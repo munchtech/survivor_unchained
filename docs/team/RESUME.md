@@ -9,9 +9,25 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - Outfits: the Reaver loincloth (ea6a9417 via 4d552845; Reaver-only legal all 0).
 - Team tools: `tools/freshness.py` gate in `turn.py take` (checks the caller's checkout or `--root`), `tools/half.py`; README rules: numeric-pass solvers on su-lead-high, half-size working pictures, scope checks to what changed. RESUME trimmed (old states in RESUME_ARCHIVE.md).
 
-### Restart order for the next coordinator
-1. **Animation** (successor started 14 Oct by 34daaf5d on the owner's one-time 385k coordinator budget; handed off @ ce9aedbc, worktree agent-af8dbda3195e438e4, docs/handoff/animation.md section 0). Sword grip fist NOT merge-ready: judge j1 failed it at the contact frames (scratchpad 34daaf5d sworderdict_j1.txt): fresh su-lead-high solver, measured AT the contact frames. Brim hand (idle_arcanist_break tuck) bc8a9bbe WIP, waits on outfits' glove choice. Flare r9 WIP; left fist off the shaft at f16-21 (a solver's report may be in the handoff). Reaver panel bone after.
-2. Outfits, face, classes, Flare VFX: see their handoffs (filled in at wind-down).
+### Merged this session
+Staff in fist (7e06d70b), Reaver loincloth (ea6a9417), lips at rest B3-15 on all ten faces (face-lips-rest 6743112e, judge r7 SHIP; 906 tests). Integration head pushed after 4ca5ca29.
+
+### Restart order (the owner: ONLY outfits, animation, face until the beautification is done; classes and Flare VFX paused)
+The PC restarted mid-session: every lead's uncommitted work was saved as a "WIP (coordinator, after the PC restart)" commit on its branch. Check it before use. Solvers that were running are gone; check their scratch folders (scratchpad 34daaf5d) and the branch log.
+1. **Outfits** (worktree agent-a5ca10091b08dc429 @ 618b674d; docs/handoff/outfits.md latest "Paused here").
+   - The body pass F1 (080103ba) is NOT merged yet: hand 11.3%, forearm +50 mm, head +7%, panel_front bone, and the Arcanist shoulder caps with elbow gloves. Hands judged better than shipped. Legal 0 on Warden, Ranger and Reaver; the Arcanist waits for the glove pick.
+   - Then: the glove top edge at the elbow bend (a solver was on it; see 5ca11b9f), the glove options sheet (B1 white fingerless, B2 black, C bare) for the owner, the knuckles (MCP 59% of the hand vs about 53%: check against references, then fold into the next body build), the Arcanist chest fix, stockings.
+   - Merge F1 together with animation's re-fits, since the clips depend on the rig.
+2. **Animation** (agent-af8dbda3195e438e4 @ 40459bb4; handoff section 0). Every clip is rebuilt on the new rig; the tuck re-fit 6d909b35.
+   - The sword grip is thinned to 15 mm (b72c551d, WIP, solver sword4).
+   - The Flare re-fit on the new rig was running (flare_nr; its flare.py edits are in the WIP commit).
+   - The Reaver panel needs a judge.
+   - Then the relaxed idle hand, the sword wrist elbow-swivel, daggers, axe and crossbow.
+3. **Face** (agent-a2d632df7c7f21ec0 @ 712b6937; successor 23 block).
+   - The smile is NOT YET: interior WIP b64a8528 (the grey far-tooth column, too-pink tongue, per-row floors, tooth gaps), then the sculpt-border solver for the stitched upper-lip seam in the smile shapes.
+   - Hardwon's 1-px pale tick at the 6x zoom (check at the Look's face zoom).
+   - Then hair edges (speckle, the stray strand at +7%).
+Stray untracked files in the main checkout: FlareFx.cs, FlareFx.Burns.cs at the root (likely the Flare lead's; left alone).
 
 ## 14 October, early: coordinator 1be2d2a9 wound down (three leads at 399k budgets, the owner's one-session trial). Restart here
 
