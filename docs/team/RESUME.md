@@ -2,6 +2,43 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 14 October, night: coordinator d7e64ca2 (outfits, animation, face only)
+Scratch for every lead this session: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\d7e64ca2-6832-41bd-8851-2fc0175ecc1b\scratchpad\{outfits,anim,face}` (KEEP). Nothing merged yet this session except docs and tools (roster, lastmsg.py).
+- **The next body build (outfits; ONE build, after the owner's glove pick):**
+  - F1;
+  - the hand at mcp 0.48 / p2 0.65: MCP 96.7-105.9 mm from the wrist (`anim\handpivots.json`, weighting in handpivots.md);
+  - the thumb MCP 12.4 mm back (the "thumb" entry);
+  - the back-of-hand drop moved to the new MCPs (an outfits solver);
+  - the left hand's pivots by the same rule on its own skin (`handpivots_left.json`). No mirror re-projection, the coordinator's call: the body is 3.6 mm asymmetric by sculpt;
+  - NOT the Reaver panel weights: panel3 found no weight or pivot change passes (`anim\panelweights.md`). Her thigh's top rises to belt height at knee drive, so the thigh shows through the panel and belt at the game camera (sprint f3, sit_log). Fix: (b) less knee drive in run, sprint and sit_log (animation measures it first), else (a) a hip-flexion corrective in this body build (outfits);
+  - the Arcanist glove rebuild for the pick.
+  Legal on whatever it re-tessellates.
+- **Outfits** (s23 a58bbd501930f73d1, worktree agent-a5ca10091b08dc429):
+  - The glove sheet: A / B1 white fingerless / B2 black / C bare. Judge gl1 NOT YET (jagged knuckle cut, B1 matte); both fixed, re-judging; then to the owner.
+  - After it: the Arcanist chest fix, stockings.
+  - The Ranger thigh line is the designed pant seam. The owner may dislike the pant reading as skin in warm light.
+- **Animation** (lead 28 a48e0478734b53e88, worktree agent-af8dbda3195e438e4):
+  - Relaxed idle hand PASS; re-judge after the build at +5 deg at the knuckles.
+  - Reaver panel swing PASS, plus the fall lag (af30daf8).
+  - Title seat PASS (f749ec7a; GameFront.Seat on 0.61 / down 0.18).
+  - Flare FIX (the flare9 solver).
+  - Sword: grip 13.7 mm (WE-01 logged). The tips still hang 2-5 mm on the modelled hand (short P3s; caps of 77 and 87 don't help). Candidates A `anim\grip\sword_fit.json` and B `anim\cap\cap77.json`, judged by eye on the real build.
+  - Staff: on the new hand the pads sink 6-8 mm (Godot truth, grip_truth.gd). Refit after the build.
+  - fistfit's thumb bug: the thumb sinks 3 mm into the forefinger. The fix is in `anim\thumb\tthumb.py`. Relaxed thumb_in goes to 18.
+  - The merge request lands WITH F1 and the body build, repacked once.
+- **Face** (s24 a76b8645c3a96d3d5, worktree agent-a2d632df7c7f21ec0):
+  - The smile pass: interior judge rounds, cheek variants.
+  - heroine.glb (m11) is shared with outfits' build: rebuild on integration, never pick a side.
+
+### Restart order (only outfits, animation, face; classes and Flare VFX stay paused)
+1. **Outfits:** a fresh successor 24 in worktree agent-a5ca10091b08dc429 @ 5f6fb567, from docs/handoff/outfits.md "Paused here".
+   - Starts with the owner's glove pick (OWNER_NOTES 14 Oct night), then the one body build.
+   - Panel3's weights are NOT coming: the Reaver thigh is a body or knee-drive fix. Ask animation's measure of the knee-drive cut first.
+2. **Animation:** a fresh lead 29 in worktree agent-af8dbda3195e438e4 @ 5cee3e9a, section 0.
+   - Before the body build: the Flare frame-offset check (a runner seeks the packed clip at frames 18-20), the f23-27 pelvis smoothing, and the Reaver knee-drive measurement.
+   - After it: the refits and the judges.
+3. **Face:** a fresh successor 25 in worktree agent-a2d632df7c7f21ec0 @ 67d38290, from its latest "Start here". The mouth interior is SHIP. The smile seam fix 083f41ab is unjudged and goes to a judge first. The heroine.glb m15 is uncommitted (unjudged art, also in `scratchpadace\seam\m15.glb`). Add the faint throat line in outfits' glove sheet (play row 1).
+
 ## 14 October, later: coordinator 34daaf5d (running lean to its 125% grace; the owner's choice)
 
 ### Merged

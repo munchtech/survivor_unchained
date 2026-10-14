@@ -272,3 +272,19 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - Classes (classes-12@aeba2930, NOT merged, paused for beautification): bossMul retired; the other boss multipliers are shown on the cards. Boss health alone can't reach the bands (the Flare meter fills from a share of boss health), so the fix is: arena boss health ×2.5, no kill-fill near a boss, the lamp growth gone, new Strike powers. Measured: room-clearing Flares 10.1-14.9% of an arena boss; Act 1 all in band; good use 15.8% shorter than pre-Flare. **The cost for the owner to weigh: arena boss fights go from about 65-85 s to about 83-153 s.**
 - **A finding for the owner:** damage over time double-dips (each bleed, burn or poison tick re-applies every multiplier to an already-multiplied base), so tooltips undersell it (Whetstone, the roadknife's poison at about 5x the Toll). Fixing it moves every damage-over-time build; queued for phase 7 with a number solver.
 - **Answered (14 Oct):** longer arena boss fights (about 83-153 s): "good". Damage over time: "the tooltip can easily say 'and each tick' - nothing is broken there". Keep the mechanic; tooltips state that every multiplier applies to each tick. Not a rebalance; drop it from phase 7's fix list (the hardest-hit check counts it as designed).
+
+## 14 October 2026, night: waiting on the owner (coordinator d7e64ca2)
+- **The Arcanist glove pick (ANSWERED 14 Oct, below):** A current black leather, B1 white satin fingerless, B2 black satin fingerless, C bare hands; all with shoulder caps and a bare upper arm. Sheets: `survivorsunchained_inputs\scratch_d7e64ca2\outfits_s23\gloves_options_play.jpg` and `gloves_options_detail.jpg`. Judge gl2 SEND, recommends B1 about 60/40 over B2; gl1 leaned B2. The coordinator recommends B1. The pick starts the one body build (RESUME "14 October, night").
+- **Optional:** the title camera 15% closer, so she reads bigger (the title judge's suggestion; left as it is).
+- **Noted:** the Ranger's light-brown pants read close to skin in warm light, and their outer seam looks like a line drawn on her thigh. It's designed, so changing it is a colour call.
+
+## 14 October 2026, night: the glove pick (to coordinator 1cc516bc)
+- The owner: "b1 with th gloves but give them style". **B1 is picked:** white satin, fingerless, elbow length, with shoulder caps and a bare upper arm. It becomes the Arcanist default (`ARC_HANDS`, `ARC_GLOVE_MAT`).
+- **"Give them style":** B1 as built is a plain white tube (a straight top edge, a flat hand edge, little satin sheen), so it can read like a sleeve or a bandage. The outfits lead designs styled B1s, a taste solver or judge picks the best two or three, and the owner picks from a sheet built on the new body. The coordinator's starting points:
+  - (a) a shaped top edge with a soft point over the outer elbow, piped in the leotard's amethyst;
+  - (b) a finger cut that's sexy, not cropped: a point to the middle knuckle with a thin loop over the middle finger, piped too;
+  - (c) embroidery on the back of the hand: classic three-line glove points, or a small arcane sigil (soul for the Arcanist);
+  - (d) a lace band at the top that the stocking tops can match;
+  - (e) real satin: a sheen that runs along the forearm, not flat white.
+- The style doesn't change her body, so **the one body build starts now** with B1 as the default. The styled glove is shot on the new hand. Whatever style wins carries to the stocking tops.
+
