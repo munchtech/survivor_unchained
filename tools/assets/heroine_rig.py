@@ -213,6 +213,19 @@ def _as_skin(W2, near, t, body, index, src):
         # took that thigh's bones (up to 0.98) and stretched across the gap
         # between her legs in every clip: the owner, 13 Oct)
         names_ = {i: n for n, i in index.items()}
+        # (only where the skin is the wrong leg's: at her crotch the skin
+        # under a thong or a gusset is both legs', and the piece must take
+        # its very blend there or it parts from her and the strip shows,
+        # fin3: 11 / 6 / 4 frames. So per side only where the skin's share
+        # of the piece's own leg is under 30%, fully under 10%)
+        cl_ = np.array([names_[c].endswith("_l") for c in chain])
+        cr_ = np.array([names_[c].endswith("_r") for c in chain])
+        pl_, pr_ = W2[ok][:, np.array(chain)[cl_]].sum(1), W2[ok][:, np.array(chain)[cr_]].sum(1)
+        sl_, sr_ = Ws[ok][:, cl_].sum(1), Ws[ok][:, cr_].sum(1)
+        own_ = np.where(pl_ >= pr_, sl_, sr_) / np.maximum(sl_ + sr_, 1e-12)
+        kx_ = np.clip((0.3 - own_) / 0.2, 0.0, 1.0)
+        kx_ = (kx_ * kx_ * (3 - 2 * kx_))[:, None]
+        whole_ = target
         target = np.zeros((int(ok.sum()), len(chain)))
         for suf in ("_l", "_r"):
             cs = np.array([names_[c].endswith(suf) for c in chain])
@@ -224,6 +237,7 @@ def _as_skin(W2, near, t, body, index, src):
         rest_ = ~np.array([names_[c].endswith(("_l", "_r")) for c in chain])
         if rest_.any():
             target[:, rest_] = W2[ok][:, np.array(chain)[rest_]]
+        target = (1 - kx_) * whole_ + kx_ * target
     tt = t[ok][:, None]
     out[np.ix_(ok.nonzero()[0], chain)] = tt * W2[ok][:, chain] + (1 - tt) * target
     return out
