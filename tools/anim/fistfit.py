@@ -409,7 +409,7 @@ def main(argv):
     wrap, A, prof = fit(a.piece, y0s)
     A0, _ = read_seat(a.piece)
     print(f'WRAP["{a.piece}"] = {json.dumps(wrap)}')
-    moved = np.linalg.norm(A - A0) > 1e-4
+    moved = np.linalg.norm(A - A0) > 5e-4   # 0.5 mm: the seat search's own tolerance below that
     print(f"seat {PIECES[a.piece]['at']} = {np.round(A, 4).tolist()}" + (" (moved)" if moved else " (kept)"))
     fails = table(a.piece, wrap, A, prof)
     if a.write:
