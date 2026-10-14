@@ -28,7 +28,7 @@ public partial class FlareFx
     float simFps = 24;
     // The sim's camera framed SimSize metres across, centred SimLook metres over the crater; played SimRate times
     // its own speed (the column at full height in about 0.15 s).
-    const float SimSize = 15.4f, SimLook = 6.0f, SimRate = 1.4f;
+    const float SimSize = 16.0f, SimLook = 4.5f, SimRate = 1.4f;
     bool Simmed => simBoom != null;
 
     void BoomReady()

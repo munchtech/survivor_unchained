@@ -38,7 +38,9 @@ void fragment() {
 	float lod = clamp(log2(max(length(dFdx(texels)), length(dFdy(texels)))), 0.0, 3.0);
 	vec4 c = mix(cell(i0, UV, lod), cell(i1, UV, lod), fract(f));
 	c.rgb = min(c.rgb, vec3(c.a));
-	c *= 1.0 - smoothstep(0.88, 0.995, length(UV * 2.0 - 1.0));
+	// Square, soft: the atlas fades its own cells (pack.py); a round fade trimmed the rising smoke.
+	vec2 q = abs(UV * 2.0 - 1.0);
+	c *= 1.0 - smoothstep(0.9, 0.995, max(q.x, q.y));
 	float k = fade;
 	if (soft > 0.0) {
 		float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;

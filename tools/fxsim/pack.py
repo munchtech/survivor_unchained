@@ -88,7 +88,7 @@ def load(f, tone):
 def resize(a, cell):
     if a.shape[0] == cell:
         return a
-    return np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(a[..., c]), "F").resize((cell, cell), Image.LANCZOS)) for c in range(4)], 2)
+    return np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(a[..., c], np.float32), "F").resize((cell, cell), Image.LANCZOS)) for c in range(4)], 2)
 
 
 def edge_fade(a):
