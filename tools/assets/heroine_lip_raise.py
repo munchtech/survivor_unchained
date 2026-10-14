@@ -48,7 +48,16 @@ EVEN = 0.7          # (the broad patches inside the new red evened this much tow
 EVEN_SIGMA = 10.0   # (front-grid px, 1 mm: what counts as broad)
 EVEN_FROM = 0.0012  # (evening starts this far over the mouth line: the lips' meeting keeps its shade)
 SMOOTH = (31, 12)   # (the old red top's height across her mouth: a median, then a gaussian, front-grid px)
-K = {"own": "border"}
+# (solver s1, 14 October 2026: each face's factor for lower:upper about 1.5 at the Look with its lips_lower (below),
+#  measured on the Look (rmeas.py at 978 / a 13-column median): own 1.32/1.39 (red to her border, by the coordinator's
+#  rule), Moonlit 1.48/1.53, Highborn 1.46/1.48, Vixen 1.50/1.50, Fey 1.52/1.61, Doe 1.48/1.58, Hard-won 1.57/1.69
+#  (at 1.45), Saffron 1.24/1.85; Sunborn and Wildling unmeasurable there (the paint's dark mouth line lies under the
+#  sculpt's slit and the darkest row jumps between them), their factors guessed)
+K = {"own": "border", "highborn": 1.6, "vixen": 1.7, "doe": 1.2, "sunborn": 1.5, "moonlit": 1.2, "saffron": 1.3,
+     "wildling": 1.55, "hardwon": 1.45, "fey": 1.7}
+# (the lips_lower each face was shot with, for its lower lip about 15% fuller: for looks.json, not used here)
+LIPS_LOWER = {"own": 0.7, "highborn": 0.65, "vixen": 0.75, "doe": 1.0, "sunborn": 0.65, "moonlit": 0.45, "saffron": 1.0,
+              "wildling": 0.5, "hardwon": 0.6, "fey": 0.6}
 LUMA = np.array([0.2126, 0.7152, 0.0722])
 
 
