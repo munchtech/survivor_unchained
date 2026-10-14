@@ -8,8 +8,9 @@ shader_type spatial;
 render_mode shadows_disabled;
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, hint_default_white;
-uniform vec3 tint : source_color = vec3(0.9, 0.72, 0.72);      // (its paint, a bright salmon, made a light rose)
-uniform float grey = 0.35;      // (its paint's colour eased so far toward its own grey: a rose, not a crimson slab (j2))
+uniform vec3 tint : source_color = vec3(0.86, 0.66, 0.6);      // (its paint, a bright salmon, made a muted rose: at
+//                                 (0.9, 0.72, 0.72) its front read (132-153, 71-88, 66-92), blue up to its green, pink (solver int2))
+uniform float grey = 0.42;      // (its paint's colour eased so far toward its own grey: a rose, not a crimson slab (j2))
 uniform float rim = 0.6;        // (its sides, turned from the eye, darkened so far toward the mouth's dark: rounded, no
 //                                 hard edge against what is behind it (j2))
 uniform vec3 inside : source_color = vec3(0.42, 0.15, 0.14);  // (the mouth's own dark red, heroine_skin's mouth_colour)

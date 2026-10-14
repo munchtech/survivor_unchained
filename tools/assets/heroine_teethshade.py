@@ -29,6 +29,12 @@ import heroine_seam as hs  # noqa: E402
 
 GLB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb")
 SIDE, DEPTH, POW = 0.3, 0.007, 1.3   # (the share: SIDE + (1 - SIDE) / (1 + (d / DEPTH) ** POW), d m behind the front teeth)
+# (her lower row (solver int2): seen from the Look end-on through her open mouth, her far side's lower premolars and
+# molars stood as a column of grey stones; with her tongue lying on their inner cusps (heroine_mouth.tongue_hug) their
+# outer cusps still show, and at SIDE (0.42 as a floor tried) a light stack. Deep in her mouth, under her upper molars
+# 3-6 mm over them, little light reaches them: her lower row falls by its own curve, its premolars about 0.64-0.46, its
+# molars 0.36 to 0.28)
+SIDE_LOW, DEPTH_LOW, POW_LOW = (float(v) for v in os.environ.get("TEETH_LOW", "0.25,0.009,2.0").split(","))
 MOVED = 0.002                         # (m: a point mouth_open moves more than this at 1 is her lower row's)
 
 
@@ -64,7 +70,8 @@ def share(V, F, moved):
     g = body == gum
     d[g] = np.maximum(front[False] - V[g, 2], 0)
     d = np.maximum(d, 0)
-    return SIDE + (1 - SIDE) / (1 + (d / DEPTH) ** POW)
+    lw = np.array([low[b] and b != gum for b in body])
+    return np.where(lw, SIDE_LOW + (1 - SIDE_LOW) / (1 + (d / DEPTH_LOW) ** POW_LOW), SIDE + (1 - SIDE) / (1 + (d / DEPTH) ** POW))
 
 
 def shade(path, out=None, redo=False):
@@ -91,7 +98,7 @@ def shade(path, out=None, redo=False):
     chunks[bvi] = col.tobytes()
     js["accessors"].append({"bufferView": bvi, "componentType": 5126, "count": len(col), "type": "VEC3"})
     p["attributes"]["COLOR_0"] = len(js["accessors"]) - 1
-    m.setdefault("extras", {})["teeth_shade"] = {"side": SIDE, "depth": DEPTH, "pow": POW}
+    m.setdefault("extras", {})["teeth_shade"] = {"side": SIDE, "depth": DEPTH, "pow": POW, "low": [SIDE_LOW, DEPTH_LOW, POW_LOW]}
     hs._save(out or path, js, chunks)
     print("TEETHSHADE: %d points, share %.2f..%.2f (median %.2f); written %s" % (len(g), g.min(), g.max(), np.median(g), out or path))
 

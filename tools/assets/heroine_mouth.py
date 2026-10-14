@@ -29,6 +29,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_seam as hs  # noqa: E402
+import heroine_teethshade as hts  # noqa: E402
 
 GLB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb")
 # (mm lower, per face: each face's upper incisors 2.5 mm under her upper lip's front edge at mouth_open .6, measured by
@@ -60,6 +61,19 @@ TONGUE_ROOT, TONGUE_LEN =0.12, 0.035   # (her tongue's shade at its root, so far
 DEPRESS_MM = float(os.environ.get("MOUTH_DEPRESS_MM", "12"))
 DEPRESS_LEN = 0.03
 GROOVE_X = (0.005, 0.014)      # (m off her mouth's middle: lowered fully to here, none from there out)
+# (her tongue's sides against her lower side teeth (solver int2): from the Look her far side's lower premolars and
+# molars, seen end-on along the line of sight, stood as a grey column through her open mouth beside the tongue's hard
+# edge; of its pixels 15% were their inner (lingual) faces and 11% the gum under them, seen through a 2-3 mm gap
+# between her tongue's side and the teeth, its side 1-2 mm under their inner cusps at the premolars. In a mouth the
+# tongue's side lies against the teeth's inner faces and on their inner cusps. So its side is pushed out to the teeth
+# (HUG_IN m into them) and up to their inner cusps' tips (HUG_UP m over them) from the first premolar back, in its
+# rest shape, so it rides her jaw so at any opening; from u (its point's share of its half width) HUG_U)
+HUG_IN = float(os.environ.get("MOUTH_HUG_IN_MM", "2.5")) / 1000
+HUG_UP = float(os.environ.get("MOUTH_HUG_UP_MM", "3.0")) / 1000
+HUG_U = (0.45, 0.95)
+# (her teeth's gaps: rounded blocks 0.26-0.57 mm apart, read with open dark wedges between them along the arch (6-8%
+# too wide, the face lead): each tooth widened so much along the arch about its own middle)
+WIDEN = float(os.environ.get("MOUTH_WIDEN", "1.07"))
 
 
 def _prim(js, mat):
@@ -98,6 +112,85 @@ def smile_open(V, D):
     out[:, 1] = RAISE_MM / 1000 * w
     out[:, 2] = -ROLL * RAISE_MM / 1000 * w
     return out, line, int((w > 0.5).sum())
+
+
+def _smooth(z, v, zq, win):
+    """v(z) sampled at points (z, v), as a moving max over win (m) then evened by a window as wide, at zq (m)."""
+    raw = np.array([v[np.abs(z - q) < win].max() if (np.abs(z - q) < win).any() else np.nan for q in zq])
+    ok = np.isfinite(raw)
+    raw = np.interp(zq, zq[ok], raw[ok])
+    k = max(1, int(round(win / max(zq[1] - zq[0], 1e-6))))
+    pad = np.r_[np.full(k, raw[0]), raw, np.full(k, raw[-1])]
+    return np.convolve(pad, np.ones(2 * k + 1) / (2 * k + 1), mode="same")[k:-k]
+
+
+def widen(TV, body, gum, mid, lower):
+    """Each tooth (not her gums) widened WIDEN times along the arch about its own middle: the move (m) per point. The
+    arch's way at a tooth: from the tooth before it to the one after (each row in order round her mouth)."""
+    out = np.zeros_like(TV)
+    c0 = np.array([mid, 0.0, 0.04])
+    for row in (False, True):
+        bs = [b for b in np.unique(body) if b != gum and (lower[body == b].mean() > 0.5) == row]
+        cen = {b: TV[body == b].mean(0) for b in bs}
+        bs.sort(key=lambda b: np.arctan2(cen[b][0] - c0[0], cen[b][2] - c0[2]))
+        for i, b in enumerate(bs):
+            t = cen[bs[min(i + 1, len(bs) - 1)]] - cen[bs[max(i - 1, 0)]]
+            t[1] = 0
+            t /= np.linalg.norm(t)
+            s = body == b
+            out[s] = ((TV[s] - cen[b]) @ t)[:, None] * t * (WIDEN - 1)
+    return out
+
+
+def tongue_hug(GV, TV, low_teeth, mid):
+    """Her tongue's side pushed out to her lower side teeth's inner faces and up to their inner cusps (HUG_IN, HUG_UP),
+    from her first premolars back, in its rest shape: the move (m) per point of her tongue."""
+    out = np.zeros_like(GV)
+    zq = np.arange(GV[:, 2].min(), GV[:, 2].max() + 1e-4, 0.0005)
+    gx = np.abs(GV[:, 0] - mid)
+    hw = _smooth(GV[:, 2], gx, zq, 0.003)
+    zt = TV[low_teeth, 2]
+    # (from the first premolar: her lower canines' back edge, the third tooth out from her middle, to her last molars')
+    tz = TV[low_teeth]
+    z_canine = np.percentile(tz[np.abs(tz[:, 0] - mid) > 0.012, 2], 92)
+    z_back = zt.min()
+    fade = _s01((z_canine - GV[:, 2]) / 0.006) * _s01((GV[:, 2] - (z_back - 0.006)) / 0.006)
+    for sg in (-1, 1):
+        side = (np.sign(GV[:, 0] - mid) == sg)
+        ts = low_teeth & (np.sign(TV[:, 0] - mid) == sg) & (np.abs(TV[:, 0] - mid) > 0.008)
+        ax = np.abs(TV[ts, 0] - mid)
+        ling = -_smooth(TV[ts, 2], -ax, zq, 0.003)          # (its inner face's distance from her middle, per z)
+        near_in = ax < np.interp(TV[ts, 2], zq, ling) + 0.0025
+        cusp = _smooth(TV[ts, 2][near_in], TV[ts, 1][near_in], zq, 0.003)
+        u = gx / np.interp(GV[:, 2], zq, hw)
+        wu = _s01((u - HUG_U[0]) / (HUG_U[1] - HUG_U[0]))
+        push = np.maximum(0, np.interp(GV[:, 2], zq, ling) + HUG_IN - np.interp(GV[:, 2], zq, hw))
+        # (her tongue's side's top, per z: the highest of its points out past 0.8 of its half width)
+        rim = side & (u > 0.8)
+        top = _smooth(GV[rim, 2], GV[rim, 1], zq, 0.003)
+        lift = np.maximum(0, np.interp(GV[:, 2], zq, cusp) + HUG_UP - np.interp(GV[:, 2], zq, top))
+        # (its top lifted fully, its underside a third: by its point's height in its own cross-section)
+        lo = -_smooth(GV[side, 2], -GV[side, 1], zq, 0.003)
+        hh = (GV[:, 1] - np.interp(GV[:, 2], zq, lo)) / np.maximum(np.interp(GV[:, 2], zq, top) - np.interp(GV[:, 2], zq, lo), 1e-4)
+        wv = 0.33 + 0.67 * _s01((hh - 0.2) / 0.6)
+        out[side, 0] += (sg * push * wu * fade)[side]
+        out[side, 1] += (lift * wu * wv * fade)[side]
+    return out
+
+
+def _normals(V, F, old):
+    """Smooth normals (area-weighted, points welded by position), turned to agree with the old ones."""
+    _, w = np.unique(np.round(V * 1e6).astype(np.int64), axis=0, return_inverse=True)
+    w = w.ravel()
+    fn = np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
+    acc = np.zeros((w.max() + 1, 3))
+    for k in range(3):
+        np.add.at(acc, w[F[:, k]], fn)
+    N = acc[w]
+    N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+    if (N * old).sum(1).mean() < 0:
+        N = -N
+    return N
 
 
 def _seen(V, I, pts, dirs=((0, 0, 1), (0.3, 0, 1), (-0.3, 0, 1), (0, 0.2, 1), (0, -0.2, 1))):
@@ -166,6 +259,25 @@ def seat(path, out=None):
     TD = rd(tp["targets"][tn.index("mouth_open")]["POSITION"])
     HD = rd(hp["targets"][hn.index("mouth_open")]["POSITION"])
     n = np.linalg.norm(TD, axis=1)
+    # (her teeth widened along the arch, each about its middle, and its normals with them; her tongue's sides hugged
+    # to her lower side teeth (HUG_*), in their rest shapes)
+    TF = hs._read(js, binc, tp["indices"]).astype(np.int64).reshape(-1, 3)
+    body = hts._bodies(TV, TF)
+    gum = np.bincount(body).argmax()
+    mid = 0.5 * (TV[:, 0].min() + TV[:, 0].max())
+    wd = widen(TV, body, gum, mid, n > 0.002)
+    TN = rd(tp["attributes"]["NORMAL"])
+    for b in np.unique(body[np.linalg.norm(wd, axis=1) > 0]):
+        s = body == b
+        t = wd[s][np.argmax(np.linalg.norm(wd[s], axis=1))]
+        t /= np.linalg.norm(t)
+        TN[s] -= (1 - 1 / WIDEN) * (TN[s] @ t)[:, None] * t
+    TN /= np.linalg.norm(TN, axis=1, keepdims=True)
+    TV = TV + wd
+    GF = hs._read(js, binc, gp["indices"]).astype(np.int64).reshape(-1, 3)
+    hug = tongue_hug(GV, TV, (n > 0.002) & (body != gum), mid)
+    GV = GV + hug
+    GN = _normals(GV, GF, rd(gp["attributes"]["NORMAL"]))
     # (her tongue rides her jaw: her lower teeth's and gum's mouth_open is an affine map of their (y, z), rms 0.1 mm
     # (MakeHuman's jaw morph), so each point of her tongue moves as her jaw does where it is (behind ROOT_Z, as at it).
     # Following the lower teeth nearest it (inverse distance over the 16 nearest, the front teeth weighing most) and
@@ -192,6 +304,8 @@ def seat(path, out=None):
     dy = np.array([0, -SEAT_MM["own"] / 1000, 0])
     hs._set(js, chunks, tp["attributes"]["POSITION"], TV + dy, minmax=True)
     hs._set(js, chunks, gp["attributes"]["POSITION"], GV + dy, minmax=True)
+    hs._set(js, chunks, tp["attributes"]["NORMAL"], TN)
+    hs._set(js, chunks, gp["attributes"]["NORMAL"], GN)
     for f, mm in SEAT_MM.items():
         if f == "own":
             continue
