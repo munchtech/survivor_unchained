@@ -7,7 +7,7 @@
 WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
 T="python $WT/tools/turn.py"
 # (take: --root this worktree, so the freshness gate checks it; exit 2 = stale art: stop, never spin)
-take() { while :; do $T take "$1" "$W" --wait 60 --root "$WT" >/dev/null 2>&1; r=$?; [ $r -eq 0 ] && return 0; [ $r -eq 2 ] && { echo "STALE: $T take $1 --root $WT refused (merge integration / reimport)"; exit 2; }; done; }
+take() { while :; do $T take "$1" "$W" --wait 60 --root "$WT" ${2:+--stale-ok} >/dev/null 2>&1; r=$?; [ $r -eq 0 ] && return 0; [ $r -eq 2 ] && { echo "STALE: $T take $1 --root $WT refused (merge integration / reimport)"; exit 2; }; done; }
 S="${OSCR:?set OSCR, the outfits scratch folder}/hs"
 W="outfits lead: rebuild"
 take blender
@@ -17,7 +17,7 @@ timeout 7000 "/c/Users/munch/Tools/blender-4.5.14-windows-x64/blender.exe" -b "$
 $T give blender "$W" >/dev/null
 echo "blender done $(date +%H:%M:%S)"
 grep -E "Error|Traceback|line [0-9]+|BODY|OUTFIT |PLATE CUP|HIDES" "$S/outfits.log" | head -30
-take godot
+take godot stale-ok   # (this build has just written the models; it reimports them next)
 echo "godot turn $(date +%H:%M:%S)"
 cd $WT/godot
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"
