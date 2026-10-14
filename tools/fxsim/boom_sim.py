@@ -94,32 +94,33 @@ TAKES = {
     # its walls. Shaded as burns_boom4 (src_material), but the fire is the flame alone (the hot gas only a dull ember
     # red, never an orange-lit fog), and burning gas is clear (the soot thick where the fire has died).
     "burns_boom5": dict(
-        dom=(15.0, 15.0, 13.0), tscale=4.0, steps_max=4, vort=0.5, flame_vort=2.0, beta=1.8, alpha=0.3,
-        burn=0.05, flame_smoke=3.0, dissolve=55, noise=0, noise_k=1.0, sub=3,
+        dom=(15.0, 15.0, 15.0), tscale=4.0, steps_max=4, vort=0.5, flame_vort=2.0, beta=1.4, alpha=0.3,
+        burn=0.03, flame_smoke=4.0, dissolve=60, noise=0, noise_k=1.0, sub=3,
         fuel=2.0, temp=3.0, smoke=0.0, vfac=0.0, out=0.0, vol=1.0, surf=0.12,
         burst=True, burst_c=(0.0, 0.0, 1.5),
-        heart=dict(keys=((1, 0.62), (2, 0.85), (3, 1.0)), on=(1, 3), fuel=2.6, temp=3.0, smoke=0.0,
+        heart=dict(keys=((1, 0.62), (2, 0.85), (3, 1.0)), on=(1, 3), fuel=3.6, temp=3.0, smoke=0.0,
                    tex=(0.45, 1.3, 1.0), lump=0.45),
-        fp=dict(n=26, seed=11, start=(1, 1), end=(4, 6), d0=(0.15, 0.45), d1=(1.3, 2.5), r0=(0.32, 0.45),
-                r1=(0.8, 1.3), zmin=-0.3, fuel=(1.2, 2.8), temp=3.0, smoke=0.0, lump=0.45, tex=(0.5, 1.4, 1.0),
-                ease=2.0, vfac=0.25, jit=0.25),
-        sp=dict(n=40, seed=23, start=(2, 3), end=(5, 7), d1=(2.7, 3.9), d0_rel=(0.55, 0.75), r0=(0.25, 0.4),
-                r1=(0.55, 1.05), zmin=-0.15, smoke=(0.25, 0.9), temp=1.4, lump=0.5, tex=(0.6, 1.6, 1.0),
-                ease=2.0, vfac=0.2, jit=0.3),
+        fp=dict(n=30, seed=11, start=(1, 1), end=(4, 6), d0=(0.15, 0.45), d1=(1.0, 2.1), r0=(0.32, 0.45),
+                r1=(0.65, 1.15), zmin=-0.3, fuel=(0.6, 3.8), fuel_pow=2.0, temp=3.0, smoke=(0.08, 0.3), lump=0.45,
+                tex=(0.6, 2.2, 1.0), ease=2.0, vfac=0.08, jit=0.25),
+        sp=dict(n=22, seed=23, start=(3, 3), end=(5, 7), d1=(3.0, 3.8), d0_rel=(0.75, 0.9), r0=(0.25, 0.35),
+                r1=(0.5, 0.95), zmin=-0.45, zmax=0.25, smoke=(0.2, 0.6), temp=1.4, lump=0.5, tex=(0.6, 1.6, 1.0),
+                ease=2.0, vfac=0.08, jit=0.3),
         stem=dict(r=0.32, z=0.35, on=(1, 5), fuel=1.0, temp=2.0, smoke=0.6, up=2.0),
-        turb=((1, 3.0), (8, 3.0), (20, 1.5), (36, 0.6)), turb_size=1.2, turb_z=(2.5, 9.0), turb_xy=(0.0, 0.0),
+        turb=((1, 2.5), (8, 2.0), (20, 1.0), (36, 0.4)), turb_size=1.2, turb_z=(2.5, 10.0), turb_xy=(0.0, 0.0),
         src=True,
         smoke_k=30.0, dpow=1.0, smoke_rgb=(0.04, 0.036, 0.032), absorb=(0.45, 0.25, 0.08),
-        flame_k=8.0, fq=1.0, flame_pow=1.0, emit_k=3.5, emit_m=3.0, heat_fire=(0.55, 1.0), heat_w=0.9,
-        heat_cap=0.38, fmask=(0.15, 0.6, 0.15), side=(1.6, 0.35),
-        soot_noise=(0.9, 0.3, 4.0), soot_up=5.0,
+        flame_k=8.0, fq=1.0, flame_pow=1.0, emit_k=3.5, emit_m=2.5, heat_fire=(0.55, 1.0), heat_w=0.0,
+        fvis=((1, 0.05, 0.3), (5, 0.15, 0.45), (10, 0.22, 0.5), (24, 0.25, 0.5)), vmin=0.15,
+        fmask=(0.0, 0.0, 0.08), side=(1.6, 0.35),
+        soot_noise=(0.9, 0.2, 4.0), soot_up=5.0,
         ramp=((0.0, (0.0, 0.0, 0.0)), (0.10, (0.55, 0.03, 0.0)), (0.30, (0.92, 0.12, 0.01)),
               (0.50, (1.0, 0.30, 0.02)), (0.70, (1.0, 0.50, 0.06)), (0.85, (1.0, 0.70, 0.20)),
               (0.93, (1.0, 0.84, 0.46)), (1.0, (1.0, 0.95, 0.80))),
-        fnoise=0.35, fnoise_s=2.5, fnoise_up=4.0,
+        fnoise=0.1, fnoise_s=1.4, fnoise_up=4.0,
         glow_rgb=(1.0, 0.22, 0.04), glow_k=0.0, glow_heat=(0.5, 1.0),
         heat_keys=((1, 0.6), (4, 0.6), (10, 1.0), (18, 0.8), (26, 0.35), (34, 0.0)),
-        zfade=(9.5, 12.8), smoke_keys=((1, 1.0), (26, 1.0), (38, 0.5), (47, 0.12)), fire_keys=(),
+        zfade=(10.5, 14.5), smoke_keys=((1, 1.0), (24, 1.0), (36, 0.55), (44, 0.2), (48, 0.0)), fire_keys=(),
         amb=0.15, look=4.5, ortho=16.0,
         tone=dict(exp=1.0, knee=0.6, hot=0.0, sat=1.0, amb=(0.0, 0.0, 0.0)),
     ),
@@ -169,9 +170,9 @@ def src_material(t):
         nt.nodes.remove(n)
     L = nt.links.new
 
-    def math(op, a, b=None, clamp=False):
+    def math(op, a, b=None, c=None, clamp=False):
         n = nt.nodes.new("ShaderNodeMath"); n.operation = op; n.use_clamp = clamp
-        for i, v in enumerate((a, b)):
+        for i, v in enumerate((a, b, c)):
             if v is None:
                 continue
             if isinstance(v, (int, float)):
@@ -231,15 +232,6 @@ def src_material(t):
         l2.default_value = (0.3, 0, -t.get("soot_up", 5.0)); l2.keyframe_insert("default_value", frame=33)
         mk = math("MULTIPLY", math("SUBTRACT", nz2.outputs["Fac"], th), gain, clamp=True)
         ds = math("MULTIPLY", ds, mk)
-    if t.get("fmask"):
-        # Burning gas is clear: the soot thinned where the flame is high (to fmask[2] of itself at fmask[1]), so the
-        # fire shows where it burns at the cloud's skin and the soot lies thick where the fire has died.
-        fm0, fm1, fmin = t["fmask"]
-        fmr = nt.nodes.new("ShaderNodeMapRange"); fmr.clamp = True
-        fmr.inputs["From Min"].default_value, fmr.inputs["From Max"].default_value = fm0, fm1
-        fmr.inputs["To Min"].default_value, fmr.inputs["To Max"].default_value = 1.0, fmin
-        L(attr("flame"), fmr.inputs["Value"])
-        ds = math("MULTIPLY", ds, fmr.outputs["Result"])
     # Fire: the flame broken finer than the grid by a noise that climbs with it.
     f = attr("flame")
     if t.get("fnoise", 0.0) > 0:
@@ -254,6 +246,33 @@ def src_material(t):
         L(nz.outputs["Fac"], ma.inputs[0])
         ma.inputs[1].default_value = 2.0 * t["fnoise"]; ma.inputs[2].default_value = 1.0 - t["fnoise"]
         f = math("MULTIPLY", f, ma.outputs["Value"], clamp=True)
+    vis = None
+    if t.get("fvis"):
+        # The fire seen only where it burns hot enough: a smoothstep of the broken flame from lo to hi (keyed, as
+        # fvis = ((frame, lo, hi), ...)), the fire below it kept at vmin of itself (a dull red under the soot). The
+        # burnt-out gas is soot, so the fire shrinks into pockets as it dies, edged sharp against black.
+        ks = t["fvis"]
+        lo = keyed(nt, "fvis_lo", [(k[0], k[1]) for k in ks], ks[0][1]).outputs[0]
+        hi = keyed(nt, "fvis_hi", [(k[0], k[2]) for k in ks], ks[0][2]).outputs[0]
+        vr = nt.nodes.new("ShaderNodeMapRange"); vr.clamp = True; vr.interpolation_type = "SMOOTHSTEP"
+        L(f, vr.inputs["Value"]); L(lo, vr.inputs["From Min"]); L(hi, vr.inputs["From Max"])
+        vr.inputs["To Min"].default_value, vr.inputs["To Max"].default_value = 0.0, 1.0
+        vis = vr.outputs["Result"]
+        vmin = t.get("vmin", 0.15)
+        f = math("MULTIPLY", f, math("MULTIPLY_ADD", vis, 1.0 - vmin, vmin))
+    if t.get("fmask"):
+        # Burning gas is clear: the soot thinned where the fire burns (to fmask[2] of itself), so the fire shows
+        # where it burns at the cloud's skin and the soot lies thick where the fire has died. With fvis, the fire's
+        # own visibility; else the raw flame mapped from fmask[0] to fmask[1].
+        fm0, fm1, fmin = t["fmask"]
+        if vis is not None:
+            ds = math("MULTIPLY", ds, math("MULTIPLY_ADD", vis, fmin - 1.0, 1.0))
+        else:
+            fmr = nt.nodes.new("ShaderNodeMapRange"); fmr.clamp = True
+            fmr.inputs["From Min"].default_value, fmr.inputs["From Max"].default_value = fm0, fm1
+            fmr.inputs["To Min"].default_value, fmr.inputs["To Max"].default_value = 1.0, fmin
+            L(attr("flame"), fmr.inputs["Value"])
+            ds = math("MULTIPLY", ds, fmr.outputs["Result"])
     if t.get("heat_fire"):
         # Hot gas is fire too: its heat (the sim's buoyancy temperature, which outlives the flame) mapped to the
         # same scale, cooling on heat_keys, so burnt-out gas keeps a deep red glow and the fire dies as it cools.
@@ -632,15 +651,15 @@ def main():
     if t.get("burst"):
         cx, cy, cz = t["burst_c"]
 
-        def spiral(n, zmin, seed, jit):
-            """n directions spread evenly over the sphere above zmin (a jittered Fibonacci spiral), shuffled."""
+        def spiral(n, zmin, seed, jit, zmax=1.0):
+            """n directions spread evenly over the sphere's band zmin..zmax (a jittered Fibonacci spiral), shuffled."""
             r = random.Random(seed)
-            m = max(n, int(round(n * 2.0 / (1.0 - zmin))))
+            m = max(n, int(round(n * 2.0 / (zmax - zmin))))
             ga = math.pi * (3.0 - math.sqrt(5.0))
             out_ = []
             for k in range(m):
                 z = 1.0 - 2.0 * (k + 0.5) / m
-                if z < zmin:
+                if z < zmin or z > zmax:
                     continue
                 rr = math.sqrt(max(0.0, 1.0 - z * z)); th = k * ga
                 v = [rr * math.cos(th) + r.uniform(-jit, jit), rr * math.sin(th) + r.uniform(-jit, jit),
@@ -655,7 +674,7 @@ def main():
             on the front), radius r0 to r1, eased out (fast, then slowing), on from a frame in p["start"] to one in
             p["end"]; each lumpy, its emission broken by its own clouds."""
             r = random.Random(p["seed"] + 1)
-            for i, dv in enumerate(spiral(p["n"], p["zmin"], p["seed"], p.get("jit", 0.25))):
+            for i, dv in enumerate(spiral(p["n"], p["zmin"], p["seed"], p.get("jit", 0.25), p.get("zmax", 1.0))):
                 a = r.randint(*p["start"]); b = max(r.randint(*p["end"]), a + 1)
                 d1 = r.uniform(*p["d1"])
                 d0 = d1 * r.uniform(*p["d0_rel"]) if p.get("d0_rel") else r.uniform(*p["d0"])
@@ -669,7 +688,11 @@ def main():
                 ob = bpy.context.object
                 lumpy(ob, p["lump"])
                 if kind == "fire":
-                    charge(f"{prefix}{i}", ob, (a, b), keys, r.uniform(*p["fuel"]), p["temp"], p.get("smoke", 0.0),
+                    # Fuel skewed low (fuel_pow > 1): most puffs burn out early, a few rich ones burn on in pockets.
+                    fu = p["fuel"][0] + (p["fuel"][1] - p["fuel"][0]) * r.random() ** p.get("fuel_pow", 1.0)
+                    smk = p.get("smoke", 0.0)
+                    smk = r.uniform(*smk) if isinstance(smk, (tuple, list)) else smk
+                    charge(f"{prefix}{i}", ob, (a, b), keys, fu, p["temp"], smk,
                            vfac=p.get("vfac", 0.0), tex=p.get("tex"), sub=t.get("sub", 3))
                 else:
                     charge(f"{prefix}{i}", ob, (a, b), keys, 0.0, p["temp"], r.uniform(*p["smoke"]),
