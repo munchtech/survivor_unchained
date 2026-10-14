@@ -265,67 +265,6 @@ varying float soft_w;
 varying float edge_w;
 varying float back_ao;
 
-// The light through her (BACKLIGHT): how much, its colour, and how far it is kept to lamps behind her (it has no
-// thickness mask: from a lamp in front it lit the underside of her jaw, away from it, red).
-uniform float backlight = 0.18;
-uniform vec3 backlight_colour = vec3(1.0, 0.45, 0.35);
-uniform float backlight_behind = 0.0;
-// (how far the light through her is kept to where she is thin, by ao_map's blue (heroine_thin.py: her ears, the
-// wings of her nose): unmasked, the underside of her jaw, turned from the key, took a salmon line along its edge.
-// Under the Look's rig only (look_rig), as is her head's rim kept to lamps behind her: the rig has its own fill and
-// bounce, but outside it (play, cinematics, the Look's whole frame) these two were her head's only light on the side
-// turned from a lamp, as they are her body's; without them, by the overhead lantern at night, her lower face, jaw
-// and nostrils fell to the night sky's blue-black under a lit neck (judge rj2v, 12 October 2026).)
-uniform float thin_map = 0.0;
-// (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
-// 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
-varying float front_rim;
-// Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
-// its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
-// ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
-// by the fill at a high ndl; a test switch, 1 none.)
-uniform vec3 shade_tint = vec3(1.0);
-uniform float shade_from = -0.2;
-uniform float shade_to = 0.5;
-uniform float shade_down = 0.0;
-uniform float down_from = 0.0;
-uniform float down_to = 0.6;
-uniform float shade_zone = 0.0;
-// (shade_by_light 1: the gate is each lamp's own light at the point (its colour's luminance times ndl and attenuation,
-// shadow included), not ndl: under her jaw the fill reaches her at a high ndl but weakly, and the key's soft shadow
-// falls there, so ndl called it lit and her body's tone (set for lit skin) greyed it; the key at a low angle on her
-// lower cheek is still strong, so that stays as fitted)
-uniform float shade_by_light = 0.0;
-// (shade_by_soft 1: the gate is the lamp's own sheen (SPECULAR_AMOUNT, 2x its light_specular): the Look's fill (0.1)
-// and bounce (0) are its soft lamps, and her shade is theirs, so they show her paint's own colour and the key (0.3)
-// her body's tone at every angle; by light, the key's weak light at her jaw's edge took her paint's colour, an
-// orange band along it)
-uniform float shade_by_soft = 0.0;
-// (thinned, shade_thin of it, on her jaw's underside, where she faces down (world normal's -y thin_from to thin_to):
-// lit there by the soft lamps alone, the warm bounce from below most, it showed her paint's own colour at full, an
-// orange-brown wedge from her jaw's angle to her chin with her head turned (Oklab C 1.6 times her lit skin's, own at
-// 80 degrees; face lead 19, 13 October 2026). Her cheeks face down 0.36-0.47 at the Look, her jaw's shade on her neck
-// under 0.4, and keep it all. (Tried: its saturation capped at 1.4 times her paint's own took the fill's warmth too,
-// the front view's jaw shade C 0.035 to 0.028; by ao_map's shade, it is as deep on her neck. 0: as before.)
-uniform float shade_thin = 0.75;
-uniform float thin_from = 0.4;
-uniform float thin_to = 0.75;
-// Her rim (`rim`) kept to where the lamp reaches her (rim_gate: smoothstep(0, 0.3, ndl)), and how much of her colour.
-uniform float rim_gate = 0.0;
-uniform float rim_tint = 0.6;
-// The sheen a lamp behind her gives, against one in front (People.HerBackSpec): skin's fine relief breaks up a light
-// that grazes it from behind; at full, the cool rim lamp lay over her collarbones and upper chest as a lilac sheen.
-uniform float back_spec = 1.0;
-// (a developer's view, --skin-set *:dbg_gate=1 with --look-ambient 0 --tonemap linear --grade off: each lamp's light at
-// the point, shadow and its angle in (ATTENUATION times ndl, times dbg_gate), red the key's path in front of her, green
-// the soft lamps, blue the lamps behind her)
-uniform float dbg_gate = 0.0;
-varying float shade_w;
-varying float lift_w;
-varying float soft_w;
-varying float edge_w;
-varying float back_ao;
-
 void vertex() {
 	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
