@@ -129,7 +129,10 @@ public partial class FlareFx
             simBoom.Scale = Vector3.One * SimSize;
             simBoom.Visible = life < 1;
             simMat!.SetShaderParameter("life", life);
-            simMat.SetShaderParameter("gain", 1.25f * (LessFlash ? 0.6f : 1));
+            // The birth burns through the eye's dip (the world stops down, the fireball doesn't: solver 5 measured the
+            // dip taking the birth's whitest pixel from 0.92 to 0.85 at f118); handed back to the dip by 0.3 s.
+            float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.16f, 0.3f, c));
+            simMat.SetShaderParameter("gain", 1.25f * through * (LessFlash ? 0.6f : 1));
             // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
             simMat.SetShaderParameter("smoke", 1.0f - 0.35f * Mathf.SmoothStep(0.35f, 0.8f, c));
             simMat.SetShaderParameter("fade", (1 - Mathf.SmoothStep(0.9f, 1.4f, c)) * (1 - Mathf.SmoothStep(0.85f, 1f, life)));

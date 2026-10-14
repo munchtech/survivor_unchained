@@ -32,6 +32,9 @@ public partial class FlareFx : Node3D
     /// frames the night dims to 0.7 and comes back over a second, so the fire stays the brightest thing on screen
     /// and the frame's mean holds under §1.6's 1.5x (it held 1.9x for 0.6 s).</summary>
     public Action<float> Dip = _ => { };
+    /// <summary>The dip now (1 none): the BOOM's birth burns through it (FlareFx.Boom BoomTick).</summary>
+    float dipNow = 1;
+    void SetDip(float k) { dipNow = k; Dip(k); }
     /// <summary>The pad: low motor, high motor, seconds.</summary>
     public Action<float, float, float> Rumble = (_, _, _) => { };
     /// <summary>The HUD's dim (0 none .. 1 the Flare's 35%).</summary>
@@ -241,7 +244,7 @@ public partial class FlareFx : Node3D
             {
                 float s = (float)(t - lastAt);
                 // (Flare time: the last word's 6-frame hitstop runs it at a tenth, so 0.005 s is about 3 real frames.)
-                Dip(1 - 0.38f * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.12f, 0.42f, s)) * (LessFlash ? 0.5f : 1));
+                SetDip(1 - 0.38f * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.12f, 0.42f, s)) * (LessFlash ? 0.5f : 1));
             }
             if (Done())
             {
@@ -341,7 +344,7 @@ public partial class FlareFx : Node3D
         marks.Clear();
         doomed.Clear();
         look = web = frost = Vector4.Zero;
-        Dip(1);
+        SetDip(1);
         RenderingServer.GlobalShaderParameterSet("flare_look", look);
         RenderingServer.GlobalShaderParameterSet("flare_web", web);
         RenderingServer.GlobalShaderParameterSet("flare_frost", frost);

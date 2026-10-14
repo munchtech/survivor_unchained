@@ -20,6 +20,15 @@ uniform float fade = 1.0;
 // The fire's hue: the sim's tone read salmon over the night ground (s5f); less blue makes it burn orange.
 uniform vec3 fire_tint = vec3(1.0); // (burns_boom5's own colour: no tint)
 uniform float soft = 0.8;
+// The birth (atlas cells 0..birth_end): the atlas tops out at 1.0, so its white-yellow heart (linear luma
+// hot_lo..hot_hi: the top fifth of b5dx's ball in cells 0-2, a tenth in 3) is pushed past the tonemapper's white
+// (hot: how far over, fading out by cell 6) and its body pre-saturated against AgX's desaturation of bright colour
+// (sat, back to 1 by birth_end). Judge 4 fix 1; solver 5's limits.
+uniform float hot = 2.2;
+uniform float hot_lo = 0.82;
+uniform float hot_hi = 0.93;
+uniform float sat = 1.5;
+uniform float birth_end = 9.0;
 // The BOOM's ring (flare_world): its first tenth of a second shows through the fireball's base (judge 3).
 global uniform sampler2D flare_marks : filter_nearest, repeat_disable;
 
@@ -42,6 +51,15 @@ void fragment() {
 	float lod = clamp(log2(max(length(dFdx(texels)), length(dFdy(texels)))), 0.0, 3.0);
 	vec4 c = mix(cell(i0, UV, lod), cell(i1, UV, lod), fract(f));
 	c.rgb = min(c.rgb, vec3(c.a));
+	if (f < birth_end) {
+		// straight colour (the atlas is premultiplied): its top channel finds the heart, its luma the body
+		vec3 sc = c.rgb / max(c.a, 1e-3);
+		float l = dot(sc, vec3(0.2126, 0.7152, 0.0722));
+		float heart = smoothstep(hot_lo, hot_hi, l) * (1.0 - smoothstep(3.0, 6.0, f));
+		float s = mix(sat, 1.0, smoothstep(birth_end - 4.0, birth_end, f));
+		sc = max(mix(vec3(l), sc, mix(s, 1.0, heart)), vec3(0.0));
+		c.rgb = sc * c.a * (1.0 + hot * heart);
+	}
 	// Square, soft: the atlas fades its own cells (pack.py); a round fade trimmed the rising smoke.
 	vec2 q = abs(UV * 2.0 - 1.0);
 	c *= 1.0 - smoothstep(0.9, 0.995, max(q.x, q.y));

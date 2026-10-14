@@ -274,7 +274,7 @@ public partial class FlareFx
                 bed.Spawn(FlareBits.Kind.Puff, sp, -em.Dir * 1.5f + Rand3() * 0.4f, 0.8f + R() * 0.6f, 0.28f, new Color(0.05f, 0.045f, 0.04f, 0.32f), sizeEnd: 0.8f + R() * 0.5f, drag: 2.5f, lift: 0.3f);
             }
             // The eye darkens for the last two frames before the last word: the BOOM's punch is the dark before it.
-            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) Dip(LessFlash ? 0.95f : 0.9f);
+            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) SetDip(LessFlash ? 0.95f : 0.9f);
             if (t >= em.LandAt) Land(em);
         }
         if (colT >= 0) { colT += dt; Column(dt); }
