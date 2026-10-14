@@ -6142,7 +6142,7 @@ def arcanist():
     GLOVE_EYES = [float(v) for v in os.environ.get("GLOVE_EYES", "0.008,0.028,0.048,0.068,0.086").split(",")]
     GLOVE_EYE = tuple(float(v) for v in os.environ.get("GLOVE_EYE", "0.0015,0.00045,0.0026").split(","))
     GLOVE_LACE_R = float(os.environ.get("GLOVE_LACE_R", "0.0009"))
-    GLOVE_LACE_CLEAR = float(os.environ.get("GLOVE_LACE_CLEAR", "0.0004"))   # (s25 gs2: a lace's surface off the built binding and sheet)
+    GLOVE_LACE_CLEAR = float(os.environ.get("GLOVE_LACE_CLEAR", "0.0006"))   # (s25 gs2: a lace's surface off the built binding and sheet; at 0.4 mm two points stood 0.27 mm off, G2h)
     GLOVE_KNOT_SEAT = float(os.environ.get("GLOVE_KNOT_SEAT", "0.00075"))   # (s25 gs2: the knot's base off what is under it)
     GLOVE_BOW = tuple(float(v) for v in os.environ.get("GLOVE_BOW", "0.009,0.004,0.014,0.0035,0.0011").split(","))
     GLOVE_STYLE_FRAME, GLOVE_HAND = {}, {}
@@ -8958,11 +8958,6 @@ def rings_one(objs):
 
 
 rings_one(made)
-pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
-for name in OUTFITS:
-    mine = pieces_of[name]
-    if not mine:
-        continue
 
 # (s25 gs2, G1: the three points down the back of her hand ride the glove's sheet as finally weighted
 # (helpers split, top refitted, rings): each point of a thread takes the blend of the sheet under it,
@@ -9022,6 +9017,11 @@ glove_riders(made)
     for o in mine:
         o.select_set(True)
     bpy.context.view_layer.objects.active = arm
+pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
+for name in OUTFITS:
+    mine = pieces_of[name]
+    if not mine:
+        continue
     # Text and binary apart, the textures beside them in one folder that
     # every outfit shares (embedded, each file carried its own copies).
     path = os.path.join(os.path.dirname(OUT), f"heroine_outfit_{name}.gltf")
