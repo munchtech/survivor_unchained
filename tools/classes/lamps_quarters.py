@@ -6,38 +6,57 @@ THIRD = round(1 / 3, 4)
 
 # The one modifier per staged Flare that Light my way may light before Act 1 is done (CLASSES §7): measured on Act 1
 # against the staged Flare without it. A Flare with no passing modifier marks none.
-EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_for_the_dead", "roadknife.the_roads_toll.toll_doubled"}
+EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_for_the_dead", "roadknife.the_roads_toll.toll_doubled",
+         "sunderer.the_long_cut.through_the_wall",
+         "butcher.the_butchers_bill.wide_chops", "moonweaver.the_branding.the_eye",
+         "verge_hunter.one_arrow.pinned_to_the_earth", "chainbound.drag_them_under.hold_him"}
 
 # ------------------------------------------------------------------ Flares --
 # Phase 1 plays each as its kind's plain form (Lamps.cs FlareDef); phase 2 stages the first four, phase 6 the rest.
 # power: each blow's damage at level 1. A Strike's blows land over its length; a Stand pulses `blows` a second.
-flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.")
+flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.",
+      beat={"key": 0.2, "first": 0.3, "cleave": 0.55, "second": 0.85, "hitstop": 3, "hitstopCleave": 8, "shake": 0.8},
+      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 0.6,
+            "wall": 36, "sunderWall": 0.4, "burn": 0.25, "burnSeconds": 4})
 flare("dawn_in_the_steel", "Dawn in the Steel", "warden", "sunderer", "stand", 6, 10, 2, 345, "holy", ["melee", "area", "heavy", "holy"], "For 6 s the blade burns with morning: faster swings, crescents of light, every heavy blow staggers.")
 flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike", 0.9, 14, 3, 920, "holy", ["area", "holy", "shield"], "Three tolls on the shield: each stuns and sears everything near, and mends you 4%. The last is a holy blast 8 m round.",
       beat={"first": 0.3, "step": 0.25, "hitstop": 4, "hitstopLast": 8},
       args={"toll": 0.45, "blast": 1.25, "blastRadius": 8, "stun": 1, "sear": 2, "mend": 0.04, "peal": 0.08, "stagger": 0.15, "flee": 3})
 flare("sixty_on_the_wall", "Sixty on the Wall", "warden", "bulwark", "stand", 6, 7, 1, 345, "holy", ["area", "holy", "shield"], "For 6 s the Watch's shield-bearers hold an arc in front of you.", "cut", 0.5)
-flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing.")
+flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing (at least four): each mends 2%.",
+      beat={"key": 0.2, "leap": 0.2, "first": 0.45, "step": 0.06, "lastGap": 0.12, "hitstop": 2, "hitstopLast": 7},
+      args={"chop": 1.5, "lastChop": 1.5, "minChops": 4, "maxChops": 10, "mend": 0.02, "splash": 2, "bleed": 0.4, "bleedSeconds": 3, "vault": 6,
+            "emptyLeap": 6, "bossMul": 0.5, "wide": 0.6, "feast": 0.1})
 flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 0, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
       beat={"key": 0.3, "hitstop": 1, "hitstopExecute": 4},
       args={"faster": 2, "bleed": 0.8, "bleedSeconds": 3, "deepen": 1, "execute": 0.15, "extend": 0.3, "extendCap": 8, "overtime": 0.6, "overtimeCap": 12, "mend": 0.01, "mistRadius": 5, "flee": 1.5})
-flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul them into one knot for the slam.")
+flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul it into one knot at your feet for the slam.",
+      beat={"key": 0.2, "first": 0.35, "knot": 0.65, "slam": 0.77, "grindFirst": 0.7, "grindLast": 0.86, "slamGrinder": 0.95, "hitstop": 2, "hitstopLast": 8},
+      args={"hook": 0.5, "slam": 1.75, "hooks": 0, "slamRadius": 4, "knotAhead": 1.5, "knotSpread": 1.2, "stun": 1, "bossStun": 1.5, "bossDrag": 3,
+            "bossMul": 1.0, "deeper": 1.5, "grinds": 3, "grind": 0.25, "hold": 3, "emptyHooks": 8})
 flare("storm_on_the_chain", "Storm on the Chain", "reaver", "chainbound", "stand", 5, 8, 2, 400, "storm", ["melee", "storm", "area", "hook"], "For 5 s the chain sweeps 8 m out, and the sky strikes down it.")
 flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 12, 1160, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then twelve embers fall on the frozen ground, and each shatters what is frozen round it.",
-      beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
-      args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "bossMul": 1.0, "moreEmbers": 18, "blackIce": 0.5})
+      beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "aim": 0.2, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
+      args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "bossMul": 1.0, "moreEmbers": 18, "blackIce": 0.5, "shove": 3, "shoveStun": 0.5, "shoveStagger": 0.15})
 flare("hard_winter", "Hard Winter", "arcanist", "kindler", "stand", 6, 12, 1, 345, "frost", ["spell", "frost", "area", "zone"], "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts.")
-flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.0, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.")
+flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.1, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.",
+      beat={"key": 0.15, "first": 0.45, "burstFirst": 0.75, "burstLast": 1.0, "bossBurst": 1.1, "hop": 0.1, "second": 1.0, "hitstop": 2, "hitstopLast": 6, "hitstopEye": 1},
+      args={"markSeconds": 4, "burst": 1.5, "splash": 0.35, "burstRadius": 2, "bossBurst": 1.5, "bossRadius": 3, "bossMul": 1.0, "pass": 0.75, "passRange": 6, "passMax": 24,
+            "deep": 1.5, "secondShare": 0.6, "eye": 0.25, "eyeSeconds": 6, "eyeRange": 8, "eyeMax": 10, "emptyRings": 3})
 flare("the_drowned_moon", "The Drowned Moon", "arcanist", "moonweaver", "stand", 6, 5, 3, 255, "arcane", ["spell", "arcane", "projectile", "zone"], "For 6 s a pool of moonlight follows you and looses motes.")
 flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2, 12, 12, 2100, "physical", ["melee", "steel", "physical", "twin"], "Gone in smoke: twelve cuts in 1.2 s on the strongest near, each poisoned, and anything below 25% dies. On a boss, the last four.",
       beat={"key": 0.24, "first": 0.24, "last": 1.12, "hitstop": 1, "hitstopLast": 6},
-      args={"poison": 0.5, "poisonSeconds": 4, "execute": 0.25, "lastCut": 0.4, "onBoss": 4, "bossMul": 0.25, "doubled": 18, "gone": 3})
+      args={"poison": 0.5, "poisonSeconds": 4, "execute": 0.25, "lastCut": 0.4, "onBoss": 4, "bossMul": 0.25, "doubled": 18, "gone": 3, "emptyFan": 0.45, "emptyRadius": 1.5})
 flare("through_and_through", "Through and Through", "stalker", "roadknife", "stand", 6, 3, 2, 290, "physical", ["melee", "steel", "physical"], "For 6 s your dashes are free and endless, and every one cuts.")
-flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.")
+flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.",
+      beat={"key": 0.35, "first": 0.4, "splitFirst": 0.45, "splitLast": 0.55, "follow": 0.3, "hitstop": 7, "hitstopSplit": 1, "hitstopLast": 3},
+      args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "bossMul": 0.45, "splits": 3, "splitMore": 6,
+            "splitAngle": 0.4, "splitLength": 12, "splitWidth": 0.8, "split": 0.6, "pinned": 2, "heart": 0.6, "heartFan": 0.7, "heartFrom": 4})
 flare("pinning_rain", "Pinning Rain", "stalker", "verge_hunter", "stand", 5, 6, 3, 205, "physical", ["projectile", "ranged", "physical", "area"], "For 5 s arrows rain on ground 12 m across, rooting what they strike.")
 
 P_FIRST = 2   # the four Flares phase 2 stages
 P_REST = 6
+P_6A = 2      # phase 6a's staged Flares: their modifiers are live (Lamps.LivePhase) as each is staged
 
 # ------------------------------------------------------------------ warden --
 w = hearth("warden",
@@ -84,9 +103,9 @@ sund = road("warden", w, "sunderer", "Road of the Sunderer", "Slow, huge blows t
     [("Weight of the Oath", "Every blow you strike is heavy and always staggers: Sunder's line comes on every swing. You swing 45% slower, nothing can make you swing faster, and you never strike true.", [R("weight_of_the_oath", phase=4, slower=0.45)]),
      ("The Unbroken Line", "Sunder's heavy blow no longer splits a line: it breaks the ground all around you, 4 m, at half the blow.", [R("unbroken_line", phase=5, radius=4, share=0.5)])],
     ("the_long_cut", "The Long Cut", [
-        ("Second Cut", "Another sweep 0.3 s later, inside the 1.2 s.", FM("the_long_cut", "long_cut.second_cut", P_REST)),
-        ("Line of Morning", "The line burns for 4 s.", FM("the_long_cut", "long_cut.line_of_morning", P_REST)),
-        ("Through the Wall", "The line runs 36 m, and Sundered is 40% weaker armor on bosses.", FM("the_long_cut", "long_cut.through_the_wall", P_REST))]),
+        ("Second Cut", "Another sweep 0.3 s later, inside the 1.2 s.", FM("the_long_cut", "long_cut.second_cut", P_6A)),
+        ("Line of Morning", "The line burns for 4 s.", FM("the_long_cut", "long_cut.line_of_morning", P_6A)),
+        ("Through the Wall", "The line runs 36 m, and Sundered is 40% weaker armor on bosses.", FM("the_long_cut", "long_cut.through_the_wall", P_6A))]),
     ("dawn_in_the_steel", "Dawn in the Steel", [
         ("High Morning", "It holds 8 s.", FM("dawn_in_the_steel", "dawn_steel.high_morning", P_REST)),
         ("Crescents Through", "Its crescents pierce everything.", FM("dawn_in_the_steel", "dawn_steel.crescents_through", P_REST)),
@@ -178,9 +197,9 @@ butch = road("reaver", rv, "butcher", "Road of the Butcher", "Twin axes, and you
     [("Always Bleeding", "You always count as below a third of health for Fights Best Hurt and Blood Up. You can't be mended above half, and what would mend past it is lost.", [R("always_bleeding", cap=0.5)]),
      ("The Butcher's Count", "Each kill gives +1% damage for 10 s, to 50. You take more by half the Count.", [R("butchers_count", per=0.01, cap=50, seconds=10, price=0.5)])],
     ("the_butchers_bill", "The Butcher's Bill", [
-        ("Running Tab", "The leftover chops can go on twice.", FM("the_butchers_bill", "bill.running_tab", P_REST)),
-        ("Wide Chops", "Each chop strikes everything 2 m round.", FM("the_butchers_bill", "bill.wide_chops", P_REST)),
-        ("Feast", "Each kill mends 10%.", FM("the_butchers_bill", "bill.feast", P_REST))]),
+        ("Running Tab", "The leftover chops can go on twice.", FM("the_butchers_bill", "bill.running_tab", P_6A)),
+        ("Wide Chops", "Each chop strikes everything 2 m round.", FM("the_butchers_bill", "bill.wide_chops", P_6A)),
+        ("Feast", "Each kill mends 10%.", FM("the_butchers_bill", "bill.feast", P_6A))]),
     ("butchers_hour", "Butcher's Hour", [
         ("Overtime", "A kill adds 0.6 s (up to 12 s more).", FM("butchers_hour", "hour.overtime", P_FIRST)),
         ("Red Mist", "Lesser things near you flee.", FM("butchers_hour", "hour.red_mist", P_FIRST)),
@@ -212,9 +231,9 @@ chain = road("reaver", rv, "chainbound", "Road of the Chainbound", "A hooked cha
     [("The Long Chain", "Melee skills reach 3 m further and hook the last thing they hit. They strike 20% weaker.", [R("long_chain", reach=3, weaker=0.2)]),
      ("Lightning Rod", "Storm skills strike Bound things first, and 40% harder. You take 15% more from storm and fire.", [R("lightning_rod", more=0.4, price=0.15)])],
     ("drag_them_under", "Drag Them Under", [
-        ("Deeper", "The hooks reach the whole screen.", FM("drag_them_under", "drag.deeper", P_REST)),
-        ("Grinder", "The knot is shredded for a breath before the slam.", FM("drag_them_under", "drag.grinder", P_REST)),
-        ("Hold Him", "A boss is pinned 3 s.", FM("drag_them_under", "drag.hold_him", P_REST))]),
+        ("Deeper", "The hooks reach the whole screen.", FM("drag_them_under", "drag.deeper", P_6A)),
+        ("Grinder", "The knot is shredded for a breath before the slam.", FM("drag_them_under", "drag.grinder", P_6A)),
+        ("Hold Him", "A boss is pinned 3 s.", FM("drag_them_under", "drag.hold_him", P_6A))]),
     ("storm_on_the_chain", "Storm on the Chain", [
         ("Second Length", "A second chain; the sweeps alternate.", FM("storm_on_the_chain", "storm_chain.second_length", P_REST)),
         ("Earthing", "Each sky strike mends 1%.", FM("storm_on_the_chain", "storm_chain.earthing", P_REST)),
@@ -277,7 +296,7 @@ kind = road("arcanist", ar, "kindler", "Road of the Kindler", "Fire and frost on
         ("Called Down", "Every ember falls on the toughest frozen thing.", FM("burns_twice", "burns.called_down", P_FIRST))]),
     ("hard_winter", "Hard Winter", [
         ("Deep Winter", "It freezes after 1 s.", FM("hard_winter", "winter.deep", P_REST)),
-        ("Thaw-Burst", "The thaw bursts twice as hard.", FM("hard_winter", "winter.thaw_burst", P_REST)),
+        ("Thaw-Burst", "A shatter shatters the frozen within 3 m.", FM("hard_winter", "winter.thaw_burst", P_REST)),
         ("Winter Keeps", "Mend 2% a second while it holds.", FM("hard_winter", "winter.keeps", P_REST))]))
 
 moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight that hunts on its own and marks what it touches.",
@@ -306,9 +325,9 @@ moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight t
     [("The Echo", "Every spell fires again 0.5 s later at half strength. Spells wait 25% longer.", [R("the_echo", delay=0.5, share=0.5, longer=0.25)]),
      ("Crowded Sky", "Spells with projectiles loose two more, all seeking, and no two strike the same thing; each is 35% weaker.", [R("crowded_sky", add=2, weaker=0.35)])],
     ("the_branding", "The Branding", [
-        ("Second Brand", "It brands again 1 s later.", FM("the_branding", "branding.second", P_REST)),
-        ("Branded Deep", "The bursts are 50% wider.", FM("the_branding", "branding.deep", P_REST)),
-        ("The Eye", "The boss is branded three times.", FM("the_branding", "branding.eye", P_REST))]),
+        ("Second Brand", "It brands again 1 s later.", FM("the_branding", "branding.second", P_6A)),
+        ("Branded Deep", "The bursts are 50% wider.", FM("the_branding", "branding.deep", P_6A)),
+        ("The Eye", "The boss's brand stays 6 s and bursts again whenever a mark passes to it.", FM("the_branding", "branding.eye", P_6A))]),
     ("the_drowned_moon", "The Drowned Moon", [
         ("Full Moon", "Twice the motes.", FM("the_drowned_moon", "drowned.full_moon", P_REST)),
         ("Moonset", "It ends by bursting upward, 8 m round.", FM("the_drowned_moon", "drowned.moonset", P_REST)),
@@ -371,7 +390,7 @@ knife = road("stalker", st, "roadknife", "Road of the Roadknife", "Twin blades: 
     ("through_and_through", "Through and Through", [
         ("Deeper Notches", "Each pass notches twice.", FM("through_and_through", "through.deeper", P_REST)),
         ("Wake of Blades", "The paths stay as Cutting Wake for 2 s.", FM("through_and_through", "through.wake", P_REST)),
-        ("Free Hands", "It lasts 8 s.", FM("through_and_through", "through.free_hands", P_REST))]))
+        ("Free Hands", "Press the Flare again to cut every notch now; it ends there.", FM("through_and_through", "through.free_hands", P_REST))]))
 
 verge = road("stalker", st, "verge_hunter", "Road of the Verge-Hunter", "A longbow: far off, pinning the front.",
     ("Far Eye", "Blows from beyond 8 m strike true one time in four.", [R("far_eye", range=8, chance=0.25)], ["volley", "heartseeker"]),
@@ -399,9 +418,9 @@ verge = road("stalker", st, "verge_hunter", "Road of the Verge-Hunter", "A longb
     [("Long Sight", "Blows from beyond 8 m strike 50% harder. Within 4 m, 30% weaker.", [R("long_sight", range=8, more=0.5, near=4, weaker=0.3)]),
      ("Hunter's Stillness", "After a second standing still, every arrow pierces everything. Moving, arrows can't pierce.", [R("hunters_stillness", after=1)])],
     ("one_arrow", "One Arrow", [
-        ("Split Thrice More", "It splits three more times.", FM("one_arrow", "arrow.split", P_REST)),
-        ("Pinned to the Earth", "Everything struck is rooted 2 s.", FM("one_arrow", "arrow.pinned", P_REST)),
-        ("Through the Heart", "Triple crit damage on a boss.", FM("one_arrow", "arrow.heart", P_REST))]),
+        ("Split Thrice More", "It splits three more times.", FM("one_arrow", "arrow.split", P_6A)),
+        ("Pinned to the Earth", "Everything struck is rooted 2 s.", FM("one_arrow", "arrow.pinned", P_6A)),
+        ("Through the Heart", "It stops in the first champion or boss it hits, and its three splits turn back into it.", FM("one_arrow", "arrow.heart", P_6A))]),
     ("pinning_rain", "Pinning Rain", [
         ("Follow the Hunter", "The field moves with you.", FM("pinning_rain", "rain.follow", P_REST)),
         ("Iron Rain", "The arrows stun.", FM("pinning_rain", "rain.iron", P_REST)),
