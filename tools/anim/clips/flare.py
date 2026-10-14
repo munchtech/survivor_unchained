@@ -536,7 +536,7 @@ def _arc_vec(arc):
 
 def finger_mix():
     from keyed import FINGER_PRESETS
-    keys = ("curl", "thumb", "spread", "cascade", "oppose", "thumb_roll")
+    keys = ("curl", "thumb", "spread", "cascade", "oppose", "thumb_roll", "thumb_in")
 
     def full(p):
         # (With the per-joint scales and cascades a preset may carry, keyed.finger_curl: the relaxed hand's shape.)
