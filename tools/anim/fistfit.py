@@ -60,6 +60,8 @@ WRAP_MIN = 180.0      # deg: how far round the line the finger's end has come (f
                       # close; 180 the far side). HANG alone passed fingers that never go round: laid along the grip
                       # or balled up in front of it with their ends near the palm (a search found such "passes").
 OFF_MAX = 3.0         # deg: a held clip's fingers off WRAP's
+THUMB_IN = 0.0        # mm: deepest the thumb's last bone and pad (02, 03) may go into the forefinger, by its bone line (into_finger)
+THUMB_CLEAR = 0.3     # mm: how far the fit keeps them out of the forefinger and middle finger (THUMB_IN the pass)
 
 sk = Skeleton.load(DATA / "heroine_skeleton.json")
 I = sk.index
@@ -377,6 +379,25 @@ def end_point(X3, J, fn):
     return X3[int(np.argmax((X3 - a) @ d))]
 
 
+def into_finger(S, T, J, fn):
+    """mm each point of S is into finger fn (T its skin points, J the joints), + into: a point nearer the finger's bone
+    line than the finger's nearest skin point is, so inside it. The nearest-vertex gap alone misses a point that sinks
+    between the mesh's vertices (3.2 mm, 2026-10-14). nan where S falls off the line's ends: the knuckle's palm side has
+    no finger skin to compare."""
+    pts = [J[f"{fn}_0{q}_r"] for q in (1, 2, 3)] + [J[f"{fn}_04_leaf_r"]]
+    def proj(Pt):
+        best = np.full(len(Pt), np.inf); inside = np.zeros(len(Pt), bool)
+        for p0, p1 in zip(pts, pts[1:]):
+            d = p1 - p0; t = (Pt - p0) @ d / float(d @ d)
+            dist = np.linalg.norm(Pt - (p0 + np.outer(np.clip(t, 0, 1), d)), axis=1)
+            take = dist < best; best[take] = dist[take]; inside[take] = (t[take] >= 0) & (t[take] <= 1)
+        return best * 1000, inside
+    rs, ins = proj(S); rt, _ = proj(T)
+    v = rt[cKDTree(T).query(S)[1]] - rs
+    v[~ins] = np.nan
+    return v
+
+
 def measure(h, rf, gr):
     """Per finger: pads (01, 02, 03 min gap mm), deepest into the hilt, the tip's hang past the far side; the palm's
     gap, adjacent fingers' distance."""
@@ -391,6 +412,9 @@ def measure(h, rf, gr):
                        wrap=round(wrap_angle(e, gr, u)))
     okp = ~np.isnan(g[h.palm])
     out["palm"] = round(float(g[h.palm][okp].min()), 1) if okp.any() else None
+    st = h.fing["thumb"][np.isin(h.bone[h.fing["thumb"]], ["thumb_02_r", "thumb_03_r"])]
+    v = into_finger(X[st], X[h.fing["index"]], J, "index"); v = v[~np.isnan(v)]
+    out["thumb_in"] = round(float(v.max()), 1) if len(v) else 0.0
     out["deepest"] = round(float(np.nanmin(g)), 1)
     adj = {}
     for f1, f2 in zip(FINGERS, FINGERS[1:]):
@@ -416,6 +440,8 @@ def verdict(m, ang=None):
             bad.append(f"{fn} end joint {ang[fn][2]:.0f}")
     if m["deepest"] < -IN_MAX:
         bad.append(f"into the hilt {m['deepest']}")
+    if m["thumb_in"] > THUMB_IN:
+        bad.append(f"thumb into the forefinger {m['thumb_in']}")
     for k, v in m["adj"].items():
         if v > ADJ_MAX:
             bad.append(f"{k} apart {v}")
@@ -546,12 +572,15 @@ def fit_finger(h, fn, base, spr, gr, u, x0, opp=0.0, roll=0.0):
     return [round(float(v), 1) for v in best.x[:3]], round(float(best.x[3]), 1)
 
 
-def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=3.0, spr=None):
+def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=2.0, spr=None):
     """Oppose, roll and three bends: its outer pads on the grip, none of it inside, its last bone over the forefinger's
-    or middle finger's outer bones (d_lo..d_hi mm off them), its tip within `span` (mm along the line)."""
+    or middle finger's outer bones (d_lo..d_hi mm off them), none of its outer bones into either finger (THUMB_CLEAR
+    mm clear by their bone lines: d_lo is the nearest skin point only, which let the last bone sink 3.2 mm between the
+    forefinger's vertices), the thenar kept on the shaft, its tip within `span` (mm along the line)."""
     sub_t = h.fing["thumb"]; sub_i = np.concatenate([h.fing["index"], h.fing["middle"]])
     tb = h.bone[sub_t]; ib = h.bone[sub_i]
     over = np.isin(ib, ["index_02_r", "index_03_r", "middle_02_r", "middle_03_r"])
+    outer = np.isin(tb, ["thumb_02_r", "thumb_03_r"]); ni = len(h.fing["index"])
     def cost(x):
         opp, roll, a1, a2, a3 = x
         a = dict(ang); a["thumb"] = [a1, a2, a3]
@@ -565,18 +594,39 @@ def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=3.0, spr=None):
         c += 50 * float((np.clip(-0.4 - g[~np.isnan(g)], 0, None) ** 2).sum())
         d3 = cKDTree(Xi[over]).query(Xt[tb == "thumb_03_r"])[0].min() * 1000
         dall = cKDTree(Xi).query(Xt)[0].min() * 1000
-        if d3 > d_hi: c += 2 * (d3 - d_hi) ** 2
+        if d3 > d_hi: c += 20 * (d3 - d_hi) ** 2
         if dall < d_lo: c += 20 * (d_lo - dall) ** 2
-        tt = float((h.joints(rf)["thumb_04_leaf_r"] - gr.A) @ gr.D) * 1000
+        J = h.joints(rf)
+        for fn, T in (("index", Xi[:ni]), ("middle", Xi[ni:])):
+            v = into_finger(Xt[outer], T, J, fn); v = v[~np.isnan(v)]
+            c += 20 * float((np.clip(v + THUMB_CLEAR, 0, None) ** 2).sum())
+        gp = gr.gap(h.pose(rf, h.palm))[0]; gp = gp[~np.isnan(gp)]
+        pm = float(gp.min()) if len(gp) else 99.0
+        if pm > 0.5: c += 10 * (pm - 0.5) ** 2
+        if pm < -0.4: c += 50 * (-0.4 - pm) ** 2
+        tt = float((J["thumb_04_leaf_r"] - gr.A) @ gr.D) * 1000
         if tt < span[0]: c += (span[0] - tt) ** 2
         if tt > span[1]: c += (tt - span[1]) ** 2
         for v, lo, hi, s in ((opp, 0.0, 1.0, 30), (roll, -45, 45, 1), (a1, -15, 60, 1), (a2, -10, 80, 1), (a3, -10, 90, 1)):
             if v < lo: c += ((lo - v) * s) ** 2
             if v > hi: c += ((v - hi) * s) ** 2
         return c
+    lims = [(0.0, 1.0), (-45, 45), (-15, 60), (-10, 80), (-10, 90)]
+    x0 = np.clip(np.array(x0, float), [lo for lo, _ in lims], [hi for _, hi in lims])
+    if SEARCH["global"]:
+        # Global (differential evolution inside lims, seeded with x0, SEARCH's settings and seed), then a local polish:
+        # the thumb's wells are narrow and the multi-start local search settled in one that sank into the forefinger.
+        de = differential_evolution(cost, lims, x0=x0, popsize=SEARCH["popsize"], maxiter=SEARCH["maxiter"],
+                                    tol=1e-4, mutation=(0.5, 1.0), recombination=0.7, seed=SEARCH["seed"],
+                                    polish=False)
+        starts = (de.x,)
+    else:
+        starts = (x0, (0.3, -30, 20, 30, 50), (0.7, 0, 0, 40, 40), (0.5, -40, 30, 10, 60), (0.5, 45, 10, -10, 20),
+                  (0.6, 30, 20, 0, 10))
     best = None
-    for s0 in (x0, (0.3, -30, 20, 30, 50), (0.7, 0, 0, 40, 40), (0.5, -40, 30, 10, 60)):
-        s = minimize(cost, np.array(s0, float), method="Nelder-Mead", options={"xatol": 0.05, "fatol": 0.005, "maxiter": 1500, "adaptive": True})
+    for s0 in starts:
+        s = minimize(cost, np.array(s0, float), method="Nelder-Mead",
+                     options={"xatol": 0.02, "fatol": 0.002, "maxiter": 2000, "adaptive": True})
         if best is None or s.fun < best.fun: best = s
     return [round(float(v), 2) for v in best.x]
 
