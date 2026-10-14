@@ -420,6 +420,7 @@ def seat(path, out=None):
     GN0 = Lm @ rd(gp["attributes"]["NORMAL"])
     GV = S @ GV
     gt = {nm: S @ rd(t["POSITION"]) for nm, t in zip(gn, gp["targets"])}
+    tgt_attr = {(nm, att): rd(t[att]) for nm, t in zip(gn, gp["targets"]) for att in ("NORMAL", "TANGENT") if att in t}
     UV = Lm @ rd(gp["attributes"]["TEXCOORD_0"])
     J0, W0 = rd(gp["attributes"]["JOINTS_0"]), rd(gp["attributes"]["WEIGHTS_0"])
     first = np.argmax(Lm > 0, axis=1)
@@ -477,6 +478,11 @@ def seat(path, out=None):
     _put(js, chunks, gp["attributes"]["WEIGHTS_0"], GW)
     for nm, t in zip(gn, gp["targets"]):
         _put(js, chunks, t["POSITION"], gt[nm], minmax=True)
+        # (a shape key's normal and tangent deltas get the same subdivision as its points: every attribute of a target
+        # must have the primitive's count, or Godot logs an error per key on import)
+        for att in ("NORMAL", "TANGENT"):
+            if att in t:
+                _put(js, chunks, t[att], S @ tgt_attr[(nm, att)])
     _put(js, chunks, gp["indices"], GF.ravel(), 5123 if GF.max() < 65535 else 5125)
     _add_target(js, chunks, hm, hp, "smile_open", SO)
     _add_target(js, chunks, hm, hp, "smile_hold", SH)
