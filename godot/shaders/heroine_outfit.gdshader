@@ -14,7 +14,7 @@
 //  - gloss: latex and satin, clean and smooth.
 shader_type spatial;
 
-uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill
+uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin
 uniform sampler2D albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_map : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D orm : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;   // (G rough, B metal)
@@ -193,6 +193,15 @@ void fragment() {
 		metal = 0.0;
 		RIM = 0.35;
 		RIM_TINT = 0.6;
+	} else if (kind == 5) {
+		// Satin (her gloves, s22): a stretch satin, never latex. Its own roughness (the
+		// material's, about 0.45: the linen's roughness map is flat white), a broad soft
+		// highlight, a sheen at the grazing edges, the knit barely there.
+		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.3);
+		rough = clamp(roughness_value + 0.08 * (macro - 0.5) + 0.1 * (1.0 - sky), 0.3, 0.75);
+		metal = 0.0;
+		RIM = 0.3;
+		RIM_TINT = 0.5;
 	} else {
 		// Gloss: clean and smooth, barely a grain.
 		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.12);

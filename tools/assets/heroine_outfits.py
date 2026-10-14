@@ -7105,7 +7105,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # satin: clean). Fur and sheer stockings have shaders of their own.
 KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": "metal", "gold": "metal", "claspgold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "glovesatin": "gloss", "gloveblack": "gloss", "amethyst": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
+        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "glovesatin": "satin", "gloveblack": "satin", "amethyst": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
 
 
 # Decals laid on her skin, drawn this far toward the camera so they never

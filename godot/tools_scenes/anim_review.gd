@@ -23,6 +23,8 @@ extends SceneTree
 #   GESTURE=her/nod GESTUREAT=s            a gesture laid over the clip (Gestures.cs) s seconds in
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
 #   BODYDIR=folder                         her body and outfits read from another build (before a change)
+#                                          (its outfit_materials.json and outfit_tex/ beside them)
+#   LIGHTS=town                            the towns' day light (as lookdev.gd's)
 #   NOJOINTS=1                             her helper bones left undriven (not her body before them:
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
 #   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
@@ -190,14 +192,18 @@ func env(k, d):
 # People.OutfitMaterials does (heroine_outfit.gdshader from
 # outfit_materials.json), not in the file's own materials.
 func game_outfit(mi):
-	var table = JSON.parse_string(FileAccess.get_file_as_string("res://art/people/outfit_materials.json"))
+	# (BODYDIR: that build's own table, when it has one)
+	var tf = "res://art/people/outfit_materials.json"
+	if env("BODYDIR", "") != "" and FileAccess.file_exists(env("BODYDIR", "").path_join("outfit_materials.json")):
+		tf = env("BODYDIR", "").path_join("outfit_materials.json")
+	var table = JSON.parse_string(FileAccess.get_file_as_string(tf))
 	var sh = load("res://shaders/heroine_outfit.gdshader")
 	for s in mi.mesh.get_surface_count():
 		var src = mi.mesh.surface_get_material(s)
 		if not (src is StandardMaterial3D) or not table.has(src.resource_name):
 			continue
 		var e = table[src.resource_name]
-		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4}.get(e["kind"], -1)
+		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4, "satin": 5}.get(e["kind"], -1)
 		if kind < 0:
 			continue
 		src.vertex_color_use_as_albedo = false
@@ -495,6 +501,21 @@ func stage(root):
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.9
 	root.add_child(rim)
+	# LIGHTS=town: the towns' day, as lookdev.gd's (warm key 44 deg up from azimuth 55,
+	# a cool hemisphere, a faint cool rim, fog grey behind)
+	if env("LIGHTS", "") == "town":
+		var el = deg_to_rad(44.0)
+		var az = deg_to_rad(55.0)
+		var dir = Vector3(cos(el) * cos(az), sin(el), cos(el) * sin(az)).normalized()
+		key.basis = Basis.looking_at(-dir, Vector3.UP)
+		key.light_color = Color("#f4e6cc")
+		key.light_energy = 1.5
+		rim.light_color = Color("#dfe8f4")
+		rim.light_energy = 0.35
+		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		e.ambient_light_color = Color("#8a9aac")
+		e.ambient_light_energy = 0.9
+		e.background_color = Color("#8e969a")
 	place_camera()
 
 func place_camera():
