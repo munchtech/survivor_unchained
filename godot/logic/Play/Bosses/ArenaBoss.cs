@@ -80,6 +80,9 @@ public abstract class ArenaBoss
 
     /// <summary>Its health over its people's champion's: set so a par build takes a minute and a half.</summary>
     public virtual double HealthMul(int tier) => 12 + 2 * tier;
+    /// <summary>Every arena boss's health over its script's (the owner, 13 October: no hidden boss-damage cuts, "we need
+    /// to just buff the bosses"): the Flare's share of a boss is reached by health, not by a measure on what it takes.</summary>
+    public static double Toughness = 1;
     public virtual double DamageMul => 1.3;
 
     /// <summary>Its health as it came (the creature it was is pooled: once it is gone the

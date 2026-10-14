@@ -49,6 +49,7 @@ Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
 SurvivorUnchained.Sim.Battle.FlareRout = double.Parse(opt.Get("rout", "0"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Sim.Battle.FlareReachMul = double.Parse(opt.Get("flarereach", "1"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Sim.Battle.TrackBossHits = opt.Get("hits", "0") != "0";
+SurvivorUnchained.Play.Bosses.ArenaBoss.Toughness = double.Parse(opt.Get("bosshp", "1"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Play.Bosses.StoryBoss.Cuts = opt.Get("storycut", "1") != "0";
 // --storyhp roost=103,vault=130: a story boss's health multiple in place of its script's (by the fight's short name).
 foreach (var kv in opt.List("storyhp", "").Where(x => x.Contains('=')))
