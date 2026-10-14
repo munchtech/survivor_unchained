@@ -84,14 +84,14 @@ def warden(t, f):
 # Her free hand on her hip (15 Oct, animation 30; judge l30-r1 chose it over the hand on the thigh: "a confident witch
 # silhouette", the thigh hand read limp at the game camera). The palm on the front-side of her hip above the hip bone,
 # fingers forward and down over it, the fan closed (index-middle 0.5 mm, ring-little 2.5), the thumb forward along the
-# forefinger; elbow out ~107 mm and back ~95. Wrist flex -13..-14, dev -2..+5. Every part 1.1-2.5 mm off what it lies on
-# (the leotard's outer face, ~7-9 mm off her skin there; the trim; the little finger on bare skin past the leg opening).
-# Kept on her pelvis as she sways (idle_arcanist, below): the wrist (character space at rest) and the hand's way in the
-# pelvis's frame.
-ARC_HIP = {"pos": (0.1752, 1.18299, 0.03965), "knuckles": (-0.3373, -0.70768, 0.62077), "blade": (-0.25397, 0.70344, 0.66382)}
-ARC_HIP_FINGERS = {"thumb": 0.1, "oppose": 0.0, "thumb_in": 70.45,
+# forefinger (r2: not a straight peg out of the glove: base 15, end 22, 22 deg off the index); elbow out ~107, back
+# ~95. Wrist flex -13..-14, dev -2..+5. Every part 1.1-2.5 mm off what it lies on (the leotard's outer face, ~7-9 mm
+# off her skin there; the trim; the little finger on bare skin past the leg opening). Kept on her pelvis as she sways
+# (idle_arcanist, below): the wrist (character space at rest) and the hand's way in the pelvis's frame.
+ARC_HIP = {"pos": (0.17502, 1.18299, 0.03956), "knuckles": (-0.3373, -0.70768, 0.62077), "blade": (-0.23811, 0.70218, 0.671)}
+ARC_HIP_FINGERS = {"thumb": 0.1, "oppose": 0.05, "thumb_in": 15.4, "thumb_roll": -23.6,
                    "bends": {"index": [25.268, 25.268, 12.629], "middle": [23.594, 23.594, 11.792],
-                             "ring": [23.795, 23.795, 11.892], "pinky": [17.923, 24.487, 11.913], "thumb": [4.821, 1.621, 2.166]},
+                             "ring": [23.795, 23.795, 11.892], "pinky": [17.923, 24.487, 11.913], "thumb": [0.5, 15.2, 22.1]},
                    "spreads": {"index": -13.35, "middle": 0.0, "ring": 8.3, "pinky": 13.4}}
 
 
@@ -104,8 +104,8 @@ def arcanist(t, f):
     return {
         # (ARC_HIP at the captured standing's first frame, in the chest's frame, for the clips that take the idle's
         # arms as they are: its breaks, the stops, the Flare's settle.)
-        "hand_l": {"arc": arc_of((-0.0249, -0.3225, 0.1053)), "pole": (1.0, 0.032, -1.243), "frame": "chest",
-                   "knuckles": _n((-0.3849, -0.4502, 0.8057)), "blade": _n((-0.1976, 0.8929, 0.4045)), "twist": 0.3},
+        "hand_l": {"arc": arc_of((-0.0251, -0.3226, 0.1052)), "pole": (1.0, 0.032, -1.243), "frame": "chest",
+                   "knuckles": _n((-0.3849, -0.4502, 0.8057)), "blade": _n((-0.1819, 0.8929, 0.4120)), "twist": 0.3},
         # The staff upright at her side, its head leaning in a little and its foot out past her right leg
         # (13 Oct: on the seated bound staff, blade (-0.12, 1.0, 0.18) crossed its lower half behind her right
         # thigh and calf every frame; now >= 10 mm off her legs and her hat).
