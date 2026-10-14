@@ -495,6 +495,186 @@ if HAND_SLIM < 1.0 or HAND_SCALE != 1.0 or FOREARM_ADD != 0.0:
     if HAND_SCALE != 1.0 or FOREARM_ADD != 0.0:
         hand_bones_scaled()
 
+# (s24, the one body build, 14 Oct: her knuckles where a hand's are. F1's finger
+# 01 joints sat at her webs (P1 21-27 mm, a woman's 40-50), so her fingers bent
+# from her webs and no grip closed. Animation's solver (handpivots.json, fistfit
+# set_hand): every finger's 01 joint drawn toward her wrist's pivot by one factor,
+# till the middle one is HPIV_MCP of her hand's length from it; each 03 joint
+# moved along its finger till the middle bone is HPIV_P2 of the first; her thumb's
+# MCP (thumb_02) back along her metacarpal to HPIV_THUMB from her CMC (her right
+# thumb; her CMC and IP stay). Her right hand is the table's (L = HPIV_L); her
+# left by the same rule on its own skin, its length and thumb scaled by its own
+# (her sculpt is 3.6 mm asymmetric: never a mirror). Every bone keeps its rest
+# orientation (only pivots move, as the solver modelled), and the skin a pivot
+# passes is handed over: palm skin to its finger's 01 bone in HPIV_LANE lanes by
+# a smoothstep HPIV_RAMP either side of the new knuckle, end skin to the middle
+# bone over HPIV_DIP_RAMP, thumb skin past its new MCP to thumb_02 over
+# HPIV_RAMP. Her skin is not moved here. Off: HAND_PIVOTS=0.)
+HAND_PIVOTS = os.environ.get("HAND_PIVOTS", "1") == "1"
+HPIV_MCP = float(os.environ.get("HPIV_MCP", "0.48"))
+HPIV_P2 = float(os.environ.get("HPIV_P2", "0.65"))
+HPIV_L = float(os.environ.get("HPIV_L", "0.2115"))
+HPIV_THUMB = float(os.environ.get("HPIV_THUMB", "0.0533"))
+HPIV_RAMP, HPIV_DIP_RAMP, HPIV_LANE = 0.010, 0.005, 0.014
+# (the outfits' arm chains read her hand to F1's middle knuckle, so no garment moves with the pivots)
+MID01_BUILT = {sd: np.array((arm.matrix_world @ arm.data.bones[f"middle_01_{sd}"].head_local)[:])
+               for sd in "lr" if f"middle_01_{sd}" in arm.data.bones}
+HPIV = {}
+
+
+def hand_pivots(obj):
+    me = obj.data
+    A2B = obj.matrix_world.inverted() @ arm.matrix_world   # armature space -> her mesh's
+    B2A = A2B.inverted()
+    loc = lambda v: np.array((A2B @ v)[:])
+    co = np.array([v.co[:] for v in me.vertices])
+    gi = {g.name: g.index for g in obj.vertex_groups}
+    nv = len(co)
+    Wg = {}
+
+    def read(n):
+        w = np.zeros(nv)
+        if n in gi:
+            k = gi[n]
+            for v in me.vertices:
+                for g in v.groups:
+                    if g.group == k:
+                        w[v.index] = g.weight
+        return w
+
+    def wt(n):
+        if n not in Wg:
+            Wg[n] = read(n)
+        return Wg[n]
+    F4 = ("index", "middle", "ring", "pinky")
+    bl = arm.data.bones
+    old = {b.name: loc(b.head_local) for b in bl}
+    new = {}
+    lens = {}
+    for sd in "lr":
+        if f"hand_{sd}" not in bl or any(f"{f}_0{i}_{sd}" not in bl for f in F4 + ("thumb",) for i in (1, 2, 3)):
+            continue
+        # her hand's length on her own skin: wrist pivot to her middle fingertip
+        m3 = wt(f"middle_03_{sd}") > 0.5
+        lens[sd] = float(np.linalg.norm(co[m3] - old[f"hand_{sd}"], axis=1).max())
+    if set(lens) != {"l", "r"}:
+        print("HAND_PIVOTS: no hands found")
+        return
+    chain_r = (np.linalg.norm(old["thumb_02_r"] - old["thumb_01_r"])
+               + np.linalg.norm(old["thumb_03_r"] - old["thumb_02_r"]))
+    for sd in "lr":
+        a = old[f"hand_{sd}"]
+        L = HPIV_L * lens[sd] / lens["r"]
+        s = HPIV_MCP * L / np.linalg.norm(old[f"middle_01_{sd}"] - a)
+        for f in F4:
+            p1 = a + (old[f"{f}_01_{sd}"] - a) * s
+            new[f"{f}_01_{sd}"] = p1
+            p2, p3 = old[f"{f}_02_{sd}"], old[f"{f}_03_{sd}"]
+            e = (p3 - p2) / np.linalg.norm(p3 - p2)
+            new[f"{f}_03_{sd}"] = p2 + e * HPIV_P2 * np.linalg.norm(p2 - p1)
+        c0, m0, i0 = (old[f"thumb_0{k}_{sd}"] for k in (1, 2, 3))
+        chain = np.linalg.norm(m0 - c0) + np.linalg.norm(i0 - m0)
+        new[f"thumb_02_{sd}"] = c0 + (m0 - c0) / np.linalg.norm(m0 - c0) * HPIV_THUMB * chain / chain_r
+        print("HAND_PIVOTS %s: hand %.1f mm on her skin (L %.1f), knuckles x%.4f: MCP %s mm from her wrist; P1 %s, P2 %s mm; "
+              "thumb MCP %.1f mm back (metacarpal %.1f, proximal %.1f)"
+              % (sd, lens[sd] * 1000, L * 1000, s,
+                 " ".join("%.1f" % (np.linalg.norm(new[f"{f}_01_{sd}"] - a) * 1000) for f in F4),
+                 " ".join("%.1f" % (np.linalg.norm(old[f"{f}_02_{sd}"] - new[f"{f}_01_{sd}"]) * 1000) for f in F4),
+                 " ".join("%.1f" % (np.linalg.norm(new[f"{f}_03_{sd}"] - old[f"{f}_02_{sd}"]) * 1000) for f in F4),
+                 np.linalg.norm(new[f"thumb_02_{sd}"] - m0) * 1000, np.linalg.norm(new[f"thumb_02_{sd}"] - c0) * 1000,
+                 np.linalg.norm(i0 - new[f"thumb_02_{sd}"]) * 1000))
+
+    # ---- the skin each pivot passes, handed over (fistfit _model_body, _model_dips, _model_thumb)
+    def share(sel, wc, kc, kp, more):
+        """kc's share of the pair (kc, kp) on the vertices sel: at least (more)
+        or at most (not more) the pair's total x wc."""
+        wc_, wp_ = wt(kc)[sel], wt(kp)[sel]
+        tot = wc_ + wp_
+        nc = np.maximum(wc_, tot * wc) if more else np.minimum(wc_, tot * wc)
+        Wg[kc][sel], Wg[kp][sel] = nc, tot - nc
+
+    def smooth(x):
+        u = np.clip(x, 0, 1)
+        return u * u * (3 - 2 * u)
+    for sd in "lr":
+        hn = f"hand_{sd}"
+        ax = old[f"middle_01_{sd}"] - old[hn]
+        ax /= np.linalg.norm(ax)
+        side = old[f"index_01_{sd}"] - old[f"pinky_01_{sd}"]
+        side -= ax * (side @ ax)
+        side /= np.linalg.norm(side)
+        cand = np.nonzero(wt(hn) > 0)[0]
+        lat = np.stack([(co[cand] - new[f"{f}_01_{sd}"]) @ side for f in F4], 1)
+        lane = np.argmin(np.abs(lat), 1)
+        for li, f in enumerate(F4):
+            n1 = f"{f}_01_{sd}"
+            m = old[n1] - new[n1]
+            m /= np.linalg.norm(m)
+            sel = cand[(lane == li) & (np.abs(lat[:, li]) < HPIV_LANE)]
+            want = smooth(((co[sel] - new[n1]) @ m + HPIV_RAMP) / (2 * HPIV_RAMP))
+            k = want > 0
+            wt(n1)
+            share(sel[k], want[k], n1, hn, True)
+        for f in F4:
+            n2, n3 = f"{f}_02_{sd}", f"{f}_03_{sd}"
+            m = new[n3] - old[n3]
+            if np.linalg.norm(m) < 1e-6:
+                continue
+            m /= np.linalg.norm(m)
+            sel = np.nonzero(wt(n3) > 0)[0]
+            wt(n2)
+            want = smooth(((co[sel] - new[n3]) @ m + HPIV_DIP_RAMP) / (2 * HPIV_DIP_RAMP))
+            share(sel, want, n3, n2, False)
+        n1, n2, n3 = f"thumb_01_{sd}", f"thumb_02_{sd}", f"thumb_03_{sd}"
+        e = old[n3] - old[n1]
+        e /= np.linalg.norm(e)
+        sel = np.nonzero((wt(n2) > 0) | (wt(n1) > 0))[0]
+        want = smooth(((co[sel] - new[n2]) @ e + HPIV_RAMP) / (2 * HPIV_RAMP))
+        k = (want > 0) & (wt(n1)[sel] > 0)
+        share(sel[k], want[k], n2, n1, True)
+    changed = 0
+    for n, w in Wg.items():
+        w0 = read(n)
+        if n not in gi:
+            obj.vertex_groups.new(name=n)
+            gi[n] = obj.vertex_groups[n].index
+        vg = obj.vertex_groups[n]
+        for i in np.nonzero(np.abs(w - w0) > 1e-7)[0]:
+            if w[i] > 1e-7:
+                vg.add([int(i)], float(w[i]), "REPLACE")
+            else:
+                vg.remove([int(i)])
+            changed += 1
+
+    # ---- the bones: each moved pivot's bone keeps its rest orientation; the bones under it stay where they are
+    prev = bpy.context.view_layer.objects.active
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = arm.data.edit_bones
+    for n in new:
+        for c in eb[n].children:
+            c.use_connect = False
+        eb[n].use_connect = False
+    worst = 0.0
+    for n, p in new.items():
+        x = eb[n]
+        M0 = x.matrix.copy()
+        kids = list(x.children)
+        tip = kids[0].head.copy() if kids else x.tail.copy()
+        M = M0.copy()
+        M.translation = B2A @ Vector(p.tolist())
+        x.matrix = M
+        x.length = max((tip - x.head).dot(M0.col[1].to_3d().normalized()), 0.004)
+        worst = max(worst, max(abs(x.matrix[i][j] - M0[i][j]) for i in range(3) for j in range(3)))
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.view_layer.objects.active = prev
+    HPIV.update(new=new, old=old, lens=lens)
+    print("HAND_PIVOTS: %d pivots moved (orientation kept to %.1e), %d skin weights handed over" % (len(new), worst, changed))
+
+
+if HAND_PIVOTS:
+    hand_pivots(body)
+
 # ------------------------------------------------------------ her surface --
 # Welded (the paint's seams split her vertices) and in triangles.
 bm = bmesh.new()
@@ -625,7 +805,7 @@ UNDERBUST = (NIP["l"][2] + NIP["r"][2]) / 2 - 0.056
 WAIST = head("spine_01")[2]
 NECK = head("neck_01")
 LEG = {sd: [head(f"thigh_{sd}"), head(f"calf_{sd}"), head(f"foot_{sd}"), head(f"ball_{sd}")] for sd in "lr"}
-ARM = {sd: [head(f"upperarm_{sd}"), head(f"lowerarm_{sd}"), head(f"hand_{sd}"), head(f"middle_01_{sd}")] for sd in "lr"}
+ARM = {sd: [head(f"upperarm_{sd}"), head(f"lowerarm_{sd}"), head(f"hand_{sd}"), MID01_BUILT.get(sd, head(f"middle_01_{sd}"))] for sd in "lr"}
 print("LANDMARKS crotch %.3f underbust %.3f waist %.3f" % (CROTCH, UNDERBUST, WAIST))
 
 
@@ -5571,6 +5751,10 @@ def arcanist():
             a = head(bs[0])
             ax = head(bs[1]) - a
             ax /= np.linalg.norm(ax)
+            if FL_EXACT and fg != "thumb":
+                # (s24: from F1's knuckle, FL_P1 short of the 02 joint, as knuckle_exact reads
+                # it: the body build's 01 pivots sit ~24 mm further back)
+                a = head(bs[1]) - ax * FL_P1[("index", "middle", "ring", "pinky").index(fg)]
             s = (P - a) @ ax
             cut = (FL_CUT_THUMB if fg == "thumb" else FL_CUT) + (FL_FIELD_OVER if FL_EXACT else 0.0)
             if fg == "middle" and not FL_EXACT:
@@ -5606,7 +5790,10 @@ def arcanist():
         up_ = np.cross(ax_, side_)
         up_ *= -np.sign((head(f"thumb_03_{sd}") - head(f"index_02_{sd}")) @ up_)
         F4 = ("index", "middle", "ring", "pinky")
-        fl = [(head(f"{f}_01_{sd}") - a_) @ side_ for f in F4]
+        # (s24: across her hand by F1's knuckles, FL_P1 short of each 02 joint along its first bone)
+        k1 = [head(f"{f}_02_{sd}") - FL_P1[k] * (head(f"{f}_02_{sd}") - head(f"{f}_01_{sd}"))
+              / np.linalg.norm(head(f"{f}_02_{sd}") - head(f"{f}_01_{sd}")) for k, f in enumerate(F4)]
+        fl = [(k1[k] - a_) @ side_ for k in range(4)]
         knots_t = [(head(f"{f}_02_{sd}") - a_) @ ax_ - FL_P1[k] - FL_WEB_GAP for k, f in enumerate(F4)]
         o = np.argsort(fl); knots_l = np.array(fl)[o]; knots_t = np.array(knots_t)[o]
         lmid, half = fl[1], 0.5 * abs(fl[3] - fl[0]) + 0.006
