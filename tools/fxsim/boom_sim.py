@@ -53,8 +53,8 @@ TAKES = {
         fnoise=0.45, fnoise_s=2.2, flame_pow=1.3, emit_k=1.2,
         smoke_k=12.0, dpow=1.0, smoke_rgb=(0.09, 0.075, 0.062), fmask=(0.12, 0.7, 0.08), zfade=(8.0, 11.5),
         smoke_keys=((1, 1.0), (22, 1.0), (38, 0.4), (47, 0.0)), fire_keys=(),
-        amb=0.15, look=3.75, ortho=14.6,
-        tone=dict(exp=1.0, knee=0.65, hot=0.25, amb=(0.030, 0.025, 0.020)),
+        amb=0.15, look=4.5, ortho=16.0,
+        tone=dict(exp=0.8, knee=0.45, hot=0.0, sat=2.0, amb=(0.030, 0.025, 0.020)),
     ),
 }
 

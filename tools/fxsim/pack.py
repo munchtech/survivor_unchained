@@ -23,7 +23,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-TONE = dict(exp=1.0, knee=0.65, hot=0.0, amb=(0.0, 0.0, 0.0))
+TONE = dict(exp=1.0, knee=0.65, hot=0.0, sat=1.0, amb=(0.0, 0.0, 0.0))
 GAIN, SMOKE = 1.25, 0.9  # the game's (FlareFx.Boom.cs): fire's colour times gain, smoke's alpha times SMOKE
 
 
@@ -66,7 +66,9 @@ def load(f, tone):
         m = rgb.max(2, keepdims=True)
         k = tone["knee"]
         mm = np.where(m < k, m, k + (1 - k) * (1 - np.exp(-(m - k) / (1 - k))))
-        out = rgb * (mm / np.maximum(m, 1e-6))
+        # Hue kept, saturation deepened: each channel's ratio to the brightest raised to `sat` (a pale linear
+        # (1, 0.8, 0.38) reads cream on screen; at sat 2 it is (1, 0.64, 0.14), a hot orange-yellow).
+        out = mm * np.power(np.clip(rgb / np.maximum(m, 1e-6), 0, 1), tone.get("sat", 1.0))
         if tone["hot"] > 0:
             # Past the knee the hottest lean to a pale yellow, a little (never a flat cream field).
             w = np.clip((m - 1.0) / 2.0, 0, 1) * tone["hot"]
@@ -86,7 +88,7 @@ def load(f, tone):
 def resize(a, cell):
     if a.shape[0] == cell:
         return a
-    return np.stack([np.asarray(Image.fromarray(a[..., c], "F").resize((cell, cell), Image.LANCZOS)) for c in range(4)], 2)
+    return np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(a[..., c]), "F").resize((cell, cell), Image.LANCZOS)) for c in range(4)], 2)
 
 
 def edge_fade(a):
@@ -138,7 +140,7 @@ def main():
             print("REFUSED: light at the border in", bad[:6]); sys.exit(2)
         if round_:
             print("WARNING: light past the game's round fade (r > 0.88) in", round_[:8])
-        enc = np.concatenate([srgb(atlas[..., :3]), atlas[..., 3:4]], 2)
+        enc = np.nan_to_num(np.concatenate([srgb(atlas[..., :3]), atlas[..., 3:4]], 2))
         Image.fromarray((enc * 255 + 0.5).astype(np.uint8), "RGBA").save(out)
         json.dump({"grid": cols, "rows": rows, "frames": len(fs), "fps": fps, "source": os.path.basename(src.rstrip("/\\")),
                    "tone": tone}, open(os.path.splitext(out)[0] + ".json", "w"))
