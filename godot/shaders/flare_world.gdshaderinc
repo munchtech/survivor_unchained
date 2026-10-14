@@ -130,7 +130,7 @@ vec3 flare_web_light(vec2 w) {
 // of a jittered grid, m), so the burnt ground glows along a joined crust of cracks, never in loose straight lengths
 // (judge 3: the hairline web held under the char read as orange straw and sticks).
 float fl_seam(vec2 w) {
-	vec2 g = w / 0.55;
+	vec2 g = w / 0.8;
 	vec2 gi = floor(g);
 	float d1 = 9.0, d2 = 9.0;
 	for (int y = -1; y <= 1; y++)
@@ -140,7 +140,7 @@ float fl_seam(vec2 w) {
 		float d = length(g - c - 0.1 - 0.8 * h);
 		if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
 	}
-	return (d2 - d1) * 0.55 * 0.5;
+	return (d2 - d1) * 0.8 * 0.5;
 }
 
 // The impacts: melted rings of wet ground round each, char flung out, and a hot heart that cools.
@@ -393,11 +393,14 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		if (bo.z > 0.01 && flare_web.x > 0.0) {
 			float fl_sd = fl_seam(w);
 			float fl_px = max(fwidth(w.x), 0.004);
-			float fl_sl = 1.0 - smoothstep(fl_px * 0.6, fl_px * 1.8, fl_sd);
-			float fl_on = smoothstep(0.42, 0.62, texture(flare_noise, w * 0.17 + 0.3).g + (texture(flare_noise, w * 0.6).r - 0.5) * 0.25);
+			// (f6b: the whole net lit, 3 px wide, read as a giraffe's hide at 1.6x the frame. One pixel; a sixth of it.)
+			float fl_sl = 1.0 - smoothstep(fl_px * 0.35, fl_px * 1.05, fl_sd);
+			// (f6d: lit in loose bits it read as scattered straw. Patches a few metres across where the whole crust
+			// glows, joined, cooling to dark at their edges.)
+			float fl_on = smoothstep(0.58, 0.72, texture(flare_noise, w * 0.11 + 0.3).g);
 			float fl_ht = clamp(flare_web.y, 0.0, 1.0);
 			vec3 fl_hot = mix(vec3(0.3, 0.03, 0.008), vec3(1.0, 0.42, 0.08), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
-			web += fl_hot * fl_sl * fl_on * bo.z * flare_web.x * 1.1;
+			web += fl_hot * fl_sl * fl_on * bo.z * flare_web.x * 0.8 * mix(0.3, 1.0, flare_hue.a);
 		}
 	}
 	emi += web;

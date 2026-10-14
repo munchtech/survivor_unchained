@@ -32,22 +32,24 @@ void fragment() {
 	float flick = step(0.72, fl_h(seed * 13.0 + fid * 1.37 + tick * 0.173));
 	// Glass: a cold blue-grey body, lit by the fire and the moon like any solid (at 0.04-0.06 dark glass it was
 	// invisible on the char: judge 3).
-	vec3 ice = vec3(0.2, 0.26, 0.33) * (0.8 + 0.45 * cr);
+	vec3 ice = vec3(0.13, 0.17, 0.22) * (0.8 + 0.45 * cr);
 	vec3 alb = mix(ice, COLOR.rgb * 0.4, COLOR.a * 0.25);
 	// Melted: darker wet stone under a skin of water.
-	ALBEDO = mix(alb, vec3(0.05, 0.06, 0.075), smoothstep(0.2, 0.8, melt));
+	// (f6d: eleven hundred plates lying flat, lit full by the sky, read as litter: down, they go dark and wet at
+	// once, and only their glints stay.)
+	ALBEDO = mix(alb, vec3(0.05, 0.06, 0.075), max(smoothstep(0.0, 0.3, melt), v_c.z * 0.6));
 	ROUGHNESS = 0.3;
 	SPECULAR = 0.0;
 	METALLIC = 0.0;
 	float glint = smoothstep(0.975, 0.995, dot(NORMAL, VIEW));
 	float plane = smoothstep(0.72, 0.8, cr) * (1.0 - smoothstep(0.8, 0.9, cr));
-	float alive = 1.0 - smoothstep(0.35, 0.75, melt);
+	float alive = (1.0 - smoothstep(0.35, 0.75, melt)) * (1.0 - 0.6 * v_c.z);
 	// The pool's last glints: sharp, a few frames on and off, gone as it dries.
 	float pool = smoothstep(0.3, 0.6, melt) * (1.0 - smoothstep(0.85, 1.0, melt)) * step(0.55, fl_h(seed * 7.0 + tick * 0.31))
 		* (1.0 - smoothstep(0.05, 0.11, length(v_local.xz - vec2(fl_h(seed) - 0.5, fl_h(seed + 0.5) - 0.5) * 0.4)));
 	// (The cold rim is put out by the heat: orange faces with blue rims added up to pink, s5.)
-	EMISSION = vec3(0.22, 0.42, 0.75) * (pow(rim, 2.0) * 0.7 + plane * 0.14 + 0.06) * alive * (1.0 - 0.85 * heat)
-		+ vec3(0.7, 0.86, 1.0) * (glint * 1.3 + flick * (1.0 - v_c.z) * 0.55) * alive * (1.0 - 0.8 * heat)
+	EMISSION = vec3(0.22, 0.42, 0.75) * (pow(rim, 2.0) * 0.5 + plane * 0.12 + 0.05) * alive * (1.0 - 0.85 * heat)
+		+ vec3(0.7, 0.86, 1.0) * (glint * 1.3 + flick * (1.0 - v_c.z) * 0.4) * alive * (1.0 - 0.8 * heat)
 		+ vec3(0.8, 0.92, 1.0) * pool * 1.8
 		// Hot: lit orange through its faces by the fire that threw it, brightest at its edges.
 		// Only its edges and a breath of its body: a whole face lit read as a flat flake of confetti (s5).

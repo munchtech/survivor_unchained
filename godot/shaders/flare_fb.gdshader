@@ -20,6 +20,8 @@ uniform float fade = 1.0;
 // The fire's hue: the sim's tone read salmon over the night ground (s5f); less blue makes it burn orange.
 uniform vec3 fire_tint = vec3(1.0, 0.92, 0.6);
 uniform float soft = 0.8;
+// The BOOM's ring (flare_world): its first tenth of a second shows through the fireball's base (judge 3).
+global uniform sampler2D flare_marks : filter_nearest, repeat_disable;
 
 void vertex() {
 	float s = length(MODEL_MATRIX[0].xyz);
@@ -49,6 +51,14 @@ void fragment() {
 		vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
 		behind.xyz /= behind.w;
 		k *= clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
+		vec4 bm = texelFetch(flare_marks, ivec2(31, 0), 0);
+		if (bm.z > 0.0 && bm.w < 0.13) {
+			vec3 gw = (INV_VIEW_MATRIX * vec4(behind.xyz, 1.0)).xyz;
+			float x = clamp((bm.w - 0.01) / 0.7, 0.0, 1.0);
+			float ahead = bm.z * (1.0 - pow(1.0 - x, 2.5)) - length(gw.xz - bm.xy);
+			float line = exp(-pow((ahead - 0.05) / 0.3, 2.0));
+			k *= 1.0 - 0.85 * line * (1.0 - smoothstep(0.07, 0.13, bm.w));
+		}
 	}
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 	ALBEDO = c.rgb * fire_tint * gain * k * clear;

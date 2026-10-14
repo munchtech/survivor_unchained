@@ -114,7 +114,8 @@ public partial class FlareShards : MultiMeshInstance3D
                 Size = size * (0.6f + R() * 1.0f),
                 Heat = heat * (0.5f + R() * 0.5f),
                 Seed = R(),
-                MeltT = 1.0f + R() * 0.5f,
+                // (f6c: lying 1-1.5 s, eleven hundred of them read as litter; most go in under a second.)
+                MeltT = R() < 0.3f ? 1.0f + R() * 0.5f : 0.5f + R() * 0.4f,
                 Thrown = thrown,
                 Tint = tint,
                 Shape = shape,

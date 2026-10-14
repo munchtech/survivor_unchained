@@ -270,7 +270,8 @@ public partial class FlareFx
             for (int i = 0; i < 4; i++)
             {
                 var sp = pos - em.Dir * (FallSpeed * dt * R());
-                bed.Spawn(FlareBits.Kind.Puff, sp, -em.Dir * 1.5f + Rand3() * 0.4f, 1.1f + R() * 0.9f, 0.35f, new Color(0.09f, 0.08f, 0.075f, 0.55f), sizeEnd: 1.4f + R(), drag: 2.5f, lift: 0.3f);
+                // (f6e: at 0.55 and 2 m wide the trails lay over the field as moonlit cotton at Verge night.)
+                bed.Spawn(FlareBits.Kind.Puff, sp, -em.Dir * 1.5f + Rand3() * 0.4f, 0.8f + R() * 0.6f, 0.28f, new Color(0.05f, 0.045f, 0.04f, 0.32f), sizeEnd: 0.8f + R() * 0.5f, drag: 2.5f, lift: 0.3f);
             }
             // The eye darkens for the last two frames before the last word: the BOOM's punch is the dark before it.
             if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) Dip(LessFlash ? 0.95f : 0.9f);
@@ -390,13 +391,15 @@ public partial class FlareFx
                 glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.15f, v, 0.2f + R() * 0.1f, 0.22f + R() * 0.12f, new Color(1.15f, 0.5f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 5);
             }
             shards.Burst(p + Vector3.Up * 0.1f, 9, 7, 0.22f, new Color(0, 0, 0, 0), 1);
-            // Steam: thin wisps, not a few cotton balls.
-            for (int i = 0; i < 10; i++)
+            // Steam: thin wisps, not a few cotton balls. (f6c: ten pale 2 m puffs an ember lay over the field as
+            // moonlit cotton; four, half the size, warm and dim at night, warm-white by day.)
+            for (int i = 0; i < 4; i++)
                 bed.Spawn(new FlareBits.P
                 {
-                    Kind = FlareBits.Kind.Puff, At = p + Vector3.Up * 0.3f, V = new Vector3((R() - 0.5f) * 4, 2f + R() * 3f, (R() - 0.5f) * 4),
-                    Life = 1.1f + R() * 1.0f, Size = 0.4f, SizeEnd = 1.2f + R(), Color = new Color(0.62f, 0.65f, 0.7f, 0.2f),
-                    ColorEnd = new Color(0.62f, 0.65f, 0.7f, 0.08f), Drag = 2.4f, Lift = 1.5f, Swirl = 1.2f, Seed = R(), Wind = SteamWind * 0.6f,
+                    Kind = FlareBits.Kind.Puff, At = p + Vector3.Up * 0.3f, V = new Vector3((R() - 0.5f) * 2.5f, 2.5f + R() * 3f, (R() - 0.5f) * 2.5f),
+                    Life = 1.0f + R() * 0.8f, Size = 0.25f, SizeEnd = 0.7f + R() * 0.4f,
+                    Color = Night ? new Color(0.45f, 0.38f, 0.32f, 0.13f) : new Color(0.86f, 0.8f, 0.72f, 0.11f),
+                    ColorEnd = Night ? new Color(0.38f, 0.4f, 0.44f, 0.03f) : new Color(0.8f, 0.79f, 0.76f, 0.03f), Drag = 2.4f, Lift = 1.5f, Swirl = 1.2f, Seed = R(), Wind = SteamWind * 0.6f,
                 });
             // Sparks, never soot (t10: black flecks over the fire).
             for (int i = 0; i < 16; i++)
@@ -438,7 +441,7 @@ public partial class FlareFx
             var v = d * (9 + R() * 13) + new Vector3((R() - 0.5f) * 4, 1.5f + R() * 4.5f, (R() - 0.5f) * 4);
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.3f, v, 0.4f + R() * 0.45f, 0.045f, new Color(1.4f, 0.72f, 0.24f), new Color(0.6f, 0.12f, 0.02f), gravity: 9, drag: 1.2f);
         }
-        SpendLight(p + Vector3.Up * 3f, new Color(1f, 0.6f, 0.25f), 15 * (banked ? 1.25f : 1));
+        SpendLight(p + Vector3.Up * 3f, new Color(1f, 0.6f, 0.25f), 11 * (banked ? 1.25f : 1)); // (15: 1.8x arena, 2.2x an empty field; §1.6 wants <= 1.6x)
         spendLight.OmniRange = reach * 1.3f;
         Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
         Cue("ember_last", p, 1);
@@ -527,11 +530,11 @@ public partial class FlareFx
             glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
             if (R() < 0.5f)
                 glow.Spawn(FlareBits.Kind.Tongue, w + Vector3.Up * 0.5f * scale, away * 5 + Vector3.Up * (3.5f + R() * 2), 0.1f + R() * 0.06f, (0.26f + R() * 0.1f) * scale, new Color(1.1f, 0.5f, 0.14f), new Color(0.65f, 0.12f, 0.02f), drag: 2);
-            // A short breath of steam off the hot ice.
-            bed.Spawn(new FlareBits.P
+            // A short breath of steam off the hot ice, off one in four (f6b: off all 250, a sheet of cotton).
+            if (R() < 0.25f) bed.Spawn(new FlareBits.P
             {
                 Kind = FlareBits.Kind.Puff, At = w + Vector3.Up * 0.8f * scale, V = Vector3.Up * 1.6f + away * 1.4f,
-                Life = 0.7f + R() * 0.3f, Size = 0.3f * scale, SizeEnd = 1.1f * scale, Color = new Color(0.62f, 0.65f, 0.7f, 0.2f),
+                Life = 0.6f + R() * 0.3f, Size = 0.22f * scale, SizeEnd = 0.7f * scale, Color = new Color(0.62f, 0.65f, 0.7f, 0.12f),
                 ColorEnd = new Color(0.62f, 0.65f, 0.7f, 0.0f), Drag = 2.2f, Lift = 0.8f, Swirl = 1.0f, Seed = R(), Wind = SteamWind * 0.5f,
             });
         }
