@@ -7,8 +7,9 @@
 // fine down on skin catches the light; light through her where she is thin.
 shader_type spatial;
 render_mode sss_mode_skin, cull_disabled;
-// (both sides drawn for her head alone (mouth_in): its inside, seen through her open mouth, is the dark of her throat;
-// culled, her hair showed through it behind her teeth (the smile pass, a2). Every other part's back faces are
+// (both sides drawn for her head alone (mouth_in), and only inside her mouth (mouth_c): its inside, seen through her
+// open mouth, is the dark of her throat; elsewhere (under her jaw) a back face drew a dark red speck (lips B3 sheet);
+// culled, what lay behind it showed through (the smile pass, a2). Every other part's back faces are
 // discarded, as culled before.)
 
 uniform sampler2D paint : source_color, filter_linear_mipmap_anisotropic;
@@ -289,7 +290,7 @@ void vertex() {
 }
 
 void fragment() {
-	if (tuck_gone > 0.5 || (!FRONT_FACING && mouth_in < 0.5)) {
+	if (tuck_gone > 0.5 || (!FRONT_FACING && (mouth_in < 0.5 || mouth_c <= 0.0))) {
 		discard;
 	}
 	vec2 tx = UV * vec2(textureSize(paint, 0));
