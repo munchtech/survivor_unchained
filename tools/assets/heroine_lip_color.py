@@ -44,6 +44,10 @@ LINES = 0.6                 # (her lower lip's vertical lines carried into the b
 LINES_SIGMA = 4.0           # (front-grid px, 0.1 mm: the high-pass across her lip)
 LINES_SHIFT = 0.0           # (the mirror's offset)
 OWN_SIGMA = 5.0             # (each texel's own detail against the paint smoothed over this, px)
+# (B3, the owner's 14 October lips: "shouldn't bottom lip be bigger than top lip?": the red carried only part way to
+#  the border, its height over the mouth line this fraction of the border's, per face (--upper own=0.9,moonlit=0.8),
+#  for an upper lip about 2/3 of the lower; with --edge 0.35 a crisp vermilion border, not a fade)
+UPPER = {}
 
 
 def lin(c):
@@ -82,6 +86,8 @@ def fields(F, m, t, paint_front, face="", t_new=None):
     and the paint's smoothed luminance (each texel keeps its own fine detail against it)."""
     e = hl.red_top(paint_front, m, t)
     tt = border(m, t if t_new is None else t_new, dense=t_new is not None)
+    if face in UPPER:
+        tt = m + UPPER[face] * (tt - m)
     ok = ~np.isnan(tt) & ~np.isnan(m)
     x = np.arange(len(m))
     ok_e = ok & ~np.isnan(e)
@@ -187,6 +193,15 @@ def main():
     if "--to" in args:
         i = args.index("--to")
         to = args[i + 1]
+        del args[i:i + 2]
+    global EDGE
+    if "--upper" in args:
+        i = args.index("--upper")
+        UPPER.update({k: float(v) for k, v in (kv.split("=") for kv in args[i + 1].split(","))})
+        del args[i:i + 2]
+    if "--edge" in args:
+        i = args.index("--edge")
+        EDGE = float(args[i + 1]) / 1000
         del args[i:i + 2]
     border_mode = "sculpt"
     if "--border" in args:
