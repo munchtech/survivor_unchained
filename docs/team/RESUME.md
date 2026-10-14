@@ -2,6 +2,17 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 14 October, later: coordinator 34daaf5d (running lean to its 125% grace; the owner's choice)
+
+### Merged
+- Animation: the staff in her closed right fist (7e06d70b; re-shot on fresh imports, holds).
+- Outfits: the Reaver loincloth (ea6a9417 via 4d552845; Reaver-only legal all 0).
+- Team tools: `tools/freshness.py` gate in `turn.py take` (checks the caller's checkout or `--root`), `tools/half.py`; README rules: numeric-pass solvers on su-lead-high, half-size working pictures, scope checks to what changed. RESUME trimmed (old states in RESUME_ARCHIVE.md).
+
+### Restart order for the next coordinator
+1. **Animation** (handed off @ ce9aedbc, worktree agent-af8dbda3195e438e4, docs/handoff/animation.md section 0). Sword grip fist NOT merge-ready: judge j1 failed it at the contact frames (scratchpad 34daaf5d sworderdict_j1.txt): fresh su-lead-high solver, measured AT the contact frames. Brim hand (idle_arcanist_break tuck) bc8a9bbe WIP, waits on outfits' glove choice. Flare r9 WIP; left fist off the shaft at f16-21 (a solver's report may be in the handoff). Reaver panel bone after.
+2. Outfits, face, classes, Flare VFX: see their handoffs (filled in at wind-down).
+
 ## 14 October, early: coordinator 1be2d2a9 wound down (three leads at 399k budgets, the owner's one-session trial). Restart here
 
 Scratch to keep: the 1be2d2a9 scratchpad (anim, judge, flare) and 59a43b82's (outfits, cl11).
