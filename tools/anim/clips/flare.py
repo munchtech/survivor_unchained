@@ -200,33 +200,33 @@ def _body_keys():
 # The staff's path in her space: (frame, anchor, point, shaft's way butt to
 # head, right elbow's way). anchor "grip": the shaft's point in the fist at
 # `point`; "butt": the butt's foot at `point` (planted).
-BUTT_AT = np.array([-0.37, 0.004, -0.17])  # beside her right foot (the lunge's lead), by its heel
+BUTT_AT = np.array([-0.40, 0.004, -0.17])  # beside her right foot (the lunge's lead), by its heel
 STAFF = [
-    (3, "grip", (-0.17, 1.40, 0.27), _n(0.75, 0.62, 0.15), (-0.9, -0.4, -0.2)),
-    (5, "grip", (-0.13, 1.70, 0.09), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
+    (3, "grip", (-0.17, 1.40, 0.36), _n(0.75, 0.62, 0.15), (-0.9, -0.4, -0.2)),
+    (5, "grip", (-0.13, 1.70, 0.12), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
     (7, "grip", (-0.11, 1.89, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
     (12, "grip", (-0.11, 1.90, -0.22), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
-    (15, "grip", (-0.11, 1.895, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
+    (15, "grip", (-0.11, 1.91, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
     # The drive: the staff wheeled about the middle of her two fists (its
     # head up, its butt down at her right), down in front of her face and
     # out of its way, then driven straight down into the ground. The right
     # elbow keyed by its way from the shoulder (E): forward, then down, the
     # forearm out-forward to the planted staff.
-    (16, "grip", (-0.13, 1.88, -0.18), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
-    (17, "grip", (-0.20, 1.60, 0.06), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
-    (18, "grip", (-0.32, 1.32, 0.16), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
+    (16, "grip", (-0.13, 1.93, -0.15), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
+    (17, "grip", (-0.20, 1.60, 0.10), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
+    (18, "grip", (-0.32, 1.32, 0.20), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
     (19, "grip", (-0.41, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
     # the butt and the left fist within her reach.
-    (CONTACT, "butt", BUTT_AT, _n(0.02, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
-    (22, "butt", BUTT_AT, _n(0.02, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
-    (28, "butt", BUTT_AT, _n(0.06, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
-    (40, "butt", BUTT_AT, _n(0.05, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
+    (CONTACT, "butt", BUTT_AT, _n(0.0, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
+    (22, "butt", BUTT_AT, _n(0.0, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
+    (28, "butt", BUTT_AT, _n(0.03, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
+    (40, "butt", BUTT_AT, _n(0.02, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
     (SWEEP, "butt", BUTT_AT, _n(-0.24, 0.96, 0.14), (-0.6, -0.8, -0.4)),
-    (BLEND, "grip", (-0.37, 0.98, -0.14), _n(0.08, 0.99, 0.10), (-0.8, -0.3, -0.6)),
-    (52, "grip", (-0.33, 1.12, -0.06), _n(0.0, 1.0, 0.14), (-0.8, -0.3, -0.6)),
+    (BLEND, "grip", (-0.40, 0.98, -0.14), _n(-0.08, 0.99, 0.10), (-0.8, -0.3, -0.6)),
+    (52, "grip", (-0.33, 1.12, -0.06), _n(-0.03, 1.0, 0.14), (-0.8, -0.3, -0.6)),
 ]
 # Through the drive the fist turns on one even turn from its last poster
 # frame to its plant (as last solved), this far along at each frame: the
