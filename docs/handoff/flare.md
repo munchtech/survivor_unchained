@@ -26,11 +26,22 @@ button"; "pushing a flare should always do something visible"; "flares should be
   ~0.3 s; web under char halved and sunk by 2 s; pre-BOOM dip 0.9; BOOM light 15; sim fade by +0.8 s. Measured f7:
   arena peak 1.79x, 4 frames over, 1.5 swings/s; Verge night 1.61x, 3 over, 1.0/s. BUT the Return's floor fell to
   0.29x arena / 0.37x Verge night: the steam had been lighting it. Its own light (judge fix 4) is the next build.
-- **Solver 2 (sim shading) was running at handoff:** dark opaque soot, blackbody flame, a round birth with no starfish
-  so SimFirst can go to 0, no tail speckle. See "Solver 2" below for its result.
+- **Solver 2 (take `burns_boom4`, bake c2, render c2g; commits 1d6f7f52..e24b0889): NOT passed, game atlas unchanged.**
+  A white-hot 1.2 m core swelling to 4.7 m in 3 frames inside an 8.4 m soot shell, a ground stem, no jets (no starfish,
+  no squares); `src_material`: soot albedo 0.05, density x45, heat-glow on a keyed cooling curve. Its f10-f19 are the best
+  fire yet (rolling, sooty pockets) but "warmer than violent". Weak: f2-f7 a flat round disc (the shell's density is a
+  uniform 0.09; textures had no effect); from f19 the cloud hits the domain's side walls (cut lines); the flame dies by
+  ~f14; Cycles reads heat as 0..1 not 0..3. Its next bake: a ~15 m box or smaller shell, the shell from many small lumpy
+  puffs, burn ~0.02 with fuel 3; heat curve ~0.6 at f4, soot density ~30. For the game then: SimFirst 0 (drop the 0.8->1
+  swell), fire_tint (1,1,1), smoke 1.0. Trial atlas `tools/fxsim/.shots/c2g_atlas.png` (6x6 x 448), key frames
+  `c2g_key_f004/f011/f021.png`, previews `c2g_prev_night/day.jpg`; bake c2's cache kept for render-only runs.
+- **Coordinator (13 Oct):** classes-11 is merged into integration (904 tests): merge integration into flare-1 when
+  convenient (merge only; never reset/stash here). Drag Them Under now hooks everything in reach (~60 chain lines a press
+  in arena hordes): budget its VFX for that count.
 
 ## Next, in order (judge 3's fixes; full text in its verdict, summarised)
-1. Integrate solver 2's take (SimSize/SimLook/SimFirst, drop fire_tint if it says so), shoot, look once.
+1. One more sim bake from solver 2's notes (fresh max solver, its numbers in the brief), then integrate (SimFirst 0,
+   tint off), shoot with `q.sh`, look once.
 2. BOOM birth: white-hot core ~1-1.5 m at once, full size in 4-6 frames; spend 1-1.5% of pixels over the knee for 3
    frames; whole-frame peak <= 1.6x (now 1.79x); draw the ring's first 0.1 s over the fireball's base.
 3. The Return's light: web amber 0-2 s then dark by 4 s; meltwater glints (sharp, twinkling, ~1/m², at the frost's
@@ -50,7 +61,7 @@ button"; "pushing a flare should always do something visible"; "flares should be
 Old scratch (still on disk): `59a43b82.../scratchpad/flare/` (`lq.sh TAG`, `batch8.sh TAG`, `jsheet.sh TAG`, `sheet.py`,
 `lum60.py`, `meas.py TAG`, `shot.sh`). Mine: `1be2d2a9.../scratchpad/f5/` (`q.sh TAG an` = import + clean row + a BOOM
 sequence at 20 fps from 7.75 s; `lqs.sh TAG` = Verge night lq; `cap.sh`; `onset.py WAV t0 t1`; `bisect.sh`).
-Back them up to `survivorsunchained_inputs/scratch_1be2d2a9/flare/` before the scratch is cleared.
+Backed up in `survivorsunchained_inputs/scratch_1be2d2a9/flare/` (with `f6_boom.jpg`).
 Build C#: `dotnet build godot/SurvivorUnchained.csproj -v q`. Tests: `dotnet test godot/tests/Tests.csproj` (887 green).
 
 ## Gotchas
