@@ -2,6 +2,36 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 14 October, early: coordinator 1be2d2a9 wound down (three leads at 399k budgets, the owner's one-session trial). Restart here
+
+Scratch to keep: the 1be2d2a9 scratchpad (anim, judge, flare) and 59a43b82's (outfits, cl11).
+
+### Merged
+- **Classes:** classes-11@bf5963c7 (1a6f7ae0), all five wave-6a Flares.
+- **Outfits:** fin5 on the shipped face (db47b5a6; judge verdict_fin4 MERGE-READY; legal 0 on all four).
+  - The owner's "legs stuck together" fix: `_as_skin` gave inner-thigh pieces the other leg's weights (0.91-1.00); AS_SKIN_SIDES.
+
+### Restart order (each from its handoff; worktrees kept)
+1. **Outfits:** worktree agent-a5ca10091b08dc429 @ db47b5a6, docs/handoff/outfits.md "Paused here". In order:
+   - the glove skin through the Arcanist glove (animation judge j4: hide the hand skin under the glove, fix A);
+   - the right glove brown vs the left purple;
+   - the Reaver front fringe at sit_log;
+   - polish.
+   - Warden .bin is 51.9 MB (GitHub warns).
+2. **Animation:** worktree agent-af8dbda3195e438e4 @ 21e9c31d, NOT merged. docs/handoff/animation.md section 0.
+   - The staff is in her fist: 4eb83530 refit the pocket (FistAtR was 40-65 mm off), and j4 passes the hold. It waits on outfits' glove fix, then a re-judge, re-pack and merge request (74f53e84 pack stale).
+   - **Lesson:** the coordinator merged it from an unjudged picture and the owner caught it. Judge "is it visibly inside her closed hand" first.
+   - Flare r9 WIP 5bca5171.
+   - bull_rush parked at 9b5486fc: it needs a new hand route.
+   - Then the grip-fist system for the sword, daggers, axe and crossbow (same seat fault; the sword is the "mangled hilt").
+3. **Flare VFX:** worktree agent-af0782e2e3f51bc1f, flare-1, NOT merged. docs/handoff/flare.md "Paused here". BOOM birth b5cx installed (solver 4).
+4. **Classes:** the owner's boss rules (OWNER_NOTES 13 Oct evening):
+   - Flare boss share: AoE 10-15%, single-target 15-20%.
+   - No hidden boss multipliers; retire bossMul, buff boss health instead.
+   - A Flare stays the hardest hit.
+   - Then phase 7.
+5. **Face:** smile pass, then hair edges (unchanged from below).
+
 ## 13 October, late: coordinator 59a43b82 at its limit; every lead wound down at a clean point. Restart here
 
 ### Restart
