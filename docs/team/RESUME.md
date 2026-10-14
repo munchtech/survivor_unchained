@@ -24,7 +24,7 @@ Scratch to keep: the 1be2d2a9 scratchpad (anim, judge, flare) and 59a43b82's (ou
    - Flare r9 WIP 5bca5171.
    - bull_rush parked at 9b5486fc: it needs a new hand route.
    - Then the grip-fist system for the sword, daggers, axe and crossbow (same seat fault; the sword is the "mangled hilt").
-3. **Flare VFX:** worktree agent-af0782e2e3f51bc1f, flare-1, NOT merged. docs/handoff/flare.md "Paused here". BOOM birth b5cx installed (solver 4).
+3. **Flare VFX:** worktree agent-af0782e2e3f51bc1f, flare-1, NOT merged. @ b24624ca (tests 905), docs/handoff/flare.md "Paused here". Judge 4 NOT READY: BOOM FAIL (flat cream ball, then a black soot hole), shards FAIL, Return FAIL, ring and day WEAK, 2.5 swings/s at night FAIL; freeze, hold, frost, embers, sync good. First: the birth atlas to a fresh max solver via tools/fxsim/birth.py. Verdict: survivorsunchained_inputs/scratch_1be2d2a9/flare/f6/j4/verdict_j4.txt.
 4. **Classes:** the owner's boss rules (OWNER_NOTES 13 Oct evening):
    - Flare boss share: AoE 10-15%, single-target 15-20%.
    - No hidden boss multipliers; retire bossMul, buff boss health instead.
