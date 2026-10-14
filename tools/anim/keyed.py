@@ -1024,7 +1024,16 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # and 0.3 mm clear of the forefinger by its bone line (it was 1.5 mm into it); opposed 0.45 (was 0.63) and
         # rolled 12 degrees so the pad, not its side, lies on the finger.
         "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (8.0, 3.4, 57.9)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
-                  "oppose": 0.45, "thumb_roll": 12.3}}
+                  "oppose": 0.45, "thumb_roll": 12.3},
+        # The dagger (WeaponSockets.DaggerAtR / DaggerDirR), fitted 14 October (animation 31, fistfit.py daggers --fit
+        # --seat 80, on daggers_back's frame 2 and the ranger's hand) on its own section: the hilt is a flat hexagon,
+        # 15 mm thick toward the palm and 29 across, 122 mm between pommel and guard. Nothing of the hand into it (0.0),
+        # the palm on it (1.1), the outer pads 0.3-0.6 mm off, the fingers' ends round it and touching (0.9-1.3 mm
+        # apart); the thumb's last joint 68 (55-70: its pad over the forefinger, not a hook). Not yet the pass: the
+        # forefinger's and middle finger's middle bones 3.0 and 3.2 mm off the flat, the little finger's end 2.5 (the
+        # bones turn at the hexagon's corners; a round 13-14 mm grip would close them, as the chevalier's thinning did).
+        "daggers": {"bends": {"index": (56.7, 105.5, 43.9), "middle": (74.4, 91.3, 40.6), "ring": (83.0, 83.7, 41.9), "pinky": (90.9, 65.1, 60.1), "thumb": (5.1, 21.1, 68.3)}, "spreads": {"index": -9.4, "middle": -0.9, "ring": 15.8, "pinky": 22.7},
+                  "oppose": 0.00, "thumb_roll": -4.5}}
 
 
 def spread_axis(rig, j):
@@ -1035,7 +1044,7 @@ def spread_axis(rig, j):
 def wrap_of(weapon):
     """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): only her right hand's pocket is
     measured, so only "r"."""
-    main = (weapon or "").split("+")[0]
+    main = {"axes": "axe"}.get((weapon or "").split("+")[0], (weapon or "").split("+")[0])
     return {"r": WRAP[main]} if main in WRAP else {}
 
 

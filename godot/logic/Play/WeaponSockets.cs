@@ -89,13 +89,37 @@ public static class WeaponSockets
     public static readonly Vector3 BladeAtR = new(-0.0381f, 0.0808f, -0.0131f);
     public static readonly Vector3 BladeDirR = new(0f, 0.57357644f, 0.81915204f);
 
+    /// <summary>The line her right fist closes round on an axe's haft (tools/anim/keyed.py WRAP["axe"]), in hand_r's space:
+    /// where the haft's grip point (Arms.Spec.Grip along its long axis) lands, and the direction the piece's +Y is turned
+    /// onto, butt toward head: the viking axe's haft (9 degrees off its long axis, which the head pulls) turned onto the
+    /// lean its clips are keyed to (keyed.py GRIP["axe"], 30), its butt under the heel of her palm. NOT LIVE (not in
+    /// PocketR): its haft is 40 mm thick toward the palm and 58 across (155 mm round, where her fist closes on about 90),
+    /// so no fist closes on it: the best fit (tools/anim/fistfit.py axe --fit, 14 October) brings the fingers' ends only
+    /// 123-177 degrees round it, the middle finger's end 12 mm off. The haft wants thinning to about 30 mm across over
+    /// the hand's span (as tools/assets/grip_thin.py did the chevalier sword's grip), then the fit, then PocketR.</summary>
+    public static readonly Vector3 AxeAtR = new(-0.0382f, 0.1119f, 0.0381f);
+    public static readonly Vector3 AxeDirR = Vector3.Normalize(new Vector3(-0.00086f, 0.62927f, 0.77719f));
+
+    /// <summary>The line her right fist closes round on a dagger's hilt (tools/anim/keyed.py WRAP["daggers"]), in hand_r's
+    /// space: where the hilt's grip point (Arms.Spec.Grip along its long axis) lands, and its direction, pommel toward
+    /// blade: the mount's own (Arms.Spec.Lean 30, keyed.py GRIP["daggers"]), so the seat only moves the hilt. Fitted 14
+    /// October on her skin, the ranger's glove and the dagger's hilt (a flat hexagon 15 mm thick toward the palm, 29
+    /// across, measured on its own section, tools/anim/fistfit.py): the palm and every finger's outer pad on it (0.3-1.1
+    /// mm out, the forefinger's and middle finger's middle bones 3 mm off the flat), nothing into it, the thumb over the
+    /// forefinger; her forefinger 4 mm short of the guard, the heel of her palm on the pommel. (The plain mount, -25, 75,
+    /// 0 mm, ran the hilt 10 mm into her palm and little finger, the forefinger 15 mm off it.) Live only for a dagger whose
+    /// Spec is Seated.</summary>
+    public static readonly Vector3 DaggerAtR = new(-0.0334f, 0.0720f, -0.0139f);
+    public static readonly Vector3 DaggerDirR = new(0f, 0.5f, 0.8660254f);
+
     /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the
-    /// staff's (FistAtR / FistDirR) and the one-handed blade's (BladeAtR / BladeDirR). A new kind needs only its line here
-    /// and its fist in keyed.py WRAP.</summary>
+    /// staff's (FistAtR / FistDirR), the one-handed blade's (BladeAtR / BladeDirR) and the dagger's (DaggerAtR / DaggerDirR).
+    /// A new kind needs its line here, its fist in keyed.py WRAP, and its pieces' Arms.Spec Seated (or an anchor_grip).</summary>
     public static (Vector3 At, Vector3 Dir)? PocketR(WeaponKind kind) => kind switch
     {
         WeaponKind.Staff => (FistAtR, FistDirR),
         WeaponKind.Blade1H => (BladeAtR, BladeDirR),
+        WeaponKind.Dagger => (DaggerAtR, DaggerDirR),
         _ => null,
     };
 

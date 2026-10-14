@@ -7,6 +7,8 @@
                                                         hand_r y of the line at the seat's height); the best seat wins
     python tools/anim/fistfit.py sword --fit --seat 95,105 --hand '{"knuckles": 20}'   the same on a corrected hand
                                                         (set_hand: the body build's change, modelled; never written)
+    python tools/anim/fistfit.py viking_sword --slide -30    a piece's grip point moved along its shaft (Arms.Spec.Grip)
+                                                        modelled, never written
     python tools/anim/fistfit.py sword --fit --write    write the fitted WRAP["sword"] into keyed.py (and the seat into
                                                         WeaponSockets.cs if it moved: then rebuild the clips and re-dump
                                                         arms_local, tools_scenes/arms_dump.gd)
@@ -49,7 +51,20 @@ ALLF = FINGERS + ("thumb",)
 # frame its rest is fitted on.
 PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="BladeDirR", outfit="warden", rest=("idle_warden", 76)),
           # The staff's shaft in WRAP["staff"]'s fist (13.65 mm round), seated on the fist's pocket (FistAtR / FistDirR).
-          "staff": dict(arms="mage_staff@hand_r", at="FistAtR", dir="FistDirR", outfit="arcanist", rest=("idle_arcanist", 0))}
+          "staff": dict(arms="mage_staff@hand_r", at="FistAtR", dir="FistDirR", outfit="arcanist", rest=("idle_arcanist", 0)),
+          # The viking sword: the one-handed blade's pocket and fist (its clips are the sword's). Its hilt is a flat oval
+          # (about 18 mm thick toward the palm, 34-37 across: "section"), so it is measured on its own section, not round.
+          # The dump holds it on the plain mount (Arms.Spec Seated not yet set): "dump" its grip point and lean there.
+          "viking_sword": dict(arms="viking_sword@hand_r", at="BladeAtR", dir="BladeDirR", outfit="warden",
+                               rest=("idle_warden", 76), weapon=("sword",), wrap="sword", section=True,
+                               dump=((-25.0, 75.0, 0.0), 35.0)),
+          # The axe (its haft turned onto the keyed lean, "axis" the window its line is fitted over): no fist closes on its
+          # 40 x 58 mm haft (WeaponSockets.AxeAtR, not live); "thumb_end" the thumb's last joint in a fit (55-70).
+          # The dagger: a flat hexagonal hilt 15 x 29 mm (WRAP["daggers"], DaggerAtR).
+          "axe": dict(arms="viking_axe@hand_r", at="AxeAtR", dir="AxeDirR", outfit="reaver", rest=("idle_reaver", 0), thumb_end=(55.0, 70.0),
+                      weapon=("axe", "axes"), section=True, dump=((-25.0, 75.0, 0.0), 30.0), axis=(-80.0, 150.0)),
+          "daggers": dict(arms="daggers@hand_r", at="DaggerAtR", dir="DaggerDirR", outfit="ranger",
+                          rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0), dump=((-25.0, 75.0, 0.0), 30.0))}
 PAD = (-0.5, 1.5)     # mm: the 02/03 pads' gap to the leather
 IN_MAX = 0.5          # mm: deepest any of the hand may go into the hilt
 HANG_MAX = 0.0        # mm: the finger's end past the grip's far surface (along the palm's normal). Its end is its skin's
@@ -61,6 +76,8 @@ WRAP_MIN = 180.0      # deg: how far round the line the finger's end has come (f
                       # or balled up in front of it with their ends near the palm (a search found such "passes").
 OFF_MAX = 3.0         # deg: a held clip's fingers off WRAP's
 THUMB_IN = 0.0        # mm: deepest the thumb's last bone and pad (02, 03) may go into the forefinger, by its bone line (into_finger)
+THUMB_END = (-10.0, 90.0)   # deg: the thumb's last joint in a fit (a piece's PIECES "thumb_end" sets it: 55-70 is the
+                            # sword's look, its pad on the fingers, not "a hooked claw" at 89)
 THUMB_CLEAR = 0.3     # mm: how far the fit keeps them out of the forefinger and middle finger (THUMB_IN the pass)
 
 sk = Skeleton.load(DATA / "heroine_skeleton.json")
@@ -72,7 +89,12 @@ HB =[n for n in I if n.endswith("_r") and any(n.startswith(k) for k in ("hand",)
 CHAIN = sorted(j for n, j in I.items() if n.endswith("_r") and any(n.startswith(k) for k in ALLF))
 
 
-def read_seat(piece):
+def wrap_key(piece):
+    """The WRAP a piece's clips lay (the clips key a fist per weapon, not per piece: both swords hold WRAP["sword"])."""
+    return PIECES[piece].get("wrap", piece)
+
+
+def _pocket(piece):
     s = SOCKETS.read_text(encoding="utf-8")
     def vec(name):
         m = re.search(rf"{name}\s*=\s*(?:Vector3\.Normalize\()?new(?:\s*Vector3)?\(([^)]*)\)", s)
@@ -80,15 +102,104 @@ def read_seat(piece):
     return vec(PIECES[piece]["at"]), vec(PIECES[piece]["dir"])
 
 
+def _rot(a, b):
+    """The least rotation (matrix) taking unit a onto unit b."""
+    v = np.cross(a, b); c = float(a @ b); K = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3) + K + K @ K / (1 + c)
+
+
+def dump_line(piece):
+    """A piece the dump holds on the plain mount (PIECES "dump": its grip point G mm and lean there): (G, the mount's
+    shaft my, c, Dh, R). Its grip's own line in the dump is G + c + s Dh (PIECES "axis": the t window, mm along my from
+    G, over which it is fitted through the sections' box centres; else c 0, Dh my); Arms.Seat turns the piece by R, the
+    least turn taking my onto the pocket's Dir, and lays G on its At, so the line seated is At + R c along R Dh."""
+    P = PIECES[piece]; G = np.array(P["dump"][0]) / 1000; lean = np.radians(P["dump"][1])
+    my = np.array([0.0, np.sin(lean), np.cos(lean)]); c = np.zeros(3); Dh = my
+    if "axis" in P:
+        V = np.array(json.load(open(DATA / "arms_local.json"))[P["arms"]]["v"], float) - G
+        e1 = _e1(my); e2 = np.cross(my, e1); t = V @ my * 1000
+        T, C = [], []
+        for a in np.arange(P["axis"][0], P["axis"][1], 4.0):
+            m = (t >= a) & (t < a + 4)
+            if m.sum() >= 3:
+                x, y = V[m] @ e1, V[m] @ e2
+                T.append((a + 2) / 1000); C.append([(x.min() + x.max()) / 2, (y.min() + y.max()) / 2])
+        T, C = np.array(T), np.array(C)
+        k = np.polyfit(T, C, 1)                       # centre = k[1] + t k[0]
+        c = k[1][0] * e1 + k[1][1] * e2
+        Dh = my + k[0][0] * e1 + k[0][1] * e2; Dh /= np.linalg.norm(Dh)
+    _, Dir = _pocket(piece)
+    return G, my, c, Dh, _rot(my, Dir / np.linalg.norm(Dir))
+
+
+def built_wrap(piece):
+    """The fist the piece's clips are built with: its WRAP, else (none fitted yet) the sword's as the fit's seed and the
+    table's reference."""
+    return keyed.WRAP.get(wrap_key(piece)) or keyed.WRAP["sword"]
+
+
+def read_seat(piece):
+    """The grip's line in hand_r space as the game seats the piece: (a point on it, its direction). For a piece the dump
+    seats, the pocket itself; for one it doesn't yet (PIECES "dump"), its own line laid on the pocket (dump_line)."""
+    At, Dir = _pocket(piece)
+    if "dump" not in PIECES[piece]:
+        return At, Dir
+    G, my, c, Dh, R = dump_line(piece)
+    return At + R @ c, R @ Dh
+
+
+class Prof(list):
+    """A hilt's profile: (t mm, r mm) per slice, and for a piece fitted on its own section (PIECES "section") the
+    section's radius round the line per slice (sec: t mm, the angles, R mm [t, angle]), measured off e1 = hand +X square
+    to the line (so a seat that only moves the piece keeps it)."""
+    sec = None
+
+
+def _e1(D):
+    e = np.array([1.0, 0, 0]) - D[0] * D
+    return e / np.linalg.norm(e)
+
+
 def hilt_profile(piece, A, D, step=2.0):
-    """(t mm along the line from the grip point, r mm): the piece's outer radius per slice (arms_local, as seated)."""
-    V = np.array(json.load(open(DATA / "arms_local.json"))[PIECES[piece]["arms"]]["v"], float)
-    dd = V - A; t = dd @ D * 1000; r = np.linalg.norm(dd - np.outer(dd @ D, D), axis=1) * 1000
-    out = []
+    """(t mm along the line from the grip point, r mm): the piece's outer radius per slice (arms_local, as seated).
+    A piece the dump doesn't seat yet (PIECES "dump": its grip point and lean as the plain mount holds it, Arms.Seat not
+    yet laying it on its pocket) is measured about its own grip point there: the seat only moves it (the pocket keeps
+    the mount's lean), so its hilt about the grip point is the same. "slide" (mm): the grip point moved toward the tip
+    along the shaft (Arms.Spec.Grip raised by slide / Length), modelled."""
+    P = PIECES[piece]
+    V = np.array(json.load(open(DATA / "arms_local.json"))[P["arms"]]["v"], float)
+    if "dump" in P:
+        G, my, c, Dh, R = dump_line(piece)
+        assert abs(R @ Dh @ (D / np.linalg.norm(D))) > 0.99999, f"{piece}: the line isn't the seated grip's"
+        V = (V - G - c) @ R.T + A                     # seated, the line through A
+    V = V - P.get("slide", 0.0) / 1000 * D
+    dd = V - A; t = dd @ D * 1000; Q = dd - np.outer(dd @ D, D); r = np.linalg.norm(Q, axis=1) * 1000
+    out = Prof(); ts, Rs = [], []
+    if P.get("section"):
+        from scipy.spatial import ConvexHull
+        e1 = _e1(D); e2 = np.cross(D, e1); ang = np.radians(np.arange(0, 360, 5.0))
+        Q2 = np.stack([Q @ e1, Q @ e2], 1) * 1000; ray = np.stack([np.cos(ang), np.sin(ang)], 1)
     for a in np.arange(np.floor(t.min()), t.max(), step):
         m = (t >= a) & (t < a + step)
         if m.sum() >= 3:
             out.append((a + step / 2, float(r[m].max())))
+            if P.get("section"):
+                Rs.append(np.full(len(ang), r[m].max())); ts.append(a + step / 2)
+                try:
+                    hull = Q2[m][ConvexHull(Q2[m]).vertices]
+                except Exception:
+                    continue
+                p0, p1 = hull, np.roll(hull, -1, 0); e = p1 - p0
+                # ray s*d = p0 + l*e: solve per edge and angle; the hull holds the line (else its max radius stands)
+                den = ray[:, None, 0] * e[None, :, 1] - ray[:, None, 1] * e[None, :, 0]
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    sd = (p0[None, :, 0] * e[None, :, 1] - p0[None, :, 1] * e[None, :, 0]) / den
+                    lam = (p0[None, :, 0] * ray[:, None, 1] - p0[None, :, 1] * ray[:, None, 0]) / den
+                ok = (sd > 0) & (lam >= -1e-9) & (lam <= 1 + 1e-9)
+                if ok.any(1).all():
+                    Rs[-1] = np.where(ok, sd, np.inf).min(1)
+    if P.get("section"):
+        out.sec = dict(t=np.array(ts), ang=ang, R=np.array(Rs))
     return out
 
 
@@ -96,15 +207,30 @@ class Grip:
     def __init__(self, A, D, prof):
         self.A = np.asarray(A, float); self.D = np.asarray(D, float) / np.linalg.norm(D)
         self.pt = np.array([p[0] for p in prof]) / 1000; self.pr = np.array([p[1] for p in prof]) / 1000
+        self.sec = getattr(prof, "sec", None)
+        if self.sec is not None:
+            self.e1 = _e1(self.D); self.e2 = np.cross(self.D, self.e1)
 
-    def R(self, t):
-        return np.interp(t, self.pt, self.pr, left=np.nan, right=np.nan)
+    def R(self, t, w=None):
+        """m: the surface's distance from the line at t (m along it); on a section, in direction(s) w (square to it)."""
+        if self.sec is None or w is None:
+            return np.interp(t, self.pt, self.pr, left=np.nan, right=np.nan)
+        S = self.sec; t = np.atleast_1d(np.asarray(t, float)) * 1000; w = np.atleast_2d(w)
+        phi = np.mod(np.arctan2(w @ self.e2, w @ self.e1), 2 * np.pi)
+        da = S["ang"][1] - S["ang"][0]; k = phi / da; k0 = np.floor(k).astype(int) % len(S["ang"]); f = k - np.floor(k)
+        k1 = (k0 + 1) % len(S["ang"])
+        Ra = S["R"][:, k0] * (1 - f) + S["R"][:, k1] * f           # [nt, npts]
+        i = np.clip(np.searchsorted(S["t"], t) - 1, 0, len(S["t"]) - 2); g = (t - S["t"][i]) / (S["t"][i + 1] - S["t"][i])
+        cols = np.arange(len(t))
+        out = (Ra[i, cols] * (1 - g) + Ra[i + 1, cols] * g) / 1000
+        out[(t < S["t"][0]) | (t > S["t"][-1])] = np.nan
+        return out if out.size > 1 else float(out[0])
 
     def gap(self, X):
         """mm outside the surface (negative: inside), nan off the piece; t mm along the line."""
         dd = X - self.A; t = dd @ self.D
-        r = np.linalg.norm(dd - np.outer(t, self.D), axis=1)
-        return (r - self.R(t)) * 1000, t * 1000
+        Q = dd - np.outer(t, self.D); r = np.linalg.norm(Q, axis=1)
+        return (r - self.R(t, Q if self.sec is not None else None)) * 1000, t * 1000
 
 
 _bodies = {}
@@ -406,7 +532,7 @@ def measure(h, rf, gr):
     for fn in ALLF:
         sub = h.fing[fn]; B = h.bone[sub]; gs = g[sub]; ok = ~np.isnan(gs)
         pads = [round(float(gs[(B == f"{fn}_0{k}_r") & ok].min()), 1) if ((B == f"{fn}_0{k}_r") & ok).any() else None for k in (1, 2, 3)]
-        e = end_point(X[sub][B == f"{fn}_03_r"], J, fn); v = e - gr.A; R = gr.R(v @ gr.D)
+        e = end_point(X[sub][B == f"{fn}_03_r"], J, fn); v = e - gr.A; R = gr.R(v @ gr.D, -u)
         out[fn] = dict(pads=pads, deepest=round(float(gs[ok].min()), 1) if ok.any() else None,
                        hang=round(float((-(v @ u) - R) * 1000), 1) if not np.isnan(R) else None,
                        wrap=round(wrap_angle(e, gr, u)))
@@ -532,7 +658,7 @@ def fit_finger(h, fn, base, spr, gr, u, x0, opp=0.0, roll=0.0):
         tip = (np.linalg.norm(X - e, axis=1) < 0.010) & ~np.isnan(g)
         d = (g[tip].min() if tip.any() else 20.0) - 1.0
         if d > 0: c += d * d
-        v = e - gr.A; R = gr.R(v @ gr.D)
+        v = e - gr.A; R = gr.R(v @ gr.D, -u)
         hang = (-(v @ u) - (0.016 if np.isnan(R) else R)) * 1000
         if hang > HANG_MAX - 1.5: c += 2 * (hang - HANG_MAX + 1.5) ** 2
         wa = wrap_angle(e, gr, u)
@@ -607,11 +733,11 @@ def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=2.0, spr=None):
         tt = float((J["thumb_04_leaf_r"] - gr.A) @ gr.D) * 1000
         if tt < span[0]: c += (span[0] - tt) ** 2
         if tt > span[1]: c += (tt - span[1]) ** 2
-        for v, lo, hi, s in ((opp, 0.0, 1.0, 30), (roll, -45, 45, 1), (a1, -15, 60, 1), (a2, -10, 80, 1), (a3, -10, 90, 1)):
+        for v, lo, hi, s in ((opp, 0.0, 1.0, 30), (roll, -45, 45, 1), (a1, -15, 60, 1), (a2, -10, 80, 1), (a3, *THUMB_END, 1)):
             if v < lo: c += ((lo - v) * s) ** 2
             if v > hi: c += ((v - hi) * s) ** 2
         return c
-    lims = [(0.0, 1.0), (-45, 45), (-15, 60), (-10, 80), (-10, 90)]
+    lims = [(0.0, 1.0), (-45, 45), (-15, 60), (-10, 80), THUMB_END]
     x0 = np.clip(np.array(x0, float), [lo for lo, _ in lims], [hi for _, hi in lims])
     if SEARCH["global"]:
         # Global (differential evolution inside lims, seeded with x0, SEARCH's settings and seed), then a local polish:
@@ -634,11 +760,13 @@ def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=2.0, spr=None):
 def fit(piece, y0s=None, prof=None, iters=3):
     """Re-derive the WRAP (and, given y0s, the seat) on the rest frame. Returns (wrap, A, prof)."""
     P = PIECES[piece]; A0, D = read_seat(piece); D = D / np.linalg.norm(D)
+    global THUMB_END
+    THUMB_END = tuple(P.get("thumb_end", THUMB_END))
     prof = prof or hilt_profile(piece, A0, D)
     _, rot, pos = load(CLIPS / f"{P['rest'][0]}.json"); h = Hand(rot[P["rest"][1]], pos[P["rest"][1]], P["outfit"])
     # A = (x, y0, 0) + w D: w (where along the hilt the hand is) kept; y0 the line's place along her fingers, x its depth.
     w = float(A0[2] / D[2]); base0 = A0 - w * D
-    old, opp0, roll0, spr0 = wrap_args(keyed.WRAP[piece])
+    old, opp0, roll0, spr0 = wrap_args(built_wrap(piece))
     best = None
     for y0 in (y0s or [base0[1] * 1000]):
         y0 /= 1000
@@ -788,6 +916,8 @@ def write_wrap(piece, wrap):
 
 
 def write_seat(piece, A):
+    if "dump" in PIECES[piece]:
+        G, my, c, Dh, R = dump_line(piece); A = A - R @ c      # the grip point, off the line by its seated c
     s = SOCKETS.read_text(encoding="utf-8"); name = PIECES[piece]["at"]
     s2, n = re.subn(rf"({name}\s*=\s*new\()[^)]*\)", rf"\g<1>{A[0]:.4f}f, {A[1]:.4f}f, {A[2]:.4f}f)", s, count=1)
     assert n == 1
@@ -801,11 +931,11 @@ def table(piece, wrap=None, A=None, prof=None):
     P = PIECES[piece]; A0, D = read_seat(piece); D = D / np.linalg.norm(D)
     prof = prof or hilt_profile(piece, A0, D)
     gr = Grip(A0 if A is None else A, D, prof)
-    built, bopp, broll, bspr = wrap_args(keyed.WRAP[piece])
+    built, bopp, broll, bspr = wrap_args(built_wrap(piece))
     rows, fails = [], 0
     for path in sorted(CLIPS.glob("*.json")):
         d = json.load(open(path)); meta = d.get("meta", {})
-        if (meta.get("weapon") or "").split("+")[0] != piece:
+        if (meta.get("weapon") or "").split("+")[0] not in P.get("weapon", (piece,)):
             continue
         _, rot, pos = load(path); fps = d.get("fps", 30); n = len(rot)
         c = meta.get("contact")
@@ -841,12 +971,17 @@ def main(argv):
     ap.add_argument("--fit", action="store_true")
     ap.add_argument("--seat", default=None, help="comma-separated y0 (mm) to try for the grip's line")
     ap.add_argument("--write", action="store_true")
+    ap.add_argument("--slide", type=float, default=None, help="mm: the piece's grip point moved toward its tip along the "
+                    "shaft (Arms.Spec.Grip), modelled (overrides PIECES' slide; never written)")
     ap.add_argument("--hand", default=None, help="a corrected hand to try (JSON for set_hand, e.g. {\"knuckles\": 20}); "
                     "never written")
     ap.add_argument("--tilt", default=None, help="flexion tilt to lay: 'derive' (tilt_for on this hand) or JSON "
                     "{finger: deg}; default keyed.FLEX_TILT")
     ap.add_argument("--relaxed", action="store_true", help="the relaxed hand's checks (relaxed()) and stop")
     a = ap.parse_args(argv)
+    if a.slide is not None:
+        assert not a.write, "--slide models a Spec.Grip change: set it in Arms.cs and PIECES first"
+        PIECES[a.piece]["slide"] = a.slide
     if a.hand:
         assert not a.write, "--hand models a hand that isn't built: nothing is written for it"
         set_hand(json.loads(a.hand))
@@ -861,12 +996,12 @@ def main(argv):
     y0s = [float(v) for v in a.seat.split(",")] if a.seat else None
     wrap, A, prof = fit(a.piece, y0s)
     A0, _ = read_seat(a.piece)
-    print(f'WRAP["{a.piece}"] = {json.dumps(wrap)}')
+    print(f'WRAP["{wrap_key(a.piece)}"] = {json.dumps(wrap)}')
     moved = np.linalg.norm(A - A0) > 5e-4   # 0.5 mm: the seat search's own tolerance below that
     print(f"seat {PIECES[a.piece]['at']} = {np.round(A, 4).tolist()}" + (" (moved)" if moved else " (kept)"))
     fails = table(a.piece, wrap, A, prof)
     if a.write:
-        write_wrap(a.piece, wrap)
+        write_wrap(wrap_key(a.piece), wrap)
         if moved:
             write_seat(a.piece, A)
         print("written: rebuild the clips (tools/anim/build.py sword idle run sprint stop show bull)" + (", re-dump arms_local" if moved else ""))

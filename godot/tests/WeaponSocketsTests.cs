@@ -136,7 +136,9 @@ public class WeaponSocketsTests
     {
         Assert.Equal((WeaponSockets.FistAtR, WeaponSockets.FistDirR), WeaponSockets.PocketR(WeaponKind.Staff));
         Assert.NotNull(WeaponSockets.PocketR(WeaponKind.Blade1H));
-        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Dagger, WeaponKind.Crossbow, WeaponKind.Shield, WeaponKind.Wand })
+        Assert.Equal((WeaponSockets.DaggerAtR, WeaponSockets.DaggerDirR), WeaponSockets.PocketR(WeaponKind.Dagger));
+        // The axe's line is measured but not live (its haft is too thick for her fist to close on: see AxeAtR).
+        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Crossbow, WeaponKind.Shield, WeaponKind.Wand })
             Assert.Null(WeaponSockets.PocketR(k));
     }
 
