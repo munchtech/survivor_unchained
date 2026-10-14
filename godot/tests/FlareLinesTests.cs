@@ -175,7 +175,10 @@ public class FlareLinesTests
             return boss.MaxHp - boss.Hp;
         }
         double plain = Took(), heart = Took("arrow.heart");
-        Assert.True(heart > plain * 1.5, $"{heart:0} against {plain:0}");
+        // Its three splits come back into the boss, each "heart" of the arrow's measure.
+        var oa = Lamps.Flare("one_arrow")!;
+        double more = 3 * oa.Arg("heart", 0.15) / oa.Arg("arrow", 1);
+        Assert.True(heart > plain * (1 + 0.8 * more), $"{heart:0} against {plain:0}");
     }
 
     [Fact]
