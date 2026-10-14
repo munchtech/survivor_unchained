@@ -1583,4 +1583,7 @@ def export(objs, path, **kw):
 
 _game_parts = [o for o in parts if not (o.name == "HeroineBrows" and os.path.exists(FACE_PAINT))]
 export([her, head] + _game_parts, os.path.join(ART, "heroine.glb"), export_format="GLB")
+# (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
+import heroine_seam  # noqa: E402
+heroine_seam.seam(os.path.join(ART, "heroine.glb"))
 print("WRITTEN", OUT_BLEND, "and", ART)

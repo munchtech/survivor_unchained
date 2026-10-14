@@ -27,6 +27,8 @@ extends SceneTree
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
 #   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
 #                                          away (blue); her own skin drawn from both sides; her UVs as colour
+#   HAIRCLEAR=1 [HAIRMESH=folder]          debug: per photographed frame, how near her hair chain comes to her posed
+#                                          body and outfit (signed cm, negative = inside) and its jump in her neck frame
 var clip = ""
 var out = ""
 var her: Node3D
@@ -542,12 +544,14 @@ func _process(delta):
 	if gestures != null and k == int(float(env("GESTUREAT", "0")) * 30):
 		gestures.Play(ap.get_animation(env("GESTURE", "")), 1.0, env("HOLD", "") != "")
 	if k % step == 0:
-		# DEBUG=bone: print where that bone is and which way its axes point.
+		# DEBUG=bone[,bone...]: print where each bone is and which way its axes point.
 		if env("DEBUG", "") != "":
 			var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
-			var gp = sk.get_bone_global_pose(sk.find_bone(env("DEBUG", "")))
-			print("DBG %d t=%.3f pos=%s y=%s z=%s" % [k, ap.current_animation_position, gp.origin, gp.basis.y, gp.basis.z])
+			for bn in env("DEBUG", "").split(","):
+				var gp = sk.get_bone_global_pose(sk.find_bone(bn))
+				print("DBG %d t=%.3f %s pos=%s x=%s y=%s z=%s" % [k, ap.current_animation_position, bn, gp.origin, gp.basis.x, gp.basis.y, gp.basis.z])
 		var img = vp.get_texture().get_image()
+		if env("HAIRCLEAR", "") != "": hair_clear(k)
 		shots.append(img)
 		if env("FULL", "") != "": img.save_png(out.replace(".png", "_%02d.png" % shots.size()))
 	if shots.size() >= nframes:
@@ -565,3 +569,98 @@ func sheet():
 		img.blit_rect(shots[i], Rect2i(0, 0, w, h), Vector2i((i % cols) * w, (i / cols) * h))
 	img.save_png(out)
 	print("SHEET %s %d frames" % [out, shots.size()])
+
+# HAIRCLEAR=1: how near each hair chain comes to her posed skin and outfit, and
+# how far its points jump between photographed frames in her neck's frame.
+var hc_prev = {}
+var hc_named = false
+func hair_clear(k):
+	var skel: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+	var nb = skel.find_bone("neck_01")
+	var N: Transform3D = skel.global_transform * skel.get_bone_global_pose(nb)
+	var skip = ["hair", "lash", "brow", "eye", "teeth", "tongue"]
+	var meshes = []
+	for m in her.find_children("*", "MeshInstance3D", true, false):
+		if m.skin == null and m.get_node_or_null(m.skeleton) == null: continue
+		var low = String(m.name).to_lower()
+		var bad = false
+		for s in skip:
+			if low.contains(s): bad = true
+		if not bad and m.mesh != null: meshes.append(m)
+	if not hc_named:
+		hc_named = true
+		var names = []
+		for m in meshes: names.append(String(m.name))
+		print("HAIRCLEAR meshes: ", ", ".join(names))
+	for hn in her.find_children("HairSway", "", true, false):
+		var cw = hn.get("ChainWorld")
+		if cw == null or cw.size() != 8: continue
+		var p0: Vector3 = cw[0]
+		var vs = []   # [pos, normal, mesh name]
+		for m in meshes:
+			var bm: ArrayMesh = m.bake_mesh_from_current_skeleton_pose()
+			if bm == null: continue
+			var gt: Transform3D = m.global_transform
+			var nb3 = gt.basis.inverse().transposed()
+			for si in bm.get_surface_count():
+				var arr = bm.surface_get_arrays(si)
+				var pv = arr[Mesh.ARRAY_VERTEX]
+				var nv = arr[Mesh.ARRAY_NORMAL]
+				if pv == null or nv == null: continue
+				for i in pv.size():
+					var g = gt * pv[i]
+					if g.distance_to(p0) <= 0.45:
+						vs.append([g, (nb3 * nv[i]).normalized(), String(m.name)])
+		# HAIRMESH=folder: these posed vertices (position, normal, mesh) saved per
+		# frame, so the clearance can be replayed offline against a changed chain.
+		if env("HAIRMESH", "") != "":
+			var f = FileAccess.open("%s/k%02d.bin" % [env("HAIRMESH", ""), k], FileAccess.WRITE)
+			var names = []
+			for m in meshes: names.append(String(m.name))
+			for v in vs:
+				for c in [v[0].x, v[0].y, v[0].z, v[1].x, v[1].y, v[1].z, float(names.find(v[2]))]: f.store_float(c)
+			f.close()
+			if k == 0: print("HAIRMESH names: ", ",".join(names))
+		var worst = INF
+		var wseg = 0
+		var wmesh = ""
+		var wdist = 0.0
+		var segmin = []
+		for i in range(1, 8):
+			var smin = INF
+			for j in 5:
+				var s: Vector3 = cw[i - 1].lerp(cw[i], j / 4.0)
+				var bd = INF
+				var bv = null
+				for v in vs:
+					var d = s.distance_squared_to(v[0])
+					if d < bd:
+						bd = d
+						bv = v
+				if bv == null: continue
+				var sg = (s - bv[0]).dot(bv[1]) * 100.0
+				smin = min(smin, sg)
+				if sg < worst:
+					worst = sg
+					wseg = i
+					wmesh = bv[2]
+					wdist = sqrt(bd) * 100.0
+			segmin.append(smin)
+		var sm = ""
+		for v in segmin: sm += " %.1f" % v
+		print("HAIRCLEAR k=%d worst seg=%d mesh=%s signed=%.1f dist=%.1f" % [k, wseg, wmesh, worst, wdist])
+		print("HAIRCLEAR k=%d segs%s" % [k, sm])
+		var inv = N.affine_inverse()
+		var loc = []
+		for i in 8: loc.append(inv * Vector3(cw[i]))
+		var key = hn.get_instance_id()
+		if hc_prev.has(key):
+			var mx = 0.0
+			var mp = 1
+			for i in range(1, 8):
+				var d = loc[i].distance_to(hc_prev[key][i]) * 100.0
+				if d > mx:
+					mx = d
+					mp = i
+			print("HAIRMOVE k=%d max=%.1f point=%d" % [k, mx, mp])
+		hc_prev[key] = loc

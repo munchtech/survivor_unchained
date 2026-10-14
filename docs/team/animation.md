@@ -1,6 +1,6 @@
 # Animation: status
 
-Lead 10 (12 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
+Lead 22 (13 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
 
 ## The holding arm, measured (13 October, lead 19)
 
@@ -23,8 +23,13 @@ armscheck left the whole holding arm out (its shoulder blend, upper arm and paul
 
 Combat clips without a weapon in their meta also carry the kit and fail at the arm (hit 55 / 74, dash 51 / 66, get_up 55 / 71, vault 56 / 72, warcry 43 / 58, leap 42 / 42), most of them failing on the body already. **Stalker:** the crossbow's stock is 39 mm into her right forearm (lowerarm_twist_01_r) on every crossbow clip (idle_stalker 154/154 frames). That's one mount fix (after the Warden set). The walks (wade, walk_tired, walk_uphill) are at 7.3 / 7.3 if armed.
 
-## In work (13 October, lead 21 handed off; handoff section 0)
-flare_burns_twice round 7 re-judged PASS WITH FIXES (blocking: the hat brim hides her at the game camera f17-25); round 8 with a worker. Staff asset: the rod sat 31 mm off the fist's line and the coil went through her fists; a leather-bound grip, an anchor_grip (rod in the fist, 0.02 mm) and a cleared grip zone are built, judge 1 failed the execution, round 2 in work, not installed. bull_rush round 6 (shield arm, home = the new guard, blends) and the sword trio's wrist spin (a solver) in work. None packed. System note: her `grip` fist is closed to a 4-7 mm channel, so every weapon's grip sits inside her fingers (a per-diameter finger wrap later).
+## In work (13 October, lead 22 wound down with the coordinator; handoff section 0)
+- **Staff (WE-08):** the anchor now sets the shaft (3d2afab4, `WeaponSockets.ShaftAxes`, tested), but the fist's axis is 6.6 deg off hand-Y, so the anchor must be laid on the fist's axis (next). The leather wrap goes middle-poly: modelled strap steps, grain in the normal map, 3-6k vertices (the high wrap was 56k; a 429-vertex bake lost the look). Not installed.
+- **flare_burns_twice** round 8 (79695cbd, unjudged): the brim's bow fixed in numbers (chest at contact 52 -> 33 deg). The hat gaps (1-8 mm) wait for the new staff. The forearm spins (37 and 41 deg a frame) need explaining before its judge.
+- **bull_rush** round 6 (4d6159f0): the shield is clear of the holding arm, rim to pauldron >= 31 mm. A judge was running at wind-down. Its blends into sword_fore need re-measuring on a fresh sword build (the library's sword JSONs are stale).
+- **Sword trio wrist spin:** two solvers ran out. The likely cause is a system one: keyed.py interpolates blade and knuckles per component, not as one hand frame, so a 90 deg roll bunches into 1-2 frames. Next: a hand-frame slerp.
+- **Crossbow:** the cocked wrist in idle and run lays the stock's rear on the forearm (39 mm); probes in scratch `xb`.
+- **System note, for later:** her `grip` fist closes to a 4-7 mm channel, so every weapon's grip sits inside her fingers. The AAA answer is a grip fist whose fingers wrap to each grip's diameter (from the anchor and the bounds), one system for every weapon.
 
 ## Run and sprint, packed (13 October, lead 20)
 run_warden, sprint_warden, idle_warden, idle_warden_break and stop_warden_l/r packed. The shield hand sits 2.5 cm (run) and 2 cm (sprint) back, so the left elbow stays bent: inner angle run 118-124 deg, sprint 115-119 (a judge's bar: 125/120). Shield and sword 0.0 into skin and outfit; left hand 65.5/26.6 mm off her; left arm 16 mm or more off her outfit; the run-to-sprint crossfade (the game's synced Blend2) at 25/50/75% is clean (elbow at most 123 deg, hand at least 37 mm off her, rim to pauldron at least 11 mm). Judges passed it from the front, the sword side, the game camera and behind. **New gate for every later blend and the trailing-foot gait fix: shield rim to pauldron at least 8 mm** (now 9.0 in the sprint). Polish noted: her left index finger points straight down at the shield's rim while the others half-curl (hidden at the game camera). Scripts: `Z\s20\owed.py` (elbow and crossfade), `armbody.py`, `back.py`.

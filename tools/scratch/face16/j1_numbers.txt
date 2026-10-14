@@ -1,0 +1,37 @@
+State: worktree-agent-a2d632df7c7f21ec0 @ 0aa3c60a. Integration merged (rendering's grade toe 1.0 at the Look; portrait rig: fill 1.0/0.95/0.9, bounce 0.18, rim specular 0.25). Then: thin_map (light-through-skin kept to ears + nose wings; heroine_thin.py), irises recalibrated at the Look. Shots: t1 = after merge, before thin_map; t2/t3/t4 = after.
+
+UNDER-JAW SHADE (lmxy spots, Oklab; jawR = 0.07 face-heights below landmark 136; cheek = landmark 205). Before = f16c (old rig), after = t1 (new rig; thin_map doesn't touch it).
+face      jawR before        jawR after         cheek after        portrait jawR      portrait cheek
+own       L.48 C.038 h47     L.53 C.059 h50     L.75 C.084 h55     -                  -
+highborn  L.45 C.034 h46     L.52 C.057 h49     L.76 C.086 h55     L.50 C.027 h61     L.74 C.062 h49 (_23: jaw C.049 cheek C.064)
+doe       L.41 C.050 h47     L.48 C.072 h49     L.73 C.097 h53     L.37 C.053 h51     L.73 C.073 h52
+sunborn   L.27 C.049 h45     L.36 C.075 h51     L.61 C.105 h50     L.27 C.039 h50     L.60 C.091 h48
+vixen     -                  L.51 C.057 h51     L.76 C.088 h53     L.37 C.050 h51     L.75 C.063 h51
+moonlit   -                  L.54 C.060 h50     L.78 C.080 h55     L.44 C.059 h53     L.79 C.056 h53
+saffron   -                  L.45 C.080 h51     L.71 C.115 h53     L.37 C.056 h50     L.72 C.092 h53
+hardwon   -                  L.45 C.068 h50     L.71 C.095 h53     L.35 C.049 h48     L.71 C.071 h49
+fey       -                  L.56 C.061 h52     L.75 C.083 h55     L.38 C.046 h52     L.76 C.061 h51
+Reading: the grey is gone (jaw hue 49-52 = portraits' 48-53; jaw/cheek chroma 0.65-0.74, portraits 0.43-0.79). BUT the new warm fill pushed every cheek's chroma 25-43% over its portrait (before the rig: Highborn +14%), the neck likewise (Highborn neck C.079 vs portrait .044-.047). The jaw shade is also lighter than the portraits' (L .45-.56 vs .35-.44).
+
+SALMON JAW EDGE (profile t80, column x=920 down through the jaw edge; edge vs lit neck just above):
+own       t1: edge C.083 h42 vs lit C.076 h52 (1.09x, hue -10)   t2 (thin_map): edge C.067 h46 vs lit C.067 h55 (1.00x, hue -9)
+highborn  t1: edge C.083 h42 vs lit C.073 h54 (1.14x, -12)       t2: edge C.069 h47 vs lit C.064 h57 (1.08x, -10)
+sunborn   t1: edge C.092 h42 vs lit C.090 h48 (1.02x, -6)        t2: edge C.084 h47 vs lit C.085 h50 (0.99x, -3)
+(n2's acceptance: edge chroma <= 1.1x lit. The remaining hue drop at the edge is the terminator's per-channel softness.)
+
+COLLAR SHEEN (box x880-1240 y620-940; brightest 3% vs median skin): acceptance hue within +-10 of skin, dL <= +0.08
+                back_spec 1.0          0.3 (shipped)         0.15
+highborn        dh -12 dL+.04          dh +3 dL+.03          dh +4 dL+.03
+doe             dh -16 dL+.05          dh  0 dL+.04          dh +2 dL+.04
+sunborn         dh -32 dL+.11          dh -4 dL+.06          dh +2 dL+.06
+(old rig + 0.3, f16c: highborn -6, doe -9, sunborn -19 dL+.09)
+
+IRISES at the Look (ring sRGB, both eyes agree within 1): target = portrait
+doe chestnut  t1 (patch only) [61 23 11]  t3 [62 32 19]  target [61 32 20]
+sunborn sloe  t1 [21 12 11]               t3 [29 21 16]  target [30 22 19]
+moonlit umber t1 [49 23 16]               t3 [50 31 23]  target [50 31 25]
+saffron peat  t1 [46 23 17]               t3 [47 28 22]  target [46 29 24]
+dE t3: peat-chestnut 0.038 (aim >= 0.03), umber-peat 0.013, umber-chestnut 0.026.
+
+EARS: her ear paint is greyer than her cheek and neck (median paint, own head: ear .651/.565/.529, cheek .704/.573/.514, neck .639/.539/.482) and the face tone (features blue) is 0 on the ears. Not yet changed.
+NECK LENGTH: --neck-cm moves her head bone along her neck (her neck bone is 8.3 cm). -1.5 cm is 18%, -3 cm 36%. The slider "neck_length" already spans +-1.5 cm. No helmet or gorget model exists yet (only item icons).

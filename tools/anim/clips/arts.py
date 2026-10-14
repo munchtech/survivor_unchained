@@ -185,8 +185,11 @@ def _shield_rush(ph, k, hand):
             "thumb": (-0.3, 0.6, 0.75)}
 
 
-RUSH_HAND = np.array((0.0, 0.03, 0.34))
-RUSH_POLE = (2.0, -2.3, 0.2)
+# The shield out before her (chest frame, from the shoulder): chosen from a grid of real builds
+# (round 6), the hand x -0.07..0, y -0.08..0.03, z 0.34..0.42 and two elbow poles. This one keeps
+# it 0 mm off her skin, outfit and holding arm for f0-11, the rim 30+ mm off the pauldron.
+RUSH_HAND = np.array((0.0, 0.03, 0.42))
+RUSH_POLE = (1.0, -0.3, -0.3)
 CHARGE = replace(WARDEN, frames=12, speed=4.4, duty=0.3, drop=0.13, bob=0.06, lean=50, spine_lean=8, hip_yaw=8,
                  hip_roll=3, chest_yaw=4, reach=0.44, kick=0.46, knee=0.40, shoulders=(8, 8),
                  arms={"l": _shield_rush, "r": _sword_cocked})
@@ -203,14 +206,27 @@ SWORD_BACK_BLADE = (-0.2, 0.15, -0.97)       # f12: the blade drawn back behind 
 SWORD_WAY = ((12, SWORD_BACK, SWORD_BACK_POLE),
              (16, (-0.25, -0.15, 0.08), (-0.25, -1.0, -0.1)),
              (22, None, None))                 # (None: her guard's)
-HOME_LIFT = 0.025                              # f22: the shield a little up off her breastplate as it settles
+SHOVE_AT = np.array((-0.10, 0.02, 0.44))                    # f12: the shield's place on the plant (chest frame, from the shoulder)
+SHOVE_PUNCH = np.array((0.02, 0.02, 0.03))                # f14: the punch's reach beyond it
+SHOVE_POLE = (1.0, -0.4, -0.4)
+REBOUND_HAND = (-0.10, -0.10, 0.42)                            # f16: the shield's place on its way home (None: between the shove and the guard)
+REBOUND_POLE = (1.0, -0.5, -0.4)
+HOME_LIFT = 0.0                                # f22: the shield on her guard (a lift off it brought the rim to her pauldron)
 HEAD_FROM, HEAD_SETTLE = 11, 24
 
 
 def _shield_home(lift=0.0):
-    """The rebound's shield: up before her, out and forward of guard_l."""
-    return {"arc": arc_of((-0.01, -0.22 + lift, 0.31)), "pole": (1.0, -0.4, -0.3), "frame": "chest",
+    """The rebound's shield on her guard: sword.py's guard_l (GUARD_L_AT (-0.07, -0.22, 0.34), the pole
+    GUARD_L_POLE, solved 0/0 against skin, outfit and her holding arm) with the hand 2 cm further left
+    and 3 cm further out, so the sword hand's guard keeps 200 mm off the rim (at guard_l's own place
+    it came to 178). `lift` raises it; the shield's face is set by the thumb's plane."""
+    from clips.sword import GUARD_L_POLE
+    x, y, z = HOME_AT
+    return {"arc": arc_of((x, y + lift, z)), "pole": GUARD_L_POLE, "frame": "chest",
             "thumb": (-0.3, 0.75, 0.6)}
+
+
+HOME_AT = (-0.05, -0.22, 0.37)
 
 
 def _head_held(start, settle, guard):
@@ -252,7 +268,7 @@ def bull_rush(rig):
     plant = {"foot_l": {"pos": PLANT_L, "rot": (12, 0, 0), "pole": (0.2, 0, 1)},
              "foot_r": {"pos": (-0.14, 0.06, -0.46), "rot": (-16, 40, 0), "toe": 40},
              "fingers_l": "fist", "fingers_r": "grip"}
-    shove_l = {"arc": arc_of((-0.10, 0.02, 0.44)), "pole": (1.0, -0.2, -0.3), "frame": "chest",
+    shove_l = {"arc": arc_of(SHOVE_AT), "pole": SHOVE_POLE, "frame": "chest",
                "blade": _n(-0.1, 0.85, 0.5), "twist": 0.3}
     sword_up = {"arc": arc_of(SWORD_BACK), "pole": SWORD_BACK_POLE, "frame": "chest",
                 "blade": _n(*SWORD_BACK_BLADE), "twist": 0.5}
@@ -287,19 +303,24 @@ def bull_rush(rig):
     keys += [
         # The lead foot slams down; the shield punches out, the body behind it.
         (12, slam, "fast"),
-        (14, body({**plant, "hips": {"pos": (0.02, -0.24, 0.13)}, "hand_l": {**shove_l, "arc": arc_of((-0.08, 0.04, 0.47))},
+        (14, body({**plant, "hips": {"pos": (0.02, -0.24, 0.13)}, "hand_l": {**shove_l, "arc": arc_of(SHOVE_AT + SHOVE_PUNCH), "pole": SHOVE_POLE},
                    "clav_l": (6, 20), "clav_r": (6, -6)},
                   hips=(-14, 24, 0), spine=(-24, 16, 0), neck=(0, -10, 0), head=(20, -18, 0)), "ease"),
+        # The trunk alone, about a fifth of the way from the shove to the guard's: the shove's
+        # "ease" held the chest still at f14 and then whipped it (10 degrees a frame).
+        (15, body({}, hips=(-12.5, 20.6, 0), spine=(-21.0, 13.3, 0), neck=(0, -8.6, 0), head=(17.6, -15.2, 0)), "auto"),
         # The rebound: back up over her feet, the back foot stepping up into
         # her guard (the lead foot stays planted), shield home.
         (16, body({"foot_l": plant["foot_l"], "foot_r": {"pos": (-0.16, 0.10, -0.30), "rot": (-20, 12, 0), "toe": 10},
-                   "hips": {"pos": (0.01, -0.20, 0.10)}, "clav_l": (4, 12), "clav_r": (4, -4)},
-                  hips=(-11, 18, 0), spine=(-19, 12, 0), neck=(0, -7, 0), head=(16, -13, 0)), "auto"),
+                   "hips": {"pos": (0.01, -0.20, 0.10)}, "clav_l": (4, 12), "clav_r": (4, -4),
+                   **({"hand_l": {"arc": arc_of(REBOUND_HAND), "pole": REBOUND_POLE, "frame": "chest", "thumb": (-0.3, 0.75, 0.6)}}
+                      if REBOUND_HAND is not None else {})},
+                  hips=(-11.0, 17.2, 0), spine=(-17.9, 10.7, 0), neck=(0, -6, 0), head=(15, -12, 0)), "auto"),
         (19, body({"foot_l": {"pos": PLANT_L, "rot": (12, 0, 0)},
                    "foot_r": {"pos": (-0.17, 0.0, -0.13), "rot": (-25, 0, 0)},
-                   "hips": {"pos": (0.0, -0.12, 0.04)}, "hand_l": _shield_home(0.04),
+                   "hips": {"pos": (0.0, -0.12, 0.04)}, "hand_l": _shield_home(-0.03),
                    "fingers_l": "fist", "fingers_r": "grip"},
-                  hips=(-6, 6, 0), spine=(-8, 2, 0), neck=(0, -2, 0), head=(8, -4, 0)), "auto"),
+                  hips=(-8.6, 6, 0), spine=(-11.6, 3, 0), neck=(0, -2, 0), head=(8, -4, 0)), "auto"),
         (22, body({**GUARD, "hips": {"pos": (0.0, -0.09, 0.03)}, "hand_l": _shield_home(HOME_LIFT)},
                   hips=(-3, 5, 0), spine=(-4, 4, 0), head=(4, -4, 0)), "auto"),
         # Her guard, the shield held a hand further out before her than the

@@ -7205,6 +7205,13 @@ if BODY_OUT:
     # (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
     import heroine_seam
     heroine_seam.seam(BODY_OUT)
+    # (and her upper lids' creases made a soft fold, never a second brow: heroine_browfold.py; the paints'
+    # partner step, heroine_browpaint.py, is done once in each paint)
+    import heroine_browfold
+    heroine_browfold.fold(BODY_OUT)
+    # (and her side teeth in the cheeks' shade: heroine_teethshade.py)
+    import heroine_teethshade
+    heroine_teethshade.shade(BODY_OUT)
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
