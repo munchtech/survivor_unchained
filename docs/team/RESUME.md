@@ -5,7 +5,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 ## 14 October, night: coordinator 1cc516bc (running; outfits, animation, face)
 - The owner picked **B1 "with style"** (OWNER_NOTES). Styled G1/G2 being built; one judged sheet goes to the owner, on the new body.
 - **The one body build** (outfits s25 from 9ed60792): hand pivots on both hands' own skin, back of hand, throat fill (face's judged fix), B1. **F1's builds had NO correctives** (stale game-skeleton dump: no panel_front, stale hand and forearm bones; integration's glb has elbow_point, F1's don't): the final build needs a fresh skeleton dump and gates on the correctives.
-- **The Reaver thigh is NOT in the body build.** Knee drive can't hide it (animation 29), and a groin crease can't either: the true gap is 48-84 mm (outfits `N\hip
+- **The Reaver thigh is NOT in the body build.** Knee drive can't hide it (animation 29), and a groin crease can't either: the true gap is 48-84 mm (outfits scratch 1cc516bc `outfits\hip
 eed.py`). The fix is garment-side, Reaver only: the belt front and buckle ride up like panel_front, or the belt sits higher. It comes after the body build and the glove sheet. Knee drive stays.
 - Animation 29 handed off @ c0e50030 (section 0a; idle_arcanist hip wrist 31-39 deg WIP, hand-on-thigh vs hand-on-hip for the judge). Successor 30 starts when the body build is final.
 
