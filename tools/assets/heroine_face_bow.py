@@ -7,9 +7,13 @@ authored (her own face's border fold: points on the fold's underside face back),
 was made against them while its shape opens the fold, so on the face a few points that now face the front keep a
 normal facing back or down (Doe's 7826 and 9146: 136 deg off their own surface), and their neighbours spike 60-70
 deg against their rings (own: 41-45). This step leaves every position alone: in each of the five face keys, on the
-bow's window, the points seen from in front whose normal is far off the face's own surface (DEV) or off its ring
-(LAP) get a new normal, filled smoothly from their seen neighbours (started from the face's surface normal), and
-the key's normal delta there is rewritten to give it. Nothing else in the glb changes (other keys, faces, the base).
+bow's window, the points seen from in front (at rest or in smile .8) whose normal is far off the face's own surface
+(DEV) or off its ring (LAP) get a new unit normal at rest, filled smoothly from their seen neighbours (started from
+the face's surface normal; the set grows by any neighbour the fill leaves spiking), and the key's normal delta there
+is rewritten to give it. Nothing else in the glb changes (other keys, faces, the base, every position).
+Measured (lap.py's spike, deg, at 7752 9202 7876 9114): 53-66 to 0 at rest, 47-64 to 4-6 in smile .8; its window's
+max 10-14 on the five. Left: in the smile, 7983 and 8988 still dip (shade 0.4-0.5 under their ring; was 1.4-1.6),
+set by the smile key's own normals there (see POSES): a smile-key or per-face corrective fix, not a face-key one.
 
     python tools/assets/heroine_face_bow.py IN.glb [OUT.glb]
 
