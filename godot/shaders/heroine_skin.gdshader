@@ -6,7 +6,10 @@
 // pores, never the even gloss of plastic; a soft rim at her edges, as the
 // fine down on skin catches the light; light through her where she is thin.
 shader_type spatial;
-render_mode sss_mode_skin;
+render_mode sss_mode_skin, cull_disabled;
+// (both sides drawn for her head alone (mouth_in): its inside, seen through her open mouth, is the dark of her throat;
+// culled, her hair showed through it behind her teeth (the smile pass, a2). Every other part's back faces are
+// discarded, as culled before.)
 
 uniform sampler2D paint : source_color, filter_linear_mipmap_anisotropic;
 uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
@@ -286,7 +289,7 @@ void vertex() {
 }
 
 void fragment() {
-	if (tuck_gone > 0.5) {
+	if (tuck_gone > 0.5 || (!FRONT_FACING && mouth_in < 0.5)) {
 		discard;
 	}
 	vec2 tx = UV * vec2(textureSize(paint, 0));
@@ -389,9 +392,9 @@ void fragment() {
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
 	ALBEDO *= ambient_tint / body_back;
-	mouth_f = mouth_c;
-	if (mouth_c > 0.0) {
-		float mc = smoothstep(0.0, 0.35, mouth_c), mo = smoothstep(0.1, 1.0, mouth_c);
+	mouth_f = FRONT_FACING ? mouth_c : 1.0;
+	if (mouth_f > 0.0) {
+		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
 		ALBEDO = mix(ALBEDO, mouth_colour, mc);
 		BACKLIGHT *= 1.0 - mc;
 		SPECULAR *= 1.0 - mo;

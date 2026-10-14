@@ -508,6 +508,9 @@ public static class People
                 // (its own shade inside her mouth, lit at its tip and dark at its root: heroine_mouth.py's vertex colour;
                 // white where a mesh has none)
                 m.VertexColorUseAsAlbedo = true;
+                // (its paint a bright salmon pink, read as a plastic slab inside her mouth at the Look (a2): a muted,
+                // darker rose, as a tongue in the mouth's shade)
+                m.AlbedoColor = new Color(0.66f, 0.5f, 0.5f);
                 return m;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);

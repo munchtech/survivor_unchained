@@ -48,7 +48,13 @@ UP_Y1, UP_Y2 = 0.008, 0.016    # (m above her lips' line: raised fully to here, 
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)
 CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
 #                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
-TONGUE_ROOT, TONGUE_LEN = 0.3, 0.05   # (her tongue's shade at its root, so far back from its tip)
+TONGUE_ROOT, TONGUE_LEN = 0.12, 0.035   # (her tongue's shade at its root, so far back from its tip: at 0.3 over 50 mm its
+#                                      back, unshadowed, read as a lit pink slab behind her teeth (a2))
+# (at mouth_open 1, her tongue dropped and drawn back so far beyond her lower teeth's move, fully at its tip,
+# at its root: following her teeth alone it filled 14 mm of her mouth's opening at .6 (a2), a slab over her lower
+# teeth with no dark between it and her upper teeth; 0.6 of it at its root)
+TONGUE_DROP_MM = float(os.environ.get("MOUTH_TONGUE_DROP_MM", "7"))
+TONGUE_BACK_MM = float(os.environ.get("MOUTH_TONGUE_BACK_MM", "3"))
 
 
 def _prim(js, mat):
@@ -135,6 +141,8 @@ def seat(path, out=None):
     w /= w.sum(1, keepdims=True)
     GD_old = rd(gp["targets"][gn.index("mouth_open")]["POSITION"])
     GD = (w[..., None] * TD[jaw][j]).sum(1)
+    tip = 0.6 + 0.4 * _s01(1 - (GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
+    GD = GD + np.c_[np.zeros(len(GV)), -TONGUE_DROP_MM / 1000 * tip, -TONGUE_BACK_MM / 1000 * tip]
     # (her upper teeth are her skull's: mouth_open no longer moves them)
     TD2 = TD * _s01((n / n.max() - 0.3) / (JAW_SHARE - 0.3))[:, None]
     SO, line, raised = smile_open(HV, HD)
