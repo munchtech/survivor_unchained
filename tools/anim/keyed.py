@@ -986,9 +986,11 @@ WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 
         # palm on it (0.3). "spreads" draw the fingers together (her rest hand is fanned: knuckles 22-23 mm apart,
         # fingers 14-15 mm across): outer bones 1.4-1.5 mm apart, the little finger's 4.6. Not yet the pass: the
         # forefinger's middle bone 8 mm off, the ring's 3.7, the little finger's 6.3; the fingers' ends 2-8 mm past the
-        # grip's far side (her finger bones run 11-12 mm above their pads' skin, so a finger lying on the grip has its
-        # end 20-27 mm out from the line, and the pass wants it wrapped some 236 deg round; at 60 deg end joints the
-        # ends come 154 (forefinger), 219 (middle), 198 (ring), 158 deg (little) round, 180 the far side).
+        # grip's far side. Why (sword5, 14 October): her knuckle pivots sit at the finger webs, so her first finger
+        # bones are 21-27 mm long against about 41-56 in a real hand and the wrap only starts at the middle joint; the
+        # ends come 146-211 deg round where a fist needs about 225-235 (fistfit WRAP_MIN 180). The bones run at about
+        # mid-thickness (pads 6.5-9 mm under them), not high in the finger as round 4 thought. Not passable on this
+        # hand: waits on the body build's knuckle and end-joint move (fistfit --hand models it).
         "sword": {"bends": {"index": (-10.1, 75.8, 58.7), "middle": (45.1, 48.9, 60.7), "ring": (56.4, 34.7, 60.9), "pinky": (52.5, 39.7, 60.5), "thumb": (6.7, -6.8, 9.7)}, "spreads": {"index": -24.3, "middle": -6.6, "ring": 11.2, "pinky": 30.8},
                   "oppose": 1.00, "thumb_roll": -25.4}}
 
