@@ -10,7 +10,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - Team tools: `tools/freshness.py` gate in `turn.py take` (checks the caller's checkout or `--root`), `tools/half.py`; README rules: numeric-pass solvers on su-lead-high, half-size working pictures, scope checks to what changed. RESUME trimmed (old states in RESUME_ARCHIVE.md).
 
 ### Restart order for the next coordinator
-1. **Animation** (handed off @ ce9aedbc, worktree agent-af8dbda3195e438e4, docs/handoff/animation.md section 0). Sword grip fist NOT merge-ready: judge j1 failed it at the contact frames (scratchpad 34daaf5d sworderdict_j1.txt): fresh su-lead-high solver, measured AT the contact frames. Brim hand (idle_arcanist_break tuck) bc8a9bbe WIP, waits on outfits' glove choice. Flare r9 WIP; left fist off the shaft at f16-21 (a solver's report may be in the handoff). Reaver panel bone after.
+1. **Animation** (successor started 14 Oct by 34daaf5d on the owner's one-time 385k coordinator budget; handed off @ ce9aedbc, worktree agent-af8dbda3195e438e4, docs/handoff/animation.md section 0). Sword grip fist NOT merge-ready: judge j1 failed it at the contact frames (scratchpad 34daaf5d sworderdict_j1.txt): fresh su-lead-high solver, measured AT the contact frames. Brim hand (idle_arcanist_break tuck) bc8a9bbe WIP, waits on outfits' glove choice. Flare r9 WIP; left fist off the shaft at f16-21 (a solver's report may be in the handoff). Reaver panel bone after.
 2. Outfits, face, classes, Flare VFX: see their handoffs (filled in at wind-down).
 
 ## 14 October, early: coordinator 1be2d2a9 wound down (three leads at 399k budgets, the owner's one-session trial). Restart here
