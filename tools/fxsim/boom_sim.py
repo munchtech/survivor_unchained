@@ -63,13 +63,14 @@ TAKES = {
     # fire's light is its own heat's colour, the soot near-black and opaque, the fire seen through it reddened.
     "burns_boom4": dict(
         dom=(13.0, 13.0, 13.0), tscale=4.0, steps_max=4, vort=0.45, flame_vort=1.5, beta=1.5, alpha=0.3,
-        burn=0.17, flame_smoke=3.0, dissolve=60, noise=0, noise_k=1.0,
+        burn=0.05, flame_smoke=4.0, dissolve=60, noise=0, noise_k=1.0, sub=0,
         fuel=2.0, temp=3.0, smoke=0.12, vfac=0.0, out=0.0, vol=1.0, surf=0.15,
         ball=True,
-        ball_keys=((1, 0.9, 0.65), (2, 1.5, 1.45), (3, 2.0, 2.05), (4, 2.4, 2.35)), core_on=(1, 4), core_up=0.0,
-        core_tex=(0.28, 1.8, 1.15), lump=0.30, lump_s=0.55,
-        shell_keys=((1, 0.9, 0.7), (2, 1.6, 2.1), (3, 2.2, 3.2), (4, 2.6, 3.9), (5, 2.9, 4.3)), shell_on=(2, 5),
-        shell_smoke=0.14, shell_temp=1.8, shell_tex=(0.22, 2.2, 0.95), shell_lump=0.35, shell_up=0.0,
+        ball_keys=((1, 1.3, 0.65), (2, 1.3, 1.5), (3, 1.3, 2.1), (4, 1.3, 2.4)), core_on=(1, 4), core_up=0.0,
+        core_vd=((1, 1.0), (2, 0.75), (3, 0.5), (4, 0.38)),
+        core_tex=(0.055, 1.6, 1.1), lump=0.30, lump_s=0.55,
+        shell_keys=((1, 1.6, 0.7), (2, 1.6, 2.4), (3, 1.6, 3.5), (4, 1.6, 4.2)), shell_on=(2, 4),
+        shell_smoke=0.09, shell_temp=2.0, shell_tex=(0.09, 2.5, 1.0), shell_lump=0.30, shell_up=0.0,
         stem=dict(r=0.32, z=0.35, on=(1, 5), fuel=1.0, temp=2.0, smoke=0.6, up=2.0),
         turb=((1, 3.0), (8, 3.0), (20, 1.5), (36, 0.8)), turb_size=1.2, turb_z=(2.5, 8.0),
         src=True,
@@ -91,7 +92,7 @@ TAKES = {
 def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     o = dict(out=a[0], take="burns_boom", res=160, frames=48, px=512, pitch=66.0, samples=48,
-             bake_only=False, render_only=False, set="", only="", fmt="exr", vbounce=1, step=1.0, dry=False)
+             bake_only=False, render_only=False, set="", only="", fmt="exr", vbounce=1, step=1.0, dry=False, cache="")
     i = 1
     while i < len(a):
         k = a[i].lstrip("-").replace("-", "_")
@@ -425,7 +426,7 @@ def main():
         d.strength = k; d.mid_level = 0.5
 
     def charge(name, obj, on, keys=(), fuel=1.0, temp=3.0, smoke=0.5, vcoord=None, vfac=0.0, normal=0.0,
-               fuel_keys=(), kind="BOTH", tex=None):
+               fuel_keys=(), kind="BOTH", tex=None, sub=8, vd_keys=()):
         """A solid flow (it fills its volume, not a shell) of fuel, heat and smoke, on for frames on[0]..on[1];
         keys: (frame, location, scale), linear, so a punch starts at full speed. tex (scale, contrast, brightness):
         a clouds texture over its emission (fuel and smoke, not heat), fixed to the object, so it burns unevenly."""
@@ -439,7 +440,7 @@ def main():
             tx = bpy.data.textures.new(name + "_tex", "CLOUDS")
             tx.noise_scale, tx.contrast, tx.intensity = tex; tx.noise_depth = 3
             fs.use_texture = True; fs.noise_texture = tx; fs.texture_map_type = "AUTO"; fs.texture_size = 1.0
-        fs.surface_distance = t.get("surf", 0.1); fs.volume_density = t.get("vol", 1.0); fs.subframes = 8
+        fs.surface_distance = t.get("surf", 0.1); fs.volume_density = t.get("vol", 1.0); fs.subframes = sub
         fs.fuel_amount = fuel; fs.temperature = temp; fs.density = smoke
         fs.smoke_color = (0.06, 0.05, 0.045)
         fs.use_initial_velocity = True
@@ -449,6 +450,8 @@ def main():
         a, b = on
         for fr, v in ((1, a <= 1), (a, True), (b, True), (b + 1, False)):
             fs.use_inflow = v; fs.keyframe_insert("use_inflow", frame=fr)
+        for fr, v in vd_keys:
+            fs.volume_density = v; fs.keyframe_insert("volume_density", frame=fr)
         for fr, v in fuel_keys:
             fs.fuel_amount = v; fs.keyframe_insert("fuel_amount", frame=fr)
         for fr, loc, sc_ in keys:
@@ -510,7 +513,8 @@ def main():
         c = bpy.context.object
         lumpy(c, t["lump"])
         charge("core", c, t["core_on"], [(fr, (0, 0, z), (r, r, r)) for fr, z, r in t["ball_keys"]],
-               t["fuel"], t["temp"], t["smoke"], vcoord=(0.0, 0.0, t.get("core_up", 0.0)), tex=t.get("core_tex"))
+               t["fuel"], t["temp"], t["smoke"], vcoord=(0.0, 0.0, t.get("core_up", 0.0)), tex=t.get("core_tex"),
+               sub=t.get("sub", 8), vd_keys=t.get("core_vd", ()))
         # The shell: soot thrown round it a frame later, torn (a clouds texture), cooler, so the fire shows through
         # its holes and glows red through its thin parts, dark at its rims.
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=5, radius=1.0, location=(0, 0, 0.9))
@@ -518,13 +522,13 @@ def main():
         lumpy(sh, t["shell_lump"])
         charge("shell", sh, t["shell_on"], [(fr, (0, 0, z), (r, r, r)) for fr, z, r in t["shell_keys"]],
                0.0, t["shell_temp"], t["shell_smoke"], vcoord=(0.0, 0.0, t.get("shell_up", 0.0)), kind="SMOKE",
-               tex=t.get("shell_tex"))
+               tex=t.get("shell_tex"), sub=t.get("sub", 8))
         # The stem: the crater burning on, smoke and a little fuel thrown up into the ball.
         st = t["stem"]
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0, location=(0, 0, st["z"]))
         sm = bpy.context.object
         charge("stem", sm, st["on"], [(1, (0, 0, st["z"]), (st["r"],) * 3)], st["fuel"], st["temp"], st["smoke"],
-               vcoord=(0.0, 0.0, st["up"]))
+               vcoord=(0.0, 0.0, st["up"]), sub=t.get("sub", 8))
         if t.get("turb"):
             bpy.ops.object.effector_add(type="TURBULENCE", location=(0, 0, 2.0))
             tb = bpy.context.object
@@ -565,7 +569,7 @@ def main():
 
     # Last: changing any domain setting after this frees (deletes) the baked cache, so a render-only run would
     # find it gone.
-    ds.cache_directory = os.path.join(out, "cache")
+    ds.cache_directory = os.path.abspath(o["cache"]) if o["cache"] else os.path.join(out, "cache")
     if o["dry"]:
         for ob in sc.objects:
             if "Fluid" in ob.modifiers and ob.modifiers["Fluid"].fluid_type == "FLOW":
