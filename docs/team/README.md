@@ -98,7 +98,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | RUNNING 13 Oct (coordinator 1be2d2a9): Flare successor 5 ad0ecff6a1c25f696 on flare-1 (worktree agent-af0782e2e3f51bc1f @ 4a26c4f1, broken WIP). Bisect the salmon flood, then the BOOM, frost and shatters, the bar; judge; captures with sound | docs/team/skills.md |
+| Skills look and feel (VFX, under the main session) | RUNNING 13 Oct evening (coordinator 1be2d2a9): Flare successor 6 ade7c2d0af7e2dbf3 on flare-1 (worktree agent-af0782e2e3f51bc1f; 5 handed off @ 29951cd5: salmon fixed, BOOM a Mantaflow flipbook; judge 3 BOOM/ring WEAK, frost PASS, shards/Return/swings/bar FAIL; swings since fixed). Not merged | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
