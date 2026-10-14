@@ -448,7 +448,7 @@ public partial class GameHud : CanvasLayer
         labelsAlpha = k;
         ground.Modulate = new Color(1, 1, 1, k);
         ground.Visible = k > 0;
-        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.SelfModulate = new Color(1, 1, 1, k);
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.Fade = k;
     }
 
     float flareDim;
@@ -932,7 +932,7 @@ public partial class GameHud : CanvasLayer
         tipLine = null;
         if (h == null) return;
         Control? keys = h.Keys.Count > 0 ? Style.H(6, HintKeys(h.Keys).ToArray()) : null;
-        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY), SelfModulate = new Color(1, 1, 1, labelsAlpha) };
+        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY), Fade = labelsAlpha };
         play.AddChild(tipLine);
     }
 
