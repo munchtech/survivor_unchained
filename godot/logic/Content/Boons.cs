@@ -177,7 +177,7 @@ public static class Boons
             Text = "What fights for you strikes 15% harder and is 15% tougher.",
             Mods = r => [Inc(Stat.SummonDamage, 0.15 * r, "boon:kinship"), Inc(Stat.SummonHealth, 0.15 * r, "boon:kinship")] },
         new() { Id = "spirit_companion", Name = "Spirit Companion", Icon = "spiritwolf", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Summon],
-            Text = "Call a spirit wolf that hunts beside you. Each rank calls another.", Mods = _ => [],
+            Text = "Call a spirit wolf that hunts beside you; it hits champions and bosses twice as hard. Each rank calls another.", Mods = _ => [],
             DeeperText = ["A second wolf answers.", "A third wolf: a pack of your own."] },
         new() { Id = "grave_call", Name = "Grave Call", Icon = "risen", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Shadow],
             Text = "Raise a ghoul to shamble after the horde. Slow, and it hits very hard.", Mods = _ => [] },

@@ -97,6 +97,8 @@ public sealed class RunResult
     public double FlareBossTook = double.NaN;
     /// <summary>Health taken off bosses (as FlareBossTook counts it), by source: each skill's share of a boss.</summary>
     public Dictionary<string, double> BossTookBy = new();
+    /// <summary>The hardest-hit check (--hits 1): each source's largest blow on a boss, and its most in 1.2 s and in 6 s.</summary>
+    public Dictionary<string, double>? BossBestHit, BossBest1, BossBest6;
     /// <summary>A Stand's uplift on a boss: health taken off bosses while it held, and its seconds on a boss (Battle).</summary>
     public double StandTook, StandSeconds;
     /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
@@ -354,6 +356,12 @@ public static class ArenaSim
         double took = b.BossHealthBy.Values.Sum();
         if (took > 0) r.FlareBossTook = b.BossHealthBy.GetValueOrDefault("flare") / took;
         r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
+        if (Battle.TrackBossHits)
+        {
+            r.BossBestHit = new Dictionary<string, double>(b.BossBestHit);
+            r.BossBest1 = b.BossHitBuckets.Keys.ToDictionary(k => k, k => b.BossBestIn(k, 1.2));
+            r.BossBest6 = b.BossHitBuckets.Keys.ToDictionary(k => k, k => b.BossBestIn(k, 6));
+        }
         r.StandTook = b.BossTookInStand; r.StandSeconds = b.StandOnBossSeconds;
         if (bossDmg > 0) r.FlareBossShare = b.BossDamageBy.GetValueOrDefault("flare") / bossDmg;
         return r;

@@ -80,6 +80,12 @@ public sealed class WeaponDef
     /// <summary>Bosses and elites: crowd weapons hit one big target softly.</summary>
     public double? BossDamage;
     public string Description = "";
+    /// <summary>What champions and bosses take, said on its card (the owner, 13 October: "things should hit what their
+    /// tooltips say"): its BossDamage, and a summon's allies' double (Battle.HitEnemy).</summary>
+    public double BigMul => (BossDamage ?? 1) * (Tags.Contains(Tag.Summon) ? 2 : 1);
+    public string BossNote => BigMul > 1.001 ? $" It hits champions and bosses {BigMul.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} times as hard." : "";
+    /// <summary>The card's words: its description and what champions and bosses take.</summary>
+    public string Card => Description + BossNote;
     public Evolution[] Evolutions = System.Array.Empty<Evolution>();
     /// <summary>Offered in the level-up pool (and so discoverable, and learnable by day).</summary>
     public bool Findable;

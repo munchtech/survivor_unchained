@@ -419,7 +419,7 @@ public static class LevelUp
             {
                 if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id)) continue;
                 var d = Content.Weapons.All[id];
-                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
+                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Card, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
                 double w = 3.2 * want * Affinity(d.Tags, tags) * Again(o);
                 var mine = paths.FirstOrDefault(p => p.Weapons.Contains(id));
                 double lean = 1;

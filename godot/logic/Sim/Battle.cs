@@ -290,6 +290,26 @@ public sealed partial class Battle
     /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
     /// share of the damage read a quarter of its share of the fight.</summary>
     public readonly Dictionary<string, double> BossHealthBy = new();
+    /// <summary>The harness's hardest-hit check (CLASSES §7; the owner, 13 October: a Flare stays the hardest-hitting
+    /// press on a boss): when on, each source's damage on bosses in tenth-second buckets, and its largest single blow.</summary>
+    public static bool TrackBossHits;
+    public readonly Dictionary<string, Dictionary<int, double>> BossHitBuckets = new();
+    public readonly Dictionary<string, double> BossBestHit = new();
+    /// <summary>A source's most damage on bosses inside any window of this many seconds (TrackBossHits).</summary>
+    public double BossBestIn(string by, double seconds)
+    {
+        if (!BossHitBuckets.TryGetValue(by, out var bk) || bk.Count == 0) return 0;
+        var keys = bk.Keys.OrderBy(k => k).ToArray();
+        int w = Math.Max(1, (int)Math.Round(seconds * 10)), lo = 0;
+        double sum = 0, best = 0;
+        for (int hi = 0; hi < keys.Length; hi++)
+        {
+            sum += bk[keys[hi]];
+            while (keys[hi] - keys[lo] >= w) sum -= bk[keys[lo++]];
+            best = Math.Max(best, sum);
+        }
+        return best;
+    }
     /// <summary>For the harness, a Stand's uplift on a boss (CLASSES §7): health taken off bosses in all and while a
     /// Stand held, and the seconds a Stand held with a boss being hurt (struck within the last second).</summary>
     public double BossTookAll, BossTookInStand, StandOnBossSeconds;
@@ -809,6 +829,13 @@ public sealed partial class Battle
         {
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
             BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
+            if (TrackBossHits)
+            {
+                if (!BossHitBuckets.TryGetValue(by, out var bk)) BossHitBuckets[by] = bk = new();
+                int key = (int)(Time * 10);
+                bk[key] = bk.GetValueOrDefault(key) + dmg;
+                BossBestHit[by] = Math.Max(BossBestHit.GetValueOrDefault(by), dmg);
+            }
             if (by == "flare") e.FlareTook += took;
             BossTookAll += took;
             if (FlareT > 0 && Flare?.Kind == FlareKind.Stand) BossTookInStand += took;

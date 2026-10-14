@@ -56,6 +56,8 @@ public sealed class StoryRunResult
     public Dictionary<string, Dictionary<string, double>> HurtBy = new();
     /// <summary>Health taken off the boss (Battle.BossHealthBy), by source; and the Bulwark's rebukes.</summary>
     public Dictionary<string, double> BossTookBy = new();
+    /// <summary>The hardest-hit check (--hits 1): each source's largest blow on a boss, and its most in 1.2 s and in 6 s.</summary>
+    public Dictionary<string, double>? BossBestHit, BossBest1, BossBest6;
     /// <summary>A Stand's uplift on a boss: health taken off bosses while it held, and its seconds on a boss (Battle).</summary>
     public double StandTook, StandSeconds;
     public int Rebukes;
@@ -261,6 +263,12 @@ public static class StorySim
         r.KilledBy = !r.Won && host.Result != null ? b.Player.FellTo ?? b.Player.LastKiller?.Def.Id ?? "?" : "";
         r.Build = ArenaSim.Describe(b);
         r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
+        if (Battle.TrackBossHits)
+        {
+            r.BossBestHit = new Dictionary<string, double>(b.BossBestHit);
+            r.BossBest1 = b.BossHitBuckets.Keys.ToDictionary(k => k, k => b.BossBestIn(k, 1.2));
+            r.BossBest6 = b.BossHitBuckets.Keys.ToDictionary(k => k, k => b.BossBestIn(k, 6));
+        }
         r.FlareCrowd = b.FlareCrowd.ToList();
         r.StandTook = b.BossTookInStand; r.StandSeconds = b.StandOnBossSeconds;
         r.Rebukes = b.Rebukes;

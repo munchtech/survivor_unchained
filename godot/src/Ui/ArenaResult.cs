@@ -100,7 +100,7 @@ public partial class ArenaResultScreen : TellingScreen
             {
                 var w = Weapons.All[id];
                 var word = Kit.Word(w.Name, () => { if (Arenas.Inscribe(G.Journey, r, id)) { told = true; Refresh(); } }, new Color("#d8c8f0"), 16);
-                word.TooltipText = $"{w.Description} By day it asks {SkillBook.Need} {SkillBook.Attribute(id)}.";
+                word.TooltipText = $"{w.Card} By day it asks {SkillBook.Need} {SkillBook.Attribute(id)}.";
                 pick.AddChild(word);
             }
             Next(pick, () => Sound.Sfx.Loot(true), 0.45);
