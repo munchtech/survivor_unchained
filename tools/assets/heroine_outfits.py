@@ -516,6 +516,15 @@ HPIV_P2 = float(os.environ.get("HPIV_P2", "0.65"))
 HPIV_L = float(os.environ.get("HPIV_L", "0.2115"))
 HPIV_THUMB = float(os.environ.get("HPIV_THUMB", "0.0533"))
 HPIV_RAMP, HPIV_DIP_RAMP, HPIV_LANE = 0.010, 0.005, 0.014
+# (s24, the coordinator: her left PIPs on her own skin. Each left finger's skin registered
+# (ICP) onto her right's mirror, her right's 02 joint carried onto it sits this far toward the
+# tip from her left's rigged 02 (mm: index, middle, ring, pinky; s24 scratch pipreg.py on P1):
+# the rig had them short, 6.4 mm at the pinky, so her left fingers bent mid-bone. The skin
+# short of a moved 02 goes to the 01 bone over HPIV_PIP_RAMP either side.)
+HPIV_L02 = [float(x) / 1000 for x in os.environ.get("HPIV_L02", "0.3,2.5,3.7,6.4").split(",")]
+HPIV_PIP_RAMP = 0.006
+# (her hand's bones as F1 built them: the fingerless glove's cut is drawn from these)
+F1_HEADS = {b.name: np.array((arm.matrix_world @ b.head_local)[:]) for b in arm.data.bones}
 # (the outfits' arm chains read her hand to F1's middle knuckle, so no garment moves with the pivots)
 MID01_BUILT = {sd: np.array((arm.matrix_world @ arm.data.bones[f"middle_01_{sd}"].head_local)[:])
                for sd in "lr" if f"middle_01_{sd}" in arm.data.bones}
@@ -566,11 +575,14 @@ def hand_pivots(obj):
         a = old[f"hand_{sd}"]
         L = HPIV_L * lens[sd] / lens["r"]
         s = HPIV_MCP * L / np.linalg.norm(old[f"middle_01_{sd}"] - a)
-        for f in F4:
+        for kf, f in enumerate(F4):
             p1 = a + (old[f"{f}_01_{sd}"] - a) * s
             new[f"{f}_01_{sd}"] = p1
             p2, p3 = old[f"{f}_02_{sd}"], old[f"{f}_03_{sd}"]
             e = (p3 - p2) / np.linalg.norm(p3 - p2)
+            if sd == "l" and HPIV_L02[kf]:
+                p2 = p2 + e * HPIV_L02[kf]
+                new[f"{f}_02_{sd}"] = p2
             new[f"{f}_03_{sd}"] = p2 + e * HPIV_P2 * np.linalg.norm(p2 - p1)
         c0, m0, i0 = (old[f"thumb_0{k}_{sd}"] for k in (1, 2, 3))
         chain = np.linalg.norm(m0 - c0) + np.linalg.norm(i0 - m0)
@@ -579,8 +591,8 @@ def hand_pivots(obj):
               "thumb MCP %.1f mm back (metacarpal %.1f, proximal %.1f)"
               % (sd, lens[sd] * 1000, L * 1000, s,
                  " ".join("%.1f" % (np.linalg.norm(new[f"{f}_01_{sd}"] - a) * 1000) for f in F4),
-                 " ".join("%.1f" % (np.linalg.norm(old[f"{f}_02_{sd}"] - new[f"{f}_01_{sd}"]) * 1000) for f in F4),
-                 " ".join("%.1f" % (np.linalg.norm(new[f"{f}_03_{sd}"] - old[f"{f}_02_{sd}"]) * 1000) for f in F4),
+                 " ".join("%.1f" % (np.linalg.norm(new.get(f"{f}_02_{sd}", old[f"{f}_02_{sd}"]) - new[f"{f}_01_{sd}"]) * 1000) for f in F4),
+                 " ".join("%.1f" % (np.linalg.norm(new[f"{f}_03_{sd}"] - new.get(f"{f}_02_{sd}", old[f"{f}_02_{sd}"])) * 1000) for f in F4),
                  np.linalg.norm(new[f"thumb_02_{sd}"] - m0) * 1000, np.linalg.norm(new[f"thumb_02_{sd}"] - c0) * 1000,
                  np.linalg.norm(i0 - new[f"thumb_02_{sd}"]) * 1000))
 
@@ -617,6 +629,13 @@ def hand_pivots(obj):
             share(sel[k], want[k], n1, hn, True)
         for f in F4:
             n2, n3 = f"{f}_02_{sd}", f"{f}_03_{sd}"
+            if n2 in new:
+                n1 = f"{f}_01_{sd}"
+                m2 = new[n2] - old[n2]
+                m2 /= np.linalg.norm(m2)
+                sel = np.nonzero(wt(n2) > 0)[0]
+                wt(n1)
+                share(sel, smooth(((co[sel] - new[n2]) @ m2 + HPIV_PIP_RAMP) / (2 * HPIV_PIP_RAMP)), n2, n1, False)
             m = new[n3] - old[n3]
             if np.linalg.norm(m) < 1e-6:
                 continue
@@ -5728,6 +5747,8 @@ def arcanist():
     for sd_ in "lr":
         KEEP_SUB[f"arcanist.glove_{sd_}"] = lambda q, w_, t_, sd_=sd_: glove_sub(q, w_, t_, sd_)
 
+    F1h = lambda n_: F1_HEADS.get(n_, head(n_))   # (s24: the glove's cut as drawn on F1's hand)
+
     def knuckle_cut(sd):
         """(s20, ARC_HANDS=fingerless: the owner's "cut off at the fingers sexily")
         Her hand to FL_CUT past each knuckle (the thumb FL_CUT_THUMB past its
@@ -5735,26 +5756,22 @@ def arcanist():
         further, FL_POINT_W wide at its root. Eased by each finger's weight, so
         the line runs smoothly through the webs between them."""
         f_ = np.ones(len(P))
-        a_ = head(f"middle_01_{sd}")
-        ax_ = head(f"middle_02_{sd}") - a_
+        a_ = F1h(f"middle_01_{sd}")
+        ax_ = F1h(f"middle_02_{sd}") - a_
         ax_ /= np.linalg.norm(ax_)
-        side_ = head(f"pinky_01_{sd}") - head(f"index_01_{sd}")
+        side_ = F1h(f"pinky_01_{sd}") - F1h(f"index_01_{sd}")
         side_ -= ax_ * (side_ @ ax_)
         side_ /= np.linalg.norm(side_)
         up_ = np.cross(ax_, side_)
         # (the back of her hand: away from her thumb, which lies before her palm)
-        up_ *= -np.sign((head(f"thumb_03_{sd}") - head(f"index_01_{sd}")) @ up_)
+        up_ *= -np.sign((F1h(f"thumb_03_{sd}") - F1h(f"index_01_{sd}")) @ up_)
         for fg in ("index", "middle", "ring", "pinky", "thumb"):
             bs = [f"{fg}_0{i}_{sd}" for i in ((2, 3) if fg == "thumb" else (1, 2, 3))]
             if not all(n in BI for n in bs):
                 continue
-            a = head(bs[0])
-            ax = head(bs[1]) - a
+            a = F1h(bs[0])
+            ax = F1h(bs[1]) - a
             ax /= np.linalg.norm(ax)
-            if FL_EXACT and fg != "thumb":
-                # (s24: from F1's knuckle, FL_P1 short of the 02 joint, as knuckle_exact reads
-                # it: the body build's 01 pivots sit ~24 mm further back)
-                a = head(bs[1]) - ax * FL_P1[("index", "middle", "ring", "pinky").index(fg)]
             s = (P - a) @ ax
             cut = (FL_CUT_THUMB if fg == "thumb" else FL_CUT) + (FL_FIELD_OVER if FL_EXACT else 0.0)
             if fg == "middle" and not FL_EXACT:
@@ -5781,25 +5798,25 @@ def arcanist():
         # knuckle move leaves where they are; each finger's knot FL_P1 (her F1 rig's first
         # bones, the right hand's, measured: their 01 heads sat at her webs) short of its
         # 02 joint, less FL_WEB_GAP)
-        a_ = head(f"hand_{sd}")
-        ax_ = head(f"middle_02_{sd}") - a_
+        a_ = F1h(f"hand_{sd}")
+        ax_ = F1h(f"middle_02_{sd}") - a_
         ax_ /= np.linalg.norm(ax_)
-        side_ = head(f"pinky_02_{sd}") - head(f"index_02_{sd}")
+        side_ = F1h(f"pinky_02_{sd}") - F1h(f"index_02_{sd}")
         side_ -= ax_ * (side_ @ ax_)
         side_ /= np.linalg.norm(side_)
         up_ = np.cross(ax_, side_)
-        up_ *= -np.sign((head(f"thumb_03_{sd}") - head(f"index_02_{sd}")) @ up_)
+        up_ *= -np.sign((F1h(f"thumb_03_{sd}") - F1h(f"index_02_{sd}")) @ up_)
         F4 = ("index", "middle", "ring", "pinky")
         # (s24: across her hand by F1's knuckles, FL_P1 short of each 02 joint along its first bone)
-        k1 = [head(f"{f}_02_{sd}") - FL_P1[k] * (head(f"{f}_02_{sd}") - head(f"{f}_01_{sd}"))
-              / np.linalg.norm(head(f"{f}_02_{sd}") - head(f"{f}_01_{sd}")) for k, f in enumerate(F4)]
+        k1 = [F1h(f"{f}_02_{sd}") - FL_P1[k] * (F1h(f"{f}_02_{sd}") - F1h(f"{f}_01_{sd}"))
+              / np.linalg.norm(F1h(f"{f}_02_{sd}") - F1h(f"{f}_01_{sd}")) for k, f in enumerate(F4)]
         fl = [(k1[k] - a_) @ side_ for k in range(4)]
-        knots_t = [(head(f"{f}_02_{sd}") - a_) @ ax_ - FL_P1[k] - FL_WEB_GAP for k, f in enumerate(F4)]
+        knots_t = [(F1h(f"{f}_02_{sd}") - a_) @ ax_ - FL_P1[k] - FL_WEB_GAP for k, f in enumerate(F4)]
         o = np.argsort(fl); knots_l = np.array(fl)[o]; knots_t = np.array(knots_t)[o]
         lmid, half = fl[1], 0.5 * abs(fl[3] - fl[0]) + 0.006
         print("GLOVE %s knuckle line: %s mm from her wrist" % (sd, " ".join("%.1f" % (t_ * 1000) for t_ in knots_t)))
-        ta_ = head(f"thumb_02_{sd}")
-        tx_ = head(f"thumb_03_{sd}") - ta_
+        ta_ = F1h(f"thumb_02_{sd}")
+        tx_ = F1h(f"thumb_03_{sd}") - ta_
         tx_ /= np.linalg.norm(tx_)
         wth = np.clip(wsum(f"thumb_02_{sd}", f"thumb_03_{sd}"), 0, 1)
         tree = cKDTree(P)
