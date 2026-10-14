@@ -132,6 +132,11 @@ TAKES = {
 
 # burns_boom5 with its birth graded (lead 6): the ramp's exponent high to f5, back to 1 by f10, the light kept.
 TAKES["burns_boom5b"] = dict(TAKES["burns_boom5"], pow_keys=((1, 1.8), (5, 1.6), (10, 1.0)))
+# burns_boom5 with its birth regraded (solver 7): rendered from bake b5's cache rewritten by tools/fxsim/birth.py
+# (preset b5c) for f1-f9, its fire lit by the designed heat there (src_material's birth branch), handed back to
+# burns_boom5's own shading at f10 (so f10-f48 are b5g's).
+TAKES["burns_boom5c"] = dict(TAKES["burns_boom5"], birth=dict(
+    keys=((1, 1.0), (9, 1.0), (10, 0.0)), m=3.0, k=2.3, op=((1, 0.55), (5, 0.55), (8, 0.75), (10, 1.0))))
 
 
 def args():
@@ -253,7 +258,7 @@ def src_material(t):
         L(nz.outputs["Fac"], ma.inputs[0])
         ma.inputs[1].default_value = 2.0 * t["fnoise"]; ma.inputs[2].default_value = 1.0 - t["fnoise"]
         f = math("MULTIPLY", f, ma.outputs["Value"], clamp=True)
-    vis = None
+    vis = vmod = None
     if t.get("fvis"):
         # The fire seen only where it burns hot enough: a smoothstep of the broken flame from lo to hi (keyed, as
         # fvis = ((frame, lo, hi), ...)), the fire below it kept at vmin of itself (a dull red under the soot). The
@@ -266,7 +271,8 @@ def src_material(t):
         vr.inputs["To Min"].default_value, vr.inputs["To Max"].default_value = 0.0, 1.0
         vis = vr.outputs["Result"]
         vmin = t.get("vmin", 0.15)
-        f = math("MULTIPLY", f, math("MULTIPLY_ADD", vis, 1.0 - vmin, vmin))
+        vmod = math("MULTIPLY_ADD", vis, 1.0 - vmin, vmin)
+        f = math("MULTIPLY", f, vmod)
     if t.get("fmask"):
         # Burning gas is clear: the soot thinned where the fire burns (to fmask[2] of itself), so the fire shows
         # where it burns at the cloud's skin and the soot lies thick where the fire has died. With fvis, the fire's
@@ -300,6 +306,22 @@ def src_material(t):
     fp = math("POWER", f, t.get("flame_pow", 1.0))
     # (Only the colour: the light stays the flame's.)
     fpr = math("POWER", f, keyed(nt, "pow_f", t["pow_keys"], 1.0).outputs[0]) if t.get("pow_keys") else fp
+    bw = None
+    if t.get("birth"):
+        # The birth (a cache regraded by tools/fxsim/birth.py): the fire's colour and light from its designed heat T
+        # (the cache's temperature, read as `heat`), not the saturated flame: lobes hot, creases and limbs cooler, a
+        # small white heart. Keyed in by w (1 through the birth, 0 after it, where the bake's own heat is back), T
+        # dimmed with the fire's visibility (so it dies into pockets as the flame does), the fire semi-clear (op),
+        # so each lobe's limb is seen through its own cooler skin.
+        b = t["birth"]
+        bw = keyed(nt, "birth_w", b["keys"], 0.0).outputs[0]
+        T = attr("heat")
+        if vmod is not None:
+            T = math("MULTIPLY", T, vmod)
+        fpr = math("MULTIPLY_ADD", math("SUBTRACT", T, fpr), bw, fpr)
+        b_inten = math("MULTIPLY", math("POWER", T, b.get("m", 3.0)), b.get("k", 2.3))
+        op = keyed(nt, "birth_op", b.get("op", ((1, 1.0),)), 1.0).outputs[0]
+        ff = math("MULTIPLY", ff, math("MULTIPLY_ADD", math("SUBTRACT", op, 1.0), bw, 1.0))
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     cr = ramp.color_ramp
     rk = t["ramp"]
@@ -309,6 +331,8 @@ def src_material(t):
         e = cr.elements.new(p); e.color = tuple(c) + (1,)
     L(fpr, ramp.inputs["Fac"])
     inten = math("MULTIPLY", math("POWER", fp, t.get("emit_m", 2.0)), t["emit_k"])
+    if bw is not None:
+        inten = math("MULTIPLY_ADD", math("SUBTRACT", b_inten, inten), bw, inten)
     if t.get("fire_keys"):
         inten = math("MULTIPLY", inten, keyed(nt, "fire_taper", t["fire_keys"], 1.0).outputs[0])
     fire_rgb = scale(ramp.outputs["Color"], math("MULTIPLY", ff, inten))
