@@ -310,23 +310,30 @@ def arcanist_break(rig):
         # The elbow low and forward of the shoulder (not out level with the hand), so the forearm rises to the ear and
         # the wrist stays near straight (it bent 55-65 deg back with the elbow out: the owner, 14 October, "her hands
         # ... going at a very weird angle at the wrists"); the fingers soft and graded, the index leading.
-        tuck = {"pos": (0.133, 1.622, 0.037), "pole": (0.7, -0.6, 0.4), "knuckles": (-0.25, 0.8, -0.3)}
-        soft = {"curl": 0.32, "thumb": 0.2, "cascade": 0.45, "spread": 2}
+        tuck = {"pos": (0.1109, 1.6728, -0.0495), "pole": (0.3, -0.75, 0.6), "knuckles": (-0.1005, 0.6249, -0.7742),
+                "blade": (0.0391, -0.7750, -0.6307)}
+        tuck2 = {**tuck, "pos": (0.1201, 1.6613, -0.0747), "knuckles": (-0.0781, 0.6320, -0.7710), "blade": (0.0314, -0.7714, -0.6356)}
+        soft = {"thumb": 0.1, "oppose": 0.05, "thumb_in": 28, "thumb_roll": -23.6,
+                "bends": {"index": [10, 22, 11], "middle": [15, 25, 12.5], "ring": [20, 27, 13.5], "pinky": [24, 27, 13.5],
+                          "thumb": [0.5, 12, 20]},
+                "spreads": {"index": -13.35, "middle": 0.0, "ring": 10, "pinky": 30}}
         first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l=soft), "ease")
-        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.143, 1.603, -0.023)}, head=(-6, 4, 8), fingers_l=soft), "ease")
+        second = (28, over("arcanist", hand_l=tuck2, head=(-6, 4, 8), fingers_l=soft), "ease")
+        # Out of her hair before it drops (eased down from behind the ear, the fingertips went 9 mm into her head).
+        lift = (31, over("arcanist", hand_l={**tuck2, "pos": (0.1519, 1.6416, -0.0674)}, fingers_l=soft), "auto")
     # Up beside her face, not before it (the fingers stay 6 cm or more out from her mouth), the wrist easing
     # straight on the way (extension 55 -> 27 deg, no flick back; tools: scratch tuck/wrist.py, facecheck.py), and
     # down the same way to the hip.
-    rising = (9, over("arcanist", hand_l={"pos": (0.21, 1.40, 0.11), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.2, 0.8, 0.6)},
+    rising = (9, over("arcanist", hand_l={"pos": (0.21, 1.40, 0.11), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.3, 0.55, 0.78)},
                       fingers_l="relaxed"), "auto")
-    lower = {"pos": (0.21, 1.36, 0.08), "pole": (1.0, -0.3, -0.3), "knuckles": (0.0, 0.6, 0.8)}
+    lower = {"pos": (0.21, 1.36, 0.08), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.35, 0.5, 0.8)}
     lowering = (36, over("arcanist", hand_l=lower, fingers_l="relaxed"), "auto")
     keys = [
         (0, over("arcanist"), "auto"),
         *([rising] if rig.body != "him" else []),
         first,
         second,
-        *([lowering] if rig.body != "him" else []),
+        *([lift, lowering] if rig.body != "him" else []),
         # Up at the sky, the staff turning in her fingers.
         (44, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
         (60, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
