@@ -36,7 +36,7 @@ public partial class Game
         hud.Fade(0, 1.6);
     }
 
-    /// <summary>The stranger at the title's fire: a hooded ranger, unarmed.</summary>
+    /// <summary>The stranger at the title's fire: a ranger, bare-headed (her face and hair are the point; Loadout gives her no hood), unarmed.</summary>
     static PersonSpec Stranger()
     {
         var a = Callings.Archetype("stalker");
