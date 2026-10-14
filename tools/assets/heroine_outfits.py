@@ -5431,7 +5431,7 @@ def arcanist():
     # shoulder caps (ARC_CAPS) the glove's top is ARC_GLOVE_ELBOW below her
     # elbow joint, her upper arm bare between)
     if os.environ.get("ARC_CAPS", "1") == "1" and "GLOVE_TOP" not in os.environ:
-        GLOVE_TOP = WRIST_S - ELBOW_S - float(os.environ.get("ARC_GLOVE_ELBOW", "0.015"))
+        GLOVE_TOP = WRIST_S - ELBOW_S - float(os.environ.get("ARC_GLOVE_ELBOW", "0.04"))
     # (s20, the owner 14 Oct, her hands: ARC_HANDS glove (as before) | fingerless
     # | bare (no gloves; the sleeves to her wrists, ARC_SLEEVE_END short of it);
     # a fingerless glove in ARC_GLOVE_MAT ("satin": the white of her stockings'
@@ -5583,7 +5583,7 @@ def arcanist():
     def glove_top_cut(sd):
         e_, w_ = ARM[sd][1], ARM[sd][2]
         ax_ = (w_ - e_) / np.linalg.norm(w_ - e_)
-        off_ = float(os.environ.get("ARC_GLOVE_ELBOW", "0.015"))
+        off_ = float(os.environ.get("ARC_GLOVE_ELBOW", "0.04"))
         return lambda q: (q - e_) @ ax_ - off_
 
     def glove_top_k(pos, sd):
@@ -5748,7 +5748,7 @@ def arcanist():
               piece(f"arcanist.glove_{sd}", AND(limb(sd, WRIST_S - GLOVE_TOP - (0.02 if ARC_CAPS else 0.0), 9.9, legs=False), knuckle_cut(sd)), ARC_GLOVE_MAT, lift=FL_LIFT, thick=FL_THICK, bevel=0.0003, edge=30,
                     soften=GLOVE_SOFTEN, smooth=GLOVE_SMOOTH, cut=glove_top_cut(sd) if ARC_CAPS else None,
                     trim=(ARC_GLOVE_MAT, GLOVE_HEM, 0.0003, 0.0008) if GLOVE_HEM > 0 else None,
-                    clear=lambda q, sd=sd: FL_LIFT - GLOVE_SINK * glove_top_k(q, sd))
+                    clear=lambda q, sd=sd: FL_LIFT - (0.0 if ARC_CAPS else GLOVE_SINK) * glove_top_k(q, sd))
               if ARC_HANDS == "fingerless" else []),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
