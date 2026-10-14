@@ -439,6 +439,18 @@ public partial class GameHud : CanvasLayer
         play.Modulate = new Color(1, 1, 1, calm);
     }
 
+    float labelsAlpha = 1;
+
+    /// <summary>A Flare's BOOM hides the ground names and any tip text until its fire has gone (k 0 to 1).</summary>
+    public void LabelsAlpha(float k)
+    {
+        if (k == labelsAlpha) return;
+        labelsAlpha = k;
+        ground.Modulate = new Color(1, 1, 1, k);
+        ground.Visible = k > 0;
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.SelfModulate = new Color(1, 1, 1, k);
+    }
+
     float flareDim;
     ulong tipHoldUntil;
     Hint? tipHeld;
@@ -920,7 +932,7 @@ public partial class GameHud : CanvasLayer
         tipLine = null;
         if (h == null) return;
         Control? keys = h.Keys.Count > 0 ? Style.H(6, HintKeys(h.Keys).ToArray()) : null;
-        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY) };
+        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY), SelfModulate = new Color(1, 1, 1, labelsAlpha) };
         play.AddChild(tipLine);
     }
 
