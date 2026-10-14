@@ -952,7 +952,7 @@ FINGER_PRESETS = {
 # 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
 # web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
 WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
-                            "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 79.6)},
+                            "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 65.0)},
                   "oppose": 0.44, "thumb_roll": -20.8}}
 
 
