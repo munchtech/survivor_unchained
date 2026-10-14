@@ -42,6 +42,7 @@ UNDER = 0.00015     # (k "border": the new top's middle this far under the borde
 CORNER = 0.005      # (the factor eases from 1 at the corners of her mouth to k this far in)
 BORDER_K = 2.6      # (k "border": the red's own height scaled so toward the corners, where that is under the border)
 EVEN_F = {"own": 0.92}  # (her own paint's red has a dark mark that the stretch would draw out tall)
+HEAL = 0.82         # (a mark this much darker than the red about it is healed before the stretch)
 FADE = 0.0005       # (the raise fades out where it lifts the red less than this: toward the corners of her mouth)
 EVEN = 0.7          # (the broad patches inside the new red evened this much toward the lip's colour)
 EVEN_SIGMA = 10.0   # (front-grid px, 1 mm: what counts as broad)
@@ -153,8 +154,17 @@ def raise_face(face, img, F, m, t, k, log=True):
     act = beta > 0
     ny, nx = Fi.shape[:2]
     ys = hl.Y1 - (np.arange(ny) + 0.5) * hl.D
-    # (front grid: every column's new paint, for the evening and a look)
     Y = ys[:, None] - m[None, :]
+    # (marks in the red that the stretch would draw out tall (her own face's dark spot): darker than the red about
+    #  them by HEAL, wider than a lip line, lifted to it)
+    lum = lin(Fi) @ LUMA
+    bg = ndimage.median_filter(lum, (15, 31))
+    rel = lum / np.maximum(bg, 1e-5)
+    zone = act[None, :] & (Y > 0.0003) & (Y < hs[None, :])
+    mk = ndimage.binary_opening(zone & (rel < HEAL), np.ones((3, 5)))
+    mk = ndimage.gaussian_filter(ndimage.binary_dilation(mk, iterations=3).astype(float), 1.5)
+    Fi = Fi * (1 - mk[..., None]) + srgb(lin(Fi) * np.clip(bg / np.maximum(lum, 1e-5), 1, 2)[..., None]) * mk[..., None]
+    # (front grid: every column's new paint, for the evening and a look)
     sy = source_height(Y, H[None, :], S[None, :])
     src_rows = hl.row(m[None, :] + sy)
     cols = np.repeat(np.arange(nx)[None, :], ny, 0).astype(float)
@@ -184,7 +194,7 @@ def raise_face(face, img, F, m, t, k, log=True):
     tgt = G + EVEN_F.get(face, EVEN) * (ref[None, :, :] - G) * ramp[..., None]
     gain = np.where(good[..., None], tgt / np.maximum(G, 1e-5), 1.0)
     gain = np.nan_to_num(gain, nan=1.0)
-    return Fi, Wp, gain, dict(e=e, hs=hs, H=H, S=S, act=act, beta=beta)
+    return Fi, Wp, gain, dict(e=e, hs=hs, H=H, S=S, act=act, beta=beta, heal=mk, healed=Fi)
 
 
 def apply(img, F, m, P, UV, TRI, fields):
@@ -216,6 +226,8 @@ def apply(img, F, m, P, UV, TRI, fields):
     sv = hl.sample(np.nan_to_num(F[..., 1]), sr, c_s)
     src = np.stack([ndimage.map_coordinates(img[..., ch], [sv * n - 0.5, su * n - 0.5], order=3, mode="nearest")
                     for ch in range(3)], -1)
+    hk = np.clip(hl.sample(fields["heal"], sr, c_s), 0, 1)[:, None]
+    src = src * (1 - hk) + hl.sample(fields["healed"], sr, c_s) * hk
     g = hl.sample(gain, r_s, c_s)
     lip = lin(src) * g
     u = np.clip((y - (Hi - EDGE / 2)) / EDGE, 0, 1)
@@ -233,6 +245,11 @@ def main():
     if "--to" in args:
         i = args.index("--to")
         to = args[i + 1]
+        del args[i:i + 2]
+    frm = hl.TEX
+    if "--from" in args:                                           # (the paints read from there: default head_tex)
+        i = args.index("--from")
+        frm = args[i + 1]
         del args[i:i + 2]
     if "--glb" in args:
         i = args.index("--glb")
@@ -257,7 +274,7 @@ def main():
         bad = np.isnan(F[..., 0])
         _, (iy, ix) = ndimage.distance_transform_edt(bad, return_indices=True)
         Ff = F[iy, ix]
-        src = os.path.join(hl.TEX, pp[f])
+        src = os.path.join(frm, pp[f])
         img = np.asarray(Image.open(src).convert("RGB")).astype(np.float64)
         Fi, Wp, gain, fl = raise_face(f, img, Ff, m, t, K[f])
         fl["gain"] = gain
