@@ -151,29 +151,29 @@ def _body_keys():
         # bow is spread over f14-19 (the chest and head leaving together).
         k(14, "auto", hips=(-0.01, 0.005, -0.20), hrot=(0, -3, 0), spine=(0, -10, 0), neck=(0, -4, 0), head=(0, -9, 0),
           cl=(9, 0), cr=(9, 0)),
-        k(15, "auto", hips=(-0.012, -0.015, -0.21), hrot=(0, -3, 0), spine=(0, -7, 0), neck=(0, -3, -2), head=(0, -8, -1),
-          cl=(9, 0), cr=(9, 0)),
-        k(16, "auto", hips=(-0.014, -0.05, -0.23), hrot=(0, -3, 0), spine=(0, -1, 0), neck=(0, -2, -4), head=(0, -4, -2),
-          cl=(9, 0), cr=(9, 0)),
-        k(17, "auto", hips=(-0.017, -0.095, -0.25), hrot=(-1.5, 3, 1), spine=(-4, 7, 1), neck=(0, -1, -8), head=(0, -2, -4),
-          cl=(5, 6), cr=(3, 1.5)),
-        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 2), neck=(0, 1, -13), head=(0, 3, -7),
-          cl=(2, 12), cr=(-2, 3)),
-        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 18, 2), neck=(0, 0, -32), head=(0, 5, -12),
-          cl=(1, 16), cr=(-6, 3.5)),
-        k(CONTACT, "ease", hips=(-0.03, -0.37, -0.33), hrot=(-4, 16, 3), spine=(-16, 19, 2), neck=(0, -3, -20), head=(0, 1, -3),
-          cl=(0, 20), cr=(-10, 4)),
+        k(15, "auto", hips=(-0.012, -0.015, -0.21), hrot=(-3, -3, 0), spine=(-3, -7, 0), neck=(0, -3, -5), head=(0, -8, -1),
+          cl=(15, 4), cr=(9, 0)),
+        k(16, "auto", hips=(-0.014, -0.05, -0.23), hrot=(-8, -3, 0), spine=(-8, -1, 0), neck=(0, -2, -12), head=(0, -4, -2),
+          cl=(27, 12), cr=(9, 0)),
+        k(17, "auto", hips=(-0.017, -0.095, -0.25), hrot=(-9.5, 3, 1), spine=(-11, 7, 1), neck=(0, -1, -14), head=(0, -2, -4),
+          cl=(17, 18), cr=(3, 1.5)),
+        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-11, 8, 2), spine=(-15, 14, 2), neck=(0, 1, -18), head=(0, 3, -7),
+          cl=(12, 24), cr=(-6, 3)),
+        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-9.5, 12, 2.5), spine=(-16.5, 18, 2), neck=(0, 0, -28), head=(0, 5, -12),
+          cl=(7, 28), cr=(-16, 3.5)),
+        k(CONTACT, "ease", hips=(-0.07, -0.37, -0.33), hrot=(-7, 16, 10), spine=(-18, 19, 2), neck=(0, -3, -40), head=(0, 1, -3),
+          cl=(2, 32), cr=(-14, 4)),
         # The settle: the weight lands, the pelvis 2-3 cm lower and the chest
         # a few degrees further over than the pose it comes back to (f25).
-        k(21, "auto", hips=(-0.03, -0.39, -0.33), hrot=(-2, 15, 3), spine=(-8, 21, 3), neck=(0, -3, -22), head=(0, -2, -3),
-          cl=(1, 12), cr=(-10, 4)),
-        k(22, "auto", hips=(-0.03, -0.395, -0.33), hrot=(-1, 14.5, 3), spine=(-4, 17, 4), neck=(0, -2, -22), head=(0, -1, -5),
-          cl=(2, 6), cr=(-10, 3.5)),
+        k(21, "auto", hips=(-0.075, -0.39, -0.33), hrot=(-4, 15, 11), spine=(-9, 21, 3), neck=(0, -3, -42), head=(0, -2, -3),
+          cl=(3, 24), cr=(-10, 4)),
+        k(22, "auto", hips=(-0.05, -0.395, -0.33), hrot=(-2, 14.5, 6.5), spine=(-4, 17, 4), neck=(0, -2, -31), head=(0, -1, -5),
+          cl=(3, 12), cr=(-10, 3.5)),
         # The look up: the chest lifted and the head back to the sky, deep in
         # the lunge (the staff is planted and the fist low), the body in one
         # line on from the back thigh, the chest turned a little open to her
         # left where her hand opens.
-        k(23, "auto", hips=(-0.03, -0.38, -0.33), hrot=(0, 14, 3), spine=(-2, 8, 5), neck=(0, 0, -16), head=(0, 10, -6),
+        k(23, "auto", hips=(-0.03, -0.38, -0.33), hrot=(0, 14, 3), spine=(-2, 8, 5), neck=(0, 0, -20), head=(0, 10, -6),
           cl=(3, 2), cr=(-10, 3)),
         # One line from the hips to the head: the hips thrust forward, the
         # chest arched back (and rising a few degrees through the hold), the
@@ -216,7 +216,7 @@ STAFF = [
     (16, "grip", (-0.135, 1.950, -0.070), _n(0.945, 0.307, 0.110), (-1.0, 0.0, 0.4)),
     (17, "grip", (-0.190, 1.581, 0.103), _n(0.874, 0.480, 0.066), _n(0.1, -0.2, 0.9), "E"),
     (18, "grip", (-0.301, 1.310, 0.233), _n(0.470, 0.874, 0.123), _n(-0.1, -0.6, 0.7), "E"),
-    (19, "grip", (-0.408, 1.001, -0.057), _n(-0.024, 0.996, 0.078), _n(-0.35, -0.9, 0.1), "E"),
+    (19, "grip", (-0.408, 1.001, -0.057), _n(-0.024, 0.996, 0.078), _n(-0.55, -0.55, -0.6), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
@@ -422,7 +422,7 @@ class Flare:
                 Rl = self.Rl[fr] if self.Rl is not None else None
                 Ws = on - (qrot(Rl, M_L) if Rl is not None else 0.0)
                 k = _smooth((fr - 16) / 3.0)
-                pole_s = np.array((0.6, -0.3, 0.8)) * (1 - k) + np.array((0.9, -0.3, -0.4)) * k
+                pole_s = np.array((0.6, -0.3, 0.8)) * (1 - k) + np.array((0.6, 0.3, 0.6)) * k
                 # Letting go across her front: the elbow up and back, so the
                 # forearm clears her breasts as the hand comes away.
                 k2 = _smooth((fr - 18) / 8.0)
