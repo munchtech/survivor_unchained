@@ -93,3 +93,11 @@ From the coordinator of 10 October (session 181eef02). Wave 1 restarted, ran abo
   - Decide body-build asks up front and merge them, so the build runs once (hand pivots, thumb, back-of-hand reshape, left hand by its own skin).
   - Pushback saved a build: anatomy said 24-28 mm where a crude model said 15.
   - Helpers launched by a lead report to the coordinator and often can't address the lead: relay every one.
+
+**Coordinator 1cc516bc (14 October, night; outfits, animation, face).** The owner picked B1 "with style". Ran outfits 24 then 25, animation 29 then 30, face 25. Nothing merged yet: the one body build is rig-final (F0, outfits scratch 1cc516bc `prop\F0`), and animation 30 refits on it. Open: the chest_smooth round 2, the glove fixes (the elbow-fold poke-through, G1 rebuild, G2 one round or dropped), then the judged glove sheet to the owner. RESUME "14 October, night: coordinator 1cc516bc" has the state.
+- **Lessons:**
+  - Gate every body build on its correctives: F1's builds silently had none (a stale game-skeleton dump, "no game skeleton matches"). Grep the GLB for `elbow_point` against integration's.
+  - Nearest-surface depth undersells a limb passing through the body (kd said 18 mm; the true gap along the thigh's up direction was 48-84 mm). Measure the true gap before specifying a corrective.
+  - Blender lookdev can't judge the head/neck rim: the game's skin shader eases the head into the graft. Judge that area in Godot shots only.
+  - Coarse sculpt triangulation (7-8 mm edges) is the root of the knuckle failure and the chest facets: one "close-up skin detail" item after F1.
+  - A rig-final build lets animation start before skin-only fixes finish (outfits' pushback; gate: bones, weights and key deltas identical).
