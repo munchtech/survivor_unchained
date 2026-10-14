@@ -19,7 +19,7 @@ public partial class FlareFx
     /// <summary>The fireball's centre over the crater in the sim (birth.py's centre), and its rim light on the statues.</summary>
     const float BallY = 1.5f;
     const float Roll = 0f;
-    static readonly float FireRim = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRERIM"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fr) ? fr : 1.2f;
+    static readonly float FireRim = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRERIM"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fr) ? fr : 1.0f;
     static readonly float FireLight = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRELIGHT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fl) ? fl : 9f;
     readonly Vector3[] jets = new Vector3[12];
     int jetN;
@@ -104,7 +104,8 @@ public partial class FlareFx
             simBoom.Scale = Vector3.One * SimSize;
             simMat!.SetShaderParameter("life", SimFirst / Math.Max(1, simFrames - 1));
             // The soot lit (judge 4 fix 3): amber from the fire below at night, grey-brown sunlit tops by day.
-            simMat.SetShaderParameter("soot_lit", Night ? new Vector3(0.08f, 0.035f, 0.012f) : new Vector3(0.20f, 0.18f, 0.16f));
+            // (judge 5b 4: night bellies 0.18-0.25 amber, crowns 0.05-0.08; day always darker than the ground, crowns <=0.38)
+            simMat.SetShaderParameter("soot_lit", Night ? new Vector3(0.09f, 0.04f, 0.013f) : new Vector3(0.075f, 0.062f, 0.05f));
             simMat.SetShaderParameter("soot_up", Night ? -1f : 1f);
             simBoom.Visible = true;
         }
@@ -140,9 +141,13 @@ public partial class FlareFx
         // the quad's own roll is spent; Roll keeps the hook.)
         float rx = Mathf.Clamp((c - 0.033f) / 0.27f, 0, 1);
         float roll = 1 + Roll * (1 - (1 - rx) * (1 - rx));
-        float rise = c < 0.067f ? 0 : 2.4f * (1 - Mathf.Exp(-(c - 0.067f) / 0.4f));
+        // (judge 5b 2d: ~2 m on screen wanted, >=80 px up-screen by f150: 4.5 m ease-out from f120)
+        float rise = c < 0.1f ? 0 : 4.5f * (1 - Mathf.Exp(-(c - 0.1f) / 0.4f));
         // The frozen statues' rims catch the fireball (judge 5a 2: warm light on cyan ice gives back nothing; vat.gdshaderinc).
-        RenderingServer.GlobalShaderParameterSet("flare_fire", new Vector4(p.X, p.Y + BallY + rise, p.Z, FireRim * lit));
+        // I(t) (judge 5b 3): 1.0 f114-f118, 0.6 f124, 0.35 f132, 0.15 f142, 0 at f155.
+        float I = c < 0.067f ? 1 : c < 0.167f ? Mathf.Lerp(1, 0.6f, (c - 0.067f) / 0.1f) : c < 0.3f ? Mathf.Lerp(0.6f, 0.35f, (c - 0.167f) / 0.133f)
+            : c < 0.467f ? Mathf.Lerp(0.35f, 0.15f, (c - 0.3f) / 0.167f) : Mathf.Max(0, Mathf.Lerp(0.15f, 0, (c - 0.467f) / 0.216f));
+        RenderingServer.GlobalShaderParameterSet("flare_fire", new Vector4(p.X, p.Y + BallY + rise, p.Z, FireRim * I * Mathf.SmoothStep(0, 0.03f, c) * (LessFlash ? 0.6f : 1)));
         // The pillar: full height in 0.15 s, full fire to 0.45 s, burnt out by 1.1 s.
         if (simBoom != null)
         {
@@ -155,11 +160,13 @@ public partial class FlareFx
             // dip taking the birth's whitest pixel from 0.92 to 0.85 at f118); exempt to f142 (0.47 s), handed back over 10 frames (judge 5a 1e).
             float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.15f, 0.27f, c)); // (lead 7, s14: the life exempt re-brightened the frame f126-f140, an extra swing and 18 frames over 1.5x empty; the birth only now, back by f130)
             simMat.SetShaderParameter("gain", 1.25f * through * (LessFlash ? 0.6f : 1));
+            // After the birth only the hottest of the fire burns through the dip (judge 5b 2b: a hot band in the folds).
+            simMat.SetShaderParameter("undip", (1 / Math.Max(0.4f, dipNow) - 1) * Mathf.SmoothStep(0.15f, 0.27f, c));
             // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
             // (judge 5a 3: soot 0.7 at f128, <=0.3 at f150, gone by f185, eroding from its thin edge first)
-            simMat.SetShaderParameter("smoke", 1.0f - 0.75f * Mathf.SmoothStep(0.2f, 0.6f, c));
+            simMat.SetShaderParameter("smoke", 1.0f - 0.65f * Mathf.SmoothStep(0.47f, 0.64f, c)); // (judge 5b 4: 0.85 core to f142, 0.3 at f152)
             simMat.SetShaderParameter("erode", 0.6f * Mathf.SmoothStep(0.3f, 1.1f, c));
-            simMat.SetShaderParameter("fade", (1 - Mathf.SmoothStep(0.9f, 1.2f, c)) * (1 - Mathf.SmoothStep(0.85f, 1f, life)));
+            simMat.SetShaderParameter("fade", (1 - Mathf.SmoothStep(0.64f, 1.0f, c)) * (1 - Mathf.SmoothStep(0.85f, 1f, life)));
             pillar.Visible = cap.Visible = false;
         }
         float grow = 1 - Mathf.Pow(1 - Mathf.Clamp(c / 0.15f, 0, 1), 3);

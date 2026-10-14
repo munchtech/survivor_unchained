@@ -11,7 +11,22 @@ global uniform vec4 flare_at;     // xyz: where she stood at the press; w: the r
 global uniform vec4 flare_look;   // x: drain 0..1; y: repaint radius (m); z: the repaint's cold 0..1; w: kind (0 none, 1 Burns Twice, 2 its Black Ice)
 global uniform vec4 flare_web;    // x: web light 0..1; y: heat (1 the calling's hue .. 0 dark); z: how far it has lit (m); w: seed
 global uniform vec4 flare_frost;  // x: the front (m); y: frost alive 0..1; z: melted in from the edge (m); w: seconds since the frost
-global uniform vec4 flare_fire;   // xyz: the BOOM's fireball (world); w: its light on the frozen statues' rims (0 none)
+global uniform vec4 flare_fire;   // xyz: the BOOM's fireball (world); w: its light on the world I(t) 0..1 (0 none)
+
+// The fireball's light on the world (judge 5b fix 3): a weight by the direction to the ball, not the view, falling
+// 1 within 3 m, 0.55 at 6 m, ~0.2 at 12 m; its colour yellow at the birth, orange after.
+float flare_fire_w(vec3 wp, vec3 n_world) {
+	if (flare_fire.w <= 0.0) return 0.0;
+	vec3 to = flare_fire.xyz - wp;
+	float d = length(to);
+	float nl = dot(n_world, to / max(d, 1e-3));
+	return (0.5 * nl + 0.5) * (0.5 * nl + 0.5) * exp(-max(d - 3.0, 0.0) * 0.2) * flare_fire.w;
+}
+// (the statues' warm faces' emission at full weight)
+const float fire_rim = 0.9;
+vec3 flare_fire_col() {
+	return mix(vec3(1.0, 0.62, 0.30), vec3(1.0, 0.80, 0.45), smoothstep(0.6, 1.0, flare_fire.w));
+}
 global uniform vec4 flare_hue;    // rgb: the web's hot colour (the calling's); a: night 0..1
 global uniform sampler2D flare_plate : filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
@@ -406,6 +421,11 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		}
 	}
 	emi += web;
+	// The fireball's warm pool on the ground within ~5 m, frost and scorch alike (judge 5b fix 3).
+	if (flare_fire.w > 0.0) {
+		float pd = length(w - flare_fire.xz);
+		emi += flare_fire_col() * flare_fire.w * 0.14 * (1.0 - smoothstep(1.5, 5.0, pd)) * (1.0 + alb);
+	}
 }
 
 // Whether Burns Twice's frost holds this point's reach (its glaze, not a spell's rime, says what is frozen there).

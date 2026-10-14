@@ -35,7 +35,11 @@ uniform float birth_end = 24.0;
 // over the world at most soot_max.
 uniform vec3 soot_lit = vec3(0.08, 0.035, 0.012);
 uniform float soot_up = -1.0;
-uniform float soot_max = 0.7;
+uniform float soot_max = 0.85;
+// How much the dip takes from the fire (1/dip - 1) after the birth: the hottest of it (straight luma undip_lo..hi) gets it back.
+uniform float undip = 0.0;
+uniform float undip_lo = 0.5;
+uniform float undip_hi = 0.8;
 // The soot eroding from its thin edge first (0 none .. 1 all), with a noise so it tears rather than shrinks.
 uniform float erode = 0.0;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
@@ -68,8 +72,17 @@ void fragment() {
 		sc = max(mix(vec3(l), sc, mix(s, 1.0, heart)), vec3(0.0));
 		c.rgb = sc * c.a * (1.0 + hot * heart);
 	}
-	// Nothing outside the fire before f124 (judge 5a 1d: an olive haze hugged the young ball): its thin veil clipped.
-	c *= mix(1.0, smoothstep(0.1, 0.2, c.a), 1.0 - smoothstep(4.5, 6.0, f));
+	// Nothing outside the fire before f124 (judge 5a 1d: an olive haze hugged the young ball): its thin veil clipped,
+	// the clip let go over f120-f134 (judge 5b 2a: released in one step it filmed the folds), the veil's light x density^2.
+	float vk = 1.0 - smoothstep(3.4, 11.0, f);
+	c *= mix(1.0, smoothstep(0.1 * vk, 0.2 * vk + 1e-3, c.a), vk);
+	c.rgb *= mix(1.0, smoothstep(0.0, 0.35, c.a), smoothstep(3.4, 5.0, f) * (1.0 - smoothstep(14.0, 18.0, f)));
+	// The fire is opaque (judge 5b 1c: statues and frost showed through its lobes): its bright body covers what's behind.
+	{
+		float lf = dot(c.rgb / max(c.a, 1e-3), vec3(0.2126, 0.7152, 0.0722));
+		float a = max(c.a, smoothstep(0.12, 0.3, lf) * smoothstep(0.08, 0.3, c.a));
+		c.a = a;
+	}
 	{
 		// the soot: a pixel's darkness (straight luma under ~0.2) is how much of it is soot
 		float l = dot(c.rgb / max(c.a, 1e-3), vec3(0.2126, 0.7152, 0.0722));
@@ -77,13 +90,17 @@ void fragment() {
 		// lit in proportion to its own value (judge 5a 3: folds to bellies ~1:3), and from one side
 		float own = smoothstep(0.0, 0.08, l);
 		float side = 0.5 + 0.5 * soot_up * (1.0 - 2.0 * UV.y);
-		c.rgb = max(c.rgb, soot_lit * mix(0.3, 1.0, own) * mix(0.6, 1.2, side) * c.a * soot);
+		c.rgb = max(c.rgb, soot_lit * mix(0.22, 1.0, own * own) * mix(0.6, 1.2, side) * c.a * soot);
 		float a = mix(c.a, min(c.a, soot_max), soot);
 		// eroding from its thin edge first, torn by a noise drifting up
 		float n = textureLod(flare_noise, UV * 2.5 + vec2(0.0, life * 0.4), 0.0).r;
 		a *= mix(1.0, smoothstep(erode, erode + 0.25, a + 0.3 * (n - 0.5)), soot);
 		c.rgb *= a / max(c.a, 1e-3);
 		c.a = a;
+	}
+	if (undip > 0.0) {
+		float lh = dot(c.rgb / max(c.a, 1e-3), vec3(0.2126, 0.7152, 0.0722));
+		c.rgb *= 1.0 + undip * smoothstep(undip_lo, undip_hi, lh);
 	}
 	// Square, soft: the atlas fades its own cells (pack.py); a round fade trimmed the rising smoke.
 	vec2 q = abs(UV * 2.0 - 1.0);
