@@ -7568,6 +7568,10 @@ if BODY_OUT:
     # (and the bow's normals refilled in the base and every mouth key, after the easing above recomputed them:
     # heroine_face_bow.py run_keys)
     heroine_face_bow.run_keys(BODY_OUT)
+    # (and her mouth's inside pushed back behind her skin in every face key, and the upper front gum raised so the laugh
+    # shows teeth, not gum: heroine_mouth_inner.py; heroine_mouth_seal.py is NOT hooked yet, judged NOT YET)
+    import heroine_mouth_inner
+    heroine_mouth_inner.run(BODY_OUT)
     # (her head +7%, the owner 14 Oct: the Head joint's rest scaled, her meshes as they were, so it
     # may run before or after any step that measures them (heroine_mouth.seat); keep it last)
     import heroine_headscale
