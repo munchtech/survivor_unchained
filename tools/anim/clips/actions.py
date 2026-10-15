@@ -848,19 +848,75 @@ def _cast_release(rig, keys, frm=16, to=28, lag=1.75):
     forearm, 0.1 mm from the glove in game, the forearm 80 mm into her trunk
     on the way; swung out from the start, its little finger met her right
     hand's knuckles at f19. Now 77 mm from the forearm, 29 from the hand.)"""
-    from keyed import Track, _one_frame
+    from keyed import FINGER_PRESETS, Track, _one_frame, finger_curl
+    from rig import qaxis, qinv, qmul, qslerp
     track = Track(_one_frame(rig, keys))
     m, n = 2.0, 3.0
     peak = (m / (m + n)) ** m * (n / (m + n)) ** n
 
+    def smooth(x):
+        x = min(1.0, max(0.0, x))
+        return x * x * (3 - 2 * x)
+
+    # (15 October, animation 33; the max judge on the passed path: "fix the hand".) Her fingers: the staff's grip to
+    # f17, opening from f18 to a soft curl by f20 (knuckle 20-29, middle joint 30-39, more toward the little finger;
+    # the relaxed thumb beside the forefinger), held to the end. Keyed "grip" then "relaxed", the preset switched at
+    # the nearer key: a fist to f22, then open in a frame.
+    grip, soft = finger_curl("grip"), finger_curl("relaxed")
+    curl = {"index": (20, 30, 8), "middle": (23, 33, 10), "ring": (26, 36, 12), "pinky": (29, 39, 14),
+            "thumb": tuple(soft["thumb"])}
+    rel = FINGER_PRESETS["relaxed"]
+
+    def fingers(fr):
+        s = smooth((fr - 17) / 3)
+        mix = lambda a, b: a + (b - a) * s
+        return {"bends": {f: tuple(mix(a, b) for a, b in zip(grip[f], curl[f])) for f in curl},
+                "oppose": mix(0, rel["oppose"]), "thumb_roll": mix(0, rel["thumb_roll"]),
+                "thumb_in": mix(0, rel["thumb_in"]), "spreads": {f: mix(0, v) for f, v in rel["spreads"].items()}}
+
+    # Her wrist: flexed toward the palm as the hand swings out (measured +9/+14/+15 at f20-22) so the fingers trail;
+    # then, over f21-28, turned in the hand's own frame (on how it rides as keyed) out of the staff's pronation: rolled
+    # toward neutral, the palm in on her hip, the fingers forward and down, extension 38 (it hung at 44, palm 27 mm
+    # off the hip). The elbow eased back (pole) and the hand 38 mm in toward the hip over f22-28 so the palm can reach.
+    s3, h = rig.I["spine_03"], rig.I["hand_l"]
+    land_q = qmul(qaxis([0, 1.0, 0], -45), qmul(qaxis([0, 0, 1.0], 17), qmul(qaxis([0, 1.0, 0], 50), qaxis([1.0, 0, 0], 24))))
+    inward = np.array([-0.95, -0.18, 0.24])
+    pole_to = np.array([-0.2, 0.0, -1.0])
+
+    def turn(fr):
+        b = 32.0 * smooth((fr - 15) / 3) * (1 - smooth((fr - 21) / 3))
+        land = smooth((fr - 21) / 7)
+        return qmul(qaxis([0, 0, 1.0], -b), qslerp(np.array([0, 0, 0, 1.0]), land_q, land))
+
+    def hand_turn(pose):
+        keep = getattr(rig, "swivel_force", None)
+        rig.swivel_force = {}
+        local, pos = rig.solve(pose)
+        rig.swivel_force = keep
+        g, _ = rig.globals(local, pos)
+        chest = qmul(g[0, s3], qinv(rig.grest[s3]))
+        return qmul(qinv(chest), g[0, h])
+
     def post(fr, pose):
-        if not frm < fr < to:
+        if frm < fr < to:
+            u = (fr - frm) / (to - frm)
+            w = u ** m * (1 - u) ** n / peak
+            az, _, r = pose["hand_l"]["arc"]
+            el = track(fr - lag * w)["hand_l"]["arc"][1]
+            pose["hand_l"] = {**pose["hand_l"], "arc": (az, el, r)}
+        if fr <= frm:
             return pose
-        u = (fr - frm) / (to - frm)
-        w = u ** m * (1 - u) ** n / peak
-        az, _, r = pose["hand_l"]["arc"]
-        el = track(fr - lag * w)["hand_l"]["arc"][1]
-        pose["hand_l"] = {**pose["hand_l"], "arc": (az, el, r)}
+        k = smooth((fr - 22) / (to - 22))
+        if k:
+            az, el, r = pose["hand_l"]["arc"]
+            a, e = math.radians(az), math.radians(el)
+            v = np.array([r * math.cos(e) * math.sin(a), r * math.sin(e), r * math.cos(e) * math.cos(a)]) + 0.038 * k * inward
+            p0 = np.array(pose["hand_l"]["pole"], float)
+            pose["hand_l"] = {**pose["hand_l"], "arc": arc_of(v), "pole": tuple(p0 + (pole_to - p0) * k)}
+        pose["fingers_l"] = fingers(fr)
+        q = qmul(hand_turn(pose), turn(fr))
+        pose["hand_l"] = {**pose["hand_l"], "knuckles": tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
+                          "blade": tuple(float(x) for x in qrot(q, [0, 0, 1.0]))}
         return pose
     return post
 
