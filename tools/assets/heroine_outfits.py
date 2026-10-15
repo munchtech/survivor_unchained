@@ -9242,6 +9242,81 @@ def glove_riders(objs):
         print("GLOVE RIDERS %s: %d points of %d threads on the sheet's own weights (furthest %.1f mm off it)" % (sd, n, len(riders), worst * 1000))
 
 
+# (s26 solver gs5: GLOVE_HAND_EXACT again, last, on her body's final weights: the sheet's blend taken at build
+# time still carried 0.04 of her hand up the thumb sleeve where her exported skin has none (her rig's later
+# passes), 3 mm off her with her thumb spread. So every layer of each fingerless glove (sheet, hem, piping)
+# takes, in its hand part, her final skin's own blend at its nearest point, before the cords ride it.)
+def glove_hand_final(objs):
+    ex = tuple(float(v) for v in os.environ.get("GLOVE_HAND_EXACT", "0.5,0.9").split(","))
+    if len(ex) < 2 or ARC_HANDS != "fingerless":
+        return
+    bones = [b.name for b in arm.data.bones]
+    bi = {n: i for i, n in enumerate(bones)}
+    handc = np.array([n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky") for n in bones])
+    bm_ = body.data
+    bm_.calc_loop_triangles()
+    mwb = body.matrix_world
+    bp = np.array([(mwb @ v.co)[:] for v in bm_.vertices])
+    gname = {g.index: g.name for g in body.vertex_groups}
+    bt = np.array([t.vertices[:] for t in bm_.loop_triangles])
+    for sd in "lr":
+        gl = [o for o in objs if o.type == "MESH" and o.name.startswith(f"arcanist.glove_{sd}") and "_point" not in o.name]
+        if not gl:
+            continue
+        gp = np.vstack([np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices]) for o in gl])
+        near = cKDTree(gp).query(bp, distance_upper_bound=0.03)[0] < 0.03
+        tri = bt[near[bt].all(1)]
+        used = np.unique(tri)
+        bw = np.zeros((len(bp), len(bones)))
+        for i in used:
+            for g in bm_.vertices[i].groups:
+                n = gname.get(g.group)
+                if n in bi:
+                    bw[i, bi[n]] += g.weight
+        bvh = BVHTree.FromPolygons([tuple(q) for q in bp], tri.tolist())
+        nmv, worst = 0, 0.0
+        for o in gl:
+            ogn = {g.index: g.name for g in o.vertex_groups}
+            groups = {g.name: g for g in o.vertex_groups}
+            rows, ks = [], []
+            for v in o.data.vertices:
+                q = o.matrix_world @ v.co
+                old = np.zeros(len(bones))
+                for g in v.groups:
+                    if ogn.get(g.group) in bi:
+                        old[bi[ogn[g.group]]] += g.weight
+                co, _n, fi, _d = bvh.find_nearest(q)
+                if co is None:
+                    rows.append(old); ks.append(0.0)
+                    continue
+                a_, b_, c_ = bp[tri[fi]]
+                v0, v1, v2 = b_ - a_, c_ - a_, np.array(co[:]) - a_
+                d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+                den = max(d00 * d11 - d01 * d01, 1e-18)
+                bv = (d11 * d20 - d01 * d21) / den
+                bw_ = (d00 * d21 - d01 * d20) / den
+                bc = np.clip(np.array([1 - bv - bw_, bv, bw_]), 0, 1)
+                sx = bc @ bw[tri[fi]] / max(bc.sum(), 1e-9)
+                k = np.clip((sx[handc].sum() - ex[0]) / (ex[1] - ex[0]), 0, 1)
+                k = k * k * (3 - 2 * k)
+                rows.append(old * (1 - k) + sx * k); ks.append(k)
+            rows = four_bones(np.array(rows))
+            rows /= np.maximum(rows.sum(1, keepdims=True), 1e-9)
+            ks = np.array(ks)
+            for i in np.nonzero(ks > 0)[0]:
+                for g in list(o.data.vertices[i].groups):
+                    if o.vertex_groups[g.group].name in bi:
+                        o.vertex_groups[g.group].remove([int(i)])
+                for j in np.nonzero(rows[i] > 1e-4)[0]:
+                    if bones[j] not in groups:
+                        groups[bones[j]] = o.vertex_groups.new(name=bones[j])
+                    groups[bones[j]].add([int(i)], float(rows[i, j]), "REPLACE")
+            nmv += int((ks > 0).sum())
+        print("GLOVE HAND FINAL %s: %d points of %d layers on her final skin's blend" % (sd, nmv, len(gl)))
+
+
+glove_hand_final(made)
+
 glove_riders(made)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
