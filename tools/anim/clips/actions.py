@@ -975,6 +975,8 @@ def throw(rig):
     # The dagger's grip: the fingers closed round the hilt and the thumb
     # swung in over them (keyed.py "oppose"; "grip"'s thumb stood out like a
     # hitch-hiker's), as the warden's sword grip.
+    # Her right fist is the dagger's fitted wrap (keyed WRAP["daggers"]: "grip" in a daggers clip's right hand
+    # becomes it; this preset left her fingers 49-54 deg off it, fistfit.py daggers); the left keeps the preset.
     fist = {"curl": 0.92, "thumb": 0.65, "cascade": 0.08, "oppose": 0.8}
 
     def held(v, pole, blade, twist=0.45):
@@ -1001,7 +1003,7 @@ def throw(rig):
         # already turning down as the hips lead, so it doesn't turn in a frame.)
         hand_l = held((0.29 - 0.10 * max(0.0, 2 * c - 1), -0.16, 0.26), (0.8, -0.5, -0.2), (0.45 - 0.05 * c, 0.8 - 0.4 * c, 0.35 + 0.4 * c))
         return body(stance(0.07, weight=-0.4), hips=(-16, -2 - 2 * c, 0), spine=(-26, -8 - 3 * c, 0), head=(30, -2 + 4 * c, 0),
-                    clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r=fist, fingers_l=fist)
+                    clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r="grip", fingers_l=fist)
 
     keys = [
         # (judge 11: the haft still stood upright and the hand out to the
@@ -1020,7 +1022,7 @@ def throw(rig):
         (3.5, body(stance(0.08), hips=(-2, 6, 0), spine=(0, 8, 0), head=(4, -4, 0),
                    hand_r=held((-0.04, 0.10, 0.44), (-0.8, -0.3, -0.2), (0.05, 0.35, 1.0)),
                    hand_l=held((0.10, -0.29, 0.18), (0.6, -0.2, -0.6), (0.3, -0.2, 0.93)),
-                   fingers_r=fist, fingers_l=fist), "linear"),
+                   fingers_r="grip", fingers_l=fist), "linear"),
         # The follow-through: the right arm long, the fist ahead of her and
         # low, the blade pointing ahead and down at where the knife went (a
         # fist kept close in front of her held its blade at her groin); the left swept down
@@ -1030,16 +1032,16 @@ def throw(rig):
         (7, body(stance(0.10, weight=0.5), hips=(12, 10, 0), spine=(22, 14, 0), head=(-26, -6, 0),
                  hand_r=held((-0.215, -0.15, 0.45), (-0.6, -0.6, 0.0), (-0.75, -0.25, 0.6)),
                  hand_l=held((0.07, -0.40, 0.12), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
-                 fingers_r=fist, fingers_l=fist), "ease"),
+                 fingers_r="grip", fingers_l=fist), "ease"),
         (10, body(stance(0.10, weight=0.5), hips=(13, 10, 0), spine=(24, 14, 0), head=(-28, -6, 0),
                   hand_r=held((-0.225, -0.19, 0.43), (-0.6, -0.6, 0.0), (-0.7, -0.3, 0.65)),
                   hand_l=held((0.08, -0.42, 0.10), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
-                  fingers_r=fist, fingers_l=fist), "auto"),
+                  fingers_r="grip", fingers_l=fist), "auto"),
         # Back to the hands low at her sides, the blades ahead (the left
         # beside her thigh, off her groin: judge 10).
         (21, body(stance(0.07), hand_r=held((-0.09, -0.33, 0.15), (-0.6, -0.4, -0.5), (-0.7, -0.05, 0.7)),
                   hand_l=held((0.06, -0.38, 0.06), (0.6, -0.4, -0.5), (0.15, -0.35, 0.92)),
-                  fingers_r=fist, fingers_l=fist), "ease"),
+                  fingers_r="grip", fingers_l=fist), "ease"),
     ]
     return build("throw", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3.5 / 30, "weapon": "daggers"})
 
