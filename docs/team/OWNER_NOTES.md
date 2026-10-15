@@ -288,3 +288,6 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
   - (e) real satin: a sheen that runs along the forearm, not flat white.
 - The style doesn't change her body, so **the one body build starts now** with B1 as the default. The styled glove is shot on the new hand. Whatever style wins carries to the stocking tops.
 
+
+## 14 October 2026, evening: the crossbow hold (to coordinator 1847d1a6)
+- Animation found the crossbow mesh has no pistol grip (the stock sits 85-120 mm off her hand) and `Arms.Seat` skips pistol pieces. The owner picked **(a): add a pistol grip** so her fist seats as it does on the sword (not a stock-under-forearm hold). Animation lead: a grip on the mesh (ours, logged in ASSET_PROVENANCE), an `Arms.Seat` path for it, a WRAP fist and a PocketR line, then the wrist cap at crossbow_shoot; queued after the other weapons' wrist cap.
