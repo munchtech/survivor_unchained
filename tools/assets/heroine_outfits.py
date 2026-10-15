@@ -6606,6 +6606,39 @@ def arcanist():
     GLOVE_HEM = float(os.environ.get("GLOVE_HEM", "0.0035"))
     GLOVE_SOFTEN = int(os.environ.get("GLOVE_SOFTEN", "24"))
     GLOVE_SMOOTH = int(os.environ.get("GLOVE_SMOOTH", "6"))
+    # (s26 solver gs5, judge hip l30: with her thumb spread (hand on hip, thumb_in 70) the thumb hole's web side
+    # sank 2.2 mm into her and the knuckle edge at the web stood off as a white point: the sheet's weights, eased
+    # over 8 mm (eased_weights), had carried her hand's share up the 8 mm thumb sleeve (hand 0.06, thumb_01 0.13
+    # where her skin has none) and her thumb's down onto the web's knuckle edge (thumb_02 0.07 vs 0.01), and with
+    # her thumb turned 70 deg at its root each point went 4-6 mm off the skin it sits on. Now the glove's hand
+    # part takes her skin's own blend at its nearest point (barycentric: as smooth as her skin's), full where her
+    # hand and fingers carry GLOVE_HAND_EXACT[1] of it, none under [0] (her wrist keeps the eased blend). "0": as before.)
+    GLOVE_HAND_EXACT = tuple(float(v) for v in os.environ.get("GLOVE_HAND_EXACT", "0.5,0.9").split(","))
+    _hand_cols = np.array([n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky") for n in BONES])
+    def glove_hand_exact(pos, wt):
+        if len(GLOVE_HAND_EXACT) < 2:
+            return wt
+        sx = np.zeros_like(wt)
+        for i, q in enumerate(pos):
+            co, _n, fi, _d = BVH.find_nearest(Vector(q))
+            if co is None:
+                sx[i] = wt[i]
+                continue
+            a_, b_, c_ = P[TRI[fi]]
+            v0, v1, v2 = b_ - a_, c_ - a_, np.array(co[:]) - a_
+            d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+            den = max(d00 * d11 - d01 * d01, 1e-18)
+            bv = (d11 * d20 - d01 * d21) / den
+            bw = (d00 * d21 - d01 * d20) / den
+            bc = np.clip(np.array([1 - bv - bw, bv, bw]), 0, 1)
+            sx[i] = bc @ W[TRI[fi]] / max(bc.sum(), 1e-9)
+        k = np.clip((sx[:, _hand_cols].sum(1) - GLOVE_HAND_EXACT[0]) / (GLOVE_HAND_EXACT[1] - GLOVE_HAND_EXACT[0]), 0, 1)
+        k = (k * k * (3 - 2 * k))[:, None]
+        out_ = wt * (1 - k) + sx * k
+        print("GLOVE hand exact: %d points on her skin's own blend, %d eased into it (moved L1 up to %.2f, mean %.3f)"
+              % (int((k[:, 0] > 0.999).sum()), int(((k[:, 0] > 0) & (k[:, 0] <= 0.999)).sum()),
+                 np.abs(out_ - wt).sum(1).max(), np.abs(out_ - wt).sum(1).mean()))
+        return out_
     def glove_top_cut(sd):
         e_, w_ = ARM[sd][1], ARM[sd][2]
         ax_ = (w_ - e_) / np.linalg.norm(w_ - e_)
@@ -6803,7 +6836,8 @@ def arcanist():
                          (np.minimum(tc(q), kc(q)) if kc is not None else tc(q)) if tc is not None else kc(q))
                         if (ARC_CAPS or FL_EXACT) else None,
                     trim=(("glovepipe", GLOVE_PIPE[0], 0.0003, 0.0008) if GLOVE_STYLE in ("G1", "G2") else (ARC_GLOVE_MAT, GLOVE_HEM, 0.0003, 0.0008)) if GLOVE_HEM > 0 else None,
-                    clear=lambda q, sd=sd: FL_LIFT - (0.0 if ARC_CAPS else GLOVE_SINK) * glove_top_k(q, sd))
+                    clear=lambda q, sd=sd: FL_LIFT - (0.0 if ARC_CAPS else GLOVE_SINK) * glove_top_k(q, sd),
+                    weigh=glove_hand_exact)
               if ARC_HANDS == "fingerless" else []),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
