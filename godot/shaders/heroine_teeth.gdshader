@@ -34,9 +34,17 @@ uniform float fill = 0.2;
 uniform vec3 deep_tint = vec3(1.0, 1.07, 0.96);
 // (judge a05fb157: at deep_tint, green over red, they read a cool green stone grey on all ten (worst Hard-won, Fey):
 // deep_warm 1 takes deep_tint_warm instead, warmer and darker, so they recede into the mouth's warm shade.
-// UNJUDGED: 0 until judged (pictures: --teethparam deep_warm=1))
+// Judge a00723b7: still olive-khaki in the laugh (Fey, Hard-won most), her near side teeth blue-grey. Not the sky:
+// at the Look its light off (--look-ambient 0), the reflections off, SSAO off or the fill and edge lamps off left
+// those teeth's colour as it was (solver interior, ia). Ivory darkened is olive beside her mouth's red, and her side
+// teeth, lit more by the white fill than the warm key, lose their ivory's yellow (hue 54 to 32, b* 14 to 4). So with
+// deep_warm, her far lower row goes on to deep_dark (a dim red-brown, the light that reaches it off her cheeks and
+// tongue), and every tooth by its shade (1 - its light, k^2.2, times the lower row's own share) toward shade_warm, so
+// her side teeth keep the ivory's warmth as they darken)
 uniform vec3 deep_tint_warm = vec3(0.8, 0.6, 0.45);
-uniform float deep_warm = 0.0;
+uniform vec3 deep_dark = vec3(0.5, 0.32, 0.29);
+uniform vec3 shade_warm = vec3(1.0, 0.82, 0.55);
+uniform float deep_warm = 1.0;
 uniform float deep_spec = 0.15;
 uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden)
 
@@ -52,7 +60,10 @@ void fragment() {
 	// (her lips shut, 1, to parted, 0: shut runs from 1 to 0.6 by mouth_open 0.05)
 	float c = clamp((shut - 0.6) / 0.4, 0.0, 1.0);
 	float dw = 1.0 - clamp(COLOR.g, 0.0, 1.0);
-	ALBEDO = mix(texture(paint, UV).rgb * ivory * mix(vec3(1.0), mix(deep_tint, deep_tint_warm, deep_warm), dw), shade, c);
+	vec3 dt = mix(vec3(1.0), mix(deep_tint, deep_tint_warm, deep_warm), dw);
+	dt = mix(dt, deep_dark, dw * deep_warm);
+	dt *= mix(vec3(1.0), shade_warm, deep_warm * clamp(1.0 - f * clamp(COLOR.g, 0.0, 1.0), 0.0, 1.0));
+	ALBEDO = mix(texture(paint, UV).rgb * ivory * dt, shade, c);
 	SPECULAR = 0.5 * f * (1.0 - c) * mix(1.0, deep_spec, min(1.0, 2.0 * dw));
 	ROUGHNESS = mix(mix(0.6, roughness, k), 1.0, c);
 	AO = mix(f, seep, c);

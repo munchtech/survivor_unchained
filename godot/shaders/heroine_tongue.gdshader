@@ -19,8 +19,22 @@ uniform float fill = 0.15;
 uniform float roughness = 0.45;
 uniform float specular = 0.3;
 uniform float shine = 0.15;     // (the lamps' sheen on it, x.15 of what it was, by its depth and darkening (COLOR.r*COLOR.g) so it dies toward its root and where it touches her lower teeth: a blue-white glint on its far raised edge there (judge r4))
+// (judge a00723b7: its far side ended in a hard vertical line against her back teeth. Its side falls into their shade:
+// its light cut by lat_amt from lat_in to lat_out m off her mouth's middle (lat_mid), its points taken to her head's own
+// space (head_inv, set each frame by HerFaceLife.TongueFrame), so the shade stays on its sides as her head turns.
+// UNJUDGED: 0 until judged; the candidate is 0.85 (pictures: --tongueparam lat_amt=0.85))
+uniform mat4 head_inv = mat4(1.0);
+uniform float lat_amt = 0.0;
+uniform float lat_in = 0.008;
+uniform float lat_out = 0.018;
+uniform float lat_mid = 0.0016;
 varying float shade_k;
 varying float shine_k;
+varying float lat_x;
+
+void vertex() {
+	lat_x = abs((head_inv * vec4(VERTEX, 1.0)).x - lat_mid);
+}
 
 void fragment() {
 	float k = COLOR.r;
@@ -29,7 +43,7 @@ void fragment() {
 	float side = 1.0 - rim * (1.0 - smoothstep(0.0, 0.6, abs(dot(NORMAL, VIEW))));
 	// (its vertex colour's green: darker where it touches her lower teeth and on its raised sides (heroine_mouth.py's
 	// TOUCH, EDGE), so its edge there never reads lighter than its top (solver int3))
-	float dark = COLOR.g;
+	float dark = COLOR.g * (1.0 - lat_amt * smoothstep(lat_in, lat_out, lat_x));
 	ALBEDO = c * side * dark;
 	AO = k * k;
 	AO_LIGHT_AFFECT = 0.0;
