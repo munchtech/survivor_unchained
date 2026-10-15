@@ -1027,13 +1027,14 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
                   "oppose": 0.45, "thumb_roll": 12.3},
         # The dagger (WeaponSockets.DaggerAtR / DaggerDirR), fitted 14 October (animation 31, fistfit.py daggers --fit
         # --seat 80, on daggers_back's frame 2 and the ranger's hand) on its own section: the hilt is a flat hexagon,
-        # 15 mm thick toward the palm and 29 across, 122 mm between pommel and guard. Nothing of the hand into it (0.0),
-        # the palm on it (1.1), the outer pads 0.3-0.6 mm off, the fingers' ends round it and touching (0.9-1.3 mm
-        # apart); the thumb's last joint 68 (55-70: its pad over the forefinger, not a hook). Not yet the pass: the
-        # forefinger's and middle finger's middle bones 3.0 and 3.2 mm off the flat, the little finger's end 2.5 (the
-        # bones turn at the hexagon's corners; a round 13-14 mm grip would close them, as the chevalier's thinning did).
-        "daggers": {"bends": {"index": (56.7, 105.5, 43.9), "middle": (74.4, 91.3, 40.6), "ring": (83.0, 83.7, 41.9), "pinky": (90.9, 65.1, 60.1), "thumb": (5.1, 21.1, 68.3)}, "spreads": {"index": -9.4, "middle": -0.9, "ring": 15.8, "pinky": 22.7},
-                  "oppose": 0.00, "thumb_roll": -4.5}}
+        # 15 mm thick toward the palm and 29 across, 122 mm between pommel and guard. Refitted 14 October (animation 33's
+        # solver, the 02/03 pads weighted and held 0..1.5 mm, the seat 1.0 mm deeper: DaggerAtR x -33.4 -> -32.4 mm):
+        # nothing of the hand into it (0.0), the palm on it (0.4), the outer pads 0.4-1.4 mm off (forefinger 1.3/0.6,
+        # middle 0.7/0.6, ring 0.9/0.6, little 0.4/1.4), the thumb's middle bone 0.5 off (was 0.6 in), its last joint 69,
+        # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
+        # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
+        "daggers": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
+                  "oppose": 0.01, "thumb_roll": -3.9}}
 
 
 def spread_axis(rig, j):

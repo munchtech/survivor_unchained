@@ -109,7 +109,7 @@ public static class WeaponSockets
     /// forefinger; her forefinger 4 mm short of the guard, the heel of her palm on the pommel. (The plain mount, -25, 75,
     /// 0 mm, ran the hilt 10 mm into her palm and little finger, the forefinger 15 mm off it.) Live only for a dagger whose
     /// Spec is Seated.</summary>
-    public static readonly Vector3 DaggerAtR = new(-0.0334f, 0.0720f, -0.0139f);
+    public static readonly Vector3 DaggerAtR = new(-0.0324f, 0.0720f, -0.0139f);
     public static readonly Vector3 DaggerDirR = new(0f, 0.5f, 0.8660254f);
 
     /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the
