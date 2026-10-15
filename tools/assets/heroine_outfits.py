@@ -1897,6 +1897,12 @@ def relax(pos, tris, interior=0, edge=12):
 # metalness and roughness where the scan has no map of them. The colour is
 # baked into a texture of the material's own (outfit_<key>_diff.jpg), so the
 # game gets exactly what was made here.
+# (s27 glove round 2: GLOVE_IVORY "r,g,b,mean" the glove an ivory under 255 so its highlight has room
+# (judge gl r1: paper-white by day); GLOVE_PIPE_MAT "r,g,b,mean,rough" the piping matched to the
+# leotard's plum (it read navy-black); GLOVE_THREAD_MAT likewise for the back-of-hand points)
+_GIV = [float(v) for v in os.environ.get("GLOVE_IVORY", "").split(",") if v]
+_GPM = [float(v) for v in os.environ.get("GLOVE_PIPE_MAT", "0.60,0.42,0.72,58,0.30").split(",")]
+_GTM = [float(v) for v in os.environ.get("GLOVE_THREAD_MAT", "1.652,1.379,1.12,240,0.22").split(",")]
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
@@ -1921,12 +1927,12 @@ SPEC = {
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
     # (s21, her gloves: the stockings' bands' white, a finer weave and a softer sheen over a forearm's length)
     "glovesatin": ("rough_linen", (1.652, 1.379, 1.12), 228, 40, 0.0, 0.3) if not os.environ.get("GLOVE_STYLE") else
-                  ("rough_linen", (1.652, 1.379, 1.12), 212, 40, 0.0, 0.25),   # (s23 judge gl1: 0.45 read matte cotton; a satin sheen. s24 GLOVE_STYLE S1: 212/0.25, headroom for its highlight)
+                  (("rough_linen", tuple(_GIV[:3]), _GIV[3], 40, 0.0, 0.25) if _GIV else ("rough_linen", (1.652, 1.379, 1.12), 212, 40, 0.0, 0.25)),   # (s23 judge gl1: 0.45 read matte cotton; a satin sheen. s24 GLOVE_STYLE S1: 212/0.25, headroom for its highlight)
     # (s24 GLOVE_STYLE S2: the gloves' plum piping (the leotard's plum, a touch lighter than plumleather),
     # a less mirror-like gold for small parts, an ivory silk thread a shade over the glove)
-    **({"glovepipe": ("rough_linen", (0.60, 0.42, 0.72), 58, 40, 0.0, 0.30),
+    **({"glovepipe": ("rough_linen", tuple(_GPM[:3]), _GPM[3], 40, 0.0, _GPM[4]),
         "wiregold": ("Metal048C", (252, 194, 108), None, 3, 1.0, 0.34),
-        "glovethread": ("rough_linen", (1.652, 1.379, 1.12), 240, 60, 0.0, 0.22)} if os.environ.get("GLOVE_STYLE") else {}),
+        "glovethread": ("rough_linen", tuple(_GTM[:3]), _GTM[3], 60, 0.0, _GTM[4])} if os.environ.get("GLOVE_STYLE") else {}),
     "gloveblack": ("rough_linen", (0.3, 0.3, 0.34), 24, 40, 0.0, 0.46),   # (s23 judge gl1: 0.4 near wet-look in the fist close)
     "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 100, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
@@ -6544,6 +6550,12 @@ def arcanist():
     FL_WEB_GAP = float(os.environ.get("FL_WEB_GAP", "0.002"))
     FL_V = float(os.environ.get("FL_V", {"G1": "0.012", "G2": "0.011"}.get(GLOVE_STYLE, "0.008")))
     FL_P1 = [float(x) for x in os.environ.get("FL_P1", "0.0232,0.0269,0.0267,0.0211").split(",")]
+    # (s27 glove round 2, judge gl r1: a white tooth where the cut met her index knuckle and the piping hooked
+    # there and at the pinky end. FL_DORS "offset,width" of the band the V eases in over, back of the hand to
+    # palm (was 4,8 mm); FL_THUMB_BLEND "lo,hi" her thumb's weight over which the thumb cut's field blends into
+    # the knuckle cut's (was a hard switch at 0.5, a step in the field; "0,0" = as before))
+    FL_DORS = [float(x) for x in os.environ.get("FL_DORS", "0.004,0.008").split(",")]
+    FL_THUMB_BLEND = [float(x) for x in os.environ.get("FL_THUMB_BLEND", "0,0").split(",")]
     def knuckle_exact(sd):
         # (her frame from her wrist and her middle joints (02), which a body build's
         # knuckle move leaves where they are; each finger's knot FL_P1 (her F1 rig's first
@@ -6581,7 +6593,7 @@ def arcanist():
             base_ = lambda ql: np.interp(ql, knots_l, knots_t)
         def line_at(ql, qu, tongue=True):
             line = base_(ql)
-            dors = np.clip((qu + 0.004) / 0.008, 0, 1)
+            dors = np.clip((qu + FL_DORS[0]) / FL_DORS[1], 0, 1)
             dors = dors * dors * (3 - 2 * dors)
             dl = np.sqrt((ql - lmid) ** 2 + FL_V_R ** 2) - FL_V_R if GLOVE_STYLE else np.abs(ql - lmid)
             line = line - FL_V * dors * np.clip(dl / half, 0, 1)
@@ -6596,6 +6608,10 @@ def arcanist():
             c = line - qt
             _, j = tree.query(q)
             th = FL_CUT_THUMB - (q - ta_) @ tx_
+            if FL_THUMB_BLEND[1] > FL_THUMB_BLEND[0]:
+                s_ = np.clip((wth[j] - FL_THUMB_BLEND[0]) / (FL_THUMB_BLEND[1] - FL_THUMB_BLEND[0]), 0, 1)
+                s_ = s_ * s_ * (3 - 2 * s_)
+                return c * (1 - s_) + th * s_
             return np.where(wth[j] > 0.5, th, c)
         return f
 
@@ -8202,6 +8218,9 @@ KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": 
 # Decals laid on her skin, drawn this far toward the camera so they never
 # z-fight it (the Reaver's ink half sank into her skin in the full model).
 PULL = {"ink": 0.0015}
+# (s27: GLOVE_ANISO, the glove satin's highlight drawn out along her forearm (its UV v runs along the arm);
+# written as "aniso" for the outfit shader's satin; 0 = none, as before)
+ANISO = {"glovesatin": float(os.environ.get("GLOVE_ANISO", "0"))} if float(os.environ.get("GLOVE_ANISO", "0")) else {}
 
 
 def kind(key):
@@ -8312,7 +8331,7 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {})} for k, v in SPEC.items()}, fh, indent=1)
+        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **({"aniso": ANISO[k]} if k in ANISO else {})} for k, v in SPEC.items()}, fh, indent=1)
 
 made = []
 for name, build in OUTFITS.items():

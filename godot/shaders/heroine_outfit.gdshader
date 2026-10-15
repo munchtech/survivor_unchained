@@ -33,6 +33,7 @@ uniform bool test_flat = false;                  // (the legal motion check: eve
 uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
 uniform float gold_rough = 0.2;
 uniform float gold_floor = 0.08;                  // (gold's own colour added as a dim emission, less in crevices, so it never goes black at night; 0.08 by judge g4: warm gold at night, no change by day, 0.15 turned shadowed trim to flat tan)
+uniform float satin_aniso = 0.0;                   // (s27, satin only: its highlight drawn out along the UV v (her forearm, on the gloves); 0 = round, as before)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -203,6 +204,8 @@ void fragment() {
 		metal = 0.0;
 		RIM = 0.3;
 		RIM_TINT = 0.5;
+		ANISOTROPY = satin_aniso;
+		ANISOTROPY_FLOW = vec2(0.0, 1.0);
 	} else {
 		// Gloss: clean and smooth, barely a grain.
 		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.12);
