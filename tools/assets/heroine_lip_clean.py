@@ -144,6 +144,253 @@ def wet_line(img, x, yl, isl, lift=LIFT):
     return o, W, int(zone.sum()), rose
 
 
+
+# ---- round 2 (14 October 2026, paint solver; UNJUDGED): what each pose shows, her contact line, her inner lip's band ----
+
+VIEWS = (-25, -17, 0, 17, 25)   # (degrees of yaw at pitch -6, the Look's: a texel counts as seen if any of these sees it)
+POSES = {"rest": {}, "smile": {"smile": .8}, "pucker": {"pucker": .8}, "snarl": {"snarl": .8},
+         "laugh": {"mouth_open": .6, "smile": .8}, "open": {"mouth_open": .6}}
+RES = 0.00004     # (m: the views' pixel)
+BOX = (-0.026, 0.026, -0.026, 0.006)   # (m about her mouth's middle and her lips' line)
+MMPT = 0.131      # (mm per texel at 4096, on her lips)
+WIN = (1560, 1880, 1440, 1880)   # (her mouth's window on the shared UV at 4096: rows, cols)
+
+
+class Geo:
+    """Her head, teeth and tongue from heroine.glb, posed as the game does (face key, lips_lower+ at the face's own
+    fullness from looks.json, expression keys; smile with mouth_open adds smile_open and smile_hold)."""
+
+    def __init__(self, path=None):
+        import heroine_mouth as hmo
+        import heroine_mouth_inner as hmi
+        import heroine_seam as hs
+        self.hmo = hmo
+        js, binc = hs._load(path or hl.GLB)
+        self.m = {}
+        for mat in ("skin_head", "teeth", "tongue"):
+            mm, pp = hmo._prim(js, mat)
+            names = mm["extras"]["targetNames"]
+            V = hs._read(js, binc, pp["attributes"]["POSITION"]).astype(np.float64)
+            T = hs._read(js, binc, pp["indices"]).astype(np.int64).reshape(-1, 3)
+            D = {k: hs._read(js, binc, t["POSITION"]).astype(np.float64) for k, t in zip(names, pp["targets"])
+                 if k.startswith("face_") or k in ("smile", "mouth_open", "smile_open", "smile_hold", "snarl", "pucker",
+                                                    "lips_lower+")}
+            self.m[mat] = (V, T, D)
+            if mat == "skin_head":
+                self.uv = hs._read(js, binc, pp["attributes"]["TEXCOORD_0"]).astype(np.float64)
+        self.lips = hmi._lips()
+
+    def pose(self, mat, face, kv):
+        V, T, D = self.m[mat]
+        kv = dict(kv)
+        mo, sm = kv.get("mouth_open", 0), kv.get("smile", 0)
+        if sm and mo:
+            o = min(mo / 0.3, 1)
+            kv["smile_open"], kv["smile_hold"] = sm * o * o * (3 - 2 * o), sm * mo
+        P = V.copy()
+        if face != "own" and "face_" + face in D:
+            P += D["face_" + face]
+        if "lips_lower+" in D:
+            P += self.lips.get(face, 0.0) * D["lips_lower+"]
+        for k, v in kv.items():
+            if k in D and v:
+                P += v * D[k]
+        return P
+
+    def seen(self, face, kv, n=4096):
+        """n x n bool: her head's texels any of VIEWS sees in this pose (her teeth and tongue hide what's behind them)."""
+        P0 = self.pose("skin_head", face, {})
+        line = self.hmo.lips_line(P0, self.m["skin_head"][2]["mouth_open"])
+        x0 = np.median(P0[(np.abs(P0[:, 1] - line) < 0.004) & (P0[:, 2] > 0.09), 0])
+        zf = P0[(np.abs(P0[:, 1] - line) < 0.003) & (np.abs(P0[:, 0] - x0) < 0.005), 2].max()
+        c = np.array([x0, line, zf])
+        out = np.zeros((n, n), bool)
+        nx, ny = int((BOX[1] - BOX[0]) / RES), int((BOX[3] - BOX[2]) / RES)
+        posed = {mat: self.pose(mat, face, kv) for mat in self.m}
+        for yaw in VIEWS:
+            a, b = np.radians(yaw), np.radians(-6.0)
+            R = (np.array([[1, 0, 0], [0, np.cos(b), -np.sin(b)], [0, np.sin(b), np.cos(b)]])
+                 @ np.array([[np.cos(a), 0, -np.sin(a)], [0, 1, 0], [np.sin(a), 0, np.cos(a)]]))
+            Z = np.full((ny, nx), -1e9)
+            TR = np.full((ny, nx), -1, np.int64)   # (her head's triangle; -2 teeth or tongue)
+            for mat in self.m:
+                V, T, D = self.m[mat]
+                tri = ((posed[mat] - c) @ R.T)[T]
+                lo, hi = tri.min(1), tri.max(1)
+                sel = np.where((hi[:, 0] > BOX[0]) & (lo[:, 0] < BOX[1]) & (hi[:, 1] > BOX[2]) & (lo[:, 1] < BOX[3]))[0]
+                for i in sel:
+                    p, q, r = tri[i]
+                    ix0, ix1 = max(int((lo[i, 0] - BOX[0]) / RES), 0), min(int((hi[i, 0] - BOX[0]) / RES) + 1, nx)
+                    iy0, iy1 = max(int((lo[i, 1] - BOX[2]) / RES), 0), min(int((hi[i, 1] - BOX[2]) / RES) + 1, ny)
+                    if ix1 <= ix0 or iy1 <= iy0:
+                        continue
+                    d = (q[1] - r[1]) * (p[0] - r[0]) + (r[0] - q[0]) * (p[1] - r[1])
+                    if abs(d) < 1e-16:
+                        continue
+                    X, Y = np.meshgrid(BOX[0] + (np.arange(ix0, ix1) + 0.5) * RES, BOX[2] + (np.arange(iy0, iy1) + 0.5) * RES)
+                    l1 = ((q[1] - r[1]) * (X - r[0]) + (r[0] - q[0]) * (Y - r[1])) / d
+                    l2 = ((r[1] - p[1]) * (X - r[0]) + (p[0] - r[0]) * (Y - r[1])) / d
+                    h = (l1 >= 0) & (l2 >= 0) & (l1 + l2 <= 1)
+                    z = l1 * p[2] + l2 * q[2] + (1 - l1 - l2) * r[2]
+                    zs = Z[iy0:iy1, ix0:ix1]
+                    w = h & (z > zs)
+                    if w.any():
+                        zs[w] = z[w]
+                        TR[iy0:iy1, ix0:ix1][w] = i if mat == "skin_head" else -2
+            V, T, D = self.m["skin_head"]
+            Q = (posed["skin_head"] - c) @ R.T
+            iy, ix = np.nonzero(TR >= 0)
+            t = TR[iy, ix]
+            px, py = BOX[0] + (ix + 0.5) * RES, BOX[2] + (iy + 0.5) * RES
+            p, q, r = Q[T[t, 0], :2], Q[T[t, 1], :2], Q[T[t, 2], :2]
+            d = (q[:, 1] - r[:, 1]) * (p[:, 0] - r[:, 0]) + (r[:, 0] - q[:, 0]) * (p[:, 1] - r[:, 1])
+            l1 = ((q[:, 1] - r[:, 1]) * (px - r[:, 0]) + (r[:, 0] - q[:, 0]) * (py - r[:, 1])) / d
+            l2 = ((r[:, 1] - p[:, 1]) * (px - r[:, 0]) + (p[:, 0] - r[:, 0]) * (py - r[:, 1])) / d
+            uv = l1[:, None] * self.uv[T[t, 0]] + l2[:, None] * self.uv[T[t, 1]] + (1 - l1 - l2)[:, None] * self.uv[T[t, 2]]
+            tx = np.clip((uv * n).astype(int), 0, n - 1)
+            out[tx[:, 1], tx[:, 0]] = True
+        return out
+
+
+def _ss(t):
+    t = np.clip(t, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def _lin(c):
+    c = c / 255.0
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def _srgb(c):
+    c = np.clip(c, 0, 1)
+    return 255.0 * np.where(c <= 0.0031308, 12.92 * c, 1.055 * c ** (1 / 2.4) - 0.055)
+
+
+def _win(a):
+    return a[WIN[0]:WIN[1], WIN[2]:WIN[3]]
+
+
+def _xprof(xv, vals, sel, step=0.5, sig=1.0, q=50):
+    """A per-x profile (percentile q of vals over sel, in step mm bins, smoothed sig mm), read back at xv."""
+    bx = np.arange(-20, 20.01, step)
+    v = np.array([np.percentile(vals[sel & (np.abs(xv - b) < step / 2)], q) if (sel & (np.abs(xv - b) < step / 2)).sum() > 3
+                  else np.nan for b in bx])
+    ok = np.isfinite(v)
+    v = np.interp(bx, bx[ok], v[ok])
+    v = ndimage.gaussian_filter1d(v, sig / step)
+    return np.interp(xv, bx, v)
+
+
+def meeting_line(s, I, Y):
+    """The paint's dark meeting line on her lower lip (window crop s): the long dark blob (GUARD under its 31-texel
+    median, over GUARD_N texels) lying most at -4..-1.5 mm of rest height."""
+    L = s @ LUM
+    dark = L < ndimage.median_filter(L, 31) - GUARD
+    lab, nl = ndimage.label(dark, np.ones((3, 3)))
+    sz = ndimage.sum(dark, lab, range(1, nl + 1))
+    cand = [(ndimage.sum(I & (Y > -4) & (Y < -1.5), lab, i), i) for i in 1 + np.nonzero(sz > GUARD_N)[0]]
+    return (lab == max(cand)[1]) & I
+
+
+RF = 1.2          # (mm in front of the meeting line where her lip's front is full colour)
+LB = 0.5          # (mm into that front where the move starts)
+LINE_IN = 0.1     # (share of the line's width laid past the contact, under her upper lip)
+WSCALE = 2.0      # (the line's width, times: the lip's top turns from the eye, so the line shows thinner there)
+CX = (11.0, 14.0)  # (mm off her mouth's middle: the move full, none)
+
+
+def contact(img, x, yl, isl, rest):
+    """Her lower lip's dark meeting line moved up to where her lips meet at rest (the edge of what VIEWS see with
+    her mouth shut, `rest`), its own width kept; the ramp from it to her lip's front stretched over the gap, so the
+    band of paint between the old line and the contact (Saffron: a grey band, then the line: a second line under the
+    crease) goes. Sampled along x (mm) and a (mm from the lip's full front) from the paint itself. Under the contact
+    (hidden at rest) it holds the line's inner edge; inner_band() then lays the inner lip's colour there."""
+    from scipy.interpolate import griddata
+    s = _win(img)
+    I = _win(isl)
+    X, Y = np.nan_to_num(_win(x), nan=99.0), np.nan_to_num(_win(yl), nan=99.0)
+    R = ndimage.binary_opening(ndimage.binary_closing(_win(rest) & I, iterations=2), iterations=2)
+    line = meeting_line(s, I, Y)
+    lab, nl = ndimage.label(I & ~ndimage.binary_dilation(line, iterations=2))
+    fr = ndimage.sum(Y < -5, lab, range(1, nl + 1))
+    front = (lab == 1 + int(np.argmax(fr))) & I
+    dl = ndimage.distance_transform_edt(~line) * MMPT
+    F = front & (dl >= RF)
+    a = ndimage.distance_transform_edt(~F) * MMPT - ndimage.distance_transform_edt(F) * MMPT
+    hid = I & ~R
+    b = ndimage.distance_transform_edt(~hid) * MMPT        # (visible texels: mm to the contact)
+    dv = ndimage.distance_transform_edt(~(I & R)) * MMPT   # (hidden texels: mm past it)
+    zone = I & (a > -LB - 1) & (np.abs(X) < 20)
+    S = np.where(hid, a - dv, a + b)
+    zs = zone & (a > 0) & (np.where(hid, dv, b) < 4)
+    sg = 0.5 / MMPT
+    S = ndimage.gaussian_filter(np.where(zs, S, 0), sg) / np.maximum(ndimage.gaussian_filter(zs.astype(float), sg), 1e-6)
+    alb = _xprof(X, a, line, q=10)
+    alt = _xprof(X, a, line, q=90)
+    w = np.maximum(alt - alb, 0.2)
+    h1, h2 = (1 - LINE_IN) * w * WSCALE, LINE_IN * w * WSCALE
+    n_ = a
+    o = np.where(n_ <= -LB, n_,
+        np.where(n_ <= S - h1, -LB + (n_ + LB) * (alb + LB) / np.maximum(S - h1 + LB, 1e-3),
+        np.where(n_ <= S + h2, alb + (n_ - (S - h1)) * w / (h1 + h2), alt)))
+    o = np.where(S - h1 > alb, o, n_)   # (where the line is already at the contact nothing moves)
+    src = zone & (a < float(alt.max()) + 0.5)
+    K = 3.0   # (a's scale against x in the interpolation)
+    tgt = zone & (n_ > -LB) & (np.abs(o - n_) > 1e-3)
+    new = griddata(np.c_[X[src], K * a[src]], s[src], np.c_[X[tgt], K * o[tgt]], method="linear")
+    bad = ~np.isfinite(new).all(1)
+    new[bad] = s[tgt][bad]
+    out = s.copy()
+    out[tgt] = new
+    wx = 1 - _ss((np.abs(X) - CX[0]) / (CX[1] - CX[0]))
+    wt = ndimage.gaussian_filter(zone.astype(float), 1.0) * wx
+    res = s * (1 - wt[..., None]) + out * wt[..., None]
+    o_img = img.copy()
+    o_img[WIN[0]:WIN[1], WIN[2]:WIN[3]] = res
+    return o_img, dict(moved=int((tgt & (wt > 0.5)).sum()), bad=int(bad.sum())), dict(a=a, S=S, alb=alb, alt=alt, line=line, hid=hid, X=X, o=o)
+
+
+SAT = 1.15        # (the inner band's saturation against her lip front's, linear)
+BRIGHT = 0.9      # (its sRGB brightness against her lip front's)
+DETAIL = 0.25     # (share of the paint's own fine shading kept in it)
+IN0, IN1 = 0.15, 0.4   # (mm past the contact: the band's colour from none to full, so her rest face doesn't change)
+DEEP = 1.0        # (mm: its soft darkening before the deepest point a pose shows, to DEEP_TO)
+DEEP_TO = 0.7
+INNER_X = (11.0, 14.0)
+
+
+def inner_band(img, x, yl, isl, rest, shown):
+    """Her lower lip's inner band (hidden at rest, `rest` False; shown in a snarl, laugh, open or pucker, `shown`):
+    her lip front's own colour (median, linear) a touch more saturated (SAT) at BRIGHT of its brightness, with
+    DETAIL of the paint's fine shading, darkening softly (to DEEP_TO) over the last DEEP mm before the deepest point
+    the poses show (her teeth). Eased in from IN0 to IN1 mm past the contact."""
+    s = _win(img)
+    I = _win(isl)
+    X, Y = np.nan_to_num(_win(x), nan=99.0), np.nan_to_num(_win(yl), nan=99.0)
+    R = ndimage.binary_opening(ndimage.binary_closing(_win(rest) & I, iterations=2), iterations=2)
+    Sh = ndimage.binary_closing(_win(shown) & I, iterations=2) & ~R
+    dv = ndimage.distance_transform_edt(~R) * MMPT
+    L = _lin(s)
+    fr = I & R & (Y < -5) & (Y > -8) & (np.abs(X) < 8)
+    base = np.median(L[fr], 0)
+    m = base.mean()
+    col = m + (base - m) * SAT
+    col *= (BRIGHT ** 2.2) * (base @ LUM) / (col @ LUM)
+    deep = _xprof(X, dv, Sh, q=95)
+    f = 1 - (1 - DEEP_TO) * _ss((dv - (deep - DEEP)) / (DEEP + 0.3))
+    ll = L @ LUM
+    sm = ndimage.gaussian_filter(ll, 0.6 / MMPT)
+    det = np.clip(ll / np.maximum(sm, 1e-4), 0.5, 1.6) ** DETAIL
+    new = col[None, None, :] * (f * det)[..., None]
+    wx = 1 - _ss((np.abs(X) - INNER_X[0]) / (INNER_X[1] - INNER_X[0]))
+    w = _ss((dv - IN0) / (IN1 - IN0)) * (I & ~R) * wx
+    O = L * (1 - w[..., None]) + new * w[..., None]
+    o_img = img.copy()
+    o_img[WIN[0]:WIN[1], WIN[2]:WIN[3]] = _srgb(O)
+    return o_img, dict(texels=int((w > 0.5).sum()), base=base.round(3), col=col.round(3),
+                       deep=round(float(np.median(deep[Sh])), 2) if Sh.any() else 0)
+
 def main():
     a = sys.argv[1:]
     opt = {"--src": hl.TEX, "--to": None, "--hi": HI, "--lo": LO, "--wet": None}
@@ -153,6 +400,7 @@ def main():
             opt[flag] = a[i + 1]
             del a[i:i + 2]
     src, to, hi, lo = opt["--src"], opt["--to"], float(opt["--hi"]), float(opt["--lo"])
+    a = [v for v in a if v not in ("--contact", "--inner")]
     files = hl.paints()
     cache = {}
     for f in a:
@@ -166,6 +414,24 @@ def main():
             img, ww, nz, rose = wet_line(img, *cache[n], lift=float(opt["--wet"]))
             print("LIP_CLEAN %s: meeting line's band %d texels, rose (linear) %s, max change %.1f"
                   % (f, nz, np.round(rose, 3), np.abs(img - img0).max()))
+        for flag in ("--contact", "--inner"):   # (round 2: her meeting line to the contact; her inner band's colour)
+            if flag not in sys.argv:
+                continue
+            if "geo" not in cache:
+                cache["geo"] = Geo()
+                cache["seen"] = {}
+            g = cache["geo"]
+            for pz in (("rest",) if flag == "--contact" else ("rest", "snarl", "laugh", "open", "pucker")):
+                if (f, pz) not in cache["seen"]:
+                    cache["seen"][(f, pz)] = g.seen(f, POSES[pz], n)
+            sv = cache["seen"]
+            img0 = img
+            if flag == "--contact":
+                img, info, _ = contact(img, *cache[n], sv[(f, "rest")])
+            else:
+                shown = sv[(f, "snarl")] | sv[(f, "laugh")] | sv[(f, "open")] | sv[(f, "pucker")]
+                img, info = inner_band(img, *cache[n], sv[(f, "rest")], shown)
+            print("LIP_CLEAN %s %s: %s, max change %.1f" % (f, flag, info, np.abs(img - img0).max()))
         if hi <= 0:   # (--hi 0: the meeting line's band only, no fleck pass)
             dst = os.path.join(to, files[f]) if to else p
             Image.fromarray(np.clip(img + 0.5, 0, 255).astype(np.uint8), "RGB").save(dst, quality=95, subsampling=0)
