@@ -6608,6 +6608,11 @@ def arcanist():
             c = line - qt
             _, j = tree.query(q)
             th = FL_CUT_THUMB - (q - ta_) @ tx_
+            if os.environ.get("FL_FDUMP"):
+                # (debug: the cut's inputs, for study offline)
+                np.savez(os.path.join(os.environ["FL_FDUMP"], "kx_%s.npz" % sd), q=q, ql=ql, qt=qt, qu=qu, c=c, th=th, wthj=wth[j],
+                         P=P, TRI=TRI, wth=wth, a=a_, ax=ax_, side=side_, up=up_, ta=ta_, tx=tx_, kl=knots_l, kt=knots_t,
+                         lmid=lmid, half=half, prm=np.array([FL_V, FL_V_R, FL_TONGUE, FL_TONGUE_R, FL_TONGUE_W, FL_CUT_THUMB] + list(FL_DORS)))
             if FL_THUMB_BLEND[1] > FL_THUMB_BLEND[0]:
                 s_ = np.clip((wth[j] - FL_THUMB_BLEND[0]) / (FL_THUMB_BLEND[1] - FL_THUMB_BLEND[0]), 0, 1)
                 s_ = s_ * s_ * (3 - 2 * s_)
@@ -9312,6 +9317,60 @@ def glove_riders(objs):
 # time still carried 0.04 of her hand up the thumb sleeve where her exported skin has none (her rig's later
 # passes), 3 mm off her with her thumb spread. So every layer of each fingerless glove (sheet, hem, piping)
 # takes, in its hand part, her final skin's own blend at its nearest point, before the cords ride it.)
+# (s27 solver, judge gl r2 fixes 2 and 3: GLOVE_EDGE_EASE "knuckle sigma,thumb sigma,full,none" (m). Her skin's
+# weights are coarse at her hand: round her index knuckle's thumb side a ring of points half hand, half finger, which
+# the knuckle edge ran along between ends on the finger (0.9), and at her thumb cut thumb_02/03 shares uneven point
+# to point (0.65-0.98). The cut was smooth at rest (radius 5-8 mm), but in her fist the knuckle edge doubled back
+# on itself at the index knuckle (radius 1.2 mm, 162 deg in 6 mm: the hook) and the thumb cut zig-zagged (1.4 mm,
+# 135 deg: the crown), as her skin there does. So each hand opening's blend is eased along the opening (Gaussian,
+# sigma of arc; the thumb hole's by its own sigma) and every layer (sheet, hem, piping) takes the change in full
+# within `full` of the edge, none past `none`. "": as before.)
+GLOVE_EDGE_EASE = [float(v) for v in os.environ.get("GLOVE_EDGE_EASE", "").split(",") if v]
+
+
+def glove_edge_delta(sd, bp, tri, bw, bvh, handc, thumbc):
+    """(GLOVE_EDGE_EASE) The hand openings' points of the glove's sheet and, at each, the change its eased blend
+    makes to her skin's own blend there: (tree of the points, changes), or None."""
+    sh = SHEET.get(f"arcanist.glove_{sd}")
+    if len(GLOVE_EDGE_EASE) < 4 or sh is None:
+        return None
+    spos, stris = sh[0], sh[1]
+    def blend(q):
+        co, _n, fi, _d = bvh.find_nearest(Vector(q))
+        if co is None:
+            return np.zeros(bw.shape[1])
+        a_, b_, c_ = bp[tri[fi]]
+        v0, v1, v2 = b_ - a_, c_ - a_, np.array(co[:]) - a_
+        d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+        den = max(d00 * d11 - d01 * d01, 1e-18)
+        bv = (d11 * d20 - d01 * d21) / den
+        bw_ = (d00 * d21 - d01 * d20) / den
+        bc = np.clip(np.array([1 - bv - bw_, bv, bw_]), 0, 1)
+        return bc @ bw[tri[fi]] / max(bc.sum(), 1e-9)
+    pts, dl = [], []
+    for lp in edge_loops(stris):
+        L = spos[np.array(lp)]
+        W_ = np.array([blend(q) for q in L])
+        if W_[:, handc].sum(1).mean() < 0.5:
+            continue
+        thumb_ = W_[:, thumbc].sum(1).mean() > 0.3
+        sg = GLOVE_EDGE_EASE[1] if thumb_ else GLOVE_EDGE_EASE[0]
+        seg = np.linalg.norm(np.roll(L, -1, 0) - L, axis=1)
+        s = np.r_[0, np.cumsum(seg)[:-1]]
+        tot = seg.sum()
+        ds = (s[:, None] - s[None, :] + tot / 2) % tot - tot / 2
+        K = np.exp(-0.5 * (ds / sg) ** 2)
+        K /= K.sum(1, keepdims=True)
+        d_ = K @ W_ - W_
+        pts.append(L)
+        dl.append(d_)
+        print("GLOVE EDGE EASE %s %s: %d points, %.0f mm, sigma %.0f mm, blend moved L1 up to %.2f (mean %.2f)"
+              % (sd, "thumb" if thumb_ else "knuckle", len(L), tot * 1000, sg * 1000, np.abs(d_).sum(1).max(), np.abs(d_).sum(1).mean()))
+    if not pts:
+        return None
+    return cKDTree(np.vstack(pts)), np.vstack(dl)
+
+
 def glove_hand_final(objs):
     ex = tuple(float(v) for v in os.environ.get("GLOVE_HAND_EXACT", "0.5,0.9").split(","))
     if len(ex) < 2 or ARC_HANDS != "fingerless":
@@ -9340,6 +9399,7 @@ def glove_hand_final(objs):
                 if n in bi:
                     bw[i, bi[n]] += g.weight
         bvh = BVHTree.FromPolygons([tuple(q) for q in bp], tri.tolist())
+        ed_ = glove_edge_delta(sd, bp, tri, bw, bvh, handc, np.array([n.startswith("thumb") for n in bones])) if GLOVE_EDGE_EASE else None
         nmv, worst = 0, 0.0
         for o in gl:
             ogn = {g.index: g.name for g in o.vertex_groups}
@@ -9366,6 +9426,13 @@ def glove_hand_final(objs):
                 k = np.clip((sx[handc].sum() - ex[0]) / (ex[1] - ex[0]), 0, 1)
                 k = k * k * (3 - 2 * k)
                 rows.append(old * (1 - k) + sx * k); ks.append(k)
+            if ed_ is not None:
+                # (GLOVE_EDGE_EASE: the opening's eased blend, in full near its edge, faded out into the glove)
+                gpo = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices])
+                dd_, jj_ = ed_[0].query(gpo)
+                f_ = 1 - np.clip((dd_ - GLOVE_EDGE_EASE[2]) / (GLOVE_EDGE_EASE[3] - GLOVE_EDGE_EASE[2]), 0, 1)
+                f_ = f_ * f_ * (3 - 2 * f_) * np.array(ks)
+                rows = list(np.maximum(np.array(rows) + f_[:, None] * ed_[1][jj_], 0))
             rows = four_bones(np.array(rows))
             rows /= np.maximum(rows.sum(1, keepdims=True), 1e-9)
             ks = np.array(ks)
