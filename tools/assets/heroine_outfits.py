@@ -8218,9 +8218,6 @@ KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": 
 # Decals laid on her skin, drawn this far toward the camera so they never
 # z-fight it (the Reaver's ink half sank into her skin in the full model).
 PULL = {"ink": 0.0015}
-# (s27: GLOVE_ANISO, the glove satin's highlight drawn out along her forearm (its UV v runs along the arm);
-# written as "aniso" for the outfit shader's satin; 0 = none, as before)
-ANISO = {"glovesatin": float(os.environ.get("GLOVE_ANISO", "0"))} if float(os.environ.get("GLOVE_ANISO", "0")) else {}
 
 
 def kind(key):
@@ -8331,7 +8328,7 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **({"aniso": ANISO[k]} if k in ANISO else {})} for k, v in SPEC.items()}, fh, indent=1)
+        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {})} for k, v in SPEC.items()}, fh, indent=1)
 
 made = []
 for name, build in OUTFITS.items():

@@ -226,8 +226,6 @@ func game_outfit(mi):
 		m.set_shader_parameter("repeats", float(e["repeats"]))
 		if e.has("pull"):
 			m.set_shader_parameter("view_pull", float(e["pull"]))
-		if e.has("aniso"):
-			m.set_shader_parameter("satin_aniso", float(e["aniso"]))
 		if e.has("drop_folded"):
 			m.set_shader_parameter("drop_folded", bool(e["drop_folded"]))
 		mi.set_surface_override_material(s, m)
