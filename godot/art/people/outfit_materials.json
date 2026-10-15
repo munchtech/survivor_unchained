@@ -84,11 +84,11 @@
   "repeats": 10
  },
  "glovesatin": {
-  "kind": "gloss",
+  "kind": "satin",
   "repeats": 40
  },
  "gloveblack": {
-  "kind": "gloss",
+  "kind": "satin",
   "repeats": 40
  },
  "amethyst": {
