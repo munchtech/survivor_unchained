@@ -32,6 +32,11 @@ uniform float fill = 0.2;
 // of the canine's, 1 elsewhere): its paint warmed to deep_tint (linear) and its sheen cut to deep_spec there. From the
 // Look her far lower molars read blue-grey, blue at or over red (the sky on their enamel), solver int3)
 uniform vec3 deep_tint = vec3(1.0, 1.07, 0.96);
+// (judge a05fb157: at deep_tint, green over red, they read a cool green stone grey on all ten (worst Hard-won, Fey):
+// deep_warm 1 takes deep_tint_warm instead, warmer and darker, so they recede into the mouth's warm shade.
+// UNJUDGED: 0 until judged (pictures: --teethparam deep_warm=1))
+uniform vec3 deep_tint_warm = vec3(0.8, 0.6, 0.45);
+uniform float deep_warm = 0.0;
 uniform float deep_spec = 0.15;
 uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden)
 
@@ -47,7 +52,7 @@ void fragment() {
 	// (her lips shut, 1, to parted, 0: shut runs from 1 to 0.6 by mouth_open 0.05)
 	float c = clamp((shut - 0.6) / 0.4, 0.0, 1.0);
 	float dw = 1.0 - clamp(COLOR.g, 0.0, 1.0);
-	ALBEDO = mix(texture(paint, UV).rgb * ivory * mix(vec3(1.0), deep_tint, dw), shade, c);
+	ALBEDO = mix(texture(paint, UV).rgb * ivory * mix(vec3(1.0), mix(deep_tint, deep_tint_warm, deep_warm), dw), shade, c);
 	SPECULAR = 0.5 * f * (1.0 - c) * mix(1.0, deep_spec, min(1.0, 2.0 * dw));
 	ROUGHNESS = mix(mix(0.6, roughness, k), 1.0, c);
 	AO = mix(f, seep, c);

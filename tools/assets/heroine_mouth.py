@@ -112,7 +112,9 @@ WIDEN = float(os.environ.get("MOUTH_WIDEN", "1.07"))
 # are raised, and its normals smoothed after. Its paint is darkened where it touches her lower teeth, to TOUCH at
 # them, none TOUCH_MM off; and on its whole raised side to EDGE, so that never reads lighter than its top (heroine_
 # tongue.gdshader: its vertex colour's green))
-TOUCH, TOUCH_MM, EDGE = 0.6, 3.0, 0.8
+# (judge a05fb157: on all ten its far side still ended in a straight vertical edge against her lower back teeth, about
+# 8-9 mm right of her middle; darkened deeper and over a wider band (0.6 over 3 mm until then), it fades into them)
+TOUCH, TOUCH_MM, EDGE = 0.45, 5.0, 0.8
 # (her inner cheeks beside her lower back teeth (solver int3): from the Look a saturated red-pink lit wall right of her
 # far lower row (Sunborn, Saffron, Hardwon). Her head's vertex colour's green there (1 elsewhere) falls to 0 out past
 # WALL_X (m off her middle, in, full) and WALL_DZ (m behind her lower canines' middles: none, full); the skin shader
