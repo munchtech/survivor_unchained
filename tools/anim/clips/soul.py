@@ -313,7 +313,9 @@ def arcanist_break(rig):
         tuck = {"pos": (0.1109, 1.6728, -0.0495), "pole": (0.3, -0.75, 0.6), "knuckles": (-0.1005, 0.6249, -0.7742),
                 "blade": (0.0391, -0.7750, -0.6307)}
         tuck2 = {**tuck, "pos": (0.1201, 1.6613, -0.0747), "knuckles": (-0.0781, 0.6320, -0.7710), "blade": (0.0314, -0.7714, -0.6356)}
-        soft = {"thumb": 0.1, "oppose": 0.05, "thumb_in": 28, "thumb_roll": -23.6,
+        # (Thumb drawn in 22, not 28: at 28 her glove's thumb sleeve sank up to 9.8 mm into her hand at the index's
+        # base, 13 points, f15-34; at 22 none within 4 mm. Animation 33, outfits s27's thumb-hole flap.)
+        soft = {"thumb": 0.1, "oppose": 0.05, "thumb_in": 22, "thumb_roll": -23.6,
                 "bends": {"index": [10, 22, 11], "middle": [15, 25, 12.5], "ring": [20, 27, 13.5], "pinky": [24, 27, 13.5],
                           "thumb": [0.5, 12, 20]},
                 "spreads": {"index": -13.35, "middle": 0.0, "ring": 10, "pinky": 30}}

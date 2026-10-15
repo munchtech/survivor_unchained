@@ -497,6 +497,11 @@ class Flare:
         o = _curve(L_OPEN, fr)
         rel, grip, spread = finger_mix()
         f = {k: rel[k] * (1 - g - o) + grip[k] * g + spread[k] * o for k in rel}
+        if o == 0 and 0 < g < 1:
+            # On the reach the thumb takes its grip by half way (it closes first, as the hand leaves her hip).
+            gt = min(1.0, g / 0.5)
+            for k in ("thumb", "oppose", "thumb_roll", "thumb_in", "t1", "t2", "t3"):
+                f[k] = rel[k] * (1 - gt) + grip[k] * gt
         return f
 
     def solve(self, HR, HL):
@@ -598,7 +603,9 @@ def flare_burns_twice(rig, rounds=10, log=None):
     _settle(rig, F, clip)
     # Her left hand on her hip at the ends (where the idle's weight is), kept on her own pelvis: in the chest's
     # frame with the relaxed fingers it sank up to 29 mm into her hip and spread at the settle.
-    return idle.hip_layer(rig, clip, lambda f: 1.0 - _curve(L_SHAFT, f) - _curve(L_OPEN, f))
+    # (The thumb slerped by w squared, with Flare.fingers' thumb leading the reach: at f4 her glove's thumb sleeve
+    # folded 1.3 mm into her hand's thenar, 2 points; now none. Animation 33.)
+    return idle.hip_layer(rig, clip, lambda f: 1.0 - _curve(L_SHAFT, f) - _curve(L_OPEN, f), thumb_pow=2.0)
 
 
 def _settle(rig, F, clip, a=50, b=56):

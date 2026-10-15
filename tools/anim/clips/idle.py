@@ -139,13 +139,16 @@ def _on_hip(rig, base, arms):
     return over
 
 
-def hip_layer(rig, clip, w, curl=None):
+def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
     """`clip` with her left hand laid on her hip (ARC_HIP, idle_arcanist's) where the weight w(frame) > 0, kept on
     the clip's OWN pelvis frame by frame, and the left arm and fingers slerped by w from the clip's own into it.
     For the clips that took the idle's frame-0 hand in the chest's frame (the breaks, the stops, the Flare's settle,
     the flourish): there the hand floated 3-17 mm off her hip, or sank into it, as her hips moved under the chest.
     `curl` ({finger: [deg per frame]}): each finger closed that much more (0.6 at the knuckle, 0.4 at the middle
-    joint; opened at the knuckle alone) where the clip's legs move the surface under it (the stops; following the thigh instead sank the thumb)."""
+    joint; opened at the knuckle alone) where the clip's legs move the surface under it (the stops; following the thigh instead sank the thumb).
+    `thumb_pow`: the left thumb's joints slerped by w**thumb_pow instead of w, so the thumb takes the clip's own shape
+    before the hand leaves her hip (the Flare's reach: at w 0.25, f4, her glove's thumb sleeve folded 1.3 mm into
+    her hand's thenar)."""
     from keyed import solve_frames
     from rig import qmul, qinv, qrot, qslerp
     I = rig.I
@@ -154,6 +157,7 @@ def hip_layer(rig, clip, w, curl=None):
     g, p = rig.sk.fk(clip.rot, clip.pos)
     n = clip.frames
     ws = [min(1.0, max(0.0, float(w(f)))) for f in range(n)]
+    thumb = {I[f"thumb_0{q}_l"] for q in (1, 2, 3)}
     arm = [ua]
     for j in arm:
         arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
@@ -194,7 +198,7 @@ def hip_layer(rig, clip, w, curl=None):
                               weapon=(clip.meta or {}).get("weapon", ""))
         for i, k in enumerate(idx):
             for j in arm:
-                clip.rot[k, j] = qslerp(clip.rot[k, j], rot[i, j], ws[k])
+                clip.rot[k, j] = qslerp(clip.rot[k, j], rot[i, j], ws[k] ** thumb_pow if j in thumb else ws[k])
         f = e
     return clip
 
