@@ -1,62 +1,59 @@
 # Handoff: the heroine's body and outfits
 
-From outfits lead successor 25 (su-lead-high), 14 October 2026. Start cold: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is ~6,500 lines, mixed CRLF/LF: grep it, edit with exact byte replacements (handle `\r\n`), `ast.parse` after each edit. `heroine_rig.py` is CRLF.
+From outfits lead successor 26 (su-lead-high), 14 October 2026. Start cold: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is ~6,500 lines, mixed CRLF/LF: grep it, edit with exact byte replacements (handle `\r\n`), `ast.parse` after each edit. `heroine_rig.py` is CRLF.
 
-## Paused here; next: (successor 25, 14 Oct, late)
-N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1cc516bc-727d-4e77-9f0e-4ed15fbf8ea6\scratchpad\outfits`; my work is in `N\s25`. Scripts there:
-- `vb.sh <tag> K=V` (full build into `N\prop\<tag>\art`, takes its own turn)
-- `vbs.sh` (the same, `SCRIPT=` another build script)
-- `ar.sh <out> <list> K=V` (anim_review shots)
-- `acc.sh <tag>` (the build swapped in, then the waystation close-ups own/sbd/ownn/sbn, then restored and re-imported)
-- `dump.sh <art> <json>` (game skeleton dump from a build)
-- `gcmp.py <artA> <artB>` (outfits vertex compare)
-- `throat_geo.py <before glb> <after glb>`
-- `hp4.py <acc dir>` (face's throat high-pass vs prototype ta3)
-- `wedge\geo.py`, `wedge\bl.py` (chest dihedral stats; Blender light-azimuth renders)
+## Paused here; next: (successor 26, 14 Oct, evening)
+M = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\outfits` (this round's work). N = the 1cc516bc session's `scratchpad\outfits` (older tools: `N\gs2\gl.py`, `pd.sh`, `pd_F0` pose dumps). Builds are in `M\prop\<tag>\art`; `bash M\vb.sh <tag> K=V` builds all four plus the body (~9 min, its own blender turn). Run ONE build at a time: each writes `godot/art/outfit/outfit_glovesatin_diff.jpg`, so restore it after with `git checkout --`.
 
-Lists: `chest_nude.txt`, `jig.txt`, `neck.txt`, `bh\list*.txt`.
+**Done this round**
+- **Chest (CHEST_SMOOTH on by default, 5dba90b6).** The CT2 build was 2 vertices short of F0 because the chest's custom normals were set twice. `heroine_chest.chest_smooth` now hands them to `mend_folds` as `CN_OVERRIDE`, applied to `cn` before the fold check (a0686d94, 22c07116).
+  - Max judge PASS on CT2's sheets (`M\chj\*.jpg` plus `N\s25\chest2\wedge_game_CT2.jpg`).
+  - Poke-through on all four outfits: no new pokes (`M\poke\chest_poke_ct4.txt`).
+  - UVs: the flips change interpolation in a few skewed quads, at most 0.0031 UV on her left upper-inner breast (`M\uvchk.py`). The coordinator asked for one textured close-up of that spot (F0 vs final) on the glove judge's checklist.
+  - Later (judge): a hairline light tear at the cleavage bottom under Blender's single hard light only; the fold band; a red paint tick on the outer left breast and the areola ticks. These go to the "close-up skin detail" pass.
+- **Body committed: d268fe8a** (heroine.glb = build B1c = CT4). `M\ident.py <F0 glb> <glb>` shows 31536 vertices; bones, inverse binds and every shape-key delta identical; weights identical except 258 chest points (at most 2e-4); elbow_point keys present. Animation and face are rebuilding on it.
+- **Glove crook fixed** (e055270f, c678500f, 76b952d9): GLOVE_WFIT (top band weights fitted to her skin over 180 poses) and GLOVE_CROOK_WX ("0.4,12,32,20,35"). B1c and G1e have 0 A / 0 Ao on every frame of the six Arcanist clips, and the rest gap is unchanged. The judge needs `M\gs4\m3.py` (each arm against its own glove). The cast_raise "drift" was her forearms meeting (relayed to animation).
+- **G2 dropped**: its V edge isn't clean (break L 1.0, R 0.46 mm). It stays off the sheet.
+- **Legal on B1c's outfits** (all four): areola 0, strip 0, FLAT stray/binding/lone 0. Closest margins are below. Output and `count.txt` are in `M\legal`.
 
-- **Rig-final trial body F0** (`N\prop\F0\art`, code = HEAD with CHEST_SMOOTH off): hand pivots plus the left PIPs and DIPs, throat_fill on, back_of_hand OFF (bcac177d), and correctives rebuilt.
-  - **Correctives:** F1 had none, because the skeleton dump was stale. The fresh dump (810d51bf, `tools/anim/data/heroine_skeleton.json`, from P6's armature) makes the log read "RIG correctives: 25 pieces keyed", with elbow_point_l/_r on the body and pieces, as integration has them.
-  - **Final-build gates:** the log has no "no game skeleton matches", and the GLB carries elbow_point_l/_r.
-  - `N\handpivots_left.json` was rewritten from F0 (right vs handpivots.json 0.05 mm).
-  - **Coordinator: GO.** F0 is rig-final. Animation copies `N\prop\F0\art` into its own worktree (uncommitted) and refits now. No heroine.glb or outfit binaries until the final commit. Every later heroine.glb keeps bones, weights and every shape-key delta identical to F0; report that check with the final build.
-- **Back of hand: judge bh1 FAILED back_of_hand** (faceting: a ~7 mm mesh can't hold per-knuckle shapes); it's off. P5 = P1 at the hand shots (`N\s25\bh\p156.jpg`). F0's hands still need a judge's pass: fold it into the glove sheet's judge (hand closes).
-  - Post-F1 item "close-up skin detail" (coordinator): one max solver picks between a broad knuckle cap (<= 1.5 mm, half-width >= 20 mm) with the detail baked into the skin normal map, or denser skin at the hands (and the chest if chest_smooth falls short).
-- **Throat: PASS** (judge on F0, plus a fill-off check; `N\s25\acc\F0\throat_cmp.jpg`, `N\s25\neck\fill_onoff.jpg`). 208 points moved, at most 8.48 mm, band only; the normal profile equals the prototype.
-  - Log for a later neck pass, after confirming them in a game shot (the coordinator says judge rim issues only in Godot game shots): a silhouette step at the neck's side, a glint on the left trapezius, a faint line on the back of the neck. All three are identical with the fill off, so they're the old graft corner; the fix is widening the fill around the sides.
-- **Chest wedge = body faceting** (light-azimuth test; the sculpt's slivers).
-  - Round 1, `tools/assets/heroine_chest.py` (UNCOMMITTED) with its hook in heroine_outfits.py's BODY_OUT block (UNCOMMITTED, knob CHEST_SMOOTH default 0), was FAILED by its judge: a new dent low on the right breast inside, a glint and pit at the left armpit, the wedge only softened.
-  - Round 2 is a **su-lead-max solver RUNNING** (tags CT*, sheets to `N\s25\chest2`). It reports by SendMessage to the s25 agent id; ask the coordinator to relay. Gates: dihedral p90 <= 9 / p99 <= 18 per breast, normal move <= 1 mm, no new crease, poke-through no worse, nothing that can't be undone. Then a max judge on the four sheets, as in `N\s25\chestj` (wedge_game, nude_front/tq, jiggle) plus Blender `chest_sheet`.
-  - **Round 2 REPORTED (done, nothing committed; unjudged).** Final build CT2 (`N\prop\CT2\art`): CHEST_SMOOTH=1, other CHEST_* at their defaults. `heroine_chest.py` is rewritten (round 1's copy is in `N\s25\c2\heroine_chest_r1.py`; scripts in `N\s25\c2`); the hook is unchanged.
-    - **Paint vs geometry:** a flat skin colour shows the wedge and the breastbone line just as before, so both are her shape (`N\s25\chest2\wedge_flat_vs_paint.jpg`).
-    - **Cause:** F0's vertex normals sit off a smooth fit by p50/p90/p99/max 2/11/27/52 deg, while the surface is only 0.02 mm off it. The slivers make the normals wrong.
-    - **Method:** the same pre-mend; 259 edge flips; a gentler fair; custom normals from a 10 mm quadric fit, blended back at the edges and the nipples. Godot keeps them on import (checked).
-    - **Gates, CT2 vs F0:**
-      - Pass: dihedral p90 L 8.1 / R 8.3; no face turned more than 30 deg (max 22.6); moves at most 0.92 mm (0.91 along the normal), mean 0.14; volume +0.06 cm3 per side; weights identical.
-      - **Fail:** dihedral p99 L 21.3 / R 20.0 (gate 18). Five edges more than 10 deg sharper than F0 (max +14.4: the bottom of the cleavage, her left outer breast, her right outer-lower side; round 1 had 44). The GLB has **31534 vertices against F0's 31536**: the export merged 2 copies, probably the export mend. That breaks "identical to F0" for animation, so fix it or explain it.
-      - **Not measured:** posed poke-through on all four outfits (rest, sprint and run_arcanist). A runner should do it.
-    - **Sheets:** CT1 complete in `N\s25\chest2\CT1` (acc, town/key nude, jig, bl2), crop `N\s25\chest2\wedge_game_CT1.jpg`. CT2's set was rendering into `N\s25\chest2\CT2` (log `N\s25\c2\sheets_ct2.log`). CT2 differs from CT1 only in the normals at 7 points.
-    - **Risks:** a softer cleavage line (normals smoothed over about 10 mm); 290 GLB normals outside the area changed by more than 1 deg; the fold band stays blotchy.
-    - **Next:** the coordinator decides on the p99 and crease misses. Then the vertex-count fix, the poke-through check, and a max judge on the CT2 sheets (wedge night columns, the cleavage line, the dent and armpit spots from round 1).
-  - If it passes: CHEST_SMOOTH default 1, commit heroine_chest.py + the hook, and legal on all four (the coordinator asked, since it's under every garment).
-- **Gloves:** the builder's WIP is committed (bd9ab30d). GLOVE_STYLE="" is vertex-identical on all four (F0 vs F0h).
-  - A **su-lead-high solver is RUNNING** (`N\gs2`; tags B1a/G1x/G2x), reporting by SendMessage to s25. Its jobs: (1) the elbow-fold poke-through at the crook in the brim pose, for every style including the B1 default (gate: 0 skin outside the glove at the brim frame and the worst flexion of six Arcanist clips); (2) G1's points onto the glove's own weights, plus an elbow-back shot; (3) G2's lace >= 0.3 mm over the built binding tubes, the knot seated within 0.5-1 mm, the V placement. G2 drops if it isn't clean in one round.
-  - **gs2 solver REPORTED (done; commits 41d38800, 0473dacc, 59926cda; 59926cda restores heroine_outfits.py exactly as built after two mis-staged zero-context patches; check the pieces_of loop sits after glove_riders as in the build).** Builds: B1a (default), G1c (G1), G2i (G2; G2h = GLOVE_LACE_CLEAR 0.4), art in `N\prop\<tag>\art`; shots (1280x960, brim_close, brim_elbow, staff_close, open_hand, elbow_back, idle_close, idle_day) in `N\gs2\r_B1a`, `r_G1c`, `r_G2h`, `r_G2i` (done when `shots_G2i.txt` says SHOTS_DONE). Not cropped at 2x: `N\gs\crop.py` for the judge.
-    - **G1 fixed:** `glove_riders()` points take the glove sheet's final weights (2160/2166, at most 1.2 mm off the sheet). **G2 fixed by numbers:** laces cleared by ray over the built tubes (nearest 0.40 L / 0.45 R mm, 0 under 0.3; eyelet ends exempt; was -3 mm); knot base 0.75 mm off (was 4.4). The V stays at GLOVE_V_AT=hand (not compared numerically). The bow, aglets and foot bar at 2x are unjudged.
-    - **The elbow poke-through is NOT fixed (blocks the sheet).** Tools in `N\gs2`: anim_review POSEDUMP=file (new, in the uncommitted `godot/tools_scenes/anim_review.gd`), `pd.sh <art> <dir>`, `m3.py <art> <posedir>` (Godot-style skinning plus tuck; A = skin past the glove's inner wall, Ao = past the outer wall, so visible; SIM=rim,in,shape re-tucks without a build), `diag.py`. Worst A (Ao) in mm, L | R:
-      - brim: B1 2.16 (1.73) | 1.78 (1.26); G1 1.85 (1.51) | 0.01; G2 1.99 (1.67) | 1.39 (0.69)
-      - cast_bolt: R 1.69 B1, 1.31 G2
-      - run/sprint: up to 1.0
-    - **Where:** L is one skin vertex at the inner crook, 1.7 mm under the top; R is at the elbow-tip side (-18 deg), 3.9 mm under the top, in every bent-elbow clip.
-    - **Tuck sims:** rim 0.5/20 mm clears all of it but opens the rest gap at the top to a mean of 3.7-5.2 / max 6.1-7.7 mm, so no tuck setting passes both gates.
-    - **Next:** a max solver on a glove-side fix (the top's weights matched to her skin in the crook and elbow-tip windows, or a crook dip on B1), checked with m3.py.
-    - **Separate bug:** cast_raise R at 0.66 s, 7.9 (3.0) mm all round the forearm 25-45 mm in, where glove and skin drift 5-8 mm apart. Every style.
-    - Poses came from F0's dump.
-  - Then **the one glove sheet** on the final body: G1, G2 (if clean), plain B1. Reuse `S\sheet_opts.py` (cols G1/G2/B1) with `S\gloves2.txt` via ar.sh (BODYDIR, LIGHTS=town, 1920x1080) and the game shots `S\gl.txt` (as `S\swapshoot.sh`), plus the elbow-back shot. A max judge ranks them, and also passes F0's hands. Then to the coordinator for the owner. Note for the pick: G1's finger ring sits where the middle finger closes on the staff, and animation checks that grip with whichever glove wins.
-- **Then the final build:** F0's code + CHEST_SMOOTH (if passed) + the glove fixes. Gates as above, plus bones/weights/keys identical to F0. Legal (tools/legal/motioncheck, docs/handoff/legal.md) on all four. Tell the coordinator before committing heroine.glb; then `MERGE REQUEST` with animation's refits, tests (`cd godot && dotnet test tests/Tests.csproj`) and legal counts.
-- **Reaver belt (the coordinator's call):** garment-side, Reaver-only, AFTER the body build and the glove sheet. The belt's front band and buckle ride up the thigh like panel_front, or the belt sits higher. True gap per `N\hip\need.py`: belt/buckle/panel need sit 48/23/30, run 62/41/28, sprint 84/69/52 mm. The groin-crease corrective was dropped (patch kept in `N\s25\crease_solver.patch`).
-- **Backlog:** the nude groin fold is crumpled at deep flexion even in P1 (98-172 creases sharper than 90 deg); a judge looks at nude sit_log first.
+  | Outfit | L (cm) | R (cm) |
+  |---|---|---|
+  | warden | +0.69 | +0.48 |
+  | arcanist | +2.10 | +0.48 |
+  | ranger | +2.05 | +1.15 |
+  | reaver | +0.88 | +0.21 |
+
+  Arcanist leap_below_05 shows tucked skin as a cyan arm close to the camera (near-clip; not a legal area).
+- **Tests:** dotnet 917 passed, 0 failed.
+
+**In flight: the thumb web** (animation's white corner below the B1 thumb hole, hand on hip)
+- 2afc9aec glove_hand_final (GLOVE_HAND_EXACT "0.5,0.9"): the glove's hand part takes her final skin blend. In the hip pose, the L thumb-hole edge is 4.57 -> 0.44 mm and the web edge 6.53 -> 0.71.
+- 05e037f7 TUCK_WELD (arcanist) and GLOVE_EDGE_IN (10 mm): her skin's split copies (one point, 2-4 vertices) each took their own tuck and parted when tucked, giving a 5.5 mm crack, the dark slit and the white flap. Now there's one tuck mark per point, eased to none at the glove's open edges. The crack is 5.54 -> 1.16 mm at the L thumb hole (1.74 worst).
+  - **This changes heroine.glb's COLOR_0 channel 1 at 216 vertices; every other accessor is byte-equal (`M\gs6\cmp0.py`). Tell the coordinator before committing B1j's heroine.glb.**
+- Builds: B1j (default, all fixes) and G1j (GLOVE_STYLE=G1), in `M\prop`. Nobody has looked at them.
+- `M\gs6\thumb_after_half.jpg` came out as full-figure frames (the l6.txt cameras don't close in), so it's useless. Shoot closes with `M\gs6\l_hip.txt` or `M\gs5\shoot.sh` (LOOKOFF on the thumb web), B1c vs B1j, and look at half size: is the flap and slit gone?
+- Open:
+  - The R staff-fist thumb stands 2.0 mm off her skin. The glove's weights already equal hers; it's her coarse thumb joint. Fit per-point weights over the clip poses, or leave it for the judge.
+  - The knuckle edge bridges the finger webs 1.5-2.3 mm (old).
+  - `TUCK_WELD=all` would weld the other three outfits' split marks (103/76/334 points): a later legal-scope change.
+  - An m3 that ignores the staff grip (`M\gs6\m3e.py` is polluted).
+
+**Next, in order**
+1. Judge-ready check of B1j at the thumb, as above. If the flap is gone, B1j/G1j are the final outfits; if not, one high solver on the crack.
+2. Commit the final art: B1j's four outfits, outfit_materials.json and outfit_tex.
+   - The worktree's `godot/art/people` currently holds B1c's outfits, uncommitted, swapped in for legal.
+   - Run legal only for what the diff touches: the tuck colours changed only near the glove edges (arcanist channel), so arcanist alone, unless `TUCK_WELD` widens.
+   - heroine.glb goes to B1j only after the coordinator says yes (colour-only).
+3. **The glove sheet:** G1 vs plain B1 on the final art.
+   - `bash M\gshoot.sh B1:B1j G1:G1j` runs anim_review closes from `M\gsheet.txt` (incl. elbow_back) and the game shots from `M\ggame.txt` (art swapped in, then restored to HEAD and re-imported). Commit the final art first, so the restore doesn't undo it.
+   - Then `python M\gsheet.py M\shots M\gl_sheet B1="B1: plain white satin" G1="G1: styled (amethyst-piped point, finger loop)"` makes `_play.jpg` and `_detail.jpg`. Look at every cut edge at 2x yourself first.
+   - Then a max judge (budget 150k): rank the styles, pass F0's hands (open hand, fist on the staff, brim, elbow-back), and check the chest UV spot.
+   - Note for the pick: G1's finger ring sits where the middle finger closes on the staff.
+   - Then to the coordinator with the verdict path.
+4. MERGE REQUEST `worktree-agent-a5ca10091b08dc429@<commit>`, with the tests and the legal counts above.
+5. Then: the Reaver belt (`N\hip\need.py`), the Arcanist chest, stockings in the winning glove's trim, the nude groin fold, and the neck graft corner (Godot game shots only).
+
+Other leads' scripts in `M` (anim, face subfolders) aren't ours.
 
 ## What changed this round (all default on)
 - **The owner's leg band ("legs stuck together by fabric", every clip):** `heroine_rig._as_skin` shared a piece's whole limb weight out as the nearest skin's, so pieces at the inner thigh took the other thigh's bones: Arcanist stocking lace 0.98, Ranger cloth/leather 0.97, Reaver knee fur 1.00. **AS_SKIN_SIDES** (d0f5851f, eased in 0121f13f): per side only where the skin's share of the piece's own leg is under 30% (fully under 10%); elsewhere as before, since done everywhere it parted the crotch pieces from her (fin3: strip 11/6/4 frames). After: one-leg pieces 0 (Arcanist, Reaver); Ranger browncloth 0.41 and brownleather 0.12 at z 0.89-0.92, at her crotch (judged fine).
@@ -68,6 +65,9 @@ Lists: `chest_nude.txt`, `jig.txt`, `neck.txt`, `bh\list*.txt`.
 Leotard foot: binding ends square at a_leo_f (955-961,705-711), taper into the thigh crease over ~3 mm; bottom stitch run ~1 mm onto the binding's front face; qr left end 3x4 px bluish fleck and 5 px step (turn-under radius, lining albedo); left leg-line pale rim (roughness on the roll's crest); under-crotch back: pointed binding ends and a creased pouch from below-hip cameras (one continuous binding into the strap, shrink-wrap <= 1 mm); sit_log front-low leg lines ragged when legs spread (Arcanist, Ranger); Ranger knob's dark tick (blend the binding corner). From judge fin2: sabaton heel crescent (lining value or rim in 2 mm), instep streaks and run_warden heel_bq2 crumple (rigid-weight the shell), sole corner ticks; glove middle-finger cap-seam kink (blend the subdivision boundary ring). The l_hand_outer_rest skin speck is her hip seen between fingers (ray-cast; correct).
 
 ## Lessons
+- Never run `python -` in any form (heredoc or `< /dev/null`): Python 3.14's REPL here loops and wrote ~200 MB each time (three times this round). Scripts go to files.
+- A Haiku runner polling a long Godot batch burns its budget in minutes: run legal and shot batches as one background bash script (`M\legal_rest.sh`, `M\gshoot.sh`) and wait with `timeout 590 bash -c 'until ...'`.
+- Blender custom normals are quantised on every `normals_split_custom_set`: set them once (mend_folds), or the export welds co-located copies and the vertex count changes.
 - Never pipe an empty heredoc to python (`python - <<'EOF'` then `EOF`): on this machine it opens a REPL that spammed 775 MB of errors. Run scripts from files with `< /dev/null`.
 - ICP on a finger slides along it: use a fixed vertex region (F1's weights) and multi-start along the axis, or the answer depends on the pivots you started from.
 - Before a judge, look at every cut edge at 2x yourself: judge gl1 failed the sheet on teeth in the finger webs and a matte white, costing a second judge.
