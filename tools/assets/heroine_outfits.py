@@ -8784,6 +8784,15 @@ GLOVE_WSMOOTH_BAND = tuple(float(v) for v in os.environ.get("GLOVE_WSMOOTH_BAND"
 GLOVE_WFIT = os.environ.get("GLOVE_WFIT", "1") == "1"
 GLOVE_WFIT_LAM = float(os.environ.get("GLOVE_WFIT_LAM", "1.0"))
 GLOVE_WFIT_ASYM = float(os.environ.get("GLOVE_WFIT_ASYM", "10"))
+# (s26 solver gs4, the crook: with her elbow shut past 95 degrees her skin at the crook, a few mm under the
+# top, came through the top band (B1 0.50 mm at the brim, G1 0.86 with its dip and 0.21 running). The band
+# took the mean of her skin's upperarm share there (0.17-0.24), but one of her coarse rows carries less
+# (0.11-0.15), and with less of the upper arm a point folds less into the crook: so the row stood proud
+# of the band. Now, within GLOVE_CROOK_WX[1] deg of her crook (eased out by [2]) and from the top to
+# [3] mm in (eased out by [4]), [0] of the glove's upperarm share goes to her forearm's (lowerarm and
+# twist, their own ratio): the band folds in less than any of her rows, and her rest is untouched. Its
+# flanks (40 deg off) wanted the opposite, so the window is narrow. "0" leaves the fit as it was.)
+GLOVE_CROOK_WX = tuple(float(v) for v in os.environ.get("GLOVE_CROOK_WX", "0.4,12,32,20,35").split(","))
 
 
 def glove_fit_poses():
@@ -8976,9 +8985,29 @@ def glove_top_weights(objs):
         Wn = np.maximum(Wn, 0.0)
         Wn /= np.maximum(Wn.sum(1, keepdims=True), 1e-9)
         Wn = four_bones(k[:, None] * Wn + (1 - k[:, None]) * W0)
+        wr = sel
+        if GLOVE_CROOK_WX[0] > 0 and all(f"{n}_{sd}" in bix for n in ("upperarm", "lowerarm", "lowerarm_twist_01")):
+            al_, pf_, pz_, df_, dz_ = GLOVE_CROOK_WX
+            bk_ = e_ - ARM[sd][0]
+            bk_ = bk_ - ax * (bk_ @ ax)
+            bk_ /= np.linalg.norm(bk_)
+            r_ = (X - e_) - np.outer((X - e_) @ ax, ax)
+            off_c = 180.0 - np.abs(np.degrees(np.arctan2(r_ @ np.cross(ax, bk_), r_ @ bk_)))
+            dt_ = np.maximum(GLOVE_TOP_D[sd](X), 0.0) if sd in GLOVE_TOP_D else np.maximum((X - e_) @ ax - off, 0.0)
+            kc = (1 - ramp(off_c, pf_, pz_)) * (1 - ramp(dt_ * 1000, df_, dz_))
+            iu, il, it_ = bix[f"upperarm_{sd}"], bix[f"lowerarm_{sd}"], bix[f"lowerarm_twist_01_{sd}"]
+            cs = np.nonzero((kc > 0) & (Wn[:, iu] > 0) & (Wn[:, il] + Wn[:, it_] > 0))[0]
+            mv_ = Wn[cs, iu] * al_ * kc[cs]
+            fl_ = Wn[cs, il] / (Wn[cs, il] + Wn[cs, it_])
+            Wn[cs, iu] -= mv_
+            Wn[cs, il] += mv_ * fl_
+            Wn[cs, it_] += mv_ * (1 - fl_)
+            wr = np.union1d(sel, cs)
+            print("GLOVE CROOK %s: %d points' upperarm share cut (by up to %.0f%%; most %.3f, mean %.3f)"
+                  % (sd, len(cs), 100 * al_, mv_.max() if len(cs) else 0, mv_.mean() if len(cs) else 0))
         groups = {o: {g.name: g for g in o.vertex_groups} for o in gl}
         moved = 0
-        for i in sel:
+        for i in wr:
             o, vi = at[i]
             gs = groups[o]
             for j in np.nonzero((W0[i] > 0) | (Wn[i] > 1e-4))[0]:
