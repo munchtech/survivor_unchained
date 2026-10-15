@@ -35,6 +35,22 @@ Measured (bow2/meas.py, dip / light x100, max over the window on ten faces): res
 1) 181 to 14 dark; Saffron's pucker keeps a light spot 59 at 7130/9834 (was 62: its ring's points just outside the
 window face back). Left: the creator sliders lips_upper-, mouth_height-, cupids_bow-, lips_forward+, mouth_width+ carry
 the same kind of spike at weight 1 (not redone).
+
+run_keys r3 (bow solver, 14 October 2026, UNJUDGED): r2 darkened her open mouth: her upper lip's inside (hidden at rest on
+every face, base normals facing back, nz -0.98) blends from back to front as mouth_open grows, so at .6 it passed through
+backward, and the fill, which only matches neighbours, turned whole patches away (bow3/dark.py: open 1 34-60 mm2 of
+seen points > 60 deg off the surface seen or facing back). Now: (1) _inside: those points (window's width, WIN_H[0] up
+to INSIDE_TOP) get a new base normal, the surface seen there with her mouth open (mouth_open .6 and 1 on every face,
+area-weighted, spread and smoothed), and every face and expression key starts there with no delta (keys outside the
+redo that show them, mouth_height+, keep their own normal); (2) _fill holds each pose's target within a cone of the
+surface seen there (seen_normals; CONE_IN 25 deg on the inside, CONE off elsewhere so the rest/smile wins stay);
+(3) mouth_open is redone at .6 too (KEY_W); (4) the window is KWIN_X 15 mm wide (floor KWIN_H0 5.5 mm past WIN_X),
+taking in the cheek-fold points 6886/6922/6694 (mirror 10116/10075) that faced back in pucker (Saffron's scratch,
+dip 71 -> gone) and Saffron's rest/pucker light spot 7130/9834. Measured on outfits' B1c body (r2 -> r3): dark.py open
+.6 7-18 -> 0-0.3 mm2, open 1 34-60 -> 0-0.4, laugh 6.5-9 -> 0-0.6 (bow1: 3-8, 4.5-10.7, 0.8-4.3); no seen window point
+faces back in any pose; meas.py worst rest/smile/laugh dip 25 / light 26 -> 11 / 13, open/pucker/snarl/frown 14 / 59
+-> 27 / 15 (27: own open 1 at 9863/7076, grazing points shaded as their true surface); 8-light rest per face within 1
+of r2 (Saffron 26 -> 16). Positions untouched; only NORMAL accessors (base, mouth_height+, the 16 keys) change.
 """
 import contextlib
 import copy
@@ -240,9 +256,76 @@ KNZ = float(os.environ.get("FACE_BOW_KNZ", "0"))      # (or whose normal faces f
 ROUNDS = int(os.environ.get("FACE_BOW_ROUNDS", "5"))   # (rounds: faces, expressions, the laugh's helpers, each on the others)
 FACE_COMBO_W = float(os.environ.get("FACE_BOW_COMBO_W", "0.5"))   # (a face's fill: its expressions' weight against its rest)
 MARK_KEYS = "face_bow_keys"
+KEY_W = {"mouth_open": tuple(float(v) for v in os.environ.get("FACE_BOW_OPEN_W", "0.6,0.8,1").split(","))}   # (keys redone at other weights than EXPR_W)
+CONE_IN = float(os.environ.get("FACE_BOW_CONE_IN", "25"))   # (deg: the cone on her upper lip's inside, never seen at rest)
+KWIN_X = float(os.environ.get("FACE_BOW_KWIN_X", "0.015"))   # (m: run_keys' window, either side: past the bow's, to her
+#  philtrum's sides, where pucker shows points under the cheek's fold)
+KWIN_H0 = 0.0055                # (m over her lips' line: the side band's floor, under the window's)
+INSIDE_TOP = 0.018              # (m over her lips' line: how high her upper lip's inside is taken, past the window)
+INSIDE_W = (0.6, 1.0)           # (mouth_open's weights whose seen surface sets the inside's new base normal)
+INSIDE_SMOOTH = int(os.environ.get("FACE_BOW_INSIDE_SMOOTH", "3"))   # (smoothing passes over it)
+CONE = float(os.environ.get("FACE_BOW_CONE", "180"))   # (deg: in every pose a fill target is held within this of the surface seen there)
 
 
-def _fill(poses, Tw, A, win, K0, its=ITS):
+def seen_normals(Q, Tw):
+    """Per welded point: the area-weighted normal of its front-facing (+z) triangles, the surface actually seen (0 where
+    none faces front)."""
+    a, b, c = Q[Tw[:, 0]], Q[Tw[:, 1]], Q[Tw[:, 2]]
+    fn = np.cross(b - a, c - a)
+    f = fn[:, 2] > 0
+    acc = np.zeros_like(Q)
+    for j in range(3):
+        np.add.at(acc, Tw[f, j], fn[f])
+    return _unit(acc)
+
+
+def _inside(V, Tw, A, win, D, fk):
+    """Her upper lip's inside on the window: points hidden at rest on her own face and every face key (H), and their
+    new base normal Nh: the surface seen there with her mouth open (mouth_open at INSIDE_W on every face, weighed by
+    the area seen), spread over the points it never shows, smoothed."""
+    H = win & (seen_area(V, Tw) == 0)
+    for k in fk:
+        H &= seen_area(V + D[k], Tw) == 0
+    Nh = np.zeros_like(V)
+    if not H.any() or "mouth_open" not in D:
+        return np.zeros(len(V), bool), Nh
+    for Df in [0] + [D[k] for k in fk]:
+        for w in INSIDE_W:
+            Q = V + Df + w * D["mouth_open"]
+            Nh += (seen_area(Q, Tw) * 1e6)[:, None] * seen_normals(Q, Tw)
+    has = H & (np.linalg.norm(Nh, axis=1) > 1e-9)
+    Nh = _unit(Nh)
+    AH = A[np.where(H)[0]]
+    for _ in range(100):        # (spread to the inside points no open mouth shows, from those it does)
+        todo = H & ~has
+        if not todo.any():
+            break
+        m = AH @ (Nh * has[:, None])
+        got = np.linalg.norm(m, axis=1) > 1e-9
+        idx = np.where(H)[0]
+        new = todo[idx] & got
+        if not new.any():
+            break
+        Nh[idx[new]] = _unit(m[new])
+        has[idx[new]] = True
+    for _ in range(INSIDE_SMOOTH):
+        Nh[H] = _unit(Nh[H] + _unit(AH @ (Nh * H[:, None])))
+    return H & has, Nh
+
+
+def _cone(t, v, c):
+    """t (unit) turned toward v (unit, or 0: left) until it is at most c deg (per point) off it."""
+    c = np.radians(np.broadcast_to(np.asarray(c, float), (len(t),)))
+    cs = (t * v).sum(1)
+    bad = (np.linalg.norm(v, axis=1) > 0.5) & (cs < np.cos(c))
+    if bad.any():
+        u = _unit(t[bad] - cs[bad, None] * v[bad])
+        t = t.copy()
+        t[bad] = np.cos(c[bad])[:, None] * v[bad] + np.sin(c[bad])[:, None] * u
+    return t
+
+
+def _fill(poses, Tw, A, win, K0, its=ITS, cone=CONE):
     """One key's absolute unit normals K (welded) redone where any of its poses spikes. poses: (Q welded shape, R, wk):
     the pose's normal is unit(R + wk K) (R: the base's, the face's and the other keys' share). Returns (K, redone, the
     worst ring angle over the poses after)."""
@@ -258,32 +341,32 @@ def _fill(poses, Tw, A, win, K0, its=ITS):
         lap0 = _ang(G0, _unit(M @ G0))
         S |= win & vis & ((lap0 > KLAP) | (G0[:, 2] < KNZ))
         vis = vis.astype(float)
-        pre.append((Q, R, wk, Ng, vis * pw, M, G0, lap0))
+        pre.append((Q, R, wk, Ng, vis * pw, M, G0, lap0, seen_normals(Q, Tw)))
 
     def worst(K):
         return max(_ang(_unit(R + wk * K), _unit(M @ _unit(R + wk * K)))[win & (vis > 0)].max(initial=0)
-                   for Q, R, wk, Ng, vis, M, G0, lap0 in pre)
+                   for Q, R, wk, Ng, vis, M, G0, lap0, Vs in pre)
     K = K0
     for _ in range(GROW + 1):
         if not S.any():
             break
         K = K0.copy()
         acc = np.zeros((S.sum(), 3))
-        for Q, R, wk, Ng, vis, M, G0, lap0 in pre:      # (start: each pose's own surface where it faces front)
+        for Q, R, wk, Ng, vis, M, G0, lap0, Vs in pre:      # (start: each pose's own surface where it faces front)
             st = np.where((Ng[S, 2] > 0)[:, None], Ng[S], G0[S])
             s = np.linalg.norm(R[S] + wk * K0[S], axis=1)
             acc += (vis[S] + 1e-3)[:, None] * (s[:, None] * st - R[S]) / wk
         K[S] = _unit(acc)
-        MS = [M[np.where(S)[0]] for Q, R, wk, Ng, vis, M, G0, lap0 in pre]
+        MS = [M[np.where(S)[0]] for Q, R, wk, Ng, vis, M, G0, lap0, Vs in pre]
         for _ in range(its):
             acc = np.zeros((S.sum(), 3))
-            for (Q, R, wk, Ng, vis, M, G0, lap0), Ms in zip(pre, MS):
-                t = _unit(Ms @ _unit(R + wk * K))
+            for (Q, R, wk, Ng, vis, M, G0, lap0, Vs), Ms in zip(pre, MS):
+                t = _cone(_unit(Ms @ _unit(R + wk * K)), Vs[S], np.broadcast_to(cone, (len(K),))[S])
                 s = np.linalg.norm(R[S] + wk * K[S], axis=1)
                 acc += (vis[S] + 1e-3)[:, None] * (s[:, None] * t - R[S]) / wk
             K[S] = _unit(acc)
         new = np.zeros_like(S)
-        for Q, R, wk, Ng, vis, M, G0, lap0 in pre:
+        for Q, R, wk, Ng, vis, M, G0, lap0, Vs in pre:
             G = _unit(R + wk * K)
             new |= win & (vis > 0) & ~S & (_ang(G, _unit(M @ G)) > np.maximum(GROW_LAP, lap0 + 1))
         if not new.any():
@@ -301,30 +384,54 @@ def bow_keys(js, binc, chunks, hm, hp):
     names = ex["targetNames"]
     P, N, first, inv, Tw, A, line = mesh(js, binc, hp, names)
     V = P[first]
-    win = (np.abs(V[:, 0] - MID) < WIN_X) & (V[:, 1] - line > WIN_H[0]) & (V[:, 1] - line < WIN_H[1]) & (V[:, 2] > WIN_Z)
+    ax = np.abs(V[:, 0] - MID)
+    near = (ax < KWIN_X) & (V[:, 1] - line > np.where(ax < WIN_X, WIN_H[0], KWIN_H0)) & (V[:, 2] > WIN_Z)
+    win = near & (V[:, 1] - line < WIN_H[1])
     Nw = N[first].astype(np.float64)
     z = np.zeros_like(Nw)
     # (the base: her own face at rest)
     Nn, S0, _ = _fill([(V, z, 1.0)], Tw, A, win, Nw)
     done = {"base": int(S0.sum())}
-    Nr = N.copy()
-    Nr[S0[inv]] = Nn[inv[S0[inv]]]
-    if S0.any():
-        hs._set_dense(js, chunks, hp["attributes"]["NORMAL"], Nr)
     fk = ["face_" + f for f in FACES_ALL if "face_" + f in names]
     hk = [k for k, _ in LAUGH if k not in KEYS_EXPR and k in names]
     tg = {k: hp["targets"][names.index(k)] for k in fk + [k for k in KEYS_EXPR if k in names] + hk}
     D = {k: hs._read(js, binc, t["POSITION"])[first] for k, t in tg.items()}
     DN = {k: hs._read(js, binc, t["NORMAL"]) for k, t in tg.items()}
+    # (her upper lip's inside: hidden at rest on every face, its base normals face back; turned to face the way it
+    #  shows when her mouth opens, so a part-open mouth no longer blends through backward)
+    H, Nh = _inside(V, Tw, A, near & (V[:, 1] - line < INSIDE_TOP), D, fk)
+    win = win | H
+    Nn[H] = Nh[H]
+    S0 = S0 | H
+    done["inside"] = int(H.sum())
+    Nr = N.copy()
+    Nr[S0[inv]] = Nn[inv[S0[inv]]]
+    if S0.any():
+        hs._set_dense(js, chunks, hp["attributes"]["NORMAL"], Nr)
+    if H.any():                 # (the other keys: those that show the inside keep their own normal there, the rest
+        rows = H[inv]           #  their delta)
+        for k, t in zip(names, hp["targets"]):
+            if k in tg or "NORMAL" not in t:
+                continue
+            Qk = V + hs._read(js, binc, t["POSITION"])[first]
+            if not (H & (seen_area(Qk, Tw) > 0)).any():
+                continue
+            dn = hs._read(js, binc, t["NORMAL"])
+            dn[rows] = _unit(N[rows] + dn[rows]) - Nr[rows]
+            hs._set(js, chunks, t["NORMAL"], dn)
+            done[k] = int(H.sum())
     K = {k: _unit(Nn + DN[k][first]) for k in tg}   # (each key's absolute normal, welded, as Godot makes it)
-    Sall = {k: np.zeros(len(V), bool) for k in tg}
+    Sall = {k: H.copy() for k in tg}
+    for k in tg:                # (on the inside every face and expression starts at the new base: no delta)
+        K[k][H] = Nn[H]
+    cone = np.where(H, CONE_IN, CONE)
     lw = dict(LAUGH)
 
     def redo(k, poses_of, starts):
         """From each start, filled: the one that spikes least in its poses."""
         best = None
         for K0 in starts:
-            Kk, S, sc = _fill(poses_of(K0), Tw, A, win, K0)
+            Kk, S, sc = _fill(poses_of(K0), Tw, A, win, K0, cone=cone)
             if best is None or sc < best[0]:
                 best = (sc, Kk, S)
         K[k] = best[1]
@@ -338,6 +445,12 @@ def bow_keys(js, binc, chunks, hm, hp):
                 Q, R = Q + wj * D[j], R + wj * (K[j] - Nn)
         return Q, R
 
+    def _starts(k):             # (round one's starts: the key's normal on the old base and on the new; the inside at the new base)
+        out = (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first]))
+        for o in out:
+            o[H] = Nn[H]
+        return out
+
     def faces():                # (her own face, then each face key: shape, normal)
         return [(np.zeros_like(V), Nn)] + [(D[k], K[k]) for k in fk]
     ex_keys = [k for k in KEYS_EXPR if k in tg]
@@ -350,10 +463,10 @@ def bow_keys(js, binc, chunks, hm, hp):
                     Q, R = laugh_of(D[k], Nn, None)
                     out.append((Q, R - Nn, 1.0, FACE_COMBO_W))
                 return out
-            redo(k, fposes, (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first])) if not rnd else (K[k],))
+            redo(k, fposes, _starts(k) if not rnd else (K[k],))
         for k in ex_keys:       # (each at EXPR_W on every face)
-            redo(k, lambda K0, k=k: [(V + Df + w * D[k], Kf - w * Nn, w) for Df, Kf in faces() for w in EXPR_W],
-                 (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first])) if not rnd else (K[k],))
+            redo(k, lambda K0, k=k: [(V + Df + w * D[k], Kf - w * Nn, w) for Df, Kf in faces() for w in KEY_W.get(k, EXPR_W)],
+                 _starts(k) if not rnd else (K[k],))
         for k in hk:            # (the laugh's helpers on every face, the other keys at their laugh weights)
             def lposes(K0, k=k):
                 out = []
@@ -361,7 +474,7 @@ def bow_keys(js, binc, chunks, hm, hp):
                     Q, R = laugh_of(Df, Kf, k)
                     out.append((Q + lw[k] * D[k], R - lw[k] * Nn, lw[k]))
                 return out
-            redo(k, lposes, (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first])) if not rnd else (K[k],))
+            redo(k, lposes, _starts(k) if not rnd else (K[k],))
     for k in tg:
         rows = (Sall[k] | S0)[inv]
         out = DN[k].copy()
