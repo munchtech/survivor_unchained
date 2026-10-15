@@ -291,3 +291,6 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 ## 14 October 2026, evening: the crossbow hold (to coordinator 1847d1a6)
 - Animation found the crossbow mesh has no pistol grip (the stock sits 85-120 mm off her hand) and `Arms.Seat` skips pistol pieces. The owner picked **(a): add a pistol grip** so her fist seats as it does on the sword (not a stock-under-forearm hold). Animation lead: a grip on the mesh (ours, logged in ASSET_PROVENANCE), an `Arms.Seat` path for it, a WRAP fist and a PocketR line, then the wrist cap at crossbow_shoot; queued after the other weapons' wrist cap.
+
+## 14 October 2026, night: the finish line (to coordinator 1847d1a6)
+- The owner: "judge at max zoom seen in game but make sure its critically! it should still look 'perfect' just at those distances". Judges rule at the game's own cameras (play/town, the close-up at its closest zoom, the Look camera), critically, and it must look perfect there; marks only visible beyond them (Blender, 6x crops) are logged, not fixed. Round cap 2-3 per item, then closed as known unless the owner reopens. A fixed list per area per session. README "Working lean", "The finish line".
