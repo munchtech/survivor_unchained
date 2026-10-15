@@ -1116,16 +1116,20 @@ def daggers_fore(rig):
 
 
 def daggers_heavy(rig):
-    """Both blades in a crossing cut, out from the middle."""
+    """Both blades in a crossing cut, out from the middle.
+
+    The blades are keyed where the wrists can take them (animation 33's solver, the sword's template): at the
+    contact each wrist is about 20 deg ulnar (was 36-37, at the rig's cap), the blade within 11-12 deg of where it
+    pointed before; the cut-end blades turned so the wrists stay under 28 ulnar."""
     keys = [
-        (0, _dag(0, 0, (0.16, 0.10, 0.18), _n(0.4, 0.7, -0.5), (-0.4, 0.2, -0.8),
-                 (-0.16, 0.10, 0.18), _n(-0.4, 0.7, -0.5), (0.4, 0.2, -0.8)), "fast"),
-        (3, _dag(0, 0, (0.0, -0.10, 0.44), _n(-0.3, -0.1, 1.0), (-0.6, -0.6, -0.3),
-                 (0.0, -0.08, 0.44), _n(0.3, -0.1, 1.0), (0.6, -0.6, -0.3), pitch=16), "linear"),
-        (6, _dag(0, 0, (-0.30, -0.24, 0.24), _n(-0.9, -0.3, 0.2), (-0.3, -1.0, 0.2),
-                 (0.30, -0.24, 0.24), _n(0.9, -0.3, 0.2), (0.3, -1.0, 0.2), pitch=20, weight=0.2), "ease"),
-        (9, _dag(0, 0, (-0.32, -0.26, 0.20), _n(-0.85, -0.4, -0.1), (-0.2, -1.0, 0.3),
-                 (0.32, -0.26, 0.20), _n(0.85, -0.4, -0.1), (0.2, -1.0, 0.3), pitch=20, weight=0.2), "auto"),
+        (0, _dag(0, 0, (0.16, 0.10, 0.18), _n(0.44, 0.70, -0.57), (-0.4, 0.2, -0.8),
+                 (-0.16, 0.10, 0.18), _n(-0.45, 0.70, -0.56), (0.4, 0.2, -0.8)), "fast"),
+        (3, _dag(0, 0, (0.02, -0.10, 0.44), _n(-0.07, 0.68, 0.73), (-0.6, -0.6, -0.3),
+                 (-0.02, -0.08, 0.44), _n(0.07, 0.72, 0.69), (0.6, -0.6, -0.3), pitch=16), "linear"),
+        (6, _dag(0, 0, (-0.30, -0.24, 0.24), _n(-1.0, 0.07, 0.01), (-0.3, -1.0, 0.2),
+                 (0.30, -0.24, 0.24), _n(1.0, 0.07, 0.01), (0.3, -1.0, 0.2), pitch=20, weight=0.2), "ease"),
+        (9, _dag(0, 0, (-0.32, -0.26, 0.20), _n(-1.0, 0.01, -0.09), (-0.2, -1.0, 0.3),
+                 (0.32, -0.26, 0.20), _n(1.0, 0.01, -0.09), (0.2, -1.0, 0.3), pitch=20, weight=0.2), "auto"),
         (20, DAG_GUARD, "ease"),
     ]
     return build("daggers_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})
