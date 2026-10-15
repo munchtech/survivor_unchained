@@ -8414,6 +8414,10 @@ TUCK_FULL = 0.98
 # (the Arcanist's elbow glove's top: her skin's tuck at its line, and how far in it is full)
 GLOVE_TUCK_RIM = float(os.environ.get("GLOVE_TUCK_RIM", "0.05"))
 GLOVE_TUCK_IN = float(os.environ.get("GLOVE_TUCK_IN", "0.03"))
+# (s26 solver gs6: the outfits whose marks are one at each point of her split skin, TUCK_WELD; and the
+# fingerless glove's open edges on her hand, her skin eased in from nothing there to a full tuck GLOVE_EDGE_IN in)
+TUCK_WELD = [s_ for s_ in os.environ.get("TUCK_WELD", "arcanist").split(",") if s_]
+GLOVE_EDGE_IN = float(os.environ.get("GLOVE_EDGE_IN", "0.010"))
 GONE_IN = 0.02
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
@@ -8499,10 +8503,28 @@ if BODY_OUT:
             ev = np.array([e.vertices[:] for e in me.edges])
             globals()["_body_nb"] = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
                                                       shape=(len(me.vertices), len(me.vertices))).tocsr()
+        # (s26 solver gs6, TUCK_WELD: her skin is split here and there, two to four copies at one point, each
+        # its own normal (her hands most: 80 such points in the Arcanist's mark), and each copy took its own
+        # mark, by its own ray and its own ring from the border: 0.27, 0.53 and 0.78 at one point 3.7 mm in
+        # from the left thumb hole. Drawn tucked, the copies part, a crack 5.5 mm wide under the glove's open
+        # edge, seen as a dark slit and the edge over it as a white flap. In the outfits named, the copies at
+        # a point are one: the deepest copy's ray, the rings counted on her skin welded, one mark for all.)
+        welded = name in TUCK_WELD
+        if welded:
+            if "_body_cw" not in globals():
+                _, gid_ = np.unique(np.round(np.array([v.co[:] for v in me.vertices]) / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+                gid_ = np.asarray(gid_).ravel()
+                S_ = sparse.csr_matrix((np.ones(len(gid_)), (np.arange(len(gid_)), gid_)))
+                C_ = (S_ @ S_.T).tocsr()
+                globals()["_body_cw"] = (gid_, (C_ @ _body_nb @ C_).tocsr())
+            gm_ = np.zeros(_body_cw[0].max() + 1)
+            np.maximum.at(gm_, _body_cw[0], vals[:, k])
+            print("TUCK WELD %s: %d points of hers split in copies, %d of them marked unequally" % (name, int((np.bincount(_body_cw[0]) > 1).sum()), int((np.abs(gm_[_body_cw[0]] - vals[:, k]) > 1e-6).sum())))
+            vals[:, k] = gm_[_body_cw[0]]
         under = vals[:, k] > 0
         reached, ring = ~under, np.zeros(len(under))
         for r_ in (1, 2):
-            nxt = under & ~reached & ((_body_nb @ reached.astype(float)) > 0)
+            nxt = under & ~reached & (((_body_cw[1] if welded else _body_nb) @ reached.astype(float)) > 0)
             ring[nxt], reached = r_, reached | nxt
         vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
         # Under a held edge (held_edges: a leotard's leg lines) she is tucked
@@ -8559,6 +8581,30 @@ if BODY_OUT:
                     fa = (ARMW[sd][jj] > 0.5) & (d_ > -0.05) & (d_ < GLOVE_TUCK_IN)
                     vals[fa, k] = np.where(d_[fa] > 0, GLOVE_TUCK_RIM + (1.0 - GLOVE_TUCK_RIM) * ramp(d_[fa], 0.0, GLOVE_TUCK_IN), 0.0)
                     print("GLOVE TUCK %s: %d vertices of hers eased in under its top, %d past it untucked" % (sd, int((fa & (d_ > 0)).sum()), int((fa & (d_ <= 0)).sum())))
+            # (s26 solver gs6, GLOVE_EDGE_IN: the fingerless glove's open edges on her hand, the thumb hole and
+            # the knuckle cut (its sheet's own border, finish()'s rim, where her skin under it is her hand's):
+            # her skin eased in from no tuck at the edge to a full one GLOVE_EDGE_IN inside, and none beside it.
+            # Tucked by the rays and the rings, a mark of 0.78 sat 3.7 mm in from the left thumb hole, 0.3 and
+            # more within 4 mm of it: her skin sank away under the open edge, a dark slit and a white flap.)
+            if ARC_HANDS == "fingerless" and GLOVE_EDGE_IN > 0:
+                bwc_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+                for sd in ("l", "r"):
+                    rim_ = [np.array(o["rim"].to_list() if hasattr(o["rim"], "to_list") else o["rim"], float).reshape(-1, 3)
+                            @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3]
+                            for o in objs if o.name.startswith(f"arcanist.glove_{sd}") and "rim" in o.keys()]
+                    if not rim_:
+                        continue
+                    rim_ = np.vstack(rim_)
+                    hc_ = [BI[n] for n in BONES if n.endswith(f"_{sd}") and n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky")]
+                    rim_ = rim_[W[cKDTree(P).query(rim_)[1]][:, hc_].sum(1) > 0.5]
+                    de_ = cKDTree(rim_).query(bwc_)[0]
+                    cap_ = ramp(de_, 0.0, GLOVE_EDGE_IN)
+                    m_ = (de_ < GLOVE_EDGE_IN) & (vals[:, k] > cap_)
+                    n4_ = de_ < 0.004
+                    print("GLOVE EDGE %s: %d rim points on her hand; %d vertices of hers eased in from its open edges (mean %.2f -> %.2f); within 4 mm max %.2f -> %.2f"
+                          % (sd, len(rim_), int(m_.sum()), vals[m_, k].mean() if m_.any() else 0, cap_[m_].mean() if m_.any() else 0,
+                             vals[n4_, k].max(), np.minimum(vals[n4_, k], cap_[n4_]).max()))
+                    vals[m_, k] = cap_[m_]
         for cap_, zone_ in TUCK_ZONES.get(name, []):
             zw_ = zone_(P[jj])
             print("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (vals[:, k] > cap_)).sum()), cap_))
@@ -8579,6 +8625,10 @@ if BODY_OUT:
         # 10). Under the cuff's own edge she is tucked as before, so no gap
         # opens there and a look into the cuff finds her.
         vals[:, k] = np.minimum(vals[:, k], TUCK_FULL)
+        if name in TUCK_WELD and "_body_cw" in globals():
+            gm_ = np.zeros(_body_cw[0].max() + 1)
+            np.maximum.at(gm_, _body_cw[0], vals[:, k])
+            vals[:, k] = gm_[_body_cw[0]]
         if name == "arcanist" and ARC_HANDS == "glove":
             for sd in ("l", "r"):
                 glv = [o for o in objs if o.name.startswith(f"arcanist.glove_{sd}")]
