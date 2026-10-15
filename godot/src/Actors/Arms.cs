@@ -43,7 +43,7 @@ public static class Arms
         ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true, Kind: WeaponKind.Crossbow),
         ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30, Kind: WeaponKind.Wand),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f, Kind: WeaponKind.Shield),
-        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger),
+        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),
         ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),
     };
 
