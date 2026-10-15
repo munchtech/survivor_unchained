@@ -9326,6 +9326,10 @@ def glove_riders(objs):
 # sigma of arc; the thumb hole's by its own sigma) and every layer (sheet, hem, piping) takes the change in full
 # within `full` of the edge, none past `none`. "": as before.)
 GLOVE_EDGE_EASE = [float(v) for v in os.environ.get("GLOVE_EDGE_EASE", "").split(",") if v]
+# (s27: GLOVE_EDGE_EASE_IDX "small,lo,hi": on the knuckle opening the wide sigma only where the edge carries her
+# index finger (its blend share, smoothed along the loop, eased in from lo to hi), `small` elsewhere: the wide ease
+# everywhere mixed ring into pinky on the back of her hand (L knuckle edge 2.92 mm off her in cast_raise))
+GLOVE_EDGE_EASE_IDX = [float(v) for v in os.environ.get("GLOVE_EDGE_EASE_IDX", "").split(",") if v]
 
 
 def glove_edge_delta(sd, bp, tri, bw, bvh, handc, thumbc):
@@ -9361,6 +9365,14 @@ def glove_edge_delta(sd, bp, tri, bw, bvh, handc, thumbc):
         ds = (s[:, None] - s[None, :] + tot / 2) % tot - tot / 2
         K = np.exp(-0.5 * (ds / sg) ** 2)
         K /= K.sum(1, keepdims=True)
+        if not thumb_ and len(GLOVE_EDGE_EASE_IDX) >= 3:
+            idxc = np.array([b.name.startswith("index") for b in arm.data.bones])
+            t_ = np.clip((K @ W_[:, idxc].sum(1) - GLOVE_EDGE_EASE_IDX[1]) / (GLOVE_EDGE_EASE_IDX[2] - GLOVE_EDGE_EASE_IDX[1]), 0, 1)
+            sgv = GLOVE_EDGE_EASE_IDX[0] + (sg - GLOVE_EDGE_EASE_IDX[0]) * t_ * t_ * (3 - 2 * t_)
+            K = np.exp(-0.5 * (ds / sgv[:, None]) ** 2)
+            K /= K.sum(1, keepdims=True)
+            print("GLOVE EDGE EASE %s knuckle: sigma %.0f-%.0f mm by her index share (wide at %d of %d points)"
+                  % (sd, sgv.min() * 1000, sgv.max() * 1000, (t_ > 0.5).sum(), len(L)))
         d_ = K @ W_ - W_
         pts.append(L)
         dl.append(d_)
