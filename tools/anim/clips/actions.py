@@ -826,11 +826,43 @@ def cast_raise(rig):
         (16, body(stance(0.14, weight=0.3), hips=(0, 15, 0), spine=(0, 19, 0), head=(0, -10, 0),
                   hand_r=arm((0.10, -0.25, 0.30), (-0.7, -0.6, -0.2), blade=_n(0.0, 0.97, -0.25)),
                   hand_l=arm((-0.26, -0.07, 0.26), (0.8, -0.4, -0.3)), fingers_l="grip", fingers_r="grip"), "auto"),
-        (28, body(stance(0.06), hand_l=arm((-0.02, -0.40, -0.05), (1.0, 0.0, -0.7), knuckles=_n(0.2, -0.6, 0.6)),
+        # (Her left hand hangs a little out and forward of her shoulder, azimuth +61: at -158, just behind,
+        # the arc's azimuth ran from -45 round past her right side and the hand swept back across her
+        # right forearm; this way it swings out to her left. Its fall is held back: _cast_release.)
+        (28, body(stance(0.06), hand_l=arm((0.04, -0.40, 0.022), (1.0, 0.0, -0.7), knuckles=_n(0.2, -0.6, 0.6)),
                   hand_r=arm((-0.16, -0.28, 0.12), (-0.8, -0.3, -0.6), blade=_n(-0.12, 1.0, 0.18)),
                   fingers_l="relaxed", fingers_r="grip"), "ease"),
     ]
-    return build("cast_raise", rig, keys, meta={"layer": "upper", "contact": 10 / 30, "weapon": "staff"})
+    return build("cast_raise", rig, keys, meta={"layer": "upper", "contact": 10 / 30, "weapon": "staff"},
+                 post=_cast_release(rig, keys))
+
+
+def _cast_release(rig, keys, frm=16, to=28, lag=1.75):
+    """Her left hand letting go of the staff (cast_raise, f16-28): it leaves
+    the staff out to her left at the height it held it and only then falls to
+    her side, its drop (the arc's elevation) running up to `lag` frames
+    behind its swing out (the azimuth), most at f20-21 and none at either
+    key, so the keys and the speed's one smooth rise and fall are kept.
+
+    (14 October, lead 32: let fall as keyed, it swept back across her right
+    forearm, 0.1 mm from the glove in game, the forearm 80 mm into her trunk
+    on the way; swung out from the start, its little finger met her right
+    hand's knuckles at f19. Now 77 mm from the forearm, 29 from the hand.)"""
+    from keyed import Track, _one_frame
+    track = Track(_one_frame(rig, keys))
+    m, n = 2.0, 3.0
+    peak = (m / (m + n)) ** m * (n / (m + n)) ** n
+
+    def post(fr, pose):
+        if not frm < fr < to:
+            return pose
+        u = (fr - frm) / (to - frm)
+        w = u ** m * (1 - u) ** n / peak
+        az, _, r = pose["hand_l"]["arc"]
+        el = track(fr - lag * w)["hand_l"]["arc"][1]
+        pose["hand_l"] = {**pose["hand_l"], "arc": (az, el, r)}
+        return pose
+    return post
 
 
 def cast_flick(rig):
