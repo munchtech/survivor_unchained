@@ -21,7 +21,7 @@ Scratch to KEEP: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Deskto
    - Outfits' `MERGE REQUEST worktree-agent-a5ca10091b08dc429@dfe686ed`: the final body B1j and the four outfits; legal 0 on all four; 917 tests.
    - It is HELD, to merge together with animation's repack, because integration's clips are built for the old rig.
    - Animation's merge gate: repack on dfe686ed's art, the hip-thumb fix (below), judges, MERGE REQUEST. Then tell face.
-2. **Animation** (worktree agent-af8dbda3195e438e4; handoff section 0, lead 33's).
+2. **Animation** (worktree agent-af8dbda3195e438e4 @ 0ed50202; handoff section 0, lead 33's). Lead 33 already copied dfe686ed's art in, repacked all 87 clips (motion no worse than F0; 930 tests); the hip-thumb gate is DONE (c8e73ef9: the 71 deg was an old clip; the break tuck and Flare reach fixed, need a look). Five sheets in `anim\l33` await ONE max judge (re-shoot the Arcanist rows on G3, add the game close-up and night). Then take outfits' G3 commit, repack once, MERGE REQUEST. Axe wrist cap CLOSED as known (round cap).
    - **Done this session:**
      - the hip hand in the static clips;
      - the sword idle wrist, and the sword attacks off the ulnar limit (16-25 deg at contact);
