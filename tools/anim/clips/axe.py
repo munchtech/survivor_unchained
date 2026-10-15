@@ -140,10 +140,10 @@ AXES_GUARD = pose(0, 0, (-0.08, -0.24, 0.22), _n(-0.35, 0.75, 0.5), pole=(-0.7, 
                   left_blade=_n(0.35, 0.75, 0.5))
 
 
-def axes_right(rig):
+def _axes_cut():
     """The right axe's forehand, her right to her left; the left axe drawn
-    back for its turn."""
-    keys = [
+    back for its turn (axes_left plays it mirrored)."""
+    return [
         (0, axes_pose(-22, -34, (-0.18, 0.14, 0.10), _n(-0.4, 0.8, -0.45), (-0.8, 0.1, -0.5),
                       (0.02, -0.26, 0.30), _n(0.3, 0.6, 0.75), weight=-0.4), "fast"),
         (2.5, axes_pose(-3, -4, (0.0, -0.06, 0.46), _n(0.15, -0.1, 1.0), (-0.6, -0.7, -0.3),
@@ -154,26 +154,19 @@ def axes_right(rig):
                       (0.22, 0.0, -0.02), _n(0.5, 0.75, -0.45), weight=0.7, pivot=0.7, pitch=21), "ease"),
         (15, axes_pose(7, 12, (0.0, -0.24, 0.24), _n(0.2, 0.6, 0.75), (-0.6, -0.5, -0.4),
                        (0.10, -0.20, 0.20), _n(0.4, 0.7, 0.55), weight=0.2, pivot=0.2), "auto"),
-        (24, AXES_GUARD, "ease"),
     ]
+
+
+def axes_right(rig):
+    """The right axe's forehand, her right to her left; the left axe drawn
+    back for its turn."""
+    keys = _axes_cut() + [(24, AXES_GUARD, "ease")]
     return build("axes_right", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axes"})
 
 
 def axes_left(rig):
     """The left axe's forehand, her left to her right: the right's mirrored."""
-    keys = [
-        (0, mirror(axes_pose(-22, -34, (-0.18, 0.14, 0.10), _n(-0.4, 0.8, -0.45), (-0.8, 0.1, -0.5),
-                             (0.02, -0.26, 0.30), _n(0.3, 0.6, 0.75), weight=-0.4)), "fast"),
-        (2.5, mirror(axes_pose(-3, -4, (0.0, -0.06, 0.46), _n(0.15, -0.1, 1.0), (-0.6, -0.7, -0.3),
-                               (0.10, -0.20, 0.16), _n(0.5, 0.7, 0.3), weight=0.1, pitch=16)), "linear"),
-        (5, mirror(axes_pose(20, 34, (0.28, -0.32, 0.26), _n(0.85, -0.4, 0.25), (-0.9, -0.2, 0.2),
-                             (0.20, -0.04, 0.0), _n(0.5, 0.75, -0.4), weight=0.6, pivot=0.6, pitch=20)), "ease"),
-        (7, mirror(axes_pose(23, 39, (0.30, -0.38, 0.20), _n(0.75, -0.55, -0.1), (-0.9, -0.1, 0.3),
-                             (0.22, 0.0, -0.02), _n(0.5, 0.75, -0.45), weight=0.7, pivot=0.7, pitch=21)), "ease"),
-        (15, mirror(axes_pose(7, 12, (0.0, -0.24, 0.24), _n(0.2, 0.6, 0.75), (-0.6, -0.5, -0.4),
-                              (0.10, -0.20, 0.20), _n(0.4, 0.7, 0.55), weight=0.2, pivot=0.2)), "auto"),
-        (24, AXES_GUARD, "ease"),
-    ]
+    keys = [(t, mirror(p), e) for t, p, e in _axes_cut()] + [(24, AXES_GUARD, "ease")]
     # (The mirrored stance puts her right foot forward for this one: a step
     # through with the cut.)
     return build("axes_left", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axes"})
