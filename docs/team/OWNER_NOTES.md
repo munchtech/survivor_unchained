@@ -294,3 +294,6 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 ## 14 October 2026, night: the finish line (to coordinator 1847d1a6)
 - The owner: "judge at max zoom seen in game but make sure its critically! it should still look 'perfect' just at those distances". Judges rule at the game's own cameras (play/town, the close-up at its closest zoom, the Look camera), critically, and it must look perfect there; marks only visible beyond them (Blender, 6x crops) are logged, not fixed. Round cap 2-3 per item, then closed as known unless the owner reopens. A fixed list per area per session. README "Working lean", "The finish line".
+
+## 14 October 2026, night: the glove pick (to coordinator 1847d1a6)
+- The owner: "louder top if you think its better, as is if not (g3 either way)". **G3 is picked.** The coordinator's call: **the louder top**, because at play zoom G3's piping is a 1 px edge and the owner asked for style. A deeper scallop and a thicker plum cord at the top only; the hand keeps G3's piped knuckle V, with no extra lines. One build, then a max judge at the game cameras (the finish line) on whether it reads in play AND stays elegant; if it reads costume-y, ship G3 as is. Then G3 becomes the Arcanist default; stockings take its ivory and trim.

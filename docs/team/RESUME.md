@@ -10,8 +10,8 @@ Scratch to KEEP: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Deskto
   - **Never kill processes by name** (README Safety).
 - The owner picked the crossbow pistol grip (OWNER_NOTES).
 
-### Waiting on the owner
-- **The glove pick: B1 (plain) vs G3 (plum-piped scalloped top and knuckle V, ivory satin).**
+### The owner's answers
+- **ANSWERED: G3, with a louder top** (OWNER_NOTES 14 Oct night: one build with a deeper scallop and thicker cord at the top, judged at the game cameras; if it reads costume-y, G3 as is). Outfits' first job after the merge. Was: B1 (plain) vs G3 (plum-piped scalloped top and knuckle V, ivory satin).
   - Sheets: `outfits\s27\gl3_play_owner.jpg`, `gl3_detail_owner.jpg`. Judge PASS: `gl3_verdict.md`.
   - The coordinator's note: at play zoom G3's style is a quiet 1 px edge. A "louder G3" was offered: a deeper scallop and a thicker cord at the top, no lines on the hand.
   - G3 changes heroine.glb, colour only (the Arcanist tuck, 413 hand vertices). Face rebuilds once more, animation repacks on that commit, and Arcanist legal and the tests re-run.
