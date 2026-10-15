@@ -22,9 +22,9 @@ uniform float shine = 0.15;     // (the lamps' sheen on it, x.15 of what it was,
 // (judge a00723b7: its far side ended in a hard vertical line against her back teeth. Its side falls into their shade:
 // its light cut by lat_amt from lat_in to lat_out m off her mouth's middle (lat_mid), its points taken to her head's own
 // space (head_inv, set each frame by HerFaceLife.TongueFrame), so the shade stays on its sides as her head turns.
-// UNJUDGED: 0 until judged; the candidate is 0.85 (pictures: --tongueparam lat_amt=0.85))
+// Judged ON (judge abdb6549, 14 Oct): reads as a rounded tongue in shadow by the teeth; edge step 17-21 still over the 10 aim (a refinement).
 uniform mat4 head_inv = mat4(1.0);
-uniform float lat_amt = 0.0;
+uniform float lat_amt = 0.85;
 uniform float lat_in = 0.008;
 uniform float lat_out = 0.018;
 uniform float lat_mid = 0.0016;
