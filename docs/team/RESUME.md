@@ -2,6 +2,10 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 16 October: coordinator 007ccb1a, project finish line (face only)
+- **One lead this stretch: face** (successor 27, in worktree agent-a2d632df7c7f21ec0), until the heroine's beautification is done. Outfits and animation stay paused at their handoffs, so the F1 merge stays HELD; face's merge-ready glb stays uncommitted until F1 lands.
+- **The owner's project finish line:** judges at `effort: "xhigh"`; perfect = what the player sees, at 1:1 game-camera frames, never enlarged sheets (README "The finish line"). Face starts by re-checking its open list at 1:1 and closing what doesn't show.
+
 ## 14 October, night: coordinator 1847d1a6 wound down (outfits, animation, face only; restart here)
 Scratch to KEEP: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\{outfits,anim,face,judge_*}` (and 1cc516bc's).
 - Nothing was merged this session except docs.
