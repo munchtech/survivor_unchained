@@ -2,6 +2,64 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 16 October: coordinator 007ccb1a, project finish line (face only)
+- **Three leads, in their old worktrees:** face 27 (a2345a59d661843a1), outfits 28 (ac136e960cc6e59f5), animation 34 (a66388d840aa99c6e). The owner first said face only, then: "restart them then" so F1 can land. F1 path: outfits builds and commits G3 (louder top), animation takes it, repacks, judge, then both MERGE REQUESTs land together; then face rebuilds on merged.
+- **The owner's project finish line:** judges at `effort: "xhigh"`; perfect = what the player sees, at 1:1 game-camera frames, never enlarged sheets (README "The finish line"). Face starts by re-checking its open list at 1:1 and closing what doesn't show.
+
+## 14 October, night: coordinator 1847d1a6 wound down (outfits, animation, face only; restart here)
+Scratch to KEEP: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\{outfits,anim,face,judge_*}` (and 1cc516bc's).
+- Nothing was merged this session except docs.
+- New standing rules:
+  - **The finish line** (README "Working lean"): judge critically at the game's own max zoom; marks beyond it are logged, not fixed; 2-3 rounds, then closed as known; a fixed list per area.
+  - **Never kill processes by name** (README Safety).
+- The owner picked the crossbow pistol grip (OWNER_NOTES).
+
+### The owner's answers
+- **ANSWERED: G3, with a louder top** (OWNER_NOTES 14 Oct night: one build with a deeper scallop and thicker cord at the top, judged at the game cameras; if it reads costume-y, G3 as is). Outfits' first job after the merge. Was: B1 (plain) vs G3 (plum-piped scalloped top and knuckle V, ivory satin).
+  - Sheets: `outfits\s27\gl3_play_owner.jpg`, `gl3_detail_owner.jpg`. Judge PASS: `gl3_verdict.md`.
+  - The coordinator's note: at play zoom G3's style is a quiet 1 px edge. A "louder G3" was offered: a deeper scallop and a thicker cord at the top, no lines on the hand.
+  - G3 changes heroine.glb, colour only (the Arcanist tuck, 413 hand vertices). Face rebuilds once more, animation repacks on that commit, and Arcanist legal and the tests re-run.
+
+### Restart order
+1. **The F1 merge (coordinator, first).**
+   - Outfits' `MERGE REQUEST worktree-agent-a5ca10091b08dc429@dfe686ed`: the final body B1j and the four outfits; legal 0 on all four; 917 tests.
+   - It is HELD, to merge together with animation's repack, because integration's clips are built for the old rig.
+   - Animation's merge gate: repack on dfe686ed's art, the hip-thumb fix (below), judges, MERGE REQUEST. Then tell face.
+2. **Animation** (worktree agent-af8dbda3195e438e4 @ 0ed50202; handoff section 0, lead 33's). Lead 33 already copied dfe686ed's art in, repacked all 87 clips (motion no worse than F0; 930 tests); the hip-thumb gate is DONE (c8e73ef9: the 71 deg was an old clip; the break tuck and Flare reach fixed, need a look). Five sheets in `anim\l33` await ONE max judge (re-shoot the Arcanist rows on G3, add the game close-up and night). Then take outfits' G3 commit, repack once, MERGE REQUEST. Axe wrist cap CLOSED as known (round cap). The owner: chain_strike becomes two-handed (her left hand grips the chain; after the merge). The owner will check the axe swings in play.
+   - **Done this session:**
+     - the hip hand in the static clips;
+     - the sword idle wrist, and the sword attacks off the ulnar limit (16-25 deg at contact);
+     - the brim tuck pose and transitions;
+     - stop_warden_l;
+     - the cast_raise path;
+     - the dagger fist (numeric PASS, seated in game) and the throw fist.
+   - **Merge gate: in the hip clip, thumb_01_l turns 71 deg into the back of her hand.** That is outfits' "white flap" at the thumb hole, not the glove. Bring it to about 14 deg, with 0 points inside the hand by outfits' `outfits\s27\solve\pen.py`.
+   - **Then:**
+     - the cast_raise hand judge;
+     - the wrist cap on the axe (2 rounds unconverged: park it, or one max solver), the chain, daggers and throw;
+     - the viking sword and axe grips (round or thin the assets);
+     - the crossbow pistol grip (the owner's pick).
+3. **Face** (worktree agent-a2d632df7c7f21ec0 @ 5bdca23b; "Start here", successor 26).
+   - **Merge path:** a merge-ready heroine.glb on B1j sits UNCOMMITTED in the worktree (md5 45fe3386; `face\b1j\j_noseal.glb`). After F1 merges: rebuild on merged, `R\cmp.py`, tests, MERGE REQUEST.
+   - **Then:**
+     - Own's chin dot at open 1.0;
+     - the mouth seal's three failed items;
+     - the teeth hue (the far lower row reads amber);
+     - lip paint round 2 (Saffron's doubled line, the snarl's brown band, flecks);
+     - Sunborn's doubled line (confirm whether it's still open);
+     - the hair edges.
+   - The laugh corner pocket is CLOSED as known.
+4. **Outfits** (worktree agent-a5ca10091b08dc429 @ cbc57774; "Paused here", successor 27).
+   - After the pick: commit the glove (or keep B1).
+   - **Then:**
+     - the right thumb, 2 mm off the staff;
+     - the Reaver belt;
+     - the Arcanist chest;
+     - stockings in the glove's ivory and trim;
+     - the groin fold;
+     - the neck graft corner (Godot shots only);
+     - the close-up skin detail. The coordinator's lean: a normal-map detail bake first, so the rig stays frozen; a denser mesh only if the judge says the bake can't read at the close-up.
+
 ## 14 October, late: coordinator 1cc516bc wound down (outfits, animation, face only; restart here)
 Scratch to KEEP: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1cc516bc-727d-4e77-9f0e-4ed15fbf8ea6\scratchpad\{outfits,anim,face}` (and d7e64ca2's, 34daaf5d's). Nothing merged this session except docs. The owner picked **B1 "with style"** (OWNER_NOTES).
 

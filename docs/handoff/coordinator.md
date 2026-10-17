@@ -101,3 +101,11 @@ From the coordinator of 10 October (session 181eef02). Wave 1 restarted, ran abo
   - Blender lookdev can't judge the head/neck rim: the game's skin shader eases the head into the graft. Judge that area in Godot shots only.
   - Coarse sculpt triangulation (7-8 mm edges) is the root of the knuckle failure and the chest facets: one "close-up skin detail" item after F1.
   - A rig-final build lets animation start before skin-only fixes finish (outfits' pushback; gate: bones, weights and key deltas identical).
+
+**Coordinator 1847d1a6 (14 October, night; outfits, animation, face).** Ran outfits 26 then 27, animation 31, 32 and 33, and face 26. Nothing was merged except docs. Outfits' final body and outfits are committed (dfe686ed), with the merge request HELD to land with animation's repack. The glove sheet (B1 vs G3) is with the owner. The owner set the finish line (judge critically at the game's max zoom) and picked the crossbow pistol grip. RESUME "14 October, night: coordinator 1847d1a6" has the state.
+- **Lessons:**
+  - Helpers can't SendMessage "parent". Leads must give each helper their agent id; otherwise the reports land on the coordinator.
+  - A lead's leftover runner can overwrite newer art when its job finishes (B1c over B1j). When the art moves on, TaskStop the predecessor's runners; find them by grepping `subagents/*.jsonl` for the job.
+  - A worker's `taskkill /IM python.exe` killed every lead's Python jobs. That's now a README rule, and it goes in every worker brief.
+  - Leads filled about 240k in 1-1.5 hours. Plan a successor per lead per stretch, and expect the coordinator itself to reach 250k in one long evening of relays.
+  - A body build that keeps the skeleton identical (F0 to B1c to B1j) let animation and face work in parallel; colour-only follow-ups were cheap to confirm by accessor diff.
