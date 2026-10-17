@@ -288,3 +288,19 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
   - (e) real satin: a sheen that runs along the forearm, not flat white.
 - The style doesn't change her body, so **the one body build starts now** with B1 as the default. The styled glove is shot on the new hand. Whatever style wins carries to the stocking tops.
 
+
+## 14 October 2026, evening: the crossbow hold (to coordinator 1847d1a6)
+- Animation found the crossbow mesh has no pistol grip (the stock sits 85-120 mm off her hand) and `Arms.Seat` skips pistol pieces. The owner picked **(a): add a pistol grip** so her fist seats as it does on the sword (not a stock-under-forearm hold). Animation lead: a grip on the mesh (ours, logged in ASSET_PROVENANCE), an `Arms.Seat` path for it, a WRAP fist and a PocketR line, then the wrist cap at crossbow_shoot; queued after the other weapons' wrist cap.
+
+## 14 October 2026, night: the finish line (to coordinator 1847d1a6)
+- The owner: "judge at max zoom seen in game but make sure its critically! it should still look 'perfect' just at those distances". Judges rule at the game's own cameras (play/town, the close-up at its closest zoom, the Look camera), critically, and it must look perfect there; marks only visible beyond them (Blender, 6x crops) are logged, not fixed. Round cap 2-3 per item, then closed as known unless the owner reopens. A fixed list per area per session. README "Working lean", "The finish line".
+
+## 14 October 2026, night: the glove pick (to coordinator 1847d1a6)
+- The owner: "louder top if you think its better, as is if not (g3 either way)". **G3 is picked.** The coordinator's call: **the louder top**, because at play zoom G3's piping is a 1 px edge and the owner asked for style. A deeper scallop and a thicker plum cord at the top only; the hand keeps G3's piped knuckle V, with no extra lines. One build, then a max judge at the game cameras (the finish line) on whether it reads in play AND stays elegant; if it reads costume-y, ship G3 as is. Then G3 becomes the Arcanist default; stockings take its ivory and trim.
+
+## 14 October 2026, night: waiting on the owner (coordinator 1847d1a6)
+- **ANSWERED (the owner): "if it was meant to be two-handed, then two handed".** Animation makes her left hand grip the chain in chain_strike (and check chain_haul). Was: **chain_strike's left hand:** the clip is meant to be two-handed, but her left hand sits 30-42 cm off the chain's handle. Keep it one-handed (the left free), or make her grip the chain with both hands? (animation lead 33)
+- **The owner will check the axe swings in play** (pending). Was: **The axe swings:** the wrist sits at the rig's limit at contact in every axe swing; two solvers couldn't fix it without moving the forearm deeper into her body, so it's closed as known at the round cap. Reopen if it reads as a "weird angle" in play.
+
+## 16 October 2026: project finish line (to coordinator 007ccb1a)
+- The owner: "we are gonna move judges to extra instead of max, and were going to accept perfect for what the player can see, not at the big zoom." Judges spawn as `su-lead-max` with `effort: "xhigh"`. Perfect is judged on 1:1 game-camera frames (play/town, the close-up camera, the Look camera); enlarged sheets and crops no longer count, and marks only they show are closed. README "The finish line". This stretch runs one lead only: face, until the heroine's beautification is done.
