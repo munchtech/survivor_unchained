@@ -2283,6 +2283,9 @@ BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
 # bound (a thumb's), its binding (key, width, height, overhang) as given, not widened to 5 mm; and the
 # glove's top cut for her skin's tuck under it)
 BIND_SIGMA, BIND_MINLOOP, BIND_SPEC, GLOVE_TOP_D = {}, {}, {}, {}
+# (s28, the owner's louder G3 top: a piece's name: (a point, (width, height, overhang)): its bound edge loop
+# nearest that point (the glove's top, by her elbow) bound to that instead of BIND_SPEC's; the rest as given)
+BIND_TOP = {}
 # (s17 spike2: a piece's name: its binding faces the sheet's faces within 3 mm of
 # the line, weighed by their area, not the one nearest face: at the arcanist's left
 # hip one folded sliver at the edge (0.18 mm2) was the nearest face of four line
@@ -2349,6 +2352,10 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     moved = np.zeros(len(pos), bool)
     bound = 0
     planes = []
+    top_k = -1
+    if name in BIND_TOP:
+        a_ = np.asarray(BIND_TOP[name][0], float)
+        top_k = int(np.argmin([np.linalg.norm(pos[l_].mean(0) - a_) for l_ in loops]))
     for k, loop in enumerate(loops):
         lp = pos[loop]
         seg = np.linalg.norm(np.diff(np.vstack([lp, lp[:1]]), axis=0), axis=1)
@@ -2361,7 +2368,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         bound += 1
         cur = smooth_closed(lp, BIND_SIGMA.get(name, sigma))
         # (no bend tighter than twice the rolled edge's radius: see rounded())
-        cur = rounded(cur, rmin or BIND_RMIN.get(name) or width)
+        cur = rounded(cur, rmin or BIND_RMIN.get(name) or (BIND_TOP[name][1][0] if k == top_k else width))
         # Back onto the sheet (its surface, not the plane of the nearest
         # point: that changed from point to point and stepped the line in
         # depth, unseen face-on, kinked at a glancing view), the move eased
@@ -2453,6 +2460,9 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         pos[fix] -= outward[jn[fix]] * (out_[fix] + 0.0003)[:, None]
         moved |= fix
         w_r, h_r, o_r, t_r = width, height, overhang, thick
+        if k == top_k:
+            w_r, h_r, o_r = BIND_TOP[name][1]
+            print("BIND_TOP %s_bind%d: %.1f mm wide, %.1f mm over the sheet, %.1f mm overhang" % (name, k, w_r * 1000, h_r * 1000, o_r * 1000))
         if name in BIND_SLIM:
             # (s18 BIND_SLIM: slimmer round and under her crotch, eased along the line)
             sl_ = ramp(-cur[:, 2], -(CROTCH + 0.02), -(CROTCH + 0.004)) * ramp(-np.abs(cur[:, 0]), -0.06, -0.05)
@@ -6126,6 +6136,8 @@ def arcanist():
     GLOVE_CROOK_W = np.radians(float(os.environ.get("GLOVE_CROOK_W", "70")))
     GLOVE_PIPE = tuple(float(v) for v in os.environ.get("GLOVE_PIPE", "0.003,0.0006,0.0014").split(","))
     GLOVE_BIND_SIGMA = float(os.environ.get("GLOVE_BIND_SIGMA", "0.003"))
+    # (s28: the top's binding alone as (width, height over the sheet, overhang), the louder G3; 0 = GLOVE_PIPE's)
+    GLOVE_PIPE_TOP = tuple(float(v) for v in os.environ.get("GLOVE_PIPE_TOP", "0,0,0").split(","))
     # (G1: the top's lancet ARC_GLOVE_POINT up toward her elbow, ARC_GLOVE_POINT_W deg each side at its root,
     # its tip ARC_GLOVE_POINT_TIP deg round, centred ARC_GLOVE_POINT_ROT deg round from the back of her hand
     # toward her pinky (her ulna's ridge, the line to her elbow's tip); on her hand a tongue FL_TONGUE onto
@@ -6843,6 +6855,8 @@ def arcanist():
             BIND_MINLOOP[f"arcanist.glove_{sd}"] = 0.03
             if GLOVE_STYLE in ("G1", "G2"):
                 BIND_SPEC[f"arcanist.glove_{sd}"] = ("glovepipe",) + GLOVE_PIPE
+                if GLOVE_PIPE_TOP[0] > 0:
+                    BIND_TOP[f"arcanist.glove_{sd}"] = (ARM[sd][1], GLOVE_PIPE_TOP)
         out += [
             *(piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP - (GLOVE_FIELD_OVER if ARC_CAPS else 0.0), 9.9, legs=False), "blackleather",
                     lift=(lambda q, sd=sd: glove_a_lift(q, sd)) if ARC_CAPS else 0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12,
