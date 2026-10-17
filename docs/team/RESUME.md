@@ -3,7 +3,7 @@
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
 ## 16 October: coordinator 007ccb1a, project finish line (face only)
-- **One lead this stretch: face** (successor 27, in worktree agent-a2d632df7c7f21ec0), until the heroine's beautification is done. Outfits and animation stay paused at their handoffs, so the F1 merge stays HELD; face's merge-ready glb stays uncommitted until F1 lands.
+- **Three leads, in their old worktrees:** face 27 (a2345a59d661843a1), outfits 28 (ac136e960cc6e59f5), animation 34 (a66388d840aa99c6e). The owner first said face only, then: "restart them then" so F1 can land. F1 path: outfits builds and commits G3 (louder top), animation takes it, repacks, judge, then both MERGE REQUESTs land together; then face rebuilds on merged.
 - **The owner's project finish line:** judges at `effort: "xhigh"`; perfect = what the player sees, at 1:1 game-camera frames, never enlarged sheets (README "The finish line"). Face starts by re-checking its open list at 1:1 and closing what doesn't show.
 
 ## 14 October, night: coordinator 1847d1a6 wound down (outfits, animation, face only; restart here)
