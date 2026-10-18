@@ -6,14 +6,14 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>
 /// The close view of her in play (logic/Play/CloseUp.cs decides how near; FollowCamera.Close frames it): the wheel
-/// or the right stick in town, and the idle view anywhere quiet. Standing a while with the view close, she turns
-/// to it as she does for the book, her head to the lens, and by day her carried light comes down so the sun models
-/// her face. --close C: the wheel's level set (pictures); --idle-after S: the idle view after S seconds.
+/// or the right stick in town, and the idle view anywhere quiet. The wheel only brings the view nearer, her back
+/// still to it; in the idle view she turns to it (CloseUp.PoseFor), her head to the lens. Close, by day her carried
+/// light comes down so the sun models her face. --close C: the wheel's level set (pictures); --idle-after S: the idle view after S seconds.
 /// </summary>
 public partial class Game
 {
     readonly CloseUp closeUp = new();
-    double closeStill, closeDrift;
+    double closeDrift;
     bool closeDrives;
 
     /// <summary>A new place: the close view back to play's distance at once (--close C: set, where it is safe).</summary>
@@ -43,7 +43,7 @@ public partial class Game
         if (scene == null || zone == null) return;
         var s = Settings.Current;
         closeUp.IdleOn = s.IdleClose;
-        closeUp.IdleAfter = Args.Has("idle-after") ? Args.Num("idle-after", 12) : s.IdleCloseAfter;
+        closeUp.IdleAfter = Args.Has("idle-after") ? Args.Num("idle-after", 60) : s.IdleCloseAfter;
         bool taken = InCinematic || showing || scene.CameraHeld;
         bool held = taken || Mode != "play" || hudMode != null || screens.Current != null || inTransit || camSaved != null
             || zone is ArenaRun or StoryNight || zone.Ember || cam.FocusOverride != null || Battle?.Player is not { Alive: true };
@@ -65,7 +65,7 @@ public partial class Game
         closeDrift = closeUp.Idling ? closeDrift + dt : 0;
         cam.Orbit = closeUp.Idling ? 0.3f * Mathf.Sin((float)closeDrift * 0.1f) : 0;
         if (taken) cam.SnapClose();
-        HerToTheView(dt, held, moving);
+        HerToTheView(dt, held);
         // The idle view is a picture: the HUD steps away (back at once on any input). Near, by the wheel or idle,
         // no name floats by her head, and the town's walkers keep out of the view behind her.
         float near = cam.CloseShown;
@@ -76,13 +76,13 @@ public partial class Game
         else zone.KeepClear = null;
     }
 
-    /// <summary>Close and standing a beat: she turns to the view, her head to the lens; by day her light comes down.</summary>
-    void HerToTheView(double dt, bool held, bool moving)
+    /// <summary>In the idle view she turns to it, her head to the lens (never for the wheel alone: the owner,
+    /// 17 October); close, by day her light comes down.</summary>
+    void HerToTheView(double dt, bool held)
     {
         if (scene?.Player is not { } pv || screens.Current != null) { closeDrives = false; return; }
         float near = cam.CloseShown;
-        closeStill = moving || held ? 0 : closeStill + dt;
-        bool turn = !held && near > 0.45f && closeStill > 1.2;
+        bool turn = !held && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
         if (turn)
         {
             // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)

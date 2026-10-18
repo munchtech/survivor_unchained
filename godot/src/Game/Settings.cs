@@ -21,7 +21,7 @@ public sealed class Settings
     /// <summary>Left alone a while with nothing hostile near, the view eases in close on her (CloseUp), after so
     /// many seconds; off, never.</summary>
     public bool IdleClose = true;
-    public double IdleCloseAfter = 12;
+    public double IdleCloseAfter = 60;
     /// <summary>The pad's rumble: full, low or off (S-14).</summary>
     public string Rumble = "full";
     public bool Fullscreen = true;
@@ -47,6 +47,8 @@ public sealed class Settings
         // --quality Q: a run at that quality whatever was saved (measuring, pictures).
         if (Args.Get("quality") is { } q) s.Quality = q;
         if (Args.Get("scale") is { } sc) s.Scale = sc;
+        // (12 s was the old default, never offered in the menu: a true idle is a minute now, the owner 17 October)
+        if (s.IdleCloseAfter == 12) s.IdleCloseAfter = 60;
         return s;
     }
 
