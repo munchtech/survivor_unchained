@@ -1,0 +1,3 @@
+[["e1","c04a",["own"],["--skinparam","lip_ao_open=0.9,mouth_occ=0.3","--tongueparam","open_light=0.75","--teethparam","side_glow=0.15"]],
+ ["e2","c04a",["own"],["--skinparam","lip_ao_open=0.9,dbg_gate=1","--tongueparam","open_light=0.75","--teethparam","side_glow=0.3"]],
+ ["e3","c04a",["own"],["--skinparam","lip_ao_open=0.9,mouth_fill=0.5","--tongueparam","open_light=0.75","--teethparam","side_glow=0.3"]]]

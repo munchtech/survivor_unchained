@@ -1,0 +1,4 @@
+[["dg1","c04a",["own"],["--skinparam","lip_ao_open=0.9","--tongueparam","open_light=0.75","--teethparam","debug=1"]],
+ ["dg2","c04a",["own"],["--skinparam","lip_ao_open=0.9,mouth_fill=0.8","--tongueparam","open_light=0.75"]],
+ ["dg3","c04a",["own"],["--skinparam","lip_ao_open=1.0,dbg_gate=4","--tongueparam","open_light=0.75"]],
+ ["dg4","c04a",["own"],["--skinparam","lip_ao_open=0.9","--tongueparam","open_light=0.75,fill=1.5","--teethparam","seep=0.5"]]]
