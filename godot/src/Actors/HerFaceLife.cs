@@ -115,8 +115,26 @@ public partial class HerFaceLife : Node
                 m.SetShaderParameter("lit", k);
                 // (the lamps cut wholly with her lips shut (her mouth's corner), 0.6 of the way once they part)
                 m.SetShaderParameter("shut", 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
+                // (her side teeth flat in her mouth's shade while her lips are parted only a little: the shader's narrow)
+                m.SetShaderParameter("narrow", 1 - Mathf.SmoothStep(0.25f, 0.6f, w));
                 foreach (var (n, v) in teethParams) m.SetShaderParameter(n, v);
             }
+    }
+
+    /// <summary>Her mouth's inside lit by how far her lips part (0.25 is the cinematics' most): her tongue's light (its
+    /// shader's open_light, half at 0.25 and under, full by 0.6, where it was judged) and the shade baked where her lips
+    /// meet eased up as they part (the skin's lips_apart). Before any --skin-set / --tongueparam, which win.</summary>
+    void MouthShade()
+    {
+        if (mouth == null) return;
+        float w = Mathf.Max(open >= 0 ? mouth.GetBlendShapeValue(open) : 0, snarl >= 0 ? mouth.GetBlendShapeValue(snarl) : 0);
+        float apart = Mathf.SmoothStep(0.03f, 0.3f, w), tl = Mathf.Lerp(0.5f, 1f, Mathf.SmoothStep(0.25f, 0.6f, w));
+        for (int s = 0; mouth.Mesh != null && s < mouth.Mesh.GetSurfaceCount(); s++)
+            if (mouth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true)
+                m.SetShaderParameter("lips_apart", apart);
+        for (int s = 0; tongue?.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
+            if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
+                m.SetShaderParameter("open_light", tl);
     }
 
     /// <summary>--mouth-cam: each frame, the camera in her head's own space (the glb's, as her head, teeth and tongue are
@@ -140,9 +158,20 @@ public partial class HerFaceLife : Node
             var vp = GetViewport().GetVisibleRect().Size;
             GD.Print(string.Format(ci, "MOUTHCAM t {0:0.000} o {1} bx {2} by {3} bz {4} fov {5:0.000} keep {6} vp {7} {8} mi {9}",
                 t, V(c.Origin), V(c.Basis.Column0), V(c.Basis.Column1), V(c.Basis.Column2), cam.Fov, (int)cam.KeepAspect,
-                vp.X, vp.Y, V(teeth.Transform.Origin)));
+                vp.X, vp.Y, V(teeth.Transform.Origin)) + MouthKeys());
             return;
         }
+    }
+
+    /// <summary>The head's blend weights in use (" w name=v ..."), so an offline ray cast poses her mouth as drawn.</summary>
+    string MouthKeys()
+    {
+        if (mouth?.Mesh is not ArrayMesh am) return "";
+        var sb = new System.Text.StringBuilder(" w");
+        for (int i = 0; i < am.GetBlendShapeCount(); i++)
+            if (mouth.GetBlendShapeValue(i) is float v && Mathf.Abs(v) > 0.0005f)
+                sb.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, " {0}={1:0.0000}", am.GetBlendShapeName(i), v));
+        return sb.ToString();
     }
 
     void SkinParams()
@@ -190,6 +219,7 @@ public partial class HerFaceLife : Node
     public override void _Process(double delta)
     {
         t += delta;
+        MouthShade();
         if (skinParams.Count > 0) SkinParams();
         if (tongueParams.Count > 0) TongueParams();
         TeethLight();

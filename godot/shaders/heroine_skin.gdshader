@@ -68,6 +68,11 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// (her lips parted (HerFaceLife.MouthShade, 0 shut to 1 by mouth_open 0.3): the shade ao_map bakes where her lips
+// meet, right for them shut, is eased up to lip_ao_open on her lips (features' green): opened, the inner faces of her
+// lips came out of that bake near black, her lower lip's top a black band under her teeth (c04a A5, judge F1, face 29))
+uniform float lips_apart = 0.0;
+uniform float lip_ao_open = 0.6;
 // Her ears' hollows, a shade of their own (heroine_ear_ao.png, tools/assets/heroine_ear_ao.py; white elsewhere):
 // multiplied into AO, dimming her lamps there by ear_light (not ao_light), and warming her paint by it (ear_tint).
 // The cool fill and sky reached into her ear's bowl, grey-white in a warm ear (judge rj5v). Off at ear_amount 0.
@@ -389,7 +394,7 @@ void fragment() {
 	// inner linings showed as white slivers along their line at a turn)
 	float ea = mix(1.0, texture(ear_ao, UV).r, ear_amount);
 	ALBEDO *= mix(ear_tint, vec3(1.0), ea);
-	float ao = aot.r * ea;
+	float ao = mix(aot.r, max(aot.r, lip_ao_open), lips_apart * smoothstep(0.6, 0.95, fm.g)) * ea;
 	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
 	sheen = SPECULAR;
 	AO = ao;

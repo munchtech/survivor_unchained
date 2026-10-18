@@ -15,6 +15,10 @@ uniform float rim = 0.6;        // (its sides, turned from the eye, darkened so 
 //                                 hard edge against what is behind it (j2))
 uniform vec3 inside : source_color = vec3(0.42, 0.15, 0.14);  // (the mouth's own dark red, heroine_skin's mouth_colour)
 uniform float lamps = 0.6;
+// (how much of the light its vertex colour gives it reaches it as her lips part (HerFaceLife.MouthShade): its colour
+// was set for an open mouth (0.6); her lips parted a little (0.25) its tip, deep behind her teeth, read as a lit pink
+// band across her mouth (c04a A5, judge F1, face 29))
+uniform float open_light = 1.0;
 uniform float fill = 0.15;
 uniform float roughness = 0.45;
 uniform float specular = 0.3;
@@ -37,7 +41,7 @@ void vertex() {
 }
 
 void fragment() {
-	float k = COLOR.r;
+	float k = COLOR.r * open_light;
 	vec3 c = texture(paint, UV).rgb;
 	c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), grey) * tint;
 	float side = 1.0 - rim * (1.0 - smoothstep(0.0, 0.6, abs(dot(NORMAL, VIEW))));

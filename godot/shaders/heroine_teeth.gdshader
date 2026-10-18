@@ -46,6 +46,12 @@ uniform vec3 deep_dark = vec3(0.5, 0.32, 0.29);
 uniform vec3 shade_warm = vec3(1.0, 0.82, 0.55);
 uniform float deep_warm = 1.0;
 uniform float deep_spec = 0.15;
+// (her lips parted only a little (HerFaceLife.TeethLight: 1 to mouth_open 0.25, none by 0.6): her side teeth (their
+// light under flat_from to flat_to) take the shut lips' flat warm dark too. Shaped and lit, the lower canine and
+// premolars at her mouth's corner read as a black block with one lit facet: a broken tooth (c04a A5, judge F1, face 29))
+uniform float narrow = 0.0;
+uniform float flat_from = 0.8;
+uniform float flat_to = 0.97;
 uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden)
 
 void fragment() {
@@ -58,7 +64,7 @@ void fragment() {
 	float k = COLOR.r * mix(closed, 1.0, lit);
 	float f = pow(k, 2.2);
 	// (her lips shut, 1, to parted, 0: shut runs from 1 to 0.6 by mouth_open 0.05)
-	float c = clamp((shut - 0.6) / 0.4, 0.0, 1.0);
+	float c = max(clamp((shut - 0.6) / 0.4, 0.0, 1.0), narrow * (1.0 - smoothstep(flat_from, flat_to, COLOR.r)));
 	float dw = 1.0 - clamp(COLOR.g, 0.0, 1.0);
 	vec3 dt = mix(vec3(1.0), mix(deep_tint, deep_tint_warm, deep_warm), dw);
 	dt = mix(dt, deep_dark, dw * deep_warm);
