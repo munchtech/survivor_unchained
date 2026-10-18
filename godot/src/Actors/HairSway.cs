@@ -54,6 +54,7 @@ public partial class HairSway : Node
     // The chain: its bone, its points at rest (skeleton space), now and a
     // step ago (world), its links' lengths, what it is kept out of.
     int bone = -1;
+    Transform3D bind = Transform3D.Identity;
     float stiff, bend, corner;
     Vector3[] rest = [], x = [], xp = [];
     // Read-only view of the chain's world points (root first), for the HAIRCLEAR debug in anim_review.gd.
@@ -131,12 +132,27 @@ public partial class HairSway : Node
         mesh = GetParent() as MeshInstance3D;
         sk = mesh?.GetParent() as Skeleton3D;
         if (sk == null) return;
+        // Stepped once her skeleton's final pose is made (SkeletonUpdated: her modifiers' corrections in it, HerCarriage's
+        // lift of her chest and head and the rest), as she is drawn. (18 October, face 30: stepped in _Process, it read
+        // her pose before them, so the chain's rest and her balls stood where her head and back were before the lift,
+        // and the hair it carries, skinned on the lifted head, hung 3-9 cm off its chain, into her back: a braid's
+        // lower half and its tie, a tail's tips. If no pose is made in a frame, _Process steps it. OLDPOSE=1 as before.)
+        if (!OS.HasEnvironment("OLDPOSE")) sk.SkeletonUpdated += OnPosed;
         head = sk.FindBone("Head");
         FindForearms();
         var file = $"res://art/people/heroine_hair_{Style}.chain.json";
         if (Style == "" || !FileAccess.FileExists(file)) return;
         var d = Json.ParseString(FileAccess.GetFileAsString(file)).AsGodotDictionary();
         bone = sk.FindBone((string)d["bone"]);
+        // Its rest carried as the hair itself is skinned: by its own skin's bind of that bone (the hair's file's), not
+        // her skeleton's rest. (18 October, face 30: her skeleton's Head rest is not the one the hair was built and
+        // bound on (her neck's rebuild), so the chain's rest stood 2-9 cm behind the hair down a braid or tail: the
+        // chain lay on her back, kept out of her, and the hair it carries hung 6-9 cm into her, a braid's lower half
+        // and its tie gone into her back at the Look. NOBIND=1 uses her skeleton's rest again, to compare.)
+        bind = sk.GetBoneGlobalRest(bone).AffineInverse();
+        if (mesh!.Skin is { } skin && !OS.HasEnvironment("NOBIND"))
+            for (int i = 0; i < skin.GetBindCount(); i++)
+                if (skin.GetBindName(i) == (string)d["bone"] || (skin.GetBindName(i) == "" && skin.GetBindBone(i) == bone)) { bind = skin.GetBindPose(i); break; }
         stiff = (float)d["stiff"];
         bend = d.ContainsKey("bend") ? (float)d["bend"] : 0.03f;
         corner = d.ContainsKey("corner") ? Mathf.DegToRad((float)d["corner"]) : 0f;
@@ -248,7 +264,31 @@ public partial class HairSway : Node
         return want.Rotated(axis.Normalized(), most);
     }
 
+    double pending = -1;
+    ulong posedFrame;
+
     public override void _Process(double delta)
+    {
+        if (OS.HasEnvironment("OLDPOSE") || Engine.GetProcessFrames() > posedFrame + 2) { pending = -1; Step(delta); return; }
+        pending = System.Math.Max(pending, 0) + delta;
+    }
+
+    void OnPosed()
+    {
+        if (!IsInstanceValid(this) || !IsInsideTree()) return;
+        posedFrame = Engine.GetProcessFrames();
+        if (pending < 0) return;
+        var d = pending;
+        pending = -1;
+        Step(d);
+    }
+
+    public override void _ExitTree()
+    {
+        if (sk != null && IsInstanceValid(sk)) sk.SkeletonUpdated -= OnPosed;
+    }
+
+    void Step(double delta)
     {
         if (mesh == null || sk == null || head < 0) return;
         float dt = Mathf.Clamp((float)delta, 0f, 1f / 20);
@@ -267,7 +307,7 @@ public partial class HairSway : Node
         sway = Vector3.Zero;
         if (bone >= 0 && rest.Length == 8)
         {
-            var moved = world * Moved(bone);
+            var moved = world * (sk.GetBoneGlobalPose(bone) * bind);
             for (int i = 0; i < 8; i++) target[i] = moved * rest[i];
             if (at.Length != balls.Length) { at = new Vector3[balls.Length]; back = new Vector3[balls.Length]; across = new Vector3[balls.Length]; }
             for (int i = 0; i < balls.Length; i++)
