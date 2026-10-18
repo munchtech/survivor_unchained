@@ -5,6 +5,9 @@
     python tools/assets/grip_conform.py conform dagger_b --out DIR    conform one piece's grip, write DIR/<file>.glb
     python tools/assets/grip_conform.py check dagger_b DIR/daggers.glb   re-measure a conformed file (section within TOL of
                                                                       the spec; every other vertex, UV and byte as before)
+    python tools/assets/grip_conform.py conform viking_sword --src a4df6f89 --seat --cylinder --roll 5 --out DIR
+                                                                      a round type, made one cylinder: every ring of the
+                                                                      band on the circle, its sides spaced evenly (below)
     (--src REV: read the original from git, as grip_thin.py does; default the file as it is in public/assets/weapons)
 
 The piece is laid as Arms.Make lays it (godot/src/Actors/Arms.cs, the rows parsed from `All`): its node's meshes (Spec
@@ -353,7 +356,7 @@ def measure_piece(pc, sp):
 
 
 # ------------------------------------------------------------------ conform --
-def conform(pc, sp, seat=False, anchor=True, round_=False):
+def conform(pc, sp, seat=False, anchor=True, round_=False, cylinder=False, roll=0.0, radius=None):
     tname, ty = type_of(pc.row["kind"], sp)
     assert ty, f"{pc.id}: kind {pc.row['kind']} has no grip type in {SPEC.name}"
     cfg = piece_cfg(sp, pc.row, pc.id)
@@ -363,9 +366,51 @@ def conform(pc, sp, seat=False, anchor=True, round_=False):
     hw_t, hd_t = ty["section"]["half_w"], ty["section"]["half_d"]
     hw_b, hd_b = before["half_w"], before["half_d"]     # per axis: a round spec makes a flat hilt round
     sx, sy = hw_t / hw_b, hd_t / hd_b
-    rnd = round_ and ty["section"]["shape"] == "round"
+    rnd = (round_ or cylinder) and ty["section"]["shape"] == "round"
+    cyl = cylinder and rnd
     D = pc.D
-    if rnd:
+    if cyl:
+        # cylinder: each RING (the band's vertices grouped along the line, as sections() groups them) drawn to the circle
+        # on its own outline, so a taper, a bead or a sag between long quads all come to the type's radius: the fist
+        # meets one round section along the whole band (a round spec's swell is the reference grip's: none)
+        _, _, _, _, tq, R = pc.frame(t0, t1)
+        idx = np.flatnonzero(m); idx = idx[np.argsort(tq[idx])]
+        ring = np.zeros(len(tq), int); cur = 0; first = idx[0]
+        for a, b in zip(idx[:-1], idx[1:]):
+            if tq[b] - tq[a] > 0.75 or tq[b] - tq[first] > 3.0:
+                cur += 1; first = b
+            ring[b] = cur
+        ang_all = np.arctan2(R @ e2, R @ e1); rr_all = np.linalg.norm(R, axis=1)
+        tabs = {}
+        for j in np.unique(ring[m]):
+            sel = np.flatnonzero(m & (ring == j)); a_, r_ = ang_all[sel], rr_all[sel]
+            k = ((a_ + np.pi) / (2 * np.pi) * 36).astype(int) % 36
+            top = np.array(sorted([np.flatnonzero(k == q)[np.argmax(r_[k == q])] for q in np.unique(k)], key=lambda i: a_[i]))
+            tabs[j] = (np.r_[a_[top] - 2 * np.pi, a_[top], a_[top] + 2 * np.pi], np.tile(r_[top], 3))
+        # and its sides spaced evenly round the circle: a flat oval's vertices bunch toward its long axis, and drawn to
+        # the circle as they lie its faces toward the palm span 50 degrees (a 1.2 mm flat). The angles the band's rings
+        # share (the ring with the most), mapped in order onto n even steps (turned to move them least); every band
+        # vertex's angle through that map (UVs stay: a wrap's texture laid as evenly as the oval's was)
+        js = [j for j in np.unique(ring[m])]
+        big = max(js, key=lambda j: (m & (ring == j)).sum())
+        u = np.sort(ang_all[m & (ring == big)])
+        u = u[np.r_[True, np.diff(u) > np.radians(0.5)]]
+        if u[-1] - u[0] > 2 * np.pi - np.radians(0.5):
+            u = u[1:]                       # -180 and +180 are one angle
+        n_ = len(u); step = 2 * np.pi / n_
+        off0 = np.angle(np.exp(1j * (u - step * np.arange(n_))).mean())
+        ev = off0 + np.radians(roll) + step * np.arange(n_)
+        # the corners' radius: the polygon's mean radius round its sides the spec's (an even n-gon of corner radius 1 has
+        # mean (n/pi) cos(pi/n) ln tan(pi/4 + pi/2n): 0.977 for 12, so a 12-sided grip with its corners on the spec's circle
+        # is 0.3 mm thin to the hand), its corners no further than TOL past the circle (check's own bound)
+        mf = n_ / np.pi * np.cos(np.pi / n_) * np.log(np.tan(np.pi / 4 + np.pi / (2 * n_)))
+        target = (radius or min(hw_t / mf, hw_t + TOL - 0.01)) / pc.mm
+        ev = ev + 2 * np.pi * np.round((u - ev) / (2 * np.pi))    # each even angle beside its own
+        def remap(th):
+            xa = np.r_[u - 2 * np.pi, u, u + 2 * np.pi]; ya = np.r_[ev - 2 * np.pi, ev, ev + 2 * np.pi]
+            return np.interp(th, xa, ya)
+        sx = sy = float(target / rr_all[m].max())
+    elif rnd:
         # round: each point's distance from the line times g(angle) = the radius / the band's outline at that angle
         # (10 degree sectors, the widest point in each at its own angle), so the outline comes to the circle, a ring's swell kept
         _, _, _, _, tq, R = pc.frame(t0, t1)
@@ -381,8 +426,27 @@ def conform(pc, sp, seat=False, anchor=True, round_=False):
     S = np.eye(3) + (sx - 1) * np.outer(e1, e1) + (sy - 1) * np.outer(e2, e2)
     Sit = np.linalg.inv(S).T
 
-    def maps(Rp):
+    def maps(Rp, rows=None):
         """per point (world, square to D off the line): the new offset, and the normal and tangent maps."""
+        if cyl:
+            th = np.arctan2(Rp @ e2, Rp @ e1); out = np.linalg.norm(Rp, axis=1)
+            for j, (xp_, fp_) in tabs.items():  # noqa: B007
+                q = ring[rows] == j
+                out[q] = np.interp(th[q], xp_, fp_)
+            rad = np.linalg.norm(Rp, axis=1) * target / out
+            th2 = remap(th); dth = th2 - th
+            er2 = np.outer(np.cos(th2), e1) + np.outer(np.sin(th2), e2)
+            c_, s_ = np.cos(dth)[:, None], np.sin(dth)[:, None]
+            def turn(v):     # each row turned about D by its point's dth (Rodrigues)
+                return v * c_ + np.cross(D, v) * s_ + np.outer(v @ D, D) * (1 - c_)
+            def nmap(n):     # a side face (mostly radial) is the cylinder's: radial at its new angle; a cap (a guard's or
+                # a pommel's face sharing the band's ring) keeps its own, turned with its point
+                o = turn(n); side = np.abs(n @ D) < 0.5
+                o[side] = er2[side]
+                return o
+            def tmap(v):     # turned with its point; then square to the new normal (Gram-Schmidt in conform's caller)
+                return turn(v)
+            return er2 * rad[:, None], nmap, tmap
         if not rnd:
             return Rp @ S.T, (lambda n: n @ Sit.T), (lambda v: v @ S.T)
         th = np.arctan2(Rp @ e2, Rp @ e1); gg = gfun(th)
@@ -405,7 +469,7 @@ def conform(pc, sp, seat=False, anchor=True, round_=False):
             continue
         Pw = V @ A.T + M[:3, 3]
         C = pc.G + np.outer((Pw - pc.G) @ D, D) + cl(((Pw - pc.G) @ D) * pc.mm)
-        off, nmap, tmap = maps((Pw - C)[mm])
+        off, nmap, tmap = maps((Pw - C)[mm], np.flatnonzero(mm) + base - n)
         V2 = V.copy(); V2[mm] = (C[mm] + off - M[:3, 3]) @ Ai.T
         out = V.astype("<f4"); out[mm] = V2[mm].astype("<f4")
         g.b[po:po + out.nbytes] = out.tobytes()
@@ -421,6 +485,8 @@ def conform(pc, sp, seat=False, anchor=True, round_=False):
         if "TANGENT" in p["attributes"]:
             to, T = g.acc(p["attributes"]["TANGENT"], 4)
             T2 = tmap((T[:, :3] @ A.T)[mm]) @ Ai.T
+            if cyl and "NORMAL" in p["attributes"]:      # square to the new normal (model space: t.n is A-invariant)
+                T2 = T2 - N2 * (T2 * N2).sum(1, keepdims=True)
             T2 /= np.linalg.norm(T2, axis=1, keepdims=True)
             o = T.astype("<f4"); o[mm, :3] = T2.astype("<f4")
             g.b[to:to + o.nbytes] = o.tobytes()
@@ -523,6 +589,9 @@ def main(argv=None):
     c = sub.add_parser("conform"); c.add_argument("piece"); c.add_argument("--out", required=True); c.add_argument("--src")
     c.add_argument("--seat", action="store_true", help="the grip point moved to the type's grip_from_guard")
     c.add_argument("--round", action="store_true", help="a round type: the band's outline drawn to the circle (a flat hilt made round), not scaled per axis")
+    c.add_argument("--cylinder", action="store_true", help="a round type: each ring of the band drawn to the circle (a taper, beads, a sag between long quads made one cylinder)")
+    c.add_argument("--roll", type=float, default=0.0, help="--cylinder: deg the even sides are turned about the line (from the least move)")
+    c.add_argument("--radius", type=float, default=None, help="--cylinder: mm, the corners' radius (default: the polygon's mean radius the spec's, within TOL)")
     c.add_argument("--no-anchor", action="store_true", help="no anchor_grip written (the mount stays on the bounds)")
     k = sub.add_parser("check"); k.add_argument("piece"); k.add_argument("file"); k.add_argument("--src")
     k.add_argument("--moved", type=float, default=0.0, help="mm the grip point was moved (--seat's)")
@@ -548,7 +617,7 @@ def main(argv=None):
             print(line + ("  (anchor)" if s["anchor"] else ""))
     elif a.cmd == "conform":
         pc = load(a.piece, a.src)
-        r = conform(pc, sp, a.seat, not a.no_anchor, a.round)
+        r = conform(pc, sp, a.seat, not a.no_anchor, a.round, a.cylinder, a.roll, a.radius)
         out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
         assert out.resolve() != WEAPONS.resolve() and (ROOT / "godot").resolve() not in out.resolve().parents,             "a conformed piece goes to a scratch folder first; it replaces the game's file only after check and fistfit"
         f = out / f"{pc.row['file']}.glb"; pc.g.write(f)
