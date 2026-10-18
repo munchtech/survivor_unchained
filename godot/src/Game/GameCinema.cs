@@ -51,6 +51,7 @@ public partial class Game
         try { cine = new Cine(this, file, b, done); }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         finally { chained = null; }
+        if (scene != null) scene.Fx.HideLoot = true;
         handoffId = id;
         return true;
     }
@@ -119,6 +120,7 @@ public partial class Game
         if (cine == null) return;
         cine.Frame(dt);
         if (cine.Over) { var c = cine; cine = null; c.Finish(); }
+        if (scene != null) scene.Fx.HideLoot = cine != null; // hidden across a chain, shown at the hand-back
     }
 
     sealed class Cine
