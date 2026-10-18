@@ -49,7 +49,7 @@ public partial class HerFaceLife : Node
                 if (l >= 0 || r >= 0) lids.Add((mi, l, r));
                 if (mi.Name.ToString().Contains("Teeth")) teeth = mi;
                 else if (mi.Name.ToString().Contains("Tongue")) tongue = mi;
-                else if (mi.FindBlendShapeByName("snarl") is int sn and >= 0) { mouth = mi; open = mi.FindBlendShapeByName("mouth_open"); snarl = sn; }
+                else if (mi.FindBlendShapeByName("snarl") is int sn and >= 0) { mouth = mi; open = mi.FindBlendShapeByName("mouth_open"); snarl = sn; smile = mi.FindBlendShapeByName("smile"); }
                 for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                     if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_eye.gdshader") == true)
                         eyes = m;
@@ -98,7 +98,8 @@ public partial class HerFaceLife : Node
     readonly System.Collections.Generic.List<(string Name, float Value)> tongueParams = new();
 
     MeshInstance3D? teeth, mouth, tongue;
-    int open = -1, snarl = -1;
+    int open = -1, snarl = -1, smile = -1;
+    static readonly bool NoFold = Args.Has("nofold");     // (--nofold: the corners cut as before, for a BEFORE shot)
 
     /// <summary>Her teeth lit only as far as her lips are parted (her head's mouth_open, or a snarl's lifted lip): with
     /// her lips closed her mouth is dark inside, so the teeth a corner of her lips shows read as shade, not a white
@@ -215,6 +216,10 @@ public partial class HerFaceLife : Node
             {
                 m.SetShaderParameter("lips_apart", apart);
                 m.SetShaderParameter("lips_narrow", 1 - Mathf.SmoothStep(0.3f, 0.6f, w));
+                // (the corners' cut of the lamps behind her only as her smile folds them in: at rest the crease is
+                // open to the light, and a lamp to her side and behind cut there drew a black smudge past each
+                // corner, the lamp at c02 s8; face 30 cine)
+                if (smile >= 0 && !NoFold) m.SetShaderParameter("fold", Mathf.SmoothStep(0.05f, 0.4f, mouth.GetBlendShapeValue(smile)));
             }
         for (int s = 0; tongue?.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
             if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")

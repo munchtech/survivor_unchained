@@ -25,7 +25,8 @@ def stat(kind, a):
         ch = (px[i].max(1) - px[i].min(1)).mean()
         return f"white {l[w].mean():5.1f} iris L{l[i].mean():4.1f} C{ch:4.1f}"
     if kind == "cheek":
-        return f"L{l.mean():5.1f} n250 {(px.max(1) >= 250).sum():5d}"
+        m = px.mean(0) / 255; h, sat, v = colorsys.rgb_to_hsv(*m)
+        return f"L{l.mean():5.1f} s{sat:.2f} n250 {(px.max(1) >= 250).sum():5d}"
     if kind == "hair":
         m = px.mean(0) / 255; h, s, v = colorsys.rgb_to_hsv(*m)
         hi = (l > np.percentile(l, 95)); m2 = px[hi].mean(0) / 255; h2, s2, _ = colorsys.rgb_to_hsv(*m2)

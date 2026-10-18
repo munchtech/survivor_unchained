@@ -6,7 +6,9 @@ OUT = r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivor
 name, s = sys.argv[1], float(sys.argv[2]); rows = []
 for spec in sys.argv[3:]:
     tag, shot, box = spec.split(":"); box = tuple(int(v) for v in box.split(","))
-    rows.append([Image.open(f"{SH}f30c{tag}_{f}_{shot}.png").convert("RGB").crop(box) for f in ("own", "saffron", "sunborn")])
+    import os
+    fs = [f for f in ("own", "saffron", "sunborn") if os.path.exists(f"{SH}f30c{tag}_{f}_{shot}.png")]
+    rows.append([Image.open(f"{SH}f30c{tag}_{f}_{shot}.png").convert("RGB").crop(box) for f in fs])
 W = max(sum(int(c.width * s) for c in r) for r in rows); H = sum(int(r[0].height * s) for r in rows)
 m = Image.new("RGB", (W, H)); y = 0
 for r in rows:

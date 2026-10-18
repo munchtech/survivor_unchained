@@ -28,6 +28,8 @@ try:
                 for x in glob.glob(os.path.join(G, ".shots", name + "*")): os.remove(x)
                 if kind in UNTIL:
                     a = ["--quick", "warden", "--sex", "female", "--zone", "lowford", "--nohud", "--cine", kind, "--shot", name, "--until", UNTIL[kind], "--stills", "4"]
+                elif kind in ("town", "townn"):
+                    a = ["--shot", name, "--seconds", "8", "--close", "1", "--quick", "reaver", "--zone", "waystation", "--nohud", "--sex", "female", "--time", "day" if kind == "town" else "night"]
                 else:
                     a = ["--shot", name, "--seconds", "10", "--new", "--sex", "female", "--step", "1", "--part", "1", "--open-eyes"] + (["--look-time", "day"] if kind == "day" else [])
                 with open(os.path.join(LOGS, name + ".log"), "w", encoding="utf-8", errors="replace") as lf:

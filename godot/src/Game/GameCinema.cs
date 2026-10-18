@@ -293,7 +293,7 @@ public partial class Game
 
         // (env CINEDBG, shots only, off unless set: the cinematic light changed, to tell her materials' faults from
         // its own (face 30 cine): "key=0.5" the sun or moon's energy scaled, "glow=0.5" the cues' held lamps',
-        // "lamps=0.5" the zone's lamps', "ambient=0.5" the sky's, "nossao", "nosunshadow", "noomnishadow", "nodof")
+        // "lamps=0.5" the zone's lamps', "ambient=0.5" the sky's, "nossao", "nosunshadow", "noomnishadow", "nodof", "fill=E" a soft white spot from over the lens)
         static readonly Dictionary<string, float>? cineDbg = Args.Has("shot") && System.Environment.GetEnvironmentVariable("CINEDBG") is { Length: > 0 } cd
             ? cd.Split(',').Select(kv => kv.Split('=')).ToDictionary(a => a[0], a => a.Length > 1 ? float.Parse(a[1], System.Globalization.CultureInfo.InvariantCulture) : 1f)
             : null;
@@ -320,7 +320,21 @@ public partial class Game
             if (d.ContainsKey("nossao")) g.air.Env.SsaoEnabled = false;
             if (d.ContainsKey("nosunshadow")) g.air.Key.ShadowEnabled = false;
             if (d.ContainsKey("nodof")) { dof.DofBlurNearEnabled = false; dof.DofBlurFarEnabled = false; }
+            // ("fill=E": a soft white spot from just over the lens onto her eyes, people only, as the town close-up's key)
+            if (d.TryGetValue("fill", out var fe) && ActorAt("her", "eyes") is V3 he)
+            {
+                if (dbgFill == null || !IsInstanceValid(dbgFill))
+                {
+                    dbgFill = new SpotLight3D { LightColor = new Color(1f, 0.96f, 0.9f), SpotAngle = 14, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2, LightSpecular = 0.3f, LightEnergy = fe };
+                    g.scene!.AddChild(dbgFill);
+                }
+                var eyes = new Vector3((float)he.X, (float)he.Y, (float)he.Z);
+                var c0 = g.camera.GlobalTransform;
+                dbgFill.GlobalPosition = c0.Origin + c0.Basis.Y * 0.25f;
+                if (dbgFill.GlobalPosition.DistanceTo(eyes) > 0.05f) dbgFill.LookAt(eyes);
+            }
         }
+        SpotLight3D? dbgFill;
 
         public void Frame(double dt)
         {
