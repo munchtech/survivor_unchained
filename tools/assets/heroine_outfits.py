@@ -8695,8 +8695,15 @@ def armor_tuck_write(body_obj, folder):
     ARMOR_BODY_HASH: sha1 of her body's bind positions so rounded, unique, sorted, as i32 little-endian."""
     global ARMOR_BODY_HASH
     me_ = body_obj.data
-    bp = np.array([(body_obj.matrix_world @ v.co)[:] for v in me_.vertices])
-    q = np.round(np.stack([bp[:, 0], bp[:, 2], -bp[:, 1]], 1) * 1e5).astype(np.int64)
+    # (her points as the exporter writes them, float32 in her mesh's own frame (her world frame: asserted), so
+    # each rounds as the game's copy of them does)
+    bp = np.empty(len(me_.vertices) * 3, np.float32)
+    me_.vertices.foreach_get("co", bp)
+    bp = bp.reshape(-1, 3)
+    if not np.allclose(np.array(body_obj.matrix_world), np.eye(4), atol=1e-9):
+        print("ARMOR TUCK: her body is not at the origin; its points taken through its matrix")
+        bp = np.array([(body_obj.matrix_world @ v.co)[:] for v in me_.vertices], np.float32)
+    q = np.round(np.stack([bp[:, 0], bp[:, 2], -bp[:, 1]], 1).astype(np.float64) * 1e5).astype(np.int64)
     uq, inv = np.unique(q, axis=0, return_inverse=True)
     inv = np.asarray(inv).ravel()
     ARMOR_BODY_HASH = hashlib.sha1(uq.astype("<i4").tobytes()).hexdigest()
@@ -9913,8 +9920,10 @@ for name in OUTFITS:
         seq = [slot_entry(o.name)["slot"] for o in order]
         runs = sum(1 for i_ in range(len(seq)) if i_ == 0 or seq[i_] != seq[i_ - 1])
         if runs != len(by_slot):
-            print("SLOT ORDER %s.%s: its slots interleave in the join (%d runs of %d slots): the LOD's join differs" % (name, key, runs, len(by_slot)))
+            print("SLOT ORDER %s.%s: its slots interleave in the join (%d runs of %d slots): heroine_lod.py lays its pieces back in order" % (name, key, runs, len(by_slot)))
         for rank, (slot, sobjs) in enumerate(by_slot.items()):
+            # (each piece's place in the material's one join and its triangles, in this mesh's order)
+            pieces_ = [[order.index(o), sum(len(f_.vertices) - 2 for f_ in o.data.polygons)] for o in sobjs]
             bpy.ops.object.select_all(action="DESELECT")
             for o in sobjs:
                 o.select_set(True)
@@ -9925,7 +9934,7 @@ for name in OUTFITS:
                 bpy.ops.object.join()
             sobjs[0].name = sobjs[0].data.name = f"{name}.{slot}.{key}"
             joined.append(sobjs[0])
-            ranks[sobjs[0].name] = {"outfit": name, "slot": slot, "material": key, "rank": rank}
+            ranks[sobjs[0].name] = {"outfit": name, "slot": slot, "material": key, "rank": rank, "pieces": pieces_}
     print("MERGED", name, len(mine), "pieces into", len(joined), "meshes")
     mine = joined
     bpy.ops.object.select_all(action="DESELECT")
