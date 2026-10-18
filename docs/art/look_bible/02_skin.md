@@ -13,7 +13,7 @@ Tier 1 (her). Owner: the touch-up lead (after the armor metal, per the owner's o
 | Dragon's Dogma 2, soft daylight ([shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2054970/ss_ef263c112e274dc73a4bb00596aee1ebfc2b0ed8.1920x1080.jpg)) | Mostly matte skin with color zones: cheeks, nose and lips redder. Shine only on the nose bridge and lips. |
 | Stellar Blade ([shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3489700/ss_9d4d62e118a167333d53db94354671e10416b25d.1920x1080.jpg)) | Idealized beauty that is still skin: an even complexion, soft light passing through, wet eyes, lips with real gloss. The nearest match to her appeal. |
 | God of War, firelight ([shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1593500/ss_1351cb512d008f7e47fc50b74197f4f8eb6f3419.1920x1080.jpg)) | Pores and cavities kill the shine in tiny dots, so the highlight reads as skin. |
-| A Plague Tale: Requiem, low light ([shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1182900/ss_029c5cfa427cf6d5f0d9f96ae7ea0f3e69f2e88d.1920x1080.jpg)) | Skin in shadow stays warm and alive, never grey or blue. |
+| Baldur's Gate 3, night ([shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1086940/ss_0efa1a469a37beeb4fd0cb8e16dc99bd36357dc4.1920x1080.jpg)) | A cool scene, but her skin in shadow stays warm and alive, never grey or blue. (It replaced a child's face from A Plague Tale: every face on our boards is an adult's.) |
 
 ## What ours ISN'T (18 Oct audit frames, 1:1)
 | Frame | What fails |
