@@ -835,7 +835,7 @@ public static class People
 
     /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
     /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye), uv (her head's UV emitted:
-    /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), nosss, mask (her scalp's tint green).</summary>
+    /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), hairnospec and hairnovar (her hair's shine, its strand tone variation off), nosss, mask (her scalp's tint green).</summary>
     static void H1Debug(Person p, string dbg)
     {
         var on = new HashSet<string>(dbg.Split(','));

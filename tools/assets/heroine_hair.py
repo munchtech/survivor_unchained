@@ -470,7 +470,7 @@ def onto(Q, want, lying):
     return flat.reshape(Q.shape)
 
 
-def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.0015, out_pts=None):
+def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.0015, out_pts=None, u_by_width=False):
     """A card along each guide: a strip of the atlas (a column chosen from
     `columns`) as wide as `width` at its root, narrowing to its tip, facing
     out from her, three points across: where it lies on her, curved round her
@@ -531,6 +531,14 @@ def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.001
     u0, u1 = col / COLUMNS + 0.002, (col + 1) / COLUMNS - 0.002
     v = np.tile(1 - f, 3)[None].repeat(S, 0)
     u = np.concatenate([np.repeat(u0[:, None], K, 1), np.repeat(((u0 + u1) / 2)[:, None], K, 1), np.repeat(u1[:, None], K, 1)], 1)
+    if u_by_width:
+        # (round 3: a tail's cards, a third as wide under the tie, squeezed
+        # their strip of the atlas into it: shrunk that much, each blurred to
+        # its strip's mean shade, a flat block. Now as much of its strip as it
+        # is wide, from its middle: its strands as fine all along)
+        ratio = w / w.max(1, keepdims=True)
+        mid, half = ((u0 + u1) / 2)[:, None], ((u1 - u0) / 2)[:, None]
+        u = np.concatenate([mid - half * ratio, np.repeat(mid, K, 1), mid + half * ratio], 1)
     base = (np.arange(S) * 3 * K)[:, None]
     k = np.arange(K - 1)[None, :]
     # (wound to face out from her, as their normals do)
@@ -1035,10 +1043,16 @@ def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24, flat=0.6, fa
     B = spread * flat * (1 + (fan_thick - 1) * f)
     face = across * ((d * across).sum(1) / A)[:, None] + away * ((d * away).sum(1) / B + 0.25)[:, None]
     face /= np.linalg.norm(face, axis=1)[:, None] + 1e-9
+    # (round 3: just under the tie, where the bundle is thinnest, its cards
+    # faced every way round it, each its own shine: blocks. There they all
+    # face out from her, as one, easing to round the bundle by 7 cm.)
+    w_ = np.clip(1 - j / (len(Cd) - 1) / 0.15, 0, 1)[:, None]
+    face = face * (1 - w_) + away * w_
+    face /= np.linalg.norm(face, axis=1)[:, None] + 1e-9
     face = face.reshape(P.shape)
     out, at = [], 0
     for k, width, cols, off in layers:
-        c = cards(P[at:at + k], RNG.uniform(*width, k), list(cols), off, root=np.full(k, 0.3), narrow=0.3, out_pts=face[at:at + k])
+        c = cards(P[at:at + k], RNG.uniform(*width, k), list(cols), off, root=np.full(k, 0.3), narrow=0.3, out_pts=face[at:at + k], u_by_width=True)
         c["swing"] = True
         out.append(c)
         at += k
@@ -1054,7 +1068,9 @@ def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24, flat=0.6, fa
     c = merge_cards(out)
     a0 = 0.015
     c["UV"][:, 1] = 1 - (a0 + (1 - c["UV"][:, 1]) * (1 - a0))
-    c["F"] = c["F"][np.argsort(c["V"][c["F"]].mean(1)[:, 1], kind="stable")]       # (her back at +y: nearest it first)
+    K3 = 3 * points                                                # (each card's points; by card, nearest her back (+y) first)
+    cy = c["V"].reshape(-1, K3, 3)[:, :, 1].mean(1)
+    c["F"] = c["F"][np.argsort(cy[c["F"][:, 0] // K3], kind="stable")]
     c["blunt"] = True
     c["shared"] = (0.05, 0.09)
     print("  tail: %d cards" % n)
@@ -1248,7 +1264,14 @@ def style_pixie():
         reach = np.maximum(rise(pts), 0) + 0.001 + 0.004 * np.random.default_rng(len(pts)).random(len(pts))
         L = L * (1 - nape) + np.minimum(L, np.maximum(reach, 0.008)) * nape
         points = 12
-        stop = lambda q: ((q[:, 1] < -0.02) & (q[:, 2] < EYE_Z + 0.04)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
+        # (round 3, the judge: still spikes, skin between, at 135 and 180: the
+        # 8 mm least length took those rooted by her hairline 5 to 8 mm past it.
+        # Now at her nape each stops 1 to 3 mm past it, however long; the nape
+        # tips under them, pixie_nape_row, the edge)
+        past = 0.001 + 0.002 * np.random.default_rng(len(pts) + 7).random(len(pts))
+        at_nape = nape > 0.3
+        stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < EYE_Z + 0.04)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
+                          | (at_nape & (rise(q) < -past)))
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(len(pts), points - 1),
                 off, side=no_part(pts), lift=0.007 * top, stop=stop)
         P = resample(P, points)
