@@ -8791,9 +8791,28 @@ if BODY_OUT:
     # partner step, heroine_browpaint.py, is done once in each paint)
     import heroine_browfold
     heroine_browfold.fold(BODY_OUT)
+    # (and the bow's normals refilled in the face keys, so no dark dots sit over her upper lip's border:
+    # heroine_face_bow.py run; its run_keys follows the smile's easing below)
+    import heroine_face_bow
+    heroine_face_bow.run(BODY_OUT)
     # (and her side teeth in the cheeks' shade: heroine_teethshade.py)
     import heroine_teethshade
     heroine_teethshade.shade(BODY_OUT)
+    # (and her teeth and tongue seated for an open mouth and a smile, her mouth's inside dark by depth and the
+    # smile_open key: heroine_mouth.py)
+    import heroine_mouth
+    heroine_mouth.seat(BODY_OUT)
+    # (and her smile's and open mouth's moves eased across her upper lip's border, so no groove or fold opens
+    # there: heroine_smile_lip.py)
+    import heroine_smile_lip
+    heroine_smile_lip.run(BODY_OUT)
+    # (and the bow's normals refilled in the base and every mouth key, after the easing above recomputed them:
+    # heroine_face_bow.py run_keys)
+    heroine_face_bow.run_keys(BODY_OUT)
+    # (and her mouth's inside pushed back behind her skin in every face key, and the upper front gum raised so the laugh
+    # shows teeth, not gum: heroine_mouth_inner.py; heroine_mouth_seal.py is NOT hooked yet, judged NOT YET)
+    import heroine_mouth_inner
+    heroine_mouth_inner.run(BODY_OUT)
     # (her head +7%, the owner 14 Oct: the Head joint's rest scaled, her meshes as they were, so it
     # may run before or after any step that measures them (heroine_mouth.seat); keep it last)
     import heroine_headscale

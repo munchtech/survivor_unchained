@@ -507,8 +507,14 @@ public static class People
                 th.SetShaderParameter("paint", src.AlbedoTexture);
                 return th;
             case "tongue":
-                m.Roughness = 0.35f;
-                return m;
+                // (its own shade inside her mouth, lit at its tip and dark at its root: heroine_mouth.py's vertex colour,
+                // white where a mesh has none; no shadows, as their maps hatched it and cut a hard black edge over it
+                // (the smile pass, e1): shaders/heroine_tongue.gdshader. Its paint a bright salmon pink, read as a
+                // plastic slab inside her mouth at the Look (a2): the shader mutes it to a darker rose)
+                tongueShader ??= GD.Load<Shader>("res://shaders/heroine_tongue.gdshader");
+                var tg = new ShaderMaterial { Shader = tongueShader, ResourceName = "tongue" };
+                tg.SetShaderParameter("paint", src.AlbedoTexture);
+                return tg;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
         }
@@ -553,6 +559,18 @@ public static class People
                 Shape(mi, name + "+", Mathf.Max(v, 0));
                 Shape(mi, name + "-", Mathf.Max(-v, 0));
                 Shape(mi, name, v);
+            }
+            // (her smile with her mouth open lifts her upper lip off her teeth: smile_open, heroine_mouth.py, as her
+            // smile times how far her lips are parted, full by mouth_open 0.3; with her lips closed a smile stays
+            // closed-lipped); and smile_hold, her philtrum and nose's foot held up against mouth_open's drop, as her smile
+            // times mouth_open itself (so her nose's foot doesn't rise and fall back as her lips part)
+            int so = mi.FindBlendShapeByName("smile_open");
+            if (so >= 0 && mi.FindBlendShapeByName("smile") is int sm and >= 0 && mi.FindBlendShapeByName("mouth_open") is int mo and >= 0)
+            {
+                float m = mi.GetBlendShapeValue(mo), o = Mathf.Clamp(m / 0.3f, 0, 1);
+                mi.SetBlendShapeValue(so, mi.GetBlendShapeValue(sm) * o * o * (3 - 2 * o));
+                int sh = mi.FindBlendShapeByName("smile_hold");
+                if (sh >= 0) mi.SetBlendShapeValue(sh, mi.GetBlendShapeValue(sm) * Mathf.Clamp(m, 0, 1));
             }
         }
 
@@ -884,7 +902,7 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
-    static Shader? hairShader, hairSoftShader, eyeShader, teethShader;
+    static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
@@ -1045,7 +1063,11 @@ public static class People
     /// gap opened in her wherever a piece swung off her as she moved.</summary>
     static void TuckSkin(MeshInstance3D mi, int ch)
     {
-        // (Only her body is marked; her head is left as it is, shape keys and all.)
+        // (Only her body is marked; her head is left as it is, shape keys and all. Her head and tongue carry
+        // vertex colours of their own since the smile pass (heroine_mouth.py: the mouth's depth, the tongue's
+        // shade), which read as an outfit's channel would tuck them in and discard them whole: skipped by name.)
+        string n = mi.Name.ToString();
+        if (n.EndsWith("Head") || n.EndsWith("Tongue")) return;
         if (mi.Mesh is not ArrayMesh am || (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) == 0) return;
         for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
             if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
@@ -1095,6 +1117,8 @@ public static class People
         if (src.ResourceName == "skin_head" && who == "heroine")
         {
             if (HeadPaint(look.FaceShape) is Texture2D painted) m.SetShaderParameter("paint", painted);
+            // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
+            m.SetShaderParameter("mouth_in", 1f);
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
             // (her eyes, brows and lips deepened when her face is small on
@@ -1642,7 +1666,10 @@ public static class People
         }
         var rest = skel.GetBoneGlobalRest(skel.FindBone("Head"));
         var qHead = from.GetBoneGlobalRest(from.FindBone("Head")).Origin;
-        var fit = new Transform3D(Basis.Identity.Scaled(Vector3.One * HairScale), rest.Origin + HairOffset - HairScale * qHead);
+        // (scaled about her head as her head's rest is: outfits baked her head 7% bigger as the Head bone's rest scale,
+        // 14 October 2026, and a fit in plain metres would leave the hair at the old size)
+        var hsc = rest.Basis.Scale;
+        var fit = new Transform3D(Basis.Identity.Scaled(hsc * HairScale), rest.Origin + hsc * (HairOffset - HairScale * qHead));
         foreach (var c in from.GetChildren())
             if (c is MeshInstance3D mi)
             {

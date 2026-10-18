@@ -48,11 +48,14 @@ public partial class HerFaceLife : Node
                 int l = mi.FindBlendShapeByName("blink_l"), r = mi.FindBlendShapeByName("blink_r");
                 if (l >= 0 || r >= 0) lids.Add((mi, l, r));
                 if (mi.Name.ToString().Contains("Teeth")) teeth = mi;
+                else if (mi.Name.ToString().Contains("Tongue")) tongue = mi;
                 else if (mi.FindBlendShapeByName("snarl") is int sn and >= 0) { mouth = mi; open = mi.FindBlendShapeByName("mouth_open"); snarl = sn; }
                 for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                     if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_eye.gdshader") == true)
                         eyes = m;
             }
+        // (printed once her pose is final, her pose's modifiers run: --mouth-cam)
+        if (MouthCam) sk.SkeletonUpdated += PrintMouthCam;
         nextBlink = rng.RandfRange(1.0f, 4.0f);
         nextLook = rng.RandfRange(0.4f, 1.5f);
         // --open-eyes: a still of her face with her lids up and her eyes ahead
@@ -83,12 +86,18 @@ public partial class HerFaceLife : Node
             foreach (var kv in tpar.Split(','))
                 if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
                     teethParams.Add((k, f));
+        // --tongueparam name=value,...: her tongue shader's numbers, each frame (pictures of them tried).
+        if (Args.Get("tongueparam") is string gpar)
+            foreach (var kv in gpar.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    tongueParams.Add((k, f));
     }
 
     readonly System.Collections.Generic.List<(string Name, Variant Value)> skinParams = new();
     readonly System.Collections.Generic.List<(string Name, float Value)> teethParams = new();
+    readonly System.Collections.Generic.List<(string Name, float Value)> tongueParams = new();
 
-    MeshInstance3D? teeth, mouth;
+    MeshInstance3D? teeth, mouth, tongue;
     int open = -1, snarl = -1;
 
     /// <summary>Her teeth lit only as far as her lips are parted (her head's mouth_open, or a snarl's lifted lip): with
@@ -110,6 +119,32 @@ public partial class HerFaceLife : Node
             }
     }
 
+    /// <summary>--mouth-cam: each frame, the camera in her head's own space (the glb's, as her head, teeth and tongue are
+    /// all on her Head bone): "MOUTHCAM t T o X Y Z bx .. by .. bz .. fov F vp W H", so a tool casting rays at the glb
+    /// sees her mouth as the picture does (the smile pass: what fills her mouth's opening, found offline).</summary>
+    static readonly bool MouthCam = Args.Has("mouth-cam");
+
+    void PrintMouthCam()
+    {
+        if (teeth?.Skin is not { } skin || GetParent() is not Skeleton3D sk || GetViewport().GetCamera3D() is not { } cam) return;
+        int head = sk.FindBone("Head");
+        for (int i = 0; i < skin.GetBindCount(); i++)
+        {
+            string bn = skin.GetBindName(i);
+            int b = bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i);
+            if (b != head) continue;
+            var m = sk.GlobalTransform * sk.GetBoneGlobalPose(head) * skin.GetBindPose(i);
+            var c = m.AffineInverse() * cam.GlobalTransform;
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            string V(Vector3 v) => string.Format(ci, "{0:0.000000} {1:0.000000} {2:0.000000}", v.X, v.Y, v.Z);
+            var vp = GetViewport().GetVisibleRect().Size;
+            GD.Print(string.Format(ci, "MOUTHCAM t {0:0.000} o {1} bx {2} by {3} bz {4} fov {5:0.000} keep {6} vp {7} {8} mi {9}",
+                t, V(c.Origin), V(c.Basis.Column0), V(c.Basis.Column1), V(c.Basis.Column2), cam.Fov, (int)cam.KeepAspect,
+                vp.X, vp.Y, V(teeth.Transform.Origin)));
+            return;
+        }
+    }
+
     void SkinParams()
     {
         if (GetParent() is not Skeleton3D sk) return;
@@ -120,13 +155,45 @@ public partial class HerFaceLife : Node
                         foreach (var (k, v) in skinParams) m.SetShaderParameter(k, v);
     }
 
+    /// <summary>Her tongue's points in her head's own space (the glb's, as made), for its shader's shade by how far each
+    /// point is off her mouth's middle (heroine_tongue.gdshader's head_inv): its side falls into the shade beside her back
+    /// teeth wherever her head turns. Set each frame, as her head moves and her material is remade with each look.</summary>
+    void TongueFrame()
+    {
+        if (tongue?.Skin is not { } skin || GetParent() is not Skeleton3D sk) return;
+        int head = sk.FindBone("Head");
+        if (head < 0) return;
+        for (int i = 0; i < skin.GetBindCount(); i++)
+        {
+            string bn = skin.GetBindName(i);
+            if ((bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i)) != head) continue;
+            var inv = (sk.GetBoneGlobalPose(head) * skin.GetBindPose(i)).AffineInverse() * tongue.Transform;
+            for (int s = 0; tongue.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
+                if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
+                    m.SetShaderParameter("head_inv", inv);
+            return;
+        }
+    }
+
+    void TongueParams()
+    {
+        if (GetParent() is not Skeleton3D sk) return;
+        foreach (var c in sk.GetChildren())
+            if (c is MeshInstance3D mi)
+                for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
+                        foreach (var (k, v) in tongueParams) m.SetShaderParameter(k, v);
+    }
+
     Color?[]? cycle;
 
     public override void _Process(double delta)
     {
         t += delta;
         if (skinParams.Count > 0) SkinParams();
+        if (tongueParams.Count > 0) TongueParams();
         TeethLight();
+        TongueFrame();
         // A blink: the lid down in 70 ms, held a moment, up in 150 ms.
         if (t >= nextBlink && blinkAt < 0)
         {

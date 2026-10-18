@@ -6,7 +6,11 @@
 // pores, never the even gloss of plastic; a soft rim at her edges, as the
 // fine down on skin catches the light; light through her where she is thin.
 shader_type spatial;
-render_mode sss_mode_skin;
+render_mode sss_mode_skin, cull_disabled;
+// (both sides drawn for her head alone (mouth_in), and only inside her mouth (mouth_c): its inside, seen through her
+// open mouth, is the dark of her throat; elsewhere (under her jaw) a back face drew a dark red speck (lips B3 sheet);
+// culled, what lay behind it showed through (the smile pass, a2). Every other part's back faces are
+// discarded, as culled before.)
 
 uniform sampler2D paint : source_color, filter_linear_mipmap_anisotropic;
 uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
@@ -264,8 +268,36 @@ varying float lift_w;
 varying float soft_w;
 varying float edge_w;
 varying float back_ao;
+// The inside of her mouth (heroine_mouth.py: her head's vertex colour's alpha, 1 outside, falling to 0 deep in her
+// mouth): her paint there (a lilac-grey island, an orange-brown cheek wall) and every lamp's light, unshadowed at
+// this scale, showed it as a lit box with an orange glow (judge rj3). There it takes mouth_colour, a wet dark red,
+// and the light falls off with depth to mouth_occ of none (all of it: the sky's by AO, the lamps', its rim, the
+// light through her and its sheen). mouth_in 1 for her head only (People.HerPart); 0, as before.
+uniform float mouth_in = 0.0;
+uniform vec3 mouth_colour : source_color = vec3(0.42, 0.15, 0.14);
+uniform float mouth_occ = 0.93;
+// (a little of its own colour given off, so the shade inside reads as a deep red, not a black hole; less with depth)
+uniform float mouth_fill = 0.2;
+// (her mouth's corners, the crease where her lips meet (heroine_mouth.py: her head's vertex colour's red, 1 or down
+// to 0 there): in her smile it folds in, and the lamps behind her lit it, an orange-brown wedge through her skin's
+// light (the smile pass, e3); shadows at this scale don't reach it. corner_shade of the lamps behind her cut there:
+// all of them made a grey smudge on her cheek by the corners, f2)
+uniform float corner_shade = 1.0;
+varying float crease;
+// (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
+// there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
+// saturated red-pink lit wall beside her far lower row (solver int3))
+uniform float wall_dark = 0.3;
+uniform float wall_grey = 0.8;
+uniform vec3 wall_tint = vec3(1.0, 0.88, 0.78);   // (the grey it goes to, warmed: blue under green, a dark maroon like the cavity, judge r4)
+varying float mouth_w;
+varying float mouth_c;
+varying float mouth_f;
 
 void vertex() {
+	mouth_c = mouth_in * (1.0 - COLOR.a);
+	crease = mouth_in * (1.0 - COLOR.r);
+	mouth_w = mouth_in * (1.0 - COLOR.g);
 	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
@@ -275,7 +307,7 @@ void vertex() {
 }
 
 void fragment() {
-	if (tuck_gone > 0.5) {
+	if (tuck_gone > 0.5 || (!FRONT_FACING && (mouth_in < 0.5 || mouth_c <= 0.0))) {
 		discard;
 	}
 	vec2 tx = UV * vec2(textureSize(paint, 0));
@@ -378,9 +410,21 @@ void fragment() {
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
 	ALBEDO *= ambient_tint / body_back;
+	mouth_f = FRONT_FACING ? mouth_c : 1.0;
+	if (mouth_f > 0.0) {
+		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
+		vec3 mcol = mix(mouth_colour, vec3(dot(mouth_colour, vec3(0.2126, 0.7152, 0.0722))) * wall_tint, wall_grey * mouth_w) * (1.0 - wall_dark * mouth_w);
+		ALBEDO = mix(ALBEDO, mcol, mc);
+		BACKLIGHT *= 1.0 - mc;
+		SPECULAR *= 1.0 - mo;
+		AO = min(AO, 1.0 - mouth_occ * mo);
+		EMISSION += mcol * mouth_fill * mc * (1.0 - 0.6 * mo);
+	}
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
+	// (dbg_gate 9: her UV, emitted, to find a picture's point on her mesh, with --tonemap linear --grade off)
+	if (dbg_gate > 8.5) { EMISSION = vec3(UV, 0.0); }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -393,6 +437,7 @@ float schlick(float u) {
 }
 
 void light() {
+	float mouth_lit = (1.0 - mouth_occ * smoothstep(0.1, 1.0, mouth_f));
 	float ndl = dot(NORMAL, LIGHT);
 	float c_ndl = max(ndl, 0.0);
 	if (dbg_gate > 0.0) {
@@ -428,6 +473,7 @@ void light() {
 	// (lamps behind her take no lift: the Look's cool rim and the fire's edge lamp lifted the far side of her neck too,
 	// judge j6)
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
+	mouth_lit *= 1.0 - corner_shade * crease * behind;
 	vec3 kt = vec3(1.0);
 	// (from her collarbones down none: fitted on her neck with her body's tone, which is taken out there; body_tone)
 	vec3 ktone = mix(vec3(1.0), LIGHT_IS_DIRECTIONAL && sky_tone.x > 0.0 ? sky_tone : key_tone, neck_w);
@@ -441,16 +487,16 @@ void light() {
 		vec3 elw = vec3(0.2126, 0.7152, 0.0722);
 		kt *= mix(vec3(1.0), edge_tone * dot(ea, elw) / max(dot(ea * edge_tone, elw), 1e-4), key_w * soft_w * edge_w);
 	}
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
+	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
-	DIFFUSE_LIGHT += rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
+	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
-	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
+	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
 	if (c_ndl > 0.0) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;
@@ -460,7 +506,7 @@ void light() {
 		float f0 = 0.16 * sheen * sheen;
 		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
 		float f = f0 + (f90 - f0) * schlick(c_ldh);
-		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		SPECULAR_LIGHT += mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 	}
 	}
 }
