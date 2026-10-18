@@ -2,9 +2,16 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## 00. Paused here (armor lead 1, 18 October 2026, coordinator wind-down); next:
+Read helper reports with `tools/scratch/coordinator/lastmsg.py` from `C:\Users\munch\.claude\projects\C--Users-munch-Desktop-survivorsunchained\4b7b1da3-62bc-4cd2-ab49-a52d9a8367dc\subagents\`.
+- **STILL RUNNING: agent a65daa3772cf94af4 (item 1, su-lead-high medium):** heroine_outfits.py `--slots` work: tools/armor/slot_map.json, outfit meshes joined per (slot, material) as `<outfit>.<slot>.<mat>`, per-(outfit, slot) tuck in `godot/art/people/armor_tuck/*.bin`, `armor_index.json`, HerLod/People name matching; acceptance = heroine.glb and LOD data-equal, per-material unions equal, tuck max vs channel numbers. It had uncommitted edits in tools/assets/heroine_outfits.py, heroine_neck_graft.npz (a build side-effect: don't commit it unless the report says so) and HerLod.cs at the pause. Check its report and diff before anything else; it is told to commit WIP when it stops.
+- Finished helpers (reports came via the coordinator; summaries in section 2): 2b RPG slots (88f620fc), Marionette weapon workshop (Marionette armor-1 47e22c8, 7ba3d62, fdd3fbe), weapon drop (8f6ab7cc), item-to-art (c307bab3).
+- Uncommitted by me at the pause: nothing. Last lead commit: a WeaponsData test that every item's ArtKind matches its weapons.json row (built, NOT yet run: run `cd godot && dotnet test` in the background, ~5 min).
+- **Next, in order:** (1) item 1's report: check the numbers, finish or re-brief. (2) Item 2 (game: HerWear equip by slot from Wear.Of, tuck map in heroine_skin.gdshader by VERTEX_ID or COLOR.r rewrite, a `--wear` shot argument, the mixed look's play-camera fps measured EARLY; if it costs, a per-slot LOD from heroine_lod.py's method). (3) Item 3 (the plate top style from warden's plate_cups, rolled edge, shared trim strip, three tiers plain/etched/gilded). (4) First Godot run: confirm HerClips' fallback (oathbrand -> "sword") and `--weapon oathbrand`. (5) After anim-38 merges: re-run ArmsDump and fistfit (tools/scratch/armor1/fistfit_drop.py; its oathbrand row needs weapon=("sword",), wrap="sword"), then the plain-mount check of Axe/Blade2H/Blunt/Axe2H/Wand (5b), and offer animation the fistfit data hook. (6) Marionette armor workshop panel (item 6). (7) Shoot + ONE max judge with the whole-frame gate, then the MR. Touch-up's armor metal: only from integration when the coordinator says it landed.
+
 ## 0. Start here (armor lead 1, 18 October 2026)
 The owner: "build and just drag over armor and weapons without having to rebuild hopefully anything animation wise or character wise"; "smart bras and bikinis, smart all parts really ... making new armor shouldnt cost us hours of animation and body edits - it should just work".
-State: design settled (section 1), slice not started. Fixed list = section 2.
+State: design settled (section 1); fixed list with state = section 2.
 
 ## 1. The design (decided; why in brackets)
 1. **Visual slots, by layer** (from what the four outfits already are). L1 next to skin: `top` (bra, cups, bandeau), `bottom` (bikini, briefs), `legwear` (stockings), `gloves`. L2 over: `skirt` (tassets, loincloth), `belt`, `collar`, `bracers`, `greaves`, `boots`. L3 outer: `pauldrons`, `cloak`, `head`. Paired slots are one piece with both sides (mirrored, or `sides: "l"` for one).
@@ -24,8 +31,8 @@ State: design settled (section 1), slice not started. Fixed list = section 2.
 Known limits: her play-camera model (HerLod, one LOD file per outfit) doesn't cover mixed looks; until per-piece LODs exist a mixed look draws the full model in play (perf to measure in the slice).
 
 ## 2. Fixed list
-1. `--slots` mode: slot tags on the four outfits' pieces, per-piece tuck, sockets and rims; four outfit files unchanged. NOT STARTED
-2. Game: Wear, equip by slot, tuck map in the skin shader, armor_index; tests. NOT STARTED
+1. Slot-granular outfits: slot map, per-(outfit, slot) meshes and tuck, armor_index (sockets and rims come with item 3). RUNNING (a65daa3772cf94af4)
+2. Game: Wear, equip by slot, tuck map in the skin shader, armor_index; tests; mixed-look fps early. NOT STARTED
 3. The smart top shell (style `plate`, from the warden's cups code) with the rolled edge, the shared trim strip, and the three tiers (plain forged, etched, gilded) as three pieces. NOT STARTED
 4. Mixed look: the new top + an existing outfit's bottom/skirt/boots. NOT STARTED
 5. A new blade1h weapon through Marionette, dropped in by weapon_drop.py, fistfit pass. PARTLY DONE: Oathbrand made in Marionette's weapon workshop (Marionette armor-1 47e22c8, fdd3fbe; grip 13.672 mm mean vs 13.70); dropped as data (8f6ab7cc: weapons.json, WeaponsData.cs/ArmsData.cs, tools/armor/weapon_drop.py, public/assets/weapons/oathbrand.glb). fistfit (scratch copy tools/scratch/armor1/fistfit_drop.py; its row needs weapon=("sword",), wrap="sword"): oathbrand and the shipped sword fail alike within 0.1 mm on the main checkout's stale clips. Re-run on anim-38's clips after it merges, and re-run ArmsDump then (arms_local.json kept at integration's, d393552c). In progress: ItemDef.Art + per-kind Held template + HerClips.Kind from the Arms kind (no C# per weapon); an `oathbrand` item.

@@ -60,4 +60,19 @@ public class WeaponsDataTests
         Assert.Empty(WeaponsData.Parse("{not json"));
         Assert.Empty(WeaponsData.Parse("[]"));
     }
+
+    /// <summary>An item that names its art carries the art's kind too (logic can't read weapons.json): the two
+    /// must agree, and the art must be a known weapon, so they can't drift apart.</summary>
+    [Fact]
+    public void EveryItemsArtKindMatchesItsWeaponsRow()
+    {
+        var path = System.IO.Path.Combine(SurvivorUnchained.Core.DataFiles.Dir, "..", "art", "weapons", "weapons.json");
+        var rows = System.Linq.Enumerable.ToDictionary(WeaponsData.Parse(System.IO.File.ReadAllText(path)), r => r.Id);
+        foreach (var d in SurvivorUnchained.Rpg.Items.All.Values)
+        {
+            if (d.Art == null || !rows.TryGetValue(d.Art, out var row)) continue;   // (a C# Arms row: not ours to check)
+            Assert.Equal(row.Kind, WeaponSockets.Parse(d.ArtKind));
+        }
+        Assert.Contains("oathbrand", rows.Keys);
+    }
 }
