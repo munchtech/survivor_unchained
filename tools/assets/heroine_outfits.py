@@ -1926,12 +1926,12 @@ STOCK_WELT = tuple(float(v) for v in os.environ.get("STOCK_WELT", "0.006,0.0008,
 # (s29 judge tri: the Arcanist's boots "flat, soleless, paddle-shaped black feet ... rubber socks" at the mid zoom.
 # ARC_BOOT=made lofts them as the Ranger's boot is (heroine_boots.boot: toe box, welted sole, heel block), black, the
 # front of the top ARC_BOOT_LIFT higher than the back as before; ARC_BOOT_ST "toe,toe_point,heel" (m) its toe and heel.)
-ARC_BOOT = os.environ.get("ARC_BOOT", "")
+ARC_BOOT = os.environ.get("ARC_BOOT", "made")   # (judge b1, 17 Oct: PASS at 1:1, "made black knee boots"; "" the old fitted sock)
 ARC_BOOT_LIFT = float(os.environ.get("ARC_BOOT_LIFT", "0.03"))
 ARC_BOOT_SOLE = os.environ.get("ARC_BOOT_SOLE", "darkleather")
-_ABS = [float(v) for v in os.environ.get("ARC_BOOT_ST", "0.012,0.010,0.0095").split(",")]
+_ABS = [float(v) for v in os.environ.get("ARC_BOOT_ST", "0.010,0.022,0.012").split(",")]
 ARC_BOOT_ST = dict(BOOTS.RANGER, toe=_ABS[0], toe_point=_ABS[1], heel=_ABS[2])
-ARC_BOOT_ST.update({k_: float(v_) for k_, v_ in (kv.split("=") for kv in os.environ.get("ARC_BOOT_KV", "").split(",") if kv)})   # (any other key of BOOTS.RANGER, "k=v,...")
+ARC_BOOT_ST.update({k_: float(v_) for k_, v_ in (kv.split("=") for kv in os.environ.get("ARC_BOOT_KV", "w_ankle=0.015,w_shaft=0.022,c_shaft=0.003,c_ankle=0.003").split(",") if kv)})   # (any other key of BOOTS.RANGER, "k=v,...")
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),

@@ -1349,7 +1349,8 @@ public static class People
         if (HeadRigOff) w = 1;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("look_rig", w);
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (outfitShader != null && m.Shader == outfitShader)))
+                    m.SetShaderParameter("look_rig", w);   // (her outfit too: its steel and leather rougher under the rig, s29)
     }
 
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";

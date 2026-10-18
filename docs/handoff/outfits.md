@@ -2,48 +2,27 @@
 
 From outfits lead successor 27 (su-lead-high), 14 October 2026. Start cold: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is ~6,500 lines, mixed CRLF/LF: grep it, edit with exact byte replacements (handle `\r\n`), `ast.parse` after each edit. `heroine_rig.py` is CRLF.
 
-## Paused here; next: (successor 27, 14 Oct, night)
-M = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\outfits` (this round: `M\s27`). N = the 1cc516bc session's `scratchpad\outfits` (pose dumps `N\gs2\pd_F0` for `M\gs6\hr.py`). Builds: `bash M\vb.sh <tag> K=V` (all four plus body, ~9 min, into `M\prop\<tag>\art`); after each, `git checkout --` `godot/art/outfit/outfit_glove{satin,pipe,thread}_diff.jpg`. Arcanist only, with dumps: `M\s27\cut\ob.sh` (~2 min).
+## Paused here; next: (successor 29, 18 Oct)
+S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59f6a467-b8ce-446c-8f35-44c1d92b7b9a\scratchpad\s29`.
+- Arcanist-only build: `bash S\ob.sh <tag> K=V ...` (~3 min, into `S\prop\<tag>\art`; restores `godot/art/outfit/` after).
+- Game-camera shots: `bash S\gshoot.sh <list> <outdir>`. Each line is `NAME|QUICK|CLIP@SEC or -|ZONE|TIME|CLOSE|FACING|SKIN(-/brown)|HAIR`. QUICK `new:<archetype>` is the Look camera (always by the fire). The Ranger is `stalker`. `--facing` has no effect in town idle.
 
-**Committed (on this branch)**
-- **Final art d1be5c2a (+ dfe686ed, the glove texture .import with mipmaps).** heroine.glb = B1j: d268fe8a's body plus COLOR_0 ch1 at 216 hand vertices (tuck). Arcanist = B1j. Warden, Ranger and Reaver = B1c, because B1j only added UV float noise there and a 42-triangle reorder on warden gold.
-  - Legal: Arcanist on B1j has areola 0, strip 0, FLAT 0, closest L +2.10 / R +0.48 cm (`M\s27\legal\count.txt`). Tests: 917 passed, 0 failed.
-  - **MERGE REQUEST dfe686ed is sent and on hold.** It merges with animation's repack (integration's clips are built for the old rig). If the head changes before that merge, tell the coordinator.
-- **The L thumb flap in the hand-on-hip clip is animation's.** thumb_01_l is turned 71° into the back of her hand; bare skin does it too (`M\s27\solve\e34.jpg`, `pen.py`). It went to animation as a gate.
-- **Glove round 2 code, all default off** (210cc759, f1c238b9, 4fc84278, b4e3e865):
-  - `GLOVE_IVORY`, `GLOVE_PIPE_MAT`, `GLOVE_THREAD_MAT` (materials, defined before `SPEC`);
-  - `FL_DORS`, `FL_THUMB_BLEND` (`knuckle_exact`);
-  - `GLOVE_EDGE_EASE` and `GLOVE_EDGE_EASE_IDX` (`glove_edge_delta` / `glove_hand_final`): the glove edge's blend averaged along each hand opening, wide only where it carries the index finger;
-  - the satin rim 0.3 -> 0.4 (shader kind 5, shared, so B1 has it too).
-  - Satin anisotropy was tried and removed: Godot's anisotropic path (even at 0, even written for every kind) flattened the leotard's grain from 8.68 to 3.58 (`M\s27\leo.py`). If it's reopened, use a glove-only shader.
+**This session**
+- **G3 committed** (d34afe1b): G3L2 is the `ARC_GLOVE` default. heroine.glb vs dfe686ed differs in COLOR_0 ch1 only. Legal clean, 917 tests. F1 merged (1d758b22).
+- **Triage at 1:1** (max API judge, `S\tri_verdict.md`): the thumb gap, Reaver belt, Arcanist chest, groin fold, neck graft, skin detail and finger tone are CLOSED. The neck graft is also closed with short hair and on the Ranger (`S\b1_verdict.md`).
+- **Stockings: CLOSED by the owner** ("we move forward as we are"). `STOCK_IVORY` (tint, plum welt, sheer tint from outfit_materials.json) stays in code, default off.
+- **Arcanist boots: PASS** (max judge b1). `ARC_BOOT=made` is now the default: `heroine_boots.boot` with ARC_BOOT_ST `0.010,0.022,0.012` and ARC_BOOT_KV `w_ankle=0.015,w_shaft=0.022,c_shaft=0.003,c_ankle=0.003`. Optional polish if ever reopened: a matte sole edge about 15% lighter; an almond toe running 12-15 mm past the foot.
+- **Look camera, under the portrait rig only** (`look_rig` is now set on outfit materials too, in People.HerLookRig):
+  - The Ranger's leather roughness floor of 0.60 PASSES (xhigh judge wd2).
+  - The Warden's steel: roughness floor 0.30 and colour x0.70, the best of three rounds. It still FAILS ("royal-blue enamel"). The blue is the night environment's reflection, not her albedo: desaturating the albedo changed nothing (r3, removed). **Closed as known at the round cap.** If reopened, the lever is a lower environment/reflection-probe contribution on metal under the rig, not the albedo.
+- **Hands: ON HOLD** (the owner). They go in the next body build. Numbers (`S\hand_numbers.txt`, `S\hand2.py`):
+  - index P/M/D 52/31/14 mm: the distal segment is stubby (the norm is about a quarter of the finger), so move the DIP joint toward the knuckle;
+  - the proximal section is taller than wide (t22 vs w18 mm): flatten it;
+  - the right hand has 36% fewer vertices than the left (2164 vs 3402);
+  - the glove tuck is 0 on the exposed segments.
+- For others: the seated close-up looks down onto the Arcanist's hat (camera, no owner). Hair forms a hard sheet over the swung arm in rv_sprint_cu_f3 (face/hair).
 
-**The glove pick (waiting on the owner)**
-- Max judge round 3 PASSES G3 at the game cameras (`M\s27\gl3_verdict.md`; rounds 1-2 in `gl_verdict.md`, `gl2_verdict.md`).
-- The owner's sheets: `M\s27\gl3_play_owner.jpg` and `gl3_detail_owner.jpg` (B1 vs G3), sent through the coordinator.
-- G3 = build `M\prop\G3d`, env:
-  `GLOVE_STYLE=G1 GLOVE_LOOP=0,0,0,0 GLOVE_POINTS=0,0,0,0,0 FL_DORS=0.006,0.014 FL_THUMB_BLEND=0.3,0.7 GLOVE_IVORY=1.789,1.470,1.142,223 GLOVE_PIPE_MAT=0.75,0.44,0.72,70,0.25 GLOVE_EDGE_EASE=0.010,0.005,0.003,0.010 GLOVE_EDGE_EASE_IDX=0.005,0.1,0.4`
-- Measures: the posed knuckle loop turns at most 86-91° in 6 mm (as at rest; the hairpin was 162°); the thumb hole's tightest turn is 6.6-7.5 mm; hr.py's L knuckle in cast_raise is 2.49 mm (B1j 2.32, accepted). Output in `M\s27\cut\hr_e3.txt`.
-- **If the owner picks G3:**
-  1. Make that env the default for `ARC_GLOVE` (grep `GLOVE_STYLE = os.environ`) and rebuild, or commit G3d's files:
-     - the Arcanist gltf and bin;
-     - outfit_materials.json;
-     - `outfit_tex` glove textures: `outfit_glovepipe_diff.jpg` (and its .import) is new;
-     - heroine.glb: G3d's differs from the committed one only in COLOR_0 ch1 at 413 hand vertices (`M\gs6\cmp0.py`). Tell the coordinator before committing it: face and animation build on it.
-  2. Keep Warden, Ranger and Reaver as committed (G3d's differ by float noise only).
-  3. Run Arcanist legal (`M\s27\legal.sh`, ~5 min), then the tests.
-- If the owner picks B1, the edge fix alone (`GLOVE_EDGE_EASE*`) fixes B1's index tooth and thumb flaps: build and check them.
-
-**Then, in order:**
-1. The R thumb in the staff fist stands 2.0 mm off her skin (her coarse thumb joint; R:thumb in hr.py).
-2. The Reaver belt (`N\hip\need.py`).
-3. The Arcanist chest.
-4. Stockings in the winning trim (match their white to the glove's ivory: judge r3).
-5. The nude groin fold.
-6. The neck graft corner (Godot game shots only).
-7. The close-up skin detail pass: knuckles, the cleavage hairline, the fold band, paint ticks, and the old dark tick and pale wedge at the L areola.
-
-Logged and not fixed (beyond game zoom): the satin weave reads sandy in the closes; the satin sheen doesn't show on the forearm in play by day.
-Judging rule (the owner, README "The finish line"): judges rule at the game's own cameras, critically; marks beyond that are logged; 2-3 rounds per item, then it closes as known.
+**Next:** the MERGE REQUEST (boots art, Look-rig shader, People.cs, ARC_BOOT default). Run the legal gate first: `python tools/legal/gate.py --root <worktree>`. Then the area is done until the next body build (fingers).
 
 ## What changed this round (all default on)
 - **The owner's leg band ("legs stuck together by fabric", every clip):** `heroine_rig._as_skin` shared a piece's whole limb weight out as the nearest skin's, so pieces at the inner thigh took the other thigh's bones: Arcanist stocking lace 0.98, Ranger cloth/leather 0.97, Reaver knee fur 1.00. **AS_SKIN_SIDES** (d0f5851f, eased in 0121f13f): per side only where the skin's share of the piece's own leg is under 30% (fully under 10%); elsewhere as before, since done everywhere it parted the crotch pieces from her (fin3: strip 11/6/4 frames). After: one-leg pieces 0 (Arcanist, Reaver); Ranger browncloth 0.41 and brownleather 0.12 at z 0.89-0.92, at her crotch (judged fine).

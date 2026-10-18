@@ -33,6 +33,12 @@ uniform bool test_flat = false;                  // (the legal motion check: eve
 uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
 uniform float gold_rough = 0.2;
 uniform float gold_floor = 0.08;                  // (gold's own colour added as a dim emission, less in crevices, so it never goes black at night; 0.08 by judge g4: warm gold at night, no change by day, 0.15 turned shadowed trim to flat tan)
+// (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
+// leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
+uniform float look_rig = 0.0;
+uniform float look_metal_rough = 0.30;
+uniform float look_metal_dim = 0.70;               // (and its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
+uniform float look_leather_rough = 0.60;
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -211,6 +217,9 @@ void fragment() {
 		rough = clamp(0.16 + 0.1 * macro + 0.1 * (1.0 - sky), 0.1, 0.4);
 		metal = 0.0;
 	}
+	if (kind == 1) rough = mix(rough, max(rough, look_metal_rough), look_rig * (1.0 - gold));
+	if (kind == 1) col *= mix(1.0, look_metal_dim, look_rig * (1.0 - gold));
+	if (kind == 0) rough = mix(rough, max(rough, look_leather_rough), look_rig);
 	ALBEDO = clamp(col * mix(0.55, 1.0, sky), 0.0, 1.0);
 	NORMAL_MAP = nrm;
 	ROUGHNESS = rough;
