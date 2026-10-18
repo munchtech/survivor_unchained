@@ -412,7 +412,11 @@ def stalker_break(rig):
     crouch = {"hips": {"pos": (0, -0.37, -0.13), "rot": (0, 32, 0)}, "spine": (0, 22, 0), "head": (0, 10, 0),
               "foot_l": f["foot_l"], "foot_r": f["foot_r"],
               "hand_l": {"pos": (0.06, 0.04, 0.42), "pole": (0.8, 0.2, -0.4), "knuckles": (0.0, -0.3, 1.0)},
-              "fingers_l": "open"}
+              "fingers_l": "open",
+              # The crossbow held out over her knees, the stock level ahead (the idle's carry, low across her, went
+              # 73 mm into her right thigh and the right arm 80 mm into her legs as she sank).
+              "hand_r": {"arc": arc_of((-0.12, -0.10, 0.42)), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
+                         "knuckles": idle._n((0.15, 0.35, 0.92)), "twist": 0.5}}
     # (Every key's feet given, planted with the base's own turn: a key without them came out with her feet squared to
     # rest, 5 and 14 deg off the idle's at the break's ends.)
     keys = [

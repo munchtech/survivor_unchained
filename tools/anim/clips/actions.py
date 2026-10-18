@@ -944,7 +944,7 @@ def cast_flick(rig):
 def crossbow_shoot(rig):
     """The crossbow up at the eye and loosed: the kick throws the fists up
     and the shoulder back, she rides it and lowers (the left hand back onto the fore-stock, as in her idle)."""
-    from clips.idle import STALKER_HAND_L
+    from clips.idle import STALKER_HAND_L, STALKER_HAND_R
     aim_r = arm((0.06, -0.02, 0.40), (-0.8, -0.5, -0.2), knuckles=_n(0.08, 0.02, 1.0))
     aim_l = arm((-0.10, -0.08, 0.40), (0.8, -0.5, -0.2), knuckles=_n(0.1, -0.2, 1.0))
     keys = [
@@ -956,7 +956,7 @@ def crossbow_shoot(rig):
                  fingers_r="grip", fingers_l="relaxed"), "ease"),
         (8, body(stance(0.08), spine=(-8, 2, 0), head=(10, 2, -4), hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "auto"),
-        (18, body(stance(0.08), hand_r=arm((0.12, -0.38, 0.20), (-0.7, -0.4, -0.5), knuckles=_n(0.5, -0.15, 0.85)),
+        (18, body(stance(0.08), hand_r=STALKER_HAND_R["hand_r"],
                   hand_l=STALKER_HAND_L["hand_l"], fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
     return build("crossbow_shoot", rig, keys, meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"})

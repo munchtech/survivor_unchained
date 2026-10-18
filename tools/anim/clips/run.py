@@ -118,12 +118,14 @@ def staff_hold():
 
 
 def crossbow_low():
-    """The crossbow low in the right hand, pointing at the ground ahead, carried out beside her right
-    thigh (9 cm out, 2 cm higher; under her it sat 76 mm in the thigh as it drove up), the elbow by her ribs."""
+    """The crossbow in the right fist on its pistol grip, the stock level and ahead (pitch -6..7 deg, yaw within 9 of
+    her line), the forearm level from an elbow by her ribs, the fist at her waist 10 cm out. Pointed at the ground from
+    beside the thigh (the old carry), the stock now the long axis put the bow 56-63 mm into her left thigh as it drove
+    up (armscheck, 18 October); here 0, and the right arm 0 mm into her (motion.py)."""
     def f(ph, k, hand):
         sway = 0.06 * (k - 0.5)
-        return {"arc": arc_of((-0.09, -0.34, 0.15 + sway)), "pole": (-0.2, -0.3, -1.0),
-                "knuckles": (0.0, -0.55, 0.83), "blade": (0.0, 0.83, 0.55), "frame": "chest", "twist": 0.5}
+        return {"arc": arc_of((-0.10, -0.15, 0.32 + sway)), "pole": (-0.2, -0.3, -1.0),
+                "knuckles": (0.0, 0.64, 0.77), "blade": (0.0, 0.77, -0.64), "frame": "chest", "twist": 0.5}
     return f
 
 
