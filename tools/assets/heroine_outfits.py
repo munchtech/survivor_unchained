@@ -8387,6 +8387,13 @@ def material_table(path):
             return {"tint": [round(float(c) / 255, 4) for c in np.asarray(Image.open(f).convert("RGB"), np.float32).reshape(-1, 3).mean(0)]}
         json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k)} for k, v in SPEC.items()}, fh, indent=1)
 
+# (s30, for face's hair drape, 18 Oct: BODY_BLEND_OUT=<path> saves a copy of the scene here, her body after the
+# F1 body pass and every body step above, before any outfit is made; object names kept: Heroine, HeroineHead,
+# the armature. Not in it: what the glb's post-steps add (the face chain, the head's rest scale, her helpers).)
+if os.environ.get("BODY_BLEND_OUT"):
+    bpy.ops.wm.save_as_mainfile(filepath=os.environ["BODY_BLEND_OUT"], copy=True)
+    print("BODY_BLEND_OUT", os.environ["BODY_BLEND_OUT"])
+
 made = []
 for name, build in OUTFITS.items():
     if ONLY and name != ONLY:

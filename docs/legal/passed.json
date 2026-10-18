@@ -1,1 +1,287 @@
-{}
+{
+ "note": "Written by tools/legal/gate.py: the last PASS per outfit and per clip (fingerprints, commit, counts).",
+ "outfits": {
+  "arcanist": {
+   "clips": {
+    "arcanist_show": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "05d33cecbc493a87b5acf23d61e4b70805f3f735"
+    },
+    "axe_back": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "68f7a20a958022583da6626b7291bd4c5f06c7aa"
+    },
+    "axe_fore": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "65e56a979e9ba22fdae4a3b49c309048bd87436c"
+    },
+    "axe_heavy": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "6dd49b2e6870e58f2f8bf12b285f3e015663e9c8"
+    },
+    "axes_heavy": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "41cc592d43bb5d5a786b68517e1eb74404b270bd"
+    },
+    "axes_left": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "142fb7598be7885644d5fa16747ec01b9620bd20"
+    },
+    "axes_right": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "3d30681e01922dc62cc851112eb966c08de471e0"
+    },
+    "bull_rush": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
+    },
+    "cast_bolt": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
+    },
+    "cast_flick": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
+    },
+    "cast_raise": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
+    },
+    "catch_breath": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "feaf9db2f447bfbf5d4bf15a43123c94c4c87785"
+    },
+    "chain_haul": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "787238d2898ad5be83f159b3b92becdf18f3627b"
+    },
+    "chain_strike": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "dedb58f540ec09a5e2037e68fbe3090d70fabd64"
+    },
+    "crossbow_shoot": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "4deab199811000d2c08b17c56d4a97594d0342de"
+    },
+    "daggers_back": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "50cd00b42f98e3184a95943a1831400034fd4763"
+    },
+    "daggers_fore": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "e6ef447dd7a126faf754d02d23931d75eadbe008"
+    },
+    "daggers_heavy": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "9c5d01e8759c4639bec07266c064de8cd4e7d11d"
+    },
+    "dash": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "049b224b36c74bf0c842827012948a9030d06cd0"
+    },
+    "death": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "ecf2773eb27c1d5d9c241d61d04a9fda944853c9"
+    },
+    "death_back": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "c05e8a480f73bee9725e9bc00bd81bfd5f1a217b"
+    },
+    "exhale": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "dedfd44172ce2f598fc600efe91d6dcd2bef4306"
+    },
+    "get_up": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "56363ea95394e4eb449cff5504411a2cb975ea44"
+    },
+    "hit": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "0adb61b8c7fe7cb7f97a1ed60433c1c273b77147"
+    },
+    "idle_arcanist": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "a3103aeb932929c9d347ea6a5e2910ac6049360a"
+    },
+    "idle_arcanist_break": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "1b04695d0a85eb6c7eb65d345d41c79c243a7647"
+    },
+    "leap": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "822203ff573d568581c62a7520cd1e4192eee36f"
+    },
+    "lie_side_wake": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "3345108ab85cc7e41dff7844e507483097961102"
+    },
+    "nod": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "58b944e5036cc994f024ab2d00dfb9582bd18e17"
+    },
+    "reach_coals": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
+    },
+    "run_arcanist": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "ed955009ecb67c6eec0ebc3b9f8fb1b763ca5a2f"
+    },
+    "run_arcanist_wand": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "0acf6cd5f958cd688e5db2c8e00fecfcef25997b"
+    },
+    "shiver": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "4f92576c1248f11e0244bb61d30adc5ce2c859c0"
+    },
+    "sit_back_heels": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "7a62c8157fe14f853cb60b09a093e2e027ae37a7"
+    },
+    "sit_log": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
+    },
+    "sprint_arcanist": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "c9585435b22de6f6c6b8535d159839491c36eab0"
+    },
+    "sprint_arcanist_wand": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "972f0afe5e1c1b28d9e8422d7eb843db893666b0"
+    },
+    "stop_arcanist_l": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "744b6f8ebf3dc7a3e2224875f88993b1af97a031"
+    },
+    "stop_arcanist_r": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "452bf2b45496540f5b1d61ccdbc8bc4c665d10ba"
+    },
+    "sword_back": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "a57cc7b52a22e644ddf528e12c5df817ac0858a5"
+    },
+    "sword_fore": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "233b50f0ba8dcdb6efe295efdf28a2036a9cbd2a"
+    },
+    "sword_heavy": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "afe4c8234a1c7bd5bdff0027811916e7f23ef1ba"
+    },
+    "throw": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "4eedc0bd80362b587050bf89384560647c0f7d32"
+    },
+    "vault": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "2686a9ee9c0b65dfe853bcf6567a287e03d92147"
+    },
+    "vault_back": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "da2d69de2028cdab80b2d528f2275ec10cebf51c"
+    },
+    "warcry": {
+     "commit": "a95f04d5",
+     "date": "2026-10-18",
+     "fp": "ac7bd326108f240a4af9f9b99f3a805800b8664b"
+    }
+   },
+   "commit": "a95f04d5",
+   "counts": {
+    "areola": 0,
+    "closest": {
+     "L": 2.1,
+     "R": 0.48
+    },
+    "flat": 0,
+    "frames": 2180,
+    "strip": 0
+   },
+   "date": "2026-10-18",
+   "dirty": true,
+   "global": {
+    "body breast paint": "6347d3cce152106f",
+    "body import": "c11fe037183ee69d",
+    "body materials": "f19ce8704d22ca8a",
+    "body skeleton": "5e64331f0fcc1b89",
+    "body skin meshes": "2a44b0df23ffd62b",
+    "code HairSway.cs": "9658ba64147da295",
+    "code HerFaceLife.cs": "3b64a048cc25a740",
+    "code HerJiggle.cs": "5fe3d99470464d4d",
+    "code HerJoints.cs": "643195bc7704c9e8",
+    "code HerPose.cs": "f605748425dffaf8",
+    "godot binary": "393483e36bd683a8",
+    "hair ponytail": "92afaa19269f0a91",
+    "head parts (occluders)": "0a1d9b6b3acea14f",
+    "import_mipmaps.gd": "4e5759d6b8341411",
+    "lookdev.gd": "e4c12496bb43b583",
+    "project.godot rendering": "2c3d8e044e885b3b",
+    "rig_helpers.json": "ebf3170beefad490",
+    "shader coverage.gdshaderinc": "b2d932ad6b0c9605",
+    "shader fur_shell.gdshader": "d9b9983e95e2819b",
+    "shader heroine_hair.gdshader": "f2ab58346f153d14",
+    "shader heroine_hair.gdshaderinc": "a0f72f8ba890d352",
+    "shader heroine_outfit.gdshader": "eb9fbd16eb7ddfbc",
+    "shader heroine_skin.gdshader": "834a8646e73806f0",
+    "shader motion.gdshaderinc": "854d9aa8882cd4eb",
+    "shader sheer.gdshader": "eddb83ec8ceceb45",
+    "tool .gitignore": "845c97c4631481e8",
+    "tool count.py": "0b9a962d4c590e7d",
+    "tool make_motioncheck.py": "19682186d6153082",
+    "tool marks_section.py": "e11cb08d7ed09726",
+    "tool posed.py": "97aa3aa281aebff6",
+    "tool run.sh": "6b1c32f5a460e591"
+   },
+   "outfit": "63ecf640618d9b32",
+   "tuck": "dc506d6fa9301af5"
+  }
+ }
+}
