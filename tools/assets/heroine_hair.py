@@ -213,10 +213,17 @@ EAR_V = EAR_TREE.query(HP)[0] < 0.006 if EAR_TREE is not None else np.zeros(len(
 # October, face 29: kept 6 mm off all her ears' keys move, as her hair's roots
 # are, it left a bare ring round each ear, her scalp's pale paint showing
 # behind and above it, a whitish wedge at the Look.)
-_flap = np.zeros(len(HP), bool)
+# (18 October, face 30 H1b: a tenth of each key's most took in a centimetre and
+# more of her scalp behind and above each ear, which her keys move too; the cap
+# stopped short of it there, her scalp's grey paint the pale patch at the Look.
+# Her flap alone is what they move by a quarter of their most or more: traced on
+# the game's frames by her head's UV, its edge is her ear's crease. As
+# heroine_features.py's scalp tint behind her ears.)
+_fm = np.zeros(len(HP))
 for _k in ("ears_out+", "ears_pointed+", "ears_lobes+"):
     _mv = _key_moves(_k)
-    _flap |= (_mv > 0.1 * _mv.max()) if _mv.max() > 0 else False
+    _fm = np.maximum(_fm, _mv / _mv.max()) if _mv.max() > 0 else _fm
+_flap = _fm > 0.25
 FLAP_TREE = cKDTree(HP[_flap]) if _flap.any() else None
 print("  ears: %d points their keys move, %d their flaps" % (EAR.sum(), _flap.sum()))
 # Her neck, between her jaw and her shoulders (her skin there facing out,
