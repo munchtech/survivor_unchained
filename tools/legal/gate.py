@@ -7,6 +7,8 @@ it prints ONE line, and the details go to files.
     python tools/legal/gate.py            fingerprint, compare, run what changed, one line back
     python tools/legal/gate.py --dry      the scope only (seconds, no Godot)
     python tools/legal/gate.py --full     every outfit, every clip
+    python tools/legal/gate.py --restamp  re-stamp the record's fingerprints after a change of scheme (no Godot; only if nothing
+                                          changed since the passes under the old scheme, else refuses and lists)
     --root <checkout>   the checkout to fingerprint and shoot (default: this file's). A worktree
                         is imported first (inside the turn); the main checkout is not, unless --import.
     --import            import the project first (inside the godot turn)
@@ -22,7 +24,9 @@ What coverage depends on (fingerprint(); if in doubt a thing is in):
   parts as occluders (positions and weights, not their blend shapes, UVs or paint); the ponytail
   the check wears (geometry, weights and its cards' alpha: hair can hide or bare a breast); the
   shaders that tuck, hide, discard or move a vertex (heroine_skin, heroine_outfit, fur_shell,
-  sheer, heroine_hair and their includes; comments ignored); her runtime motion code (HerJiggle,
+  sheer, heroine_hair and their includes; comments ignored; fragment() and light() reduced to what
+  writes ALPHA*, DEPTH or discards and what those read, so colour and light edits don't count, and
+  uniforms nothing kept reads are dropped; a file that doesn't parse counts whole); her runtime motion code (HerJiggle,
   HerPose, HerJoints, HairSway, HerFaceLife; rig_helpers.json); lookdev.gd (the check is built
   from it), the import script and the models' import settings; project.godot's rendering,
   shader_globals and importer_defaults; the motion check's own files; the Godot binary.
@@ -51,6 +55,7 @@ import io
 import json
 import os
 import re
+import signal
 import struct
 import subprocess
 import sys
@@ -180,7 +185,190 @@ def src_text(path, kind):
     return '\n'.join(l.rstrip() for l in s.splitlines() if l.strip())
 
 
-def shader_fp(root, name, seen):
+STOP = set("""void bool int uint float double vec2 vec3 vec4 ivec2 ivec3 ivec4 uvec2 uvec3 uvec4 bvec2 bvec3 bvec4
+mat2 mat3 mat4 sampler2D sampler3D samplerCube sampler2DArray isampler2D usampler2D const in out inout uniform varying flat
+smooth highp mediump lowp if else for while do switch case default true false""".split())
+ALWAYS_UNIFORM = ('alpha', 'discard', 'hide', 'tuck', 'cut', 'clip', 'mask', 'test_', 'legal')
+SEED = re.compile(r'\b(?:ALPHA\w*|DEPTH|discard|return)\b')
+ASSIGN = re.compile(r'(\w+)\s*(?:\[[^\]]*\])?\s*(?:\.\w+\s*(?:\[[^\]]*\])?\s*)*(?:[-+*/%&|^]|<<|>>)?=(?!=)')
+IDENT = re.compile(r'[A-Za-z_]\w*')
+
+
+def _items(t):
+    """Top-level items of a (comment-free) shader: each ends at ';' or at the closing brace of a function."""
+    out, buf, br, pa = [], '', 0, 0
+    for line in t.split('\n'):
+        if line.lstrip().startswith('#'):
+            if buf.strip() or br or pa:
+                raise ValueError('directive inside an item')
+            out.append(line.strip())
+            continue
+        for ch in line + ' ':
+            buf += ch
+            if ch == '{':
+                br += 1
+            elif ch == '}':
+                br -= 1
+                if br < 0:
+                    raise ValueError('brace')
+                if br == 0 and pa == 0 and not buf.lstrip().startswith('struct'):
+                    out.append(buf.strip())
+                    buf = ''
+            elif ch == '(':
+                pa += 1
+            elif ch == ')':
+                pa -= 1
+            elif ch == ';' and br == 0 and pa == 0:
+                out.append(buf.strip())
+                buf = ''
+    if buf.strip() or br or pa:
+        raise ValueError('unterminated')
+    return [re.sub(r'\s+', ' ', i) for i in out if i.strip(' ;')]
+
+
+def _body_nodes(body):
+    """A function body as a tree of {'k': stmt|block, 'text', 'kids', 'chain'} (chain: an else, or the while of a do,
+    joins the node before it)."""
+    root = {'kids': []}
+    stack = [root]
+    buf, pa = '', 0
+
+    def add(node, text):
+        kids = stack[-1]['kids']
+        node['chain'] = bool(kids) and (text.startswith('else') or (text.startswith('while') and kids[-1].get('text') == 'do'))
+        kids.append(node)
+
+    for ch in body:
+        if ch == '(':
+            pa += 1
+        elif ch == ')':
+            pa -= 1
+        if pa == 0 and ch == '{':
+            t = re.sub(r'\s+', ' ', buf).strip()
+            n = {'k': 'block', 'text': t, 'kids': [], 'keep': False}
+            add(n, t)
+            stack.append(n)
+            buf = ''
+        elif pa == 0 and ch == '}':
+            t = re.sub(r'\s+', ' ', buf).strip()
+            if t:
+                add({'k': 'stmt', 'text': t, 'kids': [], 'keep': False}, t)
+            buf = ''
+            if len(stack) < 2:
+                raise ValueError('brace')
+            stack.pop()
+        elif pa == 0 and ch == ';':
+            t = re.sub(r'\s+', ' ', buf).strip()
+            if t:
+                add({'k': 'stmt', 'text': t, 'kids': [], 'keep': False}, t)
+            buf = ''
+        else:
+            buf += ch
+    if len(stack) != 1 or pa != 0 or buf.strip():
+        raise ValueError('unbalanced')
+    return root
+
+
+def _reduce_body(body):
+    """The statements of fragment()/light() that can change coverage (see the docstring), as text."""
+    root = _body_nodes(body)
+    flat = []
+
+    def walk(n, anc):
+        for k in n['kids']:
+            k['anc'] = anc
+            flat.append(k)
+            walk(k, anc + [k])
+    walk(root, [])
+    for n in flat:
+        txt = n['text']
+        n['ids'] = {i for i in IDENT.findall(txt) if i not in STOP}
+        if n['k'] == 'stmt':
+            d = {m.group(1) for m in ASSIGN.finditer(txt)} if '=' in txt else set()
+            n['defs'] = (d or n['ids']) - STOP
+            n['seed'] = bool(SEED.search(txt))
+            n['loopctl'] = bool(re.search(r'\b(?:break|continue)\b', txt))
+    chains = []
+
+    def groups(n):
+        cur = None
+        for k in n['kids']:
+            if k['chain'] and cur is not None:
+                cur.append(k)
+            else:
+                cur = [k]
+                chains.append(cur)
+            groups(k)
+    groups(root)
+    needed = set()
+
+    def keep(n):
+        if not n['keep']:
+            n['keep'] = True
+            needed.update(n['ids'])
+            return True
+        return False
+    changed = True
+    while changed:
+        changed = False
+        for n in flat:
+            if n['k'] == 'stmt' and not n['keep']:
+                if n['loopctl']:
+                    if any(a['keep'] and re.match(r'(for|while|do|switch)\b', a['text']) for a in n['anc']):
+                        changed |= keep(n)
+                elif n['seed'] or (n['defs'] & needed):
+                    changed |= keep(n)
+        for n in reversed(flat):
+            if n['k'] == 'block' and not n['keep'] and any(k['keep'] for k in n['kids']):
+                changed |= keep(n)
+        for c in chains:
+            if any(n['keep'] for n in c):
+                for n in c:
+                    changed |= keep(n)
+
+    def emit(n):
+        out = []
+        for k in n['kids']:
+            if k['keep']:
+                out.append(k['text'] + (' {' + ' '.join(emit(k)) + '}' if k['k'] == 'block' else ';'))
+        return out
+    return ' '.join(emit(root))
+
+
+def reduce_shader(t):
+    """-> ([non-uniform kept strings], [(uniform name, its declaration)]); raises on anything it can't parse."""
+    plain, unis = [], []
+    for it in _items(t):
+        if re.match(r'(?:(?:global|instance)\s+)?uniform\b', it):
+            head = re.split(r'[:=]', it, maxsplit=1)[0]
+            head = re.sub(r'\[[^\]]*\]', '', head).split()
+            unis.append((head[-1], it))
+            continue
+        m = re.match(r'(?:\w+\s+)+(\w+)\s*\([^)]*\)\s*\{', it)
+        if m and m.group(1) in ('fragment', 'light'):
+            body = it[it.index('{') + 1:it.rindex('}')]
+            plain.append(it[:it.index('{')] + '{' + _reduce_body(body) + '}')
+        else:
+            plain.append(it)
+    return plain, unis
+
+
+def motion_uniforms(root):
+    """Uniform names the motion check sets or injects (tools/legal/motioncheck/), plus the ones it is known to."""
+    names = {'test_flat', 'tuck_channel'}
+    mc = os.path.join(root, 'tools', 'legal', 'motioncheck')
+    if os.path.isdir(mc):
+        for f in os.listdir(mc):
+            fp_ = os.path.join(mc, f)
+            if os.path.isfile(fp_) and not f.endswith('.pyc'):
+                x = open(fp_, encoding='utf-8', errors='replace').read()
+                names.update(re.findall(r'set_shader_parameter\(\\?"(\w+)', x))
+                names.update(re.findall(r'uniform\s+\w+\s+(\w+)', x))
+    return names
+
+
+def shader_fp_old(root, name, seen):
+    """The whole text of the shader minus comments (the scheme before the coverage-only one; --restamp uses it)."""
     p = os.path.join(root, 'godot', 'shaders', name)
     if p in seen:
         return {}
@@ -188,7 +376,51 @@ def shader_fp(root, name, seen):
     t = src_text(p, 'shader')
     out = {name: h(t)}
     for inc in re.findall(r'#include\s+"res://([^"]+)"', t):
-        out.update(shader_fp(root, os.path.relpath(os.path.join(root, 'godot', inc), os.path.join(root, 'godot', 'shaders')), seen))
+        out.update(shader_fp_old(root, os.path.relpath(os.path.join(root, 'godot', inc), os.path.join(root, 'godot', 'shaders')), seen))
+    return out
+
+
+def _includes(root, t):
+    return [os.path.relpath(os.path.join(root, 'godot', inc), os.path.join(root, 'godot', 'shaders'))
+            for inc in re.findall(r'#include\s+"res://([^"]+)"', t)]
+
+
+def _corpus(root, name, seen, parts):
+    """All the text coverage could be read from, over a shader and its includes (reduced where that parses)."""
+    p = os.path.join(root, 'godot', 'shaders', name)
+    if p in seen:
+        return
+    seen.add(p)
+    t = src_text(p, 'shader')
+    try:
+        parts.extend(reduce_shader(t)[0])
+    except Exception:
+        parts.append(t)
+    for inc in _includes(root, t):
+        _corpus(root, inc, seen, parts)
+
+
+def shader_fp(root, name, seen):
+    """Per shader file, a fingerprint of what can change coverage: everything but what feeds only colour and light
+    (fragment()/light() reduced to alpha, depth, discard and what they read; uniforms nothing kept reads are dropped).
+    If the file doesn't parse, its whole text, as before."""
+    p = os.path.join(root, 'godot', 'shaders', name)
+    if p in seen:
+        return {}
+    seen.add(p)
+    t = src_text(p, 'shader')
+    try:
+        plain, unis = reduce_shader(t)
+        parts = []
+        _corpus(root, name, set(), parts)
+        corpus = '\n'.join(parts)
+        mot = motion_uniforms(root)
+        keepu = [d for n, d in unis if n in mot or any(w in n.lower() for w in ALWAYS_UNIFORM) or re.search(r'\b%s\b' % re.escape(n), corpus)]
+        out = {name: h(plain, keepu)}
+    except Exception:
+        out = {name: h(t)}
+    for inc in _includes(root, t):
+        out.update(shader_fp(root, inc, seen))
     return out
 
 
@@ -206,7 +438,7 @@ def project_sections(root):
     return h(keep)
 
 
-def fingerprint(root):
+def fingerprint(root, old_shaders=False):
     """-> {'global': {part: h}, 'outfit': {o: h}, 'tuck': {o: h}, 'clips': {clip: h}}"""
     G = {}
     people = os.path.join(root, 'godot', 'art', 'people')
@@ -261,7 +493,7 @@ def fingerprint(root):
         G['hair ' + HAIR] = 'missing'
     seen = set()
     for s in SHADERS:
-        for k, v in shader_fp(root, s + '.gdshader', seen).items():
+        for k, v in (shader_fp_old if old_shaders else shader_fp)(root, s + '.gdshader', seen).items():
             G['shader ' + k] = v
     for c in CODE:
         G['code %s.cs' % c] = h(src_text(os.path.join(root, 'godot', 'src', 'Actors', c + '.cs'), 'cs'))
@@ -402,11 +634,13 @@ def summary_of(folder):
 
 def run_outfit(root, project, out, o, clips, all_clips, do_import, log):
     os.makedirs(out, exist_ok=True)
-    who = '%s: %s (%d clips)' % (TURN, o, len(clips))
-    rc, msg = turn(root, 'take', who)
-    if rc != 0:
-        return {'blocked': msg.splitlines()[-1] if msg else 'turn refused'}
+    # The label is unique to this process, so giving it back frees exactly what this run took and never another's.
+    who = '%s: %s (%d clips, pid %d)' % (TURN, o, len(clips), os.getpid())
+    rc = None  # None: the take didn't return (an exception or an interrupt may have landed after it was made)
     try:
+        rc, msg = turn(root, 'take', who)
+        if rc != 0:
+            return {'blocked': msg.splitlines()[-1] if msg else 'turn refused'}
         if do_import:
             with open(os.path.join(out, 'import.log'), 'w') as f:
                 subprocess.run([GODOT, '--headless', '--path', project, '--import'], stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT, timeout=3600)
@@ -420,7 +654,8 @@ def run_outfit(root, project, out, o, clips, all_clips, do_import, log):
             subprocess.run([BASH, os.path.join(root, 'tools', 'legal', 'motioncheck', 'run.sh').replace('\\', '/'), 'all'],
                            env=env, stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT)
     finally:
-        turn(root, 'give', who)
+        if rc is None or rc == 0:  # taken, or maybe taken: give back (harmless if it wasn't)
+            turn(root, 'give', who)
     with open(os.path.join(out, 'count.txt'), 'w') as f:
         cr = subprocess.run([sys.executable, os.path.join(root, 'tools', 'legal', 'motioncheck', 'count.py'), out, str(MIN_PX)],
                             stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT)
@@ -452,10 +687,49 @@ def describe(o, n, r):
     return s
 
 
+def restamp(root, passed, passed_path):
+    """Rewrite the record's fingerprints to the current scheme, without running Godot. Only if the current tree, under
+    the OLD (whole-shader) scheme, equals every recorded fingerprint: nothing changed since the passes."""
+    rec = passed.get('outfits', {})
+    if not rec:
+        print('LEGAL RESTAMP: nothing recorded in %s' % passed_path)
+        return 0
+    old, new = fingerprint(root, True), fingerprint(root)
+    diff = []
+    for o, e in sorted(rec.items()):
+        g = [k for k in sorted(set(old['global']) | set(e.get('global', {}))) if old['global'].get(k) != e.get('global', {}).get(k)]
+        if g:
+            diff.append('%s global: %s' % (o, ', '.join(g)))
+        if old['outfit'].get(o) != e.get('outfit'):
+            diff.append('%s: its pieces' % o)
+        if old['tuck'].get(o) != e.get('tuck'):
+            diff.append('%s: its tuck channel' % o)
+        for c, v in sorted(e.get('clips', {}).items()):
+            if old['clips'].get(c) != v.get('fp'):
+                diff.append('%s clip %s' % (o, c))
+    if diff:
+        print('LEGAL RESTAMP REFUSED (the tree differs from the recorded passes): ' + '; '.join(diff))
+        return 2
+    for o, e in rec.items():
+        e['global'], e['outfit'], e['tuck'] = new['global'], new['outfit'][o], new['tuck'][o]
+    passed['note'] = 'Written by tools/legal/gate.py: the last PASS per outfit and per clip (fingerprints, commit, counts).'
+    json.dump(passed, open(passed_path, 'w', encoding='utf-8'), indent=1, sort_keys=True)
+    print('LEGAL RESTAMP ok: %d outfits re-stamped to the coverage-only shader scheme, pass status kept' % len(rec))
+    return 0
+
+
+def _term(signum, frame):
+    raise SystemExit(3)  # unwinds through run_outfit's finally, which gives the godot turn back
+
+
 def main():
+    for name in ('SIGTERM', 'SIGBREAK'):
+        if hasattr(signal, name):
+            signal.signal(getattr(signal, name), _term)
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry', action='store_true')
     ap.add_argument('--full', action='store_true')
+    ap.add_argument('--restamp', action='store_true')
     ap.add_argument('--root', default=MAIN)
     ap.add_argument('--import', dest='do_import', action='store_true')
     ap.add_argument('--passed')
@@ -465,6 +739,8 @@ def main():
     root = os.path.normpath(os.path.abspath(a.root))
     passed_path = a.passed or os.path.join(root, 'docs', 'legal', 'passed.json')
     passed = json.load(open(passed_path, encoding='utf-8')) if os.path.exists(passed_path) and os.path.getsize(passed_path) > 2 else {}
+    if a.restamp:
+        return restamp(root, passed, passed_path)
     stamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     legal = os.path.join(root, '.legal')
     fp = fingerprint(root)
