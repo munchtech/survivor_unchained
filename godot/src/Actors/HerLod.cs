@@ -30,6 +30,15 @@ public partial class HerLod : Node
 
     readonly List<(MeshInstance3D Full, MeshInstance3D Lod, int[] Map, bool[] Own)> pairs = new();
     readonly List<MeshInstance3D> fulls = new();
+    /// <summary>The full meshes after the first a gameplay mesh stands for (its other slots' meshes of one material):
+    /// it wears the first one's materials.</summary>
+    readonly HashSet<MeshInstance3D> follow = new();
+    /// <summary>Her outfit's slots (tools/armor/slot_map.json's layers).</summary>
+    static readonly string[] Slots = { "ink", "top", "bottom", "legwear", "gloves", "skirt", "belt", "collar", "bracers", "greaves", "boots", "pauldrons", "cloak", "head" };
+
+    /// <summary>Whether a full mesh is one slot's of an outfit's material: SET_SLOT_MAT (heroine_outfits.py's SET.SLOT.MAT,
+    /// the dots made underscores on import).</summary>
+    public static bool IsSlotMesh(string name, string set, string mat) => Slots.Any(s => name == $"{set}_{s}_{mat}");
     MeshInstance3D? shadow, body;
     Skeleton3D skel = null!;
     bool? on;
@@ -63,23 +72,30 @@ public partial class HerLod : Node
                 continue;
             }
             mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
-            var full = name == "lod_body" ? children.FirstOrDefault(c => c.Name == "Heroine")
-                : children.FirstOrDefault(c => c.Name == $"{set}_{name[4..]}");
-            if (full == null) { mi.QueueFree(); continue; }
+            // (her outfit's full meshes are one a slot and material, SET_SLOT_MAT (heroine_outfits.py's
+            // SET.SLOT.MAT, the dots made underscores on import): lod_MAT stands for every slot's MAT)
+            var fullsOf = name == "lod_body" ? children.Where(c => c.Name == "Heroine").ToList()
+                : children.Where(c => IsSlotMesh(c.Name.ToString(), set, name[4..])).ToList();
+            if (fullsOf.Count == 0) { mi.QueueFree(); continue; }
             int n = mi.Mesh.GetSurfaceCount();
-            var map = new int[n];
             var own = new bool[n];
             for (int s = 0; s < n; s++)
-            {
-                var key = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
-                map[s] = Enumerable.Range(0, full.Mesh.GetSurfaceCount()).FirstOrDefault(f => full.Mesh.SurfaceGetMaterial(f)?.ResourceName == key);
                 // (fur: a shorter stack of shells of its own)
-                if (key == "fur") own[s] = true;
-            }
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName == "fur") own[s] = true;
             if (own.Any(o => o)) People.Fur(mi, FurShells);
-            lod.pairs.Add((full, mi, map, own));
-            lod.fulls.Add(full);
-            if (name == "lod_body") lod.body = full;
+            foreach (var full in fullsOf)
+            {
+                var map = new int[n];
+                for (int s = 0; s < n; s++)
+                {
+                    var key = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+                    map[s] = Enumerable.Range(0, full.Mesh.GetSurfaceCount()).FirstOrDefault(f => full.Mesh.SurfaceGetMaterial(f)?.ResourceName == key);
+                }
+                if (lod.pairs.Any(q => q.Lod == mi)) lod.follow.Add(full);
+                lod.pairs.Add((full, mi, map, own));
+                lod.fulls.Add(full);
+            }
+            if (name == "lod_body") lod.body = fullsOf[0];
         }
         scene.Free();
         p.Skeleton.AddChild(lod);
@@ -123,6 +139,7 @@ public partial class HerLod : Node
         // Whatever the full model wears, these wear (a dye, her paint, a ghost's overlay).
         foreach (var (f, l, map, own) in pairs)
         {
+            if (follow.Contains(f)) continue;
             for (int s = 0; s < map.Length; s++)
                 if (!own[s] && l.GetSurfaceOverrideMaterial(s) != f.GetSurfaceOverrideMaterial(map[s]))
                     l.SetSurfaceOverrideMaterial(s, f.GetSurfaceOverrideMaterial(map[s]));

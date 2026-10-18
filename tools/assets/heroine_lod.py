@@ -328,9 +328,24 @@ def lod(folder, outfit):
     
     # Every surface of her, as it stands in her bind pose.
     parts = []      # (kind, name, attrs, tris)
+    # (the outfit's meshes are one a slot and material, SET.SLOT.MAT (heroine_outfits.py, armor lead 1): joined back
+    # into one a material, the slots end to end in their join's rank (glTF extras), as one mesh a material was)
+    by_mat = {}
     for mi, m in enumerate(full.js["meshes"]):
         for mat, attrs, tris in full.prims(mi):
-            parts.append(("outfit", mat, attrs, tris))
+            by_mat.setdefault(mat, []).append((m.get("extras", {}).get("rank", 0), attrs, tris))
+    for mat in sorted(by_mat):
+        got = sorted(by_mat[mat], key=lambda r: r[0])
+        keys = set(got[0][1])
+        assert all(set(a) == keys for _, a, _ in got), f"{outfit} {mat}: its slots' meshes carry different attributes"
+        attrs, tris, base = {}, [], 0
+        for k in got[0][1]:
+            assert len({a[k][0].dtype for _, a, _ in got}) == 1 and len({a[k][1] for _, a, _ in got}) == 1, f"{outfit} {mat} {k}"
+            attrs[k] = (np.concatenate([a[k][0] for _, a, _ in got]), got[0][1][k][1])
+        for _, a, t in got:
+            tris.append(t + base)
+            base += len(a["POSITION"][0])
+        parts.append(("outfit", mat, attrs, np.concatenate(tris)))
     for mi, m in enumerate(body.js["meshes"]):
         node = next(n for n in body.js["nodes"] if n.get("mesh") == mi)
         for mat, attrs, tris in body.prims(mi):
