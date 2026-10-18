@@ -23,6 +23,7 @@ public partial class CineBreath : SkeletonModifier3D
     public float Depth = 1f;
 
     float weight;
+    double dbgT;
     double phase, clock;
     bool found;
     int spine2 = -1, spine3 = -1, neck = -1, head = -1, clavL = -1, clavR = -1;
@@ -73,11 +74,11 @@ public partial class CineBreath : SkeletonModifier3D
         double p = phase % Mathf.Tau / Mathf.Tau;
         float b = (float)(p < 0.4 ? 0.5 - 0.5 * System.Math.Cos(p / 0.4 * System.Math.PI) : 0.5 + 0.5 * System.Math.Cos((p - 0.4) / 0.6 * System.Math.PI));
         // The chest lifts (the upper back extends) and the shoulders rise.
-        float lift = Mathf.DegToRad(1.1f) * b * k;
-        if (spine2 >= 0) Bend(sk, spine2, s2Side, -lift * 0.45f);
+        float lift = Mathf.DegToRad(2.0f) * b * k;
+        if (spine2 >= 0) Bend(sk, spine2, s2Side, -lift * 0.6f);
         Bend(sk, spine3, s3Side, -lift);
-        if (clavL >= 0) Bend(sk, clavL, clavLFwd, Mathf.DegToRad(1.3f) * b * k);
-        if (clavR >= 0) Bend(sk, clavR, clavRFwd, -Mathf.DegToRad(1.3f) * b * k);
+        if (clavL >= 0) Bend(sk, clavL, clavLFwd, Mathf.DegToRad(2.2f) * b * k);
+        if (clavR >= 0) Bend(sk, clavR, clavRFwd, -Mathf.DegToRad(2.2f) * b * k);
         // The head keeps its line through the breath, and wanders a little, unevenly.
         float nod = (float)(0.55 * System.Math.Sin(clock * Mathf.Tau / 7.3) + 0.45 * System.Math.Sin(clock * Mathf.Tau / 11.9 + 1.3));
         float yaw = (float)(0.6 * System.Math.Sin(clock * Mathf.Tau / 9.1 + 0.4) + 0.4 * System.Math.Sin(clock * Mathf.Tau / 15.7 + 2.1));
@@ -85,8 +86,14 @@ public partial class CineBreath : SkeletonModifier3D
         if (neck >= 0) Bend(sk, neck, neckSide, steady * 0.4f);
         if (head >= 0)
         {
-            Bend(sk, head, headSide, steady * 0.6f + Mathf.DegToRad(0.8f) * nod * k);
-            Bend(sk, head, headUp, Mathf.DegToRad(1.2f) * yaw * k);
+            Bend(sk, head, headSide, steady * 0.6f + Mathf.DegToRad(1.0f) * nod * k);
+            Bend(sk, head, headUp, Mathf.DegToRad(1.4f) * yaw * k);
+        }
+        if (Args.Has("cinebones") && (dbgT -= delta) <= 0)
+        {
+            dbgT = 1.0;
+            var hp = head >= 0 ? sk.GetBoneGlobalPose(head).Origin : Vector3.Zero;
+            GD.Print($"cinebreath w={weight:0.00} head=({hp.X:0.0000},{hp.Y:0.0000},{hp.Z:0.0000})");
         }
     }
 
