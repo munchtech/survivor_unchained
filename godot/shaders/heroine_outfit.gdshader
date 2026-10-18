@@ -39,6 +39,18 @@ uniform float look_rig = 0.0;
 uniform float look_metal_rough = 0.30;
 uniform float look_metal_dim = 0.70;               // (and its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
 uniform float look_leather_rough = 0.60;
+// Metal's standard (touch-up, 18 Oct): worn, forged; never a mirror.
+uniform float metal_rough = 0.46;                  // (its satin roughness, varied about this by +-0.05 over the piece)
+uniform float metal_rough_wear = 0.34;             // (where worn bright: its edges and what stands out)
+uniform float metal_rough_floor = 0.32;            // (no metal smoother than this: a mirror took the fire and the sky as blown spots)
+uniform float metal_grime = 1.0;                   // (dirt in its recesses: dark, brown, dull, not metal)
+uniform float metal_dent = 0.08;                   // (the hammered unevenness)
+uniform float brass_dim = 0.62;                    // (gold read as aged brass: darker and a little greyer than the bright alloy)
+uniform float brass_rough_add = 0.0;
+uniform float metal_hammer = 0.05;                 // (planishing marks, 8 mm)
+uniform float steel_dim = 0.8;                      // (the plate's field darker, so its worn edges read against it)
+uniform vec3 steel_warm = vec3(1.04, 1.0, 0.93);    // (steel a warm grey: under an open sky it went blue)
+uniform float metal_wear_bright = 1.3;
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -144,42 +156,66 @@ void fragment() {
 		if (flag < 0.25) rough = max(rough, 0.8);
 		metal = 0.0;
 	} else if (kind == 1) {
-		// Metal: the scan's grain kept faint, a hammered unevenness, its
-		// polish brightest at the edges and on what stands out, dulled and
-		// darkened in the crevices and where it meets other pieces.
-		// (the scan's colour flattened to its mean: its stains read as dirt
-		// on plate that is kept; the plate's own story is told below)
-		// (one formed piece, not a patchwork: the scan's stains and dents
-		// kept to a whisper, a faint planishing over all of it)
-		// (a formed plate reads as one smooth surface: the scan's patches,
-		// even faint, read in its reflections as lumps, so none of it here)
-		vec3 mean_col = textureLod(albedo, vec2(0.5), 20.0).rgb * tint;   // (its smallest mip, one texel: the true mean; a 2x2 mip read through each UV island's own corner showed as pale patches)
+		// Metal, one standard for every outfit (touch-up, 18 Oct: the owner's
+		// "plastic armor"; it read as chrome or candy plastic with blown hot spots):
+		// worn, forged metal. Never a mirror: a satin roughness that varies over the
+		// piece; polished brighter and smoother only on its edges and on what stands
+		// out (worn there); grime, dull and darker, in its recesses and where pieces
+		// meet; gold as aged brass. Every field is in the piece's own space or its
+		// baked data, so it holds still under TAA; no extra passes.
+		// (the scan's colour flattened to its mean: a formed plate reads as one
+		// smooth surface; its stains and patches, even faint, read as lumps)
+		vec3 mean_col = textureLod(albedo, vec2(0.5), 20.0).rgb * tint;   // (its smallest mip, one texel: the true mean)
 		col = mean_col;
 		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
 		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
 		gold_emit = mean_col * gold * gold_floor;
+		float rusty = 1.0 - step(0.95, metallic_value);   // (rust: the only metal not built fully metallic)
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
-		vec3 dent = normalize(vec3((h0 - hx) * 0.08, (h0 - hy) * 0.08, 1.0)) * 0.5 + 0.5;
-		nrm = dent;
+		// (and the planishing: hammer marks about 8 mm across, faint, so the reflections break up as forged plate's do)
+		vec2 e2 = vec2(0.001, 0.0);
+		float k0 = noise(m * 125.0), kx = noise((m + e2.xy) * 125.0), ky = noise((m + e2.yx) * 125.0);
+		vec2 slope = vec2(h0 - hx, h0 - hy) * metal_dent + vec2(k0 - kx, k0 - ky) * metal_hammer;
+		nrm = normalize(vec3(slope, 1.0)) * 0.5 + 0.5;
+		// Wear and grime fields, in the piece's own space (never screen space).
+		vec2 op = vec2(opos.x + 0.6 * opos.z, opos.y - 0.4 * opos.z);
+		float blot = fbm(op * 22.0 + piece * 13.0);                 // (hand-worn and wiped patches, a few cm)
+		float fleck = fbm(op * 140.0 + 5.0);                         // (fine wear, mm)
 		float polish = max(near_edge, bulge);
-		// (brushed along one way: fine streaks in its roughness)
+		// (the rim worn bright all along, broken up; the high points of a dome only scuffed, in patches)
+		float wear = clamp(near_edge * smoothstep(0.2, 0.55, fleck + 0.25) + bulge * smoothstep(0.62, 0.8, fleck) * 0.7, 0.0, 1.0);
+		// grime: in the hollows, out of the sky's reach, and where pieces meet, patchy
+		float grime = clamp((0.7 * hollow + 0.8 * (1.0 - sky)) * smoothstep(0.25, 0.75, blot + 0.15) + 0.45 * smoothstep(0.002, 0.005, edge) * (1.0 - smoothstep(0.008, 0.02, edge)) * smoothstep(0.3, 0.7, blot), 0.0, 1.0) * metal_grime;   // (and a band of dirt just inside the rim, along the rivets)
 		float brush = brushed(vec2(opos.x + opos.z, opos.y));   // (fine level streaks, one way over the whole piece)
-		// (a plate laid out round her arm brushed along it, by its UVs: on a dome's
-		// top, where the level streaks run flat, they showed as rotated blocks, judge 6)
-		if (flag > 0.25 && flag < 0.75) brush = brushed(m);
-		rough = clamp(mix(0.3, 0.18, polish) + 0.1 * hollow + 0.14 * (1.0 - sky) + 0.06 * (brush - 0.5), 0.12, 0.6);
-		// (the pauldron's broad plates satin, not polished: at the Look they
-		// blew out 5.7% of the lower frame, face lead)
-		// (the bracers too, so the set matches: polished beside the satin cap,
-		// judge 7)
-		// (and no hotter than 0.38: the bracers' round caught the key light as a hot
-		// streak along their top at 0.32, judge 7)
-		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.38, 0.62);
-		// (gold only: glossier by gold_gloss, the polished edges and bulges a little more still)
+		if (flag > 0.25 && flag < 0.75) brush = brushed(m);     // (a plate laid out round her arm brushed along it, by its UVs, judge 6)
+		// Roughness: satin, varied; smoother where worn, rougher where dirty.
+		rough = metal_rough + 0.10 * (blot - 0.5) + 0.05 * (brush - 0.5);
+		rough = mix(rough, metal_rough_wear, wear);
+		rough = mix(rough, 0.72, grime);
+		// Colour: aged brass for gold (darker, less saturated, browner), the rest as built.
+		vec3 brass = mix(vec3(dot(mean_col, vec3(0.3, 0.55, 0.15))), mean_col, 0.8) * brass_dim;
+		col = mix(col, brass, gold);
+		rough = mix(rough, rough + brass_rough_add, gold);
+		col *= 0.9 + 0.2 * blot;                                  // (an uneven patina)
+		col *= mix(mix(1.0, steel_dim, 1.0 - gold) * mix(vec3(1.0), steel_warm, 1.0 - gold), vec3(metal_wear_bright), wear);                              // (bright bare metal on the worn edges)
+		// grime is dirt, not metal: dark, brown, dielectric
+		vec3 dirt = vec3(0.045, 0.036, 0.027);
+		if (rusty > 0.5) {
+			// rust: its scan kept (half), rough and mostly dull, its edges worn back to dark iron
+			col = mix(mean_col, texture(albedo, UV).rgb * tint, 0.5) * (0.9 + 0.2 * blot);
+			rough = max(rough + 0.2, 0.62) - 0.15 * wear;
+		}
+		col = mix(col, dirt, grime * 0.8);
+		metal = mix(1.0, 0.0, grime * 0.85);
+		if (rusty > 0.5) metal = mix(0.35, 0.9, wear) * (1.0 - grime * 0.85);
+		// (the pauldron's plates and the bracers satin, the set matching: at the Look they
+		// blew out 5.7% of the lower frame at 0.32, face lead; judge 7)
+		if (flag > 0.25 && flag < 0.75) rough += 0.04;
+		rough = clamp(rough, metal_rough_floor, 0.85);
+		// (gold only, a trial knob: glossier by gold_gloss)
 		rough = mix(rough, max(gold_rough - 0.04 * polish, 0.08), gold * gold_gloss);
-		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
-		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
+		col *= mix(0.75, 1.0, sky);
 	} else if (kind == 2 || kind == 4) {
 		// Cloth: its weave fine, rough, a sheen seen across it.
 		nrm = blend_normals(nrm, texture(normal_map, UV * 3.7).rgb, 0.8);
