@@ -1,5 +1,24 @@
 # Cinematics: handoff
 
+## Paused here (cinematics 3 successor, ac7e54435a82fff12, 18 Oct); next:
+1. **Two k11 max staging solvers were still running at the pause, finishing on their own.** Read their reports with `python tools/scratch/coordinator/lastmsg.py <id> <out>`; the transcripts are in `C:\Users\munch\.claude\projects\C--Users-munch-Desktop-survivorsunchained\4b7b1da3-62bc-4cd2-ab49-a52d9a8367dc\subagents\`. They commit their own work as "WIP cinematics 3 k11". Check `git status` for leftovers and commit them with their diff checked.
+   - `ac62b6269fc9eedaf`: C01 (brief `tools/scratch/cin6/judge/s5a_brief.md`). It covers s3, s10 and s6 (o1-o3), s11's pickup, the s8/s8b fire keys, the night (s7, s8a, s9), thinning the s12 mist, the s11 to s12 exposure ramp, and cutting s0. Shots `k11ac01_*`.
+   - `a11ffa156dc106d9c`: C02, C03 s3b and C04 A (brief `s5b_brief.md`). It covers the s8 and s4 keys, s3b's key from the lamp, the sa5/sa7 dawn keys, the sa8 mist, C02's water, mist and framing, and dimming the post globes in cinematics only. **Plus the two cuts the coordinator agreed: C02 s3, and C04 A sa6** (flask_drink exists only as a clip script in `tools/anim/clips/story_c04.py`; the shot doesn't use it and there's no flask prop). Shots `k11bc02_*`, `k11bc03_*`, `k11bc04a_*`.
+2. Then **judge round 2** on items 2-4 (max; reuse `judge/k10_brief.md` with the k11 frame names; split C01 from the rest, as k10A/k10B did). A solver round for whatever staging still fails; at the round cap, restage or cut. Nothing that staging controls closes as known.
+3. **Run the tests (`dotnet test`), then the MR** ("MR READY cinematics-1@<commit>" to main). Include one line comparing pass counts: k10 passed 1/33, against round 2's count. Carry the backlog below in the MR and here, then STOP.
+
+**Backlog by owner (from the k10 verdicts; none is closed as known):**
+- **ANIMATION (blocked-by-clip):** a prone face-down wake and push-up (C01 s2, s5); the risen tearing free (C01 s12); her pickup and turn on stepping feet with no root slide (C01 s11); the warden's rise from the water (C02 s5); the warden's guard (C02 s12, C01 s11); flask_drink plus a flask prop (C04 A sa6, cut until then).
+- **CINEMATICS items 5-6 (blocked-by-art, restaged on the new art):**
+  - C01: s2's pose and frost; s6a over the coals; s7's prints as the leading line; s9's rising head.
+  - C02: s5, s6 and s9's framing on the warden; s7 as a profile two-shot from the west; s11's beats; s12's guard before the crane.
+  - C04 A: sa2's gold on the trees; sa4's ember draining; sa5's breath plume.
+  - C03: s4's steam; s6's heart light (cut if not built).
+  - C04 B: sb4a's smoke.
+- **TOUCH-UP (her):** waxy skin, the ear's tone, oversized glossy lips, the hairline cap edge, the braid tab's herringbone, the throat, glossy plastic armor (blown highlights, white greaves, the black gap at the pauldron top), the gray patch on the wrist at the vambrace (C01 s6a).
+- **NPC art:** the warden's flat white eyes (they need blue emissive points), his bare lamp hand (it needs the gauntlet), the greatsword's edge, the drowned's identical tan shirts, Grimtunnel, the villagers.
+- **ENV:** flat cream egg globes on the lamp posts (they need real flames); flat water with no shore or reflection; the ring stones; non-emissive coals; frost-grass cards; the tower top; the cartoon chest; the gallows lamp's hard light diamond; toon pines; the gray boulder (C04 A sa8); the town (C04 B).
+
 ## Start here (cinematics 3 successor, agent ac7e54435a82fff12, 18 Oct)
 Scope: items 1-4 only, then the MR and STOP. (1) Loot is hidden in cinematics (888bf952). (2) A darker grade with real-source light and mist. (3) The owner's o1-o3: C01 s3, s6 and s10, plus s11. (4) Side keys on the close-ups, to the look bible's rule (docs/art/look_bible/02_skin.md item 5). Items 5-6 (blocking against the notes, the missing moments) are the backlog for after the new art, with the list in the k10 verdicts.
 - k10 (staging solver a5f61d98, a0f421e7/6c8e0756): the `atmosphere` cue's tuning, a `mist` cue (FogVolume), and HeadTurn keeping a lying head's roll. Two max gate judges passed 1/33 (`tools/scratch/cin6/judge/k10A_verdict.md`, `k10B_verdict.md`). The C01 and C04 A hand-overs pass.
