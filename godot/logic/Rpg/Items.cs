@@ -41,6 +41,9 @@ public sealed class ItemDef
     public double Value;
     public string? Lore, Downside;
     public ItemWeapon? Weapon;
+    /// <summary>The Arms id (art/weapons/weapons.json) it puts in her right hand, and that row's kind ("blade1h", "dagger", "staff", "crossbow", "axe", "wand"):
+    /// a weapon with no Loadouts.Held row takes its kind's stance (Loadouts.Of).</summary>
+    public string? Art, ArtKind;
     public List<StatMod>? Mods;
     public List<TriggerDef>? Triggers;
     public List<string>? Tags;
