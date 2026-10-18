@@ -8,9 +8,11 @@ GODOT = r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-sta
 TP = os.path.join(W, "tools", "turn.py")
 LOGS = sys.argv[1]; TAG = sys.argv[2]; WHAT = sys.argv[3] if len(sys.argv) > 3 else "all"
 os.makedirs(LOGS, exist_ok=True)
-PZ = {"own": ("fair", "moss"), "saffron": ("warm", "peat"), "sunborn": ("brown", "sloe")}
+PZ = {"own": ("fair", "moss"), "saffron": ("warm", "peat"), "sunborn": ("brown", "sloe"), "highborn": ("fair", "frost")}
+PZ = {k: v for k, v in PZ.items() if k in os.environ["FACES"].split(",")} if os.environ.get("FACES") else {k: v for k, v in PZ.items() if k != "highborn"}
+LK = {"own": ("fair", "moss"), "saffron": ("warm", "peat"), "sunborn": ("brown", "sloe"), "highborn": ("fair", "frost")}
 def look(f, d, tm, s="braid"):
-    sk, ey = PZ[f]
+    sk, ey = LK[f]
     a = ["--seconds", "10", "--turn", str(d), "--hair", s, "--new", "--sex", "female", "--step", "1", "--part", "0", "--open-eyes", "--preset", f, "--skin", sk, "--eyes", ey]
     return a + (["--look-time", "day"] if tm == "day" else [])
 TOG = {  # name: (extra args, H1DBG)
