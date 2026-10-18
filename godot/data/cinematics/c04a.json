@@ -56,7 +56,7 @@
     {
       "id": "A2",
       "type": "ELS",
-      "dur": 2.4,
+      "dur": 2.2,
       "note": "From the west, across the road and up into the birches: the tops go gold one by one from the east as the sun clears the ridge; the light comes down the trunks, and where it reaches the road the blue in the iron by the verge goes pale and small.",
       "cam": {"pos": [-5.0, 1.4, -58.0], "at": [10.0, 9.0, -64.0], "lens": 35},
       "cues": [
@@ -132,7 +132,7 @@
       "fit": ["cin_first_light.face"],
       "tail": 1.5,
       "note": "Frontal, a very slow push (0.05 m): she is still. Her eyes go inward, searching. N6. Then nothing: hold 1.5 s of silence after the line. Play someone who has mislaid a thing she uses every day.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
       "cues": [
         {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 5, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "face", "keys": {"nose_wrinkle": 0, "brows_sad": 0.45}, "over": 2.0},

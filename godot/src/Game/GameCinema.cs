@@ -961,7 +961,7 @@ public partial class Game
                     // A shot's own light on the cast, as a film crew sets one (face 30: dead eyes
                     // with no light into the sockets, an unlit crown): a soft spot on the people's
                     // layer only, no shadow, from "from" ({"lens": [right, up, back]} in the
-                    // camera's frame, or a place) onto "aim" (a place, a bone tracked), "energy"
+                    // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
                     // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
                     string name = c.Str("name") ?? "rig";
                     if (rigs.Remove(name, out var was)) was.L.QueueFree();
@@ -971,7 +971,7 @@ public partial class Game
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
                         SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
-                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? 0 : e,
+                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? 0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
                     rigs[name] = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index);
@@ -1038,7 +1038,7 @@ public partial class Game
                     });
                     // "light": it lights what is near it too (a lamp held to a face), within "range".
                     if (c.Has("light"))
-                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f });
+                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f, LightSpecular = (float)c.Num("spec", 0.5) });
                     // "under": [width, height], the dark of what the light is set in (a tower against the sky).
                     if (c.Get("under") is { ValueKind: JsonValueKind.Array } u)
                     {

@@ -40,7 +40,7 @@
     {
       "id": "2",
       "type": "LS",
-      "dur": 3.0,
+      "dur": 2.4,
       "note": "Low at the water on the near bank, looking north-east at their backs: the drowned standing in their rows, waist-deep, heads bowed, facing the far bank. The mist moves; they do not. The lamp low in the middle distance, left.",
       "cam": {"pos": {"abs": [5.2, -0.75, -36.6]}, "at": {"abs": [10.6, -0.5, -44.0]}, "lens": 35},
       "cues": []
@@ -117,10 +117,12 @@
       "fit": ["cin_none_cross.lie_down"],
       "tail": 1.4,
       "note": "Her face in the lamp's light: the flame small in each eye, the wet hair, the green weed the light finds and holds on. Close enough to her lips that breath would show; none does. Blue on one side of her face, her ember's red faint on the other. W2, very quietly, off.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.03, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}, "lens": 100, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, 0.0, 0]}, "lens": 90, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "music", "mood": "silence"},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [-0.2, 0.06, -0.28]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.8, "range": 0.55},
+        {"do": "hide", "actor": "warden"},
+        {"do": "rig", "name": "ember", "energy": 0.15, "color": "#ff6a33", "angle": 30, "range": 0.3, "from": {"actor": "her", "bone": "eyes", "off": [-0.15, -0.12, -0.18]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.2, 0.0, -0.28]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.25, "range": 0.55, "spec": 1.0},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},
@@ -134,6 +136,7 @@
       "note": "Low beside her, up at him past the lamp: his face under the hood lit from below, the beard streaming, two points of blue for eyes. He holds the look a full second, then straightens.",
       "cam": {"pos": [3.3, 0.5, -31.3], "at": {"actor": "warden", "bone": "head"}, "lens": 50},
       "cues": [
+        {"do": "hide", "actor": "warden", "hidden": false},
         {"at": 1.2, "do": "anim", "actor": "warden", "clip": "Sword_Idle", "blend": 0.8},
         {"at": 1.4, "do": "glow", "name": "held", "remove": true}
       ]

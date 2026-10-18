@@ -80,7 +80,7 @@
     {
       "id": "B4a",
       "type": "CU",
-      "dur": 2.2,
+      "dur": 1.7,
       "note": "From the square by her, compressed: the tower's upper window, the keeper's lamp-iron standing on the sill, its flame pale in the shade, goes out. A thread of smoke climbs the glass. (Rook's own eyeline is blocked by the roofs; this is the nearest clear line.)",
       "cam": {"pos": [4.0, 1.8, 8.0], "at": {"mark": "lamp", "y": 7.45}, "lens": 280},
       "still": 0.3,
@@ -91,7 +91,7 @@
     {
       "id": "B4b",
       "type": "MS",
-      "dur": 2.0,
+      "dur": 1.7,
       "note": "Reverse: Rook's single from the square, her eyeline just off the lens to the right. Her eyes come down from the tower to the survivor, and she unfolds her arms.",
       "cam": {"pos": [-8.4, 1.3, 11.8], "at": {"actor": "rook", "bone": "chest", "off": [0, 0.24, 0]}, "lens": 45, "focus": {"actor": "rook", "bone": "head"}, "fstop": 2.8},
       "cues": [

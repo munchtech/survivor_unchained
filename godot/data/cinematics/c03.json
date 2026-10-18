@@ -66,7 +66,7 @@
     {
       "id": "3b",
       "type": "MCU",
-      "dur": 2.5,
+      "dur": 1.9,
       "note": "On her, his lamp's light on her face: she looks at him, and nods, once, slowly. Yes. (Devout: then the Order's sign for the dead, finger and thumb closing on the air.)",
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.55, -0.1, -1.5]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [

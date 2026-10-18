@@ -109,7 +109,7 @@
     {
       "id": "6",
       "type": "MS",
-      "dur": 7.0,
+      "dur": 6.4,
       "still": 1.5,
       "note": "Front three-quarter from her left, across the coals: she comes up onto her heels and looks down at her hands, the cord and the full flask; across at the bedroll, dry; down again. N1.",
       "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.22, 0], "track": true}, "lens": 35, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
@@ -147,7 +147,7 @@
       "note": "Behind her, low over her left shoulder: the prints in the frost, dark and wet, coming out of the night to where she lay. The camera tilts up along them, north, into the dark they came from. N2.",
       "cam": {"pos": [-9.55, 1.12, 91.45], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
       "cues": [
-        {"do": "rig", "name": "rim", "energy": 1.5, "color": "#b9c9ff", "angle": 20, "from": {"actor": "her", "bone": "head", "off": [0, 0.45, -0.5]}, "aim": {"actor": "her", "bone": "head", "off": [0, 0.08, 0]}},
+        {"do": "rig", "name": "rim", "energy": 2.0, "color": "#ffd9b0", "angle": 25, "from": {"actor": "her", "bone": "eyes", "off": [0, 0.3, -0.15]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, 0.12, 0.07]}},
         {"at": 0.0, "do": "head", "where": [-8.9, 0.3, 86.5], "over": 1.2},
         {"do": "gaze", "look": [0, 0.5], "wander": 0.03},
         {"at": 0.6, "do": "line", "id": "cin_drowned_fire.prints"}
@@ -161,7 +161,6 @@
       "note": "Frontal, a little under her eyes, the dark behind her. From the trail to her boots. She breathes out, long. Nothing shows. Hold a beat.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.02, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 70, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
-        {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 5, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "rig", "name": "under", "energy": 0.25, "color": "#ffc890", "angle": 18, "from": {"lens": [0.35, -0.3, 0]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "gaze", "look": [0, 0.1]},
         {"at": 0.7, "do": "gaze", "look": [0, 0.9]},
