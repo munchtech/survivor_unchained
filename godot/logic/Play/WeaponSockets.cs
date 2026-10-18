@@ -123,14 +123,30 @@ public static class WeaponSockets
     public static readonly Vector3 DaggerAtR = new(-0.0324f, 0.0720f, -0.0139f);
     public static readonly Vector3 DaggerDirR = new(0f, 0.5f, 0.8660254f);
 
+    /// <summary>A pistol-held piece's grip (the crossbow's, tools/assets/crossbow_grip.py): its line, foot toward the stock,
+    /// leans this many degrees off square to the stock toward the bow (its foot back toward the butt), as a pistol-grip
+    /// crossbow's. In the piece (Arms.Make: +Y along the stock toward the bow, +Z its top, the anchor_grip's origin the
+    /// grip point) the grip runs (0, sin, cos) of it. grip_spec.json Crossbow "rake".</summary>
+    public const float PistolRake = 18f;
+
+    /// <summary>The line her right fist closes round on the crossbow's pistol grip (tools/anim/keyed.py WRAP["crossbow"]), in
+    /// hand_r's space: where the grip point (its anchor_grip's origin) lands, and the grip's direction, foot toward the
+    /// stock. The direction is the rake itself (hand +Z turned PistolRake toward the fingers), so the seat (PistolSeat) lays
+    /// the stock along hand +Y (the fingers' and the forearm's line, the bow forward) and its top out of the thumb side,
+    /// as the plain pistol mount held it: the clips' aim is unchanged, only the piece moves onto the fist.</summary>
+    public static readonly Vector3 CrossbowAtR = new(-0.0410f, 0.0920f, -0.0120f);
+    public static readonly Vector3 CrossbowDirR = new(0f, 0.30901699f, 0.95105652f);
+
     /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the
-    /// staff's (FistAtR / FistDirR), the one-handed blade's (BladeAtR / BladeDirR) and the dagger's (DaggerAtR / DaggerDirR).
+    /// staff's (FistAtR / FistDirR), the one-handed blade's (BladeAtR / BladeDirR), the dagger's (DaggerAtR / DaggerDirR) and the
+    /// crossbow's pistol grip (CrossbowAtR / CrossbowDirR: laid by PistolSeat, not FistSeat).
     /// A new kind needs its line here, its fist in keyed.py WRAP, and its pieces' Arms.Spec Seated (or an anchor_grip).</summary>
     public static (Vector3 At, Vector3 Dir)? PocketR(WeaponKind kind) => kind switch
     {
         WeaponKind.Staff => (FistAtR, FistDirR),
         WeaponKind.Blade1H => (BladeAtR, BladeDirR),
         WeaponKind.Dagger => (DaggerAtR, DaggerDirR),
+        WeaponKind.Crossbow => (CrossbowAtR, CrossbowDirR),
         _ => null,
     };
 
@@ -191,6 +207,27 @@ public static class WeaponSockets
         float s = axis.Length(), c = Vector3.Dot(Vector3.UnitY, dir);
         var turn = s < 1e-7f ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(axis / s, MathF.Atan2(s, c));
         return (turn, at);
+    }
+
+    /// <summary>Where a pistol-held piece (the crossbow) sits inside its mount so that its grip point (its anchor_grip's
+    /// origin) lands on the fist's pocket `pocketAt` and its grip's line, (0, sin PistolRake, cos PistolRake) in the piece,
+    /// runs along the fist's line `pocketDir` (both in its hand's space), turned about that line so the stock (the piece's
+    /// +Y) leans toward the hand's +Y (the fingers', the forearm's line: the bow forward) and its top (+Z) out of the thumb
+    /// side. A turn and an offset in the mount's space (`mx, my, mz, origin`: the mount in the hand's space), the piece's own
+    /// axes: no PieceTransform under it.</summary>
+    public static (Quaternion Turn, Vector3 At) PistolSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin, Vector3 pocketAt, Vector3 pocketDir)
+    {
+        Vector3 In(Vector3 v) => new(Vector3.Dot(v, mx), Vector3.Dot(v, my), Vector3.Dot(v, mz));
+        var d = Vector3.Normalize(In(pocketDir));
+        var fwd = In(Vector3.UnitY);
+        var s = fwd - d * Vector3.Dot(fwd, d);
+        s = s.LengthSquared() < 1e-10f ? Vector3.Normalize(Vector3.Cross(d, In(Vector3.UnitX))) : Vector3.Normalize(s);
+        float r = PistolRake * MathF.PI / 180f, sr = MathF.Sin(r), cr = MathF.Cos(r);
+        var y = sr * d + cr * s;          // the stock, toward the bow
+        var z = cr * d - sr * s;          // its top
+        var x = Vector3.Cross(y, z);
+        var m = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
+        return (Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(m)), In(pocketAt - origin));
     }
 
     /// <summary>Metres to push a socket out of her body along its normal for an outfit: art/anim/socket_clearance.json, written by

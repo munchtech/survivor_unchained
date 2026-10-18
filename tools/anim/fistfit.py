@@ -78,7 +78,12 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           # the right's seat, pass and table hold.
           "dagger_l": dict(arms="dagger_b@hand_l", at="DaggerLeftAt", dir="DaggerLeftDir", outfit="ranger", side="l",
                            rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0),
-                           weapon=("daggers",), wrap="daggers_l", seed="daggers")}
+                           weapon=("daggers",), wrap="daggers_l", seed="daggers"),
+          # The crossbow's pistol grip (tools/assets/crossbow_grip.py: 13.7 mm round, raked 18 deg), seated on its pocket
+          # (WeaponSockets.CrossbowAtR / CrossbowDirR, Arms.Seat's pistol path). "near" (mm): only the piece within that
+          # of the grip's line is the grip's (the stock, the lever and the bow lie across the slices square to it).
+          "crossbow": dict(arms="crossbow@hand_r", at="CrossbowAtR", dir="CrossbowDirR", outfit="ranger",
+                           rest=("idle_stalker", 0), near=30.0, seed="sword")}
 PAD = (-0.5, 1.5)     # mm: the 02/03 pads' gap to the leather
 IN_MAX = 0.5          # mm: deepest any of the hand may go into the hilt
 HANG_MAX = 0.0        # mm: the finger's end past the grip's far surface (along the palm's normal). Its end is its skin's
@@ -217,6 +222,8 @@ def hilt_profile(piece, A, D, step=2.0):
         assert abs(R @ Dh @ (D / np.linalg.norm(D))) > 0.99999, f"{piece}: the line isn't the seated grip's"
         V = (V - G - c) @ R.T + A                     # seated, the line through A
     V = V - P.get("slide", 0.0) / 1000 * D
+    if "near" in P:     # only the piece near the grip's line (a crossbow: its stock and bow cross the slices)
+        q = V - A; V = V[np.linalg.norm(q - np.outer(q @ D, D), axis=1) * 1000 <= P["near"]]
     dd = V - A; t = dd @ D * 1000; Q = dd - np.outer(dd @ D, D); r = np.linalg.norm(Q, axis=1) * 1000
     out = Prof(); ts, Rs = [], []
     if P.get("section"):

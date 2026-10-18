@@ -175,8 +175,9 @@ RUNS = {
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
     # 58-61 degrees out of her sagittal plane at the back swing, 29-34 forward; up, at most 13 (run and sprint).
     "run_arcanist_wand": (replace(ARCANIST, swing_r=((6, 10, 80, 25), (-30, 13, 70, -35))), {"r": blade_carry(out=0.0)}, "wand"),
-    # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint).
-    "run_stalker": (replace(STALKER, fingers="fist", fingers_r="relaxed", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
+    # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint). The right
+    # fist closed on the crossbow's pistol grip (WRAP["crossbow"], 18 October; relaxed, it stood off the grip).
+    "run_stalker": (replace(STALKER, fingers="fist", fingers_r="grip", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
                     {"r": crossbow_low()}, "crossbow"),
     # Both fists closed on the daggers ("grip": each the fitted dagger fist, keyed.wrap_of: WRAP["daggers"] right,
     # WRAP["daggers_l"] left; with the gait's relaxed hands the fingers stood 10-73 mm off the hilts).
