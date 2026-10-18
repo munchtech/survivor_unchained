@@ -8704,14 +8704,20 @@ def armor_tuck_write(body_obj, folder):
         print("ARMOR TUCK: her body is not at the origin; its points taken through its matrix")
         bp = np.array([(body_obj.matrix_world @ v.co)[:] for v in me_.vertices], np.float32)
     q = np.round(np.stack([bp[:, 0], bp[:, 2], -bp[:, 1]], 1).astype(np.float64) * 1e5).astype(np.int64)
-    uq, inv = np.unique(q, axis=0, return_inverse=True)
+    # (only her points on a face: the exporter writes no others)
+    fv = np.empty(sum(len(f_.vertices) for f_ in me_.polygons), np.int64)
+    me_.polygons.foreach_get("vertices", fv)
+    used = np.zeros(len(me_.vertices), bool)
+    used[fv] = True
+    uq, inv = np.unique(q[used], axis=0, return_inverse=True)
     inv = np.asarray(inv).ravel()
+    print("ARMOR TUCK: %d of her %d points on faces, %d places" % (int(used.sum()), len(used), len(uq)))
     ARMOR_BODY_HASH = hashlib.sha1(uq.astype("<i4").tobytes()).hexdigest()
     os.makedirs(os.path.join(folder, "armor_tuck"), exist_ok=True)
     for (out, slot), t in sorted(ARMOR_TUCK.items()):
         assert len(t) == len(me_.vertices), "her body's vertices changed after the tuck"
         g = np.zeros(len(uq))
-        np.maximum.at(g, inv, t)
+        np.maximum.at(g, inv, t[used])
         k = np.nonzero(g > 0)[0]
         rec = np.zeros(len(k), dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")])
         rec["x"], rec["y"], rec["z"], rec["t"] = uq[k, 0], uq[k, 1], uq[k, 2], g[k]
