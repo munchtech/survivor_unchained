@@ -1,0 +1,38 @@
+godot: yours
+[f30cb0_own_day] 1 png, 19 s
+[f30cb0_saffron_day] 1 png, 18 s
+[f30cb0_sunborn_day] 1 png, 18 s
+[f30cn1_own_c02] 9 png, 58 s
+[f30cn1_saffron_c02] 9 png, 58 s
+[f30cn2_own_c02] 9 png, 57 s
+[f30cn2_saffron_c02] 9 png, 57 s
+[f30cn3_own_c02] 9 png, 57 s
+[f30cn3_saffron_c02] 9 png, 58 s
+[f30cn4_own_c02] 9 png, 59 s
+[f30cn4_saffron_c02] 9 png, 58 s
+[f30cn5_own_c02] 9 png, 57 s
+[f30cn5_saffron_c02] 9 png, 57 s
+[f30cn6_own_c02] 9 png, 58 s
+[f30cn6_saffron_c02] 9 png, 57 s
+[f30cn7_own_c02] 9 png, 57 s
+[f30cn7_saffron_c02] 9 png, 58 s
+[f30cn8_own_c02] 9 png, 58 s
+[f30cn8_saffron_c02] 9 png, 58 s
+[f30ce1_own_c01] 13 png, 81 s
+[f30ce1_sunborn_c01] 13 png, 81 s
+[f30ce2_own_c01] 13 png, 81 s
+[f30ce2_own_c04a] 9 png, 62 s
+[f30ce2_sunborn_c01] 13 png, 80 s
+[f30ce2_sunborn_c04a] 9 png, 63 s
+[f30ce3_own_c01] 13 png, 80 s
+[f30ce3_own_c04a] 9 png, 63 s
+[f30ce3_sunborn_c01] 13 png, 79 s
+[f30ce3_sunborn_c04a] 9 png, 62 s
+[f30ce4_own_c01] 13 png, 80 s
+[f30ce4_sunborn_c01] 13 png, 80 s
+[f30ca3_saffron_c04a] 9 png, 61 s
+[f30ca3_sunborn_c04a] 9 png, 61 s
+[f30ca4_saffron_c04a] 9 png, 61 s
+[f30ca4_sunborn_c04a] 9 png, 61 s
+godot: given back
+DONE

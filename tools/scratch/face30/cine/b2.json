@@ -1,0 +1,9 @@
+[
+ ["f0", ["c01","c02","c04a","day","night"], ["own","saffron","sunborn"], []],
+ ["f1", ["c02","day","night"], ["own","saffron","sunborn"], ["--skin-set", "*:spec_cap=0.3"]],
+ ["f2", ["c02","day","night"], ["own","saffron"], ["--skin-set", "*:spec_cap=0.12"]],
+ ["d1", ["c02"], ["own","saffron"], [], {"CINEDBG": "nodof"}],
+ ["g1", ["c02"], ["own","saffron"], [], {"CINEDBG": "glow=0.5"}],
+ ["l1", ["c01","c04a"], ["own","sunborn"], [], {"CINEDBG": "fill=1.0"}],
+ ["l2", ["c01"], ["own","saffron"], [], {"CINEDBG": "noomnishadow"}]
+]
