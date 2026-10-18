@@ -354,8 +354,9 @@ public partial class Game
 
         sealed record Rig(SpotLight3D L, JsonElement From, JsonElement Aim, int Shot);
         readonly Dictionary<string, Rig> rigs = new();
-        /// <summary>The zone lamps' glowing pieces a "globe" cue dimmed, with what they wore before (put back at the end).</summary>
-        readonly List<(MeshInstance3D M, int S, Material? Was)> globes = new();
+        /// <summary>A zone lamp's glowing piece a "globe" cue dimmed: what it wore before (put back at the end), its own copy, its colour.</summary>
+        sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; }
+        readonly List<Globe> globes = new();
         /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
         readonly HashSet<ShaderMaterial> waters = new();
 
@@ -1135,9 +1136,9 @@ public partial class Game
                 }
                 case "globe":
                 {
-                    // A zone lamp's glowing piece dimmed to "level" of its own, for this cinematic only (the
-                    // ford's post globes, flat eggs that clip in a close or long lens, until their flames are
-                    // made); its light is left as it is. Put back as it was when the cinematic ends.
+                    // A zone lamp's glowing piece dimmed to "level" of its own (faded over "over"), for this
+                    // cinematic only (the ford's post globes, flat eggs that clip in a close or long lens, until
+                    // their flames are made); its light is left as it is. Put back as it was when the cinematic ends.
                     var gmeta = g.scene!.View.Data.Meta.Lights;
                     int gli = (int)c.Num("light");
                     if (gli < 0 || gli >= gmeta.Count) break;
@@ -1150,13 +1151,20 @@ public partial class Game
                         foreach (var gmi in gms)
                             for (int gsi = 0; gmi.Mesh != null && gsi < gmi.Mesh.GetSurfaceCount(); gsi++)
                             {
-                                int ghad = globes.FindIndex(x => x.M == gmi && x.S == gsi);
-                                var gwas0 = ghad >= 0 ? globes[ghad].Was : gmi.GetSurfaceOverrideMaterial(gsi);
-                                if ((gwas0 ?? gmi.Mesh.SurfaceGetMaterial(gsi)) is not ShaderMaterial gsm || gsm.GetShaderParameter("color").VariantType != Godot.Variant.Type.Vector3) continue;
-                                var gdim = (ShaderMaterial)gsm.Duplicate();
-                                gdim.SetShaderParameter("color", (Vector3)gsm.GetShaderParameter("color") * glv);
-                                gmi.SetSurfaceOverrideMaterial(gsi, gdim);
-                                if (ghad < 0) globes.Add((gmi, gsi, gwas0));
+                                var gl = globes.Find(x => x.M == gmi && x.S == gsi);
+                                if (gl == null)
+                                {
+                                    var gwas = gmi.GetSurfaceOverrideMaterial(gsi);
+                                    if ((gwas ?? gmi.Mesh.SurfaceGetMaterial(gsi)) is not ShaderMaterial gsm || gsm.GetShaderParameter("color").VariantType != Godot.Variant.Type.Vector3) continue;
+                                    gl = new Globe(gmi, gsi, gwas, (ShaderMaterial)gsm.Duplicate(), (Vector3)gsm.GetShaderParameter("color"));
+                                    gmi.SetSurfaceOverrideMaterial(gsi, gl.Dim);
+                                    globes.Add(gl);
+                                }
+                                var gg = gl;
+                                float gfrom = gg.Level;
+                                void SetG(float l) { gg.Level = l; gg.Dim.SetShaderParameter("color", gg.Base * l); }
+                                if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => SetG(Mathf.Lerp(gfrom, glv, (float)k))));
+                                else SetG(glv);
                             }
                     }
                     break;
@@ -1377,7 +1385,7 @@ public partial class Game
             props.Clear();
             foreach (var r in rigs.Values) r.L.QueueFree();
             rigs.Clear();
-            foreach (var (gm, gs, gwas) in globes) if (IsInstanceValid(gm)) gm.SetSurfaceOverrideMaterial(gs, gwas);
+            foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
             globes.Clear();
             foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
             waters.Clear();
