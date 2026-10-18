@@ -4,14 +4,18 @@ Agent af0973d59a5b2817a (third lead), branch `worktree-agent-af0973d59a5b2817a`.
 
 **Paused by the owner after the fit-fix pass** (5 Oct). Wake me for a new outfit, a store-page review, or before submission.
 
-## The gate (17 October)
+## The gate (17 October; retired from merge requests 18 October)
+
+**Retired from merge requests (18 October).** The owner decided: the shipped heroine body has no nipples or areolas (painted out and flattened; genitals were never modelled), so the coverage gate has nothing to find. After the body build's one final run, merge requests no longer run it. One optional run stays before a store build (a Steam upload). The anatomical body is a non-shipping asset at `C:\Users\munch\Desktop\survivorsunchained_inputs\anatomical\heroine_anatomical.glb`, kept for sex scenes the owner may add later. It never goes in the build or the export; it is logged here. If it ever ships, or such scenes are added, the gate and the Steam survey come back.
+
+What follows is the how-to for the optional run.
 
 The owner: "having to legal check everytime we change an outfit or animation is going to be an issue". So the coverage check runs once per merge request, through one command, on only what changed:
 
 - `python tools/legal/gate.py` as a background Bash job (from a worktree: add `--root <worktree>`; it imports there first). It takes and gives back the godot turn itself, one outfit at a time, and prints one line: `LEGAL PASS arcanist(46 clips) areola 0 strip 0 FLAT 0 closest L +2.10 R +0.48 cm -> .legal/<stamp>`, `LEGAL FAIL ...` with the worst clip, view and frame, or `LEGAL SKIP (unchanged since <commit>)` in seconds. `--dry` prints the scope only; `--full` forces everything. Details and pictures go to `<root>/.legal/<stamp>/<outfit>/` (git-ignored: test tints, and they can show her bare).
 - **What skips:** it fingerprints what coverage depends on (the docstring in `gate.py` lists it) and compares with `docs/legal/passed.json`, the last PASS per outfit and per clip. Paint and colour (off her breasts: the areola is found from her breast paint), other hair styles, the face's blend shapes, comments in shaders and code: skipped. One outfit's pieces or its tuck channel of her vertex colours: that outfit, every clip. A clip: that clip on every outfit that plays it. Her body, the ponytail the check wears, a skin, outfit, fur, sheer or hair shader, her jiggle, pose or helper-bone code, lookdev.gd or the check's own tools: all four, every clip.
 - The pass bar is count.py's, unchanged: areola and strip in 0 frames (6 px), FLAT 0, every clip shot. A PASS updates `passed.json` for exactly what ran; commit it with the work.
-- **In a MERGE REQUEST,** paste the gate's one line. Never run it while iterating; `merge_lead.sh` prints `--dry` after each merge, so the coordinator sees whether the merged result needs a run.
+- **Optional, before a store build:** run it once and keep the one line. Never while iterating. `merge_lead.sh` no longer prints `--dry`.
 
 ## Blockers (2 open)
 

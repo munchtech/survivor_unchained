@@ -16,7 +16,6 @@ git ls-tree -r --name-only "$b" | grep -E "\.(uid|import)$" | while read -r f; d
 done
 echo "merging $b ($(git log --oneline -1 "$b"))"
 git merge --no-edit "$b" || { echo "CONFLICT: resolve, then git add and git commit --no-edit"; git diff --name-only --diff-filter=U; exit 2; }
-# Legal: does the merged result need the coverage check? (--dry: seconds, no Godot; the run itself is the lead's or yours, in the background)
-python tools/legal/gate.py --dry || echo "legal gate: --dry failed (see above)"
+# Legal gate: retired from merge requests 18 Oct (optional pre-store run only), so no --dry here.
 echo "merged; now: cd godot/tests && dotnet test, then git push origin claude/vigilant-galileo-l6jqyx"
 echo "if the lead's work is finished: powershell -NoProfile -ExecutionPolicy Bypass -File tools/scratch/coordinator/wt_remove.ps1 .claude/worktrees/agent-$1 (CLAUDE.md rule 1)"
