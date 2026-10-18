@@ -1,0 +1,6 @@
+sprint_warden_town_c180_ph0|warden|-|sprint_warden_town@0.0|day|0.9|180
+sprint_warden_town_c180_ph5|warden|-|sprint_warden_town@0.035|day|0.9|180
+sprint_warden_town_c180_ph45|warden|-|sprint_warden_town@0.315|day|0.9|180
+sprint_warden_town_c180_ph50|warden|-|sprint_warden_town@0.35|day|0.9|180
+sprint_warden_town_c180_ph55|warden|-|sprint_warden_town@0.385|day|0.9|180
+sprint_warden_town_p180_ph0|warden|-|sprint_warden_town@0.0|day|0|180

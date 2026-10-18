@@ -204,7 +204,7 @@ RUSH_HAND = np.array((0.0, 0.03, 0.42))
 RUSH_POLE = (1.0, -0.3, -0.3)
 CHARGE = replace(WARDEN, frames=12, speed=4.4, duty=0.3, drop=0.13, bob=0.06, lean=50, spine_lean=8, hip_yaw=8,
                  hip_roll=3, chest_yaw=4, reach=0.44, kick=0.46, knee=0.40, shoulders=(8, 8),
-                 arms={"l": _shield_rush, "r": _sword_cocked})
+                 arms={"l": _shield_rush, "r": _sword_cocked}, swing=None)
 RUSH_TURN = (-8, -22, 26)   # hips, spine yaw (the left shoulder leading), head yaw back to the front
 SWORD_BACK = (-0.26, 0.16, -0.32)             # f12: the sword hand still back by her right shoulder, where the carry held it (chest frame, from the shoulder)
 SWORD_BACK_POLE = (0.71, 0.66, -0.25)         # the elbow out and up
@@ -709,9 +709,201 @@ def chain_haul(rig):
     return build("chain_haul", rig, keys, meta={"layer": "full", "weapon": "axe", "note": "keyed: yanked off her feet and flown in on the chain, held"})
 
 
-def chain_strike(rig):
+_HAFT = None
+
+
+def _haft():
+    """The viking axe's haft in hand_r's own space (the piece as the game mounts it: data/arms_local.json): a point
+    on its axis level with the right fist's seat (WeaponSockets.AxeAtR), its line butt toward head, and its oval's
+    narrow way (toward her right palm) and wide way. Fitted on the haft's own mesh (the ring centres of 4 mm slices
+    over the haft below the head, re-fitted), not the seat's line (16.8 deg off it, the head's pull)."""
+    global _HAFT
+    if _HAFT is None:
+        import json
+        from pathlib import Path
+        V = np.array(json.loads((Path(__file__).resolve().parents[1] / "data" / "arms_local.json").read_text())
+                     ["viking_axe@hand_r"]["v"], float)
+        A = np.array([-0.0382, 0.1119, 0.0381])   # WeaponSockets.AxeAtR
+        D = np.array([-0.00086, 0.62927, 0.77719])
+        D = D / np.linalg.norm(D)
+        for _ in range(4):
+            t = (V - A) @ D
+            r = np.linalg.norm((V - A) - np.outer(t, D), axis=1)
+            m = (t > -0.20) & (t < 0.10) & (r < 0.06)
+            cs = []
+            for a in np.arange(-0.20, 0.10, 0.004):
+                s = m & (t >= a) & (t < a + 0.004)
+                if s.sum() >= 12:
+                    lo, hi = V[s].min(0), V[s].max(0)
+                    cs.append((lo + hi) / 2)
+            cs = np.array(cs)
+            c0 = cs.mean(0)
+            D2 = np.linalg.svd(cs - c0)[2][0]
+            D = D2 * np.sign(D2 @ D)
+            A = c0 + D * ((A - c0) @ D)
+        t = (V - A) @ D
+        m = (t > -0.15) & (t < 0.09)
+        Q = (V[m] - A) - np.outer(t[m], D)
+        w = np.linalg.svd(Q - Q.mean(0))[2][0]
+        w = w - D * (w @ D)
+        w = w / np.linalg.norm(w)
+        n = np.cross(D, w)
+        if n @ (np.zeros(3) - A) < 0:   # toward the wrist and palm
+            n, w = -n, -w
+        _HAFT = (A, D, n, np.cross(D, n))
+    return _HAFT
+
+
+# Her left fist on the haft below her right (animation 35's solver, 17 October). The haft is an oval 40 mm thick
+# toward the palm and 58 across; the right fist covers it from 1 to 97 mm below the seat (its heel of the hand the
+# lowest), and the butt ends 168 mm below it: 71 mm free, where her left fist, fitted on it, spans 68 mm of fingers
+# (index knuckle to the little finger's edge) and its palm's heel 8 mm more. So it fits below, the forefinger
+# pressed to the right's little finger (3 mm into its skin), the heel of the palm just past the butt (as the right's
+# own is under it); no room for a longer grip and no need to wrap it over the right fist.
+# The fist's wrap, fitted on her skin to the oval (every finger pad 0.3 mm in to 1.1 mm off, the fingers' ends
+# 140-175 deg round it; the thumb, which no turn wraps round a haft this thick, laid over its top beside the
+# forefinger, 1.3 mm in at most): the bends as keyed.WRAP's, the left's spreads mirrored as keyed lays them.
+L_WRAP = {"bends": {"index": (51.0, 72.0, 37.0), "middle": (56.5, 67.0, 42.0), "ring": (56.5, 64.5, 48.5),
+                    "pinky": (45.0, 71.0, 22.0), "thumb": (-17.4, 25.0, 81.3)},
+          "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
+          "oppose": 0.05, "thumb_roll": 43.1, "thumb_in": 25.8}
+# The haft through that fist, in hand_l's space: a point on its axis, its line (toward the thumb, the axe's head)
+# and the oval's narrow way (from its axis toward the palm).
+L_CHANNEL = (np.array([0.04162, 0.076, 0.0]), np.array([0.20791, 0.16985, 0.96329]),
+             np.array([-0.97815, 0.03610, 0.20475]))
+L_BELOW = 0.126   # the left fist's channel point this far below the right's seat along the haft (m)
+HOLD_TO, FREE_AT = 12, 15   # both hands on it f1-f12; the left lets go over f12-f15 (in its fist at f15)
+# Both hands on one haft 126 mm apart: keyed, the hands were each before its own shoulder, the left 107-117% of
+# her arm's reach from the right's. Her chest turned toward them (yaw, pitch) and both shoulders drawn forward bring
+# both arms to 77-98% (the right hand held where it was, in her own space, so its path does not move).
+# OFF (17 October): with the right hand's path kept, the left arm crosses her chest to reach it (upper arm 78 mm into
+# her trunk, 71 into her breasts) and the fist turns 22-34 deg off the haft at f3-f8. Wants the right hand's path
+# brought in toward her centre line first (the solver's report).
+TWO_HANDS = False
+SQUARE = {}
+# Round 2 (17 October): the right hand's path brought in toward her centre line over the hold, so the blow is a
+# centred overhead chop (as a two-handed axe is swung) and both hands meet on the haft before her breastbone:
+# CENTRE added to the keyed right hand (shoulder-relative, toward her left and a little in) at f1-f12, eased out
+# over f12-f15 into the keyed wrench-free; f0 (the hand-over from the haul) and the rest of her as keyed.
+# NOT MET (round 2 solver): centred, the left reaches (76-88% of her arm) and holds the haft at most frames, but
+# in the low crouch (f4-f9) the hands sit between her knees, where her forward left thigh is: the left forearm goes
+# 58-79 mm into it, the right upper arm 17-36 mm into her trunk and breast, f3 is 53 deg off (the left forearm at its
+# twist limit). Brought forward of the knee, the left fist flips on the haft (its twist pinned at -48). Wants the
+# haft's line (the right fist's keyed blade over f3-f9) re-keyed with the hands, not a shift of the keyed path.
+CENTRE = {1: (0.17, 0.0, -0.05), 12: (0.17, 0.0, -0.05)}   # by frame, linear between
+TURN_WITH = False
+HOLD_POLES = {"hand_r": None, "hand_l": None}   # the elbows' way over the hold (the chest's frame)
+
+
+def _centred(fr, pose):
+    """A post moving the keyed right hand by CENTRE (its shoulder's space, the chest's frame) over the hold."""
+    if fr < 1 or fr >= FREE_AT or "hand_r" not in pose:
+        return pose
+    u = min(1.0, max(0.0, (fr - HOLD_TO) / (FREE_AT - HOLD_TO)))
+    w = 1.0 - u * u * (3 - 2 * u)
+    az, el, r = pose["hand_r"]["arc"]
+    az, el = math.radians(az), math.radians(el)
+    v = np.array([r * math.cos(el) * math.sin(az), r * math.sin(el), r * math.cos(el) * math.cos(az)])
+    ks = sorted(CENTRE)
+    k1 = next((k for k in ks if k >= min(fr, HOLD_TO)), ks[-1])
+    k0 = max((k for k in ks if k <= min(fr, HOLD_TO)), default=ks[0])
+    a = 0.0 if k1 == k0 else (min(fr, HOLD_TO) - k0) / (k1 - k0)
+    d = (1 - a) * np.array(CENTRE[k0]) + a * np.array(CENTRE[k1])
+    pose = dict(pose)
+    hr = {**pose["hand_r"], "arc": arc_of(v + w * d)}
+    if TURN_WITH:
+        # The fist turned with the arm's new line (shoulder to hand), so the wrist keeps its keyed bend.
+        a, b = v / np.linalg.norm(v), (v + w * d) / np.linalg.norm(v + w * d)
+        ax = np.cross(a, b); sn = np.linalg.norm(ax); cs = float(a @ b)
+        if sn > 1e-9:
+            ax = ax / sn
+            K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+            Rm = np.eye(3) + sn * K + (1 - cs) * K @ K
+            for k in ("blade", "knuckles"):
+                if k in hr:
+                    hr[k] = tuple(float(x) for x in Rm @ np.array(hr[k], float))
+    pose["hand_r"] = hr
+    for k, pole in HOLD_POLES.items():
+        if pole is not None and k in pose:
+            q = np.array(pose[k].get("pole", pole), float)
+            pose[k] = {**pose[k], "pole": tuple(float(x) for x in q + w * (np.array(pole, float) - q))}
+    return pose
+
+
+def _left_on_haft():
+    """hand_l's frame in hand_r's space with the left fist on the haft: (rotation matrix, origin). Its palm on the
+    haft's far side from the right's (the mirror of a fist on a haft: the two palms face apart)."""
+    C, H, N, _ = _haft()
+    c, h, n = L_CHANNEL
+    h = h / np.linalg.norm(h)
+    n = n - h * (n @ h)
+    n = n / np.linalg.norm(n)
+    A = np.stack([h, n, np.cross(h, n)], 1)
+    B = np.stack([H, -N, np.cross(H, -N)], 1)
+    R = B @ A.T
+    return R, C - H * L_BELOW - R @ c
+
+
+def _two_hands(rig, clip, hold, free):
+    """A post laying her left hand on the haft below her right, frame by frame from where the right hand holds it
+    (as `clip` solved it), over frames hold[0]..hold[1]; let go evenly from hold[1] to `free` toward the keyed
+    hand (its wrist, its turn and its elbow's way as `clip` had them, the fingers easing into the keyed fist)."""
+    from keyed import finger_curl, FINGER_PRESETS
+    from rig import qaxis, qfrom_matrix, qinv, qmul, qrot, qslerp
+    I = rig.I
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    hr, hl, s3 = I["hand_r"], I["hand_l"], I["spine_03"]
+    R_lr, o_lr = _left_on_haft()
+    fist = finger_curl("fist")
+    fp = FINGER_PRESETS["fist"]
+
+    def ease(u):
+        u = min(1.0, max(0.0, u))
+        return u * u * (3 - 2 * u)
+
+    def post(fr, pose):
+        if fr < hold[0] or fr >= free:
+            return pose
+        w = ease((fr - hold[1]) / (free - hold[1]))
+        pose = dict(pose)
+        for k, d in SQUARE.items():
+            base = pose.get(k, (0.0,) * len(d))
+            pose[k] = tuple(float(a + b * (1 - w)) for a, b in zip(base, d))
+        # The right hand where the first solve put it (her space), its elbow's way as keyed.
+        lq = qaxis([1.0, 0, 0], -rig.grip.get("r", 0.0))
+        Bq = qmatrix(qmul(g[fr, hr], lq))
+        sr = pose["hand_r"]
+        chest_r = qmul(g[fr, s3], qinv(rig.grest[s3]))
+        pr = np.array(sr.get("pole", (-0.6, -0.4, -0.4)), float)
+        pr = qrot(chest_r, pr) if sr.get("frame") == "chest" else pr
+        pose["hand_r"] = {"pos": tuple(float(x) for x in p[fr, hr]), "blade": tuple(float(x) for x in Bq[:, 2]),
+                          "knuckles": tuple(float(x) for x in Bq[:, 1]), "pole": tuple(float(x) for x in pr),
+                          "frame": "char", "twist": sr.get("twist", 0.5)}
+        Rr = qmatrix(g[fr, hr])
+        Rl = Rr @ R_lr
+        W = p[fr, hr] + Rr @ o_lr
+        spec_k = pose.get("hand_l", {})
+        chest = qmul(g[fr, s3], qinv(rig.grest[s3]))
+        pole = np.array(spec_k.get("pole", (0.6, -0.4, -0.4)), float)
+        pole = qrot(chest, pole) if spec_k.get("frame") == "chest" else pole
+        if w > 0:
+            q = qslerp(qfrom_matrix(Rl), g[fr, hl], w)
+            Rl = qmatrix(q)
+            W = W + (p[fr, hl] - W) * w
+        spec = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in Rl[:, 2]),
+                "knuckles": tuple(float(x) for x in Rl[:, 1]), "pole": tuple(float(x) for x in pole),
+                "frame": "char", "twist": spec_k.get("twist", 0.3)}
+        mix = lambda a, b: a + (b - a) * w
+        fingers = {"bends": {k: tuple(mix(a, b) for a, b in zip(v, fist[k])) for k, v in L_WRAP["bends"].items()},
+                   "spreads": {k: mix(v, 0.0) for k, v in L_WRAP["spreads"].items()},
+                   **{k: mix(L_WRAP[k], fp.get(k, 0.0)) for k in ("oppose", "thumb_roll", "thumb_in")}}
+        return {**pose, "hand_l": spec, "fingers_l": fingers}
+    return post
+
+
+def _strike_keys():
     both = {"pole": (-0.6, -0.4, -0.4), "frame": "chest", "twist": 0.5}
-    keys = [
+    return [
         (0, _flight(3.0), "fast"),
         # Feet swung down under her as the axe comes over the top, both
         # hands on it.
@@ -757,8 +949,18 @@ def chain_strike(rig):
                   hips=(0, 16, 0), spine=(0, 12, 0), neck=(0, -8, 0), head=(0, -10, 0)), "auto"),
         (27, AXE_GUARD, "ease"),
     ]
-    return build("chain_strike", rig, keys, meta={"layer": "full", "contact": 3 / 30, "weapon": "axe",
-                                                   "note": "keyed: the haul's landing blow, two-handed"})
+
+
+def chain_strike(rig):
+    keys = _strike_keys()
+    meta = {"layer": "full", "contact": 3 / 30, "weapon": "axe", "note": "keyed: the haul's landing blow, two-handed"}
+    # Solved once for where the right hand holds the axe, then again with the left fist on the haft below it at
+    # every frame from f1 (the keyed left hands are only where it lets go to).
+    if not TWO_HANDS:
+        return build("chain_strike", rig, keys, meta=meta)
+    first = build("chain_strike", rig, keys, meta=meta, post=_centred)
+    two = _two_hands(rig, first, (1, HOLD_TO), FREE_AT)
+    return build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: two(fr, _centred(fr, pose)))
 
 
 ALL = (("vault", vault), ("vault_back", vault_back), ("bull_rush", bull_rush), ("chain_haul", chain_haul),

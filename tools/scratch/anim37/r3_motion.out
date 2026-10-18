@@ -1,0 +1,40 @@
+PACKED 87 clips into res://art/anim/heroine.res (OK)
+manifest: 87 made of 72 planned
+PACKED 74 clips into res://art/anim/hero.res (OK)
+FINAL      run_warden_town          l: leg    0mm@f-1 abd 13
+FINAL      sprint_warden_town       l: leg    0mm@f-1 abd 14
+(body ready in 1.4 s)
+run_arcanist             | l: up    0 fa    0 hd    0 br    0 pit   0 war   2 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war  24 arc   6 rea   0 ran   8 | vol el 58/76 wr 98/98
+run_arcanist_wand        | l: up    0 fa    0 hd    0 br    0 pit   0 war   2 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 58/50 wr 98/60
+run_reaver               | l: up    0 fa    0 hd    0 br    0 pit   0 war   4 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 58/50 wr 97/60
+run_reaver_axes          | l: up    0 fa    0 hd    0 br    0 pit   0 war  10 arc   0 rea   4 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 52/50 wr 66/60
+run_stalker              | l: up    0 fa    0 hd    0 br    0 pit   0 war   3 arc   0 rea  19 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   7 arc   0 rea   0 ran   0 | vol el 59/72 wr 99/10
+run_stalker_daggers      | l: up    0 fa    0 hd    0 br    0 pit   0 war   3 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 53/50 wr 66/62
+run_warden               | l: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   4 ran   0 r: up    3 fa    0 hd    0 br    0 pit   0 war  13 arc   9 rea   7 ran   9 | vol el 70/50 wr 104/5
+run_warden_town          | l: up    0 fa    0 hd    0 br    0 pit   0 war   1 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 60/58 wr 101/1
+sprint_arcanist          | l: up    0 fa    0 hd    0 br    0 pit   0 war   4 arc   0 rea   0 ran   0 r: up    0 fa    0 hd   10 br    0 pit   0 war  33 arc  15 rea  10 ran  16 | vol el 56/76 wr 98/98
+sprint_arcanist_wand     | l: up    0 fa    0 hd    0 br    0 pit   0 war   4 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 56/47 wr 98/62
+sprint_reaver            | l: up    0 fa    0 hd    0 br    0 pit   0 war   9 arc   0 rea   5 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   3 arc   0 rea   0 ran   0 | vol el 56/47 wr 98/61
+sprint_reaver_axes       | l: up    0 fa    0 hd    0 br    0 pit   0 war  12 arc   0 rea  10 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   3 arc   0 rea   0 ran   0 | vol el 50/47 wr 66/61
+sprint_stalker           | l: up    0 fa    0 hd    2 br    0 pit   0 war   4 arc   3 rea  51 ran   4 r: up    0 fa    0 hd    0 br    0 pit   0 war  11 arc   0 rea   0 ran   0 | vol el 57/72 wr 100/1
+sprint_stalker_daggers   | l: up    0 fa    0 hd    0 br    0 pit   0 war   5 arc   0 rea  39 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea  30 ran   3 | vol el 50/48 wr 67/63
+sprint_warden            | l: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea  62 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   6 arc   2 rea   0 ran   2 | vol el 69/50 wr 105/5
+sprint_warden_town       | l: up    0 fa    0 hd    0 br    0 pit   0 war   2 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 57/56 wr 102/1
+saved C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4\tools\anim\out\motion_cw_r3.json
+run_arcanist             | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    0 fa    0 hd    0 br    0 pit  
+run_arcanist_wand        | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+run_reaver               | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+run_reaver_axes          | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+run_stalker              | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    0 fa    0 hd    0 br    0 pit  
+run_stalker_daggers      | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+run_warden               | l: up    0 fa    0 hd    0 br    0 pit   0 r: up    4 fa    4 hd    0 br    0 pit  
+run_warden_town          | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+sprint_arcanist          | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    0 fa    0 hd    0 br    0 pit  
+sprint_arcanist_wand     | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+sprint_reaver            | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+sprint_reaver_axes       | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+sprint_stalker           | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    0 fa    0 hd    0 br    0 pit  
+sprint_stalker_daggers   | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+sprint_warden            | l: up    0 fa    0 hd    0 br    0 pit   0 r: up    4 fa    4 hd    0 br    0 pit  
+sprint_warden_town       | l: up    4 fa    0 hd    0 br    0 pit   0 r: up    4 fa    0 hd    0 br    0 pit  
+saved C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4\tools\anim\out\motio

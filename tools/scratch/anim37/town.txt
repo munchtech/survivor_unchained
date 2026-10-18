@@ -1,0 +1,13 @@
+run_warden_town_p180_ph0|warden|-|run_warden_town@0.0|day|0|180
+run_warden_town_p180_ph25|warden|-|run_warden_town@0.175|day|0|180
+run_warden_town_p180_ph69|warden|-|run_warden_town@0.483|day|0|180
+run_warden_town_p90_ph0|warden|-|run_warden_town@0.0|day|0|90
+run_warden_town_p90_ph25|warden|-|run_warden_town@0.175|day|0|90
+run_warden_town_p90_ph69|warden|-|run_warden_town@0.483|day|0|90
+run_warden_town_c180_ph0|warden|-|run_warden_town@0.0|day|0.9|180
+run_warden_town_c180_ph25|warden|-|run_warden_town@0.175|day|0.9|180
+run_warden_town_c180_ph69|warden|-|run_warden_town@0.483|day|0.9|180
+sprint_warden_town_p180_ph0|warden|-|sprint_warden_town@0.0|day|0|180
+sprint_warden_town_p180_ph69|warden|-|sprint_warden_town@0.483|day|0|180
+sprint_warden_town_p90_ph0|warden|-|sprint_warden_town@0.0|day|0|90
+sprint_warden_town_p90_ph69|warden|-|sprint_warden_town@0.483|day|0|90

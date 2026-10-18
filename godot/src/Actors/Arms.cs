@@ -25,8 +25,8 @@ public static class Arms
     /// forefinger to the heel of the hand), for those whose own clips are
     /// keyed to it (tools/anim/keyed.py GRIP), not the library's.
     /// Seated: its Grip has been measured against her fitted fist (Seat lays it on her fist's pocket for its kind,
-    /// WeaponSockets.PocketR); an unseated piece without an anchor keeps the plain mount (its hilt not yet checked
-    /// against the fist: the viking sword's guard would sit 25 mm into her forefinger at its Grip).
+    /// WeaponSockets.Pocket: her right fist's, and her left's where that is fitted); an unseated piece without an anchor
+    /// keeps the plain mount (its hilt not yet checked against the fist: the viking sword's guard would sit 25 mm into her forefinger at its Grip).
     public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null, float Lean = 0, WeaponKind Kind = WeaponKind.None, bool Seated = false);
 
     public static readonly Dictionary<string, Spec> All = new()
@@ -44,7 +44,7 @@ public static class Arms
         ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30, Kind: WeaponKind.Wand),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f, Kind: WeaponKind.Shield),
         ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),
-        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),  // Seated once its left fist passes (fistfit.py daggers --side l)
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
@@ -213,15 +213,17 @@ public static class Arms
     /// down the shaft". An unanchored piece is seated only when its Spec says its Grip was measured on the fist
     /// (Seated) and only in her and the hero's hands (`own`: the fist was fitted on her hand, the grip keyed to its
     /// Lean); the folk keep the plain mount. Not for a pistol-held piece (its stock sits on
-    /// the fist) or the forearm. hand_l: its pocket isn't measured yet (the left mount isn't mirrored either), so a
-    /// left-hand piece keeps the plain mount.</summary>
+    /// the fist) or the forearm. hand_l: the same seat on its left pocket (WeaponSockets.PocketL, the right's mirrored: only the
+    /// dagger's so far), the mount itself unmirrored (the seat lays the grip point and the shaft's line, so only the
+    /// piece's roll about its shaft is the plain mount's: a flat hilt's faces toward the palm and the back either way).
+    /// Every other kind in the left hand keeps the plain mount.</summary>
     public static Transform3D Seat(Node3D piece, string id, string bone, bool own = true)
     {
         var t = PieceTransform(id);
         var spec = All[id];
-        if (bone != "hand_r" || spec.Pistol) return t;
+        if (spec.Pistol) return t;
         var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
-        if (WeaponSockets.PocketR(kind) is not { } pocket) return t;
+        if (WeaponSockets.Pocket(kind, bone) is not { } pocket) return t;
         if (!piece.HasMeta("anchored") && !(own && spec.Seated)) return t;
         var m = MountTransform(id, bone, own);
         static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);

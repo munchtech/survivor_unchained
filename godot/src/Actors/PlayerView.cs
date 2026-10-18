@@ -409,11 +409,12 @@ public partial class PlayerView : Node3D
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
-        // cameras (a judge's 1:1 frame of one pose; for pictures only).
+        // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
+        // sheathed, as the game plays it.
         if (mine && Hold is { Length: 2 } hold)
         {
             tree.Active = false;
-            if (!held) { held = true; view?.Sheathe(false); }
+            if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town")); }
             person.Anim.Play(own.Prefix + hold[0]);
             person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
             person.Anim.Pause();

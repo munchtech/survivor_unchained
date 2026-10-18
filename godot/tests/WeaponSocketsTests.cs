@@ -143,6 +143,61 @@ public class WeaponSocketsTests
     }
 
     [Fact]
+    public void TheMirrorIsAReflectionNearAPlainXFlip()
+    {
+        // Rl^T diag(-1, 1, 1) Rr off her rest skeleton: orthonormal, det -1, and within a degree of x -> -x (each axis
+        // 0.4-0.5 off it).
+        var m = WeaponSockets.MirrorRL;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                Assert.Equal(i == j ? 1.0 : 0.0, (double)System.Numerics.Vector3.Dot(m[i], m[j]), 4);
+        double det = System.Numerics.Vector3.Dot(m[0], System.Numerics.Vector3.Cross(m[1], m[2]));
+        Assert.Equal(-1.0, det, 4);
+        var flip = new[] { new System.Numerics.Vector3(-1, 0, 0), System.Numerics.Vector3.UnitY, System.Numerics.Vector3.UnitZ };
+        for (int i = 0; i < 3; i++)
+            Assert.True(System.Numerics.Vector3.Dot(m[i], flip[i]) > MathF.Cos(1f * MathF.PI / 180));
+    }
+
+    [Fact]
+    public void TheLeftDaggerPocketIsItsLineMirrored()
+    {
+        var l = WeaponSockets.PocketL(WeaponKind.Dagger);
+        Assert.NotNull(l);
+        var (at, dir) = l!.Value;
+        // Mapped back by the mirror's transpose, it is its line as given in hand_r's frame.
+        var m = WeaponSockets.MirrorRL;
+        System.Numerics.Vector3 Back(System.Numerics.Vector3 v) => m[0] * v.X + m[1] * v.Y + m[2] * v.Z;
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(Back(at), WeaponSockets.DaggerLeftAt), 5);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(Back(dir), System.Numerics.Vector3.Normalize(WeaponSockets.DaggerLeftDir)), 5);
+        Assert.Equal(1.0, (double)dir.Length(), 5);
+        // Toward her left palm (+X in hand_l, where hand_r's palm is -X), under her knuckles as the right's is.
+        Assert.InRange(at.X, 0.025f, 0.045f);
+        Assert.InRange(at.Y, 0.060f, 0.090f);
+        // A left dagger seated on the plain left mount (Arms.MountTransform: the same as the right's, Lean 30): its grip
+        // point on the left pocket and its shaft along the left line.
+        float s = MathF.Sin(30 * MathF.PI / 180), c = MathF.Cos(30 * MathF.PI / 180);
+        System.Numerics.Vector3 mx = new(0, c, -s), my = new(0, s, c), o = new(-0.025f, 0.075f, 0);
+        var mz = System.Numerics.Vector3.Cross(mx, my);
+        var (turn, pos) = WeaponSockets.FistSeat(mx, my, mz, o, at, dir);
+        System.Numerics.Vector3 Hand(System.Numerics.Vector3 v) => o + mx * v.X + my * v.Y + mz * v.Z;
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(Hand(pos), at), 6);
+        var shaft = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn);
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(System.Numerics.Vector3.Normalize(Hand(shaft) - o), dir), 5);
+    }
+
+    [Fact]
+    public void OnlyTheDaggerHasALeftPocketAndOnlyTheHandsHavePockets()
+    {
+        foreach (WeaponKind k in Enum.GetValues(typeof(WeaponKind)))
+        {
+            Assert.Equal(WeaponSockets.PocketR(k), WeaponSockets.Pocket(k, "hand_r"));
+            Assert.Equal(WeaponSockets.PocketL(k), WeaponSockets.Pocket(k, "hand_l"));
+            Assert.Null(WeaponSockets.Pocket(k, "lowerarm_l"));
+            if (k != WeaponKind.Dagger) Assert.Null(WeaponSockets.PocketL(k));
+        }
+    }
+
+    [Fact]
     public void ClearanceReadsTheFileAndDefaultsToZero()
     {
         var c = WeaponSockets.Clearance.Parse("{\"warden\": {\"back\": 0.012, \"hip_blade\": 0.02}, \"none\": {\"back\": 0.005}}");
