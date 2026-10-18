@@ -105,6 +105,6 @@ for cid in sys.argv[2:]:
     print(f"== {cid}: {total:.1f} s, {len(shots)} shots")
     for s in shots:
         m = mo.get(s["id"], {})
-        mt = " | ".join(w + " " + " ".join(f"{x:.0f}" for x in v) for w, v in m.items() if not w.startswith("drowned") or w == "drowned.0")
+        mt = " | ".join(w + " " + " ".join(f"{x:.1f}" for x in v) for w, v in m.items() if not w.startswith("drowned") or w == "drowned.0")
         lines = "; ".join(f"{e[2][5:]} {e[0]:.1f}-{e[1]:.1f}" for e in s["events"] if e[2].startswith("line"))
         print(f"{s['id']:>4} @{s['t']:5.1f} {s['dur']:4.1f}s  last {s['last']:4.1f}  tail {s['dur']-s['last']:4.1f}  {s['cam']:<22} cm/still: [{mt}]  {lines}")

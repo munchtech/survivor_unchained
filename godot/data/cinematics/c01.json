@@ -128,7 +128,7 @@
     {
       "id": "6a",
       "type": "INSERT",
-      "dur": 3.0,
+      "dur": 2.4,
       "still": 2.0,
       "note": "The hand to the coals: kneeling, she holds her right hand out low over the embers, palm down, closer than anyone could bear, and it stays.",
       "cam": {"pos": [-9.95, 0.75, 91.35], "at": [-10.15, 0.25, 90.6], "lens": 50, "focus": {"actor": "her", "bone": "hand_r", "track": true}, "fstop": 2.0},

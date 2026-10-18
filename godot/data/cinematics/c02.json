@@ -40,7 +40,7 @@
     {
       "id": "2",
       "type": "LS",
-      "dur": 4.0,
+      "dur": 3.0,
       "note": "Low at the water on the near bank, looking north-east at their backs: the drowned standing in their rows, waist-deep, heads bowed, facing the far bank. The mist moves; they do not. The lamp low in the middle distance, left.",
       "cam": {"pos": {"abs": [5.2, -0.75, -36.6]}, "at": {"abs": [10.6, -0.5, -44.0]}, "lens": 35},
       "cues": []
@@ -48,7 +48,7 @@
     {
       "id": "3",
       "type": "INSERT",
-      "dur": 3.5,
+      "dur": 3.0,
       "note": "The fist and the lamp: an ancient gauntlet, black with river and grown with weed, gripping a lamp-iron that is new, unrusted, its edges still sharp from the forge. Blue light in it, steady. Below, the surface trembles in time with a sound.",
       "cam": {"pos": {"abs": [5.2, -0.45, -42.1]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.35, 0]}, "lens": 85, "move": {"push": 0.25, "ease": "linear"}},
       "cues": []
@@ -141,7 +141,7 @@
     {
       "id": "10",
       "type": "LS",
-      "dur": 2.5,
+      "dur": 2.0,
       "note": "Low on the water behind his legs, looking east down the river: every one of the drowned turns its face toward her at once, a wave down the rows.",
       "cam": {"pos": {"abs": [1.4, -0.5, -31.6]}, "at": {"abs": [10.4, -0.4, -43.4]}, "lens": 65},
       "cues": [

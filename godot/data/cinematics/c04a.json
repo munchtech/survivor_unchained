@@ -56,7 +56,7 @@
     {
       "id": "A2",
       "type": "ELS",
-      "dur": 5.0,
+      "dur": 4.0,
       "note": "From the west, across the road and up into the birches: the tops go gold one by one from the east as the sun clears the ridge; the light comes down the trunks, and where it reaches the road the blue in the iron by the verge goes pale and small.",
       "cam": {"pos": [-5.0, 1.4, -58.0], "at": [10.0, 9.0, -64.0], "lens": 35},
       "cues": [
@@ -68,7 +68,7 @@
     {
       "id": "A3",
       "type": "MS",
-      "dur": 3.5,
+      "dur": 2.6,
       "note": "Side-on from the east, the sun behind the camera: the light reaches her face and shoulders. She shuts her eyes against it.",
       "cam": {"pos": {"mark": "road", "off": [3.0, 1.5, 0.0]}, "at": {"mark": "road", "off": [0, 1.4, 0]}, "lens": 50},
       "cues": [
@@ -130,7 +130,7 @@
       "type": "CU",
       "dur": 6.5,
       "fit": ["cin_first_light.face"],
-      "tail": 3.0,
+      "tail": 1.5,
       "note": "Frontal, a very slow push (0.05 m): she is still. Her eyes go inward, searching. N6. Then nothing: hold 3 s of silence after the line. Play someone who has mislaid a thing she uses every day.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
       "cues": [

@@ -434,7 +434,7 @@ public partial class Game
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
-                            .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.00},{p.Y:0.00},{p.Z:0.00})" : "")));
+                            .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.000},{p.Y:0.000},{p.Z:0.000})" : "")));
                 // --cinenear X,Z,R: every visible mesh within R of a point, by path, at each
                 // shot's still (what is that in the frame? Lowford's stray ring stone was found so).
                 if (Args.Get("cinenear") is string near && stillK == 1)
@@ -923,10 +923,20 @@ public partial class Game
                         {
                             float x0 = (float)at.X - size / 2 + i * tile, z0 = (float)at.Z - size / 2 + j * tile;
                             float cx = x0 + tile / 2, cz = z0 + tile / 2;
+                            // The box spans the tile's own rise and fall: one height from its centre left
+                            // the ground on a slope outside the box, and the frost stopped on a straight
+                            // line along the tile's edge (square seams from the play camera).
+                            float lo = float.MaxValue, hi = float.MinValue;
+                            for (int u = 0; u <= 4; u++)
+                                for (int w = 0; w <= 4; w++)
+                                {
+                                    float hgt = (float)g.scene!.HeightAt(x0 + tile * u / 4, z0 + tile * w / 4);
+                                    lo = Math.Min(lo, hgt); hi = Math.Max(hi, hgt);
+                                }
                             var d = new Decal
                             {
                                 TextureAlbedo = Frost(new Vector2(x0, z0), tile, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
-                                Size = new Vector3(tile, 1.4f, tile), Position = new Vector3(cx, (float)g.scene!.HeightAt(cx, cz) + 0.35f, cz),
+                                Size = new Vector3(tile, hi - lo + 1.4f, tile), Position = new Vector3(cx, (lo + hi) / 2 + 0.35f, cz),
                                 AlbedoMix = (float)c.Num("amount", 0.4), CullMask = 1, UpperFade = 0.1f, LowerFade = 0.1f,
                             };
                             g.scene.AddChild(d);
@@ -1122,8 +1132,11 @@ public partial class Game
                     var w = corner + new Vector2((x + 0.5f) / N, (y + 0.5f) / N) * tile;
                     float n = frostNoise.GetNoise2D(w.X, w.Y) * 0.5f + 0.5f;
                     float a = Mathf.SmoothStep(0.3f, 0.7f, n);
-                    var off = (w - centre).Abs() / (size / 2);
-                    a *= Mathf.Clamp((1 - Mathf.Max(off.X, off.Y)) / 0.2f, 0, 1);
+                    // The patch thins out to a ragged round edge (a square one read as straight
+                    // seams from the play camera above): the radius wanders with a slow noise.
+                    float r = w.DistanceTo(centre) / (size / 2);
+                    float wob = frostNoise.GetNoise2D(w.X * 0.12f + 311f, w.Y * 0.12f - 97f) * 0.22f;
+                    a *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp((0.92f + wob - r) / 0.4f, 0, 1));
                     if (hole is Vector2 hc) a *= Mathf.SmoothStep(radius * 0.7f, radius * 1.4f, w.DistanceTo(hc));
                     for (int k = 0; k + 1 < trail.Count; k++)
                     {

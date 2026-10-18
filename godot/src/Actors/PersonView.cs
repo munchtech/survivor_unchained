@@ -168,7 +168,27 @@ public partial class PersonView : Node3D, INpcView
     }
 
     /// <summary>The cinematic's clock moved on.</summary>
-    public void Advance(double dt) { if (Cinema) person.Anim.Advance(dt); }
+    public void Advance(double dt)
+    {
+        if (!Cinema) return;
+        person.Anim.Advance(dt);
+        // A clip played to its end (or stopped on a frame) holds a wax figure: breathe it.
+        var a = person.Anim;
+        bool held = !a.IsPlaying() || a.SpeedScale == 0
+            || (a.HasAnimation(a.AssignedAnimation) && a.GetAnimation(a.AssignedAnimation) is { } clip
+                && clip.LoopMode == Animation.LoopModeEnum.None && a.CurrentAnimationPosition >= clip.Length - 0.02);
+        if (breath == null)
+        {
+            if (!held) return;
+            breath = new CineBreath();
+            person.Skeleton.AddChild(breath);
+            // After the clip's gestures, before the head turns and her corrective joints.
+            if (person.Gestures != null && person.Gestures.GetParent() == person.Skeleton)
+                person.Skeleton.MoveChild(breath, person.Gestures.GetIndex() + 1);
+        }
+        breath.Want = held ? 1 : 0;
+    }
+    CineBreath? breath;
 
     public void Locomotion(double speed)
     {

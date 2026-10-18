@@ -42,7 +42,7 @@
     {
       "id": "2",
       "type": "MLS",
-      "dur": 4.0,
+      "dur": 3.3,
       "note": "Low at the water from the south-west: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water, steady.",
       "cam": {"pos": {"mark": "w", "off": [-6.0, 0.5, 5.5]}, "at": {"mark": "w", "off": [0, 1.5, 0]}, "lens": 28},
       "cues": [
@@ -156,7 +156,9 @@
         {"do": "lids", "value": 1, "over": 0.06},
         {"at": 0.18, "do": "lids", "value": null},
         {"at": 0.25, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.35, 1.05, -1.0]}, "dur": 0.25},
-        {"at": 0.5, "do": "line", "id": "cin_heart_goes_down.nobodys"}
+        {"at": 0.5, "do": "line", "id": "cin_heart_goes_down.nobodys"},
+        {"at": 0.05, "do": "anim", "actor": "her", "clip": "her/flinch", "from": 0, "speed": 1, "blend": 0.05},
+        {"at": 0.45, "do": "anim", "actor": "her", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.6}
       ]
     },
     {
