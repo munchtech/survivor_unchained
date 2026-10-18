@@ -892,6 +892,23 @@ public static class People
                 if (on.Contains("allsss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
                 GD.Print($"H1Debug part {mi.Mesh.SurfaceGetMaterial(s)?.ResourceName}");
             }
+        // (shot-only, tone solver 18 Oct: headnocast / bodynocast / othernocast: her head's mesh, her body's, or every
+        // other mesh of hers (outfit, hair) casts no shadow, to find what shades her neck from the moon)
+        foreach (var mi in p.Meshes.Concat(p.Hair))
+        {
+            bool isHead = false, isBody = false;
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var rn = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+                if (rn == "skin_head") isHead = true;
+                if (rn == "Material_0.001" || rn == "skin_graft") isBody = true;
+            }
+            if (isHead ? on.Contains("headnocast") : isBody ? on.Contains("bodynocast") : on.Contains("othernocast") || on.Contains("nocast:" + mi.Name))
+            {
+                mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                GD.Print($"H1Debug nocast {mi.Name}");
+            }
+        }
         GD.Print($"H1Debug: {dbg}");
     }
 
