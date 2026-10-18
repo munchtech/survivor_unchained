@@ -830,6 +830,39 @@ public static class People
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
+    }
+
+    /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
+    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye), uv (her head's UV emitted:
+    /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), nosss, mask (her scalp's tint green).</summary>
+    static void H1Debug(Person p, string dbg)
+    {
+        var on = new HashSet<string>(dbg.Split(','));
+        foreach (var mi in p.Hair)
+        {
+            if (on.Contains("nohair")) mi.Visible = false;
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var name = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+                if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial hm) continue;
+                if (name == "hair_cap" && on.Contains("nocap")) mi.SetSurfaceOverrideMaterial(s, new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.Alpha, AlbedoColor = new Color(0, 0, 0, 0) });
+                else if (name == "hair_cap" && on.Contains("capgreen")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 1, 0));
+                else if (name != "hair_cap" && on.Contains("cardsblue")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 0, 1));
+            }
+        }
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
+                if (on.Contains("uv")) m.SetShaderParameter("dbg_gate", 9.0f);
+                if (on.Contains("uv10")) m.SetShaderParameter("dbg_gate", 10.0f);
+                if (on.Contains("uv11")) m.SetShaderParameter("dbg_gate", 11.0f);
+                if (on.Contains("nospec")) { m.SetShaderParameter("shine", 0f); m.SetShaderParameter("seam_shine", 0f); m.SetShaderParameter("rim", 0f); }
+                if (on.Contains("nosss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
+                if (on.Contains("mask")) m.SetShaderParameter("shadow_colour", new Color(0, 1f / 2.4f, 0));
+            }
+        GD.Print($"H1Debug: {dbg}");
     }
 
     /// <summary>Her face as one she started from (Lore.Her's faces): its

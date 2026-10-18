@@ -186,7 +186,8 @@ if _ear.any():
     # the Look. Her ear itself is its fine mesh (edges under 2.8 mm) within
     # 1.9 cm of its flap (what its keys move most), and the flap: her scalp is
     # tinted to 1 mm off it, eased in over the 2.5 mm past that. In front
-    # of her ear and below its top, where her face is, as it was.)
+    # of her ear and below its top, where her face is, as it was. Behind and
+    # above, superseded by face 30 H1b's flap below: no change on screen.)
     _el = np.zeros(len(V)); _ne = np.zeros(len(V))
     for _a, _b in ((0, 1), (1, 2), (2, 0)):
         _len = np.linalg.norm(V[T[:, _a]] - V[T[:, _b]], axis=1)
@@ -216,16 +217,40 @@ if _ear.any():
         _side = np.sign(P[:, 0]) == _sg
         _c = V[_flap & (np.sign(V[:, 0]) == _sg)].mean(0)
         _w[_side] = np.maximum(smooth((P[_side, 1] - _c[1]) / 0.006), smooth((P[_side, 2] - _c[2] - 0.010) / 0.006))
-    scalp *= _old + (_new - _old) * _w
+    # (18 October, face 30 H1b: behind and above her ear, her ear is its flap alone. Her ear's "own" points above
+    # (fine mesh near what its keys move), and its keys' flap at a tenth of each key's most, take in a centimetre
+    # and more of her scalp behind and above it (its keys move her scalp round it too), painted the pale grey
+    # her scalp is under her hair: kept off, untinted, it was the pale patch behind and above each ear at the
+    # Look on every hairstyle and face. Found at the pixel: the head's UV read off the game's frame (People.H1Debug,
+    # heroine_skin's dbg_gate 10 and 11) lay in that "own" ear, the mask 0 there. Her flap is what her ears' keys
+    # move by a quarter of their most or more (traced on the frames: its edge is her ear's crease); her scalp
+    # tinted from 0.5 mm off it, eased in over the 2.5 mm past that.)
+    _fm = np.zeros(len(V))
+    for _name in ("ears_out+", "ears_pointed+", "ears_lobes+"):
+        if _name in _kb:
+            _mv = np.linalg.norm(np.array([d.co[:] for d in _kb[_name].data]) - _base, axis=1)
+            _fm = np.maximum(_fm, _mv / max(_mv.max(), 1e-9))
+    _lf = _fm > 0.25
+    _dl = cKDTree(V[_lf]).query(V)[0]
+    _dl[_lf] = 0.0
+    _dlt = (_dl[T[_tri]] * np.clip(_bb, 0, 1)).sum(1) / np.clip(_bb, 0, 1).sum(1)
+    _skin = 1 - smooth((_dlt - 0.0005) / 0.0025)
+    _lf_tex = _lf[T[_tri]].all(1)
+    print("EAR FLAP %d points, %d texels behind" % (_lf.sum(), (_lf_tex & (_w > 0.5)).sum()))
+    scalp *= _old + (1 - _skin - _old) * _w
 sh = np.zeros((SIZE, SIZE, 4), np.float32)
 sh[rows, cols, 1] = scalp
 sh[..., 3] = 1
 sh[..., 1] = np.clip(ndimage.gaussian_filter(sh[..., 1], 1.5) * inside + (1 - inside) * ndimage.grey_dilation(sh[..., 1], size=(5, 5)), 0, 1)
-# (and none on her ear itself, softened into it as it was)
+# (and none on her ear itself, softened into it as it was; behind and above it, none on its flap, so the blur
+# leaves her ear its skin)
 if _ear.any():
     _em = np.zeros((SIZE, SIZE), bool)
-    _em[rows[_ear_tex], cols[_ear_tex]] = True
+    _em[rows[_ear_tex & (_w < 0.5)], cols[_ear_tex & (_w < 0.5)]] = True
     sh[_em, 1] = 0.0
+    _sk = np.zeros((SIZE, SIZE), np.float32)
+    _sk[rows, cols] = _lf_tex * _w
+    sh[..., 1] *= 1 - _sk
 spath = os.path.join(OUT, "heroine_shadow.png")
 Image.fromarray((sh[::-1] * 255 + 0.5).astype(np.uint8)).save(spath)
 print("SCALP", spath, "%d texels" % (sh[..., 1] > 0.5).sum())
