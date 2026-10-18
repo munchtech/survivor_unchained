@@ -221,9 +221,9 @@ def stalker_show(rig):
         (74, aim(0), "ease"),
         (90, over("stalker"), "ease"),
     ]
-    # (Her left hand on the fore-stock the whole way, up to the eye and down: idle.ride_stock.)
-    return idle.ride_stock(rig, lambda post: build("stalker_show", rig, keys, base=base, post=post,
-                                                   meta={"layer": "full", "weapon": "crossbow"}))
+    # (idle.ride_stock tried here, animation 38: at the sighting the hand could not hold the stock's relation, the
+    # crossbow 5-9 mm into her left fingers and the upper arm 7-25 mm into her chest; left keyed for now.)
+    return build("stalker_show", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
 
 
 # ----------------------------------------------------------------- breaks --
