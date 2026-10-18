@@ -36,7 +36,8 @@ public partial class Game
     {
         if (scene?.Battle is not { } b || cine != null) return false;
         // --nocine, or a quick start: the zone's captions instead (pictures of play from the first frame).
-        if (Args.Has("nocine") || (quick && Args.Get("cine") != id && chained == null)) return false;
+        // --cines: a quick start that plays every cinematic as the zone reaches it (real-play checks).
+        if (Args.Has("nocine") || (quick && !Args.Has("cines") && Args.Get("cine") != id && chained == null)) return false;
         CineFile file;
         try { file = CineFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"cinema: {id} not played ({e.Message})"); return false; }
@@ -55,7 +56,7 @@ public partial class Game
     }
 
     public bool CanCinematic(string id) =>
-        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && Args.Get("cine") != id && chained == null)
+        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && !Args.Has("cines") && Args.Get("cine") != id && chained == null)
         && FileAccess.FileExists($"res://data/cinematics/{id}.json");
 
     /* The hand-over (docs/cinematics/README.md, 5a): from a cinematic's "play"
