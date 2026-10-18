@@ -94,7 +94,7 @@ public class WeaponSocketsTests
         System.Numerics.Vector3 mx = new(0, 1, 0), my = new(0, 0, 1), mz = new(1, 0, 0), o = new(-0.025f, 0.075f, 0);
         var (turn, at) = WeaponSockets.FistSeat(mx, my, mz, o);
         System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
-        // The grip point lands on the pocket; the shaft runs along the fist's line (8.2 degrees off the mount's).
+        // The grip point lands on the pocket; the shaft runs along the fist's line (27.7 degrees off the mount's).
         var grip = Hand(at);
         Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(grip, WeaponSockets.FistAtR), 6);
         var shaft = Hand(System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn)) - o;
@@ -104,7 +104,7 @@ public class WeaponSocketsTests
         Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(up, WeaponSockets.FistAtR + WeaponSockets.FistDirR), 5);
         // The least turn: the piece's +Z (its edge or face) stays square to the shaft and keeps its side.
         var face = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitZ, turn);
-        Assert.True(face.Z > 0.99f);
+        Assert.True(face.Z > 0.97f);  // 0.977 on the 27.7 degree fist (was > 0.99 on the 8.2 degree one)
     }
 
     [Fact]
@@ -112,14 +112,14 @@ public class WeaponSocketsTests
     {
         // In hand_r's space (+Y along the fingers, +Z the thumb's side, the palm toward -X): the pocket lies under the
         // knuckles (on the body build F0 her knuckle pivots are 100-105 mm from the wrist), the leather's 13.65 mm plus
-        // the glove off the palm (-X), not at the thumb's root (31 mm); the shaft square to the fingers within a few degrees.
+        // the glove off the palm (-X), not at the thumb's root (31 mm); the shaft on the diagonal (27.7 deg off hand +Z, 18 Oct) so the little finger reaches it.
         var at = WeaponSockets.FistAtR;
-        Assert.InRange(at.Y, 0.085f, 0.105f);
-        Assert.InRange(at.X, -0.045f, -0.025f);
+        Assert.InRange(at.Y, 0.074f, 0.094f);
+        Assert.InRange(at.X, -0.043f, -0.023f);
         Assert.InRange(at.Z, -0.020f, 0.0f);
         var dir = WeaponSockets.FistDirR;
         Assert.InRange((double)dir.Length(), 0.99999, 1.00001);
-        Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 7.0, 9.5);
+        Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 26.7, 28.7);
     }
 
     [Fact]
