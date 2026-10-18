@@ -9,7 +9,8 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>--hairdump DIR (a developer's switch, Args): at creation's Look, from 2 s in and every 0.25 s, her hair as the
 /// game draws it (CPU-skinned, plus heroine_hair.gdshaderinc's vertex() from each surface's current uniforms, its `air`
-/// left out) and her other meshes (body, head, outfit; not eyes, teeth, tongue, lashes, brows), in world space, for
+/// left out) and her other meshes (body, head, outfit; not eyes, teeth, tongue, lashes, brows; her skin tucked under the
+/// outfit as heroine_skin.gdshader draws it, its discarded triangles left out), in world space, for
 /// tools/scratch/face29/posed_clip.py to measure how far her hair passes into her. Read on the skeleton's
 /// SkeletonUpdated, so her modifiers' corrections (HerPose and the rest) are in the pose.
 ///
@@ -28,7 +29,7 @@ public static class HairDump
     static bool due, wired;
     static Skeleton3D? wiredOn;
 
-    sealed class S { public MeshInstance3D Mi = null!; public int Surf; public bool Hair, Cap, Tie; public Vector2[] Uv = [], Uv2 = []; public float[] Cb = []; }
+    sealed class S { public MeshInstance3D Mi = null!; public int Surf; public bool Hair, Cap, Tie; public Vector2[] Uv = [], Uv2 = []; public float[] Cb = []; public float Tuck; public float[] TuckW = []; }
     static readonly List<S> surfs = new();
     static readonly List<HairSway> chains = new();
     static readonly string[] Skip = ["hair", "lash", "brow", "eye", "teeth", "tongue"];
@@ -93,8 +94,30 @@ public static class HairDump
                 }
                 else
                 {
+                    // Her skin under an outfit (heroine_skin.gdshader's tuck): pulled in along its normal by tuck x the
+                    // channel's weight (all of it from 0.973), and the triangles where it is gone (>= 0.995) discarded.
+                    var keep = I;
+                    if (mat is ShaderMaterial sm && sm.GetShaderParameter("tuck_channel") is { VariantType: Variant.Type.Int } tc && tc.AsInt32() >= 0)
+                    {
+                        int ch = tc.AsInt32();
+                        var col = a[(int)Mesh.ArrayType.Color].AsColorArray();
+                        x.Tuck = sm.GetShaderParameter("tuck").VariantType == Variant.Type.Nil ? 0.010f : sm.GetShaderParameter("tuck").AsSingle();
+                        x.TuckW = new float[P.Length];
+                        var gone = new float[P.Length];
+                        for (int v = 0; v < P.Length && v < col.Length; v++)
+                        {
+                            float h = ch == 0 ? col[v].R : ch == 1 ? col[v].G : ch == 2 ? col[v].B : col[v].A;
+                            x.TuckW[v] = h > 0.973f ? 1f : h;
+                            gone[v] = h >= 0.995f ? 1f : 0f;
+                        }
+                        var kept = new List<int>();
+                        for (int t = 0; t + 2 < I.Length; t += 3)
+                            if ((gone[I[t]] + gone[I[t + 1]] + gone[I[t + 2]]) / 3f <= 0.5f) { kept.Add(I[t]); kept.Add(I[t + 1]); kept.Add(I[t + 2]); }
+                        keep = kept.ToArray();
+                    }
                     using var w = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.idx")));
-                    foreach (var q in I) w.Write(q);
+                    foreach (var q in keep) w.Write(q);
+                    I = keep;
                 }
                 surfs.Add(x);
                 var mname = (mat?.ResourceName is { Length: > 0 } rn ? rn : mat?.ResourcePath is { Length: > 0 } rp ? Path.GetFileNameWithoutExtension(rp) : $"surf{s}").Replace(' ', '_');
@@ -143,7 +166,13 @@ public static class HairDump
         foreach (var x in surfs)
         {
             if (!baked.TryGetValue(x.Mi, out var bm)) baked[x.Mi] = bm = x.Mi.BakeMeshFromCurrentSkeletonPose();
-            var P = bm.SurfaceGetArrays(x.Surf)[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            var arr = bm.SurfaceGetArrays(x.Surf);
+            var P = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            if (x.Tuck > 0)
+            {
+                var N = arr[(int)Mesh.ArrayType.Normal].AsVector3Array();
+                for (int v = 0; v < P.Length && v < N.Length; v++) P[v] -= N[v] * x.Tuck * x.TuckW[v];
+            }
             var g = x.Mi.GlobalTransform;
             if (x.Hair && (x.Mi.GetSurfaceOverrideMaterial(x.Surf) as ShaderMaterial) is { } m)
             {
@@ -151,6 +180,12 @@ public static class HairDump
                 var head = m.GetShaderParameter("head").AsVector3();
                 var chain = V3(m, "chain", 8); var crest = V3(m, "chain_rest", 8); var turn = V4(m, "chain_turn", 8);
                 var arms = V3(m, "arms", 4); float armR = m.GetShaderParameter("arm_r").AsSingle();
+                if (x.Mi.GetChildren().OfType<HairSway>().FirstOrDefault() is { } hs0 && hs0.ChainWorld.Length == 8 && x.Uv2.Any(u => u.Y > 0))
+                {
+                    // (a check that the uniforms are read as the shader reads them: rest + chain, in the world, is the chain)
+                    float e = 0; for (int i = 0; i < 8; i++) e = Mathf.Max(e, (g * (crest[i] + chain[i])).DistanceTo(hs0.ChainWorld[i]));
+                    GD.Print($"HAIRDUMP-CHECK k{frame} s{x.Surf} chain vs uniforms {e * 1000:F2} mm");
+                }
                 for (int v = 0; v < P.Length; v++)
                 {
                     var V = P[v];
