@@ -1009,19 +1009,28 @@ AIM_OPEN = 1.0
 SHOOT_CRADLE_T = (9, 16)
 
 
-def aim_cradle(t0, t1):
+def aim_cradle(t0, t1, t_in=None):
+    """rel for idle.ride_stock: the cradle up to frame t0, swung onto the idle's hold by t1 (and, with t_in = (a, b),
+    off the idle's hold onto the cradle between frames a and b first, the same path backward)."""
     from clips.idle import cradle_rel, blend_rel
     from rig import smoothstep
     cache = {}
 
     def rel(f, idle_rel):
+        if t_in is not None and f < t_in[1]:
+            a, b = t_in
+            g = t1 - (t1 - t0) * (f - a) / (b - a) if f > a else t1   # (run backward over t0..t1)
+            return rel_out(g, idle_rel)
+        return rel_out(f, idle_rel)
+
+    def rel_out(f, idle_rel):
         if "c" not in cache:
             cache["c"] = cradle_rel(**AIM_CRADLE) + (AIM_CRADLE_AIM,)
         if f <= t0:
             return cache["c"]
         if f >= t1:
             return idle_rel
-        u = float(smoothstep((f - t0) / (t1 - t0)))
+        u = float(smoothstep((f - t0) / (t1 - t0)) if float(f).is_integer() else (f - t0) / (t1 - t0))
         if "v" not in cache:
             cache["v"] = cradle_rel(**AIM_SIDE) if AIM_SIDE else None
         # (The fingers eased open as they come over the top and closed round its far side as the hand lands.)

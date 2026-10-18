@@ -205,25 +205,33 @@ def stalker_show(rig):
     """The crossbow up to her eye, sighting across the dark to the left,
     then the right, then down."""
     base = idle.base_of(rig, "stalker")
+    # The shoot's sighting (actions.crossbow_shoot): a shooter's stance, the body bladed to her right and the
+    # crossbow turned back, upright, the left hand cradling the fore-stock palm up (idle.ride_stock with
+    # actions.aim_cradle; on its own keyed arc the upper arm went 3 mm into her chest and the crossbow 10 mm into
+    # her left hand). Turned whole to the left and the right by the spine.
+    from clips import actions as A
+    B = A.AIM_BLADE
+
     def aim(yaw):
-        return over("stalker", spine=(yaw * 0.6, -4, 0), head=(yaw * 0.4, 6, -6),
-                    hand_r={"arc": arc_of((0.06, -0.02, 0.40)), "pole": (-0.8, -0.5, -0.2), "frame": "chest",
-                            "knuckles": _n(0.06, 0.03, 1.0), "twist": 0.5},
-                    hand_l={"arc": arc_of((-0.10, -0.08, 0.40)), "pole": (0.8, -0.5, -0.2), "frame": "chest",
-                            "knuckles": _n(0.1, -0.2, 1.0), "twist": 0.4})
+        return over("stalker", spine=(yaw * 0.6 - B, -4, 0), head=(yaw * 0.4 + B, 6, -6),
+                    clav_l=A.AIM_CLAV_L, clav_r=A.AIM_CLAV_R,
+                    hand_r=arm(A._yawed((0.06, -0.02, 0.40), B), A._yawed(A.AIM_POLE_R, B),
+                               knuckles=_n(*A._yawed((0.06, 0.03, 1.0), B)), blade=A.AIM_TOP),
+                    hand_l=arm(A._yawed((-0.10, -0.08, 0.40), B), A.AIM_POLE_L, knuckles=_n(0.1, -0.2, 1.0)))
+    rest = over("stalker", hand_r={**idle.STALKER_HAND_R["hand_r"], "blade": idle.stalker_top(rig)})
     keys = [
-        (0, over("stalker"), "auto"),
+        (0, rest, "auto"),
         (12, aim(0), "ease"),
         (26, aim(34), "ease"),
         (38, aim(34), "auto"),
         (54, aim(-34), "ease"),
         (64, aim(-34), "auto"),
         (74, aim(0), "ease"),
-        (90, over("stalker"), "ease"),
+        (90, rest, "ease"),
     ]
-    # (idle.ride_stock tried here, animation 38: at the sighting the hand could not hold the stock's relation, the
-    # crossbow 5-9 mm into her left fingers and the upper arm 7-25 mm into her chest; left keyed for now.)
-    return build("stalker_show", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
+    return idle.ride_stock(rig, lambda post: build("stalker_show", rig, keys, base=base, post=post,
+                                                   meta={"layer": "full", "weapon": "crossbow"}),
+                           rel=A.aim_cradle(76, 86, t_in=(2, 12)))
 
 
 # ----------------------------------------------------------------- breaks --
