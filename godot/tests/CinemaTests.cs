@@ -203,7 +203,7 @@ public class CinemaTests
     [Fact]
     public void A_cinematic_that_ends_in_play_hands_her_over_where_it_leaves_her()
     {
-        var ending = All().Where(f => f.End.Her != null).ToList();
+        var ending = All().Where(f => f.End.Her != null && f.End.Next == null).ToList();
         Assert.Contains(ending, f => f.Id == "c01");
         foreach (var f in ending)
             foreach (var calling in new[] { "warden", "arcanist" })
@@ -218,6 +218,26 @@ public class CinemaTests
                 Assert.True(CineHandover.PlaysLastShot(s), $"{f.Id}: her own body does not take the last shot from its cut (a \"play\" cue at 0)");
                 Assert.True(CineHandover.Blend(s) >= 0.5, $"{f.Id}: the last shot cuts to the game's camera (a follow move of 0.5 s or more, to its end)");
             }
+    }
+
+    /// <summary>The owner (17 October): C03 runs on into C04 A, with no three seconds
+    /// of wading between them. A cinematic that runs on names one in its own zone,
+    /// keeps its bars to the cut, and hands nothing to play itself.</summary>
+    [Fact]
+    public void A_cinematic_that_runs_on_cuts_into_the_next_in_its_zone()
+    {
+        var on = All().Where(f => f.End.Next != null).ToList();
+        Assert.Contains(on, f => f.Id == "c03" && f.End.Next == "c04a");
+        foreach (var f in on)
+        {
+            var next = All().Single(n => n.Id == f.End.Next);
+            Assert.Equal(f.Zone, next.Zone);
+            var s = Lay(f, "warden");
+            var p = new CinePlayer(s);
+            p.Advance(s.Length - 0.01);
+            Assert.True(p.Bars > 0.99, $"{f.Id}: its bars go out before the cut into {next.Id}");
+            Assert.False(CineHandover.PlaysLastShot(s), $"{f.Id}: hands her to play before {next.Id} (a \"play\" cue in its last shot)");
+        }
     }
 
     [Fact]

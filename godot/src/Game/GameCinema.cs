@@ -36,7 +36,7 @@ public partial class Game
     {
         if (scene?.Battle is not { } b || cine != null) return false;
         // --nocine, or a quick start: the zone's captions instead (pictures of play from the first frame).
-        if (Args.Has("nocine") || (quick && Args.Get("cine") != id)) return false;
+        if (Args.Has("nocine") || (quick && Args.Get("cine") != id && chained == null)) return false;
         CineFile file;
         try { file = CineFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"cinema: {id} not played ({e.Message})"); return false; }
@@ -44,15 +44,18 @@ public partial class Game
         if (marks != null) foreach (var (k, v) in marks) file.Marks[k] = v.ToArray();
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
-        ClearKept();
+        // Run on from the one before (its end.next): the bars stay in and what it left stays.
+        if (chained == null) ClearKept();
+        else file.Bars.In = 0;
         try { cine = new Cine(this, file, b, done); }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
+        finally { chained = null; }
         handoffId = id;
         return true;
     }
 
     public bool CanCinematic(string id) =>
-        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && Args.Get("cine") != id)
+        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && Args.Get("cine") != id && chained == null)
         && FileAccess.FileExists($"res://data/cinematics/{id}.json");
 
     /* The hand-over (docs/cinematics/README.md, 5a): from a cinematic's "play"
@@ -68,6 +71,10 @@ public partial class Game
         foreach (var n in kept) if (IsInstanceValid(n)) n.QueueFree();
         kept.Clear();
     }
+    /// <summary>A cinematic ended into the next (end.next): its bars and the camera
+    /// it saved, taken over by the next one if the zone starts it on the cut.</summary>
+    sealed record Chain(CinemaBars Bars, (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) Saved);
+    Chain? chained;
     (double X, double Z) carry;
     double carryT;
     const double CarryFade = 0.7;
@@ -121,7 +128,7 @@ public partial class Game
         readonly Action? done;
         readonly CinePlayer player;
         readonly CinePlaces places;
-        readonly CinemaBars bars = new();
+        readonly CinemaBars bars;
         readonly Dictionary<string, PersonView> people = new();
         readonly Dictionary<string, Enemy> enemies = new();
         readonly Dictionary<string, WardenView> bosses = new();
@@ -170,9 +177,9 @@ public partial class Game
             player = new CinePlayer(new CineSchedule(file, cc, id => CineLines.Seconds(CineLines.Find(id, ctx))));
             places = new CinePlaces(file, (x, z) => g.scene!.HeightAt(x, z), ActorAt);
             seen = Settings.Current.SeenCinematics.Contains(file.Id);
-            g.AddChild(bars);
             var cam = g.camera;
-            saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes);
+            if (g.chained is { } ch) { bars = ch.Bars; saved = ch.Saved; }
+            else { bars = new(); g.AddChild(bars); saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes); }
             cam.Near = 0.04f;
             g.controls.Captured = true;
             g.hud.ShowPlay(false);
@@ -336,6 +343,31 @@ public partial class Game
         }
         SpotLight3D? dbgFill;
 
+        sealed record Rig(SpotLight3D L, JsonElement From, JsonElement Aim, int Shot);
+        readonly Dictionary<string, Rig> rigs = new();
+
+        /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
+        void PlaceRigs()
+        {
+            int shot = player.Shot.Index;
+            foreach (var (name, r) in rigs.ToList())
+            {
+                if (r.Shot >= 0 && r.Shot != shot) { r.L.QueueFree(); rigs.Remove(name); continue; }
+                var aim = r.Aim.ValueKind == JsonValueKind.Undefined ? (ActorAt("her", "eyes") is V3 he ? V(he) : g.camera.GlobalPosition) : V(places.Resolve(r.Aim));
+                Vector3 at;
+                if (r.From.ValueKind == JsonValueKind.Object && r.From.TryGetProperty("lens", out var lens))
+                {
+                    var c0 = g.camera.GlobalTransform;
+                    float ox = (float)lens[0].GetDouble(), oy = (float)lens[1].GetDouble(), oz = lens.GetArrayLength() > 2 ? (float)lens[2].GetDouble() : 0;
+                    at = c0.Origin + c0.Basis.X * ox + c0.Basis.Y * oy + c0.Basis.Z * oz;
+                }
+                else at = r.From.ValueKind == JsonValueKind.Undefined ? g.camera.GlobalPosition : V(places.Resolve(r.From));
+                r.L.GlobalPosition = at;
+                r.L.SpotRange = at.DistanceTo(aim) * 1.6f + 1;
+                if (at.DistanceTo(aim) > 0.05f) r.L.LookAt(aim, Mathf.Abs((aim - at).Normalized().Y) > 0.98f ? Vector3.Forward : Vector3.Up);
+            }
+        }
+
         public void Frame(double dt)
         {
             Skipping(dt);
@@ -371,7 +403,7 @@ public partial class Game
             }
             Steer();
             // The play's HUD comes in as the bars go out, over the blend into the game's camera.
-            if (!hudIn && file.End.Her != null && player.T >= player.S.Length - Math.Max(0.4, file.Bars.Out))
+            if (!hudIn && file.End.Her != null && file.End.Next == null && player.T >= player.S.Length - Math.Max(0.4, file.Bars.Out))
             {
                 hudIn = true;
                 g.hud.ShowPlay(true, (float)Math.Max(0.4, file.Bars.Out));
@@ -380,6 +412,7 @@ public partial class Game
             foreach (var w in bosses.Values) w.Shine(dt);
             foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
+            PlaceRigs();
             CineDbg();
             var shot = player.Shot.Shot;
             // --shot NAME --until S: each shot's standing frame saved as it passes (the previs boards).
@@ -897,6 +930,29 @@ public partial class Game
                         }
                     break;
                 }
+                case "rig":
+                {
+                    // A shot's own light on the cast, as a film crew sets one (face 30: dead eyes
+                    // with no light into the sockets, an unlit crown): a soft spot on the people's
+                    // layer only, no shadow, from "from" ({"lens": [right, up, back]} in the
+                    // camera's frame, or a place) onto "aim" (a place, a bone tracked), "energy"
+                    // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
+                    string name = c.Str("name") ?? "rig";
+                    if (rigs.Remove(name, out var was)) was.L.QueueFree();
+                    float e = (float)c.Num("energy", 0.3);
+                    if (e <= 0) break;
+                    var l = new SpotLight3D
+                    {
+                        Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
+                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? 0 : e,
+                    };
+                    g.scene!.AddChild(l);
+                    rigs[name] = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index);
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = e * (float)k; }));
+                    PlaceRigs();
+                    break;
+                }
                 case "glow":
                 {
                     // A light seen far off (the ford's lamps from the camp, one lamp high up the
@@ -1132,8 +1188,34 @@ public partial class Game
             bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();
             props.Clear();
+            foreach (var r in rigs.Values) r.L.QueueFree();
+            rigs.Clear();
             // Her prints stay: they are in the frost whether it played or not.
             people.Clear();
+            if (file.End.Next != null)
+            {
+                // On into the next on the cut: the zone starts it from done; if it
+                // does not, play is handed back here as usual.
+                g.chained = new Chain(bars, saved);
+                Seen();
+                done?.Invoke();
+                if (g.chained != null) { g.chained = null; Restore(); }
+                return;
+            }
+            Restore();
+            Seen();
+            done?.Invoke();
+        }
+
+        void Seen()
+        {
+            if (!Settings.Current.SeenCinematics.Contains(file.Id)) { Settings.Current.SeenCinematics.Add(file.Id); Settings.Current.Save(); }
+            GD.Print($"cinema: {file.Id} {(player.Skipped ? "skipped" : "done")}");
+        }
+
+        void Restore()
+        {
+            var p = b.Player;
             var cam = g.camera;
             cam.Fov = saved.Fov; cam.KeepAspect = saved.Keep; cam.Near = saved.Near; cam.Attributes = saved.Attr;
             g.scene!.CameraHeld = false;
@@ -1145,9 +1227,6 @@ public partial class Game
             g.controls.ClearLatches();
             if (!hudIn) g.hud.ShowPlay(true, player.Skipped ? 0.3f : 0.6f);
             bars.QueueFree();
-            if (!Settings.Current.SeenCinematics.Contains(file.Id)) { Settings.Current.SeenCinematics.Add(file.Id); Settings.Current.Save(); }
-            GD.Print($"cinema: {file.Id} {(player.Skipped ? "skipped" : "done")}");
-            done?.Invoke();
         }
     }
 }

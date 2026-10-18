@@ -101,6 +101,10 @@ public sealed class CineEnd
     /// back (the Warden face down in the ford after C03), until the next
     /// cinematic or until she leaves the place: nothing vanishes at the hand-over.</summary>
     public List<string>? Keep;
+    /// <summary>The cinematic the zone plays straight after this one, on a cut (C03
+    /// into C04 A: the crossing is in the cut, not in play). The bars stay, the HUD
+    /// stays down, and the camera is not handed back between them.</summary>
+    public string? Next;
 }
 
 /// <summary>Which survivors a shot or a cue is for (all of them, when unset).</summary>
@@ -210,6 +214,6 @@ public sealed class CineCue
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "lids", "look", "light", "lit", "fire",
         "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
-        "lamp", "head", "play",
+        "lamp", "head", "play", "rig",
     ];
 }

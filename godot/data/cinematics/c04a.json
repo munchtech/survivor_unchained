@@ -30,6 +30,7 @@
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
         {"do": "place", "mark": "bank"},
+        {"at": 0.6, "do": "line", "id": "cin_first_light.reeds", "when": {"facts": ["!prologue.reeds_said"]}},
         {"do": "move", "to": "road", "dur": 4.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 3.9, "do": "anim", "clip": "@idle", "blend": 0.4},
         {"do": "prints", "from": [1.0, -49.0], "to": [0.6, -57.0], "stride": 0.8},

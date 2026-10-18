@@ -707,10 +707,15 @@ public sealed class Prologue : ZoneRuntime
         wardenInCine = false;
         GrimGone();
         shown.Add("grimGone");
-        Taken();
+        // C03 runs on into C04 A on the cut (the owner, 17 October: no three seconds
+        // of wading between two cinematics): the crossing is in the cut, and play
+        // comes back on the road once the ember has gone into the ground.
+        bool onward = G.CanCinematic("c04a");
+        Taken(toast: !onward);
         // The cinematic began the dawn (a fifth of the way); the road holds there until C04 finishes it.
         dawnK = 0.287;
-        Dawnbreak();
+        Dawnbreak(said: !onward);
+        if (onward) FirstLight(false, onward: true);
     }
 
     void RunVictory(double dt)
@@ -785,7 +790,7 @@ public sealed class Prologue : ZoneRuntime
     }
 
     /// <summary>What the night's end leaves: the Warden's heart is Grimtunnel's, and you know it.</summary>
-    void Taken()
+    void Taken(bool toast = true)
     {
         G.Apply("""
             [
@@ -795,18 +800,26 @@ public sealed class Prologue : ZoneRuntime
               { "give": "grimtunnels_lamp" }
             ]
             """);
-        G.Toast(new Toast(ToastKind.Lore, "Grimtunnel took the Warden's heart", "They went down, not away. In the churned mud where he went: a lamp on a snapped strap, still warm. His.", Life: 8));
+        if (toast) TakenToast();
     }
 
+    void TakenToast() =>
+        G.Toast(new Toast(ToastKind.Lore, "Grimtunnel took the Warden's heart", "They went down, not away. In the churned mud where he went: a lamp on a snapped strap, still warm. His.", Life: 8));
+
     /// <summary>The gate opens and the night is over: the walk to the Waystation.</summary>
-    void Dawnbreak()
+    void Dawnbreak(bool said = true)
     {
         if (B == null) return;
         Go(Stage.Dawn);
         B.Collision.RemoveTagged("gate");
         // Chid, who has watched the ford all night (TWIST_OPTIONS A); the narrator says it as plainly as the rest.
-        G.Say("In the reeds on the far bank, someone is standing very still.", null, 4);
-        G.After(4.4, () => G.Say("Gray light, then gold. Up the road, the Waystation's gate is opening.", null, 6));
+        // When C04 A follows on the cut, it says the reeds as she climbs out, and shows the gate.
+        if (said)
+        {
+            W.Facts["prologue.reeds_said"] = true;
+            G.Say("In the reeds on the far bank, someone is standing very still.", null, 4);
+            G.After(4.4, () => G.Say("Gray light, then gold. Up the road, the Waystation's gate is opening.", null, 6));
+        }
         Objective([("Walk up the road to the Waystation", false, false)]);
         W.Time = TimeOfDay.Dawn;
     }
@@ -814,11 +827,21 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The dawn puts the ember out: the cards, the blessing, all it
     /// built. What the survivor carries, and what they learned, stay.</summary>
     /// <summary>C04 A: the ember goes out in it (its "douse" event), and the narrator says what Douse's caption did.</summary>
-    void FirstLight(bool south)
+    void FirstLight(bool south, bool onward = false)
     {
         doused = true;
         W.Facts["prologue.dawn_south"] = south;
-        if (!G.Cinematic("c04a", () => { dawnK = 1; G.SetAtmosphere(Atmospheres.Dawn); if (!dousedByCine) Douse(false); })) { Douse(); return; }
+        if (!G.Cinematic("c04a", () =>
+            {
+                dawnK = 1; G.SetAtmosphere(Atmospheres.Dawn); if (!dousedByCine) Douse(false);
+                // On from C03, she never waded back for what he left: it is hers on the road.
+                if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
+            }))
+        {
+            Douse();
+            if (onward) TakenToast();
+            return;
+        }
     }
 
     bool dousedByCine;

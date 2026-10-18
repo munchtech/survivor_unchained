@@ -251,7 +251,8 @@ public sealed class CinePlayer
         {
             var b = S.File.Bars;
             double inK = b.In <= 0 ? 1 : Math.Clamp(T / b.In, 0, 1);
-            double outK = b.Out <= 0 ? 1 : Math.Clamp((S.Length - T) / b.Out, 0, 1);
+            // A cinematic that runs on into the next keeps its bars to the cut.
+            double outK = b.Out <= 0 || S.File.End.Next != null ? 1 : Math.Clamp((S.Length - T) / b.Out, 0, 1);
             return Math.Min(inK, outK);
         }
     }

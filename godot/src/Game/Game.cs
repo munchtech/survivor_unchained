@@ -323,8 +323,10 @@ public partial class Game : Node, IZoneHost
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Travel(onTo));
-        // --cine ID: that cinematic played here at once (pictures of it, its previs).
-        if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);
+        // --cine ID: that cinematic played here at once (pictures of it, its previs),
+        // and on into the one it runs on into (its end.next), as the zone plays them.
+        if (Args.Get("cine") is string cid && cine == null)
+            Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
         Save("new");
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
