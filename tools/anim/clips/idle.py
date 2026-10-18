@@ -227,7 +227,7 @@ def reaver(t, f):
 # and the upper arm 60 mm into her side and breast. Shared by the crossbow's shot and the stops (which end here).
 # The crossbow's carry moved as one (both hands, chest frame, m): ahead of her, so its butt clears her waist.
 STALKER_SHIFT = (0.0, 0.0, 0.06)
-STALKER_HAND_L = {"hand_l": {"arc": arc_of(np.add((-0.058, -0.329, 0.255), STALKER_SHIFT)), "pole": (0.0, -0.5, -1.0), "frame": "chest",
+STALKER_HAND_L = {"hand_l": {"arc": arc_of(np.add((-0.058, -0.337, 0.255), STALKER_SHIFT)), "pole": (0.0, -0.5, -1.0), "frame": "chest",
                              "knuckles": _n((-0.71, 0.33, 0.63)), "blade": _n((-0.49, 0.41, -0.77)), "twist": 0.4}}
 
 

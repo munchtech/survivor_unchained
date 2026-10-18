@@ -404,15 +404,43 @@ def reaver_break(rig):
     return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
 
 
+def _vpath(pts, fr):
+    """A shoulder-relative vector along keyed points [(frame, vector)], eased between each pair (smoothstep), the
+    direction turned on the sphere and the length drawn straight."""
+    if fr <= pts[0][0]:
+        return np.array(pts[0][1], float)
+    for (f0, a), (f1, b) in zip(pts, pts[1:]):
+        if fr <= f1:
+            u = idle._smooth((fr - f0) / (f1 - f0))
+            a, b = np.array(a, float), np.array(b, float)
+            na, nb = np.linalg.norm(a), np.linalg.norm(b)
+            ua, ub = a / na, b / nb
+            om = math.acos(max(-1.0, min(1.0, float(ua @ ub))))
+            d = ua if om < 1e-6 else (math.sin((1 - u) * om) * ua + math.sin(u * om) * ub) / math.sin(om)
+            return d * (na + (nb - na) * u)
+    return np.array(pts[-1][1], float)
+
+
+def _arc_vec(spec):
+    az, el, r = (math.radians(spec["arc"][0]), math.radians(spec["arc"][1]), spec["arc"][2])
+    return np.array([math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)]) * r
+
+
 def stalker_break(rig):
     base = idle.base_of(rig, "stalker")
     f = feet_of(rig, base, turn=True)
     # (Her haunches as deep as before she was stood up, 18 Oct: idle.STAND lifted the base 11 cm, carried it 19 cm
     # forward and turned it back 10 deg.)
+    # Her left hand reaching down ahead of her left knee, two fingers toward the ground (chest frame, from the shoulder:
+    # with her bent over, ahead in the chest's frame is down and forward in hers). Keyed in her space at a point past
+    # her reach (6 cm left of her middle, on the ground), the arm went straight down across her and the upper arm
+    # 24-35 mm into her breast and side as she sank and rose (animation 38): here the arm hangs from the shoulder,
+    # the elbow turned out.
+    reach_l = {"arc": arc_of(STALKER_CROUCH_L), "pole": (1.0, -0.2, -0.3), "frame": "chest",
+               "knuckles": _n(0.0, 0.2, 1.0), "blade": _n(-0.9, 0.1, -0.3), "twist": 0.4}
     crouch = {"hips": {"pos": (0, -0.37, -0.13), "rot": (0, 32, 0)}, "spine": (0, 22, 0), "head": (0, 10, 0),
               "foot_l": f["foot_l"], "foot_r": f["foot_r"],
-              "hand_l": {"pos": (0.06, 0.04, 0.42), "pole": (0.8, 0.2, -0.4), "knuckles": (0.0, -0.3, 1.0)},
-              "fingers_l": "open",
+              "hand_l": reach_l, "fingers_l": "open",
               # The crossbow held out over her knees, the stock level ahead (the idle's carry, low across her, went
               # 73 mm into her right thigh and the right arm 80 mm into her legs as she sank).
               "hand_r": {"arc": arc_of((-0.12, -0.10, 0.42)), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
@@ -431,7 +459,47 @@ def stalker_break(rig):
         (110, over("stalker", foot_l=f["foot_l"], foot_r=f["foot_r"]), "ease"),
         (120, over("stalker", **f), "ease"),
     ]
-    return build("idle_stalker_break", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
+    # The hands' own timing through the fold (animation 38): the left hand comes up and off the fore-stock (out to
+    # her left) before the crossbow moves, reaches down as she sinks, and is laid back on the stock only once the
+    # crossbow is home again (the crossbow had swung up through the resting hand, 17 mm into her thumb).
+    hl, hr = idle.STALKER_HAND_L["hand_l"], idle.STALKER_HAND_R["hand_r"]
+    V0, VC = _arc_vec(hl), np.array(STALKER_CROUCH_L, float)
+    V1 = V0 + np.array(STALKER_LIFT_L)
+    R0, RC = _arc_vec(hr), _arc_vec(crouch["hand_r"])
+    left = [(55, V0), (59, V1), (72, VC), (90, VC), (108, V1), (114, V0)]
+    right = [(58, R0), (72, RC), (90, RC), (110, R0)]
+    turn_l = [(59, 0.0), (72, 1.0), (90, 1.0), (108, 0.0)]
+    def mixv(a, b, w):
+        v = np.array(a, float) * (1 - w) + np.array(b, float) * w
+        return tuple(float(x) for x in v / np.linalg.norm(v))
+
+    def ramp(pts, fr):
+        if fr <= pts[0][0]:
+            return pts[0][1]
+        for (f0, a), (f1, b) in zip(pts, pts[1:]):
+            if fr <= f1:
+                return a + (b - a) * idle._smooth((fr - f0) / (f1 - f0))
+        return pts[-1][1]
+
+    def post(fr, pose):
+        if not 55 <= fr <= 114:
+            return pose
+        w = ramp(turn_l, fr)
+        pose = dict(pose)
+        pose["hand_l"] = {"arc": arc_of(_vpath(left, fr)), "frame": "chest",
+                          "pole": mixv(hl["pole"], reach_l["pole"], w), "knuckles": mixv(hl["knuckles"], reach_l["knuckles"], w),
+                          "blade": mixv(hl["blade"], reach_l["blade"], w), "twist": 0.4}
+        pose["fingers_l"] = "open" if 56 <= fr <= 111 else "relaxed"
+        pose["hand_r"] = dict(hr, arc=arc_of(_vpath(right, fr)),
+                              knuckles=mixv(hr["knuckles"], crouch["hand_r"]["knuckles"], ramp([(58, 0.0), (72, 1.0), (90, 1.0), (110, 0.0)], fr)))
+        return pose
+    return build("idle_stalker_break", rig, keys, base=base, post=post, meta={"layer": "full", "weapon": "crossbow"})
+
+
+# The break's left hand (chest frame, from the shoulder, m): reaching down ahead of her left knee, and lifted off the
+# fore-stock on the way (up and out to her left of the idle's).
+STALKER_CROUCH_L = (0.02, 0.03, 0.52)
+STALKER_LIFT_L = (0.05, 0.05, 0.0)
 
 
 def catch_breath(rig):
