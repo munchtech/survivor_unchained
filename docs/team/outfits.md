@@ -1,10 +1,10 @@
 # Heroine body and outfits: status
 
-Lead: none (successor 17 wound down 13 October 2026 with the coordinator). Handoff: `docs/handoff/outfits.md` "Start here". Branch: `worktree-agent-a5ca10091b08dc429` (code committed; built art uncommitted and unjudged: never build it into the game until it passes).
+Lead: none (successor 29 finished its fixed list on 18 October 2026). Handoff: `docs/handoff/outfits.md` "Paused here". Branch: `worktree-agent-a5ca10091b08dc429`.
 
-## Now (13 October): wound down, fixes in, fin2 next
-- Every fin1 failure has a fix in code, on by default and unjudged: the leotard as one piece (LEO_ONE), the corset's edge skived under its binding (EDGE_SKIVE), the plunge untangled (PLUNGE_UNTANGLE, BIND_AREA_N), the Ranger's crotch widened (RANGER_GUSSET, fixing the legal miss), the sabaton and greave (SAB17, SAB_MATTE, GREAVE_RIM, GREAVE_LINE), and the glove tips (KEEP_SUB).
-- Next: taper the boning channel's lower end (arcanist.boninga), build fin2 with the legal run over all four outfits, re-judge the failed items only, then dotnet test and the merge request.
+## Now (18 October): fixed list done, merge request sent
+- G3L2 glove merged with F1. Triage at 1:1 closed 7 of 8 old items. The owner closed the stockings item; the Arcanist's made boots PASS; at the Look rig, the Ranger's leather roughness floor PASSES and the Warden's steel is closed as known at the round cap.
+- Next body build: the fingers (DIP joint toward the knuckle, a flatter proximal section; numbers in the handoff), bundled so refits and legal run once.
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than a garment.
