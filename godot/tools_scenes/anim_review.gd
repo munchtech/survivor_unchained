@@ -23,10 +23,14 @@ extends SceneTree
 #   GESTURE=her/nod GESTUREAT=s            a gesture laid over the clip (Gestures.cs) s seconds in
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
 #   BODYDIR=folder                         her body and outfits read from another build (before a change)
+#                                          (its outfit_materials.json and outfit_tex/ beside them)
+#   LIGHTS=town                            the towns' day light (as lookdev.gd's)
 #   NOJOINTS=1                             her helper bones left undriven (not her body before them:
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
 #   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
 #                                          away (blue); her own skin drawn from both sides; her UVs as colour
+#   POSEDUMP=file.json                     per photographed frame, her bones' final global poses (after every modifier,
+#                                          from skeleton_updated) and her meshes' non-zero blend shapes, for measuring off-engine
 #   HAIRCLEAR=1 [HAIRMESH=folder]          debug: per photographed frame, how near her hair chain comes to her posed
 #                                          body and outfit (signed cm, negative = inside) and its jump in her neck frame
 var clip = ""
@@ -44,6 +48,8 @@ var travelled = 0.0
 var view = "three"
 var warm = 4
 var vp: SubViewport
+var posedump = []
+var lastpose = null
 
 func _init():
 	var args = OS.get_cmdline_user_args()
@@ -121,6 +127,9 @@ func _init():
 		var jsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
 		jsk.add_child(load("res://src/Actors/HerJoints.cs").new())
 	stage(root)
+	if env("POSEDUMP", "") != "":
+		var psk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+		psk.skeleton_updated.connect(pose_grab.bind(psk))
 
 var tree: AnimationTree
 var gestures = null
@@ -190,14 +199,18 @@ func env(k, d):
 # People.OutfitMaterials does (heroine_outfit.gdshader from
 # outfit_materials.json), not in the file's own materials.
 func game_outfit(mi):
-	var table = JSON.parse_string(FileAccess.get_file_as_string("res://art/people/outfit_materials.json"))
+	# (BODYDIR: that build's own table, when it has one)
+	var tf = "res://art/people/outfit_materials.json"
+	if env("BODYDIR", "") != "" and FileAccess.file_exists(env("BODYDIR", "").path_join("outfit_materials.json")):
+		tf = env("BODYDIR", "").path_join("outfit_materials.json")
+	var table = JSON.parse_string(FileAccess.get_file_as_string(tf))
 	var sh = load("res://shaders/heroine_outfit.gdshader")
 	for s in mi.mesh.get_surface_count():
 		var src = mi.mesh.surface_get_material(s)
 		if not (src is StandardMaterial3D) or not table.has(src.resource_name):
 			continue
 		var e = table[src.resource_name]
-		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4}.get(e["kind"], -1)
+		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4, "satin": 5}.get(e["kind"], -1)
 		if kind < 0:
 			continue
 		src.vertex_color_use_as_albedo = false
@@ -495,6 +508,21 @@ func stage(root):
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.9
 	root.add_child(rim)
+	# LIGHTS=town: the towns' day, as lookdev.gd's (warm key 44 deg up from azimuth 55,
+	# a cool hemisphere, a faint cool rim, fog grey behind)
+	if env("LIGHTS", "") == "town":
+		var el = deg_to_rad(44.0)
+		var az = deg_to_rad(55.0)
+		var dir = Vector3(cos(el) * cos(az), sin(el), cos(el) * sin(az)).normalized()
+		key.basis = Basis.looking_at(-dir, Vector3.UP)
+		key.light_color = Color("#f4e6cc")
+		key.light_energy = 1.5
+		rim.light_color = Color("#dfe8f4")
+		rim.light_energy = 0.35
+		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		e.ambient_light_color = Color("#8a9aac")
+		e.ambient_light_energy = 0.9
+		e.background_color = Color("#8e969a")
 	place_camera()
 
 func place_camera():
@@ -558,8 +586,10 @@ func _process(delta):
 		var img = vp.get_texture().get_image()
 		if env("HAIRCLEAR", "") != "": hair_clear(k)
 		shots.append(img)
+		if lastpose != null: posedump.append(lastpose)
 		if env("FULL", "") != "": img.save_png(out.replace(".png", "_%02d.png" % shots.size()))
 	if shots.size() >= nframes:
+		if env("POSEDUMP", "") != "": pose_write()
 		sheet()
 		quit()
 	return false
@@ -669,3 +699,25 @@ func hair_clear(k):
 					mp = i
 			print("HAIRMOVE k=%d max=%.1f point=%d" % [k, mx, mp])
 		hc_prev[key] = loc
+
+# POSEDUMP: the final pose as the skin gets it (skeleton_updated comes after every modifier).
+func pose_grab(sk: Skeleton3D):
+	var b = []
+	for i in sk.get_bone_count():
+		var g: Transform3D = sk.get_bone_global_pose(i)
+		b.append([g.basis.x.x, g.basis.x.y, g.basis.x.z, g.basis.y.x, g.basis.y.y, g.basis.y.z, g.basis.z.x, g.basis.z.y, g.basis.z.z, g.origin.x, g.origin.y, g.origin.z])
+	var bs = {}
+	for mi in sk.get_children():
+		if mi is MeshInstance3D and mi.mesh is ArrayMesh:
+			for i in mi.get_blend_shape_count():
+				var v = mi.get_blend_shape_value(i)
+				if v != 0.0: bs[String(mi.name) + "|" + String(mi.mesh.get_blend_shape_name(i))] = v
+	lastpose = {"t": ap.current_animation_position, "len": ap.current_animation_length, "bones": b, "shapes": bs}
+
+func pose_write():
+	var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+	var names = []
+	for i in sk.get_bone_count(): names.append(sk.get_bone_name(i))
+	var f = FileAccess.open(env("POSEDUMP", ""), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"clip": clip, "names": names, "frames": posedump}))
+	f.close()

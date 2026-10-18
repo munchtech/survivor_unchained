@@ -107,7 +107,7 @@ func _init():
 				mi.visible = false
 		# OUTFIT=prefix ("warden_" a set, "warden_straps" one piece): her pieces (heroine_outfit_<set>.gltf), on her skeleton.
 		var outfit = OS.get_environment("OUTFIT")
-		if outfit != "":
+		if outfit != "" and outfit != "none":   # (none: her bare, as a close-up list can name it)
 			var o = load("res://art/people/%s_outfit_%s.gltf" % [who, outfit.split("_")[0]]).instantiate()
 			var os_ = o.find_children("*", "Skeleton3D", true, false)[0]
 			for mi in os_.get_children():
@@ -272,6 +272,21 @@ func _init():
 		rim.rotation_degrees = Vector3(-25, -70, 0)
 		rim.light_energy = 1.1
 		rim.shadow_enabled = key.shadow_enabled
+	elif lights == "town":
+		# (the towns' day by their zone.json atmosphere, roughly: warm key 44 deg up
+		# from azimuth 55, a cool hemisphere, a faint cool rim, fog grey behind)
+		var el = deg_to_rad(44.0)
+		var az = deg_to_rad(55.0)
+		var dir = Vector3(cos(el) * cos(az), sin(el), cos(el) * sin(az)).normalized()
+		key.basis = Basis.looking_at(-dir, Vector3.UP)
+		key.light_color = Color("#f4e6cc")
+		key.light_energy = 1.5
+		rim.light_color = Color("#dfe8f4")
+		rim.light_energy = 0.35
+		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		e.ambient_light_color = Color("#8a9aac")
+		e.ambient_light_energy = 0.9
+		e.background_color = Color("#8e969a")
 
 # As People.OutfitMaterials: her outfit's pieces by shaders/heroine_outfit.gdshader
 # (OLDOUTFIT=1: as exported, to compare).
@@ -284,7 +299,7 @@ func outfit_materials(mi):
 		if mi.get_surface_override_material(s) != null or not (src is StandardMaterial3D): continue
 		src.vertex_color_use_as_albedo = false
 		if not outfit_table.has(String(src.resource_name)): continue
-		var k = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4}.get(outfit_table[String(src.resource_name)]["kind"], -1)
+		var k = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4, "satin": 5}.get(outfit_table[String(src.resource_name)]["kind"], -1)
 		if k < 0: continue
 		var m = ShaderMaterial.new()
 		m.shader = load("res://shaders/heroine_outfit.gdshader")
@@ -361,6 +376,14 @@ func hide_skin(mi, ch):
 
 func _process(delta):
 	t += delta
+	# HEADSCALE=k: her head (and all skinned to it: hair, hat) scaled k about its bone, every frame (a head-size A/B).
+	if OS.get_environment("HEADSCALE") != "":
+		var hk = float(OS.get_environment("HEADSCALE"))
+		for h in get_root().get_child(0).get_children():
+			if h.has_method("find_children"):
+				for sk in h.find_children("*", "Skeleton3D", true, false):
+					var hb = sk.find_bone("Head")
+					if hb >= 0: sk.set_bone_pose_scale(hb, Vector3.ONE * hk)
 	# MOVE=metres: each figure carried forward and back that far, about one
 	# return a second and a half (to see her hair swing and stream).
 	if OS.get_environment("MOVE") != "":
