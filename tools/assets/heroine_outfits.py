@@ -36,6 +36,20 @@ from scipy import sparse
 import scipy.sparse.csgraph
 from scipy.spatial import cKDTree
 
+# (s28, the owner's glove pick: ARC_GLOVE names the Arcanist glove's knobs as a set, each only a default
+# (an explicit env still wins). G3 = the owner's pick (14 Oct): B1's ivory fingerless satin, a plum-piped top
+# with a soft point over the back of her elbow and a dip at her inner elbow, a piped knuckle V; G3L/G3L2 its
+# louder tops (a deeper point, a wider plum binding at the top only); B1 = plain white satin, as before s24.)
+_G3 = {"GLOVE_STYLE": "G1", "GLOVE_LOOP": "0,0,0,0", "GLOVE_POINTS": "0,0,0,0,0", "FL_DORS": "0.006,0.014",
+       "FL_THUMB_BLEND": "0.3,0.7", "GLOVE_IVORY": "1.789,1.470,1.142,223", "GLOVE_PIPE_MAT": "0.75,0.44,0.72,70,0.25",
+       "GLOVE_EDGE_EASE": "0.010,0.005,0.003,0.010", "GLOVE_EDGE_EASE_IDX": "0.005,0.1,0.4"}
+ARC_GLOVE_SETS = {"B1": {}, "G3": _G3,
+                  "G3L": dict(_G3, ARC_GLOVE_POINT="0.034", ARC_GLOVE_POINT_W="46", GLOVE_PIPE_TOP="0.005,0.001,0.0022"),
+                  "G3L2": dict(_G3, ARC_GLOVE_POINT="0.044", ARC_GLOVE_POINT_W="52", GLOVE_CROOK="0.012", GLOVE_PIPE_TOP="0.007,0.0014,0.003")}
+ARC_GLOVE = os.environ.get("ARC_GLOVE", "G3L2")
+for k_, v_ in ARC_GLOVE_SETS[ARC_GLOVE].items():
+    os.environ.setdefault(k_, v_)
+
 # Progress shown as it happens (Blender holds output back otherwise).
 sys.stdout.reconfigure(line_buffering=True)
 ARGS = sys.argv[sys.argv.index("--") + 1:]
@@ -239,6 +253,15 @@ def mend_folds(me, obj=None, free=None, normals=True):
     cn = np.empty(nl * 3, np.float32)
     me.corner_normals.foreach_get("vector", cn)
     cn = cn.reshape(-1, 3).astype(float)
+    # (s26: her chest's fitted normals, heroine_chest.py, enter here as this pass's own, so the fold check
+    # below still mends any corner of theirs that turned over, and every corner is stored once, as in F0:
+    # set twice, the rounding changed and the export welded 2 copies)
+    _hc = sys.modules.get("heroine_chest")
+    if normals and obj is not None and _hc is not None and getattr(_hc, "CN_OVERRIDE", None) is not None:
+        _sel, _nv = _hc.CN_OVERRIDE
+        if len(cn) == nl:
+            cn[_sel] = _nv
+        _hc.CN_OVERRIDE = None
     lv = np.empty(nl, np.int64)
     me.loops.foreach_get("vertex_index", lv)
     mb = bmesh.new()
@@ -1888,6 +1911,12 @@ def relax(pos, tris, interior=0, edge=12):
 # metalness and roughness where the scan has no map of them. The colour is
 # baked into a texture of the material's own (outfit_<key>_diff.jpg), so the
 # game gets exactly what was made here.
+# (s27 glove round 2: GLOVE_IVORY "r,g,b,mean" the glove an ivory under 255 so its highlight has room
+# (judge gl r1: paper-white by day); GLOVE_PIPE_MAT "r,g,b,mean,rough" the piping matched to the
+# leotard's plum (it read navy-black); GLOVE_THREAD_MAT likewise for the back-of-hand points)
+_GIV = [float(v) for v in os.environ.get("GLOVE_IVORY", "").split(",") if v]
+_GPM = [float(v) for v in os.environ.get("GLOVE_PIPE_MAT", "0.60,0.42,0.72,58,0.30").split(",")]
+_GTM = [float(v) for v in os.environ.get("GLOVE_THREAD_MAT", "1.652,1.379,1.12,240,0.22").split(",")]
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
@@ -1912,12 +1941,12 @@ SPEC = {
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
     # (s21, her gloves: the stockings' bands' white, a finer weave and a softer sheen over a forearm's length)
     "glovesatin": ("rough_linen", (1.652, 1.379, 1.12), 228, 40, 0.0, 0.3) if not os.environ.get("GLOVE_STYLE") else
-                  ("rough_linen", (1.652, 1.379, 1.12), 212, 40, 0.0, 0.25),   # (s23 judge gl1: 0.45 read matte cotton; a satin sheen. s24 GLOVE_STYLE S1: 212/0.25, headroom for its highlight)
+                  (("rough_linen", tuple(_GIV[:3]), _GIV[3], 40, 0.0, 0.25) if _GIV else ("rough_linen", (1.652, 1.379, 1.12), 212, 40, 0.0, 0.25)),   # (s23 judge gl1: 0.45 read matte cotton; a satin sheen. s24 GLOVE_STYLE S1: 212/0.25, headroom for its highlight)
     # (s24 GLOVE_STYLE S2: the gloves' plum piping (the leotard's plum, a touch lighter than plumleather),
     # a less mirror-like gold for small parts, an ivory silk thread a shade over the glove)
-    **({"glovepipe": ("rough_linen", (0.60, 0.42, 0.72), 58, 40, 0.0, 0.30),
+    **({"glovepipe": ("rough_linen", tuple(_GPM[:3]), _GPM[3], 40, 0.0, _GPM[4]),
         "wiregold": ("Metal048C", (252, 194, 108), None, 3, 1.0, 0.34),
-        "glovethread": ("rough_linen", (1.652, 1.379, 1.12), 240, 60, 0.0, 0.22)} if os.environ.get("GLOVE_STYLE") else {}),
+        "glovethread": ("rough_linen", tuple(_GTM[:3]), _GTM[3], 60, 0.0, _GTM[4])} if os.environ.get("GLOVE_STYLE") else {}),
     "gloveblack": ("rough_linen", (0.3, 0.3, 0.34), 24, 40, 0.0, 0.46),   # (s23 judge gl1: 0.4 near wet-look in the fist close)
     "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 100, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
@@ -2268,6 +2297,9 @@ BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
 # bound (a thumb's), its binding (key, width, height, overhang) as given, not widened to 5 mm; and the
 # glove's top cut for her skin's tuck under it)
 BIND_SIGMA, BIND_MINLOOP, BIND_SPEC, GLOVE_TOP_D = {}, {}, {}, {}
+# (s28, the owner's louder G3 top: a piece's name: (a point, (width, height, overhang)): its bound edge loop
+# nearest that point (the glove's top, by her elbow) bound to that instead of BIND_SPEC's; the rest as given)
+BIND_TOP = {}
 # (s17 spike2: a piece's name: its binding faces the sheet's faces within 3 mm of
 # the line, weighed by their area, not the one nearest face: at the arcanist's left
 # hip one folded sliver at the edge (0.18 mm2) was the nearest face of four line
@@ -2334,6 +2366,10 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     moved = np.zeros(len(pos), bool)
     bound = 0
     planes = []
+    top_k = -1
+    if name in BIND_TOP:
+        a_ = np.asarray(BIND_TOP[name][0], float)
+        top_k = int(np.argmin([np.linalg.norm(pos[l_].mean(0) - a_) for l_ in loops]))
     for k, loop in enumerate(loops):
         lp = pos[loop]
         seg = np.linalg.norm(np.diff(np.vstack([lp, lp[:1]]), axis=0), axis=1)
@@ -2346,7 +2382,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         bound += 1
         cur = smooth_closed(lp, BIND_SIGMA.get(name, sigma))
         # (no bend tighter than twice the rolled edge's radius: see rounded())
-        cur = rounded(cur, rmin or BIND_RMIN.get(name) or width)
+        cur = rounded(cur, rmin or BIND_RMIN.get(name) or (BIND_TOP[name][1][0] if k == top_k else width))
         # Back onto the sheet (its surface, not the plane of the nearest
         # point: that changed from point to point and stepped the line in
         # depth, unseen face-on, kinked at a glancing view), the move eased
@@ -2438,6 +2474,9 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         pos[fix] -= outward[jn[fix]] * (out_[fix] + 0.0003)[:, None]
         moved |= fix
         w_r, h_r, o_r, t_r = width, height, overhang, thick
+        if k == top_k:
+            w_r, h_r, o_r = BIND_TOP[name][1]
+            print("BIND_TOP %s_bind%d: %.1f mm wide, %.1f mm over the sheet, %.1f mm overhang" % (name, k, w_r * 1000, h_r * 1000, o_r * 1000))
         if name in BIND_SLIM:
             # (s18 BIND_SLIM: slimmer round and under her crotch, eased along the line)
             sl_ = ramp(-cur[:, 2], -(CROTCH + 0.02), -(CROTCH + 0.004)) * ramp(-np.abs(cur[:, 0]), -0.06, -0.05)
@@ -6111,6 +6150,8 @@ def arcanist():
     GLOVE_CROOK_W = np.radians(float(os.environ.get("GLOVE_CROOK_W", "70")))
     GLOVE_PIPE = tuple(float(v) for v in os.environ.get("GLOVE_PIPE", "0.003,0.0006,0.0014").split(","))
     GLOVE_BIND_SIGMA = float(os.environ.get("GLOVE_BIND_SIGMA", "0.003"))
+    # (s28: the top's binding alone as (width, height over the sheet, overhang), the louder G3; 0 = GLOVE_PIPE's)
+    GLOVE_PIPE_TOP = tuple(float(v) for v in os.environ.get("GLOVE_PIPE_TOP", "0,0,0").split(","))
     # (G1: the top's lancet ARC_GLOVE_POINT up toward her elbow, ARC_GLOVE_POINT_W deg each side at its root,
     # its tip ARC_GLOVE_POINT_TIP deg round, centred ARC_GLOVE_POINT_ROT deg round from the back of her hand
     # toward her pinky (her ulna's ridge, the line to her elbow's tip); on her hand a tongue FL_TONGUE onto
@@ -6142,6 +6183,8 @@ def arcanist():
     GLOVE_EYES = [float(v) for v in os.environ.get("GLOVE_EYES", "0.008,0.028,0.048,0.068,0.086").split(",")]
     GLOVE_EYE = tuple(float(v) for v in os.environ.get("GLOVE_EYE", "0.0015,0.00045,0.0026").split(","))
     GLOVE_LACE_R = float(os.environ.get("GLOVE_LACE_R", "0.0009"))
+    GLOVE_LACE_CLEAR = float(os.environ.get("GLOVE_LACE_CLEAR", "0.0006"))   # (s25 gs2: a lace's surface off the built binding and sheet; at 0.4 mm two points stood 0.27 mm off, G2h)
+    GLOVE_KNOT_SEAT = float(os.environ.get("GLOVE_KNOT_SEAT", "0.00075"))   # (s25 gs2: the knot's base off what is under it)
     GLOVE_BOW = tuple(float(v) for v in os.environ.get("GLOVE_BOW", "0.009,0.004,0.014,0.0035,0.0011").split(","))
     GLOVE_STYLE_FRAME, GLOVE_HAND = {}, {}
 
@@ -6348,7 +6391,28 @@ def arcanist():
                     co, nn, _, _ = SKIN_BVH.find_nearest(Vector(c + d * (R_ + 0.005)))
                     p_, n = np.array(co[:]), np.array(nn[:])
                 return p_, n
-            def under(p_):
+            # (s25 gs2: the binding as built (its tubes, BIND_SIGMA-eased off the cut), for the laces:
+            # over the cut's estimate one crossing lace dipped 3 mm into it, gsG2g)
+            bobs_ = [o for o in bpy.data.objects if o.type == "MESH" and o.name.startswith(nm + "_bind")]
+            bvb_ = None
+            if bobs_:
+                bv_, bt_, o_ = [], [], 0
+                for o in bobs_:
+                    bv_ += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+                    bt_ += [tuple(i + o_ for i in pl.vertices) for pl in o.data.polygons]
+                    o_ += len(o.data.vertices)
+                bvb_ = BVHTree.FromPolygons(bv_, bt_)
+            def built_h(p_, n):
+                # (the highest built face over p_ along n, binding or sheet, off her skin)
+                h = 0.0
+                for bvh_, add in ((bvb_, 0.0), (sbvh, sth)):
+                    if bvh_ is None:
+                        continue
+                    hit = bvh_.ray_cast(Vector(p_ + n * 0.02), Vector(-n), 0.025)
+                    if hit[0] is not None:
+                        h = max(h, float((np.array(hit[0][:]) - p_) @ n) + add)
+                return h
+            def under(p_, n=None):
                 # (what lies under a cord at p_, off her skin: the glove's face, its binding's crown)
                 dd = float(cutf(p_[None])[0])
                 h = lift_c if dd > 0 else 0.0
@@ -6366,7 +6430,7 @@ def arcanist():
                 PN = [arm_pt(s, x) for s, x in sx]
                 pp = np.array([a for a, b in PN])
                 nn = np.array([b for a, b in PN])
-                req = np.array([under(a) for a in pp]) + r + base
+                req = np.array([max(under(a), built_h(a, b) + GLOVE_LACE_CLEAR - base) if key == "glovepipe" else under(a) for a, b in zip(pp, nn)]) + r + base
                 if laid:
                     lp = np.array([a for a, b in laid])
                     lr = np.array([b for a, b in laid])
@@ -6419,10 +6483,13 @@ def arcanist():
                                  lr_, "glovepipe", ends=(eye_end, eye_end))
             bl, bh, tl, al_, ar_ = GLOVE_BOW
             s_k = GLOVE_EYES[0] - 0.0045
-            for sg in (1, -1):
-                made_ += lay_(f"arcanist.glove_{sd}_lace_top{'ab'[sg > 0]}", [(GLOVE_EYES[0], sg * xs[0]), (s_k, sg * 0.0006)], lr_, "glovepipe", ends=(eye_end, None))
             kp, kn = arm_pt(s_k, 0.0)
-            hk = max([((c_ - kp) @ kn) + r_ for c_, r_ in laid if np.linalg.norm(c_ - kp) < 0.004] + [lift_c])
+            # (s25 gs2: the knot seated, its base GLOVE_KNOT_SEAT off what is under it (it stood 4.4 mm off
+            # her on the laces' stack, gsG2g), the top laces' ends inside it, loops and tails from its rim)
+            hb_ = max(under(kp), built_h(kp, kn)) + GLOVE_KNOT_SEAT
+            for sg in (1, -1):
+                made_ += lay_(f"arcanist.glove_{sd}_lace_top{'ab'[sg > 0]}", [(GLOVE_EYES[0], sg * xs[0]), (s_k, sg * 0.0006)], lr_, "glovepipe", ends=(eye_end, hb_ + 0.0003))
+            hk = hb_ + 0.0008   # (the knot dome's base at hk - 0.8 mm = hb_)
             for sg in (1, -1):
                 t = np.linspace(0, 2 * np.pi, 64, endpoint=False)
                 lp_ = np.stack([s_k - 0.5 * bh * np.sin(t) + 0.0006 * (1 - np.cos(t)), sg * 0.5 * bl * (1 - np.cos(t))], 1)
@@ -6442,8 +6509,25 @@ def arcanist():
             for o_ in domes(f"arcanist.glove_{sd}_knot", [kp + kn * (hk - 0.0008)], [kn], "glovepipe", r=0.0019):
                 o_["hides"] = False
                 made_.append(o_)
-            print("GLOVE %s V: %.0f mm wide at the top, its foot %.0f mm down; %d eyelet pairs, %d crossings, the bow's knot %.1f mm off her"
-                  % (sd, hw0 * 1000, (L - ra / np.sin(np.arctan2(0.5 * hw0, L)) + ra) * 1000, ne, ne - 1, hk * 1000))
+            print("GLOVE %s V: %.0f mm wide at the top, its foot %.0f mm down; %d eyelet pairs, %d crossings, the bow's knot's base %.2f mm off what is under it"
+                  % (sd, hw0 * 1000, (L - ra / np.sin(np.arctan2(0.5 * hw0, L)) + ra) * 1000, ne, ne - 1, GLOVE_KNOT_SEAT * 1000))
+            # (the gate: every lace point GLOVE_LACE_CLEAR off every binding tube and the sheet, bar the
+            # eyelet ends, which go into their rings)
+            if bvb_ is not None:
+                worst_ = []
+                for o in made_:
+                    if "_lace" not in o.name and "_tail" not in o.name and "_bow" not in o.name:
+                        continue
+                    for v in o.data.vertices:
+                        q_ = o.matrix_world @ v.co
+                        co, nrm_, _, dist = bvb_.find_nearest(q_)
+                        if co is None:
+                            continue
+                        e_d = min(np.linalg.norm(np.array(q_[:]) - arm_pt(s, sg_ * xs[i])[0]) for i, s in enumerate(GLOVE_EYES) for sg_ in (1, -1)) if dist < 0.0006 else 1.0
+                        if e_d < er + 0.0005:
+                            continue
+                        worst_.append(dist if (np.array(q_[:]) - np.array(co[:])) @ np.array(nrm_[:]) > 0 else -dist)
+                print("GLOVE %s laces off the built binding: nearest %.2f mm (%d lace surface points under 0.3 mm)" % (sd, min(worst_) * 1000, int((np.array(worst_) < 0.0003).sum())))
         return made_
 
     def knuckle_cut(sd):
@@ -6492,6 +6576,12 @@ def arcanist():
     FL_WEB_GAP = float(os.environ.get("FL_WEB_GAP", "0.002"))
     FL_V = float(os.environ.get("FL_V", {"G1": "0.012", "G2": "0.011"}.get(GLOVE_STYLE, "0.008")))
     FL_P1 = [float(x) for x in os.environ.get("FL_P1", "0.0232,0.0269,0.0267,0.0211").split(",")]
+    # (s27 glove round 2, judge gl r1: a white tooth where the cut met her index knuckle and the piping hooked
+    # there and at the pinky end. FL_DORS "offset,width" of the band the V eases in over, back of the hand to
+    # palm (was 4,8 mm); FL_THUMB_BLEND "lo,hi" her thumb's weight over which the thumb cut's field blends into
+    # the knuckle cut's (was a hard switch at 0.5, a step in the field; "0,0" = as before))
+    FL_DORS = [float(x) for x in os.environ.get("FL_DORS", "0.004,0.008").split(",")]
+    FL_THUMB_BLEND = [float(x) for x in os.environ.get("FL_THUMB_BLEND", "0,0").split(",")]
     def knuckle_exact(sd):
         # (her frame from her wrist and her middle joints (02), which a body build's
         # knuckle move leaves where they are; each finger's knot FL_P1 (her F1 rig's first
@@ -6529,7 +6619,7 @@ def arcanist():
             base_ = lambda ql: np.interp(ql, knots_l, knots_t)
         def line_at(ql, qu, tongue=True):
             line = base_(ql)
-            dors = np.clip((qu + 0.004) / 0.008, 0, 1)
+            dors = np.clip((qu + FL_DORS[0]) / FL_DORS[1], 0, 1)
             dors = dors * dors * (3 - 2 * dors)
             dl = np.sqrt((ql - lmid) ** 2 + FL_V_R ** 2) - FL_V_R if GLOVE_STYLE else np.abs(ql - lmid)
             line = line - FL_V * dors * np.clip(dl / half, 0, 1)
@@ -6544,6 +6634,15 @@ def arcanist():
             c = line - qt
             _, j = tree.query(q)
             th = FL_CUT_THUMB - (q - ta_) @ tx_
+            if os.environ.get("FL_FDUMP"):
+                # (debug: the cut's inputs, for study offline)
+                np.savez(os.path.join(os.environ["FL_FDUMP"], "kx_%s.npz" % sd), q=q, ql=ql, qt=qt, qu=qu, c=c, th=th, wthj=wth[j],
+                         P=P, TRI=TRI, wth=wth, a=a_, ax=ax_, side=side_, up=up_, ta=ta_, tx=tx_, kl=knots_l, kt=knots_t,
+                         lmid=lmid, half=half, prm=np.array([FL_V, FL_V_R, FL_TONGUE, FL_TONGUE_R, FL_TONGUE_W, FL_CUT_THUMB] + list(FL_DORS)))
+            if FL_THUMB_BLEND[1] > FL_THUMB_BLEND[0]:
+                s_ = np.clip((wth[j] - FL_THUMB_BLEND[0]) / (FL_THUMB_BLEND[1] - FL_THUMB_BLEND[0]), 0, 1)
+                s_ = s_ * s_ * (3 - 2 * s_)
+                return c * (1 - s_) + th * s_
             return np.where(wth[j] > 0.5, th, c)
         return f
 
@@ -6554,6 +6653,39 @@ def arcanist():
     GLOVE_HEM = float(os.environ.get("GLOVE_HEM", "0.0035"))
     GLOVE_SOFTEN = int(os.environ.get("GLOVE_SOFTEN", "24"))
     GLOVE_SMOOTH = int(os.environ.get("GLOVE_SMOOTH", "6"))
+    # (s26 solver gs5, judge hip l30: with her thumb spread (hand on hip, thumb_in 70) the thumb hole's web side
+    # sank 2.2 mm into her and the knuckle edge at the web stood off as a white point: the sheet's weights, eased
+    # over 8 mm (eased_weights), had carried her hand's share up the 8 mm thumb sleeve (hand 0.06, thumb_01 0.13
+    # where her skin has none) and her thumb's down onto the web's knuckle edge (thumb_02 0.07 vs 0.01), and with
+    # her thumb turned 70 deg at its root each point went 4-6 mm off the skin it sits on. Now the glove's hand
+    # part takes her skin's own blend at its nearest point (barycentric: as smooth as her skin's), full where her
+    # hand and fingers carry GLOVE_HAND_EXACT[1] of it, none under [0] (her wrist keeps the eased blend). "0": as before.)
+    GLOVE_HAND_EXACT = tuple(float(v) for v in os.environ.get("GLOVE_HAND_EXACT", "0.5,0.9").split(","))
+    _hand_cols = np.array([n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky") for n in BONES])
+    def glove_hand_exact(pos, wt):
+        if len(GLOVE_HAND_EXACT) < 2:
+            return wt
+        sx = np.zeros_like(wt)
+        for i, q in enumerate(pos):
+            co, _n, fi, _d = BVH.find_nearest(Vector(q))
+            if co is None:
+                sx[i] = wt[i]
+                continue
+            a_, b_, c_ = P[TRI[fi]]
+            v0, v1, v2 = b_ - a_, c_ - a_, np.array(co[:]) - a_
+            d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+            den = max(d00 * d11 - d01 * d01, 1e-18)
+            bv = (d11 * d20 - d01 * d21) / den
+            bw = (d00 * d21 - d01 * d20) / den
+            bc = np.clip(np.array([1 - bv - bw, bv, bw]), 0, 1)
+            sx[i] = bc @ W[TRI[fi]] / max(bc.sum(), 1e-9)
+        k = np.clip((sx[:, _hand_cols].sum(1) - GLOVE_HAND_EXACT[0]) / (GLOVE_HAND_EXACT[1] - GLOVE_HAND_EXACT[0]), 0, 1)
+        k = (k * k * (3 - 2 * k))[:, None]
+        out_ = wt * (1 - k) + sx * k
+        print("GLOVE hand exact: %d points on her skin's own blend, %d eased into it (moved L1 up to %.2f, mean %.3f)"
+              % (int((k[:, 0] > 0.999).sum()), int(((k[:, 0] > 0) & (k[:, 0] <= 0.999)).sum()),
+                 np.abs(out_ - wt).sum(1).max(), np.abs(out_ - wt).sum(1).mean()))
+        return out_
     def glove_top_cut(sd):
         e_, w_ = ARM[sd][1], ARM[sd][2]
         ax_ = (w_ - e_) / np.linalg.norm(w_ - e_)
@@ -6737,6 +6869,8 @@ def arcanist():
             BIND_MINLOOP[f"arcanist.glove_{sd}"] = 0.03
             if GLOVE_STYLE in ("G1", "G2"):
                 BIND_SPEC[f"arcanist.glove_{sd}"] = ("glovepipe",) + GLOVE_PIPE
+                if GLOVE_PIPE_TOP[0] > 0:
+                    BIND_TOP[f"arcanist.glove_{sd}"] = (ARM[sd][1], GLOVE_PIPE_TOP)
         out += [
             *(piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP - (GLOVE_FIELD_OVER if ARC_CAPS else 0.0), 9.9, legs=False), "blackleather",
                     lift=(lambda q, sd=sd: glove_a_lift(q, sd)) if ARC_CAPS else 0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12,
@@ -6751,7 +6885,8 @@ def arcanist():
                          (np.minimum(tc(q), kc(q)) if kc is not None else tc(q)) if tc is not None else kc(q))
                         if (ARC_CAPS or FL_EXACT) else None,
                     trim=(("glovepipe", GLOVE_PIPE[0], 0.0003, 0.0008) if GLOVE_STYLE in ("G1", "G2") else (ARC_GLOVE_MAT, GLOVE_HEM, 0.0003, 0.0008)) if GLOVE_HEM > 0 else None,
-                    clear=lambda q, sd=sd: FL_LIFT - (0.0 if ARC_CAPS else GLOVE_SINK) * glove_top_k(q, sd))
+                    clear=lambda q, sd=sd: FL_LIFT - (0.0 if ARC_CAPS else GLOVE_SINK) * glove_top_k(q, sd),
+                    weigh=glove_hand_exact)
               if ARC_HANDS == "fingerless" else []),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
@@ -8328,6 +8463,10 @@ TUCK_FULL = 0.98
 # (the Arcanist's elbow glove's top: her skin's tuck at its line, and how far in it is full)
 GLOVE_TUCK_RIM = float(os.environ.get("GLOVE_TUCK_RIM", "0.05"))
 GLOVE_TUCK_IN = float(os.environ.get("GLOVE_TUCK_IN", "0.03"))
+# (s26 solver gs6: the outfits whose marks are one at each point of her split skin, TUCK_WELD; and the
+# fingerless glove's open edges on her hand, her skin eased in from nothing there to a full tuck GLOVE_EDGE_IN in)
+TUCK_WELD = [s_ for s_ in os.environ.get("TUCK_WELD", "arcanist").split(",") if s_]
+GLOVE_EDGE_IN = float(os.environ.get("GLOVE_EDGE_IN", "0.010"))
 GONE_IN = 0.02
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
@@ -8413,10 +8552,28 @@ if BODY_OUT:
             ev = np.array([e.vertices[:] for e in me.edges])
             globals()["_body_nb"] = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
                                                       shape=(len(me.vertices), len(me.vertices))).tocsr()
+        # (s26 solver gs6, TUCK_WELD: her skin is split here and there, two to four copies at one point, each
+        # its own normal (her hands most: 80 such points in the Arcanist's mark), and each copy took its own
+        # mark, by its own ray and its own ring from the border: 0.27, 0.53 and 0.78 at one point 3.7 mm in
+        # from the left thumb hole. Drawn tucked, the copies part, a crack 5.5 mm wide under the glove's open
+        # edge, seen as a dark slit and the edge over it as a white flap. In the outfits named, the copies at
+        # a point are one: the deepest copy's ray, the rings counted on her skin welded, one mark for all.)
+        welded = name in TUCK_WELD
+        if welded:
+            if "_body_cw" not in globals():
+                _, gid_ = np.unique(np.round(np.array([v.co[:] for v in me.vertices]) / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+                gid_ = np.asarray(gid_).ravel()
+                S_ = sparse.csr_matrix((np.ones(len(gid_)), (np.arange(len(gid_)), gid_)))
+                C_ = (S_ @ S_.T).tocsr()
+                globals()["_body_cw"] = (gid_, (C_ @ _body_nb @ C_).tocsr())
+            gm_ = np.zeros(_body_cw[0].max() + 1)
+            np.maximum.at(gm_, _body_cw[0], vals[:, k])
+            print("TUCK WELD %s: %d points of hers split in copies, %d of them marked unequally" % (name, int((np.bincount(_body_cw[0]) > 1).sum()), int((np.abs(gm_[_body_cw[0]] - vals[:, k]) > 1e-6).sum())))
+            vals[:, k] = gm_[_body_cw[0]]
         under = vals[:, k] > 0
         reached, ring = ~under, np.zeros(len(under))
         for r_ in (1, 2):
-            nxt = under & ~reached & ((_body_nb @ reached.astype(float)) > 0)
+            nxt = under & ~reached & (((_body_cw[1] if welded else _body_nb) @ reached.astype(float)) > 0)
             ring[nxt], reached = r_, reached | nxt
         vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
         # Under a held edge (held_edges: a leotard's leg lines) she is tucked
@@ -8473,6 +8630,30 @@ if BODY_OUT:
                     fa = (ARMW[sd][jj] > 0.5) & (d_ > -0.05) & (d_ < GLOVE_TUCK_IN)
                     vals[fa, k] = np.where(d_[fa] > 0, GLOVE_TUCK_RIM + (1.0 - GLOVE_TUCK_RIM) * ramp(d_[fa], 0.0, GLOVE_TUCK_IN), 0.0)
                     print("GLOVE TUCK %s: %d vertices of hers eased in under its top, %d past it untucked" % (sd, int((fa & (d_ > 0)).sum()), int((fa & (d_ <= 0)).sum())))
+            # (s26 solver gs6, GLOVE_EDGE_IN: the fingerless glove's open edges on her hand, the thumb hole and
+            # the knuckle cut (its sheet's own border, finish()'s rim, where her skin under it is her hand's):
+            # her skin eased in from no tuck at the edge to a full one GLOVE_EDGE_IN inside, and none beside it.
+            # Tucked by the rays and the rings, a mark of 0.78 sat 3.7 mm in from the left thumb hole, 0.3 and
+            # more within 4 mm of it: her skin sank away under the open edge, a dark slit and a white flap.)
+            if ARC_HANDS == "fingerless" and GLOVE_EDGE_IN > 0:
+                bwc_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+                for sd in ("l", "r"):
+                    rim_ = [np.array(o["rim"].to_list() if hasattr(o["rim"], "to_list") else o["rim"], float).reshape(-1, 3)
+                            @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3]
+                            for o in objs if o.name.startswith(f"arcanist.glove_{sd}") and "rim" in o.keys()]
+                    if not rim_:
+                        continue
+                    rim_ = np.vstack(rim_)
+                    hc_ = [BI[n] for n in BONES if n.endswith(f"_{sd}") and n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky")]
+                    rim_ = rim_[W[cKDTree(P).query(rim_)[1]][:, hc_].sum(1) > 0.5]
+                    de_ = cKDTree(rim_).query(bwc_)[0]
+                    cap_ = ramp(de_, 0.0, GLOVE_EDGE_IN)
+                    m_ = (de_ < GLOVE_EDGE_IN) & (vals[:, k] > cap_)
+                    n4_ = de_ < 0.004
+                    print("GLOVE EDGE %s: %d rim points on her hand; %d vertices of hers eased in from its open edges (mean %.2f -> %.2f); within 4 mm max %.2f -> %.2f"
+                          % (sd, len(rim_), int(m_.sum()), vals[m_, k].mean() if m_.any() else 0, cap_[m_].mean() if m_.any() else 0,
+                             vals[n4_, k].max(), np.minimum(vals[n4_, k], cap_[n4_]).max()))
+                    vals[m_, k] = cap_[m_]
         for cap_, zone_ in TUCK_ZONES.get(name, []):
             zw_ = zone_(P[jj])
             print("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (vals[:, k] > cap_)).sum()), cap_))
@@ -8493,6 +8674,10 @@ if BODY_OUT:
         # 10). Under the cuff's own edge she is tucked as before, so no gap
         # opens there and a look into the cuff finds her.
         vals[:, k] = np.minimum(vals[:, k], TUCK_FULL)
+        if name in TUCK_WELD and "_body_cw" in globals():
+            gm_ = np.zeros(_body_cw[0].max() + 1)
+            np.maximum.at(gm_, _body_cw[0], vals[:, k])
+            vals[:, k] = gm_[_body_cw[0]]
         if name == "arcanist" and ARC_HANDS == "glove":
             for sd in ("l", "r"):
                 glv = [o for o in objs if o.name.startswith(f"arcanist.glove_{sd}")]
@@ -8558,6 +8743,11 @@ if BODY_OUT:
         n_eased += 1
     print("BODY breast weights eased at", n_eased, "of her vertices")
     me.color_attributes.active_color = col
+    # (s25, her chest skin faired over the sculpt's irregular triangulation: heroine_chest.py; here,
+    # after every piece is fitted to her as she was, so none changes. Off: CHEST_SMOOTH=0)
+    if os.environ.get("CHEST_SMOOTH", "1") == "1":
+        from heroine_chest import chest_smooth
+        chest_smooth(body, mend_folds)
     # Her helper bones (twists at the shoulders and down the forearms, shares
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
@@ -8577,9 +8767,28 @@ if BODY_OUT:
     # partner step, heroine_browpaint.py, is done once in each paint)
     import heroine_browfold
     heroine_browfold.fold(BODY_OUT)
+    # (and the bow's normals refilled in the face keys, so no dark dots sit over her upper lip's border:
+    # heroine_face_bow.py run; its run_keys follows the smile's easing below)
+    import heroine_face_bow
+    heroine_face_bow.run(BODY_OUT)
     # (and her side teeth in the cheeks' shade: heroine_teethshade.py)
     import heroine_teethshade
     heroine_teethshade.shade(BODY_OUT)
+    # (and her teeth and tongue seated for an open mouth and a smile, her mouth's inside dark by depth and the
+    # smile_open key: heroine_mouth.py)
+    import heroine_mouth
+    heroine_mouth.seat(BODY_OUT)
+    # (and her smile's and open mouth's moves eased across her upper lip's border, so no groove or fold opens
+    # there: heroine_smile_lip.py)
+    import heroine_smile_lip
+    heroine_smile_lip.run(BODY_OUT)
+    # (and the bow's normals refilled in the base and every mouth key, after the easing above recomputed them:
+    # heroine_face_bow.py run_keys)
+    heroine_face_bow.run_keys(BODY_OUT)
+    # (and her mouth's inside pushed back behind her skin in every face key, and the upper front gum raised so the laugh
+    # shows teeth, not gum: heroine_mouth_inner.py; heroine_mouth_seal.py is NOT hooked yet, judged NOT YET)
+    import heroine_mouth_inner
+    heroine_mouth_inner.run(BODY_OUT)
     # (her head +7%, the owner 14 Oct: the Head joint's rest scaled, her meshes as they were, so it
     # may run before or after any step that measures them (heroine_mouth.seat); keep it last)
     import heroine_headscale
@@ -8716,6 +8925,163 @@ rigid_again(RIGID_PIECES, RIDERS)
 # together, so they cannot part; then four bones, cut smoothly. GLOVE_WSMOOTH=0: as rigged.)
 GLOVE_WSMOOTH = tuple(float(v) for v in os.environ.get("GLOVE_WSMOOTH", "0.008,0.003").split(","))
 GLOVE_WSMOOTH_BAND = tuple(float(v) for v in os.environ.get("GLOVE_WSMOOTH_BAND", "0.02,0.035").split(","))
+# (s26 solver, the top in her bent elbow: her skin's weights change fast round her arm at the crook
+# and the elbow's point, so the smoothed top bent on another blend than the skin under it, and her
+# skin came through it there (2.2 mm at the brim, 1.7 mm casting). Now each point of the top band
+# takes the four-bone blend that best keeps it where it sits on its nearest triangle of her skin
+# (at its own height off it), her elbow bent 0-165 degrees, her forearm rolled -60..60 and her upper
+# arm -30..30, her helpers driven and her correctives keyed as the game does (tools/anim/helpers.py);
+# poses where it would sink into her skin count GLOVE_WFIT_ASYM times more. Her rest is untouched
+# (any blend is exact there). GLOVE_WFIT=0, or no game skeleton for the armature: the s23 smoothing.)
+GLOVE_WFIT = os.environ.get("GLOVE_WFIT", "1") == "1"
+GLOVE_WFIT_LAM = float(os.environ.get("GLOVE_WFIT_LAM", "1.0"))
+GLOVE_WFIT_ASYM = float(os.environ.get("GLOVE_WFIT_ASYM", "10"))
+# (s26 solver gs4, the crook: with her elbow shut past 95 degrees her skin at the crook, a few mm under the
+# top, came through the top band (B1 0.50 mm at the brim, G1 0.86 with its dip and 0.21 running). The band
+# took the mean of her skin's upperarm share there (0.17-0.24), but one of her coarse rows carries less
+# (0.11-0.15), and with less of the upper arm a point folds less into the crook: so the row stood proud
+# of the band. Now, within GLOVE_CROOK_WX[1] deg of her crook (eased out by [2]) and from the top to
+# [3] mm in (eased out by [4]), [0] of the glove's upperarm share goes to her forearm's (lowerarm and
+# twist, their own ratio): the band folds in less than any of her rows, and her rest is untouched. Its
+# flanks (40 deg off) wanted the opposite, so the window is narrow. "0" leaves the fit as it was.)
+GLOVE_CROOK_WX = tuple(float(v) for v in os.environ.get("GLOVE_CROOK_WX", "0.4,12,32,20,35").split(","))
+
+
+def glove_fit_poses():
+    """(her game skeleton, [(skin matrices [J, 4, 4], game space, rest to posed; {corrective: weight})]), or None."""
+    sk = rig_helpers._game_skeleton(arm)
+    if sk is None:
+        return None
+    hp = rig_helpers.hp
+    from rig import qaxis, qmul
+    nj = len(sk.names)
+    grot0, gpos0 = sk.rest_globals()
+    rest_inv = np.linalg.inv(hp.mats(grot0[0], gpos0[0]))
+    out = []
+    for deg in range(0, 166, 15):
+        for roll in (-60, -30, 0, 30, 60):
+            for ur in (-30, 0, 30):
+                rot = sk.rest_rot.copy()
+                for s_ in "lr":
+                    la, ua = sk.index["lowerarm_" + s_], sk.index["upperarm_" + s_]
+                    rot[la] = qmul(hp.bent(sk, "lowerarm_" + s_, deg)[la], qaxis([0, 1.0, 0], roll))
+                    rot[ua] = qmul(rot[ua], qaxis([0, 1.0, 0], ur))
+                scale, shift = np.ones((nj, 3)), np.zeros((nj, 3))
+                rot = hp.drive(sk, rot, scale, shift)
+                grot, gpos = sk.fk(rot[None])
+                out.append((hp.mats(grot[0], gpos[0], scale, shift) @ rest_inv, hp.corrective_weights(sk, rot)))
+    return sk, out
+
+
+def glove_keys_game(o, names):
+    """{name: [V, 3] moves, game space} of o's shape keys `names` it has."""
+    out = {}
+    if o.data.shape_keys is None:
+        return out
+    n = len(o.data.vertices)
+    base = np.empty(n * 3)
+    o.data.shape_keys.reference_key.data.foreach_get("co", base)
+    m3 = np.array(o.matrix_world.to_3x3())
+    for nm in names:
+        kb = o.data.shape_keys.key_blocks.get(nm)
+        if kb is not None:
+            co = np.empty(n * 3)
+            kb.data.foreach_get("co", co)
+            out[nm] = rig_helpers._to_game((co - base).reshape(-1, 3) @ m3.T)
+    return out
+
+
+def glove_fit_rows(fitp, gl, X, W0, sel, bones):
+    """The band's rows (`sel` of X, Blender world; W0 by `bones`) fitted to follow her skin over fitp's poses."""
+    from scipy.optimize import nnls
+    sk, poses = fitp
+    S = np.stack([m for m, _ in poses])                     # (f, J, 4, 4)
+    sv = [sh for _, sh in poses]
+    kn = ("elbow_point_l", "elbow_point_r")
+    mw = body.matrix_world
+    nbv = len(body.data.vertices)
+    co = np.empty(nbv * 3)
+    body.data.vertices.foreach_get("co", co)
+    PB = rig_helpers._to_game(co.reshape(-1, 3) @ np.array(mw.to_3x3()).T + np.array(mw.translation))
+    WB = rig_helpers._weights(body, sk.names)
+    KB = glove_keys_game(body, kn)
+    body.data.calc_loop_triangles()
+    TB = np.empty(len(body.data.loop_triangles) * 3, np.int64)
+    body.data.loop_triangles.foreach_get("vertices", TB)
+    TB = TB.reshape(-1, 3)
+    XG = rig_helpers._to_game(X)
+    KG = {k_: [] for k_ in kn}
+    for o in gl:
+        kk_ = glove_keys_game(o, kn)
+        for k_ in kn:
+            KG[k_].append(kk_.get(k_, np.zeros((len(o.data.vertices), 3))))
+    KG = {k_: np.vstack(v) for k_, v in KG.items()}
+    near = cKDTree(XG[sel]).query(PB)[0] < 0.03
+    TB = TB[near[TB].any(1)]
+    bvh = BVHTree.FromPolygons([tuple(p) for p in PB], TB.tolist())
+    T = np.array([TB[bvh.find_nearest(Vector(XG[i]))[2]] for i in sel])
+    A_, B_, C_ = PB[T[:, 0]], PB[T[:, 1]], PB[T[:, 2]]
+    nf = np.cross(B_ - A_, C_ - A_)
+    nf /= np.linalg.norm(nf, axis=1, keepdims=True)
+    d = ((XG[sel] - A_) * nf).sum(1)
+    q = XG[sel] - nf * d[:, None] - A_
+    e1, e2 = B_ - A_, C_ - A_
+    g11, g12, g22 = (e1 * e1).sum(1), (e1 * e2).sum(1), (e2 * e2).sum(1)
+    r1, r2 = (q * e1).sum(1), (q * e2).sum(1)
+    det = g11 * g22 - g12 * g12
+    u = (g22 * r1 - g12 * r2) / det
+    v = (g11 * r2 - g12 * r1) / det
+    bc = np.column_stack([1 - u - v, u, v])
+    Wi = (WB[T] * np.clip(bc, 0, 1)[:, :, None]).sum(1)
+    Wi /= np.maximum(Wi.sum(1, keepdims=True), 1e-9)
+    # her skin under the band, posed (her correctives keyed) in every pose
+    U = np.unique(T)
+    ui = np.searchsorted(U, T)
+    PBp = []
+    for f in range(len(S)):
+        Pu = PB[U] + sum(sv[f].get(k_, 0.0) * KB[k_][U] for k_ in KB)
+        Mu = np.einsum("uj,jab->uab", WB[U], S[f])
+        PBp.append(np.einsum("uab,ub->ua", Mu[:, :3, :3], Pu) + Mu[:, :3, 3])
+    PBp = np.stack(PBp, 1) * 1e3                             # (U, f, 3) mm
+    bix_ = {n: i for i, n in enumerate(bones)}
+    tob = np.array([bix_[n] for n in sk.names])
+    fromb = {bix_[n]: j for j, n in enumerate(sk.names)}
+    Wn = np.zeros((len(sel), len(bones)))
+    sl = np.sqrt(GLOVE_WFIT_LAM)
+    SWm = np.array([[sv[f].get(k_, 0.0) for k_ in kn] for f in range(len(S))])
+    worst = 0.0
+    for r, i in enumerate(sel):
+        a_, b_, c_ = PBp[ui[r, 0]], PBp[ui[r, 1]], PBp[ui[r, 2]]
+        n_ = np.cross(b_ - a_, c_ - a_)
+        n_ /= np.maximum(np.linalg.norm(n_, axis=1, keepdims=True), 1e-12)
+        tg = a_ + (b_ - a_) * u[r] + (c_ - a_) * v[r] + n_ * d[r] * 1e3
+        cand = np.nonzero((WB[T[r]].max(0) > 0) | (W0[i, tob] > 0))[0]
+        pf = XG[i][None, :] + SWm @ np.stack([KG[k_][i] for k_ in kn])
+        Sc = S[:, cand]
+        Xm = (np.einsum("fcab,fb->fca", Sc[:, :, :3, :3], pf) + Sc[:, :, :3, 3]) * 1e3   # (f, c, 3)
+        Xm = Xm.transpose(0, 2, 1).reshape(-1, len(cand))
+        y = tg.reshape(-1)
+        Aa = np.vstack([Xm, sl * np.eye(len(cand)), 1e3 * np.ones((1, len(cand)))])
+        ya = np.concatenate([y, sl * Wi[r, cand], [1e3]])
+        cf = np.ones(len(S))
+        for _ in range(4 if GLOVE_WFIT_ASYM > 0 else 1):
+            rw = np.concatenate([np.repeat(np.sqrt(cf), 3), np.ones(len(cand) + 1)])
+            w_, _ = nnls(Aa * rw[:, None], ya * rw)
+            if (w_ > 1e-6).sum() > 4:
+                keep = np.argsort(-w_)[:4]
+                w2, _ = nnls(Aa[:, keep] * rw[:, None], ya * rw)
+                w_ = np.zeros(len(cand))
+                w_[keep] = w2
+            en = ((Xm @ w_ - y).reshape(-1, 3) * n_).sum(1)
+            cf = cf + GLOVE_WFIT_ASYM * (en < -0.1)
+        worst = max(worst, -en.min())
+        Wn[r, tob[cand]] = w_
+    Wn = np.maximum(Wn, 0.0)
+    Wn /= np.maximum(Wn.sum(1, keepdims=True), 1e-9)
+    return Wn, worst
+
+
+_GLOVE_FITP = []
 
 
 def glove_top_weights(objs):
@@ -8754,7 +9120,13 @@ def glove_top_weights(objs):
         rad /= np.maximum(np.linalg.norm(rad, axis=1, keepdims=True), 1e-9)
         tree = cKDTree(X)
         Wn = W0.copy()
-        for i in sel:
+        if GLOVE_WFIT and not _GLOVE_FITP:
+            _GLOVE_FITP.append(glove_fit_poses())
+        if GLOVE_WFIT and _GLOVE_FITP[0] is not None:
+            Wn[sel], worst = glove_fit_rows(_GLOVE_FITP[0], gl, X, W0, sel, bones)
+            print("GLOVE TOP FIT %s: %d points fitted over %d poses (LAM %g, ASYM %g); most a point still sinks into her skin %.2f mm"
+                  % (sd, len(sel), len(_GLOVE_FITP[0][1]), GLOVE_WFIT_LAM, GLOVE_WFIT_ASYM, worst))
+        for i in (sel if not (GLOVE_WFIT and _GLOVE_FITP[0] is not None) else []):
             J = np.array(tree.query_ball_point(X[i], 2.5 * max(sc, sa)))
             D = X[J] - X[i]
             da, dn, dc = D @ ax, D @ rad[i], D @ np.cross(ax, rad[i])
@@ -8765,9 +9137,29 @@ def glove_top_weights(objs):
         Wn = np.maximum(Wn, 0.0)
         Wn /= np.maximum(Wn.sum(1, keepdims=True), 1e-9)
         Wn = four_bones(k[:, None] * Wn + (1 - k[:, None]) * W0)
+        wr = sel
+        if GLOVE_CROOK_WX[0] > 0 and all(f"{n}_{sd}" in bix for n in ("upperarm", "lowerarm", "lowerarm_twist_01")):
+            al_, pf_, pz_, df_, dz_ = GLOVE_CROOK_WX
+            bk_ = e_ - ARM[sd][0]
+            bk_ = bk_ - ax * (bk_ @ ax)
+            bk_ /= np.linalg.norm(bk_)
+            r_ = (X - e_) - np.outer((X - e_) @ ax, ax)
+            off_c = 180.0 - np.abs(np.degrees(np.arctan2(r_ @ np.cross(ax, bk_), r_ @ bk_)))
+            dt_ = np.maximum(GLOVE_TOP_D[sd](X), 0.0) if sd in GLOVE_TOP_D else np.maximum((X - e_) @ ax - off, 0.0)
+            kc = (1 - ramp(off_c, pf_, pz_)) * (1 - ramp(dt_ * 1000, df_, dz_))
+            iu, il, it_ = bix[f"upperarm_{sd}"], bix[f"lowerarm_{sd}"], bix[f"lowerarm_twist_01_{sd}"]
+            cs = np.nonzero((kc > 0) & (Wn[:, iu] > 0) & (Wn[:, il] + Wn[:, it_] > 0))[0]
+            mv_ = Wn[cs, iu] * al_ * kc[cs]
+            fl_ = Wn[cs, il] / (Wn[cs, il] + Wn[cs, it_])
+            Wn[cs, iu] -= mv_
+            Wn[cs, il] += mv_ * fl_
+            Wn[cs, it_] += mv_ * (1 - fl_)
+            wr = np.union1d(sel, cs)
+            print("GLOVE CROOK %s: %d points' upperarm share cut (by up to %.0f%%; most %.3f, mean %.3f)"
+                  % (sd, len(cs), 100 * al_, mv_.max() if len(cs) else 0, mv_.mean() if len(cs) else 0))
         groups = {o: {g.name: g for g in o.vertex_groups} for o in gl}
         moved = 0
-        for i in sel:
+        for i in wr:
             o, vi = at[i]
             gs = groups[o]
             for j in np.nonzero((W0[i] > 0) | (Wn[i] > 1e-4))[0]:
@@ -8915,6 +9307,209 @@ def rings_one(objs):
 
 
 rings_one(made)
+
+# (s25 gs2, G1: the three points down the back of her hand ride the glove's sheet as finally weighted
+# (helpers split, top refitted, rings): each point of a thread takes the blend of the sheet under it,
+# so thread and cuff move as one in the fist and the open hand. GLOVE_RIDERS=0: as laid.)
+def glove_riders(objs):
+    if os.environ.get("GLOVE_RIDERS", "1") != "1":
+        return
+    bones = [b.name for b in arm.data.bones]
+    bi = {n: i for i, n in enumerate(bones)}
+    for sd in "lr":
+        sheet = [o for o in objs if o.type == "MESH" and o.name == f"arcanist.glove_{sd}"]
+        riders = [o for o in objs if o.type == "MESH" and o.name.startswith(f"arcanist.glove_{sd}_point")]
+        if not sheet or not riders:
+            continue
+        sh = sheet[0]
+        mw = sh.matrix_world
+        sp = np.array([(mw @ v.co)[:] for v in sh.data.vertices])
+        gname = {g.index: g.name for g in sh.vertex_groups}
+        sw = np.zeros((len(sp), len(bones)))
+        for v in sh.data.vertices:
+            for g in v.groups:
+                if gname.get(g.group) in bi:
+                    sw[v.index, bi[gname[g.group]]] += g.weight
+        tris = [tuple(p.vertices) for p in sh.data.polygons]
+        bvh = BVHTree.FromPolygons([tuple(x) for x in sp], tris)
+        worst, n = 0.0, 0
+        for o in riders:
+            mo = o.matrix_world
+            rows = []
+            for v in o.data.vertices:
+                q = mo @ v.co
+                co, _, fi, dist = bvh.find_nearest(q)
+                vs = tris[fi]
+                # (the face's blend at the nearest point: weights by inverse distance to its corners)
+                dd = np.linalg.norm(sp[list(vs)] - np.array(co[:]), axis=1)
+                k = 1.0 / np.maximum(dd, 1e-6)
+                rows.append((k[:, None] * sw[list(vs)]).sum(0) / k.sum())
+                worst = max(worst, dist)
+            rows = four_bones(np.array(rows))
+            rows /= np.maximum(rows.sum(1, keepdims=True), 1e-9)
+            for vg in list(o.vertex_groups):
+                if vg.name in bi:
+                    o.vertex_groups.remove(vg)
+            groups = {}
+            for i, r in enumerate(rows):
+                for j in np.nonzero(r > 1e-4)[0]:
+                    if bones[j] not in groups:
+                        groups[bones[j]] = o.vertex_groups.new(name=bones[j])
+                    groups[bones[j]].add([i], float(r[j]), "REPLACE")
+            n += len(rows)
+        print("GLOVE RIDERS %s: %d points of %d threads on the sheet's own weights (furthest %.1f mm off it)" % (sd, n, len(riders), worst * 1000))
+
+
+# (s26 solver gs5: GLOVE_HAND_EXACT again, last, on her body's final weights: the sheet's blend taken at build
+# time still carried 0.04 of her hand up the thumb sleeve where her exported skin has none (her rig's later
+# passes), 3 mm off her with her thumb spread. So every layer of each fingerless glove (sheet, hem, piping)
+# takes, in its hand part, her final skin's own blend at its nearest point, before the cords ride it.)
+# (s27 solver, judge gl r2 fixes 2 and 3: GLOVE_EDGE_EASE "knuckle sigma,thumb sigma,full,none" (m). Her skin's
+# weights are coarse at her hand: round her index knuckle's thumb side a ring of points half hand, half finger, which
+# the knuckle edge ran along between ends on the finger (0.9), and at her thumb cut thumb_02/03 shares uneven point
+# to point (0.65-0.98). The cut was smooth at rest (radius 5-8 mm), but in her fist the knuckle edge doubled back
+# on itself at the index knuckle (radius 1.2 mm, 162 deg in 6 mm: the hook) and the thumb cut zig-zagged (1.4 mm,
+# 135 deg: the crown), as her skin there does. So each hand opening's blend is eased along the opening (Gaussian,
+# sigma of arc; the thumb hole's by its own sigma) and every layer (sheet, hem, piping) takes the change in full
+# within `full` of the edge, none past `none`. "": as before.)
+GLOVE_EDGE_EASE = [float(v) for v in os.environ.get("GLOVE_EDGE_EASE", "").split(",") if v]
+# (s27: GLOVE_EDGE_EASE_IDX "small,lo,hi": on the knuckle opening the wide sigma only where the edge carries her
+# index finger (its blend share, smoothed along the loop, eased in from lo to hi), `small` elsewhere: the wide ease
+# everywhere mixed ring into pinky on the back of her hand (L knuckle edge 2.92 mm off her in cast_raise))
+GLOVE_EDGE_EASE_IDX = [float(v) for v in os.environ.get("GLOVE_EDGE_EASE_IDX", "").split(",") if v]
+
+
+def glove_edge_delta(sd, bp, tri, bw, bvh, handc, thumbc):
+    """(GLOVE_EDGE_EASE) The hand openings' points of the glove's sheet and, at each, the change its eased blend
+    makes to her skin's own blend there: (tree of the points, changes), or None."""
+    sh = SHEET.get(f"arcanist.glove_{sd}")
+    if len(GLOVE_EDGE_EASE) < 4 or sh is None:
+        return None
+    spos, stris = sh[0], sh[1]
+    def blend(q):
+        co, _n, fi, _d = bvh.find_nearest(Vector(q))
+        if co is None:
+            return np.zeros(bw.shape[1])
+        a_, b_, c_ = bp[tri[fi]]
+        v0, v1, v2 = b_ - a_, c_ - a_, np.array(co[:]) - a_
+        d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+        den = max(d00 * d11 - d01 * d01, 1e-18)
+        bv = (d11 * d20 - d01 * d21) / den
+        bw_ = (d00 * d21 - d01 * d20) / den
+        bc = np.clip(np.array([1 - bv - bw_, bv, bw_]), 0, 1)
+        return bc @ bw[tri[fi]] / max(bc.sum(), 1e-9)
+    pts, dl = [], []
+    for lp in edge_loops(stris):
+        L = spos[np.array(lp)]
+        W_ = np.array([blend(q) for q in L])
+        if W_[:, handc].sum(1).mean() < 0.5:
+            continue
+        thumb_ = W_[:, thumbc].sum(1).mean() > 0.3
+        sg = GLOVE_EDGE_EASE[1] if thumb_ else GLOVE_EDGE_EASE[0]
+        seg = np.linalg.norm(np.roll(L, -1, 0) - L, axis=1)
+        s = np.r_[0, np.cumsum(seg)[:-1]]
+        tot = seg.sum()
+        ds = (s[:, None] - s[None, :] + tot / 2) % tot - tot / 2
+        K = np.exp(-0.5 * (ds / sg) ** 2)
+        K /= K.sum(1, keepdims=True)
+        if not thumb_ and len(GLOVE_EDGE_EASE_IDX) >= 3:
+            idxc = np.array([b.name.startswith("index") for b in arm.data.bones])
+            t_ = np.clip((K @ W_[:, idxc].sum(1) - GLOVE_EDGE_EASE_IDX[1]) / (GLOVE_EDGE_EASE_IDX[2] - GLOVE_EDGE_EASE_IDX[1]), 0, 1)
+            sgv = GLOVE_EDGE_EASE_IDX[0] + (sg - GLOVE_EDGE_EASE_IDX[0]) * t_ * t_ * (3 - 2 * t_)
+            K = np.exp(-0.5 * (ds / sgv[:, None]) ** 2)
+            K /= K.sum(1, keepdims=True)
+            print("GLOVE EDGE EASE %s knuckle: sigma %.0f-%.0f mm by her index share (wide at %d of %d points)"
+                  % (sd, sgv.min() * 1000, sgv.max() * 1000, (t_ > 0.5).sum(), len(L)))
+        d_ = K @ W_ - W_
+        pts.append(L)
+        dl.append(d_)
+        print("GLOVE EDGE EASE %s %s: %d points, %.0f mm, sigma %.0f mm, blend moved L1 up to %.2f (mean %.2f)"
+              % (sd, "thumb" if thumb_ else "knuckle", len(L), tot * 1000, sg * 1000, np.abs(d_).sum(1).max(), np.abs(d_).sum(1).mean()))
+    if not pts:
+        return None
+    return cKDTree(np.vstack(pts)), np.vstack(dl)
+
+
+def glove_hand_final(objs):
+    ex = tuple(float(v) for v in os.environ.get("GLOVE_HAND_EXACT", "0.5,0.9").split(","))
+    if len(ex) < 2 or ARC_HANDS != "fingerless":
+        return
+    bones = [b.name for b in arm.data.bones]
+    bi = {n: i for i, n in enumerate(bones)}
+    handc = np.array([n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky") for n in bones])
+    bm_ = body.data
+    bm_.calc_loop_triangles()
+    mwb = body.matrix_world
+    bp = np.array([(mwb @ v.co)[:] for v in bm_.vertices])
+    gname = {g.index: g.name for g in body.vertex_groups}
+    bt = np.array([t.vertices[:] for t in bm_.loop_triangles])
+    for sd in "lr":
+        gl = [o for o in objs if o.type == "MESH" and o.name.startswith(f"arcanist.glove_{sd}") and "_point" not in o.name]
+        if not gl:
+            continue
+        gp = np.vstack([np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices]) for o in gl])
+        near = cKDTree(gp).query(bp, distance_upper_bound=0.03)[0] < 0.03
+        tri = bt[near[bt].all(1)]
+        used = np.unique(tri)
+        bw = np.zeros((len(bp), len(bones)))
+        for i in used:
+            for g in bm_.vertices[i].groups:
+                n = gname.get(g.group)
+                if n in bi:
+                    bw[i, bi[n]] += g.weight
+        bvh = BVHTree.FromPolygons([tuple(q) for q in bp], tri.tolist())
+        ed_ = glove_edge_delta(sd, bp, tri, bw, bvh, handc, np.array([n.startswith("thumb") for n in bones])) if GLOVE_EDGE_EASE else None
+        nmv, worst = 0, 0.0
+        for o in gl:
+            ogn = {g.index: g.name for g in o.vertex_groups}
+            groups = {g.name: g for g in o.vertex_groups}
+            rows, ks = [], []
+            for v in o.data.vertices:
+                q = o.matrix_world @ v.co
+                old = np.zeros(len(bones))
+                for g in v.groups:
+                    if ogn.get(g.group) in bi:
+                        old[bi[ogn[g.group]]] += g.weight
+                co, _n, fi, _d = bvh.find_nearest(q)
+                if co is None:
+                    rows.append(old); ks.append(0.0)
+                    continue
+                a_, b_, c_ = bp[tri[fi]]
+                v0, v1, v2 = b_ - a_, c_ - a_, np.array(co[:]) - a_
+                d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+                den = max(d00 * d11 - d01 * d01, 1e-18)
+                bv = (d11 * d20 - d01 * d21) / den
+                bw_ = (d00 * d21 - d01 * d20) / den
+                bc = np.clip(np.array([1 - bv - bw_, bv, bw_]), 0, 1)
+                sx = bc @ bw[tri[fi]] / max(bc.sum(), 1e-9)
+                k = np.clip((sx[handc].sum() - ex[0]) / (ex[1] - ex[0]), 0, 1)
+                k = k * k * (3 - 2 * k)
+                rows.append(old * (1 - k) + sx * k); ks.append(k)
+            if ed_ is not None:
+                # (GLOVE_EDGE_EASE: the opening's eased blend, in full near its edge, faded out into the glove)
+                gpo = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices])
+                dd_, jj_ = ed_[0].query(gpo)
+                f_ = 1 - np.clip((dd_ - GLOVE_EDGE_EASE[2]) / (GLOVE_EDGE_EASE[3] - GLOVE_EDGE_EASE[2]), 0, 1)
+                f_ = f_ * f_ * (3 - 2 * f_) * np.array(ks)
+                rows = list(np.maximum(np.array(rows) + f_[:, None] * ed_[1][jj_], 0))
+            rows = four_bones(np.array(rows))
+            rows /= np.maximum(rows.sum(1, keepdims=True), 1e-9)
+            ks = np.array(ks)
+            for i in np.nonzero(ks > 0)[0]:
+                for g in list(o.data.vertices[i].groups):
+                    if o.vertex_groups[g.group].name in bi:
+                        o.vertex_groups[g.group].remove([int(i)])
+                for j in np.nonzero(rows[i] > 1e-4)[0]:
+                    if bones[j] not in groups:
+                        groups[bones[j]] = o.vertex_groups.new(name=bones[j])
+                    groups[bones[j]].add([int(i)], float(rows[i, j]), "REPLACE")
+            nmv += int((ks > 0).sum())
+        print("GLOVE HAND FINAL %s: %d points of %d layers on her final skin's blend" % (sd, nmv, len(gl)))
+
+
+glove_hand_final(made)
+
+glove_riders(made)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
     mine = pieces_of[name]

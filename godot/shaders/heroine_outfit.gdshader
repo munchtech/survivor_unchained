@@ -201,7 +201,9 @@ void fragment() {
 		// (s24 glove styles S1: a satin at 0.25 floors at 0.22, its streak kept; B1's 0.30 keeps 0.30)
 		rough = clamp(roughness_value + 0.08 * (macro - 0.5) + 0.1 * (1.0 - sky), roughness_value < 0.295 ? 0.22 : 0.3, 0.75);
 		metal = 0.0;
-		RIM = 0.3;
+		// (s27, judge gl r2: a satin sheen at the grazing edges that reads in play; 0.3 left the forearm flat cream.
+		// Not anisotropy: Godot's anisotropic path, even at 0, cost every other outfit material its fine grain)
+		RIM = 0.4;
 		RIM_TINT = 0.5;
 	} else {
 		// Gloss: clean and smooth, barely a grain.

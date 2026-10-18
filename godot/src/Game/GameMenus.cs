@@ -95,11 +95,13 @@ public partial class Game
         cam.ScreenShift = o.CameraShift;
         cam.ScreenNear = o.CameraNear;
         cam.ScreenFrame = o.CameraFrame;
-        // (framed so, she turns to the view, a little toward the panel she reads)
+        // (framed so, she turns to the view, a little toward the panel she reads: in the town and the ember's
+        // arenas only; in the field she stands as she was, the owner 17 October)
         if (scene?.Player is { } pv)
         {
-            pv.Turned = o.CameraFrame != null ? cam.Yaw + 0.35f : null;
-            pv.Watch = o.CameraFrame != null ? cam.Camera : null;
+            bool pose = zone != null && closeUp.PoseFor(o.CameraFrame != null, !zone.Combat, zone.Ember) == CloseUp.Pose.ToTheView;
+            pv.Turned = pose ? cam.Yaw + 0.35f : null;
+            pv.Watch = pose ? cam.Camera : null;
             // (by day her carried light is dimmed while the book frames her: the sun models her face)
             pv.LampScale = o.CameraFrame != null && scene.View.Night != true ? BookLampByDay : 1;
         }

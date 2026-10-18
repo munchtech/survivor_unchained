@@ -1,21 +1,49 @@
 # Handoff: the heroine's body and outfits
 
-From outfits lead successor 24 (su-lead-high), 14 October 2026. Start cold: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is ~6,500 lines, mixed CRLF/LF: grep it, edit with exact byte replacements (handle `\r\n`), `ast.parse` after each edit. `heroine_rig.py` is CRLF.
+From outfits lead successor 27 (su-lead-high), 14 October 2026. Start cold: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is ~6,500 lines, mixed CRLF/LF: grep it, edit with exact byte replacements (handle `\r\n`), `ast.parse` after each edit. `heroine_rig.py` is CRLF.
 
-## Paused here; next: (successor 24, 14 Oct)
-N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1cc516bc-727d-4e77-9f0e-4ed15fbf8ea6\scratchpad\outfits` (mine; keep). S (d7e64ca2) and X (34daaf5d) as before. Integration merged at 5e96e142. **The owner picked B1** ("b1 with th gloves but give them style"): `ARC_HANDS=fingerless`, `ARC_GLOVE_MAT=glovesatin` are already the defaults. The worktree's art is still F1's; no heroine.glb is committed.
-- **The one body build (code at 8ace9b15, unjudged; builds `N\prop\P1..P6`, P6 = everything so far):**
-  - `hand_pivots(obj)` (~line 530-710 of heroine_outfits.py, knob HAND_PIVOTS): fingers' 01 at 0.48 L, 03 at P2 = 0.65 P1, thumb MCP 12.4 mm back; right = animation's handpivots.json to 0.05 mm. Skin handed over as fistfit modelled. Bones keep rest orientation.
-  - Left hand by the same rule on its own skin, plus the coordinator's check: its PIPs and DIPs were rigged up to 6.9 mm short and 3 mm dorsal of where her right's sit on the same skin, so `HPIV_L02` / `HPIV_L03` (along/across/palmward mm) carry them there. Measured with `N\pipreg4.py <glb> <F1 glb>` (multi-start ICP of each left finger onto the right's mirror): all within 0.8 mm on P5. **Rewrite `N\handpivots_left.json` from the final build** (`python N\leftjson.py <glb> <out> <anim handpivots.json>`); animation needs it.
-  - Outfits read F1's hand: `MID01_BUILT` (ARM chain) and `F1_HEADS`/`F1h` (the fingerless glove's cut), so the pivots move no garment.
-  - `back_of_hand(obj)` (solver; knob BACKHAND now default 1, BH_A 0.0025): every drop within 1.2 mm of its new MCP; rises 0.3-1.8 mm (ring knuckles weakest). Out of spec: 92 points at t 70-85 / 135-145 mm move up to 3.4 mm (the ease-in; all on the hand, none on palm, thumb, wrist). Good-pair dihedral change max 57.7, p99 31.5 deg (the back of the hand is sparse: no vertices between 94.5 and 109 mm on the right middle). **Needs a max judge**: backs of both hands, open and fist, P1 vs P6, close-up; if it reads lumpy or faceted, the next solver is max. Tools `N\bh` (land3.py, check.py, rise.py).
-  - `throat_fill(obj)` (THROAT_FILL, C 1.56, IN 0.035, OUT 0.045): face 25's prototype exactly (187 points, 8.48 mm, z 1.525-1.594). **Still to do:** the face judge's acceptance on the build (`survivorsunchained_inputs\scratch_1cc516bc\face_throat\`: cols.py <glb> midline normal-y; acc.ps1/accm.py shots and 8-row high-pass <= 4.5 luma per tile, within 0.5 of the prototype; one profile + one 3/4 render, smooth concave midline, no edge at the band's sides, no skin through a collar).
-  - **Hip-flexion corrective (coordinator's (a)):** I chose a BODY corrective (`groin_crease_{s}` on thigh_{s} in tools/anim/helpers.py correctives; heroine_rig.py piece_correctives; knob HIP_CREASE default 0 while WIP). A su-lead-high solver is RUNNING on it (tags HC*), uncommitted edits in helpers.py, heroine_rig.py, tools/anim/skin.py. Its gates: Reaver thigh >= 2 mm under belt/buckle/panel/dl panel to 100 deg (sprint) / 90 (sit_log) by animation's kd scripts (`1cc516bc\scratchpad\anim\kd`); other outfits don't regress; nude crease to a max judge ("natural", sprint f3 and sit_log). After it: tell the coordinator, animation re-measures with kd in minutes.
-  - **Chest wedge check (coordinator):** `--key-at` does NOT move the light in the zone close-up (wedge a/b/c identical, `N\wedge`). Find another way (Blender LIGHTS=side vs town on the body, or a non-zone close-up) before calling it geometry or shadow.
-  - Then: one final build on the latest integration with everything on; legal on what `git diff --stat` of the built files shows (the hip corrective puts shape keys on pieces: likely all four outfits); judges (hands, throat, crease); tell the coordinator the commit the moment it is final (animation refits every grip); never commit heroine.glb without telling the coordinator (face's smile seam rides on it).
-- **The styled glove ("give them style"):** max designer's spec `N\glove_style_spec.md`: G1 "Sorceress points" (top lancet over the outer elbow, hand lancet onto the middle finger with a thin plum loop, plum binding, three tone-on-tone points), G2 "Laced plunge" (laced V down the outer forearm, gold eyelets, bow), G3 "The Arcanist's focus" (amethyst on the back of the hand, gold wire, ring, bangle; risk: magical-girl). Shared: satin value 228 -> 212, roughness 0.25 with the gdshader kind-5 floor lowered to 0.22; a 6 mm inner-crook dip. A su-lead-high builder is RUNNING G1 then G2 (knob GLOVE_STYLE, tags gsG1*/gsG2*, renders under `N\gs`). **Its uncommitted `godot/art/outfit/outfit_glovesatin_diff.jpg` and `godot/shaders/heroine_outfit.gdshader` changes hit the default B1 too: keep or revert them by the judge's call.** Then: a max judge ranks G1/G2 (and B1 plain) on ONE sheet built on the final body (one face, game close-up and town camera, day and night, hand closes: `S\sheet_opts.py`, `S\swapshoot.sh`), and the sheet goes to the coordinator for the owner.
-- Helpers still running when I paused report to this agent (s24); ask the coordinator to relay their final reports.
-- Then (unchanged): F1 merge request with animation's refits; the Arcanist chest fix; stockings matching the glove's trim; polish (gl2's inner-elbow notch, the hem ~1 mm proud at the index side).
+## Paused here; next: (successor 27, 14 Oct, night)
+M = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\outfits` (this round: `M\s27`). N = the 1cc516bc session's `scratchpad\outfits` (pose dumps `N\gs2\pd_F0` for `M\gs6\hr.py`). Builds: `bash M\vb.sh <tag> K=V` (all four plus body, ~9 min, into `M\prop\<tag>\art`); after each, `git checkout --` `godot/art/outfit/outfit_glove{satin,pipe,thread}_diff.jpg`. Arcanist only, with dumps: `M\s27\cut\ob.sh` (~2 min).
+
+**Committed (on this branch)**
+- **Final art d1be5c2a (+ dfe686ed, the glove texture .import with mipmaps).** heroine.glb = B1j: d268fe8a's body plus COLOR_0 ch1 at 216 hand vertices (tuck). Arcanist = B1j. Warden, Ranger and Reaver = B1c, because B1j only added UV float noise there and a 42-triangle reorder on warden gold.
+  - Legal: Arcanist on B1j has areola 0, strip 0, FLAT 0, closest L +2.10 / R +0.48 cm (`M\s27\legal\count.txt`). Tests: 917 passed, 0 failed.
+  - **MERGE REQUEST dfe686ed is sent and on hold.** It merges with animation's repack (integration's clips are built for the old rig). If the head changes before that merge, tell the coordinator.
+- **The L thumb flap in the hand-on-hip clip is animation's.** thumb_01_l is turned 71° into the back of her hand; bare skin does it too (`M\s27\solve\e34.jpg`, `pen.py`). It went to animation as a gate.
+- **Glove round 2 code, all default off** (210cc759, f1c238b9, 4fc84278, b4e3e865):
+  - `GLOVE_IVORY`, `GLOVE_PIPE_MAT`, `GLOVE_THREAD_MAT` (materials, defined before `SPEC`);
+  - `FL_DORS`, `FL_THUMB_BLEND` (`knuckle_exact`);
+  - `GLOVE_EDGE_EASE` and `GLOVE_EDGE_EASE_IDX` (`glove_edge_delta` / `glove_hand_final`): the glove edge's blend averaged along each hand opening, wide only where it carries the index finger;
+  - the satin rim 0.3 -> 0.4 (shader kind 5, shared, so B1 has it too).
+  - Satin anisotropy was tried and removed: Godot's anisotropic path (even at 0, even written for every kind) flattened the leotard's grain from 8.68 to 3.58 (`M\s27\leo.py`). If it's reopened, use a glove-only shader.
+
+**The glove pick (waiting on the owner)**
+- Max judge round 3 PASSES G3 at the game cameras (`M\s27\gl3_verdict.md`; rounds 1-2 in `gl_verdict.md`, `gl2_verdict.md`).
+- The owner's sheets: `M\s27\gl3_play_owner.jpg` and `gl3_detail_owner.jpg` (B1 vs G3), sent through the coordinator.
+- G3 = build `M\prop\G3d`, env:
+  `GLOVE_STYLE=G1 GLOVE_LOOP=0,0,0,0 GLOVE_POINTS=0,0,0,0,0 FL_DORS=0.006,0.014 FL_THUMB_BLEND=0.3,0.7 GLOVE_IVORY=1.789,1.470,1.142,223 GLOVE_PIPE_MAT=0.75,0.44,0.72,70,0.25 GLOVE_EDGE_EASE=0.010,0.005,0.003,0.010 GLOVE_EDGE_EASE_IDX=0.005,0.1,0.4`
+- Measures: the posed knuckle loop turns at most 86-91° in 6 mm (as at rest; the hairpin was 162°); the thumb hole's tightest turn is 6.6-7.5 mm; hr.py's L knuckle in cast_raise is 2.49 mm (B1j 2.32, accepted). Output in `M\s27\cut\hr_e3.txt`.
+- **If the owner picks G3:**
+  1. Make that env the default for `ARC_GLOVE` (grep `GLOVE_STYLE = os.environ`) and rebuild, or commit G3d's files:
+     - the Arcanist gltf and bin;
+     - outfit_materials.json;
+     - `outfit_tex` glove textures: `outfit_glovepipe_diff.jpg` (and its .import) is new;
+     - heroine.glb: G3d's differs from the committed one only in COLOR_0 ch1 at 413 hand vertices (`M\gs6\cmp0.py`). Tell the coordinator before committing it: face and animation build on it.
+  2. Keep Warden, Ranger and Reaver as committed (G3d's differ by float noise only).
+  3. Run Arcanist legal (`M\s27\legal.sh`, ~5 min), then the tests.
+- If the owner picks B1, the edge fix alone (`GLOVE_EDGE_EASE*`) fixes B1's index tooth and thumb flaps: build and check them.
+
+**Then, in order:**
+1. The R thumb in the staff fist stands 2.0 mm off her skin (her coarse thumb joint; R:thumb in hr.py).
+2. The Reaver belt (`N\hip\need.py`).
+3. The Arcanist chest.
+4. Stockings in the winning trim (match their white to the glove's ivory: judge r3).
+5. The nude groin fold.
+6. The neck graft corner (Godot game shots only).
+7. The close-up skin detail pass: knuckles, the cleavage hairline, the fold band, paint ticks, and the old dark tick and pale wedge at the L areola.
+
+Logged and not fixed (beyond game zoom): the satin weave reads sandy in the closes; the satin sheen doesn't show on the forearm in play by day.
+Judging rule (the owner, README "The finish line"): judges rule at the game's own cameras, critically; marks beyond that are logged; 2-3 rounds per item, then it closes as known.
 
 ## What changed this round (all default on)
 - **The owner's leg band ("legs stuck together by fabric", every clip):** `heroine_rig._as_skin` shared a piece's whole limb weight out as the nearest skin's, so pieces at the inner thigh took the other thigh's bones: Arcanist stocking lace 0.98, Ranger cloth/leather 0.97, Reaver knee fur 1.00. **AS_SKIN_SIDES** (d0f5851f, eased in 0121f13f): per side only where the skin's share of the piece's own leg is under 30% (fully under 10%); elsewhere as before, since done everywhere it parted the crotch pieces from her (fin3: strip 11/6/4 frames). After: one-leg pieces 0 (Arcanist, Reaver); Ranger browncloth 0.41 and brownleather 0.12 at z 0.89-0.92, at her crotch (judged fine).
@@ -27,6 +55,12 @@ N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsun
 Leotard foot: binding ends square at a_leo_f (955-961,705-711), taper into the thigh crease over ~3 mm; bottom stitch run ~1 mm onto the binding's front face; qr left end 3x4 px bluish fleck and 5 px step (turn-under radius, lining albedo); left leg-line pale rim (roughness on the roll's crest); under-crotch back: pointed binding ends and a creased pouch from below-hip cameras (one continuous binding into the strap, shrink-wrap <= 1 mm); sit_log front-low leg lines ragged when legs spread (Arcanist, Ranger); Ranger knob's dark tick (blend the binding corner). From judge fin2: sabaton heel crescent (lining value or rim in 2 mm), instep streaks and run_warden heel_bq2 crumple (rigid-weight the shell), sole corner ticks; glove middle-finger cap-seam kink (blend the subdivision boundary ring). The l_hand_outer_rest skin speck is her hip seen between fingers (ray-cast; correct).
 
 ## Lessons
+- `M\gshoot.sh <col>:<tag>` removes the shots when col == tag (`rm -rf shots/$c` after shooting): name the column differently (s27 lost a 20-minute run).
+- A shared-shader change reaches every outfit material: measure one untouched material (the leotard's high-pass std at brim_close, `M\s27\leo.py`) before and after. Godot's ANISOTROPY, even at 0, flattened the leotard.
+- Stray `python -` at the start of a pasted command started the REPL twice this round (lead and solver): a reminder to check the first line of every bash command; stop it at once by task ID.
+- Never run `python -` in any form (heredoc or `< /dev/null`): Python 3.14's REPL here loops and wrote ~200 MB each time (three times this round). Scripts go to files.
+- A Haiku runner polling a long Godot batch burns its budget in minutes: run legal and shot batches as one background bash script (`M\legal_rest.sh`, `M\gshoot.sh`) and wait with `timeout 590 bash -c 'until ...'`.
+- Blender custom normals are quantised on every `normals_split_custom_set`: set them once (mend_folds), or the export welds co-located copies and the vertex count changes.
 - Never pipe an empty heredoc to python (`python - <<'EOF'` then `EOF`): on this machine it opens a REPL that spammed 775 MB of errors. Run scripts from files with `< /dev/null`.
 - ICP on a finger slides along it: use a fixed vertex region (F1's weights) and multi-start along the axis, or the answer depends on the pivots you started from.
 - Before a judge, look at every cut edge at 2x yourself: judge gl1 failed the sheet on teeth in the finger webs and a matte white, costing a second judge.

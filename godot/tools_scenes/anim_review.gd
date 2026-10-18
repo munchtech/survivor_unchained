@@ -29,6 +29,8 @@ extends SceneTree
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
 #   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
 #                                          away (blue); her own skin drawn from both sides; her UVs as colour
+#   POSEDUMP=file.json                     per photographed frame, her bones' final global poses (after every modifier,
+#                                          from skeleton_updated) and her meshes' non-zero blend shapes, for measuring off-engine
 #   HAIRCLEAR=1 [HAIRMESH=folder]          debug: per photographed frame, how near her hair chain comes to her posed
 #                                          body and outfit (signed cm, negative = inside) and its jump in her neck frame
 var clip = ""
@@ -46,6 +48,8 @@ var travelled = 0.0
 var view = "three"
 var warm = 4
 var vp: SubViewport
+var posedump = []
+var lastpose = null
 
 func _init():
 	var args = OS.get_cmdline_user_args()
@@ -126,6 +130,9 @@ func _init():
 		var jsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
 		jsk.add_child(load("res://src/Actors/HerJoints.cs").new())
 	stage(root)
+	if env("POSEDUMP", "") != "":
+		var psk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+		psk.skeleton_updated.connect(pose_grab.bind(psk))
 
 var tree: AnimationTree
 var gestures = null
@@ -586,8 +593,10 @@ func _process(delta):
 		var img = vp.get_texture().get_image()
 		if env("HAIRCLEAR", "") != "": hair_clear(k)
 		shots.append(img)
+		if lastpose != null: posedump.append(lastpose)
 		if env("FULL", "") != "": img.save_png(out.replace(".png", "_%02d.png" % shots.size()))
 	if shots.size() >= nframes:
+		if env("POSEDUMP", "") != "": pose_write()
 		sheet()
 		quit()
 	# The photograph above is the frame drawn last tick: only now does the
@@ -708,3 +717,25 @@ func hair_clear(k):
 					mp = i
 			print("HAIRMOVE k=%d max=%.1f point=%d" % [k, mx, mp])
 		hc_prev[key] = loc
+
+# POSEDUMP: the final pose as the skin gets it (skeleton_updated comes after every modifier).
+func pose_grab(sk: Skeleton3D):
+	var b = []
+	for i in sk.get_bone_count():
+		var g: Transform3D = sk.get_bone_global_pose(i)
+		b.append([g.basis.x.x, g.basis.x.y, g.basis.x.z, g.basis.y.x, g.basis.y.y, g.basis.y.z, g.basis.z.x, g.basis.z.y, g.basis.z.z, g.origin.x, g.origin.y, g.origin.z])
+	var bs = {}
+	for mi in sk.get_children():
+		if mi is MeshInstance3D and mi.mesh is ArrayMesh:
+			for i in mi.get_blend_shape_count():
+				var v = mi.get_blend_shape_value(i)
+				if v != 0.0: bs[String(mi.name) + "|" + String(mi.mesh.get_blend_shape_name(i))] = v
+	lastpose = {"t": ap.current_animation_position, "len": ap.current_animation_length, "bones": b, "shapes": bs}
+
+func pose_write():
+	var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+	var names = []
+	for i in sk.get_bone_count(): names.append(sk.get_bone_name(i))
+	var f = FileAccess.open(env("POSEDUMP", ""), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"clip": clip, "names": names, "frames": posedump}))
+	f.close()

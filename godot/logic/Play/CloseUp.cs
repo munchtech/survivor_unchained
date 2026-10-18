@@ -13,6 +13,10 @@ namespace SurvivorUnchained.Play;
 ///     its own (Idling), anywhere but a fight, a cinematic, a conversation, a screen or a night's arena.
 ///   - Any input, or anything hostile drawing near, ends the idle view at once; the wheel's own level stays.
 ///   - Moving, the view holds no nearer than MoveCap, so the street ahead stays in view.
+/// Her pose (the owner, 17 October 2026: "would prefer to be able to stare at the butt"): the wheel never turns her;
+/// she turns to the view and takes her idle pose only in the idle view (a true idle, a minute by default) or while
+/// a framed screen (her book, the pack) is open where screens are her rest: the town and the ember's arenas, not
+/// the field, whose world goes on. PoseFor is the one place that picks it (more poses and emotes later go there).
 /// </summary>
 public sealed class CloseUp
 {
@@ -27,8 +31,8 @@ public sealed class CloseUp
     /// <summary>Anything hostile and roused (not standing idle) this near ends it too.</summary>
     public const double RousedRadius = 45;
 
-    /// <summary>Seconds without input before the view eases in (the setting; 12 by default).</summary>
-    public double IdleAfter = 12;
+    /// <summary>Seconds without input before the view eases in (the setting; a minute by default).</summary>
+    public double IdleAfter = 60;
     /// <summary>The idle view at all (the setting).</summary>
     public bool IdleOn = true;
 
@@ -95,6 +99,16 @@ public sealed class CloseUp
     /// <summary>How fast the view goes to it (FollowCamera's damping, per second): the idle view drifts in slowly
     /// and leaves at once; the wheel is quick.</summary>
     public double Rate(double target, double shown) => Idling && target > shown ? 0.45 : 4.0;
+
+    /// <summary>How she stands: her own (her facing and stance as play left them) or turned to the view in her
+    /// idle pose. (One place: emotes and more poses come in here later.)</summary>
+    public enum Pose { Own, ToTheView }
+
+    /// <summary>Her pose now: to the view only in the idle view, or with a framed screen open (framed) in the town
+    /// (safe) or an ember's arena (ember); never for the wheel alone, never for a screen in the field.</summary>
+    public Pose PoseFor(bool framed, bool safe, bool ember) =>
+        framed ? (safe || ember ? Pose.ToTheView : Pose.Own)
+        : Idling ? Pose.ToTheView : Pose.Own;
 
     /// <summary>Anything hostile near her, or roused and coming (CloseUp.NearRadius, RousedRadius).</summary>
     public static bool Threat(Battle b)
