@@ -31,6 +31,9 @@ SPRINT_SWING = (5, -3, 1.25, -3)
 SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3)}
 
 
+# The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).
+STALKER_STOP_POLE_L = (0.6, -0.5, -0.8)
+
 def sprint(rig, run):
     """The sprint for one of her runs (run_<calling>[_<weapon>])."""
     g, arms, weapon = RUNS[run]
@@ -93,6 +96,10 @@ def stop(rig, calling, side):
 
     def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0):
         a = arms
+        if calling == "stalker" and isinstance(arms.get("hand_l"), dict):
+            # (The left elbow turned a little out as she brakes: by her side as in the idle, the inner upper arm
+            # pressed 4.5 mm into her side as the lean was thrown back.)
+            a = {**arms, "hand_l": {**arms["hand_l"], "pole": STALKER_STOP_POLE_L}}
         if out and calling == "warden":
             # The sword hand carried 15 mm out from her right thigh through the stop (14 Oct: with the hilt seated in
             # the fist's hollow, 12 mm nearer the palm, it came 7-12 mm from the thigh, inside the skirt, as she
