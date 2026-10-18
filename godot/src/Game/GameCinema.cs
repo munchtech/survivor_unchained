@@ -132,6 +132,9 @@ public partial class Game
         readonly CinemaBars bars;
         readonly Dictionary<string, PersonView> people = new();
         readonly Dictionary<string, Enemy> enemies = new();
+        /// <summary>The creatures it stages, by id: how far down they are drawn, and a role held from a moment (CrowdView.Staged).</summary>
+        readonly Dictionary<int, (double Sink, string? Role, double T0)> staged = new();
+        double SinkOf(Enemy e) => staged.TryGetValue(e.Id, out var st) ? st.Sink : 0;
         readonly Dictionary<string, WardenView> bosses = new();
         readonly Dictionary<string, OrbView> orbs = new();
         readonly Dictionary<string, double> orbLight = new();
@@ -439,6 +442,16 @@ public partial class Game
                     foreach (var name in people.Keys)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
                             .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.000},{p.Y:0.000},{p.Z:0.000})" : "")));
+                if (Args.Has("cinebones"))
+                {
+                    // A held blade's tip, the cast's creatures (where drawn: their feet, sunk or not) and the orbs.
+                    foreach (var (name, v) in people)
+                        if (v.TipOf("handslot.r") is Vector3 tp) GD.Print($"cinebones {file.Id} s{shot.Id} {name} tip_r=({tp.X:0.000},{tp.Y:0.000},{tp.Z:0.000})");
+                    foreach (var (name, e) in enemies)
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} feet=({e.X:0.000},{g.scene!.HeightAt(e.X, e.Z) - SinkOf(e):0.000},{e.Z:0.000}) facing={e.Facing:0.00} state={e.State}");
+                    foreach (var (name, o) in orbs)
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} orb=({o.GlobalPosition.X:0.000},{o.GlobalPosition.Y:0.000},{o.GlobalPosition.Z:0.000}) light={orbLight.GetValueOrDefault(name):0.00}");
+                }
                 // --cinenear X,Z,R: every visible mesh within R of a point, by path, at each
                 // shot's still (what is that in the frame? Lowford's stray ring stone was found so).
                 if (Args.Get("cinenear") is string near && stillK == 1)
@@ -502,9 +515,12 @@ public partial class Game
                 // The way it looks turns from the shot's to the game's (a point far up a
                 // road, lerped toward her, kept the camera looking ahead until the last
                 // moment and lost her from the frame on the way).
-                Vector3 d0 = (at - pos).Normalized(), d1 = (fl - fp).Normalized();
-                float reach = Mathf.Lerp((at - pos).Length(), (fl - fp).Length(), k);
+                // The game's look is taken from where the camera is now, not from where it lands: its
+                // direction from the landing place, laid on a crane still high and wide of it, aimed at
+                // empty ground and lost her from the frame halfway up (C01 s12).
                 pos = pos.Lerp(fp, k);
+                Vector3 d0 = (at - pos).Normalized(), d1 = (fl - pos).Normalized();
+                float reach = Mathf.Lerp((at - pos).Length(), (fl - pos).Length(), k);
                 // The look turns ahead of the move (its square root), so she stays in the frame.
                 at = pos + (d0.Dot(d1) > 0.9999f ? d1 : d0.Slerp(d1, Mathf.Sqrt(k))) * reach;
                 hfov = Mathf.Lerp(hfov, FollowHfov(), k);
@@ -683,6 +699,16 @@ public partial class Game
                 }
                 case "anim":
                 {
+                    // A creature it stages takes one of its crowd roles and holds it (Grimtunnel's arms round the heart).
+                    if (enemies.TryGetValue(c.Actor, out var ce))
+                    {
+                        var st = staged.GetValueOrDefault(ce.Id);
+                        staged[ce.Id] = (st.Sink, c.Str("clip"), t0);
+                        // "where": turned to face it (Grimtunnel to her, not to where her own body waits).
+                        if (c.Has("where")) { var fw = places.Resolve(c.Get("where")); ce.Facing = Math.Atan2(fw.Z - ce.Z, fw.X - ce.X); }
+                        CrowdView.Staged = x => staged.TryGetValue(x.Id, out var sx) ? (sx.Sink, sx.Role, player.T - sx.T0) : null;
+                        break;
+                    }
                     if (!people.TryGetValue(c.Actor, out var v)) break;
                     var clip = c.Str("clip")!;
                     if (clip == "@idle") clip = Loadouts.Of(g.Journey.Ch).Arms.Idle;
@@ -819,7 +845,16 @@ public partial class Game
                     {
                         Style = style, Level = (int)c.Num("level", 1), Tag = c.Str("tag"), Disposition = c.Bool("neutral") ? Disposition.Neutral : null,
                     });
-                    if (e != null) enemies[c.Actor] = e;
+                    if (e != null)
+                    {
+                        enemies[c.Actor] = e;
+                        // "sink": drawn this far down into the ground or the water (Grimtunnel waist-deep in the ford).
+                        if (c.Has("sink"))
+                        {
+                            staged[e.Id] = (c.Num("sink"), null, 0);
+                            CrowdView.Staged = x => staged.TryGetValue(x.Id, out var st) ? (st.Sink, st.Role, player.T - st.T0) : null;
+                        }
+                    }
                     break;
                 }
                 case "world":
@@ -1256,6 +1291,7 @@ public partial class Game
             var cam = g.camera;
             cam.Fov = saved.Fov; cam.KeepAspect = saved.Keep; cam.Near = saved.Near; cam.Attributes = saved.Attr;
             Campfire.ClearNear(0);
+            CrowdView.Staged = null;
             g.scene!.CameraHeld = false;
             if (g.scene.Player != null) g.scene.Player.Hidden = false;
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);

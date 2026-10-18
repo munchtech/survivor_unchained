@@ -218,6 +218,15 @@ public partial class PersonView : Node3D, INpcView
         if (loop == "") loop = "Idle";
     }
 
+    /// <summary>Where the tip of what a hand holds is (world), or null (--cinebones: a blade's clearance).</summary>
+    public Vector3? TipOf(string slot)
+    {
+        if (!held.TryGetValue(slot, out var m) || !IsInstanceValid(m)) return null;
+        foreach (var c in m.GetChildren())
+            if (c is Node3D w && w.HasMeta("tip")) return w.GlobalTransform * new Vector3(0, (float)w.GetMeta("tip"), 0);
+        return null;
+    }
+
     public void Hold(string slot, string? pack, string? piece)
     {
         if (held.Remove(slot, out var old)) old.QueueFree();
