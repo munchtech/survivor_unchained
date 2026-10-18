@@ -36,6 +36,20 @@ from scipy import sparse
 import scipy.sparse.csgraph
 from scipy.spatial import cKDTree
 
+# (s28, the owner's glove pick: ARC_GLOVE names the Arcanist glove's knobs as a set, each only a default
+# (an explicit env still wins). G3 = the owner's pick (14 Oct): B1's ivory fingerless satin, a plum-piped top
+# with a soft point over the back of her elbow and a dip at her inner elbow, a piped knuckle V; G3L/G3L2 its
+# louder tops (a deeper point, a wider plum binding at the top only); B1 = plain white satin, as before s24.)
+_G3 = {"GLOVE_STYLE": "G1", "GLOVE_LOOP": "0,0,0,0", "GLOVE_POINTS": "0,0,0,0,0", "FL_DORS": "0.006,0.014",
+       "FL_THUMB_BLEND": "0.3,0.7", "GLOVE_IVORY": "1.789,1.470,1.142,223", "GLOVE_PIPE_MAT": "0.75,0.44,0.72,70,0.25",
+       "GLOVE_EDGE_EASE": "0.010,0.005,0.003,0.010", "GLOVE_EDGE_EASE_IDX": "0.005,0.1,0.4"}
+ARC_GLOVE_SETS = {"B1": {}, "G3": _G3,
+                  "G3L": dict(_G3, ARC_GLOVE_POINT="0.034", ARC_GLOVE_POINT_W="46", GLOVE_PIPE_TOP="0.005,0.001,0.0022"),
+                  "G3L2": dict(_G3, ARC_GLOVE_POINT="0.044", ARC_GLOVE_POINT_W="52", GLOVE_CROOK="0.012", GLOVE_PIPE_TOP="0.007,0.0014,0.003")}
+ARC_GLOVE = os.environ.get("ARC_GLOVE", "G3L2")
+for k_, v_ in ARC_GLOVE_SETS[ARC_GLOVE].items():
+    os.environ.setdefault(k_, v_)
+
 # Progress shown as it happens (Blender holds output back otherwise).
 sys.stdout.reconfigure(line_buffering=True)
 ARGS = sys.argv[sys.argv.index("--") + 1:]
