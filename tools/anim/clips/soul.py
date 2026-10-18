@@ -26,11 +26,14 @@ from clips.actions import arm, body, stance
 from clips.sword import _n
 from gait import arc_of
 from keyed import build
+from rig import qinv, qmatrix, qmul
 
 
-def feet_of(rig, base, f=0):
+def feet_of(rig, base, f=0, turn=False):
     """Where the base clip's feet are at a frame, as foot controls (so a
-    crouch laid over it keeps them planted)."""
+    crouch laid over it keeps them planted). turn: with their turn too (a
+    keyed foot is otherwise squared to rest: the stalker's base stands with
+    her right toe out 16 deg, and her break's feet snapped 11 deg at its ends)."""
     g, p = rig.sk.fk(base.rot[f][None], base.pos[f][None])
     out = {}
     for side in "lr":
@@ -40,7 +43,16 @@ def feet_of(rig, base, f=0):
         # (Less the body's own widening, which the solver adds back: they already stand where they stand.)
         s = 1 if side == "l" else -1
         out[f"foot_{side}"] = {"pos": (float(a[0]) - s * rig.feet_out, float(a[1] - rig.prest[j][1]), float(a[2]))}
+        if turn:
+            out[f"foot_{side}"]["rot"] = _euler(qmul(fwd, qinv(rig.grest[j])))
     return out
+
+
+def _euler(qt):
+    """qeuler's (yaw, pitch, roll) for a turn."""
+    m = qmatrix(qt)
+    pitch = math.asin(max(-1.0, min(1.0, -m[1][2])))
+    return (math.degrees(math.atan2(m[0][2], m[2][2])), math.degrees(pitch), math.degrees(math.atan2(m[1][0], m[1][1])))
 
 
 def arms_of(calling):
@@ -394,22 +406,26 @@ def reaver_break(rig):
 
 def stalker_break(rig):
     base = idle.base_of(rig, "stalker")
-    f = feet_of(rig, base)
-    crouch = {"hips": {"pos": (0, -0.26, 0.06), "rot": (0, 22, 0)}, "spine": (0, 22, 0), "head": (0, 10, 0),
+    f = feet_of(rig, base, turn=True)
+    # (Her haunches as deep as before she was stood up, 18 Oct: idle.STAND lifted the base 11 cm, carried it 19 cm
+    # forward and turned it back 10 deg.)
+    crouch = {"hips": {"pos": (0, -0.37, -0.13), "rot": (0, 32, 0)}, "spine": (0, 22, 0), "head": (0, 10, 0),
               "foot_l": f["foot_l"], "foot_r": f["foot_r"],
               "hand_l": {"pos": (0.06, 0.04, 0.42), "pole": (0.8, 0.2, -0.4), "knuckles": (0.0, -0.3, 1.0)},
               "fingers_l": "open"}
+    # (Every key's feet given, planted with the base's own turn: a key without them came out with her feet squared to
+    # rest, 5 and 14 deg off the idle's at the break's ends.)
     keys = [
-        (0, over("stalker"), "auto"),
-        (14, over("stalker", spine=(22, 0, 0), head=(40, 2, 0)), "ease"),
-        (28, over("stalker", spine=(24, 0, 0), head=(44, 4, 0)), "ease"),
-        (44, over("stalker", spine=(-22, 0, 0), head=(-40, 2, 0)), "ease"),
-        (56, over("stalker", spine=(-24, 0, 0), head=(-44, 4, 0)), "ease"),
+        (0, over("stalker", **f), "auto"),
+        (14, over("stalker", **f, spine=(22, 0, 0), head=(40, 2, 0)), "ease"),
+        (28, over("stalker", **f, spine=(24, 0, 0), head=(44, 4, 0)), "ease"),
+        (44, over("stalker", **f, spine=(-22, 0, 0), head=(-40, 2, 0)), "ease"),
+        (56, over("stalker", **f, spine=(-24, 0, 0), head=(-44, 4, 0)), "ease"),
         # Down on her haunches, two fingers to the ground, reading it.
         (72, over("stalker", **crouch), "ease"),
         (90, over("stalker", **{**crouch, "head": (8, 14, 0)}), "ease"),
         (110, over("stalker", foot_l=f["foot_l"], foot_r=f["foot_r"]), "ease"),
-        (120, over("stalker"), "ease"),
+        (120, over("stalker", **f), "ease"),
     ]
     return build("idle_stalker_break", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
 

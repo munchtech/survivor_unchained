@@ -68,9 +68,9 @@ arcanist; hunting bow (a crossbow, held pistol-fashion) and the knife belt
 | | Warden | Arcanist | Reaver | Stalker |
 |---|---|---|---|---|
 | Attitude | The wall: heavy plate, unhurried, certain | Poise: a scholar of dangerous things | Feral: hungry, restless, all forward | The predator: patient, low, silent |
-| Stance | Square, feet wide, weight even, shield up | Upright, feet on a line, one hip cocked, staff planted | Low, wide, weight forward on the balls of the feet, shoulders hunched | Crouched a little, weight back, head level and turning |
+| Stance | Square, feet wide, weight even, shield up | Upright, feet on a line, one hip cocked, staff planted | Low, wide, weight forward on the balls of the feet, shoulders hunched | Standing ready: weight forward on the balls of her feet, knees soft, the left foot a little ahead, chest slightly forward, head level and turning (stood up 18 Oct: the full crouch read as squatting) |
 | Run | Grounded and hard: a heavier, slower cadence (21 frames a cycle), little bounce, square shoulders, shield across the body, the sword arm swinging short | Upright and light, chin up, steps on one line and the hips swaying, the staff still in one fist, the free hand open | Pitched forward 32°, hunched, short fast cadence (19), high knee drive, big arm pump with the axes | A glide: low knees, long strides, little bounce, head steady and forward |
-| Idle | Heavyset's square, tensed standing; buckler across her, sword low | Strutting's chin-up ease; staff upright, a hand on her hip | Angry's restless tension; the axe on her shoulder | Crouched and ready; the crossbow low across her |
+| Idle | Heavyset's square, tensed standing; buckler across her, sword low | Strutting's chin-up ease; staff upright, a hand on her hip | Angry's restless tension; the axe on her shoulder | Crouched's breath and sway, stood up: knees soft (about 19°), hips over the middle of her feet, chest about 9° forward; the crossbow low across her |
 | Idle break | Rolls her sword shoulder, looks her buckler over | Turns the staff in her fingers, glances at the sky, tucks her hair | Rolls her neck, spins the axe in her wrist, shakes out her hand | Scans left and right, a crouch to read the ground, rises |
 | Signature | The shield never drops | The free hand always shapes something | Never still | Always watching |
 

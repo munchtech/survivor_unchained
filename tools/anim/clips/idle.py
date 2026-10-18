@@ -271,12 +271,95 @@ _bases = {}
 SHARES_BASE = {"idle_stalker_daggers": "stalker"}
 
 
+# A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
+# bathroom"). The Crouched take's knees bent 55 deg with her hips 17 cm behind her feet and her chest 19 deg over; she
+# keeps its breath and sway, her hips lifted and carried over the middle of her feet (the knees to about a third of
+# the bend), the hips and everything above turned back so the chest leans a little and the head comes level, the legs
+# reaching again for the same planted ankles. knee: the mean knee bend wanted (deg); over: the hips ahead of the
+# middle of her feet, ankle to ball (m); pitch: the hips turned back (deg); width: her ankles apart (m; the take's,
+# drawn in to her hips, were 14 cm apart, near touching once she stood); stagger: her left foot ahead of her right (m),
+# a shooter's stance under the crossbow held across her.
+STAND = {"stalker": {"knee": 19.0, "over": 0.03, "pitch": 10.0, "width": 0.21, "stagger": 0.05}}
+
+
+def stand(rig, clip: Clip, knee, over, pitch, width=None, stagger=0.0) -> Clip:
+    from rig import qaxis, qbetween, qinv, qmul, qrot, two_bone_ik
+    sk = rig.sk
+    rot, pos = clip.rot.copy(), clip.pos.copy()
+    T = rot.shape[0]
+    pel, root = sk.i("pelvis"), sk.i("root")
+    g, p = sk.fk(rot, pos)
+    ank = {s: p[:, sk.i(f"foot_{s}")].copy() for s in "lr"}
+    ball = {s: p[:, sk.i(f"ball_{s}")] for s in "lr"}
+    foot_g = {s: g[:, sk.i(f"foot_{s}")].copy() for s in "lr"}
+    bend0 = {s: p[:, sk.i(f"calf_{s}")] - (p[:, sk.i(f"thigh_{s}")] + ank[s]) / 2 for s in "lr"}
+    fwd = sum(ball[s] - ank[s] for s in "lr").mean(axis=0)
+    fwd[1] = 0
+    fwd /= np.linalg.norm(fwd)
+    left = np.cross([0.0, 1.0, 0.0], fwd)
+    side = 1.0 if np.mean(np.sum((ank["l"] - ank["r"]) * left, axis=1)) > 0 else -1.0
+    apart = np.mean(np.abs(np.sum((ank["l"] - ank["r"]) * left, axis=1)))
+    for s, k in (("l", 1.0), ("r", -1.0)):
+        # The feet set out (a fixed offset each, so planted stays planted).
+        d = left * side * k * ((width - apart) / 2 if width else 0.0) + fwd * k * stagger / 2
+        ank[s] = ank[s] + d
+        ball[s] = ball[s] + d
+    mid = sum(ank[s] + ball[s] for s in "lr") / 4
+    # The hips turned back about her left-right axis (a turn about `left` tips her up toward her front).
+    turn = qaxis(left, -pitch)
+    rot[:, pel] = qmul(qinv(g[:, root]), qmul(turn, g[:, pel]))
+    # Carried forward over her feet (the sway about it kept), then the whole of her moved back so her hips sway about
+    # the root as the take's did (in_place): her feet go back under her rather than her hips forward off the root.
+    shift = fwd * (over - np.mean(np.sum((p[:, pel] - mid) * fwd, axis=1)))
+    centre = p[:, pel].mean(axis=0) + shift
+    centre[1] = 0.0
+    for s in "lr":
+        ank[s] = ank[s] - centre
+    shift = shift - centre
+
+    def legs(dy):
+        r, q = rot.copy(), pos.copy()
+        d = shift + np.array([0.0, dy, 0.0])
+        q[:, pel] = q[:, pel] + qrot(qinv(g[:, root]), np.broadcast_to(d, (T, 3)))
+        gl, gp = sk.fk(r, q)
+        bends = []
+        for s in "lr":
+            th, ca, fo = sk.i(f"thigh_{s}"), sk.i(f"calf_{s}"), sk.i(f"foot_{s}")
+            for t in range(T):
+                a, b_, c_ = gp[t, th], gp[t, ca], gp[t, fo]
+                k = bend0[s][t] / max(np.linalg.norm(bend0[s][t]), 1e-6)
+                nb, nc = two_bone_ik(a, b_, c_, ank[s][t], (a + ank[s][t]) / 2 + k)
+                r1 = qbetween(b_ - a, nb - a)
+                gth = qmul(r1, gl[t, th])
+                c2 = nb + qrot(r1, c_ - b_)
+                gca = qmul(qbetween(c2 - nb, nc - nb), qmul(r1, gl[t, ca]))
+                r[t, th] = qmul(qinv(gl[t, sk.parent[th]]), gth)
+                r[t, ca] = qmul(qinv(gth), gca)
+                r[t, fo] = qmul(qinv(gca), foot_g[s][t])
+                u, v = nb - a, nc - nb
+                bends.append(math.degrees(math.acos(np.clip(np.dot(u, v) / np.linalg.norm(u) / np.linalg.norm(v), -1, 1))))
+        return r, q, float(np.mean(bends))
+
+    lo, hi = 0.0, 0.25
+    for _ in range(18):
+        dy = (lo + hi) / 2
+        _, _, b = legs(dy)
+        lo, hi = (dy, hi) if b > knee else (lo, dy)
+    r, q, _ = legs((lo + hi) / 2)
+    meta = {**clip.meta, "changes": clip.meta.get("changes", "") +
+            f"; stood up: hips raised and carried over her feet, knees to {knee:.0f} deg, the body turned back {pitch:.0f} deg"}
+    return Clip(clip.name, clip.fps, r, q, loop=clip.loop, meta=meta)
+
+
 def base_of(rig, calling):
     """A calling's captured standing (made once a run, shared by its idle,
     its breaks and its flourish)."""
     if calling not in _bases:
         style = IDLES[f"idle_{calling}"][0]
-        _bases[calling] = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0))
+        base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0))
+        if calling in STAND:
+            base = stand(rig, base, **STAND[calling])
+        _bases[calling] = base
     return _bases[calling]
 
 
