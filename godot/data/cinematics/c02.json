@@ -26,11 +26,15 @@
       "type": "MLS",
       "dur": 4.0,
       "note": "Behind her as she comes down to the water's edge and stops: the near post at frame left, the ford's stones going out into mist, the two far posts. In the river to the right a lamp burns low over the water, and beyond it the drowned stand in their rows.",
-      "cam": {"pos": [4.4, 1.5, -25.4], "at": {"abs": [4.6, -0.3, -44.0]}, "lens": 28},
+      "cam": {"pos": [3.4, 1.5, -25.4], "at": {"abs": [3.6, -0.95, -44.0]}, "lens": 28},
       "cues": [
-        {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
-        {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0},
+        {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0},
+        {"do": "mist", "name": "river", "where": {"abs": [7.0, -0.8, -41.0]}, "size": [26, 2.2, 18], "density": 0.75, "color": "#8494aa", "falloff": 2.0},
         {"do": "glow", "name": "back", "where": {"abs": [11.5, 0.6, -50.0]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 9.0, "range": 16},
+        {"do": "water", "level": 0.4},
+        {"do": "globe", "light": 4, "level": 0.25},
+        {"do": "globe", "light": 5, "level": 0.25},
+        {"do": "globe", "light": 6, "level": 0.25},
         {"do": "music", "mood": "silence"},
         {"do": "event", "name": "warden_cine"},
         {"do": "place", "actor": "warden", "where": {"abs": [2.6, -1.2, -44.5]}, "heading": -1.5708, "tilt": -90},
@@ -45,16 +49,10 @@
       "type": "LS",
       "dur": 2.4,
       "note": "Low at the water on the near bank, looking north-east at their backs: the drowned standing in their rows, waist-deep, heads bowed, facing the far bank. The mist moves; they do not. The lamp low in the middle distance, left.",
-      "cam": {"pos": {"abs": [5.2, -0.75, -36.6]}, "at": {"abs": [10.6, -0.5, -44.0]}, "lens": 35},
-      "cues": []
-    },
-    {
-      "id": "3",
-      "type": "INSERT",
-      "dur": 3.0,
-      "note": "The fist and the lamp: an ancient gauntlet, black with river and grown with weed, gripping a lamp-iron that is new, unrusted, its edges still sharp from the forge. Blue light in it, steady. Below, the surface trembles in time with a sound.",
-      "cam": {"pos": {"abs": [5.2, -0.45, -42.1]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.35, 0]}, "lens": 85, "move": {"push": 0.25, "ease": "linear"}},
-      "cues": []
+      "cam": {"pos": {"abs": [3.73, -0.75, -34.58]}, "at": {"abs": [10.6, -0.5, -44.0]}, "lens": 35},
+      "cues": [
+        {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0}
+      ]
     },
     {
       "id": "4",
@@ -65,7 +63,9 @@
       "note": "Her face, listening, from north-west of her; she looks off screen left to the lamp. W1 rises from under the water, sung: the Order's evening call, slowed to a dirge, heard through water.",
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.55, 0.0, -0.85]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
-        {"do": "rig", "name": "key", "energy": 1.4, "color": "#8ac8ff", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.25, -0.15, -0.9]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
+        {"do": "rig", "name": "key", "energy": 0.8, "color": "#6a9ae6", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.25, 0.1, -0.9]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "ember", "energy": 0.4, "color": "#ff7a4a", "angle": 16, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.1, -0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
         {"at": 0.3, "do": "line", "id": "cin_none_cross.call"},
         {"do": "face", "keys": {"brows_up": 0.2}, "over": 0.8},
         {"do": "gaze", "look": [0.15, -0.1]}
@@ -121,12 +121,13 @@
       "fit": ["cin_none_cross.lie_down"],
       "tail": 1.4,
       "note": "Her face in the lamp's light: the flame small in each eye, the wet hair, the green weed the light finds and holds on. Close enough to her lips that breath would show; none does. Blue on one side of her face, her ember's red faint on the other. W2, very quietly, off.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, 0.0, 0]}, "lens": 90, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.5, 0.05, -0.87]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.045, 0]}, "lens": 80, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "music", "mood": "silence"},
         {"do": "hide", "actor": "warden"},
-        {"do": "rig", "name": "ember", "energy": 0.35, "color": "#ff6a33", "angle": 30, "range": 0.3, "from": {"actor": "her", "bone": "eyes", "off": [-0.3, -0.1, -0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.34, 0.02, -0.14]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.3, "range": 0.55, "spec": 1.0},
+        {"do": "rig", "name": "ember", "energy": 0.25, "color": "#ff7a4a", "angle": 14, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.15, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.06, -0.06, -0.03]}},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.4, 0.1, -0.15]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.5, "range": 0.8, "spec": 1.0},
+        {"do": "gaze", "look": [-0.3, -0.25], "wander": 0.06},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},
@@ -150,8 +151,9 @@
       "type": "LS",
       "dur": 2.0,
       "note": "Low on the water behind his legs, looking east down the river: every one of the drowned turns its face toward her at once, a wave down the rows.",
-      "cam": {"pos": {"abs": [1.4, -0.5, -31.6]}, "at": {"abs": [10.4, -0.4, -43.4]}, "lens": 65},
+      "cam": {"pos": {"abs": [1.4, -0.5, -31.6]}, "at": {"abs": [10.4, -1.18, -43.4]}, "lens": 65, "focus": {"abs": [10.4, -0.7, -43.4]}, "fstop": 2.8},
       "cues": [
+        {"do": "rig", "name": "rows", "energy": 8.0, "color": "#8ac8ff", "angle": 20, "from": {"actor": "her", "bone": "head", "off": [0, 0.3, 0]}, "aim": {"abs": [10.4, -0.7, -43.4]}},
         {"at": 0.3, "do": "look", "actor": "drowned", "where": [2.5, 1.5, -31.0], "over": 0.45, "stagger": 0.07},
         {"at": 0.4, "do": "sfx", "name": "rasp", "gain": 0.5}
       ]
@@ -163,8 +165,9 @@
       "fit": ["cin_none_cross.none"],
       "tail": 0.6,
       "note": "Low on the near bank west of the road, the whole ford: W3. The three posts' flames lean toward him at once, like grass in a wind: he is drinking them. Ice runs out from each post across the water. The drowned lift their heads. Title: THE FORD-WARDEN / Keeper of the Low Crossing.",
-      "cam": {"pos": [-7.5, 0.7, -26.0], "at": {"abs": [4.0, 0.6, -40.0]}, "lens": 24},
+      "cam": {"pos": [-6.34, 0.7, -25.05], "at": {"abs": [5.16, 2.18, -39.05]}, "lens": 24},
       "cues": [
+        {"do": "mist", "name": "river", "where": {"abs": [7.0, -0.8, -41.0]}, "size": [26, 2.2, 18], "density": 0.75, "color": "#8494aa", "falloff": 2.0},
         {"at": 0.2, "do": "line", "id": "cin_none_cross.none"},
         {"at": 0.2, "do": "music", "mood": "boss", "intensity": 1.0},
         {"at": 0.2, "do": "sfx", "name": "frost_crack", "gain": 0.9},
@@ -183,6 +186,10 @@
       "cues": [
         {"do": "atmosphere", "preset": "night", "from": "now", "over": 2.0},
         {"do": "mist", "name": "river", "density": 0, "over": 2.0},
+        {"do": "water", "level": 1, "over": 2.0},
+        {"do": "globe", "light": 4, "level": 1, "over": 2.0},
+        {"do": "globe", "light": 5, "level": 1, "over": 2.0},
+        {"do": "globe", "light": 6, "level": 1, "over": 2.0},
         {"at": 0.0, "do": "play"},
         {"do": "anim", "actor": "warden", "clip": "Idle_Shield_Loop", "blend": 0.3},
         {"at": "end", "do": "event", "name": "warden_up"}

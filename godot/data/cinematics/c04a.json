@@ -100,32 +100,21 @@
       "type": "CU",
       "dur": 5.5,
       "note": "Frontal, low sun from frame right, the birches' shade behind: colour comes into her face. She breathes out, and her breath smokes in the cold, a long white plume in the sunlight. She sees it. She breathes again, to see it again. Then the cold reaches her: a shiver, once, hard.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.25, -0.02, -1.25]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.8, -0.12, -1.7]}, "at": {"actor": "her", "bone": "eyes", "off": [-0.13, -0.1, 0.06]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
-        {"do": "atmosphere", "preset": "dawn", "exposure": 0.78, "hemi": 0.6, "env": 0.6},
-        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "atmosphere", "preset": "dawn", "exposure": 0.78, "hemi": 0.3, "env": 0.3},
+        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 14, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 5, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
+        {"do": "globe", "light": 4, "level": 0.25},
+        {"do": "globe", "light": 5, "level": 0.25},
+        {"do": "globe", "light": 6, "level": 0.25},
         {"at": 0.8, "do": "sfx", "name": "breath_out", "gain": 1.3},
-        {"at": 0.8, "do": "face", "keys": {"mouth_open": 0.25, "brows_up": 0, "smile": 0}, "over": 0.6},
-        {"at": 2.0, "do": "face", "keys": {"mouth_open": 0.05, "smile": 0.1}, "over": 0.5},
+        {"at": 0.8, "do": "face", "keys": {"mouth_open": 0, "brows_up": 0, "smile": 0}, "over": 0.6},
+        {"at": 2.0, "do": "face", "keys": {"mouth_open": 0, "smile": 0.08}, "over": 0.5},
         {"at": 2.8, "do": "sfx", "name": "breath_out", "gain": 1.1},
         {"at": 4.4, "do": "face", "keys": {"smile": 0, "squint": 0.2, "frown": 0.2}, "over": 0.2},
         {"at": 4.4, "do": "sfx", "name": "cloth", "gain": 0.6},
         {"at": 4.4, "do": "anim", "clip": "her/shiver", "from": 0, "speed": 1, "blend": 0.1}
-      ]
-    },
-    {
-      "id": "A6",
-      "type": "MCU",
-      "dur": 5.0,
-      "note": "She lifts the flask on its cord, pulls the cork with her teeth, and stops: smells it. The river. She drinks anyway, long, eyes shut; water on her chin. She lowers it.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.5, -0.15, -1.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.12, 0]}, "lens": 50},
-      "cues": [
-        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
-        {"at": 1.0, "do": "sfx", "name": "click", "gain": 0.5},
-        {"at": 1.5, "do": "face", "keys": {"nose_wrinkle": 0.3, "squint": 0, "frown": 0}, "over": 0.3},
-        {"at": 2.3, "do": "lids", "value": 1, "over": 0.3},
-        {"at": 4.3, "do": "lids", "value": null}
       ]
     },
     {
@@ -137,13 +126,17 @@
       "note": "Frontal, a very slow push (0.05 m): she is still. Her eyes go inward, searching. N6. Then nothing: hold 1.5 s of silence after the line. Play someone who has mislaid a thing she uses every day.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
       "cues": [
-        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 14, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 5, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
-        {"do": "face", "keys": {"nose_wrinkle": 0, "brows_sad": 0.45}, "over": 2.0},
-        {"do": "gaze", "look": [0, 0]},
+        {"do": "face", "keys": {"nose_wrinkle": 0, "squint": 0, "frown": 0, "mouth_open": 0, "smile": 0, "brows_sad": 0.45}, "over": 2.0},
         {"at": 0.4, "do": "line", "id": "cin_first_light.face"},
-        {"at": 2.6, "do": "gaze", "look": [-0.3, -0.2]},
-        {"at": 4.6, "do": "gaze", "look": [0, 0]}
+        {"do": "gaze", "look": [-0.3, 0.22], "wander": 0.04},
+        {"do": "lids", "value": 0.15, "over": 0.5},
+        {"at": 2.2, "do": "gaze", "look": [-0.22, 0.27], "wander": 0.04, "snap": true},
+        {"at": 3.1, "do": "gaze", "look": [-0.14, 0.3], "wander": 0.04},
+        {"at": 3.9, "do": "gaze", "look": [-0.08, 0.31], "wander": 0.04},
+        {"at": 4.6, "do": "lids", "value": 1, "over": 0.08},
+        {"at": 4.72, "do": "lids", "value": 0.15, "over": 0.15}
       ]
     },
     {
@@ -151,13 +144,21 @@
       "type": "LS",
       "dur": 5.5,
       "note": "Low behind her on the road, looking north up the hill: she walks away from camera into the light; at the top of the hill the gate stands open. Her own body from the cut (play). Over the last 3 s the camera cranes up over her, tilting down into the game's view; she walks on into play. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
-      "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
+      "cam": {"pos": {"mark": "road", "off": [1.6, 0.6, 3.0]}, "at": [1.0, 4.0, -110.0], "lens": 28, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
       "cues": [
         {"do": "atmosphere", "preset": "dawn", "from": "now", "over": 1.5},
+        {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 1.6, "name": "road1", "where": [0.5, 0, -68.0], "size": [30, 1.4, 12], "sink": 0.6},
+        {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 1.6, "name": "road2", "where": [0.5, 0, -80.0], "size": [34, 1.6, 12], "sink": 1.0},
+        {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 1.6, "name": "road3", "where": [0.5, 0, -92.0], "size": [38, 1.8, 12], "sink": 1.0},
+        {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 1.6, "name": "road4", "where": [0.5, 0, -104.0], "size": [42, 2.2, 14], "sink": 1.0},
         {"at": 0.0, "do": "play"},
         {"do": "move", "to": "top", "dur": 6.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 1.0, "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0},
-        {"at": "end", "do": "event", "name": "douse"}
+        {"at": "end", "do": "event", "name": "douse"},
+        {"at": 2.5, "do": "mist", "name": "road1", "density": 0, "over": 2.6},
+        {"at": 2.5, "do": "mist", "name": "road2", "density": 0, "over": 2.6},
+        {"at": 2.5, "do": "mist", "name": "road3", "density": 0, "over": 2.6},
+        {"at": 2.5, "do": "mist", "name": "road4", "density": 0, "over": 2.6}
       ]
     }
   ],
