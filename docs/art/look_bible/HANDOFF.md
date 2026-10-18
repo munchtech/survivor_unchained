@@ -70,3 +70,4 @@ Left: about 4 h for the boards, about 1.5 h for the budgets, 1.5 h for the inven
 - Crop boxes guessed from thumbnails miss: the God of War crop landed on a shoulder. Preview a crop at 480 px before building the board.
 - Store screenshots are mostly action shots, with few material close-ups. Crop hard, and caption what the crop teaches.
 - Keep pictures out of long contexts: view each board once at full size, then fix by numbers.
+- In perf summary.md the fps and ms columns read "-": the harness's JSON names those keys differently. Read frame times from each case's .json or .csv; the GPU ms, draws, primitives and VRAM columns are right.
