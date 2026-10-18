@@ -357,6 +357,9 @@ public partial class Game
         /// <summary>A zone lamp's glowing piece a "globe" cue dimmed: what it wore before (put back at the end), its own copy, its colour.</summary>
         sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; }
         readonly List<Globe> globes = new();
+        /// <summary>The bosses a "hide" cue hid: their Shine shows them every frame, so they are hidden again after it (C02 s8:
+        /// the Warden and his lamp-iron stood at her temple, the lamp a clipped disc at the frame's edge).</summary>
+        readonly HashSet<Node3D> bossHidden = new();
         /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
         readonly HashSet<ShaderMaterial> waters = new();
 
@@ -423,7 +426,7 @@ public partial class Game
                 g.hud.ShowPlay(true, (float)Math.Max(0.4, file.Bars.Out));
             }
             foreach (var v in people.Values) v.Advance(dt);
-            foreach (var w in bosses.Values) w.Shine(dt);
+            foreach (var w in bosses.Values) { w.Shine(dt); if (bossHidden.Contains(w)) w.Visible = false; }
             foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
             PlaceRigs();
@@ -679,7 +682,7 @@ public partial class Game
                     break;
                 }
                 case "hide":
-                    if (bosses.TryGetValue(c.Actor, out var hw)) hw.Visible = !c.Bool("hidden", true);
+                    if (bosses.TryGetValue(c.Actor, out var hw)) { hw.Visible = !c.Bool("hidden", true); if (hw.Visible) bossHidden.Remove(hw); else bossHidden.Add(hw); }
                     else if (NodeOf(c.Actor) is { } hv) hv.Visible = !c.Bool("hidden", true);
                     break;
                 case "lamp":
