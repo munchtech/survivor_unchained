@@ -456,8 +456,9 @@ public static class People
     static readonly Vector3 HerPaintedIris = new(0.816f, 0.766f, 1.071f);
 
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
-    /// fitted to her head), the first hers unless another is chosen.</summary>
-    public static readonly string[] HerHairs = { "long", "ponytail", "braid", "bob", "pixie" };
+    /// fitted to her head), the first hers unless another is chosen. Long and bob (art kept on disk)
+    /// are out until rebuilt (the owner, 18 Oct): an old "long" or "bob" falls to the braid.</summary>
+    public static readonly string[] HerHairs = { "braid", "ponytail", "pixie" };
 
     /// <summary>Her own hair colour, copper, as her portrait has it (under a white light its median
     /// within a few per cent of the portrait's; the old #8f2d14 rendered blood-red, its green and blue

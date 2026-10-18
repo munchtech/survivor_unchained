@@ -225,7 +225,7 @@ public sealed class CreationDraft
 {
     public int Step;
     public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
-    public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "long";
+    public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "braid";
     /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or "".</summary>
     public string BeardStyle = "";
     public bool Headgear = true, Beard = true;

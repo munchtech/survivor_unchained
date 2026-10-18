@@ -30,3 +30,15 @@ Closed as known (face 28, 17 October, the coordinator agreed). No screen or scen
 - **Verdict and sheets** (1:1, 16 Oct): `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\007ccb1a-862a-405f-908e-2b7c3e433488\scratchpad\f27\j1\verdict.md`. The shoot script is `..\f27\tri.ps1`.
 - **Item 1's start:** `gum_low()` in `tools/assets/heroine_mouth_inner.py`, kept but NOT hooked. It pushes the lower teeth and gum back in the teeth's mouth_open key, to keep 2 mm behind her chin. It also scales the mouth_height slider's teeth key by how far her skin follows the slider at each height. Run it alone with `gum_low_file(glb, out)` (about 90 s). The unjudged build is `..\f27\chin\g1.glb` (on the pre-G3 body), with its log in `dbg.txt`. Caution: its push reaches 7.6 mm at open 1.0, driven by the mouth_height Low slider (Sunborn, own). It applies to every face, so the front teeth may look sunk. Judge that before hooking it, or move the Low case into a corrective key.
 - Also closed: hooking `heroine_mouth_seal.py`, since nothing it fixes shows at 1:1.
+
+## Later: long and bob (deferred 18 Oct by the owner)
+
+The owner, 18 Oct: "Yes: ship braid, ponytail and pixie, braid is her default, and long and bob leave the creation menu until they're rebuilt."
+
+They come back with a rebuild or with Marionette's hair-card library. Their art and gltfs are kept on disk (and all of long's physics, HairSway's `Style == "long"` branch); they are only out of her `cuts` in `looks.json` and `People.HerHairs`. An old save or arg with "long" or "bob" lands on the braid (`Loadouts.HerHair`). The judge's items for them (verdict sections A and B):
+- Long and bob read as a painted slab or helmet: one even copper, a lighter horizontal band across the back, a ragged crown, hard dark tips.
+- Long moves as flat sheets (sprint frame, across #5), with a hard jagged top edge.
+- Long is stiff with no trail while she runs (across #2); the spin frames match rest.
+- Bob's front strands float off the head, and one hangs across the eye (spin #4), with a pale gap between front cards.
+- Bob's forehead strand is a hook that reads as a drawn line (turns 0 and 45).
+- Measured: the bob's main cards stand a median 15.6 mm off the face; the "glued" read is the fine layer at 1.6 mm (`tools/scratch/face29/facegap.py`).
