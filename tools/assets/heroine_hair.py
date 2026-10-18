@@ -1740,6 +1740,10 @@ def export(o, style):
                               export_skins=True, export_animations=False, export_yup=True, export_tangents=True,
                               export_vertex_color="ACTIVE", export_morph_normal=False, export_morph_tangent=False,
                               export_try_sparse_sk=True)
+    # Hair that took her neck's weights follows her neck's skin as her body build changed it (heroine_neck.py
+    # match_graft, 18 October: her neck's skin under her head moves with her head since her neck was shortened)
+    import heroine_neck
+    heroine_neck.match_pieces(path, heroine_neck.field(), hair=True)
     # The data's checksum written into the .gltf: Godot reimports when the
     # .gltf changes, not its .bin (a style rebuilt with as many points would
     # otherwise keep the old one).

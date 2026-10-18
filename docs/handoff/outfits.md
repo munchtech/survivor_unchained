@@ -2,7 +2,28 @@
 
 From outfits lead successor 27 (su-lead-high), 14 October 2026. Start cold: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is ~6,500 lines, mixed CRLF/LF: grep it, edit with exact byte replacements (handle `\r\n`), `ast.parse` after each edit. `heroine_rig.py` is CRLF.
 
-## Start here: Body build lead 3 (from body build lead 2, a6eba6641cedaeb16, 18 Oct; HANDED OFF)
+## Start here: Neck seam fix (DONE, judged PASS at 1:1; MERGE REQUEST sent; neck seam lead successor, 18 Oct)
+Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-aa882d32aeeb17aca`, branch neck-seam-1. Scratch N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\43e8c2e6-36a3-4fd7-8ca4-39c475e24666\scratchpad\ns` (shoot.sh, lists, briefs, r1/r2 frames; keep until merged).
+**Cause:** the Head rest cut (heroine_neck.shorten_glb) drops each point 30 mm x its Head weight. Her head's skin by the ears and jaw (Head 0.5-0.76) sank onto the body's neck bridge (skin_graft, 0.10-0.30), and the graft came through: 102 points, up to 8.3 mm.
+**Fix (weights, chosen because it holds in motion; a geometry cut would keep the mismatched weights in every turn):** `heroine_neck.match_graft(glb, cut)`, run before the cut in heroine_outfits.py. Graft points within 2 cm of her head take the weights of the head skin they end up beside; the take fades to nothing at 7 cm. Those head points are found again after each try, over 8 tries, then the weights are smoothed 3 times over the graft's edges. The 102 points welded to her head at SPLIT keep exactly the head's weights. In r1 they didn't, and the weld opened into black slits up to 15.6 mm. It writes the change to `tools/assets/heroine_neck_graft.npz`. `match_pieces(gltf, field, hair)` gives the same change to piece and hair points whose skin was the graft:
+- outfits: the nearest body point, within 3 cm;
+- hair: the nearest of her head or body, at full strength within 2 cm, fading to nothing at 5 cm.
+It's wired into the outfit export and into heroine_hair.py's export, so later builds reproduce it. NOT idempotent: run it once per fresh export.
+**Installed:** heroine.glb; the Arcanist, Reaver and Warden outfits (Ranger had no change); the braid, ponytail, bob and long hair (pixie had no change); and the anatomical body (non-shipping) in survivorsunchained_inputs.
+**Measured** (tools/scratch/neck_seam: sd.py, out.py, motion.py, weld.py, clear.py):
+- Graft out of her head by more than 2 mm: 49 -> 0, and the worst 8.3 -> 1.9 mm (1.7 before the cut).
+- In 20-45 degree head turns, the worst 7.4-18.3 -> 1.8-3.9 mm (2.4-10.8 before the cut).
+- Weld gap: 0.
+- Collars against the uncut body: similar, within about 1 mm, better in some poses and worse in others.
+- Nape hair: better in every pose. Tests: 941/0/8.
+**Judged (max):** j1 PASS on all of C01 s8, s8b and s10, C04a A5, and the Look (Warden, Reaver, Arcanist, pixie, ponytail). j2 PASS on the 8 frames j1 didn't reach (town close-ups and the rest of the Look). Briefs are N\judge1_brief.md and N\judge2_brief.md. The frames are in N\r2.
+**Logged, older than this fix:**
+- a faint glint of about 40 px in C01 s8_1-2, where the shard was (the 1.9 mm poke that was also there before the cut);
+- the braid's flat, square-ended dark red tab under her right ear in C01 s8, which reads as a defect at 1:1: face/hair;
+- the hooked kinks at the ends of the Reaver's cord: outfits.
+**Next:** the cinematics lead re-shoots C01 s8, s8b and s10 and C04 A5 after the merge.
+
+## Before: Body build lead 3 (from body build lead 2, a6eba6641cedaeb16, 18 Oct; HANDED OFF)
 Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a45c374d405fbacf2`, branch body-build-1. `godot/assets` is a JUNCTION (git ` D`: never stage it; never `git stash`/`reset --hard`/`checkout .`). S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\463a4243-9324-49b0-bda9-b9fb9a9d68b1\scratchpad\nk` (KEEP until this merges). Never type `python -` (stdin hangs).
 
 **State: C1 built, installed, committed (9877693b), judged PASS at 1:1 (max, 2 rounds: `S\j1\verdict.md`, `S\j2\verdict.md`; frames `S\shots_c1`).** A plain build reproduces it now: the defaults are on (6a8203e7: FINGER_FIX, AREOLA_OUT, NECK_CUT 0.03, and integration's PAULDRON leather + PLUNGE_TAUT 0.06), so `bash S/vb.sh <tag>` needs no env.
