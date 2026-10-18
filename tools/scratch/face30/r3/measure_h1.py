@@ -23,7 +23,7 @@ for (face, t), probe in PROBE.items():
         print(face, t, "no probe"); continue
     uv = uv_at(probe); ok = ~np.isnan(uv[..., 0])
     r = np.clip((np.nan_to_num(uv[..., 1]) * S).astype(int), 0, S - 1); c = np.clip((np.nan_to_num(uv[..., 0]) * S).astype(int), 0, S - 1)
-    nohair = rd(probe + "_nohair") if has(probe + "_nohair") else None
+    nohair = rd(probe + "_nohair") if has(probe + "_nohair") and not os.environ.get("NOBARE") else None
     for style in ("braid", "ponytail", "pixie"):
         bname, aname = f"h1_lk_{face}_{style}_t{t:03d}", f"{AFTER}_{face}_{style}_t{t:03d}"
         if not (has(bname) and has(aname)):
