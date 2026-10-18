@@ -8949,7 +8949,55 @@ if BODY_OUT:
         for _kb in (_ffm.shape_keys.key_blocks if _ffm.shape_keys else []):
             _ff_keep.append(np.empty(len(_kb.data) * 3))
             _kb.data.foreach_get("co", _ff_keep[-1])
+        _ff_cn = np.empty(len(_ffm.loops) * 3, np.float32)
+        _ffm.corner_normals.foreach_get("vector", _ff_cn)
         finger_flattened(body)
+        # (her custom normals are kept relative to each corner's own frame, so points moved under them
+        # turned a few round (4 corners on her left fingers over 45 deg, 3 past 90: dark specks). Her moved
+        # points' corners, and the ring round them, take her skin's own normal as it now is; the rest keep theirs.)
+        _ffc = np.empty(len(_ffm.vertices) * 3)
+        _ffm.vertices.foreach_get("co", _ffc)
+        _ffmv = np.abs(_ffc - _ff_keep[0]).reshape(-1, 3).max(1) > 1e-9
+        _ffe = np.empty(len(_ffm.edges) * 2, np.int64)
+        _ffm.edges.foreach_get("vertices", _ffe)
+        _ffe = _ffe.reshape(-1, 2)
+        _ffr = _ffmv.copy()
+        _ffr[_ffe[_ffmv[_ffe[:, 0]], 1]] = True
+        _ffr[_ffe[_ffmv[_ffe[:, 1]], 0]] = True
+        _fflv = np.empty(len(_ffm.loops), np.int64)
+        _ffm.loops.foreach_get("vertex_index", _fflv)
+        _ffvn = np.empty(len(_ffm.vertices) * 3, np.float32)
+        _ffm.vertex_normals.foreach_get("vector", _ffvn)
+        # (as mend_folds does: welded by place, and any point whose normal turned against the mean of
+        # the points round it (a pad point drawn through her skin) takes the mean of its unturned neighbours)
+        _, _ffw = np.unique(np.round(_ffc.reshape(-1, 3) / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+        _ffw = _ffw.ravel()
+        _ffnw = _ffw.max() + 1
+        _ffW = np.zeros((_ffnw, 3))
+        np.add.at(_ffW, _ffw, _ffvn.reshape(-1, 3))
+        _ffW /= np.maximum(np.linalg.norm(_ffW, axis=1, keepdims=True), 1e-12)
+        _ffa, _ffb = _ffw[_ffe[:, 0]], _ffw[_ffe[:, 1]]
+        _ffk = _ffa != _ffb
+        _ffa, _ffb = _ffa[_ffk], _ffb[_ffk]
+        _ffM = np.zeros((_ffnw, 3))
+        np.add.at(_ffM, _ffa, _ffW[_ffb])
+        np.add.at(_ffM, _ffb, _ffW[_ffa])
+        _ffM /= np.maximum(np.linalg.norm(_ffM, axis=1, keepdims=True), 1e-12)
+        _ffrw = np.zeros(_ffnw, bool)
+        _ffrw[_ffw[_ffr]] = True
+        _ffbad = _ffrw & ((_ffW * _ffM).sum(1) < 0.5)
+        _ffG = np.where(_ffbad[:, None], 0.0, _ffW)
+        _ffM2 = np.zeros((_ffnw, 3))
+        np.add.at(_ffM2, _ffa, _ffG[_ffb])
+        np.add.at(_ffM2, _ffb, _ffG[_ffa])
+        _ffok = _ffbad & (np.linalg.norm(_ffM2, axis=1) > 1e-9)
+        _ffW[_ffok] = _ffM2[_ffok] / np.linalg.norm(_ffM2[_ffok], axis=1, keepdims=True)
+        _ffo = _ff_cn.reshape(-1, 3).copy()
+        _ffs = _ffr[_fflv]
+        _ffo[_ffs] = _ffW[_ffw[_fflv[_ffs]]]
+        _ffm.normals_split_custom_set([tuple(v) for v in _ffo])
+        print("FINGER_FIX: %d corners given her skin's own normal (%d points moved, %d in the ring; %d turned points "
+              "given their neighbours')" % (int(_ffs.sum()), int(_ffmv.sum()), int(_ffr.sum() - _ffmv.sum()), int(_ffok.sum())))
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
     for o in [body] + HEAD_PARTS:
@@ -8963,6 +9011,7 @@ if BODY_OUT:
         for _kb, _c in zip(_ffm.shape_keys.key_blocks if _ffm.shape_keys else [], _ff_keep[1:]):
             _kb.data.foreach_set("co", _c)
         _ffm.update()
+        _ffm.normals_split_custom_set([tuple(v) for v in _ff_cn.reshape(-1, 3)])
     # (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
     import heroine_seam
     heroine_seam.seam(BODY_OUT)
