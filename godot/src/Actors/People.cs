@@ -183,6 +183,9 @@ public static class People
         public string? Paint;
         /// <summary>The face she started from, whose painting her head wears (none: her own).</summary>
         public string? FaceShape;
+        /// <summary>Her face's own lower-lip fullness (FaceShape.Lips) and the player's lips_lower slider, summed on
+        /// the key (HerFace, HerFaceKey).</summary>
+        public float LipsBase, LipsSlider;
         /// <summary>The colour her brows are dyed (her hair's), or none: as painted.</summary>
         public Color? Brow;
         /// <summary>Her head's pose as she is drawn (her corrective layer
@@ -453,8 +456,9 @@ public static class People
     static readonly Vector3 HerPaintedIris = new(0.816f, 0.766f, 1.071f);
 
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
-    /// fitted to her head), the first hers unless another is chosen.</summary>
-    public static readonly string[] HerHairs = { "long", "ponytail", "braid", "bob", "pixie" };
+    /// fitted to her head), the first hers unless another is chosen. Long and bob (art kept on disk)
+    /// are out until rebuilt (the owner, 18 Oct): an old "long" or "bob" falls to the braid.</summary>
+    public static readonly string[] HerHairs = { "braid", "ponytail", "pixie" };
 
     /// <summary>Her own hair colour, copper, as her portrait has it (under a white light its median
     /// within a few per cent of the portrait's; the old #8f2d14 rendered blood-red, its green and blue
@@ -504,8 +508,14 @@ public static class People
                 th.SetShaderParameter("paint", src.AlbedoTexture);
                 return th;
             case "tongue":
-                m.Roughness = 0.35f;
-                return m;
+                // (its own shade inside her mouth, lit at its tip and dark at its root: heroine_mouth.py's vertex colour,
+                // white where a mesh has none; no shadows, as their maps hatched it and cut a hard black edge over it
+                // (the smile pass, e1): shaders/heroine_tongue.gdshader. Its paint a bright salmon pink, read as a
+                // plastic slab inside her mouth at the Look (a2): the shader mutes it to a darker rose)
+                tongueShader ??= GD.Load<Shader>("res://shaders/heroine_tongue.gdshader");
+                var tg = new ShaderMaterial { Shader = tongueShader, ResourceName = "tongue" };
+                tg.SetShaderParameter("paint", src.AlbedoTexture);
+                return tg;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
         }
@@ -543,11 +553,25 @@ public static class People
         foreach (var mi in p.Meshes)
         {
             if (mi.Mesh is not ArrayMesh am || am.GetBlendShapeCount() == 0) continue;
-            foreach (var (name, v) in all)
+            foreach (var (name, v0) in all)
             {
+                var v = v0;
+                if (name == "lips_lower") { p.LipsSlider = v0; v = Mathf.Clamp(v0 + p.LipsBase, -1, 1.5f); }
                 Shape(mi, name + "+", Mathf.Max(v, 0));
                 Shape(mi, name + "-", Mathf.Max(-v, 0));
                 Shape(mi, name, v);
+            }
+            // (her smile with her mouth open lifts her upper lip off her teeth: smile_open, heroine_mouth.py, as her
+            // smile times how far her lips are parted, full by mouth_open 0.3; with her lips closed a smile stays
+            // closed-lipped); and smile_hold, her philtrum and nose's foot held up against mouth_open's drop, as her smile
+            // times mouth_open itself (so her nose's foot doesn't rise and fall back as her lips part)
+            int so = mi.FindBlendShapeByName("smile_open");
+            if (so >= 0 && mi.FindBlendShapeByName("smile") is int sm and >= 0 && mi.FindBlendShapeByName("mouth_open") is int mo and >= 0)
+            {
+                float m = mi.GetBlendShapeValue(mo), o = Mathf.Clamp(m / 0.3f, 0, 1);
+                mi.SetBlendShapeValue(so, mi.GetBlendShapeValue(sm) * o * o * (3 - 2 * o));
+                int sh = mi.FindBlendShapeByName("smile_hold");
+                if (sh >= 0) mi.SetBlendShapeValue(sh, mi.GetBlendShapeValue(sm) * Mathf.Clamp(m, 0, 1));
             }
         }
 
@@ -605,8 +629,11 @@ public static class People
     {
         int hb = p.Skeleton.FindBone("Head");
         if (hb < 0) return p.Root.GlobalPosition + Vector3.Up * 1.6f;
-        var moved = (p.HeadPose ?? p.Skeleton.GetBoneGlobalPose(hb)) * p.Skeleton.GetBoneGlobalRest(hb).AffineInverse();
-        return p.Skeleton.GlobalTransform * (moved * new Vector3(0, 1.748f, 0.075f));
+        var rest = p.Skeleton.GetBoneGlobalRest(hb);
+        var moved = (p.HeadPose ?? p.Skeleton.GetBoneGlobalPose(hb)) * rest.AffineInverse();
+        // (between her eyes at rest: 8.2 cm over and 11.1 cm in front of her Head joint, so they ride with its rest:
+        // her neck 3 cm shorter, 18 October 2026, lowered the joint; at 1.748 m fixed the Look aimed over her eyes)
+        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + new Vector3(0, 0.082f, 0.111f)));
     }
 
     /// <summary>Her eyes' colour (shaders/heroine_eye.gdshader): the iris's
@@ -806,6 +833,66 @@ public static class People
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
+        // (env HAIRSET "through=0,shine2=0.2": her hair's uniforms tried in a shot without a build, every pass; face 30 cine)
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("HAIRSET") is { Length: > 0 } hs)
+            foreach (var mi in p.Hair)
+                for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial hm)
+                        foreach (var pass in HairDraw.Passes(hm))
+                            foreach (var kv in hs.Split(','))
+                                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x))
+                                    pass.SetShaderParameter(k.Trim(), x);
+    }
+
+    /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
+    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye), uv (her head's UV emitted:
+    /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), hairnospec and hairnovar (her hair's shine, its strand tone variation off), nosss, mask (her scalp's tint green).</summary>
+    static void H1Debug(Person p, string dbg)
+    {
+        var on = new HashSet<string>(dbg.Split(','));
+        foreach (var mi in p.Hair)
+        {
+            if (on.Contains("nohair")) mi.Visible = false;
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var name = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+                if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial hm) continue;
+                if (name == "hair_cap" && on.Contains("nocap")) mi.SetSurfaceOverrideMaterial(s, new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.Alpha, AlbedoColor = new Color(0, 0, 0, 0) });
+                else if (name == "hair_cap" && on.Contains("capgreen")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 1, 0));
+                else if (name != "hair_cap" && on.Contains("cardsblue")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 0, 1));
+                if (on.Contains("hairnospec")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
+                if (on.Contains("hairnovar")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("variation", 0f);
+            }
+        }
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
+                if (on.Contains("uv")) m.SetShaderParameter("dbg_gate", 9.0f);
+                if (on.Contains("uv10")) m.SetShaderParameter("dbg_gate", 10.0f);
+                if (on.Contains("uv11")) m.SetShaderParameter("dbg_gate", 11.0f);
+                if (on.Contains("nospec")) { m.SetShaderParameter("shine", 0f); m.SetShaderParameter("seam_shine", 0f); m.SetShaderParameter("rim", 0f); }
+                if (on.Contains("nosss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
+                if (on.Contains("mask")) m.SetShaderParameter("shadow_colour", new Color(0, 1f / 2.4f, 0));
+            }
+        // (face 30 neck: noao (her skin's baked shade white), flathead / flatbody (the head's or the other skin parts'
+        // paint one flat skin tone), allsss (nosss on every skin part), on every part on her skin's shader)
+        var flat = new ImageTexture();
+        { var im = Image.CreateEmpty(1, 1, false, Image.Format.Rgb8); im.Fill(new Color(0.80f, 0.62f, 0.52f)); flat = ImageTexture.CreateFromImage(im); }
+        var white = new ImageTexture();
+        { var im = Image.CreateEmpty(1, 1, false, Image.Format.Rgba8); im.Fill(new Color(1, 1, 1, 1)); white = ImageTexture.CreateFromImage(im); }
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || m.Shader?.ResourcePath?.Contains("heroine_skin") != true) continue;
+                bool head = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head";
+                if (on.Contains("noao")) m.SetShaderParameter("ao_map", white);
+                if (on.Contains(head ? "flathead" : "flatbody")) m.SetShaderParameter("paint", flat);
+                if (on.Contains("allsss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
+                GD.Print($"H1Debug part {mi.Mesh.SurfaceGetMaterial(s)?.ResourceName}");
+            }
+        GD.Print($"H1Debug: {dbg}");
     }
 
     /// <summary>Her face as one she started from (Lore.Her's faces): its
@@ -825,9 +912,19 @@ public static class People
                 if (name.StartsWith("face_") && !name.EndsWith('+') && !name.EndsWith('-')) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
             }
         }
+        var fs = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(f => f.Id == (face is { Length: > 0 } ? face : "own"));
         // (and her lids at that face's rest, as its portrait has them)
         if (p.Skeleton.GetNodeOrNull<HerFaceLife>("HerFaceLife") is HerFaceLife life)
-            life.Rest = (float)(SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(f => f.Id == (face is { Length: > 0 } ? face : "own"))?.Lid ?? 0);
+            life.Rest = (float)(fs?.Lid ?? 0);
+        // (and its lower lip's own fullness under the player's slider)
+        p.LipsBase = (float)(fs?.Lips ?? 0);
+        foreach (var mi in p.Meshes)
+            if (mi.Mesh is ArrayMesh { } lm && lm.GetBlendShapeCount() > 0)
+            {
+                var v = Mathf.Clamp(p.LipsSlider + p.LipsBase, -1, 1.5f);
+                if (mi.FindBlendShapeByName("lips_lower+") is int a and >= 0) mi.SetBlendShapeValue(a, Mathf.Max(v, 0));
+                if (mi.FindBlendShapeByName("lips_lower-") is int b and >= 0) mi.SetBlendShapeValue(b, Mathf.Max(-v, 0));
+            }
     }
 
     /// <summary>Her head's painting for a face she started from (Lore.Her's
@@ -869,7 +966,7 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
-    static Shader? hairShader, hairSoftShader, eyeShader, teethShader;
+    static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
@@ -955,7 +1052,7 @@ public static class People
             var key = src.ResourceName;
             if (!outfitTable.ContainsKey(key)) continue;
             var entry = outfitTable[key].AsGodotDictionary();
-            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, "twill" => 4, _ => -1 };
+            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, "twill" => 4, "satin" => 5, _ => -1 };
             if (kind < 0) continue;
             var m = new ShaderMaterial { Shader = outfitShader };
             m.SetShaderParameter("kind", kind);
@@ -985,7 +1082,12 @@ public static class People
             {
                 // Sheer: clear face on, denser at the edges (shaders/sheer.gdshader).
                 sheerShader ??= GD.Load<Shader>("res://shaders/sheer.gdshader");
-                mi.SetSurfaceOverrideMaterial(s, new ShaderMaterial { Shader = sheerShader });
+                var sm = new ShaderMaterial { Shader = sheerShader };
+                // (its colour, when the build names one: the Arcanist's stockings in her glove's ivory, s29)
+                outfitTable ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/outfit_materials.json")).AsGodotDictionary();
+                if (outfitTable.TryGetValue("stocking", out var st) && st.AsGodotDictionary().TryGetValue("tint", out var tv) && tv.AsGodotArray() is { Count: 3 } t)
+                    sm.SetShaderParameter("tint", new Color((float)t[0], (float)t[1], (float)t[2]));
+                mi.SetSurfaceOverrideMaterial(s, sm);
                 continue;
             }
             if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src || (src.ResourceName != "fur" && src.ResourceName != "down")) continue;
@@ -1025,7 +1127,11 @@ public static class People
     /// gap opened in her wherever a piece swung off her as she moved.</summary>
     static void TuckSkin(MeshInstance3D mi, int ch)
     {
-        // (Only her body is marked; her head is left as it is, shape keys and all.)
+        // (Only her body is marked; her head is left as it is, shape keys and all. Her head and tongue carry
+        // vertex colours of their own since the smile pass (heroine_mouth.py: the mouth's depth, the tongue's
+        // shade), which read as an outfit's channel would tuck them in and discard them whole: skipped by name.)
+        string n = mi.Name.ToString();
+        if (n.EndsWith("Head") || n.EndsWith("Tongue")) return;
         if (mi.Mesh is not ArrayMesh am || (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) == 0) return;
         for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
             if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
@@ -1075,6 +1181,8 @@ public static class People
         if (src.ResourceName == "skin_head" && who == "heroine")
         {
             if (HeadPaint(look.FaceShape) is Texture2D painted) m.SetShaderParameter("paint", painted);
+            // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
+            m.SetShaderParameter("mouth_in", 1f);
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
             // (her eyes, brows and lips deepened when her face is small on
@@ -1329,7 +1437,8 @@ public static class People
         if (HeadRigOff) w = 1;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("look_rig", w);
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (outfitShader != null && m.Shader == outfitShader)))
+                    m.SetShaderParameter("look_rig", w);   // (her outfit too: its steel and leather rougher under the rig, s29)
     }
 
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
@@ -1621,7 +1730,10 @@ public static class People
         }
         var rest = skel.GetBoneGlobalRest(skel.FindBone("Head"));
         var qHead = from.GetBoneGlobalRest(from.FindBone("Head")).Origin;
-        var fit = new Transform3D(Basis.Identity.Scaled(Vector3.One * HairScale), rest.Origin + HairOffset - HairScale * qHead);
+        // (scaled about her head as her head's rest is: outfits baked her head 7% bigger as the Head bone's rest scale,
+        // 14 October 2026, and a fit in plain metres would leave the hair at the old size)
+        var hsc = rest.Basis.Scale;
+        var fit = new Transform3D(Basis.Identity.Scaled(hsc * HairScale), rest.Origin + hsc * (HairOffset - HairScale * qHead));
         foreach (var c in from.GetChildren())
             if (c is MeshInstance3D mi)
             {

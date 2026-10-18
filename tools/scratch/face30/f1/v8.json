@@ -1,0 +1,3 @@
+[["m1","c04a",["own"],["--skinparam","lip_ao_open=0.9,lip_floor=0.15,lip_gain=5","--tongueparam","open_light=0.75","--teethparam","flat_amount=0,side_floor=0.6"]],
+ ["m2","c04a",["own"],["--skinparam","lip_ao_open=0.9,lip_floor=0.15,lip_gain=5","--tongueparam","open_light=0.75","--teethparam","flat_amount=0,side_floor=0.75"]],
+ ["m3","c04a",["own"],["--skinparam","lip_ao_open=0.9,lip_floor=0.15,lip_gain=5","--tongueparam","open_light=0.75","--teethparam","flat_amount=0.5,side_floor=0.6,side_glow=0.08"]]]

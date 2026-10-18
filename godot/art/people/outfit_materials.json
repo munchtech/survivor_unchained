@@ -83,6 +83,26 @@
   "kind": "gloss",
   "repeats": 10
  },
+ "glovesatin": {
+  "kind": "satin",
+  "repeats": 40
+ },
+ "glovepipe": {
+  "kind": "satin",
+  "repeats": 40
+ },
+ "wiregold": {
+  "kind": "metal",
+  "repeats": 3
+ },
+ "glovethread": {
+  "kind": "satin",
+  "repeats": 60
+ },
+ "gloveblack": {
+  "kind": "satin",
+  "repeats": 40
+ },
  "amethyst": {
   "kind": "gloss",
   "repeats": 10

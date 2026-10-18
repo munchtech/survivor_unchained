@@ -83,12 +83,24 @@ public class LoadoutTests
         // Her own outfit for her calling, not the Quaternius clothes.
         Assert.Equal(new[] { Loadouts.HerOutfit(archetype) }, p.Outfit!);
         // Her hair is one of her own cuts: an older save's cut becomes the nearest of hers.
-        Assert.Equal("bob", p.Hair);
+        Assert.Equal("ponytail", p.Hair);
         // The calling's first colours are its own, undyed: her suit as it was made.
         Assert.Null(p.Dye);
         Assert.False(p.Beard);
         Assert.Equal(1.2, p.Figure);
         Assert.False(string.IsNullOrEmpty(Loadouts.Of(ch).Arms.Right));
+    }
+
+    [Fact]
+    public void Her_default_cut_is_the_braid_and_long_and_bob_fall_back_to_it()
+    {
+        Assert.Equal("braid", Loadouts.HerHair(null));
+        Assert.Equal("braid", Loadouts.HerHair("long"));
+        Assert.Equal("braid", Loadouts.HerHair("bob"));
+        Assert.Equal("ponytail", Loadouts.HerHair("Hair_Buns"));
+        Assert.Equal("pixie", Loadouts.HerHair("Hair_Buzzed"));
+        Assert.Equal("ponytail", Loadouts.HerHair("ponytail"));
+        Assert.Equal(new[] { "Hair_SimpleParted", "Hair_Buzzed", "Hair_Long" }, World.Lore.HairStyles(Sex.Male));
     }
 
     [Fact]
@@ -144,7 +156,7 @@ public class LoadoutTests
             var s = her.Sliders.First(x => x.Id == kv.Key);
             Assert.InRange(kv.Value, s.Min, s.Max);
         }));
-        Assert.Equal(new[] { "long", "ponytail", "braid", "bob", "pixie" }, her.Cuts.Select(h => h.Id));
+        Assert.Equal(new[] { "braid", "ponytail", "pixie" }, her.Cuts.Select(h => h.Id));
         Assert.Contains(her.Paints, p => p.Id == "none");
         // A face that brings its own skin or eyes names ones there are.
         Assert.All(her.Faces, f =>

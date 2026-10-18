@@ -35,7 +35,7 @@ public partial class HairSway : Node
     /// chest; pushed out the nearest way, the chain came out of her front. What hangs from her head is never in
     /// front of her chest. The tip that showed in her plunge, outfits judge h1, 11 October 2026, was her tail not
     /// swinging at all: its weights reached the shader upside down, tools/scratch/face17/uv2flip.py.)</summary>
-    sealed class Ball { public int Bone; public Vector3 At; public float R, W; public bool Behind; }
+    sealed class Ball { public int Bone; public Vector3 At; public float R, W, WB, Bulge, Pad; public bool Behind, OutOnly; }
 
     // Her forearms, from the elbow to past the fist, in the skeleton's space at rest: the shader pushes her hair out of
     // them (a lock by her ear as her throwing arm comes past her head, animation judge 20), and balls at her shoulders and
@@ -54,6 +54,7 @@ public partial class HairSway : Node
     // The chain: its bone, its points at rest (skeleton space), now and a
     // step ago (world), its links' lengths, what it is kept out of.
     int bone = -1;
+    Transform3D bind = Transform3D.Identity;
     float stiff, bend, corner;
     Vector3[] rest = [], x = [], xp = [];
     // Read-only view of the chain's world points (root first), for the HAIRCLEAR debug in anim_review.gd.
@@ -131,12 +132,27 @@ public partial class HairSway : Node
         mesh = GetParent() as MeshInstance3D;
         sk = mesh?.GetParent() as Skeleton3D;
         if (sk == null) return;
+        // Stepped once her skeleton's final pose is made (SkeletonUpdated: her modifiers' corrections in it, HerCarriage's
+        // lift of her chest and head and the rest), as she is drawn. (18 October, face 30: stepped in _Process, it read
+        // her pose before them, so the chain's rest and her balls stood where her head and back were before the lift,
+        // and the hair it carries, skinned on the lifted head, hung 3-9 cm off its chain, into her back: a braid's
+        // lower half and its tie, a tail's tips. If no pose is made in a frame, _Process steps it. OLDPOSE=1 as before.)
+        if (!OS.HasEnvironment("OLDPOSE")) sk.SkeletonUpdated += OnPosed;
         head = sk.FindBone("Head");
         FindForearms();
         var file = $"res://art/people/heroine_hair_{Style}.chain.json";
         if (Style == "" || !FileAccess.FileExists(file)) return;
         var d = Json.ParseString(FileAccess.GetFileAsString(file)).AsGodotDictionary();
         bone = sk.FindBone((string)d["bone"]);
+        // Its rest carried as the hair itself is skinned: by its own skin's bind of that bone (the hair's file's), not
+        // her skeleton's rest. (18 October, face 30: her skeleton's Head rest is not the one the hair was built and
+        // bound on (her neck's rebuild), so the chain's rest stood 2-9 cm behind the hair down a braid or tail: the
+        // chain lay on her back, kept out of her, and the hair it carries hung 6-9 cm into her, a braid's lower half
+        // and its tie gone into her back at the Look. NOBIND=1 uses her skeleton's rest again, to compare.)
+        bind = sk.GetBoneGlobalRest(bone).AffineInverse();
+        if (mesh!.Skin is { } skin && !OS.HasEnvironment("NOBIND"))
+            for (int i = 0; i < skin.GetBindCount(); i++)
+                if (skin.GetBindName(i) == (string)d["bone"] || (skin.GetBindName(i) == "" && skin.GetBindBone(i) == bone)) { bind = skin.GetBindPose(i); break; }
         stiff = (float)d["stiff"];
         bend = d.ContainsKey("bend") ? (float)d["bend"] : 0.03f;
         corner = d.ContainsKey("corner") ? Mathf.DegToRad((float)d["corner"]) : 0f;
@@ -156,14 +172,30 @@ public partial class HairSway : Node
             // spine to 6 cm out, and reaching her sides), so a braid that swings over her shoulder as she throws and then
             // bends forward lies on her back, not 2-4 cm into it beside her spine, hidden (hair judge hj2).
             if (name.StartsWith("spine")) list[^1].W = 0.06f;
+            // And toward her back they reach wider still and further back (face 30): her back is flat across her shoulder
+            // blades, which stand 1.4-1.9 cm further back than her spine's furrow (the balls' reach is set at her spine),
+            // so a tail swung aside as she spun at the Look (135-360 degrees a second) lay along the balls' curve with its
+            // strands 1-1.5 cm into her shoulder blade and the warden's straps. So each spine ball's line widens toward her
+            // back (to 8 cm each way at her waist, 14 at her shoulder blades) and reaches out by up to 1.6 cm more from 0.5
+            // to 4 cm off her middle, where her shoulder blades rise (her middle, as the hair hangs, is as it was). Only
+            // toward her back: sideways and in front they are as they were. Env NOBACKWIDE=1 leaves it out, to compare.
+            if (name.StartsWith("spine")) { list[^1].WB = Lerp3(BackY, BackW, list[^1].At.Y); list[^1].Bulge = Lerp3(BackY, BackOut, list[^1].At.Y); }
         }
         // (her shoulders and upper arms only: her forearm and fist sweeping past her head as she threw kicked the chain
         // up over her head, hair judge hj1; the shader keeps her hair out of her forearms)
         foreach (var (shoulder, elbow, _) in Limbs())
         {
             Vector3 s = sk.GetBoneGlobalRest(shoulder).Origin, e = sk.GetBoneGlobalRest(elbow).Origin;
-            list.Add(new Ball { Bone = shoulder, At = s, R = 0.08f });
-            list.Add(new Ball { Bone = shoulder, At = s.Lerp(e, 0.5f), R = 0.065f });
+            list.Add(new Ball { Bone = shoulder, At = s, R = 0.08f + ArmPad, Pad = ArmPad });
+            list.Add(new Ball { Bone = shoulder, At = s.Lerp(e, 0.5f), R = 0.065f + ArmPad, Pad = ArmPad });
+        }
+        // (and the hair's own thickness on them, as the balls down her back have it, and one more between them: a tail
+        // flung round her at 360 degrees a second went 1-1.5 cm into the back of her arm in the waist between the two,
+        // and over her shoulder into the warden's pauldron. Kept for the swing alone: lying, the drape has its own pad.)
+        foreach (var (shoulder, elbow, _) in Limbs())
+        {
+            Vector3 s = sk.GetBoneGlobalRest(shoulder).Origin, e = sk.GetBoneGlobalRest(elbow).Origin;
+            list.Add(new Ball { Bone = shoulder, At = s.Lerp(e, 0.25f), R = 0.072f + ArmPad, Pad = ArmPad, OutOnly = true });
         }
         balls = list.ToArray();
         fileBalls = bs.Count;
@@ -173,6 +205,19 @@ public partial class HairSway : Node
         bool can = ridgeBone >= 0 && balls.Length >= fileBalls + 4 && !OS.HasEnvironment("NORIDGE");
         pony = can && Style == "ponytail" && !OS.HasEnvironment("NOPONYRIDGE");
         ridge = can && Style == "braid" || pony;
+    }
+
+    // (her back toward its spine balls, by height in her skeleton's rest: each line's half-width, and how much further
+    // out it reaches beside her middle; that from BackFrom to BackTo off her middle; her arm balls' pad)
+    static readonly float[] BackY = [1.30f, 1.40f, 1.50f], BackW = [0.08f, 0.12f, 0.14f], BackOut = [0.008f, 0.016f, 0.016f];
+    const float BackFrom = 0.005f, BackTo = 0.04f, ArmPad = 0.022f;
+    static readonly bool NoBackWide = OS.HasEnvironment("NOBACKWIDE");
+    static float Lerp3(float[] xs, float[] ys, float y)
+    {
+        if (y <= xs[0]) return ys[0];
+        if (y >= xs[^1]) return ys[^1];
+        int k = 1; while (xs[k] < y) k++;
+        return Mathf.Lerp(ys[k - 1], ys[k], (y - xs[k - 1]) / (xs[k] - xs[k - 1]));
     }
 
     /// <summary>Her arms' bones (shoulder, elbow, hand), each side that has them.</summary>
@@ -220,6 +265,14 @@ public partial class HairSway : Node
             var c = ww > 0 ? at[b] + w * Mathf.Clamp((q - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
             var off = q - c;
             float r = balls[b].R * scale;
+            if (balls[b].WB > balls[b].W && ww > 0 && off.Dot(back[b]) > 0 && !NoBackWide)
+            {
+                var w2 = w * (1f + (balls[b].WB / balls[b].W - 1f) * Mathf.SmoothStep(0f, 1f, off.Dot(back[b]) / r));
+                c = at[b] + w2 * Mathf.Clamp((q - at[b]).Dot(w2) / w2.LengthSquared(), -1f, 1f);
+                off = q - c;
+                float u = Mathf.Abs((q - at[b]).Dot(w)) / Mathf.Sqrt(ww) / scale;
+                r += balls[b].Bulge * scale * Mathf.SmoothStep(BackFrom, BackTo, u) * Mathf.SmoothStep(0f, 1f, off.Dot(back[b]) / r);
+            }
             if (off.LengthSquared() >= r * r) continue;
             // (in front of a ball down her back: mirrored behind it, then out)
             // (but not one that was in front of it already, lying beside her as she lies face down, once the hold has let
@@ -248,7 +301,31 @@ public partial class HairSway : Node
         return want.Rotated(axis.Normalized(), most);
     }
 
+    double pending = -1;
+    ulong posedFrame;
+
     public override void _Process(double delta)
+    {
+        if (OS.HasEnvironment("OLDPOSE") || Engine.GetProcessFrames() > posedFrame + 2) { pending = -1; Step(delta); return; }
+        pending = System.Math.Max(pending, 0) + delta;
+    }
+
+    void OnPosed()
+    {
+        if (!IsInstanceValid(this) || !IsInsideTree()) return;
+        posedFrame = Engine.GetProcessFrames();
+        if (pending < 0) return;
+        var d = pending;
+        pending = -1;
+        Step(d);
+    }
+
+    public override void _ExitTree()
+    {
+        if (sk != null && IsInstanceValid(sk)) sk.SkeletonUpdated -= OnPosed;
+    }
+
+    void Step(double delta)
     {
         if (mesh == null || sk == null || head < 0) return;
         float dt = Mathf.Clamp((float)delta, 0f, 1f / 20);
@@ -267,7 +344,7 @@ public partial class HairSway : Node
         sway = Vector3.Zero;
         if (bone >= 0 && rest.Length == 8)
         {
-            var moved = world * Moved(bone);
+            var moved = world * (sk.GetBoneGlobalPose(bone) * bind);
             for (int i = 0; i < 8; i++) target[i] = moved * rest[i];
             if (at.Length != balls.Length) { at = new Vector3[balls.Length]; back = new Vector3[balls.Length]; across = new Vector3[balls.Length]; }
             for (int i = 0; i < balls.Length; i++)
@@ -587,9 +664,10 @@ public partial class HairSway : Node
     {
         for (int b = 0; b < balls.Length; b++)
         {
+            if (balls[b].OutOnly) continue;
             bool arm = b >= fileBalls;
             var w = across[b];
-            float ww = w.LengthSquared(), r = (balls[b].R + (arm ? PadR : 0)) * scale;
+            float ww = w.LengthSquared(), r = (balls[b].R - balls[b].Pad + (arm ? PadR : 0)) * scale;
             var c = ww > 0 ? at[b] + w * Mathf.Clamp((q - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
             var off = q - c;
             if (off.LengthSquared() >= r * r) continue;

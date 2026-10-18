@@ -14,7 +14,7 @@
 //  - gloss: latex and satin, clean and smooth.
 shader_type spatial;
 
-uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill
+uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin
 uniform sampler2D albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_map : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D orm : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;   // (G rough, B metal)
@@ -33,7 +33,13 @@ uniform bool test_flat = false;                  // (the legal motion check: eve
 uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
 uniform float gold_rough = 0.2;
 uniform float gold_floor = 0.08;                  // (gold's own colour added as a dim emission, less in crevices, so it never goes black at night; 0.08 by judge g4: warm gold at night, no change by day, 0.15 turned shadowed trim to flat tan)
-uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it)
+// (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
+// leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
+uniform float look_rig = 0.0;
+uniform float look_metal_rough = 0.30;
+uniform float look_metal_dim = 0.70;               // (and its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
+uniform float look_leather_rough = 0.60;
+uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
 varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
@@ -193,12 +199,27 @@ void fragment() {
 		metal = 0.0;
 		RIM = 0.35;
 		RIM_TINT = 0.6;
+	} else if (kind == 5) {
+		// Satin (her gloves, s22): a stretch satin, never latex. Its own roughness (the
+		// material's, about 0.45: the linen's roughness map is flat white), a broad soft
+		// highlight, a sheen at the grazing edges, the knit barely there.
+		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.3);
+		// (s24 glove styles S1: a satin at 0.25 floors at 0.22, its streak kept; B1's 0.30 keeps 0.30)
+		rough = clamp(roughness_value + 0.08 * (macro - 0.5) + 0.1 * (1.0 - sky), roughness_value < 0.295 ? 0.22 : 0.3, 0.75);
+		metal = 0.0;
+		// (s27, judge gl r2: a satin sheen at the grazing edges that reads in play; 0.3 left the forearm flat cream.
+		// Not anisotropy: Godot's anisotropic path, even at 0, cost every other outfit material its fine grain)
+		RIM = 0.4;
+		RIM_TINT = 0.5;
 	} else {
 		// Gloss: clean and smooth, barely a grain.
 		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.12);
 		rough = clamp(0.16 + 0.1 * macro + 0.1 * (1.0 - sky), 0.1, 0.4);
 		metal = 0.0;
 	}
+	if (kind == 1) rough = mix(rough, max(rough, look_metal_rough), look_rig * (1.0 - gold));
+	if (kind == 1) col *= mix(1.0, look_metal_dim, look_rig * (1.0 - gold));
+	if (kind == 0) rough = mix(rough, max(rough, look_leather_rough), look_rig);
 	ALBEDO = clamp(col * mix(0.55, 1.0, sky), 0.0, 1.0);
 	NORMAL_MAP = nrm;
 	ROUGHNESS = rough;
@@ -209,6 +230,7 @@ void fragment() {
 	if (debug_view == 1) { ALBEDO = vec3(1.0 - smoothstep(0.0, 0.01, edge), fract(edge / 0.004), 0.0); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 2) { ALBEDO = vec3(conv); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 4) { ALBEDO = vec3(0.0); EMISSION = vec3(gold, 0.0, gold) * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
+	if (debug_view == 5) { ALBEDO = vec3(0.30, 0.30, 0.36); ROUGHNESS = 0.4; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (its shape alone: flat colour, no normal map, no mottle)
 	if (debug_view == 3) { ALBEDO = vec3(sky); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }

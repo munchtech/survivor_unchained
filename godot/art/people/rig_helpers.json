@@ -137,5 +137,28 @@
     0.04
    ]
   }
+ ],
+ "panels": [
+  {
+   "name": "panel_front",
+   "parent": "pelvis",
+   "thighs": [
+    "thigh_l",
+    "thigh_r"
+   ],
+   "pivot": [
+    0.0,
+    0.0,
+    0.06
+   ],
+   "length": 0.45,
+   "amount": 1.15,
+   "soft": 12.0,
+   "spread_from": 8.0,
+   "spread_to": 20.0,
+   "spread_damp": 0.6,
+   "fall_tau": 0.04,
+   "fall_rate": 450.0
+  }
  ]
 }

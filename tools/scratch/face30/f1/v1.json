@@ -1,0 +1,6 @@
+[["bef","c04a",["own"],["--skinparam","lips_apart=0","--teethparam","narrow=0","--tongueparam","open_light=1","--teethdrop","0"]],
+ ["s2","c04a",["own"],["--teethdrop","0"]],
+ ["d15","c04a",["own"],["--mouth-cam"]],
+ ["d15b","c04a",["own"],["--skinparam","lip_ao_open=0.9","--tongueparam","open_light=0.75"]],
+ ["d20b","c04a",["own"],["--teethdrop","2.0","--skinparam","lip_ao_open=0.9","--tongueparam","open_light=0.75","--teethparam","narrow=0.5"]],
+ ["lk","look",["own"],["--face","mouth_open=0.25"]]]

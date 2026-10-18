@@ -1,5 +1,11 @@
 # Handoff: the coordinator (main session)
 
+## Start here (startup reading, nothing else)
+1. This page.
+2. `docs/team/RESUME.md`, its top section only (the current state, the restart order, the owner's pending decisions).
+3. Restart each lead it lists with `docs/handoff/lead_brief.md` (the shared brief: paste it, then add the area's worktree, where the predecessor stopped, and its steps).
+Open README, OWNER_NOTES or a handoff only when a step needs them, by `grep -n` and the exact lines. The rules are in memory and README "Working lean"; you don't need to re-read them to start.
+
 From the coordinator session that ran 3 to 6 October 2026. Read this after `docs/team/README.md`, `RESUME.md` and `OWNER_NOTES.md`. Your memory (MEMORY.md) holds the owner's standing direction.
 
 ## What the coordinator does
@@ -57,29 +63,11 @@ A new coordinator can't reliably reach the old session's agents, so never switch
 - **The budget hook reads the brief only (11 October fix).** It used to match README's example "Context budget: 120k". Write `Context budget: 300k` in every brief.
 The owner, 7 October: the cheapest route (lower effort, smaller model, any saving technique) that ends at the same quality, always, without asking; raise at once when quality is at risk. Measure each wave's tokens per finished piece against wave 1 (7 October: max-effort leads filled 48k to 300k in about 30 minutes; the hour cache works, 0 five-minute writes) and report the real saving.
 
-## State at handoff
-From the coordinator of 10 October (session 181eef02). Wave 1 restarted, ran about three hours, hit the weekly limit, resumed on usage credit, then was wound down by the owner. Integration is unchanged apart from docs (roster, OWNER_NOTES 10 October: the neck note, nipple show-through, boots). No area passed its judge except rendering's FSR 2 native, which waits to merge alongside face. Every lead stopped with a "Paused here; next:" block on its own branch; RESUME "10 October" has the four branches, the restart order and the scratch backup. Token use, measured with every judge, solver and runner (`tools/scratch/coordinator/wave_cost.py <session>`, usage_week.py's list prices): 7 October (session 0b33992d, 1 h 40 min) about $75, $45 an hour; 10 October (3 h 40 min) about $150, $41 an hour. The leads got about four times cheaper per hour (four max leads $40 in 45 min; five high leads $44 in 3 h 40 min), but judges and solvers took 70% of the spend ($104 over 15 spawns, each filling 180-366k with images and their own measuring). So the saving moved, not landed. Fix adopted in README "Working lean": lean judges.
-
-**Coordinator 91211d34 (10 October, evening):** restarted wave 1 in the old worktrees; the owner's disk cleanup (CLAUDE.md, wt_remove.ps1); the context-budget hook; lean agent types. Wound down at 245k with rendering handed off and ready to merge with face, and the other three asked to pause (RESUME "10 October, late"). If their PAUSED lines didn't arrive, check each branch's handoff block and `ctx.py` before restarting.
-
-**Coordinator ba85aba8 (12 October):** merged Act 1 boss health, classes phase 2, her hair swing (16/18), relaxed turns (blender 3, godot 4, VRAM guard). Ran classes, face, hero, outfits and animation, then wound all five down on the owner's word (RESUME "12 October, evening"). Lessons: leads hit their ~250-300k budget in 1-4 hours, so plan a successor per lead per long stretch; a lead's report can say "merge-ready" while a merged piece later fails a check (Butcher's Hour), so ask for the before-the-owner-plays checks before merging live gameplay; another session may commit to integration in the main checkout (free_ram tools): fetch before every merge. This session's scratchpad holds leads' scratch: keep it.
-
-**Coordinator 1515c1de (12 October, night):** ran classes, face, outfits and animation (hero held: Blender turns). Merged the get_up braid and ponytail, the Butcher's Hour fix and the Flare press-stagger fix with Act 1 retuned (RESUME "12 October, night"). Lessons: every su-lead-high lead filled 250-280k in 1.5-3.5 h, so plan a successor per lead every couple of hours and keep onboarding small; most of their spend was their own measuring and pictures, so brief successors to hand build-and-measure loops to runners and take the build to a judge before chasing every number; give a solver one item and a named route, and make it build before measuring (several solvers ran out measuring); judges rule on what the eye sees (the neck and reach_coals rulings). Run a narrow judge yourself (foreground, Context budget: 100k) when a lead hands off just before one. A lead often wakes once more after its "HANDOFF READY" when its background batch ends: check the branch head before spawning from it. Scratch to keep: this session's scratchpad (classes, face, outfits, anim).
-
-**Coordinator 33ad5b17 (12 October, night):** restarted animation, face, classes, outfits; built the close-up camera (merged). Merged animation dd541c17, camera d31fefa6, classes 6d9a123c. Owner rules added: 125% budget grace to finish a near-done step (hook updated); face and outfits first; hero held. Lessons: a lead's background solvers report to the coordinator, so relaying is most of the coordinator's traffic (keep relays condensed); diagnose before fixing (the glove notch was the leotard edge, the clasp gap was her spine bend, not her breasts): solvers that measured first saved builds; copy sheets out of `.shots` before removing a worktree. RESUME "12 October, late night" has the running state.
-
-**Coordinator 1be2d2a9 (13-14 October, the owner's one-session trial: three leads at 399k budgets, coordinator 300k; rules not changed).**
-- **Merged:** classes-11 (the five wave-6a Flares) and outfits fin5 (all four outfits, plus the owner's "legs stuck together" fix).
-- **Handed off, not merged:**
-  - animation, the staff in her fist (it waits on the outfits glove fix);
-  - Flare VFX (judge 4 NOT READY).
-- **Measured (cmp3.py in the scratchpad):**
-  - this session, 8.1 h, $123 ($15/h);
-  - 33ad5b17, 4 leads, 6.5 h, $150 ($23/h);
-  - 59a43b82, 5-6 leads, 14 h, $355 ($25/h).
-- **Per lead-slot hour all three cost about $5:** fewer leads is a throughput dial, not a saving.
-- **The bigger budget was barely used:** only 2 of 6 leads passed 300k (366k, 320k), and lead cost per slot-hour rose about 10-15%. Keep 300k.
-- **Lessons:**
-  - Never merge on a picture the judge hasn't ruled on (the staff merge was pulled when the owner saw the fist beside the shaft).
-  - Judges check "visibly inside the closed hand" first.
-  - Rebuild a lead's art on the latest integration before merging binaries (the outfits conflicted with face ship's heroine.glb).
+## Lessons that still apply (from coordinator_history.md)
+- Fetch before every merge: other sessions commit to integration. Check a handed-off lead's branch head before spawning from it (it often wakes once more).
+- Never merge on a picture the judge hasn't ruled on. Ask for the before-the-owner-plays checks before merging live gameplay.
+- Rebuild a lead's art on the latest integration before merging binaries. After any body build, refit every grip and gate it on its correctives (grep the GLB for `elbow_point` against integration's).
+- When the art moves on, TaskStop the predecessor's runners (grep `subagents/*.jsonl` for the job); a leftover runner overwrote newer art once.
+- Helpers' reports land on you, not the lead: relay each one condensed, and copy sheets out of `.shots` before removing a worktree.
+- Leads fill about 240k in 1-2 hours: plan a successor per lead per stretch. You reach 250k in one long evening of relays.
+- Diagnose before fixing; two tools disagreeing means a ground-truth measurement in Godot, not a third model.

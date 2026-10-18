@@ -284,6 +284,13 @@ func legal_marks(mi):
 				if n >= 8:
 					pig[b] = acc / n
 					print("legal marks: ", breast_name[b], " areola from her paint: ", n, " vertices, centre ", pig[b])
+		# (Painted out since 18 October 2026: the shipped body has no areola to read, and the sharpest bump
+		# guessed points 3.5-6 cm low and lopsided. So each landmark is where the anatomical paint has it, at
+		# rest (the 18 October baseline's read; her chest did not move with the neck and finger build).)
+		if pig.is_empty():
+			for b in breast:
+				pig[b] = Vector3(-0.114342, 1.415941, 0.160966) if String(breast_name[b]).ends_with("_r") else Vector3(0.118351, 1.414201, 0.161135)
+				print("legal marks: ", breast_name[b], " areola painted out: the anatomical landmark, centre ", pig[b])
 		var best = {}
 		var bests = {}
 		var bidx = {}

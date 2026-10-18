@@ -4,18 +4,20 @@
 # and the turntable sheets (godot turn).
 #   bash turn_build.sh                  OUTFITS="warden reaver" limits the sheets; NOSHEETS=1 skips them
 #   AFTER="cmd" runs a command while the Godot turn is still held (close-ups, say)
-T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+T="python $WT/tools/turn.py"
+# (take: --root this worktree, so the freshness gate checks it; exit 2 = stale art: stop, never spin)
+take() { while :; do $T take "$1" "$W" --wait 60 --root "$WT" ${2:+--stale-ok} >/dev/null 2>&1; r=$?; [ $r -eq 0 ] && return 0; [ $r -eq 2 ] && { echo "STALE: $T take $1 --root $WT refused (merge integration / reimport)"; exit 2; }; done; }
 S="${OSCR:?set OSCR, the outfits scratch folder}/hs"
 W="outfits lead: rebuild"
-until $T take blender "$W" --wait 60 >/dev/null 2>&1; do :; done
+take blender
 echo "blender turn $(date +%H:%M:%S)"
 cd $WT
 timeout 7000 "/c/Users/munch/Tools/blender-4.5.14-windows-x64/blender.exe" -b "$S/heroine_built.blend" --python tools/assets/heroine_outfits.py -- godot/art/people/x --body godot/art/people/heroine.glb > "$S/outfits.log" 2>&1
 $T give blender "$W" >/dev/null
 echo "blender done $(date +%H:%M:%S)"
 grep -E "Error|Traceback|line [0-9]+|BODY|OUTFIT |PLATE CUP|HIDES" "$S/outfits.log" | head -30
-until $T take godot "$W" --wait 60 >/dev/null 2>&1; do :; done
+take godot stale-ok   # (this build has just written the models; it reimports them next)
 echo "godot turn $(date +%H:%M:%S)"
 cd $WT/godot
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"

@@ -519,9 +519,17 @@ public sealed partial class Battle
         double accel = 1 - Math.Exp(-dt * 14);
         p.Vx += (targetVX - p.Vx) * accel;
         p.Vz += (targetVZ - p.Vz) * accel;
+        double wasX = p.X, wasZ = p.Z;
         p.X += p.Vx * dt;
         p.Z += p.Vz * dt;
         Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+        // Pressed against a wall or the well, she moves only as far as it lets her: her speed is what she
+        // made, so she stands (or runs along it) instead of running on the spot into it.
+        if (dt > 0)
+        {
+            double mvx = (p.X - wasX) / dt, mvz = (p.Z - wasZ) / dt;
+            if (mvx * mvx + mvz * mvz < p.Vx * p.Vx + p.Vz * p.Vz) { p.Vx = mvx; p.Vz = mvz; }
+        }
         double sp = Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
         p.Moving = sp > 0.6;
         if (p.Moving)

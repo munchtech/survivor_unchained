@@ -131,6 +131,56 @@ SPEC = {
          # broad flanks make the cap a cone with a point: tick.py previews)
          "amount": 0.012, "radius": [0.028, 0.06, 0.045], "lean": 0.0, "near": 0.008, "garment": [0.02, 0.04]},
     ],
+    # Panel bones: one centred bone (no {s}) for a hanging front panel (the
+    # Reaver's loincloth), a child of the pelvis that swings forward with the
+    # leading thigh, so the thigh coming through at a stride's foot strike
+    # lifts the panel instead of showing through it (a linear blend of the
+    # two thighs averages them: the leading one went through it). panel_turn
+    # is the law, HerJoints.cs the game's copy.
+    # - rest: at the pelvis's head + `pivot` (metres, her rest axes: +Y up,
+    #   +Z her front; 6 cm in front of the pelvis bone at its height, about
+    #   6 cm behind the panel's face and 2.5 cm above its top: a pivot inside
+    #   her swings the panel's top forward with it, clear of the thigh's
+    #   crease, without lifting it into her belly), laid along the panel:
+    #   its +Y down, its +Z her front, its +X her right; `length` (Blender).
+    # - turn: about her lateral axis (the panel's bottom forward and up) by
+    #   amount * softrelu(smooth max of the thighs' forward swing), the swing
+    #   read in the pelvis's frame as degrees in her side plane from rest; the
+    #   smooth max (polynomial, `soft` degrees wide, less soft/4 so equal
+    #   thighs give their own swing) keeps it smooth as the legs cross, and
+    #   softrelu (quadratic over the first `soft` degrees) never turns it
+    #   back. Damped by up to `spread_damp` as the thighs spread (their mean
+    #   abduction from `spread_from` to `spread_to` degrees, smoothstep): on
+    #   a seat with the knees apart (sit_log) it lifts 38, not 87.
+    # Measured offline on Godot's own poses against the ea6a9417 Reaver build
+    # (thigh points inside the panel, run/sprint mean -> frame 14):
+    # run_warden 521 -> 0 (f14 2106 -> 0), sprint_warden 478 -> 27 (f14 0),
+    # run_reaver 946 -> 33, sprint_reaver 1097 -> 63, walk_tired 1514 -> 0,
+    # idle_reaver 0 -> 0; sit_log stretch>1.6x 13% -> 3%, inside 299 -> 161;
+    # never into her belly or the trailing thigh.
+    # - fall (panel_fall, in time, so only where frames follow each other:
+    #   the game, drive's `state`): it rises with the law at once, but falls
+    #   as a loose flap does, a first-order lag of `fall_tau` seconds toward
+    #   the law and never faster than `fall_rate` degrees a second (15 a
+    #   30 fps frame), never below the law (so never into the thigh). On
+    #   run_reaver it trails the law's fall by about a frame (90 -> 84, 71,
+    #   56, 46 over f6-f9, was 79, 60, 43, 38), the rise and crossovers as
+    #   they were.
+    #
+    # Weighting recipe (heroine_outfits.py, the Reaver's front panel: the
+    # loincloth's front piece, the one-piece part FRINGE_ONE moves today):
+    # every panel vertex gets W = (1 - k) * W_built + k * panel_front, with
+    # W_built its weights as built now (ea6a9417: near the belt pelvis ~0.73,
+    # thighs ~0.09 each, spine_01 ~0.09) and k = smoothstep(0, 0.06,
+    # top - y), y its rest height and top the panel's top edge (1.047 m on
+    # today's body): none at the belt, all of it 6 cm down and below. Keep
+    # the thighs' small share in that top band (taking it to the pelvis left
+    # the thigh 20-38 mm through the panel's top in a sprint).
+    "panels": [
+        {"name": "panel_front", "parent": "pelvis", "thighs": ["thigh_l", "thigh_r"], "pivot": [0.0, 0.0, 0.06],
+         "length": 0.45, "amount": 1.15, "soft": 12.0, "spread_from": 8.0, "spread_to": 20.0, "spread_damp": 0.6,
+         "fall_tau": 0.04, "fall_rate": 450.0},
+    ],
 }
 
 
@@ -151,7 +201,7 @@ def write_spec():
 
 
 def names():
-    return [n for h in SPEC["helpers"] for n in each(h["name"])]
+    return [n for h in SPEC["helpers"] for n in each(h["name"])] + [p["name"] for p in SPEC.get("panels", [])]
 
 
 def has_helpers(sk: Skeleton):
@@ -217,6 +267,19 @@ def extend(sk: Skeleton) -> Skeleton:
             parent.append(p)
             rot.append(np.array(r, float))
             pos.append(np.array(t, float))
+    for pn in SPEC.get("panels", []):
+        if pn["name"] in I or pn["parent"] not in I:
+            continue
+        p = I[pn["parent"]]
+        gp = grot[0, p]
+        # laid along the panel: +Y down, +Z her front (so +X her right)
+        r = qmul(qinv(gp), PANEL_REST)
+        t = qrot(qinv(gp), np.asarray(pn["pivot"], float))
+        I[pn["name"]] = len(names_)
+        names_.append(pn["name"])
+        parent.append(p)
+        rot.append(np.array(r, float))
+        pos.append(np.array(t, float))
     out = Skeleton(names=names_, parent=parent, rest_rot=np.array(rot), rest_pos=np.array(pos), path=sk.path)
     out.index = I
     return out
@@ -308,12 +371,108 @@ def point_squeeze(bend, h):
     return float(h["squeeze"] * t * t * (3 - 2 * t))
 
 
-def drive(sk: Skeleton, rot, scale=None, shift=None):
+# A panel's rest in her rest axes: half a turn about +Z (+Y down, +X her right).
+PANEL_REST = np.array([0.0, 0.0, 1.0, 0.0])
+
+
+def _smax(a, b, k):
+    """Polynomial smooth max, `k` wide (max + k/4 where a == b)."""
+    h = max(k - abs(a - b), 0.0) / k
+    return max(a, b) + h * h * k / 4
+
+
+def _softrelu(x, k):
+    """0 below 0, x - k/2 above k, a quadratic between (smooth, never < 0)."""
+    return 0.0 if x <= 0 else (x * x / (2 * k) if x < k else x - k / 2)
+
+
+def panel_turn(pn, fl, fr, al, ar):
+    """Degrees a panel turns forward (SPEC "panels"): from each thigh's
+    forward swing (fl, fr) and spread (al, ar), degrees from rest."""
+    k = pn["soft"]
+    lead = _smax(fl, fr, k) - k / 4
+    spread = (al + ar) / 2
+    damp = 1.0 - pn["spread_damp"] * float(_smooth((spread - pn["spread_from"]) / (pn["spread_to"] - pn["spread_from"])))
+    return pn["amount"] * _softrelu(lead, k) * damp
+
+
+def panel_fall(pn, prev, target, dt):
+    """The panel's turn this frame (degrees) from last frame's (`prev`, None
+    at the first) and the law's (`target`), `dt` seconds on: up at once,
+    down as a first-order lag (`fall_tau`), at most `fall_rate` deg/s, never
+    below the law. PanelSwing.Fall's twin."""
+    if prev is None or target >= prev:
+        return target
+    if dt <= 0:
+        return prev
+    y = target + (prev - target) * math.exp(-dt / pn["fall_tau"])
+    return max(target, y, prev - pn["fall_rate"] * dt)
+
+
+def _swing_spread(v, v0, side):
+    """A thigh's line v (its +Y, in her rest axes carried with the pelvis)
+    against its rest v0: (forward swing in her side plane, spread out to
+    `side` (+1 her left, -1 her right)), degrees."""
+    fwd = lambda u: math.degrees(math.atan2(u[2], -u[1]))
+    out = lambda u: math.degrees(math.asin(min(1.0, max(-1.0, u[0] * side))))
+    return fwd(v) - fwd(v0), out(v) - out(v0)
+
+
+def _below(sk: Skeleton, rot, top, bone):
+    """`bone`'s rotation in `top`'s frame (local rotations down the chain)."""
+    q = np.array([0, 0, 0, 1.0])
+    j = bone
+    while j != top and j >= 0:
+        q = qmul(rot[j], q)
+        j = sk.parent[j]
+    return q
+
+
+def panel_angles(sk: Skeleton, rot, pn):
+    """(fl, fr, al, ar): each thigh's forward swing and spread in the
+    pelvis's frame, degrees from rest (local rotations as drive takes them)."""
+    I = sk.index
+    p = I[pn["parent"]]
+    gp = sk.rest_globals()[0][0, p]
+    res = []
+    for name, side in zip(pn["thighs"], (1, -1)):
+        t = I[name]
+        v = qrot(gp, qrot(_below(sk, rot, p, t), [0, 1.0, 0]))
+        v0 = qrot(gp, qrot(_below(sk, sk.rest_rot, p, t), [0, 1.0, 0]))
+        res.append(_swing_spread(v, v0, side))
+    (fl, al), (fr, ar) = res
+    return fl, fr, al, ar
+
+
+def drive_panels(sk: Skeleton, rot, state=None, dt=None):
+    """The panel bones turned (local rotations, changed in place). With
+    `state` (a dict kept from frame to frame, {} at the first) and `dt`
+    (seconds since the last frame), each falls as panel_fall has it, as the
+    game does; without, the law alone (one frame on its own)."""
+    I = sk.index
+    for pn in SPEC.get("panels", []):
+        j = I.get(pn["name"])
+        if j is None:
+            continue
+        p = I[pn["parent"]]
+        deg = panel_turn(pn, *panel_angles(sk, rot, pn))
+        if state is not None:
+            deg = state[pn["name"]] = panel_fall(pn, state.get(pn["name"]), deg, dt if dt is not None else 0.0)
+        # about her lateral axis (+X her right), in the pelvis's frame: the
+        # panel's bottom forward and up
+        gp = sk.rest_globals()[0][0, p]
+        ax = qrot(qinv(gp), [-1.0, 0, 0])
+        rot[j] = qnorm(qmul(qaxis(ax, deg), sk.rest_rot[j]))
+    return rot
+
+
+def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
     """Her helpers posed from the pose (local rotations [J, 4], changed in
     place): the forearm's roll handed to the hand, the twists shared out, the
     shares half bent and swollen across the bend (`scale` [J, 3], if given,
     takes their stretch, and `shift` [J, 3] the move in the bone's own frame
-    that holds its pivot still). As HerJoints.cs does it, after every other layer."""
+    that holds its pivot still). As HerJoints.cs does it, after every other layer.
+    `state` and `dt`: the panels' fall from frame to frame (drive_panels)."""
     I = sk.index
     ident = np.array([0, 0, 0, 1.0])
     for s in "lr":
@@ -349,6 +508,7 @@ def drive(sk: Skeleton, rot, scale=None, shift=None):
                     scale[j] = (1.0 - q, 1.0, k)
                     if shift is not None:
                         shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(deg, hh))
+    drive_panels(sk, rot, state, dt)
     return rot
 
 

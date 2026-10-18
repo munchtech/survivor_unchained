@@ -160,6 +160,7 @@ ElevenLabs is planned for the final voices.
 | Sketchfab CC BY models | "Author must be credited. Commercial use is allowed." (API licence requirements) | https://sketchfab.com/licenses |
 | CC BY 4.0 | Keep the creator's name, the notices and a link; "indicate if You modified" it (§3(a)) | https://creativecommons.org/licenses/by/4.0/legalcode.en |
 | 100STYLE | "Creative Commons Attribution 4.0 International" | https://zenodo.org/records/8127870 |
+| 100STYLE (run and sprint arm swing) | Reference only: her runs' and sprints' arm swing (`tools/anim/gait.py` `Gait.swing`, `tools/anim/clips/run.py`) was measured against 100STYLE Neutral_FR as phase-binned joint angles; no 100STYLE data ships in those clips; the files stay outside the repo (`C:\Users\munch\Tools\mocap\100STYLE`) | https://zenodo.org/records/8127870 |
 | MakeHuman 1.2+ and MPFB2 | Assets "released under CC0 1.0 Universal"; exports are "your data" | https://github.com/makehumancommunity/makehuman/blob/master/LICENSE.md |
 | Mixamo | Free for commercial use; no redistributing raw character or animation files | https://community.adobe.com/questions-696/mixamo-faq-licensing-royalties-ownership-eula-and-tos-589400 |
 | NVIDIA Open Model License (Kimodo) | "NVIDIA claims no ownership rights in outputs." | https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/ |
@@ -210,7 +211,7 @@ All eleven share one replacement path: our own weapons modelled in Blender to ou
 
 | # | Path | Model, author, URL | Risk |
 |---|---|---|---|
-| WE-01 | `chevalier_sword.glb` | "Chevalier Sword" by rubenve, https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8 | **medium**: the description says it was "made as a mod for blade and sorcery. Based on the concept by Guillem Daudén". The concept artist's design isn't covered by the modeller's grant |
+| WE-01 | `chevalier_sword.glb` | "Chevalier Sword" by rubenve, https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8; MODIFIED 14 Oct 2026 (animation, `tools/assets/grip_thin.py`): the grip's rings drawn in toward its axis, nothing else touched (guard, ferrule, pommel, blade, UVs and texture as they came): to 15.0 mm round at its widest (b72c551d, was 18.5), then to 13.7 mm round, near a cylinder (the pommel-end ring, 13.68 mm, kept), the staff's shaft size, for her fist to close on | **medium**: the description says it was "made as a mod for blade and sorcery. Based on the concept by Guillem Daudén". The concept artist's design isn't covered by the modeller's grant |
 | WE-02 | `viking_sword.glb` | "Viking Sword (Game Model)" by Michael Makivic, https://sketchfab.com/3d-models/viking-sword-game-model-a05d0bd73e9e4508b873ffd7b6a6238d | low |
 | WE-03 | `longsword.glb` | "medieval sword" by LowSeb, https://sketchfab.com/3d-models/medieval-sword-da574cba504e4b83a3293f3d3bd067fb | low |
 | WE-04 | `zweihander.glb` | "Zweihander" by Siesta, https://sketchfab.com/3d-models/zweihander-bde0f0351bf443f6bed68aeff84b4129 | low: the description links a GameBanana mod; the author invites changes |

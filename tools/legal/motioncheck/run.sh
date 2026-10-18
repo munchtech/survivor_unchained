@@ -28,6 +28,8 @@ STAND="chest:0,1.45,1.3,1.30:35;left:45,1.40,1.2,1.28:36;side:90,1.30,1.3,1.25:3
 FLOOR="low:0,0.55,1.9,0.25:45;lowside:90,0.55,1.9,0.25:45;top:25,2.0,1.4,0.25:50"
 shoot() { # outfit clip views follow frames
   local o="$1" clip="$2" views="$3" follow="$4" frames="$5"
+  # (LIST=1: print "LIST <outfit> <clip>" instead, for tools/legal/gate.py's scope; nothing is run)
+  [ -n "${LIST:-}" ] && { echo "LIST $o $clip"; return; }
   env FOV=38 OUTFIT="$o" HAIR=ponytail SPREAD=1 MARKS=1 FRAMES="$frames" VIEWS="$views" FOLLOW="$follow" \
     timeout 300 "$G" --path . --resolution 960x540 --fixed-fps 60 -s "$OUT/motioncheck.gd" -- "her/$clip" "$OUT/${o}_${clip}.png" \
     </dev/null >"$OUT/log_${o}_${clip}.txt" 2>&1

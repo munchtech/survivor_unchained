@@ -1,0 +1,43 @@
+godot: yours
+[f30cf0_own_c01] 13 png, 82 s
+[f30cf0_own_c02] 9 png, 57 s
+[f30cf0_own_c04a] 9 png, 61 s
+[f30cf0_own_day] 1 png, 18 s
+[f30cf0_own_night] 1 png, 18 s
+[f30cf0_saffron_c01] 13 png, 81 s
+[f30cf0_saffron_c02] 9 png, 58 s
+[f30cf0_saffron_c04a] 9 png, 62 s
+[f30cf0_saffron_day] 1 png, 18 s
+[f30cf0_saffron_night] 1 png, 18 s
+[f30cf0_sunborn_c01] 13 png, 80 s
+[f30cf0_sunborn_c02] 9 png, 57 s
+[f30cf0_sunborn_c04a] 9 png, 61 s
+[f30cf0_sunborn_day] 1 png, 18 s
+[f30cf0_sunborn_night] 1 png, 18 s
+[f30cf1_own_c02] 9 png, 57 s
+[f30cf1_own_day] 1 png, 18 s
+[f30cf1_own_night] 1 png, 18 s
+[f30cf1_saffron_c02] 9 png, 57 s
+[f30cf1_saffron_day] 1 png, 18 s
+[f30cf1_saffron_night] 1 png, 18 s
+[f30cf1_sunborn_c02] 9 png, 57 s
+[f30cf1_sunborn_day] 1 png, 18 s
+[f30cf1_sunborn_night] 1 png, 18 s
+[f30cf2_own_c02] 9 png, 57 s
+[f30cf2_own_day] 1 png, 18 s
+[f30cf2_own_night] 1 png, 19 s
+[f30cf2_saffron_c02] 9 png, 59 s
+[f30cf2_saffron_day] 1 png, 19 s
+[f30cf2_saffron_night] 1 png, 19 s
+[f30cd1_own_c02] 9 png, 59 s
+[f30cd1_saffron_c02] 9 png, 63 s
+[f30cg1_own_c02] 9 png, 59 s
+[f30cg1_saffron_c02] 9 png, 60 s
+[f30cl1_own_c01] 13 png, 84 s
+[f30cl1_own_c04a] 9 png, 62 s
+[f30cl1_sunborn_c01] 13 png, 81 s
+[f30cl1_sunborn_c04a] 9 png, 62 s
+[f30cl2_own_c01] 13 png, 81 s
+[f30cl2_saffron_c01] 13 png, 81 s
+godot: given back
+DONE

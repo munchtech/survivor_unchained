@@ -36,7 +36,7 @@ public partial class Game
         hud.Fade(0, 1.6);
     }
 
-    /// <summary>The stranger at the title's fire: a hooded ranger, unarmed.</summary>
+    /// <summary>The stranger at the title's fire: a ranger, bare-headed (her face and hair are the point; Loadout gives her no hood), unarmed.</summary>
     static PersonSpec Stranger()
     {
         var a = Callings.Archetype("stalker");
@@ -58,7 +58,12 @@ public partial class Game
         figure = new PersonView(spec, null, 0.8);
         scene!.AddChild(figure);
         float sx = Fire.X + 2.05f, sz = Fire.Y - 0.1f;
-        figure.Place(sx + 0.12, scene.HeightAt(sx, sz) + 0.08, sz, -Math.PI / 2 - 0.12, true);
+        // (on the log (Camp's seat log, seed 1): her root brought `on` metres along her facing
+        // and lowered `down`, so sit_log's glutes rest on the log's crown and her thighs on its
+        // fire side (measured on the stalker's outfit: thighs 2 mm off, glutes 5 mm, cloth at
+        // most 4 mm in), her boot soles on the ground (1 mm) and her feet clear of the log)
+        double heading = -Math.PI / 2 - 0.12, on = 0.61, down = 0.18;
+        figure.Place(sx + 0.12 + on * Math.Sin(heading), scene.HeightAt(sx, sz) + 0.08 - down, sz + on * Math.Cos(heading), heading, true);
         figure.Loop("Sit_Chair_Idle", 0);
     }
 
@@ -128,6 +133,10 @@ public partial class Game
     void UpdateCreate(double dt)
     {
         if (figure == null || scene == null || draft == null) return;
+        // --spin DEG: the turntable turned DEG a second, as a player holding the turn key (pictures of her hair turning).
+        if (Args.Has("spin")) figTurn += Mathf.DegToRad((float)Args.Num("spin", 90)) * (float)dt;
+        // --hairdump DIR: her hair and body as drawn, every 0.25 s from 2 s in, for posed_clip.py (HairDump).
+        if (Args.Has("hairdump")) HairDump.Tick(figure, dt);
         figTurnNow = Mathf.Lerp(figTurnNow, figTurn, 1 - Mathf.Exp(-9f * (float)dt));
         figure.Rotation = new Vector3(0, (float)FigureHeading + figTurnNow, 0);
         float y = (float)scene.HeightAt(Fire.X, Fire.Y);
@@ -425,6 +434,12 @@ public partial class Game
         if (Args.Get("eyes") is string ey) draft.Eyes = ey;
         DressFigure(draft);
         PoseCreate();
+        // --look-time day|dawn|dusk: the Look in that light, not the fire's night (pictures of her hair by day).
+        if (Args.Get("look-time") is string lt && lt != "night" && scene != null)
+        {
+            air.Set(Atmospheres.ByName(lt));
+            scene.SetNight(false);
+        }
         var create = new CreateScreen(this, draft);
         screens.Show(create);
         create.FrameForStep();

@@ -40,7 +40,8 @@ def add_bones(arm):
     lower bone's frame turned about its line onto the joint's hinge."""
     have = {b.name for b in arm.data.bones}
     want = [(h, n) for h in hp.SPEC["helpers"] for n in hp.each(h["name"])]
-    if all(n in have for _, n in want):
+    panels = [p for p in hp.SPEC.get("panels", []) if p["parent"] in have]
+    if all(n in have for _, n in want) and all(p["name"] in have for p in panels):
         return 0
     _active(arm)
     bpy.ops.object.mode_set(mode="EDIT")
@@ -72,6 +73,27 @@ def add_bones(arm):
         b.parent = parent
         b.use_connect = False
         b.use_deform = True
+        made += 1
+    # Panel bones (SPEC "panels"): at the parent's head + pivot (her rest
+    # axes, game's +Y up / +Z front: Blender's +Z up / -Y front), pointing
+    # down the panel, its +Z her front and +X her right (the game turns it
+    # about that X: HerJoints, helpers.drive_panels).
+    for p in panels:
+        if p["name"] in eb:
+            continue
+        parent = eb[p["parent"]]
+        gx, gy, gz = p["pivot"]
+        h = parent.head + Vector((gx, -gz, gy))
+        m = Matrix(((-1.0, 0.0, 0.0, h.x), (0.0, 0.0, -1.0, h.y), (0.0, -1.0, 0.0, h.z), (0.0, 0.0, 0.0, 1.0)))
+        b = eb.new(p["name"])
+        b.head = (0.0, 0.0, 0.0)
+        b.tail = (0.0, p["length"], 0.0)
+        b.matrix = m
+        b.length = p["length"]
+        b.parent = parent
+        b.use_connect = False
+        b.use_deform = True
+        print(f"RIG panel {p['name']}: head {tuple(round(v, 4) for v in b.head)} tail {tuple(round(v, 4) for v in b.tail)}")
         made += 1
     bpy.ops.object.mode_set(mode="OBJECT")
     return made
@@ -280,6 +302,23 @@ def _game_skeleton(arm):
         heads = _to_game([(arm.matrix_world @ arm.data.bones[n].head_local)[:] for n in sk.names])
         err = np.abs(gpos[0] - heads).max()
         if err < 0.002:
+            return sk
+        # Her joints moved by translation only (the DIPs toward her knuckles, FINGER_FIX; the
+        # dump made after the neck cut, whose Head rest is 30 mm short of this armature's, since
+        # the cut is a glb post-step): the dump's rest turns still hold, so its rest positions are
+        # re-seated on this armature's heads. Before this, a joint 2 mm off dropped every
+        # corrective (elbow_point_l/r) from her body and pieces without a word in the summary.
+        dev = np.abs(gpos[0] - heads).max(1)
+        if err < 0.05:
+            grot, _ = sk.rest_globals()
+            from rig import qinv, qrot
+            pos = sk.rest_pos.copy()
+            for j, p in enumerate(sk.parent):
+                pos[j] = heads[j] if p < 0 else qrot(qinv(grot[0, p]), heads[j] - heads[p])
+            sk.rest_pos = pos
+            moved = [sk.names[j] for j in np.where(dev >= 0.002)[0]]
+            print(f"RIG correctives: {f} was {err * 1000:.1f} mm off this armature; rest re-seated on its heads "
+                  f"({len(moved)} joints: {', '.join(moved[:12])}{' ...' if len(moved) > 12 else ''})")
             return sk
         print(f"RIG correctives: {f} is {err * 1000:.1f} mm off this armature")
     return None

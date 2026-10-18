@@ -80,7 +80,7 @@ public static class Loadouts
     {
         var cuts = Lore.Her.Cuts;
         if (cuts.Any(h => h.Id == style)) return style!;
-        return style switch { "Hair_BuzzedFemale" or "Hair_Buzzed" or "none" => "pixie", "Hair_Buns" => "bob", _ => cuts[0].Id };
+        return style switch { "Hair_BuzzedFemale" or "Hair_Buzzed" or "none" => "pixie", "Hair_Buns" => "ponytail", _ => cuts[0].Id };
     }
 
     /// <summary>The survivor as their character sheet has them.</summary>

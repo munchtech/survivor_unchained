@@ -18,6 +18,9 @@ namespace SurvivorUnchained.View;
 ///   at the elbow and knee, pushes the flesh out across the bend as a bent
 ///   tube is pushed (its own Z), so a joint bends round a corner and keeps its
 ///   flesh instead of folding flat.
+/// - a panel bone (the Reaver's front loincloth) swings forward with her
+///   leading thigh (Core/PanelSwing.cs), so the thigh lifts it at a
+///   stride's foot strike instead of showing through it.
 /// A body without the helpers is left as it is. The numbers are in
 /// art/people/rig_helpers.json, written by helpers.py, so the tools and the
 /// game drive them alike.
@@ -58,8 +61,22 @@ public partial class HerJoints : SkeletonModifier3D
         public readonly List<(MeshInstance3D Mesh, int Shape)> On = new();
     }
 
+    /// <summary>A hanging front panel's bone (the Reaver's loincloth), turned
+    /// forward about her lateral axis with the leading thigh (Core/PanelSwing).</summary>
+    sealed class Panel
+    {
+        public int Bone;
+        public Quaternion ParentRest, Rest; // the pelvis's global rest; the panel's own rest
+        public Vector3 Axis;                // her lateral axis (+X her right) in the pelvis's frame
+        public Core.PanelSwing.Law Law;
+        public readonly int[][] Chains = new int[2][];   // each thigh up to (not with) the pelvis
+        public readonly Vector3[] Rest0 = new Vector3[2]; // each thigh's line at rest, her rest axes
+        public double Last = double.NaN;                  // last frame's turn (degrees), for its fall
+    }
+
     Skeleton3D? found;
     readonly List<Side> sides = new();
+    readonly List<Panel> panels = new();
     // Her meshes come and go (an outfit put on): look for the shapes again.
     bool rescan = true;
 
@@ -161,6 +178,35 @@ public partial class HerJoints : SkeletonModifier3D
                 }
             sides.Add(one);
         }
+        // Panel bones (helpers.py SPEC "panels"): one centred bone each.
+        panels.Clear();
+        if (s.ContainsKey("panels"))
+            foreach (var pv in s["panels"].AsGodotArray())
+            {
+                var p = pv.AsGodotDictionary();
+                int bone = sk.FindBone((string)p["name"]), parent = sk.FindBone((string)p["parent"]);
+                var thighs = p["thighs"].AsGodotArray();
+                int tl = sk.FindBone((string)thighs[0]), tr = sk.FindBone((string)thighs[1]);
+                if (bone < 0 || parent < 0 || tl < 0 || tr < 0) continue;
+                var gp = sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion();
+                var one = new Panel
+                {
+                    Bone = bone, ParentRest = gp, Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
+                    Axis = (gp.Inverse() * new Vector3(-1, 0, 0)).Normalized(),
+                    Law = new Core.PanelSwing.Law((double)p["amount"], (double)p["soft"], (double)p["spread_from"], (double)p["spread_to"], (double)p["spread_damp"],
+                        p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450),
+                };
+                foreach (var (t, i) in new[] { (tl, 0), (tr, 1) })
+                {
+                    var chain = new List<int>();
+                    for (int j = t; j >= 0 && j != parent; j = sk.GetBoneParent(j)) chain.Add(j);
+                    one.Chains[i] = chain.ToArray();
+                    var q = Quaternion.Identity;
+                    foreach (int j in one.Chains[i]) q = sk.GetBoneRest(j).Basis.GetRotationQuaternion() * q;
+                    one.Rest0[i] = gp * (q * Vector3.Up);
+                }
+                panels.Add(one);
+            }
     }
 
     /// <summary>d split as swing * twist, the twist about the bone's own +Y.</summary>
@@ -267,6 +313,26 @@ public partial class HerJoints : SkeletonModifier3D
                 foreach (var (mi, i) in c.On)
                     if (IsInstanceValid(mi)) mi.SetBlendShapeValue(i, w);
             }
+        }
+        // The panels: each thigh's line in the pelvis's frame (her rest axes
+        // carried with it), its forward swing and spread from rest, and the
+        // panel turned by the law about her lateral axis, its bottom forward.
+        foreach (var p in panels)
+        {
+            double fl = 0, fr = 0, al = 0, ar = 0;
+            for (int i = 0; i < 2; i++)
+            {
+                var q = Quaternion.Identity;
+                foreach (int j in p.Chains[i]) q = sk.GetBonePoseRotation(j) * q;
+                var v = p.ParentRest * (q * Vector3.Up);
+                var v0 = p.Rest0[i];
+                var (sw, sp) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, i == 0 ? 1 : -1);
+                if (i == 0) { fl = sw; al = sp; } else { fr = sw; ar = sp; }
+            }
+            // (up with the thigh at once, down as a loose flap falls: Core/PanelSwing.Fall)
+            p.Last = Core.PanelSwing.Fall(p.Law, p.Last, Core.PanelSwing.Turn(p.Law, fl, fr, al, ar), delta);
+            float deg = (float)p.Last;
+            sk.SetBonePoseRotation(p.Bone, (new Quaternion(p.Axis, Mathf.DegToRad(deg)) * p.Rest).Normalized());
         }
     }
 }

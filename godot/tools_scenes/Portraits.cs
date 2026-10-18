@@ -185,7 +185,7 @@ public partial class Portraits : Node3D
         var face = d.ContainsKey("face") ? d["face"].AsGodotDictionary().ToDictionary(kv => (string)kv.Key, kv => (float)kv.Value) : new Dictionary<string, float>();
         // (faceShape: one of her other faces, its own head and painting, People.HerFaceKey; "" her own)
         var shape = d.ContainsKey("faceShape") && (string)d["faceShape"] != "" ? (string)d["faceShape"] : null;
-        var look = new People.Look("female", new[] { "her:" + outfit }, d.ContainsKey("hair") ? (string)d["hair"] : "long", false,
+        var look = new People.Look("female", new[] { "her:" + outfit }, d.ContainsKey("hair") ? (string)d["hair"] : "braid", false,
             C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null,
             shape);
         People.HerRestyle(her!, look);

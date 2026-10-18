@@ -1,0 +1,347 @@
+"""Her face's features drawn bold, for the game to deepen when her face is
+small on screen. Seen from the game's camera her face is a few pixels
+across, and her paint's mipmaps average her eyes, brows and lips into her
+skin: a red-orange blur with no face in it. This draws them large and
+soft in her head's UVs (so the mask survives its own mipmaps), for her
+skin's shader to darken and redden by, the more the smaller she is
+(shaders/heroine_skin.gdshader, "features").
+
+    blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_features.py -- godot/art/people/head_tex
+
+Written to <out>/heroine_features.png: red, her eyes (their lash lines
+deepest) and brows, to darken; green, her lips, to deepen to their red;
+blue, where her face's own paint lies, for each face's tone (none at SPLIT).
+Run again when her head is rebuilt (heroine_head.py), then tools/assets/heroine_ao_seam.py (heroine_ao.png's
+green: her head's nearness to her neck's seam) and tools/assets/heroine_thin.py (its blue: where she is thin).
+"""
+import os
+import sys
+
+import bpy
+import numpy as np
+from scipy import ndimage
+
+OUT = os.path.abspath(sys.argv[sys.argv.index("--") + 1])
+SIZE = 1024
+
+head = bpy.data.objects["HeroineHead"]
+me = head.data
+mw = np.array(head.matrix_world)
+V = np.array([v.co[:] for v in me.vertices]) @ mw[:3, :3].T + mw[:3, 3]
+me.calc_loop_triangles()
+T = np.array([t.vertices[:] for t in me.loop_triangles])
+L = np.array([t.loops[:] for t in me.loop_triangles])
+UV = np.array([d.uv[:] for d in me.uv_layers[0].data])[L] * SIZE
+
+
+def raster():
+    """Every texel her faces cover: its row, column and place on her."""
+    rows, cols, pts = [], [], []
+    for k, t in enumerate(UV):
+        x0, y0 = np.maximum(np.floor(t.min(0)).astype(int), 0)
+        x1, y1 = np.minimum(np.ceil(t.max(0)).astype(int), SIZE - 1)
+        if x1 < x0 or y1 < y0:
+            continue
+        xs, ys = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        p = np.stack([xs.ravel() + 0.5, ys.ravel() + 0.5], 1)
+        a, b, c = t
+        v0, v1, v2 = b - a, c - a, p - a
+        den = v0[0] * v1[1] - v1[0] * v0[1]
+        if abs(den) < 1e-12:
+            continue
+        v = (v2[:, 0] * v1[1] - v1[0] * v2[:, 1]) / den
+        w = (v0[0] * v2[:, 1] - v2[:, 0] * v0[1]) / den
+        bb = np.stack([1 - v - w, v, w], 1)
+        m = (bb > -1e-3).all(1)
+        rows.append(ys.ravel()[m])
+        cols.append(xs.ravel()[m])
+        pts.append((V[T[k]][None] * bb[m][:, :, None]).sum(1))
+        nrm.append(np.repeat(FN[k][None], m.sum(), 0))
+        tri.append(np.full(m.sum(), k))
+        bary.append(bb[m])
+    return np.concatenate(rows), np.concatenate(cols), np.concatenate(pts), np.concatenate(nrm)
+
+
+FN = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+FN /= np.linalg.norm(FN, axis=1)[:, None] + 1e-12
+FN *= np.sign((FN * (V[T].mean(1) - V.mean(0))).sum(1).mean())     # (out from her, whichever way her faces are wound)
+nrm = []
+tri, bary = [], []   # (each texel's triangle and its place in it: raster)
+
+
+def smooth(x):
+    x = np.clip(x, 0, 1)
+    return x * x * (3 - 2 * x)
+
+
+rows, cols, P, N = raster()
+# (her outside, facing forward: not the insides of her mouth and lids)
+forward = N[:, 1] < -0.35
+# Her paint at each texel (its 4K image, rows from the bottom as Blender has them).
+img = next(n.image for n in me.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image)
+W, H = img.size
+paint = np.array(img.pixels[:], np.float32).reshape(H, W, 4)[..., :3]
+col = paint[np.clip(((rows + 0.5) / SIZE * H).astype(int), 0, H - 1), np.clip(((cols + 0.5) / SIZE * W).astype(int), 0, W - 1)]
+
+eyes = bpy.data.objects["HeroineEyes"]
+EV = np.array([(eyes.matrix_world @ v.co)[:] for v in eyes.data.vertices])
+dark = np.zeros(len(P))
+for sd in (1, -1):
+    e = EV[EV[:, 0] * sd > 0]
+    # (the middle of her eye's opening: the front of her cornea, the mean of
+    # its points within 3 mm of its foremost: her front is -y)
+    front = e[:, 1].min()
+    c = e[e[:, 1] < front + 0.003].mean(0)
+    r = 0.0
+    d = P - c
+    near = P[:, 1] < front + 0.012
+    # her eye's opening and the lids round it, an almond 3.4 cm across and
+    # 1.7 high about it, deepest along her upper lash line
+    ex, ez = d[:, 0] / 0.019, (d[:, 2] - 0.001) / 0.0105
+    eye = (1 - smooth((np.hypot(ex, ez) - 0.55) / 0.45)) * near
+    lash = (1 - smooth(np.abs(ez - 0.45) / 0.45)) * (1 - smooth((np.abs(ex) - 0.7) / 0.4)) * near
+    # her brow above it: from her paint where it is darker than the skin
+    # below her brow, within the band her brows can be in, and the band itself a little
+    band = (d[:, 2] > 0.008) & (d[:, 2] < 0.032) & (np.abs(d[:, 0]) < 0.03) & near
+    skin = np.median(col[(d[:, 2] > -0.03) & (d[:, 2] < -0.015) & (np.abs(d[:, 0]) < 0.015) & near], 0)
+    brow = band * np.clip((skin.mean() - col.mean(1)) / 0.12, 0, 1)
+    dark = np.maximum(dark, np.maximum(eye * 0.75, np.maximum(lash, brow)))
+    print("EYE", "lr"[sd < 0], "centre", np.round(c, 3), "radius %.4f" % r, "texels: eye %d lash %d brow %d near %d" % (
+        (eye > 0.5).sum(), (lash > 0.5).sum(), (brow > 0.5).sum(), near.sum()))
+
+# Her lips: her paint's red, in the box her mouth is in.
+redness = col[:, 0] - col[:, 1]
+mouth = ((np.abs(P[:, 0]) < 0.03) & (P[:, 2] < EV[:, 2].mean() - 0.045) & (P[:, 2] > EV[:, 2].mean() - 0.11)
+         & (P[:, 1] < V[:, 1].min() + 0.03) & forward)
+ref = np.median(redness[mouth])
+lips = mouth * np.clip((redness - ref) / 0.08, 0, 1)
+
+out = np.zeros((SIZE, SIZE, 4), np.float32)
+out[rows, cols, 0] = dark
+out[rows, cols, 1] = lips
+out[..., 3] = 1
+# Drawn bold: widened and softened, so they stay as they shrink.
+inside = np.zeros((SIZE, SIZE), bool)
+inside[rows, cols] = True
+for k, (grow, soft) in ((0, (4, 3.0)), (1, (3, 2.0))):
+    ch = ndimage.grey_dilation(out[..., k], size=(grow * 2 + 1, grow * 2 + 1))
+    ch = ndimage.gaussian_filter(ch, soft)
+    out[..., k] = np.clip(np.maximum(out[..., k], ch) * inside, 0, 1)
+from PIL import Image  # noqa: E402
+# Blue: where her face's own paint lies (heroine_face/face_paint.png's alpha,
+# softened over 3 mm), for the game to set each face's colour against its
+# portrait's there alone (People.HerFaceTone), her neck and body as they are.
+_fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "face_paint.png")
+if os.path.exists(_fp):
+    _a = np.asarray(Image.open(_fp).convert("RGBA").resize((SIZE, SIZE), Image.BILINEAR), np.float32)[..., 3] / 255
+    out[..., 2] = np.clip(ndimage.gaussian_filter(_a, 6), 0, 1)[::-1]
+    # (and none at SPLIT, eased in over the 2 cm above it as her head's shape keys are: the graft below has no face
+    # tone, and a face's tone that reached SPLIT stopped there as a step across her neck (the owner, 10 October 2026))
+    _s = np.clip((P[:, 2] - (1.625 + 0.27 * (P[:, 1] + 0.02))) / 0.02, 0, 1)
+    _ease, _in = np.zeros((SIZE, SIZE), np.float32), np.zeros((SIZE, SIZE), bool)
+    _ease[rows, cols], _in[rows, cols] = _s * _s * (3 - 2 * _s), True
+    _, (_iy, _ix) = ndimage.distance_transform_edt(~_in, return_indices=True)
+    out[..., 2] *= _ease[_iy, _ix]
+os.makedirs(OUT, exist_ok=True)
+path = os.path.join(OUT, "heroine_features.png")
+# (SHADOW_ONLY=1: only heroine_shadow.png rewritten, the features and AO left as they are)
+if not os.environ.get("SHADOW_ONLY"):
+    Image.fromarray((out[::-1] * 255 + 0.5).astype(np.uint8)).save(path)
+print("FEATURES", path, "eyes and brows %d texels, lips %d" % ((out[..., 0] > 0.3).sum(), (out[..., 1] > 0.3).sum()))
+
+# Her scalp, under her hair (green, as the shader's shadow_mask has it): the
+# game darkens it to her hair's colour, so between her hair's cards there is
+# hair, not her skin, and her hairline reads as hair growing (bare skin
+# there read as a bald brow, and a pale scalp worst under dark hair). From
+# her hairline (face_shapes.HAIRLINE, as her hair is grown) up, eased in
+# from a centimetre under it over 16 mm, as hair thickens at a real hairline (a
+# soft painted edge under its fine hairs, not a line where the cards begin).
+sys.path.insert(0, "C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a2d632df7c7f21ec0/tools/assets")
+import face_shapes as fs  # noqa: E402
+eye_z = EV[:, 2].mean()
+theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
+rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
+# (faint from 4 mm under her hairline, most of it over the centimetre above:
+# under her hair's cap as it thins out, blended over her skin there. It
+# began 1.6 cm under, when the cap ended hard: there it read as a dark band
+# of skin under her hair.)
+scalp = smooth((rise + 0.004) / 0.012) ** 2
+# Not her ears (what her ears' own keys move, and 6 mm round them): darkened
+# with her scalp they turned the colour of her hair.
+from scipy.spatial import cKDTree  # noqa: E402
+_kb = me.shape_keys.key_blocks if me.shape_keys else {}
+_base = np.array([d.co[:] for d in _kb[0].data]) if _kb else None
+_ear = np.zeros(len(V), bool)
+for _name, _min in (("ears_out+", 0.0005), ("ears_pointed+", 0.0003), ("ears_lobes+", 0.0003)):
+    if _name in _kb:
+        _ear |= np.linalg.norm(np.array([d.co[:] for d in _kb[_name].data]) - _base, axis=1) > _min
+if _ear.any():
+    _d = cKDTree(V[_ear]).query(P)[0]
+    _old = smooth((_d - 0.002) / 0.006)
+    # (18 October, face 30: behind and above her ears, only her ear itself.
+    # Her ears' keys move her scalp round them too (a centimetre and more
+    # behind and above each), and kept off all of it and 8 mm more, her
+    # scalp there was her bare skin where her hair's cap thins out to her
+    # ear: a pale wedge behind and above each ear, her skin's own tone, at
+    # the Look. Her ear itself is its fine mesh (edges under 2.8 mm) within
+    # 1.9 cm of its flap (what its keys move most), and the flap: her scalp is
+    # tinted to 1 mm off it, eased in over the 2.5 mm past that. In front
+    # of her ear and below its top, where her face is, as it was. Behind and
+    # above, superseded by face 30 H1b's flap below: no change on screen.)
+    _el = np.zeros(len(V)); _ne = np.zeros(len(V))
+    for _a, _b in ((0, 1), (1, 2), (2, 0)):
+        _len = np.linalg.norm(V[T[:, _a]] - V[T[:, _b]], axis=1)
+        for _q in (_a, _b):
+            np.add.at(_el, T[:, _q], _len)
+            np.add.at(_ne, T[:, _q], 1)
+    _el /= np.maximum(_ne, 1)
+    _flap = np.zeros(len(V), bool)
+    for _name in ("ears_out+", "ears_pointed+", "ears_lobes+"):
+        if _name in _kb:
+            _mv = np.linalg.norm(np.array([d.co[:] for d in _kb[_name].data]) - _base, axis=1)
+            _flap |= _mv > 0.1 * _mv.max()
+    _own = ((_el < 0.0028) & (cKDTree(V[_flap]).query(V)[0] < 0.019)) | _flap
+    # (how far each point of her is from her ear, laid across her triangles,
+    # so her ear's own triangles are none: a texel's distance to the nearest
+    # of her ear's points tinted her flap's middles, up to a millimetre and
+    # a half from its points)
+    _dv = cKDTree(V[_own]).query(V)[0]
+    _dv[_own] = 0.0
+    _tri, _bb = np.concatenate(tri), np.concatenate(bary)
+    _dt = (_dv[T[_tri]] * np.clip(_bb, 0, 1)).sum(1) / np.clip(_bb, 0, 1).sum(1)
+    _new = smooth((_dt - 0.001) / 0.0025)
+    _ear_tex = _own[T[_tri]].all(1)
+    # (behind her ear's middle, or 1 cm over it: hers; in front and below, her face's)
+    _w = np.zeros(len(P))
+    for _sg in (1, -1):
+        _side = np.sign(P[:, 0]) == _sg
+        _c = V[_flap & (np.sign(V[:, 0]) == _sg)].mean(0)
+        _w[_side] = np.maximum(smooth((P[_side, 1] - _c[1]) / 0.006), smooth((P[_side, 2] - _c[2] - 0.010) / 0.006))
+    # (18 October, face 30 H1b: behind and above her ear, her ear is its flap alone. Her ear's "own" points above
+    # (fine mesh near what its keys move), and its keys' flap at a tenth of each key's most, take in a centimetre
+    # and more of her scalp behind and above it (its keys move her scalp round it too), painted the pale grey
+    # her scalp is under her hair: kept off, untinted, it was the pale patch behind and above each ear at the
+    # Look on every hairstyle and face. Found at the pixel: the head's UV read off the game's frame (People.H1Debug,
+    # heroine_skin's dbg_gate 10 and 11) lay in that "own" ear, the mask 0 there. Her flap is what her ears' keys
+    # move by a quarter of their most or more (traced on the frames: its edge is her ear's crease); her scalp
+    # tinted from 0.5 mm off it, eased in over the 2.5 mm past that.)
+    _fm = np.zeros(len(V))
+    for _name in ("ears_out+", "ears_pointed+", "ears_lobes+"):
+        if _name in _kb:
+            _mv = np.linalg.norm(np.array([d.co[:] for d in _kb[_name].data]) - _base, axis=1)
+            _fm = np.maximum(_fm, _mv / max(_mv.max(), 1e-9))
+    _lf = _fm > 0.25
+    _dl = cKDTree(V[_lf]).query(V)[0]
+    _dl[_lf] = 0.0
+    _dlt = (_dl[T[_tri]] * np.clip(_bb, 0, 1)).sum(1) / np.clip(_bb, 0, 1).sum(1)
+    _skin = 1 - smooth((_dlt - 0.0005) / 0.0025)
+    _lf_tex = _lf[T[_tri]].all(1)
+    print("EAR FLAP %d points, %d texels behind" % (_lf.sum(), (_lf_tex & (_w > 0.5)).sum()))
+    scalp *= _old + (1 - _skin - _old) * _w
+sh = np.zeros((SIZE, SIZE, 4), np.float32)
+sh[rows, cols, 1] = scalp
+sh[..., 3] = 1
+sh[..., 1] = np.clip(ndimage.gaussian_filter(sh[..., 1], 1.5) * inside + (1 - inside) * ndimage.grey_dilation(sh[..., 1], size=(5, 5)), 0, 1)
+# (and none on her ear itself, softened into it as it was; behind and above it, none on its flap, so the blur
+# leaves her ear its skin)
+if _ear.any():
+    _em = np.zeros((SIZE, SIZE), bool)
+    _em[rows[_ear_tex & (_w < 0.5)], cols[_ear_tex & (_w < 0.5)]] = True
+    sh[_em, 1] = 0.0
+    _sk = np.zeros((SIZE, SIZE), np.float32)
+    _sk[rows, cols] = _lf_tex * _w
+    sh[..., 1] *= 1 - _sk
+spath = os.path.join(OUT, "heroine_shadow.png")
+Image.fromarray((sh[::-1] * 255 + 0.5).astype(np.uint8)).save(spath)
+print("SCALP", spath, "%d texels" % (sh[..., 1] > 0.5).sum())
+np.savez_compressed(os.path.join(OUT, "diag.npz"), rows=rows, cols=cols, P=P, N=N, scalp=scalp, rise=rise,
+    old=_old, new=_new, w=_w, ear_tex=_ear_tex, own_tex=_own[T[_tri]].any(1), dt=_dt, inside=inside, sh=sh[..., 1],
+    V=V, own=_own, flap=_flap, ear=_ear, skin=_skin, lf=_lf)
+if os.environ.get("SHADOW_ONLY"):
+    sys.exit(0)
+
+# Her head's own shade where light reaches her less (ambient occlusion): under
+# her jaw and chin, in her nostrils, the corners of her mouth, the folds of
+# her ears, the creases of her lids. Without it her neck under her jaw was lit
+# as brightly as her cheeks, brighter where it faced up into the key light: a
+# pale band from her jaw to her collar where her portrait has a shadow. Rays
+# over the hemisphere of each of her head's points (48, out to 5 cm, nearer
+# hits counting more) against her head, her body and her eyes; laid in her
+# head's UVs (red) for her skin's shader (AO, and some of the light: People.Skin).
+from mathutils import Vector  # noqa: E402
+from mathutils.bvhtree import BVHTree  # noqa: E402
+_vs, _fs = [], []
+for _name in ("HeroineHead", "Heroine", "HeroineEyes"):
+    _o = bpy.data.objects.get(_name)
+    if _o is None:
+        continue
+    _b = len(_vs)
+    _M = np.array(_o.matrix_world)
+    _vs += [tuple(p_) for p_ in np.array([v.co[:] for v in _o.data.vertices]) @ _M[:3, :3].T + _M[:3, 3]]
+    _fs += [[_b + i for i in p_.vertices] for p_ in _o.data.polygons]
+_bvh = BVHTree.FromPolygons(_vs, _fs)
+VN = np.zeros_like(V)
+for k_ in range(3):
+    np.add.at(VN, T[:, k_], FN)
+VN /= np.linalg.norm(VN, axis=1)[:, None] + 1e-12
+_rng = np.random.default_rng(3)
+_u = _rng.random((48, 2))
+_dirs = np.c_[np.sqrt(_u[:, 0]) * np.cos(2 * np.pi * _u[:, 1]), np.sqrt(_u[:, 0]) * np.sin(2 * np.pi * _u[:, 1]), np.sqrt(1 - _u[:, 0])]
+REACH = 0.05
+ao_v = np.ones(len(V))
+for i_ in range(len(V)):
+    n_ = VN[i_]
+    t1 = np.cross(n_, [0.0, 0.0, 1.0] if abs(n_[2]) < 0.9 else [1.0, 0.0, 0.0])
+    t1 /= np.linalg.norm(t1)
+    t2 = np.cross(n_, t1)
+    o_ = Vector(V[i_] + n_ * 0.0006)
+    occ = 0.0
+    for d_ in _dirs:
+        w_ = d_[0] * t1 + d_[1] * t2 + d_[2] * n_
+        h_ = _bvh.ray_cast(o_, Vector(w_), REACH)
+        if h_[0] is not None:
+            occ += 1.0 - h_[3] / REACH
+    ao_v[i_] = 1.0 - occ / len(_dirs)
+# (none at her neck's seam with her body, whose own skin has none: eased to
+# nothing over the 2 cm above it)
+sys.path.insert(0, "C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a2d632df7c7f21ec0/tools/assets")
+_split = V[:, 2] - (1.625 + 0.27 * (V[:, 1] + 0.02))
+ao_v = 1 - (1 - ao_v) * smooth(_split / 0.02)
+# (per texel, from its triangle's points)
+_UVn = UV / SIZE
+_ao = np.ones((SIZE, SIZE), np.float32)
+_in = np.zeros((SIZE, SIZE), bool)
+for k_, t_ in enumerate(UV):
+    x0, y0 = np.maximum(np.floor(t_.min(0)).astype(int), 0)
+    x1, y1 = np.minimum(np.ceil(t_.max(0)).astype(int), SIZE - 1)
+    if x1 < x0 or y1 < y0:
+        continue
+    xs, ys = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+    q_ = np.stack([xs.ravel() + 0.5, ys.ravel() + 0.5], 1)
+    a_, b_, c_ = t_
+    v0, v1, v2 = b_ - a_, c_ - a_, q_ - a_
+    den = v0[0] * v1[1] - v1[0] * v0[1]
+    if abs(den) < 1e-12:
+        continue
+    vv = (v2[:, 0] * v1[1] - v1[0] * v2[:, 1]) / den
+    ww = (v0[0] * v2[:, 1] - v2[:, 0] * v0[1]) / den
+    bb = np.stack([1 - vv - ww, vv, ww], 1)
+    m_ = (bb > -1e-3).all(1)
+    _ao[ys.ravel()[m_], xs.ravel()[m_]] = (ao_v[T[k_]][None] * bb[m_]).sum(1)
+    _in[ys.ravel()[m_], xs.ravel()[m_]] = True
+_, (iy_, ix_) = ndimage.distance_transform_edt(~_in, return_indices=True)
+_ao = _ao[iy_, ix_]
+aop = np.zeros((SIZE, SIZE, 4), np.float32)
+aop[..., 0] = aop[..., 1] = aop[..., 2] = np.clip(_ao, 0, 1)
+aop[..., 3] = 1
+apath = os.path.join(OUT, "heroine_ao.png")
+Image.fromarray((aop[::-1] * 255 + 0.5).astype(np.uint8)).save(apath)
+print("AO", apath, "her points: mean %.2f, 5%% %.2f; under her chin %.2f" % (
+    ao_v.mean(), np.percentile(ao_v, 5), np.median(ao_v[(V[:, 2] < EV[:, 2].mean() - 0.11) & (V[:, 2] > EV[:, 2].mean() - 0.15) & (np.abs(V[:, 0]) < 0.03) & (VN[:, 2] < -0.3)])))
+if os.environ.get("FEATURES_PREVIEW"):
+    # (her paint with the mask over it: darkened where red, reddened where green)
+    small = np.array(Image.fromarray((np.clip(paint[::-1], 0, 1) * 255).astype(np.uint8)).resize((SIZE, SIZE)), np.float32) / 255
+    m = out[::-1]
+    prev = small * (1 - 0.8 * m[..., :1])
+    prev[..., 0] = np.maximum(prev[..., 0], m[..., 1])
+    Image.fromarray((np.clip(prev, 0, 1) * 255).astype(np.uint8)).save(os.environ["FEATURES_PREVIEW"])

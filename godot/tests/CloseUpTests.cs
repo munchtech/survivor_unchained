@@ -71,6 +71,46 @@ public class CloseUpTests
         Assert.Equal(1, c.Update(0.1, Town), 6);
     }
 
+    // Her pose (the owner, 17 October 2026): the wheel never turns her; a framed screen does in the town and the
+    // ember's arenas, not in the field; a true idle (a minute) does.
+    [Fact]
+    public void ZoomingInWithNoScreenNeverTurnsHer()
+    {
+        var c = new CloseUp();
+        c.Wheel(10, 0, Town);
+        Assert.Equal(1, Run(c, Town, 30), 6);
+        Assert.Equal(CloseUp.Pose.Own, c.PoseFor(framed: false, safe: true, ember: false));
+    }
+
+    [Fact]
+    public void AScreenOpenInTownTurnsHer()
+    {
+        var c = new CloseUp();
+        Assert.Equal(CloseUp.Pose.ToTheView, c.PoseFor(framed: true, safe: true, ember: false));
+        // (an arena or the prologue's night road, where screens stop the world, too)
+        Assert.Equal(CloseUp.Pose.ToTheView, c.PoseFor(framed: true, safe: false, ember: true));
+    }
+
+    [Fact]
+    public void AScreenOpenInTheFieldLeavesHerAsSheWas()
+    {
+        var c = new CloseUp();
+        Assert.Equal(CloseUp.Pose.Own, c.PoseFor(framed: true, safe: false, ember: false));
+    }
+
+    [Fact]
+    public void AMinuteIdleTurnsHer()
+    {
+        var c = new CloseUp();
+        Run(c, Town, 59);
+        Assert.Equal(CloseUp.Pose.Own, c.PoseFor(false, true, false));
+        Run(c, Town, 1.5);
+        Assert.True(c.Idling);
+        Assert.Equal(CloseUp.Pose.ToTheView, c.PoseFor(false, true, false));
+        c.Input();
+        Assert.Equal(CloseUp.Pose.Own, c.PoseFor(false, true, false));
+    }
+
     [Fact]
     public void LeftAloneSheIsShownCloseAnywhereQuiet()
     {

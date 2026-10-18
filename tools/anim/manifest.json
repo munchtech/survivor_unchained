@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 81,
- "planned": 71,
+ "made": 83,
+ "planned": 72,
  "clips": [
   {
    "clip": "idle_warden",
@@ -58,6 +58,18 @@
    "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
    "length": 5.1,
    "layer": "full"
+  },
+  {
+   "clip": "idle_stalker_daggers",
+   "plays_for": "idle, stalker with daggers",
+   "status": "fallback",
+   "fallback": "Idle_Loop",
+   "made_by": "100STYLE Crouched_ID (idle_stalker's base), arms keyed",
+   "source": "",
+   "licence": "",
+   "changes": "",
+   "length": null,
+   "layer": ""
   },
   {
    "clip": "idle_warden_break",
@@ -933,6 +945,30 @@
    "licence": "own work",
    "changes": "",
    "length": 7.667,
+   "layer": "full"
+  },
+  {
+   "clip": "run_warden_town",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.7,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_warden_town",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.7,
    "layer": "full"
   },
   {

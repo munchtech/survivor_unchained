@@ -408,6 +408,19 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)x, (float)y, (float)z);
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
+        // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
+        // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
+        // sheathed, as the game plays it.
+        if (mine && Hold is { Length: 2 } hold)
+        {
+            tree.Active = false;
+            if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town")); }
+            person.Anim.Play(own.Prefix + hold[0]);
+            person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
+            person.Anim.Pause();
+            if (person.Pose != null) person.Pose.Native = 1;
+            return;
+        }
         if (!p.Alive || fallen)
         {
             if (!dead)
@@ -645,5 +658,7 @@ public partial class PlayerView : Node3D
 
     /// <summary>How much of her clips' bowed head is taken back toward level in play (--head-level tries
     /// another): from play's camera her face then shows eyes and a mouth, not the crown of her hair.</summary>
+    static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
+    bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }

@@ -132,13 +132,13 @@ def sword_back(rig):
         # back wound to the left.
         (0, pose(18, 30, BACK_COCK, _n(0.55, 0.6, -0.55), pole=(0.2, -0.3, -1.0), left=False, weight=0.4, pitch=4), "fast"),
         # Through the middle at full reach, the blade level and leading.
-        (2.5, pose(4, 4, (-0.05, -0.08, 0.46), _n(-0.15, 0.05, 1.0), pole=(-0.3, -0.8, -0.4), left=False, weight=0.0), "linear"),
+        (2.5, pose(4, 4, (-0.08, -0.12, 0.46), _n(0.05, 0.5, 0.86), pole=(-0.3, -0.8, -0.4), left=False, weight=0.0), "linear"),
         # Out to her right: the cut ends.
-        (5, pose(-16, -32, (-0.36, -0.14, 0.30), _n(-0.95, -0.05, 0.25), pole=(-0.2, -1.0, 0.2), left=False, weight=-0.5), "ease"),
+        (5, pose(-16, -32, (-0.36, -0.14, 0.30), _n(-0.93, 0.26, 0.24), pole=(-0.2, -1.0, 0.2), left=False, weight=-0.5), "ease"),
         # Held, the blade carrying on a hair (the weight of it).
-        (8, pose(-19, -38, (-0.38, -0.18, 0.24), _n(-0.9, -0.15, -0.3), pole=(-0.1, -1.0, 0.3), left=False, weight=-0.6), "ease"),
+        (8, pose(-19, -38, (-0.38, -0.18, 0.24), _n(-0.99, 0.04, -0.05), pole=(-0.1, -1.0, 0.3), left=False, weight=-0.6), "ease"),
         # Recovering: the blade comes round and up into the guard.
-        (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.5, 0.5, 0.7), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
+        (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.34, 0.51, 0.79), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
         (24, _body(GUARD), "ease"),
     ]
     keys = with_shield(keys, BACK_L)
@@ -148,11 +148,11 @@ def sword_back(rig):
 def sword_fore(rig):
     keys = [
         # Cocked over the right shoulder, the back wound to the right.
-        (0, pose(-18, -32, (-0.20, 0.10, 0.14), _n(-0.45, 0.65, -0.6), pole=(-0.8, -0.2, -0.5), left=False, weight=-0.4), "fast"),
-        (2.5, pose(-3, -4, (-0.02, -0.06, 0.46), _n(0.1, 0.05, 1.0), pole=(-0.6, -0.7, -0.3), left=False, weight=0.0), "linear"),
+        (0, pose(-18, -32, (-0.20, 0.10, 0.14), _n(-0.3, 0.79, -0.69), pole=(-0.8, -0.2, -0.5), left=False, weight=-0.4), "fast"),
+        (2.5, pose(-3, -4, (-0.125, -0.0925, 0.46), _n(0.015, 0.49, 0.88), pole=(-0.6, -0.325, -0.3), left=False, weight=0.0), "linear"),
         # Out to her left, across her: the cut ends low.
-        (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, -0.15, 0.35), pole=(-0.9, -0.2, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
-        (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.85, -0.3, -0.2), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
+        (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, 0.0175, 0.0), pole=(-0.9, -0.2, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
+        (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.86, -0.26, -0.17), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
         (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.2, pivot=0.2),
          "auto"),
         (24, _body(GUARD), "ease"),
@@ -165,10 +165,10 @@ def sword_heavy(rig):
     keys = [
         # Wound far round to the right and low.
         (0, pose(-30, -40, (-0.30, -0.20, 0.06), _n(-0.6, 0.1, -0.8), pole=(-0.6, -0.8, 0.0), left=False, weight=-0.7, pitch=14), "fast"),
-        (3, pose(-6, -8, (-0.10, -0.14, 0.47), _n(-0.3, -0.05, 1.0), pole=(-0.4, -0.9, -0.1), left=False, weight=0.0, pitch=12), "linear"),
+        (3, pose(-6, -8, (-0.165, -0.14, 0.47), _n(-0.4, 0.29, 1.0), pole=(-0.4, -0.9, -0.1), left=False, weight=0.0, pitch=12), "linear"),
         # All the way round to her left, the whole back behind it.
-        (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, -0.05, 0.2), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
-        (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.3, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
+        (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, 0.175, 0.075), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
+        (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.25, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
         (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.3, pivot=0.3), "auto"),
         (30, _body(GUARD), "ease"),
     ]

@@ -1,0 +1,18 @@
+godot: yours
+[f30cb0_own_c01] 13 png, 83 s
+[f30cb0_own_c02] 9 png, 58 s
+[f30cb0_own_c04a] 9 png, 63 s
+[f30cb0_own_day] 1 png, 18 s
+[f30cb0_own_night] 1 png, 18 s
+[f30cb0_saffron_c01] 13 png, 82 s
+[f30cb0_saffron_c02] 9 png, 58 s
+[f30cb0_saffron_c04a] 9 png, 62 s
+[f30cb0_saffron_day] 1 png, 18 s
+[f30cb0_saffron_night] 1 png, 18 s
+[f30cb0_sunborn_c01] 13 png, 81 s
+[f30cb0_sunborn_c02] 9 png, 57 s
+[f30cb0_sunborn_c04a] 9 png, 62 s
+[f30cb0_sunborn_day] 1 png, 19 s
+[f30cb0_sunborn_night] 1 png, 19 s
+godot: given back
+DONE

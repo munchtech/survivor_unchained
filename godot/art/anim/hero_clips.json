@@ -407,6 +407,17 @@
 		"steps": 2.0,
 		"weapon": "sword+shield"
 	},
+	"run_warden_town": {
+		"cycle": 0.7,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"shiver": {
 		"layer": "gesture",
 		"length": 1.06666672229767,
@@ -507,6 +518,17 @@
 		"speed": 7.395,
 		"steps": 2.0,
 		"weapon": "sword+shield"
+	},
+	"sprint_warden_town": {
+		"cycle": 0.7,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": ""
 	},
 	"stalker_show": {
 		"layer": "full",
