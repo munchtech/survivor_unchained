@@ -56,3 +56,7 @@ At the play camera, the close-up at its closest zoom and the Look camera, at 1:1
 - From the play camera, a plain, an etched and a gilded piece can be told apart.
 
 Owners: the touch-up lead (the worn-metal standard: items 1-4 and 6 on her current outfits) and the armor-and-weapons pipeline lead (item 5 and the tier ladder, built into the slot parts).
+
+## Sources
+- Filament's PBR notes ([google.github.io/filament](https://google.github.io/filament/Filament.md.html)) give the metal reflectances: iron sRGB about #c4c6c6, gold about #ffd891. They also cover specular occlusion, so cavities lose their reflection: "no real-world material has a reflectance lower than 2%".
+- The full list, with verified quotes, is in `look_bible_refs\tricks_sources.md` (outside the repo).
