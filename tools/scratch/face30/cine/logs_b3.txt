@@ -1,0 +1,32 @@
+godot: yours
+[f30cz0_own_town] 1 png, 19 s
+[f30cz0_own_townn] 1 png, 18 s
+[f30cz0_saffron_town] 1 png, 18 s
+[f30cz0_saffron_townn] 1 png, 18 s
+[f30cz0_sunborn_town] 1 png, 18 s
+[f30cz0_sunborn_townn] 1 png, 18 s
+[f30cf9_own_c01] 13 png, 81 s
+[f30cf9_own_c02] 9 png, 58 s
+[f30cf9_own_c04a] 9 png, 62 s
+[f30cf9_own_day] 1 png, 18 s
+[f30cf9_own_night] 1 png, 18 s
+[f30cf9_own_town] 1 png, 18 s
+[f30cf9_own_townn] 1 png, 18 s
+[f30cf9_saffron_c01] 13 png, 81 s
+[f30cf9_saffron_c02] 9 png, 57 s
+[f30cf9_saffron_c04a] 9 png, 62 s
+[f30cf9_saffron_day] 1 png, 18 s
+[f30cf9_saffron_night] 1 png, 18 s
+[f30cf9_saffron_town] 1 png, 18 s
+[f30cf9_saffron_townn] 1 png, 18 s
+[f30cf9_sunborn_c01] 13 png, 81 s
+[f30cf9_sunborn_c02] 9 png, 57 s
+[f30cf9_sunborn_c04a] 9 png, 62 s
+[f30cf9_sunborn_day] 1 png, 18 s
+[f30cf9_sunborn_night] 1 png, 18 s
+[f30cf9_sunborn_town] 1 png, 18 s
+[f30cf9_sunborn_townn] 1 png, 18 s
+[f30ct1_own_c01] 13 png, 81 s
+[f30ct1_saffron_c01] 13 png, 81 s
+godot: given back
+DONE

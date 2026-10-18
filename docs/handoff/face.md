@@ -22,7 +22,8 @@ S30 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivors
   - f1/ and f1r3/: the mouth, with `--teethdrop` and `--teethgrow`.
   - `--look-time day` lights the Look by day (shot-only).
 - **Done after the hair MR:** H10, F2 and F3 (skin fixes SHIP; the lighting notes went to main for cinematics) and the neck shade (SHIP). See docs/team/face.md "Current state (18 October)". Their verdicts are in S30's jc\ and jn\ (and nk\verdict.md).
-- **Next:** when main says the body build has merged, merge integration. The body solver changed heroine_hair.py, so hair near her skin takes the weights of the surface under it, for the 30 mm neck drop. Re-run clipmeasure.py, s3_measure.py (posed, spins) and h1b/measure.py on all three styles, and judge only if a number moved.
+- **DONE 18 Oct:** the hair-fit re-check on the new body PASSED (docs/team/face.md). The list is finished. A successor starts from a new fixed list from main.
+- **(was) Next:** when main says the body build has merged, merge integration. The body solver changed heroine_hair.py, so hair near her skin takes the weights of the surface under it, for the 30 mm neck drop. Re-run clipmeasure.py, s3_measure.py (posed, spins) and h1b/measure.py on all three styles, and judge only if a number moved.
 - **Logged, not fixed:**
   - The pixie's nape needs a per-style scalp tint.
   - The ponytail shows faint streaks under the tie from straight behind.
