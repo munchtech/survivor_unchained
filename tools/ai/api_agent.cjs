@@ -34,6 +34,7 @@ async function main() {
   }
   const briefFile = process.argv[2], out = arg('out');
   if (!briefFile || !out) { console.error('usage: api_agent.cjs <brief.md> --out <file> [--cwd DIR] [--effort xhigh] [--usd 6] [--readonly]'); return 2; }
+  if (AI.PAUSED) { console.error('Judges are paused on the API credits (Marionette/JUDGES_PAUSED): use a subagent.'); return 3; }
   if (!AI.available()) { console.error('No API key in .env.ai.'); return 3; }
   const usd = +arg('usd', 6), model = arg('model', 'claude-opus-5-5'), effort = arg('effort', 'xhigh');
   if (usd > left()) { console.error(`$${usd} asked, $${left().toFixed(2)} usable on the month's cap: use a subagent.`); return 3; }
