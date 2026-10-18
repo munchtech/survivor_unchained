@@ -15,3 +15,4 @@ The owner's rules for this stretch (17 October; README "Effort by kind of work" 
 - Hand off at about 300k: update your handoff's top section and send "HANDOFF READY <branch>@<commit>".
 
 First report, once you're oriented (within your first few turns): your fixed list with each item's state, and an honest estimate of how much is left until your area is DONE and merged (items, rounds, rough hours), so the owner can plan which areas start next.
+- API judges: read the verdict's summary and fixes, not the sheets the judge already ruled on (re-opening them doubles the cost on the subscription). Keep any wait under an hour, or the cache goes cold.
