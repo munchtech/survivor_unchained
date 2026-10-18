@@ -317,3 +317,7 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 ## 17 October 2026: Face lead, the hair (from playing, to coordinator 59f6a467)
 - The owner: "current note for faces, hair physics are a mess, and hair styles even on creation screen clip through and stuff - unless I don't have the proper version. but like hair dosn't look good". The build was current (freshness.py passes on integration). Sent to face 28 as the top of its list: shoot every style at 1:1 at the Look, close-up and play cameras, at rest and in motion, one max judge, then the fixed list and an estimate.
+
+## 17 October 2026: Animation, a grip standard (to coordinator 59f6a467)
+- The owner: "we will be adding more weapons and armor along the way, will gripping other weapons require new animation tweaks every single time? that seems tedious and theres got to be a better way". Answer: fists are fitted per weapon type; each new mesh's grip is conformed at import to its type's spec (diameter, length, socket), checked by fistfit numbers with no judge, so new animation work is only for a new weapon type. Gauntlets: one thick-glove offset per type. Animation builds it with the staff fix after F1 (staff, then the viking sword and axe as the proof).
+- Also the owner: animations rarely show fingers (runs are clenched or held together), so don't chase finger detail; a proper wrap hides them.
