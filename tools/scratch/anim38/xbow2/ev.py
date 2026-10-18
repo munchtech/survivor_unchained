@@ -16,7 +16,8 @@ from motion import Measure
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 hero = "--hero" in sys.argv
-OUTD = W / "tools/anim/out" / ("anim38_hero" if hero else "anim38_her")
+TAG = next((a[6:] for a in sys.argv if a.startswith("--tag=")), "")
+OUTD = W / "tools/anim/out" / (("anim38_hero" if hero else "anim38_her") + TAG)
 OUTD.mkdir(parents=True, exist_ok=True)
 sk = Skeleton.load(DATA / ("hero_skeleton.json" if hero else "heroine_skeleton.json"))
 rig = Rig(sk, body="him" if hero else "her")
@@ -24,7 +25,7 @@ import pickle
 import clips.idle as _idle
 _b0 = _idle.base_of
 def _base_of(rig_, calling):
-    p = OUTD / f"base_{calling}.pkl"
+    p = OUTD.parent / ("anim38_hero" if hero else "anim38_her") / f"base_{calling}.pkl"
     if calling not in _idle._bases and p.exists():
         _idle._bases[calling] = pickle.loads(p.read_bytes())
     out = _b0(rig_, calling)
@@ -51,7 +52,9 @@ else:
     bm = Body.heroine(jiggle=True); meas = Measure(bm)   # motion.py's own (the Checker's surfaces skip the winding test)
 print(f"bodies ready ({time.time() - t0:.0f} s)", flush=True)
 parts = b.parts
+SET = next((a[6:] for a in sys.argv if a.startswith("--set=")), "crossbow")
 KEY = "crossbow@hand_r"
+KEYS = [k for _, k in __import__("armscheck").SETS[SET]] if not hero else []
 for n in args:
     c = b.clip(n, OUTD)
     Gs = b.frames(c)
@@ -78,14 +81,19 @@ for n in args:
             for s in "lr":
                 ck.m.arm[s][2].pose(P)
             ck.whole.pose(P)
-            dep, nr = ck.depths(P, KEY, G)
-            i = int(dep.argmax())
-            xd = float(dep[i]); xw = ck.where(nr[i]) if xd > 0 else "-"
-            hs, _, hw = ck.hold_depth(P, KEY, G)
-            Q = ck.piece_points(KEY, G)
-            pts, along, _ = meas.arm["l"]
-            hp = P[pts[along >= 2]]   # (same skin vertices on both bodies)
-            gap = float(cKDTree(Q).query(hp, k=1)[0].min()) * 1000
+            xd, xw, hs = 0.0, "-", 0.0
+            for K in KEYS:
+                dep, nr = ck.depths(P, K, G)
+                i = int(dep.argmax())
+                if dep[i] > xd:
+                    xd = float(dep[i]); xw = K.split("@")[0][:6] + ":" + ck.where(nr[i])
+                hs = max(hs, ck.hold_depth(P, K, G)[0])
+            gap = 0.0
+            if SET == "crossbow":
+                Q = ck.piece_points(KEY, G)
+                pts, along, _ = meas.arm["l"]
+                hp = P[pts[along >= 2]]   # (same skin vertices on both bodies)
+                gap = float(cKDTree(Q).query(hp, k=1)[0].min()) * 1000
             r["x"] = (xd, xw, hs, gap)
         rows.append(r)
     L = np.array([max(x["l"][:3]) for x in rows]); R = np.array([max(x["r"][:3]) for x in rows])

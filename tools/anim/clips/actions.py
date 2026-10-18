@@ -941,25 +941,47 @@ def cast_flick(rig):
     return build("cast_flick", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 0.0, "weapon": "wand"})
 
 
+# The left elbow at the aim: down and ahead under the fore-stock.
+AIM_POLE_L = (0.3, -0.8, 0.5)
+# Her left shoulder drawn forward at the aim (clav_l: raise, forward).
+AIM_CLAV_L = (0, 18)
+# A shooter's stance at the aim: the body turned to her right by AIM_BLADE (deg), the head and the crossbow turned back
+# by as much in the chest's frame, so the aim is unchanged and her left shoulder comes forward to the fore-stock (squared
+# to it, the left upper arm crossed her chest at shoulder height to reach it and went 30 mm into her breast's top).
+AIM_BLADE = 14.0
+
+
+def _yawed(v, deg):
+    """A chest-frame vector turned toward her left about the chest's up axis."""
+    a = math.radians(deg)
+    x, y, z = v
+    return (x * math.cos(a) + z * math.sin(a), y, -x * math.sin(a) + z * math.cos(a))
+
+
 def crossbow_shoot(rig):
     """The crossbow up at the eye and loosed: the kick throws the fists up
-    and the shoulder back, she rides it and lowers (the left hand back onto the fore-stock, as in her idle)."""
+    and the shoulder back, she rides it and lowers (the left hand on the fore-stock throughout, as in her idle)."""
     from clips.idle import STALKER_HAND_L, STALKER_HAND_R
-    aim_r = arm((0.06, -0.02, 0.40), (-0.8, -0.5, -0.2), knuckles=_n(0.08, 0.02, 1.0))
-    aim_l = arm((-0.10, -0.08, 0.40), (0.8, -0.5, -0.2), knuckles=_n(0.1, -0.2, 1.0))
+    B = AIM_BLADE
+    aim_r = arm(_yawed((0.06, -0.02, 0.40), B), _yawed((-0.8, -0.5, -0.2), B), knuckles=_n(*_yawed((0.08, 0.02, 1.0), B)))
+    aim_l = arm(_yawed((-0.10, -0.08, 0.40), B), AIM_POLE_L, knuckles=_n(0.1, -0.2, 1.0))
     keys = [
-        (0, body(stance(0.08), spine=(-8, 4, 0), head=(10, 4, -4), hand_r=aim_r, hand_l=aim_l,
+        (0, body(stance(0.08), spine=(-8 - B, 4, 0), head=(10 + B, 4, -4), clav_l=AIM_CLAV_L, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "fast"),
-        (2, body(stance(0.08, weight=-0.3), spine=(-10, -4, 0), head=(10, -2, -4), clav_r=(6, -6),
-                 hand_r=arm((0.06, 0.04, 0.34), (-0.8, -0.4, -0.2), knuckles=_n(0.08, 0.3, 0.95)),
-                 hand_l=arm((-0.10, 0.0, 0.34), (0.8, -0.4, -0.2), knuckles=_n(0.1, 0.1, 1.0)),
+        (2, body(stance(0.08, weight=-0.3), spine=(-10 - B, -4, 0), head=(10 + B, -2, -4), clav_r=(6, -6), clav_l=AIM_CLAV_L,
+                 hand_r=arm(_yawed((0.06, 0.04, 0.34), B), _yawed((-0.8, -0.4, -0.2), B), knuckles=_n(*_yawed((0.08, 0.3, 0.95), B))),
+                 hand_l=arm(_yawed((-0.10, 0.0, 0.34), B), AIM_POLE_L, knuckles=_n(0.1, 0.1, 1.0)),
                  fingers_r="grip", fingers_l="relaxed"), "ease"),
-        (8, body(stance(0.08), spine=(-8, 2, 0), head=(10, 2, -4), hand_r=aim_r, hand_l=aim_l,
+        (8, body(stance(0.08), spine=(-8 - B, 2, 0), head=(10 + B, 2, -4), clav_l=AIM_CLAV_L, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "auto"),
         (18, body(stance(0.08), hand_r=STALKER_HAND_R["hand_r"],
                   hand_l=STALKER_HAND_L["hand_l"], fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
-    return build("crossbow_shoot", rig, keys, meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"})
+    # Both hands on it: the left rides the fore-stock through the aim, the kick and the lowering (idle.ride_stock;
+    # keyed on its own arc it hung 7-9 cm off the crossbow at the aim and its thumb went 10 mm in as it came down).
+    from clips.idle import ride_stock
+    return ride_stock(rig, lambda post: build("crossbow_shoot", rig, keys, post=post,
+                                              meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"}))
 
 
 def throw(rig):

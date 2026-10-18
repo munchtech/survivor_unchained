@@ -221,7 +221,9 @@ def stalker_show(rig):
         (74, aim(0), "ease"),
         (90, over("stalker"), "ease"),
     ]
-    return build("stalker_show", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
+    # (Her left hand on the fore-stock the whole way, up to the eye and down: idle.ride_stock.)
+    return idle.ride_stock(rig, lambda post: build("stalker_show", rig, keys, base=base, post=post,
+                                                   meta={"layer": "full", "weapon": "crossbow"}))
 
 
 # ----------------------------------------------------------------- breaks --

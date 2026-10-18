@@ -8,7 +8,7 @@ hero = "--hero" in sys.argv
 a = [x for x in sys.argv[1:] if not x.startswith("--")]
 sk = Skeleton.load(DATA / ("hero_skeleton.json" if hero else "heroine_skeleton.json")); I = sk.index
 b = Body.hero() if hero else Body.heroine(jiggle=False)
-c = b.clip(a[0], W / "tools/anim/out" / ("anim38_hero" if hero else "anim38_her"))
+c = b.clip(a[0], W / "tools/anim/out" / (("anim38_hero" if hero else "anim38_her") + next((x[6:] for x in sys.argv if x.startswith("--tag=")), "")))
 g, p = sk.fk(c.rot, c.pos)
 r = range(*map(int, a[1].split(":"))) if len(a) > 1 else range(len(p))
 for f in r:

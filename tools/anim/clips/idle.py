@@ -227,7 +227,7 @@ def reaver(t, f):
 # and the upper arm 60 mm into her side and breast. Shared by the crossbow's shot and the stops (which end here).
 # The crossbow's carry moved as one (both hands, chest frame, m): ahead of her, so its butt clears her waist.
 STALKER_SHIFT = (0.0, 0.0, 0.06)
-STALKER_HAND_L = {"hand_l": {"arc": arc_of(np.add((-0.058, -0.337, 0.255), STALKER_SHIFT)), "pole": (0.0, -0.5, -1.0), "frame": "chest",
+STALKER_HAND_L = {"hand_l": {"arc": arc_of(np.add((-0.058, -0.335, 0.255), STALKER_SHIFT)), "pole": (0.0, -0.5, -1.0), "frame": "chest",
                              "knuckles": _n((-0.71, 0.33, 0.63)), "blade": _n((-0.49, 0.41, -0.77)), "twist": 0.4}}
 
 
@@ -244,11 +244,87 @@ def stalker(t, f):
     }
 
 
+_STOCK = {}
+STOCK_DROP = 0.003
+
+
+def _stock_rel(rig):
+    """Her left hand on the fore-stock as the idle lays it (stalker(), the base's first frame), in her right hand's
+    frame: (wrist offset, turn). Made once per body."""
+    from keyed import grip_of
+    from rig import qinv, qmul, qrot
+    key = id(rig)
+    if key not in _STOCK:
+        base = base_of(rig, "stalker")
+        grip0 = rig.grip
+        rig.grip = grip_of("crossbow") if rig.grips else {}
+        rig.swivel_force = {}
+        local, pos = rig.solve(stalker(0, 0), base=(base.rot[0], base.pos[0]))
+        rig.swivel_force = None
+        rig.grip = grip0
+        g, p = rig.globals(local, pos)
+        hr, hl, s3 = rig.I["hand_r"], rig.I["hand_l"], rig.I["spine_03"]
+        # (Laid STOCK_DROP lower onto the stock, in the chest's frame: the idle's first frame has her palm 4-5 mm
+        # over it, where the loop's breath lays it 1.5-4.5.)
+        drop = qrot(qmul(g[0, s3], qinv(rig.grest[s3])), [0.0, -STOCK_DROP, 0.0])
+        _STOCK[key] = (qrot(qinv(g[0, hr]), p[0, hl] + drop - p[0, hr]), qmul(qinv(g[0, hr]), g[0, hl]))
+    return _STOCK[key]
+
+
+def ride_stock(rig, make, weight=lambda f: 1.0):
+    """A crossbow clip whose left hand rides the fore-stock wherever the crossbow goes (animation 38: keyed on its own
+    arc from her shoulder, it parted from the stock or the stock swung through it as the two arms' arcs drifted apart:
+    the crossbow 6-18 mm into her left hand in the shot, the show and the stops). make(post) builds the clip; the right
+    hand's path is read from a first build and the left hand put where the idle lays it on the stock in the right
+    hand's frame (weight(frame) 0..1: how far from its keyed place onto the stock)."""
+    from rig import qinv, qmul, qrot
+    rel_p, rel_q = _stock_rel(rig)
+    c0 = make(None)
+    g, p = rig.sk.fk(c0.rot, c0.pos)
+    hr, s3 = rig.I["hand_r"], rig.I["spine_03"]
+    tg = []
+    for f in range(c0.frames):
+        q = qmul(g[f, hr], rel_q)
+        tg.append((p[f, hr] + qrot(g[f, hr], rel_p), qrot(q, [0, 0, 1.0]), qrot(q, [0, 1.0, 0]),
+                   qmul(g[f, s3], qinv(rig.grest[s3]))))
+
+    def post(fr, pose):
+        w = float(weight(fr))
+        if w <= 0 or not isinstance(pose.get("hand_l"), dict):
+            return pose
+        pos, bl, kn, chest = tg[min(fr, len(tg) - 1)]
+        spec = dict(pose["hand_l"])
+        if spec.get("frame") == "chest":
+            bl, kn = qrot(qinv(chest), bl), qrot(qinv(chest), kn)
+        for k, v in (("blade", bl), ("knuckles", kn)):
+            if w < 1 and k in spec:
+                v = np.array(spec[k], float) * (1 - w) + v * w
+            spec[k] = tuple(float(x) for x in v / np.linalg.norm(v))
+        spec.pop("thumb", None)
+        spec["pos"] = tuple(float(x) for x in pos)
+        spec["mix"] = w if "arc" in spec else 1.0
+        return {**pose, "hand_l": spec}
+    return make(post)
+
+
 def stalker_daggers(t, f):
     """The stalker's idle with a dagger in each hand (the game asks for idle_<calling>_<kind> first: OwnClips.For). Her
     crossbow idle let the left hang "relaxed" round the second dagger, an open hand with the blade stuck to it (judge,
     17 October); here both fists close on their hilts (the daggers' fitted WRAP, the left's mirrored: keyed.wrap_of)."""
-    return {**stalker(t, f), "fingers_l": "grip"}
+    # Her own arms (animation 38: on the crossbow's, the right dagger lay 20 mm into her left hand): a relaxed ready
+    # stance, both fists low ahead of her hips, a hand's width apart, the elbows soft by her sides, the wrists
+    # straight and the forearms rolled so the blades rise forward and a little out (the left a little ahead, over
+    # her leading foot).
+    return {"hand_r": {"arc": arc_of(DAGGERS_HAND_R), "pole": (-0.7, -0.5, -0.4), "frame": "chest",
+                       "thumb": _n((-0.25, 0.75, 0.6)), "twist": 0.5},
+            "hand_l": {"arc": arc_of(DAGGERS_HAND_L), "pole": (0.7, -0.5, -0.4), "frame": "chest",
+                       "thumb": _n((0.25, 0.75, 0.6)), "twist": 0.5},
+            "fingers_r": "grip", "fingers_l": "grip"}
+
+
+# The daggers' ready fists (chest frame, from each shoulder, m).
+DAGGERS_HAND_R = (0.05, -0.34, 0.24)
+DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 
 
 def warden_town(t, f):
