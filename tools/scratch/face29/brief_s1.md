@@ -12,7 +12,7 @@ You are a judge for Survivor Unchained, a dark-fantasy action RPG with an adult 
 - **H3, strands flat on the face read as scratches:** thin side strands lay flat on the temple and cheek, reading as scratches at the Look and as scars or cuts at the close-up. The fix: the fine hairs are lifted from 1.5 mm to 4 mm off the skin, 25% thinner, fainter, and stop 4 mm below the hairline; the tendrils are held 10 mm off her cheek and blended, a little lighter.
 
 ## Sheets
-Folder: `<SHEETS>`. Every tile is a 1:1 crop of a native 1920x1080 game frame, labelled BEFORE or AFTER. The same camera and turn sit side by side.
+Folder: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\77fe93b5-7a3e-4db3-8deb-795d76a58e9a\scratchpad29\s1j\`. Every tile is a 1:1 crop of a native 1920x1080 game frame, labelled BEFORE or AFTER. The same camera and turn sit side by side.
 - `own_<style>_000.png`, `own_<style>_180.png`: the default face (fair). Rows are Look turns 0 and 135, or 180 and 315. Note: the BEFORE frames were shot on the previous body build; the body change doesn't touch the head or hair.
 - `saffron_<style>_*.png`, `sunborn_<style>_*.png`: warm and brown skin, the same turns. The pale wedge was expected to be worse on darker skin.
 - `cu_<style>_05.png`, `cu_<style>_09.png`: the town close-up at its closest zoom, before and after.
