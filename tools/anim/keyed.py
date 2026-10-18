@@ -1034,8 +1034,11 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # its pad 1.0 mm over the middle finger's middle bone, closed over the fingers, the thumb 1.3 mm off the hilt
         # and 0.3 mm clear of the forefinger by its bone line (it was 1.5 mm into it); opposed 0.45 (was 0.63) and
         # rolled 12 degrees so the pad, not its side, lies on the finger.
-        "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (8.0, 3.4, 57.9)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
-                  "oppose": 0.45, "thumb_roll": 12.3},
+        # Refitted 18 October (animation 38) on the body build's hand (c31c1760: DIPs toward the knuckle) by a direct solve on
+        # fistfit.measure: seat BladeAtR moved 9.4 mm (x -5, y +8: the line further from the palm, which sits 4.2-4.8 mm off
+        # the hilt, so the shorter middle bones reach round); fistfit sword 13 of 13 frames pass.
+        "sword": {"bends": {"index": (40.1, 66.3, 50.4), "middle": (42.8, 78.4, 39.5), "ring": (63.0, 54.4, 59.5), "pinky": (70.1, 30.2, 60.1), "thumb": (10.6, -12.3, 47.1)}, "spreads": {"index": -17.9, "middle": 3.5, "ring": -3.8, "pinky": 13.4},
+                  "oppose": 0.67, "thumb_roll": 46.9},
         # The dagger (WeaponSockets.DaggerAtR / DaggerDirR), fitted 14 October (animation 31, fistfit.py daggers --fit
         # --seat 80, on daggers_back's frame 2 and the ranger's hand) on its own section: the hilt is a flat hexagon,
         # 15 mm thick toward the palm and 29 across, 122 mm between pommel and guard. Refitted 14 October (animation 33's
@@ -1044,7 +1047,8 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # middle 0.7/0.6, ring 0.9/0.6, little 0.4/1.4), the thumb's middle bone 0.5 off (was 0.6 in), its last joint 69,
         # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
         # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
-        "daggers": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
+        # Refitted 18 October (animation 38) on the body build's hand, the seat kept: fistfit daggers 8 of 8 frames pass.
+        "daggers": {"bends": {"index": (63.1, 108.6, 10.9), "middle": (72.2, 101.3, 20.1), "ring": (80.9, 90.0, 3.3), "pinky": (93.3, 60.2, 38.4), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -21.1, "middle": -9.3, "ring": 19.6, "pinky": 25.3},
                   "oppose": 0.01, "thumb_roll": -3.9},
         # Her LEFT fist on the second dagger (dagger_b: its own hilt, about 11 mm thick toward the palm and 23 across,
         # thinner than the first's 15 x 29), laid mirrored on WeaponSockets.PocketL. NOT FITTED: a copy of the right's

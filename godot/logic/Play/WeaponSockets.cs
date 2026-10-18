@@ -97,7 +97,7 @@ public static class WeaponSockets
     /// outer pads lie on it (0.3-1.0 mm out), the thumb over the middle finger; the hand spans 76 mm of the 125, its
     /// forefinger 15 mm short of the ferrule and its little finger 13 mm clear of the pommel's collar. (The old seat, the
     /// grip point at the mount, -25, 75, 0 mm, ran the hilt through the lower palm, the fingers 20-34 mm off it.)</summary>
-    public static readonly Vector3 BladeAtR = new(-0.0381f, 0.0808f, -0.0131f);
+    public static readonly Vector3 BladeAtR = new(-0.0431f, 0.0888f, -0.0131f);
     public static readonly Vector3 BladeDirR = new(0f, 0.57357644f, 0.81915204f);
 
     /// <summary>The line her right fist closes round on an axe's haft (tools/anim/keyed.py WRAP["axe"]), in hand_r's space:
