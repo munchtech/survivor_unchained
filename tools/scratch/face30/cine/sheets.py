@@ -12,7 +12,7 @@ C = {"c02_mouth": ("c02_c02_s8_3", (150, 560, 930, 805)), "c02_cheek": ("c02_c02
      "c04a_a5": ("c04a_c04a_sa5_3", (740, 430, 1520, 675)), "c04a_a7": ("c04a_c04a_sa7_3", (690, 440, 1470, 685)),
      "look_day": ("day", (590, 330, 1370, 575)), "look_night": ("night", (590, 330, 1370, 575))}
 for name, (shot, box) in C.items():
-    w, h = box[2] - box[0], box[3] - box[1]
+    box = (box[0], box[1], box[2], box[1] + 235); w, h = box[2] - box[0], 235
     m = Image.new("RGB", (2 * w + 8, 3 * h + 2 * 4 + 20), (40, 40, 40)); d = ImageDraw.Draw(m)
     d.text((4, 4), f"{name}  BEFORE ({A})", fill=(255, 255, 255)); d.text((w + 12, 4), f"AFTER ({B})", fill=(255, 255, 255))
     for r, f in enumerate(("own", "saffron", "sunborn")):

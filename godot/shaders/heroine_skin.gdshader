@@ -318,7 +318,7 @@ uniform float mouth_fill = 0.2;
 uniform float corner_shade = 1.0;
 // (how far her smile folds her corners in, 0 to 1, from her smile's blend shape (HerFaceLife.MouthShade): the cut by it)
 uniform float fold = 1.0;
-// (the most one lamp's sheen gives, in linear light: 0.2 took the c02 s8 cheek from 877-4176 clipped pixels to none, the
+// (the most one lamp's sheen gives, in linear light: 0.2 took the c02 s8 cheek from 877-4176 clipped pixels to 0-74, the
 // Look by day and night and the town close-up unchanged (face 30 cine; 0.3 left 252, 0.12 dulled her cheek 8 L))
 uniform float spec_cap = 0.2;
 varying float crease;
