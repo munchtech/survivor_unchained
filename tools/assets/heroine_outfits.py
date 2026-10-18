@@ -1917,6 +1917,21 @@ def relax(pos, tris, interior=0, edge=12):
 _GIV = [float(v) for v in os.environ.get("GLOVE_IVORY", "").split(",") if v]
 _GPM = [float(v) for v in os.environ.get("GLOVE_PIPE_MAT", "0.60,0.42,0.72,58,0.30").split(",")]
 _GTM = [float(v) for v in os.environ.get("GLOVE_THREAD_MAT", "1.652,1.379,1.12,240,0.22").split(",")]
+# (s29 judge tri, 17 Oct: the stockings a cool flat white beside the glove's ivory and plum piping, "two unrelated
+# whites". STOCK_IVORY=1 tints the sheer and its top band to the glove's ivory (GLOVE_IVORY) and pipes the band's edges in
+# the glove's plum, STOCK_WELT "width,lift,thick" (m); the game's sheer shader takes the stocking's mean colour from
+# outfit_materials.json "tint", written only then, so the default stays as it was.)
+STOCK_IVORY = os.environ.get("STOCK_IVORY", "") == "1" and bool(_GIV) and bool(os.environ.get("GLOVE_STYLE"))
+STOCK_WELT = tuple(float(v) for v in os.environ.get("STOCK_WELT", "0.006,0.0008,0.0015").split(","))
+# (s29 judge tri: the Arcanist's boots "flat, soleless, paddle-shaped black feet ... rubber socks" at the mid zoom.
+# ARC_BOOT=made lofts them as the Ranger's boot is (heroine_boots.boot: toe box, welted sole, heel block), black, the
+# front of the top ARC_BOOT_LIFT higher than the back as before; ARC_BOOT_ST "toe,toe_point,heel" (m) its toe and heel.)
+ARC_BOOT = os.environ.get("ARC_BOOT", "")
+ARC_BOOT_LIFT = float(os.environ.get("ARC_BOOT_LIFT", "0.03"))
+ARC_BOOT_SOLE = os.environ.get("ARC_BOOT_SOLE", "darkleather")
+_ABS = [float(v) for v in os.environ.get("ARC_BOOT_ST", "0.012,0.010,0.0095").split(",")]
+ARC_BOOT_ST = dict(BOOTS.RANGER, toe=_ABS[0], toe_point=_ABS[1], heel=_ABS[2])
+ARC_BOOT_ST.update({k_: float(v_) for k_, v_ in (kv.split("=") for kv in os.environ.get("ARC_BOOT_KV", "").split(",") if kv)})   # (any other key of BOOTS.RANGER, "k=v,...")
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
@@ -1952,7 +1967,7 @@ SPEC = {
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
     "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
-    "stocking": ("rough_linen", (1.624, 1.356, 1.11), 232, 14, 0.0, 0.45, 0.42),
+    "stocking": ("rough_linen", tuple(_GIV[:3]), _GIV[3], 14, 0.0, 0.45, 0.42) if STOCK_IVORY else ("rough_linen", (1.624, 1.356, 1.11), 232, 14, 0.0, 0.45, 0.42),
     # (the linen scan is blue, about (145, 171, 205): these two are tinted from
     # it to a colour, warm ivory and a light saddle brown)
     # (the arcanist's feathery trim: soft white, drawn as fur shells, finer and longer)
@@ -6892,9 +6907,11 @@ def arcanist():
             # partly her hips', and a weight test tore a hole there; and no
             # gap kept for the slot between her thighs, which ends above it)
             *piece(f"arcanist.stocking_{sd}", AND(0.3 - ARMW["l"] - ARMW["r"], stock_top(sd) - Z, (X * (1 if sd == "l" else -1) - 0.004) * 0.3, (KNEE_S - 0.03) - LEG_S[sd]), "stocking", lift=0.0012, thick=0.0, bevel=0.0, soften=10, slot=False),
-            *girdle(f"arcanist.lace_{sd}", stock_band, 0.03, "satin", lift=0.003, thick=0.0018,
-                    trim=("satin", 0.0035, 0.0006, 0.0012), mask=(LEGW[sd] > 0.6) & (Z < CROTCH + 0.02) & (X * (1 if sd == "l" else -1) > 0.002)),
-            *piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "blackleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, trim=gold(0.008), edge=30),
+            *girdle(f"arcanist.lace_{sd}", stock_band, 0.03, "glovesatin" if STOCK_IVORY else "satin", lift=0.003, thick=0.0018,
+                    trim=("glovepipe",) + STOCK_WELT if STOCK_IVORY else ("satin", 0.0035, 0.0006, 0.0012), mask=(LEGW[sd] > 0.6) & (Z < CROTCH + 0.02) & (X * (1 if sd == "l" else -1) > 0.002)),
+            *(BOOTS.boot(f"arcanist.boot_{sd}", sd, KNEE_S - 0.05 - ARC_BOOT_LIFT, ARC_BOOT_LIFT, ARC_BOOT_ST, "blackleather", sole_key=ARC_BOOT_SOLE)
+              if ARC_BOOT == "made" else
+              piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "blackleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, trim=gold(0.008), edge=30)),
             *piece(f"arcanist.cuff_{sd}", limb(sd, KNEE_S - 0.065, KNEE_S - 0.015), "blackleather", lift=0.009, thick=0.003, smooth=6, trim=gold(0.005)),
         ]
         if GLOVE_STYLE and ARC_HANDS == "fingerless":
@@ -8361,7 +8378,14 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {})} for k, v in SPEC.items()}, fh, indent=1)
+        from PIL import Image
+
+        def tint(k):   # (STOCK_IVORY: a sheer piece's mean colour, for the game's sheer shader, which draws no texture)
+            f = os.path.join(TEX, f"outfit_{k}_diff.jpg")
+            if not (STOCK_IVORY and kind(k) == "sheer" and os.path.exists(f)):
+                return {}
+            return {"tint": [round(float(c) / 255, 4) for c in np.asarray(Image.open(f).convert("RGB"), np.float32).reshape(-1, 3).mean(0)]}
+        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k)} for k, v in SPEC.items()}, fh, indent=1)
 
 made = []
 for name, build in OUTFITS.items():

@@ -1000,7 +1000,12 @@ public static class People
             {
                 // Sheer: clear face on, denser at the edges (shaders/sheer.gdshader).
                 sheerShader ??= GD.Load<Shader>("res://shaders/sheer.gdshader");
-                mi.SetSurfaceOverrideMaterial(s, new ShaderMaterial { Shader = sheerShader });
+                var sm = new ShaderMaterial { Shader = sheerShader };
+                // (its colour, when the build names one: the Arcanist's stockings in her glove's ivory, s29)
+                outfitTable ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/outfit_materials.json")).AsGodotDictionary();
+                if (outfitTable.TryGetValue("stocking", out var st) && st.AsGodotDictionary().TryGetValue("tint", out var tv) && tv.AsGodotArray() is { Count: 3 } t)
+                    sm.SetShaderParameter("tint", new Color((float)t[0], (float)t[1], (float)t[2]));
+                mi.SetSurfaceOverrideMaterial(s, sm);
                 continue;
             }
             if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src || (src.ResourceName != "fur" && src.ResourceName != "down")) continue;
