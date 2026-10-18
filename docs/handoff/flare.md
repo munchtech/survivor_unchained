@@ -4,6 +4,15 @@ Read `docs/team/README.md`, `RESUME.md` (top block), `OWNER_NOTES.md` (13 Octobe
 `docs/design/FLARE_LOOK.md` §0, §1.6, §4.1, §4.4. Branch `flare-1`, worktree `.claude/worktrees/agent-af0782e2e3f51bc1f`.
 Numbers are classes' (paused; send anything for classes through the coordinator). Her clip is animation's.
 
+## Paused here (successor 8, 18 October: queued until cinematics frees its slot); next:
+- Integration merged clean at 8834b4dd (no conflicts; `godot/assets` junction still points inside this worktree).
+  Nothing tuned, shot or judged yet. No turn held. The main checkout's stray `FlareFx.cs`/`FlareFx.Burns.cs` are 0 bytes (nothing to save).
+- Old scratch dirs (59a43b82 `flare/`, 1be2d2a9 `f6/`, 34daaf5d `s/`) still exist, so `fin16.sh`/`lq.sh` run as written; write new sheets to `flare_boom17/`.
+- Fixed list (the owner, 18 Oct: finish and merge): (1) tune s16's light ("Next" 1; knobs: `flare_fire` I(t) at FlareFx.Boom.cs:150, `undip` :164, FLARE_FIRELIGHT);
+  (2) judge 5c on the BOOM, whole-frame gate, max; (3) atlas solver (b5e) if the birth fails; (4) judge 4's 4-9 under the 2-3 round cap, cut what can't pass;
+  (5) other Flares' state, one shoot-and-look for unseen ones; (6) owner captures (`f5/cap.sh`) to main first; (7) `dotnet test`, MR READY, keep-list for `.shots` (33 GB) and `tools/fxsim` (14 GB).
+- C: had 63 GB free at the pause; check before each render (stop under 50 GB).
+
 ## The owner's words
 "super epic flare animations. like beyond anything we've done yet"; "an 'oh shit' button ... a 'clear the whole room'
 button"; "pushing a flare should always do something visible"; "flares should be unique"; "sounds that feel awesome".
