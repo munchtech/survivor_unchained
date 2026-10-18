@@ -71,6 +71,7 @@ public partial class HerJoints : SkeletonModifier3D
         public Core.PanelSwing.Law Law;
         public readonly int[][] Chains = new int[2][];   // each thigh up to (not with) the pelvis
         public readonly Vector3[] Rest0 = new Vector3[2]; // each thigh's line at rest, her rest axes
+        public double Last = double.NaN;                  // last frame's turn (degrees), for its fall
     }
 
     Skeleton3D? found;
@@ -192,7 +193,8 @@ public partial class HerJoints : SkeletonModifier3D
                 {
                     Bone = bone, ParentRest = gp, Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
                     Axis = (gp.Inverse() * new Vector3(-1, 0, 0)).Normalized(),
-                    Law = new Core.PanelSwing.Law((double)p["amount"], (double)p["soft"], (double)p["spread_from"], (double)p["spread_to"], (double)p["spread_damp"]),
+                    Law = new Core.PanelSwing.Law((double)p["amount"], (double)p["soft"], (double)p["spread_from"], (double)p["spread_to"], (double)p["spread_damp"],
+                        p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450),
                 };
                 foreach (var (t, i) in new[] { (tl, 0), (tr, 1) })
                 {
@@ -327,7 +329,9 @@ public partial class HerJoints : SkeletonModifier3D
                 var (sw, sp) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, i == 0 ? 1 : -1);
                 if (i == 0) { fl = sw; al = sp; } else { fr = sw; ar = sp; }
             }
-            float deg = (float)Core.PanelSwing.Turn(p.Law, fl, fr, al, ar);
+            // (up with the thigh at once, down as a loose flap falls: Core/PanelSwing.Fall)
+            p.Last = Core.PanelSwing.Fall(p.Law, p.Last, Core.PanelSwing.Turn(p.Law, fl, fr, al, ar), delta);
+            float deg = (float)p.Last;
             sk.SetBonePoseRotation(p.Bone, (new Quaternion(p.Axis, Mathf.DegToRad(deg)) * p.Rest).Normalized());
         }
     }

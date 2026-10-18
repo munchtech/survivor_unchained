@@ -39,3 +39,6 @@ tools/uigreybox/fonts/
 
 # tools/classes measurement output (named baselines, big jsonl); the recipe is in CLASSES §7
 /tools/classes/out/
+
+# The legal gate's runs (tools/legal/gate.py): test-tint pictures that can show her bare
+/.legal/

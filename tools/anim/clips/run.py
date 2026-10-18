@@ -151,7 +151,9 @@ RUNS = {
     "run_arcanist": (ARCANIST, {"r": staff_hold()}, "staff"),
     "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
     "run_stalker": (STALKER, {"r": crossbow_low()}, "crossbow"),
-    "run_stalker_daggers": (STALKER, {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
+    # Both fists closed on the daggers ("grip": the right is the fitted dagger fist, keyed.WRAP; with the gait's relaxed
+    # hands the fingers stood 10-73 mm off the hilts).
+    "run_stalker_daggers": (replace(STALKER, fingers="grip"), {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
     # In town, weapons sheathed: her calling's carriage, the arms swinging free.
     "run_warden_town": (replace(WARDEN, fingers="relaxed", arm_fwd=(-0.04, -0.20, 0.27), arm_back=(0.11, -0.25, -0.21), elbow_out=0.22), {}, ""),
 }

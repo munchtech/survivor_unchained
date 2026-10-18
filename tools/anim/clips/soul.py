@@ -163,7 +163,8 @@ def arcanist_show(rig):
                           "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
     ]
-    return build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 12) if f < 12 else idle._smooth((f - 55) / 23))
 
 
 def reaver_show(rig):
@@ -306,23 +307,53 @@ def arcanist_break(rig):
         # A strand tucked behind her ear: the hand comes up before her
         # shoulder, fingers up, palm to her, then back over the ear (it turns
         # on the way, not at the top).
-        tuck = {"pos": (0.13, 1.62, 0.04), "pole": (1.0, 0.2, -0.3), "knuckles": (-0.25, 0.8, -0.55)}
-        first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l="relaxed"), "ease")
-        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8)), "ease")
-    rising = (9, over("arcanist", hand_l={"pos": (0.16, 1.38, 0.16), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.1, 0.9, 0.3)},
-                      fingers_l="relaxed"), "auto")
+        # The elbow low and forward of the shoulder (not out level with the hand), so the forearm rises to the ear and
+        # the wrist stays near straight (it bent 55-65 deg back with the elbow out: the owner, 14 October, "her hands
+        # ... going at a very weird angle at the wrists"); the fingers soft and graded, the index leading.
+        tuck = {"pos": (0.1109, 1.6728, -0.0495), "pole": (0.3, -0.75, 0.6), "knuckles": (-0.1005, 0.6249, -0.7742),
+                "blade": (0.0391, -0.7750, -0.6307)}
+        tuck2 = {**tuck, "pos": (0.1201, 1.6613, -0.0747), "knuckles": (-0.0781, 0.6320, -0.7710), "blade": (0.0314, -0.7714, -0.6356)}
+        # (Thumb drawn in 22, not 28: at 28 her glove's thumb sleeve sank up to 9.8 mm into her hand at the index's
+        # base, 13 points, f15-34; at 22 none within 4 mm. Animation 33, outfits s27's thumb-hole flap.)
+        soft = {"thumb": 0.1, "oppose": 0.05, "thumb_in": 22, "thumb_roll": -23.6,
+                "bends": {"index": [10, 22, 11], "middle": [15, 25, 12.5], "ring": [20, 27, 13.5], "pinky": [24, 27, 13.5],
+                          "thumb": [0.5, 12, 20]},
+                "spreads": {"index": -13.35, "middle": 0.0, "ring": 10, "pinky": 30}}
+        first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l=soft), "ease")
+        second = (28, over("arcanist", hand_l=tuck2, head=(-6, 4, 8), fingers_l=soft), "ease")
+        # Out of her hair before it drops (eased down from behind the ear, the fingertips went 9 mm into her head).
+        lift = (31, over("arcanist", hand_l={**tuck2, "pos": (0.1519, 1.6416, -0.0674)}, fingers_l=soft), "auto")
+    # Up beside her face, not before it (the fingers stay 6 cm or more out from her mouth), the wrist easing
+    # straight on the way (extension 55 -> 27 deg, no flick back; tools: scratch tuck/wrist.py, facecheck.py), and
+    # down the same way to the hip.
+    h9 = {"pos": (0.2100, 1.4001, 0.1100), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.2910, 0.4774, 0.8289), "blade": (-0.1065, 0.8448, -0.5233)}
+    rising = (9, over("arcanist", hand_l=h9, fingers_l="relaxed"), "auto")
+    h41 = {"pos": (0.2100, 1.3601, 0.0800), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.3434, 0.4529, 0.8226), "blade": (-0.0956, 0.8544, -0.5096)}
+    # The drop from her head to her chest over 10 frames, not 5 (it ran 30 cm in 5, 8.7 cm a frame: lead 31's tuck
+    # judge), so the staff's turn and the hand's landing on her hip come 5 frames later for her.
+    lowering = (41, over("arcanist", hand_l=h41, fingers_l="relaxed"), "auto")
+    # Wrist keys on the way up and down, and h9/h41 aimed in full: between the keys the hand bent 21-22 deg sideways
+    # (lead 31's tuck judge); now 11-12 at most from f9 to the chest key (tools: scratch anim/l32/try.sh, speed.py).
+    w12 = (12, {"hand_l": {"pos": (0.1843, 1.4708, 0.0686), "pole": (0.5, -0.72, 0.47), "knuckles": (-0.2388, 0.8157, 0.5267), "blade": (-0.0682, 0.5268, -0.8464)}}, "auto")
+    w15 = (15, {"hand_l": {"pos": (0.1516, 1.6022, -0.0232), "pole": (0.42, -0.73, 0.53), "knuckles": (-0.1495, 0.8269, -0.5420), "blade": (0.0529, -0.5406, -0.8388)}}, "auto")
+    w36 = (36, {"hand_l": {"pos": (0.1912, 1.4792, 0.0170), "pole": (0.45, -0.72, 0.5), "knuckles": (-0.2001, 0.9279, 0.3144), "blade": (-0.0365, 0.3134, -0.9481)}}, "auto")
+    w39 = (39, {"hand_l": {"pos": (0.2066, 1.3838, 0.0674), "pole": (0.55, -0.71, 0.43), "knuckles": (-0.2865, 0.5744, 0.7666), "blade": (-0.0990, 0.7780, -0.6193)}}, "auto")
+    d = 0 if rig.body == "him" else 5
     keys = [
         (0, over("arcanist"), "auto"),
-        *([rising] if rig.body != "him" else []),
+        *([rising, w12, w15] if rig.body != "him" else []),
         first,
         second,
+        *([lift, w36, w39, lowering] if rig.body != "him" else []),
         # Up at the sky, the staff turning in her fingers.
-        (44, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
-        (60, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
-        (74, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
+        (44 + d, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
+        (60 + d, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
+        (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
-    return build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    # The hand on her hip as it leaves and from where it is back (f44 on it floated 3-10 mm in the chest's frame).
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 9) if f < 9 else idle._smooth((f - 36 - d) / 8))
 
 
 def reaver_break(rig):
