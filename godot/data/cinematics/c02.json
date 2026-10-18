@@ -117,10 +117,10 @@
       "fit": ["cin_none_cross.lie_down"],
       "tail": 1.4,
       "note": "Her face in the lamp's light: the flame small in each eye, the wet hair, the green weed the light finds and holds on. Close enough to her lips that breath would show; none does. Blue on one side of her face, her ember's red faint on the other. W2, very quietly, off.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.4, -0.03, -0.95]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}, "lens": 100, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.03, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}, "lens": 100, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "music", "mood": "silence"},
-        {"do": "glow", "name": "held", "where": {"abs": [2.83, 1.0, -31.05]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 1.0, "range": 2.2},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [-0.2, 0.06, -0.28]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.8, "range": 0.55},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},

@@ -289,6 +289,9 @@ public partial class Game
                     if (i >= 0) p = sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin;
                     if (bone == "eyes") p += new Vector3(0, 0.07f, 0);
                 }
+                // Handed over, she walks in her own body and the stand-in stays behind, hidden:
+                // a place on her (a camera tracking her chest) goes with the body that moves.
+                if (handed && name == "her" && g.scene?.Player is { } pv) p += pv.GlobalPosition - v.GlobalPosition;
                 return new V3(p.X, p.Y, p.Z);
             }
             if (enemies.TryGetValue(name, out var e)) return new V3(e.X, g.scene!.HeightAt(e.X, e.Z) + (bone == "head" ? 1.6 : 0), e.Z);
@@ -486,6 +489,10 @@ public partial class Game
             if (pose.Black || pose.Hold) return;
             var cam = g.camera;
             Vector3 pos = V(pose.Pos), at = V(pose.At);
+            // A close shot draws the key's shadow from a short reach, so its first split is fine
+            // enough for a face: from 70 m a jaw cast a stair-stepped edge down her neck.
+            if (keyReach < 0) keyReach = g.air.Key.DirectionalShadowMaxDistance;
+            g.air.Key.DirectionalShadowMaxDistance = (at - pos).Length() < 3.5f ? 14 : keyReach;
             float hfov = (float)pose.Hfov;
             if (pose.FollowK > 0 && EndPoint() is Vector3 end)
             {
@@ -926,17 +933,21 @@ public partial class Game
                             // The box spans the tile's own rise and fall: one height from its centre left
                             // the ground on a slope outside the box, and the frost stopped on a straight
                             // line along the tile's edge (square seams from the play camera).
+                            // Each tile reaches FrostSeam past its edges and fades out over its
+                            // neighbour's, the two summing to one: a hard border between tiles drew
+                            // a grid of thin lines across the frost.
+                            float ext = tile + 2 * FrostSeam, ex0 = x0 - FrostSeam, ez0 = z0 - FrostSeam;
                             float lo = float.MaxValue, hi = float.MinValue;
                             for (int u = 0; u <= 4; u++)
                                 for (int w = 0; w <= 4; w++)
                                 {
-                                    float hgt = (float)g.scene!.HeightAt(x0 + tile * u / 4, z0 + tile * w / 4);
+                                    float hgt = (float)g.scene!.HeightAt(ex0 + ext * u / 4, ez0 + ext * w / 4);
                                     lo = Math.Min(lo, hgt); hi = Math.Max(hi, hgt);
                                 }
                             var d = new Decal
                             {
-                                TextureAlbedo = Frost(new Vector2(x0, z0), tile, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
-                                Size = new Vector3(tile, hi - lo + 1.4f, tile), Position = new Vector3(cx, (lo + hi) / 2 + 0.35f, cz),
+                                TextureAlbedo = Frost(new Vector2(ex0, ez0), ext, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
+                                Size = new Vector3(ext, hi - lo + 1.4f, ext), Position = new Vector3(cx, (lo + hi) / 2 + 0.35f, cz),
                                 AlbedoMix = (float)c.Num("amount", 0.4), CullMask = 1, UpperFade = 0.1f, LowerFade = 0.1f,
                             };
                             g.scene.AddChild(d);
@@ -1122,6 +1133,8 @@ public partial class Game
         /// <summary>One tile of frost as a decal's picture (its corner and size in the
         /// world): a thin rime broken by noise, thinning to the patch's edge, and
         /// cleared in a soft ring where a fire keeps it off.</summary>
+        const float FrostSeam = 0.3f;
+
         static ImageTexture Frost(Vector2 corner, float tile, Vector2 centre, float size, Vector2? hole, float radius, List<Vector2> trail)
         {
             const int N = 96;
@@ -1129,9 +1142,12 @@ public partial class Game
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
-                    var w = corner + new Vector2((x + 0.5f) / N, (y + 0.5f) / N) * tile;
+                    var uv = new Vector2((x + 0.5f) / N, (y + 0.5f) / N) * tile;
+                    var w = corner + uv;
                     float n = frostNoise.GetNoise2D(w.X, w.Y) * 0.5f + 0.5f;
                     float a = Mathf.SmoothStep(0.3f, 0.7f, n);
+                    // The cross-fade over the overlap with each neighbour (linear, so the pair sums to one).
+                    a *= Mathf.Clamp(Mathf.Min(uv.X, tile - uv.X) / (2 * FrostSeam), 0, 1) * Mathf.Clamp(Mathf.Min(uv.Y, tile - uv.Y) / (2 * FrostSeam), 0, 1);
                     // The patch thins out to a ragged round edge (a square one read as straight
                     // seams from the play camera above): the radius wanders with a slow noise.
                     float r = w.DistanceTo(centre) / (size / 2);
@@ -1162,8 +1178,11 @@ public partial class Game
 
         /* --------------------------------------------------------- the end -- */
 
+        float keyReach = -1;
+
         public void Finish()
         {
+            if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;
             // Play starts exactly where the cinematic leaves her, facing as she
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;

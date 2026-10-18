@@ -158,7 +158,8 @@
         {"at": 0.25, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.35, 1.05, -1.0]}, "dur": 0.25},
         {"at": 0.5, "do": "line", "id": "cin_heart_goes_down.nobodys"},
         {"at": 0.05, "do": "anim", "actor": "her", "clip": "her/flinch", "from": 0, "speed": 1, "blend": 0.05},
-        {"at": 0.45, "do": "anim", "actor": "her", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.6}
+        {"at": 0.12, "do": "anim", "actor": "her", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.35},
+        {"at": 0.12, "do": "anim", "actor": "her", "clip": "Idle_Shield_Loop", "from": 0, "speed": 1, "blend": 0.35, "when": {"calling": ["warden"]}}
       ]
     },
     {
@@ -167,7 +168,7 @@
       "dur": 5.0,
       "fit": ["cin_heart_goes_down.downstairs"],
       "note": "From her eye height, down at him: in his arms the heart's light goes on straining out toward her. He looks down at it, up at her, down at it. His head-lamp swings up into her face and his head jerks twice: sniffing. Then he goes still, toad-still, and his head dips: very nearly a bow. G2. Then a laugh shakes him, and he is grinning again.",
-      "cam": {"pos": {"mark": "her", "off": [0.55, 1.25, -0.3]}, "at": {"mark": "her", "off": [0.35, 1.55, -1.25]}, "lens": 28},
+      "cam": {"pos": {"mark": "her", "off": [0.7, 1.55, 0.2]}, "at": {"mark": "her", "off": [0.35, 1.0, -1.25]}, "lens": 28},
       "cues": [
         {"do": "face", "keys": {"eyes_wide": 0.1, "mouth_open": 0.05, "squint": 0.5, "nose_wrinkle": 0.2}, "over": 0.5},
         {"at": 0.8, "do": "sfx", "name": "sniff", "gain": 0.8},
@@ -182,7 +183,7 @@
       "dur": 3.5,
       "fit": ["cin_heart_goes_down.grateful"],
       "note": "G3, broken in the middle, half over his shoulder; he dives head first, still clutching the heart; the hole folds in behind him; the heart's light shows in the churned mud for a moment going down, then is gone.",
-      "cam": {"pos": {"mark": "her", "off": [3.2, 1.2, -1.6]}, "at": {"mark": "her", "off": [0.35, 0.6, -1.25]}, "lens": 35},
+      "cam": {"pos": {"mark": "her", "off": [3.2, 1.2, -1.6]}, "at": {"mark": "her", "off": [0.35, 1.0, -1.25]}, "lens": 35},
       "cues": [
         {"at": 0.2, "do": "line", "id": "cin_heart_goes_down.grateful"},
         {"at": "end-1.2", "do": "event", "name": "grim_down"},
