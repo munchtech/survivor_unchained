@@ -562,7 +562,7 @@ HPIV_PIP_RAMP = 0.006
 # 1.13-1.20): finger_flattened draws each P1's palmar pad toward her bone's axis till the section's
 # thickness is FF_TW of its width, the back of her finger kept, eased in past her web and out
 # before her PIP; her two hands on their own skin.)
-FINGER_FIX = os.environ.get("FINGER_FIX", "0") == "1"
+FINGER_FIX = os.environ.get("FINGER_FIX", "1") == "1"
 FF_D = [float(v) for v in os.environ.get("FF_D", "0.23,0,0.23,0.23").split(",")]
 FF_TW = float(os.environ.get("FF_TW", "1.0"))
 # (her hand's bones as F1 built them: the fingerless glove's cut is drawn from these)
@@ -5327,7 +5327,7 @@ PLUNGE_FOOT = float(os.environ.get("PLUNGE_FOOT", 0.022))   # (the round foot's 
 PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its sides ease out: 1 straight)
 PLUNGE_FOLD = float(os.environ.get("PLUNGE_FOLD", 0.04))    # (how wide the cloth is fitted over the fold beside its foot)
 PLUNGE_FADE = float(os.environ.get("PLUNGE_FADE", 0.0))    # (the fit faded to nothing over this, before its edge; off: at 15 mm, on the U's true distance, the crease came back, 72-80 deg, and the sheet stood 6 mm up through the binding)
-PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
+PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.06))    # (the gore at its foot: the round its cloth spans her folds by)
 PLUNGE_RIM = float(os.environ.get("PLUNGE_RIM", 0.0015))    # (the U's rim, its lower part, this far off her: on a taut string along it)
 PLUNGE_STRING = float(os.environ.get("PLUNGE_STRING", 0.035))  # (that string's least round, both ways: it spans her folds, never kinks)
 PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the rim the cloth eases back into the fitted sheet)
@@ -7958,7 +7958,7 @@ def ranger():
     out += ribbon("ranger.pant_seam", list(seam), 0.005, "brownleather", lift=0.0022, thick=0.0012)
     # (two pauldrons for the owner to choose between: the lamed one, and the
     # leather spaulder with riveted plates)
-    out += ranger_spaulder() if os.environ.get("PAULDRON") == "leather" else ranger_pauldron()
+    out += ranger_spaulder() if os.environ.get("PAULDRON", "leather") == "leather" else ranger_pauldron()
     for sd in "lr":
         # (the bracers satin and brushed round her forearm as the plates are
         # round her arm, judge 7)
@@ -8933,7 +8933,7 @@ if BODY_OUT:
     # (18 Oct, the owner: her nipples and areolae out of the shipped body, painted out of her albedo and
     # flattened into her breasts' curve: heroine_areola.py; here, after every piece is cut from her as she
     # was, so none changes. AREOLA_OUT=0 builds the anatomical body, kept and never shipped.)
-    if os.environ.get("AREOLA_OUT", "0") == "1":
+    if os.environ.get("AREOLA_OUT", "1") == "1":
         import heroine_areola
         heroine_areola.apply(body, [NIPPLE["l"], NIPPLE["r"]])
     # Her helper bones (twists at the shoulders and down the forearms, shares
@@ -8999,7 +8999,7 @@ if BODY_OUT:
     # (her neck 3 cm shorter, the owner's pick B, 18 Oct: her Head joint's rest moved down her neck, as the
     # game's --neck-cm drew it for the 1:1 sheet; last, after every step that finds her face by position)
     import heroine_neck
-    heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0")))
+    heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
@@ -9112,8 +9112,8 @@ def rigid_again(objs, riders):
 
 
 PL_RAW = os.environ.get("PL_RAW", "1") == "1"
-SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "0,0,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON") == "leather" else set()
-SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26,upperarm_twist_01_l:0.27").split(",") if kv)] if os.environ.get("PAULDRON") == "leather" else []
+SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "0,0,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON", "leather") == "leather" else set()
+SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26,upperarm_twist_01_l:0.27").split(",") if kv)] if os.environ.get("PAULDRON", "leather") == "leather" else []
 RIGID_PIECES = one_blend_pieces(made)
 RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
 _rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
