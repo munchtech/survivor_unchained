@@ -20,8 +20,8 @@ public partial class HeadTurn : SkeletonModifier3D
     /// <summary>How far the head turns from where the body has it, at most (degrees).</summary>
     public float Limit = 75;
     float weight;
-    int head = -1, neck = -1;
-    Vector3 headForward, neckForward, headUp, neckUp;
+    int head = -1, neck = -1, spine = -1;
+    Vector3 headForward, neckForward, headUp, neckUp, spineUp;
 
     public HeadTurn() { Name = "HeadTurn"; }
 
@@ -42,17 +42,22 @@ public partial class HeadTurn : SkeletonModifier3D
                 var nr = sk.GetBoneGlobalRest(neck).Basis.Orthonormalized().Inverse();
                 neckForward = (nr * Vector3.Back).Normalized();
                 neckUp = (nr * Vector3.Up).Normalized();
+                spine = sk.GetBoneParent(neck);
+                if (spine >= 0) spineUp = (sk.GetBoneGlobalRest(spine).Basis.Orthonormalized().Inverse() * Vector3.Up).Normalized();
             }
         }
         weight = Mathf.MoveToward(weight, Want, (float)delta * Rate);
         if (weight <= 0.001f || Target is not Vector3 target) return;
         var local = sk.GlobalTransform.AffineInverse() * target;
+        // Lying down the head keeps its roll with the body (C01 s3: her face on its side on the ground,
+        // tipped toward the coals): it is levelled only as far as the body under it stands upright.
+        float level = spine >= 0 ? Mathf.SmoothStep(0.35f, 0.7f, (sk.GetBoneGlobalPose(spine).Basis.Orthonormalized() * spineUp).Dot(Vector3.Up)) : 1;
         // The neck takes two fifths of the turn, the head the rest.
-        if (neck >= 0) Turn(sk, neck, neckForward, neckUp, local, weight * 0.4f, Limit * 0.4f);
-        Turn(sk, head, headForward, headUp, local, weight, Limit);
+        if (neck >= 0) Turn(sk, neck, neckForward, neckUp, local, weight * 0.4f, Limit * 0.4f, level);
+        Turn(sk, head, headForward, headUp, local, weight, Limit, level);
     }
 
-    static void Turn(Skeleton3D sk, int bone, Vector3 forward, Vector3 up, Vector3 target, float k, float limit)
+    static void Turn(Skeleton3D sk, int bone, Vector3 forward, Vector3 up, Vector3 target, float k, float limit, float level)
     {
         var g = sk.GetBoneGlobalPose(bone);
         var basis = g.Basis.Orthonormalized();
@@ -67,12 +72,12 @@ public partial class HeadTurn : SkeletonModifier3D
         // The shortest turn tips the head over; a person keeps the head level as it
         // turns, so the roll about the new forward is taken back toward the body's up.
         Vector3 fwd = (newBasis * forward).Normalized(), headUpNow = (newBasis * up).Normalized();
-        Vector3 level = (Vector3.Up - fwd * fwd.Dot(Vector3.Up)).Normalized();
+        Vector3 upright = (Vector3.Up - fwd * fwd.Dot(Vector3.Up)).Normalized();
         Vector3 have = (headUpNow - fwd * fwd.Dot(headUpNow)).Normalized();
-        if (level.LengthSquared() > 0.5f && have.LengthSquared() > 0.5f)
+        if (upright.LengthSquared() > 0.5f && have.LengthSquared() > 0.5f && level > 0)
         {
-            float roll = have.SignedAngleTo(level, fwd);
-            newBasis = new Basis(new Quaternion(fwd, roll * 0.8f * k)) * newBasis;
+            float roll = have.SignedAngleTo(upright, fwd);
+            newBasis = new Basis(new Quaternion(fwd, roll * 0.8f * k * level)) * newBasis;
         }
         int parent = sk.GetBoneParent(bone);
         var parentBasis = parent >= 0 ? sk.GetBoneGlobalPose(parent).Basis.Orthonormalized() : Basis.Identity;

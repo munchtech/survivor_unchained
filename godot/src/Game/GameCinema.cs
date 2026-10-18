@@ -819,12 +819,13 @@ public partial class Game
                 case "atmosphere":
                 {
                     // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
-                    // cinematic and finished in the next); a skip lands on k1.
-                    var to = Atmospheres.ByName(c.Str("preset")!);
+                    // cinematic and finished in the next); a skip lands on k1. "from": "now"
+                    // blends from the air as it is (a scene's own night back into play's).
+                    var to = Tuned(Atmospheres.ByName(c.Str("preset")!), c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
                     if (c.Str("from") is string fromName)
                     {
-                        var from = Atmospheres.ByName(fromName);
+                        var from = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
                         if (over > 0 && !skipping)
                         {
                             double last = -1;
@@ -1092,6 +1093,42 @@ public partial class Game
                     props[name] = root;
                     break;
                 }
+                case "mist":
+                {
+                    // Mist lying low on the ground or the water for the scene (the ford, the frost past the
+                    // firelight): a fog volume "size" [w, h, d] metres about "where", thickest at its foot
+                    // ("falloff"), lit by what lights the air. Without "where" the one of that name thins or
+                    // thickens to "density" over "over" (gone with the scene, so faded out before play).
+                    string name = "mist." + (c.Str("name") ?? "mist");
+                    if (!c.Has("where"))
+                    {
+                        if (props.TryGetValue(name, out var mv) && mv is FogVolume { Material: FogMaterial fm })
+                        {
+                            float from = fm.Density, to = (float)c.Num("density");
+                            if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => fm.Density = Mathf.Lerp(from, to, (float)k)));
+                            else fm.Density = to;
+                        }
+                        break;
+                    }
+                    if (props.Remove(name, out var oldMist)) oldMist.QueueFree();
+                    var sz = c.Get("size");
+                    var size = sz.ValueKind == JsonValueKind.Array ? new Vector3((float)sz[0].GetDouble(), (float)sz[1].GetDouble(), (float)sz[2].GetDouble()) : new Vector3(40, 1.2f, 40);
+                    var noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin, Frequency = (float)c.Num("grain", 0.08), FractalOctaves = 3 };
+                    var mat = new FogMaterial
+                    {
+                        Density = (float)c.Num("density", 0.5), Albedo = new Color(c.Str("color") ?? "#9aa8bc"), HeightFalloff = (float)c.Num("falloff", 2),
+                        EdgeFade = (float)c.Num("edge", 0.5), DensityTexture = new NoiseTexture3D { Width = 64, Height = 8, Depth = 64, Seamless = true, Noise = noise, Normalize = true },
+                    };
+                    var foot = V(places.Resolve(c.Get("where")));
+                    var vol = new FogVolume
+                    {
+                        Name = "Mist", Shape = RenderingServer.FogVolumeShape.Box, Size = size, Material = mat,
+                        Position = foot + new Vector3(0, size.Y * 0.5f - (float)c.Num("sink", 0.2), 0),
+                    };
+                    g.scene!.AddChild(vol);
+                    props[name] = vol;
+                    break;
+                }
                 case "bars" or "fade" or "wet":
                     // The bars and black follow the shots; wetness waits on its system (docs/cinematics/README.md section 6, 7).
                     break;
@@ -1100,6 +1137,18 @@ public partial class Game
 
         readonly Dictionary<string, Node3D> props = new();
         static GradientTexture2D? halo;
+
+        /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
+        /// "hemi", "env", "exposure", "fog" and "rim" scale the preset's own; "azimuth" and "elevation" (degrees)
+        /// move the moon or sun for the shot; "keyColor" and "fogColor" replace its colours.</summary>
+        static AtmospherePreset Tuned(AtmospherePreset p, CineCue c) => p with
+        {
+            KeyIntensity = p.KeyIntensity * c.Num("key", 1), HemiIntensity = p.HemiIntensity * c.Num("hemi", 1),
+            EnvIntensity = p.EnvIntensity * c.Num("env", 1), Exposure = p.Exposure * c.Num("exposure", 1),
+            FogDensity = p.FogDensity * c.Num("fog", 1), RimStrength = p.RimStrength * c.Num("rim", 1),
+            KeyAzimuth = c.Has("azimuth") ? c.Num("azimuth") : p.KeyAzimuth, KeyElevation = c.Has("elevation") ? c.Num("elevation") : p.KeyElevation,
+            KeyColor = c.Str("keyColor") ?? p.KeyColor, FogColor = c.Str("fogColor") ?? p.FogColor,
+        };
 
         /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
         static GradientTexture2D Halo() => halo ??= new GradientTexture2D

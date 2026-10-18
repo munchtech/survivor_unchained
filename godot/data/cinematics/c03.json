@@ -70,6 +70,7 @@
       "note": "On her, his lamp's light on her face: she looks at him, and nods, once, slowly. Yes. (Devout: then the Order's sign for the dead, finger and thumb closing on the air.)",
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.55, -0.1, -1.5]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
+        {"do": "rig", "name": "moon", "energy": 1.2, "color": "#9fb8ff", "angle": 28, "from": {"actor": "her", "bone": "eyes", "off": [-0.8, 0.9, 0.3]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "face", "keys": {"brows_sad": 0.35, "mouth_open": 0.05}, "over": 0.6},
         {"do": "gaze", "look": [0, -0.4]},
         {"at": 0.9, "do": "anim", "clip": "her/nod", "from": 0, "speed": 1, "blend": 0.2}

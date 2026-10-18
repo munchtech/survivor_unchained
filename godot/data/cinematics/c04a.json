@@ -60,7 +60,7 @@
       "note": "From the west, across the road and up into the birches: the tops go gold one by one from the east as the sun clears the ridge; the light comes down the trunks, and where it reaches the road the blue in the iron by the verge goes pale and small.",
       "cam": {"pos": [-5.0, 1.4, -58.0], "at": [10.0, 9.0, -64.0], "lens": 35},
       "cues": [
-        {"do": "atmosphere", "preset": "dawn", "from": "night", "k0": 0.2, "over": 10.0},
+        {"do": "atmosphere", "preset": "dawn", "from": "night", "k0": 0.2, "over": 9.0},
         {"do": "place", "mark": "road"},
         {"do": "anim", "clip": "@idle", "blend": 0}
       ]
@@ -102,6 +102,8 @@
       "note": "Frontal, low sun from frame right, the birches' shade behind: colour comes into her face. She breathes out, and her breath smokes in the cold, a long white plume in the sunlight. She sees it. She breathes again, to see it again. Then the cold reaches her: a shiver, once, hard.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.25, -0.02, -1.25]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "atmosphere", "preset": "dawn", "exposure": 0.78, "hemi": 0.6, "env": 0.6},
+        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 5, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"at": 0.8, "do": "sfx", "name": "breath_out", "gain": 1.3},
         {"at": 0.8, "do": "face", "keys": {"mouth_open": 0.25, "brows_up": 0, "smile": 0}, "over": 0.6},
@@ -119,6 +121,7 @@
       "note": "She lifts the flask on its cord, pulls the cork with her teeth, and stops: smells it. The river. She drinks anyway, long, eyes shut; water on her chin. She lowers it.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.5, -0.15, -1.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.12, 0]}, "lens": 50},
       "cues": [
+        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"at": 1.0, "do": "sfx", "name": "click", "gain": 0.5},
         {"at": 1.5, "do": "face", "keys": {"nose_wrinkle": 0.3, "squint": 0, "frown": 0}, "over": 0.3},
         {"at": 2.3, "do": "lids", "value": 1, "over": 0.3},
@@ -134,6 +137,7 @@
       "note": "Frontal, a very slow push (0.05 m): she is still. Her eyes go inward, searching. N6. Then nothing: hold 1.5 s of silence after the line. Play someone who has mislaid a thing she uses every day.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
       "cues": [
+        {"do": "rig", "name": "sun", "energy": 1.8, "color": "#ffc890", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.9, 0.35, 0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 5, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "face", "keys": {"nose_wrinkle": 0, "brows_sad": 0.45}, "over": 2.0},
         {"do": "gaze", "look": [0, 0]},
@@ -149,6 +153,7 @@
       "note": "Low behind her on the road, looking north up the hill: she walks away from camera into the light; at the top of the hill the gate stands open. Her own body from the cut (play). Over the last 3 s the camera cranes up over her, tilting down into the game's view; she walks on into play. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
       "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
       "cues": [
+        {"do": "atmosphere", "preset": "dawn", "from": "now", "over": 1.5},
         {"at": 0.0, "do": "play"},
         {"do": "move", "to": "top", "dur": 6.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 1.0, "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0},

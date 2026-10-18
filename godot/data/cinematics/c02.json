@@ -28,6 +28,9 @@
       "note": "Behind her as she comes down to the water's edge and stops: the near post at frame left, the ford's stones going out into mist, the two far posts. In the river to the right a lamp burns low over the water, and beyond it the drowned stand in their rows.",
       "cam": {"pos": [4.4, 1.5, -25.4], "at": {"abs": [4.6, -0.3, -44.0]}, "lens": 28},
       "cues": [
+        {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
+        {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0},
+        {"do": "glow", "name": "back", "where": {"abs": [11.5, 0.6, -50.0]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 4.0, "range": 14},
         {"do": "music", "mood": "silence"},
         {"do": "event", "name": "warden_cine"},
         {"do": "place", "actor": "warden", "where": {"abs": [2.6, -1.2, -44.5]}, "heading": -1.5708, "tilt": -90},
@@ -62,6 +65,7 @@
       "note": "Her face, listening, from north-west of her; she looks off screen left to the lamp. W1 rises from under the water, sung: the Order's evening call, slowed to a dirge, heard through water.",
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.55, 0.0, -0.85]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "rig", "name": "key", "energy": 1.4, "color": "#8ac8ff", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.25, -0.15, -0.9]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"at": 0.3, "do": "line", "id": "cin_none_cross.call"},
         {"do": "face", "keys": {"brows_up": 0.2}, "over": 0.8},
         {"do": "gaze", "look": [0.15, -0.1]}
@@ -121,8 +125,8 @@
       "cues": [
         {"do": "music", "mood": "silence"},
         {"do": "hide", "actor": "warden"},
-        {"do": "rig", "name": "ember", "energy": 0.15, "color": "#ff6a33", "angle": 30, "range": 0.3, "from": {"actor": "her", "bone": "eyes", "off": [-0.15, -0.12, -0.18]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.2, 0.0, -0.28]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.25, "range": 0.55, "spec": 1.0},
+        {"do": "rig", "name": "ember", "energy": 0.35, "color": "#ff6a33", "angle": 30, "range": 0.3, "from": {"actor": "her", "bone": "eyes", "off": [-0.3, -0.1, -0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.34, 0.02, -0.14]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.45, "range": 0.55, "spec": 1.0},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},
@@ -177,6 +181,8 @@
       "note": "He sets his guard. Pull back and up into the follow camera. Bars out; the boss bar and the lamps' tip come up. Control.",
       "cam": {"pos": [2.2, 1.8, -27.2], "at": {"abs": [3.0, 1.6, -33.6]}, "lens": 35, "move": {"pos": [2.5, 9.0, -20.0], "ease": "inout", "follow": true}},
       "cues": [
+        {"do": "atmosphere", "preset": "night", "from": "now", "over": 2.0},
+        {"do": "mist", "name": "river", "density": 0, "over": 2.0},
         {"at": 0.0, "do": "play"},
         {"do": "anim", "actor": "warden", "clip": "Idle_Shield_Loop", "blend": 0.3},
         {"at": "end", "do": "event", "name": "warden_up"}
