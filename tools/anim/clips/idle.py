@@ -113,7 +113,10 @@ def arcanist(t, f):
         # The staff upright at her side, its head leaning in a little and its foot out past her right leg
         # (13 Oct: on the seated bound staff, blade (-0.12, 1.0, 0.18) crossed its lower half behind her right
         # thigh and calf every frame; now >= 10 mm off her legs and her hat).
-        "hand_r": {"arc": arc_of((-0.16, -0.28, 0.12)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
+        # (18 Oct, animation 38: the grip 7 cm forward and the elbow's pole turned down and in, from (0.12 forward,
+        # pole (-0.8, -0.3, -0.6)): at the close-up the elbow stood cocked out and back; now 20 deg out of her
+        # side, not 32 (the hip arm's 26), 85 mm out from the shoulder, not 132, and 15 deg back, not 35.)
+        "hand_r": {"arc": arc_of((-0.16, -0.28, 0.19)), "pole": (-0.2, -0.6, -0.75), "frame": "chest",
                    "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5},
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
