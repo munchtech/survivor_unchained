@@ -13,9 +13,9 @@ The owner: "having to legal check everytime we change an outfit or animation is 
 - The pass bar is count.py's, unchanged: areola and strip in 0 frames (6 px), FLAT 0, every clip shot. A PASS updates `passed.json` for exactly what ran; commit it with the work.
 - **In a MERGE REQUEST,** paste the gate's one line. Never run it while iterating; `merge_lead.sh` prints `--dry` after each merge, so the coordinator sees whether the merged result needs a run.
 
-## Blockers (3)
+## Blockers (2 open)
 
-1. **The mature-content survey:** it waits on the motion check passing on the main session's **fit-fix build**. The draft answers are in `STEAM_CHECKLIST.md` D1 and D2.
+1. **The mature-content survey: confirmed (18 Oct).** No nipples, areolas or genitals in the shipped body (painted out; the anatomical version stays outside the build); the motion check no longer gates it. Answers in `STEAM_CHECKLIST.md` D1 and D2.
 2. **The boar:** our own replaces it. A new creatures lead makes it locally with Krea 2 and TRELLIS 2, which puts it in the Krea footprint. Its picture comes from text alone, never from the Sketchfab boar or others' art (brief 5(a)). The old boar must not ship.
 3. **The AI disclosure:** ready to paste (`STEAM_CHECKLIST.md` D3). **Raise it at submission, not before** (the owner, 5 Oct).
 
