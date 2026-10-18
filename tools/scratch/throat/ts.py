@@ -1,7 +1,7 @@
 """ts.py <src.glb> <dst.glb> [ease|noease] [K=V ...]: heroine_throat.ease (unless noease) then soften(dst, 0) (the glb cut already)."""
 import sys, shutil, time
 sys.path.insert(0, "C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a1941eef2c79c45fe/tools/assets")
-import heroine_throat as ht
+import heroine_throat_skin as ht
 src, dst, mode = sys.argv[1], sys.argv[2], sys.argv[3]
 for k in sys.argv[4:]:
     a, b = k.split("=")

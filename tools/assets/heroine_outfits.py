@@ -9082,11 +9082,11 @@ if BODY_OUT:
     # (18 Oct, the owner on C01: "a giant atoms apple". Her throat's weights refilled smoothly between her chest and
     # the skin under her head, her clavicles and upper arms out of her neck's column (the pieces and hair that took her
     # neck's weights follow, match_pieces below, through match_graft's field), then her neck's front and sides faired
-    # inward as the game shows her after the cut: heroine_throat.py. Off: THROAT_SOFT=0)
+    # inward as the game shows her after the cut: heroine_throat_skin.py. Off: THROAT_SOFT=0)
     if os.environ.get("THROAT_SOFT", "1") == "1":
-        import heroine_throat
-        heroine_throat.ease(BODY_OUT)
-        heroine_throat.soften(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
+        import heroine_throat_skin
+        heroine_throat_skin.ease(BODY_OUT)
+        heroine_throat_skin.soften(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     print("BODY", BODY_OUT)
 
