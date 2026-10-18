@@ -552,6 +552,19 @@ HPIV_L02 = [[float(v) / 1000 for v in x.split("/")] for x in
 HPIV_L03 = [[float(v) / 1000 for v in x.split("/")] for x in
             os.environ.get("HPIV_L03", "-2.8/0.1/-0.1,-0.4/0.2/-1.8,0.8/-0.5/-2.1,-1.0/-0.9/1.4").split(",")]
 HPIV_PIP_RAMP = 0.006
+# (FINGER_FIX=1, the owner 14-18 Oct, her fingers: (1) her end bones were stubby, the 0.65 rule put
+# her index, ring and pinky DIPs 14.3/18.3/10.5 mm from their tips (D/finger 0.12-0.19, a hand's
+# 0.21-0.25). Each 03 joint goes along its finger till the end segment (DIP to her skin's tip along
+# the end bone) is FF_D of her finger (MCP to tip), per finger index, middle, ring, pinky (0: the
+# 0.65 rule as before; her middle was already 0.23); her left's L03 offsets keep their across and
+# palmward parts. Her skin has no DIP crease to sit on (its bumps and its paint are flat to 0.2 mm
+# and 4/255), so the ratio places it. (2) Her proximal sections were taller than wide (mid-P1 t/w
+# 1.13-1.20): finger_flattened draws each P1's palmar pad toward her bone's axis till the section's
+# thickness is FF_TW of its width, the back of her finger kept, eased in past her web and out
+# before her PIP; her two hands on their own skin.)
+FINGER_FIX = os.environ.get("FINGER_FIX", "0") == "1"
+FF_D = [float(v) for v in os.environ.get("FF_D", "0.23,0,0.23,0.23").split(",")]
+FF_TW = float(os.environ.get("FF_TW", "1.0"))
 # (her hand's bones as F1 built them: the fingerless glove's cut is drawn from these)
 F1_HEADS = {b.name: np.array((arm.matrix_world @ b.head_local)[:]) for b in arm.data.bones}
 # (the outfits' arm chains read her hand to F1's middle knuckle, so no garment moves with the pivots)
@@ -620,6 +633,19 @@ def hand_pivots(obj):
             new[f"{f}_03_{sd}"] = p2 + e * HPIV_P2 * np.linalg.norm(p2 - p1)
             if sd == "l" and any(HPIV_L03[kf]):
                 new[f"{f}_03_{sd}"] = new[f"{f}_03_{sd}"] + e * HPIV_L03[kf][0] + lat_ * HPIV_L03[kf][1] + palm_ * HPIV_L03[kf][2]
+            if FINGER_FIX and FF_D[kf] > 0:
+                # (end segment = FF_D of the finger: tip is her skin's furthest point along the end bone)
+                q = co[(wt(f"{f}_01_{sd}") + wt(f"{f}_02_{sd}") + wt(f"{f}_03_{sd}")) > 0.5]
+                p3 = new[f"{f}_03_{sd}"]
+                d0 = float(((q - p2) @ ((p3 - p2) / np.linalg.norm(p3 - p2))).max() - np.linalg.norm(p3 - p2))
+                for _ in range(4):
+                    e3 = (p3 - p2) / np.linalg.norm(p3 - p2)
+                    t0 = float(((q - p2) @ e3).max())
+                    p3 = p2 + e3 * (t0 - FF_D[kf] * (np.linalg.norm(p2 - p1) + t0))
+                new[f"{f}_03_{sd}"] = p3
+                d1 = t0 - float(np.linalg.norm(p3 - p2))
+                print("FINGER_FIX %s %s: DIP %.1f mm toward her knuckle, end segment %.1f -> %.1f mm (D/finger %.3f)"
+                      % (f, sd, (d1 - d0) * 1000, d0 * 1000, d1 * 1000, d1 / (np.linalg.norm(p2 - p1) + t0)))
         c0, m0, i0 = (old[f"thumb_0{k}_{sd}"] for k in (1, 2, 3))
         chain = np.linalg.norm(m0 - c0) + np.linalg.norm(i0 - m0)
         new[f"thumb_02_{sd}"] = c0 + (m0 - c0) / np.linalg.norm(m0 - c0) * HPIV_THUMB * chain / chain_r
@@ -729,8 +755,131 @@ def hand_pivots(obj):
     print("HAND_PIVOTS: %d pivots moved (orientation kept to %.1e), %d skin weights handed over" % (len(new), worst, changed))
 
 
+def finger_flattened(obj):
+    """FINGER_FIX (2): each finger's proximal section, from her web to her PIP, drawn in
+    front to back toward t/w = FF_TW, from her palmar pad only (her finger's back and sides kept),
+    about the bone's axis (the new 01 -> 02 line), by her finger's own weights; a plane slice of
+    her skin every 0.5 mm reads w and t, twice (the second pass takes up the smoothing's shortfall)."""
+    me = obj.data
+    co = np.array([v.co[:] for v in me.vertices])
+    nv = len(co)
+    F4 = ("index", "middle", "ring", "pinky")
+    gi = {g.name: g.index for g in obj.vertex_groups}
+    want = {gi[f"{f}_0{i}_{sd}"]: f"{f}_0{i}_{sd}" for sd in "lr" for f in F4 for i in (1, 2, 3)
+            if f"{f}_0{i}_{sd}" in gi}
+    W = {n: np.zeros(nv) for n in want.values()}
+    for v in me.vertices:
+        for g in v.groups:
+            n = want.get(g.group)
+            if n:
+                W[n][v.index] = g.weight
+    me.calc_loop_triangles()
+    tri = np.zeros(len(me.loop_triangles) * 3, np.int64)
+    me.loop_triangles.foreach_get("vertices", tri)
+    tri = tri.reshape(-1, 3)
+    new, old = HPIV["new"], HPIV["old"]
+    hd = lambda n: new.get(n, old[n])
+
+    def smooth(x):
+        u = np.clip(x, 0, 1)
+        return u * u * (3 - 2 * u)
+
+    def sections(X, tris, p1, u, l2, d2, S, rad=0.015):
+        d = (X - p1) @ u
+        rows = []
+        for s in S:
+            dt = d[tris] - s
+            pts = []
+            for a_, b_ in ((0, 1), (1, 2), (2, 0)):
+                da, db = dt[:, a_], dt[:, b_]
+                m = (da * db) < 0
+                t = da[m] / (da[m] - db[m])
+                pa, pb = X[tris[m, a_]], X[tris[m, b_]]
+                pts.append(pa + (pb - pa) * t[:, None])
+            R = np.concatenate(pts) - (p1 + u * s)
+            R = R[np.linalg.norm(R, axis=1) < rad]
+            if len(R) < 4:
+                rows.append((np.nan, np.nan, np.nan))
+                continue
+            y = R @ d2
+            rows.append((np.ptp(R @ l2), y.max(), -y.min()))
+        return np.array(rows)
+    out = co.copy()
+    for sd in "lr":
+        if f"index_01_{sd}" not in new:
+            continue
+        for f in F4:
+            n1, n2, n3 = (f"{f}_0{i}_{sd}" for i in (1, 2, 3))
+            p1, p2 = hd(n1), hd(n2)
+            P = float(np.linalg.norm(p2 - p1))
+            u = (p2 - p1) / P
+            l2 = hd(f"index_02_{sd}") - hd(f"pinky_02_{sd}")
+            l2 = l2 - u * (l2 @ u)
+            l2 /= np.linalg.norm(l2)
+            d2 = np.cross(u, l2)
+            if (hd(f"thumb_03_{sd}") - hd(f"index_02_{sd}")) @ d2 > 0:
+                d2 = -d2                                   # (d2: toward the back of her finger)
+            fw = np.clip(W[n1] + W[n2] + W[n3], 0, 1)
+            tris = tri[(fw[tri] > 0.6).all(1)]
+            trisw = tri[(fw[tri] > 0.3).all(1)]
+            S = np.arange(0.001, P, 0.0005)
+            mv = np.nonzero(fw > 0)[0]
+            log = []
+            for ps in range(3):
+                sec = sections(out, tris, p1, u, l2, d2, S)
+                w, dors, palm = sec[:, 0], sec[:, 1], sec[:, 2]
+                mid = int(np.argmin(np.abs(S - 0.6 * P)))
+                log.append((w[mid], dors[mid] + palm[mid]))
+                if ps == 2:
+                    break
+                if ps == 0:
+                    # (her web: the last section, short of 0.65 P, still 15% wider than her free finger,
+                    # on her finger's own skin, else with the skin it shares; never short of 0.45 P)
+                    s_w = 0.0
+                    for tt in (tris, trisw):
+                        ww = sections(out, tt, p1, u, l2, d2, S, 0.022)[:, 0]
+                        ref = np.nanmedian(ww[(S > 0.7 * P) & (S < 0.95 * P)])
+                        wide = np.nonzero((ww > 1.15 * ref) & (S < 0.65 * P))[0]
+                        if len(wide):
+                            s_w = S[wide.max()] + 0.0005
+                            break
+                    s_w = max(s_w, 0.45 * P)
+                fs = np.clip((FF_TW * w - dors) / palm, 0.6, 1.0)
+                fs[~np.isfinite(fs)] = 1.0
+                env = smooth((S - s_w + 0.006) / 0.006) * smooth((P - 0.002 - S) / 0.008)
+                g = 1 - env * (1 - fs)
+                # (smoothed along her finger, sigma 2 mm: no ridge where the pad starts)
+                k = np.exp(-0.5 * (np.arange(-12, 13) * 0.5 / 2.0) ** 2)
+                k /= k.sum()
+                g = np.convolve(np.pad(g, 12, constant_values=1.0), k, "valid")
+                X = out[mv]
+                sv = (X - p1) @ u
+                y = (X - p1) @ d2
+                gv = np.interp(sv, S, g, left=1.0, right=1.0)
+                fac = 1 - (1 - gv) * smooth(-y / 0.002) * fw[mv]
+                out[mv] = X + np.outer(y * fac - y, d2)
+            mvd = np.linalg.norm(out[mv] - co[mv], axis=1)
+            print("FINGER_FIX %s %s: web %.1f mm from MCP (P %.1f); mid-P1 w %.1f t %.1f -> w %.1f t %.1f (t/w %.2f -> %.2f); "
+                  "pad drawn in up to %.1f mm" % (f, sd, s_w * 1000, P * 1000, log[0][0] * 1000, log[0][1] * 1000,
+                                                  log[2][0] * 1000, log[2][1] * 1000, log[0][1] / log[0][0],
+                                                  log[2][1] / log[2][0], mvd.max() * 1000))
+    moved = np.linalg.norm(out - co, axis=1)
+    for i in np.where(moved > 0)[0]:
+        me.vertices[i].co = out[i].tolist()
+    if me.shape_keys:
+        for kb in me.shape_keys.key_blocks:
+            kc = np.array([d.co[:] for d in kb.data])
+            kc += out - co
+            for i in np.where(moved > 0)[0]:
+                kb.data[i].co = kc[i].tolist()
+    me.update()
+    print("FINGER_FIX: %d points moved, up to %.1f mm" % (int((moved > 1e-7).sum()), moved.max() * 1000))
+
+
 if HAND_PIVOTS:
     hand_pivots(body)
+    if FINGER_FIX:
+        finger_flattened(body)
 
 # ---- her back of hand (BACKHAND=1): her skin's knuckle drop moved onto her new knuckles.
 # hand_pivots moved her finger pivots ~20 mm toward her wrist; her back-of-hand skin still fell
@@ -8779,6 +8928,12 @@ if BODY_OUT:
     if os.environ.get("CHEST_SMOOTH", "1") == "1":
         from heroine_chest import chest_smooth
         chest_smooth(body, mend_folds)
+    # (18 Oct, the owner: her nipples and areolae out of the shipped body, painted out of her albedo and
+    # flattened into her breasts' curve: heroine_areola.py; here, after every piece is cut from her as she
+    # was, so none changes. AREOLA_OUT=0 builds the anatomical body, kept and never shipped.)
+    if os.environ.get("AREOLA_OUT", "0") == "1":
+        import heroine_areola
+        heroine_areola.apply(body, [NIPPLE["l"], NIPPLE["r"]])
     # Her helper bones (twists at the shoulders and down the forearms, shares
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
@@ -8824,6 +8979,10 @@ if BODY_OUT:
     # may run before or after any step that measures them (heroine_mouth.seat); keep it last)
     import heroine_headscale
     heroine_headscale.scale(BODY_OUT, HEAD_SCALE)
+    # (her neck 3 cm shorter, the owner's pick B, 18 Oct: her Head joint's rest moved down her neck, as the
+    # game's --neck-cm drew it for the 1:1 sheet; last, after every step that finds her face by position)
+    import heroine_neck
+    heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0")))
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
