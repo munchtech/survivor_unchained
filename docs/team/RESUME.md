@@ -2,12 +2,14 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 17 October: coordinator 59f6a467 (face, outfits, animation; the F1 merge first)
-- The week's usage ran out on 16 Oct at about 21:55, mid-step. New rules: README "Effort by kind of work" and "Focus" (17 Oct): coding on medium, menial on Sonnet/Haiku, judges max on what's always seen and xhigh on the rest, finish the fixed list and free the slot.
-- **Where each lead stopped** (scratch in `...ccb1a-862a-405f-908e-2b7c3e433488\scratchpad\`):
-  - **Outfits 28:** the xhigh API judge picked **G3L2** (the loudest top; `s28\g4_verdict.md`). heroine.glb differs from dfe686ed in COLOR_0 ch1 only; a defaults-only confirm rebuild was running. Next: legal, tests, commit, "G3 COMMITTED", then triage its list at 1:1.
-  - **Animation 34:** daggers rows shot at 1:1 (`1847d1a6...\scratchpadnim\l34\`); Arcanist rows scripted (`ar.txt`, `gshoot.sh`), waiting on G3. Next: take G3 file by file, repack once, pen.py and motion, shoot, one judge, MERGE REQUEST. Then chain_strike two-handed.
-  - **Face 27:** triage judged at 1:1 (`f27\j1erdict.md`): a fixed list of nine (own's chin dot first); ten items and mouth_seal closed. heroine.glb 45fe3386 still uncommitted; rebuild on merged after F1.
+## 17 October: coordinator 59f6a467 (face 28, outfits 29, animation 35; the F1 merge first)
+Rules new today: README "Effort by kind of work", "Focus"; the legal gate (`tools/legal/gate.py`, docs/team/legal.md top; passed.json is empty, so the first full run, 182 clip runs, happens on the F1 merge); lead_brief.md; memory nudge-owner-forward. API credits: about $32 left this month (judges only).
+- **Outfits 29** (ad20dd321ebcf2bfc, worktree agent-a5ca10091b08dc429): **G3 COMMITTED @d34afe1b** (G3L2, the ARC_GLOVE default; COLOR_0 ch1 only, 443 hand vertices; Arcanist legal clean; 917 tests). Merge request held to land with animation's. Then its triage list at 1:1. The hand reshape is ON HOLD (the owner: a proper wrap hides the fingers); it takes proportion numbers only.
+- **Animation 35** (aa037c6458cfa8937, worktree agent-af8dbda3195e438e4): G3 taken and imported (no repack needed); daggers judge 4/5 (left fist FAIL, a left-fist solver running); 50 Arcanist shots, then one max judge, then **MERGE REQUEST** (F1 = outfits d34afe1b + animation). After F1: chain_strike (the solver is blocked; the right path may move toward centre, approved), then the GRIP STANDARD (spec per type, a conform tool from grip_thin.py, the staff fist and the open staff hand in run/sprint, the viking sword and axe as proof), then the crossbow pistol grip built to the spec. About 11-15 h.
+- **Face 28** (a208d8ffd755d6e0c, worktree agent-a2d632df7c7f21ec0): the nine mouth items CLOSED as known (logged "Big expressions" in docs/team/face.md); gum_low unhooked. **Hair is now its top item** (the owner: physics a mess, clipping at creation): a 1:1 shoot (every style spun in 45-degree steps, cinematic back views such as c03's walk to the warden, the play and close-up cameras in motion), one max judge, then the list and an estimate. After F1: rebuild heroine.glb on merged, cmp, tests, MERGE REQUEST.
+- **Done today:** close-up zoom no longer turns her (d4d3aafe; she poses only with a framed screen in town or ember zones, or after 60 s idle; town menus don't pause, which is the owner's earlier rule).
+- **Waiting for a slot:** cinematics (c03 runs straight into c04a's ember beat, plus the owner's other notes); the owner picks what follows when slots free (UI, combat, classes, Flare VFX).
+- **On F1 merge:** `merge_lead.sh` for both, run `python tools/legal/gate.py --full` (background), tests, push, tell face.
 
 ## How the team runs now (README has the detail)
 
