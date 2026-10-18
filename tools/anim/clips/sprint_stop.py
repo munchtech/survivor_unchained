@@ -49,8 +49,10 @@ def sprint(rig, run):
                 arm_fwd=held(np.array(g.arm_fwd) * [1, 0.8, 1.2]), arm_back=held(np.array(g.arm_back) * [1, 1.1, 1.25]))
     if g.swing is not None:
         # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
-        (ft, fo, fe, fr), (bt, bo, be, br) = g.swing
-        s = replace(s, swing=((ft + SPRINT_SWING[0], fo, fe + SPRINT_SWING[1], fr), (bt * SPRINT_SWING[2], bo + 1, be + SPRINT_SWING[3], br)))
+        def sped(sw):
+            (ft, fo, fe, fr), (bt, bo, be, br) = sw
+            return ((ft + SPRINT_SWING[0], fo, fe + SPRINT_SWING[1], fr), (bt * SPRINT_SWING[2], bo + 1, be + SPRINT_SWING[3], br))
+        s = replace(s, swing=sped(g.swing), swing_r=None if g.swing_r is None else sped(g.swing_r))
     return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
 
 

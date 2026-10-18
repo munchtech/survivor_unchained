@@ -16,6 +16,25 @@ from keyed import Rig
 from skin import Body
 from motion import Measure
 from armmetrics import metrics
+from rig import qrot, qinv
+rr, rpos = sk.rest_globals() if False else (None, None)
+def shield(clip):
+    """Arm into the slung shield (Arms.cs Back socket: 66 cm across, centred (0, 1.22, -0.20) at rest on spine_03,
+    inner face taken at z -0.19): max depth mm per side over the frames."""
+    grot, gp = sk.fk(clip.rot, clip.pos)
+    r0, p0 = sk.rest_globals(); r0, p0 = r0[0], p0[0]
+    S = I["spine_03"]; out = {}
+    for sd in "lr":
+        U, E, H = I[f"upperarm_{sd}"], I[f"lowerarm_{sd}"], I[f"hand_{sd}"]
+        worst = 0.0
+        for f in range(len(gp)):
+            pts = [(gp[f, U] * 0.5 + gp[f, E] * 0.5, 0.045), (gp[f, E], 0.04), (gp[f, E] * 0.75 + gp[f, H] * 0.25, 0.035), (gp[f, E] * 0.5 + gp[f, H] * 0.5, 0.032)]
+            for p, r in pts:
+                q = qrot(r0[S], qrot(qinv(grot[f, S]), p - gp[f, S])) + p0[S]
+                if (q[0] ** 2 + (q[1] - 1.22) ** 2) ** 0.5 < 0.33:
+                    worst = max(worst, (-0.19 - (q[2] - r)) * 1000)
+        out[sd] = worst
+    return out
 b = Body.heroine(jiggle=False); m = Measure(b); sk = b.sk; I = sk.index
 rig = Rig(sk, body="her")
 j = dict(shL=I["upperarm_l"], shR=I["upperarm_r"], elL=I["lowerarm_l"], elR=I["lowerarm_r"], hdL=I["hand_l"], hdR=I["hand_r"],
@@ -57,5 +76,7 @@ for label, spec in cands.items():
                     if d > worst[s][0]: worst[s] = (d, f)
         _, gp = sk.fk(clip.rot, clip.pos)
         r = metrics(gp, j)
+        sh = shield(clip) if "town" in nm else None
         a = " ".join(f"{s}: leg {worst[s][0]:4.0f}mm@f{worst[s][1]:<2d} abd {r[s]['abd_max']:4.1f} trav {r[s]['hand_travel']:.2f}L sag {r[s]['sag_fwd']:+4.0f}/{r[s]['sag_back']:+4.0f} elb {r[s]['elb_min']:3.0f}-{r[s]['elb_max']:3.0f}" for s in "lr")
+        if sh: a += f"  SHIELD l {sh['l']:3.0f} r {sh['r']:3.0f}"
         print(f"{label:10s} {nm:24s} {a} ({time.time()-t0:.0f}s)", flush=True)

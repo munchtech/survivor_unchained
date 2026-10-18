@@ -50,6 +50,8 @@ class Gait:
     # shoulder through the whole swing, a little in toward the middle in front, the upper arm 16 degrees
     # each way at a jog (1.5 m/s); hers is a run (5.3 m/s), so the upper arm swings about 42.
     swing: tuple = None
+    # The right arm's own swing where it carries a heavy piece (the Reaver's axe: closer in, half the swing).
+    swing_r: tuple = None
     fingers: str = "relaxed"
     # The right hand's own, where it holds a piece the other hand doesn't ("grip": the piece's fitted fist, keyed.wrap_of):
     # the arcanist's run keyed both hands "open", so her staff hand stood open, the pads 24-79 mm off the shaft.
@@ -128,6 +130,7 @@ def manly(g: Gait) -> Gait:
                    chest_yaw=g.chest_yaw * 1.3, width=max(g.width, 0.065), drop=g.drop + 0.015, bob=g.bob * 0.9,
                    duty=min(0.4, g.duty + 0.02), elbow_out=g.elbow_out + 0.12,
                    swing=None if g.swing is None else tuple((a[0], a[1] + 5, a[2], a[3]) for a in g.swing),
+                   swing_r=None if g.swing_r is None else tuple((a[0], a[1] + 5, a[2], a[3]) for a in g.swing_r),
                    shoulders=(g.shoulders[0] + 2, g.shoulders[1] + 3))
 
 
@@ -167,7 +170,7 @@ def pose_at(g: Gait, rig: Rig, ph):
         # behind to in front would fold the arm up through the shoulder and
         # spin the forearm), a touch higher through the middle.
         if g.swing is not None:
-            hand = _swung(g.swing, rig, side, k)
+            hand = _swung(g.swing_r if side == "r" and g.swing_r is not None else g.swing, rig, side, k)
             if side in g.arms:
                 hand = g.arms[side](ph, k, hand)
             pose[f"hand_{side}"] = hand

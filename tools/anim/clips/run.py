@@ -140,8 +140,15 @@ def open_hand():
 # out and swung the fist 0.8-1.3 arm-lengths fore and aft: "chicken wing", "weird exaggerated arm movements".)
 # (Round 2, animation 37: behind her the elbow closes to 65-75 and the forearm turns out (turn -25/-30), so the
 # fist rides up and out past her hip; at 85-90 and turned in it went 45-80 mm into the thigh driving through.
-# The Reaver leans 24+8, not 32+12: bent that far, her own thigh came up into her hand.)
-SWING = ((6, 12, 80, 20), (-36, 14, 70, -25))
+# The Reaver leans 14+3, not 32+12: bent that far her own thigh came up into her hand, and from the play camera's
+# 53-degree look down 24+8 still read as a stoop (judge r2).)
+# The town run carries the shield slung on her back (Arms.cs Back socket, 66 cm across): the elbow no further than
+# about 12 cm behind the shoulder, or it comes out through the shield's face (judge r2: at -36 it did, 27 mm; the
+# sprint 56). The swing a touch further forward instead.
+SWING = ((8, 12, 80, 20), (-20, 14, 70, -22))
+# A heavy axe's arm (judge r2: the axe elbow winged out 30-35 degrees at the close-up): in by her side, half the
+# free arm's swing, the forearm barely turned out.
+AXE_ARM = ((6, 10, 80, 10), (-20, 11, 70, -10))
 WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
@@ -149,7 +156,7 @@ ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
                 arm_fwd=(0.0, -0.20, 0.25), arm_back=(0.0, -0.32, -0.22), elbow_out=0.25, fingers="open",
                 swing=((6, 10, 80, 25), (-30, 12, 70, -25)))
-REAVER = Gait(frames=19, speed=SPEED, duty=0.30, drop=0.10, bob=0.08, lean=24, spine_lean=8, hip_yaw=11, hip_roll=4,
+REAVER = Gait(frames=19, speed=SPEED, duty=0.30, drop=0.10, bob=0.08, lean=14, spine_lean=3, hip_yaw=11, hip_roll=4,
               hip_shift=0.025, chest_yaw=8, width=0.07, reach=0.36, kick=0.48, knee=0.36, shoulders=(8, 10),
               arm_fwd=(0.0, -0.06, 0.34), arm_back=(0.04, -0.24, -0.32), elbow_out=0.5, fingers="fist",
               swing=((10, 14, 75, 20), (-36, 15, 65, -30)))
@@ -161,10 +168,11 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
     "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
-    "run_reaver": (REAVER, {"r": blade_carry(up_fwd=0.75)}, "axe"),
-    "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
+    "run_reaver": (replace(REAVER, swing_r=AXE_ARM), {"r": blade_carry(up_fwd=0.75)}, "axe"),
+    "run_reaver_axes": (replace(REAVER, swing=AXE_ARM), {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
-    "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
+    # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
+    "run_arcanist_wand": (replace(ARCANIST, swing_r=((6, 10, 80, 25), (-30, 13, 70, -35))), {"r": blade_carry()}, "wand"),
     # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint).
     "run_stalker": (replace(STALKER, fingers="fist", fingers_r="relaxed", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
                     {"r": crossbow_low()}, "crossbow"),
