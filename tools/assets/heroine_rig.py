@@ -303,6 +303,23 @@ def _game_skeleton(arm):
         err = np.abs(gpos[0] - heads).max()
         if err < 0.002:
             return sk
+        # Her joints moved by translation only (the DIPs toward her knuckles, FINGER_FIX; the
+        # dump made after the neck cut, whose Head rest is 30 mm short of this armature's, since
+        # the cut is a glb post-step): the dump's rest turns still hold, so its rest positions are
+        # re-seated on this armature's heads. Before this, a joint 2 mm off dropped every
+        # corrective (elbow_point_l/r) from her body and pieces without a word in the summary.
+        dev = np.abs(gpos[0] - heads).max(1)
+        if err < 0.05:
+            grot, _ = sk.rest_globals()
+            from rig import qinv, qrot
+            pos = sk.rest_pos.copy()
+            for j, p in enumerate(sk.parent):
+                pos[j] = heads[j] if p < 0 else qrot(qinv(grot[0, p]), heads[j] - heads[p])
+            sk.rest_pos = pos
+            moved = [sk.names[j] for j in np.where(dev >= 0.002)[0]]
+            print(f"RIG correctives: {f} was {err * 1000:.1f} mm off this armature; rest re-seated on its heads "
+                  f"({len(moved)} joints: {', '.join(moved[:12])}{' ...' if len(moved) > 12 else ''})")
+            return sk
         print(f"RIG correctives: {f} is {err * 1000:.1f} mm off this armature")
     return None
 
