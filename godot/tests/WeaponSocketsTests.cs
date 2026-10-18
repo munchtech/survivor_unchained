@@ -97,15 +97,49 @@ public class WeaponSocketsTests
     public void TheFistsPocketIsTheHollowItsFingersCloseRound()
     {
         // In hand_r's space (+Y along the fingers, +Z the thumb's side, the palm toward -X): the pocket lies under the
-        // knuckles (her knuckles are 120-139 mm from the wrist), the leather's 13.65 mm plus the glove off the palm
-        // (-X), not at the thumb's root (58 mm); the shaft square to the fingers within a few degrees.
+        // knuckles (on the body build F0 her knuckle pivots are 100-105 mm from the wrist), the leather's 13.65 mm plus
+        // the glove off the palm (-X), not at the thumb's root (31 mm); the shaft square to the fingers within a few degrees.
         var at = WeaponSockets.FistAtR;
-        Assert.InRange(at.Y, 0.105f, 0.130f);
-        Assert.InRange(at.X, -0.040f, -0.025f);
+        Assert.InRange(at.Y, 0.085f, 0.105f);
+        Assert.InRange(at.X, -0.045f, -0.025f);
         Assert.InRange(at.Z, -0.020f, 0.0f);
         var dir = WeaponSockets.FistDirR;
         Assert.InRange((double)dir.Length(), 0.99999, 1.00001);
         Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 7.0, 9.5);
+    }
+
+    [Fact]
+    public void ABladeSitsOnItsOwnPocketInTheLeanItsClipsAreKeyedTo()
+    {
+        // Her sword mount as held (Arms.MountTransform, Lean 35): the shaft (+Y) is hand +Z turned 35 degrees about hand +X
+        // toward the fingers. The blade's pocket keeps that line's direction (the clips aim the blade by it, keyed.py
+        // GRIP["sword"]), so the seat only moves the hilt, never turns it.
+        float s = MathF.Sin(35 * MathF.PI / 180), c = MathF.Cos(35 * MathF.PI / 180);
+        System.Numerics.Vector3 mx = new(0, c, -s), my = new(0, s, c), o = new(-0.025f, 0.075f, 0);
+        var mz = System.Numerics.Vector3.Cross(mx, my);
+        var pocket = WeaponSockets.PocketR(WeaponKind.Blade1H);
+        Assert.NotNull(pocket);
+        var (pAt, pDir) = pocket!.Value;
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(pDir, my), 6);
+        var (turn, at) = WeaponSockets.FistSeat(mx, my, mz, o, pAt, pDir);
+        Assert.True(System.Numerics.Quaternion.Dot(turn, System.Numerics.Quaternion.Identity) > 0.999999f);
+        System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(Hand(at), pAt), 6);
+        // The hollow under her knuckles (100-105 mm from the wrist on the body build F0), toward the palm (-X): not the
+        // old mount point.
+        Assert.InRange(pAt.Y, 0.070f, 0.105f);
+        Assert.InRange(pAt.X, -0.045f, -0.030f);
+    }
+
+    [Fact]
+    public void OnlyFittedKindsHaveAPocket()
+    {
+        Assert.Equal((WeaponSockets.FistAtR, WeaponSockets.FistDirR), WeaponSockets.PocketR(WeaponKind.Staff));
+        Assert.NotNull(WeaponSockets.PocketR(WeaponKind.Blade1H));
+        Assert.Equal((WeaponSockets.DaggerAtR, WeaponSockets.DaggerDirR), WeaponSockets.PocketR(WeaponKind.Dagger));
+        // The axe's line is measured but not live (its haft is too thick for her fist to close on: see AxeAtR).
+        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Crossbow, WeaponKind.Shield, WeaponKind.Wand })
+            Assert.Null(WeaponSockets.PocketR(k));
     }
 
     [Fact]

@@ -826,11 +826,99 @@ def cast_raise(rig):
         (16, body(stance(0.14, weight=0.3), hips=(0, 15, 0), spine=(0, 19, 0), head=(0, -10, 0),
                   hand_r=arm((0.10, -0.25, 0.30), (-0.7, -0.6, -0.2), blade=_n(0.0, 0.97, -0.25)),
                   hand_l=arm((-0.26, -0.07, 0.26), (0.8, -0.4, -0.3)), fingers_l="grip", fingers_r="grip"), "auto"),
-        (28, body(stance(0.06), hand_l=arm((-0.02, -0.40, -0.05), (1.0, 0.0, -0.7), knuckles=_n(0.2, -0.6, 0.6)),
+        # (Her left hand hangs a little out and forward of her shoulder, azimuth +61: at -158, just behind,
+        # the arc's azimuth ran from -45 round past her right side and the hand swept back across her
+        # right forearm; this way it swings out to her left. Its fall is held back: _cast_release.)
+        (28, body(stance(0.06), hand_l=arm((0.04, -0.40, 0.022), (1.0, 0.0, -0.7), knuckles=_n(0.2, -0.6, 0.6)),
                   hand_r=arm((-0.16, -0.28, 0.12), (-0.8, -0.3, -0.6), blade=_n(-0.12, 1.0, 0.18)),
                   fingers_l="relaxed", fingers_r="grip"), "ease"),
     ]
-    return build("cast_raise", rig, keys, meta={"layer": "upper", "contact": 10 / 30, "weapon": "staff"})
+    return build("cast_raise", rig, keys, meta={"layer": "upper", "contact": 10 / 30, "weapon": "staff"},
+                 post=_cast_release(rig, keys))
+
+
+def _cast_release(rig, keys, frm=16, to=28, lag=1.75):
+    """Her left hand letting go of the staff (cast_raise, f16-28): it leaves
+    the staff out to her left at the height it held it and only then falls to
+    her side, its drop (the arc's elevation) running up to `lag` frames
+    behind its swing out (the azimuth), most at f20-21 and none at either
+    key, so the keys and the speed's one smooth rise and fall are kept.
+
+    (14 October, lead 32: let fall as keyed, it swept back across her right
+    forearm, 0.1 mm from the glove in game, the forearm 80 mm into her trunk
+    on the way; swung out from the start, its little finger met her right
+    hand's knuckles at f19. Now 77 mm from the forearm, 29 from the hand.)"""
+    from keyed import FINGER_PRESETS, Track, _one_frame, finger_curl
+    from rig import qaxis, qinv, qmul, qslerp
+    track = Track(_one_frame(rig, keys))
+    m, n = 2.0, 3.0
+    peak = (m / (m + n)) ** m * (n / (m + n)) ** n
+
+    def smooth(x):
+        x = min(1.0, max(0.0, x))
+        return x * x * (3 - 2 * x)
+
+    # (15 October, animation 33; the max judge on the passed path: "fix the hand".) Her fingers: the staff's grip to
+    # f17, opening from f18 to a soft curl by f20 (knuckle 20-29, middle joint 30-39, more toward the little finger;
+    # the relaxed thumb beside the forefinger), held to the end. Keyed "grip" then "relaxed", the preset switched at
+    # the nearer key: a fist to f22, then open in a frame.
+    grip, soft = finger_curl("grip"), finger_curl("relaxed")
+    curl = {"index": (20, 30, 8), "middle": (23, 33, 10), "ring": (26, 36, 12), "pinky": (29, 39, 14),
+            "thumb": tuple(soft["thumb"])}
+    rel = FINGER_PRESETS["relaxed"]
+
+    def fingers(fr):
+        s = smooth((fr - 17) / 3)
+        mix = lambda a, b: a + (b - a) * s
+        return {"bends": {f: tuple(mix(a, b) for a, b in zip(grip[f], curl[f])) for f in curl},
+                "oppose": mix(0, rel["oppose"]), "thumb_roll": mix(0, rel["thumb_roll"]),
+                "thumb_in": mix(0, rel["thumb_in"]), "spreads": {f: mix(0, v) for f, v in rel["spreads"].items()}}
+
+    # Her wrist: flexed toward the palm as the hand swings out (measured +9/+14/+15 at f20-22) so the fingers trail;
+    # then, over f21-28, turned in the hand's own frame (on how it rides as keyed) out of the staff's pronation: rolled
+    # toward neutral, the palm in on her hip, the fingers forward and down, extension 38 (it hung at 44, palm 27 mm
+    # off the hip). The elbow eased back (pole) and the hand 38 mm in toward the hip over f22-28 so the palm can reach.
+    s3, h = rig.I["spine_03"], rig.I["hand_l"]
+    land_q = qmul(qaxis([0, 1.0, 0], -45), qmul(qaxis([0, 0, 1.0], 17), qmul(qaxis([0, 1.0, 0], 50), qaxis([1.0, 0, 0], 24))))
+    inward = np.array([-0.95, -0.18, 0.24])
+    pole_to = np.array([-0.2, 0.0, -1.0])
+
+    def turn(fr):
+        b = 32.0 * smooth((fr - 15) / 3) * (1 - smooth((fr - 21) / 3))
+        land = smooth((fr - 21) / 7)
+        return qmul(qaxis([0, 0, 1.0], -b), qslerp(np.array([0, 0, 0, 1.0]), land_q, land))
+
+    def hand_turn(pose):
+        keep = getattr(rig, "swivel_force", None)
+        rig.swivel_force = {}
+        local, pos = rig.solve(pose)
+        rig.swivel_force = keep
+        g, _ = rig.globals(local, pos)
+        chest = qmul(g[0, s3], qinv(rig.grest[s3]))
+        return qmul(qinv(chest), g[0, h])
+
+    def post(fr, pose):
+        if frm < fr < to:
+            u = (fr - frm) / (to - frm)
+            w = u ** m * (1 - u) ** n / peak
+            az, _, r = pose["hand_l"]["arc"]
+            el = track(fr - lag * w)["hand_l"]["arc"][1]
+            pose["hand_l"] = {**pose["hand_l"], "arc": (az, el, r)}
+        if fr <= frm:
+            return pose
+        k = smooth((fr - 22) / (to - 22))
+        if k:
+            az, el, r = pose["hand_l"]["arc"]
+            a, e = math.radians(az), math.radians(el)
+            v = np.array([r * math.cos(e) * math.sin(a), r * math.sin(e), r * math.cos(e) * math.cos(a)]) + 0.038 * k * inward
+            p0 = np.array(pose["hand_l"]["pole"], float)
+            pose["hand_l"] = {**pose["hand_l"], "arc": arc_of(v), "pole": tuple(p0 + (pole_to - p0) * k)}
+        pose["fingers_l"] = fingers(fr)
+        q = qmul(hand_turn(pose), turn(fr))
+        pose["hand_l"] = {**pose["hand_l"], "knuckles": tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
+                          "blade": tuple(float(x) for x in qrot(q, [0, 0, 1.0]))}
+        return pose
+    return post
 
 
 def cast_flick(rig):
@@ -887,6 +975,8 @@ def throw(rig):
     # The dagger's grip: the fingers closed round the hilt and the thumb
     # swung in over them (keyed.py "oppose"; "grip"'s thumb stood out like a
     # hitch-hiker's), as the warden's sword grip.
+    # Her right fist is the dagger's fitted wrap (keyed WRAP["daggers"]: "grip" in a daggers clip's right hand
+    # becomes it; this preset left her fingers 49-54 deg off it, fistfit.py daggers); the left keeps the preset.
     fist = {"curl": 0.92, "thumb": 0.65, "cascade": 0.08, "oppose": 0.8}
 
     def held(v, pole, blade, twist=0.45):
@@ -913,7 +1003,7 @@ def throw(rig):
         # already turning down as the hips lead, so it doesn't turn in a frame.)
         hand_l = held((0.29 - 0.10 * max(0.0, 2 * c - 1), -0.16, 0.26), (0.8, -0.5, -0.2), (0.45 - 0.05 * c, 0.8 - 0.4 * c, 0.35 + 0.4 * c))
         return body(stance(0.07, weight=-0.4), hips=(-16, -2 - 2 * c, 0), spine=(-26, -8 - 3 * c, 0), head=(30, -2 + 4 * c, 0),
-                    clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r=fist, fingers_l=fist)
+                    clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r="grip", fingers_l=fist)
 
     keys = [
         # (judge 11: the haft still stood upright and the hand out to the
@@ -932,7 +1022,7 @@ def throw(rig):
         (3.5, body(stance(0.08), hips=(-2, 6, 0), spine=(0, 8, 0), head=(4, -4, 0),
                    hand_r=held((-0.04, 0.10, 0.44), (-0.8, -0.3, -0.2), (0.05, 0.35, 1.0)),
                    hand_l=held((0.10, -0.29, 0.18), (0.6, -0.2, -0.6), (0.3, -0.2, 0.93)),
-                   fingers_r=fist, fingers_l=fist), "linear"),
+                   fingers_r="grip", fingers_l=fist), "linear"),
         # The follow-through: the right arm long, the fist ahead of her and
         # low, the blade pointing ahead and down at where the knife went (a
         # fist kept close in front of her held its blade at her groin); the left swept down
@@ -942,16 +1032,16 @@ def throw(rig):
         (7, body(stance(0.10, weight=0.5), hips=(12, 10, 0), spine=(22, 14, 0), head=(-26, -6, 0),
                  hand_r=held((-0.215, -0.15, 0.45), (-0.6, -0.6, 0.0), (-0.75, -0.25, 0.6)),
                  hand_l=held((0.07, -0.40, 0.12), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
-                 fingers_r=fist, fingers_l=fist), "ease"),
+                 fingers_r="grip", fingers_l=fist), "ease"),
         (10, body(stance(0.10, weight=0.5), hips=(13, 10, 0), spine=(24, 14, 0), head=(-28, -6, 0),
                   hand_r=held((-0.225, -0.19, 0.43), (-0.6, -0.6, 0.0), (-0.7, -0.3, 0.65)),
                   hand_l=held((0.08, -0.42, 0.10), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
-                  fingers_r=fist, fingers_l=fist), "auto"),
+                  fingers_r="grip", fingers_l=fist), "auto"),
         # Back to the hands low at her sides, the blades ahead (the left
         # beside her thigh, off her groin: judge 10).
         (21, body(stance(0.07), hand_r=held((-0.09, -0.33, 0.15), (-0.6, -0.4, -0.5), (-0.7, -0.05, 0.7)),
                   hand_l=held((0.06, -0.38, 0.06), (0.6, -0.4, -0.5), (0.15, -0.35, 0.92)),
-                  fingers_r=fist, fingers_l=fist), "ease"),
+                  fingers_r="grip", fingers_l=fist), "ease"),
     ]
     return build("throw", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3.5 / 30, "weapon": "daggers"})
 
@@ -1026,16 +1116,20 @@ def daggers_fore(rig):
 
 
 def daggers_heavy(rig):
-    """Both blades in a crossing cut, out from the middle."""
+    """Both blades in a crossing cut, out from the middle.
+
+    The blades are keyed where the wrists can take them (animation 33's solver, the sword's template): at the
+    contact each wrist is about 20 deg ulnar (was 36-37, at the rig's cap), the blade within 11-12 deg of where it
+    pointed before; the cut-end blades turned so the wrists stay under 28 ulnar."""
     keys = [
-        (0, _dag(0, 0, (0.16, 0.10, 0.18), _n(0.4, 0.7, -0.5), (-0.4, 0.2, -0.8),
-                 (-0.16, 0.10, 0.18), _n(-0.4, 0.7, -0.5), (0.4, 0.2, -0.8)), "fast"),
-        (3, _dag(0, 0, (0.0, -0.10, 0.44), _n(-0.3, -0.1, 1.0), (-0.6, -0.6, -0.3),
-                 (0.0, -0.08, 0.44), _n(0.3, -0.1, 1.0), (0.6, -0.6, -0.3), pitch=16), "linear"),
-        (6, _dag(0, 0, (-0.30, -0.24, 0.24), _n(-0.9, -0.3, 0.2), (-0.3, -1.0, 0.2),
-                 (0.30, -0.24, 0.24), _n(0.9, -0.3, 0.2), (0.3, -1.0, 0.2), pitch=20, weight=0.2), "ease"),
-        (9, _dag(0, 0, (-0.32, -0.26, 0.20), _n(-0.85, -0.4, -0.1), (-0.2, -1.0, 0.3),
-                 (0.32, -0.26, 0.20), _n(0.85, -0.4, -0.1), (0.2, -1.0, 0.3), pitch=20, weight=0.2), "auto"),
+        (0, _dag(0, 0, (0.16, 0.10, 0.18), _n(0.44, 0.70, -0.57), (-0.4, 0.2, -0.8),
+                 (-0.16, 0.10, 0.18), _n(-0.45, 0.70, -0.56), (0.4, 0.2, -0.8)), "fast"),
+        (3, _dag(0, 0, (0.02, -0.10, 0.44), _n(-0.07, 0.68, 0.73), (-0.6, -0.6, -0.3),
+                 (-0.02, -0.08, 0.44), _n(0.07, 0.72, 0.69), (0.6, -0.6, -0.3), pitch=16), "linear"),
+        (6, _dag(0, 0, (-0.30, -0.24, 0.24), _n(-1.0, 0.07, 0.01), (-0.3, -1.0, 0.2),
+                 (0.30, -0.24, 0.24), _n(1.0, 0.07, 0.01), (0.3, -1.0, 0.2), pitch=20, weight=0.2), "ease"),
+        (9, _dag(0, 0, (-0.32, -0.26, 0.20), _n(-1.0, 0.01, -0.09), (-0.2, -1.0, 0.3),
+                 (0.32, -0.26, 0.20), _n(1.0, 0.01, -0.09), (0.2, -1.0, 0.3), pitch=20, weight=0.2), "auto"),
         (20, DAG_GUARD, "ease"),
     ]
     return build("daggers_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})

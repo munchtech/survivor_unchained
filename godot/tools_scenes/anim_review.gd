@@ -23,10 +23,14 @@ extends SceneTree
 #   GESTURE=her/nod GESTUREAT=s            a gesture laid over the clip (Gestures.cs) s seconds in
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
 #   BODYDIR=folder                         her body and outfits read from another build (before a change)
+#                                          (its outfit_materials.json and outfit_tex/ beside them)
+#   LIGHTS=town                            the towns' day light (as lookdev.gd's)
 #   NOJOINTS=1                             her helper bones left undriven (not her body before them:
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
 #   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
 #                                          away (blue); her own skin drawn from both sides; her UVs as colour
+#   POSEDUMP=file.json                     per photographed frame, her bones' final global poses (after every modifier,
+#                                          from skeleton_updated) and her meshes' non-zero blend shapes, for measuring off-engine
 #   HAIRCLEAR=1 [HAIRMESH=folder]          debug: per photographed frame, how near her hair chain comes to her posed
 #                                          body and outfit (signed cm, negative = inside) and its jump in her neck frame
 var clip = ""
@@ -44,6 +48,8 @@ var travelled = 0.0
 var view = "three"
 var warm = 4
 var vp: SubViewport
+var posedump = []
+var lastpose = null
 
 func _init():
 	var args = OS.get_cmdline_user_args()
@@ -78,6 +84,9 @@ func _init():
 	ap = AnimationPlayer.new()
 	her.add_child(ap)
 	ap.root_node = NodePath("..")
+	# Advanced by hand, after each photograph (see _process): played by the
+	# tree, the pose drawn at a tick was a frame on from the one asked for.
+	ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	var ual = AnimationLibrary.new()
 	for f in ["res://assets/people/UAL1.glb", "res://assets/people/UAL2.glb"]:
 		var s = load(f).instantiate()
@@ -121,6 +130,9 @@ func _init():
 		var jsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
 		jsk.add_child(load("res://src/Actors/HerJoints.cs").new())
 	stage(root)
+	if env("POSEDUMP", "") != "":
+		var psk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+		psk.skeleton_updated.connect(pose_grab.bind(psk))
 
 var tree: AnimationTree
 var gestures = null
@@ -179,6 +191,7 @@ func overlay(over):
 	for L in ap.get_animation_library_list(): tree.add_animation_library(L, ap.get_animation_library(L))
 	tree.set("parameters/sc/scale", float(env("OVERSPEED", "1.6")))
 	tree.active = true
+	tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 
 func env(k, d):
 	var v = OS.get_environment(k)
@@ -190,14 +203,18 @@ func env(k, d):
 # People.OutfitMaterials does (heroine_outfit.gdshader from
 # outfit_materials.json), not in the file's own materials.
 func game_outfit(mi):
-	var table = JSON.parse_string(FileAccess.get_file_as_string("res://art/people/outfit_materials.json"))
+	# (BODYDIR: that build's own table, when it has one)
+	var tf = "res://art/people/outfit_materials.json"
+	if env("BODYDIR", "") != "" and FileAccess.file_exists(env("BODYDIR", "").path_join("outfit_materials.json")):
+		tf = env("BODYDIR", "").path_join("outfit_materials.json")
+	var table = JSON.parse_string(FileAccess.get_file_as_string(tf))
 	var sh = load("res://shaders/heroine_outfit.gdshader")
 	for s in mi.mesh.get_surface_count():
 		var src = mi.mesh.surface_get_material(s)
 		if not (src is StandardMaterial3D) or not table.has(src.resource_name):
 			continue
 		var e = table[src.resource_name]
-		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4}.get(e["kind"], -1)
+		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4, "satin": 5}.get(e["kind"], -1)
 		if kind < 0:
 			continue
 		src.vertex_color_use_as_albedo = false
@@ -495,6 +512,21 @@ func stage(root):
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.9
 	root.add_child(rim)
+	# LIGHTS=town: the towns' day, as lookdev.gd's (warm key 44 deg up from azimuth 55,
+	# a cool hemisphere, a faint cool rim, fog grey behind)
+	if env("LIGHTS", "") == "town":
+		var el = deg_to_rad(44.0)
+		var az = deg_to_rad(55.0)
+		var dir = Vector3(cos(el) * cos(az), sin(el), cos(el) * sin(az)).normalized()
+		key.basis = Basis.looking_at(-dir, Vector3.UP)
+		key.light_color = Color("#f4e6cc")
+		key.light_energy = 1.5
+		rim.light_color = Color("#dfe8f4")
+		rim.light_energy = 0.35
+		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		e.ambient_light_color = Color("#8a9aac")
+		e.ambient_light_energy = 0.9
+		e.background_color = Color("#8e969a")
 	place_camera()
 
 func place_camera():
@@ -529,7 +561,7 @@ func place_camera():
 	cam.look_at_from_position(c + off / float(env("ZOOM", "1")), c)
 
 func _process(delta):
-	her.position += her.basis.z.normalized() * speed * delta
+	her.position += her.basis.z.normalized() * speed * TICK
 	# FIXCAM=1: the camera set up on the clip's first frame and left there,
 	# as a cinematic's camera is set on its marks when the shot begins.
 	if env("FIXCAM", "") == "" or frame <= warm:
@@ -537,11 +569,14 @@ func _process(delta):
 	frame += 1
 	if frame <= warm:
 		if frame == warm:
-			# The first shots after warming: from the clip's start.
+			# The first shots after warming: from the clip's start (not
+			# advanced this tick, so the start itself is drawn and photographed).
 			ap.seek(start, true)
 			her.position = Vector3.ZERO
 			# (her hair hung afresh from this pose: the seek back was a jump, and it flung her hair)
 			for h in her.find_children("HairSway", "", true, false): h.call("Settle")
+		else:
+			play_on(delta)
 		return false
 	var k = frame - warm - 1
 	if tree != null and k == int(float(env("OVERAT", "0")) * 30):
@@ -558,11 +593,24 @@ func _process(delta):
 		var img = vp.get_texture().get_image()
 		if env("HAIRCLEAR", "") != "": hair_clear(k)
 		shots.append(img)
+		if lastpose != null: posedump.append(lastpose)
 		if env("FULL", "") != "": img.save_png(out.replace(".png", "_%02d.png" % shots.size()))
 	if shots.size() >= nframes:
+		if env("POSEDUMP", "") != "": pose_write()
 		sheet()
 		quit()
+	# The photograph above is the frame drawn last tick: only now does the
+	# clip move on to the next (until 14 Oct the player moved on before the
+	# first photograph, so every cell showed one frame later than its number).
+	play_on(delta)
 	return false
+
+# Exactly a frame: the engine's tick wanders (0.025-0.042 s seen under
+# --fixed-fps 30, 14 Oct), which moved cells off their frames by up to a quarter.
+const TICK = 1.0 / 30.0
+func play_on(_delta):
+	if tree != null: tree.advance(TICK)
+	else: ap.advance(TICK)
 
 func sheet():
 	var w = shots[0].get_width()
@@ -669,3 +717,25 @@ func hair_clear(k):
 					mp = i
 			print("HAIRMOVE k=%d max=%.1f point=%d" % [k, mx, mp])
 		hc_prev[key] = loc
+
+# POSEDUMP: the final pose as the skin gets it (skeleton_updated comes after every modifier).
+func pose_grab(sk: Skeleton3D):
+	var b = []
+	for i in sk.get_bone_count():
+		var g: Transform3D = sk.get_bone_global_pose(i)
+		b.append([g.basis.x.x, g.basis.x.y, g.basis.x.z, g.basis.y.x, g.basis.y.y, g.basis.y.z, g.basis.z.x, g.basis.z.y, g.basis.z.z, g.origin.x, g.origin.y, g.origin.z])
+	var bs = {}
+	for mi in sk.get_children():
+		if mi is MeshInstance3D and mi.mesh is ArrayMesh:
+			for i in mi.get_blend_shape_count():
+				var v = mi.get_blend_shape_value(i)
+				if v != 0.0: bs[String(mi.name) + "|" + String(mi.mesh.get_blend_shape_name(i))] = v
+	lastpose = {"t": ap.current_animation_position, "len": ap.current_animation_length, "bones": b, "shapes": bs}
+
+func pose_write():
+	var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+	var names = []
+	for i in sk.get_bone_count(): names.append(sk.get_bone_name(i))
+	var f = FileAccess.open(env("POSEDUMP", ""), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"clip": clip, "names": names, "frames": posedump}))
+	f.close()
