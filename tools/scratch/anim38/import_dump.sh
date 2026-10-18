@@ -2,7 +2,7 @@
 # Import the worktree's Godot project, then dump her skeleton from the new body.
 W=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a6b5a13d0be70144d
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/463a4243-9324-49b0-bda9-b9fb9a9d68b1/scratchpad/a38
+S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/43e8c2e6-36a3-4fd7-8ca4-39c475e24666/scratchpad/a38
 python $W/tools/turn.py take godot "animation 38: import + skeleton dump" --wait 900 --stale-ok --root $W || { echo "NO TURN"; exit 1; }
 cd $W/godot
 timeout 1800 "$G" --headless --path . --import > $S/import.log 2>&1; echo IMPORT $?

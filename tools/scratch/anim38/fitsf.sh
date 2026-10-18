@@ -1,6 +1,6 @@
 #!/bin/sh
 # fistfit runs from an args file (one per line), in parallel. Usage: fitsf.sh <tag> <argsfile>
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/463a4243-9324-49b0-bda9-b9fb9a9d68b1/scratchpad/a38
+S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/43e8c2e6-36a3-4fd7-8ca4-39c475e24666/scratchpad/a38
 W=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a6b5a13d0be70144d
 O=$S/f_$1
 mkdir -p $O
