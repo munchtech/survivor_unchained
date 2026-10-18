@@ -1,0 +1,137 @@
+# posed_clip.py at the Look, @457a77cc (+88cb2a96: long/bob deferred, not measured; the *_spin90_<outfit> braid runs were asked as long and fell back to the braid). Default outfit: warden. Skin tucked under the outfit as drawn.
+== braid_idle0: 21 frames
+  strands head     body                 n= 65980  >1mm max  1.48% (k04) med  0.78%  >3mm max  1.34% med  0.76%  worst  15.0 mm (k14) med 15.0
+  strands head     head                 n= 65980  >1mm max  0.60% (k00) med  0.17%  >3mm max  0.01% med  0.00%  worst   4.1 mm (k00) med  2.7
+  strands neck     head                 n=   120  >1mm max  9.17% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k00) med  0.1
+  roots   head     body                 n=  8535  >1mm max  1.25% (k12) med  0.91%  >3mm max  1.11% med  0.88%  worst  15.0 mm (k12) med 15.0
+  roots   head     head                 n=  8535  >1mm max  1.85% (k00) med  1.10%  >3mm max  0.14% med  0.12%  worst   6.4 mm (k00) med  5.1
+  tie     head     body                 n=   363  >1mm max 60.88% (k12) med 49.04%  >3mm max 52.34% med 45.18%  worst  15.0 mm (k11) med 15.0
+  chain hair_braid: min signed    6.7 mm (k01, point 4); frames < 0: 0/21, median 13.1 mm
+== braid_idle180: 21 frames
+  strands head     body                 n= 65980  >1mm max  1.46% (k03) med  0.83%  >3mm max  1.31% med  0.80%  worst  15.0 mm (k20) med 15.0
+  strands head     head                 n= 65980  >1mm max  0.60% (k00) med  0.17%  >3mm max  0.01% med  0.00%  worst   4.1 mm (k00) med  2.7
+  strands neck     head                 n=   120  >1mm max 10.00% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k00) med  0.1
+  roots   head     body                 n=  8535  >1mm max  1.22% (k04) med  0.98%  >3mm max  1.08% med  0.96%  worst  15.0 mm (k13) med 14.9
+  roots   head     head                 n=  8535  >1mm max  1.86% (k00) med  1.10%  >3mm max  0.14% med  0.12%  worst   6.5 mm (k00) med  5.1
+  tie     head     body                 n=   363  >1mm max 60.06% (k02) med 51.52%  >3mm max 50.96% med 45.73%  worst  15.0 mm (k03) med 14.9
+  chain hair_braid: min signed    5.9 mm (k01, point 4); frames < 0: 0/21, median 13.1 mm
+== braid_spin360: 14 frames
+  strands head     body                 n= 65980  >1mm max  1.05% (k10) med  0.86%  >3mm max  0.90% med  0.64%  worst  15.0 mm (k09) med 15.0
+  strands head     head                 n= 65980  >1mm max  0.59% (k00) med  0.18%  >3mm max  0.01% med  0.00%  worst   4.1 mm (k00) med  2.7
+  strands head     warden_darkleather   n= 65980  >1mm max  0.01% (k12) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k12) med  0.0
+  strands head     warden_gold          n= 65980  >1mm max  0.07% (k12) med  0.00%  >3mm max  0.07% med  0.00%  worst  15.0 mm (k12) med  6.4
+  strands head     warden_steel         n= 65980  >1mm max  0.00% (k11) med  0.00%  >3mm max  0.00% med  0.00%  worst  14.5 mm (k11) med  0.0
+  strands neck     head                 n=   120  >1mm max  9.17% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.5 mm (k00) med  0.1
+  roots   head     body                 n=  8535  >1mm max  1.11% (k12) med  0.42%  >3mm max  1.01% med  0.42%  worst  15.0 mm (k07) med 14.5
+  roots   head     head                 n=  8535  >1mm max  1.85% (k00) med  1.11%  >3mm max  0.14% med  0.12%  worst   6.4 mm (k00) med  5.1
+  tie     head     body                 n=   363  >1mm max 63.64% (k12) med 38.02%  >3mm max 54.27% med 37.88%  worst  15.0 mm (k13) med 14.9
+  chain hair_braid: min signed   -6.8 mm (k12, point 4); frames < 0: 9/14, median -3.9 mm
+== braid_spin90: 28 frames
+  strands head     body                 n= 65980  >1mm max  1.46% (k21) med  0.67%  >3mm max  1.38% med  0.66%  worst  15.0 mm (k17) med 15.0
+  strands head     head                 n= 65980  >1mm max  0.60% (k00) med  0.17%  >3mm max  0.01% med  0.00%  worst   4.1 mm (k00) med  2.7
+  strands neck     head                 n=   120  >1mm max 10.00% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k00) med  0.1
+  roots   head     body                 n=  8535  >1mm max  1.21% (k14) med  0.79%  >3mm max  1.11% med  0.79%  worst  15.0 mm (k04) med 14.9
+  roots   head     head                 n=  8535  >1mm max  1.86% (k00) med  1.10%  >3mm max  0.14% med  0.12%  worst   6.5 mm (k00) med  5.1
+  tie     head     body                 n=   363  >1mm max 58.13% (k22) med 46.01%  >3mm max 51.79% med 42.98%  worst  15.0 mm (k09) med 14.9
+  chain hair_braid: min signed   -0.2 mm (k00, point 1); frames < 0: 1/28, median 10.8 mm
+== braid_spin90_arcanist: 28 frames
+  strands head     arcanist_plumleather n= 65980  >1mm max  0.12% (k07) med  0.12%  >3mm max  0.00% med  0.00%  worst   1.5 mm (k26) med  1.4
+  strands head     body                 n= 65980  >1mm max  0.13% (k06) med  0.09%  >3mm max  0.12% med  0.09%  worst  15.0 mm (k18) med 14.9
+  strands head     head                 n= 65980  >1mm max  1.86% (k00) med  0.85%  >3mm max  1.02% med  0.22%  worst   8.2 mm (k00) med  5.2
+  strands neck     arcanist_plumleather n=   120  >1mm max  1.67% (k03) med  0.00%  >3mm max  1.67% med  0.00%  worst  14.8 mm (k27) med  0.0
+  strands neck     head                 n=   120  >1mm max 75.00% (k00) med 29.58%  >3mm max 47.50% med  1.67%  worst   6.3 mm (k00) med  4.1
+  roots   head     arcanist_plumleather n=  8535  >1mm max  0.20% (k00) med  0.20%  >3mm max  0.00% med  0.00%  worst   1.1 mm (k05) med  1.1
+  roots   head     head                 n=  8535  >1mm max  3.14% (k00) med  2.06%  >3mm max  1.73% med  0.70%  worst   9.9 mm (k00) med  7.7
+  chain hair_braid: min signed   -1.3 mm (k10, point 4); frames < 0: 15/28, median -0.5 mm
+== braid_spin90_reaver: 28 frames
+  strands head     body                 n= 65980  >1mm max  0.34% (k00) med  0.00%  >3mm max  0.34% med  0.00%  worst  15.0 mm (k00) med  0.0
+  strands head     head                 n= 65980  >1mm max  0.10% (k00) med  0.01%  >3mm max  0.00% med  0.00%  worst   2.4 mm (k00) med  1.2
+  strands head     reaver_blackleather  n= 65980  >1mm max  0.00% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst  14.8 mm (k24) med  0.0
+  strands head     reaver_darkleather   n= 65980  >1mm max  0.00% (k16) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.5 mm (k16) med  0.0
+  strands head     reaver_oldleather    n= 65980  >1mm max  0.00% (k16) med  0.00%  >3mm max  0.00% med  0.00%  worst   1.5 mm (k16) med  0.0
+  roots   head     body                 n=  8535  >1mm max  0.42% (k00) med  0.00%  >3mm max  0.42% med  0.00%  worst  14.9 mm (k00) med  0.0
+  roots   head     head                 n=  8535  >1mm max  0.97% (k00) med  0.63%  >3mm max  0.11% med  0.01%  worst   4.8 mm (k00) med  3.2
+  tie     head     body                 n=   363  >1mm max 40.77% (k00) med  0.00%  >3mm max 40.77% med  0.00%  worst  15.0 mm (k00) med  0.0
+  chain hair_braid: min signed    0.2 mm (k00, point 4); frames < 0: 0/28, median 15.0 mm
+== braid_spin90_stalker: 28 frames
+  strands head     body                 n= 65980  >1mm max  0.12% (k01) med  0.08%  >3mm max  0.11% med  0.08%  worst  15.0 mm (k19) med 14.9
+  strands head     head                 n= 65980  >1mm max  0.97% (k19) med  0.78%  >3mm max  0.23% med  0.16%  worst   5.1 mm (k19) med  4.8
+  strands neck     head                 n=   120  >1mm max 27.50% (k04) med 25.00%  >3mm max  1.67% med  0.00%  worst   4.1 mm (k17) med  2.3
+  roots   head     head                 n=  8535  >1mm max  2.28% (k18) med  2.03%  >3mm max  0.74% med  0.52%  worst   7.4 mm (k19) med  7.0
+  chain hair_braid: min signed   -6.0 mm (k03, point 7); frames < 0: 1/28, median 9.9 mm
+== ponytail_idle0: 21 frames
+  strands head     body                 n= 89106  >1mm max  3.80% (k00) med  3.33%  >3mm max  3.29% med  2.92%  worst  15.0 mm (k18) med 15.0
+  strands head     head                 n= 89106  >1mm max  0.14% (k00) med  0.08%  >3mm max  0.00% med  0.00%  worst   4.0 mm (k00) med  2.7
+  strands head     warden_darkleather   n= 89106  >1mm max  0.01% (k13) med  0.01%  >3mm max  0.00% med  0.00%  worst   1.5 mm (k14) med  1.4
+  strands head     warden_gold          n= 89106  >1mm max  0.00% (k01) med  0.00%  >3mm max  0.00% med  0.00%  worst  15.0 mm (k18) med 11.4
+  roots   head     head                 n= 11817  >1mm max  1.17% (k00) med  0.59%  >3mm max  0.14% med  0.10%  worst   6.4 mm (k00) med  5.1
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k16) med  1.4
+  chain hair_ponytail: min signed    8.2 mm (k01, point 5); frames < 0: 0/21, median 15.0 mm
+== ponytail_idle180: 22 frames
+  strands head     body                 n= 89106  >1mm max  3.49% (k00) med  3.33%  >3mm max  3.05% med  2.92%  worst  15.0 mm (k14) med 15.0
+  strands head     head                 n= 89106  >1mm max  0.14% (k00) med  0.08%  >3mm max  0.00% med  0.00%  worst   4.0 mm (k00) med  2.7
+  strands head     warden_darkleather   n= 89106  >1mm max  0.01% (k21) med  0.01%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k14) med  1.5
+  strands head     warden_gold          n= 89106  >1mm max  0.00% (k06) med  0.00%  >3mm max  0.00% med  0.00%  worst  14.8 mm (k18) med  8.5
+  roots   head     head                 n= 11817  >1mm max  1.17% (k00) med  0.58%  >3mm max  0.14% med  0.10%  worst   6.4 mm (k00) med  5.1
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k03) med  1.4
+  chain hair_ponytail: min signed    7.9 mm (k01, point 5); frames < 0: 0/22, median 15.0 mm
+== ponytail_spin360: 14 frames
+  strands head     body                 n= 89106  >1mm max  3.77% (k02) med  3.11%  >3mm max  3.18% med  2.74%  worst  15.0 mm (k02) med 15.0
+  strands head     head                 n= 89106  >1mm max  0.14% (k00) med  0.08%  >3mm max  0.00% med  0.00%  worst   4.0 mm (k00) med  2.7
+  strands head     warden_darkleather   n= 89106  >1mm max  0.03% (k00) med  0.01%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k04) med  1.5
+  strands head     warden_gold          n= 89106  >1mm max  0.01% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst  14.6 mm (k09) med  0.6
+  strands head     warden_steel         n= 89106  >1mm max  0.02% (k00) med  0.00%  >3mm max  0.01% med  0.00%  worst  13.6 mm (k00) med  0.0
+  roots   head     head                 n= 11817  >1mm max  1.17% (k00) med  0.61%  >3mm max  0.14% med  0.10%  worst   6.4 mm (k00) med  5.1
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k13) med  1.4
+  chain hair_ponytail: min signed    5.9 mm (k11, point 5); frames < 0: 0/14, median 15.0 mm
+== ponytail_spin90: 28 frames
+  strands head     body                 n= 89106  >1mm max  3.39% (k08) med  3.29%  >3mm max  3.00% med  2.88%  worst  15.0 mm (k06) med 15.0
+  strands head     head                 n= 89106  >1mm max  0.14% (k00) med  0.08%  >3mm max  0.00% med  0.00%  worst   4.0 mm (k00) med  2.7
+  strands head     warden_darkleather   n= 89106  >1mm max  0.02% (k07) med  0.01%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k21) med  1.5
+  strands head     warden_gold          n= 89106  >1mm max  0.00% (k05) med  0.00%  >3mm max  0.00% med  0.00%  worst  13.9 mm (k17) med  0.7
+  roots   head     head                 n= 11817  >1mm max  1.17% (k00) med  0.59%  >3mm max  0.14% med  0.10%  worst   6.4 mm (k00) med  5.1
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k27) med  1.4
+  chain hair_ponytail: min signed    8.1 mm (k00, point 5); frames < 0: 0/28, median 15.0 mm
+== ponytail_spin90_arcanist: 28 frames
+  strands head     arcanist_plumleather n= 89106  >1mm max  0.52% (k12) med  0.44%  >3mm max  0.00% med  0.00%  worst   1.8 mm (k01) med  1.6
+  strands head     body                 n= 89106  >1mm max  4.21% (k00) med  3.29%  >3mm max  3.71% med  2.87%  worst  15.0 mm (k14) med 15.0
+  strands head     head                 n= 89106  >1mm max  0.36% (k00) med  0.18%  >3mm max  0.20% med  0.09%  worst   7.9 mm (k00) med  5.3
+  roots   head     arcanist_darkpurple  n= 11817  >1mm max  0.05% (k24) med  0.02%  >3mm max  0.00% med  0.00%  worst   1.3 mm (k08) med  1.1
+  roots   head     arcanist_plumleather n= 11817  >1mm max  0.71% (k23) med  0.47%  >3mm max  0.00% med  0.00%  worst   2.2 mm (k01) med  2.2
+  roots   head     head                 n= 11817  >1mm max  2.17% (k00) med  1.37%  >3mm max  1.19% med  0.46%  worst  10.1 mm (k00) med  7.7
+  tie     head     arcanist_plumleather n=   363  >1mm max  2.20% (k00) med  2.20%  >3mm max  0.00% med  0.00%  worst   1.1 mm (k27) med  1.1
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k05) med  1.4
+  chain hair_ponytail: min signed   -1.5 mm (k02, point 5); frames < 0: 17/28, median -0.6 mm
+== ponytail_spin90_reaver: 28 frames
+  strands head     body                 n= 89106  >1mm max  3.46% (k00) med  0.00%  >3mm max  3.00% med  0.00%  worst  15.0 mm (k00) med  0.0
+  strands head     head                 n= 89106  >1mm max  0.04% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst   2.4 mm (k00) med  0.9
+  strands head     reaver_blackleather  n= 89106  >1mm max  0.00% (k00) med  0.00%  >3mm max  0.00% med  0.00%  worst  11.6 mm (k00) med  0.0
+  strands head     reaver_darkleather   n= 89106  >1mm max  0.01% (k06) med  0.01%  >3mm max  0.00% med  0.00%  worst   1.9 mm (k06) med  1.6
+  strands head     reaver_oldleather    n= 89106  >1mm max  0.10% (k14) med  0.02%  >3mm max  0.00% med  0.00%  worst   1.6 mm (k19) med  1.5
+  roots   head     head                 n= 11817  >1mm max  0.49% (k00) med  0.34%  >3mm max  0.08% med  0.03%  worst   4.8 mm (k00) med  3.3
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k20) med  1.4
+  chain hair_ponytail: min signed   10.1 mm (k00, point 6); frames < 0: 0/28, median 15.0 mm
+== ponytail_spin90_stalker: 28 frames
+  strands head     body                 n= 89106  >1mm max  3.69% (k20) med  3.44%  >3mm max  3.21% med  3.00%  worst  15.0 mm (k23) med 15.0
+  strands head     head                 n= 89106  >1mm max  0.21% (k19) med  0.18%  >3mm max  0.10% med  0.07%  worst   5.1 mm (k19) med  4.7
+  strands head     ranger_darkleather   n= 89106  >1mm max  0.01% (k04) med  0.00%  >3mm max  0.00% med  0.00%  worst   2.5 mm (k12) med  2.0
+  strands head     ranger_forestleather n= 89106  >1mm max  0.04% (k18) med  0.03%  >3mm max  0.01% med  0.00%  worst  15.0 mm (k26) med 13.5
+  roots   head     head                 n= 11817  >1mm max  1.49% (k19) med  1.37%  >3mm max  0.52% med  0.36%  worst   7.4 mm (k19) med  7.0
+  tie     head     head                 n=   363  >1mm max  1.10% (k00) med  1.10%  >3mm max  0.00% med  0.00%  worst   1.4 mm (k03) med  1.4
+  chain hair_ponytail: min signed    4.5 mm (k00, point 5); frames < 0: 0/28, median 8.7 mm
+== pixie_idle0: 21 frames
+  strands head     head                 n= 55409  >1mm max  1.53% (k00) med  0.61%  >3mm max  0.14% med  0.00%  worst   4.1 mm (k00) med  2.8
+  strands neck     head                 n=   279  >1mm max 12.90% (k00) med  2.87%  >3mm max  0.00% med  0.00%  worst   2.9 mm (k00) med  1.7
+  roots   head     head                 n= 10557  >1mm max  2.05% (k00) med  1.13%  >3mm max  0.23% med  0.15%  worst   6.4 mm (k00) med  5.1
+== pixie_idle180: 21 frames
+  strands head     head                 n= 55409  >1mm max  1.55% (k00) med  0.61%  >3mm max  0.15% med  0.00%  worst   4.1 mm (k00) med  2.8
+  strands neck     head                 n=   279  >1mm max 12.90% (k00) med  2.87%  >3mm max  0.00% med  0.00%  worst   2.9 mm (k00) med  1.7
+  roots   head     head                 n= 10557  >1mm max  2.06% (k00) med  1.12%  >3mm max  0.23% med  0.15%  worst   6.5 mm (k00) med  5.1
+== pixie_spin360: 14 frames
+  strands head     head                 n= 55409  >1mm max  1.53% (k00) med  0.62%  >3mm max  0.13% med  0.00%  worst   4.1 mm (k00) med  2.8
+  strands neck     head                 n=   279  >1mm max 12.54% (k00) med  2.87%  >3mm max  0.00% med  0.00%  worst   2.9 mm (k00) med  1.8
+  roots   head     head                 n= 10557  >1mm max  2.04% (k00) med  1.14%  >3mm max  0.23% med  0.15%  worst   6.4 mm (k00) med  5.1
+== pixie_spin90: 28 frames
+  strands head     head                 n= 55409  >1mm max  1.54% (k00) med  0.60%  >3mm max  0.14% med  0.00%  worst   4.1 mm (k00) med  2.8
+  strands neck     head                 n=   279  >1mm max 12.90% (k00) med  2.87%  >3mm max  0.00% med  0.00%  worst   2.9 mm (k00) med  1.7
+  roots   head     head                 n= 10557  >1mm max  2.06% (k00) med  1.11%  >3mm max  0.23% med  0.15%  worst   6.5 mm (k00) med  5.1

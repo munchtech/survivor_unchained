@@ -456,8 +456,9 @@ public static class People
     static readonly Vector3 HerPaintedIris = new(0.816f, 0.766f, 1.071f);
 
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
-    /// fitted to her head), the first hers unless another is chosen.</summary>
-    public static readonly string[] HerHairs = { "long", "ponytail", "braid", "bob", "pixie" };
+    /// fitted to her head), the first hers unless another is chosen. Long and bob (art kept on disk)
+    /// are out until rebuilt (the owner, 18 Oct): an old "long" or "bob" falls to the braid.</summary>
+    public static readonly string[] HerHairs = { "braid", "ponytail", "pixie" };
 
     /// <summary>Her own hair colour, copper, as her portrait has it (under a white light its median
     /// within a few per cent of the portrait's; the old #8f2d14 rendered blood-red, its green and blue
@@ -832,6 +833,41 @@ public static class People
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
+    }
+
+    /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
+    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye), uv (her head's UV emitted:
+    /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), hairnospec and hairnovar (her hair's shine, its strand tone variation off), nosss, mask (her scalp's tint green).</summary>
+    static void H1Debug(Person p, string dbg)
+    {
+        var on = new HashSet<string>(dbg.Split(','));
+        foreach (var mi in p.Hair)
+        {
+            if (on.Contains("nohair")) mi.Visible = false;
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var name = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+                if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial hm) continue;
+                if (name == "hair_cap" && on.Contains("nocap")) mi.SetSurfaceOverrideMaterial(s, new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.Alpha, AlbedoColor = new Color(0, 0, 0, 0) });
+                else if (name == "hair_cap" && on.Contains("capgreen")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 1, 0));
+                else if (name != "hair_cap" && on.Contains("cardsblue")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 0, 1));
+                if (on.Contains("hairnospec")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
+                if (on.Contains("hairnovar")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("variation", 0f);
+            }
+        }
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
+                if (on.Contains("uv")) m.SetShaderParameter("dbg_gate", 9.0f);
+                if (on.Contains("uv10")) m.SetShaderParameter("dbg_gate", 10.0f);
+                if (on.Contains("uv11")) m.SetShaderParameter("dbg_gate", 11.0f);
+                if (on.Contains("nospec")) { m.SetShaderParameter("shine", 0f); m.SetShaderParameter("seam_shine", 0f); m.SetShaderParameter("rim", 0f); }
+                if (on.Contains("nosss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
+                if (on.Contains("mask")) m.SetShaderParameter("shadow_colour", new Color(0, 1f / 2.4f, 0));
+            }
+        GD.Print($"H1Debug: {dbg}");
     }
 
     /// <summary>Her face as one she started from (Lore.Her's faces): its

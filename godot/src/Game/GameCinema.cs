@@ -346,6 +346,7 @@ public partial class Game
             {
                 stillK++;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
+                if (Args.Has("mouth-cam")) GD.Print($"STILL {file.Id}_s{shot.Id}_{stillK}");
                 // --cinebones: where the cast's bones are at each still, for framing shots on them.
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)

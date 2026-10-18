@@ -118,7 +118,7 @@ public sealed class CineWhen
 /// <summary>The survivor it is played for.</summary>
 public sealed class CineContext
 {
-    public string Calling = "warden", Background = "hunter", Hair = "long", Sex = "female";
+    public string Calling = "warden", Background = "hunter", Hair = "braid", Sex = "female";
     public HashSet<string> Facts = new();
 }
 

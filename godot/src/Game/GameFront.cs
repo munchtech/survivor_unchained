@@ -135,6 +135,8 @@ public partial class Game
         if (figure == null || scene == null || draft == null) return;
         // --spin DEG: the turntable turned DEG a second, as a player holding the turn key (pictures of her hair turning).
         if (Args.Has("spin")) figTurn += Mathf.DegToRad((float)Args.Num("spin", 90)) * (float)dt;
+        // --hairdump DIR: her hair and body as drawn, every 0.25 s from 2 s in, for posed_clip.py (HairDump).
+        if (Args.Has("hairdump")) HairDump.Tick(figure, dt);
         figTurnNow = Mathf.Lerp(figTurnNow, figTurn, 1 - Mathf.Exp(-9f * (float)dt));
         figure.Rotation = new Vector3(0, (float)FigureHeading + figTurnNow, 0);
         float y = (float)scene.HeightAt(Fire.X, Fire.Y);
@@ -432,6 +434,12 @@ public partial class Game
         if (Args.Get("eyes") is string ey) draft.Eyes = ey;
         DressFigure(draft);
         PoseCreate();
+        // --look-time day|dawn|dusk: the Look in that light, not the fire's night (pictures of her hair by day).
+        if (Args.Get("look-time") is string lt && lt != "night" && scene != null)
+        {
+            air.Set(Atmospheres.ByName(lt));
+            scene.SetNight(false);
+        }
         var create = new CreateScreen(this, draft);
         screens.Show(create);
         create.FrameForStep();

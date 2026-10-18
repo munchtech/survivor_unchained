@@ -46,7 +46,48 @@ uniform vec3 deep_dark = vec3(0.5, 0.32, 0.29);
 uniform vec3 shade_warm = vec3(1.0, 0.82, 0.55);
 uniform float deep_warm = 1.0;
 uniform float deep_spec = 0.15;
-uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden)
+// (her lips parted only a little (HerFaceLife.TeethLight: 1 to mouth_open 0.25, none by 0.6): her side teeth (their
+// light under flat_from to flat_to) take the shut lips' flat warm dark too. Shaped and lit, the lower canine and
+// premolars at her mouth's corner read as a black block with one lit facet: a broken tooth (c04a A5, judge F1, face 29))
+uniform float narrow = 0.0;
+uniform float flat_from = 0.8;
+uniform float flat_to = 0.97;
+// (face 30: instead, those side teeth kept shaped and lit, their light share (COLOR.r) raised to side_floor by narrow and
+// lit: flat, they read as an olive block, and in the buccal corridor's shade at a mouth barely parted they went black
+// beside her incisors (c04a A5). flat_amount scales the flat dark above (1 as face 29's, 0 now))
+uniform float side_floor = 0.8;
+uniform float flat_amount = 0.0;
+// (her lips parted a little (HerFaceLife.TeethDrop: mouth_open about 0.25, none shut or by 0.6): her upper row seated
+// lower by drop_v (mesh space, its length the drop), on upper_mask's vertices (1 by VERTEX_ID, made from the mesh: those
+// mouth_open doesn't move; black, none, where unset). Her lip hid all but 0.5-1 mm of her incisors at c04a A5, read as
+// a black slit (judge F1, face 30))
+uniform sampler2D upper_mask : filter_nearest, hint_default_black;
+uniform int mask_w = 256;
+uniform vec3 drop_v = vec3(0.0);
+// (and while dropped (band, HerFaceLife.TeethDrop's ease, 1 at mouth_open 0.25, none shut or by 0.6), her upper row
+// shaded as one ivory band: flat to the eye (no tooth's facets), band_col by its height above her incisors' edge
+// (upper_mask's green, 0 at the edge to 1 band_span above it, from the mesh at rest: tools see HerFaceLife), fading
+// from 1 to band_low, by her side teeth's light (COLOR.r) as before; band_glow of it emitted, so it reads ivory in any
+// lamp. Shaped and lit, the dropped incisors read as grey facets with notches, chipped (judge F1 r2, face 30). The
+// gaps and notches between them are filled by heroine_teeth_shell.gdshader, a pass behind)
+uniform float band = 0.0;
+uniform vec3 band_col : source_color = vec3(0.9, 0.84, 0.68);
+uniform float band_low = 0.35;
+uniform float band_glow = 0.15;
+// (and her lower row, behind, flat to the eye too, in band_col times band_lower, its gaps filled by the shell too: shaped
+// and lit, its tips showed between her upper teeth and lip as jagged pale shards (Sunborn), and her left canine, in the
+// shade of her lip, as a black pocket beside her incisors (judge F1 r2))
+uniform float band_lower = 0.6;
+uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden; -1: band red, lower green, light blue)
+varying float up_w;
+varying float up_t;
+
+void vertex() {
+	vec4 um = texelFetch(upper_mask, ivec2(VERTEX_ID % mask_w, VERTEX_ID / mask_w), 0);
+	up_w = um.r; up_t = um.g;
+	if (dot(drop_v, drop_v) > 0.0)
+		VERTEX += drop_v * um.r;
+}
 
 void fragment() {
 	if (debug > 1.5) discard;
@@ -55,10 +96,10 @@ void fragment() {
 	// lamps alike, the paint kept ivory): her side teeth read as shaded ivory. Until the smile pass's j2 the shade cut
 	// the lamps by 1 - k^3 and the sky to k^2, with the paint browned toward shade: her canines and every tooth behind
 	// them read black, and her far side's lower back teeth a black column through her open mouth)
-	float k = COLOR.r * mix(closed, 1.0, lit);
+	float k = max(COLOR.r, side_floor * narrow * lit) * mix(closed, 1.0, lit);
 	float f = pow(k, 2.2);
 	// (her lips shut, 1, to parted, 0: shut runs from 1 to 0.6 by mouth_open 0.05)
-	float c = clamp((shut - 0.6) / 0.4, 0.0, 1.0);
+	float c = max(clamp((shut - 0.6) / 0.4, 0.0, 1.0), flat_amount * narrow * (1.0 - smoothstep(flat_from, flat_to, COLOR.r)));
 	float dw = 1.0 - clamp(COLOR.g, 0.0, 1.0);
 	vec3 dt = mix(vec3(1.0), mix(deep_tint, deep_tint_warm, deep_warm), dw);
 	dt = mix(dt, deep_dark, dw * deep_warm);
@@ -72,5 +113,24 @@ void fragment() {
 	// (on her gums and palate alone, by their paint's red: lit so, her side teeth read as brown blocks (g1))
 	vec3 p = texture(paint, UV).rgb;
 	EMISSION = inside * fill * (1.0 - k) * (1.0 - c) * smoothstep(0.08, 0.25, p.r - p.b);
+	float bw = band * smoothstep(0.5, 1.0, up_w) * (1.0 - smoothstep(0.08, 0.25, p.r - p.b));
+	if (bw > 0.0) {
+		vec3 bc = band_col * mix(1.0, band_low, smoothstep(0.0, 1.0, up_t));
+		ALBEDO = mix(ALBEDO, bc, bw);
+		NORMAL = normalize(mix(NORMAL, VIEW, bw));
+		SPECULAR *= 1.0 - 0.8 * bw;
+		ROUGHNESS = mix(ROUGHNESS, 0.8, bw);
+		EMISSION = mix(EMISSION, bc * band_glow * f, bw);
+	}
+	float lw = band * (1.0 - smoothstep(0.0, 0.5, up_w)) * (1.0 - smoothstep(0.08, 0.25, p.r - p.b));
+	if (lw > 0.0) {
+		vec3 lc = band_col * band_lower;
+		ALBEDO = mix(ALBEDO, lc, lw);
+		NORMAL = normalize(mix(NORMAL, VIEW, lw));
+		SPECULAR *= 1.0 - 0.8 * lw;
+		ROUGHNESS = mix(ROUGHNESS, 0.8, lw);
+		EMISSION = mix(EMISSION, lc * band_glow * f, lw);
+	}
 	if (debug > 0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; AO = 0.0; AO_LIGHT_AFFECT = 1.0; EMISSION = vec3(0.0, 2.0, 0.0); }
+	if (debug < -0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; EMISSION = 2.0 * vec3(bw, lw, f); }
 }

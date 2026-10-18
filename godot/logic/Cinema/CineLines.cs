@@ -81,7 +81,7 @@ public static class CineLines
             Calling = ch.Archetype,
             Background = ch.Background,
             Sex = ch.Sex == Sex.Male ? "male" : "female",
-            Hair = ch.HairStyle ?? "long",
+            Hair = ch.HairStyle ?? "braid",
         };
         foreach (var f in facts ?? []) c.Facts.Add(f);
         return c;

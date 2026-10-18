@@ -115,8 +115,110 @@ public partial class HerFaceLife : Node
                 m.SetShaderParameter("lit", k);
                 // (the lamps cut wholly with her lips shut (her mouth's corner), 0.6 of the way once they part)
                 m.SetShaderParameter("shut", 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
+                // (her side teeth flat in her mouth's shade while her lips are parted only a little: the shader's narrow)
+                m.SetShaderParameter("narrow", 1 - Mathf.SmoothStep(0.25f, 0.6f, w));
                 foreach (var (n, v) in teethParams) m.SetShaderParameter(n, v);
             }
+    }
+
+    /// <summary>Her upper teeth seated lower while her lips are parted a little (mouth_open 0.25, the cinematics' most): at
+    /// c04a A5 (85 mm at 1.25 m) her upper lip hid all but 0.5-1 mm of her incisors and her mouth read as a black slit
+    /// (judge F1, face 30). Shut (no drop under 0.03) and from 0.6 (none) as before. The upper row is the vertices her
+    /// mouth_open leaves where they are, found once per mesh into a mask by vertex index (the teeth shader's upper_mask);
+    /// the drop is down in her head's own space, so it holds as her head turns. --teethdrop MM sets its most (1.5).</summary>
+    void TeethDrop()
+    {
+        if (teeth?.Mesh is not ArrayMesh am || teeth.Skin is not { } skin || mouth == null || GetParent() is not Skeleton3D sk) return;
+        if (am != maskMesh)
+        {
+            maskMesh = am; upperMask = null;
+            int ti = teeth.FindBlendShapeByName("mouth_open");
+            if (ti >= 0 && am.GetSurfaceCount() > 0)
+            {
+                var basis = am.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                var sv = am.SurfaceGetBlendShapeArrays(0)[ti][(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                bool relative = am.BlendShapeMode == Mesh.BlendShapeMode.Relative;
+                int n = basis.Length, h = (n + MaskW - 1) / MaskW, up = 0;
+                var img = Image.CreateEmpty(MaskW, Mathf.Max(1, h), false, Image.Format.Rg8);
+                // (green: the band's height, 0 at her incisors' edge (the upper row's lowest point at rest, Y up) to 1
+                // BandSpan above it: the teeth shader's up_t, its ivory band shaded by it (judge F1 r2, face 30))
+                var still = new bool[n];
+                float edge = float.MaxValue;
+                for (int i = 0; i < n && i < sv.Length; i++)
+                    if ((relative ? sv[i] : sv[i] - basis[i]).Length() < 0.002f) { still[i] = true; edge = Mathf.Min(edge, basis[i].Y); }
+                for (int i = 0; i < n; i++)
+                    if (still[i]) { img.SetPixel(i % MaskW, i / MaskW, new Color(1, Mathf.Clamp((basis[i].Y - edge) / BandSpan, 0, 1), 0)); up++; }
+                upperMask = ImageTexture.CreateFromImage(img);
+                if (MouthCam || Args.Has("teethgrow")) GD.Print($"TEETHMASK {up}/{n} edge {edge:F4}");
+            }
+        }
+        if (upperMask == null) return;
+        float w = Mathf.Max(open >= 0 ? mouth.GetBlendShapeValue(open) : 0, snarl >= 0 ? mouth.GetBlendShapeValue(snarl) : 0);
+        float d = DropMost * Mathf.SmoothStep(0.03f, 0.2f, w) * (1 - Mathf.SmoothStep(0.35f, 0.6f, w));
+        int head = sk.FindBone("Head");
+        Vector3 v = Vector3.Zero;
+        if (head >= 0 && d > 0)
+            for (int i = 0; i < skin.GetBindCount(); i++)
+            {
+                string bn = skin.GetBindName(i);
+                if ((bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i)) != head) continue;
+                var toMesh = ((sk.GetBoneGlobalPose(head) * skin.GetBindPose(i)).AffineInverse() * teeth.Transform).AffineInverse();
+                v = toMesh.Basis * new Vector3(0, -d, 0);
+                break;
+            }
+        // (the band, and its gaps' shell behind it, on as far as the drop is: HerFaceLife's shell pass only then)
+        float band = DropMost > 0 ? d / DropMost : 0;
+        for (int s = 0; s < am.GetSurfaceCount(); s++)
+            if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
+            {
+                m.SetShaderParameter("upper_mask", upperMask);
+                m.SetShaderParameter("mask_w", MaskW);
+                m.SetShaderParameter("drop_v", v);
+                m.SetShaderParameter("band", band);
+                if (band > 0.001f && v != Vector3.Zero && ShellGrow > 0)
+                {
+                    shellShader ??= GD.Load<Shader>("res://shaders/heroine_teeth_shell.gdshader");
+                    if (m.NextPass is not ShaderMaterial sm || sm.Shader != shellShader)
+                        m.NextPass = sm = new ShaderMaterial { Shader = shellShader, ResourceName = "teeth_shell" };
+                    sm.SetShaderParameter("paint", m.GetShaderParameter("paint"));
+                    sm.SetShaderParameter("upper_mask", upperMask);
+                    sm.SetShaderParameter("mask_w", MaskW);
+                    sm.SetShaderParameter("drop_v", v);
+                    sm.SetShaderParameter("grow", ShellGrow * v.Length() / d);
+                    sm.SetShaderParameter("band", band);
+                    foreach (var pn in new[] { "lit", "narrow", "closed", "side_floor" }) sm.SetShaderParameter(pn, m.GetShaderParameter(pn));
+                    foreach (var (pn, pv) in teethParams) sm.SetShaderParameter(pn, pv);
+                }
+                else if (m.NextPass != null) m.NextPass = null;
+                foreach (var (pn, pv) in teethParams) m.SetShaderParameter(pn, pv);
+            }
+    }
+
+    const float BandSpan = 0.003f;
+    static readonly float ShellGrow = Args.Num("teethgrow", 1.2f) / 1000f;
+    Shader? shellShader;
+    const int MaskW = 256;
+    static readonly float DropMost = Args.Has("teethdrop") ? Args.Num("teethdrop", 1.5f) / 1000f : 0.0015f;
+    ArrayMesh? maskMesh;
+    ImageTexture? upperMask;
+
+    /// <summary>Her mouth's inside lit by how far her lips part (0.25 is the cinematics' most): her tongue's light (its
+    /// shader's open_light, 0.75 at 0.25 and under (face 30; face 29's half left her mouth a black slit), full by 0.6, where it was judged) and the shade baked where her lips
+    /// meet eased up as they part (the skin's lips_apart). Before any --skin-set / --tongueparam, which win.</summary>
+    void MouthShade()
+    {
+        if (mouth == null) return;
+        float w = Mathf.Max(open >= 0 ? mouth.GetBlendShapeValue(open) : 0, snarl >= 0 ? mouth.GetBlendShapeValue(snarl) : 0);
+        float apart = Mathf.SmoothStep(0.03f, 0.3f, w), tl = Mathf.Lerp(0.75f, 1f, Mathf.SmoothStep(0.25f, 0.6f, w));
+        for (int s = 0; mouth.Mesh != null && s < mouth.Mesh.GetSurfaceCount(); s++)
+            if (mouth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true)
+            {
+                m.SetShaderParameter("lips_apart", apart);
+                m.SetShaderParameter("lips_narrow", 1 - Mathf.SmoothStep(0.3f, 0.6f, w));
+            }
+        for (int s = 0; tongue?.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
+            if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
+                m.SetShaderParameter("open_light", tl);
     }
 
     /// <summary>--mouth-cam: each frame, the camera in her head's own space (the glb's, as her head, teeth and tongue are
@@ -140,9 +242,20 @@ public partial class HerFaceLife : Node
             var vp = GetViewport().GetVisibleRect().Size;
             GD.Print(string.Format(ci, "MOUTHCAM t {0:0.000} o {1} bx {2} by {3} bz {4} fov {5:0.000} keep {6} vp {7} {8} mi {9}",
                 t, V(c.Origin), V(c.Basis.Column0), V(c.Basis.Column1), V(c.Basis.Column2), cam.Fov, (int)cam.KeepAspect,
-                vp.X, vp.Y, V(teeth.Transform.Origin)));
+                vp.X, vp.Y, V(teeth.Transform.Origin)) + MouthKeys());
             return;
         }
+    }
+
+    /// <summary>The head's blend weights in use (" w name=v ..."), so an offline ray cast poses her mouth as drawn.</summary>
+    string MouthKeys()
+    {
+        if (mouth?.Mesh is not ArrayMesh am) return "";
+        var sb = new System.Text.StringBuilder(" w");
+        for (int i = 0; i < am.GetBlendShapeCount(); i++)
+            if (mouth.GetBlendShapeValue(i) is float v && Mathf.Abs(v) > 0.0005f)
+                sb.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, " {0}={1:0.0000}", am.GetBlendShapeName(i), v));
+        return sb.ToString();
     }
 
     void SkinParams()
@@ -190,9 +303,11 @@ public partial class HerFaceLife : Node
     public override void _Process(double delta)
     {
         t += delta;
+        MouthShade();
         if (skinParams.Count > 0) SkinParams();
         if (tongueParams.Count > 0) TongueParams();
         TeethLight();
+        TeethDrop();
         TongueFrame();
         // A blink: the lid down in 70 ms, held a moment, up in 150 ms.
         if (t >= nextBlink && blinkAt < 0)

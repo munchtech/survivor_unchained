@@ -2,6 +2,64 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Start here (face 30, 18 Oct: hair round MERGE REQUESTED; next H10, F2, F3, the neck shade, the fit re-check)
+S30 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\463a4243-9324-49b0-bda9-b9fb9a9d68b1\scratchpad\f30`. It holds the verdicts (j2, j3, jf1, jf1r3), the sheets (s3j, h1j, h1bj, r3j, spinj, f1j) and the briefs. Keep it until the MR merges.
+- **Done and judged** (docs/team/face.md "Current state (18 October)"):
+  - Braid and ponytail SHIP (j3, max judge on the API).
+  - Pixie CLOSE: the nape is closed as known.
+  - F1 closed as known, keeping round 3 (jf1r3).
+  - Tests 935/0/8.
+- **Causes found, worth remembering:**
+  - The scalp tint and the cap's `_flap` both used an "ear" region that took in 1 cm of scalp. Both now use the 1/4-of-max rule.
+  - HairSway stepped before the skeleton modifiers. It now steps on `SkeletonUpdated`; `OLDPOSE=1` gives the old behaviour.
+  - The spine balls didn't reach her shoulder blades. They are widened toward her back; `NOBACKWIDE=1` turns that off.
+- **Tools** (in tools/scratch/face30/):
+  - s3_measure.py: hair dump plus posed_clip, at idle 0 and 180 and spin 90, 180 and 360.
+  - s3_shoot.py.
+  - h1b/measure.py: the ear-patch luma ratio. Debug switches: `H1DBG` (People.H1Debug) and the skin shader's `dbg_gate`.
+  - h1b/h1b_shoot.py: the judge set.
+  - r3/: the sheets.
+  - f1/ and f1r3/: the mouth, with `--teethdrop` and `--teethgrow`.
+  - `--look-time day` lights the Look by day (shot-only).
+- **Next, in order:**
+  1. H10, F2, F3: one test each, the same face under the Look rig against the cinematic key (c02 s8, c04a A5, c01 s8). Fix what's ours, and send the lighting part to main for the cinematics lead.
+  2. The grey jaw and neck shade (OWNER_NOTES "neck discolouration"). The body lead's `survivorsunchained_inputs\body_build\neck_sheet.png` shows it at 1:1 on all three neck lengths.
+  3. When the new body build lands on integration (a shorter neck, finger fixes, the areolas painted out): merge integration and rebuild the three styles on the new body. Then re-run clipmeasure.py, posed_clip (through s3_measure.py) and h1b/measure.py, and judge only if a number moved.
+- **Logged, not fixed:**
+  - The pixie's nape needs a per-style scalp tint.
+  - The ponytail shows faint streaks under the tie from straight behind.
+  - Seen from behind, the braid's first plait under the nape is slightly soft.
+
+## Start here (face 29 HANDED OFF at the coordinator's wind-down, 18 Oct; HAIR, three styles ship)
+SC below = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\77fe93b5-7a3e-4db3-8deb-795d76a58e9a\scratchpad` (face 29's session scratch: keep it until this list is merged).
+- **Scope (the owner, 18 Oct):** "Yes: ship braid, ponytail and pixie, braid is her default, and long and bob leave the creation menu until they're rebuilt." DONE on this branch @88cb2a96 (looks.json cuts, People.HerHairs, Loadout Buns to ponytail, the defaults; tests 935/0/8; c02 checked with no `--hair`). Long and bob are logged in docs/team/face.md "Later". `--hair long` now gives the braid.
+- **The owner's words:** "hair physics are a mess, and hair styles even on creation screen clip through ... hair dosn't look good" (17 Oct); "some of the hair just looks bad right? bob for example looks like some is glued on the face" (18 Oct).
+- **Verdict:** face 28's max judge, `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59f6a467-b8ce-446c-8f35-44c1d92b7b9a\scratchpad\f28\j\verdict.md` (read A, C and E only). Measured: `tools/scratch/face29/clipmeasure.py` (bind pose: the fit isn't stale), `facegap.py` (the fine layer was 1.6 mm off the face), the posed run (`--hairdump`, `posed_clip.py`, report `posed_clip_report.txt`; its run commands aren't in the report: rebuild them from `s1_shoot.py`'s `look()` + `--hairdump DIR` + `--spin 90|360`).
+- **ORDER for face 30:** (1) the S1 judge; (2) S3's ponytail and braid tie, built, measured and judged; (3) H8, the pixie crown whorl; (4) F1 finished or reverted; (5) MERGE REQUEST (legal gate once, `python tools/legal/gate.py --root <worktree>` in the background; heroine_hair.gdshaderinc untouched so far, but 73a798ca touches the skin, teeth and tongue shaders). Solvers run as su-lead-high at effort medium; judges xhigh on the API (`node tools/ai/api_agent.cjs <brief> --out <dir>/verdict.md --cwd <worktree> --effort xhigh --usd 6 --readonly`, background; about $27 of credits left).
+- **Items:**
+  - **H1 the pale scalp wedge behind the ears and nape, H3 strands flat on the face (S1, 4b9c3b5b, heroine_hair.py only):** the cap runs to 1.5 mm from her ear (3 mm fade); the pixie nape cards end 3-8 mm past the hairline; the fine hairs are 4 mm off, 25% thinner, fainter; the tendrils are 10 mm off on hair_fine. Built in `SC\f29s1\art1` (ponytail, braid, pixie). `tools/scratch/face29/s1_shoot.py` shoots the before frames (saffron, sunborn), INSTALLS the build into godot/art/people and shoots the after frames (log `SC\f29\s1r\shoot.log`; frames `godot\.shots\b_lk_*`, `a_lk_*`, `a_cu_*`). Own's before frames are `SC\f29s1\before\`. SHOT AND INSTALLED (18 Oct 01:53, all 78 runs, turn given back): the art1 build is in godot/art/people, UNCOMMITTED and UNJUDGED (heroine_hair_{braid,ponytail,pixie}.gltf/.bin and the braid and ponytail .chain.json), and imported. Its 27 sheets are made at 1:1 in `SC\f29\s1j\`. NEXT: run the judge, which is ready as is: `node tools/ai/api_agent.cjs tools/scratch/face29/brief_s1.md --out SC\f29\s1j\verdict.md --cwd <worktree> --effort xhigh --usd 6 --readonly` (background). Then run `facegap.py`. On a PASS, commit the installed hair art. On a FAIL, run a medium solver round (cap 2-3). To undo the install, check out those named files from HEAD. Still open from S1: the pixie at 105 deg, 15 mm off eye level, keeps cap fade ~0.05; if it shows pale, tighten heroine_features.py's ear rule ((_d - 0.002)/0.006) to ~1.5 mm and rebuild heroine_shadow.png. Commit the installed `heroine_hair_*` once judged.
+  - **Ponytail resting shape + H5 (a flat ribbon, dead straight in a spin), braid tie, braid at 360 deg/s (S3, stopped before building; no edits):** the causes and the plan are S3's. tail() starts on a disc r 0.014 fanning 3x to ~4 cm, and its cards sit 0.012 out, so the tail is 3-5 cm half-thick against the chain's skin+8 mm clearance (chain_spheres ~778): flatten the fan along her back normal only and set the sphere margin to the tail's real half-thickness (~2 cm). The ribbon: cards all face out via frame()/COLLIDE_N, so face each card round the bundle axis by its radial angle; then lower CHAIN stiff/bend (0.01/0.03) and tune PonyMargin/PonyRoundTime against a `--spin 90 --every 0.1 --count 20` strip. Braid tie: style_braid's band is at the centreline, ring r ~9 mm, while the lobes reach +-2 cm, so make it ~0.019*taper + 0.0145*taper, lifted along out[end]. Braid 360 deg/s (-6.8 mm, point 4): the braid's spheres r + 0.015 instead of 0.008, or close as known if it doesn't show at 1:1. Posed numbers before: ponytail 2.9-3.3% of strands over 3 mm into her, worst 15+ mm; the tie 45-50% over 3 mm in.
+  - **H8 the pixie crown whorl reads as a dark hole at the close-up; H9 strays:** not started.
+  - **F1 c04a A5 at mouth_open 0.25 (black void, "broken teeth"; S2, 73a798ca, WIP UNJUDGED and on the branch):** the cause is shading, not geometry, and not the cinematic key. The lip hides all but 0.5-1 mm of the upper incisors at that camera; the pink band is the tongue tip lit for a wide-open mouth; the right corner's lower canine and premolars render black with one lit facet; the black band is the lower lip's top (ao bake 0.31-0.36, own's mouth line paint, the upper lip's shadow). 73a798ca: tongue `open_light`, teeth `narrow`, skin `lips_apart`/`lip_ao_open`, `HerFaceLife.MouthShade`, a `--mouth-cam` print. Result on own: the chip and band are gone, but the mouth is now a black slit, so S2 says don't ship it as is. Next: seat the upper teeth ~1.5 mm lower (drop.py: the incisor band 4.5 to 11 px), lift the lower lip's top harder, check closed, open 0.6 and smile on all ten faces. Or REVERT 73a798ca before the merge request if F1 doesn't finish. Scripts: `tools/scratch/face29/s2/` (copies); sheets `SC\s2\` (diag1, e12, e345, f12, zoom).
+  - **H10, F2, F3 (hair colour across the cinematics, dead eyes, the c02 s8 smudge and bleached cheeks):** one test each, the same face under the Look rig against the cinematic key. Fix what's ours; send the lighting part to main for the cinematics lead. Not started.
+  - **Not ours:** the town close-up running away from her (a camera item).
+- **Sheets also made (unjudged, superseded):** `SC\f29\j\` (47 1:1 sheets of the whole first shoot, `tools/scratch/face29/sheets.py`), `SC\f29\j\brief_rest.md` (don't run it: the verdict covers it).
+
+## Start here (18 Oct, successor 28 STOPPED at the coordinator's call; face MERGED, hair triage judged, face 29 takes hair)
+- **Merged:** the face rebuild on F1's body (40e08eb9, on integration 6bbf9425). cmp against the judged 45fe3386: only Mesh_0 differs. Tests 934/0/8. The nine mouth items are CLOSED as known (docs/team/face.md "Big expressions"): the game never goes past mouth_open 0.25, smile 0.15 or frown 0.2 (the cinematics' face cues), and nothing pokes through at that range (`tools/scratch/face28/poke.py`). `gum_low` is kept, unhooked.
+- **Hair triage (the owner, 17 Oct: "hair physics are a mess ... clip through ... hair dosn't look good"; "spin around in character creation", cinematic walk to the Warden from behind):**
+  - Shot on current art with `tools/scratch/face28/hair.py` (86 runs; one godot turn; `python hair.py [name filters]`). Sheets made by `hsheet.py`.
+  - Judge brief: `face28/brief.md`. Verdict, sheets and the brief are in `S\j\`, where S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59f6a467-b8ce-446c-8f35-44c1d92b7b9a\scratchpad\f28`.
+  - The same judge ruled on the face at the cinematic close-ups (`shoot.py`, `fsheet.py`). Those are the closest cameras in the game (c04a A5 85 mm at 1.25 m, c02 s8 135 mm at 0.95 m).
+- **Picture flags added:**
+  - `--spin DEG` turns the Look's turntable at DEG per second.
+  - `--auto away` runs her up the screen, her back to the camera.
+  - Town motion is shot as the Reaver, because the Arcanist's hat hides her hair.
+- **Camera notes passed to the coordinator** (not hair):
+  - At `--close 1`, running away, the close-up frames her low back with no head in frame.
+  - At `--close 0.5`, the camera goes inside her body.
+  - The play camera never shows hair detail.
+
 ## Start here (14 Oct, successor 26 HANDED OFF at about 215k; merge-ready build installed UNCOMMITTED, waiting on F1)
 R = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\face` (KEEP all). Glb mutex for agents sharing this worktree: `python R\glock.py take|give|show <who>` (`give` restores t1; when the merge build is installed, copy it back after any give). Glb diff tool: `python R\cmp.py A.glb B.glb ...` (per-accessor md5).
 - **heroine.glb in the worktree = `R\b1j\j_noseal.glb` (md5 45fe3386...), UNCOMMITTED on purpose.** Built with `python R\b1j\build.py <B1j> OUT` on outfits' final body B1j (`git show dfe686ed:godot/art/people/heroine.glb`, = `R\b1j\B1j.glb`). Imported (0 errors), freshness fresh, `dotnet test` 917 passed / 0 failed / 8 skipped. Against t1, the base POSITION matches exactly. What differs: the body (Mesh_0, nodes, skins); the head's NORMALs (bow); the face keys' POSITION (inside points); teeth POSITION (gum); tongue COLOR_0. All of it is judged. **Next:** when the coordinator says F1 is merged on integration, merge integration, rebuild from merged code on THEIR heroine.glb (never pick a side in a conflict), compare with `cmp.py`, run the tests, tell the coordinator, then send `MERGE REQUEST <branch>@<commit>`.

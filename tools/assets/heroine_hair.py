@@ -208,6 +208,24 @@ def _key_moves(name):
 EAR = (_key_moves("ears_out+") > 0.0005) | (_key_moves("ears_pointed+") > 0.0003) | (_key_moves("ears_lobes+") > 0.0003)
 EAR_TREE = cKDTree(HP[EAR]) if EAR.any() else None
 EAR_V = EAR_TREE.query(HP)[0] < 0.006 if EAR_TREE is not None else np.zeros(len(HP), bool)
+# Her ears' flaps themselves (what their keys move most: over a tenth of the
+# most each moves anything), for the cap, which runs on up to them. (18
+# October, face 29: kept 6 mm off all her ears' keys move, as her hair's roots
+# are, it left a bare ring round each ear, her scalp's pale paint showing
+# behind and above it, a whitish wedge at the Look.)
+# (18 October, face 30 H1b: a tenth of each key's most took in a centimetre and
+# more of her scalp behind and above each ear, which her keys move too; the cap
+# stopped short of it there, her scalp's grey paint the pale patch at the Look.
+# Her flap alone is what they move by a quarter of their most or more: traced on
+# the game's frames by her head's UV, its edge is her ear's crease. As
+# heroine_features.py's scalp tint behind her ears.)
+_fm = np.zeros(len(HP))
+for _k in ("ears_out+", "ears_pointed+", "ears_lobes+"):
+    _mv = _key_moves(_k)
+    _fm = np.maximum(_fm, _mv / _mv.max()) if _mv.max() > 0 else _fm
+_flap = _fm > 0.25
+FLAP_TREE = cKDTree(HP[_flap]) if _flap.any() else None
+print("  ears: %d points their keys move, %d their flaps" % (EAR.sum(), _flap.sum()))
 # Her neck, between her jaw and her shoulders (her skin there facing out,
 # not up or down), which hair hanging by it is kept well clear of: lying on
 # it, a strand read as a scratch on her skin, and as her head turned, the
@@ -224,9 +242,9 @@ def hairline_z(theta):
     return EYE_Z + fs.hairline_height(theta)
 
 
-def scalp(below=0.0):
+def scalp(below=0.0, to_ears=False):
     """Her head's surface above her hairline (and `below` it), as triangles
-    (not her ears)."""
+    (not her ears; with `to_ears`, on up to their flaps, 1.5 mm off them)."""
     me = head.data
     me.calc_loop_triangles()
     T = np.array([t.vertices[:] for t in me.loop_triangles])
@@ -244,7 +262,13 @@ def scalp(below=0.0):
     r = c - CENTRE
     outside = (np.linalg.norm(r, axis=1) > 0.06) & ((n * r).sum(1) > 0)
     core = (np.hypot(r[:, 0], r[:, 1]) < 0.045) & (c[:, 2] < EYE_Z + 0.06)
-    return T[(c[:, 2] > hairline_z(theta) - below) & ~ear & outside & ~core & (depth_in(c) < 0.006)]
+    keep = (c[:, 2] > hairline_z(theta) - below) & ~ear & outside & ~core & (depth_in(c) < 0.006)
+    if to_ears and FLAP_TREE is not None:
+        # (round her ears her head's outline is theirs, so her scalp behind
+        # them lay "inside" it: within 3 cm of a flap, her outside is enough)
+        near = FLAP_TREE.query(c)[0]
+        keep |= (c[:, 2] > hairline_z(theta) - below) & outside & ~core & (near < 0.03) & (near > 0.0015)
+    return T[keep]
 
 
 def depth_in(c):
@@ -446,14 +470,16 @@ def onto(Q, want, lying):
     return flat.reshape(Q.shape)
 
 
-def cards(P, width, columns, off, root=None, narrow=0.55, face=None):
+def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.0015, out_pts=None, u_by_width=False):
     """A card along each guide: a strip of the atlas (a column chosen from
     `columns`) as wide as `width` at its root, narrowing to its tip, facing
     out from her, three points across: where it lies on her, curved round her
     (each point as far off her as its middle); elsewhere bulging a little at
     its middle (some body). Its points' normals all face out from her (hair
     lit as one mass, not card by card). With `root`, each that much narrower
-    at its root, widening to its full width a quarter of the way down."""
+    at its root, widening to its full width a quarter of the way down. With
+    `out_pts` (a way per point), each point faces that way instead (a tail's
+    cards round its bundle)."""
     S, K, _ = P.shape
     t = np.zeros_like(P)
     t[:, 1:-1] = P[:, 2:] - P[:, :-2]
@@ -471,6 +497,8 @@ def cards(P, width, columns, off, root=None, narrow=0.55, face=None):
         # (turned toward where it is seen from: a lock hanging beside her
         # cheek faced out sideways, edge on to anyone before her, and vanished)
         out = out * 0.3 + np.asarray(face, float)[None, None] * 0.7
+    if out_pts is not None:
+        out = np.array(out_pts, float)
     for _ in range(3):                                           # smoothed along the strand: no twisting
         out[:, 1:-1] = (out[:, :-2] + 2 * out[:, 1:-1] + out[:, 2:]) / 4
     out /= np.linalg.norm(out, axis=2)[:, :, None] + 1e-9
@@ -487,7 +515,7 @@ def cards(P, width, columns, off, root=None, narrow=0.55, face=None):
     n3 /= np.linalg.norm(n3, axis=1)[:, None] + 1e-9
     sd = ((flat - COLLIDE_P[i3].mean(1)) * n3).sum(1).reshape(S, K)
     lying = sd < off + 0.004
-    held = np.maximum(sd, 0.0015)
+    held = np.maximum(sd, floor)
     Lv = onto(P - side * w[:, :, None] / 2, held, lying)
     Rv = onto(P + side * w[:, :, None] / 2, held, lying)
     # (where it lies, no edge of it past her hairline: drawn in toward its middle)
@@ -503,6 +531,14 @@ def cards(P, width, columns, off, root=None, narrow=0.55, face=None):
     u0, u1 = col / COLUMNS + 0.002, (col + 1) / COLUMNS - 0.002
     v = np.tile(1 - f, 3)[None].repeat(S, 0)
     u = np.concatenate([np.repeat(u0[:, None], K, 1), np.repeat(((u0 + u1) / 2)[:, None], K, 1), np.repeat(u1[:, None], K, 1)], 1)
+    if u_by_width:
+        # (round 3: a tail's cards, a third as wide under the tie, squeezed
+        # their strip of the atlas into it: shrunk that much, each blurred to
+        # its strip's mean shade, a flat block. Now as much of its strip as it
+        # is wide, from its middle: its strands as fine all along)
+        ratio = w / w.max(1, keepdims=True)
+        mid, half = ((u0 + u1) / 2)[:, None], ((u1 - u0) / 2)[:, None]
+        u = np.concatenate([mid - half * ratio, np.repeat(mid, K, 1), mid + half * ratio], 1)
     base = (np.arange(S) * 3 * K)[:, None]
     k = np.arange(K - 1)[None, :]
     # (wound to face out from her, as their normals do)
@@ -619,24 +655,41 @@ def style_long():
     return layers
 
 
-def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
+def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None):
     """Her hairline, soft as a real one is, not the cards' ends in a row:
     fine short hairs lying on her scalp the way it is combed, thinning out
     toward its edge; and over its edge baby hairs, finer, shorter and fainter
     (each card's alpha), a few astray. Two sets of cards, of their own
     material (hair_fine: the game blends them over her skin, as faint as they
-    are; cut by hashed alpha they were a scatter of dots)."""
+    are; cut by hashed alpha they were a scatter of dots). With `low`, none
+    at her sides (past 40 degrees from her front) rooted below that height.
+    (18 October, face 30: drawn back, the fine hairs before her ears ran
+    down over her cheek, and in profile read as claw scratches at the Look
+    and scars at the close-up, however far off her skin: braid and ponytail
+    now end them at the top of her ear.)"""
     out = []
+
+    def high(pts):
+        if low is None:
+            return np.ones(len(pts), bool)
+        th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+        return (th < 40) | (pts[:, 2] > low)
     pts, nrm = roots(spacing, above=-0.001, below=0.022, soft=0.014)
     theta = np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))
-    near = np.abs(np.degrees(theta)) < 125
+    near = (np.abs(np.degrees(theta)) < 125) & high(pts)
     pts, nrm = pts[near], nrm[near]
     L = RNG.uniform(0.025, 0.06, len(pts))
     dirs = combed(pts, nrm, comb(pts))
-    P = lie(pts - nrm * 0.001, dirs, comb, L / (points - 1), np.full(len(pts), points - 1), 0.0015,
-            side=sides(pts) if sides else None)
-    c = cards(P, RNG.uniform(0.003, 0.006, len(pts)), list(range(6, 16)), 0.0015)
-    c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)), 3 * points)
+    # (18 October, face 29's judge: lying 1.5 mm off her, lit as the hair and
+    # with no shadow, the ones by her temples read as scratches on her skin, and
+    # at the close-up as cuts. Now lifted (to 4 mm by their tips), a quarter
+    # thinner and a fifth fainter, and none goes more than 4 mm down past her
+    # hairline: in front of her ears, combed down, they ran on down her cheek.)
+    P = lie(pts - nrm * 0.001, dirs, comb, L / (points - 1), np.full(len(pts), points - 1), 0.004,
+            side=sides(pts) if sides else None, stop=lambda q: rise(q) < -0.004)
+    P = resample(P, points)                                      # (one stopped short ends where it stopped)
+    c = cards(P, RNG.uniform(0.003, 0.006, len(pts)) * 0.75, list(range(6, 16)), 0.004, floor=0.0025)
+    c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)) * 0.8, 3 * points)
     c["mat"] = 3
     out.append(c)
     print("  hairline: %d cards" % len(pts))
@@ -656,7 +709,7 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     # fainter (0.3 to 0.55), denser at the edge.)
     pts, nrm = roots(0.0026, above=0.0, below=0.003)
     th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
-    keep = RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.6, 0.85, 1.0])
+    keep = (RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.6, 0.85, 1.0])) & high(pts)
     pts, nrm = pts[keep], nrm[keep]
     n, k = len(pts), 6
     turn = RNG.normal(0, 0.2, n) + np.where(RNG.random(n) < 0.08, np.clip(RNG.normal(0, 0.5, n), -0.7, 0.7), 0)
@@ -665,9 +718,9 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
         w = comb(p, side)
         return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
     L = RNG.uniform(0.002, 0.007, n)
-    P = lie(pts - nrm * 0.0005, combed(pts, nrm, astray(pts)), astray, L / (k - 1), np.full(n, k - 1), 0.0009,
+    P = lie(pts - nrm * 0.0005, combed(pts, nrm, astray(pts)), astray, L / (k - 1), np.full(n, k - 1), 0.002,
             side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0012, n))
-    c = cards(P, RNG.uniform(0.0012, 0.0022, n), [11, 12, 13], 0.0009, narrow=0.7)
+    c = cards(P, RNG.uniform(0.0012, 0.0022, n), [11, 12, 13], 0.002, narrow=0.7, floor=0.002)
     c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
     c["mat"] = 3
     c["flat"] = True
@@ -709,7 +762,7 @@ def off_face(P, step):
     P[..., 0] = np.where(m, np.where(x < 0, -1, 1) * out, x)
 
 
-def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None, lift=0.0):
+def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None, lift=0.0, extra=None):
     """Strands of several lengths let fall together: their links scaled to
     each (so all have as many points); with `comb`, each first laid along her
     scalp for `lie_for` metres, rising `lift` more off her as it goes (some
@@ -728,7 +781,7 @@ def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None, lift=
             steps = np.minimum((lie_for[m] / seg).astype(int), points - 4)
             # (lying flatter than it hangs: combed hair lies close on the head)
             pinned = (lie(start[m], dirs[m], comb, np.full(m.sum(), seg), steps, 0.003 + (off - 0.003) * 0.75, lift=lift[m]), steps)
-        out[m] = drape(start[m], dirs[m], Lm, points=points, offset=off, pinned=pinned, extra=off_face)
+        out[m] = drape(start[m], dirs[m], Lm, points=points, offset=off, pinned=pinned, extra=extra or off_face)
     return out
 
 
@@ -752,10 +805,12 @@ def along_chain(at, pts):
     return best_t
 
 
-def chain_spheres():
+def chain_spheres(margin=0.008):
     """What the chain is kept out of: the back of her head, and her neck and
     back, a ball every 5 cm down her spine (each moving with the spine bone
-    nearest it), reaching to the skin of her back there."""
+    nearest it), reaching to the skin of her back there, and `margin` more (a
+    number, or a function of each ball's height, centre and reach)."""
+    mg = margin if callable(margin) else (lambda z, c, r: margin)
     back = (np.abs(HP[:, 0]) < 0.02) & (np.abs(HP[:, 2] - CENTRE[2]) < 0.02) & (HP[:, 1] > CENTRE[1])
     out = [{"bone": "Head", "at": CENTRE, "r": float(HP[back, 1].max() - CENTRE[1]) + 0.004}]
     mw = arm.matrix_world
@@ -766,7 +821,7 @@ def chain_spheres():
         c = np.array([0.0, np.interp(z, [bb[1][2] for bb in bones][::-1], [bb[1][1] for bb in bones][::-1]), z])
         near = (np.abs(BP[:, 2] - z) < 0.025) & (np.abs(BP[:, 0]) < 0.03) & (BP[:, 1] > c[1])
         r = float(BP[near, 1].max() - c[1]) if near.any() else 0.08
-        out.append({"bone": name, "at": c, "r": r + 0.008})
+        out.append({"bone": name, "at": c, "r": r + float(mg(z, c, r))})
     return out
 
 
@@ -811,12 +866,15 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
         P = resample(P, points)
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
-    out += hairline_hairs(comb, sides=no_part)
-    out += tendrils()
+    out += hairline_hairs(comb, sides=no_part, low=float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01)
+    # (18 October, face 30 round 3, the judge: the one lock a side lay on her
+    # temple and cheek as a thin dark line, a cut or a scar; drawn back reads
+    # cleaner. Made and dropped, so the RNG, and all made after, stays as was.)
+    tendrils(per_side=1, lock=True)
     return out
 
 
-def tendrils(per_side=9):
+def tendrils(per_side=9, lock=False):
     """A few fine locks left loose at her temples, falling past her cheeks
     to her jaw, softly waved: drawn back, her hair framed nothing, and she
     read slicked, bald-browed."""
@@ -826,18 +884,37 @@ def tendrils(per_side=9):
     pick = []
     for sd in (1, -1):
         cand = np.where(ok & (np.sign(pts[:, 0]) == sd))[0]
-        if len(cand):
+        if len(cand) and lock:
+            # (18 October, face 30: nine fine ones a side still read as claw
+            # scratches across her cheek in profile. Now one, a lock: thicker,
+            # tapered to its tip, from her temple to her jaw, wide of her face)
+            pick += list(cand[np.argsort(np.abs(th[cand] - 60) + np.abs(pts[cand, 2] - EYE_Z - 0.03) * 300)[:per_side]])
+        elif len(cand):
             pick += list(RNG.choice(cand, min(per_side, len(cand)), replace=False))
     if not pick:
         return []
     pts, nrm = pts[pick], nrm[pick]
     sweep = np.c_[np.sign(pts[:, 0]) * 0.35, np.full(len(pts), -0.3), -np.ones(len(pts))]
     dirs = combed(pts, nrm, sweep)
-    L = RNG.uniform(0.11, 0.17, len(pts))
-    P = drape_lengths(pts - nrm * 0.001, dirs, L, 0.004, points=16)
+    L = RNG.uniform(0.11, 0.17, len(pts)) if not lock else np.full(len(pts), 0.125)
+    # (18 October, face 29's judge: hung 4 mm off her cheek, cut hard and dark,
+    # they read as scratches at the Look and as cuts at the close-up. Now held
+    # 1 cm off her skin and out past her cheekbones (off_face's 7.8 cm, 8.6),
+    # blended as her fine hairs are (soft-edged), a little lighter and fainter.)
+    def wide_of_face(P, step):
+        x = P[..., 0]
+        m = (P[..., 2] < EYE_Z + 0.03) & (P[..., 2] > EYE_Z - 0.13) & (P[..., 1] < 0.0) & (np.abs(x) < 0.086)
+        P[..., 0] = np.where(m, np.where(x < 0, -1, 1) * 0.086, x)
+    P = drape_lengths(pts - nrm * 0.001, dirs, L, 0.010, points=16, extra=wide_of_face)
     P = wave(P, 0.005, 0.07, pts)
-    c = cards(P, RNG.uniform(0.007, 0.013, len(pts)), list(range(8, 15)), 0.004, narrow=0.65, face=(0.0, -1.0, 0.0))
-    c["alpha"] = np.repeat(RNG.uniform(0.75, 1.0, len(pts)), 3 * 16)
+    if lock:
+        c = cards(P, np.full(len(pts), 0.016), [11, 12, 13], 0.010, narrow=0.85, face=(0.0, -1.0, 0.0), floor=0.004)
+        print("  tendrils: %d locks" % len(pts))
+        return [c]
+    c = cards(P, RNG.uniform(0.007, 0.013, len(pts)), list(range(8, 15)), 0.010, narrow=0.65, face=(0.0, -1.0, 0.0), floor=0.004)
+    c["alpha"] = np.repeat(RNG.uniform(0.75, 1.0, len(pts)) * 0.75, 3 * 16)
+    c["mat"] = 3
+    c["blue"] = 0.35
     print("  tendrils: %d cards" % len(pts))
     return [c]
 
@@ -881,13 +958,17 @@ def tube(path, ra, rb, up, sides=8, tile=0.025):
                 at=np.repeat(path, sides + 1, 0))
 
 
-def band(T, axis, radius, wide=0.007, thick=0.0035):
-    """A leather tie round her hair at T, across `axis`."""
-    e1 = np.cross(axis, [1.0, 0.0, 0.0])
-    e1 /= np.linalg.norm(e1)
-    e2 = np.cross(axis, e1)
+def band(T, axis, radius, wide=0.007, thick=0.0035, e=None, rb=None):
+    """A leather tie round her hair at T, across `axis` (with `e` and `rb`,
+    an oval: `radius` along e[0], `rb` along e[1])."""
+    if e is None:
+        e1 = np.cross(axis, [1.0, 0.0, 0.0])
+        e1 /= np.linalg.norm(e1)
+        e2 = np.cross(axis, e1)
+    else:
+        e1, e2 = (np.asarray(v, float) / np.linalg.norm(v) for v in e)
     a = np.linspace(0, 2 * np.pi, 33)
-    ring = T + radius * (np.cos(a)[:, None] * e1 + np.sin(a)[:, None] * e2)
+    ring = T + np.cos(a)[:, None] * e1 * radius + np.sin(a)[:, None] * e2 * (radius if rb is None else rb)
     t = tube(ring, wide / 2, thick, ring - T, sides=10)
     t["mat"] = 2
     return t
@@ -903,19 +984,28 @@ def trim(q, length):
     return np.vstack([q[:j], end])
 
 
-def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24):
+def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24, flat=0.6, fan_thick=1.5):
     """The tail from a tie at T: strands from a bundle there (a disc across
     `axis`), out along it a way, then let fall all together; as they fall
     each keeps its place in the bundle, the bundle widening to `fan` times as
     wide at the tips (hair has body: it does not fall to a string). Its
-    layers (each so many strands, so wide, from such columns) after."""
+    layers (each so many strands, so wide, from such columns) after.
+    (18 October, face 30: a round bundle fanned 3x every way stood 3-5 cm
+    thick off her back, and sank into it as it swung; its cards all faced out
+    from her, so from the side it read as one flat ribbon. Now the bundle is
+    `flat` as deep toward her back as it is wide, fanning only `fan_thick`
+    times that way, and each card faces out round the bundle, as it lies in
+    it: a round, full tail, wide on her back, not thick into it.)"""
     e1 = np.cross(axis, [1.0, 0.0, 0.0])
-    e1 /= np.linalg.norm(e1)
-    e2 = np.cross(axis, e1)
+    e1 /= np.linalg.norm(e1)                                       # (toward her: her back's way in)
+    e2 = np.cross(axis, e1)                                        # (side to side)
     n = sum(ly[0] for ly in layers)
     r, a = spread * np.sqrt(RNG.random(n)), RNG.uniform(0, 2 * np.pi, n)
-    disc = e1 * (r * np.cos(a))[:, None] + e2 * (r * np.sin(a))[:, None]
-    disc -= disc.mean(0)
+    thick = e1 * (flat * r * np.cos(a))[:, None]
+    wide = e2 * (r * np.sin(a))[:, None]
+    thick -= thick.mean(0)
+    wide -= wide.mean(0)
+    disc = thick + wide
     dirs = axis + disc / spread * 0.45
     dirs /= np.linalg.norm(dirs, axis=1)[:, None]
 
@@ -926,7 +1016,7 @@ def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24):
             fall /= np.linalg.norm(fall) + 1e-9
             d = P[:, k] - P[:, k].mean(0)
             d -= np.outer(d @ fall, fall)
-            want = disc * (1 + (fan - 1) * k / (K - 1))
+            want = wide * (1 + (fan - 1) * k / (K - 1)) + thick * (1 + (fan_thick - 1) * k / (K - 1))
             want -= np.outer(want @ fall, fall)
             P[:, k] += (want - d) * 0.15                       # (no drift: both have no mean)
         off_face(P, step)
@@ -935,14 +1025,71 @@ def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24):
     middle = resample(P.mean(0)[None], 8)[0]                     # (the chain it swings on)
     P = np.array([resample(trim(P[i], L[i])[None], points)[0] for i in range(n)])
     P = wave(P, 0.004, 0.13, T + disc * 40)
+    # Each point's way out round the bundle: from the chain's nearest point,
+    # across it (side to side over her back, and out from her), as far out in
+    # the bundle as it lies (its depth over the bundle's, its width over its
+    # width), a little more out from her than in.
+    Cd = resample(middle[None], 64)[0]
+    flat_p = P.reshape(-1, 3)
+    j = cKDTree(Cd).query(flat_p)[1]
+    tg = np.gradient(Cd, axis=0)[j]
+    tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-9
+    away = -e1 - tg * (tg @ -e1)[:, None]
+    away /= np.linalg.norm(away, axis=1)[:, None] + 1e-9
+    across = np.cross(tg, away)
+    d = flat_p - Cd[j]
+    f = j / (len(Cd) - 1)
+    A = spread * (1 + (fan - 1) * f)
+    B = spread * flat * (1 + (fan_thick - 1) * f)
+    face = across * ((d * across).sum(1) / A)[:, None] + away * ((d * away).sum(1) / B + 0.25)[:, None]
+    face /= np.linalg.norm(face, axis=1)[:, None] + 1e-9
+    # (round 3: just under the tie, where the bundle is thinnest, its cards
+    # faced every way round it, each its own shine: blocks. There they all
+    # face out from her, as one, easing to round the bundle by 7 cm.)
+    w_ = np.clip(1 - j / (len(Cd) - 1) / 0.15, 0, 1)[:, None]
+    face = face * (1 - w_) + away * w_
+    face /= np.linalg.norm(face, axis=1)[:, None] + 1e-9
+    face = face.reshape(P.shape)
     out, at = [], 0
     for k, width, cols, off in layers:
-        c = cards(P[at:at + k], RNG.uniform(*width, k), list(cols), off, root=np.full(k, 0.3), narrow=0.3)
+        c = cards(P[at:at + k], RNG.uniform(*width, k), list(cols), off, root=np.full(k, 0.3), narrow=0.3, out_pts=face[at:at + k], u_by_width=True)
         c["swing"] = True
         out.append(c)
         at += k
+    # (18 October, face 30 round 3, the judge: light and dark blocks just
+    # under the tie, from her side and spinning. Each card there was faded in
+    # from its root over 8 mm (and the shader's first 1.2% of it), so all of
+    # it under the tie was half see-through, its cards blended in the order
+    # they were made, each its own shade by how much hair lay over it. Now
+    # one set, drawn from her back outward (from behind, the nearest last);
+    # their roots under the tie not faded (it hides them; the shader's fade
+    # skipped by starting their strands' texture past it); and one shared
+    # shade over their first 5 cm, easing to their own by 9 (build()).)
+    c = merge_cards(out)
+    a0 = 0.015
+    c["UV"][:, 1] = 1 - (a0 + (1 - c["UV"][:, 1]) * (1 - a0))
+    K3 = 3 * points                                                # (each card's points; by card, nearest her back (+y) first)
+    cy = c["V"].reshape(-1, K3, 3)[:, :, 1].mean(1)
+    c["F"] = c["F"][np.argsort(cy[c["F"][:, 0] // K3], kind="stable")]
+    c["blunt"] = True
+    c["shared"] = (0.05, 0.09)
     print("  tail: %d cards" % n)
-    return out, middle
+    return [c], middle
+
+
+def merge_cards(cs):
+    """Several sets of cards as one (their faces after each other)."""
+    out, base = {}, 0
+    for c in cs:
+        for k, v in c.items():
+            if k == "F":
+                out.setdefault(k, []).append(v + base)
+            elif isinstance(v, np.ndarray):
+                out.setdefault(k, []).append(v)
+            else:
+                out[k] = v
+        base += len(c["V"])
+    return {k: (np.concatenate(v) if isinstance(v, list) else v) for k, v in out.items()}
 
 
 def style_ponytail():
@@ -959,7 +1106,7 @@ def style_ponytail():
     parts += hang
     parts.append(band(T + axis * 0.004, axis, 0.0135))
     global CHAIN
-    CHAIN = {"points": middle, "bone": "Head", "stiff": 0.01, "bend": 0.03}
+    CHAIN = {"points": middle, "bone": "Head", "stiff": 0.006, "bend": 0.02, "margin": "bind"}
     return parts
 
 
@@ -995,17 +1142,33 @@ def style_braid():
         fuzz = np.stack([path[:end + 2] + out[:end + 2] * 0.008 * taper[:end + 2, None]])
         parts.append(cards(resample(fuzz, 32), np.array([0.026]), list(range(6, 11)), 0.012))
     # Tied off, and a short tail below.
-    parts.append(band(C[end], t[end], 0.0135 * taper[end], wide=0.014, thick=0.004))
+    # (18 October, face 30: a ring 9 mm round its middle, the band sank into
+    # the braid, whose strands reach 3.4 cm across it and 1.8 out, and into
+    # her: now it wraps them, as wide as they reach each way)
+    parts.append(band(C[end], t[end], (0.019 + 0.0145) * taper[end] + 0.001, wide=0.014, thick=0.004,
+                      e=(ac[end], out[end]), rb=(0.0075 + 0.0100) * taper[end] + 0.001))
     n = 40
     r, a = 0.009 * np.sqrt(RNG.random(n)), RNG.uniform(0, 2 * np.pi, n)
     disc = ac[end] * (r * np.cos(a))[:, None] + out[end] * (r * np.sin(a))[:, None]
     P = drape_lengths(C[end] + disc, np.repeat(t[end][None], n, 0), np.full(n, 0.075), 0.01, points=10)
     parts.append(cards(P, RNG.uniform(0.012, 0.02, n), list(range(6, 14)), 0.01, root=np.full(n, 0.4)))
+    # (18 October, face 30 round 3, the judge: from behind, where it leaves her
+    # nape, its outline against her skin was jagged, stair-stepped: its three
+    # strands' outer turns, each a 12-sided tube. Now hair over its edges each
+    # side, two cards from her nape down to its tie, a little out from it and
+    # from her, reaching just past its outer turns: a smooth outline, its
+    # crossings still seen between. Made after all else: the RNG and chain stay.)
+    reach_ = (0.019 + 0.0145) * taper
+    for sd in (1, -1):
+        for inset, wd in ((0.0055, 0.013), (0.0105, 0.016)):
+            q = C[:end + 1] + ac[:end + 1] * (sd * (reach_[:end + 1] - inset))[:, None] + out[:end + 1] * (0.006 * taper[:end + 1])[:, None]
+            q = np.vstack([T + (q[0] - T) * 0.4, q])              # (from up under her gathered hair)
+            parts.append(cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35))
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
         c["swing"] = True
     global CHAIN
-    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012, "bend": 0.03, "corner": 60}
+    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012, "bend": 0.03, "corner": 60, "margin": "bind"}
     return parts
 
 
@@ -1092,15 +1255,128 @@ def style_pixie():
         top = np.clip((pts[:, 2] - (EYE_Z + 0.05)) / 0.05, 0, 1) + np.clip(-pts[:, 1] / 0.06, 0, 1) * 0.5
         top = np.clip(top, 0, 1)
         L = (0.028 + 0.06 * top) * RNG.uniform(0.85, 1.1, len(pts))
+        # (18 October, face 29: at her nape each ends 3 to 8 mm past her
+        # hairline, no further: 3 cm long there, their tips hung down her neck
+        # in spikes, her skin pale between them)
+        th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+        nape = np.clip((th_ - 95) / 30, 0, 1) * (1 - top)
+        # (face 30: 1 to 5 mm past it, the fine row under them, pixie_nape_row, thinning out past their tips)
+        reach = np.maximum(rise(pts), 0) + 0.001 + 0.004 * np.random.default_rng(len(pts)).random(len(pts))
+        L = L * (1 - nape) + np.minimum(L, np.maximum(reach, 0.008)) * nape
         points = 12
-        stop = lambda q: ((q[:, 1] < -0.02) & (q[:, 2] < EYE_Z + 0.04)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
+        # (round 3, the judge: still spikes, skin between, at 135 and 180: the
+        # 8 mm least length took those rooted by her hairline 5 to 8 mm past it.
+        # Now at her nape each stops 1 to 3 mm past it, however long; the nape
+        # tips under them, pixie_nape_row, the edge)
+        past = 0.001 + 0.002 * np.random.default_rng(len(pts) + 7).random(len(pts))
+        at_nape = nape > 0.3
+        stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < EYE_Z + 0.04)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
+                          | (at_nape & (rise(q) < -past)))
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(len(pts), points - 1),
                 off, side=no_part(pts), lift=0.007 * top, stop=stop)
         P = resample(P, points)
-        layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0)))
+        # (stopped in the crease over her neck, their edges sank 2-3 mm into her: held 2.8 mm off at her nape)
+        layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0),
+                            floor=np.where(at_nape, 0.0028, 0.0015)[:, None]))
         print("  layer: %d cards" % len(pts))
     layers += hairline_hairs(comb_pixie, sides=no_part)
+    layers += pixie_crown_fill(layers[:3]) + pixie_nape_row()
     return layers
+
+
+def pixie_crown_fill(layers):
+    """(18 October, face 30, H8: swept to her right, her pixie parted on the
+    left of her crown, its cards lying away on both sides of a strip 1 to
+    1.5 cm wide where only their faded roots were: her cap showed through,
+    darkened as under hair, a dark hole on top of her head at the close-up.)
+    Short cards lying flat the way it is combed, rooted where no card's
+    opaque part (past its faded root) lies within 2 mm over her scalp."""
+    rng = np.random.default_rng(30)
+    opaque = []
+    for c in layers:
+        Ks = 12                                              # (style_pixie's points along each)
+        Vq = c["V"].reshape(-1, 3 * Ks, 3).reshape(-1, 3, Ks, 3)
+        aq = c["arc"].reshape(-1, 3, Ks)
+        rq = np.minimum(0.008, c["length"].reshape(-1, 3, Ks)[:, :1, :1] / 3)
+        # (each card filled in: 5 across, 4 to every link along)
+        f = np.linspace(0, 1, 4 * (Ks - 1) + 1)
+        i0 = np.minimum((f * (Ks - 1)).astype(int), Ks - 2); w = (f * (Ks - 1) - i0)[None, None, :, None]
+        Va = Vq[:, :, i0] * (1 - w) + Vq[:, :, i0 + 1] * w
+        Aa = aq[:, :, i0] * (1 - w[..., 0]) + aq[:, :, i0 + 1] * w[..., 0]
+        Va = np.concatenate([Va, (Va[:, :1] + Va[:, 1:2]) / 2, (Va[:, 1:2] + Va[:, 2:]) / 2], 1)
+        Aa = np.concatenate([Aa, Aa[:, :2]], 1)
+        opaque.append(Va[Aa > rq].reshape(-1, 3))
+    O = np.vstack(opaque)
+    A = cKDTree(O)
+    pts, nrm = roots(0.0025, above=0.02)
+    top = pts[:, 2] > EYE_Z + 0.05
+    # (covered: an opaque part of a card over it, within 2 mm of the line out
+    # from it and up to 2 cm out: the top's cards lie lifted, well off her)
+    bare = top.copy()
+    for i in np.where(top)[0]:
+        nb = A.query_ball_point(pts[i] + nrm[i] * 0.01, 0.0105)
+        if nb:
+            d = O[nb] - pts[i]
+            h = d @ nrm[i]
+            lat = np.linalg.norm(d - np.outer(h, nrm[i]), axis=1)
+            bare[i] = not ((lat < 0.002) & (h > 0) & (h < 0.02)).any()
+    if not bare.any():
+        return []
+    # (each rooted 4 mm back up the way it is combed from a bare point, so
+    # its opaque part lies over it, and faded in over its first 2.5 mm only:
+    # rooted in the strip itself and faded over 7, they left it as it was)
+    b, bn = pts[bare], nrm[bare]
+    back = b - combed(b, bn, comb_pixie(b)) * 0.004
+    cand, cn = roots(0.0015, above=0.015)
+    k = cKDTree(cand).query(back)[1]
+    k = np.unique(k)
+    pts, nrm = cand[k], cn[k]
+    n, points = len(pts), 8
+    L = rng.uniform(0.018, 0.026, n)
+    P = lie(pts - nrm * 0.001, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(n, points - 1), 0.0025, side=no_part(pts))
+    P = resample(P, points)
+    c = cards(P, rng.uniform(0.012, 0.016, n), list(range(0, 6)), 0.0025)
+    c["length"] = np.full(len(c["length"]), 0.0075)          # (build's root fade: a third of this)
+    print("  crown fill: %d cards (%d bare points)" % (n, bare.sum()))
+    return [c]
+
+
+def pixie_nape_row():
+    """(18 October, face 30: her pixie's nape ended in its cards' tips, spikes
+    with her skin between them, at the Look from behind.) One row of short,
+    narrow, dense and faint hairs (hair_fine: blended, not cut) from 6 mm
+    over her nape's hairline to 2 to 6 mm under it, combed down, so it thins
+    out into her skin there as a real nape does."""
+    rng = np.random.default_rng(31)
+    pts, nrm = roots(0.0022, above=-0.001, below=0.006)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = th > 112
+    pts, nrm = pts[keep], nrm[keep]
+    n, points = len(pts), 6
+    L = np.maximum(rise(pts), 0) + rng.uniform(0.002, 0.006, n)
+    P = lie(pts - nrm * 0.0008, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(n, points - 1), 0.0015, side=no_part(pts))
+    P = resample(P, points)
+    c = cards(P, rng.uniform(0.003, 0.005, n), list(range(6, 16)), 0.0015, floor=0.0015)
+    c["alpha"] = np.repeat(rng.uniform(0.45, 0.7, n), 3 * points)
+    c["mat"] = 3
+    print("  nape row: %d cards" % n)
+    # (18 October, face 30 round 3, the judge: still a jagged row of spikes,
+    # skin between them, at 135 and 180 on every face; the fine row didn't
+    # show. Under it now short, dense, tapered nape tips of her hair proper
+    # (cut, not blended): rooted 4 to 14 mm over her nape's hairline, 3 mm
+    # apart, 6 to 9 mm wide, each ending 1 to 3 mm past the hairline, so the
+    # spikes' gaps fill with hair that tapers out at its edge.)
+    pts, nrm = roots(0.003, above=0.004, below=0.014)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = th > 105
+    pts, nrm = pts[keep], nrm[keep]
+    m, k = len(pts), 8
+    L = np.maximum(rise(pts), 0) + rng.uniform(0.001, 0.003, m)
+    P = lie(pts - nrm * 0.0008, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (k - 1), np.full(m, k - 1), 0.0035, side=no_part(pts))
+    P = resample(P, k)
+    t = cards(P, rng.uniform(0.006, 0.009, m), list(range(0, 8)), 0.0035, narrow=0.8, floor=0.0035)
+    print("  nape tips: %d cards" % m)
+    return [t, c]
 
 
 # Each style: its cards, how its hair is combed where it lies (for the cap),
@@ -1122,7 +1398,7 @@ def cap(comb, sides=part_side):
     and one short enough not to, as a hard one."""
     from scipy.sparse import coo_matrix, identity
     from scipy.sparse.linalg import spsolve
-    T = scalp(below=0.012)                       # (on past her hairline, unseen there: no edge to it)
+    T = scalp(below=0.012, to_ears=True)         # (on past her hairline, unseen there: no edge to it; and up to her ears)
     used = np.unique(T)
     idx = -np.ones(len(HP), int)
     idx[used] = np.arange(len(used))
@@ -1136,6 +1412,10 @@ def cap(comb, sides=part_side):
     wav = sum(0.0018 * np.sin(V @ (u / np.linalg.norm(u)) * 2 * np.pi / lam + ph)
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
     fade = np.clip((V[:, 2] - hairline_z(theta) + 0.001 + 0.5 * wav) / 0.011, 0, 1)
+    # (and at her ears, faded out over the 3 mm next to each: her hair grows
+    # to her ear, its edge there soft, not the cap's cut edge)
+    if FLAP_TREE is not None:
+        fade = np.minimum(fade, np.clip((FLAP_TREE.query(V)[0] - 0.0015) / 0.003, 0, 1))
     # Along the combing (v) and across it (u), each edge as long in them as
     # along and across the combing there (least squares). Across, the same
     # way on both sides of her parting (mirrored there, not torn).
@@ -1180,7 +1460,7 @@ def build(style):
         # parting into her hair, not a row of cards' ends: a wig's edge at
         # the Look's close-up)
         alpha = c.get("alpha", np.ones(len(c["V"])))
-        if mat in (0, 3) and "arc" in c:
+        if mat in (0, 3) and "arc" in c and not c.get("blunt"):
             ramp = np.clip(c["arc"] / np.minimum(0.008, c["length"] / 3 + 1e-6), 0, 1)
             alpha = alpha * ramp * ramp * (3 - 2 * ramp)
         C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0), alpha])
@@ -1211,6 +1491,23 @@ def build(style):
     flat = np.concatenate([np.full(len(c["V"]), bool(c.get("flat"))) for c in layers])
     Ch[flat, 0] = 1.0
     Ch[flat, 2] = 1.0
+    # (a tail's cards under its tie: one shade, its outer hair's (the 75th
+    # percentile just below), over their first `shared[0]` metres, easing to
+    # their own by `shared[1]`: no light and dark blocks under the tie)
+    at0 = 0
+    for c in layers:
+        if "shared" in c:
+            a, b = c["shared"]
+            sl = slice(at0, at0 + len(c["V"]))
+            arc_ = c["arc"]
+            below = (arc_ > b) & (arc_ < b + 0.04)
+            tone = float(np.percentile(Ch[sl, 0][below], 75))
+            w = np.clip((b - arc_) / (b - a), 0, 1)
+            Ch[sl, 0] = Ch[sl, 0] * (1 - w) + tone * w
+            print("  tail's shade under the tie: %.2f" % tone)
+        at0 += len(c["V"])
+    blue = np.concatenate([np.full(len(c["V"]), float(c.get("blue", 0.0))) for c in layers])
+    Ch[:, 2] = np.maximum(Ch[:, 2], blue)
     C = [Ch]
     cp = cap(comb, sides)
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])
@@ -1251,7 +1548,7 @@ def build(style):
         g = lambda v: [float(v[0]), float(v[2]), float(-v[1])]
         with open(os.path.join(ART, f"heroine_hair_{style}.chain.json"), "w", encoding="utf-8") as fh:
             json.dump({"bone": CHAIN["bone"], "stiff": CHAIN["stiff"], "bend": CHAIN["bend"], **({"corner": CHAIN["corner"]} if "corner" in CHAIN else {}), "points": [g(q) for q in CHAIN["points"]],
-                       "spheres": [{"bone": sp["bone"], "at": g(sp["at"]), "r": sp["r"]} for sp in chain_spheres()]}, fh, indent=1)
+                       "spheres": [{"bone": sp["bone"], "at": g(sp["at"]), "r": sp["r"]} for sp in chain_spheres(chain_margin(layers))]}, fh, indent=1)
         # (what swings on a chain from her head is her head's alone: the chain moves it)
         if CHAIN["bone"] == "Head":
             at = np.where((cw[:, 1] > 0)[:, None], CENTRE, at)
@@ -1263,6 +1560,33 @@ def build(style):
     rig(o, V, at)
     print("STYLE", style, len(V), "points,", len(F), "faces")
     return o
+
+
+def chain_margin(layers):
+    """How far the chain is kept off her back beyond her skin: CHAIN's
+    "margin" (a number), or for "bind", at each ball as far as the chain lies
+    off her skin there as she stands and 4 mm more (8 mm to 4 cm): the chain
+    never closer to her back than as built, so as her back comes back to it
+    (her breath, the Look's stance) the hair is carried out, not sunk in.
+    (18 October, face 30: kept only 8 mm off, as close as a ponytail's chain
+    lies at her shoulder blades, the strands squashed under it on her back sank
+    1.5 cm into her as she stood at the Look, and a braid's tie 1.4 cm.)"""
+    m = CHAIN.get("margin", 0.008)
+    if m != "bind":
+        return m
+    Cp = resample(np.asarray(CHAIN["points"])[None], 64)[0]
+    order = np.argsort(Cp[:, 2])
+    lo, hi = Cp[:, 2].min(), Cp[:, 2].max()
+
+    def extra(z, c, r):
+        if z < lo - 0.03 or z > hi + 0.03:
+            return 0.008
+        zz = float(np.clip(z, lo, hi))
+        q = np.array([np.interp(zz, Cp[order, 2], Cp[order, 1]), zz])
+        clear = float(np.hypot(q[0] - c[1], q[1] - c[2])) - r
+        return float(np.clip(clear + 0.004, 0.008, 0.04))
+    print("  chain kept off her back:", ", ".join("%.1f" % (sp["r"] * 1000) for sp in chain_spheres(extra)), "mm")
+    return extra
 
 
 def follow_head(o, at):

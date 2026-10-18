@@ -1,8 +1,17 @@
 # Heroine face, hair and creation's Look: status
 
-Ship branch `face/ship` @ 096c7a8c (one squash on integration 02fb2a8b; 886 tests pass): MERGE REQUESTED 13 October. Work branch `worktree-agent-a2d632df7c7f21ec0`. Handoff: `docs/handoff/face.md` (successor 19's "Start here").
+Work branch `worktree-agent-a2d632df7c7f21ec0` (face 30: hair round MERGE REQUESTED 18 October). The face rebuild merged earlier (40e08eb9, integration 6bbf9425). Handoff: `docs/handoff/face.md` ("Start here (face 30)").
 
-## Current state (13 October)
+## Current state (18 October, face 30: hair round, MERGE REQUESTED)
+- **Hair (braid default, ponytail, pixie):** max judge j3 at 1:1 (Look by night and day, town close-up, spins 90 and 360): braid SHIP, ponytail SHIP, pixie CLOSE (the nape edge, closed as known at the round cap).
+  - H1, the pale patch behind the ears: the "ear" region in both the scalp tint mask (heroine_features.py) and the hair cap's `_flap` (heroine_hair.py) took in 1 cm of scalp. Both now count only vertices the ear keys move by at least 1/4 of their max (b2918c19, c7b4a84d).
+  - Clipping into her back: HairSway stepped before her skeleton modifiers (HerCarriage's lift), so the chain hung 3-9 cm off the hair. It now steps on `SkeletonUpdated` (7d3e4b91). The back's collision is widened toward the shoulder blades and the arm balls padded for fast spins (20a0e2f2; `NOBACKWIDE=1` compares).
+  - Ponytail round, not a ribbon (cards face round the bundle, `merge_cards`, `cards(u_by_width)`). The braid tie wraps the braid. The side locks on braid and ponytail were removed (they read as scars). The pixie crown is filled.
+  - Closed as known: the pixie's nape is a slightly ragged edge at Look turns 135-180 (noticeable, not obvious). The fix needs a per-style scalp tint, because extending the shared tint below the nape would darken the braid's and ponytail's bare neck. The pixie has strands within 1.7-2.7 mm of her nape crease in bind pose, none over 3 mm. Ponytail spin 360: 0.08-0.42% of strands > 3 mm in, run to run.
+- **F1, the mouth at open 0.25 (c04a A5):** CLOSED AS KNOWN, keeping round 3 (21268a1e: an ivory teeth band while barely parted, a shell filling the gaps, the lower lip's lift muted to her lip colour). Judge: clearly better than before, nothing a player would call broken; the teeth read as a plain band, and a grey slab steps against it on her left. The dark molars at 0.6 are unreachable (the game stops at 0.25).
+- **Next:** H10, F2 and F3 (hair colour in the cinematics, dead eyes, c02 s8's cheeks: split ours from the lighting); the grey jaw and neck shade (OWNER_NOTES "neck discolouration", seen on the body lead's neck sheet); then the hair fit re-check on the new body build (clipmeasure.py, posed_clip.py, tools/scratch/face30/s3_measure.py).
+
+## Earlier state (13 October)
 - **Face ship:** every part passed its judges (s1, rj1-rj7). Last item, the turned jaw's orange-brown wedge at the Look, was the skin shader's warm shade tint on her jaw's underside (not the ear map, not the paint); fixed by `shade_thin` 0.75 (rj7 PASS). Residual, not blocking: moonlit and fey's under-jaw a touch deep at 2x (lightness, a later fill pass).
 - **Next (owner said yes):** the smile pass (upper teeth, mouth interior, open-smile corner wedges, the at-rest lip fix for five faces carried into the smile shapes; the soft version ships unless the new one clearly wins). Then hair: hard pale scalp edge at the hairline, pale scalp slivers above the ear, strands reading as cracks over the ear and scratches across the cheek, the review tool rendering her bald.
 
@@ -30,3 +39,15 @@ Closed as known (face 28, 17 October, the coordinator agreed). No screen or scen
 - **Verdict and sheets** (1:1, 16 Oct): `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\007ccb1a-862a-405f-908e-2b7c3e433488\scratchpad\f27\j1\verdict.md`. The shoot script is `..\f27\tri.ps1`.
 - **Item 1's start:** `gum_low()` in `tools/assets/heroine_mouth_inner.py`, kept but NOT hooked. It pushes the lower teeth and gum back in the teeth's mouth_open key, to keep 2 mm behind her chin. It also scales the mouth_height slider's teeth key by how far her skin follows the slider at each height. Run it alone with `gum_low_file(glb, out)` (about 90 s). The unjudged build is `..\f27\chin\g1.glb` (on the pre-G3 body), with its log in `dbg.txt`. Caution: its push reaches 7.6 mm at open 1.0, driven by the mouth_height Low slider (Sunborn, own). It applies to every face, so the front teeth may look sunk. Judge that before hooking it, or move the Low case into a corrective key.
 - Also closed: hooking `heroine_mouth_seal.py`, since nothing it fixes shows at 1:1.
+
+## Later: long and bob (deferred 18 Oct by the owner)
+
+The owner, 18 Oct: "Yes: ship braid, ponytail and pixie, braid is her default, and long and bob leave the creation menu until they're rebuilt."
+
+They come back with a rebuild or with Marionette's hair-card library. Their art and gltfs are kept on disk (and all of long's physics, HairSway's `Style == "long"` branch); they are only out of her `cuts` in `looks.json` and `People.HerHairs`. An old save or arg with "long" or "bob" lands on the braid (`Loadouts.HerHair`). The judge's items for them (verdict sections A and B):
+- Long and bob read as a painted slab or helmet: one even copper, a lighter horizontal band across the back, a ragged crown, hard dark tips.
+- Long moves as flat sheets (sprint frame, across #5), with a hard jagged top edge.
+- Long is stiff with no trail while she runs (across #2); the spin frames match rest.
+- Bob's front strands float off the head, and one hangs across the eye (spin #4), with a pale gap between front cards.
+- Bob's forehead strand is a hook that reads as a drawn line (turns 0 and 45).
+- Measured: the bob's main cards stand a median 15.6 mm off the face; the "glued" read is the fine layer at 1.6 mm (`tools/scratch/face29/facegap.py`).
