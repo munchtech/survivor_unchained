@@ -26,6 +26,9 @@ CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_r
 
 # The sprint's swing from the run's: forward +th, forward elbow +deg, the back upper arm x, back elbow +deg.
 SPRINT_SWING = (5, -3, 1.25, -3)
+# Per run where it differs: the town sprint's back swing a little short of the run's (x0.9), or the elbow comes through the
+# shield slung on her back (judge r3: 3-5 mm through at ph0 and ph50 at x1.25).
+SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3)}
 
 
 def sprint(rig, run):
@@ -49,9 +52,11 @@ def sprint(rig, run):
                 arm_fwd=held(np.array(g.arm_fwd) * [1, 0.8, 1.2]), arm_back=held(np.array(g.arm_back) * [1, 1.1, 1.25]))
     if g.swing is not None:
         # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
+        k = SPRINT_SWING_RUN.get(run, SPRINT_SWING)
+
         def sped(sw):
             (ft, fo, fe, fr), (bt, bo, be, br) = sw
-            return ((ft + SPRINT_SWING[0], fo, fe + SPRINT_SWING[1], fr), (bt * SPRINT_SWING[2], bo + 1, be + SPRINT_SWING[3], br))
+            return ((ft + k[0], fo, fe + k[1], fr), (bt * k[2], bo + 1, be + k[3], br))
         s = replace(s, swing=sped(g.swing), swing_r=None if g.swing_r is None else sped(g.swing_r))
     return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
 

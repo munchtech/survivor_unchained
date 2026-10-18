@@ -18,6 +18,8 @@ from motion import Measure
 from armmetrics import metrics
 from rig import qrot, qinv
 rr, rpos = sk.rest_globals() if False else (None, None)
+import os
+FACE = float(os.environ.get("FACE", "-0.172"))  # calibrated on judge r3 (x1.25 sprint: 3-5 mm seen through)
 def shield(clip):
     """Arm into the slung shield (Arms.cs Back socket: 66 cm across, centred (0, 1.22, -0.20) at rest on spine_03,
     inner face taken at z -0.19): max depth mm per side over the frames."""
@@ -32,7 +34,7 @@ def shield(clip):
             for p, r in pts:
                 q = qrot(r0[S], qrot(qinv(grot[f, S]), p - gp[f, S])) + p0[S]
                 if (q[0] ** 2 + (q[1] - 1.22) ** 2) ** 0.5 < 0.33:
-                    worst = max(worst, (-0.19 - (q[2] - r)) * 1000)
+                    worst = max(worst, (FACE - (q[2] - r)) * 1000)
         out[sd] = worst
     return out
 b = Body.heroine(jiggle=False); m = Measure(b); sk = b.sk; I = sk.index
@@ -59,6 +61,7 @@ for label, spec in cands.items():
             arms = {**arms, "r": xb}
         R.RUNS[n] = (g, arms, w)
     SS.SPRINT_SWING = tuple(spec.get("sprint", SS0))
+    if "sprint_town" in spec: SS.SPRINT_SWING_RUN = {"run_warden_town": tuple(spec["sprint_town"])}
     for nm in names:
         t0 = time.time()
         run = nm if nm.startswith("run_") else "run_" + nm[len("sprint_"):]
