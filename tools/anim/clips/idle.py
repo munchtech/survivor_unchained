@@ -268,31 +268,84 @@ def _stock_rel(rig):
         # over it, where the loop's breath lays it 1.5-4.5.)
         drop = qrot(qmul(g[0, s3], qinv(rig.grest[s3])), [0.0, -STOCK_DROP, 0.0])
         _STOCK[key] = (qrot(qinv(g[0, hr]), p[0, hl] + drop - p[0, hr]), qmul(qinv(g[0, hr]), g[0, hl]))
+        # (And the crossbow's top there, in the chest's frame: a clip that keys the right hand's blade lands on it.)
+        _STOCK[("top", key)] = tuple(float(x) for x in qrot(qinv(qmul(g[0, s3], qinv(rig.grest[s3]))), qrot(g[0, hr], [0, 0, 1.0])))
     return _STOCK[key]
 
 
-def ride_stock(rig, make, weight=lambda f: 1.0):
+def stalker_top(rig):
+    """The crossbow's top (hand_r +Z) in her idle, in the chest's frame."""
+    _stock_rel(rig)
+    return _STOCK[("top", id(rig))]
+
+
+# The fore-stock's centre line in hand_r's space (m): along +Y at this x, z (the stock 40 mm wide, its top at +z 0.09).
+STOCK_AXIS = (-0.041, 0.045)
+
+
+def cradle_rel(at, fingers=35.0, roll=0.0, lift=0.0, palm=0.020, reach=0.045):
+    """A palm-up cradle under the fore-stock, in hand_r's space: (wrist offset, turn), as _stock_rel returns. at: the
+    palm's centre (x, y, z; the stock's underside is z 0.00-0.02 from y 0.14 on); fingers: deg from the stock (+Y)
+    toward its far side (+X); roll: deg the palm tips about the fingers toward her (-X, the heel of the hand down the
+    near side); lift: deg the fingers rise toward the stock's top (+Z), up its far side. palm, reach: the palm's centre from the wrist's bone, out of the palm and along the fingers."""
+    from rig import qfrom_basis
+    a, r, l = math.radians(fingers), math.radians(roll), math.radians(lift)
+    f = np.array([math.sin(a) * math.cos(l), math.cos(a) * math.cos(l), math.sin(l)])
+    side = np.array([math.cos(a), -math.sin(a), 0.0])        # across the fingers, toward the far side
+    up = np.cross(side, f)                                   # the palm's normal before the roll
+    n = up * math.cos(r) - side * math.sin(r)                # the palm's normal (hand_l +X)
+    z = np.cross(n, f)
+    return (np.array(at, float) - reach * f - palm * n, qfrom_basis(n, f, z))
+
+
+def blend_rel(a, b, t, via=None, out=0.0):
+    """Between two of the left hand's relations to the stock: the wrist swung about the stock's centre line (round
+    its near side, never through it), its turn slerped; via: a relation passed at t 0.5 (each half on its own), out:
+    m the wrist stands off the stock at the middle (sin bump)."""
+    from rig import qslerp
+    if via is not None:
+        p, q = (blend_rel(a, via, 2 * t) if t < 0.5 else blend_rel(via, b, 2 * t - 1))[:2]
+        if out:
+            c = np.array([STOCK_AXIS[0], p[1], STOCK_AXIS[1]])
+            d = p - c
+            p = p + d / max(1e-6, np.linalg.norm(d)) * out * math.sin(math.pi * t)
+        return p, q
+    (pa, qa), (pb, qb) = a[:2], b[:2]
+    c = np.array([STOCK_AXIS[0], 0.0, STOCK_AXIS[1]])
+    da, db = pa - c, pb - c
+    ang = lambda d: math.atan2(d[2], d[0])
+    ra, rb = math.hypot(da[0], da[2]), math.hypot(db[0], db[2])
+    t1, t2 = ang(da), ang(db)
+    t1 %= 2 * math.pi; t2 %= 2 * math.pi                     # (0 = +x far side, pi = the near side: no crossing 0)
+    th = t1 + (t2 - t1) * t; rr = ra + (rb - ra) * t + out * math.sin(math.pi * t)
+    p = c + np.array([rr * math.cos(th), da[1] + (db[1] - da[1]) * t, rr * math.sin(th)])
+    return p, qslerp(qa, qb, t)
+
+
+def ride_stock(rig, make, weight=lambda f: 1.0, rel=None):
     """A crossbow clip whose left hand rides the fore-stock wherever the crossbow goes (animation 38: keyed on its own
     arc from her shoulder, it parted from the stock or the stock swung through it as the two arms' arcs drifted apart:
     the crossbow 6-18 mm into her left hand in the shot, the show and the stops). make(post) builds the clip; the right
     hand's path is read from a first build and the left hand put where the idle lays it on the stock in the right
     hand's frame (weight(frame) 0..1: how far from its keyed place onto the stock)."""
     from rig import qinv, qmul, qrot
-    rel_p, rel_q = _stock_rel(rig)
+    idle_rel = _stock_rel(rig)
     c0 = make(None)
     g, p = rig.sk.fk(c0.rot, c0.pos)
     hr, s3 = rig.I["hand_r"], rig.I["spine_03"]
     tg = []
     for f in range(c0.frames):
+        r = (rel(f, idle_rel) if rel else None) or idle_rel
+        rel_p, rel_q = r[0], r[1]
         q = qmul(g[f, hr], rel_q)
         tg.append((p[f, hr] + qrot(g[f, hr], rel_p), qrot(q, [0, 0, 1.0]), qrot(q, [0, 1.0, 0]),
-                   qmul(g[f, s3], qinv(rig.grest[s3]))))
+                   qmul(g[f, s3], qinv(rig.grest[s3])), r[2] if len(r) > 2 else 1.0, r[3] if len(r) > 3 else None))
 
     def post(fr, pose):
         w = float(weight(fr))
         if w <= 0 or not isinstance(pose.get("hand_l"), dict):
             return pose
-        pos, bl, kn, chest = tg[min(fr, len(tg) - 1)]
+        pos, bl, kn, chest, aim, fingers = tg[min(fr, len(tg) - 1)]
         spec = dict(pose["hand_l"])
         if spec.get("frame") == "chest":
             bl, kn = qrot(qinv(chest), bl), qrot(qinv(chest), kn)
@@ -303,6 +356,10 @@ def ride_stock(rig, make, weight=lambda f: 1.0):
         spec.pop("thumb", None)
         spec["pos"] = tuple(float(x) for x in pos)
         spec["mix"] = w if "arc" in spec else 1.0
+        if aim < 1.0:
+            spec["aim"] = aim     # (rel's third: how far the hand is turned to it, 0 = riding the forearm)
+        if fingers is not None:
+            return {**pose, "hand_l": spec, "fingers_l": fingers}   # (rel's fourth: the left fingers there)
         return {**pose, "hand_l": spec}
     return make(post)
 

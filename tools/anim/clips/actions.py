@@ -942,13 +942,23 @@ def cast_flick(rig):
 
 
 # The left elbow at the aim: down and ahead under the fore-stock.
-AIM_POLE_L = (0.3, -0.8, 0.5)
+AIM_POLE_L = (0.65, -0.7, 0.3)
+# The right elbow at the aim: out and down, a shooter's (not a chicken wing).
+AIM_POLE_R = (-1.0, 0.0, -0.4)
+# The crossbow's top at the aim (chest frame): up, its prod level (keyed by the knuckles alone, the fist rolled
+# palm-down with the forearm and the crossbow lay canted 60 deg onto its left side).
+AIM_TOP = (0.0, 1.0, 0.0)
+# The right fist on the way down (chest frame, from the shoulder, m) and its elbow.
+LOWER_R = (0.15, -0.19, 0.36)
+LOWER_POLE_R = (-1.0, -0.3, -0.2)
+# Her right shoulder drawn forward at the aim (clav_r: raise, forward).
+AIM_CLAV_R = (20, -10)
 # Her left shoulder drawn forward at the aim (clav_l: raise, forward).
-AIM_CLAV_L = (0, 18)
+AIM_CLAV_L = (8, 18)
 # A shooter's stance at the aim: the body turned to her right by AIM_BLADE (deg), the head and the crossbow turned back
 # by as much in the chest's frame, so the aim is unchanged and her left shoulder comes forward to the fore-stock (squared
 # to it, the left upper arm crossed her chest at shoulder height to reach it and went 30 mm into her breast's top).
-AIM_BLADE = 14.0
+AIM_BLADE = 26.0
 
 
 def _yawed(v, deg):
@@ -961,27 +971,68 @@ def _yawed(v, deg):
 def crossbow_shoot(rig):
     """The crossbow up at the eye and loosed: the kick throws the fists up
     and the shoulder back, she rides it and lowers (the left hand on the fore-stock throughout, as in her idle)."""
-    from clips.idle import STALKER_HAND_L, STALKER_HAND_R
+    from clips.idle import STALKER_HAND_L, STALKER_HAND_R, stalker_top
     B = AIM_BLADE
-    aim_r = arm(_yawed((0.06, -0.02, 0.40), B), _yawed((-0.8, -0.5, -0.2), B), knuckles=_n(*_yawed((0.08, 0.02, 1.0), B)))
+    aim_r = arm(_yawed((0.06, -0.02, 0.40), B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.02, 1.0), B)),
+                blade=AIM_TOP)
     aim_l = arm(_yawed((-0.10, -0.08, 0.40), B), AIM_POLE_L, knuckles=_n(0.1, -0.2, 1.0))
     keys = [
-        (0, body(stance(0.08), spine=(-8 - B, 4, 0), head=(10 + B, 4, -4), clav_l=AIM_CLAV_L, hand_r=aim_r, hand_l=aim_l,
+        (0, body(stance(0.08), spine=(-8 - B, 4, 0), head=(10 + B, 4, -4), clav_l=AIM_CLAV_L, clav_r=AIM_CLAV_R, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "fast"),
         (2, body(stance(0.08, weight=-0.3), spine=(-10 - B, -4, 0), head=(10 + B, -2, -4), clav_r=(6, -6), clav_l=AIM_CLAV_L,
-                 hand_r=arm(_yawed((0.06, 0.04, 0.34), B), _yawed((-0.8, -0.4, -0.2), B), knuckles=_n(*_yawed((0.08, 0.3, 0.95), B))),
+                 hand_r=arm(_yawed((0.06, 0.04, 0.34), B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.3, 0.95), B)),
+                                blade=AIM_TOP),
                  hand_l=arm(_yawed((-0.10, 0.0, 0.34), B), AIM_POLE_L, knuckles=_n(0.1, 0.1, 1.0)),
                  fingers_r="grip", fingers_l="relaxed"), "ease"),
-        (8, body(stance(0.08), spine=(-8 - B, 2, 0), head=(10 + B, 2, -4), clav_l=AIM_CLAV_L, hand_r=aim_r, hand_l=aim_l,
+        (8, body(stance(0.08), spine=(-8 - B, 2, 0), head=(10 + B, 2, -4), clav_l=AIM_CLAV_L, clav_r=AIM_CLAV_R, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "auto"),
-        (18, body(stance(0.08), hand_r=STALKER_HAND_R["hand_r"],
+        (18, body(stance(0.08), hand_r={**STALKER_HAND_R["hand_r"], "blade": stalker_top(rig)},
                   hand_l=STALKER_HAND_L["hand_l"], fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
     # Both hands on it: the left rides the fore-stock through the aim, the kick and the lowering (idle.ride_stock;
     # keyed on its own arc it hung 7-9 cm off the crossbow at the aim and its thumb went 10 mm in as it came down).
     from clips.idle import ride_stock
     return ride_stock(rig, lambda post: build("crossbow_shoot", rig, keys, post=post,
-                                              meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"}))
+                                              meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"}),
+                      rel=aim_cradle(*SHOOT_CRADLE_T))
+
+
+# The left hand at the aim: palm up under the fore-stock, close ahead of the right fist (idle.cradle_rel), the elbow
+# down under it; swung round the stock's near side onto the idle's palm-down hold as the crossbow comes down.
+AIM_CRADLE = {"at": (-0.06, 0.20, -0.04), "fingers": 30.0, "roll": -25.0, "lift": 0.0}
+AIM_CRADLE_AIM = 1.0
+# On the way between: the palm flat against the stock's near side, the fingers along it (not swept through it), and
+# the wrist stood off it by AIM_OFF.
+AIM_SIDE = {"at": (-0.075, 0.20, 0.045), "fingers": 0.0, "roll": -90.0}
+AIM_OFF = 0.06
+AIM_OPEN = 1.0
+SHOOT_CRADLE_T = (9, 16)
+
+
+def aim_cradle(t0, t1):
+    from clips.idle import cradle_rel, blend_rel
+    from rig import smoothstep
+    cache = {}
+
+    def rel(f, idle_rel):
+        if "c" not in cache:
+            cache["c"] = cradle_rel(**AIM_CRADLE) + (AIM_CRADLE_AIM,)
+        if f <= t0:
+            return cache["c"]
+        if f >= t1:
+            return idle_rel
+        u = float(smoothstep((f - t0) / (t1 - t0)))
+        if "v" not in cache:
+            cache["v"] = cradle_rel(**AIM_SIDE) if AIM_SIDE else None
+        # (The fingers eased open as they come over the top and closed round its far side as the hand lands.)
+        from keyed import FINGER_PRESETS
+        o = AIM_OPEN * math.sin(math.pi * u) ** 0.5
+        fl = dict(FINGER_PRESETS["relaxed"])
+        fl["curl"] = fl["curl"] * (1 - o) - 0.05 * o
+        fl["thumb"] = fl["thumb"] * (1 - 0.3 * o)
+        return (blend_rel(cache["c"][:2], idle_rel, u, via=cache["v"], out=AIM_OFF)
+                + (AIM_CRADLE_AIM + (1 - AIM_CRADLE_AIM) * u, fl if o > 0 else None))
+    return rel
 
 
 def throw(rig):

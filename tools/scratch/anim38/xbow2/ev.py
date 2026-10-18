@@ -35,6 +35,10 @@ def _base_of(rig_, calling):
 _idle.base_of = _base_of
 FR = next((a[4:] for a in sys.argv if a.startswith("--f=")), None)
 mods = [importlib.import_module(f"clips.{m}") for m in ("idle", "soul", "actions", "sprint_stop", "run")]
+import os, json
+for k, v in json.loads(os.environ.get("A38", "{}")).items():   # module constant overrides: {"actions.AIM_BLADE": 20}
+    mn, an = k.split(".")
+    setattr(importlib.import_module(f"clips.{mn}"), an, tuple(v) if isinstance(v, list) else v)
 t0 = time.time()
 made = []
 for m in mods:
@@ -99,7 +103,7 @@ for n in args:
     L = np.array([max(x["l"][:3]) for x in rows]); R = np.array([max(x["r"][:3]) for x in rows])
     fl = int(L.argmax()); fr = int(R.argmax())
     s = (f"{n:22s} L {L.max():5.1f}@{fl} ({rows[fl]['l'][3]}{' br' if rows[fl]['l'][4] else ''}, up/fa/hd "
-         f"{rows[fl]['l'][0]:.0f}/{rows[fl]['l'][1]:.0f}/{rows[fl]['l'][2]:.0f})  R {R.max():5.1f}@{fr} ({rows[fr]['r'][3]})")
+         f"{rows[fl]['l'][0]:.0f}/{rows[fl]['l'][1]:.0f}/{rows[fl]['l'][2]:.0f})  R {R.max():5.1f}@{fr} ({rows[fr]['r'][3]} {rows[fr]['r'][0]:.0f}/{rows[fr]['r'][1]:.0f}/{rows[fr]['r'][2]:.0f})")
     if ck:
         X = np.array([x["x"][0] for x in rows]); H = np.array([x["x"][2] for x in rows]); g = np.array([x["x"][3] for x in rows])
         fx = int(X.argmax())
