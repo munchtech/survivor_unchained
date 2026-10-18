@@ -103,8 +103,9 @@ public partial class CrowdView : Node3D
 
     /// <summary>A cinematic's say over a creature it stages (set by the cinematic, null when none plays):
     /// how far down it is drawn (Grimtunnel waist-deep in the ford, C03), and a role it holds once up and
-    /// standing, with the seconds since it began (his arms round the heart), or null for its own.</summary>
-    public static Func<Enemy, (double Sink, string? Role, double T)?>? Staged;
+    /// standing, with the seconds since it began (his arms round the heart), or null for its own; and which
+    /// way it is drawn facing (to her, whatever its own mind), or null.</summary>
+    public static Func<Enemy, (double Sink, string? Role, double T, double? Facing)?>? Staged;
 
     /// <summary>How many are standing, and lying (for the log).</summary>
     public (int Living, int Dead) Counts => (living, corpses.Count);
@@ -299,9 +300,10 @@ public partial class CrowdView : Node3D
         // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
         // the dirt whole.)
         if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
-        if (Staged?.Invoke(e) is var (stSink, stRole, stT))
+        if (Staged?.Invoke(e) is var (stSink, stRole, stT, stFace))
         {
             y -= stSink;
+            if (stFace is double fc) g.Facing = fc;
             if (stRole != null && e.State == EnemyState.Active && asset.Clips.ContainsKey(stRole)) { role = stRole; t = stT; }
         }
         // Struck: a squash, and a flinch along the blow, gone with the flash.

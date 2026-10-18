@@ -133,7 +133,7 @@ public partial class Game
         readonly Dictionary<string, PersonView> people = new();
         readonly Dictionary<string, Enemy> enemies = new();
         /// <summary>The creatures it stages, by id: how far down they are drawn, and a role held from a moment (CrowdView.Staged).</summary>
-        readonly Dictionary<int, (double Sink, string? Role, double T0)> staged = new();
+        readonly Dictionary<int, (double Sink, string? Role, double T0, double? Facing)> staged = new();
         double SinkOf(Enemy e) => staged.TryGetValue(e.Id, out var st) ? st.Sink : 0;
         readonly Dictionary<string, WardenView> bosses = new();
         readonly Dictionary<string, OrbView> orbs = new();
@@ -703,10 +703,11 @@ public partial class Game
                     if (enemies.TryGetValue(c.Actor, out var ce))
                     {
                         var st = staged.GetValueOrDefault(ce.Id);
-                        staged[ce.Id] = (st.Sink, c.Str("clip"), t0);
-                        // "where": turned to face it (Grimtunnel to her, not to where her own body waits).
-                        if (c.Has("where")) { var fw = places.Resolve(c.Get("where")); ce.Facing = Math.Atan2(fw.Z - ce.Z, fw.X - ce.X); }
-                        CrowdView.Staged = x => staged.TryGetValue(x.Id, out var sx) ? (sx.Sink, sx.Role, player.T - sx.T0) : null;
+                        // "where": drawn facing it (Grimtunnel to her, not to where her own body waits).
+                        double? face = st.Facing;
+                        if (c.Has("where")) { var fw = places.Resolve(c.Get("where")); face = Math.Atan2(fw.Z - ce.Z, fw.X - ce.X); }
+                        staged[ce.Id] = (st.Sink, c.Str("clip") ?? st.Role, t0, face);
+                        CrowdView.Staged = x => staged.TryGetValue(x.Id, out var sx) ? (sx.Sink, sx.Role, player.T - sx.T0, sx.Facing) : null;
                         break;
                     }
                     if (!people.TryGetValue(c.Actor, out var v)) break;
@@ -851,8 +852,8 @@ public partial class Game
                         // "sink": drawn this far down into the ground or the water (Grimtunnel waist-deep in the ford).
                         if (c.Has("sink"))
                         {
-                            staged[e.Id] = (c.Num("sink"), null, 0);
-                            CrowdView.Staged = x => staged.TryGetValue(x.Id, out var st) ? (st.Sink, st.Role, player.T - st.T0) : null;
+                            staged[e.Id] = (c.Num("sink"), null, 0, null);
+                            CrowdView.Staged = x => staged.TryGetValue(x.Id, out var st) ? (st.Sink, st.Role, player.T - st.T0, st.Facing) : null;
                         }
                     }
                     break;

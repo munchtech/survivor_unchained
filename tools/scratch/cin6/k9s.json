@@ -1,0 +1,4 @@
+[
+ {"name": "k9sc01", "cine": "c01", "until": 84, "args": ["--stills", "6", "--handoff", "--cinebones"], "keep": ["_s10_", "_s11_", "_s12_", "_ho_"]},
+ {"name": "k9sc03", "cine": "c03", "until": 100, "args": ["--stills", "6", "--cinebones"], "keep": ["_s9_", "_s10_", "_s11_", "_s12_"], "timeout": 1000}
+]
