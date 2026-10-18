@@ -161,6 +161,7 @@ import face_shapes as fs  # noqa: E402
 eye_z = EV[:, 2].mean()
 theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
 rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
+rise = fs.hairline_across(theta, rise, np.hypot(P[:, 0], P[:, 1]))   # (across her hairline, as her hair's cap: 18 Oct)
 # (faint from 4 mm under her hairline, most of it over the centimetre above:
 # under her hair's cap as it thins out, blended over her skin there. It
 # began 1.6 cm under, when the cap ended hard: there it read as a dark band

@@ -1132,10 +1132,31 @@ def style_braid():
     taper = 1 - 0.4 * f
     end = int(np.searchsorted(f, 0.84))
     pitch = 0.062
+    # (18 October, touch-up: where it left her gathered hair its three strands began 3.4 cm apart, each an open
+    # tube, and past her neck from the front its start read as a flat, square-ended dark tab under her ear. Now
+    # they grow out of the gathered hair: begun 1.5 cm up inside it, drawn together there and parting into the
+    # plait over its first 4 cm, each strand thin where it starts and full by 2.5 cm. BRAID_GROW=0: as before.)
+    grow = os.environ.get("BRAID_GROW", "1") == "1"
+    if grow:
+        back = T[None] + axis[None] * np.linspace(-0.005, 0.01, 6)[:-1, None]     # (up inside her gathered hair)
+        Cs = np.vstack([back, C])
+        arc_s = np.r_[0, np.cumsum(np.linalg.norm(np.diff(Cs, axis=0), axis=1))] - np.linalg.norm(C[0] - back[0])
+        _, out_s, ac_s = frame(Cs)
+        sp = np.clip(arc_s / 0.04, 0, 1)
+        spread = sp * sp * (3 - 2 * sp)
+        thick = 0.35 + 0.65 * np.clip((arc_s + 0.015) / 0.04, 0, 1)
+        taper_s = 1 - 0.4 * np.clip(arc_s / arc[-1], 0, 1)
+        nb = len(back)
     for k in range(3):
         th = 2 * np.pi * arc / pitch + 2 * np.pi * k / 3
         path = C + ac * (0.019 * taper * np.sin(th))[:, None] + out * (0.0075 * taper * np.sin(2 * th))[:, None]
-        lobe = tube(path[:end + 2], 0.0145 * taper[:end + 2], 0.0100 * taper[:end + 2], out[:end + 2], sides=12)
+        if grow:
+            th_s = 2 * np.pi * arc_s / pitch + 2 * np.pi * k / 3
+            path_s = Cs + ac_s * (0.019 * taper_s * spread * np.sin(th_s))[:, None] + out_s * (0.0075 * taper_s * spread * np.sin(2 * th_s))[:, None]
+            lobe = tube(path_s[:nb + end + 2], (0.0145 * taper_s * thick)[:nb + end + 2], (0.0100 * taper_s * thick)[:nb + end + 2],
+                        out_s[:nb + end + 2], sides=12)
+        else:
+            lobe = tube(path[:end + 2], 0.0145 * taper[:end + 2], 0.0100 * taper[:end + 2], out[:end + 2], sides=12)
         lobe["mat"] = 1
         parts.append(lobe)
         # (loose hairs over each strand of it)
@@ -1162,7 +1183,7 @@ def style_braid():
     for sd in (1, -1):
         for inset, wd in ((0.0055, 0.013), (0.0105, 0.016)):
             q = C[:end + 1] + ac[:end + 1] * (sd * (reach_[:end + 1] - inset))[:, None] + out[:end + 1] * (0.006 * taper[:end + 1])[:, None]
-            q = np.vstack([T + (q[0] - T) * 0.4, q])              # (from up under her gathered hair)
+            q = np.vstack([T + (q[0] - T) * (0.1 if grow else 0.4), q])   # (from up under her gathered hair)
             parts.append(cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35))
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
@@ -1411,7 +1432,9 @@ def cap(comb, sides=part_side):
     r = np.random.default_rng(5)
     wav = sum(0.0018 * np.sin(V @ (u / np.linalg.norm(u)) * 2 * np.pi / lam + ph)
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
-    fade = np.clip((V[:, 2] - hairline_z(theta) + 0.001 + 0.5 * wav) / 0.011, 0, 1)
+    # (across her hairline, not by height: fs.hairline_across)
+    across = fs.hairline_across(theta, V[:, 2] - hairline_z(theta), np.hypot(V[:, 0] - CENTRE[0], V[:, 1] - CENTRE[1]))
+    fade = np.clip((across + 0.001 + 0.5 * wav) / 0.011, 0, 1)
     # (and at her ears, faded out over the 3 mm next to each: her hair grows
     # to her ear, its edge there soft, not the cap's cut edge)
     if FLAP_TREE is not None:
