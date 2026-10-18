@@ -103,6 +103,8 @@ public partial class Game
     // The figure turned (radians from how she stands) and brought near (0 all
     // of her, 0.55 head and shoulders, 1 her face): asked, and as it is now.
     float figTurn, figTurnNow, figZoom;
+    /// <summary>The fastest the shown figure turns (rad/s, 135 deg/s): her hair chain holds to about this speed.</summary>
+    const float MaxFigTurnRate = 0.75f * Mathf.Pi;
     CameraAttributesPractical? portrait;
     // (--look-dof: the portrait's depth of field, off since 10 October 2026: blended
     // hair took the backdrop's depth and blurred, and the focus edge moved every frame)
@@ -137,7 +139,8 @@ public partial class Game
         if (Args.Has("spin")) figTurn += Mathf.DegToRad((float)Args.Num("spin", 90)) * (float)dt;
         // --hairdump DIR: her hair and body as drawn, every 0.25 s from 2 s in, for posed_clip.py (HairDump).
         if (Args.Has("hairdump")) HairDump.Tick(figure, dt);
-        figTurnNow = Mathf.Lerp(figTurnNow, figTurn, 1 - Mathf.Exp(-9f * (float)dt));
+        float dTurn = Mathf.Lerp(figTurnNow, figTurn, 1 - Mathf.Exp(-9f * (float)dt)) - figTurnNow;
+        figTurnNow += Mathf.Clamp(dTurn, -MaxFigTurnRate * (float)dt, MaxFigTurnRate * (float)dt);
         figure.Rotation = new Vector3(0, (float)FigureHeading + figTurnNow, 0);
         float y = (float)scene.HeightAt(Fire.X, Fire.Y);
         Vector3 fullPos = new(Fire.X + 1.05f, y + 1.75f, Fire.Y + 7.0f), fullLook = new(Fire.X + 0.95f, y + 1.0f, Fire.Y + 0.9f);

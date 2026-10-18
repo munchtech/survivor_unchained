@@ -11,7 +11,7 @@ os.makedirs(OUT, exist_ok=True)
 def look(s, d, secs):
     return ["--seconds", str(secs), "--turn", str(d), "--hair", s, "--new", "--sex", "female", "--step", "1", "--part", "0",
             "--open-eyes", "--preset", "own", "--skin", "fair", "--eyes", "moss"]
-RUNS = [("idle0", 0, 7, []), ("idle180", 180, 7, []), ("spin90", 0, 9, ["--spin", "90"]), ("spin360", 0, 5.5, ["--spin", "360"])]
+RUNS = [("idle0", 0, 7, []), ("idle180", 180, 7, []), ("spin90", 0, 9, ["--spin", "90"]), ("spin180", 0, 7, ["--spin", "180"]), ("spin360", 0, 5.5, ["--spin", "360"])]
 if os.environ.get("NOTURN") != "1" and subprocess.run([sys.executable, TP, "take", "godot", "face30: s3 measure", "--wait", "3600", "--root", W]).returncode != 0:
     print("TURN REFUSED"); sys.exit(1)
 dirs = []
