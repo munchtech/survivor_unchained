@@ -32,7 +32,7 @@ public static class Arms
     public static readonly Dictionary<string, Spec> All = new()
     {
         ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f, Lean: 35, Kind: WeaponKind.Blade1H, Seated: true),
-        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H),
+        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H, Seated: true),  // grip conformed (grip_conform.py --seat --round): its anchor_grip seats it
         ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35, Kind: WeaponKind.Blade1H),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
@@ -44,7 +44,7 @@ public static class Arms
         ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30, Kind: WeaponKind.Wand),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f, Kind: WeaponKind.Shield),
         ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),
-        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),  // Seated once its left fist passes (fistfit.py daggers --side l)
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),  // grip conformed (grip_conform.py --no-anchor); its left fist: fistfit.py daggers --side l
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
@@ -70,16 +70,19 @@ public static class Arms
         var pts = new List<Vector3>();
         Transform3D? aGrip = null, aSheath = null;
         var tag = WeaponKind.None;
+        var path = new List<string>();
         void Walk(Node n, Transform3D at)
         {
             foreach (var c in n.GetChildren())
             {
                 var t = c is Node3D c3 ? at * c3.Transform : at;
                 // Anchors (Marionette exports carry them) and a kind tag (a glTF extra "kind", or a node named kind_<kind>).
+                // In a file of several pieces only the anchors under the piece's own node (WeaponSockets.AnchorIsPiece).
                 if (c is Node3D)
                 {
-                    if (c.Name.ToString().StartsWith("anchor_grip")) aGrip = t;
-                    else if (c.Name.ToString().StartsWith("anchor_sheath")) aSheath = t;
+                    bool own = WeaponSockets.AnchorIsPiece(spec.Node, path);
+                    if (c.Name.ToString().StartsWith("anchor_grip")) { if (own) aGrip = t; }
+                    else if (c.Name.ToString().StartsWith("anchor_sheath")) { if (own) aSheath = t; }
                     else if (c.Name.ToString().StartsWith("kind", StringComparison.OrdinalIgnoreCase)) tag = WeaponSockets.Parse(c.Name);
                 }
                 if (c.HasMeta("extras") && c.GetMeta("extras").Obj is Godot.Collections.Dictionary ex && ex.ContainsKey("kind"))
@@ -87,7 +90,9 @@ public static class Arms
                 if (c is MeshInstance3D mi && mi.Mesh != null)
                     for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                         foreach (var v in (Vector3[])mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex]) pts.Add(t * v);
+                path.Add(c.Name.ToString());
                 Walk(c, t);
+                path.RemoveAt(path.Count - 1);
             }
         }
         Walk(model, Transform3D.Identity);

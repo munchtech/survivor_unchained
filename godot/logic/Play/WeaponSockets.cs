@@ -49,6 +49,17 @@ public static class WeaponSockets
     /// otherwise), so a longer blade gives a longer scabbard. Never under 5 cm.</summary>
     public static float BladeLength(float tipY, float sheathY, float guard) => Math.Max(0.05f, tipY - sheathY - guard);
 
+    /// <summary>Whether an anchor (anchor_grip, anchor_sheath) found at `path` (the node names from the file's root down to
+    /// the anchor's parent) is this piece's: in a file of several pieces (Arms.Spec Node: both daggers share daggers.glb)
+    /// only an anchor under the piece's own node counts, so one dagger's anchor never mounts the other. A whole-file piece
+    /// (no Node) takes any anchor in the file.</summary>
+    public static bool AnchorIsPiece(string? specNode, IEnumerable<string> path)
+    {
+        if (specNode == null) return true;
+        foreach (var n in path) if (n == specNode) return true;
+        return false;
+    }
+
     /// <summary>The piece's shaft (long) and side (mid) axes in model space. An anchor (anchor_grip, else anchor_sheath) says
     /// the shaft outright: its -Y runs down the blade or haft toward the tip, so `anchorDown` (that -Y) is the shaft, exactly,
     /// whatever else the mesh carries (a coil or a crossguard tilts the bounds' principal axis: 4 degrees on the bound staff).

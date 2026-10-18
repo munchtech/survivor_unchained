@@ -60,24 +60,24 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
                         thumb_over=True, thumb_end=(-10.0, 85.0)),
           # The viking sword: the one-handed blade's pocket and fist (its clips are the sword's). Its hilt is a flat oval
           # (about 18 mm thick toward the palm, 34-37 across: "section"), so it is measured on its own section, not round.
-          # The dump holds it on the plain mount (Arms.Spec Seated not yet set): "dump" its grip point and lean there.
+          # 18 October: its grip conformed to the Blade1H standard (grip_conform.py --seat --round: 13.7 mm round, an
+          # anchor_grip at the type's grip point), so the dump seats it on the pocket like the sword.
           "viking_sword": dict(arms="viking_sword@hand_r", at="BladeAtR", dir="BladeDirR", outfit="warden",
-                               rest=("idle_warden", 76), weapon=("sword",), wrap="sword", section=True,
-                               dump=((-25.0, 75.0, 0.0), 35.0)),
+                               rest=("idle_warden", 76), weapon=("sword",), wrap="sword", section=True),
           # The axe (its haft turned onto the keyed lean, "axis" the window its line is fitted over): no fist closes on its
           # 40 x 58 mm haft (WeaponSockets.AxeAtR, not live); "thumb_end" the thumb's last joint in a fit (55-70).
           # The dagger: a flat hexagonal hilt 15 x 29 mm (WRAP["daggers"], DaggerAtR).
           "axe": dict(arms="viking_axe@hand_r", at="AxeAtR", dir="AxeDirR", outfit="reaver", rest=("idle_reaver", 0), thumb_end=(55.0, 70.0),
                       weapon=("axe", "axes"), section=True, dump=((-25.0, 75.0, 0.0), 30.0), axis=(-80.0, 150.0)),
           "daggers": dict(arms="daggers@hand_r", at="DaggerAtR", dir="DaggerDirR", outfit="ranger",
-                          rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0), dump=((-25.0, 75.0, 0.0), 30.0),
+                          rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0),
                           left="dagger_l"),
           # Her left fist on the second dagger (dagger_b, hand_l; its own mesh, Cube_004_01), seated on the left pocket
-          # (WeaponSockets.PocketL: the right's through MIRROR) and laid with WRAP["daggers"] mirrored (keyed.wrap_of
+          # (WeaponSockets.PocketL: the right's through MIRROR; its grip conformed to the Dagger standard 18 October, Arms.Spec Seated) and laid with WRAP["daggers_l"] mirrored (keyed.wrap_of
           # "l"). Measured in hand_r's frame: her left hand, its skin and the piece taken through MIRROR (side "l"), so
-          # the right's seat, pass and table hold; "dump" is the plain hand_l mount there (MountTransform, mirrored).
+          # the right's seat, pass and table hold.
           "dagger_l": dict(arms="dagger_b@hand_l", at="DaggerLeftAt", dir="DaggerLeftDir", outfit="ranger", side="l",
-                           rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0), dump=((-25.0, 75.0, 0.0), 30.0),
+                           rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0),
                            weapon=("daggers",), wrap="daggers_l", seed="daggers")}
 PAD = (-0.5, 1.5)     # mm: the 02/03 pads' gap to the leather
 IN_MAX = 0.5          # mm: deepest any of the hand may go into the hilt

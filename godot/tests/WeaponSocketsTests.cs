@@ -54,6 +54,20 @@ public class WeaponSocketsTests
     }
 
     [Fact]
+    public void AnAnchorBelongsOnlyToThePieceItLiesUnder()
+    {
+        // daggers.glb: two pieces, Cube_004 (daggers) and Cube_004_01 (dagger_b). An anchor under one is not the other's.
+        Assert.True(WeaponSockets.AnchorIsPiece("Cube_004", new[] { "Scene", "Cube_004" }));
+        Assert.False(WeaponSockets.AnchorIsPiece("Cube_004_01", new[] { "Scene", "Cube_004" }));
+        Assert.True(WeaponSockets.AnchorIsPiece("Cube_004_01", new[] { "Scene", "Cube_004_01", "Grip" }));
+        // At the file's root (no node above it) it is no one piece's in a shared file...
+        Assert.False(WeaponSockets.AnchorIsPiece("Cube_004", System.Array.Empty<string>()));
+        // ...and a whole-file piece takes any anchor.
+        Assert.True(WeaponSockets.AnchorIsPiece(null, System.Array.Empty<string>()));
+        Assert.True(WeaponSockets.AnchorIsPiece(null, new[] { "Scene", "Cube_004" }));
+    }
+
+    [Fact]
     public void AnAnchorSetsTheShaftNotTheBounds()
     {
         // The bound staff: its coil leans the bounds' long axis 4 degrees off the rod; the anchor's -Y is the rod.
