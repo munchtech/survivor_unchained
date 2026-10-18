@@ -1055,8 +1055,10 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # (WRAP_LEFT is off). Mirrored as is, it leaves her left forefinger 7.6/6.1 mm off dagger_b and the hand 22 mm
         # into it (her hands are 1-4 deg and up to 7 mm off each other's mirror at rest). fistfit.py daggers --side l
         # --fit (17 October) found no passing seat: best y0 84, pads 3.6/1.2, 3.6/0.5, 4.3/4.1, -0.7/1.5, 0.7 mm in.
-        "daggers_l": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
-                  "oppose": 0.01, "thumb_roll": -3.9}}
+        # SUPERSEDED 18 October (animation 38): fitted on the conformed dagger_b (29.2 x 15.2) and her left hand by a direct
+        # solve on fistfit.measure, DaggerLeftAt moved 12.0 mm (x -1, y +12; the palm 2.7 mm off): fistfit daggers --side l passes.
+        "daggers_l": {"bends": {"index": (38.3, 100.6, 55.4), "middle": (59.4, 104.0, 7.5), "ring": (62.2, 94.4, 5.7), "pinky": (73.2, 76.4, 23.2), "thumb": (28.0, -11.3, 54.7)}, "spreads": {"index": -22.8, "middle": 3.8, "ring": -4.3, "pinky": -0.6},
+                  "oppose": 0.00, "thumb_roll": -11.2}}
 
 
 def spread_axis(rig, j):
@@ -1078,9 +1080,9 @@ def wrap_of(weapon):
 # The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on
 # her left hand and the left piece, fistfit.py --side l: her hands aren't each other's mirror to the millimetre, and the
 # second dagger's hilt is thinner), laid mirrored as every left hand is.
-# Off until WRAP["daggers_l"] passes on her left hand (17 October: no fit yet; the entry is the right's, unfitted).
-# Then {"daggers": "daggers_l"}, with Arms.Spec dagger_b Seated.
-WRAP_LEFT = {}
+# On 18 October (animation 38): WRAP["daggers_l"] fitted on her left hand and the conformed dagger_b (fistfit daggers --side l).
+# Arms.Spec dagger_b Seated.
+WRAP_LEFT = {"daggers": "daggers_l"}
 
 
 def finger_curl(spec):

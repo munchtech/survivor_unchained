@@ -152,7 +152,7 @@ public static class WeaponSockets
     /// about 11 mm toward the palm and 23 across), given in hand_r's frame as its mirror image (so it reads beside
     /// DaggerAtR / DaggerDirR; PocketL takes it to hand_l by ToLeft). Fitted on her left hand (tools/anim/fistfit.py
     /// daggers --side l --fit: keyed.py WRAP["daggers_l"]), the direction the mount's own (Lean 30).</summary>
-    public static readonly Vector3 DaggerLeftAt = new(-0.0324f, 0.0720f, -0.0139f);
+    public static readonly Vector3 DaggerLeftAt = new(-0.0334f, 0.0840f, -0.0139f);
     public static readonly Vector3 DaggerLeftDir = new(0f, 0.5f, 0.8660254f);
 
     /// <summary>Her left fist's pocket (hand_l space), for a kind whose left fist is fitted (keyed.py wrap_of gives it

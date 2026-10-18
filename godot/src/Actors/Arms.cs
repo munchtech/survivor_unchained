@@ -32,7 +32,7 @@ public static class Arms
     public static readonly Dictionary<string, Spec> All = new()
     {
         ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f, Lean: 35, Kind: WeaponKind.Blade1H, Seated: true),
-        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H, Seated: true),  // grip conformed (grip_conform.py --seat --round): its anchor_grip seats it
+        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H),  // grip conformed (grip_conform.py --seat --round): its anchor_grip seats it; Seated once fistfit viking_sword passes (18 Oct: its grip under the fist is 1-2 mm thinner than the sword's)
         ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35, Kind: WeaponKind.Blade1H),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
