@@ -2,7 +2,35 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Start here (face 30: face 29 HANDED OFF at the coordinator's wind-down, 18 Oct; HAIR, three styles ship)
+## Start here (face 30, 18 Oct: hair round MERGE REQUESTED; next H10, F2, F3, the neck shade, the fit re-check)
+S30 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\463a4243-9324-49b0-bda9-b9fb9a9d68b1\scratchpad\f30`. It holds the verdicts (j2, j3, jf1, jf1r3), the sheets (s3j, h1j, h1bj, r3j, spinj, f1j) and the briefs. Keep it until the MR merges.
+- **Done and judged** (docs/team/face.md "Current state (18 October)"):
+  - Braid and ponytail SHIP (j3, max judge on the API).
+  - Pixie CLOSE: the nape is closed as known.
+  - F1 closed as known, keeping round 3 (jf1r3).
+  - Tests 935/0/8.
+- **Causes found, worth remembering:**
+  - The scalp tint and the cap's `_flap` both used an "ear" region that took in 1 cm of scalp. Both now use the 1/4-of-max rule.
+  - HairSway stepped before the skeleton modifiers. It now steps on `SkeletonUpdated`; `OLDPOSE=1` gives the old behaviour.
+  - The spine balls didn't reach her shoulder blades. They are widened toward her back; `NOBACKWIDE=1` turns that off.
+- **Tools** (in tools/scratch/face30/):
+  - s3_measure.py: hair dump plus posed_clip, at idle 0 and 180 and spin 90, 180 and 360.
+  - s3_shoot.py.
+  - h1b/measure.py: the ear-patch luma ratio. Debug switches: `H1DBG` (People.H1Debug) and the skin shader's `dbg_gate`.
+  - h1b/h1b_shoot.py: the judge set.
+  - r3/: the sheets.
+  - f1/ and f1r3/: the mouth, with `--teethdrop` and `--teethgrow`.
+  - `--look-time day` lights the Look by day (shot-only).
+- **Next, in order:**
+  1. H10, F2, F3: one test each, the same face under the Look rig against the cinematic key (c02 s8, c04a A5, c01 s8). Fix what's ours, and send the lighting part to main for the cinematics lead.
+  2. The grey jaw and neck shade (OWNER_NOTES "neck discolouration"). The body lead's `survivorsunchained_inputs\body_build\neck_sheet.png` shows it at 1:1 on all three neck lengths.
+  3. When the new body build lands on integration (a shorter neck, finger fixes, the areolas painted out): merge integration and rebuild the three styles on the new body. Then re-run clipmeasure.py, posed_clip (through s3_measure.py) and h1b/measure.py, and judge only if a number moved.
+- **Logged, not fixed:**
+  - The pixie's nape needs a per-style scalp tint.
+  - The ponytail shows faint streaks under the tie from straight behind.
+  - Seen from behind, the braid's first plait under the nape is slightly soft.
+
+## Start here (face 29 HANDED OFF at the coordinator's wind-down, 18 Oct; HAIR, three styles ship)
 SC below = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\77fe93b5-7a3e-4db3-8deb-795d76a58e9a\scratchpad` (face 29's session scratch: keep it until this list is merged).
 - **Scope (the owner, 18 Oct):** "Yes: ship braid, ponytail and pixie, braid is her default, and long and bob leave the creation menu until they're rebuilt." DONE on this branch @88cb2a96 (looks.json cuts, People.HerHairs, Loadout Buns to ponytail, the defaults; tests 935/0/8; c02 checked with no `--hair`). Long and bob are logged in docs/team/face.md "Later". `--hair long` now gives the braid.
 - **The owner's words:** "hair physics are a mess, and hair styles even on creation screen clip through ... hair dosn't look good" (17 Oct); "some of the hair just looks bad right? bob for example looks like some is glued on the face" (18 Oct).
