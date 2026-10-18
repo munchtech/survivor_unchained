@@ -9048,6 +9048,9 @@ if BODY_OUT:
     # (her neck 3 cm shorter, the owner's pick B, 18 Oct: her Head joint's rest moved down her neck, as the
     # game's --neck-cm drew it for the 1:1 sheet; last, after every step that finds her face by position)
     import heroine_neck
+    # (and her neck's skin under her head given her head's weights there first, so the cut drops the two as one:
+    # heroine_neck.match_graft; the pieces and hair that took that skin's weights follow it, match_pieces below)
+    heroine_neck.match_graft(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     print("BODY", BODY_OUT)
 
@@ -9804,4 +9807,8 @@ for name in OUTFITS:
     bpy.context.view_layer.objects.active = arm
     bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_texture_dir="outfit_tex", use_selection=True,
                               export_skins=True, export_animations=False, export_yup=True, export_vertex_color="ACTIVE")
+    # (its points that took her neck's weights follow her neck's skin as heroine_neck.match_graft changed it)
+    import heroine_neck
+    if float(os.environ.get("NECK_CUT", "0.03")):
+        heroine_neck.match_pieces(path, heroine_neck.field())
     print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)
