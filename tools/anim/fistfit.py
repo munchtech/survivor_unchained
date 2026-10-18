@@ -7,6 +7,8 @@
                                                         hand_r y of the line at the seat's height); the best seat wins
     python tools/anim/fistfit.py sword --fit --seat 95,105 --hand '{"knuckles": 20}'   the same on a corrected hand
                                                         (set_hand: the body build's change, modelled; never written)
+    python tools/anim/fistfit.py daggers --side l       her LEFT fist (PIECES "left": dagger_l, the second dagger in
+                                                        hand_l), measured in hand_r's frame through the mirror (MIRROR)
     python tools/anim/fistfit.py viking_sword --slide -30    a piece's grip point moved along its shaft (Arms.Spec.Grip)
                                                         modelled, never written
     python tools/anim/fistfit.py sword --fit --write    write the fitted WRAP["sword"] into keyed.py (and the seat into
@@ -64,7 +66,15 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           "axe": dict(arms="viking_axe@hand_r", at="AxeAtR", dir="AxeDirR", outfit="reaver", rest=("idle_reaver", 0), thumb_end=(55.0, 70.0),
                       weapon=("axe", "axes"), section=True, dump=((-25.0, 75.0, 0.0), 30.0), axis=(-80.0, 150.0)),
           "daggers": dict(arms="daggers@hand_r", at="DaggerAtR", dir="DaggerDirR", outfit="ranger",
-                          rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0), dump=((-25.0, 75.0, 0.0), 30.0))}
+                          rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0), dump=((-25.0, 75.0, 0.0), 30.0),
+                          left="dagger_l"),
+          # Her left fist on the second dagger (dagger_b, hand_l; its own mesh, Cube_004_01), seated on the left pocket
+          # (WeaponSockets.PocketL: the right's through MIRROR) and laid with WRAP["daggers"] mirrored (keyed.wrap_of
+          # "l"). Measured in hand_r's frame: her left hand, its skin and the piece taken through MIRROR (side "l"), so
+          # the right's seat, pass and table hold; "dump" is the plain hand_l mount there (MountTransform, mirrored).
+          "dagger_l": dict(arms="dagger_b@hand_l", at="DaggerLeftAt", dir="DaggerLeftDir", outfit="ranger", side="l",
+                           rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0), dump=((-25.0, 75.0, 0.0), 30.0),
+                           weapon=("daggers",), wrap="daggers_l", seed="daggers")}
 PAD = (-0.5, 1.5)     # mm: the 02/03 pads' gap to the leather
 IN_MAX = 0.5          # mm: deepest any of the hand may go into the hilt
 HANG_MAX = 0.0        # mm: the finger's end past the grip's far surface (along the palm's normal). Its end is its skin's
@@ -87,6 +97,30 @@ BUILT = RIG             # the axes the clips were built with (keyed's at import)
 LAST = {"fit": [], "table": []}    # the last fit's seats and the last table's rows, for a caller
 HB =[n for n in I if n.endswith("_r") and any(n.startswith(k) for k in ("hand",) + ALLF)]
 CHAIN = sorted(j for n, j in I.items() if n.endswith("_r") and any(n.startswith(k) for k in ALLF))
+CHAIN_L = sorted(I[n[:-2] + "_l"] for n in I if n.endswith("_r") and any(n.startswith(k) for k in ALLF))
+# hand_r's space to hand_l's: her body's mirror (skeleton x = 0) through her rest hand frames, Rl^T diag(-1,1,1) Rr (her
+# rest hands are 0.4 deg off each other's mirror, so not a plain x flip). A left measure takes hand_l points to hand_r's
+# frame by its transpose (rows: X @ MIRROR). WeaponSockets.MirrorRL is this (_check_mirror, side "l").
+MIRROR = qmatrix(RIG.grest[I["hand_l"]]).T @ np.diag([-1.0, 1.0, 1.0]) @ qmatrix(RIG.grest[I["hand_r"]])
+
+
+def side_of(piece):
+    return PIECES[piece].get("side", "r")
+
+
+def _check_mirror():
+    """WeaponSockets.MirrorRL (what the game seats the left piece by) against MIRROR off the skeleton."""
+    s = SOCKETS.read_text(encoding="utf-8")
+    m = re.search(r"MirrorRL\s*=\s*\{([^}]*)\}", s)
+    rows = [[float(v.strip().rstrip("f")) for v in r.split(",")] for r in re.findall(r"new\(([^)]*)\)", m.group(1))]
+    err = float(np.abs(np.array(rows) - MIRROR).max())
+    assert err < 2e-5, f"WeaponSockets.MirrorRL is {err:.2e} off the skeleton's mirror: re-derive it\n{MIRROR}"
+
+
+def _arms_v(piece):
+    """The piece's mesh from arms_local in its hand's space, a left piece's taken to hand_r's frame (MIRROR)."""
+    V = np.array(json.load(open(DATA / "arms_local.json"))[PIECES[piece]["arms"]]["v"], float)
+    return V @ MIRROR if side_of(piece) == "l" else V
 
 
 def wrap_key(piece):
@@ -114,9 +148,12 @@ def dump_line(piece):
     G, over which it is fitted through the sections' box centres; else c 0, Dh my); Arms.Seat turns the piece by R, the
     least turn taking my onto the pocket's Dir, and lays G on its At, so the line seated is At + R c along R Dh."""
     P = PIECES[piece]; G = np.array(P["dump"][0]) / 1000; lean = np.radians(P["dump"][1])
-    my = np.array([0.0, np.sin(lean), np.cos(lean)]); c = np.zeros(3); Dh = my
+    my = np.array([0.0, np.sin(lean), np.cos(lean)]); c = np.zeros(3)
+    if side_of(piece) == "l":     # the plain hand_l mount, taken to hand_r's frame
+        G, my = MIRROR.T @ G, MIRROR.T @ my
+    Dh = my
     if "axis" in P:
-        V = np.array(json.load(open(DATA / "arms_local.json"))[P["arms"]]["v"], float) - G
+        V = _arms_v(piece) - G
         e1 = _e1(my); e2 = np.cross(my, e1); t = V @ my * 1000
         T, C = [], []
         for a in np.arange(P["axis"][0], P["axis"][1], 4.0):
@@ -135,7 +172,7 @@ def dump_line(piece):
 def built_wrap(piece):
     """The fist the piece's clips are built with: its WRAP, else (none fitted yet) the sword's as the fit's seed and the
     table's reference."""
-    return keyed.WRAP.get(wrap_key(piece)) or keyed.WRAP["sword"]
+    return keyed.WRAP.get(wrap_key(piece)) or keyed.WRAP[PIECES[piece].get("seed", "sword")]
 
 
 def read_seat(piece):
@@ -167,7 +204,7 @@ def hilt_profile(piece, A, D, step=2.0):
     the mount's lean), so its hilt about the grip point is the same. "slide" (mm): the grip point moved toward the tip
     along the shaft (Arms.Spec.Grip raised by slide / Length), modelled."""
     P = PIECES[piece]
-    V = np.array(json.load(open(DATA / "arms_local.json"))[P["arms"]]["v"], float)
+    V = _arms_v(piece)
     if "dump" in P:
         G, my, c, Dh, R = dump_line(piece)
         assert abs(R @ Dh @ (D / np.linalg.norm(D))) > 0.99999, f"{piece}: the line isn't the seated grip's"
@@ -407,18 +444,22 @@ def _model_thumb(b):
         b.W[sel] /= b.W[sel].sum(1, keepdims=True)
 
 
-def body(outfit):
-    if outfit not in _bodies:
+def body(outfit, side="r"):
+    """Her skinned body in the outfit, its hand region (_fist) on `side`'s hand; a left hand's bones named as the
+    right's (Hand takes its points to hand_r's frame)."""
+    if (outfit, side) not in _bodies:
         b = skin.Body.heroine(outfit=outfit, jiggle=False)
         if HAND:
+            assert side == "r", "set_hand models the right hand only"
             _model_body(b)
             _model_dips(b)
             _model_thumb(b)
-        Wst = np.stack([(b.W * (b.J == I[n])).sum(1) for n in HB], 1)
+        names = HB if side == "r" else [n[:-2] + "_l" for n in HB]
+        Wst = np.stack([(b.W * (b.J == I[n])).sum(1) for n in names], 1)
         sel = np.nonzero(Wst.max(1) > 0.5)[0]
         b._fist = dict(sel=sel, bone=np.array([HB[i] for i in Wst.argmax(1)[sel]]), kind=b.kind[sel])
-        _bodies[outfit] = b
-    return _bodies[outfit]
+        _bodies[(outfit, side)] = b
+    return _bodies[(outfit, side)]
 
 
 def load(path):
@@ -427,20 +468,24 @@ def load(path):
 
 
 class Hand:
-    """One clip frame's right hand region (skin points, hand_r space), its finger chain re-posable."""
-    def __init__(self, rot_f, pos_f, outfit):
-        self.b = body(outfit); F = self.b._fist
+    """One clip frame's hand region (skin points, hand_r space), its finger chain re-posable. side "l": her left hand,
+    its points and joints taken to hand_r's frame through MIRROR and its bones named as the right's, so every measure
+    below reads it as a right hand."""
+    def __init__(self, rot_f, pos_f, outfit, side="r"):
+        self.side = side; self.sfx = "_" + side; self.chain = CHAIN if side == "r" else CHAIN_L
+        self.mir = np.eye(3) if side == "r" else MIRROR
+        self.b = body(outfit, side); F = self.b._fist
         self.rot_f, self.pos_f = rot_f.copy(), pos_f.copy()
         sk_ = F["kind"] == "skin"
         self.idx = F["sel"][sk_]; self.bone = F["bone"][sk_]
         self.fing = {fn: np.nonzero(np.char.startswith(self.bone.astype(str), fn))[0] for fn in ALLF}
         self.palm = np.nonzero(self.bone == "hand_r")[0]
         self.G0 = self.b.globals(Clip("x", 30, self.rot_f[None], self.pos_f[None], False, {}), 0)
-        h = I["hand_r"]; self.Rh = self.G0[h][:3, :3]; self.ph = self.G0[h][:3, 3]
+        h = I["hand" + self.sfx]; self.Rh = self.G0[h][:3, :3] @ self.mir; self.ph = self.G0[h][:3, 3]
 
     def G(self, rot_f):
         G = self.G0.copy()
-        for j in CHAIN:
+        for j in self.chain:
             L = np.eye(4); L[:3, :3] = qmatrix(rot_f[j]); L[:3, 3] = sk.rest_pos[j]   # the dump's bone lengths
             G[j] = G[sk.parent[j]] @ L
         return G
@@ -451,27 +496,28 @@ class Hand:
 
     def joints(self, rot_f):
         G = self.G(rot_f)
-        return {n: (G[I[n]][:3, 3] - self.ph) @ self.Rh for n in HB}
+        return {n: (G[I[n[:-2] + self.sfx]][:3, 3] - self.ph) @ self.Rh for n in HB}
 
     def rotf(self, ang, oppose=0.0, roll=0.0, spread=None, thumb_in=0.0):
         """Finger bends {finger: (a1, a2, a3)} laid as keyed.Rig.solve lays a WRAP or a preset (rest, the thumb's
         oppose, thumb_in and roll, each finger's spread at its base knuckle (spread {finger: deg}, keyed.spread_axis),
         then each bend about its joint's axis); fingers not given keep the frame's own."""
         r = self.rot_f.copy(); spread = spread or {}
+        sg = 1.0 if self.side == "r" else -1.0       # the left's signs, as keyed.Rig.solve lays them
         for name, angles in ang.items():
             for k, a in enumerate(angles):
-                j = I[f"{name}_0{k + 1}_r"]
+                j = I[f"{name}_0{k + 1}{self.sfx}"]
                 q = sk.rest_rot[j]
                 if k == 0 and spread.get(name):
-                    q = qmul(q, qaxis(keyed.spread_axis(RIG, j), spread[name]))
+                    q = qmul(q, qaxis(keyed.spread_axis(RIG, j), sg * spread[name]))
                 if name == "thumb" and k == 0:
                     if oppose:
-                        along = qrot(qinv(RIG.grest[j]), qrot(RIG.grest[I["hand_r"]], [0, 1.0, 0]))
-                        q = qmul(q, qaxis(along / np.linalg.norm(along), -oppose * 55))
+                        along = qrot(qinv(RIG.grest[j]), qrot(RIG.grest[I["hand" + self.sfx]], [0, 1.0, 0]))
+                        q = qmul(q, qaxis(along / np.linalg.norm(along), -sg * oppose * 55))
                     if thumb_in:
-                        q = qmul(q, qaxis(keyed.spread_axis(RIG, j), -thumb_in))
+                        q = qmul(q, qaxis(keyed.spread_axis(RIG, j), -sg * thumb_in))
                     if roll:
-                        q = qmul(q, qaxis([0, 1.0, 0], roll))
+                        q = qmul(q, qaxis([0, 1.0, 0], sg * roll))
                 r[j] = qmul(q, qaxis(RIG.finger_axis[j], a)) if a else q
         return r
 
@@ -574,10 +620,12 @@ def verdict(m, ang=None):
     return bad
 
 
-def wrist(rot, pos, f):
+def wrist(rot, pos, f, side="r"):
     g, p = sk.fk(rot[f:f + 1], pos[f:f + 1])
-    h, la = I["hand_r"], I["lowerarm_r"]
+    h, la = I[f"hand_{side}"], I[f"lowerarm_{side}"]
     d = qrot(qinv(g[0, h]), p[0, h] - p[0, la]); d /= np.linalg.norm(d)
+    if side == "l":
+        d = d @ MIRROR
     return round(float(np.degrees(np.arctan2(d[0], d[1]))), 1), round(float(np.degrees(np.arctan2(d[2], d[1]))), 1)
 
 
@@ -590,7 +638,7 @@ def finger_off(rot_f, h, ang, opp, roll, spr=None):
         ref = h.rotf(ang, opp, roll, spr)
     finally:
         RIG = cur
-    return max(float(np.degrees(2 * np.arccos(min(1.0, abs(float(np.dot(rot_f[j], ref[j]))))))) for j in CHAIN)
+    return max(float(np.degrees(2 * np.arccos(min(1.0, abs(float(np.dot(rot_f[j], ref[j]))))))) for j in h.chain)
 
 
 # ------------------------------------------------------------------ fitting --
@@ -763,7 +811,8 @@ def fit(piece, y0s=None, prof=None, iters=3):
     global THUMB_END
     THUMB_END = tuple(P.get("thumb_end", THUMB_END))
     prof = prof or hilt_profile(piece, A0, D)
-    _, rot, pos = load(CLIPS / f"{P['rest'][0]}.json"); h = Hand(rot[P["rest"][1]], pos[P["rest"][1]], P["outfit"])
+    _, rot, pos = load(CLIPS / f"{P['rest'][0]}.json")
+    h = Hand(rot[P["rest"][1]], pos[P["rest"][1]], P["outfit"], side_of(piece))
     # A = (x, y0, 0) + w D: w (where along the hilt the hand is) kept; y0 the line's place along her fingers, x its depth.
     w = float(A0[2] / D[2]); base0 = A0 - w * D
     old, opp0, roll0, spr0 = wrap_args(built_wrap(piece))
@@ -928,7 +977,9 @@ def write_seat(piece, A):
 def table(piece, wrap=None, A=None, prof=None):
     """Every built clip holding the piece: at its contact frame(s) (else its first) and the rest frame, the fist on the
     hilt (the clip's own fingers, or `wrap` laid on its frames), the wrist, and whether its fingers are WRAP's."""
-    P = PIECES[piece]; A0, D = read_seat(piece); D = D / np.linalg.norm(D)
+    P = PIECES[piece]; A0, D = read_seat(piece); D = D / np.linalg.norm(D); side = side_of(piece)
+    if side == "l":
+        _check_mirror()
     prof = prof or hilt_profile(piece, A0, D)
     gr = Grip(A0 if A is None else A, D, prof)
     built, bopp, broll, bspr = wrap_args(built_wrap(piece))
@@ -944,7 +995,7 @@ def table(piece, wrap=None, A=None, prof=None):
         if path.stem == P["rest"][0]:
             frames = [P["rest"][1]]
         for f in frames:
-            h = Hand(rot[f], pos[f], P["outfit"])
+            h = Hand(rot[f], pos[f], P["outfit"], side)
             off = finger_off(rot[f], h, built, bopp, broll, bspr)
             if wrap is None:
                 rf = rot[f]
@@ -953,7 +1004,7 @@ def table(piece, wrap=None, A=None, prof=None):
             m = measure(h, rf, gr); bad = verdict(m, a if wrap is not None else None) \
                 + ([f"fingers off WRAP {off:.0f} deg"] if off > OFF_MAX else [])
             fails += bool(bad)
-            rows.append((path.stem, f, m, wrist(rot, pos, f), off, bad))
+            rows.append((path.stem, f, m, wrist(rot, pos, f, side), off, bad))
     LAST["table"] = [dict(clip=n, frame=f, measure=m, wrist=wr, off=round(o, 1), fails=bad) for n, f, m, wr, o, bad in rows]
     print(f"{'clip':16s} {'fr':>3s} " + " ".join(f"{fn[:4]:>16s}" for fn in FINGERS) + "   in  palm  adj(im,mr,rp)  wrist(flex,dev)  off")
     print(f"{'':16s} {'':3s} " + " ".join(f"{'pad02/03 hang':>16s}" for _ in FINGERS))
@@ -978,7 +1029,12 @@ def main(argv):
     ap.add_argument("--tilt", default=None, help="flexion tilt to lay: 'derive' (tilt_for on this hand) or JSON "
                     "{finger: deg}; default keyed.FLEX_TILT")
     ap.add_argument("--relaxed", action="store_true", help="the relaxed hand's checks (relaxed()) and stop")
+    ap.add_argument("--side", choices=("r", "l"), default="r", help="l: her left fist on the piece's left twin "
+                    "(PIECES 'left'): its table, or with --fit its own WRAP and seat (in hand_r's frame, mirrored)")
     a = ap.parse_args(argv)
+    if a.side == "l":
+        assert "left" in PIECES[a.piece] and not a.hand, f"{a.piece}: no left twin (or --hand, right only)"
+        a.piece = PIECES[a.piece]["left"]
     if a.slide is not None:
         assert not a.write, "--slide models a Spec.Grip change: set it in Arms.cs and PIECES first"
         PIECES[a.piece]["slide"] = a.slide

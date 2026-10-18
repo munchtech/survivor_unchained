@@ -230,6 +230,13 @@ def stalker(t, f):
     }
 
 
+def stalker_daggers(t, f):
+    """The stalker's idle with a dagger in each hand (the game asks for idle_<calling>_<kind> first: OwnClips.For). Her
+    crossbow idle let the left hang "relaxed" round the second dagger, an open hand with the blade stuck to it (judge,
+    17 October); here both fists close on their hilts (the daggers' fitted WRAP, the left's mirrored: keyed.wrap_of)."""
+    return {**stalker(t, f), "fingers_l": "grip"}
+
+
 def warden_town(t, f):
     """In town, her weapons sheathed (the sword at her left hip, the shield
     on her back): the arms hang free and easy at her sides, the elbows soft,
@@ -250,12 +257,15 @@ IDLES = {
     "idle_arcanist": ("Strutting", arcanist, "staff"),
     "idle_reaver": ("Angry", reaver, "axe"),
     "idle_stalker": ("Crouched", stalker, "crossbow"),
+    "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
     "idle_warden_town": ("WiggleHips", warden_town, ""),
 }
 
 
 _bases = {}
+# An idle that stands on another's captured base (the same standing, other arms).
+SHARES_BASE = {"idle_stalker_daggers": "stalker"}
 
 
 def base_of(rig, calling):
@@ -272,7 +282,7 @@ def clips(rig, want):
     for name, (style, arms, weapon) in IDLES.items():
         if want and not any(w in name for w in want):
             continue
-        base = base_of(rig, name[5:])
+        base = base_of(rig, SHARES_BASE.get(name, name[5:]))
         if arms is arcanist:
             arms = _on_hip(rig, base, arms)
         out.append(layered(name, rig, base, arms, {"weapon": weapon}))

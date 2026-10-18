@@ -1034,6 +1034,13 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
         # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
         "daggers": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
+                  "oppose": 0.01, "thumb_roll": -3.9},
+        # Her LEFT fist on the second dagger (dagger_b: its own hilt, about 11 mm thick toward the palm and 23 across,
+        # thinner than the first's 15 x 29), laid mirrored on WeaponSockets.PocketL. NOT FITTED: a copy of the right's
+        # (WRAP_LEFT is off). Mirrored as is, it leaves her left forefinger 7.6/6.1 mm off dagger_b and the hand 22 mm
+        # into it (her hands are 1-4 deg and up to 7 mm off each other's mirror at rest). fistfit.py daggers --side l
+        # --fit (17 October) found no passing seat: best y0 84, pads 3.6/1.2, 3.6/0.5, 4.3/4.1, -0.7/1.5, 0.7 mm in.
+        "daggers_l": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
                   "oppose": 0.01, "thumb_roll": -3.9}}
 
 
@@ -1043,10 +1050,22 @@ def spread_axis(rig, j):
 
 
 def wrap_of(weapon):
-    """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): only her right hand's pocket is
-    measured, so only "r"."""
+    """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): her right hand's, and her left's
+    where the clip holds a piece there on a fitted left pocket (WeaponSockets.PocketL, its own WRAP: WRAP_LEFT):
+    "daggers", a pair. A right-hand-only piece
+    ("axe", "sword", "staff") keeps "r" only; "axes" would take "l" with "axe" once WRAP["axe"] and a left pocket exist."""
     main = {"axes": "axe"}.get((weapon or "").split("+")[0], (weapon or "").split("+")[0])
-    return {"r": WRAP[main]} if main in WRAP else {}
+    if main not in WRAP:
+        return {}
+    return {"r": WRAP[main], "l": WRAP[WRAP_LEFT[main]]} if main in WRAP_LEFT else {"r": WRAP[main]}
+
+
+# The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on
+# her left hand and the left piece, fistfit.py --side l: her hands aren't each other's mirror to the millimetre, and the
+# second dagger's hilt is thinner), laid mirrored as every left hand is.
+# Off until WRAP["daggers_l"] passes on her left hand (17 October: no fit yet; the entry is the right's, unfitted).
+# Then {"daggers": "daggers_l"}, with Arms.Spec dagger_b Seated.
+WRAP_LEFT = {}
 
 
 def finger_curl(spec):
