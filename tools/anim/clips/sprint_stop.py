@@ -24,6 +24,10 @@ CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_r
             "warden_town": "run_warden_town"}
 
 
+# The sprint's swing from the run's: forward +th, forward elbow +deg, the back upper arm x, back elbow +deg.
+SPRINT_SWING = (5, -3, 1.25, -3)
+
+
 def sprint(rig, run):
     """The sprint for one of her runs (run_<calling>[_<weapon>])."""
     g, arms, weapon = RUNS[run]
@@ -46,7 +50,7 @@ def sprint(rig, run):
     if g.swing is not None:
         # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
         (ft, fo, fe, fr), (bt, bo, be, br) = g.swing
-        s = replace(s, swing=((ft + 5, fo, fe - 3, fr), (bt * 1.35, bo + 1, be - 5, br)))
+        s = replace(s, swing=((ft + SPRINT_SWING[0], fo, fe + SPRINT_SWING[1], fr), (bt * SPRINT_SWING[2], bo + 1, be + SPRINT_SWING[3], br)))
     return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
 
 

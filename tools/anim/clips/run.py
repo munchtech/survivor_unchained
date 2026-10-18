@@ -118,10 +118,11 @@ def staff_hold():
 
 
 def crossbow_low():
-    """The crossbow low in the right hand, pointing at the ground ahead."""
+    """The crossbow low in the right hand, pointing at the ground ahead, carried out beside her right
+    thigh (9 cm out, 2 cm higher; under her it sat 76 mm in the thigh as it drove up), the elbow by her ribs."""
     def f(ph, k, hand):
         sway = 0.06 * (k - 0.5)
-        return {"arc": arc_of((0.0, -0.36, 0.14 + sway)), "pole": (-0.4, -0.2, -1.0),
+        return {"arc": arc_of((-0.09, -0.34, 0.15 + sway)), "pole": (-0.2, -0.3, -1.0),
                 "knuckles": (0.0, -0.55, 0.83), "blade": (0.0, 0.83, 0.55), "frame": "chest", "twist": 0.5}
     return f
 
@@ -137,22 +138,25 @@ def open_hand():
 # the elbows near square and close to her ribs, the fist ahead of the shoulder through the swing, in toward
 # her middle and under her bust in front, by her hip behind. (Their old keys flared the elbows 35-55 degrees
 # out and swung the fist 0.8-1.3 arm-lengths fore and aft: "chicken wing", "weird exaggerated arm movements".)
-SWING = ((6, 12, 80, 20), (-36, 14, 85, 15))
+# (Round 2, animation 37: behind her the elbow closes to 65-75 and the forearm turns out (turn -25/-30), so the
+# fist rides up and out past her hip; at 85-90 and turned in it went 45-80 mm into the thigh driving through.
+# The Reaver leans 24+8, not 32+12: bent that far, her own thigh came up into her hand.)
+SWING = ((6, 12, 80, 20), (-36, 14, 70, -25))
 WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
-              fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 90, 15)))
+              fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
                 arm_fwd=(0.0, -0.20, 0.25), arm_back=(0.0, -0.32, -0.22), elbow_out=0.25, fingers="open",
-                swing=((6, 10, 80, 25), (-30, 12, 85, 15)))
-REAVER = Gait(frames=19, speed=SPEED, duty=0.30, drop=0.10, bob=0.08, lean=32, spine_lean=12, hip_yaw=11, hip_roll=4,
+                swing=((6, 10, 80, 25), (-30, 12, 70, -25)))
+REAVER = Gait(frames=19, speed=SPEED, duty=0.30, drop=0.10, bob=0.08, lean=24, spine_lean=8, hip_yaw=11, hip_roll=4,
               hip_shift=0.025, chest_yaw=8, width=0.07, reach=0.36, kick=0.48, knee=0.36, shoulders=(8, 10),
               arm_fwd=(0.0, -0.06, 0.34), arm_back=(0.04, -0.24, -0.32), elbow_out=0.5, fingers="fist",
-              swing=((10, 14, 75, 20), (-40, 15, 85, 15)))
+              swing=((10, 14, 75, 20), (-36, 15, 65, -30)))
 STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26, spine_lean=8, hip_yaw=8,
                hip_roll=4.5, hip_shift=0.025, chest_yaw=8, width=0.045, reach=0.40, kick=0.38, knee=0.26,
                head_up=6, arm_fwd=(0.0, -0.18, 0.26), arm_back=(0.03, -0.30, -0.24), elbow_out=0.2,
-               swing=((6, 10, 80, 20), (-32, 12, 85, 15)))
+               swing=((6, 10, 80, 20), (-32, 12, 70, -25)))
 
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
@@ -161,7 +165,9 @@ RUNS = {
     "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
-    "run_stalker": (STALKER, {"r": crossbow_low()}, "crossbow"),
+    # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint).
+    "run_stalker": (replace(STALKER, fingers="fist", fingers_r="relaxed", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
+                    {"r": crossbow_low()}, "crossbow"),
     # Both fists closed on the daggers ("grip": each the fitted dagger fist, keyed.wrap_of: WRAP["daggers"] right,
     # WRAP["daggers_l"] left; with the gait's relaxed hands the fingers stood 10-73 mm off the hilts).
     "run_stalker_daggers": (replace(STALKER, fingers="grip"), {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
