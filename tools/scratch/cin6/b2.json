@@ -1,0 +1,5 @@
+[
+ {"name": "k2c01", "cine": "c01", "until": 84, "args": ["--stills", "6", "--handoff", "--cinebones"]},
+ {"name": "k2c02", "cine": "c02", "until": 58, "args": ["--stills", "3", "--cinebones"]},
+ {"name": "k2c04a", "cine": "c04a", "until": 60, "args": ["--stills", "3", "--handoff", "--cinebones"]}
+]

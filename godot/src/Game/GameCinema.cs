@@ -413,6 +413,10 @@ public partial class Game
             foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
             PlaceRigs();
+            // No ember or smoke between a close lens and her (C01 s10: a drifting ember was a soft
+            // orange disc across her cheek): the Look's ClearNear, to just short of her face.
+            float lensToHer = people.TryGetValue("her", out var hv) && hv.Visible && ActorAt("her", "eyes") is V3 ey ? g.camera.GlobalPosition.DistanceTo(V(ey)) : 99;
+            Campfire.ClearNear(lensToHer < 4 ? Math.Max(0, lensToHer - 0.3f) : 0);
             CineDbg();
             var shot = player.Shot.Shot;
             // --shot NAME --until S: each shot's standing frame saved as it passes (the previs boards).
@@ -1218,6 +1222,7 @@ public partial class Game
             var p = b.Player;
             var cam = g.camera;
             cam.Fov = saved.Fov; cam.KeepAspect = saved.Keep; cam.Near = saved.Near; cam.Attributes = saved.Attr;
+            Campfire.ClearNear(0);
             g.scene!.CameraHeld = false;
             if (g.scene.Player != null) g.scene.Player.Hidden = false;
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);

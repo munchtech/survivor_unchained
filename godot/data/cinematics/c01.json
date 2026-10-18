@@ -147,6 +147,7 @@
       "note": "Behind her, low over her left shoulder: the prints in the frost, dark and wet, coming out of the night to where she lay. The camera tilts up along them, north, into the dark they came from. N2.",
       "cam": {"pos": [-9.55, 1.12, 91.45], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
       "cues": [
+        {"do": "rig", "name": "rim", "energy": 0.8, "color": "#b9c9ff", "angle": 20, "from": {"actor": "her", "bone": "head", "off": [0.4, 0.7, -1.6]}, "aim": {"actor": "her", "bone": "head", "off": [0, 0.08, 0]}},
         {"at": 0.0, "do": "head", "where": [-8.9, 0.3, 86.5], "over": 1.2},
         {"do": "gaze", "look": [0, 0.5], "wander": 0.03},
         {"at": 0.6, "do": "line", "id": "cin_drowned_fire.prints"}
@@ -160,6 +161,8 @@
       "note": "Frontal, a little under her eyes, the dark behind her. From the trail to her boots. She breathes out, long. Nothing shows. Hold a beat.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.02, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 70, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 14, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
+        {"do": "rig", "name": "under", "energy": 0.25, "color": "#ffc890", "angle": 18, "from": {"lens": [0.35, -0.3, 0]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "gaze", "look": [0, 0.1]},
         {"at": 0.7, "do": "gaze", "look": [0, 0.9]},
         {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.12, "brows_sad": 0.4}, "over": 1.2},
@@ -191,6 +194,7 @@
       "note": "As 8, a touch tighter. The narration runs on over the cut ('and a voice comes down to you...'); then the voice up the road, as if at her shoulder. She does not turn; her eyes go a fraction toward it, and come back. Unnamed.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.06, -0.02, -0.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 14, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "lit", "light": 7, "on": true},
         {"do": "lit", "light": 8, "on": true},
         {"do": "gaze", "look": [0, 0.35], "wander": 0.02},
@@ -238,28 +242,28 @@
     {
       "id": "11",
       "type": "MLS",
-      "dur": 3.5,
-      "still": 1.8,
-      "note": "Side-on and wide enough for all of her: she takes her weapon from the log and comes round with it ready. On three sides the frost breaks.",
+      "dur": 2.8,
+      "still": 1.1,
+      "note": "Side-on and wide enough for all of her: on the cut she is at the log's end, already bending to her weapon; she takes it and comes round with it ready. On three sides the frost breaks.",
       "cam": {"pos": [-8.6, 1.05, 93.9], "at": [-8.85, 0.95, 89.4], "lens": 35, "focus": {"mark": "reach", "off": [0, 1.0, 0]}, "fstop": 4.0},
       "cues": [
-        {"do": "move", "to": "reach", "dur": 0.7, "heading": 1.5708},
-        {"at": 0.7, "do": "anim", "clip": "PickUp_Table", "from": 0, "speed": 1.1, "blend": 0.15, "when": {"calling": ["warden", "reaver", "stalker"]}},
-        {"at": 1.25, "do": "prop", "name": "weapon", "remove": true, "when": {"calling": ["warden", "reaver", "stalker"]}},
-        {"at": 1.25, "do": "prop", "name": "shield", "remove": true},
-        {"at": 1.25, "do": "hold", "slot": "all", "piece": "@own", "when": {"calling": ["warden", "reaver", "stalker"]}},
-        {"at": 0.7, "do": "anim", "clip": "Spell_Simple_Enter", "from": 0, "speed": 0.9, "blend": 0.15, "when": {"calling": ["arcanist"]}},
-        {"at": 1.6, "do": "face", "keys": {"smile": 0.15}, "over": 0.15, "when": {"calling": ["arcanist"]}},
-        {"at": 2.1, "do": "face", "keys": {"smile": 0, "brows_angry": 0.3}, "over": 0.2, "when": {"calling": ["arcanist"]}},
-        {"at": 1.4, "do": "sfx", "name": "hit"},
-        {"at": 1.4, "do": "face", "keys": {"eyes_wide": 0.2, "brows_angry": 0.35, "mouth_open": 0.12}, "over": 0.3},
-        {"at": 1.0, "do": "world", "rate": 0.05},
-        {"at": 1.0, "do": "spawn", "actor": "r2", "def": "risen", "mark": "r2", "style": "rise"},
-        {"at": 1.15, "do": "spawn", "actor": "r3", "def": "risen", "mark": "r3", "style": "rise"},
-        {"at": 1.3, "do": "spawn", "actor": "r4", "def": "risen", "mark": "r4", "style": "rise"},
-        {"at": 1.0, "do": "sfx", "name": "frost_crack", "where": {"mark": "r2"}, "gain": 0.6},
-        {"at": 1.2, "do": "sfx", "name": "frost_crack", "where": {"mark": "r3"}, "gain": 0.6},
-        {"at": 2.6, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3}
+        {"do": "place", "mark": "reach", "heading": 1.5708},
+        {"at": 0.0, "do": "anim", "clip": "PickUp_Table", "from": 0.15, "speed": 1.1, "blend": 0, "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 0.55, "do": "prop", "name": "weapon", "remove": true, "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 0.55, "do": "prop", "name": "shield", "remove": true},
+        {"at": 0.55, "do": "hold", "slot": "all", "piece": "@own", "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 0.0, "do": "anim", "clip": "Spell_Simple_Enter", "from": 0, "speed": 0.9, "blend": 0, "when": {"calling": ["arcanist"]}},
+        {"at": 0.9, "do": "face", "keys": {"smile": 0.15}, "over": 0.15, "when": {"calling": ["arcanist"]}},
+        {"at": 1.4, "do": "face", "keys": {"smile": 0, "brows_angry": 0.3}, "over": 0.2, "when": {"calling": ["arcanist"]}},
+        {"at": 0.7, "do": "sfx", "name": "hit"},
+        {"at": 0.7, "do": "face", "keys": {"eyes_wide": 0.2, "brows_angry": 0.35, "mouth_open": 0.12}, "over": 0.3},
+        {"at": 0.3, "do": "world", "rate": 0.05},
+        {"at": 0.3, "do": "spawn", "actor": "r2", "def": "risen", "mark": "r2", "style": "rise"},
+        {"at": 0.45, "do": "spawn", "actor": "r3", "def": "risen", "mark": "r3", "style": "rise"},
+        {"at": 0.6, "do": "spawn", "actor": "r4", "def": "risen", "mark": "r4", "style": "rise"},
+        {"at": 0.3, "do": "sfx", "name": "frost_crack", "where": {"mark": "r2"}, "gain": 0.6},
+        {"at": 0.5, "do": "sfx", "name": "frost_crack", "where": {"mark": "r3"}, "gain": 0.6},
+        {"at": 1.9, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3}
       ]
     },
     {
@@ -268,7 +272,7 @@
       "dur": 3.5,
       "still": 1.2,
       "note": "From in front of her, the one crane of the scene: up and round behind her into the game's camera as R1 tears free and the rest come up. Bars out. Control.",
-      "cam": {"pos": [-8.6, 1.25, 86.4], "at": {"mark": "end", "off": [0, 1.0, 0]}, "lens": 35, "move": {"path": [[-6.0, 2.6, 88.2], [-6.2, 9.5, 96.5]], "start": 0, "end": "end", "ease": "inout", "follow": true}},
+      "cam": {"pos": [-8.6, 1.5, 86.4], "at": {"mark": "end", "off": [0, 1.4, 0]}, "lens": 35, "move": {"path": [[-6.0, 2.6, 88.2], [-6.2, 9.5, 96.5]], "start": 0, "end": "end", "ease": "inout", "follow": true}},
       "cues": [
         {"at": 0.0, "do": "play"},
         {"do": "move", "to": "end", "dur": 1.3, "clip": "Walk_Formal_Loop", "speed": 0.9},

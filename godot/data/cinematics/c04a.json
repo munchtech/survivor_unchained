@@ -102,6 +102,7 @@
       "note": "Frontal, low sun from frame right, the birches' shade behind: colour comes into her face. She breathes out, and her breath smokes in the cold, a long white plume in the sunlight. She sees it. She breathes again, to see it again. Then the cold reaches her: a shiver, once, hard.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.25, -0.02, -1.25]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 14, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"at": 0.8, "do": "sfx", "name": "breath_out", "gain": 1.3},
         {"at": 0.8, "do": "face", "keys": {"mouth_open": 0.25, "brows_up": 0, "smile": 0}, "over": 0.6},
         {"at": 2.0, "do": "face", "keys": {"mouth_open": 0.05, "smile": 0.1}, "over": 0.5},
@@ -133,6 +134,7 @@
       "note": "Frontal, a very slow push (0.05 m): she is still. Her eyes go inward, searching. N6. Then nothing: hold 3 s of silence after the line. Play someone who has mislaid a thing she uses every day.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
       "cues": [
+        {"do": "rig", "name": "eye", "energy": 0.3, "color": "#fff3e6", "angle": 14, "from": {"lens": [0, 0.25, 0]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "face", "keys": {"nose_wrinkle": 0, "brows_sad": 0.45}, "over": 2.0},
         {"do": "gaze", "look": [0, 0]},
         {"at": 0.4, "do": "line", "id": "cin_first_light.face"},

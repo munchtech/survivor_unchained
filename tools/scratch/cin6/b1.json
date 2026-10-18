@@ -1,0 +1,6 @@
+[
+ {"name": "k1c01", "cine": "c01", "until": 66, "args": ["--stills", "6", "--handoff", "--cinebones"]},
+ {"name": "k1c02", "cine": "c02", "until": 48, "args": ["--stills", "3", "--cinebones"]},
+ {"name": "k1c03", "cine": "c03", "until": 96, "args": ["--stills", "3", "--handoff", "--cinebones"], "timeout": 900},
+ {"name": "k1c04b", "cine": "c04b", "zone": "waystation", "until": 32, "args": ["--stills", "3", "--cinebones"]}
+]
