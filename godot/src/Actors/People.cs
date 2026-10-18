@@ -834,6 +834,15 @@ public static class People
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
+        // (env HAIRSET "through=0,shine2=0.2": her hair's uniforms tried in a shot without a build, every pass; face 30 cine)
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("HAIRSET") is { Length: > 0 } hs)
+            foreach (var mi in p.Hair)
+                for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial hm)
+                        foreach (var pass in HairDraw.Passes(hm))
+                            foreach (var kv in hs.Split(','))
+                                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x))
+                                    pass.SetShaderParameter(k.Trim(), x);
     }
 
     /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
@@ -866,6 +875,22 @@ public static class People
                 if (on.Contains("nospec")) { m.SetShaderParameter("shine", 0f); m.SetShaderParameter("seam_shine", 0f); m.SetShaderParameter("rim", 0f); }
                 if (on.Contains("nosss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
                 if (on.Contains("mask")) m.SetShaderParameter("shadow_colour", new Color(0, 1f / 2.4f, 0));
+            }
+        // (face 30 neck: noao (her skin's baked shade white), flathead / flatbody (the head's or the other skin parts'
+        // paint one flat skin tone), allsss (nosss on every skin part), on every part on her skin's shader)
+        var flat = new ImageTexture();
+        { var im = Image.CreateEmpty(1, 1, false, Image.Format.Rgb8); im.Fill(new Color(0.80f, 0.62f, 0.52f)); flat = ImageTexture.CreateFromImage(im); }
+        var white = new ImageTexture();
+        { var im = Image.CreateEmpty(1, 1, false, Image.Format.Rgba8); im.Fill(new Color(1, 1, 1, 1)); white = ImageTexture.CreateFromImage(im); }
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || m.Shader?.ResourcePath?.Contains("heroine_skin") != true) continue;
+                bool head = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head";
+                if (on.Contains("noao")) m.SetShaderParameter("ao_map", white);
+                if (on.Contains(head ? "flathead" : "flatbody")) m.SetShaderParameter("paint", flat);
+                if (on.Contains("allsss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
+                GD.Print($"H1Debug part {mi.Mesh.SurfaceGetMaterial(s)?.ResourceName}");
             }
         GD.Print($"H1Debug: {dbg}");
     }

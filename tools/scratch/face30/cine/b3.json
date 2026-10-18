@@ -1,0 +1,5 @@
+[
+ ["z0", ["town","townn"], ["own","saffron","sunborn"], ["--nofold", "--skin-set", "*:spec_cap=1000"]],
+ ["f9", ["c01","c02","c04a","day","night","town","townn"], ["own","saffron","sunborn"], []],
+ ["t1", ["c01"], ["own","saffron"], ["--skin-set", "skin_head:shade_tint=1/1/1"]]
+]

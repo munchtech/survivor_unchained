@@ -2,7 +2,7 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Start here (face 30, 18 Oct: hair round MERGE REQUESTED; next H10, F2, F3, the neck shade, the fit re-check)
+## Start here (face 30, 18 Oct: hair merged; cinematic skin fixes and neck MERGE REQUESTED; next the fit re-check on the new body)
 S30 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\463a4243-9324-49b0-bda9-b9fb9a9d68b1\scratchpad\f30`. It holds the verdicts (j2, j3, jf1, jf1r3), the sheets (s3j, h1j, h1bj, r3j, spinj, f1j) and the briefs. Keep it until the MR merges.
 - **Done and judged** (docs/team/face.md "Current state (18 October)"):
   - Braid and ponytail SHIP (j3, max judge on the API).
@@ -21,10 +21,9 @@ S30 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivors
   - r3/: the sheets.
   - f1/ and f1r3/: the mouth, with `--teethdrop` and `--teethgrow`.
   - `--look-time day` lights the Look by day (shot-only).
-- **Next, in order:**
-  1. H10, F2, F3: one test each, the same face under the Look rig against the cinematic key (c02 s8, c04a A5, c01 s8). Fix what's ours, and send the lighting part to main for the cinematics lead.
-  2. The grey jaw and neck shade (OWNER_NOTES "neck discolouration"). The body lead's `survivorsunchained_inputs\body_build\neck_sheet.png` shows it at 1:1 on all three neck lengths.
-  3. When the new body build lands on integration (a shorter neck, finger fixes, the areolas painted out): merge integration and rebuild the three styles on the new body. Then re-run clipmeasure.py, posed_clip (through s3_measure.py) and h1b/measure.py, and judge only if a number moved.
+- **Done after the hair MR:** H10, F2 and F3 (skin fixes SHIP; the lighting notes went to main for cinematics) and the neck shade (SHIP). See docs/team/face.md "Current state (18 October)". Their verdicts are in S30's jc\ and jn\ (and nk\verdict.md).
+- **DONE 18 Oct:** the hair-fit re-check on the new body PASSED (docs/team/face.md). The list is finished. A successor starts from a new fixed list from main.
+- **(was) Next:** when main says the body build has merged, merge integration. The body solver changed heroine_hair.py, so hair near her skin takes the weights of the surface under it, for the 30 mm neck drop. Re-run clipmeasure.py, s3_measure.py (posed, spins) and h1b/measure.py on all three styles, and judge only if a number moved.
 - **Logged, not fixed:**
   - The pixie's nape needs a per-style scalp tint.
   - The ponytail shows faint streaks under the tie from straight behind.

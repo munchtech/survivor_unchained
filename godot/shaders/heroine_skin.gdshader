@@ -316,6 +316,11 @@ uniform float mouth_fill = 0.2;
 // light (the smile pass, e3); shadows at this scale don't reach it. corner_shade of the lamps behind her cut there:
 // all of them made a grey smudge on her cheek by the corners, f2)
 uniform float corner_shade = 1.0;
+// (how far her smile folds her corners in, 0 to 1, from her smile's blend shape (HerFaceLife.MouthShade): the cut by it)
+uniform float fold = 1.0;
+// (the most one lamp's sheen gives, in linear light: 0.2 took the c02 s8 cheek from 877-4176 clipped pixels to 0-74, the
+// Look by day and night and the town close-up unchanged (face 30 cine; 0.3 left 252, 0.12 dulled her cheek 8 L))
+uniform float spec_cap = 0.2;
 varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
@@ -524,7 +529,7 @@ void light() {
 	// (lamps behind her take no lift: the Look's cool rim and the fire's edge lamp lifted the far side of her neck too,
 	// judge j6)
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
-	mouth_lit *= 1.0 - corner_shade * crease * behind;
+	mouth_lit *= 1.0 - corner_shade * fold * crease * behind;
 	vec3 kt = vec3(1.0);
 	// (from her collarbones down none: fitted on her neck with her body's tone, which is taken out there; body_tone)
 	vec3 ktone = mix(vec3(1.0), LIGHT_IS_DIRECTIONAL && sky_tone.x > 0.0 ? sky_tone : key_tone, neck_w);
@@ -557,7 +562,10 @@ void light() {
 		float f0 = 0.16 * sheen * sheen;
 		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
 		float f = f0 + (f90 - f0) * schlick(c_ldh);
-		SPECULAR_LIGHT += mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		vec3 spec = mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
+		float sl = max(max(spec.r, spec.g), spec.b);
+		SPECULAR_LIGHT += sl > spec_cap ? spec * (spec_cap / sl) : spec;
 	}
 	}
 }
