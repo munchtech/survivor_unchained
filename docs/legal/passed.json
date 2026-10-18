@@ -4,242 +4,242 @@
   "arcanist": {
    "clips": {
     "arcanist_show": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "05d33cecbc493a87b5acf23d61e4b70805f3f735"
     },
     "axe_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "68f7a20a958022583da6626b7291bd4c5f06c7aa"
     },
     "axe_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "65e56a979e9ba22fdae4a3b49c309048bd87436c"
     },
     "axe_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "6dd49b2e6870e58f2f8bf12b285f3e015663e9c8"
     },
     "axes_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "41cc592d43bb5d5a786b68517e1eb74404b270bd"
     },
     "axes_left": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "142fb7598be7885644d5fa16747ec01b9620bd20"
     },
     "axes_right": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3d30681e01922dc62cc851112eb966c08de471e0"
     },
     "bull_rush": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
     },
     "cast_flick": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
     },
     "catch_breath": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "feaf9db2f447bfbf5d4bf15a43123c94c4c87785"
     },
     "chain_haul": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "787238d2898ad5be83f159b3b92becdf18f3627b"
     },
     "chain_strike": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedb58f540ec09a5e2037e68fbe3090d70fabd64"
     },
     "crossbow_shoot": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4deab199811000d2c08b17c56d4a97594d0342de"
     },
     "daggers_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "50cd00b42f98e3184a95943a1831400034fd4763"
     },
     "daggers_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "e6ef447dd7a126faf754d02d23931d75eadbe008"
     },
     "daggers_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "9c5d01e8759c4639bec07266c064de8cd4e7d11d"
     },
     "dash": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "049b224b36c74bf0c842827012948a9030d06cd0"
     },
     "death": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ecf2773eb27c1d5d9c241d61d04a9fda944853c9"
     },
     "death_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "c05e8a480f73bee9725e9bc00bd81bfd5f1a217b"
     },
     "exhale": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedfd44172ce2f598fc600efe91d6dcd2bef4306"
     },
     "get_up": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "56363ea95394e4eb449cff5504411a2cb975ea44"
     },
     "hit": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0adb61b8c7fe7cb7f97a1ed60433c1c273b77147"
     },
     "idle_arcanist": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a3103aeb932929c9d347ea6a5e2910ac6049360a"
     },
     "idle_arcanist_break": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "1b04695d0a85eb6c7eb65d345d41c79c243a7647"
     },
     "leap": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "822203ff573d568581c62a7520cd1e4192eee36f"
     },
     "lie_side_wake": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3345108ab85cc7e41dff7844e507483097961102"
     },
     "nod": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "58b944e5036cc994f024ab2d00dfb9582bd18e17"
     },
     "reach_coals": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "run_arcanist": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "5d4c66bce07f1dd3417f139ab11be6876cb071ac"
     },
     "run_arcanist_wand": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "31069f2d86ab3717dc38cf8efe157b61601e795d"
     },
     "shiver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4f92576c1248f11e0244bb61d30adc5ce2c859c0"
     },
     "sit_back_heels": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "7a62c8157fe14f853cb60b09a093e2e027ae37a7"
     },
     "sit_log": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_arcanist": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "df73907b0da76c82eca5aa6194ecaa5710345389"
     },
     "sprint_arcanist_wand": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "6e3a6bd8b82c066825797706cd10df4127d5c991"
     },
     "stop_arcanist_l": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "744b6f8ebf3dc7a3e2224875f88993b1af97a031"
     },
     "stop_arcanist_r": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "452bf2b45496540f5b1d61ccdbc8bc4c665d10ba"
     },
     "sword_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a57cc7b52a22e644ddf528e12c5df817ac0858a5"
     },
     "sword_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "233b50f0ba8dcdb6efe295efdf28a2036a9cbd2a"
     },
     "sword_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "afe4c8234a1c7bd5bdff0027811916e7f23ef1ba"
     },
     "throw": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4eedc0bd80362b587050bf89384560647c0f7d32"
     },
     "vault": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "2686a9ee9c0b65dfe853bcf6567a287e03d92147"
     },
     "vault_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "da2d69de2028cdab80b2d528f2275ec10cebf51c"
     },
     "warcry": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ac7bd326108f240a4af9f9b99f3a805800b8664b"
     }
    },
-   "commit": "d9cba305",
+   "commit": "a0530d7c",
    "counts": {
     "areola": 0,
     "closest": {
-     "L": 2.1,
-     "R": 0.48
+     "L": 2.14,
+     "R": 1.19
     },
     "flat": 0,
     "frames": 2180,
@@ -248,18 +248,18 @@
    "date": "2026-10-18",
    "dirty": true,
    "global": {
-    "body breast paint": "6347d3cce152106f",
+    "body breast paint": "332f9e7464e403d7",
     "body import": "c11fe037183ee69d",
     "body materials": "f19ce8704d22ca8a",
-    "body skeleton": "5e64331f0fcc1b89",
-    "body skin meshes": "2a44b0df23ffd62b",
+    "body skeleton": "0c8b196f0a424a0d",
+    "body skin meshes": "5050161c1f0a6868",
     "code HairSway.cs": "e9df8644100a1ef6",
     "code HerFaceLife.cs": "33ee1a3c6ec4ea4d",
     "code HerJiggle.cs": "5fe3d99470464d4d",
     "code HerJoints.cs": "643195bc7704c9e8",
     "code HerPose.cs": "f605748425dffaf8",
     "godot binary": "393483e36bd683a8",
-    "hair ponytail": "acc1a71e3fcb3ccb",
+    "hair ponytail": "64682d795742acef",
     "head parts (occluders)": "0a1d9b6b3acea14f",
     "import_mipmaps.gd": "4e5759d6b8341411",
     "lookdev.gd": "e4c12496bb43b583",
@@ -276,252 +276,252 @@
     "tool .gitignore": "845c97c4631481e8",
     "tool count.py": "0b9a962d4c590e7d",
     "tool make_motioncheck.py": "19682186d6153082",
-    "tool marks_section.py": "e11cb08d7ed09726",
+    "tool marks_section.py": "e45523d1bf2974ed",
     "tool posed.py": "97aa3aa281aebff6",
     "tool run.sh": "6b1c32f5a460e591"
    },
-   "outfit": "63ecf640618d9b32",
-   "tuck": "dc506d6fa9301af5"
+   "outfit": "a18295976d052b14",
+   "tuck": "b1abefe367369f51"
   },
   "ranger": {
    "clips": {
     "axe_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "68f7a20a958022583da6626b7291bd4c5f06c7aa"
     },
     "axe_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "65e56a979e9ba22fdae4a3b49c309048bd87436c"
     },
     "axe_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "6dd49b2e6870e58f2f8bf12b285f3e015663e9c8"
     },
     "axes_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "41cc592d43bb5d5a786b68517e1eb74404b270bd"
     },
     "axes_left": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "142fb7598be7885644d5fa16747ec01b9620bd20"
     },
     "axes_right": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3d30681e01922dc62cc851112eb966c08de471e0"
     },
     "bull_rush": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
     },
     "cast_flick": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
     },
     "catch_breath": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "feaf9db2f447bfbf5d4bf15a43123c94c4c87785"
     },
     "chain_haul": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "787238d2898ad5be83f159b3b92becdf18f3627b"
     },
     "chain_strike": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedb58f540ec09a5e2037e68fbe3090d70fabd64"
     },
     "crossbow_shoot": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4deab199811000d2c08b17c56d4a97594d0342de"
     },
     "daggers_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "50cd00b42f98e3184a95943a1831400034fd4763"
     },
     "daggers_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "e6ef447dd7a126faf754d02d23931d75eadbe008"
     },
     "daggers_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "9c5d01e8759c4639bec07266c064de8cd4e7d11d"
     },
     "dash": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "049b224b36c74bf0c842827012948a9030d06cd0"
     },
     "death": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ecf2773eb27c1d5d9c241d61d04a9fda944853c9"
     },
     "death_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "c05e8a480f73bee9725e9bc00bd81bfd5f1a217b"
     },
     "exhale": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedfd44172ce2f598fc600efe91d6dcd2bef4306"
     },
     "get_up": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "56363ea95394e4eb449cff5504411a2cb975ea44"
     },
     "hit": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0adb61b8c7fe7cb7f97a1ed60433c1c273b77147"
     },
     "idle_stalker": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "76e2bf876208f3043954fec7bd28a469b3cb067e"
     },
     "idle_stalker_break": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "5dc4209a7fb8f4040dbbbe6adb466ff1988453ac"
     },
     "leap": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "822203ff573d568581c62a7520cd1e4192eee36f"
     },
     "lie_side_wake": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3345108ab85cc7e41dff7844e507483097961102"
     },
     "nod": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "58b944e5036cc994f024ab2d00dfb9582bd18e17"
     },
     "reach_coals": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "run_stalker": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "02ce1d8a40181395b4f9849a672ee59dad441950"
     },
     "run_stalker_daggers": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "c710b22fc562fb732c1af89d7e9c993a1329a9e6"
     },
     "shiver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4f92576c1248f11e0244bb61d30adc5ce2c859c0"
     },
     "sit_back_heels": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "7a62c8157fe14f853cb60b09a093e2e027ae37a7"
     },
     "sit_log": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_stalker": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "6a0ca59855407d42e060b7d69fa7b86c0d080de8"
     },
     "sprint_stalker_daggers": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "b9cc1b6816f252f3f7f685a5e0012a23bc2347e5"
     },
     "stalker_show": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "e74fdba5c4939239720024f7786091f7379cc176"
     },
     "stop_stalker_l": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "aa115a4db46f895d0e8bb717e5670db3c8b405dd"
     },
     "stop_stalker_r": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "fe4ade996084f900ae380a3cbb50e6e2fcbe0656"
     },
     "sword_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a57cc7b52a22e644ddf528e12c5df817ac0858a5"
     },
     "sword_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "233b50f0ba8dcdb6efe295efdf28a2036a9cbd2a"
     },
     "sword_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "afe4c8234a1c7bd5bdff0027811916e7f23ef1ba"
     },
     "throw": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4eedc0bd80362b587050bf89384560647c0f7d32"
     },
     "vault": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "2686a9ee9c0b65dfe853bcf6567a287e03d92147"
     },
     "vault_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "da2d69de2028cdab80b2d528f2275ec10cebf51c"
     },
     "warcry": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ac7bd326108f240a4af9f9b99f3a805800b8664b"
     }
    },
-   "commit": "d9cba305",
+   "commit": "a0530d7c",
    "counts": {
     "areola": 0,
     "closest": {
-     "L": 0.77,
-     "R": 0.24
+     "L": 0.81,
+     "R": 0.18
     },
     "flat": 0,
     "frames": 2180,
@@ -530,18 +530,18 @@
    "date": "2026-10-18",
    "dirty": true,
    "global": {
-    "body breast paint": "6347d3cce152106f",
+    "body breast paint": "332f9e7464e403d7",
     "body import": "c11fe037183ee69d",
     "body materials": "f19ce8704d22ca8a",
-    "body skeleton": "5e64331f0fcc1b89",
-    "body skin meshes": "2a44b0df23ffd62b",
+    "body skeleton": "0c8b196f0a424a0d",
+    "body skin meshes": "5050161c1f0a6868",
     "code HairSway.cs": "e9df8644100a1ef6",
     "code HerFaceLife.cs": "33ee1a3c6ec4ea4d",
     "code HerJiggle.cs": "5fe3d99470464d4d",
     "code HerJoints.cs": "643195bc7704c9e8",
     "code HerPose.cs": "f605748425dffaf8",
     "godot binary": "393483e36bd683a8",
-    "hair ponytail": "acc1a71e3fcb3ccb",
+    "hair ponytail": "64682d795742acef",
     "head parts (occluders)": "0a1d9b6b3acea14f",
     "import_mipmaps.gd": "4e5759d6b8341411",
     "lookdev.gd": "e4c12496bb43b583",
@@ -558,247 +558,247 @@
     "tool .gitignore": "845c97c4631481e8",
     "tool count.py": "0b9a962d4c590e7d",
     "tool make_motioncheck.py": "19682186d6153082",
-    "tool marks_section.py": "e11cb08d7ed09726",
+    "tool marks_section.py": "e45523d1bf2974ed",
     "tool posed.py": "97aa3aa281aebff6",
     "tool run.sh": "6b1c32f5a460e591"
    },
-   "outfit": "121dacb7adcdc2fa",
-   "tuck": "39f8949fd54112b5"
+   "outfit": "1adcfb8ab25c2e05",
+   "tuck": "856462a3ce51ffd0"
   },
   "reaver": {
    "clips": {
     "axe_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "68f7a20a958022583da6626b7291bd4c5f06c7aa"
     },
     "axe_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "65e56a979e9ba22fdae4a3b49c309048bd87436c"
     },
     "axe_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "6dd49b2e6870e58f2f8bf12b285f3e015663e9c8"
     },
     "axes_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "41cc592d43bb5d5a786b68517e1eb74404b270bd"
     },
     "axes_left": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "142fb7598be7885644d5fa16747ec01b9620bd20"
     },
     "axes_right": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3d30681e01922dc62cc851112eb966c08de471e0"
     },
     "bull_rush": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
     },
     "cast_flick": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
     },
     "catch_breath": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "feaf9db2f447bfbf5d4bf15a43123c94c4c87785"
     },
     "chain_haul": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "787238d2898ad5be83f159b3b92becdf18f3627b"
     },
     "chain_strike": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedb58f540ec09a5e2037e68fbe3090d70fabd64"
     },
     "crossbow_shoot": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4deab199811000d2c08b17c56d4a97594d0342de"
     },
     "daggers_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "50cd00b42f98e3184a95943a1831400034fd4763"
     },
     "daggers_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "e6ef447dd7a126faf754d02d23931d75eadbe008"
     },
     "daggers_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "9c5d01e8759c4639bec07266c064de8cd4e7d11d"
     },
     "dash": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "049b224b36c74bf0c842827012948a9030d06cd0"
     },
     "death": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ecf2773eb27c1d5d9c241d61d04a9fda944853c9"
     },
     "death_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "c05e8a480f73bee9725e9bc00bd81bfd5f1a217b"
     },
     "exhale": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedfd44172ce2f598fc600efe91d6dcd2bef4306"
     },
     "get_up": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "56363ea95394e4eb449cff5504411a2cb975ea44"
     },
     "hit": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0adb61b8c7fe7cb7f97a1ed60433c1c273b77147"
     },
     "idle_reaver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "edf39050ca3e62a9b4bf77ca61396830681cee9e"
     },
     "idle_reaver_break": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a9e30fad2d874bf4eaa8df6bdea587db428c886c"
     },
     "leap": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "822203ff573d568581c62a7520cd1e4192eee36f"
     },
     "lie_side_wake": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3345108ab85cc7e41dff7844e507483097961102"
     },
     "nod": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "58b944e5036cc994f024ab2d00dfb9582bd18e17"
     },
     "reach_coals": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "reaver_show": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "84ae86795ef429e62f57f77fa8dd17898588f62d"
     },
     "run_reaver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "2e50017308405e027c123c95615bae7a4a93dfed"
     },
     "run_reaver_axes": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "9746cb71967e55a51af2169a8aa00810cf6c2d2c"
     },
     "shiver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4f92576c1248f11e0244bb61d30adc5ce2c859c0"
     },
     "sit_back_heels": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "7a62c8157fe14f853cb60b09a093e2e027ae37a7"
     },
     "sit_log": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_reaver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "00087f9e00aa2fb7b7b9f01bd2c2b96124c44ba8"
     },
     "sprint_reaver_axes": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "b5e8d1c5373bca71f3f960362baf7d0552de4574"
     },
     "stop_reaver_l": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "8a6d86a2ddb6191fca9a6ab8a1089c165d856d4d"
     },
     "stop_reaver_r": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "b209f4106e460030315bab2bc3a4743701177bec"
     },
     "sword_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a57cc7b52a22e644ddf528e12c5df817ac0858a5"
     },
     "sword_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "233b50f0ba8dcdb6efe295efdf28a2036a9cbd2a"
     },
     "sword_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "afe4c8234a1c7bd5bdff0027811916e7f23ef1ba"
     },
     "throw": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4eedc0bd80362b587050bf89384560647c0f7d32"
     },
     "vault": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "2686a9ee9c0b65dfe853bcf6567a287e03d92147"
     },
     "vault_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "da2d69de2028cdab80b2d528f2275ec10cebf51c"
     },
     "warcry": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ac7bd326108f240a4af9f9b99f3a805800b8664b"
     }
    },
-   "commit": "d9cba305",
+   "commit": "a0530d7c",
    "counts": {
     "areola": 0,
     "closest": {
@@ -812,18 +812,18 @@
    "date": "2026-10-18",
    "dirty": true,
    "global": {
-    "body breast paint": "6347d3cce152106f",
+    "body breast paint": "332f9e7464e403d7",
     "body import": "c11fe037183ee69d",
     "body materials": "f19ce8704d22ca8a",
-    "body skeleton": "5e64331f0fcc1b89",
-    "body skin meshes": "2a44b0df23ffd62b",
+    "body skeleton": "0c8b196f0a424a0d",
+    "body skin meshes": "5050161c1f0a6868",
     "code HairSway.cs": "e9df8644100a1ef6",
     "code HerFaceLife.cs": "33ee1a3c6ec4ea4d",
     "code HerJiggle.cs": "5fe3d99470464d4d",
     "code HerJoints.cs": "643195bc7704c9e8",
     "code HerPose.cs": "f605748425dffaf8",
     "godot binary": "393483e36bd683a8",
-    "hair ponytail": "acc1a71e3fcb3ccb",
+    "hair ponytail": "64682d795742acef",
     "head parts (occluders)": "0a1d9b6b3acea14f",
     "import_mipmaps.gd": "4e5759d6b8341411",
     "lookdev.gd": "e4c12496bb43b583",
@@ -840,242 +840,242 @@
     "tool .gitignore": "845c97c4631481e8",
     "tool count.py": "0b9a962d4c590e7d",
     "tool make_motioncheck.py": "19682186d6153082",
-    "tool marks_section.py": "e11cb08d7ed09726",
+    "tool marks_section.py": "e45523d1bf2974ed",
     "tool posed.py": "97aa3aa281aebff6",
     "tool run.sh": "6b1c32f5a460e591"
    },
-   "outfit": "b853db2cb2d193cd",
-   "tuck": "36f6d1e057d85bac"
+   "outfit": "b3f5bed5ffa3a810",
+   "tuck": "c87307956f9e4e5f"
   },
   "warden": {
    "clips": {
     "axe_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "68f7a20a958022583da6626b7291bd4c5f06c7aa"
     },
     "axe_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "65e56a979e9ba22fdae4a3b49c309048bd87436c"
     },
     "axe_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "6dd49b2e6870e58f2f8bf12b285f3e015663e9c8"
     },
     "axes_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "41cc592d43bb5d5a786b68517e1eb74404b270bd"
     },
     "axes_left": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "142fb7598be7885644d5fa16747ec01b9620bd20"
     },
     "axes_right": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3d30681e01922dc62cc851112eb966c08de471e0"
     },
     "bull_rush": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
     },
     "cast_flick": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
     },
     "catch_breath": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "feaf9db2f447bfbf5d4bf15a43123c94c4c87785"
     },
     "chain_haul": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "787238d2898ad5be83f159b3b92becdf18f3627b"
     },
     "chain_strike": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedb58f540ec09a5e2037e68fbe3090d70fabd64"
     },
     "crossbow_shoot": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4deab199811000d2c08b17c56d4a97594d0342de"
     },
     "daggers_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "50cd00b42f98e3184a95943a1831400034fd4763"
     },
     "daggers_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "e6ef447dd7a126faf754d02d23931d75eadbe008"
     },
     "daggers_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "9c5d01e8759c4639bec07266c064de8cd4e7d11d"
     },
     "dash": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "049b224b36c74bf0c842827012948a9030d06cd0"
     },
     "death": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ecf2773eb27c1d5d9c241d61d04a9fda944853c9"
     },
     "death_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "c05e8a480f73bee9725e9bc00bd81bfd5f1a217b"
     },
     "exhale": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "dedfd44172ce2f598fc600efe91d6dcd2bef4306"
     },
     "get_up": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "56363ea95394e4eb449cff5504411a2cb975ea44"
     },
     "hit": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "0adb61b8c7fe7cb7f97a1ed60433c1c273b77147"
     },
     "idle_warden": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3fadd24a27f0b44cc40c1d7f676714f09230dba2"
     },
     "idle_warden_break": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ced22662109feccf9c24b96261a6a29900b1f13f"
     },
     "leap": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "822203ff573d568581c62a7520cd1e4192eee36f"
     },
     "lie_side_wake": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3345108ab85cc7e41dff7844e507483097961102"
     },
     "nod": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "58b944e5036cc994f024ab2d00dfb9582bd18e17"
     },
     "reach_coals": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "run_warden": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "b2f0a3b0d1b3b03a7e7ef5044e3c08f33c334563"
     },
     "shiver": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4f92576c1248f11e0244bb61d30adc5ce2c859c0"
     },
     "sit_back_heels": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "7a62c8157fe14f853cb60b09a093e2e027ae37a7"
     },
     "sit_log": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_warden": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "9bea1c65ff01b8ed995d2b0168b714127b6160ec"
     },
     "stop_warden_l": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "26a238478f9fc98caae41b6ef558b1214c816d82"
     },
     "stop_warden_r": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "e11ddfd48b955e9bfad6390f13db45d2fc146258"
     },
     "sword_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "a57cc7b52a22e644ddf528e12c5df817ac0858a5"
     },
     "sword_fore": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "233b50f0ba8dcdb6efe295efdf28a2036a9cbd2a"
     },
     "sword_heavy": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "afe4c8234a1c7bd5bdff0027811916e7f23ef1ba"
     },
     "throw": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "4eedc0bd80362b587050bf89384560647c0f7d32"
     },
     "vault": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "2686a9ee9c0b65dfe853bcf6567a287e03d92147"
     },
     "vault_back": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "da2d69de2028cdab80b2d528f2275ec10cebf51c"
     },
     "warcry": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "ac7bd326108f240a4af9f9b99f3a805800b8664b"
     },
     "warden_show": {
-     "commit": "d9cba305",
+     "commit": "a0530d7c",
      "date": "2026-10-18",
      "fp": "34043a17faa3a8b5ee8bb6ba90f5f8174f77a874"
     }
    },
-   "commit": "d9cba305",
+   "commit": "a0530d7c",
    "counts": {
     "areola": 0,
     "closest": {
      "L": 0.69,
-     "R": -0.01
+     "R": 0.41
     },
     "flat": 0,
     "frames": 2080,
@@ -1084,18 +1084,18 @@
    "date": "2026-10-18",
    "dirty": true,
    "global": {
-    "body breast paint": "6347d3cce152106f",
+    "body breast paint": "332f9e7464e403d7",
     "body import": "c11fe037183ee69d",
     "body materials": "f19ce8704d22ca8a",
-    "body skeleton": "5e64331f0fcc1b89",
-    "body skin meshes": "2a44b0df23ffd62b",
+    "body skeleton": "0c8b196f0a424a0d",
+    "body skin meshes": "5050161c1f0a6868",
     "code HairSway.cs": "e9df8644100a1ef6",
     "code HerFaceLife.cs": "33ee1a3c6ec4ea4d",
     "code HerJiggle.cs": "5fe3d99470464d4d",
     "code HerJoints.cs": "643195bc7704c9e8",
     "code HerPose.cs": "f605748425dffaf8",
     "godot binary": "393483e36bd683a8",
-    "hair ponytail": "acc1a71e3fcb3ccb",
+    "hair ponytail": "64682d795742acef",
     "head parts (occluders)": "0a1d9b6b3acea14f",
     "import_mipmaps.gd": "4e5759d6b8341411",
     "lookdev.gd": "e4c12496bb43b583",
@@ -1112,12 +1112,12 @@
     "tool .gitignore": "845c97c4631481e8",
     "tool count.py": "0b9a962d4c590e7d",
     "tool make_motioncheck.py": "19682186d6153082",
-    "tool marks_section.py": "e11cb08d7ed09726",
+    "tool marks_section.py": "e45523d1bf2974ed",
     "tool posed.py": "97aa3aa281aebff6",
     "tool run.sh": "6b1c32f5a460e591"
    },
-   "outfit": "c6dbf9b40410f936",
-   "tuck": "b506da6a6f518e59"
+   "outfit": "cc8e9736d4ae7d10",
+   "tuck": "b60227c78efeab9f"
   }
  }
 }

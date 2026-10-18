@@ -1629,20 +1629,25 @@ def follow_head(o, at):
     print("  follows her head's keys: %s" % " ".join(made))
 
 
-_bw = None
+_bw = {}
+
+
+def mesh_weights(o):
+    """A mesh's weights, a row a point."""
+    if o.name not in _bw:
+        gname = {g.index: g.name for g in o.vertex_groups}
+        W = np.zeros((len(o.data.vertices), len(BONES)))
+        for v in o.data.vertices:
+            for g in v.groups:
+                if gname.get(g.group) in BI:
+                    W[v.index, BI[gname[g.group]]] = g.weight
+        _bw[o.name] = W
+    return _bw[o.name]
 
 
 def body_weights():
     """Her body's weights, a row a point (for hair lying on her)."""
-    global _bw
-    if _bw is None:
-        gname = {g.index: g.name for g in body.vertex_groups}
-        _bw = np.zeros((len(body.data.vertices), len(BONES)))
-        for v in body.data.vertices:
-            for g in v.groups:
-                if gname.get(g.group) in BI:
-                    _bw[v.index, BI[gname[g.group]]] = g.weight
-    return _bw
+    return mesh_weights(body)
 
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head"]
@@ -1673,6 +1678,23 @@ def rig(o, V, at=None):
     bw = spine_only(body_weights()[i])
     bw /= bw.sum(1, keepdims=True) + 1e-9
     W = W * (1 - on_body[:, None]) + bw * on_body[:, None]
+    # Hair close to her skin moves as the skin under it does: the weights of
+    # the nearest point of her head or body, whichever is under it, all of it
+    # within 2 cm, eased off by 5 cm (each bone's as spine_only). Over her
+    # skull that is her head's alone, as above; at her nape and behind her ears
+    # the head's skin is her head's to below EYE_Z - 0.10 while the rule above
+    # gave hair there her body's neck from EYE_Z - 0.04 (up to 0.6 of it), and
+    # hair on her body's neck Head = 1 just above the ease. (18 October: her
+    # neck shortened 3 cm by her Head joint, hair there no longer moved with
+    # the skin under it, by up to 16 mm, and sank 7-10 mm into her head and
+    # neck.) What swings on a chain is kept at CENTRE, inside her skull, far
+    # from both: unchanged.
+    sd, si = cKDTree(np.vstack([HP, BP])).query(at)
+    sw = spine_only(np.vstack([mesh_weights(head), body_weights()])[si])
+    sw /= sw.sum(1, keepdims=True) + 1e-9
+    near = np.clip(1 - (sd - 0.02) / 0.03, 0, 1)
+    Wn = W * (1 - near[:, None]) + sw * near[:, None]
+    W = np.where((np.abs(Wn - W).max(1) > 1e-6)[:, None], Wn, W)
     o.parent = arm
     mod = o.modifiers.new("Armature", "ARMATURE")
     mod.object = arm

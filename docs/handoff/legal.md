@@ -34,6 +34,8 @@ Rules:
 
 ## State (5 October 2026)
 
+**18 Oct news:** the legal coverage gate (`tools/legal/gate.py`) left merge requests; the shipped body has no nipples or areolas. One optional run before a store build. See `docs/team/legal.md` "The gate".
+
 **Launch blockers: three.**
 1. **The AI disclosure:** ready to paste (`STEAM_CHECKLIST.md` D3), naming only what the release ships. Raise it, and the BODIES_RECORD signature, only at submission (the owner, 5 Oct). It has a bullet to add for each thing that may ship later (the hero's body, a MoGe-built face, voices, the hymn, store art). The owner pastes it at submission.
 2. **The mature-content survey:** waiting on the motion check of the main session's **tuck build** (below). Draft answers: checklist D1 and D2.
@@ -97,6 +99,8 @@ The main session builds outfits with her skin tucked in rather than cut away. `h
    - run the USPTO search himself (it sits behind a bot challenge).
 
 ## Decisions (and why)
+
+- **Anatomical body (18 Oct):** `C:\Users\munch\Desktop\survivorsunchained_inputs\anatomical\heroine_anatomical.glb` is non-shipping, outside the build and export. If it ships or sex scenes are added, the gate and the survey come back.
 
 - **The check measures; it never asks for more garment.** That is the owner's direction.
 - **The disclosure names only what ships, and says "rebuilt and rigged for the game", not "by hand"**: agents did much of the rebuild. "Under his direction and review", not "every asset reviewed by a person", which can't be shown.

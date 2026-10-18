@@ -629,8 +629,11 @@ public static class People
     {
         int hb = p.Skeleton.FindBone("Head");
         if (hb < 0) return p.Root.GlobalPosition + Vector3.Up * 1.6f;
-        var moved = (p.HeadPose ?? p.Skeleton.GetBoneGlobalPose(hb)) * p.Skeleton.GetBoneGlobalRest(hb).AffineInverse();
-        return p.Skeleton.GlobalTransform * (moved * new Vector3(0, 1.748f, 0.075f));
+        var rest = p.Skeleton.GetBoneGlobalRest(hb);
+        var moved = (p.HeadPose ?? p.Skeleton.GetBoneGlobalPose(hb)) * rest.AffineInverse();
+        // (between her eyes at rest: 8.2 cm over and 11.1 cm in front of her Head joint, so they ride with its rest:
+        // her neck 3 cm shorter, 18 October 2026, lowered the joint; at 1.748 m fixed the Look aimed over her eyes)
+        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + new Vector3(0, 0.082f, 0.111f)));
     }
 
     /// <summary>Her eyes' colour (shaders/heroine_eye.gdshader): the iris's
