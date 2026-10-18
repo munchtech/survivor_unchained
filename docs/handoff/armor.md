@@ -28,7 +28,7 @@ Known limits: her play-camera model (HerLod, one LOD file per outfit) doesn't co
 2. Game: Wear, equip by slot, tuck map in the skin shader, armor_index; tests. NOT STARTED
 3. The smart top shell (style `plate`, from the warden's cups code) with the rolled edge, the shared trim strip, and the three tiers (plain forged, etched, gilded) as three pieces. NOT STARTED
 4. Mixed look: the new top + an existing outfit's bottom/skirt/boots. NOT STARTED
-5. A new blade1h weapon through Marionette, dropped in by weapon_drop.py (weapons.json + fistfit data rows), fistfit pass. NOT STARTED
+5. A new blade1h weapon through Marionette, dropped in by weapon_drop.py, fistfit pass. PARTLY DONE: Oathbrand made in Marionette's weapon workshop (Marionette armor-1 47e22c8, fdd3fbe; grip 13.672 mm mean vs 13.70); dropped as data (8f6ab7cc: weapons.json, WeaponsData.cs/ArmsData.cs, tools/armor/weapon_drop.py, public/assets/weapons/oathbrand.glb). fistfit (scratch copy tools/scratch/armor1/fistfit_drop.py; its row needs weapon=("sword",), wrap="sword"): oathbrand and the shipped sword fail alike within 0.1 mm on the main checkout's stale clips. Re-run on anim-38's clips after it merges, and re-run ArmsDump then (arms_local.json kept at integration's, d393552c). In progress: ItemDef.Art + per-kind Held template + HerClips.Kind from the Arms kind (no C# per weapon); an `oathbrand` item.
 5b. Measured plain-mount check of Axe, Blade2H, Blunt, Axe2H, Wand; failing kinds listed for animation. NOT STARTED
 6. Marionette workshop panel + export; the slice's top made through it. NOT STARTED
 7. 1:1 shoot (idle, run, an attack; play, close-up at its closest, Look) + ONE max judge with the whole-frame gate. NOT STARTED
