@@ -1,157 +1,142 @@
-"""Her head's shape keys' moves of her throat made smooth, in her exported glb (heroine.glb).
+"""Her throat bends as a woman's, not round an Adam's apple (the owner, 18 October 2026, C01 by the fire: "a giant
+atoms apple ... it looks bad").
 
-Each face's key moves her jaw and chin (Saffron's 13 mm forward and down), and her throat under it went with them
-until the 2 cm above SPLIT, where heroine_head.py eases every key's move out: the throat's surface bent there, so
-side on Saffron's throat showed a kink under her chin and from the front a dark crescent groove; Highborn's a notch
-then a bulge, like an Adam's apple; Moonlit's and Hard-won's milder (judge n1, 11 October 2026).
+    import heroine_throat; heroine_throat.ease(<heroine.glb>)     (after heroine_neck.match_graft, before shorten_glb)
 
-Here every key's move under her jaw (tools/assets/heroine_face/jaw_zone.png, the ten faces' jaw cuts at their
-most) is made again as the smoothest that meets the key's own move along the zone's edge and none at SPLIT, with no
-slope there either (biharmonic, over her head's points welded by place): her throat runs from her jaw down to her
-neck as one even surface. Her normals under each key follow the change in her shape (the key's own normals plus
-the turn of her surface's normals from the key's old move to the new), eased in over heroine_seam.py's band as
-its own are.
+What it was. Her shape at rest is smooth (no laryngeal bump on her midline, measured to 0.5 mm over a cubic). The bump
+is her skinning: down the front of her throat her weights went from spine_03 (0.84) to Head (0.75) within 4 cm, from
+1.553 to 1.593 m (rest, glTF), with neck_01 at 0.1 throughout. So with her head back the skin below 1.55 stayed with
+her chest, the skin above 1.59 swung with her head, and the 4 cm between bent at two corners: a dip, then a ridge
+that the firelight grazed (her midline 4-6 mm off a smooth curve with the head back 40-50 deg). Same in every body
+since the base was rigged, which is why the neck seam fix did not change it.
 
-heroine_seam.py's seam() runs this first, on every glb heroine_head.py and heroine_outfits.py write. On a glb whose
-seam is already done:
-
-    python tools/assets/heroine_throat.py godot/art/people/heroine.glb [OUT.glb]
-
-(it does nothing on one already done: its head's extras say throat_eased).
+What it does. Over the front and sides of her neck, between her chest (where no point has Head or neck_01) and the
+2 cm of her neck skin under her head (heroine_neck.match_graft gives that skin her head's weights, so the seam holds),
+her weights are refilled smoothly (each bone's weight biharmonic over her skin, held at the points round the area):
+the bend spreads from her sternal notch to under her jaw and her throat stays one long smooth line as her head goes
+back or turns. Her shape is not moved (her pieces fit her as they were); only weights change. The pieces and hair
+that took her neck skin's weights take the same change (heroine_neck.match_pieces, through its field).
+Off: THROAT_SOFT=0.
 """
 import os
-import sys
 
-import numpy as np
-import scipy.sparse as sp
-import scipy.sparse.linalg as spl
-from PIL import Image
-from scipy.spatial import cKDTree
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import heroine_seam as hs  # noqa: E402
-
-ZONE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "jaw_zone.png")
-IN_ZONE = 0.3        # (the zone's value from which a point's move is made again)
-EAR_X = 0.057        # (her ears' lobes, in the zone at its back corners: left as the keys shape them)
-# (the keys that shape her face; her expressions (mouth_open, smile, ...) and ears keep their own moves)
-SHAPE_KEYS = ("face_", "chin_", "jaw_")
+TH_FREE = 120.0       # (deg round her neck from her front within which her weights are refilled)
+HEAD_HOLD = 0.02      # (m: her skin this near her head keeps match_graft's weights, as heroine_neck.FULL)
+UP_MIN = 0.005        # (Head + neck_01 below this: her chest and shoulders, held)
+Y_LO, Y_HI, R_MAX = 1.40, 1.70, 0.18   # (the box, rest glTF metres, round her neck's axis, that the area lies in)
 
 
-def _vertex_normals(V, T):
-    fn = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
-    n = np.zeros_like(V)
-    for k in range(3):
-        np.add.at(n, T[:, k], fn)
-    return n / (np.linalg.norm(n, axis=1)[:, None] + 1e-12)
-
-
-def throat(js, binc, chunks, hm, hp, shared, ease=None):
-    """Every key's POSITION in the zone made again, its NORMAL moved with it (the change times `ease` per point, if
-    given: for a glb whose key normals are eased already). Returns the keys changed and the largest change."""
-    if "throat_eased" in hm.get("extras", {}):
-        print("THROAT: already done - nothing done")
-        return []
-    P = hs._read(js, binc, hp["attributes"]["POSITION"])
-    UV = hs._read(js, binc, hp["attributes"]["TEXCOORD_0"])
-    T = hs._read(js, binc, hp["indices"]).reshape(-1, 3)
-    # (her points welded by place: the glb splits them along her UVs' seams)
-    key = np.round(P / 1e-6).astype(np.int64)
-    _, wi, inv = np.unique(key, axis=0, return_index=True, return_inverse=True)
+def _weld(P, T, np):
+    _, inv = np.unique(np.round(P / 1e-5).astype(np.int64), axis=0, return_inverse=True)
     inv = inv.ravel()
-    n = len(wi)
-    WT = inv[T]
-    zone_img = np.asarray(Image.open(ZONE).convert("L"), np.float32) / 255
-    h, w = zone_img.shape
-    zv = zone_img[np.clip((UV[:, 1] * h).astype(int), 0, h - 1), np.clip((UV[:, 0] * w).astype(int), 0, w - 1)]
-    z = np.zeros(n)
-    np.maximum.at(z, inv, zv)
-    sh = np.zeros(n, bool)
-    sh[inv[shared]] = True
-    # (the welded mesh's edges, and the ring of points next to SPLIT: held still too, so no slope at SPLIT)
-    e = np.concatenate([WT[:, [0, 1]], WT[:, [1, 2]], WT[:, [2, 0]]])
-    e = np.unique(np.sort(e, 1), axis=0)
-    e = e[e[:, 0] != e[:, 1]]
-    A = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), (n, n)).tocsr()
-    A.data[:] = 1
-    ring = (A @ sh.astype(float)) > 0
-    Pw = P[wi]
-    free = (z >= IN_ZONE) & ~sh & ~ring & (np.abs(Pw[:, 0]) < EAR_X)
-    fixed = ~free
-    deg = np.asarray(A.sum(1)).ravel()
-    L = sp.diags(deg) - A
-    Lw = sp.diags(1 / np.maximum(deg, 1)) @ L
-    Q = (Lw.T @ Lw).tocsr()
-    Qff = Q[free][:, free].tocsc()
-    Qfc = Q[free][:, fixed]
-    solve = spl.factorized(Qff)
-    targets = hp.get("targets", [])
-    names = hm.get("extras", {}).get("targetNames", [])
-    hn = hs._read(js, binc, hp["attributes"]["NORMAL"])
-    changed = []
-    worst = 0.0
-    zero_held = sh | ring
-    for k, t in enumerate(targets):
-        if "POSITION" not in t or not (names[k] if k < len(names) else "").startswith(SHAPE_KEYS):
+    U = np.zeros((inv.max() + 1, 3))
+    U[inv] = P
+    Tw = inv[T]
+    Tw = Tw[(Tw[:, 0] != Tw[:, 1]) & (Tw[:, 1] != Tw[:, 2]) & (Tw[:, 0] != Tw[:, 2])]
+    return U, inv, Tw
+
+
+def ease(path, save=True):
+    import numpy as np
+    from scipy import sparse
+    from scipy.sparse.linalg import splu
+    from scipy.spatial import cKDTree
+    import heroine_neck as hn
+    G = hn._Gl(path)
+    g = G.g
+    N = g["nodes"]
+    hb = [n for n in N if n.get("name") == "Heroine"][0]
+    hh = [n for n in N if n.get("name") == "HeroineHead"][0]
+    prims = [p for p in g["meshes"][hb["mesh"]]["primitives"] if "JOINTS_0" in p["attributes"]]
+    gp = [p for p in prims if g["materials"][p["material"]].get("name") == "skin_graft"]
+    assert len(gp) == 1, "one skin_graft"
+    hp = [p for p in g["meshes"][hh["mesh"]]["primitives"] if g["materials"][p["material"]].get("name") == "skin_head"][0]
+    names = G.names()
+    nj = len(names)
+    hj, nk = names.index("Head"), names.index("neck_01")
+    # her neck's axis: neck_01's place in the world (rest), up her body
+    par = {c: i for i, n in enumerate(N) for c in n.get("children", [])}
+
+    def wm(i):
+        n = N[i]
+        x, y, z, w = n.get("rotation", [0, 0, 0, 1])
+        M = np.eye(4)
+        M[:3, :3] = np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                              [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                              [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]) * np.array(n.get("scale", [1, 1, 1]))
+        M[:3, 3] = n.get("translation", [0, 0, 0])
+        return M if i not in par else wm(par[i]) @ M
+    c = wm([i for i, n in enumerate(N) if n.get("name") == "neck_01"][0])[:3, 3]
+    # her body's skin, welded by place (the graft's seam copies and its edge with her body move as one)
+    Ps, Ts, Js, Ws, o = [], [], [], [], 0
+    for p in prims:
+        x = G.get(p["attributes"]["POSITION"]).astype(float)
+        Ps.append(x)
+        Ts.append(G.get(p["indices"]).reshape(-1, 3).astype(int) + o)
+        Js.append(G.get(p["attributes"]["JOINTS_0"]))
+        Ws.append(G.get(p["attributes"]["WEIGHTS_0"]).astype(float))
+        o += len(x)
+    P, T = np.concatenate(Ps), np.concatenate(Ts)
+    U, inv, Tw = _weld(P, T, np)
+    D0 = hn._dense(np.concatenate(Js), np.concatenate(Ws), nj)
+    W0 = np.zeros((len(U), nj))
+    first = np.unique(inv, return_index=True)[1]
+    W0[inv[first]] = D0[first]
+    th = np.degrees(np.arctan2(U[:, 0] - c[0], U[:, 2] - c[2]))
+    r = np.hypot(U[:, 0] - c[0], U[:, 2] - c[2])
+    dh = cKDTree(G.get(hp["attributes"]["POSITION"]).astype(float)).query(U)[0]
+    up = W0[:, hj] + W0[:, nk]
+    free = (np.abs(th) < TH_FREE) & (U[:, 1] > Y_LO) & (U[:, 1] < Y_HI) & (r < R_MAX) & (dh > HEAD_HOLD) & (up > UP_MIN)
+    # biharmonic fill (uniform Laplacian squared), held at every point round the area
+    n = len(U)
+    e = np.r_[Tw[:, [0, 1]], Tw[:, [1, 2]], Tw[:, [2, 0]]]
+    e = np.r_[e, e[:, ::-1]]
+    A = sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)).tocsr()
+    A.data[:] = 1.0
+    L = (sparse.diags(np.asarray(A.sum(1)).ravel()) - A).tocsr()
+    L2 = (L @ L).tocsr()
+    fi, bi = np.nonzero(free)[0], np.nonzero(~free)[0]
+    lu = splu(L2[fi][:, fi].tocsc())
+    rhs = -(L2[fi][:, bi] @ W0[bi])
+    X = W0.copy()
+    used = np.nonzero(np.abs(W0[fi]).sum(0) + np.abs(rhs).sum(0) > 0)[0]
+    for k in used:
+        X[fi, k] = lu.solve(rhs[:, k])
+    X = np.clip(X, 0, None)
+    X /= np.maximum(X.sum(1, keepdims=True), 1e-12)
+    # written back to her primitives (top four), the change kept for her pieces
+    o, moved = 0, 0
+    keepD = []
+    for p, x in zip(prims, Ps):
+        ix = inv[o:o + len(x)]
+        o += len(x)
+        f = free[ix]
+        if not f.any():
             continue
-        D = hs._read(js, binc, t["POSITION"])
-        Dw = np.zeros((n, 3))
-        Dw[inv] = D
-        if np.abs(Dw[free]).max() < 1e-7 and np.abs(Dw[ring]).max() < 1e-7:
-            continue
-        Dc = Dw.copy()
-        Dc[zero_held] = 0
-        Dn = Dc.copy()
-        Dn[free] = np.stack([solve(-(Qfc @ Dc[fixed][:, c])) for c in range(3)], 1)
-        D2 = Dn[inv]
-        delta = np.linalg.norm(D2 - D, axis=1).max()
-        if delta < 1e-6:
-            continue
-        worst = max(worst, delta)
-        hs._set(js, chunks, t["POSITION"], D2, minmax=True)
-        if "NORMAL" in t:
-            dn = hs._read(js, binc, t["NORMAL"])
-            turn = _vertex_normals(P + D2, T) - _vertex_normals(P + D, T)
-            # (welded: each place's turn as its points' mean, so her UVs' seams don't show)
-            tw = np.zeros((n, 3))
-            np.add.at(tw, inv, turn)
-            cnt = np.bincount(inv, minlength=n)[:, None]
-            turn = (tw / np.maximum(cnt, 1))[inv]
-            if ease is not None:
-                turn = turn * ease[:, None]
-            a = hn + dn + turn
-            a /= np.linalg.norm(a, axis=1)[:, None] + 1e-12
-            hs._set(js, chunks, t["NORMAL"], a - hn)
-        changed.append(names[k] if k < len(names) else str(k))
-    hm.setdefault("extras", {})["throat_eased"] = IN_ZONE
-    print("THROAT: %d of her head's points made again under her jaw (%d held at SPLIT); %d keys changed, by up to "
-          "%.1f mm: %s" % (int(free.sum()), int(zero_held.sum()), len(changed), worst * 1000, ", ".join(changed[:12])))
-    return changed
-
-
-def main(path, out=None):
-    js, binc = hs._load(path)
-    chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
-    mats = [m.get("name") for m in js.get("materials", [])]
-    hm = hp = gp = None
-    for m in js["meshes"]:
-        for p in m["primitives"]:
-            if "material" in p and mats[p["material"]] == "skin_head":
-                hm, hp = m, p
-            if "material" in p and mats[p["material"]] == "skin_graft":
-                gp = p
-    HV = hs._read(js, binc, hp["attributes"]["POSITION"])
-    GV = hs._read(js, binc, gp["attributes"]["POSITION"])
-    d, _ = cKDTree(GV).query(HV)
-    shared = d < hs.SHARED
-    ease = None
-    if "seam_band" in hm.get("extras", {}):
-        dist, _ = cKDTree(HV[shared]).query(HV)
-        ease = hs._smooth01(dist / hm["extras"]["seam_band"])
-    if throat(js, binc, chunks, hm, hp, shared, ease):
-        hs._save(out or path, js, chunks)
-        print("THROAT: written", out or path)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
+        J, Wt = G.get(p["attributes"]["JOINTS_0"]), G.get(p["attributes"]["WEIGHTS_0"]).astype(np.float32)
+        old = hn._dense(J[f], Wt[f].astype(float), nj)
+        top, tw = hn._top4(X[ix[f]])
+        J[f], Wt[f] = top, tw
+        G.put(p["attributes"]["JOINTS_0"], J)
+        G.put(p["attributes"]["WEIGHTS_0"], Wt)
+        keepD.append((x[f], hn._dense(top, tw, nj) - old))
+        moved += int(f.sum())
+    if save:
+        G.save()
+    # (the graft's change for her pieces: match_graft's and this, summed where a point has both)
+    fld = hn._FIELD[0] if hn._FIELD else None
+    if keepD and fld is not None and list(fld["names"]) == list(names):
+        Pn = np.concatenate([k[0] for k in keepD])
+        Dn = np.concatenate([k[1] for k in keepD])
+        Fp, Fd = fld["P"].copy(), fld["D"].copy()
+        d, j = cKDTree(Fp).query(Pn)
+        same = d < 1e-6
+        np.add.at(Fd, j[same], Dn[same])
+        fld["P"] = np.concatenate([Fp, Pn[~same]])
+        fld["D"] = np.concatenate([Fd, Dn[~same]])
+        if save:
+            np.savez_compressed(hn.FIELD_FILE, P=fld["P"].astype(np.float32), D=fld["D"].astype(np.float32),
+                                names=np.array(names), body=fld["body"].astype(np.float32), head=fld["head"].astype(np.float32))
+    print("THROAT: %d points of her neck's front and sides given smooth weights (biharmonic between her chest and the "
+          "skin under her head) in %s" % (moved, path))
+    return X, free, U
