@@ -878,8 +878,10 @@ def finger_flattened(obj):
 
 if HAND_PIVOTS:
     hand_pivots(body)
-    if FINGER_FIX:
-        finger_flattened(body)
+# (finger_flattened is applied to her body only, just before her body is exported, and taken
+# back after: her whole skin feeds every piece (BVH.find_nearest's tie-breaks between two faces
+# at an edge shift with any point of her, held_edges -> a corset's bind -> its decimate), so a
+# flatten here moved every outfit 3-7 mm; her gloves sit on the un-flattened pad.)
 
 # ---- her back of hand (BACKHAND=1): her skin's knuckle drop moved onto her new knuckles.
 # hand_pivots moved her finger pivots ~20 mm toward her wrist; her back-of-hand skin still fell
@@ -8939,6 +8941,15 @@ if BODY_OUT:
     # split onto them; her pieces take the same split below.
     mend_folds(me, body)
     rig_helpers.apply(arm, [body])
+    _ff_keep = None
+    if HAND_PIVOTS and FINGER_FIX:
+        _ffm = body.data
+        _ff_keep = [np.empty(len(_ffm.vertices) * 3)]
+        _ffm.vertices.foreach_get("co", _ff_keep[0])
+        for _kb in (_ffm.shape_keys.key_blocks if _ffm.shape_keys else []):
+            _ff_keep.append(np.empty(len(_kb.data) * 3))
+            _kb.data.foreach_get("co", _ff_keep[-1])
+        finger_flattened(body)
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
     for o in [body] + HEAD_PARTS:
@@ -8946,6 +8957,12 @@ if BODY_OUT:
     bpy.context.view_layer.objects.active = arm
     bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
                               export_yup=True, export_vertex_color="ACTIVE")
+    if _ff_keep is not None:
+        # (her flattened fingers taken back: her pieces' rigging and glove fit below read her body)
+        _ffm.vertices.foreach_set("co", _ff_keep[0])
+        for _kb, _c in zip(_ffm.shape_keys.key_blocks if _ffm.shape_keys else [], _ff_keep[1:]):
+            _kb.data.foreach_set("co", _c)
+        _ffm.update()
     # (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
     import heroine_seam
     heroine_seam.seam(BODY_OUT)
