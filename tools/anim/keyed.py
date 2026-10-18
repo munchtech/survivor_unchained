@@ -1016,15 +1016,8 @@ FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 # bones, none of it past the fingers' column, its proximal pad 0.6 mm off the shaft; the ring refitted to the new palm line.
 # The fingers can't close to the judge's 75/100/60: with the palm on this 27.3 mm shaft, her knuckle and middle joints
 # together top out at about 130 deg before a finger goes into it (fistfit, 17 October), as they do here.
-# Refitted 18 October (animation 38) on a DIAGONAL line, as a staff is held: FistDirR turned 18 deg about the palm's normal
-# (the little finger's end of the shaft toward the heel of the hand: the line from the forefinger's root to the heel under
-# the little finger) and 8 deg toward the palm at the forefinger's end, 19.7 deg in all (27.7 off hand +Z, was 8.2); the
-# line 10 mm toward the wrist. Square across the fingers no seat let the little finger reach the shaft without the palm
-# going 2-11 mm in; on the diagonal all four fingers' outer pads lie on it (-0.5..1.3 mm), the tips short of the far side,
-# the thumb over the forefinger and middle finger as the 17 October judge wanted (its tip 3.0 mm off their middle bones,
-# none of it past them). GRIP["staff"] 18 turns her hand back so the staff points where the clips key it.
-WRAP = {"staff": {"bends": {"index": (58.9, 73.7, 46.5), "middle": (65.6, 79.3, 59.9), "ring": (65.6, 83.1, 23.0), "pinky": (76.4, 70.6, 33.4), "thumb": (-3.7, 49.2, 75.5)}, "spreads": {"index": -19.1, "middle": -10.4, "ring": 1.7, "pinky": 5.9},
-                  "oppose": 0.16, "thumb_roll": 22.9, "thumb_in": 0.7},
+WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (53.4, 71.6, 60.1), "pinky": (41.7, 73.3, 60.3), "thumb": (14.1, 1.3, 86.0)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.1, "pinky": 1.3},
+                  "oppose": 0.22, "thumb_roll": 5.3, "thumb_in": -7.9},
         # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
         # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
         # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
@@ -1575,12 +1568,11 @@ def _one_frame(rig: Rig, keys, base=None):
 # fingers toward them (degrees): a sword's grip runs from the root of the
 # forefinger to the heel of the hand, so with the wrist straight the blade
 # rises at about 55 degrees from the forearm's line and a little ulnar bend
-# puts it nearly in line. An axe's haft is gripped nearer square, a crossbow
-# square (pistol fashion), a staff at 18 (18 Oct: its fist refitted on the
-# diagonal, WRAP["staff"]). Only her and the hero
+# puts it nearly in line. An axe's haft is gripped nearer square, a staff and
+# a crossbow square (mid-shaft; pistol fashion). Only her and the hero
 # (Rig.grips): the folk also play the Universal Animation Library, held
 # square. Must match the game's mounts (Arms.Spec.Lean).
-GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0, "staff": 18.0}
+GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0}
 
 
 def grip_of(weapon):
