@@ -291,6 +291,37 @@ public partial class Game
 
         /* ------------------------------------------------------------ frame -- */
 
+        // (env CINEDBG, shots only, off unless set: the cinematic light changed, to tell her materials' faults from
+        // its own (face 30 cine): "key=0.5" the sun or moon's energy scaled, "glow=0.5" the cues' held lamps',
+        // "lamps=0.5" the zone's lamps', "ambient=0.5" the sky's, "nossao", "nosunshadow", "noomnishadow", "nodof")
+        static readonly Dictionary<string, float>? cineDbg = Args.Has("shot") && System.Environment.GetEnvironmentVariable("CINEDBG") is { Length: > 0 } cd
+            ? cd.Split(',').Select(kv => kv.Split('=')).ToDictionary(a => a[0], a => a.Length > 1 ? float.Parse(a[1], System.Globalization.CultureInfo.InvariantCulture) : 1f)
+            : null;
+        float keyWas = -1, keySet = -1, ambSet = -1;
+        void CineDbg()
+        {
+            if (cineDbg is not { } d) return;
+            void Scale(Light3D l, float k)
+            {
+                // (each light scaled once: its energy as set by the cues kept in its metadata)
+                if (!l.HasMeta("cdbg") || (float)l.GetMeta("cdbg_set") != l.LightEnergy) { l.SetMeta("cdbg", l.LightEnergy); l.LightEnergy *= k; l.SetMeta("cdbg_set", l.LightEnergy); }
+            }
+            if (d.TryGetValue("key", out var kk) && g.air.Key.LightEnergy != keySet) { keyWas = g.air.Key.LightEnergy; keySet = keyWas * kk; g.air.Key.LightEnergy = keySet; }
+            if (d.TryGetValue("glow", out var gk))
+                foreach (var pr in props.Values)
+                    foreach (var l in pr.FindChildren("*", "OmniLight3D", true, false)) { Scale((Light3D)l, gk); if (d.ContainsKey("noomnishadow")) ((Light3D)l).ShadowEnabled = false; }
+            if (d.TryGetValue("lamps", out var lk) || d.ContainsKey("noomnishadow"))
+                foreach (var l in g.scene!.View.FindChildren("*", "OmniLight3D", true, false))
+                {
+                    if (d.ContainsKey("noomnishadow")) ((Light3D)l).ShadowEnabled = false;
+                    if (d.ContainsKey("lamps")) Scale((Light3D)l, lk);
+                }
+            if (d.TryGetValue("ambient", out var ak) && g.air.Env.AmbientLightEnergy != ambSet) { ambSet = g.air.Env.AmbientLightEnergy * ak; g.air.Env.AmbientLightEnergy = ambSet; }
+            if (d.ContainsKey("nossao")) g.air.Env.SsaoEnabled = false;
+            if (d.ContainsKey("nosunshadow")) g.air.Key.ShadowEnabled = false;
+            if (d.ContainsKey("nodof")) { dof.DofBlurNearEnabled = false; dof.DofBlurFarEnabled = false; }
+        }
+
         public void Frame(double dt)
         {
             Skipping(dt);
@@ -335,6 +366,7 @@ public partial class Game
             foreach (var w in bosses.Values) w.Shine(dt);
             foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
+            CineDbg();
             var shot = player.Shot.Shot;
             // --shot NAME --until S: each shot's standing frame saved as it passes (the previs boards).
             var span = player.Shot;
