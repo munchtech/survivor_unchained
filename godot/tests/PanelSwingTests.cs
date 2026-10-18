@@ -34,6 +34,38 @@ public class PanelSwingTests
         Assert.Equal(18.262717539544067, s, 9); Assert.Equal(14.075187828925216, o, 9);
     }
 
+    [Theory]
+    [InlineData(double.NaN, 40, 1 / 30.0, 40.0)]                    // first frame: the law
+    [InlineData(90, 79.2, 1 / 30.0, 83.89366065187644)]             // run f5 -> f6: lags the fall
+    [InlineData(84, 60.4, 1 / 30.0, 70.65651772076704)]
+    [InlineData(100, 40, 1 / 30.0, 85.0)]                           // capped: 450 deg/s, 15 a frame
+    [InlineData(100, 40, 1 / 60.0, 92.5)]
+    [InlineData(100, 99, 1 / 60.0, 99.65924063020044)]
+    [InlineData(105.3, 99.2, 1 / 144.0, 104.32780483434048)]
+    [InlineData(80, 20, 0.5, 20.000223599190324)]                  // a long frame: all the way down
+    [InlineData(50, 51, 1 / 60.0, 51.0)]                            // rising: the law at once
+    [InlineData(70, 30, 0.0, 70.0)]                                 // no time: held
+    public void FallMatchesTheTools(double prev, double target, double dt, double want)
+        => Assert.Equal(want, PanelSwing.Fall(Law, prev, target, dt), 9);
+
+    [Fact]
+    public void FallsNoFasterThanTheRateAndNeverBelowTheLaw()
+    {
+        // The law dropping 60 degrees in one step: the panel takes it at most 450 deg/s, whatever the frame rate.
+        foreach (double dt in new[] { 1 / 30.0, 1 / 60.0, 1 / 144.0 })
+        {
+            double th = 100, t = 0;
+            while (t < 0.5)
+            {
+                double next = PanelSwing.Fall(Law, th, 40, dt);
+                Assert.InRange(th - next, 0, 450 * dt + 1e-9);
+                Assert.True(next >= 40);
+                th = next; t += dt;
+            }
+            Assert.InRange(th, 40, 40.01);
+        }
+    }
+
     [Fact]
     public void SmoothAcrossTheLegsCrossing()
     {

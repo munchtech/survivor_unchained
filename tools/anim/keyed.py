@@ -89,9 +89,11 @@ class Rig:
 
     FEET_OUT = {"her": 0.0, "him": 0.045}
 
-    def __init__(self, sk: Skeleton, body="her", grips=True):
+    def __init__(self, sk: Skeleton, body="her", grips=True, flex_tilt=None):
         self.sk = sk
         self.body = body
+        # Each finger's flexion axis tilt (deg, FLEX_TILT; None: the module's, read now).
+        self.flex_tilt = dict(FLEX_TILT if flex_tilt is None else flex_tilt)
         # Whether weapons sit in a diagonal grip (GRIP): her and the hero;
         # not the folk, who also play the library's clips, held square.
         self.grips = grips
@@ -408,7 +410,14 @@ class Rig:
         else:
             axis_w = np.cross(d, palm)
         axis_w = axis_w / np.linalg.norm(axis_w)
-        return qrot(qinv(g[j]), axis_w)
+        a = qrot(qinv(g[j]), axis_w)
+        tilt = 0.0 if name.startswith("thumb") else self.flex_tilt.get(name.split("_")[0], 0.0)
+        if tilt:
+            # Inclined toward the bone's own line (bone +y; the axis stays square to the palm's normal, so a spread's
+            # axis, spread_axis, keeps its direction), the way that bends the finger toward the thumb as it closes.
+            t = np.radians(tilt) * (1 if side == "r" else -1)
+            a = np.cos(t) * a + np.sin(t) * np.array([0, 1.0, 0])
+        return a
 
     # ------------------------------------------------------------- solve --
     def solve(self, pose: dict, base=None):
@@ -751,23 +760,40 @@ class Rig:
             local[j] = grot[j] if p < 0 else qmul(qinv(grot[p]), grot[j])
         for side in "lr":
             spec = pose.get(f"fingers_{side}", "relaxed")
-            if spec == "grip" and side in getattr(self, "wrap", {}):
+            # A hand that holds a piece with a fitted wrap closes on it in that wrap whether its keys say "grip" or
+            # "fist" (a run's carriage keys "fist" for both hands: run_warden and sprint_warden closed her sword
+            # hand's fingers into the palm, through the hilt, 14 October).
+            if spec in ("grip", "fist") and side in getattr(self, "wrap", {}):
                 spec = self.wrap[side]
             curl = finger_curl(spec)
             # The thumb swung in across the palm before it bends ("oppose", 0..1),
             # so a fist closes over the fingers instead of thumbing a lift.
-            oppose = spec.get("oppose", 0) if isinstance(spec, dict) else 0
+            preset = spec if isinstance(spec, dict) else FINGER_PRESETS.get(spec, {})
+            oppose = preset.get("oppose", 0)
             if oppose:
                 j = I[f"thumb_01_{side}"]
                 along = qrot(qinv(self.grest[j]), qrot(self.grest[I[f"hand_{side}"]], [0, 1.0, 0]))
                 local[j] = qmul(local[j], qaxis(along / np.linalg.norm(along), oppose * 55 * (1 if side == "l" else -1)))
-            roll = spec.get("thumb_roll", 0) if isinstance(spec, dict) else 0
+            # The thumb drawn in beside the forefinger ("thumb_in", deg, about its base's spread axis): a relaxed hand's
+            # thumb rests along the forefinger's side, not off the front of the hand.
+            t_in = preset.get("thumb_in", 0)
+            if t_in:
+                j = I[f"thumb_01_{side}"]
+                local[j] = qmul(local[j], qaxis(spread_axis(self, j), t_in * (1 if side == "l" else -1)))
+            roll = preset.get("thumb_roll", 0)
             if roll:
                 j = I[f"thumb_01_{side}"]
                 local[j] = qmul(local[j], qaxis([0, 1.0, 0], roll * (1 if side == "r" else -1)))
+            # Each finger's own spread (a fitted wrap's "spreads", deg; + fans the forefinger toward the thumb, the
+            # others the same way) at its base knuckle before it bends, so the bend's axis turns with it. The left
+            # hand's axis is the mirror's: the same values fan it the other way (measured, l30), so its sign turns.
+            spreads = (spec if isinstance(spec, dict) else FINGER_PRESETS.get(spec, {})).get("spreads", {})
+            sgn_s = 1.0 if side == "r" else -1.0
             for name, angles in curl.items():
                 for k, a in enumerate(angles):
                     j = I[f"{name}_0{k + 1}_{side}"]
+                    if k == 0 and spreads.get(name):
+                        local[j] = qmul(local[j], qaxis(spread_axis(self, j), sgn_s * spreads[name]))
                     if a:
                         local[j] = qmul(local[j], qaxis(self.finger_axis[j], a))
             sp_ = spec.get("spread", 0) if isinstance(spec, dict) else FINGER_PRESETS.get(spec, {}).get("spread", 0)
@@ -928,7 +954,21 @@ def _twist(qr, axis):
 # thumb), and how far they fan.
 FINGER_PRESETS = {
     "rest": {"curl": 0, "thumb": 0},
-    "relaxed": {"curl": 0.28, "thumb": 0.15, "cascade": 0.25},
+    # Relaxed (14 October, lead 27; the owner: her idle hands "weird", the curl read clawed, every joint flexed
+    # evenly): each joint its own scale and cascade, so the forefinger lies nearly straight and each finger toward
+    # the little one bends more, mostly at the knuckle and the middle joint, the end joints only a little. Index to
+    # little finger (knuckle, middle, last): (8, 15, 6) (15, 24, 9) (22, 33, 12) (29, 42, 15); the thumb soft beside
+    # the forefinger (12, 12, 16), drawn in 21 deg (its last bone's skin 5-9 mm off the forefinger's, was 30-36: the
+    # V judge r1 saw), swung 9 deg across and rolled a little so its pad faces it (judge r1: A's
+    # straight thumb left a V of background beside the forefinger; keep knuckle bends <= 30 until her knuckles move,
+    # then about +5 there). Was curl 0.28, cascade 0.25: (22, 27, 18) .. (39, 46, 32), the tips hooked: a claw.
+    # Her knuckles moved (body build F0, 15 October, animation 30): +5 at every knuckle, (13, 20, 27, 34) index to
+    # little finger, and the thumb drawn in 18 (was 21; its last bone was 1.8 mm off the forefinger on F0). Judge l30-r1
+    # PASS, with the fan closed ("spreads", at the base knuckles): her rest hand is fanned, the tips read as separate
+    # stubs 6-12 mm apart; now index-middle 1.8, middle-ring 2.9, ring-little 5.2 mm, none into another.
+    "relaxed": {"curl": 0.1, "thumb": 0.25, "cascade": 0.5, "j1": 1.625, "j2": 1.58, "j3": 0.92,
+                "c1": 0.5385, "c2": 0.6, "c3": 0.5, "t1": 1.92, "t2": 1.37, "t3": 1.6, "oppose": 0.16, "thumb_roll": -8,
+                "thumb_in": 18, "spreads": {"index": -7.0, "middle": 0.0, "ring": 8.0, "pinky": 22.0}},
     "open": {"curl": 0.05, "thumb": 0.0, "spread": 4},
     # Pressed flat on the ground under her weight: bent back a little.
     "flat": {"curl": -0.12, "thumb": 0.0, "spread": 6},
@@ -938,6 +978,20 @@ FINGER_PRESETS = {
     "fist": {"curl": 1.0, "thumb": 0.8, "cascade": 0.05},
     "point": {"curl": 0.95, "thumb": 0.6, "index": 0.05},
 }
+
+# Converging flexion (deg, each finger's three joints; + the closing finger toward the thumb side, - toward the little
+# finger). A hand's fingers don't close in parallel planes: flexed, they all point at one spot, roughly the scaphoid's
+# distal pole (Eaton, e-Hand, "Hand examination": the cascade, "with flexion the fingertips tend to converge on one
+# spot"; Kapandji, The Physiology of the Joints vol. 1, the hand: the oblique flexion of the fingers), so the ring and
+# little fingers' axes are inclined toward the thumb and the forefinger's slightly the other way. Each axis leans
+# off square to its bone by its value, toward the bone's line (Rig._bend_axis). Derived on her hand (fistfit.py
+# tilt_for): the value that, at knuckle 90 and middle joint 90, points the middle bone at that spot (her hand_r space
+# y 18, z 16 mm: 13 mm before and 7 mm in from her thumb's base pivot; +-1.5 deg for the spot 6 mm either way). The
+# thumb has its own (Rig._bend_axis). On her hand as built (14 October, animation solver): the relaxed hand moves
+# under 0.3 mm, WRAP["staff"]'s pads under 0.6 and its fingers close up (outer bones 3.3/2.9/6.8 mm apart, were
+# 6.0/6.8/9.5). Re-derived on the body build F0 (15 October, animation 30: hand pivots mcp 0.48 / p2 0.65, the thumb's
+# base pivot unchanged at y 31.4, z 23.0, so the spot stands): fistfit.tilt_for() on its game-skeleton dump.
+FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 
 
 # A fist fitted to a grip (WRAP, by the clip's weapon: wrap_of): "grip" in that hand becomes this, each finger's three
@@ -951,15 +1005,47 @@ FINGER_PRESETS = {
 # was 45.5; its CMC is 92 mm from the line, so no turn of the base brings the pad nearer than 28 mm), its proximal pad
 # 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
 # web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
-WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
-                            "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 65.0)},
-                  "oppose": 0.44, "thumb_roll": -20.8}}
+WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (51.8, 73.5, 50.7), "pinky": (41.7, 73.3, 60.3), "thumb": (25.5, -5.3, 39.8)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.2, "pinky": 1.3},
+                  "oppose": -0.00, "thumb_roll": 12.7},
+        # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
+        # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
+        # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
+        # harder toward the little finger, the end joints at their 60 deg, nothing more than 0.4 mm into the hilt, the
+        # palm on it (0.3). "spreads" draw the fingers together (her rest hand is fanned: knuckles 22-23 mm apart,
+        # fingers 14-15 mm across): outer bones 1.4-1.5 mm apart, the little finger's 4.6. Not yet the pass: the
+        # forefinger's middle bone 8 mm off, the ring's 3.7, the little finger's 6.3; the fingers' ends 2-8 mm past the
+        # grip's far side. Why (sword5, 14 October): her knuckle pivots sit at the finger webs, so her first finger
+        # bones are 21-27 mm long against about 41-56 in a real hand and the wrap only starts at the middle joint; the
+        # ends come 146-211 deg round where a fist needs about 225-235 (fistfit WRAP_MIN 180). The bones run at about
+        # mid-thickness (pads 6.5-9 mm under them), not high in the finger as round 4 thought. Not passable on this
+        # hand: waits on the body build's knuckle and end-joint move (fistfit --hand models it).
+        # The thumb refitted (animation 31, on idle_warden's rest frame): its end joint 58 (was 89, "a hooked claw"),
+        # its pad 1.0 mm over the middle finger's middle bone, closed over the fingers, the thumb 1.3 mm off the hilt
+        # and 0.3 mm clear of the forefinger by its bone line (it was 1.5 mm into it); opposed 0.45 (was 0.63) and
+        # rolled 12 degrees so the pad, not its side, lies on the finger.
+        "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (8.0, 3.4, 57.9)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
+                  "oppose": 0.45, "thumb_roll": 12.3},
+        # The dagger (WeaponSockets.DaggerAtR / DaggerDirR), fitted 14 October (animation 31, fistfit.py daggers --fit
+        # --seat 80, on daggers_back's frame 2 and the ranger's hand) on its own section: the hilt is a flat hexagon,
+        # 15 mm thick toward the palm and 29 across, 122 mm between pommel and guard. Refitted 14 October (animation 33's
+        # solver, the 02/03 pads weighted and held 0..1.5 mm, the seat 1.0 mm deeper: DaggerAtR x -33.4 -> -32.4 mm):
+        # nothing of the hand into it (0.0), the palm on it (0.4), the outer pads 0.4-1.4 mm off (forefinger 1.3/0.6,
+        # middle 0.7/0.6, ring 0.9/0.6, little 0.4/1.4), the thumb's middle bone 0.5 off (was 0.6 in), its last joint 69,
+        # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
+        # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
+        "daggers": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
+                  "oppose": 0.01, "thumb_roll": -3.9}}
+
+
+def spread_axis(rig, j):
+    """A finger's base knuckle's spread axis (bone space): across its bend axis and its own line, the palm's normal."""
+    return np.cross([0, 1.0, 0], rig.finger_axis[j])
 
 
 def wrap_of(weapon):
     """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): only her right hand's pocket is
     measured, so only "r"."""
-    main = (weapon or "").split("+")[0]
+    main = {"axes": "axe"}.get((weapon or "").split("+")[0], (weapon or "").split("+")[0])
     return {"r": WRAP[main]} if main in WRAP else {}
 
 
@@ -971,13 +1057,18 @@ def finger_curl(spec):
     th = p.get("thumb", 0.2)
     cascade = p.get("cascade", 0.15)
     tip = p.get("tip", 1.0)
+    # Per joint (knuckle, middle, last): a scale ("j1".."j3", 1) and a cascade toward the little finger ("c1".."c3",
+    # else "cascade"); the thumb's joints scaled by "t1".."t3" (1). The defaults are the one-cascade curl as before.
+    js = [p.get(f"j{k}", 1.0) for k in (1, 2, 3)]
+    cs = [p.get(f"c{k}", cascade) for k in (1, 2, 3)]
+    ts = [p.get(f"t{k}", 1.0) for k in (1, 2, 3)]
     out = {}
     for i, f in enumerate(FINGERS):
-        ci = c * (1 + cascade * i)
+        ci = [c * (1 + cs[k] * i) for k in range(3)]
         if f == "index" and "index" in p:
-            ci = p["index"]
-        out[f] = [ci * 80, ci * 95 * (0.8 + 0.2 * tip), ci * 65 * tip]
-    out["thumb"] = [th * 25, th * 35, th * 40]
+            ci = [p["index"]] * 3
+        out[f] = [ci[0] * 80 * js[0], ci[1] * 95 * (0.8 + 0.2 * tip) * js[1], ci[2] * 65 * tip * js[2]]
+    out["thumb"] = [th * 25 * ts[0], th * 35 * ts[1], th * 40 * ts[2]]
     return out
 
 
@@ -1096,7 +1187,8 @@ def smoothstep_(x):
     return x * x * (3 - 2 * x)
 
 
-FINGER_DEFAULTS = {"curl": 0.3, "thumb": 0.2, "cascade": 0.15, "tip": 1.0, "oppose": 0.0, "spread": 0.0}
+FINGER_DEFAULTS = {"curl": 0.3, "thumb": 0.2, "cascade": 0.15, "tip": 1.0, "oppose": 0.0, "spread": 0.0,
+                   "j1": 1.0, "j2": 1.0, "j3": 1.0, "t1": 1.0, "t2": 1.0, "t3": 1.0, "thumb_roll": 0.0, "thumb_in": 0.0}
 
 
 def _even_fingers(keys):
@@ -1118,6 +1210,8 @@ def _even_fingers(keys):
                 p = dict(FINGER_PRESETS.get(spec, {})) if isinstance(spec, str) else dict(spec)
                 full = {**FINGER_DEFAULTS, **p}
                 full.setdefault("index", full["curl"])
+                for c_ in ("c1", "c2", "c3"):
+                    full.setdefault(c_, full["cascade"])
                 key = (key[0], {**key[1], k: full}, *key[2:])
             out.append(key)
         keys = out

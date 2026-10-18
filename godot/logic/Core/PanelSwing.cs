@@ -10,7 +10,7 @@ namespace SurvivorUnchained.Core;
 /// </summary>
 public static class PanelSwing
 {
-    public readonly record struct Law(double Amount, double Soft, double SpreadFrom, double SpreadTo, double SpreadDamp);
+    public readonly record struct Law(double Amount, double Soft, double SpreadFrom, double SpreadTo, double SpreadDamp, double FallTau = 0.04, double FallRate = 450);
 
     /// <summary>Polynomial smooth max, <paramref name="k"/> wide (max + k/4 where a == b).</summary>
     public static double SmoothMax(double a, double b, double k)
@@ -38,6 +38,20 @@ public static class PanelSwing
         double lead = SmoothMax(fl, fr, k) - k / 4;
         double damp = 1 - law.SpreadDamp * Smooth(((al + ar) / 2 - law.SpreadFrom) / (law.SpreadTo - law.SpreadFrom));
         return law.Amount * SoftRelu(lead, k) * damp;
+    }
+
+    /// <summary>The turn this frame (degrees) from last frame's (<paramref name="prev"/>,
+    /// NaN at the first) and the law's (<paramref name="target"/>), <paramref name="dt"/>
+    /// seconds on: up with the law at once, down as a loose flap falls, a
+    /// first-order lag of FallTau seconds toward the law, never faster than
+    /// FallRate degrees a second and never below the law (so never into the
+    /// thigh). helpers.py panel_fall, number for number.</summary>
+    public static double Fall(in Law law, double prev, double target, double dt)
+    {
+        if (double.IsNaN(prev) || target >= prev) return target;
+        if (dt <= 0) return prev;
+        double y = target + (prev - target) * Math.Exp(-dt / law.FallTau);
+        return Math.Max(target, Math.Max(y, prev - law.FallRate * dt));
     }
 
     /// <summary>A thigh's line (its +Y in her rest axes carried with the

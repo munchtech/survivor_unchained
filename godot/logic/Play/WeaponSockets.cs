@@ -73,18 +73,70 @@ public static class WeaponSockets
     /// (13.65 mm round the line), the thumb over the forefinger. (The old pocket, -39, 58, 2 mm, lay at the thumb's root,
     /// 40 mm off the palm and 30-50 mm off the pads: the shaft ran beside the fist, not through it.) An anchored piece's
     /// grip point and shaft are laid on it.</summary>
-    public static readonly Vector3 FistAtR = new(-0.0308f, 0.1188f, -0.0104f);
+    public static readonly Vector3 FistAtR = new(-0.0399f, 0.0948f, -0.0104f);
     public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.0863f, 0.1138f, 0.9898f));
 
-    /// <summary>Where an anchored piece sits inside its mount so that its grip point (the anchor's origin, on the shaft's
-    /// centreline) lands on the fist's pocket and its shaft (the piece's +Y, the anchor's -Y) runs along the fist's line:
-    /// a turn (the least that takes +Y onto the line, so the anchor's +Z keeps its roll) and an offset, both in the mount's
-    /// space. `mx, my, mz, origin`: the mount in the hand's space (unleaned; a Lean turns this seat with the mount).</summary>
-    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin)
+    /// <summary>The line her right fist closes round on a one-handed blade (tools/anim/keyed.py WRAP["sword"]), in hand_r's
+    /// space: where the blade's grip point (Arms.Spec.Grip along its long axis) lands, and the shaft's direction, pommel
+    /// toward blade. The shaft keeps the diagonal grip her sword clips are keyed to (keyed.py GRIP["sword"], Arms.Spec.Lean
+    /// 35: hand +Z turned 35 degrees toward the fingers, so the blade points where the clips aim it); the line is moved onto
+    /// the fist's hollow, up under the knuckles: from the forefinger's root (its first bone lies on the grip) across to the
+    /// heel of the palm, 36.7 mm off the bones toward the palm (the palm rests on the grip). Fitted 14 October on her skin
+    /// and the chevalier sword's hilt (a barrel 13.3-18.5 mm round, 125 mm between collar and ferrule): every finger's two
+    /// outer pads lie on it (0.3-1.0 mm out), the thumb over the middle finger; the hand spans 76 mm of the 125, its
+    /// forefinger 15 mm short of the ferrule and its little finger 13 mm clear of the pommel's collar. (The old seat, the
+    /// grip point at the mount, -25, 75, 0 mm, ran the hilt through the lower palm, the fingers 20-34 mm off it.)</summary>
+    public static readonly Vector3 BladeAtR = new(-0.0381f, 0.0808f, -0.0131f);
+    public static readonly Vector3 BladeDirR = new(0f, 0.57357644f, 0.81915204f);
+
+    /// <summary>The line her right fist closes round on an axe's haft (tools/anim/keyed.py WRAP["axe"]), in hand_r's space:
+    /// where the haft's grip point (Arms.Spec.Grip along its long axis) lands, and the direction the piece's +Y is turned
+    /// onto, butt toward head: the viking axe's haft (9 degrees off its long axis, which the head pulls) turned onto the
+    /// lean its clips are keyed to (keyed.py GRIP["axe"], 30), its butt under the heel of her palm. NOT LIVE (not in
+    /// PocketR): its haft is 40 mm thick toward the palm and 58 across (155 mm round, where her fist closes on about 90),
+    /// so no fist closes on it: the best fit (tools/anim/fistfit.py axe --fit, 14 October) brings the fingers' ends only
+    /// 123-177 degrees round it, the middle finger's end 12 mm off. The haft wants thinning to about 30 mm across over
+    /// the hand's span (as tools/assets/grip_thin.py did the chevalier sword's grip), then the fit, then PocketR.</summary>
+    public static readonly Vector3 AxeAtR = new(-0.0382f, 0.1119f, 0.0381f);
+    public static readonly Vector3 AxeDirR = Vector3.Normalize(new Vector3(-0.00086f, 0.62927f, 0.77719f));
+
+    /// <summary>The line her right fist closes round on a dagger's hilt (tools/anim/keyed.py WRAP["daggers"]), in hand_r's
+    /// space: where the hilt's grip point (Arms.Spec.Grip along its long axis) lands, and its direction, pommel toward
+    /// blade: the mount's own (Arms.Spec.Lean 30, keyed.py GRIP["daggers"]), so the seat only moves the hilt. Fitted 14
+    /// October on her skin, the ranger's glove and the dagger's hilt (a flat hexagon 15 mm thick toward the palm, 29
+    /// across, measured on its own section, tools/anim/fistfit.py): the palm and every finger's outer pad on it (0.3-1.1
+    /// mm out, the forefinger's and middle finger's middle bones 3 mm off the flat), nothing into it, the thumb over the
+    /// forefinger; her forefinger 4 mm short of the guard, the heel of her palm on the pommel. (The plain mount, -25, 75,
+    /// 0 mm, ran the hilt 10 mm into her palm and little finger, the forefinger 15 mm off it.) Live only for a dagger whose
+    /// Spec is Seated.</summary>
+    public static readonly Vector3 DaggerAtR = new(-0.0324f, 0.0720f, -0.0139f);
+    public static readonly Vector3 DaggerDirR = new(0f, 0.5f, 0.8660254f);
+
+    /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the
+    /// staff's (FistAtR / FistDirR), the one-handed blade's (BladeAtR / BladeDirR) and the dagger's (DaggerAtR / DaggerDirR).
+    /// A new kind needs its line here, its fist in keyed.py WRAP, and its pieces' Arms.Spec Seated (or an anchor_grip).</summary>
+    public static (Vector3 At, Vector3 Dir)? PocketR(WeaponKind kind) => kind switch
+    {
+        WeaponKind.Staff => (FistAtR, FistDirR),
+        WeaponKind.Blade1H => (BladeAtR, BladeDirR),
+        WeaponKind.Dagger => (DaggerAtR, DaggerDirR),
+        _ => null,
+    };
+
+    /// <summary>The staff's seat (FistSeat with the staff's pocket).</summary>
+    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin) =>
+        FistSeat(mx, my, mz, origin, FistAtR, FistDirR);
+
+    /// <summary>Where a piece sits inside its mount so that its grip point (an anchor's origin, else the Spec's grip; on
+    /// the shaft's centreline) lands on the fist's pocket `pocketAt` and its shaft (the piece's +Y, an anchor's -Y) runs
+    /// along the fist's line `pocketDir` (both in hand_r's space): a turn (the least that takes +Y onto the line, so the
+    /// piece's +Z keeps its roll) and an offset, both in the mount's space. `mx, my, mz, origin`: the mount in the hand's
+    /// space, as it is held (with its Lean).</summary>
+    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin, Vector3 pocketAt, Vector3 pocketDir)
     {
         Vector3 In(Vector3 v) => new(Vector3.Dot(v, mx), Vector3.Dot(v, my), Vector3.Dot(v, mz));
-        var at = In(FistAtR - origin);
-        var dir = Vector3.Normalize(In(FistDirR));
+        var at = In(pocketAt - origin);
+        var dir = Vector3.Normalize(In(pocketDir));
         var axis = Vector3.Cross(Vector3.UnitY, dir);
         float s = axis.Length(), c = Vector3.Dot(Vector3.UnitY, dir);
         var turn = s < 1e-7f ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(axis / s, MathF.Atan2(s, c));
