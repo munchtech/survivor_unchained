@@ -177,6 +177,13 @@ def _smooth01(x):
     return x * x * (3 - 2 * x)
 
 
+def _lip_step(path, out=None):
+    """Her upper lip's sculpt brought down to each face's portrait (heroine_lipsculpt.py), after the throat and the
+    seam; once only (marker lip_sculpt). WIP, off unless HEROINE_LIPSCULPT=1."""
+    import heroine_lipsculpt
+    heroine_lipsculpt.run(path, out)
+
+
 def seam(path, out=None, band=BAND):
     js, binc = _load(path)
     chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
@@ -215,8 +222,10 @@ def seam(path, out=None, band=BAND):
         if welded is not None:
             _save(out or path, js, chunks)
             print("SEAM: keys already held in", path, "- weights welded, written", out or path)
+            _lip_step(out or path)
         else:
             print("SEAM: already done in", path, "(band %.0f mm) - nothing done" % (hm["extras"]["seam_band"] * 1000))
+            _lip_step(path, out)
         return
     # (first her keys' moves under her jaw made smooth down to SPLIT: heroine_throat.py; then read anew, its
     # accessors being in new views)
@@ -250,6 +259,7 @@ def seam(path, out=None, band=BAND):
                 _set(js, chunks, t["POSITION"], dp, minmax=True)
     hm.setdefault("extras", {})["seam_band"] = band
     _save(out or path, js, chunks)
+    _lip_step(out or path)
     turned.sort(reverse=True)
     print("SEAM: %d of her head's points shared with the graft; %d keys' normals held to her neck's at SPLIT (they had "
           "turned up to %.1f deg there: %s), eased in over %.0f mm; shared points' moves under the keys (up to %.2f mm) "
