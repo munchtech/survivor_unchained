@@ -30,7 +30,7 @@
       "cues": [
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0},
-        {"do": "glow", "name": "back", "where": {"abs": [11.5, 0.6, -50.0]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 4.0, "range": 14},
+        {"do": "glow", "name": "back", "where": {"abs": [11.5, 0.6, -50.0]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 9.0, "range": 16},
         {"do": "music", "mood": "silence"},
         {"do": "event", "name": "warden_cine"},
         {"do": "place", "actor": "warden", "where": {"abs": [2.6, -1.2, -44.5]}, "heading": -1.5708, "tilt": -90},
@@ -126,7 +126,7 @@
         {"do": "music", "mood": "silence"},
         {"do": "hide", "actor": "warden"},
         {"do": "rig", "name": "ember", "energy": 0.35, "color": "#ff6a33", "angle": 30, "range": 0.3, "from": {"actor": "her", "bone": "eyes", "off": [-0.3, -0.1, -0.1]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.34, 0.02, -0.14]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.45, "range": 0.55, "spec": 1.0},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.34, 0.02, -0.14]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.3, "range": 0.55, "spec": 1.0},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},
