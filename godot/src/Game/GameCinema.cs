@@ -354,6 +354,8 @@ public partial class Game
 
         sealed record Rig(SpotLight3D L, JsonElement From, JsonElement Aim, int Shot);
         readonly Dictionary<string, Rig> rigs = new();
+        /// <summary>The zone lamps' glowing pieces a "globe" cue dimmed, with what they wore before (put back at the end).</summary>
+        readonly List<(MeshInstance3D M, int S, Material? Was)> globes = new();
 
         /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
         void PlaceRigs()
@@ -1129,6 +1131,34 @@ public partial class Game
                     props[name] = vol;
                     break;
                 }
+                case "globe":
+                {
+                    // A zone lamp's glowing piece dimmed to "level" of its own, for this cinematic only (the
+                    // ford's post globes, flat eggs that clip in a close or long lens, until their flames are
+                    // made); its light is left as it is. Put back as it was when the cinematic ends.
+                    var gmeta = g.scene!.View.Data.Meta.Lights;
+                    int gli = (int)c.Num("light");
+                    if (gli < 0 || gli >= gmeta.Count) break;
+                    float glv = (float)c.Num("level", 1);
+                    foreach (var gname in gmeta[gli].Glow)
+                    {
+                        if (g.scene.View.Node(gname) is not Node3D gnode) continue;
+                        var gms = gnode.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().ToList();
+                        if (gnode is MeshInstance3D gself) gms.Add(gself);
+                        foreach (var gmi in gms)
+                            for (int gsi = 0; gmi.Mesh != null && gsi < gmi.Mesh.GetSurfaceCount(); gsi++)
+                            {
+                                int ghad = globes.FindIndex(x => x.M == gmi && x.S == gsi);
+                                var gwas0 = ghad >= 0 ? globes[ghad].Was : gmi.GetSurfaceOverrideMaterial(gsi);
+                                if ((gwas0 ?? gmi.Mesh.SurfaceGetMaterial(gsi)) is not ShaderMaterial gsm || gsm.GetShaderParameter("color").VariantType != Godot.Variant.Type.Vector3) continue;
+                                var gdim = (ShaderMaterial)gsm.Duplicate();
+                                gdim.SetShaderParameter("color", (Vector3)gsm.GetShaderParameter("color") * glv);
+                                gmi.SetSurfaceOverrideMaterial(gsi, gdim);
+                                if (ghad < 0) globes.Add((gmi, gsi, gwas0));
+                            }
+                    }
+                    break;
+                }
                 case "bars" or "fade" or "wet":
                     // The bars and black follow the shots; wetness waits on its system (docs/cinematics/README.md section 6, 7).
                     break;
@@ -1314,6 +1344,8 @@ public partial class Game
             props.Clear();
             foreach (var r in rigs.Values) r.L.QueueFree();
             rigs.Clear();
+            foreach (var (gm, gs, gwas) in globes) if (IsInstanceValid(gm)) gm.SetSurfaceOverrideMaterial(gs, gwas);
+            globes.Clear();
             // Her prints stay: they are in the frost whether it played or not.
             people.Clear();
             if (file.End.Next != null)
