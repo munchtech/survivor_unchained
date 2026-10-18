@@ -82,28 +82,31 @@ def report(tag, sd, reg, mask):
         if n1: lines.append(f"    {tag:22s} {r:8s} {m.sum():7d} v: inside>1mm {n1:6d} ({100*n1/m.sum():5.1f}%), >3mm {n3:6d}, worst {-x.min()*1000:6.1f} mm")
     return lines
 
-for s in STY:
-    g = G(A + rf"\heroine_hair_{s}.gltf")
-    names = g.joint_names(0)
-    mats_now = np.array([HJ[n] if n in HJ else g.W(g.j["skins"][0]["joints"][q]) for q, n in enumerate(names)]) @ g.ibm(0)
-    mats_then = np.array([g.W(g.j["skins"][0]["joints"][q]) for q in range(len(names))]) @ g.ibm(0)
-    missing = [n for n in names if n not in HJ]
-    print(f"== {s}" + (f" (joints not in heroine.glb: {missing})" if missing else ""))
-    for (node, mesh, k, mat, P, J, Wt, sk, I, ni) in g.meshes():
-        at = g.j["meshes"][g.j["nodes"][ni]["mesh"]]["primitives"][k]["attributes"]
-        uv = g.acc(at["TEXCOORD_0"]).astype(float) if "TEXCOORD_0" in at else np.zeros((len(P), 2))
-        now = skinned(P, J, Wt, mats_now); then = skinned(P, J, Wt, mats_then)
-        reg = region(names, J, Wt)
-        mv = np.linalg.norm(now - then, axis=1)
-        print(f"  [{mat}] {len(P)} v; moved by the skeleton change: " + ", ".join(f"{r} median {np.median(mv[reg==r])*1000:.1f} max {mv[reg==r].max()*1000:.1f} mm" for r in ("head", "neck", "back", "shoulder") if (reg == r).any()))
-        body_part = mat not in ("hair_cap",)
-        strands = (uv[:, 1] >= 0.1) if mat != "hair_cap" else np.ones(len(P), bool)
-        roots = ~strands
-        L = []
-        L += report("head skin (strands)", headS.sd(now), reg, strands)
-        L += report("head skin (roots)", headS.sd(now), reg, roots)
-        L += report("body skin (strands)", body.sd(now), reg, strands)
-        for o, ms in outs.items():
-            for m, S in ms.items():
-                L += report(f"{o}.{m}", S.sd(now), reg, strands)
-        print("\n".join(L) if L else "    nothing inside by more than 1 mm")
+def _main():
+  for s in STY:
+      g = G(A + rf"\heroine_hair_{s}.gltf")
+      names = g.joint_names(0)
+      mats_now = np.array([HJ[n] if n in HJ else g.W(g.j["skins"][0]["joints"][q]) for q, n in enumerate(names)]) @ g.ibm(0)
+      mats_then = np.array([g.W(g.j["skins"][0]["joints"][q]) for q in range(len(names))]) @ g.ibm(0)
+      missing = [n for n in names if n not in HJ]
+      print(f"== {s}" + (f" (joints not in heroine.glb: {missing})" if missing else ""))
+      for (node, mesh, k, mat, P, J, Wt, sk, I, ni) in g.meshes():
+          at = g.j["meshes"][g.j["nodes"][ni]["mesh"]]["primitives"][k]["attributes"]
+          uv = g.acc(at["TEXCOORD_0"]).astype(float) if "TEXCOORD_0" in at else np.zeros((len(P), 2))
+          now = skinned(P, J, Wt, mats_now); then = skinned(P, J, Wt, mats_then)
+          reg = region(names, J, Wt)
+          mv = np.linalg.norm(now - then, axis=1)
+          print(f"  [{mat}] {len(P)} v; moved by the skeleton change: " + ", ".join(f"{r} median {np.median(mv[reg==r])*1000:.1f} max {mv[reg==r].max()*1000:.1f} mm" for r in ("head", "neck", "back", "shoulder") if (reg == r).any()))
+          body_part = mat not in ("hair_cap",)
+          strands = (uv[:, 1] >= 0.1) if mat != "hair_cap" else np.ones(len(P), bool)
+          roots = ~strands
+          L = []
+          L += report("head skin (strands)", headS.sd(now), reg, strands)
+          L += report("head skin (roots)", headS.sd(now), reg, roots)
+          L += report("body skin (strands)", body.sd(now), reg, strands)
+          for o, ms in outs.items():
+              for m, S in ms.items():
+                  L += report(f"{o}.{m}", S.sd(now), reg, strands)
+          print("\n".join(L) if L else "    nothing inside by more than 1 mm")
+
+if __name__ == "__main__": _main()
