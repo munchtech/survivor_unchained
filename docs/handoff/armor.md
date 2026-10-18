@@ -31,11 +31,13 @@ Known limits: her play-camera model (HerLod, one LOD file per outfit) doesn't co
 5b. Measured plain-mount check of Axe, Blade2H, Blunt, Axe2H, Wand; failing kinds listed for animation. NOT STARTED
 6. Marionette workshop panel + export; the slice's top made through it. NOT STARTED
 7. 1:1 shoot (idle, run, an attack; play, close-up at its closest, Look) + ONE max judge with the whole-frame gate. NOT STARTED
-2b. RPG item slots: Shoulders, Bracers, Hands, Belt, Legs, Feet added (ItemKind, EquipSlot, Equipment), ItemDef.Wear, equip/unequip, save migration, tests; debug-only equip hook. NOT STARTED
+2b. RPG item slots: Shoulders, Bracers, Hands, Belt, Legs, Feet added (ItemKind, EquipSlot, Equipment), ItemDef.Wear, equip/unequip, save migration, tests. DONE 88f620fc (Wear.cs Group/SlotOf/Of/Validate; Inventory.Reslot in Saves.Migrate, save Version stays 5; 6 tests in WearTests.cs; 955 tests, 0 failed; the suite takes ~5 min, run it in the background)
 8. MR + Marionette branch report; then the remaining slots as data.
 
 ## 3. Follow-ups for the coordinator to route (not mine)
 - Loot: drop tables, affixes and itemization for the six new item slots.
-- UI: the inventory paper doll for the new slots.
+- UI: the inventory paper doll for the new slots (PackScreen shows only the old ones).
+- Crafting: `Crafting.Workable` and the affix Gear list don't include the six new kinds yet (they can't be reforged and take no affixes).
+- Kits: OtherKit (the night kit) isn't re-slotted for the new kinds.
 - Animation: fitted fists for the kinds that fail the plain-mount check (5b).
 - Merge touch-up's armor metal only from integration, when the coordinator says it landed.
