@@ -1,5 +1,11 @@
 # Cinematics: handoff
 
+## Start here (cinematics 3 successor, agent ac7e54435a82fff12, 18 Oct)
+Scope: items 1-4 only, then the MR and STOP. (1) Loot is hidden in cinematics (888bf952). (2) A darker grade with real-source light and mist. (3) The owner's o1-o3: C01 s3, s6 and s10, plus s11. (4) Side keys on the close-ups, to the look bible's rule (docs/art/look_bible/02_skin.md item 5). Items 5-6 (blocking against the notes, the missing moments) are the backlog for after the new art, with the list in the k10 verdicts.
+- k10 (staging solver a5f61d98, a0f421e7/6c8e0756): the `atmosphere` cue's tuning, a `mist` cue (FogVolume), and HeadTurn keeping a lying head's roll. Two max gate judges passed 1/33 (`tools/scratch/cin6/judge/k10A_verdict.md`, `k10B_verdict.md`). The C01 and C04 A hand-overs pass.
+- k11: two max staging solvers (briefs `judge/s5a_brief.md` for C01 and `s5b_brief.md` for C02-C04 A, shared `s5_common.md`), shots `k11a*`/`k11b*`. Then one judge round (reuse `k10_brief.md`), the tests, the MR.
+- Touch-up 2's finding on C01 s3: the face/neck split is the moon, shadowed by her armor (evidence `judge/tu_tone_evidence.jpg`).
+
 ## Start here (cinematics 3, PAUSED 18 Oct, clean point)
 Worktree `agent-a59432fe3bfc6eb92`, branch `cinematics-1` (merged with integration incl. the neck seam fix 7b9cd519). `godot/assets` is a JUNCTION: never `git reset --hard`, `git checkout .` or bare `git stash`. Full suite 942/0/8 at 888bf952. No turns held. Nothing is merged to main yet.
 
