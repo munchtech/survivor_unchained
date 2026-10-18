@@ -10,7 +10,7 @@ From outfits lead successor 27 (su-lead-high), 14 October 2026. Start cold: `doc
 
 ### Before (successor 29)
 S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59f6a467-b8ce-446c-8f35-44c1d92b7b9a\scratchpad\s29`.
-- Arcanist-only build: `bash S\ob.sh <tag> K=V ...` (~3 min, into `S\prop\<tag>\art`; restores `godot/art/outfit/` after).
+- Arcanist-only build (no `--body`: looks at rest only, never art; see s30): `bash S\ob.sh <tag> K=V ...` (~3 min, into `S\prop\<tag>\art`; restores `godot/art/outfit/` after).
 - Game-camera shots: `bash S\gshoot.sh <list> <outdir>`. Each line is `NAME|QUICK|CLIP@SEC or -|ZONE|TIME|CLOSE|FACING|SKIN(-/brown)|HAIR`. QUICK `new:<archetype>` is the Look camera (always by the fire). The Ranger is `stalker`. `--facing` has no effect in town idle.
 
 **This session**
