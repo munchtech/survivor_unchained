@@ -91,7 +91,7 @@ def main():
     peel = blur(rng.standard_normal((N, N)), 3.0)
     peel /= np.abs(peel).max()
     # (fine scratches mostly in the roughness: as normals, massed, they read as a leather grain)
-    h = -0.15 * sc - 0.6 * d4 - 1.0 * pit + 0.05 * peel
+    h = -0.15 * sc - 0.6 * d4 - 0.45 * pit + 0.05 * peel   # (pits shallow: deep, they caught the light as beads)
     hb = blur(h, 0.7)
     gx = (np.roll(hb, -1, 1) - np.roll(hb, 1, 1)) * 0.5
     gy = (np.roll(hb, -1, 0) - np.roll(hb, 1, 0)) * 0.5

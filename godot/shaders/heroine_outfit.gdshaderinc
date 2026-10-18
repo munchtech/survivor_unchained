@@ -49,12 +49,12 @@ uniform float detail_normal = 0.7;
 uniform float detail_rough = 1.0;
 uniform float detail_cavity = 1.0;
 uniform int finish = 0;
-uniform vec3 blued : source_color = vec3(0.31, 0.35, 0.47);        // (blued steel: its reflectance; deep blue-black where it reflects the dark)
-uniform vec3 blued_temper : source_color = vec3(0.36, 0.34, 0.52); // (its temper sheen: a faint violet in patches)
+uniform vec3 blued : source_color = vec3(0.36, 0.38, 0.47);        // (blued steel: its reflectance; deep blue-black where it reflects the dark)
+uniform vec3 blued_temper : source_color = vec3(0.40, 0.37, 0.50); // (its temper sheen: a faint violet in patches)
 uniform float blued_chip = 1.0;                    // (how far its worn edges chip back to bright steel)
 uniform float metal_env = 0.55;                    // (the sky's reflection kept: no probe, the rest is the dark around her)
-uniform float metal_env_horizon = 0.45;            // (and less at the horizon, where trees, walls and the camp stand)
-uniform float metal_spec_cap = 1.1;                // (a highlight never brighter than this times a white matte card facing that light)
+uniform float metal_env_horizon = 0.5;             // (and less at the horizon, where trees, walls and the camp stand)
+uniform float metal_spec_cap = 1.5;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
