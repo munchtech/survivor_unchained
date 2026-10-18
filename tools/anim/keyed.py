@@ -546,7 +546,12 @@ class Rig:
                 # bent toward it, whatever the pole would say this frame.
                 eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, S + elbow_at[side])
             else:
-                eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, gpos[la] + pole)
+                # "pole_at": "shoulder": the pole is a way from the shoulder (the elbow's own side of the
+                # shoulder-hand line), not an offset from where the elbow stands at rest: from the rest
+                # elbow, out at her side, any pole carried the rest pose's spread into the arm (the
+                # runs' elbows flared out, 17 October).
+                base = S if spec.get("pole_at") == "shoulder" else gpos[la]
+                eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, base + pole)
             aimed = "blade" in spec or "knuckles" in spec or "thumb" in spec or plant > 0
             # A weapon is held in a diagonal grip: its shaft crosses the palm
             # from the root of the forefinger to the heel of the hand, so it
@@ -1005,8 +1010,14 @@ FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 # was 45.5; its CMC is 92 mm from the line, so no turn of the base brings the pad nearer than 28 mm), its proximal pad
 # 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
 # web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
-WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (51.8, 73.5, 50.7), "pinky": (41.7, 73.3, 60.3), "thumb": (25.5, -5.3, 39.8)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.2, "pinky": 1.3},
-                  "oppose": -0.00, "thumb_roll": 12.7},
+# The thumb refitted closed over the fingers, 17 October (animation 35; fistfit.fit_thumb_over, the max judge: "a finger
+# pointing, not a thumb wrapped over", its tip 26 mm past the far side and 13.5 mm off the fingers): its last joint 86
+# (was 40), drawn in toward the forefinger (thumb_in 7.9), its tip 3.8 mm off the forefinger's and middle finger's middle
+# bones, none of it past the fingers' column, its proximal pad 0.6 mm off the shaft; the ring refitted to the new palm line.
+# The fingers can't close to the judge's 75/100/60: with the palm on this 27.3 mm shaft, her knuckle and middle joints
+# together top out at about 130 deg before a finger goes into it (fistfit, 17 October), as they do here.
+WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (53.4, 71.6, 60.1), "pinky": (41.7, 73.3, 60.3), "thumb": (14.1, 1.3, 86.0)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.1, "pinky": 1.3},
+                  "oppose": 0.22, "thumb_roll": 5.3, "thumb_in": -7.9},
         # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
         # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
         # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
@@ -1034,6 +1045,13 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
         # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
         "daggers": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
+                  "oppose": 0.01, "thumb_roll": -3.9},
+        # Her LEFT fist on the second dagger (dagger_b: its own hilt, about 11 mm thick toward the palm and 23 across,
+        # thinner than the first's 15 x 29), laid mirrored on WeaponSockets.PocketL. NOT FITTED: a copy of the right's
+        # (WRAP_LEFT is off). Mirrored as is, it leaves her left forefinger 7.6/6.1 mm off dagger_b and the hand 22 mm
+        # into it (her hands are 1-4 deg and up to 7 mm off each other's mirror at rest). fistfit.py daggers --side l
+        # --fit (17 October) found no passing seat: best y0 84, pads 3.6/1.2, 3.6/0.5, 4.3/4.1, -0.7/1.5, 0.7 mm in.
+        "daggers_l": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
                   "oppose": 0.01, "thumb_roll": -3.9}}
 
 
@@ -1043,10 +1061,22 @@ def spread_axis(rig, j):
 
 
 def wrap_of(weapon):
-    """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): only her right hand's pocket is
-    measured, so only "r"."""
+    """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): her right hand's, and her left's
+    where the clip holds a piece there on a fitted left pocket (WeaponSockets.PocketL, its own WRAP: WRAP_LEFT):
+    "daggers", a pair. A right-hand-only piece
+    ("axe", "sword", "staff") keeps "r" only; "axes" would take "l" with "axe" once WRAP["axe"] and a left pocket exist."""
     main = {"axes": "axe"}.get((weapon or "").split("+")[0], (weapon or "").split("+")[0])
-    return {"r": WRAP[main]} if main in WRAP else {}
+    if main not in WRAP:
+        return {}
+    return {"r": WRAP[main], "l": WRAP[WRAP_LEFT[main]]} if main in WRAP_LEFT else {"r": WRAP[main]}
+
+
+# The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on
+# her left hand and the left piece, fistfit.py --side l: her hands aren't each other's mirror to the millimetre, and the
+# second dagger's hilt is thinner), laid mirrored as every left hand is.
+# Off until WRAP["daggers_l"] passes on her left hand (17 October: no fit yet; the entry is the right's, unfitted).
+# Then {"daggers": "daggers_l"}, with Arms.Spec dagger_b Seated.
+WRAP_LEFT = {}
 
 
 def finger_curl(spec):

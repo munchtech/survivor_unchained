@@ -160,6 +160,7 @@ ElevenLabs is planned for the final voices.
 | Sketchfab CC BY models | "Author must be credited. Commercial use is allowed." (API licence requirements) | https://sketchfab.com/licenses |
 | CC BY 4.0 | Keep the creator's name, the notices and a link; "indicate if You modified" it (§3(a)) | https://creativecommons.org/licenses/by/4.0/legalcode.en |
 | 100STYLE | "Creative Commons Attribution 4.0 International" | https://zenodo.org/records/8127870 |
+| 100STYLE (run and sprint arm swing) | Reference only: her runs' and sprints' arm swing (`tools/anim/gait.py` `Gait.swing`, `tools/anim/clips/run.py`) was measured against 100STYLE Neutral_FR as phase-binned joint angles; no 100STYLE data ships in those clips; the files stay outside the repo (`C:\Users\munch\Tools\mocap\100STYLE`) | https://zenodo.org/records/8127870 |
 | MakeHuman 1.2+ and MPFB2 | Assets "released under CC0 1.0 Universal"; exports are "your data" | https://github.com/makehumancommunity/makehuman/blob/master/LICENSE.md |
 | Mixamo | Free for commercial use; no redistributing raw character or animation files | https://community.adobe.com/questions-696/mixamo-faq-licensing-royalties-ownership-eula-and-tos-589400 |
 | NVIDIA Open Model License (Kimodo) | "NVIDIA claims no ownership rights in outputs." | https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/ |

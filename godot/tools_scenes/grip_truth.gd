@@ -3,8 +3,10 @@ extends SceneTree
 # her clip from art/anim/heroine.res, HerPose Native and HerJoints as the game lays them), and the piece as the game mounts
 # it (SheathedReview.Held: Arms.MountTransform and Arms.Seat), both in hand_r's own space (model metres), to JSON for
 # tools/anim/griptruth.py. Only what lies within 0.2 m of hand_r. Each vertex keeps its top-weighted bone and that weight.
-# usage: Godot --headless --path godot -s res://tools_scenes/grip_truth.gd -- OUT.json OUTFIT PIECE CLIP:FRAME[,CLIP:FRAME...]
+# usage: Godot --headless --path godot -s res://tools_scenes/grip_truth.gd -- OUT.json OUTFIT PIECE CLIP:FRAME[,CLIP:FRAME...] [BONE]
 #   e.g. ... -- C:/tmp/staff.json arcanist mage_staff her/idle_arcanist:0,her/cast_raise:10
+#   BONE: the hand that holds it, hand_r (default) or hand_l (... ranger dagger_b her/daggers_back:2 hand_l): then all is
+#   in hand_l's own space (griptruth.py takes it to hand_r's frame through fistfit.MIRROR).
 var her: Node3D
 var skel: Skeleton3D
 var ap: AnimationPlayer
@@ -14,6 +16,7 @@ var wait = 0
 var out = ""
 var piece = ""
 var frames = []
+var bone_ = "hand_r"
 const NEAR = 0.2
 
 func _init():
@@ -24,6 +27,7 @@ func _init():
 	for s in a[3].split(","):
 		var p = s.split(":")
 		jobs.append([p[0], int(p[1])])
+	if a.size() > 4: bone_ = a[4]
 	her = load("res://art/people/heroine.glb").instantiate()
 	get_root().add_child(her)
 	skel = her.find_children("*", "Skeleton3D", true, false)[0]
@@ -44,7 +48,7 @@ func _init():
 	her.add_child(ap)
 	ap.root_node = NodePath("..")
 	ap.add_animation_library("her", load("res://art/anim/heroine.res"))
-	load("res://tools_scenes/SheathedReview.cs").new().Held(skel, piece, "hand_r")
+	load("res://tools_scenes/SheathedReview.cs").new().Held(skel, piece, bone_)
 
 func _process(_d):
 	if wait > 0:
@@ -54,7 +58,7 @@ func _process(_d):
 	k += 1
 	if k >= jobs.size():
 		var f = FileAccess.open(out, FileAccess.WRITE)
-		f.store_string(JSON.stringify({"piece": piece, "frames": frames}))
+		f.store_string(JSON.stringify({"piece": piece, "bone": bone_, "frames": frames}))
 		f.close()
 		print("grip_truth: wrote ", out)
 		quit()
@@ -73,7 +77,7 @@ func r5(v: Vector3):
 	return [snappedf(v.x, 0.00001), snappedf(v.y, 0.00001), snappedf(v.z, 0.00001)]
 
 func grab():
-	var hb = skel.find_bone("hand_r")
+	var hb = skel.find_bone(bone_)
 	var H: Transform3D = skel.global_transform * skel.get_bone_global_pose(hb)
 	var Hi = H.affine_inverse()
 	var verts = []

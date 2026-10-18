@@ -1,0 +1,18 @@
+{
+  "about": "One grip per weapon TYPE (docs/anim/GRIP_STANDARD.md). section: the grip's half-extents about its centre line, mm in life (round: half_w = half_d = the radius; flat: half_w across the flats' long way, half_d toward the palm); length: the reference grip's usable length, mm; grip_from_guard: mm from the guard's end of the grip down to the grip point (the anchor_grip origin, the fist's pocket point); glove: mm a glove's thickness adds round the fist (0: the fitted fists are on her skin and the ranger's glove as fitted). from: the piece the type's fist is fitted and judged on. Written by tools/assets/grip_conform.py measure.",
+  "types": {
+    "Staff":   {"kinds": ["Staff"], "from": "mage_staff (grip_wrap about its anchor_grip)", "fist": "keyed.py WRAP staff, WeaponSockets FistAtR",
+                "section": {"shape": "round", "half_w": 13.65, "half_d": 13.65}, "length": 382, "glove": 0.0},
+    "Blade1H": {"kinds": ["Blade1H"], "from": "chevalier_sword (thinned, grip_thin.py --radius 13.7)", "fist": "keyed.py WRAP sword, WeaponSockets BladeAtR",
+                "section": {"shape": "round", "half_w": 13.70, "half_d": 13.70}, "length": 131, "grip_from_guard": 84.0, "glove": 0.0},
+    "Dagger":  {"kinds": ["Dagger"], "from": "daggers (Cube_004)", "fist": "keyed.py WRAP daggers, WeaponSockets DaggerAtR (left: PocketL, mirrored)",
+                "section": {"shape": "flat", "half_w": 14.60, "half_d": 7.59}, "length": 128, "grip_from_guard": 71.1, "glove": 0.0},
+    "Axe":     {"kinds": ["Axe"], "from": "PROVISIONAL: no fist is fitted on an axe (AxeAtR not live: viking_axe's 58 x 42 mm haft is past any fist); 32 x 27.3 mm, the staff's depth, about the 30 across WeaponSockets asks; the first axe fit (fistfit.py axe --fit on the conformed haft) sets it",
+                "fist": "none yet (keyed.py WRAP axe, WeaponSockets AxeAtR when fitted)",
+                "section": {"shape": "flat", "half_w": 16.0, "half_d": 13.65}, "length": null, "glove": 0.0}
+  },
+  "pieces": {
+    "mage_staff": {"parts": ["grip_wrap"], "centre": "axis", "why": "the bead strand hangs by the shaft; the anchor is on the shaft (the rule)"},
+    "longsword": {"centre": "axis", "t": [-73, 79], "why": "a wire-wrapped grip: its rings' radii jump 15-22 mm, so the band is read off its profile"}
+  }
+}

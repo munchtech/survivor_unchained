@@ -123,13 +123,52 @@ public static class WeaponSockets
         _ => null,
     };
 
+    /// <summary>hand_r's space to hand_l's: her body's mirror (the plane x = 0 of her skeleton at rest) carried through her
+    /// rest hand frames, Rl^T diag(-1, 1, 1) Rr (tools/anim/fistfit.py MIRROR, from data/heroine_skeleton.json). Not a plain
+    /// X flip: her rest hands sit 0.4 degrees off each other's mirror. Rows; a reflection (det -1), its own transpose's
+    /// inverse, so a point in hand_l's space maps back by its transpose.</summary>
+    public static readonly Vector3[] MirrorRL =
+    {
+        new(-0.999976f, 0.006672f, 0.001970f),
+        new(0.006660f, 0.999958f, -0.006359f),
+        new(0.002012f, 0.006345f, 0.999978f),
+    };
+
+    /// <summary>A hand_r point or direction in hand_l's space (MirrorRL).</summary>
+    public static Vector3 ToLeft(Vector3 v) => new(Vector3.Dot(MirrorRL[0], v), Vector3.Dot(MirrorRL[1], v), Vector3.Dot(MirrorRL[2], v));
+
+    /// <summary>The line her left fist closes round on the second dagger (dagger_b: its own hilt, thinner than the first's,
+    /// about 11 mm toward the palm and 23 across), given in hand_r's frame as its mirror image (so it reads beside
+    /// DaggerAtR / DaggerDirR; PocketL takes it to hand_l by ToLeft). Fitted on her left hand (tools/anim/fistfit.py
+    /// daggers --side l --fit: keyed.py WRAP["daggers_l"]), the direction the mount's own (Lean 30).</summary>
+    public static readonly Vector3 DaggerLeftAt = new(-0.0324f, 0.0720f, -0.0139f);
+    public static readonly Vector3 DaggerLeftDir = new(0f, 0.5f, 0.8660254f);
+
+    /// <summary>Her left fist's pocket (hand_l space), for a kind whose left fist is fitted (keyed.py wrap_of gives it
+    /// "l"): its line in hand_r's frame taken through the mirror (ToLeft). Only the dagger (the pair Visuals and her
+    /// stalker hold: daggers right, dagger_b left); every other kind keeps the plain mount in her left hand until its left
+    /// fist is fitted too (fistfit.py --side l).</summary>
+    public static (Vector3 At, Vector3 Dir)? PocketL(WeaponKind kind) => kind switch
+    {
+        WeaponKind.Dagger => (ToLeft(DaggerLeftAt), Vector3.Normalize(ToLeft(DaggerLeftDir))),
+        _ => null,
+    };
+
+    /// <summary>The fitted pocket of a fist by its bone (hand_r: PocketR, hand_l: PocketL), else none.</summary>
+    public static (Vector3 At, Vector3 Dir)? Pocket(WeaponKind kind, string bone) => bone switch
+    {
+        "hand_r" => PocketR(kind),
+        "hand_l" => PocketL(kind),
+        _ => null,
+    };
+
     /// <summary>The staff's seat (FistSeat with the staff's pocket).</summary>
     public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin) =>
         FistSeat(mx, my, mz, origin, FistAtR, FistDirR);
 
     /// <summary>Where a piece sits inside its mount so that its grip point (an anchor's origin, else the Spec's grip; on
     /// the shaft's centreline) lands on the fist's pocket `pocketAt` and its shaft (the piece's +Y, an anchor's -Y) runs
-    /// along the fist's line `pocketDir` (both in hand_r's space): a turn (the least that takes +Y onto the line, so the
+    /// along the fist's line `pocketDir` (both in its hand's space): a turn (the least that takes +Y onto the line, so the
     /// piece's +Z keeps its roll) and an offset, both in the mount's space. `mx, my, mz, origin`: the mount in the hand's
     /// space, as it is held (with its Lean).</summary>
     public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin, Vector3 pocketAt, Vector3 pocketDir)

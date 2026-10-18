@@ -4,9 +4,9 @@
   "arcanist": {
    "clips": {
     "arcanist_show": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "05d33cecbc493a87b5acf23d61e4b70805f3f735"
+     "fp": "3423f6b3f7e8cf553516dda1db9566b263220035"
     },
     "axe_back": {
      "commit": "1308cae5",
@@ -44,9 +44,9 @@
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
+     "fp": "43d247d085c75b846fd903db5dcd15f2c8faadfa"
     },
     "cast_flick": {
      "commit": "1308cae5",
@@ -54,9 +54,9 @@
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
+     "fp": "2ac69a3cba90619b11d057cd01277ad93c4ff750"
     },
     "catch_breath": {
      "commit": "1308cae5",
@@ -124,14 +124,14 @@
      "fp": "0adb61b8c7fe7cb7f97a1ed60433c1c273b77147"
     },
     "idle_arcanist": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a3103aeb932929c9d347ea6a5e2910ac6049360a"
+     "fp": "7f0db102e8b20b461f387148a43b9bc48a9bc09e"
     },
     "idle_arcanist_break": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "1b04695d0a85eb6c7eb65d345d41c79c243a7647"
+     "fp": "823ebcd1d53b6dc1f8af59d8ac22dc4feeeea1e0"
     },
     "leap": {
      "commit": "1308cae5",
@@ -154,14 +154,14 @@
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "run_arcanist": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "ed955009ecb67c6eec0ebc3b9f8fb1b763ca5a2f"
+     "fp": "5d4c66bce07f1dd3417f139ab11be6876cb071ac"
     },
     "run_arcanist_wand": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "0acf6cd5f958cd688e5db2c8e00fecfcef25997b"
+     "fp": "31069f2d86ab3717dc38cf8efe157b61601e795d"
     },
     "shiver": {
      "commit": "1308cae5",
@@ -179,24 +179,24 @@
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_arcanist": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "c9585435b22de6f6c6b8535d159839491c36eab0"
+     "fp": "df73907b0da76c82eca5aa6194ecaa5710345389"
     },
     "sprint_arcanist_wand": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "972f0afe5e1c1b28d9e8422d7eb843db893666b0"
+     "fp": "6e3a6bd8b82c066825797706cd10df4127d5c991"
     },
     "stop_arcanist_l": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "744b6f8ebf3dc7a3e2224875f88993b1af97a031"
+     "fp": "d04c6408a02b6d697272866c680ef40c4668c050"
     },
     "stop_arcanist_r": {
-     "commit": "1308cae5",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "452bf2b45496540f5b1d61ccdbc8bc4c665d10ba"
+     "fp": "f531b067df60b30a6007af013be7f674926c3a27"
     },
     "sword_back": {
      "commit": "1308cae5",
@@ -321,9 +321,9 @@
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
+     "fp": "43d247d085c75b846fd903db5dcd15f2c8faadfa"
     },
     "cast_flick": {
      "commit": "6f289d91",
@@ -331,9 +331,9 @@
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
+     "fp": "2ac69a3cba90619b11d057cd01277ad93c4ff750"
     },
     "catch_breath": {
      "commit": "6f289d91",
@@ -431,14 +431,14 @@
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "run_stalker": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "135bc9ffccccc7c19a81cabd45cc38b3ef915efc"
+     "fp": "02ce1d8a40181395b4f9849a672ee59dad441950"
     },
     "run_stalker_daggers": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "3a6c12371338808f0279037933b23e47b91908c0"
+     "fp": "c710b22fc562fb732c1af89d7e9c993a1329a9e6"
     },
     "shiver": {
      "commit": "6f289d91",
@@ -456,14 +456,14 @@
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_stalker": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "4113ccce0ad14aba065fdf003d55ba35916067d7"
+     "fp": "6a0ca59855407d42e060b7d69fa7b86c0d080de8"
     },
     "sprint_stalker_daggers": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "45d2095eb554d4c8a0f27d924cd5d13557c7a90c"
+     "fp": "b9cc1b6816f252f3f7f685a5e0012a23bc2347e5"
     },
     "stalker_show": {
      "commit": "6f289d91",
@@ -603,9 +603,9 @@
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
+     "fp": "43d247d085c75b846fd903db5dcd15f2c8faadfa"
     },
     "cast_flick": {
      "commit": "6f289d91",
@@ -613,9 +613,9 @@
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
+     "fp": "2ac69a3cba90619b11d057cd01277ad93c4ff750"
     },
     "catch_breath": {
      "commit": "6f289d91",
@@ -718,14 +718,14 @@
      "fp": "84ae86795ef429e62f57f77fa8dd17898588f62d"
     },
     "run_reaver": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "6804f3a43f169f5fd9a3dd0f5854707dff74b94c"
+     "fp": "2e50017308405e027c123c95615bae7a4a93dfed"
     },
     "run_reaver_axes": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a29038f7511f38e371b55087acc518f8cdfad1d2"
+     "fp": "9746cb71967e55a51af2169a8aa00810cf6c2d2c"
     },
     "shiver": {
      "commit": "6f289d91",
@@ -743,14 +743,14 @@
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_reaver": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "da4c0dcc00282c4f370e7cf9fd41c5dc46c60306"
+     "fp": "00087f9e00aa2fb7b7b9f01bd2c2b96124c44ba8"
     },
     "sprint_reaver_axes": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "1ba7a75357d81630bb08e1ba59a8600fdc5bc605"
+     "fp": "b5e8d1c5373bca71f3f960362baf7d0552de4574"
     },
     "stop_reaver_l": {
      "commit": "6f289d91",
@@ -885,9 +885,9 @@
      "fp": "0d844e5695797c79298defdce56683bfaf28ce22"
     },
     "cast_bolt": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "ae57ce3937f170dbac2017a7f38efee35bca08ff"
+     "fp": "43d247d085c75b846fd903db5dcd15f2c8faadfa"
     },
     "cast_flick": {
      "commit": "6f289d91",
@@ -895,9 +895,9 @@
      "fp": "436f179ee3b77f621c4dac338d228940a8191bca"
     },
     "cast_raise": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a6ef174575fa758c6ec50f7051f2673aabb07d3a"
+     "fp": "2ac69a3cba90619b11d057cd01277ad93c4ff750"
     },
     "catch_breath": {
      "commit": "6f289d91",
@@ -995,9 +995,9 @@
      "fp": "5e55eb5b43405b2d60b6dbcd9256a48c3e6a1b05"
     },
     "run_warden": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "e2ea01c9b87423760ebd1299ef6472b1c89bb920"
+     "fp": "b2f0a3b0d1b3b03a7e7ef5044e3c08f33c334563"
     },
     "shiver": {
      "commit": "6f289d91",
@@ -1015,9 +1015,9 @@
      "fp": "3fbf720b36f7618e095f41df6b14e0fc7641a482"
     },
     "sprint_warden": {
-     "commit": "6f289d91",
+     "commit": "a1ed0e60",
      "date": "2026-10-18",
-     "fp": "a4c6d2d0625fdab0e241ad3c6e09b17eb0c57f32"
+     "fp": "9bea1c65ff01b8ed995d2b0168b714127b6160ec"
     },
     "stop_warden_l": {
      "commit": "6f289d91",
