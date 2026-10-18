@@ -2,6 +2,11 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 18 October 2026
+- "cease api credit billing for now - may turn it back on later", then "marionette can use what it needs for the small changes built in the app like 'change this' etc that uses a few cents. just no more judges or shifts for now". DONE: `Marionette/JUDGES_PAUSED`; judges run as subagents.
+- "don't unpause the others yet, lets finish up where we are and decide what to do". Classes and Flare VFX stay paused until cinematics 3, the neck seam and animation 38 finish.
+- "do we know why the ranger is always crouching like they have to go to the bathroom?" Cause: idle_stalker(_daggers) uses 100STYLE Crouched_ID whole, with the weight back (ANIM_DESIGN.md:71). Routed to animation 38: a soft-kneed, weight-forward hunter's idle instead. OPEN.
+
 ## 11 October 2026
 
 ### The twists
