@@ -1275,7 +1275,9 @@ def style_pixie():
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(len(pts), points - 1),
                 off, side=no_part(pts), lift=0.007 * top, stop=stop)
         P = resample(P, points)
-        layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0)))
+        # (stopped in the crease over her neck, their edges sank 2-3 mm into her: held 2.8 mm off at her nape)
+        layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0),
+                            floor=np.where(at_nape, 0.0028, 0.0015)[:, None]))
         print("  layer: %d cards" % len(pts))
     layers += hairline_hairs(comb_pixie, sides=no_part)
     layers += pixie_crown_fill(layers[:3]) + pixie_nape_row()
@@ -1370,9 +1372,9 @@ def pixie_nape_row():
     pts, nrm = pts[keep], nrm[keep]
     m, k = len(pts), 8
     L = np.maximum(rise(pts), 0) + rng.uniform(0.001, 0.003, m)
-    P = lie(pts - nrm * 0.0012, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (k - 1), np.full(m, k - 1), 0.0015, side=no_part(pts))
+    P = lie(pts - nrm * 0.0008, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (k - 1), np.full(m, k - 1), 0.0035, side=no_part(pts))
     P = resample(P, k)
-    t = cards(P, rng.uniform(0.006, 0.009, m), list(range(0, 8)), 0.0015, narrow=0.8, floor=0.0015)
+    t = cards(P, rng.uniform(0.006, 0.009, m), list(range(0, 8)), 0.0035, narrow=0.8, floor=0.0035)
     print("  nape tips: %d cards" % m)
     return [t, c]
 

@@ -849,6 +849,8 @@ public static class People
                 if (name == "hair_cap" && on.Contains("nocap")) mi.SetSurfaceOverrideMaterial(s, new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.Alpha, AlbedoColor = new Color(0, 0, 0, 0) });
                 else if (name == "hair_cap" && on.Contains("capgreen")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 1, 0));
                 else if (name != "hair_cap" && on.Contains("cardsblue")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 0, 1));
+                if (on.Contains("hairnospec")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
+                if (on.Contains("hairnovar")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("variation", 0f);
             }
         }
         foreach (var mi in p.Meshes)
