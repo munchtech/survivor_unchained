@@ -356,6 +356,8 @@ public partial class Game
         readonly Dictionary<string, Rig> rigs = new();
         /// <summary>The zone lamps' glowing pieces a "globe" cue dimmed, with what they wore before (put back at the end).</summary>
         readonly List<(MeshInstance3D M, int S, Material? Was)> globes = new();
+        /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
+        readonly HashSet<ShaderMaterial> waters = new();
 
         /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
         void PlaceRigs()
@@ -1159,6 +1161,22 @@ public partial class Game
                     }
                     break;
                 }
+                case "water":
+                {
+                    // The river's light, all of it, scaled for this cinematic ("level" 1 as built; 0.4 about
+                    // a stop and a third down: the ford's water was the brightest broad thing at night),
+                    // faded over "over"; put back as built when the cinematic ends.
+                    float wto = (float)c.Num("level", 1);
+                    foreach (var wmi in g.scene!.View.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+                    {
+                        if (wmi.MaterialOverride is not ShaderMaterial wsm || wsm.Shader?.ResourcePath.EndsWith("water.gdshader") != true) continue;
+                        waters.Add(wsm);
+                        float wfrom = wsm.GetShaderParameter("level").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("level") : 1f;
+                        if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => wsm.SetShaderParameter("level", Mathf.Lerp(wfrom, wto, (float)k))));
+                        else wsm.SetShaderParameter("level", wto);
+                    }
+                    break;
+                }
                 case "bars" or "fade" or "wet":
                     // The bars and black follow the shots; wetness waits on its system (docs/cinematics/README.md section 6, 7).
                     break;
@@ -1361,6 +1379,8 @@ public partial class Game
             rigs.Clear();
             foreach (var (gm, gs, gwas) in globes) if (IsInstanceValid(gm)) gm.SetSurfaceOverrideMaterial(gs, gwas);
             globes.Clear();
+            foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
+            waters.Clear();
             // Her prints stay: they are in the frost whether it played or not.
             people.Clear();
             if (file.End.Next != null)
