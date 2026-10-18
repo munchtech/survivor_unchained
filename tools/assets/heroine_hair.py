@@ -1130,7 +1130,8 @@ def style_pixie():
         # in spikes, her skin pale between them)
         th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
         nape = np.clip((th_ - 95) / 30, 0, 1) * (1 - top)
-        reach = np.maximum(rise(pts), 0) + 0.003 + 0.005 * np.random.default_rng(len(pts)).random(len(pts))
+        # (face 30: 1 to 5 mm past it, the fine row under them, pixie_nape_row, thinning out past their tips)
+        reach = np.maximum(rise(pts), 0) + 0.001 + 0.004 * np.random.default_rng(len(pts)).random(len(pts))
         L = L * (1 - nape) + np.minimum(L, np.maximum(reach, 0.008)) * nape
         points = 12
         stop = lambda q: ((q[:, 1] < -0.02) & (q[:, 2] < EYE_Z + 0.04)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
@@ -1202,9 +1203,89 @@ def cap(comb, sides=part_side):
 
 
 def build(style):
+    layers += pixie_crown_fill(layers[:3]) + pixie_nape_row()
     global RNG, CHAIN
     import zlib
     CHAIN = None
+def pixie_crown_fill(layers):
+    """(18 October, face 30, H8: swept to her right, her pixie parted on the
+    left of her crown, its cards lying away on both sides of a strip 1 to
+    1.5 cm wide where only their faded roots were: her cap showed through,
+    darkened as under hair, a dark hole on top of her head at the close-up.)
+    Short cards lying flat the way it is combed, rooted where no card's
+    opaque part (past its faded root) lies within 2 mm over her scalp."""
+    rng = np.random.default_rng(30)
+    opaque = []
+    for c in layers:
+        Ks = 12                                              # (style_pixie's points along each)
+        Vq = c["V"].reshape(-1, 3 * Ks, 3).reshape(-1, 3, Ks, 3)
+        aq = c["arc"].reshape(-1, 3, Ks)
+        rq = np.minimum(0.008, c["length"].reshape(-1, 3, Ks)[:, :1, :1] / 3)
+        # (each card filled in: 5 across, 4 to every link along)
+        f = np.linspace(0, 1, 4 * (Ks - 1) + 1)
+        i0 = np.minimum((f * (Ks - 1)).astype(int), Ks - 2); w = (f * (Ks - 1) - i0)[None, None, :, None]
+        Va = Vq[:, :, i0] * (1 - w) + Vq[:, :, i0 + 1] * w
+        Aa = aq[:, :, i0] * (1 - w[..., 0]) + aq[:, :, i0 + 1] * w[..., 0]
+        Va = np.concatenate([Va, (Va[:, :1] + Va[:, 1:2]) / 2, (Va[:, 1:2] + Va[:, 2:]) / 2], 1)
+        Aa = np.concatenate([Aa, Aa[:, :2]], 1)
+        opaque.append(Va[Aa > rq].reshape(-1, 3))
+    O = np.vstack(opaque)
+    A = cKDTree(O)
+    pts, nrm = roots(0.0025, above=0.02)
+    top = pts[:, 2] > EYE_Z + 0.05
+    # (covered: an opaque part of a card over it, within 2 mm of the line out
+    # from it and up to 2 cm out: the top's cards lie lifted, well off her)
+    bare = top.copy()
+    for i in np.where(top)[0]:
+        nb = A.query_ball_point(pts[i] + nrm[i] * 0.01, 0.0105)
+        if nb:
+            d = O[nb] - pts[i]
+            h = d @ nrm[i]
+            lat = np.linalg.norm(d - np.outer(h, nrm[i]), axis=1)
+            bare[i] = not ((lat < 0.002) & (h > 0) & (h < 0.02)).any()
+    if not bare.any():
+        return []
+    # (each rooted 4 mm back up the way it is combed from a bare point, so
+    # its opaque part lies over it, and faded in over its first 2.5 mm only:
+    # rooted in the strip itself and faded over 7, they left it as it was)
+    b, bn = pts[bare], nrm[bare]
+    back = b - combed(b, bn, comb_pixie(b)) * 0.004
+    cand, cn = roots(0.0015, above=0.015)
+    k = cKDTree(cand).query(back)[1]
+    k = np.unique(k)
+    pts, nrm = cand[k], cn[k]
+    n, points = len(pts), 8
+    L = rng.uniform(0.018, 0.026, n)
+    P = lie(pts - nrm * 0.001, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(n, points - 1), 0.0025, side=no_part(pts))
+    P = resample(P, points)
+    c = cards(P, rng.uniform(0.012, 0.016, n), list(range(0, 6)), 0.0025)
+    c["length"] = np.full(len(c["length"]), 0.0075)          # (build's root fade: a third of this)
+    print("  crown fill: %d cards (%d bare points)" % (n, bare.sum()))
+    return [c]
+
+
+def pixie_nape_row():
+    """(18 October, face 30: her pixie's nape ended in its cards' tips, spikes
+    with her skin between them, at the Look from behind.) One row of short,
+    narrow, dense and faint hairs (hair_fine: blended, not cut) from 6 mm
+    over her nape's hairline to 2 to 6 mm under it, combed down, so it thins
+    out into her skin there as a real nape does."""
+    rng = np.random.default_rng(31)
+    pts, nrm = roots(0.0022, above=-0.001, below=0.006)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = th > 112
+    pts, nrm = pts[keep], nrm[keep]
+    n, points = len(pts), 6
+    L = np.maximum(rise(pts), 0) + rng.uniform(0.002, 0.006, n)
+    P = lie(pts - nrm * 0.0008, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(n, points - 1), 0.0015, side=no_part(pts))
+    P = resample(P, points)
+    c = cards(P, rng.uniform(0.003, 0.005, n), list(range(6, 16)), 0.0015, floor=0.0015)
+    c["alpha"] = np.repeat(rng.uniform(0.45, 0.7, n), 3 * points)
+    c["mat"] = 3
+    print("  nape row: %d cards" % n)
+    return [c]
+
+
     RNG = np.random.default_rng(zlib.crc32(style.encode()))  # (each style the same however many are made)
     old = bpy.data.objects.get(f"hair_{style}")             # (from a run before, saved in the blend)
     if old:

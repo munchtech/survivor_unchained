@@ -434,6 +434,12 @@ public partial class Game
         if (Args.Get("eyes") is string ey) draft.Eyes = ey;
         DressFigure(draft);
         PoseCreate();
+        // --look-time day|dawn|dusk: the Look in that light, not the fire's night (pictures of her hair by day).
+        if (Args.Get("look-time") is string lt && lt != "night" && scene != null)
+        {
+            air.Set(Atmospheres.ByName(lt));
+            scene.SetNight(false);
+        }
         var create = new CreateScreen(this, draft);
         screens.Show(create);
         create.FrameForStep();
