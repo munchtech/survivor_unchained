@@ -151,6 +151,114 @@ def gum_lift(js, binc, chunks):
     return int((lift > 0).sum()), 1000 * lift.max()
 
 
+GUMLOW_MM = float(os.environ.get("MOUTH_GUMLOW_MM", "2.0"))
+GUMLOW_POSES = ({"mouth_open": 0.6}, {"mouth_open": 0.8}, {"mouth_open": 1.0}, {"mouth_open": 0.8, "smile": 0.8},
+                {"mouth_open": 1.0, "smile": 1.0}, {"mouth_open": 0.6, "snarl": 0.8}, {"mouth_open": 0.6, "frown": 0.8})
+GUMLOW_SLIDERS = (None, "jaw_forward+", "jaw_forward-", "mouth_height+", "mouth_height-")
+
+
+def gum_low(js, binc, chunks):
+    """Her lower gum kept GUMLOW_MM behind her chin's skin as her mouth opens (face 27's triage judge, 16 Oct: own's chin
+    showed a dark-red dot at open 1.0, the lower gum's front 0.85 mm through her chin). The push goes back (-z) into the
+    teeth's mouth_open key only, so her rest is unmoved and it grows with the opening. Every face, the jaw/mouth sliders at
+    their ends, the poses above, the views of VIEWS. Returns (points moved, most mm at mouth_open 1)."""
+    tm, tp = hmo._prim(js, "teeth")
+    if "gum_low" in tm.get("extras", {}):
+        return 0, 0.0
+    hm, hp = hmo._prim(js, "skin_head")
+    names, tn = hm["extras"]["targetNames"], tm["extras"]["targetNames"]
+    keep = lambda n: n.startswith("face_") or n in ("smile", "mouth_open", "smile_open", "smile_hold", "frown", "snarl", "lips_lower+") or n in GUMLOW_SLIDERS
+    V = hs._read(js, binc, hp["attributes"]["POSITION"]).astype(np.float64)
+    T = hs._read(js, binc, hp["indices"]).astype(np.int64).reshape(-1, 3)
+    alpha = hs._read(js, binc, hp["attributes"]["COLOR_0"])[:, 3]
+    D = {n: hs._read(js, binc, t["POSITION"]).astype(np.float64) for n, t in zip(names, hp["targets"]) if keep(n)}
+    TV = hs._read(js, binc, tp["attributes"]["POSITION"]).astype(np.float64)
+    TD = {n: hs._read(js, binc, t["POSITION"]).astype(np.float64) for n, t in zip(tn, tp["targets"]) if keep(n)}
+    line = hmo.lips_line(V, D["mouth_open"])
+    mid = np.median(V[(np.abs(V[:, 1] - line) < 0.004) & (V[:, 2] > 0.09), 0])
+    zf = V[(np.abs(V[:, 1] - line) < 0.003) & (np.abs(V[:, 0] - mid) < 0.005), 2].max()
+    near = (np.abs(V[:, 0] - mid) < 0.045) & (np.abs(V[:, 1] - line) < 0.07)
+    inside = alpha < ALPHA
+    tin = inside[T].any(1) | ((V[T, 2].mean(1) < zf - 0.025) & (np.abs(V[T, 0].mean(1) - mid) < 0.025))
+    outer = T[~tin & near[T].all(1)]
+    mo_n = np.linalg.norm(TD["mouth_open"], axis=1)
+    # (the mouth height slider moved all her teeth as one, 9.5 mm at Low, while her chin's skin under 25 mm below her lips
+    # stays put, so at Low her lower gum's foot sat 7-9 mm through her chin when she opened. Each tooth point now takes the
+    # share of the slider her skin takes at its height: her skin's move on her face's middle line, over the lips' full move)
+    prof_y = np.arange(-0.06, 0.03, 0.0025)
+    for sl in ("mouth_height-", "mouth_height+"):
+        if sl not in TD or sl not in D:
+            continue
+        full = np.median(D[sl][(np.abs(V[:, 0] - mid) < 0.004) & (np.abs(V[:, 1] - line) < 0.002), 1])
+        if abs(full) < 1e-5:
+            continue
+        share = []
+        for y in prof_y:
+            s = (np.abs(V[:, 0] - mid) < 0.004) & (np.abs(V[:, 1] - (line + y)) < 0.0015) & ~inside
+            share.append(np.clip(D[sl][np.where(s)[0][np.argmax(V[s, 2])], 1] / full, 0, 1) if s.any() else np.nan)
+        share = np.array(share)
+        ok = ~np.isnan(share)
+        f = np.interp(TV[:, 1] - line, prof_y[ok], share[ok])
+        f = np.where(mo_n > 0.002, f, 1.0)          # (her upper teeth and gum go with her lips, as before)
+        TD[sl] = TD[sl] * f[:, None]
+        hs._set(js, chunks, tp["targets"][tn.index(sl)]["POSITION"], TD[sl], minmax=True)
+    cand =np.where((mo_n > 0.002) & (np.abs(TV[:, 0] - mid) < 0.025) & (TV[:, 1] < line - 0.006))[0]
+    faces = [None] + [n[5:] for n in names if n.startswith("face_") and not n.endswith(("+", "-"))]
+    lips = _lips()
+    w = np.zeros(len(cand))
+    for f in faces:
+        Pf = V + (D["face_" + f] if f else 0) + lips.get(f or "own", 0.0) * D.get("lips_lower+", 0)
+        Tf = TV + (TD["face_" + f] if f and "face_" + f in TD else 0)
+        for sl in GUMLOW_SLIDERS:
+            Ps = Pf + (D[sl] if sl and sl in D else 0)
+            Ts = Tf + (TD[sl] if sl and sl in TD else 0)
+            for kv in GUMLOW_POSES:
+                kv = dict(kv)
+                mo, sm = kv.get("mouth_open", 0), kv.get("smile", 0)
+                if sm and mo:
+                    o = min(mo / 0.3, 1)
+                    kv["smile_open"], kv["smile_hold"] = sm * o * o * (3 - 2 * o), sm * mo
+                P = Ps + sum(v * D[k] for k, v in kv.items() if k in D)
+                PT = Ts + sum(v * TD[k] for k, v in kv.items() if k in TD)
+                for yaw, pitch in VIEWS:
+                    R = _rot(yaw, pitch)
+                    Q, QT = P @ R.T, PT[cand] @ R.T
+                    fz = np.cross(Q[outer[:, 1]] - Q[outer[:, 0]], Q[outer[:, 2]] - Q[outer[:, 0]])[:, 2]
+                    z = _cover(Q, outer[fz > 0], QT)
+                    m = z - QT[:, 2]
+                    lack = np.where((z > -np.inf) & (m > -FAR_MM / 1000) & (m < GUMLOW_MM / 1000), GUMLOW_MM / 1000 - m, 0)
+                    need_ = lack / max(R[2, 2], 0.5) / mo
+                    if os.environ.get("GUMLOW_DEBUG") and need_.max() > 0:
+                        print("  gum_low need %.2f mm/open: %s %s %s view %s (pts %d)" % (1000 * need_.max(), f or "own", sl, kv, (yaw, pitch), int((need_ > 0).sum())))
+                    w = np.maximum(w, need_)
+    if not (w > 0).any():
+        tm.setdefault("extras", {})["gum_low"] = {"mm": GUMLOW_MM, "points": 0}
+        return 0, 0.0
+    # (spread over the moving lower teeth's points, falling linearly to none at SPREAD_MM; copies at UV seams move as one)
+    mov = np.where(mo_n > 0.002)[0]
+    src = cand[w > 0]
+    dist = np.linalg.norm(TV[mov][:, None] - TV[src][None], axis=2)
+    p = np.zeros(len(TV))
+    p[mov] = (w[w > 0][None] * np.clip(1 - dist / (SPREAD_MM / 1000), 0, 1)).max(1)
+    _, weld = np.unique(np.round(TV / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+    weld = weld.ravel()
+    p = np.bincount(weld, p, minlength=weld.max() + 1)[weld] / np.bincount(weld, minlength=weld.max() + 1)[weld]
+    Dm = hs._read(js, binc, tp["targets"][tn.index("mouth_open")]["POSITION"]).astype(np.float64)
+    Dm[:, 2] -= p
+    hs._set(js, chunks, tp["targets"][tn.index("mouth_open")]["POSITION"], Dm, minmax=True)
+    tm.setdefault("extras", {})["gum_low"] = {"mm": GUMLOW_MM, "points": int((p > 0).sum()), "most_mm": round(1000 * p.max(), 3)}
+    return int((p > 0).sum()), 1000 * p.max()
+
+
+def gum_low_file(path, out=None):
+    """gum_low alone on a built glb (one whose mouth_inner already ran)."""
+    js, binc = hs._load(path)
+    chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
+    n, mm = gum_low(js, binc, chunks)
+    hs._save(out or path, js, chunks)
+    print("GUM_LOW: %d points pushed back, most %.2f mm at mouth_open 1; written %s" % (n, mm, out or path))
+
+
 def run(path, out=None):
     js, binc = hs._load(path)
     hm, hp = hmo._prim(js, "skin_head")
@@ -200,6 +308,8 @@ def run(path, out=None):
         done.append("%s %d points, most %.2f mm" % (f, int((p > 0).sum()), 1000 * p.max()))
     ng, mg = gum_lift(js, binc, chunks)
     done.append("gum: %d points raised, most %.2f mm" % (ng, mg))
+    # (gum_low is NOT hooked (face 28, 17 Oct): what it fixes shows only at mouth_open 0.6+, which no scene uses; run it
+    # alone with gum_low_file when a scene first opens her mouth that far. Unjudged; its push reaches 7.6 mm at open 1)
     hm.setdefault("extras", {})[MARK] = {"margin_mm": MARGIN_MM, "gum_h_mm": GUM_H_MM, "faces": done}
     hs._save(out or path, js, chunks)
     print("MOUTH_INNER: her mouth's inside pushed back behind her skin: %s; written %s" % ("; ".join(done) or "none needed", out or path))
