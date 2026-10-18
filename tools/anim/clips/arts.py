@@ -783,7 +783,24 @@ L_ITER = 2   # the left fist's re-aims (each a solve) at where the last solve le
 # OFF (17 October): with the right hand's path kept, the left arm crosses her chest to reach it (upper arm 78 mm into
 # her trunk, 71 into her breasts) and the fist turns 22-34 deg off the haft at f3-f8. Wants the right hand's path
 # brought in toward her centre line first (the solver's report).
+# One-handed (shipped): as she rises from the crouch (f9-f18) the keyed left hand swept 59 mm into her forward left
+# thigh. L_CLEAR moves it out beside and a little ahead of the knee over L_CLEAR_AT (9 mm clear; nothing else moves).
 TWO_HANDS = False
+L_CLEAR = (0.07, 0.0, 0.05)   # added to the keyed left hand (shoulder-relative, the chest's frame: left, up, forward)
+L_CLEAR_AT = (6, 10, 15, 21)   # eased in from, full from, full to, eased out by (frames)
+
+
+def _left_clear(fr, pose):
+    """A post moving the one-handed clip's free left hand by L_CLEAR, clear of her thigh as she rises."""
+    a, p0, p1, c = L_CLEAR_AT
+    if fr <= a or fr >= c or "hand_l" not in pose:
+        return pose
+    u = 1.0 if p0 <= fr <= p1 else ((fr - a) / (p0 - a) if fr < p0 else (c - fr) / (c - p1))
+    w = u * u * (3 - 2 * u)
+    az, el, r = pose["hand_l"]["arc"]
+    az, el = math.radians(az), math.radians(el)
+    v = np.array([r * math.cos(el) * math.sin(az), r * math.sin(el), r * math.cos(el) * math.cos(az)])
+    return {**pose, "hand_l": {**pose["hand_l"], "arc": arc_of(v + w * np.array(L_CLEAR))}}
 SQUARE = {}
 # Round 2 (17 October): the right hand's path brought in toward her centre line over the hold, so the blow is a
 # centred overhead chop (as a two-handed axe is swung) and both hands meet on the haft before her breastbone:
@@ -1059,7 +1076,7 @@ def chain_strike(rig):
     # Solved once for where the right hand holds the axe, then again with the left fist on the haft below it at
     # every frame from f1 (the keyed left hands are only where it lets go to).
     if not TWO_HANDS:
-        return build("chain_strike", rig, keys, meta=meta)
+        return build("chain_strike", rig, keys, meta=meta, post=_left_clear)
     first = build("chain_strike", rig, keys, meta=meta)
     fwd = _forward(rig, first)
     second = build("chain_strike", rig, keys, meta=meta, post=fwd)
