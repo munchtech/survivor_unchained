@@ -823,7 +823,7 @@ public partial class Game
                     // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
                     // cinematic and finished in the next); a skip lands on k1. "from": "now"
                     // blends from the air as it is (a scene's own night back into play's).
-                    var to = Tuned(Atmospheres.ByName(c.Str("preset")!), c);
+                    var to = Tuned(c.Str("preset") == "now" ? g.air.Current : Atmospheres.ByName(c.Str("preset")!), c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
                     if (c.Str("from") is string fromName)
                     {
@@ -1178,7 +1178,22 @@ public partial class Game
             FogDensity = p.FogDensity * c.Num("fog", 1), RimStrength = p.RimStrength * c.Num("rim", 1),
             KeyAzimuth = c.Has("azimuth") ? c.Num("azimuth") : p.KeyAzimuth, KeyElevation = c.Has("elevation") ? c.Num("elevation") : p.KeyElevation,
             KeyColor = c.Str("keyColor") ?? p.KeyColor, FogColor = c.Str("fogColor") ?? p.FogColor,
+            Sky = c.Has("skySat") ? SkySat(p.Sky, c.Num("skySat")) : p.Sky,
         };
+
+        /// <summary>A sky's colours taken toward their own grey ("skySat" 0.6: 40% of the colour out; 1 as it is),
+        /// as a shot of a face against a cobalt night wants; "preset": "now" tunes the air as it is, so a later
+        /// cue's 1/0.6 puts it back.</summary>
+        static SkySettings SkySat(SkySettings s, double k)
+        {
+            string Sat(string hex)
+            {
+                var col = new Color(hex);
+                float l = col.R * 0.2126f + col.G * 0.7152f + col.B * 0.0722f, f = (float)k;
+                return "#" + new Color(Mathf.Clamp(l + (col.R - l) * f, 0, 1), Mathf.Clamp(l + (col.G - l) * f, 0, 1), Mathf.Clamp(l + (col.B - l) * f, 0, 1)).ToHtml(false);
+            }
+            return s with { Top = Sat(s.Top), Horizon = Sat(s.Horizon), Bottom = Sat(s.Bottom), Glow = Sat(s.Glow) };
+        }
 
         /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
         static GradientTexture2D Halo() => halo ??= new GradientTexture2D
