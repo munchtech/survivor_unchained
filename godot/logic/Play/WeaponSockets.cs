@@ -134,7 +134,7 @@ public static class WeaponSockets
     /// stock. The direction is the rake itself (hand +Z turned PistolRake toward the fingers), so the seat (PistolSeat) lays
     /// the stock along hand +Y (the fingers' and the forearm's line, the bow forward) and its top out of the thumb side,
     /// as the plain pistol mount held it: the clips' aim is unchanged, only the piece moves onto the fist.</summary>
-    public static readonly Vector3 CrossbowAtR = new(-0.0410f, 0.0920f, -0.0120f);
+    public static readonly Vector3 CrossbowAtR = new(-0.0430f, 0.0950f, -0.0120f);
     public static readonly Vector3 CrossbowDirR = new(0f, 0.30901699f, 0.95105652f);
 
     /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the
