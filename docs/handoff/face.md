@@ -9,6 +9,21 @@ Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES
 - Code: physics `godot/src/Actors/HairSway.cs` (chains for long, ponytail, braid; a spring for short styles); cards built by `tools/assets/heroine_hair.py`; the shader `shaders/heroine_hair.gdshader`.
 - Not ours: the town close-up running away from her (camera item, no owner).
 
+## Start here (18 Oct, successor 28 STOPPED at the coordinator's call; face MERGED, hair triage judged, face 29 takes hair)
+- **Merged:** the face rebuild on F1's body (40e08eb9, on integration 6bbf9425). cmp against the judged 45fe3386: only Mesh_0 differs. Tests 934/0/8. The nine mouth items are CLOSED as known (docs/team/face.md "Big expressions"): the game never goes past mouth_open 0.25, smile 0.15 or frown 0.2 (the cinematics' face cues), and nothing pokes through at that range (`tools/scratch/face28/poke.py`). `gum_low` is kept, unhooked.
+- **Hair triage (the owner, 17 Oct: "hair physics are a mess ... clip through ... hair dosn't look good"; "spin around in character creation", cinematic walk to the Warden from behind):**
+  - Shot on current art with `tools/scratch/face28/hair.py` (86 runs; one godot turn; `python hair.py [name filters]`). Sheets made by `hsheet.py`.
+  - Judge brief: `face28/brief.md`. Verdict, sheets and the brief are in `S\j\`, where S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59f6a467-b8ce-446c-8f35-44c1d92b7b9a\scratchpad\f28`.
+  - The same judge ruled on the face at the cinematic close-ups (`shoot.py`, `fsheet.py`). Those are the closest cameras in the game (c04a A5 85 mm at 1.25 m, c02 s8 135 mm at 0.95 m).
+- **Picture flags added:**
+  - `--spin DEG` turns the Look's turntable at DEG per second.
+  - `--auto away` runs her up the screen, her back to the camera.
+  - Town motion is shot as the Reaver, because the Arcanist's hat hides her hair.
+- **Camera notes passed to the coordinator** (not hair):
+  - At `--close 1`, running away, the close-up frames her low back with no head in frame.
+  - At `--close 0.5`, the camera goes inside her body.
+  - The play camera never shows hair detail.
+
 ## Start here (14 Oct, successor 26 HANDED OFF at about 215k; merge-ready build installed UNCOMMITTED, waiting on F1)
 R = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1847d1a6-6513-4947-9408-126dd43ed5f8\scratchpad\face` (KEEP all). Glb mutex for agents sharing this worktree: `python R\glock.py take|give|show <who>` (`give` restores t1; when the merge build is installed, copy it back after any give). Glb diff tool: `python R\cmp.py A.glb B.glb ...` (per-accessor md5).
 - **heroine.glb in the worktree = `R\b1j\j_noseal.glb` (md5 45fe3386...), UNCOMMITTED on purpose.** Built with `python R\b1j\build.py <B1j> OUT` on outfits' final body B1j (`git show dfe686ed:godot/art/people/heroine.glb`, = `R\b1j\B1j.glb`). Imported (0 errors), freshness fresh, `dotnet test` 917 passed / 0 failed / 8 skipped. Against t1, the base POSITION matches exactly. What differs: the body (Mesh_0, nodes, skins); the head's NORMALs (bow); the face keys' POSITION (inside points); teeth POSITION (gum); tongue COLOR_0. All of it is judged. **Next:** when the coordinator says F1 is merged on integration, merge integration, rebuild from merged code on THEIR heroine.glb (never pick a side in a conflict), compare with `cmp.py`, run the tests, tell the coordinator, then send `MERGE REQUEST <branch>@<commit>`.
