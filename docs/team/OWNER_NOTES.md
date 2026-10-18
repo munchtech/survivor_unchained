@@ -10,6 +10,9 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 
 ### Neck length
 
+- **DONE (18 Oct):** the owner looked at 2 shorter lengths at 1:1 (they asked for at most 2) and picked **B, 3 cm shorter** (chin to notch 8.5 cm, 0.37 head heights, the real average). Merged in c31c1760. A neck-seam regression at cinematic close-ups is being fixed (RESUME).
+- **Owner, 18 Oct:** use max judges on the API credits until they run out, without rationing ("I don't care if its low").
+
 - On the neck fixes (seam, grey jaw shade): "the neck might have been too long anyway, maybe the bug helps find the perfect". Then: "said might :) It could be perfect - and maybe a design boon that lets helmets be cool later without taking bust view". So it is an open question, not a change: the length may be right, and a long neck leaves room for helmets, gorgets and high collars without covering the bust. The face lead shows today's neck beside one or two shorter lengths (front and profile, at the Look and in play), with a helmet or gorget silhouette on each if one is to hand, and the judge weighs both looks. The owner picks; today's length is a full option. Outfits and animation are told before any change ships.
 
 ### Classes, trees and ultimates
