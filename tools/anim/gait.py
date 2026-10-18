@@ -42,6 +42,14 @@ class Gait:
     arm_fwd: tuple = (0.0, -0.17, 0.29)     # fist ahead, from the shoulder in the chest's frame (toward the middle +)
     arm_back: tuple = (0.02, -0.30, -0.26)  # fist behind
     elbow_out: float = 0.35      # elbows away from the body
+    # The arm keyed by its joints (chest frame), forward and back: (upper arm forward of hanging, out from her
+    # side, elbow's inside angle, the upper arm turned in), eased between on the step. Set, it replaces
+    # arm_fwd/arm_back/elbow_out: their pole was an offset from her rest elbow, out at her side, so every run's
+    # elbows flared out 35-55 degrees and the fists pumped up high (the owner, 17 October: "chicken wing").
+    # Measured on a real run (100STYLE Neutral_FR): out 15-18, the elbow 65-95, the fist ahead of the
+    # shoulder through the whole swing, a little in toward the middle in front, the upper arm 16 degrees
+    # each way at a jog (1.5 m/s); hers is a run (5.3 m/s), so the upper arm swings about 42.
+    swing: tuple = None
     fingers: str = "relaxed"
     # The right hand's own, where it holds a piece the other hand doesn't ("grip": the piece's fitted fist, keyed.wrap_of):
     # the arcanist's run keyed both hands "open", so her staff hand stood open, the pads 24-79 mm off the shaft.
@@ -119,6 +127,7 @@ def manly(g: Gait) -> Gait:
     return replace(g, hip_roll=g.hip_roll * 0.3, hip_shift=g.hip_shift * 0.4, hip_yaw=g.hip_yaw * 0.8,
                    chest_yaw=g.chest_yaw * 1.3, width=max(g.width, 0.065), drop=g.drop + 0.015, bob=g.bob * 0.9,
                    duty=min(0.4, g.duty + 0.02), elbow_out=g.elbow_out + 0.12,
+                   swing=None if g.swing is None else tuple((a[0], a[1] + 5, a[2], a[3]) for a in g.swing),
                    shoulders=(g.shoulders[0] + 2, g.shoulders[1] + 3))
 
 
@@ -157,6 +166,13 @@ def pose_at(g: Gait, rig: Rig, ph):
         # changing only as the elbow opens and closes (a straight line from
         # behind to in front would fold the arm up through the shoulder and
         # spin the forearm), a touch higher through the middle.
+        if g.swing is not None:
+            hand = _swung(g.swing, rig, side, k)
+            if side in g.arms:
+                hand = g.arms[side](ph, k, hand)
+            pose[f"hand_{side}"] = hand
+            pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))
+            continue
         e = _ease(k)
         nb, nf = np.linalg.norm(back), np.linalg.norm(fwd)
         db, df = back / nb, fwd / nf
@@ -175,6 +191,37 @@ def pose_at(g: Gait, rig: Rig, ph):
         # drawn back and a touch higher behind.
         pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))
     return pose
+
+
+def _rotv(v, axis, deg):
+    a = np.asarray(axis, float)
+    a = a / np.linalg.norm(a)
+    t = math.radians(deg)
+    return v * math.cos(t) + np.cross(a, v) * math.sin(t) + a * float(np.dot(a, v)) * (1 - math.cos(t))
+
+
+def arm_joints(th, out, el, turn, lu, lf):
+    """Her left arm by its joints, in the chest's frame from the shoulder (x out to her left, y up, z
+    forward): the upper arm `th` degrees forward of hanging and `out` from her side, the elbow's inside
+    angle `el`, the upper arm turned in by `turn` (the forearm swung toward her middle). (elbow, hand)."""
+    u = _rotv(_rotv(np.array([0.0, -1.0, 0.0]), [1, 0, 0], -th), [0, 0, 1], out)
+    hinge = _rotv(_rotv(_rotv(np.array([1.0, 0, 0]), [1, 0, 0], -th), [0, 0, 1], out), u, turn)
+    f = _rotv(u, hinge, -(180 - el))
+    return u * lu, u * lu + f * lf
+
+
+def _swung(swing, rig, side, k):
+    """The hand spec for an arm keyed by its joints (Gait.swing), k 1 fully forward: the hand where those
+    joints put it, the elbow's way from the shoulder as the pole (exactly where it goes)."""
+    fw, bk = np.array(swing[0], float), np.array(swing[1], float)
+    th, out, el, turn = bk + (fw - bk) * k
+    I = rig.I
+    lu = float(np.linalg.norm(rig.prest[I[f"lowerarm_{side}"]] - rig.prest[I[f"upperarm_{side}"]]))
+    lf = float(np.linalg.norm(rig.prest[I[f"hand_{side}"]] - rig.prest[I[f"lowerarm_{side}"]]))
+    E, H = arm_joints(th, out, el, turn, lu, lf)
+    m = np.array([1.0 if side == "l" else -1.0, 1, 1])
+    E, H = E * m, H * m
+    return {"arc": arc_of(H), "pole": tuple(E / np.linalg.norm(E)), "pole_at": "shoulder", "frame": "chest"}
 
 
 def _ease(k):

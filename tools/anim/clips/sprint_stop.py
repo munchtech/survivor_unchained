@@ -43,6 +43,10 @@ def sprint(rig, run):
     s = replace(g, arms=arms, speed=g.speed * 1.45, duty=g.duty - 0.05, lean=g.lean + 8, kick=g.kick + 0.06,
                 knee=g.knee + 0.06, reach=g.reach + 0.08, bob=g.bob + 0.01,
                 arm_fwd=held(np.array(g.arm_fwd) * [1, 0.8, 1.2]), arm_back=held(np.array(g.arm_back) * [1, 1.1, 1.25]))
+    if g.swing is not None:
+        # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
+        (ft, fo, fe, fr), (bt, bo, be, br) = g.swing
+        s = replace(s, swing=((ft + 5, fo, fe - 3, fr), (bt * 1.35, bo + 1, be - 5, br)))
     return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
 
 

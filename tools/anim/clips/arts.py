@@ -204,7 +204,7 @@ RUSH_HAND = np.array((0.0, 0.03, 0.42))
 RUSH_POLE = (1.0, -0.3, -0.3)
 CHARGE = replace(WARDEN, frames=12, speed=4.4, duty=0.3, drop=0.13, bob=0.06, lean=50, spine_lean=8, hip_yaw=8,
                  hip_roll=3, chest_yaw=4, reach=0.44, kick=0.46, knee=0.40, shoulders=(8, 8),
-                 arms={"l": _shield_rush, "r": _sword_cocked})
+                 arms={"l": _shield_rush, "r": _sword_cocked}, swing=None)
 RUSH_TURN = (-8, -22, 26)   # hips, spine yaw (the left shoulder leading), head yaw back to the front
 SWORD_BACK = (-0.26, 0.16, -0.32)             # f12: the sword hand still back by her right shoulder, where the carry held it (chest frame, from the shoulder)
 SWORD_BACK_POLE = (0.71, 0.66, -0.25)         # the elbow out and up

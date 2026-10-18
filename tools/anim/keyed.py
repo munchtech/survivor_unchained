@@ -546,7 +546,12 @@ class Rig:
                 # bent toward it, whatever the pole would say this frame.
                 eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, S + elbow_at[side])
             else:
-                eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, gpos[la] + pole)
+                # "pole_at": "shoulder": the pole is a way from the shoulder (the elbow's own side of the
+                # shoulder-hand line), not an offset from where the elbow stands at rest: from the rest
+                # elbow, out at her side, any pole carried the rest pose's spread into the arm (the
+                # runs' elbows flared out, 17 October).
+                base = S if spec.get("pole_at") == "shoulder" else gpos[la]
+                eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, base + pole)
             aimed = "blade" in spec or "knuckles" in spec or "thumb" in spec or plant > 0
             # A weapon is held in a diagonal grip: its shaft crosses the palm
             # from the root of the forefinger to the heel of the hand, so it
