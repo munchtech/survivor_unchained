@@ -2,7 +2,30 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
-## 00. Paused here (animation 38 successor, 18 October 2026, coordinator restart); next:
+## 000. Paused here (animation 38, successor aaa2dfbad0f05ff2d, 18 October 2026, coordinator wind-down); next:
+Branch `anim-38`, worktree agent-a6b5a13d0be70144d (no stash, reset --hard or checkout .: godot/assets is a junction). Integration merged at 83bec3b4. Section 00 below still holds the item history; this block supersedes its "Next".
+**Done this session:**
+- **The grip-frame convention** for the armor-and-weapons pipeline (armor-1): `docs/anim/GRIP_STANDARD.md` (6418bbfc). It covers the hand socket and hand_r's axes; anchor_grip (origin at the grip point, -Y toward the tip, +Z toward the edge or face), anchor_sheath and the kind tag; a per-kind table (the pocket in WeaponSockets, the pose in keyed.py WRAP and GRIP, the section in grip_spec.json); and a new weapon in four steps with no animation. Point the MR report at it.
+- **Item 3, the staff:** tests updated for the diagonal fist (b935e72b, worker). dotnet test passes: 943 passed, 0 failed, 8 skipped. One assertion was loosened, AnAnchoredPieceSitsOnTheFistsLine face.Z > 0.97 (it is 0.977 on the 27.7 deg fist). A fresh arms dump came out byte-identical. The Arms.cs viking comment and the WE-09 22.5-degree note are fixed.
+- **The left hand (items 4 and 7), round 2** (solver a2e170da2cb586424, commits b1fe60e6, 091262c3, 3956daff), heroine, mm:
+
+| Clip | Was | Now |
+|---|---|---|
+| break, left arm into her | 35 | 0 |
+| break, crossbow into her hand | 17.5 | 0 |
+| idle_stalker_daggers | 20 | 0 (its own DAGGERS_HAND_R/L) |
+| stops, crossbow | 12.3 | 0, but the left arm is now 4.5 into her trunk at f9 |
+| idle, hand-to-stock gap | 7.7-11.8 | 1.8-5.8 |
+| crossbow_shoot | the crossbow 13 into her hand, a one-handed aim | the hand on the stock, but the upper arms press her pectorals: L 11.2@f9, R 5.4@f11 |
+| stalker_show | crossbow 10.1@f6 | not fixed (the keyed hand was put back) |
+
+The break moves the hands on their own timing: the left hand lifts off the stock at f55-59 and goes back on at f108-114. idle.ride_stock carries the left hand with the stock, and the aim has a shooter's stance (the spine turned 14 deg). fistfit crossbow is 8/8 and audit.py flags nothing on the 7 stalker clips. Its tools are in tools/scratch/anim38/xbow2/ (ev.py measures per frame: L, R, X and the gap; --hero).
+
+**RUNNING at the pause: solver abc2c5e0be260d6ae (su-lead-high, medium), round 3 of 3, the LAST, on these items.** (1) crossbow_shoot: a two-handed aim with a palm-up cradle under the fore-stock, the left elbow under the stock, both upper arms clear of her chest (target L, R, X 0). (2) stalker_show's sighting: the same stance and support. (3) The stops' left arm, 4.5 mm at f9: turn the elbow out. Read its report with `python tools/scratch/coordinator/lastmsg.py abc2c5e0be260d6ae <out.md>`; the transcript is in `C:/Users/munch/.claude/projects/C--Users-munch-Desktop-survivorsunchained/4b7b1da3-62bc-4cd2-ab49-a52d9a8367dc/subagents/`. Check `git log` for its commits. Whatever it reaches closes these items (round cap), unless the whole-frame gate fails a frame: then restage it (camera or pose), never close it as known.
+
+**Next:** (a) The solver's result. (b) A runner, in one pass: rebuild every clip for both bodies (`build.py --no-pack`, `--body hero`); run `motion.py --outfits`, `armscheck.py` with `--sockets`, fistfit for every piece and dotnet test; report every number against the tables above and section 00. (c) The 1:1 shoot: `sh tools/scratch/anim38/gshoot2.sh tools/scratch/anim38/shots38.txt <out>`. That is 43 frames (play, town, and the close-up at 1.0, its closest; female and male via the 8th column). Look once at a half-size sheet to check each frame holds the right weapon (the daggers idle uses the stalker's default kit, which isn't confirmed). Update the crossbow_shoot, stalker_show and stop frames to the solver's report. (d) ONE su-lead-max judge at effort max, in the foreground, its brief opening with the whole-frame gate (lead_brief.md; calibration in survivorsunchained_inputs/owner_frames_18oct/). (e) The MR, with full packs, naming GRIP_STANDARD.md.
+
+## 00. Paused here (animation 38 successor, 18 October 2026, coordinator restart); superseded by 000 above:
 Branch `anim-38` (worktree agent-a6b5a13d0be70144d; godot/assets is a junction to its own public/assets: no stash, reset --hard or checkout .). Integration was merged at bb23299e. **Merge integration again before the shoot: the neck seam fix landed (heroine.glb, outfits, hair).** Nothing is shot or judged yet. Every clip is built unpacked in tools/anim/out (`build.py --no-pack`, plus `--body hero`). Never commit heroine.res, hero.res, *_clips.json or manifest.json. Scripts: tools/scratch/anim38/ (gshoot.sh and sheet.py are anim37's 1:1 shoot, repointed; stance.py, feet.py and basecheck.py are the stalker's; solve.py and seatscan.py the fist seats). Solver reports that arrive after the pause go to tools/scratch/anim38/reports/. The crossbow solver's scratch is in survivorsunchained_inputs\scratch_anim38\.
 **The fixed list (fistfit and motion.py numbers):**
 1. Sword 13/13, right dagger 8/8: PASS. **Left dagger 7/8, CLOSED** (0.9 mm into the hilt at idle_stalker_daggers f0: invisible at 1:1; the judge confirms).
