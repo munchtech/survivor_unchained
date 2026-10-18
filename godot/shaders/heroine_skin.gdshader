@@ -85,6 +85,22 @@ uniform float lip_zone = 0.3;
 // (all of it eased out from mouth_open 0.3 to 0.6 (HerFaceLife.MouthShade): wide open, her paint's line lifted read as a
 // red rim inside her lower lip, so there, as face 29's)
 uniform float lips_narrow = 0.0;
+// (lip_tone 1: the lift ends at her own lip colour in shade instead (her paint blurred to its mip lip_cmip, times her
+// tone: her lips' mean colour, their dark line averaged in), eased lip_sat of the way to its grey, times lip_dark where
+// her paint is darker than that, and times lip_bake where the bake shades her lips' meeting (ao_map, 1 - its red from
+// lip_bake_from to lip_bake_to), there whatever the paint, so the lamps shade it as her lip (and lip_glow of that emitted: the light
+// her teeth throw back on it); her lips' sheen there cut to lip_spec.
+// Lifted by lip_floor alone her paint's dark line kept its own hue: a lit red band along her lower lip's top (own),
+// and with the sheen the lifted AO let back, a pale grey-lavender strip (Sunborn) (c04a A5, judge F1 r2, face 30))
+uniform float lip_tone = 1.0;
+uniform float lip_cmip = 5.0;
+uniform float lip_sat = 0.7;
+uniform float lip_dark = 0.8;
+uniform float lip_spec = 0.25;
+uniform float lip_bake = 1.2;
+uniform float lip_glow = 0.0;
+uniform float lip_bake_from = 0.15;
+uniform float lip_bake_to = 0.5;
 // Her ears' hollows, a shade of their own (heroine_ear_ao.png, tools/assets/heroine_ear_ao.py; white elsewhere):
 // multiplied into AO, dimming her lamps there by ear_light (not ao_light), and warming her paint by it (ear_tint).
 // The cool fill and sky reached into her ear's bowl, grey-white in a warm ear (judge rj5v). Off at ear_amount 0.
@@ -339,7 +355,17 @@ void fragment() {
 	float lip_w = lip_gain > 1.0 ? lips_apart * lips_narrow * smoothstep(lip_zone, lip_zone + 0.25, textureLod(features, UV, lip_mip).g) : 0.0;
 	if (lip_w > 0.0) {
 		float lum0 = max(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
-		ALBEDO *= mix(1.0, clamp(lip_floor * dot(tone, vec3(0.2126, 0.7152, 0.0722)) / lum0, 1.0, lip_gain), lip_w);
+		if (lip_tone > 0.0) {
+			vec3 lc = textureLod(paint, UV, lip_cmip).rgb * tone * mix(vec3(1.0), mix(face_world, face_tone, rig_w), fm.b);
+			float ll = dot(lc, vec3(0.2126, 0.7152, 0.0722));
+			vec3 lt = mix(vec3(ll), lc, lip_sat) * lip_dark;
+			float lum_t = max(ll * lip_dark, 1e-4);
+			ALBEDO = mix(ALBEDO, lt, clamp(4.0 * (1.0 - lum0 / lum_t), 0.0, 1.0) * lip_w * lip_tone);
+			float lip_b = smoothstep(lip_bake_from, lip_bake_to, 1.0 - aot.r) * lip_w * lip_tone;
+			ALBEDO = mix(ALBEDO, lt * lip_bake / lip_dark, lip_b);
+			EMISSION += lt * lip_bake / lip_dark * lip_glow * lip_b;
+		} else
+			ALBEDO *= mix(1.0, clamp(lip_floor * dot(tone, vec3(0.2126, 0.7152, 0.0722)) / lum0, 1.0, lip_gain), lip_w);
 	}
 	vec3 fk = texture(freckles, UV).rgb;
 	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate) * rig_w;
@@ -413,6 +439,7 @@ void fragment() {
 	ALBEDO *= mix(ear_tint, vec3(1.0), ea);
 	float ao = mix(aot.r, max(aot.r, lip_ao_open), max(lip_w, lips_apart * (1.0 - lips_narrow) * smoothstep(0.6, 0.95, fm.g))) * ea;
 	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
+	SPECULAR *= mix(1.0, lip_spec, lip_w * lip_tone);
 	sheen = SPECULAR;
 	AO = ao;
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));

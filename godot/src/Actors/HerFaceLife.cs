@@ -139,11 +139,17 @@ public partial class HerFaceLife : Node
                 var sv = am.SurfaceGetBlendShapeArrays(0)[ti][(int)Mesh.ArrayType.Vertex].AsVector3Array();
                 bool relative = am.BlendShapeMode == Mesh.BlendShapeMode.Relative;
                 int n = basis.Length, h = (n + MaskW - 1) / MaskW, up = 0;
-                var img = Image.CreateEmpty(MaskW, Mathf.Max(1, h), false, Image.Format.R8);
+                var img = Image.CreateEmpty(MaskW, Mathf.Max(1, h), false, Image.Format.Rg8);
+                // (green: the band's height, 0 at her incisors' edge (the upper row's lowest point at rest, Y up) to 1
+                // BandSpan above it: the teeth shader's up_t, its ivory band shaded by it (judge F1 r2, face 30))
+                var still = new bool[n];
+                float edge = float.MaxValue;
                 for (int i = 0; i < n && i < sv.Length; i++)
-                    if ((relative ? sv[i] : sv[i] - basis[i]).Length() < 0.002f) { img.SetPixel(i % MaskW, i / MaskW, Colors.White); up++; }
+                    if ((relative ? sv[i] : sv[i] - basis[i]).Length() < 0.002f) { still[i] = true; edge = Mathf.Min(edge, basis[i].Y); }
+                for (int i = 0; i < n; i++)
+                    if (still[i]) { img.SetPixel(i % MaskW, i / MaskW, new Color(1, Mathf.Clamp((basis[i].Y - edge) / BandSpan, 0, 1), 0)); up++; }
                 upperMask = ImageTexture.CreateFromImage(img);
-                if (MouthCam) GD.Print($"TEETHMASK {up}/{n}");
+                if (MouthCam || Args.Has("teethgrow")) GD.Print($"TEETHMASK {up}/{n} edge {edge:F4}");
             }
         }
         if (upperMask == null) return;
@@ -160,15 +166,37 @@ public partial class HerFaceLife : Node
                 v = toMesh.Basis * new Vector3(0, -d, 0);
                 break;
             }
+        // (the band, and its gaps' shell behind it, on as far as the drop is: HerFaceLife's shell pass only then)
+        float band = DropMost > 0 ? d / DropMost : 0;
         for (int s = 0; s < am.GetSurfaceCount(); s++)
             if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
             {
                 m.SetShaderParameter("upper_mask", upperMask);
                 m.SetShaderParameter("mask_w", MaskW);
                 m.SetShaderParameter("drop_v", v);
+                m.SetShaderParameter("band", band);
+                if (band > 0.001f && v != Vector3.Zero && ShellGrow > 0)
+                {
+                    shellShader ??= GD.Load<Shader>("res://shaders/heroine_teeth_shell.gdshader");
+                    if (m.NextPass is not ShaderMaterial sm || sm.Shader != shellShader)
+                        m.NextPass = sm = new ShaderMaterial { Shader = shellShader, ResourceName = "teeth_shell" };
+                    sm.SetShaderParameter("paint", m.GetShaderParameter("paint"));
+                    sm.SetShaderParameter("upper_mask", upperMask);
+                    sm.SetShaderParameter("mask_w", MaskW);
+                    sm.SetShaderParameter("drop_v", v);
+                    sm.SetShaderParameter("grow", ShellGrow * v.Length() / d);
+                    sm.SetShaderParameter("band", band);
+                    foreach (var pn in new[] { "lit", "narrow", "closed", "side_floor" }) sm.SetShaderParameter(pn, m.GetShaderParameter(pn));
+                    foreach (var (pn, pv) in teethParams) sm.SetShaderParameter(pn, pv);
+                }
+                else if (m.NextPass != null) m.NextPass = null;
+                foreach (var (pn, pv) in teethParams) m.SetShaderParameter(pn, pv);
             }
     }
 
+    const float BandSpan = 0.003f;
+    static readonly float ShellGrow = Args.Num("teethgrow", 1.2f) / 1000f;
+    Shader? shellShader;
     const int MaskW = 256;
     static readonly float DropMost = Args.Has("teethdrop") ? Args.Num("teethdrop", 1.5f) / 1000f : 0.0015f;
     ArrayMesh? maskMesh;
