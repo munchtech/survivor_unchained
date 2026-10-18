@@ -1,0 +1,5 @@
+{
+ "_": "Her metal's finish by material key (outfit_materials.json kind metal; shaders/heroine_outfit_metal.gdshader's finish). Any key not here is bare: as built. blued: blued steel, deep blue-black, chipped back to bright steel at its worn edges (the look bible's armor-metal page, item 4).",
+ "steel": "blued",
+ "darksteel": "blued"
+}

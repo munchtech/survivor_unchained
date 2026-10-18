@@ -1050,8 +1050,9 @@ public static class People
         HerLod.Attach(p, set);
     }
 
-    static Shader? furShader, sheerShader, outfitShader;
-    static Godot.Collections.Dictionary? outfitTable;
+    static Shader? furShader, sheerShader, outfitShader, metalShader;
+    static Godot.Collections.Dictionary? outfitTable, metalFinishes;
+    static Texture2D? metalDetail;
 
     /// <summary>Her outfit's pieces drawn as what they are made of
     /// (shaders/heroine_outfit.gdshader: leather, metal, cloth or gloss, from
@@ -1071,8 +1072,19 @@ public static class People
             var entry = outfitTable[key].AsGodotDictionary();
             int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, "twill" => 4, "satin" => 5, _ => -1 };
             if (kind < 0) continue;
-            var m = new ShaderMaterial { Shader = outfitShader };
+            // (metal: the same shader with metal's own light and reflection, one shared scratch-and-pit
+            // detail and its key's finish; the look bible's armor-metal page)
+            if (kind == 1) metalShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_metal.gdshader");
+            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : outfitShader };
             m.SetShaderParameter("kind", kind);
+            if (kind == 1)
+            {
+                metalDetail ??= GD.Load<Texture2D>("res://art/outfit/metal_wear_detail.png");
+                m.SetShaderParameter("metal_detail", metalDetail);
+                m.SetShaderParameter("has_detail", metalDetail != null);
+                metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
+                if (metalFinishes.TryGetValue(key, out var fin) && (string)fin == "blued") m.SetShaderParameter("finish", 1);
+            }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
             m.SetShaderParameter("normal_map", src.NormalTexture);
             m.SetShaderParameter("orm", src.RoughnessTexture);
@@ -1454,7 +1466,7 @@ public static class People
         if (HeadRigOff) w = 1;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (outfitShader != null && m.Shader == outfitShader)))
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (outfitShader != null && m.Shader == outfitShader) || (metalShader != null && m.Shader == metalShader)))
                     m.SetShaderParameter("look_rig", w);   // (her outfit too: its steel and leather rougher under the rig, s29)
     }
 
