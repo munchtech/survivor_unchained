@@ -44,18 +44,24 @@ import numpy as np
 from clips import idle
 from clips.soul import arms_of
 from keyed import Track, build
-from rig import Clip, qinv, qmul, qrot, qslerp, qbetween
+from rig import Clip, qaxis, qinv, qmul, qrot, qslerp, qbetween
 
 NAME = "flare_burns_twice"
 END, CONTACT, SWEEP, BLEND = 60, 20, 43, 46
 
 # The staff in hand_r's own space (the bound staff, seated on the fist's line by Arms.Seat: WeaponSockets.FistSeat).
 M_R = np.array([-0.025, 0.075, 0.0])                 # the mount: the shaft through the right fist
-BUTT = np.array([0.0372, 0.0292, -0.7900])           # the butt's foot (on the shaft's line, 787.6 mm below the pocket)
-AXIS = np.array([-0.0863, 0.1138, 0.9898])           # the shaft's line, butt toward head (the fist's line: WeaponSockets.FistDirR, 4eb83530)
+# 18 October (animation 38): the staff's fist refitted on a diagonal (WeaponSockets.FistAtR / FistDirR, keyed.py
+# WRAP["staff"], GRIP["staff"] 18); the line, its pocket and the butt (the grip 787.7 mm up from the butt, Arms.Spec)
+# as the game seats them (data/arms_local.json, mage_staff@hand_r: its foot at 0.1336, -0.2413, -0.7081).
+AXIS = np.array([-0.2116, 0.4141, 0.8853])           # the shaft's line, butt toward head (WeaponSockets.FistDirR)
 AXIS = AXIS / np.linalg.norm(AXIS)
-SHAFT0 = np.array([-0.0308, 0.1188, -0.0104])        # the shaft's centre where it crosses the fist (the fist's pocket: FistAtR, refitted to the wrapped fist)
+SHAFT0 = np.array([-0.0326, 0.0841, -0.0104])        # the shaft's centre where it crosses the fist (WeaponSockets.FistAtR)
+BUTT = SHAFT0 - 0.7877 * AXIS                        # the butt's foot (on the shaft's line)
 LEFT_AT = 0.235                                      # the left fist this far up the shaft (m along it)
+# On the drive the left fist slides a little up the shaft (eased over f16-20, held to its letting go): at the plant
+# the staff's head is out at her right and the straight left arm crossed her chest into it (18 Oct, the refitted fist).
+LEFT_SLIDE = [(16, 0.0), (CONTACT, 0.0)]
 # The left fist's pocket (the mirror of the right's: her left hand's +X is
 # across the palm, her right's across the back).
 M_L = np.array([0.039, 0.058, 0.002])
@@ -224,7 +230,9 @@ STAFF = [
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
     # the butt and the left fist within her reach.
-    (CONTACT, "butt", BUTT_AT, _n(-0.200, 0.975, 0.095), _n(0.15, -0.97, -0.10), "E"),
+    # (18 Oct, the refitted fist: the plant's elbow keyed out to her right, -0.60 (was 0.15 in, as the hold's): at
+    # f20 the upper arm went 31 mm into her side.)
+    (CONTACT, "butt", BUTT_AT, _n(-0.200, 0.975, 0.095), _n(-0.60, -0.80, -0.10), "E"),
     (22, "butt", BUTT_AT, _n(-0.120, 0.985, 0.120), _n(0.15, -0.97, -0.10), "E"),
     (28, "butt", BUTT_AT, _n(-0.047, 0.992, 0.117), _n(0.15, -0.97, -0.10), "E"),
     (40, "butt", BUTT_AT, _n(-0.033, 0.990, 0.133), _n(0.15, -0.97, -0.10), "E"),
@@ -306,6 +314,12 @@ class Flare:
         self.Rr = None
         self.Rl = None
         self.idle = arms_of("arcanist")
+        # The grip's blade and knuckles in hand_r's space: keyed.py reads a keyed blade as the grip's way, the hand
+        # turned back from it by GRIP["staff"] about its +X (18 Oct; keyed with the hand's own +Z the fist was 18 deg
+        # off its line and her right arm went 54 mm into her).
+        from keyed import GRIP
+        lq = qaxis([1.0, 0, 0], -GRIP.get("staff", 0.0)) if rig.grips else np.array([0, 0, 0, 1.0])
+        self.gz, self.gy = qrot(lq, np.array([0, 0, 1.0])), qrot(lq, np.array([0, 1.0, 0]))
         _, rp = rig.sk.rest_globals()
         I = rig.I
         self.L_len = float(np.linalg.norm(rp[0, I["lowerarm_l"]] - rp[0, I["upperarm_l"]])
@@ -356,12 +370,23 @@ class Flare:
             a, b, u = _staff_at(fr)
             d = _slerp_dir(a[3], b[3], u)
             R = self.Rr[fr] if self.Rr is not None else None
+            # The hand as it is keyed this frame (the last solved, turned so the shaft lies on the key's line; on the
+            # drive, as DRIVE_U turns it): the wrist is put from this, not the last solved. (18 Oct: the refitted fist's
+            # butt lies 27.7 deg off the hand's +Z; put from the last solved hand, a frame whose shaft leant out took a
+            # wrist out of her reach, the arm went straight and the shaft leant on: f20 and f23-26 stuck so, the butt
+            # 6-7 cm off the ground.)
+            Rk = R
+            if R is not None:
+                Rk = qmul(qbetween(qrot(R, AXIS), d), R)
+                if fr in DRIVE_U:
+                    qa, qb = self.Rr[15], self.Rr[CONTACT + 1]
+                    Rk = qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, DRIVE_U[fr])
             if a[1] == "butt" and b[1] == "butt":
                 anchor, point = BUTT, np.array(BUTT_AT)
-                W = point - (qrot(R, anchor) if R is not None else -0.79 * d)
+                W = point - (qrot(Rk, anchor) if R is not None else -0.79 * d)
             else:
-                pa = self._wrist_of(a, fr, R)
-                pb = self._wrist_of(b, fr, R)
+                pa = self._wrist_of(a, fr, Rk)
+                pb = self._wrist_of(b, fr, Rk)
                 W = pa + (pb - pa) * u
             kn = None
             # The elbow's way: a pole from where the arm hangs, or (E) the
@@ -377,12 +402,13 @@ class Flare:
                 # chased it 18 cm out to her right (round 9's f20).
                 qa, qb = self.Rr[15], self.Rr[CONTACT + 1]
                 q = qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, DRIVE_U[fr])
-                d = qrot(q, np.array([0, 0, 1.0]))
-                kn = qrot(q, np.array([0, 1.0, 0]))
+                d = qrot(q, self.gz)
+                kn = qrot(q, self.gy)
             if kn is None and R is not None:
                 # The key's way is the SHAFT's line (round 9: AXIS moved with the refitted pocket, 4eb83530): the hand's
                 # +Z (the "blade" the arm solve keys) turned, as last solved, by the shortest turn putting the shaft on it.
-                d = qrot(qbetween(qrot(R, AXIS), d), qrot(R, np.array([0, 0, 1.0])))
+                # (Keyed as the grip's own way, GRIP["staff"]: keyed.py turns the hand back from it by the lean.)
+                d = qrot(qbetween(qrot(R, AXIS), d), qrot(R, self.gz))
             w = _curve(R_ON, fr)
             if w < 1.0:
                 Wi = S_r[fr] + qrot(chest[fr], v_idle)
@@ -433,7 +459,7 @@ class Flare:
                 bump = bump + qrot(chest[fr], np.array(L_REACH)) * math.sin(math.pi * ws)
             if ws > 0:
                 qr, pr = G[0][fr], G[1][fr]
-                on = pr + qrot(qr, SHAFT0 + AXIS * LEFT_AT)
+                on = pr + qrot(qr, SHAFT0 + AXIS * (LEFT_AT + _curve(LEFT_SLIDE, fr)))
                 dw = qrot(qr, AXIS)
                 Rl = self.Rl[fr] if self.Rl is not None else None
                 Ws = on - (qrot(Rl, M_L) if Rl is not None else 0.0)

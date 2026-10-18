@@ -84,8 +84,10 @@ public static class WeaponSockets
     /// (13.65 mm round the line), the thumb over the forefinger. (The old pocket, -39, 58, 2 mm, lay at the thumb's root,
     /// 40 mm off the palm and 30-50 mm off the pads: the shaft ran beside the fist, not through it.) An anchored piece's
     /// grip point and shaft are laid on it.</summary>
-    public static readonly Vector3 FistAtR = new(-0.0399f, 0.0948f, -0.0104f);
-    public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.0863f, 0.1138f, 0.9898f));
+    /// 18 October (animation 38): refitted on a diagonal (fistfit; keyed.py WRAP["staff"]): the shaft from the forefinger's root
+    /// to the heel under the little finger, 27.7 deg off hand +Z (was 8.2), so the little finger reaches it; keyed.py GRIP["staff"] 18.
+    public static readonly Vector3 FistAtR = new(-0.0326f, 0.0841f, -0.0104f);
+    public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.2116f, 0.4141f, 0.8853f));
 
     /// <summary>The line her right fist closes round on a one-handed blade (tools/anim/keyed.py WRAP["sword"]), in hand_r's
     /// space: where the blade's grip point (Arms.Spec.Grip along its long axis) lands, and the shaft's direction, pommel
