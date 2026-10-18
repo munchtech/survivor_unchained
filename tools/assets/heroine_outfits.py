@@ -4208,6 +4208,11 @@ BONING_TAPER = float(os.environ.get("BONING_TAPER", "0.008"))
 # line's own depth, 10 cm inside her: the channel dived into her at the leg line, and the side of that dive was
 # judge fin1/fin2's tab (r_hand_outer_rest) and thorn (a_leo_qr); the taper was on its end, inside her. 0 = off.)
 BONING_CLIP = float(os.environ.get("BONING_CLIP", "0.008"))
+# (touch-up 2, 18 Oct, the owner's C01 frames: the Reaver's cord is laid from inside the base of her neck and taut
+# over the hollow between her collarbones and her neck, not snapped to the skin nearest each point, which jumped
+# across that crease and hooked; ribbon(taut=). TAUT_ITERS: the passes of its pull. 0 = off.)
+TAUT_CORD = int(os.environ.get("TAUT_CORD", "1"))
+TAUT_ITERS = int(os.environ.get("TAUT_ITERS", "40"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
@@ -4599,7 +4604,7 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
-           hides=False, follow=False, flare=None, onto=None, taper=None):
+           hides=False, follow=False, flare=None, onto=None, taper=None, taut=0):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
@@ -4653,6 +4658,25 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
         if snap:
             c = lay(c)
+    if taut and snap and onto is None:
+        # (taut, the Reaver's cord (touch-up 2, 18 Oct; the owner's C01 frames): laid on her skin it sank into the
+        # hollow between her collarbones and her neck and hooked at its edges. A cord over a hollow is held up by
+        # its own pull: each point is only ever lifted off her along her skin's normal, by as much as its
+        # neighbours' pull would carry it, never moved along her (so the fangs stay on it) and never pushed in.
+        # `taut` is the most it may stand off her, in metres)
+        for _ in range(TAUT_ITERS):
+            sm = c.copy()
+            sm[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
+            hit = [SKIN_BVH.find_nearest(Vector(p)) for p in c]
+            q = np.array([h[0][:] for h in hit])
+            n = np.array([h[1][:] for h in hit])
+            up = np.maximum(((sm - c) * n).sum(1), 0.0)
+            c = c + n * up[:, None]
+            h_ = ((c - q) * n).sum(1)
+            c = c - n * (np.maximum(h_, 0.0) - np.clip(h_, 0.0, taut))[:, None] - n * np.minimum(h_, 0.0)[:, None]
+        hit = [SKIN_BVH.find_nearest(Vector(p)) for p in c]
+        h_ = (((c - np.array([h[0][:] for h in hit])) * np.array([h[1][:] for h in hit])).sum(1))
+        print("TAUT %s: stands off her up to %.1f mm (mean %.1f) over %d points" % (name, h_.max() * 1000, h_.mean() * 1000, len(c)))
     if onto is not None and BONING_CLIP > 0:
         # (s18, BONING_CLIP: no further than its piece goes, see the knob)
         hit_ = np.array([s_bvh.ray_cast(Vector((p[0], -0.6, p[2])), Vector((0, 1, 0)), 1.2)[0] is not None for p in c])
@@ -8377,7 +8401,11 @@ def reaver():
                  flare=0.06, lift=0.016, trim=edge(0.01), nu=120, strips=11, one_piece=0.7),
         # Wolf fangs on a cord round her neck, hanging into her cleavage:
         # trophies of the Verge's wolves.
-        *ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003),
+        # (TAUT_CORD: laid from inside the base of her neck, so no point jumps from her collarbone to her neck
+        # as the skin nearest it did, and taut over the hollow between them)
+        *(ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003, taut=0.008,
+                 centre=np.array([0.0, 0.005, neck_z - 0.05])) if TAUT_CORD else
+          ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003)),
         *fangs("reaver.fangs", fang_at, fang_out, fang_down, "bone"),
         # Beneath it a G-string hung from the belt itself: a narrow front
         # (hidden by the panel) and a string down the back, both running up
