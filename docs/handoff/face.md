@@ -2,6 +2,16 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Start here (touch-up lead 2, 18 Oct; IN PROGRESS)
+Same worktree and rules as touch-up 1 below (junction; never stage `.import` noise; T = the old scratch `...#e8c2e6-...\scratchpad	u`). Touch-up 1's three solvers ended: tone DONE (routed), throat and metal stopped short, so each has a round-2 solver at high (briefs T	hroatrief_r2.md, T\metalrief_r2.md; they report to this lead).
+1. Throat: cause is her WEIGHTS (front throat spine_03 to Head within 4 cm: dip and ridge head-back) plus a side-neck bump (clavicle weights) in tilt plus turn. heroine_throat.ease (6cf7c386) unwired; round 2 wires ease plus a shape soften (THROAT_SOFT) and builds `vb.sh th_r2` (includes the cord).
+2-3. Hairline and braid tab: built braid (T\hair\h1) and shade (T\shadow
+ew) INSTALLED UNCOMMITTED in godot/art/people; AFTER set shot in T\lk_h1 (BEFORE T\lk_base). Judge in the final round. Rebuild the hair after the throat build (its neck field changes: hb.sh reads tools/assets/heroine_neck_graft.npz), all shipping styles (braid, ponytail, pixie).
+4. Reaver cord: ribbon(taut=), TAUT_CORD (55b36693): laid from inside the neck base, lifted over hollows only. Built in th_r2; check the `TAUT reaver.cord` log line and a cordview (scratch_touchup1	u\cordview.py).
+5. Face vs neck tone: the moon plus her armor's moon shadow on her throat in C01 s3, not her skin. Sent to main for cinematics. CLOSED here.
+6. Metal: target docs/art/look_bible/01_armor_metal.md (items 1-4, 6; DONE line there). Round 1 WIP 83a05782 (town OK, C01 fire still blue and blown). The round-2 report carries the reusable spec for the armor-1 lead: paste it here and tell main when merged.
+Then: install the th_r2 build, rebuild and install the hair, one 1:1 shoot (Look, close-ups, C01 s3/s8/s10/s11, C02, C04; all four outfits for metal), ONE max judge (whole-frame gate first, the owner's three frames, the page's DONE line), dotnet test, "MR READY" to main.
+
 ## Start here (touch-up lead 1, agent a1941eef2c79c45fe, 18 Oct; HANDED OFF at about 240k with three solvers running)
 Worktree `agent-a1941eef2c79c45fe`, branch `worktree-agent-a1941eef2c79c45fe` (from e6756ae9). `godot/assets` is a JUNCTION to this worktree's own public/assets (` D godot/assets`: never stage it; never `git stash`/`reset --hard`/`checkout .`). Never stage the `.import` noise. T = scratch `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\43e8c2e6-36a3-4fd7-8ca4-39c475e24666\scratchpad\tu` (briefs, sheets, crops; keep until the MR merges).
 **The fixed list (main's brief, plus items 5 and 6; round cap 2, nothing a player sees at 1:1 closes as known; whole-frame gate in every judge brief):**
