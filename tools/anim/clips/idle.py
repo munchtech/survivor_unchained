@@ -221,14 +221,21 @@ def reaver(t, f):
     }
 
 
+# Her left hand laid over the crossbow's fore-stock, palm down, a hand ahead of the right fist, the fingers over its
+# far side; the elbow bent and hanging by her side (animation 38, 18 Oct). Under the stock (as keyed before) the fore-
+# stock sits 55 cm from her shoulder, past her reach with the stock carried this low: the arm went straight across her
+# and the upper arm 60 mm into her side and breast. Shared by the crossbow's shot and the stops (which end here).
+STALKER_HAND_L = {"hand_l": {"arc": arc_of((-0.058, -0.339, 0.255)), "pole": (0.0, -0.5, -1.0), "frame": "chest",
+                             "knuckles": _n((-0.71, 0.33, 0.63)), "blade": _n((-0.49, 0.41, -0.77)), "twist": 0.4}}
+
+
 def stalker(t, f):
     return {
         # The crossbow low across her, pointing ahead and to her left, the
-        # left hand under its stock.
+        # left hand laid over its fore-stock.
         "hand_r": {"arc": arc_of((0.12, -0.38, 0.20)), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
                    "knuckles": _n((0.5, -0.15, 0.85)), "twist": 0.5},
-        "hand_l": {"arc": arc_of((-0.16, -0.42, 0.30)), "pole": (0.7, -0.4, -0.5), "frame": "chest",
-                   "knuckles": _n((0.2, -0.2, 0.95)), "twist": 0.4},
+        **STALKER_HAND_L,
         "fingers_r": "grip", "fingers_l": "relaxed",
     }
 
