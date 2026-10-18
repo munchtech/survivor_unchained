@@ -107,10 +107,12 @@ def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, f
 
 def staff_hold():
     """The staff upright in the right fist at her side, tipped forward, the
-    arm barely swinging."""
+    arm barely swinging. The hand 80 mm out to her right of where it was (x 0.02): with
+    the fist closed on the shaft (WRAP["staff"], 17 October) its fingers went 80 mm into
+    her right thigh as it came through (motion.py; 50 with the hand open), now 0.3."""
     def f(ph, k, hand):
         sway = 0.03 * (k - 0.5)
-        return {"arc": arc_of((0.02, -0.40, 0.10 + sway)), "pole": (-0.3, -0.1, -1.0),
+        return {"arc": arc_of((-0.08, -0.40, 0.10 + sway)), "pole": (-0.3, -0.1, -1.0),
                 "blade": (0.05, 0.94, 0.33), "knuckles": (0.0, -0.33, 0.94), "frame": "chest", "twist": 0.5}
     return f
 
@@ -148,7 +150,7 @@ RUNS = {
     "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     "run_reaver": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING)}, "axe"),
     "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING), "l": blade_carry(1.0, up_fwd=0.75, swing=AXE_SWING)}, "axes"),
-    "run_arcanist": (ARCANIST, {"r": staff_hold()}, "staff"),
+    "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
     "run_stalker": (STALKER, {"r": crossbow_low()}, "crossbow"),
     # Both fists closed on the daggers ("grip": each the fitted dagger fist, keyed.wrap_of: WRAP["daggers"] right,

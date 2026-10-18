@@ -43,6 +43,9 @@ class Gait:
     arm_back: tuple = (0.02, -0.30, -0.26)  # fist behind
     elbow_out: float = 0.35      # elbows away from the body
     fingers: str = "relaxed"
+    # The right hand's own, where it holds a piece the other hand doesn't ("grip": the piece's fitted fist, keyed.wrap_of):
+    # the arcanist's run keyed both hands "open", so her staff hand stood open, the pads 24-79 mm off the shaft.
+    fingers_r: str = ""
     head_up: float = 0.0         # chin raised (+) beyond level
     shoulders: tuple = (0, 0)    # clavicles (raise, forward)
     arms: dict = field(default_factory=dict)  # per side overrides: {"r": callable(phase, pose)->hand spec}
@@ -138,7 +141,7 @@ def pose_at(g: Gait, rig: Rig, ph):
         "neck": (0, -(g.lean + g.spine_lean) * 0.35, 0),
         "head": (-g.chest_yaw * c * 0.8, -(g.lean + g.spine_lean) * 0.45 - g.head_up, 0),
         "clav_l": g.shoulders, "clav_r": g.shoulders,
-        "fingers_l": g.fingers, "fingers_r": g.fingers,
+        "fingers_l": g.fingers, "fingers_r": g.fingers_r or g.fingers,
     }
     for side, off in (("l", 0.0), ("r", 0.5)):
         s = 1 if side == "l" else -1

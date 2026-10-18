@@ -1005,8 +1005,14 @@ FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 # was 45.5; its CMC is 92 mm from the line, so no turn of the base brings the pad nearer than 28 mm), its proximal pad
 # 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
 # web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
-WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (51.8, 73.5, 50.7), "pinky": (41.7, 73.3, 60.3), "thumb": (25.5, -5.3, 39.8)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.2, "pinky": 1.3},
-                  "oppose": -0.00, "thumb_roll": 12.7},
+# The thumb refitted closed over the fingers, 17 October (animation 35; fistfit.fit_thumb_over, the max judge: "a finger
+# pointing, not a thumb wrapped over", its tip 26 mm past the far side and 13.5 mm off the fingers): its last joint 86
+# (was 40), drawn in toward the forefinger (thumb_in 7.9), its tip 3.8 mm off the forefinger's and middle finger's middle
+# bones, none of it past the fingers' column, its proximal pad 0.6 mm off the shaft; the ring refitted to the new palm line.
+# The fingers can't close to the judge's 75/100/60: with the palm on this 27.3 mm shaft, her knuckle and middle joints
+# together top out at about 130 deg before a finger goes into it (fistfit, 17 October), as they do here.
+WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (53.4, 71.6, 60.1), "pinky": (41.7, 73.3, 60.3), "thumb": (14.1, 1.3, 86.0)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.1, "pinky": 1.3},
+                  "oppose": 0.22, "thumb_roll": 5.3, "thumb_in": -7.9},
         # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
         # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
         # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
