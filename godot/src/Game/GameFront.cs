@@ -128,6 +128,8 @@ public partial class Game
     void UpdateCreate(double dt)
     {
         if (figure == null || scene == null || draft == null) return;
+        // --spin DEG: the turntable turned DEG a second, as a player holding the turn key (pictures of her hair turning).
+        if (Args.Has("spin")) figTurn += Mathf.DegToRad((float)Args.Num("spin", 90)) * (float)dt;
         figTurnNow = Mathf.Lerp(figTurnNow, figTurn, 1 - Mathf.Exp(-9f * (float)dt));
         figure.Rotation = new Vector3(0, (float)FigureHeading + figTurnNow, 0);
         float y = (float)scene.HeightAt(Fire.X, Fire.Y);

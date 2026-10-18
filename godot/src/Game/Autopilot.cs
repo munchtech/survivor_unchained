@@ -31,6 +31,8 @@ public sealed class Autopilot
     /// <summary>Run across the screen, turning back every few seconds (--auto across): her in
     /// profile at a run, for pictures and measures of her in motion.</summary>
     public bool Across;
+    /// <summary>Walk up the screen, away from the camera (--auto away): her back and hair to it.</summary>
+    public bool Away;
     public (double X, double Z) Move { get; private set; }
     public readonly List<string> Log = new();
     string lastStage = "";
@@ -76,6 +78,7 @@ public sealed class Autopilot
         // (--auto toward: walking down the screen, toward the camera, her face
         // to it: pictures of her face at play zoom)
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
+        if (Away && b != null && b.Player.Alive && !g.InTransit) { Move = (0, -1); return; }
         if (Across && b != null && b.Player.Alive && !g.InTransit) { Move = ((int)(t / 6) % 2 == 0 ? 1 : -1, 0); return; }
         if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle) return;
         if (z.Id != "lowford") { Field(dt, b); return; }

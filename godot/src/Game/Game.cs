@@ -125,7 +125,7 @@ public partial class Game : Node, IZoneHost
         var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         UiArt.Warm();
         if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away" };
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
