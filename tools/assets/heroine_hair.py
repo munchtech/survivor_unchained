@@ -859,7 +859,10 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
     out += hairline_hairs(comb, sides=no_part, low=float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01)
-    out += tendrils(per_side=1, lock=True)
+    # (18 October, face 30 round 3, the judge: the one lock a side lay on her
+    # temple and cheek as a thin dark line, a cut or a scar; drawn back reads
+    # cleaner. Made and dropped, so the RNG, and all made after, stays as was.)
+    tendrils(per_side=1, lock=True)
     return out
 
 
@@ -1039,8 +1042,38 @@ def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24, flat=0.6, fa
         c["swing"] = True
         out.append(c)
         at += k
+    # (18 October, face 30 round 3, the judge: light and dark blocks just
+    # under the tie, from her side and spinning. Each card there was faded in
+    # from its root over 8 mm (and the shader's first 1.2% of it), so all of
+    # it under the tie was half see-through, its cards blended in the order
+    # they were made, each its own shade by how much hair lay over it. Now
+    # one set, drawn from her back outward (from behind, the nearest last);
+    # their roots under the tie not faded (it hides them; the shader's fade
+    # skipped by starting their strands' texture past it); and one shared
+    # shade over their first 5 cm, easing to their own by 9 (build()).)
+    c = merge_cards(out)
+    a0 = 0.015
+    c["UV"][:, 1] = 1 - (a0 + (1 - c["UV"][:, 1]) * (1 - a0))
+    c["F"] = c["F"][np.argsort(c["V"][c["F"]].mean(1)[:, 1], kind="stable")]       # (her back at +y: nearest it first)
+    c["blunt"] = True
+    c["shared"] = (0.05, 0.09)
     print("  tail: %d cards" % n)
-    return out, middle
+    return [c], middle
+
+
+def merge_cards(cs):
+    """Several sets of cards as one (their faces after each other)."""
+    out, base = {}, 0
+    for c in cs:
+        for k, v in c.items():
+            if k == "F":
+                out.setdefault(k, []).append(v + base)
+            elif isinstance(v, np.ndarray):
+                out.setdefault(k, []).append(v)
+            else:
+                out[k] = v
+        base += len(c["V"])
+    return {k: (np.concatenate(v) if isinstance(v, list) else v) for k, v in out.items()}
 
 
 def style_ponytail():
@@ -1103,6 +1136,18 @@ def style_braid():
     disc = ac[end] * (r * np.cos(a))[:, None] + out[end] * (r * np.sin(a))[:, None]
     P = drape_lengths(C[end] + disc, np.repeat(t[end][None], n, 0), np.full(n, 0.075), 0.01, points=10)
     parts.append(cards(P, RNG.uniform(0.012, 0.02, n), list(range(6, 14)), 0.01, root=np.full(n, 0.4)))
+    # (18 October, face 30 round 3, the judge: from behind, where it leaves her
+    # nape, its outline against her skin was jagged, stair-stepped: its three
+    # strands' outer turns, each a 12-sided tube. Now hair over its edges each
+    # side, two cards from her nape down to its tie, a little out from it and
+    # from her, reaching just past its outer turns: a smooth outline, its
+    # crossings still seen between. Made after all else: the RNG and chain stay.)
+    reach_ = (0.019 + 0.0145) * taper
+    for sd in (1, -1):
+        for inset, wd in ((0.0055, 0.013), (0.0105, 0.016)):
+            q = C[:end + 1] + ac[:end + 1] * (sd * (reach_[:end + 1] - inset))[:, None] + out[:end + 1] * (0.006 * taper[:end + 1])[:, None]
+            q = np.vstack([T + (q[0] - T) * 0.4, q])              # (from up under her gathered hair)
+            parts.append(cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35))
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
         c["swing"] = True
@@ -1290,7 +1335,23 @@ def pixie_nape_row():
     c["alpha"] = np.repeat(rng.uniform(0.45, 0.7, n), 3 * points)
     c["mat"] = 3
     print("  nape row: %d cards" % n)
-    return [c]
+    # (18 October, face 30 round 3, the judge: still a jagged row of spikes,
+    # skin between them, at 135 and 180 on every face; the fine row didn't
+    # show. Under it now short, dense, tapered nape tips of her hair proper
+    # (cut, not blended): rooted 4 to 14 mm over her nape's hairline, 3 mm
+    # apart, 6 to 9 mm wide, each ending 1 to 3 mm past the hairline, so the
+    # spikes' gaps fill with hair that tapers out at its edge.)
+    pts, nrm = roots(0.003, above=0.004, below=0.014)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = th > 105
+    pts, nrm = pts[keep], nrm[keep]
+    m, k = len(pts), 8
+    L = np.maximum(rise(pts), 0) + rng.uniform(0.001, 0.003, m)
+    P = lie(pts - nrm * 0.0012, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (k - 1), np.full(m, k - 1), 0.0015, side=no_part(pts))
+    P = resample(P, k)
+    t = cards(P, rng.uniform(0.006, 0.009, m), list(range(0, 8)), 0.0015, narrow=0.8, floor=0.0015)
+    print("  nape tips: %d cards" % m)
+    return [t, c]
 
 
 # Each style: its cards, how its hair is combed where it lies (for the cap),
@@ -1374,7 +1435,7 @@ def build(style):
         # parting into her hair, not a row of cards' ends: a wig's edge at
         # the Look's close-up)
         alpha = c.get("alpha", np.ones(len(c["V"])))
-        if mat in (0, 3) and "arc" in c:
+        if mat in (0, 3) and "arc" in c and not c.get("blunt"):
             ramp = np.clip(c["arc"] / np.minimum(0.008, c["length"] / 3 + 1e-6), 0, 1)
             alpha = alpha * ramp * ramp * (3 - 2 * ramp)
         C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0), alpha])
@@ -1405,6 +1466,21 @@ def build(style):
     flat = np.concatenate([np.full(len(c["V"]), bool(c.get("flat"))) for c in layers])
     Ch[flat, 0] = 1.0
     Ch[flat, 2] = 1.0
+    # (a tail's cards under its tie: one shade, its outer hair's (the 75th
+    # percentile just below), over their first `shared[0]` metres, easing to
+    # their own by `shared[1]`: no light and dark blocks under the tie)
+    at0 = 0
+    for c in layers:
+        if "shared" in c:
+            a, b = c["shared"]
+            sl = slice(at0, at0 + len(c["V"]))
+            arc_ = c["arc"]
+            below = (arc_ > b) & (arc_ < b + 0.04)
+            tone = float(np.percentile(Ch[sl, 0][below], 75))
+            w = np.clip((b - arc_) / (b - a), 0, 1)
+            Ch[sl, 0] = Ch[sl, 0] * (1 - w) + tone * w
+            print("  tail's shade under the tie: %.2f" % tone)
+        at0 += len(c["V"])
     blue = np.concatenate([np.full(len(c["V"]), float(c.get("blue", 0.0))) for c in layers])
     Ch[:, 2] = np.maximum(Ch[:, 2], blue)
     C = [Ch]
