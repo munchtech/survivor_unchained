@@ -39,7 +39,9 @@ from grip_conform import Glb, write_anchor  # noqa: E402
 SRC = ROOT / "public" / "assets" / "weapons" / "crossbow.glb"
 LENGTH = 0.693         # m: Arms.Spec crossbow Length, the stock's run (the size it had in the game while Arms.Make
                        # took its bow, 0.85 across, for its length: the anchor now says the stock is the shaft)
-RAKE = 18.0            # deg: the grip's line off square to the stock, its foot toward the butt (WeaponSockets.PistolRake)
+RAKE = 22.5            # deg: the grip's line off square to the stock, its foot toward the butt (WeaponSockets.PistolRake).
+                       # 22.5 (was 18, 18 October): at 18 her little finger's tip came 1.7 mm past the grip's far side and
+                       # 0.7 mm into it at every seat; at 22-23.5 all four fingers lie on it (fistfit crossbow, PASS)
 R = 13.7               # mm: the band's radius (grip_spec.json Crossbow, the one-handed blade's 13.7)
 JZ = -0.478            # file z where the grip's line meets the stock's underside (the lever's tail ends at z -0.409)
 ANCHOR = 62.0          # mm along the line below the underside: the grip point (the fist's pocket)

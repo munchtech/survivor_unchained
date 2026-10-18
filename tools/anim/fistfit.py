@@ -79,7 +79,7 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           "dagger_l": dict(arms="dagger_b@hand_l", at="DaggerLeftAt", dir="DaggerLeftDir", outfit="ranger", side="l",
                            rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0),
                            weapon=("daggers",), wrap="daggers_l", seed="daggers"),
-          # The crossbow's pistol grip (tools/assets/crossbow_grip.py: 13.7 mm round, raked 18 deg), seated on its pocket
+          # The crossbow's pistol grip (tools/assets/crossbow_grip.py: 13.7 mm round, raked 22.5 deg), seated on its pocket
           # (WeaponSockets.CrossbowAtR / CrossbowDirR, Arms.Seat's pistol path). "near" (mm): only the piece within that
           # of the grip's line is the grip's (the stock, the lever and the bow lie across the slices square to it).
           "crossbow": dict(arms="crossbow@hand_r", at="CrossbowAtR", dir="CrossbowDirR", outfit="ranger",
@@ -478,6 +478,10 @@ def body(outfit, side="r"):
 
 def load(path):
     d, rot, pos = audit.load(Path(path), sk)
+    # Unit quaternions, as the game lays them (Godot's Basis from a quaternion divides by its length): the captured idles
+    # store theirs at |q| 0.99994, and qmatrix on those compounds down the chain to a 0.3% shrunk hand frame (the fist
+    # read 0.2-0.3 mm off between idle_stalker and run_stalker on the same WRAP, 18 October).
+    rot = rot / np.linalg.norm(rot, axis=-1, keepdims=True)
     return d, rot, pos
 
 

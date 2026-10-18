@@ -1048,11 +1048,11 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
         # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
         # Refitted 18 October (animation 38) on the body build's hand, the seat kept: fistfit daggers 8 of 8 frames pass.
-        # The crossbow's pistol grip (WeaponSockets.CrossbowAtR / CrossbowDirR: 13.7 mm round, raked 18 deg; tools/assets/
-        # crossbow_grip.py), fitted 18 October (animation 38) by fistfit.py crossbow --fit then a direct solve on
-        # fistfit.measure, the seat moved 3.2 mm (x -2, y +3): every finger's pads on it but the little finger's
-        # (0.6-0.9 mm into the grip, its end 1.2 mm past the far side; the best of two rounds of seats).
-        "crossbow": {"bends": {"index": (45.6, 69.3, 40.5), "middle": (49.9, 70.0, 59.2), "ring": (58.4, 55.8, 58.2), "pinky": (59.5, 36.6, 60.4), "thumb": (8.1, -10.9, 45.7)}, "spreads": {"index": 0.6, "middle": 7.0, "ring": -7.8, "pinky": 4.8},
+        # The crossbow's pistol grip (WeaponSockets.CrossbowAtR / CrossbowDirR: 13.7 mm round; tools/assets/
+        # crossbow_grip.py), fitted 18 October (animation 38) by a direct solve on fistfit.measure. Raked 22.5 deg (was 18:
+        # there no seat kept the little finger off it, 0.7 mm in and its end 1.7 mm past the far side), the seat (-41, 95.1,
+        # -9.2) mm: every finger's outer pads on it (-0.3..1.1 mm), its ends short of the far side, palm 1.8 mm off.
+        "crossbow": {"bends": {"index": (40.0, 74.8, 42.2), "middle": (48.3, 74.2, 58.2), "ring": (59.9, 59.7, 59.6), "pinky": (62.3, 39.6, 60.6), "thumb": (8.1, -10.9, 45.7)}, "spreads": {"index": 0.6, "middle": 7.4, "ring": -7.5, "pinky": 4.7},
                   "oppose": 0.44, "thumb_roll": 45.7},
         "daggers": {"bends": {"index": (63.1, 108.6, 10.9), "middle": (72.2, 101.3, 20.1), "ring": (80.9, 90.0, 3.3), "pinky": (93.3, 60.2, 38.4), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -21.1, "middle": -9.3, "ring": 19.6, "pinky": 25.3},
                   "oppose": 0.01, "thumb_roll": -3.9},
