@@ -35,6 +35,8 @@ Known limits: her play-camera model (HerLod, one LOD file per outfit) doesn't co
 2b. RPG item slots: Shoulders, Bracers, Hands, Belt, Legs, Feet added (ItemKind, EquipSlot, Equipment), ItemDef.Wear, equip/unequip, save migration, tests. DONE 88f620fc (Wear.cs Group/SlotOf/Of/Validate; Inventory.Reslot in Saves.Migrate, save Version stays 5; 6 tests in WearTests.cs; 955 tests, 0 failed; the suite takes ~5 min, run it in the background)
 8. MR + Marionette branch report; then the remaining slots as data.
 
+Note (18 Oct): Oathbrand's orange gilt was weaponforge.js's own bug (its `hexRGB` took THREE.Color's linear values into an sRGB canvas; fixed in Marionette fdd3fbe). The shared export path is not affected: pieces.js `recolor` converts sRGB in and out explicitly, `mat.color.set` is managed by three.js, and toGame/sendPiece don't touch colours. So no earlier export needs re-checking.
+
 ## 3. Follow-ups for the coordinator to route (not mine)
 - Loot: drop tables, affixes and itemization for the six new item slots.
 - UI: the inventory paper doll for the new slots (PackScreen shows only the old ones).
