@@ -17,8 +17,8 @@ Written by the art direction lead (look bible 1) from 18 October 2026. It sets t
 ## Pages
 | # | Page | State |
 |---|---|---|
-| 1a | [Her armor metal](01_armor_metal.md) | board ready for the owner |
-| 1b | Her skin | in progress |
+| 1a | [Her armor metal](01_armor_metal.md) | passed the coordinator; with the owner |
+| 1b | [Her skin](02_skin.md) | board ready for the owner |
 | 1c-1j | Light, grade and mist; water and shore; foliage; terrain and road; stone and the castle; the town; NPCs; story props and flames | to do |
 | 2 | Per-tier budgets (triangles, textures, materials, draw calls) | measuring |
 | 3 | The Prologue's asset inventory: keep, rework or build | extracted, to mark |
