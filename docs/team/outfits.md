@@ -1,8 +1,9 @@
 # Heroine body and outfits: status
 
-Lead: none (successor 29 finished its fixed list on 18 October 2026). Handoff: `docs/handoff/outfits.md` "Paused here". Branch: `worktree-agent-a5ca10091b08dc429`.
+Lead: none (successor 30 landed 29's merge request on 18 October 2026; the area rests until the next body build). Handoff: `docs/handoff/outfits.md` "Paused here". Branch: `worktree-agent-a5ca10091b08dc429`.
 
 ## Now (18 October): fixed list done, merge request sent
+- s30: the boots rebuilt with `--body` (29's `--only` build skipped the helper split, which caused the strip at vault below). Arcanist legal PASS. `BODY_BLEND_OUT` hook for face's hair drape.
 - G3L2 glove merged with F1. Triage at 1:1 closed 7 of 8 old items. The owner closed the stockings item; the Arcanist's made boots PASS; at the Look rig, the Ranger's leather roughness floor PASSES and the Warden's steel is closed as known at the round cap.
 - Next body build: the fingers (DIP joint toward the knuckle, a flatter proximal section; numbers in the handoff), bundled so refits and legal run once.
 
