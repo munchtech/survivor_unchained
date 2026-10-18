@@ -8,6 +8,8 @@ Agent af0973d59a5b2817a (third lead), branch `worktree-agent-af0973d59a5b2817a`.
 
 **Retired from merge requests (18 October).** The owner decided: the shipped heroine body has no nipples or areolas (painted out and flattened; genitals were never modelled), so the coverage gate has nothing to find. After the body build's one final run, merge requests no longer run it. One optional run stays before a store build (a Steam upload). The anatomical body is a non-shipping asset at `C:\Users\munch\Desktop\survivorsunchained_inputs\anatomical\heroine_anatomical.glb`, kept for sex scenes the owner may add later. It never goes in the build or the export; it is logged here. If it ever ships, or such scenes are added, the gate and the Steam survey come back.
 
+**Landmarks on the painted-out body (18 October).** The gate found each areola from her paint; with the paint gone it guessed the sharpest bumps, 3.5-6 cm low and lopsided, and failed the Reaver on its bare underside (a false FAIL). `tools/legal/motioncheck/marks_section.py` now falls back to the anatomical paint's centres at rest (breast_r (-0.114, 1.416, 0.161), breast_l (0.118, 1.414, 0.161); the log says "areola painted out: the anatomical landmark"). If her chest is ever reshaped, re-read them from the anatomical body.
+
 What follows is the how-to for the optional run.
 
 The owner: "having to legal check everytime we change an outfit or animation is going to be an issue". So the coverage check runs once per merge request, through one command, on only what changed:
