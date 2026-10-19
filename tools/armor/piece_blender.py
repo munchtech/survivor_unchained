@@ -970,6 +970,39 @@ me = body.data
 hides = [o for o in made if o.get("hides")]
 tuck, hid = G["tuck_of"](PID, hides, SLOT)
 stamp("tuck: %d of her vertices under it" % hid)
+# (r3, F7: her skin under the gore's footprint sunk at least 3 mm (a mark of 0.3: 10 mm times it), all of it in the
+# middle, so the gore stands clear of her in every calling's idle. The footprint: her points whose ray out along her
+# normal meets the gore's inner face within 20 mm, plus those within 2 mm of it across her skin (its margin). Over
+# it the mark ramps from 0.3 at its edge to full (0.98) 8 mm in. Nowhere else changes.)
+if f"{PID}.gore" in CAP["sheet"]:
+    gsp_, _, gst_, _ = CAP["sheet"][f"{PID}.gore"]
+    gtree_ = BVHTree.FromPolygons([tuple(p) for p in gsp_], gst_.tolist())
+    bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+    nm_ = body.matrix_world.to_3x3().inverted().transposed()
+    bn_ = np.array([(nm_ @ v.normal).normalized()[:] for v in me.vertices])
+    cand_ = np.nonzero(cKDTree(gsp_).query(bw_, distance_upper_bound=0.04)[0] < 0.04)[0]
+    inF_, marg_ = [], []
+    for i in cand_:
+        p_, n_ = Vector(bw_[i]), Vector(bn_[i])
+        h_ = gtree_.ray_cast(p_ - n_ * 0.003, n_, 0.023)
+        if h_[0] is not None:
+            inF_.append(i)
+            continue
+        q_ = gtree_.find_nearest(p_)[0]
+        if q_ is not None:
+            d_ = np.array((q_ - p_)[:])
+            tang_ = d_ - bn_[i] * d_.dot(bn_[i])
+            if np.linalg.norm(tang_) <= 0.002 and abs(d_.dot(bn_[i])) < 0.02:
+                marg_.append(i)
+    inF_, marg_ = np.array(inF_, int), np.array(marg_, int)
+    if len(inF_):
+        out_ = np.setdiff1d(cand_, inF_)
+        din_ = cKDTree(bw_[out_]).query(bw_[inF_])[0] if len(out_) else np.full(len(inF_), 1.0)
+        want_ = 0.3 + 0.68 * np.clip((din_ - 0.002) / 0.006, 0.0, 1.0)
+        tuck[inF_] = np.maximum(tuck[inF_], want_)
+    if len(marg_):
+        tuck[marg_] = np.maximum(tuck[marg_], 0.3)
+    stamp("tuck under the gore: %d footprint points (%d full), %d margin" % (len(inF_), int((tuck[inF_] > 0.973).sum()) if len(inF_) else 0, len(marg_)))
 # (her coverage at rest, her skin tucked as the game draws it: 10 mm times the tuck)
 _, jb = cKDTree(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])).query(P)
 G["cover_report"](PID, made, 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb]))
