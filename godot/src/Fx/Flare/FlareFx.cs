@@ -42,7 +42,7 @@ public partial class FlareFx : Node3D
     /// <summary>The world's labels (loot names, map text): 0 hidden from the press, back to 1 from BOOM +0.8 s over 0.3 s (judge 5a).</summary>
     public Action<float> LabelsAlpha = _ => { };
 
-    readonly FlareBits glow = new(2600, false), bed = new(1400, true), scars = new(700, true);
+    readonly FlareBits glow = new(3400, false), bed = new(1400, true), scars = new(700, true);
     readonly FlareShards shards = new(2600);
     static readonly bool NoWeb = OS.GetEnvironment("FLARE_NOWEB") == "1";
     readonly Random rng = new(71);
@@ -80,6 +80,8 @@ public partial class FlareFx : Node3D
     OmniLight3D headLight = null!, spendLight = null!;
     readonly List<Ember> embers = new();
     readonly List<Vector4> marks = new();
+    /// <summary>Each mark's shape (judge 4 fix 9): the ember's way over the ground (x, z), its size 0.7-1.3x, its arcs' seed.</summary>
+    readonly List<Vector4> markAux = new();
     Image marksImg = null!;
     ImageTexture marksTex = null!;
     readonly List<Vector3> missiles = new();
@@ -95,7 +97,7 @@ public partial class FlareFx : Node3D
         AddChild(headLight);
         AddChild(spendLight);
         BoomReady();
-        marksImg = Image.CreateEmpty(32, 1, false, Image.Format.Rgbaf);
+        marksImg = Image.CreateEmpty(32, 2, false, Image.Format.Rgbaf);
         marksTex = ImageTexture.CreateFromImage(marksImg);
         RenderingServer.GlobalShaderParameterSet("flare_marks", marksTex);
         RenderingServer.GlobalShaderParameterSet("flare_hue", new Vector4(1f, 0.42f, 0.1f, 1));
@@ -320,6 +322,8 @@ public partial class FlareFx : Node3D
             var m = i < marks.Count ? marks[i] : Vector4.Zero;
             if (i < marks.Count) m.W = (float)(t - m.W);
             marksImg.SetPixel(i, 0, new Color(m.X, m.Y, m.Z, i < marks.Count ? m.W : 0));
+            var x = i < markAux.Count ? markAux[i] : Vector4.Zero;
+            marksImg.SetPixel(i, 1, new Color(x.X, x.Y, x.Z, x.W));
         }
         // The last texel: the BOOM's ring (where, how far it runs, seconds since), racing over the whole reach.
         marksImg.SetPixel(31, 0, lastAt > 0 ? new Color(boomAt.X, boomAt.Z, ringMax, (float)(t - lastAt)) : new Color(0, 0, 0, 0));
@@ -344,6 +348,7 @@ public partial class FlareFx : Node3D
         embersLit = 0;
         firstLanded = calledDown = false;
         marks.Clear();
+        markAux.Clear();
         doomed.Clear();
         look = web = frost = Vector4.Zero;
         SetDip(1);

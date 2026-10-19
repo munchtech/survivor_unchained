@@ -1,57 +1,57 @@
-// Burns Twice's ice shards (Fx/Flare/FlareShards.cs): real lit geometry, faceted plates of cold glass, so the fire
-// beside them lights them and their facets flash as they tumble. A cold blue-grey glass body that reads on char and
-// on frost alike, never white; a cold rim; the instance colour tints them (a shattered body's shards keep a little
-// of its paint). INSTANCE_CUSTOM.x is the shard's heat (lit from inside by the ember that broke it, cooling), .y its
-// melt (0..1 after it lands: it sinks to a pool and glints), .z 1 once landed, .w its seed.
+// Burns Twice's ice shards (Fx/Flare/FlareShards.cs): real lit geometry, faceted plates of see-through cyan glass
+// (judge 4 fix 4: opaque matte grey cards read as spilled salt). A clear cyan body over whatever lies behind it,
+// a bright grazing rim where the plate turns edge-on, and one short facet flash each as it tumbles; never white.
+// Down, it is gone to a wet dark mark a half again its size within a tenth of a second, drying over a second and
+// a half. INSTANCE_CUSTOM.x is the shard's heat (lit from inside by the ember that broke it, cooling), .y its melt
+// (0..1 after it lands), .z 1 once landed, .w its seed. COLOR.a is its facet flash (1 for its two frames).
 shader_type spatial;
-render_mode diffuse_burley, specular_disabled, cull_back;
+render_mode diffuse_burley, specular_disabled, cull_back, blend_mix, depth_draw_never;
 
 global uniform sampler2D flare_plate : filter_linear_mipmap, repeat_enable;
+global uniform vec4 flare_hue;    // a: night 0..1
 
 varying flat vec4 v_c;
+varying flat float v_flash;
 varying vec3 v_local;
 
 void vertex() {
 	v_c = INSTANCE_CUSTOM;
+	v_flash = COLOR.a;
 	v_local = VERTEX;
-	// Facets stay facets (judge 3 asked for faceted plates); a breath of dome so a face never goes one flat white.
+	// Facets stay facets; a breath of dome so a face never goes one flat tone.
 	NORMAL = normalize(mix(NORMAL, normalize(VERTEX * vec3(0.6, 4.0, 0.6) + vec3(0.0, 1e-3, 0.0)), 0.15));
 }
 
 float fl_h(float x) { return fract(sin(x * 91.7) * 43758.5453); }
 
 void fragment() {
-	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+	float rim = 1.0 - clamp(abs(dot(NORMAL, VIEW)), 0.0, 1.0);
 	float cr = texture(flare_plate, v_local.xz * 1.6 + v_local.y * 1.7).r;
 	float heat = clamp(v_c.x, 0.0, 1.0);
-	float melt = v_c.y;
 	float seed = v_c.w;
-	// Which facet this is (the twelve each face their own way): each flashes on its own clock while it tumbles.
+	float day = 1.0 - flare_hue.a;
+	// Down: glass for the first frames of its landing (<=0.12 s), then only the wet mark.
+	float down = v_c.z;
+	float glassk = 1.0 - down * smoothstep(0.0, 0.08, v_c.y);
+	// Which facet this is (twelve, each facing its own way): the one its seed picks takes the flash.
 	float fid = floor(atan(v_local.z, v_local.x) * 0.955 + 3.0) + step(0.0, v_local.y) * 7.0;
-	float tick = floor(TIME * (11.0 + 7.0 * seed) + seed * 17.0 + fid * 3.1);
-	float flick = step(0.72, fl_h(seed * 13.0 + fid * 1.37 + tick * 0.173));
-	// Glass: a cold blue-grey body, lit by the fire and the moon like any solid (at 0.04-0.06 dark glass it was
-	// invisible on the char: judge 3).
-	vec3 ice = vec3(0.13, 0.17, 0.22) * (0.8 + 0.45 * cr);
-	vec3 alb = mix(ice, COLOR.rgb * 0.4, COLOR.a * 0.25);
-	// Melted: darker wet stone under a skin of water.
-	// (f6d: eleven hundred plates lying flat, lit full by the sky, read as litter: down, they go dark and wet at
-	// once, and only their glints stay.)
-	ALBEDO = mix(alb, vec3(0.05, 0.06, 0.075), max(smoothstep(0.0, 0.3, melt), v_c.z * 0.6));
+	float mine = 1.0 - step(0.5, abs(fid - floor(fl_h(seed * 5.3) * 12.0)));
+	// The body: clear cyan glass (about rgb 95,140,170 over the dark), a little of the light behind it bent
+	// through the crystal's grain, cooler and thinner by day so the sun on it never turns it white.
+	vec3 body = vec3(0.075, 0.17, 0.27) * (0.85 + 0.3 * cr) * mix(1.0, 0.7, day);
+	float grazing = pow(rim, 3.0);
+	vec3 rimc = vec3(0.42, 0.58, 0.72) * grazing * mix(1.0, 0.75, day);
+	vec3 flash = vec3(0.62, 0.72, 0.8) * v_flash * mine * (1.0 - down);
+	// Hot: lit orange at its edges by the fire that threw it (only the edges: a whole face lit read as confetti).
+	vec3 hot = vec3(1.0, 0.32, 0.05) * heat * 1.1 * pow(rim, 2.5);
+	ALBEDO = mix(vec3(0.05, 0.08, 0.1), vec3(0.012, 0.014, 0.016), 1.0 - glassk);
 	ROUGHNESS = 0.3;
 	SPECULAR = 0.0;
 	METALLIC = 0.0;
-	float glint = smoothstep(0.975, 0.995, dot(NORMAL, VIEW));
-	float plane = smoothstep(0.72, 0.8, cr) * (1.0 - smoothstep(0.8, 0.9, cr));
-	float alive = (1.0 - smoothstep(0.35, 0.75, melt)) * (1.0 - 0.6 * v_c.z);
-	// The pool's last glints: sharp, a few frames on and off, gone as it dries.
-	float pool = smoothstep(0.3, 0.6, melt) * (1.0 - smoothstep(0.85, 1.0, melt)) * step(0.55, fl_h(seed * 7.0 + tick * 0.31))
-		* (1.0 - smoothstep(0.05, 0.11, length(v_local.xz - vec2(fl_h(seed) - 0.5, fl_h(seed + 0.5) - 0.5) * 0.4)));
-	// (The cold rim is put out by the heat: orange faces with blue rims added up to pink, s5.)
-	EMISSION = vec3(0.22, 0.42, 0.75) * (pow(rim, 2.0) * 0.5 + plane * 0.12 + 0.05) * alive * (1.0 - 0.85 * heat)
-		+ vec3(0.7, 0.86, 1.0) * (glint * 1.3 + flick * (1.0 - v_c.z) * 0.4) * alive * (1.0 - 0.8 * heat)
-		+ vec3(0.8, 0.92, 1.0) * pool * 1.8
-		// Hot: lit orange through its faces by the fire that threw it, brightest at its edges.
-		// Only its edges and a breath of its body: a whole face lit read as a flat flake of confetti (s5).
-		+ vec3(1.0, 0.3, 0.04) * heat * (0.06 + 1.3 * pow(rim, 2.5));
+	EMISSION = ((body * (1.0 - 0.8 * heat) + rimc * (1.0 - 0.8 * heat) + flash) + hot) * glassk;
+	float a_glass = clamp(0.55 + 0.35 * grazing + 0.4 * v_flash * mine, 0.0, 0.95);
+	// The wet mark: dark, soft-edged, about 0.6x the ground, drying out.
+	float r = length(v_local.xz);
+	float a_wet = 0.42 * (1.0 - smoothstep(0.18, 0.46, r + (cr - 0.5) * 0.12)) * (1.0 - smoothstep(0.2, 1.0, v_c.y));
+	ALPHA = mix(a_wet, a_glass, glassk);
 }

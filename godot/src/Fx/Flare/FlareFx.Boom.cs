@@ -197,8 +197,9 @@ public partial class FlareFx
                     glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * 0.25f + d * 0.4f, v, 0.32f + R() * 0.16f, 0.3f + R() * 0.12f,
                         new Color(1.1f, 0.48f, 0.12f), new Color(0.6f, 0.1f, 0.02f), sizeEnd: 0.85f + R() * 0.35f, drag: 4.2f, lift: 1.2f);
                 }
-        // The heat riding the ring's line for its first third of a second.
-        float hs = Mathf.SmoothStep(0.0f, 0.03f, s) * (1 - Mathf.SmoothStep(0.22f, 0.34f, s));
+        // The heat and dust riding ahead of the ring's line while it runs (judge 4 fix 7: its skirt), born with it
+        // clear of the fireball.
+        float hs = Mathf.SmoothStep(3.8f, 6.2f, RingAt(s, ringMax)) * (1 - Mathf.SmoothStep(0.5f, 0.68f, s));
         haze.Visible = hs > 0.005f || s < 0.03f;
         hazeMat.SetShaderParameter("radius", RingAt(s, ringMax));
         hazeMat.SetShaderParameter("strength", hs);

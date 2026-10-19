@@ -17,6 +17,7 @@ varying vec2 v_uv;
 varying flat float v_kind;
 varying flat float v_age;
 varying flat float v_seed;
+varying flat float v_glow; // a puff's own light (FlareBits.P.Glow, in the basis' unused y.x)
 varying float v_len;
 varying float v_h; // a puff: how high on it, by the world's up as seen (-1 its belly .. 1 its crown)
 
@@ -27,6 +28,7 @@ void vertex() {
 	v_kind = floor(INSTANCE_CUSTOM.w + 1e-4);
 	v_age = INSTANCE_CUSTOM.w - v_kind;
 	v_seed = fract(float(INSTANCE_ID) * 0.6180339);
+	v_glow = MODEL_MATRIX[1].x;
 	v_uv = UV;
 	vec3 pv = (VIEW_MATRIX * vec4(at, 1.0)).xyz;
 	vec3 vv = (VIEW_MATRIX * vec4(vel, 0.0)).xyz;
@@ -112,6 +114,7 @@ void fragment() {
 		// Its belly darker and warmer, its crown pale (by day a pale puff with no belly read as a contrail).
 		float under = smoothstep(0.3, -0.85, v_h + (n - 0.5) * 0.6);
 		rgb *= mix(vec3(1.0), vec3(0.5, 0.42, 0.35), under * mix(0.85, 0.5, flare_hue.a));
+		emit = rgb * v_glow * (0.6 + 0.4 * under);
 	} else if (v_kind < 4.5) {
 		// A thread of light rising: thin, bright along its length, fading at both ends.
 		float along = q.y * 0.5 + 0.5;

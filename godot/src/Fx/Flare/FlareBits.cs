@@ -30,6 +30,9 @@ public partial class FlareBits : MultiMeshInstance3D
         /// <summary>The way it is drawn, if not its way of travel (a tongue riding the ring stands up and leans
         /// out while it runs with the line).</summary>
         public Vector3? Show;
+        /// <summary>A puff's own light (0 none): its colour times this, glowing (the Return's wisps lit amber from
+        /// the cracks under them, judge 4 fix 6). Sent in the transform's unused basis.y.x.</summary>
+        public float Glow;
     }
 
     readonly List<P> live = new();
@@ -130,7 +133,7 @@ public partial class FlareBits : MultiMeshInstance3D
             // milliseconds.)
             int o = n * 20;
             float sz = Mathf.Max(0.001f, s);
-            buf[o] = sz; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = p.At.X;
+            buf[o] = sz; buf[o + 1] = p.Glow; buf[o + 2] = 0; buf[o + 3] = p.At.X;
             buf[o + 4] = 0; buf[o + 5] = sz; buf[o + 6] = 0; buf[o + 7] = p.At.Y;
             buf[o + 8] = 0; buf[o + 9] = 0; buf[o + 10] = sz; buf[o + 11] = p.At.Z;
             buf[o + 12] = c.R; buf[o + 13] = c.G; buf[o + 14] = c.B; buf[o + 15] = c.A;

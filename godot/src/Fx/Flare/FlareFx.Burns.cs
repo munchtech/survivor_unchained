@@ -287,27 +287,46 @@ public partial class FlareFx
         {
             double s = t - lastAt;
             float rr = RingAt(s, ringMax), speed = (RingAt(s + 0.02, ringMax) - rr) / 0.02f;
-            // (Judge 3: tongues 0.5-1.2 m tall every ~0.6 m, leaning out. One slot each 0.6 m of the line, each lit
-            // about once a tongue's life, so they stand evenly spread; each rides the line, drawn standing.)
-            int slots = Mathf.Max(8, (int)(Mathf.Tau * rr / 0.6f));
-            float life = 0.13f;
+            // (Judge 4 fix 7: tongues 0.6-1.0 m tall every ~0.45 m, leaning well out, so the band has height; amber
+            // to their tips, never red. Judge 3 had 0.5-1.2 m every 0.6 m.) Only once the line is clear of the fireball.
+            float born = Mathf.SmoothStep(3.8f, 6.2f, rr);
+            int slots = Mathf.Max(8, (int)(Mathf.Tau * rr / 0.45f));
+            float life = 0.16f;
             for (int i = 0; i < slots; i++)
             {
-                if (R() > dt / life) continue;
+                if (R() > dt / life * born) continue;
                 float a = (i + R()) * Mathf.Tau / slots;
                 var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                var p = boomAt + way * (rr - 0.03f);
+                var p = boomAt + way * (rr - 0.08f);
                 if (new Vector2(p.X - at.X, p.Z - at.Z).Length() > reach - 0.5f) continue;
                 p.Y = (float)HeightAt(p.X, p.Z) + 0.03f;
-                float tall = 0.5f + R() * 0.7f;
+                float tall = 0.6f + R() * 0.4f;
                 glow.Spawn(new FlareBits.P
                 {
-                    Kind = FlareBits.Kind.Tongue, At = p, V = way * speed * 0.9f + Vector3.Up * (0.6f + R() * 0.8f),
-                    Show = way * (0.35f + R() * 0.3f) + Vector3.Up, Life = life * (0.7f + R() * 0.6f), Size = tall / 2.6f, SizeEnd = tall / 2.6f * 0.8f,
-                    Color = new Color(1.1f, 0.52f, 0.14f), ColorEnd = new Color(0.7f, 0.12f, 0.02f),
+                    Kind = FlareBits.Kind.Tongue, At = p, V = way * speed * 0.95f + Vector3.Up * (0.6f + R() * 0.8f),
+                    Show = way * (0.55f + R() * 0.35f) + Vector3.Up, Life = life * (0.7f + R() * 0.6f), Size = tall / 2.6f, SizeEnd = tall / 2.6f * 0.85f,
+                    Color = new Color(1.2f, 0.62f, 0.18f), ColorEnd = new Color(0.85f, 0.36f, 0.06f),
                 });
             }
+            // The ring's birth (judge 4 fix 8): the fireball's lower billows roll out along the ground with the line
+            // over its first 4-6 m (f118-f124), thinning as the burning band takes over from them.
+            if (rr < 7f)
+            {
+                float k = 1 - Mathf.SmoothStep(4.5f, 7f, rr);
+                int bn = (int)(Mathf.Tau * Mathf.Max(rr, 1f) / 0.7f);
+                for (int i = 0; i < bn; i++)
+                {
+                    if (R() > dt / 0.1f * k) continue;
+                    float a = (i + R()) * Mathf.Tau / bn;
+                    var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                    var p = boomAt + way * (rr * (0.7f + R() * 0.3f));
+                    p.Y = (float)HeightAt(p.X, p.Z) + 0.25f + R() * 0.35f;
+                    glow.Spawn(FlareBits.Kind.Fire, p, way * speed * (0.85f + R() * 0.2f) + Vector3.Up * (0.3f + R() * 0.6f), 0.14f + R() * 0.08f, 0.45f + R() * 0.25f,
+                        new Color(1.1f, 0.52f, 0.13f), new Color(0.7f, 0.26f, 0.04f), sizeEnd: 0.8f + R() * 0.3f, drag: 1.5f, lift: 0.5f);
+                }
+            }
         }
+        GroundSteam(dt);
         // ---- The Return: steam off every scar. Not contrails (t5): each column is fed in gusts from a tight spot,
         // leaves fast and slows, snakes on its own eddies, leans downwind more the higher it climbs, and spreads
         // and thins until it breaks up. By day fewer puffs, so it never reads as a pale sheet.
@@ -341,6 +360,37 @@ public partial class FlareFx
         }
     }
 
+    /// <summary>The Return's ground steam (judge 4 fix 6: none in the arena at +1 s): low, slow wisps off the burnt
+    /// and melting ground over the reach, hugging it and drifting, a fifth of them lit amber from the cracks under
+    /// them; by day fewer and pale.</summary>
+    void GroundSteam(float dt)
+    {
+        if (lastAt <= 0) return;
+        float r = (float)(t - lastAt);
+        if (r < 0.3f || r > 4.6f) return;
+        float k = Mathf.SmoothStep(0.3f, 0.8f, r) * (1 - Mathf.SmoothStep(3.0f, 4.6f, r));
+        float rate = (Night ? 40 : 18) * k;
+        float far = Mathf.Min(RingAt(r, ringMax), ringMax);
+        for (int i = 0, n = (int)(rate * dt + R()); i < n; i++)
+        {
+            float a = R() * Mathf.Tau, d = Mathf.Sqrt(R()) * far;
+            var p = boomAt + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * d;
+            if (new Vector2(p.X - at.X, p.Z - at.Z).Length() > reach - 0.3f) continue;
+            if (new Vector2(p.X - Her.X, p.Z - Her.Z).LengthSquared() < 4) continue;
+            p.Y = (float)HeightAt(p.X, p.Z) + 0.12f + R() * 0.2f;
+            bool amber = R() < 0.2f;
+            bed.Spawn(new FlareBits.P
+            {
+                Kind = FlareBits.Kind.Puff, At = p, V = new Vector3((R() - 0.5f) * 0.3f, 0.2f + R() * 0.25f, (R() - 0.5f) * 0.3f),
+                Life = 2.2f + R() * 1.0f, Size = 0.4f + R() * 0.2f, SizeEnd = 1.4f + R() * 0.6f,
+                Color = Night ? (amber ? new Color(0.62f, 0.36f, 0.16f, 0.16f) : new Color(0.36f, 0.38f, 0.42f, 0.12f)) : new Color(0.82f, 0.8f, 0.76f, 0.07f),
+                ColorEnd = Night ? new Color(0.34f, 0.36f, 0.4f, 0.0f) : new Color(0.8f, 0.79f, 0.76f, 0.0f),
+                Drag = 1.2f, Lift = 0.1f, Swirl = 0.6f, Seed = R(), Wind = SteamWind * 0.25f,
+                Glow = Night ? (amber ? 0.55f : 0.18f) : 0,
+            });
+        }
+    }
+
     /// <summary>The night air the steam leans on (m/s²): one way across the whole field.</summary>
     static readonly Vector3 SteamWind = new(1.0f, 0, 0.45f);
 
@@ -363,7 +413,13 @@ public partial class FlareFx
         if (!firstLanded) { firstLanded = true; Shots.Want("b7_ember1", 1 / 60.0); Shots.Want("b8_embers", 0.2); }
         if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c1a_p10", 0.1); Shots.Want("c1w_wave", 0.3); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
         marks.Add(new Vector4(p.X, p.Z, em.Radius * (em.Last ? 0.8f : 0.9f), (float)t));
-        if (marks.Count > 30) marks.RemoveAt(0);
+        // Its scar's shape (judge 4 fix 9: twelve identical round rings): stretched along the ember's way over the
+        // ground, its own size, its own arcs.
+        var way = new Vector2(em.Dir.X, em.Dir.Z);
+        if (way.LengthSquared() < 0.01f) { float wa = R() * Mathf.Tau; way = new Vector2(Mathf.Cos(wa), Mathf.Sin(wa)); }
+        way = way.Normalized();
+        markAux.Add(new Vector4(way.X, way.Y, em.Last ? 1 : 0.7f + R() * 0.6f, R()));
+        if (marks.Count > 30) { marks.RemoveAt(0); markAux.RemoveAt(0); }
         // (The last word's own light, if it carried one, goes with the flash: left on, it lit the char orange to
         // the end of the Return, s5a.)
         if (em.Last && em.Light != null)
@@ -514,8 +570,12 @@ public partial class FlareFx
 
     /// <summary>A statue breaks: its ice flies out away from what broke it (hot from the fire), a small scorch where
     /// it stood, sparks lift, a breath of frost dust. Never a body that just goes.</summary>
-    /// <summary>3-6 plates of ice a statue (judge 3), a few more for the big.</summary>
-    int Plates(float scale) => (int)((3 + R() * 3.99f) * Mathf.Sqrt(Mathf.Max(scale, 1)));
+    /// <summary>2-4 plates of ice a statue (judge 3 had 3-6; judge 4 adds 1-2 chunks), a few more for the big.</summary>
+    int Plates(float scale) => (int)((2 + R() * 2.99f) * Mathf.Sqrt(Mathf.Max(scale, 1)));
+
+    /// <summary>1-2 chunks of 40-60 cm a statue (judge 4 fix 4).</summary>
+    void Chunks(Vector3 w, float scale, float speed, float heat, Vector3 away, bool thrown) =>
+        shards.Burst(w + Vector3.Up * 0.8f * scale, R() < 0.5f ? 1 : 2, speed, 0.46f * Mathf.Sqrt(scale), new Color(0, 0, 0, 0), heat, away, thrown, chunk: true);
 
     void Shatter(Vector3 w, float scale, Vector3 from, bool ring)
     {
@@ -526,6 +586,7 @@ public partial class FlareFx
             // The ring's burst (judge 2, s4: even, still confetti): the ice thrown out along the line's way,
             // stretched by its speed and lit orange through its faces, landing a metre or three on and cooling grey.
             shards.Burst(w + Vector3.Up * 0.9f * scale, Plates(scale), 7.5f, 0.24f * Mathf.Sqrt(scale), new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
+            Chunks(w, scale, 7.5f, 1.3f, away, true);
             // The line flares where it crosses a body (while the line is there: a late one threw a lone upright
             // tongue, a vertical bar at +1.4 s, f6h).
             if (lastAt > 0 && t - lastAt < 0.7) glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
@@ -544,7 +605,11 @@ public partial class FlareFx
                 ColorEnd = new Color(0.62f, 0.65f, 0.7f, 0.0f), Drag = 2.2f, Lift = 0.8f, Swirl = 1.0f, Seed = R(), Wind = SteamWind * 0.5f,
             });
         }
-        else shards.Burst(w + Vector3.Up * 0.9f * scale, Plates(scale), 5f, 0.24f * Mathf.Sqrt(scale), new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.9f, away);
+        else
+        {
+            shards.Burst(w + Vector3.Up * 0.9f * scale, Plates(scale), 5f, 0.24f * Mathf.Sqrt(scale), new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.9f, away);
+            Chunks(w, scale, 5f, 0.9f, away, false);
+        }
         // A scorch where it stood, on the glass only: inside the ring's char, one a statue read as a grid of stumps (judge 3).
         if (!ring) scars.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Scar, At = w + Vector3.Up * 0.04f, Life = 4.4f + R(), Size = (0.65f + R() * 0.3f) * scale, Color = new Color(0.02f, 0.016f, 0.013f, 0.6f) });
         // (The dust small, faint and cold: at 1.6 m and pale, 250 of them at once laid a grey sheet over the crowd.)

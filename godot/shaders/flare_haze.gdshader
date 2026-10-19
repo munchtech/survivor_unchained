@@ -22,9 +22,12 @@ void vertex() {
 void fragment() {
 	vec2 d = v_w.xz - center.xz;
 	float dl = length(d);
-	// The band: a metre and a half, mostly just behind the line, where the air is hottest.
-	float x = (dl - radius + 0.35) / 0.8;
-	float band = exp(-x * x) * strength;
+	// The skirt (judge 4 fix 7): heat and kicked-up dust 1-1.5 m ahead of the line, the blast before its fire,
+	// and a breath of it just behind the line where the air is hottest.
+	float ah = dl - radius;
+	float x = (ah - 0.6) / 0.6;
+	float band = (exp(-x * x) + 0.5 * exp(-pow((ah + 0.25) / 0.4, 2.0))) * strength;
+	band = min(band, 1.0);
 	if (band < 0.01) discard;
 	// It churns: rising cells, bending more across the band than along it.
 	vec2 q = v_w.xz * 0.9 + vec2(0.0, -age * 6.0);
@@ -33,6 +36,9 @@ void fragment() {
 	vec2 dir = d / max(dl, 1e-3);
 	vec2 off = (dir * n1 * 1.2 + vec2(n2, -n1) * 0.7) * band * 0.016;
 	// (screen space: x across, y down; the ground's outward roughly maps to the screen's)
-	ALBEDO = texture(screen_tex, SCREEN_UV + off).rgb;
+	vec3 bent = texture(screen_tex, SCREEN_UV + off).rgb;
+	// The dust: a warm brown veil, thickest at the skirt's front, torn by the churn.
+	float dust = exp(-x * x) * strength * smoothstep(0.35, 0.7, n1 + 0.5 + n2 * 0.6);
+	ALBEDO = mix(bent, bent * vec3(0.78, 0.66, 0.52) + vec3(0.025, 0.017, 0.008), dust * 0.55);
 	ALPHA = smoothstep(0.01, 0.12, band);
 }
