@@ -6,13 +6,14 @@ namespace SurvivorUnchained.View;
 /// <summary>
 /// --her-draws: her share of the frame's draw calls (armor.md's play-draw budget). From 4 s it averages the viewport's
 /// draws over 30 frames with her shown, then 30 with her skeleton hidden, prints the difference and what of hers is
-/// visible (meshes and surfaces drawn, and those casting shadows), and shows her again. Not for pictures.
+/// visible (meshes and surfaces drawn, and those casting shadows), and shows her again; the same for primitives
+/// (triangles) drawn, seen and in shadow passes. Not for pictures.
 /// </summary>
 public partial class HerDraws : Node
 {
     Skeleton3D skel = null!;
     int frame;
-    double t, a, ash, b, bsh;
+    double t, a, ash, b, bsh, pa, psh, pb, pbsh;
     string seen = "";
 
     public static void Watch(People.Person p)
@@ -28,9 +29,11 @@ public partial class HerDraws : Node
         var vp = GetViewport().GetViewportRid();
         double d = RenderingServer.ViewportGetRenderInfo(vp, RenderingServer.ViewportRenderInfoType.Visible, RenderingServer.ViewportRenderInfo.DrawCallsInFrame);
         double sh = RenderingServer.ViewportGetRenderInfo(vp, RenderingServer.ViewportRenderInfoType.Shadow, RenderingServer.ViewportRenderInfo.DrawCallsInFrame);
+        double pr = RenderingServer.ViewportGetRenderInfo(vp, RenderingServer.ViewportRenderInfoType.Visible, RenderingServer.ViewportRenderInfo.PrimitivesInFrame);
+        double prs = RenderingServer.ViewportGetRenderInfo(vp, RenderingServer.ViewportRenderInfoType.Shadow, RenderingServer.ViewportRenderInfo.PrimitivesInFrame);
         // (the info is the last drawn frame's: skip the frame after each switch)
-        if (frame >= 1 && frame <= 30) { a += d; ash += sh; }
-        if (frame >= 33 && frame <= 62) { b += d; bsh += sh; }
+        if (frame >= 1 && frame <= 30) { a += d; ash += sh; pa += pr; psh += prs; }
+        if (frame >= 33 && frame <= 62) { b += d; bsh += sh; pb += pr; pbsh += prs; }
         if (frame == 30)
         {
             var list = new System.Collections.Generic.List<string>();
@@ -56,7 +59,7 @@ public partial class HerDraws : Node
         if (frame == 62)
         {
             skel.Visible = true;
-            GD.Print($"her draws: {(a - b) / 30:0.0} visible + {(ash - bsh) / 30:0.0} shadow (frame {a / 30:0} + {ash / 30:0}sh without her {b / 30:0} + {bsh / 30:0}sh); {seen}");
+            GD.Print($"her draws: {(a - b) / 30:0.0} visible + {(ash - bsh) / 30:0.0} shadow (frame {a / 30:0} + {ash / 30:0}sh without her {b / 30:0} + {bsh / 30:0}sh); her primitives: {(pa - pb) / 30:0} visible + {(psh - pbsh) / 30:0} shadow; {seen}");
         }
         frame++;
     }

@@ -139,12 +139,22 @@ public partial class HerLod : Node
         pieceShadows.Add((sh, like));
     }
 
+    /// <summary>Her teeth and tongue, drawn only with her full model: at the play camera her mouth is under a pixel, and
+    /// they are two draws and two shadow casters.</summary>
+    void Mouth(bool show)
+    {
+        if (!IsInstanceValid(skel)) return;
+        foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
+            if (mi.Name.ToString() is var n && (n.Contains("Teeth") || n.Contains("Tongue"))) mi.Visible = show;
+    }
+
     internal void Remove()
     {
         foreach (var l in pairs.Select(q => q.Lod).Distinct()) l.QueueFree();
         shadow?.QueueFree();
         foreach (var (s, _) in pieceShadows) s.QueueFree();
         foreach (var f in fulls) if (IsInstanceValid(f)) f.Visible = true;
+        Mouth(true);
         // (out of the tree at once, so the one made next takes its name and For finds that one)
         GetParent()?.RemoveChild(this);
         QueueFree();
@@ -175,6 +185,7 @@ public partial class HerLod : Node
             }
             if (shadow != null) shadow.Visible = want && Mode != "mesh";
             foreach (var (s, _) in pieceShadows) s.Visible = want && Mode != "mesh";
+            Mouth(!want);
         }
         if (!want) return;
         // Whatever the full model wears, these wear (a dye, her paint, a ghost's overlay).
