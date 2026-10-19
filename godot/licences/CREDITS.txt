@@ -227,6 +227,8 @@ Building materials, 1k
     https://polyhaven.com/a/medieval_blocks_03
 * "Castle Wall Slates" by Rob Tuytel: slate roofs, clay tiles
     https://polyhaven.com/a/castle_wall_slates
+* "Roof Slates 02" by Rob Tuytel: the crypt's stone-slate roof
+    https://polyhaven.com/a/roof_slates_02
 * "Rock Boulder Dry" by Dimitrios Savva, Rico Cilliers: headstones, rock
     https://polyhaven.com/a/rock_boulder_dry
 * "Rough Wood" by Rob Tuytel: posts, crosses, timber
