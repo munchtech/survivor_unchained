@@ -1073,6 +1073,11 @@ WRAP = {"staff": {"bends": {"index": (58.9, 73.7, 46.5), "middle": (65.6, 79.3, 
         "daggers_l": {"bends": {"index": (38.3, 100.6, 55.4), "middle": (59.4, 104.0, 7.5), "ring": (62.2, 94.4, 5.7), "pinky": (73.2, 76.4, 23.2), "thumb": (28.0, -11.3, 54.7)}, "spreads": {"index": -22.8, "middle": 3.8, "ring": -4.3, "pinky": -0.6},
                   "oppose": 0.00, "thumb_roll": -11.2}}
 
+# The wand (anim-40, 19 October): Made.Wand's grip made the one-handed blade's (13.7 mm round, a knob below, a collar
+# above), seated on the blade's pocket (WeaponSockets.PocketR Wand: BladeAtR / BladeDirR, GRIP["wand"] 35): the same
+# fist. fistfit wand passes on it (cast_flick, the wand run and sprint).
+WRAP["wand"] = WRAP["sword"]
+
 
 def spread_axis(rig, j):
     """A finger's base knuckle's spread axis (bone space): across its bend axis and its own line, the palm's normal."""
@@ -1580,7 +1585,7 @@ def _one_frame(rig: Rig, keys, base=None):
 # diagonal, WRAP["staff"]). Only her and the hero
 # (Rig.grips): the folk also play the Universal Animation Library, held
 # square. Must match the game's mounts (Arms.Spec.Lean).
-GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0, "staff": 18.0}
+GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 35.0, "staff": 18.0}
 
 
 def grip_of(weapon):

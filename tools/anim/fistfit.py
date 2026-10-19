@@ -82,6 +82,10 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           # The crossbow's pistol grip (tools/assets/crossbow_grip.py: 13.7 mm round, raked 22.5 deg), seated on its pocket
           # (WeaponSockets.CrossbowAtR / CrossbowDirR, Arms.Seat's pistol path). "near" (mm): only the piece within that
           # of the grip's line is the grip's (the stock, the lever and the bow lie across the slices square to it).
+          # The wand (anim-40): Made.Wand's grip is the one-handed blade's (13.7 mm round), seated on its pocket and held in
+          # its fist (WRAP["wand"] is WRAP["sword"]).
+          "wand": dict(arms="wand@hand_r", at="BladeAtR", dir="BladeDirR", outfit="arcanist", rest=("cast_flick", 0),
+                       weapon=("wand",), wrap="sword"),
           "crossbow": dict(arms="crossbow@hand_r", at="CrossbowAtR", dir="CrossbowDirR", outfit="ranger",
                            rest=("idle_stalker", 0), near=30.0, seed="sword")}
 # Pieces dropped in as data (GRIP_STANDARD.md section 4): tools/armor/weapon_drop.py writes each new piece's row, copied

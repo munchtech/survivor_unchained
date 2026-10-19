@@ -147,6 +147,8 @@ public static class WeaponSockets
     {
         WeaponKind.Staff => (FistAtR, FistDirR),
         WeaponKind.Blade1H => (BladeAtR, BladeDirR),
+        // The wand: Made.Wand's grip is the one-handed blade's (13.7 mm round, anim-40), held in the same fist.
+        WeaponKind.Wand => (BladeAtR, BladeDirR),
         WeaponKind.Dagger => (DaggerAtR, DaggerDirR),
         WeaponKind.Crossbow => (CrossbowAtR, CrossbowDirR),
         _ => null,

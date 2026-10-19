@@ -153,7 +153,9 @@ public class WeaponSocketsTests
         Assert.Equal((WeaponSockets.DaggerAtR, WeaponSockets.DaggerDirR), WeaponSockets.PocketR(WeaponKind.Dagger));
         // The axe's line is measured but not live (its haft is too thick for her fist to close on: see AxeAtR).
         Assert.Equal((WeaponSockets.CrossbowAtR, WeaponSockets.CrossbowDirR), WeaponSockets.PocketR(WeaponKind.Crossbow));
-        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Shield, WeaponKind.Wand })
+        // The wand is held in the one-handed blade's fist (Made.Wand's grip is the Blade1H's, anim-40).
+        Assert.Equal((WeaponSockets.BladeAtR, WeaponSockets.BladeDirR), WeaponSockets.PocketR(WeaponKind.Wand));
+        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Shield })
             Assert.Null(WeaponSockets.PocketR(k));
     }
 

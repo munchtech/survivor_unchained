@@ -43,7 +43,7 @@ public static class Arms
         // The crossbow: its stock 0.693 m (the size it had while Make took its 0.85 m bow for its length, before its
         // anchor_grip said the stock is the shaft), held by its pistol grip (tools/assets/crossbow_grip.py, Seat).
         ["crossbow"] = new("crossbow", 0.693f, 0.3f, Pistol: true, Kind: WeaponKind.Crossbow),
-        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30, Kind: WeaponKind.Wand),
+        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 35, Kind: WeaponKind.Wand, Seated: true),  // her one-handed fist (anim-40): Made.Wand's grip is the Blade1H's, seated on BladeAtR; fistfit wand
         ["shield_round"] = new("shield_round", 0.66f, 0.5f, Kind: WeaponKind.Shield),
         ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),
         ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),  // grip conformed (grip_conform.py --no-anchor); its left fist: fistfit.py daggers --side l
