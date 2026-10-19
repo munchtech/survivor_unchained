@@ -16,7 +16,7 @@ from dataclasses import replace
 import numpy as np
 
 from clips import idle
-from clips.run import RUNS, SPRINT_ARMS
+from clips.run import POST, RUNS, SPRINT_ARMS
 from gait import arc_of, run_cycle
 from keyed import build
 
@@ -61,7 +61,9 @@ def sprint(rig, run):
             (ft, fo, fe, fr), (bt, bo, be, br) = sw
             return ((ft + k[0], fo, fe + k[1], fr), (bt * k[2], bo + 1, be + k[3], br))
         s = replace(s, swing=sped(g.swing), swing_r=None if g.swing_r is None else sped(g.swing_r))
-    return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
+    clip = run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
+    # (The run's post-pass too: the warden's town hand on her sword's hilt, run.hilt_carry.)
+    return POST[run](rig, clip) if run in POST else clip
 
 
 # The stops' left fingers closed onto her hip frame by frame (deg; idle.hip_layer's `curl`): with the hand kept on her
