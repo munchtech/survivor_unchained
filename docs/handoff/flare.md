@@ -4,6 +4,32 @@ Read `docs/team/README.md`, `RESUME.md` (top block), `OWNER_NOTES.md` (13 Octobe
 `docs/design/FLARE_LOOK.md` §0, §1.6, §4.1, §4.4. Branch `flare-1`, worktree `.claude/worktrees/agent-af0782e2e3f51bc1f`.
 Numbers are classes' (paused; send anything for classes through the coordinator). Her clip is animation's.
 
+## Paused here (successor 9, 18 October, coordinator wind-down); next:
+- Integration 19c4915e merged (5d23b6f8). No judge has run yet, so nothing is cut and nothing judged. No turn held.
+- **The BOOM now lands at f67 of the lq 60 fps run, not f114** (the whole beat shifted 47 frames after the merge; the
+  press-to-BOOM is unchanged as far as the frames show). Every old frame number shifts by -47: +1 s = f127, +3 s = f247.
+- (1) Light: DONE by the numbers. I(t) re-shaped (0.5 under the flash, 1 by ~f70, slower decay), undip 0.6x, and two
+  defaults from a sweep: `FireGain` 0.8 (the fire after the flash, `FLARE_FIREGAIN`) and `FireRim` 0.7. Arena night
+  (sweep A): peak 1.68x, 1 frame over 1.5x, sustain f69-f93 1.31-1.44x; day 0.85-0.90x. **Open:** the empty field is
+  still 23 frames over 1.5x (peak 1.86x; FLARE_LOOK 1.6 allows 4); gain 0.65/rim 0.6 gave 11 and an arena sustain
+  1.28-1.36x. The fire itself is the excess there, not the world light (rim-off A/B). Decide at the judge: accept for
+  the empty press, or make the gain follow the crowd.
+- (4) Judge 4's 4-9: built by a medium solver (commits 9e268781..87b92af2; shot s9c = `Ls9c_an_*`/`Ls9c_sd_*` in
+  `.shots`, BOOM f67; taken BEFORE the light defaults). Its own misses: ring hot band ~16 px (target 20-30), outer hue
+  23-25 (25-35); shard cyan coverage far under target; a white crust on the frost's outer edge at +1 s (cause unknown);
+  **steam doesn't show (cut it if the judge doesn't see it)**; scars not re-checked. Glow particle cap 2600 -> 3400.
+- **Next:** one shoot with the light defaults (`KEEPALL=1 bash $S/lq.sh s18 an sd`, $S = 34daaf5d `scratchpad/s`;
+  run `Godot --headless --import` first if turn.py says STALE), then ONE combined max judge (whole-frame gate first) on
+  the BOOM + 4-9 at 1:1 full frames: night f66 f67 f69 f72 f76 f80 f85 f93 f100 f113 f127 f187 f247, day f67 f76 f85
+  f100 f127, the scars beat row `s18_an_b9_last_1.png`, plus a small f60-f130 strip for motion. Main's rule: an item
+  that's a NO in round 1 is CUT, not re-roled. Then (3) the atlas only if the birth fails, (6) captures, (7) tests + MR.
+- (5) Other Flares: DONE, one shoot (sheet `survivorsunchained_inputs/flare9/other_flares_state.jpg`): all seven are
+  stand-ins (shared dip and sparks; a crescent on the Bill and Drag, a blue glow on the Branding). **The Road's Toll and
+  One Arrow barely show at the play camera: they fail "every press visible".** Backlog for the next Flare build, no fixes.
+- Scripts: `survivorsunchained_inputs/flare9/scripts/` (`rr.py TAG [-r a,b,step]` = luma ratio per frame and frames
+  over 1.5x; `gsweep.sh` = 100-frame runs with env knobs). This session's Temp scratchpad was wiped mid-run; keep
+  scripts there. Keep-list: not started (`.shots` holds only s9c + old kept frames now; C: 64 GB).
+
 ## Paused here (successor 8, 18 October: queued until cinematics frees its slot); next:
 - Integration merged clean at 8834b4dd (no conflicts; `godot/assets` junction still points inside this worktree).
   Nothing tuned, shot or judged yet. No turn held. The main checkout's stray `FlareFx.cs`/`FlareFx.Burns.cs` are 0 bytes (nothing to save).

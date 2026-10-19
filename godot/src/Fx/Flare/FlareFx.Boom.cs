@@ -19,9 +19,9 @@ public partial class FlareFx
     /// <summary>The fireball's centre over the crater in the sim (birth.py's centre), and its rim light on the statues.</summary>
     const float BallY = 1.5f;
     const float Roll = 0f;
-    static readonly float FireRim = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRERIM"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fr) ? fr : 1.0f;
+    static readonly float FireRim = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRERIM"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fr) ? fr : 0.7f;
     /// <summary>The fire after the flash (lead 9: the luminance budget, FLARE_LOOK 1.6; FLARE_FIREGAIN for look-dev).</summary>
-    static readonly float FireGain = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIREGAIN"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fg) ? fg : 1f;
+    static readonly float FireGain = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIREGAIN"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fg) ? fg : 0.8f; // (lead 9 sweep: 0.8 + rim 0.7 = arena peak 1.68x, 1 frame over 1.5x, sustain 1.31-1.44x)
     static readonly float FireLight = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRELIGHT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fl) ? fl : 9f;
     readonly Vector3[] jets = new Vector3[12];
     int jetN;
