@@ -1,0 +1,48 @@
+# 1i. NPCs and crowds
+
+The board: `C:\Users\munch\Desktop\survivorsunchained_inputs\look_bible_refs\boards\09_npcs.jpg`. It sits outside the repo because its top rows are other games' screenshots, kept for reference only and never shipped.
+
+**The look in one line:** NPCs that belong in her world without her detail: one shared base, variety from data, and staging (light, mist, silhouette) wherever a close-up would show what a tier-2 head lacks.
+
+Tier 2 for the story NPCs (the Warden, Grimtunnel, the villagers) and tier 3 for the fodder (the drowned, the risen). The bar is "looks good in the shot and runs well", not "matches her".
+
+## What it IS (references; what each teaches)
+
+| Reference | What it teaches |
+|---|---|
+| Kingdom Come II ([Steam](https://store.steampowered.com/app/1771300), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1771300/ss_b863918a1655050ee6200846cf8abb71137fa13e.1920x1080.jpg)) | Story NPCs in real proportions, with textured skin and plain clothes that have weight. Not her level of detail, and nothing cartoon. |
+| Dragon's Dogma 2 ([Steam](https://store.steampowered.com/app/2054970), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2054970/ss_ef263c112e274dc73a4bb00596aee1ebfc2b0ed8.1920x1080.jpg)) | A warm key from one side and a soft fill. On a tier-2 face the light does half the work. |
+| Banishers ([Steam](https://store.steampowered.com/app/1493640), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1493640/ss_d955784e3e58baa3ae037a7cbab886e27af01980.1920x1080.jpg)) | Villagers at mid distance. Varied silhouettes and a muted palette from a small kit of clothes; no face detail is needed at this size. |
+| Banishers ([Steam](https://store.steampowered.com/app/1493640), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1493640/ss_c309ec41b66ba62ab7c7c54a257f58f7a5d2a4ee.1920x1080.jpg)) | Faces lit by one candle and falling off into the dark. Staging hides what a tier-2 head lacks. |
+| Lords of the Fallen ([Steam](https://store.steampowered.com/app/1501750), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1501750/ss_ecb5a5df054344bf681282edb3ed76499e675605.1920x1080.jpg)) | A figure backlit in cold blue mist, a silhouette with a lit edge. Our drowned and the Warden, staged. |
+
+## What ours ISN'T (our frames, 18 Oct audit, 1:1)
+
+| Frame | What fails |
+|---|---|
+| `frames/c02_s1.jpg` (C02 s1) | Cartoon drowned standing in a grid in flat water, a green-faced zombie in front, no mist. |
+| `frames/c03_s1.jpg` (C03 s1) | The Warden as a cartoon: a clay beard shell and blank white eyes in a flat blue fill. |
+| `frames/c03_s10.jpg` (C03 s10) | Grimtunnel's untextured, polka-dot skin; a faceted brim hides his eyes. |
+| `frames/c04b_sb4b.jpg` (C04 B sb4b) | A cartoon villager with chunky hair, plastic skin and a clay-smooth bodice. |
+
+## The trick
+
+1. One shared base for every human: her base through Marionette, with face and body morphs for variety, and one texture atlas per crowd type.
+2. Variety from data, not new models: a tint per instance (skin, hair, cloth), a small kit of clothes, hair cards from the style library.
+3. Tier 3 (the drowned, the risen): instanced, with animation baked to textures (VAT) and LODs. A wet shader (darker, glossier, strands of weed) tells the drowned's story.
+4. Staging over detail: mist, backlight and silhouette for crowds; a hood and "two blue points" for the Warden's eyes; a hero head only where a close-up needs one.
+5. A face in close-up gets a three-quarter key and a darker background, as hers does.
+
+## DONE means (at the cameras each NPC is shown at, 1:1)
+
+- No NPC reads as a cartoon next to her at the camera it's shown at.
+- Crowds read as silhouettes with a lit edge, in rows that recede (C02 s2, s10).
+- Every NPC face in a close-up is a hero head or is staged (hood, backlight, mist).
+- The bar for tiers 2 and 3 is "looks good in the shot and runs well", not "matches her". Budgets on page 2.
+
+Owners: The story characters lead through Marionette (the base, morphs, the clothes kit, hair cards); animation (VAT for crowds, the story clips); cinematics (staging).
+
+## Sources
+- Crowds: "we could successfully create a scene where 10,000 crowd NPCs are on screen at the same time" (Cournoyer, [AC Unity, GDC 2015](https://gdcvault.com/play/1022141/Massive-Crowd-on-Assassin-s)); instanced crowds with animation in textures: "almost 10,000 characters, independently animating ... at 30 frames/sec" ([GPU Gems 3, ch. 2](https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch02.html)).
+- Staging that hides a low-detail face (hoods, backlight, silhouette) has no public source; it is our own craft.
+- The full list, with verified quotes, is in `look_bible_refs\tricks_sources.md` (outside the repo).

@@ -19,8 +19,15 @@ Written by the art direction lead (look bible 1) from 18 October 2026. It sets t
 |---|---|---|
 | 1a | [Her armor metal](01_armor_metal.md) | passed the coordinator; with the owner |
 | 1b | [Her skin](02_skin.md) | board ready for the owner |
-| 1c-1j | Light, grade and mist; water and shore; foliage; terrain and road; stone and the castle; the town; NPCs; story props and flames | to do |
-| 2 | Per-tier budgets (triangles, textures, materials, draw calls) | measuring |
+| 1c | [Light, grade and mist](03_light_grade_mist.md) | built; at the lead's judge |
+| 1d | [Water and shore](04_water_shore.md) | built; at the lead's judge |
+| 1e | [Foliage](05_foliage.md) | built; at the lead's judge |
+| 1f | [Terrain and road](06_terrain_road.md) | built; at the lead's judge |
+| 1g | [Stone and the castle](07_stone_castle.md) | built; at the lead's judge |
+| 1h | [The town](08_town.md) | built; at the lead's judge |
+| 1i | [NPCs and crowds](09_npcs.md) | built; at the lead's judge |
+| 1j | [Story props and flames](10_props_flames.md) | built; at the lead's judge |
+| 2 | Per-tier budgets (triangles, textures, materials, draw calls) | measured (`look_bible_perf\summary.md`); page to write |
 | 3 | The Prologue's asset inventory: keep, rework or build | extracted, to mark |
 | 4 | The tutorial's launch-ready checklist (the first 20-30 minutes) | to do |
 
@@ -28,3 +35,4 @@ Written by the art direction lead (look bible 1) from 18 October 2026. It sets t
 - Reference pictures from other games are for reference only and never ship. They live outside the repo, in `C:\Users\munch\Desktop\survivorsunchained_inputs\look_bible_refs\`; `steam\sources.csv` logs each source URL.
 - The repo holds only our own frames (`frames/`, from the 18 October whole-frame audit, 1:1), links, and short notes on what each reference teaches.
 - Every board says what the look IS, what ours ISN'T, the cheap trick that buys it, and what DONE means at the game's cameras at 1:1.
+- `tools/lumstats.py` measures a frame's light (luma p5/p50/p95, clipping, saturation, pools) for the DONE lines on 1c and 1h.
