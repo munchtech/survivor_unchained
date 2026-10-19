@@ -117,6 +117,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | HANDED OFF 14 Oct early (restart from RESUME): Flare lead 6 ade7c2d0af7e2dbf3, flare-1 @ b24624ca in worktree agent-af0782e2e3f51bc1f, not merged; judge 4 NOT READY (BOOM, shards, Return FAIL) | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
+| Storybook cinematics (drawn, Diablo III style: the format, the player, the look; SB00 first) | storybook 1, worktree storybook-1 (19 Oct) | docs/team/storybook.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | HELD (the owner, 12 Oct night: face and outfits first). PAUSED 12 Oct evening (handoff docs/handoff/hero_male.md on worktree-agent-ac39445bca5508eaf@9c51a20d) | docs/team/hero_male.md |
