@@ -106,8 +106,9 @@ Total: 48.0 s.
 
 ## Lines
 
-All the narrator's (*casting:* 50s, neutral RP, low and close, a winter's tale by
-the fire). Conversation `cin_drowned_fire`.
+All the narrator's (*casting:* the owner's 6 October recast, `VOICES.md`: a woman of
+about sixty, plain and dry, level, the valley's accent lightly; no warmth, no winter's
+tale). Conversation `cin_drowned_fire`.
 
 | VO id | Shot | Line | Note |
 |---|---|---|---|
@@ -177,6 +178,10 @@ the fire). Conversation `cin_drowned_fire`.
 - **In.** A match: creation's last frame (her, dry, the high fire) holds 0.5 s and
   cuts hard to black (the drowning), then wakes her soaked by the same fire burned
   down, 0.4 m from where she stood. The title music cuts with the picture.
+  **With the storybook intro** (`docs/story/storybook/sb00_stay_where_they_reach.md`,
+  once it is built): creation's frame fades into SB00, which ends on the drowning in
+  black, and this script starts at shot 1 without its water-closing sound (SB00,
+  "Handover to C01").
 - **Out.** Shot 12 blends into the follow camera over its last 2 s; the world, held
   at `WorldRate` 0 with the risen mid-rise since shot 11, runs from the blend's end.
   `Stage.Wake` begins as now.
