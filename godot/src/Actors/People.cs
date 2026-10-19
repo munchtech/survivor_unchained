@@ -898,6 +898,23 @@ public static class People
                 if (on.Contains("allsss")) { m.SetShaderParameter("scatter", 0f); m.SetShaderParameter("backlight", 0f); }
                 GD.Print($"H1Debug part {mi.Mesh.SurfaceGetMaterial(s)?.ResourceName}");
             }
+        // (shot-only, tone solver 18 Oct: headnocast / bodynocast / othernocast: her head's mesh, her body's, or every
+        // other mesh of hers (outfit, hair) casts no shadow, to find what shades her neck from the moon)
+        foreach (var mi in p.Meshes.Concat(p.Hair))
+        {
+            bool isHead = false, isBody = false;
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var rn = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+                if (rn == "skin_head") isHead = true;
+                if (rn == "Material_0.001" || rn == "skin_graft") isBody = true;
+            }
+            if (isHead ? on.Contains("headnocast") : isBody ? on.Contains("bodynocast") : on.Contains("othernocast") || on.Contains("nocast:" + mi.Name))
+            {
+                mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                GD.Print($"H1Debug nocast {mi.Name}");
+            }
+        }
         GD.Print($"H1Debug: {dbg}");
     }
 
@@ -1043,8 +1060,9 @@ public static class People
         HerLod.For(p)?.Merge(laid);
     }
 
-    static Shader? furShader, sheerShader, outfitShader;
-    static Godot.Collections.Dictionary? outfitTable;
+    static Shader? furShader, sheerShader, outfitShader, metalShader;
+    static Godot.Collections.Dictionary? outfitTable, metalFinishes;
+    static Texture2D? metalDetail;
 
     /// <summary>Her outfit's pieces drawn as what they are made of
     /// (shaders/heroine_outfit.gdshader: leather, metal, cloth or gloss, from
@@ -1064,8 +1082,40 @@ public static class People
             var entry = outfitTable[key].AsGodotDictionary();
             int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, "twill" => 4, "satin" => 5, _ => -1 };
             if (kind < 0) continue;
-            var m = new ShaderMaterial { Shader = outfitShader };
+            // (metal: the same shader with metal's own light and reflection, one shared scratch-and-pit
+            // detail and its key's finish; the look bible's armor-metal page)
+            if (kind == 1) metalShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_metal.gdshader");
+            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : outfitShader };
             m.SetShaderParameter("kind", kind);
+            if (kind == 1)
+            {
+                metalDetail ??= GD.Load<Texture2D>("res://art/outfit/metal_wear_detail.png");
+                m.SetShaderParameter("metal_detail", metalDetail);
+                m.SetShaderParameter("has_detail", metalDetail != null);
+                metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
+                if (metalFinishes.TryGetValue(key, out var fin) && (string)fin == "blued") m.SetShaderParameter("finish", 1);
+                // (pieces of this key with a finish of their own, matched in the shader by the piece
+                // number heroine_outfits.py bakes into each piece: the key's pieces are one mesh)
+                if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
+                {
+                    string set = mi.Name.ToString().Split('_')[0];
+                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids;
+                    int n = 0;
+                    foreach (var (pn, pv) in byKey.AsGodotDictionary())
+                    {
+                        var name = (string)pn;
+                        if (n >= 4 || !name.StartsWith(set + ".")) continue;
+                        var o = pv.AsGodotDictionary();
+                        ids[n] = PieceNumber(name[(set.Length + 1)..]);
+                        if (o.TryGetValue("metal_rough", out var r)) pr[n] = (float)r;
+                        if (o.TryGetValue("metal_env_graze", out var g)) pg[n] = (float)g;
+                        n++;
+                    }
+                    m.SetShaderParameter("piece_id", ids);
+                    m.SetShaderParameter("piece_rough", pr);
+                    m.SetShaderParameter("piece_graze", pg);
+                }
+            }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
             m.SetShaderParameter("normal_map", src.NormalTexture);
             m.SetShaderParameter("orm", src.RoughnessTexture);
@@ -1077,8 +1127,22 @@ public static class People
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
             if (System.Environment.GetEnvironmentVariable("GOLD_ROUGH") is string gr && float.TryParse(gr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var grv)) m.SetShaderParameter("gold_rough", grv);
+            if (System.Environment.GetEnvironmentVariable("OUTFIT_DEBUG_VIEW") is string dv && int.TryParse(dv, out var dvv)) m.SetShaderParameter("debug_view", dvv);   // (a check: 4 = the gold mask flat magenta)
             mi.SetSurfaceOverrideMaterial(s, m);
         }
+    }
+
+    /// <summary>A piece's own number, as heroine_outfits.py bakes it into its vertex
+    /// colours' green: the CRC-32 of its name's first word (greave_l: greave) mod 1000, over 1000.</summary>
+    static float PieceNumber(string word)
+    {
+        uint c = 0xFFFFFFFF;
+        foreach (byte b in System.Text.Encoding.UTF8.GetBytes(word.Split('_')[0]))
+        {
+            c ^= b;
+            for (int k = 0; k < 8; k++) c = (c >> 1) ^ (0xEDB88320u & (uint)-(int)(c & 1));
+        }
+        return ((~c) % 1000) / 1000f;
     }
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
@@ -1460,7 +1524,7 @@ public static class People
         if (HeadRigOff) w = 1;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (outfitShader != null && m.Shader == outfitShader)))
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (outfitShader != null && m.Shader == outfitShader) || (metalShader != null && m.Shader == metalShader)))
                     m.SetShaderParameter("look_rig", w);   // (her outfit too: its steel and leather rougher under the rig, s29)
     }
 

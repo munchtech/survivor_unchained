@@ -4208,6 +4208,25 @@ BONING_TAPER = float(os.environ.get("BONING_TAPER", "0.008"))
 # line's own depth, 10 cm inside her: the channel dived into her at the leg line, and the side of that dive was
 # judge fin1/fin2's tab (r_hand_outer_rest) and thorn (a_leo_qr); the taper was on its end, inside her. 0 = off.)
 BONING_CLIP = float(os.environ.get("BONING_CLIP", "0.008"))
+# (touch-up 2, 18 Oct, the owner's C01 frames: the Reaver's cord is laid from inside the base of her neck and taut
+# over the hollow between her collarbones and her neck, not snapped to the skin nearest each point, which jumped
+# across that crease and hooked; ribbon(taut=). TAUT_ITERS: the passes of its pull. 0 = off.)
+TAUT_CORD = int(os.environ.get("TAUT_CORD", "1"))
+TAUT_ITERS = int(os.environ.get("TAUT_ITERS", "40"))
+# (touch-up 3, 18 Oct, the C01 s10 firelight close-up: the cord showed at the back of her neck as a dark bracket and
+# went missing down the side of her neck. Two causes, measured on the built rig with her head turned 40-60 degrees:
+# the band of skin at her nape from 1 to 4 cm above neck_01 folds over itself in a turn (the skin's own weights; a
+# point 3.5 mm off it, weighted exactly as it is, still goes 2-4 mm under), and the cord's back ran in that band
+# with a 2 cm wobble (laid from inside, rising and dipping) and a V where its two ends met. So the cord is a closed
+# loop (smoothed across its join) and its back is free to slide along her: eased straight, without shrinking up
+# her neck (Taubin), no higher than NAPE_CORD below neck_01 at the back, taut over hollows as before. Its front,
+# with the fangs, does not move. NAPE_CORD: metres below neck_01's head; < 0 = off.)
+NAPE_CORD = float(os.environ.get("NAPE_CORD", "0.01"))
+NAPE_ITERS = int(os.environ.get("NAPE_ITERS", "150"))
+# (NAPE_SIDE: at her neck's sides it rides this much higher than behind, where her neck meets her shoulders: any
+# lower and it lay out on top of her shoulders, 16 cm from her neck's axis. Her skin there holds in a turn up to
+# 1.5 cm above neck_01.)
+NAPE_SIDE = float(os.environ.get("NAPE_SIDE", "0.011"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
@@ -4599,7 +4618,7 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
-           hides=False, follow=False, flare=None, onto=None, taper=None):
+           hides=False, follow=False, flare=None, onto=None, taper=None, taut=0, closed=False, nape=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
@@ -4617,7 +4636,20 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     that piece's outside as seen from ahead, `lift` off it, moving with it
     (a boning channel on a suit). `taper`, a length: over that much of its
     end it eases down into the piece it lies on and narrows, so it ends
-    flush, not in a square tab (a boning channel ending on a panel)."""
+    flush, not in a square tab (a boning channel ending on a panel).
+    `closed`: its first and last control points are one, and it is eased
+    across that join as along the rest (a cord round her neck). `nape`
+    (height, y): with `taut`, its points behind y slide along her, eased
+    straight and no higher than that height (NAPE_CORD)."""
+    def sm3(a):
+        # (one [1 2 1]/4 pass along it; round the join when closed)
+        a = a.copy()
+        if closed:
+            r = a[:-1]
+            r = (np.roll(r, 1, 0) + 2 * r + np.roll(r, -1, 0)) / 4
+            return np.concatenate([r, r[:1]])
+        a[1:-1] = (a[:-2] + 2 * a[1:-1] + a[2:]) / 4
+        return a
     if onto is not None:
         s_pos, s_tris, s_wt, s_thick = SHEET[onto]
         s_bvh = BVHTree.FromPolygons([tuple(p) for p in s_pos], s_tris.tolist())
@@ -4650,9 +4682,98 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     # (not snapped, it is taut, as given: it bridges a hollow rather than
     # sinking into it)
     for _ in range(3):
-        c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
+        c = sm3(c)
         if snap:
             c = lay(c)
+    if taut and snap and onto is None:
+        # (taut, the Reaver's cord (touch-up 2, 18 Oct; the owner's C01 frames): laid on her skin it sank into the
+        # hollow between her collarbones and her neck and hooked at its edges. A cord over a hollow is held up by
+        # its own pull: each point is only ever lifted off her along her skin's normal, by as much as its
+        # neighbours' pull would carry it, never moved along her (so the fangs stay on it) and never pushed in.
+        # `taut` is the most it may stand off her, in metres)
+        for _ in range(TAUT_ITERS):
+            sm = sm3(c)
+            hit = [SKIN_BVH.find_nearest(Vector(p)) for p in c]
+            q = np.array([h[0][:] for h in hit])
+            n = np.array([h[1][:] for h in hit])
+            up = np.maximum(((sm - c) * n).sum(1), 0.0)
+            c = c + n * up[:, None]
+            h_ = ((c - q) * n).sum(1)
+            c = c - n * (np.maximum(h_, 0.0) - np.clip(h_, 0.0, taut))[:, None] - n * np.minimum(h_, 0.0)[:, None]
+        if nape is not None and closed:
+            # (NAPE_CORD, see the knob: the back slides, Taubin-eased (a pass in, a pass out: wobbles go, the loop
+            # does not shrink up her neck), held under the height, then back onto her within `taut`)
+            zcap, y0, ay = nape
+            r = c[:-1].copy()
+            r0_ = r.copy()
+            w_ = ramp(r[:, 1], y0, y0 + 0.03)
+            # (its back laid afresh: laid by rays from inside the base of her neck, it doubled back on itself behind
+            # her shoulders (an 8 cm jump). So: its front, from the fangs out to where it turns behind her, kept;
+            # behind, an arc round her neck, each point cast level out from her neck's axis, rising from where
+            # the front ends to the height behind)
+            fr = np.nonzero(w_ < 0.3)[0]
+            fr = fr[fr.argsort()]
+            assert (np.diff(fr) == 1).all(), "nape: the cord's front is not one run"
+            pa, pb = r[fr[0]], r[fr[-1]]
+            fa = np.arctan2(pa[0], pa[1] - ay)
+            fb = np.arctan2(pb[0], pb[1] - ay)
+            if fa < fb:
+                fa += 2 * np.pi
+            n_ = max(8, int((fa - fb) * 0.065 / 0.003))
+            u_ = np.linspace(0, 1, n_ + 2)[1:-1]
+            ph = fb + (fa - fb) * u_
+            fa_, fb_ = fa - 2 * np.pi * (fa > np.pi), fb
+
+            def prof(f_):
+                # (its height round her: zcap behind, NAPE_SIDE higher at her sides, down to the front's ends)
+                f_ = (f_ + np.pi) % (2 * np.pi) - np.pi
+                z_ = zcap + NAPE_SIDE * np.sin(np.minimum(np.abs(f_), np.pi / 2)) ** 2
+                ze = np.where(f_ > 0, pa[2], pb[2])
+                fe = np.where(f_ > 0, abs(fa_), abs(fb_))
+                return z_ + (ze - zcap - NAPE_SIDE) * ramp(np.abs(f_), np.pi / 2, fe)
+            zz = prof(ph)
+            arc = []
+            for f_, z_ in zip(ph, zz):
+                d_ = Vector((np.sin(f_), np.cos(f_), 0.0))
+                hit_ = SKIN_BVH.ray_cast(Vector((0.0, ay, z_)), d_, 0.3)
+                arc.append(np.array(hit_[0][:]) if hit_[0] is not None else np.array(SKIN_BVH.find_nearest(Vector((0.08 * d_[0], ay + 0.08 * d_[1], z_)))[0][:]))
+            r = np.concatenate([r[fr], np.array(arc)])
+            w_ = np.concatenate([w_[fr], np.ones(len(arc))])[:, None]
+            for _ in range(NAPE_ITERS):
+                for f_ in (0.5, -0.53):
+                    # (across the cord only, never along it: points eased along it bunched and spread, 1 to 27 mm)
+                    t_ = np.roll(r, -1, 0) - np.roll(r, 1, 0)
+                    t_ /= np.linalg.norm(t_, axis=1)[:, None] + 1e-12
+                    L_ = (np.roll(r, 1, 0) + np.roll(r, -1, 0)) / 2 - r
+                    r = r + f_ * w_ * (L_ - (L_ * t_).sum(1)[:, None] * t_)
+                r[:, 2] -= w_[:, 0] * np.maximum(r[:, 2] - prof(np.arctan2(r[:, 0], r[:, 1] - ay)) - 0.001, 0.0)
+                hit = [SKIN_BVH.find_nearest(Vector(p)) for p in r]
+                q = np.array([h[0][:] for h in hit])
+                n = np.array([h[1][:] for h in hit])
+                h_ = ((r - q) * n).sum(1)
+                # (out of her at once; in toward her only softly: pulled straight in, points over the crease
+                # where her neck meets her shoulders all went to the same point of it)
+                r = r - n * (np.minimum(h_, 0.0) + 0.2 * np.maximum(h_ - taut, 0.0))[:, None]
+                # (and the arc behind her kept evenly spaced along itself, its ends on the front's)
+                nf_ = len(fr)
+                pl = np.concatenate([r[nf_ - 1:], r[:1]])
+                sl = np.r_[0, np.cumsum(np.linalg.norm(np.diff(pl, axis=0), axis=1))]
+                tq = np.linspace(0, sl[-1], len(pl))[1:-1]
+                r[nf_:] = np.stack([np.interp(tq, sl, pl[:, k]) for k in range(3)], 1)
+            c = np.concatenate([r, r[:1]])
+            if os.environ.get("CORD_DUMP"):
+                np.savez(os.environ["CORD_DUMP"], before=r0_, after=r, w=w_[:, 0])
+            tg_ = np.diff(np.concatenate([r, r[:2]]), axis=0)
+            tg_ /= np.linalg.norm(tg_, axis=1)[:, None] + 1e-12
+            ang = np.degrees(np.arccos(np.clip((tg_[1:] * tg_[:-1]).sum(1), -1, 1)))
+            ln_ = np.linalg.norm(np.diff(np.concatenate([r, r[:2]]), axis=0)[1:], axis=1)
+            bk_ = np.roll(w_[:, 0], -1) > 0.5
+            print("NAPE %s: back at %.1f..%.1f mm below the cap, its sharpest bend %.0f deg/cm (front %.0f), its steps %.1f..%.1f mm"
+                  % (name, (zcap - np.roll(r[:, 2], -1)[bk_].max()) * 1000, (zcap - np.roll(r[:, 2], -1)[bk_].min()) * 1000,
+                     (ang / (ln_ * 100))[bk_].max(), (ang / (ln_ * 100))[~bk_].max(), ln_.min() * 1000, ln_.max() * 1000))
+        hit = [SKIN_BVH.find_nearest(Vector(p)) for p in c]
+        h_ = (((c - np.array([h[0][:] for h in hit])) * np.array([h[1][:] for h in hit])).sum(1))
+        print("TAUT %s: stands off her up to %.1f mm (mean %.1f) over %d points" % (name, h_.max() * 1000, h_.mean() * 1000, len(c)))
     if onto is not None and BONING_CLIP > 0:
         # (s18, BONING_CLIP: no further than its piece goes, see the knob)
         hit_ = np.array([s_bvh.ray_cast(Vector((p[0], -0.6, p[2])), Vector((0, 1, 0)), 1.2)[0] is not None for p in c])
@@ -4671,9 +4792,11 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     else:
         nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
     for _ in range(4):
-        nrm[1:-1] = (nrm[:-2] + 2 * nrm[1:-1] + nrm[2:]) / 4
+        nrm = sm3(nrm)
     nrm /= np.linalg.norm(nrm, axis=1)[:, None]
     tg = np.gradient(c, axis=0)
+    if closed:
+        tg[0] = tg[-1] = c[1] - c[-2]
     tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
     bn = np.cross(nrm, tg)
     bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
@@ -4709,7 +4832,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     if not follow:
         wt[:] = wt.mean(1, keepdims=True)
     for _ in range(6):
-        wt[1:-1] = (wt[:-2] + 2 * wt[1:-1] + wt[2:]) / 4
+        wt = sm3(wt)
     edge = (wrow[:, None] / 2 - np.abs(off[None, :] * wrow[:, None])).ravel()
     at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
@@ -8355,6 +8478,13 @@ def reaver():
             front_point(0.035, nz + 0.06), front_point(0.0, nz + 0.035), front_point(-0.035, nz + 0.06),
             np.array([-0.07, -0.04, neck_z - 0.045]), np.array([-0.055, 0.03, neck_z]), np.array([0.0, 0.07, neck_z + 0.02])]
     path = on_surface(cord[2:7], step=0.003)
+    if TAUT_CORD and NAPE_CORD >= 0:
+        # (NAPE_CORD: its back laid under the cap from the start, so the cap only holds it, never flattens it)
+        cord_t = [q.copy() for q in cord]
+        for k_, dz_ in ((0, 0.004), (8, 0.004), (1, 0.012), (7, 0.012)):
+            cord_t[k_][2] = neck_z - NAPE_CORD - dz_
+    else:
+        cord_t = cord
     for _ in range(3):
         path[1:-1] = (path[:-2] + 2 * path[1:-1] + path[2:]) / 4
     low = path[np.argsort(path[:, 2])[:len(path) // 3]]
@@ -8377,7 +8507,12 @@ def reaver():
                  flare=0.06, lift=0.016, trim=edge(0.01), nu=120, strips=11, one_piece=0.7),
         # Wolf fangs on a cord round her neck, hanging into her cleavage:
         # trophies of the Verge's wolves.
-        *ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003),
+        # (TAUT_CORD: laid from inside the base of her neck, so no point jumps from her collarbone to her neck
+        # as the skin nearest it did, and taut over the hollow between them)
+        *(ribbon("reaver.cord", cord_t, 0.004, "blackleather", lift=0.0025, thick=0.003, taut=0.008,
+                 centre=np.array([0.0, 0.005, neck_z - 0.05]), closed=NAPE_CORD >= 0,
+                 nape=(neck_z - NAPE_CORD, -0.02, head("neck_01")[1]) if NAPE_CORD >= 0 else None) if TAUT_CORD else
+          ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003)),
         *fangs("reaver.fangs", fang_at, fang_out, fang_down, "bone"),
         # Beneath it a G-string hung from the belt itself: a narrow front
         # (hidden by the panel) and a string down the back, both running up
@@ -9200,6 +9335,14 @@ if BODY_OUT:
     # (and her neck's skin under her head given her head's weights there first, so the cut drops the two as one:
     # heroine_neck.match_graft; the pieces and hair that took that skin's weights follow it, match_pieces below)
     heroine_neck.match_graft(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
+    # (18 Oct, the owner on C01: "a giant atoms apple". Her throat's weights refilled smoothly between her chest and
+    # the skin under her head, her clavicles and upper arms out of her neck's column (the pieces and hair that took her
+    # neck's weights follow, match_pieces below, through match_graft's field), then her neck's front and sides faired
+    # inward as the game shows her after the cut: heroine_throat_skin.py. Off: THROAT_SOFT=0)
+    if os.environ.get("THROAT_SOFT", "1") == "1":
+        import heroine_throat_skin
+        heroine_throat_skin.ease(BODY_OUT)
+        heroine_throat_skin.soften(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     print("BODY", BODY_OUT)
 
