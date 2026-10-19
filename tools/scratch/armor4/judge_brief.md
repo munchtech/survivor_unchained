@@ -41,3 +41,7 @@ Frames, all in C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\armor
 - For each FAIL: the cause as you read it, and a concrete fix (what to change, and where you'd look) with its owner. Restage or cut a shot that can't pass the gate. Don't close it as known.
 - One line per checklist item: overall PASS/FAIL.
 - Anything outside armor that fails the gate, by owner, in one list.
+
+## Notes
+- A frame caught mid-blink (eyes closed) is capture timing, not a defect, unless the face itself reads wrong.
+- Read every listed frame once at full size; the whole frames serve the gate, the crops serve the play-camera checklist. No other files are needed (the owner's three calibration frames excepted).
