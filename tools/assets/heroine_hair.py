@@ -863,6 +863,16 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb(pts)), comb, L / (points - 1), np.full(len(pts), points - 1), off,
                 side=no_part(pts), stop=lambda q: np.linalg.norm(q - T, axis=1) < reach,
                 lift=lift * np.clip((pts[:, 2] - (EYE_Z + 0.06)) / 0.04, 0, 1))
+        # (18 October, touch-up hair round 2: a strand that never came within `reach` of the tie (held off it by her
+        # head, round behind her ear) ran on its whole length past it, down her neck: the thin dark strand under her
+        # ear by the fire (C01 s10, the owner's o3). Each now ends where it comes nearest the tie. GATHER_CUT=0: as before.)
+        if os.environ.get("GATHER_CUT", "1") == "1":
+            dT = np.linalg.norm(P - T, axis=2)
+            jn = dT.argmin(1)
+            miss = dT.min(1) >= reach
+            for i in np.nonzero(miss)[0]:
+                P[i, jn[i] + 1:] = P[i, jn[i]]
+            print("  gathered: %d of %d never reached the tie, cut where nearest it" % (miss.sum(), len(P)))
         P = resample(P, points)
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
@@ -1161,7 +1171,9 @@ def style_braid():
         parts.append(lobe)
         # (loose hairs over each strand of it)
         fuzz = np.stack([path[:end + 2] + out[:end + 2] * 0.008 * taper[:end + 2, None]])
-        parts.append(cards(resample(fuzz, 32), np.array([0.026]), list(range(6, 11)), 0.012))
+        _fz = cards(resample(fuzz, 32), np.array([0.026]), list(range(6, 11)), 0.012)
+        if os.environ.get("DBG_NOFUZZ") != "1":
+            parts.append(_fz)
     # Tied off, and a short tail below.
     # (18 October, face 30: a ring 9 mm round its middle, the band sank into
     # the braid, whose strands reach 3.4 cm across it and 1.8 out, and into
@@ -1184,7 +1196,9 @@ def style_braid():
         for inset, wd in ((0.0055, 0.013), (0.0105, 0.016)):
             q = C[:end + 1] + ac[:end + 1] * (sd * (reach_[:end + 1] - inset))[:, None] + out[:end + 1] * (0.006 * taper[:end + 1])[:, None]
             q = np.vstack([T + (q[0] - T) * (0.1 if grow else 0.4), q])   # (from up under her gathered hair)
-            parts.append(cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35))
+            _cv = cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35)
+            if os.environ.get("DBG_NOCOVER") != "1":
+                parts.append(_cv)
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
         c["swing"] = True
