@@ -20,6 +20,8 @@ public partial class FlareFx
     const float BallY = 1.5f;
     const float Roll = 0f;
     static readonly float FireRim = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRERIM"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fr) ? fr : 1.0f;
+    /// <summary>The fire after the flash (lead 9: the luminance budget, FLARE_LOOK 1.6; FLARE_FIREGAIN for look-dev).</summary>
+    static readonly float FireGain = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIREGAIN"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fg) ? fg : 1f;
     static readonly float FireLight = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRELIGHT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fl) ? fl : 9f;
     readonly Vector3[] jets = new Vector3[12];
     int jetN;
@@ -161,7 +163,7 @@ public partial class FlareFx
             // The birth burns through the eye's dip (the world stops down, the fireball doesn't: solver 5 measured the
             // dip taking the birth's whitest pixel from 0.92 to 0.85 at f118); exempt to f142 (0.47 s), handed back over 10 frames (judge 5a 1e).
             float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.15f, 0.27f, c)); // (lead 7, s14: the life exempt re-brightened the frame f126-f140, an extra swing and 18 frames over 1.5x empty; the birth only now, back by f130)
-            simMat.SetShaderParameter("gain", 1.25f * through * (LessFlash ? 0.6f : 1));
+            simMat.SetShaderParameter("gain", 1.25f * through * Mathf.Lerp(1, FireGain, Mathf.SmoothStep(0.04f, 0.12f, c)) * (LessFlash ? 0.6f : 1));
             // After the birth only the hottest of the fire burns through the dip (judge 5b 2b: a hot band in the folds).
             simMat.SetShaderParameter("undip", 0.6f * (1 / Math.Max(0.4f, dipNow) - 1) * Mathf.SmoothStep(0.12f, 0.3f, c)); // (lead 9: 0.6x and a longer hand-over, s16 re-brightened at f134)
             // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
