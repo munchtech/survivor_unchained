@@ -22,11 +22,11 @@ import math
 import numpy as np
 
 from clips import idle
-from clips.actions import arm, body, stance
+from clips.actions import KNEE_Y, TUCK_Y, arm, body, stance
 from clips.sword import _n
 from gait import arc_of
 from keyed import build
-from rig import qinv, qmatrix, qmul
+from rig import qeuler, qinv, qmatrix, qmul, qrot
 
 
 def feet_of(rig, base, f=0, turn=False):
@@ -436,49 +436,140 @@ def _arc_vec(spec):
     return np.array([math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)]) * r
 
 
+def _pchip(pts, fr):
+    """A place along (frame, vector) points, monotone between them (no overshoot past a point, so a held place
+    stays held)."""
+    xs = np.array([p[0] for p in pts], float)
+    ys = np.array([np.asarray(p[1], float) for p in pts])
+    if fr <= xs[0]:
+        return ys[0]
+    if fr >= xs[-1]:
+        return ys[-1]
+    h = np.diff(xs)
+    d = np.diff(ys, axis=0) / h[:, None]
+    m = np.zeros_like(ys)
+    for k in range(1, len(xs) - 1):
+        a, b = d[k - 1], d[k]
+        w1, w2 = 2 * h[k] + h[k - 1], h[k] + 2 * h[k - 1]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            m[k] = np.where(a * b > 0, (w1 + w2) / (w1 / a + w2 / b), 0.0)
+    k = int(np.searchsorted(xs, fr) - 1)
+    t = (fr - xs[k]) / h[k]
+    h00, h10, h01, h11 = 2 * t ** 3 - 3 * t ** 2 + 1, t ** 3 - 2 * t ** 2 + t, -2 * t ** 3 + 3 * t ** 2, t ** 3 - t ** 2
+    return h00 * ys[k] + h10 * h[k] * m[k] + h01 * ys[k + 1] + h11 * h[k] * m[k + 1]
+
+
 def stalker_break(rig):
     base = idle.base_of(rig, "stalker")
     f = feet_of(rig, base, turn=True)
-    # (Her haunches as deep as before she was stood up, 18 Oct: idle.STAND lifted the base 11 cm, carried it 19 cm
-    # forward and turned it back 10 deg.)
-    # Her left hand reaching down ahead of her left knee, two fingers toward the ground (chest frame, from the shoulder:
-    # with her bent over, ahead in the chest's frame is down and forward in hers). Keyed in her space at a point past
-    # her reach (6 cm left of her middle, on the ground), the arm went straight down across her and the upper arm
-    # 24-35 mm into her breast and side as she sank and rose (animation 38): here the arm hangs from the shoulder,
-    # the elbow turned out.
-    reach_l = {"arc": arc_of(STALKER_CROUCH_L), "pole": (1.0, -0.2, -0.3), "frame": "chest",
-               "knuckles": _n(0.0, 0.2, 1.0), "blade": _n(-0.9, 0.1, -0.3), "twist": 0.4}
-    crouch = {"hips": {"pos": (0, -0.37, -0.13), "rot": (0, 32, 0)}, "spine": (0, 22, 0), "head": (0, 10, 0),
-              "foot_l": f["foot_l"], "foot_r": f["foot_r"],
-              "hand_l": reach_l, "fingers_l": "open",
-              # The crossbow held out over her knees, the stock level ahead (the idle's carry, low across her, went
-              # 73 mm into her right thigh and the right arm 80 mm into her legs as she sank).
-              "hand_r": {"arc": arc_of((-0.12, -0.10, 0.42)), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
-                         "knuckles": idle._n((0.15, 0.35, 0.92)), "twist": 0.5}}
-    # (Every key's feet given, planted with the base's own turn: a key without them came out with her feet squared to
-    # rest, 5 and 14 deg off the idle's at the break's ends.)
+    sk, I = rig.sk, rig.I
+    # Down on one knee to read the ground (animation 39: the heel-squat she had, hips behind her heels and the back
+    # near flat, read from the play camera in a thong cut as crouching to relieve herself, the head hunched down).
+    # The right foot steps back onto its tucked toes and the right knee goes down; the left foot stays planted ahead,
+    # its shin near upright; the pelvis under her shoulders, the back near upright, the head up and scanning. The
+    # pelvis is placed in her space (the base's own sway taken out, so the knee holds still on the ground), the knee
+    # a thigh's length below the solved hip, the foot a shin's length behind it.
+    def base_pelvis(fr):
+        fr = min(fr, base.frames - 1)
+        g, p = sk.fk(base.rot[fr][None], base.pos[fr][None])
+        return p[0, I["pelvis"]]
+
+    kneel = {"hips": {"rot": BREAK_HIPS_ROT}, "spine": BREAK_SPINE, "neck": BREAK_NECK, "head": BREAK_HEAD,
+             "foot_l": f["foot_l"], "foot_r": f["foot_r"]}
+    BOT = 81
+    bot = dict(kneel, hips={"pos": tuple(np.subtract(BREAK_PELVIS, base_pelvis(BOT))), "rot": BREAK_HIPS_ROT})
+    local, pos = rig.solve(bot, base=(base.rot[BOT], base.pos[BOT]))
+    gq, gp = sk.fk(local[None], pos[None])
+    gq, gp = gq[0], gp[0]
+    hip = gp[I["thigh_r"]]
+    L = float(np.linalg.norm(rig.prest[I["calf_r"]] - rig.prest[I["thigh_r"]]))
+    S = float(np.linalg.norm(rig.prest[I["foot_r"]] - rig.prest[I["calf_r"]]))
+    kx = BREAK_KNEE_X
+    knee = np.array([kx, KNEE_Y, hip[2] - math.sqrt(max(L * L - (hip[1] - KNEE_Y) ** 2 - (hip[0] - kx) ** 2, 1e-6))])
+    ankle_b = np.array([kx, TUCK_Y, knee[2] - math.sqrt(max(S * S - (TUCK_Y - KNEE_Y) ** 2, 1e-6))])
+    # The left hand hanging down past the outside of her left knee, the fingers toward the ground (on one knee the
+    # ground is out of her reach without folding her over; laid on the knee, it went 6-127 mm into the outfits' leg
+    # pieces), keyed in the chest's frame from the shoulder as solved at the bottom.
+    chest = qmul(gq[I["spine_03"]], qinv(rig.grest[I["spine_03"]]))
+    knee_l = gp[I["calf_l"]]
+    VC = qrot(qinv(chest), knee_l + np.array(BREAK_BY_KNEE_L) - gp[I["upperarm_l"]])
+    # (On its way down and up it goes round the outside of the knee, which rises under it as she goes down.)
+    VW = qrot(qinv(chest), knee_l + np.array(BREAK_WIDE_L) - gp[I["upperarm_l"]])
+
+    # The right foot's way (its ball's place, the foot's pitch and the toes' bend): heel up, swung back and set down
+    # on the ball, the toes tucked under; and back the same way. The ball never moves while it carries her.
+    rest_a = rig.prest[I["foot_r"]]
+    ball_off = rig.prest[I["ball_r"]] - rest_a
+    yaw, p0, roll = f["foot_r"]["rot"]
+    home_a = np.array([f["foot_r"]["pos"][0] - rig.feet_out, rest_a[1] + f["foot_r"]["pos"][1], f["foot_r"]["pos"][2]])
+
+    def ball_of(a, pitch):
+        return a + qrot(qeuler(yaw, pitch, roll), ball_off)
+    home_b, bot_b = ball_of(home_a, p0), ball_of(ankle_b, TUCK_PITCH)
+
+    def swing(t):
+        # (Lifted straight up first and set straight down last: a foot that arrived along the ground slid 3 cm.)
+        return idle._smooth((t - 0.15) / 0.7)
+
+    def right(fr):
+        """(ball, pitch, toe) of the right foot at a frame."""
+        (h0, h1), (s0, s1), (r0, r1) = R_HEEL, R_BACK, R_HOME
+        if fr <= h0 or fr >= r1:
+            return home_b, p0, 0.0
+        if fr <= h1:
+            u = idle._smooth((fr - h0) / (h1 - h0))
+            return home_b, p0 + 25 * u, 25 * u
+        if fr <= s1:
+            t = (fr - s0) / (s1 - s0)
+            u = swing(t)
+            b = home_b + (bot_b - home_b) * u + np.array([0, 0.07 * math.sin(math.pi * t), 0])
+            return b, p0 + 25 + (TUCK_PITCH - p0 - 25) * u, 25 + (TUCK_TOE - 25) * u
+        if fr <= r0:
+            return bot_b, TUCK_PITCH, TUCK_TOE
+        t = (fr - r0) / (r1 - r0)
+        u = swing(t)
+        b = bot_b + (home_b - bot_b) * u + np.array([0, 0.05 * math.sin(math.pi * t), 0])
+        return b, TUCK_PITCH + (p0 - TUCK_PITCH) * u, TUCK_TOE * (1 - u) ** 2
+
+    # The pelvis's way (her space): the weight onto the left foot, down and back onto the right knee, held; forward
+    # over the left foot, the knee up, and up as the right foot comes home.
+    pel = [(R_HEEL[0], base_pelvis(R_HEEL[0])), (R_HEEL[1], base_pelvis(R_HEEL[1]) + np.array((0.02, -0.03, 0.0))), (R_BACK[1], BREAK_DOWN),
+           (R_DOWN, BREAK_PELVIS), (90, BREAK_PELVIS), (R_HOME[0], BREAK_OFF), (R_HOME[1], BREAK_UP),
+           (R_STAND, base_pelvis(R_STAND))]
+
+    reach_l = {"arc": arc_of(VC), "pole": (1.0, -0.2, -0.3), "frame": "chest",
+               "knuckles": _n(0.0, -0.4, 1.0), "blade": _n(-0.9, 0.1, -0.3), "twist": 0.4}
+    crouch = {**kneel, "hand_l": reach_l, "fingers_l": "open",
+              # The crossbow held low ahead of her, off the ground and clear of her thighs and left shin.
+              "hand_r": {"arc": arc_of(BREAK_HAND_R), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
+                         "knuckles": idle._n(BREAK_AIM_R), "twist": 0.5}}
     keys = [
         (0, over("stalker", **f), "auto"),
         (14, over("stalker", **f, spine=(22, 0, 0), head=(40, 2, 0)), "ease"),
         (28, over("stalker", **f, spine=(24, 0, 0), head=(44, 4, 0)), "ease"),
         (44, over("stalker", **f, spine=(-22, 0, 0), head=(-40, 2, 0)), "ease"),
         (56, over("stalker", **f, spine=(-24, 0, 0), head=(-44, 4, 0)), "ease"),
-        # Down on her haunches, two fingers to the ground, reading it.
-        (72, over("stalker", **crouch), "ease"),
-        (90, over("stalker", **{**crouch, "head": (8, 14, 0)}), "ease"),
-        (110, over("stalker", foot_l=f["foot_l"], foot_r=f["foot_r"]), "ease"),
+        # Down on her right knee, reading the ground ahead, the head turning across it.
+        (R_BACK[1], over("stalker", **{**crouch, **BREAK_LEAN}), "ease"),
+        (R_DOWN, over("stalker", **crouch), "ease"),
+        (90, over("stalker", **{**crouch, "head": BREAK_HEAD_TO}), "ease"),
+        (R_HOME[0], over("stalker", **{**crouch, **BREAK_LEAN, "head": BREAK_HEAD_TO}), "ease"),
+        (R_STAND, over("stalker", foot_l=f["foot_l"], foot_r=f["foot_r"]), "ease"),
         (120, over("stalker", **f), "ease"),
     ]
     # The hands' own timing through the fold (animation 38): the left hand comes up and off the fore-stock (out to
     # her left) before the crossbow moves, reaches down as she sinks, and is laid back on the stock only once the
     # crossbow is home again (the crossbow had swung up through the resting hand, 17 mm into her thumb).
     hl, hr = idle.STALKER_HAND_L["hand_l"], idle.STALKER_HAND_R["hand_r"]
-    V0, VC = _arc_vec(hl), np.array(STALKER_CROUCH_L, float)
+    V0 = _arc_vec(hl)
     V1 = V0 + np.array(STALKER_LIFT_L)
     R0, RC = _arc_vec(hr), _arc_vec(crouch["hand_r"])
-    left = [(55, V0), (59, V1), (72, VC), (90, VC), (108, V1), (114, V0)]
-    right = [(58, R0), (72, RC), (90, RC), (110, R0)]
+    left = [(55, V0), (59, V1), (64, VW), (72, VC), (90, VC), (99, VW), (108, V1), (114, V0)]
+    # (The crossbow brought forward first, off her right thigh as it comes up.)
+    RW = R0 + np.array(BREAK_FWD_R)
+    right_h = [(56, R0), (61, RW), (72, RC), (90, RC), (101, RW), (110, R0)]
     turn_l = [(59, 0.0), (72, 1.0), (90, 1.0), (108, 0.0)]
+
     def mixv(a, b, w):
         v = np.array(a, float) * (1 - w) + np.array(b, float) * w
         return tuple(float(x) for x in v / np.linalg.norm(v))
@@ -491,24 +582,63 @@ def stalker_break(rig):
                 return a + (b - a) * idle._smooth((fr - f0) / (f1 - f0))
         return pts[-1][1]
 
+    aim_r = (knee - (hip + ankle_b) / 2) * 10
+
     def post(fr, pose):
-        if not 55 <= fr <= 114:
+        if not R_HEEL[0] <= fr <= 114:
             return pose
-        w = ramp(turn_l, fr)
         pose = dict(pose)
+        if R_HEEL[0] <= fr <= R_STAND:
+            hips = dict(pose.get("hips", {}))
+            hips["pos"] = tuple(float(x) for x in np.subtract(_pchip(pel, fr), base_pelvis(fr)))
+            pose["hips"] = hips
+            b, pitch, toe = right(fr)
+            a = b - qrot(qeuler(yaw, pitch, roll), ball_off)
+            k = ramp(KNEE_AIM, fr)
+            pose["foot_r"] = {"pos": (float(a[0]) + rig.feet_out, float(a[1] - rest_a[1]), float(a[2])),
+                              "rot": (yaw, float(pitch), roll), "toe": float(toe),
+                              # The knee's way turned onto its place on the ground as she goes down (and back).
+                              "pole": tuple(float(x) for x in np.array((-0.15, 0, 1.0)) * (1 - k) + aim_r * k)}
+        w = ramp(turn_l, fr)
         pose["hand_l"] = {"arc": arc_of(_vpath(left, fr)), "frame": "chest",
                           "pole": mixv(hl["pole"], reach_l["pole"], w), "knuckles": mixv(hl["knuckles"], reach_l["knuckles"], w),
                           "blade": mixv(hl["blade"], reach_l["blade"], w), "twist": 0.4}
         pose["fingers_l"] = "open" if 56 <= fr <= 111 else "relaxed"
-        pose["hand_r"] = dict(hr, arc=arc_of(_vpath(right, fr)),
+        pose["hand_r"] = dict(hr, arc=arc_of(_vpath(right_h, fr)),
                               knuckles=mixv(hr["knuckles"], crouch["hand_r"]["knuckles"], ramp([(58, 0.0), (72, 1.0), (90, 1.0), (110, 0.0)], fr)))
         return pose
     return build("idle_stalker_break", rig, keys, base=base, post=post, meta={"layer": "full", "weapon": "crossbow"})
 
 
-# The break's left hand (chest frame, from the shoulder, m): reaching down ahead of her left knee, and lifted off the
-# fore-stock on the way (up and out to her left of the idle's).
-STALKER_CROUCH_L = (0.02, 0.03, 0.52)
+# The break's kneel (her space, m and deg): the pelvis at the bottom (over her right knee, under her shoulders, a
+# thigh's length behind her left knee), the right knee's side place, the hips', back's and head's turns there, the
+# left hand's place beside the left knee and on its way (from the knee's joint), the crossbow hand's at the bottom
+# and on its way out (chest frame, from the shoulder; the way out off the idle's), its knuckles' aim (a crossbow aimed
+# across her went 7-21 mm into her left shin), the tucked right foot's pitch. KNEE_AIM: how far the right knee's pole
+# is turned onto its place.
+BREAK_PELVIS = (0.02, 0.545, -0.38)
+BREAK_KNEE_X = -0.10
+BREAK_HIPS_ROT = (0, 4, 0)
+BREAK_SPINE = (0, 8, 0)
+BREAK_NECK = (0, 2, 0)
+BREAK_HEAD = (-10, 15, 0)
+BREAK_HEAD_TO = (12, 17, 0)
+BREAK_BY_KNEE_L = (0.18, -0.03, 0.10)
+BREAK_WIDE_L = (0.20, 0.17, 0.02)
+BREAK_FWD_R = (-0.12, 0.09, 0.06)
+BREAK_HAND_R = (-0.06, -0.30, 0.32)
+BREAK_AIM_R = (-0.10, 0.45, 0.88)
+TUCK_PITCH = 50.0
+TUCK_TOE = TUCK_PITCH + 4  # (the toes near level along the ground; get_up's 64 lifts them 14 deg)
+# Her lean over the left foot going down and coming up, and the pelvis as the right foot sets down behind her, as
+# the knee leaves the ground (the back leg near straight) and as the foot comes home.
+BREAK_LEAN = {"hips": {"rot": (0, 12, 0)}, "spine": (0, 16, 0)}
+BREAK_DOWN, BREAK_OFF, BREAK_UP = (0.01, 0.75, -0.23), (0.02, 0.76, -0.20), (0.03, 0.97, -0.04)
+# The right foot's frames: heel up, swung back to its toes, and home (from, to); the knee down, and up standing.
+R_HEEL, R_BACK, R_HOME = (54, 57), (57, 67), (97, 108)
+R_DOWN, R_STAND = 73, 114
+KNEE_AIM = [(57, 0.0), (67, 1.0), (97, 1.0), (104, 0.0)]
+# The left hand lifted off the fore-stock on the way (chest frame, m: up and out to her left of the idle's).
 STALKER_LIFT_L = (0.05, 0.05, 0.0)
 
 
