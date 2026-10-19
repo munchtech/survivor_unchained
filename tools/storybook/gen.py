@@ -11,7 +11,14 @@ A jobs file is a list (or {"defaults": {...}, "jobs": [...]}) of:
      "steps": 9, "shift": 3.0,
      "init": "path.png", "denoise": 0.55,               # paint over a picture
      "control": "edges.png", "strength": 0.7,             # hold a layout (canny/depth/pose/hed)
-     "inpaint": "path.png", "mask": "mask.png"}           # repaint the white of the mask
+     "inpaint": "path.png", "mask": "mask.png",           # repaint the white of the mask
+     "hold": true,                                        # ...and hold the rest exactly while sampling
+     "crop": [x, y, w, h]}                                # save this region as the picture (canvas kept as _canvas.png)
+"hold" (round 15, the master in context) puts the mask on the init's latent as
+well (SetLatentNoiseMask): every step the unmasked part is the init itself, noised
+to that step, so the white part is painted while the model attends to the exact
+picture beside it (a reference plate on one canvas). Use it with init = the
+canvas, inpaint = the same canvas, denoise 1.0.
 Take the GPU turn first (tools/turn.py take gpu "storybook: ...").
 """
 import argparse
@@ -83,8 +90,14 @@ def graph(job, seed, prefix):
             cn["end_percent"] = float(job["end"])
         g["cn"] = {"class_type": "ZImageFunControlnet", "inputs": cn}
         model = ["cn", 0]
+    latent = ["latent", 0]
+    if job.get("hold"):
+        if "msk" not in g:
+            g["msk"] = {"class_type": "LoadImageMask", "inputs": {"image": comfy.upload(job["mask"]), "channel": "red"}}
+        g["held"] = {"class_type": "SetLatentNoiseMask", "inputs": {"samples": latent, "mask": ["msk", 0]}}
+        latent = ["held", 0]
     g["sample"] = {"class_type": "KSampler", "inputs": {
-        "model": model, "positive": ["pos", 0], "negative": ["neg", 0], "latent_image": ["latent", 0],
+        "model": model, "positive": ["pos", 0], "negative": ["neg", 0], "latent_image": latent,
         "seed": int(seed), "steps": int(job.get("steps", 9)), "cfg": float(job.get("cfg", 1.0)),
         "sampler_name": job.get("sampler", "res_multistep"), "scheduler": job.get("scheduler", "simple"), "denoise": denoise}}
     g["decode"] = {"class_type": "VAEDecode", "inputs": {"samples": ["sample", 0], "vae": ["vae", 0]}}
@@ -120,7 +133,13 @@ def main():
             tmp = os.path.join(out, "_tmp")
             saved = comfy.run(graph(job, seed, "sb_" + name), tmp)
             src = [p for p in saved if p.endswith(".png")][0]
-            os.replace(src, dst)
+            if job.get("crop"):
+                from PIL import Image
+                x, y, cw, ch = (int(v) for v in job["crop"])
+                os.replace(src, dst[:-4] + "_canvas.png")
+                Image.open(dst[:-4] + "_canvas.png").crop((x, y, x + cw, y + ch)).save(dst)
+            else:
+                os.replace(src, dst)
             used = dict(weights)
             if job.get("control") or job.get("inpaint"):
                 used[PATCH] = sha(PATCH)
