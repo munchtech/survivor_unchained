@@ -11,10 +11,10 @@ Tier 2 (the open world), and the frame around tier 1: it decides how every Prolo
 | Reference | What it teaches |
 |---|---|
 | Diablo IV, play camera ([Steam](https://store.steampowered.com/app/2344520), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2344520/ss_ee4b4e1ba9c8a07f40aff563c7c43fd04477d60c.1920x1080.jpg)) | Dark ground that still shows its detail, with light only where the action is. Luma p50 23, pools 0.57. "Darkness does not mean bleakness." |
-| Path of Exile 2, play camera ([Steam](https://store.steampowered.com/app/2694490), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2694490/ss_e2d559c229fc8e66cefae1f19370fa4ccd2fc712.1920x1080.jpg)) | The camp fire is an island of warm light in the dark. This is our C01 camp, seen from the play camera. |
-| Path of Exile 2 ([Steam](https://store.steampowered.com/app/2694490), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2694490/ss_033b9250c0e77bf1767bd26fd104bc2680378ffe.1920x1080.jpg)) | Warm pools from a fire and a lit doorway. The rest falls almost to black and still reads by rim and silhouette. Luma p50 11. |
+| Path of Exile 2, play camera ([Steam](https://store.steampowered.com/app/2694490), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2694490/ss_e2d559c229fc8e66cefae1f19370fa4ccd2fc712.1920x1080.jpg)) | One fire makes an island of warm light; the rest drops near-black and still reads. The model for C01 seen from the play camera. |
+| Diablo IV, play camera, low sun in haze ([Steam](https://store.steampowered.com/app/2344520), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2344520/ss_38d64c37bf2e84bbec5138cf114529eada712ebc.1920x1080.jpg)) | Long cast shadows shape the ground from the high camera. Pools only 0.24: by day the shadows do the work, not the pools. |
 | Red Dead Redemption 2, a river at night ([Steam](https://store.steampowered.com/app/1174180), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1174180/ss_66b553f4c209476d3e4ce25fa4714002cc914c4f.1920x1080.jpg)) | A cool moon key and mist, with warm fires far off, both caught in the water. Our ford at night (C02, C03). |
-| The Witcher 3, low sun ([Steam](https://store.steampowered.com/app/292030), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/292030/ss_c6d0b7eee8d40b55d33621fcd700151f3325b501.1920x1080.jpg)) | A warm key at grazing height, long shadows across the road, the haze lit gold. Our dawn (C04). |
+| The Witcher 3, low sun ([Steam](https://store.steampowered.com/app/292030), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/292030/ss_c6d0b7eee8d40b55d33621fcd700151f3325b501.1920x1080.jpg)) | A warm key at grazing height rakes the road with long shadows, while the distance stays cool and hazy. Our dawn (C04). |
 
 ## What ours ISN'T (our frames, 18 Oct audit, 1:1)
 
@@ -30,26 +30,29 @@ Tier 2 (the open world), and the frame around tier 1: it decides how every Prolo
 |---|---|---|---|
 | Diablo IV and Path of Exile 2 at night, play camera (diablo4_01/05/06, poe2_06/07/09) | 11-23 | 2.6-7.5 | 0.57-1.27 |
 | Night cinematics (Tsushima, RDR2, Witcher 3, KCD II) | 5-75 | 1.6-17 | 0.44-1.45 (mist shots lowest) |
+| Day frames at the play camera, p50 at least 50 (Diablo IV, Titan Quest II; 40 frames) | 50 and up | - | 0.24-0.56 (9 of 40 reach 0.55) |
 | Ours, the Low Ford road at night, play camera (playc2_12, 16) | 57-64 | 1.9-2.1 | 0.45 |
 | Ours, the town at dawn (playc2_54; C04 B sb1, sb5) | 58-84 | 1.5-2.1 | 0.25-0.47 |
 
-Luma is Rec.709 on sRGB 0-255, with the HUD and the letterbox cropped. Pools is the std/mean of luma on a 32x18 downsample: it is high when light comes in pools and low when a frame is evenly lit, and dark or pale surfaces can raise it too, so a judge reads it beside the frame. The low-ford preset is why: the moon sits 50-52 degrees high over a strong hemi ambient (0.95-1.25), with exposure 1.42-1.6 and a lifted black (`Atmospheres.Night`, lowford zone.json).
+By day, pools doesn't separate a good frame from ours (our dawn town's 0.25-0.47 sits inside the shipped range), so the dawn DONE line uses the sun's shadows instead. Luma is Rec.709 on sRGB 0-255, with the HUD and the letterbox cropped. Pools is the std/mean of luma on a 32x18 downsample: it is high when light comes in pools and low when a frame is evenly lit, and dark or pale surfaces can raise it too, so a judge reads it beside the frame. The low-ford preset is why: the moon sits 50-52 degrees high over a strong hemi ambient (0.95-1.25), with exposure 1.42-1.6 and a lifted black (`Atmospheres.Night`, lowford zone.json).
 
 ## The trick
 
-1. A low, directional key: the moon 20-30 degrees high (now 50-52), the dawn sun 10-20. Shadows then model the ground and the trees from the high camera.
+1. A low, directional key: the moon 20-30 degrees high (now 50-52), the dawn sun 10-20. Shadows then model the ground and the trees from the high camera. Cap the directional shadow distance to what the play camera needs and use 2 splits. Shadow draws stay at or below today's 2,246.
 2. Ambient 2-3 stops under the key: lower the hemi and env intensity and the exposure, and drop the black lift (it makes blacks milky). Shadows go cool and dark, never gray.
 3. Pools from real sources: the camp fire, lamps, windows, and her ember (a soft warm light on her at night, the way Diablo IV lights the player). The brightest area of a frame is a source or what it lights.
-4. Mist in layers: volumetric height fog in the hollows and over the river, colored by the key, never fog sprites. The lamps get their halos from it for free.
+4. Mist in layers: volumetric fog for the air and the lamp halos. For thin mist on the river and in hollows, 2-3 stacked mesh planes with scrolling noise that fade softly where they meet geometry, colored by the key. Never camera-facing sprites.
 5. A grade per area: AgX, warm highlights over cool shadows, saturation about 0.9, and backgrounds 1.5-2 stops under the subject.
 
 ## DONE means (at the play, close-up and Look cameras, at 1:1)
 
 - Night play frames: luma p50 15-35 (Diablo IV and Path of Exile 2: 11-23; ours 57-64), p95 at least 2.5 times p50 (theirs 2.6-7.5; ours 1.9-2.1), and pools at least 0.55 (theirs 0.57-1.27; ours 0.45).
-- Dawn and day frames: pools at least 0.55, with long shadows from a low sun (0.4 in a deliberate mist shot).
+- Dawn and day: a sun 10-20 degrees high casts shadows over at least a quarter of the ground in a play-camera frame, and lit ground is at least one stop over the shadow beside it (sRGB luma ratio at least 1.35 on a patch pair). Pools isn't used by day (shipped play-camera day frames: 0.24-0.56).
+- Close-up camera at closest zoom and the Look camera, night: her face reads (skin and eyes) and is the brightest area that isn't a light source, lit by a source a judge can name. The background median sits 1.5-2 stops under her.
 - At most 0.5% of a frame clipped, outside flames and lamps.
 - In every shot a fresh judge can say where the light comes from. Nothing is lit by ambient alone.
 - Mobs and pickups stay readable (the rim light, her pool): the player never loses her or an enemy in the dark.
+- Measured on fixed positions (the audit's playc2_12, playc2_16 road positions, plus the ford, camp, wood road and three town frames at dawn), with the audit's HUD crop and the vignette off.
 - Pools = the std/mean of luma at 32x18; docs/art/look_bible/tools/lumstats.py measures all of these.
 
 Owners: The tutorial environment lead (the zone presets, zone lights and fog); cinematics (each shot's own key and grade: the audit's STAGING block); rendering, for readability (the body rim, her ember light) and the cost of fog and shadowed lights.

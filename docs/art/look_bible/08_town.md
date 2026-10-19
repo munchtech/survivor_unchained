@@ -13,7 +13,7 @@ Tier 2. The town closes the Prologue (C04 B) and is the first hub the player wal
 | Titan Quest II, play camera over a town ([Steam](https://store.steampowered.com/app/1154030), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1154030/ss_810475ff9a2f935b7b2d10b53e521e46e7226301.1920x1080.jpg)) | Roofs, walls and street all read. Warm light rakes across them, and the clutter says people live here. |
 | Baldur's Gate 3, a high camera ([Steam](https://store.steampowered.com/app/1086940), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1086940/ss_c73bc54415178c07fef85f54ee26621728c77504.1920x1080.jpg)) | A plaza with stalls, banners and a crowd. The street is the stage, and the buildings frame it. |
 | No Rest for the Wicked ([Steam](https://store.steampowered.com/app/1371980), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1371980/ss_ba6d507f9ffba16c5fff2f89d2c6b9312ffdfdf6.1920x1080.jpg)) | A timber town at the play camera. Layered walkways, warm lamps and deep shadows. |
-| Kingdom Come II ([Steam](https://store.steampowered.com/app/1771300), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1771300/ss_77abcbc203685b38a50a8cee383bd7f47488f090.1920x1080.jpg)) | A market street, lived in. Stalls, barrels and people at work, with a church spire closing the view. |
+| Kingdom Come II ([Steam](https://store.steampowered.com/app/1771300), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1771300/ss_77abcbc203685b38a50a8cee383bd7f47488f090.1920x1080.jpg)) | A market street, lived in. Stalls, barrels and people at work, with a church spire closing the view. Take the dressing and the life; the surface is photoreal, beyond tier 2. |
 | The Witcher 3 ([Steam](https://store.steampowered.com/app/292030), [shot](https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/292030/ss_ba2c8dfce29d6cca82edb1b69c2479d64cc1db23.1920x1080.jpg)) | A timber town at golden hour. The low sun runs down the street, with long shadows and warm walls against cool shade. |
 
 ## What ours ISN'T (our frames, 18 Oct audit, 1:1)
@@ -21,24 +21,26 @@ Tier 2. The town closes the Prologue (C04 B) and is the first hub the player wal
 | Frame | What fails |
 |---|---|
 | `frames/play_w84.jpg` (the town at the play camera (a 720p capture)) | A roof fills the frame, and she shows only through a round hole cut in it. The light is flat and brown. |
-| `frames/c04b_sb1.jpg` (C04 B sb1) | A low-detail town in shadowless haze, with bald hills on the skyline and no smoke or lit window. |
+| `frames/c04b_sb1.jpg` (C04 B sb1) | A toy town. Clean, same-scale houses with ruler-straight ridges, flat terracotta and no grime, in shadowless haze, with bald hills behind and no smoke or lit window. |
 | `frames/c04b_sb3.jpg` (C04 B sb3) | The villagers stand idle, facing away. Nothing in the street is happening. |
 
 ## The trick
 
-1. Roofs and walls between the camera and her fade out (a cut-away, as Baldur's Gate 3 and Diablo IV do), so the street is the stage at the play camera.
-2. A modular kit: timber frame, plaster, a stone base, two roof types, all on two trim sheets. At distance, visibility ranges merge each block into one mesh.
+1. Lay the town out for the camera: main streets at least as wide as the eaves are high, so at the play camera's pitch a roof rarely covers her. Where one does, the whole roof in the way fades with a dithered (screen-door) alpha driven by a per-instance shader uniform, not a round hole and not transparency. Its shadow stays, from the shadow proxy.
+2. A modular kit: timber frame, plaster, a stone base, two roof types, all on two trim sheets. At distance, visibility ranges swap each block for one merged low-poly mesh built in Blender (Godot swaps; it does not merge).
 3. The dawn sun low down the main street, with long shadows. One or two smoking chimneys and a lit bakery window (the line: "someone is baking").
 4. Clutter in clusters from one shared prop kit: barrels, crates, carts, washing lines, stalls, signs.
-5. The ground: cobbles with anti-tiling, mud in the gutters, puddles that catch the sky.
+5. The ground: cobbles as on page 1f (a large varied tile, no hex blending) and mud in the gutters. Puddles: a low-roughness vertex-paint mask that reflects the sky through the environment's radiance and a reflection probe, not SSR.
+6. Weather and break it. Use page 1g's grime from the ground up and edge wear on every wall. Vary roof tiles in value tile to tile, with soot by the chimneys and moss on the shaded side. Sag ridges and eaves a few cm, and give eaves a 40-60 cm overhang with rafter ends. Make doors 2.0-2.2 m tall next to her, so the town isn't toy-scaled.
 
 ## DONE means (at the play and close-up cameras, at 1:1)
 
 - At the play camera she and the street stay visible in town. No roof hides her.
-- At dawn the town has a sun with long shadows (pools at least 0.55; ours 0.25).
+- At dawn a low sun rakes the street, measured as on page 1c: shadow over at least a quarter of the ground, and lit ground at least 1.35 times the luma of the shadow beside it (`docs/art/look_bible/tools/lumstats.py --crop` on each patch).
 - Every screen shows at least three signs of life: smoke, a lit window, someone at work.
 - No cobble pattern repeats, and neighboring buildings differ in at least two of roof, color and height.
-- Cost: the town fits page 2's draw-call budget.
+- At the town camera at 1:1, no ridge or eave is ruler-straight, roof value varies tile to tile, every wall's base is darker than its top, and doors measure 2.0-2.2 m.
+- Within page 2's budget, shadow draws included. Kit pieces, clutter under 0.5 m, lamps and windows cast no shadows; each building has one merged shadows-only proxy; the directional shadow distance and splits are set for the play camera.
 
 Owners: The tutorial environment lead (the kit, dressing, the dawn light); rendering with the camera code (the roof cut-away); story characters (the villagers, page 1i); cinematics (C04 B staging).
 
