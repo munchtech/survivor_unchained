@@ -9005,6 +9005,32 @@ if BODY_OUT:
             _aobjs = [o for o in _ahides if slot_entry(o.name)["slot"] == _aslot]
             ARMOR_TUCK[(_aout, _aslot)] = tuck_of(_aout, _aobjs, _aslot)[0] if _aobjs else np.zeros(len(me.vertices))
         _ak = CHANNELS.index(_aout)
+        # (armor 2, TUCK DEFICIT: the max over an outfit's slots must reach its channel everywhere, or her skin is
+        # drawn over where a garment hides it when the whole set is worn (each slot's tuck eases in from its own
+        # border, so at a seam between two slots, and under the boots' deep rule, neither reached the channel).
+        # Where the channel exceeds the max over slots, the slot whose hiding pieces' surface lies nearest that point
+        # of hers takes the channel's value there. tools/armor/tuck_fix.py applied the same rule to the 18 Oct build.)
+        _aslots = sorted({slot_entry(o.name)["slot"] for o in _ahides})
+        if _ak <= 3 and _aslots:
+            _amx = np.max([ARMOR_TUCK[(_aout, s_)] for s_ in _aslots], 0)
+            _adef = np.nonzero((vals[:, _ak] - _amx > 1 / 255) | ((vals[:, _ak] > 0.973) & (_amx <= 0.973)))[0]  # (or full in the channel only: the shader reads 0.973 and over as full)
+            _atr = {}
+            for s_ in _aslots:
+                _avs, _afs = [], []
+                for o in _ahides:
+                    if slot_entry(o.name)["slot"] == s_:
+                        b_ = len(_avs)
+                        _avs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+                        _afs += [[b_ + i for i in p_.vertices] for p_ in o.data.polygons]
+                _atr[s_] = BVHTree.FromPolygons(_avs, _afs)
+            _agiven = {}
+            for i_ in _adef:
+                co_ = body.matrix_world @ me.vertices[i_].co
+                d_ = {s_: (t_.find_nearest(co_)[3] if t_.find_nearest(co_)[0] is not None else 1e9) for s_, t_ in _atr.items()}
+                s_ = min(d_, key=d_.get)
+                ARMOR_TUCK[(_aout, s_)][i_] = vals[i_, _ak]
+                _agiven[s_] = _agiven.get(s_, 0) + 1
+            print("TUCK DEFICIT %s: %d vertices short of the channel given it, by nearest slot: %s" % (_aout, len(_adef), _agiven))
         if _ak <= 3:
             _amx = np.max([t_ for (o_, s_), t_ in ARMOR_TUCK.items() if o_ == _aout], 0)
             _afull = vals[:, _ak] > 0.973

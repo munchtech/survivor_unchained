@@ -170,7 +170,7 @@
    "arcanist.bottom.thread"
   ],
   "tuck": "armor_tuck/arcanist.bottom.bin",
-  "tuck_count": 29,
+  "tuck_count": 34,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -186,7 +186,7 @@
    "arcanist.collar.thread"
   ],
   "tuck": "armor_tuck/arcanist.collar.bin",
-  "tuck_count": 30,
+  "tuck_count": 31,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -306,7 +306,7 @@
    "ranger.bottom.thread"
   ],
   "tuck": "armor_tuck/ranger.bottom.bin",
-  "tuck_count": 2341,
+  "tuck_count": 2361,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -377,7 +377,7 @@
    "ranger.top.thread"
   ],
   "tuck": "armor_tuck/ranger.top.bin",
-  "tuck_count": 3372,
+  "tuck_count": 3373,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
