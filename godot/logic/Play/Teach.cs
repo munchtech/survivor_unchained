@@ -29,6 +29,8 @@ public sealed record Aim
     /// <summary>With Safe: the point and she must be in the open, nothing tall (a roof, a canopy) between
     /// them and the camera; under cover, it waits.</summary>
     public bool Open { get; init; }
+    /// <summary>She must be in plain view (nothing tall between her chest and the camera); hidden, it waits.</summary>
+    public bool HerSeen { get; init; }
     /// <summary>With Open: points that must be on the screen and in the open too (the Knight's head and
     /// chest, so the one the line names can be read; none: it waits).</summary>
     public Func<IReadOnlyList<(double X, double Y, double Z)>>? Seen { get; init; }

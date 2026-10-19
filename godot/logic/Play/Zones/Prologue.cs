@@ -284,7 +284,7 @@ public sealed class Prologue : ZoneRuntime
                 new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
-            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", Aim.At("draught"), "draught");
+            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught");
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
             Teach("level", CalloutKind.Freeze, "What the night taught you", $"This one stays, night and day. Open {Key("character")} to spend it.",

@@ -238,7 +238,7 @@ public partial class Game
             float far = d.Length() - Ui.Callout.EdgeTip - 8;
             if (far < 1) continue;
             d = d.Normalized();
-            // (pinned where the line toward it leaves the safe frame: the marker's top at y 124, 24 px under
+            // (pinned where the line toward it leaves the safe frame: the marker's top at y 150, clear of
             // the boss bar's words; 24 px in at the sides; over the HUD's foot; 24 px clear of the map and
             // the objectives under it (x 1520 on, to y 480). Its tip points along the line, at the thing.)
             Vector2? at = null;
@@ -250,7 +250,7 @@ public partial class Game
                 var tip = c0 + d * Ui.Callout.EdgeTip;
                 lo = new Vector2(Math.Min(lo.X, tip.X), Math.Min(lo.Y, tip.Y));
                 hi = new Vector2(Math.Max(hi.X, tip.X), Math.Max(hi.Y, tip.Y));
-                if (lo.X < 24 || lo.Y < 124 || hi.X > 1920 - 24 || hi.Y > 860) break;
+                if (lo.X < 24 || lo.Y < 150 || hi.X > 1920 - 24 || hi.Y > 860) break;
                 if (hi.X > 1520 - 24 && lo.Y < 480 + 24) break;
                 at = c0;
             }
@@ -273,6 +273,8 @@ public partial class Game
         if (t.Hud == "card:weapon") return teachOffers?.Any(o => o.Kind == OfferKind.Weapon) == true ? Presence.Here : Presence.NotYet;
         if (t.Hud == "cards") return teachOffers is { Count: > 0 } ? Presence.Here : Presence.NotYet;
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
+        // (a freeze on her own state: never the moment a roof hides her)
+        if (t.HerSeen && Battle?.Player is { } pl && scene != null && !InOpen((pl.X, scene.HeightAt(pl.X, pl.Z) + 1.3, pl.Z), true)) return Presence.NotYet;
         if (t.World != null)
         {
             // (several things: here when one of the world's is on the screen; a HUD part alone doesn't count)
