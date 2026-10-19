@@ -575,10 +575,12 @@ def pose_check():
         return deg if (d2 - d) @ np.asarray(want, float) > 0 else -deg
 
     poses = {
-        "arms_overhead": [("upperarm_l", (0, 1, 0), 130, (0, 0, 1)), ("upperarm_r", (0, 1, 0), 130, (0, 0, 1))],
+        "arms_overhead": [("clavicle_l", (0, 1, 0), 25, (0, 0, 1)), ("clavicle_r", (0, 1, 0), 25, (0, 0, 1)),
+                          ("upperarm_l", (0, 1, 0), 110, (0, 0, 1)), ("upperarm_r", (0, 1, 0), 110, (0, 0, 1))],
         "reach_across_r": [("upperarm_r", (0, 0, 1), 80, (1, -1, 0)), ("lowerarm_r", (0, 0, 1), 60, (1, -1, 0))],
         "arms_back": [("upperarm_l", (0, 0, 1), 40, (0, 1, 0)), ("upperarm_r", (0, 0, 1), 40, (0, 1, 0))],
-        "hug": [("upperarm_l", (0, 0, 1), 70, (0, -1, 0)), ("upperarm_r", (0, 0, 1), 70, (0, -1, 0))],
+        "hug": [("clavicle_l", (0, 0, 1), 15, (0, -1, 0)), ("clavicle_r", (0, 0, 1), 15, (0, -1, 0)),
+                ("upperarm_l", (0, 0, 1), 70, (0, -1, 0)), ("upperarm_r", (0, 0, 1), 70, (0, -1, 0))],
         "twist_bend": [("spine_02", (1, 0, 0), 20, (0, -1, 0)), ("spine_03", (0, 0, 1), 25, (1, 0, 0))],
     }
     out = {}
@@ -596,12 +598,13 @@ def pose_check():
         bv = np.array([(body.matrix_world @ v.co)[:] for v in m_.vertices])
         bn = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in m_.vertices])
         be.to_mesh_clear()
-        r_ = skin_vs_shell(bv, bn, COV, tuck, shell_tree(dg))
-        moved = float(np.abs(bv[COV] - bv0[COV]).max())
-        out[pname] = {"skin_moved_mm": round(moved * 1000, 1), "covered_at_rest": int(len(COV)),
+        r_ = skin_vs_shell(bv, bn, NEAR, tuck, shell_tree(dg))
+        moved = float(np.abs(bv[NEAR] - bv0[NEAR]).max())
+        inC = R0["covered"]
+        out[pname] = {"skin_moved_mm": round(moved * 1000, 1), "near_points": int(len(NEAR)), "covered_at_rest": int(len(COV)),
                       "through_untucked": int(r_["through"].sum()), "through_tucked": int(r_["through_t"].sum()),
-                      "worst_tucked_mm": round(r_["deep_t"] * 1000, 2), "no_longer_covered": int((~r_["covered"]).sum()),
-                      "no_longer_covered_tucked_full": int((~r_["covered"] & (tuck[COV] > 0.973)).sum())}
+                      "worst_tucked_mm": round(r_["deep_t"] * 1000, 2), "no_longer_covered": int((inC & ~r_["covered"]).sum()),
+                      "no_longer_covered_tucked_full": int((inC & ~r_["covered"] & (tuck[NEAR] > 0.973)).sum())}
     for b in pb:
         b.rotation_quaternion = (1, 0, 0, 0)
     bpy.context.view_layer.update()
@@ -668,6 +671,13 @@ g_.setdefault("asset", {})["extras"] = {"armor_piece": PID, "slot": SLOT, "tier"
 json.dump(g_, open(path, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 if missing:
     print("ARMOR TEXTURES not in art/people/outfit_tex (copied beside the piece):", missing)
+# (the piece must sit on the body the game ships: her hash as art/people/armor_index.json has it, item 1)
+_pix = json.load(open(os.path.join(ROOT, "godot", "art", "people", "armor_index.json"), encoding="utf-8"))
+SHIPPED_HASH = {r.get("body_hash") for r in _pix} - {None}
+if SHIPPED_HASH != {BODY_HASH} and os.environ.get("ARMOR_ANY_BODY") != "1":
+    json.dump(NUM, open(os.path.join(SCRATCH, "numbers.json"), "w", encoding="utf-8"), indent=1)
+    raise SystemExit("ARMOR REFUSED: built on body %s, the shipped body is %s (art/people/armor_index.json); nothing written"
+                     % (BODY_HASH, sorted(SHIPPED_HASH)))
 import shutil  # noqa: E402
 os.makedirs(os.path.join(ART, "armor_tuck"), exist_ok=True)
 shutil.copyfile(path, os.path.join(ART, f"{PID}.gltf"))
@@ -692,7 +702,7 @@ ix_path = os.path.join(ART, "armor_index.json")
 rows = json.load(open(ix_path, encoding="utf-8")) if os.path.exists(ix_path) else []
 rows = [r for r in rows if r.get("id") != PID]
 amap = G["ARMOR_MAP"]
-row = {"id": PID, "outfit": PID, "slot": SLOT, "layer": amap["layers"][SLOT], "covers": SPEC_PIECE.get("covers", [SLOT]),
+row = {"id": PID, "outfit": None, "slot": SLOT, "layer": amap["layers"][SLOT], "covers": SPEC_PIECE.get("covers", [SLOT]),
        "meshes": sorted(ranks), "tuck": f"armor_tuck/{PID}.bin", "tuck_count": TUCK_N, "body_hash": BODY_HASH}
 if SPEC_PIECE.get("hold"):
     row["hold"] = SPEC_PIECE["hold"]

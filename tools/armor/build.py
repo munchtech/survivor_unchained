@@ -44,7 +44,11 @@ def build(pid, src):
     wall = time.time() - t0
     after = dirty(GUARD)
     touched = sorted(set(after) - set(before))
-    ok = r.returncode == 0 and os.path.exists(os.path.join(scratch, "numbers.json"))
+    text = open(log, encoding="utf-8", errors="replace").read()
+    ok = r.returncode == 0 and "ARMOR NUMBERS" in text and "ARMOR REFUSED" not in text
+    for l in text.splitlines():
+        if l.startswith(("ARMOR REFUSED", "Traceback")):
+            print(l)
     print("BUILD %s: %s in %.0f s (log %s)" % (pid, "ok" if ok else "FAILED (exit %d)" % r.returncode, wall, log))
     if touched:
         print("BUILD %s: WROTE GUARDED FILES %s" % (pid, touched))
