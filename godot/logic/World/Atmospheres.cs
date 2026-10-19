@@ -96,7 +96,7 @@ public static class Atmospheres
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.04, 1.0, 0.95],
-        "#3e5a8a", "#ffbe7a", 0.3, 0.9, 0.1, 1.14) { Toe = 0.5 };
+        "#a6bced", "#ffbe7a", 0.3, 0.9, 0.1, 1.14) { Toe = 0.5 };   // (a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
 
     /// <summary>The Low Ford at dawn, in play: the sun 18 degrees up in the north-east, cheated 50 degrees from
     /// C04 A's rising sun toward the road's far end (as the moon was), so the road gets sun and the wood's shadows
@@ -107,7 +107,7 @@ public static class Atmospheres
         KeyColor = "#ffcf98", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = -30, ShadowStrength = 0.95,
         HemiSky = "#7c96d0", HemiGround = "#2a2a30", HemiIntensity = 0.9, EnvIntensity = 0.7,
         FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
-        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.32, MistColor = "#7a8aa2", CrowdRim = 0.05,
+        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05,
     };
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
@@ -118,7 +118,7 @@ public static class Atmospheres
     };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96],
-        "#3a5878", "#ffd49a", 0.25, 0.9, 0.1, 1.12) { Toe = 0.5 };
+        "#b0c0de", "#ffd49a", 0.25, 0.9, 0.1, 1.12) { Toe = 0.5 };
 
     /// <summary>The Waystation by day: a hard country's low sun, 28 degrees up in the north-east of the
     /// sky's arc, behind the street from the camera, so its shadows fall toward the player.</summary>
