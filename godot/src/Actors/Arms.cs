@@ -36,7 +36,7 @@ public static class Arms
         ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35, Kind: WeaponKind.Blade1H),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
-        ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi, Lean: 30, Kind: WeaponKind.Axe),
+        ["viking_axe"] = new("viking_axe", 0.7702f, 0.15f, Roll: Mathf.Pi, Lean: 35, Kind: WeaponKind.Axe, Seated: true),  // haft conformed to her one-handed fist (anim-40: tapered haft, an oval wrap 34.7 x 21.7 mm over the fist, anchor_grip on the haft's line); seated on BladeAtR (PocketR Axe), Length keeps the old scale; fistfit axe
         ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),
         ["mage_staff"] = new("mage_staff", 1.75f, 0.45f, Kind: WeaponKind.Staff),
         ["short_staff"] = new("mage_staff", 1.1f, 0.3f, Kind: WeaponKind.Staff),

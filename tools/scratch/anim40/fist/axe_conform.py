@@ -36,7 +36,7 @@ def smooth(x):
     return x * x * (3 - 2 * x)
 
 
-def build(rc=13.7, win=50.0, blend=45.0, butt=BUTT, top=TOP, src=None):
+def build(rc=13.7, win=50.0, blend=45.0, butt=BUTT, top=TOP, src=None, flare=0.0, f0=0.0, f1=40.0, wc=0.0, ov=1.0):
     pc = gc.load("viking_axe", rev=src)
     O, d, a1, a2 = haft_frame(pc)
     tt, u, v = coords(pc, O, d, a1, a2)
@@ -74,8 +74,10 @@ def build(rc=13.7, win=50.0, blend=45.0, butt=BUTT, top=TOP, src=None):
         lam = np.clip((rho - 0.89) / 0.11, 0, 1)
         su = su_p + (su_w - su_p) * lam; sv = sv_p + (sv_w - sv_p) * lam
         Au, Av = uu * su, vv * sv
-        g = rc / outline(np.arctan2(vv, uu))
-        w = 1 - smooth((np.abs(t) - win) / blend)
+        th_ = np.arctan2(vv, uu)
+        ell = 1.0 / np.sqrt(np.cos(th_) ** 2 / ov + np.sin(th_) ** 2 * ov)     # an oval (ov > 1: long in the head's plane), its area kept
+        g = (rc + flare * smooth((t - f0) / (f1 - f0))) * ell / outline(th_)
+        w = 1 - smooth((np.abs(t - wc) - win) / blend)
         return w * uu * g + (1 - w) * Au, w * vv * g + (1 - w) * Av
 
     newP = pc.P.copy()
@@ -156,8 +158,13 @@ if __name__ == "__main__":
     ap.add_argument("--win", type=float, default=50.0)
     ap.add_argument("--blend", type=float, default=45.0)
     ap.add_argument("--src", default=None)
+    ap.add_argument("--flare", type=float, default=0.0)
+    ap.add_argument("--f0", type=float, default=0.0)
+    ap.add_argument("--f1", type=float, default=40.0)
+    ap.add_argument("--wc", type=float, default=0.0)
+    ap.add_argument("--ov", type=float, default=1.0)
     a = ap.parse_args()
-    pc, O, d, newP, maps, info = build(a.rc, a.win, a.blend, src=a.src)
+    pc, O, d, newP, maps, info = build(a.rc, a.win, a.blend, src=a.src, flare=a.flare, f0=a.f0, f1=a.f1, wc=a.wc, ov=a.ov)
     print({k: (np.round(v, 1).tolist() if isinstance(v, np.ndarray) else v) for k, v in info.items()})
     write(pc, O, d, newP, maps, a.out)
     print("written", a.out)
