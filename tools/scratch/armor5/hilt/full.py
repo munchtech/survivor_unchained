@@ -2,8 +2,9 @@ import sys, json
 import numpy as np
 from opt import hilt_of
 from ev import *
-x = np.array(json.loads(sys.argv[1]), float)
-h = hilt_of(x) if len(x) == 7 else json.loads(sys.argv[1])
+a = json.loads(sys.argv[1])
+h = hilt_of(np.array(a, float)) if isinstance(a, list) else a
+h.update(json.loads(sys.argv[2]) if len(sys.argv) > 2 else {})
 print(json.dumps(h))
 for nm in ("run_warden_town", "sprint_warden_town"):
     c = apply(nm, h)

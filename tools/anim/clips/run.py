@@ -141,8 +141,8 @@ def crossbow_low():
 # the elbow opened past 120. HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side, the elbow's
 # way from the shoulder (pole), all in the pelvis bone's frame (solved: tools/scratch/armor5 hilt notes); `clav`:
 # the left shoulder's run swing kept (0: none, held at its mean; a hand on a hilt doesn't pump the shoulder).
-HILT = {"wrist": (0.298, 0.0102, -0.0037), "knuckles": (0.0114, -0.3008, 0.9536), "thumb": (-0.5251, 0.8098, 0.2617),
-        "pole": (-0.1458, -0.5502, -0.81), "fingers": "relaxed", "clav": 0.0}
+HILT = {"wrist": (0.2978, 0.0091, -0.0004), "knuckles": (0.0102, -0.2861, 0.9582), "thumb": (-0.1359, 0.9489, 0.2848),
+        "pole": (0.8534, -0.5016, -0.0009), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.0}
 
 
 def hilt_carry(rig, clip, hilt=None):
@@ -169,12 +169,21 @@ def hilt_carry(rig, clip, hilt=None):
             clip.rot[f, c] = qslerp(mean, clip.rot[f, c], h["clav"])
         g, p = rig.sk.fk(clip.rot, clip.pos)
 
+    # `pole_chest`: the share of the chest's turn on the pelvis (about its clip mean) that the elbow's way follows.
+    # The shield rides her back on spine_03; with the pole fixed to the pelvis, the chest's run twist swung the
+    # shield's rim into the elbow mid-stride.
+    from rig import qmul, qinv, qnorm, qslerp
+    ch = I["spine_03"]
+    Mf = np.array([qmul(qinv(g[f, pel]), g[f, ch]) for f in range(n)])
+    Mm = qnorm(np.mean(Mf * np.sign(Mf @ Mf[0])[:, None], axis=0))
+
     def spec(f):
         R = g[f, pel]
+        Rp = qslerp(R, qmul(g[f, ch], qinv(Mm)), h.get("pole_chest", 0.0))
         return {"hand_l": {"pos": tuple(p[f, pel] + qrot(R, np.array(h["wrist"], float))),
                            "knuckles": tuple(qrot(R, np.array(h["knuckles"], float))),
                            "blade": tuple(qrot(R, np.array(h["thumb"], float))),
-                           "pole": tuple(qrot(R, np.array(h["pole"], float))), "pole_at": "shoulder"},
+                           "pole": tuple(qrot(Rp, np.array(h["pole"], float))), "pole_at": "shoulder"},
                 "fingers_l": h["fingers"]}
     rot, _ = solve_frames(rig, [spec(f) for f in range(n)], [(clip.rot[f], clip.pos[f]) for f in range(n)],
                           loop=clip.loop, weapon=(clip.meta or {}).get("weapon", ""))
