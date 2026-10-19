@@ -47,11 +47,13 @@ uniform float erode = 0.0;
 // (heat gm_lo..gm_hi, pushed gm_hot over the tonemapper's white, gone by sim frame gm_end), an orange body, and
 // edges falling to dark red and into the smoke (gm_edge: the heat under which it darkens).
 uniform float gm = 1.0;
-uniform float gm_lo = 0.13;
-uniform float gm_hi = 0.26;
-uniform float gm_hot = 3.5;
-uniform float gm_end = 13.0;
-uniform float gm_edge = 0.08;
+uniform float gm_lo = 0.20;
+uniform float gm_hi = 0.33;
+uniform float gm_hot = 7.0;
+uniform float gm_end = 15.0;
+uniform float gm_edge = 0.10;
+// The body's light (under the tonemapper's knee, so it stays orange: brighter it went cream).
+uniform float gm_body = 0.6;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
 
 void vertex() {
@@ -87,12 +89,14 @@ void fragment() {
 		vec3 sc = c0.rgb / max(c0.a, 1e-3);
 		float l = dot(sc, vec3(0.2126, 0.7152, 0.0722));
 		float heat = l * mix(0.55, 1.0, smoothstep(0.15, 0.7, c0.a)) * mix(1.0, 0.75, smoothstep(6.0, 22.0, f));
-		float core = smoothstep(gm_lo, gm_hi, heat) * (1.0 - smoothstep(gm_end - 4.0, gm_end, f));
+		// (the atlas's hottest runs low over sim frames 4-8, p99 0.27-0.3 against 0.45 either side: the core held through it)
+		heat *= 1.0 + 0.3 * smoothstep(3.0, 4.5, f) * (1.0 - smoothstep(6.5, 8.5, f));
+		float core = smoothstep(gm_lo, gm_hi, heat) * (1.0 - smoothstep(gm_end - 6.0, gm_end, f));
 		float t = clamp(heat / gm_lo, 0.0, 1.0);
 		// dark red at the edges, orange through the body, white-yellow at the core
-		vec3 hue = mix(vec3(1.0, 0.13, 0.03), vec3(1.0, 0.40, 0.08), smoothstep(0.3, 0.85, t));
+		vec3 hue = mix(vec3(1.0, 0.04, 0.0), vec3(1.0, 0.24, 0.0), smoothstep(0.45, 0.9, t));
 		hue = mix(hue, vec3(1.0, 0.86, 0.62), core);
-		float lum = max(l, 0.02) * mix(0.3, 1.0, smoothstep(gm_edge / gm_lo, 0.9, t)) * (1.0 + gm_hot * core);
+		float lum = max(l, 0.02) * mix(0.25 * gm_body, gm_body, smoothstep(gm_edge / gm_lo, 0.9, t)) * (1.0 + gm_hot / gm_body * core);
 		vec3 g = hue * (lum / dot(hue, vec3(0.2126, 0.7152, 0.0722)));
 		c.rgb = mix(c.rgb, g * c.a, gm * smoothstep(1.5, 3.0, f));
 	}

@@ -82,11 +82,11 @@ public partial class FlareFx
             simMat.SetShaderParameter("atlas", GD.Load<Texture2D>(fb + ".png"));
             simMat.SetShaderParameter("grid", (int)meta["grid"].AsDouble());
             simMat.SetShaderParameter("frames", simFrames);
-            // Look-dev: FLARE_GM="gm,lo,hi,hot,end,edge" overrides the heat map's uniforms (flare_fb.gdshader).
+            // Look-dev: FLARE_GM="gm,lo,hi,hot,end,edge,body" overrides the heat map's uniforms (flare_fb.gdshader).
             var gmv = System.Environment.GetEnvironmentVariable("FLARE_GM")?.Split(',');
             if (gmv != null)
             {
-                string[] gmn = { "gm", "gm_lo", "gm_hi", "gm_hot", "gm_end", "gm_edge" };
+                string[] gmn = { "gm", "gm_lo", "gm_hi", "gm_hot", "gm_end", "gm_edge", "gm_body" };
                 for (int i = 0; i < Math.Min(gmv.Length, gmn.Length); i++)
                     if (float.TryParse(gmv[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gv))
                         simMat.SetShaderParameter(gmn[i], gv);

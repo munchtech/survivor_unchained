@@ -231,10 +231,10 @@ vec4 flare_marks_at(vec2 w) {
 // fast and easing as it reaches the reach's edge in 0.7 s (after the last word's hitstop). FlareFx.RingAt is the
 // same curve: each statue bursts as the line crosses it.
 // The ring's profile (m, and its light): the white-hot edge, the orange body, the soot skirt behind.
-#define FL_RING_EDGE 0.11
-#define FL_RING_BODY 0.42
+#define FL_RING_EDGE 0.075
+#define FL_RING_BODY 0.55
 #define FL_RING_SKIRT 0.75
-#define FL_RING_GLOW 0.45
+#define FL_RING_GLOW 0.3
 #define FL_RING_HOT 1.6
 float flare_ring(float s, float rmax) {
 	float x = clamp((s - 0.01) / 0.7, 0.0, 1.0);
@@ -321,7 +321,7 @@ float flare_boom_behind(vec2 w) {
 vec3 flare_boom_light(vec4 bo) {
 	// (Judge 4 fix 7: amber at its edge, hue ~28, orange through it, a yellow-white core.)
 	// (Judge 6 (7): bright, the body went cream under the tonemapper: a saturated orange under it, the edge white-hot.)
-	return mix(vec3(0.7, 0.2, 0.03), vec3(1.0, 0.36, 0.05), smoothstep(0.2, 0.8, bo.y)) * bo.y * FL_RING_GLOW + vec3(1.0, 0.8, 0.52) * bo.x * FL_RING_HOT;
+	return mix(vec3(0.75, 0.16, 0.02), vec3(1.0, 0.3, 0.035), smoothstep(0.2, 0.8, bo.y)) * bo.y * FL_RING_GLOW + vec3(1.0, 0.8, 0.52) * bo.x * FL_RING_HOT;
 }
 
 // The last word's ground flash (judge 2, s4): its first frames, a torn disc about 3 m across round the crater, a
