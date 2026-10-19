@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 19 October: coordinator 8f465914 (running)
+Leads: armor 4 (armor-1), animation 39 (anim-38), Flare 10 (flare-1), environment 2 (env-1), the tutorial teaching pass (teach-1, new, off f192ac14). The story writer is DONE: SB00 plus the tutorial copy merged in f192ac14. Its worktree is removed; an empty story-lore folder is left, held open by a process. The stale animation 38 lead (session f56a8f65) was stopped on 19 Oct; it had kept relaunching jobs in anim-38. Next when a slot frees: the storybook format/builder for SB00 (su-lead-max), then the touch-up round below.
+
 ## 18 October, night: coordinator a68188e9 WIND-DOWN (read this first; the section below is history)
 **Merged and pushed:** cinematics 3 (19c4915e) and touch-up 4 (ba7c26ed; the throat, the Reaver cord, metal round 4, hair round 2; spec in docs/art/look_bible/01_armor_metal.md "As built"). Tests 942/0/8, integration at 795be9ce+. Both worktrees removed, plus the three stale ones (classes-12, story/act2, hero pose: branches kept on origin, unmerged). **4 worktrees, C: 65 GB free.**
 **Every lead is PAUSED cleanly, with "Paused here; next:" at its handoff top:**
