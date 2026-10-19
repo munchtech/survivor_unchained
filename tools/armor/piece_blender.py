@@ -465,10 +465,21 @@ def fitted_cups(cname, top, lift, thick, roll, gap, side, fold, sub=6):
     return [shell] + beads
 
 
-def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll):
+def gore_row(z_top, z_tip):
+    """The gore's one blend: her soft weights at its centre on her sternum (its four largest shares), dense."""
+    gc = np.array(G["front_point"](0.0, (z_top + z_tip) / 2))
+    row = np.zeros(NB)
+    for n_, w_ in top4(G["soft_weights"](gc[None])[0]):
+        row[BI[n_] if isinstance(BI, dict) else BONES.index(n_)] = w_
+    return row
+
+
+def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll, row=None):
     """The gore: a small forged plate on her sternum between the cups, cut from her own skin (so it lies on her,
     `lift` off), its outline the cups' inner rims 1.5 mm clear above, tapering down to a rounded tip on her
-    sternum. Its own rolled edge."""
+    sternum. Its own rolled edge. Rigid (r2, F7): with `row`, the plate and its rolled edge all on that one blend (the
+    blend at its centre), so it never bends between the cups as her breast bones move (arms in, it read as a bent
+    sliver on the skin weights it took point by point)."""
     xs = np.arange(-hw_top - 0.012, hw_top + 0.012 + 1e-9, 0.0025)
     zs = np.arange(z_tip - 0.006, z_top + 0.012 + 1e-9, 0.0025)
     nx, nz = len(xs), len(zs)
@@ -498,7 +509,8 @@ def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll):
                            np.where(z < tipc[1], hw_tip - np.hypot(x, z - tipc[1]), 1.0)])
     pos = pos + nor * lift
     _, j = cKDTree(P).query(pos)
-    attr = np.hstack([nor, W[j].astype(float), np.zeros((len(pos), 1))])
+    attr = np.hstack([nor, W[j].astype(float) if row is None else np.repeat(np.asarray(row, float)[None], len(pos), 0),
+                      np.zeros((len(pos), 1))])
     pos, at, tris = G["clip"](f, pos, attr, tris)
     pos, at, tris = G["weld"](pos, at, tris)
     tris = G["islands"](pos, tris, keep_frac=0.3)
@@ -730,7 +742,11 @@ def build_plate_top():
     near_in = rr[np.abs(rr[:, 0]) < x_min + 0.012]
     z_corner = near_in[:, 2].min()
     gz_top, gz_tip = z_corner + gp["top"], z_corner - gp["drop"]
-    gore, gsheet = gore_plate(f"{PID}.gore", [cups[0]], gz_top, gz_tip, x_min + 0.012, gp["hw_tip"], gp["lift"], gp["thick"], gp["roll"])
+    grow = gore_row(gz_top, gz_tip) if gp.get("rigid", True) else None
+    gore, gsheet = gore_plate(f"{PID}.gore", [cups[0]], gz_top, gz_tip, x_min + 0.012, gp["hw_tip"], gp["lift"], gp["thick"], gp["roll"], grow)
+    if grow is not None:
+        for o_ in gore:
+            set_one_blend(o_, top4(grow))
     gs = gsheet[0]
     gc = np.array(G["front_point"](0.0, (gz_top + gz_tip) / 2))
     zr = gz_top - 0.007
@@ -738,8 +754,10 @@ def build_plate_top():
     xr = (np.abs(band_[:, 0]).max() - 0.0055) if len(band_) else 0.008
     zt = gs[:, 2].min() + 0.0075
     gpts_, gn_ = aim_hits(gore, [((0.0, -0.6, zt), (0.0, 0.0, zt))] + [((sg * xr, -0.6, zr), (sg * xr, 0.0, zr)) for sg in (1, -1)])
-    gore_rivets = low_rivets(f"{PID}.gore_rivets", gpts_, gn_, G["soft_weights"](np.array(gpts_)), 0.0024, MKEY) if gpts_ else []
-    FIT["gore"] = {"top_z": round(float(gz_top), 4), "tip_z": round(float(gz_tip), 4), "cups_apart_mm": round(float(2 * x_min * 1000), 1)}
+    gwt_ = np.repeat(grow[None], len(gpts_), 0) if grow is not None else (G["soft_weights"](np.array(gpts_)) if gpts_ else None)
+    gore_rivets = low_rivets(f"{PID}.gore_rivets", gpts_, gn_, gwt_, 0.0024, MKEY) if gpts_ else []
+    FIT["gore"] = {"top_z": round(float(gz_top), 4), "tip_z": round(float(gz_tip), 4), "cups_apart_mm": round(float(2 * x_min * 1000), 1),
+                   "rigid_blend": top4(grow) if grow is not None else None}
     shell = [cups[0], gore[0]]
     parts = cups + allstraps + backstrap + fix + buckles + gore + gore_rivets
     # ---- sockets
@@ -777,7 +795,7 @@ def build_plate_top():
         sh = np.asarray(strap_lines[sd][1])
         sock(f"shoulder_{sd}", sh, G["SKIN_BVH"].find_nearest(Vector(sh))[1][:], [0, 1.0, 0], G["soft_weights"](sh[None])[0])
     gn = np.array(G["SKIN_BVH"].find_nearest(Vector(gc))[1][:])
-    sock("gore", gc + gn * (gp["lift"] + gp["thick"]), gn, [0, 0, 1.0], G["soft_weights"](gc[None])[0])
+    sock("gore", gc + gn * (gp["lift"] + gp["thick"]), gn, [0, 0, 1.0], grow if grow is not None else G["soft_weights"](gc[None])[0])
     NUM_FIT.update(FIT.get("gore", {}))
     bs = bsock["back"]
     sock("back", bs["point"], bs["normal"], [0, 0, 1.0], bs["weights"])
@@ -1441,11 +1459,40 @@ def pose_dump(pname, bv, bn, dg):
         sh += [tuple(o.matrix_world @ v.co) for v in m_.vertices]
         oe.to_mesh_clear()
     POSE_DUMP[pname] = {"skin": gl(bv[NEAR]), "skin_n": gl(bn[NEAR]), "bones": sorted(mats), "mats": np.array([mats[k] for k in sorted(mats)]),
-                        "shell": gl(np.array(sh))}
+                        "shell": gl(np.array(sh)), "tuck": np.asarray(tuck[NEAR], np.float32)}
+
+
+def gore_in_pose(bv, dg, rest_q=None):
+    """The gore plate posed (r2, F7): its standoff off her posed skin (each of its points to her nearest skin, mm: the
+    inner face's min and p50, the points nearer her than the plate's thickness) and its bend (the largest distance of a
+    posed point from the best rigid fit of its rest points, mm: 0 for a plate that never bends)."""
+    objs = B.get("gore", [])
+    if not objs:
+        return None
+    o = objs[0]
+    oe = o.evaluated_get(dg)
+    m_ = oe.to_mesh()
+    q = np.array([(o.matrix_world @ v.co)[:] for v in m_.vertices])
+    oe.to_mesh_clear()
+    if not hasattr(gore_in_pose, "polys"):
+        gore_in_pose.polys = [p_.vertices[:] for p_ in body.data.polygons]
+    bt = BVHTree.FromPolygons([tuple(x) for x in bv], gore_in_pose.polys)
+    d = np.array([np.linalg.norm(np.array(bt.find_nearest(Vector(x))[0][:]) - x) for x in q]) * 1000
+    inner = d < np.median(d)
+    r = {"standoff_min_mm": round(float(d.min()), 2), "standoff_inner_p50_mm": round(float(np.median(d[inner])), 2),
+         "standoff_inner_max_mm": round(float(d[inner].max()), 2)}
+    if rest_q is not None and len(rest_q) == len(q):
+        a_, b_ = rest_q - rest_q.mean(0), q - q.mean(0)
+        U, _, Vt = np.linalg.svd(a_.T @ b_)
+        D = np.diag([1, 1, np.sign(np.linalg.det(U @ Vt))])
+        R = U @ D @ Vt
+        r["bend_mm"] = round(float(np.linalg.norm(a_ @ R - b_, axis=1).max() * 1000), 3)
+    return r, q
 
 
 def pose_check():
     out = {}
+    gore_rest = None
     for pname, rots in [("rest", [])] + list(POSES.items()):
         bv, bn, dg = pose_body(rots)
         try:
@@ -1453,8 +1500,16 @@ def pose_check():
         except Exception as ex:
             print("POSE DUMP failed", pname, repr(ex))
         straps_ = strap_check(bv, bn, dg)
+        try:
+            g_ = gore_in_pose(bv, dg, gore_rest)
+        except Exception as ex:
+            print("GORE POSE failed", pname, repr(ex))
+            g_ = None
         if pname == "rest":
             out["rest"] = {"straps": straps_}
+            if g_ is not None:
+                gore_rest = g_[1]
+                out["rest"]["gore"] = g_[0]
             continue
         r_ = skin_vs_shell(bv, bn, NEAR, tuck, shell_tree(dg))
         moved = float(np.abs(bv[NEAR] - bv0[NEAR]).max())
@@ -1465,6 +1520,8 @@ def pose_check():
                       "no_longer_covered_tucked_full": int((inC & ~r_["covered"] & (tuck[NEAR] > 0.973)).sum()),
                       "through_tucked_at": nip_rel(bv0[NEAR[r_["through_t"]]])[:6],
                       "through_untucked_at": nip_rel(bv0[NEAR[r_["through"]]])[:6], "straps": straps_}
+        if g_ is not None:
+            out[pname]["gore"] = g_[0]
     pose_rest()
     return out
 
@@ -1477,7 +1534,7 @@ except Exception as ex:  # (the numbers still come; the pose check names its fai
     NUM["poses"] = {"error": repr(ex)}
 if POSE_DUMP:
     np.savez_compressed(os.path.join(SCRATCH, "poses.npz"), names=np.array(sorted(POSE_DUMP)),
-                        **{f"{k}__{f}": np.asarray(v[f]) for k, v in POSE_DUMP.items() for f in ("skin", "skin_n", "bones", "mats", "shell")})
+                        **{f"{k}__{f}": np.asarray(v[f]) for k, v in POSE_DUMP.items() for f in ("skin", "skin_n", "bones", "mats", "shell", "tuck")})
 stamp("numbers measured")
 
 # --------------------------------------------------------------- export --

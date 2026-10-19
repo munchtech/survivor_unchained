@@ -163,5 +163,15 @@
  "gem_emerald": {
   "kind": "gloss",
   "repeats": 70
+ },
+ "blacksteel": {
+  "kind": "metal",
+  "repeats": 2.5,
+  "albedo_srgb": [
+   0.2,
+   0.2,
+   0.215
+  ],
+  "roughness": 0.45
  }
 }

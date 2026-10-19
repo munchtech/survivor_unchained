@@ -21,6 +21,10 @@ piece / painted / flag and TEXCOORD_1 edge / convexity, taken from the shell at 
   sunk 0.2 mm into the plate; a dark groove `gap` wide each side, a film on the plate (the shell's own mesh, its sky
   and convexity dropped: the shader draws it dark and rough). Each section rigid on the plate's blend under it; lowered
   where a strap crosses it (never through the leather). A coarser band in the gameplay LOD, on that LOD's own surface.
+- `gild`: parts of the base's own shell (`parts`: rolled_rim, the cups' rolled edges; gore, the gore plate and its
+  rolled edge) copied into `mat` `lift` out along their normals (never toward her), the steel kept under it: the tier's
+  gilt rim and gore. Each copied vertex keeps its weights and shading data; faces turned to her are not copied. Kept
+  in the gameplay LOD (from that LOD's own shell). Checked in the poses as the shell is: against her tucked skin.
 - `paint` `etch_<name>`: the etched pattern as a film 0.25 mm over the plate in the shell's own mesh and material (or
   `ground`'s: a leather one draws it as a matte black fill, see etch()),
   its sky and convexity dropped so the outfit shader draws it as acid-etched steel (darker, rougher, recessed: its
@@ -173,6 +177,17 @@ def material_def(name, js):
         gem_textures()
         return {"name": name, "doubleSided": False,
                 "pbrMetallicRoughness": {"baseColorTexture": {"index": tex(f"tex/{name}_diff.png")}, "metallicFactor": 0.0, "roughnessFactor": 0.12}}
+    row = mats_table().get(name, {})
+    if row.get("albedo_srgb"):
+        # (r2, F2: blacksteel, the etch's blackened ground: a dark metal of its own colour (the metal shader draws a
+        # texture's mean only), metallic, at the shader's satin roughness)
+        from PIL import Image
+        os.makedirs(TEX, exist_ok=True)
+        f = os.path.join(TEX, f"{name}_diff.png")
+        Image.fromarray(np.full((16, 16, 3), np.round(np.asarray(row["albedo_srgb"], float) * 255), np.uint8)).save(f)
+        return {"name": name, "doubleSided": False,
+                "pbrMetallicRoughness": {"baseColorTexture": {"index": tex(f"tex/{name}_diff.png")}, "metallicFactor": 1.0,
+                                         "roughnessFactor": row.get("roughness", 0.45)}}
     import glob
     for f in sorted(glob.glob(os.path.join(ROOT, "godot", "art", "people", "heroine_outfit_*.gltf"))):
         if f.endswith("_lod.gltf"):
@@ -505,14 +520,17 @@ PROFILES = {
     "rolled": [(np.cos(a), np.sin(a)) for a in np.linspace(np.pi, 0, 9)],
     "rope": [(np.cos(a), np.sin(a)) for a in np.linspace(np.pi, 0, 9)],
     "filigree": [(-1, 0), (-1, 0.5), (-0.7, 0.8), (-0.35, 0.6), (0, 1.0), (0.35, 0.6), (0.7, 0.8), (1, 0.5), (1, 0)],
+    # (r2, F1: a raised half-round bead, so it draws a lit line over a shadow line: a short foot wall, then the round)
+    "bead": [(-1, 0)] + [(np.cos(a), 0.12 + 0.88 * np.sin(a)) for a in np.linspace(np.pi, 0, 9)] + [(1, 0)],
 }
+LOD_PROFILES = {"bead": [(-1, 0)] + [(np.cos(a), 0.12 + 0.88 * np.sin(a)) for a in np.linspace(np.pi, 0, 4)] + [(1, 0)]}
 
 
 def trim_band(surf, rim, ad, step, leather, lod=False):
     """A swept band along a rim on the surface (see the module doc)."""
     prof = PROFILES[ad.get("profile", "gold_band")]
     if lod:
-        prof = [(-1, 0), (-1, 0.7), (-0.6, 1.0), (0.6, 1.0), (1, 0.7), (1, 0)]
+        prof = LOD_PROFILES.get(ad.get("profile"), [(-1, 0), (-1, 0.7), (-0.6, 1.0), (0.6, 1.0), (1, 0.7), (1, 0)])
     w, h, dc = ad.get("width", 0.005), ad.get("height", 0.0015), ad.get("inset", 0.0)
     P0, O0, N0, s = rim_line(rim, step)
     pc, fc, bc, nc = fair(surf, inward(surf, P0, O0, N0, dc))
@@ -590,6 +608,82 @@ def element(lm, slot, origin, X, Y, Z, w_row, c_row, scale=1.0, roll=0.0, offset
     zz = P0[:, 2] / max(P0[:, 2].max(), 1e-6)
     U1 = np.c_[np.full(n, 0.002), 0.5 + 0.3 * zz]     # (polished: an element is all edge)
     return P, N, U0, U1, np.repeat(c[None], n, 0), np.repeat(w_row[None], n, 0), T
+
+
+# ---------------------------------------------------------------------------------------- the gild --
+def gild(m, sock, ad, nb, table, mat):
+    """`gild`: parts of the base's own shell (`parts`: "rolled_rim", the cups' rolled edges; "gore", the gore plate and
+    its rolled edge, not its rivets) copied into `mat`, `lift` out along their welded normals: a gilt skin over the
+    steel, the base's shell untouched under it (a tier adds adornment only). Each copied vertex keeps its own weights
+    and shading data (it rides and wears as the steel under it does). Faces turned toward her (their normal against
+    the plate's outward one by more than `facing`) are not copied: hidden, and they would stand nearer her skin."""
+    P = m["attrs"]["POSITION"][0].astype(np.float64)
+    N = m["attrs"]["NORMAL"][0].astype(np.float64)
+    T = m["tris"]
+    tu = m["attrs"]["TEXCOORD_2"][0][:, 0] if "TEXCOORD_2" in m["attrs"] else np.zeros(len(P))
+    lab = pl.parts(P, T)
+    # (each rim's line, ten points to a segment, so a distance to it is to the line, not its points)
+    dz = lambda a_: np.vstack([a_ + (np.roll(a_, -1, 0) - a_) * t for t in np.linspace(0, 1, 10, endpoint=False)])
+    rp = np.vstack([dz(np.array(r["points"])) for r in sock["rims"].values()])
+    rn = np.vstack([dz(np.array(r["normals"])) for r in sock["rims"].values()])
+    rn /= np.maximum(np.linalg.norm(rn, axis=1, keepdims=True), 1e-12)
+    rt = cKDTree(rp)
+    g = sock["sockets"].get("gore")
+    want = set(ad.get("parts", ["rolled_rim", "gore"]))
+    facing = ad.get("facing", -0.3)
+    fn = N[T].sum(1)
+    fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-15)
+    keep = np.zeros(len(T), bool)
+    vref = np.zeros((len(P), 3))                              # (each copied vertex's plate outward: away from her)
+    got = {}
+    for c in np.unique(lab):
+        sel = lab == c
+        v = np.unique(T[sel])
+        size = float(np.linalg.norm(np.ptp(P[v], 0)))
+        if size < 0.02:
+            continue                                           # (rivets, buckles' bits)
+        d_rim = rt.query(P[v])[0]
+        kind = None
+        if "rolled_rim" in want and np.median(d_rim) < 0.004 and d_rim.max() < 0.006 and (np.abs(tu[v]) > 1e-6).mean() > 0.9:
+            kind = "rolled_rim"
+            ref = rn[rt.query(P[T[sel]].mean(1))[1]]
+        elif "gore" in want and g is not None and np.linalg.norm(P[v].mean(0) - np.array(g["point"])) < 0.03 and size < 0.09:
+            kind = "gore"
+            ref = np.repeat(np.array(g["normal"])[None], int(sel.sum()), 0)
+        if kind is None:
+            continue
+        ok = (fn[sel] * ref).sum(1) > facing
+        idx = np.nonzero(sel)[0][ok]
+        keep[idx] = True
+        vref[T[idx].ravel()] = np.repeat(ref[ok], 3, 0)
+        got.setdefault(kind, {"parts": 0, "tris": 0, "dropped_facing_her": 0})
+        got[kind]["parts"] += 1
+        got[kind]["tris"] += int(ok.sum())
+        got[kind]["dropped_facing_her"] += int((~ok).sum())
+    if not keep.any():
+        return None, got
+    Tk = T[keep]
+    used, inv = np.unique(Tk.ravel(), return_inverse=True)
+    # (welded normals: a hard edge's split vertices move together, so no crack opens in the gilt)
+    _, wi = np.unique(np.round(P[used] / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+    wi = wi.ravel()
+    ns = np.zeros((wi.max() + 1, 3))
+    np.add.at(ns, wi, N[used])
+    ns = ns[wi] / np.maximum(np.linalg.norm(ns[wi], axis=1, keepdims=True), 1e-12)
+    # (never lifted toward her: a normal turned her way (a rolled edge's underside, kept where its face is not) loses
+    # that part, so the gilt stands out sideways there, never nearer her than the steel it covers)
+    vr = vref[used]
+    vr /= np.maximum(np.linalg.norm(vr, axis=1, keepdims=True), 1e-12)
+    k_ = np.minimum((ns * vr).sum(1, keepdims=True), 0.0)
+    dn = ns - k_ * vr
+    dn /= np.maximum(np.linalg.norm(dn, axis=1, keepdims=True), 1e-12)
+    Pn = P[used] + dn * ad.get("lift", 0.00025)
+    k = table.get(mat, {}).get("repeats", 3) / max(table.get(m["mat"], {}).get("repeats", 2.5), 1e-6)
+    U0 = m["attrs"]["TEXCOORD_0"][0][used].astype(np.float64) * k
+    U1 = m["attrs"]["TEXCOORD_1"][0][used].astype(np.float64)
+    C = colour(m)[used]
+    W = dense(m, nb)[used]
+    return (Pn, N[used], U0, U1, C, W, inv.reshape(-1, 3), P[used]), got
 
 
 # ---------------------------------------------------------------------------------------- the etch --
@@ -721,7 +815,7 @@ def etch(surf, sock, ad, lod):
         raise SystemExit(f"ADORN: no etched pattern {name!r} (etch_band_vine)")
     k = float(ad.get("strength", 1.0))
     sky = 1 - (1 - ad.get("sky", ETCH_SKY)) * k
-    conv = ETCH_CONV
+    conv = ad.get("conv", ETCH_CONV)
     lift = FILM * (1.6 if lod else 1.0)
     mt = matte_ground(ad)
     parts, stats = [], {"bands": 0, "lines": 0}
@@ -811,7 +905,9 @@ def compact(m):
 def pose_check(shell_id, model, new_by_mesh, base_full):
     """Every new vertex skinned into each test pose (her skinning matrices from the shell's build, poses.npz), and
     its signed distance to her posed skin there: through if under it. The shell's own vertices skinned the same way
-    must land on the build's posed shell (a check of the matrices)."""
+    must land on the build's posed shell (a check of the matrices). A gilt vertex (`gild`, a skin on the shell) is held
+    to the shell's own standard: against her skin tucked as the game draws it (poses.npz's tuck), or, from an older
+    poses.npz without it, by how far it stands out of the steel it covers where that steel lies under her skin."""
     f = os.path.join(ROOT, ".shots", "armor2", "build", shell_id, "poses.npz")
     if not os.path.exists(f):
         return {"skipped": f"no {os.path.relpath(f, ROOT)}: build {shell_id} (Blender) first"}
@@ -825,28 +921,54 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
         skin, skin_n = z[f"{pn}__skin"], z[f"{pn}__skin_n"]
         st = cKDTree(skin)
 
-        def pose(m, sel=None):
+        def pose(m, sel=None, P_=None):
             P = m["attrs"]["POSITION"][0].astype(np.float64)
             J = m["attrs"]["JOINTS_0"][0].astype(np.int64)
             W = pl.floats(*m["attrs"]["WEIGHTS_0"]).astype(np.float64)
             if sel is not None:
                 P, J, W = P[sel], J[sel], W[sel]
+            if P_ is not None:
+                P = P_
             Ph = np.c_[P, np.ones(len(P))]
             return np.einsum("nk,nkij,nj->ni", W, M[J], Ph)[:, :3]
 
         r = {"new_vertices": 0, "through": 0, "min_clear_mm": None}
         clear = []
-        for m, sel in new_by_mesh:
-            q = pose(m, sel)
+        gilt_tucked = 0
+
+        tk = z[f"{pn}__tuck"].astype(np.float64) if f"{pn}__tuck" in z.files else None
+        tk = None if tk is None else 0.010 * np.where(tk > 0.973, 1.0, tk)     # (as the base's check: her skin drawn in)
+
+        def signed(q, tucked=False):
             d, j = st.query(q, k=6)
             # (the signed distance off her skin: along the normal of the nearest skin points)
             sd = ((q[:, None] - skin[j]) * skin_n[j]).sum(2)
-            sd = np.where(d[:, :1] < 0.03, np.median(sd, 1)[:, None], 1.0)[:, 0]
+            if tucked:
+                sd = sd + tk[j]
+            return np.where(d[:, :1] < 0.03, np.median(sd, 1)[:, None], 1.0)[:, 0]
+        for m, sel, src in new_by_mesh:
+            sd = signed(pose(m, sel))
+            g = ~np.isnan(src[:, 0])
+            if g.any() and tk is not None:
+                # (the gilt is a skin on the shell: held to the shell's own standard, her skin tucked as the game draws it)
+                ss = signed(pose(m, sel[g], src[g]))
+                gilt_tucked += int((ss < 0).sum())
+                sd[g] = signed(pose(m, sel[g]), tucked=True)
+            elif g.any():
+                ss = signed(pose(m, sel[g], src[g]))
+                if os.environ.get("ADORN_DIAG"):
+                    bad_ = (sd[g] - np.minimum(ss, 0.0)) < 0
+                    if bad_.any():
+                        say("GILT DIAG", pn, int(bad_.sum()), "sd", np.round(sd[g][bad_][:8] * 1000, 2).tolist(), "steel", np.round(ss[bad_][:8] * 1000, 2).tolist(),
+                            "at", np.round(src[g][bad_][:4], 4).tolist())
+                sd[g] = sd[g] - np.minimum(ss, 0.0)
+                gilt_tucked += int((ss < 0).sum())
             clear.append(sd)
         cl = np.concatenate(clear) if clear else np.zeros(0)
         r["new_vertices"] = int(len(cl))
         r["through"] = int((cl < 0).sum())
         r["min_clear_mm"] = round(float(cl.min() * 1000), 2) if len(cl) else None
+        r["gilt_on_tucked_steel"] = gilt_tucked
         sh = z[f"{pn}__shell"]
         bq = pose(base_full)
         dd, _ = cKDTree(bq).query(sh)
@@ -1017,7 +1139,7 @@ def build(pid, post=False):
         elif kind == "trim":
             for rn in rim_names(sock, ad["rim"]):
                 rim = sock["rims"][rn]
-                tb = trim_band(S_full, rim, ad, 0.0022, leather)
+                tb = trim_band(S_full, rim, ad, ad.get("step", 0.0022), leather)
                 full_new.setdefault(mat, []).append((tb["P"], tb["N"], tb["U0"], tb["U1"], tb["C"], tb["W"], tb["T"]))
                 gap = ad.get("gap", 0.001)
                 w, dc = ad.get("width", 0.005), ad.get("inset", 0.0)
@@ -1031,8 +1153,19 @@ def build(pid, post=False):
                                        "inset_mm": dc * 1000, "gap_mm": gap * 1000, "tris": int(len(tb["T"])),
                                        "groove_tris": int(sum(len(g[6]) for g in grooves))})
                 if S_lod is not None:
-                    tl = trim_band(S_lod, rim, ad, 0.006, leather, lod=True)
+                    tl = trim_band(S_lod, rim, ad, ad.get("lod_step", 0.006), leather, lod=True)
                     lod_new.setdefault(mat, []).append((tl["P"], tl["N"], tl["U0"], tl["U1"], tl["C"], tl["W"], tl["T"]))
+        elif kind == "gild":
+            part, got = gild(shell_full, sock, ad, nb, table, mat)
+            st = {"mat": mat, "lift_mm": ad.get("lift", 0.00025) * 1000, "full": got}
+            if part is not None:
+                full_new.setdefault(mat, []).append(part)
+            if shell_lod is not None and ad.get("lod", True):
+                lpart, lgot = gild(shell_lod, sock, ad, nb, table, mat)
+                st["lod1"] = lgot
+                if lpart is not None:
+                    lod_new.setdefault(mat, []).append(lpart)
+            stats.setdefault("gild", []).append(st)
         elif kind == "paint":
             parts, st = etch(S_full, sock, ad, False)
             gm = ad.get("ground", shell_full["mat"])
@@ -1060,7 +1193,9 @@ def build(pid, post=False):
             n0 = len(m["attrs"]["POSITION"][0])
             append(m, parts, nb)
             if lodn == "full":
-                new_sel.append((m, np.arange(n0, len(m["attrs"]["POSITION"][0]))))
+                # (a gilt vertex's steel under it, for the pose check: NaN for the rest)
+                src = np.concatenate([p[7] if len(p) > 7 else np.full((len(p[0]), 3), np.nan) for p in parts if len(p[0])])
+                new_sel.append((m, np.arange(n0, len(m["attrs"]["POSITION"][0])), src))
     # numbers
     full = [m for m in model.meshes if not m["extras"].get("lod")]
     lod1 = [m for m in model.meshes if m["extras"].get("lod") == "lod1"]
