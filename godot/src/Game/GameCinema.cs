@@ -692,6 +692,11 @@ public partial class Game
                     if (bosses.TryGetValue(c.Actor, out var w))
                     {
                         if (c.Has("lit")) w.LampLit = c.Bool("lit", true);
+                        // "flame": the flame's core brightness (1 = as built), "flameColor" its hue (hex),
+                        // "halo" its halo's strength: a lamp seen at night as lit glass, not a white disc.
+                        if (c.Has("flame")) w.FlameLevel = (float)c.Num("flame");
+                        if (c.Str("flameColor") is string fch) w.FlameColor = new Color(fch);
+                        if (c.Has("halo")) w.HaloLevel = (float)c.Num("halo");
                         if (!c.Has("glow")) break;
                         double from = w.Glow, to = c.Num("glow");
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => w.Glow = from + (to - from) * k));
