@@ -120,6 +120,14 @@ float flare_cover(vec2 w, float arr, float crystal) {
 	// (Judge 4 fix 6: a soft 1.4 m fringe, fern-scale ragged, read as a band of white static. A clean edge
 	// wandering on a low cloud, with a breath of the crystal in it.)
 	c *= smoothstep(0.35, 0.65, flare_melt_edge(w, arr, crystal));
+	// (Judge 6 (6): the melt creeping in from the edge read as a white crust.) Once the BOOM's ring has passed a
+	// point its frost fades out by alpha alone over 40 frames, no edge, no colour (flare_ring's inverse).
+	vec4 fl_bm = texelFetch(flare_marks, ivec2(31, 0), 0);
+	if (fl_bm.z > 0.0) {
+		float fl_x = 1.0 - pow(clamp(1.0 - length(w - fl_bm.xy) / fl_bm.z, 0.0, 1.0), 0.4);
+		float fl_pass = 0.01 + 0.7 * fl_x;
+		c *= 1.0 - smoothstep(fl_pass, fl_pass + 0.67, fl_bm.w);
+	}
 	return c * flare_frost.y;
 }
 
@@ -394,24 +402,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi *= 1.0 - 0.5 * bo.z;
 		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9;
 		emi += flare_boom_light(bo);
-		// Live embers scattered in the char, breathing, dying through the Return (FLARE_LOOK §4.1).
-		// A point in one 31 cm cell in ten, clumped, of varied heat (a jittered grid of even dots read as polka, s5). (NEVER name a local in this file after a uniform of a shader that
-		// includes it: arena_ground's 'uniform vec3 ember' won over a local 'ember' and lit the whole inside of
-		// the ring salmon at 4x ready, s5. Locals here take an fl_ prefix when in doubt.)
-		// (Judge 3: still a polka grid. Now one a metre cell, anywhere in it (+-0.5 m), sized 0.5-2x, a third of
-		// them out by 1-2 s and the rest by 2.5-5 s.)
-		vec2 eci = floor(w);
-		float en = fract(sin(dot(eci, vec2(127.1, 311.7))) * 43758.5453);
-		float en2 = fract(sin(dot(eci, vec2(269.5, 183.3))) * 43758.5453);
-		float en3 = fract(sin(dot(eci, vec2(419.2, 371.9))) * 43758.5453);
-		float er = length(w - eci - vec2(en, en2));
-		float erad = 0.012 * (0.5 + 1.5 * en3 * en3);
-		float epx = max(fwidth(w.x), 0.002);
-		float fl_emb = step(0.85, en3 + en * 0.2) * (1.0 - smoothstep(erad, erad + epx * 1.2, er)) * (0.35 + 0.65 * en2 * en2) * smoothstep(0.45, 0.75, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
-		float eend = en3 < 0.33 ? 1.0 + 3.0 * en3 : 2.5 + 2.5 * en3;
-		// (Judge 4 fix 5: sparse, twinkling: each on its own few-frame clock.)
-		float breath = 0.3 + 0.7 * step(0.45, fract(sin(en * 77.3 + floor(TIME * (7.0 + 6.0 * en2) + en2 * 9.0)) * 43758.5453));
-		emi += vec3(1.0, 0.33, 0.06) * fl_emb * breath * bo.z * smoothstep(0.08, 0.3, bmk.w) * (1.0 - smoothstep(eend - 0.6, eend, bmk.w)) * 1.3;
+		// (Judge 6 (9): the live embers in the char are CUT: over a 1000 px disc they read as orange confetti, as pickups.)
 		// The last word's ground flash.
 		emi += flare_boom_flash(w);
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
@@ -421,34 +412,15 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi += vec3(0.3, 0.6, 1.0) * (cr.y * 0.6 + spine * 0.45) * band * cover * (black ? 0.35 : 1.0);
 		// Held frost: a few fine points of cold light, and the meltwater's glints.
 		emi += vec3(0.4, 0.68, 1.0) * cr.y * ice * twinkle * 0.05 * flare_hue.a;
-		// Meltwater glints (judge 3): about one a square metre, sharp (a pixel or two), each twinkling on its own
-		// clock, scattered thin on the wet ground.
-		{
-			vec2 gci = floor(w);
-			float gh = fract(sin(dot(gci, vec2(41.3, 289.1))) * 43758.5453);
-			float gh2 = fract(sin(dot(gci, vec2(157.7, 113.9))) * 43758.5453);
-			vec2 gp = gci + 0.15 + 0.7 * vec2(gh, gh2);
-			float gpx = max(fwidth(w.x), 0.004);
-			float gd = 1.0 - smoothstep(gpx * 0.5, gpx * 1.6, length(w - gp));
-			float gtw = step(0.45, fract(sin(gh * 91.7 + floor(TIME * (9.0 + 8.0 * gh2) + gh * 13.0)) * 43758.5453));
-			// (Judge 4 fix 6: thick at the receding edge they read as TV static. Scattered thin on the wet only.)
-			float gwet = 0.25 * wet * (1.0 - ice) * (1.0 - smoothstep(4.5, 6.0, flare_frost.w));
-			emi += vec3(0.75, 0.9, 1.0) * gd * gtw * gwet * mix(0.9, 2.2, flare_hue.a);
-		}
-		// The meltwater's lip: a thin bright line (about a pixel) along the ice's receding edge, broken in places.
-		{
-			float fl_lw = max(fwidth(fl_me), 1e-4);
-			float fl_lip = 1.0 - smoothstep(0.6, 1.6, abs(fl_me - 0.5) / fl_lw);
-			float fl_lbr = smoothstep(0.3, 0.6, texture(flare_noise, w * 0.27 + 0.9).r);
-			emi += vec3(0.5, 0.7, 0.92) * fl_lip * fl_lbr * fl_melting * fl_dry * mix(0.2, 0.55, flare_hue.a);
-		}
+		// (Judge 6 (6): the melt is cut, its glints with it.)
 		nrm_view = normalize((view * vec4(nw, 0.0)).xyz);
 		// The web shows faint under the ice, and is burnt out under the char (its glow over the inside of the
 		// ring read as orange lines on the black: s2e).
 		// Through the char it glows amber (judge 2, s4), a breath warmer than the web on open ground.
 		// (Judge 3: held at full over the whole char it read as orange straw. Half, and sunk dark by 2 s.)
 		// (Judge 3's Return: amber to 2 s, dark by 4 s; the Burns timeline sinks flare_web itself.)
-		web *= (1.0 - 0.45 * ice) * (1.0 - bo.z);
+		// (Judge 6 (5): the hairlines show only where the ring has been, as the crust's veins below.)
+		web *= (1.0 - 0.45 * ice) * (1.0 - bo.z) * step(bmk.z, 0.0);
 		// Under the char the web is the crust's own cracks: amber to 2 s, dark red and gone by 4 s (FlareFx.Burns
 		// sinks flare_web), a few joined runs of them alight, not the whole net.
 		if (bo.z > 0.01 && flare_web.x > 0.0) {

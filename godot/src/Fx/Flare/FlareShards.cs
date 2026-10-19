@@ -34,7 +34,8 @@ public partial class FlareShards : MultiMeshInstance3D
     {
         cap = capacity;
         Name = "FlareShards";
-        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_shard.gdshader") };
+        // (Judge 6 (4): the shards lie below the fire, never in front of it: drawn before every other Flare bit.)
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_shard.gdshader"), RenderPriority = -4 };
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,

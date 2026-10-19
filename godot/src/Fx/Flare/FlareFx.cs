@@ -244,6 +244,12 @@ public partial class FlareFx : Node3D
             RenderingServer.GlobalShaderParameterSet("flare_web", NoWeb ? new Vector4(0, web.Y, web.Z, web.W) : web);
             RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
             UploadMarks();
+            // (Judge 6 A2's check, for the pictures' log: bodies the ring passed 4+ frames ago, as CrowdView drew them last frame.)
+            if (lastAt > 0 && !audited && id == "burns_twice" && t >= lastAt + RingTime(ringMax) + 6 / 60.0)
+            {
+                audited = true;
+                if (Args.Has("shot")) GD.Print($"flare {id}: ring +4f, bodies in the ring drawn {CrowdView.FlareAuditSeen}, neither shattered nor charred {CrowdView.FlareAuditBad}");
+            }
             if (lastAt > 0)
             {
                 float s = (float)(t - lastAt);
@@ -340,6 +346,7 @@ public partial class FlareFx : Node3D
         Stop = 0;
         ramp = 1;
         releaseAt = spendAt = lastAt = -1;
+        audited = false;
         colT = -1;
         BoomClear();
         spendLightT = -1;
@@ -409,8 +416,38 @@ public partial class FlareFx : Node3D
     {
         if (!Active || doomed.Count == 0) return false;
         foreach (var d in doomed.Values)
-            if (t < d.At + DropAfter && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
+            if (t < Math.Max(d.At + DropAfter, DropsShow(d.Where)) && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
         return false;
+    }
+
+    /// <summary>When Burns Twice's drops show (judge 6 (9): 250 embers falling out of the statues over the Return read as
+    /// orange confetti on the char): at the Return's end, rippling out from her over 0.6 s. Flare time.</summary>
+    double DropsShow(Vector3 w)
+    {
+        if (id != "burns_twice") return 0;
+        if (lastAt <= 0) return Held;
+        return lastAt + 4.2 + 0.6 * Mathf.Clamp(new Vector2(w.X - Her.X, w.Z - Her.Z).Length() / Math.Max(1, reach), 0, 1);
+    }
+
+    /// <summary>How charred a body here is (judge 6 A2: beige bodies left lying in the ring read as wooden mannequins): 0
+    /// till the BOOM's ring reaches it, charred within 3 frames of it, inside her reach (the ring's char). The living
+    /// come back out of it as the ground's char goes (2.2-4.6 s); CrowdView keeps the dead charred.</summary>
+    public float CharAt(double x, double z, bool living)
+    {
+        if (!Active || id != "burns_twice" || lastAt <= 0) return 0;
+        if ((x - at.X) * (x - at.X) + (z - at.Z) * (z - at.Z) > (reach + 0.3) * (reach + 0.3)) return 0;
+        float d = new Vector2((float)x - boomAt.X, (float)z - boomAt.Z).Length();
+        double pass = lastAt + RingTime(d);
+        float k = Mathf.Clamp((float)((t - pass) / (3 / 60.0)), 0, 1);
+        return living ? k * (1 - Mathf.SmoothStep(2.2f, 4.6f, (float)(t - lastAt))) : k;
+    }
+
+    /// <summary>Whether the ring passed here 4 frames or more ago, inside her reach (the char audit's bodies).</summary>
+    public bool RingPast(double x, double z)
+    {
+        if (!Active || id != "burns_twice" || lastAt <= 0) return false;
+        if ((x - at.X) * (x - at.X) + (z - at.Z) * (z - at.Z) > (reach + 0.3) * (reach + 0.3)) return false;
+        return t >= lastAt + RingTime(new Vector2((float)x - boomAt.X, (float)z - boomAt.Z).Length()) + 4 / 60.0;
     }
 
     /// <summary>The BOOM's ring (flare_world's flare_ring): its radius this long after the last word lands (Flare
@@ -429,6 +466,7 @@ public partial class FlareFx : Node3D
     }
 
     float ringMax = 16;
+    bool audited;
 
     int StandingIn(Battle b)
     {

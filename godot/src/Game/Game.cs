@@ -607,6 +607,8 @@ public partial class Game : Node, IZoneHost
             Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night);
         };
         CrowdView.FlareDeath = fl.DeathOf;
+        CrowdView.FlareChar = fl.CharAt;
+        CrowdView.FlareRingPast = fl.RingPast;
         ApplySettings();
         return scene;
     }

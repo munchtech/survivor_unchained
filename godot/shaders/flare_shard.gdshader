@@ -40,19 +40,22 @@ void fragment() {
 	// through the crystal's grain, cooler and thinner by day so the sun on it never turns it white.
 	// (s9a: at 0.55 over the whole face they read as flat pale cards: the face clearer and dimmer, each facet its
 	// own tone, the light at the edges.)
-	float ftone = 0.55 + 0.45 * fl_h(seed * 3.1 + fid * 0.71);
-	vec3 body = vec3(0.04, 0.095, 0.15) * (0.8 + 0.4 * cr) * ftone * mix(1.0, 0.7, day);
+	// (Judge 6 (4): at night they read as grey paper. Ice: base sRGB about (140, 200, 225), a fresnel rim at least
+	// twice its luma.)
+	const vec3 base = vec3(0.262, 0.578, 0.753);
+	float ftone = 0.8 + 0.2 * fl_h(seed * 3.1 + fid * 0.71);
+	vec3 body = base * (0.85 + 0.3 * cr) * ftone * mix(0.42, 0.16, day);
 	float grazing = pow(rim, 2.0);
-	vec3 rimc = vec3(0.42, 0.58, 0.72) * grazing * mix(1.0, 0.75, day);
+	vec3 rimc = mix(base, vec3(0.75, 0.95, 1.0), 0.5) * grazing * mix(1.6, 0.6, day);
 	vec3 flash = vec3(0.62, 0.72, 0.8) * v_flash * mine * (1.0 - down);
 	// Hot: lit orange at its edges by the fire that threw it (only the edges: a whole face lit read as confetti).
 	vec3 hot = vec3(1.0, 0.32, 0.05) * heat * 1.1 * pow(rim, 2.5);
-	ALBEDO = mix(vec3(0.025, 0.04, 0.05), vec3(0.012, 0.014, 0.016), 1.0 - glassk);
+	ALBEDO = mix(base * 0.35, vec3(0.012, 0.014, 0.016), 1.0 - glassk);
 	ROUGHNESS = 0.3;
 	SPECULAR = 0.0;
 	METALLIC = 0.0;
 	EMISSION = ((body * (1.0 - 0.8 * heat) + rimc * (1.0 - 0.8 * heat) + flash) + hot) * glassk;
-	float a_glass = clamp(0.38 + 0.5 * grazing + 0.4 * v_flash * mine, 0.0, 0.95);
+	float a_glass = clamp(0.7 + 0.2 * grazing + 0.2 * v_flash * mine, 0.0, 0.95);
 	// The wet mark: dark, soft-edged, about 0.6x the ground, drying out.
 	float r = length(v_local.xz);
 	float a_wet = 0.42 * (1.0 - smoothstep(0.18, 0.46, r + (cr - 0.5) * 0.12)) * (1.0 - smoothstep(0.2, 1.0, v_c.y));
