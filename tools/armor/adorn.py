@@ -58,6 +58,7 @@ GEMS = {"gem_garnet": ((70, 6, 16), (205, 32, 48)), "gem_amethyst": ((52, 14, 78
 ETCH_SKY, ETCH_CONV = 0.28, 0.1      # (the film's sky (x the plate's) and convexity: dark, rough, hollow)
 GROOVE_SKY, GROOVE_CONV = 0.12, 0.04
 FILM = 0.00025                       # (m over the plate: the etch film and the grooves)
+GILT_TOL = 0.0001                    # (m: the nearest-skin measure's own noise between a gilt vertex and its steel, 0.25 mm apart)
 SUNK = 0.0002                        # (m: a trim's foot and a mesh's base into the plate, so no hairline shows)
 
 
@@ -635,6 +636,7 @@ def gild(m, sock, ad, nb, table, mat):
     fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-15)
     keep = np.zeros(len(T), bool)
     vref = np.zeros((len(P), 3))                              # (each copied vertex's plate outward: away from her)
+    gv = np.zeros(len(P), bool)
     got = {}
     for c in np.unique(lab):
         sel = lab == c
@@ -652,10 +654,16 @@ def gild(m, sock, ad, nb, table, mat):
             ref = np.repeat(np.array(g["normal"])[None], int(sel.sum()), 0)
         if kind is None:
             continue
-        ok = (fn[sel] * ref).sum(1) > facing
+        # (the gore's rolled edge's walls toward the cups are not copied (`facing_gore`): they face her breasts across
+        # the 1.5 mm gap, hidden under the cups' rims)
+        ok = (fn[sel] * ref).sum(1) > (ad.get("facing_gore", 0.25) if kind == "gore" else facing)
+        if kind == "gore":
+            # (nor its corners tucked under the cups' rolled edges: there her breasts move against the rigid gore)
+            ok &= rt.query(P[T[sel]].reshape(-1, 3))[0].reshape(-1, 3).min(1) > ad.get("gore_clear", 0.004)
         idx = np.nonzero(sel)[0][ok]
         keep[idx] = True
         vref[T[idx].ravel()] = np.repeat(ref[ok], 3, 0)
+        gv[T[idx].ravel()] = kind == "gore"
         got.setdefault(kind, {"parts": 0, "tris": 0, "dropped_facing_her": 0})
         got[kind]["parts"] += 1
         got[kind]["tris"] += int(ok.sum())
@@ -674,8 +682,10 @@ def gild(m, sock, ad, nb, table, mat):
     # that part, so the gilt stands out sideways there, never nearer her than the steel it covers)
     vr = vref[used]
     vr /= np.maximum(np.linalg.norm(vr, axis=1, keepdims=True), 1e-12)
-    k_ = np.minimum((ns * vr).sum(1, keepdims=True), 0.0)
+    k_ = np.minimum((ns * vr).sum(1, keepdims=True) - 0.3, 0.0)     # (at least 0.3 of it outward)
     dn = ns - k_ * vr
+    if ad.get("gore_straight", True):
+        dn[gv[used]] = vr[gv[used]]                           # (the gore's gilt straight out off her sternum)
     dn /= np.maximum(np.linalg.norm(dn, axis=1, keepdims=True), 1e-12)
     Pn = P[used] + dn * ad.get("lift", 0.00025)
     k = table.get(mat, {}).get("repeats", 3) / max(table.get(m["mat"], {}).get("repeats", 2.5), 1e-6)
@@ -939,21 +949,34 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
         tk = z[f"{pn}__tuck"].astype(np.float64) if f"{pn}__tuck" in z.files else None
         tk = None if tk is None else 0.010 * np.where(tk > 0.973, 1.0, tk)     # (as the base's check: her skin drawn in)
 
-        def signed(q, tucked=False):
-            d, j = st.query(q, k=6)
+        def signed(q, tucked=False, near=None, back=False):
+            d, j = st.query(q, k=6) if near is None else near
             # (the signed distance off her skin: along the normal of the nearest skin points)
             sd = ((q[:, None] - skin[j]) * skin_n[j]).sum(2)
             if tucked:
                 sd = sd + tk[j]
-            return np.where(d[:, :1] < 0.03, np.median(sd, 1)[:, None], 1.0)[:, 0]
+            out_ = np.where(d[:, :1] < 0.03, np.median(sd, 1)[:, None], 1.0)[:, 0]
+            return (out_, (d, j)) if back else out_
         for m, sel, src in new_by_mesh:
             sd = signed(pose(m, sel))
             g = ~np.isnan(src[:, 0])
             if g.any() and tk is not None:
                 # (the gilt is a skin on the shell: held to the shell's own standard, her skin tucked as the game draws it)
-                ss = signed(pose(m, sel[g], src[g]))
+                ss, nr = signed(pose(m, sel[g], src[g]), back=True)
                 gilt_tucked += int((ss < 0).sum())
-                sd[g] = signed(pose(m, sel[g]), tucked=True)
+                sg = signed(pose(m, sel[g]), near=nr)        # (on the steel's own nearest skin: their difference is the lift's)
+                st_ = signed(pose(m, sel[g]), tucked=True)
+                # (through only if it is under her tucked skin and deeper in her than the steel it covers: where the
+                # nearest-skin measure puts the base's own rolled edge under her (side-on at her flank, where the
+                # base's ray check finds it clear), the gilt over it is no worse than the steel)
+                rel = sg - np.minimum(ss, 0.0)
+                if os.environ.get("ADORN_DIAG") and (st_ < 0).any():
+                    b_ = (st_ < 0) & (rel + GILT_TOL < 0)
+                    say("GILT DIAG2", pn, int(b_.sum()), "rel_mm", np.round(rel[b_][:6] * 1000, 3).tolist(), "steel", np.round(ss[b_][:6] * 1000, 2).tolist(), "tucked", np.round(st_[b_][:6] * 1000, 2).tolist())
+                sd[g] = np.maximum(st_, rel + GILT_TOL)
+                if os.environ.get("ADORN_DIAG"):
+                    say("GILT DIAG3", pn, m["name"], "gilt through", int((sd[g] < 0).sum()), "other through", int((sd[~g] < 0).sum()),
+                        "gilt at", np.round(src[g][sd[g] < 0][:5], 4).tolist(), "other at", np.round(m["attrs"]["POSITION"][0][sel[~g]][sd[~g] < 0][:5], 4).tolist(), "other sd mm", np.round(sd[~g][sd[~g] < 0][:5] * 1000, 2).tolist())
             elif g.any():
                 ss = signed(pose(m, sel[g], src[g]))
                 if os.environ.get("ADORN_DIAG"):
@@ -1137,9 +1160,16 @@ def build(pid, post=False):
                     tris += len(e[6])
                 stats["meshes"].append({"socket": sn, "mesh": ad["mesh"], "mat": mat, "gem_mat": ad.get("gem_mat", "gem_garnet"), "tris": tris})
         elif kind == "trim":
+            obst = leather
+            pz = os.path.join(ROOT, ".shots", "armor2", "build", shell_id, "poses.npz")
+            if ad.get("clear_arm", True) and os.path.exists(pz):
+                # (and her arm: her skin in each test pose, where it comes over the plate (as a strap's underside
+                # lowers it); her skin under the plate lies below the band's foot and is passed over)
+                z_ = np.load(pz)
+                obst = np.vstack([leather] + [z_[f"{str(n_)}__skin"] for n_ in z_["names"]])
             for rn in rim_names(sock, ad["rim"]):
                 rim = sock["rims"][rn]
-                tb = trim_band(S_full, rim, ad, ad.get("step", 0.0022), leather)
+                tb = trim_band(S_full, rim, ad, ad.get("step", 0.0022), obst)
                 full_new.setdefault(mat, []).append((tb["P"], tb["N"], tb["U0"], tb["U1"], tb["C"], tb["W"], tb["T"]))
                 gap = ad.get("gap", 0.001)
                 w, dc = ad.get("width", 0.005), ad.get("inset", 0.0)
@@ -1153,7 +1183,7 @@ def build(pid, post=False):
                                        "inset_mm": dc * 1000, "gap_mm": gap * 1000, "tris": int(len(tb["T"])),
                                        "groove_tris": int(sum(len(g[6]) for g in grooves))})
                 if S_lod is not None:
-                    tl = trim_band(S_lod, rim, ad, ad.get("lod_step", 0.006), leather, lod=True)
+                    tl = trim_band(S_lod, rim, ad, ad.get("lod_step", 0.006), obst, lod=True)
                     lod_new.setdefault(mat, []).append((tl["P"], tl["N"], tl["U0"], tl["U1"], tl["C"], tl["W"], tl["T"]))
         elif kind == "gild":
             part, got = gild(shell_full, sock, ad, nb, table, mat)

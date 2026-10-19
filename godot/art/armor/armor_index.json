@@ -8,6 +8,7 @@
    "top"
   ],
   "meshes": [
+   "plate_top_etched.top.blacksteel",
    "plate_top_etched.top.darkleather",
    "plate_top_etched.top.steel"
   ],
