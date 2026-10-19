@@ -289,12 +289,7 @@ public partial class Game
         AimCallout();
         // (--teach-diag with --shot: each freeze's frame first with the ember halos held out, to measure them by)
         // (the callout's own frame a few frames after, halos back: the two differ by the halos alone)
-        if (haloDiag != null && !Shots.Pending("teach_" + haloDiag + "_nohalo"))
-        {
-            scene.Fx.HalosHidden = false;
-            Shots.Want("teach_" + haloDiag, 0.05);
-            haloDiag = null;
-        }
+        if (haloDiag != null && !Shots.Pending("teach_" + haloDiag + "_nohalo")) { scene.Fx.HalosHidden = false; haloDiag = null; }
     }
 
     string? haloDiag;
@@ -358,9 +353,9 @@ public partial class Game
         {
             haloDiag = c.Id;
             scene.Fx.HalosHidden = true;
-            Shots.Want("teach_" + c.Id + "_nohalo", 0.85);
+            Shots.Want("teach_" + c.Id + "_nohalo", 0.75);
         }
-        else if (Args.Has("shot")) Shots.Want("teach_" + c.Id, 0.9);
+        if (Args.Has("shot")) Shots.Want("teach_" + c.Id, haloDiag == c.Id ? 1.05 : 0.9);
     }
 
     void TeachDown(Callout c)
