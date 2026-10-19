@@ -106,8 +106,9 @@ Total: 48.0 s.
 
 ## Lines
 
-All the narrator's (*casting:* 50s, neutral RP, low and close, a winter's tale by
-the fire). Conversation `cin_drowned_fire`.
+All the narrator's (*casting:* the owner's 6 October recast, `VOICES.md`: a woman of
+about sixty, plain and dry, level, the valley's accent lightly; no warmth, no winter's
+tale). Conversation `cin_drowned_fire`.
 
 | VO id | Shot | Line | Note |
 |---|---|---|---|

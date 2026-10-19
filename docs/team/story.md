@@ -4,7 +4,12 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, writer 15, branch `story/marker-and-locks`):** love scenes
+**Now (19 October, the storybook writer, branch `story-lore`): DONE.** SB00, the
+storybook lore intro (`docs/story/storybook/`), and the tutorial's Ember copy and
+callouts (`docs/story/TUTORIAL_COPY.md`), edited once (PASS WITH FIXES, applied).
+For the storybook lead, the experience director and UI design; see the handoff top.
+
+**Before (11 October, writer 15, branch `story/marker-and-locks`):** love scenes
 B judged (PASS WITH FIXES), fixed and fix-checked (PASS WITH FIXES, applied).
 The blue room and the Blind are locked whole (566 locks): every Sella and
 Maeca line there, and the narrator's bolt; the door guard holds any other
