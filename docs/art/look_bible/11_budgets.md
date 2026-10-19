@@ -47,7 +47,7 @@ What the Prologue may spend, so the tutorial environment lead, the story charact
 | UI draws | at most 300 (today 486-583, uncounted) | the same |
 | Video memory | at most 3 GB | at most 2.5 GB (8 GB cards) |
 | Texture memory by tier | her at most 400 MB, world 1.2 GB, NPCs and fodder 300 MB, FX and UI 200 MB | the same (today 1.66 GB at medium against the 2.5 GB cap) |
-| The title screen | at most 6 ms GPU, at most 450 draws | at most 5 ms |
+| The title screen | at most 6 ms GPU, at most 450 draws | at most 4.5 ms on the 5080 (estimate, as above) |
 
 Today against these: the Low Ford's quiet windows meet the GPU target and the road's heaviest fighting (70-170 s) doesn't (above); the Warden fight, dawn and the gate are unmeasured. In the run, draws (443-481) and primitives (5.02-5.21M average from 130 s, peak 5.40M) fail; in the static view draws are 438 at the Low Ford (pass) and 492 in town (fail), and primitives are 4.78M (pass narrowly, with grass more than half). Shadow draws (2,435 and 1,686) fail: 2x at the Low Ford, 1.4x in town. Video memory (2.4 GB) passes; the title (11.3 ms, 1,512 draws) fails. At 1080p medium the Low Ford runs 4.0 ms average and 8.2 ms p99 (`lf_med`): over the 7 ms p99 line. The CPU side is not met: frames take 10.0 ms against 4.9 ms of GPU in the run's first window, and the log has hitches of 152, 180 and 209 ms (fx, draft, auto) at 21-22 s.
 
