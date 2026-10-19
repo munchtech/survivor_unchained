@@ -1,5 +1,46 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (env lead 5, 19 Oct): E2 DONE, MR READY; next E3
+- **E2 is at MR READY** on env-2 (integration merged at fe27b26e). Briefs and tools: `survivorsunchained_inputs\scratch_env5\`. Verdicts: `env_e2\judge1erdict.md`, `env_e2\judge2erdict.md`.
+- **What E2 shipped:**
+  - The fog-blotch fix (frost thaws at hand-back).
+  - The flame kit.
+  - The camp fire, rebuilt (4a01da0e). Sparks are 0.4 m streaks.
+  - The road and ford lamps (518b64bc, 0aa4faca, 4c83162d).
+  - The crypt roof on our own slate (2afa524d, 31bbc871). The Poly Haven photo left the repo; the raw copy and its hash are in `survivorsunchained_inputsaw_materialsoof_slates_02\`.
+  - The crypt door (258cec72): our own candelabrum, warm candles with a light, the skull in bone colour, the Barrow's green light as a soft pool. terrain.gdshader now glows blight veins only on true blight, which also removes the faint vein glow at the Waystation.
+- **Judges:** judge 2 passed the fire, the sparks, the flame-kit look, the ford lamps at the play camera, and dawn. The crypt door hit all four targets in its last round, closed by main without a third judge.
+- **Closed as known (at the cap):** the road lantern at the close-up camera (an even peach box, its flame floating about 60 px above the burner). Ford lamps at the close-up were never shot. The ford flame's body is S 0.48, against a target of 0.5 or more.
+- **Routed, tracked, not closed (whole-frame NOs; main, 19 Oct):**
+  - E3: the ground blend.
+  - E4: canopies and foliage.
+  - E5: rocks and stepping stones.
+  - E6: the ford water (blotches, glints, the crescent stuck under her). E6 must also carry the ford lamps' cold pool and reflection.
+  - E7: the bedroll, and the camp chest (2.7 m from the fire; its pale trim reads cold).
+  - The crowd lead: the grey untextured NPCs.
+  - Teaching/VFX: the ember pickup's halo at the close-up.
+  - The camera owner: the road lantern blocking her face at the close-up (fade near occluders).
+- **Optional polish:** the close-up's grey bark log has even furrows and reads cool; soot the ring stones' inner faces about 15% darker.
+- **Checks:**
+  - Tests: 994/0/8.
+  - Full teach run: all 11 moments shown and answered; it ends at the hand-off to town as designed.
+- **Perf (`survivorsunchained_inputs\env_perf1\e2\`, Release, quiet GPU, min/median/max over 20 s windows):**
+  - 1440p high: GPU 4.4/5.0/5.8 ms (M1 4.9/5.4/7.6), frame 5.0/5.5/7.7 ms, fps 131/180/199 (M1 107/125/148). Shadow draws: play max 771; one cinematic window (Intro/Boss) at 1710.
+  - 1080p medium: GPU 2.6/3.5/4.1 ms, fps 117/226/323, play shadow max 1174.
+  - The camp's "4.4 -> 6.1 ms" rise was another Godot running at the same time (fire on/off: 3.87 vs 4.10 ms).
+- **Next: E3** (terrain and road; the fixed list below). Start by re-checking the ground blend that judges 1-2 flagged (W2) at 1:1.
+
+## Before (env lead 4, 19 Oct): E2 built, judge next (HANDED OFF at ~250k)
+- Worktree `.claude/worktrees/env-2`, branch `env-2` (pushed). E1 is merged (8ba3a4e7). Frames: `survivorsunchained_inputs\env_e2\`. Briefs: `survivorsunchained_inputs\scratch_env4\`. The godot import cache is in place. `tools/scratch/env/shots.py <round> <set>` points at env-2. Sets: roofs, ford, pool, campclose (-9.5,92.5: close4 hides the fire).
+- **Fog blotches: FIXED (f1f79d05).** They were C01's frost decals (a 44 m patch, left into play), not fog. Proved by A/B (`env_e2\fog_ab\cmp_frost.jpg`). The frost now thaws over 3 s at hand-back. Switch: `--cine-nofrost`. This also fixes the "frost decal on a flat prop" item routed to cinematics.
+- **Flame kit: built** (eb3edefe..540309e6). FlameKit.cs, flame_mv.gdshader, and our own Mantaflow flipbook with motion vectors in art/fx/flame (provenance FX-06). Flicker +-11-12%. The loop seam is 7.6/255, one normal step.
+- **Lamps round 1** (986f1422, 32a8384a): our own holders (tools/assets/env_lamps.py, Lamps.cs, lamp_glass shader, LampLayer 1<<11): the ford's three lamp-irons, 8 road posts, 3 wall torches, a standing lantern, and the shrine candle. The white disc is gone, BUT no flame shows at the play camera: the ford lamp reads as a dark box, and the road lantern is dark with a bright spot below it. **Round 2 solver a093803a585045fbe is RUNNING** (output `env_e2\lamps2\`). Its report comes to env lead 4, who relays it via main. Check `git log` for its commits.
+- **Camp fire: built** (e79ae4c0). Own logs, ember cracks, ash bed, sparks, smoke; 3.7k tris; flicker +-12%. Open: GPU at the camp went 4.4 -> 6.1 ms, unexplained; re-measure on a quiet machine before the MR. The glb carries three 2048 maps (12 MB); 1024 may do. The fire light still bobs 4 mm (ZoneView's formula): drive light 0 with Flame.Drive.
+- **Black roof: built** (92a8cfd0). The crypt's slope faced away from the low moon. Now: slate rows along the ridge, wet sheen, lichen and moss, a pale ridge roll and gable coping. Roof luma 20.0 vs 16.2 for the ground beside it. **License rule:** it ships Poly Haven `roof_slates_02` AS IS. Main's ruling is that CC0 photos are raw material only, baked into our own material, so bake it (recolour and combine with our noise or a trim) before the MR.
+- **Done:** the look bible's night line (6x) and the dawn sun cheat (bf0a04eb). The Marionette prop format was answered via main: first props wagon, Barrow grave set, crypt, shrine statue, wayside saint. We build the lamps ourselves.
+- **NEXT:** (1) when lamps2 lands, run the judge: `scratch_env4\e2_judge1_brief.md` (paste lamps2's numbers in). (2) One fix round from its verdict, with the round cap. (3) The full teach run once (experience.md "Run"), perf (`tools/perf/run.py`, both presets), tests. (4) "MR READY env-2@<commit>". Then E3.
+- Seen, not mine: foreground cartoon tree canopies cover her and the HUD on the camp road (E4).
+
 ## Now (env lead 3, 19 Oct): E1 DONE, its MR next; then E2
 - **E1 light closed at the cap.** Judge 3 (round 3b) passed 14 of 17 frames. Judge 4 (round 3c) passed the camp night and the close-up, found no regressions, and passed the ford night by the numbers after the beacon pool (its call). The wood road at dawn closes for E1 and comes back with E4's canopy gap. Sheets, round 0 against final: `C:\Users\munch\Desktop\survivorsunchained_inputs\env_e1\final\`. Round sheets: `env_e1\r3b\`, `env_e1\r3c\`. Judge briefs and tools: `survivorsunchained_inputs\scratch_env3\` (e1_judge3_brief.md, e1_judge4_brief.md, cheek.py).
 - **What rounds 3b-3c changed (dd6ebc40..5b249250):**
@@ -43,7 +84,7 @@
 | # | Item | Boards | Budget (page 11) | Rough agent time | State |
 |---|---|---|---|---|---|
 | E1 | Light, grade, mist: zone presets (Low Ford night and dawn, the camp, the town dawn/day), moon 20-30 deg, ambient 2-3 stops under, her ember light, pools from sources, mist planes; shadow rules (one shadowed lamp, no shadows from crowd/fx/scatter/kit pieces, sun distance and 2 splits for the play camera) | 1c | fog+mist <= 0.5 ms; shadow draws <= 1,200 | 4-6 h | DONE (MR) |
-| E2 | Flames and lamps: flame kit (motion-vector flipbook shader, noise flicker), modeled lamp frames and posts, torches, the camp fire (logs with ember cracks and end caps, ash bed, sparks, smoke), the Warden's three blue lamps | 1j | lamp 1.5k tris, 2 draws, no shadow | 6-10 h | open |
+| E2 | Flames and lamps: flame kit (motion-vector flipbook shader, noise flicker), modeled lamp frames and posts, torches, the camp fire (logs with ember cracks and end caps, ash bed, sparks, smoke), the Warden's three blue lamps | 1j | lamp 1.5k tris, 2 draws, no shadow | 6-10 h | DONE (MR) |
 | E3 | Terrain and road: <= 4 layers a pixel (today 7), height blend, anti-tiling + macro, road into the terrain (ruts, verges, no grass), frost by exposure, wet hollows, base blends, decals and scatter; town cobbles (large varied tile, gutters, puddles) | 1f, 1h | 0.8 ms, 40 draws | 10-14 h | open |
 | E4 | Foliage kit: spruce, birch, alder in 3 sizes, ferns, bushes, grass clumps; 3 LODs + impostor, shadow LOD, wind, back light, hue jitter; swapped in by remapping `flora.json` pieces | 1e | trees+bushes+rocks 0.8 ms, 80 draws, 420 shadow; grass 1.0 ms, 10 draws | 16-24 h | open |
 | E5 | Rocks and ford stones: shared rock set, triplanar stone, moss upstream, wet band; stepping stones no two alike | 1f, 1g | rock 3k (outcrop 8k) | 6-8 h | open |
