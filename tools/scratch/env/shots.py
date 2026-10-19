@@ -2,7 +2,7 @@
 Sets: night (Low Ford by night: camp, two road spots, ford, wood road, the close view at camp),
 dawn (Low Ford at dawn, after the prologue), town_dawn, town_day. Frames: godot/.shots/ROUND_SET_NN.png. "old": the presets before E1 (--air-old); "unshadowed": the key casts no shadow; "tune=k=v,k=v": --air-tune; "args=--a 1 --b 2": raw switches."""
 import os, subprocess, sys, time
-W = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\env-2"
+W = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\env-3"
 G = os.path.join(W, "godot")
 GODOT = r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe"
 HERE = os.path.dirname(os.path.abspath(__file__)); LOGS = os.path.join(HERE, "logs")
@@ -15,7 +15,7 @@ more = next((a[5:].split() for a in sys.argv[2:] if a.startswith("args=")), []) 
 sets = [a for a in sys.argv[2:] if a not in flags and not a.startswith(("tune=", "args="))] or list(SETS)
 b = subprocess.run(["dotnet", "build", os.path.join(G, "SurvivorUnchained.csproj"), "-v", "q", "-nologo"], capture_output=True, text=True)
 if b.returncode != 0: print(b.stdout[-3000:]); sys.exit(1)
-TURN = "env-2: E2 shots " + rnd
+TURN = "env-3: E3 shots " + rnd
 if subprocess.run([sys.executable, TP, "take", "godot", TURN, "--wait", "3600", "--stale-ok"]).returncode != 0:
     print("TURN REFUSED"); sys.exit(1)
 try:
