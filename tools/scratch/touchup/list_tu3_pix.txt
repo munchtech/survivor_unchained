@@ -1,0 +1,2 @@
+pix_lk3|new:warden|--zoom 0.55 --turn 40
+pix_lkp|new:warden|--zoom 0.55 --turn 90

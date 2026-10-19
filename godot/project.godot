@@ -63,6 +63,10 @@ body_rim={
 "type": "vec4",
 "value": Vector4(0.56, 0.7, 1, 0.55)
 }
+ground_bounce={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 view_from={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

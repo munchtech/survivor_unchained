@@ -57,6 +57,17 @@ At the play camera, the close-up at its closest zoom and the Look camera, at 1:1
 
 Owners: the touch-up lead (the worn-metal standard: items 1-4 and 6 on her current outfits) and the armor-and-weapons pipeline lead (item 5 and the tier ladder, built into the slot parts).
 
+## As built (touch-up 3-4, 18 Oct): the worn-metal standard, for the armor pipeline to consume
+
+Items 1-4 and 6 above, on her four outfits. Every new slot part uses the same shader and gets all of it for free; only a per-piece override is data.
+- **Files:** `godot/shaders/heroine_outfit.gdshaderinc` is the only body (`heroine_outfit.gdshader` is a stub that includes it; `heroine_outfit_metal.gdshader` includes it with `OUTFIT_METAL_LIGHT`, every outfit key of kind `metal` in `outfit_materials.json`). The tiled detail is `godot/art/outfit/metal_wear_detail.png` (built by `tools/assets/metal_wear_detail.py`: RG normal, B roughness offset, A cavity). Per-piece overrides: `godot/art/people/metal_finishes.json` "pieces" (by key, then `outfit.piece`, matched by the baked piece number; feeds `piece_rough`).
+- **Roughness:** `metal_rough` 0.45 (varied 0.35-0.55 by the detail), `metal_rough_wear` 0.26 on worn edges, `metal_rough_floor` 0.22; `metal_dent` 0.16, `metal_hammer` 0.09 (8 mm planishing); `metal_grime` 1.0 in recesses. Wear from the baked edge, convexity and sky-seen masks, never hand paint.
+- **Color:** steel neutral; `gold_tone` #ffd891 (Filament) x `brass_dim` 0.85, `brass_rough_add` -0.18 (raised trim ~0.27, catches a line of light); blued steel `blued` (0.43, 0.44, 0.49), temper `blued_temper` (0.46, 0.43, 0.53), `blued_chip` 1.0 to bright steel at worn edges. Fully metallic keys ignore the scan's metal map (it made flecks).
+- **Reflection (no probes):** `metal_env` 0.50 x `metal_env_horizon` 0.8, spec occlusion mix(0.3, 1, sky-seen); `metal_env_graze` 0.3 (the sheen that tells plate in shade from rubber); `metal_ground` 1.0 (Atmosphere's global ground_bounce, below the horizon). Probes were tried: no visible gain, +0.1 ms (commit 3548a664 if ever wanted).
+- **Highlights:** `metal_spec_cap` 1.2 (never brighter than 1.2x a white matte card facing that light), `metal_spec_knee` 0.4. Look camera: `look_metal_dim` 1.0, `look_metal_rough` 0.30.
+- **Example override:** the Warden's greaves and sabatons: rough 0.36, graze 0.45 (a cylinder's highlight is a line).
+- **Known, left to the slot parts' shape work:** the greaves in dawn shade still read a little like dark boots (the C04 shot that showed it is cut); moonlit lames stay bluish, mostly the moon's own color (blue/red 1.92).
+
 ## Sources
 - Filament's PBR notes ([google.github.io/filament](https://google.github.io/filament/Filament.md.html)) give the metal reflectances: iron sRGB about #c4c6c6, gold about #ffd891. They also cover specular occlusion, so cavities lose their reflection: "no real-world material has a reflectance lower than 2%".
 - The full list, with verified quotes, is in `look_bible_refs\tricks_sources.md` (outside the repo).
