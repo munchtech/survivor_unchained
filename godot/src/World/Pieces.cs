@@ -606,7 +606,8 @@ public static partial class Pieces
         Tube(b, Path(9, t => new Vector3(Mathf.Lerp(-0.09f, 0.09f, t), -0.16f - Mathf.Sin(t * Mathf.Pi) * 0.02f, 0.02f + Mathf.Sin(t * Mathf.Pi) * 0.11f)), 0.016f, 5);
         foreach (float sx in new[] { -1f, 1f })
             Tube(b, new List<Vector3> { new(sx * 0.09f, -0.16f, 0.02f), new(sx * 0.1f, -0.08f, -0.01f) }, 0.016f, 5);
-        Add(root, b.Mesh(), OldBone());
+        // Weathered bone at about 0.42 sRGB value (the old-bone cream read as a pale egg by the crypt's door at night).
+        Add(root, b.Mesh(), Mat(SurvivorUnchained.Args.Get("skull-bone") is string sb ? "#" + sb : "#7c6a50", 0, 0.8f));
         var dark = new Build();
         foreach (float x in new[] { -0.05f, 0.05f }) Lathe(dark, Pts(0.034f, 0, 0.03f, 0.018f, 0, 0.024f), 10, At(Made.Facing, x, 0.02f, 0.155f));
         Lathe(dark, Pts(0.017f, 0, 0.012f, 0.015f, 0, 0.02f), 3, At(Made.Facing, 0, -0.04f, 0.16f));
@@ -636,8 +637,10 @@ public static partial class Pieces
         // Tallow gone yellow-grey (a cream wax by the crypt's door read as a glowing egg at night), and the
         // flame kit's candle on it, no light of its own (look bible 10; the shrine's candle is the model).
         Add(holder, wax.Mesh(), Mat(TallowHex, 0, 0.75f));
-        FlameKit.Add(holder, new Vector3(0, 0.47f, 0), FlameKind.Candle, light: false);
-        return Fitted(holder, box);
+        // Fitted on the skull and its wax alone (a big flame in the bounds shrank the skull), the flame added after.
+        var fit = Fitted(holder, box);
+        CryptCandle(holder, new Vector3(0, 0.47f, 0), false, 0.8f / Mathf.Max(holder.Scale.X, 1e-3f));
+        return fit;
     }
 
     const string TallowHex = "#6e6450";
@@ -660,11 +663,46 @@ public static partial class Pieces
             if (up > 0) Lathe(iron, Pts(0.022f * w, 0.53f * h, 0.022f * w, cy, 0, cy), 8, At(c.X, y0, c.Z));
             Lathe(iron, Pts(0.03f * w, 0, 0.08f * w, 0.025f * h, 0.075f * w, 0.04f * h, 0, 0.04f * h), 10, At(c.X + x * w, y0 + cy, c.Z));
             Lathe(wax, Pts(0.05f * w, 0, 0.05f * w, tall * h, 0.035f * w, tall * h + 0.01f * h, 0, tall * h + 0.01f * h), 10, At(c.X + x * w, y0 + cy + 0.04f * h, c.Z));
-            FlameKit.Add(root, new Vector3(c.X + x * w, y0 + cy + 0.04f * h + tall * h + 0.008f * h, c.Z), FlameKind.Candle, light: false);
+            var f = CryptCandle(root, new Vector3(c.X + x * w, y0 + cy + 0.04f * h + tall * h + 0.008f * h, c.Z), up > 0);
+            // Its light low and forward of the cups (beside the wax it lit the tallow white): it lights the step and the wall.
+            if (f.Light != null) f.Light.Position = new Vector3(0, -(cy + 0.04f * h + tall * h) + CandleLightUp * h, CandleLightFwd);
         }
         Add(root, iron.Mesh(), Wrought());
         Add(root, wax.Mesh(), Mat(TallowHex, 0, 0.75f));
         return root;
+    }
+
+    // The crypt's candles from the play camera (23 m up and back): the kit's candle card is 8 cm, so a white tick of
+    // a pixel or two. Made bigger and warmer here, and the middle one lights the door's step (judge 2, item 6).
+    static readonly float CandleScale = SurvivorUnchained.Args.Num("candle-scale", 4f),
+        CandleBody = SurvivorUnchained.Args.Num("candle-body", 2f), CandleCore = SurvivorUnchained.Args.Num("candle-core", 2.5f),
+        CandleSat = SurvivorUnchained.Args.Num("candle-sat", 1f), CandleTilt = SurvivorUnchained.Args.Num("candle-tilt", 0f),
+        CandleEnergy = SurvivorUnchained.Args.Num("candle-energy", 2.2f), CandleRange = SurvivorUnchained.Args.Num("candle-range", 1.8f),
+        CandleLightFwd = SurvivorUnchained.Args.Num("candle-fwd", 0.25f), CandleCoreLo = SurvivorUnchained.Args.Num("candle-core-lo", 0.6f),
+        CandleWide = SurvivorUnchained.Args.Num("candle-wide", 1.6f), CandleLightUp = SurvivorUnchained.Args.Num("candle-up", 0.35f);
+
+    /// <summary>A kit candle flame for the crypt, at <see cref="CandleScale"/>, warm-bodied; with
+    /// <paramref name="light"/> its own short warm light (no shadow, the kit's flicker).</summary>
+    static Flame CryptCandle(Node3D parent, Vector3 at, bool light, float k = 1)
+    {
+        var f = FlameKit.Add(parent, at, FlameKind.Candle, scale: CandleScale * k, light: light);
+        foreach (var n in f.GetChildren())
+            if (n is MeshInstance3D { Mesh: QuadMesh { Material: ShaderMaterial m } } card)
+            {
+                card.Scale = card.Scale with { X = card.Scale.X * CandleWide };
+                m.SetShaderParameter("tilt", CandleTilt);
+                m.SetShaderParameter("body_k", CandleBody);
+                m.SetShaderParameter("core_k", CandleCore);
+                m.SetShaderParameter("warm_sat", CandleSat);
+                m.SetShaderParameter("core_lo", CandleCoreLo);
+            }
+        if (f.Light != null)
+        {
+            f.Energy = CandleEnergy;
+            f.Light.OmniRange = CandleRange;
+            f.Light.OmniAttenuation = 1.2f;
+        }
+        return f;
     }
 
     /* ------------------------------------------------------ the gate, towers -- */

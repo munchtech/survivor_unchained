@@ -152,7 +152,9 @@ void fragment() {
 	// Blight: dead ground veined with sick light.
 	float vein = 1.0 - abs(nM.g * 2.0 - 1.0);
 	vein = pow(vein, 10.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 16.0) * 0.6;
-	EMISSION = blight_glow * vein * (gw[6] / tot) * (0.55 + 0.45 * sin(TIME * 1.3 + nL.r * 12.0)) * 1.6;
+	// Only true blight glows (the Verge's paint runs to 0.55): a faint wash (Low Ford's graveyard, 0.35 at most) is dead
+	// ground, not neon veins (its few noise-tipped patches drew a hard green squiggle by the crypt; judge 2, item 6).
+	EMISSION = blight_glow * vein * (gw[6] / tot) * (0.55 + 0.45 * sin(TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b);
 
 	ALBEDO = albedo;
 	ROUGHNESS = clamp(rough, 0.3, 1.0);
