@@ -21,6 +21,10 @@ as plates from one book by one painter. P4 is remade the same way, beside the ma
     python tools/storybook/mkjobs_style_r15.py [test|final] [--seed N --strength S --end E --canvas V]
     python tools/storybook/gen.py tools/storybook/jobs/style_r15_<test|final>.json --out tools/storybook/out/style_r15/gen
     python tools/storybook/unify.py finish <the four> --out tools/storybook/out/style_r15/fin
+
+Picked for judge r3 (19 Oct): canvas V, depth strength 0.6 end 0.7, denoise 1.0, seed 23, test 2's
+words (gen/p{1,4,7,9}_t2_d100_s23). H broke (3600 px wide is out of the model's range); alt kept r14's
+flat surfaces; test 2's blurred light inits at 0.9 gave P1 its S but lost P7's fourth light.
 """
 import argparse
 import json
