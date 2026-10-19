@@ -75,8 +75,6 @@ public static class HerWear
             foreach (var r in g)
             {
                 MeshInstance3D? anyFull = null;
-                // (what another worn slot's piece covers of it, undrawn: the top's strap under a pauldron, ArmorUnder)
-                var hide = Under(r, look);
                 foreach (var mn in r.Meshes)
                 {
                     if (!found.TryGetValue(mn.Replace('.', '_'), out var mi) && !found.TryGetValue(mn, out mi))
@@ -91,7 +89,6 @@ public static class HerWear
                     mi.Layers = 2;
                     mi.SetMeta(Meta, r.Id);
                     p.Meshes.Add(mi);
-                    Trim(mi, hide);
                     People.Fur(mi);
                     People.OutfitMaterials(mi);
                     anyFull ??= mi;
@@ -100,7 +97,6 @@ public static class HerWear
                     if (found.TryGetValue($"{r.Id}_lod1_{mat}", out var lm) && lm != mi && lm.GetParent() != null)
                     {
                         Lay(p, lm, r.Id);
-                        Trim(lm, hide);
                         People.OutfitMaterials(lm);
                         lodPairs.Add((mi, lm));
                     }
@@ -152,54 +148,6 @@ public static class HerWear
         // What draws of it at the play camera, one mesh a material (HerLod.Merge).
         HerLod.For(p)?.Merge(laid);
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)"));
-    }
-
-    static readonly Dictionary<string, HashSet<long>> underFiles = new();
-
-    /// <summary>The points of `r` that the pieces `look` puts in its covering slots hide (ArmorUnder), or null.</summary>
-    static HashSet<long>? Under(ArmorPiece r, IReadOnlyDictionary<string, string> look)
-    {
-        HashSet<long>? all = null;
-        foreach (var f in ArmorUnder.Files(r, look))
-        {
-            var path = $"res://art/{r.Dir}/{f}";
-            if (!underFiles.TryGetValue(path, out var s))
-                underFiles[path] = s = FileAccess.FileExists(path) ? ArmorUnder.Read(FileAccess.GetFileAsBytes(path)) : new HashSet<long>();
-            (all ??= new HashSet<long>()).UnionWith(s);
-        }
-        return all;
-    }
-
-    /// <summary>`mi` drawn without its triangles wholly in `hide` (by bind position): a new mesh of its surfaces, the
-    /// imported one left as it is (shared by every copy of the scene). Its surfaces' materials and blend shapes kept.</summary>
-    static void Trim(MeshInstance3D mi, HashSet<long>? hide)
-    {
-        if (hide == null || hide.Count == 0 || mi.Mesh is not ArrayMesh src) return;
-        var kept = new int[src.GetSurfaceCount()][];
-        bool any = false;
-        for (int s = 0; s < src.GetSurfaceCount(); s++)
-        {
-            var arr = src.SurfaceGetArrays(s);
-            if (src.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles || arr[(int)Mesh.ArrayType.Index].VariantType == Variant.Type.Nil) continue;
-            var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
-            var keys = new long[v.Length];
-            for (int i = 0; i < v.Length; i++) keys[i] = ArmorUnder.Key(v[i].X, v[i].Y, v[i].Z);
-            kept[s] = ArmorUnder.Keep(arr[(int)Mesh.ArrayType.Index].AsInt32Array(), keys, hide)!;
-            any |= kept[s] != null;
-        }
-        if (!any) return;
-        var mesh = new ArrayMesh { BlendShapeMode = src.BlendShapeMode };
-        for (int b = 0; b < src.GetBlendShapeCount(); b++) mesh.AddBlendShape(src.GetBlendShapeName(b));
-        for (int s = 0; s < src.GetSurfaceCount(); s++)
-        {
-            var arr = src.SurfaceGetArrays(s);
-            if (kept[s] != null) arr[(int)Mesh.ArrayType.Index] = kept[s];
-            var fmt = src.SurfaceGetFormat(s) & ~(Mesh.ArrayFormat)((long)Mesh.ArrayFormat.FormatVertex | (long)Mesh.ArrayFormat.FormatNormal | (long)Mesh.ArrayFormat.FormatTangent | (long)Mesh.ArrayFormat.FormatColor | (long)Mesh.ArrayFormat.FormatTexUV | (long)Mesh.ArrayFormat.FormatTexUV2 | (long)Mesh.ArrayFormat.FormatBones | (long)Mesh.ArrayFormat.FormatWeights | (long)Mesh.ArrayFormat.FormatIndex | (long)Mesh.ArrayFormat.FormatCustom0 | (long)Mesh.ArrayFormat.FormatCustom1 | (long)Mesh.ArrayFormat.FormatCustom2 | (long)Mesh.ArrayFormat.FormatCustom3);
-            mesh.AddSurfaceFromArrays(src.SurfaceGetPrimitiveType(s), arr, src.SurfaceGetBlendShapeArrays(s), null, fmt);
-            mesh.SurfaceSetMaterial(s, src.SurfaceGetMaterial(s));
-            mesh.SurfaceSetName(s, src.SurfaceGetName(s));
-        }
-        mi.Mesh = mesh;
     }
 
     /// <summary>A piece's gameplay or shadow mesh, onto her skeleton like its full meshes (but not in her mesh list).</summary>

@@ -41,20 +41,11 @@ def adorn(pid, post=False):
     return r.returncode == 0
 
 
-def under(pid):
-    """tools/armor/under.py: what of it a pauldron covers, undrawn while one is worn (the row's "under")."""
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "armor", "under.py"), pid], cwd=ROOT, capture_output=True, text=True)
-    for l in (r.stdout + r.stderr).splitlines():
-        if l.startswith(("UNDER", "Traceback")):
-            print(l)
-    return r.returncode == 0
-
-
 def build(pid, src):
     pj = os.path.join(ROOT, "godot", "art", "armor", "src", pid, "piece.json")
     piece = json.load(open(pj, encoding="utf-8"))
     if piece.get("base"):
-        return adorn(pid) and under(pid)       # (no Blender: the base's built shell, copied)
+        return adorn(pid)       # (no Blender: the base's built shell, copied)
     scratch = os.path.join(ROOT, ".shots", "armor2", "build", pid)
     os.makedirs(scratch, exist_ok=True)
     before = dirty(GUARD)
@@ -81,7 +72,6 @@ def build(pid, src):
         ok = r2.returncode == 0
         if ok and any(not (a["kind"] == "row" and a.get("mesh", "rivet") == "rivet") for a in piece.get("adorn", [])):
             ok = adorn(pid, post=True)
-        ok = ok and under(pid)
         # (imported as the outfits are: Godot's own LODs off, ours are in the file)
         imp = gl_ + ".import"
         if not os.path.exists(imp):

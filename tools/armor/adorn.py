@@ -730,7 +730,7 @@ def vine_chart(L, ad):
     ll, wl = hw + ad.get("leaf", 3.0), ad.get("leaf_width", 1.3)
     a0 = np.radians(ad.get("leaf_lean", -5.0))
     a1 = a0 + np.radians(ad.get("leaf_curl", 30.0))
-    for j in range(2 * nw):
+    for j in range(0, 2 * nw, int(ad.get("leaf_every", 1))):
         s = 1.0 if j % 2 == 0 else -1.0                      # (the crest's side: its leaf goes to the other)
         uc = (np.pi / 2 + j * np.pi) / k
         x = np.linspace(0, 1, max(8, int(np.ceil(ll / 0.35))) + 1)

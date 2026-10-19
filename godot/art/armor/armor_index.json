@@ -21,13 +21,6 @@
   },
   "file": "res://art/armor/plate_top_etched.gltf",
   "tier": 2,
-  "under": {
-   "pauldrons": {
-    "warden.pauldrons": "armor_under/plate_top_etched.pauldrons.warden.bin",
-    "ranger.pauldrons": "armor_under/plate_top_etched.pauldrons.ranger.bin",
-    "*": "armor_under/plate_top_etched.pauldrons.any.bin"
-   }
-  },
   "base": "plate_top_plain"
  },
  {
@@ -53,13 +46,6 @@
   },
   "file": "res://art/armor/plate_top_gilded.gltf",
   "tier": 3,
-  "under": {
-   "pauldrons": {
-    "warden.pauldrons": "armor_under/plate_top_gilded.pauldrons.warden.bin",
-    "ranger.pauldrons": "armor_under/plate_top_gilded.pauldrons.ranger.bin",
-    "*": "armor_under/plate_top_gilded.pauldrons.any.bin"
-   }
-  },
   "base": "plate_top_plain"
  },
  {
@@ -82,13 +68,6 @@
    "squash": 0
   },
   "file": "res://art/armor/plate_top_plain.gltf",
-  "tier": 1,
-  "under": {
-   "pauldrons": {
-    "warden.pauldrons": "armor_under/plate_top_plain.pauldrons.warden.bin",
-    "ranger.pauldrons": "armor_under/plate_top_plain.pauldrons.ranger.bin",
-    "*": "armor_under/plate_top_plain.pauldrons.any.bin"
-   }
-  }
+  "tier": 1
  }
 ]
