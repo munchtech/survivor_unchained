@@ -23,6 +23,8 @@ public partial class Game
 
     bool OnAction(Act a)
     {
+        // A storybook hears only the held skip.
+        if (storybook != null || beginning) return true;
         if (scene == null) return false;
         // A screen hears the keys first.
         if (screens.Current is Overlay o)

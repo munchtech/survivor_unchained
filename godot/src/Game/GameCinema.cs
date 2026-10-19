@@ -49,6 +49,8 @@ public partial class Game
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
+        // Straight after a storybook (SB00 into C01): its bars, full, are this one's from the first frame.
+        if (chained == null && TakeStoryBars() is { } sb) chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes));
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
         try { cine = new Cine(this, file, b, done); cineId = id; }
