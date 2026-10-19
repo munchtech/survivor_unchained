@@ -33,7 +33,8 @@ uniform float metal_rough_floor = 0.22;            // (no metal smoother than th
 uniform float metal_grime = 1.0;                   // (dirt in its recesses: dark, brown, dull, not metal)
 uniform float metal_dent = 0.08;                   // (the hammered unevenness)
 uniform float brass_dim = 0.85;                    // (gold read as aged brass: a little darker and greyer than the bright alloy; the rest from grime)
-uniform float brass_rough_add = 0.0;
+uniform float brass_rough_add = -0.1;             // (metal r3: raised trim a little smoother than the plate, 0.35: it catches a line of light, gold not tan)
+uniform vec3 gold_tone : source_color = vec3(1.0, 0.847, 0.569);   // (metal r3: gold's reflectance, Filament's #ffd891; times brass_dim for aged brass. Was its scan's mean, greyed: it read tan and matte by day)
 uniform float metal_hammer = 0.05;                 // (planishing marks, 8 mm)
 uniform float steel_dim = 1.0;                      // (round 1 darkened the plate's field to 0.8; physical now, the reflection held instead)
 uniform vec3 steel_warm = vec3(1.0);                // (round 1 warmed steel against the sky's blue; neutral now, the reflection held instead)
@@ -49,14 +50,17 @@ uniform float detail_normal = 0.7;
 uniform float detail_rough = 1.0;
 uniform float detail_cavity = 1.0;
 uniform int finish = 0;
-uniform vec3 blued : source_color = vec3(0.36, 0.38, 0.47);        // (blued steel: its reflectance; deep blue-black where it reflects the dark)
-uniform vec3 blued_temper : source_color = vec3(0.40, 0.37, 0.50); // (its temper sheen: a faint violet in patches)
+uniform vec3 blued : source_color = vec3(0.42, 0.44, 0.52);        // (blued steel: its reflectance; deep blue-black where it reflects the dark. metal r3: was 0.36,0.38,0.47, black rubber in moonlit and dawn shade)
+uniform vec3 blued_temper : source_color = vec3(0.46, 0.43, 0.57); // (its temper sheen: a faint violet in patches; scaled with blued, metal r3)
 uniform float blued_chip = 1.0;                    // (how far its worn edges chip back to bright steel)
-uniform float metal_env = 0.55;                    // (the sky's reflection kept: no probe, the rest is the dark around her)
-uniform float metal_env_horizon = 0.5;             // (and less at the horizon, where trees, walls and the camp stand)
-uniform float metal_spec_cap = 1.5;                // (a highlight never brighter than this times a white matte card facing that light)
+uniform float metal_env = 0.50;                    // (the sky's reflection kept: no probe, the rest is the dark around her; metal r3: was 0.55)
+uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
+uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
+uniform float metal_env_graze = 0.3;               // (metal r3: at grazing angles at least this much of the sky kept, the sheen that tells plate in shade from rubber)
+uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
+global uniform vec4 ground_bounce;                   // (Atmosphere: the key's light off the ground, linear; metal reflects it below the horizon)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -205,7 +209,7 @@ void fragment() {
 		rough = mix(rough, 0.72, grime);
 		rough += (dtl.b - 0.5) * detail_rough * (0.7 + 0.6 * wear);
 		// Colour: aged brass for gold (darker, less saturated, browner), the rest as built.
-		vec3 brass = mix(vec3(dot(mean_col, vec3(0.3, 0.55, 0.15))), mean_col, 0.8) * brass_dim;
+		vec3 brass = gold_tone * brass_dim;
 		col = mix(col, brass, gold);
 		rough = mix(rough, rough + brass_rough_add, gold);
 		col *= 0.9 + 0.2 * blot;                                  // (an uneven patina)
@@ -243,8 +247,14 @@ void fragment() {
 		// light the scene) is kept only in part, least at the horizon (trees, walls, the camp)
 		// and in what the sky can't reach (specular occlusion from the baked sky seen).
 		vec3 rw = (INV_VIEW_MATRIX * vec4(reflect(-VIEW, NORMAL), 0.0)).xyz;
-		float keep = metal_env * mix(metal_env_horizon, 1.0, smoothstep(0.05, 0.6, abs(rw.y))) * mix(0.2, 1.0, sky * sky);
-		RADIANCE = vec4(0.0, 0.0, 0.0, 1.0 - keep);
+		float keep = metal_env * mix(metal_env_horizon, 1.0, smoothstep(0.05, 0.6, abs(rw.y))) * mix(0.3, 1.0, sky);
+		float graze = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+		keep = max(keep, metal_env_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
+		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
+		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
+		float down = smoothstep(0.0, 0.35, -rw.y);
+		vec3 ground = ground_bounce.rgb * metal_ground * down * mix(0.45, 1.0, sky) * (1.0 - grime);
+		RADIANCE = vec4(ground / max(1.0 - keep, 1e-3), 1.0 - keep);
 		v_metal = metal;
 #else
 		col *= mix(0.75, 1.0, sky);
