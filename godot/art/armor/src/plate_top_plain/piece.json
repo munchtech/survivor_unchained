@@ -1,0 +1,23 @@
+{
+ "id": "plate_top_plain",
+ "name": "Forged Plate Top",
+ "slot": "top",
+ "style": "plate",
+ "tier": 1,
+ "tier_name": "plain forged",
+ "material": "steel",
+ "tint": null,
+ "params": {
+  "over": 0.03, "low": 0.03, "wing": 0.022,
+  "lift": 0.002, "thick": 0.003, "gap": 0.011, "side": 0.07,
+  "roll": {"width": 0.005, "height": 0.0009},
+  "strap_width": 0.018, "back_width": 0.022, "back_rise": 0.035,
+  "buckle": {"t": 0.45, "w": 0.027, "h": 0.021, "r": 0.0016},
+  "gore_width": 0.016
+ },
+ "adorn": [
+  {"kind": "row", "rim": "cup_rim", "mesh": "rivet", "spacing": 0.028, "inset": 0.0095, "r": 0.0032, "mat": "steel"}
+ ],
+ "covers": ["top"],
+ "hold": {"amount": 0.55, "squash": 0}
+}
