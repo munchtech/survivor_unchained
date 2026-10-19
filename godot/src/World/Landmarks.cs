@@ -23,6 +23,8 @@ public sealed class Landmarks
     public readonly Node3D Root;
     /// <summary>Every node by name (the runtime's are unique).</summary>
     public readonly Dictionary<string, Node3D> Nodes = new();
+    /// <summary>The lamp holders put in KayKit lamps' places (Lamps.cs): the zone lights their flames.</summary>
+    public readonly List<Node3D> Holders = new();
 
     readonly ZoneData zone;
 
@@ -65,6 +67,7 @@ public sealed class Landmarks
         if (part.Length < 4 || Pieces.For(part[1], part[2], int.TryParse(part[3], out var i) ? i : 0, at.Basis.Scale.Y, Ground) is not Node3D piece) return false;
         foreach (var c in kk.GetChildren()) { kk.RemoveChild(c); c.QueueFree(); }
         kk.AddChild(piece);
+        if (piece.HasMeta("lamp")) Holders.Add(piece);
         return true;
     }
 

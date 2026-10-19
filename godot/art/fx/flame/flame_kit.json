@@ -1,0 +1,28 @@
+{
+ "grid": 8,
+ "frames": 64,
+ "fps": 24.0,
+ "cell": [
+  128,
+  256
+ ],
+ "aspect": 0.3255,
+ "mv_scale": 0.10122842267155648,
+ "mv": "flow from frame i to i+1 (last to first included) in cell UV, RG = 0.5 + flow / mv_scale / 2; +y is down the cell",
+ "source": "tools/fxsim/flame_sim.py (Blender Mantaflow, our own) + flame_pack.py",
+ "seam_255": 11.73,
+ "neighbour_255": 8.69,
+ "sim": {
+  "start": 100,
+  "n": 24,
+  "len": 64,
+  "fade": 16,
+  "cw": 128,
+  "ch": 256,
+  "k": 0.0,
+  "kk": 2.6,
+  "vfall": 0.55,
+  "grid": 8,
+  "fps": 24.0
+ }
+}

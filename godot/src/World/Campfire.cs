@@ -3,9 +3,9 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// A campfire: a photoscanned ring of stones round charred wood (Poly
-/// Haven's stone fire pit, art/world), a flame filmed and played round and
-/// round on upright cards (art/fx/fb/fire_loop, shaders/flame_loop.gdshader),
+/// A campfire: a ring of made stones round our own logs and ash bed
+/// (art/world/campfire), the flame kit's camp fire (FlameKit.cs: a
+/// simulated flame on upright cards, shaders/flame_mv.gdshader),
 /// embers and smoke of GPU particles, and its own light.
 /// </summary>
 public static class Campfire
@@ -41,11 +41,32 @@ public static class Campfire
         // CAMPFIRE_PARTS picks the layers, for pictures of each alone.
         parts = System.Environment.GetEnvironmentVariable("CAMPFIRE_PARTS") ?? parts;
         if (ring) Ring(root, size);
-        if (parts.Contains("coals")) root.AddChild(Coals(size));
+        if (parts.Contains("coals")) root.AddChild(Wood(size) ?? Coals(size));
         if (parts.Contains("flames")) root.AddChild(FilmedFlames(size) ?? Flames(size));
         if (parts.Contains("embers")) root.AddChild(Embers(size));
         if (parts.Contains("smoke")) root.AddChild(Smoke(size));
+        if (SurvivorUnchained.Args.Has("fire-probe")) root.TreeEntered += () => root.GetTree().CreateTimer(13).Timeout += () => Probe(root);
         return root;
+    }
+
+    /// <summary>--fire-probe: what stands within 2.5 m of the fire (layers, shading) and the lights reaching it, printed once.</summary>
+    static void Probe(Node3D fire)
+    {
+        var at = fire.GlobalPosition;
+        foreach (var n in fire.GetTree().Root.FindChildren("*", "GeometryInstance3D", true, false))
+        {
+            if (n is not GeometryInstance3D g || !g.IsVisibleInTree()) continue;
+            var c = g.GlobalTransform * g.GetAabb().GetCenter();
+            var cam = fire.GetViewport().GetCamera3D();
+            var sp = cam != null && !cam.IsPositionBehind(c) ? cam.UnprojectPosition(c) : new Vector2(-1, -1);
+            if (new Vector2(c.X - at.X, c.Z - at.Z).Length() > 2.5f && !(sp.X >= 0 && sp.X < 300 && sp.Y > 650 && sp.Y < 1000 && c.DistanceTo(cam!.GlobalPosition) < 12)) continue;
+            string mat = g is MeshInstance3D mi && mi.Mesh != null && mi.Mesh.GetSurfaceCount() > 0
+                ? ((mi.MaterialOverride ?? mi.GetActiveMaterial(0)) is BaseMaterial3D bm ? $"std {bm.ShadingMode}" : (mi.MaterialOverride ?? mi.GetActiveMaterial(0))?.GetType().Name ?? "none") : g.GetType().Name;
+            GD.Print($"FIREPROBE geo {g.GetPath()} layers {g.Layers} at {c - at} screen {sp} {mat} shadow {g.CastShadow}");
+        }
+        foreach (var n in fire.GetTree().Root.FindChildren("*", "Light3D", true, false))
+            if (n is Light3D l && l.IsVisibleInTree() && (l is DirectionalLight3D || l.GlobalPosition.DistanceTo(at) < 15))
+                GD.Print($"FIREPROBE light {l.GetPath()} mask {l.LightCullMask} e {l.LightEnergy:0.00} col {l.LightColor} at {l.GlobalPosition - at} shadow {l.ShadowEnabled}");
     }
 
     static void Ring(Node3D root, float size)
@@ -178,7 +199,60 @@ public static class Campfire
         b.Warp(v0, i0, p => p, weld: true);
     }
 
-    /// <summary>What the fire burns on and what is left when it burns down:
+    /// <summary>--campfire-ember K, --campfire-bounce K, --campfire-wash K: the logs' ember cracks, the ash bed's and the logs' warm wash, for pictures.</summary>
+    static readonly float EmberK = SurvivorUnchained.Args.Num("campfire-ember", 3f);
+    static readonly float BounceK = SurvivorUnchained.Args.Num("campfire-bounce", 0f);
+    static readonly float WashK = SurvivorUnchained.Args.Num("campfire-wash", 4.5f);
+
+    /// <summary>What the fire burns on, our own (tools/assets/env_campfire.py, art/world/campfire): five
+    /// logs in a collapsed star, burnt toward the middle with ember cracks that breathe
+    /// (shaders/campfire_wood.gdshader), real end caps; a flat ash bed with a few coals. The logs
+    /// are on <see cref="CoalLayer"/>, out of the fire's light, washed warm in their shader and lit
+    /// from below by the coals' glow; the bed takes the fire's light. Null without the model.</summary>
+    static Node3D? Wood(float size)
+    {
+        const string path = "res://art/world/campfire/campfire.glb";
+        if (!ResourceLoader.Exists(path)) return null;
+        var scene = GD.Load<PackedScene>(path).Instantiate<Node3D>();
+        var root = new Node3D { Name = "Coals", Scale = Vector3.One * size };
+        var shader = GD.Load<Shader>("res://shaders/campfire_wood.gdshader");
+        ShaderMaterial? look = null;
+        foreach (var name in new[] { "Logs", "Bed" })
+        {
+            if (scene.FindChild(name, true, false) is not MeshInstance3D src) continue;
+            if (look == null && src.GetActiveMaterial(0) is StandardMaterial3D std)
+            {
+                look = new ShaderMaterial { Shader = shader };
+                look.SetShaderParameter("albedo_tex", std.AlbedoTexture);
+                look.SetShaderParameter("normal_tex", std.NormalTexture);
+                look.SetShaderParameter("ember_tex", std.EmissionTexture);
+                look.SetShaderParameter("ember_k", EmberK);
+                look.SetShaderParameter("bounce_k", BounceK);
+            }
+            var mat = look;
+            if (look != null) { mat = (ShaderMaterial)look.Duplicate(); if (name == "Bed") mat.SetShaderParameter("bed", 1f); }
+            var mi = new MeshInstance3D { Name = name, Mesh = src.Mesh, MaterialOverride = mat };
+            // The bed takes the fire's light too (on the coals' layer its pale ash showed moonlit blue
+            // under the flames); it casts no shadow.
+            if (name == "Bed") mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+            // The logs read dark with their cracks glowing, washed warm by the flames in the shader
+            // (floodlit by the light over the flames they were orange cobs).
+            else { mi.Layers = CoalLayer; mat?.SetShaderParameter("wash_k", WashK); }
+            root.AddChild(mi);
+        }
+        scene.Free();
+        // The coals' own glow, falling off within a metre: what is held just over them (a hand, in
+        // C01) and the logs' undersides are lit from below, deep orange.
+        root.AddChild(new OmniLight3D
+        {
+            Name = "Glow", Position = new Vector3(0, 0.1f, 0), LightColor = new Color(1f, 0.36f, 0.08f),
+            LightEnergy = 0.35f, OmniRange = 1.1f * size, OmniAttenuation = 1.6f, ShadowEnabled = false, LightSpecular = 0.3f,
+            LightCullMask = 0xFFFFF & ~CoalLayer,
+        });
+        return root;
+    }
+
+    /// <summary>The procedural bed, used when the model is missing. What the fire burns on and what is left when it burns down:
     /// a bed of ash, a low heap of charcoal lumps, and four sticks laid in a
     /// star, their inner ends burnt to coal (shaders/coals.gdshader). A hand
     /// held over it in C01 is lit by it, and the title's flames stand on it.</summary>
@@ -306,33 +380,12 @@ public static class Campfire
         return new CurveTexture { Curve = c };
     }
 
-    /// <summary>The filmed flame: three cards out of step with each other,
-    /// the tallest in the middle; null if the atlas is missing.</summary>
+    /// <summary>The flame: the kit's camp fire (FlameKit, three simulated cards out of step); its one
+    /// shadowed light stays the zone's.</summary>
     static Node3D? FilmedFlames(float size)
     {
-        if (!ResourceLoader.Exists("res://art/fx/fb/fire_loop.png")) return null;
         var root = new Node3D { Name = "Flames" };
-        var shader = GD.Load<Shader>("res://shaders/flame_loop.gdshader");
-        var atlas = GD.Load<Texture2D>("res://art/fx/fb/fire_loop.png");
-        (Vector3 At, float W, float H, float Phase, float Glow)[] cards =
-        {
-            (new(0, 0, 0), 1.2f, 1.6f, 0f, 1.1f),
-            (new(-0.18f, 0, 0.08f), 0.9f, 1.15f, 0.37f, 0.85f),
-            (new(0.17f, 0, -0.06f), 0.95f, 1.2f, 0.71f, 0.85f),
-        };
-        foreach (var (at, w, h, phase, glow) in cards)
-        {
-            var mat = new ShaderMaterial { Shader = shader };
-            mat.SetShaderParameter("atlas", atlas);
-            mat.SetShaderParameter("phase", phase);
-            mat.SetShaderParameter("glow", glow);
-            root.AddChild(new MeshInstance3D
-            {
-                Mesh = new QuadMesh { Size = new Vector2(1, 1), CenterOffset = new Vector3(0, 0.5f, 0), Material = mat },
-                Position = at * size, Scale = new Vector3(w, h, 1) * size,
-                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            });
-        }
+        FlameKit.Add(root, Vector3.Zero, FlameKind.Camp, scale: size, light: false);
         return root;
     }
 
@@ -365,48 +418,63 @@ public static class Campfire
         };
     }
 
+    /// <summary>--ember-w W, --ember-l L: a spark's streak (m). Thin, so at the close-up it is a streak 1-3 px wide, not a
+    /// soft round disc (11 mm wide, a radial blob, it read as an orb).</summary>
+    static readonly float EmberW = SurvivorUnchained.Args.Num("ember-w", 0.006f), EmberL = SurvivorUnchained.Args.Num("ember-l", 0.4f);
+
+    /// <summary>Sparks: few and small, each a short streak along its flight, rising off the coals,
+    /// wandering a little and fading within a metre or two (not a spray).</summary>
     static GpuParticles3D Embers(float size)
     {
         var p = new ParticleProcessMaterial
         {
-            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.25f * size,
-            Direction = Vector3.Up, Spread = 25, InitialVelocityMin = 1.5f, InitialVelocityMax = 3.2f,
-            Gravity = new Vector3(0, 0.4f, 0), ScaleMin = 0.6f, ScaleMax = 1.2f,
-            // Hot, not blinding: a speck many times white is spread by the
-            // glow into a ball.
-            // Kept just under the bloom's threshold: brighter, and the glow
-            // spreads two dozen of them into one orange ball over the fire.
-            ColorRamp = Ramp((0, new Color(1.05f, 0.62f, 0.22f, 1)), (0.7f, new Color(0.9f, 0.32f, 0.06f, 1)), (1, new Color(0.5f, 0.1f, 0.02f, 0))),
-            TurbulenceEnabled = true, TurbulenceNoiseStrength = 2f, TurbulenceNoiseScale = 1.5f, TurbulenceInfluenceMin = 0.2f, TurbulenceInfluenceMax = 0.4f,
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.16f * size,
+            Direction = Vector3.Up, Spread = 14, InitialVelocityMin = 0.8f, InitialVelocityMax = 1.7f,
+            Gravity = new Vector3(0.05f, 0.35f, 0), DampingMin = 0.3f, DampingMax = 0.6f,
+            ScaleMin = 0.6f, ScaleMax = 1.1f, ScaleCurve = Curve((0, 1f), (0.7f, 0.8f), (1, 0.15f)),
+            ParticleFlagAlignY = true, LifetimeRandomness = 0.45,
+            // Hot, not blinding: kept just under the bloom's threshold, so the glow doesn't
+            // spread them into one orange ball over the fire.
+            ColorRamp = Ramp((0, new Color(1.05f, 0.6f, 0.2f, 1)), (0.55f, new Color(0.95f, 0.34f, 0.06f, 0.9f)), (1, new Color(0.5f, 0.1f, 0.02f, 0))),
+            TurbulenceEnabled = true, TurbulenceNoiseStrength = 1.2f, TurbulenceNoiseScale = 1.2f, TurbulenceInfluenceMin = 0.06f, TurbulenceInfluenceMax = 0.16f,
         };
+        if (emberLook == null)
+        {
+            // Drawn along its velocity (align Y), turned to the camera about it; sized by the
+            // process scale (a particle billboard drops it unless told to keep it).
+            emberLook = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true);
+            emberLook.BillboardMode = BaseMaterial3D.BillboardModeEnum.FixedY;
+            emberLook.BillboardKeepScale = true;
+        }
         return new GpuParticles3D
         {
-            Name = "Embers", Amount = 24, Lifetime = 2.2, ProcessMaterial = p, Position = new Vector3(0, 0.4f, 0),
-            // A speck sized in the mesh itself: billboarded particles ignored
-            // the process material's scale, and drew each ember a metre across.
-            DrawPass1 = new QuadMesh { Size = new Vector2(0.045f, 0.045f) * size, Material = emberLook ??= Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
+            Name = "Embers", Amount = 12, Lifetime = 1.9, ProcessMaterial = p, Position = new Vector3(0, 0.22f, 0) * size,
+            DrawPass1 = new QuadMesh { Size = new Vector2(EmberW, EmberL) * size, Material = emberLook },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 2.0,
         };
     }
 
+    /// <summary>Smoke: a thin dark thread off the top of the flames, drifting with the air and
+    /// opening as it climbs, gone by about 3 m (never a grey blanket over the fire from above).</summary>
     static GpuParticles3D Smoke(float size)
     {
         var p = new ParticleProcessMaterial
         {
-            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.2f * size,
-            Direction = Vector3.Up, Spread = 8, InitialVelocityMin = 0.6f, InitialVelocityMax = 1f,
-            Gravity = new Vector3(0.25f, 0.15f, 0), ScaleMin = 0.8f, ScaleMax = 1.4f,
-            ScaleCurve = Curve((0, 0.5f), (1, 2.6f)),
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.12f * size,
+            Direction = Vector3.Up, Spread = 6, InitialVelocityMin = 0.55f, InitialVelocityMax = 0.75f,
+            DampingMin = 0.05f, DampingMax = 0.12f, Gravity = new Vector3(0.16f, 0.06f, 0.05f),
+            ScaleMin = 0.8f, ScaleMax = 1.2f, ScaleCurve = Curve((0, 0.35f), (1, 1.7f)),
             AngleMin = -180, AngleMax = 180, AngularVelocityMin = -20, AngularVelocityMax = 20,
-            // Dark: night smoke is barely lit (these are linear values; 0.14
-            // would show as a pale grey).
-            ColorRamp = Ramp((0, new Color(0.03f, 0.028f, 0.025f, 0)), (0.2f, new Color(0.035f, 0.032f, 0.03f, 0.45f)), (1, new Color(0.045f, 0.045f, 0.05f, 0))),
+            TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.8f, TurbulenceNoiseScale = 1.2f, TurbulenceInfluenceMin = 0.03f, TurbulenceInfluenceMax = 0.07f,
+            // Dark: night smoke is barely lit (linear values), and thin.
+            ColorRamp = Ramp((0, new Color(0.03f, 0.028f, 0.025f, 0)), (0.15f, new Color(0.035f, 0.032f, 0.03f, 0.3f)), (0.6f, new Color(0.04f, 0.04f, 0.042f, 0.13f)), (1, new Color(0.045f, 0.045f, 0.05f, 0))),
         };
+        if (smokeLook == null) { smokeLook = Sprite(Sprites.Puff, false); smokeLook.BillboardKeepScale = true; }
         return new GpuParticles3D
         {
-            Name = "Smoke", Amount = 20, Lifetime = 4.5, ProcessMaterial = p, Position = new Vector3(0, 1.1f, 0),
-            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = smokeLook ??= Sprite(Sprites.Puff, false) },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 4.0,
+            Name = "Smoke", Amount = 14, Lifetime = 3.2, ProcessMaterial = p, Position = new Vector3(0, 0.95f, 0) * size,
+            DrawPass1 = new QuadMesh { Size = new Vector2(0.55f, 0.55f) * size, Material = smokeLook },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 3.2,
         };
     }
 

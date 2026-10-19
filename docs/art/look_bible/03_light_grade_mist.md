@@ -38,7 +38,7 @@ By day, pools doesn't separate a good frame from ours (our dawn town's 0.25-0.47
 
 ## The trick
 
-1. A low, directional key: the moon 20-30 degrees high (now 50-52), the dawn sun 10-20. Shadows then model the ground and the trees from the high camera. Cap the directional shadow distance to what the play camera needs and use 2 splits. Shadow draws stay at or below today's 2,246.
+1. A low, directional key: the moon 20-30 degrees high (now 50-52), the dawn sun 10-20, its azimuth cheated down the road toward its far end on the Low Ford (LowFordDawn; the owner, 19 October: keep it). Shadows then model the ground and the trees from the high camera. Cap the directional shadow distance to what the play camera needs and use 2 splits. Shadow draws stay at or below today's 2,246.
 2. Ambient 2-3 stops under the key: lower the hemi and env intensity and the exposure, and drop the black lift (it makes blacks milky). Shadows go cool and dark, never gray.
 3. Pools from real sources: the camp fire, lamps, windows, and her ember (a soft warm light on her at night, the way Diablo IV lights the player). The brightest area of a frame is a source or what it lights.
 4. Mist in layers: volumetric fog for the air and the lamp halos. For thin mist on the river and in hollows, 2-3 stacked mesh planes with scrolling noise that fade softly where they meet geometry, colored by the key. Never camera-facing sprites.
@@ -48,7 +48,7 @@ By day, pools doesn't separate a good frame from ours (our dawn town's 0.25-0.47
 
 - Night play frames: luma p50 15-35 (Diablo IV and Path of Exile 2: 11-23; ours 57-64), p95 at least 2.5 times p50 (theirs 2.6-7.5; ours 1.9-2.1), and pools at least 0.55 (theirs 0.57-1.27; ours 0.45).
 - Dawn and day: a sun 10-20 degrees high casts shadows over at least a quarter of the ground in a play-camera frame, and lit ground is at least one stop over the shadow beside it (sRGB luma ratio at least 1.35 on a patch pair). Pools isn't used by day (shipped play-camera day frames: 0.24-0.56).
-- Close-up camera at closest zoom and the Look camera, night: her face reads (skin and eyes) and is the brightest area that isn't a light source, lit by a source a judge can name. The background median sits 1.5-2 stops under her (sRGB luma ratio 1.6-1.9).
+- Close-up camera at closest zoom and the Look camera, night: her face reads (skin and eyes) and is the brightest area that isn't a light source, lit by a source a judge can name. The background median sits about 6x under her face (sRGB luma ratio 5-6.5, about 2.5 stops). The owner, 19 October: keep the night close-up at about 6x (the GameCloseUp exposure, built in E1), replacing the earlier 1.6-1.9.
 - At most 0.5% of a frame clipped, outside flames and lamps.
 - In every shot a fresh judge can say where the light comes from. Nothing is lit by ambient alone.
 - Mobs and pickups stay readable (the rim light, her pool): the player never loses her or an enemy in the dark.
