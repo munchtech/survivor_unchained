@@ -20,7 +20,10 @@ SETS = {
     "close4": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-8.6,88.6,1,0;-8.6,88.6,1,0"], 4),
     # E2 lamps: the ford's three lamp-irons at the play camera (by the pylons at 0,-33.5, -9.7,-49.6, 9.7,-49.6)
     "ford": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "0,-37;-7,-46;7,-46"], 3),
+    "dbg": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--lamp-debug", "--spots", "-7.5,87.5"], 1),
     "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
     "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", TOWN], 3),
     "town_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", TOWN], 3),
+    # E2: the black roof slabs (teaching F10, F11): the Post and the Barrow's crypt by night
+    "roofs": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "16,31;-17,4;-22,2"], 3),
 }

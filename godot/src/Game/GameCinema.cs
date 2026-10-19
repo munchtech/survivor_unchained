@@ -997,6 +997,7 @@ public partial class Game
                 }
                 case "frost":
                 {
+                    if (Args.Has("cine-nofrost")) break;   // (pictures: the frost left out, env E2's fog A/B)
                     // Frost on the ground about a place, thin and patchy, and none within a fire's
                     // reach: the prints show dark in it. It stays, as the prints do.
                     // Laid in tiles, each on its own ground and only knee-deep, so it
