@@ -57,6 +57,9 @@ uniform float metal_env = 0.50;                    // (the sky's reflection kept
 uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
 uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
 uniform float metal_env_graze = 0.3;               // (metal r3: at grazing angles at least this much of the sky kept, the sheen that tells plate in shade from rubber)
+uniform vec4 piece_id = vec4(-1.0);                // (up to four pieces of this key with a finish of their own: their baked piece number, People.PieceNumber; -1 none.
+uniform vec4 piece_rough = vec4(-1.0);             //  Each piece's metal_rough and metal_env_graze, -1 the key's own; art/people/metal_finishes.json "pieces".
+uniform vec4 piece_graze = vec4(-1.0);             //  Metal r4: the greaves and sabatons smoother with more edge sheen, a tube's line of light, not a boot's)
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
@@ -204,7 +207,9 @@ void fragment() {
 		float brush = brushed(vec2(opos.x + opos.z, opos.y));   // (fine level streaks, one way over the whole piece)
 		if (flag > 0.25 && flag < 0.75) brush = brushed(m);     // (a plate laid out round her arm brushed along it, by its UVs, judge 6)
 		// Roughness: satin, varied; smoother where worn, rougher where dirty; scratched (more where worn).
-		rough = metal_rough + 0.10 * (blot - 0.5) + 0.05 * (brush - 0.5);
+		float p_rough = metal_rough;
+		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_rough[i] >= 0.0) p_rough = piece_rough[i];
+		rough = p_rough + 0.10 * (blot - 0.5) + 0.05 * (brush - 0.5);
 		rough = mix(rough, metal_rough_wear, wear);
 		rough = mix(rough, 0.72, grime);
 		rough += (dtl.b - 0.5) * detail_rough * (0.7 + 0.6 * wear);
@@ -249,7 +254,9 @@ void fragment() {
 		vec3 rw = (INV_VIEW_MATRIX * vec4(reflect(-VIEW, NORMAL), 0.0)).xyz;
 		float keep = metal_env * mix(metal_env_horizon, 1.0, smoothstep(0.05, 0.6, abs(rw.y))) * mix(0.3, 1.0, sky);
 		float graze = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-		keep = max(keep, metal_env_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
+		float p_graze = metal_env_graze;
+		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_graze[i] >= 0.0) p_graze = piece_graze[i];
+		keep = max(keep, p_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
 		float down = smoothstep(0.0, 0.35, -rw.y);

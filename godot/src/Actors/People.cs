@@ -1084,6 +1084,27 @@ public static class People
                 m.SetShaderParameter("has_detail", metalDetail != null);
                 metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
                 if (metalFinishes.TryGetValue(key, out var fin) && (string)fin == "blued") m.SetShaderParameter("finish", 1);
+                // (pieces of this key with a finish of their own, matched in the shader by the piece
+                // number heroine_outfits.py bakes into each piece: the key's pieces are one mesh)
+                if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
+                {
+                    string set = mi.Name.ToString().Split('_')[0];
+                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids;
+                    int n = 0;
+                    foreach (var (pn, pv) in byKey.AsGodotDictionary())
+                    {
+                        var name = (string)pn;
+                        if (n >= 4 || !name.StartsWith(set + ".")) continue;
+                        var o = pv.AsGodotDictionary();
+                        ids[n] = PieceNumber(name[(set.Length + 1)..]);
+                        if (o.TryGetValue("metal_rough", out var r)) pr[n] = (float)r;
+                        if (o.TryGetValue("metal_env_graze", out var g)) pg[n] = (float)g;
+                        n++;
+                    }
+                    m.SetShaderParameter("piece_id", ids);
+                    m.SetShaderParameter("piece_rough", pr);
+                    m.SetShaderParameter("piece_graze", pg);
+                }
             }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
             m.SetShaderParameter("normal_map", src.NormalTexture);
@@ -1096,8 +1117,22 @@ public static class People
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
             if (System.Environment.GetEnvironmentVariable("GOLD_ROUGH") is string gr && float.TryParse(gr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var grv)) m.SetShaderParameter("gold_rough", grv);
+            if (System.Environment.GetEnvironmentVariable("OUTFIT_DEBUG_VIEW") is string dv && int.TryParse(dv, out var dvv)) m.SetShaderParameter("debug_view", dvv);   // (a check: 4 = the gold mask flat magenta)
             mi.SetSurfaceOverrideMaterial(s, m);
         }
+    }
+
+    /// <summary>A piece's own number, as heroine_outfits.py bakes it into its vertex
+    /// colours' green: the CRC-32 of its name's first word (greave_l: greave) mod 1000, over 1000.</summary>
+    static float PieceNumber(string word)
+    {
+        uint c = 0xFFFFFFFF;
+        foreach (byte b in System.Text.Encoding.UTF8.GetBytes(word.Split('_')[0]))
+        {
+            c ^= b;
+            for (int k = 0; k < 8; k++) c = (c >> 1) ^ (0xEDB88320u & (uint)-(int)(c & 1));
+        }
+        return ((~c) % 1000) / 1000f;
     }
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
