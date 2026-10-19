@@ -20,11 +20,11 @@ public static class Args
     static Dictionary<string, string>? parsed;
 
     /// <summary>Whether the developer's switches are read at all: in the
-    /// editor and debug builds, never in a release build. Every switch
+    /// editor and debug builds and the measuring build (export preset "Windows (perf)", feature "perf"), never in the player's release build. Every switch
     /// (--quick, --zone, --body, --gold, --shot, --perf...) comes through
     /// here, so a player's copy cannot be talked into a place, a body or a
     /// view the game does not offer (the legal brief, issue 3).</summary>
-    public static bool Dev => OS.IsDebugBuild();
+    public static bool Dev => OS.IsDebugBuild() || OS.HasFeature("perf");
 
     static Dictionary<string, string> All()
     {

@@ -28,6 +28,9 @@ public partial class Game
 
     /// <summary>A cinematic playing (null: none).</summary>
     public bool InCinematic => cine != null;
+    /// <summary>The cinematic playing (its id), for --perf's windows.</summary>
+    public string? CinematicId => cine != null ? cineId : null;
+    string? cineId;
 
     /// <summary>A cinematic from the data, played now in the zone that is
     /// running; done when it hands back (or is skipped). False if it cannot
@@ -48,7 +51,7 @@ public partial class Game
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
-        try { cine = new Cine(this, file, b, done); }
+        try { cine = new Cine(this, file, b, done); cineId = id; }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         finally { chained = null; }
         if (scene != null) scene.Fx.HideLoot = true;
@@ -113,14 +116,26 @@ public partial class Game
         Shots.Want($"ho_{handoffId}_{handoffN++:000}", 0);
     }
 
+    /// <summary>The one place the shadow rules of play (E1) step aside for a cinematic and come back:
+    /// the lamps all shadow at full strength (ShadowLamp.Suspended) and the sun has its old cascades
+    /// and reach (Graphics.Sun), so the judged shots are unchanged. Acts only on a change.</summary>
+    void CineShadows()
+    {
+        bool on = cine != null;
+        if (ShadowLamp.Suspended == on) return;
+        ShadowLamp.Suspended = on;
+        Graphics.Sun(air, Graphics.Current);
+    }
+
     /// <summary>Each frame, after the world is drawn: the camera, the cast, the cues.</summary>
     void CinemaFrame(double dt)
     {
         carryT = Math.Max(0, carryT - dt);
         HandoffFrames(dt, cine?.ToEnd);
+        CineShadows();
         if (cine == null) return;
         cine.Frame(dt);
-        if (cine.Over) { var c = cine; cine = null; c.Finish(); }
+        if (cine.Over) { var c = cine; cine = null; c.Finish(); CineShadows(); }
         if (scene != null) scene.Fx.HideLoot = cine != null; // hidden across a chain, shown at the hand-back
     }
 
@@ -842,11 +857,21 @@ public partial class Game
                     // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
                     // cinematic and finished in the next); a skip lands on k1. "from": "now"
                     // blends from the air as it is (a scene's own night back into play's).
-                    var to = Tuned(c.Str("preset") == "now" ? g.air.Current : Atmospheres.ByName(c.Str("preset")!), c);
+                    // "play": the zone's own air for the time it is (the hand-back into play's look).
+                    var to = Tuned(c.Str("preset") switch
+                    {
+                        "now" => g.air.Current,
+                        "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
+                        var n => Atmospheres.ByName(n == "play" ? "night" : n!),
+                    }, c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
                     if (c.Str("from") is string fromName)
                     {
                         var from = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
+                        // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
+                        // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
+                        // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
+                        if (c.Str("preset") == "play") @from = @from with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
                         if (over > 0 && !skipping)
                         {
                             double last = -1;

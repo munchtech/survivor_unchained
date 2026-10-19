@@ -118,7 +118,8 @@ public class CreditsTests
             Assert.True(new FileInfo(Path.Combine(Godot, "licences", file)) is { Exists: true, Length: > 500 }, file);
         // In the pack too, so the game can show them; tools/godot/export.sh copies the folder beside the executable.
         var presets = File.ReadAllText(Path.Combine(Godot, "export_presets.cfg"));
-        Assert.Equal(3, Regex.Matches(presets, @"include_filter=""[^""]*licences/\*").Count);
+        // (Every preset: the three platforms' and the measuring build's.)
+        Assert.Equal(Regex.Matches(presets, @"^\[preset\.\d+\]", RegexOptions.Multiline).Count, Regex.Matches(presets, @"include_filter=""[^""]*licences/\*").Count);
         Assert.Contains("licences", File.ReadAllText(Path.Combine(Godot, "..", "tools", "godot", "export.sh")));
     }
 }

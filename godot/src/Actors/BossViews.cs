@@ -118,7 +118,7 @@ public partial class WardenView : Node3D, IBossView
             },
         });
         haloMat = (StandardMaterial3D)((MeshInstance3D)flame.GetChild(1)).MaterialOverride;
-        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = true };
+        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = false };
         AddChild(light);
     }
 
@@ -197,6 +197,8 @@ public partial class WardenView : Node3D, IBossView
         // The light is the lamp in his fist, hung a little out from the body.
         double i = LampLit ? g * (5 + Math.Sin(time * 3.1) * 0.8 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
         light.LightEnergy = (float)(i / Math.PI);
+        // The one shadowed positional light of the scene, ahead of any lamp (ShadowLamp).
+        if (light.LightEnergy > 0) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
         var at = lamp.GlobalPosition;
         light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
     }
@@ -204,6 +206,8 @@ public partial class WardenView : Node3D, IBossView
     // Explicit, so they do not shadow Godot's own Hide() and Dispose().
     void IBossView.Hide() => Visible = false;
     void IBossView.Dispose() => QueueFree();
+
+    public override void _ExitTree() => ShadowLamp.Withdraw(light);
 }
 
 /// <summary>

@@ -50,6 +50,7 @@ public partial class ZoneView : Node3D
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         AddChild(Water.Build(z));
+        if (MistLayers.Build(z) is { } mist) AddChild(mist);
         Perf.Lap("ground and water");
         var flora = Dressing.Flora(z);
         AddChild(flora);
@@ -104,6 +105,17 @@ public partial class ZoneView : Node3D
             if (f.Light >= 0 && f.Light < meta.Lights.Count)
                 foreach (var glow in meta.Lights[f.Light].Glow) { fireGlow.Add(glow); if (Node(glow) is Node3D ball) ball.Visible = false; }
         }
+        // The Low Ford's beacons (the pylons' blue flames): built at an HDR white-blue that AgX blew out to a white
+        // octagon (E1 round 3); at a quarter (round 3c; an eighth went matte) its core sits at 230, blue, under the clip, and their lights still pool the ground.
+        foreach (var (name, n) in Landmarks.Nodes)
+            if (name.StartsWith("pylon_flame"))
+            {
+                DimGlow(n, SurvivorUnchained.Args.Num("beacon-glow", 0.25f));   // (--beacon-glow K: pictures)
+                // A short cool pool from the flame itself on the stones, the plinth's top and the mist round it (judge 4:
+                // the beacon "lights nothing ... reads as a sticker"); it goes out with the flame (a child of it).
+                if (n is Node3D flame && BeaconPool > 0)
+                    flame.AddChild(new OmniLight3D { LightColor = new Color("#c0d4ff"), LightEnergy = BeaconPool, OmniRange = 7, OmniAttenuation = 1.5f, ShadowEnabled = false });
+            }
         foreach (var c in meta.Chimneys)
         {
             var smoke = Campfire.ChimneySmoke();
@@ -122,6 +134,25 @@ public partial class ZoneView : Node3D
         SetNight(false);
     }
 
+    /// <summary>The zone's lights kept off her own layer (PlayerView.HerLayer: the close view by night), or given back.</summary>
+    public void HerUnlit(bool off)
+    {
+        foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~PlayerView.HerLayer : l.LightCullMask | PlayerView.HerLayer;
+    }
+
+    /// <summary>The lit light nearest `at` within `within` metres (a fire by her), or null.</summary>
+    public OmniLight3D? NearestLit(Vector3 at, float within)
+    {
+        OmniLight3D? best = null; float bd = within * within;
+        for (int i = 0; i < lights.Count; i++)
+        {
+            if (!lit[i]) continue;
+            float d = lights[i].GlobalPosition.DistanceSquaredTo(at);
+            if (d < bd) { bd = d; best = lights[i]; }
+        }
+        return best;
+    }
+
     OmniLight3D MakeLight(ZoneData.LightSpec l)
     {
         int i = lights.Count;
@@ -134,7 +165,7 @@ public partial class ZoneView : Node3D
             LightEnergy = l.Intensity / Mathf.Pi,
             OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
             // The big lights (fires, lanterns) cast shadows near the camera, at dusk and by night (Shadows).
-            ShadowEnabled = CastsShadow(l), DistanceFadeShadow = 28, DistanceFadeEnabled = true,
+            ShadowEnabled = false, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
             DistanceFadeBegin = 45, DistanceFadeLength = 20, LightVolumetricFogEnergy = 1.2f,
         };
         lights.Add(light);
@@ -222,6 +253,22 @@ public partial class ZoneView : Node3D
     public void Stop(string node) => stopped.Add(node);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
+    /// <summary>--beacon-pool E: the beacon flame's own short light (pictures).</summary>
+    static readonly float BeaconPool = SurvivorUnchained.Args.Num("beacon-pool", 3f);
+
+    static void DimGlow(Node n, float k)
+    {
+        if (n is MeshInstance3D m)
+            for (int i = 0; i < m.GetSurfaceOverrideMaterialCount(); i++)
+                if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial sm && sm.GetShaderParameter("color").Obj is Vector3 c)
+                {
+                    var d = (ShaderMaterial)sm.Duplicate();
+                    d.SetShaderParameter("color", c * k);
+                    m.SetSurfaceOverrideMaterial(i, d);
+                }
+        foreach (var c in n.GetChildren()) DimGlow(c, k);
+    }
+
     public Node3D? Node(string name) => Landmarks.Nodes.TryGetValue(name, out var n) ? n : null;
 
     public bool IsLit(int light) => lit[light];
@@ -231,6 +278,7 @@ public partial class ZoneView : Node3D
     {
         lit[light] = on;
         lights[light].Visible = on;
+        OfferShadow(light);
         if (flames.TryGetValue(light, out var flame)) flame.Visible = on;
         if (light < Data.Meta.Lights.Count)
             foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on && !fireGlow.Contains(g);
@@ -273,7 +321,7 @@ public partial class ZoneView : Node3D
         Shadows();
     }
 
-    bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows;
+    bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows && !SurvivorUnchained.Args.Has("lamp-shadows-off");   // (--lamp-shadows-off: pictures)
 
     /// <summary>Whether it is dusk (the game's clock): the lamps cast shadows then, as by night.</summary>
     public void SetDusk(bool on)
@@ -290,11 +338,21 @@ public partial class ZoneView : Node3D
 
     void Shadows()
     {
-        for (int i = 0; i < lights.Count; i++)
-        {
-            bool cast = CastsShadow(specs[i]);
-            if (lights[i].ShadowEnabled != cast) lights[i].ShadowEnabled = cast;
-        }
+        for (int i = 0; i < lights.Count; i++) OfferShadow(i);
+    }
+
+    /// <summary>A light that may cast a shadow, and is lit, is offered to the one-shadow arbiter
+    /// (ShadowLamp); otherwise withdrawn.</summary>
+    void OfferShadow(int i)
+    {
+        if (i >= specs.Count || i >= lights.Count || i >= lit.Count) return;
+        if (lit[i] && CastsShadow(specs[i])) ShadowLamp.Offer(lights[i], 0);
+        else ShadowLamp.Withdraw(lights[i]);
+    }
+
+    public override void _ExitTree()
+    {
+        foreach (var l in lights) ShadowLamp.Withdraw(l);
     }
 
     /// <summary>How far the blight has drawn back (0..1): the ground's veins

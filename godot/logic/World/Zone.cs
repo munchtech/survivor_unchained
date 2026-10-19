@@ -79,12 +79,41 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     /// <summary>How much of the shadow tint's darkening is held off in the toe (0 to 1): the tint stays a colour there,
     /// so dark values (an iris, dark hair, unlit ground) keep their detail instead of falling to black.</summary>
     public double Toe { get; init; }
+    /// <summary>The moon's colour over what it lights (0: none; play's own grades, E1 round 3): a weakly coloured pixel
+    /// (moonlit grass, stone, a slate shade) gives up MoonDrop of its own chroma and takes MoonSat of lightness in the
+    /// moon's hue (Oklab degrees); one coloured past MoonLo..MoonHi (C/L: a fire, her ember's pool, skin by it) keeps its
+    /// own. Faded out over lightness MoonTop - MoonWidth..MoonTop (Oklab L), so at dawn it cools the shade only. After the
+    /// warm-hue hold and the toe's: they kept the khaki of olive grass and the brown of the shade under a blue moon.</summary>
+    public double Moon { get; init; }
+    public double MoonHue { get; init; } = 250;
+    public double MoonSat { get; init; } = 0.06;
+    public double MoonDrop { get; init; } = 0.75;
+    public double MoonLo { get; init; } = 0.06;
+    public double MoonHi { get; init; } = 0.16;
+    public double MoonTop { get; init; } = 0.9;
+    public double MoonWidth { get; init; } = 0.2;
 }
 
 public sealed record AtmospherePreset(
     SkySettings Sky, string KeyColor, double KeyIntensity, double KeyElevation, double KeyAzimuth, double ShadowStrength,
     string HemiSky, string HemiGround, double HemiIntensity, double EnvIntensity, string FogColor, double FogDensity,
-    double Exposure, string Rim, double RimStrength, GradeSettings Grade);
+    double Exposure, string Rim, double RimStrength, GradeSettings Grade)
+{
+    /// <summary>The volumetric fog's density: the air the lamps' halos and the key's shafts are seen in.</summary>
+    public double Haze { get; init; } = 0.0012;
+    /// <summary>How thick the mist lies on a river (0: none, as the cinematics' presets have it; 1: thick).</summary>
+    public double Mist { get; init; }
+    /// <summary>The mist's colour (sRGB hex): the key's light in the air, as the eye sees it.</summary>
+    public string MistColor { get; init; } = "#000000";
+    /// <summary>Her carried light's strength against its base (play's night lights her pool more, in a darker world).</summary>
+    public double Ember { get; init; } = 1;
+    /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
+    public double CrowdRim { get; init; }
+    /// <summary>A river's light, the sky in it, and how far its ripples bend it (1: as built; the water shader's water_air).</summary>
+    public double RiverLight { get; init; } = 1;
+    public double RiverSky { get; init; } = 1;
+    public double RiverBend { get; init; } = 1;
+}
 
 public sealed class ZoneMeta
 {

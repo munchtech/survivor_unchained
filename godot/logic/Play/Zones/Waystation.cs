@@ -394,7 +394,11 @@ public sealed class Waystation : ZoneRuntime
         return new(south.X, south.Z - 15, Math.PI);
     }
 
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Night ? Atmospheres.NightTown : base.AtmosphereFor(t);
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t switch
+    {
+        TimeOfDay.Night => Atmospheres.NightTown, TimeOfDay.Dawn => Atmospheres.WaystationDawn, TimeOfDay.Day => Atmospheres.WaystationDay,
+        _ => base.AtmosphereFor(t),
+    };
 
     // The town is seen whole from its gate; the corner behind the shrine is not.
     public override List<(double X, double Z, double R)> MapKnown => [(0, 2, 35), (22, 20, 20), (-22, 20, 20), (22, -20, 20), (-20, -18, 17)];

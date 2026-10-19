@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.World;
 
@@ -34,9 +35,48 @@ public partial class Atmosphere : Node3D
     /// <summary>How much colour the world keeps below the brights (0 all, 1
     /// none): the grade's worn world.</summary>
     public float Mute = 0.16f;
+    /// <summary>Her carried light's gain under the air in force (AtmospherePreset.Ember).</summary>
+    public static float EmberGain = 1;
+    /// <summary>The camera's own say over the exposure (1: none): the close view by night opens up, as an eye does
+    /// on a face near it, so the wood behind her reads (GameCloseUp, E1).</summary>
+    public float ViewExposure { get; private set; } = 1;
+    /// <summary>The camera's say over the grade's highlight tint (0: the preset's; 1: none). The close view by night takes the
+    /// near-white highlight tint off her face, which it left pale and waxy (E1 round 3); in quarter steps, each table made once.</summary>
+    public float ViewHighlightsNeutral { get; private set; }
+    public void SetViewHighlights(float k)
+    {
+        k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
+        if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
+        ViewHighlightsNeutral = k;
+        var lut = GradeLut(ViewGrade(Current.Grade), Mute);
+        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+    }
+    // (#bcbcbc is linear 0.5: the grade adds a tint as its distance from 0.5, so this one adds nothing.)
+    // (And the moon's colour off her skin: its weakly coloured parts went grey in patches beside the ember-lit ones.)
+    GradeSettings ViewGrade(GradeSettings g) => ViewHighlightsNeutral <= 0 ? g
+        : g with
+        {
+            HighlightTint = "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
+            Moon = g.Moon * (1 - CloseMoonOff * ViewHighlightsNeutral),
+        };
+    /// <summary>--close-moon-off K: how much of the grade's moon colour the close view by night takes off (pictures).</summary>
+    static readonly float CloseMoonOff = SurvivorUnchained.Args.Num("close-moon-off", 1f);
+
+    public void SetViewExposure(float k)
+    {
+        if (Mathf.IsEqualApprox(k, ViewExposure)) return;
+        ViewExposure = k;
+        Env.TonemapExposure = (float)Current.Exposure * ExposureScale * k * FlareDip;
+    }
     double clock;
 
     const float FogMatchDistance = 60;
+    static readonly bool OldAir = SurvivorUnchained.Args.Has("air-old");
+    // (Colours as sRGB hex, written with '_' for '#'; three numbers as r/g/b.)
+    static readonly Dictionary<string, string>? Tune = SurvivorUnchained.Args.Get("air-tune") is string tu
+        ? tu.Split(',').Select(kv => kv.Split('=')).ToDictionary(kv => kv[0], kv => kv[1].Replace('_', '#')) : null;
+    /// <summary>--grade-off: no colour grade (the frame as AgX leaves it), to design the grade outside the game.</summary>
+    static readonly bool GradeOff = SurvivorUnchained.Args.Has("grade-off");
 
     public Atmosphere()
     {
@@ -79,7 +119,7 @@ public partial class Atmosphere : Node3D
     public override void _Process(double delta)
     {
         clock += delta;
-        if (FlareDip != dipShown) { dipShown = FlareDip; Env.TonemapExposure = (float)Current.Exposure * ExposureScale * FlareDip; }
+        if (FlareDip != dipShown) { dipShown = FlareDip; Env.TonemapExposure = (float)Current.Exposure * ExposureScale * ViewExposure * FlareDip; }
         RenderingServer.GlobalShaderParameterSet(SkyTime, (float)clock);
     }
 
@@ -91,6 +131,39 @@ public partial class Atmosphere : Node3D
     /// <param name="grade">Rebuild the colour grade too (not every frame of a blend).</param>
     public void Set(AtmospherePreset p, bool grade = true)
     {
+        // --air-old: play's presets (E1) back to the ones before them, for before-and-after pictures.
+        if (OldAir) p = ReferenceEquals(p, Atmospheres.LowFordNight) ? Atmospheres.Night : ReferenceEquals(p, Atmospheres.LowFordDawn) ? Atmospheres.Dawn
+            : ReferenceEquals(p, Atmospheres.WaystationDawn) ? Atmospheres.Dawn : ReferenceEquals(p, Atmospheres.WaystationDay) ? Atmospheres.Day : p;
+        // --air-tune "hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
+        // play's presets (E1) nudged, for a sweep of pictures in one build.
+        if (Tune != null && (ReferenceEquals(p, Atmospheres.LowFordNight) || ReferenceEquals(p, Atmospheres.LowFordDawn)
+            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay)))
+        {
+            double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
+            string H(string k, string v) => Tune.TryGetValue(k, out var x) ? x : v;
+            double[] V(string k, double[] v) => Tune.TryGetValue(k, out var x)
+                ? x.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : v;
+            p = p with
+            {
+                KeyColor = H("keyc", p.KeyColor), HemiSky = H("hemisky", p.HemiSky), HemiGround = H("hemiground", p.HemiGround),
+                FogColor = H("fogc", p.FogColor), MistColor = H("mistc", p.MistColor),
+                Sky = p.Sky with { Top = H("skytop", p.Sky.Top), Horizon = H("skyhor", p.Sky.Horizon), Glow = H("skyglow", p.Sky.Glow) },
+                HemiIntensity = T("hemi", p.HemiIntensity), EnvIntensity = T("env", p.EnvIntensity), Exposure = T("exposure", p.Exposure),
+                KeyIntensity = T("key", p.KeyIntensity), KeyElevation = T("elevation", p.KeyElevation), KeyAzimuth = T("azimuth", p.KeyAzimuth),
+                ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
+                FogDensity = T("fog", p.FogDensity), CrowdRim = T("crowdrim", p.CrowdRim), RiverLight = T("river", p.RiverLight),
+                RiverSky = T("riversky", p.RiverSky), RiverBend = T("bend", p.RiverBend),
+                Grade = p.Grade with
+                {
+                    TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe),
+                    ShadowTint = H("sh", p.Grade.ShadowTint), HighlightTint = H("hi", p.Grade.HighlightTint), Gain = V("gain", p.Grade.Gain),
+                    Lift = V("lift", p.Grade.Lift), Saturation = T("sat", p.Grade.Saturation), Vibrance = T("vib", p.Grade.Vibrance),
+                    Moon = T("moon", p.Grade.Moon), MoonHue = T("mhue", p.Grade.MoonHue), MoonSat = T("msat", p.Grade.MoonSat),
+                    MoonDrop = T("mdrop", p.Grade.MoonDrop), MoonLo = T("mlo", p.Grade.MoonLo), MoonHi = T("mhi", p.Grade.MoonHi),
+                    MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth),
+                },
+            };
+        }
         Current = p;
         float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
         var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
@@ -116,12 +189,12 @@ public partial class Atmosphere : Node3D
         Env.FogLightColor = C(p.FogColor);
         Env.FogDensity = (float)(p.FogDensity * p.FogDensity * FogMatchDistance);
         Env.VolumetricFogAlbedo = C(p.FogColor).Lightened(0.5f);
-        Env.VolumetricFogDensity = 0.0012f;
+        Env.VolumetricFogDensity = (float)p.Haze;
         // An ember arena's own air: smoke or dust hanging in it.
         Key.LightAngularDistance = 0;
         if (air is { } a)
         {
-            Env.VolumetricFogDensity = 0.0012f * (float)a.Haze;
+            Env.VolumetricFogDensity = (float)p.Haze * (float)a.Haze;
             Env.VolumetricFogAlbedo = C(a.HazeColor).Lightened(0.35f);
             // Under a canopy the moon's breadth softens a shadow by how far its caster stands
             // over the ground (PCSS): the pools get a soft rim from leaves nine metres up, and
@@ -129,15 +202,20 @@ public partial class Atmosphere : Node3D
             // (At 2.5° the pools washed out into a general shading.)
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
-        Env.TonemapExposure = (float)p.Exposure * ExposureScale * FlareDip;
+        Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure * FlareDip;
+        SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * Key.LightEnergy);
+        EmberGain = (float)p.Ember;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
+        RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));
+        RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
+        RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the
         // sky's lower half is the hemisphere's dark ground colour, so in shade her plate reflected
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
-        if (grade) Env.AdjustmentColorCorrection = GradeLut(p.Grade, Mute);
+        if (grade) { var lut = GradeLut(ViewGrade(p.Grade), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;
@@ -208,6 +286,7 @@ public partial class Atmosphere : Node3D
                     var outLin = Pow(p.Clamp(Vector3.Zero, Vector3.One), 2.2f);
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
+                    if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
                     var o = Srgb(outLin);
                     img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
                 }
@@ -285,6 +364,17 @@ public partial class Atmosphere : Node3D
         float a = Mathf.Lerp(o.Y * Mathf.Cos(oh), i.Y * s * Mathf.Cos(ih), w);
         float b = Mathf.Lerp(o.Y * Mathf.Sin(oh), i.Y * s * Mathf.Sin(ih), w);
         return FromOklab(o.X, a, b).Clamp(Vector3.Zero, Vector3.One);
+    }
+
+    /// <summary>GradeSettings.Moon: the moon's (or the dawn shade's) cool colour over what is weakly coloured.</summary>
+    static Vector3 Moonlight(Vector3 inLin, Vector3 outLin, GradeSettings g)
+    {
+        var i = Oklab(inLin); var o = Oklab(outLin);
+        float sat = i.Y / Mathf.Max(i.X, 1e-4f), top = (float)g.MoonTop;
+        float m = (float)g.Moon * (1 - Smooth((float)g.MoonLo, (float)g.MoonHi, sat)) * (1 - Smooth(top - (float)g.MoonWidth, top, i.X)) * Smooth(0, 0.06f, i.X);
+        if (m <= 0) return outLin;
+        float h0 = Mathf.DegToRad(o.Z), h1 = Mathf.DegToRad((float)g.MoonHue), keep = 1 - m * (float)g.MoonDrop, add = m * o.X * (float)g.MoonSat;
+        return FromOklab(o.X, o.Y * Mathf.Cos(h0) * keep + add * Mathf.Cos(h1), o.Y * Mathf.Sin(h0) * keep + add * Mathf.Sin(h1)).Clamp(Vector3.Zero, Vector3.One);
     }
 
     /// <summary>Linear sRGB to Oklab as (L, chroma, hue in degrees).</summary>

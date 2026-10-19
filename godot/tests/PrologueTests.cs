@@ -52,7 +52,7 @@ public class PrologueTests
     public void The_night_starts_by_the_fire_and_the_dead_rise()
     {
         var s = Make();
-        Assert.Same(Atmospheres.Night, s.Host.Air);
+        Assert.Same(Atmospheres.LowFordNight, s.Host.Air);
         Assert.Equal("Survive the night", s.Host.Tracked.Single().Steps[0].Text);
         // The night's: the ember burns here.
         Assert.True(s.B.EmberOn);
@@ -205,7 +205,7 @@ public class PrologueTests
         var b = s.J.StartBattle(true, s.Meta.Collision(), (_, _) => 0, 0, -100, 0, 9);
         z2.Begin(b);
         Assert.Equal(Prologue.Stage.Exit, z2.Now);
-        Assert.Same(Atmospheres.Dawn, s.Host.Air);
+        Assert.Same(Atmospheres.LowFordDawn, s.Host.Air);
         Assert.DoesNotContain(b.Collision.All(), c => c.Tag == "gate");
     }
 

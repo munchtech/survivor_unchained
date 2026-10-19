@@ -164,7 +164,8 @@ public partial class BattleFx : Node3D
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
         // Lit by their own colour at about its strength, no more: at 2.6 times a stone was white-hot
         // in every channel and the tone curve made cream popcorn of a field of them.
-        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(1.0f, 0.25f)));
+        emberGlow = (ShaderMaterial)Glowing(1.0f, 0.25f);
+        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, emberGlow));
         // (and round each one lying still, a soft warm breath of added light: a stone a few pixels across
         // reads at the play camera; ember_halo.gdshader)
         emberHalos = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ember_halo.gdshader") }));
@@ -1615,8 +1616,15 @@ public partial class BattleFx : Node3D
     /// <summary>A cinematic is playing: no pickup is drawn (logic untouched; GameCinema sets it).</summary>
     public bool HideLoot;
 
+    ShaderMaterial? emberGlow;
+    float emberEmit = 1;
+
     void Pickups(Battle b, double now)
     {
+        // In play's night (her ember's gain over 1) the stones glow up to 1.6 times, so a blue one still reads on the
+        // moon's blue-dark ground (E1 round 3: one was lost at the camp's edge).
+        float emit = Mathf.Lerp(1f, 1.6f, Mathf.Clamp((Atmosphere.EmberGain - 1) / 0.7f, 0, 1));
+        if (emberGlow != null && !Mathf.IsEqualApprox(emit, emberEmit)) { emberEmit = emit; emberGlow.SetShaderParameter("emit", emit); }
         embers.Begin(); emberHalos.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
         foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {

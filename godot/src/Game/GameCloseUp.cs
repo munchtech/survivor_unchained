@@ -59,6 +59,7 @@ public partial class Game
         if (!held && !zone.Combat && Mathf.Abs(look.Y) > Mathf.Abs(look.X)) notches += -look.Y * 7 * dt;
         closeUp.Wheel(notches, cam.CloseShown, sit);
         float target = (float)closeUp.Update(dt, sit);
+        if (spotClose is float tc) { target = tc; taken = true; }
         cam.Close = target;
         cam.CloseRate = (float)closeUp.Rate(target, cam.CloseShown);
         // The idle view drifts slowly round her, between three-quarters and her front.
@@ -80,7 +81,13 @@ public partial class Game
     /// 17 October); close, by day her light comes down.</summary>
     void HerToTheView(double dt, bool held)
     {
-        if (scene?.Player is not { } pv || screens.Current != null) { closeDrives = false; return; }
+        if (scene?.Player is not { } pv || screens.Current != null)
+        {
+            closeDrives = false;
+            if (scene?.Player is { } pv0) { pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
+            if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false;
+            return;
+        }
         float near = cam.CloseShown;
         bool turn = !held && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
         if (turn)
@@ -90,31 +97,99 @@ public partial class Game
             pv.Watch = cam.Camera;
         }
         else if (closeDrives) { pv.Turned = null; pv.Watch = null; }
-        bool lit = !held && near > 0.05f && scene.View.Night != true;
+        // (--spots holds the close view where play would not: lit as play lights it there.)
+        bool night = scene.View.Night == true, lit = (!held || spotClose != null) && near > 0.05f;
         float day = Mathf.Clamp((near - 0.3f) / 0.4f, 0, 1);
-        if (lit) pv.LampScale = Mathf.Lerp(1, CloseLampByDay, day);
+        if (lit) pv.LampScale = Mathf.Lerp(1, night ? CloseLampByNight : CloseLampByDay, day);
         else if (closeDrives) pv.LampScale = 1;
+        pv.LampOffHer = lit && night && day > 0.5f && CloseLampOffHer;
+        // By night the camp's fire stood behind the lens and lit both her cheeks alike: it is kept off her (her own
+        // layer), and a share of it, from where it burns and flickering as it does, stays on her as her warm fill.
+        bool own = pv.LampOffHer && CloseFireShare < 1;
+        if (own != pv.OwnLayer) { pv.OwnLayer = own; scene.View.HerUnlit(own); }
+        FireOnHer(own, pv);
         closeDrives = turn || lit;
         // By day the sun is behind or above her: a soft key of her own, 40 degrees off the lens on the side she
-        // turns to and 25 up, on people only (layer 2), so her face is modelled, not flat.
+        // turns to and 25 up, on people only (layer 2), so her face is modelled, not flat. By night her ember's
+        // warm light, 40 degrees off the lens and 30 up (from above her head and in front it lit her face flat,
+        // as a flash would: E1 round 2), with the moon's cool rim from behind on her other side, so she stands
+        // out from the wood behind her, not pasted on it.
         if (closeKey == null || !IsInstanceValid(closeKey) || closeKey.GetParent() != scene)
         {
-            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2, LightSpecular = 0.3f, LightEnergy = 0 };
+            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKey);
         }
-        float want = lit ? CloseKey * day : 0;
+        if (closeRim == null || !IsInstanceValid(closeRim) || closeRim.GetParent() != scene)
+        {
+            closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.6f, LightEnergy = 0 };
+            scene.AddChild(closeRim);
+        }
+        closeKey.LightColor = night ? CloseKeyColourNight : new Color(1f, 0.95f, 0.88f);
+        float want = lit ? (night ? CloseKeyNight : CloseKey) * day : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
         closeKey.Visible = closeKey.LightEnergy > 0.005f;
+        var chest = pv.GlobalPosition + new Vector3(0, 1.55f, 0);
         if (closeKey.Visible)
         {
-            var chest = pv.GlobalPosition + new Vector3(0, 1.55f, 0);
-            float a = cam.Yaw + 0.7f, up = Mathf.DegToRad(25);
+            // (By night: the key CloseKeyAzNight degrees off her face, on the lens's side of it. She stands turned 0.6 rad
+            // from the lens, so round 2's key at 0.7 rad was 6 degrees off her face: frontal, flat, waxy.)
+            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? 30 : 25);
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
         }
+        air.SetViewExposure(lit && night ? Mathf.Lerp(1, CloseExposureNight, day) : 1);
+        air.SetViewHighlights(lit && night ? day : 0);
+        float wantRim = lit && night ? CloseRimNight * day : 0;
+        closeRim.LightEnergy = Mathf.Lerp(closeRim.LightEnergy, wantRim, 1 - Mathf.Exp(-3 * (float)dt));
+        closeRim.Visible = closeRim.LightEnergy > 0.005f;
+        if (closeRim.Visible)
+        {
+            // Behind her, on the side away from the key (her far cheek's), 35 degrees up.
+            float a = cam.Yaw + Mathf.Pi - CloseRimAz, up = Mathf.DegToRad(35);
+            closeRim.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
+            closeRim.LookAt(chest + new Vector3(0, 0.15f, 0));
+        }
     }
 
-    SpotLight3D? closeKey;
+    void FireOnHer(bool own, SurvivorUnchained.View.PlayerView pv)
+    {
+        var src = own ? scene!.View.NearestLit(pv.GlobalPosition, 12) : null;
+        if (src == null) { if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false; return; }
+        if (fireFill == null || !IsInstanceValid(fireFill) || fireFill.GetParent() != scene)
+        {
+            fireFill = new OmniLight3D { Name = "CloseFireFill", ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerLayer };
+            scene!.AddChild(fireFill);
+        }
+        fireFill.GlobalPosition = src.GlobalPosition;
+        fireFill.LightColor = src.LightColor;
+        fireFill.LightEnergy = src.LightEnergy * CloseFireShare;
+        fireFill.OmniRange = src.OmniRange;
+        fireFill.OmniAttenuation = src.OmniAttenuation;
+        fireFill.LightSpecular = src.LightSpecular;
+        fireFill.Visible = true;
+    }
+
+    SpotLight3D? closeKey, closeRim;
+    OmniLight3D? fireFill;
+    // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
+    // filled her shadow side almost to her lit side).
+    static float CloseFireShare => Args.Num("close-fire", 0.3f);
+    // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
+    static float CloseKeyNight => Args.Num("close-key-night", 2.5f);
+    static float CloseRimNight => Args.Num("close-rim", 1.0f);
+    // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
+    static float CloseRimAz => Args.Num("close-rim-az", 0.5f);
+    static float CloseLampByNight => Args.Num("close-lamp-night", 0.8f);
+    // --close-lamp-on-her: by night her lamp lights her too in the close view (before E1 round 3c it did, and filled her face flat).
+    static bool CloseLampOffHer => !Args.Has("close-lamp-on-her");
+    // --close-exp-night X: the close view's exposure by night against play's (pictures).
+    // (Round 3: 2.0 left her face pale at 187; 0.35 of a stop under it brings it to about 165.)
+    static float CloseExposureNight => Args.Num("close-exp-night", 1.35f);   // x the preset's 1.5: face ~145-150 (judge 3 fix; round 3c's 1.465 left it pale at 170, the fire filling it)
+    // --close-key-az D: the night key's angle off her face (degrees), toward the lens, so her far cheek falls into half
+    // shade (E1 round 3: 50-60; judge 3 fix: 90, about 55 degrees off the lens on the fire's side, once the fire no longer filled her).
+    // The key's colour: the ember's, saturated (1.0, 0.6, 0.35).
+    static float CloseKeyAzNight => Args.Num("close-key-az", 90f);
+    static readonly Color CloseKeyColourNight = new(1f, 0.6f, 0.35f);
     // --close-key E, --close-lamp L: the day key's strength and her lamp's share by day, for pictures.
     static float CloseKey => Args.Has("close-key") ? Args.Num("close-key", 0.7f) : 0.7f;
     static float CloseLampByDay => Args.Has("close-lamp") ? Args.Num("close-lamp", 0.25f) : 0.25f;
