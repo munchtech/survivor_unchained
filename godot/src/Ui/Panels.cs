@@ -12,7 +12,11 @@ namespace SurvivorUnchained.Ui;
 /// <summary>What the level-up draft shows, and what picking does; the fight, for the build beside the cards;
 /// a skip, when one is allowed (docs/SKILLS_DESIGN.md, "The offer").</summary>
 public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int Rerolls, int Banishes, int Queued, string? Tip, HashSet<Tag> Build,
-    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null, Battle? Battle = null, Action? Skip = null);
+    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null, Battle? Battle = null, Action? Skip = null)
+{
+    /// <summary>A callout speaks on this panel (src/Ui/Callout.cs): the tip's place is kept for its words.</summary>
+    public bool Teaching { get; init; }
+}
 
 /// <summary>A conversation as the panel shows it: who, and what they look like.</summary>
 public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
@@ -49,6 +53,16 @@ public partial class DraftPanel : Control
     readonly Dictionary<string, Control> buildChips = new();
     HBoxContainer foot = null!;
     Label banner = null!;
+
+    Control? tipRoom;
+    /// <summary>Where a callout's words stand on this panel (the tip's place), if one speaks here.</summary>
+    public Rect2? TipArea => tipRoom != null && tipRoom.IsInsideTree() ? tipRoom.GetGlobalRect() : null;
+    /// <summary>The cards on the screen now, with what each offers (a callout points at them).</summary>
+    public IEnumerable<(Rect2 Rect, Offer Offer)> CardAreas()
+    {
+        for (int i = 0; i < cards.Count && i < v.Offers.Count; i++)
+            if (IsInstanceValid(cards[i]) && cards[i].IsInsideTree()) yield return (cards[i].GetGlobalRect(), v.Offers[i]);
+    }
 
     public DraftPanel(DraftView v)
     {
@@ -128,7 +142,13 @@ public partial class DraftPanel : Control
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose after this", Style.UiBold, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
         if (v.Battle != null && LevelUp.BuildPaths(v.Battle) is { Count: > 0 } paths)
             col.AddChild(Style.Label($"Walking {string.Join(" and ", paths.Select(p => p.Name))}", Style.TextItalic, Style.Small, Style.EmberHi, false, HorizontalAlignment.Center));
-        if (v.Tip != null)
+        if (v.Teaching)
+        {
+            // The callout's title and line stand here (it draws them): their room kept.
+            tipRoom = new Control { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(900, 74), SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
+            col.AddChild(tipRoom);
+        }
+        else if (v.Tip != null)
         {
             var tip = Style.Label(v.Tip, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
             tip.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;

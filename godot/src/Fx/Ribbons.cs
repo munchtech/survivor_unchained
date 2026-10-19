@@ -433,10 +433,13 @@ public partial class Ribbons : MeshInstance3D
         }
     }
 
+    /// <summary>Held out of the picture (a teaching freeze: no trail hangs frozen in the air).</summary>
+    public bool Hidden;
+
     void Flush()
     {
         // Nothing to draw: hidden, rather than drawing a mesh of empty triangles.
-        Visible = glow.Ni > 0;
+        Visible = !Hidden && glow.Ni > 0;
         glow.Flush();
         shade.Flush();
     }

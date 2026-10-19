@@ -47,6 +47,8 @@ public partial class WorldScene : Node3D, IZoneLook
     /// keep a breath of motion while what is staged over them (a chest opening) moves at full
     /// speed. The fight itself is paused by SimPaused.</summary>
     public float Hold;
+    /// <summary>A freeze frame (a tutorial callout): the effects hold still with the fight.</summary>
+    public bool FxStill;
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
@@ -263,7 +265,8 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Player);
             Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
-            if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
+            // (a teaching freeze holds the camera too: the words were placed for this picture)
+            if (Showcase == null && !CameraHeld && !FxStill) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
             Crowd.Drawn = Drawn;
@@ -272,11 +275,11 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.PlayerPos = HerDrawn;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
-            Fx.Update(b, fightDt, fightTime);
+            Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
             flare.Her = HerDrawn;
             if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; }
             flare.Staff = staff;
-            flare.Tick(dt, b);
+            flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             // The meadow grows round the survivor as they go.

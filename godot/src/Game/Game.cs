@@ -171,8 +171,9 @@ public partial class Game : Node, IZoneHost
             Name = Args.Get("name") ?? "Wren", Archetype = arch, Background = Args.Get("bg") ?? "hunter",
             Palette = a.Palettes.Any(p => p.Id == Args.Get("palette")) ? Args.Get("palette")! : a.Palettes[0].Id,
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
-            // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
-            Sex = Args.Get("sex") == "female" ? Sex.Female : null, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
+            // [--hair STYLE --figure F --skin ID]: the heroine by default (the owner, 19 Oct: the male hero is
+            // out of testing, and runs without --sex played him); --sex male for the old hero.
+            Sex = Args.Get("sex") == "male" ? null : Sex.Female, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
             // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
             FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),
@@ -562,6 +563,8 @@ public partial class Game : Node, IZoneHost
         if (chestShown != null) { chestShown.QueueFree(); chestShown = null; if (hudMode == "chest") hudMode = null; }
         // A cinematic does not outlive its place.
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
+        // Nor a callout.
+        TeachLeave();
         ClearKept();
         zone?.Dispose();
         zone = null;
@@ -698,6 +701,8 @@ public partial class Game : Node, IZoneHost
     /// away instead of fading.</summary>
     void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false, string? from = null)
     {
+        // (--teach-end: a scripted run of the prologue's callouts ends as she leaves the road)
+        if (Args.Has("teach-end") && zone?.Id == "lowford") Shots.EndIn(3);
         // One journey, one new place, one save: a second press at the gate waits.
         if (inTransit) return;
         inTransit = true;
@@ -1112,6 +1117,7 @@ public partial class Game : Node, IZoneHost
         Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
+        UpdateTeach(dt);
         Perf.End(Perf.Part.Draft);
         hudT -= dt;
         if (hudT <= 0)
