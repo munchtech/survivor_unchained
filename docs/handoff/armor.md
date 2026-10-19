@@ -1,6 +1,16 @@
 # Handoff: armor and weapons (smart slot parts)
 
-Read README ("Working lean", Safety), RESUME's top, then this page. Worktree `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
+Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
+
+## Armor lead 6 (19 Oct): MR READY, the hilt carry (warden town run and sprint), judge r2 PASS 8/8
+Worktree `.claude/worktrees/armor-5`, branch `armor-5` (junction: never stash, reset --hard or checkout .). Integration merged in.
+- **What:** `run.hilt_carry` post-pass (tools/anim/clips/run.py `HILT`, `POST`; `sprint_stop.sprint` applies it too). Her left hand rests on the sheathed sword's throat at her left hip in run_warden_town and sprint_warden_town. idle and the stops are byte-identical. The free right hand is a loose fist (`fingers_r="fist"`, the town run only).
+- **Fixes over lead 5's WIP:** the elbow's pole follows her chest (`pole_chest`), because the shield rides spine_03 and the chest's twist swung its rim into the elbow (23.6 mm, now 6.1). After judge r1 (front views: elbow flared, a gunslinger's wrist, a limp right hand): the hand sits 3.3 cm lower on the throat, the elbow swings 30 degrees in, and `clav` 0.3 lets the held shoulder move with the stride.
+- **Measured** (all frames, scratch `tools/scratch/armor5/hilt/chk2`): warden sword vs arm 0 (was 28 run, 38-40 sprint); left forearm vs shield 6.1 (right arm 5.3 before); crossbow 0; elbow 123-138; wrist 18-20; warden palm 8-10 mm off; reaver outfit 4.4-6.0 (thumb, not her shipped kit); motion --against base_town and audit clean. dotnet test 993/0/8.
+- **Judges:** r1 11/13 (both front views failed), r2 8/8 PASS (`hilt/judge_h1_r1.md`, `judge_h2_r2.md`; frames `hilt/shots_h1`, `shots_h2`). Closed as known (polish, at the cap): seen head-on, the palm sits 8-10 mm off the scabbard (the judge's ideal is 2-3 mm with the thumb over its front edge; the reaver outfit's sword sits 14 mm further out, so one hand can't touch both).
+- **Not committed:** godot/art/anim/heroine.res and heroine_clips.json. This worktree's tools/anim/out/clips lacks 3 of integration's clips (cup_hands, flask_drink, ...), so its pack is partial. **The coordinator packs her library in the main checkout after the merge** (`build.py`, her clips; never `--body hero`).
+- **Route:** (face or animation) in the closest front frames her eyes drift down and to her right, not along the run. (Animation, from lead 5) the axe and wand fists, the open hand in run_arcanist_wand.
+- Tools: `hilt/h.py` (base cache), `full.py <hilt json|x> [overrides]` + `summ.sh` (all frames), `scan3.py`/`scan4.py` (swivel, hand-down scans), `cand.py` (s, swivel, clav -> HILT).
 
 ## Armor lead 5 (19 Oct): MR READY at armor-5@975cd32e (steps 5/5b, the socket retune); the hilt carry is PAUSED on armor-5 HEAD
 Worktree `.claude/worktrees/armor-5`, branch `armor-5` (junction: never stash, reset --hard or checkout .). **Merge 975cd32e, not HEAD.** The commits after it hold the unfinished hilt carry in tools/anim/clips/run.py; take this page from HEAD.
@@ -20,12 +30,7 @@ Worktree `.claude/worktrees/armor-5`, branch `armor-5` (junction: never stash, r
   - The warden's shipped kit moved only 4 mm (the shield), so no judge: it isn't visible at 1:1.
   - Tests: Sheath and WeaponSocket 42/0 (full suite 977/0/8). Nothing in piece.json or armor_index.json changed.
 **For animation (route):** the axe fist and the wand fist (above). The wand's open hand in run_arcanist_wand. The sword hilt: her left forearm goes 38-40 mm through it in sprint_warden_town f0-3 and f19-21, and about 28 in the run (the one hit the player sees today; no socket clears it, the best was 30).
-**Paused here; next: the hilt carry** (coordinator-approved for armor, 19 Oct): in the warden's town run and sprint, her left hand rides on the sheathed sword. State 3cf2328e (WIP, NOT packed):
-- The pass: `run.hilt_carry` post-pass in run.py (`HILT`, `POST`), plus `sprint_stop.sprint()`. It re-solves only the left arm in the pelvis frame. idle, the stops and her other clips are byte-identical.
-- Measured: sword vs arm 0 mm (reaver 2-4), palm 8-10 mm off, motion.py clean, audit 0.
-- FAILS: the elbow points back, into the shield on her back (29 mm, was 5.4), and the crossbow is 6-19 into her upper arm. Fix found, unverified: the elbow out to her side (pole about (0.85, -0.5, 0) pelvis). The settings are in 3cf2328e's message and `tools/scratch/armor5/hilt/opt_with_shield.log`.
-- Next: those settings into HILT, `hilt/full.py` (CLAV=0), `summ.sh`, hand-tune, build `--no-pack`, sockdeep, `motion --against base_town`, audit, the idle-to-run and run-to-sprint hand distances, then pack her clips only (`build.py run_warden_town sprint_warden_town`; never `--body hero`).
-- Then shoot `tools/scratch/armor5/shots6.txt` (close-up frames; the play camera at 23 m shows her about 25 px tall) with `shoot.sh`, and run ONE max judge with `judge_brief.md`, updated for the hand on the hilt (cap 2 rounds). If the hand can't pass, close the sprint hilt hit as known and route it to animation.
+**The hilt carry** was paused here; armor lead 6 finished it (above).
 
 ## MR READY (armor lead 4, 19 Oct): steps 1-2; next: steps 5/5b as their own small MR
 State: armor-1, integration fdebb878 merged in, pushed. dotnet test 974/0/8.
