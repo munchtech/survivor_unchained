@@ -51,6 +51,18 @@ public sealed class Autopilot
     {
         t += dt;
         Move = (0, 0);
+        // A callout is read: a freeze answered 1.2 s (real) after it shows, with its answer or the key
+        // that goes on, and a panel's words left up as long before a card is taken. (With --shot, not
+        // before its frame is taken.)
+        if (g.Teaching is { } tc && (tc.Kind == CalloutKind.Freeze || tc.Kind == CalloutKind.Panel && g.Overlay == "draft"))
+        {
+            if (g.TeachingFor < 1.2 || Shots.Pending("teach_" + tc.Id)) return;
+            if (tc.Kind == CalloutKind.Freeze)
+            {
+                Controls.Instance.Press(tc.Answer != null && Enum.TryParse<Act>(tc.Answer, true, out var ans) ? ans : Act.Confirm);
+                return;
+            }
+        }
         // Drafted as a player would (the harness's greedy taste), or --draft first|random|path:ID.
         if (g.Overlay == "draft" && g.Battle is { } db) { g.Pick(Math.Clamp(picker.Choose(db, g.Offers.ToList(), rng), 0, Math.Max(0, g.Offers.Count - 1))); return; }
         // A line is read at a reader's pace (pictures of conversations need the line on screen).

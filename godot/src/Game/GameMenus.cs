@@ -35,6 +35,8 @@ public partial class Game
         if (inTransit || Mode != "play") return false;
         // A cinematic hears only the held skip (GameCinema), never a menu.
         if (cine != null) return true;
+        // A callout holding the fight still hears its answer, or the key that goes on (GameTeach).
+        if (TeachKey(a)) return true;
         // A chest opening: any key brings it all down, a second closes it.
         if (hudMode == "chest") { chestShown?.Skip(); return true; }
         // A fall in a story night: get up, or let the night go (GameFall).
@@ -216,7 +218,7 @@ public partial class Game
             controls.ClearLatches();
             return;
         }
-        if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b) return;
+        if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b || Teaching is { Kind: CalloutKind.Freeze }) return;
         hudMode = "chest";
         scene.SimPaused = true;
         chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);
@@ -236,7 +238,7 @@ public partial class Game
     void UpdateDraft(double dt)
     {
         var b = Battle;
-        if (b != null && b.DraftOwed && Overlay == null && b.Player.Alive && !inTransit)
+        if (b != null && b.DraftOwed && Overlay == null && b.Player.Alive && !inTransit && Teaching is not { Kind: CalloutKind.Freeze })
         {
             // A beat after the flare, then time stops.
             draftWait += dt;
@@ -257,12 +259,15 @@ public partial class Game
     {
         var b = Battle!;
         offers = list;
-        var tip = draftTip;
-        draftTip = null;
+        // A callout on this panel (the first great blessing, the first skill) says what the tip
+        // would; the tip waits for the panels after it.
+        bool teaching = TeachPanel(list);
+        var tip = teaching ? null : draftTip;
+        if (!teaching) draftTip = null;
         string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "Dusk: the ember wakes, and any of them is yours" : "Midnight: a second, or the first deepened" : null;
         using var _ = new Perf.Span(Perf.Part.DraftUi);
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
-            LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b, LevelUp.CanSkip(b) ? Skip : null));
+            LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b, LevelUp.CanSkip(b) ? Skip : null) { Teaching = teaching });
     }
 
     public void Pick(int i)

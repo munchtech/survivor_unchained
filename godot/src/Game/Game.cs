@@ -538,6 +538,8 @@ public partial class Game : Node, IZoneHost
         if (chestShown != null) { chestShown.QueueFree(); chestShown = null; if (hudMode == "chest") hudMode = null; }
         // A cinematic does not outlive its place.
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
+        // Nor a callout.
+        TeachLeave();
         ClearKept();
         zone?.Dispose();
         zone = null;
@@ -658,6 +660,8 @@ public partial class Game : Node, IZoneHost
     /// away instead of fading.</summary>
     void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false, string? from = null)
     {
+        // (--teach-end: a scripted run of the prologue's callouts ends as she leaves the road)
+        if (Args.Has("teach-end") && zone?.Id == "lowford") Shots.EndIn(3);
         // One journey, one new place, one save: a second press at the gate waits.
         if (inTransit) return;
         inTransit = true;
@@ -1068,6 +1072,7 @@ public partial class Game : Node, IZoneHost
         Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
+        UpdateTeach(dt);
         Perf.End(Perf.Part.Draft);
         hudT -= dt;
         if (hudT <= 0)

@@ -72,6 +72,9 @@ public partial class Shots : Node
         live.wanted.Add((live.time + inSeconds, tag));
     }
 
+    /// <summary>Whether a frame of that tag is still to be taken.</summary>
+    public static bool Pending(string tag) => live != null && live.wanted.Exists(w => w.Tag == tag);
+
     /// <summary>The run ends this many seconds on (sooner than --until: a whole night ends at its result).</summary>
     public static void EndIn(double seconds)
     {
