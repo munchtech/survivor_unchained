@@ -24,6 +24,11 @@
   - E2 notes from the judges: the camp lamp's art, Tam's lantern a hot blob, lamp pools on dirt muddy brown.
   - The wood road at dawn, after E4's gap: re-measure the patch (>= 1.35); if it's still night-dark, lift that zone's dawn sky fill +0.3 stop, never the shared dawn preset.
 - **Owner calls:** the night close-up background at about 6x (judges 2-4 say keep it, and change the bible's night line). The dawn sun is cheated toward the road's far end (judge 2 said yes).
+- **M1 perf, E1 MR (`survivorsunchained_inputs\env_perf1\m1\`; both runs reach Exit).** Min / median / max over 20 s windows:
+  - 1440p high: GPU 4.9/5.4/7.6 ms, frame 6.7/8.0/9.4 ms, fps 107/125/148 (e1: min 74), shadow draws 248/545/1443.
+  - 1080p medium: GPU 3.4/4.9/7.7 ms, frame 5.9/8.0/15.9 ms, shadow draws 232/557/1670. Its worst window had another game on the GPU.
+  - Windows over 1,200 shadow draws are cinematic (72-100% cine), and cinemas keep the old shadow rules. Play stays under 1,200.
+- **Next: E2** (flames and lamps, board 1j; `docs/art/look_bible/10_props_flames.md` "The trick" and "DONE means"). Start with a solver brief: the shared flame kit (a motion-vector flipbook spatial shader, noise flicker), the lamp and torch holders (1.5k tris, 2 draws, no shadow), the camp fire, the Warden's three blue lamps. Then one judge, then the E2 MR.
 - **The coordinator's ruling:** E1 goes to main as its own MR (shadow rules and light, one full run and perf first), then E2, then E3, each with its own MR.
 - **The 211 untracked .uid files** that blocked the merge are in the coordinator's scratch, `env3\uid_bak\`. Bin them after the MR; never commit them.
 
