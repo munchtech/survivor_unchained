@@ -47,7 +47,7 @@ public class WaystationTests
     public void The_town_is_lived_in_by_day()
     {
         var s = Make();
-        Assert.Same(Atmospheres.Day, s.Host.Air);
+        Assert.Same(Atmospheres.WaystationDay, s.Host.Air);
         Assert.True(s.Zone.Actors.Count >= 10);
         Run(s, 20);
         Assert.True(s.Host.FakeLook.Walkers >= 8, $"{s.Host.FakeLook.Walkers} walkers");
