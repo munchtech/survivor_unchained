@@ -117,6 +117,7 @@ public static class People
             else HerOutfit(p, set[4..]);
         }
         if (her) Perf.Lap("play: her outfit");
+        if (her) HerDraws.Watch(p);
         // Her hair, a mesh of its own: the style chosen if it is one of hers;
         // her face shaped, and the paint on it.
         if (her)
@@ -1008,9 +1009,11 @@ public static class People
         if (!ResourceLoader.Exists(file)) return;
         var scene = GD.Load<PackedScene>(file).Instantiate<Node3D>();
         var from = (Skeleton3D)scene.FindChildren("*", "Skeleton3D", true, false)[0];
+        var laid = new List<MeshInstance3D>();
         foreach (var mi in from.GetChildren().OfType<MeshInstance3D>().ToList())
         {
             if (!mi.Name.ToString().StartsWith(set + "_")) continue;
+            laid.Add(mi);
             from.RemoveChild(mi);
             mi.Owner = null;
             p.Skeleton.AddChild(mi);
@@ -1034,8 +1037,10 @@ public static class People
         int ch = System.Array.IndexOf(OutfitChannels, set);
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
             if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
-        // Her gameplay model beside it, drawn only at the play camera (HerLod).
+        // Her gameplay model beside it, drawn only at the play camera (HerLod), and what draws of it there one
+        // mesh a material (HerLod.Merge).
         HerLod.Attach(p, set);
+        HerLod.For(p)?.Merge(laid);
     }
 
     static Shader? furShader, sheerShader, outfitShader;

@@ -62,6 +62,7 @@ public static class HerWear
 
         var lodPairs = new List<(MeshInstance3D Full, MeshInstance3D Lod)>();
         var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
+        var laid = new List<MeshInstance3D>();
 
         // Each piece's meshes from its file (its outfit's, or its own), a file opened once.
         foreach (var g in rows.GroupBy(r => r.File ?? $"res://art/people/heroine_outfit_{r.Outfit}.gltf"))
@@ -91,6 +92,7 @@ public static class HerWear
                     People.Fur(mi);
                     People.OutfitMaterials(mi);
                     anyFull ??= mi;
+                    laid.Add(mi);
                     var mat = mn[(mn.LastIndexOf('.') + 1)..];
                     if (found.TryGetValue($"{r.Id}_lod1_{mat}", out var lm) && lm != mi && lm.GetParent() != null)
                     {
@@ -143,6 +145,8 @@ public static class HerWear
                 foreach (var (s, like) in lodShadows) lod.AddShadow(s, like);
             }
         }
+        // What draws of it at the play camera, one mesh a material (HerLod.Merge).
+        HerLod.For(p)?.Merge(laid);
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)"));
     }
 
