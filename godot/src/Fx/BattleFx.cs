@@ -1504,10 +1504,13 @@ public partial class BattleFx : Node3D
     // (An array made for each ember on the ground every frame was most of what the effects threw away.)
     static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f, 0.5f };
 
+    /// <summary>A cinematic is playing: no pickup is drawn (logic untouched; GameCinema sets it).</summary>
+    public bool HideLoot;
+
     void Pickups(Battle b, double now)
     {
         embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
-        foreach (var p in b.Pickups.Living())
+        foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
             float gy = Y(kx, kz);

@@ -1,0 +1,5 @@
+[
+ {"name": "k12a4", "cine": "c01", "until": 48, "args": ["--stills", "3", "--cinebones"], "keep": ["_s2_", "_s3_", "_s8_", "_s8a_", "_s8b_", "_s10_"]},
+ {"name": "k12a4X", "cine": "k12vX", "until": 36, "args": ["--stills", "3"], "keep": ["_s8a_"]},
+ {"name": "k12a4L", "cine": "k12vL", "until": 12, "args": ["--stills", "3"], "keep": ["_s3_"]}
+]

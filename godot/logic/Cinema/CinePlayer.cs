@@ -15,6 +15,9 @@ public readonly record struct V3(double X, double Y, double Z)
     public double Length => Math.Sqrt(X * X + Y * Y + Z * Z);
     public V3 Unit => Length < 1e-9 ? new V3(0, 0, -1) : this * (1 / Length);
     public static V3 Lerp(V3 a, V3 b, double k) => a + (b - a) * k;
+    // Printed as its coordinates only: the record's generated printer would
+    // follow Unit (itself a V3) forever and overflow the stack.
+    public override string ToString() => FormattableString.Invariant($"({X}, {Y}, {Z})");
 }
 
 /// <summary>A shot placed in time.</summary>
@@ -175,8 +178,12 @@ public static class CineCamera
             if (m.Roll is double r1) roll = Lerp(roll, r1, k);
             if (m.Focus.ValueKind != JsonValueKind.Undefined && Focus(m.Focus, pos, place) is double f1) focus = focus is double f0 ? Lerp(f0, f1, k) : f1;
         }
-        return new CamPose(pos, at, Hfov(lens), roll, focus, c.Fstop, lens, c.Handheld, m is { Follow: true } ? k : 0, false, false);
+        return new CamPose(pos, at, Hfov(lens), roll, focus, c.Fstop, lens, c.Handheld, m is { Follow: true } ? FollowK(m, k) : 0, false, false);
     }
+
+    /// <summary>The blend into the game's camera: the move's eased way, or from FollowFrom on, eased again.</summary>
+    static double FollowK(CineMove m, double k) =>
+        m.FollowFrom <= 0 ? k : m.FollowFrom >= 1 ? (k >= 1 ? 1 : 0) : Ease("inout", (k - m.FollowFrom) / (1 - m.FollowFrom));
 
     static double Lerp(double a, double b, double k) => a + (b - a) * k;
 
@@ -251,7 +258,8 @@ public sealed class CinePlayer
         {
             var b = S.File.Bars;
             double inK = b.In <= 0 ? 1 : Math.Clamp(T / b.In, 0, 1);
-            double outK = b.Out <= 0 ? 1 : Math.Clamp((S.Length - T) / b.Out, 0, 1);
+            // A cinematic that runs on into the next keeps its bars to the cut.
+            double outK = b.Out <= 0 || S.File.End.Next != null ? 1 : Math.Clamp((S.Length - T) / b.Out, 0, 1);
             return Math.Min(inK, outK);
         }
     }
