@@ -19,14 +19,14 @@ Written by the art direction lead (look bible 1) from 18 October 2026. It sets t
 |---|---|---|
 | 1a | [Her armor metal](01_armor_metal.md) | passed the coordinator; with the owner |
 | 1b | [Her skin](02_skin.md) | board ready for the owner |
-| 1c | [Light, grade and mist](03_light_grade_mist.md) | built; at the lead's judge |
-| 1d | [Water and shore](04_water_shore.md) | built; at the lead's judge |
-| 1e | [Foliage](05_foliage.md) | built; at the lead's judge |
-| 1f | [Terrain and road](06_terrain_road.md) | built; at the lead's judge |
-| 1g | [Stone and the castle](07_stone_castle.md) | built; at the lead's judge |
-| 1h | [The town](08_town.md) | built; at the lead's judge |
-| 1i | [NPCs and crowds](09_npcs.md) | built; at the lead's judge |
-| 1j | [Story props and flames](10_props_flames.md) | built; at the lead's judge |
+| 1c | [Light, grade and mist](03_light_grade_mist.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1d | [Water and shore](04_water_shore.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1e | [Foliage](05_foliage.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1f | [Terrain and road](06_terrain_road.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1g | [Stone and the castle](07_stone_castle.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1h | [The town](08_town.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1i | [NPCs and crowds](09_npcs.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
+| 1j | [Story props and flames](10_props_flames.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
 | 2 | Per-tier budgets (triangles, textures, materials, draw calls) | measured (`look_bible_perf\summary.md`); page to write |
 | 3 | The Prologue's asset inventory: keep, rework or build | extracted, to mark |
 | 4 | The tutorial's launch-ready checklist (the first 20-30 minutes) | to do |
