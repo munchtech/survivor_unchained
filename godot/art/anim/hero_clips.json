@@ -169,7 +169,7 @@
 	"death": {
 		"hold": true,
 		"layer": "full",
-		"length": 1.13333332538605,
+		"length": 1.5,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -202,7 +202,14 @@
 	},
 	"get_up": {
 		"layer": "full",
-		"length": 1.46666669845581,
+		"length": 2.03333330154419,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"get_up_back": {
+		"layer": "full",
+		"length": 1.66666662693024,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -253,10 +260,10 @@
 	"idle_stalker": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
 		"layer": "full",
-		"length": 5.09999990463257,
+		"length": 5.0,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
+		"source": "100STYLE Crouched_ID frames 688-988 (60 fps)",
 		"speed": 0.0,
 		"weapon": "crossbow"
 	},
@@ -271,10 +278,10 @@
 	"idle_warden": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
 		"layer": "full",
-		"length": 5.03333330154419,
+		"length": 5.06666660308838,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE Heavyset_ID frames 1107-1409 (60 fps)",
+		"source": "100STYLE Heavyset_ID frames 1105-1409 (60 fps)",
 		"speed": 0.0,
 		"weapon": "sword+shield"
 	},
@@ -608,9 +615,9 @@
 		"weapon": "sword+shield"
 	},
 	"throw": {
-		"contact": 0.0833333333333333,
+		"contact": 0.116666666666667,
 		"layer": "upper",
-		"length": 0.666666686534882,
+		"length": 0.699999988079071,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
