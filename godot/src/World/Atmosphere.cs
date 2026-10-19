@@ -25,6 +25,9 @@ public partial class Atmosphere : Node3D
     public readonly DirectionalLight3D Key;
     readonly ShaderMaterial sky;
     public AtmospherePreset Current { get; private set; } = Atmospheres.Night;
+
+    /// <summary>Counts every change of the air (a blend counts each step): what a reflection probe, captured once, watches to know it is stale.</summary>
+    public static int Version { get; private set; }
     /// <summary>A touch less exposure at low quality keeps the mood (the web
     /// game's exposureScale).</summary>
     public float ExposureScale = 1;
@@ -88,6 +91,7 @@ public partial class Atmosphere : Node3D
     public void Set(AtmospherePreset p, bool grade = true)
     {
         Current = p;
+        Version++;
         float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
         var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
         Key.Basis = Basis.LookingAt(-dir, Mathf.Abs(dir.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
