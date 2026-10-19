@@ -45,10 +45,10 @@ public static partial class Pieces
             ("halloween", "crypt") => Crypt(box),
             ("halloween", "fence") => Fence(box, false, seed),
             ("halloween", "fence_broken") => Fence(box, true, seed),
-            ("halloween", "post_lantern") => LampPost(box, true),
+            ("halloween", "post_lantern") => Lamps.Holder("post_lantern") ?? LampPost(box, true),
             ("halloween", "post") => LampPost(box, false),
             ("halloween", "shrine") => Shrine(box),
-            ("halloween", "lantern_standing") => Fitted(Lantern(false), box),
+            ("halloween", "lantern_standing") => StandingLamp(box) ?? Fitted(Lantern(false), box),
             ("halloween", "pillar") or ("dungeon", "pillar") => Pillar(box, seed),
             ("halloween", "tree_dead_large") => Kit($"nature/DeadTree_{1 + seed % 3}", box),
             ("halloween", "candle_triple") => Kit("props/CandleStick_Triple", box),
@@ -60,7 +60,7 @@ public static partial class Pieces
             ("dungeon", "wall_half") => Wall(box, 0.9f, seed),
             ("dungeon", "wall_cracked") => Wall(box, 1f, seed),
             ("dungeon", "rubble_half") or ("dungeon", "rubble_large") => Rubble(box, seed),
-            ("dungeon", "torch_mounted") or ("dungeon", "torch_lit") => Kit("props/Torch_Metal", box),
+            ("dungeon", "torch_mounted") or ("dungeon", "torch_lit") => Lamps.Holder("torch_mounted") ?? Kit("props/Torch_Metal", box),
             ("dungeon", "banner_thin_red") => Kit("props/Banner_1", box),
             ("dungeon", "box_small") => Kit("props/Crate_Wooden", box),
             ("dungeon", "box_small_decorated") => Kit("props/Crate_Metal", box),
@@ -386,6 +386,15 @@ public static partial class Pieces
         lantern.Transform = new Transform3D(Basis.Identity.Scaled(Vector3.One * 0.32f), new Vector3(0, Top - 0.55f, Out));
         root.AddChild(lantern);
         return root;
+    }
+
+    /// <summary>Our standing lantern (Lamps), its foot on the box's floor, as tall as the box.</summary>
+    static Node3D? StandingLamp(Aabb box)
+    {
+        if (Lamps.Holder("lantern_standing") is not Node3D lamp || Lamps.Of("lantern_standing") is not Lamps.Info i) return null;
+        float k = box.Size.Y / i.Height;
+        lamp.Transform = new Transform3D(Basis.Identity.Scaled(Vector3.One * k), new Vector3(box.GetCenter().X, box.Position.Y, box.GetCenter().Z));
+        return lamp;
     }
 
     /// <summary>A square pillar of dressed stone: a plinth, the shaft, a capital.</summary>

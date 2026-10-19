@@ -105,17 +105,9 @@ public partial class ZoneView : Node3D
             if (f.Light >= 0 && f.Light < meta.Lights.Count)
                 foreach (var glow in meta.Lights[f.Light].Glow) { fireGlow.Add(glow); if (Node(glow) is Node3D ball) ball.Visible = false; }
         }
-        // The Low Ford's beacons (the pylons' blue flames): built at an HDR white-blue that AgX blew out to a white
-        // octagon (E1 round 3); at a quarter (round 3c; an eighth went matte) its core sits at 230, blue, under the clip, and their lights still pool the ground.
-        foreach (var (name, n) in Landmarks.Nodes)
-            if (name.StartsWith("pylon_flame"))
-            {
-                DimGlow(n, SurvivorUnchained.Args.Num("beacon-glow", 0.25f));   // (--beacon-glow K: pictures)
-                // A short cool pool from the flame itself on the stones, the plinth's top and the mist round it (judge 4:
-                // the beacon "lights nothing ... reads as a sticker"); it goes out with the flame (a child of it).
-                if (n is Node3D flame && BeaconPool > 0)
-                    flame.AddChild(new OmniLight3D { LightColor = new Color("#c0d4ff"), LightEnergy = BeaconPool, OmniRange = 7, OmniAttenuation = 1.5f, ShadowEnabled = false });
-            }
+        // The lamps: modeled holders with the flame kit's flames in them (Lamps.cs, look bible 10), where
+        // the web game hung glowing balls (the road's lanterns, the gate's torches, the ford's three beacons).
+        WireLamps(meta);
         foreach (var c in meta.Chimneys)
         {
             var smoke = Campfire.ChimneySmoke();
@@ -212,7 +204,7 @@ public partial class ZoneView : Node3D
         if (light < 0 || light >= lights.Count) return;
         levels[light] = (level, flickerRate);
         if (color is Color c) lights[light].LightColor = c;
-        if (specs[light].Flicker <= 0) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level;
+        if (specs[light].Flicker <= 0 || driven.Contains(light)) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level;
     }
 
     readonly Dictionary<int, (float Level, float Rate)> levels = new();
@@ -253,20 +245,86 @@ public partial class ZoneView : Node3D
     public void Stop(string node) => stopped.Add(node);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
-    /// <summary>--beacon-pool E: the beacon flame's own short light (pictures).</summary>
-    static readonly float BeaconPool = SurvivorUnchained.Args.Num("beacon-pool", 3f);
+    /// <summary>The lights a lamp's flame flickers (not the zone's own formula), and each one's holders' glass.</summary>
+    readonly HashSet<int> driven = new();
+    readonly Dictionary<int, List<Node3D>> lampGlass = new();
 
-    static void DimGlow(Node n, float k)
+    /// <summary>--lamp-energy K, --lamp-color HEX: the road lamps' light, for pictures (pools on the dirt).</summary>
+    static readonly float LampEnergy = SurvivorUnchained.Args.Num("lamp-energy", 1f);
+    static readonly string? LampColor = SurvivorUnchained.Args.Get("lamp-color");
+    /// <summary>--ford-energy K: the ford lamps' light, for pictures.</summary>
+    static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 1f);
+
+    /// <summary>A node's transform in the landmarks' frame (the landmarks stand at the zone's origin).</summary>
+    Transform3D InLandmarks(Node3D n)
     {
-        if (n is MeshInstance3D m)
-            for (int i = 0; i < m.GetSurfaceOverrideMaterialCount(); i++)
-                if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial sm && sm.GetShaderParameter("color").Obj is Vector3 c)
-                {
-                    var d = (ShaderMaterial)sm.Duplicate();
-                    d.SetShaderParameter("color", c * k);
-                    m.SetSurfaceOverrideMaterial(i, d);
-                }
-        foreach (var c in n.GetChildren()) DimGlow(c, k);
+        var t = n.Transform;
+        for (var p = n.GetParent(); p != null && p != Landmarks.Root; p = p.GetParent())
+            if (p is Node3D p3) t = p3.Transform * t;
+        return t;
+    }
+
+    /// <summary>Each lamp holder its flame, in the place of the glowing ball the web game lit it by; the ball's
+    /// node stays (its name is what the lights, the Prologue and the cinematics reach for) with its mesh hidden,
+    /// and the flame under it, so a light put out puts the flame out with it.</summary>
+    void WireLamps(SurvivorUnchained.World.ZoneMeta meta)
+    {
+        var glowLight = new Dictionary<string, int>();
+        for (int i = 0; i < meta.Lights.Count && i < lights.Count; i++)
+            foreach (var g in meta.Lights[i].Glow) if (!fireGlow.Contains(g)) glowLight[g] = i;
+        // The road's lamps and torches (KayKit pieces swapped in Landmarks): the glow ball nearest the flame.
+        foreach (var holder in Landmarks.Holders)
+        {
+            var kind = (string)holder.GetMeta("lamp");
+            if (Lamps.Of(kind) is not Lamps.Info info) continue;
+            var at = InLandmarks(holder) * info.Flame;
+            string? best = null;
+            float bd = 0.8f * 0.8f;
+            foreach (var (g, _) in glowLight)
+                if (Node(g) is Node3D gn && InLandmarks(gn).Origin.DistanceSquaredTo(at) is float d && d < bd) { bd = d; best = g; }
+            if (best == null) { Lamps.SetLit(holder, false); continue; }
+            int li = glowLight[best];
+            bool torch = kind == "torch_mounted";
+            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : 1.1f, holder);
+            if (LampColor != null) lights[li].LightColor = new Color(LampColor);
+            specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
+            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+            glowLight.Remove(best);
+        }
+        // The Low Ford's three: the keeper's lamp-iron (the Warden carries the same) on each pylon, a low blue flame.
+        if (meta.Refs.ValueKind == System.Text.Json.JsonValueKind.Object && meta.Refs.TryGetProperty("pylons", out var pylons) && Lamps.Of("ford_lamp") is Lamps.Info ford)
+        {
+            int k = 0;
+            foreach (var p in pylons.EnumerateArray())
+            {
+                string flame = p.GetProperty("flame").GetString()!;
+                int li = p.GetProperty("light").GetInt32();
+                if (li < 0 || li >= lights.Count || Lamps.Holder("ford_lamp", coldGlass: true) is not Node3D lamp) continue;
+                var foot = new Vector3(p.GetProperty("x").GetSingle(), p.GetProperty("top").GetSingle(), p.GetProperty("z").GetSingle());
+                lamp.Position = foot;
+                lamp.Name = $"ford_lamp-{k++}";
+                Landmarks.Root.AddChild(lamp);
+                Landmarks.Nodes[lamp.Name] = lamp;
+                var at = foot + ford.Flame;
+                LampFlame(flame, li, at, FlameKind.Lamp, true, 1.6f, lamp);
+                // Its light from the flame, in the cage (it hung 0.8 m over the pylon, over the old globe).
+                specs[li] = specs[li] with { At = at + Vector3.Up * 0.14f, Intensity = specs[li].Intensity * FordEnergy };
+                lights[li].Position = specs[li].At;
+                lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+            }
+        }
+    }
+
+    void LampFlame(string glow, int light, Vector3 at, FlameKind kind, bool cold, float scale, Node3D holder)
+    {
+        if (Node(glow) is not Node3D g) return;
+        foreach (var c in g.GetChildren()) if (c is GeometryInstance3D m) m.Visible = false;
+        var f = FlameKit.Add(g, Vector3.Zero, kind, cold, scale, light: false);
+        f.Transform = InLandmarks(g).AffineInverse() * new Transform3D(Basis.Identity, at);
+        f.Drive(lights[light]);
+        driven.Add(light);
+        if (!lampGlass.TryGetValue(light, out var list)) lampGlass[light] = list = new();
+        list.Add(holder);
     }
 
     public Node3D? Node(string name) => Landmarks.Nodes.TryGetValue(name, out var n) ? n : null;
@@ -283,6 +341,7 @@ public partial class ZoneView : Node3D
         if (light < Data.Meta.Lights.Count)
             foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on && !fireGlow.Contains(g);
         foreach (var (l, fire) in fires) if (l == light) Burn(fire, on);
+        if (lampGlass.TryGetValue(light, out var holders)) foreach (var h in holders) Lamps.SetLit(h, on);
         foreach (var (l, p) in moths) if (l == light) p.Emitting = on && Night;
     }
 
@@ -477,7 +536,8 @@ public partial class ZoneView : Node3D
         {
             if (!lit[i]) continue;
             var l = specs[i];
-            if (l.Flicker <= 0) continue;
+            // (A lamp's light is flickered by its flame: FlameKit's Flame.Drive, in energy only.)
+            if (l.Flicker <= 0 || driven.Contains(i)) continue;
             float ph = phases[i];
             var (level, rate) = levels.TryGetValue(i, out var lv) ? lv : (1f, 1f);
             float ft = t * rate;

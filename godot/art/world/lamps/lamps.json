@@ -1,0 +1,46 @@
+{
+ "ford_lamp": {
+  "flame": [
+   0,
+   0.21960000000000002,
+   0
+  ],
+  "height": 0.9663999999999999,
+  "tris": 576,
+  "tris_lod1": 230,
+  "materials": 2
+ },
+ "post_lantern": {
+  "flame": [
+   0,
+   2.1012,
+   1.12
+  ],
+  "height": 2.96,
+  "tris": 576,
+  "tris_lod1": 225,
+  "materials": 2
+ },
+ "lantern_standing": {
+  "flame": [
+   0,
+   0.17099999999999999,
+   0
+  ],
+  "height": 0.615,
+  "tris": 632,
+  "tris_lod1": 252,
+  "materials": 2
+ },
+ "torch_mounted": {
+  "flame": [
+   0,
+   0.5275483512878418,
+   0.34144307136535645
+  ],
+  "height": 0.75,
+  "tris": 284,
+  "tris_lod1": 109,
+  "materials": 2
+ }
+}
