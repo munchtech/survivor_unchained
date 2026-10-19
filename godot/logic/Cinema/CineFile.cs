@@ -101,6 +101,10 @@ public sealed class CineEnd
     /// back (the Warden face down in the ford after C03), until the next
     /// cinematic or until she leaves the place: nothing vanishes at the hand-over.</summary>
     public List<string>? Keep;
+    /// <summary>The cinematic the zone plays straight after this one, on a cut (C03
+    /// into C04 A: the crossing is in the cut, not in play). The bars stay, the HUD
+    /// stays down, and the camera is not handed back between them.</summary>
+    public string? Next;
 }
 
 /// <summary>Which survivors a shot or a cue is for (all of them, when unset).</summary>
@@ -173,6 +177,9 @@ public sealed class CineMove
     public string Ease = "inout";
     /// <summary>Ends as the game's own follow camera on the survivor's end mark.</summary>
     public bool Follow;
+    /// <summary>With Follow: how far through the move (0..1 of its eased way) the blend into the
+    /// game's camera begins, so a crane can open at eye level and only hand over at its top.</summary>
+    public double FollowFrom;
 }
 
 /// <summary>Something that happens at a moment of a shot. What it carries
@@ -210,6 +217,6 @@ public sealed class CineCue
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "lids", "look", "light", "lit", "fire",
         "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
-        "lamp", "head", "play",
+        "lamp", "head", "play", "rig", "mist", "globe", "water", "grade",
     ];
 }

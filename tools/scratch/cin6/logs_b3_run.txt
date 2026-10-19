@@ -1,0 +1,6 @@
+godot: yours
+[k3c01] 77 png, 141 s
+[k3c02] 3 png, 81 s
+[k3c03] 144 png, 181 s
+godot: given back
+DONE

@@ -1,0 +1,4 @@
+[
+ {"name": "k7a", "cine": "c01", "until": 58, "args": ["--stills", "6", "--cinebones"], "keep": ["_s8_3", "_s8b_3"]},
+ {"name": "k7b", "cine": "c01", "until": 58, "args": ["--stills", "6", "--cinebones"], "env": {"CINEDBG": "noomnishadow,nosunshadow"}, "keep": ["_s8_3", "_s8b_3"]}
+]

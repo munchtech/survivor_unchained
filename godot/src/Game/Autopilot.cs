@@ -116,6 +116,13 @@ public sealed class Autopilot
                 if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < 1.0 && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
                 break;
             }
+            case "Barrow" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "caller") is { } caller:
+            {
+                // The Grave-Caller holds the stage until it falls: close on it (it stood off down the road before).
+                orbit += dt * 0.5;
+                tx = caller.X + Math.Cos(orbit) * 3; tz = caller.Z + Math.Sin(orbit) * 3;
+                break;
+            }
             case "Boss" or "Intro":
             {
                 var f = Place("ford");

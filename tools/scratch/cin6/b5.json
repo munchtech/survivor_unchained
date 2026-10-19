@@ -1,0 +1,3 @@
+[
+ {"name": "k5c01", "cine": "c01", "until": 60, "args": ["--stills", "6", "--cinebones"], "keep": ["_s8b_"]}
+]

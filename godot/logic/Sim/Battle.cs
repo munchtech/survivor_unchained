@@ -1618,6 +1618,18 @@ public sealed partial class Battle
         return p;
     }
 
+    /// <summary>Everything lying on the ground brought to her feet, settled, so it is taken
+    /// as she stands there, with its sound: what a cut skipped her walking back for
+    /// (C03 into C04 A leaves the Warden's hoard in the ford). Gear a filter hides stays.</summary>
+    public void Gather(double x, double z)
+    {
+        foreach (var k in Pickups.Items)
+        {
+            if (!k.Alive || k.Look == Verdict.Hidden) continue;
+            k.X = x; k.Z = z; k.Vx = k.Vz = 0; k.Age = Math.Max(k.Age, 1);
+        }
+    }
+
     /// <summary>A zone's loot laid down where it says (a boss's hoard, a strongbox's spill): as a
     /// creature's drop is, with its piece, light and sound.</summary>
     public Pickup? Spill(Loot d, double x, double z)
