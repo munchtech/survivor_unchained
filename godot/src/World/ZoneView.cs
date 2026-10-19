@@ -108,7 +108,14 @@ public partial class ZoneView : Node3D
         // The Low Ford's beacons (the pylons' blue flames): built at an HDR white-blue that AgX blew out to a white
         // octagon (E1 round 3); at a quarter (round 3c; an eighth went matte) its core sits at 230, blue, under the clip, and their lights still pool the ground.
         foreach (var (name, n) in Landmarks.Nodes)
-            if (name.StartsWith("pylon_flame")) DimGlow(n, SurvivorUnchained.Args.Num("beacon-glow", 0.25f));   // (--beacon-glow K: pictures)
+            if (name.StartsWith("pylon_flame"))
+            {
+                DimGlow(n, SurvivorUnchained.Args.Num("beacon-glow", 0.25f));   // (--beacon-glow K: pictures)
+                // A short cool pool from the flame itself on the stones, the plinth's top and the mist round it (judge 4:
+                // the beacon "lights nothing ... reads as a sticker"); it goes out with the flame (a child of it).
+                if (n is Node3D flame && BeaconPool > 0)
+                    flame.AddChild(new OmniLight3D { LightColor = new Color("#c0d4ff"), LightEnergy = BeaconPool, OmniRange = 7, OmniAttenuation = 1.5f, ShadowEnabled = false });
+            }
         foreach (var c in meta.Chimneys)
         {
             var smoke = Campfire.ChimneySmoke();
@@ -246,6 +253,9 @@ public partial class ZoneView : Node3D
     public void Stop(string node) => stopped.Add(node);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
+    /// <summary>--beacon-pool E: the beacon flame's own short light (pictures).</summary>
+    static readonly float BeaconPool = SurvivorUnchained.Args.Num("beacon-pool", 3f);
+
     static void DimGlow(Node n, float k)
     {
         if (n is MeshInstance3D m)

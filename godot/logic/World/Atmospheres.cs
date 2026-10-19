@@ -94,14 +94,15 @@ public static class Atmospheres
     /// shadows' 10% moon leak on brown earth; the sky's light at 2.2 times brings it to two and a half stops under, blue,
     /// with its texture; the moon 0.3 of a stop down kept the road's middle grey under 35. Round 3b (measured): the moon down to 20 degrees, so the
     /// trees' shadows lie longer across the road; the sky 2.2, exposure 1.5, her ember 2.2, the grade's contrast 1.13: night
-    /// p50 15-31, pools 0.52-0.71, road B's p95/p50 2.5.</summary>
+    /// p50 15-31, pools 0.52-0.71, road B's p95/p50 2.5. Round 3c: the river's mist 0.14 and light 0.17 (the ford's
+    /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
         KeyColor = "#a9c4ff", KeyIntensity = 4.9, KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
         HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.2, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.5, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.2, MistColor = "#2c3a50", Ember = 2.2,
-        CrowdRim = 0.2, RiverLight = 0.25, RiverSky = 0.3, RiverBend = 0.5,
+        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.14, MistColor = "#2c3a50", Ember = 2.2,
+        CrowdRim = 0.2, RiverLight = 0.17, RiverSky = 0.3, RiverBend = 0.5,
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.0, 1.0, 1.0],
