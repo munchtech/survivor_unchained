@@ -5,17 +5,18 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// Thin mist lying on a zone's river (look bible 1c, "mist in layers"): three sheets stacked a little over
-/// the water along its course (the water mask), torn by drifting noise (mist_sheet.gdshader, as an arena's
-/// stream has), fading where they meet the banks, so none has an edge of its own. Unlit, so the air's preset
-/// colours them by its key (Tint, from Atmosphere.Set) and sets how thick they lie: play's presets lay them,
-/// the cinematics' presets (Mist 0) leave the river as their shots were judged.
+/// the water along its course (the water mask), each at its own height and pace, lying in drifting banks with
+/// clear water between (river_mist.gdshader), fading where they meet the banks and stones, so none has an edge
+/// of its own. Unlit: the air's preset colours them (Tint, from Atmosphere.Set), the key lighting each bank's
+/// near side, and sets how thick they lie: play's presets lay them, the cinematics' presets (Mist 0) leave the
+/// river as their shots were judged.
 /// </summary>
 public static class MistLayers
 {
     static readonly List<ShaderMaterial> mats = new();
     static readonly List<Node3D> roots = new();
-    static readonly float[] Rise = { 0.25f, 0.65f, 1.2f }, Share = { 1f, 0.7f, 0.45f }, Drift = { 0.02f, 0.028f, 0.016f };
-    static Color tint = new(0.3f, 0.36f, 0.45f);
+    static readonly float[] Rise = { 0.25f, 0.7f, 1.4f }, Share = { 1f, 0.7f, 0.45f }, Drift = { 0.02f, 0.03f, 0.014f }, BankDrift = { 0.22f, 0.3f, 0.4f };
+    static Color tint = new(0.3f, 0.36f, 0.45f), keyLight;
     static float thick;
     static bool shown = true;
 
@@ -54,7 +55,7 @@ public static class MistLayers
                 for (int j = 0; j < 3; j++)
                 {
                     verts.Add(new Vector3(c.X, y0 + Rise[k], c.Z + off[j]));
-                    uv.Add(new Vector2(off[j] + k * 17, along + k * 41));
+                    uv.Add(new Vector2(off[j], along));
                     uv2.Add(new Vector2(mid[j], 0));
                 }
                 if (i == 0) continue;
@@ -69,9 +70,11 @@ public static class MistLayers
             arrays[(int)Mesh.ArrayType.Index] = idx.ToArray();
             var mesh = new ArrayMesh();
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-            var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/mist_sheet.gdshader") };
+            var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/river_mist.gdshader") };
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
             mat.SetShaderParameter("drift", Drift[k]);
+            mat.SetShaderParameter("bank_drift", BankDrift[k]);
+            mat.SetShaderParameter("layer", (float)k);
             mat.SetMeta("share", Share[k]);
             mats.Add(mat);
             root.AddChild(new MeshInstance3D { Name = $"Mist{k}", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
@@ -81,11 +84,11 @@ public static class MistLayers
         return root;
     }
 
-    /// <summary>The air's colour for the mist and how thick it lies (0: none).</summary>
-    public static void Tint(Color mist, float thickness)
+    /// <summary>The air's colour for the mist, how thick it lies (0: none), and the key's light (linear, its energy in).</summary>
+    public static void Tint(Color mist, float thickness, Color key)
     {
-        if (tint == mist && Mathf.IsEqualApprox(thick, thickness)) return;
-        tint = mist; thick = thickness;
+        if (tint == mist && Mathf.IsEqualApprox(thick, thickness) && keyLight == key) return;
+        tint = mist; thick = thickness; keyLight = key;
         Apply();
     }
 
@@ -97,6 +100,7 @@ public static class MistLayers
         foreach (var mt in mats)
         {
             mt.SetShaderParameter("mist", tint);
+            mt.SetShaderParameter("key_light", new Vector3(keyLight.R, keyLight.G, keyLight.B));
             mt.SetShaderParameter("opacity", thick * (float)mt.GetMeta("share"));
         }
     }

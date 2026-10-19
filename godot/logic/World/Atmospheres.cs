@@ -74,8 +74,13 @@ public static class Atmospheres
     // above, which their shots were judged under. The play camera sits south of her (+z) looking
     // north, so a key from the east or west (azimuth near 0 or 180) throws its shadows across the road.
 
-    static readonly GradeSettings PlayNightGrade = new([0, 0, 0], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#2c4e7e", "#ffaa58", 0.1, 0.9, 0.1, 1.08) { Toe = 1 };   // (a stronger tint took the shade to black: no lift under it)
+    // (Round 2, judge: the highlight tint near white, so the fire and her ember carry the warmth and the moon stays
+    // blue, not grey; the shade tint doubled, over a blue-only lift, so the shade is deep blue, not dead black.)
+    // The shade tint is a blue of mid luma (#a6bced, luma 0.5 in linear): the grade adds it as (tint - 0.5), so it
+    // turns the shade blue without darkening it. #2c4e7e at 0.2 also took 0.09 off every dark, crushing the wood's
+    // shade to black (p50 5 on the road).
+    static readonly GradeSettings PlayNightGrade = new([0.004, 0.010, 0.024], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
+        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.08) { Toe = 1 };
 
     /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
     /// west), so it lights the road's corridor through the wood, and what stands on it throws a long
@@ -84,22 +89,25 @@ public static class Atmospheres
     public static readonly AtmospherePreset LowFordNight = Night with
     {
         KeyColor = "#a9c4ff", KeyIntensity = 6.0, KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
-        HemiSky = "#3a5280", HemiGround = "#1e1a14", HemiIntensity = 1.0, EnvIntensity = 0.65,
-        FogColor = "#0e1726", FogDensity = 0.008, Exposure = 1.35, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.16, MistColor = "#2c3a50", Ember = 1.7,
+        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 1.1, EnvIntensity = 0.55,
+        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.4, Rim = "#9fc0ff", RimStrength = 0.75,
+        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.2, MistColor = "#2c3a50", Ember = 1.7,
+        CrowdRim = 0.2, RiverLight = 0.25, RiverSky = 0.3, RiverBend = 0.5,
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.04, 1.0, 0.95],
-        "#3e5a8a", "#ffbe7a", 0.2, 0.9, 0.1, 1.14) { Toe = 0.5 };
+        "#3e5a8a", "#ffbe7a", 0.3, 0.9, 0.1, 1.14) { Toe = 0.5 };
 
-    /// <summary>The Low Ford at dawn, in play: the sun 15 degrees up in the east (where C04 A brings it
-    /// up), raking the road; the shade cool and two stops under it.</summary>
+    /// <summary>The Low Ford at dawn, in play: the sun 18 degrees up in the north-east, cheated 50 degrees from
+    /// C04 A's rising sun toward the road's far end (as the moon was), so the road gets sun and the wood's shadows
+    /// fall beside it; the shade cool (a neutral-cool ground bounce, not brown) and two stops under it; the fog a
+    /// thin cool veil, not a mauve murk. (C04 A's hand-back takes this sun on its cut: GameCinema "atmosphere".)</summary>
     public static readonly AtmospherePreset LowFordDawn = Dawn with
     {
-        KeyColor = "#ffcf98", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = 20, ShadowStrength = 0.95,
-        HemiSky = "#7c96d0", HemiGround = "#30241a", HemiIntensity = 0.9, EnvIntensity = 0.7,
-        FogColor = "#9a8e98", FogDensity = 0.0065, Exposure = 1.05, Rim = "#ffd8b0", RimStrength = 0.25,
-        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.2, MistColor = "#8a8894",
+        KeyColor = "#ffcf98", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = -30, ShadowStrength = 0.95,
+        HemiSky = "#7c96d0", HemiGround = "#2a2a30", HemiIntensity = 0.9, EnvIntensity = 0.7,
+        FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
+        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.32, MistColor = "#7a8aa2", CrowdRim = 0.05,
     };
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
@@ -110,16 +118,27 @@ public static class Atmospheres
     };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96],
-        "#3a5878", "#ffd49a", 0.18, 0.9, 0.1, 1.12) { Toe = 0.5 };
+        "#3a5878", "#ffd49a", 0.25, 0.9, 0.1, 1.12) { Toe = 0.5 };
 
     /// <summary>The Waystation by day: a hard country's low sun, 28 degrees up in the north-east of the
     /// sky's arc, behind the street from the camera, so its shadows fall toward the player.</summary>
     public static readonly AtmospherePreset WaystationDay = Day with
     {
-        KeyColor = "#ffeccc", KeyIntensity = 4.6, KeyElevation = 28, KeyAzimuth = 290, ShadowStrength = 0.95,
+        KeyColor = "#ffe0b0", KeyIntensity = 4.6, KeyElevation = 28, KeyAzimuth = 290, ShadowStrength = 0.95,
         HemiSky = "#8ea6c4", HemiGround = "#3e3022", HemiIntensity = 0.62, EnvIntensity = 0.55,
         Exposure = 0.95, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.002, Mist = 0.05, MistColor = "#a8acb4",
     };
+
+    /// <summary>Play's night going to dawn by k (0 to 1), where no C04 A brings the sun up: the moon sets and the
+    /// sun rises, each from its own place. The key fades out by halfway, turns there unseen (no light, no shadow)
+    /// and fades in as the sun; a blended key wheeled its shadows 280 degrees round her.</summary>
+    public static AtmospherePreset Dawning(double k)
+    {
+        var p = Blend(LowFordNight, LowFordDawn, k);
+        var from = k < 0.5 ? LowFordNight : LowFordDawn;
+        double w = Math.Abs(2 * k - 1);
+        return p with { KeyAzimuth = from.KeyAzimuth, KeyElevation = from.KeyElevation, KeyIntensity = from.KeyIntensity * w * w * (3 - 2 * w) };
+    }
 
     public static AtmospherePreset ByName(string name) => name switch
     {
@@ -144,7 +163,11 @@ public static class Atmospheres
             Mix(a.Grade.ShadowTint, b.Grade.ShadowTint, t), Mix(a.Grade.HighlightTint, b.Grade.HighlightTint, t),
             Lerp(a.Grade.TintStrength, b.Grade.TintStrength, t), Lerp(a.Grade.Saturation, b.Grade.Saturation, t),
             Lerp(a.Grade.Vibrance, b.Grade.Vibrance, t), Lerp(a.Grade.Contrast, b.Grade.Contrast, t)) { Toe = Lerp(a.Grade.Toe, b.Grade.Toe, t) })
-        { Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t) };
+        {
+            Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
+            CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
+            RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
+        };
 
     /* ------------------------------------------------------------ colour -- */
 

@@ -94,6 +94,12 @@ public sealed record AtmospherePreset(
     public string MistColor { get; init; } = "#000000";
     /// <summary>Her carried light's strength against its base (play's night lights her pool more, in a darker world).</summary>
     public double Ember { get; init; } = 1;
+    /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
+    public double CrowdRim { get; init; }
+    /// <summary>A river's light, the sky in it, and how far its ripples bend it (1: as built; the water shader's water_air).</summary>
+    public double RiverLight { get; init; } = 1;
+    public double RiverSky { get; init; } = 1;
+    public double RiverBend { get; init; } = 1;
 }
 
 public sealed class ZoneMeta

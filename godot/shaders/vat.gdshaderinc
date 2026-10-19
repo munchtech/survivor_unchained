@@ -18,6 +18,10 @@ uniform vec3 glow_color = vec3(0.0);
 uniform float rim_amount = 0.45;
 uniform float rim_tint = 0.35;
 uniform float alpha_cut = 0.45;
+// Play's moon rim on the crowd (Atmosphere.Set, E1): the key's colour times its strength (rgb), and which way the
+// key lies (key_dir, world, toward the light). Godot's RIM is lit by the key, so in the wood's shade a mob had none.
+global uniform vec4 crowd_rim;
+global uniform vec4 key_dir;
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
 // (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
@@ -147,6 +151,12 @@ void fragment() {
 	// (At 0.75 across the whole body a pale body lost its paint and read as a ghost.)
 	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.38 + fx.x * (0.1 + rim * rim * 1.1));
 	e += c * COLOR.a;
+	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
+	if (crowd_rim.a > 0.0) {
+		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
+		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
+		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
+	}
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;
 	EMISSION = e;

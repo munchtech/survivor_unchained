@@ -34,6 +34,15 @@ public partial class Atmosphere : Node3D
     public float Mute = 0.16f;
     /// <summary>Her carried light's gain under the air in force (AtmospherePreset.Ember).</summary>
     public static float EmberGain = 1;
+    /// <summary>The camera's own say over the exposure (1: none): the close view by night opens up, as an eye does
+    /// on a face near it, so the wood behind her reads (GameCloseUp, E1).</summary>
+    public float ViewExposure { get; private set; } = 1;
+    public void SetViewExposure(float k)
+    {
+        if (Mathf.IsEqualApprox(k, ViewExposure)) return;
+        ViewExposure = k;
+        Env.TonemapExposure = (float)Current.Exposure * ExposureScale * k;
+    }
     double clock;
 
     const float FogMatchDistance = 60;
@@ -107,6 +116,8 @@ public partial class Atmosphere : Node3D
                 HemiIntensity = T("hemi", p.HemiIntensity), EnvIntensity = T("env", p.EnvIntensity), Exposure = T("exposure", p.Exposure),
                 KeyIntensity = T("key", p.KeyIntensity), KeyElevation = T("elevation", p.KeyElevation), KeyAzimuth = T("azimuth", p.KeyAzimuth),
                 ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
+                FogDensity = T("fog", p.FogDensity), CrowdRim = T("crowdrim", p.CrowdRim), RiverLight = T("river", p.RiverLight),
+                RiverSky = T("riversky", p.RiverSky), RiverBend = T("bend", p.RiverBend),
                 Grade = p.Grade with { TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe) },
             };
         }
@@ -148,11 +159,14 @@ public partial class Atmosphere : Node3D
             // (At 2.5° the pools washed out into a general shading.)
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
-        Env.TonemapExposure = (float)p.Exposure * ExposureScale;
-        SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist);
+        Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure;
+        SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * Key.LightEnergy);
         EmberGain = (float)p.Ember;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
+        RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));
+        RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
+        RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the
         // sky's lower half is the hemisphere's dark ground colour, so in shade her plate reflected
         // nothing and read as rubber (look bible, armor metal; metal round 3).

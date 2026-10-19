@@ -868,6 +868,10 @@ public partial class Game
                     if (c.Str("from") is string fromName)
                     {
                         var from = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
+                        // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
+                        // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
+                        // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
+                        if (c.Str("preset") == "play") @from = @from with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
                         if (over > 0 && !skipping)
                         {
                             double last = -1;

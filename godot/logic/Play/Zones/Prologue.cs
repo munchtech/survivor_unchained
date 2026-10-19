@@ -548,7 +548,7 @@ public sealed class Prologue : ZoneRuntime
                 // The sun clears the trees, and the ember goes out.
                 if (!doused && dawnK > 0.3) { doused = true; Douse(); }
                 envT -= dt;
-                G.SetAtmosphere(Atmospheres.Blend(Atmospheres.LowFordNight, Atmospheres.LowFordDawn, dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
+                G.SetAtmosphere(Atmospheres.Dawning(dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
                 if (envT <= 0) envT = 1.2;
                 if (dawnK >= 1 && stageT > 10) Go(Stage.Exit);
                 break;
