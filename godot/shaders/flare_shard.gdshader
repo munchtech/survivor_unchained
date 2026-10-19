@@ -48,7 +48,9 @@ void fragment() {
 	vec3 body = base * (0.85 + 0.3 * cr) * ftone * mix(0.5, 0.25, day);
 	float grazing = pow(rim, 2.0);
 	// (Cyan to its brightest: a white rim or flash went neutral under the tone curve, white chips over the floor: a2.)
-	vec3 rimc = base * grazing * mix(1.4, 0.7, day);
+	// (Judge 6 (6)/solver B: at 1.4x the base the rims still went neutral at night, pale chips at f100-f133 over
+	// the floor: a deeper cyan, a breath dimmer, so it holds its colour under the knee; still over twice the body.)
+	vec3 rimc = vec3(0.12, 0.48, 0.80) * grazing * mix(1.1, 0.7, day);
 	vec3 flash = base * 0.9 * v_flash * mine * (1.0 - down);
 	// Hot: lit orange at its edges by the fire that threw it (only the edges: a whole face lit read as confetti).
 	vec3 hot = vec3(1.0, 0.32, 0.05) * heat * 1.1 * pow(rim, 2.5);
