@@ -1,0 +1,25 @@
+[
+ {
+  "id": "plate_top_plain",
+  "outfit": null,
+  "slot": "top",
+  "layer": 1,
+  "covers": [
+   "top"
+  ],
+  "meshes": [
+   "plate_top_plain.top.darkleather",
+   "plate_top_plain.top.steel",
+   "plate_top_plain.top.thread"
+  ],
+  "tuck": "armor_tuck/plate_top_plain.bin",
+  "tuck_count": 683,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  },
+  "file": "res://art/armor/plate_top_plain.gltf",
+  "tier": 1
+ }
+]
