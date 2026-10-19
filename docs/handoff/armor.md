@@ -2,6 +2,31 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Armor lead 5 (19 Oct): MR READY at armor-5@975cd32e (steps 5/5b, the socket retune); the hilt carry is PAUSED on armor-5 HEAD
+Worktree `.claude/worktrees/armor-5`, branch `armor-5` (junction: never stash, reset --hard or checkout .). **Merge 975cd32e, not HEAD.** The commits after it hold the unfinished hilt carry in tools/anim/clips/run.py; take this page from HEAD.
+**In the MR (975cd32e):**
+- (5) Oathbrand passes fistfit 13/13, equal to the sword. fistfit.py merges `tools/anim/data/fistfit_pieces.json` (the read hook, offered to animation); `weapon_drop.py fit_row` writes a dropped piece's row from its kind's (FIT_BASE). ArmsDump re-run on anim-39.
+- (5b) Plain mount, measured (`tools/scratch/armor5/plaincheck.py`):
+  - Axe FAILS: fingers 17-27 mm into the 40x58 haft.
+  - Wand FAILS: cast_flick pads 10 mm off and 14 into; the wand runs show an open hand 38-86 mm off.
+  - Blade2H, Blunt and Axe2H: NPC-only. She has no clips of them and no Loadouts template.
+- Sheath sockets (Arms.cs `Sockets`: back, sling, hip_loop, hip_belt, back_diag). hip_blade is unchanged. socket_clearance.json refit. Measured by `tools/scratch/armor5/sockdeep.py` on the warden town clips (the only sheathed clips in the game), all five outfits; before `deep1_before.txt`, after `deep2_after.txt`, body/arm mm:
+  - shield: 2.3/9.2 -> 0/5.4
+  - crossbow: 5-15 -> 0 (none: 1.5/2.3)
+  - axes: 26-74 -> 0.6
+  - wand: body 21-36 -> 0, but its crystal is now 20-27 into her right upper arm in the borrowed sprint (the arcanist doesn't sheathe yet)
+  - 2H back: 16-63 -> 0
+  - mace: 82 -> 58, closed (NPC-only)
+  - The warden's shipped kit moved only 4 mm (the shield), so no judge: it isn't visible at 1:1.
+  - Tests: Sheath and WeaponSocket 42/0 (full suite 977/0/8). Nothing in piece.json or armor_index.json changed.
+**For animation (route):** the axe fist and the wand fist (above). The wand's open hand in run_arcanist_wand. The sword hilt: her left forearm goes 38-40 mm through it in sprint_warden_town f0-3 and f19-21, and about 28 in the run (the one hit the player sees today; no socket clears it, the best was 30).
+**Paused here; next: the hilt carry** (coordinator-approved for armor, 19 Oct): in the warden's town run and sprint, her left hand rides on the sheathed sword. State 3cf2328e (WIP, NOT packed):
+- The pass: `run.hilt_carry` post-pass in run.py (`HILT`, `POST`), plus `sprint_stop.sprint()`. It re-solves only the left arm in the pelvis frame. idle, the stops and her other clips are byte-identical.
+- Measured: sword vs arm 0 mm (reaver 2-4), palm 8-10 mm off, motion.py clean, audit 0.
+- FAILS: the elbow points back, into the shield on her back (29 mm, was 5.4), and the crossbow is 6-19 into her upper arm. Fix found, unverified: the elbow out to her side (pole about (0.85, -0.5, 0) pelvis). The settings are in 3cf2328e's message and `tools/scratch/armor5/hilt/opt_with_shield.log`.
+- Next: those settings into HILT, `hilt/full.py` (CLAV=0), `summ.sh`, hand-tune, build `--no-pack`, sockdeep, `motion --against base_town`, audit, the idle-to-run and run-to-sprint hand distances, then pack her clips only (`build.py run_warden_town sprint_warden_town`; never `--body hero`).
+- Then shoot `tools/scratch/armor5/shots6.txt` (close-up frames; the play camera at 23 m shows her about 25 px tall) with `shoot.sh`, and run ONE max judge with `judge_brief.md`, updated for the hand on the hilt (cap 2 rounds). If the hand can't pass, close the sprint hilt hit as known and route it to animation.
+
 ## MR READY (armor lead 4, 19 Oct): steps 1-2; next: steps 5/5b as their own small MR
 State: armor-1, integration fdebb878 merged in, pushed. dotnet test 974/0/8.
 Done:
