@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7jd8tsgwrewj"
-path.s3tc="res://.godot/imported/arm.jpg-95455d77bc6634ce6621cbe6ea0a08a7.s3tc.ctex"
-path.etc2="res://.godot/imported/arm.jpg-95455d77bc6634ce6621cbe6ea0a08a7.etc2.ctex"
+uid="uid://gush020phr2j"
+path.s3tc="res://.godot/imported/normal.jpg-76d837ac69b693dcebf7032a4d79c7b7.s3tc.ctex"
+path.etc2="res://.godot/imported/normal.jpg-76d837ac69b693dcebf7032a4d79c7b7.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://art/materials/roof_slates_02/arm.jpg"
-dest_files=["res://.godot/imported/arm.jpg-95455d77bc6634ce6621cbe6ea0a08a7.s3tc.ctex", "res://.godot/imported/arm.jpg-95455d77bc6634ce6621cbe6ea0a08a7.etc2.ctex"]
+source_file="res://art/materials/roof_slate/normal.jpg"
+dest_files=["res://.godot/imported/normal.jpg-76d837ac69b693dcebf7032a4d79c7b7.s3tc.ctex", "res://.godot/imported/normal.jpg-76d837ac69b693dcebf7032a4d79c7b7.etc2.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=2
+compress/normal_map=1
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1

@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmtcxsxvyjg4a"
-path.s3tc="res://.godot/imported/albedo.jpg-15b9a3626c01fe1527cfd79242f3ea79.s3tc.ctex"
-path.etc2="res://.godot/imported/albedo.jpg-15b9a3626c01fe1527cfd79242f3ea79.etc2.ctex"
+uid="uid://cpj3giv7u2k60"
+path.s3tc="res://.godot/imported/arm.jpg-c2b59d9f8f143c793779f7da15c886f1.s3tc.ctex"
+path.etc2="res://.godot/imported/arm.jpg-c2b59d9f8f143c793779f7da15c886f1.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://art/materials/roof_slates_02/albedo.jpg"
-dest_files=["res://.godot/imported/albedo.jpg-15b9a3626c01fe1527cfd79242f3ea79.s3tc.ctex", "res://.godot/imported/albedo.jpg-15b9a3626c01fe1527cfd79242f3ea79.etc2.ctex"]
+source_file="res://art/materials/roof_slate/arm.jpg"
+dest_files=["res://.godot/imported/arm.jpg-c2b59d9f8f143c793779f7da15c886f1.s3tc.ctex", "res://.godot/imported/arm.jpg-c2b59d9f8f143c793779f7da15c886f1.etc2.ctex"]
 
 [params]
 

@@ -133,20 +133,22 @@ public static partial class Pieces
     static StandardMaterial3D Slates() => Surface("castle_wall_slates", 1.6f, "#9a9690");
     static StandardMaterial3D? roofSlates;
 
-    /// <summary>A roof of stone slates (Poly Haven roof_slates_02, 3 m a
-    /// tile) on the roof's own UVs (metres), wet enough to catch the sky,
-    /// weathered by its vertex colours.</summary>
+    /// <summary>A roof of stone slates (our own set, made by
+    /// tools/assets/env_roof_slate.py, 3 m a tile) on the roof's own UVs
+    /// (metres), wet enough to catch the sky, weathered by its vertex
+    /// colours. The texture's green is the roughness itself (0.33-0.6 per
+    /// slate, mean 0.40; the old photo's 0.85 x 0.45 gave 0.38).</summary>
     static StandardMaterial3D RoofSlates()
     {
         if (roofSlates != null) return roofSlates;
-        const string dir = "res://art/materials/roof_slates_02";
+        const string dir = "res://art/materials/roof_slate";
         var arm = GD.Load<Texture2D>($"{dir}/arm.jpg");
         return roofSlates = new StandardMaterial3D
         {
             AlbedoTexture = GD.Load<Texture2D>($"{dir}/albedo.jpg"), AlbedoColor = Colors.White,
             VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true,
             NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{dir}/normal.jpg"), NormalScale = 1.6f,
-            Roughness = 0.45f, RoughnessTexture = arm, RoughnessTextureChannel = BaseMaterial3D.TextureChannel.Green,
+            Roughness = 1f, RoughnessTexture = arm, RoughnessTextureChannel = BaseMaterial3D.TextureChannel.Green,
             AOEnabled = true, AOTexture = arm, AOTextureChannel = BaseMaterial3D.TextureChannel.Red,
             Uv1Scale = new Vector3(1 / 3f, 1 / 3f, 1),
         };
