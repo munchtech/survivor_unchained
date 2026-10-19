@@ -36,6 +36,8 @@ uniform float tilt = 0.0;
 // Where the core begins in heat: lower for a flame that must read as a bright point from far off.
 uniform float core_lo = 0.86;
 uniform float pull = 0.0;
+// A cold flame's core pulled from blue-white toward blue (0..1), so the tonemapper doesn't clip it to pure white.
+uniform float core_blue = 0.0;
 
 void vertex() {
 	vec3 to_cam = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
@@ -103,7 +105,8 @@ void fragment() {
 	// Heat-weighted: the edges a dim red, the middle bright, so the tongue keeps its inner shape.
 	float body = smoothstep(0.0, 0.25, h) * pow(h, 1.6);
 	float core = smoothstep(core_lo, 1.0, h);
-	vec3 col = ramp(h) * body * body_k + ramp(1.0) * core * core_k;
+	vec3 core_col = mix(ramp(1.0), vec3(0.2, 0.45, 1.0), core_blue * cold);
+	vec3 col = ramp(h) * body * body_k + core_col * core * core_k;
 	float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
 	behind.xyz /= behind.w;

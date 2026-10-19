@@ -271,7 +271,9 @@ public partial class ZoneView : Node3D
     static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.9f);
     static readonly bool FordPylonLit = !SurvivorUnchained.Args.Has("ford-pylon-dark");
     /// <summary>--ford-flame-k K: the ford flames' brightness over the road lamps' (AgX whitens a bright blue).</summary>
-    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.5f);
+    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.12f);
+    /// <summary>--ford-core-blue B: the ford flames' core pulled toward blue (0 = blue-white, which AgX clips to pure white).</summary>
+    static readonly float FordCoreBlue = SurvivorUnchained.Args.Num("ford-core-blue", 1f);
     /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>
     static readonly float LampScale = SurvivorUnchained.Args.Num("lamp-scale", 1.3f);
     static readonly float FordFlame = SurvivorUnchained.Args.Num("ford-flame", 2f);
@@ -377,6 +379,7 @@ public partial class ZoneView : Node3D
                 fm.SetShaderParameter("tilt", LampTilt);
                 fm.SetShaderParameter("core_lo", LampCore);
                 fm.SetShaderParameter("pull", LampPull);
+                if (cold) fm.SetShaderParameter("core_blue", FordCoreBlue);
                 fm.RenderPriority = 1;
                 card.Scale = card.Scale with { X = card.Scale.X * LampWide };
             }
