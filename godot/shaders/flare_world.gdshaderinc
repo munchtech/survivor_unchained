@@ -194,7 +194,7 @@ vec4 flare_marks_at(vec2 w) {
 		float age = m.w;
 		float a = atan(dq.y, dq.x) + mx.w * 6.2832;
 		float fl_down = 0.45 + 0.55 * smoothstep(-0.6, 0.8, fl_al / max(length(d), 1e-3));
-		float fl_arcs = smoothstep(-0.25, 0.35, sin(a * floor(2.0 + 2.99 * mx.w) + mx.w * 17.0));
+		float fl_arcs = smoothstep(-0.05, 0.45, sin(a * floor(2.0 + 2.99 * mx.w) + mx.w * 17.0));
 		float spl = texture(flare_noise, vec2(a * 0.47746 + float(i) * 0.137, 0.21 + float(i) * 0.05)).g;
 		float n = texture(flare_noise, w * 0.6 + float(i) * 0.31).b;
 		// The melt opens fast, then wider as the heat spreads.
@@ -261,7 +261,7 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	float band = smoothstep(-0.05, 0.02, ahead) * (1.0 - smoothstep(bw * 0.55, bw, ahead + (tear - 0.5) * 0.25 + (nb - 0.5) * 0.2));
 	float cells = 0.55 + 0.45 * smoothstep(0.25, 0.75, texture(flare_noise, w * 2.3 + vec2(TIME * 0.9, -TIME * 3.4)).r);
 	float body = band * cells * (1.0 - 0.45 * smoothstep(bw * 0.3, bw, ahead));
-	float core = exp(-pow((ahead - bw * 0.3) / (bw * 0.17), 2.0)) * band * smoothstep(0.45, 0.85, cells + (tear - 0.5) * 0.3);
+	float core = exp(-pow((ahead - bw * 0.28) / (bw * 0.11), 2.0)) * band * smoothstep(0.45, 0.85, cells + (tear - 0.5) * 0.3);
 	// Short licks out ahead of it, 15-40 cm, flickering every few frames.
 	float tg = texture(flare_noise, vec2(u * 23.0, 0.83)).b;
 	float fl = texture(flare_noise, vec2(u * 23.0 + 0.5, 0.17 + floor(TIME * 16.0) * 0.0731)).b;
@@ -287,7 +287,7 @@ float flare_boom_behind(vec2 w) {
 // The BOOM's line on a surface (its white-yellow core under the knee, orange to red behind it).
 vec3 flare_boom_light(vec4 bo) {
 	// (Judge 4 fix 7: amber at its edge, hue ~28, orange through it, a yellow-white core.)
-	return mix(vec3(0.62, 0.3, 0.05), vec3(1.0, 0.48, 0.09), smoothstep(0.2, 0.8, bo.y)) * bo.y * 1.1 + vec3(1.0, 0.78, 0.42) * bo.x * 0.7;
+	return mix(vec3(0.62, 0.34, 0.06), vec3(1.0, 0.5, 0.1), smoothstep(0.2, 0.8, bo.y)) * bo.y * 0.62 + vec3(1.0, 0.74, 0.38) * bo.x * 0.42;
 }
 
 // The last word's ground flash (judge 2, s4): its first frames, a torn disc about 3 m across round the crater, a
@@ -342,6 +342,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// or the plate's fine haze of lines lit as a field, read as grey snow over the screen). Only the
 		// ferns' spines are bright: thin crystal edges catching the light.
 		float spine = flare_spine(w);
+		// (Judge 4 fix 6: at the receding edge the spines lit read as a crust of white static: the ice goes clear
+		// and dark there before it melts.)
+		spine *= mix(1.0, smoothstep(0.8, 1.9, flare_melt_edge(w, arr, cr.x)), step(0.01, flare_frost.z));
 		float gl = dot(alb, FL_LUM);
 		vec3 under = mix(vec3(gl), alb, 0.45) * vec3(0.46, 0.66, 1.0) * 0.85;
 		vec3 glass = mix(under, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.013, 0.03), black ? 0.8 : 0.3);
@@ -404,7 +407,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		float er = length(w - eci - vec2(en, en2));
 		float erad = 0.012 * (0.5 + 1.5 * en3 * en3);
 		float epx = max(fwidth(w.x), 0.002);
-		float fl_emb = step(0.55, en3 + en * 0.2) * (1.0 - smoothstep(erad, erad + epx * 1.2, er)) * (0.35 + 0.65 * en2 * en2) * smoothstep(0.45, 0.75, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
+		float fl_emb = step(0.85, en3 + en * 0.2) * (1.0 - smoothstep(erad, erad + epx * 1.2, er)) * (0.35 + 0.65 * en2 * en2) * smoothstep(0.45, 0.75, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
 		float eend = en3 < 0.33 ? 1.0 + 3.0 * en3 : 2.5 + 2.5 * en3;
 		// (Judge 4 fix 5: sparse, twinkling: each on its own few-frame clock.)
 		float breath = 0.3 + 0.7 * step(0.45, fract(sin(en * 77.3 + floor(TIME * (7.0 + 6.0 * en2) + en2 * 9.0)) * 43758.5453));
@@ -462,13 +465,13 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 			float fl_halo = exp(-max(fl_cr.x - fl_hw, 0.0) / (fl_px * (1.2 + 1.0 * fract(fl_cr.y * 7.3)))) * fl_thick * (1.0 - fl_sl);
 			// (f6d: lit in loose bits it read as scattered straw. Patches a few metres across where the crust
 			// glows, joined, cooling to dark at their edges.)
-			float fl_on = smoothstep(0.55, 0.7, texture(flare_noise, w * 0.11 + 0.3).g);
+			float fl_on = smoothstep(0.6, 0.74, texture(flare_noise, w * 0.11 + 0.3).g);
 			// Each goes dark at its own time, +1 to +3.5 s, the thinnest first.
 			float fl_T = 1.0 + 2.5 * clamp(fl_wc * 0.75 + fract(fl_cr.y * 13.7) * 0.25, 0.0, 1.0);
 			float fl_ht = 1.0 - smoothstep(fl_T - 1.0, fl_T, bmk.w);
-			vec3 fl_hot = mix(vec3(0.35, 0.025, 0.005), mix(vec3(1.0, 0.27, 0.035), vec3(1.0, 0.55, 0.16), fl_thick), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
+			vec3 fl_hot = mix(vec3(0.35, 0.025, 0.005), mix(vec3(1.0, 0.27, 0.035), vec3(1.0, 0.46, 0.1), fl_thick), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
 			vec3 fl_hal = vec3(0.6, 0.07, 0.012) * smoothstep(0.0, 0.4, fl_ht);
-			web += (fl_hot * fl_sl * mix(0.8, 1.3, fl_thick) + fl_hal * fl_halo * 0.45) * fl_on * bo.z * smoothstep(0.0, 0.1, flare_web.x) * mix(0.45, 1.0, flare_hue.a);
+			web += (fl_hot * fl_sl * mix(0.45, 0.85, fl_thick) + fl_hal * fl_halo * 0.35) * fl_on * bo.z * smoothstep(0.0, 0.1, flare_web.x) * mix(0.45, 1.0, flare_hue.a);
 		}
 	}
 	emi += web;

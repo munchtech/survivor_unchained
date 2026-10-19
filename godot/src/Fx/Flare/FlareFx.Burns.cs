@@ -313,16 +313,16 @@ public partial class FlareFx
             if (rr < 7f)
             {
                 float k = 1 - Mathf.SmoothStep(4.5f, 7f, rr);
-                int bn = (int)(Mathf.Tau * Mathf.Max(rr, 1f) / 0.7f);
+                int bn = (int)(Mathf.Tau * Mathf.Max(rr, 1f) / 0.5f);
                 for (int i = 0; i < bn; i++)
                 {
-                    if (R() > dt / 0.1f * k) continue;
+                    if (R() > dt / 0.12f * k) continue;
                     float a = (i + R()) * Mathf.Tau / bn;
                     var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                     var p = boomAt + way * (rr * (0.7f + R() * 0.3f));
                     p.Y = (float)HeightAt(p.X, p.Z) + 0.25f + R() * 0.35f;
-                    glow.Spawn(FlareBits.Kind.Fire, p, way * speed * (0.85f + R() * 0.2f) + Vector3.Up * (0.3f + R() * 0.6f), 0.14f + R() * 0.08f, 0.45f + R() * 0.25f,
-                        new Color(1.1f, 0.52f, 0.13f), new Color(0.7f, 0.26f, 0.04f), sizeEnd: 0.8f + R() * 0.3f, drag: 1.5f, lift: 0.5f);
+                    glow.Spawn(FlareBits.Kind.Fire, p, way * speed * (0.85f + R() * 0.2f) + Vector3.Up * (0.3f + R() * 0.6f), 0.16f + R() * 0.08f, 0.9f + R() * 0.4f,
+                        new Color(0.85f, 0.4f, 0.1f), new Color(0.55f, 0.2f, 0.03f), sizeEnd: 1.5f + R() * 0.4f, drag: 1.5f, lift: 0.5f);
                 }
             }
         }
@@ -383,10 +383,10 @@ public partial class FlareFx
             {
                 Kind = FlareBits.Kind.Puff, At = p, V = new Vector3((R() - 0.5f) * 0.3f, 0.2f + R() * 0.25f, (R() - 0.5f) * 0.3f),
                 Life = 2.2f + R() * 1.0f, Size = 0.4f + R() * 0.2f, SizeEnd = 1.4f + R() * 0.6f,
-                Color = Night ? (amber ? new Color(0.62f, 0.36f, 0.16f, 0.16f) : new Color(0.36f, 0.38f, 0.42f, 0.12f)) : new Color(0.82f, 0.8f, 0.76f, 0.07f),
-                ColorEnd = Night ? new Color(0.34f, 0.36f, 0.4f, 0.0f) : new Color(0.8f, 0.79f, 0.76f, 0.0f),
+                Color = Night ? (amber ? new Color(0.8f, 0.45f, 0.18f, 0.22f) : new Color(0.5f, 0.52f, 0.56f, 0.18f)) : new Color(0.84f, 0.82f, 0.78f, 0.1f),
+                ColorEnd = Night ? new Color(0.45f, 0.47f, 0.52f, 0.02f) : new Color(0.8f, 0.79f, 0.76f, 0.02f),
                 Drag = 1.2f, Lift = 0.1f, Swirl = 0.6f, Seed = R(), Wind = SteamWind * 0.25f,
-                Glow = Night ? (amber ? 0.55f : 0.18f) : 0,
+                Glow = Night ? (amber ? 0.9f : 0.35f) : 0,
             });
         }
     }
@@ -446,7 +446,7 @@ public partial class FlareFx
                 var v = new Vector3(Mathf.Cos(a) * (3 + R() * 2), 2.2f + R() * 1.5f, Mathf.Sin(a) * (3 + R() * 2));
                 glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.15f, v, 0.2f + R() * 0.1f, 0.22f + R() * 0.12f, new Color(1.15f, 0.5f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 5);
             }
-            shards.Burst(p + Vector3.Up * 0.1f, 9, 7, 0.22f, new Color(0, 0, 0, 0), 1);
+            shards.Burst(p + Vector3.Up * 0.1f, 6, 7, 0.22f, new Color(0, 0, 0, 0), 1);
             // Steam: thin wisps, not a few cotton balls. (f6c: ten pale 2 m puffs an ember lay over the field as
             // moonlit cotton; four, half the size, warm and dim at night, warm-white by day.)
             for (int i = 0; i < 4; i++)
@@ -487,7 +487,7 @@ public partial class FlareFx
         BoomStart(p);
         // The flash's hot point, low at the root (the ground's flash and the pillar carry the size).
         glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.4f, Vector3.Zero, 0.06f, 1.3f, new Color(1.0f, 0.62f, 0.26f), new Color(0.5f, 0.12f, 0.02f));
-        shards.Burst(p + Vector3.Up * 0.2f, 34, 13, 0.24f, new Color(0, 0, 0, 0), 1);
+        shards.Burst(p + Vector3.Up * 0.2f, 18, 13, 0.24f, new Color(0, 0, 0, 0), 1);
         // Sparks: up the pillar, and a spray thrown out low along the jets.
         for (int i = 0; i < 24; i++)
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * (0.3f + R() * 2), new Vector3((R() - 0.5f) * 5, 10 + R() * 14, (R() - 0.5f) * 5), 0.6f + R() * 0.5f, 0.05f, new Color(1.4f, 0.7f, 0.22f), new Color(0.6f, 0.12f, 0.02f), gravity: 9, drag: 0.8f);
@@ -570,8 +570,8 @@ public partial class FlareFx
 
     /// <summary>A statue breaks: its ice flies out away from what broke it (hot from the fire), a small scorch where
     /// it stood, sparks lift, a breath of frost dust. Never a body that just goes.</summary>
-    /// <summary>2-4 plates of ice a statue (judge 3 had 3-6; judge 4 adds 1-2 chunks), a few more for the big.</summary>
-    int Plates(float scale) => (int)((2 + R() * 2.99f) * Mathf.Sqrt(Mathf.Max(scale, 1)));
+    /// <summary>1-2 plates of ice a statue (judge 3 had 3-6; judge 4: 1-2 chunks besides), a few more for the big.</summary>
+    int Plates(float scale) => (int)((1 + R() * 1.99f) * Mathf.Sqrt(Mathf.Max(scale, 1)));
 
     /// <summary>1-2 chunks of 40-60 cm a statue (judge 4 fix 4).</summary>
     void Chunks(Vector3 w, float scale, float speed, float heat, Vector3 away, bool thrown) =>
