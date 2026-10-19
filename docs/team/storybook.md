@@ -4,7 +4,7 @@
 
 ## Now (19 October)
 - (19 Oct, late) Style frames r2 in progress: one hand locked by words and a shared pass (unify.py), our block-ins steer the layout (blockin.py); content rounds r10-r13 done, the shared repaint, the shoot and judge r2 next (handoff top).
-- (1) Player BUILT (d0b6f97a, 367b8554; 993 tests); checked (1.5-1.65 ms a frame at 1080p; capture in sync; five fixes in the handoff). (2) Look: rounds 1-9 explored; hand chosen (an oil sketch over brush ink); 4 style frames (P1, P4, P7, P9) shot through the player; style judge r1 FAILED 0/4 (fixes in the handoff); r2 next, then the owner's eye. (3) Temp sound bed DONE (d4e41e9e); plates not started (plan: docs/storybook/sb00_plates.md). (4) Cut judge, MR: not started.
+- (1) Player BUILT (d0b6f97a, 367b8554); its value bug fixed (1e04e8f2: image layers were squared, darks crushed; tests 1009/0/8). (2) Look: STOPPED at the judge cap for the owner's call: style judge r1, r2, r3 all 0/4 (r2 one shared repaint: color unified, surfaces not; r3 the master in context: closer, still not one hand, and the hand is the generator's stock illustration look; notes don't stick). Judge's routes: a painter over our layouts, or a public-domain style LoRA (handoff top). (3) Temp sound bed DONE (d4e41e9e); plates not started. (4) Cut judge, MR: not started.
 
 ## Decisions
 - Our own pictures only: Z-Image-Turbo (Apache-2.0) on the local ComfyUI, each logged with prompt, seed and weight hashes. Never Krea.
