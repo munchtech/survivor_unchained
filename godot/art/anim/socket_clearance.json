@@ -1,39 +1,39 @@
 {
  "warden": {
   "hip_blade": 0.0155,
-  "hip_loop": 0.0254,
-  "hip_belt": 0.0206,
-  "sling": 0.0225,
-  "belt_back": 0.0252,
+  "hip_loop": 0.005,
+  "hip_belt": 0.0186,
+  "sling": 0.0207,
+  "belt_back": 0.0249,
   "back": 0.005,
-  "back_diag": 0.0191
+  "back_diag": 0.0192
  },
  "arcanist": {
-  "hip_blade": 0.0117,
-  "hip_loop": 0.0154,
-  "hip_belt": 0.012,
-  "sling": 0.0119,
-  "belt_back": 0.0113,
+  "hip_blade": 0.016,
+  "hip_loop": 0.005,
+  "hip_belt": 0.0144,
+  "sling": 0.0108,
+  "belt_back": 0.0106,
   "back": 0.005,
-  "back_diag": 0.0115
+  "back_diag": 0.0119
  },
  "reaver": {
   "hip_blade": 0.0291,
-  "hip_loop": 0.0373,
-  "hip_belt": 0.0188,
-  "sling": 0.0219,
+  "hip_loop": 0.005,
+  "hip_belt": 0.0173,
+  "sling": 0.0185,
   "belt_back": 0.0187,
   "back": 0.005,
-  "back_diag": 0.012
+  "back_diag": 0.0097
  },
  "ranger": {
-  "hip_blade": 0.0154,
-  "hip_loop": 0.0265,
-  "hip_belt": 0.0119,
-  "sling": 0.0116,
+  "hip_blade": 0.015,
+  "hip_loop": 0.005,
+  "hip_belt": 0.0122,
+  "sling": 0.0115,
   "belt_back": 0.0132,
   "back": 0.005,
-  "back_diag": 0.0124
+  "back_diag": 0.0129
  },
  "none": {
   "hip_blade": 0.005,
