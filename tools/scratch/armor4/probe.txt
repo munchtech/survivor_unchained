@@ -1,0 +1,6 @@
+p_sword_heavy_0.35_f150|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 6 --wear plate_top_gilded --facing 150 --hold sword_heavy@0.35
+p_sword_heavy_0_5_f150|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 6 --wear plate_top_gilded --facing 150 --hold sword_heavy@0.5
+p_run_f150|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 6 --wear plate_top_gilded --facing 150 --hold run_warden@0.2
+p_sword_heavy_0.35_f210|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 6 --wear plate_top_gilded --facing 210 --hold sword_heavy@0.35
+p_sword_heavy_0_5_f210|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 6 --wear plate_top_gilded --facing 210 --hold sword_heavy@0.5
+p_run_f210|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 6 --wear plate_top_gilded --facing 210 --hold run_warden@0.2
