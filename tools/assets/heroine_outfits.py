@@ -4213,6 +4213,16 @@ BONING_CLIP = float(os.environ.get("BONING_CLIP", "0.008"))
 # across that crease and hooked; ribbon(taut=). TAUT_ITERS: the passes of its pull. 0 = off.)
 TAUT_CORD = int(os.environ.get("TAUT_CORD", "1"))
 TAUT_ITERS = int(os.environ.get("TAUT_ITERS", "40"))
+# (touch-up 3, 18 Oct, the C01 s10 firelight close-up: the cord showed at the back of her neck as a dark bracket and
+# went missing down the side of her neck. Two causes, measured on the built rig with her head turned 40-60 degrees:
+# the band of skin at her nape from 1 to 4 cm above neck_01 folds over itself in a turn (the skin's own weights; a
+# point 3.5 mm off it, weighted exactly as it is, still goes 2-4 mm under), and the cord's back ran in that band
+# with a 2 cm wobble (laid from inside, rising and dipping) and a V where its two ends met. So the cord is a closed
+# loop (smoothed across its join) and its back is free to slide along her: eased straight, without shrinking up
+# her neck (Taubin), no higher than NAPE_CORD below neck_01 at the back, taut over hollows as before. Its front,
+# with the fangs, does not move. NAPE_CORD: metres below neck_01's head; < 0 = off.)
+NAPE_CORD = float(os.environ.get("NAPE_CORD", "0.01"))
+NAPE_ITERS = int(os.environ.get("NAPE_ITERS", "150"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
@@ -4604,7 +4614,7 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
-           hides=False, follow=False, flare=None, onto=None, taper=None, taut=0):
+           hides=False, follow=False, flare=None, onto=None, taper=None, taut=0, closed=False, nape=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
@@ -4622,7 +4632,20 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     that piece's outside as seen from ahead, `lift` off it, moving with it
     (a boning channel on a suit). `taper`, a length: over that much of its
     end it eases down into the piece it lies on and narrows, so it ends
-    flush, not in a square tab (a boning channel ending on a panel)."""
+    flush, not in a square tab (a boning channel ending on a panel).
+    `closed`: its first and last control points are one, and it is eased
+    across that join as along the rest (a cord round her neck). `nape`
+    (height, y): with `taut`, its points behind y slide along her, eased
+    straight and no higher than that height (NAPE_CORD)."""
+    def sm3(a):
+        # (one [1 2 1]/4 pass along it; round the join when closed)
+        a = a.copy()
+        if closed:
+            r = a[:-1]
+            r = (np.roll(r, 1, 0) + 2 * r + np.roll(r, -1, 0)) / 4
+            return np.concatenate([r, r[:1]])
+        a[1:-1] = (a[:-2] + 2 * a[1:-1] + a[2:]) / 4
+        return a
     if onto is not None:
         s_pos, s_tris, s_wt, s_thick = SHEET[onto]
         s_bvh = BVHTree.FromPolygons([tuple(p) for p in s_pos], s_tris.tolist())
@@ -4655,7 +4678,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     # (not snapped, it is taut, as given: it bridges a hollow rather than
     # sinking into it)
     for _ in range(3):
-        c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
+        c = sm3(c)
         if snap:
             c = lay(c)
     if taut and snap and onto is None:
@@ -4665,8 +4688,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         # neighbours' pull would carry it, never moved along her (so the fangs stay on it) and never pushed in.
         # `taut` is the most it may stand off her, in metres)
         for _ in range(TAUT_ITERS):
-            sm = c.copy()
-            sm[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
+            sm = sm3(c)
             hit = [SKIN_BVH.find_nearest(Vector(p)) for p in c]
             q = np.array([h[0][:] for h in hit])
             n = np.array([h[1][:] for h in hit])
@@ -4674,6 +4696,30 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
             c = c + n * up[:, None]
             h_ = ((c - q) * n).sum(1)
             c = c - n * (np.maximum(h_, 0.0) - np.clip(h_, 0.0, taut))[:, None] - n * np.minimum(h_, 0.0)[:, None]
+        if nape is not None and closed:
+            # (NAPE_CORD, see the knob: the back slides, Taubin-eased (a pass in, a pass out: wobbles go, the loop
+            # does not shrink up her neck), held under the height, then back onto her within `taut`)
+            zcap, y0 = nape
+            r = c[:-1].copy()
+            w_ = ramp(r[:, 1], y0, y0 + 0.03)[:, None]
+            for _ in range(NAPE_ITERS):
+                for f_ in (0.5, -0.53):
+                    r = r + f_ * w_ * ((np.roll(r, 1, 0) + np.roll(r, -1, 0)) / 2 - r)
+                r[:, 2] -= w_[:, 0] * np.maximum(r[:, 2] - zcap, 0.0)
+                hit = [SKIN_BVH.find_nearest(Vector(p)) for p in r]
+                q = np.array([h[0][:] for h in hit])
+                n = np.array([h[1][:] for h in hit])
+                h_ = ((r - q) * n).sum(1)
+                r = r - n * (h_ - np.clip(h_, 0.0, taut))[:, None]
+            c = np.concatenate([r, r[:1]])
+            tg_ = np.diff(np.concatenate([r, r[:2]]), axis=0)
+            tg_ /= np.linalg.norm(tg_, axis=1)[:, None] + 1e-12
+            ang = np.degrees(np.arccos(np.clip((tg_[1:] * tg_[:-1]).sum(1), -1, 1)))
+            ln_ = np.linalg.norm(np.diff(np.concatenate([r, r[:2]]), axis=0)[1:], axis=1)
+            bk_ = np.roll(w_[:, 0], -1) > 0.5
+            print("NAPE %s: back at %.1f..%.1f mm below the cap, its sharpest bend %.0f deg/cm (front %.0f), its steps %.1f..%.1f mm"
+                  % (name, (zcap - np.roll(r[:, 2], -1)[bk_].max()) * 1000, (zcap - np.roll(r[:, 2], -1)[bk_].min()) * 1000,
+                     (ang / (ln_ * 100))[bk_].max(), (ang / (ln_ * 100))[~bk_].max(), ln_.min() * 1000, ln_.max() * 1000))
         hit = [SKIN_BVH.find_nearest(Vector(p)) for p in c]
         h_ = (((c - np.array([h[0][:] for h in hit])) * np.array([h[1][:] for h in hit])).sum(1))
         print("TAUT %s: stands off her up to %.1f mm (mean %.1f) over %d points" % (name, h_.max() * 1000, h_.mean() * 1000, len(c)))
@@ -4695,9 +4741,11 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     else:
         nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
     for _ in range(4):
-        nrm[1:-1] = (nrm[:-2] + 2 * nrm[1:-1] + nrm[2:]) / 4
+        nrm = sm3(nrm)
     nrm /= np.linalg.norm(nrm, axis=1)[:, None]
     tg = np.gradient(c, axis=0)
+    if closed:
+        tg[0] = tg[-1] = c[1] - c[-2]
     tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
     bn = np.cross(nrm, tg)
     bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
@@ -4733,7 +4781,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     if not follow:
         wt[:] = wt.mean(1, keepdims=True)
     for _ in range(6):
-        wt[1:-1] = (wt[:-2] + 2 * wt[1:-1] + wt[2:]) / 4
+        wt = sm3(wt)
     edge = (wrow[:, None] / 2 - np.abs(off[None, :] * wrow[:, None])).ravel()
     at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
@@ -8379,6 +8427,13 @@ def reaver():
             front_point(0.035, nz + 0.06), front_point(0.0, nz + 0.035), front_point(-0.035, nz + 0.06),
             np.array([-0.07, -0.04, neck_z - 0.045]), np.array([-0.055, 0.03, neck_z]), np.array([0.0, 0.07, neck_z + 0.02])]
     path = on_surface(cord[2:7], step=0.003)
+    if TAUT_CORD and NAPE_CORD >= 0:
+        # (NAPE_CORD: its back laid under the cap from the start, so the cap only holds it, never flattens it)
+        cord_t = [q.copy() for q in cord]
+        for k_, dz_ in ((0, 0.004), (8, 0.004), (1, 0.012), (7, 0.012)):
+            cord_t[k_][2] = neck_z - NAPE_CORD - dz_
+    else:
+        cord_t = cord
     for _ in range(3):
         path[1:-1] = (path[:-2] + 2 * path[1:-1] + path[2:]) / 4
     low = path[np.argsort(path[:, 2])[:len(path) // 3]]
@@ -8403,8 +8458,9 @@ def reaver():
         # trophies of the Verge's wolves.
         # (TAUT_CORD: laid from inside the base of her neck, so no point jumps from her collarbone to her neck
         # as the skin nearest it did, and taut over the hollow between them)
-        *(ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003, taut=0.008,
-                 centre=np.array([0.0, 0.005, neck_z - 0.05])) if TAUT_CORD else
+        *(ribbon("reaver.cord", cord_t, 0.004, "blackleather", lift=0.0025, thick=0.003, taut=0.008,
+                 centre=np.array([0.0, 0.005, neck_z - 0.05]), closed=NAPE_CORD >= 0,
+                 nape=(neck_z - NAPE_CORD, -0.02) if NAPE_CORD >= 0 else None) if TAUT_CORD else
           ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003)),
         *fangs("reaver.fangs", fang_at, fang_out, fang_down, "bone"),
         # Beneath it a G-string hung from the belt itself: a narrow front
