@@ -1680,7 +1680,7 @@ public partial class Game : Node, IZoneHost
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
         // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, softshadow, ssao, msaa, interp,
-        // flora, props, landmarks, ground, water, fx, volfog, fog, glow, fsr;
+        // flora, props, landmarks, ground, water, fx, volfog, mist (the river's sheets), fog, glow, fsr;
         // or quality:Q, scale:S, aa:A (that quality, resolution or smoothing while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1748,6 +1748,7 @@ public partial class Game : Node, IZoneHost
                 if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;
                 if (flipped.Contains("msaa")) GetViewport().Msaa3D = on ? t.Msaa : Viewport.Msaa.Disabled;
                 if (flipped.Contains("volfog")) air.Env.VolumetricFogEnabled = on && t.VolumetricFog;
+                if (flipped.Contains("mist")) MistLayers.Shown = on;
                 if (flipped.Contains("fog")) air.Env.FogEnabled = on;
                 if (flipped.Contains("glow")) air.Env.GlowEnabled = on;
                 // fsr: FSR 2 (play's smoothing, at native) swapped for a plain bilinear draw while out:

@@ -17,6 +17,10 @@ public static class MistLayers
     static readonly float[] Rise = { 0.25f, 0.65f, 1.2f }, Share = { 1f, 0.7f, 0.45f }, Drift = { 0.02f, 0.028f, 0.016f };
     static Color tint = new(0.3f, 0.36f, 0.45f);
     static float thick;
+    static bool shown = true;
+
+    /// <summary>False: the sheets hidden whatever the air (the perf flip "mist").</summary>
+    public static bool Shown { get => shown; set { if (shown == value) return; shown = value; Apply(); } }
 
     /// <summary>The sheets for a zone with a river (a water mask and its "WATER_Y"), or null.</summary>
     public static Node3D? Build(ZoneData z)
@@ -89,7 +93,7 @@ public static class MistLayers
     {
         mats.RemoveAll(mt => !GodotObject.IsInstanceValid(mt));
         roots.RemoveAll(r => !GodotObject.IsInstanceValid(r));
-        foreach (var r in roots) r.Visible = thick > 0.001f;
+        foreach (var r in roots) r.Visible = shown && thick > 0.001f;
         foreach (var mt in mats)
         {
             mt.SetShaderParameter("mist", tint);

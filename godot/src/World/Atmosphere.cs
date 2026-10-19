@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.World;
 
@@ -37,6 +38,8 @@ public partial class Atmosphere : Node3D
 
     const float FogMatchDistance = 60;
     static readonly bool OldAir = SurvivorUnchained.Args.Has("air-old");
+    static readonly Dictionary<string, double>? Tune = SurvivorUnchained.Args.Get("air-tune") is string tu
+        ? tu.Split(',').Select(kv => kv.Split('=')).ToDictionary(kv => kv[0], kv => double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture)) : null;
 
     public Atmosphere()
     {
@@ -93,6 +96,20 @@ public partial class Atmosphere : Node3D
         // --air-old: play's presets (E1) back to the ones before them, for before-and-after pictures.
         if (OldAir) p = ReferenceEquals(p, Atmospheres.LowFordNight) ? Atmospheres.Night : ReferenceEquals(p, Atmospheres.LowFordDawn) ? Atmospheres.Dawn
             : ReferenceEquals(p, Atmospheres.WaystationDawn) ? Atmospheres.Dawn : ReferenceEquals(p, Atmospheres.WaystationDay) ? Atmospheres.Day : p;
+        // --air-tune "hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
+        // play's presets (E1) nudged, for a sweep of pictures in one build.
+        if (Tune != null && (ReferenceEquals(p, Atmospheres.LowFordNight) || ReferenceEquals(p, Atmospheres.LowFordDawn)
+            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay)))
+        {
+            double T(string k, double v) => Tune.TryGetValue(k, out var x) ? x : v;
+            p = p with
+            {
+                HemiIntensity = T("hemi", p.HemiIntensity), EnvIntensity = T("env", p.EnvIntensity), Exposure = T("exposure", p.Exposure),
+                KeyIntensity = T("key", p.KeyIntensity), KeyElevation = T("elevation", p.KeyElevation), KeyAzimuth = T("azimuth", p.KeyAzimuth),
+                ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
+                Grade = p.Grade with { TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe) },
+            };
+        }
         Current = p;
         float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
         var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
