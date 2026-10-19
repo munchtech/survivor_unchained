@@ -991,6 +991,7 @@ public partial class Game : Node, IZoneHost
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
                 ? new Vector3((float)be.X, 0, (float)be.Z) : null;
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
+            Spots(dt);
             UpdateCloseUp(dt);
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);

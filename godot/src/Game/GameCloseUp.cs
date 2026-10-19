@@ -59,6 +59,7 @@ public partial class Game
         if (!held && !zone.Combat && Mathf.Abs(look.Y) > Mathf.Abs(look.X)) notches += -look.Y * 7 * dt;
         closeUp.Wheel(notches, cam.CloseShown, sit);
         float target = (float)closeUp.Update(dt, sit);
+        if (spotClose is float tc) { target = tc; taken = true; }
         cam.Close = target;
         cam.CloseRate = (float)closeUp.Rate(target, cam.CloseShown);
         // The idle view drifts slowly round her, between three-quarters and her front.
