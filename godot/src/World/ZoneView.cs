@@ -134,7 +134,7 @@ public partial class ZoneView : Node3D
             LightEnergy = l.Intensity / Mathf.Pi,
             OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
             // The big lights (fires, lanterns) cast shadows near the camera, at dusk and by night (Shadows).
-            ShadowEnabled = CastsShadow(l), DistanceFadeShadow = 28, DistanceFadeEnabled = true,
+            ShadowEnabled = false, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
             DistanceFadeBegin = 45, DistanceFadeLength = 20, LightVolumetricFogEnergy = 1.2f,
         };
         lights.Add(light);
@@ -231,6 +231,7 @@ public partial class ZoneView : Node3D
     {
         lit[light] = on;
         lights[light].Visible = on;
+        OfferShadow(light);
         if (flames.TryGetValue(light, out var flame)) flame.Visible = on;
         if (light < Data.Meta.Lights.Count)
             foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on && !fireGlow.Contains(g);
@@ -290,11 +291,21 @@ public partial class ZoneView : Node3D
 
     void Shadows()
     {
-        for (int i = 0; i < lights.Count; i++)
-        {
-            bool cast = CastsShadow(specs[i]);
-            if (lights[i].ShadowEnabled != cast) lights[i].ShadowEnabled = cast;
-        }
+        for (int i = 0; i < lights.Count; i++) OfferShadow(i);
+    }
+
+    /// <summary>A light that may cast a shadow, and is lit, is offered to the one-shadow arbiter
+    /// (ShadowLamp); otherwise withdrawn.</summary>
+    void OfferShadow(int i)
+    {
+        if (i >= specs.Count || i >= lights.Count || i >= lit.Count) return;
+        if (lit[i] && CastsShadow(specs[i])) ShadowLamp.Offer(lights[i], 0);
+        else ShadowLamp.Withdraw(lights[i]);
+    }
+
+    public override void _ExitTree()
+    {
+        foreach (var l in lights) ShadowLamp.Withdraw(l);
     }
 
     /// <summary>How far the blight has drawn back (0..1): the ground's veins

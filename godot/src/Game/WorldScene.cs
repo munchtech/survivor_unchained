@@ -80,6 +80,18 @@ public partial class WorldScene : Node3D, IZoneLook
         AddChild(Voices);
     }
 
+    public override void _EnterTree() => GetTree().NodeAdded += FxNoShadow;
+    public override void _ExitTree() => GetTree().NodeAdded -= FxNoShadow;
+
+    /// <summary>Nothing under the Fx root casts a shadow (E1): many fx meshes are made without
+    /// setting CastShadow, and Godot's default is On. Corpses (Gore) count as fx.</summary>
+    void FxNoShadow(Node n)
+    {
+        if (n is not GeometryInstance3D g || g.CastShadow == GeometryInstance3D.ShadowCastingSetting.Off) return;
+        for (Node? p = n.GetParent(); p != null; p = p.GetParent())
+            if (p == Fx) { g.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; return; }
+    }
+
     public double HeightAt(double x, double z) => Data.HeightAt((float)x, (float)z);
 
     /// <summary>The fight (or walk) here, and the survivor in it.</summary>
@@ -242,6 +254,8 @@ public partial class WorldScene : Node3D, IZoneLook
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)hx, (float)hz);
             View.FollowGrass(at);
+            // The one shadowed lamp at a time (E1): the nearest to her, cross-faded.
+            ShadowLamp.Update(HerDrawn, dt);
             // Taking a blow bruises the edges of the picture; so does being low.
             damageFlash = Math.Max(0, damageFlash - dt * 2.2);
             double low = p.Alive ? Math.Max(0, 0.35 - p.Hp / b.MaxHp) * 1.2 : 0.6;

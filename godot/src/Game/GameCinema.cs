@@ -116,14 +116,26 @@ public partial class Game
         Shots.Want($"ho_{handoffId}_{handoffN++:000}", 0);
     }
 
+    /// <summary>The one place the shadow rules of play (E1) step aside for a cinematic and come back:
+    /// the lamps all shadow at full strength (ShadowLamp.Suspended) and the sun has its old cascades
+    /// and reach (Graphics.Sun), so the judged shots are unchanged. Acts only on a change.</summary>
+    void CineShadows()
+    {
+        bool on = cine != null;
+        if (ShadowLamp.Suspended == on) return;
+        ShadowLamp.Suspended = on;
+        Graphics.Sun(air, Graphics.Current);
+    }
+
     /// <summary>Each frame, after the world is drawn: the camera, the cast, the cues.</summary>
     void CinemaFrame(double dt)
     {
         carryT = Math.Max(0, carryT - dt);
         HandoffFrames(dt, cine?.ToEnd);
+        CineShadows();
         if (cine == null) return;
         cine.Frame(dt);
-        if (cine.Over) { var c = cine; cine = null; c.Finish(); }
+        if (cine.Over) { var c = cine; cine = null; c.Finish(); CineShadows(); }
         if (scene != null) scene.Fx.HideLoot = cine != null; // hidden across a chain, shown at the hand-back
     }
 

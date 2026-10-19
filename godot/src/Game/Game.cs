@@ -1624,10 +1624,7 @@ public partial class Game : Node, IZoneHost
         var (gibs, splats) = scene.Fx.Gore.Counts;
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} clock {World.Time} {World.Clock:0.0}s day {World.Day} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
-
     /// <summary>--perf-flip lampshadows: the place's lights that cast shadows (and the place they are in).</summary>
-    List<OmniLight3D>? shadowed;
-    WorldScene? shadowedIn;
     /// <summary>--perf-flip softshadow: the key light's breadth while it is taken away.</summary>
     float softAngle;
     bool softSaid;
@@ -1731,20 +1728,8 @@ public partial class Game : Node, IZoneHost
                         flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights"))
                         n.Visible = on;
                 }
-                // (Each light's own setting kept: a lamp unshadowed by day stays so.)
-                if (flipped.Contains("lampshadows"))
-                {
-                    if (shadowed == null || shadowedIn != scene)
-                    {
-                        shadowedIn = scene;
-                        shadowed = new();
-                        foreach (var nm in new[] { "Lights", "Fires" })
-                            if (scene.View.GetNodeOrNull(nm) is { } holder)
-                                foreach (var l in holder.FindChildren("*", "OmniLight3D", true, false))
-                                    if (((OmniLight3D)l).ShadowEnabled) shadowed.Add((OmniLight3D)l);
-                    }
-                    foreach (var l in shadowed) if (IsInstanceValid(l)) l.ShadowEnabled = on;
-                }
+                // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
+                if (flipped.Contains("lampshadows")) ShadowLamp.Enabled = on;
                 var t = Graphics.Current;
                 // softshadow: the key light's breadth (the moon's soft-edged shadows under a canopy,
                 // PCSS, Atmosphere) taken away while out, and given back after.
@@ -1800,9 +1785,8 @@ public partial class Game : Node, IZoneHost
                     // The pieces set down one by one (an arena's cover, a runtime's props).
                     what.Contains("pieces") && !named)
                     n.Visible = false;
-                if (what.Contains("lampshadows") && nm == "Lights")
-                    foreach (var l in n.GetChildren()) if (l is OmniLight3D o) o.ShadowEnabled = false;
             }
+            if (what.Contains("lampshadows")) ShadowLamp.Enabled = false;
             if (what.Contains("sunshadows")) air.Key.ShadowEnabled = false;
             if (what.Contains("ssao")) air.Env.SsaoEnabled = false;
             if (what.Contains("volfog")) air.Env.VolumetricFogEnabled = false;
