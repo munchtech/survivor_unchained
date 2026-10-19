@@ -16,6 +16,10 @@ import statistics
 import subprocess
 import sys
 import time
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -38,18 +42,23 @@ def export():
 
 def run(out, name, res, quality, args):
     os.makedirs(out, exist_ok=True)
-    busy, mem, rivals = perfrun.quiet(300)
+    busy, mem, rivals = perfrun.quiet(float(os.environ.get("PERF_QUIET", "1200")))
     cmd = [EXE, "--resolution", res, "--", *args, "--quality", quality, "--perf", name]
     line = f"{name}: GPU before {busy}% {mem} MB, {rivals} other games; {' '.join(cmd[1:])}"
     print(line, flush=True)
     t0 = time.time()
     with open(os.path.join(out, name + ".log"), "w", encoding="utf-8", errors="replace") as lf:
         p = subprocess.Popen(cmd, cwd=EXE_DIR, stdout=lf, stderr=subprocess.STDOUT)
-        try:
-            p.wait(timeout=2400)
-        except subprocess.TimeoutExpired:
+        # Other games on the shared GPU while this one ran, sampled every 20 s.
+        seen, cpu = [], []
+        while p.poll() is None and time.time() - t0 < 2400:
+            seen.append(len(perfrun.others()))
+            cpu.append(psutil.cpu_percent(1) if psutil else -1)
+            time.sleep(19)
+        if p.poll() is None:
             subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True)
             line += " TIMEOUT"
+        line += f" | other games during: {sum(1 for x in seen if x)}/{len(seen)} samples (max {max(seen, default=0)}); machine CPU {statistics.mean(cpu) if cpu else -1:.0f}% mean, {max(cpu, default=-1):.0f}% max"
     took = time.time() - t0
     ok = True
     for ext in (".json", ".csv"):
