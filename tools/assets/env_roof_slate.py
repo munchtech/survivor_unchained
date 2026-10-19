@@ -192,14 +192,14 @@ def build(seed, photo):
 
     # ---- albedo
     ttone = r(0, 1)                                   # 0 blue-grey .. 1 grey-green
-    blue = np.array([0.495, 0.52, 0.55])
-    green = np.array([0.50, 0.525, 0.50])
+    blue = np.array([0.525, 0.512, 0.492])
+    green = np.array([0.515, 0.515, 0.480])
     col = blue[None] * (1 - ttone[:, None]) + green[None] * ttone[:, None]
     neutral = rng.random(ns) < 0.25
-    col[neutral] = np.array([0.52, 0.52, 0.51])
+    col[neutral] = np.array([0.525, 0.515, 0.505])
     rust = rng.random(ns) < 0.05
-    col[rust] = np.array([0.56, 0.50, 0.445])
-    col *= rng.uniform(0.84, 1.13, ns)[:, None]
+    col[rust] = np.array([0.565, 0.50, 0.435])
+    col *= rng.uniform(0.90, 1.10, ns)[:, None]
     col += rng.uniform(-0.008, 0.008, (ns, 3))
     alb = col[slate_id]
 
@@ -217,6 +217,8 @@ def build(seed, photo):
     shade *= 1 + 0.05 * (1 - smooth(0, 4, dy))       # a paler worn butt edge
     alb = alb * shade[..., None]
     alb = np.where(under[..., None], alb * 0.32, alb)
+    lum0 = (alb @ [0.2126, 0.7152, 0.0722])[..., None]
+    alb = lum0 + 0.87 * (alb - lum0)                 # pull toward neutral: chroma <= 0.033
     # match the old mean luma
     for _ in range(6):
         l = (np.clip(alb, 0, 1) @ [0.2126, 0.7152, 0.0722]).mean()
