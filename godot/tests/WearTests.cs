@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Tests;
 public class WearTests
 {
     static ItemDef Def(string id, ItemKind kind, params string[] wear) =>
-        new() { Id = id, Name = id, Kind = kind, Rarity = 1, Icon = "x", Wear = wear.Length == 0 ? null : wear.ToList() };
+        new() { Id = id, Name = id, Kind = kind, Rarity = 1, Icon = "x", Description = "A test piece for the wear slots.", Wear = wear.Length == 0 ? null : wear.ToList() };
 
     static ItemDef Reg(ItemDef d) { Items.Register(d); return d; }
 
@@ -95,5 +95,102 @@ public class WearTests
         Assert.Contains(s.Ch.Pack, p => p == b);
         Inventory.Reslot(s.Ch);
         Assert.Same(a, s.Ch.Equipment.Feet);
+    }
+    const string Index = """
+    [
+     {"id": "warden.top", "outfit": "warden", "slot": "top", "layer": 1, "covers": ["top"], "meshes": ["warden.top.steel"], "tuck": "armor_tuck/warden.top.bin", "hold": {"amount": 0.55, "squash": 0}},
+     {"id": "warden.bottom", "outfit": "warden", "slot": "bottom", "layer": 1, "covers": ["bottom"], "meshes": ["warden.bottom.thread"], "tuck": null},
+     {"id": "warden.boots", "outfit": "warden", "slot": "boots", "layer": 2, "covers": ["boots"], "meshes": ["warden.boots.steel"], "tuck": null},
+     {"id": "ranger.bottom", "outfit": "ranger", "slot": "bottom", "layer": 1, "covers": ["bottom", "legwear"], "meshes": ["ranger.bottom.leather"], "tuck": null},
+     {"id": "arcanist.legwear", "outfit": "arcanist", "slot": "legwear", "layer": 1, "covers": ["legwear"], "meshes": ["arcanist.legwear.sheer"], "tuck": null},
+     {"id": "reaver.top", "outfit": "reaver", "slot": "top", "layer": 1, "covers": ["top"], "meshes": ["reaver.top.leather"], "tuck": null},
+     {"id": "reaver.ink", "outfit": "reaver", "slot": "ink", "layer": 0, "covers": ["ink"], "meshes": ["reaver.ink.ink"], "tuck": null}
+    ]
+    """;
+
+    const string Index2 = """
+    [{"id": "plate_top_plain", "slot": "top", "layer": 1, "covers": ["top"], "meshes": ["plate_top_plain.steel"], "tuck": "armor_tuck/plate_top_plain.bin", "file": "res://art/armor/plate_top_plain.gltf", "tier": "plain"}]
+    """;
+
+    static Dictionary<string, string> W(params string[] ids) => ids.ToDictionary(i => Wear.SlotOfId(i), i => i);
+
+    [Fact]
+    public void Index_rows_parse_with_their_hold_and_folder()
+    {
+        var ix = ArmorIndex.Parse(Index).Add(Index2, "armor");
+        Assert.Equal(0.55, ix.Find("warden.top")!.Hold!.Amount);
+        Assert.Null(ix.Find("warden.boots")!.Hold);
+        Assert.Equal("top", ix.SlotOf("plate_top_plain"));
+        Assert.Equal("armor", ix.Find("plate_top_plain")!.Dir);
+        Assert.Equal("res://art/armor/plate_top_plain.gltf", ix.Find("plate_top_plain")!.File);
+        Assert.Equal("gloves", ix.SlotOf("nobody.gloves"));
+    }
+
+    [Fact]
+    public void Look_fills_from_the_calling()
+    {
+        var ix = ArmorIndex.Parse(Index);
+        var l = Wear.Look(W(), "warden", ix);
+        Assert.Equal(new Dictionary<string, string> { ["top"] = "warden.top", ["bottom"] = "warden.bottom", ["boots"] = "warden.boots" }, l);
+        Assert.True(Wear.IsCallingSet(l, "warden", ix));
+    }
+
+    [Fact]
+    public void An_equipped_piece_replaces_the_callings()
+    {
+        var ix = ArmorIndex.Parse(Index).Add(Index2, "armor");
+        var l = Wear.Look(new Dictionary<string, string> { ["top"] = "plate_top_plain" }, "warden", ix);
+        Assert.Equal("plate_top_plain", l["top"]);
+        Assert.Equal("warden.bottom", l["bottom"]);
+        Assert.False(Wear.IsCallingSet(l, "warden", ix));
+    }
+
+    [Fact]
+    public void Covers_hide_what_they_cover_whatever_else_is_worn()
+    {
+        var ix = ArmorIndex.Parse(Index);
+        var l = Wear.Look(W("ranger.bottom", "arcanist.legwear"), "warden", ix);
+        Assert.Equal("ranger.bottom", l["bottom"]);
+        Assert.False(l.ContainsKey("legwear"));
+        Assert.Equal("warden.boots", l["boots"]);
+    }
+
+    [Fact]
+    public void Ink_stays_with_its_calling()
+    {
+        var ix = ArmorIndex.Parse(Index);
+        var l = Wear.Look(W("warden.top"), "reaver", ix);
+        Assert.Equal("reaver.ink", l["ink"]);
+        Assert.Equal("warden.top", l["top"]);
+        var notes = new List<string>();
+        Assert.False(Wear.Look(W("reaver.ink"), "warden", ix, notes).ContainsKey("ink"));
+        Assert.Contains("ink", notes.Single());
+    }
+
+    [Fact]
+    public void An_unknown_piece_is_left_off_with_a_note()
+    {
+        var ix = ArmorIndex.Parse(Index);
+        var notes = new List<string>();
+        var l = Wear.Look(W("ghost.top"), "warden", ix, notes);
+        Assert.Equal("warden.top", l["top"]);
+        Assert.Contains("ghost.top", Assert.Single(notes));
+        Assert.Contains("no armor index", notes[0]);
+    }
+
+    [Fact]
+    public void The_shipped_index_gives_every_calling_its_set()
+    {
+        var ix = ArmorIndex.Shared;
+        foreach (var c in new[] { "warden", "arcanist", "ranger", "reaver" })
+        {
+            var l = Wear.Look(W(), c, ix);
+            Assert.True(l.Count >= 6, c);
+            Assert.All(l.Values, id => Assert.StartsWith(c + ".", id));
+            Assert.All(l.Values, id => Assert.NotEmpty(ix.Find(id)!.Meshes));
+        }
+        Assert.Equal("reaver.ink", Wear.Look(W(), "reaver", ix)["ink"]);
+        Assert.Equal(0.55, ix.Find("warden.top")!.Hold!.Amount);
+        Assert.Equal(0.0, ix.Find("warden.top")!.Hold!.Squash);
     }
 }

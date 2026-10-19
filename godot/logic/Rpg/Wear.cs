@@ -28,8 +28,45 @@ public static class Wear
         _ => None,
     };
 
-    /// <summary>The visual slot a piece id is for: the part after the last dot.</summary>
-    public static string SlotOf(string pieceId) => pieceId[(pieceId.LastIndexOf('.') + 1)..];
+    /// <summary>The visual slot a piece id is for: its armor index row's (ArmorIndex.Shared), else the part after the last dot.</summary>
+    public static string SlotOf(string pieceId) => ArmorIndex.Shared.SlotOf(pieceId);
+
+    /// <summary>The part of a piece id after its last dot (a calling's piece: "warden.top" is for "top").</summary>
+    public static string SlotOfId(string pieceId) => pieceId[(pieceId.LastIndexOf('.') + 1)..];
+
+    /// <summary>Her calling's tattoos: part of her skin with that calling, always worn, never an equip slot.</summary>
+    public const string Ink = "ink";
+
+    /// <summary>What she is seen wearing (docs/handoff/armor.md item 7): visual slot -> piece id. `worn` is what her
+    /// equipment (Of) or a shot's --wear puts on her; every visual slot left empty is filled from her calling's own pieces
+    /// (CALLING.SLOT where the index has one), her calling's ink is always on, and each piece's covers hide the other
+    /// visual slots it covers whatever else is worn. A piece the index does not know is left off, with a note why.</summary>
+    public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null)
+    {
+        var r = new Dictionary<string, string>();
+        foreach (var (vs, id) in worn)
+        {
+            if (ix.Find(id) is not { } row) { notes?.Add($"wear: piece '{id}' (for {vs}) is in no armor index; left off"); continue; }
+            if (row.Slot == Ink) { notes?.Add($"wear: piece '{id}' is ink, which comes with its calling; left off"); continue; }
+            r[row.Slot] = id;
+        }
+        var own = ix.Calling(calling);
+        foreach (var (slot, id) in own)
+            if (slot == Ink || !r.ContainsKey(slot)) r[slot] = id;
+        var hidden = new HashSet<string>();
+        foreach (var (slot, id) in r)
+            foreach (var c in ix.Find(id)!.Covers)
+                if (c != slot && c != Ink) hidden.Add(c);
+        foreach (var h in hidden) r.Remove(h);
+        return r;
+    }
+
+    /// <summary>The look's visual slots the calling's own full set wears exactly (and nothing else).</summary>
+    public static bool IsCallingSet(IReadOnlyDictionary<string, string> look, string calling, ArmorIndex ix)
+    {
+        var full = Look(new Dictionary<string, string>(), calling, ix);
+        return full.Count == look.Count && full.All(kv => look.TryGetValue(kv.Key, out var v) && v == kv.Value);
+    }
 
     /// <summary>Visual slot -> piece id, from what is equipped. Pieces outside their item slot's group are ignored.</summary>
     public static Dictionary<string, string> Of(Equipment eq, System.Func<string, ItemDef?>? find = null)

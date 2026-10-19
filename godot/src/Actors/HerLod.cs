@@ -102,7 +102,7 @@ public partial class HerLod : Node
         GD.Print($"her LOD: {set}, {lod.pairs.Count} meshes and her shadow ({file})");
     }
 
-    void Remove()
+    internal void Remove()
     {
         foreach (var (_, l, _, _) in pairs) l.QueueFree();
         shadow?.QueueFree();

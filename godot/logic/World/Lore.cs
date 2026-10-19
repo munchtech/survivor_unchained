@@ -49,6 +49,8 @@ public sealed class PersonSpec
     public string? Paint;
     /// <summary>The face she started from, whose painting of her skin her head wears (none: her own).</summary>
     public string? FaceShape;
+    /// <summary>The pieces her equipment wears (Rpg.Wear.Of: visual slot -> piece id), or none: her calling's outfit whole.</summary>
+    public Dictionary<string, string>? Worn;
 }
 
 public sealed class Held { public string? Right, Left, Forearm; }

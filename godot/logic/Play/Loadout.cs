@@ -143,6 +143,8 @@ public static class Loadouts
             EyeRing = eyes != null && eyes.Ring != "" ? eyes.Ring : null,
             Paint = kit != null && kit.Paints.Any(p => p.Id == ch.Paint && p.Id != "none") ? ch.Paint : null,
             FaceShape = kit != null && kit.Faces.Any(f => f.Id == ch.FaceShape) ? ch.FaceShape : null,
+            // What her equipment wears, piece by piece (People: HerWear), over her calling's outfit.
+            Worn = her && Rpg.Wear.Of(ch) is { Count: > 0 } worn ? worn : null,
             // The calling's colours dye the cloth; trousers take the darker
             // colour (or the cloth's, darker still).
             Dye = pal.Paint.TryGetValue("cloth", out var cloth)

@@ -110,7 +110,12 @@ public static class People
         // Her own clips are chosen by her calling, which her outfit says.
         if (p.Own != null) p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
-        if (her && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string set) HerOutfit(p, set[4..]);
+        // (piece by piece when her equipment wears a piece or a shot says --wear: HerWear)
+        if (her && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string set)
+        {
+            if (HerWear.LookFor(set[4..], spec.Worn) is { } wear) HerWear.Apply(p, set[4..], wear);
+            else HerOutfit(p, set[4..]);
+        }
         if (her) Perf.Lap("play: her outfit");
         // Her hair, a mesh of its own: the style chosen if it is one of hers;
         // her face shaped, and the paint on it.
@@ -1125,6 +1130,19 @@ public static class People
     /// <summary>Her skin under the outfit tucked a few millimetres in by her
     /// skin's shader (shaders/heroine_skin.gdshader), not cut away: cut, a
     /// gap opened in her wherever a piece swung off her as she moved.</summary>
+    /// <summary>Her body's meshes TuckSkin marks (HerWear's tuck map: the same ones), and their skin materials.</summary>
+    internal static bool TuckBody(MeshInstance3D mi)
+    {
+        string n = mi.Name.ToString();
+        if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
+        return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
+    }
+
+    internal static bool IsSkin(Material? m) => m is ShaderMaterial sm && skinShader2 != null && sm.Shader == skinShader2;
+
+    /// <summary>The vertex-colour channel an outfit's tuck is marked in (-1: none).</summary>
+    internal static int OutfitChannel(string set) => System.Array.IndexOf(OutfitChannels, set);
+
     static void TuckSkin(MeshInstance3D mi, int ch)
     {
         // (Only her body is marked; her head is left as it is, shape keys and all. Her head and tongue carry
