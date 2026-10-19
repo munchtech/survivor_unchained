@@ -280,7 +280,7 @@ public partial class Callout : Control, ICalloutView
                 // The iron edge, then the hot core inside it, tapering from the words to the head.
                 Stroke(pts, 9.5f, 4.5f, _ => Iron);
                 Stroke(pts, 5.5f, 2.2f, u => Deep.Lerp(Hot, u));
-                if (reach >= 0.98f) Head(pts[^1], (pts[^1] - pts[^2]).Normalized());
+                if (reach >= 0.98f && (pts[^1] - pts[^2]).LengthSquared() > 0.01f) Head(pts[^1], (pts[^1] - pts[^2]).Normalized());
                 // Where it lands: a ring of light round the thing (none for an area: its edge is the mark).
                 if (ring > 0 && reach >= 1)
                 {
@@ -311,10 +311,16 @@ public partial class Callout : Control, ICalloutView
             return list;
         }
 
-        /// <summary>A stroke along the points, w0 wide at the start, w1 at the end.</summary>
-        void Stroke(List<Vector2> pts, float w0, float w1, Func<float, Color> col)
+        /// <summary>A stroke along the points, w0 wide at the start, w1 at the end: a strip of
+        /// triangles, each drawn as it is (a polygon is triangulated, and one squeezed thin by the
+        /// arrow's first frames fails to; a triangle never does).</summary>
+        void Stroke(List<Vector2> raw, float w0, float w1, Func<float, Color> col)
         {
+            // Points closer than a third of a pixel give no direction: kept apart or dropped.
+            var pts = new List<Vector2>(raw.Count);
+            foreach (var q in raw) if (pts.Count == 0 || pts[^1].DistanceSquaredTo(q) > 0.1f) pts.Add(q);
             int n = pts.Count;
+            if (n < 2) return;
             var left = new Vector2[n];
             var right = new Vector2[n];
             var cols = new Color[n];
@@ -329,7 +335,10 @@ public partial class Callout : Control, ICalloutView
                 cols[i] = col(u);
             }
             for (int i = 1; i < n; i++)
-                DrawPolygon([left[i - 1], left[i], right[i], right[i - 1]], [cols[i - 1], cols[i], cols[i], cols[i - 1]]);
+            {
+                DrawPrimitive([left[i - 1], left[i], right[i]], [cols[i - 1], cols[i], cols[i]], []);
+                DrawPrimitive([left[i - 1], right[i], right[i - 1]], [cols[i - 1], cols[i], cols[i - 1]], []);
+            }
         }
 
         /// <summary>The head: a barbed point, iron round ember.</summary>
@@ -337,8 +346,14 @@ public partial class Callout : Control, ICalloutView
         {
             var n = new Vector2(-dir.Y, dir.X);
             Vector2[] Shape(float s) => [tip + dir * 4 * s, tip - dir * 24 * s + n * 12 * s, tip - dir * 17 * s, tip - dir * 24 * s - n * 12 * s];
-            DrawColoredPolygon(Shape(1.25f), Iron);
-            DrawPolygon(Shape(1), [Hot.Lightened(0.3f), Hot, Deep, Hot]);
+            // (two triangles each: the barbed shape is concave, and triangles never fail)
+            void Barb(Vector2[] s, Color[] c)
+            {
+                DrawPrimitive([s[0], s[1], s[2]], [c[0], c[1], c[2]], []);
+                DrawPrimitive([s[0], s[2], s[3]], [c[0], c[2], c[3]], []);
+            }
+            Barb(Shape(1.25f), [Iron, Iron, Iron, Iron]);
+            Barb(Shape(1), [Hot.Lightened(0.3f), Hot, Deep, Hot]);
         }
     }
 

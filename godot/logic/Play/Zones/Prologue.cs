@@ -164,8 +164,8 @@ public sealed class Prologue : ZoneRuntime
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
     // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
 
-    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null) =>
-        G.Teach(new Callout(id, kind, title, line, aim, answer));
+    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null) =>
+        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after });
 
     /// <summary>A point on the ground, lifted a little (what an arrow points at).</summary>
     (double X, double Y, double Z) Up(double x, double z, double lift) => (x, G.Look.HeightAt(x, z) + lift, z);
@@ -201,18 +201,18 @@ public sealed class Prologue : ZoneRuntime
         // F2: the first ember gathered (and the journal remembers what the valley believes).
         if (B.EmberXp > 0 || B.EmberLevel > 1)
         {
-            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"));
+            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground");
             if (shown.Add("lore.ember"))
                 G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
         }
         // F4: the first skill draft after the great blessing (on the panel, at the first combat-skill card).
         if (B.EmberLevel >= 2 && B.DraftOwed)
-            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("card:weapon"));
+            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("card:weapon"), after: "great_blessing");
         // F5: the first combat skill on the console.
         if (startWeapons >= 0 && B.Weapons.Count > startWeapons)
         {
             var w = B.Weapons[startWeapons];
-            Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id));
+            Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
         // F6: six risen at her (or 14 s in), while the night's first fights run.
         if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (stageT > 14 || Now != Stage.Rising || Crowd(p.X, p.Z, 3) >= 6))

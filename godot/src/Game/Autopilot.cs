@@ -167,7 +167,7 @@ public sealed class Autopilot
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if (near >= 5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
         if (near >= 3 && abilityT <= 0) { Press(Act.Flare); abilityT = 2; }
-        if (p.Hp < b.MaxHp * 0.35 && drinkT <= 0) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
+        if (p.Hp < b.MaxHp * 0.35 && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
     }
 
     /// <summary>Out in a fight with no script: circle a patch of ground, keep
@@ -227,7 +227,7 @@ public sealed class Autopilot
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if ((ring >= 6 || close >= 4) && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
         if (close >= 3 && abilityT <= 0) { Press(Act.Flare); abilityT = 1.5; }
-        if (p.Hp < b.MaxHp * 0.33 && drinkT <= 0) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
+        if (p.Hp < b.MaxHp * 0.33 && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
     }
 
     /// <summary>Go that way; wedged on something, sidestep for a moment.</summary>

@@ -39,7 +39,9 @@ public class TeachTests
         Assert.Null(t.Update(0.1, 0.1, Busy.None, Here));
         Assert.Equal("a", t.Current?.Id);
         t.Close("key", 0.6);
-        Assert.Equal("b", t.Update(0.7, 0.7, Busy.None, Here)?.Id);
+        // (a breath of play after a freeze before the next)
+        Assert.Null(t.Update(1, 1, Busy.None, Here));
+        Assert.Equal("b", t.Update(1.6, 1.6, Busy.None, Here)?.Id);
     }
 
     [Fact]
@@ -49,7 +51,7 @@ public class TeachTests
         t.Offer(Freeze("a"), 0);
         foreach (var b in new[] { Busy.Cinematic, Busy.Transit, Busy.Fall, Busy.Overlay, Busy.Draft, Busy.Banner, Busy.Say, Busy.Prompt, Busy.Hint })
             Assert.Null(t.Update(1, 1, b, Here));
-        Assert.Equal("a", t.Update(2, 2, Busy.None, Here)?.Id);
+        Assert.Equal("a", t.Update(2.6, 2.6, Busy.None, Here)?.Id);
     }
 
     [Fact]
@@ -142,5 +144,115 @@ public class TeachTests
         mem.Tips = false;
         Assert.Null(t.Update(0, 0, Busy.None, Here));
         Assert.Equal(0, t.Waiting);
+    }
+
+    static Callout OnGround(string id) => new(id, CalloutKind.Freeze, id, "A line.", Aim.In(() => [(1.0, 0.0, 2.0)]));
+
+    [Fact]
+    public void TransientFreezeGoesOverAHintButNotACaption()
+    {
+        var t = new Teacher(new TeachMemory());
+        Assert.True(OnGround("red_line").Transient);
+        Assert.False(Freeze("dash").Transient);
+        Assert.False(new Callout("bar", CalloutKind.Arrow, "b", "l", Aim.In(() => [(0.0, 0.0, 0.0)])).Transient);
+        t.Offer(Freeze("dash"), 0);
+        t.Offer(OnGround("red_line"), 0);
+        // A hint holds the dash's freeze; the red line's goes over it.
+        Assert.Equal("red_line", t.Update(0, 0, Busy.Hint, Here)?.Id);
+        t.Close("key", 1);
+        // Captions, banners, prompts, cinematics still hold it.
+        var u = new Teacher(new TeachMemory());
+        u.Offer(OnGround("red_line"), 0);
+        foreach (var b in new[] { Busy.Say, Busy.Banner, Busy.Prompt, Busy.Cinematic, Busy.Say | Busy.Hint })
+            Assert.Null(u.Update(1, 1, b, Here));
+        Assert.Equal("red_line", u.Update(2, 2, Busy.Hint, Here)?.Id);
+    }
+
+    [Fact]
+    public void WaitsWhileADraftIsOwedUnlessAPanel()
+    {
+        var t = new Teacher(new TeachMemory());
+        t.Offer(Freeze("dash"), 0);
+        t.Offer(Panel("great"), 0);
+        Assert.Null(t.Update(0.1, 0.1, Busy.Owed, Here));
+        Assert.Equal("great", t.Update(0.2, 0.2, Busy.Draft | Busy.Owed, Here)?.Id);
+        t.Update(0.2, 3, Busy.None, Here);
+        Assert.Null(t.Current);
+        // The draft was a pause: the dash waits a breath of play after it.
+        Assert.Null(t.Update(1.0, 4, Busy.None, Here));
+        Assert.Equal("dash", t.Update(1.8, 5, Busy.None, Here)?.Id);
+    }
+
+    [Fact]
+    public void GapAfterAFreezeHoldsTheNextFreezeAndArrow()
+    {
+        var t = new Teacher(new TeachMemory());
+        var log = new List<string>();
+        t.Log = (what, c, _) => log.Add($"{c.Id} {what} {t.LogWaited}");
+        t.Offer(Freeze("a"), 0);
+        t.Offer(Arrow("b"), 0);
+        t.Update(0, 0, Busy.None, Here);
+        t.Close("key", 1);
+        Assert.Null(t.Update(0, 2, Busy.None, Here));
+        Assert.Null(t.Update(1.4, 3, Busy.None, Here));
+        Assert.Equal("b", t.Update(1.5, 4, Busy.None, Here)?.Id);
+        Assert.Contains("b shown gap", log);
+    }
+
+    [Fact]
+    public void PrerequisitesInOrder()
+    {
+        var t = new Teacher(new TeachMemory());
+        var log = new List<string>();
+        t.Log = (what, c, _) => log.Add($"{c.Id} {what} {t.LogWaited}");
+        var bar = Arrow("ember_bar") with { After = "ember_ground" };
+        t.Offer(bar, 0);
+        // Its forerunner not yet offered: it waits.
+        Assert.Null(t.Update(0, 0, Busy.None, Here));
+        t.Offer(Freeze("ember_ground"), 0.5);
+        Assert.Equal("ember_ground", t.Update(0.5, 0.5, Busy.None, Here)?.Id);
+        t.Close("key", 2);
+        Assert.Null(t.Update(1, 3, Busy.None, Here));
+        Assert.Equal("ember_bar", t.Update(2.1, 4, Busy.None, Here)?.Id);
+        Assert.Contains("ember_bar shown gap,prereq", log);
+    }
+
+    [Fact]
+    public void APrerequisiteWhoseMomentLapsedNoLongerHolds()
+    {
+        var t = new Teacher(new TeachMemory());
+        t.Offer(Freeze("first"), 0);
+        // Its target gone before it could show: dropped, and not asked for again.
+        t.Update(0.1, 0.1, Busy.None, _ => Presence.Gone);
+        t.Offer(Arrow("second") with { After = "first" }, 0.2);
+        Assert.Null(t.Update(1, 1, Busy.None, Here));
+        Assert.False(t.Lapsed("first", 2));
+        Assert.True(t.Lapsed("first", 2.6));
+        Assert.Equal("second", t.Update(2.6, 2.6, Busy.None, Here)?.Id);
+    }
+
+    [Fact]
+    public void AnAimHoldsSeveralTargets()
+    {
+        // F8: the art's ring on the console and the Grave-Caller; F9: each lit lamp.
+        var art = new Aim { Hud = "art", World = () => [(4.0, 1.4, 2.0)] };
+        Assert.Equal("art", art.Hud);
+        Assert.Single(art.World!());
+        var lamps = Aim.In(() => [(0.0, 2.2, 0.0), (5.0, 2.2, 0.0), (10.0, 2.2, 0.0)]);
+        Assert.Equal(3, lamps.World!().Count);
+        Assert.True(new Callout("art", CalloutKind.Freeze, "Art", "l", art, "flare").Transient);
+    }
+
+    [Fact]
+    public void LogSaysWhatItWaitedOn()
+    {
+        var t = new Teacher(new TeachMemory());
+        var log = new List<string>();
+        t.Log = (what, c, how) => log.Add($"{c.Id} {what} {t.LogWaited}");
+        t.Offer(Freeze("a"), 0, Busy.Say | Busy.Hint);
+        t.Update(0.5, 0.5, Busy.Say, Here);
+        t.Update(1, 1, Busy.Banner, Here);
+        t.Update(2, 2, Busy.None, Here);
+        Assert.Equal(["a queued say,tip", "a shown banner,say"], log);
     }
 }

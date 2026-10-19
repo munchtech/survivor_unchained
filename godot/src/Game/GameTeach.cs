@@ -36,10 +36,12 @@ public partial class Game
     }
 
     /// <summary>A zone's callout at its moment.</summary>
-    public void Teach(Callout c) => Teacher.Offer(c, teachClock);
+    public void Teach(Callout c) => Teacher.Offer(c, teachClock, TeachBusy());
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
+    /// <summary>Whether a callout waits in the line (the autopilot holds its draught for F10's).</summary>
+    public bool TeachWaiting(string id) => teacher?.Queued(id) == true;
     /// <summary>Real seconds it has been up.</summary>
     public double TeachingFor => teacher?.Current != null ? RealNow - teacher.ShownAt : 0;
     static double RealNow => Time.GetTicksMsec() / 1000.0;
@@ -50,7 +52,8 @@ public partial class Game
         string real = what is "queued" || (what == "dropped" && teacher?.Current != c) ? "-" : $"{(RealNow - (teacher?.ShownAt ?? RealNow)) * 1000:0}";
         if (what == "shown") real = "0";
         var at = Primary(c);
-        GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}");
+        string waited = what is "queued" or "shown" or "dropped" ? $" waited={(teacher?.LogWaited is { Length: > 0 } w ? w : "-")}" : "";
+        GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}{waited}");
     }
 
     /// <summary>What has the screen, for the line of callouts.</summary>
@@ -66,6 +69,7 @@ public partial class Game
         if (hud.SayUp) b |= Busy.Say;
         if (hud.PromptUp) b |= Busy.Prompt;
         if (hud.TipUp) b |= Busy.Hint;
+        if (Battle?.DraftOwed == true && hudMode != "draft") b |= Busy.Owed;
         return b;
     }
 
@@ -79,11 +83,12 @@ public partial class Game
     }
 
     /// <summary>Where a callout points now: its points and areas on the HUD's canvas (none: not there).</summary>
-    (List<Vector2> Points, List<Rect2> Areas, bool Gone) Resolve(Callout c)
+    (List<Vector2> Points, List<Rect2> Areas, bool Gone, int WorldOn) Resolve(Callout c)
     {
         var pts = new List<Vector2>();
         var areas = new List<Rect2>();
         bool gone = false;
+        int worldOn = 0;
         var t = c.Target;
         switch (t.Hud)
         {
@@ -109,15 +114,15 @@ public partial class Game
         {
             var world = t.World();
             if (world.Count == 0) gone = true;
-            foreach (var w in world) if (OnScreen(w) is Vector2 v) pts.Add(v);
+            foreach (var w in world) if (OnScreen(w) is Vector2 v) { pts.Add(v); worldOn++; }
         }
-        return (pts, areas, gone);
+        return (pts, areas, gone, worldOn);
     }
 
     Vector2? Primary(Callout c)
     {
         if (scene == null) return null;
-        var (pts, areas, _) = Resolve(c);
+        var (pts, areas, _, _) = Resolve(c);
         return pts.Count > 0 ? pts[0] : areas.Count > 0 ? areas[0].GetCenter() : null;
     }
 
@@ -129,9 +134,10 @@ public partial class Game
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
         if (t.World != null)
         {
-            var (pts, _, gone) = Resolve(c);
+            // (several things: here when one of the world's is on the screen; a HUD part alone doesn't count)
+            var (_, _, gone, worldOn) = Resolve(c);
             if (gone) return Presence.Gone;
-            if (pts.Count == 0) return Presence.NotYet;
+            if (worldOn == 0) return Presence.NotYet;
         }
         return Presence.Here;
     }
@@ -141,6 +147,7 @@ public partial class Game
     {
         if (scene == null || Mode != "play") return;
         if (!scene.SimPaused) teachClock += dt;
+        TeachHurt(dt);
         var t = Teacher;
         if (hudMode == "draft") teachOffers = offers; else teachOffers = null;
         var was = t.Current;
@@ -148,6 +155,22 @@ public partial class Game
         if (was != null && t.Current != was) TeachDown(was);
         if (now != null) TeachUp(now);
         AimCallout();
+    }
+
+    double hurtT;
+    bool hurtDone;
+
+    /// <summary>--teach-hurt (a scripted run): her health down to 35% once, 10 s of play into the
+    /// Prologue's boss, so the draught's callout (F10) is seen.</summary>
+    void TeachHurt(double dt)
+    {
+        if (hurtDone || !Args.Has("teach-hurt") || scene!.SimPaused) return;
+        if (zone is not Zones.Prologue { Now: Zones.Prologue.Stage.Boss } || Battle is not { } b || !b.Player.Alive) return;
+        hurtT += dt;
+        if (hurtT < 10) return;
+        hurtDone = true;
+        b.Player.Hp = Math.Min(b.Player.Hp, b.MaxHp * 0.35);
+        if (Args.Dev) GD.Print($"teach hurt t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} draughts={Journey.Draughts}");
     }
 
     void TeachUp(Callout c)
@@ -187,7 +210,7 @@ public partial class Game
     void AimCallout()
     {
         if (calloutShown == null || teacher?.Current is not { } c) return;
-        var (pts, areas, _) = Resolve(c);
+        var (pts, areas, _, _) = Resolve(c);
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null));
     }
 
