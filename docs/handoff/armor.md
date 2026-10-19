@@ -53,6 +53,7 @@ Known limits: her play-camera model (HerLod, one LOD file per outfit) doesn't co
 Note (18 Oct): Oathbrand's orange gilt was weaponforge.js's own bug (its `hexRGB` took THREE.Color's linear values into an sRGB canvas; fixed in Marionette fdd3fbe). The shared export path is not affected: pieces.js `recolor` converts sRGB in and out explicitly, `mat.color.set` is managed by three.js, and toGame/sendPiece don't touch colours. So no earlier export needs re-checking.
 
 ## 3. Follow-ups for the coordinator to route (not mine)
+- **Next armor list, item 1: the pauldron slot shell** (cinematics cut close-ups partly for "balloon pauldrons" and a black gap at the pauldron top; armor 3, 19 Oct: backlog, not this MR). Build `pauldrons` as a smart slot shell like plate_top (from her shoulder surface, rolled edge, sockets), which fixes both marks for every set that uses the slot.
 - Loot: drop tables, affixes and itemization for the six new item slots.
 - UI: the inventory paper doll for the new slots (PackScreen shows only the old ones).
 - Crafting: `Crafting.Workable` and the affix Gear list don't include the six new kinds yet (they can't be reforged and take no affixes).
