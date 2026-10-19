@@ -684,18 +684,20 @@ def _ease_from(clip, rot0, n, joints):
 # her left (the fire is 1.1 m off her left ear), and slumped to that side:
 # the pelvis rolled 7 deg left (HIPS_COALS: death_back's hips twisted about
 # her own long axis, as Y-X-Z euler), the chest 9 more, the neck back so the
-# cheek rests on the ground, the chin down. The left leg bent 17 deg and
-# fallen out on to the ground, the right lying straight, 8 deg out, its foot
+# cheek rests on the ground, the chin down. The left leg bent 43 deg and
+# fallen out on to the ground (laid: past the hip's keyed limit; its knee
+# and outer thigh on the ground), the right lying straight, 8 deg out, its foot
 # rolled out; the right elbow a little bent. The flung left arm comes out of
 # the face-to-coals line, out on the ground 45 deg below her shoulder, palm
 # up, the fingers curled more toward the little one. (Judge lie r1: the
-# legs were a plank, the heels and calves 11-14 cm off the ground.) A still,
+# legs were a plank, the heels and calves 11-14 cm off the ground; r2: the
+# 17 deg knee didn't read from the side, so 35-45.) A still,
 # held (the cinematic plays it at speed 0); death_back and get_up_back are
 # unchanged (play's death).
 HIPS_COALS = (64.46, -82.59, -74.34)
 COALS_POSE = {"hips": {"pos": (0.0, -0.94, -0.62), "rot": HIPS_COALS},
               "spine": (9, 2, -6), "neck": (26, -16, 0), "head": (52, 4, 0),
-              "foot_l": {"pos": (0.335, -0.04, 0.31), "rot": (55, -50, 55), "pole": (1, 0.15, 0)},
+              "foot_l": {"pos": (0.19, -0.045, 0.285), "rot": (55, -50, 55), "pole": (1, 0.1, 0.1), "laid": True},
               "foot_r": {"pos": (-0.206, -0.055, 0.325), "rot": (-40, -55, -10), "pole": (-0.3, 1, 0)},
               "hand_l": {"pos": (0.72, 0.025, -0.82), "pole": (0.3, 1, 0.3), "knuckles": (0.6, 0, -0.6), "blade": (-0.6, 0, -0.6)},
               "hand_r": {"pos": (-0.39, 0.04, -0.675), "pole": (-1, 0.4, 0), "knuckles": (-0.2, 0, 1), "plant": 1.0},
