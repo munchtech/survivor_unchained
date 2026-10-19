@@ -1645,7 +1645,7 @@ public partial class BattleFx : Node3D
                         float beat = Mathf.Sin((float)(now * 2.2 + p.Id * 1.7));
                         float hs = 0.62f + 0.75f * s;
                         emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
-                            EmberTiers[tier] with { A = 0.42f + 0.12f * beat });
+                            EmberTiers[tier] with { A = 0.32f + 0.09f * beat });
                     }
                     break;
                 }
