@@ -358,6 +358,8 @@ public partial class Game
         /// <summary>A zone lamp's glowing piece a "globe" cue dimmed: what it wore before (put back at the end), its own copy, its colour.</summary>
         sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; public Vector3? Tint; }
         readonly List<Globe> globes = new();
+        /// <summary>A globe cue's halos: the quad, the globe's middle, how far toward the lens it sits (so the egg does not hide its heart).</summary>
+        readonly List<(Node3D Q, Vector3 At, float R)> globeHalos = new();
         /// <summary>The bosses a "hide" cue hid: their Shine shows them every frame, so they are hidden again after it (C02 s8:
         /// the Warden and his lamp-iron stood at her temple, the lamp a clipped disc at the frame's edge).</summary>
         readonly HashSet<Node3D> bossHidden = new();
@@ -430,6 +432,9 @@ public partial class Game
             foreach (var w in bosses.Values) { w.Shine(dt); if (bossHidden.Contains(w)) w.Visible = false; }
             foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
+            if (globeHalos.Count > 0 && g.GetViewport().GetCamera3D() is Camera3D hcam)
+                foreach (var (hq, hat, hr) in globeHalos)
+                    if (GodotObject.IsInstanceValid(hq)) hq.GlobalPosition = hat + (hcam.GlobalPosition - hat).Normalized() * hr;
             PlaceRigs();
             // No ember or smoke between a close lens and her (C01 s10: a drifting ember was a soft
             // orange disc across her cheek): the Look's ClearNear, to just short of her face.
@@ -1182,6 +1187,33 @@ public partial class Game
                                 if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => SetG(Mathf.Lerp(gfrom, glv, (float)k))));
                                 else SetG(glv);
                             }
+                        // "halo": a soft glow about the globe (its strength; 0 takes it away), "spread" metres across,
+                        // in "color" (or the ford's blue): flame-lit glass, not a flat egg. It sits a little toward the lens.
+                        if (!c.Has("halo")) continue;
+                        string hk = $"globehalo.{gli}.{gname}";
+                        if (props.Remove(hk, out var ohalo)) { globeHalos.RemoveAll(x => x.Q == ohalo); ohalo.QueueFree(); }
+                        float ha = (float)c.Num("halo");
+                        if (ha <= 0 || gms.Count == 0) continue;
+                        var hbox = gms[0].GlobalTransform * gms[0].GetAabb();
+                        foreach (var hm in gms) hbox = hbox.Merge(hm.GlobalTransform * hm.GetAabb());
+                        var hcol = new Color(c.Str("color") ?? "#8ac8ff");
+                        var hquad = new MeshInstance3D
+                        {
+                            Mesh = new QuadMesh { Size = Vector2.One * (float)c.Num("spread", 1.2) },
+                            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                            MaterialOverride = new StandardMaterial3D
+                            {
+                                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                                AlbedoTexture = Halo(), AlbedoColor = new Color(hcol.R, hcol.G, hcol.B, ha), DisableFog = true,
+                            },
+                        };
+                        g.scene.AddChild(hquad);
+                        var hat = hbox.GetCenter();
+                        float hr = hbox.Size.Length() * 0.5f + 0.05f;
+                        hquad.GlobalPosition = hat;
+                        props[hk] = hquad;
+                        globeHalos.Add((hquad, hat, hr));
                     }
                     break;
                 }
