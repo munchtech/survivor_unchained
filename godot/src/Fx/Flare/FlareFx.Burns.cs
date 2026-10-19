@@ -278,8 +278,8 @@ public partial class FlareFx
                 Soot(sp, -em.Dir * 1.5f + Rand3() * 0.4f, 0.8f + R() * 0.6f, 0.28f, 0.8f + R() * 0.5f, 0.14f, 2.5f, 0.3f);
             }
             // The eye darkens for the last two frames before the last word: the BOOM's punch is the dark before it.
-            // (Judge 6 (7): at 0.9 the dip was a whole-frame swing of its own, 12%; 0.95 keeps the breath under 10%.)
-            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) SetDip(LessFlash ? 0.97f : 0.95f);
+            // (Judge 6 (7): at 0.9 the dip was a whole-frame swing of its own, 12%; a breath of it, 2%.)
+            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) SetDip(LessFlash ? 0.99f : 0.98f);
             if (t >= em.LandAt) Land(em);
         }
         if (colT >= 0) { colT += dt; Column(dt); }
