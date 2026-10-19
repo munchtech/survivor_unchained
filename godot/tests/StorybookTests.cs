@@ -19,6 +19,19 @@ public class StorybookTests
         Directory.GetFiles(Path.Combine(DataFiles.Dir, "storybook"), "*.json").Select(f => StoryFile.Parse(File.ReadAllText(f)));
 
     [Fact]
+    public void Sb00_is_not_live_while_its_plates_are_placeholders()
+    {
+        Assert.False(StoryFile.Load("sb00").Live);
+    }
+
+    [Fact]
+    public void A_storybook_that_says_nothing_about_live_is_live()
+    {
+        var f = StoryFile.Parse("""{ "id": "x", "conversation": "c" }""");
+        Assert.True(f.Live);
+    }
+
+    [Fact]
     public void Every_storybook_reads_and_holds_together()
     {
         var files = All().ToList();

@@ -3,6 +3,7 @@
   "title": "Stay Where They Reach",
   "script": "docs/story/storybook/sb00_stay_where_they_reach.md",
   "conversation": "sb_stay_where_they_reach",
+  "live": false,
   "canvas": [3200, 1800],
   "grain": 0.05,
   "vignette": 0.3,

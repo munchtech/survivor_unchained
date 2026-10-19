@@ -6,6 +6,7 @@ Drawn act cinematics (the owner's "storybook", Diablo III's touchstone): painted
 
 ```jsonc
 { "id": "sb00", "conversation": "sb_stay_where_they_reach",
+  "live": false,                 // a new journey plays it only when true (the default); false while its plates are placeholders (SB00 now). --storybook <id> still plays it
   "canvas": [3200, 1800],        // the plates' reference frame, px (16:9; the 2.39:1 bars crop it)
   "grain": 0.05, "vignette": 0.3, // the finish over everything
   "skip": {"from": 1.5, "hold": 0.8},
@@ -96,6 +97,8 @@ The bars are CinemaBars at 2.39:1, fully in from the first frame.
 **Skip.** Hold interact or pause (the CinemaBars ring): from `skip.from` (1.5 s) on a first view, at once once seen. The profile flag is the storybook's id in `Settings.SeenCinematics` (`seen.sb00`), set when it first starts. A skip cuts to black, fades every sound over 0.15 s (and drops the synth's tails) and ends as skipped.
 
 ## Running it
+
+SB00 is not live (`"live": false`) until its painted plates are in: a new journey goes straight to C01, and `--storybook sb00` still plays it alone. The rest of this section describes it once live.
 
 In the game, SB00 opens a new journey when `godot/data/storybook/sb00.json` exists: creation confirmed, its last frame holds 0.5 s and fades to black over 0.8 s with the title music; SB00 plays from black (nothing 3D is drawn under it); at its end the zone is entered under the black and C01 takes the bars already in. Played to its end, it sets the journey fact `sb00.ended`, and C01's shot 1 (by its `durs` and a `when` on the cue) loses `water_close` and is 2.5 s, its drops timed from its end (first drop 1.2 s in); the rest of C01 is as written. Skipped, C01 plays exactly as written. `--nocine` goes without it; a quick start goes without it unless `--cines` (then it plays first, over black). Without the file everything plays as before.
 

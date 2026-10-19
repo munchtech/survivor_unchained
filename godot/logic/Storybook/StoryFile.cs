@@ -20,6 +20,8 @@ namespace SurvivorUnchained.Storybook;
 public sealed class StoryFile
 {
     public string Id = "", Title = "", Script = "", Conversation = "";
+    /// <summary>Whether a new journey plays it (false while its plates are placeholders; --storybook &lt;id&gt; still plays it alone).</summary>
+    public bool Live = true;
     /// <summary>The plate's reference frame, in pixels (16:9; the 2.39:1 bars crop it).</summary>
     public double[] Canvas = [3200, 1800];
     /// <summary>The light screen-space finish over everything: film grain and a vignette.</summary>

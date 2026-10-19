@@ -23,7 +23,14 @@ public partial class Game
     static bool StoryExists(string id) => FileAccess.FileExists($"res://data/storybook/{id}.json");
 
     /// <summary>A new journey opens on SB00 when there is one; --nocine and quick starts go without, as they go without C01.</summary>
-    static bool OpensOnStory => StoryExists("sb00") && !Args.Has("nocine");
+    static bool OpensOnStory => StoryExists("sb00") && StoryLive("sb00") && !Args.Has("nocine");
+
+    /// <summary>Whether the storybook says it is live (false on any error).</summary>
+    static bool StoryLive(string id)
+    {
+        try { return StoryFile.Load(id).Live; }
+        catch { return false; }
+    }
 
     /// <summary>The storybook's lines read the same for every survivor: a blank one will do.</summary>
     static Ctx StoryCtx() => new(WorldState.Fresh(1), new CharacterData());
