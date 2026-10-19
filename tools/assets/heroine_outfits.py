@@ -4223,6 +4223,10 @@ TAUT_ITERS = int(os.environ.get("TAUT_ITERS", "40"))
 # with the fangs, does not move. NAPE_CORD: metres below neck_01's head; < 0 = off.)
 NAPE_CORD = float(os.environ.get("NAPE_CORD", "0.01"))
 NAPE_ITERS = int(os.environ.get("NAPE_ITERS", "150"))
+# (NAPE_SIDE: at her neck's sides it rides this much higher than behind, where her neck meets her shoulders: any
+# lower and it lay out on top of her shoulders, 16 cm from her neck's axis. Her skin there holds in a turn up to
+# 1.5 cm above neck_01.)
+NAPE_SIDE = float(os.environ.get("NAPE_SIDE", "0.011"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
@@ -4699,19 +4703,66 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         if nape is not None and closed:
             # (NAPE_CORD, see the knob: the back slides, Taubin-eased (a pass in, a pass out: wobbles go, the loop
             # does not shrink up her neck), held under the height, then back onto her within `taut`)
-            zcap, y0 = nape
+            zcap, y0, ay = nape
             r = c[:-1].copy()
-            w_ = ramp(r[:, 1], y0, y0 + 0.03)[:, None]
+            r0_ = r.copy()
+            w_ = ramp(r[:, 1], y0, y0 + 0.03)
+            # (its back laid afresh: laid by rays from inside the base of her neck, it doubled back on itself behind
+            # her shoulders (an 8 cm jump). So: its front, from the fangs out to where it turns behind her, kept;
+            # behind, an arc round her neck, each point cast level out from her neck's axis, rising from where
+            # the front ends to the height behind)
+            fr = np.nonzero(w_ < 0.3)[0]
+            fr = fr[fr.argsort()]
+            assert (np.diff(fr) == 1).all(), "nape: the cord's front is not one run"
+            pa, pb = r[fr[0]], r[fr[-1]]
+            fa = np.arctan2(pa[0], pa[1] - ay)
+            fb = np.arctan2(pb[0], pb[1] - ay)
+            if fa < fb:
+                fa += 2 * np.pi
+            n_ = max(8, int((fa - fb) * 0.065 / 0.003))
+            u_ = np.linspace(0, 1, n_ + 2)[1:-1]
+            ph = fb + (fa - fb) * u_
+            fa_, fb_ = fa - 2 * np.pi * (fa > np.pi), fb
+
+            def prof(f_):
+                # (its height round her: zcap behind, NAPE_SIDE higher at her sides, down to the front's ends)
+                f_ = (f_ + np.pi) % (2 * np.pi) - np.pi
+                z_ = zcap + NAPE_SIDE * np.sin(np.minimum(np.abs(f_), np.pi / 2)) ** 2
+                ze = np.where(f_ > 0, pa[2], pb[2])
+                fe = np.where(f_ > 0, abs(fa_), abs(fb_))
+                return z_ + (ze - zcap - NAPE_SIDE) * ramp(np.abs(f_), np.pi / 2, fe)
+            zz = prof(ph)
+            arc = []
+            for f_, z_ in zip(ph, zz):
+                d_ = Vector((np.sin(f_), np.cos(f_), 0.0))
+                hit_ = SKIN_BVH.ray_cast(Vector((0.0, ay, z_)), d_, 0.3)
+                arc.append(np.array(hit_[0][:]) if hit_[0] is not None else np.array(SKIN_BVH.find_nearest(Vector((0.08 * d_[0], ay + 0.08 * d_[1], z_)))[0][:]))
+            r = np.concatenate([r[fr], np.array(arc)])
+            w_ = np.concatenate([w_[fr], np.ones(len(arc))])[:, None]
             for _ in range(NAPE_ITERS):
                 for f_ in (0.5, -0.53):
-                    r = r + f_ * w_ * ((np.roll(r, 1, 0) + np.roll(r, -1, 0)) / 2 - r)
-                r[:, 2] -= w_[:, 0] * np.maximum(r[:, 2] - zcap, 0.0)
+                    # (across the cord only, never along it: points eased along it bunched and spread, 1 to 27 mm)
+                    t_ = np.roll(r, -1, 0) - np.roll(r, 1, 0)
+                    t_ /= np.linalg.norm(t_, axis=1)[:, None] + 1e-12
+                    L_ = (np.roll(r, 1, 0) + np.roll(r, -1, 0)) / 2 - r
+                    r = r + f_ * w_ * (L_ - (L_ * t_).sum(1)[:, None] * t_)
+                r[:, 2] -= w_[:, 0] * np.maximum(r[:, 2] - prof(np.arctan2(r[:, 0], r[:, 1] - ay)) - 0.001, 0.0)
                 hit = [SKIN_BVH.find_nearest(Vector(p)) for p in r]
                 q = np.array([h[0][:] for h in hit])
                 n = np.array([h[1][:] for h in hit])
                 h_ = ((r - q) * n).sum(1)
-                r = r - n * (h_ - np.clip(h_, 0.0, taut))[:, None]
+                # (out of her at once; in toward her only softly: pulled straight in, points over the crease
+                # where her neck meets her shoulders all went to the same point of it)
+                r = r - n * (np.minimum(h_, 0.0) + 0.2 * np.maximum(h_ - taut, 0.0))[:, None]
+                # (and the arc behind her kept evenly spaced along itself, its ends on the front's)
+                nf_ = len(fr)
+                pl = np.concatenate([r[nf_ - 1:], r[:1]])
+                sl = np.r_[0, np.cumsum(np.linalg.norm(np.diff(pl, axis=0), axis=1))]
+                tq = np.linspace(0, sl[-1], len(pl))[1:-1]
+                r[nf_:] = np.stack([np.interp(tq, sl, pl[:, k]) for k in range(3)], 1)
             c = np.concatenate([r, r[:1]])
+            if os.environ.get("CORD_DUMP"):
+                np.savez(os.environ["CORD_DUMP"], before=r0_, after=r, w=w_[:, 0])
             tg_ = np.diff(np.concatenate([r, r[:2]]), axis=0)
             tg_ /= np.linalg.norm(tg_, axis=1)[:, None] + 1e-12
             ang = np.degrees(np.arccos(np.clip((tg_[1:] * tg_[:-1]).sum(1), -1, 1)))
@@ -8460,7 +8511,7 @@ def reaver():
         # as the skin nearest it did, and taut over the hollow between them)
         *(ribbon("reaver.cord", cord_t, 0.004, "blackleather", lift=0.0025, thick=0.003, taut=0.008,
                  centre=np.array([0.0, 0.005, neck_z - 0.05]), closed=NAPE_CORD >= 0,
-                 nape=(neck_z - NAPE_CORD, -0.02) if NAPE_CORD >= 0 else None) if TAUT_CORD else
+                 nape=(neck_z - NAPE_CORD, -0.02, head("neck_01")[1]) if NAPE_CORD >= 0 else None) if TAUT_CORD else
           ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003)),
         *fangs("reaver.fangs", fang_at, fang_out, fang_down, "bone"),
         # Beneath it a G-string hung from the belt itself: a narrow front
