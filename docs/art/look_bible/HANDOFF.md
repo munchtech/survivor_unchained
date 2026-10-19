@@ -19,8 +19,10 @@ Written by look bible 2 (agent ad893bff74a36d3e8, su-lead-max), 18 October 2026,
 ## Done
 - **1a armor metal, 1b skin:** with the owner (unchanged; keep 1a stable for armor 2 and touch-up 3).
 - **Boards 1c-1j built** (d0f8dddd): pages `03_light_grade_mist.md` ... `10_props_flames.md`, boards in `look_bible_refsoards..10_*.jpg`, our 1:1 frames in `frames/` (copied from the cinematics worktree before it goes: c01-c04 shots, `play_12/20/33` from playc2, `play_w84` from playw, a 720p capture).
-- **Round 1 of my judge (xhigh, two foreground su-lead-max judges):** 1g and 1j PASS with fixes; 1c, 1d, 1e, 1f, 1h, 1i FAIL. Every fix is written out, with replacement text, in `look_bible_refs\judge1_1c-1f_verdict.md` and `r1_1g-1j_verdict.md`. **I accept all of them**; apply them, don't re-judge round 1.
+- **Round 1 of my judge (xhigh, two foreground su-lead-max judges):** 1g and 1j PASS with fixes; 1c, 1d, 1e, 1f, 1h, 1i FAIL. Every fix is written out, with replacement text, in `look_bible_refs\judge
+1_1c-1f_verdict.md` and `r1_1g-1j_verdict.md`. **I accept all of them**; apply them, don't re-judge round 1.
 - Main got my first report (list + estimate). No board has gone to main yet.
+- **Provisional armor budget sent to main for armor 2** (confirm it on the budgets page): tier-1 LOD0 per slot piece, shell plus adornment: top or bottom up to 30k (20k typical), paired pieces 15-20k a pair, small 8k; nine slots about 150-160k, so she is about 300-350k dressed with body and hair (about 1M today: Warden 727k, body 92k, long hair 173k, PERF_AUDIT). Gameplay LOD at most 25% of LOD0, shadow LOD at most 10%, at most 2 draws per piece and about 20 per pass dressed (95 today).
 
 ## Next, in order
 1. **Apply round 1** in `look_bible_refs	oolsoards_text.py` (captions, trick and DONE lines) and `gen_pages.py` (EXTRA: tier, owners, sources), then `python gen_boards.py` and `python gen_pages.py`. Reference swaps the judges named after looking: 1c PoE2 #3 -> `diablo4_03` (low sun, play camera); 1f add or swap -> `diablo4_08` (outcrops with no seam); 1i add `titanquest2_08` (people at the play camera); 1j Lies of P -> `nrftw_13` (hearth and candles, play camera). Still to find (look at thumbnails first; `steam_pull.py` can fetch other games):
