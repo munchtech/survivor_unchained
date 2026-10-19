@@ -54,6 +54,10 @@ uniform float gm_end = 15.0;
 uniform float gm_edge = 0.10;
 // The body's light (under the tonemapper's knee, so it stays orange: brighter it went cream).
 uniform float gm_body = 0.6;
+// Its age (judge 7 (2): from f95 what was left burnt on as one flat opaque orange): over sim frames gm_cool_lo..gm_cool_hi
+// (game f90..f102) what is left of the fire cools through dark red into the smoke, its fire gone, fading.
+uniform float gm_cool_lo = 12.9;
+uniform float gm_cool_hi = 19.2;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
 
 void vertex() {
@@ -92,11 +96,13 @@ void fragment() {
 		// (the atlas's hottest runs low over sim frames 4-8, p99 0.27-0.3 against 0.45 either side: the core held through it)
 		heat *= 1.0 + 0.3 * smoothstep(3.0, 4.5, f) * (1.0 - smoothstep(6.5, 8.5, f));
 		float core = smoothstep(gm_lo, gm_hi, heat) * (1.0 - smoothstep(gm_end - 6.0, gm_end, f));
-		float t = clamp(heat / gm_lo, 0.0, 1.0);
+		float cool = smoothstep(gm_cool_lo, gm_cool_hi, f);
+		float t = clamp(heat / gm_lo, 0.0, 1.0) * (1.0 - cool);
 		// dark red at the edges, orange through the body, white-yellow at the core
 		vec3 hue = mix(vec3(1.0, 0.04, 0.0), vec3(1.0, 0.24, 0.0), smoothstep(0.45, 0.9, t));
 		hue = mix(hue, vec3(1.0, 0.86, 0.62), core);
 		float lum = max(l, 0.02) * mix(0.25 * gm_body, gm_body, smoothstep(gm_edge / gm_lo, 0.9, t)) * (1.0 + gm_hot * mix(0.4, 1.0, smoothstep(2.0, 4.0, f)) / gm_body * core); // (held under the knee as the birth hands over: empty field 3.2% at f70)
+		lum *= 1.0 - 0.92 * cool;
 		vec3 g = hue * (lum / dot(hue, vec3(0.2126, 0.7152, 0.0722)));
 		c.rgb = mix(c.rgb, g * c.a, gm * smoothstep(1.5, 3.0, f));
 	}

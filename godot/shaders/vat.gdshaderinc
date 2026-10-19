@@ -167,8 +167,11 @@ void fragment() {
 		if (flare_fire.w > 0.0) {
 			float fw = clamp(flare_fire_w((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz)), 0.0, 1.0);
 			vec3 fc = flare_fire_col();
-			ALBEDO = mix(ALBEDO, fc * 0.55, fw * 0.8);
-			EMISSION = mix(EMISSION, fc * fire_rim, fw);
+			// Only the ice takes the fire's colour (judge 7 (1): a charred body painted fc * 0.55 by it read as a beige
+			// mannequin until the fire went); the char keeps its black and catches the fire at its rim only.
+			float ice = clamp(fx.z * 2.0, 0.0, 1.0);
+			ALBEDO = mix(ALBEDO, fc * 0.55, fw * 0.8 * ice);
+			EMISSION = mix(EMISSION, fc * fire_rim, fw * ice) + fc * fire_rim * fw * (1.0 - ice) * pow(rim, 3.0) * 0.35;
 		}
 	}
 }

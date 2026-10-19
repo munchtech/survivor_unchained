@@ -245,10 +245,11 @@ public partial class FlareFx : Node3D
             RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
             UploadMarks();
             // (Judge 6 A2's check, for the pictures' log: bodies the ring passed 4+ frames ago, as CrowdView drew them last frame.)
-            if (lastAt > 0 && !audited && id == "burns_twice" && t >= lastAt + RingTime(ringMax) + 6 / 60.0)
+            // (Again at the ring's end +0.3 s and +0.55 s, while the fireball burns over the bodies: judge 7 (1).)
+            if (lastAt > 0 && audited < 3 && id == "burns_twice" && t >= lastAt + RingTime(ringMax) + 6 / 60.0 + AuditAfter[audited])
             {
-                audited = true;
-                if (Args.Has("shot")) GD.Print($"flare {id}: ring +4f, bodies in the ring drawn {CrowdView.FlareAuditSeen}, neither shattered nor charred {CrowdView.FlareAuditBad}");
+                if (Args.Has("shot")) GD.Print($"flare {id}: ring +4f +{AuditAfter[audited]:0.00}s, bodies in the ring drawn {CrowdView.FlareAuditSeen}, neither shattered nor charred {CrowdView.FlareAuditBad}");
+                audited++;
             }
             if (lastAt > 0)
             {
@@ -346,7 +347,7 @@ public partial class FlareFx : Node3D
         Stop = 0;
         ramp = 1;
         releaseAt = spendAt = lastAt = -1;
-        audited = false;
+        audited = 0;
         colT = -1;
         BoomClear();
         spendLightT = -1;
@@ -466,7 +467,8 @@ public partial class FlareFx : Node3D
     }
 
     float ringMax = 16;
-    bool audited;
+    int audited;
+    static readonly double[] AuditAfter = { 0, 0.3, 0.55 };
 
     int StandingIn(Battle b)
     {

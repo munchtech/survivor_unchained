@@ -129,11 +129,13 @@ public partial class CrowdView : Node3D
 
     static Color Charred(Color tint, float k) => k <= 0 ? tint : new Color(Mathf.Lerp(tint.R, CharTint.R, k), Mathf.Lerp(tint.G, CharTint.G, k), Mathf.Lerp(tint.B, CharTint.B, k), tint.A);
 
-    static void Audit(double x, double z, float k)
+    /// <summary>Counts what is drawn: the char the body's paint gets, and whether it is ice (vat.gdshaderinc paints the
+    /// fireball's colour only on the frozen, so a body drawn unfrozen and charred is black under it; judge 7 (1)).</summary>
+    static void Audit(double x, double z, float k, float frozen = 0)
     {
         if (FlareRingPast?.Invoke(x, z) != true) return;
         FlareAuditSeen++;
-        if (k < 0.99f) FlareAuditBad++;
+        if (k < 0.99f || frozen > 0) FlareAuditBad++;
     }
 
     /// <summary>A cinematic's say over a creature it stages (set by the cinematic, null when none plays):
@@ -384,7 +386,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = TintOf(e);
         float chr = e.State == EnemyState.Dying ? g.Char : FlareChar?.Invoke(ex, ez, true) ?? 0;
         tint = Charred(tint, chr);
-        Audit(ex, ez, chr);
+        Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
         living++;
@@ -425,7 +427,7 @@ public partial class CrowdView : Node3D
             }
             var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - st.Facing) * Godot.Basis.FromScale(Vector3.One * st.Scale);
             // (A statue still standing where the ring passed 4 frames ago is a body neither shattered nor charred.)
-            Audit(st.X, st.Z, 0);
+            Audit(st.X, st.Z, 0, 1);
             Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, 0, 0, 1, 0, st.Tint, st.Glow);
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);
