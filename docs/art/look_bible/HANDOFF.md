@@ -1,6 +1,6 @@
-# Handoff: art direction, the look bible (look bible 1 -> 2)
+# Handoff: art direction, the look bible (look bible 2 -> 3)
 
-Written by look bible 1 (agent a16fe961b1958e71b, su-lead-max), 18 October 2026, at its context budget. Read README.md beside this page first: it holds the owner's words and the page index.
+Written by look bible 2 (agent ad893bff74a36d3e8, su-lead-max), 18 October 2026, at its context budget (boards cost more context than planned: ~250k for eight boards). Read README.md beside this page first: it holds the owner's words and the page index.
 
 ## Your brief (from the coordinator, unchanged)
 - **Where you work:** the MAIN checkout (`C:\Users\munch\Desktop\survivorsunchained`, the coordinator's integration branch).
@@ -17,57 +17,34 @@ Written by look bible 1 (agent a16fe961b1958e71b, su-lead-max), 18 October 2026,
 - **Effort:** coding and menial work go to su-worker or su-runner; judges are su-lead-max in the foreground (API judges are paused). Put `Context budget:` and your agent id in every helper brief.
 
 ## Done
-- **1a, her armor metal:** `01_armor_metal.md`, board `look_bible_refs\boards\01_armor_metal.jpg`. Passed main, pushed (c1e1b888), relayed to touch-up 2 (a680d86c94df0eae7) and the armor pipeline (a6985f1db7321f528), and with the owner.
-- **1b, her skin:** `02_skin.md`, board `boards\02_skin.jpg`. v2 swapped the child's face for an adult's (2fc3e33c). Main is taking it to the owner.
-
-## In progress
-- **The perf runner** (su-runner a2ec5dc8e65576b86, approved by main).
-  - It runs `look_bible_refs\tools\perf_lb.py` in the main checkout under the godot turn, with `--stale-ok` because the heroine and hair imports there are stale (10 models). Main's conditions: no import, build or edits; a temporary `godot/override.cfg` (perf user dir), deleted after; a `git status` check for modified files.
-  - Output goes to `C:\Users\munch\Desktop\survivorsunchained_inputs\look_bible_perf\`: `summary.md` (tables), plus `.json/.csv/.log` per case.
-  - Measured HEAD cff7b440, C# build 17 Oct 23:17 (Debug): CPU main-thread ms are overstated, so budget from draws, primitives, VRAM and GPU ms.
-  - First result, lf_hi (lowford at 1440p high, 300 s of the autopilot's prologue): GPU 5.5 ms mean / 15.8 p99, 408 draws + 2246 shadow draws, about 4.9M primitives, VRAM 2405 MB.
-  - Its final report comes to a16fe961. If you don't get it, read summary.md and ask main whether the runner reported modified files.
-- **The inventory extraction** (done, partial): `look_bible_refs\inventory\inventory.csv` (323 rows) and `summary.md`.
-  - Code-made pieces (graves, fences, crypt, walls, towers, lamp posts, tents, the Warden, grass, flame cards) have no triangle counts.
-  - Outfit triangle totals sum every variant in the file, not one worn outfit (PERF_AUDIT has the worn numbers).
-  - The NPCs and the risen are Quaternius "Person" builds (Visuals.cs, npcs.json).
-  - Title and creation are the lowford camp itself.
-- **Technique sources** (done): `look_bible_refs\tricks_sources.md`, topics 1-10 with verified quotes. The strongest: Ghost of Tsushima's "stylized realism" (Patry, SIGGRAPH 2021), Filament's metal values, Sea of Thieves' shore foam, Valve's flow maps, Quilez and Mikkelsen anti-tiling, and Diablo IV's "old masters" / "Darkness does not mean bleakness".
+- **1a armor metal, 1b skin:** with the owner (unchanged; keep 1a stable for armor 2 and touch-up 3).
+- **Boards 1c-1j built** (d0f8dddd): pages `03_light_grade_mist.md` ... `10_props_flames.md`, boards in `look_bible_refsoards..10_*.jpg`, our 1:1 frames in `frames/` (copied from the cinematics worktree before it goes: c01-c04 shots, `play_12/20/33` from playc2, `play_w84` from playw, a 720p capture).
+- **Round 1 of my judge (xhigh, two foreground su-lead-max judges):** 1g and 1j PASS with fixes; 1c, 1d, 1e, 1f, 1h, 1i FAIL. Every fix is written out, with replacement text, in `look_bible_refs\judge1_1c-1f_verdict.md` and `r1_1g-1j_verdict.md`. **I accept all of them**; apply them, don't re-judge round 1.
+- Main got my first report (list + estimate). No board has gone to main yet.
 
 ## Next, in order
-1. **Boards 1c-1j**, one per subject, same format. The ISN'T frames and their causes per area are in the audit verdicts: `.claude\worktrees\agent-a59432fe3bfc6eb92\tools\scratch\cin6\judge\gateA_verdict.md` and `gateB_verdict.md`, frames `godot\.shots\playc2_<cine>_s<id>_1.png`. Gameplay frames: `playc2_00..61.png`, `playw_*.png`.
-   - Copy every frame you use into `frames/` (as with c04a_sa6 etc.): that worktree is removed when cinematics merges.
+1. **Apply round 1** in `look_bible_refs	oolsoards_text.py` (captions, trick and DONE lines) and `gen_pages.py` (EXTRA: tier, owners, sources), then `python gen_boards.py` and `python gen_pages.py`. Reference swaps the judges named after looking: 1c PoE2 #3 -> `diablo4_03` (low sun, play camera); 1f add or swap -> `diablo4_08` (outcrops with no seam); 1i add `titanquest2_08` (people at the play camera); 1j Lies of P -> `nrftw_13` (hearth and candles, play camera). Still to find (look at thumbnails first; `steam_pull.py` can fetch other games):
+   - 1d: a night river at the play camera (drop Kena: her age isn't stated, an 18+ rule risk). Try titanquest2_17, poe2_08, vrising, lastepoch.
+   - 1e: conifers from the play camera (the judge found none in our D4 shots). Try vrising, valheim, enshrouded, lastepoch; else a cinematic conifer plus the whorl recipe.
+   - 1f: a cobbled street at the play camera (bg3_00 or titanquest2_00 paving) and frost at the play camera (diablo4_00 or diablo4_07, snow); drop the Witcher 3 wheat field.
+   - 1i: an ISN'T frame of our villagers at the town camera (playc2_52-61 or playw_*, in `.claude\worktreesgent-a59432fe3bfc6eb92\godot\.shots\`; copy it into `frames/`).
+   - 1j: a camp fire reference (kcd2_02 may show one).
+2. **Round 2:** one or two foreground su-lead-max judges at xhigh on the rebuilt boards, briefed like round 1 (copy the brief from the two judge spawns: whole-frame gate per board, the finish-line sentences, the six checks) plus "round 1's fixes are listed in the verdict files; check they landed". Round cap 2-3, then close what is left as known.
+3. **Send the passing boards to main** in two batches (1c-1f, 1g-1j), each with its path and one line. Main judges and takes them to the owner. No building before the owner passes them.
+4. **Budgets page** (`11_budgets.md`): inputs `survivorsunchained_inputs\look_bible_perf\summary.md` (frame times are in each case's .json/.csv; its fps columns read "-"), PERF_AUDIT, the inventory. Target: the owner's RTX 5080 at 1440p, plus a stated min-spec (e.g. 60 fps at 1080p medium on a Steam-survey-median GPU). Per tier: triangles, texture sizes, materials, draws AND shadow draws (the judges flagged shadow draws on every board: 2,246 at the Low Ford, 6,091 at the hub). Put the measured HEAD and the stale-import note on the page.
+5. **Inventory page** (`12_inventory.md`): mark each row of `look_bible_refs\inventory\inventory.csv` keep, rework or build, with its owner lead; decide the rules, then a su-worker applies them.
+6. **Checklist page** (`13_launch_checklist.md`): the first 20-30 minutes from `docs/cinematics/shoot/animatics/prologue.txt` (title and creation at the lowford camp, C01, the road, C02, the Warden fight, C03, the ford at dawn, C04 A, the road north, C04 B, the town), with DONE per beat, pointing at the boards.
 
-   | Board | ISN'T frames | Candidate refs (store shots in `look_bible_refs\steam\<game>\`) |
-   |---|---|---|
-   | 1c light, grade, mist (the biggest cheap lever) | C01 s7/s9, C04 B sb1 | diablo4_01/04/05/06 (play camera, pools of light, mist), lotf2023_02/07, liesofp_08, eldenring_00/07 |
-   | 1d water and shore | C03 s12, C04 A sa1 | titanquest2_09/10 (iso shore), seaofthieves, avowed_00/08, rdr2 |
-   | 1e foliage | C01 s7, C04 A sa2, sa8 | tsushima, kcd2_04/06, titanquest2_01/03/13, witcher3, hzd, kena |
-   | 1f terrain and road | C01 s0, C04 B sb5 | kcd2_06, titanquest2_12/13, diablo4_08/09 |
-   | 1g stone and the castle | C01 s8a | eldenring_04, liesofp_05/06, kcd2_07 |
-   | 1h the town | C04 B sb1-sb5, playc2_51/54 | kcd2_01/07, witcher3, titanquest2_00, bg3_05, oblivionrm |
-   | 1i NPCs | C02 s1/s9, C03 s1/s10, C04 B sb4/sb4b, playc2_30 | kcd2_09, banishers_02/12, dd2_03, bg3_00 |
-   | 1j story props and flames | C01 s8a, C03 s6, C04 B sb4a | bg3_13, banishers_02, liesofp_00 |
+Left: about 1.5 h for round 1's fixes and round 2, then budgets 1.5 h, inventory 1.5 h, checklist 1 h, the owner's round 1-2 h.
 
-   - Not yet viewed: tsushima, witcher3, seaofthieves, rdr2, hzd, kena, valheim, vrising, enshrouded, poe2, nrftw. Make a thumbnail sheet first with `tools\sheet.py`.
-   - Tier 2 and 3 tricks go on 1i: shared base and atlas, tint variation, VAT. A tier-2 face in a cinematic close-up is staged (a hood, backlight, mist, the Warden's "two blue points" of eyes) or gets a hero head.
-2. **Budgets page:**
-   - Inputs: summary.md, PERF_AUDIT (heroine pieces: Warden 727k triangles and 95 draws a pass before merging; the hub's 6091 shadow draws), and the inventory.
-   - State the target hardware (the owner's RTX 5080 at 1440p; pick and justify a min-spec, e.g. 60 fps at 1080p medium on a Steam-survey-median GPU), and set per-tier triangles, texture sizes, materials and draws.
-   - Write the measured HEAD and the stale-import note on the page.
-3. **Inventory page:** mark each CSV row keep, rework or build, and its owner. Tutorial environment lead: terrain, water, trees, castle, road, town. Story characters via Marionette: the drowned, the warden, Grimtunnel, villagers. Cinematics: staging. Touch-up and the armor pipeline: her.
-4. **The checklist:** the first 20-30 minutes, from `docs/cinematics/shoot/animatics/prologue.txt` (C01 -> the road -> C02 -> the Warden fight -> C03 -> the ford at dawn -> C04 A -> the road north -> C04 B -> the town). Add the title and creation (the lowford camp at the fire), and DONE for each beat.
-
-Left: about 4 h for the boards, about 1.5 h for the budgets, 1.5 h for the inventory, 1 h for the checklist, and 1-2 h for the owner's round.
-
-## Tools (`look_bible_refs\tools\`; copies in the coordinator's scratchpad `lb\`)
-- `board.py spec.json`: builds a board from a JSON spec (rows of tiles with crop boxes and captions, then text panels; `"fit": "contain"` keeps our letterboxed frames whole). Examples: `b01_armor.json`, `b02_skin.json`.
-- `sheet.py OUT COLS THUMB_W files...`: thumbnail contact sheets.
-- `steam_pull.py OUTDIR appid:slug ...`: official store screenshots (24 max per game) into `steam\<slug>\`, logged in `sources.csv`.
-- `perf_lb.py`: the perf cases, described above.
+## Tools (`look_bible_refs	ools\`)
+- `boards_text.py` (captions, panels, tiles with a focus point and zoom) -> `gen_boards.py [03 ..]` writes `b03..b10.json` and runs `board.py`; crops are computed (letterbox bars and an `area` box such as the PoE2 HUD-free region are excluded).
+- `gen_pages.py` writes the repo pages 03-10 from the same text plus its EXTRA dict (one-line look, tier, measured table, owners, sources). Edit the text there, never the generated .md.
+- `docs/art/look_bible/tools/lumstats.py [--crop x0,y0,x1,y1] files...`: luma p5/p50/p95, clipping, saturation, pools.
+- `board.py`, `sheet.py`, `steam_pull.py`, `perf_lb.py`: as before.
 
 ## Gotchas
-- Crop boxes guessed from thumbnails miss: the God of War crop landed on a shoulder. Preview a crop at 480 px before building the board.
-- Store screenshots are mostly action shots, with few material close-ups. Crop hard, and caption what the crop teaches.
-- Keep pictures out of long contexts: view each board once at full size, then fix by numbers.
-- In perf summary.md the fps and ms columns read "-": the harness's JSON names those keys differently. Read frame times from each case's .json or .csv; the GPU ms, draws, primitives and VRAM columns are right.
+- Pictures cost more than they look: ten contact sheets and eight boards at 1280 px took this lead from ~60k to ~240k. View boards at 1280 px, changed tiles as a strip, and let judges see full size.
+- The cinematics successor may re-shoot over `playc2_*` in its worktree: everything the boards use is already in `frames/`.
+- Store shots: crop the HUD (PoE2 orbs, Titan Quest II bars); check every caption against the crop, since judges catch day-versus-night and missing-smoke errors.
+- In perf summary.md the fps and ms columns read "-": read frame times from each case's .json or .csv.
