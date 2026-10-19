@@ -187,7 +187,8 @@ public partial class Game
         var view = new Ui.Callout();
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
-            answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on"));
+            answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
+        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null });
         calloutShown = view;
         AimCallout();
         // (--shot: a frame of each, and a freeze holds until it is taken)
@@ -210,8 +211,39 @@ public partial class Game
     void AimCallout()
     {
         if (calloutShown == null || teacher?.Current is not { } c) return;
-        var (pts, areas, _, _) = Resolve(c);
-        calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null));
+        var (pts, areas, _, worldOn) = Resolve(c);
+        // The look's needs: how big each thing is (a HUD part's ring; a thing in the world, about a
+        // man's width at the camera's distance), and where she stands (the words never cover her).
+        var radii = new List<float>();
+        if (pts.Count > worldOn)
+            radii.Add(c.Target.Hud switch
+            {
+                "art" => Instrument.R + Instrument.Band,
+                "dash" or "draught" => Instrument.SmallR + Instrument.SmallBand,
+                "chain" => 22,
+                _ => Instrument.Sock / 2 + 4,
+            });
+        if (c.Target.World != null)
+            foreach (var w in c.Target.World())
+                if (OnScreen(w) is Vector2 v) radii.Add(Math.Clamp(PxPerMetre(w) * 0.55f, 20, 56));
+        Rect2? her = null;
+        if (Battle?.Player is { } pl && scene != null)
+        {
+            double gy = scene.HeightAt(pl.X, pl.Z);
+            if (OnScreen((pl.X, gy, pl.Z)) is Vector2 feet && OnScreen((pl.X, gy + 1.9, pl.Z)) is Vector2 head)
+            {
+                float h = Math.Max(40, feet.Y - head.Y);
+                her = new Rect2(feet.X - h * 0.36f, head.Y - 6, h * 0.72f, h + 30);
+            }
+        }
+        calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null) { Her = her, Radii = radii });
+    }
+
+    /// <summary>How many of the canvas's pixels a metre is, at a point in the world.</summary>
+    float PxPerMetre((double X, double Y, double Z) p)
+    {
+        var w = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
+        return camera.UnprojectPosition(w + camera.GlobalTransform.Basis.X).DistanceTo(camera.UnprojectPosition(w));
     }
 
     /// <summary>A key while a freeze is up: its answer goes on (and happens), any other key but
