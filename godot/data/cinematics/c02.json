@@ -32,11 +32,15 @@
         {"do": "mist", "name": "river", "where": {"abs": [7.0, -0.8, -41.0]}, "size": [26, 2.2, 18], "density": 0.75, "color": "#8494aa", "falloff": 2.0},
         {"do": "glow", "name": "back", "where": {"abs": [11.5, 0.6, -50.0]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 9.0, "range": 16},
         {"do": "water", "level": 0.4},
-        {"do": "globe", "light": 4, "level": 0.25},
-        {"do": "globe", "light": 5, "level": 0.25},
-        {"do": "globe", "light": 6, "level": 0.25},
+        {"do": "globe", "light": 4, "level": 0.07, "color": "#8ac8ff"},
+        {"do": "glow", "name": "post4", "where": [0.028, 3.279, -32.901], "color": "#8ac8ff", "size": 0.001, "energy": 1, "spread": 900, "halo": 0.32, "clear": true},
+        {"do": "globe", "light": 5, "level": 0.07, "color": "#8ac8ff"},
+        {"do": "glow", "name": "post5", "where": [-9.586, 3.24, -49.039], "color": "#8ac8ff", "size": 0.001, "energy": 1, "spread": 900, "halo": 0.32, "clear": true},
+        {"do": "globe", "light": 6, "level": 0.07, "color": "#8ac8ff"},
+        {"do": "glow", "name": "post6", "where": [9.624, 3.645, -49.033], "color": "#8ac8ff", "size": 0.001, "energy": 1, "spread": 900, "halo": 0.32, "clear": true},
         {"do": "music", "mood": "silence"},
         {"do": "event", "name": "warden_cine"},
+        {"do": "lamp", "actor": "warden", "flame": 0.28, "halo": 0.55},
         {"do": "place", "actor": "warden", "where": {"abs": [2.6, -1.2, -44.5]}, "heading": -1.5708, "tilt": -90},
         {"do": "anim", "actor": "warden", "clip": "Spell_Simple_Idle_Loop", "from": 0.5, "speed": 0, "blend": 0},
         {"do": "move", "to": "her", "dur": 3.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
@@ -64,8 +68,8 @@
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.55, 0.0, -0.85]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
-        {"do": "rig", "name": "key", "energy": 0.7, "color": "#a9b6cc", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.25, 0.1, -0.9]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
-        {"do": "rig", "name": "ember", "energy": 0.45, "color": "#ff7a4a", "angle": 20, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.1, -0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
+        {"do": "rig", "name": "key", "energy": 0.7, "color": "#a9b6cc", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.8, 0.1, -0.45]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "ember", "energy": 0.25, "color": "#ff7a4a", "angle": 40, "range": 1.2, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.1, -0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
         {"at": 0.3, "do": "line", "id": "cin_none_cross.call"},
         {"do": "face", "keys": {"brows_up": 0.2}, "over": 0.8},
         {"do": "gaze", "look": [0.15, -0.1]}
@@ -74,16 +78,15 @@
     {
       "id": "5",
       "type": "LS",
-      "dur": 5.0,
+      "dur": 3.0,
       "note": "Low over the water, south-west of him: he rises, the head first, water sheeting off hood and beard; sits up like a drowned man sitting up, a pause; stands, and keeps standing, taller than the far post behind him. The lamp never touches the water.",
       "cam": {"pos": {"abs": [2.4, -0.7, -40.2]}, "at": {"abs": [5.0, 1.5, -44.5]}, "lens": 24},
-      "still": 4.2,
+      "still": 2.2,
       "cues": [
-        {"do": "place", "actor": "warden", "where": {"abs": [5.0, -2.2, -44.5]}, "heading": -0.6, "tilt": 0},
-        {"do": "move", "actor": "warden", "to": {"abs": [5.0, -1.35, -44.5]}, "dur": 1.2, "heading": -0.6},
-        {"do": "lamp", "actor": "warden", "glow": 1.0, "over": 2.0},
-        {"do": "anim", "actor": "warden", "clip": "folk/m_rise_stiff", "from": 0, "speed": 1, "blend": 0},
-        {"do": "music", "mood": "mystery", "intensity": 0.35, "over": 4.0},
+        {"do": "place", "actor": "warden", "where": {"abs": [5.0, -1.35, -44.5]}, "heading": -0.6, "tilt": 0},
+        {"do": "lamp", "actor": "warden", "glow": 1.0},
+        {"do": "anim", "actor": "warden", "clip": "folk/m_rise_stiff", "from": 2.0, "speed": 1, "blend": 0},
+        {"do": "music", "mood": "mystery", "intensity": 0.35, "over": 2.0},
         {"do": "sfx", "name": "water_close", "gain": 0.6}
       ]
     },
@@ -105,7 +108,7 @@
       "type": "2S",
       "dur": 4.0,
       "note": "Profile from the west, both in frame: he bends a long way down and lifts the lamp to her face, the way a keeper of a crossing looks at a traveller. Halfway up the lamp-arm trembles, once, badly. He steadies it. (Calling: the warden's shield between them, the reaver's chin up, the arcanist's fire meeting his blue, the stalker's arrow on his eye.)",
-      "cam": {"pos": [-2.0, 1.3, -26.8], "at": {"abs": [2.7, 1.1, -32.0]}, "lens": 28},
+      "cam": {"pos": [-2.21, 1.3, -31.16], "at": {"abs": [2.7, 1.25, -31.85]}, "lens": 35},
       "cues": [
         {"do": "anim", "actor": "warden", "clip": "folk/m_bend_lift", "from": 0, "speed": 1, "blend": 0.4},
         {"do": "gaze", "look": [0, -0.6]},
@@ -125,8 +128,8 @@
       "cues": [
         {"do": "music", "mood": "silence"},
         {"do": "hide", "actor": "warden"},
-        {"do": "rig", "name": "ember", "energy": 0.3, "color": "#ff7a4a", "angle": 18, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.15, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.06, -0.06, -0.03]}},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.4, 0.1, -0.15]}, "color": "#c6cede", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.6, "range": 0.8, "spec": 1.0},
+        {"do": "rig", "name": "ember", "energy": 0.35, "color": "#ff7a4a", "angle": 40, "range": 1.2, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.15, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.06, -0.06, -0.03]}},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.28, 0.1, -0.33]}, "color": "#c6cede", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.6, "range": 0.8, "spec": 1.0},
         {"do": "gaze", "look": [-0.3, -0.25], "wander": 0.06},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
@@ -135,24 +138,16 @@
       ]
     },
     {
-      "id": "9",
-      "type": "CU",
-      "dur": 3.0,
-      "note": "Low beside her, up at him past the lamp: his face under the hood lit from below, the beard streaming, two points of blue for eyes. He holds the look a full second, then straightens.",
-      "cam": {"pos": [3.3, 0.5, -31.3], "at": {"actor": "warden", "bone": "head"}, "lens": 50},
-      "cues": [
-        {"do": "hide", "actor": "warden", "hidden": false},
-        {"at": 1.2, "do": "anim", "actor": "warden", "clip": "Sword_Idle", "blend": 0.8},
-        {"at": 1.4, "do": "glow", "name": "held", "remove": true}
-      ]
-    },
-    {
       "id": "10",
       "type": "LS",
       "dur": 2.0,
       "note": "Low on the water behind his legs, looking east down the river: every one of the drowned turns its face toward her at once, a wave down the rows.",
-      "cam": {"pos": {"abs": [1.4, -0.5, -31.6]}, "at": {"abs": [10.4, -1.18, -43.4]}, "lens": 65, "focus": {"abs": [10.4, -0.7, -43.4]}, "fstop": 2.8},
+      "cam": {"pos": {"abs": [1.71, -0.5, -31.41]}, "at": {"abs": [10.4, -0.7, -43.4]}, "lens": 35, "focus": {"abs": [10.4, -0.7, -43.4]}, "fstop": 2.8},
       "cues": [
+        {"do": "hide", "actor": "warden", "hidden": false},
+        {"do": "anim", "actor": "warden", "clip": "Sword_Idle", "blend": 0.8},
+        {"do": "glow", "name": "held", "remove": true},
+        {"do": "rig", "name": "legrim", "energy": 1.6, "color": "#9fb8ff", "angle": 30, "from": {"abs": [3.6, -0.6, -34.0]}, "aim": {"actor": "warden", "bone": "foot_l", "off": [-0.4, 0.5, 0]}},
         {"do": "rig", "name": "rows", "energy": 8.0, "color": "#8ac8ff", "angle": 20, "from": {"actor": "her", "bone": "head", "off": [0, 0.3, 0]}, "aim": {"abs": [10.4, -0.7, -43.4]}},
         {"at": 0.3, "do": "look", "actor": "drowned", "where": [2.5, 1.5, -31.0], "over": 0.45, "stagger": 0.07},
         {"at": 0.4, "do": "sfx", "name": "rasp", "gain": 0.5}
@@ -174,7 +169,13 @@
         {"at": 0.4, "do": "vfx", "kind": "nova", "where": [0.0, 0, -33.5], "radius": 3, "school": "frost"},
         {"at": 0.4, "do": "vfx", "kind": "nova", "where": [-9.7, 0, -49.6], "radius": 3, "school": "frost"},
         {"at": 0.4, "do": "vfx", "kind": "nova", "where": [9.7, 0, -49.6], "radius": 3, "school": "frost"},
-        {"at": 1.6, "do": "title", "title": "The Ford-Warden", "sub": "Keeper of the Low Crossing", "kind": "danger", "seconds": 3.2}
+        {"at": 1.6, "do": "title", "title": "The Ford-Warden", "sub": "Keeper of the Low Crossing", "kind": "danger", "seconds": 3.2},
+        {"at": 0.4, "do": "globe", "light": 4, "level": 0.02, "over": 0.5},
+        {"at": 1.4, "do": "globe", "light": 4, "level": 0.07, "over": 1.2},
+        {"at": 0.4, "do": "globe", "light": 5, "level": 0.02, "over": 0.5},
+        {"at": 1.4, "do": "globe", "light": 5, "level": 0.07, "over": 1.2},
+        {"at": 0.4, "do": "globe", "light": 6, "level": 0.02, "over": 0.5},
+        {"at": 1.4, "do": "globe", "light": 6, "level": 0.07, "over": 1.2}
       ]
     },
     {
@@ -187,12 +188,13 @@
         {"do": "atmosphere", "preset": "night", "from": "now", "over": 2.0},
         {"do": "mist", "name": "river", "density": 0, "over": 2.0},
         {"do": "water", "level": 1, "over": 2.0},
-        {"do": "globe", "light": 4, "level": 1, "over": 2.0},
-        {"do": "globe", "light": 5, "level": 1, "over": 2.0},
-        {"do": "globe", "light": 6, "level": 1, "over": 2.0},
+        {"do": "globe", "light": 4, "level": 1, "over": 0.6, "at": 1.4},
+        {"do": "globe", "light": 5, "level": 1, "over": 0.6, "at": 1.4},
+        {"do": "globe", "light": 6, "level": 1, "over": 0.6, "at": 1.4},
         {"at": 0.0, "do": "play"},
         {"do": "anim", "actor": "warden", "clip": "Idle_Shield_Loop", "blend": 0.3},
-        {"at": "end", "do": "event", "name": "warden_up"}
+        {"at": "end", "do": "event", "name": "warden_up"},
+        {"at": "end", "do": "lamp", "actor": "warden", "flame": 1, "halo": 1}
       ]
     }
   ],
