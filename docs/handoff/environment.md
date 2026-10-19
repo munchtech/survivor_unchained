@@ -1,27 +1,31 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Paused here; next: (env lead 2, at the coordinator's wind-down, 19 Oct)
-- **Next: E1 round 3's judge** (the round cap; xhigh, whole-frame gate, `su-lead-max` in the foreground). Sheets (round 0 left, round 3 right): `C:\Users\munch\Desktop\survivorsunchained_inputs\env_e1\r3\` r3_night_play, r3_dawn_day_play, r3_closeup_night, r3_town_dawn, r3_town_day. Reuse the round-2 judge brief (`C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_env1_8f465914\env\e1_judge2_brief.md`) with its "Round 2" and "Numbers" sections replaced by round 3's (below). Then close E1: frames whose light passes but whose gate needs later art (road A's canopy E4, the ford's water E6 and beacon E2, the town kit, the dawn wood road's trees E4) close for E1 and return with those items. Then E2.
-- **Verdicts:** judge 1 `C:\Users\munch\Desktop\survivorsunchained_inputs\env_e1\judge1_verdict.md` (FAIL 1/14); judge 2 `C:\Users\munch\Desktop\survivorsunchained_inputs\env_e1\r2\judge2_verdict.md` (0/17 but "a clear improvement, the structure is right": two faults, warm brown shade and khaki moonlight). Briefs for every helper: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_env1_8f465914\env\` (with the solver's offline grade copy `grade.py`, plus cover.py and chroma.py).
-- **Round 3 (3c4ade60, the solver's diagnosis):**
-  - Night shade: the ambient was blue already, but 5 stops under the moon. Ambient raised to 2.5 stops under (hemi 2.4, env 1.2).
-  - Khaki: AgX on olive grass. Fixed by a new grade step `GradeSettings.Moon` (weak colours take the moon's silver-blue; it's off in non-play presets and on her skin). Moon 4.9.
-  - Dawn and town brown: C04 A's orange sky horizon. Cooled, with a neutral gain; sun #ffdbad at az -60.
-  - Close-up: key 55 deg off her face, color (1, 0.6, 0.35), exposure 1.57.
-  - Smaller: the camp lamp at 22 (zone.json); beacon emission 0.12; night ember stones x1.6. The town spots moved to its streets (`3,3;24,0;0,-24`); town day sun ENE.
-- **Round 3 numbers** (round 0 -> 2 -> 3):
-  - Night p50, camp / road A / road B / ford / wood: 38/36/32/35/33 -> 26/19/49/39/21 -> 28/21/31-37/37/23.
-  - p95/p50: 2.75/2.86/2.0/1.84/2.52.
-  - Pools: .60/.52/.51/.46/.53, under the 0.55 target except the camp. The shade lift flattened them; an untried sweep is `--air-tune ember=2.2,hemi=2.0`.
-  - Shade median RGB about [10,16,21].
-  - Close-up: face 169, 6.0x over the background.
-  - Dawn cover / patch: 48/44/75/17/78 (1.7/1.8/1.9/1.1/1.0). The wood road stays shaded at any azimuth; spot `-5,-66` has a lit patch (1.87).
-  - Town dawn 60/62/63 (1.68/1.64/1.39); town day 31/56/37 (1.46/1.43/1.42).
-  - Clipping <= 0.04%. Fog+mist 0.07-0.10 ms (round 2). Shadow draws not re-run since round 2 (about 351 in play).
-- **Tools:** `--spots`, `tools/scratch/env/shots.py` + `sweep.py` + `shots_cfg.py` (several jobs, one build, one turn), `--air-tune` (colours and grade keys), `--air-old`, `--grade-off`, `--spots-unshadowed`, `--close-key-az`, `--close-moon-off`, the perf flip "mist". Run `dotnet build` before any shoot (shoots don't rebuild the DLL). `dotnet test` 942/0/8 at 3c4ade60.
-- **E1 shadow rules: DONE and measured** (aa758a64, `godot/src/World/ShadowLamp.cs`; `C:\Users\munch\Desktop\survivorsunchained_inputs\env_perf1\e1\`): in play at 1440p high, shadow draws 374-627 (were 2,050-4,400), GPU 4.3-5.8 ms, render CPU 2.4-3.8 (Boss over 3), draws 438-518 (over 450 at Ambush/Post/Boss). Frames are 8-13 ms against 4.5 ms GPU: a CPU-side gap, for E10. Baseline runs `C:\Users\munch\Desktop\survivorsunchained_inputs\env_perf1\` (lf_hi, lf_med reach Exit; her pre-LOD 0.56 ms / 1.39M prims: budget the post-LOD ~0.3 ms, main approved).
-- **Changed beyond the zones (tell cinematics):** c01, c02 and c04a hand-backs blend to the new preset name "play". The key direction switches on the hand-back cut. Cinemas keep the old shadow rules and sun.
-- **Owner taste calls (both judges recommend yes):** the night close-up background 3.5-6x under her face, not the board's 1.6-1.9x; the dawn sun cheated toward the road's far end instead of true east.
+## Now (env lead 3, 19 Oct): E1 DONE, its MR next; then E2
+- **E1 light closed at the cap.** Judge 3 (round 3b) passed 14 of 17 frames. Judge 4 (round 3c) passed the camp night and the close-up, found no regressions, and passed the ford night by the numbers after the beacon pool (its call). The wood road at dawn closes for E1 and comes back with E4's canopy gap. Sheets, round 0 against final: `C:\Users\munch\Desktop\survivorsunchained_inputs\env_e1\final\`. Round sheets: `env_e1\r3b\`, `env_e1\r3c\`. Judge briefs and tools: `survivorsunchained_inputs\scratch_env3\` (e1_judge3_brief.md, e1_judge4_brief.md, cheek.py).
+- **What rounds 3b-3c changed (dd6ebc40..5b249250):**
+  - Night: the moon at 20 deg; sky 2.2; exposure 1.5; contrast 1.13; her ember 2.2, pale gold #ffd0a0, attenuation 1.8; river mist 0.14, river light 0.17.
+  - The beacons: glow at a quarter, plus their own short cool light (3, 7 m).
+  - Dawn: shade cool (grade tint 0.55, Moon 1.0, sky #6f8fd8); her ember 0.5 by dawn and day.
+  - The crowd's ground blobs are on layer 2 now. A blight decal had been painting them into dark squares.
+  - The close view by night: her own layer (`PlayerView.HerLayer` 11), so the zone lights keep off her face; `CloseFireFill` keeps 0.3 of the nearest fire as warm fill; key 2.5 at 90 deg; her lamp lights the ground but not her; exposure 1.35.
+  - Picture switches: `--ember-att/-range/-color`, `--beacon-glow`, `--beacon-pool`, `--lamp-shadows-off`, `--blob-strength`, `--close-lamp-on-her`, `--close-fire`, `--close-rim-az`. Shot sets `camp`, `camp3`, `nightc`, `close4` in `tools/scratch/env/shots_cfg.py`.
+- **Final numbers.** Night p50, p95/p50 and pools by place:
+  - camp 16, 4.1, .72
+  - road A 14, 3.5, .62
+  - road B 26, 2.6, .55
+  - ford 26-30, 2.1-2.7, .61-.65
+  - wood road 15, 3.2, .57-.71
+  Close-up: face 133-150, background 5.2-5.9x under it, the far cheek 1.2-1.6 stops under. Dawn shade 85-96% cool. Dawn and town cover and patch are as in round 3b. Tests 977/0/8.
+- **Open, routed or later:**
+  - the ford's armoured figure has no rim (rendering);
+  - mist rings round the ford's stones (E6);
+  - the close-up's chest is as bright as her face (polish: aim the key at her head from 25 deg up);
+  - her rim at road B by dawn (rendering).
+  - E2 notes from the judges: the camp lamp's art, Tam's lantern a hot blob, lamp pools on dirt muddy brown.
+  - The wood road at dawn, after E4's gap: re-measure the patch (>= 1.35); if it's still night-dark, lift that zone's dawn sky fill +0.3 stop, never the shared dawn preset.
+- **Owner calls:** the night close-up background at about 6x (judges 2-4 say keep it, and change the bible's night line). The dawn sun is cheated toward the road's far end (judge 2 said yes).
+- **The coordinator's ruling:** E1 goes to main as its own MR (shadow rules and light, one full run and perf first), then E2, then E3, each with its own MR.
+- **The 211 untracked .uid files** that blocked the merge are in the coordinator's scratch, `env3\uid_bak\`. Bin them after the MR; never commit them.
 
 ## Start here (env lead 1, agent afa5095757c4beed6, 18 Oct)
 - Worktree `.claude/worktrees/env-1`, branch `env-1` (cut from integration 19c4915e). `godot/assets` is a junction to this worktree's own `public/assets`: never stash, reset --hard or checkout . here. Merge `origin/claude/vigilant-galileo-l6jqyx` at the start of each step.
@@ -33,7 +37,7 @@
 ## The fixed list (in the order the player sees it; page 13 beats)
 | # | Item | Boards | Budget (page 11) | Rough agent time | State |
 |---|---|---|---|---|---|
-| E1 | Light, grade, mist: zone presets (Low Ford night and dawn, the camp, the town dawn/day), moon 20-30 deg, ambient 2-3 stops under, her ember light, pools from sources, mist planes; shadow rules (one shadowed lamp, no shadows from crowd/fx/scatter/kit pieces, sun distance and 2 splits for the play camera) | 1c | fog+mist <= 0.5 ms; shadow draws <= 1,200 | 4-6 h | open |
+| E1 | Light, grade, mist: zone presets (Low Ford night and dawn, the camp, the town dawn/day), moon 20-30 deg, ambient 2-3 stops under, her ember light, pools from sources, mist planes; shadow rules (one shadowed lamp, no shadows from crowd/fx/scatter/kit pieces, sun distance and 2 splits for the play camera) | 1c | fog+mist <= 0.5 ms; shadow draws <= 1,200 | 4-6 h | DONE (MR) |
 | E2 | Flames and lamps: flame kit (motion-vector flipbook shader, noise flicker), modeled lamp frames and posts, torches, the camp fire (logs with ember cracks and end caps, ash bed, sparks, smoke), the Warden's three blue lamps | 1j | lamp 1.5k tris, 2 draws, no shadow | 6-10 h | open |
 | E3 | Terrain and road: <= 4 layers a pixel (today 7), height blend, anti-tiling + macro, road into the terrain (ruts, verges, no grass), frost by exposure, wet hollows, base blends, decals and scatter; town cobbles (large varied tile, gutters, puddles) | 1f, 1h | 0.8 ms, 40 draws | 10-14 h | open |
 | E4 | Foliage kit: spruce, birch, alder in 3 sizes, ferns, bushes, grass clumps; 3 LODs + impostor, shadow LOD, wind, back light, hue jitter; swapped in by remapping `flora.json` pieces | 1e | trees+bushes+rocks 0.8 ms, 80 draws, 420 shadow; grass 1.0 ms, 10 draws | 16-24 h | open |
