@@ -45,13 +45,13 @@ public static partial class Pieces
             ("halloween", "crypt") => Crypt(box),
             ("halloween", "fence") => Fence(box, false, seed),
             ("halloween", "fence_broken") => Fence(box, true, seed),
-            ("halloween", "post_lantern") => LampPost(box, true),
+            ("halloween", "post_lantern") => Lamps.Holder("post_lantern") ?? LampPost(box, true),
             ("halloween", "post") => LampPost(box, false),
             ("halloween", "shrine") => Shrine(box),
-            ("halloween", "lantern_standing") => Fitted(Lantern(false), box),
+            ("halloween", "lantern_standing") => StandingLamp(box) ?? Fitted(Lantern(false), box),
             ("halloween", "pillar") or ("dungeon", "pillar") => Pillar(box, seed),
             ("halloween", "tree_dead_large") => Kit($"nature/DeadTree_{1 + seed % 3}", box),
-            ("halloween", "candle_triple") => Kit("props/CandleStick_Triple", box),
+            ("halloween", "candle_triple") => Candelabrum(box),
             ("halloween", "skull") => Fitted(Skull(), box),
             ("halloween", "skull_candle") => SkullCandle(box),
             ("halloween", "ribcage") => Fitted(Ribcage(), box),
@@ -60,7 +60,7 @@ public static partial class Pieces
             ("dungeon", "wall_half") => Wall(box, 0.9f, seed),
             ("dungeon", "wall_cracked") => Wall(box, 1f, seed),
             ("dungeon", "rubble_half") or ("dungeon", "rubble_large") => Rubble(box, seed),
-            ("dungeon", "torch_mounted") or ("dungeon", "torch_lit") => Kit("props/Torch_Metal", box),
+            ("dungeon", "torch_mounted") or ("dungeon", "torch_lit") => Lamps.Holder("torch_mounted") ?? Kit("props/Torch_Metal", box),
             ("dungeon", "banner_thin_red") => Kit("props/Banner_1", box),
             ("dungeon", "box_small") => Kit("props/Crate_Wooden", box),
             ("dungeon", "box_small_decorated") => Kit("props/Crate_Metal", box),
@@ -131,6 +131,39 @@ public static partial class Pieces
     static StandardMaterial3D Blocks() => Surface("medieval_blocks_03", 2.2f, "#94908a");
     static StandardMaterial3D OldBone() => Mat("#a89c80", 0, 0.7f);
     static StandardMaterial3D Slates() => Surface("castle_wall_slates", 1.6f, "#9a9690");
+    static StandardMaterial3D? roofSlates;
+
+    /// <summary>A roof of stone slates (our own set, made by
+    /// tools/assets/env_roof_slate.py, 3 m a tile) on the roof's own UVs
+    /// (metres), wet enough to catch the sky, weathered by its vertex
+    /// colours. The texture's green is the roughness itself (0.33-0.6 per
+    /// slate, mean 0.40; the old photo's 0.85 x 0.45 gave 0.38).</summary>
+    static StandardMaterial3D RoofSlates()
+    {
+        if (roofSlates != null) return roofSlates;
+        const string dir = "res://art/materials/roof_slate";
+        var arm = GD.Load<Texture2D>($"{dir}/arm.jpg");
+        return roofSlates = new StandardMaterial3D
+        {
+            AlbedoTexture = GD.Load<Texture2D>($"{dir}/albedo.jpg"), AlbedoColor = Colors.White,
+            VertexColorUseAsAlbedo = true, VertexColorIsSrgb = true,
+            NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{dir}/normal.jpg"), NormalScale = 1.6f,
+            Roughness = 1f, RoughnessTexture = arm, RoughnessTextureChannel = BaseMaterial3D.TextureChannel.Green,
+            AOEnabled = true, AOTexture = arm, AOTextureChannel = BaseMaterial3D.TextureChannel.Red,
+            Uv1Scale = new Vector3(1 / 3f, 1 / 3f, 1),
+        };
+    }
+
+    /// <summary>Capping and coping stones, paler than the walls so the roof's edges read by night.</summary>
+    static StandardMaterial3D? coping;
+    static StandardMaterial3D Coping()
+    {
+        if (coping != null) return coping;
+        coping = (StandardMaterial3D)Surface("rock_boulder_dry", 0.8f).Duplicate();
+        coping.AlbedoColor = new Color("#ebe7df");
+        coping.Roughness = 0.6f;
+        return coping;
+    }
     static StandardMaterial3D Timber() => Surface("rough_wood", 1.4f);
     static StandardMaterial3D Earth() => Surface("forest_ground_04", 1.6f, "#8a8074");
     static StandardMaterial3D Wrought() => Mat("#262422", 0.8f, 0.5f);
@@ -272,9 +305,8 @@ public static partial class Pieces
         var wax = new Build();
         Lathe(wax, Pts(0, 0, 0.05f * w, 0, 0.05f * w, 0.14f * h, 0, 0.14f * h), 10, At(c.X, y0 + h * 0.3f, c.Z + bd * 0.2f));
         Add(root, wax.Mesh(), Mat("#e8dcc0", 0, 0.6f));
-        var flame = new Build();
-        Lathe(flame, Pts(0, 0, 0.03f * w, 0.02f * h, 0.02f * w, 0.05f * h, 0, 0.08f * h), 10, At(c.X, y0 + h * 0.44f, c.Z + bd * 0.2f));
-        Add(root, flame.Mesh(), Glow("#ffb050", 4));
+        // The candle's flame: the flame kit's (look bible 10), no light of its own (no zone light here).
+        FlameKit.Add(root, new Vector3(c.X, y0 + h * 0.44f, c.Z + bd * 0.2f), FlameKind.Candle, light: false);
         return root;
     }
 
@@ -294,13 +326,91 @@ public static partial class Pieces
         float eave = plinth + wallH + 0.05f * h;
         Extrude(stone, Pts(-iw / 2, eave, iw / 2, eave, 0, eave + roofH), id, 0.01f * h, At(c.X, y0, c.Z));
         Add(root, stone.Mesh(true), Blocks());
-        // The roof: two slabs of slate over the gable.
-        var roof = new Build();
+        // The roof: two slabs of stone slate, laid in courses along the ridge
+        // (its own UVs, so the courses run true), wet enough to catch the sky,
+        // lichen and moss creeping up from the eaves (vertex colours); capping
+        // stones along the ridge and coping up the gables catch the moon and
+        // draw the roof's edges, even on the slope turned away from it.
         float slope = Mathf.Sqrt(iw * iw / 4 + roofH * roofH), ang = Mathf.Atan2(roofH, iw / 2);
+        float th = 0.06f * h, run = slope + 0.08f * w, len = id + 0.14f * d;
+        var ridge = new Vector3(c.X, y0 + eave + roofH + 0.03f * h, c.Z);
+        var roof = new Build();
+        var tint = new List<Color>();
+        int Vc(Vector3 p, Vector3 n, Vector2 uv, Color k) { tint.Add(k); return roof.V(p, n, uv); }
         foreach (float sx in new[] { -1f, 1f })
-            Extrude(roof, Pts(0, -0.03f * h, slope + 0.08f * w, -0.03f * h, slope + 0.08f * w, 0.03f * h, 0, 0.03f * h), id + 0.14f * d, 0.008f * h,
-                new Transform3D(new Basis(Vector3.Back, sx > 0 ? -ang : Mathf.Pi + ang), new Vector3(c.X, y0 + eave + roofH + 0.03f * h, c.Z)));
-        Add(root, roof.Mesh(true), Slates());
+        {
+            var down = new Vector3(sx * Mathf.Cos(ang), -Mathf.Sin(ang), 0);
+            var up = new Vector3(sx * Mathf.Sin(ang), Mathf.Cos(ang), 0);
+            Vector3 At2(float u, float s, float k) => ridge + new Vector3(0, 0, (u - 0.5f) * len) + down * s + up * k;
+            // The weathering: pale lichen in patches, moss thickening toward the eaves.
+            Color Weather(float u, float s)
+            {
+                float t = s / run, x = u * len, salt = sx * 7.3f;
+                float moss = Mathf.SmoothStep(0.45f, 1f, t) * Mathf.SmoothStep(0.3f, 0.65f, Noise(x * 0.8f + salt, s * 1.1f));
+                float lichen = Mathf.SmoothStep(0.55f, 0.75f, Noise(x * 1.5f - salt, s * 1.7f + 3.1f)) * (1 - moss);
+                float streak = Mathf.SmoothStep(0.5f, 0.8f, Noise(x * 3.1f + salt, s * 0.25f)) * Mathf.SmoothStep(0.2f, 0.9f, t);
+                float grey = 0.98f + 0.16f * (Noise(x * 0.4f + 11, s * 0.4f + salt) - 0.5f) - 0.2f * streak;
+                return new Color(grey, grey, grey * 0.98f).Lerp(new Color(1f, 0.99f, 0.93f), lichen * 0.9f).Lerp(new Color(0.42f, 0.52f, 0.34f), moss * 0.8f);
+            }
+            const int nu = 64, ns = 18;
+            int g0 = roof.P.Count;
+            for (int j = 0; j <= ns; j++)
+                for (int i = 0; i <= nu; i++)
+                {
+                    float u = i / (float)nu, s = run * j / ns;
+                    Vc(At2(u, s, th / 2), up, new Vector2(u * len, s), Weather(u, s));
+                }
+            for (int j = 0; j < ns; j++)
+                for (int i = 0; i < nu; i++)
+                {
+                    int a = g0 + j * (nu + 1) + i;
+                    roof.Quad(a, a + 1, a + nu + 2, a + nu + 1);
+                }
+            // Beneath, the eave's edge and the gable ends.
+            var under = new Color(0.6f, 0.6f, 0.6f);
+            roof.Quad(Vc(At2(0, 0, -th / 2), -up, new(0, 0), under), Vc(At2(1, 0, -th / 2), -up, new(len, 0), under),
+                Vc(At2(1, run, -th / 2), -up, new(len, run), under), Vc(At2(0, run, -th / 2), -up, new(0, run), under));
+            var edge = Weather(0.5f, run);
+            roof.Quad(Vc(At2(0, run, th / 2), down, new(0, 0), edge), Vc(At2(1, run, th / 2), down, new(len, 0), edge),
+                Vc(At2(1, run, -th / 2), down, new(len, th), edge), Vc(At2(0, run, -th / 2), down, new(0, th), edge));
+            foreach (float e in new[] { 0f, 1f })
+            {
+                var n = new Vector3(0, 0, e > 0 ? 1 : -1);
+                roof.Quad(Vc(At2(e, 0, th / 2), n, new(0, 0), edge), Vc(At2(e, run, th / 2), n, new(run, 0), edge),
+                    Vc(At2(e, run, -th / 2), n, new(run, th), edge), Vc(At2(e, 0, -th / 2), n, new(0, th), edge));
+            }
+        }
+        var arr = new Godot.Collections.Array();
+        arr.Resize((int)Mesh.ArrayType.Max);
+        arr[(int)Mesh.ArrayType.Vertex] = roof.P.ToArray();
+        arr[(int)Mesh.ArrayType.Normal] = roof.N.ToArray();
+        arr[(int)Mesh.ArrayType.TexUV] = roof.U.ToArray();
+        arr[(int)Mesh.ArrayType.Color] = tint.ToArray();
+        arr[(int)Mesh.ArrayType.Index] = roof.I.ToArray();
+        var flat = new ArrayMesh();
+        flat.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        var st = new SurfaceTool();
+        st.CreateFrom(flat, 0);
+        st.GenerateTangents();
+        Add(root, st.Commit(), RoofSlates());
+        // The ridge: capping stones, a little apart; the gables' coping laid up each slope.
+        var cope = new Build();
+        float rise = th / 2 / Mathf.Cos(ang), ca = 0.05f * w, ch = 0.03f * h;
+        int stones = Mathf.Max(3, Mathf.RoundToInt(len / 0.6f));
+        var roll = new List<Vector2> { new(ca, rise - ca * Mathf.Tan(ang) - 0.01f * h) };
+        for (int k = 0; k <= 8; k++) { float a = Mathf.Pi * k / 8; roll.Add(new(ca * Mathf.Cos(a), rise - ca * Mathf.Tan(ang) + ch * 0.35f + (ch * 0.65f + ca * Mathf.Tan(ang)) * Mathf.Sin(a))); }
+        roll.Add(new(-ca, rise - ca * Mathf.Tan(ang) - 0.01f * h));
+        for (int k = 0; k < stones; k++)
+        {
+            float sl = len / stones;
+            Extrude(cope, roll.ToArray(), sl, 0.006f * h, At(ridge.X, ridge.Y, ridge.Z - len / 2 + sl * (k + 0.5f)));
+        }
+        float vw = 0.045f * d;
+        foreach (float sx in new[] { -1f, 1f })
+            foreach (float sz in new[] { -1f, 1f })
+                Extrude(cope, Pts(0.04f * w, th / 2 - 0.01f * h, run + 0.01f * w, th / 2 - 0.01f * h, run + 0.01f * w, th / 2 + 0.014f * h, 0.04f * w, th / 2 + 0.014f * h), vw, 0.005f * h,
+                    new Transform3D(Basis.FromScale(new Vector3(sx, 1, 1)) * new Basis(Vector3.Back, -ang), ridge + new Vector3(0, 0, sz * (len / 2 - vw / 2 + 0.008f * d))));
+        Add(root, cope.Mesh(true), Coping());
         // The door: dark within, iron-bound, under a lintel.
         float dw = iw * 0.36f, dh = wallH * 0.8f, front = c.Z + id / 2;
         Add(root, new BoxMesh { Size = new Vector3(dw, dh, 0.05f * d) }, Wrought(), At(c.X, y0 + plinth + dh / 2, front + 0.005f));
@@ -386,6 +496,15 @@ public static partial class Pieces
         lantern.Transform = new Transform3D(Basis.Identity.Scaled(Vector3.One * 0.32f), new Vector3(0, Top - 0.55f, Out));
         root.AddChild(lantern);
         return root;
+    }
+
+    /// <summary>Our standing lantern (Lamps), its foot on the box's floor, as tall as the box.</summary>
+    static Node3D? StandingLamp(Aabb box)
+    {
+        if (Lamps.Holder("lantern_standing") is not Node3D lamp || Lamps.Of("lantern_standing") is not Lamps.Info i) return null;
+        float k = box.Size.Y / i.Height;
+        lamp.Transform = new Transform3D(Basis.Identity.Scaled(Vector3.One * k), new Vector3(box.GetCenter().X, box.Position.Y, box.GetCenter().Z));
+        return lamp;
     }
 
     /// <summary>A square pillar of dressed stone: a plinth, the shaft, a capital.</summary>
@@ -487,7 +606,8 @@ public static partial class Pieces
         Tube(b, Path(9, t => new Vector3(Mathf.Lerp(-0.09f, 0.09f, t), -0.16f - Mathf.Sin(t * Mathf.Pi) * 0.02f, 0.02f + Mathf.Sin(t * Mathf.Pi) * 0.11f)), 0.016f, 5);
         foreach (float sx in new[] { -1f, 1f })
             Tube(b, new List<Vector3> { new(sx * 0.09f, -0.16f, 0.02f), new(sx * 0.1f, -0.08f, -0.01f) }, 0.016f, 5);
-        Add(root, b.Mesh(), OldBone());
+        // Weathered bone at about 0.42 sRGB value (the old-bone cream read as a pale egg by the crypt's door at night).
+        Add(root, b.Mesh(), Mat(SurvivorUnchained.Args.Get("skull-bone") is string sb ? "#" + sb : "#7c6a50", 0, 0.8f));
         var dark = new Build();
         foreach (float x in new[] { -0.05f, 0.05f }) Lathe(dark, Pts(0.034f, 0, 0.03f, 0.018f, 0, 0.024f), 10, At(Made.Facing, x, 0.02f, 0.155f));
         Lathe(dark, Pts(0.017f, 0, 0.012f, 0.015f, 0, 0.02f), 3, At(Made.Facing, 0, -0.04f, 0.16f));
@@ -514,8 +634,75 @@ public static partial class Pieces
         var wax = new Build();
         Lathe(wax, Pts(0, 0.36f, 0.035f, 0.36f, 0.035f, 0.47f, 0, 0.47f), 12);
         Lathe(wax, Pts(0.07f, 0.34f, 0.05f, 0.365f, 0, 0.37f), 12);
-        Add(holder, wax.Mesh(), Mat("#e8dcc0", 0, 0.6f));
-        return Fitted(holder, box);
+        // Tallow gone yellow-grey (a cream wax by the crypt's door read as a glowing egg at night), and the
+        // flame kit's candle on it, no light of its own (look bible 10; the shrine's candle is the model).
+        Add(holder, wax.Mesh(), Mat(TallowHex, 0, 0.75f));
+        // Fitted on the skull and its wax alone (a big flame in the bounds shrank the skull), the flame added after.
+        var fit = Fitted(holder, box);
+        CryptCandle(holder, new Vector3(0, 0.47f, 0), false, 0.8f / Mathf.Max(holder.Scale.X, 1e-3f));
+        return fit;
+    }
+
+    const string TallowHex = "#6e6450";
+
+    /// <summary>A wrought-iron candlestick of three (the KayKit one was white plaster with no flames, by the crypt's
+    /// door): a round foot, a stem, a bar with three cups, tallow candles burnt down unevenly, the kit's candle
+    /// flames on them and no light of their own (no zone light here).</summary>
+    static Node3D Candelabrum(Aabb box)
+    {
+        var root = new Node3D();
+        var c = box.GetCenter();
+        float w = box.Size.X, h = box.Size.Y, y0 = box.Position.Y;
+        var iron = new Build();
+        Lathe(iron, Pts(0.2f * w, 0, 0.19f * w, 0.025f * h, 0.07f * w, 0.07f * h, 0.03f * w, 0.1f * h, 0.026f * w, 0.5f * h, 0.045f * w, 0.53f * h, 0.026f * w, 0.56f * h, 0, 0.56f * h), 12, At(c.X, y0, c.Z));
+        Extrude(iron, Pts(-0.42f * w, 0.53f * h, 0.42f * w, 0.53f * h, 0.42f * w, 0.56f * h, -0.42f * w, 0.56f * h), 0.05f * w, 0.005f * h, At(c.X, y0, c.Z));
+        var wax = new Build();
+        foreach (var (x, up, tall) in new[] { (-0.4f, 0f, 0.16f), (0f, 0.1f, 0.24f), (0.4f, 0f, 0.11f) })
+        {
+            float cy = 0.56f * h + up * h;
+            if (up > 0) Lathe(iron, Pts(0.022f * w, 0.53f * h, 0.022f * w, cy, 0, cy), 8, At(c.X, y0, c.Z));
+            Lathe(iron, Pts(0.03f * w, 0, 0.08f * w, 0.025f * h, 0.075f * w, 0.04f * h, 0, 0.04f * h), 10, At(c.X + x * w, y0 + cy, c.Z));
+            Lathe(wax, Pts(0.05f * w, 0, 0.05f * w, tall * h, 0.035f * w, tall * h + 0.01f * h, 0, tall * h + 0.01f * h), 10, At(c.X + x * w, y0 + cy + 0.04f * h, c.Z));
+            var f = CryptCandle(root, new Vector3(c.X + x * w, y0 + cy + 0.04f * h + tall * h + 0.008f * h, c.Z), up > 0);
+            // Its light low and forward of the cups (beside the wax it lit the tallow white): it lights the step and the wall.
+            if (f.Light != null) f.Light.Position = new Vector3(0, -(cy + 0.04f * h + tall * h) + CandleLightUp * h, CandleLightFwd);
+        }
+        Add(root, iron.Mesh(), Wrought());
+        Add(root, wax.Mesh(), Mat(TallowHex, 0, 0.75f));
+        return root;
+    }
+
+    // The crypt's candles from the play camera (23 m up and back): the kit's candle card is 8 cm, so a white tick of
+    // a pixel or two. Made bigger and warmer here, and the middle one lights the door's step (judge 2, item 6).
+    static readonly float CandleScale = SurvivorUnchained.Args.Num("candle-scale", 4f),
+        CandleBody = SurvivorUnchained.Args.Num("candle-body", 2f), CandleCore = SurvivorUnchained.Args.Num("candle-core", 2.5f),
+        CandleSat = SurvivorUnchained.Args.Num("candle-sat", 1f), CandleTilt = SurvivorUnchained.Args.Num("candle-tilt", 0f),
+        CandleEnergy = SurvivorUnchained.Args.Num("candle-energy", 2.2f), CandleRange = SurvivorUnchained.Args.Num("candle-range", 1.8f),
+        CandleLightFwd = SurvivorUnchained.Args.Num("candle-fwd", 0.25f), CandleCoreLo = SurvivorUnchained.Args.Num("candle-core-lo", 0.6f),
+        CandleWide = SurvivorUnchained.Args.Num("candle-wide", 1.6f), CandleLightUp = SurvivorUnchained.Args.Num("candle-up", 0.35f);
+
+    /// <summary>A kit candle flame for the crypt, at <see cref="CandleScale"/>, warm-bodied; with
+    /// <paramref name="light"/> its own short warm light (no shadow, the kit's flicker).</summary>
+    static Flame CryptCandle(Node3D parent, Vector3 at, bool light, float k = 1)
+    {
+        var f = FlameKit.Add(parent, at, FlameKind.Candle, scale: CandleScale * k, light: light);
+        foreach (var n in f.GetChildren())
+            if (n is MeshInstance3D { Mesh: QuadMesh { Material: ShaderMaterial m } } card)
+            {
+                card.Scale = card.Scale with { X = card.Scale.X * CandleWide };
+                m.SetShaderParameter("tilt", CandleTilt);
+                m.SetShaderParameter("body_k", CandleBody);
+                m.SetShaderParameter("core_k", CandleCore);
+                m.SetShaderParameter("warm_sat", CandleSat);
+                m.SetShaderParameter("core_lo", CandleCoreLo);
+            }
+        if (f.Light != null)
+        {
+            f.Energy = CandleEnergy;
+            f.Light.OmniRange = CandleRange;
+            f.Light.OmniAttenuation = 1.2f;
+        }
+        return f;
     }
 
     /* ------------------------------------------------------ the gate, towers -- */

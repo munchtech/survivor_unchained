@@ -18,7 +18,25 @@ SETS = {
     "nightc": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;9,40;0,-38;-8.6,88.6,1,0"], 4),
     # the close view at the fire, four times 6 s apart (her idle breaks change her pose between them)
     "close4": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-8.6,88.6,1,0;-8.6,88.6,1,0"], 4),
+    # E2 lamps: the ford's three lamp-irons at the play camera (by the pylons at 0,-33.5, -9.7,-49.6, 9.7,-49.6)
+    "ford": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "0,-37;-7,-46;7,-46"], 3),
+    # E2 lamps: the camp's post lamp (light 1) mid-frame, for its pool (1 m vs 4 m)
+    "pool": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-3,91;-3,91"], 2),
+    # E2 lamps r2, still frames: the camp post lamp (light 1, -2.5,94) and ford pylon 0 (0,-33.5) with her 7 m off
+    # (her ember out of their pools), then the ford's three in view from between them
+    "lampstill": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;7,-33.5;0,-42"], 3),
+    "lampstill3": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;4.5,94;4.5,94;7,-33.5;7,-33.5;7,-33.5"], 6),
+    # E2 lamps r3: one frame each, for sweeps: the camp post lamp's pool, ford pylon 0 with her 7 m off
+    "lamppool": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94"], 1),
+    "fordone": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "7,-33.5"], 1),
+    # E2 lamps r3: the close-up camera at its closest on the camp post lamp and ford pylon 0
+    "lampclose": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "-2.5,92.5,1,0;0,-35.5,1,0"], 2),
+    "fordnear": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "-9.7,-44;9.7,-44"], 2),
     "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
     "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", TOWN], 3),
     "town_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", TOWN], 3),
+    # E2: the black roof slabs (teaching F10, F11): the Post and the Barrow's crypt by night
+    # E2 camp fire: the close view facing the fire (close4's spot hides it), twice
+    "campclose": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-9.5,92.5,1,0;-9.5,92.5,1,0"], 2),
+    "roofs": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "16,31;-17,4;-22,2"], 3),
 }

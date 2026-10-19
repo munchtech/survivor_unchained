@@ -997,6 +997,7 @@ public partial class Game
                 }
                 case "frost":
                 {
+                    if (Args.Has("cine-nofrost")) break;   // (pictures: the frost left out, env E2's fog A/B)
                     // Frost on the ground about a place, thin and patchy, and none within a fire's
                     // reach: the prints show dark in it. It stays, as the prints do.
                     // Laid in tiles, each on its own ground and only knee-deep, so it
@@ -1038,6 +1039,7 @@ public partial class Game
                             };
                             g.scene.AddChild(d);
                             prints.Add(d);
+                            frost.Add(d);
                         }
                     break;
                 }
@@ -1322,6 +1324,9 @@ public partial class Game
             return p;
         }
         readonly List<Decal> prints = new();
+        /// <summary>The frost's tiles: the cinematic's alone. From the play camera its soft patches read as
+        /// white fog over the road (the teaching pass, env E2), so it thaws as play is handed back.</summary>
+        readonly List<Decal> frost = new();
         static readonly Dictionary<bool, ImageTexture> printTex = new();
 
         /// <summary>A boot's print, dark and wet: a sole and a heel, soft at the edges.</summary>
@@ -1479,6 +1484,15 @@ public partial class Game
             foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
             waters.Clear();
             // Her prints stay: they are in the frost whether it played or not.
+            // The frost thaws over a few seconds as play takes over (E3 lays frost of the ground's own by exposure).
+            foreach (var fd in frost)
+                if (IsInstanceValid(fd))
+                {
+                    var tw = fd.CreateTween();
+                    tw.TweenProperty(fd, "albedo_mix", 0f, 3.0);
+                    tw.TweenCallback(Callable.From(fd.QueueFree));
+                }
+            frost.Clear();
             people.Clear();
             if (file.End.Next != null)
             {

@@ -138,6 +138,7 @@ Building materials, 1k (`godot/art/materials`):
 
 - "Medieval Blocks 03" by Rob Tuytel (https://polyhaven.com/a/medieval_blocks_03): dressed stone for walls, the gate, towers, the crypt and pillars
 - "Castle Wall Slates" by Rob Tuytel (https://polyhaven.com/a/castle_wall_slates): slate roofs, clay tiles
+- "Roof Slates 02" by Rob Tuytel (https://polyhaven.com/a/roof_slates_02): raw material for the crypt roof (its grain, baked into our own slates; the photo itself does not ship)
 - "Rock Boulder Dry" by Dimitrios Savva, Rico Cilliers (https://polyhaven.com/a/rock_boulder_dry): headstones, rock
 - "Rough Wood" by Rob Tuytel (https://polyhaven.com/a/rough_wood): posts, crosses, timber
 
