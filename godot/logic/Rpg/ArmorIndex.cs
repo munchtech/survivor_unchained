@@ -36,6 +36,9 @@ public sealed class ArmorPiece
     /// <summary>Its own file (res://art/armor/ID.gltf) for a new piece; null: its outfit's heroine_outfit_OUTFIT.gltf.</summary>
     [JsonPropertyName("file")] public string? File { get; set; }
     [JsonPropertyName("tier")] public JsonElement? Tier { get; set; }
+    /// <summary>What of it another slot's piece covers (ArmorUnder): covering slot, then that slot's piece id (or "*", any
+    /// other piece) to a file of points under its index's folder. Null: nothing.</summary>
+    [JsonPropertyName("under")] public Dictionary<string, Dictionary<string, string>>? Under { get; set; }
     /// <summary>The index's folder under art/ ("people" or "armor"), which its tuck path is relative to.</summary>
     [JsonIgnore] public string Dir { get; set; } = "people";
 }

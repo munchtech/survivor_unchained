@@ -489,7 +489,7 @@ def smooth_normals(P, T):
     return N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-15)
 
 
-def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM, matte=False):
+def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM, matte=False, edge_min=0.004):
     """A film on the plate between d0 and d1 in from a rim (the etch's bands, a trim's grooves)."""
     P0, O0, N0, s = rim_line(rim, step)
     rows = []
@@ -501,17 +501,21 @@ def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM, matte=False):
     F = np.stack([r[1] for r in rows], 1).ravel()
     B = np.stack([r[2] for r in rows], 1).reshape(-1, 3)
     T = fix_winding(P, grid_tris(ns, na, True), N)
-    return film_from(surf, P, N, F, B, T, sky, conv, lift, matte)
+    return film_from(surf, P, N, F, B, T, sky, conv, lift, matte, edge_min)
 
 
-def film_from(surf, P, N, F, B, T, sky, conv, lift=FILM, matte=False):
+def film_from(surf, P, N, F, B, T, sky, conv, lift=FILM, matte=False, edge_min=0.004):
+    """A film's vertex data from the plate under it: its sky times `sky`, its convexity `conv` (None: the plate's own),
+    its edge distance at least `edge_min` (0.004: no edge polish on it; 0.021 and over: also clear of the metal
+    shader's dirt band just inside a rim, 2-20 mm, which grimes the plate there to a part-dielectric matte)."""
     C = surf.at(surf.C, F, B)
     C[:, 0] = np.clip(C[:, 0] * sky, 0, 1)
     if matte:
         C[:, 2:4] = 0.0                        # (in a leather material: no stitch row, drawn matte)
     U1 = surf.at(surf.U1, F, B)
-    U1[:, 0] = np.maximum(U1[:, 0], 0.004)     # (no edge polish on it)
-    U1[:, 1] = conv
+    U1[:, 0] = np.maximum(U1[:, 0], edge_min)
+    if conv is not None:
+        U1[:, 1] = conv
     return P + N * lift, N, surf.at(surf.U0, F, B), U1, C, surf.at(surf.W, F, B), T
 
 
@@ -756,9 +760,12 @@ def vine_chart(L, ad):
     return np.vstack([stem, lf]), inside, {"waves": nw, "leaves": len(leaves)}
 
 
-def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False):
-    """The band's blackened ground (a film) between d0 and d1 in from a rim, with gaps where the vine runs (the bright
-    plate shows through): triangulated on the band's chart (u, v), then laid on the plate by its inward rows."""
+def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False, edge_min=0.004):
+    """The band's blackened ground (a film) between d0 and d1 in from a rim, with gaps where the vine runs: triangulated
+    on the band's chart (u, v), then laid on the plate by its inward rows. And the vine (r3, F2): the gaps' own film, the
+    same triangulation's other triangles (so they meet the ground's edges exactly), returned to go in the shell's own
+    steel with the cup's open-plate data (its sky, its convexity, clear of the rim's dirt band), so it is lit as the cup
+    is: the bare plate under the gaps lies in the shader's dirt band inside the rim and read as a matte pale line."""
     from scipy.spatial import Delaunay
     P0, O0, N0, _ = rim_line(rim, 0.001)
     nr = int(np.ceil((d1 - d0) / 0.00075)) + 1
@@ -783,7 +790,11 @@ def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False):
     T = Delaunay(allp).simplices
     c = allp[T].mean(1)
     keep = (c[:, 0] >= 0) & (c[:, 0] < L) & (np.abs(c[:, 1]) < hb)
-    keep[keep] &= ~inside(c[keep])
+    vin = keep.copy()
+    ins = inside(c[keep])
+    keep[keep] &= ~ins
+    vin[vin] &= ins
+    TV = alli[T[vin]]
     T = alli[T[keep]]
     # (a sound strip: no edge in more than two triangles, none degenerate)
     e = np.sort(np.vstack([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), 1)
@@ -803,9 +814,11 @@ def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False):
         return ((X[i0, j0] * (1 - fj) + X[i0, j0 + 1] * fj) * (1 - fi)
                 + (X[i1, j0] * (1 - fj) + X[i1, j0 + 1] * fj) * fi)
     p, f, bb, n = surf.snap(bil(G), bil(GN))
-    st.update(chart_mm=[round(float(L), 1), round(float(2 * hb), 2)], ground_tris=int(len(T)),
+    st.update(chart_mm=[round(float(L), 1), round(float(2 * hb), 2)], ground_tris=int(len(T)), vine_tris=int(len(TV)),
               boundary_edges=int((cnt == 1).sum()))
-    return film_from(surf, p, n, f, bb, fix_winding(p, T, n), sky, conv, lift, matte), st
+    ground = film_from(surf, p, n, f, bb, fix_winding(p, T, n), sky, conv, lift, matte, edge_min)
+    vine = film_from(surf, p, n, f, bb, fix_winding(p, TV, n), 1.0, None, lift, False, ad.get("vine_edge", 0.03))
+    return ground, vine, st
 
 
 def matte_ground(ad):
@@ -828,24 +841,26 @@ def etch(surf, sock, ad, lod):
     conv = ad.get("conv", ETCH_CONV)
     lift = FILM * (1.6 if lod else 1.0)
     mt = matte_ground(ad)
-    parts, stats = [], {"bands": 0, "lines": 0}
+    em = ad.get("ground_edge", 0.004)
+    parts, vines, stats = [], [], {"bands": 0, "lines": 0}
     band = ad.get("band", [0.0122, 0.0212])
     lines = ad.get("lines", [[0.0106, 0.0116], [0.0218, 0.0228]])
     for rn in rim_names(sock, ad.get("rim", "cup_rim")):
         rim = sock["rims"][rn]
         if lod:
-            parts.append(film_strip(surf, rim, band[0], band[1], 0.006, 3, sky, conv, lift, mt))
+            parts.append(film_strip(surf, rim, band[0], band[1], 0.006, 3, sky, conv, lift, mt, em))
         else:
-            film, st = vine_band(surf, rim, band[0], band[1], ad, sky, conv, lift, mt)
+            film, vine, st = vine_band(surf, rim, band[0], band[1], ad, sky, conv, lift, mt, em)
             parts.append(film)
+            vines.append(vine)
             stats.setdefault("vine", []).append(st)
             for l0, l1 in lines:
                 # (a hair higher: the inner line crosses where the left cup's plate is within 0.3 mm of her skin
                 # with the arms overhead)
-                parts.append(film_strip(surf, rim, l0, l1, 0.002, 2, sky, conv, lift * 1.2, mt))
+                parts.append(film_strip(surf, rim, l0, l1, 0.002, 2, sky, conv, lift * 1.2, mt, em))
                 stats["lines"] += 1
         stats["bands"] += 1
-    return parts, stats
+    return parts, vines, stats
 
 
 # ------------------------------------------------------------------------------------------ helpers --
@@ -1197,12 +1212,15 @@ def build(pid, post=False):
                     lod_new.setdefault(mat, []).append(lpart)
             stats.setdefault("gild", []).append(st)
         elif kind == "paint":
-            parts, st = etch(S_full, sock, ad, False)
+            parts, vines, st = etch(S_full, sock, ad, False)
             gm = ad.get("ground", shell_full["mat"])
             full_new.setdefault(gm, []).extend(parts)
+            # (the vine in the shell's own mesh and steel: no draw of its own)
+            full_new.setdefault(shell_full["mat"], []).extend(vines)
             st["tris"] = int(sum(len(p[6]) for p in parts))
+            st["vine_tris"] = int(sum(len(p[6]) for p in vines))
             if S_lod is not None:
-                lparts, lst = etch(S_lod, sock, ad, True)
+                lparts, _, lst = etch(S_lod, sock, ad, True)
                 lod_new.setdefault(gm, []).extend(lparts)
                 st["lod1_tris"] = int(sum(len(p[6]) for p in lparts))
             stats["paint"].append(dict(st, pattern=ad.get("pattern")))

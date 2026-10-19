@@ -168,10 +168,10 @@
   "kind": "metal",
   "repeats": 2.5,
   "albedo_srgb": [
-   0.2,
-   0.2,
-   0.215
+   0.29,
+   0.29,
+   0.305
   ],
-  "roughness": 0.45
+  "roughness": 0.3
  }
 }

@@ -1123,6 +1123,8 @@ public static class People
             m.SetShaderParameter("roughness_value", src.Roughness);
             m.SetShaderParameter("metallic_value", src.Metallic);
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
+            // (a metal key's own satin roughness, where its row names one: blacksteel, the etched tier's blackened ground at 0.3)
+            if (kind == 1 && entry.ContainsKey("roughness")) m.SetShaderParameter("metal_rough", (float)entry["roughness"]);
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
