@@ -603,7 +603,12 @@ public sealed class Prologue : ZoneRuntime
         // Where the cinematic leaves him (its mark warden_end), facing her.
         var (wx, _, wz, _) = CineFile.Load("c02").Mark("warden_end");
         warden = B.SpawnEnemy("ford_warden", wx, wz, new Battle.SpawnOpts { Level = 1, Tag = "warden" });
-        if (warden != null) { warden.Facing = Math.Atan2(p.Z - wz, p.X - wx); ai.Mode = "walk"; ai.T = 0; }
+        if (warden != null)
+        {
+            warden.Facing = Math.Atan2(p.Z - wz, p.X - wx); ai.Mode = "walk"; ai.T = 0;
+            // A beat after the bars go before his first blow: play opens 1.9 m from him (cinematics 3, k13).
+            ai.ContactT = 1.0; ai.CleaveCd = Math.Max(ai.CleaveCd, 1.0);
+        }
         wardenPos = (wx, wz, Math.PI / 2 - (warden?.Facing ?? 0));
         wardenView.Release();
         Go(Stage.Boss);
