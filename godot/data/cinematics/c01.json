@@ -82,10 +82,11 @@
       "note": "Her face on its side on the frozen ground, half ember, half moon. At 2.0 her eyes open. No start.",
       "cam": {"pos": [-10.07, 0.13, 90.5], "at": [-9.45, 0.17, 90.45], "lens": 60, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.0, "move": {"push": 0.02, "ease": "linear"}},
       "cues": [
+        {"do": "grade", "sat": 0.8},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6, "elevation": 75},
         {"do": "light", "light": 0, "level": 0.06, "color": "#ff9a5a", "rate": 0.45},
-        {"do": "rig", "name": "moon", "energy": 0.6, "color": "#a9bfff", "angle": 25, "from": {"actor": "her", "bone": "head", "off": [0.25, 1.4, 0.1]}, "aim": {"actor": "her", "bone": "head"}},
-        {"do": "rig", "name": "ember", "energy": 0.22, "color": "#ffa860", "angle": 16, "from": {"mark": "fire", "off": [0.35, 0.06, 0.05]}, "aim": {"actor": "her", "bone": "head", "off": [0, -0.02, 0]}},
+        {"do": "rig", "name": "moon", "energy": 0.55, "color": "#a9bfff", "angle": 30, "from": {"actor": "her", "bone": "head", "off": [-0.45, 1.3, -0.55]}, "aim": {"actor": "her", "bone": "head"}},
+        {"do": "rig", "name": "ember", "energy": 0.32, "color": "#ffb070", "angle": 30, "from": {"mark": "fire", "off": [0.3, 0.1, -0.05]}, "aim": {"actor": "her", "bone": "head"}},
         {"at": 2.0, "do": "lids", "value": 0, "over": 0.35},
         {"at": 2.0, "do": "face", "keys": {"eyes_wide": 0.1}, "over": 0.4},
         {"at": 2.8, "do": "face", "keys": {"eyes_wide": 0.0}, "over": 1.0},
@@ -100,6 +101,7 @@
       "note": "Front three-quarter from her left, across the coals: she comes up onto her heels and looks down at her hands, the cord and the full flask; across at the bedroll, dry; down again. N1.",
       "cam": {"pos": [-11.3, 0.9, 91.75], "at": {"actor": "her", "bone": "chest", "off": [0, 0.06, 0], "track": true}, "lens": 32, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
+        {"do": "grade", "sat": 1},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.24, "color": "#ff7430", "rate": 0.45},
         {"do": "place", "mark": "lie"},
