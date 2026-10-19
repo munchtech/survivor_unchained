@@ -66,6 +66,9 @@ public sealed class OwnClips
     /// than played in its place (Gestures); and whether it holds its end.</summary>
     public bool Gesture(string clip) => Meta(clip, "layer").VariantType == Variant.Type.String && (string)Meta(clip, "layer") == "gesture";
 
+    /// <summary>A swing on her upper body alone (PlayerView's upperShot filter; the hips and legs stay with what plays).</summary>
+    public bool UpperLayer(string clip) => Meta(clip, "layer").VariantType == Variant.Type.String && (string)Meta(clip, "layer") == "upper";
+
     public bool Holds(string clip) => Meta(clip, "hold").VariantType == Variant.Type.Bool && (bool)Meta(clip, "hold");
 
     static readonly HashSet<string> Idles = new()

@@ -1,0 +1,6 @@
+# anim41: the two-axe clips with the gyre_axes loadout (r1 shot axes_left with the single axe)
+axesl3_g_m|reaver|gyre_axes|axes_left@0.1|day|0.6|315|female
+axesl3_g_c|reaver|gyre_axes|axes_left@0.1|day|1|315|female
+axesr3_g_m|reaver|gyre_axes|axes_right@0.1|day|0.6|315|female
+axesidle_g_c|reaver|gyre_axes|idle_reaver@0.0|day|1|315|female
+axesrun_g_c|reaver|gyre_axes|run_reaver_axes@0.3|day|1|315|female
