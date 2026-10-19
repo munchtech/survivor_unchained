@@ -37,27 +37,48 @@ public static class Wear
     /// <summary>Her calling's tattoos: part of her skin with that calling, always worn, never an equip slot.</summary>
     public const string Ink = "ink";
 
+    /// <summary>The callings, in the order a fill's fallback is looked for (OutfitChannels' order).</summary>
+    public static readonly string[] FallbackOrder = ["warden", "arcanist", "reaver", "ranger"];
+
     /// <summary>What she is seen wearing (docs/handoff/armor.md item 7): visual slot -> piece id. `worn` is what her
     /// equipment (Of) or a shot's --wear puts on her; every visual slot left empty is filled from her calling's own pieces
-    /// (CALLING.SLOT where the index has one), her calling's ink is always on, and each piece's covers hide the other
-    /// visual slots it covers whatever else is worn. A piece the index does not know is left off, with a note why.</summary>
+    /// (CALLING.SLOT where the index has one), and her calling's ink is always on. An equipped piece's covers hide the
+    /// other visual slots it covers, equipped or not (a suit hides what it covers). A fill never hides an equipped piece
+    /// (loot the player put on must show): a fill whose covers reach a slot an equipped piece shows in is dropped, and
+    /// its own slot is filled by the first calling in FallbackOrder whose piece for that slot covers that slot only, or
+    /// left empty with a note. A piece the index does not know is left off, with a note why.</summary>
     public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null)
     {
-        var r = new Dictionary<string, string>();
+        var eq = new Dictionary<string, string>();
         foreach (var (vs, id) in worn)
         {
             if (ix.Find(id) is not { } row) { notes?.Add($"wear: piece '{id}' (for {vs}) is in no armor index; left off"); continue; }
             if (row.Slot == Ink) { notes?.Add($"wear: piece '{id}' is ink, which comes with its calling; left off"); continue; }
-            r[row.Slot] = id;
+            eq[row.Slot] = id;
         }
-        var own = ix.Calling(calling);
-        foreach (var (slot, id) in own)
-            if (slot == Ink || !r.ContainsKey(slot)) r[slot] = id;
+        // (what equipped pieces hide: each other too)
         var hidden = new HashSet<string>();
-        foreach (var (slot, id) in r)
+        foreach (var (slot, id) in eq)
             foreach (var c in ix.Find(id)!.Covers)
                 if (c != slot && c != Ink) hidden.Add(c);
-        foreach (var h in hidden) r.Remove(h);
+        var r = eq.Where(kv => !hidden.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
+        bool HidesEquipped(string slot, string id) => ix.Find(id)!.Covers.Any(c => c != slot && c != Ink && r.ContainsKey(c) && eq.ContainsKey(c));
+        foreach (var (slot, id) in ix.Calling(calling))
+        {
+            if (slot == Ink) { r[slot] = id; continue; }
+            if (eq.ContainsKey(slot) || hidden.Contains(slot)) continue;
+            if (!HidesEquipped(slot, id)) { r[slot] = id; continue; }
+            var fb = FallbackOrder.Select(c => ix.Find($"{c}.{slot}")).FirstOrDefault(p => p is { } p_ && p_.Covers.Count == 1 && p_.Covers[0] == slot);
+            if (fb != null) { r[slot] = fb.Id; notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece; {slot} filled with '{fb.Id}'"); }
+            else notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece, and no calling has a {slot} that covers only {slot}; {slot} left empty");
+        }
+        // (and what the fills kept hide, of the other fills)
+        foreach (var (slot, id) in r.ToList())
+        {
+            if (eq.ContainsKey(slot)) continue;
+            foreach (var c in ix.Find(id)!.Covers)
+                if (c != slot && c != Ink && !eq.ContainsKey(c)) r.Remove(c);
+        }
         return r;
     }
 

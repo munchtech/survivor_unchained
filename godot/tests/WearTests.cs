@@ -156,6 +156,43 @@ public class WearTests
     }
 
     [Fact]
+    public void An_equipped_piece_wins_over_the_callings_fill()
+    {
+        // (the ranger's pants fill covers legwear: equipped legwear drops it, a bottom that covers only bottom comes in)
+        var ix = ArmorIndex.Parse(Index);
+        var notes = new List<string>();
+        var l = Wear.Look(W("arcanist.legwear"), "ranger", ix, notes);
+        Assert.Equal("arcanist.legwear", l["legwear"]);
+        Assert.Equal("warden.bottom", l["bottom"]);
+        Assert.Contains("ranger.bottom", Assert.Single(notes));
+        // (no fallback: the slot is left empty, with a note)
+        var bare = ArmorIndex.Parse(Index.Replace("\"warden.bottom\", \"outfit\": \"warden\", \"slot\": \"bottom\"", "\"warden.bottomx\", \"outfit\": \"warden\", \"slot\": \"bottomx\""));
+        notes.Clear();
+        l = Wear.Look(W("arcanist.legwear"), "ranger", bare, notes);
+        Assert.Equal("arcanist.legwear", l["legwear"]);
+        Assert.False(l.ContainsKey("bottom"));
+        Assert.Contains("left empty", Assert.Single(notes));
+    }
+
+    [Fact]
+    public void An_equipped_suit_hides_an_equipped_slot()
+    {
+        var ix = ArmorIndex.Parse(Index);
+        var l = Wear.Look(W("ranger.bottom", "arcanist.legwear"), "ranger", ix);
+        Assert.Equal("ranger.bottom", l["bottom"]);
+        Assert.False(l.ContainsKey("legwear"));
+    }
+
+    [Fact]
+    public void The_shipped_index_shows_equipped_legwear_on_the_ranger()
+    {
+        var ix = ArmorIndex.Shared;
+        var l = Wear.Look(W("arcanist.legwear"), "ranger", ix);
+        Assert.Equal("arcanist.legwear", l["legwear"]);
+        Assert.Equal(["bottom"], ix.Find(l["bottom"])!.Covers);
+    }
+
+    [Fact]
     public void Ink_stays_with_its_calling()
     {
         var ix = ArmorIndex.Parse(Index);
