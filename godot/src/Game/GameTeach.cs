@@ -121,10 +121,11 @@ public partial class Game
             var world = t.World();
             if (world.Count == 0) gone = true;
             // (all of them well inside the screen, or none is pointed at yet)
-            if (t.All && world.Any(w => OnScreen(w) is not Vector2 v || !SafeArea.HasPoint(v))) world = [];
             foreach (var w in world)
             {
                 if (OnScreen(w) is not Vector2 v) continue;
+                // (each one ringed only well inside the screen: the rest get an edge arrow)
+                if (t.Each && !SafeArea.HasPoint(v)) continue;
                 // (a candidate: the first well inside the screen is the one)
                 if (t.Safe)
                 {
@@ -207,15 +208,23 @@ public partial class Game
         foreach (var p in c.Target.World())
         {
             var w = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-            if (camera.IsPositionBehind(w) || OnScreen(p) != null) continue;
+            if (camera.IsPositionBehind(w) || OnScreen(p) is Vector2 on && (!c.Target.Each || SafeArea.HasPoint(on))) continue;
             var d = camera.UnprojectPosition(w) - mid;
             if (d.Length() < 1) continue;
             d = d.Normalized();
-            // (onto a box inset from the edge, the HUD's foot kept clear)
-            float hx = 960 - 70, up = 540 - 90, down = 540 - 160;
+            // (onto a box inset from the edge: under the boss bar (to y 110) by 24 px and more, the HUD's
+            // foot kept clear)
+            float hx = 960 - 80, up = 540 - 160, down = 540 - 160;
             float tx = Math.Abs(d.X) > 1e-4f ? hx / Math.Abs(d.X) : float.MaxValue;
             float ty = d.Y < -1e-4f ? up / -d.Y : d.Y > 1e-4f ? down / d.Y : float.MaxValue;
-            list.Add((mid + d * Math.Min(tx, ty), d));
+            var at = mid + d * Math.Min(tx, ty);
+            // (never on the map or the objectives under it (x 1520 on, to y 480): 24 px clear, along the edge it is on)
+            if (at.X > 1496 && at.Y < 504)
+            {
+                if (at.Y < 170) at.X = 1496;
+                else at.Y = 504;
+            }
+            list.Add((at, d));
         }
         return list;
     }

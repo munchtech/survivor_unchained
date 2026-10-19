@@ -29,9 +29,10 @@ public sealed record Aim
     /// <summary>With Safe: the point and she must be in the open, nothing tall (a roof, a canopy) between
     /// them and the camera; under cover, it waits.</summary>
     public bool Open { get; init; }
-    /// <summary>Every one of the world's points must stand well inside the screen (three lamps, all in
-    /// sight); until they do, it waits.</summary>
-    public bool All { get; init; }
+    /// <summary>Each of the world's points is ringed only where it stands well inside the screen (clear
+    /// of its edges and the HUD); the rest get an arrowhead on the screen's edge. It waits until one does.
+    /// (The three lamps never stand on one screen at the play camera: 1,300 px apart.)</summary>
+    public bool Each { get; init; }
     /// <summary>How big a thing in the world is ringed, in metres from its middle (about a man's half-width).</summary>
     public double Radius { get; init; } = 0.55;
 

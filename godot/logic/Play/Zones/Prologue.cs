@@ -212,10 +212,19 @@ public sealed class Prologue : ZoneRuntime
         });
     }
 
-    /// <summary>The Barrow Knight's lane while it is marked (its windup), a beat after it was: a point along it.</summary>
-    IReadOnlyList<(double X, double Y, double Z)> KnightLane() =>
-        knight is { Alive: true, State: EnemyState.Windup } k && (k.LungeX != 0 || k.LungeZ != 0) && knightWound >= 0 && B!.Time - knightWound >= LaneBeat
-            ? [Up(k.X + k.LungeX * 2.6, k.Z + k.LungeZ * 2.6, 0.1)] : [];
+    /// <summary>The Barrow Knight's lane while it is marked (its windup), a beat after it was: points along
+    /// it, those clear of her first (the ring marks the lane, never her figure), the lane's middle first.</summary>
+    IReadOnlyList<(double X, double Y, double Z)> KnightLane()
+    {
+        if (knight is not { Alive: true, State: EnemyState.Windup } k || (k.LungeX == 0 && k.LungeZ == 0) || knightWound < 0 || B!.Time - knightWound < LaneBeat)
+            return [];
+        double reach = (k.Def.Charge ?? k.Def.Lunge) is { } l ? l.Speed * l.Time : 6;
+        var p = B.Player;
+        return new[] { 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8 }
+            .Select(f => (X: k.X + k.LungeX * reach * f, Z: k.Z + k.LungeZ * reach * f))
+            .OrderBy(q => Dist(q.X, q.Z, p.X, p.Z) < 2.4 ? 1 : 0)
+            .Select(q => Up(q.X, q.Z, 0.1)).ToList();
+    }
 
     void Callouts()
     {
@@ -268,7 +277,7 @@ public sealed class Prologue : ZoneRuntime
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
             Teach("lamps", CalloutKind.Freeze, "The lamps", "While these burn, the Warden barely feels a blow. Break them.",
-                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), All = true, Radius = 0.38 });
+                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", Aim.At("draught"), "draught");

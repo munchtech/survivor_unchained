@@ -887,17 +887,20 @@ public partial class Callout : Control, ICalloutView
         void Chevron(Vector2 at, Vector2 dir, float k, float breathe, float reach, bool light)
         {
             if (reach <= 0) return;
+            // A solid arrowhead pointing off the screen (an open "^" read as a letter: a 7 in the corner).
             var n = new Vector2(-dir.Y, dir.X);
-            float L = 22 * k, W = 16 * k;
+            float L = 30 * k, W = 15 * k;
             var tip = at + dir * L * 0.5f;
-            Vector2[] arm = [tip - dir * L + n * W, tip, tip - dir * L - n * W];
+            var back = tip - dir * L;
+            Vector2[] head = [tip, back + n * W, back + dir * L * 0.3f, back - n * W];
             if (light)
             {
-                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 36 * k, Vector2.One * 72 * k), false, Style.Ember with { A = (0.25f + 0.15f * breathe) * reach });
+                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 30 * k, Vector2.One * 60 * k), false, Style.Ember with { A = (0.2f + 0.12f * breathe) * reach });
                 return;
             }
-            DrawPolyline(arm, Iron with { A = Iron.A * reach }, 9f * k, true);
-            DrawPolyline(arm, Hot.Lerp(White, 0.3f * breathe) with { A = reach }, 3.4f * k, true);
+            Vector2[] rim = [.. head, tip];
+            DrawPolyline(rim, Iron with { A = Iron.A * reach }, 6f * k, true);
+            DrawColoredPolygon(head, Hot.Lerp(White, 0.25f * breathe) with { A = reach });
         }
 
         /// <summary>The arrow's tail where it leaves the words: one link of the chain, end on.</summary>
