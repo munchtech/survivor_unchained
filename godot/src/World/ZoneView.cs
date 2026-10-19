@@ -127,6 +127,25 @@ public partial class ZoneView : Node3D
         SetNight(false);
     }
 
+    /// <summary>The zone's lights kept off her own layer (PlayerView.HerLayer: the close view by night), or given back.</summary>
+    public void HerUnlit(bool off)
+    {
+        foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~PlayerView.HerLayer : l.LightCullMask | PlayerView.HerLayer;
+    }
+
+    /// <summary>The lit light nearest `at` within `within` metres (a fire by her), or null.</summary>
+    public OmniLight3D? NearestLit(Vector3 at, float within)
+    {
+        OmniLight3D? best = null; float bd = within * within;
+        for (int i = 0; i < lights.Count; i++)
+        {
+            if (!lit[i]) continue;
+            float d = lights[i].GlobalPosition.DistanceSquaredTo(at);
+            if (d < bd) { bd = d; best = lights[i]; }
+        }
+        return best;
+    }
+
     OmniLight3D MakeLight(ZoneData.LightSpec l)
     {
         int i = lights.Count;

@@ -50,6 +50,12 @@ public partial class PlayerView : Node3D
     /// <summary>True: her carried light lights the ground round her but not her (the close view by night, where
     /// from over her head it filled her face flat; E1 round 3).</summary>
     public bool LampOffHer;
+    /// <summary>Her own render layer (11): the close view by night moves her meshes off people's layer (2) onto it, so the
+    /// camp's fire, which stood behind the lens and filled her face flat from the front, can be kept off her alone (E1 judge 3).</summary>
+    public const uint HerLayer = 1u << 10;
+    /// <summary>True: her meshes on HerLayer, not on layer 2 (GameCloseUp, the close view by night).</summary>
+    public bool OwnLayer;
+    bool ownShown;
     float lamp = 1;
     // Their own clips (hers, or his) and carriage.
     readonly bool mine;
@@ -564,10 +570,25 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayer : 0xFFFFFu;
+        // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
+        if (OwnLayer || ownShown) { Relayer(this, OwnLayer); ownShown = OwnLayer; }
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
+    }
+
+    static void Relayer(Node n, bool own)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is GeometryInstance3D g)
+            {
+                if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | HerLayer;
+                else if (!own && (g.Layers & HerLayer) != 0) g.Layers = (g.Layers & ~HerLayer) | 2u;
+            }
+            Relayer(c, own);
+        }
     }
 
     /// <summary>When nothing is near: a breath caught after a long run, and
