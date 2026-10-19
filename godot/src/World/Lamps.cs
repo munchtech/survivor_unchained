@@ -78,14 +78,18 @@ public static class Lamps
     static readonly float GlassK = SurvivorUnchained.Args.Num("lamp-glass", 2.2f), GlassA = SurvivorUnchained.Args.Num("lamp-glass-a", 0.45f);
     /// <summary>--lamp-glass-warm HEX, --lamp-glass-cold HEX: the lit glass's tint, for pictures (AgX greys a pale tint: saturated).</summary>
     static readonly string GlassWarm = SurvivorUnchained.Args.Get("lamp-glass-warm") ?? "#ff8a30", GlassCold = SurvivorUnchained.Args.Get("lamp-glass-cold") ?? "#3d70ff";
+    /// <summary>--ford-glass K, --ford-glass-a A, --ford-edge K, --ford-edge-a A: the ford irons' cold glass brightness and cover (its face under the flame), for pictures.</summary>
+    static readonly float FordGlassK = SurvivorUnchained.Args.Num("ford-glass", 0.04f), FordGlassA = SurvivorUnchained.Args.Num("ford-glass-a", 0.3f),
+        FordEdge = SurvivorUnchained.Args.Num("ford-edge", 0.2f), FordEdgeA = SurvivorUnchained.Args.Num("ford-edge-a", 0.3f);
     static ShaderMaterial Glass(bool isCold)
     {
         ref var slot = ref isCold ? ref cold : ref warm;
         if (slot != null) return slot;
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_glass.gdshader") };
         m.SetShaderParameter("glow", new Color(isCold ? GlassCold : GlassWarm));
-        m.SetShaderParameter("glow_strength", (isCold ? 0.3f : 0.24f) * GlassK);
-        m.SetShaderParameter("lit_alpha", GlassA);
+        m.SetShaderParameter("glow_strength", isCold ? FordGlassK : 0.24f * GlassK);
+        m.SetShaderParameter("lit_alpha", isCold ? FordGlassA : GlassA);
+        if (isCold) { m.SetShaderParameter("edge_k", FordEdge); m.SetShaderParameter("edge_alpha", FordEdgeA); }
         // Drawn before the flames (theirs 1): the flame shows through its glass, not dimmed behind it.
         m.RenderPriority = -1;
         slot = m;
@@ -94,6 +98,8 @@ public static class Lamps
 
     /// <summary>--lamp-inner K: how strongly a lamp's flame lights its own iron from inside (shaders/lamp_inner), for pictures.</summary>
     static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-inner", 6f);
+    /// <summary>--ford-inner K: the same for the ford irons' cold flame, for pictures.</summary>
+    static readonly float FordInnerK = SurvivorUnchained.Args.Num("ford-inner", 2f);
     /// <summary>The holder's iron lit from inside by its flame at <paramref name="flame"/> (world, the flame's middle):
     /// a next pass on each of its non-glass surfaces, one material per holder (its flame's place).</summary>
     public static void Inner(Node3D holder, Vector3 flame, bool isCold, float radius)
@@ -101,7 +107,7 @@ public static class Lamps
         var inner = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_inner.gdshader") };
         inner.SetShaderParameter("flame_at", flame);
         inner.SetShaderParameter("color", isCold ? new Color("#7aa8ff") : new Color("#ffa860"));
-        inner.SetShaderParameter("strength", InnerK);
+        inner.SetShaderParameter("strength", isCold ? FordInnerK : InnerK);
         inner.SetShaderParameter("radius", radius);
         holder.SetMeta("inner", inner);
         foreach (var c in holder.FindChildren("*", "MeshInstance3D", true, false))

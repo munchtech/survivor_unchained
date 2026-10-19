@@ -51,7 +51,7 @@ public static partial class Pieces
             ("halloween", "lantern_standing") => StandingLamp(box) ?? Fitted(Lantern(false), box),
             ("halloween", "pillar") or ("dungeon", "pillar") => Pillar(box, seed),
             ("halloween", "tree_dead_large") => Kit($"nature/DeadTree_{1 + seed % 3}", box),
-            ("halloween", "candle_triple") => Kit("props/CandleStick_Triple", box),
+            ("halloween", "candle_triple") => Candelabrum(box),
             ("halloween", "skull") => Fitted(Skull(), box),
             ("halloween", "skull_candle") => SkullCandle(box),
             ("halloween", "ribcage") => Fitted(Ribcage(), box),
@@ -633,8 +633,38 @@ public static partial class Pieces
         var wax = new Build();
         Lathe(wax, Pts(0, 0.36f, 0.035f, 0.36f, 0.035f, 0.47f, 0, 0.47f), 12);
         Lathe(wax, Pts(0.07f, 0.34f, 0.05f, 0.365f, 0, 0.37f), 12);
-        Add(holder, wax.Mesh(), Mat("#e8dcc0", 0, 0.6f));
+        // Tallow gone yellow-grey (a cream wax by the crypt's door read as a glowing egg at night), and the
+        // flame kit's candle on it, no light of its own (look bible 10; the shrine's candle is the model).
+        Add(holder, wax.Mesh(), Mat(TallowHex, 0, 0.75f));
+        FlameKit.Add(holder, new Vector3(0, 0.47f, 0), FlameKind.Candle, light: false);
         return Fitted(holder, box);
+    }
+
+    const string TallowHex = "#6e6450";
+
+    /// <summary>A wrought-iron candlestick of three (the KayKit one was white plaster with no flames, by the crypt's
+    /// door): a round foot, a stem, a bar with three cups, tallow candles burnt down unevenly, the kit's candle
+    /// flames on them and no light of their own (no zone light here).</summary>
+    static Node3D Candelabrum(Aabb box)
+    {
+        var root = new Node3D();
+        var c = box.GetCenter();
+        float w = box.Size.X, h = box.Size.Y, y0 = box.Position.Y;
+        var iron = new Build();
+        Lathe(iron, Pts(0.2f * w, 0, 0.19f * w, 0.025f * h, 0.07f * w, 0.07f * h, 0.03f * w, 0.1f * h, 0.026f * w, 0.5f * h, 0.045f * w, 0.53f * h, 0.026f * w, 0.56f * h, 0, 0.56f * h), 12, At(c.X, y0, c.Z));
+        Extrude(iron, Pts(-0.42f * w, 0.53f * h, 0.42f * w, 0.53f * h, 0.42f * w, 0.56f * h, -0.42f * w, 0.56f * h), 0.05f * w, 0.005f * h, At(c.X, y0, c.Z));
+        var wax = new Build();
+        foreach (var (x, up, tall) in new[] { (-0.4f, 0f, 0.16f), (0f, 0.1f, 0.24f), (0.4f, 0f, 0.11f) })
+        {
+            float cy = 0.56f * h + up * h;
+            if (up > 0) Lathe(iron, Pts(0.022f * w, 0.53f * h, 0.022f * w, cy, 0, cy), 8, At(c.X, y0, c.Z));
+            Lathe(iron, Pts(0.03f * w, 0, 0.08f * w, 0.025f * h, 0.075f * w, 0.04f * h, 0, 0.04f * h), 10, At(c.X + x * w, y0 + cy, c.Z));
+            Lathe(wax, Pts(0.05f * w, 0, 0.05f * w, tall * h, 0.035f * w, tall * h + 0.01f * h, 0, tall * h + 0.01f * h), 10, At(c.X + x * w, y0 + cy + 0.04f * h, c.Z));
+            FlameKit.Add(root, new Vector3(c.X + x * w, y0 + cy + 0.04f * h + tall * h + 0.008f * h, c.Z), FlameKind.Candle, light: false);
+        }
+        Add(root, iron.Mesh(), Wrought());
+        Add(root, wax.Mesh(), Mat(TallowHex, 0, 0.75f));
+        return root;
     }
 
     /* ------------------------------------------------------ the gate, towers -- */

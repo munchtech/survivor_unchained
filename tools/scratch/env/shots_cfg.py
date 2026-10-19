@@ -26,6 +26,11 @@ SETS = {
     # (her ember out of their pools), then the ford's three in view from between them
     "lampstill": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;7,-33.5;0,-42"], 3),
     "lampstill3": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;4.5,94;4.5,94;7,-33.5;7,-33.5;7,-33.5"], 6),
+    # E2 lamps r3: one frame each, for sweeps: the camp post lamp's pool, ford pylon 0 with her 7 m off
+    "lamppool": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94"], 1),
+    "fordone": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "7,-33.5"], 1),
+    # E2 lamps r3: the close-up camera at its closest on the camp post lamp and ford pylon 0
+    "lampclose": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "-2.5,92.5,1,0;0,-35.5,1,0"], 2),
     "fordnear": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "-9.7,-44;9.7,-44"], 2),
     "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
     "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", TOWN], 3),
