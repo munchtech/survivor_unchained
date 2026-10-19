@@ -1,6 +1,6 @@
-# 3. The Prologue's asset inventory: keep, rework or build
+# 12. The Prologue's asset inventory: keep, rework or build
 
-Every model, texture and shader the first 20-30 minutes show (title and creation at the Low Ford camp, C01-C04, the Low Ford road and river, the Waystation town), 323 rows, each with a tier, a verdict and the lead who owns it. The data is `12_inventory.csv` beside this page (the extract plus four columns: `tier`, `verdict`, `owner`, `board`); the tables below are generated from it (`look_bible_refs\inventory\mark.py`). Budgets are page 11; the look each row is built to is its board.
+Every model, texture and shader the first 20-30 minutes show (title and creation at the Low Ford camp, C01-C04, the Low Ford road and river, the Waystation town), 323 rows, each with a tier, a verdict and the lead who owns it. The data is `12_inventory.csv` beside this page (the extract plus four columns: `tier`, `verdict`, `owner`, `board`); the tables below are generated from it (`look_bible_refs\inventory\mark.py`). Budgets are page 11; the look each row is built to is its board. **Scope:** her spells' VFX, her animation set and the UI are outside this page's rows; page 13 (the launch checklist) lists them.
 
 **Where we stand:** 229 of the 323 rows are free stylized kits (Quaternius Nature 74, Fantasy Props 44, Medieval Village 41, Universal Base Characters 30, plus KayKit placeholders inside our landmark files 40). That is the "low-poly asset pack" look behind the 18 October audit (1 of 54 shots passed): a realistic heroine in a flat-colored toy world. The owner: "we started with free assets, and we can still use some - but we have a way to build our own now". So the default for anything the camera dwells on is **build**, and a free asset stays only where it meets its board at 1:1.
 
@@ -11,24 +11,24 @@ Every model, texture and shader the first 20-30 minutes show (title and creation
 | **keep** | Ours, or meets its board today; no art work for launch beyond what its owner already has open. | Its owner's open list closes. |
 | **rework** | The mesh or system stays; materials, LODs, shading or numbers change to meet the board and page 11. | It meets its board's DONE line at 1:1 and page 11's row for its kind. |
 | **build** | Made new, ours (Marionette, the Asset Forge, code), to the board and page 11. The old row is deleted from the build when its replacement lands. | As rework, and the old asset is gone from the scene files. |
-| **test** | Small background props. Decided at the first 1:1 frame of the new kit beside them: keep if it holds, else rework (new material from the shared atlas), else build. Default if nobody tests it: rework. | Its owner writes keep, rework or build in this table. |
+| **test** | Small background props seen only at the play or town camera (rule 12). Decided by the fresh judge of the first 1:1 town and road frames, before beat 12's first shoot: keep only if the prop can't be told from the new kit and meets 1h and 1j; else rework (for a flat palette mesh, re-UV to the prop atlas within page 11's prop row), else build. Default if nobody tests it: rework. | The judge's call is written as keep, rework or build in this table. |
 | **cut** | Leaves the Prologue (deferred or replaced by a merged piece). | Gone from the scene and the menus. |
 | **n/a** | A bookkeeping row (the whole-file duplicates of the landmark groups). | - |
 
 ## The rules (applied in this order; the first that matches wins)
 
 1. **Hers (tier 1): keep, except where listed.** Her body, face textures and shaders: keep (the touch-up lead owns the skin, the worn metal and the next body build: neck, fingers, the painted-out anatomy). Braid, ponytail and pixie: keep (the face lead). Long and bob: **cut** from the Prologue (they leave creation until rebuilt; OWNER_NOTES 18 Oct). Her four calling outfits: **rework** into slot parts at page 11's dressed budget (the armor-and-weapons pipeline lead; the metal standard from the touch-up lead, board 1a). Her weapons (Sketchfab CC-BY): **build** in Marionette's weapon workshop, at most 15k each (the armor-and-weapons pipeline lead).
-2. **Bosses (tier 1, later):** the Ford-Warden (ours, code) **rework**, and the Grimtunnel and its lampling base (Sketchfab CC-BY) **build**; budgets 150k / 40k / 10k (page 11). Owner: a bosses lead, when the classes and creatures unpause; until then the cinematics lead keeps them shootable.
+2. **Bosses (tier 1):** the Ford-Warden (ours, code) **rework**, and the Grimtunnel and its lampling base (Sketchfab CC-BY) **build**; budgets 150k / 40k / 10k (page 11). Owner now: the story characters lead (Marionette builds them), shown as "story characters lead (bosses lead later)"; the rows hand over to a bosses lead when one starts (when the classes and creatures unpause). Until then the cinematics lead keeps them shootable.
 3. **Anything third-party with attribution (Sketchfab CC-BY): build.** It is the owner's standing rule to replace third-party assets with our own, and CC-BY can't stay silently.
 4. **Story NPCs (tier 2): build** through Marionette (one shared base, morphs, the clothes kit, hair and beard cards, one atlas, at most 40k), board 1i. The Quaternius Universal Base Characters parts go once the Marionette base replaces them. The shared clip libraries (UAL1, UAL2, CC0) are **keep** for now (the animation lead). Owner: the story characters lead.
 5. **Fodder (tier 3): build** (the risen, the risen warrior and archer, the barrow knight, the grave caller and the drowned extras): the same Marionette base, cheap (at most 8k at LOD0, 2k in play, VAT, no shadow). Owner: the story characters lead with animation (VAT).
 6. **Trees, bushes, grass and undergrowth (tier 2): build** with the Asset Forge to board 1e (our own species, volumes not cut-outs, wind and back light, 3 LODs and an impostor). Owner: the tutorial environment lead; rendering for LODs, impostors and the foliage shader.
-7. **Rocks:** the Quaternius rocks **build**; the Poly Haven scans (CC0) **rework** (decimate to page 11's 3k, LODs, re-grade to board 1f). Owner: the tutorial environment lead.
+7. **Rocks:** the Quaternius rocks **build**, and so do the pebbles (the `lowford.flora.pebble.*` rows keep their flora kind in the data but follow the rock rule, board 1f); the Poly Haven materials (CC0) **rework** to their boards (castle_wall_slates and medieval_blocks_03 to 1g, pine_bark to 1e, rough_wood to 1h, the others to 1f). Owner: the tutorial environment lead.
 8. **Buildings, walls, roofs, windows, doors and the KayKit placeholders inside our landmark files (towers, wall, gate, hex buildings, shrine, crypt): build** as merged buildings with two trim sheets to boards 1g and 1h. Owner: the tutorial environment lead.
 9. **Terrain, road, water and sky (ours, code): rework** to boards 1c, 1d and 1f: one terrain shader with at most 4 layers per pixel (today a 7-layer array), road strips and decals instead of splat-only paint, the water shader, shore foam and the ford's flow map, the zone presets. The Poly Haven CC0 ground and castle textures **rework** (kept as sources where they meet the board at 1:1; replaced by our own over time). Owner: the tutorial environment lead; rendering for fog and light cost.
-10. **Lamps, flames and fire FX: build** to board 1j (the flame kit, lamps and holders; lamps unshadowed except one per frame). The code-made light rigs (`lights_fires`) **rework** to the same rule. Kenney particle sheets: **build** (our own flipbooks). Owner: the tutorial environment lead; the cinematics lead for `fx.cinematic`.
+10. **Lamps, flames and fire FX: build** to board 1j (the flame kit, lamps and holders; lamps unshadowed except one per frame). The code-made light rigs (`lights_fires`) **rework** to the same rule. Kenney particle sheets: **build** (our own flipbooks). Candles with flames (the KayKit `candle_triple` and `skull_candle`) **build**. Owner: the tutorial environment lead; the cinematics lead for `fx.cinematic`.
 11. **Story props** (seen in a cinematic or at the close-up: C01's camp, the fire pit, the wagon, the heart, the Well, the stall's books and scrolls): **build** to board 1j. Owner: the tutorial environment lead.
-12. **Small background props** (crates, barrels, buckets, bags, pots, vases, fences, bricks, chimneys, tools; seen only at the play or town camera): **test**. Owner: the tutorial environment lead.
+12. **Small background props** (crates, barrels, buckets, bags, pots, vases, fences, bricks, chimneys, tools): **test** when seen only at the play or town camera. Criterion: keep only if the prop can't be told from the new kit and meets boards 1h and 1j. Who decides: the fresh judge of the first 1:1 town and road frames, before beat 12's first shoot. "Rework" for a flat palette mesh means re-UV to the prop atlas, within page 11's prop row. A test row seen in a C04b frame is **build**, and `waystation.prop.props/{Bag,Barrel,Chest_Wood,Crate_Wooden}` are **build**. Owner: the tutorial environment lead.
 13. **Our shaders and code systems not named above** (the kit, unlit, end-grain, glowing, ghost, ember core, coals shaders): **keep**; rendering owns their cost.
 14. **Whole-file rows** (`*.landmarks.WHOLE_FILE`): **n/a**.
 
@@ -42,8 +42,8 @@ Verdict by tier:
 |---|---|---|---|---|---|
 | keep | 23 | 3 | 0 | 9 | 35 |
 | rework | 5 | 23 | 0 | 5 | 33 |
-| build | 9 | 193 | 6 | 0 | 208 |
-| test | 0 | 43 | 0 | 0 | 43 |
+| build | 9 | 221 | 6 | 0 | 236 |
+| test | 0 | 15 | 0 | 0 | 15 |
 | cut | 2 | 0 | 0 | 0 | 2 |
 | n/a | 0 | 0 | 0 | 2 | 2 |
 | **total** | 39 | 262 | 6 | 16 | 323 |
@@ -54,15 +54,15 @@ Owner by verdict:
 |---|---|---|---|---|---|---|---|
 | animation lead | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
 | armor-and-weapons pipeline lead | 0 | 4 | 7 | 0 | 0 | 0 | 11 |
-| bosses lead (later) | 0 | 1 | 2 | 0 | 0 | 0 | 3 |
 | cinematics lead | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| face lead | 3 | 0 | 0 | 0 | 2 | 0 | 5 |
+| face lead | 6 | 0 | 0 | 0 | 2 | 0 | 8 |
 | rendering lead | 9 | 0 | 0 | 0 | 0 | 0 | 9 |
 | story characters lead | 0 | 1 | 30 | 0 | 0 | 0 | 31 |
+| story characters lead (bosses lead later) | 0 | 1 | 2 | 0 | 0 | 0 | 3 |
 | story characters lead + animation (VAT) | 0 | 0 | 6 | 0 | 0 | 0 | 6 |
-| touch-up lead | 20 | 0 | 0 | 0 | 0 | 0 | 20 |
-| tutorial environment lead | 0 | 20 | 102 | 43 | 0 | 0 | 165 |
-| tutorial environment lead + rendering | 0 | 7 | 61 | 0 | 0 | 0 | 68 |
+| touch-up lead | 17 | 0 | 0 | 0 | 0 | 0 | 17 |
+| tutorial environment lead | 0 | 20 | 138 | 15 | 0 | 0 | 173 |
+| tutorial environment lead + rendering | 0 | 7 | 53 | 0 | 0 | 0 | 60 |
 | - | 0 | 0 | 0 | 0 | 0 | 2 | 2 |
 
 ## Every row, by kind
@@ -74,7 +74,7 @@ Owner by verdict:
 | shader.heroine_skin |  | n/a | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 | shader.heroine_outfit |  | n/a | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 | shader.heroine_eye |  | n/a | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
-| shader.heroine_hair |  | n/a | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
+| shader.heroine_hair |  | n/a | keep | 1 | face lead | 1b | rule 1: her hair texture/shader |
 | shader.heroine_teeth |  | n/a | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 | shader.heroine_paint |  | n/a | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 | shader.sheer |  | n/a | keep | 1 | touch-up lead | 1a | rule 1: her shader |
@@ -97,17 +97,17 @@ Owner by verdict:
 | her.tex.heroine_lashes.png |  | 1 | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 | her.tex.heroine_freckles.png |  | 1 | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 | her.tex.heroine_grain.png |  | 1 | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
-| her.tex.hair_strands.png |  | 1 | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
-| her.tex.hair_scalp.png |  | 1 | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
+| her.tex.hair_strands.png |  | 1 | keep | 1 | face lead | 1b | rule 1: her hair texture/shader |
+| her.tex.hair_scalp.png |  | 1 | keep | 1 | face lead | 1b | rule 1: her hair texture/shader |
 | her.skin_pores |  | 1 | keep | 1 | touch-up lead | 1b | rule 1: her body/texture/shader |
 
 ### creature
 
 | id | tris | instances | verdict | tier | owner | board | why |
 |---|---|---|---|---|---|---|---|
-| beast.lampling | 4226 | n/a | build | 1 | bosses lead (later) | 1i | rule 2: boss base, build |
-| boss.ford_warden |  | 1 | rework | 1 | bosses lead (later) | 1i | rule 2: Ford-Warden, ours |
-| boss.grimtunnel |  | 1 | build | 1 | bosses lead (later) | 1i | rule 2: boss base, build |
+| beast.lampling | 4226 | n/a | build | 1 | story characters lead (bosses lead later) | 1i | rule 2: boss base, build |
+| boss.ford_warden |  | 1 | rework | 1 | story characters lead (bosses lead later) | 1i | rule 2: Ford-Warden, ours |
+| boss.grimtunnel |  | 1 | build | 1 | story characters lead (bosses lead later) | 1i | rule 2: boss base, build |
 
 ### fodder
 
@@ -217,14 +217,14 @@ Owner by verdict:
 | lowford.flora.flowers.Flower_3_Group | 755 | 30 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
 | lowford.flora.flowers.Flower_4_Group | 1690 | 30 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
 | lowford.flora.mushroom.Mushroom_Common | 880 | 116 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Round_1 | 136 | 58 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Round_2 | 114 | 58 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Round_3 | 128 | 49 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Round_4 | 126 | 67 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Round_5 | 124 | 69 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Square_1 | 104 | 60 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Square_2 | 78 | 78 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
-| lowford.flora.pebble.Pebble_Square_3 | 52 | 54 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
+| lowford.flora.pebble.Pebble_Round_1 | 136 | 58 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Round_2 | 114 | 58 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Round_3 | 128 | 49 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Round_4 | 126 | 67 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Round_5 | 124 | 69 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Square_1 | 104 | 60 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Square_2 | 78 | 78 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
+| lowford.flora.pebble.Pebble_Square_3 | 52 | 54 | build | 2 | tutorial environment lead | 1f | rule 7: pebble, the rock rule |
 | lowford.flora.plant.Plant_1_Big | 360 | 105 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
 | waystation.flora.berry.Bush_Common_Flowers | 1368 | 14 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
 | waystation.flora.bush.Bush_Common | 900 | 25 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: Quaternius, build to 1e |
@@ -250,12 +250,12 @@ Owner by verdict:
 | swap.nature/Pebble_Round_3 | 128 | see notes | build | 2 | tutorial environment lead | 1f | rule 7: Quaternius rock, build to 1f |
 | swap.nature/Pebble_Round_4 | 126 | see notes | build | 2 | tutorial environment lead | 1f | rule 7: Quaternius rock, build to 1f |
 | swap.nature/Pebble_Round_5 | 124 | see notes | build | 2 | tutorial environment lead | 1f | rule 7: Quaternius rock, build to 1f |
-| mat.castle_wall_slates |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven, rework to 1f |
-| mat.forest_ground_04 |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven, rework to 1f |
-| mat.medieval_blocks_03 |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven, rework to 1f |
-| mat.pine_bark |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven, rework to 1f |
-| mat.rock_boulder_dry |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven, rework to 1f |
-| mat.rough_wood |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven, rework to 1f |
+| mat.castle_wall_slates |  | n/a | rework | 2 | tutorial environment lead | 1g | rule 7: Poly Haven material, rework to its board |
+| mat.forest_ground_04 |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven material, rework to its board |
+| mat.medieval_blocks_03 |  | n/a | rework | 2 | tutorial environment lead | 1g | rule 7: Poly Haven material, rework to its board |
+| mat.pine_bark |  | n/a | rework | 2 | tutorial environment lead | 1e | rule 7: Poly Haven material, rework to its board |
+| mat.rock_boulder_dry |  | n/a | rework | 2 | tutorial environment lead | 1f | rule 7: Poly Haven material, rework to its board |
+| mat.rough_wood |  | n/a | rework | 2 | tutorial environment lead | 1h | rule 7: Poly Haven material, rework to its board |
 
 ### terrain
 
@@ -355,32 +355,32 @@ Owner by verdict:
 | lowford.prop.props/Crate_Wooden | 1576 | 3 | build | 2 | tutorial environment lead | 1j | rule 11: story prop, build to 1j |
 | lowford.prop.props/Table_Large | 986 | 1 | build | 2 | tutorial environment lead | 1j | rule 11: story prop, build to 1j |
 | waystation.prop.custom/Well | 4146 | 1 | build | 2 | tutorial environment lead | 1j | rule 11: story prop, build to 1j |
-| waystation.prop.props/Anvil_Log | 3808 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Bag | 858 | 8 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Barrel | 824 | 5 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Barrel_Holder | 2676 | 3 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Bench | 404 | 2 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Bucket_Metal | 540 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Bucket_Wooden_1 | 976 | 4 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Chain_Coil | 3744 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Chest_Wood | 2546 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Crate_Wooden | 1576 | 11 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Dummy | 2858 | 2 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/FarmCrate_Apple | 4028 | 2 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/FarmCrate_Carrot | 5262 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/FarmCrate_Empty | 1928 | 2 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Pot_1 | 1068 | 3 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Rope_1 | 1748 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Vase_2 | 598 | 2 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Vase_4 | 598 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Vase_Rubble_Medium | 1113 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/WeaponStand | 2084 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.props/Workbench | 1368 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.village/Prop_Brick2 | 94 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.village/Prop_Brick3 | 126 | 1 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.village/Prop_Chimney | 618 | 18 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.village/Prop_WoodenFence_Extension1 | 32 | 24 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
-| waystation.prop.village/Prop_WoodenFence_Single | 40 | 12 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
+| waystation.prop.props/Anvil_Log | 3808 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Bag | 858 | 8 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Barrel | 824 | 5 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Barrel_Holder | 2676 | 3 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Bench | 404 | 2 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Bucket_Metal | 540 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Bucket_Wooden_1 | 976 | 4 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Chain_Coil | 3744 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Chest_Wood | 2546 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Crate_Wooden | 1576 | 11 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Dummy | 2858 | 2 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/FarmCrate_Apple | 4028 | 2 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/FarmCrate_Carrot | 5262 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/FarmCrate_Empty | 1928 | 2 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Pot_1 | 1068 | 3 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Rope_1 | 1748 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Vase_2 | 598 | 2 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Vase_4 | 598 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Vase_Rubble_Medium | 1113 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/WeaponStand | 2084 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.props/Workbench | 1368 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.village/Prop_Brick2 | 94 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.village/Prop_Brick3 | 126 | 1 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.village/Prop_Chimney | 618 | 18 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.village/Prop_WoodenFence_Extension1 | 32 | 24 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
+| waystation.prop.village/Prop_WoodenFence_Single | 40 | 12 | build | 2 | tutorial environment lead | 1h | rule 12: test row seen in C04b, build |
 | swap.props/Banner_1 | 448 | see notes | build | 2 | tutorial environment lead | 1j | rule 11: story prop, build to 1j |
 | swap.props/Crate_Metal | 2738 | see notes | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
 | way.stall.Stall_Empty | 1496 | 1 | build | 2 | tutorial environment lead | 1j | rule 11: story prop, build to 1j |
@@ -401,7 +401,7 @@ Owner by verdict:
 | lowford.landmarks.kk-dungeon-wall_broken | 784 | 1 | build | 2 | tutorial environment lead | 1g | rule 8: KayKit structure, build |
 | lowford.landmarks.kk-dungeon-wall_cracked | 2010 | 1 | build | 2 | tutorial environment lead | 1g | rule 8: KayKit structure, build |
 | lowford.landmarks.kk-dungeon-wall_half | 272 | 1 | build | 2 | tutorial environment lead | 1g | rule 8: KayKit structure, build |
-| lowford.landmarks.kk-halloween-candle_triple | 198 | 1 | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
+| lowford.landmarks.kk-halloween-candle_triple | 198 | 1 | build | 2 | tutorial environment lead | 1j | rule 10: candle with a flame, build to 1j |
 | lowford.landmarks.kk-halloween-crypt | 952 | 1 | build | 2 | tutorial environment lead | 1g | rule 8: KayKit structure, build |
 | lowford.landmarks.kk-halloween-fence | 3040 | 8 | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
 | lowford.landmarks.kk-halloween-fence_broken | 1338 | 3 | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
@@ -412,7 +412,7 @@ Owner by verdict:
 | lowford.landmarks.kk-halloween-gravemarker_B | 136 | 1 | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
 | lowford.landmarks.kk-halloween-gravestone | 542 | 2 | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
 | lowford.landmarks.kk-halloween-pillar | 282 | 3 | build | 2 | tutorial environment lead | 1g | rule 8: KayKit structure, build |
-| lowford.landmarks.kk-halloween-skull_candle | 542 | 1 | test | 2 | tutorial environment lead | 1j | rule 12: background prop, test |
+| lowford.landmarks.kk-halloween-skull_candle | 542 | 1 | build | 2 | tutorial environment lead | 1j | rule 10: candle with a flame, build to 1j |
 | lowford.landmarks.kk-halloween-tree_dead_large | 256 | 1 | build | 2 | tutorial environment lead + rendering | 1e | rule 6: KayKit dead tree, build to 1e |
 | lowford.landmarks.WHOLE_FILE | 16431 | 1 | n/a | - | - | - | rule 14: whole-file duplicate |
 | waystation.landmarks.baked_unnamed | 3096 | 123 | test | 2 | tutorial environment lead | 1h | rule 12: background prop, test |
