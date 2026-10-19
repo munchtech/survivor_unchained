@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 19 October, late evening: coordinator b2f1b545 (running)
+Leads restarted in the wind-down's order, each a fresh successor: Marionette (a6059cb5ea3df2d31; Marionette pipeline-1 + game npc-1, credit-free), environment E2 (a8e8c2d724ec1458d; NEW worktree env-2 from 12c25077, its own assets junction), storybook 1 (a8872b6437ba5bd06, su-lead-max), armor 5 (a61fc330b520d26a9; hilt carry, 2 rounds then animation). An animation lead takes the armor slot when it frees.
+
 ## 19 October, evening: coordinator b8d13e5f WIND-DOWN (read this first)
 **Merged and pushed:** E1 light and shadows (8ba3a4e7), the teaching pass (2389dd6b; worktree removed), armor 5's sheath sockets and Oathbrand (merge of 975cd32e; handoff from cfc4e520), and the quick start defaulting to HER (b04eaa46, `--sex male` for him; runs without --sex had played the male hero through every cinematic). Tests 993/0/8.
 **Paused (each handoff top says "Paused here; next:"):**
