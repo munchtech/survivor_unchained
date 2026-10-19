@@ -31,11 +31,11 @@ uniform float metal_rough = 0.45;                  // (its plate's satin roughne
 uniform float metal_rough_wear = 0.26;             // (where worn bright: its edges and, in patches, what stands out; 0.2-0.3)
 uniform float metal_rough_floor = 0.22;            // (no metal smoother than this; only worn edges get near it, the plates stay over 0.3)
 uniform float metal_grime = 1.0;                   // (dirt in its recesses: dark, brown, dull, not metal)
-uniform float metal_dent = 0.08;                   // (the hammered unevenness)
+uniform float metal_dent = 0.16;                   // (the hammered unevenness)
 uniform float brass_dim = 0.85;                    // (gold read as aged brass: a little darker and greyer than the bright alloy; the rest from grime)
 uniform float brass_rough_add = -0.1;             // (metal r3: raised trim a little smoother than the plate, 0.35: it catches a line of light, gold not tan)
 uniform vec3 gold_tone : source_color = vec3(1.0, 0.847, 0.569);   // (metal r3: gold's reflectance, Filament's #ffd891; times brass_dim for aged brass. Was its scan's mean, greyed: it read tan and matte by day)
-uniform float metal_hammer = 0.05;                 // (planishing marks, 8 mm)
+uniform float metal_hammer = 0.09;                 // (planishing marks, 8 mm)
 uniform float steel_dim = 1.0;                      // (round 1 darkened the plate's field to 0.8; physical now, the reflection held instead)
 uniform vec3 steel_warm = vec3(1.0);                // (round 1 warmed steel against the sky's blue; neutral now, the reflection held instead)
 uniform float metal_wear_bright = 1.3;
@@ -125,7 +125,7 @@ void fragment() {
 	vec3 col = texture(albedo, UV).rgb * tint;
 	vec3 nrm = texture(normal_map, UV).rgb;
 	float rough = has_orm ? texture(orm, UV).g : roughness_value;
-	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value)) : metallic_value;
+	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value) * (1.0 - step(0.95, metallic_value))) : metallic_value;   // (touch-up 3: a fully metallic key ignores its scan's metal map, whose specks dropped to non-metal as white flecks on the steel; grime and pits come from the shared detail and the baked masks. Rust keeps its map)
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
 	vec3 gold_emit = vec3(0.0);
