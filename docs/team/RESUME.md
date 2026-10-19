@@ -2,6 +2,20 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 19 October, morning: coordinator 8f465914 WIND-DOWN (read this first)
+**Merged and pushed:** story SB00 and the tutorial copy (f192ac14), armor 4 (4feb2454), Flare 10 (b3658589). Animation 39 merges at wind-down if its MR lands; otherwise anim-38 is paused (see its handoff top). C: about 269 GB free.
+**Paused cleanly ("Paused here; next:" at each handoff top):**
+- **Tutorial environment 3:** env-1@abb3aaaa, environment.md. E1's shadow rules are DONE (shadow draws 374-627). Light: 3 rounds built; round 3's judge (the cap) is next, with numbers still missing (night pools 0.46-0.53 against 0.55, road B contrast 2.0 against 2.5). Then E2-E3 and the M1 MR. Owner taste calls pending (below).
+- **Teaching pass 2:** teach-1@c943da38, experience.md. The callout system and 11 placements are DONE and work in play (958 tests). Look: judge r1 passed 1/11; all 12 fixes are built but UNJUDGED (their frames were shot stale). Next: merge integration (14 behind), fix the red_line arrow, re-shoot, the r2 judge on the 10, the MR. Notes for the MR: F8 now teaches the Flare on Q (the story writer reconciles the F8/F13 copy); the Knight and the Grave-Caller can't die until their callout shows; elite lanes draw through roofs game-wide (combat); slot icons (HUD).
+**Owner decisions pending:** (1) the night close-up background at 3.5-6x under her face instead of the look bible's 1.6-1.9x (both judges say yes); (2) the dawn sun cheated toward the road's far end instead of true east (both judges say yes); (3) Burns Twice's loot appearing 4.2 s after the BOOM, or at once.
+**RESTART ORDER:**
+1. **MARIONETTE** (the owner, 19 Oct): one mode, and an own-assets pipeline where UNIQUE NPCs (never her body; shared topology and skeleton only) plop in rigged, and armor fits as data. Start from Marionette/HANDOFF.md "Start here". First real test: armor's own pieces, against this week's hand-fitting.
+2. **Animation 40** if anim-39 didn't merge; else the armor weapon steps 5/5b (fresh worktree off integration).
+3. **Teaching pass 2.**
+4. **Tutorial environment 3.**
+5. Then the storybook builder for SB00 (su-lead-max), then the touch-up round.
+**New rules this stretch:** the male hero is out of testing; fix loops are incremental with one full run before the MR (lead brief); coordinators stop every agent before a restart and check for live old agents at startup (coordinator.md); run `dotnet build` before any judged shoot (shoots don't rebuild C#).
+
 ## 19 October: coordinator 8f465914 (running)
 Leads: armor 4 (armor-1), animation 39 (anim-38), Flare 10 (flare-1), environment 2 (env-1), the tutorial teaching pass (teach-1, new, off f192ac14). The story writer is DONE: SB00 plus the tutorial copy merged in f192ac14. Its worktree is removed; an empty story-lore folder is left, held open by a process. The stale animation 38 lead (session f56a8f65) was stopped on 19 Oct; it had kept relaunching jobs in anim-38. Next when a slot frees: **MARIONETTE** (the owner, 19 Oct; OWNER_NOTES 19 Oct): one mode, and an own-assets pipeline where UNIQUE-looking NPCs (their own shape and face, on the shared topology and skeleton, never her body) plop in rigged, and armor fits as data. Start from Marionette/HANDOFF.md "Start here". Then the storybook format/builder for SB00 (su-lead-max), then the touch-up round below.
 State at about 01:30, 19 Oct (the coordinator is near 250k; it winds down when the leads reach their MRs):
