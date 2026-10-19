@@ -10,8 +10,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
 
-uniform sampler2D atlas : source_color, filter_linear, repeat_disable;
-uniform sampler2D mv_atlas : filter_linear, repeat_disable;
+uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D mv_atlas : filter_linear_mipmap, repeat_disable;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform int grid = 8;

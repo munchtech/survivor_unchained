@@ -38,9 +38,9 @@ def heat(p, k):
 
 def main():
     mode, sim, out = sys.argv[1:4]
-    o = opts(sys.argv[4:], start=60, n=24, len=64, fade=24, cw=128, ch=256, k=0.0, grid=8, fps=24.0)
+    o = opts(sys.argv[4:], start=60, n=24, len=64, fade=24, cw=128, ch=256, k=0.0, kk=1.2, vfall=0.55, grid=8, fps=24.0)
     F = load(sim)
-    k = o["k"] or 2.2 / max(np.percentile(F[o["start"]:].max(axis=(1, 2)), 50), 1e-6)
+    k = o["k"] or o["kk"] / max(np.percentile(F[o["start"]:].max(axis=(1, 2)), 50), 1e-6)
     if mode == "preview":
         sel = F[o["start"]:o["start"] + o["n"]]
         strip = np.concatenate([heat(f, k) for f in sel], axis=1)
@@ -54,15 +54,21 @@ def main():
         w = i / K
         loop[i] = (1 - w) * src[L + i] + w * src[i]
     H = heat(loop, k)
+    # Fire cools as it climbs: the heat falls off up the flame (from its base, the lowest lit row), so the
+    # core is a hot heart low in the tongue and the tip is orange, not white.
+    rows = np.nonzero(H.max(axis=(0, 2)) > 0.01)[0]
+    base, tip = rows.max(), rows.min()
+    up = np.clip((base - np.arange(H.shape[1])) / max(base - tip, 1), 0, 1)
+    H *= (1 - o["vfall"] * up ** 1.3)[None, :, None]
     # The crop: the union of every frame's flame, centred on the emitter (the domain's middle), cell's aspect.
-    m = H.max(axis=0) > 0.01
+    m = H.max(axis=0) > 0.04
     ys, xs = np.nonzero(m)
     cx = H.shape[2] / 2
     half_w = max(cx - xs.min(), xs.max() + 1 - cx) * 1.12
     top, bot = ys.min(), ys.max() + 1
     hgt = (bot - top) * 1.06
-    hgt = max(hgt, 2 * half_w * o["ch"] / o["cw"])
-    half_w = hgt * o["cw"] / o["ch"] / 2
+    # The cell is stretched to the flame's own width: the card's width over its height is `aspect` (sidecar).
+    aspect = 2 * half_w / hgt
     y1 = bot + 2
     y0 = y1 - hgt
     print("crop: %.0f wide x %.0f tall cells of the sim" % (2 * half_w, hgt))
@@ -103,7 +109,7 @@ def main():
         mv[sl + (1,)] = (e[..., 1] * 255 + 0.5).astype(np.uint8)
     Image.fromarray(atlas, "LA").save(out + ".png", optimize=True)
     Image.fromarray(mv, "RGB").save(out + "_mv.png", optimize=True)
-    json.dump({"grid": G, "frames": L, "fps": o["fps"], "cell": [o["cw"], o["ch"]], "mv_scale": sc,
+    json.dump({"grid": G, "frames": L, "fps": o["fps"], "cell": [o["cw"], o["ch"]], "aspect": round(float(aspect), 4), "mv_scale": sc,
                "mv": "flow from frame i to i+1 (last to first included) in cell UV, RG = 0.5 + flow / mv_scale / 2;"
                      " +y is down the cell",
                "source": "tools/fxsim/flame_sim.py (Blender Mantaflow, our own) + flame_pack.py",

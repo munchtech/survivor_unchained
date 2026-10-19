@@ -14,14 +14,14 @@ public enum FlameKind { Candle, Lamp, Torch, Brazier, Camp }
 /// </summary>
 public static class FlameKit
 {
-    /// <summary>Card width and height (m), light range (m) and energy, for each kind at scale 1.</summary>
-    internal static (float W, float H, float Range, float Energy) Spec(FlameKind kind) => kind switch
+    /// <summary>Card height (m; its width follows the atlas), light range (m) and energy, for each kind at scale 1.</summary>
+    internal static (float H, float Range, float Energy) Spec(FlameKind kind) => kind switch
     {
-        FlameKind.Candle => (0.04f, 0.08f, 2.5f, 0.35f),
-        FlameKind.Lamp => (0.08f, 0.16f, 6f, 0.9f),
-        FlameKind.Torch => (0.24f, 0.48f, 7f, 1.4f),
-        FlameKind.Brazier => (0.4f, 0.8f, 8f, 1.8f),
-        _ => (0.8f, 1.6f, 8f, 2f),
+        FlameKind.Candle => (0.08f, 2.5f, 0.35f),
+        FlameKind.Lamp => (0.16f, 6f, 0.9f),
+        FlameKind.Torch => (0.48f, 7f, 1.4f),
+        FlameKind.Brazier => (0.8f, 8f, 1.8f),
+        _ => (1.6f, 8f, 2f),
     };
 
     public static readonly Color WarmLight = new("#ffb070");
@@ -82,12 +82,14 @@ public partial class Flame : Node3D
 
     internal void Build(FlameKind kind, bool cold, float scale, bool light)
     {
-        var (w, h, range, e) = FlameKit.Spec(kind);
+        var (h, range, e) = FlameKit.Spec(kind);
+        // The card is as wide as the atlas's cell is in the world (the flame fills its cell's width).
+        float w = h * FlameShader.Aspect;
         // Neighbours never in step: a phase from where it stands and who it is.
         phase = Mathf.PosMod(Position.X * 0.731f + Position.Z * 0.377f + (GetInstanceId() % 997) * 0.6180339f, 1f);
         var shader = GD.Load<Shader>(FlameShader.Path);
         (Vector3 At, float W, float H, float Ph)[] cards = kind == FlameKind.Camp
-            ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.28f, 0, 0.1f), 0.8f, 0.72f, 0.37f), (new(0.26f, 0, -0.08f), 0.85f, 0.78f, 0.71f) }
+            ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.27f, 0, 0.1f), 0.85f, 0.72f, 0.37f), (new(0.25f, 0, -0.08f), 0.9f, 0.8f, 0.71f) }
             : new (Vector3, float, float, float)[] { (Vector3.Zero, 1f, 1f, 0f) };
         foreach (var (at, cw, ch, ph) in cards)
         {
@@ -97,7 +99,7 @@ public partial class Flame : Node3D
             AddChild(new MeshInstance3D
             {
                 Mesh = new QuadMesh { Size = Vector2.One, CenterOffset = new Vector3(0, 0.5f, 0), Material = mat },
-                Position = at * new Vector3(w, 0, w) * scale,
+                Position = at * new Vector3(h, 0, h) * 0.5f * scale,
                 Scale = new Vector3(w * cw, h * ch, 1) * scale,
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             });
@@ -137,6 +139,11 @@ static class FlameShader
     public const string Path = "res://shaders/flame_mv.gdshader";
     const string Atlas = "res://art/fx/flame/flame_kit.png", Mv = "res://art/fx/flame/flame_kit_mv.png", Meta = "res://art/fx/flame/flame_kit.json";
     static Godot.Collections.Dictionary? meta;
+    static bool Sim => ResourceLoader.Exists(Atlas) && ResourceLoader.Exists(Mv) && FileAccess.FileExists(Meta);
+    static Godot.Collections.Dictionary Info => meta ??= Json.ParseString(FileAccess.GetFileAsString(Meta)).AsGodotDictionary();
+
+    /// <summary>A card's width over its height: the atlas cell's (sidecar "aspect"), or the procedural flame's.</summary>
+    public static float Aspect => Sim && Info.ContainsKey("aspect") ? (float)Info["aspect"].AsDouble() : 0.5f;
 
     /// <summary>Small flames flicker faster than big ones.</summary>
     static float Fps(FlameKind kind) => kind switch
@@ -150,12 +157,12 @@ static class FlameShader
         mat.SetShaderParameter("cold", cold ? 1f : 0f);
         mat.SetShaderParameter("intensity", intensity);
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
-        bool sim = ResourceLoader.Exists(Atlas) && ResourceLoader.Exists(Mv) && FileAccess.FileExists(Meta);
+        bool sim = Sim;
         mat.SetShaderParameter("procedural", !sim);
         float fps = Fps(kind);
         if (sim)
         {
-            meta ??= Json.ParseString(FileAccess.GetFileAsString(Meta)).AsGodotDictionary();
+            var meta = Info;
             mat.SetShaderParameter("atlas", GD.Load<Texture2D>(Atlas));
             mat.SetShaderParameter("mv_atlas", GD.Load<Texture2D>(Mv));
             mat.SetShaderParameter("grid", (int)meta["grid"].AsDouble());
