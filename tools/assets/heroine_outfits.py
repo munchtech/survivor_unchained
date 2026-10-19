@@ -9969,7 +9969,8 @@ for name in OUTFITS:
         ARMOR_ROWS.append({"id": f"{name}.{slot}", "outfit": name, "slot": slot, "layer": ARMOR_MAP["layers"][slot],
                            "covers": e_.get("covers", [slot]), "meshes": sorted(meshes_),
                            "tuck": f"armor_tuck/{name}.{slot}.bin" if tk_ else None,
-                           "tuck_count": ARMOR_TUCK_N.get((name, slot)), "body_hash": ARMOR_BODY_HASH})
+                           "tuck_count": ARMOR_TUCK_N.get((name, slot)), "body_hash": ARMOR_BODY_HASH,
+                           **({"hold": {"amount": 0.55, "squash": 0}} if (name, slot) == ("warden", "top") else {})})  # (plate holds her: HerJiggle)
     print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)
 # (armor lead 1: one row per (outfit, slot); body_hash as armor_tuck_write has it)
 _json.dump(ARMOR_ROWS, open(os.path.join(os.path.dirname(OUT), "armor_index.json"), "w", encoding="utf-8"), indent=1)

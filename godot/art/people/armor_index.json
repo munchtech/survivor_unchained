@@ -132,7 +132,11 @@
   ],
   "tuck": "armor_tuck/warden.top.bin",
   "tuck_count": 683,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  }
  },
  {
   "id": "arcanist.boots",
