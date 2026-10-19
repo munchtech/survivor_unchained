@@ -558,20 +558,26 @@ public partial class Callout : Control, ICalloutView
         float cost = len + w.Bow.Length() * 0.6f;
         var to = (w.B - w.A).Normalized();
         if (w.DA.Dot(to) < -0.1f) cost += 500;
+        // (a hook: it leaves one way and comes back the other to land; it reads as lost, not pointing)
+        if (w.DA.Normalized().Dot(w.DB.Normalized()) < -0.3f) cost += 900;
         var near = m.Round ? new Rect2(m.C - Vector2.One * (m.R + 26), Vector2.One * (m.R + 26) * 2) : m.Box.Grow(26);
         var wordsIn = words.Grow(6);
-        bool herHit = false, wordsHit = false, edgeHit = false;
+        // Her figure itself is never crossed; her margin is kept where a way can, but a short, straight
+        // way into a mark she stands at may graze it rather than hook round.
+        Rect2? core = her?.Grow(12 - HerMargin);
+        bool herHit = false, marginHit = false, wordsHit = false, edgeHit = false;
         var hits = avoid != null ? new bool[avoid.Count] : null;
         for (int i = 1; i < pts.Count; i++)
         {
             var q = pts[i];
             if (near.HasPoint(q)) continue;
-            if (her is Rect2 h && h.HasPoint(q)) herHit = true;
+            if (her is Rect2 h && h.HasPoint(q)) { if (core is Rect2 hc && hc.HasPoint(q)) herHit = true; else marginHit = true; }
             if (i > 1 && wordsIn.HasPoint(q)) wordsHit = true;
             if (q.X < 16 || q.X > Canvas - 16 || q.Y < 16 || q.Y > CanvasH - 16) edgeHit = true;
             if (avoid != null) for (int k = 0; k < avoid.Count; k++) if (!hits![k] && avoid[k].HasPoint(q)) hits[k] = true;
         }
         if (herHit) cost += 4000;
+        else if (marginHit) cost += 700;
         if (wordsHit) cost += 2500;
         if (edgeHit) cost += 2000;
         if (hits != null) foreach (var hb in hits) if (hb) cost += 700;
