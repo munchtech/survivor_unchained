@@ -6,6 +6,8 @@ render_mode unshaded, blend_mix, cull_disabled, depth_draw_never, shadows_disabl
 
 uniform vec3 glow : source_color = vec3(1.0, 0.62, 0.32);
 uniform float glow_strength = 0.22;
+// How much the lit glass covers what is behind it (the flame's light caught in it).
+uniform float lit_alpha = 0.18;
 uniform vec3 edge : source_color = vec3(0.30, 0.34, 0.40);
 instance uniform float lit = 1.0;
 
@@ -15,5 +17,5 @@ void fragment() {
 	float soot = smoothstep(0.55, 1.0, 1.0 - UV.y);
 	vec3 inner = glow * glow_strength * lit * (1.0 - 0.6 * soot);
 	ALBEDO = inner + edge * f * 0.35;
-	ALPHA = clamp(0.10 + 0.18 * lit * (1.0 - soot) + 0.45 * f + 0.25 * soot, 0.0, 0.85);
+	ALPHA = clamp(0.10 + lit_alpha * lit * (1.0 - soot) + 0.45 * f + 0.25 * soot, 0.0, 0.85);
 }

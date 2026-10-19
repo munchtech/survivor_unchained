@@ -30,11 +30,22 @@ uniform float sway = 0.035;
 uniform float soft = 0.15;
 uniform bool procedural = false;
 
+// A small flame seen from high up (a lamp's, at the play camera) leans its card back toward the camera by `tilt`
+// (0: upright, 1: facing it square), so it isn't foreshortened to a sliver; it still stands on its base.
+uniform float tilt = 0.0;
+// Where the core begins in heat: lower for a flame that must read as a bright point from far off.
+uniform float core_lo = 0.86;
+uniform float pull = 0.0;
+
 void vertex() {
 	vec3 to_cam = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
-	vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), to_cam));
+	vec3 up = normalize(mix(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[1].xyz, tilt));
+	vec3 right = normalize(cross(up, to_cam));
 	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), 1.0);
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(right * s.x, 0.0), vec4(0.0, s.y, 0.0, 0.0), vec4(cross(right, vec3(0.0, 1.0, 0.0)), 0.0), MODEL_MATRIX[3]);
+	// Drawn a little toward the camera from far off (`pull` m, none within 6 m): a lamp's flame then clears its
+	// cage's top bar and hood, which from the play camera's height stand just in front of it.
+	vec3 o = MODEL_MATRIX[3].xyz + normalize(to_cam) * pull * smoothstep(6.0, 12.0, length(to_cam));
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(right * s.x, 0.0), vec4(up * s.y, 0.0), vec4(cross(right, up), 0.0), vec4(o, 1.0));
 }
 
 vec2 cell_uv(int i, vec2 uv) {
@@ -91,7 +102,7 @@ void fragment() {
 	// Heat to light: the body's edge fades out, the body sits under 1, the core alone climbs to core_hdr.
 	// Heat-weighted: the edges a dim red, the middle bright, so the tongue keeps its inner shape.
 	float body = smoothstep(0.0, 0.25, h) * pow(h, 1.6);
-	float core = smoothstep(0.86, 1.0, h);
+	float core = smoothstep(core_lo, 1.0, h);
 	vec3 col = ramp(h) * body * body_k + ramp(1.0) * core * core_k;
 	float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);

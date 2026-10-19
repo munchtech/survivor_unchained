@@ -25,6 +25,11 @@ SETS = {
     # E2 lamps r2, still frames: the camp post lamp (light 1, -2.5,94) and ford pylon 0 (0,-33.5) with her 7 m off
     # (her ember out of their pools), then the ford's three in view from between them
     "lampstill": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;7,-33.5;0,-42"], 3),
+    # E2 lamps r2, still frames: the camp post lamp (light 1, -2.5,94) and ford pylon 0 (0,-33.5) with her 7 m off
+    # (her ember out of their pools), then the ford's three in view from between them
+    "lampstill": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;7,-33.5;0,-42"], 3),
+    "lampstill3": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "4.5,94;4.5,94;4.5,94;7,-33.5;7,-33.5;7,-33.5"], 6),
+    "fordnear": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "-9.7,-44;9.7,-44"], 2),
     "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
     "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", TOWN], 3),
     "town_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", TOWN], 3),

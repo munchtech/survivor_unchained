@@ -2,12 +2,12 @@
  "ford_lamp": {
   "flame": [
    0,
-   0.21960000000000002,
+   0.2996,
    0
   ],
-  "height": 0.9708000000000001,
-  "tris": 628,
-  "tris_lod1": 246,
+  "height": 1.1614285714285715,
+  "tris": 640,
+  "tris_lod1": 252,
   "materials": 2
  },
  "post_lantern": {

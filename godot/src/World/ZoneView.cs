@@ -252,6 +252,8 @@ public partial class ZoneView : Node3D
     /// base that would shade the stone under it can't, and the stone is kept out instead.</summary>
     public const uint LampLayer = 1u << 11;
     readonly Dictionary<int, List<Node3D>> lampGlass = new();
+    readonly List<(int Light, Flame Flame)> lampFlames = new();
+    Queue<float>? lampDebugAt;
 
     /// <summary>--lamp-energy K, --lamp-color HEX: the road lamps' light, for pictures (pools on the dirt).</summary>
     static readonly float LampEnergy = SurvivorUnchained.Args.Num("lamp-energy", 1.3f);
@@ -259,7 +261,20 @@ public partial class ZoneView : Node3D
     static readonly string LampColor = SurvivorUnchained.Args.Get("lamp-color") ?? "#ffc890";
     /// <summary>--lamp-soft M, --lamp-flame K: a lamp flame's soft edge and brightness, for pictures.</summary>
     static readonly float LampSoft = SurvivorUnchained.Args.Num("lamp-soft", 0.02f);
-    static readonly float LampFlameK = SurvivorUnchained.Args.Num("lamp-flame", 2f);
+    static readonly float LampFlameK = SurvivorUnchained.Args.Num("lamp-flame", 3.2f);
+    /// <summary>--lamp-tilt T, --lamp-core H, --lamp-wide K: a lamp flame's lean to the camera, core start, width, for pictures.</summary>
+    static readonly float LampTilt = SurvivorUnchained.Args.Num("lamp-tilt", 0.6f), LampCore = SurvivorUnchained.Args.Num("lamp-core", 0.55f), LampWide = SurvivorUnchained.Args.Num("lamp-wide", 2.2f),
+        LampPull = SurvivorUnchained.Args.Num("lamp-pull", 0.15f);
+    /// <summary>--ford-flame S: the ford lamps' flame scale (the lamp kind's 0.16 m card), for a 0.5 m cage.</summary>
+    /// <summary>--ford-light-up M, --ford-pylon-dark: the ford light's height over the flame's base (0.9: over the iron, which
+    /// it leaves out, a soft pool on the pylon's top, not the hot square it laid from 0.16), and the pylon kept out of it, for pictures.</summary>
+    static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.9f);
+    static readonly bool FordPylonLit = !SurvivorUnchained.Args.Has("ford-pylon-dark");
+    /// <summary>--ford-flame-k K: the ford flames' brightness over the road lamps' (AgX whitens a bright blue).</summary>
+    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.5f);
+    /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>
+    static readonly float LampScale = SurvivorUnchained.Args.Num("lamp-scale", 1.3f);
+    static readonly float FordFlame = SurvivorUnchained.Args.Num("ford-flame", 2f);
     /// <summary>--ford-energy K: the ford lamps' light, for pictures.</summary>
     static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 1f);
 
@@ -295,7 +310,7 @@ public partial class ZoneView : Node3D
             if (best == null) { Lamps.SetLit(holder, false); continue; }
             int li = glowLight[best];
             bool torch = kind == "torch_mounted";
-            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : 1.1f, holder);
+            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : LampScale, holder);
             if (!torch) lights[li].LightColor = new Color(LampColor);
             specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
             lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
@@ -318,20 +333,24 @@ public partial class ZoneView : Node3D
                         && new Vector2(box.GetCenter().X - foot.X, box.GetCenter().Z - foot.Z).Length() < 0.3f && box.Position.Y > foot.Y - 0.2f && box.End.Y < foot.Y + 0.6f && box.Size.X < 1.4f)
                         dish.Visible = false;
                 lamp.Position = foot;
+                if (SurvivorUnchained.Args.Has("lamp-debug"))
+                    foreach (var c in Landmarks.Root.GetChildren())
+                        if (c is Node3D n3 && new Vector2(n3.Position.X - foot.X, n3.Position.Z - foot.Z).Length() < 2.5f)
+                            GD.Print($"FORDDBG {k} foot {foot} near {n3.Name} {n3.GetType().Name} at {n3.Position} vis {n3.Visible} {(n3 is VisualInstance3D vi ? vi.GetAabb().ToString() : "")}");
                 lamp.Name = $"ford_lamp-{k++}";
                 Landmarks.Root.AddChild(lamp);
                 Landmarks.Nodes[lamp.Name] = lamp;
                 var at = foot + ford.Flame;
-                LampFlame(flame, li, at, FlameKind.Lamp, true, 1.6f, lamp);
+                LampFlame(flame, li, at, FlameKind.Lamp, true, FordFlame, lamp);
                 // Its light in the cage with the flame (over it, 0.8 m up, it lit the cap's outside white). The lamp's
                 // iron base would shade the stone under it; lamps cast no shadow, so the pylon is kept out of its own
                 // lamp's light instead (it flared the stone's top to a pale square): the pylon on a layer of its own.
                 foreach (var c in Landmarks.Root.GetChildren())
-                    if (c is Node3D pillar && pillar.Name.ToString().StartsWith("kk-halloween-pillar")
+                    if (!FordPylonLit && c is Node3D pillar && pillar.Name.ToString().StartsWith("kk-halloween-pillar")
                         && new Vector2(pillar.Position.X - foot.X, pillar.Position.Z - foot.Z).Length() < 0.6f)
                         foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
                 lights[li].LightCullMask &= ~LampLayer;
-                specs[li] = specs[li] with { At = at + Vector3.Up * 0.16f, Intensity = specs[li].Intensity * FordEnergy };
+                specs[li] = specs[li] with { At = at + Vector3.Up * FordLightUp, Intensity = specs[li].Intensity * FordEnergy };
                 lights[li].Position = specs[li].At;
                 lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
             }
@@ -351,11 +370,23 @@ public partial class ZoneView : Node3D
             if (c is MeshInstance3D card && card.Mesh?.SurfaceGetMaterial(0) is ShaderMaterial fm)
             {
                 fm.SetShaderParameter("soft", LampSoft);
-                fm.SetShaderParameter("intensity", (float)fm.GetShaderParameter("intensity") * LampFlameK);
+                if (kind != FlameKind.Lamp) { fm.SetShaderParameter("intensity", (float)fm.GetShaderParameter("intensity") * 2f); continue; }
+                fm.SetShaderParameter("intensity", (float)fm.GetShaderParameter("intensity") * LampFlameK * (cold ? FordFlameK : 1f));
+                // From the play camera (23 m, 55 degrees down) an upright card is a sliver: leaned back toward the
+                // camera, wider than the sim's tongue, its core band broader, so it reads as a bright point.
+                fm.SetShaderParameter("tilt", LampTilt);
+                fm.SetShaderParameter("core_lo", LampCore);
+                fm.SetShaderParameter("pull", LampPull);
+                fm.RenderPriority = 1;
+                card.Scale = card.Scale with { X = card.Scale.X * LampWide };
             }
         f.Drive(lights[light]);
+        // Its iron lit from inside (the zone's light leaves the holder out): the flame's middle, a radius by its size.
+        float fh = FlameKit.Spec(kind).H * scale;
+        Lamps.Inner(holder, at + Vector3.Up * fh * 0.35f, cold, fh * 0.75f);   // (the zone isn't in the tree yet: its own frame, at its origin)
+        lampFlames.Add((light, f));
         driven.Add(light);
-        foreach (var m in holder.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+        foreach (var m in holder.FindChildren("*", "GeometryInstance3D", true, false)) { ((GeometryInstance3D)m).Layers = LampLayer; if (SurvivorUnchained.Args.Has("lamp-nocage")) ((GeometryInstance3D)m).Visible = false; }
         lights[light].LightCullMask &= ~LampLayer;
         if (!lampGlass.TryGetValue(light, out var list)) lampGlass[light] = list = new();
         list.Add(holder);
@@ -563,6 +594,34 @@ public partial class ZoneView : Node3D
     {
         time += delta;
         float t = (float)time;
+        if (SurvivorUnchained.Args.Has("lamp-debug") && (lampDebugAt ??= new Queue<float>(System.Array.ConvertAll((SurvivorUnchained.Args.Get("lamp-debug-at") ?? "9").Split(','), x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)))).Count > 0 && t > lampDebugAt.Peek())
+        {
+            lampDebugAt.Dequeue();
+            {
+                var cam = GetViewport().GetCamera3D();
+                GD.Print($"CAMDBG {cam?.GlobalPosition} mask {cam?.CullMask} fwd {-cam?.GlobalBasis.Z}");
+                for (int q = 0; q < 3; q++)
+                    if (Node($"ford_lamp-{q}") is Node3D fl)
+                        foreach (var m in fl.FindChildren("*", "MeshInstance3D", true, false))
+                            GD.Print($"FORDVIS {q} {m.Name} vit {((MeshInstance3D)m).IsVisibleInTree()} layers {((MeshInstance3D)m).Layers} at {((MeshInstance3D)m).GlobalPosition} range {((MeshInstance3D)m).VisibilityRangeBegin}-{((MeshInstance3D)m).VisibilityRangeEnd} dist {cam?.GlobalPosition.DistanceTo(((MeshInstance3D)m).GlobalPosition)}");
+            }
+            if (GetViewport().GetCamera3D() is Camera3D pc)
+                foreach (var (li, _) in lampFlames)
+                {
+                    var c = lights[li].GlobalPosition;
+                    var sb = new System.Text.StringBuilder($"POOLDBG light {li} at {c}:");
+                    foreach (var (dx, dz, nm) in new[] { (1f, 0f, "+x"), (-1f, 0f, "-x"), (0f, 1f, "+z"), (0f, -1f, "-z") })
+                        foreach (var r in new[] { 0.5f, 1f, 4f })
+                        {
+                            var p = new Vector3(c.X + dx * r, Mathf.Max(Data.HeightAt(c.X + dx * r, c.Z + dz * r), Data.Meta.Places.TryGetValue("WATER_Y", out var wy) ? wy.GetSingle() : -99f), c.Z + dz * r);
+                            var sp = pc.UnprojectPosition(p);
+                            sb.Append($" {nm}{r}=({sp.X:0},{sp.Y:0},h{p.Y:0.00})");
+                        }
+                    GD.Print(sb.ToString());
+                }
+            foreach (var (li, fl) in lampFlames)
+                GD.Print($"LAMPDBG light {li} lit {lit[li]} lvis {lights[li].IsVisibleInTree()} e {lights[li].LightEnergy:0.00} at {lights[li].GlobalPosition} flame {fl.GlobalPosition} fvis {fl.IsVisibleInTree()} scale {fl.GlobalBasis.Scale}");
+        }
         // The pump's wheel turns while the pump runs.
         if (!stopped.Contains("pump_wheel") && Node("pump_wheel") is Node3D wheel) wheel.RotateObjectLocal(Vector3.Right, (float)delta * 0.8f);
         // Every lit light's own flicker (the web game's formula).

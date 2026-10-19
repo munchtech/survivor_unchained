@@ -35,7 +35,8 @@ public partial class Game
         // --spots-unshadowed: the key casts none (its frames against the shadowed ones measure how much ground its shadows cover).
         if (Args.Has("spots-unshadowed") && air.Key.ShadowEnabled) air.Key.ShadowEnabled = false;
         // At a close stop the dead are held off out of the picture (the close view of her face, not of a fight).
-        if (spotClose != null && k == spotAt)
+        // --spots-clear: the living held off at every stop, from the start (a still place: a lamp's pool, no fight in it).
+        if (spotClose != null && k == spotAt || Args.Has("spots-clear"))
             foreach (var e in b.Enemies.Living())
                 if (Math.Abs(e.X - b.Player.X) < 70 && Math.Abs(e.Z - b.Player.Z) < 70) { e.X = b.Player.X + 75; e.Vx = e.Vz = 0; }
         if (k == spotAt || k < 0) return;

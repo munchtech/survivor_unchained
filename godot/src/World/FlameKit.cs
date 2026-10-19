@@ -124,8 +124,9 @@ public partial class Flame : Node3D
         if (Light != null) Light.LightEnergy = energy * f;
         if (driven != null && GodotObject.IsInstanceValid(driven))
         {
-            // Someone else set it (the zone's level, or off): take that as the base.
-            if (drivenLast >= 0 && !Mathf.IsEqualApprox(driven.LightEnergy, drivenLast)) drivenBase = driven.LightEnergy;
+            // Someone else set it (the zone's level, or off): take that as the base. The first frame takes it too
+            // (the zone sets a lamp's energy after wiring its flame: taken at Drive, that setting was lost).
+            if (drivenLast < 0 || !Mathf.IsEqualApprox(driven.LightEnergy, drivenLast)) drivenBase = driven.LightEnergy;
             drivenLast = drivenBase * f;
             driven.LightEnergy = drivenLast;
         }

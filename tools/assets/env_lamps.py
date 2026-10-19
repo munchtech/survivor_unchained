@@ -266,10 +266,13 @@ def pane(w, h):
     return bm
 
 
-def lamp_iron(W, H, at=Matrix.Identity(4), ring=True, bail=0.0, feet=False, fine=True):
+def lamp_iron(W, H, at=Matrix.Identity(4), ring=True, bail=0.0, feet=False, fine=True, stem=0.0, rim=0.14, hood_gap=0.16):
     """The keeper's lamp-iron, its foot at the origin: a stepped base, the
     burner cup, four corner posts with a band at mid height, glass between,
     a top plate, a four-sided cap with a finial and a ring to hang it by.
+    stem raises the burner on a rod (m), rim is the top frame's width over W, hood_gap the
+    hood's height over the frame over W: the ford's big iron, seen from the play camera
+    (23 m, 55-60 degrees down), shows its flame through a wide open top under a high hood.
     Returns (parts, the flame's place, the top of the ring)."""
     parts = []
     t = 0.15 * W           # plate thickness
@@ -285,7 +288,12 @@ def lamp_iron(W, H, at=Matrix.Identity(4), ring=True, bail=0.0, feet=False, fine
     parts.append(Part(cube(W, t, W, 0.02 * W if fine else 0), 'iron', at @ T(0, y + t / 2, 0)))
     y += t
     base_top = y
-    # The burner: a squat cup with a lip.
+    # The burner: a squat cup with a lip (on a stem, raised).
+    if stem > 0:
+        r = rod((0, y, 0), (0, y + stem + 0.01 * W, 0), 0.03 * W)
+        r.at = at @ r.at
+        parts.append(r)
+        y += stem
     parts.append(Part(lathe([(0.16 * W, 0), (0.13 * W, 0.1 * W), (0.16 * W, 0.13 * W), (0.12 * W, 0.13 * W), (0, 0.11 * W)], 6, cap=True), 'iron',
                       at @ T(0, y, 0)))
     flame = y + 0.13 * W
@@ -306,15 +314,19 @@ def lamp_iron(W, H, at=Matrix.Identity(4), ring=True, bail=0.0, feet=False, fine
     y += H
     # The top: a square frame, open in the middle so the flame shows from the play camera's height (a
     # plate hid it), and over it on four short struts a small hood (the cap) that smoke leaves under.
-    tf = 0.14 * W
+    tf = rim * W
+    th = t * 0.8 * min(1.0, rim / 0.14 + 0.25)
     for k in range(4):
         rot = at @ R('Y', k * math.pi / 2)
-        parts.append(Part(cube(W * 1.04, t * 0.8, tf), 'iron', rot @ T(0, y + t * 0.4, 0.52 * W - tf / 2)))
-    y += t * 0.8
-    gap = 0.16 * W
+        parts.append(Part(cube(W * 1.04, th, tf), 'iron', rot @ T(0, y + th / 2, 0.52 * W - tf / 2)))
+    y += th
+    gap = hood_gap * W
     for sx in (-1, 1):
         for sz in (-1, 1):
-            parts.append(rod((sx * 0.4 * W, y - 0.01 * W, sz * 0.4 * W), (sx * 0.17 * W, y + gap + 0.02 * W, sz * 0.17 * W), 0.02 * W))
+            # (in the iron's frame: these stood at the holder's origin when the iron was hung elsewhere)
+            r = rod((sx * 0.4 * W, y - 0.01 * W, sz * 0.4 * W), (sx * 0.17 * W, y + gap + 0.02 * W, sz * 0.17 * W), 0.02 * W)
+            r.at = at @ r.at
+            parts.append(r)
     y += gap
     parts.append(Part(lathe([(0.3 * W, 0), (0.27 * W, 0.03 * W), (0.1 * W, 0.18 * W), (0.07 * W, 0.2 * W), (0.07 * W, 0.25 * W), (0, 0.27 * W)], 4, math.pi / 4), 'iron',
                       at @ T(0, y, 0)))
@@ -335,7 +347,7 @@ def lamp_iron(W, H, at=Matrix.Identity(4), ring=True, bail=0.0, feet=False, fine
 
 def ford_lamp():
     """The Warden's lamp-iron, big, standing on a pylon's top."""
-    parts, flame, top = lamp_iron(0.44, 0.5)
+    parts, flame, top = lamp_iron(0.44, 0.5, stem=0.08, rim=0.06, hood_gap=0.45)
     return parts, {'flame': [0, flame + 0.07, 0], 'height': top}
 
 

@@ -74,20 +74,51 @@ public static class Lamps
     }
 
     /// <summary>The glass: unshaded, the flame's tint faint inside it, a fresnel edge (shaders/lamp_glass).</summary>
+    /// <summary>--lamp-glass K, --lamp-glass-a A: the lit glass's brightness and cover, for pictures.</summary>
+    static readonly float GlassK = SurvivorUnchained.Args.Num("lamp-glass", 2.2f), GlassA = SurvivorUnchained.Args.Num("lamp-glass-a", 0.45f);
+    /// <summary>--lamp-glass-warm HEX, --lamp-glass-cold HEX: the lit glass's tint, for pictures (AgX greys a pale tint: saturated).</summary>
+    static readonly string GlassWarm = SurvivorUnchained.Args.Get("lamp-glass-warm") ?? "#ff8a30", GlassCold = SurvivorUnchained.Args.Get("lamp-glass-cold") ?? "#3d70ff";
     static ShaderMaterial Glass(bool isCold)
     {
         ref var slot = ref isCold ? ref cold : ref warm;
         if (slot != null) return slot;
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_glass.gdshader") };
-        m.SetShaderParameter("glow", isCold ? new Color("#7aa8ff") : new Color("#ffa860"));
-        m.SetShaderParameter("glow_strength", isCold ? 0.3f : 0.24f);
+        m.SetShaderParameter("glow", new Color(isCold ? GlassCold : GlassWarm));
+        m.SetShaderParameter("glow_strength", (isCold ? 0.3f : 0.24f) * GlassK);
+        m.SetShaderParameter("lit_alpha", GlassA);
+        // Drawn before the flames (theirs 1): the flame shows through its glass, not dimmed behind it.
+        m.RenderPriority = -1;
         slot = m;
         return m;
     }
 
+    /// <summary>--lamp-inner K: how strongly a lamp's flame lights its own iron from inside (shaders/lamp_inner), for pictures.</summary>
+    static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-inner", 6f);
+    /// <summary>The holder's iron lit from inside by its flame at <paramref name="flame"/> (world, the flame's middle):
+    /// a next pass on each of its non-glass surfaces, one material per holder (its flame's place).</summary>
+    public static void Inner(Node3D holder, Vector3 flame, bool isCold, float radius)
+    {
+        var inner = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_inner.gdshader") };
+        inner.SetShaderParameter("flame_at", flame);
+        inner.SetShaderParameter("color", isCold ? new Color("#7aa8ff") : new Color("#ffa860"));
+        inner.SetShaderParameter("strength", InnerK);
+        inner.SetShaderParameter("radius", radius);
+        holder.SetMeta("inner", inner);
+        foreach (var c in holder.FindChildren("*", "MeshInstance3D", true, false))
+            if (c is MeshInstance3D m && m.Mesh != null)
+                for (int i = 0; i < m.Mesh.GetSurfaceCount(); i++)
+                {
+                    var mat = m.GetSurfaceOverrideMaterial(i) ?? m.Mesh.SurfaceGetMaterial(i);
+                    if (mat == null || mat == warm || mat == cold) continue;
+                    var own = (Material)mat.Duplicate();
+                    own.NextPass = inner;
+                    m.SetSurfaceOverrideMaterial(i, own);
+                }
+    }
     /// <summary>A holder's glass lit by its flame, or dark.</summary>
     public static void SetLit(Node3D holder, bool on)
     {
+        if (holder.HasMeta("inner") && holder.GetMeta("inner").As<ShaderMaterial>() is ShaderMaterial im) im.SetShaderParameter("lit", on ? 1f : 0f);
         foreach (var c in holder.FindChildren("*", "MeshInstance3D", true, false))
             if (c is MeshInstance3D m && IsGlass(m)) m.SetInstanceShaderParameter("lit", on ? 1f : 0f);
     }
