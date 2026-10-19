@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 19 October, day: coordinator b8d13e5f (running)
+Leads: Marionette (pipeline-1 in the Marionette repo, plus game worktree npc-1 for the NPC loader), armor 5 (armor-5, weapon steps 5/5b), teaching pass 2 (teach-1), storybook 1 (storybook-1, su-lead-max: format, look on 2-3 SB00 style frames, then 11 plates). The full pack is done in the main checkout. **E1 MERGED (8ba3a4e7, tests 977/0/8):** shadow rules and the Prologue's light; min fps 74 -> 107 at 1440p high. env-1 removed (an empty folder is left, held open). E2 is next for a fresh env lead when a slot frees (handoff: environment.md "Now (env lead 3 ...)"). Owner calls still pending: night close-up background about 6x (GameCloseUp exposure), dawn sun cheat (LowFordDawn azimuth), Burns Twice loot delay.
+
 ## 19 October, morning: coordinator 8f465914 WIND-DOWN (read this first)
 **Merged and pushed:** story SB00 and the tutorial copy (f192ac14), armor 4 (4feb2454), Flare 10 (b3658589). **Animation 39 MERGED (09f661d4)**, worktree removed. FIRST TASK for the next coordinator: a full pack in the main checkout on a Godot turn (`build.py` plus `--body hero`, all clips), because packed clips aren't committed. Animation's next items: death's end pose for C01 s2/s3, then the axe fist (fails fistfit). Routed: the arcanist hat's black brim underside (outfits); the close-up loses her when she kneels (camera); sheathed weapons 17-82 mm into skin at their sockets (armor 5/5b, GRIP_STANDARD.md section 4). C: about 269 GB free.
 **Paused cleanly ("Paused here; next:" at each handoff top):**
