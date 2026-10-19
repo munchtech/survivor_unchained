@@ -84,6 +84,12 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           # of the grip's line is the grip's (the stock, the lever and the bow lie across the slices square to it).
           "crossbow": dict(arms="crossbow@hand_r", at="CrossbowAtR", dir="CrossbowDirR", outfit="ranger",
                            rest=("idle_stalker", 0), near=30.0, seed="sword")}
+# Pieces dropped in as data (GRIP_STANDARD.md section 4): tools/armor/weapon_drop.py writes each new piece's row, copied
+# from its kind's fitted row above, to tools/anim/data/fistfit_pieces.json; merged here (a row above wins on a clash).
+_DROPPED = HERE / "data" / "fistfit_pieces.json"
+if _DROPPED.exists():
+    for _k, _r in json.loads(_DROPPED.read_text()).items():
+        PIECES.setdefault(_k, {f: tuple(v) if isinstance(v, list) else v for f, v in _r.items()})
 PAD = (-0.5, 1.5)     # mm: the 02/03 pads' gap to the leather
 IN_MAX = 0.5          # mm: deepest any of the hand may go into the hilt
 HANG_MAX = 0.0        # mm: the finger's end past the grip's far surface (along the palm's normal). Its end is its skin's
