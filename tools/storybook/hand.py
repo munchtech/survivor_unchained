@@ -21,10 +21,15 @@ import numpy as np
 
 PRESETS = {
     # Night plates: deep washes, ink black, warm paper in the lights.
-    "nocturne": dict(kuwahara=4, desat=0.55, shadow="#1a1d2a", light="#e8dcc4", split=0.35, story_boost=1.08,
+    "nocturne": dict(kuwahara=4, desat=0.3, shadow="#1a1d2a", light="#e8dcc4", split=0.35, story_boost=1.08,
                      edges=0.35, ink=0.55, ink_sigma=1.4, ink_min=60, paper=0.16, gran=0.10, grain=0.025),
     "light": dict(kuwahara=3, desat=0.35, shadow="#22222c", light="#efe4cf", split=0.25, story_boost=1.04,
                   edges=0.25, ink=0.4, ink_sigma=1.2, ink_min=40, paper=0.12, gran=0.07, grain=0.02),
+    # For the inked r2+ pictures: no Kuwahara (it smears the drawn line), the shadows massed,
+    # a gentle paper; no grain (the player lays its own over everything).
+    "plate": dict(kuwahara=0, mass=1.0, mass_lo=0.10, mass_hi=0.30, mass_r=9, mass_dark=0.9, desat=0.2, shadow="#161a26",
+                  light="#ece0c8", split=0.25, story_boost=1.05, edges=0.2, ink=0, ink_sigma=1.4, ink_min=60, paper=0.10,
+                  gran=0.06, grain=0),
     "raw": dict(kuwahara=0, desat=0, shadow="#000000", light="#ffffff", split=0, story_boost=1.0,
                 edges=0, ink=0, ink_sigma=1.4, ink_min=60, paper=0, gran=0, grain=0),
 }
@@ -61,10 +66,12 @@ def story_masks(img):
     hsv = cv2.cvtColor((img * 255).astype(np.uint8), cv2.COLOR_RGB2HSV_FULL).astype(np.float32)
     h, s, v = hsv[..., 0] * 360 / 255, hsv[..., 1] / 255, hsv[..., 2] / 255
 
-    def band(lo, hi, soft=8):
+    def band(lo, hi, soft=8, vlo=0.2, vsoft=0.3):
         a = np.clip((h - (lo - soft)) / soft, 0, 1) * np.clip(((hi + soft) - h) / soft, 0, 1)
-        return a * np.clip((s - 0.25) / 0.35, 0, 1) * np.clip((v - 0.2) / 0.3, 0, 1)
-    return band(8, 52), band(185, 228)
+        return a * np.clip((s - 0.25) / 0.35, 0, 1) * np.clip((v - vlo) / vsoft, 0, 1)
+    # The cage's blue is a bright pale light (#8ac8ff, V 1.0); a dusk sky is a dark
+    # blue and must not count as story blue, so the blue band needs high value.
+    return band(8, 52), band(185, 228, vlo=0.55, vsoft=0.25)
 
 
 def palette(img, p):
@@ -79,6 +86,29 @@ def palette(img, p):
     muted = muted * (1 - p["split"]) + (tone * lum * 2 * (lum < 0.5) + (1 - 2 * (1 - tone) * (1 - lum)) * (lum >= 0.5)) * p["split"]
     story = np.clip(img * p["story_boost"], 0, 1)
     return np.clip(muted * (1 - keep) + story * keep, 0, 1)
+
+
+def mass(img, p):
+    """An illustrator's massing: the shadows laid in as simple dark washes, so
+    the detail (hatching, texture) survives only where the light falls. The
+    shadow's edge wanders a little, as a brush lays it, never a clean threshold."""
+    amt = p.get("mass", 0)
+    if amt <= 0:
+        return img
+    h, w = img.shape[:2]
+    k = w / 1792.0
+    lum = cv2.GaussianBlur(img @ np.array([0.299, 0.587, 0.114], np.float32), (0, 0), 2.5 * k)
+    rng = np.random.default_rng(5)
+    n = cv2.resize(rng.random((h // 48 + 2, w // 48 + 2)).astype(np.float32), (w, h), interpolation=cv2.INTER_CUBIC)
+    lo, hi = p.get("mass_lo", 0.10) + 0.04 * (n - 0.5), p.get("mass_hi", 0.30) + 0.04 * (n - 0.5)
+    m = np.clip((hi - lum) / (hi - lo), 0, 1)
+    m = m * m * (3 - 2 * m)
+    r = int(round(p.get("mass_r", 9) * k)) | 1
+    u8 = (np.clip(img, 0, 1) * 255).astype(np.uint8)
+    flat = cv2.medianBlur(cv2.medianBlur(u8, r), r).astype(np.float32) / 255
+    flat = cv2.GaussianBlur(flat, (0, 0), 1.5 * k) * p.get("mass_dark", 0.9)
+    m = (m * amt)[..., None]
+    return img * (1 - m) + flat * m
 
 
 def edges_pool(img, base, amt):
@@ -130,6 +160,7 @@ def paper_tex(h, w, seed=7):
 def treat(img, p):
     h, w = img.shape[:2]
     base = kuwahara(img, int(round(p["kuwahara"] * w / 1792.0))) if p["kuwahara"] else img
+    base = mass(base, p)
     out = palette(base, p)
     out = edges_pool(out, base, p["edges"])
     if p["ink"]:

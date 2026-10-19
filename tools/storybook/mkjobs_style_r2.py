@@ -17,9 +17,9 @@ SCENES = {
            "visible. In the foreground at the top of the frame, two soldiers seen from behind hold torches high. Torch smoke drifts and sparks fall "
            "into the dark. The orange torchlight is the only strong color; everything else is night."),
     "p4": ("Night, hard frost on a field beside a road. A dead man stands upright, slack and blank-faced, arms hanging, his skin gray; a dull orange "
-           "glow shines from inside him through his open mouth, his empty eye sockets and the wounds in his chest, like a lamp behind paper. An old "
+           "glow shines from inside him, out through his open mouth, his empty eye sockets and the wounds in his chest. An old "
            "watchman with a gray beard, in a slate blue-gray hooded cloak, a round wooden shield on his left arm, drives a long spear into the dead "
-           "man's chest; from the wound the orange light pours out and falls onto the frost as a scatter of small glowing stones like coals. Behind "
+           "man's chest; from the wound the orange light pours out and falls onto the frost as a scatter of small glowing orange stones. Behind "
            "them another body lies dark and empty on the frost. The watchman's breath smokes in the cold; the dead man breathes nothing. Small "
            "orange embers glint in the dark soil. The orange light is the only strong color; the rest is cold night and frost."),
     "p9": ("Dusk, the last light: a deep blue sky over a dull rose band low on the horizon. A small camp beside a dirt road: a campfire burning "
