@@ -107,7 +107,18 @@ public class CinemaTests
         var b = new CinePlayer(Lay(f));
         a.Advance(20.0);
         for (int i = 0; i < 400; i++) b.Advance(0.05);
-        Assert.Equal(a.Camera(places.Resolve), b.Camera(places.Resolve));
+        // 400 steps of 0.05 sum to 20 only to within rounding (~1e-14 s), and a
+        // moving shot moves by that much, so the poses agree to rounding, not bit for bit.
+        var ca = a.Camera(places.Resolve);
+        var cb = b.Camera(places.Resolve);
+        Assert.Equal(a.Shot.Index, b.Shot.Index);
+        foreach (var (x, y) in new[] { (ca.Pos.X, cb.Pos.X), (ca.Pos.Y, cb.Pos.Y), (ca.Pos.Z, cb.Pos.Z),
+                     (ca.At.X, cb.At.X), (ca.At.Y, cb.At.Y), (ca.At.Z, cb.At.Z), (ca.Hfov, cb.Hfov),
+                     (ca.Roll, cb.Roll), (ca.Focus ?? 0, cb.Focus ?? 0), (ca.Fstop, cb.Fstop), (ca.Lens, cb.Lens),
+                     (ca.Handheld, cb.Handheld), (ca.FollowK, cb.FollowK) })
+            Assert.Equal(x, y, 9);
+        Assert.Equal(ca.Focus.HasValue, cb.Focus.HasValue);
+        Assert.Equal((ca.Black, ca.Hold), (cb.Black, cb.Hold));
         var end = new CinePlayer(Lay(f));
         end.Advance(end.S.Length);
         Assert.Equal(1.0, end.Camera(places.Resolve).FollowK, 6);

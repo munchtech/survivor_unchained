@@ -15,6 +15,9 @@ public readonly record struct V3(double X, double Y, double Z)
     public double Length => Math.Sqrt(X * X + Y * Y + Z * Z);
     public V3 Unit => Length < 1e-9 ? new V3(0, 0, -1) : this * (1 / Length);
     public static V3 Lerp(V3 a, V3 b, double k) => a + (b - a) * k;
+    // Printed as its coordinates only: the record's generated printer would
+    // follow Unit (itself a V3) forever and overflow the stack.
+    public override string ToString() => FormattableString.Invariant($"({X}, {Y}, {Z})");
 }
 
 /// <summary>A shot placed in time.</summary>
