@@ -5,9 +5,9 @@
    0.21960000000000002,
    0
   ],
-  "height": 0.9663999999999999,
-  "tris": 576,
-  "tris_lod1": 230,
+  "height": 0.9708000000000001,
+  "tris": 628,
+  "tris_lod1": 246,
   "materials": 2
  },
  "post_lantern": {
@@ -17,8 +17,8 @@
    1.12
   ],
   "height": 2.96,
-  "tris": 576,
-  "tris_lod1": 225,
+  "tris": 660,
+  "tris_lod1": 255,
   "materials": 2
  },
  "lantern_standing": {
@@ -28,8 +28,8 @@
    0
   ],
   "height": 0.615,
-  "tris": 632,
-  "tris_lod1": 252,
+  "tris": 684,
+  "tris_lod1": 264,
   "materials": 2
  },
  "torch_mounted": {

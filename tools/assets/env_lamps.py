@@ -107,8 +107,8 @@ def atlas():
             checks = np.clip((noise((H, w), 91, 3, 24) - 0.7) * 6, 0, 1) * (grain > 0.8)
             v = 0.62 + 0.18 * grain + 0.25 * (n1 - 0.5) + 0.1 * (n2 - 0.5)
             v = v * (1 - 0.6 * checks)
-            base = np.array([0.215, 0.165, 0.118], np.float32)
-            grey = np.array([0.19, 0.18, 0.165], np.float32)
+            base = np.array([0.235, 0.168, 0.11], np.float32)
+            grey = np.array([0.2, 0.182, 0.158], np.float32)
             weather = np.clip(noise((H, w), 13, 3, 5) * 1.2 - 0.1, 0, 1)[..., None]
             col[:, x0:x1] = (base * (1 - weather) + grey * weather) * v[..., None]
             rough[:, x0:x1] = 0.82 + 0.1 * n2
@@ -304,12 +304,21 @@ def lamp_iron(W, H, at=Matrix.Identity(4), ring=True, bail=0.0, feet=False, fine
         if fine:
             parts.append(Part(cube(0.035 * W, 0.62 * H, 0.03 * W), 'iron', rot @ T(0, 0.31 * H, 0.5 * W - p / 2 + 0.005 * W)))
     y += H
-    parts.append(Part(cube(W * 1.04, t * 0.8, W * 1.04, 0.02 * W if fine else 0), 'iron', at @ T(0, y + t * 0.4, 0)))
+    # The top: a square frame, open in the middle so the flame shows from the play camera's height (a
+    # plate hid it), and over it on four short struts a small hood (the cap) that smoke leaves under.
+    tf = 0.14 * W
+    for k in range(4):
+        rot = at @ R('Y', k * math.pi / 2)
+        parts.append(Part(cube(W * 1.04, t * 0.8, tf), 'iron', rot @ T(0, y + t * 0.4, 0.52 * W - tf / 2)))
     y += t * 0.8
-    # The cap: a four-sided roof over the top plate, vented under its finial.
-    parts.append(Part(lathe([(0.7 * W, 0), (0.62 * W, 0.04 * W), (0.2 * W, 0.3 * W), (0.12 * W, 0.34 * W), (0.12 * W, 0.4 * W), (0, 0.42 * W)], 4, math.pi / 4), 'iron',
+    gap = 0.16 * W
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            parts.append(rod((sx * 0.4 * W, y - 0.01 * W, sz * 0.4 * W), (sx * 0.17 * W, y + gap + 0.02 * W, sz * 0.17 * W), 0.02 * W))
+    y += gap
+    parts.append(Part(lathe([(0.3 * W, 0), (0.27 * W, 0.03 * W), (0.1 * W, 0.18 * W), (0.07 * W, 0.2 * W), (0.07 * W, 0.25 * W), (0, 0.27 * W)], 4, math.pi / 4), 'iron',
                       at @ T(0, y, 0)))
-    y += 0.42 * W
+    y += 0.27 * W
     top = y
     if ring:
         rr = 0.13 * W

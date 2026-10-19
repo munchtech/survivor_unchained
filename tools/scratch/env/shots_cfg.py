@@ -20,7 +20,8 @@ SETS = {
     "close4": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-8.6,88.6,1,0;-8.6,88.6,1,0"], 4),
     # E2 lamps: the ford's three lamp-irons at the play camera (by the pylons at 0,-33.5, -9.7,-49.6, 9.7,-49.6)
     "ford": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "0,-37;-7,-46;7,-46"], 3),
-    "dbg": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--lamp-debug", "--spots", "-7.5,87.5"], 1),
+    # E2 lamps: the camp's post lamp (light 1) mid-frame, for its pool (1 m vs 4 m)
+    "pool": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-3,91;-3,91"], 2),
     "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
     "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", TOWN], 3),
     "town_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", TOWN], 3),

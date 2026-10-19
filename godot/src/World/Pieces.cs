@@ -272,9 +272,8 @@ public static partial class Pieces
         var wax = new Build();
         Lathe(wax, Pts(0, 0, 0.05f * w, 0, 0.05f * w, 0.14f * h, 0, 0.14f * h), 10, At(c.X, y0 + h * 0.3f, c.Z + bd * 0.2f));
         Add(root, wax.Mesh(), Mat("#e8dcc0", 0, 0.6f));
-        var flame = new Build();
-        Lathe(flame, Pts(0, 0, 0.03f * w, 0.02f * h, 0.02f * w, 0.05f * h, 0, 0.08f * h), 10, At(c.X, y0 + h * 0.44f, c.Z + bd * 0.2f));
-        Add(root, flame.Mesh(), Glow("#ffb050", 4));
+        // The candle's flame: the flame kit's (look bible 10), no light of its own (no zone light here).
+        FlameKit.Add(root, new Vector3(c.X, y0 + h * 0.44f, c.Z + bd * 0.2f), FlameKind.Candle, light: false);
         return root;
     }
 

@@ -80,7 +80,7 @@ public static class Lamps
         if (slot != null) return slot;
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_glass.gdshader") };
         m.SetShaderParameter("glow", isCold ? new Color("#7aa8ff") : new Color("#ffa860"));
-        m.SetShaderParameter("glow_strength", isCold ? 0.16f : 0.2f);
+        m.SetShaderParameter("glow_strength", isCold ? 0.3f : 0.24f);
         slot = m;
         return m;
     }
