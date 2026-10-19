@@ -25,7 +25,7 @@ from clips import idle
 from clips.actions import KNEE_Y, TUCK_Y, arm, body, stance
 from clips.sword import _n
 from gait import arc_of
-from keyed import build
+from keyed import FINGER_PRESETS, build
 from rig import qeuler, qinv, qmatrix, qmul, qrot
 
 
@@ -487,14 +487,6 @@ def stalker_break(rig):
     kx = BREAK_KNEE_X
     knee = np.array([kx, KNEE_Y, hip[2] - math.sqrt(max(L * L - (hip[1] - KNEE_Y) ** 2 - (hip[0] - kx) ** 2, 1e-6))])
     ankle_b = np.array([kx, TUCK_Y, knee[2] - math.sqrt(max(S * S - (TUCK_Y - KNEE_Y) ** 2, 1e-6))])
-    # The left hand hanging down past the outside of her left knee, the fingers toward the ground (on one knee the
-    # ground is out of her reach without folding her over; laid on the knee, it went 6-127 mm into the outfits' leg
-    # pieces), keyed in the chest's frame from the shoulder as solved at the bottom.
-    chest = qmul(gq[I["spine_03"]], qinv(rig.grest[I["spine_03"]]))
-    knee_l = gp[I["calf_l"]]
-    VC = qrot(qinv(chest), knee_l + np.array(BREAK_BY_KNEE_L) - gp[I["upperarm_l"]])
-    # (On its way down and up it goes round the outside of the knee, which rises under it as she goes down.)
-    VW = qrot(qinv(chest), knee_l + np.array(BREAK_WIDE_L) - gp[I["upperarm_l"]])
 
     # The right foot's way (its ball's place, the foot's pitch and the toes' bend): heel up, swung back and set down
     # on the ball, the toes tucked under; and back the same way. The ball never moves while it carries her.
@@ -537,9 +529,8 @@ def stalker_break(rig):
            (R_DOWN, BREAK_PELVIS), (90, BREAK_PELVIS), (R_HOME[0], BREAK_OFF), (R_HOME[1], BREAK_UP),
            (R_STAND, base_pelvis(R_STAND))]
 
-    reach_l = {"arc": arc_of(VC), "pole": (1.0, -0.2, -0.3), "frame": "chest",
-               "knuckles": _n(0.0, -0.4, 1.0), "blade": _n(-0.9, 0.1, -0.3), "twist": 0.4}
-    crouch = {**kneel, "hand_l": reach_l, "fingers_l": "open",
+    # (The left hand: laid on her left thigh in post, knee_hand.)
+    crouch = {**kneel,
               # The crossbow held low ahead of her, off the ground and clear of her thighs and left shin.
               "hand_r": {"arc": arc_of(BREAK_HAND_R), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
                          "knuckles": idle._n(BREAK_AIM_R), "twist": 0.5}}
@@ -558,17 +549,17 @@ def stalker_break(rig):
         (120, over("stalker", **f), "ease"),
     ]
     # The hands' own timing through the fold (animation 38): the left hand comes up and off the fore-stock (out to
-    # her left) before the crossbow moves, reaches down as she sinks, and is laid back on the stock only once the
-    # crossbow is home again (the crossbow had swung up through the resting hand, 17 mm into her thumb).
+    # her left) before the crossbow moves, is laid along her left thigh as she sinks, and is laid back on the stock
+    # only once the crossbow is home again (the crossbow had swung up through the resting hand, 17 mm into her thumb).
     hl, hr = idle.STALKER_HAND_L["hand_l"], idle.STALKER_HAND_R["hand_r"]
     V0 = _arc_vec(hl)
     V1 = V0 + np.array(STALKER_LIFT_L)
     R0, RC = _arc_vec(hr), _arc_vec(crouch["hand_r"])
-    left = [(55, V0), (59, V1), (64, VW), (72, VC), (90, VC), (99, VW), (108, V1), (114, V0)]
+    # (Off the stock and back onto it along the idle's own lift; between, laid on her left thigh: see knee_hand.)
+    left = [(55, V0), (59, V1), (108, V1), (114, V0)]
     # (The crossbow brought forward first, off her right thigh as it comes up.)
     RW = R0 + np.array(BREAK_FWD_R)
     right_h = [(56, R0), (61, RW), (72, RC), (90, RC), (101, RW), (110, R0)]
-    turn_l = [(59, 0.0), (72, 1.0), (90, 1.0), (108, 0.0)]
 
     def mixv(a, b, w):
         v = np.array(a, float) * (1 - w) + np.array(b, float) * w
@@ -583,6 +574,33 @@ def stalker_break(rig):
         return pts[-1][1]
 
     aim_r = (knee - (hip + ankle_b) / 2) * 10
+    up, out_x = np.array((0.0, 1.0, 0.0)), np.array((1.0, 0.0, 0.0))
+
+    def unit(v):
+        return v / np.linalg.norm(v)
+
+    def knee_hand(fr, pose):
+        """The left hand laid along the top-outer left thigh at a frame (animation 39, judge r2: the hand that hung
+        beside the knee swung 30 cm out round it and did nothing at the bottom): the wrist's place in her space and
+        the hand's knuckles and blade in the chest's frame, from her legs as solved at that frame. The palm rides
+        forward along the thigh as the knee rises and lies on the kneecap at the bottom, on the thickest outfit's
+        surface (PALM_R: the thigh's bone line to it), and slides back the same way."""
+        b = min(fr, base.frames - 1)
+        loc, ps = rig.solve(pose, base=(base.rot[b], base.pos[b]))
+        q, p = sk.fk(loc[None], ps[None])
+        q, p = q[0], p[0]
+        th, kn = p[I["thigh_l"]], p[I["calf_l"]]
+        u = unit(kn - th)
+        t, lift = ramp(KNEE_T, fr), ramp(KNEE_LIFT, fr)
+        n = up + out_x * (KNEE_OUT[0] + (KNEE_OUT[1] - KNEE_OUT[0]) * t)
+        n = unit(n - u * (n @ u))
+        c = th + (kn - th) * t + n * (float(np.interp(t, *zip(*PALM_R))) + lift)
+        a = math.radians(float(np.interp(t, *zip(*PALM_TILT))))
+        y = unit(u * math.cos(a) - n * math.sin(a))
+        z = np.cross(-n, y)
+        wrist = c - y * PALM_FWD + n * PALM_UP
+        ch = qmul(q[I["spine_03"]], qinv(rig.grest[I["spine_03"]]))
+        return wrist, qrot(qinv(ch), y), qrot(qinv(ch), z)
 
     def post(fr, pose):
         if not R_HEEL[0] <= fr <= 114:
@@ -599,11 +617,16 @@ def stalker_break(rig):
                               "rot": (yaw, float(pitch), roll), "toe": float(toe),
                               # The knee's way turned onto its place on the ground as she goes down (and back).
                               "pole": tuple(float(x) for x in np.array((-0.15, 0, 1.0)) * (1 - k) + aim_r * k)}
-        w = ramp(turn_l, fr)
-        pose["hand_l"] = {"arc": arc_of(_vpath(left, fr)), "frame": "chest",
-                          "pole": mixv(hl["pole"], reach_l["pole"], w), "knuckles": mixv(hl["knuckles"], reach_l["knuckles"], w),
-                          "blade": mixv(hl["blade"], reach_l["blade"], w), "twist": 0.4}
-        pose["fingers_l"] = "open" if 56 <= fr <= 111 else "relaxed"
+        w, wt = ramp(KNEE_MIX, fr), ramp(KNEE_TURN, fr)
+        hand_l = {"arc": arc_of(_vpath(left, fr)), "frame": "chest", "pole": hl["pole"], "knuckles": hl["knuckles"],
+                  "blade": hl["blade"], "twist": 0.4}
+        if w > 0 or wt > 0:
+            wrist, yk, zb = knee_hand(fr, pose)
+            hand_l.update(pos=tuple(float(x) for x in wrist), mix=float(w), pole=mixv(hl["pole"], KNEE_POLE, wt),
+                          knuckles=mixv(hl["knuckles"], yk, wt), blade=mixv(hl["blade"], zb, wt))
+        pose["hand_l"] = hand_l
+        # (The fingers soft throughout, curled a little further over the kneecap.)
+        pose["fingers_l"] = dict(FINGER_PRESETS["relaxed"], curl=float(ramp(KNEE_CURL, fr)))
         pose["hand_r"] = dict(hr, arc=arc_of(_vpath(right_h, fr)),
                               knuckles=mixv(hr["knuckles"], crouch["hand_r"]["knuckles"], ramp([(58, 0.0), (72, 1.0), (90, 1.0), (110, 0.0)], fr)))
         return pose
@@ -612,9 +635,8 @@ def stalker_break(rig):
 
 # The break's kneel (her space, m and deg): the pelvis at the bottom (over her right knee, under her shoulders, a
 # thigh's length behind her left knee), the right knee's side place, the hips', back's and head's turns there, the
-# left hand's place beside the left knee and on its way (from the knee's joint), the crossbow hand's at the bottom
-# and on its way out (chest frame, from the shoulder; the way out off the idle's), its knuckles' aim (a crossbow aimed
-# across her went 7-21 mm into her left shin), the tucked right foot's pitch. KNEE_AIM: how far the right knee's pole
+# crossbow hand's at the bottom and on its way out (chest frame, from the shoulder; the way out off the idle's), its
+# knuckles' aim (a crossbow aimed across her went 7-21 mm into her left shin), the tucked right foot's pitch. KNEE_AIM: how far the right knee's pole
 # is turned onto its place.
 BREAK_PELVIS = (0.02, 0.545, -0.38)
 BREAK_KNEE_X = -0.10
@@ -623,8 +645,6 @@ BREAK_SPINE = (0, 8, 0)
 BREAK_NECK = (0, 2, 0)
 BREAK_HEAD = (-10, 15, 0)
 BREAK_HEAD_TO = (12, 17, 0)
-BREAK_BY_KNEE_L = (0.18, -0.03, 0.10)
-BREAK_WIDE_L = (0.14, 0.17, 0.04)
 BREAK_FWD_R = (-0.12, 0.09, 0.06)
 BREAK_HAND_R = (-0.06, -0.30, 0.32)
 BREAK_AIM_R = (-0.10, 0.45, 0.88)
@@ -634,6 +654,22 @@ TUCK_TOE = TUCK_PITCH + 4  # (the toes near level along the ground; get_up's 64 
 # the knee leaves the ground (the back leg near straight) and as the foot comes home.
 BREAK_LEAN = {"hips": {"rot": (0, 12, 0)}, "spine": (0, 16, 0)}
 BREAK_DOWN, BREAK_OFF, BREAK_UP = (0.01, 0.75, -0.23), (0.02, 0.76, -0.20), (0.03, 0.97, -0.04)
+# The left hand on the thigh (her space, m and deg): how far it is laid there (from the idle's lift off the stock),
+# where along the thigh (0 hip, 1 knee joint), the palm's height over the thickest outfit's surface, the thigh's
+# top-outer side (how far the normal leans out, at the hip and at the knee), the bone line to that surface (at the
+# hip and at the knee), the fingers' tilt down over the knee's front, the wrist behind and above the palm's middle,
+# the elbow's way (chest frame: out and back) and the fingers' curl.
+KNEE_MIX = [(59, 0.0), (64, 1.0), (101, 1.0), (108, 0.0)]
+KNEE_TURN = [(58, 0.0), (62, 1.0), (101, 1.0), (107, 0.0)]
+KNEE_T = [(60, 0.30), (70, 1.04), (90, 1.04), (97, 0.62), (105, 0.30)]
+KNEE_LIFT = [(59, 0.06), (63, 0.032), (66, 0.032), (69, 0.025), (75, 0.013), (90, 0.013), (95, 0.038), (104, 0.04)]
+KNEE_OUT = (0.6, 0.75)
+PALM_R = [(0.3, 0.165), (0.4, 0.162), (0.5, 0.133), (0.6, 0.120), (0.7, 0.109), (0.8, 0.096), (0.85, 0.106), (0.9, 0.092),
+          (0.95, 0.090), (1.0, 0.083), (1.05, 0.070)]
+PALM_TILT = [(0.3, 8.0), (0.8, 10.0), (1.04, 16.0)]
+PALM_FWD, PALM_UP = 0.045, 0.041
+KNEE_POLE = (0.45, -0.3, -0.85)
+KNEE_CURL = [(55, 0.1), (57, 0.0), (60, 0.0), (66, 0.1)]
 # The right foot's frames: heel up, swung back to its toes, and home (from, to); the knee down, and up standing.
 R_HEEL, R_BACK, R_HOME = (54, 57), (57, 67), (97, 108)
 R_DOWN, R_STAND = 73, 114
