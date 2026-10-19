@@ -22,24 +22,26 @@ Tier 2. The town closes the Prologue (C04 B) and is the first hub the player wal
 |---|---|
 | `frames/play_w84.jpg` (the town at the play camera (a 720p capture)) | A roof fills the frame, and she shows only through a round hole cut in it. The light is flat and brown. |
 | `frames/c04b_sb1.jpg` (C04 B sb1) | A toy town. Clean, same-scale houses with ruler-straight ridges, flat terracotta and no grime, in shadowless haze, with bald hills behind and no smoke or lit window. |
-| `frames/c04b_sb3.jpg` (C04 B sb3) | The villagers stand idle, facing away. Nothing in the street is happening. |
+| `frames/c04b_sb3.jpg` (C04 B sb3) | A bare square. A few villagers stand idle, facing away, on an empty field of cobbles with one bench and a notice board: no clutter, no work, and the same shadowless haze. |
 
 ## The trick
 
-1. Lay the town out for the camera: main streets at least as wide as the eaves are high, so at the play camera's pitch a roof rarely covers her. Where one does, the whole roof in the way fades with a dithered (screen-door) alpha driven by a per-instance shader uniform, not a round hole and not transparency. Its shadow stays, from the shadow proxy.
+1. Lay the town out for the camera: main streets at least as wide as the eaves are high, so at the play camera's pitch a roof rarely covers her. Where one does, the building in the way (its roof and any wall between her and the camera) fades with a dithered (screen-door) alpha driven by a per-instance shader uniform, easing in and out over about 0.3 s, not a round hole and not transparency, with no visible stipple at 1:1. Its shadow stays, from the shadow proxy.
 2. A modular kit: timber frame, plaster, a stone base, two roof types, all on two trim sheets. At distance, visibility ranges swap each block for one merged low-poly mesh built in Blender (Godot swaps; it does not merge).
-3. The dawn sun low down the main street, with long shadows. One or two smoking chimneys and a lit bakery window (the line: "someone is baking").
+3. The dawn sun low down the main street, with long shadows. One or two smoking chimneys and a lit bakery window (the line: "someone is baking"). The skyline: forested hills behind the town (the far forest as page 1e builds it), with the castle or a church tower breaking it. Never a bald hill.
 4. Clutter in clusters from one shared prop kit: barrels, crates, carts, washing lines, stalls, signs.
 5. The ground: cobbles as on page 1f (a large varied tile, no hex blending) and mud in the gutters. Puddles: a low-roughness vertex-paint mask that reflects the sky through the environment's radiance and a reflection probe, not SSR.
 6. Weather and break it. Use page 1g's grime from the ground up and edge wear on every wall. Vary roof tiles in value tile to tile, with soot by the chimneys and moss on the shaded side. Sag ridges and eaves a few cm, and give eaves a 40-60 cm overhang with rafter ends. Make doors 2.0-2.2 m tall next to her, so the town isn't toy-scaled.
 
 ## DONE means (at the play and close-up cameras, at 1:1)
 
-- At the play camera she and the street stay visible in town. No roof hides her.
+- At the play camera she and the street stay visible in town. No roof or wall hides her.
 - At dawn a low sun rakes the street, measured as on page 1c: shadow over at least a quarter of the ground, and lit ground at least 1.35 times the luma of the shadow beside it (`docs/art/look_bible/tools/lumstats.py --crop` on each patch).
 - Every screen shows at least three signs of life: smoke, a lit window, someone at work.
 - No cobble pattern repeats, and neighboring buildings differ in at least two of roof, color and height.
 - At the town camera at 1:1, no ridge or eave is ruler-straight, roof value varies tile to tile, every wall's base is darker than its top, and doors measure 2.0-2.2 m.
+- At the town camera, every screen holds at least two clutter clusters (three or more props each), and no stretch of bare paving is wider than about 10 m without a stall, cart, tree or cluster.
+- At the cinematic cameras, no bald hill or empty band of sky shows behind the town.
 - Within page 2's budget, shadow draws included. Kit pieces, clutter under 0.5 m, lamps and windows cast no shadows; each building has one merged shadows-only proxy; the directional shadow distance and splits are set for the play camera.
 
 Owners: The tutorial environment lead (the kit, dressing, the dawn light); rendering with the camera code (the roof cut-away); story characters (the villagers, page 1i); cinematics (C04 B staging).

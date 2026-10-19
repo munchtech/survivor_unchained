@@ -21,7 +21,7 @@ Tier 2. The castle is seen far off (C01 s8a, across the river at night); stone i
 | Frame | What fails |
 |---|---|
 | `frames/c01_s8a.jpg` (C01 s8a) | A castle wall built from boxes and a plain black slab for the tower, with no crenellations, roofs or windows. White egg lamps. |
-| `frames/c04a_sa1.jpg` (C04 A sa1) | The stepping stones are faceted low-poly shapes, with no wet line, moss or wear. |
+| `frames/c04a_sa1.jpg` (C04 A sa1) | The stepping stones are one faceted low-poly slab repeated at even spacing, sitting on the water with no wet line, foam, moss or wear. |
 
 ## The trick
 
@@ -39,7 +39,8 @@ Tier 2. The castle is seen far off (C01 s8a, across the river at night); stone i
 - No box primitives, and no stone with flat facets at the close-up.
 - At the play camera at 1:1, day and night, block joints and bevel highlights read on the town footings and the ford stones (as Titan Quest II, row 1).
 - River stones have rounded silhouettes, a dark wet band at the waterline and moss on the upstream side.
-- The far castle's darkest value is measurably lighter than the foreground's darkest (lumstats).
+- In C01 s8a, the far castle's darkest patch is at least 10 luma levels (sRGB 0-255) above the foreground's darkest (lumstats --crop on each patch).
+- No two neighboring ford stones share a shape or rotation, and each meets the water with a foam or ripple line.
 - Cost: the far castle is one draw and no shadow draw; each near building is one shadow caster.
 
 Owners: The tutorial environment lead (the kit, the stone materials, the merged far castle); cinematics (C01 s8a's exposure and the three blue lamps).

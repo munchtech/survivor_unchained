@@ -21,7 +21,7 @@ Tier 2 for the story NPCs (the Warden, Grimtunnel, the villagers) and tier 3 for
 
 | Frame | What fails |
 |---|---|
-| `frames/c02_s1.jpg` (C02 s1) | Cartoon drowned standing in a grid in flat water, a green-faced zombie in front, no mist. |
+| `frames/c02_s1.jpg` (C02 s1) | Cartoon drowned standing in a grid in flat water, every figure the same model, a green-faced zombie in front, no mist. |
 | `frames/c03_s1.jpg` (C03 s1) | The Warden as a cartoon: a clay beard shell and blank white eyes in a flat blue fill. |
 | `frames/c03_s10.jpg` (C03 s10) | Grimtunnel's untextured, polka-dot skin; a faceted brim hides his eyes. |
 | `frames/c04b_sb4b.jpg` (C04 B sb4b) | A cartoon villager with chunky hair, plastic skin and a clay-smooth bodice. |
@@ -29,20 +29,22 @@ Tier 2 for the story NPCs (the Warden, Grimtunnel, the villagers) and tier 3 for
 
 ## The trick
 
-1. One shared base for every human: her base through Marionette, with face and body morphs for variety, and one texture atlas per crowd type. At an NPC LOD (Godot's import LODs; check they hold on the skinned mesh), with hair cards at page 2's NPC card count.
-2. Variety from data, not new models: a tint per instance (skin, hair, cloth), a small kit of clothes, hair cards from the style library.
-3. Tier 3 (the drowned, the risen): instanced, with animation baked to textures (VAT) and LODs. A wet shader (darker, glossier, strands of weed) tells the drowned's story. Each drowned figure in water gets a ripple ring at the waterline (one shared flipbook decal).
-4. Staging over detail: mist, backlight and silhouette for crowds; a hood and "two blue points" for the Warden's eyes; a hero head only where a close-up needs one.
+1. One shared base for every human: the shared human base (hers), with male and female body morphs and face morphs for variety, through Marionette, and one atlas material per story NPC and one per crowd type. At an NPC LOD (Godot's import LODs; check they hold on the skinned mesh), with hair cards at page 2's NPC card count.
+2. Variety from data, not new models: a tint per instance (skin, hair, cloth), a small kit of clothes, hair cards from the style library. Beards and brows are cards too: a small beard set (stubble, short, full), never a sculpted shell.
+3. Tier 3 (the drowned, the risen): instanced, with animation baked to textures (VAT) and LODs. A wet shader (darker, glossier, strands of weed) tells the drowned's story. Each drowned figure in water gets a ripple ring at the waterline (one shared flipbook decal). Each instance gets its own clip offset and ±10% speed (INSTANCE_CUSTOM in the VAT shader), so no two move in step. A shared blob decal (or a blob quad in the MultiMesh) grounds crowd and background NPCs.
+4. Staging over detail: mist, backlight and silhouette for crowds; a deep hood that keeps the Warden's face in shadow, with "two blue points" for eyes: small glints the size of a pupil and the brightest thing in the hood, never glowing eye shapes; a hero head only where a close-up needs one.
 5. A face in close-up gets a three-quarter key and a darker background, as hers does.
-6. Tier-2 surfaces. Skin comes from her base's skin set, tinted, with roughness variation and a tiled micro-normal. Cloth comes from a few tiling weaves (linen, wool, leather), with folds baked to the normal map and darker AO in the folds. Eyes have an iris and an off-white sclera. One atlas material per NPC.
+6. Tier-2 surfaces. Skin comes from her base's skin set, tinted, with roughness variation and a tiled micro-normal. Cloth comes from a few tiling weaves (linen, wool, leather), with folds baked to the normal map and darker AO in the folds. Eyes have an iris and an off-white sclera. One atlas material per story NPC.
 
 ## DONE means (at the cameras each NPC is shown at, 1:1)
 
-- Next to her in the same frame, no NPC has flat-albedo skin, single-shell hair, cloth without folds or weave, a pure-white sclera or faceted silhouette edges.
+- Next to her in the same frame, no NPC has flat-albedo skin, single-shell hair or beard, cloth without folds or weave, a pure-white sclera or faceted silhouette edges.
 - Crowds stand in staggered depth, never a grid: uneven spacing and facing, each rank lighter in the mist, the nearest with a lit edge (C02 s2, s10).
 - Every NPC face in a close-up is a hero head, or is staged so the eyes still read (two lit points, a catchlight under the hood or brim, a rim on the brow), never a blank shape.
 - At the town camera at 1:1, day and night, every NPC reads as a person: real proportions, at least two cloth values, hair that isn't one shell, a contact shadow, and a work loop or conversation pose.
-- The bar for tiers 2 and 3 is "looks good in the shot and runs well", not "matches her". Budgets on page 2.
+- In any crowd, no two neighbors share height, build and garment, and none move in step.
+- At the play camera at 1:1, at night, each drowned or risen figure reads from its silhouette and wet sheen against the water or ground, with its ripple ring, and never loses to the background (page 1c's readability line).
+- Cost: each story NPC is one atlas material plus its hair cards, at an import LOD past about 10 m. Each crowd type is one MultiMesh draw. Crowd and background NPCs cast no shadow: a shared blob decal (or a blob quad in the MultiMesh) grounds them. Only the story NPCs in a shot cast real shadows.
 
 Owners: The story characters lead through Marionette (the base, morphs, the clothes kit, hair cards); animation (VAT for crowds, the story clips); cinematics (staging).
 

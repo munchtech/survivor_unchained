@@ -23,16 +23,16 @@ Tier 2. From the play camera the ground is most of the screen, all the time.
 | Frame | What fails |
 |---|---|
 | `frames/c01_s0.jpg` (C01 s0) | Flat dark grass with hard-edged splat blobs. The black slashes read as holes in the ground. |
-| `frames/c04b_sb5.jpg` (C04 B sb5) | The cobbles repeat in an obvious grid from above. |
-| `frames/c04a_sa8.jpg` (C04 A sa8) | Grass planted in rows across the road, and a low-poly boulder. |
+| `frames/c04b_sb5.jpg` (C04 B sb5) | The cobbles repeat in an obvious grid from above, and one clean stone covers everything: no dirt, wear, puddles or gutters. |
+| `frames/c04a_sa8.jpg` (C04 A sa8) | Tufts spread evenly over road and verge alike, so no road reads, and a low-poly boulder sits on the ground with no blend. |
 
 ## The trick
 
 1. Height-blended splat: every ground material has a height map, and the blend favors the higher one. Stones push through dirt, and soft blobs become crisp, natural edges.
-2. Anti-tiling on every ground material: hex tiling (Mikkelsen) or random tile offsets (Quilez) on the albedo and normal of the two strongest layers per pixel only, over a macro color and value texture repeating every 30-60 m (base materials tile every 2-4 m). Exception, cobbles and paving: a large tile of varied stones (4 m or more), dirt, wet and moss masks in world space that follow traffic and gutters, decals for worn and missing stones, and no hex blending.
+2. Anti-tiling on every ground material: hex tiling (Mikkelsen) or random tile offsets (Quilez) on the albedo and normal of the two strongest layers per pixel only, over a macro color and value texture repeating every 30-60 m (base materials tile every 2-4 m). Exception, cobbles and paving: a large tile of varied stones (4 m or more, in two or three variants picked by a world-space mask), dirt, wet and moss masks in world space that follow traffic and gutters, decals for worn and missing stones, and no hex blending.
 3. Decals and scatter for the smallest scale: ruts, puddles, leaf drifts, twigs and pebbles (MultiMesh), gathered where feet and wheels go.
 4. The road spline writes into the terrain's control and height maps (road material, ruts as shallow dips) and clears the grass mask. A sunk mesh strip with an edge-blend decal is used only for paved roads.
-5. Frost and wetness as layers driven by slope and height (frost on the tops, wet in the hollows), never a white ground.
+5. Frost and wetness as layers: frost on exposed tops (grass tips, litter, stone tops, taken from the material height maps), none under the canopy or the eaves (a baked sky-exposure mask), and wet and dark in the hollows and ruts. Never a white ground, never a noise-blotch pattern.
 6. Rocks, walls, stumps and buildings blend in: their lowest 20-40 cm take the terrain material, with a contact-AO decal and scatter at the base.
 
 ## DONE means (at the play and close-up cameras, at 1:1)
@@ -42,8 +42,8 @@ Tier 2. From the play camera the ground is most of the screen, all the time.
 - Roads read as worn (ruts, verges), with no grass on them.
 - Three scales of detail from the play camera: macro color, the material, then decals and scatter.
 - No hard line where a rock, wall, building or trunk meets the ground.
-- Frost sits on the tops and the litter, the hollows are dark and wet, and frost is never the brightest area at night (1c).
-- Cost: one shared terrain shader, and the scatter is instanced (page 2).
+- Frost sits on the tops and the litter, the hollows are dark and wet, and frost is never the brightest area at night (1c). Frost follows the shelter and the ground's height, never a blotch mask.
+- Cost: at the Low Ford play camera at 1440p, terrain, decals and scatter add at most 1.0 ms GPU over today's ground (or page 2's number). Scatter casts no shadows, and shadow draws stay at or below 2,246.
 
 Owners: The tutorial environment lead (the terrain shader, road strips, decals and scatter).
 

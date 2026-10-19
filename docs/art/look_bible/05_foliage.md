@@ -21,23 +21,25 @@ Tier 2. Grass and trees fill most of every road and forest frame, and grass is a
 | Frame | What fails |
 |---|---|
 | `frames/play_20.jpg` (the road through the wood at the play camera) | Flat dark-green pine shapes with no lit side and no undergrowth. |
-| `frames/c01_s7.jpg` (C01 s7) | Paper-cut pines under flat blue light. It reads as a low-poly asset pack. |
+| `frames/c01_s7.jpg` (C01 s7) | Paper-cut pines under flat blue light, and a field of identical white grass spikes, the brightest thing in the shot. It reads as a low-poly asset pack. |
 | `frames/c04a_sa2.jpg` (C04 A sa2) | Cartoon pines with peg-like branches, where the note asks for birches. |
 
 ## The trick
 
-1. A small kit of our own: three species for the Prologue (pine, birch, alder) in three sizes, plus ferns, bushes and grass clumps, built in the Asset Forge with card canopies.
-2. Crown volume: broadleaf cards get normals bent out from the crown's center. Pines get stacked whorls of branch cards, normals taken from the trunk axis tilted up, and AO baked into vertex color (dark inside and under each whorl, lit tips).
+1. A small kit of our own: three species for the Prologue (spruce, birch, alder) in three sizes, plus ferns, bushes and grass clumps, built in the Asset Forge with card canopies.
+2. Crown volume: broadleaf cards get normals bent out from the crown's center. Spruces get stacked whorls of branch cards, normals taken from the trunk axis tilted up, and AO baked into vertex color (dark inside and under each whorl, lit tips).
 3. Back light (translucency) on leaves and grass, so the low sun and the fire glow through them.
 4. A hue and value jitter per instance, so no two neighbors match. Wind from vertex colors: trunk sway, branch bend, leaf flutter (Crysis).
 5. Undergrowth hides every trunk's base. Grass grows in clumps from a noise mask, never in rows and never on the road. In the distance, LODs and then impostors. Grass takes the terrain's color at its root.
-6. Grass clumps are MultiMesh cards with a visibility-range fade and cast no shadows (SSAO and a darker root color ground them). Trees cast shadows through a low shadow-only LOD.
+6. Grass clumps are MultiMesh cards with a visibility-range fade and cast no shadows (SSAO and a darker root color ground them). Trees cast shadows through a low shadow-only LOD. Leaf and needle cards use alpha scissor with alpha antialiasing (alpha to coverage under MSAA) or alpha hash under TAA, with mipmaps that keep their coverage.
 
 ## DONE means (at the play and close-up cameras, at 1:1)
 
 - From the play camera, crowns read as volumes, never as flat cut-outs: on a crown the lit side is at least one stop over the shadow side (sRGB luma ratio at least 1.35).
 - No two identical trees stand side by side in a frame, and every trunk has undergrowth at its base.
 - Grass grows in clumps and never on the road. Everything moves in the wind.
+- From the play camera every spruce shows at least three tiers of branches with dark gaps between them (ground or lower branches seen through), never a clean star outline.
+- No crawling or shimmer on card edges while the camera pans.
 - Birches where the shot notes say birches (C04 A sa2).
 - Cost: at the Low Ford play camera at 1440p with the new kit in, primitives at or below 4.9M and shadow draws at or below 2,246.
 
