@@ -1,0 +1,31 @@
+{
+ "size": [
+  1024,
+  256
+ ],
+ "metres_u": 0.128,
+ "relief_m": 0.0015,
+ "channels": {
+  "png": "R height, G cavity, B relief mask",
+  "nor": "tangent-space normal, OpenGL (+Y up)"
+ },
+ "bands": {
+  "rolled_edge": {
+   "v0": 0.75,
+   "v1": 1.0
+  },
+  "rivet_row": {
+   "v0": 0.5,
+   "v1": 0.75
+  },
+  "rope": {
+   "v0": 0.25,
+   "v1": 0.5
+  },
+  "filigree": {
+   "v0": 0.0,
+   "v1": 0.25
+  }
+ },
+ "note": "u along the rim in metres / metres_u (repeats); v = band v0 + (across the profile 0..1) * (v1 - v0). Made by tools/armor/trim_strip.py from formulas: no third-party art."
+}

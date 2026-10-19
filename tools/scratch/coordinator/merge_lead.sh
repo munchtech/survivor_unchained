@@ -5,7 +5,7 @@
 # (Godot writes them on import); they are set aside first, not deleted.
 set -e
 M=/c/Users/munch/Desktop/survivorsunchained
-b="worktree-agent-$1"
+b="$1"; git -C /c/Users/munch/Desktop/survivorsunchained rev-parse --verify -q "$b" >/dev/null || b="worktree-agent-$1"  # a branch name, or an agent id
 cd "$M"
 [ "$(git branch --show-current)" = "claude/vigilant-galileo-l6jqyx" ] || { echo "main checkout is not on the integration branch"; exit 1; }
 B="$TEMP/hs/uid_backup/$(date +%s%N)"; mkdir -p "$B"

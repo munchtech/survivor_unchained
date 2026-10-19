@@ -47,6 +47,8 @@ public static class Arms
         ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),  // Seated once its left fist passes (fistfit.py daggers --side l)
     };
 
+    static Arms() => ArmsData.Merge(All);  // art/weapons/weapons.json: weapons of a known kind as data
+
     /// <summary>A weapon, normalised (a new node each call).</summary>
     public static Node3D Make(string id)
     {

@@ -31,6 +31,29 @@ public class LoadoutTests
         return c;
     }
 
+    [Fact]
+    public void A_weapon_with_only_art_takes_its_kinds_stance()
+    {
+        var tpl = Loadouts.HeldOf("worn_oathblade")!;
+        var h = Loadouts.HeldOf("oathbrand")!;
+        Assert.Equal(tpl with { Right = "oathbrand" }, h);
+        Assert.Equal("oathbrand", h.Right);
+        Assert.Null(Loadouts.HeldOf("copper_ring"));
+        var ch = Armed(Character.Create(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = Callings.Archetype("warden").Palettes[0].Id, WeaponItem = "worn_oathblade", Ability = Callings.Archetype("warden").Abilities[0] }, 1, 7), "oathbrand");
+        Assert.Equal("oathbrand", Loadouts.Of(ch).Arms.Right);
+    }
+
+    [Theory]
+    [InlineData(WeaponKind.Blade1H, "sword")]
+    [InlineData(WeaponKind.Axe, "axe")]
+    [InlineData(WeaponKind.Axe2H, "axe")]
+    [InlineData(WeaponKind.Staff, "staff")]
+    [InlineData(WeaponKind.Wand, "wand")]
+    [InlineData(WeaponKind.Crossbow, "crossbow")]
+    [InlineData(WeaponKind.Dagger, "daggers")]
+    [InlineData(WeaponKind.Shield, "")]
+    public void The_clips_name_each_kind(WeaponKind k, string clip) => Assert.Equal(clip, Loadouts.ClipKind(k));
+
     [Theory]
     [InlineData("warden")]
     [InlineData("reaver")]
