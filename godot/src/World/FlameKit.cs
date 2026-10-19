@@ -17,11 +17,11 @@ public static class FlameKit
     /// <summary>Card width and height (m), light range (m) and energy, for each kind at scale 1.</summary>
     internal static (float W, float H, float Range, float Energy) Spec(FlameKind kind) => kind switch
     {
-        FlameKind.Candle => (0.035f, 0.08f, 2.5f, 0.35f),
-        FlameKind.Lamp => (0.07f, 0.16f, 6f, 0.9f),
-        FlameKind.Torch => (0.22f, 0.48f, 7f, 1.4f),
-        FlameKind.Brazier => (0.45f, 0.8f, 8f, 1.8f),
-        _ => (1.2f, 1.6f, 8f, 2f),
+        FlameKind.Candle => (0.04f, 0.08f, 2.5f, 0.35f),
+        FlameKind.Lamp => (0.08f, 0.16f, 6f, 0.9f),
+        FlameKind.Torch => (0.24f, 0.48f, 7f, 1.4f),
+        FlameKind.Brazier => (0.4f, 0.8f, 8f, 1.8f),
+        _ => (0.8f, 1.6f, 8f, 2f),
     };
 
     public static readonly Color WarmLight = new("#ffb070");
@@ -92,12 +92,12 @@ public partial class Flame : Node3D
         phase = Mathf.PosMod(Position.X * 0.731f + Position.Z * 0.377f + (GetInstanceId() % 997) * 0.6180339f, 1f);
         var shader = GD.Load<Shader>(FlameShader.Path);
         (Vector3 At, float W, float H, float Ph)[] cards = kind == FlameKind.Camp
-            ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.15f, 0, 0.07f), 0.75f, 0.72f, 0.37f), (new(0.14f, 0, -0.05f), 0.8f, 0.75f, 0.71f) }
+            ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.28f, 0, 0.1f), 0.8f, 0.72f, 0.37f), (new(0.26f, 0, -0.08f), 0.85f, 0.78f, 0.71f) }
             : new (Vector3, float, float, float)[] { (Vector3.Zero, 1f, 1f, 0f) };
         foreach (var (at, cw, ch, ph) in cards)
         {
             var mat = new ShaderMaterial { Shader = shader };
-            FlameShader.Setup(mat, cold, Mathf.PosMod(phase + ph, 1f));
+            FlameShader.Setup(mat, kind, cold, Mathf.PosMod(phase + ph, 1f), ph == 0 ? 1f : 0.75f);
             mats.Add(mat);
             AddChild(new MeshInstance3D
             {
@@ -135,16 +135,41 @@ public partial class Flame : Node3D
     }
 }
 
-/// <summary>The kit's shader and atlas, and their parameters.</summary>
+/// <summary>The kit's shader, atlas and motion vectors, and their parameters. Without the atlas the
+/// shader draws its procedural flame.</summary>
 static class FlameShader
 {
-    public const string Path = "res://shaders/flame_loop.gdshader";
+    public const string Path = "res://shaders/flame_mv.gdshader";
+    const string Atlas = "res://art/fx/fb/flame_kit.png", Mv = "res://art/fx/fb/flame_kit_mv.png", Meta = "res://art/fx/fb/flame_kit.json";
+    static Godot.Collections.Dictionary? meta;
 
-    public static void Setup(ShaderMaterial mat, bool cold, float phase)
+    /// <summary>Small flames flicker faster than big ones.</summary>
+    static float Fps(FlameKind kind) => kind switch
     {
-        mat.SetShaderParameter("atlas", GD.Load<Texture2D>("res://art/fx/fb/fire_loop.png"));
+        FlameKind.Candle => 30, FlameKind.Lamp => 28, FlameKind.Torch => 24, FlameKind.Brazier => 22, _ => 20,
+    };
+
+    public static void Setup(ShaderMaterial mat, FlameKind kind, bool cold, float phase, float intensity)
+    {
         mat.SetShaderParameter("phase", phase);
-        mat.SetShaderParameter("glow", 1.0f);
-        if (cold) mat.SetShaderParameter("tint", new Color(0.45f, 0.6f, 1.2f));
+        mat.SetShaderParameter("cold", cold ? 1f : 0f);
+        mat.SetShaderParameter("intensity", intensity);
+        mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        bool sim = ResourceLoader.Exists(Atlas) && ResourceLoader.Exists(Mv) && FileAccess.FileExists(Meta);
+        mat.SetShaderParameter("procedural", !sim);
+        float fps = Fps(kind);
+        if (sim)
+        {
+            meta ??= Json.ParseString(FileAccess.GetFileAsString(Meta)).AsGodotDictionary();
+            mat.SetShaderParameter("atlas", GD.Load<Texture2D>(Atlas));
+            mat.SetShaderParameter("mv_atlas", GD.Load<Texture2D>(Mv));
+            mat.SetShaderParameter("grid", (int)meta["grid"].AsDouble());
+            mat.SetShaderParameter("frames", (int)meta["frames"].AsDouble());
+            mat.SetShaderParameter("mv_scale", (float)meta["mv_scale"].AsDouble());
+            var cell = meta["cell"].AsGodotArray();
+            mat.SetShaderParameter("cell_px", new Vector2((float)cell[0].AsDouble(), (float)cell[1].AsDouble()));
+            fps *= (float)meta["fps"].AsDouble() / 24f;
+        }
+        mat.SetShaderParameter("fps", fps);
     }
 }

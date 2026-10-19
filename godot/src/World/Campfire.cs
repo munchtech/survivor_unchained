@@ -4,8 +4,8 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// A campfire: a photoscanned ring of stones round charred wood (Poly
-/// Haven's stone fire pit, art/world), a flame filmed and played round and
-/// round on upright cards (art/fx/fb/fire_loop, shaders/flame_loop.gdshader),
+/// Haven's stone fire pit, art/world), the flame kit's camp fire (FlameKit.cs: a
+/// simulated flame on upright cards, shaders/flame_mv.gdshader),
 /// embers and smoke of GPU particles, and its own light.
 /// </summary>
 public static class Campfire
@@ -306,33 +306,12 @@ public static class Campfire
         return new CurveTexture { Curve = c };
     }
 
-    /// <summary>The filmed flame: three cards out of step with each other,
-    /// the tallest in the middle; null if the atlas is missing.</summary>
+    /// <summary>The flame: the kit's camp fire (FlameKit, three simulated cards out of step); its one
+    /// shadowed light stays the zone's.</summary>
     static Node3D? FilmedFlames(float size)
     {
-        if (!ResourceLoader.Exists("res://art/fx/fb/fire_loop.png")) return null;
         var root = new Node3D { Name = "Flames" };
-        var shader = GD.Load<Shader>("res://shaders/flame_loop.gdshader");
-        var atlas = GD.Load<Texture2D>("res://art/fx/fb/fire_loop.png");
-        (Vector3 At, float W, float H, float Phase, float Glow)[] cards =
-        {
-            (new(0, 0, 0), 1.2f, 1.6f, 0f, 1.1f),
-            (new(-0.18f, 0, 0.08f), 0.9f, 1.15f, 0.37f, 0.85f),
-            (new(0.17f, 0, -0.06f), 0.95f, 1.2f, 0.71f, 0.85f),
-        };
-        foreach (var (at, w, h, phase, glow) in cards)
-        {
-            var mat = new ShaderMaterial { Shader = shader };
-            mat.SetShaderParameter("atlas", atlas);
-            mat.SetShaderParameter("phase", phase);
-            mat.SetShaderParameter("glow", glow);
-            root.AddChild(new MeshInstance3D
-            {
-                Mesh = new QuadMesh { Size = new Vector2(1, 1), CenterOffset = new Vector3(0, 0.5f, 0), Material = mat },
-                Position = at * size, Scale = new Vector3(w, h, 1) * size,
-                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            });
-        }
+        FlameKit.Add(root, Vector3.Zero, FlameKind.Camp, scale: size, light: false);
         return root;
     }
 
