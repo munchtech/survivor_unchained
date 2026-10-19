@@ -50,6 +50,29 @@ public class WearTests
         Assert.All(Items.All.Values, d => Assert.Empty(Wear.Validate(d)));
 
     [Fact]
+    public void Every_wear_id_in_items_is_in_an_armor_index()
+    {
+        // (read from items.json itself: other tests register throwaway defs)
+        using var doc = System.Text.Json.JsonDocument.Parse(Json.ReadContent("items.json"));
+        foreach (var it in doc.RootElement.GetProperty("items").EnumerateObject())
+            if (it.Value.TryGetProperty("wear", out var wear))
+                foreach (var p in wear.EnumerateArray())
+                    Assert.True(ArmorIndex.Shared.Find(p.GetString()!) != null, $"{it.Name} wears '{p}', which is in neither armor index");
+    }
+
+    [Fact]
+    public void A_built_piece_id_without_a_dot_takes_its_slot_from_its_index_row()
+    {
+        Assert.Equal("top", Wear.SlotOf("plate_top_plain"));
+        var body = Def("t_plate", ItemKind.Body, "plate_top_plain");
+        Assert.Empty(Wear.Validate(body));
+        Assert.Equal(new[] { "plate_top_plain" }, Wear.Validate(Def("t_plate_feet", ItemKind.Feet, "plate_top_plain")));
+        var eq = new Equipment();
+        eq.Body = new ItemInstance { Uid = "9", Def = "t_plate" };
+        Assert.Equal("plate_top_plain", Wear.Of(eq, id => id == "t_plate" ? body : null)["top"]);
+    }
+
+    [Fact]
     public void Hands_equip_and_unequip_through_the_game_path()
     {
         Reg(Def("zz_test_gloves", ItemKind.Hands, "test.gloves"));
