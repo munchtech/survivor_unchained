@@ -22,7 +22,8 @@
     "r1": [-17.0, 90.0],
     "r2": [-3.5, 82.0],
     "r3": [-14.0, 98.0],
-    "r4": [-2.0, 97.0]
+    "r4": [-2.0, 97.0],
+    "down": [-9.31, 89.235, 3.1416]
   },
   "cast": {
     "her": {"kind": "survivor", "mark": "lie"},
@@ -39,12 +40,13 @@
       "black": true,
       "note": "The drowning, in sound only.",
       "cues": [
+        {"do": "place", "mark": "down", "heading": 3.1416},
         {"do": "hold", "slot": "all", "piece": null},
         {"do": "prop", "name": "weapon", "piece": "@weapon", "where": [-8.33, 0.42, 89.05], "rot": [0, 90, 72]},
         {"do": "prop", "name": "shield", "piece": "@shield", "where": [-8.05, 0.3, 89.55], "rot": [0, 80, 78], "when": {"calling": ["warden"]}},
         {"do": "lids", "value": 1, "over": 0},
-        {"do": "gaze", "look": [0.1, 0.3], "wander": 0.05},
-        {"do": "anim", "clip": "her/lie_side_wake", "from": 0, "speed": 0, "blend": 0},
+        {"do": "gaze", "look": [0.15, 0.3], "wander": 0.03},
+        {"do": "anim", "clip": "her/death_back", "from": 1.33, "speed": 0, "blend": 0},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "music", "mood": "silence"},
         {"do": "fire", "light": 0, "flames": 0.0},
@@ -57,7 +59,7 @@
         {"at": 2.2, "do": "sfx", "name": "drip", "pan": -0.2},
         {"at": 2.95, "do": "sfx", "name": "drip", "pan": -0.15},
         {"at": 3.1, "do": "sfx", "name": "owl", "gain": 0.5, "pan": 0.7},
-        {"do": "head", "where": [-10.2, 0.0, 90.2], "amount": 1.0, "over": 0.3}
+        {"do": "head", "amount": 0, "over": 0.1}
       ]
     },
     {
@@ -66,9 +68,8 @@
       "dur": 3.5,
       "still": 2.5,
       "note": "Straight down from above: the fire burned to embers, and beside it, face down on the bare ground, her; her hand lies in the ash at the coals' edge. Frost silvers the corners. The camera sinks a little, slowly.",
-      "cam": {"pos": [-9.95, 4.0, 90.62], "at": [-9.97, 0.0, 90.6], "lens": 28, "focus": 3.9, "fstop": 4.0, "move": {"pos": [-9.95, 3.6, 90.62], "ease": "slow"}},
+      "cam": {"pos": [-9.83, 3.0, 90.02], "at": [-9.85, 0.0, 90.0], "lens": 28, "focus": 2.9, "fstop": 4.0, "move": {"pos": [-9.83, 2.7, 90.02], "ease": "slow"}},
       "cues": [
-        {"do": "anim", "clip": "her/lie_side_wake", "from": 0, "speed": 0.24, "blend": 0},
         {"at": 1.4, "do": "sfx", "name": "drip", "pan": 0.1},
         {"at": 2.6, "do": "sfx", "name": "drip", "pan": 0.05}
       ]
@@ -79,16 +80,16 @@
       "dur": 4.0,
       "still": 2.6,
       "note": "Her face on its side on the frozen ground, half ember, half moon. At 2.0 her eyes open. No start.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.42, 0.0, -0.36]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.02, 0]}, "lens": 65, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "roll": 0, "move": {"push": 0.04, "ease": "linear"}},
+      "cam": {"pos": [-10.07, 0.13, 90.5], "at": [-9.45, 0.17, 90.45], "lens": 60, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.0, "move": {"push": 0.02, "ease": "linear"}},
       "cues": [
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6, "elevation": 75},
-        {"do": "light", "light": 0, "level": 0.12, "color": "#ff9448", "rate": 0.45},
-        {"do": "rig", "name": "moon", "energy": 0.35, "color": "#9fb8ff", "angle": 30, "from": {"actor": "her", "bone": "head", "off": [0.05, 1.1, -0.25]}, "aim": {"actor": "her", "bone": "head"}},
-        {"do": "rig", "name": "ember", "energy": 0.3, "color": "#ffa45c", "angle": 35, "from": {"actor": "her", "bone": "head", "off": [-0.75, -0.2, 0.1]}, "aim": {"actor": "her", "bone": "head"}},
-        {"at": 2.0, "do": "lids", "value": 0, "over": 0.15},
-        {"at": 2.0, "do": "face", "keys": {"eyes_wide": 0.25}, "over": 0.2},
-        {"at": 2.6, "do": "face", "keys": {"eyes_wide": 0.05}, "over": 1.0},
-        {"at": 2.2, "do": "lids", "value": null}
+        {"do": "light", "light": 0, "level": 0.06, "color": "#ff9a5a", "rate": 0.45},
+        {"do": "rig", "name": "moon", "energy": 0.6, "color": "#a9bfff", "angle": 25, "from": {"actor": "her", "bone": "head", "off": [0.25, 1.4, 0.1]}, "aim": {"actor": "her", "bone": "head"}},
+        {"do": "rig", "name": "ember", "energy": 0.22, "color": "#ffa860", "angle": 16, "from": {"mark": "fire", "off": [0.35, 0.06, 0.05]}, "aim": {"actor": "her", "bone": "head", "off": [0, -0.02, 0]}},
+        {"at": 2.0, "do": "lids", "value": 0, "over": 0.35},
+        {"at": 2.0, "do": "face", "keys": {"eyes_wide": 0.1}, "over": 0.4},
+        {"at": 2.8, "do": "face", "keys": {"eyes_wide": 0.0}, "over": 1.0},
+        {"at": 2.4, "do": "lids", "value": null}
       ]
     },
     {
@@ -154,6 +155,7 @@
       "note": "Frontal, a little under her eyes, the dark behind her. From the trail to her boots. She breathes out, long. Nothing shows. Hold a beat.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.02, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0.045, -0.02, 0]}, "lens": 70, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "grade", "sat": 0.72},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.69, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.12, "color": "#ffb47c", "rate": 0.45},
         {"do": "rig", "name": "key", "energy": 0.8, "color": "#ffc79a", "angle": 20, "from": {"actor": "her", "bone": "eyes", "off": [-0.6, -0.38, -0.3]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
@@ -175,13 +177,18 @@
       "note": "Up the road, north: the ford's three blue lamps low by the water, the gate's wall beyond; and high over all of it, very small, one gold lamp burning in the dark, looking south. Never a figure. The lamp line begins; cut on its comma.",
       "cam": {"pos": [1.8, 1.4, 5.0], "at": [-0.6, 9.0, -70.0], "lens": 40, "focus": 60.0, "fstop": 5.6},
       "cues": [
+        {"do": "grade", "sat": 1},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.225, "exposure": 0.782, "fog": 1.5, "fogColor": "#141a24", "rim": 0.6},
-        {"do": "light", "light": 4, "level": 0.4, "color": "#6e9bff"},
-        {"do": "light", "light": 5, "level": 0.4, "color": "#6e9bff"},
-        {"do": "light", "light": 6, "level": 0.4, "color": "#6e9bff"},
-        {"do": "globe", "light": 4, "level": 0.1},
-        {"do": "globe", "light": 5, "level": 0.1},
-        {"do": "globe", "light": 6, "level": 0.1},
+        {"do": "light", "light": 4, "level": 0.55, "color": "#6e9bff"},
+        {"do": "globe", "light": 4, "level": 0.0, "color": "#6e9bff"},
+        {"do": "glow", "name": "ford4", "where": [0.028, 3.279, -32.901], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
+        {"do": "light", "light": 5, "level": 0.55, "color": "#6e9bff"},
+        {"do": "globe", "light": 5, "level": 0.0, "color": "#6e9bff"},
+        {"do": "glow", "name": "ford5", "where": [-9.586, 3.24, -49.039], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
+        {"do": "light", "light": 6, "level": 0.55, "color": "#6e9bff"},
+        {"do": "globe", "light": 6, "level": 0.0, "color": "#6e9bff"},
+        {"do": "glow", "name": "ford6", "where": [9.624, 3.645, -49.033], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
+        {"do": "mist", "name": "ford", "where": [0.0, -1.05, -44.0], "size": [80, 1.4, 30], "density": 0.3, "color": "#5a6e8c", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
         {"do": "lit", "light": 7, "on": false},
         {"do": "lit", "light": 8, "on": false},
         {"at": 0.6, "do": "line", "id": "cin_drowned_fire.lamp"}
@@ -197,6 +204,11 @@
       "note": "As 8, a touch tighter. The narration runs on over the cut ('and a voice comes down to you...'); then the voice up the road, as if at her shoulder. She does not turn; her eyes go a fraction toward it, and come back. Unnamed.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.06, -0.02, -0.98]}, "at": {"actor": "her", "bone": "eyes", "off": [0.045, -0.02, 0]}, "lens": 70, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
+        {"do": "grade", "sat": 0.78},
+        {"do": "glow", "name": "ford4", "remove": true},
+        {"do": "glow", "name": "ford5", "remove": true},
+        {"do": "glow", "name": "ford6", "remove": true},
+        {"do": "mist", "name": "ford", "density": 0},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.69, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "rig", "name": "key", "energy": 0.8, "color": "#ffc79a", "angle": 20, "from": {"actor": "her", "bone": "eyes", "off": [-0.6, -0.38, -0.3]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "fill", "energy": 0.2, "color": "#a8c0ff", "angle": 25, "from": {"actor": "her", "bone": "eyes", "off": [0.6, 0.35, -0.6]}, "aim": {"actor": "her", "bone": "eyes"}},
@@ -223,6 +235,7 @@
       "note": "Low from the south-east: the camp, her small on the log by the embers. Background left, past the firelight, the frost darkens and a head comes up through it like a swimmer. She has not seen. N3.",
       "cam": {"pos": [-4.6, 0.95, 95.6], "at": [-9.6, 0.6, 90.0], "lens": 24, "focus": 6.5, "fstop": 5.6},
       "cues": [
+        {"do": "grade", "sat": 1},
         {"do": "atmosphere", "preset": "night", "key": 0.24, "hemi": 0.315, "env": 0.315, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.84, "color": "#ff7430", "rate": 0.45},
         {"do": "mist", "name": "west", "where": [-21.5, 0, 90.0], "size": [17, 0.5, 30], "density": 0.14, "color": "#7f8ea4", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
@@ -245,6 +258,7 @@
       "note": "From the fire's side: her head turns hard toward the sound, screen left, as the risen was. On her feet in one movement.",
       "cam": {"pos": {"abs": [-11.6, 0.98, 91.245]}, "at": {"abs": [-9.744, 1.0, 90.863]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
+        {"do": "grade", "sat": 0.72},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.12, "color": "#ffad70", "rate": 0.45},
         {"do": "rig", "name": "key", "energy": 0.9, "color": "#ffbd85", "angle": 24, "from": {"actor": "her", "bone": "eyes", "off": [-0.75, -0.4, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
@@ -267,6 +281,7 @@
       "note": "Side-on and wide enough for all of her: on the cut she is at the log's end, already bending to her weapon; she takes it and comes round with it ready. On three sides the frost breaks.",
       "cam": {"pos": [-14.45, 0.95, 89.3], "at": [-8.95, 0.85, 89.3], "lens": 35, "focus": {"mark": "reach", "off": [0, 1.0, 0]}, "fstop": 4.0},
       "cues": [
+        {"do": "grade", "sat": 1},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.3, "color": "#ff8a45", "rate": 0.45},
         {"do": "rig", "name": "edge", "energy": 1.8, "color": "#ff7a3a", "angle": 30, "from": {"mark": "fire", "off": [0, 0.8, 0]}, "aim": {"actor": "her", "bone": "chest"}},

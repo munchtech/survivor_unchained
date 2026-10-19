@@ -64,8 +64,8 @@
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.55, 0.0, -0.85]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
-        {"do": "rig", "name": "key", "energy": 0.8, "color": "#6a9ae6", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.25, 0.1, -0.9]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
-        {"do": "rig", "name": "ember", "energy": 0.4, "color": "#ff7a4a", "angle": 16, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.1, -0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
+        {"do": "rig", "name": "key", "energy": 0.7, "color": "#a9b6cc", "angle": 30, "from": {"actor": "her", "bone": "eyes", "off": [0.25, 0.1, -0.9]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "ember", "energy": 0.45, "color": "#ff7a4a", "angle": 20, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.1, -0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
         {"at": 0.3, "do": "line", "id": "cin_none_cross.call"},
         {"do": "face", "keys": {"brows_up": 0.2}, "over": 0.8},
         {"do": "gaze", "look": [0.15, -0.1]}
@@ -125,8 +125,8 @@
       "cues": [
         {"do": "music", "mood": "silence"},
         {"do": "hide", "actor": "warden"},
-        {"do": "rig", "name": "ember", "energy": 0.25, "color": "#ff7a4a", "angle": 14, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.15, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.06, -0.06, -0.03]}},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.4, 0.1, -0.15]}, "color": "#a8d2ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.5, "range": 0.8, "spec": 1.0},
+        {"do": "rig", "name": "ember", "energy": 0.3, "color": "#ff7a4a", "angle": 18, "range": 0.6, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.15, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.06, -0.06, -0.03]}},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.4, 0.1, -0.15]}, "color": "#c6cede", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 0.6, "range": 0.8, "spec": 1.0},
         {"do": "gaze", "look": [-0.3, -0.25], "wander": 0.06},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
