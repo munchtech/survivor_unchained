@@ -1094,7 +1094,7 @@ public partial class Game : Node, IZoneHost
         // Names over heads and barks have no place in a cinematic's picture either.
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null || cine != null;
         // Fallen: the world loses its colour.
-        air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : 1f, 1 - Mathf.Exp(-2 * (float)dt));
+        air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : cine != null && cineSat is double cs ? (float)cs : 1f, 1 - Mathf.Exp(-2 * (float)dt));
         Report(dt);
         Tour(dt);
     }

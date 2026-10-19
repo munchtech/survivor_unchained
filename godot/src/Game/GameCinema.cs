@@ -65,6 +65,7 @@ public partial class Game
      * player held the stick; at its end the walk carries on into play and
      * eases to a stop over CarryFade unless the player takes it. */
     (double X, double Z)? cineWalk;
+    internal double? cineSat;
     /// <summary>Bodies a cinematic left in the world (end.keep), until the next one or the place goes.</summary>
     readonly List<Node3D> kept = new();
 
@@ -1188,6 +1189,18 @@ public partial class Game
                     }
                     break;
                 }
+                case "grade":
+                {
+                    // One shot's colour grade: "sat" (1 as built) is the saturation the world eases to over
+                    // "over", or cuts to without it. A fire-lit close-up's skin goes over-saturated at a
+                    // 2700 K key, so that shot pulls it down and the next shot's first cue sets sat 1 again;
+                    // the cinematic's end hands it back to play (the lerp in Game.cs eases to 1).
+                    double gsat = c.Num("sat", 1);
+                    double gfrom = g.cineSat ?? 1;
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { g.cineSat = gfrom + (gsat - gfrom) * k; }));
+                    else { g.cineSat = gsat; g.air.Env.AdjustmentSaturation = (float)gsat; }
+                    break;
+                }
                 case "bars" or "fade" or "wet":
                     // The bars and black follow the shots; wetness waits on its system (docs/cinematics/README.md section 6, 7).
                     break;
@@ -1344,6 +1357,7 @@ public partial class Game
 
         public void Finish()
         {
+            g.cineSat = null;
             if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;
             // Play starts exactly where the cinematic leaves her, facing as she
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
