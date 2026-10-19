@@ -26,9 +26,12 @@ The contract between Marionette's armor workshop (which writes it) and `tools/ar
 ## Adornment kinds
 Each element of `mesh` and `row` rides one blend of bones taken from the shell at its foot, so it never bends; `trim` takes the rim's weights.
 - `row`: `{kind:"row", rim, mesh, spacing, inset, r, avoid, mat}`: elements along a rim, `inset` m in from the rim along the surface, `r` element radius, `avoid` (m, default 0.014) the clear radius kept around the shell's own fixings (strap anchors, buckles), where no element is placed.
-- `mesh`: `{kind:"mesh", socket, mesh, scale, roll, offset, mat}`: one mesh at a socket; `roll` degrees about +Z; `offset` [x,y,z] m in the socket frame.
+- `mesh`: `{kind:"mesh", socket, mesh, scale, roll, offset, mat, gem_mat}`: one mesh at a socket; `roll` degrees about +Z; `offset` [x,y,z] m in the socket frame.
 - `trim`: `{kind:"trim", rim, profile, width, height, inset, gap, mat}`: a raised band along a rim. `width` across the band, `height` above the shell surface (1-2 mm reads), `inset` m in from the rim (0 = on the rolled edge), `gap` the dark groove on each side between band and shell (default 0.001). Profiles: `rolled`, `rope`, `filigree`, `gold_band`.
 - `paint`: `{kind:"paint", target:"shell", pattern, strength}`: `pattern` = `etch_<name>`, an etched pattern carried in the shell's surface detail (the game's shader renders it).
+
+## Material names
+Every `material` and every adornment `mat` is an entry name in `godot/art/people/outfit_materials.json` (the game's one material list; the shader draws by its kind). Gems are entries there too: `gem_garnet`, `gem_amethyst`, `gem_sapphire`, `gem_emerald` (added with the tiers). A library mesh's own slots (`metal`, `gem`) are replaced by the adornment's `mat` (a gem's bezel takes `mat`, its stone takes `gem_mat`, default `gem_garnet`).
 
 ## The adornment library
 `mesh` and `row` take either a file shipped beside piece.json (`<file>.glb`, life size, its origin at the socket point, +Z out) or a library id. The game's library is the truth: `godot/art/armor/lib/<id>.glb`, built procedurally by `tools/armor/lib.py` (same frame convention). Ids: rows `rivet`, `stud`, `dome`, `grommet`; meshes `gem_round`, `gem_oval`, `boss`, `rune_plate`, `filigree_plate`, `buckle`. Marionette's kit pull copies the library for its preview; its own stand-ins are previews only.
