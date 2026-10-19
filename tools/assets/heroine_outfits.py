@@ -8663,6 +8663,10 @@ def material_table(path):
     """The outfit materials' table for the game: each one's kind and how
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
+    # (entries it doesn't make, the armor pieces' own (gold trims' and gems': tools/armor/adorn.py), kept as they are)
+    keep = {}
+    if os.path.exists(path):
+        keep = {k: v for k, v in json.load(open(path, encoding="utf-8")).items() if k not in SPEC}
     with open(path, "w", encoding="utf-8") as fh:
         from PIL import Image
 
@@ -8671,7 +8675,7 @@ def material_table(path):
             if not (STOCK_IVORY and kind(k) == "sheer" and os.path.exists(f)):
                 return {}
             return {"tint": [round(float(c) / 255, 4) for c in np.asarray(Image.open(f).convert("RGB"), np.float32).reshape(-1, 3).mean(0)]}
-        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k)} for k, v in SPEC.items()}, fh, indent=1)
+        json.dump({**{k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k)} for k, v in SPEC.items()}, **keep}, fh, indent=1)
 
 # (s30, for face's hair drape, 18 Oct: BODY_BLEND_OUT=<path> saves a copy of the scene here, her body after the
 # F1 body pass and every body step above, before any outfit is made; object names kept: Heroine, HeroineHead,
@@ -8785,6 +8789,383 @@ GLOVE_TUCK_IN = float(os.environ.get("GLOVE_TUCK_IN", "0.03"))
 TUCK_WELD = [s_ for s_ in os.environ.get("TUCK_WELD", "arcanist").split(",") if s_]
 GLOVE_EDGE_IN = float(os.environ.get("GLOVE_EDGE_IN", "0.010"))
 GONE_IN = 0.02
+# ------------------------------------------------------------------ slots --
+# (armor lead 1, 18 Oct: docs/handoff/armor.md section 1.) Each piece of hers is one slot's
+# (tools/armor/slot_map.json): her outfits are exported a mesh per (slot, material), named
+# <outfit>.<slot>.<material>, so the game can wear any outfit's pieces by slot and mix them; each
+# (outfit, slot) carries its own tuck of her skin (armor_tuck/<outfit>.<slot>.bin) beside the four
+# outfit channels, and armor_index.json lists them.
+import hashlib
+import json as _json
+import struct as _struct
+ARMOR_MAP = _json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "armor", "slot_map.json"), encoding="utf-8"))
+ARMOR_RE = {o: [(e, [re.compile(r) for r in e["match"]]) for e in es] for o, es in ARMOR_MAP["outfits"].items()}
+
+
+def slot_entry(name):
+    """The slot map's entry for a built piece `<outfit>.<piece>` (None: no entry or more than one)."""
+    o, _, pc = name.partition(".")
+    hits = [e for e, rs in ARMOR_RE.get(o, []) if any(r.fullmatch(pc) for r in rs)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def slot_check(objs, when):
+    """The build fails naming every piece that maps to no slot, or to more than one."""
+    bad = []
+    for o in objs:
+        out, _, pc = o.name.partition(".")
+        hits = [e["slot"] for e, rs in ARMOR_RE.get(out, []) if any(r.fullmatch(pc) for r in rs)]
+        if len(hits) != 1:
+            bad.append("%s -> %s" % (o.name, hits or "no slot"))
+    if bad:
+        raise RuntimeError("SLOTS (%s): %d pieces not mapped to exactly one slot in tools/armor/slot_map.json: %s" % (when, len(bad), "; ".join(bad)))
+    print("SLOTS (%s): all %d pieces mapped" % (when, len(objs)))
+
+
+ARMOR_TUCK = {}      # (outfit, slot) -> her skin's tuck, a value a vertex of her body
+ARMOR_TUCK_N = {}    # (outfit, slot) -> records written
+ARMOR_BODY_HASH = None
+
+
+def armor_tuck_write(body_obj, folder):
+    """Each (outfit, slot)'s tuck, sparse: u32 count, then count records (i32 x, i32 y, i32 z: her body
+    vertex's bind position, glTF Y-up metres x 1e5 rounded; f32 tuck), little-endian; only tuck > 0,
+    one record a position (her split skin's copies at one point: the largest of their tucks). And
+    ARMOR_BODY_HASH: sha1 of her body's bind positions so rounded, unique, sorted, as i32 little-endian."""
+    global ARMOR_BODY_HASH
+    me_ = body_obj.data
+    # (her points as the exporter writes them, float32 in her mesh's own frame (her world frame: asserted), so
+    # each rounds as the game's copy of them does)
+    bp = np.empty(len(me_.vertices) * 3, np.float32)
+    me_.vertices.foreach_get("co", bp)
+    bp = bp.reshape(-1, 3)
+    if not np.allclose(np.array(body_obj.matrix_world), np.eye(4), atol=1e-9):
+        print("ARMOR TUCK: her body is not at the origin; its points taken through its matrix")
+        bp = np.array([(body_obj.matrix_world @ v.co)[:] for v in me_.vertices], np.float32)
+    q = np.round(np.stack([bp[:, 0], bp[:, 2], -bp[:, 1]], 1).astype(np.float64) * 1e5).astype(np.int64)
+    # (only her points on a face: the exporter writes no others)
+    fv = np.empty(sum(len(f_.vertices) for f_ in me_.polygons), np.int64)
+    me_.polygons.foreach_get("vertices", fv)
+    used = np.zeros(len(me_.vertices), bool)
+    used[fv] = True
+    uq, inv = np.unique(q[used], axis=0, return_inverse=True)
+    inv = np.asarray(inv).ravel()
+    print("ARMOR TUCK: %d of her %d points on faces, %d places" % (int(used.sum()), len(used), len(uq)))
+    ARMOR_BODY_HASH = hashlib.sha1(uq.astype("<i4").tobytes()).hexdigest()
+    os.makedirs(os.path.join(folder, "armor_tuck"), exist_ok=True)
+    for (out, slot), t in sorted(ARMOR_TUCK.items()):
+        assert len(t) == len(me_.vertices), "her body's vertices changed after the tuck"
+        g = np.zeros(len(uq))
+        np.maximum.at(g, inv, t[used])
+        k = np.nonzero(g > 0)[0]
+        rec = np.zeros(len(k), dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")])
+        rec["x"], rec["y"], rec["z"], rec["t"] = uq[k, 0], uq[k, 1], uq[k, 2], g[k]
+        with open(os.path.join(folder, "armor_tuck", f"{out}.{slot}.bin"), "wb") as f_:
+            f_.write(_struct.pack("<I", len(k)) + rec.tobytes())
+        ARMOR_TUCK_N[(out, slot)] = int(len(k))
+    print("ARMOR TUCK: %d (outfit, slot) tucks written, her body %s" % (len(ARMOR_TUCK), ARMOR_BODY_HASH))
+
+
+def _body_keys(path):
+    """Her built glb's vertex keys in file order, one array a mesh primitive (glTF positions x 1e5 rounded: HerWear's key)."""
+    import heroine_neck as hn_
+    G_ = hn_._Gl(path)
+    return {(mi_, pi_): np.round(G_.get(p_["attributes"]["POSITION"]).astype(np.float64) * 1e5).astype(np.int64)
+            for mi_, m_ in enumerate(G_.g["meshes"]) for pi_, p_ in enumerate(m_["primitives"])}
+
+
+def armor_tuck_rekey(pre, path, folder):
+    """(armor 4, 19 Oct: the body steps after her export (the throat soften, the neck cut, the seam...) move her points
+    in the glb, so tuck records keyed at export missed them in the game: 600 of the arcanist top's. Each record at a
+    point that moved goes to where that point now is; one also still on an unmoved point stays there too.)"""
+    post = _body_keys(path)
+    # (paired a vertex by index within each primitive that kept its vertex count: the mouth and teeth steps add
+    # vertices and primitives, but no tuck lies on them)
+    same = [k for k in pre if k in post and pre[k].shape == post[k].shape]
+    print("ARMOR TUCK REKEY: %d of %d primitives paired (unpaired: %s)" % (len(same), len(post), sorted(set(post) - set(same))))
+    A, B = np.concatenate([pre[k] for k in same]), np.concatenate([post[k] for k in same])
+    mv = np.any(A != B, 1)
+    to = {}
+    for a, b in zip(map(tuple, A[mv]), map(tuple, B[mv])):
+        to.setdefault(a, b)
+    still = set(map(tuple, A[~mv]))
+    moved = 0
+    for (out, slot) in sorted(ARMOR_TUCK_N):
+        fp = os.path.join(folder, "armor_tuck", f"{out}.{slot}.bin")
+        d = open(fp, "rb").read()
+        n = _struct.unpack_from("<I", d, 0)[0]
+        rec = np.frombuffer(d, dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")], count=n, offset=4)
+        got = {}
+        for x, y, z, t in rec:
+            k = (int(x), int(y), int(z))
+            ks = ([to[k]] if k in to else []) + ([k] if k in still or k not in to else [])
+            moved += k in to
+            for k2 in ks:
+                got[k2] = max(got.get(k2, 0.0), float(t))
+        ks = sorted(got)
+        new = np.zeros(len(ks), dtype=rec.dtype)
+        if ks:
+            arr = np.array(ks, np.int64)
+            new["x"], new["y"], new["z"] = arr[:, 0], arr[:, 1], arr[:, 2]
+            new["t"] = [got[k] for k in ks]
+        with open(fp, "wb") as f_:
+            f_.write(_struct.pack("<I", len(ks)) + new.tobytes())
+        ARMOR_TUCK_N[(out, slot)] = int(len(ks))
+    print("ARMOR TUCK REKEY: %d of her glb's points moved after export; %d tuck records followed them" % (int(mv.sum()), moved))
+
+
+def tuck_of(name, objs, slot=None):
+    """Her skin's tuck (0..1 a vertex of her body, as one channel of its `hide` colours holds it) under `objs`,
+    the hiding pieces of outfit `name`: all of them (slot None: that outfit's channel, as it always was), or
+    one slot's (armor lead 1: the tuck a slot carries, for the game to take the max over what she wears).
+    The rules tied to one piece (the arcanist glove's top, the boot's foot, a hat's hair) apply only in
+    the slot that holds it."""
+    me = body.data
+    mw3 = body.matrix_world.to_3x3()
+    t = np.zeros(len(me.vertices))
+    whole = slot is None
+    say = print if whole else (lambda *a, **k: None)
+    skip_ = None
+    if not whole:
+        # (a slot's pieces reach her skin within 3 cm (the boot's ray) or 1.5 cm behind: points of hers
+        # well outside the pieces' box are left untucked without their rays, as the rays would leave them)
+        pw_ = np.array([(o.matrix_world @ v.co)[:] for o in objs for v in o.data.vertices])
+        bw0_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+        skip_ = ((bw0_ < pw_.min(0) - 0.05) | (bw0_ > pw_.max(0) + 0.05)).any(1)
+    vs, fs, cap, deep = [], [], [], []
+    for o in objs:
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+        cap += [o.get("tuck", 1.0)] * len(o.data.polygons)
+        # (a boot's parts: its top edge's heights round its middle, and its leg)
+        deep += [(np.array(o["deep_zt"][:]), np.array(o["deep_c"][:]), o["deep_side"]) if "deep_zt" in o else None] * len(o.data.polygons)
+    tree = BVHTree.FromPolygons(vs, fs)
+    reach = 0.03 if any(d is not None for d in deep) else 0.012
+    hid = 0
+    # Her skin under a piece (it faces the piece, within 12 mm), and
+    # where her skin stands proud of the filled form the pieces are cut
+    # from (a nipple's tip under a plate cup), from behind too. Never
+    # more: skin hidden past a piece's edge shows as a hole in her.
+    _, jj = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
+    # (and all of each nipple's disc, under whatever covers it: hidden only
+    # at the tip, the skin round the tip came through a plate cup as she
+    # ran, the plate and her breast swinging a little apart)
+    to_tip = np.minimum(*[np.linalg.norm(P[jj] - q, axis=1) for q in NIPPLE.values()])
+    disc = to_tip < 0.028
+    proud = ((((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (P[jj, 2] > CROTCH + 0.12)) | disc
+    # (and each nipple's bump, standing proud of the form the pieces are
+    # made on, tucked all the way under whatever covers it: tucked only as
+    # deep as the piece lay close, 2 to 4 mm off it, its tip came through a
+    # cup's outline by a pixel as she swung; at least 2 cm inside every
+    # piece's edge, so the deeper tuck can't be seen)
+    bump = (((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (to_tip < 0.012)
+    # Tucked as deep as the piece lies close: skin a piece stands well
+    # clear of (a pauldron, a bracer) cannot come through it, and tucked
+    # there it showed as a deeper gap under the piece's edge as it swung.
+    for v in me.vertices:
+        if skip_ is not None and skip_[v.index]:
+            continue
+        co = body.matrix_world @ v.co
+        n = (mw3 @ v.normal).normalized()
+        hit = tree.ray_cast(co + n * 0.0005, n, reach)
+        # A boot (its parts keep 'deep_*') tucks her skin all the way
+        # under it, through a 30 mm ray, eased in from 4 to 8 cm under its
+        # top edge (the standard rule above that: tucked deep from 1 cm
+        # down, it showed as a deep gap seen up into the boot's top as she
+        # vaulted): it stands well off her, and her calf, ankle and toes
+        # would come through it as she moved.
+        # Every other piece keeps the standard rule and its 12 mm ray.
+        # (how deep under the top edge both the hit and her skin are: a
+        # long ray from skin just past a boot's edge grazed its wall, and
+        # tucked bare skin deep there)
+        dp = deep[hit[2]] if hit[0] is not None else None
+        t_ = 0.0
+        if dp is not None and LEGW[dp[2]][jj[v.index]] >= 0.3:
+            ka_ = np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0])
+            d_ = [np.interp(np.mod(np.arctan2(q[1] - dp[1][1], q[0] - dp[1][0]), 2 * np.pi), ka_, np.r_[dp[0], dp[0][:1]]) - q[2]
+                  for q in (hit[0], co)]
+            t_ = float(ramp(min(d_), 0.04, 0.08))
+        if hit[0] is not None and hit[3] > 0.012 and t_ <= 0:
+            hit = (None, None, None, None)
+        if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
+            t[v.index] = 1
+        elif hit[0] is not None:
+            t[v.index] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
+            t[v.index] = t[v.index] * (1 - t_) + t_
+        hid += t[v.index] > 0
+    # Tucked in gradually from the border, a third, two thirds, then all
+    # the way, so her skin slopes under a piece's edge as if it pressed
+    # in, rather than stepping down.
+    if "_body_nb" not in globals():
+        ev = np.array([e.vertices[:] for e in me.edges])
+        globals()["_body_nb"] = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
+                                                  shape=(len(me.vertices), len(me.vertices))).tocsr()
+    # (s26 solver gs6, TUCK_WELD: her skin is split here and there, two to four copies at one point, each
+    # its own normal (her hands most: 80 such points in the Arcanist's mark), and each copy took its own
+    # mark, by its own ray and its own ring from the border: 0.27, 0.53 and 0.78 at one point 3.7 mm in
+    # from the left thumb hole. Drawn tucked, the copies part, a crack 5.5 mm wide under the glove's open
+    # edge, seen as a dark slit and the edge over it as a white flap. In the outfits named, the copies at
+    # a point are one: the deepest copy's ray, the rings counted on her skin welded, one mark for all.)
+    welded = name in TUCK_WELD
+    if welded:
+        if "_body_cw" not in globals():
+            _, gid_ = np.unique(np.round(np.array([v.co[:] for v in me.vertices]) / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+            gid_ = np.asarray(gid_).ravel()
+            S_ = sparse.csr_matrix((np.ones(len(gid_)), (np.arange(len(gid_)), gid_)))
+            C_ = (S_ @ S_.T).tocsr()
+            globals()["_body_cw"] = (gid_, (C_ @ _body_nb @ C_).tocsr())
+        gm_ = np.zeros(_body_cw[0].max() + 1)
+        np.maximum.at(gm_, _body_cw[0], t[:])
+        say("TUCK WELD %s: %d points of hers split in copies, %d of them marked unequally" % (name, int((np.bincount(_body_cw[0]) > 1).sum()), int((np.abs(gm_[_body_cw[0]] - t[:]) > 1e-6).sum())))
+        t[:] = gm_[_body_cw[0]]
+    under = t[:] > 0
+    reached, ring = ~under, np.zeros(len(under))
+    for r_ in (1, 2):
+        nxt = under & ~reached & (((_body_cw[1] if welded else _body_nb) @ reached.astype(float)) > 0)
+        ring[nxt], reached = r_, reached | nxt
+    t[:] *= np.where(ring > 0, ring / 3, 1.0)
+    # Under a held edge (held_edges: a leotard's leg lines) she is tucked
+    # all the way, out to HOLD_BAND from it, so a look in under the edge
+    # meets the piece's inside, not her; the last row before the edge only
+    # as deep as keeps her skin just past it from dipping more than
+    # HOLD_GROOVE under it (her rows are 4-20 mm apart there).
+    for o in objs:
+        if "hold_line" not in o:
+            continue
+        hl = np.array(o["hold_line"][:]).reshape(-1, 3)
+        bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+        dl, _ = cKDTree(hl).query(bw_)
+        und = np.zeros(len(dl), bool)
+        for i in np.nonzero(dl < HOLD_BAND)[0]:
+            v = me.vertices[i]
+            co = body.matrix_world @ v.co
+            n = (mw3 @ v.normal).normalized()
+            und[i] = tree.ray_cast(co + n * 0.0005, n, 0.012)[0] is not None
+        nb = _body_nb.tocoo()
+        m_ = und[nb.row] & ~und[nb.col] & (t[nb.col] == 0)
+        u_ = dl[nb.col[m_]] / np.maximum(dl[nb.col[m_]] + dl[nb.row[m_]], 1e-6)
+        lim = np.ones(len(dl))
+        np.minimum.at(lim, nb.row[m_], HOLD_GROOVE / 0.010 / np.maximum(u_, 1e-3))
+        before = t[und].copy()
+        # (eased in: a full tuck only from HOLD_SOFT inside the edge, a
+        # depth of a third of the way in nearer it at 30 mm; tucked all the way
+        # right up to the edge, her skin showed as cyan slivers and a sawtooth
+        # along the leg line as the cloth lifted in chain_haul, daggers_fore and
+        # the vaults, and eased over 10 mm it changed nothing, her rows there
+        # being 4-20 mm apart)
+        soft = np.clip(dl / HOLD_SOFT, 0.0, 1.0) if HOLD_SOFT > 0 else np.ones(len(dl))
+        t[und] = np.minimum(soft[und], lim[und]) if HOLD_CAP else np.maximum(t[und], np.minimum(soft[und], lim[und]))
+        say("HOLD TUCK %s: %d vertices of hers under it within %.0f mm of its held edge; marks %.2f -> %.2f (mean), %d at the edge row limited (mean %.2f)"
+              % (o.name, und.sum(), HOLD_BAND * 1000, before.mean(), t[und].mean(), (und & (lim < 1)).sum(), lim[und & (lim < 1)].mean() if (und & (lim < 1)).any() else 0))
+    if name == "arcanist":
+        # (her forearm and elbow under the sleeve and glove tucked all the way,
+        # from 5 cm above her elbow to 1 cm short of her wrist: with her elbow
+        # shut to 145 degrees its inside came through, animation's judge 11 and
+        # judge 6; her hand is left as it was, a full tuck would cross a finger)
+        for sd in ("l", "r"):
+            fa = (ARM_S[sd][jj] > ELBOW_S - 0.05) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
+            t[fa & (t[:] > 0)] = 1.0
+        # (s22: the elbow glove's top (shoulder caps, her elbow bare): her skin under it eased in
+        # from the glove's own cut, GLOVE_TUCK_RIM of a full tuck at the line, all of it
+        # GLOVE_TUCK_IN inside, and none past it. Tucked by the rays and the rule above, the
+        # tuck's border followed her coarse rows across the line: a sawtooth, partly past the
+        # top (seen into the glove, its inside blue-grey) and partly short of it, 10 mm deep
+        # one row in; with her elbow shut at the hat brim the top looked torn.)
+        if ARC_HANDS in ("fingerless", "glove") and os.environ.get("ARC_CAPS", "1") == "1" and GLOVE_TUCK_IN > 0 and (whole or any(o.name.startswith("arcanist.glove_") for o in objs)):
+            for sd in ("l", "r"):
+                e_, w_ = ARM[sd][1], ARM[sd][2]
+                d_ = GLOVE_TOP_D[sd](P[jj]) if sd in GLOVE_TOP_D else (P[jj] - e_) @ ((w_ - e_) / np.linalg.norm(w_ - e_)) - float(os.environ.get("ARC_GLOVE_ELBOW", "0.04"))
+                fa = (ARMW[sd][jj] > 0.5) & (d_ > -0.05) & (d_ < GLOVE_TUCK_IN)
+                t[fa] = np.where(d_[fa] > 0, GLOVE_TUCK_RIM + (1.0 - GLOVE_TUCK_RIM) * ramp(d_[fa], 0.0, GLOVE_TUCK_IN), 0.0)
+                say("GLOVE TUCK %s: %d vertices of hers eased in under its top, %d past it untucked" % (sd, int((fa & (d_ > 0)).sum()), int((fa & (d_ <= 0)).sum())))
+        # (s26 solver gs6, GLOVE_EDGE_IN: the fingerless glove's open edges on her hand, the thumb hole and
+        # the knuckle cut (its sheet's own border, finish()'s rim, where her skin under it is her hand's):
+        # her skin eased in from no tuck at the edge to a full one GLOVE_EDGE_IN inside, and none beside it.
+        # Tucked by the rays and the rings, a mark of 0.78 sat 3.7 mm in from the left thumb hole, 0.3 and
+        # more within 4 mm of it: her skin sank away under the open edge, a dark slit and a white flap.)
+        if ARC_HANDS == "fingerless" and GLOVE_EDGE_IN > 0:
+            bwc_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+            for sd in ("l", "r"):
+                rim_ = [np.array(o["rim"].to_list() if hasattr(o["rim"], "to_list") else o["rim"], float).reshape(-1, 3)
+                        @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3]
+                        for o in objs if o.name.startswith(f"arcanist.glove_{sd}") and "rim" in o.keys()]
+                if not rim_:
+                    continue
+                rim_ = np.vstack(rim_)
+                hc_ = [BI[n] for n in BONES if n.endswith(f"_{sd}") and n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky")]
+                rim_ = rim_[W[cKDTree(P).query(rim_)[1]][:, hc_].sum(1) > 0.5]
+                de_ = cKDTree(rim_).query(bwc_)[0]
+                cap_ = ramp(de_, 0.0, GLOVE_EDGE_IN)
+                m_ = (de_ < GLOVE_EDGE_IN) & (t[:] > cap_)
+                n4_ = de_ < 0.004
+                say("GLOVE EDGE %s: %d rim points on her hand; %d vertices of hers eased in from its open edges (mean %.2f -> %.2f); within 4 mm max %.2f -> %.2f"
+                      % (sd, len(rim_), int(m_.sum()), t[m_].mean() if m_.any() else 0, cap_[m_].mean() if m_.any() else 0,
+                         t[n4_].max(), np.minimum(t[n4_], cap_[n4_]).max()))
+                t[m_] = cap_[m_]
+    for cap_, zone_ in TUCK_ZONES.get(name, []):
+        zw_ = zone_(P[jj])
+        say("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (t[:] > cap_)).sum()), cap_))
+        t[:] = t[:] * (1 - zw_) + np.minimum(t[:], cap_) * zw_
+    if name in BALD and (whole or slot == "head"):
+        # Her hair is part of her body: hidden under a hat that is to carry the look.
+        _, j = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
+        hair = HAIR.copy()
+        for _ in range(6):
+            hair = np.maximum(hair, (ADJ @ hair > 0.05).astype(float))
+        t[(hair[j] > 0.5) & (wsum("Head", "neck_01")[j] > 0.2)] = 1
+    # A full tuck is marked TUCK_FULL (heroine_skin.gdshader reads 0.973 and
+    # over as all of it): a mark of 1 is her skin not drawn at all. So are
+    # her hands inside the Arcanist's gloves, from her fingertips to GONE_IN
+    # inside the cuff: no tuck keeps a hand in (a finger is thinner than a
+    # full tuck), and the back of her wrist, bent back as she caught her
+    # breath, came through the back of the glove tucked all the way (judge
+    # 10). Under the cuff's own edge she is tucked as before, so no gap
+    # opens there and a look into the cuff finds her.
+    t[:] = np.minimum(t[:], TUCK_FULL)
+    if name in TUCK_WELD and "_body_cw" in globals():
+        gm_ = np.zeros(_body_cw[0].max() + 1)
+        np.maximum.at(gm_, _body_cw[0], t[:])
+        t[:] = gm_[_body_cw[0]]
+    if name == "arcanist" and ARC_HANDS == "glove":
+        for sd in ("l", "r"):
+            glv = [o for o in objs if o.name.startswith(f"arcanist.glove_{sd}")]
+            if not glv:
+                continue
+            gw = np.array([(o.matrix_world @ v.co)[:] for o in glv for v in o.data.vertices])
+            jn = cKDTree(P).query(gw)[1]
+            cuff = ARM_S[sd][jn[(ARMW[sd][jn] > 0.5) & (ARM_S[sd][jn] > ELBOW_S)]].min()
+            inside = (ARMW[sd][jj] > 0.5) & (ARM_S[sd][jj] > cuff + GONE_IN)
+            if os.environ.get("ARC_CAPS", "1") == "1":
+                # (s23 solver: at elbow length her arm's coarse field runs on the slant to the
+                # glove's exact top, and past it at her elbow's side her skin went undrawn
+                # outside the glove, a hole onto its inside; so also GONE_IN inside the cut)
+                e_, w_ = ARM[sd][1], ARM[sd][2]
+                inside &= (P[jj] - e_) @ ((w_ - e_) / np.linalg.norm(w_ - e_)) - float(os.environ.get("ARC_GLOVE_ELBOW", "0.04")) > GONE_IN
+            # every hand vertex past the cuff line, the fingertips and knuckles the
+            # coverage mark never reached too: the weld of the glove by position shows
+            # its finger ends closed, so each of them sits inside leather (judge 13)
+            gone = inside
+            t[gone] = 1.0
+            say("HIDES arcanist glove_%s: her hand inside not drawn, %d vertices, from %.3f m down her arm (the cuff at %.3f, her wrist at %.3f); %d there unmarked, drawn"
+                  % (sd, gone.sum(), cuff + GONE_IN, cuff, WRIST_S, (inside & ~gone).sum()))
+    if name in ("ranger", "warden") and (whole or slot == "boots"):
+        # (her foot inside each Ranger boot and Warden sabaton not drawn, from RBOOT_GONE under her
+        # ankle down, where the boot rides her foot rigidly: her heel skin carries
+        # calf weight and swung 43-51 mm against the rigid heel counter, out
+        # through it in run_stalker; the shaft above keeps the tuck, so a look
+        # down into the boot still finds her)
+        for sd in ("l", "r"):
+            za = BOOTS.Leg(sd).ankle[2]
+            foot = (LEGW[sd][jj] > 0.5) & (P[jj, 2] < za - RBOOT_GONE)
+            gone = foot & (t[:] > 0)
+            t[gone] = 1.0
+            say("HIDES %s boot_%s: her foot inside not drawn, %d vertices under %.3f m (ankle %.3f); %d there unmarked, drawn"
+                  % (name, sd, gone.sum(), za - RBOOT_GONE, za, (foot & ~gone).sum()))
+    say("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
+    return t, hid
+
+
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
 # few millimetres in (shaders/heroine_skin.gdshader): a smooth cup need not
@@ -8802,235 +9183,50 @@ if BODY_OUT:
         objs = [o for o in made if o.name.startswith(name + ".") and o.get("hides")]
         if not objs or k > 3:
             continue
-        vs, fs, cap, deep = [], [], [], []
-        for o in objs:
-            base = len(vs)
-            vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
-            fs += [[base + i for i in p.vertices] for p in o.data.polygons]
-            cap += [o.get("tuck", 1.0)] * len(o.data.polygons)
-            # (a boot's parts: its top edge's heights round its middle, and its leg)
-            deep += [(np.array(o["deep_zt"][:]), np.array(o["deep_c"][:]), o["deep_side"]) if "deep_zt" in o else None] * len(o.data.polygons)
-        tree = BVHTree.FromPolygons(vs, fs)
-        reach = 0.03 if any(d is not None for d in deep) else 0.012
-        hid = 0
-        # Her skin under a piece (it faces the piece, within 12 mm), and
-        # where her skin stands proud of the filled form the pieces are cut
-        # from (a nipple's tip under a plate cup), from behind too. Never
-        # more: skin hidden past a piece's edge shows as a hole in her.
-        _, jj = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
-        # (and all of each nipple's disc, under whatever covers it: hidden only
-        # at the tip, the skin round the tip came through a plate cup as she
-        # ran, the plate and her breast swinging a little apart)
-        to_tip = np.minimum(*[np.linalg.norm(P[jj] - q, axis=1) for q in NIPPLE.values()])
-        disc = to_tip < 0.028
-        proud = ((((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (P[jj, 2] > CROTCH + 0.12)) | disc
-        # (and each nipple's bump, standing proud of the form the pieces are
-        # made on, tucked all the way under whatever covers it: tucked only as
-        # deep as the piece lay close, 2 to 4 mm off it, its tip came through a
-        # cup's outline by a pixel as she swung; at least 2 cm inside every
-        # piece's edge, so the deeper tuck can't be seen)
-        bump = (((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (to_tip < 0.012)
-        # Tucked as deep as the piece lies close: skin a piece stands well
-        # clear of (a pauldron, a bracer) cannot come through it, and tucked
-        # there it showed as a deeper gap under the piece's edge as it swung.
-        for v in me.vertices:
-            co = body.matrix_world @ v.co
-            n = (mw3 @ v.normal).normalized()
-            hit = tree.ray_cast(co + n * 0.0005, n, reach)
-            # A boot (its parts keep 'deep_*') tucks her skin all the way
-            # under it, through a 30 mm ray, eased in from 4 to 8 cm under its
-            # top edge (the standard rule above that: tucked deep from 1 cm
-            # down, it showed as a deep gap seen up into the boot's top as she
-            # vaulted): it stands well off her, and her calf, ankle and toes
-            # would come through it as she moved.
-            # Every other piece keeps the standard rule and its 12 mm ray.
-            # (how deep under the top edge both the hit and her skin are: a
-            # long ray from skin just past a boot's edge grazed its wall, and
-            # tucked bare skin deep there)
-            dp = deep[hit[2]] if hit[0] is not None else None
-            t_ = 0.0
-            if dp is not None and LEGW[dp[2]][jj[v.index]] >= 0.3:
-                ka_ = np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0])
-                d_ = [np.interp(np.mod(np.arctan2(q[1] - dp[1][1], q[0] - dp[1][0]), 2 * np.pi), ka_, np.r_[dp[0], dp[0][:1]]) - q[2]
-                      for q in (hit[0], co)]
-                t_ = float(ramp(min(d_), 0.04, 0.08))
-            if hit[0] is not None and hit[3] > 0.012 and t_ <= 0:
-                hit = (None, None, None, None)
-            if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
-                vals[v.index, k] = 1
-            elif hit[0] is not None:
-                vals[v.index, k] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
-                vals[v.index, k] = vals[v.index, k] * (1 - t_) + t_
-            hid += vals[v.index, k] > 0
-        # Tucked in gradually from the border, a third, two thirds, then all
-        # the way, so her skin slopes under a piece's edge as if it pressed
-        # in, rather than stepping down.
-        if "_body_nb" not in globals():
-            ev = np.array([e.vertices[:] for e in me.edges])
-            globals()["_body_nb"] = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
-                                                      shape=(len(me.vertices), len(me.vertices))).tocsr()
-        # (s26 solver gs6, TUCK_WELD: her skin is split here and there, two to four copies at one point, each
-        # its own normal (her hands most: 80 such points in the Arcanist's mark), and each copy took its own
-        # mark, by its own ray and its own ring from the border: 0.27, 0.53 and 0.78 at one point 3.7 mm in
-        # from the left thumb hole. Drawn tucked, the copies part, a crack 5.5 mm wide under the glove's open
-        # edge, seen as a dark slit and the edge over it as a white flap. In the outfits named, the copies at
-        # a point are one: the deepest copy's ray, the rings counted on her skin welded, one mark for all.)
-        welded = name in TUCK_WELD
-        if welded:
-            if "_body_cw" not in globals():
-                _, gid_ = np.unique(np.round(np.array([v.co[:] for v in me.vertices]) / 1e-6).astype(np.int64), axis=0, return_inverse=True)
-                gid_ = np.asarray(gid_).ravel()
-                S_ = sparse.csr_matrix((np.ones(len(gid_)), (np.arange(len(gid_)), gid_)))
-                C_ = (S_ @ S_.T).tocsr()
-                globals()["_body_cw"] = (gid_, (C_ @ _body_nb @ C_).tocsr())
-            gm_ = np.zeros(_body_cw[0].max() + 1)
-            np.maximum.at(gm_, _body_cw[0], vals[:, k])
-            print("TUCK WELD %s: %d points of hers split in copies, %d of them marked unequally" % (name, int((np.bincount(_body_cw[0]) > 1).sum()), int((np.abs(gm_[_body_cw[0]] - vals[:, k]) > 1e-6).sum())))
-            vals[:, k] = gm_[_body_cw[0]]
-        under = vals[:, k] > 0
-        reached, ring = ~under, np.zeros(len(under))
-        for r_ in (1, 2):
-            nxt = under & ~reached & (((_body_cw[1] if welded else _body_nb) @ reached.astype(float)) > 0)
-            ring[nxt], reached = r_, reached | nxt
-        vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
-        # Under a held edge (held_edges: a leotard's leg lines) she is tucked
-        # all the way, out to HOLD_BAND from it, so a look in under the edge
-        # meets the piece's inside, not her; the last row before the edge only
-        # as deep as keeps her skin just past it from dipping more than
-        # HOLD_GROOVE under it (her rows are 4-20 mm apart there).
-        for o in objs:
-            if "hold_line" not in o:
-                continue
-            hl = np.array(o["hold_line"][:]).reshape(-1, 3)
-            bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
-            dl, _ = cKDTree(hl).query(bw_)
-            und = np.zeros(len(dl), bool)
-            for i in np.nonzero(dl < HOLD_BAND)[0]:
-                v = me.vertices[i]
-                co = body.matrix_world @ v.co
-                n = (mw3 @ v.normal).normalized()
-                und[i] = tree.ray_cast(co + n * 0.0005, n, 0.012)[0] is not None
-            nb = _body_nb.tocoo()
-            m_ = und[nb.row] & ~und[nb.col] & (vals[nb.col, k] == 0)
-            u_ = dl[nb.col[m_]] / np.maximum(dl[nb.col[m_]] + dl[nb.row[m_]], 1e-6)
-            lim = np.ones(len(dl))
-            np.minimum.at(lim, nb.row[m_], HOLD_GROOVE / 0.010 / np.maximum(u_, 1e-3))
-            before = vals[und, k].copy()
-            # (eased in: a full tuck only from HOLD_SOFT inside the edge, a
-            # depth of a third of the way in nearer it at 30 mm; tucked all the way
-            # right up to the edge, her skin showed as cyan slivers and a sawtooth
-            # along the leg line as the cloth lifted in chain_haul, daggers_fore and
-            # the vaults, and eased over 10 mm it changed nothing, her rows there
-            # being 4-20 mm apart)
-            soft = np.clip(dl / HOLD_SOFT, 0.0, 1.0) if HOLD_SOFT > 0 else np.ones(len(dl))
-            vals[und, k] = np.minimum(soft[und], lim[und]) if HOLD_CAP else np.maximum(vals[und, k], np.minimum(soft[und], lim[und]))
-            print("HOLD TUCK %s: %d vertices of hers under it within %.0f mm of its held edge; marks %.2f -> %.2f (mean), %d at the edge row limited (mean %.2f)"
-                  % (o.name, und.sum(), HOLD_BAND * 1000, before.mean(), vals[und, k].mean(), (und & (lim < 1)).sum(), lim[und & (lim < 1)].mean() if (und & (lim < 1)).any() else 0))
-        if name == "arcanist":
-            # (her forearm and elbow under the sleeve and glove tucked all the way,
-            # from 5 cm above her elbow to 1 cm short of her wrist: with her elbow
-            # shut to 145 degrees its inside came through, animation's judge 11 and
-            # judge 6; her hand is left as it was, a full tuck would cross a finger)
-            for sd in ("l", "r"):
-                fa = (ARM_S[sd][jj] > ELBOW_S - 0.05) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
-                vals[fa & (vals[:, k] > 0), k] = 1.0
-            # (s22: the elbow glove's top (shoulder caps, her elbow bare): her skin under it eased in
-            # from the glove's own cut, GLOVE_TUCK_RIM of a full tuck at the line, all of it
-            # GLOVE_TUCK_IN inside, and none past it. Tucked by the rays and the rule above, the
-            # tuck's border followed her coarse rows across the line: a sawtooth, partly past the
-            # top (seen into the glove, its inside blue-grey) and partly short of it, 10 mm deep
-            # one row in; with her elbow shut at the hat brim the top looked torn.)
-            if ARC_HANDS in ("fingerless", "glove") and os.environ.get("ARC_CAPS", "1") == "1" and GLOVE_TUCK_IN > 0:
-                for sd in ("l", "r"):
-                    e_, w_ = ARM[sd][1], ARM[sd][2]
-                    d_ = GLOVE_TOP_D[sd](P[jj]) if sd in GLOVE_TOP_D else (P[jj] - e_) @ ((w_ - e_) / np.linalg.norm(w_ - e_)) - float(os.environ.get("ARC_GLOVE_ELBOW", "0.04"))
-                    fa = (ARMW[sd][jj] > 0.5) & (d_ > -0.05) & (d_ < GLOVE_TUCK_IN)
-                    vals[fa, k] = np.where(d_[fa] > 0, GLOVE_TUCK_RIM + (1.0 - GLOVE_TUCK_RIM) * ramp(d_[fa], 0.0, GLOVE_TUCK_IN), 0.0)
-                    print("GLOVE TUCK %s: %d vertices of hers eased in under its top, %d past it untucked" % (sd, int((fa & (d_ > 0)).sum()), int((fa & (d_ <= 0)).sum())))
-            # (s26 solver gs6, GLOVE_EDGE_IN: the fingerless glove's open edges on her hand, the thumb hole and
-            # the knuckle cut (its sheet's own border, finish()'s rim, where her skin under it is her hand's):
-            # her skin eased in from no tuck at the edge to a full one GLOVE_EDGE_IN inside, and none beside it.
-            # Tucked by the rays and the rings, a mark of 0.78 sat 3.7 mm in from the left thumb hole, 0.3 and
-            # more within 4 mm of it: her skin sank away under the open edge, a dark slit and a white flap.)
-            if ARC_HANDS == "fingerless" and GLOVE_EDGE_IN > 0:
-                bwc_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
-                for sd in ("l", "r"):
-                    rim_ = [np.array(o["rim"].to_list() if hasattr(o["rim"], "to_list") else o["rim"], float).reshape(-1, 3)
-                            @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3]
-                            for o in objs if o.name.startswith(f"arcanist.glove_{sd}") and "rim" in o.keys()]
-                    if not rim_:
-                        continue
-                    rim_ = np.vstack(rim_)
-                    hc_ = [BI[n] for n in BONES if n.endswith(f"_{sd}") and n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky")]
-                    rim_ = rim_[W[cKDTree(P).query(rim_)[1]][:, hc_].sum(1) > 0.5]
-                    de_ = cKDTree(rim_).query(bwc_)[0]
-                    cap_ = ramp(de_, 0.0, GLOVE_EDGE_IN)
-                    m_ = (de_ < GLOVE_EDGE_IN) & (vals[:, k] > cap_)
-                    n4_ = de_ < 0.004
-                    print("GLOVE EDGE %s: %d rim points on her hand; %d vertices of hers eased in from its open edges (mean %.2f -> %.2f); within 4 mm max %.2f -> %.2f"
-                          % (sd, len(rim_), int(m_.sum()), vals[m_, k].mean() if m_.any() else 0, cap_[m_].mean() if m_.any() else 0,
-                             vals[n4_, k].max(), np.minimum(vals[n4_, k], cap_[n4_]).max()))
-                    vals[m_, k] = cap_[m_]
-        for cap_, zone_ in TUCK_ZONES.get(name, []):
-            zw_ = zone_(P[jj])
-            print("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (vals[:, k] > cap_)).sum()), cap_))
-            vals[:, k] = vals[:, k] * (1 - zw_) + np.minimum(vals[:, k], cap_) * zw_
-        if name in BALD:
-            # Her hair is part of her body: hidden under a hat that is to carry the look.
-            _, j = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
-            hair = HAIR.copy()
-            for _ in range(6):
-                hair = np.maximum(hair, (ADJ @ hair > 0.05).astype(float))
-            vals[(hair[j] > 0.5) & (wsum("Head", "neck_01")[j] > 0.2), k] = 1
-        # A full tuck is marked TUCK_FULL (heroine_skin.gdshader reads 0.973 and
-        # over as all of it): a mark of 1 is her skin not drawn at all. So are
-        # her hands inside the Arcanist's gloves, from her fingertips to GONE_IN
-        # inside the cuff: no tuck keeps a hand in (a finger is thinner than a
-        # full tuck), and the back of her wrist, bent back as she caught her
-        # breath, came through the back of the glove tucked all the way (judge
-        # 10). Under the cuff's own edge she is tucked as before, so no gap
-        # opens there and a look into the cuff finds her.
-        vals[:, k] = np.minimum(vals[:, k], TUCK_FULL)
-        if name in TUCK_WELD and "_body_cw" in globals():
-            gm_ = np.zeros(_body_cw[0].max() + 1)
-            np.maximum.at(gm_, _body_cw[0], vals[:, k])
-            vals[:, k] = gm_[_body_cw[0]]
-        if name == "arcanist" and ARC_HANDS == "glove":
-            for sd in ("l", "r"):
-                glv = [o for o in objs if o.name.startswith(f"arcanist.glove_{sd}")]
-                if not glv:
-                    continue
-                gw = np.array([(o.matrix_world @ v.co)[:] for o in glv for v in o.data.vertices])
-                jn = cKDTree(P).query(gw)[1]
-                cuff = ARM_S[sd][jn[(ARMW[sd][jn] > 0.5) & (ARM_S[sd][jn] > ELBOW_S)]].min()
-                inside = (ARMW[sd][jj] > 0.5) & (ARM_S[sd][jj] > cuff + GONE_IN)
-                if os.environ.get("ARC_CAPS", "1") == "1":
-                    # (s23 solver: at elbow length her arm's coarse field runs on the slant to the
-                    # glove's exact top, and past it at her elbow's side her skin went undrawn
-                    # outside the glove, a hole onto its inside; so also GONE_IN inside the cut)
-                    e_, w_ = ARM[sd][1], ARM[sd][2]
-                    inside &= (P[jj] - e_) @ ((w_ - e_) / np.linalg.norm(w_ - e_)) - float(os.environ.get("ARC_GLOVE_ELBOW", "0.04")) > GONE_IN
-                # every hand vertex past the cuff line, the fingertips and knuckles the
-                # coverage mark never reached too: the weld of the glove by position shows
-                # its finger ends closed, so each of them sits inside leather (judge 13)
-                gone = inside
-                vals[gone, k] = 1.0
-                print("HIDES arcanist glove_%s: her hand inside not drawn, %d vertices, from %.3f m down her arm (the cuff at %.3f, her wrist at %.3f); %d there unmarked, drawn"
-                      % (sd, gone.sum(), cuff + GONE_IN, cuff, WRIST_S, (inside & ~gone).sum()))
-        if name in ("ranger", "warden"):
-            # (her foot inside each Ranger boot and Warden sabaton not drawn, from RBOOT_GONE under her
-            # ankle down, where the boot rides her foot rigidly: her heel skin carries
-            # calf weight and swung 43-51 mm against the rigid heel counter, out
-            # through it in run_stalker; the shaft above keeps the tuck, so a look
-            # down into the boot still finds her)
-            for sd in ("l", "r"):
-                za = BOOTS.Leg(sd).ankle[2]
-                foot = (LEGW[sd][jj] > 0.5) & (P[jj, 2] < za - RBOOT_GONE)
-                gone = foot & (vals[:, k] > 0)
-                vals[gone, k] = 1.0
-                print("HIDES %s boot_%s: her foot inside not drawn, %d vertices under %.3f m (ankle %.3f); %d there unmarked, drawn"
-                      % (name, sd, gone.sum(), za - RBOOT_GONE, za, (foot & ~gone).sum()))
-        print("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
+        vals[:, k] = tuck_of(name, objs)[0]
+    # (armor lead 1: and each (outfit, slot)'s own, from its hiding pieces by the same rule)
+    slot_check([o for o in made if o.name.partition(".")[0] in OUTFITS], "tuck")
+    for _aout in OUTFITS:
+        _ahides = [o for o in made if o.name.startswith(_aout + ".") and o.get("hides")]
+        for _aslot in sorted({slot_entry(o.name)["slot"] for o in made if o.name.startswith(_aout + ".")}):
+            _aobjs = [o for o in _ahides if slot_entry(o.name)["slot"] == _aslot]
+            ARMOR_TUCK[(_aout, _aslot)] = tuck_of(_aout, _aobjs, _aslot)[0] if _aobjs else np.zeros(len(me.vertices))
+        _ak = CHANNELS.index(_aout)
+        # (armor 2, TUCK DEFICIT: the max over an outfit's slots must reach its channel everywhere, or her skin is
+        # drawn over where a garment hides it when the whole set is worn (each slot's tuck eases in from its own
+        # border, so at a seam between two slots, and under the boots' deep rule, neither reached the channel).
+        # Where the channel exceeds the max over slots, the slot whose hiding pieces' surface lies nearest that point
+        # of hers takes the channel's value there. tools/armor/tuck_fix.py applied the same rule to the 18 Oct build.)
+        _aslots = sorted({slot_entry(o.name)["slot"] for o in _ahides})
+        if _ak <= 3 and _aslots:
+            _amx = np.max([ARMOR_TUCK[(_aout, s_)] for s_ in _aslots], 0)
+            _adef = np.nonzero((vals[:, _ak] - _amx > 1 / 255) | ((vals[:, _ak] > 0.973) & (_amx <= 0.973)))[0]  # (or full in the channel only: the shader reads 0.973 and over as full)
+            _atr = {}
+            for s_ in _aslots:
+                _avs, _afs = [], []
+                for o in _ahides:
+                    if slot_entry(o.name)["slot"] == s_:
+                        b_ = len(_avs)
+                        _avs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+                        _afs += [[b_ + i for i in p_.vertices] for p_ in o.data.polygons]
+                _atr[s_] = BVHTree.FromPolygons(_avs, _afs)
+            _agiven = {}
+            for i_ in _adef:
+                co_ = body.matrix_world @ me.vertices[i_].co
+                d_ = {s_: (t_.find_nearest(co_)[3] if t_.find_nearest(co_)[0] is not None else 1e9) for s_, t_ in _atr.items()}
+                s_ = min(d_, key=d_.get)
+                ARMOR_TUCK[(_aout, s_)][i_] = vals[i_, _ak]
+                _agiven[s_] = _agiven.get(s_, 0) + 1
+            print("TUCK DEFICIT %s: %d vertices short of the channel given it, by nearest slot: %s" % (_aout, len(_adef), _agiven))
+        if _ak <= 3:
+            _amx = np.max([t_ for (o_, s_), t_ in ARMOR_TUCK.items() if o_ == _aout], 0)
+            _afull = vals[:, _ak] > 0.973
+            _alost = _afull & (_amx <= 0.973)
+            _adrop = vals[:, _ak] - _amx
+            print("ARMOR TUCK %s: %d vertices full in its channel, %d of them not full in any slot (largest drop %.3f); "
+                  "%d tucked deeper by a slot than by the channel (largest rise %.3f), %d of them full in a slot only"
+                  % (_aout, int(_afull.sum()), int(_alost.sum()), float(_adrop.max()), int((_adrop < -1e-6).sum()),
+                     float(-_adrop.min()), int(((_amx > 0.973) & ~_afull).sum())))
     col.data.foreach_set("color", vals.ravel())
     # Each outfit's coverage at rest, her skin tucked as the game draws it
     # (heroine_skin.gdshader: 10 mm times the outfit's channel).
@@ -9140,6 +9336,8 @@ if BODY_OUT:
     bpy.context.view_layer.objects.active = arm
     bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
                               export_yup=True, export_vertex_color="ACTIVE")
+    armor_tuck_write(body, os.path.dirname(OUT))
+    _tuck_pre = _body_keys(BODY_OUT)
     if _ff_keep is not None:
         # (her flattened fingers taken back: her pieces' rigging and glove fit below read her body)
         _ffm.vertices.foreach_set("co", _ff_keep[0])
@@ -9195,6 +9393,7 @@ if BODY_OUT:
         heroine_throat_skin.ease(BODY_OUT)
         heroine_throat_skin.soften(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
+    armor_tuck_rekey(_tuck_pre, BODY_OUT, os.path.dirname(OUT))
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
@@ -9913,6 +10112,8 @@ glove_hand_final(made)
 
 glove_riders(made)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
+slot_check([o for v_ in pieces_of.values() for o in v_], "export")
+ARMOR_ROWS = []
 for name in OUTFITS:
     mine = pieces_of[name]
     if not mine:
@@ -9930,17 +10131,39 @@ for name in OUTFITS:
     for o in mine:
         by_mat.setdefault(o.data.materials[0].name if o.data.materials else "none", []).append(o)
     joined = []
+    ranks = {}
     for key, objs in by_mat.items():
         bpy.ops.object.select_all(action="DESELECT")
         for o in objs:
             o.select_set(True)
         bpy.context.view_layer.objects.active = objs[0]
-        if len(objs) > 1:
-            # (her corrective shapes kept through the join: heroine_rig)
-            rig_helpers.share_keys(objs)
-            bpy.ops.object.join()
-        objs[0].name = objs[0].data.name = f"{name}.{key}"
-        joined.append(objs[0])
+        # (armor lead 1: a mesh per (slot, material), <outfit>.<slot>.<material>. Each slot's pieces are
+        # joined in the order one join of the material's took them, the active piece and then the rest as
+        # the view layer lists them, so the slots' meshes laid end to end in rank order are that one mesh:
+        # heroine_lod.py joins them back so)
+        order = [objs[0]] + [o for o in bpy.context.view_layer.objects if o.select_get() and o is not objs[0]]
+        assert len(order) == len(objs)
+        by_slot = {}
+        for o in order:
+            by_slot.setdefault(slot_entry(o.name)["slot"], []).append(o)
+        seq = [slot_entry(o.name)["slot"] for o in order]
+        runs = sum(1 for i_ in range(len(seq)) if i_ == 0 or seq[i_] != seq[i_ - 1])
+        if runs != len(by_slot):
+            print("SLOT ORDER %s.%s: its slots interleave in the join (%d runs of %d slots): heroine_lod.py lays its pieces back in order" % (name, key, runs, len(by_slot)))
+        for rank, (slot, sobjs) in enumerate(by_slot.items()):
+            # (each piece's place in the material's one join and its triangles, in this mesh's order)
+            pieces_ = [[order.index(o), sum(len(f_.vertices) - 2 for f_ in o.data.polygons)] for o in sobjs]
+            bpy.ops.object.select_all(action="DESELECT")
+            for o in sobjs:
+                o.select_set(True)
+            bpy.context.view_layer.objects.active = sobjs[0]
+            if len(sobjs) > 1:
+                # (her corrective shapes kept through the join: heroine_rig)
+                rig_helpers.share_keys(sobjs)
+                bpy.ops.object.join()
+            sobjs[0].name = sobjs[0].data.name = f"{name}.{slot}.{key}"
+            joined.append(sobjs[0])
+            ranks[sobjs[0].name] = {"outfit": name, "slot": slot, "material": key, "rank": rank, "pieces": pieces_}
     print("MERGED", name, len(mine), "pieces into", len(joined), "meshes")
     mine = joined
     bpy.ops.object.select_all(action="DESELECT")
@@ -9954,4 +10177,24 @@ for name in OUTFITS:
     import heroine_neck
     if float(os.environ.get("NECK_CUT", "0.03")):
         heroine_neck.match_pieces(path, heroine_neck.field())
+    # (each mesh's slot, material and rank in its material's join, as glTF extras: heroine_lod.py and the game read them)
+    g_ = _json.load(open(path, encoding="utf-8"))
+    for m_ in g_["meshes"]:
+        if m_["name"] in ranks:
+            m_["extras"] = dict(m_.get("extras", {}), **ranks[m_["name"]])
+    _json.dump(g_, open(path, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    slots_ = {}
+    for mn_, r_ in ranks.items():
+        slots_.setdefault(r_["slot"], []).append(mn_)
+    for slot, meshes_ in sorted(slots_.items()):
+        e_ = next(e for e in ARMOR_MAP["outfits"][name] if e["slot"] == slot)
+        tk_ = (name, slot) in ARMOR_TUCK_N
+        ARMOR_ROWS.append({"id": f"{name}.{slot}", "outfit": name, "slot": slot, "layer": ARMOR_MAP["layers"][slot],
+                           "covers": e_.get("covers", [slot]), "meshes": sorted(meshes_),
+                           "tuck": f"armor_tuck/{name}.{slot}.bin" if tk_ else None,
+                           "tuck_count": ARMOR_TUCK_N.get((name, slot)), "body_hash": ARMOR_BODY_HASH,
+                           **({"hold": {"amount": 0.55, "squash": 0}} if (name, slot) == ("warden", "top") else {})})  # (plate holds her: HerJiggle)
     print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)
+# (armor lead 1: one row per (outfit, slot); body_hash as armor_tuck_write has it)
+_json.dump(ARMOR_ROWS, open(os.path.join(os.path.dirname(OUT), "armor_index.json"), "w", encoding="utf-8"), indent=1)
+print("ARMOR INDEX: %d (outfit, slot) rows -> %s" % (len(ARMOR_ROWS), os.path.join(os.path.dirname(OUT), "armor_index.json")))

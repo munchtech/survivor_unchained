@@ -1,0 +1,66 @@
+{
+ "id": "plate_top_gilded",
+ "name": "Gilded Plate Top",
+ "slot": "top",
+ "base": "plate_top_plain",
+ "base_adorn": false,
+ "tier": 3,
+ "tier_name": "gilded",
+ "material": "steel",
+ "tint": null,
+ "adorn": [
+  {
+   "kind": "row",
+   "rim": "cup_rim",
+   "mesh": "rivet",
+   "spacing": 0.021,
+   "inset": 0.0075,
+   "r": 0.0028,
+   "avoid": 0.014,
+   "mat": "gold"
+  },
+  {
+   "kind": "gild",
+   "parts": [
+    "rolled_rim",
+    "gore"
+   ],
+   "lift": 0.00025,
+   "facing": -0.3,
+   "mat": "gold"
+  },
+  {
+   "kind": "trim",
+   "rim": "cup_rim",
+   "profile": "bead",
+   "width": 0.012,
+   "height": 0.002,
+   "inset": 0.017,
+   "gap": 0.0,
+   "step": 0.0032,
+   "lod_step": 0.008,
+   "mat": "gold"
+  },
+  {
+   "kind": "mesh",
+   "socket": "gore",
+   "mesh": "gem_round",
+   "scale": 1.15,
+   "roll": 0,
+   "offset": [
+    0,
+    0.0025,
+    0.0003
+   ],
+   "mat": "gold",
+   "gem_mat": "gem_sapphire"
+  }
+ ],
+ "covers": [
+  "top"
+ ],
+ "hold": {
+  "amount": 0.55,
+  "squash": 0
+ }
+}

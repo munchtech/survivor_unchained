@@ -439,6 +439,43 @@ public partial class GameHud : CanvasLayer
         play.Modulate = new Color(1, 1, 1, calm);
     }
 
+    float labelsAlpha = 1;
+
+    /// <summary>A Flare's BOOM hides the ground names and any tip text until its fire has gone (k 0 to 1).</summary>
+    public void LabelsAlpha(float k)
+    {
+        if (k == labelsAlpha) return;
+        labelsAlpha = k;
+        ground.Modulate = new Color(1, 1, 1, k);
+        ground.Visible = k > 0;
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.Fade = k;
+    }
+
+    float flareDim;
+    ulong tipHoldUntil;
+    Hint? tipHeld;
+    bool tipWaiting;
+
+    /// <summary>A Flare holds the frame (FLARE_LOOK §1.5): the play HUD dims to 35% (k 1) but her irons (her health and
+    /// the Flare's lamp) and a boss's bar; back at k 0.</summary>
+    public void FlareDim(float k)
+    {
+        if (k == flareDim) return;
+        // A tip waits from the press until three seconds after the Flare hands the screen back (judge 3: "THE MAP"
+        // over the BOOM). Real time: the Flare's hitstop must not stretch it.
+        tipHoldUntil = k > 0 ? ulong.MaxValue : Time.GetTicksMsec() + 3000;
+        if (k > 0 && hintView != null)
+        {
+            // One already up goes and comes back after.
+            tipHeld = hintView; tipWaiting = true; hintView = null; hintBox.Visible = false;
+            if (tipLine != null && IsInstanceValid(tipLine)) tipLine.QueueFree();
+            tipLine = null;
+        }
+        flareDim = k;
+        foreach (var n in play.GetChildren())
+            if (n is CanvasItem c && c != irons && c != bossBox) c.Modulate = new Color(1, 1, 1, 1 - 0.65f * k);
+    }
+
     public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
 
     static readonly Dictionary<ToastKind, (string Glyph, Color Color)> ToastLook = new()
@@ -881,6 +918,9 @@ public partial class GameHud : CanvasLayer
 
     public void Hint(Hint? h)
     {
+        if (Args.Has("clean")) h = null;
+        if (Time.GetTicksMsec() < tipHoldUntil && h != null && !(hintView != null && hintView.Id == h.Id)) { tipHeld = h; tipWaiting = true; return; }
+        if (h == null) { tipHeld = null; tipWaiting = false; }
         bool same = hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
         hintBox.Visible = false;
@@ -892,7 +932,7 @@ public partial class GameHud : CanvasLayer
         tipLine = null;
         if (h == null) return;
         Control? keys = h.Keys.Count > 0 ? Style.H(6, HintKeys(h.Keys).ToArray()) : null;
-        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY) };
+        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY), Fade = labelsAlpha };
         play.AddChild(tipLine);
     }
 
@@ -1043,6 +1083,7 @@ public partial class GameHud : CanvasLayer
     public override void _Process(double delta)
     {
         using var _ = new Perf.Span(Perf.Part.Hud);
+        if (tipWaiting && Time.GetTicksMsec() >= tipHoldUntil) { tipWaiting = false; var th = tipHeld; tipHeld = null; Hint(th); }
         float dt = (float)delta;
         if (sayT > 0)
         {

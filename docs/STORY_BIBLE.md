@@ -86,7 +86,7 @@ confirms nor denies it, and no rule depends on it. (It must never become a
 law: a player would apply it backwards to Nell.)
 
 Every faction is partly right, and that is how the reveal stays fair: the town
-thinks ember is a mineral (it burns, it sells); the Order called it the morning
+thinks ember is a mineral (it burns, it sells), and tells the Legion's tale at dusk without taking it for more than a tale (SB00, `docs/story/storybook/`); the Order called it the morning
 and burned it for company, not for seeing by ("the morning lies a little under,
 and it will wake you where you slept"); the Watch kept it out of the ford lamps
 for reasons it forgot; the Vigil knows the Unchained are made of it; the binders

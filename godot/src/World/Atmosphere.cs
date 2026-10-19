@@ -29,6 +29,9 @@ public partial class Atmosphere : Node3D
     /// <summary>A touch less exposure at low quality keeps the mood (the web
     /// game's exposureScale).</summary>
     public float ExposureScale = 1;
+    /// <summary>The eye stopping down after a Flare's BOOM (Fx/Flare/FlareFx.Dip): 1 none.</summary>
+    public float FlareDip = 1;
+    float dipShown = 1;
     /// <summary>How much colour the world keeps below the brights (0 all, 1
     /// none): the grade's worn world.</summary>
     public float Mute = 0.16f;
@@ -63,7 +66,7 @@ public partial class Atmosphere : Node3D
     {
         if (Mathf.IsEqualApprox(k, ViewExposure)) return;
         ViewExposure = k;
-        Env.TonemapExposure = (float)Current.Exposure * ExposureScale * k;
+        Env.TonemapExposure = (float)Current.Exposure * ExposureScale * k * FlareDip;
     }
     double clock;
 
@@ -116,6 +119,7 @@ public partial class Atmosphere : Node3D
     public override void _Process(double delta)
     {
         clock += delta;
+        if (FlareDip != dipShown) { dipShown = FlareDip; Env.TonemapExposure = (float)Current.Exposure * ExposureScale * ViewExposure * FlareDip; }
         RenderingServer.GlobalShaderParameterSet(SkyTime, (float)clock);
     }
 
@@ -198,7 +202,7 @@ public partial class Atmosphere : Node3D
             // (At 2.5° the pools washed out into a general shading.)
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
-        Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure;
+        Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure * FlareDip;
         SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * Key.LightEnergy);
         EmberGain = (float)p.Ember;
         var rim = C(p.Rim).SrgbToLinear();

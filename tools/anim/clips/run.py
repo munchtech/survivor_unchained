@@ -118,12 +118,14 @@ def staff_hold():
 
 
 def crossbow_low():
-    """The crossbow low in the right hand, pointing at the ground ahead, carried out beside her right
-    thigh (9 cm out, 2 cm higher; under her it sat 76 mm in the thigh as it drove up), the elbow by her ribs."""
+    """The crossbow in the right fist on its pistol grip, the stock level and ahead (pitch -6..7 deg, yaw within 9 of
+    her line), the forearm level from an elbow by her ribs, the fist at her waist 10 cm out. Pointed at the ground from
+    beside the thigh (the old carry), the stock now the long axis put the bow 56-63 mm into her left thigh as it drove
+    up (armscheck, 18 October); here 0, and the right arm 0 mm into her (motion.py)."""
     def f(ph, k, hand):
         sway = 0.06 * (k - 0.5)
-        return {"arc": arc_of((-0.09, -0.34, 0.15 + sway)), "pole": (-0.2, -0.3, -1.0),
-                "knuckles": (0.0, -0.55, 0.83), "blade": (0.0, 0.83, 0.55), "frame": "chest", "twist": 0.5}
+        return {"arc": arc_of((-0.10, -0.15, 0.32 + sway)), "pole": (-0.2, -0.3, -1.0),
+                "knuckles": (0.0, 0.64, 0.77), "blade": (0.0, 0.77, -0.64), "frame": "chest", "twist": 0.5}
     return f
 
 
@@ -172,9 +174,12 @@ RUNS = {
     "run_reaver_axes": (replace(REAVER, swing=AXE_ARM), {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
-    "run_arcanist_wand": (replace(ARCANIST, swing_r=((6, 10, 80, 25), (-30, 13, 70, -35))), {"r": blade_carry()}, "wand"),
-    # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint).
-    "run_stalker": (replace(STALKER, fingers="fist", fingers_r="relaxed", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
+    # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
+    # 58-61 degrees out of her sagittal plane at the back swing, 29-34 forward; up, at most 13 (run and sprint).
+    "run_arcanist_wand": (replace(ARCANIST, swing_r=((6, 10, 80, 25), (-30, 13, 70, -35))), {"r": blade_carry(out=0.0)}, "wand"),
+    # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint). The right
+    # fist closed on the crossbow's pistol grip (WRAP["crossbow"], 18 October; relaxed, it stood off the grip).
+    "run_stalker": (replace(STALKER, fingers="fist", fingers_r="grip", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
                     {"r": crossbow_low()}, "crossbow"),
     # Both fists closed on the daggers ("grip": each the fitted dagger fist, keyed.wrap_of: WRAP["daggers"] right,
     # WRAP["daggers_l"] left; with the gait's relaxed hands the fingers stood 10-73 mm off the hilts).

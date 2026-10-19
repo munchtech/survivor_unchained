@@ -763,8 +763,10 @@ def _haft():
 # The fist's wrap, fitted on her skin to the oval (every finger pad 0.3 mm in to 1.1 mm off, the fingers' ends
 # 140-175 deg round it; the thumb, which no turn wraps round a haft this thick, laid over its top beside the
 # forefinger, 1.3 mm in at most): the bends as keyed.WRAP's, the left's spreads mirrored as keyed lays them.
-L_WRAP = {"bends": {"index": (51.0, 72.0, 37.0), "middle": (56.5, 67.0, 42.0), "ring": (56.5, 64.5, 48.5),
-                    "pinky": (45.0, 71.0, 22.0), "thumb": (-17.4, 25.0, 81.3)},
+# (Re-fitted 18 October to the re-dumped skeleton's fingers: index, ring and little finger bends x0.925/0.95/0.95,
+# every finger 0-1 mm on the haft where the fist sits on its line.)
+L_WRAP = {"bends": {"index": (47.2, 66.6, 34.2), "middle": (56.5, 67.0, 42.0), "ring": (53.7, 61.3, 46.1),
+                    "pinky": (42.8, 67.5, 20.9), "thumb": (-17.4, 25.0, 81.3)},
           "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
           "oppose": 0.05, "thumb_roll": 43.1, "thumb_in": 25.8}
 # The haft through that fist, in hand_l's space: a point on its axis, its line (toward the thumb, the axe's head)
@@ -772,14 +774,33 @@ L_WRAP = {"bends": {"index": (51.0, 72.0, 37.0), "middle": (56.5, 67.0, 42.0), "
 L_CHANNEL = (np.array([0.04162, 0.076, 0.0]), np.array([0.20791, 0.16985, 0.96329]),
              np.array([-0.97815, 0.03610, 0.20475]))
 L_BELOW = 0.126   # the left fist's channel point this far below the right's seat along the haft (m)
-HOLD_TO, FREE_AT = 12, 15   # both hands on it f1-f12; the left lets go over f12-f15 (in its fist at f15)
+HOLD_TO, FREE_AT = 9, 13   # both hands on it f3-f9 (HOLD_FROM); the left lets go over f9-f13 (in its fist at f13)
+HOLD_FROM = 3
+L_ITER = 2   # the left fist's re-aims (each a solve) at where the last solve left it
 # Both hands on one haft 126 mm apart: keyed, the hands were each before its own shoulder, the left 107-117% of
 # her arm's reach from the right's. Her chest turned toward them (yaw, pitch) and both shoulders drawn forward bring
 # both arms to 77-98% (the right hand held where it was, in her own space, so its path does not move).
 # OFF (17 October): with the right hand's path kept, the left arm crosses her chest to reach it (upper arm 78 mm into
 # her trunk, 71 into her breasts) and the fist turns 22-34 deg off the haft at f3-f8. Wants the right hand's path
 # brought in toward her centre line first (the solver's report).
+# One-handed (shipped): as she rises from the crouch (f9-f18) the keyed left hand swept 59 mm into her forward left
+# thigh. L_CLEAR moves it out beside and a little ahead of the knee over L_CLEAR_AT (9 mm clear; nothing else moves).
 TWO_HANDS = False
+L_CLEAR = (0.07, 0.0, 0.05)   # added to the keyed left hand (shoulder-relative, the chest's frame: left, up, forward)
+L_CLEAR_AT = (6, 10, 15, 21)   # eased in from, full from, full to, eased out by (frames)
+
+
+def _left_clear(fr, pose):
+    """A post moving the one-handed clip's free left hand by L_CLEAR, clear of her thigh as she rises."""
+    a, p0, p1, c = L_CLEAR_AT
+    if fr <= a or fr >= c or "hand_l" not in pose:
+        return pose
+    u = 1.0 if p0 <= fr <= p1 else ((fr - a) / (p0 - a) if fr < p0 else (c - fr) / (c - p1))
+    w = u * u * (3 - 2 * u)
+    az, el, r = pose["hand_l"]["arc"]
+    az, el = math.radians(az), math.radians(el)
+    v = np.array([r * math.cos(el) * math.sin(az), r * math.sin(el), r * math.cos(el) * math.cos(az)])
+    return {**pose, "hand_l": {**pose["hand_l"], "arc": arc_of(v + w * np.array(L_CLEAR))}}
 SQUARE = {}
 # Round 2 (17 October): the right hand's path brought in toward her centre line over the hold, so the blow is a
 # centred overhead chop (as a two-handed axe is swung) and both hands meet on the haft before her breastbone:
@@ -844,7 +865,95 @@ def _left_on_haft():
     return R, C - H * L_BELOW - R @ c
 
 
-def _two_hands(rig, clip, hold, free):
+# Round 3 (18 October): the blow re-keyed with the haft, not the keyed path shifted. Over the buried frames the
+# right fist's seat on the haft is set in her space, before her left knee and well forward of both knees, the haft
+# straight ahead of her and pitched down into the ground (its edge down), the axe still in it (the hands near still
+# while her body sinks and rises); eased in from the keyed path before and out to it after.
+# FWD: by frame, (seat point x, y, z in her space, the haft's pitch below level, its yaw toward her left), linear
+# between; FWD_IN/FWD_OUT: the frames the ease in starts and the ease out ends.
+# Round 3 (solver, 18 October), NOT MET, TWO_HANDS left off: with the values below (the haft 20 deg down, 5 toward
+# her left, the seat on her centre line 0.70 m ahead; shoulders raised 20 and drawn 14 forward; elbows out; the left
+# on the haft f3-f9, eased off over f9-f13; L_ITER re-aims) the left fist sits on the haft 0.1-3.6 mm off its line
+# at f3-f9 and its fingers 0-1 mm in at f4/f8/f9, but f3 is 12 deg off (its hand twist pinned at -48), f6's fingers
+# 4 mm in, f9 the left upper arm 9 mm into her trunk (8 into the breast), and in the let-go (f10) the fingers go
+# 11 mm through the haft as they open; the left joins the haft in one frame at the blow (f2-f3, as the right does).
+FWD = {3: (0.0, 0.44, 0.70, 20.0, 5.0), 6: (0.0, 0.44, 0.70, 20.0, 5.0), 9: (0.0, 0.48, 0.68, 20.0, 5.0)}
+FWD_IN, FWD_OUT = 1, 14
+FWD_POLES = {"hand_r": (-1.0, -0.3, -0.3), "hand_l": (1.0, -0.3, -0.3)}   # the elbows' way from the shoulder (her
+                                                                            # space), None = as keyed
+FWD_BODY = {"clav_l": (20, 14), "clav_r": (20, 14)}   # her body's keys moved over the blow (eased as the hands): "clav_l": (raise, forward), "spine": (yaw,
+                # pitch, roll), "hips": (yaw, pitch, roll), "hips_pos": (x, y, z); added to the keyed
+
+
+def _fwd_rot(pitch, yaw):
+    """hand_r's rotation with the haft pitched `pitch` below level and yawed `yaw` toward her left, its edge down."""
+    C, H, N, Wd = _haft()
+    p, y = math.radians(pitch), math.radians(yaw)
+    D = np.array([math.sin(y) * math.cos(p), -math.sin(p), math.cos(y) * math.cos(p)])
+    E = np.array([-math.sin(y) * math.sin(p), -math.cos(p), -math.cos(y) * math.sin(p)])
+    A = np.stack([H, Wd, np.cross(H, Wd)], 1)
+    B = np.stack([D, E, np.cross(D, E)], 1)
+    return B @ A.T
+
+
+def _forward(rig, clip):
+    """A post setting the right hand (wrist, turn) over the blow from FWD, eased from and to where `clip` solved it."""
+    from rig import qaxis, qfrom_matrix, qmul, qslerp
+    I = rig.I
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    hr = I["hand_r"]
+    C = _haft()[0]
+    lq = qmatrix(qaxis([1.0, 0, 0], -rig.grip.get("r", 0.0)))
+    ks = sorted(FWD)
+
+    def ease(u):
+        u = min(1.0, max(0.0, u))
+        return u * u * (3 - 2 * u)
+
+    def target(fr):
+        f = min(max(fr, ks[0]), ks[-1])
+        k1 = next(k for k in ks if k >= f)
+        k0 = max(k for k in ks if k <= f)
+        a = 0.0 if k1 == k0 else (f - k0) / (k1 - k0)
+        v = (1 - a) * np.array(FWD[k0], float) + a * np.array(FWD[k1], float)
+        R = _fwd_rot(v[3], v[4])
+        return R, v[:3] - R @ C
+
+    def post(fr, pose):
+        if fr <= FWD_IN or fr >= FWD_OUT or "hand_r" not in pose:
+            return pose
+        w = ease((fr - FWD_IN) / (ks[0] - FWD_IN)) if fr < ks[0] else ease((FWD_OUT - fr) / (FWD_OUT - ks[-1]))
+        R, W = target(fr)
+        q = qslerp(g[fr, hr], qfrom_matrix(R), w)
+        W = p[fr, hr] + (W - p[fr, hr]) * w
+        Bq = qmatrix(q) @ lq
+        sr = pose["hand_r"]
+        pr = FWD_POLES["hand_r"]
+        if pr is None or sr.get("frame") == "chest":
+            from rig import qinv, qrot
+            s3 = I["spine_03"]
+            chest = qmul(g[fr, s3], qinv(rig.grest[s3]))
+            pk = np.array(sr.get("pole", (-0.6, -0.4, -0.4)), float)
+            pk = qrot(chest, pk) if sr.get("frame") == "chest" else pk
+            pr = pk if pr is None else pk + (np.array(pr, float) - pk) * w
+        pose = dict(pose)
+        for k, d in FWD_BODY.items():
+            if k in ("hips", "hips_pos"):
+                h = dict(pose.get("hips", {}))
+                f_ = "rot" if k == "hips" else "pos"
+                h[f_] = tuple(float(a + b * w) for a, b in zip(h.get(f_, (0.0, 0.0, 0.0)), d))
+                pose["hips"] = h
+            else:
+                pose[k] = tuple(float(a + b * w) for a, b in zip(pose.get(k, (0.0,) * len(d)), d))
+        pose["hand_r"] = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in Bq[:, 2]),
+                          "knuckles": tuple(float(x) for x in Bq[:, 1]), "pole": tuple(float(x) for x in pr),
+                          "frame": "char", "twist": sr.get("twist", 0.5),
+                          **({"pole_at": "shoulder"} if FWD_POLES["hand_r"] is not None else {})}
+        return pose
+    return post
+
+
+def _two_hands(rig, clip, hold, free, keep_right=False, corr=None):
     """A post laying her left hand on the haft below her right, frame by frame from where the right hand holds it
     (as `clip` solved it), over frames hold[0]..hold[1]; let go evenly from hold[1] to `free` toward the keyed
     hand (its wrist, its turn and its elbow's way as `clip` had them, the fingers easing into the keyed fist)."""
@@ -869,30 +978,40 @@ def _two_hands(rig, clip, hold, free):
         for k, d in SQUARE.items():
             base = pose.get(k, (0.0,) * len(d))
             pose[k] = tuple(float(a + b * (1 - w)) for a, b in zip(base, d))
-        # The right hand where the first solve put it (her space), its elbow's way as keyed.
+        # The right hand where the first solve put it (her space), its elbow's way as keyed (keep_right: as the
+        # pose has it, the same solve as `clip`'s).
         lq = qaxis([1.0, 0, 0], -rig.grip.get("r", 0.0))
         Bq = qmatrix(qmul(g[fr, hr], lq))
         sr = pose["hand_r"]
         chest_r = qmul(g[fr, s3], qinv(rig.grest[s3]))
         pr = np.array(sr.get("pole", (-0.6, -0.4, -0.4)), float)
         pr = qrot(chest_r, pr) if sr.get("frame") == "chest" else pr
-        pose["hand_r"] = {"pos": tuple(float(x) for x in p[fr, hr]), "blade": tuple(float(x) for x in Bq[:, 2]),
-                          "knuckles": tuple(float(x) for x in Bq[:, 1]), "pole": tuple(float(x) for x in pr),
-                          "frame": "char", "twist": sr.get("twist", 0.5)}
+        if not keep_right:
+            pose["hand_r"] = {"pos": tuple(float(x) for x in p[fr, hr]), "blade": tuple(float(x) for x in Bq[:, 2]),
+                              "knuckles": tuple(float(x) for x in Bq[:, 1]), "pole": tuple(float(x) for x in pr),
+                              "frame": "char", "twist": sr.get("twist", 0.5),
+                              **({"pole_at": sr["pole_at"]} if "pole_at" in sr else {})}
         Rr = qmatrix(g[fr, hr])
         Rl = Rr @ R_lr
         W = p[fr, hr] + Rr @ o_lr
+        if corr is not None and fr in corr:
+            # Aimed past where the last solve fell short (the wrist's and elbow's own give), so it lands on the haft.
+            Rl = Rl @ corr[fr][0]
+            W = W + corr[fr][1]
         spec_k = pose.get("hand_l", {})
         chest = qmul(g[fr, s3], qinv(rig.grest[s3]))
         pole = np.array(spec_k.get("pole", (0.6, -0.4, -0.4)), float)
         pole = qrot(chest, pole) if spec_k.get("frame") == "chest" else pole
+        if FWD_POLES["hand_l"] is not None:
+            pole = pole + (np.array(FWD_POLES["hand_l"], float) - pole) * (1 - w)
         if w > 0:
             q = qslerp(qfrom_matrix(Rl), g[fr, hl], w)
             Rl = qmatrix(q)
             W = W + (p[fr, hl] - W) * w
         spec = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in Rl[:, 2]),
                 "knuckles": tuple(float(x) for x in Rl[:, 1]), "pole": tuple(float(x) for x in pole),
-                "frame": "char", "twist": spec_k.get("twist", 0.3)}
+                "frame": "char", "twist": spec_k.get("twist", 0.3),
+                **({"pole_at": "shoulder"} if FWD_POLES["hand_l"] is not None else {})}
         mix = lambda a, b: a + (b - a) * w
         fingers = {"bends": {k: tuple(mix(a, b) for a, b in zip(v, fist[k])) for k, v in L_WRAP["bends"].items()},
                    "spreads": {k: mix(v, 0.0) for k, v in L_WRAP["spreads"].items()},
@@ -957,10 +1076,28 @@ def chain_strike(rig):
     # Solved once for where the right hand holds the axe, then again with the left fist on the haft below it at
     # every frame from f1 (the keyed left hands are only where it lets go to).
     if not TWO_HANDS:
-        return build("chain_strike", rig, keys, meta=meta)
-    first = build("chain_strike", rig, keys, meta=meta, post=_centred)
-    two = _two_hands(rig, first, (1, HOLD_TO), FREE_AT)
-    return build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: two(fr, _centred(fr, pose)))
+        return build("chain_strike", rig, keys, meta=meta, post=_left_clear)
+    first = build("chain_strike", rig, keys, meta=meta)
+    fwd = _forward(rig, first)
+    second = build("chain_strike", rig, keys, meta=meta, post=fwd)
+    g2, p2 = rig.sk.fk(second.rot, second.pos)
+    R_lr, o_lr = _left_on_haft()
+    hr, hl = rig.I["hand_r"], rig.I["hand_l"]
+    corr = {}
+    clip = None
+    for it in range(L_ITER + 1):
+        two = _two_hands(rig, second, (HOLD_FROM, HOLD_TO), FREE_AT, keep_right=True, corr=corr)
+        clip = build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: two(fr, fwd(fr, pose)))
+        if it == L_ITER:
+            break
+        g3, p3 = rig.sk.fk(clip.rot, clip.pos)
+        for fr in range(HOLD_FROM, HOLD_TO + 1):
+            Rr = qmatrix(g2[fr, hr])
+            T, Tw = Rr @ R_lr, p2[fr, hr] + Rr @ o_lr
+            A = qmatrix(g3[fr, hl])
+            c0, w0 = corr.get(fr, (np.eye(3), np.zeros(3)))
+            corr[fr] = ((A.T @ T) @ c0, w0 + (Tw - p3[fr, hl]))
+    return clip
 
 
 ALL = (("vault", vault), ("vault_back", vault_back), ("bull_rush", bull_rush), ("chain_haul", chain_haul),

@@ -3,6 +3,31 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
+## Now (19 October, the storybook writer, branch `story-lore`): DONE, waiting to merge
+
+The owner (18 Oct, OWNER_NOTES top two bullets): a storybook lore intro before
+C01 that ends in drowning into the wake, and a tutorial that teaches ember plainly
+with freeze-frame callouts. Both written, edited once and fixed. Docs only.
+- **SB00 "Stay Where They Reach"** (`docs/story/storybook/sb00_stay_where_they_reach.md`):
+  11 plates, about 89 s, 9 new lines (144 words). The teller is an old Watchman in
+  the dead Watchman's voice (`watchman`, Corran), **not the narrator** (VOICES:
+  present tense, never meaning, no winter's tale; her "Your bedroll..." stays the
+  first narrated words). It plays between creation and C01; C01 starts at shot 1
+  without its water sound (C01's "In" notes it). It reuses `cin_none_cross.call`.
+- **Tutorial copy** (`docs/story/TUTORIAL_COPY.md`): the Ember explanation (7 lines
+  across the night, "lends"/"until dawn"/"first light"), F1-F13 with stage,
+  arrow target and kind (freeze or arrow only), and a `lore.ember` journal line.
+- **Editor (max, a04bd222): PASS WITH FIXES, all applied.** The worst: the Warden's
+  lamp never touches the water (P10), nobody goes in at the Legion's door (C13), no
+  wader in P7, no reins girl in P8, no whole keeper. One deviation: L4 keeps
+  "Where it lies thick" (ember makes the dead rise) and only un-stacks it. Its C43
+  aside ("Dannet, over and over" in the Watchman's voice) was cut from the script;
+  it's an idea for Act 3, not decided. Bible §1 now says the town tells the
+  Legion's tale; C01's stale narrator casting line is fixed.
+- **Next, not this writer's:** the storybook format and look (a `su-lead-max` lead),
+  the illustrations, the score's motif (the evening call's tune), the Watchman's VO
+  (lines.py, then lock), and the teaching pass (experience director + UI design).
+
 ## Where it stands (11 October, writer 15, branch `story/marker-and-locks`)
 
 - **Love scenes B: the editor-judge's 15 fixes are in** (e3e33108; verdict

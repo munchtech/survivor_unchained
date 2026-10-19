@@ -56,6 +56,8 @@ public sealed class ZoneData
     {
         DataFiles.Text = rel => FileAccess.GetFileAsString($"res://data/{rel}");
         DataFiles.Bytes = rel => FileAccess.GetFileAsBytes($"res://data/{rel}");
+        SurvivorUnchained.Rpg.ArmorIndex.Text = rel => FileAccess.FileExists($"res://art/{rel}") ? FileAccess.GetFileAsString($"res://art/{rel}") : null;
+        SurvivorUnchained.Rpg.ArmorIndex.Reset();
     }
 
     public ZoneData(string id)

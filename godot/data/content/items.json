@@ -1,5 +1,21 @@
 {
  "items": {
+  "oathbrand": {
+   "id": "oathbrand",
+   "name": "Oathbrand",
+   "kind": "weapon",
+   "rarity": 0,
+   "icon": "sword",
+   "value": 20,
+   "description": "Swings itself at whatever is nearest, in a wide arc.",
+   "weapon": {
+    "id": "oathblade",
+    "rank": 1
+   },
+   "art": "oathbrand",
+   "artKind": "blade1h",
+   "lore": "A knight's arming sword, gilt at the cross and pommel, a garnet in the wheel."
+  },
   "worn_oathblade": {
    "id": "worn_oathblade",
    "name": "Worn Oathblade",

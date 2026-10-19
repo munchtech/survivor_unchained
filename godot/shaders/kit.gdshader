@@ -11,6 +11,8 @@
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
+#include "res://shaders/flare_world.gdshaderinc"
+
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 albedo_color : source_color = vec4(1.0);
 uniform bool use_vcolor = false;
@@ -166,4 +168,11 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	if (use_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+
+	// The Flare's drain and frost (flare_world.gdshaderinc).
+	if (flare_live()) {
+		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; vec3 fl_e = EMISSION;
+		flare_prop((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, fl_a, fl_r, fl_e);
+		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
+	}
 }

@@ -387,4 +387,32 @@ public sealed partial class Battle
     /// <summary>A Stand that guards: blows cut while it holds.</summary>
     double FlareGuard(double dmg) =>
         FlareT > 0 && Flare is { Kind: FlareKind.Stand, Guard: "cut" } f ? dmg * (1 - f.GuardValue) : dmg;
+
+    /// <summary>Her clock against the world's (docs/design/FLARE_LOOK.md §1.9): while the view holds the world at 8% for
+    /// the press's Draw and Hold, it lends the Flare's own clock the rest of each real second, so the key pose ends
+    /// (Release) when the calling's Hold does and every beat after it keeps lamps.json's spacing. It never fires a
+    /// blow, a pulse or a Stand's tick, never passes the key, and leaves the world's stamps (iframes, the mend, a
+    /// Stand's boss seconds) alone. The headless harness never calls it. Returns the time it lent.</summary>
+    public double FlareLead(double dt)
+    {
+        if (dt <= 0 || FlareT <= 0 || flareReleased || Flare is not { } f) return 0;
+        // To the key and no further; a blow due at or before it stays on the world's clock (TickFlare).
+        double room = FlareT - (flareLen - flareKey);
+        if (f.Kind == FlareKind.Strike && flareBlow < flareAt.Length) room = Math.Min(room, FlareT - (flareLen - flareAt[flareBlow]) - 1e-6);
+        double lend = Math.Clamp(Math.Min(dt, room), 0, dt);
+        FlareT -= lend;
+        FlareHold = Math.Max(0, FlareHold - lend);
+        if (flareLen - FlareT >= flareKey - 1e-9)
+        {
+            flareReleased = true;
+            var p = Player;
+            Events.Emit(new Ev.Flare { Phase = FlarePhase.Release, Id = f.Id, X = p.X, Z = p.Z, Radius = flareReach, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
+        }
+        return lend;
+    }
+
+    /// <summary>The Flare's key pose time (its "key" beat), for the view's Hold.</summary>
+    public double FlareKey => flareKey;
+    /// <summary>Whether this cast's key pose has ended (Release).</summary>
+    public bool FlareReleased => flareReleased;
 }

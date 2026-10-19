@@ -18,8 +18,8 @@ namespace SurvivorUnchained.Rpg;
  * The items themselves are data (data/content/items.json, the web game's
  * own list); the affixes are rules, and are written here. */
 
-public enum ItemKind { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring, Relic, Material, Consumable, Quest, Tool, Trophy }
-public enum EquipSlot { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic }
+public enum ItemKind { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring, Relic, Material, Consumable, Quest, Tool, Trophy, Shoulders, Bracers, Hands, Belt, Legs, Feet }
+public enum EquipSlot { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic, Shoulders, Bracers, Hands, Belt, Legs, Feet }
 
 public sealed class ItemWeapon { public string Id = ""; public int Rank = 1; }
 public sealed class Consumable
@@ -41,6 +41,9 @@ public sealed class ItemDef
     public double Value;
     public string? Lore, Downside;
     public ItemWeapon? Weapon;
+    /// <summary>The Arms id (art/weapons/weapons.json) it puts in her right hand, and that row's kind ("blade1h", "dagger", "staff", "crossbow", "axe", "wand"):
+    /// a weapon with no Loadouts.Held row takes its kind's stance (Loadouts.Of).</summary>
+    public string? Art, ArtKind;
     public List<StatMod>? Mods;
     public List<TriggerDef>? Triggers;
     public List<string>? Tags;
@@ -50,6 +53,8 @@ public sealed class ItemDef
     public bool Base;
     public Consumable? Consumable;
     public bool Unique;
+    /// <summary>The visual pieces it puts on her, ids like "warden.pauldrons" (docs/handoff/armor.md, see Wear).</summary>
+    public List<string>? Wear;
     /// <summary>A quest thing the story may still ask for while this holds
     /// (always, when it is not written): until then it is neither sold over
     /// a counter nor dropped. Once its part is played it is only a keepsake.</summary>
@@ -131,6 +136,12 @@ public static class Items
     public static Dictionary<string, ItemDef> All { get { if (all == null) Load(); return all!; } }
     public static IReadOnlyList<string> RarityNames { get { if (rarityNames == null) Load(); return rarityNames!; } }
     public static readonly EquipSlot[] EquipSlots = EnumKey<EquipSlot>.All;
+
+    /// <summary>Adds a def (tests, and pieces not yet in items.json). Copy-on-write, so readers on other threads never see a dictionary change under them.</summary>
+    public static void Register(ItemDef def)
+    {
+        lock (typeof(Items)) { var next = new Dictionary<string, ItemDef>(All) { [def.Id] = def }; all = next; }
+    }
 
     public static ItemDef Get(string id) => All.TryGetValue(id, out var d) ? d : throw new KeyNotFoundException($"unknown item {id}");
     public static ItemDef? Find(string id) => All.TryGetValue(id, out var d) ? d : null;
@@ -306,6 +317,12 @@ public static class Items
         ItemKind.Amulet => EquipSlot.Amulet,
         ItemKind.Ring => EquipSlot.Ring1,
         ItemKind.Relic => EquipSlot.Relic,
+        ItemKind.Shoulders => EquipSlot.Shoulders,
+        ItemKind.Bracers => EquipSlot.Bracers,
+        ItemKind.Hands => EquipSlot.Hands,
+        ItemKind.Belt => EquipSlot.Belt,
+        ItemKind.Legs => EquipSlot.Legs,
+        ItemKind.Feet => EquipSlot.Feet,
         _ => null,
     };
 

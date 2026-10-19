@@ -7,7 +7,8 @@ using Godot;
 namespace SurvivorUnchained.Sound;
 
 /// <summary>Where a sound goes (effects unless said otherwise, as the web game).</summary>
-public enum Bus { Sfx, Music, Amb, Ui }
+/// <summary>Flare: the Flares' own sound (Sfx.Flare), at the effects' level but never under the duck it puts on them.</summary>
+public enum Bus { Sfx, Music, Amb, Ui, Flare }
 public enum Wave { Sine, Triangle, Square, Saw }
 
 /// <summary>A tone: an oscillator through filters and an envelope (the web game's ToneOpts).</summary>
@@ -70,8 +71,8 @@ public partial class Synth : Node
     readonly List<Voice> voices = new();
     readonly List<Bed> beds = new();
     AudioStreamGeneratorPlayback? dry, wet;
-    public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f };
-    static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f };
+    public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f, 0.85f };
+    static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
     public float Master = 0.85f;
     float duck = 1, duckNow = 1, masterNow;
     /// <summary>The fight's own noise held down under a big moment (the boss's fall, an

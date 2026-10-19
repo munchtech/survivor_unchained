@@ -1,0 +1,124 @@
+{
+ "rivet": {
+  "file": "rivet.glb",
+  "tris": 40,
+  "size_mm": [
+   6.48,
+   6.42,
+   2.35
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "stud": {
+  "file": "stud.glb",
+  "tris": 26,
+  "size_mm": [
+   7.02,
+   7.02,
+   2.75
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "dome": {
+  "file": "dome.glb",
+  "tris": 70,
+  "size_mm": [
+   12.09,
+   11.5,
+   3.45
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "grommet": {
+  "file": "grommet.glb",
+  "tris": 64,
+  "size_mm": [
+   7.93,
+   7.94,
+   1.2
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "gem_round": {
+  "file": "gem_round.glb",
+  "tris": 222,
+  "size_mm": [
+   14.5,
+   14.42,
+   3.76
+  ],
+  "materials": [
+   "metal",
+   "gem"
+  ]
+ },
+ "gem_oval": {
+  "file": "gem_oval.glb",
+  "tris": 222,
+  "size_mm": [
+   18.34,
+   13.39,
+   4.37
+  ],
+  "materials": [
+   "metal",
+   "gem"
+  ]
+ },
+ "boss": {
+  "file": "boss.glb",
+  "tris": 380,
+  "size_mm": [
+   30.02,
+   29.98,
+   5.35
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "rune_plate": {
+  "file": "rune_plate.glb",
+  "tris": 426,
+  "size_mm": [
+   40.04,
+   22.12,
+   1.45
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "filigree_plate": {
+  "file": "filigree_plate.glb",
+  "tris": 708,
+  "size_mm": [
+   45.0,
+   28.0,
+   1.5
+  ],
+  "materials": [
+   "metal"
+  ]
+ },
+ "buckle": {
+  "file": "buckle.glb",
+  "tris": 276,
+  "size_mm": [
+   27.2,
+   20.98,
+   3.55
+  ],
+  "materials": [
+   "metal"
+  ]
+ }
+}

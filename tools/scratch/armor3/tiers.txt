@@ -1,0 +1,9 @@
+t3_plain_play|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --wear plate_top_plain
+t3_plain_close|--quick warden --sex female --nohud --zone waystation --close 1 --idle-after 1 --seed 1 --seconds 9 --wear plate_top_plain
+t3_plain_look|--new --sex female --archetype warden --step 0 --open-eyes --seed 1 --seconds 6 --wear plate_top_plain
+t3_etched_play|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --wear plate_top_etched
+t3_etched_close|--quick warden --sex female --nohud --zone waystation --close 1 --idle-after 1 --seed 1 --seconds 9 --wear plate_top_etched
+t3_etched_look|--new --sex female --archetype warden --step 0 --open-eyes --seed 1 --seconds 6 --wear plate_top_etched
+t3_gilded_play|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --wear plate_top_gilded
+t3_gilded_close|--quick warden --sex female --nohud --zone waystation --close 1 --idle-after 1 --seed 1 --seconds 9 --wear plate_top_gilded
+t3_gilded_look|--new --sex female --archetype warden --step 0 --open-eyes --seed 1 --seconds 6 --wear plate_top_gilded

@@ -1,0 +1,118 @@
+using System.Collections.Generic;
+using System.Linq;
+
+namespace SurvivorUnchained.Rpg;
+
+/* What she is seen wearing, read from what she has equipped (docs/handoff/armor.md item 1).
+ * An item slot names a fixed group of visual slots; an item's Wear lists piece ids
+ * ("warden.pauldrons" = <outfit>.<visual slot>), each of which must sit in its item slot's group.
+ * A visual slot with no piece is left out: the view fills it from her calling's outfit. */
+public static class Wear
+{
+    public static readonly string[] VisualSlots = ["top", "bottom", "legwear", "gloves", "skirt", "belt", "collar", "bracers", "greaves", "boots", "pauldrons", "cloak", "head"];
+
+    static readonly string[] None = [];
+
+    /// <summary>The visual slots an item slot covers (none for weapons, amulets, rings, relic).</summary>
+    public static IReadOnlyList<string> Group(EquipSlot s) => s switch
+    {
+        EquipSlot.Head => ["head"],
+        EquipSlot.Shoulders => ["pauldrons"],
+        EquipSlot.Body => ["top", "collar"],
+        EquipSlot.Bracers => ["bracers"],
+        EquipSlot.Hands => ["gloves"],
+        EquipSlot.Belt => ["belt", "skirt"],
+        EquipSlot.Legs => ["bottom", "legwear", "greaves"],
+        EquipSlot.Feet => ["boots"],
+        EquipSlot.Cloak => ["cloak"],
+        _ => None,
+    };
+
+    /// <summary>The visual slot a piece id is for: its armor index row's (ArmorIndex.Shared), else the part after the last dot.</summary>
+    public static string SlotOf(string pieceId) => ArmorIndex.Shared.SlotOf(pieceId);
+
+    /// <summary>The part of a piece id after its last dot (a calling's piece: "warden.top" is for "top").</summary>
+    public static string SlotOfId(string pieceId) => pieceId[(pieceId.LastIndexOf('.') + 1)..];
+
+    /// <summary>Her calling's tattoos: part of her skin with that calling, always worn, never an equip slot.</summary>
+    public const string Ink = "ink";
+
+    /// <summary>The callings, in the order a fill's fallback is looked for (OutfitChannels' order).</summary>
+    public static readonly string[] FallbackOrder = ["warden", "arcanist", "reaver", "ranger"];
+
+    /// <summary>What she is seen wearing (docs/handoff/armor.md item 7): visual slot -> piece id. `worn` is what her
+    /// equipment (Of) or a shot's --wear puts on her; every visual slot left empty is filled from her calling's own pieces
+    /// (CALLING.SLOT where the index has one), and her calling's ink is always on. An equipped piece's covers hide the
+    /// other visual slots it covers, equipped or not (a suit hides what it covers). A fill never hides an equipped piece
+    /// (loot the player put on must show): a fill whose covers reach a slot an equipped piece shows in is dropped, and
+    /// its own slot is filled by the first calling in FallbackOrder whose piece for that slot covers that slot only, or
+    /// left empty with a note. A piece the index does not know is left off, with a note why.</summary>
+    public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null)
+    {
+        var eq = new Dictionary<string, string>();
+        foreach (var (vs, id) in worn)
+        {
+            if (ix.Find(id) is not { } row) { notes?.Add($"wear: piece '{id}' (for {vs}) is in no armor index; left off"); continue; }
+            if (row.Slot == Ink) { notes?.Add($"wear: piece '{id}' is ink, which comes with its calling; left off"); continue; }
+            eq[row.Slot] = id;
+        }
+        // (what equipped pieces hide: each other too)
+        var hidden = new HashSet<string>();
+        foreach (var (slot, id) in eq)
+            foreach (var c in ix.Find(id)!.Covers)
+                if (c != slot && c != Ink) hidden.Add(c);
+        var r = eq.Where(kv => !hidden.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
+        bool HidesEquipped(string slot, string id) => ix.Find(id)!.Covers.Any(c => c != slot && c != Ink && r.ContainsKey(c) && eq.ContainsKey(c));
+        foreach (var (slot, id) in ix.Calling(calling))
+        {
+            if (slot == Ink) { r[slot] = id; continue; }
+            if (eq.ContainsKey(slot) || hidden.Contains(slot)) continue;
+            if (!HidesEquipped(slot, id)) { r[slot] = id; continue; }
+            var fb = FallbackOrder.Select(c => ix.Find($"{c}.{slot}")).FirstOrDefault(p => p is { } p_ && p_.Covers.Count == 1 && p_.Covers[0] == slot);
+            if (fb != null) { r[slot] = fb.Id; notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece; {slot} filled with '{fb.Id}'"); }
+            else notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece, and no calling has a {slot} that covers only {slot}; {slot} left empty");
+        }
+        // (and what the fills kept hide, of the other fills)
+        foreach (var (slot, id) in r.ToList())
+        {
+            if (eq.ContainsKey(slot)) continue;
+            foreach (var c in ix.Find(id)!.Covers)
+                if (c != slot && c != Ink && !eq.ContainsKey(c)) r.Remove(c);
+        }
+        return r;
+    }
+
+    /// <summary>The look's visual slots the calling's own full set wears exactly (and nothing else).</summary>
+    public static bool IsCallingSet(IReadOnlyDictionary<string, string> look, string calling, ArmorIndex ix)
+    {
+        var full = Look(new Dictionary<string, string>(), calling, ix);
+        return full.Count == look.Count && full.All(kv => look.TryGetValue(kv.Key, out var v) && v == kv.Value);
+    }
+
+    /// <summary>Visual slot -> piece id, from what is equipped. Pieces outside their item slot's group are ignored.</summary>
+    public static Dictionary<string, string> Of(Equipment eq, System.Func<string, ItemDef?>? find = null)
+    {
+        find ??= Items.Find;
+        var r = new Dictionary<string, string>();
+        foreach (var s in Items.EquipSlots)
+        {
+            if (eq[s] is not { } it || find(it.Def)?.Wear is not { } wear) continue;
+            var group = Group(s);
+            foreach (var p in wear) if (group.Contains(SlotOf(p))) r[SlotOf(p)] = p;
+        }
+        return r;
+    }
+
+    public static Dictionary<string, string> Of(CharacterData ch, System.Func<string, ItemDef?>? find = null) => Of(ch.Equipment, find);
+
+    /// <summary>The piece ids of a def that its own item slot's group does not allow (or that name no visual slot).</summary>
+    public static List<string> Validate(ItemDef def)
+    {
+        var bad = new List<string>();
+        if (def.Wear == null) return bad;
+        var slot = Items.SlotFor(def);
+        var group = slot is EquipSlot s ? Group(s) : None;
+        foreach (var p in def.Wear) if (!VisualSlots.Contains(SlotOf(p)) || !group.Contains(SlotOf(p))) bad.Add(p);
+        return bad;
+    }
+}

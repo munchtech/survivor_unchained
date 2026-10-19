@@ -110,8 +110,14 @@ public static class People
         // Her own clips are chosen by her calling, which her outfit says.
         if (p.Own != null) p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
-        if (her && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string set) HerOutfit(p, set[4..]);
+        // (piece by piece when her equipment wears a piece or a shot says --wear: HerWear)
+        if (her && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string set)
+        {
+            if (HerWear.LookFor(set[4..], spec.Worn) is { } wear) HerWear.Apply(p, set[4..], wear);
+            else HerOutfit(p, set[4..]);
+        }
         if (her) Perf.Lap("play: her outfit");
+        if (her) HerDraws.Watch(p);
         // Her hair, a mesh of its own: the style chosen if it is one of hers;
         // her face shaped, and the paint on it.
         if (her)
@@ -1020,9 +1026,11 @@ public static class People
         if (!ResourceLoader.Exists(file)) return;
         var scene = GD.Load<PackedScene>(file).Instantiate<Node3D>();
         var from = (Skeleton3D)scene.FindChildren("*", "Skeleton3D", true, false)[0];
+        var laid = new List<MeshInstance3D>();
         foreach (var mi in from.GetChildren().OfType<MeshInstance3D>().ToList())
         {
             if (!mi.Name.ToString().StartsWith(set + "_")) continue;
+            laid.Add(mi);
             from.RemoveChild(mi);
             mi.Owner = null;
             p.Skeleton.AddChild(mi);
@@ -1046,8 +1054,10 @@ public static class People
         int ch = System.Array.IndexOf(OutfitChannels, set);
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
             if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
-        // Her gameplay model beside it, drawn only at the play camera (HerLod).
+        // Her gameplay model beside it, drawn only at the play camera (HerLod), and what draws of it there one
+        // mesh a material (HerLod.Merge).
         HerLod.Attach(p, set);
+        HerLod.For(p)?.Merge(laid);
     }
 
     static Shader? furShader, sheerShader, outfitShader, metalShader;
@@ -1113,6 +1123,8 @@ public static class People
             m.SetShaderParameter("roughness_value", src.Roughness);
             m.SetShaderParameter("metallic_value", src.Metallic);
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
+            // (a metal key's own satin roughness, where its row names one: blacksteel, the etched tier's blackened ground at 0.3)
+            if (kind == 1 && entry.ContainsKey("roughness")) m.SetShaderParameter("metal_rough", (float)entry["roughness"]);
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
@@ -1189,6 +1201,19 @@ public static class People
     /// <summary>Her skin under the outfit tucked a few millimetres in by her
     /// skin's shader (shaders/heroine_skin.gdshader), not cut away: cut, a
     /// gap opened in her wherever a piece swung off her as she moved.</summary>
+    /// <summary>Her body's meshes TuckSkin marks (HerWear's tuck map: the same ones), and their skin materials.</summary>
+    internal static bool TuckBody(MeshInstance3D mi)
+    {
+        string n = mi.Name.ToString();
+        if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
+        return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
+    }
+
+    internal static bool IsSkin(Material? m) => m is ShaderMaterial sm && skinShader2 != null && sm.Shader == skinShader2;
+
+    /// <summary>The vertex-colour channel an outfit's tuck is marked in (-1: none).</summary>
+    internal static int OutfitChannel(string set) => System.Array.IndexOf(OutfitChannels, set);
+
     static void TuckSkin(MeshInstance3D mi, int ch)
     {
         // (Only her body is marked; her head is left as it is, shape keys and all. Her head and tongue carry

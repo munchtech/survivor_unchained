@@ -58,13 +58,16 @@ public enum Sex { Male, Female }
 public sealed class Equipment
 {
     public ItemInstance? Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic;
+    public ItemInstance? Shoulders, Bracers, Hands, Belt, Legs, Feet;
 
     public ItemInstance? this[EquipSlot s]
     {
         get => s switch
         {
             EquipSlot.Weapon => Weapon, EquipSlot.Offhand => Offhand, EquipSlot.Head => Head, EquipSlot.Body => Body,
-            EquipSlot.Cloak => Cloak, EquipSlot.Amulet => Amulet, EquipSlot.Ring1 => Ring1, EquipSlot.Ring2 => Ring2, _ => Relic,
+            EquipSlot.Cloak => Cloak, EquipSlot.Amulet => Amulet, EquipSlot.Ring1 => Ring1, EquipSlot.Ring2 => Ring2,
+            EquipSlot.Shoulders => Shoulders, EquipSlot.Bracers => Bracers, EquipSlot.Hands => Hands, EquipSlot.Belt => Belt,
+            EquipSlot.Legs => Legs, EquipSlot.Feet => Feet, _ => Relic,
         };
         set
         {
@@ -78,6 +81,12 @@ public sealed class Equipment
                 case EquipSlot.Amulet: Amulet = value; break;
                 case EquipSlot.Ring1: Ring1 = value; break;
                 case EquipSlot.Ring2: Ring2 = value; break;
+                case EquipSlot.Shoulders: Shoulders = value; break;
+                case EquipSlot.Bracers: Bracers = value; break;
+                case EquipSlot.Hands: Hands = value; break;
+                case EquipSlot.Belt: Belt = value; break;
+                case EquipSlot.Legs: Legs = value; break;
+                case EquipSlot.Feet: Feet = value; break;
                 default: Relic = value; break;
             }
         }
@@ -490,6 +499,18 @@ public static class Inventory
             else if (!AddToPack(ch, prev)) { ch.Equipment[slot] = prev; return false; }
         }
         return true;
+    }
+
+    /// <summary>Migration: a worn item whose kind no longer matches its slot moves to its kind's slot
+    /// if that is empty, else to the pack (else stays). Safe to run any number of times.</summary>
+    public static void Reslot(CharacterData ch)
+    {
+        foreach (var s in Items.EquipSlots)
+        {
+            if (ch.Equipment[s] is not { } it || Items.Find(it.Def) is not { } def || Items.Fits(def, s)) continue;
+            if (Items.SlotFor(def) is EquipSlot k && Items.Fits(def, k) && ch.Equipment[k] == null) { ch.Equipment[s] = null; ch.Equipment[k] = it; }
+            else if (AddToPack(ch, it)) ch.Equipment[s] = null;
+        }
     }
 
     public static bool Unequip(CharacterData ch, EquipSlot slot)

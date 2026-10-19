@@ -54,6 +54,20 @@ public class WeaponSocketsTests
     }
 
     [Fact]
+    public void AnAnchorBelongsOnlyToThePieceItLiesUnder()
+    {
+        // daggers.glb: two pieces, Cube_004 (daggers) and Cube_004_01 (dagger_b). An anchor under one is not the other's.
+        Assert.True(WeaponSockets.AnchorIsPiece("Cube_004", new[] { "Scene", "Cube_004" }));
+        Assert.False(WeaponSockets.AnchorIsPiece("Cube_004_01", new[] { "Scene", "Cube_004" }));
+        Assert.True(WeaponSockets.AnchorIsPiece("Cube_004_01", new[] { "Scene", "Cube_004_01", "Grip" }));
+        // At the file's root (no node above it) it is no one piece's in a shared file...
+        Assert.False(WeaponSockets.AnchorIsPiece("Cube_004", System.Array.Empty<string>()));
+        // ...and a whole-file piece takes any anchor.
+        Assert.True(WeaponSockets.AnchorIsPiece(null, System.Array.Empty<string>()));
+        Assert.True(WeaponSockets.AnchorIsPiece(null, new[] { "Scene", "Cube_004" }));
+    }
+
+    [Fact]
     public void AnAnchorSetsTheShaftNotTheBounds()
     {
         // The bound staff: its coil leans the bounds' long axis 4 degrees off the rod; the anchor's -Y is the rod.
@@ -80,7 +94,7 @@ public class WeaponSocketsTests
         System.Numerics.Vector3 mx = new(0, 1, 0), my = new(0, 0, 1), mz = new(1, 0, 0), o = new(-0.025f, 0.075f, 0);
         var (turn, at) = WeaponSockets.FistSeat(mx, my, mz, o);
         System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
-        // The grip point lands on the pocket; the shaft runs along the fist's line (8.2 degrees off the mount's).
+        // The grip point lands on the pocket; the shaft runs along the fist's line (27.7 degrees off the mount's).
         var grip = Hand(at);
         Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(grip, WeaponSockets.FistAtR), 6);
         var shaft = Hand(System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn)) - o;
@@ -90,7 +104,7 @@ public class WeaponSocketsTests
         Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(up, WeaponSockets.FistAtR + WeaponSockets.FistDirR), 5);
         // The least turn: the piece's +Z (its edge or face) stays square to the shaft and keeps its side.
         var face = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitZ, turn);
-        Assert.True(face.Z > 0.99f);
+        Assert.True(face.Z > 0.97f);  // 0.977 on the 27.7 degree fist (was > 0.99 on the 8.2 degree one)
     }
 
     [Fact]
@@ -98,14 +112,14 @@ public class WeaponSocketsTests
     {
         // In hand_r's space (+Y along the fingers, +Z the thumb's side, the palm toward -X): the pocket lies under the
         // knuckles (on the body build F0 her knuckle pivots are 100-105 mm from the wrist), the leather's 13.65 mm plus
-        // the glove off the palm (-X), not at the thumb's root (31 mm); the shaft square to the fingers within a few degrees.
+        // the glove off the palm (-X), not at the thumb's root (31 mm); the shaft on the diagonal (27.7 deg off hand +Z, 18 Oct) so the little finger reaches it.
         var at = WeaponSockets.FistAtR;
-        Assert.InRange(at.Y, 0.085f, 0.105f);
-        Assert.InRange(at.X, -0.045f, -0.025f);
+        Assert.InRange(at.Y, 0.074f, 0.094f);
+        Assert.InRange(at.X, -0.043f, -0.023f);
         Assert.InRange(at.Z, -0.020f, 0.0f);
         var dir = WeaponSockets.FistDirR;
         Assert.InRange((double)dir.Length(), 0.99999, 1.00001);
-        Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 7.0, 9.5);
+        Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 26.7, 28.7);
     }
 
     [Fact]
@@ -138,8 +152,37 @@ public class WeaponSocketsTests
         Assert.NotNull(WeaponSockets.PocketR(WeaponKind.Blade1H));
         Assert.Equal((WeaponSockets.DaggerAtR, WeaponSockets.DaggerDirR), WeaponSockets.PocketR(WeaponKind.Dagger));
         // The axe's line is measured but not live (its haft is too thick for her fist to close on: see AxeAtR).
-        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Crossbow, WeaponKind.Shield, WeaponKind.Wand })
+        Assert.Equal((WeaponSockets.CrossbowAtR, WeaponSockets.CrossbowDirR), WeaponSockets.PocketR(WeaponKind.Crossbow));
+        foreach (var k in new[] { WeaponKind.None, WeaponKind.Axe, WeaponKind.Shield, WeaponKind.Wand })
             Assert.Null(WeaponSockets.PocketR(k));
+    }
+
+    [Fact]
+    public void ACrossbowSitsOnItsPistolGripWithTheStockAlongTheHandAndItsTopUp()
+    {
+        // The plain pistol mount in her hand (Arms.MountTransform, Lean 0): mount X = hand +Y, Y = hand +Z, Z = hand +X.
+        System.Numerics.Vector3 mx = new(0, 1, 0), my = new(0, 0, 1), o = new(-0.025f, 0.075f, 0);
+        var mz = System.Numerics.Vector3.Cross(mx, my);
+        var (pAt, pDir) = WeaponSockets.PocketR(WeaponKind.Crossbow)!.Value;
+        var (turn, at) = WeaponSockets.PistolSeat(mx, my, mz, o, pAt, pDir);
+        System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
+        System.Numerics.Vector3 Dir(System.Numerics.Vector3 m) => mx * m.X + my * m.Y + mz * m.Z;
+        System.Numerics.Vector3 Turned(System.Numerics.Vector3 v) => Dir(System.Numerics.Vector3.Transform(v, turn));
+        // The grip point on the pocket, the grip's own line (the rake in the piece) on the fist's line.
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(Hand(at), pAt), 6);
+        float r = WeaponSockets.PistolRake * MathF.PI / 180;
+        var grip = Turned(new System.Numerics.Vector3(0, MathF.Sin(r), MathF.Cos(r)));
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(grip, System.Numerics.Vector3.Normalize(pDir)), 5);
+        // Its line is the rake itself, so the stock (+Y) runs along hand +Y (the fingers, the forearm: the bow forward)
+        // and its top (+Z) out of the thumb side (hand +Z), as the plain pistol mount held it: the clips' aim is kept.
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(Turned(System.Numerics.Vector3.UnitY), System.Numerics.Vector3.UnitY), 5);
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(Turned(System.Numerics.Vector3.UnitZ), System.Numerics.Vector3.UnitZ), 5);
+        // A fist's line leaning off the rake still lays the grip on it exactly, the stock square to the bow's limbs and
+        // turned toward the fingers (never back up the forearm).
+        var lean = System.Numerics.Vector3.Normalize(new System.Numerics.Vector3(-0.1f, 0.45f, 0.88f));
+        (turn, at) = WeaponSockets.PistolSeat(mx, my, mz, o, pAt, lean);
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(Turned(new System.Numerics.Vector3(0, MathF.Sin(r), MathF.Cos(r))), lean), 5);
+        Assert.True(Turned(System.Numerics.Vector3.UnitY).Y > 0.9f);
     }
 
     [Fact]

@@ -54,7 +54,12 @@ public partial class ArmsDump : Node
         var dir = Path.GetFullPath(Path.Combine(root, "../tools/anim/data"));
         var sb = new StringBuilder("{\n");
         bool first = true;
-        foreach (var (id, bone) in Pairs)
+        // Weapons that are data (art/weapons/weapons.json) are held in hand_r too, for fistfit.
+        var held = new List<(string Id, string Bone)>(Pairs);
+        if (Godot.FileAccess.FileExists(ArmsData.Path))
+            foreach (var r in SurvivorUnchained.Play.WeaponsData.Parse(Godot.FileAccess.GetFileAsString(ArmsData.Path)))
+                if (!held.Exists(p => p.Id == r.Id)) held.Add((r.Id, "hand_r"));
+        foreach (var (id, bone) in held)
         {
             var piece = Arms.Make(id);
             piece.Transform = Arms.Seat(piece, id, bone);

@@ -34,6 +34,8 @@ public static class Ev
         public double X, Z, Amount; public bool Crit; public School School; public int Target;
         public bool Dot, Blocked; public Family? Family; public string? Def; public double MaxHp, Dx, Dz;
         public string? Art; public int Rank;
+        /// <summary>Landed by the Flare (the view stages the Flare's own hits and deaths).</summary>
+        public bool ByFlare;
     }
 
     /// <summary>Burst: the killing blow was far more than it had left (the body
@@ -41,7 +43,7 @@ public static class Ev
     public sealed class Kill : CombatEvent
     {
         public double X, Z; public int Enemy; public string Def = ""; public Family Family; public School School;
-        public bool Elite, Boss, ByPlayer, Burst; public double Dx, Dz, Scale = 1;
+        public bool Elite, Boss, ByPlayer, Burst, ByFlare; public double Dx, Dz, Scale = 1;
     }
 
     public sealed class PlayerHit : CombatEvent
