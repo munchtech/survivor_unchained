@@ -38,6 +38,8 @@ public partial class Game
         catch (Exception e) { GD.PushError($"storybook: {id} not played ({e.Message})"); GetTree().Quit(1); return; }
         storybook = new StoryPlayer(f, Host(), _ => { storybook = null; GetTree().Quit(); }, null, Args.Num("sb-from", 0));
         AddChild(storybook);
+        // The HUD's fade starts black; the storybook draws its own.
+        hud.Fade(0, 0);
     }
 
     /// <summary>The score with no place under it (a storybook played alone): its own mood, no air.</summary>
@@ -114,6 +116,7 @@ public partial class Game
             Unbar();
         }, bars);
         AddChild(storybook);
+        hud.Fade(0, 0);
         return true;
     }
 
