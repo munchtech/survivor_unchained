@@ -74,7 +74,7 @@ cam = bpy.data.objects.new("cam", cam_d)
 sc.collection.objects.link(cam)
 sc.camera = cam
 tgt = Vector((0.0, 0.0, 1.33))
-for tag, ang in (("front", 0.0), ("34", 35.0)):
+for tag, ang in (("front", 0.0), ("34", 35.0), ("side", 90.0)):
     a = math.radians(ang)
     cam.location = tgt + Vector((1.25 * math.sin(a), -1.25 * math.cos(a), 0.05))
     cam.rotation_euler = (tgt - cam.location).to_track_quat("-Z", "Y").to_euler()

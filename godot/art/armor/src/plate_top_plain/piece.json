@@ -8,16 +8,63 @@
  "material": "steel",
  "tint": null,
  "params": {
-  "over": 0.03, "low": 0.03, "wing": 0.022,
-  "lift": 0.002, "thick": 0.003, "gap": 0.011, "side": 0.07,
-  "roll": {"width": 0.005, "height": 0.0009},
-  "strap_width": 0.018, "back_width": 0.022, "back_rise": 0.035,
-  "buckle": {"t": 0.45, "w": 0.027, "h": 0.021, "r": 0.0016},
-  "gore_width": 0.016
+  "over": 0.03,
+  "low": 0.03,
+  "wing": 0.022,
+  "lift": 0.0011,
+  "thick": 0.0028,
+  "gap": 0.011,
+  "side": 0.045,
+  "fold": 0.0,
+  "roll": {
+   "width": 0.005,
+   "height": 0.0009
+  },
+  "strap_width": 0.016,
+  "buckle": {
+   "t": 0.45,
+   "w": 0.024,
+   "h": 0.019,
+   "r": 0.0014
+  },
+  "gore": {
+   "top": 0.014,
+   "drop": 0.02,
+   "hw_tip": 0.005,
+   "lift": 0.0005,
+   "thick": 0.0025,
+   "roll": [
+    0.0035,
+    0.0006
+   ]
+  },
+  "cup_budget": 2600,
+  "leather_budget": 900,
+  "roll_step": 0.0045,
+  "roll_nv": 8,
+  "back_rise": 0.035,
+  "back_width": 0.02,
+  "below": 0.2,
+  "back": 0.075,
+  "back_arc": 1.48
  },
  "adorn": [
-  {"kind": "row", "rim": "cup_rim", "mesh": "rivet", "spacing": 0.028, "inset": 0.0095, "r": 0.0032, "mat": "steel"}
+  {
+   "kind": "row",
+   "rim": "cup_rim",
+   "mesh": "rivet",
+   "spacing": 0.021,
+   "inset": 0.0075,
+   "r": 0.0028,
+   "avoid": 0.014,
+   "mat": "steel"
+  }
  ],
- "covers": ["top"],
- "hold": {"amount": 0.55, "squash": 0}
+ "covers": [
+  "top"
+ ],
+ "hold": {
+  "amount": 0.55,
+  "squash": 0
+ }
 }
