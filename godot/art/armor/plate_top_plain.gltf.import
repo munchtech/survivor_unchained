@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://fcbpesswuufp"
+path="res://.godot/imported/plate_top_plain.gltf-1a94c93841008b1b45f936306c2b15b6.scn"
 
 [deps]
 
+source_file="res://art/armor/plate_top_plain.gltf"
+dest_files=["res://.godot/imported/plate_top_plain.gltf-1a94c93841008b1b45f936306c2b15b6.scn"]
 
 [params]
 

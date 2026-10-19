@@ -754,14 +754,21 @@ def build_plate_top():
         socks[name] = {"point": gl(p).round(5).tolist(), "normal": gl(n).round(5).tolist(), "up": gl(up).round(5).tolist(),
                        "weights": top4(row)}
 
+    # (the cup point: cast out from her right nipple onto the cup's outer face; her left is its mirror, as the shell
+    # is (fitted_cups mirrors the right cup). A cast from each side missed on the left and fell back 12 mm off the plate.)
+    q = nip["r"]
+    nn = np.array(G["SKIN_BVH"].find_nearest(Vector(q))[1][:])
+    cp_, cn_ = q + nn * 0.01, nn
+    for t_ in (0.03, 0.0005):     # (from outside first: the outer face, where adornment sits)
+        h = cbvh.ray_cast(Vector(q + nn * t_), Vector(-nn if t_ > 0.01 else nn), 0.05)
+        if h[0] is not None:
+            cp_, cn_ = np.array(h[0][:]), np.array(h[1][:])
+            break
+    assert np.linalg.norm(cp_ - q) < 0.02, "cup socket: no cup face over her right nipple"
+    if cn_ @ nn < 0:
+        cn_ = -cn_
     for sd in "lr":
-        q = nip[sd]
-        nn = np.array(G["SKIN_BVH"].find_nearest(Vector(q))[1][:])
-        h = cbvh.ray_cast(Vector(q + nn * 0.0005), Vector(nn), 0.05)
-        p_ = np.array(h[0][:]) if h[0] is not None else q + nn * 0.01
-        n_ = np.array(h[1][:]) if h[0] is not None else nn
-        if n_ @ nn < 0:
-            n_ = -n_
+        p_, n_ = (cp_, cn_) if sd == "r" else (cp_ * mirror, cn_ * mirror)
         sock(f"cup_{sd}", p_, n_, [0, 0, 1.0], G["soft_weights"](p_[None])[0])
         pk = CUP_PEAK[sd]
         sock(f"strap_{sd}", pk, G["SKIN_BVH"].find_nearest(Vector(pk))[1][:], np.asarray(strap_lines[sd][1]) - pk, G["soft_weights"](pk[None])[0])
