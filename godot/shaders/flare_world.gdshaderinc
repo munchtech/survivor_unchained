@@ -260,7 +260,7 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	float nb = texture(flare_noise, w * 0.9 + vec2(TIME * 0.4, -TIME * 1.6)).b;
 	float band = smoothstep(-0.05, 0.02, ahead) * (1.0 - smoothstep(bw * 0.55, bw, ahead + (tear - 0.5) * 0.25 + (nb - 0.5) * 0.2));
 	float cells = 0.55 + 0.45 * smoothstep(0.25, 0.75, texture(flare_noise, w * 2.3 + vec2(TIME * 0.9, -TIME * 3.4)).r);
-	float body = band * cells * (1.0 - 0.45 * smoothstep(bw * 0.3, bw, ahead));
+	float body = band * cells * (1.0 - 0.3 * smoothstep(bw * 0.3, bw, ahead));
 	float core = exp(-pow((ahead - bw * 0.28) / (bw * 0.11), 2.0)) * band * smoothstep(0.45, 0.85, cells + (tear - 0.5) * 0.3);
 	// Short licks out ahead of it, 15-40 cm, flickering every few frames.
 	float tg = texture(flare_noise, vec2(u * 23.0, 0.83)).b;
@@ -287,7 +287,7 @@ float flare_boom_behind(vec2 w) {
 // The BOOM's line on a surface (its white-yellow core under the knee, orange to red behind it).
 vec3 flare_boom_light(vec4 bo) {
 	// (Judge 4 fix 7: amber at its edge, hue ~28, orange through it, a yellow-white core.)
-	return mix(vec3(0.62, 0.34, 0.06), vec3(1.0, 0.5, 0.1), smoothstep(0.2, 0.8, bo.y)) * bo.y * 0.62 + vec3(1.0, 0.74, 0.38) * bo.x * 0.42;
+	return mix(vec3(0.62, 0.34, 0.06), vec3(1.0, 0.46, 0.08), smoothstep(0.2, 0.8, bo.y)) * bo.y * 0.9 + vec3(1.0, 0.74, 0.38) * bo.x * 0.25;
 }
 
 // The last word's ground flash (judge 2, s4): its first frames, a torn disc about 3 m across round the crater, a

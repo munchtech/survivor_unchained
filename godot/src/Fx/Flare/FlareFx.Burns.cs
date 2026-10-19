@@ -313,7 +313,7 @@ public partial class FlareFx
             if (rr < 7f)
             {
                 float k = 1 - Mathf.SmoothStep(4.5f, 7f, rr);
-                int bn = (int)(Mathf.Tau * Mathf.Max(rr, 1f) / 0.5f);
+                int bn = (int)(Mathf.Tau * Mathf.Max(rr, 1f) / 0.3f);
                 for (int i = 0; i < bn; i++)
                 {
                     if (R() > dt / 0.12f * k) continue;
@@ -321,8 +321,8 @@ public partial class FlareFx
                     var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                     var p = boomAt + way * (rr * (0.7f + R() * 0.3f));
                     p.Y = (float)HeightAt(p.X, p.Z) + 0.25f + R() * 0.35f;
-                    glow.Spawn(FlareBits.Kind.Fire, p, way * speed * (0.85f + R() * 0.2f) + Vector3.Up * (0.3f + R() * 0.6f), 0.16f + R() * 0.08f, 0.9f + R() * 0.4f,
-                        new Color(0.85f, 0.4f, 0.1f), new Color(0.55f, 0.2f, 0.03f), sizeEnd: 1.5f + R() * 0.4f, drag: 1.5f, lift: 0.5f);
+                    glow.Spawn(FlareBits.Kind.Fire, p, way * speed * (0.85f + R() * 0.2f) + Vector3.Up * (0.3f + R() * 0.6f), 0.14f + R() * 0.06f, 0.45f + R() * 0.2f,
+                        new Color(0.6f, 0.28f, 0.07f), new Color(0.4f, 0.14f, 0.02f), sizeEnd: 0.8f + R() * 0.2f, drag: 1.5f, lift: 0.5f);
                 }
             }
         }
