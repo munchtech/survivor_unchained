@@ -19,4 +19,5 @@ The owner's rules for this stretch (17 October; README "Effort by kind of work" 
 - Hand off at about 300k: update your handoff's top section and send "HANDOFF READY <branch>@<commit>".
 
 First report, once you're oriented (within your first few turns): your fixed list with each item's state, and an honest estimate of how much is left until your area is DONE and merged (items, rounds, rough hours), so the owner can plan which areas start next.
+- **Pictures are your biggest context cost (19 Oct: three leads filled 250k with images in one afternoon).** Never open full-size frames yourself: half-size copies or contact sheets (`python tools/half.py`) only, and only when a decision needs your eye. Numbers, runners and the judge do the rest.
 - Judges: read the verdict's summary and fixes, not the sheets the judge already ruled on (re-opening them doubles the cost). Keep any wait under an hour, or the cache goes cold.
