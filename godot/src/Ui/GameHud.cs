@@ -1084,6 +1084,8 @@ public partial class GameHud : CanvasLayer
         spotK = Mathf.MoveToward(spotK, spotDim ? 1 : 0, dt / 0.26f);
         slotK = Mathf.MoveToward(slotK, spotSlots ? 1 : 0, dt / 0.2f);
         irons.ArtNote.Visible = irons.ArtWord.Visible = !spotUp;
+        // (an interact prompt waits under a freeze on a thing in the world)
+        promptBox.Modulate = spotDim ? Colors.Transparent : Colors.White;
         bool on = spotK > 0 || slotK > 0;
         if (!on && !spotWas) return;
         spotWas = on;

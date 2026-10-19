@@ -41,8 +41,10 @@ public sealed record Callout(string Id, CalloutKind Kind, string Title, string L
     public string? After { get; init; }
     /// <summary>Game seconds of play it leaves after a pause before it comes (F2 follows F1 closely).</summary>
     public double Gap { get; init; } = Teacher.Gap;
+    /// <summary>It does not wait for a hint (held under it): F2 follows F1 before the ember can rise.</summary>
+    public bool OverHint { get; init; }
     /// <summary>A freeze on a passing thing in the world (a red line, an ember stone, an enemy): it does
-    /// not wait for a hint, which is held under it and comes back after.</summary>
+    /// not wait for a hint or an interact prompt, which are held under it and come back after.</summary>
     public bool Transient => Kind == CalloutKind.Freeze && Target.World != null;
 }
 
@@ -148,7 +150,7 @@ public sealed class Teacher
 
     /// <summary>What of the screen's business holds back a callout that isn't a panel (a transient
     /// freeze goes over a hint).</summary>
-    static Busy Blocking(Callout c, Busy busy) => c.Transient ? busy & ~Busy.Hint : busy;
+    static Busy Blocking(Callout c, Busy busy) => c.Transient ? busy & ~(Busy.Hint | Busy.Prompt) : c.OverHint ? busy & ~Busy.Hint : busy;
 
     static readonly (Busy B, string Name)[] Names =
     [
@@ -220,6 +222,8 @@ public sealed class Teacher
                 continue;
             }
             var why = Why(c, now, busy, p);
+            // (its patience runs from when the one before it is done: F2 waits out F1 whole)
+            if (why.Contains("prereq")) e.At = now;
             if (why.Count > 0) { e.Waited.UnionWith(why); continue; }
             queue.RemoveAt(i);
             Current = c;

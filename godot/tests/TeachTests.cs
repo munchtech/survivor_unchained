@@ -163,9 +163,9 @@ public class TeachTests
         // Captions, banners, prompts, cinematics still hold it.
         var u = new Teacher(new TeachMemory());
         u.Offer(OnGround("red_line"), 0);
-        foreach (var b in new[] { Busy.Say, Busy.Banner, Busy.Prompt, Busy.Cinematic, Busy.Say | Busy.Hint })
+        foreach (var b in new[] { Busy.Say, Busy.Banner, Busy.Cinematic, Busy.Say | Busy.Hint, Busy.Say | Busy.Prompt })
             Assert.Null(u.Update(1, 1, b, Here));
-        Assert.Equal("red_line", u.Update(2, 2, Busy.Hint, Here)?.Id);
+        Assert.Equal("red_line", u.Update(2, 2, Busy.Hint | Busy.Prompt, Here)?.Id);
     }
 
     [Fact]

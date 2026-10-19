@@ -502,7 +502,8 @@ public partial class Callout : Control, ICalloutView
     static List<(Vector2 P, Vector2 D, float Cost)> Starts(Rect2 box, Vector2 toward)
     {
         var c = box.GetCenter();
-        float x = Mathf.Clamp(toward.X, box.Position.X + box.Size.X * 0.2f, box.End.X - box.Size.X * 0.2f);
+        float inset = Math.Min(28, box.Size.X * 0.2f);
+        float x = Mathf.Clamp(toward.X, box.Position.X + inset, box.End.X - inset);
         var o = box.Grow(Out);
         var list = new List<(Vector2, Vector2, float)>
         {

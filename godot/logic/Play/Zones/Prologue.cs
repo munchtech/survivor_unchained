@@ -169,8 +169,8 @@ public sealed class Prologue : ZoneRuntime
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
     // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
 
-    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap) =>
-        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap });
+    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap, bool overHint = false) =>
+        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap, OverHint = overHint });
 
     /// <summary>A point on the ground, lifted a little (what an arrow points at).</summary>
     (double X, double Y, double Z) Up(double x, double z, double lift) => (x, G.Look.HeightAt(x, z) + lift, z);
@@ -186,9 +186,10 @@ public sealed class Prologue : ZoneRuntime
             .OrderBy(k => Dist(k.X, k.Z, p.X, p.Z)).Take(12).Select(k => Up(k.X, k.Z, 0.3)).ToList();
     }
 
-    /// <summary>When the Knight's present windup began (game seconds), and whether its first was drawn out.</summary>
+    /// <summary>When the Grave-Caller rose (game seconds): its floor holds 30 s at most.</summary>
+    double callerAt;
+    /// <summary>When the Knight's present windup began (game seconds).</summary>
     double knightWound = -1;
-    bool knightStretched;
     /// <summary>F7 freezes a beat into the windup, once its red lane is down and on the screen.</summary>
     const double LaneBeat = 0.3;
 
@@ -200,8 +201,8 @@ public sealed class Prologue : ZoneRuntime
         if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; return; }
         if (knightWound >= 0) return;
         knightWound = B.Time;
-        if (knightStretched || (k.Def.Charge ?? k.Def.Lunge) is not { } lunge) return;
-        knightStretched = true;
+        // (every windup until F7 is seen: the one it freezes in is the one drawn out)
+        if (G.Taught("red_line") || (k.Def.Charge ?? k.Def.Lunge) is not { } lunge) return;
         k.StateT += LaneBeat;
         double reach = lunge.Speed * lunge.Time;
         B.Events.Emit(new Ev.Telegraph
@@ -226,7 +227,7 @@ public sealed class Prologue : ZoneRuntime
             Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
         // F2: straight after F1 (before the first rise), else the first ember gathered.
         if (B.EmberXp > 0 || B.EmberLevel > 1 || G.Taught("ember_ground"))
-            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground", gap: 0.6);
+            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground", gap: 0.6, overHint: true);
         // (and the journal remembers what the valley believes, once an ember is gathered)
         if (B.EmberXp > 0 || B.EmberLevel > 1)
         {
@@ -613,7 +614,8 @@ public sealed class Prologue : ZoneRuntime
                 if (knight is { Alive: true } kn && !knightRan)
                 {
                     if (kn.State == EnemyState.Windup) knightPlanted = true;
-                    else if (knightPlanted || stageT > 24) { knightRan = true; kn.HpFloor = 0; }
+                    // (and it stands until its red line was frozen on, F7, or a while has passed)
+                    else if ((knightPlanted && (G.Taught("red_line") || stageT > 40)) || stageT > 48) { knightRan = true; kn.HpFloor = 0; }
                 }
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 if (knight == null && !chestOpened)
@@ -629,6 +631,7 @@ public sealed class Prologue : ZoneRuntime
                 }
                 break;
             case Stage.Barrow:
+                if (caller is { HpFloor: > 0 } cf && (G.Taught("art") || B.Time - callerAt > 30)) cf.HpFloor = 0;
                 if (caller != null)
                 {
                     if (spawnT <= 0 && n < 16 && stageT > 8) { SpawnAround("risen", 1, 11, 15, 0, 2); spawnT = 2.5; }
@@ -695,6 +698,8 @@ public sealed class Prologue : ZoneRuntime
         Objective([("Search the old Watch-post", true, false), ("Put down the Grave-Caller", false, false)]);
         var barrow = L("barrow");
         caller = B.SpawnEnemy("grave_caller", barrow.X - 3, barrow.Z, new Battle.SpawnOpts { Level = 2, Tag = "caller", Elite = true });
+        // It can't fall before F8 has pointed at it (or a while has passed): the art is taught on it.
+        if (!G.Taught("art")) { caller.HpFloor = caller.MaxHp * 0.2; callerAt = B.Time; }
         for (int i = 0; i < 5; i++)
         {
             double a = i / 5.0 * Math.PI * 2;
