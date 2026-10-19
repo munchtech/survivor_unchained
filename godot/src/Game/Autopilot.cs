@@ -21,7 +21,7 @@ public sealed class Autopilot
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
-    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
+    double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
     /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player.</summary>
@@ -103,6 +103,12 @@ public sealed class Autopilot
         var stage = d.GetValueOrDefault("stage")?.ToString() ?? "";
         if (stage != lastStage) { Log.Add($"{t:0}s {stage} lvl{b.EmberLevel} hp{Math.Round(b.Player.Hp)} kills{b.KillCount}"); lastStage = stage; }
         var p = b.Player;
+        if ((diagT += dt) > 3 && Godot.OS.GetCmdlineUserArgs().Contains("--teach-diag"))
+        {
+            diagT = 0;
+            var kn = b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight");
+            Godot.GD.Print($"autodiag t={b.Time:0.0} stage={stage} p=({p.X:0.0},{p.Z:0.0}) wp={wp} postT={postT:0.0} knight={(kn == null ? "-" : $"({kn.X:0.0},{kn.Z:0.0}) {kn.State} hp={kn.Hp:0}/{kn.HpFloor:0}")}");
+        }
         var meta = g.Scene!.Data.Meta;
         XZ Place(string n) => meta.Place("LOWFORD", n);
         double tx = p.X, tz = p.Z;
@@ -114,6 +120,26 @@ public sealed class Autopilot
                 orbit += dt * 0.35;
                 tx = c.X + Math.Cos(orbit) * 7 - (stage == "Ambush" ? 4 : 0);
                 tz = c.Z + Math.Sin(orbit) * 6 + (stage == "Ambush" ? 6 : 0);
+                break;
+            }
+            case "Post" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight" && e.State != EnemyState.Dying) is { } knight:
+            {
+                // The Barrow Knight stands between her and the chest (locked while it stands) and the road
+                // on (the Barrow waits for it): never left (walked off down the road, she outran it, it
+                // went home and the run stood still). Until its red line is read (F7, which waits for the
+                // lane and the Knight's head and chest in the open), she draws it out onto open ground
+                // near the post, clear of the walls and the trees, and circles there; then closes on it.
+                if (!g.Taught("red_line"))
+                {
+                    var (ax, az) = knightGround ??= OpenNear(knight.X, knight.Z, 1.62 * (knight.Def.Scale ?? 1));
+                    orbit += dt * 0.45;
+                    tx = ax + Math.Cos(orbit) * 2.5; tz = az + Math.Sin(orbit) * 2.5;
+                }
+                else
+                {
+                    orbit += dt * 0.5;
+                    tx = knight.X + Math.Cos(orbit) * 3; tz = knight.Z + Math.Sin(orbit) * 3;
+                }
                 break;
             }
             case "Post" when d.GetValueOrDefault("chestOpened") is false && postT < 25:
@@ -228,6 +254,33 @@ public sealed class Autopilot
         if ((ring >= 6 || close >= 4) && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
         if (close >= 3 && abilityT <= 0 && !g.HoldFlare) { Press(Act.Flare); abilityT = 1.5; }
         if (p.Hp < b.MaxHp * 0.33 && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
+    }
+
+    (double X, double Z)? knightGround;
+
+    /// <summary>The nearest ground round a point (rings of 5, 8 and 11 m) where a figure `up` metres tall
+    /// stands in the open from the camera, with the ground 3 and 6 m round it open too (a lane drawn there
+    /// is seen); none: the point itself.</summary>
+    (double X, double Z) OpenNear(double x, double z, double up)
+    {
+        foreach (double r in new[] { 5.0, 8.0, 11.0 })
+            for (int i = 0; i < 12; i++)
+            {
+                double a = i * Math.PI / 6, cx = x + Math.Cos(a) * r, cz = z + Math.Sin(a) * r;
+                if (!g.OpenGround(cx, cz, up)) continue;
+                bool clear = true;
+                for (int k = 0; k < 8 && clear; k++)
+                {
+                    double ka = k * Math.PI / 4;
+                    clear = g.OpenGround(cx + Math.Cos(ka) * 3, cz + Math.Sin(ka) * 3, up) && g.OpenGround(cx + Math.Cos(ka) * 6, cz + Math.Sin(ka) * 6, 0.2);
+                }
+                if (clear)
+                {
+                    if (Godot.OS.GetCmdlineUserArgs().Contains("--teach-diag")) Godot.GD.Print($"autodiag knight ground ({cx:0.0},{cz:0.0}) from ({x:0.0},{z:0.0})");
+                    return (cx, cz);
+                }
+            }
+        return (x, z);
     }
 
     /// <summary>Go that way; wedged on something, sidestep for a moment.</summary>

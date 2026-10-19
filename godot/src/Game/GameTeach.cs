@@ -211,6 +211,15 @@ public partial class Game
         return true;
     }
 
+    /// <summary>(the autopilot) Whether a figure standing here, foot to head (`up` metres), is in the open
+    /// from the camera, as a freeze in the open (Aim.Open, Aim.Seen) asks.</summary>
+    public bool OpenGround(double x, double z, double up)
+    {
+        if (scene == null) return true;
+        double gy = scene.HeightAt(x, z);
+        return InOpen((x, gy + 0.1, z), true) && InOpen((x, gy + up * 0.75, z), true) && InOpen((x, gy + up, z), true);
+    }
+
     /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>
     static readonly Rect2 SafeArea = new(300, 150, 1320, 700);
 
