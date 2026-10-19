@@ -27,9 +27,9 @@ What the Prologue may spend, so the tutorial environment lead, the story charact
 
 **The town** (`hub_hi`: 3.97 ms GPU, 492 draws, 1,686 shadow draws, all of them the sun's): grass 0.99 ms, her 0.51 ms, props 266 draws and 935 shadow draws, lamps 0.24 ms. **The title** (`title_hi`) is the heaviest screen: 11.3 ms GPU, 33.1 ms p99, 1,512 draws, 6.3M primitives.
 
-**The Prologue run by window** (`lf_hi`, 20-s windows): GPU 4.6-5.0 ms average in the quiet windows, but **6.0-10.1 ms at 70-170 s: late Rising, Road, Ambush and Post, the road's heaviest fighting (kills 60 to 286; the log's fx time triples, 0.10 to 0.31-0.35 ms)**, with frame p99 up to 42 ms, draws 443-481 in the 70-190 s windows (`lf_med` reaches 480) and primitives averaging 5.02-5.21M from 130 s on, peaking at 5.40M. The run never reached ToFord, Boss, Dawn or Exit (it sits at the Barrow from 190 to 310 s): the Warden, dawn and the gate are unmeasured. That peak isn't split by part yet (the off cases are on the static view); the tutorial environment lead's first perf run splits it (the Warden, her spells, the risen, fx) before anything is cut to fit.
+**The Prologue run by window** (`lf_hi`, 20-s windows): GPU 4.6-5.0 ms average in the quiet windows, but **6.0-10.1 ms at 70-170 s: late Rising, Road, Ambush and Post, the road's heaviest fighting (kills 60 to 286; the log's fx time triples, 0.10 to 0.31-0.35 ms)**, with frame p99 up to 42 ms, draws 443-481 in the 70-190 s windows (`lf_med` reaches 480) and primitives averaging 5.00-5.21M from 130 s on, peaking at 5.40M. The run never reached ToFord, Boss, Dawn or Exit (it sits at the Barrow from 190 to 310 s): the Warden, dawn and the gate are unmeasured. That peak isn't split by part yet (the off cases are on the static view); the tutorial environment lead's first perf run splits it (the Warden, her spells, the risen, fx) before anything is cut to fit.
 
-**Lessons:** Grass and trees are the biggest world costs. Shadows are the draw-call problem: lamp shadows alone are 1,495 of 2,435 shadow draws for 0.65 ms, and the crowd and fx cast 1,523 shadow draws that the player never reads. Two cases ran disturbed (`lf_off_her`, p99 13.5 ms, and `lf_off_volfog`, p99 11.5 ms, both slower than the base's 5.5 ms), so her cost at the Low Ford and the fog's cost are not measured; both are re-run (disturbed). In town her measured cost is 0.51 ms (`hub_off_her`).
+**Lessons:** Grass and trees are the biggest world costs. Shadows are the draw-call problem: lamp shadows alone are 1,495 of 2,435 shadow draws for 0.65 ms, and the crowd and fx cast 1,523 shadow draws that the player never reads. Two cases ran disturbed (`lf_off_her`, p99 13.5 ms, and `lf_off_volfog`, p99 11.5 ms, both slower than the base's 5.5 ms), so her cost at the Low Ford and the fog's cost are not measured; both need a re-run: the first perf run repeats `lf_off_her` and `lf_off_volfog`. In town her measured cost is 0.51 ms (`hub_off_her`).
 
 ## Per frame (the targets)
 
@@ -49,13 +49,13 @@ What the Prologue may spend, so the tutorial environment lead, the story charact
 | Texture memory by tier | her at most 400 MB, world 1.2 GB, NPCs and fodder 300 MB, FX and UI 200 MB | the same (today 1.66 GB at medium against the 2.5 GB cap) |
 | The title screen | at most 6 ms GPU, at most 450 draws | at most 4.5 ms on the 5080 (estimate, as above) |
 
-Today against these: the Low Ford's quiet windows meet the GPU target and the road's heaviest fighting (70-170 s) doesn't (above); the Warden fight, dawn and the gate are unmeasured. In the run, draws (443-481) and primitives (5.02-5.21M average from 130 s, peak 5.40M) fail; in the static view draws are 438 at the Low Ford (pass) and 492 in town (fail), and primitives are 4.78M (pass narrowly, with grass more than half). Shadow draws (2,435 and 1,686) fail: 2x at the Low Ford, 1.4x in town. Video memory (2.4 GB) passes; the title (11.3 ms, 1,512 draws) fails. At 1080p medium the Low Ford runs 4.0 ms average and 8.2 ms p99 (`lf_med`): over the 7 ms p99 line. The CPU side is not met: frames take 10.0 ms against 4.9 ms of GPU in the run's first window, and the log has hitches of 152, 180 and 209 ms (fx, draft, auto) at 21-22 s.
+Today against these: the Low Ford's quiet windows meet the GPU target and the road's heaviest fighting (70-170 s) doesn't (above); the Warden fight, dawn and the gate are unmeasured. In the run, draws (443-481) and primitives (5.00-5.21M average from 130 s, peak 5.40M) fail; in the static view draws are 438 at the Low Ford (pass) and 492 in town (fail), and primitives are 4.78M (pass narrowly, with grass more than half). Shadow draws (2,435 and 1,686) fail: 2x at the Low Ford, 1.4x in town. Video memory (2.4 GB) passes; the title (11.3 ms, 1,512 draws) fails. At 1080p medium (`lf_med`) the Low Ford runs 4.0 ms average over the run, but 4.7-4.9 ms in two windows (10-30 s and 150-170 s, over the 4.5 ms line), and 8.2 ms p99 (over the 7 ms p99 line). The CPU side is not met: frames take 10.0 ms against 4.9 ms of GPU in the run's first window, and the log has hitches of 152, 180 and 209 ms (fx, draft, auto) at 21-22 s.
 
 ### The split of the 6 ms (planning numbers; each lead keeps its part)
 
 | Part | GPU ms | Draws | Shadow draws | Today |
 |---|---|---|---|---|
-| Her (dressed, play LOD) | 0.3 | 40 until the equip-time merge lands, then 20 | 80, then 40 | hub 0.51 ms (`hub_off_her`); Low Ford re-run (disturbed), 33 draws |
+| Her (dressed, play LOD) | 0.3 | 40 until the equip-time merge lands, then 20 | at most 80 in all (the sun's cascades and the one shadowed lamp), then 40 | hub 0.51 ms (`hub_off_her`); Low Ford re-run (disturbed), 33 draws |
 | Her spells (typical) | 0.5 | 40 | 0 | in fx; the big screen-clear spells' peaks are the Flare lead's |
 | Terrain, road and decals | 0.8 | 40 | 0 | not measured (add an `lf_off_terrain` case) |
 | Grass | 1.0 | 10 | 0 | 1.05 ms |
@@ -63,7 +63,7 @@ Today against these: the Low Ford's quiet windows meet the GPU target and the ro
 | Water | 0.5 | 5 | 0 | - |
 | Buildings, castle, props | 0.6 | 130 | 640 | town props 266, 935 |
 | NPCs and crowds | 0.4 | 60 | 60 (story NPCs only) | 0.15 ms, 135, 1,095 |
-| Post, sky, fog (lights' shadow draws counted on the casters) | 1.0 | 15 | 0 | sun 0.19 ms, lamps 0.65 ms; post not split yet (measure it) |
+| Post, sky, fog (lights' shadow draws and their GPU time counted on the casters) | 1.0 | 15 | 0 | sun 0.19 ms, lamps 0.65 ms; post not split yet (measure it) |
 | **Total** | **5.9** | **420** | **1,200** | |
 
 Every shadow draw is the sun's or the one shadowed lamp's; each caster's count includes both. The armor-and-weapons pipeline lead owns the equip-time merge that takes her from 40 draws to 20 (today HerWear adds each piece's meshes, and the 11 October merge is a post-export step per outfit). Trees and crowds use one MultiMesh per LOD per cell (Godot picks the LOD per MultiMesh, not per instance), and those draws are counted in their lines.
@@ -123,7 +123,7 @@ Full detail always shows at the title, in creation, in conversations, close-ups 
 
 - Texel density: tier 1 1024 px/m; tier 2 512 px/m where the close-up or a cinematic shows it, 256 px/m where only the play camera does; tier 3 256 px/m.
 - 4096 only for tier-1 bodies and faces (and the hair strands sheet). Everything compressed (VRAM-compressed in the import; normal maps as RG).
-- Texture memory by tier at medium: her at most 400 MB, world 1.2 GB, NPCs and fodder 300 MB, FX and UI 200 MB. Today is 1.66 GB against the 2.5 GB cap, with three leads adding at once, so each lead keeps to its tier's number.
+- Texture memory by tier (both presets): her at most 400 MB, world 1.2 GB, NPCs and fodder 300 MB, FX and UI 200 MB. Today is 1.66 GB against the 2.5 GB cap, with three leads adding at once, so each lead keeps to its tier's number.
 - A story NPC whose face fills a close-up gets its own 2048 head map: one 2048 atlas at 512 px/m puts only about 128 px across such a face, which is the toy look board 1i forbids.
 - Shared sheets over unique maps: one prop atlas, two building trim sheets, one rock set, one sheet per tree species.
 
