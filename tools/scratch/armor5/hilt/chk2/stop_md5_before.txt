@@ -1,0 +1,2 @@
+4494afe5b2e16c12e5909b2116c25264 *tools/anim/out/clips/stop_warden_town_l.json
+e3ed5ed69bf910f2032e7544a11acf3b *tools/anim/out/clips/stop_warden_town_r.json

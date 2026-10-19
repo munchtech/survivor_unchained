@@ -137,12 +137,17 @@ def crossbow_low():
 # there, so one hand fits all four), the palm on its outer face tilted 27 degrees toward its front edge (the reaver
 # outfit pushes the sword 14 mm further out than the warden's: square on, it went 8 mm into her palm), the fingers
 # turned 8 degrees down from square across it, so the wrist stays 19-26 degrees from straight (more, and the
-# radial limit clamped it and the palm rocked 3 mm on and off). Higher, the chevalier's guard met her hand; lower,
-# the elbow opened past 120. HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side, the elbow's
+# radial limit clamped it and the palm rocked 3 mm on and off). Higher, the chevalier's guard met her hand.
+# The elbow points out to her side and turns with her chest (pole_chest): pointed back, or fixed to the pelvis, it went
+# 23-29 mm into the shield slung on her back mid-stride (now 6 at most; 5.3 swinging free). Hilt judge r1: from the
+# front the elbow flared 12 cm out from her waist (a gunslinger's hand on the hip), so the hand sits 3.3 cm further
+# down the throat, the arm hangs straighter (elbow 123-138, was 110-121) and the elbow swings 30 degrees in toward her
+# side (4-6 cm closer; it can't come in and forward too, the hand fixes the circle it swings on). HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side, the elbow's
 # way from the shoulder (pole), all in the pelvis bone's frame (solved: tools/scratch/armor5 hilt notes); `clav`:
-# the left shoulder's run swing kept (0: none, held at its mean; a hand on a hilt doesn't pump the shoulder).
-HILT = {"wrist": (0.2978, 0.0091, -0.0004), "knuckles": (0.0102, -0.2861, 0.9582), "thumb": (-0.1359, 0.9489, 0.2848),
-        "pole": (0.8534, -0.5016, -0.0009), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.0}
+# the left shoulder's run swing kept (0: none, held at its mean; 0.3, so the held side rises and falls a little with
+# each stride and doesn't read frozen, judge r1).
+HILT = {"wrist": (0.3004, -0.0235, -0.0058), "knuckles": (0.0102, -0.2861, 0.9582), "thumb": (-0.1359, 0.9489, 0.2848),
+        "pole": (0.69, -0.6385, -0.3101), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.3}
 
 
 def hilt_carry(rig, clip, hilt=None):
@@ -253,7 +258,8 @@ RUNS = {
     # WRAP["daggers_l"] left; with the gait's relaxed hands the fingers stood 10-73 mm off the hilts).
     "run_stalker_daggers": (replace(STALKER, fingers="grip"), {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
     # In town, weapons sheathed: her calling's carriage, the arms swinging free.
-    "run_warden_town": (replace(WARDEN, fingers="relaxed", swing=SWING), {}, ""),
+    # The free right hand a loose fist (hilt judge r1: open and limp, beside the still left arm the run read inert).
+    "run_warden_town": (replace(WARDEN, fingers="relaxed", fingers_r="fist", swing=SWING), {}, ""),
 }
 
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
