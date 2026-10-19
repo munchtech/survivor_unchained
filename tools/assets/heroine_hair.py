@@ -691,7 +691,8 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None):
     c = cards(P, RNG.uniform(0.003, 0.006, len(pts)) * 0.75, list(range(6, 16)), 0.004, floor=0.0025)
     c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)) * 0.8, 3 * points)
     c["mat"] = 3
-    out.append(c)
+    if os.environ.get("DBG_NOHL") != "1":                       # (test only)
+        out.append(c)
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
     # and faint, each a little off the way it is combed, some curling.
@@ -724,7 +725,8 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None):
     c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
     c["mat"] = 3
     c["flat"] = True
-    out.append(c)
+    if os.environ.get("DBG_NOBABY") != "1":                     # (test only)
+        out.append(c)
     print("  baby hairs: %d cards" % n)
     return out
 
@@ -874,6 +876,10 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
                 P[i, jn[i] + 1:] = P[i, jn[i]]
             print("  gathered: %d of %d never reached the tie, cut where nearest it" % (miss.sum(), len(P)))
         P = resample(P, points)
+        if os.environ.get("DBG_NOLOWG") == "1":                 # (test only: the cards rooted beside her nape, below her ear's top, folded away under her scalp)
+            lowg = (pts[:, 2] < float(HP[EAR, 2].max())) & (np.abs(pts[:, 0]) > 0.03)
+            P[lowg] = (pts[lowg] - nrm[lowg] * 0.004)[:, None]
+            print("  DBG_NOLOWG: %d cards hidden" % lowg.sum())
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
     out += hairline_hairs(comb, sides=no_part, low=float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01)
@@ -1484,6 +1490,10 @@ def build(style):
         bpy.data.meshes.remove(old.data)
     shape, comb, sides = STYLES[style]
     layers = shape()
+    if os.environ.get("DBG_DUMP"):                           # (test only: every layer's points, for finding a stray card)
+        np.savez(os.environ["DBG_DUMP"] + f"_{style}.npz", HP=HP, EAR=EAR, EYE_Z=EYE_Z,
+                 **{f"L{i}": c["V"] for i, c in enumerate(layers)},
+                 **{f"K{i}": np.array([c.get("mat", 0), len(c.get("F", []))]) for i, c in enumerate(layers)})
     V, N, UV, C, F, M = [], [], [], [], [], []
     base = 0
     for li, c in enumerate(layers):
