@@ -104,11 +104,6 @@ public partial class ZoneView : Node3D
             if (f.Light >= 0 && f.Light < meta.Lights.Count)
                 foreach (var glow in meta.Lights[f.Light].Glow) { fireGlow.Add(glow); if (Node(glow) is Node3D ball) ball.Visible = false; }
         }
-        // Reflections that show the scene (the look bible's armor metal, item 6): a probe at each
-        // fire, one for a cluster of them (the town's square), so metal near a fire reflects the camp,
-        // the dark and the fire, not the sky's bright dome. Captured once, again when the air, the
-        // night or a light changes. SU_PROBES=0 leaves them out (to measure what they cost).
-        if (System.Environment.GetEnvironmentVariable("SU_PROBES") != "0") MakeProbes(meta.Fires);
         foreach (var c in meta.Chimneys)
         {
             var smoke = Campfire.ChimneySmoke();
@@ -125,61 +120,6 @@ public partial class ZoneView : Node3D
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
         SetNight(false);
-    }
-
-    readonly List<ReflectionProbe> probes = new();
-    int probeSeen = -1;
-    bool probeDirty;
-    double probeAt, airAt;
-
-    void MakeProbes(List<SurvivorUnchained.World.FireDef> fs)
-    {
-        // (fires within 12 m share one: the waystation's square has five braziers and hearths)
-        var at = new List<(Vector3 Sum, int N)>();
-        foreach (var f in fs)
-        {
-            var p = new Vector3((float)f.X, (float)f.Y, (float)f.Z);
-            int k = at.FindIndex(c => (c.Sum / c.N).DistanceTo(p) < 12f);
-            if (k < 0) at.Add((p, 1)); else at[k] = (at[k].Sum + p, at[k].N + 1);
-        }
-        foreach (var (sum, n) in at)
-        {
-            var probe = new ReflectionProbe
-            {
-                Name = "FireProbe",
-                UpdateMode = ReflectionProbe.UpdateModeEnum.Once,
-                BoxProjection = true,
-                Size = new Vector3(16f, 10f, 16f),
-                Position = sum / n + new Vector3(0, 4f, 0),
-                // (seen from 1.5 m off the fire at chest height: the fire a glow in it, not the whole view)
-                OriginOffset = new Vector3(1.5f, -2.5f, 0),
-                BlendDistance = 2f,
-                AmbientMode = ReflectionProbe.AmbientModeEnum.Environment,   // (ambient light as it was: only reflections change)
-                CullMask = 0xFFFFFu & ~2u,                                     // (not the people: layer 2)
-                EnableShadows = false,
-            };
-            AddChild(probe);
-            probes.Add(probe);
-        }
-    }
-
-    /// <summary>Captured again (a probe captured once renders when it moves): when the air has
-    /// settled after a change, or every 3 s through a long blend.</summary>
-    void WatchProbes()
-    {
-        if (probes.Count == 0) return;
-        int v = Atmosphere.Version;
-        if (v != probeSeen) { probeSeen = v; airAt = time; probeDirty = true; }
-        if (!probeDirty || (time - airAt < 0.4 && time - probeAt < 3)) return;
-        probeDirty = false; probeAt = time;
-        RecaptureProbes();
-    }
-
-    bool probeNudge;
-    void RecaptureProbes()
-    {
-        probeNudge = !probeNudge;
-        foreach (var p in probes) p.Position += new Vector3(0, probeNudge ? 0.001f : -0.001f, 0);
     }
 
     OmniLight3D MakeLight(ZoneData.LightSpec l)
@@ -288,7 +228,6 @@ public partial class ZoneView : Node3D
             foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on && !fireGlow.Contains(g);
         foreach (var (l, fire) in fires) if (l == light) Burn(fire, on);
         foreach (var (l, p) in moths) if (l == light) p.Emitting = on && Night;
-        probeDirty = true; airAt = time;   // (a fire lit or out: the probes see it again once settled)
     }
 
     static void Burn(Node3D fire, bool on)
@@ -324,7 +263,6 @@ public partial class ZoneView : Node3D
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) Campfire.ChimneyLook(c, on);
         Shadows();
-        probeDirty = true; airAt = time;
     }
 
     bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows;
@@ -466,7 +404,6 @@ public partial class ZoneView : Node3D
     {
         time += delta;
         float t = (float)time;
-        WatchProbes();
         // The pump's wheel turns while the pump runs.
         if (!stopped.Contains("pump_wheel") && Node("pump_wheel") is Node3D wheel) wheel.RotateObjectLocal(Vector3.Right, (float)delta * 0.8f);
         // Every lit light's own flicker (the web game's formula).
