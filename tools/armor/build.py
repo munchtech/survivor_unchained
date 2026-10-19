@@ -30,8 +30,22 @@ def dirty(paths):
     return sorted(l[3:] for l in out.splitlines() if not l[3:].endswith((".import", ".uid")))
 
 
+def adorn(pid, post=False):
+    """tools/armor/adorn.py: a variant's whole build (its base's shell copied), or a Blender build's other adornment."""
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "armor", "adorn.py"), pid] + (["--post"] if post else []),
+                       cwd=ROOT, capture_output=True, text=True)
+    for l in (r.stdout + r.stderr).splitlines():
+        if l.startswith(("ADORN", "Traceback")) and not l.startswith("ADORN NUMBERS"):
+            print(l)
+    print("ADORN %s: %s" % (pid, "ok" if r.returncode == 0 else "FAILED (exit %d)" % r.returncode))
+    return r.returncode == 0
+
+
 def build(pid, src):
     pj = os.path.join(ROOT, "godot", "art", "armor", "src", pid, "piece.json")
+    piece = json.load(open(pj, encoding="utf-8"))
+    if piece.get("base"):
+        return adorn(pid)       # (no Blender: the base's built shell, copied)
     scratch = os.path.join(ROOT, ".shots", "armor2", "build", pid)
     os.makedirs(scratch, exist_ok=True)
     before = dirty(GUARD)
@@ -56,6 +70,8 @@ def build(pid, src):
                              os.path.join(scratch, "numbers.json")], cwd=ROOT, capture_output=True, text=True)
         print((r2.stdout + r2.stderr).strip())
         ok = r2.returncode == 0
+        if ok and any(not (a["kind"] == "row" and a.get("mesh", "rivet") == "rivet") for a in piece.get("adorn", [])):
+            ok = adorn(pid, post=True)
         # (imported as the outfits are: Godot's own LODs off, ours are in the file)
         imp = gl_ + ".import"
         if not os.path.exists(imp):
@@ -74,6 +90,8 @@ def main(argv):
     ids = [a for a in argv if not a.startswith("--") and a != src]
     if "--all" in argv:
         ids = sorted(os.path.basename(os.path.dirname(p)) for p in glob.glob(os.path.join(ROOT, "godot", "art", "armor", "src", "*", "piece.json")))
+        # (bases first: a variant copies its base's built shell)
+        ids.sort(key=lambda i: "base" in json.load(open(os.path.join(ROOT, "godot", "art", "armor", "src", i, "piece.json"), encoding="utf-8")))
     if not os.path.exists(os.path.join(ROOT, "godot", "art", "armor", "trim_strip.json")):
         subprocess.run([sys.executable, os.path.join(ROOT, "tools", "armor", "trim_strip.py")], check=True)
     bad = [p for p in ids if not build(p, src)]

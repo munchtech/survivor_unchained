@@ -398,6 +398,18 @@ def inward(surf, P, O, N, d, steps=4):
     return p, f, b, n
 
 
+def fair(surf, row, width=0.012, rounds=3):
+    """An inward row (closed) made fair along its line: averaged over `width` of its length and snapped back, so an
+    offset round a tight corner of the rim doesn't fold into a kink."""
+    p, f, b, n = row
+    seg = np.linalg.norm(np.diff(np.vstack([p, p[:1]]), axis=0), axis=1).mean()
+    k = max(1, int(round(width / 2 / max(seg, 1e-6))))
+    for _ in range(rounds):
+        q = sum(np.roll(p, i, 0) for i in range(-k, k + 1)) / (2 * k + 1)
+        p, f, b, n = surf.snap(q, n)
+    return p, f, b, n
+
+
 def frame(n, up=None):
     """The socket frame at a point (schema): Z the normal, Y world up squared against it (her forward if Z is near
     vertical), X = Y x Z."""
@@ -465,7 +477,7 @@ def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM):
     P0, O0, N0, s = rim_line(rim, step)
     rows = []
     for d in np.linspace(d0, d1, na):
-        rows.append(inward(surf, P0, O0, N0, d))
+        rows.append(fair(surf, inward(surf, P0, O0, N0, d)))
     ns = len(P0)
     P = np.stack([r[0] for r in rows], 1).reshape(-1, 3)
     N = np.stack([r[3] for r in rows], 1).reshape(-1, 3)
@@ -500,10 +512,10 @@ def trim_band(surf, rim, ad, step, leather, lod=False):
         prof = [(-1, 0), (-1, 0.7), (-0.6, 1.0), (0.6, 1.0), (1, 0.7), (1, 0)]
     w, h, dc = ad.get("width", 0.005), ad.get("height", 0.0015), ad.get("inset", 0.0)
     P0, O0, N0, s = rim_line(rim, step)
-    pc, fc, bc, nc = inward(surf, P0, O0, N0, dc)
+    pc, fc, bc, nc = fair(surf, inward(surf, P0, O0, N0, dc))
     # (each section's own across direction: from a point a little further in)
-    pi_, _, _, _ = inward(surf, P0, O0, N0, dc + w / 2)
-    po_, _, _, _ = inward(surf, P0, O0, N0, max(dc - w / 2, 0.0))
+    pi_, _, _, _ = fair(surf, inward(surf, P0, O0, N0, dc + w / 2))
+    po_, _, _, _ = fair(surf, inward(surf, P0, O0, N0, max(dc - w / 2, 0.0)))
     ac = pi_ - po_
     ac -= nc * (ac * nc).sum(1, keepdims=True)
     ac /= np.maximum(np.linalg.norm(ac, axis=1, keepdims=True), 1e-12)
