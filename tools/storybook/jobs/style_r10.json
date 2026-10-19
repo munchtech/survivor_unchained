@@ -1,0 +1,113 @@
+{
+ "defaults": {
+  "w": 1792,
+  "h": 1024,
+  "steps": 9
+ },
+ "jobs": [
+  {
+   "name": "p1_d55",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. Night, two thousand years ago, seen from high on a dark hillside looking down into a great raw cut dug into the hill. At the top left, close to us, two ancient soldiers seen from behind, dark shapes in rust-red wool cloaks and dull bronze crested helmets, hold torches. Below them a long line of small torches carried by a column of tiny figures winds down the cut to the bottom of the picture. The walls of the cut are a few big planes of dark rock. The orange torchlight is the only strong color; everything else is night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p1_init.png",
+   "denoise": 0.55,
+   "control": "tools/storybook/out/style_r10/prep/p1_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p1_d70",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. Night, two thousand years ago, seen from high on a dark hillside looking down into a great raw cut dug into the hill. At the top left, close to us, two ancient soldiers seen from behind, dark shapes in rust-red wool cloaks and dull bronze crested helmets, hold torches. Below them a long line of small torches carried by a column of tiny figures winds down the cut to the bottom of the picture. The walls of the cut are a few big planes of dark rock. The orange torchlight is the only strong color; everything else is night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p1_init.png",
+   "denoise": 0.7,
+   "control": "tools/storybook/out/style_r10/prep/p1_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p4_d55",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. Night, hard frost on a field beside a road. A dead villager stands upright, slack, arms hanging, head tilted; his gray face is blank and empty, golden light glowing inside his open mouth and empty eye sockets, his skin lit from within like paper over a lamp. To the right an old watchman with a gray beard, in a slate blue-gray hooded cloak, braced with his weight forward, drives a plain dark spear into the dead man's chest; golden light bursts from the wound around the shaft and spills onto the frost as small glowing stones. His breath is a pale plume in the cold. The golden light is the only strong color; the rest is cold night, frost and slate.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p4_init.png",
+   "denoise": 0.55,
+   "control": "tools/storybook/out/style_r10/prep/p4_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p4_d70",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. Night, hard frost on a field beside a road. A dead villager stands upright, slack, arms hanging, head tilted; his gray face is blank and empty, golden light glowing inside his open mouth and empty eye sockets, his skin lit from within like paper over a lamp. To the right an old watchman with a gray beard, in a slate blue-gray hooded cloak, braced with his weight forward, drives a plain dark spear into the dead man's chest; golden light bursts from the wound around the shaft and spills onto the frost as small glowing stones. His breath is a pale plume in the cold. The golden light is the only strong color; the rest is cold night, frost and slate.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p4_init.png",
+   "denoise": 0.7,
+   "control": "tools/storybook/out/style_r10/prep/p4_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p7_d55",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. The Low Ford at night in winter: a shallow river crossing, snow on both banks, ice along the edges. Black iron cage lanterns on black iron posts by the water burn with a cold pale blue flame, pooling blue light on the snow. In the middle of the river a fourth blue light hangs just above the water in a wide cold glare. Nobody is there. The cold blue is the only strong color; the rest is deep night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p7_init.png",
+   "denoise": 0.55,
+   "control": "tools/storybook/out/style_r10/prep/p7_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p7_d70",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. The Low Ford at night in winter: a shallow river crossing, snow on both banks, ice along the edges. Black iron cage lanterns on black iron posts by the water burn with a cold pale blue flame, pooling blue light on the snow. In the middle of the river a fourth blue light hangs just above the water in a wide cold glare. Nobody is there. The cold blue is the only strong color; the rest is deep night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p7_init.png",
+   "denoise": 0.7,
+   "control": "tools/storybook/out/style_r10/prep/p7_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p9_d55",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a dirt road: a campfire burning high, a log, a bedroll, a pack. A lone traveler sits by the fire with their back to us, wrapped in one plain dark wool hooded cloak, reading a folded letter. Far up the road the warm lamps of a waystation. Low through the trees by the water, three small points of cold blue light. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p9_init.png",
+   "denoise": 0.55,
+   "control": "tools/storybook/out/style_r10/prep/p9_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  },
+  {
+   "name": "p9_d70",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted on a warm raw-umber toned ground over a bold brush-ink drawing: heavy dark ink contours of varied weight on the figures and the main shapes. Thick opaque paint only where the light falls; the shadows are flat, thin, dark transparent glazes with the warm umber ground showing through them. Big simple shapes and few values, most of the picture in deep shadow, matte surfaces, visible brush marks, realistic proportions, grim and serious. Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a dirt road: a campfire burning high, a log, a bedroll, a pack. A lone traveler sits by the fire with their back to us, wrapped in one plain dark wool hooded cloak, reading a folded letter. Far up the road the warm lamps of a waystation. Low through the trees by the water, three small points of cold blue light. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r10/prep/p9_init.png",
+   "denoise": 0.7,
+   "control": "tools/storybook/out/style_r10/prep/p9_edge.png",
+   "strength": 0.55,
+   "end": 0.75
+  }
+ ]
+}
