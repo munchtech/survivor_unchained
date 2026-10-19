@@ -50,7 +50,6 @@ public partial class Flame : Node3D
     float energy = 1, time, phase;
     bool lit = true;
     readonly System.Collections.Generic.List<ShaderMaterial> mats = new();
-    static readonly FastNoiseLite noise = new() { NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 1f, Seed = 7 };
 
     /// <summary>Its light's energy before the flicker.</summary>
     public float Energy { get => energy; set => energy = value; }
@@ -78,12 +77,8 @@ public partial class Flame : Node3D
         drivenLast = -1;
     }
 
-    /// <summary>The flicker factor at time t for a phase: 1 +- about 0.12, smooth (two octaves of noise).</summary>
-    internal static float Flicker(float t, float ph)
-    {
-        float n = noise.GetNoise2D(t * 2.3f, ph * 37f) * 0.75f + noise.GetNoise2D(t * 6.1f, ph * 37f + 91f) * 0.25f;
-        return 1 + Mathf.Clamp(n * 0.2f, -0.13f, 0.13f);
-    }
+    /// <summary>The flicker factor at time t for a phase: 1 +- about 0.12, smooth (World.FlameFlicker).</summary>
+    internal static float Flicker(float t, float ph) => SurvivorUnchained.World.FlameFlicker.At(t, ph);
 
     internal void Build(FlameKind kind, bool cold, float scale, bool light)
     {
@@ -140,7 +135,7 @@ public partial class Flame : Node3D
 static class FlameShader
 {
     public const string Path = "res://shaders/flame_mv.gdshader";
-    const string Atlas = "res://art/fx/fb/flame_kit.png", Mv = "res://art/fx/fb/flame_kit_mv.png", Meta = "res://art/fx/fb/flame_kit.json";
+    const string Atlas = "res://art/fx/flame/flame_kit.png", Mv = "res://art/fx/flame/flame_kit_mv.png", Meta = "res://art/fx/flame/flame_kit.json";
     static Godot.Collections.Dictionary? meta;
 
     /// <summary>Small flames flicker faster than big ones.</summary>

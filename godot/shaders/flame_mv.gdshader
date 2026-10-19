@@ -1,5 +1,5 @@
 // The flame kit's card (FlameKit.cs; look bible 10_props_flames, "The trick"). A simulated flame
-// (art/fx/fb/flame_kit: grey heat, tools/fxsim/flame_sim.py + flame_pack.py) played round its
+// (art/fx/flame/flame_kit: grey heat, tools/fxsim/flame_sim.py + flame_pack.py) played round its
 // seamless loop with motion vectors: between two frames, the first is pushed forward along its
 // optical flow and the next pulled back along it, then the two blended, so it flows and never steps.
 // The heat is coloured by a ramp here, warm or the Warden's cold blue from one atlas; only the core
