@@ -1,0 +1,5 @@
+[
+ {"name": "k8c01", "cine": "c01", "until": 84, "args": ["--stills", "6", "--handoff", "--cinebones"], "keep": ["_s6a_", "_s7_", "_s8_", "_s8b_", "_s9_", "_s10_", "_s11_", "_s12_", "_ho_"]},
+ {"name": "k8c02", "cine": "c02", "until": 58, "args": ["--stills", "3", "--cinebones"], "keep": ["_s8_"]},
+ {"name": "k8c03", "cine": "c03", "until": 118, "args": ["--stills", "3", "--handoff", "--cinebones"], "timeout": 1000}
+]

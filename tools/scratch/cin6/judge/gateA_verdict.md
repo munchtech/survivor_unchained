@@ -1,0 +1,70 @@
+**Gate A verdict: C01 and C02, 26 stills, judged at 1:1 after calibrating on o1 to o3.** One passes, and it is the black card. I checked C01 s1 by pixel values (every pixel is 0) and did not open it. No still exists for C01 s6a, so it is not judged; check that it plays.
+
+**C01 s0: NO** - 70% of the frame is flat dark grass seen from high overhead. Hard-edged splat blobs and black slashes in the grey band look like holes in the terrain. She is a speck with one arm up beside a small flame (the note says a high fire). The bedroll is a flat red card. The bars are 76 px here and 138 px in every other shot, so they pop at the cut. - cause: STAGING, ENV - fix: medium-wide from low on her by a roaring fire, with the ground in shadow and the bars at full size from the first frame. ENV blends the splat edges and fixes the slashes.
+**C01 s1: YES** - a black card for the sound-only drowning, as the note intends.
+**C01 s2: NO** - she lies on her back, curled, with an arm flung away; the note says face down with her hand in the ash. The fire is a cracked lava dome under four sticks laid in a perfect plus. From straight above, the plants look like flat green asterisks. There is no frost and the armour is chrome. - cause: ANIM, ENV, STAGING - fix: ANIM a face-down pose with the right hand in the ash; STAGING the hand on its mark plus frost in the corners; ENV a collapsed ember bed and no star-shaped grass cards under a top-down camera.
+**C01 s3: NO** (being restaged; it is o1) - a stretched throat fills the frame and the upside-down face is jammed against the bottom bar. Blown orange hot spots on the cups clip 3.5% of the picture. The pale face against the orange neck looks like a mask. - cause: STAGING, ART - fix: camera at ground level, face on its side filling the frame, cups out of shot, the ember/moon split running across the face rather than at the jaw.
+**C01 s5: NO** - blown hot spots on the cups, pauldron and greave (2.8% clipped). The pose reads as a pin-up: free hand on her hip, thigh and crotch toward the lens. Her hip in cool light goes dead grey, like clay. - cause: STAGING, ART, ANIM - fix: shoot from the fire's far side at her head as the note says (head, shoulder and hanging braid over the coals, legs out of frame); ANIM the free hand pushing on the ground.
+**C01 s6: NO** (being restaged) - the chrome hot spots dominate the centre. The face is waxy with the mouth hanging open. Her upper arms are grey-white next to an orange chest. Her hands, the cord and the flask are below frame, so the beat doesn't read. Cartoon pines and a blue blob of a tent sit behind. - cause: STAGING, ART, ENV - fix: lower or tilt to include her hands with the cord and flask (or add an insert), plus a cool fill so the skin away from the fire isn't grey.
+**C01 s7: NO** - the world looks like a stylized low-poly asset pack: flat paper-cut pines, faceted rocks, a toy cart, all under flat blue light. The prints are a few tiny dots, not a dark wet trail. Her head is a featureless orange ball in the corner. - cause: ENV, STAGING - fix: a readable trail of dark wet prints from the bottom of frame toward the river, and the tilt ends in near-black as the note asks.
+**C01 s8: NO** - waxy face under a flat frontal fire key that gives it no shape, a slack open mouth and a dark blotch under one eye. Behind her is bright frosted grass, not "the dark behind her". - cause: ART, STAGING - fix: key from three-quarter so half the face falls into shadow, dark treeline behind (or the background down 2 stops), lips at rest until the exhale.
+**C01 s8b: NO** - far tighter than "a touch" (the face is about 1.4x its size in s8), with the forehead cut at the brows. At that size her skin looks plastic, the left-hand cheek has stubble-like dark mottling and there is a bruise under the other eye. The mouth hangs slack with a hard dark lip line. - cause: STAGING, ART - fix: s8's size plus 10-15%, at eye level, dark behind; ART cleans the cheek and under-eye paint.
+**C01 s8a: NO** - a toy world: paper-cut pines, a castle wall built from boxes, a plain black slab for the tower, white egg-shaped lamps (the note asks for three blue ones), a flat blue pond, and an untextured blue cylinder for the near trunk. - cause: ENV - fix: staging can save much of it by exposing down 2-3 stops so only three low blue flames, the tiny gold lamp and the wall's silhouette read; ENV rebuilds the tower and lamps.
+**C01 s9: NO** - the beat is lost. R1 is a small figure crouched behind the bedroll, not a head rising through darkening frost. The fire is a tiny flame with no pool of light and the whole frame is lit flat blue. Cartoon pines. - cause: STAGING, ENV - fix: R1 in open frost at background left, larger, with a dark patch spreading around him and a cold rim light on the head; a warm pool from the fire and lower ambient so the camp is an island of light.
+**C01 s10: NO** (being restaged; it is o3) - a near-white waxy face, freckles that look stamped on, mouth hanging open, a chrome hot spot, and cartoon pines against a flat blue sky. The fire gives only a thin orange edge. - cause: ART, ENV, STAGING - fix: key her warm from the fire side and bring the background down 1.5-2 stops.
+**C01 s11: NO** - the camera at hip height from three-quarter behind centres her rear. She stands in a stiff idle, not "comes round with it ready". No frost breaks in frame. Chrome greaves. - cause: STAGING, ANIM - fix: truly side-on at chest height, with the frost breaking in frame on the far side; ANIM a ready guard.
+**C01 s12: NO** - the fog is soft white blobs over everything and looks like a dirty lens. R1 is a limp doll lying on the grass, not tearing free. She runs away from him. - cause: ENV, ANIM, STAGING - fix: low height fog instead of fog sprites; ANIM an emerge clip for R1; hold her in guard facing R1 until the bars go (unless the run was the test's own input).
+**C02 s1: NO** - the warden lies face down on top of the water with his lamp arm and sword sticking up; it reads as a bug. The drowned are cartoon villagers standing in a grid, and a big green-faced zombie stands in the right foreground. A gibbet pole splits the frame dead centre. No mist, flat tiled water. - cause: STAGING, ART (NPC models), ENV - fix: sink him fully so only fist and lamp break the surface, remove the foreground zombie, move the pole off centre, add mist.
+**C02 s2: NO** - cartoon drowned with their heads sunk into their shoulders, in a loose cluster rather than rows. His raised arm and lantern are jammed against the left edge. No mist, flat water. - cause: ART (NPC models), ENV, STAGING - fix: rows that recede, the lamp low in the middle distance as the note says, mist and a backlight so they read as silhouettes.
+**C02 s3: NO** - a broken frame: the camera is inside his dark sleeve and the lantern frame. There is no gauntlet, weed or water, and the lamp is a flat white ellipse, not a blue flame. - cause: STAGING, ART (the lamp) - fix: after sinking him (as in s1), a low close-up of fist and lamp against dark water; the lamp needs a real lamp-iron with a blue flame.
+**C02 s4: NO** - the best face in the set, but the skin is a cool-blue mannequin with saturated orange freckles. The ear stays tan (RGB 98,75,60 against the cheek's 71,74,85) and looks stuck on. The forehead is cut off and paper-cut forest sits behind. - cause: ART, STAGING, ENV - fix: her ember's warm rim on the far cheek and a close-up that holds the whole head; ART makes the ear match the face and tones down the freckles.
+**C02 s5: NO** - he is already standing, dry and stiff, on solid ground (boots and grass at the bottom of frame). No water, nothing sheeting off him. A cartoon boss with the sword held out at a stiff right angle. - cause: ANIM, ART, STAGING - fix: ANIM the rise clip; camera low over the water; ART a wet warden grown with weed.
+**C02 s6: NO** - the greatsword blade crosses his face diagonally and reads as clipping through it. The lamp is out of frame and the egg lamp on the post behind stands in for it. No water. Cartoon boss. - cause: ANIM, STAGING, ART - fix: a carry with the blade hanging at his side; the lamp in frame in his left hand; camera low over his wake.
+**C02 s7: NO** - not a profile but three-quarter from behind, so his face is hidden in the hood and the beat of the lamp raised to her face is invisible. Both stand on the water like a floor, with no wading line. A zombie strolls on the water at right. Her rear is centre-frame. - cause: STAGING, ENV, ART - fix: a true profile from the west at their eye line with the lamp between their faces, both sunk to wading depth or on the stones, the zombie out of shot.
+**C02 s8: NO** - an overexposed, plaster-white face (cheek 220,198,186) next to a mid-tan ear (117,85,67) reads as a mask. No flame in the eyes, no blue/red split, dry hair, no weed. The close-up cuts both brow and chin. - cause: STAGING, ART - fix: a small, low blue key from one side, her ember faint red on the other, catchlights in both eyes, framed brow to chin; ART wet hair and a weed strand.
+**C02 s9: NO** - his face lies sideways at the bottom edge, cut by the bar. It is a cartoon face with flat white oval eyes (the note says two blue points) and a stiff sculpted beard. No lamp and no light from below. - cause: STAGING, ART - fix: from her chest height looking up about 30 degrees past a blurred lamp, his face upright in the upper third and lit from below.
+**C02 s10: NO** - cartoon drowned, one with its head bent at a broken angle, clustered facing the bank instead of in rows down the river. His boot fills the left quarter. - cause: ART, ENV, STAGING - fix: camera low looking east so the rows recede, the turn staggered as a wave, mist and backlight.
+**C02 s11: NO** - the post lamp's egg glow sits right behind the title's second line. The warden squats in a wide sumo stance on the water's surface with her overlapping him. No flame-lean, no ice. A zombie walks on the water. - cause: STAGING, ENV, ART - fix: move the title or the camera off the lamp, block her a sword's length from him, sink both, remove the zombie, and add the flame-lean and ice effects, which are the beat itself.
+**C02 s12: NO** - the white egg lamp is the brightest thing on screen, dead centre. She runs away from him toward the stones. His guard is a crouch with the blade trailing. Flat tiled water, faceted stones, a hard black strip along the bank. - cause: STAGING, ENV, ANIM - fix: her in guard facing him before the bars go, the lamp dimmed to a flame; ANIM a warden guard; ENV blends the bank.
+
+**Summary by owner area**
+
+STAGING (cinematics' own):
+- Pose or angle contradicts the note: C01 s2, s3, s5, s11; C02 s7, s9. Restage to the note.
+- Too tight or cut off: C01 s8b; C02 s4, s8. Use close-ups that hold the whole head.
+- The beat is out of frame: C01 s6 (flask), s7 (prints), s9 (R1); C02 s3 (fist and lamp), s11 (flames and ice).
+- Exposure and keys: C01 s8, s8b, s10 and C02 s8 need three-quarter keys and dark behind. The biggest cheap lever is a darker grade with pools of light from real sources plus mist; the notes already ask for it. On C01 s7, s8a, s9 and C02 s2, s10, s11 it would hide much of the toy-world and NPC weakness.
+- Actors standing on the water or the warden lying on it: C02 s1, s3, s7, s11.
+- Facing at the hand-off to play: C01 s12, C02 s12.
+- Smaller items: title collision C02 s11; bars C01 s0; foreground zombie C02 s1, s7, s11; centred pole C02 s1.
+
+ART:
+- Armour is chrome with blown hot spots: C01 s2, s3, s5, s6, s10, s11. Needs higher roughness, clamped specular, aged metal.
+- Skin and face (waxy, grey away from the light, mottled, ear doesn't match): C01 s3, s5, s6, s8, s8b, s10; C02 s4, s8.
+- NPCs are cartoon low-poly and dry (drowned, warden, risen): C01 s9, s12; C02 s1, s2, s5, s6, s7, s9, s10, s11, s12.
+- Lamps are glowing eggs, not flames: C01 s8a; C02 s1, s3, s5, s11, s12.
+
+ANIM:
+- Missing story clips: face-down wake C01 s2, R1 emerging C01 s12, warden rise C02 s5, ready guards C01 s11 and C02 s12.
+- Hand on hip: C01 s5. Sword carry clipping his face: C02 s6.
+- Slack open mouth at rest: C01 s6, s8, s8b, s10.
+
+ENV:
+- Stylized low-poly world (paper-cut pines, toy castle, black slab tower, flat tiled water, terrain seams, fog sprites, star-shaped grass from above): C01 s0, s2, s6, s7, s8a, s9, s10, s12; C02 s1, s2, s3, s4, s5, s6, s7, s10, s11, s12.
+
+**Count and where to spend**
+- YES: 1 of 26 (C01 s1, the black card). 25 NO.
+- Staging is the most visible fault in C01 s0, s3, s5, s8b, s9, s11 and C02 s1, s3, s7, s8, s9, s11, s12, with the fixes above. Honestly, none of them reaches YES on staging alone, because ART or ENV fails them too.
+- The non-staging causes that fail the most shots:
+  1. **ENV:** the stylized low-poly world clashes with a realistic heroine (18 frames).
+  2. **NPC models:** cartoon and dry (11 frames).
+  3. **Missing clips and slack mouth (ANIM):** 12 frames.
+  4. **Her skin shader:** every close-up (8 frames).
+  5. **Chrome armour:** 6 frames.
+
+**Her skin: material or light?** Mostly her material, and the lights make it worse:
+- **Same flatness under every light:** warm fire (C01 s8, s8b), cool moon (C02 s4), white lamp (C02 s8), and cool fill with a warm edge (C01 s10).
+- **No surface detail:** highlights are broad smooth sheens with no pore break-up, even when the face is 1000 px wide. The only texture is in the colour (freckles, mottling).
+- **No warmth at shadow edges:** shadows go grey or blue-grey with no warm band (C02 s4 nose and jaw, C01 s5 hip, C01 s6 arms).
+- **The ear doesn't match the face:** it stays tan under every light while the face beside it goes blue or white (C02 s4, s8).
+- **What the light adds:** frontal keys (C01 s8, C02 s8) take away shape, and C02 s8 is overexposed to plaster white. Fixing those helps, but no light will make this shader read as skin.

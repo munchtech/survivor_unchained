@@ -1,5 +1,69 @@
 # Cinematics: handoff
 
+## MR READY: cinematics 3 done (successor a688d6f8e4fca8912, 18 Oct); next: merge, then STOP until the new art
+**State:** items 1-4 finished; three judged rounds (k10 1/33, k12 2/32, k13 the confirmation with SHIP-or-CUT). Tests 942/0/8. Verdicts: `tools/scratch/cin6/judge/k12A_verdict.md`, `k12B_verdict.md`, `k13A_verdict.md`, `k13B_verdict.md`. Final frames `godot/.shots/k14c0*` (all four, plus hand-overs `k14c0*_ho_*`).
+**What ships (as the cinematics now play):** C01 s1 (black), s3 (the wake; eye rig added), s8, s8a (blue ford lamps as halos), s10 (0.35 s snap), s12 (face key 0-2 s) and the hand-over: 38 s. C02 s1, s2 (the call line), s10 (lie_down), s11, s12, hand-over: 21.4 s. C03: every shot but s3b. C04 A: A8 only (the back and face lines on it, 21.8 s; the reeds line kept for players who haven't heard it, StoryLint needs it).
+**New cues and code:** `grade` (per-shot saturation), `globe` color/halo/spread, `lamp` flame/flameColor/halo, `light` size (soft shadows), follow `followFrom`, V3.ToString (test crash), the warden waits 1.0 s after the C02 hand-over (Prologue.WardenUp: he hit her the frame play started).
+**Unjudged, applied exactly as the k13 judge wrote them:** C01 s3's eye rig and s12's face key, and the line moves for the cuts (pace.py: no clips or overlaps).
+
+**Cut, and the owner whose art brings each back (restage in the next wave, step 4):**
+- **TOUCH-UP (her):** C01 s6 (armor hot spots, waxy arms, parted lips), s8b (no lip-close shape, waxy forehead, hairline); C02 s4, s8 (ashen face vs orange ear and neck, hairline, pauldron highlights); C03 s3b (same, mouth open); C04 A A5, A7 (hairline cap, balloon pauldrons, orange ear), A4 (leg skin). Every close-up of her fails on these, so stage her beats wider and backlit until touch-up lands.
+- **NPC:** C02 s5, s6, s7 (the warden's flat model; his lantern lights nothing: give it a real light), s9 (his face won't hold a close-up: blue eye points, beard).
+- **ENV:** C01 s7 (prints that read in the frost; grass flattened on the trail), s9 (log end caps, grass cards); C04 A A1 (trunk through the frame, flat stepping stones), A2 (pines, not birches; no gold treetops), A3 (cartoon trees; she should be in the shallows); the coal bed (a domed lava pie); top-down frost reads as cotton wool at the C01 hand-over; s8a needs a keep under the gold lamp.
+- **ANIM:** C01 s2's lying pose (death_back's end pose with the head 25-35° more to her left, the left cheek on the ground, the flung arm out of the face-coals line, chin down 10°), s6a (a flat palm-down hover, fingers together), s11 (a pickup with a visible grab and no shield pop, ending in a guard; the stiff, hunched step over the log), s9 (a rise that reads, head and shoulders through the frost); the warden's rise (C02 s5, sits up rather than translating); sa7's eye search or blink; flask_drink plus a flask prop (C04 A sa6).
+- **FX:** the risen rise burst in `godot/src/Fx/BattleFx.cs` ~935 shows a pale square sprite with white specks (C01 s12, over the sack; in play too); C04 A sa4's ember is a flat orange disc with a hard white dot.
+- **STAGING, on the new art:** C01 s12's turn in its first second (the player body after `play`; check it isn't a one-frame spin); C02 s7 as a true profile; C04 A as a scene again (it is one shot now).
+
+## Earlier: paused here (cinematics 3 successor, ac7e54435a82fff12, 18 Oct)
+1. **Two k11 max staging solvers were still running at the pause, finishing on their own.** Read their reports with `python tools/scratch/coordinator/lastmsg.py <id> <out>`; the transcripts are in `C:\Users\munch\.claude\projects\C--Users-munch-Desktop-survivorsunchained\4b7b1da3-62bc-4cd2-ab49-a52d9a8367dc\subagents\`. They commit their own work as "WIP cinematics 3 k11". Check `git status` for leftovers and commit them with their diff checked.
+   - `ac62b6269fc9eedaf`: C01 (brief `tools/scratch/cin6/judge/s5a_brief.md`). It covers s3, s10 and s6 (o1-o3), s11's pickup, the s8/s8b fire keys, the night (s7, s8a, s9), thinning the s12 mist, the s11 to s12 exposure ramp, and cutting s0. Shots `k11ac01_*`.
+   - `a11ffa156dc106d9c`: C02, C03 s3b and C04 A (brief `s5b_brief.md`). It covers the s8 and s4 keys, s3b's key from the lamp, the sa5/sa7 dawn keys, the sa8 mist, C02's water, mist and framing, and dimming the post globes in cinematics only. **Plus the two cuts the coordinator agreed: C02 s3, and C04 A sa6** (flask_drink exists only as a clip script in `tools/anim/clips/story_c04.py`; the shot doesn't use it and there's no flask prop). Shots `k11bc02_*`, `k11bc03_*`, `k11bc04a_*`.
+2. Then **judge round 2** on items 2-4 (max; reuse `judge/k10_brief.md` with the k11 frame names; split C01 from the rest, as k10A/k10B did). A solver round for whatever staging still fails; at the round cap, restage or cut. Nothing that staging controls closes as known.
+3. **Run the tests (`dotnet test`), then the MR** ("MR READY cinematics-1@<commit>" to main). Include one line comparing pass counts: k10 passed 1/33, against round 2's count. Carry the backlog below in the MR and here, then STOP.
+
+**Backlog by owner (from the k10 verdicts; none is closed as known):**
+- **ANIMATION (blocked-by-clip):** a prone face-down wake and push-up (C01 s2, s5); the risen tearing free (C01 s12); her pickup and turn on stepping feet with no root slide (C01 s11); the warden's rise from the water (C02 s5); the warden's guard (C02 s12, C01 s11); flask_drink plus a flask prop (C04 A sa6, cut until then).
+- **CINEMATICS items 5-6 (blocked-by-art, restaged on the new art):**
+  - C01: s2's pose and frost; s6a over the coals; s7's prints as the leading line; s9's rising head.
+  - C02: s5, s6 and s9's framing on the warden; s7 as a profile two-shot from the west; s11's beats; s12's guard before the crane.
+  - C04 A: sa2's gold on the trees; sa4's ember draining; sa5's breath plume.
+  - C03: s4's steam; s6's heart light (cut if not built).
+  - C04 B: sb4a's smoke.
+- **TOUCH-UP (her):** waxy skin, the ear's tone, oversized glossy lips, the hairline cap edge, the braid tab's herringbone, the throat, glossy plastic armor (blown highlights, white greaves, the black gap at the pauldron top), the gray patch on the wrist at the vambrace (C01 s6a).
+- **NPC art:** the warden's flat white eyes (they need blue emissive points), his bare lamp hand (it needs the gauntlet), the greatsword's edge, the drowned's identical tan shirts, Grimtunnel, the villagers.
+- **ENV:** flat cream egg globes on the lamp posts (they need real flames); flat water with no shore or reflection; the ring stones; non-emissive coals; frost-grass cards; the tower top; the cartoon chest; the gallows lamp's hard light diamond; toon pines; the gray boulder (C04 A sa8); the town (C04 B).
+
+## Start here (cinematics 3 successor, agent ac7e54435a82fff12, 18 Oct)
+Scope: items 1-4 only, then the MR and STOP. (1) Loot is hidden in cinematics (888bf952). (2) A darker grade with real-source light and mist. (3) The owner's o1-o3: C01 s3, s6 and s10, plus s11. (4) Side keys on the close-ups, to the look bible's rule (docs/art/look_bible/02_skin.md item 5). Items 5-6 (blocking against the notes, the missing moments) are the backlog for after the new art, with the list in the k10 verdicts.
+- k10 (staging solver a5f61d98, a0f421e7/6c8e0756): the `atmosphere` cue's tuning, a `mist` cue (FogVolume), and HeadTurn keeping a lying head's roll. Two max gate judges passed 1/33 (`tools/scratch/cin6/judge/k10A_verdict.md`, `k10B_verdict.md`). The C01 and C04 A hand-overs pass.
+- k11: two max staging solvers (briefs `judge/s5a_brief.md` for C01 and `s5b_brief.md` for C02-C04 A, shared `s5_common.md`), shots `k11a*`/`k11b*`. Then one judge round (reuse `k10_brief.md`), the tests, the MR.
+- Touch-up 2's finding on C01 s3: the face/neck split is the moon, shadowed by her armor (evidence `judge/tu_tone_evidence.jpg`).
+
+## Start here (cinematics 3, PAUSED 18 Oct, clean point)
+Worktree `agent-a59432fe3bfc6eb92`, branch `cinematics-1` (merged with integration incl. the neck seam fix 7b9cd519). `godot/assets` is a JUNCTION: never `git reset --hard`, `git checkout .` or bare `git stash`. Full suite 942/0/8 at 888bf952. No turns held. Nothing is merged to main yet.
+
+**The owner's bar changed (18 Oct):** the gate is now "would this frame ship in a AAA game as it stands?" at 1:1 on the whole picture (docs/handoff/lead_brief.md); a NO fails regardless of the checklist; calibration frames `godot/.shots/o1_lying_neck_adams_apple.webp`, `o2_hunched_at_log.webp`, `o3_spin_profile.webp` (C01 s3, end of s6, s10). Art direction: "more realistic - but stylized enough to make sense on saving graphics lag", our own assets; the tutorial (Prologue, so these cinematics) launch-ready first.
+
+**The gate audit** (`tools/scratch/cin6/judge/gateA_verdict.md` C01-C02, `gateB_verdict.md` C03-C04 B; one real-play still per shot, `godot/.shots/playc2_<cine>_s<id>_1.png`): 1 of 54 YES (the black card). Every NO also fails on other areas, so staging alone reaches no YES. The per-area lists in those files are the BACKLOG for the environment (low-poly pines, tiled water, town haze, grass rows, fog sprites), NPC/creature art (drowned, warden, risen, Grimtunnel, villagers), her armour metal (chrome hot spots), her skin shader (waxy: no SSS, no pore break-up), story props (heart, lamps), and animation (face-down wake, R1 emerge, warden rise, ready guards, slack mouth, sa5/sa7 faces).
+
+**Items 1-4 (agreed with the coordinator) - BUILT, UNJUDGED:**
+1. Loot hidden during cinematics: `BattleFx.HideLoot` (888bf952). Light shafts and the way-out band still draw.
+2. Darker night grade + low mist: `atmosphere` cue takes adjustments (key, hemi, env, exposure, fog, rim, azimuth, elevation, keyColor, fogColor; `"from": "now"`), new `mist` cue (a0f421e7, 6c8e0756). C01 and C02 have their own darker night; mist on C02's river and past C01's firelight.
+3. The owner's shots: C01 s3 head tipped to the coals, camera on her face's side (`HeadTurn.cs` no longer rolls a lying head upright); s6 head to bedroll then bowed to her hands, warm light on her nape, lower 32 mm (no flask: props take weapon pieces only); s10 1.0 s, cut on the lift (kneel_to_stand_snap from 0.3 s, no spin); s11 the body `look` dropped, the clip's own turn carries her, side-on at chest height.
+4. Side/three-quarter keys: C01 s8, s8b, s10; C02 s4, s8; C03 s3b; C04 A sa5-sa7 (sun on her right = frame left; the note says frame right, a cheat if wanted).
+Frames: `godot/.shots/k10c01_*`, `k10c02_*`, `k10c03_c03_s3b_*`, `k10c04a_c04a_sa5..7_*` (3 stills a shot). Edit scripts `tools/scratch/cin6/ed_k10_*.py`.
+
+**Next, in order:**
+- **C01 s3 face-vs-throat tone is OURS** (touch-up solver fcde25f0, evidence `survivorsunchained_inputs\scratch_touchup1\tu\tone\evidence.jpg`): the breastplate shades the moon off her throat, so the throat is fire-orange and the face moon-pale, split at the jaw. Fix: moon off for s3, or move it so the cups don't shade her throat, or the armour's moon shadow off in close-ups; also check the moon's colour (it turns skin pink-white). Likely the same in s10. `CINEDBG lamps=0,glow=0` doesn't reach C01's fire. Known misses from the solver: s3 too orange (ember 0.45 -> ~0.25, lens 100, camera 0.15 m toward her face), C02 s8 still pale. Check the mist for blockiness and s12's bright start.
+- Then ONE max judge with the AAA gate first on the k10 frames + round-3 items (brief `judge/j1r3_brief.md` and `j2r3_brief.md`, written for k9: point them at k10 where reshot). Round-3 k9 frames for C01 s10-s12 and C03/C04 A are in `godot/.shots/k9c0*`; C03 s9-s11 were restaged for the sunk Grimtunnel (cameras at his eye line, hug pose, VAT v14) and are unjudged.
+- Then the MR (tests: `dotnet test` in godot/tests; drop untracked `.uid`/`.import` noise; never commit the tracked `.import` changes).
+- **Items 5-6, after the art lands** (restage list): blocking/framing against the notes (C01 s2, 5, 11, 12; C02 s1, 3, 7, 9, 11, 12 incl. the warden lying on and actors standing on the water, her running at the hand-off; C03 s1, 2, 8, 11, 12; C04 A sa3, sa8; C04 B sb2, 3, 5), and the promised moments (sa2 gold treetops, sa4 ember drain, sa5 breath, C03 s4 steam, s6 water off the heart, sb4a smoke): build or cut.
+- Real play: `tools/scratch/cin6/playc.py NAME COUNT` runs the Prologue with every cinematic (`--cines`); playc2 played c01, c02, c03 -> c04a on the cut, c04b with no errors. The Gestures Slerp throw is fixed.
+
+Done this session (commits f8e0d473..6c8e0756): k8 judged (j1r2/j2r2 verdicts), round-2 fixes (pacing trims c01 s6 6.4, s11 1.8; c02 s2 2.4; c03 3b 1.9; c04a A2 2.2; c04b B4a/B4b 1.7; C02 s8 lamp side fixed: place offsets are WORLD metres), the s3 solver (take_from_log for her pick-up, the crane aims from where it is, Grimtunnel sunk and hugging), `--cines`, the gate audit.
+
+**Tools** (`tools/scratch/cin6`): `shoot.py RUNS.json` (one godot turn per batch; builds C# first), `sheet.py`, `pace.py LOG CINE...`, `jedit.py CINE edits.py`, `ed_*.py` (every edit made). Shots land in `godot/.shots/<name>_<cine>_s<shot>_<k>.png`; hand-overs in `<name>_ho_<cine>_NNN_1.png`.
+
 From agent a7a4c20bcfd7ccfd3 (who took over from a79b6d8c81e14dc63) to a fresh cinematics production lead. Read `docs/team/README.md`, `docs/team/RESUME.md`, then this page, then `docs/team/cinematics.md`.
 
 ## The owner's quotes

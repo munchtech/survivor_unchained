@@ -75,10 +75,10 @@ public class CinemaTests
         var f = CineFile.Load("c01");
         var shortTakes = new CineSchedule(f, new CineContext(), id => 2.0);
         var longTakes = new CineSchedule(f, new CineContext(), id => id.EndsWith(".prints") ? 11.0 : 2.0);
-        var s7 = longTakes.Shots.First(s => s.Shot.Id == "7");
+        var s7 = longTakes.Shots.First(s => s.Shot.Id == "8");
         var line = longTakes.Cues.First(c => c.Cue.Str("id") == "cin_drowned_fire.prints");
         Assert.Equal(line.T + 11.0 + s7.Shot.Tail, s7.End, 6);
-        Assert.Equal(longTakes.Length - shortTakes.Length, s7.Dur - shortTakes.Shots.First(s => s.Shot.Id == "7").Dur, 6);
+        Assert.Equal(longTakes.Length - shortTakes.Length, s7.Dur - shortTakes.Shots.First(s => s.Shot.Id == "8").Dur, 6);
     }
 
     [Fact]
@@ -107,7 +107,18 @@ public class CinemaTests
         var b = new CinePlayer(Lay(f));
         a.Advance(20.0);
         for (int i = 0; i < 400; i++) b.Advance(0.05);
-        Assert.Equal(a.Camera(places.Resolve), b.Camera(places.Resolve));
+        // 400 steps of 0.05 sum to 20 only to within rounding (~1e-14 s), and a
+        // moving shot moves by that much, so the poses agree to rounding, not bit for bit.
+        var ca = a.Camera(places.Resolve);
+        var cb = b.Camera(places.Resolve);
+        Assert.Equal(a.Shot.Index, b.Shot.Index);
+        foreach (var (x, y) in new[] { (ca.Pos.X, cb.Pos.X), (ca.Pos.Y, cb.Pos.Y), (ca.Pos.Z, cb.Pos.Z),
+                     (ca.At.X, cb.At.X), (ca.At.Y, cb.At.Y), (ca.At.Z, cb.At.Z), (ca.Hfov, cb.Hfov),
+                     (ca.Roll, cb.Roll), (ca.Focus ?? 0, cb.Focus ?? 0), (ca.Fstop, cb.Fstop), (ca.Lens, cb.Lens),
+                     (ca.Handheld, cb.Handheld), (ca.FollowK, cb.FollowK) })
+            Assert.Equal(x, y, 9);
+        Assert.Equal(ca.Focus.HasValue, cb.Focus.HasValue);
+        Assert.Equal((ca.Black, ca.Hold), (cb.Black, cb.Hold));
         var end = new CinePlayer(Lay(f));
         end.Advance(end.S.Length);
         Assert.Equal(1.0, end.Camera(places.Resolve).FollowK, 6);
@@ -203,7 +214,7 @@ public class CinemaTests
     [Fact]
     public void A_cinematic_that_ends_in_play_hands_her_over_where_it_leaves_her()
     {
-        var ending = All().Where(f => f.End.Her != null).ToList();
+        var ending = All().Where(f => f.End.Her != null && f.End.Next == null).ToList();
         Assert.Contains(ending, f => f.Id == "c01");
         foreach (var f in ending)
             foreach (var calling in new[] { "warden", "arcanist" })
@@ -218,6 +229,26 @@ public class CinemaTests
                 Assert.True(CineHandover.PlaysLastShot(s), $"{f.Id}: her own body does not take the last shot from its cut (a \"play\" cue at 0)");
                 Assert.True(CineHandover.Blend(s) >= 0.5, $"{f.Id}: the last shot cuts to the game's camera (a follow move of 0.5 s or more, to its end)");
             }
+    }
+
+    /// <summary>The owner (17 October): C03 runs on into C04 A, with no three seconds
+    /// of wading between them. A cinematic that runs on names one in its own zone,
+    /// keeps its bars to the cut, and hands nothing to play itself.</summary>
+    [Fact]
+    public void A_cinematic_that_runs_on_cuts_into_the_next_in_its_zone()
+    {
+        var on = All().Where(f => f.End.Next != null).ToList();
+        Assert.Contains(on, f => f.Id == "c03" && f.End.Next == "c04a");
+        foreach (var f in on)
+        {
+            var next = All().Single(n => n.Id == f.End.Next);
+            Assert.Equal(f.Zone, next.Zone);
+            var s = Lay(f, "warden");
+            var p = new CinePlayer(s);
+            p.Advance(s.Length - 0.01);
+            Assert.True(p.Bars > 0.99, $"{f.Id}: its bars go out before the cut into {next.Id}");
+            Assert.False(CineHandover.PlaysLastShot(s), $"{f.Id}: hands her to play before {next.Id} (a \"play\" cue in its last shot)");
+        }
     }
 
     [Fact]

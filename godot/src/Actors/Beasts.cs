@@ -165,7 +165,11 @@ public static class Beasts
 
     const string LHips = "mixamorig_Hips_56", LSpine = "mixamorig_Spine_45", LChest = "mixamorig_Spine2_43", LNeck = "mixamorig_Neck_2",
         LHead = "mixamorig_Head_1", LTop = "mixamorig_HeadTop_End_0", LArmL = "mixamorig_LeftArm_21", LArmR = "mixamorig_RightArm_41",
-        LLegL = "mixamorig_LeftUpLeg_50", LLegR = "mixamorig_RightUpLeg_55";
+        LLegL = "mixamorig_LeftUpLeg_50", LLegR = "mixamorig_RightUpLeg_55",
+        LForeL = "mixamorig_LeftForeArm_20", LForeR = "mixamorig_RightForeArm_40";
+    // (The hug's turns, the left side's; the right mirrors them.)
+    const double HugLean = 0.08;
+    static readonly Vector3 HugArm = new(-0.49f, -0.24f, -0.14f), HugFore = new(-1.38f, -0.61f, -1.31f);
 
     /// <summary>The diggers: pale from living under the ground, a hat on
     /// each with a lamp hung out in front of its face on a crooked iron
@@ -221,6 +225,16 @@ public static class Beasts
             double a = t * Math.Tau;
             return new Vat.Moves { Move = new(0, -0.2f, 0) }.Bone(LSpine, 0.8).Bone(LNeck, -0.3).Bone(LHead, -0.3, 0, 0.1 * Math.Sin(a))
                 .Bone(LArmL, -1.3 + 0.8 * Math.Sin(a)).Bone(LArmR, -1.3 - 0.8 * Math.Sin(a));
+        }, Hold: true),
+        // Its arms brought in round something held to its chest (C03: Grimtunnel and the heart), hunched
+        // over it, in a third of a second, and held. The turns were solved for its hands to meet a hand's
+        // breadth before its chest (tools/scratch/cin6/hug.py: two-bone reach from its idle frame).
+        new("hug", "Idle", 1.8, 0.35, t =>
+        {
+            double e = Ease(t, 1.0);
+            return new Vat.Moves().Bone(LChest, HugLean * e)
+                .Bone(LArmL, HugArm.X * e, HugArm.Y * e, HugArm.Z * e).Bone(LArmR, HugArm.X * e, -HugArm.Y * e, -HugArm.Z * e)
+                .Bone(LForeL, HugFore.X * e, HugFore.Y * e, HugFore.Z * e).Bone(LForeR, HugFore.X * e, -HugFore.Y * e, -HugFore.Z * e);
         }, Hold: true),
     }, Budget: 6000, Legs: (LLegL, LLegR), Root: LHips, Props: props);
 

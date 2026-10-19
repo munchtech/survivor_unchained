@@ -1,0 +1,5 @@
+[
+ {"name": "k13b2c02", "cine": "c02", "until": 58, "args": ["--stills", "3", "--cinebones"]},
+ {"name": "k13b2c03", "cine": "c03", "until": 40, "args": ["--stills", "3"], "keep": ["_s3b_"], "timeout": 1000},
+ {"name": "k13b2c04a", "cine": "c04a", "until": 60, "args": ["--stills", "3", "--cinebones"]}
+]

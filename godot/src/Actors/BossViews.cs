@@ -26,6 +26,28 @@ public partial class WardenView : Node3D, IBossView
     public double Glow { get; set; } = 1;
     /// <summary>Whether his lamp burns (it goes out in the river in C03).</summary>
     public bool LampLit { get; set; } = true;
+    /// <summary>A cinematic's say over the flame's own look: its core's brightness (1 = as built) and hue,
+    /// and its halo's strength (C02's night: the core was a flat white disc, the brightest thing on screen).</summary>
+    public float FlameLevel { get => flameLevel; set { flameLevel = value; Tint(); } }
+    public Color? FlameColor { get => flameColor; set { flameColor = value; Tint(); } }
+    public float HaloLevel { get => haloLevel; set { haloLevel = value; Tint(); } }
+    float flameLevel = 1, haloLevel = 1;
+    Color? flameColor;
+    StandardMaterial3D? coreMat, haloMat;
+    static readonly Color CoreBase = new(1.4f, 2.4f, 3.2f), HaloBase = new(0.55f, 0.8f, 1f, 0.6f);
+    void Tint()
+    {
+        if (coreMat == null || haloMat == null) return;
+        var c = CoreBase;
+        if (flameColor is Color fc && Mathf.Max(fc.R, Mathf.Max(fc.G, fc.B)) > 1e-4f)
+        {
+            var l = fc.SrgbToLinear();
+            c = new Color(l.R, l.G, l.B) * (3.2f / Mathf.Max(l.R, Mathf.Max(l.G, l.B)));
+        }
+        coreMat.AlbedoColor = new Color(c.R * flameLevel, c.G * flameLevel, c.B * flameLevel);
+        var h = flameColor is Color hc ? new Color(hc.R, hc.G, hc.B, HaloBase.A) : HaloBase;
+        haloMat.AlbedoColor = new Color(h.R, h.G, h.B, h.A * haloLevel);
+    }
     /// <summary>Where his lamp hangs (for framing a cinematic on it).</summary>
     public Vector3 LampAt => lamp.GlobalPosition;
     /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
@@ -76,7 +98,7 @@ public partial class WardenView : Node3D, IBossView
         lamp.AddChild(flame);
         flame.AddChild(new MeshInstance3D
         {
-            Mesh = new SphereMesh { Radius = 0.026f, Height = 0.075f, Material = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(1.4f, 2.4f, 3.2f) } },
+            Mesh = new SphereMesh { Radius = 0.026f, Height = 0.075f, Material = coreMat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = CoreBase } },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         });
         flame.AddChild(new MeshInstance3D
@@ -95,6 +117,7 @@ public partial class WardenView : Node3D, IBossView
                 AlbedoColor = new Color(0.55f, 0.8f, 1f, 0.6f),
             },
         });
+        haloMat = (StandardMaterial3D)((MeshInstance3D)flame.GetChild(1)).MaterialOverride;
         light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = true };
         AddChild(light);
     }
