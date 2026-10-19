@@ -109,6 +109,8 @@ public partial class FlareFx
             // (judge 5b 4: night bellies 0.18-0.25 amber, crowns 0.05-0.08; day always darker than the ground, crowns <=0.38)
             simMat.SetShaderParameter("soot_lit", Night ? new Vector3(0.09f, 0.04f, 0.013f) : new Vector3(0.075f, 0.062f, 0.05f));
             simMat.SetShaderParameter("soot_up", Night ? -1f : 1f);
+            // (Judge 6 (6): at 0.85 its soot pockets at her feet read as black holes by day.)
+            simMat.SetShaderParameter("soot_max", 0.6f);
             simBoom.Visible = true;
         }
         float y = (float)HeightAt(p.X, p.Z);

@@ -44,13 +44,14 @@ void fragment() {
 	// twice its luma.)
 	const vec3 base = vec3(0.262, 0.578, 0.753);
 	float ftone = 0.8 + 0.2 * fl_h(seed * 3.1 + fid * 0.71);
-	vec3 body = base * (0.85 + 0.3 * cr) * ftone * mix(0.42, 0.16, day);
+	// (Its colour its own light: lit, under the fire's warm light, a cyan albedo went grey: a1.)
+	vec3 body = base * (0.85 + 0.3 * cr) * ftone * mix(0.75, 0.3, day);
 	float grazing = pow(rim, 2.0);
-	vec3 rimc = mix(base, vec3(0.75, 0.95, 1.0), 0.5) * grazing * mix(1.6, 0.6, day);
+	vec3 rimc = mix(base, vec3(0.75, 0.95, 1.0), 0.5) * grazing * mix(2.2, 0.9, day);
 	vec3 flash = vec3(0.62, 0.72, 0.8) * v_flash * mine * (1.0 - down);
 	// Hot: lit orange at its edges by the fire that threw it (only the edges: a whole face lit read as confetti).
 	vec3 hot = vec3(1.0, 0.32, 0.05) * heat * 1.1 * pow(rim, 2.5);
-	ALBEDO = mix(base * 0.35, vec3(0.012, 0.014, 0.016), 1.0 - glassk);
+	ALBEDO = mix(base * 0.06, vec3(0.012, 0.014, 0.016), 1.0 - glassk);
 	ROUGHNESS = 0.3;
 	SPECULAR = 0.0;
 	METALLIC = 0.0;

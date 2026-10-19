@@ -47,12 +47,13 @@ void flare_drain(vec3 wp, inout vec3 alb, inout vec3 emi) {
 	float back = 1.0 - smoothstep(flare_look.y - 6.0, flare_look.y, r);
 	float k = dr * (1.0 - back);
 	float l = dot(alb, FL_LUM);
-	alb = mix(alb, vec3(l), 0.7 * k) * (1.0 - 0.25 * k);
+	// (Judge 6 (7): darkened by a quarter the press dipped the frame 14%, a swing: a tenth.)
+	alb = mix(alb, vec3(l), 0.7 * k) * (1.0 - 0.1 * k);
 	// Burns Twice paints the world back cold first; the warmth comes with the embers.
 	// (Only on the ford's frost, the reach and a little past it: by the story's camera the whole wood went blue.)
 	float cold = flare_look.z * back * dr * (1.0 - smoothstep(flare_at.w, flare_at.w + 5.0, r));
 	alb = mix(alb, vec3(l) * vec3(0.74, 0.9, 1.14), cold * 0.55);
-	emi = mix(emi, vec3(dot(emi, FL_LUM)), 0.7 * k) * (1.0 - 0.25 * k);
+	emi = mix(emi, vec3(dot(emi, FL_LUM)), 0.7 * k) * (1.0 - 0.1 * k);
 }
 
 // When the frost's front passes a point: its distance, warped by a low cloud, with fingers racing ahead.
@@ -438,8 +439,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 			// (f6d: lit in loose bits it read as scattered straw. Patches a few metres across where the crust
 			// glows, joined, cooling to dark at their edges.)
 			float fl_on = smoothstep(0.6, 0.74, texture(flare_noise, w * 0.11 + 0.3).g);
-			// Each goes dark at its own time, +1 to +3.5 s, the thinnest first.
-			float fl_T = 1.0 + 2.5 * clamp(fl_wc * 0.75 + fract(fl_cr.y * 13.7) * 0.25, 0.0, 1.0);
+			// Each goes dark at its own time, the thinnest first. (Judge 6 (5)/(9): the veins read best f80-f150; lit to
+			// +3.5 s they were orange flakes over the floor at +2 s. Now +0.8 to +1.6 s.)
+			float fl_T = 0.8 + 0.8 * clamp(fl_wc * 0.75 + fract(fl_cr.y * 13.7) * 0.25, 0.0, 1.0);
 			float fl_ht = 1.0 - smoothstep(fl_T - 1.0, fl_T, bmk.w);
 			vec3 fl_hot = mix(vec3(0.35, 0.025, 0.005), mix(vec3(1.0, 0.27, 0.035), vec3(1.0, 0.46, 0.1), fl_thick), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
 			vec3 fl_hal = vec3(0.6, 0.07, 0.012) * smoothstep(0.0, 0.4, fl_ht);
