@@ -186,6 +186,14 @@ public partial class ZoneView : Node3D
 
     readonly Dictionary<int, (float Level, float Rate)> levels = new();
 
+    /// <summary>A light's shadow softened (its source "size" metres across; 0 is as built, hard):
+    /// a cinematic's fire throws soft shadows, not razor spokes.</summary>
+    public void SetSize(int light, float size)
+    {
+        if (light < 0 || light >= lights.Count) return;
+        lights[light].LightSize = Mathf.Max(0, size);
+    }
+
     /// <summary>How far a fire's light has sunk toward its coals (SetFire).</summary>
     readonly Dictionary<int, float> lightDrop = new();
 

@@ -1,0 +1,3 @@
+[
+ {"name": "k9tc03", "cine": "c03", "until": 100, "args": ["--stills", "3", "--cinebones"], "keep": ["_s9_", "_s10_", "_s11_"], "timeout": 1000}
+]

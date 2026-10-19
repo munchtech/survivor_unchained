@@ -1,0 +1,6 @@
+[
+ {"name": "k14c01", "cine": "c01", "until": 80, "args": ["--stills", "3", "--handoff", "--cinebones"]},
+ {"name": "k14c02", "cine": "c02", "until": 60, "args": ["--stills", "3", "--handoff", "--cinebones"]},
+ {"name": "k14c03", "cine": "c03", "until": 60, "args": ["--stills", "3", "--cinebones"], "timeout": 1000},
+ {"name": "k14c04a", "cine": "c04a", "until": 80, "args": ["--stills", "3", "--handoff", "--cinebones"]}
+]

@@ -1,0 +1,6 @@
+[
+ {"name": "k12a1A", "cine": "k12vA", "until": 12, "args": ["--stills", "3", "--cinebones"], "keep": ["_s3_"]},
+ {"name": "k12a1B", "cine": "k12vB", "until": 12, "args": ["--stills", "3"], "keep": ["_s3_"]},
+ {"name": "k12a1C", "cine": "k12vC", "until": 12, "args": ["--stills", "3", "--cinebones"], "keep": ["_s3_"]},
+ {"name": "k12a1F", "cine": "k12vF", "until": 12, "args": ["--stills", "3"], "keep": ["_s3_"]}
+]
