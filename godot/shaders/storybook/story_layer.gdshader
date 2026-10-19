@@ -53,6 +53,16 @@ uniform bool reveal_invert = false;
 
 uniform vec2 scroll_speed = vec2(0.0);
 
+// The item's own colour (its modulate, the layer's opacity), kept from the
+// vertex stage: in fragment() COLOR already holds texture x modulate, and the
+// texture is sampled again below (moved by the touches), so multiplying by
+// fragment COLOR would apply the picture twice (squaring every value).
+varying vec4 modulate;
+
+void vertex() {
+	modulate = COLOR;
+}
+
 void fragment() {
 	vec2 p = UV * px;
 	vec2 d = vec2(0.0);
@@ -109,7 +119,7 @@ void fragment() {
 		float a = 1.0 - smoothstep(k - reveal_soft, k, texture(reveal_map, UV).r);
 		c.a *= reveal_invert ? 1.0 - a : a;
 	}
-	c *= COLOR;
+	c *= modulate;
 	if (blend == 2) {
 		// Screen, approximately: lighten by the colour's own lightness.
 		float l = max(c.r, max(c.g, c.b));
