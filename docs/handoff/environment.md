@@ -1,5 +1,17 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (env lead 6, 19 Oct): E3 in progress
+- Worktree `.claude/worktrees/env-3`, branch `env-3` (from dc2f991e; its own assets junction, imported, tests 994/0/8). Briefs: `survivorsunchained_inputs\scratch_env6\`. Frames: `survivorsunchained_inputs\env_e3\`. Baseline frames: `godot/.shots/e3r0_{night,dawn,town_dawn,town_day}_NN.png` (round r0, before any E3 change).
+- E3 list (7 items):
+  1. The W2 ground blend.
+  2. At most 4 layers a pixel, anti-tiling and macro.
+  3. The road in the terrain: ruts, verges, no grass.
+  4. Frost by exposure, and wet hollows.
+  5. Scatter along the road.
+  6. Town setts (a large varied tile, gutters, puddles).
+  7. Our own ground materials: art/ground shipped 7 Poly Haven sets as is.
+- Solver A (`ground_a_brief.md`: items 1, 2, 3, 5's wet half, 6, 7) is running. Solver B (frost, scatter) comes after A. Then judge 1 (xhigh, whole-frame gate), at most 3 rounds, perf (1440p high fps min >= 131), full tests, the teach run once, then the MR.
+
 ## Now (env lead 5, 19 Oct): E2 DONE, MR READY; next E3
 - **E2 is at MR READY** on env-2 (integration merged at fe27b26e). Briefs and tools: `survivorsunchained_inputs\scratch_env5\`. Verdicts: `env_e2\judge1erdict.md`, `env_e2\judge2erdict.md`.
 - **What E2 shipped:**
