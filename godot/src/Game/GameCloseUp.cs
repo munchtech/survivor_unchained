@@ -81,7 +81,7 @@ public partial class Game
     /// 17 October); close, by day her light comes down.</summary>
     void HerToTheView(double dt, bool held)
     {
-        if (scene?.Player is not { } pv || screens.Current != null) { closeDrives = false; return; }
+        if (scene?.Player is not { } pv || screens.Current != null) { closeDrives = false; if (scene?.Player is { } pv0) pv0.LampOffHer = false; return; }
         float near = cam.CloseShown;
         bool turn = !held && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
         if (turn)
@@ -96,6 +96,7 @@ public partial class Game
         float day = Mathf.Clamp((near - 0.3f) / 0.4f, 0, 1);
         if (lit) pv.LampScale = Mathf.Lerp(1, night ? CloseLampByNight : CloseLampByDay, day);
         else if (closeDrives) pv.LampScale = 1;
+        pv.LampOffHer = lit && night && day > 0.5f && CloseLampOffHer;
         closeDrives = turn || lit;
         // By day the sun is behind or above her: a soft key of her own, 40 degrees off the lens on the side she
         // turns to and 25 up, on people only (layer 2), so her face is modelled, not flat. By night her ember's
@@ -141,12 +142,14 @@ public partial class Game
 
     SpotLight3D? closeKey, closeRim;
     // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
-    static float CloseKeyNight => Args.Num("close-key-night", 0.18f);
+    static float CloseKeyNight => Args.Num("close-key-night", 0.24f);
     static float CloseRimNight => Args.Num("close-rim", 7.0f);
-    static float CloseLampByNight => Args.Num("close-lamp-night", 0.12f);
+    static float CloseLampByNight => Args.Num("close-lamp-night", 0.8f);
+    // --close-lamp-on-her: by night her lamp lights her too in the close view (before E1 round 3c it did, and filled her face flat).
+    static bool CloseLampOffHer => !Args.Has("close-lamp-on-her");
     // --close-exp-night X: the close view's exposure by night against play's (pictures).
     // (Round 3: 2.0 left her face pale at 187; 0.35 of a stop under it brings it to about 165.)
-    static float CloseExposureNight => Args.Num("close-exp-night", 1.465f);   // x the preset's 1.5: face ~170 (round 3b)
+    static float CloseExposureNight => Args.Num("close-exp-night", 1.2f);   // x the preset's 1.5: face ~140-150 (round 3c; 1.465 left it pale at 170)
     // --close-key-az D: the night key's angle off her face (degrees), toward the lens, so her far cheek falls into half
     // shade (E1 round 3: 50-60). The key's colour: the ember's, saturated (1.0, 0.6, 0.35).
     static float CloseKeyAzNight => Args.Num("close-key-az", 55f);

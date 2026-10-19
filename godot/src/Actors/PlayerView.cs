@@ -47,6 +47,9 @@ public partial class PlayerView : Node3D
     /// (GameMenus), eased. Under the sun as well, from a hand's breadth over her head it lit her
     /// face flat and cream-white, washed out beside the panel.</summary>
     public float LampScale = 1;
+    /// <summary>True: her carried light lights the ground round her but not her (the close view by night, where
+    /// from over her head it filled her face flat; E1 round 3).</summary>
+    public bool LampOffHer;
     float lamp = 1;
     // Their own clips (hers, or his) and carriage.
     readonly bool mine;
@@ -159,7 +162,7 @@ public partial class PlayerView : Node3D
             tree.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
         }
         person.Root.AddChild(tree);
-        Light = new OmniLight3D { LightColor = new Color("#ffb070"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
+        Light = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-color") ?? "#ffd0a0"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
         AddChild(Light);
         Reflections = new Reflections(lo);
         AddChild(Reflections);
@@ -559,7 +562,9 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         Light.LightEnergy = (float)((LightBase * (0.7 + 0.3 * hp) + flicker + flare * 20) / Mathf.Pi) * lamp * Atmosphere.EmberGain;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
-        Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light);
+        Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
+        Light.OmniAttenuation = EmberAtt;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u : 0xFFFFFu;
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
@@ -658,6 +663,9 @@ public partial class PlayerView : Node3D
 
     /// <summary>How much of her clips' bowed head is taken back toward level in play (--head-level tries
     /// another): from play's camera her face then shows eyes and a mouth, not the crown of her hair.</summary>
+    // --ember-att A, --ember-range K, --ember-color C: her carried light's falloff, reach and colour (E1 pictures). Round 3c:
+    // pale gold (#ffb070 was) and a steeper falloff, so the moon's shadows inside her pool stay dark, not rust streaks.
+    static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 1.8f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;

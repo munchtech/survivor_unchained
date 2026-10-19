@@ -105,7 +105,7 @@ public static class Atmospheres
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.0, 1.0, 1.0],
-        "#a6bced", "#ffbe7a", 0.3, 0.9, 0.1, 1.14) { Toe = 0.5, Moon = 0.6, MoonSat = 0.05, MoonTop = 0.45, MoonWidth = 0.2 };   // (a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
+        "#a6bced", "#ffbe7a", 0.55, 0.9, 0.1, 1.14) { Toe = 0.5, Moon = 1.0, MoonSat = 0.05, MoonTop = 0.45, MoonWidth = 0.2 };   // (a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
 
     /// <summary>The Low Ford at dawn, in play: the sun 18 degrees up in the north-north-east, cheated from C04 A's
     /// rising sun toward the road's far end (as the moon was), so the wood road's corridor gets sun (from the east-north-east
@@ -117,9 +117,9 @@ public static class Atmospheres
     {
         Sky = Dawn.Sky with { Horizon = "#7c90b8", Glow = "#c8d0e0" },
         KeyColor = "#ffdbad", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = -60, ShadowStrength = 0.95,
-        HemiSky = "#7c96d0", HemiGround = "#2c3446", HemiIntensity = 0.9, EnvIntensity = 0.7,
+        HemiSky = "#6f8fd8", HemiGround = "#2c3446", HemiIntensity = 0.9, EnvIntensity = 0.7,
         FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
-        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05,
+        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05, Ember = 0.5,
     };
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
@@ -139,7 +139,7 @@ public static class Atmospheres
     {
         KeyColor = "#ffe0b0", KeyIntensity = 4.6, KeyElevation = 28, KeyAzimuth = 330, ShadowStrength = 0.95,
         HemiSky = "#8ea6c4", HemiGround = "#3a3a40", HemiIntensity = 0.62, EnvIntensity = 0.55,
-        Exposure = 0.95, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.002, Mist = 0.05, MistColor = "#a8acb4",
+        Exposure = 0.95, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.002, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
     };
 
     /// <summary>Play's night going to dawn by k (0 to 1), where no C04 A brings the sun up: the moon sets and the

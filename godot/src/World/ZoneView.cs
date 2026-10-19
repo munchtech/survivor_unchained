@@ -106,9 +106,9 @@ public partial class ZoneView : Node3D
                 foreach (var glow in meta.Lights[f.Light].Glow) { fireGlow.Add(glow); if (Node(glow) is Node3D ball) ball.Visible = false; }
         }
         // The Low Ford's beacons (the pylons' blue flames): built at an HDR white-blue that AgX blew out to a white
-        // octagon (E1 round 3); at an eighth it reads as blue glass lit from inside, and their lights still pool the ground.
+        // octagon (E1 round 3); at a quarter (round 3c; an eighth went matte) its core sits at 230, blue, under the clip, and their lights still pool the ground.
         foreach (var (name, n) in Landmarks.Nodes)
-            if (name.StartsWith("pylon_flame")) DimGlow(n, 0.12f);
+            if (name.StartsWith("pylon_flame")) DimGlow(n, SurvivorUnchained.Args.Num("beacon-glow", 0.25f));   // (--beacon-glow K: pictures)
         foreach (var c in meta.Chimneys)
         {
             var smoke = Campfire.ChimneySmoke();
@@ -292,7 +292,7 @@ public partial class ZoneView : Node3D
         Shadows();
     }
 
-    bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows;
+    bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows && !SurvivorUnchained.Args.Has("lamp-shadows-off");   // (--lamp-shadows-off: pictures)
 
     /// <summary>Whether it is dusk (the game's clock): the lamps cast shadows then, as by night.</summary>
     public void SetDusk(bool on)

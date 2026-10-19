@@ -12,6 +12,10 @@ SETS = {
     "woodscout": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-2,-72;-5,-66;1,-78;3,-68;-6,-77"], 5),
     "townscout_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,23;8,-18;24,0;-6,-4;0,-24;10,24"], 6),
     "townscout_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "0,23;8,-18;24,0;-6,-4;0,-24;10,24"], 6),
+    # the camp and road B by night only (round 3c checks)
+    "camp": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;9,40"], 2),
+    "camp3": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;-7.5,87.5;-7.5,87.5"], 3),
+    "nightc": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;9,40;0,-38;-8.6,88.6,1,0"], 4),
     "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
     "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", TOWN], 3),
     "town_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", TOWN], 3),
