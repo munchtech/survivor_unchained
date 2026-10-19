@@ -55,17 +55,17 @@ CONTENT = {
     "p1": ("Night, two thousand years ago. We stand on the near rim of a great raw cut dug deep into a hillside and look "
            "across it and down into it. At the left, close to us on our rim, two soldiers of an ancient legion stand with "
            "their backs to us as dark silhouettes: dull dark rust-red wool cloaks, plain dull matte bronze helmets with "
-           "crests and cheek guards; the nearer holds a small torch low in front of him, half hidden by his body. Across the "
-           "cut, the far wall drops away into darkness as four great flat planes of bare slate rock, each one a single broad "
-           "shape of cold dark slate with one clean edge. Down that wall a dense column of marching soldiers winds in an S "
-           "from just below the far rim to the bottom of the picture, packed close together, their torches held up in their "
-           "hands, so the column reads as a winding stream of small flames above dark heads going down into the depth of "
+           "crests and cheek guards, no shine on them; the nearer holds a small short hand torch low in front of him, half hidden by his body. Far across "
+           "the cut, its far wall drops away into darkness as four great flat planes of bare slate rock, each plane one smooth "
+           "flat tone of cold dark slate with one clean edge. Down that far wall a dense column of small marching soldiers winds "
+           "in an S from just below the far rim to the bottom of the picture, packed close together, each carrying a short "
+           "hand torch in his fist, so the column reads as a winding stream of small flames above dark heads going down into the depth of "
            "the cut. Above the far rim the dark empty hillside rises to a crest under a strip of deep indigo night sky. The "
-           "right side of the picture sinks into deep shadow. The torchlight's orange is the only strong color; everything "
+           "right third of the picture sinks into deep shadow. The torchlight's orange is the only strong color; everything "
            "else is night."),
     "p4": ("Night under a dark slate-blue sky, hard frost on a field beside a pale dirt road, a few ember-gold glints in the "
            "frozen soil, a dark body lying in the frost behind. A dead villager stands upright and slack, arms hanging, head "
-           "tilted, in a torn linen shirt: gray waxy skin, sunken cheeks, matted hair; his eye sockets are empty holes lit "
+           "tilted, in a torn linen shirt: gray waxy skin, sunken cheeks, matted hair; his eyes are gone, the sockets empty holes lit "
            "gold from inside, and gold light glows in his open mouth; his skin is lit from within like paper over a lamp. "
            "To the right an old watchman with a gray beard, a slate blue-gray hooded cloak over a shirt of mail, a round "
            "wooden shield with a dark matte iron boss on his arm, is braced with his weight forward, both hands on a single "
@@ -78,27 +78,63 @@ CONTENT = {
            "large flat dark stepping stones crossing the shallows. Three new square cages of crude hand-forged black iron "
            "bars stand on plain square black iron posts, each cage holding a cold pale blue flame that pools blue light on "
            "the snow at its foot; those blue pools are the only bright snow, and the far bank, the right bank and the edges "
-           "of the picture lie deep in shadow. In the middle of the river, just above the water over the stones, a fourth "
-           "blue light floats with nothing holding it, in a wide soft cold glare that fades gently into the dark, its light "
+           "of the picture lie deep in shadow. In the middle of the river, a little above the water over the stones, a "
+           "fourth blue light floats in the air with nothing holding it, a bright point in a wide soft cold glare that fades gently into the dark, its light "
            "lying on the water. Nobody is there. The cold blue is the only strong color; the rest is deep night."),
     "p9": ("Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: "
            "a campfire burning high; beside it a bedroll with a wool blanket folded on top, lit by the fire; a plain leather "
-           "pack. A lone traveler sits on a log by the fire with their back to us, wrapped from the hood to the ground in one "
-           "plain dark wool cloak that falls over the log in a single smooth cone; only the hands show, holding a folded "
-           "letter to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise "
+           "pack. A lone traveler sits on a log by the fire, seen from directly behind, wrapped from the hood to the ground in "
+           "one plain dark wool cloak that falls over the log in a single smooth cone; the face is hidden inside the hood, "
+           "turned away from us; only the hands show at the side, holding a folded letter toward the fire; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise "
            "stands the waystation: a long low hall of stone and dark timber with a steep roof and warm orange windows, and "
-           "beside it a short, squat, square stone tower with a flat roof and one warm window near its top. On the right a "
-           "narrow river winds between bare trees, and low among the trees by the water three tiny cold blue lamp flames, "
-           "far apart from each other at different distances, each with a short blue reflection in the water. The fire's "
-           "orange is the warm color; the rest is blue dusk."),
+           "beside it a squat square stone tower, as wide as it is tall, with a flat roof and one warm window near its top. "
+           "On the right a narrow river winds in between bare trees, and low among the trees by the water three tiny cold blue lamp flames, "
+           "far apart from each other at different distances, each with a short blue reflection in the water. The ground "
+           "is bare and dark. The fire's orange is the warm color; the rest is blue dusk."),
 }
+
+
+def light_init(k):
+    """The target's lights and values only, blurred past any edge or flat shape (round 15, test 2):
+    at denoise 0.9 they place the story's lights and the darks the judge asked for."""
+    import sys
+    sys.path.insert(0, HERE)
+    import blockin
+    if k == "p1":
+        img = blockin.p1()[0]
+        ramp = np.clip((np.arange(W, dtype=np.float32) - 1100) / 200, 0, 1)
+        img = img * (1 - 0.4 * ramp)[None, :, None]
+    elif k == "p9":
+        c = blockin.Canvas()
+        c.img = blockin.p9()[0]
+        c.poly([(556, 326), (604, 326), (604, 412), (556, 412)], "#1f2b52", 1.0)
+        c.poly([(556, 412), (604, 412), (604, 436), (556, 436)], "#10131c", 1.0)
+        c.poly([(1110, 470), (W, 466), (W, 512), (1110, 512)], "#14151a", 2.0)
+        pts = blockin.curve([(W + 20, 560), (1640, 530), (1500, 545), (1360, 515), (1240, 500), (1150, 482)], 60)
+        for i in range(len(pts) - 1):
+            c.line([tuple(pts[i]), tuple(pts[i + 1])], "#22304a", int(60 - 46 * i / len(pts)), 1.0, 2.0)
+        for x, y, r in ((512, 420, 3), (536, 418, 3), (560, 420, 3), (631, 380, 4)):
+            c.glow(x, y, r * 4.0, "#ff9a40", 0.5)
+        img = c.img
+    elif k == "p7":
+        img = cv2.cvtColor(rgb(os.path.join(HERE, "layouts", "p7_block.png")), cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    else:
+        src = rgb(MASTER)
+        m = np.zeros(src.shape[:2], np.uint8)
+        cv2.rectangle(m, (800, 330), (1000, 415), 255, -1)
+        src = cv2.inpaint(src, m, 9, cv2.INPAINT_TELEA)
+        src = cv2.warpAffine(src, cv2.getRotationMatrix2D((896, 470), 0, 0.85), (W, H), flags=cv2.INTER_LINEAR,
+                             borderMode=cv2.BORDER_REPLICATE)
+        img = cv2.cvtColor(src, cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    img = cv2.GaussianBlur(np.clip(img, 0, 1), (0, 0), 12)
+    return cv2.cvtColor((img * 255 + 0.5).astype(np.uint8), cv2.COLOR_RGB2BGR)
 
 
 def rgb(f):
     return cv2.imread(f, cv2.IMREAD_COLOR)
 
 
-def canvases(kind, k):
+def canvases(kind, k, lit=False):
     """init (= inpaint image), mask and control for plate k on canvas kind; returns paths and the crop."""
     d = os.path.join(OUT, "canvas")
     os.makedirs(d, exist_ok=True)
@@ -112,6 +148,8 @@ def canvases(kind, k):
         init[:b - a], ctl[:b - a] = m[a:b], md[a:b]
         init[b - a:b - a + GAP] = 0
         ctl[crop[1]:] = td
+        if lit:
+            init[crop[1]:] = light_init(k)
     else:
         cw, ch, crop = W + GAP + W, H, [W + GAP, 0, W, H]
         init = np.full((ch, cw, 3), 128, np.uint8)
@@ -123,8 +161,9 @@ def canvases(kind, k):
     mask[crop[1]:crop[1] + crop[3], crop[0]:crop[0] + crop[2]] = 255
     names = {}
     for tag, im in (("init", init), ("mask", mask), ("ctl", ctl)):
-        names[tag] = REL + f"canvas/{kind}_{k}_{tag}.png"
-        cv2.imwrite(os.path.join(d, f"{kind}_{k}_{tag}.png"), im)
+        lt = "L" if lit else ""
+        names[tag] = REL + f"canvas/{kind}{lt}_{k}_{tag}.png"
+        cv2.imwrite(os.path.join(d, f"{kind}{lt}_{k}_{tag}.png"), im)
     return names, crop, cw, ch
 
 
@@ -135,10 +174,10 @@ def ic_prompt(kind, k):
             f"{FIRST[kind]}: {MASTER_WORDS}{SECOND[kind]}, painted in exactly the same way as the first: {CONTENT[k]}")
 
 
-def ic_job(kind, k, seed, strength, end, tag):
-    c, crop, cw, ch = canvases(kind, k)
+def ic_job(kind, k, seed, strength, end, tag, dn=1.0):
+    c, crop, cw, ch = canvases(kind, k, lit=dn < 1.0)
     return {"name": f"{k}_{tag}", "prompt": ic_prompt(kind, k), "seed": seed, "w": cw, "h": ch,
-            "init": c["init"], "denoise": 1.0, "inpaint": c["init"], "mask": c["mask"], "hold": True,
+            "init": c["init"], "denoise": dn, "inpaint": c["init"], "mask": c["mask"], "hold": True,
             "control": c["ctl"], "strength": strength, "end": end, "crop": crop}
 
 
@@ -149,7 +188,8 @@ def alt_job(k, seed, strength, end, dn, tag):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("which", choices=["test", "final"])
+    ap.add_argument("which", choices=["test", "test2", "final"])
+    ap.add_argument("--denoise", type=float, default=1.0)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--strength", type=float, default=0.6)
     ap.add_argument("--end", type=float, default=0.7)
@@ -164,10 +204,14 @@ def main():
             jobs.append(alt_job(k, [11], 0.6, 0.7, 0.8, "alt_d80"))
         for k in ("p4", "p7"):
             jobs.append(ic_job("V", k, [11], 0.6, 0.7, "icv_s60e70"))
-    else:
-        tag = f"ic{a.canvas.lower()}_s{int(a.strength * 100)}e{int(a.end * 100)}"
+    elif a.which == "test2":
         for k in ("p1", "p4", "p7", "p9"):
-            jobs.append(ic_job(a.canvas, k, [a.seed], a.strength, a.end, tag))
+            jobs.append(ic_job("V", k, [11, 23], 0.6, 0.7, "t2_d90", 0.9))
+            jobs.append(ic_job("V", k, [11, 23], 0.6, 0.7, "t2_d100", 1.0))
+    else:
+        tag = f"ic{a.canvas.lower()}_s{int(a.strength * 100)}e{int(a.end * 100)}_d{int(a.denoise * 100)}"
+        for k in ("p1", "p4", "p7", "p9"):
+            jobs.append(ic_job(a.canvas, k, [a.seed], a.strength, a.end, tag, a.denoise))
     f = os.path.join(HERE, "jobs", f"style_r15_{a.which}.json")
     json.dump({"defaults": {"w": W, "h": H, "steps": 9}, "jobs": jobs}, open(f, "w"), indent=1)
     print(f, sum(len(j["seed"]) for j in jobs), "pictures")

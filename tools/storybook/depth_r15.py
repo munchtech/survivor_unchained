@@ -119,7 +119,7 @@ def p1(src):
     while s < len(path) - 1:
         k = s / (len(path) - 1)
         x, y = path[int(s)]
-        hgt = 10 + 34 * k
+        hgt = 7 + 22 * k
         wid = hgt * rng.uniform(0.28, 0.4)
         x += rng.normal(0, 3 + 8 * k)
         cv2.ellipse(crowd, (int(x), int(y - hgt * 0.5)), (max(2, int(wid / 2)), max(3, int(hgt / 2))), 0, 0, 360, 1.0, -1, cv2.LINE_AA)
@@ -224,8 +224,15 @@ def p9(src):
     # A long low hall of stone and timber, a steep roof, gable on; a squat square tower beside it.
     hall = [(470, 432), (470, 404), (466, 404), (484, 384), (590, 384), (608, 404), (604, 404), (604, 432)]
     cv2.fillPoly(d, [np.array(hall, np.int32)], float(v), lineType=cv2.LINE_AA)
-    cv2.rectangle(d, (600, 352), (658, 434), float(v + 0.005), -1)
-    cv2.rectangle(d, (596, 346), (662, 354), float(v + 0.005), -1)
+    cv2.rectangle(d, (598, 362), (664, 434), float(v + 0.005), -1)
+    cv2.rectangle(d, (594, 356), (668, 364), float(v + 0.005), -1)
+    # A narrow river winding in from the right between the trees (a channel a little below the bank).
+    rv = np.zeros((H, W), np.float32)
+    pts = curve([(W + 20, 560), (1640, 530), (1500, 545), (1360, 515), (1240, 500), (1150, 482)], 200)
+    for i in range(len(pts) - 1):
+        cv2.line(rv, tuple(int(q) for q in pts[i]), tuple(int(q) for q in pts[i + 1]), 1.0, int(70 - 56 * i / len(pts)), cv2.LINE_AA)
+    rv = cv2.GaussianBlur(rv, (0, 0), 2.0)
+    d = d * (1 - 0.12 * rv)
     # The cloak's cone runs down over the log to the ground.
     c = float(d[760, 1070])
     cv2.fillPoly(d, [np.array([(930, 780), (1212, 780), (1228, 846), (916, 846)], np.int32)], c, lineType=cv2.LINE_AA)
