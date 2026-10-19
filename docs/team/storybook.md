@@ -3,6 +3,7 @@
 **Lead:** storybook 1 (su-lead-max), worktree `storybook-1`. Handoff: docs/handoff/storybook.md.
 
 ## Now (19 October)
+- (19 Oct, late) Style frames r2 in progress: one hand locked by words and a shared pass (unify.py), our block-ins steer the layout (blockin.py); content rounds r10-r13 done, the shared repaint, the shoot and judge r2 next (handoff top).
 - (1) Player BUILT (d0b6f97a, 367b8554; 993 tests); checked (1.5-1.65 ms a frame at 1080p; capture in sync; five fixes in the handoff). (2) Look: rounds 1-9 explored; hand chosen (an oil sketch over brush ink); 4 style frames (P1, P4, P7, P9) shot through the player; style judge r1 FAILED 0/4 (fixes in the handoff); r2 next, then the owner's eye. (3) Temp sound bed DONE (d4e41e9e); plates not started (plan: docs/storybook/sb00_plates.md). (4) Cut judge, MR: not started.
 
 ## Decisions
