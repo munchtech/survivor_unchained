@@ -10,7 +10,7 @@ The contract between Marionette's armor workshop (which writes it) and `tools/ar
 | `id` | `[a-z0-9_]+`, unique across both armor indexes and `godot/art/armor/src/` (the game's drop checks all three; Marionette checks its kit only) |
 | `name` | the player-facing name |
 | `slot` | one of top, bottom, legwear, gloves, skirt, belt, collar, bracers, greaves, boots, pauldrons, cloak, head. (`ink`, the reaver's tattoos, is part of a calling's skin: never a piece slot.) |
-| `base` | optional: the id of another piece whose shell this one wears unchanged. A tier variant names its plain piece as base and adds adornment only: the build reuses the base's shell geometry, weights and tuck exactly (no refit, no shell change). Without `base`, `style` + `params` define the shell. |
+| `base` | optional: the id of another piece whose shell this one wears unchanged. A tier variant names its plain piece as base and adds adornment only: the build reuses the base's shell geometry, weights and tuck exactly (no refit, no shell change). Without `base`, `style` + `params` define the shell. A variant's `adorn` is ADDED to its base's adornment (the base's rivet rows and fixings stay); set `base_adorn: false` to drop the base's adornment and keep only the shell. |
 | `style`, `params` | the shell builder and its numbers (ignored when `base` is set) |
 | `tier`, `tier_name` | 1 plain forged, 2 etched, 3 gilded |
 | `material`, `tint` | a name from `godot/art/people/outfit_materials.json`; tint an sRGB hex or null |
@@ -25,7 +25,7 @@ The contract between Marionette's armor workshop (which writes it) and `tools/ar
 
 ## Adornment kinds
 Each element of `mesh` and `row` rides one blend of bones taken from the shell at its foot, so it never bends; `trim` takes the rim's weights.
-- `row`: `{kind:"row", rim, mesh, spacing, inset, r, mat}`: elements along a rim, `inset` m in from the rim along the surface, `r` element radius.
+- `row`: `{kind:"row", rim, mesh, spacing, inset, r, avoid, mat}`: elements along a rim, `inset` m in from the rim along the surface, `r` element radius, `avoid` (m, default 0.014) the clear radius kept around the shell's own fixings (strap anchors, buckles), where no element is placed.
 - `mesh`: `{kind:"mesh", socket, mesh, scale, roll, offset, mat}`: one mesh at a socket; `roll` degrees about +Z; `offset` [x,y,z] m in the socket frame.
 - `trim`: `{kind:"trim", rim, profile, width, height, inset, gap, mat}`: a raised band along a rim. `width` across the band, `height` above the shell surface (1-2 mm reads), `inset` m in from the rim (0 = on the rolled edge), `gap` the dark groove on each side between band and shell (default 0.001). Profiles: `rolled`, `rope`, `filigree`, `gold_band`.
 - `paint`: `{kind:"paint", target:"shell", pattern, strength}`: `pattern` = `etch_<name>`, an etched pattern carried in the shell's surface detail (the game's shader renders it).
