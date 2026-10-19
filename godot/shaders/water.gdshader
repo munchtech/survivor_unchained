@@ -22,6 +22,8 @@ uniform vec3 sky : source_color = vec3(0.18, 0.29, 0.188);
 uniform vec2 flow = vec2(0.0, 0.6);
 uniform float glow = 0.45;
 uniform float murkiness = 2.4;
+// The whole river's light scaled, for a cinematic's grade (GameCinema "water"); 1 as built.
+uniform float level = 1.0;
 
 varying vec3 w_pos;
 
@@ -80,9 +82,9 @@ void fragment() {
 	}
 	see *= 1.0 - foam * 0.85;
 
-	ALBEDO = mix(body * (1.0 - see), foam_color, foam * 0.75);
-	EMISSION = under * see + lit_from_sky + sick + foam_color * foam * 0.18;
+	ALBEDO = mix(body * (1.0 - see), foam_color, foam * 0.75) * level;
+	EMISSION = (under * see + lit_from_sky + sick + foam_color * foam * 0.18) * level;
 	ROUGHNESS = mix(0.06, 0.6, foam);
-	SPECULAR = 0.5;
+	SPECULAR = 0.5 * level;
 	METALLIC = 0.0;
 }

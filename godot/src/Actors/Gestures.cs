@@ -80,7 +80,8 @@ public partial class Gestures : SkeletonModifier3D
             float w = (float)Mathf.Clamp(p.Fade, 0, 1);
             for (int k = 0; k < p.Bones.Length; k++)
             {
-                var d = p.First[k].Inverse() * p.Clip.RotationTrackInterpolate(p.Tracks[k], t);
+                // Normalized: a clip's keys drift off unit length, and Slerp throws on them (C03 s8-s11 in real play).
+                var d = (p.First[k].Inverse() * p.Clip.RotationTrackInterpolate(p.Tracks[k], t)).Normalized();
                 if (w < 1) d = Quaternion.Identity.Slerp(d, w);
                 int b = p.Bones[k];
                 sk.SetBonePoseRotation(b, (sk.GetBonePoseRotation(b) * d).Normalized());

@@ -1,0 +1,3 @@
+[
+ {"name": "k6c02", "cine": "c02", "until": 58, "args": ["--stills", "3", "--cinebones"], "keep": ["_s8_"]}
+]

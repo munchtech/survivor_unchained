@@ -21695,10 +21695,16 @@
   "npc": "cin_first_light",
   "entry": [
    {
-    "node": "back"
+    "node": "reeds"
    }
   ],
   "nodes": {
+   "reeds": {
+    "id": "reeds",
+    "speaker": "narrator",
+    "text": "In the reeds on the far bank, someone is standing very still.",
+    "next": "back"
+   },
    "back": {
     "id": "back",
     "speaker": "narrator",

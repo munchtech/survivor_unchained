@@ -36,7 +36,8 @@ public partial class Game
     {
         if (scene?.Battle is not { } b || cine != null) return false;
         // --nocine, or a quick start: the zone's captions instead (pictures of play from the first frame).
-        if (Args.Has("nocine") || (quick && Args.Get("cine") != id)) return false;
+        // --cines: a quick start that plays every cinematic as the zone reaches it (real-play checks).
+        if (Args.Has("nocine") || (quick && !Args.Has("cines") && Args.Get("cine") != id && chained == null)) return false;
         CineFile file;
         try { file = CineFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"cinema: {id} not played ({e.Message})"); return false; }
@@ -44,15 +45,19 @@ public partial class Game
         if (marks != null) foreach (var (k, v) in marks) file.Marks[k] = v.ToArray();
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
-        ClearKept();
+        // Run on from the one before (its end.next): the bars stay in and what it left stays.
+        if (chained == null) ClearKept();
+        else file.Bars.In = 0;
         try { cine = new Cine(this, file, b, done); }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
+        finally { chained = null; }
+        if (scene != null) scene.Fx.HideLoot = true;
         handoffId = id;
         return true;
     }
 
     public bool CanCinematic(string id) =>
-        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && Args.Get("cine") != id)
+        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && !Args.Has("cines") && Args.Get("cine") != id && chained == null)
         && FileAccess.FileExists($"res://data/cinematics/{id}.json");
 
     /* The hand-over (docs/cinematics/README.md, 5a): from a cinematic's "play"
@@ -60,6 +65,7 @@ public partial class Game
      * player held the stick; at its end the walk carries on into play and
      * eases to a stop over CarryFade unless the player takes it. */
     (double X, double Z)? cineWalk;
+    internal double? cineSat;
     /// <summary>Bodies a cinematic left in the world (end.keep), until the next one or the place goes.</summary>
     readonly List<Node3D> kept = new();
 
@@ -68,6 +74,10 @@ public partial class Game
         foreach (var n in kept) if (IsInstanceValid(n)) n.QueueFree();
         kept.Clear();
     }
+    /// <summary>A cinematic ended into the next (end.next): its bars and the camera
+    /// it saved, taken over by the next one if the zone starts it on the cut.</summary>
+    sealed record Chain(CinemaBars Bars, (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) Saved);
+    Chain? chained;
     (double X, double Z) carry;
     double carryT;
     const double CarryFade = 0.7;
@@ -111,6 +121,7 @@ public partial class Game
         if (cine == null) return;
         cine.Frame(dt);
         if (cine.Over) { var c = cine; cine = null; c.Finish(); }
+        if (scene != null) scene.Fx.HideLoot = cine != null; // hidden across a chain, shown at the hand-back
     }
 
     sealed class Cine
@@ -121,9 +132,12 @@ public partial class Game
         readonly Action? done;
         readonly CinePlayer player;
         readonly CinePlaces places;
-        readonly CinemaBars bars = new();
+        readonly CinemaBars bars;
         readonly Dictionary<string, PersonView> people = new();
         readonly Dictionary<string, Enemy> enemies = new();
+        /// <summary>The creatures it stages, by id: how far down they are drawn, and a role held from a moment (CrowdView.Staged).</summary>
+        readonly Dictionary<int, (double Sink, string? Role, double T0, double? Facing)> staged = new();
+        double SinkOf(Enemy e) => staged.TryGetValue(e.Id, out var st) ? st.Sink : 0;
         readonly Dictionary<string, WardenView> bosses = new();
         readonly Dictionary<string, OrbView> orbs = new();
         readonly Dictionary<string, double> orbLight = new();
@@ -170,9 +184,9 @@ public partial class Game
             player = new CinePlayer(new CineSchedule(file, cc, id => CineLines.Seconds(CineLines.Find(id, ctx))));
             places = new CinePlaces(file, (x, z) => g.scene!.HeightAt(x, z), ActorAt);
             seen = Settings.Current.SeenCinematics.Contains(file.Id);
-            g.AddChild(bars);
             var cam = g.camera;
-            saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes);
+            if (g.chained is { } ch) { bars = ch.Bars; saved = ch.Saved; }
+            else { bars = new(); g.AddChild(bars); saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes); }
             cam.Near = 0.04f;
             g.controls.Captured = true;
             g.hud.ShowPlay(false);
@@ -282,6 +296,9 @@ public partial class Game
                     if (i >= 0) p = sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin;
                     if (bone == "eyes") p += new Vector3(0, 0.07f, 0);
                 }
+                // Handed over, she walks in her own body and the stand-in stays behind, hidden:
+                // a place on her (a camera tracking her chest) goes with the body that moves.
+                if (handed && name == "her" && g.scene?.Player is { } pv) p += pv.GlobalPosition - v.GlobalPosition;
                 return new V3(p.X, p.Y, p.Z);
             }
             if (enemies.TryGetValue(name, out var e)) return new V3(e.X, g.scene!.HeightAt(e.X, e.Z) + (bone == "head" ? 1.6 : 0), e.Z);
@@ -336,6 +353,41 @@ public partial class Game
         }
         SpotLight3D? dbgFill;
 
+        sealed record Rig(SpotLight3D L, JsonElement From, JsonElement Aim, int Shot);
+        readonly Dictionary<string, Rig> rigs = new();
+        /// <summary>A zone lamp's glowing piece a "globe" cue dimmed: what it wore before (put back at the end), its own copy, its colour.</summary>
+        sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; public Vector3? Tint; }
+        readonly List<Globe> globes = new();
+        /// <summary>A globe cue's halos: the quad, the globe's middle, how far toward the lens it sits (so the egg does not hide its heart).</summary>
+        readonly List<(Node3D Q, Vector3 At, float R)> globeHalos = new();
+        /// <summary>The bosses a "hide" cue hid: their Shine shows them every frame, so they are hidden again after it (C02 s8:
+        /// the Warden and his lamp-iron stood at her temple, the lamp a clipped disc at the frame's edge).</summary>
+        readonly HashSet<Node3D> bossHidden = new();
+        /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
+        readonly HashSet<ShaderMaterial> waters = new();
+
+        /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
+        void PlaceRigs()
+        {
+            int shot = player.Shot.Index;
+            foreach (var (name, r) in rigs.ToList())
+            {
+                if (r.Shot >= 0 && r.Shot != shot) { r.L.QueueFree(); rigs.Remove(name); continue; }
+                var aim = r.Aim.ValueKind == JsonValueKind.Undefined ? (ActorAt("her", "eyes") is V3 he ? V(he) : g.camera.GlobalPosition) : V(places.Resolve(r.Aim));
+                Vector3 at;
+                if (r.From.ValueKind == JsonValueKind.Object && r.From.TryGetProperty("lens", out var lens))
+                {
+                    var c0 = g.camera.GlobalTransform;
+                    float ox = (float)lens[0].GetDouble(), oy = (float)lens[1].GetDouble(), oz = lens.GetArrayLength() > 2 ? (float)lens[2].GetDouble() : 0;
+                    at = c0.Origin + c0.Basis.X * ox + c0.Basis.Y * oy + c0.Basis.Z * oz;
+                }
+                else at = r.From.ValueKind == JsonValueKind.Undefined ? g.camera.GlobalPosition : V(places.Resolve(r.From));
+                r.L.GlobalPosition = at;
+                r.L.SpotRange = at.DistanceTo(aim) * 1.6f + 1;
+                if (at.DistanceTo(aim) > 0.05f) r.L.LookAt(aim, Mathf.Abs((aim - at).Normalized().Y) > 0.98f ? Vector3.Forward : Vector3.Up);
+            }
+        }
+
         public void Frame(double dt)
         {
             Skipping(dt);
@@ -371,15 +423,23 @@ public partial class Game
             }
             Steer();
             // The play's HUD comes in as the bars go out, over the blend into the game's camera.
-            if (!hudIn && file.End.Her != null && player.T >= player.S.Length - Math.Max(0.4, file.Bars.Out))
+            if (!hudIn && file.End.Her != null && file.End.Next == null && player.T >= player.S.Length - Math.Max(0.4, file.Bars.Out))
             {
                 hudIn = true;
                 g.hud.ShowPlay(true, (float)Math.Max(0.4, file.Bars.Out));
             }
             foreach (var v in people.Values) v.Advance(dt);
-            foreach (var w in bosses.Values) w.Shine(dt);
+            foreach (var w in bosses.Values) { w.Shine(dt); if (bossHidden.Contains(w)) w.Visible = false; }
             foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
+            if (globeHalos.Count > 0 && g.GetViewport().GetCamera3D() is Camera3D hcam)
+                foreach (var (hq, hat, hr) in globeHalos)
+                    if (GodotObject.IsInstanceValid(hq)) hq.GlobalPosition = hat + (hcam.GlobalPosition - hat).Normalized() * hr;
+            PlaceRigs();
+            // No ember or smoke between a close lens and her (C01 s10: a drifting ember was a soft
+            // orange disc across her cheek): the Look's ClearNear, to just short of her face.
+            float lensToHer = people.TryGetValue("her", out var hv) && hv.Visible && ActorAt("her", "eyes") is V3 ey ? g.camera.GlobalPosition.DistanceTo(V(ey)) : 99;
+            Campfire.ClearNear(lensToHer < 4 ? Math.Max(0, lensToHer - 0.3f) : 0);
             CineDbg();
             var shot = player.Shot.Shot;
             // --shot NAME --until S: each shot's standing frame saved as it passes (the previs boards).
@@ -397,7 +457,17 @@ public partial class Game
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
-                            .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.00},{p.Y:0.00},{p.Z:0.00})" : "")));
+                            .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.000},{p.Y:0.000},{p.Z:0.000})" : "")));
+                if (Args.Has("cinebones"))
+                {
+                    // A held blade's tip, the cast's creatures (where drawn: their feet, sunk or not) and the orbs.
+                    foreach (var (name, v) in people)
+                        if (v.TipOf("handslot.r") is Vector3 tp) GD.Print($"cinebones {file.Id} s{shot.Id} {name} tip_r=({tp.X:0.000},{tp.Y:0.000},{tp.Z:0.000})");
+                    foreach (var (name, e) in enemies)
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} feet=({e.X:0.000},{g.scene!.HeightAt(e.X, e.Z) - SinkOf(e):0.000},{e.Z:0.000}) facing={e.Facing:0.00} state={e.State}");
+                    foreach (var (name, o) in orbs)
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} orb=({o.GlobalPosition.X:0.000},{o.GlobalPosition.Y:0.000},{o.GlobalPosition.Z:0.000}) light={orbLight.GetValueOrDefault(name):0.00}");
+                }
                 // --cinenear X,Z,R: every visible mesh within R of a point, by path, at each
                 // shot's still (what is that in the frame? Lowford's stray ring stone was found so).
                 if (Args.Get("cinenear") is string near && stillK == 1)
@@ -449,6 +519,10 @@ public partial class Game
             if (pose.Black || pose.Hold) return;
             var cam = g.camera;
             Vector3 pos = V(pose.Pos), at = V(pose.At);
+            // A close shot draws the key's shadow from a short reach, so its first split is fine
+            // enough for a face: from 70 m a jaw cast a stair-stepped edge down her neck.
+            if (keyReach < 0) keyReach = g.air.Key.DirectionalShadowMaxDistance;
+            g.air.Key.DirectionalShadowMaxDistance = (at - pos).Length() < 3.5f ? 14 : keyReach;
             float hfov = (float)pose.Hfov;
             if (pose.FollowK > 0 && EndPoint() is Vector3 end)
             {
@@ -457,9 +531,12 @@ public partial class Game
                 // The way it looks turns from the shot's to the game's (a point far up a
                 // road, lerped toward her, kept the camera looking ahead until the last
                 // moment and lost her from the frame on the way).
-                Vector3 d0 = (at - pos).Normalized(), d1 = (fl - fp).Normalized();
-                float reach = Mathf.Lerp((at - pos).Length(), (fl - fp).Length(), k);
+                // The game's look is taken from where the camera is now, not from where it lands: its
+                // direction from the landing place, laid on a crane still high and wide of it, aimed at
+                // empty ground and lost her from the frame halfway up (C01 s12).
                 pos = pos.Lerp(fp, k);
+                Vector3 d0 = (at - pos).Normalized(), d1 = (fl - pos).Normalized();
+                float reach = Mathf.Lerp((at - pos).Length(), (fl - pos).Length(), k);
                 // The look turns ahead of the move (its square root), so she stays in the frame.
                 at = pos + (d0.Dot(d1) > 0.9999f ? d1 : d0.Slerp(d1, Mathf.Sqrt(k))) * reach;
                 hfov = Mathf.Lerp(hfov, FollowHfov(), k);
@@ -611,7 +688,7 @@ public partial class Game
                     break;
                 }
                 case "hide":
-                    if (bosses.TryGetValue(c.Actor, out var hw)) hw.Visible = !c.Bool("hidden", true);
+                    if (bosses.TryGetValue(c.Actor, out var hw)) { hw.Visible = !c.Bool("hidden", true); if (hw.Visible) bossHidden.Remove(hw); else bossHidden.Add(hw); }
                     else if (NodeOf(c.Actor) is { } hv) hv.Visible = !c.Bool("hidden", true);
                     break;
                 case "lamp":
@@ -620,6 +697,11 @@ public partial class Game
                     if (bosses.TryGetValue(c.Actor, out var w))
                     {
                         if (c.Has("lit")) w.LampLit = c.Bool("lit", true);
+                        // "flame": the flame's core brightness (1 = as built), "flameColor" its hue (hex),
+                        // "halo" its halo's strength: a lamp seen at night as lit glass, not a white disc.
+                        if (c.Has("flame")) w.FlameLevel = (float)c.Num("flame");
+                        if (c.Str("flameColor") is string fch) w.FlameColor = new Color(fch);
+                        if (c.Has("halo")) w.HaloLevel = (float)c.Num("halo");
                         if (!c.Has("glow")) break;
                         double from = w.Glow, to = c.Num("glow");
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => w.Glow = from + (to - from) * k));
@@ -638,6 +720,17 @@ public partial class Game
                 }
                 case "anim":
                 {
+                    // A creature it stages takes one of its crowd roles and holds it (Grimtunnel's arms round the heart).
+                    if (enemies.TryGetValue(c.Actor, out var ce))
+                    {
+                        var st = staged.GetValueOrDefault(ce.Id);
+                        // "where": drawn facing it (Grimtunnel to her, not to where her own body waits).
+                        double? face = st.Facing;
+                        if (c.Has("where")) { var fw = places.Resolve(c.Get("where")); face = Math.Atan2(fw.Z - ce.Z, fw.X - ce.X); }
+                        staged[ce.Id] = (st.Sink, c.Str("clip") ?? st.Role, t0, face);
+                        CrowdView.Staged = x => staged.TryGetValue(x.Id, out var sx) ? (sx.Sink, sx.Role, player.T - sx.T0, sx.Facing) : null;
+                        break;
+                    }
                     if (!people.TryGetValue(c.Actor, out var v)) break;
                     var clip = c.Str("clip")!;
                     if (clip == "@idle") clip = Loadouts.Of(g.Journey.Ch).Arms.Idle;
@@ -734,6 +827,8 @@ public partial class Game
                     Color? col = c.Str("color") is string hex ? new Color(hex) : null;
                     if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => g.scene!.View.SetLevel(i, Mathf.Lerp(from, to, (float)k), col, rate)));
                     else g.scene!.View.SetLevel(i, to, col, rate);
+                    // "size": the light's source in metres, softening its shadows (given back at the end).
+                    if (c.Has("size")) { g.scene!.View.SetSize(i, (float)c.Num("size")); sized.Add(i); }
                     break;
                 }
                 case "lit":
@@ -745,12 +840,13 @@ public partial class Game
                 case "atmosphere":
                 {
                     // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
-                    // cinematic and finished in the next); a skip lands on k1.
-                    var to = Atmospheres.ByName(c.Str("preset")!);
+                    // cinematic and finished in the next); a skip lands on k1. "from": "now"
+                    // blends from the air as it is (a scene's own night back into play's).
+                    var to = Tuned(c.Str("preset") == "now" ? g.air.Current : Atmospheres.ByName(c.Str("preset")!), c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
                     if (c.Str("from") is string fromName)
                     {
-                        var from = Atmospheres.ByName(fromName);
+                        var from = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
                         if (over > 0 && !skipping)
                         {
                             double last = -1;
@@ -774,7 +870,16 @@ public partial class Game
                     {
                         Style = style, Level = (int)c.Num("level", 1), Tag = c.Str("tag"), Disposition = c.Bool("neutral") ? Disposition.Neutral : null,
                     });
-                    if (e != null) enemies[c.Actor] = e;
+                    if (e != null)
+                    {
+                        enemies[c.Actor] = e;
+                        // "sink": drawn this far down into the ground or the water (Grimtunnel waist-deep in the ford).
+                        if (c.Has("sink"))
+                        {
+                            staged[e.Id] = (c.Num("sink"), null, 0, null);
+                            CrowdView.Staged = x => staged.TryGetValue(x.Id, out var st) ? (st.Sink, st.Role, player.T - st.T0, st.Facing) : null;
+                        }
+                    }
                     break;
                 }
                 case "world":
@@ -886,15 +991,52 @@ public partial class Game
                         {
                             float x0 = (float)at.X - size / 2 + i * tile, z0 = (float)at.Z - size / 2 + j * tile;
                             float cx = x0 + tile / 2, cz = z0 + tile / 2;
+                            // The box spans the tile's own rise and fall: one height from its centre left
+                            // the ground on a slope outside the box, and the frost stopped on a straight
+                            // line along the tile's edge (square seams from the play camera).
+                            // Each tile reaches FrostSeam past its edges and fades out over its
+                            // neighbour's, the two summing to one: a hard border between tiles drew
+                            // a grid of thin lines across the frost.
+                            float ext = tile + 2 * FrostSeam, ex0 = x0 - FrostSeam, ez0 = z0 - FrostSeam;
+                            float lo = float.MaxValue, hi = float.MinValue;
+                            for (int u = 0; u <= 4; u++)
+                                for (int w = 0; w <= 4; w++)
+                                {
+                                    float hgt = (float)g.scene!.HeightAt(ex0 + ext * u / 4, ez0 + ext * w / 4);
+                                    lo = Math.Min(lo, hgt); hi = Math.Max(hi, hgt);
+                                }
                             var d = new Decal
                             {
-                                TextureAlbedo = Frost(new Vector2(x0, z0), tile, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
-                                Size = new Vector3(tile, 1.4f, tile), Position = new Vector3(cx, (float)g.scene!.HeightAt(cx, cz) + 0.35f, cz),
+                                TextureAlbedo = Frost(new Vector2(ex0, ez0), ext, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
+                                Size = new Vector3(ext, hi - lo + 1.4f, ext), Position = new Vector3(cx, (lo + hi) / 2 + 0.35f, cz),
                                 AlbedoMix = (float)c.Num("amount", 0.4), CullMask = 1, UpperFade = 0.1f, LowerFade = 0.1f,
                             };
                             g.scene.AddChild(d);
                             prints.Add(d);
                         }
+                    break;
+                }
+                case "rig":
+                {
+                    // A shot's own light on the cast, as a film crew sets one (face 30: dead eyes
+                    // with no light into the sockets, an unlit crown): a soft spot on the people's
+                    // layer only, no shadow, from "from" ({"lens": [right, up, back]} in the
+                    // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
+                    // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
+                    string name = c.Str("name") ?? "rig";
+                    if (rigs.Remove(name, out var was)) was.L.QueueFree();
+                    float e = (float)c.Num("energy", 0.3);
+                    if (e <= 0) break;
+                    var l = new SpotLight3D
+                    {
+                        Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
+                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? 0 : e, SpotRange = (float)c.Num("range", 5),
+                    };
+                    g.scene!.AddChild(l);
+                    rigs[name] = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index);
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = e * (float)k; }));
+                    PlaceRigs();
                     break;
                 }
                 case "glow":
@@ -956,7 +1098,7 @@ public partial class Game
                     });
                     // "light": it lights what is near it too (a lamp held to a face), within "range".
                     if (c.Has("light"))
-                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f });
+                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f, LightSpecular = (float)c.Num("spec", 0.5) });
                     // "under": [width, height], the dark of what the light is set in (a tower against the sky).
                     if (c.Get("under") is { ValueKind: JsonValueKind.Array } u)
                     {
@@ -972,6 +1114,137 @@ public partial class Game
                     props[name] = root;
                     break;
                 }
+                case "mist":
+                {
+                    // Mist lying low on the ground or the water for the scene (the ford, the frost past the
+                    // firelight): a fog volume "size" [w, h, d] metres about "where", thickest at its foot
+                    // ("falloff"), lit by what lights the air. Without "where" the one of that name thins or
+                    // thickens to "density" over "over" (gone with the scene, so faded out before play).
+                    string name = "mist." + (c.Str("name") ?? "mist");
+                    if (!c.Has("where"))
+                    {
+                        if (props.TryGetValue(name, out var mv) && mv is FogVolume { Material: FogMaterial fm })
+                        {
+                            float from = fm.Density, to = (float)c.Num("density");
+                            if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => fm.Density = Mathf.Lerp(from, to, (float)k)));
+                            else fm.Density = to;
+                        }
+                        break;
+                    }
+                    if (props.Remove(name, out var oldMist)) oldMist.QueueFree();
+                    var sz = c.Get("size");
+                    var size = sz.ValueKind == JsonValueKind.Array ? new Vector3((float)sz[0].GetDouble(), (float)sz[1].GetDouble(), (float)sz[2].GetDouble()) : new Vector3(40, 1.2f, 40);
+                    var noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin, Frequency = (float)c.Num("grain", 0.08), FractalOctaves = 3 };
+                    var mat = new FogMaterial
+                    {
+                        Density = (float)c.Num("density", 0.5), Albedo = new Color(c.Str("color") ?? "#9aa8bc"), HeightFalloff = (float)c.Num("falloff", 2),
+                        EdgeFade = (float)c.Num("edge", 0.5), DensityTexture = new NoiseTexture3D { Width = 64, Height = 8, Depth = 64, Seamless = true, Noise = noise, Normalize = true },
+                    };
+                    var foot = V(places.Resolve(c.Get("where")));
+                    var vol = new FogVolume
+                    {
+                        Name = "Mist", Shape = RenderingServer.FogVolumeShape.Box, Size = size, Material = mat,
+                        Position = foot + new Vector3(0, size.Y * 0.5f - (float)c.Num("sink", 0.2), 0),
+                    };
+                    g.scene!.AddChild(vol);
+                    props[name] = vol;
+                    break;
+                }
+                case "globe":
+                {
+                    // A zone lamp's glowing piece dimmed to "level" of its own (faded over "over"), for this
+                    // cinematic only (the ford's post globes, flat eggs that clip in a close or long lens, until
+                    // their flames are made); its light is left as it is. Put back as it was when the cinematic ends.
+                    var gmeta = g.scene!.View.Data.Meta.Lights;
+                    int gli = (int)c.Num("light");
+                    if (gli < 0 || gli >= gmeta.Count) break;
+                    float glv = (float)c.Num("level", 1);
+                    // "color": the hue it glows in (hex), its own brightness kept (the brightest channel),
+                    // so "level" still scales that (the ford's lamps blue in a long lens, not cream eggs).
+                    Color? gtint = c.Str("color") is string ghex ? new Color(ghex).SrgbToLinear() : null;
+                    foreach (var gname in gmeta[gli].Glow)
+                    {
+                        if (g.scene.View.Node(gname) is not Node3D gnode) continue;
+                        var gms = gnode.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().ToList();
+                        if (gnode is MeshInstance3D gself) gms.Add(gself);
+                        foreach (var gmi in gms)
+                            for (int gsi = 0; gmi.Mesh != null && gsi < gmi.Mesh.GetSurfaceCount(); gsi++)
+                            {
+                                var gl = globes.Find(x => x.M == gmi && x.S == gsi);
+                                if (gl == null)
+                                {
+                                    var gwas = gmi.GetSurfaceOverrideMaterial(gsi);
+                                    if ((gwas ?? gmi.Mesh.SurfaceGetMaterial(gsi)) is not ShaderMaterial gsm || gsm.GetShaderParameter("color").VariantType != Godot.Variant.Type.Vector3) continue;
+                                    gl = new Globe(gmi, gsi, gwas, (ShaderMaterial)gsm.Duplicate(), (Vector3)gsm.GetShaderParameter("color"));
+                                    gmi.SetSurfaceOverrideMaterial(gsi, gl.Dim);
+                                    globes.Add(gl);
+                                }
+                                var gg = gl;
+                                if (gtint is Color gt && Mathf.Max(gt.R, Mathf.Max(gt.G, gt.B)) > 1e-4f)
+                                    gg.Tint = new Vector3(gt.R, gt.G, gt.B) * (Mathf.Max(gg.Base.X, Mathf.Max(gg.Base.Y, gg.Base.Z)) / Mathf.Max(gt.R, Mathf.Max(gt.G, gt.B)));
+                                float gfrom = gg.Level;
+                                void SetG(float l) { gg.Level = l; gg.Dim.SetShaderParameter("color", (gg.Tint ?? gg.Base) * l); }
+                                if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => SetG(Mathf.Lerp(gfrom, glv, (float)k))));
+                                else SetG(glv);
+                            }
+                        // "halo": a soft glow about the globe (its strength; 0 takes it away), "spread" metres across,
+                        // in "color" (or the ford's blue): flame-lit glass, not a flat egg. It sits a little toward the lens.
+                        if (!c.Has("halo")) continue;
+                        string hk = $"globehalo.{gli}.{gname}";
+                        if (props.Remove(hk, out var ohalo)) { globeHalos.RemoveAll(x => x.Q == ohalo); ohalo.QueueFree(); }
+                        float ha = (float)c.Num("halo");
+                        if (ha <= 0 || gms.Count == 0) continue;
+                        var hbox = gms[0].GlobalTransform * gms[0].GetAabb();
+                        foreach (var hm in gms) hbox = hbox.Merge(hm.GlobalTransform * hm.GetAabb());
+                        var hcol = new Color(c.Str("color") ?? "#8ac8ff");
+                        var hquad = new MeshInstance3D
+                        {
+                            Mesh = new QuadMesh { Size = Vector2.One * (float)c.Num("spread", 1.2) },
+                            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                            MaterialOverride = new StandardMaterial3D
+                            {
+                                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                                AlbedoTexture = Halo(), AlbedoColor = new Color(hcol.R, hcol.G, hcol.B, ha), DisableFog = true,
+                            },
+                        };
+                        g.scene.AddChild(hquad);
+                        var hat = hbox.GetCenter();
+                        float hr = hbox.Size.Length() * 0.5f + 0.05f;
+                        hquad.GlobalPosition = hat;
+                        props[hk] = hquad;
+                        globeHalos.Add((hquad, hat, hr));
+                    }
+                    break;
+                }
+                case "water":
+                {
+                    // The river's light, all of it, scaled for this cinematic ("level" 1 as built; 0.4 about
+                    // a stop and a third down: the ford's water was the brightest broad thing at night),
+                    // faded over "over"; put back as built when the cinematic ends.
+                    float wto = (float)c.Num("level", 1);
+                    foreach (var wmi in g.scene!.View.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+                    {
+                        if (wmi.MaterialOverride is not ShaderMaterial wsm || wsm.Shader?.ResourcePath.EndsWith("water.gdshader") != true) continue;
+                        waters.Add(wsm);
+                        float wfrom = wsm.GetShaderParameter("level").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("level") : 1f;
+                        if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => wsm.SetShaderParameter("level", Mathf.Lerp(wfrom, wto, (float)k))));
+                        else wsm.SetShaderParameter("level", wto);
+                    }
+                    break;
+                }
+                case "grade":
+                {
+                    // One shot's colour grade: "sat" (1 as built) is the saturation the world eases to over
+                    // "over", or cuts to without it. A fire-lit close-up's skin goes over-saturated at a
+                    // 2700 K key, so that shot pulls it down and the next shot's first cue sets sat 1 again;
+                    // the cinematic's end hands it back to play (the lerp in Game.cs eases to 1).
+                    double gsat = c.Num("sat", 1);
+                    double gfrom = g.cineSat ?? 1;
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { g.cineSat = gfrom + (gsat - gfrom) * k; }));
+                    else { g.cineSat = gsat; g.air.Env.AdjustmentSaturation = (float)gsat; }
+                    break;
+                }
                 case "bars" or "fade" or "wet":
                     // The bars and black follow the shots; wetness waits on its system (docs/cinematics/README.md section 6, 7).
                     break;
@@ -980,6 +1253,33 @@ public partial class Game
 
         readonly Dictionary<string, Node3D> props = new();
         static GradientTexture2D? halo;
+
+        /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
+        /// "hemi", "env", "exposure", "fog" and "rim" scale the preset's own; "azimuth" and "elevation" (degrees)
+        /// move the moon or sun for the shot; "keyColor" and "fogColor" replace its colours.</summary>
+        static AtmospherePreset Tuned(AtmospherePreset p, CineCue c) => p with
+        {
+            KeyIntensity = p.KeyIntensity * c.Num("key", 1), HemiIntensity = p.HemiIntensity * c.Num("hemi", 1),
+            EnvIntensity = p.EnvIntensity * c.Num("env", 1), Exposure = p.Exposure * c.Num("exposure", 1),
+            FogDensity = p.FogDensity * c.Num("fog", 1), RimStrength = p.RimStrength * c.Num("rim", 1),
+            KeyAzimuth = c.Has("azimuth") ? c.Num("azimuth") : p.KeyAzimuth, KeyElevation = c.Has("elevation") ? c.Num("elevation") : p.KeyElevation,
+            KeyColor = c.Str("keyColor") ?? p.KeyColor, FogColor = c.Str("fogColor") ?? p.FogColor,
+            Sky = c.Has("skySat") ? SkySat(p.Sky, c.Num("skySat")) : p.Sky,
+        };
+
+        /// <summary>A sky's colours taken toward their own grey ("skySat" 0.6: 40% of the colour out; 1 as it is),
+        /// as a shot of a face against a cobalt night wants; "preset": "now" tunes the air as it is, so a later
+        /// cue's 1/0.6 puts it back.</summary>
+        static SkySettings SkySat(SkySettings s, double k)
+        {
+            string Sat(string hex)
+            {
+                var col = new Color(hex);
+                float l = col.R * 0.2126f + col.G * 0.7152f + col.B * 0.0722f, f = (float)k;
+                return "#" + new Color(Mathf.Clamp(l + (col.R - l) * f, 0, 1), Mathf.Clamp(l + (col.G - l) * f, 0, 1), Mathf.Clamp(l + (col.B - l) * f, 0, 1)).ToHtml(false);
+            }
+            return s with { Top = Sat(s.Top), Horizon = Sat(s.Horizon), Bottom = Sat(s.Bottom), Glow = Sat(s.Glow) };
+        }
 
         /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
         static GradientTexture2D Halo() => halo ??= new GradientTexture2D
@@ -1052,6 +1352,8 @@ public partial class Game
         /// <summary>One tile of frost as a decal's picture (its corner and size in the
         /// world): a thin rime broken by noise, thinning to the patch's edge, and
         /// cleared in a soft ring where a fire keeps it off.</summary>
+        const float FrostSeam = 0.3f;
+
         static ImageTexture Frost(Vector2 corner, float tile, Vector2 centre, float size, Vector2? hole, float radius, List<Vector2> trail)
         {
             const int N = 96;
@@ -1059,11 +1361,17 @@ public partial class Game
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
-                    var w = corner + new Vector2((x + 0.5f) / N, (y + 0.5f) / N) * tile;
+                    var uv = new Vector2((x + 0.5f) / N, (y + 0.5f) / N) * tile;
+                    var w = corner + uv;
                     float n = frostNoise.GetNoise2D(w.X, w.Y) * 0.5f + 0.5f;
                     float a = Mathf.SmoothStep(0.3f, 0.7f, n);
-                    var off = (w - centre).Abs() / (size / 2);
-                    a *= Mathf.Clamp((1 - Mathf.Max(off.X, off.Y)) / 0.2f, 0, 1);
+                    // The cross-fade over the overlap with each neighbour (linear, so the pair sums to one).
+                    a *= Mathf.Clamp(Mathf.Min(uv.X, tile - uv.X) / (2 * FrostSeam), 0, 1) * Mathf.Clamp(Mathf.Min(uv.Y, tile - uv.Y) / (2 * FrostSeam), 0, 1);
+                    // The patch thins out to a ragged round edge (a square one read as straight
+                    // seams from the play camera above): the radius wanders with a slow noise.
+                    float r = w.DistanceTo(centre) / (size / 2);
+                    float wob = frostNoise.GetNoise2D(w.X * 0.12f + 311f, w.Y * 0.12f - 97f) * 0.22f;
+                    a *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp((0.92f + wob - r) / 0.4f, 0, 1));
                     if (hole is Vector2 hc) a *= Mathf.SmoothStep(radius * 0.7f, radius * 1.4f, w.DistanceTo(hc));
                     for (int k = 0; k + 1 < trail.Count; k++)
                     {
@@ -1089,8 +1397,15 @@ public partial class Game
 
         /* --------------------------------------------------------- the end -- */
 
+        float keyReach = -1;
+        readonly HashSet<int> sized = new();
+
         public void Finish()
         {
+            g.cineSat = null;
+            foreach (int i in sized) g.scene?.View.SetSize(i, 0);
+            sized.Clear();
+            if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;
             // Play starts exactly where the cinematic leaves her, facing as she
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;
@@ -1132,10 +1447,42 @@ public partial class Game
             bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();
             props.Clear();
+            foreach (var r in rigs.Values) r.L.QueueFree();
+            rigs.Clear();
+            foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
+            globes.Clear();
+            foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
+            waters.Clear();
             // Her prints stay: they are in the frost whether it played or not.
             people.Clear();
+            if (file.End.Next != null)
+            {
+                // On into the next on the cut: the zone starts it from done; if it
+                // does not, play is handed back here as usual.
+                g.chained = new Chain(bars, saved);
+                Seen();
+                done?.Invoke();
+                if (g.chained != null) { g.chained = null; Restore(); }
+                return;
+            }
+            Restore();
+            Seen();
+            done?.Invoke();
+        }
+
+        void Seen()
+        {
+            if (!Settings.Current.SeenCinematics.Contains(file.Id)) { Settings.Current.SeenCinematics.Add(file.Id); Settings.Current.Save(); }
+            GD.Print($"cinema: {file.Id} {(player.Skipped ? "skipped" : "done")}");
+        }
+
+        void Restore()
+        {
+            var p = b.Player;
             var cam = g.camera;
             cam.Fov = saved.Fov; cam.KeepAspect = saved.Keep; cam.Near = saved.Near; cam.Attributes = saved.Attr;
+            Campfire.ClearNear(0);
+            CrowdView.Staged = null;
             g.scene!.CameraHeld = false;
             if (g.scene.Player != null) g.scene.Player.Hidden = false;
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);
@@ -1145,9 +1492,6 @@ public partial class Game
             g.controls.ClearLatches();
             if (!hudIn) g.hud.ShowPlay(true, player.Skipped ? 0.3f : 0.6f);
             bars.QueueFree();
-            if (!Settings.Current.SeenCinematics.Contains(file.Id)) { Settings.Current.SeenCinematics.Add(file.Id); Settings.Current.Save(); }
-            GD.Print($"cinema: {file.Id} {(player.Skipped ? "skipped" : "done")}");
-            done?.Invoke();
         }
     }
 }

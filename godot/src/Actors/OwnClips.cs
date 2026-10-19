@@ -104,6 +104,8 @@ public sealed class OwnClips
                 "OverhandThrow" or "Throw" => "throw",
                 "Pistol_Shoot" or "1H_Ranged_Shoot" or "2H_Ranged_Shoot" => "crossbow_shoot",
                 "Punch_Cross" or "Taunt" => "warcry",
+                // (C01 s11: her own, keyed to the weapon on the log; the hero has none yet and plays the kit's.)
+                "PickUp_Table" => "take_from_log",
                 "Sword_Block" or "Block" => $"{calling}_show",
                 "Sword_Regular_A" or "Sword_Regular_B" or "Sword_Regular_C" or "Sword_Attack" or "Sword_Regular_Combo"
                     or "Sword_Heavy_Combo" or "1H_Melee_Attack_Chop" => HerClips.Swings(kind) is { Length: > 0 } s ? s[0] : null,
