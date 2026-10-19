@@ -22,8 +22,10 @@ uniform vec2 cell_px = vec2(128.0, 256.0);
 uniform float phase = 0.0;
 uniform float cold = 0.0;
 uniform float intensity = 1.0;
-// The core's brightness (linear, before exposure): above the glow threshold; the body stays under 1.
-uniform float core_hdr = 1.8;
+// The body's brightness and the core's added on top (linear, before exposure): the body stays well
+// under the glow's threshold, the core alone crosses it.
+uniform float body_k = 1.1;
+uniform float core_k = 1.4;
 uniform float sway = 0.035;
 uniform float soft = 0.15;
 uniform bool procedural = false;
@@ -70,7 +72,7 @@ float proc_heat(vec2 uv) {
 
 vec3 ramp(float h) {
 	// Linear colour; warm: ember red, orange, yellow, a near-white core; cold: deep blue, #4a7dff, pale blue-white.
-	vec3 w0 = vec3(0.35, 0.03, 0.005), w1 = vec3(0.95, 0.28, 0.03), w2 = vec3(1.0, 0.62, 0.17), w3 = vec3(1.0, 0.86, 0.6);
+	vec3 w0 = vec3(0.3, 0.02, 0.003), w1 = vec3(0.9, 0.16, 0.01), w2 = vec3(1.0, 0.42, 0.05), w3 = vec3(1.0, 0.7, 0.32);
 	vec3 c0 = vec3(0.02, 0.05, 0.35), c1 = vec3(0.07, 0.2, 1.0), c2 = vec3(0.35, 0.55, 1.0), c3 = vec3(0.78, 0.88, 1.0);
 	vec3 a = mix(w0, c0, cold), b = mix(w1, c1, cold), c = mix(w2, c2, cold), d = mix(w3, c3, cold);
 	vec3 col = mix(a, b, smoothstep(0.0, 0.35, h));
@@ -87,9 +89,10 @@ void fragment() {
 	uv.x += (sin(tt * 1.7) * 0.6 + sin(tt * 2.9 + 1.3) * 0.4) * sway * up * up;
 	float h = procedural ? proc_heat(uv) : sim_heat(uv);
 	// Heat to light: the body's edge fades out, the body sits under 1, the core alone climbs to core_hdr.
-	float body = smoothstep(0.02, 0.45, h);
-	float core = smoothstep(0.8, 0.98, h);
-	vec3 col = ramp(h) * body * 0.85 + ramp(1.0) * core * (core_hdr - 0.85);
+	// Heat-weighted: the edges a dim red, the middle bright, so the tongue keeps its inner shape.
+	float body = smoothstep(0.0, 0.25, h) * pow(h, 1.6);
+	float core = smoothstep(0.86, 1.0, h);
+	vec3 col = ramp(h) * body * body_k + ramp(1.0) * core * core_k;
 	float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
 	behind.xyz /= behind.w;

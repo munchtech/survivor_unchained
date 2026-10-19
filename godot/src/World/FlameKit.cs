@@ -173,5 +173,12 @@ static class FlameShader
             fps *= (float)meta["fps"].AsDouble() / 24f;
         }
         mat.SetShaderParameter("fps", fps);
+        // --flame-tune "body_k=0.4,core_k=1.4": the shader's numbers, for pictures.
+        if (SurvivorUnchained.Args.Get("flame-tune") is string tune)
+            foreach (var kv in tune.Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+            {
+                var p = kv.Split('=');
+                if (p.Length == 2) mat.SetShaderParameter(p[0].Trim(), float.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture) * (p[0].Trim() == "intensity" ? intensity : 1));
+            }
     }
 }
