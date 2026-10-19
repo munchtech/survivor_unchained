@@ -161,11 +161,22 @@ import face_shapes as fs  # noqa: E402
 eye_z = EV[:, 2].mean()
 theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
 rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
+rise = fs.hairline_across(theta, rise, np.hypot(P[:, 0], P[:, 1]))   # (across her hairline, as her hair's cap: 18 Oct)
 # (faint from 4 mm under her hairline, most of it over the centimetre above:
 # under her hair's cap as it thins out, blended over her skin there. It
 # began 1.6 cm under, when the cap ended hard: there it read as a dark band
 # of skin under her hair.)
 scalp = smooth((rise + 0.004) / 0.012) ** 2
+# (18 October, touch-up hair round 2: and under her hair's edge a faint warm shade toward its colour, up to her
+# hairline, where it meets the shade above. Bare, her skin just under the cap's fade, a
+# surface turned up to the moon, lit paler than her mid-forehead: the pale band at her temples by the fire (C01 s10;
+# the owner's o3). HAIRLINE_TAIL=0: as before.)
+if os.environ.get("HAIRLINE_TAIL", "1") == "1":
+    # (the hair's cards fall a few millimetres over her hairline, so what shows of her skin begins some 5 mm under
+    # it: from 2 cm under (2.8 behind her ears, where her nape's skin under her ear read as a pale, greyish patch at
+    # the Look's profiles) up to her hairline)
+    _lo = 0.020 + 0.008 * smooth((np.degrees(np.abs(theta)) - 80) / 30)
+    scalp = np.maximum(scalp, float(os.environ.get("HAIRLINE_TAIL_AMT", "0.35")) * smooth((rise + _lo) / _lo))
 # Not her ears (what her ears' own keys move, and 6 mm round them): darkened
 # with her scalp they turned the colour of her hair.
 from scipy.spatial import cKDTree  # noqa: E402

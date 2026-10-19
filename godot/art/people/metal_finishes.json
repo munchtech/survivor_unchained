@@ -1,0 +1,12 @@
+{
+ "_": "Her metal's finish by material key (outfit_materials.json kind metal; shaders/heroine_outfit_metal.gdshader's finish). Any key not here is bare: as built. blued: blued steel, deep blue-black, chipped back to bright steel at its worn edges (the look bible's armor-metal page, item 4).",
+ "steel": "blued",
+ "darksteel": "blued",
+ "pieces": {
+  "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her cups and pauldrons keep the key's 0.45 / 0.3.",
+  "steel": {
+   "warden.greave": {"metal_rough": 0.36, "metal_env_graze": 0.45},
+   "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45}
+  }
+ }
+}

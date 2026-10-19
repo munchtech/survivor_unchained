@@ -691,7 +691,8 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None):
     c = cards(P, RNG.uniform(0.003, 0.006, len(pts)) * 0.75, list(range(6, 16)), 0.004, floor=0.0025)
     c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)) * 0.8, 3 * points)
     c["mat"] = 3
-    out.append(c)
+    if os.environ.get("DBG_NOHL") != "1":                       # (test only)
+        out.append(c)
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
     # and faint, each a little off the way it is combed, some curling.
@@ -724,7 +725,8 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None):
     c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
     c["mat"] = 3
     c["flat"] = True
-    out.append(c)
+    if os.environ.get("DBG_NOBABY") != "1":                     # (test only)
+        out.append(c)
     print("  baby hairs: %d cards" % n)
     return out
 
@@ -863,7 +865,21 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb(pts)), comb, L / (points - 1), np.full(len(pts), points - 1), off,
                 side=no_part(pts), stop=lambda q: np.linalg.norm(q - T, axis=1) < reach,
                 lift=lift * np.clip((pts[:, 2] - (EYE_Z + 0.06)) / 0.04, 0, 1))
+        # (18 October, touch-up hair round 2: a strand that never came within `reach` of the tie (held off it by her
+        # head, round behind her ear) ran on its whole length past it, down her neck: the thin dark strand under her
+        # ear by the fire (C01 s10, the owner's o3). Each now ends where it comes nearest the tie. GATHER_CUT=0: as before.)
+        if os.environ.get("GATHER_CUT", "1") == "1":
+            dT = np.linalg.norm(P - T, axis=2)
+            jn = dT.argmin(1)
+            miss = dT.min(1) >= reach
+            for i in np.nonzero(miss)[0]:
+                P[i, jn[i] + 1:] = P[i, jn[i]]
+            print("  gathered: %d of %d never reached the tie, cut where nearest it" % (miss.sum(), len(P)))
         P = resample(P, points)
+        if os.environ.get("DBG_NOLOWG") == "1":                 # (test only: the cards rooted beside her nape, below her ear's top, folded away under her scalp)
+            lowg = (pts[:, 2] < float(HP[EAR, 2].max())) & (np.abs(pts[:, 0]) > 0.03)
+            P[lowg] = (pts[lowg] - nrm[lowg] * 0.004)[:, None]
+            print("  DBG_NOLOWG: %d cards hidden" % lowg.sum())
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
     out += hairline_hairs(comb, sides=no_part, low=float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01)
@@ -1132,15 +1148,38 @@ def style_braid():
     taper = 1 - 0.4 * f
     end = int(np.searchsorted(f, 0.84))
     pitch = 0.062
+    # (18 October, touch-up: where it left her gathered hair its three strands began 3.4 cm apart, each an open
+    # tube, and past her neck from the front its start read as a flat, square-ended dark tab under her ear. Now
+    # they grow out of the gathered hair: begun 1.5 cm up inside it, drawn together there and parting into the
+    # plait over its first 4 cm, each strand thin where it starts and full by 2.5 cm. BRAID_GROW=0: as before.)
+    grow = os.environ.get("BRAID_GROW", "1") == "1"
+    if grow:
+        back = T[None] + axis[None] * np.linspace(-0.005, 0.01, 6)[:-1, None]     # (up inside her gathered hair)
+        Cs = np.vstack([back, C])
+        arc_s = np.r_[0, np.cumsum(np.linalg.norm(np.diff(Cs, axis=0), axis=1))] - np.linalg.norm(C[0] - back[0])
+        _, out_s, ac_s = frame(Cs)
+        sp = np.clip(arc_s / 0.04, 0, 1)
+        spread = sp * sp * (3 - 2 * sp)
+        thick = 0.35 + 0.65 * np.clip((arc_s + 0.015) / 0.04, 0, 1)
+        taper_s = 1 - 0.4 * np.clip(arc_s / arc[-1], 0, 1)
+        nb = len(back)
     for k in range(3):
         th = 2 * np.pi * arc / pitch + 2 * np.pi * k / 3
         path = C + ac * (0.019 * taper * np.sin(th))[:, None] + out * (0.0075 * taper * np.sin(2 * th))[:, None]
-        lobe = tube(path[:end + 2], 0.0145 * taper[:end + 2], 0.0100 * taper[:end + 2], out[:end + 2], sides=12)
+        if grow:
+            th_s = 2 * np.pi * arc_s / pitch + 2 * np.pi * k / 3
+            path_s = Cs + ac_s * (0.019 * taper_s * spread * np.sin(th_s))[:, None] + out_s * (0.0075 * taper_s * spread * np.sin(2 * th_s))[:, None]
+            lobe = tube(path_s[:nb + end + 2], (0.0145 * taper_s * thick)[:nb + end + 2], (0.0100 * taper_s * thick)[:nb + end + 2],
+                        out_s[:nb + end + 2], sides=12)
+        else:
+            lobe = tube(path[:end + 2], 0.0145 * taper[:end + 2], 0.0100 * taper[:end + 2], out[:end + 2], sides=12)
         lobe["mat"] = 1
         parts.append(lobe)
         # (loose hairs over each strand of it)
         fuzz = np.stack([path[:end + 2] + out[:end + 2] * 0.008 * taper[:end + 2, None]])
-        parts.append(cards(resample(fuzz, 32), np.array([0.026]), list(range(6, 11)), 0.012))
+        _fz = cards(resample(fuzz, 32), np.array([0.026]), list(range(6, 11)), 0.012)
+        if os.environ.get("DBG_NOFUZZ") != "1":
+            parts.append(_fz)
     # Tied off, and a short tail below.
     # (18 October, face 30: a ring 9 mm round its middle, the band sank into
     # the braid, whose strands reach 3.4 cm across it and 1.8 out, and into
@@ -1162,8 +1201,10 @@ def style_braid():
     for sd in (1, -1):
         for inset, wd in ((0.0055, 0.013), (0.0105, 0.016)):
             q = C[:end + 1] + ac[:end + 1] * (sd * (reach_[:end + 1] - inset))[:, None] + out[:end + 1] * (0.006 * taper[:end + 1])[:, None]
-            q = np.vstack([T + (q[0] - T) * 0.4, q])              # (from up under her gathered hair)
-            parts.append(cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35))
+            q = np.vstack([T + (q[0] - T) * (0.1 if grow else 0.4), q])   # (from up under her gathered hair)
+            _cv = cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35)
+            if os.environ.get("DBG_NOCOVER") != "1":
+                parts.append(_cv)
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
         c["swing"] = True
@@ -1411,7 +1452,9 @@ def cap(comb, sides=part_side):
     r = np.random.default_rng(5)
     wav = sum(0.0018 * np.sin(V @ (u / np.linalg.norm(u)) * 2 * np.pi / lam + ph)
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
-    fade = np.clip((V[:, 2] - hairline_z(theta) + 0.001 + 0.5 * wav) / 0.011, 0, 1)
+    # (across her hairline, not by height: fs.hairline_across)
+    across = fs.hairline_across(theta, V[:, 2] - hairline_z(theta), np.hypot(V[:, 0] - CENTRE[0], V[:, 1] - CENTRE[1]))
+    fade = np.clip((across + 0.001 + 0.5 * wav) / 0.011, 0, 1)
     # (and at her ears, faded out over the 3 mm next to each: her hair grows
     # to her ear, its edge there soft, not the cap's cut edge)
     if FLAP_TREE is not None:
@@ -1447,6 +1490,10 @@ def build(style):
         bpy.data.meshes.remove(old.data)
     shape, comb, sides = STYLES[style]
     layers = shape()
+    if os.environ.get("DBG_DUMP"):                           # (test only: every layer's points, for finding a stray card)
+        np.savez(os.environ["DBG_DUMP"] + f"_{style}.npz", HP=HP, EAR=EAR, EYE_Z=EYE_Z,
+                 **{f"L{i}": c["V"] for i, c in enumerate(layers)},
+                 **{f"K{i}": np.array([c.get("mat", 0), len(c.get("F", []))]) for i, c in enumerate(layers)})
     V, N, UV, C, F, M = [], [], [], [], [], []
     base = 0
     for li, c in enumerate(layers):

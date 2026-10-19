@@ -1,0 +1,3 @@
+war_cuf|warden|--zone waystation --time day --close 1 --facing 0
+war_cun|warden|--zone waystation --time night --close 1 --facing 40
+war_cu3|warden|--zone waystation --time day --close 1 --facing 40
