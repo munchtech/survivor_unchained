@@ -336,6 +336,8 @@ public partial class Game : Node, IZoneHost
             nb.Player.X = na.X + 2.2;
             nb.Player.Z = na.Z + 3.2;
         }
+        // --npc NAME: a Marionette package stood beside her (pictures: GameNpcShot).
+        NpcShot();
         hud.Fade(0, 0.5);
         // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
         // later, warm builds: what a place costs to enter once the session has

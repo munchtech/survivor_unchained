@@ -133,7 +133,7 @@ def run(name, tag, res, quality, extra, wait=0, build=None):
         print("\n".join(l for l in out_text.splitlines()[-15:]))
         return None
     took = time.time() - t0
-    lines = [l for l in log.stdout.splitlines() if l.startswith("perf") or "ERROR" in l or "baked" in l]
+    lines = [l for l in log.stdout.splitlines() if l.startswith(("perf", "npc:")) or "ERROR" in l or "baked" in l]
     for l in lines[:60]:
         print("  " + l)
     path = os.path.join(OUT, out + ".json")

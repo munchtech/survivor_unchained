@@ -31,7 +31,7 @@ public partial class PersonView : Node3D, INpcView
     {
         person = People.Build(spec);
         person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
-        person.Folk = person.Kit && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
+        person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
         if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }

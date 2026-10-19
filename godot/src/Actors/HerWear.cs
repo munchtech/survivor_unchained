@@ -42,7 +42,7 @@ public static class HerWear
 
     /// <summary>Key of a bind position (glTF metres x 1e5, rounded half to even as heroine_outfits.py's numpy does).</summary>
     static long Key(long x, long y, long z) => ((x + (1 << 20)) << 42) | ((y + (1 << 20)) << 21) | (z + (1 << 20));
-    static long Key(Vector3 v) => Key((long)Math.Round(v.X * 1e5), (long)Math.Round(v.Y * 1e5), (long)Math.Round(v.Z * 1e5));
+    internal static long Key(Vector3 v) => Key((long)Math.Round(v.X * 1e5), (long)Math.Round(v.Y * 1e5), (long)Math.Round(v.Z * 1e5));
 
     public static void Apply(People.Person p, string calling, IReadOnlyDictionary<string, string> look)
     {
@@ -82,15 +82,7 @@ public static class HerWear
                         GD.PushWarning($"wear: {r.Id}'s mesh {mn} is not in {g.Key}");
                         continue;
                     }
-                    mi.GetParent().RemoveChild(mi);
-                    mi.Owner = null;
-                    p.Skeleton.AddChild(mi);
-                    mi.Skeleton = "..";
-                    mi.Layers = 2;
-                    mi.SetMeta(Meta, r.Id);
-                    p.Meshes.Add(mi);
-                    People.Fur(mi);
-                    People.OutfitMaterials(mi);
+                    WearPiece(p, mi, r.Id);
                     anyFull ??= mi;
                     laid.Add(mi);
                     var mat = mn[(mn.LastIndexOf('.') + 1)..];
@@ -150,8 +142,18 @@ public static class HerWear
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)"));
     }
 
+    /// <summary>A piece's full mesh onto a person's skeleton, drawn as what it is made of (her pieces, and a Marionette
+    /// package's: NpcPackage).</summary>
+    internal static void WearPiece(People.Person p, MeshInstance3D mi, string id)
+    {
+        Lay(p, mi, id);
+        p.Meshes.Add(mi);
+        People.Fur(mi);
+        People.OutfitMaterials(mi);
+    }
+
     /// <summary>A piece's gameplay or shadow mesh, onto her skeleton like its full meshes (but not in her mesh list).</summary>
-    static void Lay(People.Person p, MeshInstance3D mi, string id)
+    internal static void Lay(People.Person p, MeshInstance3D mi, string id)
     {
         mi.GetParent().RemoveChild(mi);
         mi.Owner = null;
@@ -203,6 +205,9 @@ public static class HerWear
         int miss = at.Keys.Count(k => !seen.Contains(k));
         if (miss > 0) GD.PushWarning($"wear: {miss} of {at.Count} tuck points are on none of her body's vertices (a stale tuck: rebuild the pieces against her body)");
     }
+
+    /// <summary>The bind positions a tuck-format record file lists (NpcPackage's hidden skin).</summary>
+    internal static IEnumerable<long> Points(string path) => Records(path).Select(r => r.Item1);
 
     static (long, float)[] Records(string path)
     {
