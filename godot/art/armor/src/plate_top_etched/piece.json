@@ -8,7 +8,7 @@
  "material": "steel",
  "tint": null,
  "adorn": [
-  {"kind": "paint", "target": "shell", "pattern": "etch_scroll", "strength": 1.0}
+  {"kind": "paint", "target": "shell", "pattern": "etch_band_vine", "strength": 1.0, "ground": "darkleather", "sky": 0.0}
  ],
  "covers": ["top"],
  "hold": {"amount": 0.55, "squash": 0}

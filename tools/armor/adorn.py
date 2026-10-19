@@ -21,7 +21,8 @@ piece / painted / flag and TEXCOORD_1 edge / convexity, taken from the shell at 
   sunk 0.2 mm into the plate; a dark groove `gap` wide each side, a film on the plate (the shell's own mesh, its sky
   and convexity dropped: the shader draws it dark and rough). Each section rigid on the plate's blend under it; lowered
   where a strap crosses it (never through the leather). A coarser band in the gameplay LOD, on that LOD's own surface.
-- `paint` `etch_<name>`: the etched pattern as a film 0.25 mm over the plate in the shell's own mesh and material,
+- `paint` `etch_<name>`: the etched pattern as a film 0.25 mm over the plate in the shell's own mesh and material (or
+  `ground`'s: a leather one draws it as a matte black fill, see etch()),
   its sky and convexity dropped so the outfit shader draws it as acid-etched steel (darker, rougher, recessed: its
   hollow and occlusion terms), bright polished steel between. Why a film, not a texture: the metal kind of
   heroine_outfit.gdshader draws its texture's mean colour only (no albedo, normal or roughness pattern reaches the
@@ -472,7 +473,7 @@ def smooth_normals(P, T):
     return N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-15)
 
 
-def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM):
+def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM, matte=False):
     """A film on the plate between d0 and d1 in from a rim (the etch's bands, a trim's grooves)."""
     P0, O0, N0, s = rim_line(rim, step)
     rows = []
@@ -484,12 +485,14 @@ def film_strip(surf, rim, d0, d1, step, na, sky, conv, lift=FILM):
     F = np.stack([r[1] for r in rows], 1).ravel()
     B = np.stack([r[2] for r in rows], 1).reshape(-1, 3)
     T = fix_winding(P, grid_tris(ns, na, True), N)
-    return film_from(surf, P, N, F, B, T, sky, conv, lift)
+    return film_from(surf, P, N, F, B, T, sky, conv, lift, matte)
 
 
-def film_from(surf, P, N, F, B, T, sky, conv, lift=FILM):
+def film_from(surf, P, N, F, B, T, sky, conv, lift=FILM, matte=False):
     C = surf.at(surf.C, F, B)
     C[:, 0] = np.clip(C[:, 0] * sky, 0, 1)
+    if matte:
+        C[:, 2:4] = 0.0                        # (in a leather material: no stitch row, drawn matte)
     U1 = surf.at(surf.U1, F, B)
     U1[:, 0] = np.maximum(U1[:, 0], 0.004)     # (no edge polish on it)
     U1[:, 1] = conv
@@ -590,98 +593,154 @@ def element(lm, slot, origin, X, Y, Z, w_row, c_row, scale=1.0, roll=0.0, offset
 
 
 # ---------------------------------------------------------------------------------------- the etch --
-def spiral(cx, cy, r0, r1, a0, turns, n=60, sign=1):
-    a = a0 + sign * np.linspace(0, 2 * np.pi * turns, n)
-    r = np.linspace(r0, r1, n)
-    return np.c_[cx + r * np.cos(a), cy + r * np.sin(a)]
+def vine_chart(L, ad):
+    """The running vine on a band's chart, in mm (u along the band's centre line 0..L, closed; v across, 0 the centre):
+    a wavy stem (a whole number of waves round the loop, so it closes without a kink) and a tapering leaf off each
+    crest into the bay under it (so the leaves alternate sides). Returns the outline points (n, 2) and inside(pts)."""
+    from matplotlib.path import Path
+    A, hw = ad.get("amp", 2.2), ad.get("stem", 1.4) / 2
+    nw = max(2, int(round(L / ad.get("wave", 14.0))))
+    k = 2 * np.pi / (L / nw)
+
+    def edges(n):
+        # (the stem's edges: its centre offset along its own normal)
+        u = np.arange(n) * L / n
+        t = np.c_[np.ones(n), A * k * np.cos(k * u)]
+        t /= np.linalg.norm(t, axis=1, keepdims=True)
+        c, nr = np.c_[u, A * np.sin(k * u)], np.c_[-t[:, 1], t[:, 0]]
+        return c + nr * hw, c - nr * hw
+    hi_d, lo_d = edges(int(L / 0.05))
+
+    def side(e, u):
+        o = np.argsort(e[:, 0])
+        x, y = e[o, 0], e[o, 1]
+        return np.interp(u % L, np.r_[x[-1] - L, x, x[0] + L], np.r_[y[-1], y, y[0]])
+
+    def in_stem(p, m=0.0):
+        return (p[:, 1] < side(hi_d, p[:, 0]) - m) & (p[:, 1] > side(lo_d, p[:, 0]) + m)
+    leaves = []
+    ll, wl = hw + ad.get("leaf", 3.0), ad.get("leaf_width", 1.3)
+    a0 = np.radians(ad.get("leaf_lean", -5.0))
+    a1 = a0 + np.radians(ad.get("leaf_curl", 30.0))
+    for j in range(2 * nw):
+        s = 1.0 if j % 2 == 0 else -1.0                      # (the crest's side: its leaf goes to the other)
+        uc = (np.pi / 2 + j * np.pi) / k
+        x = np.linspace(0, 1, max(8, int(np.ceil(ll / 0.35))) + 1)
+        th = a0 + (a1 - a0) * x
+        d = np.c_[np.sin(th), -s * np.cos(th)]
+        c = np.array([uc, s * A]) + np.r_[[[0, 0]], np.cumsum((d[1:] + d[:-1]) / 2 * np.diff(x)[:, None] * ll, 0)]
+        nr = np.c_[-d[:, 1], d[:, 0]]
+        w = wl / 2 * np.sin(np.pi * x) ** 0.7
+        poly = np.vstack([c[:-1] + nr[:-1] * w[:-1, None], c[-1:], (c[1:-1] - nr[1:-1] * w[1:-1, None])[::-1]])
+        leaves.append((poly, Path(np.vstack([poly, poly[:1]]))))
+
+    def in_leaf(p):
+        r = np.zeros(len(p), bool)
+        q = np.c_[p[:, 0] % L, p[:, 1]]
+        for poly, pa in leaves:
+            lo, hi = poly.min(0) - 0.1, poly.max(0) + 0.1
+            box = (q[:, 0] > lo[0]) & (q[:, 0] < hi[0]) & (q[:, 1] > lo[1]) & (q[:, 1] < hi[1])
+            if box.any():
+                r[box] |= pa.contains_points(q[box])
+        return r
+    inside = lambda p: in_stem(p) | in_leaf(p)
+    hi, lo = edges(int(np.ceil(L / 0.7)))
+    stem = np.vstack([hi, lo])
+    stem = stem[~in_leaf(stem)]
+    lf = np.vstack([p for p, _ in leaves])
+    lf = lf[~in_stem(lf, 0.03)]
+    return np.vstack([stem, lf]), inside, {"waves": nw, "leaves": len(leaves)}
 
 
-def bez(p0, p1, p2, p3, n=40):
-    t = np.linspace(0, 1, n)[:, None]
-    return (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3 * p3
+def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False):
+    """The band's blackened ground (a film) between d0 and d1 in from a rim, with gaps where the vine runs (the bright
+    plate shows through): triangulated on the band's chart (u, v), then laid on the plate by its inward rows."""
+    from scipy.spatial import Delaunay
+    P0, O0, N0, _ = rim_line(rim, 0.001)
+    nr = int(np.ceil((d1 - d0) / 0.00075)) + 1
+    nr += 1 - nr % 2                                         # (odd: a row on the centre line)
+    dr = np.linspace(d0, d1, nr)
+    rows = [fair(surf, inward(surf, P0, O0, N0, d)) for d in dr]
+    G = np.stack([r[0] for r in rows], 1)                    # (ns, nr, 3)
+    GN = np.stack([r[3] for r in rows], 1)
+    ns = len(G)
+    cen = G[:, nr // 2]
+    uc = np.r_[0, np.cumsum(np.linalg.norm(np.roll(cen, -1, 0) - cen, axis=1) * 1000)]   # (mm, the loop closed)
+    L, hb = uc[-1], (d1 - d0) / 2 * 1000
+    out, inside, st = vine_chart(L, ad)
+    ne = int(np.ceil(L / 2.0))
+    eu = np.arange(ne) * L / ne
+    pts = np.vstack([out, np.c_[eu, np.full(ne, hb)], np.c_[eu, np.full(ne, -hb)]])
+    pts[:, 0] %= L
+    idx = np.arange(len(pts))
+    a, b = pts[:, 0] < 6, pts[:, 0] > L - 6
+    allp = np.vstack([pts, pts[a] + [L, 0], pts[b] - [L, 0]])
+    alli = np.r_[idx, idx[a], idx[b]]
+    T = Delaunay(allp).simplices
+    c = allp[T].mean(1)
+    keep = (c[:, 0] >= 0) & (c[:, 0] < L) & (np.abs(c[:, 1]) < hb)
+    keep[keep] &= ~inside(c[keep])
+    T = alli[T[keep]]
+    # (a sound strip: no edge in more than two triangles, none degenerate)
+    e = np.sort(np.vstack([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), 1)
+    _, cnt = np.unique(e, axis=0, return_counts=True)
+    if cnt.max() > 2 or (T[:, 0] == T[:, 1]).any() or (T[:, 1] == T[:, 2]).any() or (T[:, 0] == T[:, 2]).any():
+        raise SystemExit(f"ADORN: vine band not a sound strip ({int((cnt > 2).sum())} edges in 3+ triangles)")
+    # (onto the plate: bilinear in the rows, then snapped)
+    ci = np.interp(pts[:, 0], uc, np.arange(ns + 1))
+    i0 = np.floor(ci).astype(int)
+    fi = (ci - i0)[:, None]
+    i0, i1 = i0 % ns, (i0 + 1) % ns
+    ri = np.clip(np.interp(d0 + (pts[:, 1] + hb) / 1000, dr, np.arange(nr)), 0, nr - 1)
+    j0 = np.minimum(np.floor(ri).astype(int), nr - 2)
+    fj = (ri - j0)[:, None]
+
+    def bil(X):
+        return ((X[i0, j0] * (1 - fj) + X[i0, j0 + 1] * fj) * (1 - fi)
+                + (X[i1, j0] * (1 - fj) + X[i1, j0 + 1] * fj) * fi)
+    p, f, bb, n = surf.snap(bil(G), bil(GN))
+    st.update(chart_mm=[round(float(L), 1), round(float(2 * hb), 2)], ground_tris=int(len(T)),
+              boundary_edges=int((cnt == 1).sum()))
+    return film_from(surf, p, n, f, bb, fix_winding(p, T, n), sky, conv, lift, matte), st
 
 
-def scroll_strokes():
-    """The 'scroll' motif in mm on a cup's chart (x outward from the gore, y up, the crown at 0,0): a lyre of two
-    C-scrolls rising from a stem under the crown and curling in round it, a pair of leaves off the stem, and a bud
-    above; symmetric about x = 0. Each stroke: (points (n, 2), width at its start, width at its end)."""
-    out = []
-    for sx in (1, -1):
-        m = np.array([sx, 1.0])
-        # the scroll: from the stem's top out and up round the crown, ending in a curl above-outside it
-        a = bez(np.array([0, -15.0]), np.array([9, -15.0]), np.array([17, -8.0]), np.array([17, 2.0]))
-        b = bez(np.array([17, 2.0]), np.array([17, 10.0]), np.array([11, 14.0]), np.array([7, 11.0]), 24)
-        c = spiral(9.5, 8.5, 3.4, 1.0, np.radians(225), 0.9, 30, sign=-1)
-        out.append((np.vstack([a, b[1:], c[1:]]) * m, 1.9, 0.9))
-        # a leaf off the stem, down and out, its tip curled
-        l1 = bez(np.array([0, -24.0]), np.array([6, -23.0]), np.array([12, -27.0]), np.array([14, -33.0]), 24)
-        l2 = spiral(11.8, -33.0, 2.2, 0.7, np.radians(0), 0.8, 18, sign=-1)
-        out.append((np.vstack([l1, l2[1:]]) * m, 1.6, 0.8))
-        # a small inner tendril from the scroll's base, curling toward the crown's underside
-        t1 = bez(np.array([7, -14.6]), np.array([8, -10.0]), np.array([6, -7.5]), np.array([4, -8.5]), 16)
-        out.append((t1 * m, 1.1, 0.6))
-    out.append((np.c_[np.zeros(30), np.linspace(-40.0, -15.0, 30)], 2.1, 1.9))    # the stem
-    out.append((np.c_[np.zeros(10), np.linspace(15.5, 20.5, 10)], 1.6, 0.8))      # the bud above the crown
-    return out
-
-
-def ribbon(pts, w0, w1):
-    """A stroke as a ribbon in 2D: left and right edge points (n, 2) each."""
-    d = np.gradient(pts, axis=0)
-    d /= np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
-    nrm = np.c_[-d[:, 1], d[:, 0]]
-    w = np.linspace(w0, w1, len(pts))[:, None] / 2
-    return pts + nrm * w, pts - nrm * w
-
-
-def resample(pts, step):
-    run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1))]
-    n = max(2, int(np.ceil(run[-1] / step)) + 1)
-    s = np.linspace(0, run[-1], n)
-    return np.c_[np.interp(s, run, pts[:, 0]), np.interp(s, run, pts[:, 1])]
+def matte_ground(ad):
+    return ad.get("ground") is not None and mats_table().get(ad["ground"], {}).get("kind") == "leather"
 
 
 def etch(surf, sock, ad, lod):
-    """The etched pattern (`pattern` etch_scroll): on each cup a double border inside the rim's rivets (a broad etched
-    band and a fine line in from it) and the scroll motif round its crown."""
-    name = ad.get("pattern", "etch_scroll")
-    if name != "etch_scroll":
-        raise SystemExit(f"ADORN: no etched pattern {name!r} (etch_scroll)")
+    """The etched pattern (`pattern` etch_band_vine): on each cup a Renaissance blackened band inside the rim's rivets
+    (`band`, in from the rim, m): its ground a dark rough film with a running vine left bright in it (gaps in the
+    film: a wavy stem, a leaf off each crest), framed each side by a fine etched line (`lines`). The gameplay LOD
+    keeps the dark band only (no vine, no lines): a darker border at the play camera. `ground` names the material its
+    films go in (default the shell's): a leather one draws them as a matte black fill (the metal kind darkens a film
+    by its sky to only ~0.8 of the bare plate's luminance at the close-up; Renaissance blackening is a matte fill
+    anyway); `sky` its sky (x the plate's)."""
+    name = ad.get("pattern", "etch_band_vine")
+    if name != "etch_band_vine":
+        raise SystemExit(f"ADORN: no etched pattern {name!r} (etch_band_vine)")
     k = float(ad.get("strength", 1.0))
-    sky = 1 - (1 - ETCH_SKY) * k
+    sky = 1 - (1 - ad.get("sky", ETCH_SKY)) * k
     conv = ETCH_CONV
-    step = 0.006 if lod else 0.002
     lift = FILM * (1.6 if lod else 1.0)
-    parts, stats = [], {"bands": 0, "strokes": 0, "missed": 0}
-    band = ad.get("band", [0.0115, 0.0175])
-    line = ad.get("line", [0.0198, 0.021])
+    mt = matte_ground(ad)
+    parts, stats = [], {"bands": 0, "lines": 0}
+    band = ad.get("band", [0.0122, 0.0212])
+    lines = ad.get("lines", [[0.0106, 0.0116], [0.0218, 0.0228]])
     for rn in rim_names(sock, ad.get("rim", "cup_rim")):
         rim = sock["rims"][rn]
-        parts.append(film_strip(surf, rim, band[0], band[1], step, 2 if lod else 3, sky, conv, lift))
+        if lod:
+            parts.append(film_strip(surf, rim, band[0], band[1], 0.006, 3, sky, conv, lift, mt))
+        else:
+            film, st = vine_band(surf, rim, band[0], band[1], ad, sky, conv, lift, mt)
+            parts.append(film)
+            stats.setdefault("vine", []).append(st)
+            for l0, l1 in lines:
+                # (a hair higher: the inner line crosses where the left cup's plate is within 0.3 mm of her skin
+                # with the arms overhead)
+                parts.append(film_strip(surf, rim, l0, l1, 0.002, 2, sky, conv, lift * 1.2, mt))
+                stats["lines"] += 1
         stats["bands"] += 1
-        if not lod:
-            parts.append(film_strip(surf, rim, line[0], line[1], step, 2, sky, conv, lift))
-    for sn in socket_names(sock, ad.get("socket", "cup")):
-        so = sock["sockets"][sn]
-        c, n, up = np.array(so["point"]), np.array(so["normal"]), np.array(so["up"])
-        X = np.cross(up, n)
-        sx = 1.0 if X[0] * c[0] > 0 else -1.0       # (x outward from the gore on both cups: mirrored)
-        sc = float(ad.get("scale", 1.0))
-        for pts, w0, w1 in scroll_strokes():
-            pts = resample(pts * sc, 2.4 if lod else 0.7)
-            L, R = ribbon(pts, max(w0 * sc, 1.6 if lod else 0), max(w1 * sc, 1.2 if lod else 0))
-            two = np.stack([L, R], 1).reshape(-1, 2) / 1000.0
-            O = c + n * 0.06 + np.outer(two[:, 0] * sx, X) + np.outer(two[:, 1], up)
-            p, f, b, hit = surf.ray(O, np.repeat(-n[None], len(O), 0))
-            nn = surf.normal(f, b, n)
-            T = fix_winding(p, grid_tris(len(pts), 2, False), nn)
-            if not hit.all():
-                stats["missed"] += int((~hit).sum())
-                good = hit.reshape(-1, 2).all(1)
-                keep = good[np.arange(len(pts) - 1)] & good[np.arange(1, len(pts))]
-                T = T.reshape(-1, 2, 3)[keep].reshape(-1, 3)
-            parts.append(film_from(surf, p, nn, f, b, T, sky, conv, lift))
-            stats["strokes"] += 1
     return parts, stats
 
 
@@ -976,11 +1035,12 @@ def build(pid, post=False):
                     lod_new.setdefault(mat, []).append((tl["P"], tl["N"], tl["U0"], tl["U1"], tl["C"], tl["W"], tl["T"]))
         elif kind == "paint":
             parts, st = etch(S_full, sock, ad, False)
-            full_new.setdefault(shell_full["mat"], []).extend(parts)
+            gm = ad.get("ground", shell_full["mat"])
+            full_new.setdefault(gm, []).extend(parts)
             st["tris"] = int(sum(len(p[6]) for p in parts))
             if S_lod is not None:
                 lparts, lst = etch(S_lod, sock, ad, True)
-                lod_new.setdefault(shell_full["mat"], []).extend(lparts)
+                lod_new.setdefault(gm, []).extend(lparts)
                 st["lod1_tris"] = int(sum(len(p[6]) for p in lparts))
             stats["paint"].append(dict(st, pattern=ad.get("pattern")))
         else:
