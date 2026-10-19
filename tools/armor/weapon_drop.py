@@ -26,6 +26,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = ROOT / "tools" / "anim" / "data" / "grip_spec.json"
 WEAPONS = ROOT / "public" / "assets" / "weapons"
 ROWS = ROOT / "godot" / "art" / "weapons" / "weapons.json"
+FIT_ROWS = ROOT / "tools" / "anim" / "data" / "fistfit_pieces.json"
+# A kind's fitted fistfit row (tools/anim/fistfit.py PIECES) a new piece's row is copied from; a kind not here has no
+# fitted fist yet (plain mount: GRIP_STANDARD.md section 3), so its piece gets no fistfit row.
+FIT_BASE = {"blade1h": "sword", "dagger": "daggers", "staff": "staff", "crossbow": "crossbow"}
 KINDS = ["blade1h", "blade2h", "blunt", "axe", "axe2h", "dagger", "wand", "staff", "shield", "crossbow"]
 TOL = 0.3
 MARGIN = 2.0   # mm off each end of the band (grip_conform's margin): a guard's or pommel's lip shares the band's last slice
@@ -185,9 +189,31 @@ def main(argv=None):
         rows[a.id] = row
         ROWS.parent.mkdir(parents=True, exist_ok=True)
         ROWS.write_text(json.dumps(rows, indent=1) + "\n")
+        fit_row(a.id, kind)
     where = f"copied to public/assets/weapons/{a.id}.glb, row in godot/art/weapons/weapons.json" if not a.no_copy else "not copied"
     print(f"OK {a.id}: kind {kind}, length {row['length']} m, grip {row['grip']} from the butt, section type {ty[0] if ty else '-'}, {where}")
     return 0
+
+
+def fit_row(pid, kind):
+    """tools/anim/data/fistfit_pieces.json's row for the piece: its kind's fitted row with the piece's arms key, the
+    kind's clips and fist (fistfit.py merges the file into PIECES). None for a kind with no fitted fist."""
+    base = FIT_BASE.get(kind)
+    if base is None:
+        print(f"note: kind '{kind}' has no fitted fist: no fistfit row (plain mount)")
+        return None
+    sys.path.insert(0, str(ROOT / "tools" / "anim"))
+    import fistfit
+    row = {k: v for k, v in fistfit.PIECES[base].items() if k not in ("left", "seed")}
+    row["arms"] = f"{pid}@hand_r"
+    row.setdefault("weapon", fistfit.PIECES[base].get("weapon", (base,)))
+    row.setdefault("wrap", fistfit.PIECES[base].get("wrap", base))
+    txt = FIT_ROWS.read_text() if FIT_ROWS.exists() else ""
+    rows = json.loads(txt) if txt.strip() else {}
+    rows[pid] = row
+    FIT_ROWS.write_text(json.dumps(rows, indent=1) + "\n")
+    print(f"fistfit row {pid} (from {base}) in {FIT_ROWS.relative_to(ROOT)}")
+    return row
 
 
 if __name__ == "__main__":
