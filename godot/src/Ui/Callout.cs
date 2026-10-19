@@ -461,6 +461,9 @@ public partial class Callout : Control, ICalloutView
         if (marks.Count == 0) return new Vector2(960, 400);
         var keep = new List<Rect2> { new(1520, 0, 400, 480) };
         foreach (var m in marks) keep.Add(m.Box.Grow(26));
+        // (and the edge markers, ring and tip, with the same room)
+        if (aim.Edges is { } edges)
+            foreach (var (eAt, _) in edges) keep.Add(new Rect2(eAt - Vector2.One * EdgeTip, Vector2.One * 2 * EdgeTip).Grow(26));
         // Her figure and her health bar, and a good margin: never words, never an arrow.
         Rect2? her = aim.Her?.Grow(HerMargin);
         if (her is Rect2 h0) keep.Add(h0);
@@ -725,7 +728,7 @@ public partial class Callout : Control, ICalloutView
             int n = 0;
             // (she keeps her own light: a soft pool about one and a half times her height)
             // (1.4 times that, its fall over the whole radius: no edge, never a disc of the night's own colour)
-            if (aim.Her is Rect2 hr) lights[n++] = new Vector4(hr.GetCenter().X, hr.GetCenter().Y, hr.Size.Y * 0.8f * 1.4f, 0);
+            if (aim.Her is Rect2 hr) lights[n++] = new Vector4(hr.GetCenter().X, hr.GetCenter().Y, hr.Size.Y * 0.8f * 1.4f * 1.25f, 0);
             dimMat.SetShaderParameter("soft_first", aim.Her is Rect2 ? 1 : 0);
             var marks = Marks();
             for (int i = 0; i < marks.Count && n < 6; i++)
@@ -1048,7 +1051,11 @@ public partial class Callout : Control, ICalloutView
                 for (int i = 0; i < 6; i++) {
                     if (i >= count) { break; }
                     float r = lights[i].z;
-                    float l = 1.0 - smoothstep(i < soft_first ? 0.0 : 0.5 * r, r, length(p - lights[i].xy));
+                    float d = length(p - lights[i].xy);
+                    // (her own: nearly a straight fall over the whole radius, eased at its ends, so it
+                    // changes under 2% in 10 px and has no rim; a thing's: lit to half, falling outside)
+                    float t = clamp(d / r, 0.0, 1.0);
+                    float l = i < soft_first ? 1.0 - mix(t, smoothstep(0.0, 1.0, t), 0.35) : 1.0 - smoothstep(0.5 * r, r, d);
                     lit = max(lit, l);
                     warm = max(warm, l * lights[i].w);
                 }
