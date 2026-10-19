@@ -1,0 +1,4 @@
+eqf_arc_look_old_a|--new --sex female --archetype arcanist --step 0 --open-eyes --no-taa --seed 1
+eqf_arc_look_new_a|--new --sex female --archetype arcanist --step 0 --open-eyes --no-taa --seed 1 --wear arcanist.top
+eqf_arc_look_old_b|--new --sex female --archetype arcanist --step 0 --open-eyes --no-taa --seed 1
+eqf_arc_look_new_b|--new --sex female --archetype arcanist --step 0 --open-eyes --no-taa --seed 1 --wear arcanist.top
