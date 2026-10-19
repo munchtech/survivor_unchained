@@ -2,6 +2,13 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Start here (touch-up lead 3, 18 Oct; IN PROGRESS)
+Same worktree and rules as touch-up 1 below. Scratch S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\f56a8f65-3e8d-416f-8d07-7f1c2f4fc541\scratchpad` (briefs judge_*.md, brief_*.md; shots shoot1, shoot2, metal3, metal4). Installed and committed: the th_r2 body and outfits (33672580), the hair rebuilt on its neck field (2a33575f), metal round 3 (9677849d; probes tried and reverted, b5151d92), the speck fix and hammer B (2efefebb).
+- Judge A (max): THROAT PASS (closed). The hairline and braid start pass at the Look and town cameras. FIX in C01 s10: a pale hairline band, a pale nape, a dark strand below the ear. Hair round-2 solver: S\brief_hair_r2.md. The Reaver cord passes at rest and kinks at the back of the neck in the C01 pose. Cord round-2 solver: S\brief_cord_r2.md.
+- Judge B (max): metal in town PASSES with hammer B, and the flecks are gone. FIX: moon candy blue, dawn greaves, gold trim, the Look dim. Metal finish solver: S\brief_metal_r4.md (it also handles the duplicate heroine_outfit.gdshader). Probes stay off.
+- Backlog (face owner): the C01 s8b gray smudges on her cheek and under her eye. They should read as dirt (warm brown, soft-edged) or go.
+- Next: one re-shoot of the changed frames, one max re-judge, dotnet test, the MR. The skin is not started.
+
 ## Start here (touch-up lead 2, 18 Oct; PAUSED at the coordinator's wind-down)
 **Paused here (touch-up lead 2); next:** two round-2 solvers (su-lead-high, effort high) were still running in this worktree when I paused. Their reports went to my session: read each with `python tools/scratch/coordinator/lastmsg.py <id> <out.md>` (transcripts in `C:\Users\munch\.claude\projects\C--Users-munch-Desktop-survivorsunchained\4b7b1da3-62bc-4cd2-ab49-a52d9a8367dc\subagents\`). Check their commits first (`git log`); their uncommitted files at pause were the metal ones (heroine_outfit_metal.gdshader, heroine_outfit.gdshaderinc, metal_finishes.json, metal_wear_detail.png and .py) and People.cs.
 - `aebd53e54712133dd`: THROAT round 2 (T\throat\brief_r2.md). Wire heroine_throat.ease plus a side-neck soften (THROAT_SOFT), one full build `vb.sh th_r2` (also builds the Reaver cord: its `TAUT reaver.cord` line is in T/prop/th_r2/outfits.log), numbers and C01 s3 at 1:1. It was building th_r2 at the pause.
