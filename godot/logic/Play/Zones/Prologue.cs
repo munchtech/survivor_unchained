@@ -268,7 +268,7 @@ public sealed class Prologue : ZoneRuntime
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
             Teach("lamps", CalloutKind.Freeze, "The lamps", "While these burn, the Warden barely feels a blow. Break them.",
-                Aim.In(() => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList()));
+                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), All = true, Radius = 0.38 });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", Aim.At("draught"), "draught");

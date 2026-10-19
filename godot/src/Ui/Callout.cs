@@ -453,6 +453,8 @@ public partial class Callout : Control, ICalloutView
                         if (!ClearWay(new Rect2(x - hw + 14, y - hh + 10, s.X, s.Y), marks[i], hr)) cost += 900;
                 if (cost < best) { best = cost; at = new Vector2(x, y); }
             }
+        if (OS.GetCmdlineUserArgs().Contains("--teach-diag"))
+            GD.Print($"calloutdiag place size={s} her={aim.Her} at={at} best={best} marks={string.Join(";", marks.Select(m => m.Box))}");
         return at;
     }
 
@@ -691,7 +693,7 @@ public partial class Callout : Control, ICalloutView
             {
                 if (!InWorld(i)) continue;
                 var m = marks[i];
-                lights[n++] = new Vector4(m.C.X, m.C.Y, m.R * 1.5f + 46, 0);
+                lights[n++] = new Vector4(m.C.X, m.C.Y, m.R * 1.5f + 46, 0.7f);
             }
             dimMat.SetShaderParameter("lights", lights);
             dimMat.SetShaderParameter("count", n);
@@ -976,10 +978,13 @@ public partial class Callout : Control, ICalloutView
             void fragment() {
                 vec2 p = UV * canvas;
                 float lit = 0.0;
+                float warm = 0.0;
                 for (int i = 0; i < 6; i++) {
                     if (i >= count) { break; }
                     float r = lights[i].z;
-                    lit = max(lit, 1.0 - smoothstep(0.5 * r, r, length(p - lights[i].xy)));
+                    float l = 1.0 - smoothstep(0.5 * r, r, length(p - lights[i].xy));
+                    lit = max(lit, l);
+                    warm = max(warm, l * lights[i].w);
                 }
                 vec3 c = texture(screen, SCREEN_UV).rgb;
                 float k = amount * (1.0 - lit);
@@ -1003,7 +1008,9 @@ public partial class Callout : Control, ICalloutView
                 vec3 ash = mix(vec3(y), src, 0.5) * 0.72;
                 vec2 q = UV - 0.5;
                 ash *= 1.0 - 0.15 * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
-                COLOR = vec4(mix(c, ash, k), 1.0);
+                // (a thing's pool is lit warm, as by the ember: never a cold white patch)
+                vec3 col = mix(c, ash, k) * mix(vec3(1.0), vec3(1.06, 0.95, 0.78), warm * amount);
+                COLOR = vec4(col, 1.0);
             }
             """,
     };

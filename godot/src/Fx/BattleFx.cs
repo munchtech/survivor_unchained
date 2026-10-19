@@ -53,7 +53,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
+    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, emberHalos = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -146,6 +146,9 @@ public partial class BattleFx : Node3D
         // Lit by their own colour at about its strength, no more: at 2.6 times a stone was white-hot
         // in every channel and the tone curve made cream popcorn of a field of them.
         embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(1.0f, 0.25f)));
+        // (and round each one lying still, a soft warm breath of added light: a stone a few pixels across
+        // reads at the play camera; ember_halo.gdshader)
+        emberHalos = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ember_halo.gdshader") }));
         var coin = new Build();
         Lathe(coin, Pts(0, -0.012f, 0.12f, -0.012f, 0.15f, -0.02f, 0.16f, -0.012f, 0.16f, 0.012f, 0.15f, 0.02f, 0.12f, 0.012f, 0, 0.012f), 16);
         coins = Add(new Batch(coin.Mesh(), 600, Glowing(0.6f, 0.3f, 0.9f)));
@@ -1595,7 +1598,7 @@ public partial class BattleFx : Node3D
 
     void Pickups(Battle b, double now)
     {
-        embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
+        embers.Begin(); emberHalos.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
         foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
@@ -1617,6 +1620,14 @@ public partial class BattleFx : Node3D
                         if (!CleanShots) HoardLight(kx, gy, kz);
                     }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(kx, gy + 0.45 + bob, kz)), EmberTiers[tier]);
+                    if (!p.Pulled)
+                    {
+                        // (about three times the stone across, breathing slowly, each to its own beat)
+                        float beat = Mathf.Sin((float)(now * 2.2 + p.Id * 1.7));
+                        float hs = 0.62f + 0.75f * s;
+                        emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
+                            EmberTiers[tier] with { A = 0.42f + 0.12f * beat });
+                    }
                     break;
                 }
                 case PickupKind.Gold:
@@ -1648,6 +1659,6 @@ public partial class BattleFx : Node3D
                 }
             }
         }
-        embers.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); EndLoot();
+        embers.End(); emberHalos.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); EndLoot();
     }
 }

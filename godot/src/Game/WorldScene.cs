@@ -253,7 +253,8 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Player);
             Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
-            if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
+            // (a teaching freeze holds the camera too: the words were placed for this picture)
+            if (Showcase == null && !CameraHeld && !FxStill) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
             Crowd.Drawn = Drawn;
