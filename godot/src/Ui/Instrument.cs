@@ -120,6 +120,23 @@ public partial class Instrument : Control
         Put(dashKey, Act.Dash, DashAt + new Vector2(0, SmallR + SmallBand - 1));
     }
 
+    /// <summary>A callout's spotlight: every part dimmed to dim but the one taught (keep: "art", "dash",
+    /// "draught", "chain", "socket:ID"); the six places and the passives at slots' strength; the chain's
+    /// heat pulsing along it (pulse).</summary>
+    public void Spot(string? keep, Color dim, float slots, float pulse)
+    {
+        Color For(bool kept) => kept ? Colors.White : dim;
+        Chain.Modulate = For(keep == "chain");
+        Chain.Pulse = pulse;
+        Life.Modulate = lifeKey.Modulate = For(false);
+        Art.Modulate = artKey.Modulate = For(keep == "art");
+        Dash.Modulate = dashKey.Modulate = For(keep == "dash");
+        Draught.Modulate = draughtKey.Modulate = For(keep == "draught");
+        Statuses.Modulate = For(false);
+        Passives.Modulate = For(false) with { A = slots };
+        foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
+    }
+
     /// <summary>The six places' spread: by night all six from the left (the empty ones the places still to
     /// come), by day only what is carried, centred on the middle (the day has no places to promise).</summary>
     public void Lay(int shown, bool all)
@@ -359,8 +376,8 @@ public partial class Socket : Control
     public void Show(string id, string glyph, Color school, double ready, int rank, int max, bool evolved, bool canEvolve)
     {
         if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
-        // (drawn glyphs, one hand for the row: the painted set mixes full colour and line)
-        art = Glyphs.Texture(glyph, 78, school, line: true);
+        // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
+        art = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
         if (ready < lastReady - 0.4) flash = 1;
         lastReady = ready;
@@ -542,6 +559,8 @@ public partial class EmberChain : Control
 {
     const float LinkScale = 0.8f, Sag = 4;
     float fill, flash, swing, swingV, open;
+    /// <summary>A callout points at the chain: its heat runs along all of it (0 to 1).</summary>
+    public float Pulse;
     bool ember = true;
     int level = 1;
     readonly Glow glow;
@@ -674,8 +693,17 @@ public partial class EmberChain : Control
 
         public override void _Draw()
         {
-            if (!c.ember && c.flash <= 0) return;
             float now = Time.GetTicksMsec() / 1000f;
+            // (a callout's pulse: the ember's glow travelling the whole chain, left to right)
+            if (c.Pulse > 0)
+                for (int k = 0; k <= c.Count; k += 2)
+                {
+                    float t = (float)k / c.Count;
+                    float w = 0.5f + 0.5f * Mathf.Sin(now * 4.2f - t * 9);
+                    var at = c.At(t);
+                    DrawTextureRect(soft!, new Rect2(at - new Vector2(22, 14), new Vector2(44, 28)), false, ChainTabs.HeatColour(0.75f) with { A = c.Pulse * (0.12f + 0.3f * w * w) });
+                }
+            if (!c.ember && c.flash <= 0) return;
             float flick = 1 + 0.10f * Mathf.Sin(now * 23) + 0.07f * Mathf.Sin(now * 37.3f + 1.7f);
             int n = c.Count;
             for (int k = 0; k <= n; k += 2)

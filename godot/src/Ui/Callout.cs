@@ -24,6 +24,17 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     public Rect2? Her { get; init; }
     /// <summary>Each point's size on the canvas (a HUD part's radius, a thing's in the world); none: a default.</summary>
     public IReadOnlyList<float>? Radii { get; init; }
+    /// <summary>How many of the points, from the first, are HUD parts (the rest are in the world: only
+    /// those stand in a pool of light; a HUD part is kept undimmed by the HUD itself).</summary>
+    public int HudPoints { get; init; }
+    /// <summary>What an arrow must not cross: the figures on the screen, the HUD's words.</summary>
+    public IReadOnlyList<Rect2>? Avoid { get; init; }
+    /// <summary>Things of the callout off the screen: where the screen's edge is nearest them, and which way.</summary>
+    public IReadOnlyList<(Vector2 At, Vector2 Dir)>? Edges { get; init; }
+    /// <summary>How far an area's brackets stand off it (a slot's +6, a banner's +12).</summary>
+    public float AreaGrow { get; init; } = 12;
+    /// <summary>The arrow stops at this height, short of the thing (the chain, under the six places).</summary>
+    public float? StopY { get; init; }
 }
 
 /// <summary>The drawing of a callout, as the game drives it (the UI design pass restyles behind it).</summary>
@@ -66,7 +77,14 @@ public partial class Callout : Control, ICalloutView
     double age, gone = -1;
     readonly ColorRect dim;
     readonly ShaderMaterial dimMat;
-    readonly TextureRect smoke;
+    /// <summary>The dim's own layer, under the HUD's: the world darkens, the HUD dims itself but for the
+    /// part being taught (GameHud.Spotlight).</summary>
+    readonly CanvasLayer dimLayer;
+    readonly ColorRect smoke;
+    readonly ShaderMaterial smokeMat;
+    /// <summary>Each arrow's way, chosen each aim (none: no arrow to that mark).</summary>
+    readonly List<(Way W, (Vector2 C, float R, Rect2 Box, bool Round) M)> ways = new();
+    readonly Dictionary<int, (int Start, int Land, int Bow)> wayWas = new();
     VBoxContainer column = null!;
     Control? title, foot;
     TextureRect burn = null!;
@@ -87,14 +105,12 @@ public partial class Callout : Control, ICalloutView
         MouseFilter = MouseFilterEnum.Ignore;
         Style.Fill(this);
         dimMat = new ShaderMaterial { Shader = DimShader() };
-        dim = new ColorRect { MouseFilter = MouseFilterEnum.Ignore, Material = dimMat, Visible = false };
-        Style.Fill(dim);
-        AddChild(dim);
-        smoke = new TextureRect
-        {
-            Texture = Smoke(), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
-            MouseFilter = MouseFilterEnum.Ignore, Modulate = Colors.Transparent,
-        };
+        dim = new ColorRect { MouseFilter = MouseFilterEnum.Ignore, Material = dimMat, Visible = false, Size = new Vector2(Canvas, CanvasH) };
+        dimLayer = new CanvasLayer { Layer = 9 };
+        dimLayer.AddChild(dim);
+        AddChild(dimLayer);
+        smokeMat = new ShaderMaterial { Shader = SmokeShader() };
+        smoke = new ColorRect { MouseFilter = MouseFilterEnum.Ignore, Material = smokeMat, Color = Colors.White };
         AddChild(smoke);
         glow = new Ink(this, true) { Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
         ink = new Ink(this, false);
@@ -141,7 +157,7 @@ public partial class Callout : Control, ICalloutView
             column.AddChild(Style.Gap(12));
             var f = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center, SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
             f.AddThemeConstantOverride("separation", 10);
-            f.AddChild(Chip(Style.Prompt(go), 1.2f));
+            f.AddChild(Controls.Instance is { UsingPad: false } kc ? KeyCap(kc.KeyLabel(go), 1.05f) : Chip(Style.Prompt(go), 1.2f));
             var word = WorldType.Lettering(look.GoOnWord, Style.TextItalic, 20, FootInk);
             word.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             f.AddChild(word);
@@ -158,10 +174,11 @@ public partial class Callout : Control, ICalloutView
         aim = a;
         if (column == null) return;
         // A panel's place for the words is the panel's: they stand on it, wherever it is.
-        if (aim.Words is Rect2 w) { wordsAt = w.GetCenter(); placed = true; return; }
+        if (aim.Words is Rect2 w) { wordsAt = w.GetCenter(); placed = true; Route(); return; }
         var p = Primary();
         if (!placed) { wordsAt = Place(); placedFor = p; placed = true; }
         else if (p.DistanceTo(placedFor) > 80) { wordsAt = wordsAt.Lerp(Place(), 0.2f); placedFor = placedFor.Lerp(p, 0.2f); }
+        Route();
     }
 
     public void TakeDown() { if (gone < 0) gone = 0; }
@@ -235,7 +252,7 @@ public partial class Callout : Control, ICalloutView
             box.AddThemeConstantOverride("separation", 0);
             foreach (var (seg, isKey) in Split(r, keys))
             {
-                if (isKey) { box.AddChild(Pad(Chip(Controls.Instance?.UsingPad == true ? Style.PadButton(seg) : Style.Key(seg), 1.15f), 5)); continue; }
+                if (isKey) { box.AddChild(Pad(Controls.Instance?.UsingPad == true ? Chip(Style.PadButton(seg), 1.15f) : KeyCap(seg, 1.1f), 5)); continue; }
                 string bb = seg.Replace("[", "[lb]");
                 if (!marked && subject != null && Regex.Match(bb, $@"\b{Regex.Escape(subject)}\b", RegexOptions.IgnoreCase) is { Success: true } m)
                 {
@@ -312,6 +329,23 @@ public partial class Callout : Control, ICalloutView
         return c;
     }
 
+    /// <summary>A key as a callout draws it, the same for every key it names (Space, R, E): a dark cap,
+    /// 26 px at the least, a warm edge, the key's name in bone.</summary>
+    static Control KeyCap(string text, float k)
+    {
+        var p = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(26, 26) * k, SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var s = new StyleBoxFlat { BgColor = new Color(0.05f, 0.04f, 0.035f, 0.85f), BorderColor = Hot with { A = 0.6f } };
+        s.SetBorderWidthAll(2);
+        s.SetCornerRadiusAll(4);
+        s.ContentMarginLeft = s.ContentMarginRight = 7 * k;
+        s.ContentMarginTop = s.ContentMarginBottom = 1;
+        p.AddThemeStyleboxOverride("panel", s);
+        var l = Style.Label(text, Style.UiBold, (int)Math.Round(15 * k), Bone, false, HorizontalAlignment.Center, false);
+        l.VerticalAlignment = VerticalAlignment.Center;
+        p.AddChild(l);
+        return p;
+    }
+
     static Control Pad(Control c, int side)
     {
         var m = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore, SizeFlagsVertical = SizeFlags.ShrinkCenter };
@@ -372,11 +406,14 @@ public partial class Callout : Control, ICalloutView
             {
                 // A whole row of cards is the panel itself: nothing to point at but the words' own place.
                 if (Panel && a.Size.X > 760) continue;
-                var g = a.Grow(Panel ? 6 : 12);
+                var g = a.Grow(Panel ? 6 : aim.AreaGrow);
                 list.Add((g.GetCenter(), 0, g, false));
             }
         return list;
     }
+
+    /// <summary>Whether the mark at i is a thing in the world (it stands in a pool of light).</summary>
+    bool InWorld(int i) => i >= aim.HudPoints && i < Math.Min(3, aim.Points.Count);
 
     Vector2 Primary() => aim.Points.Count > 0 ? aim.Points[0] : aim.Areas.Count > 0 ? aim.Areas[0].GetCenter() : new Vector2(960, 540);
 
@@ -391,8 +428,10 @@ public partial class Callout : Control, ICalloutView
         if (marks.Count == 0) return new Vector2(960, 400);
         var keep = new List<Rect2> { new(1520, 0, 400, 480) };
         foreach (var m in marks) keep.Add(m.Box.Grow(26));
-        Rect2? her = aim.Her?.Grow(22);
+        // Her figure and her health bar, and a good margin: never words, never an arrow.
+        Rect2? her = aim.Her?.Grow(HerMargin);
         if (her is Rect2 h0) keep.Add(h0);
+        var aimed = Aimed(marks);
         float best = float.MaxValue;
         var at = new Vector2(960, 400);
         float hw = s.X / 2 + 14, hh = s.Y / 2 + 10;
@@ -408,8 +447,10 @@ public partial class Callout : Control, ICalloutView
                 {
                     float d = Apart(box, marks[i].Box);
                     cost += (i == 0 ? 1.4f : 0.7f) * Math.Abs(d - 120) + (d < 56 ? 400 : 0);
-                    if (her is Rect2 hr && Crosses(Route(box, marks[i]), hr)) cost += 900;
                 }
+                if (her is Rect2 hr)
+                    foreach (var i in aimed)
+                        if (!ClearWay(new Rect2(x - hw + 14, y - hh + 10, s.X, s.Y), marks[i], hr)) cost += 900;
                 if (cost < best) { best = cost; at = new Vector2(x, y); }
             }
         return at;
@@ -423,72 +464,176 @@ public partial class Callout : Control, ICalloutView
         return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
-    /// <summary>Whether an arrow's way passes over r.</summary>
-    static bool Crosses((Vector2 A, Vector2 DA, Vector2 B, Vector2 DB) w, Rect2 r)
+    /// <summary>Her figure's margin: words and arrows keep this far off it.</summary>
+    const float HerMargin = 48;
+    /// <summary>How far outside the words an arrow starts.</summary>
+    const float Out = 16;
+
+    /// <summary>Which marks get an arrow: each HUD part and area, and of the things in the world only the
+    /// one nearest the words (three lamps: three rings, one arrow).</summary>
+    List<int> Aimed(List<(Vector2 C, float R, Rect2 Box, bool Round)> marks)
     {
-        var pts = Ink.Bezier(w.A, w.A + w.DA * Bend(w.A, w.B), w.B - w.DB * Bend(w.A, w.B), w.B, 1, 24);
-        foreach (var q in pts) if (r.HasPoint(q)) return true;
-        return false;
+        var list = new List<int>();
+        int nearest = -1;
+        float nd = float.MaxValue;
+        for (int i = 0; i < marks.Count; i++)
+        {
+            if (!InWorld(i)) { list.Add(i); continue; }
+            float d = marks[i].C.DistanceTo(wordsAt);
+            if (d < nd) { nd = d; nearest = i; }
+        }
+        if (nearest >= 0) list.Add(nearest);
+        return list;
     }
+
+    /// <summary>An arrow's way: where it leaves the words and which way, where it lands and which way,
+    /// and how it bows (added to both its handles).</summary>
+    public readonly record struct Way(Vector2 A, Vector2 DA, Vector2 B, Vector2 DB, Vector2 Bow)
+    {
+        public List<Vector2> Path(float t, int steps)
+        {
+            float bend = Bend(A, B);
+            return Ink.Bezier(A, A + DA * bend + Bow, B - DB * bend + Bow, B, t, steps);
+        }
+    }
+
+    /// <summary>Where an arrow may leave the words: 16 px out of their foot or head (under or over the
+    /// thing), out of a corner, or, last, out of a side (inline with the words: it reads as a bullet).</summary>
+    static List<(Vector2 P, Vector2 D, float Cost)> Starts(Rect2 box, Vector2 toward)
+    {
+        var c = box.GetCenter();
+        float x = Mathf.Clamp(toward.X, box.Position.X + box.Size.X * 0.2f, box.End.X - box.Size.X * 0.2f);
+        var o = box.Grow(Out);
+        var list = new List<(Vector2, Vector2, float)>
+        {
+            (new Vector2(x, o.End.Y), Vector2.Down, 0), (new Vector2(x, o.Position.Y), Vector2.Up, 0),
+            (new Vector2(o.Position.X, c.Y), Vector2.Left, 220), (new Vector2(o.End.X, c.Y), Vector2.Right, 220),
+        };
+        foreach (var (cx, cy) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        {
+            var d = new Vector2(cx * 0.6f, cy * 0.8f);
+            var corner = new Vector2(cx < 0 ? box.Position.X : box.End.X, cy < 0 ? box.Position.Y : box.End.Y);
+            list.Add((corner + d * Out, d, 40));
+        }
+        return list;
+    }
+
+    /// <summary>Where an arrow may land on a mark, from a, and which way: on a ring's near edge (or short of
+    /// it, StopY); on an area's near edges, at their middle or toward a corner (a bracket).</summary>
+    List<(Vector2 B, Vector2 DB, float Cost)> Lands((Vector2 C, float R, Rect2 Box, bool Round) m, Vector2 a)
+    {
+        var list = new List<(Vector2, Vector2, float)>();
+        if (m.Round)
+        {
+            if (aim.StopY is float sy && a.Y < sy) { list.Add((new Vector2(m.C.X, sy), Vector2.Down, 0)); return list; }
+            var db = (m.C - a).Normalized();
+            list.Add((m.C - db * (m.R + 5), db, 0));
+            return list;
+        }
+        var r = m.Box.Grow(4);
+        // (a card's leaves stand over its frame: the point stops clear of them)
+        float lift = Panel ? 13 : 0;
+        foreach (var (f, cost) in new[] { (0.5f, 0f), (0.15f, 50f), (0.85f, 50f) })
+        {
+            float x = Mathf.Lerp(r.Position.X, r.End.X, f);
+            if (a.Y < r.Position.Y) list.Add((new Vector2(x, r.Position.Y - lift), Vector2.Down, cost));
+            if (a.Y > r.End.Y) list.Add((new Vector2(x, r.End.Y), Vector2.Up, cost));
+        }
+        float y = Mathf.Clamp(a.Y, r.Position.Y + 12, r.End.Y - 12);
+        if (a.X < r.Position.X) list.Add((new Vector2(r.Position.X, y), Vector2.Right, 120));
+        if (a.X > r.End.X) list.Add((new Vector2(r.End.X, y), Vector2.Left, 120));
+        return list;
+    }
+
+    /// <summary>What a way costs: its length, a start turned from its thing, a bow, and above all what it
+    /// crosses (her, the figures, the HUD's words, the words themselves, the screen's edge). Near the
+    /// thing it lands on, nothing counts (an ember at her feet is still pointed at).</summary>
+    float Cost(Way w, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 words, Rect2? her, IReadOnlyList<Rect2>? avoid, int samples)
+    {
+        var pts = w.Path(1, samples);
+        if (pts.Count < 2) return float.MaxValue;
+        float len = 0;
+        for (int i = 1; i < pts.Count; i++) len += pts[i].DistanceTo(pts[i - 1]);
+        float cost = len + w.Bow.Length() * 0.6f;
+        var to = (w.B - w.A).Normalized();
+        if (w.DA.Dot(to) < -0.1f) cost += 500;
+        var near = m.Round ? new Rect2(m.C - Vector2.One * (m.R + 26), Vector2.One * (m.R + 26) * 2) : m.Box.Grow(26);
+        var wordsIn = words.Grow(6);
+        bool herHit = false, wordsHit = false, edgeHit = false;
+        var hits = avoid != null ? new bool[avoid.Count] : null;
+        for (int i = 1; i < pts.Count; i++)
+        {
+            var q = pts[i];
+            if (near.HasPoint(q)) continue;
+            if (her is Rect2 h && h.HasPoint(q)) herHit = true;
+            if (i > 1 && wordsIn.HasPoint(q)) wordsHit = true;
+            if (q.X < 16 || q.X > Canvas - 16 || q.Y < 16 || q.Y > CanvasH - 16) edgeHit = true;
+            if (avoid != null) for (int k = 0; k < avoid.Count; k++) if (!hits![k] && avoid[k].HasPoint(q)) hits[k] = true;
+        }
+        if (herHit) cost += 4000;
+        if (wordsHit) cost += 2500;
+        if (edgeHit) cost += 2000;
+        if (hits != null) foreach (var hb in hits) if (hb) cost += 700;
+        return cost;
+    }
+
+    /// <summary>The best way from the words to a mark: every start, every landing, five bows.</summary>
+    (Way W, int Start, int Land, int Bow, float Cost) BestWay(Rect2 words, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2? her,
+        IReadOnlyList<Rect2>? avoid, (int, int, int)? was, bool bowed = true, int samples = 24)
+    {
+        (Way, int, int, int, float) best = (default, -1, -1, -1, float.MaxValue);
+        var starts = Starts(words, m.C);
+        float[] bows = bowed ? [0, 0.22f, -0.22f, 0.42f, -0.42f] : [0];
+        for (int si = 0; si < starts.Count; si++)
+        {
+            var (a, da, sc) = starts[si];
+            var lands = Lands(m, a);
+            for (int li = 0; li < lands.Count; li++)
+            {
+                var (b, db, lc) = lands[li];
+                if (a.DistanceTo(b) < 24) continue;
+                var nrm = (b - a).Normalized().Orthogonal();
+                float len = a.DistanceTo(b);
+                for (int bi = 0; bi < bows.Length; bi++)
+                {
+                    var w = new Way(a, da, b, db, nrm * bows[bi] * len);
+                    float c = Cost(w, m, words, her, avoid, samples) + sc + lc;
+                    // (what was chosen holds unless another is clearly better: no flicker as things move)
+                    if (was is (int ws, int wl, int wb) && ws == si && wl == li && wb == bi) c -= 90;
+                    if (c < best.Item5) best = (w, si, li, bi, c);
+                }
+            }
+        }
+        return best;
+    }
+
+    /// <summary>Whether the words at box have a way to a mark that keeps off her (the placing's test: no bows, few samples).</summary>
+    bool ClearWay(Rect2 box, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 her) =>
+        BestWay(box, m, her, null, null, false, 12).Cost < 2500;
 
     /// <summary>How far an arrow's ends hold their way before it bends.</summary>
     static float Bend(Vector2 a, Vector2 b) => Math.Min(0.5f * a.DistanceTo(b), 160);
 
     Rect2 Words => new(wordsAt - Size2 / 2, Size2);
 
-    /// <summary>Where an arrow leaves the words, and which way: out of the foot or the head toward a
-    /// thing below or above (the words are wide), else out of the side.</summary>
-    static (Vector2 P, Vector2 Dir) Exit(Rect2 box, Vector2 toward)
-    {
-        var c = box.GetCenter();
-        var d = toward - c;
-        float ax = Math.Abs(d.X) / (box.Size.X / 2 + 90), ay = Math.Abs(d.Y) / (box.Size.Y / 2 + 20);
-        if (ay >= ax)
-        {
-            float x = Mathf.Clamp(toward.X, box.Position.X + box.Size.X * 0.2f, box.End.X - box.Size.X * 0.2f);
-            return (new Vector2(x, d.Y > 0 ? box.End.Y : box.Position.Y), new Vector2(0, Math.Sign(d.Y)));
-        }
-        return (new Vector2(d.X > 0 ? box.End.X : box.Position.X, c.Y), new Vector2(Math.Sign(d.X), 0));
-    }
+    /// <summary>Each arrow: its way, and the mark it lands on (chosen in Aim).</summary>
+    IEnumerable<(Way W, (Vector2 C, float R, Rect2 Box, bool Round) M)> Arrows() => ways;
 
-    /// <summary>An arrow's way: where it leaves the words and which way, where it lands and which
-    /// way. A point: out of the words' nearer edge, onto its ring. An area below or above (a card, a
-    /// banner): onto the middle of its near edge, straight down or up when that lies under the words,
-    /// else hooked off the words' end; an area beside: onto the middle of its near side.</summary>
-    static (Vector2 A, Vector2 DA, Vector2 B, Vector2 DB) Route(Rect2 box, (Vector2 C, float R, Rect2 Box, bool Round) m)
+    /// <summary>The arrows' ways for where the words and the things are now.</summary>
+    void Route()
     {
-        if (m.Round)
+        ways.Clear();
+        if (column == null) return;
+        var marks = Marks();
+        var words = Words;
+        Rect2? her = aim.Her?.Grow(HerMargin);
+        foreach (var i in Aimed(marks))
         {
-            var (a, da) = Exit(box, m.C);
-            var db = (m.C - a).Normalized();
-            return (a, da, m.C - db * (m.R + 5), db);
-        }
-        var r = m.Box.Grow(4);
-        var c = box.GetCenter();
-        bool below = r.Position.Y >= box.End.Y - 4, above = r.End.Y <= box.Position.Y + 4;
-        if (below || above)
-        {
-            var sy = new Vector2(0, below ? 1 : -1);
-            var land = new Vector2(r.GetCenter().X, below ? r.Position.Y : r.End.Y);
-            if (land.X >= box.Position.X + 24 && land.X <= box.End.X - 24)
-                return (new Vector2(land.X, below ? box.End.Y : box.Position.Y), sy, land, sy);
-            bool left = land.X < c.X;
-            return (new Vector2(left ? box.Position.X : box.End.X, c.Y), new Vector2(left ? -1 : 1, 0), land, sy);
-        }
-        bool l2 = r.GetCenter().X < c.X;
-        var side = new Vector2(l2 ? -1 : 1, 0);
-        return (new Vector2(l2 ? box.Position.X : box.End.X, c.Y), side, new Vector2(l2 ? r.End.X : r.Position.X, Mathf.Clamp(c.Y, r.Position.Y + 12, r.End.Y - 12)), side);
-    }
-
-    /// <summary>Each arrow: its way, and the mark it lands on.</summary>
-    IEnumerable<(Vector2 A, Vector2 DA, Vector2 B, Vector2 DB, (Vector2 C, float R, Rect2 Box, bool Round) M)> Arrows()
-    {
-        var box = Words.Grow(Headed ? 8 : 12);
-        foreach (var m in Marks())
-        {
-            var (a, da, b, db) = Route(box, m);
-            if (a.DistanceTo(b) < 24) continue;
-            yield return (a, da, b, db, m);
+            var m = marks[i];
+            var best = BestWay(words, m, her, aim.Avoid, wayWas.TryGetValue(i, out var w) ? w : null);
+            if (best.Start < 0) continue;
+            wayWas[i] = (best.Start, best.Land, best.Bow);
+            ways.Add((best.W, m));
         }
     }
 
@@ -514,31 +659,35 @@ public partial class Callout : Control, ICalloutView
         burn.Size = new Vector2(s.X + 260, s.Y + 120);
         burn.Position = wordsAt - burn.Size / 2;
         burn.Modulate = Style.Ember with { A = 0.3f * (float)Math.Max(0, 1 - Math.Abs(age - 0.16) / 0.55) + (Headed ? 0 : 0.035f) };
-        // A smoke under the words, so they read over a lit ground (none on a panel: it has its own dark).
+        // A soft dark under the words, so they read over a lit ground (none on a panel: it has its own
+        // dark): over the running fight 45% at its heart, fading out over 140 px; lighter on a freeze.
         if (!Panel)
         {
-            smoke.Size = new Vector2(s.X + 220, s.Y + 130);
+            float fade = Freeze ? 110 : 140;
+            smoke.Size = s + Vector2.One * fade * 2;
             smoke.Position = wordsAt - smoke.Size / 2;
-            smoke.Modulate = Colors.White with { A = (Freeze ? 0.34f : 0.46f) * Smooth(age / 0.25) };
+            smokeMat.SetShaderParameter("size", smoke.Size);
+            smokeMat.SetShaderParameter("fade", fade);
+            smokeMat.SetShaderParameter("alpha", (Freeze ? 0.32f : 0.45f) * Smooth(age / 0.25));
         }
-        // The world drains and darkens round its pools of light, easing in.
+        else smoke.Visible = false;
+        // The world drains, darkens and softens, but for a soft round pool on each thing in the world
+        // (its own colour, no more light than it had); a HUD part has no pool (the HUD keeps it undimmed).
         if (dim.Visible)
         {
             var lights = new Vector4[6];
-            var corner = new float[6];
             int n = 0;
-            foreach (var m in Marks())
+            var marks = Marks();
+            for (int i = 0; i < marks.Count && n < 6; i++)
             {
-                if (n >= 6) break;
-                if (m.Round) { float r = m.R + 30; lights[n] = new Vector4(m.C.X, m.C.Y, r, r); corner[n] = r; }
-                else { var h = m.Box.Size / 2 + new Vector2(14, 14); lights[n] = new Vector4(m.C.X, m.C.Y, h.X, h.Y); corner[n] = 22; }
-                n++;
+                if (!InWorld(i)) continue;
+                var m = marks[i];
+                lights[n++] = new Vector4(m.C.X, m.C.Y, m.R * 1.5f + 46, 0);
             }
             dimMat.SetShaderParameter("lights", lights);
-            dimMat.SetShaderParameter("corner", corner);
             dimMat.SetShaderParameter("count", n);
-            dimMat.SetShaderParameter("canvas", dim.Size);
-            dimMat.SetShaderParameter("amount", Smooth(age / 0.26));
+            dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
+            dimMat.SetShaderParameter("amount", Smooth(age / 0.26) * out_);
         }
         glow.QueueRedraw();
         ink.QueueRedraw();
@@ -566,11 +715,19 @@ public partial class Callout : Control, ICalloutView
             double since = c.age - Land;
             float strike = since < 0 ? 0 : (float)Math.Max(0, 1 - since / 0.28);
             float breathe = 0.5f + 0.5f * Mathf.Sin((float)c.age * 3.4f);
-            foreach (var (a, da, b, db, m) in c.Arrows())
+            // Every thing is marked; the arrows go to those Aimed (of things in the world, the nearest).
+            if (reach >= 1)
             {
+                var marks = c.Marks();
+                for (int i = 0; i < marks.Count; i++)
+                    if (!c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow);
+            }
+            if (c.aim.Edges is { } edges) foreach (var (at, d) in edges) Chevron(at, d, k, breathe, reach, glow);
+            foreach (var (way, m) in c.Arrows())
+            {
+                var (a, da, b, _, _) = way;
                 float len = a.DistanceTo(b);
-                float bend = Bend(a, b);
-                var pts = Bezier(a, a + da * bend, b - db * bend, b, r, Math.Max(10, (int)(len / 9)));
+                var pts = way.Path(r, Math.Max(10, (int)(len / 9)));
                 if (pts.Count < 2) continue;
                 var tip = pts[^1];
                 var dir = (pts[^1] - pts[^2]).Normalized();
@@ -715,6 +872,23 @@ public partial class Callout : Control, ICalloutView
             DrawLine(tip - dir * 2 * k, tip - dir * L * 0.6f, White with { A = 0.85f }, 1.6f * k, true);
         }
 
+        /// <summary>A thing off the screen: an ember chevron at the screen's edge, pointing to it.</summary>
+        void Chevron(Vector2 at, Vector2 dir, float k, float breathe, float reach, bool light)
+        {
+            if (reach <= 0) return;
+            var n = new Vector2(-dir.Y, dir.X);
+            float L = 22 * k, W = 16 * k;
+            var tip = at + dir * L * 0.5f;
+            Vector2[] arm = [tip - dir * L + n * W, tip, tip - dir * L - n * W];
+            if (light)
+            {
+                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 36 * k, Vector2.One * 72 * k), false, Style.Ember with { A = (0.25f + 0.15f * breathe) * reach });
+                return;
+            }
+            DrawPolyline(arm, Iron with { A = Iron.A * reach }, 9f * k, true);
+            DrawPolyline(arm, Hot.Lerp(White, 0.3f * breathe) with { A = reach }, 3.4f * k, true);
+        }
+
         /// <summary>The arrow's tail where it leaves the words: one link of the chain, end on.</summary>
         void Link(Vector2 at, Vector2 dir, float k)
         {
@@ -754,56 +928,72 @@ public partial class Callout : Control, ICalloutView
         }
     }
 
-    static GradientTexture2D? smokeTex;
+    static Shader? smokeShader;
 
-    /// <summary>A soft dark the words stand on: no edge anywhere, darkest under them.</summary>
-    static GradientTexture2D Smoke() => smokeTex ??= new GradientTexture2D
+    /// <summary>A soft dark the words stand on: whole under the words, fading to nothing over `fade` px
+    /// round them, no edge anywhere.</summary>
+    static Shader SmokeShader() => smokeShader ??= new Shader
     {
-        Width = 128, Height = 128, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
-        Gradient = new Gradient
-        {
-            Colors = [new Color(0.02f, 0.012f, 0.008f, 1), new Color(0.02f, 0.012f, 0.008f, 0.75f), new Color(0.02f, 0.012f, 0.008f, 0)],
-            Offsets = [0f, 0.5f, 1f],
-        },
+        Code = """
+            shader_type canvas_item;
+            uniform vec2 size = vec2(400.0, 200.0);
+            uniform float fade = 140.0;
+            uniform float alpha = 0.45;
+            void fragment() {
+                vec2 p = (UV - 0.5) * size;
+                vec2 h = size * 0.5 - vec2(fade) - vec2(14.0);
+                vec2 d = abs(p) - h;
+                float sd = length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - 14.0;
+                float a = 1.0 - smoothstep(0.0, fade, sd);
+                COLOR = vec4(0.02, 0.012, 0.008, alpha * a * a * (3.0 - 2.0 * a));
+            }
+            """,
     };
 
     static Shader? dimShader;
 
-    /// <summary>The world drained to ash and darkened, deeper at the screen's edges, but for pools of
-    /// lamplight (each a rounded box: a ring's circle, an area), warm at their edge.</summary>
+    /// <summary>The world drained to ash, darkened and softened (a light blur calms the ground's
+    /// mottle), deeper at the screen's edges, but for soft round pools on the things being taught:
+    /// their own colour, faded over the pool's outer half, never lit brighter than they were.</summary>
     static Shader DimShader() => dimShader ??= new Shader
     {
         Code = """
             shader_type canvas_item;
             uniform sampler2D screen : hint_screen_texture, filter_linear;
             uniform vec4 lights[6];
-            uniform float corner[6];
             uniform int count = 0;
             uniform float amount = 0.0;
             uniform vec2 canvas = vec2(1920.0, 1080.0);
-            float box(vec2 p, vec2 c, vec2 h, float r) {
-                vec2 d = abs(p - c) - (h - vec2(r));
-                return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
-            }
             void fragment() {
                 vec2 p = UV * canvas;
                 float lit = 0.0;
-                float rim = 0.0;
                 for (int i = 0; i < 6; i++) {
                     if (i >= count) { break; }
-                    float r = min(corner[i], min(lights[i].z, lights[i].w));
-                    float sd = box(p, lights[i].xy, lights[i].zw, r);
-                    lit = max(lit, 1.0 - smoothstep(-10.0, 72.0, sd));
-                    rim = max(rim, exp(-pow((sd - 18.0) / 34.0, 2.0)));
+                    float r = lights[i].z;
+                    lit = max(lit, 1.0 - smoothstep(0.5 * r, r, length(p - lights[i].xy)));
                 }
                 vec3 c = texture(screen, SCREEN_UV).rgb;
-                float y = dot(c, vec3(0.299, 0.587, 0.114));
-                vec3 ash = mix(vec3(y), c, 0.22) * vec3(0.46, 0.445, 0.43);
+                float k = amount * (1.0 - lit);
+                vec3 src = c;
+                if (k > 0.001) {
+                    // (about 3 px at 1080p: a 5 by 5 gaussian, 1.5 px apart)
+                    vec2 px = SCREEN_PIXEL_SIZE * 1.5;
+                    vec3 acc = vec3(0.0);
+                    float wsum = 0.0;
+                    for (int x = -2; x <= 2; x++) {
+                        for (int y = -2; y <= 2; y++) {
+                            float g = exp(-float(x * x + y * y) / 4.5);
+                            acc += texture(screen, SCREEN_UV + vec2(float(x), float(y)) * px).rgb * g;
+                            wsum += g;
+                        }
+                    }
+                    src = mix(c, acc / wsum, k);
+                }
+                float y = dot(src, vec3(0.299, 0.587, 0.114));
+                vec3 ash = mix(vec3(y), src, 0.22) * vec3(0.46, 0.445, 0.43) * 0.7;
                 vec2 q = UV - 0.5;
                 ash *= 1.0 - 0.4 * smoothstep(0.25, 0.8, length(q * vec2(1.0, 0.72)));
-                vec3 o = mix(c, ash, amount * (1.0 - lit));
-                o += vec3(1.0, 0.5, 0.18) * rim * 0.045 * amount * (1.0 - lit * 0.6);
-                COLOR = vec4(o, 1.0);
+                COLOR = vec4(mix(c, ash, k), 1.0);
             }
             """,
     };

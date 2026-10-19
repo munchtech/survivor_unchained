@@ -66,6 +66,9 @@ public partial class BattleFx : Node3D
         public bool Progress, Grow, Active;
         public Color Color;
         public Decal? Fill;
+        /// <summary>The lane again, drawn only where something tall stands over it (a roof): an elite's or
+        /// a boss's red line is never hidden.</summary>
+        public MeshInstance3D? Over;
         /// <summary>A lane's fill runs from its start to its end over its life: where it comes from,
         /// which way, how long.</summary>
         public Vector3 From, Along;
@@ -298,6 +301,7 @@ public partial class BattleFx : Node3D
         m.Color = color;
         m.Progress = m.Grow = false;
         m.Length = 0;
+        if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
         d.TextureEmission = tex;
         d.TextureAlbedo = null;
@@ -332,9 +336,9 @@ public partial class BattleFx : Node3D
     /// <summary>A lane on the ground; a hostile one fills from where the blow comes to its end as it
     /// comes (as a circle fills from its heart), so a charge reads as coming and when, and never as
     /// one more line on the ground (two edges alone read as the story places' burning edge).</summary>
-    void Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null, bool progress = false)
+    Mark Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null, bool progress = false)
     {
-        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; if (old.Over != null) old.Over.Visible = false; }
         double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
         var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
         m.Decal.Size = new Vector3(width, 4, (float)len);
@@ -356,6 +360,50 @@ public partial class BattleFx : Node3D
             m.Fill.Visible = true;
         }
         if (key is int k2) keyed[k2] = m;
+        return m;
+    }
+
+    static Shader? overShader;
+
+    /// <summary>The lane drawn again over everything, but only where the scene in front of it stands well
+    /// above the ground (more than 2.6 m nearer the camera: a roof, a canopy), so it never paints
+    /// over a figure.</summary>
+    void OverLane(Mark m, double x0, double z0, double x1, double z1, float width)
+    {
+        overShader ??= new Shader
+        {
+            Code = """
+                shader_type spatial;
+                render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix, shadows_disabled;
+                uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+                uniform sampler2D lane : source_color, filter_linear;
+                uniform vec4 col : source_color = vec4(1.0, 0.2, 0.1, 0.8);
+                void fragment() {
+                    float d = texture(depth_tex, SCREEN_UV).r;
+                    vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
+                    float scene = -v.z / v.w;
+                    float mine = -VERTEX.z;
+                    float over = smoothstep(2.6, 3.4, mine - scene);
+                    vec4 t = texture(lane, UV);
+                    float a = max(max(t.r, t.g), t.b) * t.a;
+                    ALBEDO = col.rgb;
+                    ALPHA = col.a * a * over;
+                }
+                """,
+        };
+        if (m.Over == null)
+        {
+            m.Over = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1 };
+            m.Over.MaterialOverride = new ShaderMaterial { Shader = overShader };
+            AddChild(m.Over);
+        }
+        double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
+        m.Over.Mesh = new PlaneMesh { Size = new Vector2(width, (float)len) };
+        double mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+        m.Over.Position = V(mx, heightAt(mx, mz) + 0.05, mz);
+        m.Over.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
+        ((ShaderMaterial)m.Over.MaterialOverride).SetShaderParameter("lane", laneTex);
+        m.Over.Visible = true;
     }
 
     /// <summary>A ring that races out from a point and fades.</summary>
@@ -895,7 +943,11 @@ public partial class BattleFx : Node3D
                     if (e.Hostile) { float k = e.Boss || e.Label is { Length: > 0 } ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
-                    else if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
+                    else if (e.Shape == TelegraphShape.Line)
+                    {
+                        var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
+                        if (e.Hostile && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)))) OverLane(lm, e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1));
+                    }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Ring) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
@@ -1265,7 +1317,7 @@ public partial class BattleFx : Node3D
         {
             if (!m.Active) continue;
             m.T += fdt / Mathf.Max(0.05f, m.Life);
-            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; continue; }
+            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; continue; }
             if (m.Grow)
             {
                 float r = m.Radius * (0.25f + 0.75f * Mathf.Sqrt(m.T));
@@ -1276,6 +1328,8 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
+                if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
+                    om.SetShaderParameter("col", new Color(Mathf.Min(1, m.Color.R * 2.4f), Mathf.Min(1, m.Color.G * 2.4f), Mathf.Min(1, m.Color.B * 2.4f), 0.8f * m.Decal.Modulate.A));
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.

@@ -238,7 +238,7 @@ public partial class Game
     void UpdateDraft(double dt)
     {
         var b = Battle;
-        if (b != null && b.DraftOwed && Overlay == null && b.Player.Alive && !inTransit && Teaching is not { Kind: CalloutKind.Freeze })
+        if (b != null && b.DraftOwed && Overlay == null && b.Player.Alive && !inTransit && Teaching is not { Kind: CalloutKind.Freeze or CalloutKind.Arrow })
         {
             // A beat after the flare, then time stops.
             draftWait += dt;

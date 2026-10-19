@@ -23,6 +23,9 @@ public sealed record Aim
     public string? Hud { get; init; }
     public Func<IReadOnlyList<(double X, double Y, double Z)>>? World { get; init; }
     public Announcement? Banner { get; init; }
+    /// <summary>The world's points are candidates, nearest first: the first one well inside the screen
+    /// (clear of its edges and the HUD) is pointed at; none there, it waits (an ember stone at the edge).</summary>
+    public bool Safe { get; init; }
 
     public static Aim At(string hud) => new() { Hud = hud };
     public static Aim In(Func<IReadOnlyList<(double X, double Y, double Z)>> world) => new() { World = world };
@@ -36,6 +39,8 @@ public sealed record Callout(string Id, CalloutKind Kind, string Title, string L
     public double Patience { get; init; } = 8;
     /// <summary>The callout that comes before it (it waits until that one was seen, or its moment lapsed).</summary>
     public string? After { get; init; }
+    /// <summary>Game seconds of play it leaves after a pause before it comes (F2 follows F1 closely).</summary>
+    public double Gap { get; init; } = Teacher.Gap;
     /// <summary>A freeze on a passing thing in the world (a red line, an ember stone, an enemy): it does
     /// not wait for a hint, which is held under it and comes back after.</summary>
     public bool Transient => Kind == CalloutKind.Freeze && Target.World != null;
@@ -165,7 +170,7 @@ public sealed class Teacher
         {
             var block = Blocking(c, busy);
             foreach (var (b, n) in Names) if ((block & b) != 0) why.Add(n);
-            if (now - pauseEnd < Gap) why.Add("gap");
+            if (now - pauseEnd < c.Gap) why.Add("gap");
         }
         if (c.After is string a && !memory.Seen(a) && !Lapsed(a, now)) why.Add("prereq");
         if (p == Presence.NotYet) why.Add("notyet");
@@ -185,8 +190,9 @@ public sealed class Teacher
             switch (cur.Kind)
             {
                 case CalloutKind.Arrow:
+                    // (a draft owed waits for an arrow that is up: Game.UpdateDraft)
                     if (real - ShownAt >= ArrowLife) Close("time", real);
-                    else if (Blocked(cur, busy) || where(cur) == Presence.Gone)
+                    else if (Blocked(cur, busy & ~Busy.Owed) || where(cur) == Presence.Gone)
                     {
                         if (real - ShownAt >= ArrowRead) Close("cut", real);
                         else Withdraw(now, "cut", real);

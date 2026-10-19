@@ -47,6 +47,8 @@ public partial class WorldScene : Node3D, IZoneLook
     /// keep a breath of motion while what is staged over them (a chest opening) moves at full
     /// speed. The fight itself is paused by SimPaused.</summary>
     public float Hold;
+    /// <summary>A freeze frame (a tutorial callout): the effects hold still with the fight.</summary>
+    public bool FxStill;
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
@@ -236,7 +238,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.PlayerPos = HerDrawn;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
-            Fx.Update(b, fightDt, fightTime);
+            Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             // The meadow grows round the survivor as they go.

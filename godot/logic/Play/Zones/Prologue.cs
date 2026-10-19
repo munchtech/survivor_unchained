@@ -64,6 +64,7 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
     bool knightPlanted, knightRan;
     readonly List<(double X, double Z, int Light, string Flame)> pylons = new();
+    readonly double[] lampY;
     readonly bool[] litPylons;
     readonly double[] pylonHp;
     Enemy? warden, caller, knight, grim;
@@ -91,6 +92,8 @@ public sealed class Prologue : ZoneRuntime
         foreach (var p in meta.Refs.GetProperty("pylons").EnumerateArray())
             pylons.Add((p.GetProperty("x").GetDouble(), p.GetProperty("z").GetDouble(), p.GetProperty("light").GetInt32(), p.GetProperty("flame").GetString()!));
         litPylons = pylons.Select(_ => true).ToArray();
+        // (each lamp's flame, where its light hangs: its top and the light's height over it)
+        lampY = meta.Refs.GetProperty("pylons").EnumerateArray().Select(p => p.TryGetProperty("top", out var t) ? t.GetDouble() + 0.8 : 3.2).ToArray();
         pylonHp = pylons.Select(_ => 260.0).ToArray();
         waterY = meta.Places["WATER_Y"].GetDouble();
         var camp = L("camp");
@@ -166,44 +169,67 @@ public sealed class Prologue : ZoneRuntime
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
     // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
 
-    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null) =>
-        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after });
+    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap) =>
+        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap });
 
     /// <summary>A point on the ground, lifted a little (what an arrow points at).</summary>
     (double X, double Y, double Z) Up(double x, double z, double lift) => (x, G.Look.HeightAt(x, z) + lift, z);
 
-    /// <summary>The ember stone nearest her, on the ground (none: there is none near).</summary>
-    IReadOnlyList<(double X, double Y, double Z)> NearestEmber()
+    /// <summary>The ember stones near her on the ground, nearest first (none: there is none near); the
+    /// callout points at the first one well inside the screen (Aim.Safe).</summary>
+    IReadOnlyList<(double X, double Y, double Z)> NearEmbers()
     {
         if (B == null) return [];
         var p = B.Player;
-        Pickup? best = null;
-        double bd = double.MaxValue;
-        foreach (var k in B.Pickups.Living())
-        {
-            if (k.Kind != PickupKind.Ember || k == B.HoardStone || k.Pulled) continue;
-            double d = Dist(k.X, k.Z, p.X, p.Z);
-            if (d < bd) { bd = d; best = k; }
-        }
-        return best == null || bd > 14 ? [] : [Up(best.X, best.Z, 0.3)];
+        return B.Pickups.Living()
+            .Where(k => k.Kind == PickupKind.Ember && k != B.HoardStone && !k.Pulled && Dist(k.X, k.Z, p.X, p.Z) <= 14)
+            .OrderBy(k => Dist(k.X, k.Z, p.X, p.Z)).Take(12).Select(k => Up(k.X, k.Z, 0.3)).ToList();
     }
 
-    /// <summary>The Barrow Knight's lane while it is marked (its windup): a point along it.</summary>
+    /// <summary>When the Knight's present windup began (game seconds), and whether its first was drawn out.</summary>
+    double knightWound = -1;
+    bool knightStretched;
+    /// <summary>F7 freezes a beat into the windup, once its red lane is down and on the screen.</summary>
+    const double LaneBeat = 0.3;
+
+    /// <summary>The Knight's windups as they begin: the first is drawn out by the beat F7 freezes into
+    /// it (its lane marked again for the longer wait), so the read never costs her the time to move.</summary>
+    void KnightWatch()
+    {
+        if (B == null) return;
+        if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; return; }
+        if (knightWound >= 0) return;
+        knightWound = B.Time;
+        if (knightStretched || (k.Def.Charge ?? k.Def.Lunge) is not { } lunge) return;
+        knightStretched = true;
+        k.StateT += LaneBeat;
+        double reach = lunge.Speed * lunge.Time;
+        B.Events.Emit(new Ev.Telegraph
+        {
+            Id = k.Id, Shape = TelegraphShape.Line, X = k.X, Z = k.Z, X1 = k.X + k.LungeX * reach, Z1 = k.Z + k.LungeZ * reach,
+            Radius = k.Radius, Width = k.Radius * 2.2, Duration = k.StateT, Hostile = true,
+        });
+    }
+
+    /// <summary>The Barrow Knight's lane while it is marked (its windup), a beat after it was: a point along it.</summary>
     IReadOnlyList<(double X, double Y, double Z)> KnightLane() =>
-        knight is { Alive: true, State: EnemyState.Windup } k && (k.LungeX != 0 || k.LungeZ != 0)
+        knight is { Alive: true, State: EnemyState.Windup } k && (k.LungeX != 0 || k.LungeZ != 0) && knightWound >= 0 && B!.Time - knightWound >= LaneBeat
             ? [Up(k.X + k.LungeX * 2.6, k.Z + k.LungeZ * 2.6, 0.1)] : [];
 
     void Callouts()
     {
         if (B == null) return;
         var p = B.Player;
-        // F1: the first ember on the ground.
+        KnightWatch();
+        // F1: the first ember on the ground (one well inside the screen: it waits for one).
         if (Now == Stage.Rising && B.EmbersLying > 0)
-            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", Aim.In(NearestEmber));
-        // F2: the first ember gathered (and the journal remembers what the valley believes).
+            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
+        // F2: straight after F1 (before the first rise), else the first ember gathered.
+        if (B.EmberXp > 0 || B.EmberLevel > 1 || G.Taught("ember_ground"))
+            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground", gap: 0.6);
+        // (and the journal remembers what the valley believes, once an ember is gathered)
         if (B.EmberXp > 0 || B.EmberLevel > 1)
         {
-            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground");
             if (shown.Add("lore.ember"))
                 G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
         }
@@ -222,19 +248,26 @@ public sealed class Prologue : ZoneRuntime
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", Aim.In(KnightLane));
-        // F8: the Grave-Caller near and her art ready (Q is the art until the Flare lands).
-        if (Now == Stage.Barrow && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && B.Ability is AbilityKind ak && p.AbilityCd <= 0)
+        // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
+        // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
+        // names the Flare (the art then rides the dash).
+        if (Now == Stage.Barrow && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
         {
-            var ab = Abilities.All[ak];
-            Teach("art", CalloutKind.Freeze, ab.Name, ab.Interrupts
-                    ? $"{Key("flare")}: your art. It breaks the Grave-Caller's channel."
-                    : $"{Key("flare")}: your art. Kill the Grave-Caller before it raises more.",
-                new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] }, "flare");
+            var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
+            if (B.Flare is { } fl)
+                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare. Kill the Grave-Caller before it raises more.", aim, "flare");
+            else if (B.Ability is AbilityKind ak)
+            {
+                var ab = Abilities.All[ak];
+                Teach("art", CalloutKind.Freeze, ab.Name, ab.Interrupts
+                        ? $"{Key("flare")}: your art. It breaks the Grave-Caller's channel."
+                        : $"{Key("flare")}: your art. Kill the Grave-Caller before it raises more.", aim, "flare");
+            }
         }
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
             Teach("lamps", CalloutKind.Freeze, "The lamps", "While these burn, the Warden barely feels a blow. Break them.",
-                Aim.In(() => pylons.Where((_, i) => litPylons[i]).Select(l => Up(l.X, l.Z, 2.2)).ToList()));
+                Aim.In(() => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList()));
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", Aim.At("draught"), "draught");

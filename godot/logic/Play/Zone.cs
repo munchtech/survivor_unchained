@@ -108,6 +108,8 @@ public interface IZoneHost
     /// <summary>A callout at its moment (Teach.cs): shown once a profile, one at a time, when the
     /// screen is clear. Asked every frame its moment holds is fine. A host without a screen ignores it.</summary>
     void Teach(Callout c) { }
+    /// <summary>Whether a callout was seen on this profile (what follows it can be asked for at once).</summary>
+    bool Taught(string id) => false;
     /// <summary>The survivor is up again here (the prologue's forgiveness).</summary>
     void Revived(double x, double z);
     /// <summary>The key or button bound to an action, as the player would name it.</summary>

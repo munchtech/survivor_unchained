@@ -37,6 +37,10 @@ public partial class Game
 
     /// <summary>A zone's callout at its moment.</summary>
     public void Teach(Callout c) => Teacher.Offer(c, teachClock, TeachBusy());
+    /// <summary>Whether a callout was seen on this profile.</summary>
+    public bool Taught(string id) => Settings.Current.SeenTips.Contains(id);
+    /// <summary>--teach-hurt (a scripted run): the autopilot keeps the Flare for F8 in the Barrow.</summary>
+    public bool HoldFlare => Args.Has("teach-hurt") && !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
@@ -107,16 +111,50 @@ public partial class Game
                     areas.Add(wc.Rect);
                 break;
             case var s when s.StartsWith("socket:"):
-                if (hud.SocketOf(s[7..]) is Vector2 sp) pts.Add(sp);
+                // (a slot is square: bracketed, not ringed)
+                if (hud.SocketRect(s[7..]) is Rect2 sr) areas.Add(sr);
                 break;
         }
         if (t.World != null)
         {
             var world = t.World();
             if (world.Count == 0) gone = true;
-            foreach (var w in world) if (OnScreen(w) is Vector2 v) { pts.Add(v); worldOn++; }
+            foreach (var w in world)
+            {
+                if (OnScreen(w) is not Vector2 v) continue;
+                // (a candidate: the first well inside the screen is the one)
+                if (t.Safe) { if (!SafeArea.HasPoint(v)) continue; pts.Add(v); worldOn++; break; }
+                pts.Add(v);
+                worldOn++;
+            }
         }
         return (pts, areas, gone, worldOn);
+    }
+
+    /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>
+    static readonly Rect2 SafeArea = new(300, 150, 1320, 700);
+
+    /// <summary>The callout's things in the world that are off the screen: the point on the screen's edge
+    /// toward each, and which way (a lamp behind the camera's edge gets a chevron there).</summary>
+    List<(Vector2 At, Vector2 Dir)> OffScreen(Callout c)
+    {
+        var list = new List<(Vector2, Vector2)>();
+        if (c.Target.World == null || c.Target.Safe) return list;
+        var mid = new Vector2(960, 540);
+        foreach (var p in c.Target.World())
+        {
+            var w = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
+            if (camera.IsPositionBehind(w) || OnScreen(p) != null) continue;
+            var d = camera.UnprojectPosition(w) - mid;
+            if (d.Length() < 1) continue;
+            d = d.Normalized();
+            // (onto a box inset from the edge, the HUD's foot kept clear)
+            float hx = 960 - 70, up = 540 - 90, down = 540 - 160;
+            float tx = Math.Abs(d.X) > 1e-4f ? hx / Math.Abs(d.X) : float.MaxValue;
+            float ty = d.Y < -1e-4f ? up / -d.Y : d.Y > 1e-4f ? down / d.Y : float.MaxValue;
+            list.Add((mid + d * Math.Min(tx, ty), d));
+        }
+        return list;
     }
 
     Vector2? Primary(Callout c)
@@ -158,13 +196,20 @@ public partial class Game
     }
 
     double hurtT;
-    bool hurtDone;
+    bool hurtDone, flareGiven;
 
     /// <summary>--teach-hurt (a scripted run): her health down to 35% once, 10 s of play into the
     /// Prologue's boss, so the draught's callout (F10) is seen.</summary>
     void TeachHurt(double dt)
     {
         if (hurtDone || !Args.Has("teach-hurt") || scene!.SimPaused) return;
+        // (and the Flare full once at the Barrow, so F8 is seen: the autopilot keeps it, HoldFlare)
+        if (!flareGiven && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow } && Battle is { Flare: not null } fb && fb.Player.Alive)
+        {
+            flareGiven = true;
+            fb.FlareMeter = Math.Max(fb.FlareMeter, Battle.FlareFull);
+            if (Args.Dev) GD.Print($"teach flare t={fb.Time:0.0} meter={fb.FlareMeter:0}");
+        }
         if (zone is not Zones.Prologue { Now: Zones.Prologue.Stage.Boss } || Battle is not { } b || !b.Player.Alive) return;
         hurtT += dt;
         if (hurtT < 10) return;
@@ -181,9 +226,19 @@ public partial class Game
             scene!.SimPaused = true;
             teachFroze = true;
             controls.ClearLatches();
-            if (c.Target.Banner is { } ban) { hud.Announce(ban); hud.HoldBanner = true; }
+            // (the banner shown again under it, without the key it names: the callout says it)
+            if (c.Target.Banner is { } ban)
+            {
+                hud.Announce(ban with { Sub = ban.Sub is { } sub ? System.Text.RegularExpressions.Regex.Replace(sub, @"\s*\([^()]*\)\s*$", "") : null });
+                hud.HoldBanner = true;
+            }
+            // A freeze frame: the figures and the effects hold still too.
+            scene.Hold = 1;
+            scene.FxStill = true;
         }
         hud.HoldTip = true;
+        // The HUD dims but for the part taught (a freeze); the chain's callout fades the six places.
+        hud.Spotlight(c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud == "chain");
         var view = new Ui.Callout();
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
@@ -201,9 +256,11 @@ public partial class Game
         calloutShown = null;
         hud.HoldTip = false;
         hud.HoldBanner = false;
+        hud.Spotlight(null, false, false);
         if (teachFroze)
         {
             teachFroze = false;
+            if (scene != null) { scene.Hold = 0; scene.FxStill = false; }
             if (scene != null && hudMode == null && screens.Current == null && cine == null) scene.SimPaused = false;
         }
     }
@@ -215,6 +272,7 @@ public partial class Game
         // The look's needs: how big each thing is (a HUD part's ring; a thing in the world, about a
         // man's width at the camera's distance), and where she stands (the words never cover her).
         var radii = new List<float>();
+        int hudPts = pts.Count - worldOn;
         if (pts.Count > worldOn)
             radii.Add(c.Target.Hud switch
             {
@@ -233,10 +291,30 @@ public partial class Game
             if (OnScreen((pl.X, gy, pl.Z)) is Vector2 feet && OnScreen((pl.X, gy + 1.9, pl.Z)) is Vector2 head)
             {
                 float h = Math.Max(40, feet.Y - head.Y);
-                her = new Rect2(feet.X - h * 0.36f, head.Y - 6, h * 0.72f, h + 30);
+                // (down to her health bar under her feet)
+                her = new Rect2(feet.X - h * 0.36f, head.Y - 6, h * 0.72f, h + 46);
             }
         }
-        calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null) { Her = her, Radii = radii });
+        // The figures on the screen: an arrow bends round them.
+        var avoid = new List<Rect2>();
+        if (Battle is { } bt && scene != null)
+            foreach (var en in bt.Enemies.Living())
+            {
+                if (en.State == EnemyState.Dying || avoid.Count >= 80) continue;
+                double gy = scene.HeightAt(en.X, en.Z);
+                if (OnScreen((en.X, gy, en.Z)) is Vector2 f && OnScreen((en.X, gy + 1.8 * (en.Def.Scale ?? 1), en.Z)) is Vector2 hd)
+                {
+                    float h = Math.Max(24, f.Y - hd.Y);
+                    avoid.Add(new Rect2(f.X - h * 0.3f, hd.Y, h * 0.6f, h));
+                }
+            }
+        calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
+        {
+            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c),
+            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : 12,
+            // (the chain: the arrow stops over the six places, aimed at the lock)
+            StopY = c.Target.Hud == "chain" ? Instrument.SockY - 10 : null,
+        });
     }
 
     /// <summary>How many of the canvas's pixels a metre is, at a point in the world.</summary>
