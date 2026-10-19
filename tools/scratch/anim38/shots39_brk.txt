@@ -1,0 +1,11 @@
+xb_break_19|stalker|hunting_bow|idle_stalker_break@1.9|day|0|90|female
+xb_break_21|stalker|hunting_bow|idle_stalker_break@2.1|day|0|90|female
+xb_break_22|stalker|hunting_bow|idle_stalker_break@2.2|day|0|90|female
+xb_break_24|stalker|hunting_bow|idle_stalker_break@2.4|day|0|90|female
+xb_break_27|stalker|hunting_bow|idle_stalker_break@2.7|day|0|90|female
+xb_break_27f|stalker|hunting_bow|idle_stalker_break@2.7|day|0|0|female
+xb_break_27b|stalker|hunting_bow|idle_stalker_break@2.7|day|0|180|female
+xb_break_33|stalker|hunting_bow|idle_stalker_break@3.3|day|0|90|female
+xb_break_34|stalker|hunting_bow|idle_stalker_break@3.4|day|0|90|female
+xb_break_36|stalker|hunting_bow|idle_stalker_break@3.6|day|0|90|female
+xb_break_27c|stalker|hunting_bow|idle_stalker_break@2.7|day|1|0|female
