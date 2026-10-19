@@ -61,6 +61,8 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The first character level, at dawn: its banner, and whether its callout is due (after her dawn line).</summary>
     Announcement? levelAnn;
     bool levelDue;
+    /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
+    bool knightPlanted, knightRan;
     readonly List<(double X, double Z, int Light, string Flame)> pylons = new();
     readonly bool[] litPylons;
     readonly double[] pylonHp;
@@ -545,6 +547,10 @@ public sealed class Prologue : ZoneRuntime
                     Go(Stage.Post);
                     checkpoint = new XZ(post.X - 6, post.Z + 4);
                     knight = B.SpawnEnemy("barrow_knight", post.X - 1, post.Z - 1.5, new Battle.SpawnOpts { Level = 1, Tag = "knight", Style = SpawnStyle.Rise });
+                    // Its first red line comes once the narrator's line is over (F7 freezes on it), and it
+                    // does not go down before it has run one: the elite shows what it does first.
+                    knight.RangedT = 8;
+                    knight.HpFloor = knight.MaxHp * 0.2;
                     for (int i = 0; i < 4; i++) SpawnAround("risen", 1, 5, 9, 0, 2);
                     G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5);
                     Objective([("Survive the ambush at the wagon", true, false), ("Put down the Barrow Knight", false, false), ("Search the old Watch-post", false, false)]);
@@ -571,6 +577,11 @@ public sealed class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Post:
+                if (knight is { Alive: true } kn && !knightRan)
+                {
+                    if (kn.State == EnemyState.Windup) knightPlanted = true;
+                    else if (knightPlanted || stageT > 24) { knightRan = true; kn.HpFloor = 0; }
+                }
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 if (knight == null && !chestOpened)
                 {
