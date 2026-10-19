@@ -10,6 +10,8 @@ State at about 01:30, 19 Oct (the coordinator is near 250k; it winds down when t
 - **Flare 10:** judge 6 FAILED 13/17 frames. Solver A committed 02fda81e (f127 white -80% against a 90% target). The re-judge is next. Its scripts still write logs to session 59a43b82's scratchpad: keep that folder.
 - **Environment 2:** E1's shadow rules are in (aa758a64): hi shadow draws 4395 -> 1746, min fps 30 -> 74. Hi is still over the 1,200 line.
 - **Teaching pass:** the callouts are built (951 tests). The first Prologue run fired 6 of 12 and ended before the Low Ford.
+- **Later (about 03:00):** armor's r2 judge passed gilded but failed etched, F5 and F7; the r3 solver ran out of context (F2/F5 code committed as WIP, nothing built). The worktree's C# DLL was STALE (pre metal r4), so the r2 metal rulings are unreliable: rebuild before shooting. Env E1 light judge r1: FAIL, 1 of 14 frames (shadows crush, moonlight gray, dawn murky). Teaching: all 11 live callouts fire once (958 tests); the look judge is next. Animation: the hero is dropped (the owner); the re-shoot then the judge.
+- **The male hero is out of all testing** (the owner, 19 Oct; lead brief).
 - **Disk:** 148 old session scratch folders (120 GB) were binned on 19 Oct, with scripts and texts backed up to survivorsunchained_inputs\scratch_<id>\. The owner empties the bin. Left for the sweep: 34daaf5d and 77fe93b5 (the recycle call failed on it).
 
 ## 18 October, night: coordinator a68188e9 WIND-DOWN (read this first; the section below is history)
