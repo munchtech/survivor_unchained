@@ -129,6 +129,79 @@ def crossbow_low():
     return f
 
 
+# The warden's town carry: her free left hand rides the sheathed sword's hilt at her left hip (Arms.cs hip_blade),
+# the classic hold that keeps a scabbard from swinging, fixed to the hilt in the pelvis bone's own frame (the space of
+# arms_local.json "sheathed" mounts), so it rides her hips. Swinging free, the forearm went level through the hilt
+# (28 mm in the run, 38-40 in the sprint). The hand lies on the scabbard's throat, just below the guards (local
+# 0.16 m down the blade from the sheath point, which sits mid-grip; the four one-handed blades share the scabbard
+# there, so one hand fits all four), the palm on its outer face tilted 27 degrees toward its front edge (the reaver
+# outfit pushes the sword 14 mm further out than the warden's: square on, it went 8 mm into her palm), the fingers
+# turned 8 degrees down from square across it, so the wrist stays 19-26 degrees from straight (more, and the
+# radial limit clamped it and the palm rocked 3 mm on and off). Higher, the chevalier's guard met her hand.
+# The elbow points out to her side and turns with her chest (pole_chest): pointed back, or fixed to the pelvis, it went
+# 23-29 mm into the shield slung on her back mid-stride (now 6 at most; 5.3 swinging free). Hilt judge r1: from the
+# front the elbow flared 12 cm out from her waist (a gunslinger's hand on the hip), so the hand sits 3.3 cm further
+# down the throat, the arm hangs straighter (elbow 123-138, was 110-121) and the elbow swings 30 degrees in toward her
+# side (4-6 cm closer; it can't come in and forward too, the hand fixes the circle it swings on). HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side, the elbow's
+# way from the shoulder (pole), all in the pelvis bone's frame (solved: tools/scratch/armor5 hilt notes); `clav`:
+# the left shoulder's run swing kept (0: none, held at its mean; 0.3, so the held side rises and falls a little with
+# each stride and doesn't read frozen, judge r1).
+HILT = {"wrist": (0.3004, -0.0235, -0.0058), "knuckles": (0.0102, -0.2861, 0.9582), "thumb": (-0.1359, 0.9489, 0.2848),
+        "pole": (0.69, -0.6385, -0.3101), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.3}
+
+
+def hilt_carry(rig, clip, hilt=None):
+    """`clip` with her left arm laid onto the sheathed sword's hilt (HILT), frame by frame on the clip's own pelvis:
+    the left arm solved afresh over the clip (keyed.solve_frames, the clip as its base), every other joint as it was."""
+    from keyed import solve_frames
+    from rig import qrot
+    h = dict(HILT, **(hilt or {}))
+    I = rig.I
+    pel, ua = I["pelvis"], I["upperarm_l"]
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    n = clip.frames
+    arm = [ua]
+    for j in arm:
+        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
+
+    if h.get("clav", 1.0) != 1.0:
+        # The left shoulder's run swing (gait.pose_at: drawn forward and back with the free arm) kept to this share
+        # of it about its mean: with the hand on the hilt, the full swing opened and closed the elbow 12 degrees.
+        from rig import qnorm, qslerp
+        c = I["clavicle_l"]
+        mean = qnorm(np.mean(clip.rot[:, c] * np.sign(clip.rot[:, c] @ clip.rot[0, c])[:, None], axis=0))
+        for f in range(n):
+            clip.rot[f, c] = qslerp(mean, clip.rot[f, c], h["clav"])
+        g, p = rig.sk.fk(clip.rot, clip.pos)
+
+    # `pole_chest`: the share of the chest's turn on the pelvis (about its clip mean) that the elbow's way follows.
+    # The shield rides her back on spine_03; with the pole fixed to the pelvis, the chest's run twist swung the
+    # shield's rim into the elbow mid-stride.
+    from rig import qmul, qinv, qnorm, qslerp
+    ch = I["spine_03"]
+    Mf = np.array([qmul(qinv(g[f, pel]), g[f, ch]) for f in range(n)])
+    Mm = qnorm(np.mean(Mf * np.sign(Mf @ Mf[0])[:, None], axis=0))
+
+    def spec(f):
+        R = g[f, pel]
+        Rp = qslerp(R, qmul(g[f, ch], qinv(Mm)), h.get("pole_chest", 0.0))
+        return {"hand_l": {"pos": tuple(p[f, pel] + qrot(R, np.array(h["wrist"], float))),
+                           "knuckles": tuple(qrot(R, np.array(h["knuckles"], float))),
+                           "blade": tuple(qrot(R, np.array(h["thumb"], float))),
+                           "pole": tuple(qrot(Rp, np.array(h["pole"], float))), "pole_at": "shoulder"},
+                "fingers_l": h["fingers"]}
+    rot, _ = solve_frames(rig, [spec(f) for f in range(n)], [(clip.rot[f], clip.pos[f]) for f in range(n)],
+                          loop=clip.loop, weapon=(clip.meta or {}).get("weapon", ""))
+    for f in range(n):
+        for j in arm:
+            clip.rot[f, j] = rot[f, j]
+    return clip
+
+
+# Post-passes on a run (and its sprint: sprint_stop.sprint) after the gait is solved.
+POST = {"run_warden_town": hilt_carry}
+
+
 def open_hand():
     def f(ph, k, hand):
         return hand
@@ -185,7 +258,8 @@ RUNS = {
     # WRAP["daggers_l"] left; with the gait's relaxed hands the fingers stood 10-73 mm off the hilts).
     "run_stalker_daggers": (replace(STALKER, fingers="grip"), {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
     # In town, weapons sheathed: her calling's carriage, the arms swinging free.
-    "run_warden_town": (replace(WARDEN, fingers="relaxed", swing=SWING), {}, ""),
+    # The free right hand a loose fist (hilt judge r1: open and limp, beside the still left arm the run read inert).
+    "run_warden_town": (replace(WARDEN, fingers="relaxed", fingers_r="fist", swing=SWING), {}, ""),
 }
 
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
@@ -199,5 +273,6 @@ def clips(rig, want):
     for name, (g, arms, weapon) in RUNS.items():
         if want and not any(w in name for w in want):
             continue
-        out.append(run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon}))
+        clip = run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon})
+        out.append(POST[name](rig, clip) if name in POST else clip)
     return out

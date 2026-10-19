@@ -1,0 +1,13 @@
+h_run0_s90_c|warden|-|run_warden_town@0.0|day|1|90|female
+h_run0_s270_c|warden|-|run_warden_town@0.0|day|1|270|female
+h_run10_s90_c|warden|-|run_warden_town@0.33|day|1|90|female
+h_run10_s270_c|warden|-|run_warden_town@0.33|day|1|270|female
+h_run0_front_c|warden|-|run_warden_town@0.0|day|1|0|female
+h_run10_f45_c|warden|-|run_warden_town@0.33|day|1|45|female
+h_run10_f315_c|warden|-|run_warden_town@0.33|day|1|315|female
+h_run10_back_c|warden|-|run_warden_town@0.33|day|1|180|female
+h_sprint0_s90_c|warden|-|sprint_warden_town@0.05|day|1|90|female
+h_sprint0_s270_c|warden|-|sprint_warden_town@0.05|day|1|270|female
+h_sprint20_s90_c|warden|-|sprint_warden_town@0.68|day|1|90|female
+h_sprint10_back_c|warden|-|sprint_warden_town@0.33|day|1|180|female
+h_run10_s90_p|warden|-|run_warden_town@0.33|day|0|90|female

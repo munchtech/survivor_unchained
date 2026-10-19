@@ -8,7 +8,7 @@ L=$1; mkdir -p $L; cd $W
 python $T take godot "armor5: pack + arms dump" --wait 600 --stale-ok --root "$W" > $L/turn.log 2>&1 || { echo "turn refused"; exit 1; }
 "$G" --headless --path "$W/godot" --import > $L/import.log 2>&1; echo "import $?"
 python tools/anim/build.py > $L/build_her.log 2>&1; echo "build her $?"
-python tools/anim/build.py --body hero > $L/build_hero.log 2>&1; echo "build hero $?"
+# (no hero pack: owner, 19 Oct)
 "$G" --headless --path "$W/godot" -s res://tools_scenes/arms_dump.gd > $L/dump.log 2>&1; echo "dump $?"
 python $T give godot "armor5: pack + arms dump" --root "$W" >> $L/turn.log 2>&1
 git checkout -- godot/project.godot 2>/dev/null

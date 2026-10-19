@@ -1,0 +1,7 @@
+m_run10_s270_c|warden|-|run_warden_town@0.33|day|0.69|270|female
+m_run0_front_c|warden|-|run_warden_town@0.0|day|0.69|0|female
+m_run10_f45_c|warden|-|run_warden_town@0.33|day|0.69|45|female
+m_run10_f315_c|warden|-|run_warden_town@0.33|day|0.69|315|female
+m_run10_back_c|warden|-|run_warden_town@0.33|day|0.69|180|female
+m_sprint0_s270_c|warden|-|sprint_warden_town@0.05|day|0.69|270|female
+m_sprint20_s270_c|warden|-|sprint_warden_town@0.68|day|0.69|270|female
