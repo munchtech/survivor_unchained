@@ -71,9 +71,9 @@
       "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.55, -0.1, -1.5]}, "at": {"actor": "her", "bone": "eyes", "off": [0, 0.03, 0]}, "lens": 66, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
         {"do": "atmosphere", "preset": "now", "skySat": 0.6},
-        {"do": "rig", "name": "lamp", "energy": 1.2, "color": "#8ac8ff", "angle": 35, "from": {"actor": "her", "bone": "eyes", "off": [-0.42, -0.3, -0.74]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "lamp", "energy": 0.6, "color": "#8ac8ff", "angle": 35, "from": {"actor": "her", "bone": "eyes", "off": [-0.42, -0.3, -0.74]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "moon", "energy": 1.0, "color": "#9fb8ff", "angle": 28, "from": {"actor": "her", "bone": "eyes", "off": [-0.8, 0.9, 0.6]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
-        {"do": "rig", "name": "bounce", "energy": 0.2, "color": "#ffa757", "angle": 50, "from": {"actor": "her", "bone": "eyes", "off": [0.8, -0.15, -0.14]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.06, 0]}},
+        {"do": "rig", "name": "bounce", "energy": 0.1, "color": "#ffa757", "angle": 50, "from": {"actor": "her", "bone": "eyes", "off": [0.8, -0.15, -0.14]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.06, 0]}},
         {"do": "face", "keys": {"brows_sad": 0.35, "mouth_open": 0.05}, "over": 0.6},
         {"do": "gaze", "look": [0, -0.4]},
         {"at": 0.9, "do": "anim", "clip": "her/nod", "from": 0, "speed": 1, "blend": 0.2}

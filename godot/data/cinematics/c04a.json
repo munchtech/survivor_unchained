@@ -75,7 +75,7 @@
       "fit": ["cin_first_light.back"],
       "tail": 0.5,
       "note": "A slow tilt from her chest to her feet, then hold: the ember goes out of her, red light running down her body like water, off her shoulders and hands, down her legs, into the frosted road, gone. Her weapon's night-glow cools with it. N5.",
-      "cam": {"pos": {"mark": "road", "off": [0.4, 1.3, -3.2]}, "at": {"mark": "road", "off": [0, 1.3, 0]}, "lens": 35, "move": {"pos": {"mark": "road", "off": [0.4, 0.35, -3.2]}, "at": {"mark": "road", "off": [0, -0.58, 0]}, "start": 0, "end": 2.0, "ease": "inout"}},
+      "cam": {"pos": {"mark": "road", "off": [0.4, 1.3, -3.2]}, "at": {"mark": "road", "off": [0, 1.3, 0]}, "lens": 35, "move": {"pos": {"mark": "road", "off": [0.4, 0.35, -3.2]}, "at": {"mark": "road", "off": [0, -0.2, 0]}, "start": 0, "end": 2.0, "ease": "inout"}},
       "cues": [
         {"do": "lids", "value": null},
         {"at": 0.3, "do": "line", "id": "cin_first_light.back"},
