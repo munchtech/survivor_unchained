@@ -389,6 +389,28 @@ G["cover_report"](PID, made, 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb]))
 TUCK_P = 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb])
 # Her body taken as the full build takes it before it writes her tuck (heroine_outfits.py, `if BODY_OUT:`), so
 # her points, and the records and hash made from them, are the game's.
+# (her breast weights eased into her body's groups, as the full build does first: chest_smooth and the helpers'
+# split read them)
+_, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
+changed = np.abs(W - G["W_AUTHORED"]).sum(1) > 1e-4
+groups = {vg.name: vg for vg in body.vertex_groups}
+n_eased = 0
+for v in me.vertices:
+    j = jw[v.index]
+    if not changed[j]:
+        continue
+    for e in list(v.groups):
+        body.vertex_groups[e.group].remove([v.index])
+    row_ = W[j]
+    top_ = np.argsort(-row_)[:4]
+    tot_ = row_[top_].sum() or 1.0
+    for b_ in top_:
+        if row_[b_] > 0.003:
+            vg = groups.get(BONES[b_]) or body.vertex_groups.new(name=BONES[b_])
+            groups[BONES[b_]] = vg
+            vg.add([v.index], float(row_[b_] / tot_), "REPLACE")
+    n_eased += 1
+print("BODY breast weights eased at", n_eased, "of her vertices")
 if os.environ.get("CHEST_SMOOTH", "1") == "1":
     from heroine_chest import chest_smooth
     chest_smooth(body, G["mend_folds"])
@@ -452,22 +474,61 @@ filled_bvh = BVHTree.FromPolygons([tuple(p) for p in G["P_FILLED"]], G["TRI"].to
 env = np.array([np.linalg.norm(np.array(filled_bvh.find_nearest(Vector(q))[0][:]) - q) for q in sv])
 NUM["envelope_mm"] = {"max": round(float(env.max() * 1000), 2), "p99": round(float(np.percentile(env, 99) * 1000), 2),
                       "p50": round(float(np.median(env) * 1000), 2)}
-# (gap: her skin to the shell's inner face, along her normal, where the shell covers her)
-gaps = np.full(len(P), np.nan)
-near = np.linalg.norm(P - np.array([0, P[:, 1].min(), (G["NIPPLE"]["l"][2])]), axis=1) < 0.3
-for i in np.nonzero(near)[0]:
-    h = shell_bvh.ray_cast(Vector(P[i] + N[i] * 0.0002), Vector(N[i]), 0.03)
-    if h[0] is not None:
-        gaps[i] = h[3] + 0.0002
-cov = np.isfinite(gaps)
-NUM["covered_skin_points"] = int(cov.sum())
-NUM["gap_mm"] = {"max": round(float(np.nanmax(gaps) * 1000), 2), "p99": round(float(np.nanpercentile(gaps, 99) * 1000), 2),
-                 "p50": round(float(np.nanmedian(gaps) * 1000), 2)}
-# (her skin inside the cups' outline that the shell does not cover (seen straight out): holes in it)
-cup_out = cKDTree(sheet_pos).query(P)[0] < 0.004
-inside_outline = cup_out & near
-NUM["outline_skin_uncovered"] = int((inside_outline & ~cov).sum())
-NUM["outline_skin_points"] = int(inside_outline.sum())
+# Her skin against the shell, at her body's own points (the game's, after the steps above), at rest and posed.
+# Covered: a ray out along her normal meets the shell's inner face within 30 mm (gap = that distance). Through:
+# no ray out meets it, but one back in does within 12 mm (her skin stands outside the shell). Each counted with her
+# skin as drawn (untucked) and tucked as the game draws it (10 mm times the tuck, full past 0.973).
+SHELL = B["shell"]
+
+
+def skin_vs_shell(bv, bn, idx, tuck_v, tree):
+    out = {"covered": np.zeros(len(idx), bool), "gap": np.full(len(idx), np.nan), "through": np.zeros(len(idx), bool),
+           "through_t": np.zeros(len(idx), bool), "deep_t": 0.0, "cov_t": np.zeros(len(idx), bool)}
+    for k, i in enumerate(idx):
+        n_ = bn[i] / (np.linalg.norm(bn[i]) + 1e-12)
+        for tucked in (False, True):
+            p_ = bv[i] - n_ * (0.010 * (1.0 if tuck_v[i] > 0.973 else tuck_v[i]) if tucked else 0.0)
+            f_ = tree.ray_cast(Vector(p_ + n_ * 0.0001), Vector(n_), 0.03)
+            b_ = tree.ray_cast(Vector(p_ + n_ * 0.0001), Vector(-n_), 0.012) if f_[0] is None else (None,)
+            if not tucked:
+                out["covered"][k] = f_[0] is not None
+                out["gap"][k] = f_[3] if f_[0] is not None else np.nan
+                out["through"][k] = f_[0] is None and b_[0] is not None
+            else:
+                out["cov_t"][k] = f_[0] is not None
+                out["through_t"][k] = f_[0] is None and b_[0] is not None
+                if out["through_t"][k]:
+                    out["deep_t"] = max(out["deep_t"], b_[3])
+    return out
+
+
+def shell_tree(dg=None):
+    vs, fs = [], []
+    for o in SHELL:
+        oe = o.evaluated_get(dg) if dg is not None else o
+        m_ = oe.to_mesh() if dg is not None else o.data
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in m_.vertices]
+        fs += [[base + i for i in p_.vertices] for p_ in m_.polygons]
+        if dg is not None:
+            oe.to_mesh_clear()
+    return BVHTree.FromPolygons(vs, fs)
+
+
+bv0 = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+bn0 = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in me.vertices])
+lo, hi = sv.min(0) - 0.03, sv.max(0) + 0.03
+NEAR = np.nonzero(((bv0 > lo) & (bv0 < hi)).all(1))[0]
+R0 = skin_vs_shell(bv0, bn0, NEAR, tuck, shell_tree())
+COV = NEAR[R0["covered"]]
+g_ = R0["gap"][R0["covered"]]
+NUM["rest"] = {"skin_points_near": int(len(NEAR)), "covered": int(len(COV)),
+               "gap_mm": {"max": round(float(g_.max() * 1000), 2), "p99": round(float(np.percentile(g_, 99) * 1000), 2),
+                          "p50": round(float(np.median(g_) * 1000), 2)},
+               "through_untucked": int(R0["through"].sum()), "through_tucked": int(R0["through_t"].sum()),
+               "tucked_not_covered": int(((tuck[NEAR] > 0.5) & ~R0["covered"]).sum())}
+_gw = COV[np.argsort(-g_)[:5]]
+NUM["rest"]["largest_gaps_at"] = gl(bv0[_gw]).round(3).tolist()
 # (rolled edges: the widths each rim was given and the width each roll measures across)
 rw = {}
 for tn, tb in CAP["tubes"].items():
@@ -493,10 +554,11 @@ NUM["materials"] = sorted({o.data.materials[0].name for o in made if o.data.mate
 NUM["parts"] = len(made)
 
 
-# (her skin through the shell in test poses: arms overhead, one arm across her, both arms back, a twist and bend)
+# (her skin through the shell in test poses: arms overhead, one arm across her, both arms back, a hug, a twist and bend)
 def pose_check():
     pb = arm.pose.bones
-    from mathutils import Matrix, Quaternion
+    from mathutils import Quaternion
+    arm.data.pose_position = "POSE"
 
     def rot(bone, axis, deg):
         b = arm.data.bones[bone]
@@ -509,9 +571,8 @@ def pose_check():
     def side(bone, axis, deg, want):
         b = arm.data.bones[bone]
         d = np.array((b.tail_local - b.head_local)[:])
-        qw = Quaternion(Vector(axis), np.radians(deg))
-        d2 = np.array((qw.to_matrix() @ Vector(d))[:])
-        return deg if (d2 - d) @ np.asarray(want) > 0 else -deg
+        d2 = np.array((Quaternion(Vector(axis), np.radians(deg)).to_matrix() @ Vector(d))[:])
+        return deg if (d2 - d) @ np.asarray(want, float) > 0 else -deg
 
     poses = {
         "arms_overhead": [("upperarm_l", (0, 1, 0), 130, (0, 0, 1)), ("upperarm_r", (0, 1, 0), 130, (0, 0, 1))],
@@ -521,55 +582,26 @@ def pose_check():
         "twist_bend": [("spine_02", (1, 0, 0), 20, (0, -1, 0)), ("spine_03", (0, 0, 1), 25, (1, 0, 0))],
     }
     out = {}
-    dg = bpy.context.evaluated_depsgraph_get()
-    vb = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
-    _, jP = cKDTree(vb).query(P)
-    cov_idx = np.nonzero(cov)[0]
-    tuck_v = np.zeros(len(me.vertices))
-    tuck_v[:] = tuck
     for pname, rots in poses.items():
         for b in pb:
             b.rotation_mode = "QUATERNION"
             b.rotation_quaternion = (1, 0, 0, 0)
         for bone, axis, deg, want in rots:
             if bone in pb:
-                rot(bone, axis, side(bone, axis, deg, want), )
+                rot(bone, axis, side(bone, axis, deg, want))
         bpy.context.view_layer.update()
         dg = bpy.context.evaluated_depsgraph_get()
         be = body.evaluated_get(dg)
-        bm_ = be.to_mesh()
-        bv = np.array([(body.matrix_world @ v.co)[:] for v in bm_.vertices])
-        bn = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in bm_.vertices])
+        m_ = be.to_mesh()
+        bv = np.array([(body.matrix_world @ v.co)[:] for v in m_.vertices])
+        bn = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in m_.vertices])
         be.to_mesh_clear()
-        svs, sfs = [], []
-        for o in B["shell"]:
-            oe = o.evaluated_get(dg)
-            m_ = oe.to_mesh()
-            base = len(svs)
-            svs += [tuple(o.matrix_world @ v.co) for v in m_.vertices]
-            sfs += [[base + i for i in p.vertices] for p in m_.polygons]
-            oe.to_mesh_clear()
-        tb_ = BVHTree.FromPolygons(svs, sfs)
-        vi = jP[cov_idx]
-        vi = np.unique(vi)
-        poke_raw = poke_t = miss = 0
-        worst = 0.0
-        for i in vi:
-            p_, n_ = bv[i], bn[i] / (np.linalg.norm(bn[i]) + 1e-12)
-            pt = p_ - n_ * 0.010 * (1.0 if tuck_v[i] > 0.973 else tuck_v[i])
-            fwd = tb_.ray_cast(Vector(pt + n_ * 0.0001), Vector(n_), 0.04)
-            back = tb_.ray_cast(Vector(pt), Vector(-n_), 0.012)
-            if fwd[0] is None and back[0] is not None:
-                poke_t += 1
-                worst = max(worst, back[3])
-            elif fwd[0] is None:
-                miss += 1
-            fr = tb_.ray_cast(Vector(p_ + n_ * 0.0001), Vector(n_), 0.04)
-            br = tb_.ray_cast(Vector(p_), Vector(-n_), 0.012)
-            if fr[0] is None and br[0] is not None:
-                poke_raw += 1
-        out[pname] = {"skin_points": int(len(vi)), "through_tucked": poke_t, "through_untucked": poke_raw,
-                      "worst_tucked_mm": round(worst * 1000, 2), "uncovered_tucked": miss}
+        r_ = skin_vs_shell(bv, bn, COV, tuck, shell_tree(dg))
+        moved = float(np.abs(bv[COV] - bv0[COV]).max())
+        out[pname] = {"skin_moved_mm": round(moved * 1000, 1), "covered_at_rest": int(len(COV)),
+                      "through_untucked": int(r_["through"].sum()), "through_tucked": int(r_["through_t"].sum()),
+                      "worst_tucked_mm": round(r_["deep_t"] * 1000, 2), "no_longer_covered": int((~r_["covered"]).sum()),
+                      "no_longer_covered_tucked_full": int((~r_["covered"] & (tuck[COV] > 0.973)).sum())}
     for b in pb:
         b.rotation_quaternion = (1, 0, 0, 0)
     bpy.context.view_layer.update()
@@ -669,6 +701,26 @@ row["tier"] = SPEC_PIECE.get("tier")
 rows.append(row)
 rows.sort(key=lambda r: r["id"])
 json.dump(rows, open(ix_path, "w", encoding="utf-8"), indent=1)
+
+
+def tuck_read(f):
+    import struct
+    raw = open(f, "rb").read()
+    n = struct.unpack("<I", raw[:4])[0]
+    rec = np.frombuffer(raw[4:4 + 16 * n], dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")])
+    return {(int(r["x"]), int(r["y"]), int(r["z"])): float(r["t"]) for r in rec}
+
+
+mine_t = tuck_read(os.path.join(ART, "armor_tuck", f"{PID}.bin"))
+wf = os.path.join(ROOT, "godot", "art", "people", "armor_tuck", "warden.top.bin")
+if os.path.exists(wf):
+    war_t = tuck_read(wf)
+    both = set(mine_t) & set(war_t)
+    NUM["tuck_vs_warden_top"] = {
+        "mine": {"records": len(mine_t), "max": round(max(mine_t.values(), default=0), 3), "full": sum(v > 0.973 for v in mine_t.values())},
+        "warden": {"records": len(war_t), "max": round(max(war_t.values(), default=0), 3), "full": sum(v > 0.973 for v in war_t.values())},
+        "shared_places": len(both), "only_mine": len(set(mine_t) - set(war_t)), "only_warden": len(set(war_t) - set(mine_t)),
+        "shared_mean_diff": round(float(np.mean([mine_t[k] - war_t[k] for k in both])) if both else 0.0, 4)}
 NUM["wall_s"] = round(time.time() - T0, 1)
 json.dump(NUM, open(os.path.join(SCRATCH, "numbers.json"), "w", encoding="utf-8"), indent=1)
 stamp("DONE %s -> %s" % (PID, os.path.join(ART, PID + ".gltf")))
