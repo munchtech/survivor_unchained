@@ -285,23 +285,30 @@ public static class Arms
     {
         // Shield: across the back, its boss centred between the shoulder blades 0.14 m behind spine_03, face out
         // (back), its top rim under the neck (66 cm across).
-        [WeaponSockets.Back] = new("spine_03", new(0, 1.22f, -0.20f), new(0, 1, 0), new(0, 0, -1), new(0, 0, -1)),
+        // (armor 5 solver, 19 October: 4 mm back and the top a hair to her left, so the rim clears her elbows in the run.)
+        [WeaponSockets.Back] = new("spine_03", new(0.002f, 1.219f, -0.204f), new(0.006f, 1, -0.001f), new(-0.001f, -0.001f, -1), new(0, 0, -1)),
         // One-handed blade: left hip, in the scabbard (MakeSheathed), hilt forward and up, blade down and back about
         // 30 degrees off vertical, flat to her side (thickness out).
         [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true),
         // Blunt and axe: right hip loop, head up, the haft down along the outside of the thigh (left hand: mirrored).
-        [WeaponSockets.HipLoop] = new("pelvis", new(-0.19f, 0.50f, 0.0f), new(0.06f, 1, 0), new(-1, 0, 0), new(-1, 0, 0), Mirrors: true),
-        // Wand: right hip, tucked in the belt, crystal up, leaning in and forward.
-        [WeaponSockets.HipBelt] = new("pelvis", new(-0.18f, 1.14f, 0.05f), new(0.15f, 0.95f, 0.25f), new(-1, 0, 0), new(-1, 0, 0), Mirrors: true),
+        // `At` is the axe's sheath point near the haft's foot, so it sits at the knee and the head rides at the hip. Hung
+        // 8 cm out from the thigh, the head a little forward and the flat turned 12 degrees to her back, the axes clear
+        // her thighs through the run and sprint (armor 5 solver, 19 October). The mace's wide head does not fit this row.
+        [WeaponSockets.HipLoop] = new("pelvis", new(-0.27f, 0.421f, 0.022f), new(0.044f, 0.990f, 0.146f), new(-0.974f, 0.015f, -0.224f), new(-1, 0, 0), Mirrors: true),
+        // Wand: right hip, tucked in the belt, crystal up, leaning a little out and forward (leaning in, its crystal
+        // went into her side when she bent into the sprint).
+        [WeaponSockets.HipBelt] = new("pelvis", new(-0.159f, 1.183f, 0.027f), new(-0.098f, 0.934f, 0.325f), new(-0.965f, -0.204f, -0.166f), new(-1, 0, 0), Mirrors: true),
         // Dagger: the back of the belt, flat, one each side of the spine, hilts out and blades crossing.
         [WeaponSockets.BeltBack] = new("pelvis", new(-0.17f, 1.12f, -0.13f), new(1, 0, 0), new(0, 0, -1), new(0, 0, -1), Mirrors: true),
         // Crossbow: slung across the back by the stock's middle (its anchor_sheath), stock rising to her right shoulder,
         // the bow flat across her back, its top in to the back so the pistol grip and the lever stand out from her, not
         // into her (18 October: before the grip's anchor the bow was taken for the stock and ran up the diagonal).
-        [WeaponSockets.Sling] = new("spine_03", new(0.10f, 1.16f, -0.17f), new(-0.6f, 0.8f, 0), new(0, 0, 1), new(0, 0, -1)),
+        // (armor 5 solver, 19 October: 2 cm farther back, off her shoulder blades and clear of her left arm in the run.)
+        [WeaponSockets.Sling] = new("spine_03", new(0.099f, 1.164f, -0.191f), new(-0.602f, 0.799f, -0.002f), new(0, 0.002f, 1), new(0, 0, -1)),
         // Two-handed blade or axe: diagonal across the back like the sling, hilt or haft over her right shoulder (the
         // grip high on the right), the tip down toward her left hip, flat to her back.
-        [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.20f), new(0.25f, -0.97f, 0), new(0, 0, -1), new(0, 0, -1)),
+        // (armor 5 solver, 19 October: the tip turned 11 degrees out from her back, off her calves.)
+        [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.201f), new(0.281f, -0.944f, -0.185f), new(0.003f, 0.193f, -0.981f), new(0, 0, -1)),
     };
 
     static WeaponSockets.Clearance? clearance;
