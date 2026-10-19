@@ -941,24 +941,35 @@ def cast_flick(rig):
     return build("cast_flick", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 0.0, "weapon": "wand"})
 
 
-# The left elbow at the aim: down and ahead under the fore-stock.
-AIM_POLE_L = (0.65, -0.7, 0.3)
-# The right elbow at the aim: out and down, a shooter's (not a chicken wing).
-AIM_POLE_R = (-1.0, 0.0, -0.4)
+# The left elbow at the aim: down and ahead under the fore-stock, only a little out (round 4: out at (0.65, -0.7, 0.3)
+# it flared 20-23 deg, a chicken wing from the play camera; with the shoulder drawn back and down by AIM_CLAV_L it
+# hangs at 12-13 deg clear of her breast). The show's sighting a touch further out (its swing off the cradle at f79-83
+# put the upper arm 3-4 mm into her chest at 0.2-0.25).
+AIM_POLE_L = (0.25, -0.9, 0.4)
+AIM_POLE_L_SHOW = (0.3, -0.9, 0.4)
+# The right elbow at the aim: out and a little up, a shooter's trigger elbow (level with the fist; at (-1, 0, -0.4)
+# with the lower AIM_CLAV_R the upper arm went 5 mm into her breast as the crossbow came down, f12).
+AIM_POLE_R = (-1.0, 0.4, -0.3)
 # The crossbow's top at the aim (chest frame): up, its prod level (keyed by the knuckles alone, the fist rolled
 # palm-down with the forearm and the crossbow lay canted 60 deg onto its left side).
 AIM_TOP = (0.0, 1.0, 0.0)
 # The right fist on the way down (chest frame, from the shoulder, m) and its elbow.
 LOWER_R = (0.15, -0.19, 0.36)
 LOWER_POLE_R = (-1.0, -0.3, -0.2)
-# Her right shoulder drawn forward at the aim (clav_r: raise, forward).
-AIM_CLAV_R = (20, -10)
-# Her left shoulder drawn forward at the aim (clav_l: raise, forward).
-AIM_CLAV_L = (8, 18)
+# Her right shoulder drawn forward at the aim (clav_r: raise, forward). Round 4: raised 12 deg, not 20 (a shrug); the
+# fist is lifted by as much in AIM_R so the crossbow sits where it did at the eye.
+AIM_CLAV_R = (12, -10)
+# Her left shoulder at the aim (clav_l: raise, forward): a little up and drawn back, not forward (round 4: drawn
+# forward 18 the arm was too short a reach to straighten, its elbow bent out to clear her breast; drawn back, the
+# support arm reaches long and its elbow hangs under the stock, the body's blade still bringing the shoulder forward).
+AIM_CLAV_L = (10, -10)
 # A shooter's stance at the aim: the body turned to her right by AIM_BLADE (deg), the head and the crossbow turned back
 # by as much in the chest's frame, so the aim is unchanged and her left shoulder comes forward to the fore-stock (squared
 # to it, the left upper arm crossed her chest at shoulder height to reach it and went 30 mm into her breast's top).
 AIM_BLADE = 26.0
+# The right fist at the aim (chest frame before the blade, from the shoulder, m; y lifted 23 mm with AIM_CLAV_R's
+# 8 deg less raise, so the crossbow stays put).
+AIM_R = (0.06, 0.003, 0.40)
 
 
 def _yawed(v, deg):
@@ -973,14 +984,14 @@ def crossbow_shoot(rig):
     and the shoulder back, she rides it and lowers (the left hand on the fore-stock throughout, as in her idle)."""
     from clips.idle import STALKER_HAND_L, STALKER_HAND_R, stalker_top
     B = AIM_BLADE
-    aim_r = arm(_yawed((0.06, -0.02, 0.40), B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.02, 1.0), B)),
+    aim_r = arm(_yawed(AIM_R, B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.02, 1.0), B)),
                 blade=AIM_TOP)
     aim_l = arm(_yawed((-0.10, -0.08, 0.40), B), AIM_POLE_L, knuckles=_n(0.1, -0.2, 1.0))
     keys = [
         (0, body(stance(0.08), spine=(-8 - B, 4, 0), head=(10 + B, 4, -4), clav_l=AIM_CLAV_L, clav_r=AIM_CLAV_R, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "fast"),
         (2, body(stance(0.08, weight=-0.3), spine=(-10 - B, -4, 0), head=(10 + B, -2, -4), clav_r=(6, -6), clav_l=AIM_CLAV_L,
-                 hand_r=arm(_yawed((0.06, 0.04, 0.34), B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.3, 0.95), B)),
+                 hand_r=arm(_yawed(np.add(AIM_R, (0.0, 0.06, -0.06)), B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.3, 0.95), B)),
                                 blade=AIM_TOP),
                  hand_l=arm(_yawed((-0.10, 0.0, 0.34), B), AIM_POLE_L, knuckles=_n(0.1, 0.1, 1.0)),
                  fingers_r="grip", fingers_l="relaxed"), "ease"),

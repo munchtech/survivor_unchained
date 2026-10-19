@@ -215,9 +215,9 @@ def stalker_show(rig):
     def aim(yaw):
         return over("stalker", spine=(yaw * 0.6 - B, -4, 0), head=(yaw * 0.4 + B, 6, -6),
                     clav_l=A.AIM_CLAV_L, clav_r=A.AIM_CLAV_R,
-                    hand_r=arm(A._yawed((0.06, -0.02, 0.40), B), A._yawed(A.AIM_POLE_R, B),
+                    hand_r=arm(A._yawed(A.AIM_R, B), A._yawed(A.AIM_POLE_R, B),
                                knuckles=_n(*A._yawed((0.06, 0.03, 1.0), B)), blade=A.AIM_TOP),
-                    hand_l=arm(A._yawed((-0.10, -0.08, 0.40), B), A.AIM_POLE_L, knuckles=_n(0.1, -0.2, 1.0)))
+                    hand_l=arm(A._yawed((-0.10, -0.08, 0.40), B), A.AIM_POLE_L_SHOW, knuckles=_n(0.1, -0.2, 1.0)))
     rest = over("stalker", hand_r={**idle.STALKER_HAND_R["hand_r"], "blade": idle.stalker_top(rig)})
     keys = [
         (0, rest, "auto"),
