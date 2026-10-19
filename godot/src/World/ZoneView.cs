@@ -105,6 +105,10 @@ public partial class ZoneView : Node3D
             if (f.Light >= 0 && f.Light < meta.Lights.Count)
                 foreach (var glow in meta.Lights[f.Light].Glow) { fireGlow.Add(glow); if (Node(glow) is Node3D ball) ball.Visible = false; }
         }
+        // The Low Ford's beacons (the pylons' blue flames): built at an HDR white-blue that AgX blew out to a white
+        // octagon (E1 round 3); at an eighth it reads as blue glass lit from inside, and their lights still pool the ground.
+        foreach (var (name, n) in Landmarks.Nodes)
+            if (name.StartsWith("pylon_flame")) DimGlow(n, 0.12f);
         foreach (var c in meta.Chimneys)
         {
             var smoke = Campfire.ChimneySmoke();
@@ -223,6 +227,19 @@ public partial class ZoneView : Node3D
     public void Stop(string node) => stopped.Add(node);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
+    static void DimGlow(Node n, float k)
+    {
+        if (n is MeshInstance3D m)
+            for (int i = 0; i < m.GetSurfaceOverrideMaterialCount(); i++)
+                if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial sm && sm.GetShaderParameter("color").Obj is Vector3 c)
+                {
+                    var d = (ShaderMaterial)sm.Duplicate();
+                    d.SetShaderParameter("color", c * k);
+                    m.SetSurfaceOverrideMaterial(i, d);
+                }
+        foreach (var c in n.GetChildren()) DimGlow(c, k);
+    }
+
     public Node3D? Node(string name) => Landmarks.Nodes.TryGetValue(name, out var n) ? n : null;
 
     public bool IsLit(int light) => lit[light];

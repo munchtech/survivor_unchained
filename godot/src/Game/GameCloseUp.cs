@@ -112,25 +112,28 @@ public partial class Game
             closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2, LightSpecular = 0.6f, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
-        closeKey.LightColor = night ? new Color("#ffc890") : new Color(1f, 0.95f, 0.88f);
+        closeKey.LightColor = night ? CloseKeyColourNight : new Color(1f, 0.95f, 0.88f);
         float want = lit ? (night ? CloseKeyNight : CloseKey) * day : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
         closeKey.Visible = closeKey.LightEnergy > 0.005f;
         var chest = pv.GlobalPosition + new Vector3(0, 1.55f, 0);
         if (closeKey.Visible)
         {
-            float a = cam.Yaw + 0.7f, up = Mathf.DegToRad(night ? 30 : 25);
+            // (By night: the key CloseKeyAzNight degrees off her face, on the lens's side of it. She stands turned 0.6 rad
+            // from the lens, so round 2's key at 0.7 rad was 6 degrees off her face: frontal, flat, waxy.)
+            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? 30 : 25);
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
         }
         air.SetViewExposure(lit && night ? Mathf.Lerp(1, CloseExposureNight, day) : 1);
+        air.SetViewHighlights(lit && night ? day : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
         closeRim.LightEnergy = Mathf.Lerp(closeRim.LightEnergy, wantRim, 1 - Mathf.Exp(-3 * (float)dt));
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
         if (closeRim.Visible)
         {
-            // Behind her, on the side away from the key, 35 degrees up.
-            float a = cam.Yaw + Mathf.Pi + 0.9f, up = Mathf.DegToRad(35);
+            // Behind her, on the side away from the key (her far cheek's), 35 degrees up.
+            float a = cam.Yaw + Mathf.Pi - 0.9f, up = Mathf.DegToRad(35);
             closeRim.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeRim.LookAt(chest + new Vector3(0, 0.15f, 0));
         }
@@ -142,7 +145,12 @@ public partial class Game
     static float CloseRimNight => Args.Num("close-rim", 7.0f);
     static float CloseLampByNight => Args.Num("close-lamp-night", 0.12f);
     // --close-exp-night X: the close view's exposure by night against play's (pictures).
-    static float CloseExposureNight => Args.Num("close-exp-night", 2.0f);
+    // (Round 3: 2.0 left her face pale at 187; 0.35 of a stop under it brings it to about 165.)
+    static float CloseExposureNight => Args.Num("close-exp-night", 1.57f);
+    // --close-key-az D: the night key's angle off her face (degrees), toward the lens, so her far cheek falls into half
+    // shade (E1 round 3: 50-60). The key's colour: the ember's, saturated (1.0, 0.6, 0.35).
+    static float CloseKeyAzNight => Args.Num("close-key-az", 55f);
+    static readonly Color CloseKeyColourNight = new(1f, 0.6f, 0.35f);
     // --close-key E, --close-lamp L: the day key's strength and her lamp's share by day, for pictures.
     static float CloseKey => Args.Has("close-key") ? Args.Num("close-key", 0.7f) : 0.7f;
     static float CloseLampByDay => Args.Has("close-lamp") ? Args.Num("close-lamp", 0.25f) : 0.25f;

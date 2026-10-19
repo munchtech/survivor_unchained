@@ -7,15 +7,8 @@ G = os.path.join(W, "godot")
 GODOT = r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe"
 HERE = os.path.dirname(os.path.abspath(__file__)); LOGS = os.path.join(HERE, "logs")
 TP = r"C:\Users\munch\Desktop\survivorsunchained\tools\turn.py"
-HER = ["--quick", "warden", "--sex", "female", "--preset", "own", "--skin", "fair", "--eyes", "moss", "--hair", "braid", "--seed", "7", "--nohud"]
-ROAD = "3,64;9,40;0,-38;-2,-72"
-SETS = {
-    # camp, road A (by the cart), road B (by the post), the ford, the wood road; then the close view at the fire
-    "night": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD + ";-8.6,88.6,1,0"], 6),
-    "dawn": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-7.5,87.5;" + ROAD], 5),
-    "town_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,23;3,3;8,-18"], 3),
-    "town_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "0,23;3,3;8,-18"], 3),
-}
+sys.path.insert(0, HERE)
+from shots_cfg import HER, ROAD, SETS
 rnd = sys.argv[1]; flags = {"old", "unshadowed"}; old = "old" in sys.argv[2:]; uns = "unshadowed" in sys.argv[2:]
 tune = next((a[5:] for a in sys.argv[2:] if a.startswith("tune=")), None)
 more = next((a[5:].split() for a in sys.argv[2:] if a.startswith("args=")), [])   # args="--close-key-night 0.5 ...": raw switches
