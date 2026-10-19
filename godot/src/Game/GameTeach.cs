@@ -97,7 +97,8 @@ public partial class Game
         switch (t.Hud)
         {
             case null: break;
-            case "chain": pts.Add(new Vector2(960, (Instrument.EyeL.Y + Instrument.EyeR.Y) / 2 + 14)); break;
+            // (the whole chain, bracketed: it is the bar that fills, not its lock)
+            case "chain": areas.Add(new Rect2(Instrument.EyeL.X, Instrument.EyeL.Y - 17, Instrument.EyeR.X - Instrument.EyeL.X, 38)); break;
             case "dash": pts.Add(Instrument.DashAt); break;
             case "draught": pts.Add(Instrument.DraughtAt); break;
             case "art": pts.Add(Instrument.ArtAt); break;
@@ -275,7 +276,9 @@ public partial class Game
             scene.FxStill = true;
         }
         hud.HoldTip = true;
-        // The HUD dims but for the part taught (a freeze); the chain's callout fades the six places.
+        // (no damage numbers over the words while a callout is up)
+        if (scene != null) scene.Fx.Hits.Visible = false;
+        // The part taught is kept (the HUD stays whole; the world dims on a freeze); the chain's callout fades the six places.
         hud.Spotlight(c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud == "chain");
         var view = new Ui.Callout();
         hud.Callout(view);
@@ -295,6 +298,7 @@ public partial class Game
         hud.HoldTip = false;
         hud.HoldBanner = false;
         hud.Spotlight(null, false, false);
+        if (scene != null) scene.Fx.Hits.Visible = true;
         if (teachFroze)
         {
             teachFroze = false;
@@ -349,9 +353,7 @@ public partial class Game
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
         {
             Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c),
-            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : 12,
-            // (the chain: the arrow stops over the six places, aimed at the lock)
-            StopY = c.Target.Hud == "chain" ? Instrument.SockY - 10 : null,
+            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
         });
     }
 

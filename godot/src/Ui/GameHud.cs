@@ -1129,11 +1129,12 @@ public partial class GameHud : CanvasLayer
         bool on = spotK > 0 || slotK > 0;
         if (!on && !spotWas) return;
         spotWas = on;
-        var dimC = Colors.White.Lerp(new Color(0.34f, 0.33f, 0.32f), spotK);
+        // (the HUD stays whole under a freeze: only the world dims; the part taught is ringed)
+        var dimC = Colors.White;
         foreach (var ch in play.GetChildren())
             if (ch is CanvasItem ci && ch != irons && ch != toasts && ch != subtitle && ch != tipLine && ch != hintBox && ch != promptBox)
                 ci.Modulate = dimC;
-        irons.Spot(spotK > 0 ? spotKeep : null, dimC, 1 - 0.5f * slotK, slotK);
+        irons.Spot(spotK > 0 || slotK > 0 ? spotKeep : null, dimC, 1 - 0.8f * slotK, slotK);
     }
 
     CanvasLayer? calloutLayer;

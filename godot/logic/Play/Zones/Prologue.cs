@@ -236,7 +236,7 @@ public sealed class Prologue : ZoneRuntime
         }
         // F4: the first skill draft after the great blessing (on the panel, at the first combat-skill card).
         if (B.EmberLevel >= 2 && B.DraftOwed)
-            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("card:weapon"), after: "great_blessing");
+            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"), after: "great_blessing");
         // F5: the first combat skill on the console.
         if (startWeapons >= 0 && B.Weapons.Count > startWeapons)
         {
@@ -256,7 +256,7 @@ public sealed class Prologue : ZoneRuntime
         {
             var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
             if (B.Flare is { } fl)
-                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare. Kill the Grave-Caller before it raises more.", aim, "flare");
+                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare, the ember's great blow. It's full: spend it on the Grave-Caller before it raises more.", aim, "flare");
             else if (B.Ability is AbilityKind ak)
             {
                 var ab = Abilities.All[ak];

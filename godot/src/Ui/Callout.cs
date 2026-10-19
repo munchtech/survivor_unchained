@@ -675,7 +675,7 @@ public partial class Callout : Control, ICalloutView
             smoke.Position = wordsAt - smoke.Size / 2;
             smokeMat.SetShaderParameter("size", smoke.Size);
             smokeMat.SetShaderParameter("fade", fade);
-            smokeMat.SetShaderParameter("alpha", (Freeze ? 0.32f : 0.45f) * Smooth(age / 0.25));
+            smokeMat.SetShaderParameter("alpha", (Freeze ? 0.32f : 0.55f) * Smooth(age / 0.25));
         }
         else smoke.Visible = false;
         // The world drains, darkens and softens, but for a soft round pool on each thing in the world
@@ -684,6 +684,8 @@ public partial class Callout : Control, ICalloutView
         {
             var lights = new Vector4[6];
             int n = 0;
+            // (she keeps her own light: a soft pool about one and a half times her height)
+            if (aim.Her is Rect2 hr) lights[n++] = new Vector4(hr.GetCenter().X, hr.GetCenter().Y, hr.Size.Y * 0.8f, 0);
             var marks = Marks();
             for (int i = 0; i < marks.Count && n < 6; i++)
             {
@@ -997,9 +999,10 @@ public partial class Callout : Control, ICalloutView
                     src = mix(c, acc / wsum, k);
                 }
                 float y = dot(src, vec3(0.299, 0.587, 0.114));
-                vec3 ash = mix(vec3(y), src, 0.22) * vec3(0.46, 0.445, 0.43) * 0.7;
+                // (about 30% darker, half drained: the night still reads, the thing taught stands out)
+                vec3 ash = mix(vec3(y), src, 0.5) * 0.72;
                 vec2 q = UV - 0.5;
-                ash *= 1.0 - 0.4 * smoothstep(0.25, 0.8, length(q * vec2(1.0, 0.72)));
+                ash *= 1.0 - 0.15 * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
                 COLOR = vec4(mix(c, ash, k), 1.0);
             }
             """,

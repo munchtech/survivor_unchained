@@ -130,8 +130,11 @@ public partial class Instrument : Control
         Chain.Pulse = pulse;
         Life.Modulate = lifeKey.Modulate = For(false);
         Art.Modulate = artKey.Modulate = For(keep == "art");
-        Dash.Modulate = dashKey.Modulate = For(keep == "dash");
-        Draught.Modulate = draughtKey.Modulate = For(keep == "draught");
+        // (the chain's callout: what stands over the chain fades with the six places, so the arrow's
+        // point reads as the chain's)
+        float over = keep == "chain" ? slots : 1;
+        Dash.Modulate = dashKey.Modulate = For(keep == "dash") with { A = over };
+        Draught.Modulate = draughtKey.Modulate = For(keep == "draught") with { A = over };
         Statuses.Modulate = For(false);
         Passives.Modulate = For(false) with { A = slots };
         foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
@@ -694,15 +697,20 @@ public partial class EmberChain : Control
         public override void _Draw()
         {
             float now = Time.GetTicksMsec() / 1000f;
-            // (a callout's pulse: the ember's glow travelling the whole chain, left to right)
+            // (a callout's pulse: the ember's glow filling the chain from the left, its edge brightest,
+            // once every 1.8 s, held full a beat, then again)
             if (c.Pulse > 0)
+            {
+                float fillTo = Mathf.Min(1, (now % 1.8f) / 1.3f);
                 for (int k = 0; k <= c.Count; k += 2)
                 {
                     float t = (float)k / c.Count;
-                    float w = 0.5f + 0.5f * Mathf.Sin(now * 4.2f - t * 9);
+                    if (t > fillTo) break;
+                    float w = 0.3f + 0.7f * Mathf.Exp(-(fillTo - t) * 7);
                     var at = c.At(t);
-                    DrawTextureRect(soft!, new Rect2(at - new Vector2(22, 14), new Vector2(44, 28)), false, ChainTabs.HeatColour(0.75f) with { A = c.Pulse * (0.12f + 0.3f * w * w) });
+                    DrawTextureRect(soft!, new Rect2(at - new Vector2(22, 14), new Vector2(44, 28)), false, ChainTabs.HeatColour(0.75f) with { A = c.Pulse * (0.08f + 0.4f * w) });
                 }
+            }
             if (!c.ember && c.flash <= 0) return;
             float flick = 1 + 0.10f * Mathf.Sin(now * 23) + 0.07f * Mathf.Sin(now * 37.3f + 1.7f);
             int n = c.Count;
