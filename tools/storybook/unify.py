@@ -130,6 +130,22 @@ def soft_edges(img):
     return np.clip(cv2.GaussianBlur(e, (0, 0), 1.1 * k) * 1.6, 0, 1)
 
 
+def block_edges(img):
+    """Soft edges of a flat block-in: every shape's outline, however small the value step."""
+    k = img.shape[1] / 1792.0
+    lab = cv2.cvtColor((np.clip(img, 0, 1) * 255).astype(np.uint8), cv2.COLOR_RGB2LAB)
+    lab = cv2.GaussianBlur(lab, (0, 0), 1.2 * k)
+    e = np.zeros(img.shape[:2], np.uint8)
+    for ch, (lo, hi) in zip(range(3), ((5, 12), (4, 9), (4, 9))):
+        e |= cv2.Canny(lab[..., ch], lo, hi)
+    n, lab_, st, _ = cv2.connectedComponentsWithStats((e > 0).astype(np.uint8), connectivity=8)
+    keep = np.zeros(n, bool)
+    keep[1:] = st[1:, cv2.CC_STAT_AREA] >= 30 * k
+    e = keep[lab_].astype(np.float32)
+    e = cv2.dilate(e, np.ones((2, 2), np.uint8))
+    return np.clip(cv2.GaussianBlur(e, (0, 0), 1.1 * k) * 1.6, 0, 1)
+
+
 def strays(img):
     h, s, v = hsv(img)
     out = ~(((h >= 18) & (h <= 50)) | ((h >= 195) & (h <= 220)))
@@ -151,6 +167,7 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--recolor-red", action="store_true")
     ap.add_argument("--simplify", action="store_true", help="prep: flatten the old brushwork first (mean shift)")
+    ap.add_argument("--block", action="store_true", help="prep: the input is a flat block-in (edges of every shape)")
     a = ap.parse_args()
     for f in a.inputs:
         img = load(f)
@@ -168,7 +185,8 @@ def main():
                 u8 = (np.clip(img, 0, 1) * 255).astype(np.uint8)
                 img = cv2.pyrMeanShiftFiltering(u8, sp=int(10 * k), sr=20).astype(np.float32) / 255
             save(os.path.join(d, name + "_init.png"), ground(img, PREP))
-            save(os.path.join(d, name + "_edge.png"), soft_edges(img)[..., None].repeat(3, 2))
+            edge = block_edges(img) if a.block else soft_edges(img)
+            save(os.path.join(d, name + "_edge.png"), edge[..., None].repeat(3, 2))
             json.dump({"source": f, "step": "prep", "params": PREP, "recolor_red": a.recolor_red, "simplify": a.simplify,
                        "tool": "tools/storybook/unify.py"},
                       open(os.path.join(d, name + "_init.json"), "w"), indent=1)

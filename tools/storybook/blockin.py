@@ -118,12 +118,13 @@ def p9():
     for _ in range(40):
         x = rng.uniform(0, 420); y = rng.uniform(560, 1000)
         c.line([(x, y), (x + rng.uniform(-10, 10), y - rng.uniform(10, 40))], "#0f1013", rng.uniform(2, 5), 0.8, 1.0)
-    # The Waystation: a few roofs, warm lamps, one higher.
-    for x, y, w, h in ((532, 410, 26, 22), (556, 404, 30, 28), (588, 409, 24, 23), (610, 413, 20, 19)):
-        c.poly([(x, y + h), (x, y + 6), (x + w // 2, y), (x + w, y + 6), (x + w, y + h)], "#0d0f15", 0.6)
-    c.line([(576, 432), (576, 393)], "#0d0f15", 3, 1.0, 0.5)
-    for x, y, r in ((542, 422, 5), (564, 418, 5), (592, 423, 4), (614, 421, 4), (576, 390, 6)):
-        c.glow(x, y, r * 3.0, "#ff9a40", 0.55)
+    # The Waystation on a low rise: a cluster of roofs round a square tower, warm windows, one lantern high on the tower.
+    c.poly([(470, 434), (520, 418), (640, 414), (700, 430)], "#10131c", 2.0)
+    for x, y, w, h in ((500, 404, 34, 26), (532, 396, 40, 34), (590, 400, 36, 30), (624, 408, 30, 22), (650, 412, 26, 18)):
+        c.poly([(x, y + h), (x, y + 8), (x + w // 2, y), (x + w, y + 8), (x + w, y + h)], "#0c0e14", 0.8)
+    c.poly([(570, 432), (570, 352), (566, 344), (590, 336), (594, 344), (590, 432)], "#0c0e14", 0.8)
+    for x, y, r in ((512, 420, 3), (548, 414, 4), (604, 418, 3), (636, 422, 3), (558, 424, 3), (580, 340, 5)):
+        c.glow(x, y, r * 4.0, "#ff9a40", 0.5)
         c.ellipse(x, y, max(1, r // 2), max(1, r // 2), "#ffe0a0", soft=0.6)
     # Trees and the river on the right; three blue points low by the water, uneven.
     c.poly([(1120, 476), (W, 470), (W, 506), (1120, 500)], "#2a3956", 2.0)
@@ -135,9 +136,11 @@ def p9():
             y = rng.uniform(top, 470)
             c.line([(x, y), (x + rng.uniform(-60, 60), y - rng.uniform(15, 60))], "#0a0d14", rng.uniform(1, 3), 0.9, 0.7)
     c.poly([(1110, 515), (W, 505), (W, 600), (1110, 600)], "#101219", 3.0)
-    for x, y in ((1262, 489), (1409, 496), (1567, 484)):
-        c.glow(x, y, 26, "#5aa0e0", 0.55)
-        c.ellipse(x, y, 3, 3, "#d8eeff", soft=0.7)
+    for x, y in ((1214, 488), (1436, 497), (1702, 482)):
+        c.line([(x, y + 3), (x, y + 26)], "#0a0d14", 3, 1.0, 0.5)
+        c.glow(x, y, 22, "#5aa0e0", 0.5)
+        c.ellipse(x, y, 3, 4, "#d8eeff", soft=0.7)
+        c.line([(x, 492), (x, 504)], "#6aaee8", 3, 0.6, 1.0)
     # The fire, high, and its warm ring on the ground.
     c.glow(790, 668, 430, "#4a2a12", 0.9, ry=150)
     c.glow(790, 600, 180, "#ff8a3a", 0.25)
@@ -190,8 +193,8 @@ def p1():
                  [(420, 520), (620, 640), (930, 560)]):
         c.line(line, "#0c0a08", 5, 0.85, 1.5)
     # The column: an S of torches down the far wall to the bottom edge, the brightest shapes.
-    path = curve([(470, 335), (700, 362), (930, 392), (1090, 440), (1060, 500), (860, 560), (680, 620), (640, 680), (760, 745),
-                  (930, 800), (1010, 860), (980, 930), (960, 1015)], 26)
+    path = curve([(640, 372), (760, 400), (900, 440), (1010, 490), (1000, 545), (880, 590), (740, 640), (690, 700), (760, 760),
+                  (900, 815), (990, 870), (980, 940), (950, 1015)], 24)
     c.line(path.astype(int).tolist(), "#3e2a1c", 18, 0.55, 7)
     for i, (x, y) in enumerate(path):
         r = 5.5 - 2.8 * i / (len(path) - 1)
@@ -267,15 +270,16 @@ def p7():
     # The ford: a trodden track down the near bank, flat stones across, the track up the far bank.
     c.line(curve([(560, H), (640, 960), (730, 900), (792, 850)], 20).astype(int).tolist(), "#5a6370", 60, 0.45, 12)
     for i, (x, y) in enumerate(curve([(800, 842), (870, 776), (940, 718), (1010, 662), (1080, 604), (1150, 548)], 9)):
-        r = 32 - 2.2 * i
+        r = 44 - 3.0 * i
         c.ellipse(x, y + r * 0.15, r, r * 0.42, "#1b1e23", soft=1.5)
         c.ellipse(x - r * 0.1, y - r * 0.1, r * 0.6, r * 0.18, "#5d6774", soft=1.5)
     c.line(curve([(1160, 540), (1210, 488), (1260, 430)], 10).astype(int).tolist(), "#4a525e", 34, 0.4, 8)
     # The fourth light: just above the water, a wide cold glare; its streak in the water under it.
-    c.glow(980, 640, 170, "#3a78b8", 0.55)
-    c.glow(980, 640, 60, "#8ac8ff", 0.8)
-    c.glow(980, 640, 16, "#e8f6ff", 1.0)
-    c.line([(980, 690), (980, 860)], "#8ac8ff", 10, 0.35, 5)
+    c.glow(985, 650, 300, "#24507e", 0.6, ry=220)
+    c.glow(985, 650, 110, "#5a9ad6", 0.6)
+    c.glow(985, 650, 34, "#bfe2ff", 0.9)
+    c.glow(985, 650, 9, "#ffffff", 1.0)
+    c.line([(985, 690), (985, 880)], "#8ac8ff", 14, 0.35, 6)
     c.img = np.clip(c.img, 0, 1)
     return c.img, np.zeros((H, W), np.float32)
 

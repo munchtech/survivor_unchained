@@ -1,6 +1,6 @@
 """A contact sheet: pictures in a grid, each labelled, at the size a look needs.
 
-    python tools/storybook/sheet.py <out.jpg> <img> [<img> ...] [--cols 4] [--cell 448]
+    python tools/storybook/sheet.py <out.jpg> <img> [<img> ...] [--cols 4] [--cell 448] [--window]
 """
 import argparse
 import os
@@ -15,10 +15,14 @@ def main():
     ap.add_argument("imgs", nargs="+")
     ap.add_argument("--cols", type=int, default=4)
     ap.add_argument("--cell", type=int, default=448, help="cell width in px")
+    ap.add_argument("--window", action="store_true", help="crop each plate to the 2.39 window's band (about y 13-87%%)")
     a = ap.parse_args()
     cells = []
     for f in a.imgs:
         im = cv2.imread(f, cv2.IMREAD_COLOR)
+        if a.window:
+            hh = im.shape[0]
+            im = im[int(hh * 0.134):int(hh * 0.866)]
         h, w = im.shape[:2]
         im = cv2.resize(im, (a.cell, int(h * a.cell / w)), interpolation=cv2.INTER_AREA)
         label = os.path.splitext(os.path.basename(f))[0]
