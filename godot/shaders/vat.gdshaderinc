@@ -1,3 +1,4 @@
+#include "res://shaders/flare_world.gdshaderinc"
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
 // side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
 // See vat.gdshader for what it does.
@@ -109,18 +110,21 @@ void fragment() {
 	// and bluer than a pale body, not paler, and every status light stays under 1.
 	float rough = roughness;
 	vec3 e = glow_color;
-	if (fx.z > 0.0) {
+	// Burns Twice's glaze takes the rime's place in its reach (flare_world.gdshaderinc): the fight freezes the
+	// whole reach at once, but a body glazes only as the frost's front reaches it (t10: all rimed by frost +0.1 s).
+	float fz = fx.z > 0.0 && flare_live() && flare_frosting((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) ? 0.0 : fx.z;
+	if (fz > 0.001) {
 		// Frozen (chill to half): rime grows in patches on what faces up, a cold blue at a
 		// middle value that a pale body shows against; the ice is glossy, with a thin cold rim
 		// and a few glints.
 		float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-		float rime = smoothstep(0.42, 0.62, vat_noise(vat_local * 5.0) * 0.75 + up * 0.45) * smoothstep(0.0, 0.5, fx.z);
+		float rime = smoothstep(0.42, 0.62, vat_noise(vat_local * 5.0) * 0.75 + up * 0.45) * smoothstep(0.0, 0.5, fz);
 		vec3 ice = vec3(0.16, 0.36, 0.62) * (0.7 + 0.6 * clamp(lum, 0.0, 0.6));
-		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fx.z * 0.3);
+		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fz * 0.3);
 		c = mix(c, ice, rime * 0.85);
 		rough = mix(rough, 0.22, rime);
 		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(TIME * 3.0)));
-		e += vec3(0.28, 0.62, 1.0) * fx.z * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
+		e += vec3(0.28, 0.62, 1.0) * fz * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
 	}
 	if (fx.w > 0.0) {
 		// Burning: thin tongues of fire licking up the body from its edges over char, soot where
@@ -150,4 +154,24 @@ void fragment() {
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;
 	EMISSION = e;
+
+	// The Flare's drain and glaze (flare_world.gdshaderinc).
+	if (flare_live()) {
+		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; vec3 fl_e = EMISSION;
+		flare_body((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, rim, fl_a, fl_r, fl_e);
+		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
+		// The BOOM's line reaching a statue: the fire through its cracks before it bursts.
+		EMISSION += vec3(1.0, 0.32, 0.05) * flare_crack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) * (0.45 + 0.9 * rim);
+		// The fireball on the statues (judge 5b fix 3): their faces toward it mixed to its colour (amber added on cyan
+		// came out grey), the far faces left cyan, so each statue is two-tone.
+		if (flare_fire.w > 0.0) {
+			float fw = clamp(flare_fire_w((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz)), 0.0, 1.0);
+			vec3 fc = flare_fire_col();
+			// Only the ice takes the fire's colour (judge 7 (1): a charred body painted fc * 0.55 by it read as a beige
+			// mannequin until the fire went); the char keeps its black and catches the fire at its rim only.
+			float ice = clamp(fx.z * 2.0, 0.0, 1.0);
+			ALBEDO = mix(ALBEDO, fc * 0.55, fw * 0.8 * ice);
+			EMISSION = mix(EMISSION, fc * fire_rim, fw * ice) + fc * fire_rim * fw * (1.0 - ice) * pow(rim, 3.0) * 0.35;
+		}
+	}
 }

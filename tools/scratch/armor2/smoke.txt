@@ -1,0 +1,2 @@
+mix_play|--quick warden --sex female --nohud --zone waystation --wear warden.top,ranger.bottom,ranger.boots
+mix_look|--new --sex female --archetype warden --step 0 --wear warden.top,ranger.bottom,ranger.boots

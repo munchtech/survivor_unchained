@@ -32,7 +32,7 @@ public static class Arms
     public static readonly Dictionary<string, Spec> All = new()
     {
         ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f, Lean: 35, Kind: WeaponKind.Blade1H, Seated: true),
-        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H),
+        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H),  // grip conformed (grip_conform.py --seat --round): its anchor_grip seats it; Seated, and fistfit viking_sword passes 13/13 (391f685c, grip_conform --cylinder)
         ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35, Kind: WeaponKind.Blade1H),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
@@ -40,12 +40,16 @@ public static class Arms
         ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),
         ["mage_staff"] = new("mage_staff", 1.75f, 0.45f, Kind: WeaponKind.Staff),
         ["short_staff"] = new("mage_staff", 1.1f, 0.3f, Kind: WeaponKind.Staff),
-        ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true, Kind: WeaponKind.Crossbow),
+        // The crossbow: its stock 0.693 m (the size it had while Make took its 0.85 m bow for its length, before its
+        // anchor_grip said the stock is the shaft), held by its pistol grip (tools/assets/crossbow_grip.py, Seat).
+        ["crossbow"] = new("crossbow", 0.693f, 0.3f, Pistol: true, Kind: WeaponKind.Crossbow),
         ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30, Kind: WeaponKind.Wand),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f, Kind: WeaponKind.Shield),
         ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),
-        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),  // Seated once its left fist passes (fistfit.py daggers --side l)
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),  // grip conformed (grip_conform.py --no-anchor); its left fist: fistfit.py daggers --side l
     };
+
+    static Arms() => ArmsData.Merge(All);  // art/weapons/weapons.json: weapons of a known kind as data
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
     public static Node3D Make(string id)
@@ -70,16 +74,19 @@ public static class Arms
         var pts = new List<Vector3>();
         Transform3D? aGrip = null, aSheath = null;
         var tag = WeaponKind.None;
+        var path = new List<string>();
         void Walk(Node n, Transform3D at)
         {
             foreach (var c in n.GetChildren())
             {
                 var t = c is Node3D c3 ? at * c3.Transform : at;
                 // Anchors (Marionette exports carry them) and a kind tag (a glTF extra "kind", or a node named kind_<kind>).
+                // In a file of several pieces only the anchors under the piece's own node (WeaponSockets.AnchorIsPiece).
                 if (c is Node3D)
                 {
-                    if (c.Name.ToString().StartsWith("anchor_grip")) aGrip = t;
-                    else if (c.Name.ToString().StartsWith("anchor_sheath")) aSheath = t;
+                    bool own = WeaponSockets.AnchorIsPiece(spec.Node, path);
+                    if (c.Name.ToString().StartsWith("anchor_grip")) { if (own) aGrip = t; }
+                    else if (c.Name.ToString().StartsWith("anchor_sheath")) { if (own) aSheath = t; }
                     else if (c.Name.ToString().StartsWith("kind", StringComparison.OrdinalIgnoreCase)) tag = WeaponSockets.Parse(c.Name);
                 }
                 if (c.HasMeta("extras") && c.GetMeta("extras").Obj is Godot.Collections.Dictionary ex && ex.ContainsKey("kind"))
@@ -87,7 +94,9 @@ public static class Arms
                 if (c is MeshInstance3D mi && mi.Mesh != null)
                     for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                         foreach (var v in (Vector3[])mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex]) pts.Add(t * v);
+                path.Add(c.Name.ToString());
                 Walk(c, t);
+                path.RemoveAt(path.Count - 1);
             }
         }
         Walk(model, Transform3D.Identity);
@@ -212,8 +221,10 @@ public static class Arms
     /// pocket and its shaft along the fist's line, so the anchor rule stays "origin on the shaft where the fist grips, -Y
     /// down the shaft". An unanchored piece is seated only when its Spec says its Grip was measured on the fist
     /// (Seated) and only in her and the hero's hands (`own`: the fist was fitted on her hand, the grip keyed to its
-    /// Lean); the folk keep the plain mount. Not for a pistol-held piece (its stock sits on
-    /// the fist) or the forearm. hand_l: the same seat on its left pocket (WeaponSockets.PocketL, the right's mirrored: only the
+    /// Lean); the folk keep the plain mount. A pistol-held piece (the crossbow) is seated by its pistol grip
+    /// (WeaponSockets.PistolSeat: its anchor_grip on the fist's pocket, the grip along the fist's line, the stock along
+    /// the hand's +Y, the bow forward) when it has the grip (an anchor_grip), else it keeps the plain pistol mount (its
+    /// stock on the fist). Not for the forearm. hand_l: the same seat on its left pocket (WeaponSockets.PocketL, the right's mirrored: only the
     /// dagger's so far), the mount itself unmirrored (the seat lays the grip point and the shaft's line, so only the
     /// piece's roll about its shaft is the plain mount's: a flat hilt's faces toward the palm and the back either way).
     /// Every other kind in the left hand keeps the plain mount.</summary>
@@ -221,12 +232,18 @@ public static class Arms
     {
         var t = PieceTransform(id);
         var spec = All[id];
-        if (spec.Pistol) return t;
         var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
         if (WeaponSockets.Pocket(kind, bone) is not { } pocket) return t;
+        static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+        if (spec.Pistol)
+        {
+            if (!piece.HasMeta("anchored")) return t;
+            var pm = MountTransform(id, bone, own);
+            var (pq, pat) = WeaponSockets.PistolSeat(N(pm.Basis.X), N(pm.Basis.Y), N(pm.Basis.Z), N(pm.Origin), pocket.At, pocket.Dir);
+            return new Transform3D(new Basis(new Quaternion(pq.X, pq.Y, pq.Z, pq.W)), new Vector3(pat.X, pat.Y, pat.Z));
+        }
         if (!piece.HasMeta("anchored") && !(own && spec.Seated)) return t;
         var m = MountTransform(id, bone, own);
-        static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
         var (q, at) = WeaponSockets.FistSeat(N(m.Basis.X), N(m.Basis.Y), N(m.Basis.Z), N(m.Origin), pocket.At, pocket.Dir);
         return new Transform3D(new Basis(new Quaternion(q.X, q.Y, q.Z, q.W)), new Vector3(at.X, at.Y, at.Z)) * t;
     }
@@ -278,8 +295,10 @@ public static class Arms
         [WeaponSockets.HipBelt] = new("pelvis", new(-0.18f, 1.14f, 0.05f), new(0.15f, 0.95f, 0.25f), new(-1, 0, 0), new(-1, 0, 0), Mirrors: true),
         // Dagger: the back of the belt, flat, one each side of the spine, hilts out and blades crossing.
         [WeaponSockets.BeltBack] = new("pelvis", new(-0.17f, 1.12f, -0.13f), new(1, 0, 0), new(0, 0, -1), new(0, 0, -1), Mirrors: true),
-        // Crossbow: slung across the back, stock rising to her right shoulder, its top out of the back.
-        [WeaponSockets.Sling] = new("spine_03", new(0.10f, 1.16f, -0.17f), new(-0.6f, 0.8f, 0), new(0, 0, -1), new(0, 0, -1)),
+        // Crossbow: slung across the back by the stock's middle (its anchor_sheath), stock rising to her right shoulder,
+        // the bow flat across her back, its top in to the back so the pistol grip and the lever stand out from her, not
+        // into her (18 October: before the grip's anchor the bow was taken for the stock and ran up the diagonal).
+        [WeaponSockets.Sling] = new("spine_03", new(0.10f, 1.16f, -0.17f), new(-0.6f, 0.8f, 0), new(0, 0, 1), new(0, 0, -1)),
         // Two-handed blade or axe: diagonal across the back like the sling, hilt or haft over her right shoulder (the
         // grip high on the right), the tip down toward her left hip, flat to her back.
         [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.20f), new(0.25f, -0.97f, 0), new(0, 0, -1), new(0, 0, -1)),
@@ -398,7 +417,8 @@ public static class Arms
 
     /// <summary>The piece's own turn inside its mount: held pistol-fashion
     /// (a crossbow) the stock runs along the fingers, its top out of the
-    /// thumb side, sitting on the fist rather than through it.</summary>
+    /// thumb side, sitting on the fist rather than through it (the plain
+    /// pistol mount: a piece with a pistol grip is seated on it instead, Seat).</summary>
     public static Transform3D PieceTransform(string id) => All[id].Pistol
         ? new Transform3D(new Basis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0)), new Vector3(0, 0.05f, 0))
         : Transform3D.Identity;

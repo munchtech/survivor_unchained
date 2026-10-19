@@ -36,6 +36,29 @@ public static class Loadouts
         ["knife_belt"] = new("daggers", "dagger_b", null, "Sword_Idle", ["OverhandThrow"], "Sword_Regular_Combo"),
     };
 
+    /// <summary>The Held row a new weapon of each kind takes its stance from.</summary>
+    static readonly Dictionary<WeaponKind, string> Template = new()
+    {
+        [WeaponKind.Blade1H] = "worn_oathblade", [WeaponKind.Dagger] = "knife_belt", [WeaponKind.Staff] = "ember_staff",
+        [WeaponKind.Crossbow] = "hunting_bow", [WeaponKind.Axe] = "butchers_cleaver", [WeaponKind.Wand] = "apprentice_wand",
+    };
+
+    /// <summary>What she holds: the item's own Held row; else, for an item with Art, its kind's row with the right hand swapped; else null.</summary>
+    public static HeldArms? HeldOf(string item)
+    {
+        if (Held.TryGetValue(item, out var h)) return h;
+        var def = Items.Find(item);
+        if (def?.Art == null) return null;
+        return Template.TryGetValue(WeaponSockets.Parse(def.ArtKind), out var t) ? Held[t] with { Right = def.Art } : null;
+    }
+
+    /// <summary>The kind of held piece as the clips name it ("sword", "axe", "staff"...; "" for none). A pair of axes is told apart by HerClips.Kind.</summary>
+    public static string ClipKind(WeaponKind kind) => kind switch
+    {
+        WeaponKind.Blade1H => "sword", WeaponKind.Axe or WeaponKind.Axe2H => "axe", WeaponKind.Staff => "staff",
+        WeaponKind.Wand => "wand", WeaponKind.Crossbow => "crossbow", WeaponKind.Dagger => "daggers", _ => "",
+    };
+
     /// <summary>Each calling's clothes. The Reaver goes bare-chested; a
     /// hood, where worn, covers the hair.</summary>
     static List<string> OutfitOf(string archetype, Sex sex, bool hood) =>
@@ -93,7 +116,7 @@ public static class Loadouts
     {
         var a = Callings.Archetype(ch.Archetype);
         var item = ch.Equipment.Weapon?.Def ?? a.Weapons[0];
-        var held = Held.TryGetValue(item, out var h) ? h : Held[a.Weapons[0]];
+        var held = HeldOf(item) ?? Held[a.Weapons[0]];
         var sex = ch.Sex ?? Sex.Male;
         // The Stalker's hood by their model; the Warden's and Arcanist's as their headgear.
         bool her = sex == Sex.Female;
@@ -120,6 +143,8 @@ public static class Loadouts
             EyeRing = eyes != null && eyes.Ring != "" ? eyes.Ring : null,
             Paint = kit != null && kit.Paints.Any(p => p.Id == ch.Paint && p.Id != "none") ? ch.Paint : null,
             FaceShape = kit != null && kit.Faces.Any(f => f.Id == ch.FaceShape) ? ch.FaceShape : null,
+            // What her equipment wears, piece by piece (People: HerWear), over her calling's outfit.
+            Worn = her && Rpg.Wear.Of(ch) is { Count: > 0 } worn ? worn : null,
             // The calling's colours dye the cloth; trousers take the darker
             // colour (or the cloth's, darker still).
             Dye = pal.Paint.TryGetValue("cloth", out var cloth)

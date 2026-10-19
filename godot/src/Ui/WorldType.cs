@@ -451,6 +451,8 @@ public partial class TipLine : Control
     readonly TextureRect burn;
     /// <summary>Waiting (a banner holds the upper third): unseen, and its burning in not yet begun.</summary>
     public bool Held;
+    /// <summary>The Flare's labels alpha (0 to 1), multiplied into its fade; its children ignore SelfModulate.</summary>
+    public float Fade = 1;
 
     public TipLine(string title, string text, Control? keys)
     {
@@ -509,7 +511,7 @@ public partial class TipLine : Control
         burn.Position = new Vector2(-380, s.Y / 2 - 75);
         // It burns in: the ember's glow first, the words coming up through it, then the glow cools away.
         float k = (float)Math.Clamp(T / 0.5, 0, 1);
-        Modulate = Colors.White with { A = k };
+        Modulate = Colors.White with { A = k * Fade };
         burn.Modulate = Style.Ember with { A = 0.32f * (float)Math.Max(0, 1 - Math.Abs(T - 0.25) / 0.6) };
     }
 }

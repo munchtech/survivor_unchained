@@ -9,6 +9,8 @@
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, world_vertex_coords;
 
+#include "res://shaders/flare_world.gdshaderinc"
+
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform sampler2D splat : filter_linear_mipmap, repeat_disable;
 uniform float zone_size = 300.0;
@@ -68,4 +70,11 @@ void fragment() {
 	ROUGHNESS = 0.88;
 	SPECULAR = 0.12;
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+
+	// The Flare's drain and frost on the tips (flare_world.gdshaderinc).
+	if (flare_live()) {
+		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; vec3 fl_e = EMISSION;
+		flare_blade((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, v_t, fl_a, fl_r, fl_e);
+		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
+	}
 }

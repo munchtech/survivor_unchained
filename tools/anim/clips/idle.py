@@ -113,7 +113,10 @@ def arcanist(t, f):
         # The staff upright at her side, its head leaning in a little and its foot out past her right leg
         # (13 Oct: on the seated bound staff, blade (-0.12, 1.0, 0.18) crossed its lower half behind her right
         # thigh and calf every frame; now >= 10 mm off her legs and her hat).
-        "hand_r": {"arc": arc_of((-0.16, -0.28, 0.12)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
+        # (18 Oct, animation 38: the grip 7 cm forward and the elbow's pole turned down and in, from (0.12 forward,
+        # pole (-0.8, -0.3, -0.6)): at the close-up the elbow stood cocked out and back; now 20 deg out of her
+        # side, not 32 (the hip arm's 26), 85 mm out from the shoulder, not 132, and 15 deg back, not 35.)
+        "hand_r": {"arc": arc_of((-0.16, -0.28, 0.19)), "pole": (-0.2, -0.6, -0.75), "frame": "chest",
                    "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5},
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
@@ -218,23 +221,167 @@ def reaver(t, f):
     }
 
 
+# Her left hand laid over the crossbow's fore-stock, palm down, a hand ahead of the right fist, the fingers over its
+# far side; the elbow bent and hanging by her side (animation 38, 18 Oct). Under the stock (as keyed before) the fore-
+# stock sits 55 cm from her shoulder, past her reach with the stock carried this low: the arm went straight across her
+# and the upper arm 60 mm into her side and breast. Shared by the crossbow's shot and the stops (which end here).
+# The crossbow's carry moved as one (both hands, chest frame, m): ahead of her, so its butt clears her waist.
+STALKER_SHIFT = (0.0, 0.0, 0.06)
+STALKER_HAND_L = {"hand_l": {"arc": arc_of(np.add((-0.058, -0.335, 0.255), STALKER_SHIFT)), "pole": (0.0, -0.5, -1.0), "frame": "chest",
+                             "knuckles": _n((-0.71, 0.33, 0.63)), "blade": _n((-0.49, 0.41, -0.77)), "twist": 0.4}}
+
+
+STALKER_HAND_R = {"hand_r": {"arc": arc_of(np.add((0.12, -0.38, 0.20), STALKER_SHIFT)), "pole": (-0.7, -0.4, -0.5),
+                             "frame": "chest", "knuckles": _n((0.5, -0.15, 0.85)), "twist": 0.5}}
+
+
 def stalker(t, f):
     return {
         # The crossbow low across her, pointing ahead and to her left, the
-        # left hand under its stock.
-        "hand_r": {"arc": arc_of((0.12, -0.38, 0.20)), "pole": (-0.7, -0.4, -0.5), "frame": "chest",
-                   "knuckles": _n((0.5, -0.15, 0.85)), "twist": 0.5},
-        "hand_l": {"arc": arc_of((-0.16, -0.42, 0.30)), "pole": (0.7, -0.4, -0.5), "frame": "chest",
-                   "knuckles": _n((0.2, -0.2, 0.95)), "twist": 0.4},
+        # left hand laid over its fore-stock.
+        **STALKER_HAND_R, **STALKER_HAND_L,
         "fingers_r": "grip", "fingers_l": "relaxed",
     }
+
+
+_STOCK = {}
+STOCK_DROP = 0.003
+
+
+def _stock_rel(rig):
+    """Her left hand on the fore-stock as the idle lays it (stalker(), the base's first frame), in her right hand's
+    frame: (wrist offset, turn). Made once per body."""
+    from keyed import grip_of
+    from rig import qinv, qmul, qrot
+    key = id(rig)
+    if key not in _STOCK:
+        base = base_of(rig, "stalker")
+        grip0 = rig.grip
+        rig.grip = grip_of("crossbow") if rig.grips else {}
+        rig.swivel_force = {}
+        local, pos = rig.solve(stalker(0, 0), base=(base.rot[0], base.pos[0]))
+        rig.swivel_force = None
+        rig.grip = grip0
+        g, p = rig.globals(local, pos)
+        hr, hl, s3 = rig.I["hand_r"], rig.I["hand_l"], rig.I["spine_03"]
+        # (Laid STOCK_DROP lower onto the stock, in the chest's frame: the idle's first frame has her palm 4-5 mm
+        # over it, where the loop's breath lays it 1.5-4.5.)
+        drop = qrot(qmul(g[0, s3], qinv(rig.grest[s3])), [0.0, -STOCK_DROP, 0.0])
+        _STOCK[key] = (qrot(qinv(g[0, hr]), p[0, hl] + drop - p[0, hr]), qmul(qinv(g[0, hr]), g[0, hl]))
+        # (And the crossbow's top there, in the chest's frame: a clip that keys the right hand's blade lands on it.)
+        _STOCK[("top", key)] = tuple(float(x) for x in qrot(qinv(qmul(g[0, s3], qinv(rig.grest[s3]))), qrot(g[0, hr], [0, 0, 1.0])))
+    return _STOCK[key]
+
+
+def stalker_top(rig):
+    """The crossbow's top (hand_r +Z) in her idle, in the chest's frame."""
+    _stock_rel(rig)
+    return _STOCK[("top", id(rig))]
+
+
+# The fore-stock's centre line in hand_r's space (m): along +Y at this x, z (the stock 40 mm wide, its top at +z 0.09).
+STOCK_AXIS = (-0.041, 0.045)
+
+
+def cradle_rel(at, fingers=35.0, roll=0.0, lift=0.0, palm=0.020, reach=0.045):
+    """A palm-up cradle under the fore-stock, in hand_r's space: (wrist offset, turn), as _stock_rel returns. at: the
+    palm's centre (x, y, z; the stock's underside is z 0.00-0.02 from y 0.14 on); fingers: deg from the stock (+Y)
+    toward its far side (+X); roll: deg the palm tips about the fingers toward her (-X, the heel of the hand down the
+    near side); lift: deg the fingers rise toward the stock's top (+Z), up its far side. palm, reach: the palm's centre from the wrist's bone, out of the palm and along the fingers."""
+    from rig import qfrom_basis
+    a, r, l = math.radians(fingers), math.radians(roll), math.radians(lift)
+    f = np.array([math.sin(a) * math.cos(l), math.cos(a) * math.cos(l), math.sin(l)])
+    side = np.array([math.cos(a), -math.sin(a), 0.0])        # across the fingers, toward the far side
+    up = np.cross(side, f)                                   # the palm's normal before the roll
+    n = up * math.cos(r) - side * math.sin(r)                # the palm's normal (hand_l +X)
+    z = np.cross(n, f)
+    return (np.array(at, float) - reach * f - palm * n, qfrom_basis(n, f, z))
+
+
+def blend_rel(a, b, t, via=None, out=0.0):
+    """Between two of the left hand's relations to the stock: the wrist swung about the stock's centre line (round
+    its near side, never through it), its turn slerped; via: a relation passed at t 0.5 (each half on its own), out:
+    m the wrist stands off the stock at the middle (sin bump)."""
+    from rig import qslerp
+    if via is not None:
+        p, q = (blend_rel(a, via, 2 * t) if t < 0.5 else blend_rel(via, b, 2 * t - 1))[:2]
+        if out:
+            c = np.array([STOCK_AXIS[0], p[1], STOCK_AXIS[1]])
+            d = p - c
+            p = p + d / max(1e-6, np.linalg.norm(d)) * out * math.sin(math.pi * t)
+        return p, q
+    (pa, qa), (pb, qb) = a[:2], b[:2]
+    c = np.array([STOCK_AXIS[0], 0.0, STOCK_AXIS[1]])
+    da, db = pa - c, pb - c
+    ang = lambda d: math.atan2(d[2], d[0])
+    ra, rb = math.hypot(da[0], da[2]), math.hypot(db[0], db[2])
+    t1, t2 = ang(da), ang(db)
+    t1 %= 2 * math.pi; t2 %= 2 * math.pi                     # (0 = +x far side, pi = the near side: no crossing 0)
+    th = t1 + (t2 - t1) * t; rr = ra + (rb - ra) * t + out * math.sin(math.pi * t)
+    p = c + np.array([rr * math.cos(th), da[1] + (db[1] - da[1]) * t, rr * math.sin(th)])
+    return p, qslerp(qa, qb, t)
+
+
+def ride_stock(rig, make, weight=lambda f: 1.0, rel=None):
+    """A crossbow clip whose left hand rides the fore-stock wherever the crossbow goes (animation 38: keyed on its own
+    arc from her shoulder, it parted from the stock or the stock swung through it as the two arms' arcs drifted apart:
+    the crossbow 6-18 mm into her left hand in the shot, the show and the stops). make(post) builds the clip; the right
+    hand's path is read from a first build and the left hand put where the idle lays it on the stock in the right
+    hand's frame (weight(frame) 0..1: how far from its keyed place onto the stock)."""
+    from rig import qinv, qmul, qrot
+    idle_rel = _stock_rel(rig)
+    c0 = make(None)
+    g, p = rig.sk.fk(c0.rot, c0.pos)
+    hr, s3 = rig.I["hand_r"], rig.I["spine_03"]
+    tg = []
+    for f in range(c0.frames):
+        r = (rel(f, idle_rel) if rel else None) or idle_rel
+        rel_p, rel_q = r[0], r[1]
+        q = qmul(g[f, hr], rel_q)
+        tg.append((p[f, hr] + qrot(g[f, hr], rel_p), qrot(q, [0, 0, 1.0]), qrot(q, [0, 1.0, 0]),
+                   qmul(g[f, s3], qinv(rig.grest[s3])), r[2] if len(r) > 2 else 1.0, r[3] if len(r) > 3 else None))
+
+    def post(fr, pose):
+        w = float(weight(fr))
+        if w <= 0 or not isinstance(pose.get("hand_l"), dict):
+            return pose
+        pos, bl, kn, chest, aim, fingers = tg[min(fr, len(tg) - 1)]
+        spec = dict(pose["hand_l"])
+        if spec.get("frame") == "chest":
+            bl, kn = qrot(qinv(chest), bl), qrot(qinv(chest), kn)
+        for k, v in (("blade", bl), ("knuckles", kn)):
+            if w < 1 and k in spec:
+                v = np.array(spec[k], float) * (1 - w) + v * w
+            spec[k] = tuple(float(x) for x in v / np.linalg.norm(v))
+        spec.pop("thumb", None)
+        spec["pos"] = tuple(float(x) for x in pos)
+        spec["mix"] = w if "arc" in spec else 1.0
+        if aim < 1.0:
+            spec["aim"] = aim     # (rel's third: how far the hand is turned to it, 0 = riding the forearm)
+        if fingers is not None:
+            return {**pose, "hand_l": spec, "fingers_l": fingers}   # (rel's fourth: the left fingers there)
+        return {**pose, "hand_l": spec}
+    return make(post)
 
 
 def stalker_daggers(t, f):
     """The stalker's idle with a dagger in each hand (the game asks for idle_<calling>_<kind> first: OwnClips.For). Her
     crossbow idle let the left hang "relaxed" round the second dagger, an open hand with the blade stuck to it (judge,
     17 October); here both fists close on their hilts (the daggers' fitted WRAP, the left's mirrored: keyed.wrap_of)."""
-    return {**stalker(t, f), "fingers_l": "grip"}
+    # Her own arms (animation 38: on the crossbow's, the right dagger lay 20 mm into her left hand): a relaxed ready
+    # stance, both fists low ahead of her hips, a hand's width apart, the elbows soft by her sides, the wrists
+    # straight and the forearms rolled so the blades rise forward and a little out (the left a little ahead, over
+    # her leading foot).
+    return {"hand_r": {"arc": arc_of(DAGGERS_HAND_R), "pole": (-0.7, -0.5, -0.4), "frame": "chest",
+                       "thumb": _n((-0.25, 0.75, 0.6)), "twist": 0.5},
+            "hand_l": {"arc": arc_of(DAGGERS_HAND_L), "pole": (0.7, -0.5, -0.4), "frame": "chest",
+                       "thumb": _n((0.25, 0.75, 0.6)), "twist": 0.5},
+            "fingers_r": "grip", "fingers_l": "grip"}
+
+
+# The daggers' ready fists (chest frame, from each shoulder, m).
+DAGGERS_HAND_R = (0.05, -0.34, 0.24)
+DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 
 
 def warden_town(t, f):
@@ -268,12 +415,95 @@ _bases = {}
 SHARES_BASE = {"idle_stalker_daggers": "stalker"}
 
 
+# A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
+# bathroom"). The Crouched take's knees bent 55 deg with her hips 17 cm behind her feet and her chest 19 deg over; she
+# keeps its breath and sway, her hips lifted and carried over the middle of her feet (the knees to about a third of
+# the bend), the hips and everything above turned back so the chest leans a little and the head comes level, the legs
+# reaching again for the same planted ankles. knee: the mean knee bend wanted (deg); over: the hips ahead of the
+# middle of her feet, ankle to ball (m); pitch: the hips turned back (deg); width: her ankles apart (m; the take's,
+# drawn in to her hips, were 14 cm apart, near touching once she stood); stagger: her left foot ahead of her right (m),
+# a shooter's stance under the crossbow held across her.
+STAND = {"stalker": {"knee": 19.0, "over": 0.03, "pitch": 10.0, "width": 0.21, "stagger": 0.05}}
+
+
+def stand(rig, clip: Clip, knee, over, pitch, width=None, stagger=0.0) -> Clip:
+    from rig import qaxis, qbetween, qinv, qmul, qrot, two_bone_ik
+    sk = rig.sk
+    rot, pos = clip.rot.copy(), clip.pos.copy()
+    T = rot.shape[0]
+    pel, root = sk.i("pelvis"), sk.i("root")
+    g, p = sk.fk(rot, pos)
+    ank = {s: p[:, sk.i(f"foot_{s}")].copy() for s in "lr"}
+    ball = {s: p[:, sk.i(f"ball_{s}")] for s in "lr"}
+    foot_g = {s: g[:, sk.i(f"foot_{s}")].copy() for s in "lr"}
+    bend0 = {s: p[:, sk.i(f"calf_{s}")] - (p[:, sk.i(f"thigh_{s}")] + ank[s]) / 2 for s in "lr"}
+    fwd = sum(ball[s] - ank[s] for s in "lr").mean(axis=0)
+    fwd[1] = 0
+    fwd /= np.linalg.norm(fwd)
+    left = np.cross([0.0, 1.0, 0.0], fwd)
+    side = 1.0 if np.mean(np.sum((ank["l"] - ank["r"]) * left, axis=1)) > 0 else -1.0
+    apart = np.mean(np.abs(np.sum((ank["l"] - ank["r"]) * left, axis=1)))
+    for s, k in (("l", 1.0), ("r", -1.0)):
+        # The feet set out (a fixed offset each, so planted stays planted).
+        d = left * side * k * ((width - apart) / 2 if width else 0.0) + fwd * k * stagger / 2
+        ank[s] = ank[s] + d
+        ball[s] = ball[s] + d
+    mid = sum(ank[s] + ball[s] for s in "lr") / 4
+    # The hips turned back about her left-right axis (a turn about `left` tips her up toward her front).
+    turn = qaxis(left, -pitch)
+    rot[:, pel] = qmul(qinv(g[:, root]), qmul(turn, g[:, pel]))
+    # Carried forward over her feet (the sway about it kept), then the whole of her moved back so her hips sway about
+    # the root as the take's did (in_place): her feet go back under her rather than her hips forward off the root.
+    shift = fwd * (over - np.mean(np.sum((p[:, pel] - mid) * fwd, axis=1)))
+    centre = p[:, pel].mean(axis=0) + shift
+    centre[1] = 0.0
+    for s in "lr":
+        ank[s] = ank[s] - centre
+    shift = shift - centre
+
+    def legs(dy):
+        r, q = rot.copy(), pos.copy()
+        d = shift + np.array([0.0, dy, 0.0])
+        q[:, pel] = q[:, pel] + qrot(qinv(g[:, root]), np.broadcast_to(d, (T, 3)))
+        gl, gp = sk.fk(r, q)
+        bends = []
+        for s in "lr":
+            th, ca, fo = sk.i(f"thigh_{s}"), sk.i(f"calf_{s}"), sk.i(f"foot_{s}")
+            for t in range(T):
+                a, b_, c_ = gp[t, th], gp[t, ca], gp[t, fo]
+                k = bend0[s][t] / max(np.linalg.norm(bend0[s][t]), 1e-6)
+                nb, nc = two_bone_ik(a, b_, c_, ank[s][t], (a + ank[s][t]) / 2 + k)
+                r1 = qbetween(b_ - a, nb - a)
+                gth = qmul(r1, gl[t, th])
+                c2 = nb + qrot(r1, c_ - b_)
+                gca = qmul(qbetween(c2 - nb, nc - nb), qmul(r1, gl[t, ca]))
+                r[t, th] = qmul(qinv(gl[t, sk.parent[th]]), gth)
+                r[t, ca] = qmul(qinv(gth), gca)
+                r[t, fo] = qmul(qinv(gca), foot_g[s][t])
+                u, v = nb - a, nc - nb
+                bends.append(math.degrees(math.acos(np.clip(np.dot(u, v) / np.linalg.norm(u) / np.linalg.norm(v), -1, 1))))
+        return r, q, float(np.mean(bends))
+
+    lo, hi = 0.0, 0.25
+    for _ in range(18):
+        dy = (lo + hi) / 2
+        _, _, b = legs(dy)
+        lo, hi = (dy, hi) if b > knee else (lo, dy)
+    r, q, _ = legs((lo + hi) / 2)
+    meta = {**clip.meta, "changes": clip.meta.get("changes", "") +
+            f"; stood up: hips raised and carried over her feet, knees to {knee:.0f} deg, the body turned back {pitch:.0f} deg"}
+    return Clip(clip.name, clip.fps, r, q, loop=clip.loop, meta=meta)
+
+
 def base_of(rig, calling):
     """A calling's captured standing (made once a run, shared by its idle,
     its breaks and its flourish)."""
     if calling not in _bases:
         style = IDLES[f"idle_{calling}"][0]
-        _bases[calling] = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0))
+        base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0))
+        if calling in STAND:
+            base = stand(rig, base, **STAND[calling])
+        _bases[calling] = base
     return _bases[calling]
 
 

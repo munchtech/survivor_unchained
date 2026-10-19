@@ -44,19 +44,33 @@ public partial class CrowdView : Node3D
         public bool Seen;
         /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
         public string? Death;
+        /// <summary>Its last living pose (a Flare's statue holds it).</summary>
+        public string? LastRole;
+        public double LastT;
         /// <summary>A slam's windup, while its blow and the get-up after it play (0: none).</summary>
         public double Slam;
         /// <summary>It knelt to aim: the shot that ends it is its own clip, not its melee strike.</summary>
         public bool Aimed;
         /// <summary>How far into its shot it was last frame (a new strike starts the clock again).</summary>
         public double ShotT;
+        /// <summary>Burnt by a Flare's ring as it died (0..1), kept for its body.</summary>
+        public float Char;
     }
 
     /// <summary>Where in a slam's clip the fists (or the axe) meet the ground (crowd.py's SLAM_IMPACT): the
     /// windup is played to land exactly there as the sim's blow lands, however long the kind winds up.</summary>
     const double SlamImpact = 1.0;
 
-    sealed record Corpse(long Key, string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
+    /// <summary>A body Burns Twice holds frozen in its last living pose, drawn until the Flare says it shattered,
+    /// also after the fight has let it go (FlareFx.Kill: statues until an ember or the BOOM's ring breaks them).</summary>
+    sealed record Statue(long Key, int Id, string Visual, string Role, double T, float X, float Z, float Facing, float Scale, Color Tint, float Glow);
+    readonly Dictionary<long, Statue> statues = new();
+
+    sealed record Corpse(long Key, string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born)
+    {
+        /// <summary>Burnt by a Flare's ring (0..1), kept as it lies.</summary>
+        public float Char;
+    }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
     /// and while it lies after, never another's (a creature's place in the fight's list is reused).</summary>
@@ -100,6 +114,29 @@ public partial class CrowdView : Node3D
 
     /// <summary>Whether a creature is under the ground by its script's say (set by the view; null: none is).</summary>
     public static Func<Enemy, bool>? Under;
+    /// <summary>The Flare's say over a body it struck down (FlareFx.DeathOf): 1 held standing until its blow lands, -1 shattered
+    /// (not drawn), 0 its own death.</summary>
+    public static Func<int, int>? FlareDeath;
+
+    /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
+    /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
+    public static Func<double, double, bool, float>? FlareChar;
+    public static Func<double, double, bool>? FlareRingPast;
+    /// <summary>Last frame's audit: bodies drawn where the ring passed 4+ frames ago, and those of them not charred.</summary>
+    public static int FlareAuditSeen, FlareAuditBad;
+    /// <summary>Char: the body's paint times this (albedo under 0.06 linear).</summary>
+    static readonly Color CharTint = new(0.06f, 0.048f, 0.04f, 1);
+
+    static Color Charred(Color tint, float k) => k <= 0 ? tint : new Color(Mathf.Lerp(tint.R, CharTint.R, k), Mathf.Lerp(tint.G, CharTint.G, k), Mathf.Lerp(tint.B, CharTint.B, k), tint.A);
+
+    /// <summary>Counts what is drawn: the char the body's paint gets, and whether it is ice (vat.gdshaderinc paints the
+    /// fireball's colour only on the frozen, so a body drawn unfrozen and charred is black under it; judge 7 (1)).</summary>
+    static void Audit(double x, double z, float k, float frozen = 0)
+    {
+        if (FlareRingPast?.Invoke(x, z) != true) return;
+        FlareAuditSeen++;
+        if (k < 0.99f || frozen > 0) FlareAuditBad++;
+    }
 
     /// <summary>A cinematic's say over a creature it stages (set by the cinematic, null when none plays):
     /// how far down it is drawn (Grimtunnel waist-deep in the ford, C03), and a role it holds once up and
@@ -144,12 +181,14 @@ public partial class CrowdView : Node3D
             gaits.Clear();
             corpses.Clear();
             laidOut.Clear();
+            statues.Clear();
         }
         dt = Math.Clamp(now - time, 0, 0.1);
         time = now;
         foreach (var c in crowds.Values) c.Begin();
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
+        FlareAuditSeen = FlareAuditBad = 0;
         whiteFlashes = 0;
         eliteFlashes = 0;
         foreach (var e in b.Enemies.Items)
@@ -157,7 +196,8 @@ public partial class CrowdView : Node3D
             if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
             Draw(e, heightAt);
         }
-        // The dead after the living.
+        // The Flare's statues, then the dead after the living.
+        DrawStatues(heightAt);
         DrawCorpses(heightAt);
         foreach (var c in crowds.Values) c.End();
         // Whatever the fight let go of forgets its gait.
@@ -207,13 +247,29 @@ public partial class CrowdView : Node3D
                 break;
             case EnemyState.Dying:
             {
-                // Burst apart: nothing is left to fall (the gore threw it).
-                if (e.Burst) return;
+                // Burst apart: nothing is left to fall (the gore threw it). A Flare's kill is the Flare's to show first: the
+                // frost's overkill bursts nearly every body, and the pack vanished at frost +0.1 s (s2a).
+                int flareSays = FlareDeath?.Invoke(e.Id) ?? 0;
+                if (flareSays == 0 && e.Burst) return;
+                if (flareSays < 0) return;
+                if (flareSays > 0)
+                {
+                    long key = KeyOf(e);
+                    if (!statues.ContainsKey(key))
+                    {
+                        var (st, sg) = TintOf(e);
+                        string sr = g.LastRole ?? (g.Death ??= DeathOf(asset, e));
+                        statues[key] = new Statue(key, e.Id, e.Def.Visual, sr, g.LastRole != null ? g.LastT : 0, (float)ex, (float)ez, (float)g.Facing,
+                            (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), st, sg);
+                    }
+                    return;
+                }
                 role = g.Death ??= DeathOf(asset, e);
+                if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
-                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, ex, ez, g.Facing, role); return; }
+                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, ex, ez, g.Facing, role, g.Char); return; }
                 break;
             }
             case EnemyState.Burrowed:
@@ -327,6 +383,17 @@ public partial class CrowdView : Node3D
         bool held = battle != null && e.HeldUntil > battle.Time;
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : !held && e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
         float burning = e.Status.Has(StatusKind.Burn) ? 1 - 0.8f * Still : 0;
+        var (tint, glow) = TintOf(e);
+        float chr = e.State == EnemyState.Dying ? g.Char : FlareChar?.Invoke(ex, ez, true) ?? 0;
+        tint = Charred(tint, chr);
+        Audit(ex, ez, chr, frozen);
+        if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
+        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
+        living++;
+    }
+
+    (Color, float) TintOf(Enemy e)
+    {
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         // A kind's own colour on a shared rig, and a champion's Signs (combat's, agreed with animation).
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
@@ -340,8 +407,30 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
-        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
-        living++;
+        return (tint, glow);
+    }
+
+    /// <summary>The Flare's statues: each until it shatters; let go unbroken (the Flare ended), it lies where it stood.</summary>
+    void DrawStatues(Func<double, double, double> heightAt)
+    {
+        if (statues.Count == 0) return;
+        List<long>? gone = null;
+        foreach (var st in statues.Values)
+        {
+            int says = FlareDeath?.Invoke(st.Id) ?? 0;
+            if (says <= 0)
+            {
+                (gone ??= new()).Add(st.Key);
+                if (says == 0 && !(battle != null && st.Id < battle.Enemies.Items.Length && battle.Enemies.Items[st.Id].Alive))
+                    corpses.Add(new Corpse(st.Key, st.Visual, Crowd(st.Visual).Asset.Clips.ContainsKey("die") ? "die" : st.Role, st.X, st.Z, st.Facing, st.Scale, st.Tint, st.Glow * 0.3f, time) { Char = FlareChar?.Invoke(st.X, st.Z, false) ?? 0 });
+                continue;
+            }
+            var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - st.Facing) * Godot.Basis.FromScale(Vector3.One * st.Scale);
+            // (A statue still standing where the ring passed 4 frames ago is a body neither shattered nor charred.)
+            Audit(st.X, st.Z, 0, 1);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, 0, 0, 1, 0, st.Tint, st.Glow);
+        }
+        if (gone != null) foreach (var k in gone) statues.Remove(k);
     }
 
     static float Smooth(double x, double lo, double hi)
@@ -351,13 +440,13 @@ public partial class CrowdView : Node3D
     }
 
     /// <summary>The body stays where it fell when the fight lets it go.</summary>
-    void LayOut(Enemy e, double x, double z, double facing, string role)
+    void LayOut(Enemy e, double x, double z, double facing, string role, float charred = 0)
     {
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
+        corpses.Add(new Corpse(KeyOf(e), e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred });
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
@@ -376,8 +465,10 @@ public partial class CrowdView : Node3D
             // at a glance against them (the risen are pale: a body the same grey as the walking
             // ones made the horde twice its size). Then they darken on as they lie.
             float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
-            var tint = c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1);
+            if (FlareChar != null) c.Char = Math.Max(c.Char, FlareChar(c.X, c.Z, false));
+            var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
             tint.A = 1;
+            Audit(c.X, c.Z, c.Char);
             crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }
     }

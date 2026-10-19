@@ -51,6 +51,42 @@ anti_aliasing/quality/use_taa=true
 
 [shader_globals]
 
+flare_at={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_look={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_web={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_fire={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_frost={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_hue={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_plate={
+"type": "sampler2D",
+"value": "res://art/fx/flare/frost_plate.png"
+}
+flare_noise={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_noise.png"
+}
+flare_marks={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_marks0.png"
+}
 survivor={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

@@ -1,0 +1,6 @@
+dag_idle_c|stalker|knife_belt|idle_stalker_daggers@0.0|day|1|0|female
+dag_idle_p90|stalker|knife_belt|idle_stalker_daggers@1.2|day|0|90|female
+staff_idle_c|arcanist|ember_staff|idle_arcanist@1.3|day|1|0|female
+staff_show_c|arcanist|ember_staff|arcanist_show@1.0|day|1|0|female
+staff_idle_p90|arcanist|ember_staff|idle_arcanist@2.0|day|0|90|female
+staff_flare_p90|arcanist|ember_staff|flare_burns_twice@0.667|day|0|90|female

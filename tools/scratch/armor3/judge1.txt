@@ -1,0 +1,17 @@
+j_plain_play|--quick warden --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --wear plate_top_plain
+j_plain_close|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --wear plate_top_plain
+j_plain_look|--new --sex female --step 0 --open-eyes --seed 1 --seconds 6 --archetype warden --wear plate_top_plain
+j_etched_play|--quick warden --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --wear plate_top_etched
+j_etched_close|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --wear plate_top_etched
+j_etched_look|--new --sex female --step 0 --open-eyes --seed 1 --seconds 6 --archetype warden --wear plate_top_etched
+j_gilded_play|--quick warden --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --wear plate_top_gilded
+j_gilded_close|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --wear plate_top_gilded
+j_gilded_look|--new --sex female --step 0 --open-eyes --seed 1 --seconds 6 --archetype warden --wear plate_top_gilded
+j_gilded_run_play|--quick warden --sex female --nohud --zone waystation --seed 1 --auto toward --seconds 6 --wear plate_top_gilded
+j_gilded_run_close|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --auto toward --seconds 6 --wear plate_top_gilded
+j_gilded_fight_play|--quick warden --sex female --nohud --zone verge --seed 1 --auto toward --seconds 12 --wear plate_top_gilded
+j_gilded_side_look|--new --sex female --step 0 --open-eyes --seed 1 --seconds 6 --archetype warden --turn 90 --wear plate_top_gilded
+j_gilded_deep_close|--quick warden --sex female --nohud --zone waystation --seed 1 --skin deep --close 1 --idle-after 1 --seconds 9 --wear plate_top_gilded
+j_gilded_fair_close|--quick warden --sex female --nohud --zone waystation --seed 1 --skin fair --close 1 --idle-after 1 --seconds 9 --wear plate_top_gilded
+j_mix_stalker_close|--quick stalker --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --wear plate_top_etched
+j_mix_stalker_look|--new --sex female --step 0 --open-eyes --seed 1 --seconds 6 --archetype stalker --wear plate_top_etched

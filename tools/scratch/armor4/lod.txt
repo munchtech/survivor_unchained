@@ -1,0 +1,9 @@
+lod_off_warden|--quick warden --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --lod off
+lod_on_warden|--quick warden --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6
+lod_off_arcanist|--quick arcanist --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --lod off
+lod_on_arcanist|--quick arcanist --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6
+lod_off_stalker|--quick stalker --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --lod off
+lod_on_stalker|--quick stalker --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6
+lod_off_reaver|--quick reaver --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6 --lod off
+lod_on_reaver|--quick reaver --sex female --nohud --zone waystation --seed 1 --facing 0 --seconds 6
+lod_on_fight_warden|--quick warden --sex female --nohud --zone verge --seed 1 --auto toward --seconds 12 --her-draws

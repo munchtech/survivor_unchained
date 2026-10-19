@@ -33,6 +33,8 @@ public partial class BattleFx : Node3D
     /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
     public readonly Gore Gore;
     public FollowCamera? Cam;
+    /// <summary>The Flares' own view (Fx/Flare, docs/design/FLARE_LOOK.md): every Flare's art is its own.</summary>
+    public readonly FlareFx Flare = new();
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
     public Action<float> OnDamageFlash = _ => { };
     /// <summary>Where she is drawn (between the fight's steps: Interp), on the ground.</summary>
@@ -93,6 +95,8 @@ public partial class BattleFx : Node3D
         AddChild(Gore);
         AddChild(Ribbons);
         AddChild(Blades);
+        Flare.HeightAt = heightAt;
+        AddChild(Flare);
         for (int i = 0; i < 8; i++)
         {
             var l = new OmniLight3D { LightEnergy = 0, OmniRange = 10, OmniAttenuation = 1.6f, ShadowEnabled = false, Visible = false };
@@ -689,6 +693,25 @@ public partial class BattleFx : Node3D
     double critBurstAt = -1;
     int critBursts;
 
+
+    int levelHeld;
+
+    /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
+    void LevelLight()
+    {
+        var p = PlayerPos;
+        if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
+        Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);
+        Flash(p + Vector3.Up * 2, new Color("#ffc070"), 10, 0.7f, 9);
+        for (int i = 0; i < 30; i++)
+        {
+            float a = R() * Mathf.Tau;
+            bool glint = i % 3 == 0;
+            Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, glint ? 0.3f : 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f,
+                sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
+        }
+    }
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
@@ -699,6 +722,22 @@ public partial class BattleFx : Node3D
         {
             switch (ev)
             {
+                // The Flare's moments, and its hits and kills, are its own (no spell's bursts, no gore).
+                case Ev.Flare fe:
+                    Flare.Cam = Cam;
+                    Flare.On(fe, b);
+                    break;
+                case Ev.Kill fk when fk.ByFlare && Flare.Active:
+                    Flare.Kill(fk);
+                    break;
+                case Ev.Hit fh when fh.ByFlare && !fh.Dot:
+                {
+                    // While the Flare holds the frame only champions' and bosses' numbers show (FLARE_LOOK §1.5).
+                    var foe = fh.Target >= 0 && fh.Target < b.Enemies.Capacity ? b.Enemies.Items[fh.Target] : null;
+                    if (!Flare.Quiet || foe is { Elite: true } or { Boss: true })
+                        Hits.Tally(fh.Target, V(fh.X, Y(fh.X, fh.Z) + 1.0, fh.Z), fh.Amount, fh.MaxHp, fh.Crit);
+                    break;
+                }
                 case Ev.Hit e:
                 {
                     var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
@@ -716,7 +755,9 @@ public partial class BattleFx : Node3D
                         Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
-                    Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
+                    // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
+                    if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
+                        Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     if (e.Art != null) Impact(e, at);
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     if (e.Family != null)
@@ -978,7 +1019,8 @@ public partial class BattleFx : Node3D
                     break;
                 }
                 case Ev.Drop d:
-                    Dropped(d);
+                    // (--clean: no loot beams over the picture.)
+                    if (!Args.Has("clean")) Dropped(d);
                     break;
                 case Ev.Spawn e:
                 {
@@ -999,20 +1041,9 @@ public partial class BattleFx : Node3D
                         Sparks.Spawn(PlayerPos + Vector3.Up, new Vector3(0, 1, 0), 0.3f, 0.25f, e.Kind == PickupKind.Gold ? new Color(2f, 1.5f, 0.5f) : new Color(2.2f, 1f, 0.35f), sizeEnd: 0.05f, alpha: 0.6f);
                     break;
                 case Ev.LevelUp:
-                {
-                    var p = PlayerPos;
-                    if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
-                    Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);
-                    Flash(p + Vector3.Up * 2, new Color("#ffc070"), 10, 0.7f, 9);
-                    for (int i = 0; i < 30; i++)
-                    {
-                        float a = R() * Mathf.Tau;
-                        bool glint = i % 3 == 0;
-                        Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, glint ? 0.3f : 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f,
-                            sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
-                    }
+                    // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame).
+                    if (Flare.HoldsFrame) levelHeld++; else LevelLight();
                     break;
-                }
                 case Ev.Victory v:
                 {
                     // The night's peak, in layers (it plays in the fall's slow motion, so it
@@ -1360,6 +1391,7 @@ public partial class BattleFx : Node3D
         StepPanting(fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
+        if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
         Blades.Step(fdt);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
@@ -1567,6 +1599,8 @@ public partial class BattleFx : Node3D
         foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
+            // A Flare's statue keeps its body's drop until it breaks.
+            if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && Flare.HidesDrop(kx, kz)) continue;
             float gy = Y(kx, kz);
             float bob = Mathf.Sin((float)(now * 3 + p.Id)) * 0.08f;
             var spin = new Godot.Basis(Vector3.Up, (float)(now * 2.2 + p.Id));
@@ -1580,7 +1614,7 @@ public partial class BattleFx : Node3D
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
-                        HoardLight(kx, gy, kz);
+                        if (!CleanShots) HoardLight(kx, gy, kz);
                     }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(kx, gy + 0.45 + bob, kz)), EmberTiers[tier]);
                     break;
@@ -1608,7 +1642,8 @@ public partial class BattleFx : Node3D
                     if (hidden) break;
                     // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the light's
                     // height says how rare, its colour the band (BattleFx.Loot).
-                    LootLight(p, gy, now, col);
+                    // (--clean: no loot lights over the picture.)
+                    if (!CleanShots) LootLight(p, gy, now, col);
                     break;
                 }
             }

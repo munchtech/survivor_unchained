@@ -118,6 +118,21 @@ public sealed class FollowCamera
 
     public void AddTrauma(float v) => Trauma = Mathf.Clamp(Trauma + v * ShakeScale, 0, 1);
 
+    /// <summary>The Flare's envelope (Fx/Flare/FlareFx.cs, FLARE_LOOK §1.4): the push in (a share of the distance; below
+    /// 0 pulls out) and the pitch (radians added; below 0 lifts the view toward the sky).</summary>
+    public float FlarePush, FlarePitch;
+    Vector3 joltAxis;
+    float joltAmt, joltT = 9;
+
+    /// <summary>One shake along a blow (vertical for a slam, across for a sweep), decaying: the Flare's (trauma 0..1).</summary>
+    public void Jolt(Vector3 axis, float amount)
+    {
+        if (axis.LengthSquared() < 1e-6f || ShakeScale <= 0) return;
+        joltAmt = Mathf.Max(joltAmt * Mathf.Exp(-joltT * 7), amount * ShakeScale);
+        joltAxis = axis.Normalized();
+        joltT = 0;
+    }
+
     Vector3 kick;
     float kickT = 1;
 
@@ -184,6 +199,7 @@ public sealed class FollowCamera
         Distance = Damp(Distance, TargetDistance, 1.6f, dt);
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
         kickT += dt;
+        joltT += dt;
         // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
         near = Damp(near, ScreenNear, 5, dt);
         if (ScreenFrame is { } sf) frame = sf;
@@ -206,7 +222,7 @@ public sealed class FollowCamera
     {
         float k = Mathf.SmoothStep(0, 1, framed);
         var c = Closed(closeNow, Pitch, Distance * near);
-        float pitch = Mathf.Lerp(c.Pitch, Mathf.DegToRad(frame.Pitch), k);
+        float pitch = Mathf.Lerp(c.Pitch, Mathf.DegToRad(frame.Pitch), k) + FlarePitch;
         float cp = Mathf.Cos(pitch), sp = Mathf.Sin(pitch);
         float yaw = Yaw + orbitNow * (1 - k);
         var aim = look + new Vector3(0, Mathf.Lerp(c.Height, frame.Height, k) - 0.8f, 0);
@@ -221,7 +237,7 @@ public sealed class FollowCamera
             room = Mathf.Lerp(room, free, 1 - Mathf.Exp((free < room ? -14f : -2.5f) * (float)lastDt));
         }
         else room = 1;
-        float d = Reach();
+        float d = Reach() * (1 - FlarePush);
         // (the game puts play's lens back each frame; the close view lengthens it after)
         if (closeNow > 0.0005f) Camera.Fov = Mathf.Lerp(Lens(closeNow, Pitch, Distance * near), Camera.Fov, k);
         var pos = new Vector3(aim.X + Mathf.Sin(yaw) * cp * d, aim.Y + sp * d, aim.Z + Mathf.Cos(yaw) * cp * d);
@@ -229,7 +245,9 @@ public sealed class FollowCamera
         float s = Trauma * Trauma, t = shakeT * 22;
         float N(float a) => Mathf.Sin(t + a) * 0.5f + Mathf.Sin(t * 2.3f + a * 1.7f) * 0.3f + Mathf.Sin(t * 4.1f + a * 3.1f) * 0.2f;
         var lean = Kicked();
-        var at = pos + lean + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
+        // (The Flare's jolt: a damped swing along its blow, about 13 a second.)
+        var jolt = joltT < 1.2f ? joltAxis * joltAmt * 0.55f * Mathf.Exp(-joltT * 7) * Mathf.Sin(joltT * Mathf.Tau * 13) : Vector3.Zero;
+        var at = pos + lean + jolt + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
         var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f;
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);

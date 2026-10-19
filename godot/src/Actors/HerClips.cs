@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.View;
 
@@ -26,7 +27,7 @@ public static class HerClips
         "wand" => "wand",
         "crossbow" => "crossbow",
         "daggers" => "daggers",
-        _ => "",
+        _ => right != null && Arms.All.TryGetValue(right, out var spec) ? Loadouts.ClipKind(spec.Kind) : "",
     };
 
     /// <summary>The swings for what is held: alternate cuts, the first

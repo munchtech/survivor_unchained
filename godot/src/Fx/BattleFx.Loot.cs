@@ -100,6 +100,9 @@ public partial class BattleFx
             colour with { A = strength });
 
     /// <summary>The light on a piece of loot rolled whole (p.Loot), or on what came without a tier.</summary>
+    /// <summary>--clean: stills with no loot lights, beams or names over the picture.</summary>
+    static readonly bool CleanShots = Args.Has("clean");
+
     void LootLight(Pickup p, float gy, double now, Color fallback)
     {
         float t = (float)now;

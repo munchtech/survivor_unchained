@@ -128,6 +128,51 @@ public class FlareStagedTests
     }
 
     [Fact]
+    public void Her_clock_lead_ends_the_key_pose_early_and_the_blows_keep_their_flare_clock_times()
+    {
+        // Plain: the blows by the Flare's own clock.
+        var a = Carrying("burns_twice");
+        Foe(a, 3, 0);
+        a.FillFlare(100, "t");
+        Assert.True(a.UseFlare(1, 0));
+        double len = a.FlareT;
+        var plain = new List<double>();
+        for (int i = 0; i < 120; i++)
+        {
+            a.Tick(1 / 60.0, 0, 0);
+            plain.AddRange(a.Events.Drain().OfType<Ev.Flare>().Where(e => e.Phase == FlarePhase.Blow && e.Part is not ("aim" or "shove")).Select(_ => len - a.FlareT));
+        }
+        // Led: the world at 8% until the key, the rest of each real step lent to the Flare's clock.
+        var b = Carrying("burns_twice");
+        Foe(b, 3, 0);
+        b.FillFlare(100, "t");
+        Assert.True(b.UseFlare(1, 0));
+        double iframes = b.Player.Iframes, world = 0;
+        var led = new List<double>();
+        int releases = 0;
+        for (int i = 0; i < 400 && b.FlareT > 0; i++)
+        {
+            bool held = !b.FlareReleased;
+            double step = held ? 0.08 / 60 : 1 / 60.0;
+            world += step;
+            b.Tick(step, 0, 0);
+            if (held) b.FlareLead(1 / 60.0 - step);
+            Assert.True(!held || len - b.FlareT <= b.FlareKey + 1e-9);
+            foreach (var e in b.Events.Drain().OfType<Ev.Flare>())
+            {
+                if (e.Phase == FlarePhase.Release) releases++;
+                if (e.Phase == FlarePhase.Blow && e.Part is not ("aim" or "shove")) led.Add(len - b.FlareT);
+            }
+        }
+        Assert.Equal(1, releases);
+        Assert.Equal(13, plain.Count);
+        Assert.Equal(plain.Count, led.Count);
+        for (int i = 0; i < plain.Count; i++) Assert.Equal(plain[i], led[i], 2);
+        // The world's stamps were left alone: her iframes ran down by the world's time only.
+        Assert.True(b.Player.Iframes >= iframes - world - 1e-6);
+    }
+
+    [Fact]
     public void Burns_twice_freezes_then_twelve_embers_fall_four_on_a_boss_and_the_ice_shatters()
     {
         var b = Carrying("burns_twice");

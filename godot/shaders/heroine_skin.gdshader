@@ -237,8 +237,12 @@ uniform vec3 brow_colour : source_color = vec3(0.2, 0.15, 0.12);
 // 1 is skin not drawn at all, inside a piece that closes round her: her hands
 // in the Arcanist's gloves, which no tuck keeps in (a finger is thinner than
 // it) and whose wrist came through the glove's back as it bent.
+// tuck_channel -2: the tuck read from tuck_map instead, a value a vertex (VERTEX_ID, row by row,
+// tuck_map_width wide): the largest of the tucks of the pieces she wears (HerWear), marked as above.
 uniform int tuck_channel = -1;
 uniform float tuck = 0.010;
+uniform sampler2D tuck_map : filter_nearest, repeat_disable;
+uniform int tuck_map_width = 1;
 varying float tuck_gone;
 
 // The light through her (BACKLIGHT): how much, its colour, and how far it is kept to lamps behind her (it has no
@@ -339,6 +343,10 @@ void vertex() {
 	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
+		tuck_gone = step(0.995, h);
+		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
+	} else if (tuck_channel == -2) {
+		float h = texelFetch(tuck_map, ivec2(VERTEX_ID % tuck_map_width, VERTEX_ID / tuck_map_width), 0).r;
 		tuck_gone = step(0.995, h);
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	}

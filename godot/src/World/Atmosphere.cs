@@ -28,6 +28,9 @@ public partial class Atmosphere : Node3D
     /// <summary>A touch less exposure at low quality keeps the mood (the web
     /// game's exposureScale).</summary>
     public float ExposureScale = 1;
+    /// <summary>The eye stopping down after a Flare's BOOM (Fx/Flare/FlareFx.Dip): 1 none.</summary>
+    public float FlareDip = 1;
+    float dipShown = 1;
     /// <summary>How much colour the world keeps below the brights (0 all, 1
     /// none): the grade's worn world.</summary>
     public float Mute = 0.16f;
@@ -76,6 +79,7 @@ public partial class Atmosphere : Node3D
     public override void _Process(double delta)
     {
         clock += delta;
+        if (FlareDip != dipShown) { dipShown = FlareDip; Env.TonemapExposure = (float)Current.Exposure * ExposureScale * FlareDip; }
         RenderingServer.GlobalShaderParameterSet(SkyTime, (float)clock);
     }
 
@@ -125,7 +129,7 @@ public partial class Atmosphere : Node3D
             // (At 2.5° the pools washed out into a general shading.)
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
-        Env.TonemapExposure = (float)p.Exposure * ExposureScale;
+        Env.TonemapExposure = (float)p.Exposure * ExposureScale * FlareDip;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the

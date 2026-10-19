@@ -132,7 +132,11 @@ public partial class WorldScene : Node3D, IZoneLook
         // The fall eases from a tenth of the speed back to all of it, the last of it quickest.
         double falling = fall > 0 ? 0.1 + 0.9 * Math.Pow(1 - fall / Fall, 2.2) : 1;
         double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * Math.Min(0.3, falling) : dt * falling;
+        // A Flare holds the world's clock itself (FLARE_LOOK §1.2): 8% from the press to the Spend, its own hitstops.
+        var flare = Fx.Flare;
+        if (flare.Active) fightDt = dt * flare.WorldRate;
         fightTime += fightDt;
+        if (b != null && !SimPaused) flare.Watch(b);
         // A press kept from before a pause (a draft, a chest) is not spent after it.
         if (SimPaused) dashHeld = artHeld = 0;
         if (b != null && !SimPaused)
@@ -171,6 +175,19 @@ public partial class WorldScene : Node3D, IZoneLook
                         if (ab.Id == "mirror_strike") Player?.Reflections.Strike(ab.Who);
                         else Player?.OnAbility(ab.Id);
                     }
+                }
+            }
+            // Her clock: while the world waits at 8% the Flare's own clock is lent the rest of real time, so its
+            // Release lands at her key pose (Battle.FlareLead; it never fires a blow and stops at the key).
+            if (flare.Frozen)
+            {
+                b.FlareLead(Math.Max(0, dt * flare.LeadRate - fightDt));
+                var evs = b.Events.Drain();
+                if (evs.Count > 0)
+                {
+                    Fx.Handle(evs, b);
+                    Weigh(evs, b);
+                    frameEvents.AddRange(evs);
                 }
             }
         }
@@ -213,6 +230,10 @@ public partial class WorldScene : Node3D, IZoneLook
     // (A name made once, not a new one every frame for the collector.)
     static readonly StringName SurvivorParam = "survivor";
 
+    // The held staff (the Flare's head light), found once per figure.
+    PlayerView? staffOf;
+    Node3D? staff;
+
     void Draw(double dt, double fightDt)
     {
         var b = Battle;
@@ -226,8 +247,11 @@ public partial class WorldScene : Node3D, IZoneLook
             // The living's own clock: the fight's, all but stopped while the world is held.
             double viewDt = fightDt * (1 - 0.97 * Math.Clamp(Hold, 0, 1));
             viewTime += viewDt;
+            // She runs on her own clock through a Flare's freeze and its hitstops (full speed; 10% in a hitstop).
+            var flare = Fx.Flare;
+            double herDt = flare.Frozen || flare.Stop > 0 ? dt * flare.HerRate : viewDt;
             Perf.Begin(Perf.Part.Player);
-            Player?.Update(b, hx, hz, leap, viewDt, viewTime, HeightAt);
+            Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
             if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
@@ -239,6 +263,10 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
+            flare.Her = HerDrawn;
+            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; }
+            flare.Staff = staff;
+            flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             // The meadow grows round the survivor as they go.
