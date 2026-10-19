@@ -15,7 +15,7 @@ more = next((a[5:].split() for a in sys.argv[2:] if a.startswith("args=")), []) 
 sets = [a for a in sys.argv[2:] if a not in flags and not a.startswith(("tune=", "args="))] or list(SETS)
 b = subprocess.run(["dotnet", "build", os.path.join(G, "SurvivorUnchained.csproj"), "-v", "q", "-nologo"], capture_output=True, text=True)
 if b.returncode != 0: print(b.stdout[-3000:]); sys.exit(1)
-TURN = "env-1: E1 light " + rnd
+TURN = "env-2: E2 shots " + rnd
 if subprocess.run([sys.executable, TP, "take", "godot", TURN, "--wait", "3600", "--stale-ok"]).returncode != 0:
     print("TURN REFUSED"); sys.exit(1)
 try:
