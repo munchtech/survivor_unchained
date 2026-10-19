@@ -68,7 +68,7 @@
       "dur": 4.0,
       "still": 2.6,
       "note": "Her face on its side on the frozen ground, half ember, half moon. At 2.0 her eyes open. No start.",
-      "cam": {"pos": [-10.6, 0.35, 90.9], "at": [-9.53, 0.085, 90.45], "lens": 85, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.0, "move": {"push": 0.02, "ease": "linear"}},
+      "cam": {"pos": [-10.446, 0.461, 90.503], "at": [-9.586, 0.06, 90.539], "lens": 85, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.0, "move": {"push": 0.02, "ease": "linear"}},
       "fit": ["cin_drowned_fire.bedroll"],
       "tail": 0.6,
       "cues": [
