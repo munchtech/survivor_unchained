@@ -1,52 +1,37 @@
-# Handoff: art direction, the look bible (look bible 2 -> 3)
+# Handoff: art direction, the look bible (look bible 3 -> 4)
 
-Written by look bible 2 (agent ad893bff74a36d3e8, su-lead-max), 18 October 2026, at its context budget (boards cost more context than planned: ~250k for eight boards). Read README.md beside this page first: it holds the owner's words and the page index.
+Written by look bible 3 (agent ac0cac632a8f8c956, su-lead-high), 18 October 2026, at ~270k of its 300k. Read README.md beside this page first (the owner's words, the page index).
 
-## Your brief (from the coordinator, unchanged)
-- **Where you work:** the MAIN checkout (`C:\Users\munch\Desktop\survivorsunchained`, the coordinator's integration branch).
-- **Write and commit only `docs/art/look_bible/`:** `git add docs/art/look_bible && git commit -m ... -- docs/art/look_bible`. Never touch, stage or revert anything else. Never push: main pushes.
-- **No Godot imports.** Ask main for fresh frames.
-- **References from the web are reference only:** keep them outside the repo in `C:\Users\munch\Desktop\survivorsunchained_inputs\look_bible_refs\`, with each source URL logged (`steam\sources.csv`). Only our own frames, short notes and links go in the repo.
-- **Rule from the coordinator: every face on a board is an adult's (18+ game).**
-- **Deliverables (RESUME next-wave item 1):**
-  1. boards per subject: IS / ISN'T / the cheap trick / DONE;
-  2. per-tier budgets (triangles, textures, materials, draw calls) from the measured numbers, with the measured HEAD on the page;
-  3. the Prologue's asset inventory, each item keep, rework or build, with its owner lead;
-  4. the tutorial's launch-ready checklist for the first 20-30 minutes.
-- **No building before the bible's frames pass the owner.** Send each board to main with its path and one line; main brings it to the owner.
-- **Effort:** coding and menial work go to su-worker or su-runner; judges are su-lead-max in the foreground (API judges are paused). Put `Context budget:` and your agent id in every helper brief.
+## Your brief (from the coordinator)
+- **Where:** the MAIN checkout `C:\Users\munch\Desktop\survivorsunchained`, branch `claude/vigilant-galileo-l6jqyx` (the integration branch: `git pull --ff-only` is your merge). Write and commit ONLY `docs/art/look_bible/` (`git add docs/art/look_bible && git commit -m ... -- docs/art/look_bible`). Never push (main pushes), never touch other files, no Godot imports (ask main for frames).
+- Web references stay outside the repo in `C:\Users\munch\Desktop\survivorsunchained_inputs\look_bible_refs\` with URLs in `steam\sources.csv`. Every face on a board is an adult's (18+).
+- Effort: you orchestrate on high; decided edits go to `su-worker` (it applied rounds 1-2 cleanly, ~70k each); judges are `su-lead-max` subagents at xhigh (API judges are paused). `Context budget:` and your agent id in every helper brief. 1:1 game cameras only; round cap 2-3, then close as known.
+- No building before the bible's frames pass the owner. Hand off at ~300k ("HANDOFF READY <branch>@<commit>" to main).
 
 ## Done
-- **1a armor metal, 1b skin:** with the owner (unchanged; keep 1a stable for armor 2 and touch-up 3).
-- **Boards 1c-1j built** (d0f8dddd): pages `03_light_grade_mist.md` ... `10_props_flames.md`, boards in `look_bible_refsoards..10_*.jpg`, our 1:1 frames in `frames/` (copied from the cinematics worktree before it goes: c01-c04 shots, `play_12/20/33` from playc2, `play_w84` from playw, a 720p capture).
-- **Round 1 of my judge (xhigh, two foreground su-lead-max judges):** 1g and 1j PASS with fixes; 1c, 1d, 1e, 1f, 1h, 1i FAIL. Every fix is written out, with replacement text, in `look_bible_refs\judge
-1_1c-1f_verdict.md` and `r1_1g-1j_verdict.md`. **I accept all of them**; apply them, don't re-judge round 1.
-- Main got my first report (list + estimate). No board has gone to main yet.
-- **Provisional armor budget sent to main for armor 2** (confirm it on the budgets page): tier-1 LOD0 per slot piece, shell plus adornment: top or bottom up to 30k (20k typical), paired pieces 15-20k a pair, small 8k; nine slots about 150-160k, so she is about 300-350k dressed with body and hair (about 1M today: Warden 727k, body 92k, long hair 173k, PERF_AUDIT). Gameplay LOD at most 25% of LOD0, shadow LOD at most 10%, at most 2 draws per piece and about 20 per pass dressed (95 today).
+- **1a armor metal, 1b skin:** with the owner (keep 1a stable for armor 2 and touch-up).
+- **Boards 1c-1j, round 1** applied (ec7c5d06): the judges' fixes plus the missing references, found in new Steam pulls: 1d SpellForce 3 night river (`spellforce3_08`), 1e SpellForce 3 spruces from a high camera (`spellforce3_19`), 1f Farthest Frontier cobbles (`_21`) and thin snow for frost (`_01`) plus Diablo IV 08, 1i Titan Quest II 08 and our Brannoc at the town camera (`frames/play_54.jpg`, cropped near 1:1), 1j No Rest for the Wicked 13 and an Enshrouded camp fire (`enshrouded_02`). Kena, Tsushima, the Witcher 3 wheat and Lies of P 0 are gone. No D4 or PoE2 store shot has a night river or conifers (checked all of them).
+- **Round 2** (xhigh, `judge\r2_1c-1f_verdict.md`, `r2_1g-1j_verdict.md`): 1c, 1e, 1f, 1g, 1j PASS; 1h and 1i PASS with fixes; 1d FAIL narrow (one line: the Update-Once probe would keep a broken lamp's reflection and a night sky at dawn). I accepted every fix and every optional item; a su-worker applied them (brief `judge\worker_r2_brief.md`). **See "Next" 1 for the state at handoff.**
+- First report sent to main (list and ~6 h estimate).
 
 ## Next, in order
-1. **Apply round 1** in `look_bible_refs	oolsoards_text.py` (captions, trick and DONE lines) and `gen_pages.py` (EXTRA: tier, owners, sources), then `python gen_boards.py` and `python gen_pages.py`. Reference swaps the judges named after looking: 1c PoE2 #3 -> `diablo4_03` (low sun, play camera); 1f add or swap -> `diablo4_08` (outcrops with no seam); 1i add `titanquest2_08` (people at the play camera); 1j Lies of P -> `nrftw_13` (hearth and candles, play camera). Still to find (look at thumbnails first; `steam_pull.py` can fetch other games):
-   - 1d: a night river at the play camera (drop Kena: her age isn't stated, an 18+ rule risk). Try titanquest2_17, poe2_08, vrising, lastepoch.
-   - 1e: conifers from the play camera (the judge found none in our D4 shots). Try vrising, valheim, enshrouded, lastepoch; else a cinematic conifer plus the whorl recipe.
-   - 1f: a cobbled street at the play camera (bg3_00 or titanquest2_00 paving) and frost at the play camera (diablo4_00 or diablo4_07, snow); drop the Witcher 3 wheat field.
-   - 1i: an ISN'T frame of our villagers at the town camera (playc2_52-61 or playw_*, in `.claude\worktreesgent-a59432fe3bfc6eb92\godot\.shots\`; copy it into `frames/`).
-   - 1j: a camp fire reference (kcd2_02 may show one).
-2. **Round 2:** one or two foreground su-lead-max judges at xhigh on the rebuilt boards, briefed like round 1 (copy the brief from the two judge spawns: whole-frame gate per board, the finish-line sentences, the six checks) plus "round 1's fixes are listed in the verdict files; check they landed". Round cap 2-3, then close what is left as known.
-3. **Send the passing boards to main** in two batches (1c-1f, 1g-1j), each with its path and one line. Main judges and takes them to the owner. No building before the owner passes them.
-4. **Budgets page** (`11_budgets.md`): inputs `survivorsunchained_inputs\look_bible_perf\summary.md` (frame times are in each case's .json/.csv; its fps columns read "-"), PERF_AUDIT, the inventory. Target: the owner's RTX 5080 at 1440p, plus a stated min-spec (e.g. 60 fps at 1080p medium on a Steam-survey-median GPU). Per tier: triangles, texture sizes, materials, draws AND shadow draws (the judges flagged shadow draws on every board: 2,246 at the Low Ford, 6,091 at the hub). Put the measured HEAD and the stale-import note on the page.
-5. **Inventory page** (`12_inventory.md`): mark each row of `look_bible_refs\inventory\inventory.csv` keep, rework or build, with its owner lead; decide the rules, then a su-worker applies them.
-6. **Checklist page** (`13_launch_checklist.md`): the first 20-30 minutes from `docs/cinematics/shoot/animatics/prologue.txt` (title and creation at the lowford camp, C01, the road, C02, the Warden fight, C03, the ford at dawn, C04 A, the road north, C04 B, the town), with DONE per beat, pointing at the boards.
+1. **Finish the boards:** if the round-2 worker's edits aren't committed yet: diff `look_bible_refs\tools\boards_text.py` against `tools\r2_backup\`, check each r2 fix landed, render the changed tiles with `python tools\tilestrip.py OUT.jpg <keys>` (look at it shrunk to ~1300 px), commit the regenerated pages. Round 3 is the cap: send the boards to main without another judge unless a fix went wrong. Send them in two batches, 1c-1f then 1g-1j: each board's path (`look_bible_refs\boards\03..10_*.jpg`), page, and one-line verdict (round 2 above). Update README.md's page table (1c-1j: "passed the lead's judge round 2; with main").
+2. **Page 11 budgets** (`11_budgets.md`). Inputs: `survivorsunchained_inputs\look_bible_perf\summary.md` (measured HEAD cff7b440, Debug C# build, a day-old import cache with 10 stale models: say so on the page; the per-20-s window tables DO have fps and ms), `docs/PERF_AUDIT.md`, OWNER_NOTES 11 Oct (her LOD plan, approved). My worked numbers, to check and write up:
+   - What each part costs at the Low Ford, 1440p high, against `lf_base45` (4.96 ms GPU, 438 draws, 2,435 shadow draws, 4.78M prims): grass 1.05 ms and 2.55M prims (no shadows); trees 0.97 ms, 169 draws, 714 shadow draws; lamp shadows 0.65 ms and 1,495 shadow draws; crowd 0.15 ms, 135 draws, 1,095 shadow draws; fx 0.24 ms, 428 shadow draws; sun 0.19 ms, 935 shadow draws; her 1.45M prims but no GPU time measurable; volumetric fog no measurable cost (mist is cheap). Hub: all 1,686 shadow draws are the sun's; props 266 draws and 935 shadow draws; grass 1.0 ms; her 0.5 ms. Title: 11.3 ms, 33 ms p99, 1,512 draws, the heaviest screen. Frame times exceed GPU times (main thread, Debug build), so art isn't today's limit.
+   - Targets I'd set: the owner's 5080 at 1440p high, tutorial: GPU at most 6 ms average and 10 ms p99 per 20-s window, at most 450 draws and 1,200 shadow draws, at most 5M prims, VRAM at most 3 GB. Min-spec: 60 fps at 1080p medium on an RTX 3060 / 4060-class card (the Steam survey's middle, about a third of a 5080), so on the 5080 at 1080p medium GPU at most 5 ms average and 8 ms p99 (today 4.0 / 8.2). Title at most 6 ms. Planning split of the 6 ms: her 0.3, her spells 0.5 typical (Flare owns the BOOM peaks), terrain and decals 0.8, grass 1.0, trees 0.8, water 0.5, buildings, castle and props 0.6, NPCs and crowds 0.4, post 1.0.
+   - Per-asset table: tier 1: armor per slot piece (top or bottom at most 30k at LOD0, 20k typical; pairs 15-20k; small 8k; at most 2 materials and 2 draws per piece), her dressed 300-350k (body 92k as built, hair as built for braid, ponytail and pixie), gameplay LOD at most 25%, shadow LOD at most 10%, about 20 draws per pass dressed; weapons at most 15k; bosses (later) 150k / 40k / 10k. Tier 2: story NPC at most 40k with clothes and hair and beard cards, one atlas, NPC LOD past ~10 m, crowd and background NPCs cast no shadow (blob decal); trees: broadleaf 8k, spruce 6k, 3 LODs plus impostor past ~60 m, shadow-only LOD at most 1k; bushes 2k with no shadow; grass clumps at most 150 tris, MultiMesh, no shadow; rocks 3k (outcrops 8k); buildings at most 25k merged per building with one shadow proxy at most 2k and two trim sheets; far castle one mesh at most 30k with no shadow; props 1.5k (carts and stalls 4k), shared atlases, nothing under 0.5 m casts a shadow; lamps unshadowed except one per frame; one terrain shader, at most 4 layers per pixel; one water material. Tier 3: fodder at most 8k LOD0 and 2k in play, VAT MultiMesh (one draw per type), no shadow. Texel density: tier 1 1024 px/m; tier 2 512 px/m where the close-up or cinematics show it, 256 px/m where only the play camera does; tier 3 256 px/m. Compressed textures; 4096 only for tier-1 bodies and faces.
+   - **Confirm armor 2's provisional budget** (the tier-1 numbers above, sent at bd4bac70). Note: until per-piece LODs exist, a mixed look draws LOD0 in play (armor.md item 7: measure it).
+3. **Page 12 inventory** (`12_inventory.md`): `look_bible_refs\inventory\inventory.csv`, 323 rows. Sources are mostly Quaternius stylized kits (Nature 74, Props 44, Village 41, Universal Base Characters 30) and KayKit placeholders (40): the "low-poly asset pack" look. Rules to set, then a su-worker applies them and writes the page: buildings, trees, story NPCs, rocks, terrain, water, the castle and lamps go to build (owners as in each board's Owners line); small props pass only if they hold at 1:1 next to the new kit, else rework (materials) or build; her rows keep (touch-up and armor own them); fodder and the drowned go to tier-3 build. Owner lead per row from the boards' Owners lines.
+4. **Page 13 checklist** (`13_launch_checklist.md`): the first 20-30 minutes from `docs/cinematics/shoot/animatics/prologue.txt` (title and creation at the Low Ford camp, C01, the road, C02, the Warden fight, C03, the ford at dawn, C04 A, the road north, C04 B, the town), with DONE per beat pointing at the boards' DONE lines.
+5. One xhigh judge on pages 11-13 together (copy `judge\judge_brief_common.md`, swap the checklist for "numbers match the measured files; every beat has a DONE"), then send to main.
 
-Left: about 1.5 h for round 1's fixes and round 2, then budgets 1.5 h, inventory 1.5 h, checklist 1 h, the owner's round 1-2 h.
-
-## Tools (`look_bible_refs	ools\`)
-- `boards_text.py` (captions, panels, tiles with a focus point and zoom) -> `gen_boards.py [03 ..]` writes `b03..b10.json` and runs `board.py`; crops are computed (letterbox bars and an `area` box such as the PoE2 HUD-free region are excluded).
-- `gen_pages.py` writes the repo pages 03-10 from the same text plus its EXTRA dict (one-line look, tier, measured table, owners, sources). Edit the text there, never the generated .md.
-- `docs/art/look_bible/tools/lumstats.py [--crop x0,y0,x1,y1] files...`: luma p5/p50/p95, clipping, saturation, pools.
-- `board.py`, `sheet.py`, `steam_pull.py`, `perf_lb.py`: as before.
+## Tools (`look_bible_refs\tools\`)
+- `boards_text.py` (captions, tiles with focus and zoom, panels) -> `python gen_boards.py [03 ..]`; `python gen_pages.py` writes pages 03-10 from the same text plus its EXTRA dict. Edit the text there, never the generated .md.
+- `tilestrip.py OUT.jpg key ...`: renders chosen tiles exactly as the boards crop them, with their scale.
+- `steam_pull.py OUTDIR appid:slug ...` (store search: `https://store.steampowered.com/api/storesearch/?term=...`); `sheet.py` contact sheets; `docs/art/look_bible/tools/lumstats.py`.
+- Judge brief: `judge\judge_brief_common.md` (owner's words, finish line, whole-frame gate, checklist).
 
 ## Gotchas
-- Pictures cost more than they look: ten contact sheets and eight boards at 1280 px took this lead from ~60k to ~240k. View boards at 1280 px, changed tiles as a strip, and let judges see full size.
-- The cinematics successor may re-shoot over `playc2_*` in its worktree: everything the boards use is already in `frames/`.
-- Store shots: crop the HUD (PoE2 orbs, Titan Quest II bars); check every caption against the crop, since judges catch day-versus-night and missing-smoke errors.
-- In perf summary.md the fps and ms columns read "-": read frame times from each case's .json or .csv.
+- **Pictures cost ~7-10k tokens each in context:** 19 contact sheets took this lead from ~45k to ~245k. Shrink to ~1300 px, one look per question, and let judges see boards full size.
+- Store shots: crop the HUD and logos (`area=` in `ref()`); check every caption against its crop.
+- Judges write no files: save a verdict with `python tools/scratch/coordinator/lastmsg.py <agent-id> <out.md>` from the session's subagents folder.
