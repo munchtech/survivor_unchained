@@ -20,6 +20,9 @@ for o in list(bpy.data.objects):
     bpy.data.objects.remove(o)
 bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, "godot", "art", "people", "heroine.glb"))
 bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, "godot", "art", "armor", f"{PID}.gltf"))
+# (the full piece only: its gameplay and shadow LODs (piece_lod.py) share the file)
+for o in [o for o in bpy.data.objects if o.type == "MESH" and (".lod1." in o.name or o.name.endswith(".shadow") or "_lod1_" in o.name)]:
+    bpy.data.objects.remove(o)
 # (the vertex colours are the game shaders' data (her tuck, the outfit's baked edge and cavity), never colour:
 # every colour-attribute node the importer wired in is replaced by white)
 for m in bpy.data.materials:

@@ -16,6 +16,8 @@ namespace SurvivorUnchained.View;
 /// overlay laid on the full model is on them too), all but fur, which grows fewer shells (FurShells).
 /// --lod off: never; --lod on: always (pictures side by side); --lod mesh: always, but her shadow from the full
 /// model (to tell the two apart); default: as above.
+/// A mixed look (pieces from different sets) has no outfit file: each armor piece that carries its own gameplay
+/// meshes and shadow mesh registers them here (For, AddPiece, AddShadow) and they switch the same way.
 /// </summary>
 public partial class HerLod : Node
 {
@@ -39,6 +41,7 @@ public partial class HerLod : Node
     /// <summary>Whether a full mesh is one slot's of an outfit's material: SET_SLOT_MAT (heroine_outfits.py's SET.SLOT.MAT,
     /// the dots made underscores on import).</summary>
     public static bool IsSlotMesh(string name, string set, string mat) => Slots.Any(s => name == $"{set}_{s}_{mat}");
+    readonly List<(MeshInstance3D Shadow, MeshInstance3D Like)> pieceShadows = new();
     MeshInstance3D? shadow, body;
     Skeleton3D skel = null!;
     bool? on;
@@ -102,10 +105,47 @@ public partial class HerLod : Node
         GD.Print($"her LOD: {set}, {lod.pairs.Count} meshes and her shadow ({file})");
     }
 
+    /// <summary>The gameplay-model node on her skeleton, made if she has none (null with --lod off: nothing registers).</summary>
+    public static HerLod? For(People.Person p)
+    {
+        if (Mode == "off") return null;
+        if (p.Skeleton.GetNodeOrNull<HerLod>("HerLod") is HerLod have) return have;
+        var lod = new HerLod { Name = "HerLod", skel = p.Skeleton };
+        p.Skeleton.AddChild(lod);
+        return lod;
+    }
+
+    /// <summary>An armor piece's gameplay mesh, standing for its full mesh (surfaces paired by material).</summary>
+    internal void AddPiece(MeshInstance3D full, MeshInstance3D lod)
+    {
+        int n = lod.Mesh.GetSurfaceCount();
+        var map = new int[n];
+        for (int s = 0; s < n; s++)
+        {
+            var key = lod.Mesh.SurfaceGetMaterial(s)?.ResourceName;
+            map[s] = Enumerable.Range(0, full.Mesh.GetSurfaceCount()).FirstOrDefault(f => full.Mesh.SurfaceGetMaterial(f)?.ResourceName == key);
+        }
+        lod.Visible = false;
+        lod.Layers = 2;
+        lod.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+        pairs.Add((full, lod, map, new bool[n]));
+        fulls.Add(full);
+    }
+
+    /// <summary>An armor piece's shadow mesh, shown with the gameplay model; it wears the transparency of a full mesh.</summary>
+    internal void AddShadow(MeshInstance3D sh, MeshInstance3D like)
+    {
+        sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+        sh.Visible = false;
+        sh.Layers = 2;
+        pieceShadows.Add((sh, like));
+    }
+
     internal void Remove()
     {
         foreach (var (_, l, _, _) in pairs) l.QueueFree();
         shadow?.QueueFree();
+        foreach (var (s, _) in pieceShadows) s.QueueFree();
         foreach (var f in fulls) if (IsInstanceValid(f)) f.Visible = true;
         QueueFree();
     }
@@ -134,6 +174,7 @@ public partial class HerLod : Node
                 else f.Visible = !want;
             }
             if (shadow != null) shadow.Visible = want && Mode != "mesh";
+            foreach (var (s, _) in pieceShadows) s.Visible = want && Mode != "mesh";
         }
         if (!want) return;
         // Whatever the full model wears, these wear (a dye, her paint, a ghost's overlay).
@@ -147,6 +188,8 @@ public partial class HerLod : Node
             if (l.MaterialOverlay != f.MaterialOverlay) l.MaterialOverlay = f.MaterialOverlay;
             if (l.MaterialOverride != f.MaterialOverride) l.MaterialOverride = f.MaterialOverride;
         }
+        foreach (var (s, like) in pieceShadows)
+            if (IsInstanceValid(like) && s.Transparency != like.Transparency) s.Transparency = like.Transparency;
         if (shadow != null && body != null && shadow.Transparency != body.Transparency) shadow.Transparency = body.Transparency;
     }
 }

@@ -336,6 +336,8 @@ def ico(sub):
 
 FIT = {}
 NUM_FIT = {}
+BAND = {}
+STRAPS = {}
 
 
 def nip_rel(pts):
@@ -517,6 +519,73 @@ def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll):
     return [plate] + beads, (pos, at, tris)
 
 
+def bvh_of(objs):
+    vs, fs = [], []
+    for o in objs:
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+    return BVHTree.FromPolygons(vs, fs)
+
+
+def skin_hit(o, d):
+    """Her skin where a ray from o along d first meets it, and its normal facing along d (None if it misses)."""
+    d = np.asarray(d, float) / np.linalg.norm(d)
+    h = G["SKIN_BVH"].ray_cast(Vector(tuple(o)), Vector(tuple(d)), 0.6)
+    if h[0] is None:
+        return None, None
+    n = np.array(h[1][:])
+    return np.array(h[0][:]), (n if n @ d > 0 else -n)
+
+
+def skin_band(name, cols_pts, cols_nrm, mkey, base_lift, thick, under=None, src_idx=None, sheet=None, clear=0.0004,
+              sigma=0.008, follow=True):
+    """A leather band or strap that follows her skin: `cols_pts` (columns across it, each a curve of n points on her
+    skin, side by side) and their skin normals; each point lifted `base_lift` off her along its own normal, or, where
+    something already lies on her there (`under`, a BVH: a plate, its rolled edge, another strap), over that by `clear`,
+    eased along it so it bends up over an edge and down onto her skin again. Thickened outward. Weights: her skin's
+    near each row (`src_idx`: from those points only: her torso, never her arm), one set across, eased along; where it
+    lies on a plate, the plate's own (`sheet`: its points and weights), so it moves with what it is riveted to.
+    (r3: her skin's own weights under each point, `sigma` 8 mm, each line along it its own (`follow`): eased over 2 cm and
+    one set across, with her arm's share masked off, it sank 5.6 mm into her side with her arms overhead.)"""
+    from scipy.ndimage import gaussian_filter1d, maximum_filter1d
+    C = np.asarray(cols_pts, float)          # (cols, n, 3)
+    Nn = np.asarray(cols_nrm, float)
+    k_, n = C.shape[0], C.shape[1]
+    need = np.zeros(n)
+    if under is not None:
+        for j in range(k_):
+            for i in range(n):
+                o = C[j, i] + Nn[j, i] * 0.03
+                h = under.ray_cast(Vector(tuple(o)), Vector(tuple(-Nn[j, i])), 0.04)
+                if h[0] is not None and 0.03 - h[3] > -0.002:
+                    need[i] = max(need[i], 0.03 - h[3] + clear)
+    lift = np.maximum(base_lift, need)
+    L = gaussian_filter1d(maximum_filter1d(lift, size=5, mode="nearest"), 2.0, mode="nearest")
+    lift = np.maximum(L, lift)
+    pos = (C + Nn * lift[None, :, None]).transpose(1, 0, 2).reshape(-1, 3)     # (row-major: along, then across)
+    tris = G["grid"](n, k_)
+    nor = G["vertex_normals"](pos, tris)
+    if (nor * Nn.transpose(1, 0, 2).reshape(-1, 3)).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+    wt = G["soft_weights"](pos, src_idx, sigma=sigma, k=8).reshape(n, k_, -1)
+    if not follow:
+        wt[:] = wt.mean(1, keepdims=True)
+    on_plate = gaussian_filter1d((need > 0).astype(float), 1.5, mode="nearest")
+    if sheet is not None and (need > 0).any():
+        s_pos, s_wt = sheet
+        d_, j_ = cKDTree(s_pos).query(C[k_ // 2], k=8)
+        g_ = np.exp(-0.5 * (d_ / 0.006) ** 2) + 1e-12
+        swt = (s_wt[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
+        wt = wt * (1 - on_plate[:, None, None]) + swt[:, None, :] * on_plate[:, None, None]
+    for _ in range(6):
+        wt[1:-1] = (wt[:-2] + 2 * wt[1:-1] + wt[2:]) / 4
+    wt = wt.reshape(n * k_, -1)
+    o_ = G["finish"](name, pos, wt, tris, mkey, thick, 0.0, 10 ** 7)
+    o_["hides"] = False
+    return [o_], dict(cols=C, nrm=Nn, lift=lift, on_plate=need > 0)
+
+
 def build_plate_top():
     nip = G["NIPPLE"]
     roll = PRM.get("roll", {"width": 0.005, "height": 0.0009})
@@ -532,30 +601,111 @@ def build_plate_top():
     # covers skin the look wants bare. The back strap, as round 1, closes it behind.)
     back_z = G["UNDERBUST"] + PRM.get("back_rise", 0.035)
     sw = PRM.get("strap_width", 0.016)
+    bw = PRM.get("back_width", 0.02)
+    cup_parts = cups
+    cup_bvh = bvh_of(cup_parts)
+    # ---- the back band (r3): a fitted band, as a bra's. It starts on each cup's outer side, a tab riveted on the plate
+    # `tab` in from its side seam, bends down over the rolled edge onto her skin and follows her ribs `band_lift` off
+    # her (each of its edges and its middle laid on her by a level ray from her middle out, so it lies on her across
+    # its width too), under her arm, round to her spine, where a buckle closes it. Weights her skin's under it (it lies
+    # on her: skin_band), the plate's own on the tab.
+    rr = FIT["rim_r"]
+    seam = rr[rr[:, 1] > rr[:, 1].max() - 0.004]
+    zlo, zhi = float(seam[:, 2].min()), float(seam[:, 2].max())
+    z_anc = float(np.clip(zlo + PRM.get("band_seam", 0.35) * (zhi - zlo), zlo + bw / 2 + 0.004, zhi - bw / 2 - 0.004)) if zhi - zlo > bw + 0.008 else (zlo + zhi) / 2
+    fr = G["front_point"](0.0, back_z)
+    bk_ = skin_hit((0.0, 0.6, back_z), (0, -1.0, 0))[0]
+    cxy = np.array([0.0, (fr[1] + (bk_[1] if bk_ is not None else 0.12)) / 2])
+    anc = seam[np.argmin(np.abs(seam[:, 2] - z_anc))] * mirror        # (her left: x > 0)
+    ang = lambda p: float(np.arctan2(p[0] - cxy[0], -(p[1] - cxy[1])))
+    a_seam = ang(anc)
+    r_seam = float(np.hypot(anc[0] - cxy[0], anc[1] - cxy[1]))
+    a_start = a_seam - PRM.get("tab", 0.02) / r_seam
+    def band_z(a):
+        s = np.clip(np.abs(a - np.pi) / (np.pi - a_seam), 0, 1)
+        return back_z + (z_anc - back_z) * (s * s * (3 - 2 * s))
+    def band_ray(a, dz):
+        z = band_z(a) + dz
+        return skin_hit((cxy[0], cxy[1], z), (np.sin(a), -np.cos(a), 0.0))
+    af = np.linspace(a_start, 2 * np.pi - a_start, 1600)
+    mid = np.array([band_ray(a, 0.0)[0] for a in af])
+    run_ = np.r_[0, np.cumsum(np.linalg.norm(np.diff(mid, axis=0), axis=1))]
+    nb = max(40, int(round(run_[-1] / PRM.get("band_step", 0.004))))
+    aa = np.interp(np.linspace(0, run_[-1], nb), run_, af)
+    cols, nrms = [], []
+    for dz in (-bw / 2, 0.0, bw / 2):
+        h_ = [band_ray(a, dz) for a in aa]
+        cols.append(np.array([h[0] for h in h_]))
+        nrms.append(np.array([h[1] for h in h_]))
+    nrms = np.array(nrms)
+    for _ in range(3):
+        nrms[:, 1:-1] = (nrms[:, :-2] + 2 * nrms[:, 1:-1] + nrms[:, 2:]) / 4
+    nrms /= np.linalg.norm(nrms, axis=2)[:, :, None]
+    band_lift, band_thick = PRM.get("band_lift", 0.0015), PRM.get("band_thick", 0.0025)
+    band, binfo = skin_band(f"{PID}.backstrap", cols, nrms, "darkleather", band_lift, band_thick, under=cup_bvh,
+                            sheet=(sheet_pos, sheet_wt))
+    BAND.update(binfo, aa=aa, a_seam=a_seam, z_anc=z_anc, seam_z=(zlo, zhi), cxy=cxy, thick=band_thick, objs=band)
+    backstrap = band
+    # The shoulder straps: from each cup's top outer corner over her shoulder, down her back onto the band, riveted
+    # there. Laid as before (rays out from inside her chest), now lifted off her the same way: `strap_lift` off her
+    # skin, over the cup at its foot and over the band at its end.
+    mc = cols[1]
     straps, strap_lines = [], {}
     for sd, sg in (("l", 1), ("r", -1)):
         pk = CUP_PEAK[sd]
         tp = G["front_point"](pk[0] - sg * 0.004, pk[2] - 0.012)
-        cv = [tp, np.array([sg * 0.11, 0.03, 1.565]), np.array([sg * 0.1, 0.11, 1.47]), np.array([sg * 0.085, 0.125, back_z])]
+        back_half = mc[(mc[:, 1] > cxy[1]) & (np.sign(mc[:, 0]) == sg)]
+        bp = back_half[np.argmin(np.abs(back_half[:, 0] - sg * 0.085))]
+        cv = [tp, np.array([sg * 0.11, 0.03, 1.565]), np.array([sg * 0.1, 0.11, 1.47]), np.array([bp[0], bp[1] + 0.005, bp[2] - 0.004])]
         strap_lines[sd] = cv
         straps.append((sd, cv))
+    under_s = bvh_of(cup_parts + band)
+    centre = np.array([0.0, 0.0, 1.33])
     strap_objs = {}
     for sd, cv in straps:
-        SUBGRID[f"{PID}.strap_{sd}"] = (len(G["spline"](cv, step=0.003)), max(5, int(np.ceil(sw / 0.0015)) + 1), False)
-        strap_objs[sd] = G["ribbon"](f"{PID}.strap_{sd}", cv, sw, "darkleather", thick=0.003, centre=(0.0, 0.0, 1.33))
+        c = G["spline"](cv, step=0.004)
+        lay = lambda pts: np.array([skin_hit(centre, p - centre)[0] for p in pts])
+        c = lay(c)
+        for _ in range(3):
+            c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
+            c = lay(c)
+        nr = np.array([skin_hit(centre, p - centre)[1] for p in c])
+        for _ in range(4):
+            nr[1:-1] = (nr[:-2] + 2 * nr[1:-1] + nr[2:]) / 4
+        nr /= np.linalg.norm(nr, axis=1)[:, None]
+        tg = np.gradient(c, axis=0)
+        tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
+        bn = np.cross(nr, tg)
+        bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
+        sc, sn = [], []
+        for o_ in (-0.5, 0.0, 0.5):
+            h_ = [skin_hit(centre, p + b * o_ * sw - centre) for p, b in zip(c, bn)]
+            sc.append(np.array([h[0] for h in h_]))
+            sn.append(np.array([h[1] for h in h_]))
+        sn = np.array(sn)
+        for _ in range(3):
+            sn[:, 1:-1] = (sn[:, :-2] + 2 * sn[:, 1:-1] + sn[:, 2:]) / 4
+        sn /= np.linalg.norm(sn, axis=2)[:, :, None]
+        strap_objs[sd], sinfo = skin_band(f"{PID}.strap_{sd}", sc, sn, "darkleather", PRM.get("strap_lift", 0.002), 0.003,
+                                          under=under_s, sheet=(sheet_pos, sheet_wt))
+        STRAPS[sd] = dict(sinfo, objs=strap_objs[sd])
     allstraps = [o for v_ in strap_objs.values() for o in v_]
-    bw = PRM.get("back_width", 0.02)
-    SUBGRID[f"{PID}.backstrap"] = (max(9, int(np.ceil(bw / 0.0016)) | 1), 120, "open")
-    backstrap = G["girdle"](f"{PID}.backstrap", lambda a_: np.full_like(a_, back_z), bw, "darkleather",
-                            lift=0.003, thick=0.003, arc=(PRM.get("back_arc", 1.48), 2 * np.pi - PRM.get("back_arc", 1.48)), mask=arms < 0.3, nu=120)
-    # The fixings: a rivet where each shoulder strap meets the back strap, one at each of the back strap's ends, one
+    # The fixings: a rivet where each shoulder strap meets the band, two through each tab of the band on its cup, one
     # through each shoulder strap's foot on its cup.
-    aims = ([((sg * 0.085, 0.7, back_z + 0.003), (sg * 0.085, 0.0, back_z + 0.003)) for sg in (1, -1)]
-            + [((sg * 0.7 * np.sin(PRM.get("back_arc", 1.48) + 0.05), -0.7 * np.cos(PRM.get("back_arc", 1.48) + 0.05), back_z), (0.0, 0.0, back_z)) for sg in (1, -1)])
+    aims = []
+    for sd, cv in straps:
+        e_ = STRAPS[sd]["cols"][1][-3]
+        en = STRAPS[sd]["nrm"][1][-3]
+        aims.append((e_ + en * 0.05, e_))
+    bc_, bn_ = BAND["cols"][1], BAND["nrm"][1]
+    brun = np.r_[0, np.cumsum(np.linalg.norm(np.diff(bc_, axis=0), axis=1))]
+    for at_ in (0.006, 0.0145):
+        for i_ in (int(np.argmin(np.abs(brun - at_))), int(np.argmin(np.abs(brun - (brun[-1] - at_))))):
+            aims.append((bc_[i_] + bn_[i_] * 0.05, bc_[i_]))
     fpts, fn = aim_hits(allstraps + backstrap, aims)
     for sd, cv in straps:
-        q = np.asarray(cv[0]) + (np.asarray(cv[1]) - np.asarray(cv[0])) * 0.06
-        p_, n_ = aim_hits(strap_objs[sd], [(q + np.array([0, -0.5, 0.05]), q)])
+        q = STRAPS[sd]["cols"][1][2]
+        p_, n_ = aim_hits(strap_objs[sd], [(q + STRAPS[sd]["nrm"][1][2] * 0.05, q)])
         fpts += p_
         fn += n_
     fix = low_rivets(f"{PID}.strap_rivets", fpts, fn, G["soft_weights"](np.array(fpts)), 0.0028, MKEY) if fpts else []
@@ -565,6 +715,13 @@ def build_plate_top():
         m, s_ = strap_buckle(f"{PID}.buckle_{sd}", strap_objs[sd], np.asarray(cv[0]), np.asarray(cv[1]), bk["t"], bk["w"], bk["h"], bk["r"])
         buckles += m
         bsock[sd] = s_
+    # (the band's closure at her spine: a buckle, its frame across the band)
+    ib = int(np.argmin(np.abs(BAND["aa"] - np.pi)))
+    lifted = BAND["cols"][1] + BAND["nrm"][1] * 0.02
+    bkb = PRM.get("back_buckle", {"w": bw + 0.007, "h": 0.022, "r": 0.0015})
+    m, s_ = strap_buckle(f"{PID}.buckle_back", band, lifted[ib - 3], lifted[ib + 3], 0.5, bkb["w"], bkb["h"], bkb["r"])
+    buckles += m
+    bsock["back"] = s_
     # The gore: between the cups' lower inner corners (the lowest point of each inner rim), from `top` above them to
     # `drop` below, on her sternum.
     gp = PRM.get("gore", {"top": 0.014, "drop": 0.02, "hw_tip": 0.005, "lift": 0.001, "thick": 0.0025, "roll": [0.0035, 0.0006]})
@@ -615,11 +772,8 @@ def build_plate_top():
     gn = np.array(G["SKIN_BVH"].find_nearest(Vector(gc))[1][:])
     sock("gore", gc + gn * (gp["lift"] + gp["thick"]), gn, [0, 0, 1.0], G["soft_weights"](gc[None])[0])
     NUM_FIT.update(FIT.get("gore", {}))
-    bc = np.array([0.0, 0.0, back_z])
-    hb = G["SKIN_BVH"].ray_cast(Vector((0.0, 0.5, back_z)), Vector((0, -1.0, 0)), 1.0)
-    if hb[0] is not None:
-        bc = np.array(hb[0][:]) + np.array([0, 0.006, 0])
-    sock("back", bc, [0, 1.0, 0], [0, 0, 1.0], G["soft_weights"](bc[None])[0])
+    bs = bsock["back"]
+    sock("back", bs["point"], bs["normal"], [0, 0, 1.0], bs["weights"])
     # ---- rims: the rolled edges' lines (the cut outline made fair), each with its weights
     rims = {}
     for tn, tb in CAP["tubes"].items():
@@ -827,6 +981,195 @@ if G["HAND_PIVOTS"] and G["FINGER_FIX"]:
         keep.append(np.empty(len(kb.data) * 3))
         kb.data.foreach_get("co", keep[-1])
     G["finger_flattened"](body)
+def mesh_world(objs):
+    vs, fs, owner = [], [], []
+    for o in objs:
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+        owner += [o.name] * len(o.data.polygons)
+    return np.array(vs), fs, owner
+
+
+
+
+def skin_vs_shell(bv, bn, idx, tuck_v, tree):
+    out = {"covered": np.zeros(len(idx), bool), "gap": np.full(len(idx), np.nan), "through": np.zeros(len(idx), bool),
+           "through_t": np.zeros(len(idx), bool), "deep_t": 0.0, "cov_t": np.zeros(len(idx), bool),
+           "deep_t_k": np.zeros(len(idx))}
+    for k, i in enumerate(idx):
+        n_ = bn[i] / (np.linalg.norm(bn[i]) + 1e-12)
+        for tucked in (False, True):
+            p_ = bv[i] - n_ * (0.010 * (1.0 if tuck_v[i] > 0.973 else tuck_v[i]) if tucked else 0.0)
+            f_ = tree.ray_cast(Vector(p_ + n_ * 0.0001), Vector(n_), 0.03)
+            b_ = tree.ray_cast(Vector(p_ + n_ * 0.0001), Vector(-n_), 0.012) if f_[0] is None else (None,)
+            if not tucked:
+                out["covered"][k] = f_[0] is not None
+                out["gap"][k] = f_[3] if f_[0] is not None else np.nan
+                out["through"][k] = f_[0] is None and b_[0] is not None
+                if out["through"][k]:
+                    out.setdefault("deep_u", np.zeros(len(idx)))[k] = b_[3]
+            else:
+                out["cov_t"][k] = f_[0] is not None
+                out["through_t"][k] = f_[0] is None and b_[0] is not None
+                if out["through_t"][k]:
+                    out["deep_t"] = max(out["deep_t"], b_[3])
+                    out["deep_t_k"][k] = b_[3]
+    return out
+
+
+def shell_tree(dg=None):
+    vs, fs = [], []
+    for o in SHELL:
+        oe = o.evaluated_get(dg) if dg is not None else o
+        m_ = oe.to_mesh() if dg is not None else o.data
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in m_.vertices]
+        fs += [[base + i for i in p_.vertices] for p_ in m_.polygons]
+        if dg is not None:
+            oe.to_mesh_clear()
+    return BVHTree.FromPolygons(vs, fs)
+
+
+# ------------------------------------- poses, and the shell pushed out where her skin comes through --
+POSES = {
+    "arms_overhead": [("clavicle_l", (0, 1, 0), 25, (0, 0, 1)), ("clavicle_r", (0, 1, 0), 25, (0, 0, 1)),
+                      ("upperarm_l", (0, 1, 0), 110, (0, 0, 1)), ("upperarm_r", (0, 1, 0), 110, (0, 0, 1))],
+    "reach_across_r": [("upperarm_r", (0, 0, 1), 80, (1, -1, 0)), ("lowerarm_r", (0, 0, 1), 60, (1, -1, 0))],
+    "arms_back": [("upperarm_l", (0, 0, 1), 40, (0, 1, 0)), ("upperarm_r", (0, 0, 1), 40, (0, 1, 0))],
+    "hug": [("clavicle_l", (0, 0, 1), 15, (0, -1, 0)), ("clavicle_r", (0, 0, 1), 15, (0, -1, 0)),
+            ("upperarm_l", (0, 0, 1), 70, (0, -1, 0)), ("upperarm_r", (0, 0, 1), 70, (0, -1, 0))],
+    "twist_bend": [("spine_02", (1, 0, 0), 20, (0, -1, 0)), ("spine_03", (0, 0, 1), 25, (1, 0, 0))],
+    # (r3: arms down at her sides, along her ribs over the band; both arms forward, a two-handed swing's start)
+    "arms_down": [("upperarm_l", (0, 1, 0), 40, (0, 0, -1)), ("upperarm_r", (0, 1, 0), 40, (0, 0, -1))],
+    "arms_forward": [("upperarm_l", (1, 0, 0), 75, (0, -1, 0)), ("upperarm_r", (1, 0, 0), 75, (0, -1, 0))],
+}
+
+
+def pose_body(rots):
+    """Her body posed by `rots` (rest if empty): her points and normals, world, and the depsgraph."""
+    from mathutils import Quaternion
+    pb = arm.pose.bones
+    arm.data.pose_position = "POSE"
+    for b in pb:
+        b.rotation_mode = "QUATERNION"
+        b.rotation_quaternion = (1, 0, 0, 0)
+    for bone, axis, deg, want in rots:
+        if bone not in pb:
+            continue
+        b = arm.data.bones[bone]
+        d = np.array((b.tail_local - b.head_local)[:])
+        d2 = np.array((Quaternion(Vector(axis), np.radians(deg)).to_matrix() @ Vector(d))[:])
+        deg = deg if (d2 - d) @ np.asarray(want, float) > 0 else -deg
+        R = b.matrix_local.to_3x3()
+        qw = Quaternion(Vector(axis), np.radians(deg))
+        pb[bone].rotation_quaternion = (R.inverted() @ qw.to_matrix() @ R).to_quaternion() @ pb[bone].rotation_quaternion
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    be = body.evaluated_get(dg)
+    m_ = be.to_mesh()
+    bv = np.array([(body.matrix_world @ v.co)[:] for v in m_.vertices])
+    bn = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in m_.vertices])
+    be.to_mesh_clear()
+    return bv, bn, dg
+
+
+def pose_rest():
+    for b in arm.pose.bones:
+        b.rotation_quaternion = (1, 0, 0, 0)
+    bpy.context.view_layer.update()
+
+
+def push_field(Q, D, A, X, sigma):
+    """The push-out at points X: from each deficit (point Q, direction D, amount A) a Gaussian bump `sigma` wide; the
+    largest bump's size, along the bumps' weighted direction."""
+    X = np.asarray(X, float)
+    out = np.zeros_like(X)
+    for a0 in range(0, len(X), 4000):
+        x = X[a0:a0 + 4000]
+        g = np.exp(-((x[:, None, :] - Q[None]) ** 2).sum(2) / (2 * sigma ** 2)) * A[None]
+        mag = g.max(1)
+        dv = (g[:, :, None] * D[None]).sum(1)
+        dv /= np.linalg.norm(dv, axis=1)[:, None] + 1e-12
+        out[a0:a0 + 4000] = dv * mag[:, None]
+    return out
+
+
+def push_apply(Q, D, A, sigma):
+    """Every part of the piece moved by the push field (a plate, its rolled edge, its rivets and the band's tab all
+    together, so nothing parts), and the sheet, sockets and rims with it."""
+    for o in made:
+        me_ = o.data
+        mw = np.array(o.matrix_world)
+        inv3 = np.linalg.inv(mw[:3, :3])
+        co = np.empty(len(me_.vertices) * 3)
+        me_.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+        dw = push_field(Q, D, A, co @ mw[:3, :3].T + mw[:3, 3], sigma)
+        if not np.abs(dw).max() > 1e-7:
+            continue
+        dl = dw @ inv3.T
+        me_.vertices.foreach_set("co", (co + dl).ravel())
+        for kb in (me_.shape_keys.key_blocks if me_.shape_keys else []):
+            kc = np.empty(len(kb.data) * 3)
+            kb.data.foreach_get("co", kc)
+            kb.data.foreach_set("co", (kc.reshape(-1, 3) + dl).ravel())
+        me_.update()
+    for nm, (sp_, sw_, st_, th_) in list(CAP["sheet"].items()):
+        CAP["sheet"][nm] = (sp_ + push_field(Q, D, A, sp_, sigma), sw_, st_, th_)
+    blend = lambda g: np.stack([g[..., 0], -g[..., 2], g[..., 1]], -1)
+    for s_ in B["sockets"].values():
+        p_ = blend(np.array(s_["point"]))
+        s_["point"] = gl(p_ + push_field(Q, D, A, p_[None], sigma)[0]).round(5).tolist()
+    for r_ in B["rims"].values():
+        p_ = blend(np.array(r_["points"]))
+        r_["points"] = gl(p_ + push_field(Q, D, A, p_, sigma)).round(5).tolist()
+
+
+SHELL = B["shell"]
+bv0 = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+bn0 = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in me.vertices])
+sv, sf, _ = mesh_world(B["shell"])
+lo, hi = sv.min(0) - 0.03, sv.max(0) + 0.03
+NEAR = np.nonzero(((bv0 > lo) & (bv0 < hi)).all(1))[0]
+# Pushed out where her skin comes through it, at rest or in any pose (untucked or tucked): a bump of the whole piece
+# there, `push_sigma` wide, as deep as she came through plus `push_clear`, at most `push_cap` in all. Rounds until none
+# comes through (a push can bring another point near). Never a cut: a cut bared her (r2).
+PUSH = {"rounds": []}
+PUSH_SIGMA, PUSH_CLEAR, PUSH_CAP = PRM.get("push_sigma", 0.012), PRM.get("push_clear", 0.0008), PRM.get("push_cap", 0.006)
+pushed = {}
+for rnd in range(PRM.get("push_rounds", 4)):
+    defs = {}
+    for pname, rots in [("rest", [])] + list(POSES.items()):
+        bv, bn, dg = pose_body(rots)
+        r_ = skin_vs_shell(bv, bn, NEAR, tuck, shell_tree(dg))
+        du = r_.get("deep_u", np.zeros(len(NEAR)))
+        if rnd == 0:
+            PUSH.setdefault("first_round_by_pose", {})[pname] = {
+                "untucked": int(r_["through"].sum()), "tucked": int(r_["through_t"].sum()),
+                "deepest_untucked_mm": round(float(du.max() * 1000), 2) if r_["through"].any() else 0.0,
+                "deepest_tucked_mm": round(r_["deep_t"] * 1000, 2)}
+        for k in np.nonzero(r_["through"] | r_["through_t"])[0]:
+            i = int(NEAR[k])
+            defs[i] = max(defs.get(i, 0.0), float(max(du[k], r_["deep_t_k"][k])))
+    pose_rest()
+    PUSH["rounds"].append({"points": len(defs), "max_mm": round(max(defs.values(), default=0) * 1000, 2)})
+    if not defs:
+        break
+    ii = np.array(sorted(defs))
+    A = np.array([defs[i] for i in ii]) + PUSH_CLEAR
+    A = np.minimum(A, np.maximum(PUSH_CAP - np.array([pushed.get(int(i), 0.0) for i in ii]), 0.0))
+    if A.max() <= 1e-6:
+        break
+    for i, a_ in zip(ii, A):
+        pushed[int(i)] = pushed.get(int(i), 0.0) + float(a_)
+    D = bn0[ii] / np.linalg.norm(bn0[ii], axis=1)[:, None]
+    push_apply(bv0[ii], D, A, PUSH_SIGMA)
+    sv, sf, _ = mesh_world(B["shell"])
+PUSH["at"] = nip_rel(bv0[sorted(pushed)])[:12] if pushed else []
+PUSH["total_mm"] = round(max(pushed.values(), default=0) * 1000, 2)
+stamp("push-out: %s" % json.dumps(PUSH))
+
 TUCKDIR = os.path.join(SCRATCH, "tuck")
 G["ARMOR_TUCK"].clear()
 G["ARMOR_TUCK"][(PID, SLOT)] = tuck
@@ -857,16 +1200,6 @@ stamp("helpers split; %d rigid parts each on one blend" % n_parts)
 NUM = {"id": PID, "body_hash": BODY_HASH, "tuck_records": TUCK_N, "tuck_vertices": int(hid)}
 
 
-def mesh_world(objs):
-    vs, fs, owner = [], [], []
-    for o in objs:
-        base = len(vs)
-        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
-        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
-        owner += [o.name] * len(o.data.polygons)
-    return np.array(vs), fs, owner
-
-
 sv, sf, _ = mesh_world(B["shell"])
 shell_bvh = BVHTree.FromPolygons([tuple(p) for p in sv], sf)
 # (the shell's envelope: how far its outer face stands off her filled skin: L1 at most 6 mm)
@@ -884,49 +1217,6 @@ NUM["envelope_with_rolled_edge_mm"] = envelope(B.get("envelope", B["shell"]) + [
 # Covered: a ray out along her normal meets the shell's inner face within 30 mm (gap = that distance). Through:
 # no ray out meets it, but one back in does within 12 mm (her skin stands outside the shell). Each counted with her
 # skin as drawn (untucked) and tucked as the game draws it (10 mm times the tuck, full past 0.973).
-SHELL = B["shell"]
-
-
-def skin_vs_shell(bv, bn, idx, tuck_v, tree):
-    out = {"covered": np.zeros(len(idx), bool), "gap": np.full(len(idx), np.nan), "through": np.zeros(len(idx), bool),
-           "through_t": np.zeros(len(idx), bool), "deep_t": 0.0, "cov_t": np.zeros(len(idx), bool)}
-    for k, i in enumerate(idx):
-        n_ = bn[i] / (np.linalg.norm(bn[i]) + 1e-12)
-        for tucked in (False, True):
-            p_ = bv[i] - n_ * (0.010 * (1.0 if tuck_v[i] > 0.973 else tuck_v[i]) if tucked else 0.0)
-            f_ = tree.ray_cast(Vector(p_ + n_ * 0.0001), Vector(n_), 0.03)
-            b_ = tree.ray_cast(Vector(p_ + n_ * 0.0001), Vector(-n_), 0.012) if f_[0] is None else (None,)
-            if not tucked:
-                out["covered"][k] = f_[0] is not None
-                out["gap"][k] = f_[3] if f_[0] is not None else np.nan
-                out["through"][k] = f_[0] is None and b_[0] is not None
-                if out["through"][k]:
-                    out.setdefault("deep_u", np.zeros(len(idx)))[k] = b_[3]
-            else:
-                out["cov_t"][k] = f_[0] is not None
-                out["through_t"][k] = f_[0] is None and b_[0] is not None
-                if out["through_t"][k]:
-                    out["deep_t"] = max(out["deep_t"], b_[3])
-    return out
-
-
-def shell_tree(dg=None):
-    vs, fs = [], []
-    for o in SHELL:
-        oe = o.evaluated_get(dg) if dg is not None else o
-        m_ = oe.to_mesh() if dg is not None else o.data
-        base = len(vs)
-        vs += [tuple(o.matrix_world @ v.co) for v in m_.vertices]
-        fs += [[base + i for i in p_.vertices] for p_ in m_.polygons]
-        if dg is not None:
-            oe.to_mesh_clear()
-    return BVHTree.FromPolygons(vs, fs)
-
-
-bv0 = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
-bn0 = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in me.vertices])
-lo, hi = sv.min(0) - 0.03, sv.max(0) + 0.03
-NEAR = np.nonzero(((bv0 > lo) & (bv0 < hi)).all(1))[0]
 R0 = skin_vs_shell(bv0, bn0, NEAR, tuck, shell_tree())
 COV = NEAR[R0["covered"]]
 g_ = R0["gap"][R0["covered"]]
@@ -1011,56 +1301,117 @@ NUM["triangles_by"] = {}
 for o in made:
     k_ = o.name.split(".", 1)[1].split("_bind")[0]
     k_ = {"strap_l": "straps", "strap_r": "straps", "buckle_l": "buckles", "buckle_r": "buckles", "buckle_l_bar": "buckles", "buckle_r_bar": "buckles",
-          "buckle_l_tongue": "buckles", "buckle_r_tongue": "buckles"}.get(k_, k_)
+          "buckle_l_tongue": "buckles", "buckle_r_tongue": "buckles", "buckle_back": "buckles", "buckle_back_bar": "buckles",
+          "buckle_back_tongue": "buckles"}.get(k_, k_)
     NUM["triangles_by"][k_] = NUM["triangles_by"].get(k_, 0) + sum(len(p.vertices) - 2 for p in o.data.polygons)
 NUM["triangles_by"]["cups_rolled_edge"] = sum(sum(len(p.vertices) - 2 for p in tb["obj"].data.polygons) for tn, tb in CAP["tubes"].items() if tn.startswith(f"{PID}.cups_bind"))
 NUM["parts"] = len(made)
+NUM["push_out"] = PUSH
+NUM["band"] = {"seam_z": [round(BAND["seam_z"][0], 4), round(BAND["seam_z"][1], 4)], "anchor_z": round(BAND["z_anc"], 4),
+               "length_mm": round(float(np.linalg.norm(np.diff(BAND["cols"][1], axis=0), axis=1).sum() * 1000), 1),
+               "on_plate_mm": round(float(BAND["on_plate"].sum() * PRM.get("band_step", 0.004) * 1000), 1),
+               "lift_on_skin_mm": [round(float(BAND["lift"][~BAND["on_plate"]].min() * 1000), 2), round(float(BAND["lift"][~BAND["on_plate"]].max() * 1000), 2)]}
 
 
-# (her skin through the shell in test poses: arms overhead, one arm across her, both arms back, a hug, a twist and bend)
+# (her skin through the shell in test poses: arms overhead, one arm across her, both arms back, a hug, a twist and
+# bend, arms down at her sides, both arms forward; and the band and straps on her: how far they stand off her torso,
+# whether they go into her, and how near her arm comes to them, at rest and in each pose)
+_, _jP = cKDTree(P).query(bv0)
+ARM_B = (G["ARMW"]["l"] + G["ARMW"]["r"])[_jP] > 0.5
+TORSO_B = (G["ARMW"]["l"] + G["ARMW"]["r"])[_jP] < 0.3
+BODY_F = np.array([p_.vertices[:] for p_ in me.polygons if len(p_.vertices) == 3] +
+                  [p_.vertices[:3] for p_ in me.polygons if len(p_.vertices) == 4] +
+                  [(p_.vertices[0], p_.vertices[2], p_.vertices[3]) for p_ in me.polygons if len(p_.vertices) == 4])
+
+
+def strap_sets():
+    """Each band or strap: its object, and per vertex its section along it (the rest centre line's nearest), whether it
+    lies on her skin there (not on a plate or another strap) and whether it is its inner face (its rest distance to her
+    skin under its lift plus half its thickness)."""
+    out = []
+    for nm, info, th in [("band", BAND, BAND["thick"])] + [(f"strap_{sd}", STRAPS[sd], 0.003) for sd in sorted(STRAPS)]:
+        o = info["objs"][0]
+        v = np.array([(o.matrix_world @ x.co)[:] for x in o.data.vertices])
+        sec = cKDTree(info["cols"][1]).query(v)[1]
+        d = np.array([np.linalg.norm(np.array(G["SKIN_BVH"].find_nearest(Vector(q))[0][:]) - q) for q in v])
+        inner = d < info["lift"][sec] + th / 2
+        # (on her skin: not on a plate, nor on the ramp down off it (lifted over its base lift))
+        base_ = info["lift"][~info["on_plate"]].min()
+        skin = (~info["on_plate"] & (info["lift"] < base_ + 0.0003))[sec]
+        # (a strap's end over the band: over the band, not her skin)
+        if nm != "band":
+            bt = bvh_of(BAND["objs"])
+            near_band = np.array([bt.find_nearest(Vector(q), 0.012)[0] is not None for q in info["cols"][1]])
+            skin = skin & ~near_band[sec]
+        out.append((nm, o, sec, inner, skin))
+    return out
+
+
+STRAP_SETS = strap_sets()
+
+
+def arm_in_torso(bv, tbvh, arm_i):
+    """Her arm's points inside her torso (her own skinning, nothing of the piece's), within the band's height: count and
+    the deepest, mm."""
+    zb = BAND["cols"][:, :, 2]
+    sel = arm_i[(bv[arm_i, 2] > zb.min() - 0.02) & (bv[arm_i, 2] < zb.max() + 0.02)]
+    deep = []
+    for i in sel:
+        h = tbvh.find_nearest(Vector(bv[i]), 0.03)
+        if h[0] is not None and (bv[i] - np.array(h[0][:])) @ np.array(h[1][:]) < 0:
+            deep.append(np.linalg.norm(bv[i] - np.array(h[0][:])))
+    return {"n": len(deep), "deepest_mm": round(float(max(deep, default=0) * 1000), 1)}
+
+
+def o_cols(nm):
+    return BAND["cols"][1] if nm == "band" else STRAPS[nm[-1]]["cols"][1]
+
+
+def strap_check(bv, bn, dg):
+    """Standoff of each band's inner face over her torso skin (per section, the worst point across it; max and p50
+    along it), points of it inside her (depth), and her arm's nearest approach (and points of it inside her arm)."""
+    lo_, hi_ = bv[TORSO_B].min(0), bv[TORSO_B].max(0)
+    res = {}
+    tor_f = BODY_F[TORSO_B[BODY_F].all(1)]
+    tbvh = BVHTree.FromPolygons([tuple(p) for p in bv], tor_f.tolist())
+    arm_i = np.nonzero(ARM_B)[0]
+    atree = cKDTree(bv[arm_i])
+    for nm, o, sec, inner, skin in STRAP_SETS:
+        oe = o.evaluated_get(dg)
+        m_ = oe.to_mesh()
+        v = np.array([(o.matrix_world @ x.co)[:] for x in m_.vertices])
+        oe.to_mesh_clear()
+        sd_ = np.full(len(v), np.nan)
+        for k in np.nonzero(inner & skin)[0]:
+            h = tbvh.find_nearest(Vector(v[k]))
+            if h[0] is None:
+                continue
+            dvec = v[k] - np.array(h[0][:])
+            sd_[k] = np.linalg.norm(dvec) * (1 if dvec @ np.array(h[1][:]) >= 0 else -1)
+        per = {}
+        for k in np.nonzero(np.isfinite(sd_))[0]:
+            per[sec[k]] = max(per.get(sec[k], -1), sd_[k])
+        pv = np.array(list(per.values())) if per else np.zeros(1)
+        da, ja = atree.query(v)
+        an = bn[arm_i[ja]]
+        inside_arm = int(((da < 0.02) & (((v - bv[arm_i[ja]]) * an).sum(1) < 0)).sum())
+        neg = sd_[np.isfinite(sd_) & (sd_ < 0)]
+        kmax = max(per, key=per.get) if per else 0
+        res.setdefault("arm_in_torso", arm_in_torso(bv, tbvh, arm_i))
+        res[nm] = {"standoff_max_at": nip_rel(o_cols(nm)[kmax])[0], "standoff_max_mm": round(float(pv.max() * 1000), 2), "standoff_p50_mm": round(float(np.median(pv) * 1000), 2),
+                   "in_her": int(len(neg)), "in_her_deepest_mm": round(float(-neg.min() * 1000), 2) if len(neg) else 0.0,
+                   "arm_nearest_mm": round(float(da.min() * 1000), 1), "inside_arm": inside_arm}
+    return res
+
+
 def pose_check():
-    pb = arm.pose.bones
-    from mathutils import Quaternion
-    arm.data.pose_position = "POSE"
-
-    def rot(bone, axis, deg):
-        b = arm.data.bones[bone]
-        R = b.matrix_local.to_3x3()
-        qw = Quaternion(Vector(axis), np.radians(deg))
-        ql = (R.inverted() @ qw.to_matrix() @ R).to_quaternion()
-        pb[bone].rotation_mode = "QUATERNION"
-        pb[bone].rotation_quaternion = ql @ pb[bone].rotation_quaternion
-
-    def side(bone, axis, deg, want):
-        b = arm.data.bones[bone]
-        d = np.array((b.tail_local - b.head_local)[:])
-        d2 = np.array((Quaternion(Vector(axis), np.radians(deg)).to_matrix() @ Vector(d))[:])
-        return deg if (d2 - d) @ np.asarray(want, float) > 0 else -deg
-
-    poses = {
-        "arms_overhead": [("clavicle_l", (0, 1, 0), 25, (0, 0, 1)), ("clavicle_r", (0, 1, 0), 25, (0, 0, 1)),
-                          ("upperarm_l", (0, 1, 0), 110, (0, 0, 1)), ("upperarm_r", (0, 1, 0), 110, (0, 0, 1))],
-        "reach_across_r": [("upperarm_r", (0, 0, 1), 80, (1, -1, 0)), ("lowerarm_r", (0, 0, 1), 60, (1, -1, 0))],
-        "arms_back": [("upperarm_l", (0, 0, 1), 40, (0, 1, 0)), ("upperarm_r", (0, 0, 1), 40, (0, 1, 0))],
-        "hug": [("clavicle_l", (0, 0, 1), 15, (0, -1, 0)), ("clavicle_r", (0, 0, 1), 15, (0, -1, 0)),
-                ("upperarm_l", (0, 0, 1), 70, (0, -1, 0)), ("upperarm_r", (0, 0, 1), 70, (0, -1, 0))],
-        "twist_bend": [("spine_02", (1, 0, 0), 20, (0, -1, 0)), ("spine_03", (0, 0, 1), 25, (1, 0, 0))],
-    }
     out = {}
-    for pname, rots in poses.items():
-        for b in pb:
-            b.rotation_mode = "QUATERNION"
-            b.rotation_quaternion = (1, 0, 0, 0)
-        for bone, axis, deg, want in rots:
-            if bone in pb:
-                rot(bone, axis, side(bone, axis, deg, want))
-        bpy.context.view_layer.update()
-        dg = bpy.context.evaluated_depsgraph_get()
-        be = body.evaluated_get(dg)
-        m_ = be.to_mesh()
-        bv = np.array([(body.matrix_world @ v.co)[:] for v in m_.vertices])
-        bn = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in m_.vertices])
-        be.to_mesh_clear()
+    for pname, rots in [("rest", [])] + list(POSES.items()):
+        bv, bn, dg = pose_body(rots)
+        straps_ = strap_check(bv, bn, dg)
+        if pname == "rest":
+            out["rest"] = {"straps": straps_}
+            continue
         r_ = skin_vs_shell(bv, bn, NEAR, tuck, shell_tree(dg))
         moved = float(np.abs(bv[NEAR] - bv0[NEAR]).max())
         inC = R0["covered"]
@@ -1069,10 +1420,8 @@ def pose_check():
                       "worst_tucked_mm": round(r_["deep_t"] * 1000, 2), "no_longer_covered": int((inC & ~r_["covered"]).sum()),
                       "no_longer_covered_tucked_full": int((inC & ~r_["covered"] & (tuck[NEAR] > 0.973)).sum()),
                       "through_tucked_at": nip_rel(bv0[NEAR[r_["through_t"]]])[:6],
-                      "through_untucked_at": nip_rel(bv0[NEAR[r_["through"]]])[:6]}
-    for b in pb:
-        b.rotation_quaternion = (1, 0, 0, 0)
-    bpy.context.view_layer.update()
+                      "through_untucked_at": nip_rel(bv0[NEAR[r_["through"]]])[:6], "straps": straps_}
+    pose_rest()
     return out
 
 

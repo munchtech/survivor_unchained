@@ -11,7 +11,8 @@ namespace SurvivorUnchained.View;
 /// its file onto her skeleton, as People.HerOutfit lays a whole outfit, her hold (HerJiggle) from the top she wears,
 /// and her skin's tuck under them all: the largest of the worn pieces' tucks (armor_tuck/ID.bin, by her bind-pose
 /// points), written a value a vertex into a float texture each body surface's skin reads by VERTEX_ID
-/// (heroine_skin.gdshader, tuck_channel -2). Her gameplay model (HerLod) only for one calling's full set.
+/// (heroine_skin.gdshader, tuck_channel -2). Her gameplay model (HerLod): one calling's full set uses
+/// its outfit file; a mixed look uses the gameplay and shadow meshes inside each piece's own file, if it has them.
 /// --wear a.slot,b.slot,...: those pieces over her equipment, for a shot.
 /// </summary>
 public static class HerWear
@@ -59,6 +60,9 @@ public static class HerWear
             mi.QueueFree();
         }
 
+        var lodPairs = new List<(MeshInstance3D Full, MeshInstance3D Lod)>();
+        var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
+
         // Each piece's meshes from its file (its outfit's, or its own), a file opened once.
         foreach (var g in rows.GroupBy(r => r.File ?? $"res://art/people/heroine_outfit_{r.Outfit}.gltf"))
         {
@@ -68,6 +72,8 @@ public static class HerWear
             var found = scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>()
                 .GroupBy(m => m.Name.ToString()).ToDictionary(x => x.Key, x => x.First());
             foreach (var r in g)
+            {
+                MeshInstance3D? anyFull = null;
                 foreach (var mn in r.Meshes)
                 {
                     if (!found.TryGetValue(mn.Replace('.', '_'), out var mi) && !found.TryGetValue(mn, out mi))
@@ -84,7 +90,21 @@ public static class HerWear
                     p.Meshes.Add(mi);
                     People.Fur(mi);
                     People.OutfitMaterials(mi);
+                    anyFull ??= mi;
+                    var mat = mn[(mn.LastIndexOf('.') + 1)..];
+                    if (found.TryGetValue($"{r.Id}_lod1_{mat}", out var lm) && lm != mi && lm.GetParent() != null)
+                    {
+                        Lay(p, lm, r.Id);
+                        People.OutfitMaterials(lm);
+                        lodPairs.Add((mi, lm));
+                    }
                 }
+                if (anyFull != null && found.TryGetValue($"{r.Id}_shadow", out var sm) && sm.GetParent() != null)
+                {
+                    Lay(p, sm, r.Id);
+                    lodShadows.Add((sm, anyFull));
+                }
+            }
             scene.Free();
         }
 
@@ -109,7 +129,32 @@ public static class HerWear
         }
         else TuckMap(p, rows);
         if (full) HerLod.Attach(p, calling);
+        if (lodPairs.Count > 0 || lodShadows.Count > 0)
+        {
+            var lod = HerLod.For(p);
+            if (lod == null)
+            {
+                foreach (var (_, l) in lodPairs) l.QueueFree();
+                foreach (var (s, _) in lodShadows) s.QueueFree();
+            }
+            else
+            {
+                foreach (var (f, l) in lodPairs) lod.AddPiece(f, l);
+                foreach (var (s, like) in lodShadows) lod.AddShadow(s, like);
+            }
+        }
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)"));
+    }
+
+    /// <summary>A piece's gameplay or shadow mesh, onto her skeleton like its full meshes (but not in her mesh list).</summary>
+    static void Lay(People.Person p, MeshInstance3D mi, string id)
+    {
+        mi.GetParent().RemoveChild(mi);
+        mi.Owner = null;
+        p.Skeleton.AddChild(mi);
+        mi.Skeleton = "..";
+        mi.Layers = 2;
+        mi.SetMeta(Meta, id);
     }
 
     /// <summary>The worn pieces' tuck of her skin, the largest at each of her points, into each body surface's tuck_map.</summary>

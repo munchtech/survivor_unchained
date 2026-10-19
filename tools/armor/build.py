@@ -49,6 +49,20 @@ def build(pid, src):
         if l.startswith(("ARMOR REFUSED", "Traceback")):
             print(l)
     print("BUILD %s: %s in %.0f s (log %s)" % (pid, "ok" if ok else "FAILED (exit %d)" % r.returncode, wall, log))
+    if ok:
+        # (its gameplay and shadow LODs, appended to the fresh export: tools/armor/piece_lod.py)
+        gl_ = os.path.join(ROOT, "godot", "art", "armor", pid + ".gltf")
+        r2 = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "armor", "piece_lod.py"), gl_, "--numbers",
+                             os.path.join(scratch, "numbers.json")], cwd=ROOT, capture_output=True, text=True)
+        print((r2.stdout + r2.stderr).strip())
+        ok = r2.returncode == 0
+        # (imported as the outfits are: Godot's own LODs off, ours are in the file)
+        imp = gl_ + ".import"
+        if not os.path.exists(imp):
+            ref = os.path.join(ROOT, "godot", "art", "people", "heroine_outfit_warden.gltf.import")
+            keep = [l for l in open(ref, encoding="utf-8").read().splitlines()
+                    if not l.startswith(("uid=", "path=", "dest_files=", "source_file="))]
+            open(imp, "w", encoding="utf-8", newline=chr(10)).write(chr(10).join(keep) + chr(10))
     if touched:
         print("BUILD %s: WROTE GUARDED FILES %s" % (pid, touched))
         ok = False
