@@ -3,7 +3,7 @@
 **Lead:** storybook 1 (su-lead-max), worktree `storybook-1`. Handoff: docs/handoff/storybook.md.
 
 ## Now (19 October)
-- Fixed list: (1) the format and player, hooked before C01: the code solver is building it. (2) The look on 2-3 SB00 style frames, judged, then the owner's eye: tooling done, round 1 waiting for the GPU. (3) All 11 plates with temp VO, drowning and score cues. (4) Cut judge, MR.
+- (1) Player BUILT (d0b6f97a, 367b8554; 993 tests); checks running (frame cost, capture, handover). (2) Look: round 1 done, round 2 queued for the GPU. (3) Temp sound bed DONE (d4e41e9e); plates not started (plan: docs/storybook/sb00_plates.md). (4) Cut judge, MR: not started.
 
 ## Decisions
 - Our own pictures only: Z-Image-Turbo (Apache-2.0) on the local ComfyUI, each logged with prompt, seed and weight hashes. Never Krea.
