@@ -1089,6 +1089,16 @@ public partial class VatCrowd : MultiMeshInstance3D
     const long Empty = long.MinValue;
     /// <summary>A body's floats: its transform (12), colour (4) and custom data (4), as Godot lays a MultiMesh's buffer out.</summary>
     const int Stride = 20;
+    /// <summary>The soft dark on the ground under each body (shaders/crowd_blob.gdshader: the crowd casts no shadow in
+    /// play), one flat quad per slot in a MultiMesh of its own: transform (12) and colour (4), alpha how much it shows.</summary>
+    readonly MultiMeshInstance3D blobs;
+    float[] blobBuf = Array.Empty<float>();
+    const int BlobStride = 16;
+    static Mesh? blobMesh;
+    static ShaderMaterial? blobMat;
+    /// <summary>How wide the dark under a body is against its height (a person's about 1.1 m; a wolf's is as wide
+    /// as it is long, from its baked height).</summary>
+    readonly float blobSize;
 
     public VatCrowd(VatAsset asset)
     {
@@ -1098,6 +1108,22 @@ public partial class VatCrowd : MultiMeshInstance3D
         CastShadow = ShadowCastingSetting.On;
         // They go everywhere: never culled as a whole (each is small; the GPU is not the limit here).
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
+        blobMesh ??= new PlaneMesh { Size = Vector2.One };
+        if (blobMat == null)
+        {
+            blobMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob.gdshader") };
+            // --blob-strength K: how dark the ground goes under a body (pictures; the shader's 0.6 by default).
+            if (SurvivorUnchained.Args.Has("blob-strength")) blobMat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("blob-strength", 0.6f));
+        }
+        blobSize = Math.Clamp(asset.Height * 0.62f, 0.7f, 2.4f);
+        blobs = new MultiMeshInstance3D
+        {
+            // On the crowd's layer, out of the ground decals' cull mask (1): a decal paints an unshaded quad's
+            // albedo too, and under a blight's dark stain each multiplied blob showed as a dark square (E1).
+            Name = "Blobs", CastShadow = ShadowCastingSetting.Off, MaterialOverride = blobMat, TopLevel = true, Layers = 2,
+            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
+        };
+        AddChild(blobs);
         Grow(64);
     }
 
@@ -1114,6 +1140,12 @@ public partial class VatCrowd : MultiMeshInstance3D
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
             InstanceCount = n, VisibleInstanceCount = 0, Mesh = Asset.Mesh,
+        };
+        Array.Resize(ref blobBuf, n * BlobStride);
+        blobs.Multimesh = new MultiMesh
+        {
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true,
+            InstanceCount = n, VisibleInstanceCount = 0, Mesh = blobMesh,
         };
     }
 
@@ -1166,6 +1198,15 @@ public partial class VatCrowd : MultiMeshInstance3D
         buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; buf[o + 15] = glow;
         // The pace rides in the first frame's fraction (the shader rounds the frame).
         buf[o + 16] = f0 + 0.45f * pace; buf[o + 17] = f1; buf[o + 18] = blend; buf[o + 19] = word;
+        // The dark under it: flat on the ground at its feet, as wide as it is tall by its scale, a hand over the
+        // ground so a gentle slope does not cut it.
+        int q = s * BlobStride;
+        float w = blobSize * b.X.Length();
+        var bb = blobBuf;
+        bb[q] = w; bb[q + 1] = 0; bb[q + 2] = 0; bb[q + 3] = at.Origin.X;
+        bb[q + 4] = 0; bb[q + 5] = 1; bb[q + 6] = 0; bb[q + 7] = at.Origin.Y + 0.06f;
+        bb[q + 8] = 0; bb[q + 9] = 0; bb[q + 10] = w; bb[q + 11] = at.Origin.Z;
+        bb[q + 12] = 1; bb[q + 13] = 1; bb[q + 14] = 1; bb[q + 15] = 1 - dissolve;
     }
 
     public void End()
@@ -1180,9 +1221,13 @@ public partial class VatCrowd : MultiMeshInstance3D
             slotOf.Remove(slotKey[s]);
             slotKey[s] = Empty;
             Array.Clear(buffer, s * Stride, Stride);
+            Array.Clear(blobBuf, s * BlobStride, BlobStride);
         }
         while (top > 0 && slotKey[top - 1] == Empty) top--;
         RenderingServer.MultimeshSetBuffer(Multimesh.GetRid(), new ReadOnlySpan<float>(buffer, 0, capacity * Stride));
         Multimesh.VisibleInstanceCount = shown = top;
+        RenderingServer.MultimeshSetBuffer(blobs.Multimesh.GetRid(), new ReadOnlySpan<float>(blobBuf, 0, capacity * BlobStride));
+        blobs.Multimesh.VisibleInstanceCount = top;
+        blobs.Visible = Visible;
     }
 }

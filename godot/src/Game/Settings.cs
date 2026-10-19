@@ -33,6 +33,9 @@ public sealed class Settings
     public float VoiceVolume = 1;
     /// <summary>Cinematics seen on this machine: they can be skipped from their first frame.</summary>
     public List<string> SeenCinematics = new();
+    /// <summary>The tutorial's callouts on (src/Ui/Callout.cs), and which this profile has seen (each shows once).</summary>
+    public bool Tips = true;
+    public List<string> SeenTips = new();
 
     const string File = "user://settings.json";
     public static Settings Current { get; private set; } = Load();

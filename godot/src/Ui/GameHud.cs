@@ -1075,6 +1075,76 @@ public partial class GameHud : CanvasLayer
         return irons.Passives.GetGlobalRect().GetCenter();
     }
 
+    /* ------------------------------------------- the tutorial's callouts -- */
+
+    /// <summary>Whether a narrated line, a banner, the interact prompt or a tip is on the screen now
+    /// (a callout waits for them: Teach.cs).</summary>
+    public bool SayUp => sayT > 0;
+    public bool BannerUp => annT < annLife;
+    public bool PromptUp => promptBox.Visible;
+    public bool TipUp => tipLine != null && IsInstanceValid(tipLine) && !tipLine.Held;
+    /// <summary>A callout is up: a tip waits under it.</summary>
+    public bool HoldTip;
+    /// <summary>A callout points at the banner: it stays up, whole, until let go.</summary>
+    public bool HoldBanner;
+    /// <summary>Where the banner's words are (the callout's target), while it shows.</summary>
+    public Rect2 BannerArea => BannerRect();
+    /// <summary>The draft on the screen, if one is.</summary>
+    public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
+    /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>
+    public Vector2? SocketOf(string id)
+    {
+        foreach (var s in irons.Sockets) if (s.Id == id && s.IsVisibleInTree()) return s.GetGlobalRect().GetCenter();
+        return null;
+    }
+    /// <summary>A combat skill's place among the six, as a square, if it is on the instrument now.</summary>
+    public Rect2? SocketRect(string id)
+    {
+        foreach (var s in irons.Sockets) if (s.Id == id && s.IsVisibleInTree()) return s.GetGlobalRect();
+        return null;
+    }
+
+    string? spotKeep;
+    bool spotUp, spotDim, spotSlots, spotWas;
+    float spotK, slotK;
+
+    /// <summary>A callout is up (keep: the HUD part it teaches; null and false: it came down). On a freeze
+    /// the HUD dims but for that part (the world's dim is under the HUD, so the part is never pooled
+    /// with the ground round it); on the chain's the six places fade; toasts and the art's word wait.</summary>
+    public void Spotlight(string? keep, bool dim, bool slots)
+    {
+        spotUp = dim || slots || keep != null;
+        if (keep != null || dim) spotKeep = keep;
+        spotDim = dim;
+        spotSlots = slots;
+    }
+
+    void Spot(float dt)
+    {
+        spotK = Mathf.MoveToward(spotK, spotDim ? 1 : 0, dt / 0.26f);
+        slotK = Mathf.MoveToward(slotK, spotSlots ? 1 : 0, dt / 0.2f);
+        irons.ArtNote.Visible = irons.ArtWord.Visible = !spotUp;
+        // (an interact prompt waits under a freeze on a thing in the world)
+        promptBox.Modulate = spotDim ? Colors.Transparent : Colors.White;
+        bool on = spotK > 0 || slotK > 0;
+        if (!on && !spotWas) return;
+        spotWas = on;
+        // (the HUD stays whole under a freeze: only the world dims; the part taught is ringed)
+        var dimC = Colors.White;
+        foreach (var ch in play.GetChildren())
+            if (ch is CanvasItem ci && ch != irons && ch != toasts && ch != subtitle && ch != tipLine && ch != hintBox && ch != promptBox)
+                ci.Modulate = dimC;
+        irons.Spot(spotK > 0 || slotK > 0 ? spotKeep : null, dimC, 1 - 0.8f * slotK, slotK);
+    }
+
+    CanvasLayer? calloutLayer;
+    /// <summary>The callouts' layer: over the HUD and the draft, under the fades.</summary>
+    public void Callout(Control c)
+    {
+        if (calloutLayer == null) { calloutLayer = new CanvasLayer { Layer = 20 }; AddChild(calloutLayer); }
+        calloutLayer.AddChild(c);
+    }
+
     /// <summary>A key for the draft or the conversation, if one is up.</summary>
     public bool Key(Act a) => draft?.Key(a) ?? talk?.Key(a) ?? false;
 
@@ -1091,6 +1161,8 @@ public partial class GameHud : CanvasLayer
             subtitle.Modulate = Colors.White with { A = (float)Math.Clamp(sayT / 0.6, 0, 1) };
         }
         else subtitle.Modulate = Colors.Transparent;
+        // (held under a callout: whole, its time not running)
+        if (HoldBanner && annLife > 0) annT = Math.Min(annT, annLife * 0.5);
         if (annT < annLife)
         {
             annT += delta;
@@ -1106,14 +1178,17 @@ public partial class GameHud : CanvasLayer
         {
             if (c is not Notice n) continue;
             // Held while a chest's opening says the same things over the world; told after it, whole.
-            n.Modulate = HoldToasts ? Colors.Transparent : Colors.White;
-            if (!HoldToasts && !n.Step(delta)) n.QueueFree();
+            // (and while a callout is up: nothing else speaks over it; told after it, whole)
+            bool held = HoldToasts || spotUp;
+            n.Modulate = held ? Colors.Transparent : Colors.White;
+            if (!held && !n.Step(delta)) n.QueueFree();
         }
+        Spot(dt);
         // A tip waits while a banner is up (the two share the upper third and must never meet), then
         // comes in whole; below a boss's bar whenever there is one.
         if (tipLine != null && IsInstanceValid(tipLine))
         {
-            tipLine.Held = Banner != null;
+            tipLine.Held = Banner != null || HoldTip;
             tipLine.Position = new Vector2(960, TipY);
         }
         // The chain's heat flows toward its value; a new level has already flared it and filled it,

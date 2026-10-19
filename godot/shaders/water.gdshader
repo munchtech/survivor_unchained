@@ -24,6 +24,9 @@ uniform float glow = 0.45;
 uniform float murkiness = 2.4;
 // The whole river's light scaled, for a cinematic's grade (GameCinema "water"); 1 as built.
 uniform float level = 1.0;
+// The air's say over the river (Atmosphere.Set, play's presets, E1): x its light, y the sky in it, z how far the
+// ripples bend it (under 1 the moon's glints gather into a band toward it); (1, 1, 1) as built.
+global uniform vec4 water_air;
 
 varying vec3 w_pos;
 
@@ -43,7 +46,8 @@ void fragment() {
 	vec2 wp = stream ? vec2(UV.x, -UV.y) : w_pos.xz;
 	float e = 0.35;
 	float h0 = wh(wp), hx = wh(wp + vec2(e, 0.0)), hz = wh(wp + vec2(0.0, e));
-	vec3 n_w = normalize(vec3(-(hx - h0) * 1.3, 1.0, -(hz - h0) * 1.3));
+	float bend = 1.3 * water_air.z;
+	vec3 n_w = normalize(vec3(-(hx - h0) * bend, 1.0, -(hz - h0) * bend));
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 	float fres = pow(1.0 - clamp(dot(normalize(-VERTEX), NORMAL), 0.0, 1.0), 3.0);
 
@@ -68,7 +72,7 @@ void fragment() {
 	vec3 body = mix(murk, color, 0.35 + fres * 0.65);
 	body = mix(body, shallow, sh * 0.6);
 	float ripple = smoothstep(0.52, 0.7, wh(w_pos.xz * 1.7));
-	vec3 lit_from_sky = sky * (0.25 + fres * 1.1 + ripple * 0.35) * (1.0 - sh * 0.5);
+	vec3 lit_from_sky = sky * (0.25 + fres * 1.1 + ripple * 0.35) * (1.0 - sh * 0.5) * water_air.y;
 	vec3 sick = murk * glow * (0.6 + 0.4 * wh(w_pos.xz * 2.0));
 
 	// Scum where it laps the bank, streaks down the current.
@@ -82,8 +86,9 @@ void fragment() {
 	}
 	see *= 1.0 - foam * 0.85;
 
-	ALBEDO = mix(body * (1.0 - see), foam_color, foam * 0.75) * level;
-	EMISSION = (under * see + lit_from_sky + sick + foam_color * foam * 0.18) * level;
+	float lv = level * water_air.x;
+	ALBEDO = mix(body * (1.0 - see), foam_color, foam * 0.75) * lv;
+	EMISSION = (under * see + lit_from_sky + sick + foam_color * foam * 0.18) * lv;
 	ROUGHNESS = mix(0.06, 0.6, foam);
 	SPECULAR = 0.5 * level;
 	METALLIC = 0.0;

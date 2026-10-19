@@ -22,20 +22,24 @@ public static class Graphics
     /// <summary>One step of quality: what each part of the picture is drawn with.</summary>
     public sealed record Tier(
         bool Ssao, RenderingServer.EnvironmentSsaoQuality SsaoQuality, bool VolumetricFog,
-        int SunShadowSize, RenderingServer.ShadowQuality SunFilter, bool SunFourSplits, float SunSplit,
+        int SunShadowSize, RenderingServer.ShadowQuality SunFilter, bool SunFourSplits, float SunSplit, float SunDistance,
         bool LampShadows, RenderingServer.ShadowQuality LampFilter,
         Viewport.Msaa Msaa, RenderingServer.SubSurfaceScatteringQuality Skin,
         float GrassCell, float Effects, bool CrowdShadows, int Corpses, float LodThreshold);
 
-    /// <summary>The game as made (the project's own settings: soft shadows at
+    /// <summary>The game as made, bar the crowd's shadows, the sun's cascades and
+    /// its reach (E1, 19 October 2026: shadow draws were 2,000-4,400 a frame against
+    /// a line of 1,200). The sun is two cascades to 50 m with the split at 0.65: the
+    /// first reaches 32 m, and she stands 12.5 to 31 m from the camera at every zoom
+    /// short of the farthest, so she keeps a cascade as fine as before. (The project's own settings: soft shadows at
     /// medium, positional at low, SSAO at medium, skin at low, MSAA 4x: the
     /// project's msaa_3d=2 is 4x in Godot's count, not 2x).</summary>
     public static readonly Tier High = new(
         true, RenderingServer.EnvironmentSsaoQuality.Medium, true,
-        4096, RenderingServer.ShadowQuality.SoftMedium, true, 0.1f,
+        4096, RenderingServer.ShadowQuality.SoftMedium, false, 0.65f, 50f,
         true, RenderingServer.ShadowQuality.SoftLow,
         Viewport.Msaa.Msaa4X, RenderingServer.SubSurfaceScatteringQuality.Low,
-        0.3f, 1f, true, 160, 1f);
+        0.3f, 1f, false, 160, 1f);
 
     public static readonly Tier Medium = High with
     {
@@ -52,7 +56,8 @@ public static class Graphics
         // (the atlas kept at 4096) and only the world beyond goes coarser. With
         // the split at 7 m and a 2048 atlas she sat in a 7-70 m cascade, her own
         // shadows four times coarser.
-        Ssao = false, SunFilter = RenderingServer.ShadowQuality.SoftVeryLow, SunFourSplits = false, SunSplit = 0.5f,
+        // (Low keeps 70 m with its split at 0.5: 50 m would cut the first cascade to 25 m, short of her 31 m.)
+        Ssao = false, SunFilter = RenderingServer.ShadowQuality.SoftVeryLow, SunFourSplits = false, SunSplit = 0.5f, SunDistance = 70f,
         // (Skin keeps its scattering: it is her own, and costs only the pixels she covers.)
         LampShadows = false,
         GrassCell = 0.45f, Effects = 0.5f, CrowdShadows = false, Corpses = 60, LodThreshold = 2.5f,
@@ -78,8 +83,7 @@ public static class Graphics
         RenderingServer.DirectionalShadowAtlasSetSize(t.SunShadowSize, true);
         RenderingServer.DirectionalSoftShadowFilterSetQuality(t.SunFilter);
         RenderingServer.PositionalSoftShadowFilterSetQuality(t.LampFilter);
-        air.Key.DirectionalShadowMode = t.SunFourSplits ? DirectionalLight3D.ShadowMode.Parallel4Splits : DirectionalLight3D.ShadowMode.Parallel2Splits;
-        air.Key.DirectionalShadowSplit1 = t.SunSplit;
+        Sun(air, t);
         RenderingServer.SubSurfaceScatteringSetQuality(t.Skin);
         vp.MeshLodThreshold = t.LodThreshold;
 
@@ -126,6 +130,17 @@ public static class Graphics
         scene.View.GrassCell(t.GrassCell);
         scene.Crowd.Shadows = t.CrowdShadows;
         scene.Crowd.CorpseMax = t.Corpses;
+    }
+
+    /// <summary>The sun's cascades and reach: play's (the tier's), or while a cinematic plays
+    /// (ShadowLamp.Suspended) what the game had before E1 (4 splits, split 0.1, 70 m on High and
+    /// Medium) so the judged shots do not change. Low's play settings are already those of its cinema.</summary>
+    public static void Sun(Atmosphere air, Tier t)
+    {
+        bool cine = SurvivorUnchained.View.ShadowLamp.Suspended && !ReferenceEquals(t, Low);
+        air.Key.DirectionalShadowMode = cine || t.SunFourSplits ? DirectionalLight3D.ShadowMode.Parallel4Splits : DirectionalLight3D.ShadowMode.Parallel2Splits;
+        air.Key.DirectionalShadowSplit1 = cine ? 0.1f : t.SunSplit;
+        air.Key.DirectionalShadowMaxDistance = cine ? 70f : t.SunDistance;
     }
 
     /// <summary>The edges smoothed another way than FSR 2's (--aa: smaa, fxaa, msaa, taa alone, or

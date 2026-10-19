@@ -56,7 +56,15 @@ public sealed class Prologue : ZoneRuntime
     double stageT, spawnT = 2, cutT, dawnK, envT, deadT = -1;
     XZ checkpoint;
     readonly HashSet<string> shown = new();
+    /// <summary>Combat skills held at the start (the first one more is the first drafted).</summary>
+    int startWeapons = -1;
+    /// <summary>The first character level, at dawn: its banner, and whether its callout is due (after her dawn line).</summary>
+    Announcement? levelAnn;
+    bool levelDue;
+    /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
+    bool knightPlanted, knightRan;
     readonly List<(double X, double Z, int Light, string Flame)> pylons = new();
+    readonly double[] lampY;
     readonly bool[] litPylons;
     readonly double[] pylonHp;
     Enemy? warden, caller, knight, grim;
@@ -84,6 +92,8 @@ public sealed class Prologue : ZoneRuntime
         foreach (var p in meta.Refs.GetProperty("pylons").EnumerateArray())
             pylons.Add((p.GetProperty("x").GetDouble(), p.GetProperty("z").GetDouble(), p.GetProperty("light").GetInt32(), p.GetProperty("flame").GetString()!));
         litPylons = pylons.Select(_ => true).ToArray();
+        // (each lamp's flame, where its light hangs: its top and the light's height over it)
+        lampY = meta.Refs.GetProperty("pylons").EnumerateArray().Select(p => p.TryGetProperty("top", out var t) ? t.GetDouble() + 0.8 : 3.2).ToArray();
         pylonHp = pylons.Select(_ => 260.0).ToArray();
         waterY = meta.Places["WATER_Y"].GetDouble();
         var camp = L("camp");
@@ -154,6 +164,137 @@ public sealed class Prologue : ZoneRuntime
     }
 
     string Key(string action) => G.KeyLabel(action);
+
+    /* --------------------------------------------- the callouts (Teach.cs) -- */
+    // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
+    // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
+
+    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap, bool overHint = false) =>
+        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap, OverHint = overHint });
+
+    /// <summary>A point on the ground, lifted a little (what an arrow points at).</summary>
+    (double X, double Y, double Z) Up(double x, double z, double lift) => (x, G.Look.HeightAt(x, z) + lift, z);
+
+    /// <summary>The ember stones near her on the ground, nearest first (none: there is none near); the
+    /// callout points at the first one well inside the screen (Aim.Safe).</summary>
+    IReadOnlyList<(double X, double Y, double Z)> NearEmbers()
+    {
+        if (B == null) return [];
+        var p = B.Player;
+        return B.Pickups.Living()
+            .Where(k => k.Kind == PickupKind.Ember && k != B.HoardStone && !k.Pulled && Dist(k.X, k.Z, p.X, p.Z) <= 14)
+            .OrderBy(k => Dist(k.X, k.Z, p.X, p.Z)).Take(12).Select(k => Up(k.X, k.Z, 0.3)).ToList();
+    }
+
+    /// <summary>When the Grave-Caller rose (game seconds): its floor holds 30 s at most.</summary>
+    double callerAt;
+    /// <summary>When the Knight's present windup began (game seconds).</summary>
+    double knightWound = -1;
+    /// <summary>F7 freezes a beat into the windup, once its red lane is down and on the screen.</summary>
+    const double LaneBeat = 0.3;
+
+    /// <summary>The Knight's windups as they begin: the first is drawn out by the beat F7 freezes into
+    /// it (its lane marked again for the longer wait), so the read never costs her the time to move.</summary>
+    void KnightWatch()
+    {
+        if (B == null) return;
+        if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; return; }
+        if (knightWound >= 0) return;
+        knightWound = B.Time;
+        // (every windup until F7 is seen: the one it freezes in is the one drawn out)
+        if (G.Taught("red_line") || (k.Def.Charge ?? k.Def.Lunge) is not { } lunge) return;
+        k.StateT += LaneBeat;
+        double reach = lunge.Speed * lunge.Time;
+        B.Events.Emit(new Ev.Telegraph
+        {
+            Id = k.Id, Shape = TelegraphShape.Line, X = k.X, Z = k.Z, X1 = k.X + k.LungeX * reach, Z1 = k.Z + k.LungeZ * reach,
+            Radius = k.Radius, Width = k.Radius * 2.2, Duration = k.StateT, Hostile = true,
+        });
+    }
+
+    /// <summary>The Barrow Knight's lane while it is marked (its windup), a beat after it was: points along
+    /// it, those clear of her first (the ring marks the lane, never her figure), the lane's middle first.</summary>
+    IReadOnlyList<(double X, double Y, double Z)> KnightLane()
+    {
+        if (knight is not { Alive: true, State: EnemyState.Windup } k || (k.LungeX == 0 && k.LungeZ == 0) || knightWound < 0 || B!.Time - knightWound < LaneBeat)
+            return [];
+        double reach = (k.Def.Charge ?? k.Def.Lunge) is { } l ? l.Speed * l.Time : 6;
+        var p = B.Player;
+        return new[] { 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8 }
+            .Select(f => (X: k.X + k.LungeX * reach * f, Z: k.Z + k.LungeZ * reach * f))
+            .OrderBy(q => Dist(q.X, q.Z, p.X, p.Z) < 2.4 ? 1 : 0)
+            .Select(q => Up(q.X, q.Z, 0.1)).ToList();
+    }
+
+    void Callouts()
+    {
+        if (B == null) return;
+        var p = B.Player;
+        KnightWatch();
+        // F1: the first ember on the ground (one well inside the screen: it waits for one).
+        if (Now == Stage.Rising && B.EmbersLying > 0)
+            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
+        // F2: straight after F1 (before the first rise), else the first ember gathered.
+        if (B.EmberXp > 0 || B.EmberLevel > 1 || G.Taught("ember_ground"))
+            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground", gap: 0.6, overHint: true);
+        // (and the journal remembers what the valley believes, once an ember is gathered)
+        if (B.EmberXp > 0 || B.EmberLevel > 1)
+        {
+            if (shown.Add("lore.ember"))
+                G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
+        }
+        // F4: the first skill draft after the great blessing (on the panel, at the first combat-skill card).
+        if (B.EmberLevel >= 2 && B.DraftOwed)
+            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"), after: "great_blessing");
+        // F5: the first combat skill on the console.
+        if (startWeapons >= 0 && B.Weapons.Count > startWeapons)
+        {
+            var w = B.Weapons[startWeapons];
+            Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
+        }
+        // F6: six risen at her (or 14 s in), while the night's first fights run.
+        if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (stageT > 14 || Now != Stage.Rising || Crowd(p.X, p.Z, 3) >= 6))
+            Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
+        // F7: the Barrow Knight's first red line.
+        if (KnightLane().Count > 0)
+            Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
+            {
+                World = KnightLane, Safe = true, Open = true,
+                Seen = () => knight is { Alive: true } kn ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : [],
+            });
+        // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
+        // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
+        // names the Flare (the art then rides the dash).
+        if (Now == Stage.Barrow && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
+        {
+            var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
+            if (B.Flare is { } fl)
+                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare, the ember's great blow.\nIt's full: spend it on the Grave-Caller\nbefore it raises more.", aim, "flare");
+            else if (B.Ability is AbilityKind ak)
+            {
+                var ab = Abilities.All[ak];
+                Teach("art", CalloutKind.Freeze, ab.Name, ab.Interrupts
+                        ? $"{Key("flare")}: your art. It breaks the Grave-Caller's channel."
+                        : $"{Key("flare")}: your art. Kill the Grave-Caller before it raises more.", aim, "flare");
+            }
+        }
+        // F9: the lamps, 3 s after C02 hands back.
+        if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
+            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow. Put them out.",
+                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
+        // F10: her health under 40% for the first time, with a draught to drink.
+        if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
+            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught");
+        // F12: the first character level, after her dawn line, at its banner (shown again under it).
+        if (levelDue && levelAnn != null && !finished)
+            Teach("level", CalloutKind.Freeze, "What the night taught you", $"This one stays, night and day. Open {Key("character")} to spend it.",
+                new Aim { Hud = "banner", Banner = levelAnn });
+        // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
+        // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
+    }
+
+    /// <summary>How many of the hostile dead stand within r of a point.</summary>
+    int Crowd(double x, double z, double r) => B?.Enemies.Living().Count(e => e.State is not (EnemyState.Dying or EnemyState.Rising) && e.Disposition == Disposition.Hostile && Dist(e.X, e.Z, x, z) < r) ?? 0;
     void Go(Stage s) { Now = s; stageT = 0; }
 
     bool OpenGround(double x, double z)
@@ -400,6 +541,7 @@ public sealed class Prologue : ZoneRuntime
         stageT += dt;
         spawnT -= dt;
         int n = Hostiles();
+        Callouts();
         switch (Now)
         {
             case Stage.Wake:
@@ -415,9 +557,9 @@ public sealed class Prologue : ZoneRuntime
                 if (B.EmberLevel >= 2 && shown.Add("great"))
                 {
                     B.GreatOwed++;
-                    G.SetDraftTip("A great blessing, first: it changes how the fight works, from now until the ember goes out. Anyone can take any of them.");
+                    // F3 says it on the panel (the general draft tip waits for the panels after it).
+                    Teach("great_blessing", CalloutKind.Panel, "A great blessing", "The ember lends you a blessing. It changes how you fight until dawn.", Aim.At("cards"));
                 }
-                if (stageT > 14) Tip("dash", "Dash", $"{Key("dash")}: a quick roll that nothing can touch. It has two charges, and they come back.", [Key("dash")]);
                 if ((B.EmberLevel >= 4 && stageT > 70) || stageT > 110)
                 {
                     Go(Stage.Road);
@@ -452,10 +594,14 @@ public sealed class Prologue : ZoneRuntime
                     Go(Stage.Post);
                     checkpoint = new XZ(post.X - 6, post.Z + 4);
                     knight = B.SpawnEnemy("barrow_knight", post.X - 1, post.Z - 1.5, new Battle.SpawnOpts { Level = 1, Tag = "knight", Style = SpawnStyle.Rise });
+                    // Its first red line comes once the narrator's line is over (F7 freezes on it), and it
+                    // does not go down before it has run one: the elite shows what it does first.
+                    knight.RangedT = 8;
+                    knight.HpFloor = knight.MaxHp * 0.2;
                     for (int i = 0; i < 4; i++) SpawnAround("risen", 1, 5, 9, 0, 2);
                     G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5);
                     Objective([("Survive the ambush at the wagon", true, false), ("Put down the Barrow Knight", false, false), ("Search the old Watch-post", false, false)]);
-                    Tip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it. Be off the line.", null, 12);
+                    Tip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
                 }
                 break;
             }
@@ -478,6 +624,12 @@ public sealed class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Post:
+                if (knight is { Alive: true } kn && !knightRan)
+                {
+                    if (kn.State == EnemyState.Windup) knightPlanted = true;
+                    // (and it stands until its red line was frozen on, F7, or a while has passed)
+                    else if ((knightPlanted && (G.Taught("red_line") || stageT > 40)) || stageT > 48) { knightRan = true; kn.HpFloor = 0; }
+                }
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 if (knight == null && !chestOpened)
                 {
@@ -492,13 +644,9 @@ public sealed class Prologue : ZoneRuntime
                 }
                 break;
             case Stage.Barrow:
+                if (caller is { HpFloor: > 0 } cf && (G.Taught("art") || B.Time - callerAt > 30)) cf.HpFloor = 0;
                 if (caller != null)
                 {
-                    if (Dist(caller.X, caller.Z, p.X, p.Z) < 16 && B.Ability is AbilityKind ak)
-                    {
-                        var ab = Abilities.All[ak];
-                        Tip("ability", ab.Name, $"{ab.Description} The Grave-Caller is raising the dead{(ab.Interrupts ? " — this will break its channel" : " — kill it before it raises too many")}.", [Key("ability")], 14);
-                    }
                     if (spawnT <= 0 && n < 16 && stageT > 8) { SpawnAround("risen", 1, 11, 15, 0, 2); spawnT = 2.5; }
                 }
                 else if (stageT > 1)
@@ -522,7 +670,6 @@ public sealed class Prologue : ZoneRuntime
                 {
                     int lit = LitCount;
                     Bar(new BossBar("The Ford-Warden", "Keeper of the Low Crossing", warden.Hp, warden.MaxHp, [0.7, 0.4], bar?.Channel, lit > 0));
-                    if (stageT > 3) Tip("lamps", "The lamps", "While the three lamps burn, the Warden shrugs off most of every blow. Stand in front of a lamp when it charges — or break the lamps yourself.", null, 14);
                     if (ai.Mode == "channel")
                     {
                         bool breaks = B.Ability is AbilityKind k && Abilities.All[k].Interrupts;
@@ -530,7 +677,6 @@ public sealed class Prologue : ZoneRuntime
                     }
                     if (stageT > 40 && lit == 3) { shown.Remove("lamps2"); Tip("lamps2", "The lamps", "Lure its charge into a lamp: stand before one, and step aside at the last moment.", [Key("dash")], 10); }
                 }
-                if (p.Hp < B.MaxHp * 0.4) Tip("quaff", "Draughts", $"{Key("ultimate")}: drink a health draught.", [Key("ultimate")], 8);
                 break;
             case Stage.Victory:
                 RunVictory(dt);
@@ -548,7 +694,7 @@ public sealed class Prologue : ZoneRuntime
                 // The sun clears the trees, and the ember goes out.
                 if (!doused && dawnK > 0.3) { doused = true; Douse(); }
                 envT -= dt;
-                G.SetAtmosphere(Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
+                G.SetAtmosphere(Atmospheres.Dawning(dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
                 if (envT <= 0) envT = 1.2;
                 if (dawnK >= 1 && stageT > 10) Go(Stage.Exit);
                 break;
@@ -565,6 +711,8 @@ public sealed class Prologue : ZoneRuntime
         Objective([("Search the old Watch-post", true, false), ("Put down the Grave-Caller", false, false)]);
         var barrow = L("barrow");
         caller = B.SpawnEnemy("grave_caller", barrow.X - 3, barrow.Z, new Battle.SpawnOpts { Level = 2, Tag = "caller", Elite = true });
+        // It can't fall before F8 has pointed at it (or a while has passed): the art is taught on it.
+        if (!G.Taught("art")) { caller.HpFloor = caller.MaxHp * 0.2; callerAt = B.Time; }
         for (int i = 0; i < 5; i++)
         {
             double a = i / 5.0 * Math.PI * 2;
@@ -838,7 +986,7 @@ public sealed class Prologue : ZoneRuntime
         W.Facts["prologue.dawn_south"] = south;
         if (!G.Cinematic("c04a", () =>
             {
-                dawnK = 1; G.SetAtmosphere(Atmospheres.Dawn); if (!dousedByCine) Douse(false);
+                dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); if (!dousedByCine) Douse(false);
                 // On from C03, she never waded back for what he left: it is hers on the road.
                 if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
             }))
@@ -874,19 +1022,23 @@ public sealed class Prologue : ZoneRuntime
         B.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.4, School = School.Fire, Duration = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
         int taught = G.Journey.Douse(B);
-        G.Announce(new Announcement("The ember goes out", "It burns only in the dark", "zone", 4.2, "Dawn"));
+        G.Announce(new Announcement("The ember goes out", "First light takes back what it lent", "zone", 4.2, "Dawn"));
         // What the night taught her, paid now the ember has gone: the first character level, on
         // its own, where it can be understood.
         if (taught > 0)
             G.After(4.6, () =>
             {
                 var ch = G.Journey.Ch;
-                G.Announce(new Announcement($"Level {ch.Level}", ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 4.5, "What the night taught you"));
+                levelAnn = new Announcement($"Level {ch.Level}", ch.TraitPicks > 0 ? $"A new trait can be chosen ({Key("character")})" : $"Attribute points to spend ({Key("character")})", "boon", 4.5, "What the night taught you");
+                G.Announce(levelAnn);
                 G.Journey.Grew();
             });
         // Without C04 A the narrator's words are a caption; with it, they were said in it.
         if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"", null, 14));
-        G.After(caption ? 11.5 : 9.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        // F12 once her dawn line is over (the caption's 14 s; with C04 A it was said in it), and the
+        // day's tip after that (game time: a freeze holds it back).
+        if (taught > 0) G.After(caption ? 15.4 : 5.2, () => levelDue = true);
+        G.After(caption ? 24.5 : 18.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
     void Finish()
@@ -921,7 +1073,7 @@ public sealed class Prologue : ZoneRuntime
     }
 
     public override TimeOfDay TimeOf(WorldState w) => Now is Stage.Dawn or Stage.Exit ? TimeOfDay.Dawn : TimeOfDay.Night;
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Dawn ? Atmospheres.Dawn : Atmospheres.Night;
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Dawn ? Atmospheres.LowFordDawn : Atmospheres.LowFordNight;
 
     public override void Begin(Battle b)
     {
@@ -938,18 +1090,19 @@ public sealed class Prologue : ZoneRuntime
             Dye = new Dye { Cloth = "#4a5064" },
         }, new Held { Forearm = "shield_round" }, man.X, man.Z, 2.2, "Death_A");
         G.SetDraftTip(Draft);
+        startWeapons = b.Weapons.Count;
         if (F("prologue.done").Truthy)
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.
             Now = Stage.Exit; stageT = 0; dawnK = 1; doused = true;
-            G.SetAtmosphere(Atmospheres.Dawn);
+            G.SetAtmosphere(Atmospheres.LowFordDawn);
             b.Collision.RemoveTagged("gate");
             foreach (var p in pylons) G.Look.SetLit(p.Light, false);
             ai.Mode = "dead"; wardenGone = true;
             wardenView.Hide();
             return;
         }
-        G.SetAtmosphere(Atmospheres.Night);
+        G.SetAtmosphere(Atmospheres.LowFordNight);
         // C01, the opening (docs/cinematics/shoot/c01.md), once a journey: it
         // wakes her by the fire and hands back as the dead come up. Where no
         // cinematic can play (the tests, a quick start), its lines are captions.

@@ -20,11 +20,11 @@ public static class Args
     static Dictionary<string, string>? parsed;
 
     /// <summary>Whether the developer's switches are read at all: in the
-    /// editor and debug builds, never in a release build. Every switch
+    /// editor and debug builds and the measuring build (export preset "Windows (perf)", feature "perf"), never in the player's release build. Every switch
     /// (--quick, --zone, --body, --gold, --shot, --perf...) comes through
     /// here, so a player's copy cannot be talked into a place, a body or a
     /// view the game does not offer (the legal brief, issue 3).</summary>
-    public static bool Dev => OS.IsDebugBuild();
+    public static bool Dev => OS.IsDebugBuild() || OS.HasFeature("perf");
 
     static Dictionary<string, string> All()
     {
@@ -71,6 +71,9 @@ public partial class Shots : Node
         if (live == null) return;
         live.wanted.Add((live.time + inSeconds, tag));
     }
+
+    /// <summary>Whether a frame of that tag is still to be taken.</summary>
+    public static bool Pending(string tag) => live != null && live.wanted.Exists(w => w.Tag == tag);
 
     /// <summary>The run ends this many seconds on (sooner than --until: a whole night ends at its result).</summary>
     public static void EndIn(double seconds)

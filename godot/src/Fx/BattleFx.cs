@@ -33,6 +33,25 @@ public partial class BattleFx : Node3D
     /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
     public readonly Gore Gore;
     public FollowCamera? Cam;
+
+    /// <summary>A teaching freeze: what a blow throws (sparks, hit flashes, weapon trails, swing
+    /// crescents) is held out of the frozen picture, as the damage numbers are; the Flare's own stays.</summary>
+    /// <summary>(--teach-diag: the ember stones' halos held out, for a frame to measure them against.)</summary>
+    public bool HalosHidden { get => !emberHalos.Visible; set => emberHalos.Visible = !value; }
+
+    public bool Frozen
+    {
+        get => Ribbons.Hidden;
+        set
+        {
+            Ribbons.Hidden = value;
+            if (value) Ribbons.Visible = false;
+            Sparks.Visible = !value;
+            Blades.Visible = !value;
+            Books.Visible = !value;
+            Waves.Visible = !value;
+        }
+    }
     /// <summary>The Flares' own view (Fx/Flare, docs/design/FLARE_LOOK.md): every Flare's art is its own.</summary>
     public readonly FlareFx Flare = new();
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
@@ -53,7 +72,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
+    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, emberHalos = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -68,6 +87,9 @@ public partial class BattleFx : Node3D
         public bool Progress, Grow, Active;
         public Color Color;
         public Decal? Fill;
+        /// <summary>The lane again, drawn only where something tall stands over it (a roof): an elite's or
+        /// a boss's red line is never hidden.</summary>
+        public MeshInstance3D? Over;
         /// <summary>A lane's fill runs from its start to its end over its life: where it comes from,
         /// which way, how long.</summary>
         public Vector3 From, Along;
@@ -142,7 +164,11 @@ public partial class BattleFx : Node3D
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
         // Lit by their own colour at about its strength, no more: at 2.6 times a stone was white-hot
         // in every channel and the tone curve made cream popcorn of a field of them.
-        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(1.0f, 0.25f)));
+        emberGlow = (ShaderMaterial)Glowing(1.0f, 0.25f);
+        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, emberGlow));
+        // (and round each one lying still, a soft warm breath of added light: a stone a few pixels across
+        // reads at the play camera; ember_halo.gdshader)
+        emberHalos = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ember_halo.gdshader") }));
         var coin = new Build();
         Lathe(coin, Pts(0, -0.012f, 0.12f, -0.012f, 0.15f, -0.02f, 0.16f, -0.012f, 0.16f, 0.012f, 0.15f, 0.02f, 0.12f, 0.012f, 0, 0.012f), 16);
         coins = Add(new Batch(coin.Mesh(), 600, Glowing(0.6f, 0.3f, 0.9f)));
@@ -302,6 +328,7 @@ public partial class BattleFx : Node3D
         m.Color = color;
         m.Progress = m.Grow = false;
         m.Length = 0;
+        if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
         d.TextureEmission = tex;
         d.TextureAlbedo = null;
@@ -336,9 +363,9 @@ public partial class BattleFx : Node3D
     /// <summary>A lane on the ground; a hostile one fills from where the blow comes to its end as it
     /// comes (as a circle fills from its heart), so a charge reads as coming and when, and never as
     /// one more line on the ground (two edges alone read as the story places' burning edge).</summary>
-    void Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null, bool progress = false)
+    Mark Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null, bool progress = false)
     {
-        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; if (old.Over != null) old.Over.Visible = false; }
         double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
         var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
         m.Decal.Size = new Vector3(width, 4, (float)len);
@@ -360,6 +387,50 @@ public partial class BattleFx : Node3D
             m.Fill.Visible = true;
         }
         if (key is int k2) keyed[k2] = m;
+        return m;
+    }
+
+    static Shader? overShader;
+
+    /// <summary>The lane drawn again over everything, but only where the scene in front of it stands well
+    /// above the ground (more than 2.6 m nearer the camera: a roof, a canopy), so it never paints
+    /// over a figure.</summary>
+    void OverLane(Mark m, double x0, double z0, double x1, double z1, float width)
+    {
+        overShader ??= new Shader
+        {
+            Code = """
+                shader_type spatial;
+                render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix, shadows_disabled;
+                uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+                uniform sampler2D lane : source_color, filter_linear;
+                uniform vec4 col : source_color = vec4(1.0, 0.2, 0.1, 0.8);
+                void fragment() {
+                    float d = texture(depth_tex, SCREEN_UV).r;
+                    vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
+                    float scene = -v.z / v.w;
+                    float mine = -VERTEX.z;
+                    float over = smoothstep(2.6, 3.4, mine - scene);
+                    vec4 t = texture(lane, UV);
+                    float a = max(max(t.r, t.g), t.b) * t.a;
+                    ALBEDO = col.rgb;
+                    ALPHA = col.a * a * over;
+                }
+                """,
+        };
+        if (m.Over == null)
+        {
+            m.Over = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1 };
+            m.Over.MaterialOverride = new ShaderMaterial { Shader = overShader };
+            AddChild(m.Over);
+        }
+        double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
+        m.Over.Mesh = new PlaneMesh { Size = new Vector2(width, (float)len) };
+        double mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+        m.Over.Position = V(mx, heightAt(mx, mz) + 0.05, mz);
+        m.Over.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
+        ((ShaderMaterial)m.Over.MaterialOverride).SetShaderParameter("lane", laneTex);
+        m.Over.Visible = true;
     }
 
     /// <summary>A ring that races out from a point and fades.</summary>
@@ -936,7 +1007,11 @@ public partial class BattleFx : Node3D
                     if (e.Hostile) { float k = e.Boss || e.Label is { Length: > 0 } ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
-                    else if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
+                    else if (e.Shape == TelegraphShape.Line)
+                    {
+                        var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
+                        if (e.Hostile && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)))) OverLane(lm, e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1));
+                    }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Ring) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
@@ -1296,7 +1371,7 @@ public partial class BattleFx : Node3D
         {
             if (!m.Active) continue;
             m.T += fdt / Mathf.Max(0.05f, m.Life);
-            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; continue; }
+            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; continue; }
             if (m.Grow)
             {
                 float r = m.Radius * (0.25f + 0.75f * Mathf.Sqrt(m.T));
@@ -1307,6 +1382,8 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
+                if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
+                    om.SetShaderParameter("col", new Color(Mathf.Min(1, m.Color.R * 2.4f), Mathf.Min(1, m.Color.G * 2.4f), Mathf.Min(1, m.Color.B * 2.4f), 0.8f * m.Decal.Modulate.A));
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
@@ -1539,9 +1616,16 @@ public partial class BattleFx : Node3D
     /// <summary>A cinematic is playing: no pickup is drawn (logic untouched; GameCinema sets it).</summary>
     public bool HideLoot;
 
+    ShaderMaterial? emberGlow;
+    float emberEmit = 1;
+
     void Pickups(Battle b, double now)
     {
-        embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
+        // In play's night (her ember's gain over 1) the stones glow up to 1.6 times, so a blue one still reads on the
+        // moon's blue-dark ground (E1 round 3: one was lost at the camp's edge).
+        float emit = Mathf.Lerp(1f, 1.6f, Mathf.Clamp((Atmosphere.EmberGain - 1) / 0.7f, 0, 1));
+        if (emberGlow != null && !Mathf.IsEqualApprox(emit, emberEmit)) { emberEmit = emit; emberGlow.SetShaderParameter("emit", emit); }
+        embers.Begin(); emberHalos.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
         foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
@@ -1563,6 +1647,14 @@ public partial class BattleFx : Node3D
                         if (!CleanShots) HoardLight(kx, gy, kz);
                     }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(kx, gy + 0.45 + bob, kz)), EmberTiers[tier]);
+                    if (!p.Pulled)
+                    {
+                        // (about three times the stone across, breathing slowly, each to its own beat)
+                        float beat = Mathf.Sin((float)(now * 2.2 + p.Id * 1.7));
+                        float hs = 0.62f + 0.75f * s;
+                        emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
+                            EmberTiers[tier] with { A = 0.32f + 0.09f * beat });
+                    }
                     break;
                 }
                 case PickupKind.Gold:
@@ -1594,6 +1686,6 @@ public partial class BattleFx : Node3D
                 }
             }
         }
-        embers.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); EndLoot();
+        embers.End(); emberHalos.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); EndLoot();
     }
 }

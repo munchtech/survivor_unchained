@@ -110,7 +110,7 @@
       "note": "He sets his guard. Pull back and up into the follow camera. Bars out; the boss bar and the lamps' tip come up. Control.",
       "cam": {"pos": [2.2, 1.8, -27.2], "at": {"abs": [3.0, 1.6, -33.6]}, "lens": 35, "move": {"pos": [2.5, 9.0, -20.0], "ease": "inout", "follow": true}},
       "cues": [
-        {"do": "atmosphere", "preset": "night", "from": "now", "over": 2.0},
+        {"do": "atmosphere", "preset": "play", "from": "now", "over": 2.0},
         {"do": "mist", "name": "river", "density": 0, "over": 2.0},
         {"do": "water", "level": 1, "over": 2.0},
         {"do": "globe", "light": 4, "level": 1, "over": 0.6, "at": 1.4},

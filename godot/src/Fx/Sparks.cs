@@ -175,7 +175,8 @@ public partial class Batch : MultiMeshInstance3D
         int first = Math.Min(capacity, Uploads.Least);
         Multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, InstanceCount = first, VisibleInstanceCount = 0, Mesh = mesh };
         sent = new Uploads(Multimesh, first, capacity);
-        CastShadow = shadow ? ShadowCastingSetting.On : ShadowCastingSetting.Off;
+        // No fx casts a shadow (E1): `shadow` is kept for the callers, and ignored.
+        CastShadow = ShadowCastingSetting.Off;
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
     }
 

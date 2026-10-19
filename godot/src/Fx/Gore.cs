@@ -255,7 +255,7 @@ public partial class Gore : Node3D
         var zero = new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero);
         for (int i = 0; i < n; i++) { pieces.Place(i, zero); pieces.Tint(i, Colors.White); }
         pieces.Flush();
-        var inst = new MultiMeshInstance3D { Multimesh = mm, CastShadow = GeometryInstance3D.ShadowCastingSetting.On, Layers = 1 };
+        var inst = new MultiMeshInstance3D { Multimesh = mm, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1 };
         inst.CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
         AddChild(inst);
         meshes[kind] = pieces;
