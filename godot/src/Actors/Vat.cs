@@ -1109,11 +1109,18 @@ public partial class VatCrowd : MultiMeshInstance3D
         // They go everywhere: never culled as a whole (each is small; the GPU is not the limit here).
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
         blobMesh ??= new PlaneMesh { Size = Vector2.One };
-        blobMat ??= new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob.gdshader") };
+        if (blobMat == null)
+        {
+            blobMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob.gdshader") };
+            // --blob-strength K: how dark the ground goes under a body (pictures; the shader's 0.6 by default).
+            if (SurvivorUnchained.Args.Has("blob-strength")) blobMat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("blob-strength", 0.6f));
+        }
         blobSize = Math.Clamp(asset.Height * 0.62f, 0.7f, 2.4f);
         blobs = new MultiMeshInstance3D
         {
-            Name = "Blobs", CastShadow = ShadowCastingSetting.Off, MaterialOverride = blobMat, TopLevel = true,
+            // On the crowd's layer, out of the ground decals' cull mask (1): a decal paints an unshaded quad's
+            // albedo too, and under a blight's dark stain each multiplied blob showed as a dark square (E1).
+            Name = "Blobs", CastShadow = ShadowCastingSetting.Off, MaterialOverride = blobMat, TopLevel = true, Layers = 2,
             CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
         };
         AddChild(blobs);
