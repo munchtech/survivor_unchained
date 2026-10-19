@@ -84,7 +84,7 @@ public static class Atmospheres
     // grade's warm-hue hold and toe kept them so. The grade's Moon step now gives what is weakly coloured the moon's
     // silver-blue, and leaves what is strongly coloured (the fires, her ember's pool) its own.)
     static readonly GradeSettings PlayNightGrade = new([0.004, 0.010, 0.024], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.08) { Toe = 1, Moon = 1, MoonDrop = 0.65 };
+        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65 };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
     /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
     /// west), so it lights the road's corridor through the wood, and what stands on it throws a long
@@ -92,13 +92,15 @@ public static class Atmospheres
     /// pools in a cold dark. (From the east or west, the wood's shadows filled the road.) Round 3: the ambient was five
     /// stops under the moon (ambient-only frames: the open ground at luma 5), so the shade read as brown-black, lit by the
     /// shadows' 10% moon leak on brown earth; the sky's light at 2.2 times brings it to two and a half stops under, blue,
-    /// with its texture; the moon 0.3 of a stop down kept the road's middle grey under 35.</summary>
+    /// with its texture; the moon 0.3 of a stop down kept the road's middle grey under 35. Round 3b (measured): the moon down to 20 degrees, so the
+    /// trees' shadows lie longer across the road; the sky 2.2, exposure 1.5, her ember 2.2, the grade's contrast 1.13: night
+    /// p50 15-31, pools 0.52-0.71, road B's p95/p50 2.5.</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#a9c4ff", KeyIntensity = 4.9, KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
-        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.4, EnvIntensity = 1.2,
-        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.4, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.2, MistColor = "#2c3a50", Ember = 1.7,
+        KeyColor = "#a9c4ff", KeyIntensity = 4.9, KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
+        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.2, EnvIntensity = 1.2,
+        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.5, Rim = "#9fc0ff", RimStrength = 0.75,
+        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.2, MistColor = "#2c3a50", Ember = 2.2,
         CrowdRim = 0.2, RiverLight = 0.25, RiverSky = 0.3, RiverBend = 0.5,
     };
 

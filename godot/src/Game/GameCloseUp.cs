@@ -146,7 +146,7 @@ public partial class Game
     static float CloseLampByNight => Args.Num("close-lamp-night", 0.12f);
     // --close-exp-night X: the close view's exposure by night against play's (pictures).
     // (Round 3: 2.0 left her face pale at 187; 0.35 of a stop under it brings it to about 165.)
-    static float CloseExposureNight => Args.Num("close-exp-night", 1.57f);
+    static float CloseExposureNight => Args.Num("close-exp-night", 1.465f);   // x the preset's 1.5: face ~170 (round 3b)
     // --close-key-az D: the night key's angle off her face (degrees), toward the lens, so her far cheek falls into half
     // shade (E1 round 3: 50-60). The key's colour: the ember's, saturated (1.0, 0.6, 0.35).
     static float CloseKeyAzNight => Args.Num("close-key-az", 55f);
