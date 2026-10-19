@@ -144,9 +144,11 @@ public partial class FlareFx
         // (judge 5b 2d: ~2 m on screen wanted, >=80 px up-screen by f150: 4.5 m ease-out from f120)
         float rise = c < 0.1f ? 0 : 4.5f * (1 - Mathf.Exp(-(c - 0.1f) / 0.4f));
         // The frozen statues' rims catch the fireball (judge 5a 2: warm light on cyan ice gives back nothing; vat.gdshaderinc).
-        // I(t) (judge 5b 3): 1.0 f114-f118, 0.6 f124, 0.35 f132, 0.15 f142, 0 at f155.
-        float I = c < 0.067f ? 1 : c < 0.167f ? Mathf.Lerp(1, 0.6f, (c - 0.067f) / 0.1f) : c < 0.3f ? Mathf.Lerp(0.6f, 0.35f, (c - 0.167f) / 0.133f)
-            : c < 0.467f ? Mathf.Lerp(0.35f, 0.15f, (c - 0.3f) / 0.167f) : Mathf.Max(0, Mathf.Lerp(0.15f, 0, (c - 0.467f) / 0.216f));
+        // I(t) (lead 9, after s16: the world lit at I=1 under the flash took the arena peak to 1.81x): 0.5 under the flash
+        // f114-f118, up to 1 by f121 as the flash goes (the world's warmth carries the sustain, judge 5b 3), 0.8 f134,
+        // 0.5 f144, 0.25 f154, 0 by f170.
+        float I = c < 0.067f ? 0.5f : c < 0.117f ? Mathf.Lerp(0.5f, 1, Mathf.SmoothStep(0.067f, 0.117f, c)) : c < 0.333f ? Mathf.Lerp(1, 0.8f, (c - 0.117f) / 0.216f)
+            : c < 0.5f ? Mathf.Lerp(0.8f, 0.5f, (c - 0.333f) / 0.167f) : c < 0.667f ? Mathf.Lerp(0.5f, 0.25f, (c - 0.5f) / 0.167f) : Mathf.Max(0, Mathf.Lerp(0.25f, 0, (c - 0.667f) / 0.267f));
         RenderingServer.GlobalShaderParameterSet("flare_fire", new Vector4(p.X, p.Y + BallY + rise, p.Z, FireRim * I * Mathf.SmoothStep(0, 0.03f, c) * (LessFlash ? 0.6f : 1)));
         // The pillar: full height in 0.15 s, full fire to 0.45 s, burnt out by 1.1 s.
         if (simBoom != null)
@@ -161,7 +163,7 @@ public partial class FlareFx
             float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.15f, 0.27f, c)); // (lead 7, s14: the life exempt re-brightened the frame f126-f140, an extra swing and 18 frames over 1.5x empty; the birth only now, back by f130)
             simMat.SetShaderParameter("gain", 1.25f * through * (LessFlash ? 0.6f : 1));
             // After the birth only the hottest of the fire burns through the dip (judge 5b 2b: a hot band in the folds).
-            simMat.SetShaderParameter("undip", (1 / Math.Max(0.4f, dipNow) - 1) * Mathf.SmoothStep(0.15f, 0.27f, c));
+            simMat.SetShaderParameter("undip", 0.6f * (1 / Math.Max(0.4f, dipNow) - 1) * Mathf.SmoothStep(0.12f, 0.3f, c)); // (lead 9: 0.6x and a longer hand-over, s16 re-brightened at f134)
             // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
             // (judge 5a 3: soot 0.7 at f128, <=0.3 at f150, gone by f185, eroding from its thin edge first)
             simMat.SetShaderParameter("smoke", 1.0f - 0.65f * Mathf.SmoothStep(0.47f, 0.64f, c)); // (judge 5b 4: 0.85 core to f142, 0.3 at f152)
