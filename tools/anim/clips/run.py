@@ -132,10 +132,17 @@ def crossbow_low():
 # The warden's town carry: her free left hand rides the sheathed sword's hilt at her left hip (Arms.cs hip_blade),
 # the classic hold that keeps a scabbard from swinging, fixed to the hilt in the pelvis bone's own frame (the space of
 # arms_local.json "sheathed" mounts), so it rides her hips. Swinging free, the forearm went level through the hilt
-# (28 mm in the run, 38-40 in the sprint). HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side,
-# pelvis frame; the elbow's way from the shoulder (pole), pelvis frame.
-HILT = {"wrist": (0.27, 0.19, 0.02), "knuckles": (0.0, -0.16, 0.99), "thumb": (-0.08, 0.98, 0.16),
-        "pole": (0.35, -0.6, -0.7), "fingers": "relaxed"}
+# (28 mm in the run, 38-40 in the sprint). The hand lies on the scabbard's throat, just below the guards (local
+# 0.16 m down the blade from the sheath point, which sits mid-grip; the four one-handed blades share the scabbard
+# there, so one hand fits all four), the palm on its outer face tilted 27 degrees toward its front edge (the reaver
+# outfit pushes the sword 14 mm further out than the warden's: square on, it went 8 mm into her palm), the fingers
+# turned 8 degrees down from square across it, so the wrist stays 19-26 degrees from straight (more, and the
+# radial limit clamped it and the palm rocked 3 mm on and off). Higher, the chevalier's guard met her hand; lower,
+# the elbow opened past 120. HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side, the elbow's
+# way from the shoulder (pole), all in the pelvis bone's frame (solved: tools/scratch/armor5 hilt notes); `clav`:
+# the left shoulder's run swing kept (0: none, held at its mean; a hand on a hilt doesn't pump the shoulder).
+HILT = {"wrist": (0.298, 0.0102, -0.0037), "knuckles": (0.0114, -0.3008, 0.9536), "thumb": (-0.5251, 0.8098, 0.2617),
+        "pole": (-0.1458, -0.5502, -0.81), "fingers": "relaxed", "clav": 0.0}
 
 
 def hilt_carry(rig, clip, hilt=None):
