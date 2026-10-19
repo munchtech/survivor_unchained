@@ -64,29 +64,12 @@
       ]
     },
     {
-      "id": "3b",
-      "type": "MCU",
-      "dur": 1.9,
-      "note": "On her, his lamp's light on her face: she looks at him, and nods, once, slowly. Yes. (Devout: then the Order's sign for the dead, finger and thumb closing on the air.)",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.55, -0.1, -1.5]}, "at": {"actor": "her", "bone": "eyes", "off": [0, 0.03, 0]}, "lens": 66, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
-      "cues": [
-        {"do": "atmosphere", "preset": "now", "skySat": 0.6},
-        {"do": "rig", "name": "lamp", "energy": 0.6, "color": "#8ac8ff", "angle": 35, "from": {"actor": "her", "bone": "eyes", "off": [-0.42, -0.3, -0.74]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
-        {"do": "rig", "name": "moon", "energy": 1.0, "color": "#9fb8ff", "angle": 28, "from": {"actor": "her", "bone": "eyes", "off": [-0.8, 0.9, 0.6]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
-        {"do": "rig", "name": "bounce", "energy": 0.1, "color": "#ffa757", "angle": 50, "from": {"actor": "her", "bone": "eyes", "off": [0.8, -0.15, -0.14]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.06, 0]}},
-        {"do": "face", "keys": {"brows_sad": 0.35, "mouth_open": 0.05}, "over": 0.6},
-        {"do": "gaze", "look": [0, -0.4]},
-        {"at": 0.9, "do": "anim", "clip": "her/nod", "from": 0, "speed": 1, "blend": 0.2}
-      ]
-    },
-    {
       "id": "4",
       "type": "INSERT",
       "dur": 2.5,
       "note": "The fist lowers, and the lamp goes into the river. The flame hisses out in a puff of steam. Dark.",
       "cam": {"pos": {"actor": "warden", "bone": "hand_l", "off": [1.6, -0.6, 1.4]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.55, 0], "track": true}, "lens": 35},
       "cues": [
-        {"do": "atmosphere", "preset": "now", "skySat": 1.6667},
         {"at": 0.0, "do": "anim", "actor": "warden", "clip": "folk/m_lamp_down", "from": 0, "speed": 1, "blend": 0.3},
         {"at": 1.1, "do": "lamp", "actor": "warden", "lit": false, "glow": 0.0, "over": 0.4},
         {"at": 1.1, "do": "sfx", "name": "lamp_out", "gain": 1.0}
