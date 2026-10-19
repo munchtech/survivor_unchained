@@ -4,6 +4,13 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 
 ## 19 October: coordinator 8f465914 (running)
 Leads: armor 4 (armor-1), animation 39 (anim-38), Flare 10 (flare-1), environment 2 (env-1), the tutorial teaching pass (teach-1, new, off f192ac14). The story writer is DONE: SB00 plus the tutorial copy merged in f192ac14. Its worktree is removed; an empty story-lore folder is left, held open by a process. The stale animation 38 lead (session f56a8f65) was stopped on 19 Oct; it had kept relaunching jobs in anim-38. Next when a slot frees: the storybook format/builder for SB00 (su-lead-max), then the touch-up round below.
+State at about 01:30, 19 Oct (the coordinator is near 250k; it winds down when the leads reach their MRs):
+- **Armor 4:** the judge FAILED round 1 (tiers don't climb, steel goes blue in firelight, the gore pinches, no motion frame). The r2 solver committed 0ff9c5ed (etched is 3 draws against 2). The re-judge is next.
+- **Animation 39:** the checks are still running (armscheck, fistfit, audit, dotnet), then the 48-frame shoot and the judge.
+- **Flare 10:** judge 6 FAILED 13/17 frames. Solver A committed 02fda81e (f127 white -80% against a 90% target). The re-judge is next. Its scripts still write logs to session 59a43b82's scratchpad: keep that folder.
+- **Environment 2:** E1's shadow rules are in (aa758a64): hi shadow draws 4395 -> 1746, min fps 30 -> 74. Hi is still over the 1,200 line.
+- **Teaching pass:** the callouts are built (951 tests). The first Prologue run fired 6 of 12 and ended before the Low Ford.
+- **Disk:** 148 old session scratch folders (120 GB) were binned on 19 Oct, with scripts and texts backed up to survivorsunchained_inputs\scratch_<id>\. The owner empties the bin. Left for the sweep: 34daaf5d and 77fe93b5 (the recycle call failed on it).
 
 ## 18 October, night: coordinator a68188e9 WIND-DOWN (read this first; the section below is history)
 **Merged and pushed:** cinematics 3 (19c4915e) and touch-up 4 (ba7c26ed; the throat, the Reaver cord, metal round 4, hair round 2; spec in docs/art/look_bible/01_armor_metal.md "As built"). Tests 942/0/8, integration at 795be9ce+. Both worktrees removed, plus the three stale ones (classes-12, story/act2, hero pose: branches kept on origin, unmerged). **4 worktrees, C: 65 GB free.**
