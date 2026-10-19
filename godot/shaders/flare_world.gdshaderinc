@@ -230,6 +230,12 @@ vec4 flare_marks_at(vec2 w) {
 // The BOOM's ring (the marks' last texel: where it struck, how far it runs, seconds since): its radius, racing out
 // fast and easing as it reaches the reach's edge in 0.7 s (after the last word's hitstop). FlareFx.RingAt is the
 // same curve: each statue bursts as the line crosses it.
+// The ring's profile (m, and its light): the white-hot edge, the orange body, the soot skirt behind.
+#define FL_RING_EDGE 0.11
+#define FL_RING_BODY 0.42
+#define FL_RING_SKIRT 0.75
+#define FL_RING_GLOW 0.45
+#define FL_RING_HOT 1.6
 float flare_ring(float s, float rmax) {
 	float x = clamp((s - 0.01) / 0.7, 0.0, 1.0);
 	return rmax * (1.0 - pow(1.0 - x, 2.5));
@@ -264,13 +270,15 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	// (Judge 4 fix 7: a 5 px jagged line had no mass.) A burning band 40-60 cm deep (20-30 px at the play camera),
 	// its back torn, flickering in cells, a hot yellow core a third of the way in, orange through it, its outer
 	// edge amber, never red (red on the glazed statues read mauve). The tall flame is the tongues standing on it.
-	float bw = 0.4 + 0.2 * texture(flare_noise, vec2(u * 11.0, 0.71 + bm.w * 0.6)).r;
+	// (Judge 6 (7): a fuzzy cream band ~16 px. Now a white-hot leading edge 6-8 px (~0.1 m), an orange body
+	// 24-32 px (~0.4 m) behind it, its back torn, and a soot skirt behind that: flare_boom_skirt.)
+	float bw = FL_RING_BODY * (0.85 + 0.3 * texture(flare_noise, vec2(u * 11.0, 0.71 + bm.w * 0.6)).r);
 	float tear = texture(flare_noise, w * 1.7 + vec2(0.0, -TIME * 2.5)).g;
 	float nb = texture(flare_noise, w * 0.9 + vec2(TIME * 0.4, -TIME * 1.6)).b;
-	float band = smoothstep(-0.05, 0.02, ahead) * (1.0 - smoothstep(bw * 0.55, bw, ahead + (tear - 0.5) * 0.25 + (nb - 0.5) * 0.2));
-	float cells = 0.55 + 0.45 * smoothstep(0.25, 0.75, texture(flare_noise, w * 2.3 + vec2(TIME * 0.9, -TIME * 3.4)).r);
-	float body = band * cells * (1.0 - 0.3 * smoothstep(bw * 0.3, bw, ahead));
-	float core = exp(-pow((ahead - bw * 0.28) / (bw * 0.11), 2.0)) * band * smoothstep(0.45, 0.85, cells + (tear - 0.5) * 0.3);
+	float band = smoothstep(-0.04, 0.0, ahead) * (1.0 - smoothstep(bw * 0.75, bw, ahead + (tear - 0.5) * 0.16 + (nb - 0.5) * 0.12));
+	float cells = 0.7 + 0.3 * smoothstep(0.25, 0.75, texture(flare_noise, w * 2.3 + vec2(TIME * 0.9, -TIME * 3.4)).r);
+	float body = band * cells;
+	float core = smoothstep(-0.03, 0.0, ahead) * (1.0 - smoothstep(FL_RING_EDGE * 0.6, FL_RING_EDGE, ahead + (tear - 0.5) * 0.04)) * smoothstep(0.3, 0.6, cells + (tear - 0.5) * 0.2);
 	// Short licks out ahead of it, 15-40 cm, flickering every few frames.
 	float tg = texture(flare_noise, vec2(u * 23.0, 0.83)).b;
 	float fl = texture(flare_noise, vec2(u * 23.0 + 0.5, 0.17 + floor(TIME * 16.0) * 0.0731)).b;
@@ -286,6 +294,22 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	return vec4(core * lit, body * lit, ch, fresh * ch);
 }
 
+// The soot skirt trailing the BOOM's line on its inside (judge 6 (7): 40-60 px, ~0.6-0.9 m, under 0.6x the char
+// further in), torn at its back; 0..1, while the line burns.
+float flare_boom_skirt(vec2 w) {
+	vec4 bm = texelFetch(flare_marks, ivec2(31, 0), 0);
+	if (bm.z <= 0.0) return 0.0;
+	vec2 d = w - bm.xy;
+	float u = atan(d.y, d.x) * 0.15915;
+	float wob = (texture(flare_noise, vec2(u * 2.0, 0.63 + bm.w * 0.5)).g - 0.5) * 1.3 + (texture(flare_noise, vec2(u * 9.0, 0.29)).r - 0.5) * 0.3;
+	float n = texture(flare_noise, w * 0.35).r;
+	float ahead = flare_ring(bm.w, bm.z) + wob + (n - 0.5) * 0.3 - length(d);
+	float rr = texture(flare_noise, w * 1.3 + 0.37).g;
+	float k = smoothstep(FL_RING_BODY * 0.6, FL_RING_BODY * 1.0, ahead) * (1.0 - smoothstep(FL_RING_SKIRT * 0.7, FL_RING_SKIRT, ahead - FL_RING_BODY + (rr - 0.5) * 0.35));
+	float fade = 1.0 - smoothstep(flare_at.w - 1.0, flare_at.w + 1.5, length(w - flare_at.xz));
+	return k * fade * smoothstep(3.8, 6.2, flare_ring(bm.w, bm.z)) * (1.0 - smoothstep(0.7, 1.3, bm.w));
+}
+
 // How far behind the BOOM's line this point lies (m; negative: not reached yet, or no ring).
 float flare_boom_behind(vec2 w) {
 	vec4 bm = texelFetch(flare_marks, ivec2(31, 0), 0);
@@ -296,7 +320,8 @@ float flare_boom_behind(vec2 w) {
 // The BOOM's line on a surface (its white-yellow core under the knee, orange to red behind it).
 vec3 flare_boom_light(vec4 bo) {
 	// (Judge 4 fix 7: amber at its edge, hue ~28, orange through it, a yellow-white core.)
-	return mix(vec3(0.62, 0.34, 0.06), vec3(1.0, 0.46, 0.08), smoothstep(0.2, 0.8, bo.y)) * bo.y * 0.9 + vec3(1.0, 0.74, 0.38) * bo.x * 0.25;
+	// (Judge 6 (7): bright, the body went cream under the tonemapper: a saturated orange under it, the edge white-hot.)
+	return mix(vec3(0.7, 0.2, 0.03), vec3(1.0, 0.36, 0.05), smoothstep(0.2, 0.8, bo.y)) * bo.y * FL_RING_GLOW + vec3(1.0, 0.8, 0.52) * bo.x * FL_RING_HOT;
 }
 
 // The last word's ground flash (judge 2, s4): its first frames, a torn disc about 3 m across round the crater, a
@@ -401,7 +426,10 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		rough = mix(rough, mix(0.3, 0.85, smoothstep(0.35, 0.65, mot)), bo.z);
 		spec = mix(spec, 0.25, bo.z);
 		emi *= 1.0 - 0.5 * bo.z;
-		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9;
+		float fl_sk = flare_boom_skirt(w);
+		alb = mix(alb, vec3(0.012, 0.010, 0.009), fl_sk * 0.92);
+		emi *= 1.0 - 0.8 * fl_sk;
+		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9 * (1.0 - 0.7 * fl_sk);
 		emi += flare_boom_light(bo);
 		// (Judge 6 (9): the live embers in the char are CUT: over a 1000 px disc they read as orange confetti, as pickups.)
 		// The last word's ground flash.

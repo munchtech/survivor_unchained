@@ -532,7 +532,29 @@ public partial class FlareFx
             Chunks(w, scale, 7.5f, 1.3f, away, true);
             // The line flares where it crosses a body (while the line is there: a late one threw a lone upright
             // tongue, a vertical bar at +1.4 s, f6h).
-            if (lastAt > 0 && t - lastAt < 0.7) glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
+            // (Judge 6 (8): one size at each statue read as a bead necklace. Now 0-2 a body, sized 4-14 px in
+            // radius (most small), thrown at random angles, jittered +-30 px along the line's way, and 30% of them
+            // radial streaks 20-40 px long.)
+            if (lastAt > 0 && t - lastAt < 0.7)
+            {
+                var side = new Vector3(-away.Z, 0, away.X);
+                int sn = R() < 0.15f ? 0 : R() < 0.65f ? 1 : 2;
+                for (int k = 0; k < sn; k++)
+                {
+                    var at = w + Vector3.Up * (0.2f + R() * 0.5f) * scale + away * (0.25f + (R() - 0.5f) * 0.85f) + side * ((R() - 0.5f) * 0.6f);
+                    if (R() < 0.3f)
+                        glow.Spawn(FlareBits.Kind.Streak, at, away * (6.5f + R() * 4.5f) + side * ((R() - 0.5f) * 2.5f) + Vector3.Up * (0.4f + R()), 0.1f + R() * 0.06f,
+                            0.05f + R() * 0.04f, new Color(1.3f, 0.66f, 0.2f), new Color(0.7f, 0.16f, 0.03f), drag: 1.5f);
+                    else
+                    {
+                        float rs = R();
+                        float an = (R() - 0.5f) * 2.6f;
+                        var dir = away * Mathf.Cos(an) + side * Mathf.Sin(an);
+                        glow.Spawn(FlareBits.Kind.Fire, at, dir * (1.5f + R() * 3.5f) + Vector3.Up * (1.0f + R() * 2.0f), 0.1f + R() * 0.08f, (0.11f + 0.29f * rs * rs) * scale,
+                            new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: (0.25f + 0.45f * rs * rs) * scale, drag: 3);
+                    }
+                }
+            }
             if (R() < 0.5f && lastAt > 0 && t - lastAt < 0.7)
                 glow.Spawn(new FlareBits.P
                 {

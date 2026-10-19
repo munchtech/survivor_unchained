@@ -42,6 +42,16 @@ uniform float undip_lo = 0.5;
 uniform float undip_hi = 0.8;
 // The soot eroding from its thin edge first (0 none .. 1 all), with a noise so it tears rather than shrinks.
 uniform float erode = 0.0;
+// The heat (judge 6 A1: f72-f85 read as uniform mid-orange clay): after the birth the fire is gradient-mapped by its
+// heat, the atlas's straight luma x its density (thin fire runs cooler), cooling with age: a white-yellow core
+// (heat gm_lo..gm_hi, pushed gm_hot over the tonemapper's white, gone by sim frame gm_end), an orange body, and
+// edges falling to dark red and into the smoke (gm_edge: the heat under which it darkens).
+uniform float gm = 1.0;
+uniform float gm_lo = 0.13;
+uniform float gm_hi = 0.26;
+uniform float gm_hot = 3.5;
+uniform float gm_end = 13.0;
+uniform float gm_edge = 0.08;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
 
 void vertex() {
@@ -63,6 +73,7 @@ void fragment() {
 	float lod = clamp(log2(max(length(dFdx(texels)), length(dFdy(texels)))), 0.0, 3.0);
 	vec4 c = mix(cell(i0, UV, lod), cell(i1, UV, lod), fract(f));
 	c.rgb = min(c.rgb, vec3(c.a));
+	vec4 c0 = c;
 	if (f < birth_end) {
 		// straight colour (the atlas is premultiplied): its top channel finds the heart, its luma the body
 		vec3 sc = c.rgb / max(c.a, 1e-3);
@@ -71,6 +82,19 @@ void fragment() {
 		float s = mix(1.0, mix(sat, 1.0, smoothstep(birth_end - 4.0, birth_end, f)), smoothstep(0.04, 0.15, l));
 		sc = max(mix(vec3(l), sc, mix(s, 1.0, heart)), vec3(0.0));
 		c.rgb = sc * c.a * (1.0 + hot * heart);
+	}
+	if (gm > 0.0) {
+		vec3 sc = c0.rgb / max(c0.a, 1e-3);
+		float l = dot(sc, vec3(0.2126, 0.7152, 0.0722));
+		float heat = l * mix(0.55, 1.0, smoothstep(0.15, 0.7, c0.a)) * mix(1.0, 0.75, smoothstep(6.0, 22.0, f));
+		float core = smoothstep(gm_lo, gm_hi, heat) * (1.0 - smoothstep(gm_end - 4.0, gm_end, f));
+		float t = clamp(heat / gm_lo, 0.0, 1.0);
+		// dark red at the edges, orange through the body, white-yellow at the core
+		vec3 hue = mix(vec3(1.0, 0.13, 0.03), vec3(1.0, 0.40, 0.08), smoothstep(0.3, 0.85, t));
+		hue = mix(hue, vec3(1.0, 0.86, 0.62), core);
+		float lum = max(l, 0.02) * mix(0.3, 1.0, smoothstep(gm_edge / gm_lo, 0.9, t)) * (1.0 + gm_hot * core);
+		vec3 g = hue * (lum / dot(hue, vec3(0.2126, 0.7152, 0.0722)));
+		c.rgb = mix(c.rgb, g * c.a, gm * smoothstep(1.5, 3.0, f));
 	}
 	// Nothing outside the fire before f124 (judge 5a 1d: an olive haze hugged the young ball): its thin veil clipped,
 	// the clip let go over f120-f134 (judge 5b 2a: released in one step it filmed the folds), the veil's light x density^2.
