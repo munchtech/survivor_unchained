@@ -27,9 +27,9 @@ Written by the art direction lead (look bible 1) from 18 October 2026. It sets t
 | 1h | [The town](08_town.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
 | 1i | [NPCs and crowds](09_npcs.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
 | 1j | [Story props and flames](10_props_flames.md) | passed the lead's judge (round 2, fixes applied 29f4b2a9); with main |
-| 2 | Per-tier budgets (triangles, textures, materials, draw calls) | measured (`look_bible_perf\summary.md`); page to write |
-| 3 | The Prologue's asset inventory: keep, rework or build | extracted, to mark |
-| 4 | The tutorial's launch-ready checklist (the first 20-30 minutes) | to do |
+| 2 | [Budgets: per frame, per tier, per asset](11_budgets.md) | written (look bible 4); with the lead's judge |
+| 3 | [The Prologue's asset inventory: keep, rework or build](12_inventory.md) ([csv](12_inventory.csv)) | 323 rows marked (look bible 4); with the lead's judge |
+| 4 | [The tutorial's launch-ready checklist](13_launch_checklist.md) (the first 20-30 minutes) | written (look bible 4); with the lead's judge |
 
 ## Rules for the boards
 - Reference pictures from other games are for reference only and never ship. They live outside the repo, in `C:\Users\munch\Desktop\survivorsunchained_inputs\look_bible_refs\`; `steam\sources.csv` logs each source URL.

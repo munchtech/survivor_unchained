@@ -60,7 +60,7 @@ Today against these: the Low Ford road and dawn meet the GPU target and the ford
 | Post, sky, fog, the sun's and the one lamp's shadows | 1.0 | 15 | 300 | sun 0.19 ms, lamps 0.65 ms and 1,495 |
 | **Total** | **5.9** | **420** | **1,200** | |
 
-The 0.1 ms and 30 draws left over are headroom, not anyone's. A part over its line borrows only with the environment lead's say-so, written in its owner's handoff.
+The 0.1 ms and 30 draws left over are headroom, not anyone's. The boards' own cost lines are gates on the way: 1e's and 1f's "shadow draws at or below 2,246" and "primitives at or below 4.9M" mean no worse than today when the new kit first lands; this page's 1,200 and 5M are the launch line. 1f's "at most 1.0 ms over today's ground (or page 2's number)" takes page 2's number: terrain, road and decals at most 0.8 ms in all, with the scatter inside the trees-and-rocks line; 1c's fog and mist (at most 0.5 ms) and 1d's ford (at most 0.5 ms) sit inside the post and water lines. A part over its line borrows only with the environment lead's say-so, written in its owner's handoff.
 
 ## Per asset
 
@@ -98,7 +98,7 @@ Full detail always shows at the title, in creation, in conversations, close-ups 
 | Grass clump | at most 150 | the grass sheet | 1 | MultiMesh, visibility-range fade | none | fade |
 | Rock | 3k (outcrop 8k) | a shared rock set, 1024-2048 | 1 | MultiMesh where repeated | yes, its LOD1 | 2 LODs |
 | Building, merged | at most 25k | two trim sheets (2048) shared by the kit | at most 3 | at most 3 | one shadow-only proxy, at most 2k | 2 LODs |
-| The far castle | one mesh, at most 30k | the stone trim sheet | at most 2 | at most 2 | none | - |
+| The far castle | one mesh, at most 30k | the stone trim sheet | 1 | 1 | none | - |
 | Prop | 1.5k (carts and stalls 4k) | the shared prop atlas | 1 | MultiMesh where repeated | only 0.5 m and taller | 2 LODs over 1k |
 | Lamp or torch | 1.5k | the prop atlas | 1 + the flame | 2 | no shadow; one shadowed light per frame (two in a cinematic) | - |
 | Terrain | one heightfield per zone | at most 4 layers per pixel (today a 7-layer array) | 1 | as few as the clipmap needs | receives only | - |
