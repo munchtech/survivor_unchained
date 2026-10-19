@@ -7,6 +7,8 @@
                 "section": {"shape": "round", "half_w": 13.70, "half_d": 13.70}, "length": 131, "grip_from_guard": 84.0, "glove": 0.0},
     "Dagger":  {"kinds": ["Dagger"], "from": "daggers (Cube_004)", "fist": "keyed.py WRAP daggers, WeaponSockets DaggerAtR (left: PocketL, mirrored)",
                 "section": {"shape": "flat", "half_w": 14.60, "half_d": 7.59}, "length": 128, "grip_from_guard": 71.1, "glove": 0.0},
+    "Crossbow": {"kinds": ["Crossbow"], "from": "crossbow (its pistol grip, modelled in-house: tools/assets/crossbow_grip.py, 18 October)", "fist": "keyed.py WRAP crossbow, WeaponSockets CrossbowAtR (Arms.Seat pistol path, PistolSeat)",
+                "section": {"shape": "round", "half_w": 13.70, "half_d": 13.70}, "length": 84, "rake": 22.5, "glove": 0.0},
     "Axe":     {"kinds": ["Axe"], "from": "PROVISIONAL: no fist is fitted on an axe (AxeAtR not live: viking_axe's 58 x 42 mm haft is past any fist); 32 x 27.3 mm, the staff's depth, about the 30 across WeaponSockets asks; the first axe fit (fistfit.py axe --fit on the conformed haft) sets it",
                 "fist": "none yet (keyed.py WRAP axe, WeaponSockets AxeAtR when fitted)",
                 "section": {"shape": "flat", "half_w": 16.0, "half_d": 13.65}, "length": null, "glove": 0.0}

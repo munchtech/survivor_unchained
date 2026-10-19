@@ -1016,8 +1016,15 @@ FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 # bones, none of it past the fingers' column, its proximal pad 0.6 mm off the shaft; the ring refitted to the new palm line.
 # The fingers can't close to the judge's 75/100/60: with the palm on this 27.3 mm shaft, her knuckle and middle joints
 # together top out at about 130 deg before a finger goes into it (fistfit, 17 October), as they do here.
-WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (53.4, 71.6, 60.1), "pinky": (41.7, 73.3, 60.3), "thumb": (14.1, 1.3, 86.0)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.1, "pinky": 1.3},
-                  "oppose": 0.22, "thumb_roll": 5.3, "thumb_in": -7.9},
+# Refitted 18 October (animation 38) on a DIAGONAL line, as a staff is held: FistDirR turned 18 deg about the palm's normal
+# (the little finger's end of the shaft toward the heel of the hand: the line from the forefinger's root to the heel under
+# the little finger) and 8 deg toward the palm at the forefinger's end, 19.7 deg in all (27.7 off hand +Z, was 8.2); the
+# line 10 mm toward the wrist. Square across the fingers no seat let the little finger reach the shaft without the palm
+# going 2-11 mm in; on the diagonal all four fingers' outer pads lie on it (-0.5..1.3 mm), the tips short of the far side,
+# the thumb over the forefinger and middle finger as the 17 October judge wanted (its tip 3.0 mm off their middle bones,
+# none of it past them). GRIP["staff"] 18 turns her hand back so the staff points where the clips key it.
+WRAP = {"staff": {"bends": {"index": (58.9, 73.7, 46.5), "middle": (65.6, 79.3, 59.9), "ring": (65.6, 83.1, 23.0), "pinky": (76.4, 70.6, 33.4), "thumb": (-3.7, 49.2, 75.5)}, "spreads": {"index": -19.1, "middle": -10.4, "ring": 1.7, "pinky": 5.9},
+                  "oppose": 0.16, "thumb_roll": 22.9, "thumb_in": 0.7},
         # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
         # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
         # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
@@ -1034,8 +1041,11 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # its pad 1.0 mm over the middle finger's middle bone, closed over the fingers, the thumb 1.3 mm off the hilt
         # and 0.3 mm clear of the forefinger by its bone line (it was 1.5 mm into it); opposed 0.45 (was 0.63) and
         # rolled 12 degrees so the pad, not its side, lies on the finger.
-        "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (8.0, 3.4, 57.9)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
-                  "oppose": 0.45, "thumb_roll": 12.3},
+        # Refitted 18 October (animation 38) on the body build's hand (c31c1760: DIPs toward the knuckle) by a direct solve on
+        # fistfit.measure: seat BladeAtR moved 9.4 mm (x -5, y +8: the line further from the palm, which sits 4.2-4.8 mm off
+        # the hilt, so the shorter middle bones reach round); fistfit sword 13 of 13 frames pass.
+        "sword": {"bends": {"index": (40.1, 66.3, 50.4), "middle": (42.8, 78.4, 39.5), "ring": (63.0, 54.4, 59.5), "pinky": (70.1, 30.2, 60.1), "thumb": (10.6, -12.3, 47.1)}, "spreads": {"index": -17.9, "middle": 3.5, "ring": -3.8, "pinky": 13.4},
+                  "oppose": 0.67, "thumb_roll": 46.9},
         # The dagger (WeaponSockets.DaggerAtR / DaggerDirR), fitted 14 October (animation 31, fistfit.py daggers --fit
         # --seat 80, on daggers_back's frame 2 and the ranger's hand) on its own section: the hilt is a flat hexagon,
         # 15 mm thick toward the palm and 29 across, 122 mm between pommel and guard. Refitted 14 October (animation 33's
@@ -1044,15 +1054,24 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # middle 0.7/0.6, ring 0.9/0.6, little 0.4/1.4), the thumb's middle bone 0.5 off (was 0.6 in), its last joint 69,
         # the fingers' ends round it and touching (0.5-1.5 mm apart). The forefinger's middle joint bends 110 (fit_finger's
         # 105 cap held it 3 mm off the hexagon's far flat; a PIP closes to 110-115).
-        "daggers": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
+        # Refitted 18 October (animation 38) on the body build's hand, the seat kept: fistfit daggers 8 of 8 frames pass.
+        # The crossbow's pistol grip (WeaponSockets.CrossbowAtR / CrossbowDirR: 13.7 mm round; tools/assets/
+        # crossbow_grip.py), fitted 18 October (animation 38) by a direct solve on fistfit.measure. Raked 22.5 deg (was 18:
+        # there no seat kept the little finger off it, 0.7 mm in and its end 1.7 mm past the far side), the seat (-41, 95.1,
+        # -9.2) mm: every finger's outer pads on it (-0.3..1.1 mm), its ends short of the far side, palm 1.8 mm off.
+        "crossbow": {"bends": {"index": (40.0, 74.8, 42.2), "middle": (48.3, 74.2, 58.2), "ring": (59.9, 59.7, 59.6), "pinky": (62.3, 39.6, 60.6), "thumb": (8.1, -10.9, 45.7)}, "spreads": {"index": 0.6, "middle": 7.4, "ring": -7.5, "pinky": 4.7},
+                  "oppose": 0.44, "thumb_roll": 45.7},
+        "daggers": {"bends": {"index": (63.1, 108.6, 10.9), "middle": (72.2, 101.3, 20.1), "ring": (80.9, 90.0, 3.3), "pinky": (93.3, 60.2, 38.4), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -21.1, "middle": -9.3, "ring": 19.6, "pinky": 25.3},
                   "oppose": 0.01, "thumb_roll": -3.9},
         # Her LEFT fist on the second dagger (dagger_b: its own hilt, about 11 mm thick toward the palm and 23 across,
         # thinner than the first's 15 x 29), laid mirrored on WeaponSockets.PocketL. NOT FITTED: a copy of the right's
         # (WRAP_LEFT is off). Mirrored as is, it leaves her left forefinger 7.6/6.1 mm off dagger_b and the hand 22 mm
         # into it (her hands are 1-4 deg and up to 7 mm off each other's mirror at rest). fistfit.py daggers --side l
         # --fit (17 October) found no passing seat: best y0 84, pads 3.6/1.2, 3.6/0.5, 4.3/4.1, -0.7/1.5, 0.7 mm in.
-        "daggers_l": {"bends": {"index": (58.1, 110.2, 23.0), "middle": (71.7, 101.3, 19.7), "ring": (81.5, 88.8, 15.2), "pinky": (89.8, 69.6, 60.1), "thumb": (3.9, 23.0, 69.2)}, "spreads": {"index": -20.8, "middle": -9.1, "ring": 20.0, "pinky": 27.6},
-                  "oppose": 0.01, "thumb_roll": -3.9}}
+        # SUPERSEDED 18 October (animation 38): fitted on the conformed dagger_b (29.2 x 15.2) and her left hand by a direct
+        # solve on fistfit.measure, DaggerLeftAt moved 12.0 mm (x -1, y +12; the palm 2.7 mm off): fistfit daggers --side l passes.
+        "daggers_l": {"bends": {"index": (38.3, 100.6, 55.4), "middle": (59.4, 104.0, 7.5), "ring": (62.2, 94.4, 5.7), "pinky": (73.2, 76.4, 23.2), "thumb": (28.0, -11.3, 54.7)}, "spreads": {"index": -22.8, "middle": 3.8, "ring": -4.3, "pinky": -0.6},
+                  "oppose": 0.00, "thumb_roll": -11.2}}
 
 
 def spread_axis(rig, j):
@@ -1074,9 +1093,9 @@ def wrap_of(weapon):
 # The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on
 # her left hand and the left piece, fistfit.py --side l: her hands aren't each other's mirror to the millimetre, and the
 # second dagger's hilt is thinner), laid mirrored as every left hand is.
-# Off until WRAP["daggers_l"] passes on her left hand (17 October: no fit yet; the entry is the right's, unfitted).
-# Then {"daggers": "daggers_l"}, with Arms.Spec dagger_b Seated.
-WRAP_LEFT = {}
+# On 18 October (animation 38): WRAP["daggers_l"] fitted on her left hand and the conformed dagger_b (fistfit daggers --side l).
+# Arms.Spec dagger_b Seated.
+WRAP_LEFT = {"daggers": "daggers_l"}
 
 
 def finger_curl(spec):
@@ -1556,11 +1575,12 @@ def _one_frame(rig: Rig, keys, base=None):
 # fingers toward them (degrees): a sword's grip runs from the root of the
 # forefinger to the heel of the hand, so with the wrist straight the blade
 # rises at about 55 degrees from the forearm's line and a little ulnar bend
-# puts it nearly in line. An axe's haft is gripped nearer square, a staff and
-# a crossbow square (mid-shaft; pistol fashion). Only her and the hero
+# puts it nearly in line. An axe's haft is gripped nearer square, a crossbow
+# square (pistol fashion), a staff at 18 (18 Oct: its fist refitted on the
+# diagonal, WRAP["staff"]). Only her and the hero
 # (Rig.grips): the folk also play the Universal Animation Library, held
 # square. Must match the game's mounts (Arms.Spec.Lean).
-GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0}
+GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0, "staff": 18.0}
 
 
 def grip_of(weapon):

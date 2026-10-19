@@ -941,25 +941,119 @@ def cast_flick(rig):
     return build("cast_flick", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 0.0, "weapon": "wand"})
 
 
+# The left elbow at the aim: down and ahead under the fore-stock, only a little out (round 4: out at (0.65, -0.7, 0.3)
+# it flared 20-23 deg, a chicken wing from the play camera; with the shoulder drawn back and down by AIM_CLAV_L it
+# hangs at 12-13 deg clear of her breast). The show's sighting a touch further out (its swing off the cradle at f79-83
+# put the upper arm 3-4 mm into her chest at 0.2-0.25).
+AIM_POLE_L = (0.25, -0.9, 0.4)
+AIM_POLE_L_SHOW = (0.3, -0.9, 0.4)
+# The right elbow at the aim: out and a little up, a shooter's trigger elbow (level with the fist; at (-1, 0, -0.4)
+# with the lower AIM_CLAV_R the upper arm went 5 mm into her breast as the crossbow came down, f12).
+AIM_POLE_R = (-1.0, 0.4, -0.3)
+# The crossbow's top at the aim (chest frame): up, its prod level (keyed by the knuckles alone, the fist rolled
+# palm-down with the forearm and the crossbow lay canted 60 deg onto its left side).
+AIM_TOP = (0.0, 1.0, 0.0)
+# The right fist on the way down (chest frame, from the shoulder, m) and its elbow.
+LOWER_R = (0.15, -0.19, 0.36)
+LOWER_POLE_R = (-1.0, -0.3, -0.2)
+# Her right shoulder drawn forward at the aim (clav_r: raise, forward). Round 4: raised 12 deg, not 20 (a shrug); the
+# fist is lifted by as much in AIM_R so the crossbow sits where it did at the eye.
+AIM_CLAV_R = (12, -10)
+# Her left shoulder at the aim (clav_l: raise, forward): a little up and drawn back, not forward (round 4: drawn
+# forward 18 the arm was too short a reach to straighten, its elbow bent out to clear her breast; drawn back, the
+# support arm reaches long and its elbow hangs under the stock, the body's blade still bringing the shoulder forward).
+AIM_CLAV_L = (10, -10)
+# A shooter's stance at the aim: the body turned to her right by AIM_BLADE (deg), the head and the crossbow turned back
+# by as much in the chest's frame, so the aim is unchanged and her left shoulder comes forward to the fore-stock (squared
+# to it, the left upper arm crossed her chest at shoulder height to reach it and went 30 mm into her breast's top).
+AIM_BLADE = 26.0
+# The right fist at the aim (chest frame before the blade, from the shoulder, m; y lifted 23 mm with AIM_CLAV_R's
+# 8 deg less raise, so the crossbow stays put).
+AIM_R = (0.06, 0.003, 0.40)
+
+
+def _yawed(v, deg):
+    """A chest-frame vector turned toward her left about the chest's up axis."""
+    a = math.radians(deg)
+    x, y, z = v
+    return (x * math.cos(a) + z * math.sin(a), y, -x * math.sin(a) + z * math.cos(a))
+
+
 def crossbow_shoot(rig):
     """The crossbow up at the eye and loosed: the kick throws the fists up
-    and the shoulder back, she rides it and lowers."""
-    aim_r = arm((0.06, -0.02, 0.40), (-0.8, -0.5, -0.2), knuckles=_n(0.08, 0.02, 1.0))
-    aim_l = arm((-0.10, -0.08, 0.40), (0.8, -0.5, -0.2), knuckles=_n(0.1, -0.2, 1.0))
+    and the shoulder back, she rides it and lowers (the left hand on the fore-stock throughout, as in her idle)."""
+    from clips.idle import STALKER_HAND_L, STALKER_HAND_R, stalker_top
+    B = AIM_BLADE
+    aim_r = arm(_yawed(AIM_R, B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.02, 1.0), B)),
+                blade=AIM_TOP)
+    aim_l = arm(_yawed((-0.10, -0.08, 0.40), B), AIM_POLE_L, knuckles=_n(0.1, -0.2, 1.0))
     keys = [
-        (0, body(stance(0.08), spine=(-8, 4, 0), head=(10, 4, -4), hand_r=aim_r, hand_l=aim_l,
+        (0, body(stance(0.08), spine=(-8 - B, 4, 0), head=(10 + B, 4, -4), clav_l=AIM_CLAV_L, clav_r=AIM_CLAV_R, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "fast"),
-        (2, body(stance(0.08, weight=-0.3), spine=(-10, -4, 0), head=(10, -2, -4), clav_r=(6, -6),
-                 hand_r=arm((0.06, 0.04, 0.34), (-0.8, -0.4, -0.2), knuckles=_n(0.08, 0.3, 0.95)),
-                 hand_l=arm((-0.10, 0.0, 0.34), (0.8, -0.4, -0.2), knuckles=_n(0.1, 0.1, 1.0)),
+        (2, body(stance(0.08, weight=-0.3), spine=(-10 - B, -4, 0), head=(10 + B, -2, -4), clav_r=(6, -6), clav_l=AIM_CLAV_L,
+                 hand_r=arm(_yawed(np.add(AIM_R, (0.0, 0.06, -0.06)), B), _yawed(AIM_POLE_R, B), knuckles=_n(*_yawed((0.08, 0.3, 0.95), B)),
+                                blade=AIM_TOP),
+                 hand_l=arm(_yawed((-0.10, 0.0, 0.34), B), AIM_POLE_L, knuckles=_n(0.1, 0.1, 1.0)),
                  fingers_r="grip", fingers_l="relaxed"), "ease"),
-        (8, body(stance(0.08), spine=(-8, 2, 0), head=(10, 2, -4), hand_r=aim_r, hand_l=aim_l,
+        (8, body(stance(0.08), spine=(-8 - B, 2, 0), head=(10 + B, 2, -4), clav_l=AIM_CLAV_L, clav_r=AIM_CLAV_R, hand_r=aim_r, hand_l=aim_l,
                  fingers_r="grip", fingers_l="relaxed"), "auto"),
-        (18, body(stance(0.08), hand_r=arm((0.12, -0.38, 0.20), (-0.7, -0.4, -0.5), knuckles=_n(0.5, -0.15, 0.85)),
-                  hand_l=arm((-0.16, -0.42, 0.30), (0.7, -0.4, -0.5), knuckles=_n(0.2, -0.2, 0.95)),
-                  fingers_r="grip", fingers_l="relaxed"), "ease"),
+        (18, body(stance(0.08), hand_r={**STALKER_HAND_R["hand_r"], "blade": stalker_top(rig)},
+                  hand_l=STALKER_HAND_L["hand_l"], fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
-    return build("crossbow_shoot", rig, keys, meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"})
+    # Both hands on it: the left rides the fore-stock through the aim, the kick and the lowering (idle.ride_stock;
+    # keyed on its own arc it hung 7-9 cm off the crossbow at the aim and its thumb went 10 mm in as it came down).
+    from clips.idle import ride_stock
+    return ride_stock(rig, lambda post: build("crossbow_shoot", rig, keys, post=post,
+                                              meta={"layer": "upper", "contact": 0.0, "weapon": "crossbow"}),
+                      rel=aim_cradle(*SHOOT_CRADLE_T))
+
+
+# The left hand at the aim: palm up under the fore-stock, close ahead of the right fist (idle.cradle_rel), the elbow
+# down under it; swung round the stock's near side onto the idle's palm-down hold as the crossbow comes down.
+AIM_CRADLE = {"at": (-0.06, 0.20, -0.04), "fingers": 30.0, "roll": -25.0, "lift": 0.0}
+AIM_CRADLE_AIM = 1.0
+# On the way between: the palm flat against the stock's near side, the fingers along it (not swept through it), and
+# the wrist stood off it by AIM_OFF.
+AIM_SIDE = {"at": (-0.075, 0.20, 0.045), "fingers": 0.0, "roll": -90.0}
+AIM_OFF = 0.06
+AIM_OPEN = 1.0
+# The swing off the cradle onto the idle hold: f8-17 (round 4: over f9-16 the hero's left hand spun 32 deg in a frame, f14).
+SHOOT_CRADLE_T = (8, 17)
+
+
+def aim_cradle(t0, t1, t_in=None):
+    """rel for idle.ride_stock: the cradle up to frame t0, swung onto the idle's hold by t1 (and, with t_in = (a, b),
+    off the idle's hold onto the cradle between frames a and b first, the same path backward)."""
+    from clips.idle import cradle_rel, blend_rel
+    from rig import smoothstep
+    cache = {}
+
+    def rel(f, idle_rel):
+        if t_in is not None and f < t_in[1]:
+            a, b = t_in
+            g = t1 - (t1 - t0) * (f - a) / (b - a) if f > a else t1   # (run backward over t0..t1)
+            return rel_out(g, idle_rel)
+        return rel_out(f, idle_rel)
+
+    def rel_out(f, idle_rel):
+        if "c" not in cache:
+            cache["c"] = cradle_rel(**AIM_CRADLE) + (AIM_CRADLE_AIM,)
+        if f <= t0:
+            return cache["c"]
+        if f >= t1:
+            return idle_rel
+        u = float(smoothstep((f - t0) / (t1 - t0)) if float(f).is_integer() else (f - t0) / (t1 - t0))
+        if "v" not in cache:
+            cache["v"] = cradle_rel(**AIM_SIDE) if AIM_SIDE else None
+        # (The fingers eased open as they come over the top and closed round its far side as the hand lands.)
+        from keyed import FINGER_PRESETS
+        o = AIM_OPEN * math.sin(math.pi * u) ** 0.5
+        fl = dict(FINGER_PRESETS["relaxed"])
+        fl["curl"] = fl["curl"] * (1 - o) - 0.05 * o
+        fl["thumb"] = fl["thumb"] * (1 - 0.3 * o)
+        return (blend_rel(cache["c"][:2], idle_rel, u, via=cache["v"], out=AIM_OFF)
+                + (AIM_CRADLE_AIM + (1 - AIM_CRADLE_AIM) * u, fl if o > 0 else None))
+    return rel
 
 
 def throw(rig):
