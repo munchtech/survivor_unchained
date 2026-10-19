@@ -201,6 +201,20 @@
 		"note": "the shoulders settle over 1.2 s, held",
 		"source": "keyed (tools/anim)"
 	},
+	"flare_burns_twice": {
+		"blend_out": 1.53333333333333,
+		"contact": 0.666666666666667,
+		"contacts": [
+			0.666666666666667,
+			1.43333333333333
+		],
+		"layer": "full",
+		"length": 2.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "staff"
+	},
 	"flask_drink": {
 		"changes": "retargeted to her skeleton, feet locked, centred; back, head and arms keyed over",
 		"hold": true,
@@ -277,7 +291,7 @@
 		"weapon": "axe"
 	},
 	"idle_stalker": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
 		"layer": "full",
 		"length": 5.09999990463257,
 		"licence": "CC BY 4.0",
@@ -293,6 +307,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "crossbow"
+	},
+	"idle_stalker_daggers": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
+		"layer": "full",
+		"length": 5.09999990463257,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
+		"speed": 0.0,
+		"weapon": "daggers"
 	},
 	"idle_warden": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
@@ -311,6 +335,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"idle_warden_town": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.33333349227905,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE WiggleHips_ID frames 1458-1778 (60 fps)",
+		"speed": 0.0,
+		"weapon": ""
 	},
 	"kneel_to_stand_snap": {
 		"hold": true,
@@ -645,6 +679,22 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"stop_warden_town_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": ""
+	},
+	"stop_warden_town_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": ""
 	},
 	"sword_back": {
 		"contact": 0.0833333333333333,
