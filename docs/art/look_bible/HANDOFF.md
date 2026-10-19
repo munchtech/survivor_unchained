@@ -4,11 +4,11 @@ Written by look bible 4 (agent a87527351a82e53df, su-lead-high), 18 October 2026
 
 ## State: the bible is complete
 - **Boards 1a-1j:** passed by the owner ("The look bible boards 1c-1j pass. Build the tutorial to them.", OWNER_NOTES 18 Oct).
-- **Page 11 budgets** (`11_budgets.md`), **page 12 inventory** (`12_inventory.md` + `12_inventory.csv`, 323 rows: keep 35, rework 33, build 236, test 15, cut 2, n/a 2; regenerate with `look_bible_refs\inventory\mark.py`), **page 13 launch checklist** (`13_launch_checklist.md`, 12 beats). Judged at xhigh: round 1 FAIL on all three (`look_bible_refs\judge1_11-13_verdict.md`: the perf run never left the road, so the Warden, dawn and gate are unmeasured; CPU, hitch, UI and texture budgets were missing; the test rule had no criterion), every fix applied (3b843d53); round 2 PASS on all three with four short replacements, applied by the lead, plus its optionals.
+- **Page 11 budgets** (`11_budgets.md`), **page 12 inventory** (`12_inventory.md` + `12_inventory.csv`, 323 rows: keep 35, rework 33, build 236, test 15, cut 2, n/a 2; regenerate with `look_bible_refs\inventory\mark.py`), **page 13 launch checklist** (`13_launch_checklist.md`, 12 beats). Judged at xhigh: round 1 FAIL on all three (`look_bible_refs\judge\r1_11-13_verdict.md`: the perf run never left the road, so the Warden, dawn and gate are unmeasured; CPU, hitch, UI and texture budgets were missing; the test rule had no criterion), every fix applied (3b843d53); round 2 PASS on all three with four short replacements, applied by the lead, plus its optionals.
 - Where we work: the main checkout, `docs/art/look_bible/` only, commit `-- docs/art/look_bible`, never push (main pushes).
 
 ## Open (for whoever picks the bible up; none blocks the build)
-1. Board 1i's cost line (`09_npcs.md`, generated from `look_bible_refs	oolsoards_text.py`) could add "plus a hero head map where a close-up needs one" to match page 11's close-up NPC row. Page 11 governs meanwhile.
+1. Board 1i's cost line (`09_npcs.md`, generated from `look_bible_refs\tools\boards_text.py`) could add "plus a hero head map where a close-up needs one" to match page 11's close-up NPC row. Page 11 governs meanwhile.
 2. Page 11 added four armor visual slots to armor.md's Budgets line (skirt and cloak as large, legwear as a pair, head at most 15k) and the equip-time merge (her play draws 40 until it lands, then 20): sent to main to relay to the armor-and-weapons pipeline lead.
 3. The first perf run is the tutorial environment lead's: Release build, a run that reaches stage=Exit, `lf_off_her` and `lf_off_volfog` re-run, `lf_off_terrain` added, the road's 70-170 s peak and post split by part.
 
