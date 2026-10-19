@@ -84,7 +84,11 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
 public sealed record AtmospherePreset(
     SkySettings Sky, string KeyColor, double KeyIntensity, double KeyElevation, double KeyAzimuth, double ShadowStrength,
     string HemiSky, string HemiGround, double HemiIntensity, double EnvIntensity, string FogColor, double FogDensity,
-    double Exposure, string Rim, double RimStrength, GradeSettings Grade);
+    double Exposure, string Rim, double RimStrength, GradeSettings Grade)
+{
+    /// <summary>The volumetric fog's density: the air the lamps' halos and the key's shafts are seen in.</summary>
+    public double Haze { get; init; } = 0.0012;
+}
 
 public sealed class ZoneMeta
 {

@@ -857,7 +857,13 @@ public partial class Game
                     // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
                     // cinematic and finished in the next); a skip lands on k1. "from": "now"
                     // blends from the air as it is (a scene's own night back into play's).
-                    var to = Tuned(c.Str("preset") == "now" ? g.air.Current : Atmospheres.ByName(c.Str("preset")!), c);
+                    // "play": the zone's own air for the time it is (the hand-back into play's look).
+                    var to = Tuned(c.Str("preset") switch
+                    {
+                        "now" => g.air.Current,
+                        "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
+                        var n => Atmospheres.ByName(n == "play" ? "night" : n!),
+                    }, c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
                     if (c.Str("from") is string fromName)
                     {

@@ -34,6 +34,7 @@ public partial class Atmosphere : Node3D
     double clock;
 
     const float FogMatchDistance = 60;
+    static readonly bool OldAir = SurvivorUnchained.Args.Has("air-old");
 
     public Atmosphere()
     {
@@ -87,6 +88,9 @@ public partial class Atmosphere : Node3D
     /// <param name="grade">Rebuild the colour grade too (not every frame of a blend).</param>
     public void Set(AtmospherePreset p, bool grade = true)
     {
+        // --air-old: play's presets (E1) back to the ones before them, for before-and-after pictures.
+        if (OldAir) p = ReferenceEquals(p, Atmospheres.LowFordNight) ? Atmospheres.Night : ReferenceEquals(p, Atmospheres.LowFordDawn) ? Atmospheres.Dawn
+            : ReferenceEquals(p, Atmospheres.WaystationDawn) ? Atmospheres.Dawn : ReferenceEquals(p, Atmospheres.WaystationDay) ? Atmospheres.Day : p;
         Current = p;
         float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
         var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
@@ -112,12 +116,12 @@ public partial class Atmosphere : Node3D
         Env.FogLightColor = C(p.FogColor);
         Env.FogDensity = (float)(p.FogDensity * p.FogDensity * FogMatchDistance);
         Env.VolumetricFogAlbedo = C(p.FogColor).Lightened(0.5f);
-        Env.VolumetricFogDensity = 0.0012f;
+        Env.VolumetricFogDensity = (float)p.Haze;
         // An ember arena's own air: smoke or dust hanging in it.
         Key.LightAngularDistance = 0;
         if (air is { } a)
         {
-            Env.VolumetricFogDensity = 0.0012f * (float)a.Haze;
+            Env.VolumetricFogDensity = (float)p.Haze * (float)a.Haze;
             Env.VolumetricFogAlbedo = C(a.HazeColor).Lightened(0.35f);
             // Under a canopy the moon's breadth softens a shadow by how far its caster stands
             // over the ground (PCSS): the pools get a soft rim from leaves nine metres up, and

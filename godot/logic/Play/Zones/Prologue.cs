@@ -548,7 +548,7 @@ public sealed class Prologue : ZoneRuntime
                 // The sun clears the trees, and the ember goes out.
                 if (!doused && dawnK > 0.3) { doused = true; Douse(); }
                 envT -= dt;
-                G.SetAtmosphere(Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
+                G.SetAtmosphere(Atmospheres.Blend(Atmospheres.LowFordNight, Atmospheres.LowFordDawn, dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
                 if (envT <= 0) envT = 1.2;
                 if (dawnK >= 1 && stageT > 10) Go(Stage.Exit);
                 break;
@@ -838,7 +838,7 @@ public sealed class Prologue : ZoneRuntime
         W.Facts["prologue.dawn_south"] = south;
         if (!G.Cinematic("c04a", () =>
             {
-                dawnK = 1; G.SetAtmosphere(Atmospheres.Dawn); if (!dousedByCine) Douse(false);
+                dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); if (!dousedByCine) Douse(false);
                 // On from C03, she never waded back for what he left: it is hers on the road.
                 if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
             }))
@@ -921,7 +921,7 @@ public sealed class Prologue : ZoneRuntime
     }
 
     public override TimeOfDay TimeOf(WorldState w) => Now is Stage.Dawn or Stage.Exit ? TimeOfDay.Dawn : TimeOfDay.Night;
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Dawn ? Atmospheres.Dawn : Atmospheres.Night;
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Dawn ? Atmospheres.LowFordDawn : Atmospheres.LowFordNight;
 
     public override void Begin(Battle b)
     {
@@ -942,14 +942,14 @@ public sealed class Prologue : ZoneRuntime
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.
             Now = Stage.Exit; stageT = 0; dawnK = 1; doused = true;
-            G.SetAtmosphere(Atmospheres.Dawn);
+            G.SetAtmosphere(Atmospheres.LowFordDawn);
             b.Collision.RemoveTagged("gate");
             foreach (var p in pylons) G.Look.SetLit(p.Light, false);
             ai.Mode = "dead"; wardenGone = true;
             wardenView.Hide();
             return;
         }
-        G.SetAtmosphere(Atmospheres.Night);
+        G.SetAtmosphere(Atmospheres.LowFordNight);
         // C01, the opening (docs/cinematics/shoot/c01.md), once a journey: it
         // wakes her by the fire and hands back as the dead come up. Where no
         // cinematic can play (the tests, a quick start), its lines are captions.

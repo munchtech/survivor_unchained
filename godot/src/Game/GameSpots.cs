@@ -32,6 +32,8 @@ public partial class Game
         double from = Args.Num("spots-from", 2), every = Args.Num("spots-every", 6);
         int k = spotT < from ? -1 : Math.Min(spotList.Length - 1, (int)((spotT - from) / every));
         b.Player.Hp = b.MaxHp;
+        // --spots-unshadowed: the key casts none (its frames against the shadowed ones measure how much ground its shadows cover).
+        if (Args.Has("spots-unshadowed") && air.Key.ShadowEnabled) air.Key.ShadowEnabled = false;
         if (k == spotAt || k < 0) return;
         spotAt = k;
         var (x, z, c, f) = spotList[k];

@@ -51,7 +51,7 @@
         {"do": "globe", "light": 6, "level": 0.25},
         {"do": "place", "mark": "road"},
         {"do": "anim", "clip": "@idle", "blend": 0},
-        {"do": "atmosphere", "preset": "dawn", "from": "now", "over": 1.5},
+        {"do": "atmosphere", "preset": "play", "from": "now", "over": 1.5},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road1", "where": [0.5, 0, -68.0], "size": [30, 1.4, 12], "sink": 0.6},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road2", "where": [0.5, 0, -80.0], "size": [34, 1.6, 12], "sink": 1.0},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road3", "where": [0.5, 0, -92.0], "size": [38, 1.8, 12], "sink": 1.0},
