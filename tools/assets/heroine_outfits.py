@@ -8866,6 +8866,54 @@ def armor_tuck_write(body_obj, folder):
     print("ARMOR TUCK: %d (outfit, slot) tucks written, her body %s" % (len(ARMOR_TUCK), ARMOR_BODY_HASH))
 
 
+def _body_keys(path):
+    """Her built glb's vertex keys in file order, one array a mesh primitive (glTF positions x 1e5 rounded: HerWear's key)."""
+    import heroine_neck as hn_
+    G_ = hn_._Gl(path)
+    return {(mi_, pi_): np.round(G_.get(p_["attributes"]["POSITION"]).astype(np.float64) * 1e5).astype(np.int64)
+            for mi_, m_ in enumerate(G_.g["meshes"]) for pi_, p_ in enumerate(m_["primitives"])}
+
+
+def armor_tuck_rekey(pre, path, folder):
+    """(armor 4, 19 Oct: the body steps after her export (the throat soften, the neck cut, the seam...) move her points
+    in the glb, so tuck records keyed at export missed them in the game: 600 of the arcanist top's. Each record at a
+    point that moved goes to where that point now is; one also still on an unmoved point stays there too.)"""
+    post = _body_keys(path)
+    # (paired a vertex by index within each primitive that kept its vertex count: the mouth and teeth steps add
+    # vertices and primitives, but no tuck lies on them)
+    same = [k for k in pre if k in post and pre[k].shape == post[k].shape]
+    print("ARMOR TUCK REKEY: %d of %d primitives paired (unpaired: %s)" % (len(same), len(post), sorted(set(post) - set(same))))
+    A, B = np.concatenate([pre[k] for k in same]), np.concatenate([post[k] for k in same])
+    mv = np.any(A != B, 1)
+    to = {}
+    for a, b in zip(map(tuple, A[mv]), map(tuple, B[mv])):
+        to.setdefault(a, b)
+    still = set(map(tuple, A[~mv]))
+    moved = 0
+    for (out, slot) in sorted(ARMOR_TUCK_N):
+        fp = os.path.join(folder, "armor_tuck", f"{out}.{slot}.bin")
+        d = open(fp, "rb").read()
+        n = _struct.unpack_from("<I", d, 0)[0]
+        rec = np.frombuffer(d, dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")], count=n, offset=4)
+        got = {}
+        for x, y, z, t in rec:
+            k = (int(x), int(y), int(z))
+            ks = ([to[k]] if k in to else []) + ([k] if k in still or k not in to else [])
+            moved += k in to
+            for k2 in ks:
+                got[k2] = max(got.get(k2, 0.0), float(t))
+        ks = sorted(got)
+        new = np.zeros(len(ks), dtype=rec.dtype)
+        if ks:
+            arr = np.array(ks, np.int64)
+            new["x"], new["y"], new["z"] = arr[:, 0], arr[:, 1], arr[:, 2]
+            new["t"] = [got[k] for k in ks]
+        with open(fp, "wb") as f_:
+            f_.write(_struct.pack("<I", len(ks)) + new.tobytes())
+        ARMOR_TUCK_N[(out, slot)] = int(len(ks))
+    print("ARMOR TUCK REKEY: %d of her glb's points moved after export; %d tuck records followed them" % (int(mv.sum()), moved))
+
+
 def tuck_of(name, objs, slot=None):
     """Her skin's tuck (0..1 a vertex of her body, as one channel of its `hide` colours holds it) under `objs`,
     the hiding pieces of outfit `name`: all of them (slot None: that outfit's channel, as it always was), or
@@ -9289,6 +9337,7 @@ if BODY_OUT:
     bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
                               export_yup=True, export_vertex_color="ACTIVE")
     armor_tuck_write(body, os.path.dirname(OUT))
+    _tuck_pre = _body_keys(BODY_OUT)
     if _ff_keep is not None:
         # (her flattened fingers taken back: her pieces' rigging and glove fit below read her body)
         _ffm.vertices.foreach_set("co", _ff_keep[0])
@@ -9344,6 +9393,7 @@ if BODY_OUT:
         heroine_throat_skin.ease(BODY_OUT)
         heroine_throat_skin.soften(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
+    armor_tuck_rekey(_tuck_pre, BODY_OUT, os.path.dirname(OUT))
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).

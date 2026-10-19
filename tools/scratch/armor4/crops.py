@@ -2,7 +2,7 @@
 import os, sys, numpy as np
 from PIL import Image
 O = sys.argv[1] if len(sys.argv) > 1 else "godot/.shots/armor4/"
-W, H = 480, 600
+W, H = 240, 300
 
 
 def load(n):
@@ -11,6 +11,7 @@ def load(n):
 
 def centre(a, b, fallback):
     d = np.abs(a - b).sum(2) > 30
+    d[:, :120] = False; d[:, -120:] = False     # (a one-pixel column at the frame's right edge flickers between runs)
     if d.sum() < 20:
         return fallback
     ys, xs = np.nonzero(d)
@@ -27,7 +28,7 @@ def crop(im, c):
 mid = (540, 960)
 try:
     c_play = centre(load("j_plain_play"), load("j_gilded_play"), mid)
-    c_play = (c_play[0] + 60, c_play[1])     # (the top sits above her middle: drop the box a little)
+    c_play = (c_play[0] + 20, c_play[1])     # (the top sits above her middle: drop the box a little)
 except FileNotFoundError:
     c_play = mid
 print("play centre", c_play)
