@@ -4,6 +4,7 @@
 1. This page.
 2. `docs/team/RESUME.md`, its top section only (the current state, the restart order, the owner's pending decisions).
 3. Restart each lead it lists with `docs/handoff/lead_brief.md` (the shared brief: paste it, then add the area's worktree, where the predecessor stopped, and its steps).
+4. Check for live agents from older sessions before you spawn: `find ~/.claude/projects/C--Users-munch-Desktop-survivorsunchained/*/subagents -name '*.jsonl' -mmin -15` (outside your own session). For any you find, ask that session to TaskStop it (`mcp__ccd_session_mgmt__send_message`; match the session by its lastActivityAt) unless its work is still wanted, and release any stale turns in `tools/turn.py show`.
 Open README, OWNER_NOTES or a handoff only when a step needs them, by `grep -n` and the exact lines. The rules are in memory and README "Working lean"; you don't need to re-read them to start.
 
 From the coordinator session that ran 3 to 6 October 2026. Read this after `docs/team/README.md`, `RESUME.md` and `OWNER_NOTES.md`. Your memory (MEMORY.md) holds the owner's standing direction.
@@ -55,7 +56,8 @@ A new coordinator can't reliably reach the old session's agents, so never switch
 2. Merge every branch, revert any import churn, run `dotnet test`, and push. Leave nothing uncommitted in the main checkout except files the owner is handling.
 3. Update RESUME.md: each area's exact state, what's half-built and on which branch, and the restart order. Update OWNER_NOTES with anything the owner said, marking what's done. Record the owner's pending decisions in both.
 4. Update memory with any new standing direction.
-5. Then tell the owner in one line, pointing at START.md. Give the line only when steps 1 to 4 are done.
+5. **Stop every agent (19 October: a "paused" lead from two coordinators back was still alive and kept relaunching checks in its successor's worktree).** A lead that writes "Paused here" keeps running: TaskStop every lead, runner, solver and judge this session started. Then confirm that nothing is live: no `subagents/*.jsonl` of this session changed in the last 10 min, and `tools/turn.py show` lists no turn of yours.
+6. Then tell the owner in one line, pointing at START.md. Give the line only when steps 1 to 5 are done. The owner can restart as soon as you say so; it's on you that nothing is left running.
 
 ## Tokens and quality, always
 
