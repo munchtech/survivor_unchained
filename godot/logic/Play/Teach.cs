@@ -29,6 +29,9 @@ public sealed record Aim
     /// <summary>With Safe: the point and she must be in the open, nothing tall (a roof, a canopy) between
     /// them and the camera; under cover, it waits.</summary>
     public bool Open { get; init; }
+    /// <summary>With Open: points that must be on the screen and in the open too (the Knight's head and
+    /// chest, so the one the line names can be read; none: it waits).</summary>
+    public Func<IReadOnlyList<(double X, double Y, double Z)>>? Seen { get; init; }
     /// <summary>Each of the world's points is ringed only where it stands well inside the screen (clear
     /// of its edges and the HUD); the rest get an arrowhead on the screen's edge. It waits until one does.
     /// (The three lamps never stand on one screen at the play camera: 1,300 px apart.)</summary>

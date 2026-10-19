@@ -257,7 +257,11 @@ public sealed class Prologue : ZoneRuntime
             Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
-            Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim { World = KnightLane, Safe = true, Open = true });
+            Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
+            {
+                World = KnightLane, Safe = true, Open = true,
+                Seen = () => knight is { Alive: true } kn ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : [],
+            });
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
         // names the Flare (the art then rides the dash).
@@ -265,7 +269,7 @@ public sealed class Prologue : ZoneRuntime
         {
             var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
             if (B.Flare is { } fl)
-                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare, the ember's great blow. It's full: spend it on the Grave-Caller before it raises more.", aim, "flare");
+                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare, the ember's great blow.\nIt's full: spend it on the Grave-Caller\nbefore it raises more.", aim, "flare");
             else if (B.Ability is AbilityKind ak)
             {
                 var ab = Abilities.All[ak];
@@ -276,7 +280,7 @@ public sealed class Prologue : ZoneRuntime
         }
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
-            Teach("lamps", CalloutKind.Freeze, "The lamps", "While these burn, the Warden barely feels a blow. Break them.",
+            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow. Put them out.",
                 new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)

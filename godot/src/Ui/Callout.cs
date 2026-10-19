@@ -232,7 +232,9 @@ public partial class Callout : Control, ICalloutView
         float W(string s) => font.GetStringSize(s, HorizontalAlignment.Left, -1, size).X;
         var keys = KeyWords();
         var rows = new List<string>();
-        if (Panel || W(text) <= 380) rows.Add(text);
+        // (a line set by hand, row by row: kept as written)
+        if (text.Contains('\n')) rows.AddRange(text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+        else if (Panel || W(text) <= 380) rows.Add(text);
         else
         {
             var parts = Regex.Split(text, @"(?<=[.!?])\s+(?=[A-Z])").Where(p => p.Length > 0).ToList();
@@ -243,6 +245,8 @@ public partial class Callout : Control, ICalloutView
                 else rows.Add(p);
             }
         }
+        // A row too wide for the measure breaks into rows of about equal width (never one word left alone).
+        rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Balance(r, W, maxW)).ToList();
         string? subject = Subject(text, look.Title);
         bool marked = false;
         var list = new List<Control>();
@@ -294,6 +298,35 @@ public partial class Callout : Control, ICalloutView
             if (m.Success) return m.Value;
         }
         return null;
+    }
+
+    /// <summary>A row in the fewest rows that fit `maxW`, its breaks where the widest row is narrowest.</summary>
+    static List<string> Balance(string row, Func<string, float> W, float maxW)
+    {
+        var words = row.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        int n = words.Length;
+        string Join(int a, int b) => string.Join(' ', words[a..b]);
+        for (int k = 2; k <= n; k++)
+        {
+            // (best[i, j]: the narrowest widest row setting the first i words in j rows)
+            var best = new float[n + 1, k + 1];
+            var cut = new int[n + 1, k + 1];
+            for (int i = 0; i <= n; i++) for (int j = 0; j <= k; j++) best[i, j] = float.MaxValue;
+            best[0, 0] = 0;
+            for (int j = 1; j <= k; j++)
+                for (int i = j; i <= n; i++)
+                    for (int a = j - 1; a < i; a++)
+                    {
+                        if (best[a, j - 1] == float.MaxValue) continue;
+                        float w = Math.Max(best[a, j - 1], W(Join(a, i)));
+                        if (w < best[i, j]) { best[i, j] = w; cut[i, j] = a; }
+                    }
+            if (best[n, k] > maxW && k < n) continue;
+            var list = new List<string>();
+            for (int i = n, j = k; j > 0; j--) { int a = cut[i, j]; list.Insert(0, Join(a, i)); i = a; }
+            return list;
+        }
+        return [row];
     }
 
     /// <summary>A run of the line, outlined on the world like all its type.</summary>
@@ -465,6 +498,10 @@ public partial class Callout : Control, ICalloutView
         float dy = Math.Max(0, Math.Max(a.Position.Y - b.End.Y, b.Position.Y - a.End.Y));
         return Mathf.Sqrt(dx * dx + dy * dy);
     }
+
+    /// <summary>An edge marker's ring (its radius), how far its outer edge reaches with the iron rim, and
+    /// how far its tip stands from its middle (px at 1080p): GameTeach pins it to the safe frame by these.</summary>
+    public const float EdgeRing = 20, EdgeRim = 23, EdgeTip = 33;
 
     /// <summary>Her figure's margin: words and arrows keep this far off it.</summary>
     const float HerMargin = 48;
@@ -687,7 +724,9 @@ public partial class Callout : Control, ICalloutView
             var lights = new Vector4[6];
             int n = 0;
             // (she keeps her own light: a soft pool about one and a half times her height)
-            if (aim.Her is Rect2 hr) lights[n++] = new Vector4(hr.GetCenter().X, hr.GetCenter().Y, hr.Size.Y * 0.8f, 0);
+            // (1.4 times that, its fall over the whole radius: no edge, never a disc of the night's own colour)
+            if (aim.Her is Rect2 hr) lights[n++] = new Vector4(hr.GetCenter().X, hr.GetCenter().Y, hr.Size.Y * 0.8f * 1.4f, 0);
+            dimMat.SetShaderParameter("soft_first", aim.Her is Rect2 ? 1 : 0);
             var marks = Marks();
             for (int i = 0; i < marks.Count && n < 6; i++)
             {
@@ -883,24 +922,47 @@ public partial class Callout : Control, ICalloutView
             DrawLine(tip - dir * 2 * k, tip - dir * L * 0.6f, White with { A = 0.85f }, 1.6f * k, true);
         }
 
-        /// <summary>A thing off the screen: an ember chevron at the screen's edge, pointing to it.</summary>
+        /// <summary>A thing off the screen: a ring at the screen's edge holding a small lamp flame, its
+        /// plain triangular tip pointing at the thing (in the marks' iron and ember).</summary>
         void Chevron(Vector2 at, Vector2 dir, float k, float breathe, float reach, bool light)
         {
             if (reach <= 0) return;
-            // A solid arrowhead pointing off the screen (an open "^" read as a letter: a 7 in the corner).
-            var n = new Vector2(-dir.Y, dir.X);
-            float L = 30 * k, W = 15 * k;
-            var tip = at + dir * L * 0.5f;
-            var back = tip - dir * L;
-            Vector2[] head = [tip, back + n * W, back + dir * L * 0.3f, back - n * W];
+            float R = EdgeRing * k;
             if (light)
             {
-                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 30 * k, Vector2.One * 60 * k), false, Style.Ember with { A = (0.2f + 0.12f * breathe) * reach });
+                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 34 * k, Vector2.One * 68 * k), false, Style.Ember with { A = (0.18f + 0.1f * breathe) * reach });
                 return;
             }
-            Vector2[] rim = [.. head, tip];
-            DrawPolyline(rim, Iron with { A = Iron.A * reach }, 6f * k, true);
-            DrawColoredPolygon(head, Hot.Lerp(White, 0.25f * breathe) with { A = reach });
+            var n = new Vector2(-dir.Y, dir.X);
+            // The tip: a plain triangle standing off the ring toward the thing.
+            var apex = at + dir * EdgeTip * k;
+            var b1 = at + (dir * Mathf.Cos(0.42f) + n * Mathf.Sin(0.42f)) * (R - 1 * k);
+            var b2 = at + (dir * Mathf.Cos(0.42f) - n * Mathf.Sin(0.42f)) * (R - 1 * k);
+            Vector2[] tip = [apex, b1, b2];
+            DrawPolyline([apex, b1, b2, apex], Iron with { A = Iron.A * reach }, 5f * k, true);
+            DrawArc(at, R, 0, Mathf.Tau, 48, Iron with { A = Iron.A * reach }, 6f * k, true);
+            // (the ring's dark heart, so the flame reads on snow or lamplight)
+            DrawCircle(at, R - 2 * k, Deep with { A = 0.55f * reach });
+            DrawColoredPolygon(tip, Hot.Lerp(White, 0.2f * breathe) with { A = reach });
+            DrawArc(at, R, 0, Mathf.Tau, 48, Hot.Lerp(White, 0.25f) with { A = (0.85f + 0.15f * breathe) * reach }, 2.4f * k, true);
+            // The lamp: a small flame over its cup.
+            var f0 = at + new Vector2(0, 5.5f * k);
+            var flame = new List<Vector2>(20);
+            for (int i = 0; i <= 16; i++)
+            {
+                float a = Mathf.Pi * i / 16;
+                // (a drop: round below, drawn up to a point)
+                float rr = 4.6f * k;
+                float x = Mathf.Cos(a) * rr, y = Mathf.Sin(a) * rr;
+                flame.Add(f0 + new Vector2(x, y - 3 * k));
+            }
+            flame.Add(f0 + new Vector2(0, -14.5f * k));
+            Vector2[] fl = [.. flame];
+            DrawColoredPolygon(fl, Hot.Lerp(White, 0.15f + 0.2f * breathe) with { A = reach });
+            var core = fl.Select(q => f0 + (q - f0) * 0.5f + new Vector2(0, 0.5f * k)).ToArray();
+            DrawColoredPolygon(core, White with { A = 0.9f * reach });
+            DrawLine(at + new Vector2(-6.5f * k, 8.5f * k), at + new Vector2(6.5f * k, 8.5f * k), Hot with { A = reach }, 2.2f * k, true);
+            DrawLine(at + new Vector2(-4f * k, 11.5f * k), at + new Vector2(4f * k, 11.5f * k), Hot with { A = 0.8f * reach }, 1.8f * k, true);
         }
 
         /// <summary>The arrow's tail where it leaves the words: one link of the chain, end on.</summary>
@@ -976,6 +1038,7 @@ public partial class Callout : Control, ICalloutView
             uniform sampler2D screen : hint_screen_texture, filter_linear;
             uniform vec4 lights[6];
             uniform int count = 0;
+            uniform int soft_first = 0;
             uniform float amount = 0.0;
             uniform vec2 canvas = vec2(1920.0, 1080.0);
             void fragment() {
@@ -985,7 +1048,7 @@ public partial class Callout : Control, ICalloutView
                 for (int i = 0; i < 6; i++) {
                     if (i >= count) { break; }
                     float r = lights[i].z;
-                    float l = 1.0 - smoothstep(0.5 * r, r, length(p - lights[i].xy));
+                    float l = 1.0 - smoothstep(i < soft_first ? 0.0 : 0.5 * r, r, length(p - lights[i].xy));
                     lit = max(lit, l);
                     warm = max(warm, l * lights[i].w);
                 }

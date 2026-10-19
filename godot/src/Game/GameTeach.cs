@@ -136,6 +136,12 @@ public partial class Game
                     }
                     if (!SafeArea.HasPoint(v)) continue;
                     if (t.Open && !InOpen(w)) continue;
+                    // (and what must be read with it: on the screen and in the open, or it waits)
+                    if (t.Open && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
+                    {
+                        if (OS.GetCmdlineUserArgs().Contains("--teach-diag")) GD.Print($"teachdiag {c.Id} t={Battle?.Time ?? 0:0.0} seen-blocked block={diagBlock}");
+                        break;
+                    }
                     pts.Add(v); worldOn++; break;
                 }
                 pts.Add(v);
@@ -149,7 +155,11 @@ public partial class Game
     /// the ground (a roof, a canopy) lies between them and the camera. By the world's bounding boxes:
     /// coarse, so it errs toward waiting. (The ground's big chunks and the low things are passed over.)</summary>
     double diagAt = -9; string diagBlock = "-";
-    bool InOpen((double X, double Y, double Z) p)
+    static readonly Rect2 Canvas = new(40, 40, 1840, 1000);
+
+    /// <summary>(`raised`: the point is where it is, not on the ground: a figure's head; the figure's own
+    /// shape, small and round the point, is passed over.)</summary>
+    bool InOpen((double X, double Y, double Z) p, bool raised = false)
     {
         diagBlock = "-";
         if (scene == null) return true;
@@ -161,6 +171,7 @@ public partial class Game
             {
                 if (GodotObject.InstanceFromId((ulong)id) is not GeometryInstance3D g || !g.IsVisibleInTree()) continue;
                 var box = g.GlobalTransform * g.GetAabb();
+                if (raised && box.HasPoint(to) && box.Size.X < 3 && box.Size.Z < 3) continue;
                 if (box.Size.X > 60 || box.Size.Z > 60 || box.End.Y < ground + 2.6f) continue;
                 // (a scatter's box is the whole field's: each of its plants is asked on its own)
                 if (g is MultiMeshInstance3D { Multimesh: { Mesh: { } mesh } mm })
@@ -168,7 +179,11 @@ public partial class Game
                     var local = mesh.GetAabb();
                     int n = mm.VisibleInstanceCount >= 0 ? mm.VisibleInstanceCount : mm.InstanceCount;
                     for (int k = 0; k < n; k++)
-                        if (Covers(g.GlobalTransform * mm.GetInstanceTransform(k) * local, g, to, ground)) return false;
+                    {
+                        var ib = g.GlobalTransform * mm.GetInstanceTransform(k) * local;
+                        if (raised && ib.HasPoint(to) && ib.Size.X < 3 && ib.Size.Z < 3) continue;
+                        if (Covers(ib, g, to, ground)) return false;
+                    }
                     continue;
                 }
                 if (Covers(box, g, to, ground)) return false;
@@ -186,6 +201,7 @@ public partial class Game
             return false;
         }
         float gy = (float)scene.HeightAt(p.X, p.Z);
+        if (raised) return Clear(new Vector3((float)p.X, (float)p.Y, (float)p.Z), gy);
         if (!Clear(new Vector3((float)p.X, gy + 0.1f, (float)p.Z), gy)) return false;
         if (Battle?.Player is { } pl)
         {
@@ -210,21 +226,27 @@ public partial class Game
             var w = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
             if (camera.IsPositionBehind(w) || OnScreen(p) is Vector2 on && (!c.Target.Each || SafeArea.HasPoint(on))) continue;
             var d = camera.UnprojectPosition(w) - mid;
-            if (d.Length() < 1) continue;
+            float far = d.Length() - Ui.Callout.EdgeTip - 8;
+            if (far < 1) continue;
             d = d.Normalized();
-            // (onto a box inset from the edge: under the boss bar (to y 110) by 24 px and more, the HUD's
-            // foot kept clear)
-            float hx = 960 - 80, up = 540 - 160, down = 540 - 160;
-            float tx = Math.Abs(d.X) > 1e-4f ? hx / Math.Abs(d.X) : float.MaxValue;
-            float ty = d.Y < -1e-4f ? up / -d.Y : d.Y > 1e-4f ? down / d.Y : float.MaxValue;
-            var at = mid + d * Math.Min(tx, ty);
-            // (never on the map or the objectives under it (x 1520 on, to y 480): 24 px clear, along the edge it is on)
-            if (at.X > 1496 && at.Y < 504)
+            // (pinned where the line toward it leaves the safe frame: the marker's top at y 124, 24 px under
+            // the boss bar's words; 24 px in at the sides; over the HUD's foot; 24 px clear of the map and
+            // the objectives under it (x 1520 on, to y 480). Its tip points along the line, at the thing.)
+            Vector2? at = null;
+            for (float t = 0; t < Math.Min(far, 1400); t += 2)
             {
-                if (at.Y < 170) at.X = 1496;
-                else at.Y = 504;
+                var c0 = mid + d * t;
+                var lo = c0 - Vector2.One * Ui.Callout.EdgeRim;
+                var hi = c0 + Vector2.One * Ui.Callout.EdgeRim;
+                var tip = c0 + d * Ui.Callout.EdgeTip;
+                lo = new Vector2(Math.Min(lo.X, tip.X), Math.Min(lo.Y, tip.Y));
+                hi = new Vector2(Math.Max(hi.X, tip.X), Math.Max(hi.Y, tip.Y));
+                if (lo.X < 24 || lo.Y < 124 || hi.X > 1920 - 24 || hi.Y > 860) break;
+                if (hi.X > 1520 - 24 && lo.Y < 480 + 24) break;
+                at = c0;
             }
-            list.Add((at, d));
+            if (at is not Vector2 a0) continue;
+            list.Add((a0, d));
         }
         return list;
     }
@@ -265,7 +287,17 @@ public partial class Game
         if (was != null && t.Current != was) TeachDown(was);
         if (now != null) TeachUp(now);
         AimCallout();
+        // (--teach-diag with --shot: each freeze's frame first with the ember halos held out, to measure them by)
+        // (the callout's own frame a few frames after, halos back: the two differ by the halos alone)
+        if (haloDiag != null && !Shots.Pending("teach_" + haloDiag + "_nohalo"))
+        {
+            scene.Fx.HalosHidden = false;
+            Shots.Want("teach_" + haloDiag, 0.05);
+            haloDiag = null;
+        }
     }
+
+    string? haloDiag;
 
     double hurtT;
     bool hurtDone, flareGiven;
@@ -307,6 +339,7 @@ public partial class Game
             // A freeze frame: the figures and the effects hold still too.
             scene.Hold = 1;
             scene.FxStill = true;
+            scene.Fx.Frozen = true;
         }
         hud.HoldTip = true;
         // (no damage numbers over the words while a callout is up)
@@ -321,7 +354,13 @@ public partial class Game
         calloutShown = view;
         AimCallout();
         // (--shot: a frame of each, and a freeze holds until it is taken)
-        if (Args.Has("shot")) Shots.Want("teach_" + c.Id, 0.9);
+        if (Args.Has("shot") && c.Kind == CalloutKind.Freeze && OS.GetCmdlineUserArgs().Contains("--teach-diag") && scene != null)
+        {
+            haloDiag = c.Id;
+            scene.Fx.HalosHidden = true;
+            Shots.Want("teach_" + c.Id + "_nohalo", 0.85);
+        }
+        else if (Args.Has("shot")) Shots.Want("teach_" + c.Id, 0.9);
     }
 
     void TeachDown(Callout c)
@@ -335,7 +374,7 @@ public partial class Game
         if (teachFroze)
         {
             teachFroze = false;
-            if (scene != null) { scene.Hold = 0; scene.FxStill = false; }
+            if (scene != null) { scene.Hold = 0; scene.FxStill = false; scene.Fx.Frozen = false; }
             if (scene != null && hudMode == null && screens.Current == null && cine == null) scene.SimPaused = false;
         }
     }
@@ -368,8 +407,12 @@ public partial class Game
                 float h = Math.Max(40, feet.Y - head.Y);
                 // (down to her health bar under her feet)
                 // (her bar is wider than she is: about 76 px whatever the zoom)
-                float wide = Math.Max(h * 0.72f, 84);
-                her = new Rect2(feet.X - wide / 2, head.Y - 6, wide, h + 56);
+                // (and what she holds: a blade's tip reaches about 1.35 m from her middle, either side, and
+                // over her head when raised)
+                float ppm = h / 1.9f;
+                float wide = Math.Max(Math.Max(h * 0.72f, 84), 2 * 1.35f * ppm);
+                float over = Math.Max(6, 0.45f * ppm);
+                her = new Rect2(feet.X - wide / 2, head.Y - over, wide, h + 50 + over);
             }
         }
         // The figures on the screen: an arrow bends round them.

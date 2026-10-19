@@ -33,6 +33,25 @@ public partial class BattleFx : Node3D
     /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
     public readonly Gore Gore;
     public FollowCamera? Cam;
+
+    /// <summary>A teaching freeze: what a blow throws (sparks, hit flashes, weapon trails, swing
+    /// crescents) is held out of the frozen picture, as the damage numbers are; the Flare's own stays.</summary>
+    /// <summary>(--teach-diag: the ember stones' halos held out, for a frame to measure them against.)</summary>
+    public bool HalosHidden { get => !emberHalos.Visible; set => emberHalos.Visible = !value; }
+
+    public bool Frozen
+    {
+        get => Ribbons.Hidden;
+        set
+        {
+            Ribbons.Hidden = value;
+            if (value) Ribbons.Visible = false;
+            Sparks.Visible = !value;
+            Blades.Visible = !value;
+            Books.Visible = !value;
+            Waves.Visible = !value;
+        }
+    }
     /// <summary>The Flares' own view (Fx/Flare, docs/design/FLARE_LOOK.md): every Flare's art is its own.</summary>
     public readonly FlareFx Flare = new();
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
