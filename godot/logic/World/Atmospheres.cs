@@ -75,7 +75,7 @@ public static class Atmospheres
     // north, so a key from the east or west (azimuth near 0 or 180) throws its shadows across the road.
 
     static readonly GradeSettings PlayNightGrade = new([0, 0, 0], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#2c4e7e", "#ffaa58", 0.2, 0.9, 0.1, 1.08) { Toe = 0.75 };
+        "#2c4e7e", "#ffaa58", 0.1, 0.9, 0.1, 1.08) { Toe = 1 };   // (a stronger tint took the shade to black: no lift under it)
 
     /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
     /// west), so it lights the road's corridor through the wood, and what stands on it throws a long
@@ -83,9 +83,9 @@ public static class Atmospheres
     /// pools in a cold dark. (From the east or west, the wood's shadows filled the road.)</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#a9c4ff", KeyIntensity = 4.8, KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
-        HemiSky = "#3a5280", HemiGround = "#1e1a14", HemiIntensity = 0.62, EnvIntensity = 0.42,
-        FogColor = "#0e1726", FogDensity = 0.008, Exposure = 1.3, Rim = "#9fc0ff", RimStrength = 0.75,
+        KeyColor = "#a9c4ff", KeyIntensity = 6.0, KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
+        HemiSky = "#3a5280", HemiGround = "#1e1a14", HemiIntensity = 1.0, EnvIntensity = 0.65,
+        FogColor = "#0e1726", FogDensity = 0.008, Exposure = 1.35, Rim = "#9fc0ff", RimStrength = 0.75,
         Grade = PlayNightGrade, Haze = 0.006, Mist = 0.16, MistColor = "#2c3a50", Ember = 1.7,
     };
 
@@ -96,9 +96,9 @@ public static class Atmospheres
     /// up), raking the road; the shade cool and two stops under it.</summary>
     public static readonly AtmospherePreset LowFordDawn = Dawn with
     {
-        KeyColor = "#ffcf98", KeyIntensity = 6.0, KeyElevation = 18, KeyAzimuth = 20, ShadowStrength = 0.95,
-        HemiSky = "#7c96d0", HemiGround = "#30241a", HemiIntensity = 0.78, EnvIntensity = 0.6,
-        FogColor = "#9a8e98", FogDensity = 0.0065, Exposure = 1.15, Rim = "#ffd8b0", RimStrength = 0.25,
+        KeyColor = "#ffcf98", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = 20, ShadowStrength = 0.95,
+        HemiSky = "#7c96d0", HemiGround = "#30241a", HemiIntensity = 0.9, EnvIntensity = 0.7,
+        FogColor = "#9a8e98", FogDensity = 0.0065, Exposure = 1.05, Rim = "#ffd8b0", RimStrength = 0.25,
         Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.2, MistColor = "#8a8894",
     };
 
@@ -106,7 +106,7 @@ public static class Atmospheres
     /// (azimuth -10, so the day's arc runs on through the day's 290 to dusk's 200 without crossing the camera).</summary>
     public static readonly AtmospherePreset WaystationDawn = LowFordDawn with
     {
-        KeyIntensity = 5.6, KeyElevation = 14, KeyAzimuth = -10, HemiIntensity = 0.66, EnvIntensity = 0.52, Exposure = 1.12, Haze = 0.003,
+        KeyElevation = 14, KeyAzimuth = -10, Haze = 0.003,
     };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96],
