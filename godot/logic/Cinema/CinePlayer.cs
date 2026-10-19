@@ -178,8 +178,12 @@ public static class CineCamera
             if (m.Roll is double r1) roll = Lerp(roll, r1, k);
             if (m.Focus.ValueKind != JsonValueKind.Undefined && Focus(m.Focus, pos, place) is double f1) focus = focus is double f0 ? Lerp(f0, f1, k) : f1;
         }
-        return new CamPose(pos, at, Hfov(lens), roll, focus, c.Fstop, lens, c.Handheld, m is { Follow: true } ? k : 0, false, false);
+        return new CamPose(pos, at, Hfov(lens), roll, focus, c.Fstop, lens, c.Handheld, m is { Follow: true } ? FollowK(m, k) : 0, false, false);
     }
+
+    /// <summary>The blend into the game's camera: the move's eased way, or from FollowFrom on, eased again.</summary>
+    static double FollowK(CineMove m, double k) =>
+        m.FollowFrom <= 0 ? k : m.FollowFrom >= 1 ? (k >= 1 ? 1 : 0) : Ease("inout", (k - m.FollowFrom) / (1 - m.FollowFrom));
 
     static double Lerp(double a, double b, double k) => a + (b - a) * k;
 

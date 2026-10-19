@@ -817,6 +817,8 @@ public partial class Game
                     Color? col = c.Str("color") is string hex ? new Color(hex) : null;
                     if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => g.scene!.View.SetLevel(i, Mathf.Lerp(from, to, (float)k), col, rate)));
                     else g.scene!.View.SetLevel(i, to, col, rate);
+                    // "size": the light's source in metres, softening its shadows (given back at the end).
+                    if (c.Has("size")) { g.scene!.View.SetSize(i, (float)c.Num("size")); sized.Add(i); }
                     break;
                 }
                 case "lit":
@@ -1359,10 +1361,13 @@ public partial class Game
         /* --------------------------------------------------------- the end -- */
 
         float keyReach = -1;
+        readonly HashSet<int> sized = new();
 
         public void Finish()
         {
             g.cineSat = null;
+            foreach (int i in sized) g.scene?.View.SetSize(i, 0);
+            sized.Clear();
             if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;
             // Play starts exactly where the cinematic leaves her, facing as she
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).

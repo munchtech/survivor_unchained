@@ -177,6 +177,9 @@ public sealed class CineMove
     public string Ease = "inout";
     /// <summary>Ends as the game's own follow camera on the survivor's end mark.</summary>
     public bool Follow;
+    /// <summary>With Follow: how far through the move (0..1 of its eased way) the blend into the
+    /// game's camera begins, so a crane can open at eye level and only hand over at its top.</summary>
+    public double FollowFrom;
 }
 
 /// <summary>Something that happens at a moment of a shot. What it carries
