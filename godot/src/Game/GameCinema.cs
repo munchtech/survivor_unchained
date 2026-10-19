@@ -356,7 +356,7 @@ public partial class Game
         sealed record Rig(SpotLight3D L, JsonElement From, JsonElement Aim, int Shot);
         readonly Dictionary<string, Rig> rigs = new();
         /// <summary>A zone lamp's glowing piece a "globe" cue dimmed: what it wore before (put back at the end), its own copy, its colour.</summary>
-        sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; }
+        sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; public Vector3? Tint; }
         readonly List<Globe> globes = new();
         /// <summary>The bosses a "hide" cue hid: their Shine shows them every frame, so they are hidden again after it (C02 s8:
         /// the Warden and his lamp-iron stood at her temple, the lamp a clipped disc at the frame's edge).</summary>
@@ -1147,6 +1147,9 @@ public partial class Game
                     int gli = (int)c.Num("light");
                     if (gli < 0 || gli >= gmeta.Count) break;
                     float glv = (float)c.Num("level", 1);
+                    // "color": the hue it glows in (hex), its own brightness kept (the brightest channel),
+                    // so "level" still scales that (the ford's lamps blue in a long lens, not cream eggs).
+                    Color? gtint = c.Str("color") is string ghex ? new Color(ghex).SrgbToLinear() : null;
                     foreach (var gname in gmeta[gli].Glow)
                     {
                         if (g.scene.View.Node(gname) is not Node3D gnode) continue;
@@ -1165,8 +1168,10 @@ public partial class Game
                                     globes.Add(gl);
                                 }
                                 var gg = gl;
+                                if (gtint is Color gt && Mathf.Max(gt.R, Mathf.Max(gt.G, gt.B)) > 1e-4f)
+                                    gg.Tint = new Vector3(gt.R, gt.G, gt.B) * (Mathf.Max(gg.Base.X, Mathf.Max(gg.Base.Y, gg.Base.Z)) / Mathf.Max(gt.R, Mathf.Max(gt.G, gt.B)));
                                 float gfrom = gg.Level;
-                                void SetG(float l) { gg.Level = l; gg.Dim.SetShaderParameter("color", gg.Base * l); }
+                                void SetG(float l) { gg.Level = l; gg.Dim.SetShaderParameter("color", (gg.Tint ?? gg.Base) * l); }
                                 if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => SetG(Mathf.Lerp(gfrom, glv, (float)k))));
                                 else SetG(glv);
                             }
