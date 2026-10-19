@@ -1,6 +1,14 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (env lead 4, 19 Oct): E2 built, judge next (HANDED OFF at ~250k)
+## Now (env lead 5, 19 Oct): E2 judge 1 done, round 2 running
+- Integration merged (fe27b26e). Briefs and tools: `survivorsunchained_inputs\scratch_env5\` (rules.md shared by helpers; core.py). Judge 1: `env_e2\judge1\verdict.md` (frames in the same folder).
+- **Judge 1:** fog fix PASS, roof PASS (tier 2), flame-kit motion PASS. FAIL: the camp fire at the play camera ("lava pie"), the flame kit's colour (peach, the log edge shows through), the lamps (ford a pale blue box, road pool 1.6x on one side, road B no flame), the crypt door's KayKit candles (no flames, a white skull blob). Every frame is a whole-frame NO for world items owned by E3-E7, the crowd lead (grey crowd) and teaching/VFX (the ember pickup's halo): verdict "W1-W8".
+- **Roof baked (2afa524d):** our own slate set (`tools/assets/env_roof_slate.py`, `art/materials/roof_slate/`); the Poly Haven photo is out (raw copy plus hash in `survivorsunchained_inputs\raw_materials\roof_slates_02\`).
+- **Ford core (0aa4faca):** flame_mv `core_blue`; ford flame 0.12 of the road lamps'. Core peak 254 -> 204,221,239.
+- **Round 2 running (all on env-2, each owns its own files):** fire + flame kit (`fire_r2_brief.md` -> `env_e2\fire_r2\`), lamps round 3, the last (`lamps_r3_brief.md` -> `env_e2\lamps3\`), the roof tune (`roof_r2_brief.md` -> `env_e2\roof_r2\`). Then judge 2 on the failed items only, then the full teach run, perf, tests, MR READY.
+- **Main (19 Oct): don't hold E2 for the whole-frame NOs.** Take E2's own items to PASS and merge. The MR and this handoff list each NO with its owner, tracked, not closed: E3 the ground blend; E4 canopies and foliage; E5 rocks and stepping stones; E6 the ford water (blotches, glints, the glint stuck under her); E7 the bedroll and the chest; the crowd lead the grey untextured NPCs; teaching/VFX the ember pickup's halo. Lamps: last round; what still fails after it closes as known, with its numbers.
+
+## Before (env lead 4, 19 Oct): E2 built, judge next (HANDED OFF at ~250k)
 - Worktree `.claude/worktrees/env-2`, branch `env-2` (pushed). E1 is merged (8ba3a4e7). Frames: `survivorsunchained_inputs\env_e2\`. Briefs: `survivorsunchained_inputs\scratch_env4\`. The godot import cache is in place. `tools/scratch/env/shots.py <round> <set>` points at env-2. Sets: roofs, ford, pool, campclose (-9.5,92.5: close4 hides the fire).
 - **Fog blotches: FIXED (f1f79d05).** They were C01's frost decals (a 44 m patch, left into play), not fog. Proved by A/B (`env_e2\fog_ab\cmp_frost.jpg`). The frost now thaws over 3 s at hand-back. Switch: `--cine-nofrost`. This also fixes the "frost decal on a flat prop" item routed to cinematics.
 - **Flame kit: built** (eb3edefe..540309e6). FlameKit.cs, flame_mv.gdshader, and our own Mantaflow flipbook with motion vectors in art/fx/flame (provenance FX-06). Flicker +-11-12%. The loop seam is 7.6/255, one normal step.
