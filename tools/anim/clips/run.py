@@ -129,6 +129,58 @@ def crossbow_low():
     return f
 
 
+# The warden's town carry: her free left hand rides the sheathed sword's hilt at her left hip (Arms.cs hip_blade),
+# the classic hold that keeps a scabbard from swinging, fixed to the hilt in the pelvis bone's own frame (the space of
+# arms_local.json "sheathed" mounts), so it rides her hips. Swinging free, the forearm went level through the hilt
+# (28 mm in the run, 38-40 in the sprint). HILT: the wrist, the way the fingers lie (knuckles) and the thumb's side,
+# pelvis frame; the elbow's way from the shoulder (pole), pelvis frame.
+HILT = {"wrist": (0.27, 0.19, 0.02), "knuckles": (0.0, -0.16, 0.99), "thumb": (-0.08, 0.98, 0.16),
+        "pole": (0.35, -0.6, -0.7), "fingers": "relaxed"}
+
+
+def hilt_carry(rig, clip, hilt=None):
+    """`clip` with her left arm laid onto the sheathed sword's hilt (HILT), frame by frame on the clip's own pelvis:
+    the left arm solved afresh over the clip (keyed.solve_frames, the clip as its base), every other joint as it was."""
+    from keyed import solve_frames
+    from rig import qrot
+    h = dict(HILT, **(hilt or {}))
+    I = rig.I
+    pel, ua = I["pelvis"], I["upperarm_l"]
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    n = clip.frames
+    arm = [ua]
+    for j in arm:
+        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
+
+    if h.get("clav", 1.0) != 1.0:
+        # The left shoulder's run swing (gait.pose_at: drawn forward and back with the free arm) kept to this share
+        # of it about its mean: with the hand on the hilt, the full swing opened and closed the elbow 12 degrees.
+        from rig import qnorm, qslerp
+        c = I["clavicle_l"]
+        mean = qnorm(np.mean(clip.rot[:, c] * np.sign(clip.rot[:, c] @ clip.rot[0, c])[:, None], axis=0))
+        for f in range(n):
+            clip.rot[f, c] = qslerp(mean, clip.rot[f, c], h["clav"])
+        g, p = rig.sk.fk(clip.rot, clip.pos)
+
+    def spec(f):
+        R = g[f, pel]
+        return {"hand_l": {"pos": tuple(p[f, pel] + qrot(R, np.array(h["wrist"], float))),
+                           "knuckles": tuple(qrot(R, np.array(h["knuckles"], float))),
+                           "blade": tuple(qrot(R, np.array(h["thumb"], float))),
+                           "pole": tuple(qrot(R, np.array(h["pole"], float))), "pole_at": "shoulder"},
+                "fingers_l": h["fingers"]}
+    rot, _ = solve_frames(rig, [spec(f) for f in range(n)], [(clip.rot[f], clip.pos[f]) for f in range(n)],
+                          loop=clip.loop, weapon=(clip.meta or {}).get("weapon", ""))
+    for f in range(n):
+        for j in arm:
+            clip.rot[f, j] = rot[f, j]
+    return clip
+
+
+# Post-passes on a run (and its sprint: sprint_stop.sprint) after the gait is solved.
+POST = {"run_warden_town": hilt_carry}
+
+
 def open_hand():
     def f(ph, k, hand):
         return hand
@@ -199,5 +251,6 @@ def clips(rig, want):
     for name, (g, arms, weapon) in RUNS.items():
         if want and not any(w in name for w in want):
             continue
-        out.append(run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon}))
+        clip = run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon})
+        out.append(POST[name](rig, clip) if name in POST else clip)
     return out
