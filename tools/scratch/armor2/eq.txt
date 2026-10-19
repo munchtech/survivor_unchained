@@ -1,0 +1,16 @@
+eq_warden_play_old|--quick warden --sex female --nohud --zone waystation
+eq_warden_play_new|--quick warden --sex female --nohud --zone waystation --wear warden.top
+eq_warden_look_old|--new --sex female --archetype warden --step 0
+eq_warden_look_new|--new --sex female --archetype warden --step 0 --wear warden.top
+eq_arcanist_play_old|--quick arcanist --sex female --nohud --zone waystation
+eq_arcanist_play_new|--quick arcanist --sex female --nohud --zone waystation --wear arcanist.top
+eq_arcanist_look_old|--new --sex female --archetype arcanist --step 0
+eq_arcanist_look_new|--new --sex female --archetype arcanist --step 0 --wear arcanist.top
+eq_reaver_play_old|--quick reaver --sex female --nohud --zone waystation
+eq_reaver_play_new|--quick reaver --sex female --nohud --zone waystation --wear reaver.top
+eq_reaver_look_old|--new --sex female --archetype reaver --step 0
+eq_reaver_look_new|--new --sex female --archetype reaver --step 0 --wear reaver.top
+eq_ranger_play_old|--quick stalker --sex female --nohud --zone waystation
+eq_ranger_play_new|--quick stalker --sex female --nohud --zone waystation --wear ranger.top
+eq_ranger_look_old|--new --sex female --archetype stalker --step 0
+eq_ranger_look_new|--new --sex female --archetype stalker --step 0 --wear ranger.top
