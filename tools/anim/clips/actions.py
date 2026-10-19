@@ -1017,7 +1017,8 @@ AIM_CRADLE_AIM = 1.0
 AIM_SIDE = {"at": (-0.075, 0.20, 0.045), "fingers": 0.0, "roll": -90.0}
 AIM_OFF = 0.06
 AIM_OPEN = 1.0
-SHOOT_CRADLE_T = (9, 16)
+# The swing off the cradle onto the idle hold: f8-17 (round 4: over f9-16 the hero's left hand spun 32 deg in a frame, f14).
+SHOOT_CRADLE_T = (8, 17)
 
 
 def aim_cradle(t0, t1, t_in=None):
