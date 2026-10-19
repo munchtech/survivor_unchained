@@ -1,0 +1,13 @@
+war_lkf|new:warden|--zoom 0.55
+war_lkp|new:warden|--zoom 0.55 --turn 90
+war_lkq|new:warden|--zoom 0.55 --turn 270
+war_lk3|new:warden|--zoom 0.55 --turn 40
+war_cuf|warden|--zone waystation --time day --close 1 --facing 0
+war_cup|warden|--zone waystation --time day --close 1 --facing 90
+war_cuq|warden|--zone waystation --time day --close 1 --facing 270
+war_cun|warden|--zone waystation --time night --close 1 --facing 40
+rea_lkf|new:reaver|--zoom 0.55
+rea_lk3|new:reaver|--zoom 0.55 --turn 40
+rea_cuf|reaver|--zone waystation --time day --close 1 --facing 20
+arc_lk3|new:arcanist|--zoom 0.55 --turn 40
+sta_lk3|new:stalker|--zoom 0.55 --turn 320

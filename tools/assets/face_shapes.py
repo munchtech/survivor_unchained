@@ -83,6 +83,21 @@ def hairline_height(theta):
     return PchipInterpolator(*HAIRLINE)(a) + uneven
 
 
+def hairline_across(theta, rise, r):
+    """A height over her hairline (`rise`, at angles `theta`, on her head `r` out from its middle) as the distance
+    across the line on her skin. (18 October, touch-up: her hair's cap and her scalp's shade faded in by height
+    alone, and where her hairline falls steeply round her temples (its height drops 3.6 cm over 2.5 cm of her head
+    there) a fade of a centimetre in height was barely half that across the line: her temple's hairline read as a
+    hard, pale edge. Measured across it, a fade is as long everywhere. HAIRLINE_ACROSS=0: by height, as before.)"""
+    import os
+    import numpy as np
+    if os.environ.get("HAIRLINE_ACROSS", "1") != "1":
+        return rise
+    dt = 1e-3
+    slope = (hairline_height(theta + dt) - hairline_height(theta - dt)) / (2 * dt) / np.maximum(r, 0.03)
+    return rise / np.sqrt(1.0 + slope * slope)
+
+
 # Sculpts of our own, where MakeHuman has no target: name -> f(points, anatomy) -> moves.
 SCULPTS = {}
 

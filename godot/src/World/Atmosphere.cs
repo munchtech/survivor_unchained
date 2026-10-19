@@ -132,6 +132,11 @@ public partial class Atmosphere : Node3D
         Env.TonemapExposure = (float)p.Exposure * ExposureScale * FlareDip;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
+        // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the
+        // sky's lower half is the hemisphere's dark ground colour, so in shade her plate reflected
+        // nothing and read as rubber (look bible, armor metal; metal round 3).
+        var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
+        RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
         if (grade) Env.AdjustmentColorCorrection = GradeLut(p.Grade, Mute);
     }
 
