@@ -679,6 +679,24 @@ def _ease_from(clip, rot0, n, joints):
             clip.rot[fr, j] = qslerp(rot0[j], clip.rot[fr, j], u)
 
 
+# C01's lying pose (s1-s3: found at the dead fire). death_back's end, but her
+# face turned on to its LEFT cheek, toward the coals and the s3 camera at
+# her left (the fire is 1.1 m off her left ear): the chest rolled 14 deg
+# with it, the neck back so the cheek rests on the ground, the chin down.
+# The flung left arm comes out of the face-to-coals line, out on the ground
+# 45 deg below her shoulder, palm up. A still, held (the cinematic plays it
+# at speed 0); death_back and get_up_back are unchanged (play's death).
+COALS_POSE = {"spine": (14, 2, -6), "neck": (26, -14, 0), "head": (52, 4, 0),
+              "hand_l": {"pos": (0.72, 0.05, -0.82), "pole": (0.3, 1, 0.3), "knuckles": (0.6, 0, -0.6), "blade": (-0.6, 0, -0.6)},
+              "fingers_l": "relaxed"}
+
+
+def death_back_coals(rig):
+    pose = merge(_back_pose(1.0), **COALS_POSE)
+    return build("death_back_coals", rig, [(0, pose, "ease"), (6, pose, "ease")],
+                 meta={"layer": "full", "hold": True, "note": "keyed: C01's lying still, the left cheek down, face to the coals"})
+
+
 def get_up_back(rig):
     """From where death_back left her, on her back: the head lifts first and
     the knees draw up, the flung arm comes down round her side, she sits up
@@ -1230,7 +1248,7 @@ def daggers_heavy(rig):
     return build("daggers_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})
 
 
-ALL = (("dash", dash), ("hit", hit), ("death", death), ("death_back", death_back), ("get_up", get_up), ("get_up_back", get_up_back),
+ALL = (("dash", dash), ("hit", hit), ("death", death), ("death_back", death_back), ("death_back_coals", death_back_coals), ("get_up", get_up), ("get_up_back", get_up_back),
        ("cast_bolt", cast_bolt),
        ("cast_raise", cast_raise), ("cast_flick", cast_flick), ("crossbow_shoot", crossbow_shoot), ("throw", throw),
        ("warcry", warcry), ("daggers_back", daggers_back), ("daggers_fore", daggers_fore),

@@ -46,7 +46,7 @@
         {"do": "prop", "name": "shield", "piece": "@shield", "where": [-8.05, 0.3, 89.55], "rot": [0, 80, 78], "when": {"calling": ["warden"]}},
         {"do": "lids", "value": 1, "over": 0},
         {"do": "gaze", "look": [0.15, 0.3], "wander": 0.03},
-        {"do": "anim", "clip": "her/death_back", "from": 1.33, "speed": 0, "blend": 0},
+        {"do": "anim", "clip": "her/death_back_coals", "from": 0.2, "speed": 0, "blend": 0},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "music", "mood": "silence"},
         {"do": "fire", "light": 0, "flames": 0.0},
