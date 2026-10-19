@@ -96,7 +96,7 @@ void fragment() {
 		// dark red at the edges, orange through the body, white-yellow at the core
 		vec3 hue = mix(vec3(1.0, 0.04, 0.0), vec3(1.0, 0.24, 0.0), smoothstep(0.45, 0.9, t));
 		hue = mix(hue, vec3(1.0, 0.86, 0.62), core);
-		float lum = max(l, 0.02) * mix(0.25 * gm_body, gm_body, smoothstep(gm_edge / gm_lo, 0.9, t)) * (1.0 + gm_hot / gm_body * core);
+		float lum = max(l, 0.02) * mix(0.25 * gm_body, gm_body, smoothstep(gm_edge / gm_lo, 0.9, t)) * (1.0 + gm_hot * mix(0.4, 1.0, smoothstep(2.0, 4.0, f)) / gm_body * core); // (held under the knee as the birth hands over: empty field 3.2% at f70)
 		vec3 g = hue * (lum / dot(hue, vec3(0.2126, 0.7152, 0.0722)));
 		c.rgb = mix(c.rgb, g * c.a, gm * smoothstep(1.5, 3.0, f));
 	}
