@@ -1,5 +1,16 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (env lead 4, 19 Oct): E2 in progress on env-2
+- Worktree `.claude/worktrees/env-2`, branch `env-2` (pushed). E1 is merged (8ba3a4e7). Scratch: `survivorsunchained_inputs\env_e2\` (fog_ab, kit, lamps, lamps2, campfire, roofs, roofs2).
+- **Fog blotches: FIXED (f1f79d05).** They were C01's frost decals (a 44 m patch, left into play), not fog; proved by A/B (`env_e2og_ab\cmp_frost.jpg`). The frost now thaws over 3 s at hand-back. Switch `--cine-nofrost`.
+- **Flame kit: built** (FlameKit.cs, flame_mv.gdshader, our own Mantaflow flipbook with motion vectors in art/fx/flame; flicker +-11-12%). The camp fire's flames are on it.
+- **Lamps round 1** (986f1422, 32a8384a): our own holders (tools/assets/env_lamps.py, Lamps.cs): the ford's three lamp-irons, 8 road posts, 3 wall torches, a standing lantern. The white disc is gone, but no flame shows at the play camera. Round 2 solver running (lamps2).
+- **Camp fire:** our own logs, ember cracks and ash bed. Solver running (campfire).
+- **Black roof slabs:** the Barrow crypt's camera-facing slope faces away from the low moon and gets only ambient light. Solver running (roofs2).
+- **Done:** the look bible's night line (6x) and the dawn sun cheat (bf0a04eb). The Marionette prop format was answered via main: first props wagon, Barrow grave set, crypt, shrine statue, wayside saint.
+- **Next:** one judge on all E2 frames (xhigh; whole-frame gate first), then fixes, then the full teach run, perf, and "MR READY env-2@<commit>".
+- Seen, not mine: foreground cartoon tree canopies cover her and the HUD at the camp road (E4).
+
 ## Now (env lead 3, 19 Oct): E1 DONE, its MR next; then E2
 - **E1 light closed at the cap.** Judge 3 (round 3b) passed 14 of 17 frames. Judge 4 (round 3c) passed the camp night and the close-up, found no regressions, and passed the ford night by the numbers after the beacon pool (its call). The wood road at dawn closes for E1 and comes back with E4's canopy gap. Sheets, round 0 against final: `C:\Users\munch\Desktop\survivorsunchained_inputs\env_e1\final\`. Round sheets: `env_e1\r3b\`, `env_e1\r3c\`. Judge briefs and tools: `survivorsunchained_inputs\scratch_env3\` (e1_judge3_brief.md, e1_judge4_brief.md, cheek.py).
 - **What rounds 3b-3c changed (dd6ebc40..5b249250):**
