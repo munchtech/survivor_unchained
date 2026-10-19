@@ -28,6 +28,9 @@ public partial class Game
 
     /// <summary>A cinematic playing (null: none).</summary>
     public bool InCinematic => cine != null;
+    /// <summary>The cinematic playing (its id), for --perf's windows.</summary>
+    public string? CinematicId => cine != null ? cineId : null;
+    string? cineId;
 
     /// <summary>A cinematic from the data, played now in the zone that is
     /// running; done when it hands back (or is skipped). False if it cannot
@@ -48,7 +51,7 @@ public partial class Game
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
-        try { cine = new Cine(this, file, b, done); }
+        try { cine = new Cine(this, file, b, done); cineId = id; }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         finally { chained = null; }
         if (scene != null) scene.Fx.HideLoot = true;

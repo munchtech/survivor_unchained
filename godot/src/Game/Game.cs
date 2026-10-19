@@ -1633,13 +1633,16 @@ public partial class Game : Node, IZoneHost
     bool softSaid;
     /// <summary>--perf-flip labels: loot's names on the ground not made or drawn.</summary>
     bool labelsOff;
+    /// <summary>--perf-flip fsr: the scaling mode put back after.</summary>
+    bool fsrOut;
+    Viewport.Scaling3DModeEnum fsrMode;
 
     /// <summary>--perf: the frame measured (Perf.cs), with the game's own
     /// numbers beside it: the horde, the dead, the gore, the sound's voices.</summary>
     void MeasureWith(Perf perf)
     {
         AddChild(perf);
-        Perf.CounterNames = ["foes", "drawn", "lying", "gibs", "blood", "voices"];
+        Perf.CounterNames = ["foes", "drawn", "lying", "gibs", "blood", "voices", "stage", "cine"];
         Perf.Counters = a =>
         {
             a[0] = Battle?.Enemies.Count ?? 0;
@@ -1650,14 +1653,36 @@ public partial class Game : Node, IZoneHost
                 a[1] = drawn; a[2] = dead; a[3] = gibs; a[4] = splats;
             }
             a[5] = synth.Live ? synth.Voices : 0;
+            // The Prologue's stage (Prologue.Stage's number, -1 elsewhere) and whether a cinematic plays.
+            a[6] = zone is Prologue pr ? (int)pr.Now : -1;
+            a[7] = CinematicId != null ? 1 : 0;
         };
+        // --perf-until STAGE [--perf-until-after S]: the recording ends S seconds (default 10) into that
+        // Prologue stage, or when the zone is left (a whole Prologue measured to its gate).
+        if (Args.Get("perf-until") is string until)
+        {
+            string startZone = "";
+            var held = System.Diagnostics.Stopwatch.StartNew();
+            bool reached = false;
+            Perf.Done = () =>
+            {
+                if (zone == null) return false;
+                if (startZone == "") startZone = zone.Id;
+                if (zone.Id != startZone) return true;
+                bool at = zone is Prologue pr && pr.Now.ToString() == until;
+                if (at && !reached) { reached = true; held.Restart(); }
+                return reached && held.Elapsed.TotalSeconds >= Args.Num("perf-until-after", 10);
+            };
+        }
         Perf.Note = () => $"{zone?.Id} foes {Battle?.Enemies.Count ?? 0} ember {Battle?.EmberLevel} kills {Battle?.KillCount} " +
-                          (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "");
+                          (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "") +
+                          (CinematicId is { } cid ? $" cine={cid}" : "");
         // --perf-flip A,B [--perf-flip-every S]: these taken out every other S
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, softshadow, ssao, msaa, interp;
+        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, softshadow, ssao, msaa, interp,
+        // flora, props, landmarks, ground, water, fx, volfog, fog, glow, fsr;
         // or quality:Q, scale:S, aa:A (that quality, resolution or smoothing while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1691,6 +1716,7 @@ public partial class Game : Node, IZoneHost
                     foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("fx")) scene.Fx.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
                 if (flipped.Contains("labels")) labelsOff = !on;
                 // A place's fires (their flames and lights), its lamps, its lamps' shadows, its pieces.
@@ -1699,6 +1725,9 @@ public partial class Game : Node, IZoneHost
                     if (c is not Node3D n) continue;
                     string nm = n.Name;
                     if (flipped.Contains("fires") && nm == "Fires" || flipped.Contains("lamps") && nm == "Lights" ||
+                        flipped.Contains("flora") && nm == "Flora" || flipped.Contains("props") && nm == "Props" ||
+                        flipped.Contains("landmarks") && nm == "Landmarks" || flipped.Contains("ground") && nm == "Ground" ||
+                        flipped.Contains("water") && nm == "Water" ||
                         flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights"))
                         n.Visible = on;
                 }
@@ -1732,6 +1761,18 @@ public partial class Game : Node, IZoneHost
                 if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
                 if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;
                 if (flipped.Contains("msaa")) GetViewport().Msaa3D = on ? t.Msaa : Viewport.Msaa.Disabled;
+                if (flipped.Contains("volfog")) air.Env.VolumetricFogEnabled = on && t.VolumetricFog;
+                if (flipped.Contains("fog")) air.Env.FogEnabled = on;
+                if (flipped.Contains("glow")) air.Env.GlowEnabled = on;
+                // fsr: FSR 2 (play's smoothing, at native) swapped for a plain bilinear draw while out:
+                // the smoothing's own cost.
+                if (flipped.Contains("fsr") && outNow != fsrOut)
+                {
+                    fsrOut = outNow;
+                    var fv = GetViewport();
+                    if (outNow) { fsrMode = fv.Scaling3DMode; fv.Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear; }
+                    else fv.Scaling3DMode = fsrMode;
+                }
             };
             return;
         }

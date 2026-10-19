@@ -31,6 +31,8 @@ public partial class Perf : Node
 {
     /// <summary>What the game adds to each window's line (the horde, the sound's voices).</summary>
     public static Func<string> Note = () => "";
+    /// <summary>Ends the recording early when true (--perf-until STAGE: the run measured to its end).</summary>
+    public static Func<bool> Done = () => false;
     /// <summary>The game's own numbers for each frame (foes, voices...): their
     /// names, and a filler that writes them into the array it is given.</summary>
     public static string[] CounterNames = Array.Empty<string>();
@@ -244,7 +246,7 @@ public partial class Perf : Node
             windows.Add(line);
             GD.Print($"perf {line}");
         }
-        if (t >= warm + span) Finish();
+        if (t >= warm + span || Done()) Finish();
     }
 
     /// <summary>--perf-dump: what is in the scene to draw, by the branch it
