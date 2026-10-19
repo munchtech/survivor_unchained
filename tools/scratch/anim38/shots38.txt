@@ -29,12 +29,15 @@ xb_break_36|stalker|hunting_bow|idle_stalker_break@3.6|day|0|90|female
 xb_shoot_00|stalker|hunting_bow|crossbow_shoot@0.0|day|0|90|female
 xb_shoot_00f|stalker|hunting_bow|crossbow_shoot@0.0|day|0|0|female
 xb_shoot_02|stalker|hunting_bow|crossbow_shoot@0.067|day|0|90|female
+xb_shoot_08|stalker|hunting_bow|crossbow_shoot@0.267|day|0|90|female
+xb_shoot_08f|stalker|hunting_bow|crossbow_shoot@0.267|day|0|0|female
 xb_shoot_13|stalker|hunting_bow|crossbow_shoot@0.433|day|0|90|female
 xb_shoot_18|stalker|hunting_bow|crossbow_shoot@0.6|day|0|90|female
 xb_stop_03|stalker|hunting_bow|stop_stalker_l@0.3|day|0|90|female
 xb_show_12|stalker|hunting_bow|stalker_show@0.4|day|1|0|female
 xb_show_30|stalker|hunting_bow|stalker_show@1.0|day|1|0|female
 xb_show_60|stalker|hunting_bow|stalker_show@2.0|day|1|0|female
+xb_show_80|stalker|hunting_bow|stalker_show@2.667|day|1|0|female
 chain_43|warden|-|chain_strike@0.43|day|0|90|female
 chain_48|warden|-|chain_strike@0.48|day|0|90|female
 chain_53|warden|-|chain_strike@0.53|day|0|90|female
