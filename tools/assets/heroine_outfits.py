@@ -8528,6 +8528,10 @@ def material_table(path):
     """The outfit materials' table for the game: each one's kind and how
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
+    # (entries it doesn't make, the armor pieces' own (gold trims' and gems': tools/armor/adorn.py), kept as they are)
+    keep = {}
+    if os.path.exists(path):
+        keep = {k: v for k, v in json.load(open(path, encoding="utf-8")).items() if k not in SPEC}
     with open(path, "w", encoding="utf-8") as fh:
         from PIL import Image
 
@@ -8536,7 +8540,7 @@ def material_table(path):
             if not (STOCK_IVORY and kind(k) == "sheer" and os.path.exists(f)):
                 return {}
             return {"tint": [round(float(c) / 255, 4) for c in np.asarray(Image.open(f).convert("RGB"), np.float32).reshape(-1, 3).mean(0)]}
-        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k)} for k, v in SPEC.items()}, fh, indent=1)
+        json.dump({**{k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k)} for k, v in SPEC.items()}, **keep}, fh, indent=1)
 
 # (s30, for face's hair drape, 18 Oct: BODY_BLEND_OUT=<path> saves a copy of the scene here, her body after the
 # F1 body pass and every body step above, before any outfit is made; object names kept: Heroine, HeroineHead,

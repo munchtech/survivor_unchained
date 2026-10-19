@@ -1,0 +1,15 @@
+{
+ "id": "plate_top_etched",
+ "name": "Etched Plate Top",
+ "slot": "top",
+ "base": "plate_top_plain",
+ "tier": 2,
+ "tier_name": "etched",
+ "material": "steel",
+ "tint": null,
+ "adorn": [
+  {"kind": "paint", "target": "shell", "pattern": "etch_scroll", "strength": 1.0}
+ ],
+ "covers": ["top"],
+ "hold": {"amount": 0.55, "squash": 0}
+}

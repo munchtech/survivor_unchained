@@ -147,5 +147,21 @@
  "thread": {
   "kind": "gloss",
   "repeats": 60
+ },
+ "gem_garnet": {
+  "kind": "gloss",
+  "repeats": 70
+ },
+ "gem_amethyst": {
+  "kind": "gloss",
+  "repeats": 70
+ },
+ "gem_sapphire": {
+  "kind": "gloss",
+  "repeats": 70
+ },
+ "gem_emerald": {
+  "kind": "gloss",
+  "repeats": 70
  }
 }

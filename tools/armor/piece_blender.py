@@ -800,6 +800,9 @@ G["finish"], G["tube"], G["stitches"] = _finish, _tube, _stitches
 # ------------------------------------------------------------ adornment --
 adorn_made = []
 RIVET_ROWS = {}
+# (each native row's elements, recorded in <id>.sockets.json "adorn": a tier variant (tools/armor/adorn.py) finds them
+# in the built mesh by these feet to drop or regild them; pushed with the piece below)
+ADORN_REC = []
 sheet_pos, sheet_wt, sheet_tris = B["sheet"]
 for ad in SPEC_PIECE.get("adorn", []):
     if ad["kind"] == "row" and ad.get("mesh", "rivet") == "rivet":
@@ -838,6 +841,11 @@ for ad in SPEC_PIECE.get("adorn", []):
         rv = low_rivets(f"{PID}.{ad.get('rim', 'rim')}_rivets", pts, nrs, wts, ad.get("r", 0.0028), ad.get("mat", MKEY))
         RIVET_ROWS = spc
         adorn_made += rv
+        ADORN_REC.append({"kind": "row", "rim": ad.get("rim", "cup_rim"), "mesh": "rivet", "mat": ad.get("mat", MKEY),
+                          "spacing": ad.get("spacing", 0.021), "inset": ad.get("inset", 0.0075), "r": ad.get("r", 0.0028),
+                          "avoid": ad.get("avoid", 0.014), "points": np.array(pts), "normals": np.array(nrs)})
+    elif ad["kind"] in ("row", "mesh", "trim", "paint"):
+        pass   # (built on the exported piece by tools/armor/adorn.py, after its LODs)
     else:
         raise NotImplementedError("adornment %s (item 3b)" % ad)
 made = B["parts"] + adorn_made
@@ -1124,6 +1132,9 @@ def push_apply(Q, D, A, sigma):
     for r_ in B["rims"].values():
         p_ = blend(np.array(r_["points"]))
         r_["points"] = gl(p_ + push_field(Q, D, A, p_, sigma)).round(5).tolist()
+    for a_ in ADORN_REC:
+        a_["points"] = a_["points"] + push_field(Q, D, A, a_["points"], sigma)
+    B["avoid"] = [p_ + push_field(Q, D, A, np.asarray(p_)[None], sigma)[0] for p_ in B.get("avoid", [])]
 
 
 SHELL = B["shell"]
@@ -1404,10 +1415,36 @@ def strap_check(bv, bn, dg):
     return res
 
 
+POSE_DUMP = {}
+
+
+def pose_dump(pname, bv, bn, dg):
+    """For tools/armor/adorn.py's check of adornment on her in the test poses: her skin near the piece, posed, and
+    every bone's skinning matrix, all in glTF space (Y up), and the posed shell's points to check its own skinning by."""
+    C = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, -1, 0, 0], [0, 0, 0, 1.0]])
+    aw = np.array(arm.matrix_world)
+    mats = {}
+    for pb_ in arm.pose.bones:
+        S = aw @ np.array(pb_.matrix) @ np.linalg.inv(np.array(pb_.bone.matrix_local)) @ np.linalg.inv(aw)
+        mats[pb_.name] = C @ S @ np.linalg.inv(C)
+    sh = []
+    for o in SHELL:
+        oe = o.evaluated_get(dg)
+        m_ = oe.to_mesh()
+        sh += [tuple(o.matrix_world @ v.co) for v in m_.vertices]
+        oe.to_mesh_clear()
+    POSE_DUMP[pname] = {"skin": gl(bv[NEAR]), "skin_n": gl(bn[NEAR]), "bones": sorted(mats), "mats": np.array([mats[k] for k in sorted(mats)]),
+                        "shell": gl(np.array(sh))}
+
+
 def pose_check():
     out = {}
     for pname, rots in [("rest", [])] + list(POSES.items()):
         bv, bn, dg = pose_body(rots)
+        try:
+            pose_dump(pname, bv, bn, dg)
+        except Exception as ex:
+            print("POSE DUMP failed", pname, repr(ex))
         straps_ = strap_check(bv, bn, dg)
         if pname == "rest":
             out["rest"] = {"straps": straps_}
@@ -1431,6 +1468,9 @@ except Exception as ex:  # (the numbers still come; the pose check names its fai
     import traceback
     traceback.print_exc()
     NUM["poses"] = {"error": repr(ex)}
+if POSE_DUMP:
+    np.savez_compressed(os.path.join(SCRATCH, "poses.npz"), names=np.array(sorted(POSE_DUMP)),
+                        **{f"{k}__{f}": np.asarray(v[f]) for k, v in POSE_DUMP.items() for f in ("skin", "skin_n", "bones", "mats", "shell")})
 stamp("numbers measured")
 
 # --------------------------------------------------------------- export --
@@ -1514,6 +1554,9 @@ NUM["meshes"] = sorted(ranks)
 # sockets, rims, the UV surface
 sockets = {"id": PID, "slot": SLOT, "body_hash": BODY_HASH, "space": "glTF / Godot: Y up, metres, her bind pose",
            "sockets": B["sockets"], "rims": B["rims"],
+           "fixings": [gl(p_).round(5).tolist() for p_ in B.get("avoid", [])],
+           "adorn": [dict({k: v for k, v in a_.items() if k not in ("points", "normals")}, points=gl(a_["points"]).round(5).tolist(),
+                          normals=gl(a_["normals"]).round(4).tolist()) for a_ in ADORN_REC],
            "uv_surface": {"mesh": f"{PID}.{SLOT}.{MKEY}", "layer": "UVMap (TEXCOORD_0)",
                           "units": "metres x the material's repeats (outfit_materials.json), one projection along the cup's facing"},
            "trim_uv": {"layer": "trim (TEXCOORD_2)", "atlas": "res://art/armor/trim_strip.png", "on": sorted(t for t in CAP["tubes"] if t.startswith(f"{PID}.cups_bind")),
