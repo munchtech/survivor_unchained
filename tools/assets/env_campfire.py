@@ -150,24 +150,24 @@ def sides():
         hue = hash01(ids, s + 5)
         fine = fbm(h, w, 64, 16, s + 6, 3)
         lich = ss(0.62, 0.8, fbm(h, w, 8, 4, s + 7))
-        bark = lerp(rgb(0.034, 0.027, 0.022), rgb(0.062, 0.051, 0.043) * (0.85 + 0.3 * hue[..., None]), plate[..., None])
+        bark = lerp(rgb(0.04, 0.031, 0.023), rgb(0.13, 0.098, 0.068) * (0.85 + 0.3 * hue[..., None]), plate[..., None])
         bark = bark * (0.8 + 0.4 * fine[..., None])
-        bark = lerp(bark, rgb(0.11, 0.105, 0.095), (lich * plate * 0.45)[..., None])
+        bark = lerp(bark, rgb(0.19, 0.175, 0.15), (lich * plate * 0.4)[..., None])
         bh = 0.006 * plate + 0.0012 * fine
         calb, ch, crack = char_layer(h, w, CIRC, LEN, s + 9)
         # how burnt: all of it at the inner end, the bark taking over by mid-log,
         # an uneven front, and a few scorched tongues further up
         front = yy + 0.16 * (fbm(h, w, 6, 4, s + 11) - 0.5)
-        burnt = 1 - ss(0.2, 0.42, front)
+        burnt = 1 - ss(0.26, 0.46, front)
         scorch = ss(0.6, 0.78, fbm(h, w, 5, 3, s + 12)) * (1 - ss(0.4, 0.75, yy))
         burnt = np.clip(burnt + scorch * 0.8, 0, 1)
-        deep = 1 - ss(0.0, 0.3, front)            # deepest at the inner end
+        deep = 1 - ss(0.0, 0.38, front)           # deepest at the inner end
         patch = ss(0.3, 0.75, fbm(h, w, 10, 4, s + 13))
-        ember = crack * ss(0.15, 0.6, burnt) * (0.25 + 0.75 * deep) * (0.35 + 0.65 * patch)
+        ember = crack * ss(0.15, 0.6, burnt) * (0.4 + 0.6 * deep) * (0.5 + 0.5 * patch)
         # the inner end itself smoulders dully between the cracks
-        ember = np.maximum(ember, (1 - crack) * deep * patch * 0.07)
+        ember = np.maximum(ember, (1 - crack) * deep * deep * patch * 0.16)
         # a thin glowing line along the burning front
-        ember = np.maximum(ember, (1 - ss(0.0, 0.02, np.abs(front - 0.31))) * patch * patch * 0.3 * (1 - scorch))
+        ember = np.maximum(ember, (1 - ss(0.0, 0.025, np.abs(front - 0.36))) * patch * patch * 0.38 * (1 - scorch))
         x0 = k * w
         b3 = burnt[..., None]
         ALB[0:h, x0:x0 + w] = lerp(bark, calb, b3)
@@ -235,6 +235,9 @@ BED_PX = 1000.0  # pixels a metre
 
 
 def bed():
+    """The ash bed, top-down: grey-black, not a pale disc (under the fire's light the pale ash read as a
+    white-hot dome from the play camera). Black charcoal and glowing coals in the middle, where the logs
+    meet; grey-black ash with charcoal bits outward; a little paler ash only at the rim, going into the ground."""
     n = 1024
     y0 = 1024
     Y, X = np.meshgrid((np.arange(n) - 512 + 0.5) / BED_PX, (np.arange(n) - 512 + 0.5) / BED_PX, indexing='ij')
@@ -244,21 +247,31 @@ def bed():
     f1, edge, ids = worley(n, n, 90, 90, 503)
     h = hash01(ids, 504)
     near = 1 - ss(0.1, 0.32, r + (n1 - 0.5) * 0.12)       # under the logs
-    # ash: pale grey-white, mottled, softly lumpy
-    ash = rgb(0.25, 0.24, 0.225) * (0.78 + 0.35 * n2[..., None]) * (0.85 + 0.3 * n1[..., None])
-    soot = ss(0.5, 0.75, fbm(n, n, 6, 6, 505))[..., None] * 0.55
-    ash = lerp(ash, rgb(0.11, 0.105, 0.1), soot)
+    # ash: grey-black, mottled; a paler grey ring toward the rim
+    ash = rgb(0.06, 0.058, 0.055) * (0.75 + 0.45 * n2[..., None]) * (0.8 + 0.4 * n1[..., None])
+    pale = (ss(0.28, 0.4, r + (n1 - 0.5) * 0.1) * ss(0.45, 0.7, fbm(n, n, 6, 6, 506)))[..., None] * 0.6
+    ash = lerp(ash, rgb(0.14, 0.135, 0.128) * (0.8 + 0.4 * n2[..., None]), pale)
+    soot = ss(0.5, 0.75, fbm(n, n, 6, 6, 505))[..., None] * 0.6
+    ash = lerp(ash, rgb(0.025, 0.023, 0.021), soot)
     # charcoal flecks and bits, thicker toward the middle
-    bit = ((h < 0.12 + 0.45 * near) * ss(0.06, 0.2, edge))
-    alb = lerp(ash, rgb(0.018, 0.016, 0.015), bit[..., None] * 0.9)
-    # under the logs: darker, burnt, with some glowing bits
-    alb = lerp(alb, rgb(0.03, 0.026, 0.024) * (0.8 + 0.5 * n2[..., None]), (near * 0.6)[..., None])
+    bit = ((h < 0.15 + 0.5 * near) * ss(0.06, 0.2, edge))
+    alb = lerp(ash, rgb(0.014, 0.012, 0.011), bit[..., None] * 0.9)
+    # under the logs: black charcoal
+    alb = lerp(alb, rgb(0.018, 0.015, 0.013) * (0.8 + 0.5 * n2[..., None]), (near * 0.85)[..., None])
     # the rim goes into the dark ground
-    rim = ss(0.36, 0.47, r + (n1 - 0.5) * 0.08)
+    rim = ss(0.38, 0.47, r + (n1 - 0.5) * 0.08)
     alb = lerp(alb, rgb(0.045, 0.036, 0.028), rim[..., None])
-    hot = (h > 0.88) * near * ss(0.06, 0.2, edge)
-    ember = hot * (0.5 + 0.5 * n2) + near * ss(0.45, 0.8, n1) * 0.18
-    hgt = 0.004 * n2 + 0.003 * bit
+    # coals: whole cells glowing in the middle, cracked lumps between the logs; brightest at the heart
+    f1c, edgec, idc = worley(n, n, 34, 34, 507)
+    hc = hash01(idc, 508)
+    heart = 1 - ss(0.04, 0.27, r + (n1 - 0.5) * 0.1)
+    coal = (hc < 0.2 + 0.55 * heart) * ss(0.02, 0.12, edgec) * heart
+    glow = coal * (0.45 + 0.55 * ss(0.3, 0.8, n2)) * (0.6 + 0.4 * hash01(idc, 509))
+    alb = lerp(alb, rgb(0.03, 0.02, 0.016), coal[..., None])
+    hot = (h > 0.86) * near * ss(0.06, 0.2, edge)
+    ember = np.maximum(glow, hot * (0.5 + 0.5 * n2))
+    ember = np.maximum(ember, near * ss(0.45, 0.8, n1) * 0.2)
+    hgt = 0.004 * n2 + 0.003 * bit + 0.003 * coal
     ALB[y0:y0 + n, 0:n] = alb
     HGT[y0:y0 + n, 0:n] = hgt
     EMB[y0:y0 + n, 0:n] = ember
@@ -311,10 +324,16 @@ def normals(strength=1.0):
     return n * 0.5 + 0.5
 
 
+TEX = int(os.environ.get('CAMPFIRE_TEX', '1024'))  # stored size: painted at T, box-filtered down
+
+
 def image(name, rgb3, srgb):
-    img = bpy.data.images.new(name, T, T, alpha=False)
+    k = T // TEX
+    if k > 1:
+        rgb3 = rgb3.reshape(TEX, k, TEX, k, -1).mean(axis=(1, 3))
+    img = bpy.data.images.new(name, TEX, TEX, alpha=False)
     img.colorspace_settings.name = 'sRGB' if srgb else 'Non-Color'
-    px = np.ones((T, T, 4), np.float32)
+    px = np.ones((TEX, TEX, 4), np.float32)
     if srgb:
         rgb3 = np.where(rgb3 <= 0.0031308, rgb3 * 12.92, 1.055 * np.power(np.clip(rgb3, 0, None), 1 / 2.4) - 0.055)
     px[..., :3] = np.clip(rgb3, 0, 1)
@@ -387,7 +406,7 @@ def log(pc, p0, p1, r, col, cap_in, cap_out, seed, segs=14, rings=12, split=Fals
     ph = rr.uniform(0, 6.28, 4)
 
     def rad(t, th):
-        burnt = 0.6 + 0.4 * smooth01(t / 0.38)
+        burnt = 0.7 + 0.3 * smooth01(t / 0.38)
         bump = 1 + 0.045 * math.sin(th * 3 + ph[0] + t * 5) + 0.03 * math.sin(th * 5 + ph[1] - t * 9) + 0.025 * math.sin(t * 23 + ph[2])
         return r * burnt * bump
 
@@ -600,7 +619,7 @@ def main():
     ]
     for i, (a, ri, yi, ro, yo, r, col, ci, co, split, roll) in enumerate(spec):
         pc = Piece()
-        log(pc, az(a, ri, yi), az(a + (4 if i % 2 else -4), ro, yo), r, col, ci, co, 40 + i, split=split, roll=roll)
+        log(pc, az(a, ri, yi), az(a + (4 if i % 2 else -4), ro, yo), r * 1.1, col, ci, co, 40 + i, split=split, roll=roll)
         logs.append(pc)
     # two burnt sticks fallen in the ash
     for i, (p0, p1, r) in enumerate((((-0.06, 0.03, 0.08), (-0.33, 0.03, 0.21), 0.021), ((0.1, 0.035, -0.06), (0.34, 0.025, -0.2), 0.017))):
@@ -624,7 +643,7 @@ def main():
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=True, export_apply=True,
                               export_yup=True, export_image_format='AUTO', export_materials='EXPORT', export_tangents=True)
-    info = {'tris_logs': tris(ob_logs), 'tris_bed': tris(ob_bed), 'materials': 1}
+    info = {'tris_logs': tris(ob_logs), 'tris_bed': tris(ob_bed), 'materials': 1, 'tex': TEX}
     info['tris'] = info['tris_logs'] + info['tris_bed']
     with open(os.path.join(OUT, 'campfire.json'), 'w') as f:
         json.dump(info, f, indent=1)

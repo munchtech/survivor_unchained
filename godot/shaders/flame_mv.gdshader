@@ -8,7 +8,7 @@
 // `procedural` draws the same flame from noise instead (a teardrop of heat torn by two octaves of
 // noise climbing it), with no atlas.
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
 
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D mv_atlas : filter_linear_mipmap, repeat_disable;
@@ -38,6 +38,13 @@ uniform float core_lo = 0.86;
 uniform float pull = 0.0;
 // A cold flame's core pulled from blue-white toward blue (0..1), so the tonemapper doesn't clip it to pure white.
 uniform float core_blue = 0.0;
+// How much the flame's body covers what is behind it (0: purely added light, as a lamp's; the blend is premultiplied, so 0
+// is exactly the old additive look). A big flame's middle hides the log behind it rather than letting its edge show through.
+uniform float occlude = 0.0;
+// The body's fall-off with heat (higher: dimmer edges and tips) and how far the warm ramp is pushed toward deep orange and red
+// (0: the old ramp; 1: the camp fire's, so the tonemapper doesn't wash its body to peach and cream).
+uniform float body_pow = 1.6;
+uniform float warm_sat = 0.0;
 
 void vertex() {
 	vec3 to_cam = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
@@ -85,7 +92,8 @@ float proc_heat(vec2 uv) {
 
 vec3 ramp(float h) {
 	// Linear colour; warm: ember red, orange, yellow, a near-white core; cold: deep blue, #4a7dff, pale blue-white.
-	vec3 w0 = vec3(0.3, 0.02, 0.003), w1 = vec3(0.9, 0.16, 0.01), w2 = vec3(1.0, 0.42, 0.05), w3 = vec3(1.0, 0.7, 0.32);
+	vec3 w0 = mix(vec3(0.3, 0.02, 0.003), vec3(0.4, 0.012, 0.0), warm_sat), w1 = mix(vec3(0.9, 0.16, 0.01), vec3(0.95, 0.09, 0.003), warm_sat);
+	vec3 w2 = mix(vec3(1.0, 0.42, 0.05), vec3(1.0, 0.3, 0.015), warm_sat), w3 = mix(vec3(1.0, 0.7, 0.32), vec3(1.0, 0.62, 0.16), warm_sat);
 	vec3 c0 = vec3(0.02, 0.05, 0.35), c1 = vec3(0.07, 0.2, 1.0), c2 = vec3(0.35, 0.55, 1.0), c3 = vec3(0.78, 0.88, 1.0);
 	vec3 a = mix(w0, c0, cold), b = mix(w1, c1, cold), c = mix(w2, c2, cold), d = mix(w3, c3, cold);
 	vec3 col = mix(a, b, smoothstep(0.0, 0.35, h));
@@ -103,7 +111,7 @@ void fragment() {
 	float h = procedural ? proc_heat(uv) : sim_heat(uv);
 	// Heat to light: the body's edge fades out, the body sits under 1, the core alone climbs to core_hdr.
 	// Heat-weighted: the edges a dim red, the middle bright, so the tongue keeps its inner shape.
-	float body = smoothstep(0.0, 0.25, h) * pow(h, 1.6);
+	float body = smoothstep(0.0, 0.25, h) * pow(h, body_pow);
 	float core = smoothstep(core_lo, 1.0, h);
 	vec3 core_col = mix(ramp(1.0), vec3(0.2, 0.45, 1.0), core_blue * cold);
 	vec3 col = ramp(h) * body * body_k + core_col * core * core_k;
@@ -112,4 +120,5 @@ void fragment() {
 	behind.xyz /= behind.w;
 	float fade = clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
 	ALBEDO = col * intensity * fade;
+	ALPHA = occlude * smoothstep(0.08, 0.45, h) * fade * min(intensity, 1.0);
 }

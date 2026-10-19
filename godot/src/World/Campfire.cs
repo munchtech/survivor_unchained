@@ -45,7 +45,28 @@ public static class Campfire
         if (parts.Contains("flames")) root.AddChild(FilmedFlames(size) ?? Flames(size));
         if (parts.Contains("embers")) root.AddChild(Embers(size));
         if (parts.Contains("smoke")) root.AddChild(Smoke(size));
+        if (SurvivorUnchained.Args.Has("fire-probe")) root.TreeEntered += () => root.GetTree().CreateTimer(13).Timeout += () => Probe(root);
         return root;
+    }
+
+    /// <summary>--fire-probe: what stands within 2.5 m of the fire (layers, shading) and the lights reaching it, printed once.</summary>
+    static void Probe(Node3D fire)
+    {
+        var at = fire.GlobalPosition;
+        foreach (var n in fire.GetTree().Root.FindChildren("*", "GeometryInstance3D", true, false))
+        {
+            if (n is not GeometryInstance3D g || !g.IsVisibleInTree()) continue;
+            var c = g.GlobalTransform * g.GetAabb().GetCenter();
+            var cam = fire.GetViewport().GetCamera3D();
+            var sp = cam != null && !cam.IsPositionBehind(c) ? cam.UnprojectPosition(c) : new Vector2(-1, -1);
+            if (new Vector2(c.X - at.X, c.Z - at.Z).Length() > 2.5f && !(sp.X >= 0 && sp.X < 300 && sp.Y > 650 && sp.Y < 1000 && c.DistanceTo(cam!.GlobalPosition) < 12)) continue;
+            string mat = g is MeshInstance3D mi && mi.Mesh != null && mi.Mesh.GetSurfaceCount() > 0
+                ? ((mi.MaterialOverride ?? mi.GetActiveMaterial(0)) is BaseMaterial3D bm ? $"std {bm.ShadingMode}" : (mi.MaterialOverride ?? mi.GetActiveMaterial(0))?.GetType().Name ?? "none") : g.GetType().Name;
+            GD.Print($"FIREPROBE geo {g.GetPath()} layers {g.Layers} at {c - at} screen {sp} {mat} shadow {g.CastShadow}");
+        }
+        foreach (var n in fire.GetTree().Root.FindChildren("*", "Light3D", true, false))
+            if (n is Light3D l && l.IsVisibleInTree() && (l is DirectionalLight3D || l.GlobalPosition.DistanceTo(at) < 15))
+                GD.Print($"FIREPROBE light {l.GetPath()} mask {l.LightCullMask} e {l.LightEnergy:0.00} col {l.LightColor} at {l.GlobalPosition - at} shadow {l.ShadowEnabled}");
     }
 
     static void Ring(Node3D root, float size)
@@ -181,7 +202,7 @@ public static class Campfire
     /// <summary>--campfire-ember K, --campfire-bounce K, --campfire-wash K: the logs' ember cracks, the ash bed's and the logs' warm wash, for pictures.</summary>
     static readonly float EmberK = SurvivorUnchained.Args.Num("campfire-ember", 3f);
     static readonly float BounceK = SurvivorUnchained.Args.Num("campfire-bounce", 0f);
-    static readonly float WashK = SurvivorUnchained.Args.Num("campfire-wash", 2f);
+    static readonly float WashK = SurvivorUnchained.Args.Num("campfire-wash", 4.5f);
 
     /// <summary>What the fire burns on, our own (tools/assets/env_campfire.py, art/world/campfire): five
     /// logs in a collapsed star, burnt toward the middle with ember cracks that breathe
@@ -397,6 +418,10 @@ public static class Campfire
         };
     }
 
+    /// <summary>--ember-w W, --ember-l L: a spark's streak (m). Thin, so at the close-up it is a streak 1-3 px wide, not a
+    /// soft round disc (11 mm wide, a radial blob, it read as an orb).</summary>
+    static readonly float EmberW = SurvivorUnchained.Args.Num("ember-w", 0.006f), EmberL = SurvivorUnchained.Args.Num("ember-l", 0.16f);
+
     /// <summary>Sparks: few and small, each a short streak along its flight, rising off the coals,
     /// wandering a little and fading within a metre or two (not a spray).</summary>
     static GpuParticles3D Embers(float size)
@@ -424,7 +449,7 @@ public static class Campfire
         return new GpuParticles3D
         {
             Name = "Embers", Amount = 12, Lifetime = 1.9, ProcessMaterial = p, Position = new Vector3(0, 0.22f, 0) * size,
-            DrawPass1 = new QuadMesh { Size = new Vector2(0.011f, 0.042f) * size, Material = emberLook },
+            DrawPass1 = new QuadMesh { Size = new Vector2(EmberW, EmberL) * size, Material = emberLook },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 2.0,
         };
     }

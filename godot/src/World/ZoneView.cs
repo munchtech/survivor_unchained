@@ -208,6 +208,7 @@ public partial class ZoneView : Node3D
     }
 
     readonly Dictionary<int, (float Level, float Rate)> levels = new();
+    static readonly bool FireTrace = SurvivorUnchained.Args.Has("fire-trace");
 
     /// <summary>A light's shadow softened (its source "size" metres across; 0 is as built, hard):
     /// a cinematic's fire throws soft shadows, not razor spokes.</summary>
@@ -639,7 +640,9 @@ public partial class ZoneView : Node3D
             float ft = t * rate;
             float f = 1 + (Mathf.Sin(ft * 8.3f + ph) * 0.5f + Mathf.Sin(ft * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(ft * 3.1f + ph) * 0.2f) * l.Flicker;
             lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level;
-            lights[i].Position = l.At + new Vector3(0, Mathf.Sin(t * 11 + ph) * 0.03f * l.Flicker - lightDrop.GetValueOrDefault(i), 0);
+            // Energy only, never position (look bible 10: the light bobbed 4 mm and the shadows swam). --fire-trace: the fire's light per frame.
+            lights[i].Position = l.At + Vector3.Down * lightDrop.GetValueOrDefault(i);
+            if (FireTrace && t >= 6 && t < 11 && fires.Exists(fr => fr.Light == i)) GD.Print($"FIRETRACE {Engine.GetProcessFrames()} {t:0.0000} {lights[i].LightEnergy:0.0000} {lights[i].Position.Y:0.0000}");
         }
     }
 }

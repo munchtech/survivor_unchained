@@ -146,6 +146,11 @@ static class FlameShader
     /// <summary>A card's width over its height: the atlas cell's (sidecar "aspect"), or the procedural flame's.</summary>
     public static float Aspect => Sim && Info.ContainsKey("aspect") ? (float)Info["aspect"].AsDouble() : 0.5f;
 
+    /// <summary>--fire-tilt, --fire-occlude, --fire-body, --fire-pow, --fire-core, --fire-sat: the camp fire's cards (flame_mv), for pictures.</summary>
+    static readonly float CampTilt = SurvivorUnchained.Args.Num("fire-tilt", 0.35f), CampOcclude = SurvivorUnchained.Args.Num("fire-occlude", 0.8f),
+        CampBody = SurvivorUnchained.Args.Num("fire-body", 0.9f), CampPow = SurvivorUnchained.Args.Num("fire-pow", 1.3f),
+        CampCore = SurvivorUnchained.Args.Num("fire-core", 0.9f), CampSat = SurvivorUnchained.Args.Num("fire-sat", 1f);
+
     /// <summary>Small flames flicker faster than big ones.</summary>
     static float Fps(FlameKind kind) => kind switch
     {
@@ -174,6 +179,18 @@ static class FlameShader
             fps *= (float)meta["fps"].AsDouble() / 24f;
         }
         mat.SetShaderParameter("fps", fps);
+        if (kind == FlameKind.Camp)
+        {
+            // From the play camera (23 m, 55 degrees down) the upright cards were foreshortened into a cream blob over
+            // the coals: leaned back toward the camera (none at a level close-up), the body deeper orange with red tips
+            // that show, and the middle covering what is behind it (the log's lit edge showed through the flame).
+            mat.SetShaderParameter("tilt", CampTilt);
+            mat.SetShaderParameter("occlude", CampOcclude);
+            mat.SetShaderParameter("body_k", CampBody);
+            mat.SetShaderParameter("body_pow", CampPow);
+            mat.SetShaderParameter("core_k", CampCore);
+            mat.SetShaderParameter("warm_sat", CampSat);
+        }
         // --flame-tune "body_k=0.4,core_k=1.4": the shader's numbers, for pictures.
         if (SurvivorUnchained.Args.Get("flame-tune") is string tune)
             foreach (var kv in tune.Split(',', System.StringSplitOptions.RemoveEmptyEntries))
