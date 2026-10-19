@@ -123,12 +123,50 @@ public partial class Game
             {
                 if (OnScreen(w) is not Vector2 v) continue;
                 // (a candidate: the first well inside the screen is the one)
-                if (t.Safe) { if (!SafeArea.HasPoint(v)) continue; pts.Add(v); worldOn++; break; }
+                if (t.Safe)
+                {
+                    if (!SafeArea.HasPoint(v)) continue;
+                    if (t.Open && !InOpen(w)) continue;
+                    pts.Add(v); worldOn++; break;
+                }
                 pts.Add(v);
                 worldOn++;
             }
         }
         return (pts, areas, gone, worldOn);
+    }
+
+    /// <summary>Whether a point on the ground, and she, are in the open: nothing standing 2.6 m or more over
+    /// the ground (a roof, a canopy) lies between them and the camera. By the world's bounding boxes:
+    /// coarse, so it errs toward waiting. (The ground's big chunks and the low things are passed over.)</summary>
+    bool InOpen((double X, double Y, double Z) p)
+    {
+        if (scene == null) return true;
+        var scenario = camera.GetWorld3D().Scenario;
+        var from = camera.GlobalPosition;
+        bool Clear(Vector3 to, float ground)
+        {
+            foreach (var id in RenderingServer.InstancesCullRay(from, to, scenario))
+            {
+                if (GodotObject.InstanceFromId((ulong)id) is not GeometryInstance3D g || !g.IsVisibleInTree()) continue;
+                var box = g.GlobalTransform * g.GetAabb();
+                if (box.Size.X > 60 || box.Size.Z > 60 || box.End.Y < ground + 2.6f) continue;
+                for (int i = 1; i < 48; i++)
+                {
+                    var q = from.Lerp(to, i / 48f);
+                    if (q.Y > ground + 2.6f && box.HasPoint(q)) return false;
+                }
+            }
+            return true;
+        }
+        float gy = (float)scene.HeightAt(p.X, p.Z);
+        if (!Clear(new Vector3((float)p.X, gy + 0.1f, (float)p.Z), gy)) return false;
+        if (Battle?.Player is { } pl)
+        {
+            float hy = (float)scene.HeightAt(pl.X, pl.Z);
+            if (!Clear(new Vector3((float)pl.X, hy + 1.0f, (float)pl.Z), hy)) return false;
+        }
+        return true;
     }
 
     /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>

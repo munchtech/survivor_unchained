@@ -26,6 +26,9 @@ public sealed record Aim
     /// <summary>The world's points are candidates, nearest first: the first one well inside the screen
     /// (clear of its edges and the HUD) is pointed at; none there, it waits (an ember stone at the edge).</summary>
     public bool Safe { get; init; }
+    /// <summary>With Safe: the point and she must be in the open, nothing tall (a roof, a canopy) between
+    /// them and the camera; under cover, it waits.</summary>
+    public bool Open { get; init; }
 
     public static Aim At(string hud) => new() { Hud = hud };
     public static Aim In(Func<IReadOnlyList<(double X, double Y, double Z)>> world) => new() { World = world };

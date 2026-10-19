@@ -248,7 +248,7 @@ public sealed class Prologue : ZoneRuntime
             Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
-            Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", Aim.In(KnightLane));
+            Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim { World = KnightLane, Safe = true, Open = true });
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
         // names the Flare (the art then rides the dash).
