@@ -50,6 +50,7 @@ public partial class ZoneView : Node3D
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         AddChild(Water.Build(z));
+        if (MistLayers.Build(z) is { } mist) AddChild(mist);
         Perf.Lap("ground and water");
         var flora = Dressing.Flora(z);
         AddChild(flora);

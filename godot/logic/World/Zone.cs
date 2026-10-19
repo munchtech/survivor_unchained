@@ -88,6 +88,12 @@ public sealed record AtmospherePreset(
 {
     /// <summary>The volumetric fog's density: the air the lamps' halos and the key's shafts are seen in.</summary>
     public double Haze { get; init; } = 0.0012;
+    /// <summary>How thick the mist lies on a river (0: none, as the cinematics' presets have it; 1: thick).</summary>
+    public double Mist { get; init; }
+    /// <summary>The mist's colour (sRGB hex): the key's light in the air, as the eye sees it.</summary>
+    public string MistColor { get; init; } = "#000000";
+    /// <summary>Her carried light's strength against its base (play's night lights her pool more, in a darker world).</summary>
+    public double Ember { get; init; } = 1;
 }
 
 public sealed class ZoneMeta

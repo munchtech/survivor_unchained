@@ -31,6 +31,8 @@ public partial class Atmosphere : Node3D
     /// <summary>How much colour the world keeps below the brights (0 all, 1
     /// none): the grade's worn world.</summary>
     public float Mute = 0.16f;
+    /// <summary>Her carried light's gain under the air in force (AtmospherePreset.Ember).</summary>
+    public static float EmberGain = 1;
     double clock;
 
     const float FogMatchDistance = 60;
@@ -130,6 +132,8 @@ public partial class Atmosphere : Node3D
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
         Env.TonemapExposure = (float)p.Exposure * ExposureScale;
+        SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist);
+        EmberGain = (float)p.Ember;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the

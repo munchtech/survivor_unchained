@@ -8,7 +8,7 @@ namespace SurvivorUnchained.Play;
 /// --spots "x,z[,c[,f]][;...]" --spots-every S --spots-from T: pictures of fixed places in one run (the look
 /// bible's measured positions). She is set down at each place in turn, T seconds in and every S after (put
 /// --seconds at T + 3 and --every at S, so each frame lands once the camera has settled), kept whole, and with
-/// c given the close view held at that level wherever she is (1: the nearest), with f her facing in degrees (0: to the camera). A switch for pictures only.
+/// c given the close view held at that level wherever she is (1: the nearest) and the dead kept out of it, with f her facing in degrees (0: to the camera). A switch for pictures only.
 /// </summary>
 public partial class Game
 {
@@ -34,6 +34,10 @@ public partial class Game
         b.Player.Hp = b.MaxHp;
         // --spots-unshadowed: the key casts none (its frames against the shadowed ones measure how much ground its shadows cover).
         if (Args.Has("spots-unshadowed") && air.Key.ShadowEnabled) air.Key.ShadowEnabled = false;
+        // At a close stop the dead are held off out of the picture (the close view of her face, not of a fight).
+        if (spotClose != null && k == spotAt)
+            foreach (var e in b.Enemies.Living())
+                if (Math.Abs(e.X - b.Player.X) < 70 && Math.Abs(e.Z - b.Player.Z) < 70) { e.X = b.Player.X + 75; e.Vx = e.Vz = 0; }
         if (k == spotAt || k < 0) return;
         spotAt = k;
         var (x, z, c, f) = spotList[k];

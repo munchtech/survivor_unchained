@@ -75,16 +75,18 @@ public static class Atmospheres
     // north, so a key from the east or west (azimuth near 0 or 180) throws its shadows across the road.
 
     static readonly GradeSettings PlayNightGrade = new([0, 0, 0], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#284a7a", "#ffaa58", 0.26, 0.9, 0.1, 1.12) { Toe = 0.5 };
+        "#2c4e7e", "#ffaa58", 0.2, 0.9, 0.1, 1.08) { Toe = 0.75 };
 
-    /// <summary>The Low Ford road by night, in play: the moon low in the west-south-west, long shadows
-    /// across the road, the fires and her ember the warm pools in a cold dark.</summary>
+    /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
+    /// west), so it lights the road's corridor through the wood, and what stands on it throws a long
+    /// shadow down the road toward the camera, rimmed by the moon; the fires and her ember the warm
+    /// pools in a cold dark. (From the east or west, the wood's shadows filled the road.)</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#a9c4ff", KeyIntensity = 4.0, KeyElevation = 25, KeyAzimuth = 165, ShadowStrength = 0.92,
-        HemiSky = "#3a5280", HemiGround = "#1e1a14", HemiIntensity = 0.32, EnvIntensity = 0.22,
-        FogColor = "#0e1726", FogDensity = 0.008, Exposure = 1.1, Rim = "#9fc0ff", RimStrength = 0.7,
-        Grade = PlayNightGrade, Haze = 0.006,
+        KeyColor = "#a9c4ff", KeyIntensity = 4.8, KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
+        HemiSky = "#3a5280", HemiGround = "#1e1a14", HemiIntensity = 0.62, EnvIntensity = 0.42,
+        FogColor = "#0e1726", FogDensity = 0.008, Exposure = 1.3, Rim = "#9fc0ff", RimStrength = 0.75,
+        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.16, MistColor = "#2c3a50", Ember = 1.7,
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.04, 1.0, 0.95],
@@ -94,15 +96,18 @@ public static class Atmospheres
     /// up), raking the road; the shade cool and two stops under it.</summary>
     public static readonly AtmospherePreset LowFordDawn = Dawn with
     {
-        KeyColor = "#ffcf98", KeyIntensity = 5.2, KeyElevation = 15, KeyAzimuth = 20, ShadowStrength = 0.95,
-        HemiSky = "#7890c4", HemiGround = "#30241a", HemiIntensity = 0.5, EnvIntensity = 0.45,
-        FogColor = "#9a8e98", FogDensity = 0.0065, Exposure = 1.0, Rim = "#ffd8b0", RimStrength = 0.25,
-        Grade = PlayDawnGrade, Haze = 0.004,
+        KeyColor = "#ffcf98", KeyIntensity = 6.0, KeyElevation = 18, KeyAzimuth = 20, ShadowStrength = 0.95,
+        HemiSky = "#7c96d0", HemiGround = "#30241a", HemiIntensity = 0.78, EnvIntensity = 0.6,
+        FogColor = "#9a8e98", FogDensity = 0.0065, Exposure = 1.15, Rim = "#ffd8b0", RimStrength = 0.25,
+        Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.2, MistColor = "#8a8894",
     };
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
     /// (azimuth -10, so the day's arc runs on through the day's 290 to dusk's 200 without crossing the camera).</summary>
-    public static readonly AtmospherePreset WaystationDawn = LowFordDawn with { KeyElevation = 14, KeyAzimuth = -10, Haze = 0.003 };
+    public static readonly AtmospherePreset WaystationDawn = LowFordDawn with
+    {
+        KeyIntensity = 5.6, KeyElevation = 14, KeyAzimuth = -10, HemiIntensity = 0.66, EnvIntensity = 0.52, Exposure = 1.12, Haze = 0.003,
+    };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96],
         "#3a5878", "#ffd49a", 0.18, 0.9, 0.1, 1.12) { Toe = 0.5 };
@@ -113,7 +118,7 @@ public static class Atmospheres
     {
         KeyColor = "#ffeccc", KeyIntensity = 4.6, KeyElevation = 28, KeyAzimuth = 290, ShadowStrength = 0.95,
         HemiSky = "#8ea6c4", HemiGround = "#3e3022", HemiIntensity = 0.62, EnvIntensity = 0.55,
-        Exposure = 0.95, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.002,
+        Exposure = 0.95, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.002, Mist = 0.05, MistColor = "#a8acb4",
     };
 
     public static AtmospherePreset ByName(string name) => name switch
@@ -139,7 +144,7 @@ public static class Atmospheres
             Mix(a.Grade.ShadowTint, b.Grade.ShadowTint, t), Mix(a.Grade.HighlightTint, b.Grade.HighlightTint, t),
             Lerp(a.Grade.TintStrength, b.Grade.TintStrength, t), Lerp(a.Grade.Saturation, b.Grade.Saturation, t),
             Lerp(a.Grade.Vibrance, b.Grade.Vibrance, t), Lerp(a.Grade.Contrast, b.Grade.Contrast, t)) { Toe = Lerp(a.Grade.Toe, b.Grade.Toe, t) })
-        { Haze = Lerp(a.Haze, b.Haze, t) };
+        { Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t) };
 
     /* ------------------------------------------------------------ colour -- */
 
