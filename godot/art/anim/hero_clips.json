@@ -169,7 +169,7 @@
 	"death": {
 		"hold": true,
 		"layer": "full",
-		"length": 1.13333332538605,
+		"length": 1.5,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -192,6 +192,20 @@
 		"note": "the shoulders settle over 1.2 s, held",
 		"source": "keyed (tools/anim)"
 	},
+	"flare_burns_twice": {
+		"blend_out": 1.53333333333333,
+		"contact": 0.666666666666667,
+		"contacts": [
+			0.666666666666667,
+			1.43333333333333
+		],
+		"layer": "full",
+		"length": 2.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "staff"
+	},
 	"flinch": {
 		"layer": "gesture",
 		"length": 0.466666668653488,
@@ -202,7 +216,14 @@
 	},
 	"get_up": {
 		"layer": "full",
-		"length": 1.46666669845581,
+		"length": 2.03333330154419,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"get_up_back": {
+		"layer": "full",
+		"length": 1.66666662693024,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -251,7 +272,7 @@
 		"weapon": "axe"
 	},
 	"idle_stalker": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
 		"layer": "full",
 		"length": 5.09999990463257,
 		"licence": "CC BY 4.0",
@@ -267,6 +288,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "crossbow"
+	},
+	"idle_stalker_daggers": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
+		"layer": "full",
+		"length": 5.09999990463257,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
+		"speed": 0.0,
+		"weapon": "daggers"
 	},
 	"idle_warden": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
@@ -285,6 +316,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"idle_warden_town": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.33333349227905,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE WiggleHips_ID frames 1474-1794 (60 fps)",
+		"speed": 0.0,
+		"weapon": ""
 	},
 	"leap": {
 		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
@@ -429,7 +470,7 @@
 	"sit_back_heels": {
 		"hold": true,
 		"layer": "full",
-		"length": 6.0,
+		"length": 6.36666679382324,
 		"licence": "own work",
 		"loop": false,
 		"note": "keyed (C01): from the forearm to sitting sideways, onto her knees and back on her heels, looking at her hands",
@@ -602,6 +643,22 @@
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
 	},
+	"stop_warden_town_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": ""
+	},
+	"stop_warden_town_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": ""
+	},
 	"sword_back": {
 		"contact": 0.0833333333333333,
 		"layer": "upper",
@@ -630,9 +687,9 @@
 		"weapon": "sword+shield"
 	},
 	"throw": {
-		"contact": 0.0833333333333333,
+		"contact": 0.116666666666667,
 		"layer": "upper",
-		"length": 0.666666686534882,
+		"length": 0.699999988079071,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
