@@ -1,0 +1,12 @@
+watch_c0|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 8 --npc watch:swap
+watch_c1|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 9.3 --npc watch:swap
+watch_c2|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 10.6 --npc watch:swap
+watch_m|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 0.6 --seconds 9 --npc watch:swap
+watch_p|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --seconds 9 --npc watch
+folk_c0|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 8 --npc folk:swap
+folk_c1|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 9.7 --npc folk:swap
+folk_c2|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 11.4 --npc folk:swap
+keegan_c0|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 8 --npc def.keegan:swap
+keegan_c1|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 9.5 --npc def.keegan:swap
+wenna_c0|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 8 --npc def.wenna:swap
+wenna_c1|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 9.5 --npc def.wenna:swap

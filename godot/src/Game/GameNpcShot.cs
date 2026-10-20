@@ -93,11 +93,22 @@ public partial class Game
         if (Args.Get("npc") is not string arg || scene == null) return;
         var parts = arg.Split(':');
         var name = parts[0];
-        var m = NpcPackage.Read(name);
-        var spec = new PersonSpec { Sex = m?.Sex == "female" ? Rpg.Sex.Female : Rpg.Sex.Male, Body = NpcPackage.Prefix + name };
-        var v = new PersonView(spec, null, 0.8) { Name = "ShotNpc" };
+        // (kit folk as the town builds them: "watch", a gate Watchman with sword and shield; "folk", a townsperson;
+        // "def.ID", a story NPC from npcs.json, with its own arms and idle)
+        var rng = new Random((int)Args.Num("seed", 1));
+        PersonSpec spec; Held? arms = null; string idle = "Idle"; double scale = 1;
+        if (name == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword", Forearm = "shield_round" }; idle = "Idle_Shield_Loop"; }
+        else if (name == "folk") { var l = Lore.FolkLooks[1 % Lore.FolkLooks.Count]; spec = Folk.Person(FolkRole.Adult, l, rng); scale = l.Scale ?? 1; }
+        else if (name.StartsWith("def.") && Lore.Person(name[4..]) is { } def) { spec = def.Person ?? new PersonSpec { Sex = Rpg.Sex.Male }; arms = def.Arms; idle = def.Idle.Length > 0 ? def.Idle : "Idle"; scale = def.Scale ?? 1; }
+        else
+        {
+            var m = NpcPackage.Read(name);
+            spec = new PersonSpec { Sex = m?.Sex == "female" ? Rpg.Sex.Female : Rpg.Sex.Male, Body = NpcPackage.Prefix + name };
+        }
+        var v = new PersonView(spec, arms, 0.8 * scale) { Name = "ShotNpc" };
         scene.AddChild(v);
-        v.Loop("Idle");
+        v.Loop(idle);
+        GD.Print($"npc shot: {name} plays {idle}");
         AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap")));
     }
 
