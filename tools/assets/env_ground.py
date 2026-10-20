@@ -402,64 +402,74 @@ def nor8(n):
 
 
 # The painted setts (style r2, E3 job 1; the Godot flag --setts-paint) ------------------------------------------------
-# A second layout and look beside the first (which stays as it is): stones of varied size (a few big flat flags, mostly
-# mid stones, small fill stones) by dart throwing on the torus, as a power diagram weighted by each stone's own radius;
-# each stone one flat painted tone, lighter on its top and its sun-side rim, darker at its foot, a gentle tonal stroke
-# along its long axis; the joints opaque matte ochre-brown packed mud, uneven, flush over the stones' buried edges.
+# A second layout and look beside the first (which stays as it is): angular flat-topped stones (rough quadrilaterals
+# and pentagons, aspect 1:1 to 1:2) laid in loose courses along x, a few big flags in the tall courses, mostly mid
+# stones, small fill stones; each stone one flat painted tone (ochre-grey, cream, a few cooler grey-blue), its top
+# tilted a little, a narrow bevel lit on the sun side and darker on the far side, a gentle tonal stroke along its long
+# axis; the joints thin where stones meet, packed mud near the stones' shaded value, wider mud gaps where a stone is missing.
 #   python tools/assets/env_ground.py --paint [--bake] [--sizes]
 # writes setts_paint_{albedo,normal,arh}.jpg (3 variants x 1024, as the first) and its masks to tools/assets/setts_src_paint/.
 
 SRC_PAINT = ROOT / 'tools' / 'assets' / 'setts_src_paint'
-P_CLASSES = ((0.42, 0.60, 260), (0.24, 0.34, 2400), (0.12, 0.19, 2500))   # diameter range (m, joint included), darts
-P_BIG_FILL = 0.30          # of the big darts thrown, the share kept (a few flags, not a pavement of them)
 P_BAND = 0.55              # the tile's border band (m): its stones are shared by all variants, so tiles meet clean
-P_SEP = 0.88               # darts may sit this close (of their radii's sum)
-P_KK = 140.0               # corners' rounding (1/m): squarer than the first layout's
-P_JOINT_HALF = 0.0085      # half a joint (1.3-2.5 cm full)
-P_DOME_H = 0.010
-P_WOBBLE = 0.0035
-P_STONE_HSV = (33.0, 0.22, 0.300)   # warmer than the first's (34, 0.16, 0.33); value set so the mean albedo matches
+P_ROW_MID = (0.18, 0.27)   # a course's height (m); a quarter of the courses are tall (big flags, or stacked fill stones)
+P_ROW_TALL = (0.31, 0.42)
+P_TALL_P = 0.25
+P_ASPECT = (1.0, 1.8)      # a stone's length over its course's height
+P_INSET = (0.003, 0.008)   # each side set in from its slot: two neighbours' joint 0.6-1.6 cm, tapering
+P_KK = 260.0               # corners' rounding (1/m)
+P_BEVEL = (0.015, 0.020)   # the bevel at a stone's edge (m); the top flat inside it
+P_TOP_H = 0.010            # the top's height over the joint's floor (m)
+P_TILT = 2.5               # the top's tilt, at most (degrees; SD 1.2), in the normal; a quarter of it in the height
+P_WOBBLE = 0.0025
 P_SUN = np.array([0.866, -0.5])     # toward the sun in the tile (col, row): azimuth 330 (x = cos az, z = sin az; rows = z)
 P_STROKE = 0.04                     # the tonal stroke along a stone's long axis, +/-
 P_STROKE_W = 0.0175                 # its width (m)
-P_WARP = 0.018                      # the stones' outlines warped (m, over about 0.35 m): no regular polygons
+# The stones' palettes: (share, hue, saturation, value): ochre-grey, cream, a few cooler grey-blue.
+P_PALETTE = ((0.72, 33.0, 0.22, 0.300), (0.20, 40.0, 0.15, 0.335), (0.08, 215.0, 0.05, 0.290))
+P_VAL_SD = 0.12
 
 
 def setts_layout_paint(variant):
-    """Seeds, their radii and their keys: the border band from one shared draw, the middle from the variant's."""
-    seeds, rad, keys = [], [], []
-    def edged(p):
-        return min(p[0], SETTS_M - p[0], p[1], SETTS_M - p[1])
-    def ok(p, r):
-        if not seeds:
-            return True
-        d = np.array(seeds) - p
-        d -= SETTS_M * np.round(d / SETTS_M)
-        return bool((np.hypot(d[:, 0], d[:, 1]) >= P_SEP * (np.array(rad) + r)).all())
-    for part, rng in (('band', np.random.default_rng(0x5E77)), ('mid', np.random.default_rng(0x5E78 + 7919 * variant))):
-        for ci, (lo, hi, darts) in enumerate(P_CLASSES):
-            # (More darts in the band: a hole left there is filled by a middle stone, which differs by variant.)
-            for t in range(darts * (3 if part == 'band' else 1)):
-                p = rng.uniform(0, SETTS_M, 2)
-                r = rng.uniform(lo, hi) / 2
-                u = rng.uniform()
-                if (part == 'band') != (edged(p) < P_BAND):
-                    continue
-                if ci == 0 and u > P_BIG_FILL:
-                    continue
-                # (A big stone in the middle keeps clear of the band, so the band's stones are the same in every variant.)
-                if part == 'mid' and edged(p) < P_BAND + (r if ci == 0 else 0.5 * r):
-                    continue
-                if ok(p, r):
-                    seeds.append(p); rad.append(r); keys.append((t, ci, 0 if part == 'band' else variant + 1))
-    return np.array(seeds), np.array(rad), keys
+    """The courses (rows along x, their heights shared by every variant) and each course's slots. A course inside the
+    tile's border band, and a course's first and last P_BAND metres along x, come from one shared draw; the rest from
+    the variant's. Returns the courses' tops (z, m), heights, and per course (start x, slot widths, slot keys)."""
+    rz = np.random.default_rng(0x5E7A)
+    hs = []
+    while sum(hs) < SETTS_M - 0.5:
+        hs.append(rz.uniform(*P_ROW_TALL) if rz.uniform() < P_TALL_P else rz.uniform(*P_ROW_MID))
+    hs = np.array(hs) * SETTS_M / sum(hs)
+    z0 = -hs[0] / 2 + np.concatenate([[0], np.cumsum(hs)[:-1]])          # course 0 straddles z = 0
+    rows = []
+    for j, h in enumerate(hs):
+        shared = z0[j] < P_BAND or z0[j] + h > SETTS_M - P_BAND
+        rs = np.random.default_rng(0x5E7B + 131 * j)
+        rv = rs if shared else np.random.default_rng(0x5E7C + 131 * j + 7919 * (variant + 1))
+        w0 = h * rs.uniform(*P_ASPECT)
+        a = w0 * rs.uniform(0.25, 0.75)                                  # the slot across x = 0: [-a, w0 - a]
+        fw, x = [], w0 - a
+        while x < P_BAND:
+            w = h * rs.uniform(*P_ASPECT); fw.append(w); x += w
+        bw, xb = [], SETTS_M - a
+        while xb > SETTS_M - P_BAND:
+            w = h * rs.uniform(*P_ASPECT); bw.append(w); xb -= w
+        gap = xb - x
+        n = max(1, int(round(gap / (h * 1.4))))
+        mw = h * rv.uniform(*P_ASPECT, n)
+        mw = mw * gap / mw.sum()
+        ws = [w0] + fw + list(mw) + bw[::-1]
+        keys = ([(j, 0, 0)] + [(j, k + 1, 0) for k in range(len(fw))]
+                + [(j, 1000 + k, 0 if shared else variant + 1) for k in range(n)]
+                + [(j, -k - 1, 0) for k in range(len(bw))][::-1])
+        rows.append((-a, np.array(ws), keys))
+    return z0, hs, rows
 
 
 def setts_sources_paint(variant):
-    """As setts_sources(), for the painted layout; adds lit (the sun-side rim, 0-1), foot (0-1) and stroke (-1..1)."""
-    s, rad, keys = setts_layout_paint(variant)
-    wt = rad * rad
-    tree = cKDTree(s, boxsize=SETTS_M)
+    """The painted layout's masks: height (metres), id, tone, wear, mud, moss, sid, stone, dome (the bevel's profile,
+    0 at the joint, 1 on the flat top), lit (the bevel's sun side, 0-1), foot (its far side, 0-1), stroke (-1..1),
+    narrow (a joint's narrowness, 0-1). And hn, the normal's height (the tops' full tilt)."""
+    z0, hs, rows = setts_layout_paint(variant)
     px = SETTS_M / SN
     cpx = SN / SETTS_M
     g = (np.arange(SN) + 0.5) * px
@@ -470,109 +480,171 @@ def setts_sources_paint(variant):
     def mixed(cell_m, oct_, sd):
         return (fbm(SN, np.random.default_rng(sd), cell_m * cpx, oct_) * (1 - m)
                 + fbm(SN, np.random.default_rng(sd + 1 + variant), cell_m * cpx, oct_) * m)
-    P = np.stack([(X + P_WARP * mixed(0.35, 2, 600)).ravel(), (Z + P_WARP * mixed(0.35, 2, 610)).ravel()], -1)
-    edge = np.zeros(len(P)); i1 = np.zeros(len(P), int); qa = np.zeros((len(P), 2))
-    for c0 in range(0, len(P), 1 << 18):
-        Pc = P[c0:c0 + (1 << 18)]
-        d, idx = tree.query(Pc, k=12)
-        pw = d * d - wt[idx]
-        o = np.argsort(pw, 1)
-        idx = np.take_along_axis(idx, o, 1)
-        a = idx[:, 0]
-        q = Pc - s[a]
-        q -= SETTS_M * np.round(q / SETTS_M)
-        es = []
-        for c in range(1, 12):
-            v = s[idx[:, c]] - s[a]
-            v -= SETTS_M * np.round(v / SETTS_M)
-            vl = np.maximum(np.linalg.norm(v, axis=1), 1e-6)
-            es.append((vl * vl + wt[a] - wt[idx[:, c]]) / (2 * vl) - (q * v).sum(1) / vl)
-        es = np.maximum(np.stack(es, 1), 0)
-        edge[c0:c0 + len(Pc)] = -np.log(np.exp(-P_KK * es).sum(1)) / P_KK
-        i1[c0:c0 + len(Pc)] = a; qa[c0:c0 + len(Pc)] = q
-    edge = np.maximum(edge.reshape(SN, SN), 0)
-    q = qa.reshape(SN, SN, 2)
-    i1 = i1.reshape(SN, SN)
-    ns = len(s)
-    # Angular stones: the mid and big ones clipped by a polygon of their own (5-8 sides, about their centroid), so a stone
-    # among many small neighbours is not a round blob; the slivers cut off become mud.
-    inc = (edge > 0.004).ravel().astype(float)
-    ii = i1.ravel(); qx, qz = q[..., 0].ravel(), q[..., 1].ravel()
-    cnt = np.bincount(ii, inc, ns) + 1e-9
-    cx = np.bincount(ii, inc * qx, ns) / cnt; cz = np.bincount(ii, inc * qz, ns) / cnt
-    R = np.zeros(ns); np.maximum.at(R, ii, inc * np.hypot(qx - cx[ii], qz - cz[ii]))
-    # (The band's stones by their own seed and radius alone, which no variant changes, so the tiles still meet clean.)
-    shared = np.array([k[2] == 0 for k in keys])
-    cx[shared] = 0; cz[shared] = 0; R[shared] = rad[shared] * 1.2
-    pr = [np.random.default_rng((k[0] * 2654435761) ^ (k[1] * 40503) ^ (k[2] * 9176) ^ 0x7A6) for k in keys]
-    nsd = np.array([r.integers(5, 7) if rad[k] > 0.2 else r.integers(6, 9) for k, r in enumerate(pr)])
-    rot = np.array([r.uniform(0, 2 * np.pi) for r in pr])
-    apo = np.array([r.uniform(0.95, 1.07, 8) for r in pr]) * (R * np.cos(np.pi / nsd))[:, None]
-    apo[rad < 0.1] = 9.0
-    apo[np.arange(8)[None, :] >= nsd[:, None]] = 9.0
-    ux, uz = q[..., 0] - cx[i1], q[..., 1] - cz[i1]
-    ep = np.full((SN, SN), 9.0)
-    for j in range(8):
-        th = rot[i1] + 2 * np.pi * j / nsd[i1] + 0.25 * np.sin(rot[i1] * (j + 3))
-        ep = np.minimum(ep, apo[i1, j] - (ux * np.cos(th) + uz * np.sin(th)))
-    edge = -np.log(np.exp(-P_KK * edge) + np.exp(-P_KK * np.maximum(ep, 0))) / P_KK
-    edge = np.maximum(edge, 0)
+    # The courses bow a little in the middle of the tile, differently in each variant (straight at its edge).
+    ex = np.sin(np.pi * X / SETTS_M) * np.sin(np.pi * Z / SETTS_M)
+    Zb = Z + 0.05 * ex * np.sin(2 * np.pi * X / SETTS_M * (1 + variant % 2) + variant * 2.1)
+    Zb = Zb + 0.035 * mixed(0.28, 1, 800)                               # the course lines bent, gently
+    zc = np.mod(Zb - z0[0], SETTS_M) + z0[0]
+    j = np.clip(np.searchsorted(z0, zc, side='right') - 1, 0, len(hs) - 1)
+    v = zc - z0[j]                                                       # down the course, 0..h
+    # Each slot's sides are slanted lines (a course's joints are not square to it), its top and bottom the course's
+    # bent lines; then the slot perhaps split (two side by side; in a tall course two stacked, or four), or missing (a
+    # smaller fill stone in a wider mud gap). Each stone's sides set in by their own amounts at each end (no two
+    # parallel), a third with a corner cut (a pentagon). Stones keyed (course, slot, part, variant).
+    i1 = np.zeros((SN, SN), int)
+    U = np.zeros((SN, SN)); V = np.zeros((SN, SN)); edge = np.zeros((SN, SN))
+    keys, tall = [], []
+    def smin(ds):
+        acc = sum(np.exp(-P_KK * np.clip(d, -0.05, 0.3)) for d in ds)
+        return -np.log(acc) / P_KK
+    for jj, (x0, ws, ks) in enumerate(rows):
+        h = hs[jj]
+        sel = j == jj
+        if not sel.any():
+            continue
+        xs = np.mod(X[sel] - x0, SETTS_M)
+        vv = v[sel]
+        n = len(ws)
+        bnd = np.concatenate([[0], np.cumsum(ws)])
+        # A slot's left side slants by its own key's draw; the last boundary is the first's, 4 m on.
+        sl = np.array([np.random.default_rng((ks[k][0] * 7177) ^ ((ks[k][1] + 5000) * 3301) ^ (ks[k][2] * 83492791) ^ 0x51A7)
+                       .uniform(-0.5, 0.5) for k in range(n)])
+        sl = np.concatenate([sl, sl[:1]])
+        B = bnd[None, :] + sl[None, :] * (vv[:, None] - h / 2)
+        xs2 = np.where(xs < B[:, 0], xs + SETTS_M, xs)
+        k = np.clip((B <= xs2[:, None]).sum(1) - 1, 0, n - 1)
+        L = B[np.arange(len(xs)), k]; R = B[np.arange(len(xs)), k + 1]
+        Wv = np.maximum(R - L, 1e-3)
+        s = (xs2 - L) / Wv
+        t = np.clip(vv / h, 0, 1)
+        cl_ = 1 / np.sqrt(1 + sl[k] ** 2); cr_ = 1 / np.sqrt(1 + sl[k + 1] ** 2)
+        ids = np.zeros(len(xs), int); ed = np.zeros(len(xs))
+        for sk in range(n):
+            key = ks[sk]
+            r = np.random.default_rng((key[0] * 73856093) ^ ((key[1] + 5000) * 19349663) ^ (key[2] * 83492791) ^ 0x51AB)
+            w = ws[sk]
+            u_ = r.uniform()
+            if h > P_ROW_TALL[0] - 0.01:
+                kind = ('v2' if w > 1.25 * h else 'h2') if u_ < 0.25 else ('q4' if u_ < 0.33 else ('miss' if u_ < 0.36 else 'one'))
+            else:
+                kind = 'v2' if (u_ < 0.18 and w > 1.4 * h) else ('miss' if 0.18 <= u_ < 0.26 else ('fill' if u_ < 0.42 else 'one'))
+            if kind == 'one':
+                rects = [(0, 0, 1, 1)]
+            elif kind == 'v2':
+                c = r.uniform(0.4, 0.6); rects = [(0, 0, c, 1), (c, 0, 1, 1)]
+            elif kind == 'fill':
+                # (A small fill stone, or two stacked, beside a shortened one.)
+                c = max(0.35, 1 - h * r.uniform(0.55, 0.8) / w)
+                if r.uniform() < 0.5:
+                    c = 1 - c; rects = [(0, 0, c, 1), (c, 0, 1, 1)]
+                else:
+                    rects = [(0, 0, c, 1), (c, 0, 1, 1)]
+                if r.uniform() < 0.4:
+                    a_, b_ = rects[1] if c > 0.5 else rects[0], r.uniform(0.4, 0.6)
+                    rects = [q for q in rects if q != a_] + [(a_[0], 0, a_[2], b_), (a_[0], b_, a_[2], 1)]
+            elif kind == 'h2':
+                c = r.uniform(0.4, 0.6); rects = [(0, 0, 1, c), (0, c, 1, 1)]
+            elif kind == 'q4':
+                c, d = r.uniform(0.4, 0.6), r.uniform(0.4, 0.6)
+                rects = [(0, 0, c, d), (c, 0, 1, d), (0, d, c, 1), (c, d, 1, 1)]
+            else:
+                cw, ch = r.uniform(0.72, 0.86), r.uniform(0.7, 0.85)
+                ox, oy = r.uniform(0.3, 0.7) * (1 - cw), r.uniform(0.3, 0.7) * (1 - ch)
+                rects = [(ox, oy, ox + cw, oy + ch)]
+            mk = k == sk
+            for pi, (s0, t0, s1, t1) in enumerate(rects):
+                gid = len(keys)
+                inn = mk & (s >= s0) & (s < s1) & (t >= t0) & (t < t1) if len(rects) > 1 else mk
+                if not inn.any():
+                    keys.append(key + (pi,)); tall.append(False)
+                    continue
+                si, ti = s[inn], t[inn]
+                iv = r.uniform(*P_INSET, (4, 2))                       # each side's inset at its two ends
+                iv[2:] += r.uniform(0, 0.012, (2, 2)) * (r.uniform() < 0.5)   # (half the stones sit lower or higher in the course)
+                dl = (si - s0) * Wv[inn] * (cl_[inn] if s0 == 0 else 1) - (iv[0, 0] + (iv[0, 1] - iv[0, 0]) * ti)
+                dr = (s1 - si) * Wv[inn] * (cr_[inn] if s1 == 1 else 1) - (iv[1, 0] + (iv[1, 1] - iv[1, 0]) * ti)
+                dt_ = (ti - t0) * h - (iv[2, 0] + (iv[2, 1] - iv[2, 0]) * si)
+                db = (t1 - ti) * h - (iv[3, 0] + (iv[3, 1] - iv[3, 0]) * si)
+                ds = [dl, dr, dt_, db]
+                if r.uniform() < 0.5:
+                    ci = r.integers(0, 4)
+                    ax = (si - s0) * Wv[inn] if ci in (0, 3) else (s1 - si) * Wv[inn]
+                    ay = (ti - t0) * h if ci in (0, 1) else (t1 - ti) * h
+                    ph_ = np.radians(r.uniform(30, 60))
+                    cl = min((s1 - s0) * w, (t1 - t0) * h) * r.uniform(0.22, 0.38)
+                    ds.append(ax * np.cos(ph_) + ay * np.sin(ph_) - cl)
+                ids[inn] = gid
+                ed[inn] = smin(ds)
+                keys.append(key + (pi,)); tall.append(h > P_ROW_TALL[0] - 0.01 and len(rects) == 1)
+        i1[sel] = ids; edge[sel] = ed
+        U[sel] = xs2; V[sel] = vv
+    ns = len(keys)
     edge = edge + P_WOBBLE * mixed(0.05, 2, 500)
 
     tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); sid = np.zeros(ns)
-    phs = np.zeros((ns, 3))
+    phs = np.zeros((ns, 3)); bev = np.zeros(ns)
+    pal_c = np.cumsum([p[0] for p in P_PALETTE])
     for k, key in enumerate(keys):
-        r = np.random.default_rng((key[0] * 73856093) ^ (key[1] * 19349663) ^ (key[2] * 83492791) ^ 0x9A1)
-        cool = r.uniform() < 0.12                     # a few cooler grey stones
-        h = (P_STONE_HSV[0] + (10.0 if cool else 0.0) + np.clip(r.normal(0, 3.5), -8, 8)) / 360.0
-        sat = P_STONE_HSV[1] * (0.65 if cool else 1.0) * r.uniform(0.85, 1.15)
-        val = P_STONE_HSV[2] * np.clip(r.normal(1.0, 0.11), 0.78, 1.25) * (1.04 if key[1] == 0 else 1.0)
-        tone[k] = colorsys.hsv_to_rgb(h, sat, val)
+        r = np.random.default_rng((key[0] * 73856093) ^ ((key[1] + 5000) * 19349663) ^ (key[2] * 83492791) ^ (key[3] * 2654435761) ^ 0x9A1)
+        _, ph_, ps_, pv_ = P_PALETTE[int(np.searchsorted(pal_c, r.uniform()))]
+        hh = (ph_ + np.clip(r.normal(0, 3.0), -7, 7)) / 360.0
+        sat = ps_ * r.uniform(0.85, 1.15)
+        val = pv_ * np.clip(r.normal(1.0, P_VAL_SD), 0.76, 1.26) * (1.04 if tall[k] else 1.0)
+        tone[k] = colorsys.hsv_to_rgb(hh % 1.0, sat, val)
         wear[k] = r.uniform(0, 1) ** 1.5
-        tilt[k] = r.normal(0, 0.022, 2)
-        top[k] = r.uniform(0.8, 1.05)
+        a = np.radians(np.clip(abs(r.normal(0, 1.2)), 0, P_TILT)); th = r.uniform(0, 2 * np.pi)
+        tilt[k] = np.tan(a) * np.array([np.cos(th), np.sin(th)])
+        top[k] = r.uniform(0.85, 1.05)
         sid[k] = r.uniform(0.1, 0.9)
         phs[k] = r.uniform(0, 2 * np.pi, 3)
+        bev[k] = r.uniform(*P_BEVEL)
 
-    dirt = mixed(0.6, 4, 100)
-    fine = mixed(0.05, 3, 110)
-    jv = mixed(0.15, 2, 300)
-    joint = (P_JOINT_HALF + 0.0035 * jv) * (1 + 0.25 * np.clip(dirt, 0, 1))
-    # The dome reaches further in on a big stone: a flag is a flat top with a rounded edge.
-    dr = np.clip(0.28 * rad, 0.03, 0.085)[i1]
-    dome = np.clip((edge - joint) / dr, 0, 1)
+    # Flat tops: a narrow bevel at the edge, then flat; each top tilted a little (full in the normal, a quarter in the
+    # height the shader reads, so the mud's levels hold).
+    stone = gaussian_filter((edge > 0).astype(float), 0.7, mode='wrap')
+    dome = np.clip(edge / bev[i1], 0, 1)
     dome = 1 - (1 - dome) ** 2
-    stone = gaussian_filter((edge > joint).astype(float), 0.7, mode='wrap')
-    hd = dome * P_DOME_H * top[i1]
-    h_m = hd + (q * tilt[i1]).sum(-1) * stone + 0.0003 * fine * stone
-    # The joints filled flatter than the first layout's: packed mud a little under the stones' edges.
+    stn = edge > 0
+    ii = i1.ravel(); stf = stn.ravel().astype(float)
+    cnt = np.bincount(ii, stf, ns) + 1e-9
+    cu = np.bincount(ii, stf * U.ravel(), ns) / cnt; cv = np.bincount(ii, stf * V.ravel(), ns) / cnt
+    qu, qv = U - cu[i1], V - cv[i1]
+    plane = qu * tilt[i1, 0] + qv * tilt[i1, 1]
+    fine = mixed(0.05, 3, 110)
+    dirt = mixed(0.6, 4, 100)
+    hd = dome * P_TOP_H * top[i1]
+    h_m = (hd + 0.25 * plane * dome) * stone
+    h_nm = (hd + plane * dome) * stone
+    # The joints: the gaps' width from the distance to the nearest stone; narrow cracks low, wide gaps packed with mud.
+    from scipy.ndimage import distance_transform_edt, maximum_filter
+    jm = ~stn
+    dt = distance_transform_edt(np.pad(jm, SN // 8, mode='wrap'))[SN // 8:-(SN // 8), SN // 8:-(SN // 8)] * px
+    wid = maximum_filter(dt, size=5, mode='wrap') * 2                     # about the gap's full width (m)
+    narrow = np.clip((0.016 - wid) / 0.008, 0, 1) * (1 - stone)
     mud = np.clip(0.55 + 0.45 * mixed(0.12, 3, 200) + 0.3 * dirt, 0, 1) * (1 - stone)
-    h_m = h_m * stone + (1 - stone) * (-0.0036 + 0.0010 * fine + 0.0016 * mud)
+    jh = -0.0036 + 0.0010 * fine + 0.0018 * mud * (1 - narrow) - 0.0006 * narrow
+    h_m = h_m + (1 - stone) * jh
+    h_nm = h_nm + (1 - stone) * jh
     moss = np.clip((-dirt - 0.2) * 2.5, 0, 1) * np.clip(0.5 + 0.8 * mixed(0.08, 2, 210), 0, 1) * (1 - stone)
 
-    # The sun-side rim and the foot, from the dome's own slope (image cols, rows).
+    # The bevel's sun side and its far side (image cols, rows).
     gx = (np.roll(hd, -1, 1) - np.roll(hd, 1, 1)) / (2 * px)
     gz = (np.roll(hd, -1, 0) - np.roll(hd, 1, 0)) / (2 * px)
     sl = np.hypot(gx, gz) + 1e-9
-    face = -(gx * P_SUN[0] + gz * P_SUN[1]) / sl                     # 1 faces the sun, -1 away
-    ramp = np.clip(sl / (P_DOME_H / 0.03), 0, 1)                     # on the dome's edge, not its flat top
+    face = -(gx * P_SUN[0] + gz * P_SUN[1]) / sl
+    ramp = np.clip(sl / 0.15, 0, 1) * (dome < 0.999)
     lit = np.clip(face, 0, 1) * ramp * stone
-    foot = (1 - np.clip(dome / 0.35, 0, 1)) * stone * (0.6 + 0.4 * np.clip(-face, 0, 1))
+    foot = np.clip(-face, 0, 1) * ramp * stone
 
-    # The stroke: bands about P_STROKE_W wide along each stone's long axis, wavering, -1..1.
-    st = (edge > joint).ravel().astype(float)
-    ii = i1.ravel(); qx, qz = q[..., 0].ravel(), q[..., 1].ravel()
-    cnt = np.bincount(ii, st, ns) + 1e-9
-    mx = np.bincount(ii, st * qx, ns) / cnt; mz = np.bincount(ii, st * qz, ns) / cnt
-    sxx = np.bincount(ii, st * qx * qx, ns) / cnt - mx * mx
-    szz = np.bincount(ii, st * qz * qz, ns) / cnt - mz * mz
-    sxz = np.bincount(ii, st * qx * qz, ns) / cnt - mx * mz
+    # The stroke: bands along each stone's long axis (from its own moments), each band one value, eased into the next.
+    sxx = np.bincount(ii, stf * qu.ravel() ** 2, ns) / cnt
+    szz = np.bincount(ii, stf * qv.ravel() ** 2, ns) / cnt
+    sxz = np.bincount(ii, stf * (qu * qv).ravel(), ns) / cnt
     ang = 0.5 * np.arctan2(2 * sxz, sxx - szz)
     ca, sa = np.cos(ang)[i1], np.sin(ang)[i1]
-    um = q[..., 0] * ca + q[..., 1] * sa
-    un = -q[..., 0] * sa + q[..., 1] * ca
+    um = qu * ca + qv * sa
+    un = -qu * sa + qv * ca
     ph = phs[i1]
-    # Each band one random value (a stroke of paint), eased into the next; the bands waver and break along their length.
     tb = un / P_STROKE_W + 0.35 * np.sin(2 * np.pi * um / 0.17 + ph[..., 1]) + ph[..., 0] * 10
     tab = np.random.default_rng(700).uniform(-1, 1, 4096)
     b0 = np.floor(tb).astype(int) + 211 * i1 + np.floor(um / 0.09 + ph[..., 2]).astype(int) * 1543
@@ -583,14 +655,17 @@ def setts_sources_paint(variant):
 
     sidm = np.where(stone > 0.5, sid[i1], 0.0)
     wearm = wear[i1] * dome * stone
-    src = dict(height=h_m, id=i1.astype(float), tone=tone[i1], wear=wearm, mud=mud, moss=moss, sid=sidm,
-               stone=stone, dome=dome, lit=lit, foot=foot, stroke=stroke)
+    src = dict(height=h_m, hnorm=h_nm, id=i1.astype(float), tone=tone[i1], wear=wearm, mud=mud, moss=moss, sid=sidm,
+               stone=stone, dome=dome, lit=lit, foot=foot, stroke=stroke, narrow=narrow)
     if SIZES:
-        area = np.bincount(ii, st, ns) * px * px
+        area = np.bincount(ii, stf, ns) * px * px
         eq = np.sqrt(4 * area[area > 0.0015] / np.pi)
+        asp = np.sqrt(np.maximum(sxx, 1e-9) / np.maximum(szz, 1e-9))
+        asp = np.maximum(asp, 1 / asp)[area > 0.0015]
         print(f'  setts paint {variant}: stones {len(eq)}, eq. diameter p5 {np.percentile(eq, 5):.3f} p50 {np.median(eq):.3f} '
               f'p95 {np.percentile(eq, 95):.3f} max {eq.max():.3f}; over 35 cm {100 * (eq > 0.35).mean():.1f}%, '
-              f'under 18 cm {100 * (eq < 0.18).mean():.1f}%; area in stones {100 * st.mean():.1f}%', flush=True)
+              f'under 18 cm {100 * (eq < 0.18).mean():.1f}%; aspect p50 {np.median(asp):.2f} p95 {np.percentile(asp, 95):.2f}; '
+              f'area in stones {100 * stf.mean():.1f}%; joint width p50 {100 * np.median(wid[jm]):.1f} cm', flush=True)
     return src
 
 
@@ -599,20 +674,20 @@ def bake_setts_paint(src):
     px = SETTS_M / SN
     stone, dome, h_m, wear = src['stone'], src['dome'], src['height'], src['wear']
     st = stone[..., None]
-    flat = np.clip((dome - 0.75) / 0.25, 0, 1)                       # the stone's flat top
-    k = (1 + 0.03 * flat + 0.14 * src['lit'] - 0.06 * src['foot'] + P_STROKE * src['stroke'] + 0.05 * wear)
+    k = (1 + 0.10 * src['lit'] - 0.08 * src['foot'] + P_STROKE * src['stroke'] + 0.05 * wear)
     alb = src['tone'] * k[..., None]
-    # The joints: opaque matte ochre-brown packed mud (not dark lines), moss where it is never swept.
-    packed = np.array([0.31, 0.235, 0.15])
-    deep = np.array([0.255, 0.19, 0.12])
+    # The joints: packed mud near the stones' shaded value, only the narrow cracks darker; moss where never swept.
+    packed = np.array([0.295, 0.237, 0.168])
+    deep = np.array([0.268, 0.212, 0.146])
     moss = np.array([0.19, 0.22, 0.11])
     mortar = packed + (deep - packed) * src['mud'][..., None]
     mortar += (moss - mortar) * src['moss'][..., None] * 0.7
+    mortar *= 1 - 0.28 * src['narrow'][..., None]
     alb = np.clip(alb * st + mortar * (1 - st), 0, 1)
     rough = (0.76 - 0.12 * wear) * stone + 0.96 * (1 - stone)
     hn = np.clip((h_m + 0.006) / 0.022, 0, 1)
-    ao = gaussian_filter(np.clip(1 - 0.12 * (1 - stone) - 0.05 * src['foot'], 0, 1), 1.0, mode='wrap')
-    n = normal_from(h_m, px, 1.0)
+    ao = gaussian_filter(np.clip(1 - 0.06 * (1 - stone) - 0.12 * src['narrow'], 0, 1), 1.0, mode='wrap')
+    n = normal_from(src['hnorm'], px, 1.0)
     n[..., 2] = src['sid'] * 2 - 1
     STASH.update(i1=src['id'].astype(int), stone=stone, alb=alb)
     return alb, n, np.stack([ao, np.clip(rough, 0.05, 1), hn], -1)
@@ -622,9 +697,11 @@ def save_sources_paint(variant, src):
     SRC_PAINT.mkdir(parents=True, exist_ok=True)
     Image.fromarray(np.clip(np.round((src['height'] + 0.006) / 0.022 * 65535), 0, 65535).astype(np.uint16)).save(
         SRC_PAINT / f'v{variant}_height.png')
+    Image.fromarray(np.clip(np.round((src['hnorm'] + 0.02) / 0.05 * 65535), 0, 65535).astype(np.uint16)).save(
+        SRC_PAINT / f'v{variant}_hnorm.png')
     Image.fromarray(src['id'].astype(np.uint16)).save(SRC_PAINT / f'v{variant}_id.png')
     to8(src['tone']).save(SRC_PAINT / f'v{variant}_tone.png')
-    for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome', 'lit', 'foot'):
+    for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome', 'lit', 'foot', 'narrow'):
         to8(src[k]).save(SRC_PAINT / f'v{variant}_{k}.png')
     to8(src['stroke'] * 0.5 + 0.5).save(SRC_PAINT / f'v{variant}_stroke.png')
 
@@ -632,8 +709,9 @@ def save_sources_paint(variant, src):
 def load_sources_paint(variant):
     def f(name):
         return np.asarray(Image.open(SRC_PAINT / f'v{variant}_{name}.png')).astype(float)
-    src = {k: f(k) / 255 for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome', 'lit', 'foot')}
+    src = {k: f(k) / 255 for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome', 'lit', 'foot', 'narrow')}
     src['height'] = f('height') / 65535 * 0.022 - 0.006
+    src['hnorm'] = f('hnorm') / 65535 * 0.05 - 0.02
     src['id'] = f('id')
     src['tone'] = f('tone') / 255
     src['stroke'] = f('stroke') / 255 * 2 - 1
