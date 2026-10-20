@@ -116,11 +116,12 @@ public partial class Game
         // out from the wood behind her, not pasted on it.
         if (closeKey == null || !IsInstanceValid(closeKey) || closeKey.GetParent() != scene)
         {
-            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
+            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayers, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKey);
         }
         if (closeRim == null || !IsInstanceValid(closeRim) || closeRim.GetParent() != scene)
         {
+            // (On her and people, not her hair (PlayerView.HerHairLayer): from behind it lifted her copper crown.)
             closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.6f, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
@@ -133,7 +134,7 @@ public partial class Game
         {
             // (By night: the key CloseKeyAzNight degrees off her face, on the lens's side of it. She stands turned 0.6 rad
             // from the lens, so round 2's key at 0.7 rad was 6 degrees off her face: frontal, flat, waxy.)
-            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? 30 : 25);
+            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? CloseKeyElNight : 25);
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
         }
@@ -144,8 +145,8 @@ public partial class Game
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
         if (closeRim.Visible)
         {
-            // Behind her, on the side away from the key (her far cheek's), 35 degrees up.
-            float a = cam.Yaw + Mathf.Pi - CloseRimAz, up = Mathf.DegToRad(35);
+            // Behind her, on the side away from the key (her far cheek's), CloseRimEl degrees up.
+            float a = cam.Yaw + Mathf.Pi - CloseRimAz, up = Mathf.DegToRad(CloseRimEl);
             closeRim.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeRim.LookAt(chest + new Vector3(0, 0.15f, 0));
         }
@@ -157,7 +158,7 @@ public partial class Game
         if (src == null) { if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false; return; }
         if (fireFill == null || !IsInstanceValid(fireFill) || fireFill.GetParent() != scene)
         {
-            fireFill = new OmniLight3D { Name = "CloseFireFill", ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerLayer };
+            fireFill = new OmniLight3D { Name = "CloseFireFill", ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerLayers };
             scene!.AddChild(fireFill);
         }
         fireFill.GlobalPosition = src.GlobalPosition;
@@ -172,11 +173,18 @@ public partial class Game
     SpotLight3D? closeKey, closeRim;
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
-    // filled her shadow side almost to her lit side).
-    static float CloseFireShare => Args.Num("close-fire", 0.3f);
+    // filled her shadow side almost to her lit side). Art style round 2 (20 Oct): 0.75, rim 3, night key 2.2, under the paint grade.
+    static float CloseFireShare => Args.Num("close-fire", 0.9f);   // (G1 r3: 0.9; 1.0 puts her back on the world's fire layer, crown L 47.7 vs 46.8)
     // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
-    static float CloseKeyNight => Args.Num("close-key-night", 2.5f);
-    static float CloseRimNight => Args.Num("close-rim", 1.0f);
+    static float CloseKeyNight => Args.Num("close-key-night", 1.7f);   // (G1 r3: 2.2 to 1.7)
+    // --close-key-el D: the night key's elevation (degrees).
+    static float CloseKeyElNight => Args.Num("close-key-el", 18f);
+    // (G1 r2: rim 3.0 to 1.0 and down from 35 degrees to 10, the key from 30 to 18: from above they lifted her copper crown
+    // pinkish-tan, toward strawberry blonde (crown Oklab L 52.6, 44.9 now, her face 79.9 and 79.4: the crown to face of
+    // art style r2's frame, 0.56); low, the rim's cool edge grazes her shoulders and arms.)
+    static float CloseRimNight => Args.Num("close-rim", 3f);   // (G1 r3: 1.5; 3 lifted the crown to 47.9 at frame 03, at az 0.9 it fills her shade side. G1 r4: 3, off her hair (PlayerView.HerHairLayer): her far edge +4.4 to +5.1 L at hue 240, the crown 39.7 as without it)
+    // --close-rim-el D: the rim's elevation (degrees).
+    static float CloseRimEl => Args.Num("close-rim-el", 10f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
     static float CloseRimAz => Args.Num("close-rim-az", 0.5f);
     static float CloseLampByNight => Args.Num("close-lamp-night", 0.8f);
@@ -184,7 +192,7 @@ public partial class Game
     static bool CloseLampOffHer => !Args.Has("close-lamp-on-her");
     // --close-exp-night X: the close view's exposure by night against play's (pictures).
     // (Round 3: 2.0 left her face pale at 187; 0.35 of a stop under it brings it to about 165.)
-    static float CloseExposureNight => Args.Num("close-exp-night", 1.35f);   // x the preset's 1.5: face ~145-150 (judge 3 fix; round 3c's 1.465 left it pale at 170, the fire filling it)
+    static float CloseExposureNight => Args.Num("close-exp-night", 1.2f);   // (G1 r4: 1.35 to 1.2: at 1.35 a third of her lit face sat above Oklab L 85 at the tonemap's shoulder, flat and pale; earlier: x the preset's 1.5: face ~145-150 (judge 3 fix; round 3c's 1.465 left it pale at 170, the fire filling it))
     // --close-key-az D: the night key's angle off her face (degrees), toward the lens, so her far cheek falls into half
     // shade (E1 round 3: 50-60; judge 3 fix: 90, about 55 degrees off the lens on the fire's side, once the fire no longer filled her).
     // The key's colour: the ember's, saturated (1.0, 0.6, 0.35).

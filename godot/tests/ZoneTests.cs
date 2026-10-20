@@ -106,4 +106,21 @@ public class ZoneTests
         Assert.Equal((Atmospheres.Night.KeyElevation + Atmospheres.Day.KeyElevation) / 2, mid.KeyElevation);
         Assert.Equal(Json.Write(Atmospheres.Dawn), Json.Write(Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, 1)));
     }
+
+    [Fact]
+    public void Paint_grade_blends_and_old_grades_load_without_it()
+    {
+        // A cinematic's preset (no paint) handing back to play's fades the paint grade in; the shadow colour is the one that has it.
+        var half = Atmospheres.Blend(Atmospheres.Night, Atmospheres.LowFordNight, 0.5).Grade;
+        Assert.Equal(Atmospheres.LowFordNight.Grade.PaintVib / 2, half.PaintVib, 9);
+        Assert.Equal(Atmospheres.LowFordNight.Grade.PaintShadowK / 2, half.PaintShadowK, 9);
+        Assert.Equal(Atmospheres.LowFordNight.Grade.PaintShadow, half.PaintShadow);
+        Assert.Equal(Json.Write(Atmospheres.WaystationDay), Json.Write(Atmospheres.Blend(Atmospheres.WaystationDawn, Atmospheres.WaystationDay, 1)));
+        // The base presets keep none; a grade written before the paint terms loads with them off.
+        Assert.Equal(0, Atmospheres.Night.Grade.PaintVib);
+        Assert.Equal("", Atmospheres.Day.Grade.PaintShadow);
+        var old = Json.Parse<GradeSettings>("{\"lift\":[0,0,0],\"gamma\":[1,1,1],\"gain\":[1,1,1],\"shadowTint\":\"#808080\",\"highlightTint\":\"#808080\",\"tintStrength\":0,\"saturation\":1,\"vibrance\":0,\"contrast\":1}");
+        Assert.Equal(0, old.PaintVib + old.PaintHi + old.PaintShadowK + old.PaintLift);
+        Assert.Equal("", old.PaintShadow);
+    }
 }
