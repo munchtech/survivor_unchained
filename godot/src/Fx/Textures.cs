@@ -71,13 +71,13 @@ public static class Textures
     {
         if (string.IsNullOrEmpty(d) || d == "1") return null;
         if (d.StartsWith("res://")) return d.TrimEnd('/');
-        d = d.Replace('\\', '/');
-        var full = System.IO.Path.GetFullPath(d).Replace('\\', '/').TrimEnd('/');
+        d = d.Replace('\\', '/').TrimEnd('/');
         var proj = ProjectSettings.GlobalizePath("res://").Replace('\\', '/').TrimEnd('/');
-        if (full.StartsWith(proj + "/", System.StringComparison.OrdinalIgnoreCase)) return "res://" + full[(proj.Length + 1)..];
-        // (relative to the worktree root, while Godot runs in godot/)
-        var i = d.LastIndexOf("godot/", System.StringComparison.Ordinal);
-        return "res://" + (i >= 0 ? d[(i + 6)..] : d).TrimEnd('/');
+        if (System.IO.Path.IsPathRooted(d))
+            return d.StartsWith(proj + "/", System.StringComparison.OrdinalIgnoreCase) ? "res://" + d[(proj.Length + 1)..] : null;
+        // (relative to the worktree root, as the shot scripts give it: Godot itself runs in godot/)
+        var i = d.StartsWith("godot/") ? 0 : d.LastIndexOf("/godot/", System.StringComparison.Ordinal) + 1;
+        return "res://" + (i > 0 || d.StartsWith("godot/") ? d[(i + 6)..] : d);
     }
 
     /// <summary>Under --kit-paint, the shader weather (saturation kept, colour multiply) of a
@@ -116,5 +116,6 @@ public static class Textures
             t.TakeOverPath($"res://assets/{p}.ktx2");
             keep.Add(t);
         }
+        if (KitPaint != null) GD.Print($"kit-paint: {KitPaint}: {painted.Count} painted sheets");
     }
 }

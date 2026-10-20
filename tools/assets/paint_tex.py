@@ -46,16 +46,16 @@ PRESETS = {
     "plain": dict(detail=0.3, cavity=0.35, edge=0.25, top=0.12, warm=(2.0, 5.0), dull=1.0, chroma=1.1, hue=(0, 0), pull=0.0,
                   stroke=0.028, value=1.0, ms=(5, 12), weather=(0.82, (0.88, 0.87, 0.85))),
     # rough stone ring and walls: warm ochre-grey stones, dark gaps, light tops
-    "stone": dict(detail=0.22, cavity=0.55, edge=0.35, top=0.22, warm=(3.0, 9.0), dull=1.4, chroma=1.15, hue=(6, 16), pull=0.22,
-                  stroke=0.028, value=1.03, ms=(6, 14), weather=(0.86, (0.9, 0.87, 0.82))),
-    "rock": dict(detail=0.25, cavity=0.5, edge=0.32, top=0.2, warm=(2.5, 8.0), dull=1.3, chroma=1.12, hue=(5, 14), pull=0.2,
-                 stroke=0.028, value=1.02, ms=(6, 14), weather=(0.86, (0.9, 0.87, 0.82))),
+    "stone": dict(detail=0.22, cavity=0.75, edge=0.4, top=0.3, warm=(3.0, 9.0), dull=1.4, chroma=1.15, hue=(6, 16), pull=0.22,
+                  stroke=0.028, value=0.97, ms=(6, 14), weather=(0.86, (0.9, 0.87, 0.82))),
+    "rock": dict(detail=0.22, cavity=0.75, edge=0.4, top=0.3, warm=(3.0, 9.0), dull=1.4, chroma=1.15, hue=(6, 16), pull=0.22,
+                 stroke=0.028, value=0.97, ms=(6, 14), weather=(0.86, (0.9, 0.87, 0.82))),
     # warm painted wood: honey and umber, grain as long strokes
     "wood": dict(detail=0.3, cavity=0.45, edge=0.25, top=0.15, warm=(4.0, 8.0), dull=1.2, chroma=1.18, hue=(14, 30), pull=0.18,
                  stroke=0.045, value=1.06, ms=(5, 12), weather=(0.88, (0.86, 0.82, 0.76))),
     # terracotta round tiles: warm, varied, sun-baked tops, dark undersides
-    "tiles": dict(detail=0.25, cavity=0.5, edge=0.3, top=0.25, warm=(3.0, 4.0), dull=1.0, chroma=1.0, hue=(30, 32), pull=0.12,
-                  stroke=0.025, value=0.98, ms=(6, 14), weather=(0.82, (0.86, 0.78, 0.72))),
+    "tiles": dict(detail=0.25, cavity=0.6, edge=0.3, top=0.25, warm=(2.0, 6.0), dull=1.0, chroma=0.92, hue=(22, 28), pull=0.2,
+                  stroke=0.025, value=0.9, ms=(6, 14), weather=(0.76, (0.84, 0.77, 0.7))),
 }
 VILLAGE = {"T_UnevenBrick": "stone", "T_RockTrim": "rock", "T_WoodTrim": "wood", "T_RoundTiles": "tiles"}
 SRGB = ROOT / "godot/art/srgb/env/village"

@@ -24,11 +24,11 @@
   ]
  },
  "T_RoundTiles_BaseColor": {
-  "weather_sat": 0.82,
+  "weather_sat": 0.76,
   "weather_tint": [
-   0.86,
-   0.78,
-   0.72
+   0.84,
+   0.77,
+   0.7
   ]
  }
 }
