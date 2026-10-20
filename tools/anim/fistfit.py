@@ -64,11 +64,13 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           # anchor_grip at the type's grip point), so the dump seats it on the pocket like the sword.
           "viking_sword": dict(arms="viking_sword@hand_r", at="BladeAtR", dir="BladeDirR", outfit="warden",
                                rest=("idle_warden", 76), weapon=("sword",), wrap="sword", section=True),
-          # The axe (its haft turned onto the keyed lean, "axis" the window its line is fitted over): no fist closes on its
-          # 40 x 58 mm haft (WeaponSockets.AxeAtR, not live); "thumb_end" the thumb's last joint in a fit (55-70).
+          # The axe (anim-40, 19 October): its haft conformed (tools/scratch/anim40/fist/axe_conform.py --ov 1.6: tapered,
+          # the wrap an oval 34.7 x 21.7 mm over the fist, long in the head's plane, as an axe haft is) and anchored on its
+          # line, seated on the blade's pocket (PocketR Axe = BladeAtR), measured on its own section; WRAP["axe"] its own
+          # fit. "thumb_end" the thumb's last joint in a fit (55-70).
           # The dagger: a flat hexagonal hilt 15 x 29 mm (WRAP["daggers"], DaggerAtR).
-          "axe": dict(arms="viking_axe@hand_r", at="AxeAtR", dir="AxeDirR", outfit="reaver", rest=("idle_reaver", 0), thumb_end=(55.0, 70.0),
-                      weapon=("axe", "axes"), section=True, dump=((-25.0, 75.0, 0.0), 30.0), axis=(-80.0, 150.0)),
+          "axe": dict(arms="viking_axe@hand_r", at="BladeAtR", dir="BladeDirR", outfit="reaver", rest=("idle_reaver", 0), thumb_end=(55.0, 70.0),
+                      weapon=("axe", "axes"), section=True),
           "daggers": dict(arms="daggers@hand_r", at="DaggerAtR", dir="DaggerDirR", outfit="ranger",
                           rest=("daggers_back", 2), section=True, thumb_end=(55.0, 70.0),
                           left="dagger_l"),
@@ -82,6 +84,10 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           # The crossbow's pistol grip (tools/assets/crossbow_grip.py: 13.7 mm round, raked 22.5 deg), seated on its pocket
           # (WeaponSockets.CrossbowAtR / CrossbowDirR, Arms.Seat's pistol path). "near" (mm): only the piece within that
           # of the grip's line is the grip's (the stock, the lever and the bow lie across the slices square to it).
+          # The wand (anim-40): Made.Wand's grip is the one-handed blade's (13.7 mm round), seated on its pocket and held in
+          # its fist (WRAP["wand"] is WRAP["sword"]).
+          "wand": dict(arms="wand@hand_r", at="BladeAtR", dir="BladeDirR", outfit="arcanist", rest=("cast_flick", 0),
+                       weapon=("wand",), wrap="sword"),
           "crossbow": dict(arms="crossbow@hand_r", at="CrossbowAtR", dir="CrossbowDirR", outfit="ranger",
                            rest=("idle_stalker", 0), near=30.0, seed="sword")}
 # Pieces dropped in as data (GRIP_STANDARD.md section 4): tools/armor/weapon_drop.py writes each new piece's row, copied

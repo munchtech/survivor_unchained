@@ -229,6 +229,10 @@ public partial class Synth : Node
     public void Play(Fm o) { if (Live) incoming.Enqueue(new FmVoice(this, o)); }
     public void Play(Clip o) { if (Live && Recordings.Pick(o.Of) is { } take) incoming.Enqueue(new ClipVoice(this, o, take)); }
     public void Add(Bed b) => bedsIn.Enqueue(b);
+    /// <summary>Every one-shot sound playing or asked for is dropped at the mixer's next
+    /// chunk (a skipped storybook's tails must not ring on into what follows). Beds stay.</summary>
+    public void Cut() => cut = true;
+    volatile bool cut;
 
     /// <summary>Sounds asked for since the mixer last looked (the mixer runs on its own thread).</summary>
     readonly ConcurrentQueue<Voice> incoming = new();
@@ -262,6 +266,7 @@ public partial class Synth : Node
     void Mix(int n, Vector2[] outDry, Vector2[] outWet)
     {
         ulong t0 = Time.GetTicksUsec();
+        if (cut) { cut = false; voices.Clear(); incoming.Clear(); }
         while (incoming.TryDequeue(out var nv)) voices.Add(nv);
         while (bedsIn.TryDequeue(out var nb)) beds.Add(nb);
         float dt = (float)(1 / Rate);

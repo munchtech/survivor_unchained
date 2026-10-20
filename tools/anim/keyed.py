@@ -1071,7 +1071,17 @@ WRAP = {"staff": {"bends": {"index": (58.9, 73.7, 46.5), "middle": (65.6, 79.3, 
         # SUPERSEDED 18 October (animation 38): fitted on the conformed dagger_b (29.2 x 15.2) and her left hand by a direct
         # solve on fistfit.measure, DaggerLeftAt moved 12.0 mm (x -1, y +12; the palm 2.7 mm off): fistfit daggers --side l passes.
         "daggers_l": {"bends": {"index": (38.3, 100.6, 55.4), "middle": (59.4, 104.0, 7.5), "ring": (62.2, 94.4, 5.7), "pinky": (73.2, 76.4, 23.2), "thumb": (28.0, -11.3, 54.7)}, "spreads": {"index": -22.8, "middle": 3.8, "ring": -4.3, "pinky": -0.6},
-                  "oppose": 0.00, "thumb_roll": -11.2}}
+                  "oppose": 0.00, "thumb_roll": -11.2},
+        # The one-handed axe (anim-40, 19 October): the viking axe's haft conformed (an oval wrap 34.7 x 21.7 mm over the
+        # fist, long in the head's plane), seated on the blade's pocket (PocketR Axe = BladeAtR): fistfit.py axe --fit
+        # --write on the dump. Her right fist only ("axes": the left keeps the plain mount, WRAP_LEFT has no axe).
+        "axe": {"bends": {"index": (32.9, 67.5, 60.1), "middle": (44.5, 75.4, 60.2), "ring": (61.1, 63.2, 59.5), "pinky": (68.3, 40.7, 60.0), "thumb": (6.7, -12.8, 56.1)}, "spreads": {"index": -5.8, "middle": 1.7, "ring": 6.9, "pinky": 4.7},
+                  "oppose": 0.67, "thumb_roll": 46.3}}
+
+# The wand (anim-40, 19 October): Made.Wand's grip made the one-handed blade's (13.7 mm round, a knob below, a collar
+# above), seated on the blade's pocket (WeaponSockets.PocketR Wand: BladeAtR / BladeDirR, GRIP["wand"] 35): the same
+# fist. fistfit wand passes on it (cast_flick, the wand run and sprint).
+WRAP["wand"] = WRAP["sword"]
 
 
 def spread_axis(rig, j):
@@ -1580,7 +1590,11 @@ def _one_frame(rig: Rig, keys, base=None):
 # diagonal, WRAP["staff"]). Only her and the hero
 # (Rig.grips): the folk also play the Universal Animation Library, held
 # square. Must match the game's mounts (Arms.Spec.Lean).
-GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0, "staff": 18.0}
+# The axe (anim-40, 19 October): its haft conformed and anchored, seated on the blade's pocket (Arms.Spec Lean 35: the
+# haft at 35 in her fist, 8.95 deg past the old bounds axis the clips were keyed on at 30), so the bounds axis now leans
+# 43.95 in her hand: GRIP 43.95 turns the hand back under it and the axe lies in the world as it was keyed (both fists:
+# the left's plain mount is at Lean 35 on the same anchored haft).
+GRIP = {"sword": 35.0, "axe": 43.95, "daggers": 30.0, "wand": 35.0, "staff": 18.0}
 
 
 def grip_of(weapon):

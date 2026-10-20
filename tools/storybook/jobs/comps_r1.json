@@ -1,0 +1,278 @@
+{
+ "defaults": {
+  "steps": 9,
+  "shift": 3.0
+ },
+ "jobs": [
+  {
+   "name": "p0_d75",
+   "prompt": "A dark painted illustration. Inside an old stone watch-post at dusk: a deep stone window, the evening sky beyond it deep blue over a dull rose band above dark hills and a pale river far off. On the stone sill a small clay oil lamp. An old man's weathered hand with gray hairs and scarred knuckles and a slate blue-gray wool cuff holds a flint striker over the lamp; the small flame has just caught, warm yellow, lighting the hand and the stone. Everything else in deep shadow. Full-bleed, no border, no text.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1920,
+   "h": 848,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p0_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p0_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p0_d88",
+   "prompt": "A dark painted illustration. Inside an old stone watch-post at dusk: a deep stone window, the evening sky beyond it deep blue over a dull rose band above dark hills and a pale river far off. On the stone sill a small clay oil lamp. An old man's weathered hand with gray hairs and scarred knuckles and a slate blue-gray wool cuff holds a flint striker over the lamp; the small flame has just caught, warm yellow, lighting the hand and the stone. Everything else in deep shadow. Full-bleed, no border, no text.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1920,
+   "h": 848,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p0_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p0_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p1_d75",
+   "prompt": "A dark painted illustration looking down into a great cut in a hillside at night. At the top, on the lip of the cut, Roman legionaries in rust-red cloaks and dull bronze crested helmets: two smiths in leather aprons hammer a giant iron chain link on an anvil, sparks flying; a standard with a rust-red banner and the number VII; big burning torches at the top corners. A heavy iron chain with links as tall as a man runs from the anvil down the left wall of the cut into the dark. A long column of small soldiers carrying torches winds down a ramp cut into the right wall. Far below at the bottom of the cut, a massive stone doorway of fitted megaliths with letters carved on its lintel; inside the doorway one smooth pale curved surface with ribs, glowing faintly; a great stone slab stands beside the doorway. Deep shadow, firelight. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1536,
+   "h": 1728,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p1_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p1_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p1_d88",
+   "prompt": "A dark painted illustration looking down into a great cut in a hillside at night. At the top, on the lip of the cut, Roman legionaries in rust-red cloaks and dull bronze crested helmets: two smiths in leather aprons hammer a giant iron chain link on an anvil, sparks flying; a standard with a rust-red banner and the number VII; big burning torches at the top corners. A heavy iron chain with links as tall as a man runs from the anvil down the left wall of the cut into the dark. A long column of small soldiers carrying torches winds down a ramp cut into the right wall. Far below at the bottom of the cut, a massive stone doorway of fitted megaliths with letters carved on its lintel; inside the doorway one smooth pale curved surface with ribs, glowing faintly; a great stone slab stands beside the doorway. Deep shadow, firelight. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1536,
+   "h": 1728,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p1_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p1_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p2_d75",
+   "prompt": "A storybook cross-section illustration, a painted cutaway of the earth under a small valley town at night. At the bottom, deep dark rock and, buried far down, a small ancient stone door with a faint pale light leaking around its edges. Thin threads of light rise slowly up through the dark rock, gravel and roots like sparks rising through water, pale at the bottom and warm orange-gold near the top, where they gather as many small glowing orange stones in the soil and in a riverbed. At the top, above the ground line: stone and timber houses where three roads meet, warm gold lamps in the windows, a hearth glowing through an open door, a market stall where one person hands coins to another for a small glowing stone, a cart of glowing stones on the road, a river at the right, dark hills, a night sky. Full-bleed, no border, no text.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1536,
+   "h": 1632,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p2_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p2_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p2_d88",
+   "prompt": "A storybook cross-section illustration, a painted cutaway of the earth under a small valley town at night. At the bottom, deep dark rock and, buried far down, a small ancient stone door with a faint pale light leaking around its edges. Thin threads of light rise slowly up through the dark rock, gravel and roots like sparks rising through water, pale at the bottom and warm orange-gold near the top, where they gather as many small glowing orange stones in the soil and in a riverbed. At the top, above the ground line: stone and timber houses where three roads meet, warm gold lamps in the windows, a hearth glowing through an open door, a market stall where one person hands coins to another for a small glowing stone, a cart of glowing stones on the road, a river at the right, dark hills, a night sky. Full-bleed, no border, no text.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1536,
+   "h": 1632,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p2_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p2_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p3_d75",
+   "prompt": "A grim painted illustration, a wide frieze at night on a frosted field beside a road, low dark hills, a dark sky. Small orange embers glint in the frozen soil like coals in ash. Left: the frost has cracked open in a jagged line with orange light inside, and a dead man's hand is coming up out of the crack. Center-left: a dead man stands upright, slack and blank-faced, arms hanging, an orange light glowing inside him that shows at his mouth, his empty eye sockets and his wounds, like a lamp behind paper. Center-right: an old soldier with a gray beard in a slate blue-gray cloak and tabard, a round wooden shield on his arm and a small lamp on his belt, drives a spear into another standing dead man; orange light pours out of the wound and falls onto the frost as a scatter of small glowing stones; the old soldier's breath smokes in the cold. Right: a dead body lying dark and empty on the frost among a few glowing stones. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2432,
+   "h": 896,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p3_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p3_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p3_d88",
+   "prompt": "A grim painted illustration, a wide frieze at night on a frosted field beside a road, low dark hills, a dark sky. Small orange embers glint in the frozen soil like coals in ash. Left: the frost has cracked open in a jagged line with orange light inside, and a dead man's hand is coming up out of the crack. Center-left: a dead man stands upright, slack and blank-faced, arms hanging, an orange light glowing inside him that shows at his mouth, his empty eye sockets and his wounds, like a lamp behind paper. Center-right: an old soldier with a gray beard in a slate blue-gray cloak and tabard, a round wooden shield on his arm and a small lamp on his belt, drives a spear into another standing dead man; orange light pours out of the wound and falls onto the frost as a scatter of small glowing stones; the old soldier's breath smokes in the cold. Right: a dead body lying dark and empty on the frost among a few glowing stones. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2432,
+   "h": 896,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p3_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p3_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p4_d75",
+   "prompt": "A wide painted illustration of one river crossing at night, read left to right. Left: on the near bank four priests in plain undyed pale linen robes lift lamps that burn gold; in the middle of the river a single lamp is held high and clear of the water, whatever holds it hidden in a column of mist; beyond, the river winds away into dark hills past more crossings, each with one small high light. Center: the dark trunk of an old willow in the foreground. Right: years later, the same kind of crossing: an old soldier in a slate blue-gray cloak stands on a wooden ladder against a stone post and pours oil from a jug into an iron lamp on top of the post; the flame is yellow and smoky; the river below is dark and smooth with nothing over it. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2496,
+   "h": 768,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p4_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p4_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p4_d88",
+   "prompt": "A wide painted illustration of one river crossing at night, read left to right. Left: on the near bank four priests in plain undyed pale linen robes lift lamps that burn gold; in the middle of the river a single lamp is held high and clear of the water, whatever holds it hidden in a column of mist; beyond, the river winds away into dark hills past more crossings, each with one small high light. Center: the dark trunk of an old willow in the foreground. Right: years later, the same kind of crossing: an old soldier in a slate blue-gray cloak stands on a wooden ladder against a stone post and pours oil from a jug into an iron lamp on top of the post; the flame is yellow and smoky; the river below is dark and smooth with nothing over it. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2496,
+   "h": 768,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p4_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p4_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p5_d75",
+   "prompt": "A grim painted illustration at night in winter, looking down a snowy road to a river ford. In the middle distance the river crosses the road: dark smooth water with ice at the edges and a line of flat stepping stones. On the near bank of the ford stand three new black iron cages on posts with cold blue flames burning inside them, their blue light reflected in the water; in the middle of the river a fourth bright blue light hangs just above the water, nothing visible holding it, rings spreading on the water under it. Bare winter trees on both sides. On the road a broken wagon lies on its side with one wheel in the air. In the ditches on both sides of the road stand rows of drowned dead people, wet, with river weed in their hair, all standing still and facing the road. Snow on the banks. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2048,
+   "h": 1088,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p5_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p5_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p5_d88",
+   "prompt": "A grim painted illustration at night in winter, looking down a snowy road to a river ford. In the middle distance the river crosses the road: dark smooth water with ice at the edges and a line of flat stepping stones. On the near bank of the ford stand three new black iron cages on posts with cold blue flames burning inside them, their blue light reflected in the water; in the middle of the river a fourth bright blue light hangs just above the water, nothing visible holding it, rings spreading on the water under it. Bare winter trees on both sides. On the road a broken wagon lies on its side with one wheel in the air. In the ditches on both sides of the road stand rows of drowned dead people, wet, with river weed in their hair, all standing still and facing the road. Snow on the banks. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2048,
+   "h": 1088,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p5_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p5_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p6_d75",
+   "prompt": "A painted illustration at dusk, the last light: a deep blue sky over a dull rose band on the horizon. Left: a small camp beside a dirt road: a campfire burning high, a log, a bedroll unrolled with a folded blanket on it, a pack; a lone traveler in a long dark hooded wool coat sits on the log with the hood up, seen from behind, reading a folded letter by the firelight. Far up the road in the distance, the small warm lamps of a town, one lamp higher than the rest. Right: the ground slopes down out of the firelight into cold blue shadow to a river as smooth as a mirror with flat stones at its edge; the same hooded traveler kneels on the stones at the water's edge, seen from behind, holding a flask under the water; upstream, three small blue lights glow low through dark trees. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2304,
+   "h": 880,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p6_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p6_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p6_d88",
+   "prompt": "A painted illustration at dusk, the last light: a deep blue sky over a dull rose band on the horizon. Left: a small camp beside a dirt road: a campfire burning high, a log, a bedroll unrolled with a folded blanket on it, a pack; a lone traveler in a long dark hooded wool coat sits on the log with the hood up, seen from behind, reading a folded letter by the firelight. Far up the road in the distance, the small warm lamps of a town, one lamp higher than the rest. Right: the ground slopes down out of the firelight into cold blue shadow to a river as smooth as a mirror with flat stones at its edge; the same hooded traveler kneels on the stones at the water's edge, seen from behind, holding a flask under the water; upstream, three small blue lights glow low through dark trees. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 2304,
+   "h": 880,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p6_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p6_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p7_d75",
+   "prompt": "A dark painted illustration, close at a river's edge at the last of dusk. A traveler in a dark wool hooded coat kneels on flat wet stones at the left, seen from behind and to the side, leaning down over the water with the hood up and the face hidden, a gloved hand holding a flask under the water, small rings spreading. Below, in the smooth black water, the traveler's hooded reflection, the face lost in shadow and ripples. To the right, just above the surface, a cold bright blue lamp glares a hand's breadth above the water and level with the hood, so bright that whatever holds it is hidden; its blue light washes the edge of the hood and streaks across the water. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1536,
+   "h": 1152,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p7_d88",
+   "prompt": "A dark painted illustration, close at a river's edge at the last of dusk. A traveler in a dark wool hooded coat kneels on flat wet stones at the left, seen from behind and to the side, leaning down over the water with the hood up and the face hidden, a gloved hand holding a flask under the water, small rings spreading. Below, in the smooth black water, the traveler's hooded reflection, the face lost in shadow and ripples. To the right, just above the surface, a cold bright blue lamp glares a hand's breadth above the water and level with the hood, so bright that whatever holds it is hidden; its blue light washes the edge of the hood and streaks across the water. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1536,
+   "h": 1152,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p7u_d75",
+   "prompt": "A dark painted illustration underwater at night: black-green murky water, streams of bubbles rushing up, and far above, through the rippling surface, a blurred cold blue light. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1920,
+   "h": 1088,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7u_block.png",
+   "denoise": 0.75,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7u_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  },
+  {
+   "name": "p7u_d88",
+   "prompt": "A dark painted illustration underwater at night: black-green murky water, streams of bubbles rushing up, and far above, through the rippling surface, a blurred cold blue light. Full-bleed, no border.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1920,
+   "h": 1088,
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7u_block.png",
+   "denoise": 0.88,
+   "control": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-1\\tools\\storybook\\out\\comps\\p7u_edges.png",
+   "strength": 0.55,
+   "end": 0.8
+  }
+ ]
+}

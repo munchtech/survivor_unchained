@@ -59,9 +59,11 @@ public sealed class CineSchedule
         {
             if (shot.When != null && !shot.When.Holds(ctx)) continue;
             var cues = shot.Cues.Where(c => c.When == null || c.When.Holds(ctx)).ToList();
-            double dur = shot.Dur;
+            // Its length for this survivor: the first of its "durs" whose when holds, else as written.
+            double written = shot.Durs?.FirstOrDefault(d => d.When == null || d.When.Holds(ctx))?.Dur ?? shot.Dur;
+            double dur = written;
             foreach (var c in cues.Where(c => c.Do == "line"))
-                ends[c.Str("id")!] = t + At(c.At, shot.Dur, t, ends, wait: true) + lineSeconds(c.Str("id")!);
+                ends[c.Str("id")!] = t + At(c.At, written, t, ends, wait: true) + lineSeconds(c.Str("id")!);
             foreach (var id in shot.Fit ?? new())
             {
                 if (!ends.TryGetValue(id, out var end)) throw new FormatException($"{f.Id} shot {shot.Id}: fits {id}, which it does not say");

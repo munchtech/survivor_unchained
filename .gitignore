@@ -42,3 +42,6 @@ tools/uigreybox/fonts/
 
 # The legal gate's runs (tools/legal/gate.py): test-tint pictures that can show her bare
 /.legal/
+
+# The storybook's working generations and treatments (tools/storybook); the game ships godot/art/storybook
+/tools/storybook/out/

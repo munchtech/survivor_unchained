@@ -1,6 +1,6 @@
 """Motion measured on her actual body, clip by clip: what the owner sees.
 
-    python tools/anim/motion.py [names...] [--hero] [--outfits] [--save NAME] [--against NAME]
+    python tools/anim/motion.py [names...] [--hero] [--outfits] [--save NAME] [--against NAME] [--folder DIR]
 
 For every frame of a clip (her springs running, as in the game), it measures:
 
@@ -443,9 +443,12 @@ def overlap(body: Body, clip):
 
 
 # ------------------------------------------------------------------ main --
+CLIP_FOLDER = None  # --folder DIR: measure clips from another folder (a before/after pair)
+
+
 def run_clip(m: Measure, mw: Measure | None, name, outfits):
     b = m.b
-    clip = b.clip(name)
+    clip = b.clip(name, CLIP_FOLDER)
     res = {"frames": clip.frames, "loop": clip.loop}
     # Two runs of the springs: plate holds her (warden), the rest swing free.
     sets = [("free", m)]
@@ -536,6 +539,11 @@ def clip_names(folder, want):
 
 
 def main(argv):
+    global CLIP_FOLDER
+    if "--folder" in argv:
+        i = argv.index("--folder")
+        CLIP_FOLDER = Path(argv[i + 1])
+        argv = argv[:i] + argv[i + 2:]
     want = [a for a in argv if not a.startswith("--") and not a.endswith(".json")]
     hero = "--hero" in argv
     save = argv[argv.index("--save") + 1] if "--save" in argv else None
@@ -555,7 +563,7 @@ def main(argv):
             mw.cover = m.cover
         folder = OUT / "clips"
     print(f"(body ready in {time.time() - t0:.1f} s)")
-    names = clip_names(folder, want)
+    names = clip_names(CLIP_FOLDER or folder, want)
     results = {}
     for n in names:
         t1 = time.time()

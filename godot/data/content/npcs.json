@@ -2021,6 +2021,16 @@
    "name": "The Ford-Warden",
    "title": "Keeper of the Low Crossing",
    "glyph": "skull"
+  },
+  "sb_stay_where_they_reach": {
+   "name": "Stay Where They Reach",
+   "title": "Storybook",
+   "glyph": "flame"
+  },
+  "watchman": {
+   "name": "An old Watchman",
+   "title": "The Watch",
+   "glyph": "flame"
   }
  },
  "guards": [

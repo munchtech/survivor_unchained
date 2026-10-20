@@ -1,0 +1,43 @@
+{
+ "defaults": {
+  "w": 1792,
+  "h": 1024,
+  "steps": 9
+ },
+ "jobs": [
+  {
+   "name": "p1_sky2_s31",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted loosely on a toned ground over a bold brush-ink drawing whose dark lines show through on the main contours: thick paint where the light falls, thin transparent dark glazes in the shadows, visible brush marks, strong chiaroscuro, realistic proportions, grim and serious. Night, two thousand years ago, on the rim of a vast deep cut in a hillside. Beyond the cut's far rim there is nothing but a black overcast night sky, flat and empty, darkest at the top; along the far rim runs a thin line of tiny torches carried by a column of legionaries. Torch smoke drifts up into the dark. Everything but the torchlight is night.",
+   "seed": [
+    5,
+    31
+   ],
+   "init": "tools/storybook/out/style_r6/p1_dome_s31.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r6/p1_dome_s31.png",
+   "mask": "tools/storybook/layouts/p1_dome_s31_skymask.png"
+  },
+  {
+   "name": "p1_sky2_s101",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted loosely on a toned ground over a bold brush-ink drawing whose dark lines show through on the main contours: thick paint where the light falls, thin transparent dark glazes in the shadows, visible brush marks, strong chiaroscuro, realistic proportions, grim and serious. Night, two thousand years ago, on the rim of a vast deep cut in a hillside. Beyond the cut's far rim there is nothing but a black overcast night sky, flat and empty, darkest at the top; along the far rim runs a thin line of tiny torches carried by a column of legionaries. Torch smoke drifts up into the dark. Everything but the torchlight is night.",
+   "seed": [
+    5,
+    31
+   ],
+   "init": "tools/storybook/out/style_r6/p1_dome_s101.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r6/p1_dome_s101.png",
+   "mask": "tools/storybook/layouts/p1_dome_s101_skymask.png"
+  },
+  {
+   "name": "p7b_G2",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted loosely on a toned ground over a bold brush-ink drawing whose dark lines show through on the main contours: thick paint where the light falls, thin transparent dark glazes in the shadows, visible brush marks, strong chiaroscuro, realistic proportions, grim and serious. Deep night in winter at the Low Ford: a wide shallow river crossing between low banks, dim blue-gray snow on both banks, thin ice along the edges of the black water, bare black trees behind under a black sky. Three new braziers of black unrusted iron, each an open iron cage on top of a tall wooden post, two on the near bank and one in the shallows, each burning with a cold pale-blue fire inside its bars. In the middle of the river a fourth pale-blue light hangs in the air just above the water, so bright a glare that whatever holds it cannot be seen. Rings spread on the black water under the fourth light. Nobody is in the picture. The cold pale blue is the only strong color; the rest is night, dim snow and black water.",
+   "seed": [
+    5,
+    31,
+    77,
+    101
+   ]
+  }
+ ]
+}

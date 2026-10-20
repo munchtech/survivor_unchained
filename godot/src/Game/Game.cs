@@ -133,6 +133,7 @@ public partial class Game : Node, IZoneHost
         ApplySettings();
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
         else if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
+        else if (Args.Get("storybook") is string sbId) StoryAlone(sbId);
         else if (Args.Has("quick") || Args.Has("zone")) Quick();
         else
         {
@@ -160,6 +161,8 @@ public partial class Game : Node, IZoneHost
     void Quick()
     {
         quick = true;
+        // --cines into the prologue: SB00 first, as a new journey has it (GameStory).
+        if (QuickStory()) return;
         var arch = Args.Get("quick") is string q && q is "warden" or "reaver" or "arcanist" or "stalker" ? q : "warden";
         var a = Callings.Archetype(arch);
         Begin(new CreationChoice
@@ -336,6 +339,8 @@ public partial class Game : Node, IZoneHost
             nb.Player.X = na.X + 2.2;
             nb.Player.Z = na.Z + 3.2;
         }
+        // --npc NAME: a Marionette package stood beside her (pictures: GameNpcShot).
+        NpcShot();
         hud.Fade(0, 0.5);
         // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
         // later, warm builds: what a place costs to enter once the session has
@@ -357,6 +362,8 @@ public partial class Game : Node, IZoneHost
     {
         Journey = Journey.Begin(c, (uint)Rng.Next());
         Journey.Slot = FreeSlot();
+        // SB00 played to its end: C01 does not hear the drowning again.
+        if (storyEnded) { World.Facts["sb00.ended"] = true; storyEnded = false; }
         Hook();
     }
 
@@ -990,6 +997,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         // Her gameplay model only in play: never in a conversation, an overlay, a held camera or a cinematic.
         View.HerLod.InPlay = Mode == "play" && !showing && !InCinematic && hudMode == null;
+        // A storybook played alone has no place under it: its score is kept here.
+        if (scene == null && storybook != null) StorySound(Math.Min(delta, 0.1));
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         playedT += delta;

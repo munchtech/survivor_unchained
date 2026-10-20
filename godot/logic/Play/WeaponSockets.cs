@@ -105,7 +105,8 @@ public static class WeaponSockets
     /// <summary>The line her right fist closes round on an axe's haft (tools/anim/keyed.py WRAP["axe"]), in hand_r's space:
     /// where the haft's grip point (Arms.Spec.Grip along its long axis) lands, and the direction the piece's +Y is turned
     /// onto, butt toward head: the viking axe's haft (9 degrees off its long axis, which the head pulls) turned onto the
-    /// lean its clips are keyed to (keyed.py GRIP["axe"], 30), its butt under the heel of her palm. NOT LIVE (not in
+    /// lean its clips are keyed to (keyed.py GRIP["axe"], 30), its butt under the heel of her palm. SUPERSEDED (anim-40,
+    /// 19 October: the haft conformed, PocketR Axe is BladeAtR); kept for the record. NOT LIVE (not in
     /// PocketR): its haft is 40 mm thick toward the palm and 58 across (155 mm round, where her fist closes on about 90),
     /// so no fist closes on it: the best fit (tools/anim/fistfit.py axe --fit, 14 October) brings the fingers' ends only
     /// 123-177 degrees round it, the middle finger's end 12 mm off. The haft wants thinning to about 30 mm across over
@@ -147,6 +148,12 @@ public static class WeaponSockets
     {
         WeaponKind.Staff => (FistAtR, FistDirR),
         WeaponKind.Blade1H => (BladeAtR, BladeDirR),
+        // The wand: Made.Wand's grip is the one-handed blade's (13.7 mm round, anim-40), held in the same fist.
+        WeaponKind.Wand => (BladeAtR, BladeDirR),
+        // The one-handed axe: its haft conformed to the same fist (anim-40: the viking axe's wrap an oval 34.7 x 21.7 mm,
+        // its anchor_grip on the haft's line), held as the blade is (keyed.py WRAP["axe"], GRIP["axe"] turns the hand so
+        // the axe lies in the world as its clips were keyed).
+        WeaponKind.Axe => (BladeAtR, BladeDirR),
         WeaponKind.Dagger => (DaggerAtR, DaggerDirR),
         WeaponKind.Crossbow => (CrossbowAtR, CrossbowDirR),
         _ => null,

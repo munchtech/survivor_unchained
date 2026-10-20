@@ -1,0 +1,11 @@
+# anim41: attacks at a mid close-up zoom (0.6), so the swinging hand and the axe are in frame
+fore3_m|reaver|-|axe_fore@0.1|day|0.6|315|female
+fore7_m|reaver|-|axe_fore@0.233|day|0.6|315|female
+heavy7_m|reaver|-|axe_heavy@0.233|day|0.6|315|female
+axesl3_m|reaver|-|axes_left@0.1|day|0.6|315|female
+chain3_m|reaver|-|chain_strike@0.1|day|0.6|315|female
+chain15_m|reaver|-|chain_strike@0.5|day|0.6|315|female
+show20_m|reaver|-|reaver_show@0.667|day|0.6|315|female
+flick0_m|arcanist|-|cast_flick@0.0|day|0.6|315|female
+flick8_m|arcanist|-|cast_flick@0.27|day|0.6|315|female
+idle_m|reaver|-|idle_reaver@0.0|day|0.6|315|female

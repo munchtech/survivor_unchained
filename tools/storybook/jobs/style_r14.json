@@ -1,0 +1,113 @@
+{
+ "defaults": {
+  "w": 1792,
+  "h": 1024,
+  "steps": 9
+ },
+ "jobs": [
+  {
+   "name": "p1_d50",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. Night, two thousand years ago. From the near rim of a great raw cut dug into a hillside we look down across it. At the left, close to us, two ancient soldiers stand on our rim with their backs to us, seen only as dark silhouettes edged with a thin line of torchlight, their wool cloaks a dull dark rust-red, dull bronze helmets with crests and cheek guards; one holds a small torch out in front of him, half hidden by his body. Across the cut, a long column of tiny figures carrying torches winds down the far wall in an S-shaped path from just below the far rim to the bottom of the picture; the torches are the brightest things in the picture. The far wall is a few big flat planes of dark rock, cold slate and indigo where the torchlight doesn't reach. Above it the dark empty hillside rises to a crest under a strip of deep indigo night sky. Torch smoke drifts. The orange torchlight is the only strong color; everything else is night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p1_init.png",
+   "denoise": 0.5,
+   "control": "tools/storybook/out/style_r14/prep/p1_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p1_d60",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. Night, two thousand years ago. From the near rim of a great raw cut dug into a hillside we look down across it. At the left, close to us, two ancient soldiers stand on our rim with their backs to us, seen only as dark silhouettes edged with a thin line of torchlight, their wool cloaks a dull dark rust-red, dull bronze helmets with crests and cheek guards; one holds a small torch out in front of him, half hidden by his body. Across the cut, a long column of tiny figures carrying torches winds down the far wall in an S-shaped path from just below the far rim to the bottom of the picture; the torches are the brightest things in the picture. The far wall is a few big flat planes of dark rock, cold slate and indigo where the torchlight doesn't reach. Above it the dark empty hillside rises to a crest under a strip of deep indigo night sky. Torch smoke drifts. The orange torchlight is the only strong color; everything else is night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p1_init.png",
+   "denoise": 0.6,
+   "control": "tools/storybook/out/style_r14/prep/p1_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p4_d50",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. Night under a dark slate-blue sky, hard frost on a field beside a pale road, small ember-gold glints scattered in the frozen soil, a dark body lying in the frost behind. A dead villager stands upright, slack, arms hanging, head tilted, in a torn linen shirt: a corpse, gray waxy skin, sunken cheeks, matted hair flat, the jaw hanging open and the eyes gone, the mouth and the two empty sockets glowing with soft golden light from inside, his skin lit from within like paper over a lamp. To the right an old watchman with a gray beard, in a slate blue-gray hooded cloak over a plain wool tunic, a matte round wooden shield with a dull iron boss on his arm, leans in with his weight forward and both hands on a plain dark spear; the spear's head is hidden deep inside the dead man's chest, and golden light bursts out around the shaft where it enters and pours down onto the frost as small glowing stones. A pale white plume of breath leaves the watchman's mouth. The golden light is the only strong color; the rest is cold night, frost and slate.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p4_init.png",
+   "denoise": 0.5,
+   "control": "tools/storybook/out/style_r14/prep/p4_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p4_d60",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. Night under a dark slate-blue sky, hard frost on a field beside a pale road, small ember-gold glints scattered in the frozen soil, a dark body lying in the frost behind. A dead villager stands upright, slack, arms hanging, head tilted, in a torn linen shirt: a corpse, gray waxy skin, sunken cheeks, matted hair flat, the jaw hanging open and the eyes gone, the mouth and the two empty sockets glowing with soft golden light from inside, his skin lit from within like paper over a lamp. To the right an old watchman with a gray beard, in a slate blue-gray hooded cloak over a plain wool tunic, a matte round wooden shield with a dull iron boss on his arm, leans in with his weight forward and both hands on a plain dark spear; the spear's head is hidden deep inside the dead man's chest, and golden light bursts out around the shaft where it enters and pours down onto the frost as small glowing stones. A pale white plume of breath leaves the watchman's mouth. The golden light is the only strong color; the rest is cold night, frost and slate.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p4_init.png",
+   "denoise": 0.6,
+   "control": "tools/storybook/out/style_r14/prep/p4_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p7_d50",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. The Low Ford at night in winter: a shallow river crossing between snowy banks, thin gray ice along both edges, a trodden track through the snow. Three new open cages of crude hand-forged black iron bars on thin black iron posts, no glass, each with a cold pale blue flame burning inside, pooling blue light on the snow at its foot. A line of large flat dark stepping stones with snow on their tops crosses the shallows; over them, in the middle of the river, a fourth blue light hangs a little above the water in a wide cold glare, nothing visible holding it. Nobody is there. The cold blue is the only strong color; the rest is deep night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p7_init.png",
+   "denoise": 0.5,
+   "control": "tools/storybook/out/style_r14/prep/p7_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p7_d60",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. The Low Ford at night in winter: a shallow river crossing between snowy banks, thin gray ice along both edges, a trodden track through the snow. Three new open cages of crude hand-forged black iron bars on thin black iron posts, no glass, each with a cold pale blue flame burning inside, pooling blue light on the snow at its foot. A line of large flat dark stepping stones with snow on their tops crosses the shallows; over them, in the middle of the river, a fourth blue light hangs a little above the water in a wide cold glare, nothing visible holding it. Nobody is there. The cold blue is the only strong color; the rest is deep night.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p7_init.png",
+   "denoise": 0.6,
+   "control": "tools/storybook/out/style_r14/prep/p7_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p9_d50",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: a campfire burning high, a bedroll with its blanket folded on top, a pack. A lone traveler sits on a log by the fire with their back to us, the whole body wrapped from the hood to the ground in one plain dark wool hooded cloak, a simple cone shape, the head bowed over a folded letter held to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise, the waystation: a small cluster of dark roofs beside a squat square stone watchtower with a flat top, its windows glowing warm orange, one lit window high on the tower. Low among the bare trees by the water on the right, three tiny cold blue lamp flames, far apart from each other, each with a short blue reflection in the water. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p9_init.png",
+   "denoise": 0.5,
+   "control": "tools/storybook/out/style_r14/prep/p9_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  },
+  {
+   "name": "p9_d60",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark tonal painting for a book plate, in loose oil paint over a bold brush-ink drawing: broad simple masses of shadow thinly glazed, a few deliberate thick opaque strokes only where the light falls; heavy dark ink contours on the figures; painterly soft edges, almost no texture in the shadows; a night palette of deep indigo, slate and umber with the story's lights; quiet, grim and serious, realistic proportions. Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: a campfire burning high, a bedroll with its blanket folded on top, a pack. A lone traveler sits on a log by the fire with their back to us, the whole body wrapped from the hood to the ground in one plain dark wool hooded cloak, a simple cone shape, the head bowed over a folded letter held to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise, the waystation: a small cluster of dark roofs beside a squat square stone watchtower with a flat top, its windows glowing warm orange, one lit window high on the tower. Low among the bare trees by the water on the right, three tiny cold blue lamp flames, far apart from each other, each with a short blue reflection in the water. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11,
+    23
+   ],
+   "init": "tools/storybook/out/style_r14/prep/p9_init.png",
+   "denoise": 0.6,
+   "control": "tools/storybook/out/style_r14/prep/p9_edge.png",
+   "strength": 0.5,
+   "end": 0.6
+  }
+ ]
+}

@@ -424,9 +424,31 @@ public partial class PlayerView : Node3D
         {
             tree.Active = false;
             if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town")); }
+            // An upper-body clip (a swing) is held as play shows it: over her idle's hips and legs (the
+            // upperShot filter), not on the clip's own keyed legs. --hold-full shows the clip's legs.
+            var sk = person.Skeleton;
+            bool upperOnly = idleNode != null && !SurvivorUnchained.Args.Has("hold-full") && own.UpperLayer(hold[0]);
+            var legs = new List<(int b, Vector3 p, Quaternion r)>();
+            if (upperOnly)
+            {
+                person.Anim.Play(idleNode!.Animation);
+                person.Anim.Seek(0, true);
+                for (int bi = 0; bi < sk.GetBoneCount(); bi++)
+                {
+                    var name = sk.GetBoneName(bi);
+                    if (name is "root" or "pelvis" || name.StartsWith("thigh") || name.StartsWith("calf") || name.StartsWith("foot") || name.StartsWith("ball") || name.StartsWith("glute"))
+                        legs.Add((bi, sk.GetBonePosePosition(bi), sk.GetBonePoseRotation(bi)));
+                }
+            }
             person.Anim.Play(own.Prefix + hold[0]);
             person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
             person.Anim.Pause();
+            foreach (var (bi, p0, r0) in legs) { sk.SetBonePosePosition(bi, p0); sk.SetBonePoseRotation(bi, r0); }
+            // Her head carried up as play carries it (HeadLevel) through a swing and her idles and runs; a
+            // whole-body clip (a fall, a roll, a flourish) keeps its own head, as play leaves it.
+            string hn = hold[0];
+            bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
+            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
             return;
         }

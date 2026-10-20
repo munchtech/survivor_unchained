@@ -132,6 +132,9 @@ public sealed class CineShot
     /// <summary>ECU, CU, MCU, MS, MLS, LS, ELS, OTS, POV, INSERT, 2S (for people; the player ignores it).</summary>
     public string Type = "";
     public double Dur;
+    /// <summary>Its length for some survivors instead: the first whose When holds (C01's
+    /// shot 1 after the storybook has played the drowning, fact sb00.ended).</summary>
+    public List<CineDur>? Durs;
     /// <summary>The screen black (sound only).</summary>
     public bool Black;
     /// <summary>Keep the camera where it is (the last frame before it began).</summary>
@@ -148,6 +151,8 @@ public sealed class CineShot
     /// seconds in; unset, 60% of the way through.</summary>
     public double? Still;
 }
+
+public sealed class CineDur { public CineWhen? When; public double Dur; }
 
 public sealed class CineCam
 {

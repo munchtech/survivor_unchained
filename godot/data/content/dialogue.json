@@ -22488,5 +22488,74 @@
     ]
    }
   }
+ },
+ "sb_stay_where_they_reach": {
+  "npc": "sb_stay_where_they_reach",
+  "entry": [
+   {
+    "node": "legion"
+   }
+  ],
+  "nodes": {
+   "legion": {
+    "id": "legion",
+    "speaker": "watchman",
+    "text": "Long ago, the Seventh Legion found something under these hills that wouldn't die,",
+    "next": "chained"
+   },
+   "chained": {
+    "id": "chained",
+    "speaker": "watchman",
+    "text": "and chained it there, in the dark.",
+    "next": "ember"
+   },
+   "ember": {
+    "id": "ember",
+    "speaker": "watchman",
+    "text": "Its light still seeps up through the ground. We call it ember. It burns. It sells. The valley lives by it.",
+    "next": "dead"
+   },
+   "dead": {
+    "id": "dead",
+    "speaker": "watchman",
+    "text": "Where it lies thick, the dead get up after dark. Not them. Just the bodies, full of its light. Put one down and it spills out.",
+    "next": "dawn"
+   },
+   "dawn": {
+    "id": "dawn",
+    "speaker": "watchman",
+    "text": "At first light it sinks into the ground and takes back what it lent. No more than that.",
+    "next": "keepers"
+   },
+   "keepers": {
+    "id": "keepers",
+    "speaker": "watchman",
+    "text": "The old priests set keepers at the crossings. After them, the Watch kept the lamps lit. Oil, never ember. Nobody remembers why.",
+    "next": "winter"
+   },
+   "winter": {
+    "id": "winter",
+    "speaker": "watchman",
+    "text": "Last winter, somebody lit the lamps at the Low Ford again. Not us. With ember.",
+    "next": "waiting"
+   },
+   "waiting": {
+    "id": "waiting",
+    "speaker": "watchman",
+    "text": "Now the drowned stand along the ford road, waiting. And something in the water is singing.",
+    "next": "lamps"
+   },
+   "lamps": {
+    "id": "lamps",
+    "speaker": "watchman",
+    "text": "Lamps are lit. Stay where they reach.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
  }
 }
