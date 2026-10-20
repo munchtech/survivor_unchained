@@ -776,7 +776,7 @@ L_CHANNEL = (np.array([0.04162, 0.076, 0.0]), np.array([0.20791, 0.16985, 0.9632
 L_BELOW = 0.126   # the left fist's channel point this far below the right's seat along the haft (m)
 HOLD_TO, FREE_AT = 9, 13   # both hands on it f3-f9 (HOLD_FROM); the left lets go over f9-f13 (in its fist at f13)
 HOLD_FROM = 3
-L_ITER = 2   # the left fist's re-aims (each a solve) at where the last solve left it
+L_ITER = 4   # the left fist's re-aims (each a solve) at where the last solve left it
 # Both hands on one haft 126 mm apart: keyed, the hands were each before its own shoulder, the left 107-117% of
 # her arm's reach from the right's. Her chest turned toward them (yaw, pitch) and both shoulders drawn forward bring
 # both arms to 77-98% (the right hand held where it was, in her own space, so its path does not move).
@@ -785,8 +785,14 @@ L_ITER = 2   # the left fist's re-aims (each a solve) at where the last solve le
 # brought in toward her centre line first (the solver's report).
 # One-handed (shipped): as she rises from the crouch (f9-f18) the keyed left hand swept 59 mm into her forward left
 # thigh. L_CLEAR moves it out beside and a little ahead of the knee over L_CLEAR_AT (9 mm clear; nothing else moves).
-TWO_HANDS = False
-L_CLEAR = (0.07, 0.0, 0.05)   # added to the keyed left hand (shoulder-relative, the chest's frame: left, up, forward)
+# Two hands again (anim 43, solver 4, 19 October; the owner: two hands is a must): the round 3 chop, centred, with
+# the haft 25 deg down at the blow easing to 17.5 as she settles (the seat lowered and drawn in with her, so the
+# head stays planted within 1 cm, f3-f11), yawed 9 deg toward her right so its flat shows the 315 camera (0.74);
+# the seat 7 cm right of her centre line (her left wrist off her forward thigh); L_ITER 4. The left fist sits on
+# the haft 0-1.8 mm off its line f3-f9; it lets go over f9-f13 toward a free hand keyed out and up (f9) and
+# L_CLEAR (it swept 50-80 mm through her thigh before).
+TWO_HANDS = True
+L_CLEAR = (0.10, 0.02, 0.08)   # added to the keyed left hand (shoulder-relative, the chest's frame: left, up, forward)
 L_CLEAR_AT = (6, 10, 15, 21)   # eased in from, full from, full to, eased out by (frames)
 
 
@@ -877,8 +883,9 @@ def _left_on_haft():
 # at f3-f9 and its fingers 0-1 mm in at f4/f8/f9, but f3 is 12 deg off (its hand twist pinned at -48), f6's fingers
 # 4 mm in, f9 the left upper arm 9 mm into her trunk (8 into the breast), and in the let-go (f10) the fingers go
 # 11 mm through the haft as they open; the left joins the haft in one frame at the blow (f2-f3, as the right does).
-FWD = {3: (0.0, 0.44, 0.70, 20.0, 5.0), 6: (0.0, 0.44, 0.70, 20.0, 5.0), 9: (0.0, 0.48, 0.68, 20.0, 5.0)}
-FWD_IN, FWD_OUT = 1, 14
+FWD = {3: (-0.07, 0.44, 0.64, 25.0, -9.0), 6: (-0.07, 0.41, 0.615, 21.0, -9.0), 9: (-0.07, 0.38, 0.585, 17.5, -9.0),
+       11: (-0.07, 0.39, 0.59, 18.5, -9.0)}
+FWD_IN, FWD_OUT = 1, 15
 FWD_POLES = {"hand_r": (-1.0, -0.3, -0.3), "hand_l": (1.0, -0.3, -0.3)}   # the elbows' way from the shoulder (her
                                                                             # space), None = as keyed
 FWD_BODY = {"clav_l": (20, 14), "clav_r": (20, 14)}   # her body's keys moved over the blow (eased as the hands): "clav_l": (raise, forward), "spine": (yaw,
@@ -1083,7 +1090,7 @@ def _strike_keys():
                   "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
                   "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
                   "hand_r": {**both, "arc": arc_of((-0.05, -0.24, 0.36)), "blade": _n(-0.12, -0.35, 0.93)},
-                  "hand_l": {"arc": arc_of((0.28, -0.32, 0.0)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
+                  "hand_l": {"arc": arc_of((0.30, -0.10, 0.16)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
                   "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
                  hips=(0, 40, 0), spine=(0, 33, 0), neck=(0, -21, 0), head=(0, -29, 0)), "ease"),
         # Wrenched free and up, the free hand back to its fist.
@@ -1110,7 +1117,8 @@ def chain_strike(rig):
         fwd = _forward(rig, first, ONE_FWD, ONE_BODY, ONE_POLES)
         return build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: _left_clear(fr, fwd(fr, pose)))
     first = build("chain_strike", rig, keys, meta=meta)
-    fwd = _forward(rig, first, FWD, FWD_BODY, FWD_POLES)
+    fwd0 = _forward(rig, first, FWD, FWD_BODY, FWD_POLES)
+    fwd = lambda fr, pose: _left_clear(fr, fwd0(fr, pose))
     second = build("chain_strike", rig, keys, meta=meta, post=fwd)
     g2, p2 = rig.sk.fk(second.rot, second.pos)
     R_lr, o_lr = _left_on_haft()
