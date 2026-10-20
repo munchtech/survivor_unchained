@@ -69,6 +69,10 @@ public sealed class OwnClips
     /// <summary>A swing on her upper body alone (PlayerView's upperShot filter; the hips and legs stay with what plays).</summary>
     public bool UpperLayer(string clip) => Meta(clip, "layer").VariantType == Variant.Type.String && (string)Meta(clip, "layer") == "upper";
 
+    /// <summary>A swing keyed with its own fighting stance (feet set, hips into the blow): played on the whole
+    /// of her while she stands (PlayerView.UpperHer), on her upper body over the run while she moves.</summary>
+    public bool Stance(string clip) => Meta(clip, "stance").VariantType == Variant.Type.Bool && (bool)Meta(clip, "stance");
+
     public bool Holds(string clip) => Meta(clip, "hold").VariantType == Variant.Type.Bool && (bool)Meta(clip, "hold");
 
     static readonly HashSet<string> Idles = new()

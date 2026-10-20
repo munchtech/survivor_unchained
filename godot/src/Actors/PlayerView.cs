@@ -260,6 +260,9 @@ public partial class PlayerView : Node3D
     bool UpperHer(string clip, double speed)
     {
         if (!mine || !own.Has(clip)) return false;
+        // Standing, a stance swing takes her whole body (its own feet set and hips into the blow), soft:
+        // it gives way to the run the moment she moves. Moving, it rides her upper body over the run.
+        if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
         upper.Animation = own.Prefix + clip;
         upperNative = true;
         tree.Set("parameters/upperScale/scale", speed);
@@ -427,12 +430,15 @@ public partial class PlayerView : Node3D
             // An upper-body clip (a swing) is held as play shows it: over her idle's hips and legs (the
             // upperShot filter), not on the clip's own keyed legs. --hold-full shows the clip's legs.
             var sk = person.Skeleton;
-            bool upperOnly = idleNode != null && !SurvivorUnchained.Args.Has("hold-full") && own.UpperLayer(hold[0]);
+            // --hold-base CLIP@S: the hips and legs from that clip instead (a swing over her run, as play shows it moving).
+            var hb = SurvivorUnchained.Args.Get("hold-base")?.Split('@');
+            bool stance = own.Stance(hold[0]) && hb == null;
+            bool upperOnly = idleNode != null && !SurvivorUnchained.Args.Has("hold-full") && own.UpperLayer(hold[0]) && !stance;
             var legs = new List<(int b, Vector3 p, Quaternion r)>();
             if (upperOnly)
             {
-                person.Anim.Play(idleNode!.Animation);
-                person.Anim.Seek(0, true);
+                person.Anim.Play(hb is { Length: 2 } ? own.Prefix + hb[0] : idleNode!.Animation);
+                person.Anim.Seek(hb is { Length: 2 } ? double.Parse(hb[1], System.Globalization.CultureInfo.InvariantCulture) : 0, true);
                 for (int bi = 0; bi < sk.GetBoneCount(); bi++)
                 {
                     var name = sk.GetBoneName(bi);
@@ -448,7 +454,7 @@ public partial class PlayerView : Node3D
             // whole-body clip (a fall, a roll, a flourish) keeps its own head, as play leaves it.
             string hn = hold[0];
             bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
-            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip ? HeadLevel : 0;
+            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
             return;
         }

@@ -1,0 +1,24 @@
+# anim41 item 2, judge round 1: every attack frame + the runs, play-true hold
+fore0_m|reaver|-|axe_fore@0.0|day|0.6|315|female
+fore3_m|reaver|-|axe_fore@0.1|day|0.6|315|female
+fore7_m|reaver|-|axe_fore@0.233|day|0.6|315|female
+heavy0_m|reaver|-|axe_heavy@0.0|day|0.6|315|female
+heavy4_m|reaver|-|axe_heavy@0.133|day|0.6|315|female
+heavy7_m|reaver|-|axe_heavy@0.233|day|0.6|315|female
+axesl3_m|reaver|gyre_axes|axes_left@0.1|day|0.6|315|female
+axesr3_m|reaver|gyre_axes|axes_right@0.1|day|0.6|315|female
+axesr7_m|reaver|gyre_axes|axes_right@0.233|day|0.6|315|female
+chain3_m|reaver|-|chain_strike@0.1|day|0.6|315|female
+chain6_m|reaver|-|chain_strike@0.2|day|0.6|315|female
+chain9_m|reaver|-|chain_strike@0.3|day|0.6|315|female
+chain3_p|reaver|-|chain_strike@0.1|day|0|315|female
+flick0_m|arcanist|-|cast_flick@0.0|day|0.6|315|female
+flick1_m|arcanist|-|cast_flick@0.033|day|0.6|315|female
+flick4_c|arcanist|-|cast_flick@0.13|day|1|315|female
+flick8_m|arcanist|-|cast_flick@0.27|day|0.6|315|female
+run_c|reaver|-|run_reaver@0.3|day|1|315|female
+wrun_c|arcanist|-|run_arcanist_wand@0.17|day|1|315|female
+axrun_c|reaver|gyre_axes|run_reaver_axes@0.3|day|1|315|female
+fore3_f45_m|reaver|-|axe_fore@0.1|day|0.6|45|female
+heavy4_f45_m|reaver|-|axe_heavy@0.133|day|0.6|45|female
+run_m|reaver|-|run_reaver@0.3|day|0.6|315|female
