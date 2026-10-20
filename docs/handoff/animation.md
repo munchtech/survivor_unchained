@@ -2,6 +2,17 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 00000000000000. MR READY (animation 45, 20 October 2026): armed townsfolk at ease in town
+Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Never commit heroine.res, heroine_clips.json, manifest.json, arms_rest_godot.json or *.import (folk.res and folk_clips.json are tracked).
+
+**Item 1, the folk close-up check: DONE.** At the close-up every armed kit NPC played a combat clip in town (the Watch's shield block, Keegan's 2H guard, Wenna's stiff kit idle).
+- New folk clip `idle_armed` (tools/anim/clips/folk_armed.py, hooked in folk.py; f_ and m_): the piece hangs easy in the right fist, down and a little forward; the free arm is free_arms' for men and the capture's own (fingers "base", new in keyed.py) for women. Game name "Idle_Armed" (FolkClips.Armed / logic/Play/TownStands.cs, People.Clip): town data only, never remapped globally.
+- The Watchmen drop the shield in town (Waystation.cs: sword only). Keegan was restaged to a viking_sword at ease (her zweihander shoulder rest failed the gate: the fist mount runs the blade out of the thumb side, so neither a knight's rest nor a low-hand shoulder rest can be built; `idle_2h` stays in the code, unused). Wenna carries her short staff hanging.
+- The folk weight-shift base slid the feet 12 cm (place="pin"): now place="line", under 1 cm. A town NPC's first stand starts at a phase hashed from its id and spot (TownStands.Phase).
+- Judges (xhigh) folk 1-3 (`tools/scratch/anim45/judge_folk*.md`): Watch, folk, Keegan, Wenna PASS. Numbers: pieces 0 mm in, lowest point 300-470 mm, feet < 1 cm. dotnet 1016/0/8. Measuring: godot/tools_scenes/folk_hold.gd + tools/anim/folkhold.py (dump a town NPC as built, clearances; `--model` re-poses in 8 s); `--npc watch|folk|def.ID[:swap]` frames a kit NPC in her place (GameNpcShot).
+- Closed as known: Wenna's staff arm stands a little off her thigh (wrist + mount). Routed [Marionette/NPC]: the kit outfits blow out flat in daylight (white/lime hoods, bald scalp edge in the hood, painted white brows, hard leather cups, a loose pauldron on the tunic); kit soles sit 30-46 mm under the ground.
+- Next: item 2, the arcanist's staff in town.
+
 ## 0000000000000. HANDOFF (animation 44, 20 October 2026): both MRs merged; next list
 Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). The attack poses (cb813e76) and idle life (947bd520) are both merged, and main repacked her (100 clips). Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import.
 
