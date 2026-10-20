@@ -1,0 +1,4 @@
+run_arcanist_wand      wrist min x  25.6 (f1) knuckle min  25.7 (f1) tip min  23.7  fwd end f0: x 25.8 y 29 z 25  legs b9b89e9d35
+sprint_arcanist_wand   wrist min x  24.9 (f1) knuckle min  24.5 (f0) tip min  22.7  fwd end f0: x 24.9 y 28 z 28  legs cee4fd0245
+run_reaver_axes        wrist min x  27.0 (f8) knuckle min  25.2 (f9) tip min  25.5  fwd end f10: x 27.3 y 17 z 27  legs 32db59dd0c  | axe he
+sprint_reaver_axes     wrist min x  27.9 (f7) knuckle min  26.3 (f9) tip min  26.4  fwd end f15: x 30.4 y 18 z 26  legs 26bed03f28  | axe he
