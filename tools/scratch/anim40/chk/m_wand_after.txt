@@ -1,0 +1,4 @@
+(body ready in 2.2 s)
+cast_flick               | l: up    0 fa    0 hd   64 br    0 pit   0 war 114 arc  64 rea 106 ran  90 r: up    4 fa    0 hd    0 br    0 pit   0 war  12 arc  11 rea   9 ran  11 | vol el 29/28 wr 75/82 kn 92/92 | l:f0/e-0/r0/u-0/roll0 r:f3/e38/r24/u38/roll26 | slide 0.0/0.3 (40.6 s)
+run_arcanist_wand        | l: up    0 fa    0 hd    0 br    0 pit   0 war   2 arc   0 rea   0 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 58/55 wr 98/96 kn 79/79 | l:f0/e-0/r0/u-0/roll0 r:f1/e-1/r2/u-1/roll19 | slide 0.6/2.0 (6.0 s)
+sprint_arcanist_wand     | l: up    0 fa    0 hd    0 br    0 pit   0 war   4 arc   0 rea   1 ran   0 r: up    0 fa    0 hd    0 br    0 pit   0 war   0 arc   0 rea   0 ran   0 | vol el 56/52 wr 98/95 kn 77/78 | l:f0/e-0/r0/u-0/roll0 r:f2/e-1/r2/u-1/roll21 | slide 0.6/1.8 (6.6 s)
