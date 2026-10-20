@@ -63,14 +63,14 @@ def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), off=None, pi
 # The head at the finish (solver 7a, judge r3 call 2): the spine's roll to her left and the head's counter-turn on
 # a pitched neck rolled her head ~25 deg (heavy ~30) onto her shoulder; rolled back level, and the heavy's chin up.
 HR5, HR7 = 22, 24
-HH6, HH10, HP6, HP10 = 26, 28, -18, -18
+HH6, HH10, HP6, HP10 = 26, 28, -24, -24
 # The run variants (axe_fore_run, axe_heavy_run): the free hand at the wind-up and its elbow's pole; the finish's
 # fist moved (chest frame) and the blade's direction.
 # The idle axe through the finish (solver 7a, judge r3 call 3): held in its f3 shape, not stood upright behind her
 # shoulder: the fist out from her left shoulder at chest height, the haft leaning out to her left.
 HV_YAW, HV_PITCH, HV_OFF = (-16, -28), -16, (-0.20, -0.10, -0.12)
 AX_IH, AX_IB = (0.15, 0.06, 0.25), (0.25, 0.97, -0.06)
-RUN_OFF0, RUN_LP0 = (0.22, -0.11, 0.19), (0.35, -0.9, -0.1)
+RUN_OFF0, RUN_LP0 = (0.22, -0.05, 0.20), (0.35, -0.9, -0.1)
 RUN_DH, RUN_BL = (0.0, 0.0, 0.0), (0.62, -0.45, 0.64)
 RUN_SY = 16
 RUN_T11, RUN_H11 = 0, (0.10, -0.30, 0.50)
