@@ -1,0 +1,9 @@
+# anim41 solver 2: chain_strike one-handed re-aim (flat to the camera, face up) and cast_flick wind-up/free arm, play-true hold
+chain3_m|reaver|-|chain_strike@0.1|day|0.6|315|female
+chain6_m|reaver|-|chain_strike@0.2|day|0.6|315|female
+chain9_m|reaver|-|chain_strike@0.3|day|0.6|315|female
+chain3_p|reaver|-|chain_strike@0.1|day|0|315|female
+flick0_m|arcanist|-|cast_flick@0.0|day|0.6|315|female
+flick1_m|arcanist|-|cast_flick@0.033|day|0.6|315|female
+flick4_c|arcanist|-|cast_flick@0.13|day|1|315|female
+flick8_m|arcanist|-|cast_flick@0.27|day|0.6|315|female

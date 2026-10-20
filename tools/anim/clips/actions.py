@@ -953,24 +953,59 @@ def _cast_release(rig, keys, frm=16, to=28, lag=1.75):
     return post
 
 
+FLK = {}
+
+
 def cast_flick(rig):
     """The wand's spell: the whole arm whipped out from over the shoulder at
     the foe, ending pointed straight at it, the free hand flung open behind
-    for balance."""
+    for balance.
+
+    (anim 41, solver 2) The wind-up hand out beside the hat's brim, not behind her head: its wand went back over
+    her left and its crystal came out through the hat's crown. Now the hand is 19 cm further out, beside her head
+    (the wand's tip 60 cm out from her head's axis, clear of the brim), the wand up and back, the knuckles keyed so
+    the whip's hand and forearm spins are 24/11 deg a frame (65 and 54 before). The free arm at the aim was flung
+    out level from the shoulder (a T, its elbow keyed out to the side): now its elbow hangs bent, down and a
+    little out, the hand at her hip-to-ribs height, 14 cm out from her side and a little behind."""
+    # (anim 42) Her whole body plays it standing (meta stance): a caster's step, the left foot ahead, knees soft,
+    # the weight rocking back at the wind-up and forward into the flick. The free hand starts low at her left side
+    # (not cupped at her chest) and at the aim hangs long and close, the fingers relaxed; the wand arm reaches
+    # forward of her shoulder, the elbow a little soft (not locked).
+    # (anim 43, solver 5b) The judge r2 (flick8: A-pose arms, wand at the cobbles, legs locked): the stance was 30 cm
+    # wide and 1.5 cm down, so as a stance clip (her whole body while she stands) the legs read straight and together.
+    # Now axe_fore's set (48 cm, knees out over the toes, about 15-20 deg) and the weight 3 cm onto the front foot at
+    # the aim. f8: the arm long at the foe (elbow 166), the wand 15 deg below level (it pointed 35 deg off to her left,
+    # level, which the 315 camera saw as down at the cobbles); the free hand by her hip (17 cm out from the hip joint).
+    # f0: the wrist cocked back, the wand's tip back over her right shoulder (45 deg past upright, 64 cm clear of
+    # the hat's axis).
+    def pole(yaw, s):
+        a = math.radians(yaw)
+        return (math.sin(a) + s * 0.25, 0, math.cos(a))
+
+    def step(weight):
+        p = stance(0.022, l=(0.24, 0.10), r=(-0.24, -0.10))
+        p["foot_l"]["pole"] = pole(10, 1)
+        p["foot_r"]["pole"] = pole(-14, -1)
+        p["hips"]["pos"] = (0.02 * weight, -0.022 - 0.012 * abs(weight), 0.06 * weight)
+        return p
+    aim = FLK.get("aim", (0.0, 0.07, 0.49)); free = FLK.get("free", (0.04, -0.35, 0.18)); fpole = FLK.get("fpole", (-0.2, -0.4, -1.0))
+    blade = FLK.get("blade", (-0.42, -0.38, 0.84)); FLK.setdefault("kn", (0.0, -1.0, 0.2)); clav = FLK.get("clav", (4, 15)); pole8 = FLK.get("pole8", (-0.8, -0.4, -0.2))
     keys = [
-        (0, body(stance(0.07, weight=-0.3), hips=(-10, -2, 0), spine=(-18, -4, 0), head=(22, 0, 0),
-                 hand_r=arm((-0.08, 0.14, -0.06), (-0.7, 0.2, -0.3), blade=_n(-0.1, 0.6, -0.8)),
-                 hand_l=arm((0.06, -0.20, 0.30), (0.8, -0.4, -0.3)), fingers_r="grip", fingers_l="open"), "fast"),
-        (3, body(stance(0.09, weight=0.4), hips=(6, 6, 0), spine=(10, 8, 0), head=(-12, -4, 0),
-                 hand_r=arm((0.02, -0.04, 0.52), (-0.8, -0.4, -0.2), blade=_n(0.0, -0.05, 1.0)),
-                 hand_l=arm((0.10, -0.22, -0.22), (0.8, -0.2, -0.3)), fingers_r="grip", fingers_l="spread"), "ease"),
-        (8, body(stance(0.09, weight=0.4), hips=(6, 6, 0), spine=(11, 8, 0), head=(-13, -4, 0),
-                 hand_r=arm((0.02, -0.06, 0.51), (-0.8, -0.4, -0.2), blade=_n(0.0, -0.1, 1.0)),
-                 hand_l=arm((0.10, -0.23, -0.22), (0.8, -0.2, -0.3)), fingers_r="grip", fingers_l="spread"), "auto"),
-        (18, body(stance(0.06), hand_r=arm((0.0, -0.36, 0.14), (-0.6, -0.4, -0.5), blade=_n(-0.1, 0.5, 0.85)),
+        (0, body(step(-0.4), hips=(-10, -2, 0), spine=(-18, -4, 0), head=(22, 0, 0),
+                 hand_r=arm((-0.25, 0.12, 0.18), (-0.8, -0.3, -0.4), blade=_n(-0.45, 0.6, -0.65),
+                            knuckles=_n(-0.862, -0.507, 0.0)),
+                 hand_l=arm((0.13, -0.46, 0.04), (0.5, -0.2, -0.9)), fingers_r="grip", fingers_l="relaxed"), "fast"),
+        (3, body(step(0.6), hips=(6, 6, 0), spine=(10, 6, 0), head=(-12, -4, 0),
+                 hand_r=arm(aim, pole8, blade=_n(*blade), **({"knuckles": _n(*FLK["kn"])} if "kn" in FLK else {})),
+                 hand_l=arm(free, fpole), fingers_r="grip", fingers_l="relaxed", clav_r=clav), "ease"),
+        (8, body(step(0.6), hips=(6, 6, 0), spine=(11, 6, 0), head=(-13, -4, 0),
+                 hand_r=arm(aim, pole8, blade=_n(*blade), **({"knuckles": _n(*FLK["kn"])} if "kn" in FLK else {})),
+                 hand_l=arm(free, fpole), fingers_r="grip", fingers_l="relaxed", clav_r=clav), "auto"),
+        (18, body(step(0.0), hand_r=arm((0.0, -0.36, 0.14), (-0.6, -0.4, -0.5), blade=_n(-0.1, 0.5, 0.85)),
                   hand_l=arm((0.0, -0.38, 0.08), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
-    return build("cast_flick", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 0.0, "weapon": "wand"})
+    return build("cast_flick", rig, keys, lead=STRIKE, meta={"layer": "upper", "stance": True, "contact": 0.0,
+                                                             "weapon": "wand"})
 
 
 # The left elbow at the aim: down and ahead under the fore-stock, only a little out (round 4: out at (0.65, -0.7, 0.3)

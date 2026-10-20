@@ -1,0 +1,4 @@
+[1/1] chain_strike 5s
+clip                           set                  piece      depth frame  part                         >10mm  share  outfit frame  part                  hold h_out frame  hold part
+chain_strike                   axe                  axe         39.8     6  calf_r                      4/28      14%    50.9     8  calf_r                 0.0   0.0     0  -
+1 clips, 1 sets, 5 s

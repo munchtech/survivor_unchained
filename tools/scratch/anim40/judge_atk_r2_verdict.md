@@ -1,0 +1,20 @@
+# Judge r2 verdict (max, animation 43, 19 Oct night): 12 PASS, 10 FAIL, 2 known open (24 frames, shots_atk4)
+PASS: fore0_m, fore3_m, heavy4_m, axesl3_m, axesr3_m, chain3_p, flick0_m, flick1_m, flick4_c, fore3_f45_m, heavy4_f45_m, flick4_run_c.
+FAIL: fore7_m (upright, fist tucked against thigh, left forearm hidden behind hip), heavy0_m (same as fore0 but arm 10 cm higher), axesr7_m (half-hearted finish; left axe bolt upright by her head = torch), chain0_m (on both knees, left fist on cobbles, one-handed: reads fallen; worst frame), chain3_m/chain6_m (knees together, rounded back, head below shoulders = digging; [not-anim: outfit] loincloth plank), chain9_m (deepest hunch, torso horizontal, hips highest, face to ground), flick8_m (A-pose arms, wand at cobbles, legs locked: gunslinger), fore0_run_m (left forearm clamped across belly, fist at right hip crease), fore7_run_m (haft across forward left thigh, head at knee: rests on leg; hand on hip, upright).
+KNOWN OPEN: heavy7_m, heavy7_run_m (head end-on; in the run heavy = fore but the axe).
+Marks on passes: fore0 forearm upright in front of face (torch hint), legs near straight; fore3/heavy4 left fist planted on hip f3-f7; heavy4_f45 left elbow pokes out behind her back; axesl3 right guard haft past nose/mouth; flick0 wand upright by ear, legs straight.
+[not-anim: light] no contact shadow under her in the _m frames (play camera has long shadows).
+
+FIXES (most important first)
+1. chain_strike f0-f2 re-key the wind-up: standing, feet ~1.5x shoulders, knees ~20 deg; left fist at haft end, right fist ~15 cm above; axe overhead, head behind her crown (haft 20-30 deg past vertical), chest up. Hips never below f3 height before f3; no knee or hand on the ground.
+2. chain_strike f3-f11: knees out 10-15 cm over the toes; hip bend -20-25 deg so the torso sits ~45 deg; chin up ~15 deg (head above shoulder line); elbows ~150 deg so the push runs down the haft.
+3. Left hand off her hip (axe_fore, axe_heavy f3-f11, standing and running): f7 hand ~20 cm out from hip, ~15 cm behind it, elbow ~100 deg, hand loose; elbow below chest height and not visible behind her back from facing 45. fore0_run: left fist ~25 cm in front of breastbone at chest height, or the missing ~25 deg spine turn to her right on the run layer.
+4. Committed f7 finish (axe_fore, axes_right): spine 15-20 deg further forward and 10-15 deg further to her left, right shoulder ~5 cm lower; right elbow 150-160 deg, fist 25-30 cm in front of her left thigh (not against it); front (left) knee ~25 deg; head ~10 deg down along the cut.
+5. Run-layer finishes: finish 15-20 cm further forward and ~10 cm further out to her left so the axe clears the run's forward knee; heavy >= 10 deg more forward spine bend than fore.
+6. axe_heavy f0: haft ~20 deg further back (head drops behind her shoulders); spine arched back ~10 deg, turned ~15 deg more to her right; back (right) knee ~25 deg, weight on it.
+7. axe_fore and axe_heavy f0: right elbow ~15 cm higher and ~10 cm further back, forearm angled back beside her head, face clear (fore0_run already has the shape).
+8. Dual axes: axes_right f7 left axe tipped back ~40 deg, head behind her left shoulder, edge forward; axes_left right guard axe 10-15 cm out to her right so the haft clears her face.
+9. cast_flick f8: wand reaches toward the target (elbow ~150 deg, wand 10-15 deg below horizontal), free hand ~5 cm off her hip or up in front of her ribs; knees ~15 deg, weight on front foot. f0: wrist back ~45 deg so the tip points back over her right shoulder.
+10. (low) effort face on swings f3-f9: brows down, jaw set; heavy7 head tilts onto shoulder (sleepy).
+heavy7 fix: roll the haft ~90 deg on its axis (forearm palm-up + wrist) so the blade hangs edge-down, flat to camera as fore7; haft >= 30 deg below horizontal, head out to her left-front across the sightline (facings 315 and 45).
+Measures wanted: chain f0-f3 hip height and ground contacts; axes_left f0-f11 closest right haft to her head; fore7_run/heavy7_run closest axe to her left thigh/knee over the whole run cycle; cast_flick f0/f8 foot spread and knees vs axe_fore's stance.

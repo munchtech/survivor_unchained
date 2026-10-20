@@ -1,0 +1,6 @@
+run_arcanist_wand      fwd  f 0 fist x  27.1 y  128.8 (navel+ 13.8, underbust  -1.2) z  29.9 (bust front + 12.9) elbow   85  pelvis-frame z  26.4
+run_arcanist_wand      back f10 fist x  33.1 y  105.2 (navel+ -9.8, underbust -24.8) z -11.2 (bust front +-28.2) elbow  112  pelvis-frame z  -7.5
+sprint_arcanist_wand   fwd  f 0 fist x  25.9 y  131.7 (navel+ 16.7, underbust  +1.7) z  31.1 (bust front + 14.1) elbow   82  pelvis-frame z  28.5
+sprint_arcanist_wand   back f10 fist x  34.6 y  110.4 (navel+ -4.6, underbust -19.6) z -19.7 (bust front +-36.7) elbow  109  pelvis-frame z -15.5
+run_reaver_axes        head-to-skin min cm: knee  41.1 (f6) shin  38.9 (f7) feet  40.9 (f9) | haft back 14..32 out 10..15 | head fwd of knee max 4.0 | fist fwd of crease max -1.9 | edge fwd -0.98..-0.91 | elbow 146..152 | uarm out 13..24 | head out of knee min 41.9
+sprint_reaver_axes     head-to-skin min cm: knee  38.9 (f5) shin  36.6 (f5) feet  41.2 (f8) | haft back 28..35 out 7..16 | head fwd of knee max -0.7 | fist fwd of crease max -4.8 | edge fwd -0.98..-0.83 | elbow 143..149 | uarm out 7..26 | head out of knee min 34.1

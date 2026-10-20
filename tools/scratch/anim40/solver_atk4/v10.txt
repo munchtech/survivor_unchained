@@ -1,0 +1,6 @@
+axe_fore|f1|{"blade":[0.55,-0.35,0.75]}
+axe_fore|f2|{"blade":[0.65,-0.4,0.65]}
+axe_fore|f3|{"blade":[0.6,-0.3,0.6]}
+axe_heavy|h0|{}
+axe_heavy|h1|{"blade":[0.6,-0.95,0.45]}
+axe_heavy|h2|{"blade":[0.55,-0.8,0.55]}

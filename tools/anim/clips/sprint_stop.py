@@ -28,7 +28,10 @@ CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_r
 SPRINT_SWING = (5, -3, 1.25, -3)
 # Per run where it differs: the town sprint's back swing a little short of the run's (x0.9), or the elbow comes through the
 # shield slung on her back (judge r3: 3-5 mm through at ph0 and ph50 at x1.25).
-SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3)}
+# A fifth number: the free (left) upper arm's out, both ends, +deg. The axes sprint's hung second axe 5 in: at the run's 14 (+1 back)
+# the sprint's elbow swung round 25 deg further out, the forearm turned in, and the head came in onto her knee (anim 44
+# solver 7c).
+SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8, -3, 1.25, -3, -5)}
 
 
 # The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).
@@ -57,10 +60,10 @@ def sprint(rig, run):
         # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
         k = SPRINT_SWING_RUN.get(run, SPRINT_SWING)
 
-        def sped(sw):
+        def sped(sw, o=0):
             (ft, fo, fe, fr), (bt, bo, be, br) = sw
-            return ((ft + k[0], fo, fe + k[1], fr), (bt * k[2], bo + 1, be + k[3], br))
-        s = replace(s, swing=sped(g.swing), swing_r=None if g.swing_r is None else sped(g.swing_r))
+            return ((ft + k[0], fo + o, fe + k[1], fr), (bt * k[2], bo + 1 + o, be + k[3], br))
+        s = replace(s, swing=sped(g.swing, k[4] if len(k) > 4 else 0), swing_r=None if g.swing_r is None else sped(g.swing_r))
     clip = run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
     # (The run's post-pass too: the warden's town hand on her sword's hilt, run.hilt_carry.)
     return POST[run](rig, clip) if run in POST else clip

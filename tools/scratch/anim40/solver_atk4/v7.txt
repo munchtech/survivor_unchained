@@ -1,0 +1,4 @@
+H1|{"clav":[6,14],"dspine":12,"dhips":6,"dhand":[-0.16,0.04,0.24],"dhinge":4,"blade":[0.8,-0.8,0.3],"dcrouch":0.04}
+H2|{"clav":[6,14],"dspine":12,"dhips":6,"dhand":[-0.14,-0.04,0.22],"dhinge":4,"blade":[0.8,-0.8,0.3],"dcrouch":0.04}
+H3|{"clav":[6,14],"dspine":12,"dhips":6,"dhand":[-0.12,-0.04,0.22],"dhinge":5,"blade":[0.75,-0.95,0.25],"dcrouch":0.05}
+H4|{"clav":[6,14],"dspine":14,"dhips":6,"dhand":[-0.14,-0.08,0.24],"dhinge":6,"blade":[0.85,-0.75,0.2],"dcrouch":0.05}

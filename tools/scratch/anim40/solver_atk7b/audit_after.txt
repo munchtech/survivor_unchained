@@ -1,0 +1,7 @@
+her    cast_flick                   l: spin 7/7 wtw 0 wbend 0 wdev 0 ftw 0 elbow 2 knee 0 (0 flagged) | r: spin 31/38 wtw 48 wbend 65 wdev 33 ftw 48 elbow 2 knee 0 (1 flagged)
+         r f1: hand spins 31 in a frame; forearm spins 38 in a frame
+her    chain_strike                 l: spin 19/60 wtw 47 wbend 62 wdev 37 ftw 48 elbow 2 knee 0 (2 flagged) | r: spin 10/57 wtw 44 wbend 54 wdev 35 ftw 44 elbow 2 knee 1 (1 flagged)
+         l f2: forearm spins 60 in a frame
+         l f3: forearm spins 45 in a frame
+         r f2: forearm spins 57 in a frame
+4 frames flagged

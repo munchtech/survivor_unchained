@@ -1,0 +1,26 @@
+clip                           set                  piece      depth frame  part                         >10mm  share  outfit frame  part                  hold h_out frame  hold part
+axe_fore                       axe                  axe         95.8     7  thigh_l                     7/27      26%   123.8     7  thigh_l                0.0   0.0     0  -
+axe_fore                       axes                 axe_r       95.8     7  thigh_l                     7/27      26%   123.8     7  thigh_l                0.0   0.0     0  -
+axe_fore                       axes                 axe_l       94.6    12  spine_01                    5/27      18%    94.6    12  spine_01               0.0   0.0     0  -
+axe_heavy                      axes                 axe_l       86.4    15  spine_01                    5/33      15%   107.4    16  pelvis                 0.0   0.0     0  -
+axe_heavy                      axe                  axe         84.1     7  thigh_l                    11/33      33%   148.4    15  thigh_l                0.0   0.0     0  -
+axe_heavy                      axes                 axe_r       84.1     7  thigh_l                    11/33      33%   148.4    15  thigh_l                0.0   0.0     0  -
+axes_right                     axe                  axe         82.7     7  thigh_l                     6/25      24%    82.7     7  thigh_l                0.0   0.0     0  -
+axes_right                     axes                 axe_r       82.7     7  thigh_l                     6/25      24%    82.7     7  thigh_l                0.0   0.0     0  -
+axe_back                       axes                 axe_l       55.1     2  pelvis                      2/27       7%    70.6     2  pelvis                 0.0   0.0     0  -
+chain_strike                   axes                 axe_l       51.4     8  calf_l                      6/28      21%    71.8     7  calf_l                 0.0   0.0     0  -
+axes_left                      axes                 axe_l       42.0     7  thigh_r                     3/25      12%    42.0     7  thigh_r                0.0   0.0     0  -
+chain_strike                   axe                  axe         39.8     6  calf_r                      4/28      14%    50.9     8  calf_r                 0.0   0.0     0  -
+chain_strike                   axes                 axe_r       39.8     6  calf_r                      4/28      14%    50.9     8  calf_r                 0.0   0.0     0  -
+axe_back                       axe                  axe          0.0     0  -                           0/27       0%     0.0     0  -                      0.0   0.0     0  -
+axe_back                       axes                 axe_r        0.0     0  -                           0/27       0%     0.0     0  -                      0.0   0.0     0  -
+axes_right                     axes                 axe_l        0.0     0  -                           0/25       0%     0.0     0  -                      0.0   0.0     0  -
+axes_left                      axe                  axe          0.0     0  -                           0/25       0%     0.0     0  -                      0.0   0.0     0  -
+axes_left                      axes                 axe_r        0.0     0  -                           0/25       0%     0.0     0  -                      0.0   0.0     0  -
+run_reaver                     axe                  axe          0.0     0  -                           0/20       0%     0.0     0  -                      0.0   0.0     0  -
+run_reaver                     axes                 axe_r        0.0     0  -                           0/20       0%     0.0     0  -                      0.0   0.0     0  -
+run_reaver                     axes                 axe_l        0.0     0  -                           0/20       0%     0.0     0  -                      0.0   0.0     0  -
+sprint_reaver                  axe                  axe          0.0     0  -                           0/20       0%     0.0     0  -                      0.0   0.0     0  -
+sprint_reaver                  axes                 axe_r        0.0     0  -                           0/20       0%     0.0     0  -                      0.0   0.0     0  -
+sprint_reaver                  axes                 axe_l        0.0     0  -                           0/20       0%     0.0     0  -                      0.0   0.0     0  -
+8 clips, 2 sets, 23 s

@@ -1,0 +1,10 @@
+# anim41 solver round 1: the axe follow-throughs re-keyed (play-true hold)
+fore0_m|reaver|-|axe_fore@0.0|day|0.6|315|female
+fore3_m|reaver|-|axe_fore@0.1|day|0.6|315|female
+fore7_m|reaver|-|axe_fore@0.233|day|0.6|315|female
+heavy0_m|reaver|-|axe_heavy@0.0|day|0.6|315|female
+heavy4_m|reaver|-|axe_heavy@0.133|day|0.6|315|female
+heavy7_m|reaver|-|axe_heavy@0.233|day|0.6|315|female
+axesl3_m|reaver|gyre_axes|axes_left@0.1|day|0.6|315|female
+axesr3_m|reaver|gyre_axes|axes_right@0.1|day|0.6|315|female
+axesr7_m|reaver|gyre_axes|axes_right@0.233|day|0.6|315|female

@@ -1,0 +1,14 @@
+clip                           set                  piece      depth frame  part                         >10mm  share  outfit frame  part                  hold h_out frame  hold part
+axe_back                       axes                 axe_l       55.1     2  pelvis                      2/27       7%    70.6     2  pelvis                 0.0   0.0     0  -
+axe_fore                       axe                  axe          0.0     0  -                           0/27       0%     0.0     0  -                      0.0   0.0     0  -
+axe_fore                       axes                 axe_r        0.0     0  -                           0/27       0%     0.0     0  -                      0.0   0.0     0  -
+axe_fore                       axes                 axe_l        0.0     0  -                           0/27       0%     3.5     3  lowerarm_twist_02_r    0.0   0.0     0  -
+axe_heavy                      axe                  axe          0.0     0  -                           0/33       0%     0.0     0  -                      0.0   0.0     0  -
+axe_heavy                      axes                 axe_r        0.0     0  -                           0/33       0%     0.0     0  -                      0.0   0.0     0  -
+axe_heavy                      axes                 axe_l        0.0     0  -                           0/33       0%     4.4     4  lowerarm_twist_02_r    0.0   0.0     0  -
+axe_back                       axe                  axe          0.0     0  -                           0/27       0%     0.0     0  -                      0.0   0.0     0  -
+axe_back                       axes                 axe_r        0.0     0  -                           0/27       0%     0.0     0  -                      0.0   0.0     0  -
+axes_right                     axe                  axe          0.0     0  -                           0/25       0%     0.0     0  -                      0.0   0.0     0  -
+axes_right                     axes                 axe_r        0.0     0  -                           0/25       0%     0.0     0  -                      0.0   0.0     0  -
+axes_right                     axes                 axe_l        0.0     0  -                           0/25       0%     0.0     0  -                      0.0   0.0     0  -
+5 clips, 2 sets, 15 s

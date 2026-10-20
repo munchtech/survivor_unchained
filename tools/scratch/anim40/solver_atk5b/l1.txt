@@ -1,0 +1,4 @@
+chain0_m|reaver|-|chain_strike@0.0|day|0.6|315|female
+chain2_m|reaver|-|chain_strike@0.067|day|0.6|315|female
+chain3_m|reaver|-|chain_strike@0.1|day|0.6|315|female
+chain9_m|reaver|-|chain_strike@0.3|day|0.6|315|female

@@ -2,6 +2,107 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 00000000000. MR READY (animation 44, 20 October 2026); next: idle life
+Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. Files are in `tools/scratch/anim40/`.
+
+**Item 2, her attack poses: DONE under the hard stop.**
+- Solver 7c built the runs (9c936c18 call 8 wand free fist; 994023f8 call 9 axes run, the second axe hanging at her side).
+- Max judge r4 (`judge_atk_r4.md`, verdict `judge_atk_r4_verdict.md`): 14 PASS, 5 FAIL-KNOWN, 3 CUT.
+  - FAIL-KNOWN: each passes the gate and beats r3, so r4 ships. The verdict has the later fixes.
+  - CUT: chain_strike f3-f9. Integration's version failed r1, so the clip is GATED OFF. The Grapple landing plays her heavy blow (PlayerView, 1b8b7215), and chain_strike stays in the library unplayed.
+- Checks (`final44/`):
+  - audit: 17 flags, all at the blow frames, as the solvers had them;
+  - armscheck: 0 mm (axe_heavy with the irrelevant `axes` set: 12 mm into the calf, but that pairing never plays);
+  - motion --outfits: unchanged from the solvers' after-runs; cast_flick is better;
+  - fistfit: axe 24/24, wand 3/3;
+  - dotnet: see the MR message.
+- Later items: chain_strike (one-handed, or a sliding grip plus a looser wrist); the five KNOWN fixes in the r4 verdict; [face] an effort face on the swings; [outfit] the loincloth in crouches; [light] no contact shadow at 0.6.
+
+**Next: idle life** (OWNER_NOTES 19 Oct "Natural idles"; the bar and the plan are in section 0000000000 below, "Next item after the MR").
+
+## 0000000000. Paused here (animation 43, 20 October 2026, early); superseded by 44 above:
+Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Integration merged at a40cba09. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. All files below are in `tools/scratch/anim40/`. No solver is running and no turns are held.
+
+**Item 2, her attack poses.**
+- Solvers 4, 5a, 5b and 6 built round 3. The max judge r3 (`judge_atk_r3.md`, verdict `judge_atk_r3_verdict.md`) passed 15 of 31 frames.
+- **The coordinator's hard stop:** after the next judge (r4), anything still failing the gate is CUT. It falls back to the clip it replaces, or is gated off and listed here with the judge's fix. Then merge the rest. No fifth round.
+
+**Restage round 4** (briefs `solver_atk7_brief.md`; shots go to `shots_atk7/`):
+- **7a, the axe swings: built.** Commits c29bca49..f86cb98f; sheet `contact_atk7a.jpg`.
+  - Head roll at the f7 finishes: from -25/-30 to within ±3.
+  - Run finishes moved beside her hip.
+  - fore0_run left arm: out from her body.
+  - axesr7 left axe: holds the f3 shape.
+  - heavy0: legs loaded (back knee 35). Open: the pelvis drops only 2 cm, and slide went 0.3 -> 1.1.
+  - **New code (accepted by the lead):** run variants `axe_fore_run` and `axe_heavy_run`, played by `PlayerView.RunVariant` while she moves.
+  - axesl7 is unshot. axes_left plays the changed keys mirrored.
+- **7b, cast_flick: built.** Commit 191d14cd; sheet `contact_atk7b.jpg`.
+  - The free arm is 6-7 deg from her side and the wand hand is at her chest.
+  - The wand sits 4 deg above level on purpose: from the 315 camera it reads about level.
+- **7b, chain_strike: NOT done (arts.py reverted).** The judge's call 6 can't be met inside the rig:
+  - the right wrist limit holds the haft at 33-35 deg;
+  - the grip is fixed on the haft, so a steeper haft lifts the hands rather than lowering them;
+  - lower hips put her arms into her breast or take the left fist off the haft.
+  - chain0/chain2/chain3_p pass. chain3/6/9 fail (it reads as leaning on a hoe). **Plan: cut.** Unless r4 passes those frames as they are, fall back to integration's chain_strike or gate it off, and list call 6 plus the rig work it needs (a per-clip grip slide along the haft, a looser right-wrist limit) as a later item.
+- **7c, the runs: NOT started** (section 7c of the brief).
+  - The wand run's free fist goes up to lower-rib height.
+  - The axes run's second axe is RESTAGED to hang at her side. If that fails, cut: run_reaver_axes plays run_reaver's arms with the second axe stowed.
+  - run_arcanist_wand and run_reaver_axes are solver 6's version (48cb7289), which failed r3 at _c and _m.
+
+**Next:**
+1. Solver 7c (su-lead-high, medium, 200k) on `solver_atk7_brief.md` section 7c.
+2. Max judge r4 (su-lead-max, max, foreground). Copy `judge_atk_r3.md`, list only the r3-failed frames now in shots_atk7 (plus fore7_m, flick0/1 to confirm they still pass), and open with the whole-frame gate.
+3. Cut whatever fails, per the hard stop.
+4. Checks on the changed clips: motion --outfits, armscheck, audit, fistfit (axe 24/24 now).
+5. One full `dotnet test`.
+6. Send "MR READY anim-40@<commit>" to main. List the changed clips, the stance marks, the run variants and the PlayerView change.
+
+**Next item after the MR (the owner, 19 Oct): idle life.**
+- **The bar is relaxed, not busy.** Stillness is fine; tension is the fault. A safe pose fails when it reads anxious: raised shoulders, arms locked or held off the body, a ramrod spine, a level pelvis with her weight on both feet, clenched fists, the head held rigidly forward. It passes with her weight on one hip and the other knee soft, the shoulders dropped, the arms hanging with bent elbows, the spine and neck easy. A sway or a breath is welcome but optional.
+- **The reference is `idle_warden_town`** (100STYLE WiggleHips_ID, frames 1458-1778), played in town when she is sheathed (PlayerView safeNow, Sheath.cs). The owner: "I adore the idle sway". Match its feel, not its shape.
+- **What lacks it:**
+  - The other callings have no `_town` idle, so they fall back to their combat idles: reaver (Angry), arcanist (Strutting), stalker (Crouched).
+  - Townsfolk and story NPCs play the kit's Idle_Loop (FolkClips.cs).
+  - Each needs a relaxed `_town` idle.
+- The coordinator decides after the MR whether it runs in this slot.
+
+**Routed:**
+- [face] An effort face on the swings (brows down, jaw set). Her lids hang heavy, and the clips have no expression track. Already in RESUME.
+- [outfit] The front loincloth panel sticks out in crouches.
+- [light] No contact shadow at the 0.6 zoom.
+
+## 000000000. Paused here (animation 42, 19 October 2026, night, coordinator wind-down); superseded by animation 43 above:
+Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Integration merged at b51354ff. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. The fists (item 1) are already merged (2a35b6a3). Item 2, the attack poses, is in progress.
+- **Solver 3 (su-lead-high, medium) stopped at its budget, NOT judged** (58512dec, 48d41e2b, c3234c87, eb3d732f). What it built: stance on (meta "stance": True) for axe_fore, axe_heavy, axe_back, axes_left/right/heavy and cast_flick (feet 1.31x shoulders, knees 12-21 deg, no knock-knee, pelvis -13/+23, hinge 14, heavy 25); finishes across (the right fist level with her left thigh, the head 51-54 cm clear of her leg); axe_fore f0 cocked; cast_flick relaxed; chain_strike settling 4 cm with the free arm back. Checks are in `tools/scratch/anim40/solver_atk3/chk/` (motion_base vs motion_new), shots list `shots_atk3.txt`, contact_atk3.jpg.
+- **New failure: her right upper arm into her breast, 72-80 mm (it was 44-66)**, from clav_r forward 22-24 on the finish keys (axes_left 51 -> 75 on the left side). axe_heavy's hand into her went 66 -> 80. Heavy still reads too close to fore. **chain_strike:** two hands at a 50 deg haft only fit with the left upper arm 80 mm into her trunk; the new f9 puts the left hand 14-51 mm into her thigh, and the head sinks 4-7 cm at f10-11. The runs (job 5) are untouched. The audit has 3 borderline spins.
+- **The coordinator's notes:** fix the breast contacts before any judge sees these frames. chain_strike gets ONE more round at two hands; if it won't fit, restage it so both hands read (a two-handed overhead chop centred in front of her) rather than fight the wrist limit.
+- **Next:**
+  1. Solver 4 (su-lead-high, effort medium) on `tools/scratch/anim40/solver_atk4_brief.md`.
+  2. The max judge r2 (su-lead-max, effort max, foreground; never the API) on the failed frames plus the stance, the run-base and the chain frames. Copy `judge_atk_r1.md`, add what changed, open with the whole-frame gate.
+  3. Round 3 is the last; a shot that can't pass is restaged.
+  4. Run motion --outfits, armscheck, audit, fistfit and dotnet test once, then MR READY. List the changed clips and say which ones are stance-marked (all 7 above), since that changes play.
+
+## 00000000. Animation 41 (19 October 2026, evening); next:
+Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Integration merged at b30feab1. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import (local pack/import by-products).
+**Item 1, axe and wand fists: DONE, MR READY at 2a35b6a3** (sheathed, on idle_reaver/idle_arcanist: axe 8.5 -> 0 mm into skin, wand unchanged). xhigh judge r1 (20 frames) and r2 (gyre_axes, 5 frames): the grips pass wherever the hand shows (fist on haft, thumb, wrist; the wand's knob and collar read "crafted"). Checks (tools/scratch/anim40/chk/): motion --outfits before/after on the 17 axe clips and 3 wand clips, no regression (forearm roll 32 -> 23 across the swings; axes_heavy's hands into outfits +8-18 mm on ~100-145 mm that were already there; stop_reaver's right hand into her 12 -> 23 mm); held armscheck axe/axes about as before, wand 0 mm; audit 19 flags = 17 + cast_flick's 2 old ones; reaver_show f5's 38 deg spin is the same twirl redistributed (f5-7 roll 82 -> 79 deg total), closed; fistfit axe 21/21, wand 3/3; dotnet test 994/0/8; freshness OK. reaver_show f20's axe leaving the close-up frame is the overhead wheel at the creation flourish: closed (coordinator).
+**Tools added:** `motion.py --folder DIR` (before/after folders); `--hold` is play-true (7b00ce4b): an upper-layer clip is held over her idle's hips and legs, her head levelled by play's HeadLevel in swings, idles and runs (`--hold-full` for the clip's own legs). Every judge before this saw keyed crouches and bowed heads that play never shows. `tools/scratch/anim40/shoot.sh <list> <out>` (CLOSE 1 closest, 0.6 mid zoom for attacks, 0 play; WEAPON gyre_axes for two axes); `axdir.py`; solver 1's play-true measures in `tools/scratch/anim40/solver_atk/` (atkm.py, comp.py, auditx.py, runhand.py).
+**Item 2, her attack poses (coordinator, 19 Oct: same slot, max judge, 2-3 rounds, restage don't close):** axe_fore, axe_heavy, axes_left/right, chain_strike, cast_flick, and the free hand in the runs.
+- **Round 1, built:** solver 1 (1d6bea5e, 37fbc052) made the swings finish forward and across, with the axe into her own legs going from 84-96 mm to 0; it also moved the free hand in the runs. Solver 2 (78cc822e, 0a408ad0) did cast_flick (the wand clears the hat, the free arm is no longer a T, the spins 54/65 -> 24/11) and chain_strike (the axe's face shows, her face is level). chain_strike is still one-handed: its left fist sat 7-29 mm off the haft.
+- **Max judge r1 (shots_j1, 23 frames): FAIL, 10 pass.** Passed: every mid-swing frame, run_c, run_m, chain3_p. Failed:
+  - every held standing frame: the idle's feet-together legs carry no weight under a swing;
+  - the f7 finishes: the axe head sits on her left boot top, and fore and heavy look alike;
+  - axe_fore f0 reads as raising a torch;
+  - cast_flick: the free hand clutches under her breast at f0, and the wand arm is locked straight (an airplane pose);
+  - run_arcanist_wand and run_reaver_axes: the free hand still at her midline;
+  - chain_strike: reads as setting the axe down; two hands wanted (the owner and the judge).
+- **Built for round 2:** 7f087c06 adds **stance swings**. A clip with meta `"stance": True` plays on her whole body while she stands (FullHer soft, so it gives way to the run when she moves), and on her upper body over the run while moving. `--hold` shows such a clip on its own legs. `--hold-base CLIP@S` lays a swing over the run's legs: the moving case, the most common one in play.
+- **Next:**
+  1. Spawn solver 3 (su-lead-max) on `tools/scratch/anim40/solver_atk3_brief.md`. It has the judge's fixes with numbers: stance meta and stance keys, finishes across to the left hip with the head 15 cm or more outside her leg, the fore f0 cock, cast_flick's free hand and elbow, the runs' free hand, chain_strike two hands and the impact.
+  2. Max judge round 2 on shots_atk3, whole-frame gate first. Brief: copy `judge_atk_r1.md` and add the stance and the run-base frames.
+  3. Round 3 is the last; anything that can't pass is restaged, not closed.
+  4. Then checks on the changed clips (motion --outfits, audit, armscheck, fistfit, dotnet test), and MR with the changed clips listed.
+- **Routed:** [outfit] chain_strike's front loincloth panel sticks out stiff when the pelvis pitches past about 30 deg (it needs a spring or a counter-rotation); [skin] her face reads paler and cooler than her chest at the close-up (flick4_c, wrun_c).
+
 ## 0000000. Paused here (animation 40, 19 October 2026, handoff at 300k); next:
 Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Import cache complete. Integration merged at 957838fe. Never commit heroine.res, *_clips.json, manifest.json or the many touched *.import files (the fresh import rewrote them).
 **Fixed list:**

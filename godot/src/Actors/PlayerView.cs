@@ -260,12 +260,19 @@ public partial class PlayerView : Node3D
     bool UpperHer(string clip, double speed)
     {
         if (!mine || !own.Has(clip)) return false;
-        upper.Animation = own.Prefix + clip;
+        // Standing, a stance swing takes her whole body (its own feet set and hips into the blow), soft:
+        // it gives way to the run the moment she moves. Moving, it rides her upper body over the run.
+        if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
+        upper.Animation = own.Prefix + RunVariant(clip);
         upperNative = true;
         tree.Set("parameters/upperScale/scale", speed);
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
     }
+
+    /// <summary>A stance swing re-aimed for her run's hips, where one is keyed (clip + "_run", e.g. axe_fore_run):
+    /// moving, her hips are the run's, not turned into the blow, so the stance clip's arms land elsewhere.</summary>
+    string RunVariant(string clip) => own.Stance(clip) && own.Has(clip + "_run") ? clip + "_run" : clip;
 
     void Full(string clip, double speed)
     {
@@ -427,12 +434,15 @@ public partial class PlayerView : Node3D
             // An upper-body clip (a swing) is held as play shows it: over her idle's hips and legs (the
             // upperShot filter), not on the clip's own keyed legs. --hold-full shows the clip's legs.
             var sk = person.Skeleton;
-            bool upperOnly = idleNode != null && !SurvivorUnchained.Args.Has("hold-full") && own.UpperLayer(hold[0]);
+            // --hold-base CLIP@S: the hips and legs from that clip instead (a swing over her run, as play shows it moving).
+            var hb = SurvivorUnchained.Args.Get("hold-base")?.Split('@');
+            bool stance = own.Stance(hold[0]) && hb == null;
+            bool upperOnly = idleNode != null && !SurvivorUnchained.Args.Has("hold-full") && own.UpperLayer(hold[0]) && !stance;
             var legs = new List<(int b, Vector3 p, Quaternion r)>();
             if (upperOnly)
             {
-                person.Anim.Play(idleNode!.Animation);
-                person.Anim.Seek(0, true);
+                person.Anim.Play(hb is { Length: 2 } ? own.Prefix + hb[0] : idleNode!.Animation);
+                person.Anim.Seek(hb is { Length: 2 } ? double.Parse(hb[1], System.Globalization.CultureInfo.InvariantCulture) : 0, true);
                 for (int bi = 0; bi < sk.GetBoneCount(); bi++)
                 {
                     var name = sk.GetBoneName(bi);
@@ -440,7 +450,8 @@ public partial class PlayerView : Node3D
                         legs.Add((bi, sk.GetBonePosePosition(bi), sk.GetBonePoseRotation(bi)));
                 }
             }
-            person.Anim.Play(own.Prefix + hold[0]);
+            // (over a run, a stance swing's run variant, as UpperHer plays it moving)
+            person.Anim.Play(own.Prefix + (hb is { Length: 2 } && upperOnly ? RunVariant(hold[0]) : hold[0]));
             person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
             person.Anim.Pause();
             foreach (var (bi, p0, r0) in legs) { sk.SetBonePosePosition(bi, p0); sk.SetBonePoseRotation(bi, r0); }
@@ -448,7 +459,7 @@ public partial class PlayerView : Node3D
             // whole-body clip (a fall, a roll, a flourish) keeps its own head, as play leaves it.
             string hn = hold[0];
             bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
-            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip ? HeadLevel : 0;
+            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
             return;
         }
@@ -539,7 +550,9 @@ public partial class PlayerView : Node3D
             }
             // Hauled all the way in: the blow she lands with (hers held in
             // the air until now, for however long the haul took).
-            else if (was == Content.AbilityKind.Grapple && FullHer("chain_strike", 1, false))
+            // chain_strike is gated off (judge r4, 20 Oct: its crouch hold reads as leaning
+            // on a hoe; a later round restages it), so she lands with her heavy blow.
+            else if (was == Content.AbilityKind.Grapple && UpperHer(HerClips.Heavy(person.Kind), 1.5))
                 artTail = time + 0.3;
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the
