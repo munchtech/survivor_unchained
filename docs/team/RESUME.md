@@ -3,7 +3,7 @@
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
 ## 20 October, day: coordinator 746784c6 (running)
-MERGED: anim-40 attack poses (chain_strike gated off; heroine repacked, 91 clips, 862f37fe) and E3 terrain and road (71ba6d14; env-3 removed). Running: animation 44 on idle life (anim-40), Marionette lead 5 (npc-1 + Marionette pipeline-1), art-style frames (su-lead-max, new worktree art-style). Owner 20 Oct: API spend open for generation that improves the work (cap $250/month, no per-stretch limit), never judges; tier-3 judges (fodder, minor filler) at high.
+MERGED: anim-40 attack poses (chain_strike gated off) and idle life (town idles/runs for reaver, arcanist wand, stalker; heroine repacked to 100 clips, 9c877dfa); E3 terrain and road (env-3 removed); art-style's --grade-try/--no-labels flags; npc-1's two baked story NPCs (villager, guard; pass at the play camera, close framing open). Running: art-style lead 3 (in-engine proof toward r2 target_town; ford target rejected), Marionette lead 6 (close-framing cloth fixes, then armor on the base, game-look preview, hair tool), animation 45 (folk close-up check, staff in town, then attack KNOWN fixes). Owner 20 Oct: API spend open for generation that improves the work (cap $250/month), never judges; tier-3 judges (fodder, minor filler) at high; Krea is fine for previews that never ship.
 
 ## 20 October, early: coordinator d7ae3fc3 WIND-DOWN (history)
 All three leads paused cleanly and stopped; no helpers, no turns; nothing merged this stretch. Tests on env-3 1012/0/8.
