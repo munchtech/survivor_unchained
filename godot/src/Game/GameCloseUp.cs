@@ -177,12 +177,13 @@ public partial class Game
     // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
     static float CloseKeyNight => Args.Num("close-key-night", 2.2f);
     // --close-key-el D: the night key's elevation (degrees).
-    static float CloseKeyElNight => Args.Num("close-key-el", 30f);
-    // (G1 r2: rim 3.0 to 2.0 and down from 35 degrees to CloseRimEl: from above it lifted her copper crown pinkish-tan,
-    // toward strawberry blonde; low, its cool edge grazes her shoulders and arms.)
-    static float CloseRimNight => Args.Num("close-rim", 2.0f);
+    static float CloseKeyElNight => Args.Num("close-key-el", 18f);
+    // (G1 r2: rim 3.0 to 1.0 and down from 35 degrees to 10, the key from 30 to 18: from above they lifted her copper crown
+    // pinkish-tan, toward strawberry blonde (crown Oklab L 52.6, 44.9 now, her face 79.9 and 79.4: the crown to face of
+    // art style r2's frame, 0.56); low, the rim's cool edge grazes her shoulders and arms.)
+    static float CloseRimNight => Args.Num("close-rim", 1.0f);
     // --close-rim-el D: the rim's elevation (degrees).
-    static float CloseRimEl => Args.Num("close-rim-el", 15f);
+    static float CloseRimEl => Args.Num("close-rim-el", 10f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
     static float CloseRimAz => Args.Num("close-rim-az", 0.5f);
     static float CloseLampByNight => Args.Num("close-lamp-night", 0.8f);
