@@ -243,6 +243,7 @@ public partial class Atmosphere : Node3D
     /// sRGB out.</summary>
     public static ImageTexture3D GradeLut(GradeSettings g, float mute)
     {
+        if (Try?.Mute is float tm) mute = tm;
         var key = $"{SurvivorUnchained.Core.Json.Write(g)}|{mute}";
         if (luts.TryGetValue(key, out var hit)) return hit;
         static Vector3 Hex(string h) { var c = new Color(h); return new Vector3(c.R, c.G, c.B); }
@@ -293,6 +294,7 @@ public partial class Atmosphere : Node3D
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
                     if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
+                    if (Try != null) outLin = Try.Apply(outLin);
                     var o = Srgb(outLin);
                     img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
                 }
@@ -415,4 +417,88 @@ public partial class Atmosphere : Node3D
     static float Srgb1(float c) => c < 0.0031308f ? c * 12.92f : 1.055f * Mathf.Pow(c, 0.41666f) - 0.055f;
     static Vector3 Lin(Vector3 c) => new(Lin1(c.X), Lin1(c.Y), Lin1(c.Z));
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
+
+    /// <summary>--grade-try k=v,...: a trial grade on top of the live one, for style frames (default untouched).
+    /// Keys: mute, vib, skin, shadow (#hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
+
+    sealed class GradeTry
+    {
+        public float? Mute;
+        float vib, skin = 1, shadowK, lift, hi;
+        bool hasShadow;
+        float ls, cs, hs;
+
+        public static GradeTry? Parse(string? spec)
+        {
+            if (string.IsNullOrWhiteSpace(spec)) return null;
+            var t = new GradeTry();
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            foreach (var part in spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                int eq = part.IndexOf('=');
+                if (eq < 0) { GD.PushWarning($"--grade-try: no value in '{part}'"); continue; }
+                string k = part[..eq].Trim().ToLowerInvariant(), v = part[(eq + 1)..].Trim();
+                if (k == "shadow")
+                {
+                    if (v.StartsWith('_')) v = "#" + v[1..];
+                    var c = new Color(v);
+                    var o = Oklab(Lin(new Vector3(c.R, c.G, c.B)));
+                    t.ls = o.X; t.cs = o.Y; t.hs = o.Z; t.hasShadow = true;
+                    continue;
+                }
+                if (!float.TryParse(v, System.Globalization.NumberStyles.Float, inv, out float f)) { GD.PushWarning($"--grade-try: bad number '{part}'"); continue; }
+                switch (k)
+                {
+                    case "mute": t.Mute = f; break;
+                    case "vib": t.vib = f; break;
+                    case "skin": t.skin = f; break;
+                    case "shadowk": t.shadowK = f; break;
+                    case "lift": t.lift = f; break;
+                    case "hi": t.hi = f; break;
+                    default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
+                }
+            }
+            return t;
+        }
+
+        public Vector3 Apply(Vector3 outLin)
+        {
+            var ok = Oklab(outLin);
+            float L = ok.X, C = ok.Y, h = ok.Z;
+            if (vib != 0)
+            {
+                float dull = 1 - Smooth(0.02f, 0.20f, C), light = Smooth(0.04f, 0.18f, L);
+                float skinHue = Smooth(15, 30, h) * (1 - Smooth(75, 90, h));
+                float skinW = skinHue * Smooth(0.025f, 0.05f, C) * Smooth(0.30f, 0.45f, L);
+                C *= 1 + vib * dull * light * (1 - skin * skinW);
+            }
+            if (hi != 0) C *= 1 + hi * Smooth(0.55f, 0.90f, L) * Smooth(0.008f, 0.03f, C);
+            float hr = Mathf.DegToRad(h);
+            float a = C * Mathf.Cos(hr), b = C * Mathf.Sin(hr);
+            if (lift != 0) L = Mathf.Min(L + lift * (1 - Smooth(0, 0.35f, L)), 1);
+            if (hasShadow && shadowK != 0)
+            {
+                float dark = 1 - Smooth(0.12f, 0.45f, L), fadeBlack = Smooth(0, 0.08f, L), own = 1 - Smooth(0.02f, 0.07f, C);
+                float w = Mathf.Clamp(shadowK * dark * own * fadeBlack, 0, 1);
+                float ct = cs * Mathf.Min(L / Mathf.Max(ls, 0.05f), 1), hsr = Mathf.DegToRad(hs);
+                a = Mathf.Lerp(a, ct * Mathf.Cos(hsr), w);
+                b = Mathf.Lerp(b, ct * Mathf.Sin(hsr), w);
+            }
+            var rgb = FromOklab(L, a, b);
+            if (!In(rgb))
+            {
+                float lo = 0, hiT = 1;
+                for (int i = 0; i < 12; i++)
+                {
+                    float mid = (lo + hiT) * 0.5f;
+                    if (In(FromOklab(L, a * mid, b * mid))) lo = mid; else hiT = mid;
+                }
+                rgb = FromOklab(L, a * lo, b * lo);
+            }
+            return rgb.Clamp(Vector3.Zero, Vector3.One);
+        }
+
+        static bool In(Vector3 v) => v.X >= -1e-5f && v.Y >= -1e-5f && v.Z >= -1e-5f && v.X <= 1 + 1e-5f && v.Y <= 1 + 1e-5f && v.Z <= 1 + 1e-5f;
+    }
 }
