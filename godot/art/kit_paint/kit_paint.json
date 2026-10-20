@@ -1,0 +1,34 @@
+{
+ "T_UnevenBrick_BaseColor": {
+  "weather_sat": 0.86,
+  "weather_tint": [
+   0.9,
+   0.87,
+   0.82
+  ]
+ },
+ "T_RockTrim_BaseColor": {
+  "weather_sat": 0.86,
+  "weather_tint": [
+   0.9,
+   0.87,
+   0.82
+  ]
+ },
+ "T_WoodTrim_BaseColor": {
+  "weather_sat": 0.88,
+  "weather_tint": [
+   0.86,
+   0.82,
+   0.76
+  ]
+ },
+ "T_RoundTiles_BaseColor": {
+  "weather_sat": 0.82,
+  "weather_tint": [
+   0.86,
+   0.78,
+   0.72
+  ]
+ }
+}

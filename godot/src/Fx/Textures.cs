@@ -58,13 +58,59 @@ public static class Textures
 
     static readonly List<Texture2D> keep = new();
 
+    /// <summary>--kit-paint DIR (style r2, a developer's switch, default off): painted kit
+    /// sheets (tools/assets/paint_tex.py) take the place of the sRGB ones where DIR has one by
+    /// the same name (T_UnevenBrick_BaseColor.webp ...), so every piece using that sheet changes
+    /// (the well and the village houses alike); DIR/kit_paint.json gives the shader weather each
+    /// painted sheet is drawn with (KitLook), DIR/folk.json overrides folk looks (ZoneData), and
+    /// the cloth stall takes DIR's painted canvas and wood (Landmarks). DIR is a res:// path or
+    /// a folder inside the project (as given from the worktree root, or absolute).</summary>
+    public static readonly string? KitPaint = ResDir(SurvivorUnchained.Args.Get("kit-paint"));
+
+    static string? ResDir(string? d)
+    {
+        if (string.IsNullOrEmpty(d) || d == "1") return null;
+        if (d.StartsWith("res://")) return d.TrimEnd('/');
+        d = d.Replace('\\', '/');
+        var full = System.IO.Path.GetFullPath(d).Replace('\\', '/').TrimEnd('/');
+        var proj = ProjectSettings.GlobalizePath("res://").Replace('\\', '/').TrimEnd('/');
+        if (full.StartsWith(proj + "/", System.StringComparison.OrdinalIgnoreCase)) return "res://" + full[(proj.Length + 1)..];
+        // (relative to the worktree root, while Godot runs in godot/)
+        var i = d.LastIndexOf("godot/", System.StringComparison.Ordinal);
+        return "res://" + (i >= 0 ? d[(i + 6)..] : d).TrimEnd('/');
+    }
+
+    /// <summary>Under --kit-paint, the shader weather (saturation kept, colour multiply) of a
+    /// painted sheet, by the path the models name it by; null for any other.</summary>
+    public static (float Sat, Vector3 Tint)? PaintedWeather(Texture2D? t) =>
+        t != null && painted.TryGetValue(t.ResourcePath.GetFile().GetBaseName(), out var w) ? w : null;
+
+    static readonly Dictionary<string, (float, Vector3)> painted = new();
+
+    static void LoadWeather()
+    {
+        var f = $"{KitPaint}/kit_paint.json";
+        if (!FileAccess.FileExists(f)) return;
+        var doc = System.Text.Json.JsonDocument.Parse(FileAccess.GetFileAsString(f));
+        foreach (var e in doc.RootElement.EnumerateObject())
+        {
+            var t = e.Value.GetProperty("weather_tint");
+            painted[e.Name] = ((float)e.Value.GetProperty("weather_sat").GetDouble(),
+                new Vector3((float)t[0].GetDouble(), (float)t[1].GetDouble(), (float)t[2].GetDouble()));
+        }
+    }
+
     /// <summary>Once, before any model loads.</summary>
     public static void Mend()
     {
         if (keep.Count > 0) return;
+        if (KitPaint != null) LoadWeather();
         foreach (var p in Srgb)
         {
-            var fixedPath = $"res://art/srgb/{p}.webp";
+            var paintedPath = KitPaint != null ? $"{KitPaint}/{p.GetFile()}.webp" : null;
+            bool usePaint = paintedPath != null && ResourceLoader.Exists(paintedPath);
+            if (paintedPath != null && !usePaint) painted.Remove(p.GetFile());
+            var fixedPath = usePaint ? paintedPath! : $"res://art/srgb/{p}.webp";
             if (!ResourceLoader.Exists(fixedPath)) continue;
             var t = GD.Load<Texture2D>(fixedPath);
             t.TakeOverPath($"res://assets/{p}.ktx2");
