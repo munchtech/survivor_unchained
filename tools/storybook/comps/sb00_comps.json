@@ -5,7 +5,7 @@
   "density": 1.2,
   "plates": [
     {
-      "id": "p0", "title": "The lamp at the post (opening vignette)", "at": 0.0, "until": 2.5,
+      "id": "p0", "comp_note": "No blue in the flame: it is a warm oil flame.", "title": "The lamp at the post (opening vignette)", "at": 0.0, "until": 2.5,
       "size": [3400, 1500], "gen": [1920, 848], "bg": "#050403",
       "camera": [{"t": 0, "x": 1700, "y": 750, "zoom": 1.0}],
       "beats": [
@@ -43,7 +43,7 @@
       "prompt": "A dark painted illustration. Inside an old stone watch-post at dusk: a deep stone window, the evening sky beyond it deep blue over a dull rose band above dark hills and a pale river far off. On the stone sill a small clay oil lamp. An old man's weathered hand with gray hairs and scarred knuckles and a slate blue-gray wool cuff holds a flint striker over the lamp; the small flame has just caught, warm yellow, lighting the hand and the stone. Everything else in deep shadow. Full-bleed, no border, no text."
     },
     {
-      "id": "p1", "title": "The cut and the chain", "at": 2.5, "until": 15.5,
+      "id": "p1", "comp_note": "The comp's chain is too small: each link is as tall as a man. The slab that closes the doorway rests to its right.", "title": "The cut and the chain", "at": 2.5, "until": 15.5,
       "size": [3200, 3600], "gen": [1536, 1728], "bg": "#080706",
       "camera": [
         {"t": 0, "x": 1600, "y": 760, "zoom": 1.0},
@@ -56,7 +56,7 @@
         {"t": 2.0, "text": "The camera descends along the chain and the torch column winding down the cut."},
         {"t": 7.5, "text": "At the bottom, a great stone doorway; inside it, one pale ribbed curve of something vast, faintly glowing. Only that: no face, never the whole."},
         {"t": 8.5, "text": "\"and chained it there, in the dark.\""},
-        {"t": 9.5, "text": "The slab slides across the doorway; the pale glow narrows to a line and goes out on the low hit."}
+        {"t": 9.5, "text": "The slab slides across the doorway; the pale glow narrows to a line and goes out on a deep drum beat in the music."}
       ],
       "layers": [
         {"name": "sky", "z": 12, "map": "#1d2c5a", "note": "night sky", "shapes": [
@@ -118,7 +118,7 @@
       "prompt": "A dark painted illustration looking down into a great cut in a hillside at night. At the top, on the lip of the cut, Roman legionaries in rust-red cloaks and dull bronze crested helmets: two smiths in leather aprons hammer a giant iron chain link on an anvil, sparks flying; a standard with a rust-red banner and the number VII; big burning torches at the top corners. A heavy iron chain with links as tall as a man runs from the anvil down the left wall of the cut into the dark. A long column of small soldiers carrying torches winds down a ramp cut into the right wall. Far below at the bottom of the cut, a massive stone doorway of fitted megaliths with letters carved on its lintel; inside the doorway one smooth pale curved surface with ribs, glowing faintly; a great stone slab stands beside the doorway. Deep shadow, firelight. Full-bleed, no border."
     },
     {
-      "id": "p2", "title": "Ember", "at": 15.5, "until": 25.5, "rest": [1600, 830],
+      "id": "p2", "comp_note": "The buried door at the bottom is Plate 1's great stone doorway, shut by its slab, not the small hut the comp shows. The town sits where three roads meet.", "title": "Ember", "at": 15.5, "until": 25.5, "rest": [1600, 830],
       "size": [3200, 3400], "gen": [1536, 1632], "bg": "#070605",
       "camera": [
         {"t": 0, "x": 1600, "y": 2760, "zoom": 1.12},
@@ -128,7 +128,7 @@
         {"t": 0.0, "text": "Deep under the hills, the Legion's door, buried; the faintest pale glow seeps past it anyway."},
         {"t": 0.5, "text": "\"Its light still seeps up through the ground. We call it ember. It burns. It sells. The valley lives by it.\""},
         {"t": 0.5, "text": "The camera rises with threads of light through rock, gravel and roots: pale deep down, warming to orange-gold near the surface, where they gather as small glowing stones in the soil and the riverbed."},
-        {"t": 6.0, "text": "The valley today: the Waystation's roofs where three roads meet, gold lamps in the windows, a hearth, coins passed for a glowing stone, a cart of stones on the road."}
+        {"t": 6.0, "text": "The valley today: the roofs of the Waystation, the valley's town, where three roads meet, gold lamps in the windows, a hearth, coins passed for a glowing stone, a cart of stones on the road."}
       ],
       "layers": [
         {"name": "sky", "z": 12, "map": "#1d2c5a", "note": "night sky over the valley", "shapes": [
@@ -172,7 +172,7 @@
       "prompt": "A storybook cross-section illustration, a painted cutaway of the earth under a small valley town at night. At the bottom, deep dark rock and, buried far down, a small ancient stone door with a faint pale light leaking around its edges. Thin threads of light rise slowly up through the dark rock, gravel and roots like sparks rising through water, pale at the bottom and warm orange-gold near the top, where they gather as many small glowing orange stones in the soil and in a riverbed. At the top, above the ground line: stone and timber houses where three roads meet, warm gold lamps in the windows, a hearth glowing through an open door, a market stall where one person hands coins to another for a small glowing stone, a cart of glowing stones on the road, a river at the right, dark hills, a night sky. Full-bleed, no border, no text."
     },
     {
-      "id": "p3", "title": "The dead get up; first light (MASTER PLATE)", "at": 25.5, "until": 46.0,
+      "id": "p3", "comp_note": "Four dead in all: a hand rising from the glowing crack (left), a dead man standing (center-left), the one the Watchman puts down (center-right) and one already fallen empty (right).", "title": "The dead get up; first light (MASTER PLATE)", "at": 25.5, "until": 46.0,
       "size": [5400, 2000], "gen": [2432, 896], "bg": "#06070a",
       "camera": [
         {"t": 0, "x": 1750, "y": 1180, "zoom": 1.12},
@@ -185,21 +185,21 @@
         {"t": 0.5, "text": "\"Where it lies thick, the dead get up after dark.\" The frost cracks in a line; a dead hand comes up."},
         {"t": 3.5, "text": "\"Not them. Just the bodies, full of its light.\" A body stands, slack and blank-faced, its light at the mouth, the eye sockets and the wounds, like a lamp behind paper."},
         {"t": 7.5, "text": "\"Put one down and it spills out.\" The Watchman's spear; the light pours out onto the frost as small glowing stones; the body falls empty and dark. His breath smokes; theirs never does."},
-        {"t": 11.5, "text": "Dawn on the same field (a painted dawn pass): gray, then gold along the hills."},
+        {"t": 11.5, "text": "Dawn on the same field (painted as separate dawn layers): gray, then gold along the hills."},
         {"t": 12.0, "text": "\"At first light it sinks into the ground and takes back what it lent. No more than that.\" The light drains down into the ground; the risen fold onto the frost as plain dead; the stones dim and sink; the Watchman leans on his spear, his lamp guttering. Tilt up to the sun's edge."}
       ],
       "layers": [
-        {"name": "sky", "z": 9, "map": "#1d2c5a", "note": "night sky; a dawn version (gray, then gold low) for the second half", "shapes": [
+        {"name": "sky", "states": ["dawn"], "z": 9, "map": "#1d2c5a", "note": "night sky. State dawn: the same sky at first light, gray, then gold low, for the second half", "shapes": [
           {"k": "rect", "r": [0, 0, 5400, 820], "grad": ["#070b18", "#18203a"]}
         ]},
-        {"name": "hills", "z": 5, "map": "#2f4a7a", "note": "low far hills; dawn version with the sun's edge on the right", "shapes": [
+        {"name": "hills", "states": ["dawn"], "z": 5, "map": "#2f4a7a", "note": "low far hills. State dawn: the same hills at first light, with the sun's edge on the right", "shapes": [
           {"k": "poly", "p": [[0, 760], [900, 700], [1800, 740], [2800, 690], [3800, 720], [4600, 680], [5400, 700], [5400, 900], [0, 900]], "c": "#0e1219"}
         ]},
         {"name": "road", "z": 2.4, "map": "#5a6a7a", "note": "the road along the far side of the field, the far frost", "shapes": [
           {"k": "poly", "p": [[0, 880], [5400, 860], [5400, 940], [0, 960]], "c": "#2a2c34"},
           {"k": "rect", "r": [0, 940, 5400, 90], "c": "#1c2026"}
         ]},
-        {"name": "field", "z": 1.0, "map": "#6a7a8a", "note": "the near field: frost, ember glinting in the soil, the crack; dawn version", "shapes": [
+        {"name": "field", "states": ["dawn"], "z": 1.0, "map": "#6a7a8a", "note": "the near field: frost, ember glinting in the soil, the crack. State dawn: the same field at first light", "shapes": [
           {"k": "rect", "r": [0, 1000, 5400, 1000], "grad": ["#2e3540", "#3d4450"]},
           {"k": "dots", "region": [0, 1020, 5400, 960], "n": 420, "c": "#8a94a6", "r": [2, 5], "a": 0.6, "seed": 11},
           {"k": "dots", "region": [300, 1300, 1400, 650], "n": 60, "c": "#ff8a3a", "r": [4, 9], "glow": true, "seed": 12},
@@ -207,10 +207,10 @@
           {"k": "line", "p": [[450, 1820], [700, 1700], [900, 1680], [1100, 1560], [1300, 1520]], "c": "#0a0a0c", "w": 26},
           {"k": "line", "p": [[450, 1820], [700, 1700], [900, 1680], [1100, 1560], [1300, 1520]], "c": "#ffb060", "w": 9, "glow": true}
         ]},
-        {"name": "hand", "z": 1.0, "map": "#d0a080", "note": "the dead hand coming up out of the crack (drawn poses: under, rising)", "shapes": [
+        {"name": "hand", "states": ["rising"], "z": 1.0, "map": "#d0a080", "note": "the dead hand under the frost, just showing at the crack. State rising: the hand coming up out of the crack", "shapes": [
           {"k": "fig", "pose": "hand_up", "at": [1080, 1570], "h": 230, "face": "right", "c": "#3a3a36", "rim": "#ff9a40"}
         ]},
-        {"name": "risen_standing", "z": 1.0, "map": "#c0c050", "note": "a risen standing, slack and blank-faced; dawn pose: fallen as plain dead", "shapes": [
+        {"name": "risen_standing", "states": ["fallen"], "z": 1.0, "map": "#c0c050", "note": "a risen standing, slack and blank-faced. State fallen: the same figure lying fallen as plain dead, for the dawn", "shapes": [
           {"k": "fig", "pose": "stand_slack", "at": [1800, 1660], "h": 820, "face": "front", "c": "#2c2e30", "rim": "#ff9a40"}
         ]},
         {"name": "risen_glow", "z": 1.0, "blend": "add", "map": "#ffb030", "note": "its light at the mouth, eye sockets and wounds (flickers; drains at dawn)", "shapes": [
@@ -220,10 +220,10 @@
           {"k": "glow", "at": [1820, 962], "r": 13, "c": "#ffc070", "a": 1.0},
           {"k": "glow", "at": [1835, 1190], "r": 36, "c": "#ffc070", "a": 1.0}
         ]},
-        {"name": "risen_struck", "z": 1.0, "map": "#a0c050", "note": "the risen being put down, the light pouring from the wound; then fallen dark", "shapes": [
+        {"name": "risen_struck", "states": ["fallen"], "z": 1.0, "map": "#a0c050", "note": "the risen being put down, the light pouring from the wound. State fallen: the same figure lying fallen and dark", "shapes": [
           {"k": "fig", "pose": "struck", "at": [2780, 1660], "h": 800, "face": "right", "c": "#2c2e30", "rim": "#ff9a40"}
         ]},
-        {"name": "watchman", "z": 0.98, "map": "#5a7ab0", "note": "the Watchman: slate blue-gray cloak and tabard, round wooden shield, gray beard, small lamp on his belt, breath smoking; dawn pose: leaning on his spear", "shapes": [
+        {"name": "watchman", "states": ["leaning"], "z": 0.98, "map": "#5a7ab0", "note": "the Watchman: slate blue-gray cloak and tabard, round wooden shield, gray beard, small lamp on his belt, breath smoking. State leaning: the same Watchman at dawn, leaning on his spear", "shapes": [
           {"k": "fig", "pose": "spear_thrust", "at": [3250, 1680], "h": 840, "face": "left", "c": "#3a4250", "rim": "#ffb060"},
           {"k": "glow", "at": [3225, 1430], "r": 28, "c": "#ffd590", "a": 0.9},
           {"k": "ellipse", "at": [3080, 1030], "r": [90, 38], "c": "#8a90a0", "a": 0.4}
@@ -252,7 +252,7 @@
       "beats": [
         {"t": 0.0, "text": "Left, long ago: priests in undyed pale linen lift gold lamps at a river crossing; midstream a lamp is held high and clear of the water, its holder lost in mist; downriver, more crossings, each with a small high light."},
         {"t": 0.5, "text": "\"The old priests set keepers at the crossings. After them, the Watch kept the lamps lit. Oil, never ember. Nobody remembers why.\""},
-        {"t": 4.5, "text": "The pan passes behind a dark willow in the foreground: years pass. The grade ages gold into yellow along the pan."},
+        {"t": 4.5, "text": "The pan passes behind a dark willow in the foreground: years pass. Along the pan the color ages from gold at left to yellow at right."},
         {"t": 6.5, "text": "Right, the Watch: a Watchman on a ladder fills a post lamp from an oil jug; the flame yellower and smoky; the water at the crossing dark and smooth, nothing over it."}
       ],
       "layers": [
@@ -332,7 +332,7 @@
           {"k": "trees", "region": [0, 300, 3600, 400], "n": 14, "c": "#0a0d12", "seed": 31},
           {"k": "poly", "p": [[0, 690], [3600, 680], [3600, 708], [0, 716]], "c": "#5a6272", "a": 0.6}
         ]},
-        {"name": "ford", "z": 3.2, "map": "#3a8ac8", "note": "INSERT at about 2.6x detail: the river crossing, stepping stones, ice, the three iron cages on posts burning cold blue, the fourth light midstream, rings", "shapes": [
+        {"name": "ford", "z": 3.2, "map": "#3a8ac8", "note": "the river crossing, stepping stones, ice, the three iron cages on posts burning cold blue, the fourth light midstream, rings", "shapes": [
           {"k": "poly", "p": [[0, 705], [3600, 695], [3600, 870], [0, 885]], "c": "#0e1622"},
           {"k": "poly", "p": [[0, 705], [3600, 695], [3600, 722], [0, 732]], "c": "#6a7a8e", "a": 0.5},
           {"k": "dots", "region": [1450, 765, 900, 50], "n": 14, "c": "#2a2e36", "r": [18, 30], "flat": 0.4, "seed": 32},
@@ -390,7 +390,7 @@
       "beats": [
         {"t": 0.0, "text": "Dusk, the last light: deep blue over a dull rose band. A small camp by the ford road: the fire high, a log, a bedroll with its blanket still folded, a pack. The traveler, hood up, back to us, a flask on a cord at the wrist, reads a folded letter. Far up the road, the Waystation's lamps, one higher. Low through the trees by the water, three points of blue."},
         {"t": 0.5, "text": "\"Lamps are lit. Stay where they reach.\""},
-        {"t": 4.0, "text": "The traveler folds the letter into the coat, stands, and walks away from us toward the water, out of the fire's warm ring into blue (the music stops as they step out of the light). The camera follows at a walk."},
+        {"t": 4.0, "text": "The traveler folds the letter into the coat, stands, and walks away from us toward the water, out of the fire's warm ring into the cold dusk (the music stops as they step out of the light). The camera follows at a walk."},
         {"t": 8.0, "text": "The river, smooth as a mirror: the traveler kneels on the flat stones at the edge, three-quarters from behind, and holds the flask under. Three blue lamps upstream."}
       ],
       "layers": [
@@ -413,11 +413,11 @@
           {"k": "glow", "at": [4850, 968], "r": 11, "c": "#bfe4ff", "a": 1.0},
           {"k": "glow", "at": [4700, 970], "r": 160, "ry": 80, "c": "#8ac8ff", "a": 0.35}
         ]},
-        {"name": "river", "z": 2.0, "map": "#3a5a8a", "note": "the river, smooth as a mirror, holding the last of the sky (trembles; rings round the flask)", "shapes": [
+        {"name": "river", "z": 2.0, "map": "#3a5a8a", "note": "the river, smooth as a mirror, holding the last of the sky (trembles; rings around the flask)", "shapes": [
           {"k": "poly", "p": [[2700, 960], [5000, 950], [5000, 1190], [2700, 1160]], "grad": ["#3a4a6a", "#1a2236"]},
           {"k": "ellipse", "at": [4700, 1080], "r": [16, 90], "c": "#8ac8ff", "a": 0.35}
         ]},
-        {"name": "bank", "z": 1.4, "map": "#4a5a7a", "note": "the slope out of the firelight down to the water, cold blue; flat stones at the edge", "shapes": [
+        {"name": "bank", "z": 1.4, "map": "#4a5a7a", "note": "the slope out of the firelight down to the water, in cold dusk shadow (deep slate, not the cage blue); flat stones at the edge", "shapes": [
           {"k": "poly", "p": [[2300, 980], [5000, 1180], [5000, 1900], [2300, 1900]], "c": "#161a22"},
           {"k": "dots", "region": [3400, 1150, 900, 70], "n": 10, "c": "#2a3040", "r": [30, 60], "flat": 0.35, "seed": 42}
         ]},
@@ -431,7 +431,7 @@
           {"k": "fire", "at": [1500, 1440], "h": 300},
           {"k": "glow", "at": [1500, 1450], "r": 1000, "ry": 520, "c": "#ff9040", "a": 0.33}
         ]},
-        {"name": "traveler", "z": 1.0, "map": "#e0e060", "note": "the traveler (drawn poses: sitting reading, standing, two walking away, kneeling at the water); hood up, no face, gloved", "shapes": [
+        {"name": "traveler", "states": ["standing", "walking1", "walking2", "kneeling"], "z": 1.0, "map": "#e0e060", "note": "the traveler, hood up, no face, gloved, sitting and reading the letter. States: standing; walking1 and walking2, two steps walking away; kneeling, kneeling at the water", "shapes": [
           {"k": "fig", "pose": "sit_back_read", "at": [1900, 1500], "h": 520, "face": "back", "c": "#2a2622", "rim": "#ff9a50"},
           {"k": "fig", "pose": "kneel_back", "at": [3750, 1195], "h": 300, "face": "back", "c": "#1a1e28", "rim": "#8ac8ff"}
         ]},
@@ -442,7 +442,7 @@
       "prompt": "A painted illustration at dusk, the last light: a deep blue sky over a dull rose band on the horizon. Left: a small camp beside a dirt road: a campfire burning high, a log, a bedroll unrolled with a folded blanket on it, a pack; a lone traveler in a long dark hooded wool coat sits on the log with the hood up, seen from behind, reading a folded letter by the firelight. Far up the road in the distance, the small warm lamps of a town, one lamp higher than the rest. Right: the ground slopes down out of the firelight into cold blue shadow to a river as smooth as a mirror with flat stones at its edge; the same hooded traveler kneels on the stones at the water's edge, seen from behind, holding a flask under the water; upstream, three small blue lights glow low through dark trees. Full-bleed, no border."
     },
     {
-      "id": "p7", "title": "The water", "at": 81.5, "until": 87.5,
+      "id": "p7", "comp_note": "Turn the traveler three-quarters from behind, hood up; the gloves meet the sleeves, no skin shows.", "title": "The water", "at": 81.5, "until": 87.5,
       "size": [3200, 2400], "gen": [1536, 1152], "bg": "#040507",
       "camera": [
         {"t": 0, "x": 1450, "y": 1750, "zoom": 1.3},
@@ -454,7 +454,7 @@
         {"t": 0.0, "text": "No words, no music from here. Close on the water: the traveler's reflection, the face lost in hood and ripple; the surface trembles; rings from the flask."},
         {"t": 0.6, "text": "Blue light slides into the reflection from the river side and grows over the reflected face until it erases it."},
         {"t": 2.5, "text": "The hooded head lifts (seen from behind and to the side); blue washes over the hood's edge. The lamp hangs a hand's breadth above the water, level with the hood, its holder lost in its glare. The lamp never touches the river. The flask still in hand."},
-        {"t": 5.5, "text": "The camera tips into the water (the underwater insert): black-green, bubbles rushing up, the blue lamp warped above the surface. Then black over 2 s, to 1:29.5."}
+        {"t": 5.5, "text": "The camera tips into the water (Plate 7u, underwater): black-green, bubbles rushing up, the blue lamp warped above the surface. Then black over 2 s, to 1:29.5."}
       ],
       "layers": [
         {"name": "far_water", "z": 3.0, "map": "#1d2c5a", "note": "the dark river beyond, the far bank barely there", "shapes": [
@@ -474,7 +474,7 @@
         {"name": "bank", "z": 0.9, "map": "#4a4a5a", "note": "flat wet stones at the edge, under the traveler", "shapes": [
           {"k": "poly", "p": [[0, 1380], [900, 1420], [1300, 1470], [1250, 1570], [0, 1610]], "c": "#1e2228"}
         ]},
-        {"name": "traveler", "z": 0.95, "map": "#e0e060", "note": "the traveler leaning over the water, hood up, from behind and to the side (drawn poses: head down; head lifting); gloved hand with the flask under", "shapes": [
+        {"name": "traveler", "states": ["head_up"], "z": 0.95, "map": "#e0e060", "note": "the traveler leaning over the water, hood up, from behind and to the side gloved hand with the flask under; head down. State head_up: the same traveler with the head lifting", "shapes": [
           {"k": "fig", "pose": "kneel_back", "at": [750, 1480], "h": 1100, "face": "right", "c": "#181a20", "rim": "#8ac8ff"}
         ]},
         {"name": "lamp", "z": 1.1, "blend": "add", "map": "#bfe4ff", "note": "the blue lamp a hand's breadth above the water, level with the hood; its glare hides what holds it; its light on the hood's edge", "shapes": [
@@ -485,7 +485,7 @@
       "prompt": "A dark painted illustration, close at a river's edge at the last of dusk. A traveler in a dark wool hooded coat kneels on flat wet stones at the left, seen from behind and to the side, leaning down over the water with the hood up and the face hidden, a gloved hand holding a flask under the water, small rings spreading. Below, in the smooth black water, the traveler's hooded reflection, the face lost in shadow and ripples. To the right, just above the surface, a cold bright blue lamp glares a hand's breadth above the water and level with the hood, so bright that whatever holds it is hidden; its blue light washes the edge of the hood and streaks across the water. Full-bleed, no border."
     },
     {
-      "id": "p7u", "title": "The water: the underwater insert", "at": 87.0, "until": 89.5,
+      "id": "p7u", "title": "Underwater", "at": 87.0, "until": 89.5,
       "size": [3200, 1800], "gen": [1920, 1088], "bg": "#030806",
       "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}],
       "beats": [
@@ -500,7 +500,7 @@
           {"k": "glow", "at": [1900, 410], "r": 300, "ry": 110, "c": "#8ac8ff", "a": 0.75},
           {"k": "glow", "at": [1900, 410], "r": 70, "ry": 35, "c": "#d8f0ff", "a": 0.9}
         ]},
-        {"name": "bubbles", "z": 0.9, "map": "#c0e0d8", "note": "bubbles rushing up (also particles)", "shapes": [
+        {"name": "bubbles", "z": 0.9, "map": "#c0e0d8", "note": "bubbles rushing up (we also add moving bubbles in the engine)", "shapes": [
           {"k": "dots", "region": [1000, 380, 1400, 1400], "n": 60, "c": "#9ab8b0", "r": [6, 24], "a": 0.5, "seed": 51}
         ]}
       ],

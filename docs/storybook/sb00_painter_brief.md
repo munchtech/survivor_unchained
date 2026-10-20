@@ -6,7 +6,7 @@
 
 ## In short
 
-We are asking for **seven layered paintings, a small opening vignette and a short underwater insert** for the 90-second painted tale that opens our game. You paint them in your own hand, over our layout sketches. We bring them to life in the game engine with slow camera moves through the layers, under an old soldier's voice.
+We are asking for **seven layered paintings, a small opening vignette and a short underwater plate** for the 90-second painted tale that opens our game. You paint them in your own hand, over our layout sketches. We bring them to life in the game engine with slow camera moves through the layers, under an old soldier's voice.
 
 Our working name for the piece is **SB00**; it is the prefix on every file.
 
@@ -14,7 +14,9 @@ Our working name for the piece is **SB00**; it is the prefix on every file.
 
 *Survivor Unchained* is a dark-fantasy action game, grim and adult in tone. Before its first scene the player hears the valley's old tale, told at dusk by an old soldier of the Watch, the men who keep lamps lit at the river crossings:
 
-> Long ago, the Seventh Legion found something under these hills that wouldn't die, and chained it there in the dark. Its light still seeps up through the ground. The valley calls it ember; it burns, it sells, the valley lives by it. Where it lies thick, the dead get up after dark, full of its light, and when one is put down the light spills out. At first light it sinks back into the ground. Keepers and lamps once held the crossings, and the Watch still keeps them lit. But last winter somebody lit the lamps at the Low Ford again, with ember, and now the drowned stand along the ford road, waiting.
+The tale, in short:
+
+> Long ago, the Seventh Legion found something under these hills that wouldn't die, and chained it there in the dark. Its light still seeps up through the ground. We call it ember; it burns, it sells, the valley lives by it. Where it lies thick, the dead get up after dark, full of its light, and when one is put down the light spills out. At first light it sinks back into the ground. Keepers and lamps once held the crossings, and the Watch still keeps them lit. But last winter somebody lit the lamps at the Low Ford again, with ember, and now the drowned stand along the ford road, waiting.
 
 The tale ends on the rule every child in the valley learns: *Lamps are lit. Stay where they reach.* Then we find a traveler at a small camp by that ford road, who walks out of the firelight to fill a flask at the water. A cold blue lamp comes close over the water, and the tale ends under the surface, in black. The game begins there.
 
@@ -38,7 +40,7 @@ Times are in the film (minutes:seconds). Plate 3 is the **master**: it sets the 
 | ![](plates/p5/sb00_p5_comp_thumb.jpg) | **5. The Low Ford; the drowned** | 0:56 to 1:11 | Winter night, close on the ford: three new black iron cages on posts burn cold blue, and a fourth blue light hangs midstream, just clear of the water, its holder lost in its glare. The camera pulls back up the road: a wagon on its side, and both ditches full of the drowned, standing river-wet with weed in their hair, every face turned to the road. They were there all along. |
 | ![](plates/p6/sb00_p6_comp_thumb.jpg) | **6. The traveler** (wide) | 1:11 to 1:21.5 | Dusk. A small camp by the ford road, the fire high. The hooded traveler, back to us, reads a folded letter, puts it away, stands and walks away from us out of the fire's warm ring toward the water, and kneels at the edge to fill a flask. Three blue lamps upstream. |
 | ![](plates/p7/sb00_p7_comp_thumb.jpg) | **7. The water** (tall) | 1:21.5 to 1:27.5 | Close on the water: the traveler's reflection, the face lost in hood and ripple. Blue light slides into the reflection and erases the face. The hooded head lifts; the lamp hangs a hand's breadth above the water, level with the hood. No words and no music from here. |
-| ![](plates/p7u/sb00_p7u_comp_thumb.jpg) | **Underwater insert** | 1:27 to 1:29.5 | Under the surface: black-green, bubbles rushing up, the blue lamp warped above. Fade to black. |
+| ![](plates/p7u/sb00_p7u_comp_thumb.jpg) | **7u. Underwater** | 1:27 to 1:29.5 (overlaps Plate 7's last half second) | Under the surface: black-green, bubbles rushing up, the blue lamp warped above. Fade to black. |
 
 ## The look
 
@@ -62,7 +64,7 @@ The palette sheet (`palette.png`) has swatches. The four story colors are fixed,
 - **Night:** indigo, umber and slate, with a warm dark ground showing through.
 - **Only two strong hues, and they are the story:**
   - **Ember orange-gold** (#ff8a3a, highlight #ffd07a): the light in the ground, hearths, open lamps, the dead's inner light, the glowing stones.
-  - **Cold cage blue** (#8ac8ff): only in the Low Ford's iron cages and the lamp over the water. Nowhere else, not even in the sky or the moonlight. The tale's lamps are warm; the Low Ford's are wrong.
+  - **Cold cage blue** (#8ac8ff): only in the Low Ford's iron cages and the lamp over the water and the light they throw close around them. Nowhere else, not even in the sky or the moonlight. The tale's lamps are warm; the Low Ford's are wrong.
 - **An oil flame** (the Watch's lamps) is yellower and smoky: not ember.
 - **The Legion:** rust-red and dull bronze, Latin letters, never shiny. **The Watch:** slate blue-gray (#4a5064), round wooden shields and spears; its old men have gray beards. **The priests:** undyed pale linen.
 - **Dawn** (Plate 3's second half): gray, then gold along the hills. **Dusk** (Plate 6): deep blue over a dull rose band.
@@ -101,13 +103,15 @@ For each plate:
 2. **One PNG per layer**, each at the full working-canvas size so all the layers line up pixel for pixel, named by plate and layer as on the sheet: `sb00_p3_field.png`.
 
 Specifications:
+- The **painting** is the comp's area. The **working canvas** adds the margin that near layers need as they slide; every layer PNG is the full working canvas. A layer's **needed area** is the part the camera sees, given as x, y and size on the working canvas.
 - The frame on screen is 2.39:1 widescreen, **3840 x 1607 px** at rest. Each plate is larger than the frame, because the camera moves.
 - **sRGB, 8 bits per channel;** 16 bits for skies, fog, mist and soft glows, so they don't band.
 - **Transparent layers:** straight (not premultiplied) alpha, no matte color, and clean edges with no light or dark fringe.
 - **Light layers** (glows, flames, light shafts, the dead's inner light, the spilled stones' glow): paint them on pure black, to be added on top (Add or Linear Dodge); deliver them on black, without transparency. The sheets mark them "add".
 - **Paint every layer complete behind whatever is in front of it.** The layers slide past each other as the camera moves, so what is hidden at the start can show later.
-- **Alternate states as separate, complete layers:** the dawn versions of Plate 3's sky, hills and field; a figure's second pose (the dead man standing, then fallen; the Watchman thrusting, then leaning on his spear); the hand under the frost and rising; the doorway open and closed.
-- Where a sheet says **INSERT**, the camera comes in close (Plate 5's ford, at about 2.6 times); paint that area again as its own layer with that much more detail.
+- **Alternate states as separate, complete layers:** the dawn versions of Plate 3's sky, hills and field; a figure's second pose (the dead man standing, then fallen; the Watchman thrusting, then leaning on his spear); the hand under the frost and rising.
+- Name each state by adding a word, as the layer tables list them: `sb00_p3_sky_dawn.png`, `sb00_p3_hand_rising.png`, `sb00_p6_traveler_kneeling.png`.
+- Where a sheet says **CLOSE-UP** (Plate 5 opens close on the ford, at up to about 3 times), paint the area its table gives a second time, at the size it gives, as `sb00_p5_<layer>_close.png`.
 - You may split or merge layers if it helps the painting. Tell us, and keep the far-to-near order.
 
 **How the layers move.** Each layer has a depth, on its sheet. Depth 1 is the main plane. A layer at depth 2 is twice as far away and slides half as much as the main plane when the camera moves; at depth 0.5 it is twice as near and slides twice as much. At rest, every layer sits exactly where the comp shows it. So far layers need less width than the comp, and near layers need more: the layer sheet gives each layer's area.

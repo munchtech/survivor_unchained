@@ -927,16 +927,22 @@ def extents(p, masks, gw, gh):
                 seen = True
                 magmax = max(magmax, mag)
         flags = []
+        close = None
+        close_mag = 0.0
         nw, nh = need[2] - need[0], need[3] - need[1]
         if (x1 - x0) > p["size"][0] * 1.005:      # the unpadded view, so the 2% pad alone never flags
             flags.append(f"WIDER than the plate ({round(nw * DENS)} px vs {round(p['size'][0] * DENS)})")
         if (y1 - y0) > p["size"][1] * 1.005:
             flags.append(f"TALLER than the plate ({round(nh * DENS)} px vs {round(p['size'][1] * DENS)})")
         if magmax > 1.3:
-            flags.append(f"INSERT: paint at {magmax:.1f}x detail")
+            flags.append(f"CLOSE-UP: paint at {magmax:.1f}x detail")
+            cl = [r for r, mag in rects if mag > 1.3]
+            pw2, ph2 = (max(r[2] for r in cl) - min(r[0] for r in cl)) * 0.02, (max(r[3] for r in cl) - min(r[1] for r in cl)) * 0.02
+            close = (min(r[0] for r in cl) - pw2, min(r[1] for r in cl) - ph2, max(r[2] for r in cl) + pw2, max(r[3] for r in cl) + ph2)
+            close_mag = max(mag for _, mag in rects if mag > 1.3)
         if bbox and not seen:
             flags.append("content never in frame")
-        out[i] = dict(need=need, bbox=bbox, solid=solid, mag=magmax, flags=flags,
+        out[i] = dict(need=need, close=close, close_mag=close_mag, bbox=bbox, solid=solid, mag=magmax, flags=flags,
                       need_px=(round(nw * DENS), round(nh * DENS)))
     return out
 
@@ -961,6 +967,12 @@ def fname(p, ly):
 
 def blend_txt(ly):
     return "add: paint on black" if ly.get("blend") == "add" else "normal"
+
+
+def files_of(p, ly):
+    """The base file of a layer and one file per alternate state."""
+    base = fname(p, ly)
+    return [base] + [base[:-4] + "_" + st + ".png" for st in ly.get("states", [])]
 
 
 def fmt_rect(r):
@@ -1061,7 +1073,7 @@ def layers_sheet(p, block, masks, ext, wc, out, base=None):
         j = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
         dt = cv2.distanceTransform((lab == j).astype(np.uint8), cv2.DIST_L2, 5)
         yy, xx = np.unravel_index(np.argmax(dt), dt.shape)
-        t = f"{ly['name']} (z {ly['z']}){hidden}"
+        t = f"{ly['name']} (depth {ly['z']}){hidden}"
         tw = d.textlength(t, font=f20)
         x = int(min(max(4, xx - tw / 2), gw - tw - 4))
         y = int(min(max(4, yy - 13), gh - 30))
@@ -1099,7 +1111,7 @@ def layers_sheet(p, block, masks, ext, wc, out, base=None):
         ly, e = p["layers"][i], ext[i]
         col = tuple(int(v * 255) for v in rgb(ly["map"]))
         d.rectangle([cols["sw"], y + 4, cols["sw"] + 26, y + 26], fill=col, outline=(200, 200, 200) if ly.get("blend") == "add" else None, width=2)
-        d.text((cols["fn"], y), fname(p, ly), font=f20, fill=(235, 235, 235))
+        d.text((cols["fn"], y), fname(p, ly) + (" +" + ", ".join(ly["states"]) if ly.get("states") else ""), font=f20, fill=(235, 235, 235))
         d.text((cols["z"], y), f"{ly['z']}", font=f20, fill=(235, 235, 235))
         d.text((cols["bl"], y), blend_txt(ly), font=f20, fill=(235, 235, 235))
         # bar: the plate's width in gray; the needed span in the map colour (it may run past the plate)
@@ -1195,7 +1207,7 @@ def notes_sheet(p, block, out, base=None):
     d = ImageDraw.Draw(sheet)
     d.text((16, 10), p["title"], font=f28, fill=(240, 240, 240))
     d.text((16, 52), f"Film {tfmt(p['at'])} to {tfmt(p['until'])}.  Painting {round(p['size'][0] * DENS)} x {round(p['size'][1] * DENS)} px.  "
-                     "Frames: first solid white, middle thin blue, last dashed gold; the gold line is the path of the centre.",
+                     "Frames: first solid white, middle thin blue, last dashed gold; the gold line is the path of the center.",
            font=f20, fill=(210, 210, 210))
     y = hh + gh + 12
     for t, ls in foot:
@@ -1246,9 +1258,9 @@ def camera_sentence(p):
         mag0, mag1 = z0 / (1 - d0), z1 / (1 - d1)
         bits = []
         if abs(dx) > 20:
-            bits.append(f"pans {'right' if dx > 0 else 'left'} {abs(dx):.0f} units")
+            bits.append(f"pans {'right' if dx > 0 else 'left'} {abs(dx) * DENS:.0f} px")
         if abs(dy) > 20:
-            bits.append(f"{'sinks' if dy > 0 else 'rises'} {abs(dy):.0f} units")
+            bits.append(f"{'sinks' if dy > 0 else 'rises'} {abs(dy) * DENS:.0f} px")
         if mag1 > mag0 * 1.01:
             bits.append(f"pushes in from {mag0:.2f}x to {mag1:.2f}x" + (" by moving forward" if d1 != d0 else ""))
         elif mag1 < mag0 * 0.99:
@@ -1277,18 +1289,31 @@ def write_appendix(plates, results, out):
     for p in sorted(plates, key=lambda q: q["at"]):
         ext, wc = results[p["id"]]["ext"], results[p["id"]]["wc"]
         num = p["id"][1:]
-        head = f"Plate {num[:-1]}, insert" if num.endswith("u") else f"Plate {num}"
-        L += [f"## {head}: {p['title']}", "",
-              f"Film {tfmt(p['at'])} to {tfmt(p['until'])}. Painting {round(p['size'][0] * DENS)} x {round(p['size'][1] * DENS)} px. "
+        head = f"Plate {num}"
+        L += [f"## {head}: {p['title']}", ""]
+        if p.get("comp_note"):
+            L += [f"**About this comp:** {p['comp_note']}", ""]
+        L += [
+              f"Film {tfmt(p['at'])} to {tfmt(p['until'])}" + (" (overlaps Plate 7's last half second as the camera tips under)" if p["id"] == "p7u" else "") + f". Painting {round(p['size'][0] * DENS)} x {round(p['size'][1] * DENS)} px. "
               f"{wc_line(wc)}.", "",
               camera_sentence(p), ""]
+        
         for b in sorted(p["beats"], key=lambda b: b["t"]):
             L.append(f"- {tfmt(p['at'] + b['t'])}  {b['text']}")
-        L += ["", "| file | depth | blend | needed size px | content | note | flags |", "|---|---|---|---|---|---|---|"]
+        L += ["", "| file | depth | blend | needed area (top-left x, y; size px) | content | note | close-up |", "|---|---|---|---|---|---|---|"]
         for i in layer_order(p):
             ly, e = p["layers"][i], ext[i]
-            L.append(f"| {fname(p, ly)} | {ly['z']} | {blend_txt(ly)} | {e['need_px'][0]} x {e['need_px'][1]} | "
-                     f"{'solid across the frame' if e['solid'] else 'partial'} | {ly['note']} | {'; '.join(e['flags'])} |")
+            cu = ""
+            if e["close"]:
+                c = e["close"]
+                cw_, ch_ = (c[2] - c[0]) * DENS, (c[3] - c[1]) * DENS
+                dw, dh = math.ceil(cw_ * e["close_mag"] / 10) * 10, math.ceil(ch_ * e["close_mag"] / 10) * 10
+                cu = (f"CLOSE-UP, a second file {fname(p, ly)[:-4]}_close.png: area {round(c[0] * DENS + wc['ox'])}, "
+                      f"{round(c[1] * DENS + wc['oy'])}, {round(cw_)} x {round(ch_)} px on the working canvas; deliver at {dw} x {dh} px")
+            fl = "; ".join(x for x in e["flags"] if not x.startswith("CLOSE-UP"))
+            L.append(f"| {', '.join(files_of(p, ly))} | {ly['z']} | {blend_txt(ly)} | "
+                     f"{round(e['need'][0] * DENS + wc['ox'])}, {round(e['need'][1] * DENS + wc['oy'])}; {e['need_px'][0]} x {e['need_px'][1]} | "
+                     f"{'solid across the frame' if e['solid'] else 'partial'} | {ly['note']} | {'; '.join(x for x in (cu, fl) if x)} |")
         L.append("")
     f = os.path.join(out, "plates.md")
     with open(f, "w", encoding="utf-8") as fh:
