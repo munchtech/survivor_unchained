@@ -36,6 +36,7 @@ public sealed class Landmarks
         Root = ResourceLoader.Exists(file) ? GD.Load<PackedScene>(file).Instantiate<Node3D>() : new Node3D();
         Root.Name = "Landmarks";
         Walk(Root);
+        if (Textures.KitPaint != null) PaintStall();
         foreach (var n in z.Meta.HiddenNodes) if (Nodes.TryGetValue(n, out var h)) h.Visible = false;
     }
 
@@ -69,6 +70,52 @@ public sealed class Landmarks
         kk.AddChild(piece);
         if (piece.HasMeta("lamp")) Holders.Add(piece);
         return true;
+    }
+
+    /// <summary>--kit-paint (style r2): the cloth stall (zone refs' stalls, kind "cloth": the
+    /// blue-and-white one in the Waystation's square) takes the painter's canvas (sun-faded
+    /// stripes, soft folds, the valance's shadow) and painted wood for its posts and counter
+    /// (tools/assets/paint_tex.py stall). Its meshes are found where it stands: the exported
+    /// stall's flat-coloured pieces within its footprint (the wares on it are kit pieces).</summary>
+    void PaintStall()
+    {
+        if (zone.Meta.Refs.ValueKind != JsonValueKind.Object || !zone.Meta.Refs.TryGetProperty("stalls", out var stalls)) return;
+        var dir = Textures.KitPaint!;
+        Texture2D? Tex(string f) => ResourceLoader.Exists($"{dir}/{f}") ? GD.Load<Texture2D>($"{dir}/{f}") : null;
+        if (Tex("stall_canvas.webp") is not Texture2D canvas) return;
+        var wood = Tex("stall_wood.webp");
+        var post = Tex("stall_post.webp") ?? wood;
+        foreach (var st in stalls.EnumerateArray())
+        {
+            if (st.GetProperty("kind").GetString() != "cloth") continue;
+            var at = new Vector2((float)st.GetProperty("x").GetDouble(), (float)st.GetProperty("z").GetDouble());
+            float ground = zone.HeightAt(at.X, at.Y);
+            int n = 0;
+            foreach (var node in Root.FindChildren("*", "MeshInstance3D", true, false))
+            {
+                if (node is not MeshInstance3D m || m.Mesh == null || m.Mesh.GetSurfaceCount() != 1 || InKit(m)) continue;
+                if (m.Mesh.SurfaceGetMaterial(0) is not StandardMaterial3D src) continue;
+                var box = m.Transform * m.GetAabb();
+                var c = box.GetCenter();
+                if (new Vector2(c.X, c.Z).DistanceTo(at) > 2.2f) continue;
+                var mat = new StandardMaterial3D { Roughness = 0.92f, CullMode = src.CullMode, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic };
+                if (src.AlbedoTexture != null && Mathf.Max(box.Size.X, box.Size.Z) > 2f) mat.AlbedoTexture = canvas;      // the awning
+                else if (box.Size.Y > 1.5f && Mathf.Max(box.Size.X, box.Size.Z) < 0.4f)                                // a post
+                { mat.AlbedoTexture = post; mat.AlbedoColor = new Color(0.86f, 0.8f, 0.74f); mat.Uv1Scale = new Vector3(1, 2.5f, 1); }
+                else if (box.Size.Y < 0.5f && c.Y - ground > 1.6f)                                                                // the valance's scallops, faded as the canvas
+                {
+                    var o = src.AlbedoColor;
+                    mat.AlbedoColor = o.B > o.R ? new Color(0.2f, 0.38f, 0.55f) : new Color(0.8f, 0.75f, 0.63f);
+                }
+                else if (box.Size.Y > 0.6f && box.Size.Y < 1.2f)                                                        // the counter
+                { mat.AlbedoTexture = wood; mat.AlbedoColor = new Color(0.9f, 0.84f, 0.76f); mat.Uv1Scale = new Vector3(2, 1, 1); }
+                else continue;
+                m.SetSurfaceOverrideMaterial(0, mat);
+                n++;
+            }
+            GD.Print($"kit-paint: cloth stall at {at}: {n} pieces painted");
+        }
+        static bool InKit(Node n) { for (var p = n.GetParent(); p != null; p = p.GetParent()) if (p.Name.ToString().StartsWith("kk-")) return true; return false; }
     }
 
     static readonly Dictionary<ulong, Material?> remade = new();

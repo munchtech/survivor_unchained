@@ -1,7 +1,8 @@
-"""python frames.py ROUND VARIANTS SETS ["try=k=v,..."] [stale]: the style frames, in one godot turn.
+"""python frames.py ROUND VARIANTS SETS ["try=k=v,..."] ["x=--flag v ..."] [stale]: the style frames, in one godot turn.
 
 VARIANTS, comma-separated: g (as built, with --grade-dump: the live table, for relighting her in the
-paint-overs), r (--grade off: the raw frame the paint-overs start from), t (--grade-try SPEC: direction A).
+paint-overs), r (--grade off: the raw frame the paint-overs start from), t (--grade-try SPEC: direction A), b (t plus the extra flags: x="--brush r=3" for
+every set, or x.SET="..." for one; e.g. the painterly post-filter on top of A).
 SETS, comma-separated: town (the square, the east road, the north street by day), ford (Low Ford by
 night: camp, road A, road B, the ford, the wood road, two ford lamps), close (the close view at camp,
 closest zoom, twice facing away from the fire and twice facing it).
@@ -19,13 +20,24 @@ SETS = {
     "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24"], 3),
     "ford": (NIGHT + ["--spots", "-7.5,87.5;3,64;9,40;0,-38;-2,-72;0,-37;-7,-46"], 7),
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
+    # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)
+    "fordc": (NIGHT + ["--spots-clear", "--spots", "-7.5,87.5;0,-38;0,-37"], 3),
+    # (judge r2: the camp at the play camera, centred near the fire, the living held off)
+    "camp": (NIGHT + ["--spots-clear", "--spots", "-9.0,90.0;-8.0,91.5"], 2),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)
 # try.SET=SPEC: that set's own spec (the day and the night want their own shadow colour)
 specs = {a[4:].split("=", 1)[0]: a[4:].split("=", 1)[1] for a in sys.argv[4:] if a.startswith("try.")}
+# x=FLAGS / x.SET=FLAGS: extra command-line flags for variant b (x.SET wins for its set)
+import shlex
+xall = next((a[2:] for a in sys.argv[4:] if a.startswith("x=")), None)
+xs = {a[2:].split("=", 1)[0]: a[2:].split("=", 1)[1] for a in sys.argv[4:] if a.startswith("x.")}
+# fps=N: Godot's --fixed-fps N (the same frames each run, for pixel comparisons)
+fps = next((a[4:] for a in sys.argv[4:] if a.startswith("fps=")), None)
 stale = "stale" in sys.argv[4:]
-if "t" in variants and not (spec or all(s in specs for s in sets)): sys.exit("variant t needs try=SPEC or try.SET=SPEC per set")
+if "b" in variants and not (xall is not None or all(s in xs for s in sets)): sys.exit("variant b needs x=FLAGS or x.SET=FLAGS per set")
+if ("t" in variants or "b" in variants) and not (spec or all(s in specs for s in sets)): sys.exit("variants t and b need try=SPEC or try.SET=SPEC per set")
 shots = os.path.join(G, ".shots"); os.makedirs(shots, exist_ok=True)
 logs = os.path.join(HERE, "logs"); os.makedirs(logs, exist_ok=True)
 b = subprocess.run(["dotnet", "build", os.path.join(G, "SurvivorUnchained.csproj"), "-v", "q", "-nologo"], capture_output=True, text=True)
@@ -38,10 +50,11 @@ try:
         extra, n = SETS[s]
         for v in variants:
             name = f"{rnd}_{s}_{v}"; t0 = time.time()
-            va = {"g": ["--grade-dump", os.path.join(shots, f"{rnd}_{s}_g.bin")], "r": ["--grade", "off"], "t": ["--grade-try", specs.get(s, spec) or ""]}[v]
+            va = {"g": ["--grade-dump", os.path.join(shots, f"{rnd}_{s}_g.bin")], "r": ["--grade", "off"], "t": ["--grade-try", specs.get(s, spec) or ""],
+                  "b": ["--grade-try", specs.get(s, spec) or ""] + shlex.split(xs.get(s, xall) or "")}[v]
             args = HER + extra + va + ["--spots-from", "10", "--spots-every", "6", "--shot", name, "--seconds", "15", "--every", "6", "--count", str(n)]
             with open(os.path.join(logs, name + ".log"), "w", encoding="utf-8", errors="replace") as lf:
-                p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080", "--"] + args, stdout=lf, stderr=subprocess.STDOUT)
+                p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080"] + (["--fixed-fps", fps] if fps else []) + ["--"] + args, stdout=lf, stderr=subprocess.STDOUT)
                 try: p.wait(timeout=600)
                 except subprocess.TimeoutExpired:
                     subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True); print(name, "TIMEOUT")

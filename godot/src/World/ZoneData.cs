@@ -54,10 +54,26 @@ public sealed class ZoneData
     /// (which reads inside an exported pack).</summary>
     public static void UseGodotFiles()
     {
-        DataFiles.Text = rel => FileAccess.GetFileAsString($"res://data/{rel}");
+        DataFiles.Text = rel => rel == "content/folk.json" && Textures.KitPaint is string kp && FileAccess.FileExists($"{kp}/folk.json")
+            ? FolkPatched(FileAccess.GetFileAsString($"res://data/{rel}"), FileAccess.GetFileAsString($"{kp}/folk.json"))
+            : FileAccess.GetFileAsString($"res://data/{rel}");
         DataFiles.Bytes = rel => FileAccess.GetFileAsBytes($"res://data/{rel}");
         SurvivorUnchained.Rpg.ArmorIndex.Text = rel => FileAccess.FileExists($"res://art/{rel}") ? FileAccess.GetFileAsString($"res://art/{rel}") : null;
         SurvivorUnchained.Rpg.ArmorIndex.Reset();
+    }
+
+    /// <summary>--kit-paint DIR's folk.json over the game's: {"looks": {"4": {"tint": "#..", "under": "#.."}}}
+    /// sets those fields of the looks at those indices (the same count, so who wears which is unchanged).</summary>
+    static string FolkPatched(string baseText, string patchText)
+    {
+        var doc = System.Text.Json.Nodes.JsonNode.Parse(baseText)!;
+        var patch = System.Text.Json.Nodes.JsonNode.Parse(patchText)!;
+        foreach (var list in new[] { "looks", "children" })
+            if (patch[list] is System.Text.Json.Nodes.JsonObject byIndex && doc[list] is System.Text.Json.Nodes.JsonArray arr)
+                foreach (var (k, v) in byIndex)
+                    if (int.TryParse(k, out var i) && i >= 0 && i < arr.Count && v is System.Text.Json.Nodes.JsonObject fields && arr[i] is System.Text.Json.Nodes.JsonObject look)
+                        foreach (var (f, fv) in fields) look[f] = fv?.DeepClone();
+        return doc.ToJsonString();
     }
 
     public ZoneData(string id)

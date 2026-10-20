@@ -4,6 +4,8 @@
         A | B | C at full size, today's graded frame as a small inset in the header.
     python sheet.py overview OUT.png ROWLABEL=A.png,B.png,C.png ...   (3 rows: the 3x3 overview)
     python sheet.py grid OUT.png COLS WIDTH IMG ... [--labels]        (working looks; labels from file stems)
+    python sheet.py four OUT.png TITLE LABEL=IMG LABEL=IMG ...         (r2: today | A | target | engine at full size;
+                                                                        IMG "-" leaves a dark panel with its label)
 """
 import os, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -53,9 +55,22 @@ def grid(out, cols, width, files, labels):
             d.rectangle((x, y, x + d.textlength(s, font=fo) + 10, y + fo.size + 8), fill=(0, 0, 0)); d.text((x + 5, y + 3), s, font=fo, fill=FG)
     sh.save(out, quality=88) if out.lower().endswith(".jpg") else sh.save(out); print(out, sh.size)
 
+def four(out, title, cols):
+    ims = [None if f == "-" else Image.open(f).convert("RGB") for _, f in cols]
+    W, H = next(im for im in ims if im is not None).size; gap = 16; head = 120
+    sh = Image.new("RGB", (len(cols) * W + (len(cols) - 1) * gap, head + H), BG); d = ImageDraw.Draw(sh)
+    d.text((16, 6), title, font=font(46), fill=FG)
+    for i, ((label, _), im) in enumerate(zip(cols, ims)):
+        x = i * (W + gap)
+        d.text((x + 12, 66), label, font=font(36), fill=FG)
+        if im is None: d.rectangle((x, head, x + W - 1, head + H - 1), fill=(30, 30, 34)); continue
+        sh.paste(im.resize((W, H), Image.LANCZOS) if im.size != (W, H) else im, (x, head))
+    sh.save(out); print(out, sh.size)
+
 if __name__ == "__main__":
     k, out = sys.argv[1], sys.argv[2]
     if k == "frame": frame(out, sys.argv[3], *sys.argv[4:8], pitches=sys.argv[8:11] or None)
+    elif k == "four": four(out, sys.argv[3], [(c.split("=", 1)[0], c.split("=", 1)[1]) for c in sys.argv[4:]])
     elif k == "overview": overview(out, [(r.split("=", 1)[0], r.split("=", 1)[1].split(",")) for r in sys.argv[3:]])
     else:
         rest = [x for x in sys.argv[5:] if x != "--labels"]

@@ -45,3 +45,4 @@ tools/uigreybox/fonts/
 
 # The storybook's working generations and treatments (tools/storybook); the game ships godot/art/storybook
 /tools/storybook/out/
+godot/.kit_paint_src/

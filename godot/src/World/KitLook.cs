@@ -121,6 +121,8 @@ public static class KitLook
         m.SetShaderParameter("alpha_scissor", cut ? Mathf.Max(s.AlphaScissorThreshold, 0.5f) : 0f);
         foreach (var (re, sat, tint) in Weather)
             if (re.IsMatch(s.ResourceName)) { m.SetShaderParameter("weather_sat", sat); m.SetShaderParameter("weather_tint", foliage ? tint * look.Shade : tint); break; }
+        // (--kit-paint: a painted sheet carries its own warmth, so it is weathered as its painter says)
+        if (Textures.PaintedWeather(s.AlbedoTexture) is var (psat, ptint)) { m.SetShaderParameter("weather_sat", psat); m.SetShaderParameter("weather_tint", ptint); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         if (foliage && look.LeafA is Color a && look.LeafB is Color b)
         {

@@ -79,9 +79,12 @@ public static class Ground
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>("res://art/ground/arh.jpg"));
         // The setts' 2K variants: only where the paint lays setts (64 MB of VRAM otherwise idle).
         bool setts = HasSetts(paint.Splat);
-        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_albedo.jpg" : "res://art/ground/albedo.jpg"));
-        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_normal.jpg" : "res://art/ground/normal.jpg"));
-        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_arh.jpg" : "res://art/ground/arh.jpg"));
+        // Style r2 (--setts-paint): the painted setts (env_ground.py --paint; the same sizes and layers) and their mud.
+        bool sp = SurvivorUnchained.Args.Has("setts-paint");
+        string st = sp ? "res://art/ground/setts_paint_" : "res://art/ground/setts_";
+        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo.jpg" : "res://art/ground/albedo.jpg"));
+        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal.jpg" : "res://art/ground/normal.jpg"));
+        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh.jpg" : "res://art/ground/arh.jpg"));
         // Picture switches for the sweeps (look bible 1f); the defaults are the chosen values.
         mat.SetShaderParameter("h_amp", SurvivorUnchained.Args.Num("ground-h-amp", 1.0f));
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
@@ -102,14 +105,17 @@ public static class Ground
             ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.32f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
             ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.32f), ("night_dew", "ground-night-dew", 0.35f), ("pud_dark", "ground-pud-dark", 0.45f), ("night_spec", "ground-night-spec", 0.12f),
             ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f),
-            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.5f), ("mud_spec", "setts-mud-spec", 0.1f) })
-            mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, v));
+            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.5f), ("mud_spec", "setts-mud-spec", 0.1f), ("mud_paint", "setts-mud-paint", 0f) })
+            mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, sp && PaintDefaults.TryGetValue(u, out var pv) ? pv : v));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
         mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         var scales = new Godot.Collections.Array<float>();
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray()) scales.Add(1f / l.GetProperty("metres").GetSingle());
+        // Style r2 (--setts-paint): the painted stones a size up, toward the target's chunkier cobbles (lead 4 at 1:1: 1.35
+        // reads as a cobbled square, 1.7 as outlined flagstones; 1.6 with half the value spread after judge r2). --setts-paint-scale N; 1 is the 4 m tile; layer 4 is the setts.
+        if (sp) scales[4] /= SurvivorUnchained.Args.Num("setts-paint-scale", 1.6f);
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
         return Finish(z, mesh);
@@ -139,6 +145,13 @@ public static class Ground
         ground.AddChild(body);
         return ground;
     }
+
+    /// <summary>The defaults under --setts-paint (each switch still wins): the mud darker, browner, less saturated, matte
+    /// and painted; the wear lane a little lighter.</summary>
+    static readonly System.Collections.Generic.Dictionary<string, float> PaintDefaults = new()
+    {
+        ["mud_tone"] = 0.85f, ["mud_sat"] = 1.3f, ["mud_spec"] = 0.02f, ["mud_paint"] = 1f, ["lane_lift"] = 0.42f,
+    };
 
     /// <summary>Does the paint lay setts anywhere (its G over a third)?</summary>
     static bool HasSetts(Image splat)
