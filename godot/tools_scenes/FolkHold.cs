@@ -18,7 +18,7 @@ namespace SurvivorUnchained.Tools;
 /// tools/anim/folkhold.py (clearance, tip and foot heights, elbow bend). tools_scenes/folk_hold.gd runs it.
 ///   Godot --headless --path godot -s res://tools_scenes/folk_hold.gd -- OUT.json WHO CLIP N
 ///   WHO: watch (a gate Watchman), def.ID (npcs.json, e.g. def.keegan); CLIP: a game name played through People.Clip
-///   (Idle_Shield_Loop, Idle_Watch) or a library name (folk/m_idle_watch).
+///   (Idle_Armed, Idle_2H_Rest) or a library name (folk/m_idle_armed).
 /// </summary>
 public partial class FolkHold : Node
 {
@@ -41,7 +41,7 @@ public partial class FolkHold : Node
         n = int.Parse(a[3]);
         var rng = new Random(1);
         PersonSpec spec; Held? arms = null; double scale = 1;
-        if (who == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword", Forearm = "shield_round" }; }
+        if (who == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword" }; }
         else if (who.StartsWith("def.") && Lore.Person(who[4..]) is { } def) { spec = def.Person ?? new PersonSpec { Sex = Rpg.Sex.Male }; arms = def.Arms; scale = def.Scale ?? 1; }
         else throw new ArgumentException($"who? {who}");
         view = new PersonView(spec, arms, 0.8 * scale);

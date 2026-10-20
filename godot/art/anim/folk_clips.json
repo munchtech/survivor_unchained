@@ -7,7 +7,7 @@
 		"loop": true,
 		"note": "townsfolk (women)",
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
-		"speed": 0.0
+		"speed": 0.00026414658587294
 	},
 	"f_cheer": {
 		"changes": "retargeted to her skeleton, feet locked, in place",
@@ -108,7 +108,29 @@
 		"loop": true,
 		"note": "townsfolk (women)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
-		"speed": 0.0
+		"speed": 0.0000000848176805499366
+	},
+	"f_idle_2h": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the arms re-solved to hold what they carry, at ease (clips/folk_armed.py)",
+		"layer": "full",
+		"length": 16.6333332061768,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk, armed, at ease (idle_2h)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.0000000848176805499366,
+		"weapon": ""
+	},
+	"f_idle_armed": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the arms re-solved to hold what they carry, at ease (clips/folk_armed.py)",
+		"layer": "full",
+		"length": 16.6333332061768,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk, armed, at ease (idle_armed)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.0000000848176805499366,
+		"weapon": "sword"
 	},
 	"f_kneel_aim": {
 		"hold": true,
@@ -224,7 +246,7 @@
 		"loop": true,
 		"note": "townsfolk (women)",
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: talk_0.bvh",
-		"speed": 0.0
+		"speed": 0.00756938906727231
 	},
 	"f_unfold_arms": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
@@ -275,7 +297,7 @@
 		"loop": true,
 		"note": "townsfolk (men)",
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
-		"speed": 0.0
+		"speed": 0.00026765179931881
 	},
 	"m_bend_lift": {
 		"changes": "retargeted to her skeleton, feet locked, retimed",
@@ -396,7 +418,29 @@
 		"loop": true,
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
-		"speed": 0.0
+		"speed": 0.000000085943207402705
+	},
+	"m_idle_2h": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the arms re-solved to hold what they carry, at ease (clips/folk_armed.py)",
+		"layer": "full",
+		"length": 16.6333332061768,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk, armed, at ease (idle_2h)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.000000085943207402705,
+		"weapon": ""
+	},
+	"m_idle_armed": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the arms re-solved to hold what they carry, at ease (clips/folk_armed.py)",
+		"layer": "full",
+		"length": 16.6333332061768,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk, armed, at ease (idle_armed)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.000000085943207402705,
+		"weapon": "sword"
 	},
 	"m_kneel_aim": {
 		"hold": true,
@@ -552,7 +596,7 @@
 		"loop": true,
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_talking.bvh",
-		"speed": 0.0
+		"speed": 0.0000111572903396131
 	},
 	"m_wade_drag": {
 		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",

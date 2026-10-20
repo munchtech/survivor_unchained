@@ -8,8 +8,8 @@ of the capture's own arm swing about its rest, so it moves against the hips' shi
   a little forward and out, its point well clear of the leg and off the ground; the left arm hangs free and easy as her
   town stands' (clips/idle.py free_arms). (Planted as a cane the short staff cannot be: the folk's plain mount runs the
   shaft out of the thumb side, so with the head up its foot is only 0.44 m below the wrist.)
-- idle_2h: a two-handed blade (Keegan's zweihander) at rest on the right shoulder, the right fist on the grip at the
-  chest, the left arm hanging free. (The knight's rest, the point planted ahead with the hands on the grip, cannot be:
+- idle_2h: a two-handed blade (Keegan's zweihander) at rest on the right shoulder, the right fist on the grip before
+  the chest, the left arm hanging free. (The knight's rest, the point planted ahead with the hands on the grip, cannot be:
   the plain mount runs the blade out of the thumb side, so a blade pointing down from the fist needs the thumb turned
   down, past the forearm's range.)
 
@@ -59,8 +59,12 @@ def _arm(rig):
 SWORD_R = dict(at=(-0.14, -0.45, 0.10), pole=(-0.4, -0.2, -1.0), blade=_n((-0.30, -0.74, 0.60)))
 # The free hand: free_arms' (her town stands), the thumb forward.
 FREE_L = dict(at=(0.16, -0.46, 0.08), pole=(0.3, -0.2, -1.0))
-# The two-handed blade on the right shoulder: the fist before the chest, the blade up and back over the shoulder.
-SHOULDER_R = dict(at=(0.05, -0.24, 0.22), pole=(-0.6, -0.5, -0.6), blade=_n((-0.06, 0.62, -0.78)))
+# The two-handed blade on the right shoulder: the fist before the chest, a little out, the elbow down at the side; the
+# blade up, back and out over the shoulder, resting a few mm above it, well clear of the head. It rides the chest
+# (the blade stays on the shoulder through the weight shift) and keeps none of the capture's arm swing. (The knuckles
+# turn the guard so its quillons clear the upper arm.) Found by search on folkhold.py's quick model (animation 45).
+SHOULDER_R = dict(at=(-0.013, -0.138, 0.238), pole=(-0.561, -0.603, -0.566), blade=_n((-0.336, 0.681, -0.651)),
+                  knuckles=_n((0.252, 0.231, 0.94)), ride="chest", swing=0.0)
 
 STANDS = {
     "idle_armed": dict(r=SWORD_R, l=FREE_L, weapon="sword"),
