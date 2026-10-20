@@ -1,0 +1,825 @@
+{
+ "hair": {
+  "style": "crop",
+  "colour": "#9f8156",
+  "base": "blond",
+  "grey": 0,
+  "beard": "none",
+  "brows": true,
+  "why": "style seeded; colour seeded",
+  "file": null,
+  "carry": {
+   "style": "crop",
+   "fieldPoints": 11518,
+   "scalpPoints": 5116,
+   "scale": 1.0703,
+   "turnDeg": 2.05,
+   "residualMm": {
+    "rms": 5.34,
+    "max": 18.08
+   },
+   "through": {
+    "her": {
+     "n": 386,
+     "deepMm": 2
+    },
+    "before": {
+     "n": 1505,
+     "deepMm": 4.34,
+     "beyondHers": 949
+    },
+    "after": {
+     "n": 108,
+     "deepMm": 2.42,
+     "beyondHers": 25
+    },
+    "byMaterial": {
+     "hair": {
+      "n": 66,
+      "points": 59520,
+      "deepMm": 1.38,
+      "beyondHers": 0
+     },
+     "hair_cap": {
+      "n": 31,
+      "points": 3740,
+      "deepMm": 2.42,
+      "beyondHers": 25
+     },
+     "hair_fine": {
+      "n": 11,
+      "points": 12455,
+      "deepMm": 0.74,
+      "beyondHers": 0
+     }
+    }
+   },
+   "pushPasses": 6,
+   "liftMaxMm": 17.24,
+   "lastNeedMm": 2.81,
+   "cardLod": {
+    "tolMm": 0.84,
+    "cards": 2286,
+    "tris": {
+     "before": 86740,
+     "after": 8000,
+     "hair": 6208,
+     "hair_fine": 1792
+    },
+    "culled": {
+     "offRoot": 20,
+     "lone": 0,
+     "hidden": 0
+    },
+    "rootMm": [
+     2.5,
+     3.5,
+     5.7
+    ]
+   },
+   "fringe": {
+    "cards": 183,
+    "tris": 732,
+    "roots": {
+     "candidates": 5667,
+     "seen": 887,
+     "picked": 183,
+     "noDir": 0
+    },
+    "spacingMm": 1.8
+   }
+  },
+  "paint": {
+   "pixels": {
+    "scalp": 1251485,
+    "roots": 1198231,
+    "brows": 11003,
+    "beard": 0
+   },
+   "life": {
+    "k": {
+     "cheek": 0.372,
+     "nose": 0.643,
+     "ear": 0.804,
+     "under": 0.592,
+     "jaw": 0.55,
+     "mottle": 0.945
+    },
+    "tip": [
+     0,
+     1.5432,
+     0.1321
+    ],
+    "ear": [
+     0.0927,
+     1.5851,
+     -0.0031
+    ],
+    "color": 2595722,
+    "rough": 2595722
+   },
+   "map": 2048,
+   "landmarks": {
+    "eyeHalf": 0.0287,
+    "eyeY": 1.5858,
+    "mouthY": 1.5177
+   }
+  }
+ },
+ "nipples": {
+  "l": [
+   1.36,
+   0.16,
+   4.65
+  ],
+  "r": [
+   1.36,
+   0.16,
+   4.65
+  ],
+  "tips": {
+   "l": 8510,
+   "r": 1838
+  }
+ },
+ "rest": {
+  "before": {
+   "deg": 78.028,
+   "bone": "hand_r"
+  },
+  "after": {
+   "deg": 0.011,
+   "bone": "thumb_04_leaf_l"
+  },
+  "headMoved": 4.49e-16
+ },
+ "name": "npc_guard",
+ "sex": "male",
+ "height": 1.7652,
+ "ownHeight": 1.7652,
+ "lod": {
+  "file": "lod.glb",
+  "tris": {
+   "lod_body": 2567,
+   "lod_npc_wool": 786,
+   "lod_npc_linen": 1343,
+   "lod_darkleather": 379,
+   "lod_steel": 1381,
+   "lod_hair": 2546
+  },
+  "total": 9002,
+  "shadowTris": 2313,
+  "shadowHair": 491,
+  "errMm": {
+   "cut": 3,
+   "lod_body.skin": {
+    "p99": 3.42,
+    "max": 10.93
+   },
+   "lod_body.skin_head": {
+    "p99": 3.44,
+    "max": 3.98
+   },
+   "lod_body.eyes": {
+    "p99": 3.22,
+    "max": 3.22
+   },
+   "lod_npc_wool": {
+    "p99": 2.73,
+    "max": 4.53
+   },
+   "lod_npc_linen": {
+    "p99": 3.51,
+    "max": 4.3
+   },
+   "lod_darkleather": {
+    "p99": 34.04,
+    "max": 48.31
+   },
+   "lod_steel": {
+    "p99": 2.86,
+    "max": 14.92
+   },
+   "lod_hair.hair_cap": {
+    "p99": 3.56,
+    "max": 7.35
+   },
+   "lod_hair": "cards whole"
+  },
+  "movedMm": {
+   "lod_body.skin": 4.5,
+   "lod_body.skin_head": 4.44,
+   "lod_npc_wool": 2.79,
+   "lod_npc_linen": 4.4,
+   "lod_darkleather": 4.5,
+   "lod_steel": 4.35,
+   "lod_hair.hair_cap": 3.34
+  },
+  "dropped": [
+   {
+    "mat": "gold",
+    "areaPct": 0.74
+   }
+  ],
+  "cards": {
+   "kept": 593,
+   "of": 1695,
+   "tris": 2252
+  }
+ },
+ "maps": {
+  "skin": {
+   "map": 1024,
+   "normalMap": 1024,
+   "roughnessMap": 1024
+  },
+  "skin_head": {
+   "map": 2048,
+   "normalMap": 2048,
+   "roughnessMap": 2048
+  },
+  "eyes": {
+   "map": 1024,
+   "specularIntensityMap": 256,
+   "clearcoatMap": 256,
+   "clearcoatNormalMap": 512
+  },
+  "teeth": {
+   "map": 1024,
+   "roughnessMap": 1024
+  },
+  "tongue": {
+   "map": 1024
+  }
+ },
+ "frame": "glTF / Godot: Y up, metres; bind pose = the heroine's (heroine.glb), the body's own proportions",
+ "skin": {
+  "areolas": "none",
+  "look": true
+ },
+ "skeleton": {
+  "joints": 79,
+  "names": [
+   "root",
+   "pelvis",
+   "spine_01",
+   "spine_02",
+   "spine_03",
+   "neck_01",
+   "Head",
+   "clavicle_l",
+   "upperarm_l",
+   "lowerarm_l",
+   "hand_l",
+   "index_01_l",
+   "index_02_l",
+   "index_03_l",
+   "index_04_leaf_l",
+   "middle_01_l",
+   "middle_02_l",
+   "middle_03_l",
+   "middle_04_leaf_l",
+   "pinky_01_l",
+   "pinky_02_l",
+   "pinky_03_l",
+   "pinky_04_leaf_l",
+   "ring_01_l",
+   "ring_02_l",
+   "ring_03_l",
+   "ring_04_leaf_l",
+   "thumb_01_l",
+   "thumb_02_l",
+   "thumb_03_l",
+   "thumb_04_leaf_l",
+   "clavicle_r",
+   "upperarm_r",
+   "lowerarm_r",
+   "hand_r",
+   "index_01_r",
+   "index_02_r",
+   "index_03_r",
+   "index_04_leaf_r",
+   "middle_01_r",
+   "middle_02_r",
+   "middle_03_r",
+   "middle_04_leaf_r",
+   "pinky_01_r",
+   "pinky_02_r",
+   "pinky_03_r",
+   "pinky_04_leaf_r",
+   "ring_01_r",
+   "ring_02_r",
+   "ring_03_r",
+   "ring_04_leaf_r",
+   "thumb_01_r",
+   "thumb_02_r",
+   "thumb_03_r",
+   "thumb_04_leaf_r",
+   "thigh_l",
+   "calf_l",
+   "foot_l",
+   "ball_l",
+   "ball_leaf_l",
+   "thigh_r",
+   "calf_r",
+   "foot_r",
+   "ball_r",
+   "ball_leaf_r",
+   "upperarm_twist_01_l",
+   "upperarm_twist_01_r",
+   "lowerarm_twist_01_l",
+   "lowerarm_twist_01_r",
+   "lowerarm_twist_02_l",
+   "lowerarm_twist_02_r",
+   "upperarm_share_l",
+   "upperarm_share_r",
+   "lowerarm_share_l",
+   "lowerarm_share_r",
+   "lowerarm_point_l",
+   "lowerarm_point_r",
+   "calf_share_l",
+   "calf_share_r"
+  ]
+ },
+ "body": "body.glb",
+ "pieces": [
+  {
+   "id": "warden.boots",
+   "slot": "boots",
+   "tris": 8994
+  }
+ ],
+ "tris": {
+  "body": 29528,
+  "bodyDrawn": 23113,
+  "skinHidden": 6415,
+  "pieces": {
+   "warden.boots": 8994
+  },
+  "hair": 11393,
+  "wear": {
+   "trousers": 1295,
+   "gambeson": 3694
+  },
+  "over": [],
+  "surfaces": {
+   "skin": 12141,
+   "skin_head": 8200,
+   "npc_wool": 1295,
+   "npc_linen": 3694,
+   "darkleather": 1162,
+   "gold": 2446,
+   "steel": 5386,
+   "eyes": 544,
+   "teeth": 1780,
+   "tongue": 448,
+   "hair:hair": 6208,
+   "hair:hair_cap": 2661,
+   "hair:hair_fine": 2524
+  },
+  "total": 48489,
+  "drawn": 48489,
+  "budget": 60000
+ },
+ "baked": true,
+ "bake": {
+  "bytes": 9650296,
+  "nodes": [
+   {
+    "name": "npc_guard",
+    "surfaces": [
+     "skin",
+     "skin_head",
+     "npc_wool",
+     "npc_linen",
+     "darkleather",
+     "gold",
+     "steel"
+    ],
+    "tris": 29504,
+    "morphs": 0
+   },
+   {
+    "name": "npc_guardHead",
+    "surfaces": [
+     "skin",
+     "skin_head"
+    ],
+    "tris": 4820,
+    "morphs": 28
+   },
+   {
+    "name": "npc_guardEyes",
+    "surfaces": [
+     "eyes"
+    ],
+    "tris": 544,
+    "morphs": 0
+   },
+   {
+    "name": "npc_guardTeeth",
+    "surfaces": [
+     "teeth"
+    ],
+    "tris": 1780,
+    "morphs": 28
+   },
+   {
+    "name": "npc_guardTongue",
+    "surfaces": [
+     "tongue"
+    ],
+    "tris": 448,
+    "morphs": 28
+   },
+   {
+    "name": "hair",
+    "surfaces": [
+     "hair",
+     "hair_cap",
+     "hair_fine"
+    ],
+    "tris": 11393,
+    "morphs": 0
+   }
+  ],
+  "skinDeleted": 6415,
+  "rims": {
+   "edges": 695,
+   "open": {
+    "rest": 26,
+    "any": 31
+   },
+   "tight": 4,
+   "byBone": {
+    "ball_r": 15,
+    "ball_l": 15,
+    "foot_r": 1
+   }
+  },
+  "holes": {
+   "of": 6415,
+   "rest": 370,
+   "any": 535,
+   "beyond15cm": 157,
+   "byBone": {
+    "ball_l": 241,
+    "ball_r": 223,
+    "calf_r": 31,
+    "foot_r": 28,
+    "foot_l": 12
+   }
+  },
+  "poses": 7
+ },
+ "wear": {
+  "top": {
+   "type": "gambeson",
+   "length": 0.38,
+   "loose": 0.22,
+   "sleeves": "long",
+   "neck": "crew",
+   "cloth": "linen",
+   "belt": "leather",
+   "quilt": "vertical",
+   "closure": "buttons",
+   "dye": "oak grey",
+   "colour": "#8a857a"
+  },
+  "bottom": {
+   "type": "trousers",
+   "length": 1,
+   "loose": 0.2,
+   "cloth": "wool",
+   "dye": "dark green",
+   "colour": "#3d4839"
+  },
+  "why": "a guard: a padded gambeson over trousers (\"guard\"); lean: ease capped",
+  "skinCovered": 1488,
+  "garments": {
+   "trousers": {
+    "spec": {
+     "type": "trousers",
+     "length": 1,
+     "loose": 0.2,
+     "cloth": "wool",
+     "dye": "dark green",
+     "colour": "#3d4839"
+    },
+    "material": "npc_wool",
+    "colour": "#3d4839",
+    "tailored": {
+     "type": "trousers",
+     "thin": {
+      "before": 1712,
+      "after": 1295
+     }
+    },
+    "body": {
+     "moved": 242,
+     "maxMm": 24.5
+    },
+    "skin": {
+     "through": 0,
+     "close": 47,
+     "maxMm": 3.6
+    },
+    "hang": 0,
+    "under": 44,
+    "dropped": 0,
+    "tris": 1295,
+    "maps": {
+     "size": 2048,
+     "texelMm": 0.69,
+     "used": 0.55,
+     "KB": [
+      110,
+      309,
+      13
+     ]
+    },
+    "spots": {
+     "through": 8,
+     "under": 1404,
+     "deepMm": 3.1,
+     "where": [
+      -0.083,
+      0.018,
+      -0.063
+     ]
+    },
+    "through": {
+     "pct": 2.405,
+     "areaPct": 1.532,
+     "deepMm": 31.73,
+     "worst": "Crouch_Idle_Loop@0.5:78"
+    }
+   },
+   "gambeson": {
+    "spec": {
+     "type": "gambeson",
+     "length": 0.38,
+     "loose": 0.22,
+     "sleeves": "long",
+     "neck": "crew",
+     "cloth": "linen",
+     "belt": "leather",
+     "quilt": "vertical",
+     "closure": "buttons",
+     "dye": "oak grey",
+     "colour": "#8a857a"
+    },
+    "material": "npc_linen",
+    "colour": "#8a857a",
+    "tailored": {
+     "type": "gambeson",
+     "neck": "crew",
+     "hemRows": 518,
+     "sleeveRows": [
+      240,
+      280
+     ],
+     "walks": [
+      {
+       "side": "Right",
+       "wristCm": 28.4,
+       "rings": 6
+      },
+      {
+       "side": "Left",
+       "wristCm": 29.6,
+       "rings": 7
+      }
+     ],
+     "thin": {
+      "before": 7370,
+      "after": 3694
+     }
+    },
+    "body": {
+     "moved": 250,
+     "maxMm": 12.4
+    },
+    "skin": {
+     "through": 0,
+     "close": 7,
+     "maxMm": 1.2
+    },
+    "drape": 333,
+    "hang": 116,
+    "cinch": 80,
+    "tent": 594,
+    "fall": 58,
+    "skin2": {
+     "through": 2,
+     "close": 4,
+     "maxMm": 7.1
+    },
+    "over": {
+     "moved": 74,
+     "maxMm": 2
+    },
+    "layer": {
+     "through": 2,
+     "close": 8,
+     "maxMm": 8.7
+    },
+    "under": 0,
+    "dropped": 0,
+    "tris": 3694,
+    "maps": {
+     "size": 2048,
+     "texelMm": 0.84,
+     "used": 0.54,
+     "KB": [
+      266,
+      359,
+      22
+     ]
+    },
+    "spots": {
+     "through": 0,
+     "under": 2456,
+     "deepMm": 0,
+     "where": null
+    },
+    "through": {
+     "pct": 2.038,
+     "areaPct": 1.587,
+     "deepMm": 37.2,
+     "worst": "Crouch_Idle_Loop@0.5:209"
+    }
+   }
+  }
+ },
+ "decimate": {
+  "hair": {
+   "errMm": 5,
+   "share": 10000,
+   "devMm": {
+    "max": 0,
+    "p99": 0
+   }
+  },
+  "warden.boots": {
+   "covered": 32,
+   "locked": 0,
+   "errMm": 1.2,
+   "clip": {
+    "fullPct": 0.297,
+    "fullAreaPct": 0.182,
+    "fullDeepMm": 23.73,
+    "areaPct": 0.07,
+    "pct": 0.07,
+    "deepMm": 19.35,
+    "worst": "Sword_Attack@0.45:37",
+    "down": 0,
+    "held": true,
+    "conservedMm": 4,
+    "tried": [
+     [
+      0,
+      8994,
+      0.07,
+      0.07,
+      19.35
+     ]
+    ]
+   },
+   "through": {
+    "pct": 0.07,
+    "areaPct": 0.07,
+    "deepMm": 19.35,
+    "worst": "Sword_Attack@0.45:37"
+   },
+   "share": 20505,
+   "devMm": {
+    "max": 20.24,
+    "p99": 10.49
+   },
+   "rungs": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "carry": {
+  "scales": {
+   "warden.boots": {
+    "max": 1.261
+   }
+  }
+ },
+ "checks": [
+  {
+   "id": "bare",
+   "words": "Every NPC wears a top and a bottom (garment or armor piece), unless the description asks for bare",
+   "ok": true,
+   "value": "dressed",
+   "limit": "top and bottom",
+   "where": null,
+   "refuse": true,
+   "fix": {
+    "label": "Use the description's clothes"
+   }
+  },
+  {
+   "id": "cloth-through",
+   "words": "No skin shows through the clothes at rest",
+   "ok": false,
+   "value": "8 points, deepest 3.1 mm",
+   "limit": "no point deeper than 2 mm",
+   "where": "trousers [-0.083,0.018,-0.063]"
+  },
+  {
+   "id": "layer-through",
+   "words": "No garment shows through the garment over it (a waistband through a tunic)",
+   "ok": true,
+   "value": "0 points, deepest 0 mm",
+   "limit": 0,
+   "where": null
+  },
+  {
+   "id": "budget",
+   "words": "The model fits its triangle budget (game model and the far LOD)",
+   "ok": true,
+   "value": "drawn 48489 of 60000, LOD 9002",
+   "limit": "60000 drawn, 12000 LOD",
+   "where": null
+  },
+  {
+   "id": "clipping",
+   "words": "Armor and clothes do not cut through the skin in any of the poses",
+   "ok": true,
+   "value": "worst 1.59% of area, deepest 37.2 mm",
+   "limit": "5% of area",
+   "where": null
+  },
+  {
+   "id": "scale",
+   "words": "No metal piece is stretched to fit (a smith resizes a plate, not stretches it)",
+   "ok": true,
+   "value": "largest 1.26x",
+   "limit": "under 1.3x on any axis",
+   "where": null
+  },
+  {
+   "id": "floating-plate",
+   "words": "No rigid plate floats off the body (over 3 mm more than her gap)",
+   "ok": null,
+   "value": "not measured yet",
+   "limit": null,
+   "where": "carry records the seat before the fit, not the plate's gap after it"
+  },
+  {
+   "id": "gaze",
+   "words": "Her eyes look straight ahead, level, and not crossed",
+   "ok": true,
+   "value": "1 deg down",
+   "limit": "at most 1 deg down",
+   "where": null,
+   "fix": {
+    "label": "Refit face"
+   }
+  },
+  {
+   "id": "lids",
+   "words": "Her lids are open to a natural width (not doll eyes, not sleepy)",
+   "ok": true,
+   "value": "13.7% of the iris covered (lid -0.7)",
+   "limit": "at most 15% covered",
+   "where": null,
+   "fix": {
+    "label": "Refit face"
+   }
+  },
+  {
+   "id": "mouth",
+   "words": "Her mouth is a natural size and resting closed",
+   "ok": true,
+   "value": "gap 0, corners 0.5 (seen), droop -0.1, pout -7.19 (mm), balance 0.1",
+   "limit": "gap <= 1, corners 0.3..2, droop >= -0.15, pout <= -0.8, balance 0..0.1",
+   "where": null,
+   "fix": {
+    "label": "Refit face"
+   }
+  },
+  {
+   "id": "shoulder-hip",
+   "words": "Shoulders and hips are in proportion for this build",
+   "ok": true,
+   "value": "ratio 1.52 (not checked on men)",
+   "limit": null,
+   "where": null
+  },
+  {
+   "id": "hairline-cut",
+   "words": "The hairline has no hard cut where the cap meets the skin",
+   "ok": true,
+   "value": "791 of 791 seen hairline points kept, fade off by at most 0.21",
+   "limit": "no seen point dropped",
+   "where": null
+  }
+ ]
+}

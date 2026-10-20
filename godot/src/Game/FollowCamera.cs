@@ -25,6 +25,9 @@ public sealed class FollowCamera
     /// <summary>How much of the shake the player wants (settings: 0..1).</summary>
     public float ShakeScale = 1;
     public Vector3? FocusOverride;
+    /// <summary>Metres the view's aim is raised (negative: lowered) for someone not her height: GameNpcShot's swap, a
+    /// package NPC in her place, frames the close-up on its own head (0: her own framing).</summary>
+    public float AimLift;
     /// <summary>What the view keeps in frame with her (a story night's boss): the look leans a third of the
     /// way toward it, never more than four and a half metres. Followed on her alone, the boss stood under the
     /// HUD's bar at the screen's foot for a fight's length.</summary>
@@ -225,7 +228,7 @@ public sealed class FollowCamera
         float pitch = Mathf.Lerp(c.Pitch, Mathf.DegToRad(frame.Pitch), k) + FlarePitch;
         float cp = Mathf.Cos(pitch), sp = Mathf.Sin(pitch);
         float yaw = Yaw + orbitNow * (1 - k);
-        var aim = look + new Vector3(0, Mathf.Lerp(c.Height, frame.Height, k) - 0.8f, 0);
+        var aim = look + new Vector3(0, Mathf.Lerp(c.Height, frame.Height, k) - 0.8f + AimLift, 0);
         // A near view comes in front of a wall, never through it (eased, so a post going by is no jolt).
         if (closeNow > 0.02f && Room != null)
         {
