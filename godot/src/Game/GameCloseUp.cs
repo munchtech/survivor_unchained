@@ -173,15 +173,15 @@ public partial class Game
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
     // filled her shadow side almost to her lit side). Art style round 2 (20 Oct): 0.75, rim 3, night key 2.2, under the paint grade.
-    static float CloseFireShare => Args.Num("close-fire", 0.75f);
+    static float CloseFireShare => Args.Num("close-fire", 0.9f);   // (G1 r3: 0.9; 1.0 puts her back on the world's fire layer, crown L 47.7 vs 46.8)
     // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
-    static float CloseKeyNight => Args.Num("close-key-night", 2.2f);
+    static float CloseKeyNight => Args.Num("close-key-night", 1.7f);   // (G1 r3: 2.2 to 1.7)
     // --close-key-el D: the night key's elevation (degrees).
     static float CloseKeyElNight => Args.Num("close-key-el", 18f);
     // (G1 r2: rim 3.0 to 1.0 and down from 35 degrees to 10, the key from 30 to 18: from above they lifted her copper crown
     // pinkish-tan, toward strawberry blonde (crown Oklab L 52.6, 44.9 now, her face 79.9 and 79.4: the crown to face of
     // art style r2's frame, 0.56); low, the rim's cool edge grazes her shoulders and arms.)
-    static float CloseRimNight => Args.Num("close-rim", 1.0f);
+    static float CloseRimNight => Args.Num("close-rim", 1.5f);   // (G1 r3: 1.5; 3 lifts the crown to 47.9 at frame 03, at az 0.9 it fills her shade side)
     // --close-rim-el D: the rim's elevation (degrees).
     static float CloseRimEl => Args.Num("close-rim-el", 10f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).

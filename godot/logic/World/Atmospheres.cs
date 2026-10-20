@@ -84,8 +84,8 @@ public static class Atmospheres
     // grade's warm-hue hold and toe kept them so. The grade's Moon step now gives what is weakly coloured the moon's
     // silver-blue, and leaves what is strongly coloured (the fires, her ember's pool) its own.)
     static readonly GradeSettings PlayNightGrade = new([0.004, 0.010, 0.024], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65, MoonSat = 0.085,
-        PaintVib = 0.8, PaintHi = 0.8, PaintShadow = "#24404a", PaintShadowK = 0.7, PaintLift = 0.02 };   // (the paint grade: art style round 2's camp, 20 Oct; G1 r2: a dark teal shade, #1d2a52 made the unlit field one slate-navy, and MoonSat 0.06 to 0.085 keeps the moonlit grass blue, C 3, under the paint vibrance's fade)
+        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65, MoonSat = 0.14,
+        PaintVib = 0.8, PaintHi = 0.8, PaintShadow = "#24404a", PaintShadowK = 0.7, PaintLift = 0.02 };   // (the paint grade: art style round 2's camp, 20 Oct; G1 r2: a dark teal shade, #1d2a52 made the unlit field one slate-navy, and MoonSat 0.06 to 0.085 keeps the moonlit grass blue, C 3, under the paint vibrance's fade; G1 r3: 0.14, moonlit grass C 2.8 to 4.7 (the moon's own colour is moot here: #86b5ff left it at 2.8, the Moon step drops its chroma))
 
     /// <summary>The close view's paint grade by night (art style round 1's, which kept her copper hair): the view grade
     /// (Atmosphere.ViewGrade) takes it over the preset's as the view closes in. No vibrance, where she fills the frame:
@@ -93,6 +93,7 @@ public static class Atmospheres
     public static readonly GradeSettings CloseNightPaint = PlayNightGrade with
     {
         PaintVib = 0, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015,
+        MoonSat = 0.085,   // (G1 r3: the play night's 0.14 is the camp grass's; the close view keeps the 0.085 she was judged under)
     };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
     /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
@@ -107,7 +108,7 @@ public static class Atmospheres
     /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#90b6ff", KeyIntensity = 5.8,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost)
+        KeyColor = "#90b6ff", KeyIntensity = 4.9,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
         KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
         HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.6, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
@@ -131,7 +132,7 @@ public static class Atmospheres
         Sky = Dawn.Sky with { Horizon = "#7c90b8", Glow = "#c8d0e0" },
         KeyColor = "#ffd6b0", KeyIntensity = 10.0,   // (G1 r2: #ffdbad 9 degrees toward peach: it leaned mustard-khaki on the grass)
         KeyElevation = 18, KeyAzimuth = -60, ShadowStrength = 0.95,
-        HemiSky = "#6f8fd8", HemiGround = "#2c3446", HemiIntensity = 0.9, EnvIntensity = 0.7,
+        HemiSky = "#7b91c0", HemiGround = "#2c3446", HemiIntensity = 1.08, EnvIntensity = 0.7,   // (G1 r3: #6f8fd8 at 0.9 35% less saturated, same hue, +20%: the square's indigo 41% to 40%; its shaded decals' p10 L 23.9 to 24.0, the fill is not what holds them)
         FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
         Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05, Ember = 0.5,
         Frost = 0.5, FrostThaw = 1,
