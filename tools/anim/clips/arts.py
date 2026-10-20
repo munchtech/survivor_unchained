@@ -897,7 +897,7 @@ FWD_BODY = {"clav_l": (20, 14), "clav_r": (20, 14)}   # her body's keys moved ov
 # Why not two hands (TWO_HANDS, tried with this haft): the left fist sat 7-29 mm off the haft and 8-12 deg tilted
 # at f3-f9 (its forearm's twist pinned), worse than round 3's straight haft, and joining it from the keyed hand
 # spun the hand 90-130 deg in a frame (f1-f2). A haft turned to show its flat leaves the left forearm no twist.
-ONE_FWD = {3: (-0.16, 0.48, 0.70, 30.0, -22.0), 6: (-0.16, 0.48, 0.70, 30.0, -22.0), 9: (-0.16, 0.50, 0.68, 30.0, -22.0)}
+ONE_FWD = {3: (-0.16, 0.48, 0.70, 30.0, -22.0), 6: (-0.16, 0.48, 0.70, 30.0, -22.0), 9: (-0.16, 0.475, 0.70, 30.0, -22.0)}
 ONE_BODY = {"clav_r": (20, 14), "spine": (-2, -10, 0), "neck": (4, -4, 0), "head": (8, -6, 0)}
 ONE_POLES = {"hand_r": None, "hand_l": None}   # the right elbow's way as keyed (out from the shoulder put the
                                                # upper arm 14-23 mm into her breast)
@@ -1077,6 +1077,15 @@ def _strike_keys():
                   "hand_l": {"arc": arc_of((0.27, -0.32, 0.04)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
                   "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
                  hips=(0, 38, 0), spine=(0, 32, 0), neck=(0, -20, 0), head=(0, -28, 0)), "ease"),
+        # (anim 42) She settles 4 cm lower over f6-f9 so the hold isn't frozen, the free arm still back and out
+        # (it dropped limp to her knee by f9).
+        (9, body({"hips": {"pos": (0.0, -0.38, 0.10)},
+                  "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
+                  "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
+                  "hand_r": {**both, "arc": arc_of((-0.05, -0.24, 0.36)), "blade": _n(-0.12, -0.35, 0.93)},
+                  "hand_l": {"arc": arc_of((0.28, -0.32, 0.0)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
+                  "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
+                 hips=(0, 40, 0), spine=(0, 33, 0), neck=(0, -21, 0), head=(0, -29, 0)), "ease"),
         # Wrenched free and up, the free hand back to its fist.
         (15, body({"hips": {"pos": (0.0, -0.18, 0.04)},
                    "foot_l": {"pos": (0.20, 0.0, 0.20), "rot": (16, 0, 0)},
@@ -1101,7 +1110,7 @@ def chain_strike(rig):
         fwd = _forward(rig, first, ONE_FWD, ONE_BODY, ONE_POLES)
         return build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: _left_clear(fr, fwd(fr, pose)))
     first = build("chain_strike", rig, keys, meta=meta)
-    fwd = _forward(rig, first)
+    fwd = _forward(rig, first, FWD, FWD_BODY, FWD_POLES)
     second = build("chain_strike", rig, keys, meta=meta, post=fwd)
     g2, p2 = rig.sk.fk(second.rot, second.pos)
     R_lr, o_lr = _left_on_haft()
