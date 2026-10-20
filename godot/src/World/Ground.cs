@@ -102,7 +102,7 @@ public static class Ground
             ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.32f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
             ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.32f), ("night_dew", "ground-night-dew", 0.35f), ("pud_dark", "ground-pud-dark", 0.45f), ("night_spec", "ground-night-spec", 0.12f),
             ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f),
-            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0.45f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.5f), ("mud_spec", "setts-mud-spec", 0.1f) })
+            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.5f), ("mud_spec", "setts-mud-spec", 0.1f) })
             mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, v));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
