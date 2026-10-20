@@ -318,10 +318,10 @@ public partial class PlayerView : Node3D
 
     /// <summary>Where she stands this frame (Game.UpdateCloseUp): a safe place, or anything hostile near. The
     /// first call is the place just entered: sheathed at once where it is safe. Only a calling with a town idle
-    /// (idle_&lt;calling&gt;_town) sheathes; the rest stay armed.</summary>
+    /// (idle_&lt;calling&gt;_&lt;kind&gt;_town or idle_&lt;calling&gt;_town) sheathes; the rest stay armed.</summary>
     public void Calm(bool safe, bool threat)
     {
-        safeNow = safe && mine && own.Has($"idle_{person.Calling}_town");
+        safeNow = safe && mine && Sheath.HasTown(person.Calling, person.Kind, own.Has);
         threatNow = threat;
         if (entered) return;
         entered = true;
@@ -334,9 +334,8 @@ public partial class PlayerView : Node3D
     {
         view?.Sheathe(sheathed);
         if (!mine || idleNode == null || runNode == null) return;
-        var kind = sheathed ? "town" : null;
-        idleNode.Animation = People.Clip(person, loadout.Arms.Idle, kind);
-        var run = People.Clip(person, "Jog_Fwd_Loop", kind);
+        idleNode.Animation = People.Clip(person, loadout.Arms.Idle, sheathed);
+        var run = People.Clip(person, "Jog_Fwd_Loop", sheathed);
         runNode.Animation = run;
         runSpeed = run.StartsWith(own.Prefix) ? own.Speed(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
         if (sprintNode == null) return;

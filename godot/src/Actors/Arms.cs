@@ -277,9 +277,12 @@ public static class Arms
     /// piece (the crossbow) is given by its stock instead (the piece's +Y turned to the mount's +X, see PieceTransform):
     /// `Shaft` the stock's run, `Thick` its top. `Normal` is the way out of her body there: the socket is pushed out along it
     /// by the worn outfit's thickness (art/anim/socket_clearance.json, filled by tools/anim/armscheck.py --sockets).
-    /// Mirrors: a piece in her left hand rides on the other side (a pair of daggers, a sword in the left).
+    /// Mirrors: a piece in her left hand rides on the other side (a pair of daggers, a sword in the left). The row's
+    /// At, Shaft, Thick and Normal are mirrored, which mirrors the flat and so turns the edge (Shaft x Thick) the other
+    /// way; MirrorEdge: the edge is mirrored instead (Thick flipped), so a pair (gyre's axes) rides as true mirror images
+    /// (the piece symmetric through its flat, it looks the same).
     /// Sheathed() turns the row into the bone's space.</summary>
-    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false);
+    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false);
 
     static readonly Dictionary<string, Socket> Sockets = new()
     {
@@ -290,14 +293,17 @@ public static class Arms
         // One-handed blade: left hip, in the scabbard (MakeSheathed), hilt forward and up, blade down and back about
         // 30 degrees off vertical, flat to her side (thickness out).
         [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true),
-        // Blunt and axe: right hip loop, head up, the haft down along the outside of the thigh (left hand: mirrored).
-        // `At` is the axe's sheath point near the haft's foot, so it sits at the knee and the head rides at the hip. Hung
-        // 8 cm out from the thigh, the head a little forward and the flat turned 12 degrees to her back, the axes clear
-        // her thighs through the run and sprint (armor 5 solver, 19 October). The mace's wide head does not fit this row.
-        [WeaponSockets.HipLoop] = new("pelvis", new(-0.27f, 0.421f, 0.022f), new(0.044f, 0.990f, 0.146f), new(-0.974f, 0.015f, -0.224f), new(-1, 0, 0), Mirrors: true),
-        // Wand: right hip, tucked in the belt, crystal up, leaning a little out and forward (leaning in, its crystal
-        // went into her side when she bent into the sprint).
-        [WeaponSockets.HipBelt] = new("pelvis", new(-0.159f, 1.183f, 0.027f), new(-0.098f, 0.934f, 0.325f), new(-0.965f, -0.204f, -0.166f), new(-1, 0, 0), Mirrors: true),
+        // Blunt and axe: the hip loop behind her right hip (left hand: mirrored, MirrorEdge, so gyre's two ride as mirror
+        // images), at about 5 o'clock (12 her front): the head on the belt (the haft's top 1.06 m up, 22 cm out from her
+        // axis), the haft down along the back of her thigh, its foot leaning 20 deg out and 10 deg to her side so the thigh
+        // clears it as it swings back in the run, the blade straight back. `At` is the axe's sheath point near the haft's
+        // foot. (Animation 44, solver idle 2, 20 October: her hands had rested on the heads at her side; now the nearest
+        // hand is 20 cm off a head in the town idle and 39 cm in the run and sprint, 0 mm into her: socktry.py.)
+        [WeaponSockets.HipLoop] = new("pelvis", new(-0.289f, 0.542f, -0.305f), new(0.319f, 0.925f, 0.205f), new(0.945f, -0.326f, 0), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true),
+        // Wand: tucked in the belt behind her right hip at about 5 o'clock, the grip at the leotard's hip line (1.08 m),
+        // the crystal down and back about 30 deg (animation 44, solver idle 2: crystal up, it stood beside her breast and
+        // her forearm passed through it in the run).
+        [WeaponSockets.HipBelt] = new("pelvis", new(-0.090f, 1.080f, -0.156f), new(-0.082f, -0.841f, -0.534f), new(0.531f, -0.490f, 0.691f), new(-0.5f, 0, -0.866f), Mirrors: true),
         // Dagger: the back of the belt, flat, one each side of the spine, hilts out and blades crossing.
         [WeaponSockets.BeltBack] = new("pelvis", new(-0.17f, 1.12f, -0.13f), new(1, 0, 0), new(0, 0, -1), new(0, 0, -1), Mirrors: true),
         // Crossbow: slung across the back by the stock's middle (its anchor_sheath), stock rising to her right shoulder,
@@ -347,7 +353,7 @@ public static class Arms
         if (WeaponSockets.SocketOf(KindOf(id)) is not { } name) return null;
         var k = Sockets[name];
         var at = k.At; var shaft = k.Shaft; var thick = k.Thick; var normal = k.Normal;
-        if (left && k.Mirrors) { at.X = -at.X; shaft.X = -shaft.X; thick.X = -thick.X; normal.X = -normal.X; }
+        if (left && k.Mirrors) { at.X = -at.X; shaft.X = -shaft.X; thick.X = -thick.X; normal.X = -normal.X; if (k.MirrorEdge) thick = -thick; }
         // Out of her body by the worn outfit's thickness (outfit null: the bare socket, as ArmsDump and armscheck want it).
         if (outfit != null) at += normal * Clearance.Metres(outfit, name);
         shaft = shaft.Normalized();

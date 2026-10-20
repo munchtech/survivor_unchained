@@ -1,0 +1,10 @@
+# Judge idle 1 verdict (max, animation 44, 20 Oct): FAIL on the reaver and arcanist; stalker and the reference PASS
+PASS: idle_wt, wt_c, idle_stc, stc_c, idle_std, std_c, runs_m2 (rstc, rstd), play_p (arw, stc, std, all five runs).
+FAIL: idle_rv, rv_c, rv_p, idle_rvx, rvx_c, rvx_p, rrv, rrvx (the sheathed axes sit where her hands fall, so she reads as holding them); idle_arw, arw_c, rarw (the wand crystal at her armpit, beside the breast; at 25/75 the right wrist swings ~20 cm out to hip height with the elbow cocked).
+Body, sway, shoulders and head on every idle: as easy as the Warden's. Variety: PASS.
+FIXES:
+1. Reaver: RESTAGE the hip loop (Arms.cs Sockets HipLoop), not the arms. Right axe at about 5 o'clock (12 = forward): the head rests on the belt, the haft runs along the back of the thigh, the blade faces back, so from 315 it sits behind her hip. Gyre: the left axe mirrored to 6:30-7, or both crossed at the lower back. Acceptance in every phase, at the close-up and at 0.6: no axe head or haft top within a hand's width of either hand; recheck rrv0 and rrvx0, and any clip that uses the loops.
+2. Arcanist: the Warden's right shoulder and elbow over the whole loop (softened as the reaver's). Move the WAND, not the arm: tip down behind the right hip at about 5 o'clock, about 25 deg back, the grip at the leotard's hip line; nothing beside her breast from 315. Re-measure the town run's right-hand clearance (1 mm now). [not-anim: outfit] a slim belt or holster strap.
+3. Stalker (optional): the crossbow ~10 deg on its sling, the butt ~8 cm back, behind her left buttock (it crowds the back of her left hand).
+Noted: rstc/rstd at 25% the near hand's forward swing ends over her groin (the Warden's judged arms). [not-anim: skin] the reaver's thigh stripes read as marker lines; [not-anim: outfit] the ranger's legging seam; the reaver's loincloth board in the run.
+Measures wanted: the arcanist right wrist travel (cm) and shoulder-abduction range vs the warden, before and after; the left axe blade to the left wrist at 25/75 (not the haft axis).

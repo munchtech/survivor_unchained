@@ -2,6 +2,25 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 000000000000. MR READY 2 (animation 44, 20 October 2026): idle life, her town idles
+Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). The by-products are never committed. Files are in `tools/scratch/anim40/`.
+
+**Item 3, idle life (her part): DONE.**
+- In a safe place, the reaver, arcanist (wand) and stalker now sheathe and play relaxed town idles: `idle_reaver_town`, `idle_arcanist_town`, `idle_stalker_town`. All are on the Warden's WiggleHips take, each on its own stretch.
+- They also play town runs (`run_reaver_town`, `run_arcanist_wand_town`, `run_stalker_town`), and the sprints follow.
+- Max judges: idle 1 (`judge_idle1_verdict.md`) passed the stalker and failed the reaver and arcanist on the sheathed pieces. Idle 2 (`judge_idle2_verdict.md`) PASSED all 8 frames.
+- **Code:**
+  - Town clips are looked up per kind (`Sheath.Names` / `HasTown`): `<stem>_<calling>_<kind>_town`, then `<stem>_<calling>_town`, then the armed clip.
+  - A piece that stays in her hand (the staff) only sheathes with its own kind's town idle, so the staff arcanist stays armed in town.
+  - Sockets moved (Arms.cs): `HipLoop` sits behind the right hip at 5 o'clock with the blade back, and gets the new `MirrorEdge` flag; `HipBelt` holds the wand tip down behind the hip. Both were refit with `socket_clearance.json` and `arms_local.json`.
+- **Checks** (`final44i/`): audit 0 flags; motion --outfits 0 mm into her; dotnet 1014/0/8.
+- **Open / later:**
+  - `idle_arcanist_staff_town` needs a walking-staff fist fit (the arm function stays in idle.py, not shipped).
+  - The mace (Blunt) shares HipLoop and goes 23 mm into her: it needs its own row.
+  - Optional: the crossbow butt, about 10 deg round its sling.
+  - Townsfolk: folk.py's "idle" is already a Mixamo weight-shift idle (`folk_weight_shift_idle.bvh`). Check one town frame before any work. Story NPCs are not checked.
+- Routed [outfit]: the loincloth board in the run, the arcanist's glove heights, the flat hat brim.
+
 ## 00000000000. MR READY (animation 44, 20 October 2026); next: idle life
 Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. Files are in `tools/scratch/anim40/`.
 
