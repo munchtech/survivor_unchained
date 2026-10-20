@@ -1,0 +1,2 @@
+villager_close_beside|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --npc npc_villager
+guard_close_beside|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --npc npc_guard

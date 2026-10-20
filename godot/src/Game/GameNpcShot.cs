@@ -14,6 +14,80 @@ namespace SurvivorUnchained.Play;
 /// </summary>
 public partial class Game
 {
+    /// <summary>
+    /// --npc-crowd N[:name1,name2,...]: N Marionette packages (default: every folder of art/npc with a manifest) scattered
+    /// 3-14 m from her in front of the camera, seeded; half idle at random headings, half walking circles of 2-4 m (perf).
+    /// </summary>
+    void NpcCrowd()
+    {
+        if (Args.Get("npc-crowd") is not string arg || scene == null) return;
+        var parts = arg.Split(':', 2);
+        if (!int.TryParse(parts[0], out int n) || n <= 0) return;
+        var names = parts.Length > 1 && parts[1].Length > 0 ? parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries)
+            : (DirAccess.GetDirectoriesAt("res://art/npc") ?? new string[0]).Where(d => FileAccess.FileExists($"{NpcPackage.Dir(d)}/manifest.json")).OrderBy(d => d, StringComparer.Ordinal).ToArray();
+        if (names.Length == 0) { GD.PushWarning("npc-crowd: no packages"); return; }
+        var views = new System.Collections.Generic.List<PersonView>();
+        for (int i = 0; i < n; i++)
+        {
+            var name = names[i % names.Length];
+            var m = NpcPackage.Read(name);
+            var spec = new PersonSpec { Sex = m?.Sex == "female" ? Rpg.Sex.Female : Rpg.Sex.Male, Body = NpcPackage.Prefix + name };
+            var v = new PersonView(spec, null, 0.8) { Name = $"CrowdNpc{i}" };
+            scene.AddChild(v);
+            v.Loop("Idle");
+            views.Add(v);
+        }
+        GD.Print($"npc-crowd: {n} of [{string.Join(",", names)}]");
+        AddChild(new NpcCrowdDriver(this, views));
+    }
+
+    sealed partial class NpcCrowdDriver : Node
+    {
+        readonly Game game;
+        readonly System.Collections.Generic.List<PersonView> views;
+        double t;
+        // per NPC: centre x, z, heading (idle) or circle radius, phase (walk)
+        double[][]? at;
+
+        public NpcCrowdDriver(Game game, System.Collections.Generic.List<PersonView> views) { this.game = game; this.views = views; }
+
+        public override void _Process(double delta)
+        {
+            t += delta;
+            if (game.scene == null || game.Battle?.Player is not { } pl || GetViewport().GetCamera3D() is not Camera3D cam) return;
+            if (at == null)
+            {
+                var rng = new Random((int)Args.Num("seed", 1) * 7919 + 17);
+                var f = new Vector3((float)(pl.X - cam.GlobalPosition.X), 0, (float)(pl.Z - cam.GlobalPosition.Z)).Normalized();
+                double fa = Math.Atan2(f.X, f.Z);
+                at = new double[views.Count][];
+                for (int i = 0; i < views.Count; i++)
+                {
+                    // (in front of the camera: from her, away from it, within 60 degrees either side; 3-14 m)
+                    double d = 3 + 11 * rng.NextDouble(), a = fa + (rng.NextDouble() - 0.5) * 2.1;
+                    double cx = pl.X + Math.Sin(a) * d, cz = pl.Z + Math.Cos(a) * d;
+                    bool walk = i % 2 == 1;
+                    at[i] = new[] { cx, cz, walk ? 2 + 2 * rng.NextDouble() : rng.NextDouble() * Math.PI * 2, rng.NextDouble() * Math.PI * 2, walk ? 1 : 0 };
+                    if (walk) views[i].Locomotion(1.3);
+                }
+            }
+            for (int i = 0; i < views.Count; i++)
+            {
+                var r = at[i];
+                double x = r[0], z = r[1], heading = r[2];
+                if (r[4] > 0)
+                {
+                    const double Speed = 1.3;
+                    double a = r[3] + t * Speed / r[2];
+                    x += r[2] * Math.Cos(a); z += r[2] * Math.Sin(a);
+                    heading = Math.Atan2(-Math.Sin(a), Math.Cos(a));
+                    views[i].Locomotion(Speed);
+                }
+                views[i].Place(x, game.scene.HeightAt(x, z), z, heading, true);
+            }
+        }
+    }
+
     void NpcShot()
     {
         if (Args.Get("npc") is not string arg || scene == null) return;
@@ -67,6 +141,26 @@ public partial class Game
                 v.Locomotion(Speed);
             }
             v.Place(x, game.scene.HeightAt(x, z), z, heading, true);
+            // (in her place, the close-up framed on its own head, not hers: a shorter NPC's head sat low in her frame,
+            // a taller one's took the camera inside it; the lift eased, as the bones settle in the first frames)
+            var nh = HeadOf(v);
+            var hh = game.scene.Player is { } h ? HeadOf(h) : null;
+            if (swap && nh is { } na && hh is { } hb) game.cam.AimLift = (float)Mathf.Lerp(game.cam.AimLift, na.Y - hb.Y, Math.Min(1, delta * 4));
+            if (nh is { } q && (int)(t * 2) != (int)((t - delta) * 2) && t > 6)
+                GD.Print($"npc shot {t:0.0}s: camera to its head {(q - c).Length():0.000} m, its head y {q.Y:0.000}, hers {hh?.Y ?? 0:0.000}, lift {game.cam.AimLift:0.000}");
+            if (Args.Has("npc-debug") && !dbg && t > 7)
+            {
+                dbg = true;
+                var sk = v.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().First();
+                int hb2 = sk.FindBone("Head");
+                GD.Print($"npc debug: Head pose {sk.GetBoneGlobalPose(hb2)}, rest {sk.GetBoneGlobalRest(hb2)}");
+                foreach (var mi in sk.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+                    GD.Print($"npc debug: mesh {mi.Name} visible {mi.IsVisibleInTree()} surfaces {mi.Mesh?.GetSurfaceCount()} aabb {mi.GetAabb()} skin {mi.Skin?.GetBindCount()} lod_bias {mi.LodBias} trans {mi.Transparency}");
+            }
         }
+
+        bool dbg;
+        static Vector3? HeadOf(Node n) => n.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().FirstOrDefault() is { } sk
+            && sk.FindBone("Head") is int b && b >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(b).Origin : null;
     }
 }

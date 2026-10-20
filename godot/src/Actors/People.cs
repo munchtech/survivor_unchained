@@ -1007,7 +1007,7 @@ public static class People
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
     /// strands, darker at the roots and deep in, with the long highlight
     /// across them.</summary>
-    static Material Hair(BaseMaterial3D src, Color colour)
+    internal static Material Hair(BaseMaterial3D src, Color colour)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
         hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
@@ -1354,6 +1354,29 @@ public static class People
                             if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
                             else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
                         }
+        return m;
+    }
+
+    /// <summary>A Marionette NPC's skin (NpcPackage): the game's skin shader (heroine_skin.gdshader: pores, light under
+    /// the skin, a soft sheen) on the package's own paint and relief, its paint its tone (no tint). Body and head take the
+    /// same rough, shine and light, so the neck's seam between the two maps has no step in sheen; pores shallower on the
+    /// body, as hers. A man's skin as his (HisSkin: rougher). Before 20 Oct the package kept its imported
+    /// StandardMaterial3D: a flat, plastic beige beside every other person in town.</summary>
+    public static Material NpcSkin(BaseMaterial3D src, Mesh mesh, bool woman)
+    {
+        var m = (ShaderMaterial)Skin(src, new Look(woman ? "female" : "male", System.Array.Empty<string>()), mesh, Colors.White, "npc");
+        m.ResourceName = src.ResourceName;
+        m.SetShaderParameter("rough", woman ? 0.55f : HisSkin.Rough);
+        if (src.RoughnessTexture != null)
+        {
+            // The package paints absolute roughness (about 0.35-0.75): the shader multiplies it into `rough`, so rough is
+            // the glTF factor (1.0 unless the package sets one), not the scalar guess above.
+            m.SetShaderParameter("rough_map", src.RoughnessTexture);
+            m.SetShaderParameter("rough_channel", (int)src.RoughnessTextureChannel);
+            m.SetShaderParameter("rough", src.Roughness);
+        }
+        m.SetShaderParameter("shine", woman ? 0.38f : HisSkin.Shine);
+        m.SetShaderParameter("scatter", HerScatter);
         return m;
     }
 
