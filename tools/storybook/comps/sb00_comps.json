@@ -172,7 +172,7 @@
       "prompt": "A storybook cross-section illustration, a painted cutaway of the earth under a small valley town at night. At the bottom, deep dark rock and, buried far down, a small ancient stone door with a faint pale light leaking around its edges. Thin threads of light rise slowly up through the dark rock, gravel and roots like sparks rising through water, pale at the bottom and warm orange-gold near the top, where they gather as many small glowing orange stones in the soil and in a riverbed. At the top, above the ground line: stone and timber houses where three roads meet, warm gold lamps in the windows, a hearth glowing through an open door, a market stall where one person hands coins to another for a small glowing stone, a cart of glowing stones on the road, a river at the right, dark hills, a night sky. Full-bleed, no border, no text."
     },
     {
-      "id": "p3", "comp_note": "Four dead in all: a hand rising from the glowing crack (left), a dead man standing (center-left), the one the Watchman puts down (center-right) and one already fallen empty (right).", "title": "The dead get up; first light (MASTER PLATE)", "at": 25.5, "until": 46.0,
+      "id": "p3", "comp_note": "Four dead in all: a hand rising from the glowing crack (left), a dead man standing (center-left), the one the Watchman puts down (center-right) and one already fallen empty (right). The speared man is dead: no breath, no beard, a slack blank face; he sags on the spear rather than recoiling. The breath plume comes from the Watchman, who drives one spear. The standing dead man has a blank, slack face, not a skull.", "title": "The dead get up; first light (MASTER PLATE)", "at": 25.5, "until": 46.0,
       "size": [5400, 2000], "gen": [2432, 896], "bg": "#06070a",
       "camera": [
         {"t": 0, "x": 1750, "y": 1180, "zoom": 1.12},
@@ -243,7 +243,7 @@
       "prompt": "A grim painted illustration, a wide frieze at night on a frosted field beside a road, low dark hills, a dark sky. Small orange embers glint in the frozen soil like coals in ash. Left: the frost has cracked open in a jagged line with orange light inside, and a dead man's hand is coming up out of the crack. Center-left: a dead man stands upright, slack and blank-faced, arms hanging, an orange light glowing inside him that shows at his mouth, his empty eye sockets and his wounds, like a lamp behind paper. Center-right: an old soldier with a gray beard in a slate blue-gray cloak and tabard, a round wooden shield on his arm and a small lamp on his belt, drives a spear into another standing dead man; orange light pours out of the wound and falls onto the frost as a scatter of small glowing stones; the old soldier's breath smokes in the cold. Right: a dead body lying dark and empty on the frost among a few glowing stones. Full-bleed, no border."
     },
     {
-      "id": "p4", "title": "Keepers and lamps", "at": 46.0, "until": 56.0,
+      "id": "p4", "comp_note": "Nothing stands in the water under the midstream lamp: it is held high in the mist with nothing visible holding it, well clear of the water. The Watchman tips his jug and pours oil into the post lamp.", "title": "Keepers and lamps", "at": 46.0, "until": 56.0,
       "size": [5800, 1800], "gen": [2496, 768], "bg": "#06070a",
       "camera": [
         {"t": 0, "x": 1650, "y": 950, "zoom": 1.05},
@@ -310,7 +310,7 @@
       "prompt": "A wide painted illustration of one river crossing at night, read left to right. Left: on the near bank four priests in plain undyed pale linen robes lift lamps that burn gold; in the middle of the river a single lamp is held high and clear of the water, whatever holds it hidden in a column of mist; beyond, the river winds away into dark hills past more crossings, each with one small high light. Center: the dark trunk of an old willow in the foreground. Right: years later, the same kind of crossing: an old soldier in a slate blue-gray cloak stands on a wooden ladder against a stone post and pours oil from a jug into an iron lamp on top of the post; the flame is yellow and smoky; the river below is dark and smooth with nothing over it. Full-bleed, no border."
     },
     {
-      "id": "p5", "title": "The Low Ford; the drowned", "at": 56.0, "until": 71.0,
+      "id": "p5", "comp_note": "Three black iron cages, each on top of one of three posts on the near bank, a cold blue flame inside; nothing on the far bank. The wagon lies on its side across the road. The close-up files need extra detail only where the opening frames look (the two small frames on the camera sheet); elsewhere the normal painting's detail is enough.", "title": "The Low Ford; the drowned", "at": 56.0, "until": 71.0,
       "size": [3600, 1900], "gen": [2048, 1088], "bg": "#05060a", "rest": [1800, 1000],
       "camera": [
         {"t": 0, "x": 1880, "y": 700, "zoom": 2.2, "dolly": 0.15},
@@ -380,7 +380,7 @@
       "prompt": "A grim painted illustration at night in winter, looking down a snowy road to a river ford. In the middle distance the river crosses the road: dark smooth water with ice at the edges and a line of flat stepping stones. On the near bank of the ford stand three new black iron cages on posts with cold blue flames burning inside them, their blue light reflected in the water; in the middle of the river a fourth bright blue light hangs just above the water, nothing visible holding it, rings spreading on the water under it. Bare winter trees on both sides. On the road a broken wagon lies on its side with one wheel in the air. In the ditches on both sides of the road stand rows of drowned dead people, wet, with river weed in their hair, all standing still and facing the road. Snow on the banks. Full-bleed, no border."
     },
     {
-      "id": "p6", "title": "The traveler", "at": 71.0, "until": 81.5,
+      "id": "p6", "comp_note": "One traveler only. The comp lacks the second moment: the same hooded traveler, seen from behind, kneels on the near bank at the water's edge, not in the water. Ignore the float in the river and the pair of lights at the road's end. The three blue lights are small lamps hanging low over the river upstream. No weapon.", "title": "The traveler", "at": 71.0, "until": 81.5,
       "size": [5000, 1900], "gen": [2304, 880], "bg": "#05060a",
       "camera": [
         {"t": 0, "x": 1650, "y": 1050, "zoom": 1.0},
