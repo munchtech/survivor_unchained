@@ -128,12 +128,14 @@ public class SheathTests
     }
 
     [Fact]
-    public void AStaffStaysInHerHandSoTheCallingsTownStandIsNotItsOwn()
+    public void TheStaffIsSlungOnHerBackSoTheCallingsTownStandServesIt()
     {
-        var have = new System.Collections.Generic.HashSet<string> { "idle_arcanist_town" };
-        Assert.False(Sheath.HasTown("arcanist", "staff", have.Contains));
-        Assert.True(Sheath.HasTown("arcanist", "wand", have.Contains));
-        foreach (var kind in new[] { "axe", "axes", "sword", "daggers", "crossbow", "sword+shield" })
+        // (Animation 45: the staff rode in her hand in town and kept her armed idle; now it has the back_staff socket.)
+        var have = new System.Collections.Generic.HashSet<string> { "idle_arcanist_town", "run_arcanist_town" };
+        foreach (var kind in new[] { "staff", "wand", "axe", "axes", "sword", "daggers", "crossbow", "sword+shield" })
             Assert.True(Sheath.HasTown("arcanist", kind, have.Contains), kind);
+        // Her town run: the staff has no own one, so the calling's.
+        Assert.Equal("run_arcanist_town", System.Array.Find(Sheath.Names("run", "arcanist", "staff", true), have.Contains));
+        Assert.Equal("run_arcanist_town", System.Array.Find(Sheath.Names("run", "arcanist", "wand", true), have.Contains));
     }
 }

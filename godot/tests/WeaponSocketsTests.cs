@@ -18,12 +18,15 @@ public class WeaponSocketsTests
     [InlineData(WeaponKind.Crossbow, "sling")]
     [InlineData(WeaponKind.Blade2H, "back_diag")]
     [InlineData(WeaponKind.Axe2H, "back_diag")]
+    [InlineData(WeaponKind.Staff, "back_staff")]
     public void KindsRideInTheirSockets(WeaponKind kind, string socket) => Assert.Equal(socket, WeaponSockets.SocketOf(kind));
 
     [Fact]
-    public void AStaffStaysInHand()
+    public void NoKindStaysInHand()
     {
-        Assert.Null(WeaponSockets.SocketOf(WeaponKind.Staff));
+        // The staff is slung on her back in town (animation 45); only None has no socket.
+        foreach (var k in System.Enum.GetValues<WeaponKind>())
+            if (k != WeaponKind.None) Assert.NotNull(WeaponSockets.SocketOf(k));
         Assert.Null(WeaponSockets.SocketOf(WeaponKind.None));
     }
 

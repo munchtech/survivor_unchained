@@ -315,6 +315,9 @@ public static class Arms
         // grip high on the right), the tip down toward her left hip, flat to her back.
         // (armor 5 solver, 19 October: the tip turned 11 degrees out from her back, off her calves.)
         [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.201f), new(0.281f, -0.944f, -0.185f), new(0.003f, 0.193f, -0.981f), new(0, 0, -1)),
+        // Staff (animation 45): slung across her back, the head (the piece's +Y) up behind her right shoulder, the foot
+        // down toward her left calf, flat to her back. `At` is the grip (no anchor_sheath).
+        [WeaponSockets.BackStaff] = new("spine_03", new(0.034f, 1.026f, -0.23f), new(-0.34f, 0.94f, 0), new(0, 0, -1), new(0, 0, -1)),
     };
 
     static WeaponSockets.Clearance? clearance;

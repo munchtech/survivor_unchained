@@ -14,10 +14,10 @@ public static class WeaponSockets
 {
     /// <summary>The named sockets (rows of Arms.Sockets, and the keys of the clearance file).</summary>
     public const string Back = "back", HipBlade = "hip_blade", HipLoop = "hip_loop", HipBelt = "hip_belt",
-        BeltBack = "belt_back", Sling = "sling", BackDiag = "back_diag";
-    public static readonly string[] All = { Back, HipBlade, HipLoop, HipBelt, BeltBack, Sling, BackDiag };
+        BeltBack = "belt_back", Sling = "sling", BackDiag = "back_diag", BackStaff = "back_staff";
+    public static readonly string[] All = { Back, HipBlade, HipLoop, HipBelt, BeltBack, Sling, BackDiag, BackStaff };
 
-    /// <summary>The socket a kind rides in sheathed; null if it stays in her hand (a staff is a walking staff).</summary>
+    /// <summary>The socket a kind rides in sheathed; null if it stays in her hand (none today: the staff is slung on her back).</summary>
     public static string? SocketOf(WeaponKind kind) => kind switch
     {
         WeaponKind.Shield => Back,
@@ -27,6 +27,7 @@ public static class WeaponSockets
         WeaponKind.Dagger => BeltBack,
         WeaponKind.Crossbow => Sling,
         WeaponKind.Blade2H or WeaponKind.Axe2H => BackDiag,
+        WeaponKind.Staff => BackStaff,
         _ => null,
     };
 
