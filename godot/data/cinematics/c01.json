@@ -37,8 +37,9 @@
       "id": "1",
       "type": "BLACK",
       "dur": 3.5,
+      "durs": [{"when": {"facts": ["sb00.ended"]}, "dur": 2.5}],
       "black": true,
-      "note": "The drowning, in sound only.",
+      "note": "The drowning, in sound only. After the storybook SB00 has played it (fact sb00.ended), the water is not heard again: 1.2 s of silence, then the drops (the shot is 2.5 s; its sounds are timed from its end).",
       "cues": [
         {"do": "place", "mark": "down", "heading": 3.1416},
         {"do": "hold", "slot": "all", "piece": null},
@@ -55,10 +56,10 @@
         {"do": "prints", "from": {"mark": "verge"}, "to": {"mark": "trail_in"}, "stride": 0.8},
         {"do": "prints", "from": {"mark": "trail_in"}, "to": [-9.0, 90.3], "stride": 0.8},
         {"do": "glow", "name": "tower", "where": {"abs": [3.0, 44.0, -260.0]}, "color": "#ffc870", "size": 0.7, "clear": true},
-        {"at": 0.15, "do": "sfx", "name": "water_close"},
-        {"at": 2.2, "do": "sfx", "name": "drip", "pan": -0.2},
-        {"at": 2.95, "do": "sfx", "name": "drip", "pan": -0.15},
-        {"at": 3.1, "do": "sfx", "name": "owl", "gain": 0.5, "pan": 0.7},
+        {"at": 0.15, "do": "sfx", "name": "water_close", "when": {"facts": ["!sb00.ended"]}},
+        {"at": "end-1.3", "do": "sfx", "name": "drip", "pan": -0.2},
+        {"at": "end-0.55", "do": "sfx", "name": "drip", "pan": -0.15},
+        {"at": "end-0.4", "do": "sfx", "name": "owl", "gain": 0.5, "pan": 0.7},
         {"do": "head", "amount": 0, "over": 0.1}
       ]
     },

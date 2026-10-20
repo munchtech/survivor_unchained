@@ -1,0 +1,114 @@
+{
+  "id": "test_plates",
+  "title": "The player's test plates",
+  "conversation": "sb_stay_where_they_reach",
+  "canvas": [3200, 1800],
+  "grain": 0.05, "vignette": 0.3,
+  "plates": [
+    {
+      "id": "a_parallax", "at": 0.0, "until": 9.0,
+      "note": "Five depths with ticks (parallax and a dolly), every touch, three particle systems, a mist band. The busy plate measured for the frame time.",
+      "in": {"kind": "ink", "dur": 1.6, "origin": [0.3, 0.6]},
+      "camera": [
+        {"t": 0, "x": 1600, "y": 900, "zoom": 1.0},
+        {"t": 4.5, "x": 1900, "y": 950, "zoom": 1.08, "dolly": 0.12},
+        {"t": 9, "x": 1450, "y": 1020, "zoom": 1.15, "dolly": 0.3, "rot": 1.2}
+      ],
+      "layers": [
+        {"id": "sky", "image": "res://art/storybook/test/sky.png", "z": 12},
+        {"id": "far", "image": "res://art/storybook/test/hills_far.png", "z": 5},
+        {"id": "wash", "image": "res://art/storybook/test/card_c.png", "z": 4, "blend": "screen", "opacity": 0.12},
+        {"id": "mist", "image": "res://art/storybook/test/mist.png", "z": 3, "pos": [-200, 820], "size": [3600, 380], "repeat": true, "opacity": 0.7,
+          "touch": [{"kind": "scroll", "speed": [40, 0]}]},
+        {"id": "mid", "image": "res://art/storybook/test/hills_mid.png", "z": 2.5},
+        {"id": "water", "image": "res://art/storybook/test/water.png", "z": 1.5, "pos": [0, 1180],
+          "touch": [{"kind": "water", "mask": "res://art/storybook/test/water_mask.png", "amp": 2.5, "freq": 1.4, "scale": 40},
+                    {"kind": "ripple", "centers": [[1600, 1330], [2300, 1400]], "start": 0.5, "period": 3.2, "speed": 70, "amp": 3, "rings": 3, "gap": 26, "reach": 320, "squash": 0.35, "light": 0.5}]},
+        {"id": "ground", "image": "res://art/storybook/test/ground.png", "z": 1},
+        {"id": "frost", "image": "res://art/storybook/test/frost.png", "z": 1, "pos": [300, 1450], "scale": 1,
+          "touch": [{"kind": "reveal", "map": "res://art/storybook/test/frost_order.png", "t0": 1.5, "t1": 6.0, "soft": 0.12}]},
+        {"id": "flame", "image": "res://art/storybook/test/flame.png", "z": 1, "pos": [2200, 820], "blend": "add",
+          "touch": [{"kind": "flicker", "rate": 7, "amount": 0.3, "seed": 2},
+                    {"kind": "sway", "mask": "res://art/storybook/test/flame_sway.png", "amp": 14, "freq": 0.8, "dir": [1, 0], "scale": 160}]},
+        {"id": "fore", "image": "res://art/storybook/test/fore.png", "z": 0.6}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "smoke", "at": [2400, 820], "area": [120, 30], "z": 1},
+        {"kind": "particles", "preset": "sparks", "at": [2400, 1340], "area": [80, 20], "z": 1, "burst": [2.0, 5.0], "count": 30},
+        {"kind": "particles", "preset": "motes", "at": [1600, 1500], "area": [2400, 300], "z": 1.2, "rate": 10},
+        {"kind": "mist", "rect": [0, 1250, 3200, 420], "z": 0.9, "color": "#b8c4cc", "density": 0.45, "speed": [30, 0], "scale": 300}
+      ],
+      "cues": [
+        {"at": 0.0, "do": "music", "mood": "night", "intensity": 0.3},
+        {"at": 0.3, "do": "say", "text": "Test plate A: five depths, every touch, three particle systems.", "dur": 3.0},
+        {"at": 1.0, "do": "sfx", "name": "drip"},
+        {"at": 3.5, "do": "line", "id": "legion", "tag": "An old Watchman"}
+      ]
+    },
+    {
+      "id": "b_light", "at": 8.0, "until": 14.5,
+      "note": "In by light (P0's lamp opening P1). A layer's own keys (offset, scale, turn), drawn key poses crossfaded, a grade moving.",
+      "in": {"kind": "light", "dur": 1.8, "origin": [0.62, 0.45]},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.05}, {"t": 6.5, "x": 1500, "y": 850, "zoom": 1.12, "ease": "linear"}],
+      "grade": [{"t": 0, "exposure": 1.0, "tint": "#ffffff", "sat": 1.0}, {"t": 5, "exposure": 0.75, "tint": "#ffd8b0", "sat": 0.6}],
+      "layers": [
+        {"id": "card", "image": "res://art/storybook/test/card_b.png", "z": 1},
+        {"id": "pose", "z": 0.8, "pos": [1400, 500], "pivot": [1600, 1140],
+          "frames": [{"t": 0, "image": "res://art/storybook/test/flame.png"}, {"t": 3.0, "image": "res://art/storybook/test/frost.png", "fade": 0.8}],
+          "keys": [{"t": 1.0, "dx": 0, "scale": 1, "rot": 0}, {"t": 5.0, "dx": 300, "dy": -60, "scale": 1.3, "rot": 8, "ease": "inout"}]},
+        {"id": "label", "color": "#000000", "label": "card layer: plate B, keys and frames", "size": [1400, 160], "pos": [80, 1580], "opacity": 0.6, "z": 1}
+      ],
+      "cues": [{"at": 0.2, "do": "sfx", "name": "owl", "gain": 0.6, "pan": 0.5}]
+    },
+    {
+      "id": "c_dissolve", "at": 14.0, "until": 18.0,
+      "in": {"kind": "dissolve", "dur": 1.0},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 2, "zoom": 1.1, "ease": "hold"}, {"t": 4, "zoom": 1.0}],
+      "layers": [{"id": "card", "image": "res://art/storybook/test/card_c.png", "z": 1,
+                  "touch": [{"kind": "sway", "amp": 6, "freq": 0.4, "dir": [0, 1], "scale": 400}]}]
+    },
+    {
+      "id": "d_fade", "at": 17.5, "until": 21.0,
+      "in": {"kind": "fade", "dur": 1.0, "color": "#000000"},
+      "camera": [{"t": 0, "x": 1600, "y": 1000, "zoom": 1.1}, {"t": 3.5, "y": 1100, "dolly": 0.15}],
+      "layers": [
+        {"id": "sky", "image": "res://art/storybook/test/sky.png", "z": 12},
+        {"id": "mid", "image": "res://art/storybook/test/hills_mid.png", "z": 2.5},
+        {"id": "water", "image": "res://art/storybook/test/water.png", "z": 1, "pos": [0, 1200],
+          "touch": [{"kind": "ripple", "centers": [[1600, 1350]], "start": 0.2, "period": 2.5, "speed": 90, "amp": 4, "rings": 4, "gap": 22, "reach": 500, "squash": 0.3, "light": 0.6}]}
+      ]
+    },
+    {
+      "id": "e_waterline", "at": 20.5, "until": 25.0,
+      "note": "Under the water: the line sweeps up, bubbles rise, the bus muffles.",
+      "in": {"kind": "waterline", "dur": 1.5, "wave": 0.03},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 4.5, "zoom": 1.06, "rot": -1.5}],
+      "layers": [{"id": "under", "image": "res://art/storybook/test/under.png", "z": 3}],
+      "fx": [
+        {"kind": "particles", "preset": "bubbles", "at": [1600, 1700], "area": [1400, 60], "z": 1, "rate": 30},
+        {"kind": "particles", "preset": "drips", "at": [800, 200], "area": [400, 10], "z": 1}
+      ],
+      "cues": [{"at": 0.0, "do": "bus", "lowpass": 500, "gain": -4, "over": 1.0}, {"at": 0.4, "do": "sfx", "name": "water_close"}]
+    },
+    {
+      "id": "f_cut", "at": 25.0, "until": 27.5,
+      "in": {"kind": "cut"},
+      "camera": [{"t": 0, "x": 1600, "y": 900}],
+      "layers": [{"id": "card", "image": "res://art/storybook/test/card_b.png", "z": 1}],
+      "cues": [{"at": 0.0, "do": "bus", "lowpass": 20000, "gain": 0, "over": 0.2}]
+    },
+    {
+      "id": "g_ink_map", "at": 27.0, "until": 32.0,
+      "in": {"kind": "ink", "dur": 2.0, "map": "res://art/storybook/test/ink_map.png", "soft": 0.1, "edge": "#0b0a09"},
+      "out": {"kind": "fade", "dur": 1.5},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 5, "x": 1700, "zoom": 1.05}],
+      "layers": [
+        {"id": "sky", "image": "res://art/storybook/test/sky.png", "z": 12},
+        {"id": "ground", "image": "res://art/storybook/test/ground.png", "z": 1}
+      ],
+      "cues": [{"at": 3.0, "do": "bus", "gain": -60, "lowpass": 300, "over": 2.0}]
+    }
+  ],
+  "cues": [{"at": 0.0, "do": "music", "mood": "silence"}],
+  "end": 33.0
+}

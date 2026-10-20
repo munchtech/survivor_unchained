@@ -1,0 +1,19 @@
+{
+ "defaults": {
+  "w": 1792,
+  "h": 1024,
+  "steps": 9
+ },
+ "jobs": [
+  {
+   "name": "p7_G2",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted loosely on a toned ground over a bold brush-ink drawing whose dark lines show through on the main contours: thick paint where the light falls, thin transparent dark glazes in the shadows, visible brush marks, strong chiaroscuro, realistic proportions, grim and serious. The Low Ford at night in winter: a wide shallow river crossing between low banks, snow on both banks, thin ice along the edges of the dark water, bare black trees behind. Three new cage lanterns of black unrusted iron stand on tall wooden posts, two on the near bank and one in the shallows, each burning with a cold pale-blue flame. In the middle of the river a fourth pale-blue light hangs in the air just above the water, its holder lost in its own glare. Rings spread on the black water under the fourth light. Nobody is in the picture. The cold pale blue is the only strong color; the rest is night, snow and black water.",
+   "seed": [
+    5,
+    31,
+    77,
+    101
+   ]
+  }
+ ]
+}

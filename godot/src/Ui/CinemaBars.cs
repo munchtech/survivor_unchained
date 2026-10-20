@@ -66,12 +66,13 @@ public partial class CinemaBars : CanvasLayer
     }
 
     /// <summary>A line under the picture for this long: the narrator's in italics,
-    /// unnamed; a sung line in italics under its singer's name.</summary>
-    public void Say(string text, string? speaker, double seconds, bool sung = false)
+    /// unnamed; a sung line in italics under its singer's name. `italics` says
+    /// so outright (the storybook's teller is unnamed but in roman).</summary>
+    public void Say(string text, string? speaker, double seconds, bool sung = false, bool? italics = null)
     {
         // The script's '/' marks where a long line breaks.
         words.Text = text.Replace(" / ", "\n").Replace("/", "\n");
-        words.AddThemeFontOverride("font", speaker == null || sung ? Style.TextItalic : Style.Text);
+        words.AddThemeFontOverride("font", italics ?? (speaker == null || sung) ? Style.TextItalic : Style.Text);
         who.Text = speaker?.ToUpperInvariant() ?? "";
         who.Visible = speaker != null;
         sayT = sayFull = seconds;
