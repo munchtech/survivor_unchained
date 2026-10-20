@@ -358,6 +358,8 @@ public static class Scatter
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("scatter-debug", 0f));
         mat.SetShaderParameter("warm_at", Ground.WarmAt(z));
+        mat.SetShaderParameter("night_dew", SurvivorUnchained.Args.Num("scatter-night-dew", 0.5f));
+        mat.SetShaderParameter("night_spec", SurvivorUnchained.Args.Num("ground-night-spec", 0.12f));
         var root = new Node3D { Name = "Scatter" };
         foreach (var ((ci, cj), bin) in bins)
         {

@@ -17,6 +17,9 @@ uniform vec4 warm_at[4];
 uniform float zone_size = 300.0;
 // 1: each piece lit white (measure_d.py counts what shows at the close-up: --scatter-debug 1).
 uniform int debug_view = 0;
+// The ground's dew and night specular (Ground.cs sets both from the terrain's switches).
+uniform float night_dew = 0.5;
+uniform float night_spec = 0.12;
 
 void fragment() {
 	vec3 alb = COLOR.rgb;
@@ -30,9 +33,13 @@ void fragment() {
 		float fl = min(dot(alb, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap);
 		alb = mix(alb, vec3(0.86, 0.93, 1.0) * fl, 0.8 * amount);
 	}
+	// Dew by night on the stones as on the ground under them (terrain.gdshader's night_dew and night_spec): dry
+	// pebbles a third lighter than the dewed road read as pale specks by moonlight (E3 G, night_04).
+	float night = ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0)) * (1.0 - COLOR.a);
+	alb *= 1.0 - night_dew * night;
 	ALBEDO = alb;
-	ROUGHNESS = mix(0.82, 0.9, COLOR.a);
-	SPECULAR = 0.3;
+	ROUGHNESS = mix(mix(0.82, 0.9, COLOR.a), 0.95, night * 0.6);
+	SPECULAR = mix(0.3, night_spec, night);
 	if (debug_view == 1) { ALBEDO = vec3(0.0); EMISSION = vec3(50.0); }
 
 	// The Flare's drain and frost (flare_world.gdshaderinc).

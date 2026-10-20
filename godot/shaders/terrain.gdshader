@@ -108,6 +108,12 @@ uniform float night_val = 0.7;
 uniform float setts_mud = 1.0;
 uniform float setts_reach = 1.5;
 uniform float setts_moss = 1.0;
+// E3 G: the mud collar at the foot of what stands (metres), and the mud's value.
+uniform float setts_collar = 0.45;
+uniform float mud_tone = 1.0;
+uniform float mud_sat = 1.5;
+// ... and its specular (the sky's sheen greyed the dark mud).
+uniform float mud_spec = 0.1;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -345,24 +351,43 @@ void fragment() {
 	// edge 0.3, its top 0.6-0.95. Near what stands the mud's level rises, ragged, so the joints widen and fill and the
 	// stones' edges (their low side first, by their tilt) are buried; some stones sunk (lower, darker, more buried), a
 	// few at the very foot gone (mud where they were). Not so far from a wall as from the well or a stall.
-	float rgm = texture(noise_tex, w * 1.7 + 0.43).r;
+	vec4 rg4 = texture(noise_tex, w * 1.7 + 0.43);
+	float rgm = rg4.r;
 	float hgt0 = hgt;
 	float wallish = step(nr.r - nr.g, 0.08);
-	float dn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (nM.a - 0.5) * 0.3;
+	float dn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (nM.a - 0.5) * 0.3 + (rg4.g - 0.5) * 0.6;
 	float mud_g = (1.0 - smoothstep(0.0, setts_reach * mix(1.0, 0.65, wallish), dn)) * w_setts * setts_mud;
-	float lost = step(st_sid, 0.1 + 0.2 * mud_g * mud_g) * step(0.3, mud_g);
-	float sunk = step(st_sid, 0.1 + 0.4 * mud_g) * step(0.1, mud_g) * (1.0 - lost);
-	float lvl = 0.13 + mud_g * mud_g * (0.42 + (rgm - 0.5) * 0.3) + mud_g * 0.06 + sunk * 0.18;
-	float mud_c = max(1.0 - smoothstep(lvl - 0.04, lvl + 0.03, hgt), lost) * step(0.001, mud_g);
-	// (sRGB 0.23, 0.185, 0.14: about 30% under the stones' value, and browner.)
-	vec3 mud_col = vec3(0.04, 0.025, 0.013) * (0.85 + 0.3 * rgm) * mv;
+	// (E3 G: the collar at the foot of all that stands, 0.3-0.6 m, broken by the 0.6 m noise: stones there buried to their
+	// tops, sunk or gone. The tile's height is read a mip or two down at the play camera, so the joints' 0.1 reads
+	// nearer 0.25 and the levels allow for it, with the edge widened by the height's own footprint.)
+	float col_d = nr.g * 2.0 + (rg4.g - 0.5) * 0.45 + (rg4.b - 0.5) * 0.25;
+	float collar = (1.0 - smoothstep(setts_collar * 0.6, setts_collar * 1.2, col_d)) * w_setts * setts_mud * mix(1.0, 0.5, wallish);
+	float lost = max(step(st_sid, 0.1 + 0.2 * mud_g * mud_g) * step(0.3, mud_g), step(st_sid, 0.35) * step(0.5, collar));
+	float sunk = max(step(st_sid, 0.1 + 0.4 * mud_g) * step(0.1, mud_g), step(st_sid, 0.6) * step(0.3, collar)) * (1.0 - lost);
+	float lvl = 0.2 + mud_g * mud_g * (0.2 + (rgm - 0.5) * 0.24) + mud_g * 0.06 + sunk * 0.18 + collar * (0.5 + (rg4.a - 0.5) * 0.3);
+	float hfw = fwidth(hgt) * 0.5;
+	float mud_c = max(1.0 - smoothstep(lvl - 0.04 - hfw, lvl + 0.03 + hfw, hgt), lost) * step(0.001, mud_g + collar);
+	// (E3 G: mud, not dark stone: about 30% under the stones' value, hue about 30 degrees and well over the stones'
+	// saturation (the town's grade greys the setts' own warmth by a third); wetter and darker in the joints and at the
+	// collar, a paler dried crust where it rides over a stone. sRGB about 0.26, 0.185, 0.11.)
+	float mdep = clamp((lvl - hgt) * 5.0, 0.0, 1.0);
+	vec3 mud_col = vec3(0.048, 0.034, 0.011) * mud_tone * mix(1.08, 0.78, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
+	// (A grain of its own at 5-20 cm: a flat sheet read as a decal. Not the tile's, whose stones showed through.)
+	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
+	mud_col *= 0.78 + 0.3 * mgr.r + 0.14 * mgr.g;
+	mud_col = max(mix(vec3(dot(mud_col, vec3(0.2126, 0.7152, 0.0722))), mud_col, mud_sat), 0.0);
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
 	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);
+	// A film of mud over the tops that poke through the collar.
+	albedo = mix(albedo, albedo * vec3(0.92, 0.85, 0.74), collar * (1.0 - mud_c) * 0.6);
 	albedo = mix(albedo, mud_col, mud_c);
-	rough = mix(rough, 0.8, mud_c);
+	rough = mix(rough, mix(0.85, 0.65, mdep * collar), mud_c);
 	n_w = normalize(mix(n_w, n_geo, mud_c * 0.85));
 	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
+	float dbg_mud_c = step(0.5, mud_c) * w_setts;
+	float mud_s = mud_c * w_setts;
+	float dbg_collar = step(0.5, collar);
 	float joint = w_setts * (1.0 - smoothstep(0.14, 0.26, hgt));
 	// Moss in the shaded joints, in patches, out of the wear lane.
 	float moss_k = joint * (1.0 - ex4.g) * smoothstep(0.45, 0.7, rgm * 0.6 + nF.a * 0.4) * (1.0 - nr.b) * setts_moss * (1.0 - mud_c);
@@ -505,6 +530,9 @@ void fragment() {
 		if (debug_view == 24) m = opn;
 		// 25 the setts' stones (tile height over a stone's edge, before the mud), for their sizes in the frame.
 		if (debug_view == 25) m = step(0.5, w_setts) * step(0.34, hgt0);
+		// 26 the setts' mud (E3 G).
+		if (debug_view == 26) m = dbg_mud_c;
+		if (debug_view == 27) m = dbg_collar;
 		ALBEDO = vec3(0.0);
 		EMISSION = vec3(step(0.5, m) * 50.0);
 	}
@@ -513,7 +541,7 @@ void fragment() {
 	AO_LIGHT_AFFECT = 0.25;
 	// By night the ground's sheen at the close camera's grazing angle read as snow on the road and pale smears at the
 	// tufts' feet (judge 1, E3 fix 10): the moonlit ground kept matte, the puddles still holding the sky.
-	SPECULAR = dbg_on ? 0.0 : mix(mix(0.35, night_spec, night), mirror, pud);
+	SPECULAR = dbg_on ? 0.0 : mix(mix(mix(0.35, mud_spec, mud_s), night_spec, night), mirror, pud);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 
 	// The Flare's drain, web, frost and scars (flare_world.gdshaderinc).
