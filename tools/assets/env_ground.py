@@ -435,8 +435,9 @@ P_STROKE_W = 0.065                  # their width (m): 2-3 to a stone
 # palette tweak toward the target's sunlit cream-grey: less red and a third less saturated, more and paler cream
 # stones, under a warm key. Round 3 was ((0.34, 30, 0.12, 0.300), (0.30, 35, 0.27, 0.298), (0.24, 41, 0.13, 0.348),
 # (0.12, 212, 0.08, 0.285)); the draws per stone are the same, so the layout doesn't move.)
-P_PALETTE = ((0.34, 38.0, 0.08, 0.310), (0.22, 36.0, 0.18, 0.298), (0.30, 44.0, 0.10, 0.372), (0.14, 214.0, 0.07, 0.296))
-P_VAL_SD = 0.16
+P_PALETTE = ((0.36, 38.0, 0.08, 0.310), (0.24, 36.0, 0.18, 0.298), (0.26, 44.0, 0.10, 0.350), (0.14, 214.0, 0.07, 0.296))
+# (Judge r2: the stones read as noise and the cream ones stayed bright in the shadows: half the spread, no cream outliers.)
+P_VAL_SD = 0.08
 
 
 def _pkey(key):

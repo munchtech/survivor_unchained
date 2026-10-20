@@ -22,6 +22,8 @@ SETS = {
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)
     "fordc": (NIGHT + ["--spots-clear", "--spots", "-7.5,87.5;0,-38;0,-37"], 3),
+    # (judge r2: the camp at the play camera, centred near the fire, the living held off)
+    "camp": (NIGHT + ["--spots-clear", "--spots", "-9.0,90.0;-8.0,91.5"], 2),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)
