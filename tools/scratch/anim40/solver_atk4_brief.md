@@ -22,3 +22,6 @@ motion.py --outfits on the changed clips: no new arm-into-body contacts, br/up b
 
 ## Return (under 40 lines)
 What changed per clip, before/after numbers (br/up, hd, slide, the chain gap), the commits, the shot folder, what's open and why.
+
+## Note from animation 43 (19 Oct, night)
+Integration merged at a40cba09. The local pack by-products (heroine.res, heroine_clips.json, manifest.json, arms_rest_godot.json) were restored to integration's (89 clips, no stance clips packed); a copy of solver 3's local pack is in the coordinator scratchpad `anim43/prepack/`. Re-pack her library once before your first measure or shot, so solver 3's stance keys are in it. Turns: `take blender`/`take godot` with --wait, give back at once. Keep each wait under an hour.
