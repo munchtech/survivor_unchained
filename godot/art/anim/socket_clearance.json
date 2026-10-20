@@ -2,7 +2,7 @@
  "warden": {
   "hip_blade": 0.0155,
   "hip_loop": 0.005,
-  "hip_belt": 0.0186,
+  "hip_belt": 0.0301,
   "sling": 0.0207,
   "belt_back": 0.0249,
   "back": 0.005,
@@ -11,7 +11,7 @@
  "arcanist": {
   "hip_blade": 0.016,
   "hip_loop": 0.005,
-  "hip_belt": 0.0144,
+  "hip_belt": 0.0116,
   "sling": 0.0108,
   "belt_back": 0.0106,
   "back": 0.005,
@@ -20,7 +20,7 @@
  "reaver": {
   "hip_blade": 0.0291,
   "hip_loop": 0.005,
-  "hip_belt": 0.0173,
+  "hip_belt": 0.023,
   "sling": 0.0185,
   "belt_back": 0.0187,
   "back": 0.005,
@@ -29,7 +29,7 @@
  "ranger": {
   "hip_blade": 0.015,
   "hip_loop": 0.005,
-  "hip_belt": 0.0122,
+  "hip_belt": 0.0195,
   "sling": 0.0115,
   "belt_back": 0.0132,
   "back": 0.005,
