@@ -371,6 +371,17 @@ public static class Arms
         return (name, RestOf(k.Bone).AffineInverse().Basis * n);
     }
 
+    /// <summary>A staff in her hand while she is sheathed (in town): a walking staff, slid down through her fist by
+    /// WeaponSockets.StaffWalk along the fist's line, so its butt reaches the ground (idle_arcanist_staff_town plants it).
+    /// Once per mount: drawing makes the mount anew (Hold).</summary>
+    public static void Walking(Node3D mount)
+    {
+        if (mount.HasMeta("walking") || mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D w) return;
+        mount.SetMeta("walking", true);
+        var d = WeaponSockets.FistDirR * -WeaponSockets.StaffWalk;
+        w.Position += mount.Transform.Basis.Inverse() * new Vector3(d.X, d.Y, d.Z);
+    }
+
     /// <summary>Mount a weapon at its sheathed socket (a sword with its scabbard), or null if it has none.</summary>
     public static Node3D? HoldSheathed(People.Person person, string id, bool left) => HoldSheathed(person.Skeleton, id, left, person.Calling);
 

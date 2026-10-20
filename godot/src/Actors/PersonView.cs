@@ -53,7 +53,12 @@ public partial class PersonView : Node3D, INpcView
         {
             if (!held.TryGetValue(slot, out var old)) continue;
             Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
-            if (now == null) continue;
+            if (now == null)
+            {
+                // (A staff stays in her hand: a walking staff in town.)
+                if (on && slot == "handslot.r" && Arms.KindOf(id) == WeaponKind.Staff) Arms.Walking(old);
+                continue;
+            }
             (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
             held[slot] = now;
         }
