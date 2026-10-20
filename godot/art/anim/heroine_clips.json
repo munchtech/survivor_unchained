@@ -192,6 +192,15 @@
 		"note": "keyed: struck from in front, onto her back, held",
 		"source": "keyed (tools/anim)"
 	},
+	"death_back_coals": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.200000002980232,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: C01's lying still, the left cheek down, face to the coals",
+		"source": "keyed (tools/anim)"
+	},
 	"exhale": {
 		"hold": true,
 		"layer": "gesture",
