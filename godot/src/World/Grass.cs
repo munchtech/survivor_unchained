@@ -74,7 +74,10 @@ public static class Grass
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/grass.gdshader") };
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
-        mat.SetShaderParameter("splat", ImageTexture.CreateFromImage(z.Splat));
+        // The paint as the ground draws it, and the road's mask: none on its made surface or in the ruts.
+        var paint = GroundPaint.Of(z);
+        mat.SetShaderParameter("splat", ImageTexture.CreateFromImage(paint.Splat));
+        mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         mat.SetShaderParameter("meadow_scale", 1f / meta.RootElement.GetProperty("layers")[0].GetProperty("metres").GetSingle());

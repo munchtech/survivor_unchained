@@ -67,12 +67,29 @@ public static class Ground
         }
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
-        var splat = ImageTexture.CreateFromImage(WithMips(z.Splat));
+        // The paint reconciled with the roads, and the road, wet and puddle mask (GroundPaint.cs).
+        var paint = GroundPaint.Of(z);
+        var splat = ImageTexture.CreateFromImage(WithMips(paint.Splat));
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("splat", splat);
+        mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
+        mat.SetShaderParameter("mask_texel", z.Size / paint.Mask.GetWidth());
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>("res://art/ground/normal.jpg"));
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>("res://art/ground/arh.jpg"));
+        // The setts' 2K variants: only where the paint lays setts (64 MB of VRAM otherwise idle).
+        bool setts = HasSetts(paint.Splat);
+        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_albedo.jpg" : "res://art/ground/albedo.jpg"));
+        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_normal.jpg" : "res://art/ground/normal.jpg"));
+        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_arh.jpg" : "res://art/ground/arh.jpg"));
+        // Picture switches for the sweeps (look bible 1f); the defaults are the chosen values.
+        mat.SetShaderParameter("h_amp", SurvivorUnchained.Args.Num("ground-h-amp", 1.0f));
+        mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
+        mat.SetShaderParameter("edge_k", SurvivorUnchained.Args.Num("ground-edge-k", 1.6f));
+        mat.SetShaderParameter("macro_amt", SurvivorUnchained.Args.Num("ground-macro", 1.0f));
+        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.07f));
+        mat.SetShaderParameter("wet_amt", SurvivorUnchained.Args.Num("ground-wet", 1.0f));
+        mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
         mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));
@@ -95,6 +112,14 @@ public static class Ground
         body.AddChild(new CollisionShape3D { Shape = shape, Scale = new Vector3(z.Step, 1, z.Step) });
         ground.AddChild(body);
         return ground;
+    }
+
+    /// <summary>Does the paint lay setts anywhere (its G over a third)?</summary>
+    static bool HasSetts(Image splat)
+    {
+        var d = splat.GetData();
+        for (int k = 1; k < d.Length; k += 4) if (d[k] > 85) return true;
+        return false;
     }
 
     static Image WithMips(Image img)

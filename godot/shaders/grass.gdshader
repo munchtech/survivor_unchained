@@ -10,6 +10,8 @@ render_mode cull_disabled, diffuse_burley, world_vertex_coords;
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform sampler2D splat : filter_linear_mipmap, repeat_disable;
+// GroundPaint.cs: R the road's made surface, G its ruts (black: no road).
+uniform sampler2D paint_mask : filter_linear, repeat_disable, hint_default_black;
 uniform sampler2DArray g_alb : source_color, filter_linear_mipmap, repeat_enable;
 uniform float meadow_scale = 0.5;
 uniform float zone_size = 290.0;
@@ -62,6 +64,9 @@ void vertex() {
 	float dens = (1.0 - smoothstep(0.12, 0.45, hard + (nz.g - 0.5) * 0.35))
 		* (1.0 - smoothstep(0.15, 0.8, sp.r + (nz.g - 0.5) * 0.35) * 0.85);
 	dens *= smoothstep(0.18, 0.5, nz.r + 0.22);
+	// None on a road's made surface or in its ruts; sparse on its centre strip (R about 0.5).
+	vec4 pm = textureLod(paint_mask, (wp + zone_size * 0.5) / zone_size, 0.0);
+	dens *= (1.0 - smoothstep(0.6, 0.8, pm.r)) * (1.0 - smoothstep(0.1, 0.4, pm.g));
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
 	float keep = step(h3, dens * density * edge);
