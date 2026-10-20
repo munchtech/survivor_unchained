@@ -3,6 +3,7 @@ usage: python staffcheck.py "<At>;<Shaft>;<Thick>"|old <clip> [<clip> ...] [--ou
 Rebuilds mage_staff@hand_r's sheathed mount (arms_local.json "sheathed", as Arms.Sheathed) from the row, pushed out
 along the row's normal (0,0,-1) by --clr (the outfit's back_staff clearance; default socket_clearance.json's
 back_diag for the outfit), and per clip prints the minimum over frames of:
+  head-back: the head to her upper back, shoulders and neck (skin and outfit)
   head:  the staff's head (points > 0.30 m up the shaft from the grip) to her head and neck skin, the hat (<outfit>.head.*)
          and the braid (heroine_hair_braid, rigid on her head bone: no physics), each
   foot:  the staff's foot (points < -0.55 m) to her calves and feet (skin) and boots
@@ -71,6 +72,7 @@ SK, GA, HA = b.kind == "skin", b.kind == "garment", b.kind == "hair"
 HAT = GA & np.char.startswith(b.piece.astype(str), f"{outfit}.head")
 HEADSK = SK & np.isin(vb, ["head", "neck_01", "neck_02"])
 CALF = SK & (np.char.startswith(vb.astype(str), "calf") | np.char.startswith(vb.astype(str), "foot") | np.char.startswith(vb.astype(str), "ball"))
+BACK = (SK | (GA & ~HAT)) & np.isin(vb, ["spine_02", "spine_03", "clavicle_l", "clavicle_r", "upperarm_l", "upperarm_r", "neck_01"])
 BOOT = GA & np.char.find(b.piece.astype(str), ".boots") >= 0
 FING = ("index", "middle", "ring", "pinky", "thumb")
 HAND = {s: np.array([n.endswith("_" + s) and (n.startswith("hand") or n.split("_")[0] in FING) for n in vb]) & SK for s in "lr"}
@@ -80,7 +82,7 @@ Grest = None
 for name in clips:
     clip = b.clip(name)
     Gs = b.frames(clip)
-    best = {k: (9e9, -1) for k in ("head-head", "head-hat", "head-braid", "foot-calf", "foot-boot", "hand l", "hand r", "staff-braid")}
+    best = {k: (9e9, -1) for k in ("head-head", "head-hat", "head-braid", "foot-calf", "foot-boot", "hand l", "hand r", "staff-braid", "head-back")}
     deep = (0.0, -1, "")
     for f in range(0, len(Gs), step):
         G = Gs[f]
@@ -99,6 +101,7 @@ for name in clips:
         if HA.any():
             upd("head-braid", th.query(P[HA])[0].min())
             upd("staff-braid", ta.query(P[HA])[0].min())
+        upd("head-back", th.query(P[BACK])[0].min())
         upd("foot-calf", tf.query(P[CALF])[0].min())
         if BOOT.any(): upd("foot-boot", tf.query(P[BOOT])[0].min())
         for s in "lr":
