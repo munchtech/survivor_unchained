@@ -78,6 +78,12 @@ public static class Grass
         var paint = GroundPaint.Of(z);
         mat.SetShaderParameter("splat", ImageTexture.CreateFromImage(paint.Splat));
         mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
+        mat.SetShaderParameter("expo_tex", paint.Exposure);
+        mat.SetShaderParameter("frost_tone", SurvivorUnchained.Args.Num("frost-tone", 1.7f));
+        mat.SetShaderParameter("frost_cap", SurvivorUnchained.Args.Num("frost-cap", 0.1f));
+        mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
+        mat.SetShaderParameter("meadow_amt", SurvivorUnchained.Args.Num("ground-meadow", 1f));
+        mat.SetShaderParameter("warm_at", Ground.WarmAt(z));
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         mat.SetShaderParameter("meadow_scale", 1f / meta.RootElement.GetProperty("layers")[0].GetProperty("metres").GetSingle());

@@ -43,10 +43,25 @@ uniform float h_depth = 0.08;
 // The paint's ramps: steeper than 1 narrows the edge.
 uniform float edge_k = 1.6;
 uniform float macro_amt = 1.0;
-uniform float rut_depth = 0.07;
+uniform float rut_depth = 0.035;
 uniform float wet_amt = 1.0;
-// 1: show the road mask (R road, G ruts, B wet) as the colour; 2: the paint.
+// 1: show the road mask (R road, G ruts, B wet) as the colour; 2: the paint; 3: the frost's exposure (R sky, G sun);
+// 4: the frost (red where it lies, blue where not: measure_b.py's mask).
 uniform int debug_view = 0;
+// Hoar frost (look bible 1f, "The trick" 5): GroundPaint's exposure (R the open sky, G the sun at the thaw's key),
+// the preset's amount and thaw (Atmosphere: x amount, y thaw), the rime's value, and how far down the heights it reaches.
+uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
+global uniform vec4 ground_frost;
+// The rime: the ground under it lifted by frost_tone, greyed and cooled, never past frost_cap (frost is never
+// the brightest thing at night: look bible 1c).
+uniform float frost_tone = 1.7;
+uniform float frost_cap = 0.1;
+uniform float frost_reach = 0.5;
+// The fires' warmth: no frost within z metres of (x, y); radius 0 is unused.
+uniform vec4 warm_at[4];
+// The meadow's three scales (look bible 1f): the land's lie and patches over 10-40 m, clumps and bare
+// ground over 1-5 m (0: as A left it).
+uniform float meadow_amt = 1.0;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -110,6 +125,10 @@ void fragment() {
 	float ws = clamp((sp.g - 0.5) * edge_k + 0.5 + (nM.g - 0.5) * 0.25, 0.0, 1.0) * step(0.02, sp.g);
 	float wb = clamp((sp.b - 0.5) * edge_k + 0.5 + (nM.r - 0.5) * 0.4, 0.0, 1.0) * step(0.02, sp.b);
 	float wm = clamp((sp.a - 0.5) * edge_k + 0.5 + (nM.g - 0.5) * 0.3, 0.0, 1.0) * step(0.02, sp.a);
+	// The meadow's bare patches (1-3 m, in loose drifts): trodden earth through the grass, as the grass leaves them.
+	// (noise_tex's channels are value noise of base period 4, 8, 16 and 64 a tile: nM's R about 4 m across, G 2 m, B 1 m.)
+	float bare = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
+	wd = max(wd, bare * (1.0 - step(0.02, sp.g)));
 	// The road's centre strip: sparse grass between the ruts.
 	float cen = smoothstep(0.84, 0.96, pm.r);
 	wd *= 1.0 - cen * 0.45;
@@ -152,6 +171,8 @@ void fragment() {
 	mat3 T[4];
 	float hs[4];
 	float best = -1.0;
+	// The strongest material's own place on its map, for the frost's local tops.
+	vec3 uv0 = vec3(0.0); vec2 dx0 = vec2(0.0), dy0 = vec2(0.0); int k0 = 0;
 	for (int s = 0; s < 4; s++) {
 		hs[s] = -9.0;
 		A[s] = vec4(0.0); Nn[s] = vec4(0.5, 0.5, 1.0, 1.0); H[s] = vec4(1.0, 1.0, 0.0, 1.0);
@@ -173,6 +194,7 @@ void fragment() {
 			a0 = mix(a0, a1, b); n0 = mix(n0, n1, b); h0 = mix(h0, h1, b);
 		}
 		A[s] = a0; Nn[s] = n0; H[s] = h0;
+		if (s == 0) { uv0 = vec3(k == SETTS ? uv : uv + off_a, ly); dx0 = dx; dy0 = dy; k0 = k; }
 		hs[s] = wv[s] + h0.b * h_amp;
 		best = max(best, hs[s]);
 	}
@@ -208,9 +230,23 @@ void fragment() {
 	// Macro: colour and value drift every 30-60 m, so a field is not one colour.
 	float mv = mix(1.0, 0.8 + 0.3 * nC.r + 0.08 * (nL.r - 0.5), macro_amt);
 	albedo *= mv;
+	vec4 ex4 = texture(expo_tex, zuv);
+	// The meadow over 10-40 m: damp lows greener and darker, rises and open patches gone to straw, worn
+	// stretches browner; then clumps over a metre or two, darker hearts and lighter crowns.
+	float low = ex4.b * 2.0 - 1.0;
+	float lush = clamp(smoothstep(0.08, 0.6, low + (nM.r - 0.5) * 0.3), 0.0, 1.0);
+	float dry = smoothstep(0.46, 0.72, nL.g * 0.5 + nC.r * 0.3 + nM.r * 0.2 + max(-low, 0.0) * 0.45) * (1.0 - lush);
+	float brown = smoothstep(0.55, 0.78, nL.b * 0.5 + nC.g * 0.5) * (1.0 - lush) * (1.0 - dry * 0.6);
+	float clump = nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2;
+	vec3 mm = albedo;
+	mm = mix(mm, mm * vec3(1.36, 1.14, 0.66) * 1.22, dry);
+	mm = mix(mm, mm * vec3(1.1, 0.93, 0.78) * 0.9, brown * 0.8);
+	mm = mix(mm, mm * vec3(0.76, 1.0, 0.78) * 0.68, lush);
+	mm *= (0.64 + 0.72 * clump) * mix(vec3(1.12, 1.0, 0.76), vec3(0.88, 1.04, 0.9), smoothstep(0.3, 0.7, clump));
 	vec3 straw = albedo * vec3(1.07, 1.03, 0.86);
 	vec3 green = albedo * vec3(0.95, 1.03, 0.94);
-	albedo = mix(albedo, mix(green, straw, smoothstep(0.3, 0.7, nC.g)), w_meadow * 0.6 * macro_amt);
+	vec3 old = mix(green, straw, smoothstep(0.3, 0.7, nC.g));
+	albedo = mix(albedo, mix(old, mm, meadow_amt), w_meadow * mix(0.6, 1.0, meadow_amt) * macro_amt);
 	// Setts: the world's own tone over the tile, so no two copies match.
 	albedo *= 1.0 + (nF.r - 0.5) * 0.22 * w_setts;
 
@@ -232,13 +268,43 @@ void fragment() {
 	// Wet: hollows, ruts, gutters. Damp grass darkens less than earth.
 	float wet = clamp(pm.b * wet_amt * (1.0 - w_meadow * 0.6) + rut * 0.35 * w_soft, 0.0, 1.0);
 	wet *= smoothstep(0.25, 0.55, 1.0 - hgt * 0.6 + (nF.a - 0.5) * 0.4);
-	albedo *= mix(1.0, 0.64, wet) * (1.0 - 0.38 * rut * w_soft);
+	// The ruts: two damp tracks, darker and smoother right across (the dip in the normal kept slight: at a low
+	// sun one wall lit and one dark read as a thin line, not a track).
+	float rut_w = smoothstep(0.05, 0.6, rut) * w_soft;
+	wet = max(wet, rut_w * 0.7 * wet_amt);
+	albedo *= mix(1.0, 0.64, wet) * (1.0 - 0.45 * rut_w);
 	rough = mix(rough, 0.72, wet * 0.6);
+	// (Not smoother: at the dawn's low sun a smoother rut took a sheen and read lighter than the road.)
+	rough = mix(rough, 0.8, rut_w * 0.5);
 	// Puddles: standing water in the deepest ruts and low corners, on earth, mud and stone.
 	float pud = smoothstep(0.6, 0.7, pm.a + (nF.b - 0.5) * 0.5 + (nM.a - 0.5) * 0.3 - hgt * 0.25) * w_soft * wet_amt;
 	albedo = mix(albedo, albedo * 0.45, pud);
 	rough = mix(rough, 0.05, pud);
 	n_w = normalize(mix(n_w, n_geo, pud * 0.9));
+
+	// Hoar frost: on the exposed tops (the heights' high parts, the road's verges and centre strip), less in the
+	// ruts, none in the wet or on standing water, none under a crown or the eaves; at dawn only in the shade.
+	float frost_k = 0.0;
+	if (ground_frost.x > 0.001) {
+		vec2 ex = ex4.rg;
+		float cover = ground_frost.x * ex.r * (1.0 - ground_frost.y * ex.g * 0.92) * smoothstep(0.6, 0.85, n_geo.y);
+		float verge = (1.0 - smoothstep(0.3, 0.7, pm.r)) * smoothstep(0.05, 0.4, sp.r);
+		// The tops: what stands above its own few centimetres around (the height a few mips up), so the rime
+		// lies on each clump, stone and crumb, never in blotches the size of the map's own swells.
+		float hb = (k0 == SETTS ? textureGrad(s_arh, uv0, dx0 * 5.0, dy0 * 5.0) : textureGrad(g_arh, uv0, dx0 * 5.0, dy0 * 5.0)).b;
+		// Bare earth holds the day's warmth longer than grass does; a fire's keeps it off.
+		cover *= mix(0.45, 1.0, w_meadow);
+		for (int i = 0; i < 4; i++) if (warm_at[i].z > 0.0) cover *= smoothstep(warm_at[i].z, warm_at[i].z + 2.5, length(w - warm_at[i].xy));
+		float top = 0.5 + (hgt - hb) * 2.2 + cen * 0.12 + verge * 0.06 - rut * w_soft * 0.35;
+		float thr = mix(1.0, 1.0 - frost_reach, cover);
+		float fr = smoothstep(thr - 0.1, thr + 0.12, top) * smoothstep(0.02, 0.2, cover);
+		fr *= (1.0 - smoothstep(0.12, 0.4, wet)) * (1.0 - pud);
+		frost_k = fr * mix(0.8, 0.5, w_soft);
+		float fl = min(dot(albedo, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap);
+		albedo = mix(albedo, vec3(0.86, 0.93, 1.0) * fl, fr * mix(0.8, 0.5, w_soft));
+		rough = mix(rough, 0.88, fr);
+		n_w = normalize(mix(n_w, n_geo, fr * 0.3));
+	}
 
 	// Blight: dead ground veined with sick light.
 	float vein = 1.0 - abs(nM.g * 2.0 - 1.0);
@@ -250,6 +316,8 @@ void fragment() {
 	ALBEDO = albedo;
 	if (debug_view == 1) ALBEDO = pm.rgb;
 	if (debug_view == 2) ALBEDO = sp.rgb;
+	if (debug_view == 4) ALBEDO = vec3(frost_k, 0.0, 1.0 - frost_k);
+	if (debug_view == 3) ALBEDO = vec3(texture(expo_tex, zuv).rg, 0.0);
 	ROUGHNESS = clamp(rough, 0.04, 1.0);
 	AO = mix(1.0, ao, 0.85);
 	AO_LIGHT_AFFECT = 0.25;

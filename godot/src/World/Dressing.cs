@@ -54,6 +54,21 @@ public static class Dressing
         return list;
     }
 
+    /// <summary>A flora piece's bounds as it stands (its meshes where they sit in it; a scan's first
+    /// variant): GroundPaint reads its crown from it, for the frost's sky exposure.</summary>
+    public static Aabb BoundsOf(string piece)
+    {
+        var list = piece.StartsWith("scan:") ? VariantsOf(piece[5..]) : PartsOf("nature", piece);
+        Aabb? b = null;
+        foreach (var (mesh, local) in list)
+        {
+            var a = local * mesh.GetAabb();
+            b = b is Aabb o ? o.Merge(a) : a;
+            if (piece.StartsWith("scan:")) break;
+        }
+        return b ?? new Aabb();
+    }
+
     static readonly Dictionary<string, Mesh> looked = new();
 
     /// <summary>A piece's mesh with its kind's look (KitLook): one copy per

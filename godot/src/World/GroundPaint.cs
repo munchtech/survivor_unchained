@@ -24,16 +24,31 @@ public sealed class GroundPaint
 {
     public readonly Image Splat;
     public readonly Image Mask;
+    /// <summary>The frost's exposure (look bible 1f, "The trick" 5) and the meadow's lows, RGBA8 over the zone at a
+    /// quarter metre: R the open sky (0 under a crown, by a wall and under its eaves; 1 in the open; blurred about a
+    /// metre), G the sun on the ground for the thaw (0 in the shade of a crown or a wall at the key's angle; baked by
+    /// SunAt), B the lie of the land over 10-40 m (0.5 level; up to 1 in a damp low, down to 0 on a dry rise).</summary>
+    public readonly ImageTexture Exposure;
 
     static readonly ConditionalWeakTable<ZoneData, GroundPaint> Made = new();
+    static GroundPaint? latest;
+    static Vector3? sun;
 
-    public static GroundPaint Of(ZoneData z) => Made.GetValue(z, k => new GroundPaint(k));
+    public static GroundPaint Of(ZoneData z) => latest = Made.GetValue(z, k => new GroundPaint(k));
+
+    /// <summary>The thaw's sun (toward the light): the latest zone's sun on the ground is baked for it.</summary>
+    public static void SunAt(Vector3 dir)
+    {
+        if (dir.Y < 0.05f || sun is Vector3 was && was.AngleTo(dir) < 0.02f) return;
+        sun = dir;
+        latest?.BakeSun(dir);
+    }
 
     // Tunable from the command line for sweeps (SurvivorUnchained.Args).
     static readonly float RoadHalf = Args.Num("road-half", 1.55f);      // the made surface, half its width
     static readonly float VergeW = Args.Num("road-verge", 1.5f);        // trodden earth beyond it
     static readonly float RutOff = Args.Num("road-rut-off", 0.75f);     // each rut from the centre
-    static readonly float RutW = Args.Num("road-rut-w", 0.2f);          // a rut's half width
+    static readonly float RutW = Args.Num("road-rut-w", 0.26f);          // a rut's half width
 
     GroundPaint(ZoneData z)
     {
@@ -100,6 +115,7 @@ public sealed class GroundPaint
                 int c = j * n + i;
                 lap[c] = (h[c - 1] + h[c + 1] + h[c - n] + h[c + n] - 4 * h[c]) / (st * st);
             }
+        var lap0 = lap;
         lap = Blur(Blur(lap, n, 2), n, 2);
 
         // The gutters: wall and building bases.
@@ -202,12 +218,138 @@ public sealed class GroundPaint
                 px[k * 4 + 3] = (byte)(Mathf.Clamp(a, 0, 1) * 255);
             }
         Splat = Image.CreateFromData(sr, sr, false, Image.Format.Rgba8, px);
+
+        // The sky over the ground: what stands over it (the flora's crowns, from their own meshes) and the walls.
+        er = Math.Min(1536, (int)Math.Ceiling(size / 0.25f));
+        et = size / er;
+        this.half = half;
+        foreach (var g in z.Flora)
+        {
+            if (g.Kind is "rock" or "boulder" or "cliff" or "pebble") continue;
+            var b = Dressing.BoundsOf(g.Piece);
+            foreach (var t in g.At)
+            {
+                float sc = t.Basis.Column0.Length(), top = b.End.Y * sc;
+                if (top < 1.4f) continue;
+                float r = 0.5f * Math.Max(b.Size.X, b.Size.Z) * sc * 0.85f;
+                float k = g.Kind == "dead" ? 0.4f : top < 2.6f ? 0.7f : 0.95f;
+                var c = new Vector2(t.Origin.X + b.GetCenter().X * sc, t.Origin.Z + b.GetCenter().Z * sc);
+                shelters.Add((c, r, Math.Max(top * 0.3f, 0.8f), top, k));
+            }
+        }
+        walls = boxes;
+        var sky = new float[er * er];
+        Array.Fill(sky, 1f);
+        foreach (var (c, r, _, _, k) in shelters)
+            Stamp(sky, c, c, r, k);
+        foreach (var c in walls)
+        {
+            float rr = (float)Math.Sqrt(c.Hw * c.Hw + c.Hd * c.Hd) + 2.4f;
+            int i0 = Math.Max(0, (int)(((float)c.X - rr + half) / et)), i1 = Math.Min(er - 1, (int)(((float)c.X + rr + half) / et));
+            int j0 = Math.Max(0, (int)(((float)c.Z - rr + half) / et)), j1 = Math.Min(er - 1, (int)(((float)c.Z + rr + half) / et));
+            for (int j = j0; j <= j1; j++)
+                for (int i = i0; i <= i1; i++)
+                {
+                    float o = BoxOut(c, -half + (i + 0.5f) * et, -half + (j + 0.5f) * et);
+                    sky[j * er + i] *= Mathf.SmoothStep(0.25f, 2.2f, o);
+                }
+        }
+        skyBlur = Blur(Blur(sky, er, 2), er, 2);
+        // The lie of the land: the heights' curvature over tens of metres, scaled by its own spread.
+        var lows = Blur(Blur(Blur(lap0, n, 5), n, 5), n, 5);
+        double ss = 0;
+        foreach (var v in lows) ss += v * v;
+        float sd = (float)Math.Sqrt(ss / lows.Length) + 1e-6f;
+        lie = new byte[er * er];
+        for (int j = 0; j < er; j++)
+            for (int i = 0; i < er; i++)
+                lie[j * er + i] = (byte)(Mathf.Clamp(0.5f + Sample(lows, n, st, half, -half + (i + 0.5f) * et, -half + (j + 0.5f) * et) / (3f * sd), 0, 1) * 255);
+        Exposure = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(null)));
+        if (sun is Vector3 sdir) BakeSun(sdir);
         // --ground-dump DIR: both as PNGs, to check them by eye.
         if (Args.Get("ground-dump") is { } dumpDir)
         {
             Mask.SavePng($"{dumpDir}/{z.Id}_mask.png");
             Splat.SavePng($"{dumpDir}/{z.Id}_splat.png");
+            Exposure.GetImage().SavePng($"{dumpDir}/{z.Id}_exposure.png");
         }
+    }
+
+    readonly int er;
+    readonly float et, half;
+    readonly float[] skyBlur = Array.Empty<float>();
+    readonly byte[] lie = Array.Empty<byte>();
+    readonly List<(Vector2 C, float R, float Lo, float Hi, float K)> shelters = new();
+    readonly List<ColliderDef> walls = new();
+    /// <summary>How tall a wall stands, for its shadow at the thaw's sun (the colliders carry no height).</summary>
+    const float WallH = 3.5f;
+
+    /// <summary>The sun on the ground for a key toward `dir`: a crown shades the ground where the ray to the sun
+    /// passes through it (a capsule from the crown along the shadow), a wall where it passes under its top.</summary>
+    void BakeSun(Vector3 dir)
+    {
+        var lit = new float[er * er];
+        Array.Fill(lit, 1f);
+        var s = new Vector2(dir.X, dir.Z) / dir.Y;
+        foreach (var (c, r, lo, hi, k) in shelters)
+            Stamp(lit, c - s * hi, c - s * lo, r, k);
+        foreach (var c in walls)
+        {
+            float rr = (float)Math.Sqrt(c.Hw * c.Hw + c.Hd * c.Hd);
+            Vector2 a = new((float)c.X, (float)c.Z), b = a - s * WallH;
+            int i0 = Math.Max(0, (int)((Math.Min(a.X, b.X) - rr + half) / et)), i1 = Math.Min(er - 1, (int)((Math.Max(a.X, b.X) + rr + half) / et));
+            int j0 = Math.Max(0, (int)((Math.Min(a.Y, b.Y) - rr + half) / et)), j1 = Math.Min(er - 1, (int)((Math.Max(a.Y, b.Y) + rr + half) / et));
+            for (int j = j0; j <= j1; j++)
+                for (int i = i0; i <= i1; i++)
+                {
+                    float x = -half + (i + 0.5f) * et, zz = -half + (j + 0.5f) * et;
+                    for (float h = 0.25f; h <= WallH; h += 0.25f)
+                        if (BoxOut(c, x + s.X * h, zz + s.Y * h) <= 0) { lit[j * er + i] = 0; break; }
+                }
+        }
+        lit = Blur(Blur(lit, er, 1), er, 1);
+        Exposure.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(lit)));
+    }
+
+    byte[] Pack(float[]? lit)
+    {
+        var ex = new byte[er * er * 4];
+        for (int k = 0; k < er * er; k++)
+        {
+            ex[k * 4] = (byte)(Mathf.Clamp(skyBlur[k], 0, 1) * 255);
+            ex[k * 4 + 1] = lit == null ? (byte)255 : (byte)(Mathf.Clamp(lit[k], 0, 1) * 255);
+            ex[k * 4 + 2] = lie[k];
+            ex[k * 4 + 3] = 255;
+        }
+        return ex;
+    }
+
+    /// <summary>Takes a share k off `g` within r of the segment a-b (a crown, or its shadow), soft at its rim.</summary>
+    void Stamp(float[] g, Vector2 a, Vector2 b, float r, float k)
+    {
+        float rr = r * 1.15f;
+        int i0 = Math.Max(0, (int)((Math.Min(a.X, b.X) - rr + half) / et)), i1 = Math.Min(er - 1, (int)((Math.Max(a.X, b.X) + rr + half) / et));
+        int j0 = Math.Max(0, (int)((Math.Min(a.Y, b.Y) - rr + half) / et)), j1 = Math.Min(er - 1, (int)((Math.Max(a.Y, b.Y) + rr + half) / et));
+        Vector2 ab = b - a;
+        float l2 = Math.Max(ab.LengthSquared(), 1e-6f);
+        for (int j = j0; j <= j1; j++)
+            for (int i = i0; i <= i1; i++)
+            {
+                var p = new Vector2(-half + (i + 0.5f) * et, -half + (j + 0.5f) * et);
+                float t = Math.Clamp((p - a).Dot(ab) / l2, 0, 1);
+                float d = (p - a - ab * t).Length();
+                if (d >= rr) continue;
+                g[j * er + i] *= 1f - k * (1f - Mathf.SmoothStep(0.55f * r, 1.15f * r, d));
+            }
+    }
+
+    /// <summary>How far (x, z) lies outside a box collider (0 or less: inside).</summary>
+    static float BoxOut(ColliderDef c, float x, float z)
+    {
+        double cos = Math.Cos(-c.Rot), sin = Math.Sin(-c.Rot), dx = x - c.X, dz = z - c.Z;
+        double lx = Math.Abs(dx * cos - dz * sin) - c.Hw, lz = Math.Abs(dx * sin + dz * cos) - c.Hd;
+        if (lx < 0 && lz < 0) return (float)Math.Max(lx, lz);
+        return (float)Math.Sqrt(Math.Max(lx, 0) * Math.Max(lx, 0) + Math.Max(lz, 0) * Math.Max(lz, 0));
     }
 
     static float Sample(float[] g, int n, float st, float half, float x, float z)

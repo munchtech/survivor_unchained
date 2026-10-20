@@ -103,6 +103,7 @@ public static class Atmospheres
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.5, Rim = "#9fc0ff", RimStrength = 0.75,
         Grade = PlayNightGrade, Haze = 0.006, Mist = 0.14, MistColor = "#2c3a50", Ember = 2.2,
         CrowdRim = 0.2, RiverLight = 0.17, RiverSky = 0.3, RiverBend = 0.5,
+        Frost = 1,
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.0, 1.0, 1.0],
@@ -121,13 +122,14 @@ public static class Atmospheres
         HemiSky = "#6f8fd8", HemiGround = "#2c3446", HemiIntensity = 0.9, EnvIntensity = 0.7,
         FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
         Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05, Ember = 0.5,
+        Frost = 0.5, FrostThaw = 1,
     };
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
     /// (azimuth -10, so the day's arc runs on through the day's 290 to dusk's 200 without crossing the camera).</summary>
     public static readonly AtmospherePreset WaystationDawn = LowFordDawn with
     {
-        KeyElevation = 14, KeyAzimuth = -10, Haze = 0.003,
+        KeyElevation = 14, KeyAzimuth = -10, Haze = 0.003, Frost = 0, FrostThaw = 0,
     };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.01, 1.0, 0.99],
@@ -187,6 +189,7 @@ public static class Atmospheres
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
+            Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
         };
 
     /* ------------------------------------------------------------ colour -- */

@@ -33,12 +33,24 @@ uniform float span = 80.0;
 uniform sampler2D heights : filter_linear, repeat_disable;
 uniform float h_size = 290.0;
 uniform float h_res = 256.0;
+// Hoar frost on the tips (GroundPaint's exposure; Atmosphere's amount and thaw), as the ground's.
+uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
+global uniform vec4 ground_frost;
+// The rime: the ground under it lifted by frost_tone, greyed and cooled, never past frost_cap (frost is never
+// the brightest thing at night: look bible 1c).
+uniform float frost_tone = 1.7;
+uniform float frost_cap = 0.1;
+uniform vec4 warm_at[4];
+uniform float meadow_amt = 1.0;
+// 4: the frost as the ground's debug_view 4 shows it.
+uniform int debug_view = 0;
 // Where nothing grows (a fire's pit): x, z and radius; radius 0 is unused.
 uniform vec4 bare_at[4];
 
 varying float v_t;
 varying vec3 v_tint;
 varying float v_dry;
+varying float v_frost;
 
 float gh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
@@ -64,6 +76,13 @@ void vertex() {
 	float dens = (1.0 - smoothstep(0.12, 0.45, hard + (nz.g - 0.5) * 0.35))
 		* (1.0 - smoothstep(0.15, 0.8, sp.r + (nz.g - 0.5) * 0.35) * 0.85);
 	dens *= smoothstep(0.18, 0.5, nz.r + 0.22);
+	// The ground's bare patches and its clumps (terrain.gdshader, the same noise): tufts gather in clumps
+	// a metre or two across, with gaps between.
+	vec4 nF = texture(noise_tex, wp * 0.29 + 0.71), nM = texture(noise_tex, wp * 0.061 + 0.37);
+	vec4 nC = texture(noise_tex, wp * 0.0213 + 0.13), nL = texture(noise_tex, wp * 0.011);
+	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
+	float clump = nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2;
+	dens *= (1.0 - bare_p) * mix(1.0, mix(0.3, 1.3, smoothstep(0.32, 0.68, clump)), meadow_amt);
 	// None on a road's made surface (R 0.8) or in its ruts; sparse on its centre strip (R to 1).
 	vec4 pm = textureLod(paint_mask, (wp + zone_size * 0.5) / zone_size, 0.0);
 	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));
@@ -72,7 +91,7 @@ void vertex() {
 	float keep = step(h3, dens * density * edge);
 	for (int i = 0; i < 4; i++) keep *= step(bare_at[i].z, length(wp - bare_at[i].xy));
 	// Shorter than a meadow: the fight is read through it from above.
-	float hgt = mix(0.22, 0.5, nz.b) * (0.75 + 0.5 * h4) * keep;
+	float hgt = mix(0.22, 0.5, nz.b) * (0.75 + 0.5 * h4) * mix(1.0, 0.7 + 0.6 * smoothstep(0.3, 0.7, clump), meadow_amt) * keep;
 	float wid = (0.85 + 0.4 * h1) * keep;
 	float t = clamp(off.y / 1.2, 0.0, 1.0);
 	v_t = t;
@@ -96,7 +115,24 @@ void vertex() {
 	g *= 0.8 + 0.2 * texture(noise_tex, wp * 0.011).r;
 	// Each blade its own shade; patches gone to straw over tens of metres.
 	v_tint = g * tint * tone * (0.78 + 0.4 * UV2.x) * (0.9 + 0.25 * h4);
+	// The frost on this tuft: the sky over it, thawed in the sun at dawn, each tuft its own.
+	v_frost = 0.0;
+	if (ground_frost.x > 0.001) {
+		vec2 ex = textureLod(expo_tex, (wp + zone_size * 0.5) / zone_size, 0.0).rg;
+		v_frost = ground_frost.x * ex.r * (1.0 - ground_frost.y * ex.g * 0.92) * (0.6 + 0.4 * h1);
+		for (int i = 0; i < 4; i++) if (warm_at[i].z > 0.0) v_frost *= smoothstep(warm_at[i].z, warm_at[i].z + 2.5, length(wp - warm_at[i].xy));
+	}
 	v_dry = clamp(smoothstep(0.45, 0.75, texture(noise_tex, wp * 0.02 + 5.3).g) * (0.6 + 0.4 * h1) + straw_bias, 0.0, 1.0);
+	// The ground's lie under it (terrain.gdshader): straw on the rises, damp green in the lows, browner
+	// where worn, so tuft and ground agree and the tufts read lighter than the ground at their crowns.
+	vec4 ex4 = textureLod(expo_tex, (wp + zone_size * 0.5) / zone_size, 0.0);
+	float low = ex4.b * 2.0 - 1.0;
+	float lush = clamp(smoothstep(0.08, 0.6, low + (nM.r - 0.5) * 0.3), 0.0, 1.0);
+	float dry = smoothstep(0.46, 0.72, nL.g * 0.5 + nC.r * 0.3 + nM.r * 0.2 + max(-low, 0.0) * 0.45) * (1.0 - lush);
+	v_tint *= mix(vec3(1.0), vec3(0.8, 1.02, 0.8) * 0.8, lush * meadow_amt);
+	float brown = smoothstep(0.55, 0.78, nL.b * 0.5 + nC.g * 0.5) * (1.0 - lush) * (1.0 - dry * 0.6);
+	v_tint *= mix(vec3(1.0), (0.64 + 0.72 * clump) * mix(vec3(1.12, 1.0, 0.76), vec3(0.88, 1.04, 0.9), smoothstep(0.3, 0.7, clump)) * mix(vec3(1.0), vec3(1.1, 0.93, 0.78) * 0.9, brown * 0.8), meadow_amt);
+	v_dry = mix(v_dry, clamp(dry * (0.7 + 0.5 * h1) + straw_bias, 0.0, 1.0), meadow_amt);
 }
 
 void fragment() {
@@ -108,7 +144,11 @@ void fragment() {
 	// Straw: dry grass, paler and warmer, toward the tip most.
 	vec3 straw = straw_color * mix(0.4, 1.0, t);
 	gb = mix(gb, straw, v_dry * straw_mix);
-	ALBEDO = gb;
+	// Rime on the tips: down the blade as far as the night's cold reaches.
+	float fr = v_frost * smoothstep(mix(1.0, 0.35, v_frost), 1.0, t);
+	float fl = min(dot(gb, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap);
+	gb = mix(gb, vec3(0.86, 0.93, 1.0) * fl, fr * 0.8);
+	ALBEDO = debug_view == 4 ? vec3(fr * 0.8, 0.0, 1.0 - fr * 0.8) : gb;
 	// Both faces of a blade take the ground's normal: lit as the meadow is,
 	// not half of it from below.
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);

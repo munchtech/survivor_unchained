@@ -87,9 +87,15 @@ public static class Ground
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
         mat.SetShaderParameter("edge_k", SurvivorUnchained.Args.Num("ground-edge-k", 1.6f));
         mat.SetShaderParameter("macro_amt", SurvivorUnchained.Args.Num("ground-macro", 1.0f));
-        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.07f));
+        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.035f));
         mat.SetShaderParameter("wet_amt", SurvivorUnchained.Args.Num("ground-wet", 1.0f));
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
+        mat.SetShaderParameter("expo_tex", paint.Exposure);
+        mat.SetShaderParameter("frost_tone", SurvivorUnchained.Args.Num("frost-tone", 1.7f));
+        mat.SetShaderParameter("frost_cap", SurvivorUnchained.Args.Num("frost-cap", 0.1f));
+        mat.SetShaderParameter("frost_reach", SurvivorUnchained.Args.Num("frost-reach", 0.5f));
+        mat.SetShaderParameter("meadow_amt", SurvivorUnchained.Args.Num("ground-meadow", 1f));
+        mat.SetShaderParameter("warm_at", WarmAt(z));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
         mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));
@@ -99,6 +105,18 @@ public static class Ground
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
         return Finish(z, mesh);
+    }
+
+    /// <summary>The fires' warmth, where no frost lies: (x, z, radius), four at most.</summary>
+    public static Vector4[] WarmAt(ZoneData z)
+    {
+        var w = new Vector4[4];
+        for (int i = 0; i < Mathf.Min(4, z.Meta.Fires.Count); i++)
+        {
+            var f = z.Meta.Fires[i];
+            w[i] = new Vector4((float)f.X, (float)f.Z, 2.5f + 2f * (float)f.Size, 0);
+        }
+        return w;
     }
 
     static MeshInstance3D Finish(ZoneData z, ArrayMesh mesh)
