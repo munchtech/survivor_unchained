@@ -1,0 +1,3 @@
+keegan_c0|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 8 --npc def.keegan:swap
+keegan_c1|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 13.5 --npc def.keegan:swap
+keegan_c2|--quick warden --sex female --nohud --zone waystation --time day --seed 1 --idle-after 1 --close 1 --seconds 19 --npc def.keegan:swap

@@ -89,7 +89,9 @@ FOLK_RELAXED = {"bends": {"index": [20, 22, 12], "middle": [27, 30, 15], "ring":
                 "spreads": {"index": -7.0, "middle": 0.0, "ring": 8.0, "pinky": 22.0}}
 
 STANDS = {
-    "idle_armed": dict(r=SWORD_R, l=FREE_L, weapon="sword", f=dict(fingers_l=FOLK_RELAXED)),
+    # (A woman's free arm and hand are the capture's own, unlayered: on Wenna's narrow corset waist the free_arms rest
+    # held the arm out in an A-frame and the fingers read straight (judge folk 2); the unarmed folk's, which pass.)
+    "idle_armed": dict(r=SWORD_R, l=FREE_L, weapon="sword", f=dict(l=None)),
     "idle_2h": dict(r=SHOULDER_R, l=FREE_L, weapon=""),
 }
 
@@ -100,7 +102,8 @@ def make_stand(name, rig, base: Clip, stand=None) -> Clip:
     sex = name.split("_", 1)[0]
     if sex in st:
         # The stand's own for this body (its "f" or "m": hands, fingers), over the shared.
-        st = {k: (dict(v, **st[sex].get(k, {})) if isinstance(v, dict) else st[sex].get(k, v)) for k, v in st.items()}
+        st = {k: (dict(v, **st[sex][k]) if isinstance(v, dict) and isinstance(st[sex].get(k), dict) else st[sex].get(k, v))
+              for k, v in st.items()}
         st.update({k: v for k, v in st[sex].items() if k not in st})
     k = _arm(rig) / HER_ARM
     swing = {s: _captured(rig, base, s) * SWING for s in "lr"}
@@ -133,8 +136,13 @@ def make_stand(name, rig, base: Clip, stand=None) -> Clip:
         return h
 
     def over(t, f):
-        d = {"hand_r": hand("r", st["r"], f), "hand_l": hand("l", st["l"], f), "fingers_r": "grip",
-             "fingers_l": "grip" if st["weapon"].endswith("shield") else st.get("fingers_l", "relaxed")}
+        d = {"hand_r": hand("r", st["r"], f), "fingers_r": "grip"}
+        if st["l"] is None:
+            # (None: the capture's own free arm and fingers.)
+            d["fingers_l"] = "base"
+        else:
+            d["hand_l"] = hand("l", st["l"], f)
+            d["fingers_l"] = "grip" if st["weapon"].endswith("shield") else st.get("fingers_l", "relaxed")
         return d
 
     clip = layered(name, rig, base, over, {"weapon": st["weapon"]})

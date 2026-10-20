@@ -765,6 +765,9 @@ class Rig:
             local[j] = grot[j] if p < 0 else qmul(qinv(grot[p]), grot[j])
         for side in "lr":
             spec = pose.get(f"fingers_{side}", "relaxed")
+            # "base": the captured base's own fingers, as they came (a free hand left to the capture, animation 45).
+            if spec == "base" and base is not None:
+                continue
             # A hand that holds a piece with a fitted wrap closes on it in that wrap whether its keys say "grip" or
             # "fist" (a run's carriage keys "fist" for both hands: run_warden and sprint_warden closed her sword
             # hand's fingers into the palm, through the hilt, 14 October).
