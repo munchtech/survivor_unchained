@@ -1,0 +1,5 @@
+  axe_fore                       27 frames   0.87 s  clips.axe  (17.4 s)
+  axe_heavy                      33 frames   1.07 s  clips.axe  (17.4 s)
+  axes_right                     25 frames   0.80 s  clips.axe  (17.4 s)
+  axes_left                      25 frames   0.80 s  clips.axe  (17.4 s)
+4 clips written to C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\anim-40\tools\anim\out\clips
