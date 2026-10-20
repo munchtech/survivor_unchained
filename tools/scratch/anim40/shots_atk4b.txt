@@ -1,0 +1,6 @@
+fore7_m|reaver|-|axe_fore@0.233|day|0.6|315|female
+heavy0_m|reaver|-|axe_heavy@0.0|day|0.6|315|female
+heavy4_m|reaver|-|axe_heavy@0.133|day|0.6|315|female
+heavy7_m|reaver|-|axe_heavy@0.233|day|0.6|315|female
+heavy4_f45_m|reaver|-|axe_heavy@0.133|day|0.6|45|female
+heavy7_run_m|reaver --hold-base run_reaver@0.3|-|axe_heavy@0.233|day|0.6|315|female

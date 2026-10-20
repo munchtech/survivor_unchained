@@ -1,0 +1,4 @@
+her    chain_strike                 l: spin 48/31 wtw 48 wbend 62 wdev 31 ftw 47 elbow 2 knee 2 (1 flagged) | r: spin 22/55 wtw 48 wbend 51 wdev 38 ftw 48 elbow 2 knee 0 (1 flagged)
+         l f3: hand spins 48 in a frame; forearm spins 31 in a frame
+         r f2: forearm spins 55 in a frame
+2 frames flagged

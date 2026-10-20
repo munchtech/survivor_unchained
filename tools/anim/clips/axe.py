@@ -117,10 +117,10 @@ def axe_heavy(rig):
         # (As axe_fore's finish, anim 42, but heavier: 10 deg more hinge, the head lower and further out.)
         # (Solver 4: as fore's, the arm in front of her breast; and apart from fore: the head about 13 cm lower
         # and 15 further out, the haft steeper, the knees deeper, held two frames longer.)
-        (6, pose(28, 40, (0.09, -0.46, 0.56), _n(0.55, -0.8, 0.55), pole=(-0.9, -0.3, 0.1),
+        (6, pose(28, 40, (0.09, -0.46, 0.56), _n(0.75, -0.95, 0.25), pole=(-0.9, -0.3, 0.1),
                  off=(0.10, -0.47, 0.0), left_pole=(0.4, -0.2, -0.9), weight=0.8, pivot=0.8, pitch=9, hinge=23,
                  clav_r=(6, 14), crouch=0.07), "ease"),
-        (10, pose(31, 42, (0.11, -0.50, 0.54), _n(0.55, -0.8, 0.55), pole=(-0.9, -0.3, 0.2),
+        (10, pose(31, 42, (0.11, -0.50, 0.54), _n(0.75, -0.95, 0.25), pole=(-0.9, -0.3, 0.2),
                   off=(0.10, -0.47, 0.0), left_pole=(0.4, -0.2, -0.9), weight=0.9, pivot=0.9, pitch=10, hinge=25,
                   clav_r=(6, 14), crouch=0.07), "ease"),
         (22, pose(6, 10, (0.0, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
