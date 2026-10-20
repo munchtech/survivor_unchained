@@ -98,10 +98,11 @@ public static class Ground
         mat.SetShaderParameter("warm_at", WarmAt(z));
         // Judge 1's fix round (E3 C): what stands near the ground, and its switches.
         mat.SetShaderParameter("near_tex", paint.Near);
-        foreach (var (u, sw, v) in new[] { ("rut_dark", "ground-rut-dark", 0.45f), ("crown_lift", "ground-crown", 0.12f), ("grime", "setts-grime", 0.5f),
+        foreach (var (u, sw, v) in new[] { ("rut_dark", "ground-rut-dark", 0.45f), ("crown_lift", "ground-crown", 0.12f), ("grime", "setts-grime", 0.08f),
             ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.32f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
             ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.32f), ("night_dew", "ground-night-dew", 0.35f), ("pud_dark", "ground-pud-dark", 0.45f), ("night_spec", "ground-night-spec", 0.12f),
-            ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f) })
+            ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f),
+            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f) })
             mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, v));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);

@@ -43,8 +43,8 @@ import ground  # noqa: E402  (the raw sets' names and their download)
 RAW = Path(r'C:\Users\munch\Desktop\survivorsunchained_inputs\raw_materials\ground')
 OUT = ROOT / 'godot' / 'art' / 'ground'
 N = 1024
-SN = 2048            # setts px per tile
-SETTS_M = 8.0        # setts tile, metres
+SN = 1024            # setts px per tile
+SETTS_M = 4.0        # setts tile, metres
 VARIANTS = 3
 
 AUTHORS = {
@@ -183,6 +183,16 @@ def build_layer(spec, seed):
 
 
 # The setts -----------------------------------------------------------------
+# Judge 3's restage (E3 F): a 4 m authored tile in three variants (the shader picks one per tile by a world-space hash;
+# their border stones are shared, so the tiles meet clean), stones 18-30 cm with a few 35-45 cm, joints 2.4-3.4 cm.
+# Two steps, so a restyle is a re-bake: setts_sources() lays the stones and writes their masks to tools/assets/setts_src/
+# (height, stone id, tone, wear, mud, moss, grain), and bake_setts() turns those masks into albedo, normal and arh.
+# Where the street's mud gathers (walls, the well, the stalls) is the shader's: it fills the joints and buries the stone
+# edges by this tile's height (arh B: joints about 0.1, a stone's edge about 0.3, its top 0.6-0.95), and drops or sinks
+# whole stones by their own random (normal B).
+
+SRC = ROOT / 'tools' / 'assets' / 'setts_src'
+
 
 def hash2(i, j, v):
     """Per-cell random generator: v = 0 is shared by every variant."""
@@ -190,25 +200,23 @@ def hash2(i, j, v):
 
 
 def setts_layout(variant):
-    """Seeds, their keys and their weights (a power diagram: a weighted stone takes ground from its neighbours).
-    Judge 1, E3 fix 6: stones 0.2-0.6 m, 10-20% over 0.45 m (a laid street mixes sizes; an even field reads as mosaic)."""
-    cols, rows = 25, 30                         # about 0.32 m x 0.27 m cells before the weights
+    """Seeds, their keys and their weights (a power diagram: a weighted stone takes ground from its neighbours)."""
+    cols, rows = COLS, ROWS
     dx, dz = SETTS_M / cols, SETTS_M / rows
     seeds, keys, wts = [], [], []
     for j in range(rows):
         for i in range(cols):
             border = i in (0, cols - 1) or j in (0, rows - 1)
             r = hash2(i, j, 0 if border else variant + 1)
-            x = (i + 0.5 * (j & 1) + r.uniform(-0.36, 0.36)) * dx
-            z = (j + r.uniform(-0.32, 0.32)) * dz
+            x = (i + 0.5 * (j & 1) + r.uniform(-JIT, JIT)) * dx
+            z = (j + r.uniform(-JIT * 0.9, JIT * 0.9)) * dz
             w = 0.0
             if not border:
                 # The courses bow, differently in each variant, straight at the tile's edge.
                 ph = variant * 2.1
                 ex = np.sin(np.pi * x / SETTS_M) * np.sin(np.pi * z / SETTS_M)
-                z += 0.16 * ex * np.sin(2 * np.pi * x / SETTS_M * (1 + variant % 2) + ph)
-                x += 0.06 * ex * np.sin(2 * np.pi * z / SETTS_M * 2 + ph)
-                # A share of big stones, and some small ones between.
+                z += 0.07 * ex * np.sin(2 * np.pi * x / SETTS_M * (1 + variant % 2) + ph)
+                x += 0.03 * ex * np.sin(2 * np.pi * z / SETTS_M * 2 + ph)
                 u = r.uniform(0, 1)
                 w = BIG_W * r.uniform(0.8, 1.15) if u < BIG_P else (-SMALL_W * r.uniform(0.5, 1.0) if u > 1 - SMALL_P else 0.0)
             seeds.append((x % SETTS_M, z % SETTS_M))
@@ -217,23 +225,21 @@ def setts_layout(variant):
     return np.array(seeds), keys, np.array(wts)
 
 
-BIG_P, BIG_W = 0.17, 0.06       # share of big stones, their power weight (m^2): 11-12% over 0.45 m (equal-area diameter)
-SMALL_P, SMALL_W = 0.0, 0.0
-
-
-def build_setts(variant, grain):
+def setts_sources(variant):
+    """Lay variant `variant`'s stones and return its source masks (all SN x SN, float):
+    height (metres), id (stone index), tone (RGB, each stone's own colour), wear (0-1, worn tops), mud (0-1, the dirt
+    packed into the joints), moss (0-1, where moss grows in them), grain (-1..1, the stone's surface at 2-5 cm), sid
+    (each stone's own random 0.1-0.9, 0 in the joints), stone (0-1, coverage)."""
     s, keys, wt = setts_layout(variant)
     tree = cKDTree(s, boxsize=SETTS_M)
     px = SETTS_M / SN
+    cpx = SN / SETTS_M                               # px per metre
     g = (np.arange(SN) + 0.5) * px
     X, Z = np.meshgrid(g, g)
     P = np.stack([X.ravel(), Z.ravel()], -1)
-    # The power diagram: nearest by |p - s|^2 - w among the 8 nearest; the distance to each bisector with the
-    # other seven, smooth-minned so the corners round off like worn cobbles (in row chunks, for memory).
-    kk = 45.0     # (90 before judge 2: sharper corners read as a Voronoi mosaic)
     edge = np.zeros(len(P)); i1 = np.zeros(len(P), int); qa = np.zeros((len(P), 2))
-    for c0 in range(0, len(P), 1 << 20):
-        Pc = P[c0:c0 + (1 << 20)]
+    for c0 in range(0, len(P), 1 << 19):
+        Pc = P[c0:c0 + (1 << 19)]
         d, idx = tree.query(Pc, k=8)
         pw = d * d - wt[idx]
         o = np.argsort(pw, 1)
@@ -248,18 +254,17 @@ def build_setts(variant, grain):
             vl = np.maximum(np.linalg.norm(v, axis=1), 1e-6)
             es.append((vl * vl + wt[a] - wt[idx[:, c]]) / (2 * vl) - (q * v).sum(1) / vl)
         es = np.maximum(np.stack(es, 1), 0)
-        edge[c0:c0 + len(Pc)] = -np.log(np.exp(-kk * es).sum(1)) / kk
+        edge[c0:c0 + len(Pc)] = -np.log(np.exp(-KK * es).sum(1)) / KK
         i1[c0:c0 + len(Pc)] = a; qa[c0:c0 + len(Pc)] = q
-    q = qa
-    edge = edge.reshape(SN, SN)   # metres to the joint
-    edge = np.maximum(edge, 0)
-    # The joints wobble (judge 2: no ruler-straight polygon sides): about a centimetre over 5-8 cm.
-    edge = edge + WOBBLE * fbm(SN, np.random.default_rng(500), SN / SETTS_M * 0.06, 2)   # (one field for every variant: the tiles meet clean)
+    edge = np.maximum(edge.reshape(SN, SN), 0)
+    # The joints wobble (no ruler-straight sides): about 4 mm over 4-6 cm.
+    edge = edge + WOBBLE * fbm(SN, np.random.default_rng(500), cpx * 0.05, 2)
+    q = qa.reshape(SN, SN, 2)
+    i1 = i1.reshape(SN, SN)
 
-    # Per stone (judge 2, E3 fix 2: the random warm, cool and olive tints read as a Voronoi mosaic): one stone,
-    # its hue within 6 degrees, its saturation within 10%, its value SD about 10%.
+    # Per stone: one hue within 6 degrees, saturation within 10%, value SD about 10%.
     ns = len(s)
-    tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); rgh = np.zeros(ns); sid = np.zeros(ns)
+    tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); sid = np.zeros(ns)
     for k, key in enumerate(keys):
         r = hash2(*key)
         h = (STONE_HSV[0] + np.clip(r.normal(0, 3.0), -6, 6)) / 360.0
@@ -267,89 +272,124 @@ def build_setts(variant, grain):
         val = STONE_HSV[2] * np.clip(r.normal(1.0, 0.10), 0.8, 1.22)
         tone[k] = colorsys.hsv_to_rgb(h, sat, val)
         wear[k] = r.uniform(0, 1) ** 1.5
-        tilt[k] = r.normal(0, 0.035, 2)
+        tilt[k] = r.normal(0, 0.03, 2)
         top[k] = r.uniform(0.75, 1.0)
-        rgh[k] = r.uniform(0.6, 0.82)
         sid[k] = r.uniform(0.1, 0.9)
-    q = q.reshape(SN, SN, 2)
-    i1 = i1.reshape(SN, SN)
 
-    # Where the dirt lies (about 0.8 m) and fine grain: each variant's own in
-    # the middle, one shared field toward the tile's edge, so tiles meet clean.
-    shared, own = np.random.default_rng(100), np.random.default_rng(101 + variant)
-    e = np.minimum(np.minimum(g, SETTS_M - g), 1.2) / 1.2
+    # Each variant's own noise in the middle, one shared field toward the tile's edge, so tiles meet clean.
+    e = np.minimum(np.minimum(g, SETTS_M - g), 0.6) / 0.6
     m = np.minimum(e[None, :], e[:, None])
     m = m * m * (3 - 2 * m)
-    def mixed(cell, oct_, sd):
-        return fbm(SN, np.random.default_rng(sd), cell, oct_) * (1 - m) + fbm(SN, np.random.default_rng(sd + 1 + variant), cell, oct_) * m
-    dirt = fbm(SN, shared, SN / 10, 4) * (1 - m) + fbm(SN, own, SN / 10, 4) * m
-    fine = fbm(SN, shared, SN / 160, 3) * (1 - m) + fbm(SN, own, SN / 160, 3) * m
-    # Joints 1-4 cm wide, varying along their length (about 0.3 m) and wider where swept.
-    jv = mixed(SN / 26, 2, 300)
-    joint = (0.0075 + 0.005 * jv) * (1 + 0.35 * np.clip(-dirt, 0, 1))      # half a joint, 0.3-2 cm
-    # A dome over each whole stone (no bevelled rim): parabolic from the joint to DOME_R in.
+    def mixed(cell_m, oct_, sd):
+        return (fbm(SN, np.random.default_rng(sd), cell_m * cpx, oct_) * (1 - m)
+                + fbm(SN, np.random.default_rng(sd + 1 + variant), cell_m * cpx, oct_) * m)
+    dirt = mixed(0.6, 4, 100)                   # where the dirt lies, about 0.6 m
+    fine = mixed(0.05, 3, 110)
+    # Joints 2.4-3.4 cm wide, varying along their length (about 0.15 m), wider where the dirt lies.
+    jv = mixed(0.15, 2, 300)
+    joint = (JOINT_HALF + 0.0045 * jv) * (1 + 0.15 * np.clip(dirt, 0, 1))
     dome = np.clip((edge - joint) / DOME_R, 0, 1)
     dome = 1 - (1 - dome) ** 2
-    stone = (edge > joint).astype(float)
-    stone = gaussian_filter(stone, 0.7, mode='wrap')
-    # Grain at 2-5 cm (about plus or minus 5% luma).
-    gr = mixed(SN / SETTS_M * 0.035, 2, 400)
-    h_m = (dome * DOME_H * top[i1] + (q * tilt[i1]).sum(-1) * stone
-           + gr * 0.0008 * stone + 0.0008 * fine)
-    h_m = h_m * stone + (1 - stone) * (-0.004 + 0.003 * fine)
-
-    base = tone[i1]
-    w = wear[i1][..., None]
-    lip = 1 - np.clip((edge - joint) / 0.012, 0, 1)[..., None]                  # the stone's last 1.2 cm by the joint
-    alb = base * (1 + GRAIN * gr[..., None]) * (1 + 0.06 * w * dome[..., None])     # worn tops a little lighter
-    alb *= 1 - 0.12 * lip * (0.6 + 0.4 * (0.5 + 0.5 * dirt[..., None]))               # grit at the stone's foot
-    # The joints: brown grit, a little sand in it, moss where it is never swept.
-    grit = np.array([0.25, 0.19, 0.13]) * (1 + 0.22 * fine[..., None])
-    sand = np.array([0.33, 0.27, 0.19])
-    moss = np.array([0.17, 0.19, 0.11])
-    fill = np.clip(0.5 + 0.5 * mixed(SN / 24, 3, 200), 0, 1)[..., None] * 0.45
-    mortar = grit * (1 - fill) + sand * fill * (1 - 0.3 * np.clip(dirt, 0, 1)[..., None])
-    mortar += (moss - mortar) * np.clip(-dirt - 0.4, 0, 1)[..., None] * 0.5
-    st = stone[..., None]
-    alb = alb * st + mortar * (1 - st)
-    # Broad grime between the courses of traffic: whole stones darker.
-    alb *= (1 - 0.08 * np.clip(dirt, 0, 1))[..., None]
-    alb = np.clip(alb, 0, 1)
-
-    STASH.update(i1=i1, stone=stone, edge=edge, joint=joint, gr=gr, alb=alb)
-    rough = (rgh[i1] - 0.15 * wear[i1] * dome) * stone + 0.95 * (1 - stone)
-    hn = (h_m - h_m.min()) / (h_m.max() - h_m.min())
-    ao = np.clip(1 - 0.45 * (1 - stone) - 0.15 * lip[..., 0], 0, 1)
-    ao = gaussian_filter(ao, 2, mode='wrap')
-    n = normal_from(h_m, px, 1.0)
-    # The normal's B carries each stone's own random (0.1-0.9; the shader rebuilds z from x and y), so the
-    # terrain can drop or sink whole stones at the setts' ragged edge (judge 1, E3 fix 5).
-    n[..., 2] = np.where(stone > 0.5, sid[i1], 0.0) * 2 - 1
+    stone = gaussian_filter((edge > joint).astype(float), 0.7, mode='wrap')
+    gr = mixed(0.035, 2, 400)                   # grain at 2-5 cm
+    h_m = (dome * DOME_H * top[i1] + (q * tilt[i1]).sum(-1) * stone + gr * 0.0006 * stone + 0.0006 * fine)
+    h_m = h_m * stone + (1 - stone) * (-0.004 + 0.0025 * fine)
+    # The dirt packed into the joints (a little proud of their floor where it is thick) and the moss in it.
+    mud = np.clip(0.55 + 0.45 * mixed(0.12, 3, 200) + 0.3 * dirt, 0, 1) * (1 - stone)
+    moss = np.clip((-dirt - 0.25) * 2.5, 0, 1) * np.clip(0.5 + 0.8 * mixed(0.08, 2, 210), 0, 1) * (1 - stone)
+    h_m += mud * 0.002 * (1 - stone)
+    sidm = np.where(stone > 0.5, sid[i1], 0.0)
+    wearm = wear[i1] * dome * stone
+    src = dict(height=h_m, id=i1.astype(float), tone=tone[i1], wear=wearm, mud=mud, moss=moss, grain=gr, sid=sidm,
+               stone=stone, dome=dome, edge=edge, joint=joint)
     if SIZES:
         area = np.bincount(i1.ravel(), weights=(edge > joint).ravel().astype(float), minlength=ns) * px * px
-        eq = np.sqrt(4 * area[area > 0.004] / np.pi)
-        print(f'  setts {variant}: stones {len(eq)}, eq. diameter p5 {np.percentile(eq, 5):.2f} p50 {np.median(eq):.2f} '
-              f'p95 {np.percentile(eq, 95):.2f} max {eq.max():.2f}; over 0.45 m {100 * (eq > 0.45).mean():.0f}%, under 0.2 m {100 * (eq < 0.2).mean():.0f}%', flush=True)
+        eq = np.sqrt(4 * area[area > 0.002] / np.pi)
+        # The widest extent of each stone (its Feret width along x, z and both diagonals).
+        st = (edge > joint)
+        ids = i1[st]
+        co = np.stack(np.nonzero(st), -1).astype(float) * px - s[ids][:, ::-1]
+        co -= SETTS_M * np.round(co / SETTS_M)          # (round the stone's seed, so a stone across the tile's edge is whole)
+        wmax = np.zeros(ns)
+        for a in (np.array([1, 0]), np.array([0, 1]), np.array([1, 1]) / 2 ** 0.5, np.array([1, -1]) / 2 ** 0.5):
+            pr = co @ a
+            lo = np.full(ns, 1e9); hi = np.full(ns, -1e9)
+            np.minimum.at(lo, ids, pr); np.maximum.at(hi, ids, pr)
+            wmax = np.maximum(wmax, hi - lo)
+        wm = wmax[area > 0.002]
+        print(f'  setts {variant}: stones {len(eq)}, eq. diameter p5 {np.percentile(eq, 5):.3f} p50 {np.median(eq):.3f} '
+              f'p95 {np.percentile(eq, 95):.3f} max {eq.max():.3f}; 35-45 cm {100 * ((eq > 0.33) & (eq < 0.46)).mean():.1f}%; '
+              f'width p50 {np.median(wm):.3f} p99 {np.percentile(wm, 99):.3f} max {wm.max():.3f} m', flush=True)
+    return src
+
+
+def bake_setts(src):
+    """Albedo, normal and arh (R occlusion, G roughness, B height) from the sources; the look lives here."""
+    px = SETTS_M / SN
+    stone, dome, h_m, gr, wear = src['stone'], src['dome'], src['height'], src['grain'], src['wear']
+    st = stone[..., None]
+    lip = 1 - np.clip(dome / 0.25, 0, 1)                                     # the stone's last centimetre or so
+    alb = src['tone'] * (1 + GRAIN * gr[..., None]) * (1 + 0.06 * wear[..., None])
+    alb *= 1 - 0.10 * lip[..., None]
+    # The joints: brown grit and packed dirt, moss where it is never swept.
+    grit = np.array([0.28, 0.23, 0.17])
+    dirt = np.array([0.22, 0.18, 0.13])
+    moss = np.array([0.16, 0.19, 0.10])
+    mortar = grit + (dirt - grit) * src['mud'][..., None]
+    mortar += (moss - mortar) * src['moss'][..., None] * 0.6
+    alb = np.clip(alb * st + mortar * (1 - st), 0, 1)
+    rough = (0.72 - 0.15 * wear) * stone + 0.95 * (1 - stone)
+    hn = np.clip((h_m + 0.006) / 0.022, 0, 1)
+    ao = gaussian_filter(np.clip(1 - 0.25 * (1 - stone) - 0.1 * lip, 0, 1), 1.0, mode='wrap')
+    n = normal_from(h_m, px, 1.0)
+    # The normal's B carries each stone's own random (0.1-0.9; the shader rebuilds z from x and y).
+    n[..., 2] = src['sid'] * 2 - 1
+    STASH.update(i1=src['id'].astype(int), stone=stone, edge=src['edge'], joint=src['joint'], gr=gr, alb=alb)
     return alb, n, np.stack([ao, np.clip(rough, 0.05, 1), hn], -1)
+
+
+def save_sources(variant, src):
+    SRC.mkdir(parents=True, exist_ok=True)
+    def u16(a, lo, hi, name):
+        Image.fromarray(np.clip(np.round((a - lo) / (hi - lo) * 65535), 0, 65535).astype(np.uint16)).save(SRC / f'v{variant}_{name}.png')
+    u16(src['height'], -0.006, 0.016, 'height')            # metres, -6 to +16 mm
+    Image.fromarray(src['id'].astype(np.uint16)).save(SRC / f'v{variant}_id.png')
+    to8(src['tone']).save(SRC / f'v{variant}_tone.png')
+    for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome'):
+        to8(src[k]).save(SRC / f'v{variant}_{k}.png')
+    to8(src['grain'] * 0.5 + 0.5).save(SRC / f'v{variant}_grain.png')
+
+
+def load_sources(variant):
+    def f(name):
+        return np.asarray(Image.open(SRC / f'v{variant}_{name}.png')).astype(float)
+    src = {k: f(k) / 255 for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome')}
+    src['height'] = f('height') / 65535 * 0.022 - 0.006
+    src['id'] = f('id')
+    src['tone'] = f('tone') / 255
+    src['grain'] = f('grain') / 255 * 2 - 1
+    src['edge'] = src['joint'] = None
+    return src
+
+
+def build_setts(variant, grain=None):
+    src = setts_sources(variant)
+    return bake_setts(src)
 
 
 SIZES = '--sizes' in sys.argv
 STASH = {}   # the last tile's stones, joints and grain (for a measuring script)
-DOME_H = 0.012     # each stone's dome, to DOME_R in from its joint (judge 2: a domed stone, not a bevelled rim)
-DOME_R = 0.09
-WOBBLE = 0.006
-GRAIN = 0.12       # grain at 2-5 cm: plus or minus about 5% luma
+COLS, ROWS = 17, 19   # about 0.235 m x 0.21 m cells before the weights
+JIT = 0.30
+KK = 70.0             # the corners' rounding (1/m)
+BIG_P, BIG_W = 0.05, 0.03      # a few big stones (35-45 cm) and their power weight (m^2)
+SMALL_P, SMALL_W = 0.08, 0.005
+JOINT_HALF = 0.013    # half a joint (2.2-3.2 cm full)
+DOME_H = 0.010        # each stone's dome, to DOME_R in from its joint
+DOME_R = 0.06
+WOBBLE = 0.004
+GRAIN = 0.12          # grain at 2-5 cm: plus or minus about 5% luma
 STONE_HSV = (34.0, 0.16, 0.33)   # the stones' one hue (degrees), saturation and value
-
-
-def setts_grain():
-    ph = load(RAW / 'cobblestone_05' / 'diff.jpg', size=512)
-    L = luma(ph)
-    hp = L - gaussian_filter(L, 1.5, mode='wrap')
-    hp /= 3 * hp.std()
-    hp = np.clip(hp, -0.35, 1)            # the photo's own joints (dark) dropped
-    t = np.tile(np.clip(hp, -1, 1), (SN // 512, SN // 512))
-    return t
 
 
 def to8(a):
@@ -398,20 +438,31 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', choices=['layers', 'setts'])
     ap.add_argument('--sizes', action='store_true', help='print the setts stone sizes')
+    ap.add_argument('--bake', action='store_true', help='the setts: re-bake the maps from tools/assets/setts_src (no new layout)')
     a = ap.parse_args()
-    fetch_raw()
     OUT.mkdir(parents=True, exist_ok=True)
-    grain = setts_grain()
     setts = None
     if a.only != 'layers':
-        setts = [build_setts(v, grain) for v in range(VARIANTS)]
+        setts = []
+        for v in range(VARIANTS):
+            src = load_sources(v) if a.bake else setts_sources(v)
+            if not a.bake:
+                save_sources(v, src)
+            setts.append(bake_setts(src))
         save_strip('setts_albedo', [to8(s[0]) for s in setts], SN)
         save_strip('setts_normal', [nor8(s[1]) for s in setts], SN)
         save_strip('setts_arh', [to8(s[2]) for s in setts], SN)
+        meta = json.loads((OUT / 'ground.json').read_text())
+        meta['setts'] = {'metres': SETTS_M, 'variants': VARIANTS, 'px': SN}
+        for l in meta['layers']:
+            if l['name'] == 'stone':
+                l['metres'] = SETTS_M
+        (OUT / 'ground.json').write_text(json.dumps(meta, indent=1) + '\n')
     if a.only == 'setts':
         return
+    fetch_raw()
     if setts is None:
-        setts = [build_setts(0, grain)]
+        setts = [build_setts(0)]
     alb, nor, arh = [], [], []
     for k, spec in enumerate(LAYERS):
         if spec[1] is None:

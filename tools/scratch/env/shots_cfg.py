@@ -11,6 +11,8 @@ SETS = {
     # scouting: the wood road at dawn round round 2's spot, and the town's streets
     "woodscout": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-2,-72;-5,-66;1,-78;3,-68;-6,-77"], 5),
     "townscout_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,23;8,-18;24,0;-6,-4;0,-24;10,24"], 6),
+    # E3 F: the square twice, the camera 3 cm apart (the setts' joints in motion: shimmer)
+    "townjit": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;3.03,3.02"], 2),
     "townscout_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "0,23;8,-18;24,0;-6,-4;0,-24;10,24"], 6),
     # the camp and road B by night only (round 3c checks)
     "camp": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;9,40"], 2),

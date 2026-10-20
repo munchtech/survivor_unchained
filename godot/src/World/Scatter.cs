@@ -243,16 +243,17 @@ public static class Scatter
                 for (; next <= s0 + len; next += Step)
                 {
                     var c = a + dir * (next - s0);
-                    float hw = GroundPaint.HalfWidth(hw0, next), shift = GroundPaint.RutShift(next), ro = GroundPaint.RutHalf(hw);
+                    float hw = GroundPaint.HalfWidth(hw0, next);
                     foreach (int sg in new[] { -1, 1 })
                     {
-                        // Pebbles at both edges of the rut on this side, small stones on the verge, the odd large one at the edge.
-                        foreach (int e in new[] { -1, 1 })
-                            if (Chance(0.55f))
-                            {
-                                var q = c + n * (shift + sg * ro + e * GroundPaint.RutW * U(0.9f, 1.5f)) + dir * U(0, Step);
-                                Stone(q.X, q.Y, U(0.035f, 0.08f), 0);
-                            }
+                        // Pebbles strewn over the road on this side, small stones on the verge, the odd large one at the edge.
+                        // (Judge 3, E3 F: the pebbles at both edges of each rut, 0.55 a 0.25 m step, read as beaded rows along
+                        // the ruts' shoulders; now loose across the road's half, no band.)
+                        if (Chance(0.3f))
+                        {
+                            var q = c + n * (sg * U(0f, hw)) + dir * U(0, Step);
+                            Stone(q.X, q.Y, U(0.03f, 0.07f), 0);
+                        }
                         if (Chance(0.5f)) { var q = c + n * (sg * (hw + U(-0.2f, 1.2f))) + dir * U(0, Step); Stone(q.X, q.Y, U(0.03f, 0.08f), 0.3f); }
                         // (Judge 1, E3 fix 9: the odd edge stone sunk 30-50%, flat, dark as the road, dirt up its lower half,
                         // 0.25 m at most; the pale smooth ones read as eggs.)

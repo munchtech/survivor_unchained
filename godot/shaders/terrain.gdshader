@@ -71,7 +71,7 @@ uniform float rut_dark = 0.45;
 uniform float crown_lift = 0.12;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
-uniform float grime = 0.5;
+uniform float grime = 0.08;
 uniform float gutter_w = 0.4;
 // The setts' shoulders lit less (judge 1, E3 fix 6: the bevel rims read as mosaic; halve their highlight).
 uniform float setts_bump = 0.32;
@@ -102,6 +102,12 @@ uniform float mirror_rut = 1.0;
 uniform float night_tuft = 1.0;
 // ... and its value over 4-10 m by night, set after the rime (the frost's cap levelled the day's meadow_val into felt).
 uniform float night_val = 0.7;
+// Judge 3's setts restage (E3 F): the street's mud by what stands (the joints fill and the stones' edges are buried, by
+// the tile's own height; out to setts_reach metres from the well, the stalls, the posts, less far from a wall), stones
+// sunk and missing at their foot, moss in the shaded joints. 0 turns each off.
+uniform float setts_mud = 1.0;
+uniform float setts_reach = 1.5;
+uniform float setts_moss = 1.0;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -228,6 +234,7 @@ void fragment() {
 	vec2 st_uv = w * g_scale[SETTS];
 	float st_ly = floor(hash12(floor(st_uv) + 17.0) * 2.999);
 
+	float st_sid = 0.5;
 	vec4 A[4], Nn[4], H[4];
 	mat3 T[4];
 	float hs[4];
@@ -253,6 +260,7 @@ void fragment() {
 		if (k == SETTS) {
 			// (The setts' normal carries each stone's own random in B: env_ground.py.)
 			float sid = n0.b;
+			st_sid = sid;
 			vec2 nxy = (n0.rg * 2.0 - 1.0) * setts_bump;
 			n0.rg = nxy * 0.5 + 0.5;
 			n0.b = sqrt(max(1.0 - dot(nxy, nxy), 0.0)) * 0.5 + 0.5;
@@ -328,11 +336,37 @@ void fragment() {
 	albedo *= mix(1.0, mix(0.8, 1.06, tuft), nt);
 	// Setts: the world's own tone over the tile, so no two copies match.
 	albedo *= 1.0 + (nF.r - 0.5) * 0.22 * w_setts;
-	// Grime within 0.6-1 m of what stands; a wear lane down the ways; weeds and moss in the joints by the walls.
+	// Grime within 0.6-1 m of what stands (a trace now: the mud below carries it); a wear lane down the ways; weeds and
+	// moss in the joints by the walls.
 	float near_any = 1.0 - smoothstep(0.6, 1.0, nr.g * 2.0 + (nF.b - 0.5) * 0.3);
 	albedo *= 1.0 - grime * near_any * w_setts;
 	albedo *= 1.0 + lane_lift * nr.b * w_setts * (1.0 - near_any);
-	float joint = w_setts * (1.0 - smoothstep(0.18, 0.42, hgt));
+	// The street's mud (judge 3, E3 F: grime as mud, not darker stone). The tile's height: joints about 0.1, a stone's
+	// edge 0.3, its top 0.6-0.95. Near what stands the mud's level rises, ragged, so the joints widen and fill and the
+	// stones' edges (their low side first, by their tilt) are buried; some stones sunk (lower, darker, more buried), a
+	// few at the very foot gone (mud where they were). Not so far from a wall as from the well or a stall.
+	float rgm = texture(noise_tex, w * 1.7 + 0.43).r;
+	float hgt0 = hgt;
+	float wallish = step(nr.r - nr.g, 0.08);
+	float dn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (nM.a - 0.5) * 0.3;
+	float mud_g = (1.0 - smoothstep(0.0, setts_reach * mix(1.0, 0.65, wallish), dn)) * w_setts * setts_mud;
+	float lost = step(st_sid, 0.1 + 0.2 * mud_g * mud_g) * step(0.3, mud_g);
+	float sunk = step(st_sid, 0.1 + 0.4 * mud_g) * step(0.1, mud_g) * (1.0 - lost);
+	float lvl = 0.13 + mud_g * mud_g * (0.42 + (rgm - 0.5) * 0.3) + mud_g * 0.06 + sunk * 0.18;
+	float mud_c = max(1.0 - smoothstep(lvl - 0.04, lvl + 0.03, hgt), lost) * step(0.001, mud_g);
+	// (sRGB 0.23, 0.185, 0.14: about 30% under the stones' value, and browner.)
+	vec3 mud_col = vec3(0.04, 0.025, 0.013) * (0.85 + 0.3 * rgm) * mv;
+	albedo *= 1.0 - 0.14 * sunk * w_setts;
+	// Worn tops by the well and the stalls: a little lighter.
+	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);
+	albedo = mix(albedo, mud_col, mud_c);
+	rough = mix(rough, 0.8, mud_c);
+	n_w = normalize(mix(n_w, n_geo, mud_c * 0.85));
+	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
+	float joint = w_setts * (1.0 - smoothstep(0.14, 0.26, hgt));
+	// Moss in the shaded joints, in patches, out of the wear lane.
+	float moss_k = joint * (1.0 - ex4.g) * smoothstep(0.45, 0.7, rgm * 0.6 + nF.a * 0.4) * (1.0 - nr.b) * setts_moss * (1.0 - mud_c);
+	albedo = mix(albedo, vec3(0.022, 0.031, 0.010) * mv, moss_k * 0.75);
 	// (Out to 0.9 m: the gutter takes the wall's first 0.3-0.5 m, so the weeds live in the joints at its lip.)
 	float wsel = smoothstep(0.5, 0.62, texture(noise_tex, w * 0.9 + 0.2).g) * (1.0 - smoothstep(0.75, 1.0, nr.r * 2.0));
 	albedo = mix(albedo, vec3(0.085, 0.11, 0.045) * (0.8 + 0.4 * nF.a), joint * wsel * weeds);
@@ -469,6 +503,8 @@ void fragment() {
 		if (debug_view == 22) m = step(0.9, w_soft);
 		if (debug_view == 23) m = step(0.5, prim);
 		if (debug_view == 24) m = opn;
+		// 25 the setts' stones (tile height over a stone's edge, before the mud), for their sizes in the frame.
+		if (debug_view == 25) m = step(0.5, w_setts) * step(0.34, hgt0);
 		ALBEDO = vec3(0.0);
 		EMISSION = vec3(step(0.5, m) * 50.0);
 	}

@@ -24,7 +24,7 @@
   {
    "name": "stone",
    "raw": "none (procedural; cobblestone_05 grain)",
-   "metres": 8.0
+   "metres": 4.0
   },
   {
    "name": "rock",
@@ -38,8 +38,8 @@
   }
  ],
  "setts": {
-  "metres": 8.0,
+  "metres": 4.0,
   "variants": 3,
-  "px": 2048
+  "px": 1024
  }
 }
