@@ -14,7 +14,7 @@ The owner's rules for this stretch (17 October; README "Effort by kind of work" 
 - Put `Context budget: <n>` in every helper brief and give each helper YOUR agent id so it reports to you, not to the coordinator.
 - There are 8 worktrees on disk, the cap: never spawn with `isolation: "worktree"`. Helpers work in your worktree.
 - Your Temp scratchpad is the COORDINATOR's, shared by every lead and helper: keep your scratch in a subfolder named for your area, and at the end back up and clear only that subfolder, never the whole scratchpad (touch-up 4 wiped it on 18 Oct).
-- Never kill processes by name; never bare `git stash`, `git reset --hard` or `git checkout .` in your worktree; commit as you go (WIP commits are fine).
+- Never kill processes by name; never bare `git stash`, `git reset --hard` or `git checkout .` in your worktree; commit as you go (WIP commits are fine). In a junction worktree, remove the `godotssets` link (`cmd /c rmdir`) before merging integration and remake it after: a failed merge wiped env-4's assets on 20 Oct (README, junction DANGER).
 - No legal gate in merge requests (retired 18 Oct, `docs/team/legal.md`).
 - Hand off at about 300k: update your handoff's top section and send "HANDOFF READY <branch>@<commit>".
 
