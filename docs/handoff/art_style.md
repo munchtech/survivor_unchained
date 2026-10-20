@@ -1,16 +1,23 @@
 # Handoff: the signature art style (style frames)
 
-## Status: round 1 DONE, 20 October (art-style lead 1); waiting on main
-- **Delivered:** `survivorsunchained_inputs\art_style\r1\`: today/A/B/C for town, ford and close; three sheets; `overview.png`; `proposal.md`. Frames: town_00 (spot 3,3), ford_03 (0,-38), close_03 (-9.5,92.5,1,0). They come from `tools/scratch/art_style/frames.py`: `--no-labels` hides the world text; "g" runs dump the live table.
-- **The gate: NO on all nine.**
-  - **A** is proven in engine: `--grade-try` (e19baf80) matches its numpy twin `grade_try.py` on all but 1.5% of pixels, and the default grade is untouched. It's a free colour gain, but it can't fix the town's assets.
-  - **B and C fail to preview a painted surface.** Z-Image paints in a flat comic style: above about 45% repaint it invents content, and below that it adds no brushwork. Their gain is light, which the engine can do.
-  - The solver's method is in `paintprep_r1.py` (light block-in, a stroke filter that follows edges) and `paint.py` (fixed for this ComfyUI's MoGe).
-- **Merge candidate:** only `--grade-try` + `--no-labels` (godot/src/World/Atmosphere.cs, godot/src/Shots.cs; both shots-only).
-- **Open (main's call):** the next step. The lead recommends A's grade plus B's lighting design, then the in-engine proof (masked stroke post-filter plus 3-4 re-textured assets). Alternatives: a painter's paint-over of A_town/A_ford, or a Krea 2 + darkbrush try (needs main's call under the replace-Krea policy).
-- **Left behind:**
-  - The scratch in the coordinator's scratchpad `art_style\` (including `solver\`) is not yet backed up.
-  - The worktree shows about 1,146 `.import` files as modified (line endings only; their content diff is empty) and 32 untracked `.uid` files. These are by-products of the first import: never commit them.
+## Status: round 2, step 1 DONE; step 2 started (art-style lead 2, 20 Oct); next lead picks up step 2
+The brief for round 2 is main's spawn brief (the owner, 20 Oct: Krea is fine for PREVIEWS; reference frames never ship). The order: 1) a painted target, 2) the in-engine proof judged against it.
+- **Step 1, the target: DONE.** Files: `survivorsunchained_inputsrt_style2\` (`target_<frame>.png`, `sheet_<frame>.png` = today | A | target, `target_alts\`). Main's full-size verdict:
+  - town: a real YES, the best frame yet; the seams are fine at 1:1.
+  - close: the world is a YES, but she reads pasted-in. So plan a painted touch on her LIGHT only (a softer specular, a painted rim, fire bounce), never her face shape or texture.
+  - ford: v1 painted the drowned as astronauts. v2 keeps every figure's engine pixels: a SAM mask, inpainted out before painting, composited back. Main hasn't seen v2.
+- **How the target is made** (`tools/scratch/art_style/krea_r2.py`; scratch in the coordinator's scratchpad `art_style2\`: src, paint, tiles, masks):
+  - `prep` gives the A frame plus B's light block-in. A single img2img pass re-imagines the top-down camera (edge score 0.29).
+  - `tile` (2x upscale, 12 overlapping 1536x864 tiles, each captioned by Qwen3-VL, darkbrush 0.8, d 0.40-0.42) holds the layout (0.59) and gives finer strokes. The close-up is a single pass at d 0.42, seed 3.
+  - The ford source is lit brighter first (`ford_L2`: light x1.6, exposure 1.3, gamma 0.85).
+  - The reference-latent (edit) mode holds the layout but wrecks the colour: dropped.
+- **Step 2, in progress:**
+  - **E2 brush filter:** coder `a65c85b7a01d82e91` (su-lead-high, medium, background) is building it in this worktree. Its edits are still uncommitted: `godot/src/World/Brush*.cs`, PlayerView/Game/GameFront/ZoneView.cs, frames.py. Don't touch them until it commits. Brief: `tools/scratch/art_style/brush_brief.md`. **It reports by SendMessage to the old lead's id (a03b1e5e8623b71d6): tell it to report to you instead.**
+  - **E1 light:** no new code needed. `--air-tune` (Atmosphere.cs ~138: keyc, key, hemisky, hemiground, hemi, env, ember, mist, haze, fogc) does it, with `--lamp-inner`, `--ford-inner`, `--campfire-wash/-bounce` and `--ember-range`. Tune to the target (warm key, blue-violet fill, stronger pools) on the first engine shot, and keep it cheap until that shot shows it's on track (main).
+  - **E3 re-textures:** brief ready, `tools/scratch/art_style/e3_retexture_brief.md`. It covers the painted setts, a reusable kit-sheet painter for the well, one stall, one folk palette; all behind flags, built with our own tools (never Krea).
+  - Plus her light touch (above).
+  - **Then:** frames.py shots → judge (su-lead-max, xhigh, foreground, the whole-frame gate first, against the targets) → perf ABAB in Release (runner) → a fix round (cap 2-3) → `sheet_<frame>` as today | A | target | engine, plus `proposal.md` (the remake cost per asset) → an MR of the flags and tools only. Finish with "STYLE R2 READY".
+- **Left behind:** the scratch `art_style\` (r1 `solver\` and `r2\`) isn't backed up yet. The ~1,146 line-ending-only `.import` files and the `.uid` files: never commit them.
 
 ## Start here
 The owner approved exploring a signature look before we remake the world's assets (19 October, night: "I love your ideas, lets do it. exciting !"; OWNER_NOTES 19 Oct, "A signature art style"). This stretch is step 1 only: **style frames for the owner to pick from.** Nothing in the game changes this stretch.
