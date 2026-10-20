@@ -312,6 +312,15 @@ def leafspray(seed):
         for _ in range(7):
             q = P(c + rng.normal(0, 0.12 * rc, 2)); r = int(rc * rng.uniform(0.24, 0.36))
             cv2.circle(cimg, q, r, shade(0.07), -1, cv2.LINE_AA); cv2.circle(aimg, q, r, 255, -1, cv2.LINE_AA); cv2.circle(himg, q, r, 50, -1, cv2.LINE_AA)
+    # 2b. every clump's rim a ring of round lobes (leaf masses), under the leaves: the clump's outline
+    # scalloped and soft, a broadleaf's, not the spruce's spiky one (judge E4c: the alder's rim as jagged)
+    for c, rc in clumps:
+        nl = int(rng.integers(6, 10)); a0 = rng.uniform(0, 6.28)
+        for i in range(nl):
+            a = a0 + (i + rng.normal(0, 0.15)) * 2 * math.pi / nl
+            q = P(c + np.array([math.cos(a), math.sin(a)]) * rc * rng.uniform(0.6, 0.74)); r = int(rc * rng.uniform(0.2, 0.27))
+            lit = 0.5 * (-math.cos(a) * 0.6 - math.sin(a) * 0.8) + 0.5
+            cv2.circle(cimg, q, r, shade(0.3 + 0.2 * lit), -1, cv2.LINE_AA); cv2.circle(aimg, q, r, 255, -1, cv2.LINE_AA); cv2.circle(himg, q, r, 160, -1, cv2.LINE_AA)
     # 3. the leaves, clump by clump: the inner first, the rim's over them
     ts = np.linspace(0, 1, 9)
     for c, rc in clumps:
@@ -320,15 +329,18 @@ def leafspray(seed):
             q = c + np.array([math.cos(a), math.sin(a)]) * rr * rc
             ang = a + rng.normal(0, 0.45)                      # (fanned out from the twig)
             Ll = rc * rng.uniform(0.3, 0.42) * (0.8 + 0.3 * rr)
-            Wl = Ll * rng.uniform(0.55, 0.7)
+            Wl = Ll * rng.uniform(0.62, 0.78)
             dv = np.array([math.cos(ang), math.sin(ang)]); nv = np.array([-dv[1], dv[0]])
-            # round-obovate: widest past its middle, the tip blunt and a little notched
-            hw = Wl / 2 * np.sin(np.pi * np.clip(ts ** 0.75, 0, 1)) ** 0.6
-            hw[-1] = Wl * 0.12
+            # round-obovate: widest three quarters out, the tip a round end (no point, no notch: the
+            # crown's rim scalloped, judge E4c)
             q0 = q - dv * Ll * 0.35
-            left = [q0 + dv * Ll * t + nv * w for t, w in zip(ts, hw)]
-            right = [q0 + dv * Ll * t - nv * w for t, w in zip(ts, hw)]
-            notch = q0 + dv * Ll * 0.94
+            t1 = np.linspace(0, 0.72, 7)
+            hw = Wl / 2 * np.sin(np.pi / 2 * t1 / 0.72) ** 0.7
+            left = [q0 + dv * Ll * t + nv * w for t, w in zip(t1, hw)]
+            right = [q0 + dv * Ll * t - nv * w for t, w in zip(t1, hw)]
+            arc = [q0 + dv * Ll * (0.72 + 0.28 * math.sin(th)) + nv * Wl / 2 * math.cos(th) for th in np.linspace(0.3, math.pi - 0.3, 6)]
+            left += arc[:3]; right += arc[3:][::-1]
+            notch = q0 + dv * Ll * 1.0
             poly = np.array(left + [notch] + right[::-1], np.int32)
             # value: deep inside dark, the rim light, the lit flank (up and -x) lighter
             lit = 0.5 * (-math.cos(a) * 0.6 - math.sin(a) * 0.8) + 0.5
@@ -598,40 +610,77 @@ def spruce(H, R, seed, lod):
 
 
 def shadow_proxy(H, R, seed):
-    """What the tree casts (shadows only): stacked jagged cones, five to eight tiers, so its shadow
-    is a dense spiky spruce, not the cards' lace. Each tier's rim is a ring of broad lobes, the
-    notches between them a quarter of the tier's radius deep (narrow spikes blurred into a smooth
-    blade under the moon's soft shadow: judge E4b), each lobe's tip hanging; each tree's tiers its
-    own count, heights and lobes. Solid (its uvs in the bark strip), a few hundred tris."""
+    """What the tree casts (shadows only): a thin trunk and stacked skirts, five to seven tiers, so
+    its shadow under a low moon is a stepped, ragged spruce, not a straight blade (judge E4c: a fence
+    of spikes). Each tier a concave skirt (its flank falls in fast from the rim, so the tier above
+    stands out of it as a deep step), its rim a ring of broad hanging lobes with notches half the
+    radius deep; two or three tiers with a sector cut away and the skirt below them short, so the
+    moon shows through between the tiers (cut as geometry: the shadow pass stays opaque, no alpha
+    test). The whole tree leans 4-8 degrees with a slight bow. Each tree's tiers its own count,
+    heights, lobes and cuts. Solid (its uvs in the bark strip), a few hundred tris."""
     rng = np.random.default_rng(seed + 5)
     b = Build()
-    hs = 0.55 + 0.03 * H
-    tiers = int(rng.integers(5, 8))
-    cuts = np.sort(rng.uniform(0, 1, tiers - 1))
-    hts = hs + (H - hs) * np.concatenate([[0], 0.82 * (np.arange(1, tiers) / tiers) + 0.18 * cuts])
     uv = (BU + 0.1, 0.5)
+    # the lean and its bow: the axis's offset at height z
+    lean, laz = math.tan(math.radians(rng.uniform(4, 8))), rng.uniform(0, 6.28)
+    ld = np.array([math.cos(laz), math.sin(laz), 0.0])
+    bow = rng.uniform(0.25, 0.45)
+
+    def axis(z):
+        return ld * lean * z * (1 - bow * z / H)
+    tube(b, [axis(z) + np.array([0, 0, z]) for z in np.linspace(0, 0.9 * H, 4)],
+         [0.16 * math.sqrt(H / 8), 0.12 * math.sqrt(H / 8), 0.08 * math.sqrt(H / 8), 0.03], 5)
+    hs = 0.55 + 0.03 * H
+    tiers = int(rng.integers(5, 7)) + (1 if H > 9 else 0)
+    cuts = np.sort(rng.uniform(0, 1, tiers - 1))
+    hts = hs + (H - hs) * np.concatenate([[0], 0.84 * (np.arange(1, tiers) / tiers) + 0.16 * cuts])
+    # the tiers the moon shows through: two or three, among the lower and middle ones
+    gaps = set(rng.choice(np.arange(1, tiers - 1), size=min(tiers - 2, int(rng.integers(2, 4))), replace=False).tolist())
     for k, h0 in enumerate(hts):
         th = (hts[k + 1] - h0) if k + 1 < tiers else (H - h0)
         t = (h0 - hs) / (H - hs)
-        # (0.8 of the crown: the outer sprays stand outside it, so they take the key light; only the
-        # crown's inside falls in the tree's own shadow)
-        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.84
-        n = int(rng.integers(6, 10))
+        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.86
+        # (a tier under a gap stops short of the next: its skirt's top well below the next rim)
+        ch = th * (0.55 if (k + 1) in gaps else 1.05) + 0.1
+        c0 = axis(h0) + np.array([0, 0, h0])
+        n = int(rng.integers(5, 8))
         az0 = rng.uniform(0, 6.28)
-        ring = []
-        for i in range(n * 3):
-            a = az0 + (i + rng.normal(0, 0.12)) * 2 * math.pi / (n * 3)
-            ph = i % 3                     # a lobe: shoulder, tip, shoulder, then the notch
-            rr = r * (rng.uniform(0.95, 1.12) if ph == 1 else rng.uniform(0.84, 0.92) if ph == 0 else rng.uniform(0.7, 0.78))
-            ring.append(np.array([math.cos(a) * rr, math.sin(a) * rr, h0 - (0.14 * rr if ph == 1 else 0.05 * rr)]))
-        ring.append(ring[0])
-        # (the apex low, each tier a flat cone, so the tier above stands well out of it: seen from a low
-        # moon the tree's side is a deep sawtooth, a metre a tooth, that the moon's soft shadow keeps)
-        apex = np.array([0.0, 0.0, min(h0 + th * 1.1 + 0.1, H)])
-        P = [ring, [apex] * len(ring)]
-        N = [[np.array([0, 0, 1.0])] * len(ring)] * 2
-        UV = [[uv] * len(ring)] * 2
-        b.quad_grid(P, N, UV, len(ring) - 1, 1)
+        # a cut: a sector of 70-110 degrees taken out of the gap tier's skirt
+        cut = (rng.uniform(0, 6.28), math.radians(rng.uniform(70, 110))) if k in gaps else None
+        rim, mid = [], []
+        for i in range(n * 4 + 1):
+            ii = i % (n * 4)
+            a = az0 + (i + (rng.normal(0, 0.1) if i < n * 4 else 0)) * 2 * math.pi / (n * 4)
+            ph = ii % 4                    # a lobe: notch, shoulder, tip, shoulder
+            f = (rng.uniform(0.5, 0.58), rng.uniform(0.84, 0.92), rng.uniform(1.0, 1.12), rng.uniform(0.84, 0.92))[ph]
+            rr = r * f
+            if i == n * 4:
+                rim.append(rim[0]); mid.append(mid[0]); continue
+            rim.append(c0 + np.array([math.cos(a) * rr, math.sin(a) * rr, -(0.12 * rr if ph == 2 else 0.04 * rr)]))
+            # the concave flank: a third of the way up, the skirt already in to 0.4 of the rim
+            rm = 0.4 * r * math.sqrt(f)
+            mid.append(axis(h0 + 0.35 * ch) + np.array([math.cos(a) * rm, math.sin(a) * rm, h0 + 0.35 * ch]))
+        apex = axis(h0 + ch) + np.array([0, 0, h0 + ch])
+        angs = [az0 + i * 2 * math.pi / (n * 4) for i in range(n * 4 + 1)]
+        keep = [cut is None or abs((a - cut[0] + math.pi) % (2 * math.pi) - math.pi) > cut[1] / 2 for a in angs]
+        # the skirt in runs of kept segments (a cut leaves one open run)
+        runs, cur = [], []
+        for i in range(n * 4 + 1):
+            if keep[i]:
+                cur.append(i)
+            elif cur:
+                runs.append(cur); cur = []
+        if cur:
+            runs.append(cur)
+        if cut is not None and len(runs) > 1 and runs[0][0] == 0 and runs[-1][-1] == n * 4:
+            runs = [runs[-1][:-1] + runs[0]] + runs[1:-1]
+        for run in runs:
+            if len(run) < 2:
+                continue
+            P = [[rim[i] for i in run], [mid[i] for i in run], [apex] * len(run)]
+            N = [[np.array([0, 0, 1.0])] * len(run)] * 3
+            UV = [[uv] * len(run)] * 3
+            b.quad_grid(P, N, UV, len(run) - 1, 2)
     return b
 
 
@@ -765,7 +814,7 @@ def alder(H, R, seed, lod, stems):
 
 def alder_proxy(H, R, seed, stems):
     """What the alder casts: its crown as a core and five to seven lumps (each a clump mass about a
-    metre across, the radius jittered), so its shadow is scalloped, not one smooth blob, at 0.8 of
+    metre across, the radius jittered), so its shadow is scalloped, not one smooth blob, at 0.7 of
     the crown; and its stems below the crown."""
     rng = np.random.default_rng(seed + 5)
     b = Build()
@@ -788,12 +837,13 @@ def alder_proxy(H, R, seed, stems):
         UV = [[uv] * (nu + 1)] * (nv + 1)
         b.quad_grid(P, N, UV, nu, nv)
 
-    lump(np.array([0, 0, zc]), 0.62 * R, 0.62 * hz)
+    # (0.86 of the crown, judge E4c: the cards' outer halves out of it, so a crown's sunward top reads lit)
+    lump(np.array([0, 0, zc]), 0.54 * R, 0.54 * hz)
     for k in range(int(rng.integers(5, 8))):
         a = rng.uniform(0, 6.28); zf = rng.uniform(-0.4, 0.8)
         rxy = math.sqrt(1 - zf * zf)
         o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
-        lump(np.array([0, 0, zc]) + o * np.array([R, R, hz]) * rng.uniform(0.32, 0.45), rng.uniform(0.38, 0.48) * R, rng.uniform(0.3, 0.4) * hz, 7, 4)
+        lump(np.array([0, 0, zc]) + o * np.array([R, R, hz]) * rng.uniform(0.3, 0.4), rng.uniform(0.34, 0.42) * R, rng.uniform(0.27, 0.35) * hz, 7, 4)
     for pts, rad in alder_stems(H, seed, stems):
         tube(b, pts[:4], rad[:4], 4)
     return b

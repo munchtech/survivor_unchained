@@ -248,13 +248,14 @@ public static class Dressing
                 }
                 // (cast as the kit's pines are: by the key and by a lamp in reach, every one of them)
                 // Each tree's shadow its own (judge E4b: the camp's night shadows stood as identical blades):
-                // the proxy turned about the trunk and stretched by its own hash, length and width within 15%.
+                // the proxy turned about the trunk and stretched by its own hash, width within 15%; its height
+                // within 30% (judge E4c: under the low moon the tips stood in a line, a fence of spikes).
                 var shAt = new List<Transform3D>(g.At.Length);
                 foreach (var t in g.At)
                 {
                     float h1 = Mathf.PosMod(Mathf.Sin(t.Origin.X * 12.9898f + t.Origin.Z * 78.233f) * 43758.5453f, 1f);
                     float h2 = Mathf.PosMod(h1 * 91.7f + 0.31f, 1f), h3 = Mathf.PosMod(h1 * 57.3f + 0.67f, 1f);
-                    var jit = new Basis(Vector3.Up, h1 * Mathf.Tau).Scaled(new Vector3(0.85f + 0.3f * h2, 0.85f + 0.3f * h3, 0.85f + 0.3f * h2));
+                    var jit = new Basis(Vector3.Up, h1 * Mathf.Tau).Scaled(new Vector3(0.85f + 0.3f * h2, 0.7f + 0.6f * h3, 0.85f + 0.3f * h2));
                     shAt.Add(t * new Transform3D(jit, Vector3.Zero));
                 }
                 // (the shadows in cells twice as wide: a light's view culls them by cell, not the whole zone at once)

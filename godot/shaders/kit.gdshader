@@ -47,6 +47,14 @@ global uniform vec4 flora_light;
 // tips may take under a low sun, sRGB degrees)
 uniform float flutter = 1.0;
 uniform float hue_floor = 100.0;
+// (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
+// its crown seen from above read as a hole by day, judge E4c)
+uniform float core = 1.0;
+#ifdef OWN_BROADLEAF
+// (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
+// crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
+uniform float self_shadow = 0.55;
+#endif
 
 float hue_of(vec3 c) {
 	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
@@ -210,11 +218,12 @@ void fragment() {
 	// g how far out along its spray (0 foot, 1 tip), b 1 on a spray card (its front its upper side).
 	if (!FRONT_FACING) NORMAL = -NORMAL;
 	float night = flora_light.x, low_sun = flora_light.y;
-	float open_ = COLOR.r;
+	float open_ = mix(1.0, COLOR.r, core);
 	if (UV.x < 0.75) {
 		// each tree its own green: hue within 7 degrees (olive to blue-green), value within 13% (two hashes, not one)
 		float j2 = fract(v_jit * 7.31 + 0.37);
-		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-7.0, 7.0, v_jit))), vec3(0.0)) * mix(0.87, 1.13, j2);
+		// (up no more than 8%: a near tree jittered up read as the frame's brightest mint, judge E4c)
+		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-7.0, 7.0, v_jit))), vec3(0.0)) * mix(0.87, 1.08, j2);
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
@@ -227,7 +236,9 @@ void fragment() {
 		float hl = hue_of(sqrt(max(ALBEDO * key, vec3(0.0))));
 		ALBEDO = max(hue_turn(ALBEDO, radians(clamp(hue_floor - hl, 0.0, 60.0) * low_sun)), vec3(0.0));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
-		ALBEDO *= mix(mix(0.5, 0.6, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
+		ALBEDO *= mix(mix(0.5, 0.7, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
+		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
+		ALBEDO *= mix(vec3(1.0), vec3(0.84, 1.1, 0.96), night);
 		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
 		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
@@ -235,7 +246,8 @@ void fragment() {
 		BACKLIGHT = mix(vec3(0.45, 1.0, 0.53) * bl / key, ALBEDO * vec3(0.04, 0.07, 0.065), night) * open_;
 		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
 		// shut out; at night the needles take less of the moonlit sky still)
-		AO = mix(0.5, 0.36, night) * mix(0.45, 1.0, open_);
+		// (judge E4c: at 0.36 the shaded crowns under the moon went black, below the shaded road; 1.8x)
+		AO = mix(0.5, 0.65, night) * mix(0.45, 1.0, open_);
 		// (no wet sheen on needles: the moon's specks read as frost-blue glints)
 		SPECULAR = 0.12;
 		AO_LIGHT_AFFECT = 0.0;
@@ -251,3 +263,17 @@ void fragment() {
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
 }
+
+#ifdef OWN_BROADLEAF
+// The alder's own light (its leaves take only part of the key's shadow, self_shadow): Lambert with the
+// built-in back light's transmission and a plain GGX highlight; its bark (u > .75) the shadow whole.
+void light() {
+	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, ATTENUATION, self_shadow) : ATTENUATION;
+	float d = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d + BACKLIGHT * (1.0 - d)) / PI;
+	vec3 hv = normalize(LIGHT + VIEW);
+	float a2 = pow(max(ROUGHNESS, 0.05), 4.0), nh = clamp(dot(NORMAL, hv), 0.0, 1.0);
+	float D = a2 / (PI * pow(nh * nh * (a2 - 1.0) + 1.0, 2.0));
+	SPECULAR_LIGHT += LIGHT_COLOR * att * D * d * 0.25 * SPECULAR_AMOUNT;
+}
+#endif

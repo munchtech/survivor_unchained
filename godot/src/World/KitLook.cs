@@ -33,7 +33,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -114,7 +114,10 @@ public static class KitLook
         // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
         bool mine = foliage && s.ResourceName.Contains("Own");
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
-        m = new ShaderMaterial { Shader = mine ? own : foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
+        // (our alder, a broadleaf: its own light, the key's shadow taken in part, OWN_BROADLEAF)
+        ownLeaf ??= new Shader { Code = own.Code.Replace("#define OWN_FOLIAGE", "#define OWN_FOLIAGE\n#define OWN_BROADLEAF") };
+        bool alder = mine && s.ResourceName.Contains("Alder");
+        m = new ShaderMaterial { Shader = alder ? ownLeaf : mine ? own : foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
         m.SetShaderParameter("albedo_tex", s.AlbedoTexture);
         m.SetShaderParameter("albedo_color", s.AlbedoColor);
         m.SetShaderParameter("use_vcolor", s.VertexColorUseAsAlbedo);
@@ -131,7 +134,9 @@ public static class KitLook
         if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); m.SetShaderParameter("use_vcolor", false); }
         // (our alder, a broadleaf: its leaves flutter more than needles, and its olive is held off yellow under a low sun)
         // (the floors are set above the hue wanted on screen, ~100 and ~88: the grade warms them by 8-12 degrees, measured at roaddawn)
-        if (mine && s.ResourceName.Contains("Alder")) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 86f); }
+        // (alder at 86 left its sunlit tops pale yellow-olive at dawn, judge E4c: its brightest tenth at hue 90 or above wanted;
+        // its crown core lightened, core 0.45, as its top by day read as a hole)
+        if (alder) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 98f); m.SetShaderParameter("core", 0.45f); }
         else if (mine) m.SetShaderParameter("hue_floor", 108f);
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         // (ours keep their own greens: the kit's autumn recolour gave gold tops, cut for the cinematics)
@@ -149,7 +154,8 @@ public static class KitLook
         solidRim ??= Rim(solid);
         twoSidedRim ??= Rim(twoSided);
         ownRim ??= Rim(own);
-        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : m.Shader == own ? ownRim : twoSidedRim };
+        ownLeafRim ??= Rim(ownLeaf);
+        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : m.Shader == own ? ownRim : m.Shader == ownLeaf ? ownLeafRim : twoSidedRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {
             var name = (string)u.AsGodotDictionary()["name"];
