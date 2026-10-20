@@ -2,6 +2,36 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 0000000000000. HANDOFF (animation 44, 20 October 2026): both MRs merged; next list
+Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). The attack poses (cb813e76) and idle life (947bd520) are both merged, and main repacked her (100 clips). Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import.
+
+**Checked this stretch:**
+- **Folk:** at the play camera they read fine at 1:1. I cropped `tools/scratch/anim40/shots_idle1/rv_p.png` at 1:1: a walker mid-stride, and Brannoc at work.
+  - Unarmed folk and Marionette package NPCs play `f_idle`/`m_idle`, a Mixamo weight-shift idle (folk.py "idle", FolkClips.For).
+  - Armed kit NPCs (guards: PersonView `Folk` is false when they hold a weapon) play the KIT's `Idle_Loop`, which is the likely "stiff" one.
+  - I didn't shoot a standing guard or a folk idle at the close-up.
+- **The mace's socket:** no fix needed now. The mace has an Arms spec row, but no loadout or calling carries it (grep `"mace"`), so nobody sees it. When one does, give Blunt its own socket row (the HipLoop axe row goes 23 mm into her with the mace's wide head).
+
+**Next, in order:**
+1. **Folk idle check at the close-up** (tier 2: good on a budget).
+   - Shoot a standing unarmed townsperson and an armed guard at the close-up (0.6) in town: three frames across the loop each.
+   - If the guard's kit `Idle_Loop` reads rigid (the owner's bar: raised shoulders, locked arms, weight even on both feet), add folk `idle_armed` clips. Build them in folk.py from a relaxed source, e.g. the same Mixamo weight shift with the weapon hand closed and the arm a touch out, for both bodies `f_`/`m_`. Then map armed folk's Idle in FolkClips/People.Clip, which today only uses folk clips when `Folk` is true.
+   - One xhigh judge, judged at the close-up. Start each NPC at a random phase so a crowd doesn't sway in step (check whether that's done already).
+2. **The arcanist's staff walking idle** (`idle_arcanist_staff_town`; its arm function `staff_town` stays in idle.py, not shipped).
+   - It needs a walking-staff fist fit: the current staff grip holds the shaft on a diagonal, so a planted staff puts her wrist at about 1.1 m.
+   - The 26 cm slide was reverted. A fresh solver gets a new grip (fistfit) plus the idle. Alternatively, a staff resting on her shoulder needs no ground contact and may be cheaper: your call.
+   - Then `HasTown` lets the staff sheathe via its own kind idle.
+3. Optional:
+   - the crossbow about 10 deg round its sling (its butt crowds her left hand in the stalker town idle);
+   - each calling's town loop starting at a different phase.
+4. **Later attack items** (r4 verdict):
+   - chain_strike's restage (gated off now);
+   - the five KNOWN fixes (heavy0 pelvis, heavy7_run blade broadside, the flick free hand out, the wand run's fist out, the axes run's arm in).
+5. **Routed:**
+   - [outfit] the reaver loincloth's board in runs and crouches, the arcanist's glove heights, the flat hat brim;
+   - [face] an effort face on the swings;
+   - [light] no contact shadow at 0.6.
+
 ## 000000000000. MR READY 2 (animation 44, 20 October 2026): idle life, her town idles
 Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). The by-products are never committed. Files are in `tools/scratch/anim40/`.
 
