@@ -550,7 +550,9 @@ public partial class PlayerView : Node3D
             }
             // Hauled all the way in: the blow she lands with (hers held in
             // the air until now, for however long the haul took).
-            else if (was == Content.AbilityKind.Grapple && FullHer("chain_strike", 1, false))
+            // chain_strike is gated off (judge r4, 20 Oct: its crouch hold reads as leaning
+            // on a hoe; a later round restages it), so she lands with her heavy blow.
+            else if (was == Content.AbilityKind.Grapple && UpperHer(HerClips.Heavy(person.Kind), 1.5))
                 artTail = time + 0.3;
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the
