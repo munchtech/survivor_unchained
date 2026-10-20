@@ -315,14 +315,16 @@ public static class Arms
         // grip high on the right), the tip down toward her left hip, flat to her back.
         // (armor 5 solver, 19 October: the tip turned 11 degrees out from her back, off her calves.)
         [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.201f), new(0.281f, -0.944f, -0.185f), new(0.003f, 0.193f, -0.981f), new(0, 0, -1)),
-        // Staff (animation 45, 20 October): slung across her back on a steep diagonal (24 deg off vertical), the head (the
-        // piece's +Y) up behind and outside her right shoulder, the foot down outside her left calf; its crescent turned 45
-        // deg about the shaft to face back and out, so the inner horn lies toward her shoulder blade. `At` is the grip (no
-        // anchor_sheath). Fitted to the arcanist's wide hat brim, which reaches 35 cm round her head and drops onto her
-        // shoulders as she leans into the sprint: the head passes outside it (5 cm), the foot outside the run's kicked-back
-        // calf (6 cm), 0 mm into her skin and outfit; both hands 28 cm or more off it (tools/scratch/anim45/staffcheck.py,
-        // anim40/socktry.py). The fit puts no garment under the grip, so its clearance is the 5 mm air alone.
-        [WeaponSockets.BackStaff] = new("spine_03", new(-0.025f, 1.0608f, -0.2705f), new(-0.4f, 0.9135f, -0.0743f), new(-0.6267f, -0.3317f, -0.7052f), new(0, 0, -1)),
+        // Staff (animation 45, 20 October; judge round 1 turn): slung across her back on a steep diagonal (29 deg off
+        // vertical), the head (the piece's +Y) up behind and outside her right shoulder, the foot down outside her left
+        // calf. The crescent's face looks out along her back-left/front-right diagonal, so from the three-quarter front
+        // it shows edge-on behind her head and its short inner horn lies toward her shoulder blade. The turn swings that
+        // horn in toward her head, so the row sits 18 cm lower, 9 cm farther out and 5 cm farther back than the first
+        // fit: past the arcanist's wide hat brim 6.4 cm (the sprint's lean), her braid 6.9 cm, her upper back 7 cm, the
+        // run's kicked-back calf 8 cm, 0 mm into her skin and outfit, both hands 32 cm or more off it
+        // (tools/scratch/anim45/staffcheck.py). `At` is the grip (no anchor_sheath); its clearance is the 5 mm air alone.
+        // The bead charms are stripped while it rides (StripCharms).
+        [WeaponSockets.BackStaff] = new("spine_03", new(-0.0518f, 0.9148f, -0.3175f), new(-0.4657f, 0.8782f, -0.1086f), new(0.6607f, 0.2634f, -0.7029f), new(0, 0, -1)),
     };
 
     static WeaponSockets.Clearance? clearance;
