@@ -968,21 +968,35 @@ def cast_flick(rig):
     # the weight rocking back at the wind-up and forward into the flick. The free hand starts low at her left side
     # (not cupped at her chest) and at the aim hangs long and close, the fingers relaxed; the wand arm reaches
     # forward of her shoulder, the elbow a little soft (not locked).
+    # (anim 43, solver 5b) The judge r2 (flick8: A-pose arms, wand at the cobbles, legs locked): the stance was 30 cm
+    # wide and 1.5 cm down, so as a stance clip (her whole body while she stands) the legs read straight and together.
+    # Now axe_fore's set (48 cm, knees out over the toes, about 15-20 deg) and the weight 3 cm onto the front foot at
+    # the aim. f8: the arm long at the foe (elbow 166), the wand 15 deg below level (it pointed 35 deg off to her left,
+    # level, which the 315 camera saw as down at the cobbles); the free hand by her hip (17 cm out from the hip joint).
+    # f0: the wrist cocked back, the wand's tip back over her right shoulder (45 deg past upright, 64 cm clear of
+    # the hat's axis).
+    def pole(yaw, s):
+        a = math.radians(yaw)
+        return (math.sin(a) + s * 0.25, 0, math.cos(a))
+
     def step(weight):
-        p = stance(0.015, l=(0.15, 0.14), r=(-0.15, -0.10))
-        p["hips"]["pos"] = (0.02 * weight, -0.015 - 0.01 * abs(weight), 0.035 * weight)
+        p = stance(0.022, l=(0.24, 0.10), r=(-0.24, -0.10))
+        p["foot_l"]["pole"] = pole(10, 1)
+        p["foot_r"]["pole"] = pole(-14, -1)
+        p["hips"]["pos"] = (0.02 * weight, -0.022 - 0.012 * abs(weight), 0.06 * weight)
         return p
+    aim = (0.02, -0.15, 0.49)
     keys = [
         (0, body(step(-0.4), hips=(-10, -2, 0), spine=(-18, -4, 0), head=(22, 0, 0),
-                 hand_r=arm((-0.25, 0.12, 0.18), (-0.8, -0.3, -0.4), blade=_n(-0.506, 0.861, 0.051),
+                 hand_r=arm((-0.25, 0.12, 0.18), (-0.8, -0.3, -0.4), blade=_n(-0.45, 0.6, -0.65),
                             knuckles=_n(-0.862, -0.507, 0.0)),
-                 hand_l=arm((0.08, -0.48, 0.06), (0.3, -0.2, -1.0)), fingers_r="grip", fingers_l="relaxed"), "fast"),
+                 hand_l=arm((0.13, -0.46, 0.04), (0.5, -0.2, -0.9)), fingers_r="grip", fingers_l="relaxed"), "fast"),
         (3, body(step(0.6), hips=(6, 6, 0), spine=(10, 6, 0), head=(-12, -4, 0),
-                 hand_r=arm((0.02, -0.05, 0.51), (-0.8, -0.4, -0.2), blade=_n(0.0, -0.05, 1.0)),
-                 hand_l=arm((0.10, -0.46, -0.06), (0.3, -0.3, -1.0)), fingers_r="grip", fingers_l="relaxed"), "ease"),
+                 hand_r=arm(aim, (-0.8, -0.4, -0.2), blade=_n(-0.42, -0.34, 0.84)),
+                 hand_l=arm((0.14, -0.38, 0.08), (0.5, -0.3, -0.8)), fingers_r="grip", fingers_l="relaxed"), "ease"),
         (8, body(step(0.6), hips=(6, 6, 0), spine=(11, 6, 0), head=(-13, -4, 0),
-                 hand_r=arm((0.02, -0.07, 0.505), (-0.8, -0.4, -0.2), blade=_n(0.0, -0.1, 1.0)),
-                 hand_l=arm((0.10, -0.46, -0.07), (0.3, -0.3, -1.0)), fingers_r="grip", fingers_l="relaxed"), "auto"),
+                 hand_r=arm(aim, (-0.8, -0.4, -0.2), blade=_n(-0.42, -0.34, 0.84)),
+                 hand_l=arm((0.14, -0.38, 0.08), (0.5, -0.3, -0.8)), fingers_r="grip", fingers_l="relaxed"), "auto"),
         (18, body(step(0.0), hand_r=arm((0.0, -0.36, 0.14), (-0.6, -0.4, -0.5), blade=_n(-0.1, 0.5, 0.85)),
                   hand_l=arm((0.0, -0.38, 0.08), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]

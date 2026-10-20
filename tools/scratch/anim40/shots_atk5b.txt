@@ -1,0 +1,16 @@
+chain3_m|reaver|-|chain_strike@0.1|day|0.6|315|female
+chain6_m|reaver|-|chain_strike@0.2|day|0.6|315|female
+chain9_m|reaver|-|chain_strike@0.3|day|0.6|315|female
+chain3_p|reaver|-|chain_strike@0.1|day|0|315|female
+flick0_m|arcanist|-|cast_flick@0.0|day|0.6|315|female
+flick1_m|arcanist|-|cast_flick@0.033|day|0.6|315|female
+flick4_c|arcanist|-|cast_flick@0.13|day|1|315|female
+flick8_m|arcanist|-|cast_flick@0.27|day|0.6|315|female
+wrun_c|arcanist|-|run_arcanist_wand@0.17|day|1|315|female
+axrun_c|reaver|gyre_axes|run_reaver_axes@0.3|day|1|315|female
+flick4_run_c|arcanist --hold-base run_arcanist_wand@0.17|-|cast_flick@0.13|day|1|315|female
+chain0_m|reaver|-|chain_strike@0.0|day|0.6|315|female
+flick4_run_c|arcanist --hold-base run_arcanist_wand@0.17|-|cast_flick@0.13|day|1|315|female
+chain2_m|reaver|-|chain_strike@0.067|day|0.6|315|female
+wrun_p|arcanist|-|run_arcanist_wand@0.17|day|0|315|female
+axrun_p|reaver|gyre_axes|run_reaver_axes@0.3|day|0|315|female
