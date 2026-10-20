@@ -48,7 +48,13 @@ public sealed class GroundPaint
     internal static readonly float RoadHalf = Args.Num("road-half", 1.55f);      // the made surface, half its width
     internal static readonly float VergeW = Args.Num("road-verge", 1.5f);        // trodden earth beyond it
     internal static readonly float RutOff = Args.Num("road-rut-off", 0.75f);     // each rut from the centre
-    internal static readonly float RutW = Args.Num("road-rut-w", 0.26f);          // a rut's half width
+    // A rut (judge 1, E3 fix 1): a core 0.25-0.4 m wide, then a 0.15 m feathered shoulder; the gauge 1.4-1.5 m.
+    internal static readonly float RutCore = Args.Num("road-rut-core", 0.16f);    // half the core's width
+    internal static readonly float RutFeather = Args.Num("road-rut-feather", 0.15f);
+    internal static readonly float ClearingSoft = Args.Num("clearing-soft", 1.6f);  // a clearing's dirt edge blurred over this (m)
+    internal static readonly float PoolEvery = Args.Num("pool-every", 50f);   // open setts: one puddle in this many square metres
+    internal static readonly bool PoolsOn = !Args.Has("no-pools");
+    internal static float RutW => RutCore + RutFeather * 0.5f;                       // a rut's half width, to its shoulder's middle
 
     /// <summary>The zone's roads as point lists with their base half width (the scatter walks the same ones).</summary>
     internal static List<(Vector2[] P, float Half)> RoadPaths(ZoneData z)
@@ -75,6 +81,45 @@ public sealed class GroundPaint
 
     /// <summary>Each rut's distance from the centre line, for a road of this (wandered) half width.</summary>
     internal static float RutHalf(float hw) => RutOff * (hw / RoadHalf > 0.9f ? 1f : 0.8f);
+
+    /// <summary>A hash of (i, seed) in 0-1.</summary>
+    static float Hash(int i, int seed)
+    {
+        uint h = (uint)i * 0x9E3779B1u ^ (uint)seed * 0x85EBCA77u;
+        h ^= h >> 15; h *= 0x2C1B3C6Du; h ^= h >> 12; h *= 0x297A2D39u; h ^= h >> 15;
+        return (h & 0xFFFFFF) / (float)0x1000000;
+    }
+
+    /// <summary>Smooth value noise along a line, -1 to 1, one knot a unit.</summary>
+    static float Wander(float x, int seed)
+    {
+        int i = (int)Math.Floor(x);
+        float f = x - i;
+        f = f * f * (3 - 2 * f);
+        return Mathf.Lerp(Hash(i, seed), Hash(i + 1, seed), f) * 2 - 1;
+    }
+
+    /// <summary>A rut along s on one side (0, 1): its depth (0.42-1: plus or minus 40% over 3-6 m), with a gap of a
+    /// metre or two every 20 m or so (a firm patch); `spot` 1 where water stands in it (one stretch in most 20 m).</summary>
+    internal static float RutAlong(float s, int sd, out float spot)
+    {
+        float depth = 0.71f + 0.29f * (0.65f * Wander(s / 4.5f, 11 + sd) + 0.35f * Wander(s / 2.7f, 31 + sd)) / 1.0f;
+        int k = (int)Math.Floor(s / 20f);
+        float gap = 1;
+        for (int q = k - 1; q <= k + 1; q++)
+        {
+            float gc = (q + 0.2f + 0.6f * Hash(q, 21 + sd)) * 20f, gl = 0.5f + 0.5f * Hash(q, 23 + sd);
+            gap = Math.Min(gap, Mathf.SmoothStep(gl * 0.5f, gl * 0.5f + 0.9f, Math.Abs(s - gc)));
+        }
+        spot = 0;
+        for (int q = k - 1; q <= k + 1; q++)
+        {
+            if (Hash(q, 41 + sd) > 0.7f) continue;
+            float wc = (q + 0.1f + 0.8f * Hash(q, 43 + sd)) * 20f, wl = 0.6f + 0.9f * Hash(q, 47 + sd);
+            spot = Math.Max(spot, 1f - Mathf.SmoothStep(wl * 0.5f, wl * 0.5f + 0.35f, Math.Abs(s - wc)));
+        }
+        return Math.Clamp(depth, 0.3f, 1f) * gap;
+    }
 
     GroundPaint(ZoneData z)
     {
@@ -159,6 +204,73 @@ public sealed class GroundPaint
                 }
         }
 
+        // Puddles (judge 1, E3 fix 7): standing water 0.4-1.5 m across in the gutters along the walls, every few
+        // metres, and the odd one in a low joint of open setts. Seeded, so a zone is the same every load.
+        var pools = new float[mr * mr];
+        var prng = new Random(77);
+        float PU(float lo, float hi) => lo + (hi - lo) * (float)prng.NextDouble();
+        bool Clear(float x, float zz)
+        {
+            if (Math.Abs(x) > half - 1 || Math.Abs(zz) > half - 1 || z.Meta.WaterAt(x, zz)) return false;
+            foreach (var c in z.Meta.Colliders)
+                if (!c.Soft && (c.Kind == ColliderKind.Box ? BoxOut(c, x, zz) : (float)Math.Sqrt((x - c.X) * (x - c.X) + (zz - c.Z) * (zz - c.Z)) - (float)c.R) < 0.15f) return false;
+            return true;
+        }
+        void Pool(Vector2 at, Vector2 dir, float ra, float rb)
+        {
+            if (!Clear(at.X, at.Y)) return;
+            float rr = Math.Max(ra, rb) + 0.3f;
+            int i0 = Math.Max(0, (int)((at.X - rr + half) / mt)), i1 = Math.Min(mr - 1, (int)((at.X + rr + half) / mt));
+            int j0 = Math.Max(0, (int)((at.Y - rr + half) / mt)), j1 = Math.Min(mr - 1, (int)((at.Y + rr + half) / mt));
+            var nn = new Vector2(-dir.Y, dir.X);
+            for (int j = j0; j <= j1; j++)
+                for (int i = i0; i <= i1; i++)
+                {
+                    var q = new Vector2(-half + (i + 0.5f) * mt, -half + (j + 0.5f) * mt) - at;
+                    float u = q.Dot(dir) / ra, v = q.Dot(nn) / rb, e = Mathf.Sqrt(u * u + v * v);
+                    float g = 1f - Mathf.SmoothStep(0.55f, 1.05f, e);
+                    int at2 = j * mr + i;
+                    if (g > pools[at2]) pools[at2] = g;
+                }
+        }
+        if (PoolsOn)
+        {
+            foreach (var c in boxes)
+            {
+                if (Math.Max(c.Hw, c.Hd) < 2.0) continue;
+                double cs = Math.Cos(c.Rot), sn = Math.Sin(c.Rot);
+                Vector2 W(double lx, double lz) => new((float)(c.X + lx * cs - lz * sn), (float)(c.Z + lx * sn + lz * cs));
+                // Each side: along it, out from it.
+                foreach (var (len, ox, oz, ax, az) in new[] { (c.Hw, 0.0, c.Hd, 1.0, 0.0), (c.Hw, 0.0, -c.Hd, 1.0, 0.0), (c.Hd, c.Hw, 0.0, 0.0, 1.0), (c.Hd, -c.Hw, 0.0, 0.0, 1.0) })
+                {
+                    var aw = (W(ax, az) - W(0, 0)).Normalized();
+                    var outw = (W(ox, oz) - W(0, 0)).Normalized();
+                    for (float t = (float)-len + PU(0.5f, 4f); t < len - 0.5f; t += PU(3f, 7f))
+                    {
+                        if (prng.NextDouble() > 0.55) continue;
+                        float ra = PU(0.25f, 0.75f), rb = ra * PU(0.55f, 0.85f);
+                        var at = W(ox, oz) + aw * t + outw * (0.15f + rb);
+                        Pool(at, aw, ra, rb);
+                    }
+                }
+            }
+            // The open setts: about one in 50 square metres of them.
+            var zimg = (Image)z.Splat.Duplicate();
+            zimg.Convert(Image.Format.Rgba8);
+            var zs = zimg.GetData();
+            int zr = zimg.GetWidth();
+            int many = (int)(size * size / PoolEvery);
+            for (int k = 0; k < many; k++)
+            {
+                float x = PU(-half, half), zz = PU(-half, half);
+                int si = Math.Clamp((int)((x + half) / size * zr), 0, zr - 1), sj = Math.Clamp((int)((zz + half) / size * zr), 0, zr - 1);
+                if (zs[(sj * zr + si) * 4 + 1] < 160) continue;
+                float ra = PU(0.25f, 0.75f);
+                float an = PU(0, Mathf.Tau);
+                Pool(new Vector2(x, zz), new Vector2(Mathf.Cos(an), Mathf.Sin(an)), ra, ra * PU(0.6f, 0.9f));
+            }
+        }
+
         var mask = new byte[mr * mr * 4];
         var core = new float[mr * mr];
         var verge = new float[mr * mr];
@@ -167,7 +279,7 @@ public sealed class GroundPaint
             {
                 int at = j * mr + i;
                 float wx = -half + (i + 0.5f) * mt, wz = -half + (j + 0.5f) * mt;
-                float r = 0, rut = 0, wet, pud;
+                float r = 0, rut = 0, wet, pud, rutSpot = 0;
                 if (dist[at] < 1e8f)
                 {
                     float s = along[at], hw = hwOf[at];
@@ -179,8 +291,11 @@ public sealed class GroundPaint
                     // The ruts wander a little off the centre line, the left and right together.
                     float off = side[at] - RutShift(s);
                     float ro = RutHalf(hw);
-                    float e = (Mathf.Abs(off) - ro) / RutW;
-                    rut = Mathf.Exp(-e * e) * c * (0.75f + 0.25f * Mathf.Sin(s * 0.23f + side[at]));
+                    float dd = Mathf.Abs(Mathf.Abs(off) - ro);
+                    float along0 = RutAlong(s, off < 0 ? 0 : 1, out float spot);
+                    float prof = 1f - Mathf.SmoothStep(RutCore, RutCore + RutFeather, dd);
+                    rut = prof * c * along0;
+                    rutSpot = spot * (1f - Mathf.SmoothStep(RutCore * 0.6f, RutCore + RutFeather * 0.5f, dd)) * c;
                     float centre = Mathf.Exp(-(off / 0.38f) * (off / 0.38f));
                     // 0.8 the made surface; above it, up to 1, its centre strip (so no edge's ramp passes through the strip's values).
                     r = c * (0.8f + 0.2f * centre);
@@ -190,8 +305,9 @@ public sealed class GroundPaint
                 float cv = Sample(lap, n, st, half, wx, wz);
                 // (The blurred Laplacian: the zones' 80th percentile is about 0.045, the 95th about 0.1.)
                 float hollow = Mathf.SmoothStep(0.06f, 0.15f, cv), deep = Mathf.SmoothStep(0.11f, 0.24f, cv);
-                wet = Mathf.Max(Mathf.Max(hollow * 0.8f, rut * 0.8f), Mathf.Max(gut[at] * 0.75f, core[at] * 0.12f));
-                pud = Mathf.Max(rut * (0.62f + 0.2f * hollow), Mathf.Max(deep * 0.8f, gut[at] * 0.4f));
+                // (The ruts' own damp is the shader's, from G: here the hollows, the gutters and the made surface.)
+                wet = Mathf.Max(hollow * 0.8f, Mathf.Max(gut[at] * 0.75f, core[at] * 0.12f));
+                pud = Mathf.Max(rutSpot, Mathf.Max(deep * 0.8f, Mathf.Max(gut[at] * 0.4f, pools[at])));
                 mask[at * 4] = (byte)(Mathf.Clamp(r, 0, 1) * 255);
                 mask[at * 4 + 1] = (byte)(Mathf.Clamp(rut, 0, 1) * 255);
                 mask[at * 4 + 2] = (byte)(Mathf.Clamp(wet, 0, 1) * 255);
@@ -214,6 +330,10 @@ public sealed class GroundPaint
         for (int k = 0; k < dirt.Length; k++) dirt[k] = px[k * 4] / 255f;
         var soft = Blur(Blur(dirt, sr, 3), sr, 3);
         float smt = size / sr;
+        // Elsewhere (a camp's clearing, a yard) the dirt's own edge softened over about a metre (judge 1, E3 fix 4: the
+        // shader's ramp and the heights then make a zone 0.6-1.2 m wide, with fingers of dirt into the grass).
+        int cr = Math.Max(1, (int)Math.Round(ClearingSoft / smt / 2));
+        var softC = Blur(Blur(dirt, sr, cr), sr, cr);
         for (int j = 0; j < sr; j++)
             for (int i = 0; i < sr; i++)
             {
@@ -221,7 +341,7 @@ public sealed class GroundPaint
                 float wx = -half + (i + 0.5f) * smt, wz = -half + (j + 0.5f) * smt;
                 int mi = Math.Clamp((int)((wx + half) / mt), 0, mr - 1), mj = Math.Clamp((int)((wz + half) / mt), 0, mr - 1);
                 int at = mj * mr + mi;
-                float rr = px[k * 4] / 255f, a = Math.Min(px[k * 4 + 3] / 255f, mud[k]);
+                float rr = softC[k], a = Math.Min(px[k * 4 + 3] / 255f, mud[k]);
                 if (dist[at] < 1e8f)
                 {
                     float hw = hwOf[at];
@@ -282,6 +402,7 @@ public sealed class GroundPaint
             for (int i = 0; i < er; i++)
                 lie[j * er + i] = (byte)(Mathf.Clamp(0.5f + Sample(lows, n, st, half, -half + (i + 0.5f) * et, -half + (j + 0.5f) * et) / (3f * sd), 0, 1) * 255);
         Exposure = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(null)));
+        Near = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, MakeNear(z, px, sr)));
         if (sun is Vector3 sdir) BakeSun(sdir);
         // --ground-dump DIR: both as PNGs, to check them by eye.
         if (Args.Get("ground-dump") is { } dumpDir)
@@ -289,7 +410,94 @@ public sealed class GroundPaint
             Mask.SavePng($"{dumpDir}/{z.Id}_mask.png");
             Splat.SavePng($"{dumpDir}/{z.Id}_splat.png");
             Exposure.GetImage().SavePng($"{dumpDir}/{z.Id}_exposure.png");
+            Near.GetImage().SavePng($"{dumpDir}/{z.Id}_near.png");
         }
+    }
+
+    /// <summary>What stands near the ground (judge 1, E3 fix 6), RGBA8 at the exposure's quarter metre: R the distance
+    /// to a wall or a building's base (0-2 m), for the gutters and the weeds in the joints; G to anything standing (walls,
+    /// the well, stalls, fences, posts), for the grime; B the setts' wear lane (1 down the middle of a street or the
+    /// square's ways, about 1.5 m wide).</summary>
+    public readonly ImageTexture Near;
+
+    byte[] MakeNear(ZoneData z, byte[] sp, int sr)
+    {
+        var dw = new float[er * er];
+        var da = new float[er * er];
+        Array.Fill(dw, 2f);
+        Array.Fill(da, 2f);
+        foreach (var c in z.Meta.Colliders)
+        {
+            if (c.Soft) continue;
+            bool box = c.Kind == ColliderKind.Box;
+            if (!box && c.R < 0.25) continue;
+            bool wall = box && Math.Max(c.Hw, c.Hd) >= 2.0 && Math.Min(c.Hw, c.Hd) >= 0.25;
+            float rr = (float)(box ? Math.Sqrt(c.Hw * c.Hw + c.Hd * c.Hd) : c.R) + 2.1f;
+            int i0 = Math.Max(0, (int)(((float)c.X - rr + half) / et)), i1 = Math.Min(er - 1, (int)(((float)c.X + rr + half) / et));
+            int j0 = Math.Max(0, (int)(((float)c.Z - rr + half) / et)), j1 = Math.Min(er - 1, (int)(((float)c.Z + rr + half) / et));
+            for (int j = j0; j <= j1; j++)
+                for (int i = i0; i <= i1; i++)
+                {
+                    float x = -half + (i + 0.5f) * et, zz = -half + (j + 0.5f) * et;
+                    float o = box ? BoxOut(c, x, zz) : Mathf.Sqrt((x - (float)c.X) * (x - (float)c.X) + (zz - (float)c.Z) * (zz - (float)c.Z)) - (float)c.R;
+                    o = Math.Max(o, 0);
+                    int k = j * er + i;
+                    if (o < da[k]) da[k] = o;
+                    if (wall && o < dw[k]) dw[k] = o;
+                }
+        }
+        // The wear lane: the ridge of the distance from the setts' edge (a street's middle, the square's ways).
+        float smt = er * et / sr;
+        var lane = new float[sr * sr];
+        bool any = false;
+        var dd = new float[sr * sr];
+        for (int k = 0; k < dd.Length; k++) { bool st = sp[k * 4 + 1] > 128; dd[k] = st ? 1e6f : 0; any |= st; }
+        if (any)
+        {
+            // Two-pass chamfer distance (metres).
+            float a1 = smt, a2 = smt * 1.4142f;
+            for (int j = 0; j < sr; j++)
+                for (int i = 0; i < sr; i++)
+                {
+                    int k = j * sr + i;
+                    if (dd[k] == 0) continue;
+                    float v = dd[k];
+                    if (i > 0) v = Math.Min(v, dd[k - 1] + a1);
+                    if (j > 0) { v = Math.Min(v, dd[k - sr] + a1); if (i > 0) v = Math.Min(v, dd[k - sr - 1] + a2); if (i < sr - 1) v = Math.Min(v, dd[k - sr + 1] + a2); }
+                    dd[k] = v;
+                }
+            for (int j = sr - 1; j >= 0; j--)
+                for (int i = sr - 1; i >= 0; i--)
+                {
+                    int k = j * sr + i;
+                    if (dd[k] == 0) continue;
+                    float v = dd[k];
+                    if (i < sr - 1) v = Math.Min(v, dd[k + 1] + a1);
+                    if (j < sr - 1) { v = Math.Min(v, dd[k + sr] + a1); if (i < sr - 1) v = Math.Min(v, dd[k + sr + 1] + a2); if (i > 0) v = Math.Min(v, dd[k + sr - 1] + a2); }
+                    dd[k] = v;
+                }
+            var mx = Dilate(dd, sr, Math.Max(1, (int)(3f / smt)));
+            for (int k = 0; k < lane.Length; k++)
+                lane[k] = (1f - Mathf.SmoothStep(0.45f, 1.0f, mx[k] - dd[k])) * Mathf.SmoothStep(1.0f, 2.0f, dd[k]);
+            lane = Blur(lane, sr, Math.Max(1, (int)(0.3f / smt)));
+        }
+        var o8 = new byte[er * er * 4];
+        for (int j = 0; j < er; j++)
+            for (int i = 0; i < er; i++)
+            {
+                int k = j * er + i;
+                o8[k * 4] = (byte)(Mathf.Clamp(dw[k] / 2f, 0, 1) * 255);
+                o8[k * 4 + 1] = (byte)(Mathf.Clamp(da[k] / 2f, 0, 1) * 255);
+                float l = 0;
+                if (any)
+                {
+                    int si = Math.Clamp((int)((i + 0.5f) * et / smt), 0, sr - 1), sj = Math.Clamp((int)((j + 0.5f) * et / smt), 0, sr - 1);
+                    l = lane[sj * sr + si];
+                }
+                o8[k * 4 + 2] = (byte)(Mathf.Clamp(l, 0, 1) * 255);
+                o8[k * 4 + 3] = 255;
+            }
+        return o8;
     }
 
     readonly int er;

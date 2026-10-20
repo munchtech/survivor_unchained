@@ -189,53 +189,73 @@ def hash2(i, j, v):
 
 
 def setts_layout(variant):
-    cols, rows = 40, 48                         # about 0.2 m x 0.17 m cobbles
+    """Seeds, their keys and their weights (a power diagram: a weighted stone takes ground from its neighbours).
+    Judge 1, E3 fix 6: stones 0.2-0.6 m, 10-20% over 0.45 m (a laid street mixes sizes; an even field reads as mosaic)."""
+    cols, rows = 25, 30                         # about 0.32 m x 0.27 m cells before the weights
     dx, dz = SETTS_M / cols, SETTS_M / rows
-    seeds, keys = [], []
+    seeds, keys, wts = [], [], []
     for j in range(rows):
         for i in range(cols):
             border = i in (0, cols - 1) or j in (0, rows - 1)
             r = hash2(i, j, 0 if border else variant + 1)
-            x = (i + 0.5 * (j & 1) + r.uniform(-0.38, 0.38)) * dx
-            z = (j + r.uniform(-0.34, 0.34)) * dz
+            x = (i + 0.5 * (j & 1) + r.uniform(-0.36, 0.36)) * dx
+            z = (j + r.uniform(-0.32, 0.32)) * dz
+            w = 0.0
             if not border:
                 # The courses bow, differently in each variant, straight at the tile's edge.
                 ph = variant * 2.1
                 ex = np.sin(np.pi * x / SETTS_M) * np.sin(np.pi * z / SETTS_M)
                 z += 0.16 * ex * np.sin(2 * np.pi * x / SETTS_M * (1 + variant % 2) + ph)
                 x += 0.06 * ex * np.sin(2 * np.pi * z / SETTS_M * 2 + ph)
+                # A share of big stones, and some small ones between.
+                u = r.uniform(0, 1)
+                w = BIG_W * r.uniform(0.8, 1.15) if u < BIG_P else (-SMALL_W * r.uniform(0.5, 1.0) if u > 1 - SMALL_P else 0.0)
             seeds.append((x % SETTS_M, z % SETTS_M))
             keys.append((i, j, 0 if border else variant + 1))
-    return np.array(seeds), keys
+            wts.append(w)
+    return np.array(seeds), keys, np.array(wts)
+
+
+BIG_P, BIG_W = 0.17, 0.06       # share of big stones, their power weight (m^2): 11-12% over 0.45 m (equal-area diameter)
+SMALL_P, SMALL_W = 0.0, 0.0
 
 
 def build_setts(variant, grain):
-    s, keys = setts_layout(variant)
+    s, keys, wt = setts_layout(variant)
     tree = cKDTree(s, boxsize=SETTS_M)
     px = SETTS_M / SN
     g = (np.arange(SN) + 0.5) * px
     X, Z = np.meshgrid(g, g)
     P = np.stack([X.ravel(), Z.ravel()], -1)
-    d, idx = tree.query(P, k=4)
-    i1 = idx[:, 0]
-    q = P - s[i1]
-    q -= SETTS_M * np.round(q / SETTS_M)
-    # Distance to each of the three nearest joints, smooth-minned so the
-    # corners round off like worn cobbles.
-    es = []
-    for c in (1, 2, 3):
-        v = s[idx[:, c]] - s[i1]
-        v -= SETTS_M * np.round(v / SETTS_M)
-        vl = np.linalg.norm(v, axis=1)
-        es.append(vl * 0.5 - (q * v).sum(1) / np.maximum(vl, 1e-6))
-    es = np.maximum(np.stack(es, 1), 0)
+    # The power diagram: nearest by |p - s|^2 - w among the 8 nearest; the distance to each bisector with the
+    # other seven, smooth-minned so the corners round off like worn cobbles (in row chunks, for memory).
     kk = 90.0
-    edge = (-np.log(np.exp(-kk * es).sum(1)) / kk).reshape(SN, SN)   # metres to the joint
+    edge = np.zeros(len(P)); i1 = np.zeros(len(P), int); qa = np.zeros((len(P), 2))
+    for c0 in range(0, len(P), 1 << 20):
+        Pc = P[c0:c0 + (1 << 20)]
+        d, idx = tree.query(Pc, k=8)
+        pw = d * d - wt[idx]
+        o = np.argsort(pw, 1)
+        idx = np.take_along_axis(idx, o, 1)
+        a = idx[:, 0]
+        q = Pc - s[a]
+        q -= SETTS_M * np.round(q / SETTS_M)
+        es = []
+        for c in range(1, 8):
+            v = s[idx[:, c]] - s[a]
+            v -= SETTS_M * np.round(v / SETTS_M)
+            vl = np.maximum(np.linalg.norm(v, axis=1), 1e-6)
+            es.append((vl * vl + wt[a] - wt[idx[:, c]]) / (2 * vl) - (q * v).sum(1) / vl)
+        es = np.maximum(np.stack(es, 1), 0)
+        edge[c0:c0 + len(Pc)] = -np.log(np.exp(-kk * es).sum(1)) / kk
+        i1[c0:c0 + len(Pc)] = a; qa[c0:c0 + len(Pc)] = q
+    q = qa
+    edge = edge.reshape(SN, SN)   # metres to the joint
     edge = np.maximum(edge, 0)
 
     # Per stone: tone, hue, wear, tilt, height.
     ns = len(s)
-    tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); rgh = np.zeros(ns)
+    tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); rgh = np.zeros(ns); sid = np.zeros(ns)
     hues = np.array([[0.33, 0.33, 0.33], [0.35, 0.33, 0.30], [0.30, 0.29, 0.28], [0.38, 0.34, 0.28], [0.29, 0.30, 0.31]])
     wts = np.array([0.32, 0.26, 0.2, 0.08, 0.14])
     for k, key in enumerate(keys):
@@ -246,6 +266,7 @@ def build_setts(variant, grain):
         tilt[k] = r.normal(0, 0.07, 2)
         top[k] = r.uniform(0.7, 1.0)
         rgh[k] = r.uniform(0.6, 0.82)
+        sid[k] = r.uniform(0.1, 0.9)
     q = q.reshape(SN, SN, 2)
     i1 = i1.reshape(SN, SN)
 
@@ -263,7 +284,7 @@ def build_setts(variant, grain):
     dome = np.sqrt(dome * (2 - dome))             # rounded shoulders
     stone = (edge > joint).astype(float)
     stone = gaussian_filter(stone, 0.7, mode='wrap')
-    h_m = (dome * 0.02 * top[i1] + (q * tilt[i1]).sum(-1) * stone
+    h_m = (dome * DOME_H * top[i1] + (q * tilt[i1]).sum(-1) * stone
            + grain * 0.0025 * stone + 0.002 * fine)
     h_m = h_m * stone + (1 - stone) * (-0.004 + 0.003 * fine)
 
@@ -289,7 +310,19 @@ def build_setts(variant, grain):
     ao = np.clip(1 - 0.75 * (1 - stone) - 0.25 * shoulder[..., 0], 0, 1)
     ao = gaussian_filter(ao, 2, mode='wrap')
     n = normal_from(h_m, px, 1.0)
+    # The normal's B carries each stone's own random (0.1-0.9; the shader rebuilds z from x and y), so the
+    # terrain can drop or sink whole stones at the setts' ragged edge (judge 1, E3 fix 5).
+    n[..., 2] = np.where(stone > 0.5, sid[i1], 0.0) * 2 - 1
+    if SIZES:
+        area = np.bincount(i1.ravel(), weights=(edge > joint).ravel().astype(float), minlength=ns) * px * px
+        eq = np.sqrt(4 * area[area > 0.004] / np.pi)
+        print(f'  setts {variant}: stones {len(eq)}, eq. diameter p5 {np.percentile(eq, 5):.2f} p50 {np.median(eq):.2f} '
+              f'p95 {np.percentile(eq, 95):.2f} max {eq.max():.2f}; over 0.45 m {100 * (eq > 0.45).mean():.0f}%, under 0.2 m {100 * (eq < 0.2).mean():.0f}%', flush=True)
     return alb, n, np.stack([ao, np.clip(rough, 0.05, 1), hn], -1)
+
+
+SIZES = '--sizes' in sys.argv
+DOME_H = 0.01      # the stones' domed shoulders (0.02 before judge 1: the rims read as bright bevels)
 
 
 def setts_grain():
@@ -347,6 +380,7 @@ def save_strip(name, tiles, size):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', choices=['layers', 'setts'])
+    ap.add_argument('--sizes', action='store_true', help='print the setts stone sizes')
     a = ap.parse_args()
     fetch_raw()
     OUT.mkdir(parents=True, exist_ok=True)

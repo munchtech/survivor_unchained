@@ -87,7 +87,7 @@ public static class Ground
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
         mat.SetShaderParameter("edge_k", SurvivorUnchained.Args.Num("ground-edge-k", 1.6f));
         mat.SetShaderParameter("macro_amt", SurvivorUnchained.Args.Num("ground-macro", 1.0f));
-        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.035f));
+        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.018f));
         mat.SetShaderParameter("wet_amt", SurvivorUnchained.Args.Num("ground-wet", 1.0f));
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
         mat.SetShaderParameter("expo_tex", paint.Exposure);
@@ -96,6 +96,12 @@ public static class Ground
         mat.SetShaderParameter("frost_reach", SurvivorUnchained.Args.Num("frost-reach", 0.5f));
         mat.SetShaderParameter("meadow_amt", SurvivorUnchained.Args.Num("ground-meadow", 1f));
         mat.SetShaderParameter("warm_at", WarmAt(z));
+        // Judge 1's fix round (E3 C): what stands near the ground, and its switches.
+        mat.SetShaderParameter("near_tex", paint.Near);
+        foreach (var (u, sw, v) in new[] { ("rut_dark", "ground-rut-dark", 0.45f), ("crown_lift", "ground-crown", 0.12f), ("grime", "setts-grime", 0.4f),
+            ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.22f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
+            ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f) })
+            mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, v));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
         mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));

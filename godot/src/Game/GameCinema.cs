@@ -1484,12 +1484,13 @@ public partial class Game
             foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
             waters.Clear();
             // Her prints stay: they are in the frost whether it played or not.
-            // The frost thaws over a few seconds as play takes over (E3 lays frost of the ground's own by exposure).
+            // The decals' frost goes as play takes over (under a second): the ground's own frost, by exposure, carries it
+            // from here (judge 1, E3 fix 3: the decals were the brightest ground in the hand-back's frame).
             foreach (var fd in frost)
                 if (IsInstanceValid(fd))
                 {
                     var tw = fd.CreateTween();
-                    tw.TweenProperty(fd, "albedo_mix", 0f, 3.0);
+                    tw.TweenProperty(fd, "albedo_mix", 0f, Args.Num("cine-thaw", 0.3f));
                     tw.TweenCallback(Callable.From(fd.QueueFree));
                 }
             frost.Clear();

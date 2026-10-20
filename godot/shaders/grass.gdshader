@@ -82,12 +82,15 @@ void vertex() {
 	vec4 nC = texture(noise_tex, wp * 0.0213 + 0.13), nL = texture(noise_tex, wp * 0.011);
 	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
 	float clump = nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2;
-	dens *= (1.0 - bare_p) * mix(1.0, mix(0.3, 1.3, smoothstep(0.32, 0.68, clump)), meadow_amt);
+	// (20-100% over 2-5 m, judge 1, E3 fix 8: clumps and bare patches.)
+	dens *= (1.0 - bare_p) * mix(1.0, mix(0.2, 1.3, smoothstep(0.32, 0.68, clump)), meadow_amt);
 	// None on a road's made surface (R 0.8) or in its ruts; sparse on its centre strip (R to 1).
 	vec4 pm = textureLod(paint_mask, (wp + zone_size * 0.5) / zone_size, 0.0);
 	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
+	// Thin under a crown, where needles and leaves lie (terrain.gdshader, the same sky).
+	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, (wp + zone_size * 0.5) / zone_size, 0.0).r));
 	float keep = step(h3, dens * density * edge);
 	for (int i = 0; i < 4; i++) keep *= step(bare_at[i].z, length(wp - bare_at[i].xy));
 	// Shorter than a meadow: the fight is read through it from above.
