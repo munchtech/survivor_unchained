@@ -89,6 +89,8 @@ public partial class Game : Node, IZoneHost
         AddChild(controls);
         camera = new Camera3D { Fov = 34, Near = 0.5f, Far = 1400, Current = true };
         AddChild(camera);
+        // --brush: the painterly post-filter (style trial; nothing is made without the flag).
+        if (Brush.On is { } brush) AddChild(new Brush(brush));
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);

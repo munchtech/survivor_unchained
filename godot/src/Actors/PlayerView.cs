@@ -78,6 +78,7 @@ public partial class PlayerView : Node3D
     {
         loadout = lo;
         Name = "Survivor";
+        AddToGroup(Brush.HerGroup);
         var v = new PersonView(lo.Person, new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         person = v.Person;
         view = v;
@@ -605,7 +606,7 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayer : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayer & ~Brush.MaskLayer : 0xFFFFFu;
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer); ownShown = OwnLayer; }
         Light.Position = new Vector3(0, 2.4f, 0.4f);

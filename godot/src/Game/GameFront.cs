@@ -324,7 +324,7 @@ public partial class Game
         // portrait's lights are hers there. Left on, it was a fourth light, cold
         // and flat across her face, and its reflection a white blob as big as her
         // pupil on the lower edge of each iris.
-        air.Key.LightCullMask = p > 0.5f ? air.Key.LightCullMask & ~2u : air.Key.LightCullMask | 2u;
+        air.Key.LightCullMask = p > 0.5f ? air.Key.LightCullMask & ~(2u | Brush.MaskLayer) : air.Key.LightCullMask | 2u;
         // Embers and smoke kept out of the space between the lens and her (an ember drifting there was a soft
         // orange disc over her neck), from head and shoulders in.
         Campfire.ClearNear(p > 0.01f ? p * (camera.GlobalPosition.DistanceTo(eyes) + 0.05f) : 0);
@@ -343,7 +343,7 @@ public partial class Game
         {
             fireSrc = src;
             fireMask = src.LightCullMask;
-            src.LightCullMask = fireMask & ~2u;
+            src.LightCullMask = fireMask & ~(2u | Brush.MaskLayer);
             herFire = new OmniLight3D
             {
                 LightColor = src.LightColor, OmniRange = src.OmniRange, OmniAttenuation = src.OmniAttenuation,
