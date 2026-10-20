@@ -106,11 +106,20 @@ for name in args:
     for pc in pieces:
         if pc == "staff":
             pts = sample(np.array(raw["mage_staff@hand_r"]["v"], float), np.array(raw["mage_staff@hand_r"]["t"], int))
+            if name.endswith("_town"):   # (Arms.Walking: slid STAFF_WALK down through her fist along FistDirR)
+                fd = np.array([-0.2116, 0.4141, 0.8853]); pts = pts - 0.26 * fd / np.linalg.norm(fd)
             butt = []
-            for G in Gs:
+            body = np.array([i for i, nm in enumerate(vb) if not (nm.endswith("_r") and (nm.startswith(("upperarm", "lowerarm", "hand", "thumb")) or nm.split("_")[0] in FING))])
+            near = 9e9
+            for f, G in enumerate(Gs):
                 M = G[I["hand_r"]]
                 Q = pts @ M[:3, :3].T + M[:3, 3]
                 butt.append(Q[np.argmin(Q[:, 1])])
+                if f % 4 == 0:
+                    dd, ii = cKDTree(Q).query(b.pose(G)[body])
+                    if dd.min() < near:
+                        near, where = float(dd.min()), vb[body][int(dd.argmin())]
+            print(f"   staff nearest her body (the right arm left out): {1000 * near:.0f} mm at {where}")
             butt = np.array(butt)
             print(f"   staff butt: drift {100 * np.ptp(butt[:, [0, 2]], axis=0).max():.1f} cm (x {100 * np.ptp(butt[:, 0]):.1f}, z {100 * np.ptp(butt[:, 2]):.1f}) "
                   f"height {100 * butt[:, 1].min():.1f}-{100 * butt[:, 1].max():.1f} cm")

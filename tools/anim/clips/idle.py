@@ -399,6 +399,81 @@ def warden_town(t, f):
     }
 
 
+def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0, swing=0.012, pole_l=(0.3, -0.2, -1.0),
+              pole_r=(-0.3, -0.2, -1.0)):
+    """warden_town's free arms for another calling's town stand (its weapons sheathed): each hand (chest frame, from
+    the shoulder) moved clear of what that calling wears sheathed, `reach` the arm let out (1.025: the elbows soft at
+    20-25 deg, not 35), the same small counter-swing to the hips' sway."""
+    hl, hr = np.array(hand_l, float) * reach, np.array(hand_r, float) * reach
+
+    def arms(t, f):
+        sw = swing * math.sin(2 * math.pi * t * 2)
+        return {
+            "hand_l": {"arc": arc_of(hl + (0, 0, sw)), "pole": pole_l, "frame": "chest", "thumb": _n((-0.15, -0.1, 1.0)), "twist": 1.0},
+            "hand_r": {"arc": arc_of(hr - (0, 0, sw)), "pole": pole_r, "frame": "chest", "thumb": _n((0.15, -0.1, 1.0)), "twist": 1.0},
+            "fingers_l": "relaxed", "fingers_r": "relaxed",
+        }
+    return arms
+
+
+# Her town stands (animation 44): warden_town's base, the WiggleHips take (the owner, 19 Oct: "I adore the idle sway"),
+# another stretch of it each (TOWN_WINDOW, seconds into the take), her arms free and clear of her sheathed pieces.
+TOWN = {
+    # The axe (or two) on the hip loop at her right (and left) hip: the hands a little ahead of the heads.
+    "reaver_town": free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03),
+    # The wand on the belt at her right hip.
+    "arcanist_town": free_arms(reach=1.03),
+    # The crossbow slung on her back, the daggers at the back of her belt.
+    "stalker_town": free_arms(reach=1.03),
+}
+# A staff stays in her hand in town (WeaponSockets.SocketOf: a walking staff), slid STAFF_WALK down through her fist
+# along its line (Arms.Walking, WeaponSockets.StaffWalk: m, hand_r's space, along FistDirR).
+STAFF_WALK = 0.26
+def staff_town(t, f):
+    """The staff upright at her right side as her armed stand holds it (idle_arcanist's arm: the grip forward of her
+    hip, the elbow easy by her side), a little lower, riding her chest as she sways; slid down through her fist
+    (STAFF_WALK) so its foot hangs a hand off the ground. The left arm free. (Planted on the ground it cannot be: on
+    the fitted fist's diagonal, WRAP["staff"], the shaft runs head-toward-the-fingers, so an upright staff needs the
+    forearm near level and the wrist at 1.1 m or more, and the plain shaft above the drawn grip allows a slide of
+    25 cm at most before her fingers reach the head: its foot stays 15 cm or more up. A pinned staff in her root
+    frame drifted 24 cm, the wrist unable to hold its line as she swayed.)"""
+    d = free_arms(reach=1.03)(t, f)
+    # (The wrist rides her chest, the staff's line is kept in her character's space, "char": on the chest's, its foot
+    # swung 57 cm across as the WiggleHips chest rolls.)
+    d["hand_r"] = {"arc": arc_of((-0.16, -0.31, 0.18)), "pole": (-0.2, -0.6, -0.75), "frame": "char",
+                   "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5}
+    d["fingers_r"] = "grip"
+    return d
+
+
+TOWN["arcanist_staff_town"] = staff_town
+TOWN_WINDOW = {"reaver_town": (0, 8), "arcanist_town": (4, 12), "stalker_town": (9, 16)}
+
+
+def level_head(rig, clip: Clip, keep=0.4) -> Clip:
+    """Her head's mean tilt to one side taken down to `keep` of itself (the take's sway of it kept): the WiggleHips
+    stretches hold the head 3-8 deg toward one shoulder, more on some stretches than on warden_town's."""
+    from rig import qinv, qmul, qrot
+    sk = rig.sk
+    h = sk.i("Head")
+    grest = sk.rest_globals()[0][0]
+    g, _ = sk.fk(clip.rot, clip.pos)
+    left = np.array([qrot(qmul(g[f, h], qinv(grest[h])), [1.0, 0, 0]) for f in range(clip.frames)])
+    roll = float(np.degrees(np.mean(np.arcsin(np.clip(left[:, 1], -1, 1)))))
+    turn = qaxis_((0.0, 0.0, 1.0), -(1 - keep) * roll)
+    rot = clip.rot.copy()
+    par = sk.parent[h]
+    for f in range(clip.frames):
+        rot[f, h] = qmul(qinv(g[f, par]), qmul(turn, g[f, h]))
+    return Clip(clip.name, clip.fps, rot, clip.pos, loop=clip.loop,
+                meta={**clip.meta, "changes": clip.meta.get("changes", "") + f"; head's mean tilt {roll:+.1f} deg taken to {keep:.0%}"})
+
+
+def qaxis_(axis, deg):
+    from rig import qaxis
+    return qaxis(axis, deg)
+
+
 IDLES = {
     "idle_warden": ("Heavyset", warden, "sword+shield"),
     "idle_arcanist": ("Strutting", arcanist, "staff"),
@@ -407,12 +482,16 @@ IDLES = {
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
     "idle_warden_town": ("WiggleHips", warden_town, ""),
+    "idle_reaver_town": ("WiggleHips", TOWN["reaver_town"], ""),
+    "idle_arcanist_town": ("WiggleHips", TOWN["arcanist_town"], ""),
+    "idle_stalker_town": ("WiggleHips", TOWN["stalker_town"], ""),
+    "idle_arcanist_staff_town": ("WiggleHips", staff_town, "staff"),
 }
 
 
 _bases = {}
 # An idle that stands on another's captured base (the same standing, other arms).
-SHARES_BASE = {"idle_stalker_daggers": "stalker"}
+SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_arcanist_staff_town": "arcanist_town"}
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
@@ -500,7 +579,7 @@ def base_of(rig, calling):
     its breaks and its flourish)."""
     if calling not in _bases:
         style = IDLES[f"idle_{calling}"][0]
-        base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0))
+        base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0), window=TOWN_WINDOW.get(calling))
         if calling in STAND:
             base = stand(rig, base, **STAND[calling])
         _bases[calling] = base
@@ -515,5 +594,8 @@ def clips(rig, want):
         base = base_of(rig, SHARES_BASE.get(name, name[5:]))
         if arms is arcanist:
             arms = _on_hip(rig, base, arms)
-        out.append(layered(name, rig, base, arms, {"weapon": weapon}))
+        clip = layered(name, rig, base, arms, {"weapon": weapon})
+        if name[5:] in TOWN:
+            clip = level_head(rig, clip)
+        out.append(clip)
     return out
