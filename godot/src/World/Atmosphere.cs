@@ -125,6 +125,7 @@ public partial class Atmosphere : Node3D
 
     // (A name made once, not a new one every frame for the collector.)
     static readonly StringName SkyTime = "sky_time";
+    static readonly float FrostScale = SurvivorUnchained.Args.Num("frost", 1f);
 
     static Color C(string hex) => new(hex);
 
@@ -210,6 +211,11 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));
         RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
+        // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed
+        // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)
+        float frost = (float)p.Frost * FrostScale, thaw = (float)p.FrostThaw;
+        RenderingServer.GlobalShaderParameterSet("ground_frost", new Vector4(frost, thaw, 0, 0));
+        if (frost > 0 && thaw > 0) GroundPaint.SunAt(dir);
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the
         // sky's lower half is the hemisphere's dark ground colour, so in shade her plate reflected
         // nothing and read as rubber (look bible, armor metal; metal round 3).

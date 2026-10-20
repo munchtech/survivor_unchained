@@ -2,7 +2,10 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 20 October, early: coordinator d7ae3fc3 WIND-DOWN (read this first)
+## 20 October, day: coordinator 746784c6 (running)
+MERGED: anim-40 attack poses (chain_strike gated off; heroine repacked, 91 clips, 862f37fe) and E3 terrain and road (71ba6d14; env-3 removed). Running: animation 44 on idle life (anim-40), Marionette lead 5 (npc-1 + Marionette pipeline-1), art-style frames (su-lead-max, new worktree art-style). Owner 20 Oct: API spend open for generation that improves the work (cap $250/month, no per-stretch limit), never judges; tier-3 judges (fodder, minor filler) at high.
+
+## 20 October, early: coordinator d7ae3fc3 WIND-DOWN (history)
 All three leads paused cleanly and stopped; no helpers, no turns; nothing merged this stretch. Tests on env-3 1012/0/8.
 **RESTART ORDER (each a fresh successor with lead_brief.md, which now has the usage rules: foreground helpers when waiting; Opus decides, Sonnet implements decided code, Haiku runs shots/perf):**
 1. **Environment E3** (env lead 8): env-3@b80f1240, environment.md "Paused here (env lead 7 ...)". Judge 3 passed all but the town setts; closed as known: verge ramps, dawn_00 sun ruts, soft pale patches, town wet rims; cut: pebble rows, one gutter pool. Solver F built the authored 4 m sett tile (3 variants, 1024, sources in tools/assets/setts_src/, re-bakeable) with mud, wear and moss near the well and stalls (de5d9902). Left: browner mud, post rings, night_04 frosted pebbles, confirm the pool cut, dawn_02/night_02 shots, perf ABAB vs c7c45928 against 0.90 ms (E's numbers may have used stale 2K imports: reimport after any texture change), numbers.md, the full test, judge 4 (town + setts frames only), teach run, MR. ~2-3 h. The 488 to 749 shadow-draw rise is perf's, not E3's.
