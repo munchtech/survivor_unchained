@@ -182,7 +182,7 @@ public partial class Game
     // (G1 r2: rim 3.0 to 1.0 and down from 35 degrees to 10, the key from 30 to 18: from above they lifted her copper crown
     // pinkish-tan, toward strawberry blonde (crown Oklab L 52.6, 44.9 now, her face 79.9 and 79.4: the crown to face of
     // art style r2's frame, 0.56); low, the rim's cool edge grazes her shoulders and arms.)
-    static float CloseRimNight => Args.Num("close-rim", 1.5f);   // (G1 r3: 1.5; 3 lifts the crown to 47.9 at frame 03, at az 0.9 it fills her shade side)
+    static float CloseRimNight => Args.Num("close-rim", 3f);   // (G1 r3: 1.5; 3 lifted the crown to 47.9 at frame 03, at az 0.9 it fills her shade side. G1 r4: 3, off her hair (PlayerView.HerHairLayer): her far edge +4.4 to +5.1 L at hue 240, the crown 39.7 as without it)
     // --close-rim-el D: the rim's elevation (degrees).
     static float CloseRimEl => Args.Num("close-rim-el", 10f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
@@ -192,7 +192,7 @@ public partial class Game
     static bool CloseLampOffHer => !Args.Has("close-lamp-on-her");
     // --close-exp-night X: the close view's exposure by night against play's (pictures).
     // (Round 3: 2.0 left her face pale at 187; 0.35 of a stop under it brings it to about 165.)
-    static float CloseExposureNight => Args.Num("close-exp-night", 1.35f);   // x the preset's 1.5: face ~145-150 (judge 3 fix; round 3c's 1.465 left it pale at 170, the fire filling it)
+    static float CloseExposureNight => Args.Num("close-exp-night", 1.2f);   // (G1 r4: 1.35 to 1.2: at 1.35 a third of her lit face sat above Oklab L 85 at the tonemap's shoulder, flat and pale; earlier: x the preset's 1.5: face ~145-150 (judge 3 fix; round 3c's 1.465 left it pale at 170, the fire filling it))
     // --close-key-az D: the night key's angle off her face (degrees), toward the lens, so her far cheek falls into half
     // shade (E1 round 3: 50-60; judge 3 fix: 90, about 55 degrees off the lens on the fire's side, once the fire no longer filled her).
     // The key's colour: the ember's, saturated (1.0, 0.6, 0.35).

@@ -88,11 +88,12 @@ public static class Atmospheres
         PaintVib = 0.8, PaintHi = 0.8, PaintShadow = "#24404a", PaintShadowK = 0.7, PaintLift = 0.02 };   // (the paint grade: art style round 2's camp, 20 Oct; G1 r2: a dark teal shade, #1d2a52 made the unlit field one slate-navy, and MoonSat 0.06 to 0.085 keeps the moonlit grass blue, C 3, under the paint vibrance's fade; G1 r3: 0.14, moonlit grass C 2.8 to 4.7 (the moon's own colour is moot here: #86b5ff left it at 2.8, the Moon step drops its chroma))
 
     /// <summary>The close view's paint grade by night (art style round 1's, which kept her copper hair): the view grade
-    /// (Atmosphere.ViewGrade) takes it over the preset's as the view closes in. No vibrance, where she fills the frame:
-    /// round 1's 0.7 took her shaded side from chroma 2.6 to 4.3 (her pixels' mean Oklab dE 2.1, x100; 1.2 without it).</summary>
+    /// (Atmosphere.ViewGrade) takes it over the preset's as the view closes in. (Round 1's 0.7 vibrance took her shaded side
+    /// from chroma 2.6 to 4.3, so it was off here; G1 r4: back at 0.7 under the skin and copper protection and the dark fade,
+    /// one grade on her and the world: her shaded skin's chroma 7.9 to 8.3, lit skin 9.7 to 9.8, the neck's shade hue 21-22 both ways.)</summary>
     public static readonly GradeSettings CloseNightPaint = PlayNightGrade with
     {
-        PaintVib = 0, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015,
+        PaintVib = 0.7, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015,
         MoonSat = 0.085,   // (G1 r3: the play night's 0.14 is the camp grass's; the close view keeps the 0.085 she was judged under)
     };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
