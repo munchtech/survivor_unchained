@@ -263,12 +263,16 @@ public partial class PlayerView : Node3D
         // Standing, a stance swing takes her whole body (its own feet set and hips into the blow), soft:
         // it gives way to the run the moment she moves. Moving, it rides her upper body over the run.
         if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
-        upper.Animation = own.Prefix + clip;
+        upper.Animation = own.Prefix + RunVariant(clip);
         upperNative = true;
         tree.Set("parameters/upperScale/scale", speed);
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
     }
+
+    /// <summary>A stance swing re-aimed for her run's hips, where one is keyed (clip + "_run", e.g. axe_fore_run):
+    /// moving, her hips are the run's, not turned into the blow, so the stance clip's arms land elsewhere.</summary>
+    string RunVariant(string clip) => own.Stance(clip) && own.Has(clip + "_run") ? clip + "_run" : clip;
 
     void Full(string clip, double speed)
     {
@@ -446,7 +450,8 @@ public partial class PlayerView : Node3D
                         legs.Add((bi, sk.GetBonePosePosition(bi), sk.GetBonePoseRotation(bi)));
                 }
             }
-            person.Anim.Play(own.Prefix + hold[0]);
+            // (over a run, a stance swing's run variant, as UpperHer plays it moving)
+            person.Anim.Play(own.Prefix + (hb is { Length: 2 } && upperOnly ? RunVariant(hold[0]) : hold[0]));
             person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
             person.Anim.Pause();
             foreach (var (bi, p0, r0) in legs) { sk.SetBonePosePosition(bi, p0); sk.SetBonePoseRotation(bi, r0); }

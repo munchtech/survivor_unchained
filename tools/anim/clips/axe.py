@@ -40,11 +40,12 @@ def feet(weight=0.0, pivot=0.0, crouch=0.03):
 
 
 def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), off=None, pitch=12, roll=0, weight=0.0, pivot=0.0,
-         head=None, left_blade=None, left_pole=(0.7, -0.5, -0.3), hinge=8, clav_r=(4, 6), crouch=0.03, free="fist", knuckles=None):
+         head=None, left_blade=None, left_pole=(0.7, -0.5, -0.3), hinge=8, clav_r=(4, 6), crouch=0.03, free="fist", knuckles=None, hroll=0, hpitch=-8, hips_off=(0, 0, 0)):
     p = feet(weight, pivot, crouch)
+    p["hips"]["pos"] = tuple(a + b for a, b in zip(p["hips"]["pos"], hips_off))
     p["hips"]["rot"] = (hips_yaw, hinge, 0)
     p["spine"] = (spine_yaw, pitch, roll)
-    p["head"] = head if head is not None else (-(hips_yaw + spine_yaw) * 0.55, -8, 0)
+    p["head"] = head if head is not None else (-(hips_yaw + spine_yaw) * 0.55, hpitch, hroll)
     p["clav_l"] = (4, 6)
     p["clav_r"] = clav_r
     p["hand_r"] = {"arc": arc_of(hand), "blade": blade, "pole": pole, "frame": "chest", "twist": 0.5}
@@ -58,6 +59,20 @@ def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), off=None, pi
     p["fingers_l"] = "grip" if left_blade is not None else free
     return p
 
+
+# The head at the finish (solver 7a, judge r3 call 2): the spine's roll to her left and the head's counter-turn on
+# a pitched neck rolled her head ~25 deg (heavy ~30) onto her shoulder; rolled back level, and the heavy's chin up.
+HR5, HR7 = 22, 24
+HH6, HH10, HP6, HP10 = 26, 28, -18, -18
+# The run variants (axe_fore_run, axe_heavy_run): the free hand at the wind-up and its elbow's pole; the finish's
+# fist moved (chest frame) and the blade's direction.
+# The idle axe through the finish (solver 7a, judge r3 call 3): held in its f3 shape, not stood upright behind her
+# shoulder: the fist out from her left shoulder at chest height, the haft leaning out to her left.
+HV_YAW, HV_PITCH, HV_OFF = (-16, -28), -16, (-0.28, -0.14, -0.16)
+AX_IH, AX_IB = (0.15, 0.06, 0.25), (0.25, 0.97, -0.06)
+RUN_OFF0, RUN_LP0 = (0.21, -0.12, 0.28), (0.35, -0.9, -0.1)
+RUN_DH, RUN_BL = (0.18, 0.10, 0.06), (0.79, -0.45, 0.467)
+RUN_HDH, RUN_HBL = (0.14, 0.10, 0.04), (0.3, -0.9, 0.3)
 
 GUARD = pose(0, 0, (-0.06, -0.26, 0.22), _n(-0.3, 0.75, 0.55), pole=(-0.7, -0.5, -0.4), off=(-0.02, -0.28, 0.20))
 
@@ -85,14 +100,17 @@ def axe_back(rig):
     return build("axe_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "stance": True, "contact": 2.5 / 30, "weapon": "axe"})
 
 
-def axe_fore(rig):
-    """Forehand hack, her right to her left, over the top and down across."""
-    keys = [
+def _fore_keys(run=False):
+    """axe_fore's keys; run: the variant play shows over her run (axe_fore_run)."""
+    off0, lp0 = (RUN_OFF0, RUN_LP0) if run else ((0.10, -0.16, 0.32), (0.7, -0.5, -0.3))
+    dh, bl = (RUN_DH, _n(*RUN_BL)) if run else ((0, 0, 0), _n(0.45, -0.45, 0.8))
+    h5, h7 = (0.21 + dh[0], -0.12 + dh[1], 0.44 + dh[2]), (0.235 + dh[0], -0.10 + dh[1], 0.43 + dh[2])
+    return [
         # Cocked as the heavy is (anim 42: it read as a torch raised): the fist by her right ear, the elbow up and
         # back, the head back over her shoulder; the shoulders wound about 25 deg behind the hips.
         # (Solver 5a, judge r2: the elbow higher and further back, the forearm back beside her head, her face clear.)
         (0, pose(-28, -26, (-0.16, 0.30, -0.14), _n(-0.3, 0.5, -0.8), pole=(-0.6, 1.0, -0.5),
-                 off=(0.10, -0.16, 0.32), weight=-0.5, pitch=2, hinge=4), "fast"),
+                 off=off0, left_pole=lp0, weight=-0.5, pitch=2, hinge=4), "fast"),
         (2.5, pose(-6, -4, (0.0, -0.06, 0.46), _n(0.15, -0.1, 1.0), pole=(-0.6, -0.7, -0.3),
                    off=(0.04, -0.28, 0.16), weight=0.1, pitch=6), "linear"),
         # The follow-through (anim 42): the right fist carried across before her left hip, the arm long and the
@@ -104,28 +122,45 @@ def axe_fore(rig):
         # (Solver 5a, judge r2: committed, and clear of the run's knee. Play shows only the spine up, so the lean is
         # the spine's: 22 deg more pitch and a roll to her left; the fist out before her left thigh, elbow ~160,
         # up off the run's lifted knee; the free hand loose, out from her hip and a little behind it.)
-        (5, pose(28, 32, (0.21, -0.12, 0.44), _n(0.45, -0.45, 0.8), pole=(-0.9, -0.3, 0.1),
+        (5, pose(28, 32, h5, bl, pole=(-0.9, -0.3, 0.1),
                  off=(0.20, -0.33, 0.16), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.7, pivot=0.7, pitch=26,
-                 roll=-14, hinge=14, clav_r=(6, 14)), "ease"),
-        (7, pose(30, 34, (0.235, -0.10, 0.43), _n(0.45, -0.45, 0.8), pole=(-0.9, -0.3, 0.2),
+                 roll=-14, hinge=14, clav_r=(6, 14), hroll=HR5), "ease"),
+        (7, pose(30, 34, h7, bl, pole=(-0.9, -0.3, 0.2),
                  off=(0.20, -0.33, 0.16), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.8, pivot=0.8, pitch=28,
-                 roll=-16, hinge=15, clav_r=(6, 14)), "ease"),
+                 roll=-16, hinge=15, clav_r=(6, 14), hroll=HR7), "ease"),
         (16, pose(7, 12, (0.02, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
          "auto"),
         (26, GUARD, "ease"),
     ]
-    return build("axe_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "stance": True, "contact": 2.5 / 30,
-                                                           "weapon": "axe"})
 
 
-def axe_heavy(rig):
-    """The axe brought from behind her shoulder, high, and hacked down and
-    across in front, the back bending into it."""
-    keys = [
+def axe_fore(rig):
+    """Forehand hack, her right to her left, over the top and down across."""
+    return build("axe_fore", rig, _fore_keys(), lead=STRIKE, meta={"layer": "upper", "stance": True, "contact": 2.5 / 30,
+                                                                     "weapon": "axe"})
+
+
+def axe_fore_run(rig):
+    """axe_fore as play shows it while she runs (PlayerView.UpperHer): her hips are the run's, not turned into the
+    blow, so the cut is re-aimed for them (solver 7a, judge r3 calls 4 and 5): the free fist out before her left
+    ribs at the wind-up, not across her belly; the finish further out to her left and higher, beside her left hip
+    from the 315 camera, the head trailing outside her thigh. Upper layer only: never her stance."""
+    return build("axe_fore_run", rig, _fore_keys(True), lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30,
+                                                                           "weapon": "axe"})
+
+
+def _heavy_keys(run=False):
+    """axe_heavy's keys; run: the variant play shows over her run (axe_heavy_run)."""
+    dh, bl = (RUN_HDH, _n(*RUN_HBL)) if run else ((0, 0, 0), _n(0.75, -0.55, 0.45))
+    h6 = (0.20 + dh[0], -0.16 + dh[1], 0.44 + dh[2])
+    return [
         # (Solver 5a, judge r2: apart from fore's: wound further, arched back, the elbow high and back, the haft
         # laid back so the head drops behind her shoulders.)
-        (0, pose(-26, -54, (-0.18, 0.28, -0.18), _n(-0.25, 0.3, -0.95), pole=(-0.6, 1.0, -0.6),
-                 off=(0.08, -0.06, 0.34), weight=-0.6, pitch=-14, knuckles=(-0.782, 0.412, 0.467)), "fast"),
+        # (Solver 7a, judge r3 call 1: loaded: down onto the back leg, the pelvis over the back foot, wound further
+        # and the back arched more.)
+        (0, pose(-26 + HV_YAW[0], -54 + HV_YAW[1], (-0.18, 0.28, -0.18), _n(-0.25, 0.3, -0.95), pole=(-0.6, 1.0, -0.6),
+                 off=(0.08, -0.06, 0.34), weight=-0.6, pitch=-14 + HV_PITCH, knuckles=(-0.782, 0.412, 0.467),
+                 hips_off=HV_OFF), "fast"),
         (3, pose(-6, -8, (-0.02, 0.0, 0.42), _n(0.0, 0.2, 1.0), pole=(-0.6, -0.5, -0.4),
                  off=(0.04, -0.28, 0.16), weight=0.2, pitch=10, knuckles=(-0.211, -0.901, 0.378)), "linear"),
         # (As axe_fore's finish, anim 42, but heavier: 10 deg more hinge, the head lower and further out.)
@@ -134,18 +169,30 @@ def axe_heavy(rig):
         # (Solver 5a, judge r2: heavier than fore at the finish: the spine 14 deg more pitched, the head lower and
         # further forward; the haft rolled (knuckles) so the head's flat shows to the camera, edge leading, not
         # end-on; the free hand loose, out from her hip.)
-        (6, pose(28, 34, (0.20, -0.16, 0.44), _n(0.75, -0.55, 0.45), pole=(-0.9, -0.3, 0.1),
+        (6, pose(28, 34, h6, bl, pole=(-0.9, -0.3, 0.1),
                  off=(0.20, -0.28, 0.22), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.8, pivot=0.8, pitch=40,
-                 roll=-14, hinge=23, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89)), "ease"),
-        (10, pose(31, 36, (0.20, -0.16, 0.44), _n(0.75, -0.55, 0.45), pole=(-0.9, -0.3, 0.2),
+                 roll=-14, hinge=23, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89), hroll=HH6, hpitch=HP6), "ease"),
+        (10, pose(31, 36, h6, bl, pole=(-0.9, -0.3, 0.2),
                   off=(0.20, -0.28, 0.22), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.9, pivot=0.9,
-                  pitch=42, roll=-16, hinge=25, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89)), "ease"),
+                  pitch=42, roll=-16, hinge=25, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89),
+                  hroll=HH10, hpitch=HP10), "ease"),
         (22, pose(6, 10, (0.0, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2, knuckles=(-0.005, -0.932, 0.362)),
          "auto"),
         (32, _knuckled(GUARD, (-0.061, -0.857, 0.511)), "ease"),
     ]
-    return build("axe_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "stance": True, "contact": 3 / 30,
-                                                            "weapon": "axe"})
+
+
+def axe_heavy(rig):
+    """The axe brought from behind her shoulder, high, and hacked down and
+    across in front, the back bending into it."""
+    return build("axe_heavy", rig, _heavy_keys(), lead=STRIKE, meta={"layer": "upper", "stance": True,
+                                                                     "contact": 3 / 30, "weapon": "axe"})
+
+
+def axe_heavy_run(rig):
+    """axe_heavy over her run (as axe_fore_run): the finish further out to her left and higher."""
+    return build("axe_heavy_run", rig, _heavy_keys(True), lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30,
+                                                                             "weapon": "axe"})
 
 
 # Two axes: the left hand's forehand is the right hand's mirrored.
@@ -174,11 +221,11 @@ def mirror(p):
 
 
 def axes_pose(hips_yaw, spine_yaw, hand, blade, pole, idle_hand, idle_blade, weight=0.0, pivot=0.0, pitch=12, hinge=8,
-              clav_r=(4, 6), roll=0):
+              clav_r=(4, 6), roll=0, hroll=0, hpitch=-8):
     """The right hand cutting, the left winding up for its turn."""
     return pose(hips_yaw, spine_yaw, hand, blade, pole=pole, off=idle_hand, left_blade=idle_blade,
                 left_pole=(0.8, -0.3, -0.4), weight=weight, pivot=pivot, pitch=pitch, hinge=hinge, clav_r=clav_r,
-                roll=roll)
+                roll=roll, hroll=hroll, hpitch=hpitch)
 
 
 AXES_GUARD = pose(0, 0, (-0.08, -0.24, 0.22), _n(-0.35, 0.75, 0.5), pole=(-0.7, -0.5, -0.4), off=(0.08, -0.24, 0.22),
@@ -199,11 +246,11 @@ def _axes_cut():
         # (Solver 5a, judge r2: committed as axe_fore's; the idle axe tipped back, its head behind her shoulder,
         # and the guard axe out to the side so its haft clears her face.)
         (5, axes_pose(28, 32, (0.21, -0.12, 0.44), _n(0.45, -0.45, 0.8), (-0.9, -0.3, 0.1),
-                      (0.22, -0.04, -0.02), _n(0.4, 0.5, -0.75), weight=0.6, pivot=0.6, pitch=26, roll=-14, hinge=14,
-                      clav_r=(6, 14)), "ease"),
+                      AX_IH, _n(*AX_IB), weight=0.6, pivot=0.6, pitch=26, roll=-14, hinge=14,
+                      clav_r=(6, 14), hroll=HR5), "ease"),
         (7, axes_pose(30, 34, (0.235, -0.10, 0.43), _n(0.45, -0.45, 0.8), (-0.9, -0.3, 0.2),
-                      (0.22, 0.0, -0.06), _n(0.3, 0.3, -0.9), weight=0.7, pivot=0.7, pitch=28, roll=-16, hinge=15,
-                      clav_r=(6, 14)), "ease"),
+                      AX_IH, _n(*AX_IB), weight=0.7, pivot=0.7, pitch=28, roll=-16, hinge=15,
+                      clav_r=(6, 14), hroll=HR7), "ease"),
         (15, axes_pose(7, 12, (0.0, -0.24, 0.24), _n(0.2, 0.6, 0.75), (-0.6, -0.5, -0.4),
                        (0.10, -0.20, 0.20), _n(0.4, 0.7, 0.55), weight=0.2, pivot=0.2), "auto"),
     ]
@@ -245,6 +292,7 @@ def axes_heavy(rig):
 def clips(rig, want):
     out = []
     for name, fn in (("axe_back", axe_back), ("axe_fore", axe_fore), ("axe_heavy", axe_heavy),
+                     ("axe_fore_run", axe_fore_run), ("axe_heavy_run", axe_heavy_run),
                      ("axes_right", axes_right), ("axes_left", axes_left), ("axes_heavy", axes_heavy)):
         if want and not any(w in name for w in want):
             continue
