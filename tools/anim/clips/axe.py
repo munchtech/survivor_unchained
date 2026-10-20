@@ -40,8 +40,8 @@ def feet(weight=0.0, pivot=0.0, crouch=0.03):
 
 
 def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), off=None, pitch=12, roll=0, weight=0.0, pivot=0.0,
-         head=None, left_blade=None, left_pole=(0.7, -0.5, -0.3), hinge=8, clav_r=(4, 6)):
-    p = feet(weight, pivot)
+         head=None, left_blade=None, left_pole=(0.7, -0.5, -0.3), hinge=8, clav_r=(4, 6), crouch=0.03):
+    p = feet(weight, pivot, crouch)
     p["hips"]["rot"] = (hips_yaw, hinge, 0)
     p["spine"] = (spine_yaw, pitch, roll)
     p["head"] = head if head is not None else (-(hips_yaw + spine_yaw) * 0.55, -8, 0)
@@ -89,12 +89,15 @@ def axe_fore(rig):
         # The follow-through (anim 42): the right fist carried across before her left hip, the arm long and the
         # shoulder rolled after it; the head out past her left leg, the haft 30 deg down; a hinge from the hips
         # (the back long); the free arm long and swung back behind her for the counterweight.
-        (5, pose(22, 28, (0.25, -0.40, 0.31), _n(0.8, -0.5, 0.3), pole=(-0.9, -0.3, 0.1),
+        # (Solver 4: the arm carried in front of her breast, not through it: the chest and hips turned further
+        # into the blow and the arm aimed well forward, the shoulder drawn forward less; upper arm into her
+        # breast 72 -> 38 mm. The haft turned with the arm so the wrist stays near straight.)
+        (5, pose(28, 40, (0.09, -0.36, 0.55), _n(0.55, -0.35, 0.75), pole=(-0.9, -0.3, 0.1),
                  off=(0.10, -0.47, -0.05), left_pole=(0.4, -0.2, -0.9), weight=0.7, pivot=0.7, pitch=6, hinge=14,
-                 clav_r=(4, 22)), "ease"),
-        (7, pose(24, 30, (0.27, -0.42, 0.30), _n(0.8, -0.5, 0.3), pole=(-0.9, -0.3, 0.2),
+                 clav_r=(6, 14)), "ease"),
+        (7, pose(30, 42, (0.11, -0.38, 0.54), _n(0.55, -0.35, 0.75), pole=(-0.9, -0.3, 0.2),
                  off=(0.10, -0.47, -0.06), left_pole=(0.4, -0.2, -0.9), weight=0.8, pivot=0.8, pitch=6, hinge=15,
-                 clav_r=(4, 24)), "ease"),
+                 clav_r=(6, 14)), "ease"),
         (16, pose(7, 12, (0.02, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
          "auto"),
         (26, GUARD, "ease"),
@@ -112,13 +115,15 @@ def axe_heavy(rig):
         (3, pose(-6, -8, (-0.02, 0.0, 0.42), _n(0.0, 0.2, 1.0), pole=(-0.6, -0.5, -0.4),
                  off=(0.04, -0.28, 0.16), weight=0.2, pitch=10), "linear"),
         # (As axe_fore's finish, anim 42, but heavier: 10 deg more hinge, the head lower and further out.)
-        (6, pose(22, 28, (0.25, -0.50, 0.32), _n(0.8, -0.55, 0.3), pole=(-0.9, -0.3, 0.1),
-                 off=(0.10, -0.47, 0.0), left_pole=(0.4, -0.2, -0.9), weight=0.8, pivot=0.8, pitch=9, hinge=22,
-                 clav_r=(4, 22)), "ease"),
-        (10, pose(25, 30, (0.27, -0.54, 0.30), _n(0.8, -0.58, 0.3), pole=(-0.9, -0.3, 0.2),
-                  off=(0.10, -0.47, 0.0), left_pole=(0.4, -0.2, -0.9), weight=0.9, pivot=0.9, pitch=10, hinge=24,
-                  clav_r=(4, 24)), "ease"),
-        (20, pose(6, 10, (0.0, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
+        # (Solver 4: as fore's, the arm in front of her breast; and apart from fore: the head about 13 cm lower
+        # and 15 further out, the haft steeper, the knees deeper, held two frames longer.)
+        (6, pose(28, 40, (0.09, -0.46, 0.56), _n(0.55, -0.8, 0.55), pole=(-0.9, -0.3, 0.1),
+                 off=(0.10, -0.47, 0.0), left_pole=(0.4, -0.2, -0.9), weight=0.8, pivot=0.8, pitch=9, hinge=23,
+                 clav_r=(6, 14), crouch=0.07), "ease"),
+        (10, pose(31, 42, (0.11, -0.50, 0.54), _n(0.55, -0.8, 0.55), pole=(-0.9, -0.3, 0.2),
+                  off=(0.10, -0.47, 0.0), left_pole=(0.4, -0.2, -0.9), weight=0.9, pivot=0.9, pitch=10, hinge=25,
+                  clav_r=(6, 14), crouch=0.07), "ease"),
+        (22, pose(6, 10, (0.0, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
          "auto"),
         (32, GUARD, "ease"),
     ]
@@ -172,12 +177,13 @@ def _axes_cut():
                         (0.10, -0.20, 0.16), _n(0.5, 0.7, 0.3), weight=0.1, pitch=8), "linear"),
         # (As axe_fore's follow-through, anim 42: the fist across before her left hip, the shoulder rolled after
         # it, the head out past her left leg, a hinge from the hips.)
-        (5, axes_pose(22, 28, (0.25, -0.40, 0.31), _n(0.8, -0.5, 0.3), (-0.9, -0.3, 0.1),
+        # (Solver 4: as axe_fore's, the arm in front of her breast.)
+        (5, axes_pose(28, 40, (0.09, -0.36, 0.55), _n(0.55, -0.35, 0.75), (-0.9, -0.3, 0.1),
                       (0.20, -0.04, 0.0), _n(0.5, 0.75, -0.4), weight=0.6, pivot=0.6, pitch=6, hinge=14,
-                      clav_r=(4, 22)), "ease"),
-        (7, axes_pose(24, 30, (0.27, -0.42, 0.30), _n(0.8, -0.5, 0.3), (-0.9, -0.3, 0.2),
+                      clav_r=(6, 14)), "ease"),
+        (7, axes_pose(30, 42, (0.11, -0.38, 0.54), _n(0.55, -0.35, 0.75), (-0.9, -0.3, 0.2),
                       (0.22, 0.0, -0.02), _n(0.5, 0.75, -0.45), weight=0.7, pivot=0.7, pitch=6, hinge=15,
-                      clav_r=(4, 24)), "ease"),
+                      clav_r=(6, 14)), "ease"),
         (15, axes_pose(7, 12, (0.0, -0.24, 0.24), _n(0.2, 0.6, 0.75), (-0.6, -0.5, -0.4),
                        (0.10, -0.20, 0.20), _n(0.4, 0.7, 0.55), weight=0.2, pivot=0.2), "auto"),
     ]
@@ -192,9 +198,10 @@ def axes_right(rig):
 
 def axes_left(rig):
     """The left axe's forehand, her left to her right: the right's mirrored."""
-    keys = [(t, mirror(p), e) for t, p, e in _axes_cut()] + [(24, AXES_GUARD, "ease")]
     # (The mirrored stance puts her right foot forward for this one: a step
-    # through with the cut.)
+    # through with the cut. The guard it ends in is mirrored too, so the feet
+    # stay planted: the plain guard slid both feet 20 cm to swap them, solver 4.)
+    keys = [(t, mirror(p), e) for t, p, e in _axes_cut()] + [(24, mirror(AXES_GUARD), "ease")]
     return build("axes_left", rig, keys, lead=STRIKE, meta={"layer": "upper", "stance": True, "contact": 2.5 / 30, "weapon": "axes"})
 
 
