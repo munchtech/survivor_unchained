@@ -48,7 +48,7 @@ public partial class Atmosphere : Node3D
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
         if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
         ViewHighlightsNeutral = k;
-        var lut = GradeLut(ViewGrade(Current.Grade), Mute);
+        var lut = GradeLut(ViewGrade(Own(Current)), Mute);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
     // (#bcbcbc is linear 0.5: the grade adds a tint as its distance from 0.5, so this one adds nothing.)
@@ -59,12 +59,23 @@ public partial class Atmosphere : Node3D
             HighlightTint = "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
             Moon = g.Moon * (1 - CloseMoonOff * ViewHighlightsNeutral),
             // (The close view by night takes its own paint grade: art style round 1's, which kept her copper hair.)
-            PaintVib = Mathf.Lerp((float)g.PaintVib, (float)Atmospheres.CloseNightPaint.PaintVib, ViewHighlightsNeutral),
+            PaintVib = Mathf.Lerp((float)g.PaintVib, CloseVib, ViewHighlightsNeutral),
+            PaintVibDark = Mathf.Lerp((float)g.PaintVibDark, CloseVibDark, ViewHighlightsNeutral),
             PaintHi = Mathf.Lerp((float)g.PaintHi, (float)Atmospheres.CloseNightPaint.PaintHi, ViewHighlightsNeutral),
             PaintShadow = Atmospheres.CloseNightPaint.PaintShadow,
             PaintShadowK = Mathf.Lerp((float)g.PaintShadowK, (float)Atmospheres.CloseNightPaint.PaintShadowK, ViewHighlightsNeutral),
             PaintLift = Mathf.Lerp((float)g.PaintLift, (float)Atmospheres.CloseNightPaint.PaintLift, ViewHighlightsNeutral),
         };
+    /// <summary>--close-vib V, --close-vib-dark D: the close view's paint vibrance and its share in the darks (pictures).</summary>
+    static readonly float CloseVib = SurvivorUnchained.Args.Num("close-vib", (float)Atmospheres.CloseNightPaint.PaintVib),
+        CloseVibDark = SurvivorUnchained.Args.Num("close-vib-dark", (float)Atmospheres.CloseNightPaint.PaintVibDark);
+    /// <summary>--front-paint: the title and the Look (Atmospheres.Front) under the close view's paint grade (pictures).</summary>
+    static readonly bool FrontPaint = SurvivorUnchained.Args.Has("front-paint");
+    static GradeSettings Own(AtmospherePreset p) => FrontPaint && ReferenceEquals(p, Atmospheres.Front) ? p.Grade with
+    {
+        PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
+        PaintShadow = Atmospheres.CloseNightPaint.PaintShadow, PaintShadowK = Atmospheres.CloseNightPaint.PaintShadowK, PaintLift = Atmospheres.CloseNightPaint.PaintLift,
+    } : p.Grade;
     /// <summary>--close-moon-off K: how much of the grade's moon colour the close view by night takes off (pictures).</summary>
     static readonly float CloseMoonOff = SurvivorUnchained.Args.Num("close-moon-off", 1f);
 
@@ -227,7 +238,7 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
-        if (grade) { var lut = GradeLut(ViewGrade(p.Grade), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
+        if (grade) { var lut = GradeLut(ViewGrade(Own(p)), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;
@@ -464,7 +475,7 @@ public partial class Atmosphere : Node3D
     /// <summary>The paint grade's terms for one table: the grade's own, each --grade-try key over its own.</summary>
     readonly struct Paint
     {
-        readonly float vib, skin, shadowK, lift, hi;
+        readonly float vib, skin, shadowK, lift, hi, vibDark;
         readonly bool hasShadow;
         readonly float ls, cs, hs;
         public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
@@ -472,7 +483,7 @@ public partial class Atmosphere : Node3D
         public Paint(GradeSettings g, GradeTry? t)
         {
             vib = t?.Vib ?? (float)g.PaintVib; hi = t?.Hi ?? (float)g.PaintHi; lift = t?.Lift ?? (float)g.PaintLift;
-            shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1;
+            shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1; vibDark = (float)g.PaintVibDark;
             string hex = t?.Shadow ?? g.PaintShadow;
             hasShadow = hex != "";
             ls = cs = hs = 0;
@@ -529,8 +540,8 @@ public partial class Atmosphere : Node3D
             return rgb.Clamp(Vector3.Zero, Vector3.One);
         }
 
-        /// <summary>The vibrance's share by Oklab lightness: 0.2 up to L 0.44, all of it from L 0.52 (the sunlit stone's).</summary>
-        static float VibDeep(float L) => Mathf.Lerp(0.2f, 1, Smooth(0.44f, 0.52f, L));
+        /// <summary>The vibrance's share by Oklab lightness: PaintVibDark (0.2) up to L 0.44, all of it from L 0.52 (the sunlit stone's).</summary>
+        float VibDeep(float L) => Mathf.Lerp(vibDark, 1, Smooth(0.44f, 0.52f, L));
 
         static bool In(Vector3 v) => v.X >= -1e-5f && v.Y >= -1e-5f && v.Z >= -1e-5f && v.X <= 1 + 1e-5f && v.Y <= 1 + 1e-5f && v.Z <= 1 + 1e-5f;
     }

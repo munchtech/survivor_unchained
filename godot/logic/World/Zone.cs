@@ -101,6 +101,8 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public string PaintShadow { get; init; } = "";
     public double PaintShadowK { get; init; }
     public double PaintLift { get; init; }
+    /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
+    public double PaintVibDark { get; init; } = 0.2;
 }
 
 public sealed record AtmospherePreset(

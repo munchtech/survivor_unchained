@@ -116,11 +116,12 @@ public partial class Game
         // out from the wood behind her, not pasted on it.
         if (closeKey == null || !IsInstanceValid(closeKey) || closeKey.GetParent() != scene)
         {
-            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
+            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayers, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKey);
         }
         if (closeRim == null || !IsInstanceValid(closeRim) || closeRim.GetParent() != scene)
         {
+            // (On her and people, not her hair (PlayerView.HerHairLayer): from behind it lifted her copper crown.)
             closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.6f, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
@@ -157,7 +158,7 @@ public partial class Game
         if (src == null) { if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false; return; }
         if (fireFill == null || !IsInstanceValid(fireFill) || fireFill.GetParent() != scene)
         {
-            fireFill = new OmniLight3D { Name = "CloseFireFill", ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerLayer };
+            fireFill = new OmniLight3D { Name = "CloseFireFill", ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerLayers };
             scene!.AddChild(fireFill);
         }
         fireFill.GlobalPosition = src.GlobalPosition;
