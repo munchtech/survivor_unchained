@@ -131,7 +131,7 @@ public partial class ZoneView : Node3D
     /// <summary>The zone's lights kept off her own layer (PlayerView.HerLayer: the close view by night), or given back.</summary>
     public void HerUnlit(bool off)
     {
-        foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~(PlayerView.HerLayers | Brush.MaskLayer) : l.LightCullMask | PlayerView.HerLayers;
+        foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~(PlayerView.HerLayer | Brush.MaskLayer) : l.LightCullMask | PlayerView.HerLayer;
     }
 
     /// <summary>The lit light nearest `at` within `within` metres (a fire by her), or null.</summary>

@@ -1,6 +1,7 @@
 # Handoff: the signature art style (style frames)
 
 ## Status: round 2 DONE, ready to merge (art-style lead 4, 20 Oct)
+- **Adopted (env lead 9, 20 Oct, G1):** the light and grade are now the default in data (`GradeSettings.Paint*`; environment.md "Now (env lead 9 ..."). The brush post-filter is dropped: its code stays behind `--brush`, off by default; don't build on it. The painted look now comes through the remakes, E4 onward.
 Deliverables: `survivorsunchained_inputs\art_style\r2\` (`proposal.md`, `r2_town.png`, `r2_close.png` and `r2_night.png` as today | A | target | engine, `frames\`, `perf\`, both judge briefs). **Verdict: the engine doesn't get there with flags.** Two xhigh judges failed every frame at the whole-frame gate, and round 2 put it "about a third of the way". The light and grade pass their part: blue shadows, a pale-gold sun, ember against moon. No surface reads as painted at 1:1, and the judge says remade assets close the rest, not knobs or a stronger filter.
 - **Built this stretch:** setts palette toward cream-grey, then half the per-stone spread with no cream outliers. Stones 1.6x via `--setts-paint-scale` (the default under `--setts-paint`). `paint_tex.py props`: the furniture trim painted, 41 props, plus a `--knee` for pale paint. Night sets `fordc` and `camp` (`--spots-clear`). `sheet.py four`.
 - **Perf (Release, brush in/out):** GPU +0.77/+0.86 ms at 1080p and +2.25/+2.27 ms at 1440p; frame time +1.1-1.9 ms at 1080p and +1.8-3.4 ms at 1440p. Recommendation: drop the post filter.

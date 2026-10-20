@@ -53,13 +53,6 @@ public partial class PlayerView : Node3D
     /// <summary>Her own render layer (11): the close view by night moves her meshes off people's layer (2) onto it, so the
     /// camp's fire, which stood behind the lens and filled her face flat from the front, can be kept off her alone (E1 judge 3).</summary>
     public const uint HerLayer = 1u << 10;
-    /// <summary>Her hair's own layer (13) while she is on hers: lit as the rest of her (the key, her share of the fire, the
-    /// zone's lights and the moon), but not by the close view's moon rim (GameCloseUp), which lifted her copper crown toward
-    /// strawberry blonde (G1 r4). --close-rim-hair: her hair on HerLayer with the rest of her, as before.</summary>
-    public const uint HerHairLayer = 1u << 12;
-    static readonly bool RimHair = Args.Has("close-rim-hair");
-    /// <summary>HerLayer and HerHairLayer: every light that lights her on her own layer takes both.</summary>
-    public const uint HerLayers = HerLayer | HerHairLayer;
     /// <summary>True: her meshes on HerLayer, not on layer 2 (GameCloseUp, the close view by night).</summary>
     public bool OwnLayer;
     bool ownShown;
@@ -612,25 +605,24 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayer & ~Brush.MaskLayer : 0xFFFFFu;
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
-        if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
+        if (OwnLayer || ownShown) { Relayer(this, OwnLayer); ownShown = OwnLayer; }
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
 
-    static void Relayer(Node n, bool own, List<MeshInstance3D> hair)
+    static void Relayer(Node n, bool own)
     {
         foreach (var c in n.GetChildren())
         {
             if (c is GeometryInstance3D g)
             {
-                uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer : HerLayer;
-                if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | mine;
-                else if (!own && (g.Layers & HerLayers) != 0) g.Layers = (g.Layers & ~HerLayers) | 2u;
+                if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | HerLayer;
+                else if (!own && (g.Layers & HerLayer) != 0) g.Layers = (g.Layers & ~HerLayer) | 2u;
             }
-            Relayer(c, own, hair);
+            Relayer(c, own);
         }
     }
 

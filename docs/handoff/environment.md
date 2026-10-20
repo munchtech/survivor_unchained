@@ -1,5 +1,23 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (env lead 9, 20 Oct): G1 DONE (the painted light and grade are the default), MR next; then E4
+- Branch `env-4`. Scratch, briefs and measuring scripts: `survivorsunchained_inputs\scratch_env9\` (backed up at the end of each stretch); judges' briefs `g1_judge_*.md`, `g2_*`, `g4_*`.
+- **What G1 built:** the paint grade is data. `GradeSettings.Paint*` (vib, vib-dark, hi, shadow hex, shadowk, lift) in `godot/logic/World/Zone.cs`, applied in `GradeLut` (`Paint` in `godot/src/World/Atmosphere.cs`). Vibrance fades in the darks (`VibDeep`) and spares skin and copper. Hi spares skin. `--grade-try` still overrides any key, for pictures.
+  - Presets (`godot/logic/World/Atmospheres.cs`): WaystationDay, LowFordNight, LowFordDawn (WaystationDawn inherits it), and `CloseNightPaint`, the close view's grade. The Look and the title (`Atmospheres.Front`) take CloseNightPaint's paint by default; `--front-unpainted` gives the old grade.
+  - The close view (`godot/src/Game/GameCloseUp.cs`): key-night 1.7 at 18 degrees, fire 0.9, rim 3.0 at 10 degrees, exposure-night 1.2. The rim is kept off her hair: `PlayerView.HerHairLayer`, bit 12; `--close-rim-hair` restores the old behaviour.
+  - Untouched: the base presets (Night, Day, Dawn, Dusk, NightTown) and the brush post-filter (`--brush`). The brush is dropped: its code stays behind its flag, off by default (+2.3 ms at 1440p, invisible at the play camera). Don't build on it.
+- **Her: the grade is on her, with no mask** (main's call, from the owner's question). The r4 max judge passed all four close-ups and the Look with the paint grade. Her neck shade stays warm rose-brown (hue 21, C 9; it would read as bruised below hue 20), and the copper is deep. At the play camera her shaded side takes the moon's blue, which reads as moonlight. Mask: not needed.
+- **World judges (xhigh), round 2:** 7 of 8 frames pass the gate. The dawn town's mud decals go black in shade. They measure the same with the old dawn light and no paint (shaded earth p10 22.8 before, 23.0 now), so the cause is the setts decal asset. **E9's setts remake must pass the dawn town frame at the gate.**
+- **Open, not light (routed):**
+  - At the closest close-up spot, her face is lit more by the key than the fire, and the moon edge is subtle on skin. Both pass the gate. If the owner wants more: key 1.45, fire 1.1, a tighter rim.
+  - The eyes' catchlight at _02/_03 (face lead).
+  - A blue sheen past the far pauldron (glow).
+  - The camp lantern's acid-yellow grass: `LampColor` #ffc890 in `ZoneView.cs` is every road lamp. The amber camp lantern is E7's.
+  - The camp's frosted moonlit grass p95 (Frost).
+  - The defocused campfire behind the Look reads as a flat cutout (camp props).
+- **Perf:** hub ABAB (`survivorsunchained_inputs\env_perf1\g1\hub_A*/B*`): G1 is not slower. The single-run fps drop against E3 (lf_hi 165 to 136, hub 112 to 88, GPU flat) is machine load: A1 (integration) ran at 80 fps and B1 (G1) at 112 back to back. Tests 1017/0/8; the teach run showed and answered 11/11.
+- **Next: E4** (canopies, foliage, firs, tufts), built to the painted look (`docs/handoff/art_style.md`). Then E5, E6, E7, E9, each its own MR.
+
 ## DONE (env lead 8, 20 Oct): E3 passed judge 4, MR READY; next is the art-style frames, then E4
 - Branch `env-3` (pushed). Scratch and briefs: `survivorsunchained_inputs\scratch_env8\` (ground_g brief and scripts, e3_judge4_brief.md, perf/abab.sh and final.sh). Frames and numbers: `env_e3\g\` (numbers.md); verdict `env_e3\judge4erdict.md`.
 - **Solver G (b96cfb10):** the setts mud reads as mud: hue about 33 against the stone's 22, saturation 0.22-0.25, 30-32% darker, low sheen, its own grain. At night the pebbles take the road's dew (night_04 pale pebbles 13 -> 1). The town_01 pool cut is confirmed. New switches: `--setts-collar`, `--setts-mud-tone/-sat/-spec`, `--scatter-night-dew`, debug views 26 (mud) and 27 (collar).

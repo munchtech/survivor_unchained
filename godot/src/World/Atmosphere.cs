@@ -48,7 +48,7 @@ public partial class Atmosphere : Node3D
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
         if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
         ViewHighlightsNeutral = k;
-        var lut = GradeLut(ViewGrade(Own(Current)), Mute);
+        var lut = GradeLut(ViewGrade(Current.Grade), Mute);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
     // (#bcbcbc is linear 0.5: the grade adds a tint as its distance from 0.5, so this one adds nothing.)
@@ -58,25 +58,7 @@ public partial class Atmosphere : Node3D
         {
             HighlightTint = "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
             Moon = g.Moon * (1 - CloseMoonOff * ViewHighlightsNeutral),
-            // (The close view by night takes its own paint grade: art style round 1's, which kept her copper hair.)
-            PaintVib = Mathf.Lerp((float)g.PaintVib, CloseVib, ViewHighlightsNeutral),
-            PaintVibDark = Mathf.Lerp((float)g.PaintVibDark, CloseVibDark, ViewHighlightsNeutral),
-            PaintHi = Mathf.Lerp((float)g.PaintHi, (float)Atmospheres.CloseNightPaint.PaintHi, ViewHighlightsNeutral),
-            PaintShadow = Atmospheres.CloseNightPaint.PaintShadow,
-            PaintShadowK = Mathf.Lerp((float)g.PaintShadowK, (float)Atmospheres.CloseNightPaint.PaintShadowK, ViewHighlightsNeutral),
-            PaintLift = Mathf.Lerp((float)g.PaintLift, (float)Atmospheres.CloseNightPaint.PaintLift, ViewHighlightsNeutral),
         };
-    /// <summary>--close-vib V, --close-vib-dark D: the close view's paint vibrance and its share in the darks (pictures).</summary>
-    static readonly float CloseVib = SurvivorUnchained.Args.Num("close-vib", (float)Atmospheres.CloseNightPaint.PaintVib),
-        CloseVibDark = SurvivorUnchained.Args.Num("close-vib-dark", (float)Atmospheres.CloseNightPaint.PaintVibDark);
-    /// <summary>The title and the Look (Atmospheres.Front) take the close view's paint grade (G1 r4 judge: it fixed her pale, washed-out
-    /// lit face at the Look; identity, freckles and copper held). --front-unpainted: the grade before it (pictures).</summary>
-    static readonly bool FrontPaint = !SurvivorUnchained.Args.Has("front-unpainted");
-    static GradeSettings Own(AtmospherePreset p) => FrontPaint && ReferenceEquals(p, Atmospheres.Front) ? p.Grade with
-    {
-        PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
-        PaintShadow = Atmospheres.CloseNightPaint.PaintShadow, PaintShadowK = Atmospheres.CloseNightPaint.PaintShadowK, PaintLift = Atmospheres.CloseNightPaint.PaintLift,
-    } : p.Grade;
     /// <summary>--close-moon-off K: how much of the grade's moon colour the close view by night takes off (pictures).</summary>
     static readonly float CloseMoonOff = SurvivorUnchained.Args.Num("close-moon-off", 1f);
 
@@ -239,7 +221,7 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
-        if (grade) { var lut = GradeLut(ViewGrade(Own(p)), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
+        if (grade) { var lut = GradeLut(ViewGrade(p.Grade), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;
@@ -273,7 +255,6 @@ public partial class Atmosphere : Node3D
         float tintHue = Oklab(shT).Z;
         // --grade-toe X: the toe hold for pictures (0, the grade before it).
         float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
-        var paint = new Paint(g, Try);
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
         var slices = new Godot.Collections.Array<Image>();
         for (int b = 0; b < LutSize; b++)
@@ -313,7 +294,7 @@ public partial class Atmosphere : Node3D
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
                     if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
-                    if (paint.On) outLin = paint.Apply(outLin);
+                    if (Try != null) outLin = Try.Apply(outLin);
                     var o = Srgb(outLin);
                     img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
                 }
@@ -437,14 +418,16 @@ public partial class Atmosphere : Node3D
     static Vector3 Lin(Vector3 c) => new(Lin1(c.X), Lin1(c.Y), Lin1(c.Z));
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
 
-    /// <summary>--grade-try k=v,...: a trial paint grade over the preset's own (GradeSettings.Paint*), key by key, for style
-    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    /// <summary>--grade-try k=v,...: a trial grade on top of the live one, for style frames (default untouched).
+    /// Keys: mute, vib, skin, shadow (#hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
     static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
 
     sealed class GradeTry
     {
-        public float? Mute, Vib, Skin, ShadowK, Lift, Hi;
-        public string? Shadow;
+        public float? Mute;
+        float vib, skin = 1, shadowK, lift, hi;
+        bool hasShadow;
+        float ls, cs, hs;
 
         public static GradeTry? Parse(string? spec)
         {
@@ -456,66 +439,41 @@ public partial class Atmosphere : Node3D
                 int eq = part.IndexOf('=');
                 if (eq < 0) { GD.PushWarning($"--grade-try: no value in '{part}'"); continue; }
                 string k = part[..eq].Trim().ToLowerInvariant(), v = part[(eq + 1)..].Trim();
-                if (k == "shadow") { t.Shadow = v.StartsWith('_') ? "#" + v[1..] : v; continue; }
+                if (k == "shadow")
+                {
+                    if (v.StartsWith('_')) v = "#" + v[1..];
+                    var c = new Color(v);
+                    var o = Oklab(Lin(new Vector3(c.R, c.G, c.B)));
+                    t.ls = o.X; t.cs = o.Y; t.hs = o.Z; t.hasShadow = true;
+                    continue;
+                }
                 if (!float.TryParse(v, System.Globalization.NumberStyles.Float, inv, out float f)) { GD.PushWarning($"--grade-try: bad number '{part}'"); continue; }
                 switch (k)
                 {
                     case "mute": t.Mute = f; break;
-                    case "vib": t.Vib = f; break;
-                    case "skin": t.Skin = f; break;
-                    case "shadowk": t.ShadowK = f; break;
-                    case "lift": t.Lift = f; break;
-                    case "hi": t.Hi = f; break;
+                    case "vib": t.vib = f; break;
+                    case "skin": t.skin = f; break;
+                    case "shadowk": t.shadowK = f; break;
+                    case "lift": t.lift = f; break;
+                    case "hi": t.hi = f; break;
                     default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
                 }
             }
             return t;
-        }
-    }
-
-    /// <summary>The paint grade's terms for one table: the grade's own, each --grade-try key over its own.</summary>
-    readonly struct Paint
-    {
-        readonly float vib, skin, shadowK, lift, hi, vibDark;
-        readonly bool hasShadow;
-        readonly float ls, cs, hs;
-        public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
-
-        public Paint(GradeSettings g, GradeTry? t)
-        {
-            vib = t?.Vib ?? (float)g.PaintVib; hi = t?.Hi ?? (float)g.PaintHi; lift = t?.Lift ?? (float)g.PaintLift;
-            shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1; vibDark = (float)g.PaintVibDark;
-            string hex = t?.Shadow ?? g.PaintShadow;
-            hasShadow = hex != "";
-            ls = cs = hs = 0;
-            if (hasShadow)
-            {
-                var c = new Color(hex);
-                var o = Oklab(Lin(new Vector3(c.R, c.G, c.B)));
-                ls = o.X; cs = o.Y; hs = o.Z;
-            }
         }
 
         public Vector3 Apply(Vector3 outLin)
         {
             var ok = Oklab(outLin);
             float L = ok.X, C = ok.Y, h = ok.Z;
-            float skinHue = Smooth(15, 30, h) * (1 - Smooth(75, 90, h));
-            float skinW = skin * skinHue * Smooth(0.025f, 0.05f, C) * Smooth(0.30f, 0.45f, L);
             if (vib != 0)
             {
-                // (G1 r2: fades with lightness, a fifth of it below Oklab L 0.44 (a gamma luma of 0.3 is L 0.42): it took the day
-                // town's olive-brown mud, puddle decals and grout to rust-orange, chroma 3.1 to 5.0 (x100); 3.6 now, the sunlit setts kept.)
-                float dull = 1 - Smooth(0.02f, 0.20f, C), light = Smooth(0.04f, 0.18f, L) * VibDeep(L);
-                C *= 1 + vib * dull * light * (1 - skinW);
+                float dull = 1 - Smooth(0.02f, 0.20f, C), light = Smooth(0.04f, 0.18f, L);
+                float skinHue = Smooth(15, 30, h) * (1 - Smooth(75, 90, h));
+                float skinW = skinHue * Smooth(0.025f, 0.05f, C) * Smooth(0.30f, 0.45f, L);
+                C *= 1 + vib * dull * light * (1 - skin * skinW);
             }
-            // (G1 r2: lit skin mostly kept out of the highlight boost: it took her lit skin's chroma 9 to 11, a spray tan, and
-            // yellowed her sunlit arm in the town. Only skin's own chroma, 0.06 up: the sunlit setts' warm stone, 0.05, keeps it.)
-            if (hi != 0)
-            {
-                float skinHi = 0.85f * skin * skinHue * Smooth(0.06f, 0.085f, C) * Smooth(0.30f, 0.45f, L);
-                C *= 1 + hi * Smooth(0.55f, 0.90f, L) * Smooth(0.008f, 0.03f, C) * (1 - skinHi);
-            }
+            if (hi != 0) C *= 1 + hi * Smooth(0.55f, 0.90f, L) * Smooth(0.008f, 0.03f, C);
             float hr = Mathf.DegToRad(h);
             float a = C * Mathf.Cos(hr), b = C * Mathf.Sin(hr);
             if (lift != 0) L = Mathf.Min(L + lift * (1 - Smooth(0, 0.35f, L)), 1);
@@ -540,9 +498,6 @@ public partial class Atmosphere : Node3D
             }
             return rgb.Clamp(Vector3.Zero, Vector3.One);
         }
-
-        /// <summary>The vibrance's share by Oklab lightness: PaintVibDark (0.2) up to L 0.44, all of it from L 0.52 (the sunlit stone's).</summary>
-        float VibDeep(float L) => Mathf.Lerp(vibDark, 1, Smooth(0.44f, 0.52f, L));
 
         static bool In(Vector3 v) => v.X >= -1e-5f && v.Y >= -1e-5f && v.Z >= -1e-5f && v.X <= 1 + 1e-5f && v.Y <= 1 + 1e-5f && v.Z <= 1 + 1e-5f;
     }
