@@ -438,9 +438,13 @@ def staff_town(t, f):
     frame drifted 24 cm, the wrist unable to hold its line as she swayed.)"""
     d = free_arms(reach=1.03)(t, f)
     # (The wrist rides her chest, the staff's line is kept in her character's space, "char": on the chest's, its foot
-    # swung 57 cm across as the WiggleHips chest rolls.)
-    d["hand_r"] = {"arc": arc_of((-0.16, -0.31, 0.18)), "pole": (-0.2, -0.6, -0.75), "frame": "char",
-                   "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5}
+    # swung 57 cm across as the WiggleHips chest rolls.) Re-aimed (judge round 3: the crescent hung over her face from
+    # facing 45 at 26 deg forward, 2 out): the real line 9-13 deg forward, 15-19 out, the fist 4 cm out, 8 cm
+    # forward, 4 cm higher, the elbow 9 deg more open (72), the elbow pole down. Lower or further out cannot be:
+    # the wrist's radial limit (22) leaves the line leaning forward with the forearm below level, and 22 deg out
+    # swings the foot 30 mm into her right thigh.
+    d["hand_r"] = {"arc": arc_of((-0.21, -0.26, 0.25)), "pole": (0.0, -1.0, -0.2), "frame": "char",
+                   "blade": _n((-0.34, 1.0, -0.05)), "twist": 0.5}
     d["fingers_r"] = "grip"
     return d
 
