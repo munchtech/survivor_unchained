@@ -1,5 +1,17 @@
 # Handoff: the signature art style (style frames)
 
+## Status: round 1 DONE, 20 October (art-style lead 1); waiting on main
+- **Delivered:** `survivorsunchained_inputs\art_style\r1\`: today/A/B/C for town, ford and close; three sheets; `overview.png`; `proposal.md`. Frames: town_00 (spot 3,3), ford_03 (0,-38), close_03 (-9.5,92.5,1,0). They come from `tools/scratch/art_style/frames.py`: `--no-labels` hides the world text; "g" runs dump the live table.
+- **The gate: NO on all nine.**
+  - **A** is proven in engine: `--grade-try` (e19baf80) matches its numpy twin `grade_try.py` on all but 1.5% of pixels, and the default grade is untouched. It's a free colour gain, but it can't fix the town's assets.
+  - **B and C fail to preview a painted surface.** Z-Image paints in a flat comic style: above about 45% repaint it invents content, and below that it adds no brushwork. Their gain is light, which the engine can do.
+  - The solver's method is in `paintprep_r1.py` (light block-in, a stroke filter that follows edges) and `paint.py` (fixed for this ComfyUI's MoGe).
+- **Merge candidate:** only `--grade-try` + `--no-labels` (godot/src/World/Atmosphere.cs, godot/src/Shots.cs; both shots-only).
+- **Open (main's call):** the next step. The lead recommends A's grade plus B's lighting design, then the in-engine proof (masked stroke post-filter plus 3-4 re-textured assets). Alternatives: a painter's paint-over of A_town/A_ford, or a Krea 2 + darkbrush try (needs main's call under the replace-Krea policy).
+- **Left behind:**
+  - The scratch in the coordinator's scratchpad `art_style\` (including `solver\`) is not yet backed up.
+  - The worktree shows about 1,146 `.import` files as modified (line endings only; their content diff is empty) and 32 untracked `.uid` files. These are by-products of the first import: never commit them.
+
 ## Start here
 The owner approved exploring a signature look before we remake the world's assets (19 October, night: "I love your ideas, lets do it. exciting !"; OWNER_NOTES 19 Oct, "A signature art style"). This stretch is step 1 only: **style frames for the owner to pick from.** Nothing in the game changes this stretch.
 
