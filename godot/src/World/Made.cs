@@ -174,15 +174,18 @@ public static class Made
     /* -------------------------------------------------------------- wands -- */
 
     /// <summary>An apprentice's wand: turned ash, a brass collar, a clear
-    /// crystal held at its tip.</summary>
+    /// crystal held at its tip. Its grip is her one-handed fist's (anim-40, 19 October: the Blade1H grip, 13.7 mm round,
+    /// WeaponSockets.BladeAtR and keyed.py WRAP["sword"], tools/anim/fistfit.py wand): a knob at the butt, a plain round
+    /// grip 105 mm long (0.047 at its 16 corners: 13.85 mm, 13.7 round its sides, the wand 0.38 m over 1.29), the collar
+    /// above her forefinger. Its grip point (Arms.Spec.Grip 0.12, 46 mm up) is on the pocket.</summary>
     public static Node3D Wand()
     {
         var root = new Node3D();
         var wood = new Build();
-        Lathe(wood, Pts(0, -0.6f, 0.04f, -0.6f, 0.046f, -0.56f, 0.04f, -0.5f, 0.05f, -0.44f, 0.044f, -0.3f, 0.037f, -0.26f, 0.033f, 0.1f, 0.025f, 0.4f, 0.021f, 0.48f, 0, 0.5f), 16, textured: true);
+        Lathe(wood, Pts(0, -0.6f, 0.047f, -0.6f, 0.054f, -0.59f, 0.054f, -0.578f, 0.047f, -0.566f, 0.047f, -0.21f, 0.04f, -0.19f, 0.033f, 0.1f, 0.025f, 0.4f, 0.021f, 0.48f, 0, 0.5f), 16, textured: true);
         Add(root, wood, Grain("#8a6a48", "#4a3018"));
         var brass = new Build();
-        Lathe(brass, Pts(0.044f, -0.31f, 0.049f, -0.29f, 0.049f, -0.26f, 0.04f, -0.24f), 16);
+        Lathe(brass, Pts(0.047f, -0.215f, 0.053f, -0.2f, 0.053f, -0.172f, 0.04f, -0.155f), 16);
         for (int k = 0; k < 3; k++)
         {
             float a = k * Mathf.Tau / 3;
@@ -193,6 +196,11 @@ public static class Made
         var crystal = new Build();
         Lathe(crystal, Pts(0, 0, 0.05f, 0.04f, 0.045f, 0.14f, 0, 0.22f), 6, At(0, 0.47f, 0));
         Add(root, crystal.Faceted(), Gem("#7ac0ff", 1.1f));
+        // Its grip on the lathe's own axis (anim-40, 19 October): without it Arms.Make took the shaft and its centre from
+        // the bounds, which the three prongs and the six-sided crystal pull 0.9 mm off the grip's axis (her forefinger and
+        // little finger hung 1.3-1.4 mm past it, fistfit wand on the dump). Origin at Spec.Grip 0.12 up its 1.29 extent
+        // (-0.6 to the crystal's tip, 0.69), -Y toward the tip.
+        root.AddChild(new Node3D { Name = "anchor_grip", Transform = new Transform3D(new Basis(new Vector3(-1, 0, 0), new Vector3(0, -1, 0), new Vector3(0, 0, 1)), new Vector3(0, -0.6f + 0.12f * 1.29f, 0)) });
         return root;
     }
 

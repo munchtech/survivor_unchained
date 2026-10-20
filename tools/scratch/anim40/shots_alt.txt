@@ -1,0 +1,11 @@
+# anim41: alternatives where r1 hid the hand or weapon
+axe_fore3_f45|reaver|-|axe_fore@0.1|day|1|45|female
+axe_fore3_f270|reaver|-|axe_fore@0.1|day|1|270|female
+axe_fore8_c|reaver|-|axe_fore@0.27|day|1|315|female
+chain3_p|reaver|-|chain_strike@0.1|day|0|315|female
+chain8_c|reaver|-|chain_strike@0.27|day|1|315|female
+chain15_c|reaver|-|chain_strike@0.5|day|1|315|female
+wand_flick0_f270|arcanist|-|cast_flick@0.0|day|1|270|female
+wand_flick4_c|arcanist|-|cast_flick@0.13|day|1|315|female
+show5_c|reaver|-|reaver_show@0.167|day|1|315|female
+show20_f270|reaver|-|reaver_show@0.667|day|1|270|female

@@ -14,8 +14,9 @@ public static class WeaponsData
     /// <summary>The lean a kind's grip takes when the row gives none (as the Arms rows do).</summary>
     public static float DefaultLean(WeaponKind kind) => kind switch
     {
-        WeaponKind.Blade1H => 35,
-        WeaponKind.Dagger or WeaponKind.Blunt or WeaponKind.Axe or WeaponKind.Wand => 30,
+        // The one-handed axe and the wand are held in the blade's fist (BladeDirR, anim-40).
+        WeaponKind.Blade1H or WeaponKind.Axe or WeaponKind.Wand => 35,
+        WeaponKind.Dagger or WeaponKind.Blunt => 30,
         _ => 0,
     };
 

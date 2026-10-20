@@ -47,7 +47,7 @@
         {"do": "prop", "name": "shield", "piece": "@shield", "where": [-8.05, 0.3, 89.55], "rot": [0, 80, 78], "when": {"calling": ["warden"]}},
         {"do": "lids", "value": 1, "over": 0},
         {"do": "gaze", "look": [0.15, 0.3], "wander": 0.03},
-        {"do": "anim", "clip": "her/death_back", "from": 1.33, "speed": 0, "blend": 0},
+        {"do": "anim", "clip": "her/death_back_coals", "from": 0.2, "speed": 0, "blend": 0},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "music", "mood": "silence"},
         {"do": "fire", "light": 0, "flames": 0.0},
@@ -69,7 +69,7 @@
       "dur": 4.0,
       "still": 2.6,
       "note": "Her face on its side on the frozen ground, half ember, half moon. At 2.0 her eyes open. No start.",
-      "cam": {"pos": [-10.07, 0.13, 90.5], "at": [-9.45, 0.17, 90.45], "lens": 60, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.0, "move": {"push": 0.02, "ease": "linear"}},
+      "cam": {"pos": [-10.446, 0.461, 90.503], "at": [-9.586, 0.06, 90.539], "lens": 85, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.0, "move": {"push": 0.02, "ease": "linear"}},
       "fit": ["cin_drowned_fire.bedroll"],
       "tail": 0.6,
       "cues": [

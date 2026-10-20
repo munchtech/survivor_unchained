@@ -679,6 +679,38 @@ def _ease_from(clip, rot0, n, joints):
             clip.rot[fr, j] = qslerp(rot0[j], clip.rot[fr, j], u)
 
 
+# C01's lying pose (s1-s3: found at the dead fire). death_back's end, but her
+# face turned on to its LEFT cheek, toward the coals and the s3 camera at
+# her left (the fire is 1.1 m off her left ear), and slumped to that side:
+# the pelvis rolled 7 deg left (HIPS_COALS: death_back's hips twisted about
+# her own long axis, as Y-X-Z euler), the chest 9 more, the neck back so the
+# cheek rests on the ground, the chin down. The left leg bent 43 deg and
+# fallen out on to the ground (laid: past the hip's keyed limit; its knee
+# and outer thigh on the ground), the right lying straight, 8 deg out, its foot
+# rolled out; the right elbow a little bent. The flung left arm comes out of
+# the face-to-coals line, out on the ground 45 deg below her shoulder, palm
+# up, the fingers curled more toward the little one. (Judge lie r1: the
+# legs were a plank, the heels and calves 11-14 cm off the ground; r2: the
+# 17 deg knee didn't read from the side, so 35-45.) A still,
+# held (the cinematic plays it at speed 0); death_back and get_up_back are
+# unchanged (play's death).
+HIPS_COALS = (64.46, -82.59, -74.34)
+COALS_POSE = {"hips": {"pos": (0.0, -0.94, -0.62), "rot": HIPS_COALS},
+              "spine": (9, 2, -6), "neck": (26, -16, 0), "head": (52, 4, 0),
+              "foot_l": {"pos": (0.19, -0.045, 0.285), "rot": (55, -50, 55), "pole": (1, 0.1, 0.1), "laid": True},
+              "foot_r": {"pos": (-0.206, -0.055, 0.325), "rot": (-40, -55, -10), "pole": (-0.3, 1, 0)},
+              "hand_l": {"pos": (0.72, 0.025, -0.82), "pole": (0.3, 1, 0.3), "knuckles": (0.6, 0, -0.6), "blade": (-0.6, 0, -0.6)},
+              "hand_r": {"pos": (-0.39, 0.04, -0.675), "pole": (-1, 0.4, 0), "knuckles": (-0.2, 0, 1), "plant": 1.0},
+              "fingers_l": {"bends": {"index": (20, 35, 15), "middle": (25, 40, 20), "ring": (30, 45, 22), "pinky": (35, 50, 25),
+                                      "thumb": (12, 15, 10)}}}
+
+
+def death_back_coals(rig):
+    pose = merge(_back_pose(1.0), **COALS_POSE)
+    return build("death_back_coals", rig, [(0, pose, "ease"), (6, pose, "ease")],
+                 meta={"layer": "full", "hold": True, "note": "keyed: C01's lying still, the left cheek down, face to the coals"})
+
+
 def get_up_back(rig):
     """From where death_back left her, on her back: the head lifts first and
     the knees draw up, the flung arm comes down round her side, she sits up
@@ -1230,7 +1262,7 @@ def daggers_heavy(rig):
     return build("daggers_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})
 
 
-ALL = (("dash", dash), ("hit", hit), ("death", death), ("death_back", death_back), ("get_up", get_up), ("get_up_back", get_up_back),
+ALL = (("dash", dash), ("hit", hit), ("death", death), ("death_back", death_back), ("death_back_coals", death_back_coals), ("get_up", get_up), ("get_up_back", get_up_back),
        ("cast_bolt", cast_bolt),
        ("cast_raise", cast_raise), ("cast_flick", cast_flick), ("crossbow_shoot", crossbow_shoot), ("throw", throw),
        ("warcry", warcry), ("daggers_back", daggers_back), ("daggers_fore", daggers_fore),

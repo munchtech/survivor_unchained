@@ -1,0 +1,5 @@
+# anim41: the held-axe worst frames (armscheck): stop_reaver f9 (haft 73 mm into spine_02, all frames), axe_fore f7 (95 mm into thigh_l), axe_heavy f7
+stop_l9_c|reaver|-|stop_reaver_l@0.3|day|1|315|female
+stop_l9_f135|reaver|-|stop_reaver_l@0.3|day|1|135|female
+fore7_c|reaver|-|axe_fore@0.233|day|1|315|female
+heavy7_c|reaver|-|axe_heavy@0.233|day|1|315|female
