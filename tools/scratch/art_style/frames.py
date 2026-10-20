@@ -13,7 +13,7 @@ W = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 G = os.path.join(W, "godot")
 GODOT = r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe"
 TP = r"C:\Users\munch\Desktop\survivorsunchained\tools\turn.py"
-HER = ["--quick", "warden", "--sex", "female", "--preset", "own", "--skin", "fair", "--eyes", "moss", "--hair", "braid", "--seed", "7", "--nohud"]
+HER = ["--quick", "warden", "--sex", "female", "--preset", "own", "--skin", "fair", "--eyes", "moss", "--hair", "braid", "--seed", "7", "--nohud", "--no-labels"]
 NIGHT = ["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle"]
 SETS = {
     "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24"], 3),
@@ -22,8 +22,10 @@ SETS = {
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)
+# try.SET=SPEC: that set's own spec (the day and the night want their own shadow colour)
+specs = {a[4:].split("=", 1)[0]: a[4:].split("=", 1)[1] for a in sys.argv[4:] if a.startswith("try.")}
 stale = "stale" in sys.argv[4:]
-if "t" in variants and not spec: sys.exit("variant t needs try=SPEC")
+if "t" in variants and not (spec or all(s in specs for s in sets)): sys.exit("variant t needs try=SPEC or try.SET=SPEC per set")
 shots = os.path.join(G, ".shots"); os.makedirs(shots, exist_ok=True)
 logs = os.path.join(HERE, "logs"); os.makedirs(logs, exist_ok=True)
 b = subprocess.run(["dotnet", "build", os.path.join(G, "SurvivorUnchained.csproj"), "-v", "q", "-nologo"], capture_output=True, text=True)
@@ -36,7 +38,7 @@ try:
         extra, n = SETS[s]
         for v in variants:
             name = f"{rnd}_{s}_{v}"; t0 = time.time()
-            va = {"g": ["--grade-dump", os.path.join(shots, f"{rnd}_{s}_g.bin")], "r": ["--grade", "off"], "t": ["--grade-try", spec or ""]}[v]
+            va = {"g": ["--grade-dump", os.path.join(shots, f"{rnd}_{s}_g.bin")], "r": ["--grade", "off"], "t": ["--grade-try", specs.get(s, spec) or ""]}[v]
             args = HER + extra + va + ["--spots-from", "10", "--spots-every", "6", "--shot", name, "--seconds", "15", "--every", "6", "--count", str(n)]
             with open(os.path.join(logs, name + ".log"), "w", encoding="utf-8", errors="replace") as lf:
                 p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080", "--"] + args, stdout=lf, stderr=subprocess.STDOUT)

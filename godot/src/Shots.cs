@@ -118,6 +118,10 @@ public partial class Shots : Node
                     if (Args.Get("tonemap") is string t && System.Enum.TryParse<Godot.Environment.ToneMapper>(t, true, out var mode)) env.TonemapMode = mode;
                     if (Args.Get("grade") == "off") env.AdjustmentEnabled = false;
                 }
+        // --no-labels: the world's text off (names, marks, speech, hit numbers), for frames that are painted over.
+        if (Args.Has("no-labels") && Engine.GetFramesDrawn() % 30 == 0)
+            foreach (var n in GetTree().Root.FindChildren("*", "Node3D", true, false))
+                if (n is SurvivorUnchained.View.Voices or SurvivorUnchained.View.Hits) ((Node3D)n).Visible = false;
         for (int i = wanted.Count - 1; i >= 0; i--)
         {
             if (time < wanted[i].At) continue;
