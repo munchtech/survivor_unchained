@@ -76,17 +76,27 @@ def _inside(rgb):
     return np.all((rgb >= -1e-5) & (rgb <= 1 + 1e-5), -1)
 
 
+VIB_DARK, VIB_FROM, VIB_TO = 0.2, 0.44, 0.52
+HI_SKIN, HI_C0, HI_C1 = 0.85, 0.06, 0.085
+
+
+def vib_deep(L):
+    """Atmosphere.Paint.VibDeep: the vibrance's share by Oklab lightness."""
+    return VIB_DARK + (1 - VIB_DARK) * smooth(VIB_FROM, VIB_TO, L)
+
+
 def apply_lin(out_lin, p):
     """The Apply step on linear sRGB (...,3)."""
     L, C, h = oklab(out_lin.astype(np.float32))
+    skin_hue = smooth(15, 30, h) * (1 - smooth(75, 90, h))
+    skin_w = p["skin"] * skin_hue * smooth(0.025, 0.05, C) * smooth(0.30, 0.45, L)
     if p["vib"] != 0:
         dull = 1 - smooth(0.02, 0.20, C)
-        light = smooth(0.04, 0.18, L)
-        skin_hue = smooth(15, 30, h) * (1 - smooth(75, 90, h))
-        skin_w = skin_hue * smooth(0.025, 0.05, C) * smooth(0.30, 0.45, L)
-        C = C * (1 + p["vib"] * dull * light * (1 - p["skin"] * skin_w))
+        light = smooth(0.04, 0.18, L) * vib_deep(L)
+        C = C * (1 + p["vib"] * dull * light * (1 - skin_w))
     if p["hi"] != 0:
-        C = C * (1 + p["hi"] * smooth(0.55, 0.90, L) * smooth(0.008, 0.03, C))
+        skin_hi = HI_SKIN * p["skin"] * skin_hue * smooth(HI_C0, HI_C1, C) * smooth(0.30, 0.45, L)
+        C = C * (1 + p["hi"] * smooth(0.55, 0.90, L) * smooth(0.008, 0.03, C) * (1 - skin_hi))
     hr = np.radians(h)
     a, b = C * np.cos(hr), C * np.sin(hr)
     if p["lift"] != 0:

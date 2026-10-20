@@ -133,7 +133,7 @@ public partial class Game
         {
             // (By night: the key CloseKeyAzNight degrees off her face, on the lens's side of it. She stands turned 0.6 rad
             // from the lens, so round 2's key at 0.7 rad was 6 degrees off her face: frontal, flat, waxy.)
-            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? 30 : 25);
+            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? CloseKeyElNight : 25);
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
         }
@@ -144,8 +144,8 @@ public partial class Game
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
         if (closeRim.Visible)
         {
-            // Behind her, on the side away from the key (her far cheek's), 35 degrees up.
-            float a = cam.Yaw + Mathf.Pi - CloseRimAz, up = Mathf.DegToRad(35);
+            // Behind her, on the side away from the key (her far cheek's), CloseRimEl degrees up.
+            float a = cam.Yaw + Mathf.Pi - CloseRimAz, up = Mathf.DegToRad(CloseRimEl);
             closeRim.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeRim.LookAt(chest + new Vector3(0, 0.15f, 0));
         }
@@ -176,7 +176,13 @@ public partial class Game
     static float CloseFireShare => Args.Num("close-fire", 0.75f);
     // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
     static float CloseKeyNight => Args.Num("close-key-night", 2.2f);
-    static float CloseRimNight => Args.Num("close-rim", 3.0f);
+    // --close-key-el D: the night key's elevation (degrees).
+    static float CloseKeyElNight => Args.Num("close-key-el", 30f);
+    // (G1 r2: rim 3.0 to 2.0 and down from 35 degrees to CloseRimEl: from above it lifted her copper crown pinkish-tan,
+    // toward strawberry blonde; low, its cool edge grazes her shoulders and arms.)
+    static float CloseRimNight => Args.Num("close-rim", 2.0f);
+    // --close-rim-el D: the rim's elevation (degrees).
+    static float CloseRimEl => Args.Num("close-rim-el", 15f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
     static float CloseRimAz => Args.Num("close-rim-az", 0.5f);
     static float CloseLampByNight => Args.Num("close-lamp-night", 0.8f);

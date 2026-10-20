@@ -84,15 +84,15 @@ public static class Atmospheres
     // grade's warm-hue hold and toe kept them so. The grade's Moon step now gives what is weakly coloured the moon's
     // silver-blue, and leaves what is strongly coloured (the fires, her ember's pool) its own.)
     static readonly GradeSettings PlayNightGrade = new([0.004, 0.010, 0.024], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65,
-        PaintVib = 0.8, PaintHi = 0.8, PaintShadow = "#1d2a52", PaintShadowK = 0.7, PaintLift = 0.02 };   // (the paint grade: art style round 2's camp, 20 Oct)
+        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65, MoonSat = 0.08,
+        PaintVib = 0.8, PaintHi = 0.8, PaintShadow = "#24404a", PaintShadowK = 0.7, PaintLift = 0.02 };   // (the paint grade: art style round 2's camp, 20 Oct)
 
     /// <summary>The close view's paint grade by night (art style round 1's, which kept her copper hair): the view grade
     /// (Atmosphere.ViewGrade) takes it over the preset's as the view closes in. No vibrance, where she fills the frame:
     /// round 1's 0.7 took her shaded side from chroma 2.6 to 4.3 (her pixels' mean Oklab dE 2.1, x100; 1.2 without it).</summary>
     public static readonly GradeSettings CloseNightPaint = PlayNightGrade with
     {
-        PaintVib = 0, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.7, PaintLift = 0.015,
+        PaintVib = 0, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015,
     };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
     /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
@@ -107,7 +107,7 @@ public static class Atmospheres
     /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#a9c4ff", KeyIntensity = 6.5, KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
+        KeyColor = "#90b6ff", KeyIntensity = 5.8, KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
         HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.6, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
         Grade = PlayNightGrade, Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
@@ -117,7 +117,7 @@ public static class Atmospheres
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.0, 1.0, 1.0],
         "#a6bced", "#ffbe7a", 0.55, 0.9, 0.1, 1.14) { Toe = 0.5, Moon = 1.0, MoonSat = 0.05, MoonTop = 0.45, MoonWidth = 0.2,
-        PaintVib = 0.75, PaintHi = 0.7, PaintShadow = "#403878", PaintShadowK = 0.6 };   // (the paint grade, the day's family; a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
+        PaintVib = 0.75, PaintHi = 0.7, PaintShadow = "#403878", PaintShadowK = 0.51, PaintLift = 0.01 };   // (the paint grade, the day's family; a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
 
     /// <summary>The Low Ford at dawn, in play: the sun 18 degrees up in the north-north-east, cheated from C04 A's
     /// rising sun toward the road's far end (as the moon was), so the wood road's corridor gets sun (from the east-north-east
@@ -128,7 +128,7 @@ public static class Atmospheres
     public static readonly AtmospherePreset LowFordDawn = Dawn with
     {
         Sky = Dawn.Sky with { Horizon = "#7c90b8", Glow = "#c8d0e0" },
-        KeyColor = "#ffdbad", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = -60, ShadowStrength = 0.95,
+        KeyColor = "#ffd6b0", KeyIntensity = 10.0, KeyElevation = 18, KeyAzimuth = -60, ShadowStrength = 0.95,
         HemiSky = "#6f8fd8", HemiGround = "#2c3446", HemiIntensity = 0.9, EnvIntensity = 0.7,
         FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
         Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05, Ember = 0.5,
@@ -154,7 +154,7 @@ public static class Atmospheres
     public static readonly AtmospherePreset WaystationDay = Day with
     {
         KeyColor = "#ffd8a0", KeyIntensity = 6.6, KeyElevation = 28, KeyAzimuth = 330, ShadowStrength = 0.95,
-        HemiSky = "#9a9ad0", HemiGround = "#6a4e34", HemiIntensity = 0.7, EnvIntensity = 0.55,
+        HemiSky = "#a9a9e5", HemiGround = "#605245", HemiIntensity = 0.7, EnvIntensity = 0.55,
         Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
     };
 

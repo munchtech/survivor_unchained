@@ -488,14 +488,22 @@ public partial class Atmosphere : Node3D
         {
             var ok = Oklab(outLin);
             float L = ok.X, C = ok.Y, h = ok.Z;
+            float skinHue = Smooth(15, 30, h) * (1 - Smooth(75, 90, h));
+            float skinW = skin * skinHue * Smooth(0.025f, 0.05f, C) * Smooth(0.30f, 0.45f, L);
             if (vib != 0)
             {
-                float dull = 1 - Smooth(0.02f, 0.20f, C), light = Smooth(0.04f, 0.18f, L);
-                float skinHue = Smooth(15, 30, h) * (1 - Smooth(75, 90, h));
-                float skinW = skinHue * Smooth(0.025f, 0.05f, C) * Smooth(0.30f, 0.45f, L);
-                C *= 1 + vib * dull * light * (1 - skin * skinW);
+                // (G1 r2: fades with lightness, a fifth of it below Oklab L 0.44 (a gamma luma of 0.3 is L 0.42): it took the day
+                // town's olive-brown mud, puddle decals and grout to rust-orange, chroma 3.1 to 5.0 (x100); 3.6 now, the sunlit setts kept.)
+                float dull = 1 - Smooth(0.02f, 0.20f, C), light = Smooth(0.04f, 0.18f, L) * VibDeep(L);
+                C *= 1 + vib * dull * light * (1 - skinW);
             }
-            if (hi != 0) C *= 1 + hi * Smooth(0.55f, 0.90f, L) * Smooth(0.008f, 0.03f, C);
+            // (G1 r2: lit skin mostly kept out of the highlight boost: it took her lit skin's chroma 9 to 11, a spray tan, and
+            // yellowed her sunlit arm in the town. Only skin's own chroma, 0.06 up: the sunlit setts' warm stone, 0.05, keeps it.)
+            if (hi != 0)
+            {
+                float skinHi = 0.85f * skin * skinHue * Smooth(0.06f, 0.085f, C) * Smooth(0.30f, 0.45f, L);
+                C *= 1 + hi * Smooth(0.55f, 0.90f, L) * Smooth(0.008f, 0.03f, C) * (1 - skinHi);
+            }
             float hr = Mathf.DegToRad(h);
             float a = C * Mathf.Cos(hr), b = C * Mathf.Sin(hr);
             if (lift != 0) L = Mathf.Min(L + lift * (1 - Smooth(0, 0.35f, L)), 1);
@@ -520,6 +528,9 @@ public partial class Atmosphere : Node3D
             }
             return rgb.Clamp(Vector3.Zero, Vector3.One);
         }
+
+        /// <summary>The vibrance's share by Oklab lightness: 0.2 up to L 0.44, all of it from L 0.52 (the sunlit stone's).</summary>
+        static float VibDeep(float L) => Mathf.Lerp(0.2f, 1, Smooth(0.44f, 0.52f, L));
 
         static bool In(Vector3 v) => v.X >= -1e-5f && v.Y >= -1e-5f && v.Z >= -1e-5f && v.X <= 1 + 1e-5f && v.Y <= 1 + 1e-5f && v.Z <= 1 + 1e-5f;
     }
