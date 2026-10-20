@@ -2,11 +2,11 @@
 
 ## Status: round 2, step 1 DONE; step 2 started (art-style lead 2, 20 Oct); next lead picks up step 2
 The brief for round 2 is main's spawn brief (the owner, 20 Oct: Krea is fine for PREVIEWS; reference frames never ship). The order: 1) a painted target, 2) the in-engine proof judged against it.
-- **Step 1, the target: DONE.** Files: `survivorsunchained_inputsrt_style2\` (`target_<frame>.png`, `sheet_<frame>.png` = today | A | target, `target_alts\`). Main's full-size verdict:
+- **Step 1, the target: DONE.** Files: `survivorsunchained_inputs\art_style\r2\` (`target_<frame>.png`, `sheet_<frame>.png` = today | A | target, `target_alts\`). Main's full-size verdict:
   - town: a real YES, the best frame yet; the seams are fine at 1:1.
   - close: the world is a YES, but she reads pasted-in. So plan a painted touch on her LIGHT only (a softer specular, a painted rim, fire bounce), never her face shape or texture.
   - ford: v1 painted the drowned as astronauts. v2 keeps every figure's engine pixels: a SAM mask, inpainted out before painting, composited back. Main hasn't seen v2.
-- **How the target is made** (`tools/scratch/art_style/krea_r2.py`; scratch in the coordinator's scratchpad `art_style2\`: src, paint, tiles, masks):
+- **How the target is made** (`tools/scratch/art_style/krea_r2.py`; scratch in the coordinator's scratchpad `art_style\r2\`: src, paint, tiles, masks):
   - `prep` gives the A frame plus B's light block-in. A single img2img pass re-imagines the top-down camera (edge score 0.29).
   - `tile` (2x upscale, 12 overlapping 1536x864 tiles, each captioned by Qwen3-VL, darkbrush 0.8, d 0.40-0.42) holds the layout (0.59) and gives finer strokes. The close-up is a single pass at d 0.42, seed 3.
   - The ford source is lit brighter first (`ford_L2`: light x1.6, exposure 1.3, gamma 0.85).
