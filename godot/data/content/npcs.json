@@ -1425,11 +1425,11 @@
    "model": "knight",
    "show": [
     "Knight_Helmet",
-    "2H_Sword",
+    "1H_Sword",
     "Knight_Cape"
    ],
    "tint": "#dfe4ec",
-   "idle": "Idle_2H_Rest",
+   "idle": "Idle_Armed",
    "person": {
     "sex": "female",
     "outfit": [
@@ -1448,7 +1448,7 @@
     }
    },
    "arms": {
-    "right": "zweihander"
+    "right": "viking_sword"
    },
    "spot": {
     "x": 0,
