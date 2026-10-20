@@ -8,7 +8,7 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 89,
+ "made": 91,
  "planned": 73,
  "clips": [
   {
@@ -886,6 +886,30 @@
    "changes": "",
    "length": 3.0,
    "layer": "full"
+  },
+  {
+   "clip": "axe_fore_run",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.867,
+   "layer": "upper"
+  },
+  {
+   "clip": "axe_heavy_run",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 1.067,
+   "layer": "upper"
   },
   {
    "clip": "cup_hands",

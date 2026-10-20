@@ -14,9 +14,20 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"stance": true,
 		"weapon": "axe"
 	},
 	"axe_fore": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.866666674613953,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"stance": true,
+		"weapon": "axe"
+	},
+	"axe_fore_run": {
 		"contact": 0.0833333333333333,
 		"layer": "upper",
 		"length": 0.866666674613953,
@@ -32,6 +43,16 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"stance": true,
+		"weapon": "axe"
+	},
+	"axe_heavy_run": {
+		"contact": 0.1,
+		"layer": "upper",
+		"length": 1.06666672229767,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
 		"weapon": "axe"
 	},
 	"axes_heavy": {
@@ -41,6 +62,7 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"stance": true,
 		"weapon": "axes"
 	},
 	"axes_left": {
@@ -50,6 +72,7 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"stance": true,
 		"weapon": "axes"
 	},
 	"axes_right": {
@@ -59,6 +82,7 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"stance": true,
 		"weapon": "axes"
 	},
 	"bull_rush": {
@@ -86,6 +110,7 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"stance": true,
 		"weapon": "wand"
 	},
 	"cast_raise": {
