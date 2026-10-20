@@ -227,7 +227,12 @@ AXE_ARM = ((6, 10, 80, 10), (-20, 11, 70, -10))
 # The free left arm's own swing (anim 43 judge r1: forward, the wand run's open hand came to her lower belly and the
 # second axe's fist to her navel, its haft toward her groin). Out from her side and the forearm not turned in, as
 # run_reaver's: forward, the fist at the front of her left hip (wrist 25-28 cm out from the pelvis's midline, was 21-22).
-AXES_L = ((8, 20, 78, -5), (-22, 15, 70, -15))
+# Anim 44 judge r3: the second axe hung at her side, the haft trailing, its edge back. Her left fist holds it with the
+# head out of the thumb side, so a trailing haft wants the thumb turned back: the upper arm turned 95 out (the elbow's
+# small bend goes out, not forward) and the wrist at its ulnar end. Swing +14/-20, elbow 152-146, 14 out (at 12 the arm
+# met her trunk's cover, 1 mm). Measured (m7c): haft 14-32 back, head 39-41 cm clear of knee, shin and feet, never
+# ahead of the knee (4 cm at most, with the knee passing back), fist always behind her hip crease, edge back.
+AXES_L = ((14, 14, 152, -95), (-20, 14, 146, -95))
 # The wand run's free fist (anim 44 judge r3: T-rex arms, the fist never behind her): forward at her lower ribs, under
 # the bust (fist 129 cm in her rest frame, the underbust 130, navel 115) and 13 cm in front of it, the elbow 85 and
 # 27 cm out; back behind the hip (7.5 cm in the run, 15 in the sprint), the elbow opened to 112 and the forearm less out.
@@ -248,12 +253,32 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
                head_up=6, arm_fwd=(0.0, -0.18, 0.26), arm_back=(0.03, -0.30, -0.24), elbow_out=0.2,
                swing=((6, 10, 80, 20), (-32, 12, 70, -25)))
 
+AXE_HANG = dict(back=17.0, out=-10.0, edge=0.0, swing=0.0)
+
+
+def axe_hang(back=17.0, out=6.0, edge=0.0, swing=0.0):
+    """The second axe hung at her left side (anim 44 judge r3): the haft down from the fist, trailing `back` degrees
+    behind vertical and `out` out from her, its edge facing back (`edge` degrees turned out from straight back),
+    the haft's trail growing `swing` degrees as the fist goes back (k 0) and easing it as it comes forward."""
+    def f(ph, k, hand):
+        hand = dict(hand)
+        b = math.radians(back + swing * (0.5 - k))
+        o = math.radians(out)
+        haft = np.array([math.sin(o), -math.cos(b) * math.cos(o), -math.sin(b) * math.cos(o)])
+        e = math.radians(edge)
+        eb = np.array([math.sin(e), math.sin(b), -math.cos(b)])
+        eb = eb - haft * float(np.dot(eb, haft))
+        hand.update({"blade": tuple(haft / np.linalg.norm(haft)), "knuckles": tuple(eb / np.linalg.norm(eb)), "frame": "char"})
+        return hand
+    return f
+
+
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
     "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     "run_reaver": (replace(REAVER, swing_r=AXE_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": blade_carry(up_fwd=0.75)}, "axe"),
-    "run_reaver_axes": (replace(REAVER, swing_r=AXE_ARM, swing=AXES_L), {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
+    "run_reaver_axes": (replace(REAVER, swing_r=AXE_ARM, swing=AXES_L), {"r": blade_carry(up_fwd=0.75), "l": axe_hang(**AXE_HANG)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
