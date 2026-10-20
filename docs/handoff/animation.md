@@ -2,7 +2,58 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
-## 000000000. Paused here (animation 42, 19 October 2026, night, coordinator wind-down); next:
+## 0000000000. Paused here (animation 43, 20 October 2026, early, coordinator wind-down); next:
+Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Integration merged at a40cba09. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. All files below are in `tools/scratch/anim40/`. No solver is running and no turns are held.
+
+**Item 2, her attack poses.**
+- Solvers 4, 5a, 5b and 6 built round 3. The max judge r3 (`judge_atk_r3.md`, verdict `judge_atk_r3_verdict.md`) passed 15 of 31 frames.
+- **The coordinator's hard stop:** after the next judge (r4), anything still failing the gate is CUT. It falls back to the clip it replaces, or is gated off and listed here with the judge's fix. Then merge the rest. No fifth round.
+
+**Restage round 4** (briefs `solver_atk7_brief.md`; shots go to `shots_atk7/`):
+- **7a, the axe swings: built.** Commits c29bca49..f86cb98f; sheet `contact_atk7a.jpg`.
+  - Head roll at the f7 finishes: from -25/-30 to within ±3.
+  - Run finishes moved beside her hip.
+  - fore0_run left arm: out from her body.
+  - axesr7 left axe: holds the f3 shape.
+  - heavy0: legs loaded (back knee 35). Open: the pelvis drops only 2 cm, and slide went 0.3 -> 1.1.
+  - **New code (accepted by the lead):** run variants `axe_fore_run` and `axe_heavy_run`, played by `PlayerView.RunVariant` while she moves.
+  - axesl7 is unshot. axes_left plays the changed keys mirrored.
+- **7b, cast_flick: built.** Commit 191d14cd; sheet `contact_atk7b.jpg`.
+  - The free arm is 6-7 deg from her side and the wand hand is at her chest.
+  - The wand sits 4 deg above level on purpose: from the 315 camera it reads about level.
+- **7b, chain_strike: NOT done (arts.py reverted).** The judge's call 6 can't be met inside the rig:
+  - the right wrist limit holds the haft at 33-35 deg;
+  - the grip is fixed on the haft, so a steeper haft lifts the hands rather than lowering them;
+  - lower hips put her arms into her breast or take the left fist off the haft.
+  - chain0/chain2/chain3_p pass. chain3/6/9 fail (it reads as leaning on a hoe). **Plan: cut.** Unless r4 passes those frames as they are, fall back to integration's chain_strike or gate it off, and list call 6 plus the rig work it needs (a per-clip grip slide along the haft, a looser right-wrist limit) as a later item.
+- **7c, the runs: NOT started** (section 7c of the brief).
+  - The wand run's free fist goes up to lower-rib height.
+  - The axes run's second axe is RESTAGED to hang at her side. If that fails, cut: run_reaver_axes plays run_reaver's arms with the second axe stowed.
+  - run_arcanist_wand and run_reaver_axes are solver 6's version (48cb7289), which failed r3 at _c and _m.
+
+**Next:**
+1. Solver 7c (su-lead-high, medium, 200k) on `solver_atk7_brief.md` section 7c.
+2. Max judge r4 (su-lead-max, max, foreground). Copy `judge_atk_r3.md`, list only the r3-failed frames now in shots_atk7 (plus fore7_m, flick0/1 to confirm they still pass), and open with the whole-frame gate.
+3. Cut whatever fails, per the hard stop.
+4. Checks on the changed clips: motion --outfits, armscheck, audit, fistfit (axe 24/24 now).
+5. One full `dotnet test`.
+6. Send "MR READY anim-40@<commit>" to main. List the changed clips, the stance marks, the run variants and the PlayerView change.
+
+**Next item after the MR (the owner, 19 Oct): idle life.**
+- **The bar is relaxed, not busy.** Stillness is fine; tension is the fault. A safe pose fails when it reads anxious: raised shoulders, arms locked or held off the body, a ramrod spine, a level pelvis with her weight on both feet, clenched fists, the head held rigidly forward. It passes with her weight on one hip and the other knee soft, the shoulders dropped, the arms hanging with bent elbows, the spine and neck easy. A sway or a breath is welcome but optional.
+- **The reference is `idle_warden_town`** (100STYLE WiggleHips_ID, frames 1458-1778), played in town when she is sheathed (PlayerView safeNow, Sheath.cs). The owner: "I adore the idle sway". Match its feel, not its shape.
+- **What lacks it:**
+  - The other callings have no `_town` idle, so they fall back to their combat idles: reaver (Angry), arcanist (Strutting), stalker (Crouched).
+  - Townsfolk and story NPCs play the kit's Idle_Loop (FolkClips.cs).
+  - Each needs a relaxed `_town` idle.
+- The coordinator decides after the MR whether it runs in this slot.
+
+**Routed:**
+- [face] An effort face on the swings (brows down, jaw set). Her lids hang heavy, and the clips have no expression track. Already in RESUME.
+- [outfit] The front loincloth panel sticks out in crouches.
+- [light] No contact shadow at the 0.6 zoom.
+
+## 000000000. Paused here (animation 42, 19 October 2026, night, coordinator wind-down); superseded by animation 43 above:
 Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Integration merged at b51354ff. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. The fists (item 1) are already merged (2a35b6a3). Item 2, the attack poses, is in progress.
 - **Solver 3 (su-lead-high, medium) stopped at its budget, NOT judged** (58512dec, 48d41e2b, c3234c87, eb3d732f). What it built: stance on (meta "stance": True) for axe_fore, axe_heavy, axe_back, axes_left/right/heavy and cast_flick (feet 1.31x shoulders, knees 12-21 deg, no knock-knee, pelvis -13/+23, hinge 14, heavy 25); finishes across (the right fist level with her left thigh, the head 51-54 cm clear of her leg); axe_fore f0 cocked; cast_flick relaxed; chain_strike settling 4 cm with the free arm back. Checks are in `tools/scratch/anim40/solver_atk3/chk/` (motion_base vs motion_new), shots list `shots_atk3.txt`, contact_atk3.jpg.
 - **New failure: her right upper arm into her breast, 72-80 mm (it was 44-66)**, from clav_r forward 22-24 on the finish keys (axes_left 51 -> 75 on the left side). axe_heavy's hand into her went 66 -> 80. Heavy still reads too close to fore. **chain_strike:** two hands at a 50 deg haft only fit with the left upper arm 80 mm into her trunk; the new f9 puts the left hand 14-51 mm into her thigh, and the head sinks 4-7 cm at f10-11. The runs (job 5) are untouched. The audit has 3 borderline spins.
