@@ -27,6 +27,7 @@ Writes godot/art/ground/:
 import argparse
 import hashlib
 import json
+import colorsys
 import sys
 from pathlib import Path
 
@@ -229,7 +230,7 @@ def build_setts(variant, grain):
     P = np.stack([X.ravel(), Z.ravel()], -1)
     # The power diagram: nearest by |p - s|^2 - w among the 8 nearest; the distance to each bisector with the
     # other seven, smooth-minned so the corners round off like worn cobbles (in row chunks, for memory).
-    kk = 90.0
+    kk = 45.0     # (90 before judge 2: sharper corners read as a Voronoi mosaic)
     edge = np.zeros(len(P)); i1 = np.zeros(len(P), int); qa = np.zeros((len(P), 2))
     for c0 in range(0, len(P), 1 << 20):
         Pc = P[c0:c0 + (1 << 20)]
@@ -252,19 +253,22 @@ def build_setts(variant, grain):
     q = qa
     edge = edge.reshape(SN, SN)   # metres to the joint
     edge = np.maximum(edge, 0)
+    # The joints wobble (judge 2: no ruler-straight polygon sides): about a centimetre over 5-8 cm.
+    edge = edge + WOBBLE * fbm(SN, np.random.default_rng(500), SN / SETTS_M * 0.06, 2)   # (one field for every variant: the tiles meet clean)
 
-    # Per stone: tone, hue, wear, tilt, height.
+    # Per stone (judge 2, E3 fix 2: the random warm, cool and olive tints read as a Voronoi mosaic): one stone,
+    # its hue within 6 degrees, its saturation within 10%, its value SD about 10%.
     ns = len(s)
     tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); rgh = np.zeros(ns); sid = np.zeros(ns)
-    hues = np.array([[0.33, 0.33, 0.33], [0.35, 0.33, 0.30], [0.30, 0.29, 0.28], [0.38, 0.34, 0.28], [0.29, 0.30, 0.31]])
-    wts = np.array([0.32, 0.26, 0.2, 0.08, 0.14])
     for k, key in enumerate(keys):
         r = hash2(*key)
-        c = hues[r.choice(len(hues), p=wts)]
-        tone[k] = c * np.clip(r.normal(1.0, 0.10), 0.75, 1.3)
+        h = (STONE_HSV[0] + np.clip(r.normal(0, 3.0), -6, 6)) / 360.0
+        sat = STONE_HSV[1] * r.uniform(0.9, 1.1)
+        val = STONE_HSV[2] * np.clip(r.normal(1.0, 0.10), 0.8, 1.22)
+        tone[k] = colorsys.hsv_to_rgb(h, sat, val)
         wear[k] = r.uniform(0, 1) ** 1.5
-        tilt[k] = r.normal(0, 0.07, 2)
-        top[k] = r.uniform(0.7, 1.0)
+        tilt[k] = r.normal(0, 0.035, 2)
+        top[k] = r.uniform(0.75, 1.0)
         rgh[k] = r.uniform(0.6, 0.82)
         sid[k] = r.uniform(0.1, 0.9)
     q = q.reshape(SN, SN, 2)
@@ -276,38 +280,46 @@ def build_setts(variant, grain):
     e = np.minimum(np.minimum(g, SETTS_M - g), 1.2) / 1.2
     m = np.minimum(e[None, :], e[:, None])
     m = m * m * (3 - 2 * m)
+    def mixed(cell, oct_, sd):
+        return fbm(SN, np.random.default_rng(sd), cell, oct_) * (1 - m) + fbm(SN, np.random.default_rng(sd + 1 + variant), cell, oct_) * m
     dirt = fbm(SN, shared, SN / 10, 4) * (1 - m) + fbm(SN, own, SN / 10, 4) * m
     fine = fbm(SN, shared, SN / 160, 3) * (1 - m) + fbm(SN, own, SN / 160, 3) * m
-    joint = (0.0035 + 0.0035 * (0.5 + 0.5 * fine)) * (1 + 0.7 * np.clip(-dirt, 0, 1))   # half a joint, 0.35-1.2 cm: wider where swept
-    bevel = 0.026
-    dome = np.clip((edge - joint) / bevel, 0, 1)
-    dome = np.sqrt(dome * (2 - dome))             # rounded shoulders
+    # Joints 1-4 cm wide, varying along their length (about 0.3 m) and wider where swept.
+    jv = mixed(SN / 26, 2, 300)
+    joint = (0.0075 + 0.005 * jv) * (1 + 0.35 * np.clip(-dirt, 0, 1))      # half a joint, 0.3-2 cm
+    # A dome over each whole stone (no bevelled rim): parabolic from the joint to DOME_R in.
+    dome = np.clip((edge - joint) / DOME_R, 0, 1)
+    dome = 1 - (1 - dome) ** 2
     stone = (edge > joint).astype(float)
     stone = gaussian_filter(stone, 0.7, mode='wrap')
+    # Grain at 2-5 cm (about plus or minus 5% luma).
+    gr = mixed(SN / SETTS_M * 0.035, 2, 400)
     h_m = (dome * DOME_H * top[i1] + (q * tilt[i1]).sum(-1) * stone
-           + grain * 0.0025 * stone + 0.002 * fine)
+           + gr * 0.0008 * stone + 0.0008 * fine)
     h_m = h_m * stone + (1 - stone) * (-0.004 + 0.003 * fine)
 
     base = tone[i1]
     w = wear[i1][..., None]
-    shoulder = 1 - dome[..., None]
-    alb = base * (1 + 0.08 * grain[..., None]) * (1 + 0.1 * w * dome[..., None])     # worn tops lighter
-    alb *= 1 - 0.18 * shoulder * (0.6 + 0.4 * (0.5 + 0.5 * dirt[..., None]))           # dirt in the shoulders
-    soil = np.array([0.25, 0.22, 0.185]) * (1 + 0.25 * fine[..., None])
+    lip = 1 - np.clip((edge - joint) / 0.012, 0, 1)[..., None]                  # the stone's last 1.2 cm by the joint
+    alb = base * (1 + GRAIN * gr[..., None]) * (1 + 0.06 * w * dome[..., None])     # worn tops a little lighter
+    alb *= 1 - 0.12 * lip * (0.6 + 0.4 * (0.5 + 0.5 * dirt[..., None]))               # grit at the stone's foot
+    # The joints: brown grit, a little sand in it, moss where it is never swept.
+    grit = np.array([0.25, 0.19, 0.13]) * (1 + 0.22 * fine[..., None])
+    sand = np.array([0.33, 0.27, 0.19])
     moss = np.array([0.17, 0.19, 0.11])
-    sand = np.array([0.36, 0.34, 0.30])
-    fill = np.clip(0.5 + 0.5 * (fbm(SN, np.random.default_rng(200), SN / 24, 3) * (1 - m) + fbm(SN, np.random.default_rng(201 + variant), SN / 24, 3) * m), 0, 1)[..., None]
-    mortar = soil * (1 - fill) + sand * fill * (1 - 0.3 * np.clip(dirt, 0, 1)[..., None])
-    mortar += (moss - mortar) * np.clip(-dirt - 0.3, 0, 1)[..., None] * 0.6
+    fill = np.clip(0.5 + 0.5 * mixed(SN / 24, 3, 200), 0, 1)[..., None] * 0.45
+    mortar = grit * (1 - fill) + sand * fill * (1 - 0.3 * np.clip(dirt, 0, 1)[..., None])
+    mortar += (moss - mortar) * np.clip(-dirt - 0.4, 0, 1)[..., None] * 0.5
     st = stone[..., None]
     alb = alb * st + mortar * (1 - st)
     # Broad grime between the courses of traffic: whole stones darker.
-    alb *= (1 - 0.12 * np.clip(dirt, 0, 1))[..., None]
+    alb *= (1 - 0.08 * np.clip(dirt, 0, 1))[..., None]
     alb = np.clip(alb, 0, 1)
 
-    rough = (rgh[i1] - 0.22 * wear[i1] * dome) * stone + 0.95 * (1 - stone)
+    STASH.update(i1=i1, stone=stone, edge=edge, joint=joint, gr=gr, alb=alb)
+    rough = (rgh[i1] - 0.15 * wear[i1] * dome) * stone + 0.95 * (1 - stone)
     hn = (h_m - h_m.min()) / (h_m.max() - h_m.min())
-    ao = np.clip(1 - 0.75 * (1 - stone) - 0.25 * shoulder[..., 0], 0, 1)
+    ao = np.clip(1 - 0.45 * (1 - stone) - 0.15 * lip[..., 0], 0, 1)
     ao = gaussian_filter(ao, 2, mode='wrap')
     n = normal_from(h_m, px, 1.0)
     # The normal's B carries each stone's own random (0.1-0.9; the shader rebuilds z from x and y), so the
@@ -322,7 +334,12 @@ def build_setts(variant, grain):
 
 
 SIZES = '--sizes' in sys.argv
-DOME_H = 0.01      # the stones' domed shoulders (0.02 before judge 1: the rims read as bright bevels)
+STASH = {}   # the last tile's stones, joints and grain (for a measuring script)
+DOME_H = 0.012     # each stone's dome, to DOME_R in from its joint (judge 2: a domed stone, not a bevelled rim)
+DOME_R = 0.09
+WOBBLE = 0.006
+GRAIN = 0.12       # grain at 2-5 cm: plus or minus about 5% luma
+STONE_HSV = (34.0, 0.16, 0.33)   # the stones' one hue (degrees), saturation and value
 
 
 def setts_grain():
