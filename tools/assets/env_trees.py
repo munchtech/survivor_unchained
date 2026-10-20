@@ -70,7 +70,7 @@ def spray(seed):
     col = np.zeros((H, W, 3), np.uint8)
     al = np.zeros((H, W), np.uint8)
     hg = np.zeros((H, W), np.uint8)
-    pal = [srgb(h) for h in ('#0c1914', '#163026', '#244536', '#3a5f47', '#5a7d58')]
+    pal = [srgb(h) for h in ('#0e1a13', '#192f21', '#27442d', '#3c5c3c', '#5a7a4c')]
 
     def shade(v):
         v = float(np.clip(v, 0, 0.999)) * (len(pal) - 1)
@@ -276,7 +276,7 @@ def crown_normal(p, cn, d, H):
     ln = np.linalg.norm(r)
     r = r / ln if ln > 0.15 else np.array([d[0], d[1], 0.0]) / max(np.linalg.norm(d[:2]), 1e-6)
     t = np.clip(p[2] / H, 0, 1)
-    n = r * 0.7 + np.array([0, 0, 0.6 + 0.3 * t]) + cn * 0.3
+    n = r * 0.45 + np.array([0, 0, 0.75 + 0.2 * t]) + cn * 0.3
     return n / np.linalg.norm(n)
 
 

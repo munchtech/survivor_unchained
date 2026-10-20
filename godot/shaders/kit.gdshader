@@ -181,6 +181,11 @@ void fragment() {
 	if (UV.x < 0.75) {
 		ALBEDO *= mix(vec3(1.02, 1.0, 0.93), vec3(0.92, 1.0, 1.08), v_jit);
 		BACKLIGHT = ALBEDO * vec3(0.18, 0.22, 0.24);
+		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is shut out)
+		AO = 0.5;
+		// (no wet sheen on needles: the moon's specks read as frost-blue glints)
+		SPECULAR = 0.12;
+		AO_LIGHT_AFFECT = 0.0;
 	}
 #endif
 

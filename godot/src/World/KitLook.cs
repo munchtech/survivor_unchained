@@ -127,7 +127,7 @@ public static class KitLook
         // (--kit-paint: a painted sheet carries its own warmth, so it is weathered as its painter says)
         if (Textures.PaintedWeather(s.AlbedoTexture) is var (psat, ptint)) { m.SetShaderParameter("weather_sat", psat); m.SetShaderParameter("weather_tint", ptint); }
         // (ours are painted for the look: weathered lightly, and trunk and needles sway as one)
-        if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.64f, 0.74f, 0.76f) * look.Shade); }
+        if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         if (foliage && look.LeafA is Color a && look.LeafB is Color b)
         {

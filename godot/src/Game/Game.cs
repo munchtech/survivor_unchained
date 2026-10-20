@@ -1799,7 +1799,7 @@ public partial class Game : Node, IZoneHost
                 // pines: the place's pines alone (the kit's, or ours under --flora-own: E4 measures each).
                 if (flipped.Contains("pines") && scene.View.GetNodeOrNull<Node3D>("Flora") is { } fl)
                     foreach (var c in fl.GetChildren())
-                        if (c is Node3D p && ((string)p.Name).StartsWith("pine:")) p.Visible = on;
+                        if (c is Node3D p && ((string)p.Name).StartsWith("pine_")) p.Visible = on; // (Godot makes the ":" in "pine:Pine_1" a "_")
                 // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
                 if (flipped.Contains("lampshadows")) ShadowLamp.Enabled = on;
                 var t = Graphics.Current;

@@ -103,7 +103,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":2868,
+			"count":2863,
 			"max":[
 				2.6484951972961426,
 				8.850000381469727,
@@ -119,13 +119,13 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":2868,
+			"count":2863,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":2868,
+			"count":2863,
 			"type":"VEC2"
 		},
 		{
@@ -206,74 +206,74 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":34416,
+			"byteLength":34356,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":34416,
-			"byteOffset":34416,
+			"byteLength":34356,
+			"byteOffset":34356,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":22944,
-			"byteOffset":68832,
+			"byteLength":22904,
+			"byteOffset":68712,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":10584,
-			"byteOffset":91776,
+			"byteOffset":91616,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":5040,
-			"byteOffset":102360,
+			"byteOffset":102200,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":5040,
-			"byteOffset":107400,
+			"byteOffset":107240,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":3360,
-			"byteOffset":112440,
+			"byteOffset":112280,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":1428,
-			"byteOffset":115800,
+			"byteOffset":115640,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":1908,
-			"byteOffset":117228,
+			"byteOffset":117068,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":1908,
-			"byteOffset":119136,
+			"byteOffset":118976,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":1272,
-			"byteOffset":121044,
+			"byteOffset":120884,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":504,
-			"byteOffset":122316,
+			"byteOffset":122156,
 			"target":34963
 		}
 	],
@@ -285,7 +285,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":122820,
+			"byteLength":122660,
 			"uri":"spruce_b.bin"
 		}
 	]

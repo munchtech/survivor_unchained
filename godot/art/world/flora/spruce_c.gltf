@@ -103,7 +103,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":3695,
+			"count":3641,
 			"max":[
 				2.8739264011383057,
 				10.449999809265137,
@@ -119,13 +119,13 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":3695,
+			"count":3641,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":3695,
+			"count":3641,
 			"type":"VEC2"
 		},
 		{
@@ -206,74 +206,74 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":44340,
+			"byteLength":43692,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":44340,
-			"byteOffset":44340,
+			"byteLength":43692,
+			"byteOffset":43692,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":29560,
-			"byteOffset":88680,
+			"byteLength":29128,
+			"byteOffset":87384,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":13608,
-			"byteOffset":118240,
+			"byteOffset":116512,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":6024,
-			"byteOffset":131848,
+			"byteOffset":130120,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":6024,
-			"byteOffset":137872,
+			"byteOffset":136144,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":4016,
-			"byteOffset":143896,
+			"byteOffset":142168,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":1668,
-			"byteOffset":147912,
+			"byteOffset":146184,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":2112,
-			"byteOffset":149580,
+			"byteOffset":147852,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":2112,
-			"byteOffset":151692,
+			"byteOffset":149964,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":1408,
-			"byteOffset":153804,
+			"byteOffset":152076,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":564,
-			"byteOffset":155212,
+			"byteOffset":153484,
 			"target":34963
 		}
 	],
@@ -285,7 +285,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":155776,
+			"byteLength":154048,
 			"uri":"spruce_c.bin"
 		}
 	]
