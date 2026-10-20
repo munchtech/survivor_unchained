@@ -20,6 +20,8 @@ SETS = {
     "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24"], 3),
     "ford": (NIGHT + ["--spots", "-7.5,87.5;3,64;9,40;0,-38;-2,-72;0,-37;-7,-46"], 7),
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
+    # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)
+    "fordc": (NIGHT + ["--spots-clear", "--spots", "-7.5,87.5;0,-38;0,-37"], 3),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)

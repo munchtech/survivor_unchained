@@ -30,5 +30,13 @@
    0.77,
    0.7
   ]
+ },
+ "T_Trim_Furniture_BaseColor": {
+  "weather_sat": 0.88,
+  "weather_tint": [
+   0.86,
+   0.82,
+   0.76
+  ]
  }
 }

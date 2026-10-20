@@ -5,6 +5,7 @@
     python tools/assets/paint_tex.py sheet ALBEDO NORMAL OUT [--preset stone|rock|wood|tiles|plain] [--k v ...]
     python tools/assets/paint_tex.py village [--out godot/art/kit_paint] [--decode]
     python tools/assets/paint_tex.py stall [--out godot/art/kit_paint]
+    python tools/assets/paint_tex.py props [--out godot/art/kit_paint] [--decode]
 
 What one sheet goes through (all at texel scale, wrapped so tiling sheets stay seamless):
   1. Simplify: mean-shift patches blended with a bilateral pass, so flat patches follow the
@@ -14,7 +15,7 @@ What one sheet goes through (all at texel scale, wrapped so tiling sheets stay s
      convexity and their up-facing part light the top edges (--edge, --top).
   3. Palette: in Lab, a warm shift (--warm a,b) weighted to the midtones, the dull ones
      gaining most (--dull), a chroma gain (--chroma) and a pull toward the preset's hue
-     (--hue a,b --pull).
+     (--hue a,b --pull), and a soft knee over Lab L (--knee: pale paint ages to cream, not white).
   4. Strokes: white noise smeared along the dominant direction (perpendicular to the
      structure tensor's main axis: a plank's grain, a stone's long axis), low contrast
      (--stroke); a screen-space brush filter adds the hand on top.
@@ -58,6 +59,9 @@ PRESETS = {
                   stroke=0.025, value=0.9, ms=(6, 14), weather=(0.76, (0.84, 0.77, 0.7))),
 }
 VILLAGE = {"T_UnevenBrick": "stone", "T_RockTrim": "rock", "T_WoodTrim": "wood", "T_RoundTiles": "tiles"}
+# The set dressing's shared trims (env/props: 41 props use the furniture trim, the camp's chest among them): its pale
+# painted bands aged to cream under the knee, so the chest reads as painted wood, not a white toy.
+PROPS = {"T_Trim_Furniture": ("wood", {"knee": 62.0, "value": 0.95})}
 SRGB = ROOT / "godot/art/srgb/env/village"
 SRC = ROOT / "godot/.kit_paint_src"
 
@@ -157,6 +161,8 @@ def paint(albedo, normal, p):
     A = A + (p["hue"][0] - A) * t
     B = B + (p["hue"][1] - B) * t
     L = np.clip(L * p["value"], 0, 100)
+    kn = p.get("knee", 100.0)
+    L = np.where(L > kn, kn + (L - kn) * 0.45, L)
     out = cv2.cvtColor(np.dstack([L, A, B]).astype(np.float32), cv2.COLOR_Lab2RGB)
     # 4. strokes along the dominant direction (perpendicular to the structure's main axis)
     g = cv2.cvtColor(np.clip(simp, 0, 1).astype(np.float32), cv2.COLOR_RGB2GRAY) + 0.5 * hgt / (np.abs(hgt).max() + 1e-6)
@@ -232,9 +238,9 @@ def preset(name, over):
     return p
 
 
-def decode(names):
+def decode(names, kit="village"):
     """The normals as PNG through Godot (KTX2 is all there is of them)."""
-    need = [f"res://assets/env/village/{n}_Normal.ktx2" for n in names if not (SRC / f"{n}_Normal.png").exists()]
+    need = [f"res://assets/env/{kit}/{n}_Normal.ktx2" for n in names if not (SRC / f"{n}_Normal.png").exists()]
     if not need: return
     tag = "art-style: kit paint decode"
     subprocess.run([sys.executable, TURN, "take", "godot", tag, "--wait", "1800", "--stale-ok"], check=True)
@@ -300,7 +306,7 @@ def main():
     one = sub.add_parser("sheet", help="paint one sheet")
     one.add_argument("albedo"); one.add_argument("normal"); one.add_argument("out")
     one.add_argument("--preset", default="plain", choices=sorted(PRESETS))
-    for k in ("detail", "cavity", "edge", "top", "warm", "dull", "chroma", "hue", "pull", "stroke", "value", "ms"):
+    for k in ("detail", "cavity", "edge", "top", "warm", "dull", "chroma", "hue", "pull", "stroke", "value", "ms", "knee"):
         one.add_argument("--" + k)
     vil = sub.add_parser("village", help="paint the well's four village sheets")
     vil.add_argument("--out", default=str(ROOT / "godot/art/kit_paint"))
@@ -308,9 +314,12 @@ def main():
     vil.add_argument("--only", help="comma-separated sheet names (T_RoundTiles,...)")
     st = sub.add_parser("stall", help="paint the cloth stall's canvas and wood")
     st.add_argument("--out", default=str(ROOT / "godot/art/kit_paint"))
+    pr = sub.add_parser("props", help="paint the set dressing's shared trims (PROPS)")
+    pr.add_argument("--out", default=str(ROOT / "godot/art/kit_paint"))
+    pr.add_argument("--decode", action="store_true", help="decode missing normals through Godot first")
     a = ap.parse_args()
     if a.cmd == "sheet":
-        p = preset(a.preset, {k: getattr(a, k) for k in ("detail", "cavity", "edge", "top", "warm", "dull", "chroma", "hue", "pull", "stroke", "value", "ms")})
+        p = preset(a.preset, {k: getattr(a, k) for k in ("detail", "cavity", "edge", "top", "warm", "dull", "chroma", "hue", "pull", "stroke", "value", "ms", "knee")})
         save(paint(load(a.albedo), load(a.normal), p), Path(a.out))
     elif a.cmd == "village":
         out = Path(a.out)
@@ -321,6 +330,16 @@ def main():
         for n in names:
             p = PRESETS[VILLAGE[n]]
             save(paint(load(SRGB / f"{n}_BaseColor.webp"), load(SRC / f"{n}_Normal.png"), p), out / f"{n}_BaseColor.webp")
+            meta[f"{n}_BaseColor"] = {"weather_sat": p["weather"][0], "weather_tint": list(p["weather"][1])}
+        meta_path.write_text(json.dumps(meta, indent=1) + "\n")
+    elif a.cmd == "props":
+        out = Path(a.out)
+        if a.decode: decode(list(PROPS), "props")
+        meta_path = out / "kit_paint.json"
+        meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+        for n, (pre, over) in PROPS.items():
+            p = dict(PRESETS[pre], **over)
+            save(paint(load(SRGB.parent / "props" / f"{n}_BaseColor.webp"), load(SRC / f"{n}_Normal.png"), p), out / f"{n}_BaseColor.webp")
             meta[f"{n}_BaseColor"] = {"weather_sat": p["weather"][0], "weather_tint": list(p["weather"][1])}
         meta_path.write_text(json.dumps(meta, indent=1) + "\n")
     else:
