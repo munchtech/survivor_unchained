@@ -62,6 +62,8 @@ public partial class ZoneView : Node3D
                 Bare(flora, new Vector3((float)f.X, (float)f.Y, (float)f.Z), 0.95f * (float)f.Size);
             }
         Perf.Lap("flora");
+        if (Scatter.Build(z) is { } sc) AddChild(sc);
+        Perf.Lap("scatter");
         props = Dressing.Props(z);
         AddChild(props);
         Perf.Lap("props");

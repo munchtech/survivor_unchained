@@ -38,7 +38,7 @@ SETS = {
     # E2: the black roof slabs (teaching F10, F11): the Post and the Barrow's crypt by night
     # E2 camp fire: the close view facing the fire (close4's spot hides it), twice
     "campclose": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-9.5,92.5,1,0;-9.5,92.5,1,0"], 2),
-    # E3 ground B: C01 played and handed back to play (its frost decals thawing over the play-time frost), 15-33 s
-    "handback": (["--zone", "lowford", "--cine", "c01", "--auto", "idle"], 4),
+    # E3 ground B: C01 played and handed back to play (its frost decals thawing over the play-time frost), 15-63 s
+    "handback": (["--zone", "lowford", "--cine", "c01", "--auto", "idle"], 9),
     "roofs": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "16,31;-17,4;-22,2"], 3),
 }

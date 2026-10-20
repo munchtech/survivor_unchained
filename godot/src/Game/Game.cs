@@ -1779,8 +1779,8 @@ public partial class Game : Node, IZoneHost
                     if (flipped.Contains("fires") && nm == "Fires" || flipped.Contains("lamps") && nm == "Lights" ||
                         flipped.Contains("flora") && nm == "Flora" || flipped.Contains("props") && nm == "Props" ||
                         flipped.Contains("landmarks") && nm == "Landmarks" || flipped.Contains("ground") && nm == "Ground" ||
-                        flipped.Contains("water") && nm == "Water" ||
-                        flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights"))
+                        flipped.Contains("water") && nm == "Water" || flipped.Contains("scatter") && nm == "Scatter" ||
+                        flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Scatter" or "Fires" or "Lights"))
                         n.Visible = on;
                 }
                 // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
@@ -1834,9 +1834,9 @@ public partial class Game : Node, IZoneHost
             {
                 if (c is not Node3D n) continue;
                 string nm = n.Name;
-                bool named = nm is "Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights";
+                bool named = nm is "Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Scatter" or "Fires" or "Lights";
                 if (what.Contains("grass") && nm == "Grass" || what.Contains("flora") && nm == "Flora" || what.Contains("props") && nm == "Props" ||
-                    what.Contains("landmarks") && nm == "Landmarks" || what.Contains("ground") && nm == "Ground" || what.Contains("water") && nm == "Water" ||
+                    what.Contains("landmarks") && nm == "Landmarks" || what.Contains("ground") && nm == "Ground" || what.Contains("water") && nm == "Water" || what.Contains("scatter") && nm == "Scatter" ||
                     what.Contains("fires") && nm == "Fires" || what.Contains("lamps") && nm == "Lights" ||
                     // The pieces set down one by one (an arena's cover, a runtime's props).
                     what.Contains("pieces") && !named)

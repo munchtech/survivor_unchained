@@ -45,14 +45,14 @@ public sealed class GroundPaint
     }
 
     // Tunable from the command line for sweeps (SurvivorUnchained.Args).
-    static readonly float RoadHalf = Args.Num("road-half", 1.55f);      // the made surface, half its width
-    static readonly float VergeW = Args.Num("road-verge", 1.5f);        // trodden earth beyond it
-    static readonly float RutOff = Args.Num("road-rut-off", 0.75f);     // each rut from the centre
-    static readonly float RutW = Args.Num("road-rut-w", 0.26f);          // a rut's half width
+    internal static readonly float RoadHalf = Args.Num("road-half", 1.55f);      // the made surface, half its width
+    internal static readonly float VergeW = Args.Num("road-verge", 1.5f);        // trodden earth beyond it
+    internal static readonly float RutOff = Args.Num("road-rut-off", 0.75f);     // each rut from the centre
+    internal static readonly float RutW = Args.Num("road-rut-w", 0.26f);          // a rut's half width
 
-    GroundPaint(ZoneData z)
+    /// <summary>The zone's roads as point lists with their base half width (the scatter walks the same ones).</summary>
+    internal static List<(Vector2[] P, float Half)> RoadPaths(ZoneData z)
     {
-        float size = z.Size, half = z.Half;
         var paths = new List<(Vector2[] P, float Half)>();
         foreach (var (key, pts) in z.Meta.Paths)
         {
@@ -63,6 +63,23 @@ public sealed class GroundPaint
             for (int i = 0; i < pts.Length; i++) p[i] = new Vector2((float)pts[i][0], (float)pts[i][1]);
             paths.Add((p, key.Contains("RUT") ? RoadHalf * 0.75f : RoadHalf));
         }
+        return paths;
+    }
+
+    /// <summary>The width wanders, as a road worn by use does.</summary>
+    internal static float HalfWidth(float hw0, float s) =>
+        hw0 * (1f + 0.16f * Mathf.Sin(s * 0.093f + 1.3f) + 0.08f * Mathf.Sin(s * 0.41f));
+
+    /// <summary>How far the ruts wander off the centre line, the left and right together.</summary>
+    internal static float RutShift(float s) => 0.18f * Mathf.Sin(s * 0.057f + 0.4f);
+
+    /// <summary>Each rut's distance from the centre line, for a road of this (wandered) half width.</summary>
+    internal static float RutHalf(float hw) => RutOff * (hw / RoadHalf > 0.9f ? 1f : 0.8f);
+
+    GroundPaint(ZoneData z)
+    {
+        float size = z.Size, half = z.Half;
+        var paths = RoadPaths(z);
 
         int mr = paths.Count > 0 ? 2048 : 1024;
         float mt = size / mr;
@@ -155,13 +172,13 @@ public sealed class GroundPaint
                 {
                     float s = along[at], hw = hwOf[at];
                     // The width wanders, as a road worn by use does.
-                    hw *= 1f + 0.16f * Mathf.Sin(s * 0.093f + 1.3f) + 0.08f * Mathf.Sin(s * 0.41f);
+                    hw = HalfWidth(hw, s);
                     float d = dist[at];
                     float c = 1f - Mathf.SmoothStep(hw - 0.35f, hw + 0.45f, d);
                     float v = 1f - Mathf.SmoothStep(hw, hw + VergeW, d);
                     // The ruts wander a little off the centre line, the left and right together.
-                    float off = side[at] - 0.18f * Mathf.Sin(s * 0.057f + 0.4f);
-                    float ro = RutOff * (hw / RoadHalf > 0.9f ? 1f : 0.8f);
+                    float off = side[at] - RutShift(s);
+                    float ro = RutHalf(hw);
                     float e = (Mathf.Abs(off) - ro) / RutW;
                     rut = Mathf.Exp(-e * e) * c * (0.75f + 0.25f * Mathf.Sin(s * 0.23f + side[at]));
                     float centre = Mathf.Exp(-(off / 0.38f) * (off / 0.38f));
