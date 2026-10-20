@@ -320,8 +320,9 @@ public static class Arms
         // deg about the shaft to face back and out, so the inner horn lies toward her shoulder blade. `At` is the grip (no
         // anchor_sheath). Fitted to the arcanist's wide hat brim, which reaches 35 cm round her head and drops onto her
         // shoulders as she leans into the sprint: the head passes outside it (5 cm), the foot outside the run's kicked-back
-        // calf (6 cm), 0 mm into her (tools/scratch/anim45/staffcheck.py; armscheck --sockets).
-        [WeaponSockets.BackStaff] = new("spine_03", new(-0.025f, 1.0608f, -0.2585f), new(-0.4f, 0.9135f, -0.0743f), new(-0.6267f, -0.3317f, -0.7052f), new(0, 0, -1)),
+        // calf (6 cm), 0 mm into her skin and outfit; both hands 28 cm or more off it (tools/scratch/anim45/staffcheck.py,
+        // anim40/socktry.py). The fit puts no garment under the grip, so its clearance is the 5 mm air alone.
+        [WeaponSockets.BackStaff] = new("spine_03", new(-0.025f, 1.0608f, -0.2705f), new(-0.4f, 0.9135f, -0.0743f), new(-0.6267f, -0.3317f, -0.7052f), new(0, 0, -1)),
     };
 
     static WeaponSockets.Clearance? clearance;
