@@ -1,0 +1,16 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5080
+
+her LOD: reaver, 25 meshes and her shadow (res://art/people/heroine_outfit_reaver_lod.gltf)
+her merge: 2 meshes, 2 surfaces into 2 by material, 0 shadow casters into 0
+HerScalp: 1 surfaces
+saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/anim-40/godot/.shots/heavy7_run_m.png at 6.02s her 960 500
+ERROR: 3 RID allocations of type 'N10RendererRD14TextureStorage7TextureE' were leaked at exit.
+ERROR: Parameter "RenderingServer::get_singleton()" is null.
+   at: ~CompressedTexture2D (scene/resources/compressed_texture.cpp:460)
+ERROR: Parameter "RenderingServer::get_singleton()" is null.
+   at: ~CompressedTexture2D (scene/resources/compressed_texture.cpp:460)
+ERROR: Parameter "RenderingServer::get_singleton()" is null.
+   at: ~CompressedTexture2D (scene/resources/compressed_texture.cpp:460)
+WARNING: 6 RIDs of type "Texture" were leaked.
+   at: finalize (servers/rendering/rendering_device.cpp:7191)
