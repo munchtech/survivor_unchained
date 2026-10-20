@@ -14,6 +14,7 @@ static class BrushShaders
             float radius; float q; float hard; float strength;
             float tex; float len; float wid; float ang;
             float pxk; float ortho; float feather; float dbg;
+            float hdr_a; float hdr_b; float pad0; float pad1;
         } pc;
         vec3 proxy(vec3 c) { c = max(c, vec3(0.0)); return c / (1.0 + c); }
         """;
@@ -58,10 +59,7 @@ static class BrushShaders
             vec2 t = dot(v1, v1) > dot(v2, v2) ? v1 : v2;
             t = dot(t, t) > 1e-20 ? normalize(t) : vec2(0.0, 1.0);
             float A = (l1 + l2) > 1e-9 ? (l1 - l2) / (l1 + l2) : 0.0;
-            // (strokes follow only strong, straight structure: on small-scale texture such as cobbles the flow
-            // curls round every stone and the strokes came out as swirls; elsewhere they keep one hatch angle)
-            float conf = smoothstep(0.55, 0.9, A) * smoothstep(1e-3, 1e-2, l1);
-            imageStore(flow, g, vec4(t, A, conf));
+            imageStore(flow, g, vec4(t, A, l1));
         }
         """;
 
@@ -176,35 +174,40 @@ static class BrushShaders
             fp = (pc.ortho > 0.5 ? 1.0 : -v.z) * pc.pxk;
             return dz > 1e-7 || pc.ortho > 0.5;
         }
-        float noise_at(vec2 uv) {
-            vec3 wp; float fp;
-            if (!world(uv, wp, fp)) return 0.5;
-            float l = log2(max(pc.wid * fp, 1e-5)), l0 = floor(l), f = l - l0, s0 = exp2(l0);
-            float n = mix(vnoise(wp / s0), vnoise(wp / (2.0 * s0) + 19.19), f);
+        // Value noise at the world point under uv, its cell `px` screen pixels wide: two world octaves
+        // blended by the pixel's footprint, so it stays anchored to the world at one screen scale.
+        float noise_px(vec3 wp, float fp, float px, float seed) {
+            float l = log2(max(px * fp, 1e-5)), l0 = floor(l), f = l - l0, s0 = exp2(l0);
+            float n = mix(vnoise(wp / s0 + seed), vnoise(wp / (2.0 * s0) + seed + 19.19), f);
             return 0.5 + (n - 0.5) / sqrt(f * f + (1.0 - f) * (1.0 - f));
         }
-        vec2 dir_at(vec2 uv, vec2 fixd) {
-            vec4 t = texture(flow, uv);
-            vec2 d = t.xy; if (dot(d, fixd) < 0.0) d = -d;
-            d = mix(fixd, d, t.w);
-            return dot(d, d) > 1e-12 ? normalize(d) : fixd;
+        // One tap of the stroke texture: the dab (pc.wid wide) and its bristles (a third of that).
+        float noise_at(vec3 wp, float fp, float bs) {
+            return mix(noise_px(wp, fp, pc.wid, 0.0), vnoise(wp / bs + 7.3), 0.35);
         }
+        // Strokes: straight lines of noise along one hatch direction per region (the angle ang, turned
+        // up to 25 degrees by a world-anchored noise about 250 px across), so neighbouring dabs lie
+        // parallel like one hand's brushwork; integrated over len px with a Gaussian along the stroke.
+        // (The taps walk the world along the stroke from the centre's point and one step's offset: the
+        // strokes only show on flat areas, where that is the surface; no depth read per tap.)
         float strokes(vec2 uv) {
-            vec2 fixd = vec2(cos(pc.ang), -sin(pc.ang));
-            int n = max(int(pc.len * 0.5 + 0.5), 1);
-            float sig = max(pc.len * 0.25, 0.5);
-            float acc = noise_at(uv), ws = 1.0;
-            vec2 d0 = dir_at(uv, fixd);
-            for (int sg = -1; sg <= 1; sg += 2) {
-                vec2 p = uv, v = d0 * float(sg);
-                for (int k = 1; k <= n; k++) {
-                    p += v / pc.size;
-                    float wk = exp(-float(k * k) / (2.0 * sig * sig));
-                    acc += noise_at(p) * wk; ws += wk;
-                    vec2 nv = dir_at(p, fixd); if (dot(nv, v) < 0.0) nv = -nv; v = nv;
-                }
+            vec3 wp, w1; float fp, f1;
+            if (!world(uv, wp, fp)) return 0.0;
+            float a = pc.ang + (noise_px(wp, fp, 250.0, 3.1) - 0.5) * 2.0 * radians(25.0);
+            const float step_px = 1.5;
+            vec2 d = vec2(cos(a), -sin(a)) * step_px / pc.size;
+            world(uv + d, w1, f1);
+            vec3 ws = w1 - wp;
+            if (dot(ws, ws) > 1e2 * fp * fp * step_px * step_px) ws = vec3(0.0);
+            float bs = exp2(round(log2(max(pc.wid * 0.33 * fp, 1e-5)))); // (whole octaves: stays anchored)
+            int n = max(int(pc.len / (2.0 * step_px) + 0.5), 1);
+            float sig = max(pc.len * 0.3 / step_px, 0.5);
+            float acc = noise_at(wp, fp, bs), wsum = 1.0;
+            for (int k = 1; k <= n; k++) {
+                float wk = exp(-float(k * k) / (2.0 * sig * sig));
+                acc += (noise_at(wp + ws * float(k), fp, bs) + noise_at(wp - ws * float(k), fp, bs)) * wk; wsum += 2.0 * wk;
             }
-            return (acc / ws - 0.5) * 5.0;
+            return (acc / wsum - 0.5) * 5.0;
         }
         void main() {
             ivec2 g = ivec2(gl_GlobalInvocationID.xy);
@@ -214,13 +217,20 @@ static class BrushShaders
             if (kk.a >= 0.999 && dbg != 1) return;
             vec2 uv = (vec2(g) + 0.5) / pc.size;
             vec4 c = imageLoad(colour, g);
-            float st = (pc.tex > 0.0 || dbg == 3) ? strokes(uv) : 0.0;
+            // Strokes only in large flat areas: faded out on edges and fine detail (the smoothed gradient energy).
+            float flat_k = 1.0 - smoothstep(4e-4, 4e-3, texture(flow, uv).w);
+            float st = ((pc.tex > 0.0 || dbg == 3) && flat_k > 0.0) ? strokes(uv) * flat_k : 0.0;
+            // Bright sources stay unfiltered: lamp glass, glints, anything hot the mask missed.
+            float hot = 1.0 - smoothstep(pc.hdr_a, pc.hdr_b, max(c.r, max(c.g, c.b)));
             vec3 pp = clamp(kk.rgb * (1.0 + pc.tex * st), vec3(0.0), vec3(0.998));
             vec3 painted = pp / (1.0 - pp);
-            vec3 o = mix(c.rgb, painted, pc.strength * (1.0 - kk.a));
+            float wt = pc.strength * (1.0 - kk.a) * hot;
+            vec3 o = mix(c.rgb, painted, wt);
             if (dbg == 1) o = mix(c.rgb, vec3(1.0, 0.0, 0.0), kk.a);
             else if (dbg == 2) { vec3 wp; float fp; world(uv, wp, fp); o = fract(wp); }
             else if (dbg == 3) o = vec3(0.18 * (1.0 + 0.5 * st));
+            else if (dbg == 6) o = vec3(wt);
+            else if (dbg == 5) o = vec3(1.0 - hot, flat_k, kk.a);
             else if (dbg == 4) o = mix(c.rgb, kk.rgb / (1.0 - min(kk.rgb, vec3(0.998))), 1.0 - kk.a);
             imageStore(colour, g, vec4(o, c.a));
         }

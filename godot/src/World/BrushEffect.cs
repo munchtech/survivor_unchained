@@ -139,6 +139,7 @@ public partial class BrushEffect : CompositorEffect
             s.R * scale, s.Sharp, s.Hard, s.Str,
             s.Tex, s.Len * scale, s.Wid, Mathf.DegToRad(s.Ang),
             2f / (Mathf.Abs(proj.Y.Y) * size.Y), ortho ? 1 : 0, s.Feather * scale, s.Dbg,
+            s.HdrA, s.HdrB, 0, 0,
         };
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
 

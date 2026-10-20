@@ -23,8 +23,8 @@ public partial class Brush : Node
 
     public sealed class Spec
     {
-        public float R = 3, Str = 0.75f, Tex = 0.2f, Len = 10, Wid = 3, Sharp = 8, Hard = 8, Ang = 35, Feather = 1.5f, Dbg;
-        public bool Time;
+        public float R = 3, Str = 0.75f, Tex = 0.12f, Len = 15, Wid = 4, Sharp = 8, Hard = 8, Ang = 35, Feather = 1.5f, Dbg, HdrA = 4, HdrB = 12;
+        public bool Time, Vfx = true;
 
         public static Spec? Parse(string? spec)
         {
@@ -36,6 +36,12 @@ public partial class Brush : Node
                 int eq = part.IndexOf('=');
                 if (eq < 0) { GD.PushWarning($"--brush: no value in '{part}'"); continue; }
                 string k = part[..eq].Trim().ToLowerInvariant(), v = part[(eq + 1)..].Trim();
+                if (k == "hdr" && v.Split('/') is [var ha, var hb])
+                {
+                    if (float.TryParse(ha, System.Globalization.NumberStyles.Float, inv, out float a) && float.TryParse(hb, System.Globalization.NumberStyles.Float, inv, out float b2) && b2 > a) { t.HdrA = a; t.HdrB = b2; }
+                    else GD.PushWarning($"--brush: bad hdr '{v}' (hdr=A/B, A < B)");
+                    continue;
+                }
                 if (!float.TryParse(v, System.Globalization.NumberStyles.Float, inv, out float f)) { GD.PushWarning($"--brush: bad number '{part}'"); continue; }
                 switch (k)
                 {
@@ -49,7 +55,10 @@ public partial class Brush : Node
                     case "ang": t.Ang = f; break;
                     case "feather": t.Feather = Mathf.Clamp(f, 0, 4); break;
                     case "dbg": t.Dbg = f; break;
+                    case "hdr": t.HdrA = f; break;
+                    case "hdrb": t.HdrB = Mathf.Max(f, t.HdrA + 0.01f); break;
                     case "time": t.Time = f != 0; break;
+                    case "vfx": t.Vfx = f != 0; break;
                     default: GD.PushWarning($"--brush: unknown key '{k}'"); break;
                 }
             }
@@ -90,12 +99,14 @@ public partial class Brush : Node
         mask.AddChild(maskCam);
         AddChild(mask);
         RenderingServer.FramePreDraw += Sync;
+        if (effect.Spec.Vfx) { GetTree().NodeAdded += Added; Scan(GetTree().Root); }
         if (effect.Spec.Time) RenderingServer.ViewportSetMeasureRenderTime(mask.GetViewportRid(), true);
     }
 
     public override void _ExitTree()
     {
         RenderingServer.FramePreDraw -= Sync;
+        if (effect.Spec.Vfx) GetTree().NodeAdded -= Added;
         if (on != null && IsInstanceValid(on) && on.Compositor == compositor) on.Compositor = null;
     }
 
@@ -113,6 +124,10 @@ public partial class Brush : Node
         }
         if (cam == null) return;
         foreach (var n in GetTree().GetNodesInGroup(HerGroup)) Tag(n);
+        // Fire, sparks and spells stay pure: new ones checked a frame after they arrive (their
+        // materials set), and the whole tree again now and then for materials swapped later.
+        while (added.Count > 0) { var id = added.Dequeue(); if (InstanceFromId(id) is GeometryInstance3D g) Vfx(g); }
+        if (effect.Spec.Vfx && ++scanT % 120 == 0) Scan(GetTree().Root);
         maskCam.GlobalTransform = cam.GlobalTransform;
         maskCam.Projection = cam.Projection;
         maskCam.KeepAspect = cam.KeepAspect;
@@ -132,6 +147,56 @@ public partial class Brush : Node
                 gpuSum = maskSum = 0; gpuN = 0;
             }
         }
+    }
+
+    readonly System.Collections.Generic.Queue<ulong> added = new();
+    ulong scanT;
+
+    void Added(Node n) { if (n is GeometryInstance3D) added.Enqueue(n.GetInstanceId()); }
+
+    static void Scan(Node n)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is GeometryInstance3D g) Vfx(g);
+            Scan(c);
+        }
+    }
+
+    /// <summary>VFX on the mask layer too, so they come out unfiltered: particles, and meshes drawn
+    /// additive or unshaded-and-transparent (flames, embers, sparks, flare, spells, lamp glass), except
+    /// the wide translucent sheets (mist, the distant crowd, canopy shade) that would unmask what's behind.</summary>
+    static void Vfx(GeometryInstance3D g)
+    {
+        if ((g.Layers & MaskLayer) != 0) return;
+        bool on = g is GpuParticles3D or CpuParticles3D || Bright(g.MaterialOverride) || Bright(g.MaterialOverlay);
+        if (!on && g is MeshInstance3D mi && mi.Mesh is { } mesh)
+            for (int i = 0, n = mesh.GetSurfaceCount(); i < n && !on; i++)
+                on = Bright(mi.GetSurfaceOverrideMaterial(i)) || Bright(mesh.SurfaceGetMaterial(i));
+        if (!on && g is MultiMeshInstance3D mm && mm.Multimesh?.Mesh is { } m2)
+            for (int i = 0, n = m2.GetSurfaceCount(); i < n && !on; i++) on = Bright(m2.SurfaceGetMaterial(i));
+        if (on) g.Layers |= MaskLayer;
+    }
+
+    static readonly string[] Sheets = { "canopy", "crowd_blob", "mist_sheet", "river_mist", "unlit" };
+
+    static bool Bright(Material? m)
+    {
+        switch (m)
+        {
+            case BaseMaterial3D b:
+                return b.BlendMode == BaseMaterial3D.BlendModeEnum.Add
+                    || (b.ShadingMode == BaseMaterial3D.ShadingModeEnum.Unshaded && b.Transparency != BaseMaterial3D.TransparencyEnum.Disabled);
+            case ShaderMaterial sm when sm.Shader is { } sh:
+                foreach (var x in Sheets) if (sh.ResourcePath.Contains(x)) return false;
+                var code = sh.Code;
+                int r = code.IndexOf("render_mode", System.StringComparison.Ordinal);
+                if (r < 0) return false;
+                int e = code.IndexOf(';', r);
+                var modes = e > r ? code[r..e] : "";
+                return (modes.Contains("unshaded") || modes.Contains("blend_add")) && !modes.Contains("blend_mul");
+        }
+        return false;
     }
 
     static void Tag(Node n)
