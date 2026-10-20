@@ -51,8 +51,8 @@ public sealed class GroundPaint
     // A rut (judge 1, E3 fix 1): a core 0.25-0.4 m wide, then a 0.15 m feathered shoulder; the gauge 1.4-1.5 m.
     internal static readonly float RutCore = Args.Num("road-rut-core", 0.16f);    // half the core's width
     internal static readonly float RutFeather = Args.Num("road-rut-feather", 0.15f);
-    internal static readonly float ClearingSoft = Args.Num("clearing-soft", 1.6f);  // a clearing's dirt edge blurred over this (m)
-    internal static readonly float PoolEvery = Args.Num("pool-every", 50f);   // open setts: one puddle in this many square metres
+    internal static readonly float ClearingSoft = Args.Num("clearing-soft", 2.2f);  // a clearing's dirt edge blurred over this (m)
+    internal static readonly float PoolEvery = Args.Num("pool-every", 80f);   // open setts: one puddle in this many square metres
     internal static readonly bool PoolsOn = !Args.Has("no-pools");
     internal static float RutW => RutCore + RutFeather * 0.5f;                       // a rut's half width, to its shoulder's middle
 
@@ -247,9 +247,9 @@ public sealed class GroundPaint
                     var outw = (W(ox, oz) - W(0, 0)).Normalized();
                     for (float t = (float)-len + PU(0.5f, 4f); t < len - 0.5f; t += PU(3f, 7f))
                     {
-                        if (prng.NextDouble() > 0.55) continue;
+                        if (prng.NextDouble() > 0.4) continue;
                         float ra = PU(0.25f, 0.75f), rb = ra * PU(0.55f, 0.85f);
-                        var at = W(ox, oz) + aw * t + outw * (0.15f + rb);
+                        var at = W(ox, oz) + aw * t + outw * (0.3f + rb * 0.6f);   // across the gutter's lip onto the setts
                         Pool(at, aw, ra, rb);
                     }
                 }

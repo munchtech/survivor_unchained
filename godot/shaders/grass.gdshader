@@ -83,7 +83,7 @@ void vertex() {
 	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
 	float clump = nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2;
 	// (20-100% over 2-5 m, judge 1, E3 fix 8: clumps and bare patches.)
-	dens *= (1.0 - bare_p) * mix(1.0, mix(0.2, 1.3, smoothstep(0.32, 0.68, clump)), meadow_amt);
+	dens *= (1.0 - bare_p) * mix(1.0, mix(0.26, 1.3, smoothstep(0.32, 0.68, clump)), meadow_amt);
 	// None on a road's made surface (R 0.8) or in its ruts; sparse on its centre strip (R to 1).
 	vec4 pm = textureLod(paint_mask, (wp + zone_size * 0.5) / zone_size, 0.0);
 	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));

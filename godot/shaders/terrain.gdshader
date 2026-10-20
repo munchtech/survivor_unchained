@@ -70,9 +70,14 @@ uniform float rut_dark = 0.45;
 uniform float crown_lift = 0.12;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
-uniform float grime = 0.4;
+uniform float grime = 0.5;
 uniform float gutter_w = 0.4;
-uniform float lane_lift = 0.22;
+// The setts' shoulders lit less (judge 1, E3 fix 6: the bevel rims read as mosaic; halve their highlight).
+uniform float setts_bump = 0.4;
+uniform float night_dew = 0.25;
+uniform float pud_dark = 0.2;
+uniform float night_spec = 0.12;
+uniform float lane_lift = 0.32;
 uniform float edge_drop = 0.6;
 uniform float weeds = 1.0;
 // The meadow's value over 4-10 m (plus or minus this).
@@ -150,7 +155,7 @@ void fragment() {
 	// The setts' ragged edge (judge 1, E3 fix 5): within a metre of their edge (wobbling, so no straight run), whole
 	// stones dropped or sunk, dirt filling where they went, and the paint's own edge pushed in and out.
 	float sd_in = nr.a * 2.0 + (nM.g - 0.5) * 0.7 + (nF.r - 0.5) * 0.5;
-	float s_band = (1.0 - smoothstep(0.15, 0.85, sd_in)) * step(0.02, sp.g);
+	float s_band = (1.0 - smoothstep(0.3, 1.15, sd_in)) * step(0.02, sp.g);   // (0.5-1 m: judge 1, E3 fix 5)
 	ws = clamp(ws + (nF.g - 0.5) * 0.6 * s_band, 0.0, 1.0);
 	wd = max(wd, s_band * ws * 0.9);
 	float wb = clamp((sp.b - 0.5) * edge_k + 0.5 + (nM.r - 0.5) * 0.4, 0.0, 1.0) * step(0.02, sp.b);
@@ -230,7 +235,8 @@ void fragment() {
 		if (k == SETTS) {
 			// (The setts' normal carries each stone's own random in B: env_ground.py.)
 			float sid = n0.b;
-			vec2 nxy = n0.rg * 2.0 - 1.0;
+			vec2 nxy = (n0.rg * 2.0 - 1.0) * setts_bump;
+			n0.rg = nxy * 0.5 + 0.5;
 			n0.b = sqrt(max(1.0 - dot(nxy, nxy), 0.0)) * 0.5 + 0.5;
 			drop = step(sid, 0.1 + edge_drop * s_band) * s_band;
 		}
@@ -303,7 +309,8 @@ void fragment() {
 	albedo *= 1.0 - grime * near_any * w_setts;
 	albedo *= 1.0 + lane_lift * nr.b * w_setts * (1.0 - near_any);
 	float joint = w_setts * (1.0 - smoothstep(0.18, 0.42, hgt));
-	float wsel = smoothstep(0.66, 0.74, texture(noise_tex, w * 0.9 + 0.2).g) * (1.0 - smoothstep(0.35, 0.55, nr.r * 2.0));
+	// (Out to 0.9 m: the gutter takes the wall's first 0.3-0.5 m, so the weeds live in the joints at its lip.)
+	float wsel = smoothstep(0.5, 0.62, texture(noise_tex, w * 0.9 + 0.2).g) * (1.0 - smoothstep(0.75, 1.0, nr.r * 2.0));
 	albedo = mix(albedo, vec3(0.085, 0.11, 0.045) * (0.8 + 0.4 * nF.a), joint * wsel * weeds);
 
 	// The road: its made surface packed a little smoother; the ruts darker,
@@ -335,11 +342,17 @@ void fragment() {
 	// (Not smoother: at the dawn's low sun a smoother rut took a sheen and read lighter than the road.)
 	rough = mix(rough, 0.8, rut_w * 0.5);
 	// Puddles: standing water in the deepest ruts and low corners, on earth, mud and stone.
-	float pud = smoothstep(0.6, 0.7, pm.a + (nF.b - 0.5) * 0.5 + (nM.a - 0.5) * 0.3 - hgt * 0.25) * w_soft * wet_amt;
+	// (The noise only ragged a pool's rim: wider, it broke the gutters' damp into a rash of 0.2 m specks.)
+	float pud = smoothstep(0.6, 0.7, pm.a + (nF.b - 0.5) * 0.22 + (nM.a - 0.5) * 0.12 - hgt * 0.25) * w_soft * wet_amt;
 	// (Standing water: dark, and smooth enough to hold the sky; judge 1, E3 fix 7.)
-	albedo = mix(albedo, albedo * 0.3, pud);
+	albedo = mix(albedo, albedo * pud_dark, pud);
 	rough = mix(rough, 0.03, pud);
 	n_w = normalize(mix(n_w, n_geo, pud));
+
+	// Dew by night (judge 1, E3 fix 10 and 3: the moonlit road read as snow): bare earth and stone darker while the
+	// frost is out and no thaw has begun; the dawn keeps its own numbers.
+	float night = ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
+	albedo *= 1.0 - night_dew * night * w_soft;
 
 	// Hoar frost: on the exposed tops (the heights' high parts, the road's verges and centre strip), less in the
 	// ruts, none in the wet or on standing water, none under a crown or the eaves; at dawn only in the shade.
@@ -382,16 +395,32 @@ void fragment() {
 	if (debug_view == 2) ALBEDO = sp.rgb;
 	if (debug_view == 4) ALBEDO = vec3(frost_k, 0.0, 1.0 - frost_k);
 	if (debug_view == 3) ALBEDO = vec3(texture(expo_tex, zuv).rg, 0.0);
-	// 5: the gutter, the wall's foot (to gutter_w), the grime's reach; 6: puddles, weeded joints and joints within 0.5 m
-	// of a wall; 7: the wear lane, the dropped edge stones, the edge band (measure_c.py's masks).
-	float near05 = step(nr.r * 2.0, 0.5) * w_setts;
-	if (debug_view == 5) ALBEDO = vec3(gut, w_setts * (1.0 - near_any) * (1.0 - gut) * (1.0 - nr.b), near_any * w_setts);
-	if (debug_view == 6) ALBEDO = vec3(pud, joint * wsel * near05, joint * near05);
-	if (debug_view == 7) ALBEDO = vec3(nr.b * w_setts * (1.0 - near_any), step(nr.r * 2.0, gutter_w), s_band);
-	ROUGHNESS = clamp(rough, 0.04, 1.0);
+	// 10-18 (measure_d.py's masks), one a frame, unlit and stepped at 0.5 (white on black: no tonemap can mix them):
+	// 10 the gutter, 11 open setts (no grime, gutter, lane or puddle), 12 the grime's reach on setts, 13 puddles,
+	// 14 setts within 0.9 m of a wall (0.5 m past the gutter) whose joints are weeded, 15 setts within 0.9 m of a wall, 16 the wear lane (clear of the grime),
+	// 17 a street-side wall's foot (to gutter_w), 18 the setts' edge band.
+	float near05 = step(nr.r * 2.0, 0.9) * w_setts;
+	bool dbg_on = debug_view >= 10;
+	if (dbg_on) {
+		float m = 0.0;
+		if (debug_view == 10) m = gut;
+		if (debug_view == 11) m = w_setts * (1.0 - step(0.5, near_any)) * (1.0 - step(0.5, gut)) * (1.0 - step(0.5, nr.b)) * (1.0 - step(0.5, pud));
+		if (debug_view == 12) m = near_any * step(0.5, w_setts);
+		if (debug_view == 13) m = pud;
+		if (debug_view == 14) m = step(0.5, wsel) * near05;
+		if (debug_view == 15) m = near05;
+		if (debug_view == 16) m = step(0.5, nr.b) * w_setts * (1.0 - step(0.5, near_any));
+		if (debug_view == 17) m = step(nr.r * 2.0, gutter_w) * step(0.5, sp.g);
+		if (debug_view == 18) m = s_band;
+		ALBEDO = vec3(0.0);
+		EMISSION = vec3(step(0.5, m) * 50.0);
+	}
+	ROUGHNESS = clamp(mix(rough, 1.0, night * (1.0 - pud) * 0.6), 0.04, 1.0);
 	AO = mix(1.0, ao, 0.85);
 	AO_LIGHT_AFFECT = 0.25;
-	SPECULAR = mix(0.35, 0.5, pud);
+	// By night the ground's sheen at the close camera's grazing angle read as snow on the road and pale smears at the
+	// tufts' feet (judge 1, E3 fix 10): the moonlit ground kept matte, the puddles still holding the sky.
+	SPECULAR = dbg_on ? 0.0 : mix(mix(0.35, night_spec, night), 1.0, pud);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 
 	// The Flare's drain, web, frost and scars (flare_world.gdshaderinc).

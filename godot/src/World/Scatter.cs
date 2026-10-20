@@ -16,8 +16,8 @@ namespace SurvivorUnchained.View;
 public static class Scatter
 {
     const float Cell = 32f, Step = 0.25f, WallStep = 0.3f;
-    static readonly bool EdgeStones = !SurvivorUnchained.Args.Has("no-edge-stones");
-    static readonly float CampLitter = SurvivorUnchained.Args.Num("camp-litter", 4f);
+    static readonly bool EdgeStones = SurvivorUnchained.Args.Has("edge-stones");   // cut (judge 1, E3 fix 9: they read as eggs); the pebbles stay
+    static readonly float CampLitter = SurvivorUnchained.Args.Num("camp-litter", 6f);
 
     // A needle cluster: three thin pointed slivers crossed at a root, length 1 (fir needles lie in little drifts).
     static Tpl Needle()
@@ -317,7 +317,7 @@ public static class Scatter
         }
 
         // A camp's ground (judge 1, E3 fix 10: the close-up's near ground had nothing on it): within a few metres of the
-        // fire, chips, twigs, pebbles and needles, about four to the square metre.
+        // fire, chips, twigs, pebbles and needles, about six to the square metre (10+ a screen quarter at the close-up).
         foreach (var f in z.Meta.Fires)
         {
             float fx = (float)f.X, fz = (float)f.Z, R = 7f;
@@ -355,6 +355,7 @@ public static class Scatter
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/scatter.gdshader") };
         mat.SetShaderParameter("expo_tex", paint.Exposure);
         mat.SetShaderParameter("zone_size", z.Size);
+        mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("scatter-debug", 0f));
         mat.SetShaderParameter("warm_at", Ground.WarmAt(z));
         var root = new Node3D { Name = "Scatter" };
         foreach (var ((ci, cj), bin) in bins)

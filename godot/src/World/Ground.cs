@@ -98,9 +98,9 @@ public static class Ground
         mat.SetShaderParameter("warm_at", WarmAt(z));
         // Judge 1's fix round (E3 C): what stands near the ground, and its switches.
         mat.SetShaderParameter("near_tex", paint.Near);
-        foreach (var (u, sw, v) in new[] { ("rut_dark", "ground-rut-dark", 0.45f), ("crown_lift", "ground-crown", 0.12f), ("grime", "setts-grime", 0.4f),
-            ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.22f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
-            ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f) })
+        foreach (var (u, sw, v) in new[] { ("rut_dark", "ground-rut-dark", 0.45f), ("crown_lift", "ground-crown", 0.12f), ("grime", "setts-grime", 0.5f),
+            ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.32f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
+            ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.4f), ("night_dew", "ground-night-dew", 0.25f), ("pud_dark", "ground-pud-dark", 0.2f), ("night_spec", "ground-night-spec", 0.12f) })
             mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, v));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);

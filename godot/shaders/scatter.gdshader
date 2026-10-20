@@ -15,6 +15,8 @@ uniform float frost_tone = 1.7;
 uniform float frost_cap = 0.1;
 uniform vec4 warm_at[4];
 uniform float zone_size = 300.0;
+// 1: each piece lit white (measure_d.py counts what shows at the close-up: --scatter-debug 1).
+uniform int debug_view = 0;
 
 void fragment() {
 	vec3 alb = COLOR.rgb;
@@ -31,6 +33,7 @@ void fragment() {
 	ALBEDO = alb;
 	ROUGHNESS = mix(0.82, 0.9, COLOR.a);
 	SPECULAR = 0.3;
+	if (debug_view == 1) { ALBEDO = vec3(0.0); EMISSION = vec3(50.0); }
 
 	// The Flare's drain and frost (flare_world.gdshaderinc).
 	if (flare_live()) {
