@@ -68,11 +68,14 @@ HH6, HH10, HP6, HP10 = 26, 28, -18, -18
 # fist moved (chest frame) and the blade's direction.
 # The idle axe through the finish (solver 7a, judge r3 call 3): held in its f3 shape, not stood upright behind her
 # shoulder: the fist out from her left shoulder at chest height, the haft leaning out to her left.
-HV_YAW, HV_PITCH, HV_OFF = (-16, -28), -16, (-0.28, -0.14, -0.16)
+HV_YAW, HV_PITCH, HV_OFF = (-16, -28), -16, (-0.20, -0.10, -0.12)
 AX_IH, AX_IB = (0.15, 0.06, 0.25), (0.25, 0.97, -0.06)
-RUN_OFF0, RUN_LP0 = (0.21, -0.12, 0.28), (0.35, -0.9, -0.1)
-RUN_DH, RUN_BL = (0.18, 0.10, 0.06), (0.79, -0.45, 0.467)
-RUN_HDH, RUN_HBL = (0.14, 0.10, 0.04), (0.3, -0.9, 0.3)
+RUN_OFF0, RUN_LP0 = (0.22, -0.11, 0.19), (0.35, -0.9, -0.1)
+RUN_DH, RUN_BL = (0.0, 0.0, 0.0), (0.62, -0.45, 0.64)
+RUN_SY = 16
+RUN_T11, RUN_H11 = 0, (0.10, -0.30, 0.50)
+RUN_HSY = 16
+RUN_HDH, RUN_HBL = (0.0, 0.04, 0.0), (0.5, -0.8, 0.35)
 
 GUARD = pose(0, 0, (-0.06, -0.26, 0.22), _n(-0.3, 0.75, 0.55), pole=(-0.7, -0.5, -0.4), off=(-0.02, -0.28, 0.20))
 
@@ -104,8 +107,9 @@ def _fore_keys(run=False):
     """axe_fore's keys; run: the variant play shows over her run (axe_fore_run)."""
     off0, lp0 = (RUN_OFF0, RUN_LP0) if run else ((0.10, -0.16, 0.32), (0.7, -0.5, -0.3))
     dh, bl = (RUN_DH, _n(*RUN_BL)) if run else ((0, 0, 0), _n(0.45, -0.45, 0.8))
+    sy = RUN_SY if run else 0
     h5, h7 = (0.21 + dh[0], -0.12 + dh[1], 0.44 + dh[2]), (0.235 + dh[0], -0.10 + dh[1], 0.43 + dh[2])
-    return [
+    keys = [
         # Cocked as the heavy is (anim 42: it read as a torch raised): the fist by her right ear, the elbow up and
         # back, the head back over her shoulder; the shoulders wound about 25 deg behind the hips.
         # (Solver 5a, judge r2: the elbow higher and further back, the forearm back beside her head, her face clear.)
@@ -122,16 +126,23 @@ def _fore_keys(run=False):
         # (Solver 5a, judge r2: committed, and clear of the run's knee. Play shows only the spine up, so the lean is
         # the spine's: 22 deg more pitch and a roll to her left; the fist out before her left thigh, elbow ~160,
         # up off the run's lifted knee; the free hand loose, out from her hip and a little behind it.)
-        (5, pose(28, 32, h5, bl, pole=(-0.9, -0.3, 0.1),
+        (5, pose(28, 32 + sy, h5, bl, pole=(-0.9, -0.3, 0.1),
                  off=(0.20, -0.33, 0.16), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.7, pivot=0.7, pitch=26,
                  roll=-14, hinge=14, clav_r=(6, 14), hroll=HR5), "ease"),
-        (7, pose(30, 34, h7, bl, pole=(-0.9, -0.3, 0.2),
+        (7, pose(30, 34 + sy, h7, bl, pole=(-0.9, -0.3, 0.2),
                  off=(0.20, -0.33, 0.16), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.8, pivot=0.8, pitch=28,
                  roll=-16, hinge=15, clav_r=(6, 14), hroll=HR7), "ease"),
         (16, pose(7, 12, (0.02, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
          "auto"),
         (26, GUARD, "ease"),
     ]
+    if run and RUN_T11:
+        # (Over the run the fist finishes higher; on its way back to the guard it would come up through her breast:
+        # first it drops, the arm still long, the shoulders unwinding.)
+        keys.insert(4, (RUN_T11, pose(24, 28 + sy, RUN_H11, bl, pole=(-0.9, -0.3, 0.2), off=(0.20, -0.33, 0.16),
+                                      left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.7, pivot=0.7, pitch=24,
+                                      roll=-12, hinge=13, clav_r=(6, 12), hroll=HR7 * 0.8), "auto"))
+    return keys
 
 
 def axe_fore(rig):
@@ -152,6 +163,7 @@ def axe_fore_run(rig):
 def _heavy_keys(run=False):
     """axe_heavy's keys; run: the variant play shows over her run (axe_heavy_run)."""
     dh, bl = (RUN_HDH, _n(*RUN_HBL)) if run else ((0, 0, 0), _n(0.75, -0.55, 0.45))
+    sy = RUN_HSY if run else 0
     h6 = (0.20 + dh[0], -0.16 + dh[1], 0.44 + dh[2])
     return [
         # (Solver 5a, judge r2: apart from fore's: wound further, arched back, the elbow high and back, the haft
@@ -169,10 +181,10 @@ def _heavy_keys(run=False):
         # (Solver 5a, judge r2: heavier than fore at the finish: the spine 14 deg more pitched, the head lower and
         # further forward; the haft rolled (knuckles) so the head's flat shows to the camera, edge leading, not
         # end-on; the free hand loose, out from her hip.)
-        (6, pose(28, 34, h6, bl, pole=(-0.9, -0.3, 0.1),
+        (6, pose(28, 34 + sy, h6, bl, pole=(-0.9, -0.3, 0.1),
                  off=(0.20, -0.28, 0.22), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.8, pivot=0.8, pitch=40,
                  roll=-14, hinge=23, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89), hroll=HH6, hpitch=HP6), "ease"),
-        (10, pose(31, 36, h6, bl, pole=(-0.9, -0.3, 0.2),
+        (10, pose(31, 36 + sy, h6, bl, pole=(-0.9, -0.3, 0.2),
                   off=(0.20, -0.28, 0.22), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.9, pivot=0.9,
                   pitch=42, roll=-16, hinge=25, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89),
                   hroll=HH10, hpitch=HP10), "ease"),
