@@ -431,8 +431,11 @@ P_WOBBLE = 0.003
 P_SUN = np.array([0.866, -0.5])     # toward the sun in the tile (col, row): azimuth 330 (x = cos az, z = sin az; rows = z)
 P_STROKE = 0.06                     # the strokes along a stone's long axis, +/-
 P_STROKE_W = 0.065                  # their width (m): 2-3 to a stone
-# The stones' palettes: (share, hue, saturation, value): warm grey, ochre, cream, a few cool grey-blue.
-P_PALETTE = ((0.34, 30.0, 0.12, 0.300), (0.30, 35.0, 0.27, 0.298), (0.24, 41.0, 0.13, 0.348), (0.12, 212.0, 0.08, 0.285))
+# The stones' palettes: (share, hue, saturation, value): warm grey, ochre, cream, a few cool grey-blue. (Lead 4's
+# palette tweak toward the target's sunlit cream-grey: less red and a third less saturated, more and paler cream
+# stones, under a warm key. Round 3 was ((0.34, 30, 0.12, 0.300), (0.30, 35, 0.27, 0.298), (0.24, 41, 0.13, 0.348),
+# (0.12, 212, 0.08, 0.285)); the draws per stone are the same, so the layout doesn't move.)
+P_PALETTE = ((0.34, 38.0, 0.08, 0.310), (0.22, 36.0, 0.18, 0.298), (0.30, 44.0, 0.10, 0.372), (0.14, 214.0, 0.07, 0.296))
 P_VAL_SD = 0.16
 
 
@@ -643,9 +646,9 @@ def bake_setts_paint(src):
     k = (1 + 0.14 * src['lit'] - 0.16 * src['foot'] + P_STROKE * src['stroke'] + 0.05 * wear)
     alb = src['tone'] * k[..., None]
     # The gaps: dark brown in the cracks, packed dark-brown mud where a stone is missing; moss where never swept.
-    crack = np.array([0.112, 0.084, 0.058])
-    packed = np.array([0.205, 0.155, 0.104])
-    deep = np.array([0.175, 0.130, 0.088])
+    crack = np.array([0.104, 0.091, 0.077])      # (round 3: 0.112, 0.084, 0.058; a near-neutral dark, as the target's gaps)
+    packed = np.array([0.200, 0.158, 0.115])     # (0.205, 0.155, 0.104)
+    deep = np.array([0.170, 0.133, 0.097])       # (0.175, 0.130, 0.088)
     moss = np.array([0.17, 0.20, 0.10])
     mortar = packed + (deep - packed) * src['mud'][..., None]
     mortar += (moss - mortar) * src['moss'][..., None] * 0.6

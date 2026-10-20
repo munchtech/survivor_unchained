@@ -113,6 +113,9 @@ public static class Ground
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         var scales = new Godot.Collections.Array<float>();
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray()) scales.Add(1f / l.GetProperty("metres").GetSingle());
+        // Style r2 (--setts-paint): the painted stones a size up, toward the target's chunkier cobbles (lead 4 at 1:1: 1.35
+        // reads as a cobbled square, 1.7 as outlined flagstones). --setts-paint-scale N; 1 is the 4 m tile; layer 4 is the setts.
+        if (sp) scales[4] /= SurvivorUnchained.Args.Num("setts-paint-scale", 1.35f);
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
         return Finish(z, mesh);
