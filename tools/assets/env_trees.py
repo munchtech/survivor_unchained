@@ -839,9 +839,11 @@ def alder_proxy(H, R, seed, stems):
         b.quad_grid(P, N, UV, nu, nv)
 
     # (0.86 of the crown, judge E4c: the cards' outer halves out of it, so a crown's sunward top reads lit)
-    lump(np.array([0, 0, zc]), 0.54 * R, 0.54 * hz)
+    # (and low in it, its top well under the crown's: a low sun over the proxy's top shadowed the crown's whole
+    # top, which the camera sees)
+    lump(np.array([0, 0, zc - 0.08 * hz]), 0.54 * R, 0.45 * hz)
     for k in range(int(rng.integers(5, 8))):
-        a = rng.uniform(0, 6.28); zf = rng.uniform(-0.4, 0.8)
+        a = rng.uniform(0, 6.28); zf = rng.uniform(-0.5, 0.4)
         rxy = math.sqrt(1 - zf * zf)
         o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
         lump(np.array([0, 0, zc]) + o * np.array([R, R, hz]) * rng.uniform(0.3, 0.4), rng.uniform(0.34, 0.42) * R, rng.uniform(0.27, 0.35) * hz, 7, 4)

@@ -51,13 +51,14 @@ uniform float hue_floor = 100.0;
 // its crown seen from above read as a hole by day, judge E4c)
 uniform float core = 1.0;
 uniform float night_fill = 0.1;
+uniform float near_dim = 0.2;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
-uniform float self_shadow = 0.35;
+uniform float self_shadow = 0.5;
 uniform float wrap = 1.0;
 // (and the sky's blue in its shade by day less than the needles', so its shade stays olive)
-uniform float sky_amb = 0.7;
+uniform float sky_amb = 0.45;
 #endif
 
 float hue_of(vec3 c) {
@@ -233,6 +234,9 @@ void fragment() {
 		float j2 = fract(v_jit * 7.31 + 0.37);
 		// (up no more than 8%: a near tree jittered up read as the frame's brightest mint, judge E4c)
 		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-7.0, 7.0, v_jit))), vec3(0.0)) * mix(0.87, 1.08, j2);
+		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
+		// stood as the frame's brightest mint at roaddawn, judge E4c)
+		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
@@ -286,7 +290,7 @@ void fragment() {
 void light() {
 	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, ATTENUATION, self_shadow) : ATTENUATION;
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
-	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.3);
+	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
 	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d + BACKLIGHT * (1.0 - d)) / PI;
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
