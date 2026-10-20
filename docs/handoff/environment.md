@@ -3,7 +3,7 @@
 ## Now (env lead 7, 19 Oct night): E3 round 3 (the cap) running
 - Integration merged (fbcac443). Solver D (c7c45928) finished round C: `survivorsunchained_inputs\env_e3\d
 umbers.md`; scripts `scratch_env7\ground_d\` (measure_d.py, perf.py).
-- **Judge 2 FAILED, 5 fixes** (`env_e3\judge2erdict.md`). It closed the hand-back, the close-up (night_05; the 1.15 target is closed), the edges, the eggs (cut), the scatter, the colour and the repeat.
+- **Judge 2 FAILED, 5 fixes** (`env_e3\judge2\verdict.md`). It closed the hand-back, the close-up (night_05; the 1.15 target is closed), the edges, the eggs (cut), the scatter, the colour and the repeat.
 - Perf bisect (`scratch_env7isect\`): ground flip 0.863 ms at c7c45928, 0.854 ms with B's files. E3's rounds C and D cost nothing. Shadow draws 749 in both: not E3's, routed to perf. The hold is 0.90 ms.
 - Solver E (brief `scratch_env7\ground_e_brief.md`) is building round 3: puddles, the setts mosaic, verge/frost splats, the night meadow, the ruts in the sun. Frames go to `env_e3\e\`.
 - **Next:** judge 3, the last round (failed frames only; template `scratch_env7\e3_judge2_brief.md`), then close the rest as known. Main gave the go (19 Oct): if the setts mosaic survives round 3, restage with one authored 4 m sett tile with variation (ground at 0.90 ms or less), then judge 3 on the town frames only. Then perf (`tools/perf/run.py`, fps min at least 131), the full dotnet test, the teach run, and "MR READY env-3@<commit>".
@@ -43,7 +43,7 @@ umbers.md`; scripts `scratch_env7\ground_d\` (measure_d.py, perf.py).
 - Routed, not E3's: the tuft rows of identical cards at the close-up (E4 grass), the firs (E4), rocks (E5), water (E6), bedroll and chest (E7), buildings (E9).
 
 ## Now (env lead 5, 19 Oct): E2 DONE, MR READY; next E3
-- **E2 is at MR READY** on env-2 (integration merged at fe27b26e). Briefs and tools: `survivorsunchained_inputs\scratch_env5\`. Verdicts: `env_e2\judge1erdict.md`, `env_e2\judge2erdict.md`.
+- **E2 is at MR READY** on env-2 (integration merged at fe27b26e). Briefs and tools: `survivorsunchained_inputs\scratch_env5\`. Verdicts: `env_e2\judge1\verdict.md`, `env_e2\judge2\verdict.md`.
 - **What E2 shipped:**
   - The fog-blotch fix (frost thaws at hand-back).
   - The flame kit.
