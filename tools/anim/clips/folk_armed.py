@@ -22,7 +22,7 @@ import math
 import numpy as np
 
 from gait import arc_of
-from rig import Clip, qinv, qrot
+from rig import Clip, qinv, qmul, qrot, qslerp
 
 
 def _n(v):
@@ -47,6 +47,18 @@ def _captured(rig, base: Clip, side):
     return rel - rel.mean(axis=0)
 
 
+def _chest(rig, base: Clip):
+    """The base's chest turn (spine_03, from its rest), each frame, and the loop's mean."""
+    sk = rig.sk
+    g, _ = sk.fk(base.rot, base.pos)
+    grest = sk.rest_globals()[0][0]
+    ch = sk.i("spine_03")
+    q = np.array([qmul(g[f, ch], qinv(grest[ch])) for f in range(base.frames)])
+    q *= np.sign(q @ q[0])[:, None]
+    m = q.mean(axis=0)
+    return q, m / np.linalg.norm(m)
+
+
 def _arm(rig):
     sk = rig.sk
     pr = sk.rest_globals()[1][0]
@@ -67,8 +79,17 @@ FREE_L = dict(at=(0.16, -0.46, 0.08), pole=(0.3, -0.2, -1.0))
 SHOULDER_R = dict(at=(-0.016, -0.204, 0.199), pole=_n((-0.828, -0.469, -0.307)), blade=_n((-0.188, 0.845, -0.5)),
                   knuckles=_n((0.15, -0.3, 0.94)), ride="chest", swing=0.0)
 
+# The free hand's fingers at ease on the folk's hands (judge, animation 45: the rig's "relaxed" reads straight and
+# spread on a townsperson at the game camera): each finger curled more, toward the little one (index 20 at the knuckle,
+# little 44), the thumb as "relaxed" has it (drawn in further, or opposed more, its tip only moved off the forefinger
+# on the folk hand: 5.5 cm as relaxed, 6.0-9.4 tried; its draw-in is still to find).
+FOLK_RELAXED = {"bends": {"index": [20, 22, 12], "middle": [27, 30, 15], "ring": [35, 37, 18], "pinky": [44, 42, 20],
+                          "thumb": [12, 12, 16]},
+                "oppose": 0.16, "thumb_in": 18, "thumb_roll": -8,
+                "spreads": {"index": -7.0, "middle": 0.0, "ring": 8.0, "pinky": 22.0}}
+
 STANDS = {
-    "idle_armed": dict(r=SWORD_R, l=FREE_L, weapon="sword"),
+    "idle_armed": dict(r=SWORD_R, l=FREE_L, weapon="sword", f=dict(fingers_l=FOLK_RELAXED)),
     "idle_2h": dict(r=SHOULDER_R, l=FREE_L, weapon=""),
 }
 
@@ -76,12 +97,29 @@ STANDS = {
 def make_stand(name, rig, base: Clip, stand=None) -> Clip:
     from clips.idle import layered
     st = stand or STANDS[name.split("_", 1)[1]]
+    sex = name.split("_", 1)[0]
+    if sex in st:
+        # The stand's own for this body (its "f" or "m": hands, fingers), over the shared.
+        st = {k: (dict(v, **st[sex].get(k, {})) if isinstance(v, dict) else st[sex].get(k, v)) for k, v in st.items()}
+        st.update({k: v for k, v in st[sex].items() if k not in st})
     k = _arm(rig) / HER_ARM
     swing = {s: _captured(rig, base, s) * SWING for s in "lr"}
+    chest, chest_mean = _chest(rig, base)
 
     def hand(side, spec, f):
         at = np.array(spec["at"], float) * k + swing[side][f] * spec.get("swing", 1.0)
         h = {"arc": arc_of(at), "pole": spec["pole"], "frame": "chest", "twist": 1.0 if side == "l" else 0.5}
+        if "steady" in spec:
+            # A blade resting on the shoulder ("ride": "chest") whose line holds steadier than the chest turns: the
+            # fist, blade and pole turned as one about the resting point ("pivot", chest frame from the shoulder) by
+            # `steady` of the way from this frame's chest turn back to the loop's mean, so the blade stays on the
+            # shoulder and the fist takes up the difference (the long blade would swing a chest's every roll).
+            d = qmul(qinv(chest[f]), qslerp(chest[f], chest_mean, spec["steady"]))
+            pv = np.array(spec["pivot"], float) * k
+            at = pv + qrot(d, at - pv)
+            h["arc"] = arc_of(at)
+            h["pole"] = tuple(qrot(d, spec["pole"]))
+            spec = dict(spec, blade=tuple(qrot(d, spec["blade"])), knuckles=tuple(qrot(d, spec["knuckles"])))
         if "blade" in spec:
             # (The arc rides the chest whatever the frame; the pole and the blade are kept in character space, so a
             # hanging blade's line holds as the chest rolls; a blade resting on the shoulder rides the chest with it,
@@ -96,7 +134,7 @@ def make_stand(name, rig, base: Clip, stand=None) -> Clip:
 
     def over(t, f):
         d = {"hand_r": hand("r", st["r"], f), "hand_l": hand("l", st["l"], f), "fingers_r": "grip",
-             "fingers_l": "grip" if st["weapon"].endswith("shield") else "relaxed"}
+             "fingers_l": "grip" if st["weapon"].endswith("shield") else st.get("fingers_l", "relaxed")}
         return d
 
     clip = layered(name, rig, base, over, {"weapon": st["weapon"]})
