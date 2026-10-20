@@ -90,6 +90,11 @@ void vertex() {
 	float h = max(VERTEX.y, 0.0);
 	float ph = TIME * 1.1 + ip.x * 0.23 + ip.z * 0.19;
 	float sway = (sin(ph) * 0.65 + sin(ph * 2.3 + 1.7) * 0.25 + sin(ph * 5.1 + ip.x) * 0.1) * wind * h * h * 0.02;
+#ifdef OWN_FOLIAGE
+	// (our own trees, env_trees.py: each branch's needles flutter on their own, more toward
+	// the branch's end; the bark strip, u > .75, stands with the trunk)
+	if (UV.x < 0.75) VERTEX.y += sin(TIME * 2.7 + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * wind * length(VERTEX.xz);
+#endif
 	VERTEX.x += sway;
 	VERTEX.z += sway * 0.5;
 #ifdef REVEAL
@@ -168,6 +173,16 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	if (use_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+#ifdef OWN_FOLIAGE
+	// The crown's normals point out from the trunk on both faces of a card (Godot turns a back
+	// face's round), so a crown shades as one mass; light through the needles from behind; each
+	// tree's green a little warmer or cooler (v_jit).
+	if (!FRONT_FACING) NORMAL = -NORMAL;
+	if (UV.x < 0.75) {
+		ALBEDO *= mix(vec3(1.02, 1.0, 0.93), vec3(0.92, 1.0, 1.08), v_jit);
+		BACKLIGHT = ALBEDO * vec3(0.18, 0.22, 0.24);
+	}
+#endif
 
 	// The Flare's drain and frost (flare_world.gdshaderinc).
 	if (flare_live()) {

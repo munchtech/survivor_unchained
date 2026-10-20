@@ -17,9 +17,34 @@ public static class Dressing
 
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
-    /// <summary>A piece's file: a photoscan (art/world) or a kit piece.</summary>
+    /// <summary>A piece's file: a photoscan (art/world), one of our own trees (art/world/flora) or a kit piece.</summary>
     static string FileOf(string kit, string piece) =>
-        piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb" : $"res://assets/env/{kit}/{piece}.gltf";
+        piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb"
+        : piece.StartsWith("own:") ? $"res://art/world/flora/{piece[4..]}.gltf" : $"res://assets/env/{kit}/{piece}.gltf";
+
+    /// <summary>--flora-own (E4, a developer's switch while our own trees replace the kit's, default
+    /// off): the kit's pines drawn as our spruces (tools/assets/env_trees.py), the same count, places
+    /// and sizes. Sizes a, b, c stand as tall as the pines they replace (7.1, 8.4 and 10 m before the zone's scale).</summary>
+    public static readonly bool FloraOwn = SurvivorUnchained.Args.Has("flora-own");
+    static readonly Dictionary<string, string> OwnFor = new()
+    {
+        ["Pine_1"] = "own:spruce_a", ["Pine_3"] = "own:spruce_a", ["Pine_2"] = "own:spruce_b", ["Pine_5"] = "own:spruce_b", ["Pine_4"] = "own:spruce_c",
+    };
+    public static string Own(string piece) => FloraOwn && OwnFor.TryGetValue(piece, out var o) ? o : piece;
+
+    /// <summary>Where our own trees change LOD (the 48 m bucket's middle from the camera, m):
+    /// lod0 inside the first, lod1 to the second, lod2 beyond; lod1 alone casts the shadows.</summary>
+    static readonly float OwnLod1 = SurvivorUnchained.Args.Num("flora-lod1", 90), OwnLod2 = SurvivorUnchained.Args.Num("flora-lod2", 180);
+
+    /// <summary>An own tree's three LOD meshes (the file's nodes lod0, lod1, lod2).</summary>
+    static Mesh[] LodsOf(string piece)
+    {
+        var scene = GD.Load<PackedScene>(FileOf("nature", piece)).Instantiate<Node3D>();
+        var m = new Mesh[3];
+        for (int i = 0; i < 3; i++) m[i] = scene.FindChild($"lod{i}", true, false) is MeshInstance3D mi ? mi.Mesh : m[Mathf.Max(i - 1, 0)];
+        scene.Free();
+        return m;
+    }
 
     /// <summary>Every file the place's flora and props are made from (Prefetch asks for them ahead).</summary>
     public static IEnumerable<string> Files(ZoneData z)
@@ -58,6 +83,7 @@ public static class Dressing
     /// variant): GroundPaint reads its crown from it, for the frost's sky exposure.</summary>
     public static Aabb BoundsOf(string piece)
     {
+        if (piece.StartsWith("own:")) return LodsOf(piece)[0].GetAabb();
         var list = piece.StartsWith("scan:") ? VariantsOf(piece[5..]) : PartsOf("nature", piece);
         Aabb? b = null;
         foreach (var (mesh, local) in list)
@@ -175,6 +201,22 @@ public static class Dressing
                         VisibilityRangeEnd = low ? 90 : 0,
                     });
                 }
+                continue;
+            }
+            if (g.Piece.StartsWith("own:"))
+            {
+                var lods = LodsOf(g.Piece);
+                MultiMeshInstance3D Mmi(Mesh mesh, string tag)
+                {
+                    var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = g.At.Length };
+                    for (int i = 0; i < g.At.Length; i++) mm.SetInstanceTransform(i, g.At[i]);
+                    return new MultiMeshInstance3D { Multimesh = mm, Name = $"{g.Kind}:{g.Piece}:{tag}", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+                }
+                var l0 = Mmi(lods[0], "lod0"); l0.VisibilityRangeEnd = OwnLod1;
+                var l1 = Mmi(lods[1], "lod1"); l1.VisibilityRangeBegin = OwnLod1; l1.VisibilityRangeEnd = OwnLod2;
+                var l2 = Mmi(lods[2], "lod2"); l2.VisibilityRangeBegin = OwnLod2;
+                var sh = Mmi(lods[1], "shadow"); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+                root.AddChild(l0); root.AddChild(l1); root.AddChild(l2); root.AddChild(sh);
                 continue;
             }
             foreach (var (mesh, local) in PartsOf("nature", g.Piece))

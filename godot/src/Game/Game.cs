@@ -1745,7 +1745,7 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, softshadow, ssao, msaa, interp,
+        // grass, fires, lamps, lampshadows, pines, pieces, labels, sunshadows, softshadow, ssao, msaa, interp,
         // flora, props, landmarks, ground, water, fx, volfog, mist (the river's sheets), fog, glow, fsr;
         // or quality:Q, scale:S, aa:A (that quality, resolution or smoothing while out).
         if (Args.Get("perf-flip") is string flips)
@@ -1796,6 +1796,10 @@ public partial class Game : Node, IZoneHost
                         flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Scatter" or "Fires" or "Lights"))
                         n.Visible = on;
                 }
+                // pines: the place's pines alone (the kit's, or ours under --flora-own: E4 measures each).
+                if (flipped.Contains("pines") && scene.View.GetNodeOrNull<Node3D>("Flora") is { } fl)
+                    foreach (var c in fl.GetChildren())
+                        if (c is Node3D p && ((string)p.Name).StartsWith("pine:")) p.Visible = on;
                 // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
                 if (flipped.Contains("lampshadows")) ShadowLamp.Enabled = on;
                 var t = Graphics.Current;

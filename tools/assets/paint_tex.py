@@ -57,6 +57,13 @@ PRESETS = {
     # terracotta round tiles: warm, varied, sun-baked tops, dark undersides
     "tiles": dict(detail=0.25, cavity=0.6, edge=0.3, top=0.25, warm=(2.0, 6.0), dull=1.0, chroma=0.92, hue=(22, 28), pull=0.2,
                   stroke=0.025, value=0.9, ms=(6, 14), weather=(0.76, (0.84, 0.77, 0.7))),
+    # E4 bark (env_trees.py): grey-brown scales simplified to plates, deep crevices, the lichen kept cool
+    "bark": dict(detail=0.25, cavity=0.7, edge=0.35, top=0.1, warm=(2.0, 6.0), dull=1.2, chroma=1.1, hue=(6, 12), pull=0.15,
+                 stroke=0.035, value=1.0, ms=(6, 14), weather=(0.92, (0.92, 0.9, 0.87))),
+    # E4 needles and leaves (env_trees.py): clumps kept as flat painted masses, a pull toward a cool
+    # spruce green (never gold: the warmth comes from the light), little warm shift
+    "foliage": dict(detail=0.1, cavity=0.45, edge=0.3, top=0.12, warm=(0.0, 1.0), dull=0.5, chroma=1.05, hue=(-14, 4), pull=0.2,
+                    stroke=0.03, value=1.0, ms=(6, 12), weather=(0.94, (0.93, 0.95, 0.92))),
 }
 VILLAGE = {"T_UnevenBrick": "stone", "T_RockTrim": "rock", "T_WoodTrim": "wood", "T_RoundTiles": "tiles"}
 # The set dressing's shared trims (env/props: 41 props use the furniture trim, the camp's chest among them): its pale

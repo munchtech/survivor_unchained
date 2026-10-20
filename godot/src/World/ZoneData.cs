@@ -110,7 +110,7 @@ public sealed class ZoneData
             var look = new KitLook.Look(
                 g.TryGetProperty("wind", out var w) ? w.GetSingle() : 0, la, lb, amount,
                 g.TryGetProperty("moss", out var mo) && mo.ValueKind == JsonValueKind.Number ? mo.GetSingle() : 0);
-            Flora.Add(new FloraGroup(g.GetProperty("kind").GetString()!, g.GetProperty("piece").GetString()!, list, look));
+            Flora.Add(new FloraGroup(g.GetProperty("kind").GetString()!, Dressing.Own(g.GetProperty("piece").GetString()!), list, look));
         }
         using var props = JsonDocument.Parse(FileAccess.GetFileAsString($"{Dir}/props.json"));
         var t = new float[12];

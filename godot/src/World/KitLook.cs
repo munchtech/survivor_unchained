@@ -33,7 +33,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -111,7 +111,10 @@ public static class KitLook
         if (cache.TryGetValue(key, out var m)) return m;
         solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
-        m = new ShaderMaterial { Shader = foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
+        // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
+        bool mine = foliage && s.ResourceName.Contains("Own");
+        own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
+        m = new ShaderMaterial { Shader = mine ? own : foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
         m.SetShaderParameter("albedo_tex", s.AlbedoTexture);
         m.SetShaderParameter("albedo_color", s.AlbedoColor);
         m.SetShaderParameter("use_vcolor", s.VertexColorUseAsAlbedo);
@@ -123,6 +126,8 @@ public static class KitLook
             if (re.IsMatch(s.ResourceName)) { m.SetShaderParameter("weather_sat", sat); m.SetShaderParameter("weather_tint", foliage ? tint * look.Shade : tint); break; }
         // (--kit-paint: a painted sheet carries its own warmth, so it is weathered as its painter says)
         if (Textures.PaintedWeather(s.AlbedoTexture) is var (psat, ptint)) { m.SetShaderParameter("weather_sat", psat); m.SetShaderParameter("weather_tint", ptint); }
+        // (ours are painted for the look: weathered lightly, and trunk and needles sway as one)
+        if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.64f, 0.74f, 0.76f) * look.Shade); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         if (foliage && look.LeafA is Color a && look.LeafB is Color b)
         {
@@ -137,7 +142,8 @@ public static class KitLook
         // parameter the same, so the rim is the piece itself, fading.
         solidRim ??= Rim(solid);
         twoSidedRim ??= Rim(twoSided);
-        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : twoSidedRim };
+        ownRim ??= Rim(own);
+        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : m.Shader == own ? ownRim : twoSidedRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {
             var name = (string)u.AsGodotDictionary()["name"];
