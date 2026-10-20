@@ -885,6 +885,24 @@ FWD_BODY = {"clav_l": (20, 14), "clav_r": (20, 14)}   # her body's keys moved ov
                 # pitch, roll), "hips": (yaw, pitch, roll), "hips_pos": (x, y, z); added to the keyed
 
 
+# One-handed, the haft re-aimed (anim 41, solver 2, 19 October). The judge (play-true, 315 camera): at f3 the axe
+# lay buried edge-on (it read as a saw; its head pointed down and back between her feet, 14 cm into the ground), her
+# face was lost (20-22 deg below level, her chest 64-70 deg over) and the free hand hovered by the haft without
+# holding it. Now, over f3-f9, _forward sets the right fist from ONE_FWD: its seat 16 cm right of her centre line,
+# 0.70 m ahead, the haft 30 deg down and 22 toward her right with its edge down, so the blade bites 0-3 cm into the
+# ground before her and its flat faces the camera (|flat . camera| 0.82-0.89, was 0.33-0.57); her chest up 10 deg
+# and her neck and head lifted 10 more and turned 12 toward the camera (her face level, -1..+2 deg; 0.73-0.76
+# toward the camera, was 0.49-0.51). The free hand lets go as the axe comes down (f2, opened) and swings out to her
+# left for balance, low (f3-f9; L_CLEAR then moves it clear of her thigh as she rises).
+# Why not two hands (TWO_HANDS, tried with this haft): the left fist sat 7-29 mm off the haft and 8-12 deg tilted
+# at f3-f9 (its forearm's twist pinned), worse than round 3's straight haft, and joining it from the keyed hand
+# spun the hand 90-130 deg in a frame (f1-f2). A haft turned to show its flat leaves the left forearm no twist.
+ONE_FWD = {3: (-0.16, 0.48, 0.70, 30.0, -22.0), 6: (-0.16, 0.48, 0.70, 30.0, -22.0), 9: (-0.16, 0.50, 0.68, 30.0, -22.0)}
+ONE_BODY = {"clav_r": (20, 14), "spine": (-2, -10, 0), "neck": (4, -4, 0), "head": (8, -6, 0)}
+ONE_POLES = {"hand_r": None, "hand_l": None}   # the right elbow's way as keyed (out from the shoulder put the
+                                               # upper arm 14-23 mm into her breast)
+
+
 def _fwd_rot(pitch, yaw):
     """hand_r's rotation with the haft pitched `pitch` below level and yawed `yaw` toward her left, its edge down."""
     C, H, N, Wd = _haft()
@@ -896,7 +914,7 @@ def _fwd_rot(pitch, yaw):
     return B @ A.T
 
 
-def _forward(rig, clip):
+def _forward(rig, clip, FWD=FWD, FWD_BODY=FWD_BODY, FWD_POLES=FWD_POLES):
     """A post setting the right hand (wrist, turn) over the blow from FWD, eased from and to where `clip` solved it."""
     from rig import qaxis, qfrom_matrix, qmul, qslerp
     I = rig.I
@@ -1041,22 +1059,23 @@ def _strike_keys():
                   "foot_r": {"pos": (-0.22, 0.06, -0.23), "rot": (-23, 24, 0)},
                   "hand_r": {**both, "arc": arc_of((-0.03, 0.06, 0.44)), "blade": _n(-0.05, 0.35, 0.94)},
                   "hand_l": {"arc": arc_of((0.04, 0.02, 0.40)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "grip", "fingers_r": "grip"},
+                  "fingers_l": "spread", "fingers_r": "grip"},
                  hips=(0, 30, 0), spine=(0, 18, 0), neck=(0, -17, 0), head=(0, -25, 0)), "linear"),
-        # The blow: down hard into a wide crouch, the axe buried low before her.
+        # The blow: down hard into a wide crouch, the axe buried low before her (one-handed: the free hand let go at
+        # f2 and out to her left for balance; the haft re-aimed by ONE_FWD).
         (3, body({"hips": {"pos": (0.0, -0.30, 0.10)},
                   "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
                   "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
                   "hand_r": {**both, "arc": arc_of((-0.02, -0.22, 0.44)), "blade": _n(0.0, -0.75, 0.65)},
-                  "hand_l": {"arc": arc_of((0.06, -0.26, 0.38)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "grip", "fingers_r": "grip", "clav_l": (-4, 14), "clav_r": (-4, 14)},
+                  "hand_l": {"arc": arc_of((0.26, -0.30, 0.06)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
+                  "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 14), "clav_r": (-4, 14)},
                  hips=(0, 34, 0), spine=(0, 30, 0), neck=(0, -18, 0), head=(0, -26, 0)), "ease"),
         (6, body({"hips": {"pos": (0.0, -0.34, 0.10)},
                   "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
                   "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
                   "hand_r": {**both, "arc": arc_of((-0.02, -0.28, 0.42)), "blade": _n(0.0, -0.85, 0.5)},
-                  "hand_l": {"arc": arc_of((0.06, -0.30, 0.36)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "grip", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
+                  "hand_l": {"arc": arc_of((0.27, -0.32, 0.04)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
+                  "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
                  hips=(0, 38, 0), spine=(0, 32, 0), neck=(0, -20, 0), head=(0, -28, 0)), "ease"),
         # Wrenched free and up, the free hand back to its fist.
         (15, body({"hips": {"pos": (0.0, -0.18, 0.04)},
@@ -1076,7 +1095,11 @@ def chain_strike(rig):
     # Solved once for where the right hand holds the axe, then again with the left fist on the haft below it at
     # every frame from f1 (the keyed left hands are only where it lets go to).
     if not TWO_HANDS:
-        return build("chain_strike", rig, keys, meta=meta, post=_left_clear)
+        if not ONE_FWD:
+            return build("chain_strike", rig, keys, meta=meta, post=_left_clear)
+        first = build("chain_strike", rig, keys, meta=meta, post=_left_clear)
+        fwd = _forward(rig, first, ONE_FWD, ONE_BODY, ONE_POLES)
+        return build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: _left_clear(fr, fwd(fr, pose)))
     first = build("chain_strike", rig, keys, meta=meta)
     fwd = _forward(rig, first)
     second = build("chain_strike", rig, keys, meta=meta, post=fwd)
