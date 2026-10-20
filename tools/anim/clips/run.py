@@ -224,6 +224,11 @@ SWING = ((8, 12, 80, 20), (-20, 14, 70, -22))
 # A heavy axe's arm (judge r2: the axe elbow winged out 30-35 degrees at the close-up): in by her side, half the
 # free arm's swing, the forearm barely turned out.
 AXE_ARM = ((6, 10, 80, 10), (-20, 11, 70, -10))
+# The free left arm's own swing (anim 43 judge r1: forward, the wand run's open hand came to her lower belly and the
+# second axe's fist to her navel, its haft toward her groin). Out from her side and the forearm not turned in, as
+# run_reaver's: forward, the fist at the front of her left hip (wrist 25-28 cm out from the pelvis's midline, was 21-22).
+AXES_L = ((8, 20, 78, -5), (-22, 15, 70, -15))
+WAND_L = ((20, 18, 70, 0), (-30, 12, 70, -25))
 WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
@@ -245,13 +250,13 @@ RUNS = {
     "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     "run_reaver": (replace(REAVER, swing_r=AXE_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": blade_carry(up_fwd=0.75)}, "axe"),
-    "run_reaver_axes": (replace(REAVER, swing=AXE_ARM), {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
+    "run_reaver_axes": (replace(REAVER, swing_r=AXE_ARM, swing=AXES_L), {"r": blade_carry(up_fwd=0.75), "l": blade_carry(1.0, up_fwd=0.75)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
     # 58-61 degrees out of her sagittal plane at the back swing, 29-34 forward; up, at most 13 (run and sprint).
     "run_arcanist_wand": (replace(ARCANIST, fingers_r="grip", swing_r=((6, 10, 80, 25), (-30, 13, 70, -35)),
-                                  swing=((16, 12, 72, 10), ARCANIST.swing[1])), {"r": blade_carry(out=0.0)}, "wand"),
+                                  fingers="fist", swing=WAND_L), {"r": blade_carry(out=0.0)}, "wand"),
     # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint). The right
     # fist closed on the crossbow's pistol grip (WRAP["crossbow"], 18 October; relaxed, it stood off the grip).
     "run_stalker": (replace(STALKER, fingers="fist", fingers_r="grip", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
