@@ -50,10 +50,14 @@ uniform float hue_floor = 100.0;
 // (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
 // its crown seen from above read as a hole by day, judge E4c)
 uniform float core = 1.0;
+uniform float night_fill = 0.1;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
-uniform float self_shadow = 0.55;
+uniform float self_shadow = 0.35;
+uniform float wrap = 1.0;
+// (and the sky's blue in its shade by day less than the needles', so its shade stays olive)
+uniform float sky_amb = 0.7;
 #endif
 
 float hue_of(vec3 c) {
@@ -217,6 +221,11 @@ void fragment() {
 	// Each vertex's colour (env_trees.py): r how open it is (1 at the crown's skin, 0.35 at its axis),
 	// g how far out along its spray (0 foot, 1 tip), b 1 on a spray card (its front its upper side).
 	if (!FRONT_FACING) NORMAL = -NORMAL;
+#ifdef OWN_BROADLEAF
+	// (an alder's crown is a dome of leaves facing every way: its normals bent up toward the sky, so its
+	// top takes the sun whole and its sides most of it; judge E4c: its sun-side half alone read lit)
+	if (UV.x < 0.75) NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz * 0.6);
+#endif
 	float night = flora_light.x, low_sun = flora_light.y;
 	float open_ = mix(1.0, COLOR.r, core);
 	if (UV.x < 0.75) {
@@ -236,9 +245,9 @@ void fragment() {
 		float hl = hue_of(sqrt(max(ALBEDO * key, vec3(0.0))));
 		ALBEDO = max(hue_turn(ALBEDO, radians(clamp(hue_floor - hl, 0.0, 60.0) * low_sun)), vec3(0.0));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
-		ALBEDO *= mix(mix(0.5, 0.7, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
+		ALBEDO *= mix(mix(0.5, 0.8, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
 		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
-		ALBEDO *= mix(vec3(1.0), vec3(0.84, 1.1, 0.96), night);
+		ALBEDO *= mix(vec3(1.0), vec3(0.7, 1.15, 0.9), night);
 		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
 		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
@@ -246,8 +255,15 @@ void fragment() {
 		BACKLIGHT = mix(vec3(0.45, 1.0, 0.53) * bl / key, ALBEDO * vec3(0.04, 0.07, 0.065), night) * open_;
 		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
 		// shut out; at night the needles take less of the moonlit sky still)
-		// (judge E4c: at 0.36 the shaded crowns under the moon went black, below the shaded road; 1.8x)
-		AO = mix(0.5, 0.65, night) * mix(0.45, 1.0, open_);
+		// (judge E4c: at 0.36 the shaded crowns under the moon went black, below the shaded road: the moonlit
+		// sky's light let in whole, and less shut out at the core)
+		AO = mix(0.5, 1.0, night) * mix(mix(0.45, 0.7, night), 1.0, open_);
+#ifdef OWN_BROADLEAF
+		AO *= mix(sky_amb, 1.0, night);
+#endif
+		// (and a moonlit fill the shade keeps, deep blue-green: the night sky's light under a crown is more than the
+		// ambient alone gives, its shaded crowns as light as the shaded road, judge E4c)
+		EMISSION += ALBEDO * vec3(0.45, 1.0, 0.82) * night_fill * night * mix(0.6, 1.0, open_);
 		// (no wet sheen on needles: the moon's specks read as frost-blue glints)
 		SPECULAR = 0.12;
 		AO_LIGHT_AFFECT = 0.0;
@@ -266,14 +282,13 @@ void fragment() {
 
 #ifdef OWN_BROADLEAF
 // The alder's own light (its leaves take only part of the key's shadow, self_shadow): Lambert with the
-// built-in back light's transmission and a plain GGX highlight; its bark (u > .75) the shadow whole.
+// built-in back light's transmission, wrapped (wrap) and floored; its bark (u > .75) the shadow whole.
 void light() {
 	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, ATTENUATION, self_shadow) : ATTENUATION;
-	float d = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
+	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.3);
+	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
 	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d + BACKLIGHT * (1.0 - d)) / PI;
-	vec3 hv = normalize(LIGHT + VIEW);
-	float a2 = pow(max(ROUGHNESS, 0.05), 4.0), nh = clamp(dot(NORMAL, hv), 0.0, 1.0);
-	float D = a2 / (PI * pow(nh * nh * (a2 - 1.0) + 1.0, 2.0));
-	SPECULAR_LIGHT += LIGHT_COLOR * att * D * d * 0.25 * SPECULAR_AMOUNT;
+	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
 }
 #endif

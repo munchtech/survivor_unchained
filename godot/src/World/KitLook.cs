@@ -136,7 +136,7 @@ public static class KitLook
         // (the floors are set above the hue wanted on screen, ~100 and ~88: the grade warms them by 8-12 degrees, measured at roaddawn)
         // (alder at 86 left its sunlit tops pale yellow-olive at dawn, judge E4c: its brightest tenth at hue 90 or above wanted;
         // its crown core lightened, core 0.45, as its top by day read as a hole)
-        if (alder) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 98f); m.SetShaderParameter("core", 0.45f); }
+        if (alder) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 98f); m.SetShaderParameter("core", 0.3f); }
         else if (mine) m.SetShaderParameter("hue_floor", 108f);
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         // (ours keep their own greens: the kit's autumn recolour gave gold tops, cut for the cinematics)

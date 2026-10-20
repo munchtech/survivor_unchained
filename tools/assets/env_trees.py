@@ -311,7 +311,8 @@ def leafspray(seed):
     for c, rc in clumps:
         for _ in range(7):
             q = P(c + rng.normal(0, 0.12 * rc, 2)); r = int(rc * rng.uniform(0.24, 0.36))
-            cv2.circle(cimg, q, r, shade(0.07), -1, cv2.LINE_AA); cv2.circle(aimg, q, r, 255, -1, cv2.LINE_AA); cv2.circle(himg, q, r, 50, -1, cv2.LINE_AA)
+            # (0.18, not 0.07: the cores at near black read as holes in the crown by day, judge E4c)
+            cv2.circle(cimg, q, r, shade(0.18), -1, cv2.LINE_AA); cv2.circle(aimg, q, r, 255, -1, cv2.LINE_AA); cv2.circle(himg, q, r, 50, -1, cv2.LINE_AA)
     # 2b. every clump's rim a ring of round lobes (leaf masses), under the leaves: the clump's outline
     # scalloped and soft, a broadleaf's, not the spruce's spiky one (judge E4c: the alder's rim as jagged)
     for c, rc in clumps:
@@ -344,7 +345,7 @@ def leafspray(seed):
             poly = np.array(left + [notch] + right[::-1], np.int32)
             # value: deep inside dark, the rim light, the lit flank (up and -x) lighter
             lit = 0.5 * (-math.cos(a) * 0.6 - math.sin(a) * 0.8) + 0.5
-            v = 0.12 + 0.42 * rr ** 1.3 + 0.28 * lit * rr + rng.normal(0, 0.05)
+            v = 0.2 + 0.36 * rr ** 1.3 + 0.28 * lit * rr + rng.normal(0, 0.05)
             cv2.fillPoly(cimg, [poly], shade(v), cv2.LINE_AA); cv2.fillPoly(aimg, [poly], 255, cv2.LINE_AA)
             cv2.fillPoly(himg, [poly], int(110 + 120 * rr), cv2.LINE_AA)
             # the leaf's light half (its blade tilted to the sky), and its midrib a shade darker
