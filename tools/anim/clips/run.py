@@ -228,7 +228,10 @@ AXE_ARM = ((6, 10, 80, 10), (-20, 11, 70, -10))
 # second axe's fist to her navel, its haft toward her groin). Out from her side and the forearm not turned in, as
 # run_reaver's: forward, the fist at the front of her left hip (wrist 25-28 cm out from the pelvis's midline, was 21-22).
 AXES_L = ((8, 20, 78, -5), (-22, 15, 70, -15))
-WAND_L = ((20, 18, 70, 0), (-30, 12, 70, -25))
+# The wand run's free fist (anim 44 judge r3: T-rex arms, the fist never behind her): forward at her lower ribs, under
+# the bust (fist 129 cm in her rest frame, the underbust 130, navel 115) and 13 cm in front of it, the elbow 85 and
+# 27 cm out; back behind the hip (7.5 cm in the run, 15 in the sprint), the elbow opened to 112 and the forearm less out.
+WAND_L = ((10, 18, 85, 0), (-48, 8, 112, -10))
 WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
