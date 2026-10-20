@@ -11,6 +11,8 @@ SETS = {
     # scouting: the wood road at dawn round round 2's spot, and the town's streets
     "woodscout": (["--zone", "lowford", "--facts", "prologue.done=true", "--auto", "idle", "--spots", "-2,-72;-5,-66;1,-78;3,-68;-6,-77"], 5),
     "townscout_dawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,23;8,-18;24,0;-6,-4;0,-24;10,24"], 6),
+    # E3 F: the square twice, the camera 3 cm apart (the setts' joints in motion: shimmer)
+    "townjit": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;3.03,3.02"], 2),
     "townscout_day": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "0,23;8,-18;24,0;-6,-4;0,-24;10,24"], 6),
     # the camp and road B by night only (round 3c checks)
     "camp": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-7.5,87.5;9,40"], 2),
@@ -38,5 +40,7 @@ SETS = {
     # E2: the black roof slabs (teaching F10, F11): the Post and the Barrow's crypt by night
     # E2 camp fire: the close view facing the fire (close4's spot hides it), twice
     "campclose": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "-9.5,92.5,1,0;-9.5,92.5,1,0"], 2),
+    # E3 ground B: C01 played and handed back to play (its frost decals thawing over the play-time frost), 15-63 s
+    "handback": (["--zone", "lowford", "--cine", "c01", "--auto", "idle"], 9),
     "roofs": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots", "16,31;-17,4;-22,2"], 3),
 }

@@ -113,6 +113,10 @@ public sealed record AtmospherePreset(
     public double RiverLight { get; init; } = 1;
     public double RiverSky { get; init; } = 1;
     public double RiverBend { get; init; } = 1;
+    /// <summary>Hoar frost on the ground's exposed tops in play (0: none; 1: a night's full frost; look bible 1f),
+    /// and how much of it the sun has thawed where it falls (0: none; 1: all of it, leaving it in the shade).</summary>
+    public double Frost { get; init; }
+    public double FrostThaw { get; init; }
 }
 
 public sealed class ZoneMeta

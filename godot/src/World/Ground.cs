@@ -67,12 +67,43 @@ public static class Ground
         }
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
-        var splat = ImageTexture.CreateFromImage(WithMips(z.Splat));
+        // The paint reconciled with the roads, and the road, wet and puddle mask (GroundPaint.cs).
+        var paint = GroundPaint.Of(z);
+        var splat = ImageTexture.CreateFromImage(WithMips(paint.Splat));
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("splat", splat);
+        mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
+        mat.SetShaderParameter("mask_texel", z.Size / paint.Mask.GetWidth());
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>("res://art/ground/normal.jpg"));
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>("res://art/ground/arh.jpg"));
+        // The setts' 2K variants: only where the paint lays setts (64 MB of VRAM otherwise idle).
+        bool setts = HasSetts(paint.Splat);
+        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_albedo.jpg" : "res://art/ground/albedo.jpg"));
+        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_normal.jpg" : "res://art/ground/normal.jpg"));
+        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? "res://art/ground/setts_arh.jpg" : "res://art/ground/arh.jpg"));
+        // Picture switches for the sweeps (look bible 1f); the defaults are the chosen values.
+        mat.SetShaderParameter("h_amp", SurvivorUnchained.Args.Num("ground-h-amp", 1.0f));
+        mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
+        mat.SetShaderParameter("edge_k", SurvivorUnchained.Args.Num("ground-edge-k", 1.6f));
+        mat.SetShaderParameter("macro_amt", SurvivorUnchained.Args.Num("ground-macro", 1.0f));
+        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.018f));
+        mat.SetShaderParameter("wet_amt", SurvivorUnchained.Args.Num("ground-wet", 1.0f));
+        mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
+        mat.SetShaderParameter("expo_tex", paint.Exposure);
+        mat.SetShaderParameter("frost_tone", SurvivorUnchained.Args.Num("frost-tone", 1.7f));
+        mat.SetShaderParameter("frost_cap", SurvivorUnchained.Args.Num("frost-cap", 0.1f));
+        mat.SetShaderParameter("frost_reach", SurvivorUnchained.Args.Num("frost-reach", 0.5f));
+        mat.SetShaderParameter("meadow_amt", SurvivorUnchained.Args.Num("ground-meadow", 1f));
+        mat.SetShaderParameter("warm_at", WarmAt(z));
+        // Judge 1's fix round (E3 C): what stands near the ground, and its switches.
+        mat.SetShaderParameter("near_tex", paint.Near);
+        foreach (var (u, sw, v) in new[] { ("rut_dark", "ground-rut-dark", 0.45f), ("crown_lift", "ground-crown", 0.12f), ("grime", "setts-grime", 0.08f),
+            ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.32f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
+            ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.32f), ("night_dew", "ground-night-dew", 0.35f), ("pud_dark", "ground-pud-dark", 0.45f), ("night_spec", "ground-night-spec", 0.12f),
+            ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f),
+            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.5f), ("mud_spec", "setts-mud-spec", 0.1f) })
+            mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, v));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
         mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));
@@ -82,6 +113,18 @@ public static class Ground
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
         return Finish(z, mesh);
+    }
+
+    /// <summary>The fires' warmth, where no frost lies: (x, z, radius), four at most.</summary>
+    public static Vector4[] WarmAt(ZoneData z)
+    {
+        var w = new Vector4[4];
+        for (int i = 0; i < Mathf.Min(4, z.Meta.Fires.Count); i++)
+        {
+            var f = z.Meta.Fires[i];
+            w[i] = new Vector4((float)f.X, (float)f.Z, 2.5f + 2f * (float)f.Size, 0);
+        }
+        return w;
     }
 
     static MeshInstance3D Finish(ZoneData z, ArrayMesh mesh)
@@ -95,6 +138,14 @@ public static class Ground
         body.AddChild(new CollisionShape3D { Shape = shape, Scale = new Vector3(z.Step, 1, z.Step) });
         ground.AddChild(body);
         return ground;
+    }
+
+    /// <summary>Does the paint lay setts anywhere (its G over a third)?</summary>
+    static bool HasSetts(Image splat)
+    {
+        var d = splat.GetData();
+        for (int k = 1; k < d.Length; k += 4) if (d[k] > 85) return true;
+        return false;
     }
 
     static Image WithMips(Image img)

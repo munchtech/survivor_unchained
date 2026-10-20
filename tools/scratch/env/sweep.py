@@ -2,7 +2,7 @@
 (# comments). Frames: godot/.shots/NAME_SET_NN.png; logs in logs/."""
 import os, subprocess, sys, time, shlex
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-W = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\env-1"
+W = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\env-3"
 G = os.path.join(W, "godot")
 GODOT = r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe"
 LOGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
