@@ -447,7 +447,11 @@ def staff_town(t, f):
 
 
 # (staff_town is not shipped: it needs a walking-staff fist fit, a later item.)
-TOWN_WINDOW = {"reaver_town": (0, 8), "arcanist_town": (4, 12), "stalker_town": (9, 16)}
+# (Animation 44, solver idle 2: the arcanist's stretch from (4, 12) to (2, 10), 100STYLE frames 876-1218: on the old one
+# the chest rolled against her hips, so her right wrist rose 13 cm to her hip's height and out at 25/75 %; on this one
+# it rides her hip as the warden's does, 26-28 cm out of the hip joint and within 5 cm of its height; the warden's
+# 26-27 and 2. It shares 3 s with the reaver's (frames 744-1050), 2.2 s out of phase.)
+TOWN_WINDOW = {"reaver_town": (0, 8), "arcanist_town": (2, 10), "stalker_town": (9, 16)}
 
 
 def level_head(rig, clip: Clip, keep=0.4) -> Clip:
