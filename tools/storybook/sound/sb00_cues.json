@@ -1,0 +1,2289 @@
+{
+ "_about": "SB00's soundtrack bed, everything but the Watchman's spoken lines. Times are absolute seconds from SB00's first frame (docs/story/storybook/sb00_stay_where_they_reach.md, 'The plates'); a phrase's notes are seconds from its cue. gain and auto in dB; lp/hp in Hz, fixed or [[t, Hz], ...]; send: room -> amount. Render: python tools/storybook/sound/render.py",
+ "sr": 48000,
+ "length": 89.5,
+ "score_stop": 76.0,
+ "score_stop_lift": 0.12,
+ "silence_tail": 0.3,
+ "zero_lead": 0.15,
+ "plates": {
+  "P0": [
+   0,
+   2.5
+  ],
+  "P1": [
+   2.5,
+   11
+  ],
+  "P2": [
+   11,
+   15.5
+  ],
+  "P3": [
+   15.5,
+   25.5
+  ],
+  "P4": [
+   25.5,
+   37
+  ],
+  "P5": [
+   37,
+   46
+  ],
+  "P6": [
+   46,
+   56
+  ],
+  "P7": [
+   56,
+   63.5
+  ],
+  "P8": [
+   63.5,
+   71
+  ],
+  "P9": [
+   71,
+   78
+  ],
+  "P10": [
+   78,
+   87.5
+  ],
+  "black": [
+   87.5,
+   89.5
+  ]
+ },
+ "line_offset": 0.3,
+ "words_per_sec": 2.0,
+ "lines": [
+  {
+   "id": ".legion",
+   "plate": "P1",
+   "words": 13
+  },
+  {
+   "id": ".chained",
+   "plate": "P2",
+   "words": 7
+  },
+  {
+   "id": ".ember",
+   "plate": "P3",
+   "words": 21
+  },
+  {
+   "id": ".dead",
+   "plate": "P4",
+   "words": 26
+  },
+  {
+   "id": ".dawn",
+   "plate": "P5",
+   "words": 18
+  },
+  {
+   "id": ".keepers",
+   "plate": "P6",
+   "words": 22
+  },
+  {
+   "id": ".winter",
+   "plate": "P7",
+   "words": 14
+  },
+  {
+   "id": ".waiting",
+   "plate": "P8",
+   "words": 16
+  },
+  {
+   "id": ".lamps",
+   "plate": "P9",
+   "words": 7
+  }
+ ],
+ "mix": {
+  "under_voice_lufs": -25.0,
+  "ceiling_dbtp": -2.0
+ },
+ "rooms": {
+  "room": {
+   "rt60": 0.45,
+   "lp": 7000,
+   "lp_end": 2000,
+   "early": [
+    [
+     0.007,
+     0.5,
+     -0.4
+    ],
+    [
+     0.011,
+     0.4,
+     0.5
+    ],
+    [
+     0.017,
+     0.3,
+     -0.2
+    ],
+    [
+     0.023,
+     0.25,
+     0.3
+    ]
+   ],
+   "gain": 0
+  },
+  "valley": {
+   "rt60": 2.6,
+   "lp": 5000,
+   "lp_end": 900,
+   "pre": 0.03,
+   "gain": 0
+  },
+  "water": {
+   "rt60": 1.1,
+   "lp": 1200,
+   "lp_end": 300,
+   "gain": 0
+  },
+  "well": {
+   "rt60": 5.0,
+   "lp": 2500,
+   "lp_end": 250,
+   "pre": 0.06,
+   "early": [
+    [
+     0.09,
+     0.6,
+     0
+    ],
+    [
+     0.18,
+     0.45,
+     0.1
+    ],
+    [
+     0.27,
+     0.33,
+     -0.1
+    ],
+    [
+     0.36,
+     0.25,
+     0
+    ]
+   ],
+   "gain": 0
+  }
+ },
+ "sink": {
+  "room": "well",
+  "lp": [
+   [
+    0,
+    20000
+   ],
+   [
+    87.5,
+    20000
+   ],
+   [
+    88.0,
+    900
+   ],
+   [
+    88.6,
+    300
+   ],
+   [
+    89.0,
+    90
+   ]
+  ],
+  "gain": [
+   [
+    87.5,
+    0
+   ],
+   [
+    87.9,
+    -8
+   ],
+   [
+    88.4,
+    -20
+   ],
+   [
+    88.85,
+    -40
+   ],
+   [
+    89.05,
+    -90
+   ]
+  ],
+  "well_send": [
+   [
+    86.5,
+    0
+   ],
+   [
+    87.5,
+    0.3
+   ],
+   [
+    89.0,
+    1.0
+   ]
+  ],
+  "well_gain": [
+   [
+    87.5,
+    -6
+   ],
+   [
+    88.3,
+    -12
+   ],
+   [
+    88.8,
+    -28
+   ],
+   [
+    89.05,
+    -90
+   ]
+  ]
+ },
+ "cues": [
+  {
+   "id": "wind",
+   "bus": "fx",
+   "gen": "wind",
+   "t": 0.0,
+   "len": 86.15,
+   "p": {
+    "f": 450
+   },
+   "fade_in": 0.8,
+   "fade_out": 0.08,
+   "send": {
+    "valley": 0.1
+   },
+   "auto": [
+    [
+     0,
+     -6
+    ],
+    [
+     2.5,
+     -8
+    ],
+    [
+     4,
+     -14
+    ],
+    [
+     15.5,
+     -18
+    ],
+    [
+     25.5,
+     -9
+    ],
+    [
+     37,
+     -11
+    ],
+    [
+     44,
+     -17
+    ],
+    [
+     46,
+     -20
+    ],
+    [
+     56,
+     -8
+    ],
+    [
+     63.5,
+     -12
+    ],
+    [
+     71,
+     -22
+    ],
+    [
+     78,
+     -22
+    ],
+    [
+     86.15,
+     -22
+    ]
+   ]
+  },
+  {
+   "id": "river",
+   "bus": "fx",
+   "gen": "rec",
+   "t": 0.0,
+   "len": 78.6,
+   "p": {
+    "file": "godot/art/sound/bed_water_0.wav",
+    "loop": true
+   },
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "send": {
+    "valley": 0.15
+   },
+   "lp": [
+    [
+     0,
+     1200
+    ],
+    [
+     2.5,
+     900
+    ],
+    [
+     46,
+     3500
+    ],
+    [
+     56,
+     5000
+    ],
+    [
+     71,
+     1500
+    ],
+    [
+     78.6,
+     1500
+    ]
+   ],
+   "auto": [
+    [
+     0,
+     -22
+    ],
+    [
+     2.5,
+     -30
+    ],
+    [
+     44,
+     -30
+    ],
+    [
+     46,
+     -15
+    ],
+    [
+     56,
+     -12
+    ],
+    [
+     63.5,
+     -14
+    ],
+    [
+     71,
+     -24
+    ],
+    [
+     78.6,
+     -24
+    ]
+   ]
+  },
+  {
+   "id": "drone",
+   "bus": "music",
+   "gen": "drone",
+   "t": 2.5,
+   "len": 73.6,
+   "p": {},
+   "fade_in": 4.0,
+   "send": {
+    "valley": 0.3
+   },
+   "auto": [
+    [
+     2.5,
+     -15
+    ],
+    [
+     15.5,
+     -17
+    ],
+    [
+     25.5,
+     -15
+    ],
+    [
+     37,
+     -17
+    ],
+    [
+     46,
+     -19
+    ],
+    [
+     56,
+     -13
+    ],
+    [
+     63.5,
+     -15
+    ],
+    [
+     66,
+     -23
+    ],
+    [
+     71,
+     -26
+    ],
+    [
+     76,
+     -26
+    ]
+   ]
+  },
+  {
+   "id": "p0_striker",
+   "bus": "fx",
+   "gen": "striker",
+   "t": 0.7,
+   "len": 4.2,
+   "p": {
+    "strikes": [
+     0.0,
+     0.3
+    ],
+    "catch": 0.55,
+    "flame": 0.12
+   },
+   "fade_out": 1.6,
+   "send": {
+    "room": 0.2
+   },
+   "gain": 6
+  },
+  {
+   "id": "p1_solo",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 4.2,
+   "len": 6.6,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.3,
+      "n": "Bb3",
+      "dyn": 0.4
+     },
+     {
+      "t": 1.3,
+      "d": 1.8,
+      "n": "A3",
+      "dyn": 0.45,
+      "port": 0.25
+     },
+     {
+      "t": 3.1,
+      "d": 2.9,
+      "n": "D3",
+      "dyn": 0.4,
+      "swell": -0.5
+     }
+    ],
+    "vib": 14
+   },
+   "send": {
+    "room": 0.35,
+    "valley": 0.2
+   },
+   "gain": -25
+  },
+  {
+   "id": "p1_march",
+   "bus": "fx",
+   "gen": "march",
+   "t": 3.0,
+   "len": 8.5,
+   "p": {
+    "men": 9
+   },
+   "lp": 1800,
+   "fade_in": 1.5,
+   "fade_out": 2.0,
+   "send": {
+    "valley": 0.5
+   },
+   "gain": -4
+  },
+  {
+   "id": "p1_torches",
+   "bus": "fx",
+   "gen": "rec",
+   "t": 2.5,
+   "len": 9.0,
+   "p": {
+    "file": "godot/art/sound/bed_fire_0.wav",
+    "loop": true,
+    "offset": 3.0
+   },
+   "lp": 4000,
+   "pan": -0.3,
+   "fade_in": 1.0,
+   "fade_out": 1.5,
+   "gain": -6
+  },
+  {
+   "id": "p1_below",
+   "bus": "fx",
+   "gen": "deep_breath",
+   "t": 6.4,
+   "len": 5.0,
+   "p": {
+    "dur": 4.2
+   },
+   "send": {
+    "valley": 0.3
+   },
+   "gain": -10
+  },
+  {
+   "id": "p2_anvil",
+   "bus": "fx",
+   "gen": "anvil",
+   "t": 11.1,
+   "len": 4.0,
+   "p": {
+    "blows": [
+     0.0,
+     1.3,
+     2.6
+    ]
+   },
+   "pan": -0.2,
+   "send": {
+    "valley": 0.3
+   },
+   "gain": -2
+  },
+  {
+   "id": "p2_door",
+   "bus": "fx",
+   "gen": "stone_door",
+   "t": 11.6,
+   "len": 6.0,
+   "p": {
+    "dur": 3.4
+   },
+   "send": {
+    "valley": 0.4
+   },
+   "gain": -3
+  },
+  {
+   "id": "p2_solo",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 11.1,
+   "len": 6.0,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.25,
+      "n": "Bb3",
+      "to": "G3",
+      "gf": 0.35,
+      "dyn": 0.45
+     },
+     {
+      "t": 1.3,
+      "d": 0.6,
+      "n": "Bb3",
+      "dyn": 0.45,
+      "port": 0.12
+     },
+     {
+      "t": 1.9,
+      "d": 0.7,
+      "n": "Bb3",
+      "to": "A3",
+      "gf": 0.4,
+      "dyn": 0.45
+     },
+     {
+      "t": 2.6,
+      "d": 0.5,
+      "n": "F3",
+      "dyn": 0.4
+     },
+     {
+      "t": 3.1,
+      "d": 0.8,
+      "n": "Bb3",
+      "to": "A3",
+      "gf": 0.5,
+      "dyn": 0.45
+     },
+     {
+      "t": 3.9,
+      "d": 2.0,
+      "n": "D3",
+      "dyn": 0.4,
+      "swell": -0.6
+     }
+    ],
+    "vib": 14
+   },
+   "send": {
+    "room": 0.35,
+    "valley": 0.2
+   },
+   "gain": -25
+  },
+  {
+   "id": "p3_motes",
+   "bus": "fx",
+   "gen": "motes",
+   "t": 15.6,
+   "len": 7.5,
+   "p": {
+    "dur": 6.5
+   },
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 14
+  },
+  {
+   "id": "p3_hearth",
+   "bus": "fx",
+   "gen": "rec",
+   "t": 17.5,
+   "len": 8.0,
+   "p": {
+    "file": "godot/art/sound/bed_fire_0.wav",
+    "loop": true,
+    "offset": 11.0
+   },
+   "lp": 3000,
+   "pan": 0.2,
+   "fade_in": 2.0,
+   "fade_out": 1.5,
+   "gain": -8
+  },
+  {
+   "id": "p3_town",
+   "bus": "fx",
+   "gen": "town",
+   "t": 19.0,
+   "len": 6.5,
+   "p": {
+    "door": 0.0,
+    "coins": 1.6,
+    "cart": 2.6,
+    "cart_dur": 3.8
+   },
+   "lp": 5000,
+   "send": {
+    "valley": 0.25
+   },
+   "gain": -4
+  },
+  {
+   "id": "p3_solo",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 16.0,
+   "len": 9.6,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.0,
+      "n": "Bb3",
+      "dyn": 0.55
+     },
+     {
+      "t": 1.0,
+      "d": 1.4,
+      "n": "A3",
+      "dyn": 0.55,
+      "port": 0.2
+     },
+     {
+      "t": 2.4,
+      "d": 1.8,
+      "n": "D3",
+      "dyn": 0.5
+     },
+     {
+      "t": 4.4,
+      "d": 1.0,
+      "n": "Bb3",
+      "to": "G3",
+      "gf": 0.35,
+      "dyn": 0.55
+     },
+     {
+      "t": 5.4,
+      "d": 0.55,
+      "n": "Bb3",
+      "dyn": 0.55,
+      "port": 0.12
+     },
+     {
+      "t": 5.95,
+      "d": 0.65,
+      "n": "Bb3",
+      "to": "A3",
+      "gf": 0.4,
+      "dyn": 0.55
+     },
+     {
+      "t": 6.6,
+      "d": 0.5,
+      "n": "F3",
+      "dyn": 0.5
+     },
+     {
+      "t": 7.1,
+      "d": 0.8,
+      "n": "Bb3",
+      "to": "A3",
+      "gf": 0.5,
+      "dyn": 0.55
+     },
+     {
+      "t": 7.9,
+      "d": 1.6,
+      "n": "D3",
+      "dyn": 0.5,
+      "swell": -0.5
+     }
+    ],
+    "vib": 22,
+    "grain": 0.025
+   },
+   "send": {
+    "room": 0.35,
+    "valley": 0.25
+   },
+   "gain": -25
+  },
+  {
+   "id": "p3_pluck",
+   "bus": "music",
+   "gen": "pluck",
+   "t": 16.0,
+   "len": 9.6,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "n": "Bb2",
+      "dyn": 0.55
+     },
+     {
+      "t": 0.16,
+      "n": "F3",
+      "dyn": 0.39
+     },
+     {
+      "t": 0.32,
+      "n": "D4",
+      "dyn": 0.33
+     },
+     {
+      "t": 1.0,
+      "n": "F2",
+      "dyn": 0.55
+     },
+     {
+      "t": 1.16,
+      "n": "C3",
+      "dyn": 0.39
+     },
+     {
+      "t": 1.32,
+      "n": "A3",
+      "dyn": 0.33
+     },
+     {
+      "t": 2.4,
+      "n": "D2",
+      "dyn": 0.55
+     },
+     {
+      "t": 2.56,
+      "n": "A2",
+      "dyn": 0.39
+     },
+     {
+      "t": 2.72,
+      "n": "F3",
+      "dyn": 0.33
+     },
+     {
+      "t": 4.4,
+      "n": "G2",
+      "dyn": 0.55
+     },
+     {
+      "t": 4.56,
+      "n": "D3",
+      "dyn": 0.39
+     },
+     {
+      "t": 4.72,
+      "n": "Bb3",
+      "dyn": 0.33
+     },
+     {
+      "t": 5.4,
+      "n": "Bb2",
+      "dyn": 0.55
+     },
+     {
+      "t": 5.56,
+      "n": "F3",
+      "dyn": 0.39
+     },
+     {
+      "t": 5.72,
+      "n": "D4",
+      "dyn": 0.33
+     },
+     {
+      "t": 5.95,
+      "n": "F2",
+      "dyn": 0.55
+     },
+     {
+      "t": 6.11,
+      "n": "C3",
+      "dyn": 0.39
+     },
+     {
+      "t": 6.27,
+      "n": "A3",
+      "dyn": 0.33
+     },
+     {
+      "t": 6.6,
+      "n": "D2",
+      "dyn": 0.55
+     },
+     {
+      "t": 6.76,
+      "n": "A2",
+      "dyn": 0.39
+     },
+     {
+      "t": 6.92,
+      "n": "F3",
+      "dyn": 0.33
+     },
+     {
+      "t": 7.1,
+      "n": "A2",
+      "dyn": 0.55
+     },
+     {
+      "t": 7.26,
+      "n": "E3",
+      "dyn": 0.39
+     },
+     {
+      "t": 7.42,
+      "n": "C4",
+      "dyn": 0.33
+     },
+     {
+      "t": 7.9,
+      "n": "D2",
+      "dyn": 0.55
+     },
+     {
+      "t": 8.06,
+      "n": "A2",
+      "dyn": 0.39
+     },
+     {
+      "t": 8.22,
+      "n": "F3",
+      "dyn": 0.33
+     }
+    ],
+    "ring": 2.4
+   },
+   "pan": 0.25,
+   "send": {
+    "room": 0.3,
+    "valley": 0.2
+   },
+   "gain": -14
+  },
+  {
+   "id": "p4_frost",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 26.6,
+   "len": 3.0,
+   "p": {
+    "name": "frost_crack"
+   },
+   "send": {
+    "valley": 0.2
+   }
+  },
+  {
+   "id": "p4_rasp1",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 28.2,
+   "len": 2.0,
+   "p": {
+    "name": "rasp",
+    "pan": -0.2
+   },
+   "gain": 25
+  },
+  {
+   "id": "p4_rasp2",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 30.4,
+   "len": 2.0,
+   "p": {
+    "name": "rasp",
+    "pan": 0.3
+   },
+   "gain": 25
+  },
+  {
+   "id": "p4_rasp3",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 34.6,
+   "len": 2.0,
+   "p": {
+    "name": "rasp",
+    "pan": 0.1
+   },
+   "gain": 25
+  },
+  {
+   "id": "p4_breath1",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 29.3,
+   "len": 2.0,
+   "p": {
+    "name": "breath_out",
+    "pan": 0.4
+   },
+   "gain": 18
+  },
+  {
+   "id": "p4_breath2",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 35.6,
+   "len": 2.0,
+   "p": {
+    "name": "breath_out",
+    "pan": 0.4
+   },
+   "gain": 18
+  },
+  {
+   "id": "p4_spear",
+   "bus": "fx",
+   "gen": "spear",
+   "t": 31.8,
+   "len": 1.5,
+   "send": {
+    "valley": 0.15
+   },
+   "gain": -2
+  },
+  {
+   "id": "p4_spill",
+   "bus": "fx",
+   "gen": "ember_spill",
+   "t": 32.3,
+   "len": 2.5,
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 8
+  },
+  {
+   "id": "p4_fall",
+   "bus": "fx",
+   "gen": "body_fall",
+   "t": 33.2,
+   "len": 1.5,
+   "send": {
+    "valley": 0.15
+   }
+  },
+  {
+   "id": "p4_solo",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 26.0,
+   "len": 5.0,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.2,
+      "n": "Bb3",
+      "dyn": 0.45,
+      "press": 0.6
+     },
+     {
+      "t": 1.2,
+      "d": 1.6,
+      "n": "A3",
+      "to": "Ab3",
+      "gf": 0.5,
+      "dyn": 0.4,
+      "press": 0.7,
+      "port": 0.2
+     },
+     {
+      "t": 2.8,
+      "d": 1.6,
+      "n": "F3",
+      "to": "E3",
+      "gf": 0.6,
+      "dyn": 0.3,
+      "press": 0.8,
+      "swell": -0.6
+     }
+    ],
+    "vib": 28,
+    "vib_rate": 6.8,
+    "grain": 0.06
+   },
+   "send": {
+    "room": 0.35,
+    "valley": 0.25
+   },
+   "gain": -25
+  },
+  {
+   "id": "p4_scrape1",
+   "bus": "music",
+   "gen": "scrape",
+   "t": 30.5,
+   "len": 2.0,
+   "p": {
+    "n": "D2",
+    "dur": 1.4,
+    "dyn": 0.3
+   },
+   "send": {
+    "room": 0.3,
+    "valley": 0.3
+   },
+   "gain": -24
+  },
+  {
+   "id": "p4_scrape2",
+   "bus": "music",
+   "gen": "scrape",
+   "t": 33.4,
+   "len": 3.0,
+   "p": {
+    "n": "D2",
+    "to": "C#2",
+    "dur": 2.2,
+    "dyn": 0.35
+   },
+   "send": {
+    "room": 0.3,
+    "valley": 0.3
+   },
+   "gain": -24
+  },
+  {
+   "id": "p5_solo",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 38.0,
+   "len": 8.0,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 7.6,
+      "n": "A3",
+      "dyn": 0.45,
+      "press": 0.42,
+      "swell": 0.5,
+      "a": 0.8,
+      "r": 1.2
+     }
+    ],
+    "vib": 20
+   },
+   "send": {
+    "room": 0.35,
+    "valley": 0.3
+   },
+   "gain": -25
+  },
+  {
+   "id": "p5_drain",
+   "bus": "fx",
+   "gen": "drain",
+   "t": 37.4,
+   "len": 5.5,
+   "p": {
+    "dur": 4.5
+   },
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 12
+  },
+  {
+   "id": "p5_lamp",
+   "bus": "fx",
+   "gen": "flame",
+   "t": 37.0,
+   "len": 9.0,
+   "p": {
+    "gutter": true
+   },
+   "pan": 0.3,
+   "fade_in": 1.0,
+   "fade_out": 2.0,
+   "gain": -6
+  },
+  {
+   "id": "p5_bird1",
+   "bus": "fx",
+   "gen": "bird",
+   "t": 40.8,
+   "len": 2.0,
+   "p": {
+    "notes": 4,
+    "trill": false,
+    "pan": -0.5
+   },
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 6
+  },
+  {
+   "id": "p5_bird2",
+   "bus": "fx",
+   "gen": "bird",
+   "t": 42.9,
+   "len": 2.0,
+   "p": {
+    "notes": 3,
+    "trill": true,
+    "pan": 0.45
+   },
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 6
+  },
+  {
+   "id": "p5_bird3",
+   "bus": "fx",
+   "gen": "bird",
+   "t": 43.7,
+   "len": 2.0,
+   "p": {
+    "notes": 5,
+    "trill": false,
+    "pan": -0.5
+   },
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 6
+  },
+  {
+   "id": "p5_breath",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 40.0,
+   "len": 2.0,
+   "p": {
+    "name": "breath_out",
+    "pan": 0.3
+   },
+   "gain": 18
+  },
+  {
+   "id": "p6_hymn_top",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 46.4,
+   "len": 9.7,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.0,
+      "n": "Bb3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 1.0,
+      "d": 1.0,
+      "n": "A3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 2.0,
+      "d": 1.8,
+      "n": "D3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 4.0,
+      "d": 0.7,
+      "n": "Bb3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 4.7,
+      "d": 0.7,
+      "n": "G3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 5.4,
+      "d": 0.7,
+      "n": "Bb3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 6.1,
+      "d": 0.7,
+      "n": "A3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 6.8,
+      "d": 0.7,
+      "n": "F3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 7.5,
+      "d": 0.8,
+      "n": "A3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 8.3,
+      "d": 1.3,
+      "n": "D3",
+      "dyn": 0.5,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     }
+    ],
+    "vib": 6
+   },
+   "pan": -0.2,
+   "send": {
+    "room": 0.3,
+    "valley": 0.35
+   },
+   "gain": -25
+  },
+  {
+   "id": "p6_hymn_mid",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 46.4,
+   "len": 9.7,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.0,
+      "n": "F3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 1.0,
+      "d": 1.0,
+      "n": "F3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 2.0,
+      "d": 1.8,
+      "n": "A2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 4.0,
+      "d": 0.7,
+      "n": "D3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 4.7,
+      "d": 0.7,
+      "n": "D3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 5.4,
+      "d": 0.7,
+      "n": "F3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 6.1,
+      "d": 0.7,
+      "n": "F3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 6.8,
+      "d": 0.7,
+      "n": "D3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 7.5,
+      "d": 0.8,
+      "n": "E3",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 8.3,
+      "d": 1.3,
+      "n": "A2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     }
+    ],
+    "vib": 5
+   },
+   "pan": 0.15,
+   "gain": -33,
+   "send": {
+    "room": 0.3,
+    "valley": 0.35
+   }
+  },
+  {
+   "id": "p6_hymn_bass",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 46.4,
+   "len": 9.7,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.0,
+      "n": "Bb2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 1.0,
+      "d": 1.0,
+      "n": "F2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 2.0,
+      "d": 1.8,
+      "n": "D2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 4.0,
+      "d": 0.7,
+      "n": "G2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 4.7,
+      "d": 0.7,
+      "n": "Bb2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 5.4,
+      "d": 0.7,
+      "n": "Bb2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 6.1,
+      "d": 0.7,
+      "n": "D2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 6.8,
+      "d": 0.7,
+      "n": "Bb2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 7.5,
+      "d": 0.8,
+      "n": "A2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     },
+     {
+      "t": 8.3,
+      "d": 1.3,
+      "n": "D2",
+      "dyn": 0.45,
+      "press": 0.5,
+      "slur": false,
+      "a": 0.15,
+      "r": 0.12
+     }
+    ],
+    "vib": 4
+   },
+   "pan": 0.0,
+   "gain": -31,
+   "send": {
+    "room": 0.3,
+    "valley": 0.35
+   }
+  },
+  {
+   "id": "p6_oil",
+   "bus": "fx",
+   "gen": "pour",
+   "t": 51.6,
+   "len": 2.2,
+   "p": {
+    "dur": 1.8
+   },
+   "pan": 0.4,
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 10
+  },
+  {
+   "id": "p6_lamps",
+   "bus": "fx",
+   "gen": "flame",
+   "t": 46.0,
+   "len": 10.0,
+   "p": {},
+   "pan": -0.3,
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "gain": -6
+  },
+  {
+   "id": "p7_blue",
+   "bus": "fx",
+   "gen": "blue_flame",
+   "t": 56.0,
+   "len": 7.6,
+   "p": {},
+   "fade_in": 0.8,
+   "fade_out": 0.8,
+   "send": {
+    "valley": 0.2
+   },
+   "gain": -20
+  },
+  {
+   "id": "p7_harmonic",
+   "bus": "music",
+   "gen": "harmonic",
+   "t": 57.0,
+   "len": 6.6,
+   "p": {
+    "n": "D6"
+   },
+   "fade_in": 2.0,
+   "fade_out": 1.5,
+   "send": {
+    "valley": 0.5
+   },
+   "gain": -22
+  },
+  {
+   "id": "p7_whistle",
+   "bus": "fx",
+   "gen": "wind",
+   "t": 56.0,
+   "len": 7.5,
+   "p": {
+    "f": 700,
+    "whistle": 0.15,
+    "whistle_f": 1500
+   },
+   "fade_in": 1.0,
+   "fade_out": 1.5,
+   "gain": -8
+  },
+  {
+   "id": "p7_ring0",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 58.4,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": 0.1,
+    "g": 0.6
+   },
+   "lp": 3000,
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 10
+  },
+  {
+   "id": "p7_ring1",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 60.1,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": 0.0,
+    "g": 0.6
+   },
+   "lp": 3000,
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 10
+  },
+  {
+   "id": "p7_ring2",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 61.9,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": 0.15,
+    "g": 0.6
+   },
+   "lp": 3000,
+   "send": {
+    "valley": 0.3
+   },
+   "gain": 10
+  },
+  {
+   "id": "p8_drip0",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 64.0,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": -0.6
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip1",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 64.9,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": -0.3
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip2",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 65.6,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": 0.4
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip3",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 66.8,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": -0.5
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip4",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 67.5,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": 0.2
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip5",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 68.9,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": -0.2
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip6",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 69.6,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": 0.5
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_drip7",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 70.4,
+   "len": 1.0,
+   "p": {
+    "name": "drip",
+    "pan": -0.4
+   },
+   "send": {
+    "valley": 0.2
+   },
+   "gain": 8
+  },
+  {
+   "id": "p8_weed1",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 65.2,
+   "len": 1.5,
+   "p": {
+    "name": "cloth_water",
+    "pan": -0.3,
+    "g": 0.6
+   },
+   "gain": 12
+  },
+  {
+   "id": "p8_weed2",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 68.0,
+   "len": 1.5,
+   "p": {
+    "name": "cloth_water",
+    "pan": 0.3,
+    "g": 0.6
+   },
+   "gain": 12
+  },
+  {
+   "id": "p8_blue",
+   "bus": "fx",
+   "gen": "blue_flame",
+   "t": 63.5,
+   "len": 7.8,
+   "p": {},
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "lp": 4000,
+   "gain": -18
+  },
+  {
+   "id": "p8_river_song",
+   "bus": "fx",
+   "gen": "sung",
+   "t": 64.4,
+   "len": 7.4,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 1.2,
+      "n": "Bb2",
+      "dyn": 0.7
+     },
+     {
+      "t": 1.2,
+      "d": 1.5,
+      "n": "A2",
+      "dyn": 0.7,
+      "port": 0.3
+     },
+     {
+      "t": 2.7,
+      "d": 1.6,
+      "n": "D2",
+      "dyn": 0.6
+     },
+     {
+      "t": 4.6,
+      "d": 1.3,
+      "n": "Bb2",
+      "to": "G2",
+      "gf": 0.35,
+      "dyn": 0.6
+     },
+     {
+      "t": 5.9,
+      "d": 0.6,
+      "n": "Bb2",
+      "dyn": 0.6
+     },
+     {
+      "t": 6.5,
+      "d": 0.7,
+      "n": "Bb2",
+      "to": "A2",
+      "gf": 0.4,
+      "dyn": 0.55
+     }
+    ],
+    "vowel": "u"
+   },
+   "lp": 420,
+   "fade_out": 0.8,
+   "send": {
+    "valley": 0.7
+   },
+   "gain": -20
+  },
+  {
+   "id": "p9_fire",
+   "bus": "fx",
+   "gen": "rec",
+   "t": 71.0,
+   "len": 7.4,
+   "p": {
+    "file": "godot/art/sound/bed_fire_0.wav",
+    "loop": true,
+    "offset": 5.0
+   },
+   "fade_in": 0.6,
+   "fade_out": 0.5,
+   "pan": -0.1,
+   "lp": [
+    [
+     71,
+     9000
+    ],
+    [
+     75.6,
+     9000
+    ],
+    [
+     78.4,
+     1500
+    ]
+   ],
+   "auto": [
+    [
+     71,
+     0
+    ],
+    [
+     75.6,
+     0
+    ],
+    [
+     78.4,
+     -10
+    ]
+   ],
+   "gain": -4
+  },
+  {
+   "id": "p9_owl",
+   "bus": "fx",
+   "gen": "cine",
+   "t": 72.4,
+   "len": 2.0,
+   "p": {
+    "name": "owl",
+    "pan": -0.6
+   },
+   "send": {
+    "valley": 0.5
+   },
+   "gain": 8
+  },
+  {
+   "id": "p9_solo",
+   "bus": "music",
+   "gen": "bowed",
+   "t": 73.6,
+   "len": 2.5,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 0.7,
+      "n": "Bb3",
+      "dyn": 0.35
+     },
+     {
+      "t": 0.7,
+      "d": 0.9,
+      "n": "A3",
+      "dyn": 0.35,
+      "port": 0.2
+     },
+     {
+      "t": 1.6,
+      "d": 1.0,
+      "n": "D3",
+      "dyn": 0.33
+     }
+    ],
+    "vib": 18
+   },
+   "send": {
+    "room": 0.4,
+    "valley": 0.15
+   },
+   "gain": -25
+  },
+  {
+   "id": "p9_steps",
+   "bus": "fx",
+   "gen": "steps",
+   "t": 75.3,
+   "len": 3.0,
+   "p": {
+    "count": 5,
+    "pace": 0.55,
+    "away": 0.1,
+    "surface": "footstep_grass"
+   },
+   "send": {
+    "valley": 0.15
+   },
+   "gain": 8
+  },
+  {
+   "id": "p10_river",
+   "bus": "fx",
+   "gen": "rec",
+   "t": 77.0,
+   "len": 10.5,
+   "p": {
+    "file": "godot/art/sound/bed_water_0.wav",
+    "loop": true,
+    "offset": 12.0
+   },
+   "fade_in": 1.0,
+   "fade_out": 0.3,
+   "send": {
+    "valley": 0.1
+   },
+   "lp": [
+    [
+     77,
+     9000
+    ],
+    [
+     86.05,
+     9000
+    ],
+    [
+     86.25,
+     280
+    ]
+   ],
+   "auto": [
+    [
+     77,
+     -14
+    ],
+    [
+     78,
+     -4
+    ],
+    [
+     86.0,
+     -2
+    ],
+    [
+     86.15,
+     -8
+    ]
+   ]
+  },
+  {
+   "id": "p10_kneel",
+   "bus": "fx",
+   "gen": "kneel",
+   "t": 78.5,
+   "len": 1.5,
+   "gain": 6
+  },
+  {
+   "id": "p10_flask",
+   "bus": "fx",
+   "gen": "glug",
+   "t": 79.6,
+   "len": 2.5,
+   "p": {
+    "glugs": 7,
+    "bubbles": 14
+   },
+   "send": {
+    "water": 0.2
+   },
+   "gain": 4
+  },
+  {
+   "id": "p10_song",
+   "bus": "fx",
+   "gen": "rec",
+   "t": 79.0,
+   "len": 6.9,
+   "p": {
+    "file": "godot/art/vo/warden/dlg.cin_none_cross.call.0.ogg"
+   },
+   "lp": 2500,
+   "fade_out": 0.6,
+   "auto": [
+    [
+     79,
+     -10
+    ],
+    [
+     84.5,
+     -3
+    ]
+   ],
+   "send": {
+    "water": 0.3
+   },
+   "gain": 3
+  },
+  {
+   "id": "p10_lamp",
+   "bus": "fx",
+   "gen": "blue_flame",
+   "t": 81.5,
+   "len": 4.6,
+   "p": {
+    "pans": [
+     0.55,
+     0.45
+    ]
+   },
+   "fade_in": 3.0,
+   "fade_out": 0.1,
+   "auto": [
+    [
+     81.5,
+     -16
+    ],
+    [
+     86.0,
+     -4
+    ]
+   ],
+   "gain": -12
+  },
+  {
+   "id": "p10_splash",
+   "bus": "fx",
+   "gen": "splash",
+   "t": 86.0,
+   "len": 2.5,
+   "send": {
+    "valley": 0.25
+   },
+   "gain": 4
+  },
+  {
+   "id": "p10_under",
+   "bus": "fx",
+   "gen": "under_roar",
+   "t": 86.1,
+   "len": 3.4,
+   "p": {
+    "lp": 240
+   },
+   "fade_in": 0.08,
+   "gain": -6
+  },
+  {
+   "id": "p10_blub",
+   "bus": "fx",
+   "gen": "blub",
+   "t": 86.15,
+   "len": 3.3,
+   "p": {
+    "dur": 2.6
+   },
+   "send": {
+    "water": 0.3
+   },
+   "gain": 12
+  },
+  {
+   "id": "p10_thrash",
+   "bus": "fx",
+   "gen": "thrash",
+   "t": 86.3,
+   "len": 2.2,
+   "p": {
+    "dur": 1.6
+   },
+   "send": {
+    "water": 0.3
+   },
+   "gain": 10
+  },
+  {
+   "id": "p10_song_close",
+   "bus": "fx",
+   "gen": "sung",
+   "t": 86.4,
+   "len": 3.1,
+   "p": {
+    "notes": [
+     {
+      "t": 0.0,
+      "d": 0.9,
+      "n": "Bb2",
+      "dyn": 0.8
+     },
+     {
+      "t": 0.9,
+      "d": 1.1,
+      "n": "A2",
+      "dyn": 0.8,
+      "port": 0.3
+     },
+     {
+      "t": 2.0,
+      "d": 1.4,
+      "n": "D2",
+      "dyn": 0.7
+     }
+    ],
+    "vowel": "o"
+   },
+   "lp": 700,
+   "fade_in": 0.15,
+   "send": {
+    "water": 0.4
+   },
+   "gain": -2
+  },
+  {
+   "id": "p10_heart",
+   "bus": "fx",
+   "gen": "heartbeat",
+   "t": 86.5,
+   "len": 3.0,
+   "p": {
+    "beats": [
+     [
+      0.0,
+      1.0
+     ],
+     [
+      0.85,
+      0.85
+     ],
+     [
+      1.85,
+      0.7
+     ]
+    ]
+   },
+   "gain": 14
+  }
+ ]
+}

@@ -464,7 +464,9 @@ public partial class Game
     /// <summary>From the portrait into the game, by the same fire.</summary>
     public void BeginJourney(CreationChoice c)
     {
-        if (Mode != "create") return;
+        if (Mode != "create" || beginning) return;
+        // The storybook first, when there is one (GameStory).
+        if (OpensOnStory) { BeginWithStory(c); return; }
         EndCreate();
         Begin(c);
         draft = null;

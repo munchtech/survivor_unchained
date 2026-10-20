@@ -1,0 +1,219 @@
+{
+ "defaults": {
+  "w": 1792,
+  "h": 1024,
+  "steps": 9
+ },
+ "jobs": [
+  {
+   "name": "p9_icv_s60e70",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, one above the other with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The top plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The bottom plate, painted in exactly the same way as the first: Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: a campfire burning high; beside it a bedroll with a wool blanket folded on top, lit by the fire; a plain leather pack. A lone traveler sits on a log by the fire with their back to us, wrapped from the hood to the ground in one plain dark wool cloak that falls over the log in a single smooth cone; only the hands show, holding a folded letter to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise stands the waystation: a long low hall of stone and dark timber with a steep roof and warm orange windows, and beside it a short, squat, square stone tower with a flat roof and one warm window near its top. On the right a narrow river winds between bare trees, and low among the trees by the water three tiny cold blue lamp flames, far apart from each other at different distances, each with a short blue reflection in the water. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1792,
+   "h": 1792,
+   "init": "tools/storybook/out/style_r15/canvas/V_p9_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/V_p9_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/V_p9_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/V_p9_ctl.png",
+   "strength": 0.6,
+   "end": 0.7,
+   "crop": [
+    0,
+    768,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p9_icv_s45e50",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, one above the other with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The top plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The bottom plate, painted in exactly the same way as the first: Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: a campfire burning high; beside it a bedroll with a wool blanket folded on top, lit by the fire; a plain leather pack. A lone traveler sits on a log by the fire with their back to us, wrapped from the hood to the ground in one plain dark wool cloak that falls over the log in a single smooth cone; only the hands show, holding a folded letter to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise stands the waystation: a long low hall of stone and dark timber with a steep roof and warm orange windows, and beside it a short, squat, square stone tower with a flat roof and one warm window near its top. On the right a narrow river winds between bare trees, and low among the trees by the water three tiny cold blue lamp flames, far apart from each other at different distances, each with a short blue reflection in the water. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11
+   ],
+   "w": 1792,
+   "h": 1792,
+   "init": "tools/storybook/out/style_r15/canvas/V_p9_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/V_p9_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/V_p9_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/V_p9_ctl.png",
+   "strength": 0.45,
+   "end": 0.5,
+   "crop": [
+    0,
+    768,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p9_ich_s60e70",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, side by side with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The left plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The right plate, painted in exactly the same way as the first: Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: a campfire burning high; beside it a bedroll with a wool blanket folded on top, lit by the fire; a plain leather pack. A lone traveler sits on a log by the fire with their back to us, wrapped from the hood to the ground in one plain dark wool cloak that falls over the log in a single smooth cone; only the hands show, holding a folded letter to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise stands the waystation: a long low hall of stone and dark timber with a steep roof and warm orange windows, and beside it a short, squat, square stone tower with a flat roof and one warm window near its top. On the right a narrow river winds between bare trees, and low among the trees by the water three tiny cold blue lamp flames, far apart from each other at different distances, each with a short blue reflection in the water. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11
+   ],
+   "w": 3600,
+   "h": 1024,
+   "init": "tools/storybook/out/style_r15/canvas/H_p9_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/H_p9_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/H_p9_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/H_p9_ctl.png",
+   "strength": 0.6,
+   "end": 0.7,
+   "crop": [
+    1808,
+    0,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p9_alt_d80",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. Dusk, a deep blue sky over a thin dull rose band above the far hills. A small camp beside a rutted dirt track: a campfire burning high; beside it a bedroll with a wool blanket folded on top, lit by the fire; a plain leather pack. A lone traveler sits on a log by the fire with their back to us, wrapped from the hood to the ground in one plain dark wool cloak that falls over the log in a single smooth cone; only the hands show, holding a folded letter to the firelight; a small leather flask hangs on a cord from one wrist. Far up the track on a low rise stands the waystation: a long low hall of stone and dark timber with a steep roof and warm orange windows, and beside it a short, squat, square stone tower with a flat roof and one warm window near its top. On the right a narrow river winds between bare trees, and low among the trees by the water three tiny cold blue lamp flames, far apart from each other at different distances, each with a short blue reflection in the water. The fire's orange is the warm color; the rest is blue dusk.",
+   "seed": [
+    11
+   ],
+   "init": "tools/storybook/out/style_r14/fin/p9_d60_s11.png",
+   "denoise": 0.8,
+   "control": "tools/storybook/out/style_r15/layouts/p9_depth.png",
+   "strength": 0.6,
+   "end": 0.7
+  },
+  {
+   "name": "p1_icv_s60e70",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, one above the other with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The top plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The bottom plate, painted in exactly the same way as the first: Night, two thousand years ago. We stand on the near rim of a great raw cut dug deep into a hillside and look across it and down into it. At the left, close to us on our rim, two soldiers of an ancient legion stand with their backs to us as dark silhouettes: dull dark rust-red wool cloaks, plain dull matte bronze helmets with crests and cheek guards; the nearer holds a small torch low in front of him, half hidden by his body. Across the cut, the far wall drops away into darkness as four great flat planes of bare slate rock, each one a single broad shape of cold dark slate with one clean edge. Down that wall a dense column of marching soldiers winds in an S from just below the far rim to the bottom of the picture, packed close together, their torches held up in their hands, so the column reads as a winding stream of small flames above dark heads going down into the depth of the cut. Above the far rim the dark empty hillside rises to a crest under a strip of deep indigo night sky. The right side of the picture sinks into deep shadow. The torchlight's orange is the only strong color; everything else is night.",
+   "seed": [
+    11,
+    23
+   ],
+   "w": 1792,
+   "h": 1792,
+   "init": "tools/storybook/out/style_r15/canvas/V_p1_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/V_p1_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/V_p1_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/V_p1_ctl.png",
+   "strength": 0.6,
+   "end": 0.7,
+   "crop": [
+    0,
+    768,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p1_icv_s45e50",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, one above the other with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The top plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The bottom plate, painted in exactly the same way as the first: Night, two thousand years ago. We stand on the near rim of a great raw cut dug deep into a hillside and look across it and down into it. At the left, close to us on our rim, two soldiers of an ancient legion stand with their backs to us as dark silhouettes: dull dark rust-red wool cloaks, plain dull matte bronze helmets with crests and cheek guards; the nearer holds a small torch low in front of him, half hidden by his body. Across the cut, the far wall drops away into darkness as four great flat planes of bare slate rock, each one a single broad shape of cold dark slate with one clean edge. Down that wall a dense column of marching soldiers winds in an S from just below the far rim to the bottom of the picture, packed close together, their torches held up in their hands, so the column reads as a winding stream of small flames above dark heads going down into the depth of the cut. Above the far rim the dark empty hillside rises to a crest under a strip of deep indigo night sky. The right side of the picture sinks into deep shadow. The torchlight's orange is the only strong color; everything else is night.",
+   "seed": [
+    11
+   ],
+   "w": 1792,
+   "h": 1792,
+   "init": "tools/storybook/out/style_r15/canvas/V_p1_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/V_p1_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/V_p1_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/V_p1_ctl.png",
+   "strength": 0.45,
+   "end": 0.5,
+   "crop": [
+    0,
+    768,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p1_ich_s60e70",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, side by side with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The left plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The right plate, painted in exactly the same way as the first: Night, two thousand years ago. We stand on the near rim of a great raw cut dug deep into a hillside and look across it and down into it. At the left, close to us on our rim, two soldiers of an ancient legion stand with their backs to us as dark silhouettes: dull dark rust-red wool cloaks, plain dull matte bronze helmets with crests and cheek guards; the nearer holds a small torch low in front of him, half hidden by his body. Across the cut, the far wall drops away into darkness as four great flat planes of bare slate rock, each one a single broad shape of cold dark slate with one clean edge. Down that wall a dense column of marching soldiers winds in an S from just below the far rim to the bottom of the picture, packed close together, their torches held up in their hands, so the column reads as a winding stream of small flames above dark heads going down into the depth of the cut. Above the far rim the dark empty hillside rises to a crest under a strip of deep indigo night sky. The right side of the picture sinks into deep shadow. The torchlight's orange is the only strong color; everything else is night.",
+   "seed": [
+    11
+   ],
+   "w": 3600,
+   "h": 1024,
+   "init": "tools/storybook/out/style_r15/canvas/H_p1_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/H_p1_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/H_p1_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/H_p1_ctl.png",
+   "strength": 0.6,
+   "end": 0.7,
+   "crop": [
+    1808,
+    0,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p1_alt_d80",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. Night, two thousand years ago. We stand on the near rim of a great raw cut dug deep into a hillside and look across it and down into it. At the left, close to us on our rim, two soldiers of an ancient legion stand with their backs to us as dark silhouettes: dull dark rust-red wool cloaks, plain dull matte bronze helmets with crests and cheek guards; the nearer holds a small torch low in front of him, half hidden by his body. Across the cut, the far wall drops away into darkness as four great flat planes of bare slate rock, each one a single broad shape of cold dark slate with one clean edge. Down that wall a dense column of marching soldiers winds in an S from just below the far rim to the bottom of the picture, packed close together, their torches held up in their hands, so the column reads as a winding stream of small flames above dark heads going down into the depth of the cut. Above the far rim the dark empty hillside rises to a crest under a strip of deep indigo night sky. The right side of the picture sinks into deep shadow. The torchlight's orange is the only strong color; everything else is night.",
+   "seed": [
+    11
+   ],
+   "init": "tools/storybook/out/style_r14/fin/p1_d60_s11.png",
+   "denoise": 0.8,
+   "control": "tools/storybook/out/style_r15/layouts/p1_depth.png",
+   "strength": 0.6,
+   "end": 0.7
+  },
+  {
+   "name": "p4_icv_s60e70",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, one above the other with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The top plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The bottom plate, painted in exactly the same way as the first: Night under a dark slate-blue sky, hard frost on a field beside a pale dirt road, a few ember-gold glints in the frozen soil, a dark body lying in the frost behind. A dead villager stands upright and slack, arms hanging, head tilted, in a torn linen shirt: gray waxy skin, sunken cheeks, matted hair; his eye sockets are empty holes lit gold from inside, and gold light glows in his open mouth; his skin is lit from within like paper over a lamp. To the right an old watchman with a gray beard, a slate blue-gray hooded cloak over a shirt of mail, a round wooden shield with a dark matte iron boss on his arm, is braced with his weight forward, both hands on a single plain dark wooden spear driven into the dead man's chest; the spearhead is buried out of sight inside him, and golden light bursts out around the shaft where it enters and falls as small glowing gold stones that pile up in a little heap on the frost at the dead man's feet. A short faint puff of white breath at the watchman's lips. The golden light is the only strong color; the rest is cold night, frost and slate.",
+   "seed": [
+    11
+   ],
+   "w": 1792,
+   "h": 1792,
+   "init": "tools/storybook/out/style_r15/canvas/V_p4_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/V_p4_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/V_p4_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/V_p4_ctl.png",
+   "strength": 0.6,
+   "end": 0.7,
+   "crop": [
+    0,
+    768,
+    1792,
+    1024
+   ]
+  },
+  {
+   "name": "p7_icv_s60e70",
+   "prompt": "One dark sheet holding two plates from the same illustrated book, one above the other with a thin black gap between them, each plate full-bleed, filling its whole area edge to edge with no border, margin or paper edge. Both plates were painted by the same painter with the same brushes, in exactly the same technique: a restrained dark oil painting over a bold brush-ink drawing: thin dark transparent glazes in the shadows, thick opaque paint only where the light falls, heavy dark ink contours on the figures only, while the land, rock, snow and sky are painted in broad soft-edged masses without outlines; faces cut into a few flat planes; quiet clean shadows; a night palette of deep indigo, slate and umber with the story's lights; grim and serious, realistic proportions. The top plate: night on a frosted field: a dead villager standing slack, lit gold from inside, and an old watchman in a slate-blue hooded cloak with a round wooden shield driving a spear into his chest. The bottom plate, painted in exactly the same way as the first: The Low Ford at night in winter: a shallow river crossing between dark snowy banks under bare trees, pale thin ice along both edges of the water, a trodden track in the snow running down to the water's edge, and a line of large flat dark stepping stones crossing the shallows. Three new square cages of crude hand-forged black iron bars stand on plain square black iron posts, each cage holding a cold pale blue flame that pools blue light on the snow at its foot; those blue pools are the only bright snow, and the far bank, the right bank and the edges of the picture lie deep in shadow. In the middle of the river, just above the water over the stones, a fourth blue light floats with nothing holding it, in a wide soft cold glare that fades gently into the dark, its light lying on the water. Nobody is there. The cold blue is the only strong color; the rest is deep night.",
+   "seed": [
+    11
+   ],
+   "w": 1792,
+   "h": 1792,
+   "init": "tools/storybook/out/style_r15/canvas/V_p7_init.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r15/canvas/V_p7_init.png",
+   "mask": "tools/storybook/out/style_r15/canvas/V_p7_mask.png",
+   "hold": true,
+   "control": "tools/storybook/out/style_r15/canvas/V_p7_ctl.png",
+   "strength": 0.6,
+   "end": 0.7,
+   "crop": [
+    0,
+    768,
+    1792,
+    1024
+   ]
+  }
+ ]
+}

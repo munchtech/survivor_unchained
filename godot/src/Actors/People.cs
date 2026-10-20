@@ -96,6 +96,11 @@ public static class People
     {
         var look = LookOf(spec);
         var body = spec.Body;
+        // A person Marionette made, from its package (art/npc/NAME): no code of its own.
+        if (NpcPackage.NameOf(body) is string pkg && NpcPackage.Build(pkg) is Person made)
+        {
+            return made;
+        }
         // The woman survivor is the heroine (tools/assets/build_heroine.py),
         // in her calling's outfit; --body woman brings back the older body.
         if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
@@ -148,6 +153,11 @@ public static class People
     {
         var look = LookOf(spec);
         var body = spec.Body;
+        if (NpcPackage.NameOf(body) is string pkg)
+        {
+            foreach (var f in NpcPackage.Files(pkg)) yield return f;
+            yield break;
+        }
         if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
         if (body == "heroine")
         {
@@ -201,6 +211,8 @@ public static class People
         /// by its view, whether it goes unarmed: the townsfolk, who play
         /// their own clips (FolkClips) where they have them.</summary>
         public bool Kit, Woman, Folk;
+        /// <summary>The Marionette package it was built from (NpcPackage: "npc:NAME"), or none.</summary>
+        public string? Package;
         /// <summary>The survivor's own clips (hers or his), when they have them.</summary>
         public OwnClips? Own;
         /// <summary>Gestures laid over whatever plays (a nod, an exhale).</summary>

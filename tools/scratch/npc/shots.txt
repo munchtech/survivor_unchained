@@ -1,0 +1,8 @@
+villager_play_idle|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --npc npc_villager
+villager_play_walk|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --npc npc_villager:walk
+villager_close_idle|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --npc npc_villager:swap
+villager_close_walk|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 9 --npc npc_villager:walk:swap
+guard_play_idle|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --npc npc_guard
+guard_play_walk|--quick warden --sex female --nohud --zone waystation --facing 0 --seed 1 --seconds 6 --npc npc_guard:walk
+guard_close_idle|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --idle-after 1 --seconds 9 --npc npc_guard:swap
+guard_close_walk|--quick warden --sex female --nohud --zone waystation --seed 1 --close 1 --seconds 9 --npc npc_guard:walk:swap

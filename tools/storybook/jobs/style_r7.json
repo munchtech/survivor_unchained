@@ -1,0 +1,22 @@
+{
+ "defaults": {
+  "w": 1792,
+  "h": 1024,
+  "steps": 9
+ },
+ "jobs": [
+  {
+   "name": "p1_sky",
+   "prompt": "A full-bleed illustration that fills the entire frame edge to edge, with no border, no margin and no paper edge. A dark oil sketch for a book plate, painted loosely on a toned ground over a bold brush-ink drawing whose dark lines show through on the main contours: thick paint where the light falls, thin transparent dark glazes in the shadows, visible brush marks, strong chiaroscuro, realistic proportions, grim and serious. Night, two thousand years ago, on the rim of a vast deep cut in a hillside. Above the cut's far rim there is only a dark overcast night sky over low dark hills; a faint line of tiny torches runs along the far rim. Torch smoke drifts up into the dark. Two ancient legionaries in crested bronze helmets and rust-red cloaks stand at the near rim with torches. Everything but the torchlight is night.",
+   "seed": [
+    5,
+    31,
+    77
+   ],
+   "init": "tools/storybook/out/style_r6/p1_dome_s31.png",
+   "denoise": 1.0,
+   "inpaint": "tools/storybook/out/style_r6/p1_dome_s31.png",
+   "mask": "tools/storybook/layouts/p1_sky_mask.png"
+  }
+ ]
+}

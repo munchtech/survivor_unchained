@@ -1,0 +1,158 @@
+{
+  "id": "sb00",
+  "title": "Stay Where They Reach",
+  "script": "docs/story/storybook/sb00_stay_where_they_reach.md",
+  "conversation": "sb_stay_where_they_reach",
+  "live": false,
+  "canvas": [3200, 1800],
+  "grain": 0.05,
+  "vignette": 0.3,
+  "skip": {"from": 1.5, "hold": 0.8},
+  "plates": [
+    {
+      "id": "p0",
+      "at": 0,
+      "until": 2.5,
+      "in": {"kind": "fade", "dur": 0.6},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}],
+      "note": "PLACEHOLDER: a flat card for P0 · The lamp at the post; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#14110d", "label": "P0 · The lamp at the post", "z": 1}],
+      "cues": []
+    },
+    {
+      "id": "p1",
+      "at": 2.5,
+      "until": 11,
+      "in": {"kind": "light", "dur": 1.6, "origin": [0.56, 0.5]},
+      "camera": [{"t": 0, "x": 1600, "y": 700, "zoom": 1.08}, {"t": 8.5, "x": 1700, "y": 1150, "zoom": 1.2, "dolly": 0.12}],
+      "note": "PLACEHOLDER: a flat card for P1 · Long ago; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#15121a", "label": "P1 · Long ago", "z": 1}],
+      "cues": [
+        {"at": 0.0, "do": "music", "mood": "night", "intensity": 0.25, "over": 4.0},
+        {"at": 0.8, "do": "line", "id": "legion", "tag": "An old Watchman"}
+      ]
+    },
+    {
+      "id": "p2",
+      "at": 11,
+      "until": 15.5,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1600, "y": 650, "zoom": 1.1}, {"t": 4.5, "x": 1600, "y": 1200, "zoom": 1.15}],
+      "note": "PLACEHOLDER: a flat card for P2 · The chain; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#121214", "label": "P2 · The chain", "z": 1}],
+      "cues": [{"at": 0.3, "do": "line", "id": "chained"}]
+    },
+    {
+      "id": "p3",
+      "at": 15.5,
+      "until": 25.5,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1600, "y": 1250, "zoom": 1.12}, {"t": 10, "x": 1600, "y": 650, "zoom": 1.1}],
+      "note": "PLACEHOLDER: a flat card for P3 · Ember; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#18120c", "label": "P3 · Ember", "z": 1}],
+      "cues": [{"at": 0.8, "do": "line", "id": "ember"}]
+    },
+    {
+      "id": "p4",
+      "at": 25.5,
+      "until": 37,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1250, "y": 950, "zoom": 1.12}, {"t": 11.5, "x": 1950, "y": 950, "zoom": 1.12}],
+      "note": "PLACEHOLDER: a flat card for P4 · The dead get up; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#101418", "label": "P4 · The dead get up", "z": 1}],
+      "cues": [
+        {"at": 0.8, "do": "line", "id": "dead"},
+        {"at": 2.0, "do": "sfx", "name": "frost_crack"},
+        {"at": 3.2, "do": "sfx", "name": "rasp", "gain": 0.6}
+      ]
+    },
+    {
+      "id": "p5",
+      "at": 37,
+      "until": 46,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1600, "y": 1150, "zoom": 1.1}, {"t": 9, "x": 1600, "y": 700, "zoom": 1.08}],
+      "note": "PLACEHOLDER: a flat card for P5 · First light; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#1a1612", "label": "P5 · First light", "z": 1}],
+      "cues": [{"at": 0.8, "do": "line", "id": "dawn"}]
+    },
+    {
+      "id": "p6",
+      "at": 46,
+      "until": 56,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1200, "y": 900, "zoom": 1.15}, {"t": 10, "x": 2000, "y": 900, "zoom": 1.15}],
+      "note": "PLACEHOLDER: a flat card for P6 · Keepers and lamps; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#16140e", "label": "P6 · Keepers and lamps", "z": 1}],
+      "cues": [{"at": 0.8, "do": "line", "id": "keepers"}]
+    },
+    {
+      "id": "p7",
+      "at": 56,
+      "until": 63.5,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 7.5, "x": 1650, "y": 920, "zoom": 1.06, "dolly": 0.2}],
+      "note": "PLACEHOLDER: a flat card for P7 · Last winter; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#0c1219", "label": "P7 · Last winter", "z": 1}],
+      "cues": [{"at": 0.8, "do": "line", "id": "winter"}]
+    },
+    {
+      "id": "p8",
+      "at": 63.5,
+      "until": 71,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1250, "y": 950, "zoom": 1.1}, {"t": 7.5, "x": 1950, "y": 900, "zoom": 1.14}],
+      "note": "PLACEHOLDER: a flat card for P8 · Waiting; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#0e1214", "label": "P8 · Waiting", "z": 1}],
+      "cues": [{"at": 0.8, "do": "line", "id": "waiting"}]
+    },
+    {
+      "id": "p9",
+      "at": 71,
+      "until": 78,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 5.0, "zoom": 1.0}, {"t": 7, "x": 1800, "y": 930, "zoom": 1.03, "ease": "in"}],
+      "note": "PLACEHOLDER: a flat card for P9 · The traveler; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#141019", "label": "P9 · The traveler", "z": 1}],
+      "cues": [{"at": 0.8, "do": "line", "id": "lamps"}, {"at": 5.2, "do": "music", "mood": "silence"}]
+    },
+    {
+      "id": "p10a",
+      "at": 78,
+      "until": 81.5,
+      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.02}, {"t": 3.5, "zoom": 1.05}],
+      "note": "PLACEHOLDER: a flat card for P10a · The water (kneeling); the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#0b1116", "label": "P10a · The water (kneeling)", "z": 1}],
+      "cues": [{"at": 0.6, "do": "sfx", "name": "kneel_water"}]
+    },
+    {
+      "id": "p10b",
+      "at": 81.5,
+      "until": 84,
+      "in": {"kind": "cut"},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.1}, {"t": 2.5, "zoom": 1.14}],
+      "note": "PLACEHOLDER: a flat card for P10b · The reflection; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#0a1014", "label": "P10b · The reflection", "z": 1}],
+      "cues": [{"at": 0.3, "do": "line", "id": "cin_none_cross.call", "tag": "A voice under the water"}]
+    },
+    {
+      "id": "p10c",
+      "at": 84,
+      "until": 87.5,
+      "in": {"kind": "cut"},
+      "camera": [{"t": 0, "x": 1600, "y": 880, "zoom": 1.05}, {"t": 1.4, "y": 900, "zoom": 1.06}, {"t": 3.5, "y": 1200, "zoom": 1.12, "rot": -3, "ease": "in"}],
+      "note": "PLACEHOLDER: a flat card for P10c · Under; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
+      "layers": [{"id": "card", "color": "#070c0d", "label": "P10c · Under", "z": 1}],
+      "cues": [
+        {"at": 1.4, "do": "sfx", "name": "cloth_water"},
+        {"at": 1.5, "do": "sfx", "name": "water_close"},
+        {"at": 1.5, "do": "bus", "lowpass": 650, "gain": -3, "over": 0.35},
+        {"at": 2.2, "do": "sfx", "name": "heart_hum", "gain": 0.7}
+      ],
+      "out": {"kind": "fade", "dur": 2.0}
+    }
+  ],
+  "cues": [{"at": 0.0, "do": "music", "mood": "silence"}, {"at": 87.5, "do": "bus", "lowpass": 180, "gain": -60, "over": 2.0}],
+  "end": 89.5
+}
