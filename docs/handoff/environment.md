@@ -1,5 +1,20 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## DONE (env lead 8, 20 Oct): E3 passed judge 4, MR READY; next is the art-style frames, then E4
+- Branch `env-3` (pushed). Scratch and briefs: `survivorsunchained_inputs\scratch_env8\` (ground_g brief and scripts, e3_judge4_brief.md, perf/abab.sh and final.sh). Frames and numbers: `env_e3\g\` (numbers.md); verdict `env_e3\judge4erdict.md`.
+- **Solver G (b96cfb10):** the setts mud reads as mud: hue about 33 against the stone's 22, saturation 0.22-0.25, 30-32% darker, low sheen, its own grain. At night the pebbles take the road's dew (night_04 pale pebbles 13 -> 1). The town_01 pool cut is confirmed. New switches: `--setts-collar`, `--setts-mud-tone/-sat/-spec`, `--scatter-night-dew`, debug views 26 (mud) and 27 (collar).
+- **Judge 4: DONE,** with one fall back: the post collars read as round mud pads at the dummy and the bench, so `--setts-collar` defaults to 0 (a476f7b8, checked at 1:1). The mud layer still gathers dirt at everything that stands.
+  - Closed as known: night_02's straight setts corner; wear, sunk stones and moss that don't read in the open street; the shimmer.
+  - Notes for the painterly re-texture: the cells are evenly sized and the joints evenly dark (add big flags and small fill stones, vary the joints); make the mud opaque and matte over the buried edges; carry the wear lane in the albedo.
+- **Perf (Release, `env_perf1\e3\`):**
+  - Low Ford 1440p high: fps min/median/max 140/165/216 (E2 131/180/199), GPU median 5.4 ms (5.0).
+  - Low Ford 1080p medium: 151/204/304 (117/226/323).
+  - Waystation day 1440p high: 112 fps. The GPU is at 4.2 ms, so the frame is CPU-bound (render CPU 3.2 ms), not the ground's doing.
+  - The ground flip ABAB against c7c45928: G 1.08/0.99 ms against D's 1.07/0.98, so the restage costs nothing. The absolute number is over the 0.90 target, but c7c45928 measures the same, so the rise is drift plus integration.
+  - Routed to perf: shadow draws (play about 730, cinematic 1440-1492), the median fps drop since E2, and the hub's CPU-bound frame.
+- **Checks:** tests 1012/0/8; the teach run showed and answered all 11 moments.
+- Routed, not E3's: the moonlight streak at night_04 (lighting); tufts and firs (E4); rocks (E5); water (E6); bedroll (E7); buildings, roofs, the well and stall models (E9); the grey NPCs (crowd).
+
 ## Paused here (env lead 7, 19 Oct night): E3 setts restage WIP (de5d9902); next: finish F's list, judge 4, perf, MR
 - Worktree `.claude/worktrees/env-3`, branch `env-3` (pushed; only .import/.uid churn uncommitted). Scratch, briefs and scripts: `survivorsunchained_inputs\scratch_env7\` (ground_d/e/f, bisect, e3_judge2/3 briefs, ground_d..f briefs). Frames: `survivorsunchained_inputs\env_e3\{d,e,judge2,judge3}\`.
 - **Rounds:**
@@ -146,7 +161,7 @@ oof_slates_02\`.
 |---|---|---|---|---|---|
 | E1 | Light, grade, mist: zone presets (Low Ford night and dawn, the camp, the town dawn/day), moon 20-30 deg, ambient 2-3 stops under, her ember light, pools from sources, mist planes; shadow rules (one shadowed lamp, no shadows from crowd/fx/scatter/kit pieces, sun distance and 2 splits for the play camera) | 1c | fog+mist <= 0.5 ms; shadow draws <= 1,200 | 4-6 h | DONE (MR) |
 | E2 | Flames and lamps: flame kit (motion-vector flipbook shader, noise flicker), modeled lamp frames and posts, torches, the camp fire (logs with ember cracks and end caps, ash bed, sparks, smoke), the Warden's three blue lamps | 1j | lamp 1.5k tris, 2 draws, no shadow | 6-10 h | DONE (MR) |
-| E3 | Terrain and road: <= 4 layers a pixel (today 7), height blend, anti-tiling + macro, road into the terrain (ruts, verges, no grass), frost by exposure, wet hollows, base blends, decals and scatter; town cobbles (large varied tile, gutters, puddles) | 1f, 1h | 0.8 ms, 40 draws | 10-14 h | open |
+| E3 | Terrain and road: <= 4 layers a pixel (today 7), height blend, anti-tiling + macro, road into the terrain (ruts, verges, no grass), frost by exposure, wet hollows, base blends, decals and scatter; town cobbles (large varied tile, gutters, puddles) | 1f, 1h | 0.8 ms, 40 draws | 10-14 h | DONE 20 Oct (judge 4) |
 | E4 | Foliage kit: spruce, birch, alder in 3 sizes, ferns, bushes, grass clumps; 3 LODs + impostor, shadow LOD, wind, back light, hue jitter; swapped in by remapping `flora.json` pieces | 1e | trees+bushes+rocks 0.8 ms, 80 draws, 420 shadow; grass 1.0 ms, 10 draws | 16-24 h | open |
 | E5 | Rocks and ford stones: shared rock set, triplanar stone, moss upstream, wet band; stepping stones no two alike | 1f, 1g | rock 3k (outcrop 8k) | 6-8 h | open |
 | E6 | Water and shore: depth color, a real bed, shore and contact foam, the ford's flow map, a reflection probe (lamps culled), wet banks, mist over water, wading rings | 1d | 0.5 ms, 5 draws | 8-12 h | open |
