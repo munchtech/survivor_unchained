@@ -1,12 +1,10 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (env lead 7, 19 Oct night): E3 round 3 (the cap) running
-- Integration merged (fbcac443). Solver D (c7c45928) finished round C: `survivorsunchained_inputs\env_e3\d
-umbers.md`; scripts `scratch_env7\ground_d\` (measure_d.py, perf.py).
-- **Judge 2 FAILED, 5 fixes** (`env_e3\judge2\verdict.md`). It closed the hand-back, the close-up (night_05; the 1.15 target is closed), the edges, the eggs (cut), the scatter, the colour and the repeat.
-- Perf bisect (`scratch_env7isect\`): ground flip 0.863 ms at c7c45928, 0.854 ms with B's files. E3's rounds C and D cost nothing. Shadow draws 749 in both: not E3's, routed to perf. The hold is 0.90 ms.
-- Solver E (brief `scratch_env7\ground_e_brief.md`) is building round 3: puddles, the setts mosaic, verge/frost splats, the night meadow, the ruts in the sun. Frames go to `env_e3\e\`.
-- **Next:** judge 3, the last round (failed frames only; template `scratch_env7\e3_judge2_brief.md`), then close the rest as known. Main gave the go (19 Oct): if the setts mosaic survives round 3, restage with one authored 4 m sett tile with variation (ground at 0.90 ms or less), then judge 3 on the town frames only. Then perf (`tools/perf/run.py`, fps min at least 131), the full dotnet test, the teach run, and "MR READY env-3@<commit>".
+## Now (env lead 7, 19 Oct night): E3 setts restage running; everything else closed
+- Rounds: D c7c45928 (judge 1's fixes), E 18bd75e3 (judge 2's). Judge 3 (final, `survivorsunchained_inputs\env_e3\judge3\verdict.md`) closed everything except the setts. Closed as known: the 11 px verge ramps, dawn_00's 14% sun ruts, the soft pale patches, the town wet rims. Two cuts: the beaded pebble rows on the rut shoulders, one gutter pool at town_01.
+- **Solver F** (brief `scratch_env7\ground_f_brief.md`, frames to `env_e3\f\`): an authored 4 m sett tile in 2-3 variants (main approved the restage), stones 18-30 cm, mud in the joints by the walls, well and stalls, worn and sunk stones, moss. It also makes both cuts and proves the ground at 0.90 ms or less ABAB.
+- Perf (`scratch_env7\bisect\`): the ground flip drifts ±0.15 ms between runs. The suspect is E's setts textures (D's shader: 0.86 on the old textures, 1.04-1.09 on the new). Shadow draws 749: not E3's, routed to perf.
+- **Next:** judge 4, on town_day_00/01/02 plus the setts in dawn_02/night_02 only (template `scratch_env7\e3_judge3_brief.md`, xhigh, foreground). Then the perf run (`tools/perf/run.py`, fps min at least 131), the full dotnet test, the teach run, and "MR READY env-3@<commit>" to main.
 
 ## Paused here (env lead 6, 19 Oct night): E3 mid fix round C; next: finish C's open items, then judge 2
 - Worktree `.claude/worktrees/env-3`, branch `env-3` (pushed, clean apart from .import/.uid churn; its own assets junction; imported). Briefs: `survivorsunchained_inputs\scratch_env6\` (ground_a/b/c briefs, e3_judge1_brief.md, the measure scripts in ground_a/, ground_b/, ground_c/). Frames: `survivorsunchained_inputs\env_e3\` (a, b, judge1, c). Baseline: `godot/.shots/e3r0_*`. Shots: `python tools/scratch/env/shots.py <round> dawn night town_day` (points at env-3).
