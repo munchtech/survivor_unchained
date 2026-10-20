@@ -956,17 +956,25 @@ def _cast_release(rig, keys, frm=16, to=28, lag=1.75):
 def cast_flick(rig):
     """The wand's spell: the whole arm whipped out from over the shoulder at
     the foe, ending pointed straight at it, the free hand flung open behind
-    for balance."""
+    for balance.
+
+    (anim 41, solver 2) The wind-up hand out beside the hat's brim, not behind her head: its wand went back over
+    her left and its crystal came out through the hat's crown. Now the hand is 19 cm further out, beside her head
+    (the wand's tip 60 cm out from her head's axis, clear of the brim), the wand up and back, the knuckles keyed so
+    the whip's hand and forearm spins are 24/11 deg a frame (65 and 54 before). The free arm at the aim was flung
+    out level from the shoulder (a T, its elbow keyed out to the side): now its elbow hangs bent, down and a
+    little out, the hand at her hip-to-ribs height, 14 cm out from her side and a little behind."""
     keys = [
         (0, body(stance(0.07, weight=-0.3), hips=(-10, -2, 0), spine=(-18, -4, 0), head=(22, 0, 0),
-                 hand_r=arm((-0.08, 0.14, -0.06), (-0.7, 0.2, -0.3), blade=_n(-0.1, 0.6, -0.8)),
+                 hand_r=arm((-0.25, 0.12, 0.18), (-0.8, -0.3, -0.4), blade=_n(-0.506, 0.861, 0.051),
+                            knuckles=_n(-0.862, -0.507, 0.0)),
                  hand_l=arm((0.06, -0.20, 0.30), (0.8, -0.4, -0.3)), fingers_r="grip", fingers_l="open"), "fast"),
         (3, body(stance(0.09, weight=0.4), hips=(6, 6, 0), spine=(10, 8, 0), head=(-12, -4, 0),
                  hand_r=arm((0.02, -0.04, 0.52), (-0.8, -0.4, -0.2), blade=_n(0.0, -0.05, 1.0)),
-                 hand_l=arm((0.10, -0.22, -0.22), (0.8, -0.2, -0.3)), fingers_r="grip", fingers_l="spread"), "ease"),
+                 hand_l=arm((0.15, -0.27, -0.02), (0.5, -0.8, -0.3)), fingers_r="grip", fingers_l="spread"), "ease"),
         (8, body(stance(0.09, weight=0.4), hips=(6, 6, 0), spine=(11, 8, 0), head=(-13, -4, 0),
                  hand_r=arm((0.02, -0.06, 0.51), (-0.8, -0.4, -0.2), blade=_n(0.0, -0.1, 1.0)),
-                 hand_l=arm((0.10, -0.23, -0.22), (0.8, -0.2, -0.3)), fingers_r="grip", fingers_l="spread"), "auto"),
+                 hand_l=arm((0.15, -0.28, -0.02), (0.5, -0.8, -0.3)), fingers_r="grip", fingers_l="spread"), "auto"),
         (18, body(stance(0.06), hand_r=arm((0.0, -0.36, 0.14), (-0.6, -0.4, -0.5), blade=_n(-0.1, 0.5, 0.85)),
                   hand_l=arm((0.0, -0.38, 0.08), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
