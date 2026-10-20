@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import crowd  # noqa: E402
 from build import GODOT  # noqa: E402
-from clips import rook, warden  # noqa: E402
+from clips import folk_armed, rook, warden  # noqa: E402
 from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
 from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
@@ -80,6 +80,21 @@ def build(want):
             made.append(clip.name)
             print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  speed {clip.meta.get('speed', 0):.2f}  "
                   f"({time.time() - t0:.1f} s)")
+        # The armed folk's stands at ease (clips/folk_armed.py): the weight shift above, the arms re-solved to hold
+        # what they carry. Their rig holds pieces in the diagonal grip of the fist they are seated in (Arms.Seat lays an
+        # anchored piece, the sword or the staff, on her fitted pocket in the folk's hands too) and closes the fist
+        # fitted to that grip (keyed.py WRAP); the folk's other clips keep the plain grip (grips=False).
+        stands = [n for n in folk_armed.STANDS if not want or any(w in n for w in want)]
+        if stands:
+            armed = Rig(sk, grips=True)
+            source, file, opts = FOLK["idle"]["fm"]
+            base = make(armed, f"{sex}_idle", source, file, **opts)
+            for name in stands:
+                t0 = time.time()
+                clip = folk_armed.make_stand(f"{sex}_{name}", armed, base)
+                write_clip(clip, sk, OUT)
+                made.append(clip.name)
+                print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  (armed, {time.time() - t0:.1f} s)")
         # The Ford-Warden's cinematic clips, on the man (clips/warden.py).
         for name, fn in (warden.CLIPS.items() if sex == "m" else ()):
             if want and not any(w in name for w in want):
