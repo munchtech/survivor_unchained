@@ -775,8 +775,9 @@ L_CHANNEL = (np.array([0.04162, 0.076, 0.0]), np.array([0.20791, 0.16985, 0.9632
              np.array([-0.97815, 0.03610, 0.20475]))
 L_BELOW = 0.126   # the left fist's channel point this far below the right's seat along the haft (m)
 HOLD_TO, FREE_AT = 9, 13   # both hands on it f3-f9 (HOLD_FROM); the left lets go over f9-f13 (in its fist at f13)
-HOLD_FROM = 3
-L_ITER = 4   # the left fist's re-aims (each a solve) at where the last solve left it
+HOLD_FROM = 0
+L_ITER = 8   # the left fist's re-aims (each a solve) at where the last solve left it
+L_BEST = True   # keep each frame's best re-aim (the re-aims can run off where a forearm's twist pins)
 # Both hands on one haft 126 mm apart: keyed, the hands were each before its own shoulder, the left 107-117% of
 # her arm's reach from the right's. Her chest turned toward them (yaw, pitch) and both shoulders drawn forward bring
 # both arms to 77-98% (the right hand held where it was, in her own space, so its path does not move).
@@ -883,12 +884,17 @@ def _left_on_haft():
 # at f3-f9 and its fingers 0-1 mm in at f4/f8/f9, but f3 is 12 deg off (its hand twist pinned at -48), f6's fingers
 # 4 mm in, f9 the left upper arm 9 mm into her trunk (8 into the breast), and in the let-go (f10) the fingers go
 # 11 mm through the haft as they open; the left joins the haft in one frame at the blow (f2-f3, as the right does).
-FWD = {3: (-0.07, 0.44, 0.64, 25.0, -9.0), 6: (-0.07, 0.41, 0.615, 21.0, -9.0), 9: (-0.07, 0.38, 0.585, 17.5, -9.0),
-       11: (-0.07, 0.39, 0.59, 18.5, -9.0)}
-FWD_IN, FWD_OUT = 1, 15
+# Round 5b (anim 43, 19 October): the haft keyed from f0 (overhead, the head behind her crown) through the swing (f1
+# vertical, f2 forward at her shoulders) to the blow (f3-f9, 35-36 deg down, rolled 8 deg so the left fist sits on
+# it 0-1 mm f4-f9 with her arms long), easing out over f11-f15 (f11 out to her right: the right arm clear of her
+# side as she rises).
+FWD = {0: (-0.03, 1.98, 0.0, -118.0, 0.0), 1: (-0.03, 1.98, 0.07, -100.0, -1.0), 2: (-0.05, 1.22, 0.74, -30.0, -5.0),
+       3: (-0.07, 0.515, 0.64, 36.0, -9.0, -8.0), 6: (-0.07, 0.51, 0.635, 35.5, -9.0, -8.0),
+       9: (-0.07, 0.505, 0.63, 35.0, -9.0, -8.0), 11: (-0.12, 0.53, 0.62, 33.0, -14.0, -8.0)}
+FWD_IN, FWD_OUT = -1, 15
 FWD_POLES = {"hand_r": (-1.0, -0.3, -0.3), "hand_l": (1.0, -0.3, -0.3)}   # the elbows' way from the shoulder (her
                                                                             # space), None = as keyed
-FWD_BODY = {"clav_l": (20, 14), "clav_r": (20, 14)}   # her body's keys moved over the blow (eased as the hands): "clav_l": (raise, forward), "spine": (yaw,
+FWD_BODY = {}   # her body's keys moved over the blow (eased as the hands): "clav_l": (raise, forward), "spine": (yaw,
                 # pitch, roll), "hips": (yaw, pitch, roll), "hips_pos": (x, y, z); added to the keyed
 
 
@@ -910,12 +916,36 @@ ONE_POLES = {"hand_r": None, "hand_l": None}   # the right elbow's way as keyed 
                                                # upper arm 14-23 mm into her breast)
 
 
-def _fwd_rot(pitch, yaw):
-    """hand_r's rotation with the haft pitched `pitch` below level and yawed `yaw` toward her left, its edge down."""
+FWD_POLE_KEYS = {0: ((-1.0, 0.1, 0.3), (1.0, 0.1, 0.3)), 1: ((-1.0, 0.1, 0.3), (1.0, 0.1, 0.3)),
+                 2: ((-1.0, 0.0, 0.2), (1.0, 0.0, 0.2)), 3: ((-1.0, -0.3, -0.3), (0.7, -0.7, 0.0))}   # by frame, (right elbow's way, left elbow's way) from the shoulder (her space), linear
+                     # between; overrides FWD_POLES over the frames it spans
+
+
+def _fpole(side, fr, FWD_POLES=None):
+    """The elbow's way for `side` ("hand_r"/"hand_l") at frame fr: FWD_POLE_KEYS where they span it, else FWD_POLES."""
+    FP = FWD_POLES if FWD_POLES is not None else globals()["FWD_POLES"]
+    if FWD_POLE_KEYS:
+        ks = sorted(FWD_POLE_KEYS)
+        f = min(max(fr, ks[0]), ks[-1])
+        k1 = next(k for k in ks if k >= f)
+        k0 = max(k for k in ks if k <= f)
+        a = 0.0 if k1 == k0 else (f - k0) / (k1 - k0)
+        i = 0 if side == "hand_r" else 1
+        v = (1 - a) * np.array(FWD_POLE_KEYS[k0][i], float) + a * np.array(FWD_POLE_KEYS[k1][i], float)
+        return tuple(float(x) for x in v)
+    return FP[side]
+
+
+def _fwd_rot(pitch, yaw, roll=0.0):
+    """hand_r's rotation with the haft pitched `pitch` below level and yawed `yaw` toward her left, its edge down
+    (rolled `roll` deg about the haft, the edge toward her right for +)."""
     C, H, N, Wd = _haft()
     p, y = math.radians(pitch), math.radians(yaw)
     D = np.array([math.sin(y) * math.cos(p), -math.sin(p), math.cos(y) * math.cos(p)])
     E = np.array([-math.sin(y) * math.sin(p), -math.cos(p), -math.cos(y) * math.sin(p)])
+    if roll:
+        r = math.radians(roll)
+        E = E * math.cos(r) + np.cross(D, E) * math.sin(r)
     A = np.stack([H, Wd, np.cross(H, Wd)], 1)
     B = np.stack([D, E, np.cross(D, E)], 1)
     return B @ A.T
@@ -941,7 +971,7 @@ def _forward(rig, clip, FWD=FWD, FWD_BODY=FWD_BODY, FWD_POLES=FWD_POLES):
         k0 = max(k for k in ks if k <= f)
         a = 0.0 if k1 == k0 else (f - k0) / (k1 - k0)
         v = (1 - a) * np.array(FWD[k0], float) + a * np.array(FWD[k1], float)
-        R = _fwd_rot(v[3], v[4])
+        R = _fwd_rot(v[3], v[4], v[5] if len(v) > 5 else 0.0)
         return R, v[:3] - R @ C
 
     def post(fr, pose):
@@ -953,7 +983,7 @@ def _forward(rig, clip, FWD=FWD, FWD_BODY=FWD_BODY, FWD_POLES=FWD_POLES):
         W = p[fr, hr] + (W - p[fr, hr]) * w
         Bq = qmatrix(q) @ lq
         sr = pose["hand_r"]
-        pr = FWD_POLES["hand_r"]
+        pr = _fpole("hand_r", fr, FWD_POLES)
         if pr is None or sr.get("frame") == "chest":
             from rig import qinv, qrot
             s3 = I["spine_03"]
@@ -973,7 +1003,7 @@ def _forward(rig, clip, FWD=FWD, FWD_BODY=FWD_BODY, FWD_POLES=FWD_POLES):
         pose["hand_r"] = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in Bq[:, 2]),
                           "knuckles": tuple(float(x) for x in Bq[:, 1]), "pole": tuple(float(x) for x in pr),
                           "frame": "char", "twist": sr.get("twist", 0.5),
-                          **({"pole_at": "shoulder"} if FWD_POLES["hand_r"] is not None else {})}
+                          **({"pole_at": "shoulder"} if _fpole("hand_r", fr, FWD_POLES) is not None else {})}
         return pose
     return post
 
@@ -1027,8 +1057,8 @@ def _two_hands(rig, clip, hold, free, keep_right=False, corr=None):
         chest = qmul(g[fr, s3], qinv(rig.grest[s3]))
         pole = np.array(spec_k.get("pole", (0.6, -0.4, -0.4)), float)
         pole = qrot(chest, pole) if spec_k.get("frame") == "chest" else pole
-        if FWD_POLES["hand_l"] is not None:
-            pole = pole + (np.array(FWD_POLES["hand_l"], float) - pole) * (1 - w)
+        if _fpole("hand_l", fr) is not None:
+            pole = pole + (np.array(_fpole("hand_l", fr), float) - pole) * (1 - w)
         if w > 0:
             q = qslerp(qfrom_matrix(Rl), g[fr, hl], w)
             Rl = qmatrix(q)
@@ -1036,7 +1066,7 @@ def _two_hands(rig, clip, hold, free, keep_right=False, corr=None):
         spec = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in Rl[:, 2]),
                 "knuckles": tuple(float(x) for x in Rl[:, 1]), "pole": tuple(float(x) for x in pole),
                 "frame": "char", "twist": spec_k.get("twist", 0.3),
-                **({"pole_at": "shoulder"} if FWD_POLES["hand_l"] is not None else {})}
+                **({"pole_at": "shoulder"} if _fpole("hand_l", fr) is not None else {})}
         mix = lambda a, b: a + (b - a) * w
         fingers = {"bends": {k: tuple(mix(a, b) for a, b in zip(v, fist[k])) for k, v in L_WRAP["bends"].items()},
                    "spreads": {k: mix(v, 0.0) for k, v in L_WRAP["spreads"].items()},
@@ -1045,59 +1075,54 @@ def _two_hands(rig, clip, hold, free, keep_right=False, corr=None):
     return post
 
 
+def _knees_out(yaw, s):
+    """A knee's way over the toes of a foot turned `yaw` (s: +1 her left, -1 her right), a little outward."""
+    a = math.radians(yaw)
+    return (math.sin(a) + s * 0.25, 0, math.cos(a))
+
+
+# (anim 43, solver 5b, 19 October; the judge r2: f0 read fallen, f3-f9 digging) Restaged: she lands standing, the
+# axe overhead in both hands (f0-f1, the head behind her crown), swings it over (f2, the haft forward at shoulder
+# height: spread over two frames, the forearms' spin per frame halves), and drives it into the ground in a set
+# crouch: the feet planted wide f0-f11 (they don't move till the recovery), knees out over the toes, the torso
+# about 45 deg (hips 30-32 and spine 28-30 keyed), the head above the shoulders, the arms long down the haft.
+STRIKE_FL = {"pos": (0.24, 0.0, 0.22), "rot": (14, 0, 0), "pole": _knees_out(14, 1)}
+STRIKE_FR = {"pos": (-0.24, 0.02, -0.24), "rot": (-26, 16, 0), "toe": 16, "pole": _knees_out(-26, -1)}
+STRIKE_CLAV_L = (18, 14)   # her left shoulder up and forward over the blow: the straight left arm clears her breast
+
+
+def _strike_pose(hy, hz, hp, sp, nk, hd, clav=(0, 10), clav_l=None, hl=None, hr=None):
+    """A strike frame: hips height/forward, hips and spine pitch, neck and head pitch, the keyed hands (the posts set
+    both on the haft over f0-f9; the keyed ones are where the left lets go to)."""
+    both = {"pole": (-0.6, -0.4, -0.4), "frame": "chest", "twist": 0.5}
+    return body({"hips": {"pos": (0.0, hy, hz)}, "foot_l": dict(STRIKE_FL), "foot_r": dict(STRIKE_FR),
+                 "hand_r": {**both, "arc": arc_of(hr or (-0.02, -0.22, 0.44)), "blade": _n(0.0, -0.75, 0.65)},
+                 "hand_l": {"arc": arc_of(hl or (0.26, -0.30, 0.06)), "pole": (0.6, -0.6, -0.5), "frame": "chest",
+                            "twist": 0.3},
+                 "fingers_l": "grip", "fingers_r": "grip", "clav_l": clav_l or clav, "clav_r": clav},
+                hips=(0, hp, 0), spine=(0, sp, 0), neck=(0, nk, 0), head=(0, hd, 0))
+
+
 def _strike_keys():
     both = {"pole": (-0.6, -0.4, -0.4), "frame": "chest", "twist": 0.5}
     return [
-        (0, _flight(3.0), "fast"),
-        # Feet swung down under her as the axe comes over the top, both
-        # hands on it.
-        (1, body({"hips": {"pos": (0.0, -0.22, 0.10)},
-                  "foot_l": {"pos": (0.20, 0.12, 0.20), "rot": (14, 10, 0)},
-                  "foot_r": {"pos": (-0.20, 0.16, -0.20), "rot": (-20, 30, 0)},
-                  "hand_r": {**both, "arc": arc_of((-0.04, 0.30, 0.20)), "blade": _n(-0.1, 0.9, 0.4)},
-                  "hand_l": {"arc": arc_of((0.02, 0.26, 0.24)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "grip", "fingers_r": "grip"},
-                 hips=(0, 26, 0), spine=(0, 8, 0), neck=(0, -16, 0), head=(0, -24, 0)), "linear"),
-        # Coming down: the arms out before her at the height of her
-        # shoulders, the haft forward, the head of the axe still above it.
-        # (Over the top to buried in one frame, the hands turned over in it.)
-        (2, body({"hips": {"pos": (0.0, -0.26, 0.10)},
-                  "foot_l": {"pos": (0.22, 0.04, 0.22), "rot": (16, 4, 0)},
-                  "foot_r": {"pos": (-0.22, 0.06, -0.23), "rot": (-23, 24, 0)},
-                  "hand_r": {**both, "arc": arc_of((-0.03, 0.06, 0.44)), "blade": _n(-0.05, 0.35, 0.94)},
-                  "hand_l": {"arc": arc_of((0.04, 0.02, 0.40)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "spread", "fingers_r": "grip"},
-                 hips=(0, 30, 0), spine=(0, 18, 0), neck=(0, -17, 0), head=(0, -25, 0)), "linear"),
-        # The blow: down hard into a wide crouch, the axe buried low before her (one-handed: the free hand let go at
-        # f2 and out to her left for balance; the haft re-aimed by ONE_FWD).
-        (3, body({"hips": {"pos": (0.0, -0.30, 0.10)},
-                  "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
-                  "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
-                  "hand_r": {**both, "arc": arc_of((-0.02, -0.22, 0.44)), "blade": _n(0.0, -0.75, 0.65)},
-                  "hand_l": {"arc": arc_of((0.26, -0.30, 0.06)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 14), "clav_r": (-4, 14)},
-                 hips=(0, 34, 0), spine=(0, 30, 0), neck=(0, -18, 0), head=(0, -26, 0)), "ease"),
-        (6, body({"hips": {"pos": (0.0, -0.34, 0.10)},
-                  "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
-                  "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
-                  "hand_r": {**both, "arc": arc_of((-0.02, -0.28, 0.42)), "blade": _n(0.0, -0.85, 0.5)},
-                  "hand_l": {"arc": arc_of((0.27, -0.32, 0.04)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
-                 hips=(0, 38, 0), spine=(0, 32, 0), neck=(0, -20, 0), head=(0, -28, 0)), "ease"),
-        # (anim 42) She settles 4 cm lower over f6-f9 so the hold isn't frozen, the free arm still back and out
-        # (it dropped limp to her knee by f9).
-        (9, body({"hips": {"pos": (0.0, -0.38, 0.10)},
-                  "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
-                  "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
-                  "hand_r": {**both, "arc": arc_of((-0.05, -0.24, 0.36)), "blade": _n(-0.12, -0.35, 0.93)},
-                  "hand_l": {"arc": arc_of((0.30, -0.10, 0.16)), "pole": (0.6, -0.6, -0.5), "frame": "chest", "twist": 0.3},
-                  "fingers_l": "spread", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
-                 hips=(0, 40, 0), spine=(0, 33, 0), neck=(0, -21, 0), head=(0, -29, 0)), "ease"),
+        # Landed standing, chest up, the axe overhead (both hands on it from here; FWD sets the haft).
+        (0, _strike_pose(-0.05, 0.02, 4, -8, -2, 0, clav=(14, 4), hr=(-0.04, 0.40, 0.0), hl=(0.04, 0.36, 0.06)), "ease"),
+        (1, _strike_pose(-0.06, 0.01, 4, -12, -2, -2, clav=(16, 2), hr=(-0.04, 0.42, -0.02), hl=(0.04, 0.38, 0.04)),
+         "linear"),
+        # Coming over: the haft forward at her shoulders, sinking into the blow.
+        (2, _strike_pose(-0.16, 0.04, 16, 10, -8, -10, clav=(10, 8), hr=(-0.03, 0.30, 0.20), hl=(0.03, 0.26, 0.24)),
+         "linear"),
+        # The blow and the hold: buried before her, settling a little (f3-f9).
+        (3, _strike_pose(-0.27, 0.05, 30, 28, -16, -20, clav=(0, 12), clav_l=STRIKE_CLAV_L), "ease"),
+        (6, _strike_pose(-0.275, 0.05, 31, 29, -17, -21, clav=(0, 12), clav_l=STRIKE_CLAV_L), "ease"),
+        (9, _strike_pose(-0.28, 0.05, 32, 30, -17, -21, clav=(0, 12), clav_l=STRIKE_CLAV_L, hl=(0.30, -0.10, 0.16)),
+         "ease"),
         # Wrenched free and up, the free hand back to its fist.
         (15, body({"hips": {"pos": (0.0, -0.18, 0.04)},
                    "foot_l": {"pos": (0.20, 0.0, 0.20), "rot": (16, 0, 0)},
                    "foot_r": {"pos": (-0.21, 0.0, -0.20), "rot": (-24, 0, 0)},
-                   "hand_r": {**both, "arc": arc_of((-0.10, -0.26, 0.20)), "blade": _n(-0.3, 0.6, 0.7)},
+                   "hand_r": {**both, "arc": arc_of((-0.16, -0.24, 0.26)), "blade": _n(-0.3, 0.6, 0.7)},
                    "hand_l": {"arc": arc_of((0.04, -0.30, 0.16)), "pole": (0.7, -0.5, -0.3), "frame": "chest", "twist": 0.4},
                    "fingers_l": "fist", "fingers_r": "grip"},
                   hips=(0, 16, 0), spine=(0, 12, 0), neck=(0, -8, 0), head=(0, -10, 0)), "auto"),
@@ -1124,19 +1149,29 @@ def chain_strike(rig):
     R_lr, o_lr = _left_on_haft()
     hr, hl = rig.I["hand_r"], rig.I["hand_l"]
     corr = {}
+    best = {}   # by frame: (error, the corr that gave it); each frame's solve is its own, so the best re-aim is kept
     clip = None
     for it in range(L_ITER + 1):
         two = _two_hands(rig, second, (HOLD_FROM, HOLD_TO), FREE_AT, keep_right=True, corr=corr)
         clip = build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: two(fr, fwd(fr, pose)))
-        if it == L_ITER:
-            break
         g3, p3 = rig.sk.fk(clip.rot, clip.pos)
         for fr in range(HOLD_FROM, HOLD_TO + 1):
             Rr = qmatrix(g2[fr, hr])
             T, Tw = Rr @ R_lr, p2[fr, hr] + Rr @ o_lr
             A = qmatrix(g3[fr, hl])
             c0, w0 = corr.get(fr, (np.eye(3), np.zeros(3)))
-            corr[fr] = ((A.T @ T) @ c0, w0 + (Tw - p3[fr, hl]))
+            ang = math.degrees(math.acos(max(-1.0, min(1.0, (np.trace(A.T @ T) - 1) / 2))))
+            err = np.linalg.norm(Tw - p3[fr, hl]) * 1000 + ang   # mm + deg
+            if fr not in best or err < best[fr][0]:
+                best[fr] = (err, (c0, w0))
+            if it < L_ITER:
+                corr[fr] = ((A.T @ T) @ c0, w0 + (Tw - p3[fr, hl]))
+        if it == L_ITER:
+            break
+    if L_BEST and any(best[fr][1] is not corr.get(fr) for fr in best):
+        corr = {fr: b[1] for fr, b in best.items()}
+        two = _two_hands(rig, second, (HOLD_FROM, HOLD_TO), FREE_AT, keep_right=True, corr=corr)
+        clip = build("chain_strike", rig, keys, meta=meta, post=lambda fr, pose: two(fr, fwd(fr, pose)))
     return clip
 
 
