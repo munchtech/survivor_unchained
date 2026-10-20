@@ -22,6 +22,11 @@ The spruce (painterly realism: forms real, a little chunkier; the crown read fro
 whorls of drooping branches with up-turned tips on a straight trunk, each branch one to three
 bent spray cards, the crown a ragged narrow cone, a leader at the top. Vertex normals point out
 from the trunk (and up), so the crown shades as one mass, not as cards.
+
+The alder (--species alder; the kit's CommonTree_1-5): one to three stems from one foot, spreading
+branches, a rounded-oval crown of leaf-clump branchlets (leafspray: clumps of round blunt leaves,
+dark core, lit rim; a muted olive), lenticelled grey-brown bark (alder_bark), a lumpy shadow proxy.
+Its material Leaves_OwnAlder: KitLook gives it more flutter and its own hue floor.
 """
 import math
 import os
@@ -601,7 +606,7 @@ def shadow_proxy(H, R, seed):
     rng = np.random.default_rng(seed + 5)
     b = Build()
     hs = 0.55 + 0.03 * H
-    tiers = int(rng.integers(5, 9))
+    tiers = int(rng.integers(5, 8))
     cuts = np.sort(rng.uniform(0, 1, tiers - 1))
     hts = hs + (H - hs) * np.concatenate([[0], 0.82 * (np.arange(1, tiers) / tiers) + 0.18 * cuts])
     uv = (BU + 0.1, 0.5)
@@ -618,9 +623,11 @@ def shadow_proxy(H, R, seed):
             a = az0 + (i + rng.normal(0, 0.12)) * 2 * math.pi / (n * 3)
             ph = i % 3                     # a lobe: shoulder, tip, shoulder, then the notch
             rr = r * (rng.uniform(0.95, 1.12) if ph == 1 else rng.uniform(0.84, 0.92) if ph == 0 else rng.uniform(0.7, 0.78))
-            ring.append(np.array([math.cos(a) * rr, math.sin(a) * rr, h0 - (0.35 * rr if ph == 1 else 0.12 * rr)]))
+            ring.append(np.array([math.cos(a) * rr, math.sin(a) * rr, h0 - (0.14 * rr if ph == 1 else 0.05 * rr)]))
         ring.append(ring[0])
-        apex = np.array([0.0, 0.0, min(h0 + th * 1.35 + 0.3, H)])
+        # (the apex low, each tier a flat cone, so the tier above stands well out of it: seen from a low
+        # moon the tree's side is a deep sawtooth, a metre a tooth, that the moon's soft shadow keeps)
+        apex = np.array([0.0, 0.0, min(h0 + th * 1.1 + 0.1, H)])
         P = [ring, [apex] * len(ring)]
         N = [[np.array([0, 0, 1.0])] * len(ring)] * 2
         UV = [[uv] * len(ring)] * 2

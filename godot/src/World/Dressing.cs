@@ -180,7 +180,20 @@ public static class Dressing
     public static Node3D Flora(ZoneData z)
     {
         var root = new Node3D { Name = "Flora" };
+        // Our own trees gathered across the zone's groups (the kit's Pine_1 and Pine_3 are both spruce_a,
+        // its broadleaf and autumn CommonTrees both alders, in many groups): one set of cells per tree
+        // and look, not per group (E4c: the trees' draws). Ours keep their own greens (no recolour).
+        var flora = new List<ZoneData.FloraGroup>();
+        var merged = new Dictionary<(string, KitLook.Look), (string Kind, List<Transform3D> At)>();
         foreach (var g in z.Flora)
+        {
+            if (!g.Piece.StartsWith("own:")) { flora.Add(g); continue; }
+            var look = g.Look with { LeafA = null, LeafB = null, LeafAmount = 0 };
+            if (!merged.TryGetValue((g.Piece, look), out var mg)) merged[(g.Piece, look)] = mg = (g.Kind, new());
+            mg.At.AddRange(g.At);
+        }
+        foreach (var ((piece, look), (kind, at)) in merged) flora.Add(new ZoneData.FloraGroup(kind, piece, [.. at], look));
+        foreach (var g in flora)
         {
             var low = Low.Contains(g.Kind);
             if (g.Piece.StartsWith("scan:"))
@@ -244,8 +257,19 @@ public static class Dressing
                     var jit = new Basis(Vector3.Up, h1 * Mathf.Tau).Scaled(new Vector3(0.85f + 0.3f * h2, 0.85f + 0.3f * h3, 0.85f + 0.3f * h2));
                     shAt.Add(t * new Transform3D(jit, Vector3.Zero));
                 }
-                var sh = Mmi(lods[3], "shadow", shAt); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
-                root.AddChild(sh);
+                // (the shadows in cells twice as wide: a light's view culls them by cell, not the whole zone at once)
+                var shCells = new Dictionary<(int, int), List<Transform3D>>();
+                foreach (var t in shAt)
+                {
+                    var k = (Mathf.FloorToInt(t.Origin.X / (2 * OwnCell)), Mathf.FloorToInt(t.Origin.Z / (2 * OwnCell)));
+                    if (!shCells.TryGetValue(k, out var l)) shCells[k] = l = new();
+                    l.Add(t);
+                }
+                foreach (var ((cx, cz), at) in shCells)
+                {
+                    var sh = Mmi(lods[3], $"shadow_{cx}_{cz}", at); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+                    root.AddChild(sh);
+                }
                 continue;
             }
             foreach (var (mesh, local) in PartsOf("nature", g.Piece))

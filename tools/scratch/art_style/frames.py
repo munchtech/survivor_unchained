@@ -19,7 +19,8 @@ TP = r"C:\Users\munch\Desktop\survivorsunchained\tools\turn.py"
 HER = ["--quick", "warden", "--sex", "female", "--preset", "own", "--skin", "fair", "--eyes", "moss", "--hair", "braid", "--seed", "7", "--nohud", "--no-labels"]
 NIGHT = ["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle"]
 SETS = {
-    "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24"], 3),
+    # (E4c: the fourth spot by the square's trees, -6,-12, so the town shows them)
+    "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24;-7,-7"], 4),
     "ford": (NIGHT + ["--spots", "-7.5,87.5;3,64;9,40;0,-38;-2,-72;0,-37;-7,-46"], 7),
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)

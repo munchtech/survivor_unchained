@@ -130,7 +130,9 @@ public static class KitLook
         // (the vertex colour is their occlusion, read in OWN_FOLIAGE, not paint)
         if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); m.SetShaderParameter("use_vcolor", false); }
         // (our alder, a broadleaf: its leaves flutter more than needles, and its olive is held off yellow under a low sun)
+        // (the floors are set above the hue wanted on screen, ~100 and ~88: the grade warms them by 8-12 degrees, measured at roaddawn)
         if (mine && s.ResourceName.Contains("Alder")) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 86f); }
+        else if (mine) m.SetShaderParameter("hue_floor", 108f);
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         // (ours keep their own greens: the kit's autumn recolour gave gold tops, cut for the cinematics)
         if (foliage && !mine && look.LeafA is Color a && look.LeafB is Color b)
