@@ -1044,7 +1044,7 @@
    "layer": "full"
   },
   {
-   "clip": "run_arcanist_town",
+   "clip": "run_arcanist_wand_town",
    "plays_for": "(not in the plan)",
    "status": "made",
    "fallback": "-",
@@ -1092,7 +1092,7 @@
    "layer": "full"
   },
   {
-   "clip": "sprint_arcanist_town",
+   "clip": "sprint_arcanist_wand_town",
    "plays_for": "(not in the plan)",
    "status": "made",
    "fallback": "-",

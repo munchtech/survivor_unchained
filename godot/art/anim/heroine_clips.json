@@ -306,16 +306,6 @@
 		"source": "keyed (tools/anim)",
 		"weapon": "staff"
 	},
-	"idle_arcanist_staff_town": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
-		"layer": "full",
-		"length": 5.69999980926514,
-		"licence": "CC BY 4.0",
-		"loop": true,
-		"source": "100STYLE WiggleHips_ID frames 876-1218 (60 fps)",
-		"speed": 0.0,
-		"weapon": "staff"
-	},
 	"idle_arcanist_town": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
 		"layer": "full",
@@ -493,17 +483,6 @@
 		"steps": 2.0,
 		"weapon": "staff"
 	},
-	"run_arcanist_town": {
-		"cycle": 0.666666666666667,
-		"layer": "full",
-		"length": 0.666666686534882,
-		"licence": "own work",
-		"loop": true,
-		"source": "keyed (tools/anim/gait.py)",
-		"speed": 5.1,
-		"steps": 2.0,
-		"weapon": ""
-	},
 	"run_arcanist_wand": {
 		"cycle": 0.666666666666667,
 		"layer": "full",
@@ -514,6 +493,17 @@
 		"speed": 5.1,
 		"steps": 2.0,
 		"weapon": "wand"
+	},
+	"run_arcanist_wand_town": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": ""
 	},
 	"run_reaver": {
 		"cycle": 0.633333333333333,
@@ -638,17 +628,6 @@
 		"steps": 2.0,
 		"weapon": "staff"
 	},
-	"sprint_arcanist_town": {
-		"cycle": 0.666666666666667,
-		"layer": "full",
-		"length": 0.666666686534882,
-		"licence": "own work",
-		"loop": true,
-		"source": "keyed (tools/anim/gait.py)",
-		"speed": 7.395,
-		"steps": 2.0,
-		"weapon": ""
-	},
 	"sprint_arcanist_wand": {
 		"cycle": 0.666666666666667,
 		"layer": "full",
@@ -659,6 +638,17 @@
 		"speed": 7.395,
 		"steps": 2.0,
 		"weapon": "wand"
+	},
+	"sprint_arcanist_wand_town": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": ""
 	},
 	"sprint_reaver": {
 		"cycle": 0.633333333333333,
