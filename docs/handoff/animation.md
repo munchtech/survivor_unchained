@@ -2,7 +2,25 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
-## 0000000000. Paused here (animation 43, 20 October 2026, early, coordinator wind-down); next:
+## 00000000000. MR READY (animation 44, 20 October 2026); next: idle life
+Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. Files are in `tools/scratch/anim40/`.
+
+**Item 2, her attack poses: DONE under the hard stop.**
+- Solver 7c built the runs (9c936c18 call 8 wand free fist; 994023f8 call 9 axes run, the second axe hanging at her side).
+- Max judge r4 (`judge_atk_r4.md`, verdict `judge_atk_r4_verdict.md`): 14 PASS, 5 FAIL-KNOWN, 3 CUT.
+  - FAIL-KNOWN: each passes the gate and beats r3, so r4 ships. The verdict has the later fixes.
+  - CUT: chain_strike f3-f9. Integration's version failed r1, so the clip is GATED OFF. The Grapple landing plays her heavy blow (PlayerView, 1b8b7215), and chain_strike stays in the library unplayed.
+- Checks (`final44/`):
+  - audit: 17 flags, all at the blow frames, as the solvers had them;
+  - armscheck: 0 mm (axe_heavy with the irrelevant `axes` set: 12 mm into the calf, but that pairing never plays);
+  - motion --outfits: unchanged from the solvers' after-runs; cast_flick is better;
+  - fistfit: axe 24/24, wand 3/3;
+  - dotnet: see the MR message.
+- Later items: chain_strike (one-handed, or a sliding grip plus a looser wrist); the five KNOWN fixes in the r4 verdict; [face] an effort face on the swings; [outfit] the loincloth in crouches; [light] no contact shadow at 0.6.
+
+**Next: idle life** (OWNER_NOTES 19 Oct "Natural idles"; the bar and the plan are in section 0000000000 below, "Next item after the MR").
+
+## 0000000000. Paused here (animation 43, 20 October 2026, early); superseded by 44 above:
 Branch `anim-40`, worktree `.claude/worktrees/anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Integration merged at a40cba09. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json or *.import. All files below are in `tools/scratch/anim40/`. No solver is running and no turns are held.
 
 **Item 2, her attack poses.**
