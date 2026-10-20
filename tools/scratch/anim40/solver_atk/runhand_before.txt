@@ -1,0 +1,4 @@
+run_reaver             fwd end f0: hand_l [15 21 28]  (min x 15, y at fwd 21)  legs 32db59dd0c
+sprint_reaver          fwd end f0: hand_l [14 20 31]  (min x 14, y at fwd 20)  legs 26bed03f28
+run_arcanist_wand      fwd end f0: hand_l [12 16 24]  (min x 12, y at fwd 16)  legs b9b89e9d35
+sprint_arcanist_wand   fwd end f0: hand_l [11 16 26]  (min x 11, y at fwd 16)  legs cee4fd0245
