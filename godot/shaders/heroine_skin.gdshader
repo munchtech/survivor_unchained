@@ -31,6 +31,10 @@ uniform float pore_depth = 0.6;
 uniform sampler2D grain : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float grain_amount = 0.0;
 uniform float rough = 0.5;
+// A package's roughness map (Marionette NPCs: People.NpcSkin), ABSOLUTE roughness in rough_channel (0 R, 1 G, 2 B, 3 A, else R as grey);
+// it multiplies `rough`, so NpcSkin sets rough 1.0 with it. Unset it is white (1.0): hers is unchanged.
+uniform sampler2D rough_map : hint_default_white, filter_linear_mipmap;
+uniform int rough_channel = 1;
 uniform float shine = 0.42;
 uniform float scatter = 0.38;
 // The soft rim the fine down on skin gives against a light from behind.
@@ -444,7 +448,9 @@ void fragment() {
 		NORMAL_MAP_DEPTH = depth;
 	}
 	float edge = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
-	ROUGHNESS = clamp(mix(seam_rough, rough, hw) + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
+	vec4 rm = texture(rough_map, UV);
+	float rmv = rough_channel == 0 ? rm.r : (rough_channel == 1 ? rm.g : (rough_channel == 2 ? rm.b : (rough_channel == 3 ? rm.a : rm.r)));
+	ROUGHNESS = clamp(mix(seam_rough, rough * rmv, hw) + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	// (no sheen where her head's own shade is deep: in the crease where her
 	// lips meet and the mouth behind, the rim light's reflection on her lips'
 	// inner linings showed as white slivers along their line at a turn)

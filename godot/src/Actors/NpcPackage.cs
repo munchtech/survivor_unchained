@@ -26,7 +26,7 @@ public static class NpcPackage
     public const string Prefix = "npc:";
 
     public sealed record Piece(string Id, string Slot, string File, Variant Hide);
-    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces);
+    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null);
 
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
@@ -61,8 +61,17 @@ public static class NpcPackage
                 var keep = only.Split(',');
                 pieces.RemoveAll(p => !keep.Contains(p.Id));
             }
+            // (its hair: one of her styles carried onto its head, hair/STYLE.glb, and the colour it is dyed; a crop is painted on its head)
+            string? hairFile = null; Color? hairColour = null;
+            if (d.TryGetValue("hair", out var hv) && hv.VariantType == Variant.Type.Dictionary)
+            {
+                var h = hv.AsGodotDictionary();
+                if (h.TryGetValue("file", out var hf) && hf.VariantType == Variant.Type.String) hairFile = (string)hf;
+                if (h.TryGetValue("colour", out var hc) && hc.VariantType == Variant.Type.String) hairColour = new Color((string)hc);
+            }
             m = new Manifest(d.TryGetValue("name", out var n) ? (string)n : name, d.TryGetValue("sex", out var sx) ? (string)sx : "male",
-                d.TryGetValue("height", out var ht) ? (double)ht : 0, d.TryGetValue("joints", out var j) ? (int)j : 0, pieces);
+                d.TryGetValue("height", out var ht) ? (double)ht : 0, d.TryGetValue("joints", out var j) ? (int)j : 0, pieces, hairFile, hairColour, d.TryGetValue("baked", out var bk) && bk.VariantType == Variant.Type.Bool && (bool)bk,
+                d.TryGetValue("lod", out var lv) && lv.VariantType == Variant.Type.Dictionary && lv.AsGodotDictionary().TryGetValue("file", out var lf) && lf.VariantType == Variant.Type.String ? (string)lf : null);
         }
         return manifests[name] = m;
     }
@@ -72,7 +81,11 @@ public static class NpcPackage
     {
         yield return $"{Dir(name)}/body.glb";
         if (Read(name) is { } m)
+        {
             foreach (var p in m.Pieces) yield return $"{Dir(name)}/{p.File}";
+            if (m.HairFile != null) yield return $"{Dir(name)}/{m.HairFile}";
+            if (m.Baked && m.LodFile != null) yield return $"{Dir(name)}/{m.LodFile}";
+        }
     }
 
     static PackedScene? Scene(string file)
@@ -95,8 +108,12 @@ public static class NpcPackage
             person.Meshes.Add(mi);
             mi.Layers = 2;
             // (its vertex colours, where a part has them (the mouth's depth, the tongue's shade), are data, not colour)
+            if (m.Baked) { BakedSurfaces(person, mi, m); continue; }
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D bm && bm.VertexColorUseAsAlbedo)
+                // (its skin as skin: the game's skin shader on the package's own maps, the same on body and head, People.NpcSkin)
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D sk && sk.ResourceName is "skin" or "skin_head")
+                    mi.SetSurfaceOverrideMaterial(s, People.NpcSkin(sk, mi.Mesh, m.Sex == "female"));
+                else if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D bm && bm.VertexColorUseAsAlbedo)
                 {
                     var c = (BaseMaterial3D)bm.Duplicate();
                     c.VertexColorUseAsAlbedo = false;
@@ -104,11 +121,12 @@ public static class NpcPackage
                 }
         }
 
-        // The pieces, each from its own file onto the body's skeleton, drawn as hers are.
+        // A baked package is one mesh already (clothes and hair in it, the covered skin deleted, Godot's import LODs on it):
+        // no pieces, no LOD pairing, no merge, no hide, no hair file.
         var laid = new List<MeshInstance3D>();
         var lodPairs = new List<(MeshInstance3D Full, MeshInstance3D Lod)>();
         var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
-        foreach (var piece in m.Pieces)
+        foreach (var piece in m.Baked ? new List<Piece>() : m.Pieces)
         {
             if (Scene($"{Dir(name)}/{piece.File}") is not { } ps) continue;
             var scene = ps.Instantiate<Node3D>();
@@ -120,14 +138,11 @@ public static class NpcPackage
             MeshInstance3D? shadow = null;
             foreach (var mi in meshes)
             {
-                var n = mi.Name.ToString().Replace('.', '_');
-                var rest = n.StartsWith(id + "_") ? n[(id.Length + 1)..] : n;
-                int us = rest.IndexOf('_');
-                string part = us < 0 ? rest : rest[..us], mat = us < 0 ? "" : rest[(us + 1)..];
+                var (part, mat) = MeshPart(mi.Name.ToString(), piece.Id, piece.Slot);
                 if (from != null && mi.Skin != null) mi.Skin = Rebind(mi.Skin, from, skel, $"{name}/{piece.Id}");
                 if (part == "shadow") shadow = mi;
                 else if (part == "lod1") lods[mat] = mi;
-                else { full[mat] = mi; }
+                else if (!full.TryAdd(mat, mi)) full[mat + "#" + full.Count] = mi;   // (never one mesh over another: every mesh is laid)
             }
             MeshInstance3D? anyFull = null;
             foreach (var (mat, mi) in full)
@@ -166,17 +181,111 @@ public static class NpcPackage
         }
         if (laid.Count > 0) HerLod.For(person)?.Merge(laid);
 
+        // Its hair, drawn as hers is (People.Hair: her hair shaders, dyed the manifest's colour), on its Head; static
+        // (no sway at tier 2).
+        if (!m.Baked && m.HairFile != null && Scene($"{Dir(name)}/{m.HairFile}") is { } hs)
+        {
+            var scene = hs.Instantiate<Node3D>();
+            var from = scene.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().FirstOrDefault();
+            foreach (var mi in scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().ToList())
+            {
+                if (from != null && mi.Skin != null) mi.Skin = Rebind(mi.Skin, from, skel, $"{name}/hair");
+                mi.GetParent().RemoveChild(mi);
+                mi.Owner = null;
+                skel.AddChild(mi);
+                mi.Skeleton = "..";
+                mi.Layers = 2;
+                person.Meshes.Add(mi);
+                person.Hair.Add(mi);
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
+                        mi.SetSurfaceOverrideMaterial(s, People.Hair(src, m.HairColour ?? People.HisHairColour));
+            }
+            scene.Free();
+        }
+
+        if (m.Baked && m.LodFile != null) BakedLod(person, name, m);
+
         // The skin under the pieces, dropped.
-        Hide(person, name, m);
+        if (!m.Baked) Hide(person, name, m);
 
         // Her twist and share bones (and any others the rig's helpers name), driven from the pose the clips make.
         skel.AddChild(new HerJoints());
+        skel.AddChild(new NpcHeadLevel()); // package NPCs only: head kept level under the heroine's clips
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", People.Clips());
         if (FolkClips.Library() is AnimationLibrary folk) person.Anim.AddAnimationLibrary("folk", folk);
         GD.Print($"npc: {name} ({m.Sex}, {skel.GetBoneCount()} bones), {m.Pieces.Count} pieces, {laid.Count} meshes laid");
         return person;
+    }
+
+    /// <summary>A baked package's mesh, surface by surface by its source material's name: "skin" and "skin_head" the
+    /// package's skin; a name starting "hair" her hair (dyed the manifest's colour, the mesh listed in person.Hair); any other
+    /// vertex-colour material as data; every other surface as a laid piece's (People.Fur, People.OutfitMaterials).</summary>
+    static void BakedSurfaces(People.Person person, MeshInstance3D mi, Manifest m)
+    {
+        bool hair = false;
+        for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+        {
+            if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src) continue;
+            if (src.ResourceName is "skin" or "skin_head") mi.SetSurfaceOverrideMaterial(s, People.NpcSkin(src, mi.Mesh, m.Sex == "female"));
+            else if (src.ResourceName.StartsWith("hair"))
+            {
+                mi.SetSurfaceOverrideMaterial(s, People.Hair(src, m.HairColour ?? People.HisHairColour));
+                hair = true;
+            }
+        }
+        if (hair) person.Hair.Add(mi);
+        // (surfaces with a material laid already are skipped by both)
+        People.Fur(mi);
+        People.OutfitMaterials(mi);
+        for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+            if (mi.GetSurfaceOverrideMaterial(s) == null && mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D bm && bm.VertexColorUseAsAlbedo)
+            {
+                var c = (BaseMaterial3D)bm.Duplicate();
+                c.VertexColorUseAsAlbedo = false;
+                mi.SetSurfaceOverrideMaterial(s, c);
+            }
+    }
+
+    /// <summary>A baked package's gameplay model (lod.glb: mesh "lod", and "lod_shadow" of one "shadow" surface) on the
+    /// body's skeleton, each surface drawn as the body's surface of the same material name; switched with the full meshes
+    /// by visibility range at 18 m (--npc-lod off: always full, on: always lod, auto).</summary>
+    static void BakedLod(People.Person person, string name, Manifest m)
+    {
+        string mode = Args.Get("npc-lod") is string a && a is "off" or "on" ? Args.Get("npc-lod")! : "auto";
+        if (Scene($"{Dir(name)}/{m.LodFile}") is not { } ps) return;
+        var scene = ps.Instantiate<Node3D>();
+        var from = scene.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().FirstOrDefault();
+        var byMat = new Dictionary<string, Material>();
+        foreach (var bm in person.Meshes)
+            for (int s = 0; s < bm.Mesh.GetSurfaceCount(); s++)
+                if (bm.Mesh.SurfaceGetMaterial(s) is { } sm && sm.ResourceName != "" && !byMat.ContainsKey(sm.ResourceName)
+                    && (bm.GetSurfaceOverrideMaterial(s) ?? sm) is { } use) byMat[sm.ResourceName] = use;
+        if (mode == "auto")
+            foreach (var bm in person.Meshes) { bm.VisibilityRangeEnd = 18; bm.VisibilityRangeEndMargin = 1; }
+        if (mode == "on") foreach (var bm in person.Meshes) bm.Visible = false;
+        foreach (var mi in scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().ToList())
+        {
+            string n = mi.Name.ToString();
+            bool shadow = n == "lod_shadow";
+            if (!shadow && n != "lod") continue;
+            if (from != null && mi.Skin != null) mi.Skin = Rebind(mi.Skin, from, person.Skeleton, $"{name}/{n}");
+            mi.GetParent().RemoveChild(mi);
+            mi.Owner = null;
+            person.Skeleton.AddChild(mi);
+            mi.Skeleton = "..";
+            mi.Layers = 2;
+            if (!shadow)
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.Mesh.SurfaceGetMaterial(s) is { } sm && byMat.TryGetValue(sm.ResourceName, out var use)) mi.SetSurfaceOverrideMaterial(s, use);
+            if (shadow) mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+            else mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+            if (mode == "off") mi.Visible = false;
+            else if (mode == "auto") { mi.VisibilityRangeBegin = 18; mi.VisibilityRangeBeginMargin = 1; }
+        }
+        scene.Free();
     }
 
     /// <summary>A piece's skin as the body's skeleton has it: each bind to a bone the body lacks moved to that bone's
@@ -202,6 +311,20 @@ public static class NpcPackage
         }
         if (told.Add(what)) GD.Print($"npc: {what} bound to the body's bones ({string.Join(", ", moved)})");
         return s;
+    }
+
+    /// <summary>A piece mesh's part ("" a full mesh, "lod1", "shadow") and material, from its name: ID.MAT (Marionette's
+    /// pieces, as her outfits name theirs: ranger.top.darkleather), ID.SLOT.MAT, ID.lod1.MAT or ID.shadow (Godot's import
+    /// may write the dots as underscores). Before 20 Oct an ID.MAT name was read as part MAT with no material, so every
+    /// mesh of a piece went to one key and only its last was laid (the villager's ranger.top showed its thread alone).</summary>
+    public static (string Part, string Mat) MeshPart(string meshName, string id, string slot)
+    {
+        string n = meshName.Replace('.', '_'), i = id.Replace('.', '_');
+        var rest = n.StartsWith(i + "_") ? n[(i.Length + 1)..] : n;
+        if (rest == "shadow") return ("shadow", "");
+        if (rest.StartsWith("lod1_")) return ("lod1", rest[5..]);
+        if (slot.Length > 0 && rest.StartsWith(slot.Replace('.', '_') + "_")) rest = rest[(slot.Length + 1)..];
+        return ("", rest);
     }
 
     /// <summary>Every piece's hidden skin dropped from the body mesh's "skin" surface, once a session.</summary>
