@@ -89,13 +89,6 @@ public static class WeaponSockets
     public static readonly Vector3 FistAtR = new(-0.0326f, 0.0841f, -0.0104f);
     public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.2116f, 0.4141f, 0.8853f));
 
-    /// <summary>How far a staff slides down through her fist when she is sheathed (in town; m, hand_r's space, along
-    /// FistDirR): a walking staff, her hand up its plain shaft (13 mm round there, as at the drawn grip) so its butt
-    /// reaches the ground with her arm hanging (tools/anim/clips/idle.py STAFF_WALK, idle_arcanist_staff_town). Drawn,
-    /// the grip at 0.45 of its length leaves the butt 75 cm under her wrist: off the ground by 20 cm or more even with the
-    /// arm straight.</summary>
-    public const float StaffWalk = 0.26f;
-
     /// <summary>The line her right fist closes round on a one-handed blade (tools/anim/keyed.py WRAP["sword"]), in hand_r's
     /// space: where the blade's grip point (Arms.Spec.Grip along its long axis) lands, and the shaft's direction, pommel
     /// toward blade. The shaft keeps the diagonal grip her sword clips are keyed to (keyed.py GRIP["sword"], Arms.Spec.Lean

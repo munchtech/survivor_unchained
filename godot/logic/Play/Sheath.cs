@@ -33,7 +33,15 @@ public sealed class Sheath
 
     /// <summary>Whether a calling holding a kind has a town stand (and so sheathes in a safe place).</summary>
     public static bool HasTown(string calling, string kind, System.Func<string, bool> has) =>
-        has($"idle_{calling}_{kind}_town") || has($"idle_{calling}_town");
+        has($"idle_{calling}_{kind}_town") || (!StaysInHand(kind) && has($"idle_{calling}_town"));
+
+    /// <summary>A kind with no sheathed socket (today the staff) stays in her hand, so the calling's town stand, made
+    /// for empty hands, does not do for it.</summary>
+    static bool StaysInHand(string kind)
+    {
+        var k = WeaponSockets.Parse(kind);
+        return k != WeaponKind.None && WeaponSockets.SocketOf(k) == null;
+    }
 
     /// <summary>A new place: sheathed at once where it is safe, drawn otherwise.</summary>
     public void Enter(bool safe)

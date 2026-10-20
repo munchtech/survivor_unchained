@@ -446,7 +446,7 @@ def staff_town(t, f):
     return d
 
 
-TOWN["arcanist_staff_town"] = staff_town
+# (staff_town is not shipped: it needs a walking-staff fist fit, a later item.)
 TOWN_WINDOW = {"reaver_town": (0, 8), "arcanist_town": (4, 12), "stalker_town": (9, 16)}
 
 
@@ -485,13 +485,12 @@ IDLES = {
     "idle_reaver_town": ("WiggleHips", TOWN["reaver_town"], ""),
     "idle_arcanist_town": ("WiggleHips", TOWN["arcanist_town"], ""),
     "idle_stalker_town": ("WiggleHips", TOWN["stalker_town"], ""),
-    "idle_arcanist_staff_town": ("WiggleHips", staff_town, "staff"),
 }
 
 
 _bases = {}
 # An idle that stands on another's captured base (the same standing, other arms).
-SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_arcanist_staff_town": "arcanist_town"}
+SHARES_BASE = {"idle_stalker_daggers": "stalker"}
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the

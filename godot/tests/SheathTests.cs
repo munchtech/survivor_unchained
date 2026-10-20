@@ -126,4 +126,14 @@ public class SheathTests
         Assert.False(Sheath.HasTown("arcanist", "wand", have.Contains));
         Assert.False(Sheath.HasTown("reaver", "axe", have.Contains));
     }
+
+    [Fact]
+    public void AStaffStaysInHerHandSoTheCallingsTownStandIsNotItsOwn()
+    {
+        var have = new System.Collections.Generic.HashSet<string> { "idle_arcanist_town" };
+        Assert.False(Sheath.HasTown("arcanist", "staff", have.Contains));
+        Assert.True(Sheath.HasTown("arcanist", "wand", have.Contains));
+        foreach (var kind in new[] { "axe", "axes", "sword", "daggers", "crossbow", "sword+shield" })
+            Assert.True(Sheath.HasTown("arcanist", kind, have.Contains), kind);
+    }
 }

@@ -31,7 +31,7 @@ SPRINT_SWING = (5, -3, 1.25, -3)
 # A fifth number: the free (left) upper arm's out, both ends, +deg. The axes sprint's hung second axe 5 in: at the run's 14 (+1 back)
 # the sprint's elbow swung round 25 deg further out, the forearm turned in, and the head came in onto her knee (anim 44
 # solver 7c).
-SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8, -3, 1.25, -3, -5)}
+SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8, -3, 1.25, -3, -5), "run_reaver_town": (5, -3, 1.25, -3, 3), "run_stalker_town": (5, -3, 1.25, -3, 8)}
 
 
 # The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).

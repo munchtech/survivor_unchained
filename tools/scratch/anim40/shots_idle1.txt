@@ -16,12 +16,6 @@ arw0_m|arcanist|-|idle_arcanist_town@0.0|day|0.6|315|female
 arw25_m|arcanist|-|idle_arcanist_town@1.417|day|0.6|315|female
 arw50_m|arcanist|-|idle_arcanist_town@2.833|day|0.6|315|female
 arw75_m|arcanist|-|idle_arcanist_town@4.25|day|0.6|315|female
-ars_c|arcanist|ember_staff|idle_arcanist_staff_town@0.0|day|1|315|female
-ars_p|arcanist|ember_staff|idle_arcanist_staff_town@0.0|day|0|315|female
-ars0_m|arcanist|ember_staff|idle_arcanist_staff_town@0.0|day|0.6|315|female
-ars25_m|arcanist|ember_staff|idle_arcanist_staff_town@1.417|day|0.6|315|female
-ars50_m|arcanist|ember_staff|idle_arcanist_staff_town@2.833|day|0.6|315|female
-ars75_m|arcanist|ember_staff|idle_arcanist_staff_town@4.25|day|0.6|315|female
 stc_c|stalker|-|idle_stalker_town@0.0|day|1|315|female
 stc_p|stalker|-|idle_stalker_town@0.0|day|0|315|female
 stc0_m|stalker|-|idle_stalker_town@0.0|day|0.6|315|female
