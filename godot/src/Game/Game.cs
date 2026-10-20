@@ -1780,6 +1780,7 @@ public partial class Game : Node, IZoneHost
                     foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("brush")) Brush.Paused = !on;
                 if (flipped.Contains("fx")) scene.Fx.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
                 if (flipped.Contains("labels")) labelsOff = !on;

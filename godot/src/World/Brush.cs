@@ -19,6 +19,8 @@ public partial class Brush : Node
     public static readonly Spec? On = Spec.Parse(SurvivorUnchained.Args.Get("brush") is string b ? (b == "1" ? "" : b) : null);
     /// <summary>The layer her meshes carry as well while the filter is on (20; the mask viewport's only layer).</summary>
     public const uint MaskLayer = 1u << 19;
+    /// <summary>The filter and its mask view paused (--perf-flip brush).</summary>
+    public static bool Paused;
     public const string HerGroup = "player_view";
 
     public sealed class Spec
@@ -115,6 +117,11 @@ public partial class Brush : Node
     void Sync()
     {
         if (mask == null || maskCam == null) return;
+        // (--perf-flip brush: the filter and its mask view off and on, for a measured cost)
+        var mode = Paused ? SubViewport.UpdateMode.Disabled : SubViewport.UpdateMode.Always;
+        if (mask.RenderTargetUpdateMode != mode) mask.RenderTargetUpdateMode = mode;
+        if (effect.Enabled == Paused) effect.Enabled = !Paused;
+        if (Paused) return;
         var cam = GetViewport().GetCamera3D();
         if (cam != on)
         {
