@@ -29,6 +29,8 @@ public static class Dressing
     static readonly Dictionary<string, string> OwnFor = new()
     {
         ["Pine_1"] = "own:spruce_a", ["Pine_3"] = "own:spruce_a", ["Pine_2"] = "own:spruce_b", ["Pine_5"] = "own:spruce_b", ["Pine_4"] = "own:spruce_c",
+        // (the kit's CommonTrees, broadleaf and autumn, as our alders: 1 and 5 stand 7 m, 2 7.4 m, 3 and 4 9.2 m)
+        ["CommonTree_1"] = "own:alder_a", ["CommonTree_5"] = "own:alder_a", ["CommonTree_2"] = "own:alder_b", ["CommonTree_3"] = "own:alder_c", ["CommonTree_4"] = "own:alder_c",
     };
     public static string Own(string piece) => FloraOwn && OwnFor.TryGetValue(piece, out var o) ? o : piece;
 
@@ -232,7 +234,17 @@ public static class Dressing
                     root.AddChild(l0); root.AddChild(l1); root.AddChild(l2);
                 }
                 // (cast as the kit's pines are: by the key and by a lamp in reach, every one of them)
-                var sh = Mmi(lods[3], "shadow", new List<Transform3D>(g.At)); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+                // Each tree's shadow its own (judge E4b: the camp's night shadows stood as identical blades):
+                // the proxy turned about the trunk and stretched by its own hash, length and width within 15%.
+                var shAt = new List<Transform3D>(g.At.Length);
+                foreach (var t in g.At)
+                {
+                    float h1 = Mathf.PosMod(Mathf.Sin(t.Origin.X * 12.9898f + t.Origin.Z * 78.233f) * 43758.5453f, 1f);
+                    float h2 = Mathf.PosMod(h1 * 91.7f + 0.31f, 1f), h3 = Mathf.PosMod(h1 * 57.3f + 0.67f, 1f);
+                    var jit = new Basis(Vector3.Up, h1 * Mathf.Tau).Scaled(new Vector3(0.85f + 0.3f * h2, 0.85f + 0.3f * h3, 0.85f + 0.3f * h2));
+                    shAt.Add(t * new Transform3D(jit, Vector3.Zero));
+                }
+                var sh = Mmi(lods[3], "shadow", shAt); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
                 root.AddChild(sh);
                 continue;
             }

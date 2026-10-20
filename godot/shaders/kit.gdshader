@@ -40,8 +40,20 @@ global uniform vec4 view_from;
 
 #ifdef OWN_FOLIAGE
 // The key light's kind for our own trees (Atmosphere sets it): x how much it is the moon (0 by day,
-// 1 at night), y how much a low warm sun (dawn, dusk).
+// 1 at night), y how much a low warm sun (dawn, dusk); z, w the key's red and blue against its
+// green (linear), so the needles' back light and their lit tips can be held to a hue.
 global uniform vec4 flora_light;
+// (a species' own: its leaves' flutter in the wind, the spruce's 1; the warmest hue its sunlit
+// tips may take under a low sun, sRGB degrees)
+uniform float flutter = 1.0;
+uniform float hue_floor = 100.0;
+
+float hue_of(vec3 c) {
+	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
+	if (d < 1e-5) return 120.0;
+	float h = mx == c.r ? mod((c.g - c.b) / d, 6.0) : mx == c.g ? (c.b - c.r) / d + 2.0 : (c.r - c.g) / d + 4.0;
+	return h * 60.0;
+}
 
 vec3 hue_turn(vec3 c, float a) {
 	vec3 k = vec3(0.57735);
@@ -105,7 +117,12 @@ void vertex() {
 #ifdef OWN_FOLIAGE
 	// (our own trees, env_trees.py: each branch's needles flutter on their own, more toward
 	// the branch's end; the bark strip, u > .75, stands with the trunk)
-	if (UV.x < 0.75) VERTEX.y += sin(TIME * 2.7 + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * wind * length(VERTEX.xz);
+	// (a broadleaf's leaves, flutter > 1, flutter faster and every way, not only up and down)
+	if (UV.x < 0.75) {
+		float fr = length(VERTEX.xz) * wind;
+		VERTEX.y += sin(TIME * (2.7 + 1.6 * (flutter - 1.0)) + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * flutter * fr;
+		VERTEX.xz += vec2(sin(TIME * 4.3 + dot(VERTEX, vec3(2.1, 1.3, 0.9))), cos(TIME * 3.7 + dot(VERTEX, vec3(0.8, 1.9, 1.7)))) * 0.02 * max(flutter - 1.0, 0.0) * fr;
+	}
 #endif
 	VERTEX.x += sway;
 	VERTEX.z += sway * 0.5;
@@ -195,19 +212,27 @@ void fragment() {
 	float night = flora_light.x, low_sun = flora_light.y;
 	float open_ = COLOR.r;
 	if (UV.x < 0.75) {
-		// each tree its own green: hue within 4 degrees, value within 10% (two hashes, not one)
+		// each tree its own green: hue within 7 degrees (olive to blue-green), value within 13% (two hashes, not one)
 		float j2 = fract(v_jit * 7.31 + 0.37);
-		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-4.0, 4.0, v_jit))), vec3(0.0)) * mix(0.9, 1.1, j2);
+		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-7.0, 7.0, v_jit))), vec3(0.0)) * mix(0.87, 1.13, j2);
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
 		float tip = smoothstep(0.55, 1.0, COLOR.g) * smoothstep(0.75, 1.0, COLOR.r);
 		float lum = dot(ALBEDO, LW);
 		ALBEDO = mix(ALBEDO, vec3(lum) * vec3(0.8, 1.0, 1.16), 0.28 * low_sun * (1.0 - tip));
+		// under a low sun the sunlit needles no warmer than hue_floor (sun x needle went yellow, judge E4b):
+		// the hue the key gives them (sRGB, about) turned back up to it
+		vec3 key = flora_light.z > 0.0 ? clamp(vec3(flora_light.z, 1.0, flora_light.w), vec3(0.2), vec3(5.0)) : vec3(1.0);
+		float hl = hue_of(sqrt(max(ALBEDO * key, vec3(0.0))));
+		ALBEDO = max(hue_turn(ALBEDO, radians(clamp(hue_floor - hl, 0.0, 60.0) * low_sun)), vec3(0.0));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
 		ALBEDO *= mix(mix(0.5, 0.6, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
-		// light through the needles from behind; under the moon a third of it, deep blue-green
-		BACKLIGHT = ALBEDO * mix(vec3(0.18, 0.22, 0.24), vec3(0.04, 0.07, 0.065), night) * open_;
+		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
+		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
+		// the key's tint taken back out; under the moon a third of it, deep blue-green
+		float bl = dot(ALBEDO * vec3(0.18, 0.22, 0.24) * key, LW) / dot(vec3(0.45, 1.0, 0.53), LW);
+		BACKLIGHT = mix(vec3(0.45, 1.0, 0.53) * bl / key, ALBEDO * vec3(0.04, 0.07, 0.065), night) * open_;
 		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
 		// shut out; at night the needles take less of the moonlit sky still)
 		AO = mix(0.5, 0.36, night) * mix(0.45, 1.0, open_);

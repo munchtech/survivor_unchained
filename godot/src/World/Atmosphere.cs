@@ -233,7 +233,8 @@ public partial class Atmosphere : Node3D
         var kc = C(p.KeyColor);
         float moon = Mathf.Clamp((kc.B - kc.R) * 4f, 0f, 1f);
         float lowSun = Mathf.Clamp((kc.R - kc.B) * 3f, 0f, 1f) * (1f - Mathf.SmoothStep(15f, 35f, (float)p.KeyElevation));
-        RenderingServer.GlobalShaderParameterSet("flora_light", new Vector4(moon, lowSun, 0, 0));
+        var kl = kc.SrgbToLinear();
+        RenderingServer.GlobalShaderParameterSet("flora_light", new Vector4(moon, lowSun, kl.R / Mathf.Max(kl.G, 1e-3f), kl.B / Mathf.Max(kl.G, 1e-3f)));
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed
         // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)

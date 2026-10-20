@@ -88,30 +88,47 @@ def spray(seed):
             pts.append(pts[-1] + np.array([math.cos(a), math.sin(a)]) * length / n)
         return np.array(pts)
 
-    # the twig: from the foot up, gently bent; its end is the leading shoot
+    # The twig: from the foot up, bent (never a straight midrib: judge E4b, a straight axis with even,
+    # evenly spaced, tapered side shoots read as a fern frond). Half the sprays fork near the top.
     foot = np.array([W / 2 + rng.uniform(-20, 20) * S, H - 8 * S])
-    up = -math.pi / 2 + rng.uniform(-0.12, 0.12)
-    twig = path(foot, up, H * rng.uniform(0.86, 0.92), rng.uniform(-0.35, 0.35), 40)
+    up = -math.pi / 2 + rng.uniform(-0.15, 0.15)
+    bend = rng.choice([-1, 1]) * rng.uniform(0.35, 0.6)
+    twig = path(foot, up - bend * 0.4, H * rng.uniform(0.78, 0.86), bend, 40)
+    twig[:, 0] = np.clip(twig[:, 0], 150 * S, W - 150 * S)
     # shoots: (points, radius px at its foot, its base value); the leading shoot is the twig's upper part
     lead0 = int(len(twig) * rng.uniform(0.24, 0.34))
-    shoots = [(twig[lead0:], rng.uniform(140, 160) * S, 0.0)]
-    n_side = int(rng.integers(2, 5))
-    cuts = np.sort(rng.uniform(0.1, 0.55, n_side))
-    for i in range(1, n_side):                      # (never two at one place)
-        cuts[i] = max(cuts[i], cuts[i - 1] + 0.09)
-    sides = rng.permutation([1, -1] * 3)[:n_side]
-    if abs(sides.sum()) == n_side:                  # (both sides used)
-        sides[-1] *= -1
-    for c, sd in zip(cuts, sides):
-        if c > 0.8:
-            continue
-        p = twig[int(c * (len(twig) - 1))]
-        ang = up + sd * math.radians(rng.uniform(22, 70))
-        ln = H * rng.uniform(0.26, 0.44) * (1.05 - 0.5 * c)
-        pts = path(p, ang, ln, -sd * rng.uniform(0.05, 0.4), 18)
-        # (keep it in the cell)
-        pts[:, 0] = np.clip(pts[:, 0], 130 * S, W - 130 * S)
-        shoots.append((pts, rng.uniform(118, 140) * S * (1.1 - 0.35 * c), 0.05 * sd))
+    fork = rng.random() < 0.5
+    fk = int(len(twig) * rng.uniform(0.66, 0.76)) if fork else len(twig) - 1
+    shoots = [(twig[lead0:fk + 1], rng.uniform(140, 160) * S, 0.0)]
+    end = twig[fk] - twig[fk - 1]
+    end_a = math.atan2(end[1], end[0])
+    # the end: blunt and clumped, drooping (a fork's two prongs, or a tuft of short shoots at the tip)
+    prongs = [(-1, rng.uniform(0.3, 0.5)), (1, rng.uniform(0.3, 0.5))] if fork else \
+        [(sd, rng.uniform(0.35, 0.65)) for sd in rng.permutation([-1, 1])[:int(rng.integers(1, 3))]]
+    for sd, a in prongs:
+        ln = H * (rng.uniform(0.17, 0.25) if fork else rng.uniform(0.09, 0.13))
+        pts = path(twig[fk], end_a + sd * a, ln, sd * rng.uniform(0.2, 0.5), 12)
+        pts[:, 0] = np.clip(pts[:, 0], 130 * S, W - 130 * S); pts[:, 1] = np.maximum(pts[:, 1], 120 * S)
+        shoots.append((pts, rng.uniform(110, 130) * S * (0.9 if fork else 0.75), 0.04 * sd))
+    # side shoots: three or four places a side, each side's own (never mirror-even), one or two of
+    # them dropped; each its own length (40-100% of the room there), drooping out at its end
+    for sd in (-1, 1):
+        k = int(rng.integers(3, 5))
+        cuts = np.sort(rng.uniform(0.08, 0.6, k))
+        for i in range(1, k):
+            cuts[i] = max(cuts[i], cuts[i - 1] + 0.08)
+        keep = rng.permutation(k)[:k - int(rng.integers(1, 3))]
+        for c in cuts[np.sort(keep)]:
+            if c > 0.72:
+                continue
+            p = twig[int(c * (len(twig) - 1))]
+            ang = up + sd * math.radians(rng.uniform(25, 72))
+            f = rng.uniform(0.4, 1.0)
+            ln = H * 0.44 * (1.05 - 0.45 * c) * f
+            pts = path(p, ang, ln, sd * rng.uniform(0.1, 0.45), 18)
+            # (keep it in the cell)
+            pts[:, 0] = np.clip(pts[:, 0], 130 * S, W - 130 * S)
+            shoots.append((pts, rng.uniform(112, 138) * S * (1.1 - 0.35 * c) * (0.75 + 0.25 * f), 0.05 * sd))
     # the bare twig's foot (below the shoots): a few short needles, so the card's foot is not a stick
     shoots.append((twig[:lead0 + 6], 74 * S, -0.04))
     # back to front: the foot's stub, then the side shoots from the foot up, the leading shoot last
@@ -121,13 +138,16 @@ def spray(seed):
         pa, pe = tuple(int(x) for x in pa), tuple(int(x) for x in pe)
         cv2.line(img, pa, pe, c, w, cv2.LINE_AA); cv2.line(a, pa, pe, 255, w, cv2.LINE_AA); cv2.line(h, pa, pe, hv, w, cv2.LINE_AA)
 
-    for si in order:
+    # a slow wobble of each shoot's radius along it: tufts, not a sausage
+    wob = [(rng.uniform(0, 6.28, 2), rng.uniform(1.4, 2.6)) for _ in shoots]
+    # (every shoot's dark core first, then the needles over them all: a core drawn over the shoot
+    # before it stood as a smooth dark oval on its needles)
+    for pass_, si in [(0, i) for i in order] + [(1, i) for i in order]:
         pts, r0, vb = shoots[si]
         seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
         L = seg.sum()
         cum = np.concatenate([[0], np.cumsum(seg)])
-        # a slow wobble of the radius along the shoot: tufts, not a sausage
-        ph, fq = rng.uniform(0, 6.28, 2), rng.uniform(1.4, 2.6)
+        ph, fq = wob[si]
 
         def at(d):
             i = int(np.clip(np.searchsorted(cum, d) - 1, 0, len(pts) - 2))
@@ -136,19 +156,22 @@ def spray(seed):
             return pts[i] + (pts[i + 1] - pts[i]) * f, dv
 
         def rad(s):
-            taper = (1 - 0.7 * s ** 1.5) * (0.3 + 0.7 * smooth(0, 0.22, s))
+            # (blunt: full almost to the end, then rounded off; never drawn out to a point)
+            taper = (1 - 0.3 * s ** 2) * (0.3 + 0.7 * smooth(0, 0.22, s)) * (0.55 + 0.45 * math.sqrt(max(0.0, 1 - smooth(0.82, 1.0, s))))
             return r0 * taper * (1 + 0.16 * math.sin(fq * 6.28 * s + ph[0]) + 0.08 * math.sin(2.3 * fq * 6.28 * s + ph[1]))
 
-        # 1. the shoot's dark core (the shadowed inside of the brush): a filled ragged mass, 60% of the radius
-        lay = np.zeros((H, W), np.float32)
-        for d in np.arange(0.1 * L, L, 6 * S):
-            s = d / L
-            p, _ = at(d)
-            cv2.circle(lay, tuple(int(x) for x in p), int(rad(s) * 0.42 * rng.uniform(0.85, 1.1)), 1.0, -1, cv2.LINE_AA)
-        dark = shade(0.12 + vb)
-        m = lay[..., None]
-        col = col * (1 - m) + dark[None, None] * m
-        al = np.maximum(al, lay); hg = hg * (1 - lay) + 0.25 * lay
+        if pass_ == 0:
+            # 1. the shoot's dark core (the shadowed inside of the brush): a filled ragged mass, 60% of the radius
+            lay = np.zeros((H, W), np.float32)
+            for d in np.arange(0.1 * L, L, 6 * S):
+                s = d / L
+                p, _ = at(d)
+                cv2.circle(lay, tuple(int(x) for x in p), int(rad(s) * 0.36 * rng.uniform(0.85, 1.1)), 1.0, -1, cv2.LINE_AA)
+            dark = shade(0.12 + vb)
+            m = lay[..., None]
+            col = col * (1 - m) + dark[None, None] * m
+            al = np.maximum(al, lay); hg = hg * (1 - lay) + 0.25 * lay
+            continue
         # 2. the needles: all round the twig (seen from any side a brush shows needles across it,
         # pointing forward), each a short stroke, dark at its root, light at its tip
         cimg = (col * 255).astype(np.uint8); aimg = (al * 255).astype(np.uint8); himg = (hg * 255).astype(np.uint8)
@@ -223,6 +246,142 @@ def bark(seed, W=512, H=2048):
     return col, hgt
 
 
+def leafspray(seed):
+    """One alder spray in a CW x CH cell (as spray: rgb, alpha, height): a leafy branchlet, its twig
+    from the cell's foot with one to three side twigs, the leaves in four to six clumps along their
+    outer parts and one at each twig's end (so a spray ends blunt, in a clump). A clump is the brush
+    unit (about 0.6 m across, a quarter of the card's length): a dark shut-in core, then its leaves,
+    round-obovate and blunt-tipped, fanned out from the twig, the inner ones dark and the rim's
+    lighter, the lit flank (up and -x) lightest. Drawn at twice the size and halved."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    S = 2
+    W, H = CW * S, CH * S
+    # a muted olive (hue 80-90: beside the spruce's blue-green, never yellow)
+    pal = [srgb(h) for h in ('#151b0f', '#263119', '#3a4826', '#536534', '#73874c')]
+
+    def shade(v):
+        v = float(np.clip(v, 0, 0.999)) * (len(pal) - 1)
+        i = int(v); f = v - i
+        return ((pal[i] * (1 - f) + pal[i + 1] * f) * 255).astype(int).tolist()
+
+    def path(p0, ang, length, curl, n):
+        pts = [np.array(p0, np.float64)]
+        for i in range(n):
+            a = ang + curl * (i / n)
+            pts.append(pts[-1] + np.array([math.cos(a), math.sin(a)]) * length / n)
+        pts = np.array(pts)
+        pts[:, 0] = np.clip(pts[:, 0], 110 * S, W - 110 * S); pts[:, 1] = np.maximum(pts[:, 1], 110 * S)
+        return pts
+
+    def P(q):
+        return tuple(int(x) for x in q)
+
+    foot = np.array([W / 2 + rng.uniform(-24, 24) * S, H - 6 * S])
+    up = -math.pi / 2 + rng.uniform(-0.15, 0.15)
+    bend = rng.choice([-1, 1]) * rng.uniform(0.3, 0.6)
+    twig = path(foot, up - 0.4 * bend, H * rng.uniform(0.74, 0.84), bend, 30)
+    twigs = [(twig, 7.0 * S)]
+    for c in np.sort(rng.uniform(0.25, 0.62, int(rng.integers(1, 4)))):
+        p = twig[int(c * (len(twig) - 1))]
+        sd = rng.choice([-1, 1])
+        twigs.append((path(p, up + sd * math.radians(rng.uniform(28, 62)), H * rng.uniform(0.22, 0.36) * (1.1 - 0.5 * c), sd * rng.uniform(0.1, 0.5), 14), 5.0 * S))
+    # the clumps: one at each twig's end, the rest along the twigs' outer parts
+    clumps = [(tw[-1] + rng.normal(0, 8 * S, 2), rng.uniform(110, 140) * S) for tw, _ in twigs]
+    for c in np.sort(rng.uniform(0.22, 0.85, int(rng.integers(3, 5)))):   # (down the main twig: no bare stalk)
+        q = twig[int(c * (len(twig) - 1))]
+        clumps.append((q + rng.normal(0, 22 * S, 2), rng.uniform(100, 130) * S * (0.85 + 0.2 * c)))
+    for tw, _ in twigs[1:]:
+        q = tw[int(rng.uniform(0.35, 0.6) * (len(tw) - 1))]
+        clumps.append((q + rng.normal(0, 12 * S, 2), rng.uniform(85, 110) * S))
+    clumps.sort(key=lambda c: -c[0][1])                   # (back to front: the lower clumps first)
+    cimg = np.zeros((H, W, 3), np.uint8); aimg = np.zeros((H, W), np.uint8); himg = np.zeros((H, W), np.uint8)
+    # 1. the twigs (grey-brown, showing in the gaps)
+    for tw, w0 in twigs:
+        for i in range(len(tw) - 1):
+            w = int(max(2, w0 * (1 - 0.6 * i / len(tw))))
+            cv2.line(cimg, P(tw[i]), P(tw[i + 1]), (52, 46, 40), w, cv2.LINE_AA); cv2.line(aimg, P(tw[i]), P(tw[i + 1]), 255, w, cv2.LINE_AA)
+            cv2.line(himg, P(tw[i]), P(tw[i + 1]), 90, w, cv2.LINE_AA)
+    # 2. every clump's dark core (a ragged mass, half the clump's radius), under all the leaves
+    for c, rc in clumps:
+        for _ in range(7):
+            q = P(c + rng.normal(0, 0.12 * rc, 2)); r = int(rc * rng.uniform(0.24, 0.36))
+            cv2.circle(cimg, q, r, shade(0.07), -1, cv2.LINE_AA); cv2.circle(aimg, q, r, 255, -1, cv2.LINE_AA); cv2.circle(himg, q, r, 50, -1, cv2.LINE_AA)
+    # 3. the leaves, clump by clump: the inner first, the rim's over them
+    ts = np.linspace(0, 1, 9)
+    for c, rc in clumps:
+        lv = sorted((math.sqrt(rng.uniform(0.02, 1)) * 0.82, rng.uniform(0, 2 * math.pi)) for _ in range(int(rc / S * 0.42)))
+        for rr, a in lv:
+            q = c + np.array([math.cos(a), math.sin(a)]) * rr * rc
+            ang = a + rng.normal(0, 0.45)                      # (fanned out from the twig)
+            Ll = rc * rng.uniform(0.3, 0.42) * (0.8 + 0.3 * rr)
+            Wl = Ll * rng.uniform(0.55, 0.7)
+            dv = np.array([math.cos(ang), math.sin(ang)]); nv = np.array([-dv[1], dv[0]])
+            # round-obovate: widest past its middle, the tip blunt and a little notched
+            hw = Wl / 2 * np.sin(np.pi * np.clip(ts ** 0.75, 0, 1)) ** 0.6
+            hw[-1] = Wl * 0.12
+            q0 = q - dv * Ll * 0.35
+            left = [q0 + dv * Ll * t + nv * w for t, w in zip(ts, hw)]
+            right = [q0 + dv * Ll * t - nv * w for t, w in zip(ts, hw)]
+            notch = q0 + dv * Ll * 0.94
+            poly = np.array(left + [notch] + right[::-1], np.int32)
+            # value: deep inside dark, the rim light, the lit flank (up and -x) lighter
+            lit = 0.5 * (-math.cos(a) * 0.6 - math.sin(a) * 0.8) + 0.5
+            v = 0.12 + 0.42 * rr ** 1.3 + 0.28 * lit * rr + rng.normal(0, 0.05)
+            cv2.fillPoly(cimg, [poly], shade(v), cv2.LINE_AA); cv2.fillPoly(aimg, [poly], 255, cv2.LINE_AA)
+            cv2.fillPoly(himg, [poly], int(110 + 120 * rr), cv2.LINE_AA)
+            # the leaf's light half (its blade tilted to the sky), and its midrib a shade darker
+            cv2.fillPoly(cimg, [np.array(left + [notch, q0 + dv * Ll * 0.9, q0], np.int32)], shade(v + 0.08), cv2.LINE_AA)
+            cv2.line(cimg, P(q0), P(q0 + dv * Ll * 0.85), shade(v - 0.06), max(1, S), cv2.LINE_AA)
+    col = cimg.astype(np.float32) / 255; al = aimg.astype(np.float32) / 255; hg = himg.astype(np.float32) / 255
+    col = cv2.resize(col, (CW, CH), interpolation=cv2.INTER_AREA)
+    al = cv2.resize(al, (CW, CH), interpolation=cv2.INTER_AREA)
+    hg = cv2.resize(hg, (CW, CH), interpolation=cv2.INTER_AREA)
+    col = np.clip(col / np.maximum(al, 1e-3)[..., None], 0, 1) * (al > 0)[..., None]
+    ys = np.mgrid[0:CH, 0:CW][0].astype(np.float32)
+    col *= (0.8 + 0.2 * smooth(0, 0.6, 1 - ys / CH))[..., None]
+    return col, al, cv2.GaussianBlur(hg, (5, 5), 1.5)
+
+
+def alder_bark(seed, W=512, H=2048):
+    """The alder's bark strip: dark grey-brown, smooth with pale lenticels (short level dashes, a
+    shadow under each), a few shallow cracks, a little lichen; seamless round the trunk (u)."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    lowf = np.zeros((H, W), np.float32)
+    for s, w in ((96, 0.55), (32, 0.3), (10, 0.15)):
+        n = rng.random((H // s + 2, W // s + 1)).astype(np.float32)
+        n = np.concatenate([n, n[:, :1]], 1)
+        lowf += w * cv2.resize(n, (W + s, H + 2 * s), interpolation=cv2.INTER_CUBIC)[:H, :W]
+    base, grey, crev, lent, lich = srgb('#3f3a35'), srgb('#5a554f'), srgb('#24201c'), srgb('#8d8677'), srgb('#6b7262')
+    col = base[None, None] + (grey - base)[None, None] * smooth(0.35, 0.8, lowf)[..., None]
+    cim = (col * 255).astype(np.uint8)
+    him = (0.3 * lowf * 255).astype(np.uint8)
+    cv_crev = (crev * 255).astype(int).tolist()
+    # shallow cracks: thin wavy lines up the trunk, sparse
+    for _ in range(14):
+        x = rng.uniform(0, W); y = rng.uniform(0, H); L = rng.uniform(80, 340)
+        pts = [(x + 6 * math.sin(k * 0.4 + x), y + k * L / 20) for k in range(21)]
+        wd = int(rng.integers(2, 4))
+        for dx in (-W, 0, W):
+            pp = np.array([(a + dx, b) for a, b in pts], np.int32)
+            cv2.polylines(cim, [pp], False, cv_crev, wd, cv2.LINE_AA); cv2.polylines(him, [pp], False, 10, 3, cv2.LINE_AA)
+    # lenticels
+    for _ in range(1400):
+        x = rng.uniform(0, W); y = rng.uniform(0, H)
+        ax = (int(rng.uniform(2, 6.5)), 1)
+        lc = ((base + (lent - base) * rng.uniform(0.45, 0.85)) * 255).astype(int).tolist()
+        for dx in (-W, 0, W):
+            c = (int(x + dx), int(y))
+            cv2.ellipse(cim, (c[0], c[1] + 1), ax, 0, 0, 360, cv_crev, -1, cv2.LINE_AA)
+            cv2.ellipse(cim, c, ax, 0, 0, 360, lc, -1, cv2.LINE_AA)
+            cv2.ellipse(him, c, ax, 0, 0, 360, 200, -1, cv2.LINE_AA)
+    col = cim.astype(np.float32) / 255
+    lm = smooth(0.72, 0.85, lowf)
+    col = col + (lich - col) * (0.45 * lm)[..., None]
+    return col, cv2.GaussianBlur(him.astype(np.float32) / 255, (3, 3), 0.8)
+
+
 def normals(h, k):
     gy, gx = np.gradient(h * k)
     n = np.dstack([-gx, gy, np.ones_like(h)])
@@ -256,13 +415,13 @@ def tex(species):
     atlas = np.zeros((A, A, 4), np.float32)
     pf = pt.preset('foliage', {})
     for j in range(6):
-        c, a, h = spray(100 + j * 7)
+        c, a, h = spray(100 + j * 7) if species == 'spruce' else leafspray(200 + j * 11)
         c = bleed(c, a)
         p = pt.paint(c, normals(h, 3.0), pf)
         r, k = j // 3, j % 3          # row 0 = the atlas's top half
         atlas[r * CH:(r + 1) * CH, k * CW:(k + 1) * CW, :3] = p
         atlas[r * CH:(r + 1) * CH, k * CW:(k + 1) * CW, 3] = a
-    c, h = bark(5)
+    c, h = bark(5) if species == 'spruce' else alder_bark(9)
     p = pt.paint(c, normals(h, 2.0), pt.preset('bark', {}))
     atlas[:, int(BU * A):, :3] = p
     atlas[:, int(BU * A):, 3] = 1
@@ -327,7 +486,7 @@ def occlusion(p, H, R):
     return 0.35 + 0.65 * float(smooth(0.12, 0.92, math.hypot(p[0], p[1]) / rc))
 
 
-def card(b, c0, d, length, width, roll, arch, droop, j, H, R, segs_l=2, segs_w=2, mirror=False):
+def card(b, c0, d, length, width, roll, arch, droop, j, H, R, segs_l=2, segs_w=2, mirror=False, crown=None):
     """A spray card from c0 along d (its foot at c0), bent: its sides hang (an A across it, the
     pendant branchlets) and its outer end droops; its front is its upper side."""
     side, up = frame(d)
@@ -342,10 +501,10 @@ def card(b, c0, d, length, width, roll, arch, droop, j, H, R, segs_l=2, segs_w=2
             w = iw / segs_w * 2 - 1
             p = c0 + d * length * s + side * (w * width / 2 * (1 - 0.12 * w * w)) + up * (arch * width - droop * s * s * length - (0.24 + 0.16 * s) * width * w * w)
             rowP.append(p)
-            rowN.append(crown_normal(p, up, d, H))
+            rowN.append(crown.normal(p, up, d) if crown else crown_normal(p, up, d, H))
             uw = (-w if mirror else w)
             rowU.append((u0 + (uw + 1) / 2 * du * 0.96 + du * 0.02, v0 + s * dv * 0.97 + dv * 0.015))
-            rowC.append((occlusion(p, H, R), s, 1.0))
+            rowC.append((crown.occl(p) if crown else occlusion(p, H, R), s, 1.0))
         P.append(rowP); N.append(rowN); UV.append(rowU); C.append(rowC)
     b.quad_grid(P, N, UV, segs_w, segs_l, C, flip=True)
 
@@ -409,8 +568,16 @@ def spruce(H, R, seed, lod):
                 dd /= np.linalg.norm(dd)
                 ln = seg * 1.3 * rng.uniform(0.85, 1.15)
                 wd = ln * (0.7 if lod == 0 else 0.76) * rng.uniform(0.75, 1.25)
-                card(b, p - dd * seg * 0.12, dd, ln, wd, rng.uniform(-0.55, 0.55), 0.1, (0.16 + 0.16 * (1 - t)) * (0.6 + 0.4 * f), int(rng.integers(0, 6)), H, R,
+                roll, j = rng.uniform(-0.55, 0.55), int(rng.integers(0, 6))
+                droop = (0.16 + 0.16 * (1 - t)) * (0.6 + 0.4 * f)
+                card(b, p - dd * seg * 0.12, dd, ln, wd, roll, 0.1, droop, j, H, R,
                      segs_l=(3, 2, 1)[lod], segs_w=(2, 2, 1)[lod], mirror=bool(rng.random() < 0.5))
+                if lod == 0:
+                    # (near: a second card on the branch, rolled 20-30 degrees off the first and another
+                    # spray, so a branch has depth and no one card's spray reads alone)
+                    r2 = roll + rng.choice([-1, 1]) * math.radians(rng.uniform(20, 30))
+                    card(b, p - dd * seg * 0.05, dd, ln * rng.uniform(0.82, 0.95), wd * rng.uniform(0.85, 1.0), r2, 0.12, droop * 1.1, (j + int(rng.integers(1, 6))) % 6, H, R,
+                         segs_l=2, segs_w=2, mirror=bool(rng.random() < 0.5))
                 p = p + dd * seg
     # the leader: two crossed upright cards
     for a in (0.3, 0.3 + math.pi / 2):
@@ -426,29 +593,34 @@ def spruce(H, R, seed, lod):
 
 
 def shadow_proxy(H, R, seed):
-    """What the tree casts (shadows only): stacked jagged cones, one per tier, so its shadow is a
-    dense spiky spruce, not the cards' lace. Solid (its uvs in the bark strip), a few hundred tris."""
+    """What the tree casts (shadows only): stacked jagged cones, five to eight tiers, so its shadow
+    is a dense spiky spruce, not the cards' lace. Each tier's rim is a ring of broad lobes, the
+    notches between them a quarter of the tier's radius deep (narrow spikes blurred into a smooth
+    blade under the moon's soft shadow: judge E4b), each lobe's tip hanging; each tree's tiers its
+    own count, heights and lobes. Solid (its uvs in the bark strip), a few hundred tris."""
     rng = np.random.default_rng(seed + 5)
     b = Build()
     hs = 0.55 + 0.03 * H
-    tiers = max(4, int((H - hs) / 1.05))
-    th = (H - hs) / tiers
+    tiers = int(rng.integers(5, 9))
+    cuts = np.sort(rng.uniform(0, 1, tiers - 1))
+    hts = hs + (H - hs) * np.concatenate([[0], 0.82 * (np.arange(1, tiers) / tiers) + 0.18 * cuts])
     uv = (BU + 0.1, 0.5)
-    for k in range(tiers):
-        h0 = hs + k * th
+    for k, h0 in enumerate(hts):
+        th = (hts[k + 1] - h0) if k + 1 < tiers else (H - h0)
         t = (h0 - hs) / (H - hs)
         # (0.8 of the crown: the outer sprays stand outside it, so they take the key light; only the
         # crown's inside falls in the tree's own shadow)
-        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.8
-        n = int(rng.integers(12, 16))
+        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.84
+        n = int(rng.integers(6, 10))
         az0 = rng.uniform(0, 6.28)
         ring = []
-        for i in range(n * 2):
-            a = az0 + i * math.pi / n + rng.normal(0, 0.1)
-            rr = r * (rng.uniform(0.78, 1.1) if i % 2 == 0 else rng.uniform(0.38, 0.62))
-            ring.append(np.array([math.cos(a) * rr, math.sin(a) * rr, h0 - (0.3 * rr if i % 2 == 0 else 0.0)]))
+        for i in range(n * 3):
+            a = az0 + (i + rng.normal(0, 0.12)) * 2 * math.pi / (n * 3)
+            ph = i % 3                     # a lobe: shoulder, tip, shoulder, then the notch
+            rr = r * (rng.uniform(0.95, 1.12) if ph == 1 else rng.uniform(0.84, 0.92) if ph == 0 else rng.uniform(0.7, 0.78))
+            ring.append(np.array([math.cos(a) * rr, math.sin(a) * rr, h0 - (0.35 * rr if ph == 1 else 0.12 * rr)]))
         ring.append(ring[0])
-        apex = np.array([0.0, 0.0, min(h0 + th * 1.3, H)])
+        apex = np.array([0.0, 0.0, min(h0 + th * 1.35 + 0.3, H)])
         P = [ring, [apex] * len(ring)]
         N = [[np.array([0, 0, 1.0])] * len(ring)] * 2
         UV = [[uv] * len(ring)] * 2
@@ -456,11 +628,175 @@ def shadow_proxy(H, R, seed):
     return b
 
 
+# ---------------------------------------------------------------- the alder (the kit's CommonTree_1-5)
+
+# sizes: as tall as the kit's CommonTrees they stand for (6.8-7.4 m: a, b; 9.2 m: c); a and b
+# multi-stemmed, as alders by water mostly are
+ALDER = {
+    'a': dict(H=7.0, R=2.2, seed=13, stems=2),
+    'b': dict(H=7.7, R=2.45, seed=29, stems=3),
+    'c': dict(H=9.2, R=2.3, seed=41, stems=1),
+}
+
+
+class Oval:
+    """An alder's crown: an oval round (0, 0, zc), R across and hz up. Normals out from its middle
+    (and up), so it shades as one mass; how open a point is, by how far out in the oval it stands."""
+    def __init__(self, R, zc, hz):
+        self.R, self.zc, self.hz = R, zc, hz
+
+    def rel(self, p):
+        return np.array([p[0] / self.R, p[1] / self.R, (p[2] - self.zc) / self.hz])
+
+    def normal(self, p, cn, d):
+        q = self.rel(p)
+        ln = np.linalg.norm(q)
+        o = q / ln if ln > 0.1 else np.array([0, 0, 1.0])
+        n = o * 0.6 + np.array([0, 0, 0.5]) + cn * 0.3
+        return n / np.linalg.norm(n)
+
+    def occl(self, p):
+        return 0.35 + 0.65 * float(smooth(0.25, 0.95, np.linalg.norm(self.rel(p))))
+
+
+def tube(b, pts, radii, sides, occ=0.6):
+    """A bark tube along pts (its radius at each), the bark strip round it, v along it."""
+    pts = [np.asarray(p, np.float64) for p in pts]
+    P, N, UV = [], [], []
+    Ltot = sum(np.linalg.norm(pts[k] - pts[k - 1]) for k in range(1, len(pts)))
+    L = 0.0
+    for k, p in enumerate(pts):
+        t = pts[min(k + 1, len(pts) - 1)] - pts[max(k - 1, 0)]
+        t /= np.linalg.norm(t)
+        ref = np.array([1.0, 0, 0]) if abs(t[0]) < 0.9 else np.array([0, 1.0, 0])
+        a1 = np.cross(t, ref); a1 /= np.linalg.norm(a1)
+        a2 = np.cross(t, a1)
+        if k:
+            L += np.linalg.norm(p - pts[k - 1])
+        rowP, rowN, rowU = [], [], []
+        for i in range(sides + 1):
+            a = i / sides * 2 * math.pi
+            nr = a1 * math.cos(a) + a2 * math.sin(a)
+            rowP.append(p + nr * radii[k]); rowN.append(nr)
+            rowU.append((BU + (1 - BU) * i / sides * 0.995, 0.01 + 0.98 * L / max(Ltot, 1e-6)))
+        P.append(rowP); N.append(rowN); UV.append(rowU)
+    b.quad_grid(P, N, UV, sides, len(pts) - 1, [[(occ, 0.0, 0.0)] * (sides + 1)] * len(pts))
+
+
+def alder_stems(H, seed, stems):
+    """The stems (each a list of points and radii): one to three from one foot, leaning out a little
+    and bending, the first the tallest."""
+    rng = np.random.default_rng(seed + 3)
+    out = []
+    az0 = rng.uniform(0, 6.28)
+    r0 = (0.17 if stems == 1 else 0.115) * math.sqrt(H / 8)
+    for k in range(stems):
+        az = az0 + k * 2 * math.pi / stems + rng.normal(0, 0.3)
+        lean = math.radians(rng.uniform(5, 11) if stems > 1 else rng.uniform(0, 3))
+        top = H * (0.86 if k == 0 else rng.uniform(0.7, 0.82))
+        ph = rng.uniform(0, 6.28)
+        dx, dy = math.cos(az), math.sin(az)
+        off = 0.1 if stems > 1 else 0.0
+        pts, rad = [], []
+        for i in range(8):
+            f = i / 7
+            z = -0.2 + (top + 0.2) * f
+            w = 0.12 * math.sin(f * 3.1 + ph) * f            # (a slow bend)
+            pts.append(np.array([dx * (off + math.tan(lean) * max(z, 0)) - dy * w, dy * (off + math.tan(lean) * max(z, 0)) + dx * w, z]))
+            rad.append(max(0.022, r0 * (1 - 0.82 * f) * (1 + 0.45 * math.exp(-max(z, 0) / 0.3))))
+        out.append((pts, rad))
+    return out
+
+
+def alder(H, R, seed, lod, stems):
+    """lod 0: the stems, main branches and some 64 leaf-clump branchlets, two cards each; 1: fewer,
+    larger cards and two branches a stem; 2: a dozen big cards on the stems. The crown a rounded
+    oval from a quarter of the height up; each card from inside the crown out to its skin (its
+    clumps at the skin: lit tips, dark core)."""
+    rng = np.random.default_rng(seed)
+    b = Build()
+    zc, hz = 0.62 * H, 0.38 * H
+    crown = Oval(R, zc, hz)
+    sts = alder_stems(H, seed, stems)
+    for pts, rad in sts:
+        tube(b, pts, rad, (7, 5, 4)[lod])
+    # main branches, spreading up and out from the stems
+    for pts, rad in sts:
+        for i in range((int(rng.integers(3, 6)), 2, 0)[lod]):
+            f = rng.uniform(0.38, 0.8)
+            k = min(int(f * 7), 6); g = f * 7 - k
+            p0 = pts[k] * (1 - g) + pts[k + 1] * g
+            az, el = rng.uniform(0, 6.28), math.radians(rng.uniform(25, 55))
+            d = np.array([math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el)])
+            rr = R * math.sqrt(max(0.05, 1 - ((p0[2] - zc) / hz) ** 2))
+            L = max(0.6, rr * rng.uniform(0.6, 0.85))
+            r = 0.05 * math.sqrt(H / 8)
+            tube(b, [p0, p0 + d * L * 0.5 + np.array([0, 0, 0.08 * L]), p0 + d * L], [r, r * 0.6, r * 0.25], (4, 3, 3)[lod], occ=0.5)
+    # the leaf-clump branchlets: spread over the crown's skin (a golden-angle spiral, the bottom left open)
+    nc = (64, 30, 13)[lod]
+    for i in range(nc):
+        zf = 1 - 1.75 * (i + 0.5) / nc
+        a = i * 2.39996 + rng.normal(0, 0.25)
+        rxy = math.sqrt(max(0.0, 1 - zf * zf))
+        o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
+        f = rng.uniform(0.45, 0.7) if lod == 0 and rng.random() < 0.2 else rng.uniform(0.74, 1.0)
+        tip = np.array([0, 0, zc]) + o * np.array([R, R, hz]) * f
+        dout = o * np.array([1, 1, 0.5]) + np.array([0, 0, 0.3])
+        dout /= np.linalg.norm(dout)
+        ln = (1.7, 2.3, 3.1)[lod] * rng.uniform(0.85, 1.15) * math.sqrt(H / 8)
+        wd = ln * rng.uniform(0.75, 0.95)
+        c0 = tip - dout * ln * 0.8
+        roll, j = rng.uniform(-0.6, 0.6), int(rng.integers(0, 6))
+        card(b, c0, dout, ln, wd, roll, 0.1, 0.16, j, H, R, segs_l=(3, 2, 1)[lod], segs_w=(2, 2, 1)[lod],
+             mirror=bool(rng.random() < 0.5), crown=crown)
+        if lod == 0:
+            r2 = roll + rng.choice([-1, 1]) * math.radians(rng.uniform(20, 30))
+            card(b, c0 + dout * ln * 0.06, dout, ln * rng.uniform(0.82, 0.95), wd * rng.uniform(0.85, 1.0), r2, 0.12, 0.18, (j + int(rng.integers(1, 6))) % 6, H, R,
+                 segs_l=2, segs_w=2, mirror=bool(rng.random() < 0.5), crown=crown)
+    return b
+
+
+def alder_proxy(H, R, seed, stems):
+    """What the alder casts: its crown as a core and five to seven lumps (each a clump mass about a
+    metre across, the radius jittered), so its shadow is scalloped, not one smooth blob, at 0.8 of
+    the crown; and its stems below the crown."""
+    rng = np.random.default_rng(seed + 5)
+    b = Build()
+    zc, hz = 0.62 * H, 0.38 * H
+    uv = (BU + 0.1, 0.5)
+
+    def lump(c, rx, rz, nu=9, nv=5):
+        P, N, UV = [], [], []
+        for jv in range(nv + 1):
+            th = math.pi * jv / nv
+            row, rowN = [], []
+            for iu in range(nu + 1):
+                ph = 2 * math.pi * (iu % nu) / nu
+                o = np.array([math.sin(th) * math.cos(ph), math.sin(th) * math.sin(ph), math.cos(th)])
+                row.append(o)
+            P.append(row)
+        jit = rng.uniform(0.82, 1.18, (nv + 1, nu))
+        P = [[c + o * np.array([rx, rx, rz]) * (jit[jv, iu % nu] if 0 < jv < nv else 1.0) for iu, o in enumerate(row)] for jv, row in enumerate(P)]
+        N = [[np.array([0, 0, 1.0])] * (nu + 1)] * (nv + 1)
+        UV = [[uv] * (nu + 1)] * (nv + 1)
+        b.quad_grid(P, N, UV, nu, nv)
+
+    lump(np.array([0, 0, zc]), 0.62 * R, 0.62 * hz)
+    for k in range(int(rng.integers(5, 8))):
+        a = rng.uniform(0, 6.28); zf = rng.uniform(-0.4, 0.8)
+        rxy = math.sqrt(1 - zf * zf)
+        o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
+        lump(np.array([0, 0, zc]) + o * np.array([R, R, hz]) * rng.uniform(0.32, 0.45), rng.uniform(0.38, 0.48) * R, rng.uniform(0.3, 0.4) * hz, 7, 4)
+    for pts, rad in alder_stems(H, seed, stems):
+        tube(b, pts[:4], rad[:4], 4)
+    return b
+
+
 def mesh(species):
     import bpy
     os.makedirs(OUT, exist_ok=True)
     img_path = os.path.join(OUT, f'{species}_atlas.png')
-    for size, prm in SPRUCE.items():
+    for size, prm in (SPRUCE if species == 'spruce' else ALDER).items():
         bpy.ops.wm.read_factory_settings(use_empty=True)
         img = bpy.data.images.load(img_path)
         mat = bpy.data.materials.new(f'Leaves_Own{species.capitalize()}')
@@ -475,7 +811,10 @@ def mesh(species):
         mat.use_backface_culling = False
         tris = []
         for lod in range(4):
-            b = spruce(prm['H'], prm['R'], prm['seed'], lod) if lod < 3 else shadow_proxy(prm['H'], prm['R'], prm['seed'])
+            if species == 'spruce':
+                b = spruce(prm['H'], prm['R'], prm['seed'], lod) if lod < 3 else shadow_proxy(prm['H'], prm['R'], prm['seed'])
+            else:
+                b = alder(prm['H'], prm['R'], prm['seed'], lod, prm['stems']) if lod < 3 else alder_proxy(prm['H'], prm['R'], prm['seed'], prm['stems'])
             name = f'lod{lod}' if lod < 3 else 'shadow'
             me = bpy.data.meshes.new(name)
             me.from_pydata([tuple(p) for p in b.v], [], b.f)

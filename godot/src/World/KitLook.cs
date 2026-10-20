@@ -129,8 +129,11 @@ public static class KitLook
         // (ours are painted for the look: weathered lightly, and trunk and needles sway as one)
         // (the vertex colour is their occlusion, read in OWN_FOLIAGE, not paint)
         if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); m.SetShaderParameter("use_vcolor", false); }
+        // (our alder, a broadleaf: its leaves flutter more than needles, and its olive is held off yellow under a low sun)
+        if (mine && s.ResourceName.Contains("Alder")) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 86f); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
-        if (foliage && look.LeafA is Color a && look.LeafB is Color b)
+        // (ours keep their own greens: the kit's autumn recolour gave gold tops, cut for the cinematics)
+        if (foliage && !mine && look.LeafA is Color a && look.LeafB is Color b)
         {
             m.SetShaderParameter("recolor_a", new Vector4(a.R, a.G, a.B, look.LeafAmount));
             m.SetShaderParameter("recolor_b", new Vector3(b.R, b.G, b.B));

@@ -125,7 +125,7 @@ view_from={
 }
 flora_light={
 "type": "vec4",
-"value": Vector4(0, 0, 0, 0)
+"value": Vector4(0, 0, 1, 1)
 }
 motion_then={
 "type": "float",
