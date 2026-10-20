@@ -2,6 +2,19 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 000000000000000. Paused here (animation 45, 20 October 2026); next:
+Branch `anim-40` (godot/assets is a junction to anim-40's OWN public/assets: no stash, reset --hard, checkout .; before merging integration remove the link only (`cmd /c rmdir godotssets`), merge, remake the junction, `git update-index --assume-unchanged godot/assets`). Never commit heroine.res, heroine_clips.json, manifest.json, arms_rest_godot.json or *.import. No helpers or turns held.
+
+**Item 1 (folk armed idles): merged** (2cccd788, section below).
+**Item 2 (the arcanist's staff in town): DONE, PASSED max judge r4 10/10, MR READY at the commit this section is in; main repacks her (101 clips).**
+- Slung on her back: FAILED max r1-r2 (the wide hat brim; a 1.75 m staff stood off her like a pole). The BackStaff row and Arms.StripCharms stay in code, UNUSED (for a hatless outfit, unjudged). Walking (planted) staff: impossible (plain shaft ends 1.11 m up; elbow >= 1.25 m; the reversed grip needs a 165-180 deg forearm turn): tools in tools/scratch/anim45/walk/.
+- Shipped: `idle_arcanist_staff_town` (idle.py `staff_town`): the staff in her right hand on the combat grip, on the arcanist's WiggleHips town base, left arm free; re-aimed (78cd4dc7) so the line is 9-13 deg forward / 15-19 out, elbow 72, crescent 73-169 mm outside the brim, 0 % face cover at facings 0/45/90/135/315, 0 mm into her. SocketOf(Staff) = null again; Sheath.Names skips the calling's empty-handed town clips for a kind that stays in hand, so the town run is the shipped staff run (run_arcanist). dotnet 1017/0/8 (C# unchanged since). Judges: tools/scratch/anim45/judge_staff1-4.md.
+- **Owner call (pending, now mostly moot):** (a) keep the staff in her hand (main's recommendation, with a close-up camera nudge off the profile facing), or (b) stow it in safe places (the wand town idle; the staff vanishes). r4 passed every facing, the profile (90) included, with the face clear: it reads as a formal wizard's carry there. So (a) ships as is; the camera nudge is optional.
+- Routed [staff asset]: the gem reads as a flat blue slab side-on; give it depth. [face] a sleepy heavy-lidded gaze at the close-up.
+- Possible follow-up: her COMBAT idle_arcanist uses the old staff aim (~30 deg forward), so its crescent likely covers her face at the facing-45 close-up; the same re-aim may belong there (check one frame first).
+**Next, in order:** 3. optional: the crossbow ~10 deg round its sling (stalker town idle, butt crowds her left hand); each calling's town idle starting at its own phase. 4. later attack items: the five KNOWN fixes from judge r4 (heavy0 pelvis, heavy7_run blade broadside, the flick free hand out, the wand run's fist out, the axes run's arm in), then chain_strike's restage.
+Scratch (shared coordinator scratchpad): `...\scratchpadnim45\` (dumps, reaim/held.py face-cover check, s2/s3/staff/walk tools); back it up and clear only that subfolder at the end of the stretch.
+
 ## 00000000000000. MR READY (animation 45, 20 October 2026): armed townsfolk at ease in town
 Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Never commit heroine.res, heroine_clips.json, manifest.json, arms_rest_godot.json or *.import (folk.res and folk_clips.json are tracked).
 
