@@ -1,0 +1,16 @@
+her    axe_back                     l: spin 12/13 wtw 0 wbend 0 wdev 0 ftw 0 elbow 1 knee 0 (0 flagged) | r: spin 36/25 wtw 27 wbend 55 wdev 38 ftw 26 elbow 3 knee 0 (1 flagged)
+         r f3: hand spins 36 in a frame
+her    axe_fore                     l: spin 13/9 wtw 0 wbend 0 wdev 0 ftw 0 elbow 1 knee 0 (0 flagged) | r: spin 35/45 wtw 24 wbend 49 wdev 38 ftw 23 elbow 2 knee 0 (2 flagged)
+         r f1: forearm spins 45 in a frame
+         r f3: hand spins 35 in a frame
+her    axe_heavy                    l: spin 12/10 wtw 0 wbend 0 wdev 0 ftw 0 elbow 0 knee 0 (0 flagged) | r: spin 26/35 wtw 24 wbend 59 wdev 38 ftw 23 elbow 2 knee 0 (1 flagged)
+         r f1: forearm spins 35 in a frame
+her    axes_left                    l: spin 37/45 wtw 26 wbend 49 wdev 38 ftw 25 elbow 2 knee 0 (2 flagged) | r: spin 13/27 wtw 25 wbend 54 wdev 36 ftw 24 elbow 1 knee 0 (0 flagged)
+         l f1: forearm spins 45 in a frame
+         l f3: hand spins 37 in a frame
+her    axes_right                   l: spin 14/27 wtw 26 wbend 56 wdev 36 ftw 25 elbow 1 knee 0 (0 flagged) | r: spin 37/45 wtw 27 wbend 48 wdev 38 ftw 25 elbow 2 knee 0 (2 flagged)
+         r f1: forearm spins 45 in a frame
+         r f3: hand spins 37 in a frame
+her    chain_strike                 l: spin 29/29 wtw 1 wbend 14 wdev 5 ftw 1 elbow 2 knee 3 (0 flagged) | r: spin 23/53 wtw 47 wbend 51 wdev 38 ftw 47 elbow 4 knee 0 (1 flagged)
+         r f2: forearm spins 53 in a frame
+9 frames flagged
