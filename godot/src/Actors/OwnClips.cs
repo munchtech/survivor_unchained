@@ -88,12 +88,13 @@ public sealed class OwnClips
 
     /// <summary>The own clip for one the game names ("her/..." or "him/...")
     /// if there is one, or null for the library's.</summary>
-    public string? For(string calling, string kind, string game)
+    /// `sheathed`: her town clips first (Play/Sheath.Names), for the stand and the run.
+    public string? For(string calling, string kind, string game, bool sheathed = false)
     {
         if (Library() == null) return null;
         string? want = null;
-        if (Idles.Contains(game)) want = First($"idle_{calling}_{kind}", $"idle_{calling}");
-        else if (Moving.Contains(game)) want = First($"run_{calling}_{kind}", $"run_{calling}");
+        if (Idles.Contains(game)) want = First(SurvivorUnchained.Play.Sheath.Names("idle", calling, kind, sheathed));
+        else if (Moving.Contains(game)) want = First(SurvivorUnchained.Play.Sheath.Names("run", calling, kind, sheathed));
         else
             want = game switch
             {
