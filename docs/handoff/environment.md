@@ -15,7 +15,7 @@
   - The camp lantern's acid-yellow grass: `LampColor` #ffc890 in `ZoneView.cs` is every road lamp. The amber camp lantern is E7's.
   - The camp's frosted moonlit grass p95 (Frost).
   - The defocused campfire behind the Look reads as a flat cutout (camp props).
-- **Perf:** hub ABAB (`survivorsunchained_inputs\env_perf1\g1\hub_A*/B*`): G1 is not slower. The single-run fps drop against E3 (lf_hi 165 to 136, hub 112 to 88, GPU flat) is machine load: A1 (integration) ran at 80 fps and B1 (G1) at 112 back to back. Tests 1017/0/8; the teach run showed and answered 11/11.
+- **Perf:** hub ABAB (`survivorsunchained_inputs\env_perf1\g1\hub_A*/B*`): G1 is not slower. The single-run fps drop against E3 (lf_hi 165 to 136, hub 112 to 88, GPU flat) is machine load: A (integration) 80 then 114 fps, B (G1) 112 then 125, GPU 4.2 ms in all four. Tests 1017/0/8; the teach run showed and answered 11/11.
 - **Next: E4** (canopies, foliage, firs, tufts), built to the painted look (`docs/handoff/art_style.md`). Then E5, E6, E7, E9, each its own MR.
 
 ## DONE (env lead 8, 20 Oct): E3 passed judge 4, MR READY; next is the art-style frames, then E4
