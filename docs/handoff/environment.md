@@ -1,10 +1,29 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (env lead 7, 19 Oct night): E3 setts restage running; everything else closed
-- Rounds: D c7c45928 (judge 1's fixes), E 18bd75e3 (judge 2's). Judge 3 (final, `survivorsunchained_inputs\env_e3\judge3\verdict.md`) closed everything except the setts. Closed as known: the 11 px verge ramps, dawn_00's 14% sun ruts, the soft pale patches, the town wet rims. Two cuts: the beaded pebble rows on the rut shoulders, one gutter pool at town_01.
-- **Solver F** (brief `scratch_env7\ground_f_brief.md`, frames to `env_e3\f\`): an authored 4 m sett tile in 2-3 variants (main approved the restage), stones 18-30 cm, mud in the joints by the walls, well and stalls, worn and sunk stones, moss. It also makes both cuts and proves the ground at 0.90 ms or less ABAB.
-- Perf (`scratch_env7\bisect\`): the ground flip drifts ±0.15 ms between runs. The suspect is E's setts textures (D's shader: 0.86 on the old textures, 1.04-1.09 on the new). Shadow draws 749: not E3's, routed to perf.
-- **Next:** judge 4, on town_day_00/01/02 plus the setts in dawn_02/night_02 only (template `scratch_env7\e3_judge3_brief.md`, xhigh, foreground). Then the perf run (`tools/perf/run.py`, fps min at least 131), the full dotnet test, the teach run, and "MR READY env-3@<commit>" to main.
+## Paused here (env lead 7, 19 Oct night): E3 setts restage WIP (de5d9902); next: finish F's list, judge 4, perf, MR
+- Worktree `.claude/worktrees/env-3`, branch `env-3` (pushed; only .import/.uid churn uncommitted). Scratch, briefs and scripts: `survivorsunchained_inputs\scratch_env7\` (ground_d/e/f, bisect, e3_judge2/3 briefs, ground_d..f briefs). Frames: `survivorsunchained_inputs\env_e3\{d,e,judge2,judge3}\`.
+- **Rounds:**
+  - D c7c45928: judge 1's fixes.
+  - E 18bd75e3: judge 2's fixes.
+  - **Judge 3 (FINAL, `env_e3\judge3\verdict.md`)** closed everything except the setts.
+    - Closed as known: the 11 px verge ramps, dawn_00's 14% sun ruts, the soft pale patches, the town wet rims, and judge 2's closures (the night_05 1.15 target, the eggs).
+    - Two cuts: the beaded pebble rows on the rut shoulders (dawn_04/night_04), and the town_01 gutter pool.
+    - The setts restage was approved by main.
+- **Solver F WIP de5d9902 (brief `scratch_env7\ground_f_brief.md`, scripts `scratch_env7\ground_f\`).**
+  - Built:
+    - a 4 m sett tile in 3 variants at 1024 (VRAM per map 16.8 -> 4.2 MB). Its sources (height, stone ID, wear, mud, moss masks) are in `tools/assets/setts_src/`; re-bake with `env_ground.py --only setts --bake`;
+    - shader mud in the joints near the well, stalls, posts and walls, sunk and missing stones, wear, moss in the shaded joints (`--setts-mud/-reach/-moss`, `--ground-debug 25`);
+    - the pebble rows replaced by loose pebbles (the scatter sequence changed);
+    - the gutter pool only on the setts;
+    - a `townjit` shot set (shimmer).
+  - Measured: stone median 0.24 m (max 0.43), 23-25 cm in frame; mud on 12-13% of the boxes, NOT yet browner; the pebble peak is lower at dawn, but night_04 has more pale specks (frost on the new pebbles?); shimmer about zero.
+  - **WARNING:** E's frames and perf may have used stale 2K imports (a plain run doesn't re-import). Run `scratch_env7\ground_f\imp.sh` before any shot or perf run.
+- **Left, in order:**
+  1. One medium solver finishes F's list: browner mud (25-35% darker and browner), post rings, the night_04 pale specks at 1:1, confirm the pool cut, shoot town_day_00/01/02 + dawn_02/night_02 + dawn_04/night_04 to `env_e3\f\`, numbers.md, and the perf ABAB against c7c45928's shader+setts textures (target ground 0.90 ms or less; absolute numbers drift ±0.15 ms, see `scratch_env7\bisect\run2.log`/`run3.log`), dotnet test.
+  2. **Judge 4** (su-lead-max xhigh, foreground) on town_day_00/01/02, the setts in dawn_02/night_02, and night_04 for the pebble cut, against judge 3's "Rulings" (template `scratch_env7\e3_judge3_brief.md`). It's the restage's only round: fall back or close, no further rounds.
+  3. Perf (`tools/perf/run.py`, 1440p high fps min at least 131; baseline `env_perf1\e2\`), the full dotnet test, the teach run once, then "MR READY env-3@<commit>" to main.
+- **Owner's art-style note (19 Oct, via main):** a painterly-realism style exploration starts right after E3 and will likely re-texture the paving. So keep the sett tile re-bakeable from its masks (above); no polish on the albedo's fine micro-detail.
+- Routed, not E3's: shadow draws 488 -> 749 after the integration merge (perf); the night_04 moonlight streak through a canopy gap (lighting); tufts (E4), firs (E4), rocks (E5), water (E6), bedroll (E7), buildings (E9).
 
 ## Paused here (env lead 6, 19 Oct night): E3 mid fix round C; next: finish C's open items, then judge 2
 - Worktree `.claude/worktrees/env-3`, branch `env-3` (pushed, clean apart from .import/.uid churn; its own assets junction; imported). Briefs: `survivorsunchained_inputs\scratch_env6\` (ground_a/b/c briefs, e3_judge1_brief.md, the measure scripts in ground_a/, ground_b/, ground_c/). Frames: `survivorsunchained_inputs\env_e3\` (a, b, judge1, c). Baseline: `godot/.shots/e3r0_*`. Shots: `python tools/scratch/env/shots.py <round> dawn night town_day` (points at env-3).
