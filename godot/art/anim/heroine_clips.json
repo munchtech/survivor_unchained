@@ -306,6 +306,16 @@
 		"source": "keyed (tools/anim)",
 		"weapon": "staff"
 	},
+	"idle_arcanist_town": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
+		"layer": "full",
+		"length": 5.69999980926514,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE WiggleHips_ID frames 876-1218 (60 fps)",
+		"speed": 0.0,
+		"weapon": ""
+	},
 	"idle_reaver": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
 		"layer": "full",
@@ -323,6 +333,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "axe"
+	},
+	"idle_reaver_town": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -2.6 deg taken to 40%",
+		"layer": "full",
+		"length": 5.09999990463257,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE WiggleHips_ID frames 744-1050 (60 fps)",
+		"speed": 0.0,
+		"weapon": ""
 	},
 	"idle_stalker": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
@@ -351,6 +371,16 @@
 		"source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
 		"speed": 0.0,
 		"weapon": "daggers"
+	},
+	"idle_stalker_town": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -7.1 deg taken to 40%",
+		"layer": "full",
+		"length": 5.83333349227905,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE WiggleHips_ID frames 1244-1594 (60 fps)",
+		"speed": 0.0,
+		"weapon": ""
 	},
 	"idle_warden": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
@@ -464,6 +494,17 @@
 		"steps": 2.0,
 		"weapon": "wand"
 	},
+	"run_arcanist_wand_town": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"run_reaver": {
 		"cycle": 0.633333333333333,
 		"layer": "full",
@@ -486,6 +527,17 @@
 		"steps": 2.0,
 		"weapon": "axes"
 	},
+	"run_reaver_town": {
+		"cycle": 0.633333333333333,
+		"layer": "full",
+		"length": 0.633333325386047,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"run_stalker": {
 		"cycle": 0.666666666666667,
 		"layer": "full",
@@ -507,6 +559,17 @@
 		"speed": 5.1,
 		"steps": 2.0,
 		"weapon": "daggers"
+	},
+	"run_stalker_town": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": ""
 	},
 	"run_warden": {
 		"cycle": 0.7,
@@ -576,6 +639,17 @@
 		"steps": 2.0,
 		"weapon": "wand"
 	},
+	"sprint_arcanist_wand_town": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"sprint_reaver": {
 		"cycle": 0.633333333333333,
 		"layer": "full",
@@ -598,6 +672,17 @@
 		"steps": 2.0,
 		"weapon": "axes"
 	},
+	"sprint_reaver_town": {
+		"cycle": 0.633333333333333,
+		"layer": "full",
+		"length": 0.633333325386047,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"sprint_stalker": {
 		"cycle": 0.666666666666667,
 		"layer": "full",
@@ -619,6 +704,17 @@
 		"speed": 7.395,
 		"steps": 2.0,
 		"weapon": "daggers"
+	},
+	"sprint_stalker_town": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": ""
 	},
 	"sprint_warden": {
 		"cycle": 0.7,
