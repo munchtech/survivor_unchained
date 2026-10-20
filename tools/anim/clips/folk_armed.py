@@ -62,9 +62,10 @@ FREE_L = dict(at=(0.16, -0.46, 0.08), pole=(0.3, -0.2, -1.0))
 # The two-handed blade on the right shoulder: the fist before the chest, a little out, the elbow down at the side; the
 # blade up, back and out over the shoulder, resting a few mm above it, well clear of the head. It rides the chest
 # (the blade stays on the shoulder through the weight shift) and keeps none of the capture's arm swing. (The knuckles
-# turn the guard so its quillons clear the upper arm.) Found by search on folkhold.py's quick model (animation 45).
-SHOULDER_R = dict(at=(-0.013, -0.138, 0.238), pole=(-0.561, -0.603, -0.566), blade=_n((-0.336, 0.681, -0.651)),
-                  knuckles=_n((0.252, 0.231, 0.94)), ride="chest", swing=0.0)
+# turn the guard so its quillons clear the upper arm.) Found by search on folkhold.py's quick model of
+# Keegan (a woman) as the town builds her (animation 45); the men's is the same stand, unmeasured (no man carries one).
+SHOULDER_R = dict(at=(-0.016, -0.204, 0.199), pole=_n((-0.828, -0.469, -0.307)), blade=_n((-0.188, 0.845, -0.5)),
+                  knuckles=_n((0.15, -0.3, 0.94)), ride="chest", swing=0.0)
 
 STANDS = {
     "idle_armed": dict(r=SWORD_R, l=FREE_L, weapon="sword"),
