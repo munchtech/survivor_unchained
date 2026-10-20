@@ -92,6 +92,15 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public double MoonHi { get; init; } = 0.16;
     public double MoonTop { get; init; } = 0.9;
     public double MoonWidth { get; init; } = 0.2;
+    /// <summary>The paint grade (art style round 2, approved 20 Oct; 0: off), after the moon's step, in Oklab: PaintVib
+    /// raises the chroma of what is dull and not dark (skin hues held), PaintHi that of the lit brights, PaintLift lifts the
+    /// darkest values, and PaintShadowK of PaintShadow's hue and chroma (sRGB hex; "" none) is laid on what is dark and
+    /// weakly coloured: painted shadows coloured blue to violet, not slate. --grade-try overrides any of them for pictures.</summary>
+    public double PaintVib { get; init; }
+    public double PaintHi { get; init; }
+    public string PaintShadow { get; init; } = "";
+    public double PaintShadowK { get; init; }
+    public double PaintLift { get; init; }
 }
 
 public sealed record AtmospherePreset(

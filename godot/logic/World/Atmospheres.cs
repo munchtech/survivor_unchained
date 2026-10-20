@@ -84,7 +84,16 @@ public static class Atmospheres
     // grade's warm-hue hold and toe kept them so. The grade's Moon step now gives what is weakly coloured the moon's
     // silver-blue, and leaves what is strongly coloured (the fires, her ember's pool) its own.)
     static readonly GradeSettings PlayNightGrade = new([0.004, 0.010, 0.024], [1.0, 1.0, 1.03], [1.03, 1.0, 0.96],
-        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65 };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
+        "#a6bced", "#fff4ea", 0.2, 0.9, 0.1, 1.13) { Toe = 1, Moon = 1, MoonDrop = 0.65,
+        PaintVib = 0.8, PaintHi = 0.8, PaintShadow = "#1d2a52", PaintShadowK = 0.7, PaintLift = 0.02 };   // (the paint grade: art style round 2's camp, 20 Oct)
+
+    /// <summary>The close view's paint grade by night (art style round 1's, which kept her copper hair): the view grade
+    /// (Atmosphere.ViewGrade) takes it over the preset's as the view closes in. No vibrance, where she fills the frame:
+    /// round 1's 0.7 took her shaded side from chroma 2.6 to 4.3 (her pixels' mean Oklab dE 2.1, x100; 1.2 without it).</summary>
+    public static readonly GradeSettings CloseNightPaint = PlayNightGrade with
+    {
+        PaintVib = 0, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.7, PaintLift = 0.015,
+    };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
     /// <summary>The Low Ford road by night, in play: the moon low at the road's far end (north, a little
     /// west), so it lights the road's corridor through the wood, and what stands on it throws a long
@@ -98,16 +107,17 @@ public static class Atmospheres
     /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#a9c4ff", KeyIntensity = 4.9, KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
-        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.2, EnvIntensity = 1.2,
-        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.5, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.14, MistColor = "#2c3a50", Ember = 2.2,
-        CrowdRim = 0.2, RiverLight = 0.17, RiverSky = 0.3, RiverBend = 0.5,
+        KeyColor = "#a9c4ff", KeyIntensity = 6.5, KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
+        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.6, EnvIntensity = 1.2,
+        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
+        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
+        CrowdRim = 0.2, RiverLight = 0.55, RiverSky = 0.45, RiverBend = 0.5,
         Frost = 1,
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.0, 1.0, 1.0],
-        "#a6bced", "#ffbe7a", 0.55, 0.9, 0.1, 1.14) { Toe = 0.5, Moon = 1.0, MoonSat = 0.05, MoonTop = 0.45, MoonWidth = 0.2 };   // (a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
+        "#a6bced", "#ffbe7a", 0.55, 0.9, 0.1, 1.14) { Toe = 0.5, Moon = 1.0, MoonSat = 0.05, MoonTop = 0.45, MoonWidth = 0.2,
+        PaintVib = 0.75, PaintHi = 0.7, PaintShadow = "#403878", PaintShadowK = 0.6 };   // (the paint grade, the day's family; a mid-luma blue, as the night's: #3e5a8a took 0.12 off the shade, brown and murky)
 
     /// <summary>The Low Ford at dawn, in play: the sun 18 degrees up in the north-north-east, cheated from C04 A's
     /// rising sun toward the road's far end (as the moon was), so the wood road's corridor gets sun (from the east-north-east
@@ -133,16 +143,19 @@ public static class Atmospheres
     };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.01, 1.0, 0.99],
-        "#b0c0de", "#ffd49a", 0.25, 0.9, 0.1, 1.12) { Toe = 0.5, Moon = 0.5, MoonSat = 0.04, MoonTop = 0.45, MoonWidth = 0.2 };
+        "#b0c0de", "#ffd49a", 0.25, 0.9, 0.1, 1.12) { Toe = 0.5, Moon = 0.5, MoonSat = 0.04, MoonTop = 0.45, MoonWidth = 0.2,
+        PaintVib = 0.75, PaintHi = 0.7, PaintShadow = "#403878", PaintShadowK = 0.45 };   // (the paint grade: art style round 2's town, 20 Oct; its #2a3c78 at 0.6 moved violet and down to the target's shade: p0-30 C 2.2 h 274 to 1.8 h 291, target 0.9 h 331)
 
     /// <summary>The Waystation by day: a hard country's low sun, 28 degrees up in the east-north-east, so the
     /// houses' shadows fall across the north-south street and the square toward the south-west (from the north,
-    /// round 2, they fell along it and left the south street flat: 14% cover).</summary>
+    /// round 2, they fell along it and left the south street flat: 14% cover).
+    /// Art style round 2 (approved 20 Oct): a warmer, stronger sun (#ffd8a0, a touch warmer than r2's #ffe0a8 toward the
+    /// target's: the sunlit stone's Oklab hue 68 to 64, target 65), a violet sky fill, a warm bounce, and the paint grade.</summary>
     public static readonly AtmospherePreset WaystationDay = Day with
     {
-        KeyColor = "#ffe0b0", KeyIntensity = 4.6, KeyElevation = 28, KeyAzimuth = 330, ShadowStrength = 0.95,
-        HemiSky = "#8ea6c4", HemiGround = "#3a3a40", HemiIntensity = 0.62, EnvIntensity = 0.55,
-        Exposure = 0.95, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.002, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
+        KeyColor = "#ffd8a0", KeyIntensity = 6.6, KeyElevation = 28, KeyAzimuth = 330, ShadowStrength = 0.95,
+        HemiSky = "#9a9ad0", HemiGround = "#6a4e34", HemiIntensity = 0.7, EnvIntensity = 0.55,
+        Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
     };
 
     /// <summary>Play's night going to dawn by k (0 to 1), where no C04 A brings the sun up: the moon sets and the
@@ -184,6 +197,9 @@ public static class Atmospheres
             MoonSat = Lerp(a.Grade.MoonSat, b.Grade.MoonSat, t), MoonDrop = Lerp(a.Grade.MoonDrop, b.Grade.MoonDrop, t),
             MoonLo = Lerp(a.Grade.MoonLo, b.Grade.MoonLo, t), MoonHi = Lerp(a.Grade.MoonHi, b.Grade.MoonHi, t),
             MoonTop = Lerp(a.Grade.MoonTop, b.Grade.MoonTop, t), MoonWidth = Lerp(a.Grade.MoonWidth, b.Grade.MoonWidth, t),
+            PaintVib = Lerp(a.Grade.PaintVib, b.Grade.PaintVib, t), PaintHi = Lerp(a.Grade.PaintHi, b.Grade.PaintHi, t),
+            PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
+            PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
         })
         {
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
@@ -211,6 +227,9 @@ public static class Atmospheres
 
     static double ToLinear(double c) => c < 0.04045 ? c * 0.0773993808 : Math.Pow(c * 0.9478672986 + 0.0521327014, 2.4);
     static double ToSrgb(double c) => c < 0.0031308 ? c * 12.92 : 1.055 * Math.Pow(c, 0.41666) - 0.055;
+
+    /// <summary>Mix, where an empty colour (none) takes the other's: its strength blends on its own.</summary>
+    static string MixOr(string a, string b, double t) => a == "" ? b : b == "" ? a : Mix(a, b, t);
 
     static string Mix(string a, string b, double t)
     {

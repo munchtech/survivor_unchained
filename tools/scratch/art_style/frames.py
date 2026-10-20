@@ -5,7 +5,7 @@ paint-overs), r (--grade off: the raw frame the paint-overs start from), t (--gr
 every set, or x.SET="..." for one; e.g. the painterly post-filter on top of A).
 SETS, comma-separated: town (the square, the east road, the north street by day), ford (Low Ford by
 night: camp, road A, road B, the ford, the wood road, two ford lamps), close (the close view at camp,
-closest zoom, twice facing away from the fire and twice facing it).
+closest zoom, twice facing away from the fire and twice facing it), camp (the camp at the play camera), towndawn, forddawn.
 Frames land in godot/.shots/ as ROUND_SET_VARIANT_*.png; tables as godot/.shots/ROUND_SET_g.bin.
 """
 import os, subprocess, sys, time
@@ -24,6 +24,9 @@ SETS = {
     "fordc": (NIGHT + ["--spots-clear", "--spots", "-7.5,87.5;0,-38;0,-37"], 3),
     # (judge r2: the camp at the play camera, centred near the fire, the living held off)
     "camp": (NIGHT + ["--spots-clear", "--spots", "-9.0,90.0;-8.0,91.5"], 2),
+    # (env lead 9, G1: the dawns, one frame each: the square at dawn, the camp after the prologue)
+    "towndawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "3,3"], 1),
+    "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)

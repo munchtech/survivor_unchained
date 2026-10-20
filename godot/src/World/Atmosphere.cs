@@ -58,6 +58,12 @@ public partial class Atmosphere : Node3D
         {
             HighlightTint = "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
             Moon = g.Moon * (1 - CloseMoonOff * ViewHighlightsNeutral),
+            // (The close view by night takes its own paint grade: art style round 1's, which kept her copper hair.)
+            PaintVib = Mathf.Lerp((float)g.PaintVib, (float)Atmospheres.CloseNightPaint.PaintVib, ViewHighlightsNeutral),
+            PaintHi = Mathf.Lerp((float)g.PaintHi, (float)Atmospheres.CloseNightPaint.PaintHi, ViewHighlightsNeutral),
+            PaintShadow = Atmospheres.CloseNightPaint.PaintShadow,
+            PaintShadowK = Mathf.Lerp((float)g.PaintShadowK, (float)Atmospheres.CloseNightPaint.PaintShadowK, ViewHighlightsNeutral),
+            PaintLift = Mathf.Lerp((float)g.PaintLift, (float)Atmospheres.CloseNightPaint.PaintLift, ViewHighlightsNeutral),
         };
     /// <summary>--close-moon-off K: how much of the grade's moon colour the close view by night takes off (pictures).</summary>
     static readonly float CloseMoonOff = SurvivorUnchained.Args.Num("close-moon-off", 1f);
@@ -255,6 +261,7 @@ public partial class Atmosphere : Node3D
         float tintHue = Oklab(shT).Z;
         // --grade-toe X: the toe hold for pictures (0, the grade before it).
         float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
+        var paint = new Paint(g, Try);
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
         var slices = new Godot.Collections.Array<Image>();
         for (int b = 0; b < LutSize; b++)
@@ -294,7 +301,7 @@ public partial class Atmosphere : Node3D
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
                     if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
-                    if (Try != null) outLin = Try.Apply(outLin);
+                    if (paint.On) outLin = paint.Apply(outLin);
                     var o = Srgb(outLin);
                     img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
                 }
@@ -418,16 +425,14 @@ public partial class Atmosphere : Node3D
     static Vector3 Lin(Vector3 c) => new(Lin1(c.X), Lin1(c.Y), Lin1(c.Z));
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
 
-    /// <summary>--grade-try k=v,...: a trial grade on top of the live one, for style frames (default untouched).
-    /// Keys: mute, vib, skin, shadow (#hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    /// <summary>--grade-try k=v,...: a trial paint grade over the preset's own (GradeSettings.Paint*), key by key, for style
+    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
     static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
 
     sealed class GradeTry
     {
-        public float? Mute;
-        float vib, skin = 1, shadowK, lift, hi;
-        bool hasShadow;
-        float ls, cs, hs;
+        public float? Mute, Vib, Skin, ShadowK, Lift, Hi;
+        public string? Shadow;
 
         public static GradeTry? Parse(string? spec)
         {
@@ -439,27 +444,44 @@ public partial class Atmosphere : Node3D
                 int eq = part.IndexOf('=');
                 if (eq < 0) { GD.PushWarning($"--grade-try: no value in '{part}'"); continue; }
                 string k = part[..eq].Trim().ToLowerInvariant(), v = part[(eq + 1)..].Trim();
-                if (k == "shadow")
-                {
-                    if (v.StartsWith('_')) v = "#" + v[1..];
-                    var c = new Color(v);
-                    var o = Oklab(Lin(new Vector3(c.R, c.G, c.B)));
-                    t.ls = o.X; t.cs = o.Y; t.hs = o.Z; t.hasShadow = true;
-                    continue;
-                }
+                if (k == "shadow") { t.Shadow = v.StartsWith('_') ? "#" + v[1..] : v; continue; }
                 if (!float.TryParse(v, System.Globalization.NumberStyles.Float, inv, out float f)) { GD.PushWarning($"--grade-try: bad number '{part}'"); continue; }
                 switch (k)
                 {
                     case "mute": t.Mute = f; break;
-                    case "vib": t.vib = f; break;
-                    case "skin": t.skin = f; break;
-                    case "shadowk": t.shadowK = f; break;
-                    case "lift": t.lift = f; break;
-                    case "hi": t.hi = f; break;
+                    case "vib": t.Vib = f; break;
+                    case "skin": t.Skin = f; break;
+                    case "shadowk": t.ShadowK = f; break;
+                    case "lift": t.Lift = f; break;
+                    case "hi": t.Hi = f; break;
                     default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
                 }
             }
             return t;
+        }
+    }
+
+    /// <summary>The paint grade's terms for one table: the grade's own, each --grade-try key over its own.</summary>
+    readonly struct Paint
+    {
+        readonly float vib, skin, shadowK, lift, hi;
+        readonly bool hasShadow;
+        readonly float ls, cs, hs;
+        public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
+
+        public Paint(GradeSettings g, GradeTry? t)
+        {
+            vib = t?.Vib ?? (float)g.PaintVib; hi = t?.Hi ?? (float)g.PaintHi; lift = t?.Lift ?? (float)g.PaintLift;
+            shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1;
+            string hex = t?.Shadow ?? g.PaintShadow;
+            hasShadow = hex != "";
+            ls = cs = hs = 0;
+            if (hasShadow)
+            {
+                var c = new Color(hex);
+                var o = Oklab(Lin(new Vector3(c.R, c.G, c.B)));
+                ls = o.X; cs = o.Y; hs = o.Z;
+            }
         }
 
         public Vector3 Apply(Vector3 outLin)

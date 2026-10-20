@@ -172,11 +172,11 @@ public partial class Game
     SpotLight3D? closeKey, closeRim;
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
-    // filled her shadow side almost to her lit side).
-    static float CloseFireShare => Args.Num("close-fire", 0.3f);
+    // filled her shadow side almost to her lit side). Art style round 2 (20 Oct): 0.75, rim 3, night key 2.2, under the paint grade.
+    static float CloseFireShare => Args.Num("close-fire", 0.75f);
     // --close-key-night E, --close-rim E, --close-lamp-night L: the night key, the moon's rim and her lamp's share by night (pictures).
-    static float CloseKeyNight => Args.Num("close-key-night", 2.5f);
-    static float CloseRimNight => Args.Num("close-rim", 1.0f);
+    static float CloseKeyNight => Args.Num("close-key-night", 2.2f);
+    static float CloseRimNight => Args.Num("close-rim", 3.0f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
     static float CloseRimAz => Args.Num("close-rim-az", 0.5f);
     static float CloseLampByNight => Args.Num("close-lamp-night", 0.8f);
