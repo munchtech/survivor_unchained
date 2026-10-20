@@ -1,0 +1,29 @@
+her    axe_back                     l: spin 12/13 wtw 0 wbend 0 wdev 0 ftw 0 elbow 1 knee 0 (0 flagged) | r: spin 36/25 wtw 27 wbend 55 wdev 38 ftw 26 elbow 3 knee 0 (1 flagged)
+         r f3: hand spins 36 in a frame
+her    axe_fore                     l: spin 16/17 wtw 0 wbend 0 wdev 0 ftw 0 elbow 1 knee 0 (0 flagged) | r: spin 51/44 wtw 24 wbend 52 wdev 38 ftw 23 elbow 2 knee 0 (3 flagged)
+         r f1: forearm spins 44 in a frame
+         r f3: hand spins 30 in a frame
+         r f4: hand spins 51 in a frame
+her    axe_heavy                    l: spin 20/22 wtw 0 wbend 0 wdev 0 ftw 0 elbow 1 knee 0 (0 flagged) | r: spin 29/35 wtw 24 wbend 59 wdev 39 ftw 23 elbow 2 knee 0 (1 flagged)
+         r f1: forearm spins 35 in a frame
+her    axes_left                    l: spin 49/44 wtw 26 wbend 51 wdev 38 ftw 25 elbow 1 knee 0 (3 flagged) | r: spin 14/25 wtw 25 wbend 54 wdev 36 ftw 24 elbow 1 knee 0 (0 flagged)
+         l f1: forearm spins 44 in a frame
+         l f3: hand spins 32 in a frame
+         l f4: hand spins 49 in a frame
+her    axes_right                   l: spin 15/25 wtw 26 wbend 56 wdev 36 ftw 25 elbow 1 knee 0 (0 flagged) | r: spin 49/43 wtw 27 wbend 51 wdev 38 ftw 26 elbow 2 knee 0 (3 flagged)
+         r f1: forearm spins 43 in a frame
+         r f3: hand spins 32 in a frame
+         r f4: hand spins 49 in a frame
+her    cast_flick                   l: spin 15/13 wtw 0 wbend 0 wdev 0 ftw 0 elbow 1 knee 0 (0 flagged) | r: spin 54/65 wtw 27 wbend 49 wdev 38 ftw 26 elbow 2 knee 0 (2 flagged)
+         r f1: forearm spins 65 in a frame
+         r f2: hand spins 54 in a frame
+her    chain_strike                 l: spin 25/23 wtw 1 wbend 14 wdev 4 ftw 1 elbow 2 knee 3 (0 flagged) | r: spin 94/36 wtw 26 wbend 55 wdev 39 ftw 25 elbow 5 knee 0 (2 flagged)
+         r f2: forearm spins 36 in a frame
+         r f3: hand spins 94 in a frame; forearm spins 32 in a frame
+her    run_arcanist_wand            l: spin 2/3 wtw 0 wbend 0 wdev 0 ftw 0 elbow 0 knee 1 (0 flagged) | r: spin 1/2 wtw 19 wbend 2 wdev 2 ftw 19 elbow 0 knee 1 (0 flagged)
+her    run_reaver                   l: spin 3/4 wtw 0 wbend 0 wdev 0 ftw 0 elbow 0 knee 1 (0 flagged) | r: spin 4/1 wtw 47 wbend 5 wdev 3 ftw 48 elbow 0 knee 1 (0 flagged)
+her    run_reaver_axes              l: spin 4/1 wtw 47 wbend 5 wdev 3 ftw 47 elbow 0 knee 1 (0 flagged) | r: spin 4/1 wtw 47 wbend 5 wdev 3 ftw 48 elbow 0 knee 1 (0 flagged)
+her    sprint_arcanist_wand         l: spin 3/4 wtw 0 wbend 0 wdev 0 ftw 0 elbow 0 knee 1 (0 flagged) | r: spin 1/3 wtw 21 wbend 2 wdev 2 ftw 21 elbow 0 knee 1 (0 flagged)
+her    sprint_reaver                l: spin 4/5 wtw 0 wbend 0 wdev 0 ftw 0 elbow 0 knee 0 (0 flagged) | r: spin 4/2 wtw 47 wbend 5 wdev 3 ftw 48 elbow 0 knee 1 (0 flagged)
+her    sprint_reaver_axes           l: spin 4/2 wtw 47 wbend 5 wdev 3 ftw 48 elbow 0 knee 0 (0 flagged) | r: spin 4/2 wtw 47 wbend 5 wdev 3 ftw 48 elbow 0 knee 1 (0 flagged)
+15 frames flagged
