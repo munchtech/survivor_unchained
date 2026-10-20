@@ -13,7 +13,7 @@ Branch `anim-40` (godot/assets is a junction to anim-40's OWN public/assets: no 
 - Routed [staff asset]: the gem reads as a flat blue slab side-on; give it depth. [face] a sleepy heavy-lidded gaze at the close-up.
 - Possible follow-up: her COMBAT idle_arcanist uses the old staff aim (~30 deg forward), so its crescent likely covers her face at the facing-45 close-up; the same re-aim may belong there (check one frame first).
 **Next, in order:** 3. optional: the crossbow ~10 deg round its sling (stalker town idle, butt crowds her left hand); each calling's town idle starting at its own phase. 4. later attack items: the five KNOWN fixes from judge r4 (heavy0 pelvis, heavy7_run blade broadside, the flick free hand out, the wand run's fist out, the axes run's arm in), then chain_strike's restage.
-Scratch (shared coordinator scratchpad): `...\scratchpadnim45\` (dumps, reaim/held.py face-cover check, s2/s3/staff/walk tools); back it up and clear only that subfolder at the end of the stretch.
+Scratch (shared coordinator scratchpad): C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\746784c6-95b9-4ef2-95bf-f24b9874f4bb\scratchpad\anim45\ (dumps, reaim/held.py face-cover check, s2/s3/staff/walk tools); back it up and clear only that subfolder at the end of the stretch.
 
 ## 00000000000000. MR READY (animation 45, 20 October 2026): armed townsfolk at ease in town
 Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). Never commit heroine.res, heroine_clips.json, manifest.json, arms_rest_godot.json or *.import (folk.res and folk_clips.json are tracked).
