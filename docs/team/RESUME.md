@@ -15,6 +15,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 
 ## 19 October, night: coordinator d7ae3fc3 (running)
 Leads restarted in the wind-down's order, each a fresh successor on su-lead-high (high): environment E3 env lead 7 (a1eb150404e305217; env-3@3a15fb14), Marionette lead 4 (a40fcfbde955a39d7; pipeline-1@cd196d7 + npc-1@9d11117d), animation 43 (a5f11fa0e7ced2e0d; anim-40@e782f629, with the last run's uncommitted heroine.res/clips/manifest edits to check and commit). All of 5e61213e's agents were confirmed stopped first; no turns held. Type start check: su-lead-max loads at 17k.
+**Queued after E3 merges (the owner, 19 Oct night):** a three-grade look test toward a vibrant signature look ("the correct colors just somehow more vibrant"): A the current grade (AgX, sat 0.9, Mute 0.16), B vibrance with skin protected and no mute, C B plus coloured shadows and richer highlights. The same 6 frames (town day, Low Ford night, camp close-up face, dawn road, a Flare BOOM, her portrait), side by side for the owner to pick; then the look bible. About 1 h, a worker plus Godot turns.
 Routed to perf (no lead): shadow draws rose from 488 to 749 at the Low Ford after an integration merge (not E3; E3 bisected it 19 Oct night). The ground sits at about 0.86 ms vs 0.72 at solver B.
 
 ## 19 October, night: coordinator 5e61213e (history)
