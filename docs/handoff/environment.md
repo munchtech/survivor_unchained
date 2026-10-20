@@ -1,6 +1,33 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (env lead 9, 20 Oct): G1 DONE (the painted light and grade are the default), MR next; then E4
+## Paused here (env lead 9, 20 Oct); next: judge E4 step B round 2, then step C
+- Branch `env-4` (pushed). G1 is MERGED. Scratch, briefs and measuring scripts are backed up in `survivorsunchained_inputs\scratch_env9\` (`e4\` holds the tree work; briefs `e4a_brief.md` to `e4d_brief.md`, judges `e4a_judge.md`, `e4b_judge.md`, `e4c_judge.md`). Shots are in the worktree's `godot\.shots\` (`e4a_` to `e4d_`; `_g_` is the kit, `_o_` is ours).
+- **E4 so far: our own spruce and alder,** behind `--flora-own` (default OFF until E4 closes).
+  - Generator `tools/assets/env_trees.py`: `python tools/assets/env_trees.py tex` (the atlases, through `paint_tex.py`'s new `bark` and `foliage` presets), then `blender -b -P tools/assets/env_trees.py -- mesh`, then `Godot --headless --import`. **`frames.py` does not reimport**, so run the import after every mesh build.
+  - Output in `godot/art/world/flora/`. Shader: the `OWN_FOLIAGE` block in `godot/shaders/kit.gdshader`, plus the global `flora_light` (Atmosphere.cs, project.godot).
+  - Swap in `Dressing.cs`, `ZoneData.cs` and `KitLook.cs`: Pine_1-5 become spruce_a/b/c, CommonTree_1-5 become alder_a/b/c, in both zones. Our trees merge across placement groups, with shadow-only proxies in 48 m cells. LOD0 to 44 m, LOD1 to 100 m.
+  - Perf flips `pines` and `broadleaf`; the `road_night` view is in `tools/perf/run.py`. Whole flora at road_night: 0.46 ms GPU (kit 1.44), 99 draws (budget 80; about 57 of them are kit bushes, ferns, rocks and dead trees, so step C closes it), 192 shadow draws (budget 420).
+- **Judges:**
+  - Spruce: the foliage passes (fern read, dawn yellow and per-tree variation fixed).
+  - Alder: PASS-WITH-NOTES at dawn.
+  - Round 3 (e4c) failed camp_00/_01, road_00 and town_03. Solver e4d (cf29db6b) then fixed the marks below; **its shots `e4d_*` are NOT judged yet.**
+    - The night shadow blades: the proxy rebuilt with concave notched tiers, gaps cut between tiers, lean and ±30% height. This is the shadows' last round: if they fail, raise the LowFordNight moon from 20 to about 26-28 degrees, or close them as known.
+    - The alder crown no longer reads as a hole in town: its median 21.6 against the cobble shadow's 20.0, but only 43% of it is olive against the 50% asked.
+    - The night shade is no longer black: shaded crowns at the road's L, blue-green.
+    - The alder has lobed leaf rims, and a dawn hue floor of 98.
+    - Near trees are dimmed 20% by day, but the nearest roaddawn spruce is still the brightest patch.
+  - The Low Ford moon's angular size is 0 (the 1.2 degrees is arenas only), so the light was untouched.
+- **Next:**
+  1. A xhigh judge on `e4d_*_o_*`, using `e4c_judge.md` with e4d's changes.
+  2. Step C: snags (DeadTree_1-5, from the spruce generator with no needles), bushes (Bush_Common and its flowering version, hazel or elder), bracken (Fern_1, Plant_1_Big), all merged the same way to bring draws under 80. What they must match: the same 40-60 px clumps with dark cores and lit rims, a hue between the alder's olive and the spruce's blue-green (never the kit's lime), the night ambient floor, a dark base at the ground, an outline per species. Then the LOD2 impostors.
+  3. Grass and tufts (the Poly Haven scans and Grass.cs).
+  4. Make `--flora-own` the default, run the full test and teach run, then the MR.
+  Then E5 rocks, E6 water (fixes the ford), E7 bedroll, chest and the amber camp lantern (`LampColor` is shared by every road lamp, so the camp lantern needs its own), E9 buildings, roofs, well, stalls and the setts. **E9 gate item: the dawn town's mud decals go black in shade.** That's the decal asset, not the light (the same with the old light). E9's setts remake must pass that frame.
+- **Gotchas:**
+  - Merge with the junction removed (README); a failed merge's hard reset wiped this worktree's assets once (restored).
+  - The camp lamp pool's cyan left half belongs to lighting, not the trees.
+
+## Done (env lead 9, 20 Oct): G1, the painted light and grade as the default (MERGED)
 - Branch `env-4`. Scratch, briefs and measuring scripts: `survivorsunchained_inputs\scratch_env9\` (backed up at the end of each stretch); judges' briefs `g1_judge_*.md`, `g2_*`, `g4_*`.
 - **What G1 built:** the paint grade is data. `GradeSettings.Paint*` (vib, vib-dark, hi, shadow hex, shadowk, lift) in `godot/logic/World/Zone.cs`, applied in `GradeLut` (`Paint` in `godot/src/World/Atmosphere.cs`). Vibrance fades in the darks (`VibDeep`) and spares skin and copper. Hi spares skin. `--grade-try` still overrides any key, for pictures.
   - Presets (`godot/logic/World/Atmospheres.cs`): WaystationDay, LowFordNight, LowFordDawn (WaystationDawn inherits it), and `CloseNightPaint`, the close view's grade. The Look and the title (`Atmospheres.Front`) take CloseNightPaint's paint by default; `--front-unpainted` gives the old grade.
