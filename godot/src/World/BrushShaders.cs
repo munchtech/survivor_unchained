@@ -58,7 +58,9 @@ static class BrushShaders
             vec2 t = dot(v1, v1) > dot(v2, v2) ? v1 : v2;
             t = dot(t, t) > 1e-20 ? normalize(t) : vec2(0.0, 1.0);
             float A = (l1 + l2) > 1e-9 ? (l1 - l2) / (l1 + l2) : 0.0;
-            float conf = clamp(A * 1.5, 0.0, 1.0) * smoothstep(4e-4, 4e-3, l1);
+            // (strokes follow only strong, straight structure: on small-scale texture such as cobbles the flow
+            // curls round every stone and the strokes came out as swirls; elsewhere they keep one hatch angle)
+            float conf = smoothstep(0.55, 0.9, A) * smoothstep(1e-3, 1e-2, l1);
             imageStore(flow, g, vec4(t, A, conf));
         }
         """;
