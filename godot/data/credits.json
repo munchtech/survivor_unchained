@@ -488,10 +488,12 @@
           "entries": []
         },
         {
-          "title": "The Verge's ground",
+          "title": "The ground (raw material)",
           "sub": true,
           "links": [],
-          "notes": [],
+          "notes": [
+            "Recoloured and rebuilt into our own ground materials."
+          ],
           "entries": [
             {
               "name": "Sparse Grass",

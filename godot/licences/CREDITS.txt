@@ -206,7 +206,7 @@ https://polyhaven.com
 Each Poly Haven asset is credited to its scanners and artists, by name.
 
 
-The Verge's ground
+The ground (raw material: recoloured and rebuilt into our own materials by tools/assets/env_ground.py)
 * "Sparse Grass" by Amal Kumar: grass
     https://polyhaven.com/a/sparse_grass
 * "Forest Leaves 02" by Rob Tuytel: leaves
