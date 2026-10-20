@@ -315,9 +315,13 @@ public static class Arms
         // grip high on the right), the tip down toward her left hip, flat to her back.
         // (armor 5 solver, 19 October: the tip turned 11 degrees out from her back, off her calves.)
         [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.201f), new(0.281f, -0.944f, -0.185f), new(0.003f, 0.193f, -0.981f), new(0, 0, -1)),
-        // Staff (animation 45): slung across her back, the head (the piece's +Y) up behind her right shoulder, the foot
-        // down toward her left calf, flat to her back. `At` is the grip (no anchor_sheath).
-        [WeaponSockets.BackStaff] = new("spine_03", new(0.034f, 1.026f, -0.23f), new(-0.34f, 0.94f, 0), new(0, 0, -1), new(0, 0, -1)),
+        // Staff (animation 45, 20 October): slung across her back on a steep diagonal (24 deg off vertical), the head (the
+        // piece's +Y) up behind and outside her right shoulder, the foot down outside her left calf; its crescent turned 45
+        // deg about the shaft to face back and out, so the inner horn lies toward her shoulder blade. `At` is the grip (no
+        // anchor_sheath). Fitted to the arcanist's wide hat brim, which reaches 35 cm round her head and drops onto her
+        // shoulders as she leans into the sprint: the head passes outside it (5 cm), the foot outside the run's kicked-back
+        // calf (6 cm), 0 mm into her (tools/scratch/anim45/staffcheck.py; armscheck --sockets).
+        [WeaponSockets.BackStaff] = new("spine_03", new(-0.025f, 1.0608f, -0.2585f), new(-0.4f, 0.9135f, -0.0743f), new(-0.6267f, -0.3317f, -0.7052f), new(0, 0, -1)),
     };
 
     static WeaponSockets.Clearance? clearance;
