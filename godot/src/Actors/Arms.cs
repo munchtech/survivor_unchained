@@ -323,7 +323,7 @@ public static class Arms
         // fit: past the arcanist's wide hat brim 6.4 cm (the sprint's lean), her braid 6.9 cm, her upper back 7 cm, the
         // run's kicked-back calf 8 cm, 0 mm into her skin and outfit, both hands 32 cm or more off it
         // (tools/scratch/anim45/staffcheck.py). `At` is the grip (no anchor_sheath); its clearance is the 5 mm air alone.
-        // The bead charms are stripped while it rides (StripCharms).
+        // The bead charms are stripped while it rides (StripCharms). Unused: the slung staff failed under the arcanist's hat (animation 45); for a hatless outfit, unjudged.
         [WeaponSockets.BackStaff] = new("spine_03", new(-0.0518f, 0.9148f, -0.3175f), new(-0.4657f, 0.8782f, -0.1086f), new(0.6607f, 0.2634f, -0.7029f), new(0, 0, -1)),
     };
 
@@ -436,6 +436,7 @@ public static class Arms
     /// it is held upright, so slung at 24 deg they lean with the shaft (an earring at the close-up). They go while it
     /// rides: the detached pieces of the head no wider than 5.2 cm and of 30 welded vertices or more (the beads and
     /// links; the loose single-face trim stays) whose centre hangs off the shaft (|x| > 5 cm) between 1.40 and 1.90 m.</summary>
+    // Unused: the slung staff failed under the arcanist's hat (animation 45); for a hatless outfit, unjudged.
     static void StripCharms(Node n)
     {
         if (n is MeshInstance3D mi && mi.Mesh is ArrayMesh am)
