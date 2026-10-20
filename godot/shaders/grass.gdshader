@@ -64,9 +64,9 @@ void vertex() {
 	float dens = (1.0 - smoothstep(0.12, 0.45, hard + (nz.g - 0.5) * 0.35))
 		* (1.0 - smoothstep(0.15, 0.8, sp.r + (nz.g - 0.5) * 0.35) * 0.85);
 	dens *= smoothstep(0.18, 0.5, nz.r + 0.22);
-	// None on a road's made surface or in its ruts; sparse on its centre strip (R about 0.5).
+	// None on a road's made surface (R 0.8) or in its ruts; sparse on its centre strip (R to 1).
 	vec4 pm = textureLod(paint_mask, (wp + zone_size * 0.5) / zone_size, 0.0);
-	dens *= (1.0 - smoothstep(0.6, 0.8, pm.r)) * (1.0 - smoothstep(0.1, 0.4, pm.g));
+	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
 	float keep = step(h3, dens * density * edge);

@@ -16,7 +16,7 @@ namespace SurvivorUnchained.View;
 /// road the dirt is repainted as the road's own soft verge.</para>
 ///
 /// <para>A mask over the zone, as the paint is laid: R the road's made
-/// surface (its centre strip held back so sparse grass shows), G the wheel
+/// surface (0.8; its centre strip above that, to 1, where sparse grass shows), G the wheel
 /// ruts (depth, 0-1), B wetness (concave ground from the heights' curvature,
 /// the ruts, the gutters at wall bases), A where puddles may stand.</para>
 /// </summary>
@@ -41,8 +41,9 @@ public sealed class GroundPaint
         var paths = new List<(Vector2[] P, float Half)>();
         foreach (var (key, pts) in z.Meta.Paths)
         {
-            // The roads; their keys and the streams are not.
-            if (key.EndsWith("_KEYS") || key.Contains("STREAM") || pts.Length < 2) continue;
+            // The roads; their keys and the streams are not, nor a generated map's WAY (its ways
+            // run together into one list) or an arena's RIM.
+            if (key.EndsWith("_KEYS") || key.Contains("STREAM") || key is "WAY" or "RIM" || pts.Length < 2) continue;
             var p = new Vector2[pts.Length];
             for (int i = 0; i < pts.Length; i++) p[i] = new Vector2((float)pts[i][0], (float)pts[i][1]);
             paths.Add((p, key.Contains("RUT") ? RoadHalf * 0.75f : RoadHalf));
@@ -148,7 +149,8 @@ public sealed class GroundPaint
                     float e = (Mathf.Abs(off) - ro) / RutW;
                     rut = Mathf.Exp(-e * e) * c * (0.75f + 0.25f * Mathf.Sin(s * 0.23f + side[at]));
                     float centre = Mathf.Exp(-(off / 0.38f) * (off / 0.38f));
-                    r = c * (1f - 0.5f * centre);
+                    // 0.8 the made surface; above it, up to 1, its centre strip (so no edge's ramp passes through the strip's values).
+                    r = c * (0.8f + 0.2f * centre);
                     core[at] = c;
                     verge[at] = v;
                 }

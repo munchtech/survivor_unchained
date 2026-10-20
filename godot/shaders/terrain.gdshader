@@ -21,7 +21,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 
 uniform sampler2D noise_tex : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D splat : filter_linear_mipmap, repeat_disable;
-// GroundPaint.cs: R road surface, G ruts, B wet, A puddles.
+// GroundPaint.cs: R road surface (0.8; its centre strip to 1), G ruts, B wet, A puddles.
 uniform sampler2D paint_mask : filter_linear_mipmap, repeat_disable;
 uniform float mask_texel = 0.127;
 uniform sampler2DArray g_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -111,7 +111,7 @@ void fragment() {
 	float wb = clamp((sp.b - 0.5) * edge_k + 0.5 + (nM.r - 0.5) * 0.4, 0.0, 1.0) * step(0.02, sp.b);
 	float wm = clamp((sp.a - 0.5) * edge_k + 0.5 + (nM.g - 0.5) * 0.3, 0.0, 1.0) * step(0.02, sp.a);
 	// The road's centre strip: sparse grass between the ruts.
-	float cen = (1.0 - smoothstep(0.55, 0.9, pm.r)) * smoothstep(0.3, 0.45, pm.r);
+	float cen = smoothstep(0.84, 0.96, pm.r);
 	wd *= 1.0 - cen * 0.45;
 	float slope = 1.0 - clamp(n_geo.y, 0.0, 1.0);
 	float wr = smoothstep(0.3, 0.55, slope + (nM.b - 0.5) * 0.15);
