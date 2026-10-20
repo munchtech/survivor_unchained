@@ -1753,7 +1753,8 @@ public partial class Game : Node, IZoneHost
             var flipped = flips.Split(',').ToHashSet();
             double every = Args.Num("perf-flip-every", 1);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            bool outNow = false, wasOut = false;
+            bool outNow = false, wasOut = false, pinesOut = false;
+            List<Node3D>? pines = null;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
             // aa:NAME: the edges smoothed so while out (Graphics.Aa); interp: drawn from the last step while out (Interp).
@@ -1796,10 +1797,14 @@ public partial class Game : Node, IZoneHost
                         flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Scatter" or "Fires" or "Lights"))
                         n.Visible = on;
                 }
-                // pines: the place's pines alone (the kit's, or ours under --flora-own: E4 measures each).
-                if (flipped.Contains("pines") && scene.View.GetNodeOrNull<Node3D>("Flora") is { } fl)
-                    foreach (var c in fl.GetChildren())
-                        if (c is Node3D p && ((string)p.Name).StartsWith("pine_")) p.Visible = on; // (Godot makes the ":" in "pine:Pine_1" a "_")
+                // pines: the place's pines alone (the kit's, or ours under --flora-own: E4 measures each), found
+                // once (Dressing's flora_pine group) and switched only as the flip turns (no list made each frame).
+                if (flipped.Contains("pines") && outNow != pinesOut)
+                {
+                    pinesOut = outNow;
+                    pines ??= [.. GetTree().GetNodesInGroup("flora_pine").OfType<Node3D>()];
+                    foreach (var p in pines) p.Visible = on;
+                }
                 // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
                 if (flipped.Contains("lampshadows")) ShadowLamp.Enabled = on;
                 var t = Graphics.Current;

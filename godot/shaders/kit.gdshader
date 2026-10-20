@@ -38,6 +38,18 @@ uniform bool foot = false;
 global uniform vec4 survivor;
 global uniform vec4 view_from;
 
+#ifdef OWN_FOLIAGE
+// The key light's kind for our own trees (Atmosphere sets it): x how much it is the moon (0 by day,
+// 1 at night), y how much a low warm sun (dawn, dusk).
+global uniform vec4 flora_light;
+
+vec3 hue_turn(vec3 c, float a) {
+	vec3 k = vec3(0.57735);
+	float ca = cos(a);
+	return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
+}
+#endif
+
 // (foliage: its leaves' undersides are not a roof's; KitLook)
 uniform bool leaves = false;
 
@@ -177,15 +189,33 @@ void fragment() {
 	// The crown's normals point out from the trunk on both faces of a card (Godot turns a back
 	// face's round), so a crown shades as one mass; light through the needles from behind; each
 	// tree's green a little warmer or cooler (v_jit).
+	// Each vertex's colour (env_trees.py): r how open it is (1 at the crown's skin, 0.35 at its axis),
+	// g how far out along its spray (0 foot, 1 tip), b 1 on a spray card (its front its upper side).
 	if (!FRONT_FACING) NORMAL = -NORMAL;
+	float night = flora_light.x, low_sun = flora_light.y;
+	float open_ = COLOR.r;
 	if (UV.x < 0.75) {
-		ALBEDO *= mix(vec3(1.02, 1.0, 0.93), vec3(0.92, 1.0, 1.08), v_jit);
-		BACKLIGHT = ALBEDO * vec3(0.18, 0.22, 0.24);
-		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is shut out)
-		AO = 0.5;
+		// each tree its own green: hue within 4 degrees, value within 10% (two hashes, not one)
+		float j2 = fract(v_jit * 7.31 + 0.37);
+		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-4.0, 4.0, v_jit))), vec3(0.0)) * mix(0.9, 1.1, j2);
+		// a tier's underside (a card seen from below) in its own shade
+		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
+		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
+		float tip = smoothstep(0.55, 1.0, COLOR.g) * smoothstep(0.75, 1.0, COLOR.r);
+		float lum = dot(ALBEDO, LW);
+		ALBEDO = mix(ALBEDO, vec3(lum) * vec3(0.94, 1.0, 1.02), 0.16 * low_sun * (1.0 - tip));
+		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
+		ALBEDO *= mix(0.5, 1.0, open_) * mix(1.0, 0.9, night);
+		// light through the needles from behind; under the moon a third of it, deep blue-green
+		BACKLIGHT = ALBEDO * mix(vec3(0.18, 0.22, 0.24), vec3(0.04, 0.07, 0.065), night) * open_;
+		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
+		// shut out; at night the needles take less of the moonlit sky still)
+		AO = mix(0.5, 0.36, night) * mix(0.45, 1.0, open_);
 		// (no wet sheen on needles: the moon's specks read as frost-blue glints)
 		SPECULAR = 0.12;
 		AO_LIGHT_AFFECT = 0.0;
+	} else {
+		ALBEDO *= mix(0.6, 1.0, open_);
 	}
 #endif
 

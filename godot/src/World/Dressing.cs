@@ -32,16 +32,21 @@ public static class Dressing
     };
     public static string Own(string piece) => FloraOwn && OwnFor.TryGetValue(piece, out var o) ? o : piece;
 
-    /// <summary>Where our own trees change LOD (the 48 m bucket's middle from the camera, m):
-    /// lod0 inside the first, lod1 to the second, lod2 beyond; lod1 alone casts the shadows.</summary>
-    static readonly float OwnLod1 = SurvivorUnchained.Args.Num("flora-lod1", 90), OwnLod2 = SurvivorUnchained.Args.Num("flora-lod2", 180);
+    /// <summary>Where our own trees change LOD (a cell's middle from the camera, m): lod0 inside the
+    /// first, lod1 to the second, lod2 beyond. The play camera (23 m back at 56 degrees, 34 degrees
+    /// high) sees no ground farther than about 40 m from it, so lod0 is only what is on screen in play.
+    /// Each 48 m bucket is cut into OwnCell squares for this, so a tree's LOD goes by its own square,
+    /// not by its bucket's middle. The shadows are cast by the tree's shadow proxy alone (the file's
+    /// "shadow" node: stacked jagged cones), the whole bucket at once.</summary>
+    static readonly float OwnLod1 = SurvivorUnchained.Args.Num("flora-lod1", 44), OwnLod2 = SurvivorUnchained.Args.Num("flora-lod2", 100),
+        OwnCell = SurvivorUnchained.Args.Num("flora-cell", 24);
 
-    /// <summary>An own tree's three LOD meshes (the file's nodes lod0, lod1, lod2).</summary>
+    /// <summary>An own tree's meshes: lod0, lod1, lod2 and its shadow proxy (the file's nodes of those names).</summary>
     static Mesh[] LodsOf(string piece)
     {
         var scene = GD.Load<PackedScene>(FileOf("nature", piece)).Instantiate<Node3D>();
-        var m = new Mesh[3];
-        for (int i = 0; i < 3; i++) m[i] = scene.FindChild($"lod{i}", true, false) is MeshInstance3D mi ? mi.Mesh : m[Mathf.Max(i - 1, 0)];
+        var m = new Mesh[4];
+        for (int i = 0; i < 4; i++) m[i] = scene.FindChild(i < 3 ? $"lod{i}" : "shadow", true, false) is MeshInstance3D mi ? mi.Mesh : m[Mathf.Max(i - 1, 0)];
         scene.Free();
         return m;
     }
@@ -206,35 +211,51 @@ public static class Dressing
             if (g.Piece.StartsWith("own:"))
             {
                 var lods = LodsOf(g.Piece);
-                MultiMeshInstance3D Mmi(Mesh mesh, string tag)
+                MultiMeshInstance3D Mmi(Mesh mesh, string tag, List<Transform3D> at)
                 {
-                    var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = g.At.Length };
-                    for (int i = 0; i < g.At.Length; i++) mm.SetInstanceTransform(i, g.At[i]);
-                    return new MultiMeshInstance3D { Multimesh = mm, Name = $"{g.Kind}:{g.Piece}:{tag}", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+                    var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = at.Count };
+                    for (int i = 0; i < at.Count; i++) mm.SetInstanceTransform(i, at[i]);
+                    return Kind(new MultiMeshInstance3D { Multimesh = mm, Name = $"{g.Kind}:{g.Piece}:{tag}", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off }, g.Kind);
                 }
-                var l0 = Mmi(lods[0], "lod0"); l0.VisibilityRangeEnd = OwnLod1;
-                var l1 = Mmi(lods[1], "lod1"); l1.VisibilityRangeBegin = OwnLod1; l1.VisibilityRangeEnd = OwnLod2;
-                var l2 = Mmi(lods[2], "lod2"); l2.VisibilityRangeBegin = OwnLod2;
-                var sh = Mmi(lods[1], "shadow"); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
-                root.AddChild(l0); root.AddChild(l1); root.AddChild(l2); root.AddChild(sh);
+                var cells = new Dictionary<(int, int), List<Transform3D>>();
+                foreach (var t in g.At)
+                {
+                    var k = (Mathf.FloorToInt(t.Origin.X / OwnCell), Mathf.FloorToInt(t.Origin.Z / OwnCell));
+                    if (!cells.TryGetValue(k, out var l)) cells[k] = l = new();
+                    l.Add(t);
+                }
+                foreach (var ((cx, cz), at) in cells)
+                {
+                    var l0 = Mmi(lods[0], $"lod0_{cx}_{cz}", at); l0.VisibilityRangeEnd = OwnLod1; l0.VisibilityRangeEndMargin = 2;
+                    var l1 = Mmi(lods[1], $"lod1_{cx}_{cz}", at); l1.VisibilityRangeBegin = OwnLod1; l1.VisibilityRangeBeginMargin = 2; l1.VisibilityRangeEnd = OwnLod2; l1.VisibilityRangeEndMargin = 4;
+                    var l2 = Mmi(lods[2], $"lod2_{cx}_{cz}", at); l2.VisibilityRangeBegin = OwnLod2; l2.VisibilityRangeBeginMargin = 4;
+                    root.AddChild(l0); root.AddChild(l1); root.AddChild(l2);
+                }
+                // (cast as the kit's pines are: by the key and by a lamp in reach, every one of them)
+                var sh = Mmi(lods[3], "shadow", new List<Transform3D>(g.At)); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+                root.AddChild(sh);
                 continue;
             }
             foreach (var (mesh, local) in PartsOf("nature", g.Piece))
             {
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = g.At.Length };
                 for (int i = 0; i < g.At.Length; i++) mm.SetInstanceTransform(i, g.At[i] * local);
-                root.AddChild(new MultiMeshInstance3D
+                root.AddChild(Kind(new MultiMeshInstance3D
                 {
                     Multimesh = mm,
                     Name = $"{g.Kind}:{g.Piece}",
                     CastShadow = low ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On,
                     // Undergrowth goes before it gets small on screen.
                     VisibilityRangeEnd = low ? 70 : 0,
-                });
+                }, g.Kind));
             }
         }
         return root;
     }
+
+    /// <summary>A flora node in its kind's group ("flora_pine"; perf's pines flip finds them so: Godot
+    /// renames a second node of one name, so the names can't be matched).</summary>
+    static T Kind<T>(T n, string kind) where T : Node { n.AddToGroup($"flora_{kind}"); return n; }
 
     /// <summary>The side of the squares the kit pieces are gathered in
     /// (--prop-cell to measure others). Measured in the Waystation by day:

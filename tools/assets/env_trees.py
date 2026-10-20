@@ -60,100 +60,137 @@ def smooth(e0, e1, x):
 
 
 def spray(seed):
-    """One branch spray in a CW x CH cell: rgb (sRGB 0-1), alpha, height. Drawn as strokes at one
-    brush scale (a needle stroke, about 4 px wide at 512): a dark mass along each twig first, then
-    its needles over it, lighter toward the tips; drawn at twice the size and halved (smooth edges)."""
+    """One branch spray in a CW x CH cell: rgb (sRGB 0-1), alpha, height. A spray is a clump of
+    three to five spruce shoots off one twig (the twig's foot at the cell's bottom, its tip at the
+    top), each shoot a bottle-brush: needles all round its twig, painted as a ragged mass, dark at
+    the twig and light only toward the needle tips and the shoot's end. The side shoots leave the
+    twig at uneven places and angles, never mirror-even, so the unit read at the play camera is
+    the shoot clump (a third of the card across), not a comb of teeth. Drawn at twice the size and
+    halved (smooth edges)."""
     import cv2
     rng = np.random.default_rng(seed)
     S = 2
     W, H = CW * S, CH * S
-    col = np.zeros((H, W, 3), np.uint8)
-    al = np.zeros((H, W), np.uint8)
-    hg = np.zeros((H, W), np.uint8)
-    pal = [srgb(h) for h in ('#0e1a13', '#192f21', '#27442d', '#3c5c3c', '#5a7a4c')]
+    col = np.zeros((H, W, 3), np.float32)
+    al = np.zeros((H, W), np.float32)
+    hg = np.zeros((H, W), np.float32)
+    pal = [srgb(h) for h in ('#0b150f', '#15271b', '#213c29', '#355336', '#557548')]
 
     def shade(v):
         v = float(np.clip(v, 0, 0.999)) * (len(pal) - 1)
         i = int(v); f = v - i
         return pal[i] * (1 - f) + pal[i + 1] * f
 
-    bx, by = W / 2 + rng.uniform(-12, 12) * S, H - 10 * S
-    tx, ty = W / 2 + rng.uniform(-50, 50) * S, 20 * S
-    bend = rng.uniform(-40, 40) * S
-
-    def axis(t):
-        return np.array([bx + (tx - bx) * t + bend * math.sin(math.pi * t), by + (ty - by) * t])
-
-    twigs = []  # (points Nx2, base value, needle length px, order)
-
-    def path(p0, ang, length, curl, n=24):
+    def path(p0, ang, length, curl, n):
         pts = [np.array(p0, np.float64)]
         for i in range(n):
             a = ang + curl * (i / n)
             pts.append(pts[-1] + np.array([math.cos(a), math.sin(a)]) * length / n)
         return np.array(pts)
 
-    k, t = 0, 0.05
-    while t < 0.94:
-        side = 1 if k % 2 == 0 else -1
-        p, q = axis(t), axis(min(t + 0.01, 1))
-        ad = math.atan2(q[1] - p[1], q[0] - p[0])
-        env = math.sin(math.pi * min(1.0, 0.18 + 0.95 * t)) ** 0.7 * (1 - 0.45 * t)
-        ln = W * 0.5 * env * rng.uniform(0.85, 1.05)
-        if ln > 16 * S:
-            pts = path(p, ad + side * math.radians(rng.uniform(44, 58)), ln, side * math.radians(rng.uniform(-14, 4)))
-            twigs.append((pts, 0.12 + 0.25 * t, (36 - 12 * t) * S, 1 + t))
-            if ln > 80 * S:
-                for f in (0.38, 0.66):
-                    sp = pts[int(f * (len(pts) - 1))]
-                    twigs.append((path(sp, ad + side * math.radians(rng.uniform(70, 95)), ln * 0.34, 0, 8), 0.3 + 0.3 * t, 28 * S, 1.2 + t))
-        t += rng.uniform(0.034, 0.044)
-        k += 1
-    twigs.append((np.array([axis(i / 40) for i in range(41)]), 0.1, 38 * S, 3))
-    twigs.sort(key=lambda tw: tw[3])
-    # (every twig's dark mass first, then every twig's needles: no mass is laid over needles)
-    for pts, v0, nl, order, mass in [tw + (m,) for m in (True, False) for tw in twigs]:
+    # the twig: from the foot up, gently bent; its end is the leading shoot
+    foot = np.array([W / 2 + rng.uniform(-20, 20) * S, H - 8 * S])
+    up = -math.pi / 2 + rng.uniform(-0.12, 0.12)
+    twig = path(foot, up, H * rng.uniform(0.86, 0.92), rng.uniform(-0.35, 0.35), 40)
+    # shoots: (points, radius px at its foot, its base value); the leading shoot is the twig's upper part
+    lead0 = int(len(twig) * rng.uniform(0.24, 0.34))
+    shoots = [(twig[lead0:], rng.uniform(140, 160) * S, 0.0)]
+    n_side = int(rng.integers(2, 5))
+    cuts = np.sort(rng.uniform(0.1, 0.55, n_side))
+    for i in range(1, n_side):                      # (never two at one place)
+        cuts[i] = max(cuts[i], cuts[i - 1] + 0.09)
+    sides = rng.permutation([1, -1] * 3)[:n_side]
+    if abs(sides.sum()) == n_side:                  # (both sides used)
+        sides[-1] *= -1
+    for c, sd in zip(cuts, sides):
+        if c > 0.8:
+            continue
+        p = twig[int(c * (len(twig) - 1))]
+        ang = up + sd * math.radians(rng.uniform(22, 70))
+        ln = H * rng.uniform(0.26, 0.44) * (1.05 - 0.5 * c)
+        pts = path(p, ang, ln, -sd * rng.uniform(0.05, 0.4), 18)
+        # (keep it in the cell)
+        pts[:, 0] = np.clip(pts[:, 0], 130 * S, W - 130 * S)
+        shoots.append((pts, rng.uniform(118, 140) * S * (1.1 - 0.35 * c), 0.05 * sd))
+    # the bare twig's foot (below the shoots): a few short needles, so the card's foot is not a stick
+    shoots.append((twig[:lead0 + 6], 74 * S, -0.04))
+    # back to front: the foot's stub, then the side shoots from the foot up, the leading shoot last
+    order = [len(shoots) - 1] + sorted(range(1, len(shoots) - 1), key=lambda i: shoots[i][0][0, 1], reverse=True) + [0]
+
+    def stroke(pa, pe, c, w, img, a, h, hv):
+        pa, pe = tuple(int(x) for x in pa), tuple(int(x) for x in pe)
+        cv2.line(img, pa, pe, c, w, cv2.LINE_AA); cv2.line(a, pa, pe, 255, w, cv2.LINE_AA); cv2.line(h, pa, pe, hv, w, cv2.LINE_AA)
+
+    for si in order:
+        pts, r0, vb = shoots[si]
         seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
         L = seg.sum()
         cum = np.concatenate([[0], np.cumsum(seg)])
-        # the dark mass under the needles (the shadowed inside of the clump)
-        for i in range(len(pts) - 1 if mass else 0):
-            s = cum[i] / L
-            w = int(nl * (1.35 - 0.6 * s))
-            c = (shade(v0 - 0.2) * 255).astype(int).tolist()
-            a, b = tuple(int(x) for x in pts[i]), tuple(int(x) for x in pts[i + 1])
-            cv2.line(col, a, b, c, w, cv2.LINE_AA); cv2.line(al, a, b, 255, w, cv2.LINE_AA)
-            cv2.line(hg, a, b, int(60 + 30 * order), w, cv2.LINE_AA)
-        # the needles: forward-raking strokes both sides, base to tip
-        step = 3.2 * S
-        for d0 in (np.arange(0, L, step) if not mass else []):
-            s = d0 / L
-            i = min(np.searchsorted(cum, d0) - 1, len(pts) - 2)
-            i = max(i, 0)
-            f = (d0 - cum[i]) / max(seg[i], 1e-6)
-            p = pts[i] + (pts[i + 1] - pts[i]) * f
-            dirv = (pts[i + 1] - pts[i]) / max(seg[i], 1e-6)
-            ang0 = math.atan2(dirv[1], dirv[0])
-            for side in (-1, 1):
-                a = ang0 + side * math.radians(rng.uniform(38, 66))
-                ln = nl * (1 - 0.45 * s) * rng.uniform(0.75, 1.15)
-                e = p + np.array([math.cos(a), math.sin(a)]) * ln
-                # lit toward the needle tips and the twig's tip; a cooler top light in places
-                v = v0 + 0.55 * s ** 0.8 + rng.normal(0, 0.06) + 0.08 * (side > 0)
-                c = (shade(v) * 255).astype(int).tolist()
-                pa, pe = tuple(int(x) for x in p), tuple(int(x) for x in e)
-                cv2.line(col, pa, pe, c, int(4.2 * S), cv2.LINE_AA)
-                cv2.line(al, pa, pe, 255, int(4.2 * S), cv2.LINE_AA)
-                cv2.line(hg, pa, pe, int(90 + 30 * order + 40 * s), int(4.2 * S), cv2.LINE_AA)
-    col = cv2.resize(col, (CW, CH), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-    al = cv2.resize(al, (CW, CH), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-    hg = cv2.resize(hg, (CW, CH), interpolation=cv2.INTER_AREA).astype(np.float32) / 255
-    # the cut-out's colour premultiplied by its coverage: unmultiply
-    col = col / np.maximum(al, 1e-3)[..., None] * (al > 0)[..., None]
-    col = np.clip(col, 0, 1)
+        # a slow wobble of the radius along the shoot: tufts, not a sausage
+        ph, fq = rng.uniform(0, 6.28, 2), rng.uniform(1.4, 2.6)
+
+        def at(d):
+            i = int(np.clip(np.searchsorted(cum, d) - 1, 0, len(pts) - 2))
+            f = (d - cum[i]) / max(seg[i], 1e-6)
+            dv = (pts[i + 1] - pts[i]) / max(seg[i], 1e-6)
+            return pts[i] + (pts[i + 1] - pts[i]) * f, dv
+
+        def rad(s):
+            taper = (1 - 0.7 * s ** 1.5) * (0.3 + 0.7 * smooth(0, 0.22, s))
+            return r0 * taper * (1 + 0.16 * math.sin(fq * 6.28 * s + ph[0]) + 0.08 * math.sin(2.3 * fq * 6.28 * s + ph[1]))
+
+        # 1. the shoot's dark core (the shadowed inside of the brush): a filled ragged mass, 60% of the radius
+        lay = np.zeros((H, W), np.float32)
+        for d in np.arange(0.1 * L, L, 6 * S):
+            s = d / L
+            p, _ = at(d)
+            cv2.circle(lay, tuple(int(x) for x in p), int(rad(s) * 0.42 * rng.uniform(0.85, 1.1)), 1.0, -1, cv2.LINE_AA)
+        dark = shade(0.12 + vb)
+        m = lay[..., None]
+        col = col * (1 - m) + dark[None, None] * m
+        al = np.maximum(al, lay); hg = hg * (1 - lay) + 0.25 * lay
+        # 2. the needles: all round the twig (seen from any side a brush shows needles across it,
+        # pointing forward), each a short stroke, dark at its root, light at its tip
+        cimg = (col * 255).astype(np.uint8); aimg = (al * 255).astype(np.uint8); himg = (hg * 255).astype(np.uint8)
+        # the needles come in tufts (a few dozen sharing a lean, their ends at uneven reach), so the
+        # rim is ragged clumps, not an even comb of rakes; the shoot's lit flank (its -x side) lighter
+        nt = int(L / (0.075 * r0)) + 8
+        for k in range(nt):
+            d0 = rng.uniform(0, L)
+            x0 = rng.uniform(-1, 1)
+            lean = rng.normal(0, 0.35)
+            reach = rng.uniform(0.75, 1.2)
+            for q in range(int(rng.integers(26, 44))):
+                d = float(np.clip(d0 + rng.normal(0, 0.09 * r0), 0, L))
+                s = d / L
+                p, dv = at(d)
+                nv = np.array([-dv[1], dv[0]])
+                x = float(np.clip(x0 + rng.normal(0, 0.3), -1, 1))
+                R = rad(s) * reach
+                ang = lean + rng.normal(0, 0.18)
+                lat = x * R * rng.uniform(0.55, 1.05)
+                fwd = R * rng.uniform(0.2, 0.75) * (1 - 0.45 * abs(x))
+                ca, sa = math.cos(ang), math.sin(ang)
+                off = dv * (fwd * ca - lat * sa * 0.3) + nv * (lat * ca + fwd * sa * 0.5)
+                e = p + off
+                mid = p + (e - p) * 0.45
+                tip = 0.5 * s ** 1.2 + 0.2 * smooth(0.55, 1.0, s)  # (light only toward the shoot's end)
+                jit = rng.normal(0, 0.04)
+                flank = 0.12 * (-x)                                # (the lit flank)
+                c1 = (shade(0.1 + vb + 0.25 * tip + 0.5 * flank + jit) * 255).astype(int).tolist()
+                c2 = (shade(0.22 + vb + 0.6 * tip + flank + 0.12 * abs(x) ** 2 + jit) * 255).astype(int).tolist()
+                w = int(max(2, 3.0 * S * rng.uniform(0.8, 1.2)))
+                stroke(p + (e - p) * 0.1, mid, c1, w, cimg, aimg, himg, int(120 + 60 * tip))
+                stroke(mid, e, c2, w, cimg, aimg, himg, int(160 + 80 * tip))
+        col = cimg.astype(np.float32) / 255; al = aimg.astype(np.float32) / 255; hg = himg.astype(np.float32) / 255
+    col = cv2.resize(col, (CW, CH), interpolation=cv2.INTER_AREA)
+    al = cv2.resize(al, (CW, CH), interpolation=cv2.INTER_AREA)
+    hg = cv2.resize(hg, (CW, CH), interpolation=cv2.INTER_AREA)
+    col = np.clip(col / np.maximum(al, 1e-3)[..., None], 0, 1) * (al > 0)[..., None]
     ys = np.mgrid[0:CH, 0:CW][0].astype(np.float32)
-    col *= (0.72 + 0.28 * smooth(0, 0.6, 1 - ys / CH))[..., None]
+    col *= (0.78 + 0.22 * smooth(0, 0.6, 1 - ys / CH))[..., None]
     return col, al, cv2.GaussianBlur(hg, (5, 5), 1.5)
+
 
 def bark(seed, W=512, H=2048):
     """The spruce's bark strip: thin rounded scales, grey-brown, seamless round the trunk (u)."""
@@ -255,19 +292,21 @@ def frame(d):
 
 class Build:
     def __init__(self):
-        self.v, self.n, self.uv, self.f = [], [], [], []
+        self.v, self.n, self.uv, self.f, self.c = [], [], [], [], []
 
-    def quad_grid(self, P, N, UV, nu, nv):
-        """P, N, UV: (nv+1) x (nu+1) arrays of points, normals, uvs; faces between them."""
+    def quad_grid(self, P, N, UV, nu, nv, C=None, flip=False):
+        """P, N, UV (and C, each vertex's (occlusion, tip, card: 1 where its front is the upper side)): (nv+1) x (nu+1) arrays; faces between
+        them (flip: the other winding, so a card's front is its upper side)."""
         base = len(self.v)
         for j in range(nv + 1):
             for i in range(nu + 1):
                 self.v.append(P[j][i]); self.n.append(N[j][i]); self.uv.append(UV[j][i])
+                self.c.append(C[j][i] if C is not None else (1.0, 0.0, 0.0))
         w = nu + 1
         for j in range(nv):
             for i in range(nu):
                 a = base + j * w + i
-                self.f.append((a, a + 1, a + w + 1, a + w))
+                self.f.append((a, a + w, a + w + 1, a + 1) if flip else (a, a + 1, a + w + 1, a + w))
 
 
 def crown_normal(p, cn, d, H):
@@ -280,24 +319,35 @@ def crown_normal(p, cn, d, H):
     return n / np.linalg.norm(n)
 
 
-def card(b, c0, d, length, width, roll, arch, droop, j, H, segs_l=2, segs_w=2):
-    """A spray card from c0 along d (its foot at c0), bent: arched across, drooping along."""
+def occlusion(p, H, R):
+    """How open a point of the crown is (1 at the crown's skin, 0.35 at its axis): by its distance
+    from the trunk against the crown's radius at its height (the crown a ragged cone)."""
+    t = np.clip(p[2] / H, 0, 1)
+    rc = max(R * (1 - t) ** 0.92 * 0.95, 0.3)
+    return 0.35 + 0.65 * float(smooth(0.12, 0.92, math.hypot(p[0], p[1]) / rc))
+
+
+def card(b, c0, d, length, width, roll, arch, droop, j, H, R, segs_l=2, segs_w=2, mirror=False):
+    """A spray card from c0 along d (its foot at c0), bent: its sides hang (an A across it, the
+    pendant branchlets) and its outer end droops; its front is its upper side."""
     side, up = frame(d)
     cr, sr = math.cos(roll), math.sin(roll)
     side, up = side * cr + up * sr, up * cr - side * sr
     u0, v0, du, dv = cell_uv(j)
-    P, N, UV = [], [], []
+    P, N, UV, C = [], [], [], []
     for jl in range(segs_l + 1):
         s = jl / segs_l
-        rowP, rowN, rowU = [], [], []
+        rowP, rowN, rowU, rowC = [], [], [], []
         for iw in range(segs_w + 1):
             w = iw / segs_w * 2 - 1
-            p = c0 + d * length * s + side * (w * width / 2) + up * (arch * (1 - w * w) * width - droop * s * s * length - 0.12 * width * w * w)
+            p = c0 + d * length * s + side * (w * width / 2 * (1 - 0.12 * w * w)) + up * (arch * width - droop * s * s * length - (0.24 + 0.16 * s) * width * w * w)
             rowP.append(p)
             rowN.append(crown_normal(p, up, d, H))
-            rowU.append((u0 + (w + 1) / 2 * du * 0.96 + du * 0.02, v0 + s * dv * 0.97 + dv * 0.015))
-        P.append(rowP); N.append(rowN); UV.append(rowU)
-    b.quad_grid(P, N, UV, segs_w, segs_l)
+            uw = (-w if mirror else w)
+            rowU.append((u0 + (uw + 1) / 2 * du * 0.96 + du * 0.02, v0 + s * dv * 0.97 + dv * 0.015))
+            rowC.append((occlusion(p, H, R), s, 1.0))
+        P.append(rowP); N.append(rowN); UV.append(rowU); C.append(rowC)
+    b.quad_grid(P, N, UV, segs_w, segs_l, C, flip=True)
 
 
 def trunk(b, H, rb, sides, rings, rng):
@@ -319,7 +369,8 @@ def trunk(b, H, rb, sides, rings, rng):
             v = 0.985 * (1 - math.exp(-max(z + 0.25, 0) / 3.6))
             rowU.append((BU + (1 - BU) * i / sides * 0.995, v))
         P.append(rowP); N.append(rowN); UV.append(rowU)
-    b.quad_grid(P, N, UV, sides, rings)
+    # (the trunk stands in the crown's shade)
+    b.quad_grid(P, N, UV, sides, rings, [[(0.6, 0.0, 0.0)] * (sides + 1)] * (rings + 1))
 
 
 def spruce(H, R, seed, lod):
@@ -356,10 +407,10 @@ def spruce(H, R, seed, lod):
                 f = (ci + 1) / nc
                 dd = d + np.array([0, 0, 0.18 * f - 0.05])   # the tip turns up
                 dd /= np.linalg.norm(dd)
-                ln = seg * 1.3
-                wd = ln * (0.56 if lod == 0 else 0.62) * rng.uniform(0.9, 1.1)
-                card(b, p - dd * seg * 0.12, dd, ln, wd, rng.normal(0, 0.3), 0.12, 0.08 + 0.1 * (1 - t), int(rng.integers(0, 6)), H,
-                     segs_l=(2, 1, 1)[lod], segs_w=(2, 1, 1)[lod])
+                ln = seg * 1.3 * rng.uniform(0.85, 1.15)
+                wd = ln * (0.7 if lod == 0 else 0.76) * rng.uniform(0.75, 1.25)
+                card(b, p - dd * seg * 0.12, dd, ln, wd, rng.uniform(-0.55, 0.55), 0.1, (0.16 + 0.16 * (1 - t)) * (0.6 + 0.4 * f), int(rng.integers(0, 6)), H, R,
+                     segs_l=(3, 2, 1)[lod], segs_w=(2, 2, 1)[lod], mirror=bool(rng.random() < 0.5))
                 p = p + dd * seg
     # the leader: two crossed upright cards
     for a in (0.3, 0.3 + math.pi / 2):
@@ -370,7 +421,36 @@ def spruce(H, R, seed, lod):
         P = [[np.array([0, 0, H - 0.5]) + side * w * 0.25 + d * ln * s for w in (-1, 1)] for s in (0, 1)]
         N = [[crown_normal(np.array([side[0] * w, side[1] * w, H]), np.array([0, 0, 1.0]), side, H) for w in (-1, 1)] for s in (0, 1)]
         UV = [[(u0 + (w + 1) / 2 * du, v0 + s * dv) for w in (-1, 1)] for s in (0, 1)]
-        b.quad_grid(P, N, UV, 1, 1)
+        b.quad_grid(P, N, UV, 1, 1, [[(1.0, 1.0, 0.0)] * 2] * 2)
+    return b
+
+
+def shadow_proxy(H, R, seed):
+    """What the tree casts (shadows only): stacked jagged cones, one per tier, so its shadow is a
+    dense spiky spruce, not the cards' lace. Solid (its uvs in the bark strip), a few hundred tris."""
+    rng = np.random.default_rng(seed + 5)
+    b = Build()
+    hs = 0.55 + 0.03 * H
+    tiers = max(4, int((H - hs) / 1.05))
+    th = (H - hs) / tiers
+    uv = (BU + 0.1, 0.5)
+    for k in range(tiers):
+        h0 = hs + k * th
+        t = (h0 - hs) / (H - hs)
+        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.92
+        n = int(rng.integers(12, 16))
+        az0 = rng.uniform(0, 6.28)
+        ring = []
+        for i in range(n * 2):
+            a = az0 + i * math.pi / n + rng.normal(0, 0.1)
+            rr = r * (rng.uniform(0.78, 1.1) if i % 2 == 0 else rng.uniform(0.38, 0.62))
+            ring.append(np.array([math.cos(a) * rr, math.sin(a) * rr, h0 - (0.3 * rr if i % 2 == 0 else 0.0)]))
+        ring.append(ring[0])
+        apex = np.array([0.0, 0.0, min(h0 + th * 1.3, H)])
+        P = [ring, [apex] * len(ring)]
+        N = [[np.array([0, 0, 1.0])] * len(ring)] * 2
+        UV = [[uv] * len(ring)] * 2
+        b.quad_grid(P, N, UV, len(ring) - 1, 1)
     return b
 
 
@@ -392,24 +472,30 @@ def mesh(species):
         bsdf.inputs['Roughness'].default_value = 0.85
         mat.use_backface_culling = False
         tris = []
-        for lod in range(3):
-            b = spruce(prm['H'], prm['R'], prm['seed'], lod)
-            me = bpy.data.meshes.new(f'lod{lod}')
+        for lod in range(4):
+            b = spruce(prm['H'], prm['R'], prm['seed'], lod) if lod < 3 else shadow_proxy(prm['H'], prm['R'], prm['seed'])
+            name = f'lod{lod}' if lod < 3 else 'shadow'
+            me = bpy.data.meshes.new(name)
             me.from_pydata([tuple(p) for p in b.v], [], b.f)
             uvl = me.uv_layers.new(name='UV')
             for poly in me.polygons:
                 for li in poly.loop_indices:
                     uvl.data[li].uv = b.uv[me.loops[li].vertex_index]
             me.normals_split_custom_set_from_vertices([tuple(n) for n in b.n])
+            ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+            for i, c in enumerate(b.c):
+                ca.data[i].color = (c[0], c[1], c[2], 1.0)
+            me.color_attributes.active_color = ca
             me.materials.append(mat)
-            ob = bpy.data.objects.new(f'lod{lod}', me)
+            ob = bpy.data.objects.new(name, me)
             bpy.context.scene.collection.objects.link(ob)
             tris.append(sum(len(p.vertices) - 2 for p in me.polygons))
         out = os.path.join(OUT, f'{species}_{size}.gltf')
         bpy.ops.export_scene.gltf(filepath=out, export_format='GLTF_SEPARATE', export_texture_dir='', export_normals=True,
                                   export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
-                                  export_keep_originals=True, export_yup=True, export_apply=True)
-        print(f'{out} tris lod0/1/2: {tris}')
+                                  export_keep_originals=True, export_yup=True, export_apply=True,
+                                  export_vertex_color='ACTIVE')
+        print(f'{out} tris lod0/1/2/shadow: {tris}')
 
 
 if __name__ == '__main__':

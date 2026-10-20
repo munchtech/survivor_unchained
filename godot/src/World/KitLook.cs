@@ -127,7 +127,8 @@ public static class KitLook
         // (--kit-paint: a painted sheet carries its own warmth, so it is weathered as its painter says)
         if (Textures.PaintedWeather(s.AlbedoTexture) is var (psat, ptint)) { m.SetShaderParameter("weather_sat", psat); m.SetShaderParameter("weather_tint", ptint); }
         // (ours are painted for the look: weathered lightly, and trunk and needles sway as one)
-        if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); }
+        // (the vertex colour is their occlusion, read in OWN_FOLIAGE, not paint)
+        if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); m.SetShaderParameter("use_vcolor", false); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         if (foliage && look.LeafA is Color a && look.LeafB is Color b)
         {
@@ -135,7 +136,7 @@ public static class KitLook
             m.SetShaderParameter("recolor_b", new Vector3(b.R, b.G, b.B));
         }
         m.SetShaderParameter("moss", foliage ? 0f : look.Moss);
-        m.SetShaderParameter("jitter", foliage ? 0.14f : 0.08f);
+        m.SetShaderParameter("jitter", mine ? 0f : foliage ? 0.14f : 0.08f);  // (ours: OWN_FOLIAGE jitters each tree itself)
         m.SetShaderParameter("foot", foot);
         m.SetShaderParameter("leaves", foliage);
         // The window's rim, drawn again over what the piece's own pass left open: every

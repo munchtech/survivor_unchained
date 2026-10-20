@@ -43,6 +43,8 @@ SCENARIOS = {
     # The Verge by day: packs, the wood's flora.
     # (E4) Low Ford by night at the camp, the heroine standing: the wood round the camp in view.
     "ford_night": (HER + ["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle"], 10, 30),
+    # (E4) the wood road by night (frames.py's road spot): the most pines in view of any play view.
+    "road_night": (HER + ["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72", "--spots-from", "2"], 10, 30),
     "verge": (HER + ["--zone", "verge", "--time", "day", "--auto"], 10, 30),
     # An arena from its start, as it opens (the autopilot drafting first cards).
     "arena_open": (HER + ["--zone", "arena", "--tier", "2", "--auto"], 6, 60),

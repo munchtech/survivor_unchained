@@ -123,6 +123,10 @@ view_from={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flora_light={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 motion_then={
 "type": "float",
 "value": 0.0

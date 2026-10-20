@@ -228,6 +228,12 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
         RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));
         RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
+        // Our own trees' light (kit.gdshader's OWN_FOLIAGE, E4): how much the key is the moon (a blue key)
+        // and how much a low warm sun (dawn, dusk): the needles' back light and greens follow them.
+        var kc = C(p.KeyColor);
+        float moon = Mathf.Clamp((kc.B - kc.R) * 4f, 0f, 1f);
+        float lowSun = Mathf.Clamp((kc.R - kc.B) * 3f, 0f, 1f) * (1f - Mathf.SmoothStep(15f, 35f, (float)p.KeyElevation));
+        RenderingServer.GlobalShaderParameterSet("flora_light", new Vector4(moon, lowSun, 0, 0));
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed
         // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)
