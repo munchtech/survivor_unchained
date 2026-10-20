@@ -195,7 +195,7 @@
         {"name": "hills", "states": ["dawn"], "z": 5, "map": "#2f4a7a", "note": "low far hills. State dawn: the same hills at first light, with the sun's edge on the right", "shapes": [
           {"k": "poly", "p": [[0, 760], [900, 700], [1800, 740], [2800, 690], [3800, 720], [4600, 680], [5400, 700], [5400, 900], [0, 900]], "c": "#0e1219"}
         ]},
-        {"name": "road", "z": 2.4, "map": "#5a6a7a", "note": "the road along the far side of the field, the far frost", "shapes": [
+        {"name": "road", "states": ["dawn"], "z": 2.4, "map": "#5a6a7a", "note": "the road along the far side of the field, the far frost. State dawn: the same road and frost at first light", "shapes": [
           {"k": "poly", "p": [[0, 880], [5400, 860], [5400, 940], [0, 960]], "c": "#2a2c34"},
           {"k": "rect", "r": [0, 940, 5400, 90], "c": "#1c2026"}
         ]},
@@ -236,21 +236,21 @@
         {"name": "fallen", "z": 1.0, "map": "#7a9a40", "note": "a body fallen empty and dark on the frost", "shapes": [
           {"k": "fig", "pose": "lying", "at": [4100, 1720], "h": 760, "face": "right", "c": "#1c1e20"}
         ]},
-        {"name": "foreground", "z": 0.75, "map": "#2a2a3a", "note": "dark frosted tussocks along the bottom edge", "shapes": [
+        {"name": "foreground", "states": ["dawn"], "z": 0.75, "map": "#2a2a3a", "note": "dark frosted tussocks along the bottom edge. State dawn: the same tussocks at first light", "shapes": [
           {"k": "poly", "p": [[0, 1720], [300, 1660], [600, 1700], [1000, 1650], [1400, 1740], [1800, 1690], [2200, 1710], [2600, 1650], [3000, 1750], [3400, 1700], [3800, 1720], [4200, 1745], [4600, 1760], [5000, 1690], [5400, 1700], [5800, 1650], [6000, 1700], [6000, 2000], [0, 2000]], "c": "#0c0e12"}
         ]}
       ],
       "prompt": "A grim painted illustration, a wide frieze at night on a frosted field beside a road, low dark hills, a dark sky. Small orange embers glint in the frozen soil like coals in ash. Left: the frost has cracked open in a jagged line with orange light inside, and a dead man's hand is coming up out of the crack. Center-left: a dead man stands upright, slack and blank-faced, arms hanging, an orange light glowing inside him that shows at his mouth, his empty eye sockets and his wounds, like a lamp behind paper. Center-right: an old soldier with a gray beard in a slate blue-gray cloak and tabard, a round wooden shield on his arm and a small lamp on his belt, drives a spear into another standing dead man; orange light pours out of the wound and falls onto the frost as a scatter of small glowing stones; the old soldier's breath smokes in the cold. Right: a dead body lying dark and empty on the frost among a few glowing stones. Full-bleed, no border."
     },
     {
-      "id": "p4", "comp_note": "Nothing stands in the water under the midstream lamp: it is held high in the mist with nothing visible holding it, well clear of the water. The Watchman tips his jug and pours oil into the post lamp.", "title": "Keepers and lamps", "at": 46.0, "until": 56.0,
+      "id": "p4", "comp_note": "Nothing stands in the water under the midstream lamp: it is held high in the mist with nothing visible holding it, well clear of the water, and it burns warm gold like the priests' lamps, never blue. Nothing on the far bank. The Watchman tips his jug and pours oil into the post lamp.", "title": "Keepers and lamps", "at": 46.0, "until": 56.0,
       "size": [5800, 1800], "gen": [2496, 768], "bg": "#06070a",
       "camera": [
         {"t": 0, "x": 1650, "y": 950, "zoom": 1.05},
         {"t": 10.0, "x": 4150, "y": 950, "zoom": 1.05, "ease": "inout"}
       ],
       "beats": [
-        {"t": 0.0, "text": "Left, long ago: priests in undyed pale linen lift gold lamps at a river crossing; midstream a lamp is held high and clear of the water, its holder lost in mist; downriver, more crossings, each with a small high light."},
+        {"t": 0.0, "text": "Left, long ago: priests in undyed pale linen lift gold lamps at a river crossing; midstream a lamp burning warm gold is held high and clear of the water, its holder lost in mist; downriver, more crossings, each with a small high light."},
         {"t": 0.5, "text": "\"The old priests set keepers at the crossings. After them, the Watch kept the lamps lit. Oil, never ember. Nobody remembers why.\""},
         {"t": 4.5, "text": "The pan passes behind a dark willow in the foreground: years pass. Along the pan the color ages from gold at left to yellow at right."},
         {"t": 6.5, "text": "Right, the Watch: a Watchman on a ladder fills a post lamp from an oil jug; the flame yellower and smoky; the water at the crossing dark and smooth, nothing over it."}
@@ -275,11 +275,11 @@
           {"k": "ellipse", "at": [1950, 1250], "r": [28, 150], "c": "#ffd07a", "a": 0.35},
           {"k": "ellipse", "at": [4300, 1250], "r": [26, 140], "c": "#ffd04a", "a": 0.3}
         ]},
-        {"name": "mist", "z": 2.0, "map": "#b0b8c8", "note": "mist on the water at left, a column hiding the lamp's holder (drifts)", "shapes": [
+        {"name": "mist", "z": 1.5, "map": "#b0b8c8", "note": "mist on the water at left, a column hiding the lamp's holder (drifts)", "shapes": [
           {"k": "ellipse", "at": [1950, 960], "r": [260, 380], "c": "#9aa4b4", "a": 0.4},
           {"k": "ellipse", "at": [1100, 1090], "r": [900, 70], "c": "#9aa4b4", "a": 0.25}
         ]},
-        {"name": "keeper_lamp", "z": 1.5, "blend": "add", "map": "#ffe0a0", "note": "the lamp held high midstream, no holder visible (flickers)", "shapes": [
+        {"name": "keeper_lamp", "z": 1.5, "blend": "add", "map": "#ffe0a0", "note": "the lamp held high midstream, warm gold like the priests' lamps (not blue), no holder visible (flickers)", "shapes": [
           {"k": "glow", "at": [1950, 760], "r": 70, "c": "#ffe0a0", "a": 1.0},
           {"k": "glow", "at": [1950, 760], "r": 260, "c": "#ffc860", "a": 0.35}
         ]},
@@ -324,7 +324,7 @@
         {"t": 7.5, "text": "The camera pulls back up the road: a wagon on its side; both ditches full of the drowned, standing river-wet, weed in their hair, every face turned to the road. They were there all along. The lamps small beyond the trees; rings on the water under them."}
       ],
       "layers": [
-        {"name": "sky", "z": 12, "map": "#1d2c5a", "note": "winter night sky", "shapes": [
+        {"name": "sky", "z": 12, "map": "#1d2c5a", "close": false, "note": "winter night sky", "shapes": [
           {"k": "rect", "r": [0, 0, 3600, 660], "grad": ["#060912", "#121a2c"]}
         ]},
         {"name": "far_bank", "z": 4.5, "map": "#2f4a7a", "note": "the far bank, bare trees, snow", "shapes": [
@@ -380,7 +380,7 @@
       "prompt": "A grim painted illustration at night in winter, looking down a snowy road to a river ford. In the middle distance the river crosses the road: dark smooth water with ice at the edges and a line of flat stepping stones. On the near bank of the ford stand three new black iron cages on posts with cold blue flames burning inside them, their blue light reflected in the water; in the middle of the river a fourth bright blue light hangs just above the water, nothing visible holding it, rings spreading on the water under it. Bare winter trees on both sides. On the road a broken wagon lies on its side with one wheel in the air. In the ditches on both sides of the road stand rows of drowned dead people, wet, with river weed in their hair, all standing still and facing the road. Snow on the banks. Full-bleed, no border."
     },
     {
-      "id": "p6", "comp_note": "One traveler only. The comp lacks the second moment: the same hooded traveler, seen from behind, kneels on the near bank at the water's edge, not in the water. Ignore the float in the river and the pair of lights at the road's end. The three blue lights are small lamps hanging low over the river upstream. No weapon.", "title": "The traveler", "at": 71.0, "until": 81.5,
+      "id": "p6", "comp_note": "One traveler only. The comp lacks the second moment: the same hooded traveler, seen from behind, kneels on the near bank at the water's edge, not in the water. Ignore the float in the river and the pair of lights at the road's end. The three blue lights are the Low Ford's cages on their posts upstream, small and low through the trees. Ignore the strings of blue and orange lights in the comp's branches. No weapon.", "title": "The traveler", "at": 71.0, "until": 81.5,
       "size": [5000, 1900], "gen": [2304, 880], "bg": "#05060a",
       "camera": [
         {"t": 0, "x": 1650, "y": 1050, "zoom": 1.0},
@@ -406,16 +406,20 @@
           {"k": "glow", "at": [655, 868], "r": 7, "c": "#ffc870", "a": 1.0},
           {"k": "glow", "at": [590, 800], "r": 8, "c": "#ffd07a", "a": 1.0}
         ]},
-        {"name": "trees", "z": 2.8, "map": "#2a4a3a", "note": "dark trees by the water; three blue points low through them", "shapes": [
+        {"name": "trees", "z": 2.8, "map": "#2a4a3a", "note": "dark trees by the water; three blue points low through them, the Low Ford's cages on their posts upstream", "shapes": [
           {"k": "trees", "region": [2600, 260, 2400, 760], "n": 10, "c": "#0a0c12", "seed": 41},
-          {"k": "glow", "at": [4550, 965], "r": 11, "c": "#bfe4ff", "a": 1.0},
-          {"k": "glow", "at": [4700, 978], "r": 11, "c": "#bfe4ff", "a": 1.0},
-          {"k": "glow", "at": [4850, 968], "r": 11, "c": "#bfe4ff", "a": 1.0},
-          {"k": "glow", "at": [4700, 970], "r": 160, "ry": 80, "c": "#8ac8ff", "a": 0.35}
+          {"k": "rect", "r": [4547, 936, 6, 20], "c": "#0a0c12"},
+          {"k": "rect", "r": [4697, 942, 6, 14], "c": "#0a0c12"},
+          {"k": "rect", "r": [4847, 938, 6, 18], "c": "#0a0c12"},
+          {"k": "glow", "at": [4550, 928], "r": 11, "c": "#bfe4ff", "a": 1.0},
+          {"k": "glow", "at": [4550, 928], "r": 40, "c": "#8ac8ff", "a": 0.3},
+          {"k": "glow", "at": [4700, 934], "r": 11, "c": "#bfe4ff", "a": 1.0},
+          {"k": "glow", "at": [4700, 934], "r": 40, "c": "#8ac8ff", "a": 0.3},
+          {"k": "glow", "at": [4850, 930], "r": 11, "c": "#bfe4ff", "a": 1.0},
+          {"k": "glow", "at": [4850, 930], "r": 40, "c": "#8ac8ff", "a": 0.3}
         ]},
         {"name": "river", "z": 2.0, "map": "#3a5a8a", "note": "the river, smooth as a mirror, holding the last of the sky (trembles; rings around the flask)", "shapes": [
-          {"k": "poly", "p": [[2700, 960], [5000, 950], [5000, 1190], [2700, 1160]], "grad": ["#3a4a6a", "#1a2236"]},
-          {"k": "ellipse", "at": [4700, 1080], "r": [16, 90], "c": "#8ac8ff", "a": 0.35}
+          {"k": "poly", "p": [[2700, 960], [5000, 950], [5000, 1190], [2700, 1160]], "grad": ["#3a4a6a", "#1a2236"]}
         ]},
         {"name": "bank", "z": 1.4, "map": "#4a5a7a", "note": "the slope out of the firelight down to the water, in cold dusk shadow (deep slate, not the cage blue); flat stones at the edge", "shapes": [
           {"k": "poly", "p": [[2300, 980], [5000, 1180], [5000, 1900], [2300, 1900]], "c": "#161a22"},
@@ -474,12 +478,12 @@
         {"name": "bank", "z": 0.9, "map": "#4a4a5a", "note": "flat wet stones at the edge, under the traveler", "shapes": [
           {"k": "poly", "p": [[0, 1380], [900, 1420], [1300, 1470], [1250, 1570], [0, 1610]], "c": "#1e2228"}
         ]},
-        {"name": "traveler", "states": ["head_up"], "z": 0.95, "map": "#e0e060", "note": "the traveler leaning over the water, hood up, from behind and to the side gloved hand with the flask under; head down. State head_up: the same traveler with the head lifting", "shapes": [
+        {"name": "traveler", "states": ["head_up"], "z": 0.95, "map": "#e0e060", "note": "the traveler leaning over the water, hood up, from behind and to the side; gloved hand with the flask under; head down. State head_up: the same traveler with the head lifting", "shapes": [
           {"k": "fig", "pose": "kneel_back", "at": [750, 1480], "h": 1100, "face": "right", "c": "#181a20", "rim": "#8ac8ff"}
         ]},
-        {"name": "lamp", "z": 1.1, "blend": "add", "map": "#bfe4ff", "note": "the blue lamp a hand's breadth above the water, level with the hood; its glare hides what holds it; its light on the hood's edge", "shapes": [
-          {"k": "glow", "at": [2350, 1180], "r": 28, "c": "#e8f6ff", "a": 1.0},
-          {"k": "glow", "at": [2350, 1180], "r": 200, "c": "#8ac8ff", "a": 0.55}
+        {"name": "lamp", "z": 1.1, "blend": "add", "map": "#bfe4ff", "note": "the lamp: a small black iron cage with a cold blue flame inside. It hangs out over the water, a hand's breadth above its own reflection, level with the lifted hood in the picture; its glare hides what holds it; its light on the hood's edge", "shapes": [
+          {"k": "glow", "at": [2350, 1050], "r": 28, "c": "#e8f6ff", "a": 1.0},
+          {"k": "glow", "at": [2350, 1050], "r": 200, "c": "#8ac8ff", "a": 0.55}
         ]}
       ],
       "prompt": "A dark painted illustration, close at a river's edge at the last of dusk. A traveler in a dark wool hooded coat kneels on flat wet stones at the left, seen from behind and to the side, leaning down over the water with the hood up and the face hidden, a gloved hand holding a flask under the water, small rings spreading. Below, in the smooth black water, the traveler's hooded reflection, the face lost in shadow and ripples. To the right, just above the surface, a cold bright blue lamp glares a hand's breadth above the water and level with the hood, so bright that whatever holds it is hidden; its blue light washes the edge of the hood and streaks across the water. Full-bleed, no border."

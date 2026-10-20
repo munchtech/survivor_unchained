@@ -1,6 +1,8 @@
 """Build the SB00 painter pack from tools/storybook/out/comps outputs.
 
-python tools/storybook/pack.py [--picks p0=PATH,p3=PATH] [--comps DIR] [--pack DIR] [--no-pdf]
+python tools/storybook/pack.py [--picks p0=PATH,p3=PATH] [--keep-comps] [--comps DIR] [--pack DIR] [--no-pdf]
+
+--keep-comps keeps a plate's comp already in the pack when it has no pick (the picks' sources are git-ignored).
 """
 import argparse, re, shutil, subprocess, sys, tempfile
 from collections import Counter
@@ -118,6 +120,7 @@ def main():
     ap.add_argument("--comps", default=str(ROOT / "tools/storybook/out/comps"))
     ap.add_argument("--pack", default=str(DEFAULT_PACK))
     ap.add_argument("--no-pdf", action="store_true")
+    ap.add_argument("--keep-comps", action="store_true")
     a = ap.parse_args()
     comps, pack = Path(a.comps), Path(a.pack)
     picks = dict(kv.split("=", 1) for kv in a.picks.split(",") if kv)
@@ -132,6 +135,8 @@ def main():
         comp = d / f"sb00_{pid}_comp.png"
         if pid in picks:
             soften(picks[pid], comp)
+        elif a.keep_comps and comp.is_file():
+            notes.append(f"{pid}: comp kept from the pack")
         else:
             cp(comps / f"{pid}_block.png", comp)
             notes.append(f"{pid}: no pick, block-in used as comp")

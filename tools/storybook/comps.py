@@ -934,12 +934,12 @@ def extents(p, masks, gw, gh):
             flags.append(f"WIDER than the plate ({round(nw * DENS)} px vs {round(p['size'][0] * DENS)})")
         if (y1 - y0) > p["size"][1] * 1.005:
             flags.append(f"TALLER than the plate ({round(nh * DENS)} px vs {round(p['size'][1] * DENS)})")
-        if magmax > 1.3:
-            flags.append(f"CLOSE-UP: paint at {magmax:.1f}x detail")
+        if magmax > 1.3 and ly.get("close", True):
             cl = [r for r, mag in rects if mag > 1.3]
             pw2, ph2 = (max(r[2] for r in cl) - min(r[0] for r in cl)) * 0.02, (max(r[3] for r in cl) - min(r[1] for r in cl)) * 0.02
             close = (min(r[0] for r in cl) - pw2, min(r[1] for r in cl) - ph2, max(r[2] for r in cl) + pw2, max(r[3] for r in cl) + ph2)
             close_mag = max(mag for _, mag in rects if mag > 1.3)
+            flags.append(f"CLOSE-UP: paint at {close_mag:.1f}x detail")
         if bbox and not seen:
             flags.append("content never in frame")
         out[i] = dict(need=need, close=close, close_mag=close_mag, bbox=bbox, solid=solid, mag=magmax, flags=flags,
@@ -1092,8 +1092,10 @@ def layers_sheet(p, block, masks, ext, wc, out, base=None):
     for i in layer_order(p):
         ly = p["layers"][i]
         nl = wrap(meas, ly["note"] + ("  [" + "; ".join(ext[i]["flags"]) + "]" if ext[i]["flags"] else ""), f17, notew)
-        rows.append((i, nl, max(34, 8 + 22 * len(nl))))
-    lh = 44 + sum(r[2] for r in rows) + 12
+        # the file column: the base name, then its states wrapped under it so they never run into depth
+        fl = wrap(meas, "+ " + ", ".join(ly["states"]), f17, cols["z"] - cols["fn"] - 14) if ly.get("states") else []
+        rows.append((i, nl, fl, max(34, 8 + 22 * len(nl), 30 + 22 * len(fl))))
+    lh = 44 + sum(r[3] for r in rows) + 12
     sheet = Image.new("RGB", (gw, hh + gh + lh), (18, 18, 20))
     sheet.paste(im, (0, hh))
     d = ImageDraw.Draw(sheet)
@@ -1107,11 +1109,14 @@ def layers_sheet(p, block, masks, ext, wc, out, base=None):
     d.text((notex, y), "note", font=f17, fill=(170, 170, 170))
     y += 32
     PW = p["size"][0]
-    for i, nl, rh in rows:
+    for i, nl, fl, rh in rows:
         ly, e = p["layers"][i], ext[i]
         col = tuple(int(v * 255) for v in rgb(ly["map"]))
         d.rectangle([cols["sw"], y + 4, cols["sw"] + 26, y + 26], fill=col, outline=(200, 200, 200) if ly.get("blend") == "add" else None, width=2)
-        d.text((cols["fn"], y), fname(p, ly) + (" +" + ", ".join(ly["states"]) if ly.get("states") else ""), font=f20, fill=(235, 235, 235))
+        ffn = f20 if d.textlength(fname(p, ly), font=f20) <= cols["z"] - cols["fn"] - 12 else f17
+        d.text((cols["fn"], y + (0 if ffn is f20 else 2)), fname(p, ly), font=ffn, fill=(235, 235, 235))
+        for j, t in enumerate(fl):
+            d.text((cols["fn"] + 10, y + 28 + 22 * j), t, font=f17, fill=(205, 205, 205))
         d.text((cols["z"], y), f"{ly['z']}", font=f20, fill=(235, 235, 235))
         d.text((cols["bl"], y), blend_txt(ly), font=f20, fill=(235, 235, 235))
         # bar: the plate's width in gray; the needed span in the map colour (it may run past the plate)
@@ -1169,7 +1174,7 @@ def notes_sheet(p, block, out, base=None):
         key = (round(k["x"]), round(k["y"]), round(zc, 3), round(dc, 3))
         stack = seen.get(key, 0)
         seen[key] = stack + 1
-        labels.append((a, stack, i, tfmt(p["at"] + k["t"]) + (f"  zoom {zc:.2f}" + (f", dolly {dc:.2f}" if dc else ""))))
+        labels.append((a, stack, i, tfmt(p["at"] + k["t"]) + f"  zoom {zc / (1 - dc):.2f}x"))
     if len(path) > 1 and np.ptp(path, axis=0).max() > 4:
         cv2.polylines(u8, [np.round(path * 16).astype(np.int32)], False, (255, 208, 112), 2, cv2.LINE_AA, shift=4)
         # the arrow head at the end of the move
@@ -1249,7 +1254,7 @@ def camera_sentence(p):
     keys = sorted(p["camera"], key=lambda k: k["t"])
     if len(keys) == 1:
         k = keys[0]
-        return f"The camera holds still for the whole plate (zoom {k.get('zoom', 1):.2f})."
+        return f"The camera holds still for the whole plate (zoom {k.get('zoom', 1) / (1 - k.get('dolly', 0)):.2f}x)."
     parts = []
     z0, d0 = keys[0].get("zoom", 1), keys[0].get("dolly", 0)
     for a, b in zip(keys, keys[1:]):
@@ -1276,16 +1281,12 @@ def camera_sentence(p):
         z0, d0 = z1, d1
     if p["until"] - p["at"] > keys[-1]["t"] + 0.05:
         parts.append(f"it holds to {tfmt(p['until'])}")
-    s = "The camera starts on the first frame; " + ", then ".join(parts) + "."
+    s = f"The camera starts on the first frame at zoom {keys[0].get('zoom', 1) / (1 - keys[0].get('dolly', 0)):.2f}x; " + ", then ".join(parts) + "."
     return s
 
 
 def write_appendix(plates, results, out):
-    L = ["# SB00: the plates, for the painter", "",
-         "Each plate is a painting in layers. Paint each layer as its own file on the working canvas named for the plate, "
-         "so all layers align pixel for pixel. Depth 1 is the main plane; larger depths are farther away and slide less "
-         "when the camera moves; depths under 1 are nearer and slide more. Layers marked 'add' are pure light: paint them "
-         "on black, and they are added over the picture.", ""]
+    L = []  # the brief's "Plate by plate" heading and its rules introduce these sections
     for p in sorted(plates, key=lambda q: q["at"]):
         ext, wc = results[p["id"]]["ext"], results[p["id"]]["wc"]
         num = p["id"][1:]
@@ -1309,7 +1310,7 @@ def write_appendix(plates, results, out):
                 cw_, ch_ = (c[2] - c[0]) * DENS, (c[3] - c[1]) * DENS
                 dw, dh = math.ceil(cw_ * e["close_mag"] / 10) * 10, math.ceil(ch_ * e["close_mag"] / 10) * 10
                 cu = (f"CLOSE-UP, a second file {fname(p, ly)[:-4]}_close.png: area {round(c[0] * DENS + wc['ox'])}, "
-                      f"{round(c[1] * DENS + wc['oy'])}, {round(cw_)} x {round(ch_)} px on the working canvas; deliver at {dw} x {dh} px")
+                      f"{round(c[1] * DENS + wc['oy'])}; {round(cw_)} x {round(ch_)} px on the working canvas; deliver at {dw} x {dh} px")
             fl = "; ".join(x for x in e["flags"] if not x.startswith("CLOSE-UP"))
             L.append(f"| {', '.join(files_of(p, ly))} | {ly['z']} | {blend_txt(ly)} | "
                      f"{round(e['need'][0] * DENS + wc['ox'])}, {round(e['need'][1] * DENS + wc['oy'])}; {e['need_px'][0]} x {e['need_px'][1]} | "
@@ -1322,7 +1323,7 @@ def write_appendix(plates, results, out):
 
 
 PALETTE = [("STORY (fixed)", [("Ember", "#ff8a3a"), ("Ember highlight", "#ffd07a"),
-                              ("Cage blue (only iron cages and the keeper's lamp)", "#8ac8ff"), ("The Watch slate", "#4a5064")]),
+                              ("Cage blue (only the Low Ford's iron cages and its lamp over the water, Plates 5 to 7u)", "#8ac8ff"), ("The Watch slate", "#4a5064")]),
            ("GUIDES", [("Night indigo", "#1b2133"), ("Night indigo mid", "#2c3651"), ("Umber", "#2b2018"), ("Umber mid", "#4a3626"),
                        ("Ink black (warm)", "#15100c"), ("Oil flame", "#f0c060"), ("Lamp smoke", "#5e5248"), ("Legion rust", "#7a2e1f"),
                        ("Legion bronze (dull)", "#6e5a34"), ("Undyed linen", "#d6cab0"), ("Dawn gray", "#8c8a86"), ("Dawn gold", "#e6b45c"),
@@ -1351,7 +1352,7 @@ def write_palette(out):
                 x = 20 + j * sw
                 d.rectangle([x, y, x + sw - 12, y + sw - 30], fill=tuple(int(v * 255) for v in rgb(hx)), outline=(90, 90, 90))
                 d.text((x, y + sw - 24), hx, font=f20, fill=(240, 240, 240))
-                for k, l in enumerate(wrap(meas, name, f17, sw - 14)[:3]):
+                for k, l in enumerate(wrap(meas, name, f17, sw - 14)[:4]):
                     d.text((x, y + sw + 2 + 20 * k), l, font=f17, fill=(200, 200, 200))
             y += sw + 95
     f = os.path.join(out, "palette.png")
