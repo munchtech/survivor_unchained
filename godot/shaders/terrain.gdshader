@@ -114,6 +114,9 @@ uniform float mud_tone = 1.0;
 uniform float mud_sat = 1.5;
 // ... and its specular (the sky's sheen greyed the dark mud).
 uniform float mud_spec = 0.1;
+// Style r2 (--setts-paint): the street's mud painted, an opaque matte darker browner earth (a calm sheet, no grain), flat,
+// moss along its edges. 0 is the mud as it was.
+uniform float mud_paint = 0.0;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -371,10 +374,10 @@ void fragment() {
 	// saturation (the town's grade greys the setts' own warmth by a third); wetter and darker in the joints and at the
 	// collar, a paler dried crust where it rides over a stone. sRGB about 0.26, 0.185, 0.11.)
 	float mdep = clamp((lvl - hgt) * 5.0, 0.0, 1.0);
-	vec3 mud_col = vec3(0.048, 0.034, 0.011) * mud_tone * mix(1.08, 0.78, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
+	vec3 mud_col = mix(vec3(0.048, 0.034, 0.011), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.08, 0.78, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
 	// (A grain of its own at 5-20 cm: a flat sheet read as a decal. Not the tile's, whose stones showed through.)
 	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
-	mud_col *= 0.78 + 0.3 * mgr.r + 0.14 * mgr.g;
+	mud_col *= mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.93 + 0.1 * mgr.r, mud_paint);
 	mud_col = max(mix(vec3(dot(mud_col, vec3(0.2126, 0.7152, 0.0722))), mud_col, mud_sat), 0.0);
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
@@ -382,8 +385,8 @@ void fragment() {
 	// A film of mud over the tops that poke through the collar.
 	albedo = mix(albedo, albedo * vec3(0.92, 0.85, 0.74), collar * (1.0 - mud_c) * 0.6);
 	albedo = mix(albedo, mud_col, mud_c);
-	rough = mix(rough, mix(0.85, 0.65, mdep * collar), mud_c);
-	n_w = normalize(mix(n_w, n_geo, mud_c * 0.85));
+	rough = mix(rough, mix(mix(0.85, 0.65, mdep * collar), 0.97, mud_paint), mud_c);
+	n_w = normalize(mix(n_w, n_geo, mud_c * mix(0.85, 1.0, mud_paint)));
 	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
 	float dbg_mud_c = step(0.5, mud_c) * w_setts;
 	float mud_s = mud_c * w_setts;
@@ -392,6 +395,13 @@ void fragment() {
 	// Moss in the shaded joints, in patches, out of the wear lane.
 	float moss_k = joint * (1.0 - ex4.g) * smoothstep(0.45, 0.7, rgm * 0.6 + nF.a * 0.4) * (1.0 - nr.b) * setts_moss * (1.0 - mud_c);
 	albedo = mix(albedo, vec3(0.022, 0.031, 0.010) * mv, moss_k * 0.75);
+	// (Painted: moss along the mud's edge, in its joints and its rim, in patches.)
+	if (mud_paint > 0.0) {
+		float mg = mud_g + collar * 0.7;
+		float rim = smoothstep(0.04, 0.3, mg) * (1.0 - smoothstep(0.35, 0.8, mg));
+		float mk = rim * smoothstep(0.4, 0.62, rg4.b * 0.7 + nF.a * 0.3) * (1.0 - smoothstep(0.16, 0.34, hgt)) * (1.0 - nr.b * 0.7);
+		albedo = mix(albedo, vec3(0.030, 0.042, 0.012) * mv * (0.8 + 0.4 * mgr.g), mk * 0.8 * mud_paint * setts_moss);
+	}
 	// (Out to 0.9 m: the gutter takes the wall's first 0.3-0.5 m, so the weeds live in the joints at its lip.)
 	float wsel = smoothstep(0.5, 0.62, texture(noise_tex, w * 0.9 + 0.2).g) * (1.0 - smoothstep(0.75, 1.0, nr.r * 2.0));
 	albedo = mix(albedo, vec3(0.085, 0.11, 0.045) * (0.8 + 0.4 * nF.a), joint * wsel * weeds);
