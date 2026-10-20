@@ -42,7 +42,8 @@ def paint_graph(j, src, keep):
     if j["control"] != "none":
         if j["control"] == "depth":
             g["8"] = {"class_type": "LoadMoGeModel", "inputs": {"model_name": "moge_2_vitl_normal_fp16.safetensors"}}
-            g["9"] = {"class_type": "MoGeInference", "inputs": {"moge_model": ["8", 0], "image": ["7", 0], "resolution_level": 9, "batch_size": 1}}
+            g["9"] = {"class_type": "MoGeInference", "inputs": {"moge_model": ["8", 0], "image": ["7", 0], "resolution_level": 9, "batch_size": 1,
+                                                         "fov_x_degrees": 0.0, "force_projection": True, "apply_mask": False, "refine_steps": 0}}
             g["10"] = {"class_type": "MoGeRender", "inputs": {"moge_geometry": ["9", 0], "output": "depth"}}
             ctrl = ["10", 0]
         else:
@@ -130,12 +131,16 @@ def main():
         for j in jobs:
             src = up(j["src"]); size = Image.open(j["src"]).size
             api = mask_graph(j, src) if j.get("kind") == "mask" else paint_graph(j, src, up(j["keep"]) if j.get("keep") else None)
-            pending.append((j, queue(api), size))
+            try: pending.append((j, queue(api), size))
+            except SystemExit as ex: print("QUEUE FAILED", j["name"], str(ex)[:600])   # one bad job must not sink the batch
         for j, pid, size in pending:
             t0 = time.time(); e = wait(pid)
             if e: print(j["name"], f"{time.time() - t0:.0f}s", fetch(e, outdir, j["name"], size if j.get("kind") != "mask" else None))
     finally:
-        try: comfy.post("/free", {"unload_models": True, "free_memory": True})
+        try:   # /free answers with an empty body, so post it raw (comfy.post would fail parsing it)
+            rq = urllib.request.Request(comfy.URL + "/free", data=json.dumps({"unload_models": True, "free_memory": True}).encode(),
+                                        headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(rq).read()
         except Exception as ex: print("free failed", ex)
         subprocess.run([sys.executable, TP, "give", "gpu", TURN])
     print(f"ALL DONE in {time.time() - t00:.0f}s")
