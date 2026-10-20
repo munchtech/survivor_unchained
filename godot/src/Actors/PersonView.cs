@@ -82,7 +82,19 @@ public partial class PersonView : Node3D, INpcView
         var name = People.Clip(person, walking ? loopClip : loop);
         person.Anim.Play(name, blend, (float)loopSpeed);
         Native(name);
+        // A townsperson's first stand starts somewhere of its own in the loop (Play.TownStands.Phase), so the town
+        // does not sway in step. Not hers or the hero's (their own clips).
+        if (PhaseKey is string key && person.Own == null && !walking)
+        {
+            PhaseKey = null;
+            var len = person.Anim.CurrentAnimationLength;
+            if (len > 0.5) person.Anim.Seek(TownStands.Phase(key) * len, true);
+        }
     }
+
+    /// <summary>Who or where this townsperson is (WorldScene.Person: their id and spot), for where their first
+    /// stand starts in its loop; cleared once used.</summary>
+    public string? PhaseKey;
 
     /// <summary>Her corrective layer stands down for her own clips (eased
     /// over the blend, so her pelvis does not jump).</summary>

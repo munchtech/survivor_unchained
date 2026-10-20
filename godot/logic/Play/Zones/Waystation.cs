@@ -137,13 +137,13 @@ public sealed class Waystation : ZoneRuntime
         for (int i = 0; i < Lore.Guards.Count; i++)
         {
             var g = Lore.Guards[i];
-            // The Watch's leathers and hood, a sword and shield.
+            // The Watch's leathers and hood and a sword (their shields stay in the barracks in town), at ease.
             guards.Add(new NpcActor(new NpcDef
             {
                 Id = $"guard{i}", Name = "Watchman", Title = "The Waystation Watch", Role = "Watch", Model = "knight",
-                Show = ["Knight_Helmet", "1H_Sword", "Rectangle_Shield"], Tint = "#8a98b0", Idle = "Idle_Shield_Loop",
+                Show = ["Knight_Helmet", "1H_Sword"], Tint = "#8a98b0", Idle = "Idle_Armed",
                 Spot = new Spot { X = g.X, Z = g.Z, Facing = g.Facing }, Barks = [g.Line],
-                Person = Folk.Person(FolkRole.Watch, Lore.WatchLook, G.Rng), Arms = new Held { Right = "viking_sword", Forearm = "shield_round" },
+                Person = Folk.Person(FolkRole.Watch, Lore.WatchLook, G.Rng), Arms = new Held { Right = "viking_sword" },
             }, look, G.Rng));
         }
         // Behind every stall, someone selling; they pack up at dusk.

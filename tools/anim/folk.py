@@ -35,6 +35,10 @@ from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
 OUT = Path(__file__).resolve().parent / "out" / "folk"
 
 LOOP = dict(loop=True, place="pin")
+# Standing loops: only the take's straight-line travel out, the hips' own sway kept over the planted feet (animation 45:
+# "pin" took the sway out of the hips and so slid both feet 10-12 cm sideways through the weight shift; "line" holds
+# each foot within a few mm).
+STAND = dict(loop=True, place="line")
 
 # name: {sex: (source, file, options)}; "fm" for both. Each was picked from
 # its takes on contact sheets (tools/anim/review.py).
@@ -43,10 +47,10 @@ FOLK = {
     "walk": {"f": ("mixamo", "folk_walk_feminine.bvh", dict(loop="cycle", place="line")),
              "m": ("kimodo", "walk_man_2.bvh", dict(loop=True, place="line"))},
     # Standing: weight shifting from foot to foot.
-    "idle": {"fm": ("mixamo", "folk_weight_shift_idle.bvh", LOOP)},
+    "idle": {"fm": ("mixamo", "folk_weight_shift_idle.bvh", STAND)},
     # Talking: hers with both hands, his the general conversation.
-    "talk": {"f": ("kimodo", "talk_0.bvh", LOOP), "m": ("mixamo", "folk_talking.bvh", LOOP)},
-    "arms_crossed": {"fm": ("kimodo", "arms_crossed_0.bvh", LOOP)},
+    "talk": {"f": ("kimodo", "talk_0.bvh", STAND), "m": ("mixamo", "folk_talking.bvh", STAND)},
+    "arms_crossed": {"fm": ("kimodo", "arms_crossed_0.bvh", STAND)},
     "sit_chair": {"fm": ("mixamo", "folk_sitting_chair.bvh", LOOP)},
     "sit_floor": {"fm": ("mixamo", "folk_sitting_floor.bvh", LOOP)},
     # Gestures played once.

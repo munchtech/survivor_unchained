@@ -1001,7 +1001,7 @@
    ],
    "tint": "#5e7a4a",
    "scale": 0.9,
-   "idle": "Idle",
+   "idle": "Idle_Armed",
    "person": {
     "sex": "female",
     "outfit": [
@@ -1429,7 +1429,7 @@
     "Knight_Cape"
    ],
    "tint": "#dfe4ec",
-   "idle": "2H_Melee_Idle",
+   "idle": "Idle_2H_Rest",
    "person": {
     "sex": "female",
     "outfit": [

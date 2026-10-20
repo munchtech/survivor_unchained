@@ -97,7 +97,7 @@ public partial class Game
         // "def.ID", a story NPC from npcs.json, with its own arms and idle)
         var rng = new Random((int)Args.Num("seed", 1));
         PersonSpec spec; Held? arms = null; string idle = "Idle"; double scale = 1;
-        if (name == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword", Forearm = "shield_round" }; idle = "Idle_Shield_Loop"; }
+        if (name == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword" }; idle = "Idle_Armed"; }
         else if (name == "folk") { var l = Lore.FolkLooks[1 % Lore.FolkLooks.Count]; spec = Folk.Person(FolkRole.Adult, l, rng); scale = l.Scale ?? 1; }
         else if (name.StartsWith("def.") && Lore.Person(name[4..]) is { } def) { spec = def.Person ?? new PersonSpec { Sex = Rpg.Sex.Male }; arms = def.Arms; idle = def.Idle.Length > 0 ? def.Idle : "Idle"; scale = def.Scale ?? 1; }
         else

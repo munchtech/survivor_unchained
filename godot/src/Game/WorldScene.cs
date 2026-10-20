@@ -347,7 +347,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public INpcView Person(NpcDef def, Spot spot)
     {
         var spec = def.Person ?? new PersonSpec { Sex = Rpg.Sex.Male };
-        var v = new PersonView(spec, def.Arms, 0.8 * (def.Scale ?? 1));
+        var v = new PersonView(spec, def.Arms, 0.8 * (def.Scale ?? 1)) { PhaseKey = $"{def.Id}@{spot.X:0.0},{spot.Z:0.0}" };
         v.Position = new Vector3((float)spot.X, (float)HeightAt(spot.X, spot.Z), (float)spot.Z);
         v.Rotation = new Vector3(0, (float)spot.Facing, 0);
         AddChild(v);

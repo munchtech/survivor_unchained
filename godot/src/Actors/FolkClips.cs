@@ -60,6 +60,15 @@ public static class FolkClips
         return Named(woman, want);
     }
 
+    /// <summary>The armed townsfolk's stands at ease (tools/anim/clips/folk_armed.py), asked for by the town's data
+    /// only: "Idle_Armed", a one-handed piece hanging easy in the right fist (the gate Watch's sword, Wenna's staff),
+    /// and "Idle_2H_Rest", a two-handed blade resting on the right shoulder (Keegan). The game names this answers
+    /// (null for any other: the bosses' and the fights' armed idles keep the library's), for a woman or a man.</summary>
+    public static string? Armed(bool woman, string game) => Named(woman, ArmedName(game));
+
+    /// <summary>The folk clip's own name for one of the armed stands' game names, or null (Play.TownStands).</summary>
+    public static string? ArmedName(string game) => SurvivorUnchained.Play.TownStands.Armed(game);
+
     /// <summary>The crowd's own motion (tools/anim/crowd.py) for one the game
     /// names, or null: the Risen's lurch at the crowd's pace rather than
     /// skating on the library's slow zombie walk (armed, the weapon hangs
