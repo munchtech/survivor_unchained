@@ -69,8 +69,9 @@ public partial class Atmosphere : Node3D
     /// <summary>--close-vib V, --close-vib-dark D: the close view's paint vibrance and its share in the darks (pictures).</summary>
     static readonly float CloseVib = SurvivorUnchained.Args.Num("close-vib", (float)Atmospheres.CloseNightPaint.PaintVib),
         CloseVibDark = SurvivorUnchained.Args.Num("close-vib-dark", (float)Atmospheres.CloseNightPaint.PaintVibDark);
-    /// <summary>--front-paint: the title and the Look (Atmospheres.Front) under the close view's paint grade (pictures).</summary>
-    static readonly bool FrontPaint = SurvivorUnchained.Args.Has("front-paint");
+    /// <summary>The title and the Look (Atmospheres.Front) take the close view's paint grade (G1 r4 judge: it fixed her pale, washed-out
+    /// lit face at the Look; identity, freckles and copper held). --front-unpainted: the grade before it (pictures).</summary>
+    static readonly bool FrontPaint = !SurvivorUnchained.Args.Has("front-unpainted");
     static GradeSettings Own(AtmospherePreset p) => FrontPaint && ReferenceEquals(p, Atmospheres.Front) ? p.Grade with
     {
         PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
