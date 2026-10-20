@@ -71,14 +71,15 @@ static class BrushShaders
         layout(set = 0, binding = 1) uniform sampler2D flow;
         layout(set = 0, binding = 2) uniform sampler2D mask;
         layout(set = 0, binding = 3, rgba16f) uniform writeonly image2D kout;
+        // Her coverage: the mask's alpha, or any colour at all (her hair's erasers multiply the alpha
+        // away under her hair and brows, for FSR 2's reactive mask; the background is exact black).
+        float cov(vec2 uv) { vec4 c = texture(mask, uv); return max(c.a * 4.0, max(c.r, max(c.g, c.b)) * 128.0); }
         float her(vec2 uv) {
             vec2 d = pc.feather / pc.size, e = d * 0.7071;
-            float m = texture(mask, uv).a;
-            m = max(m, max(max(texture(mask, uv + vec2(d.x, 0)).a, texture(mask, uv - vec2(d.x, 0)).a),
-                           max(texture(mask, uv + vec2(0, d.y)).a, texture(mask, uv - vec2(0, d.y)).a)));
-            m = max(m, max(max(texture(mask, uv + e).a, texture(mask, uv - e).a),
-                           max(texture(mask, uv + vec2(e.x, -e.y)).a, texture(mask, uv + vec2(-e.x, e.y)).a)));
-            return clamp(m * 4.0, 0.0, 1.0);
+            float m = cov(uv);
+            m = max(m, max(max(cov(uv + vec2(d.x, 0)), cov(uv - vec2(d.x, 0))), max(cov(uv + vec2(0, d.y)), cov(uv - vec2(0, d.y)))));
+            m = max(m, max(max(cov(uv + e), cov(uv - e)), max(cov(uv + vec2(e.x, -e.y)), cov(uv + vec2(-e.x, e.y)))));
+            return clamp(m, 0.0, 1.0);
         }
         void main() {
             ivec2 g = ivec2(gl_GlobalInvocationID.xy);
@@ -167,7 +168,7 @@ static class BrushShaders
         }
         bool world(vec2 uv, out vec3 wp, out float fp) {
             float dz = texture(depth, uv).r;
-            vec4 v = mt.inv_proj * vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 1.0 - 2.0 * dz, 1.0);
+            vec4 v = mt.inv_proj * vec4(uv * 2.0 - 1.0, dz, 1.0);
             v.xyz /= v.w;
             wp = (mt.cam * vec4(v.xyz, 1.0)).xyz;
             fp = (pc.ortho > 0.5 ? 1.0 : -v.z) * pc.pxk;

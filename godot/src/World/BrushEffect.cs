@@ -125,7 +125,10 @@ public partial class BrushEffect : CompositorEffect
         float scale = size.Y / 1080f;
         bool ortho = Mathf.IsEqualApprox(proj.W.W, 1f);
         var mats = new float[32];
-        Put(mats, 0, proj.Inverse());
+        // The projection comes depth-corrected (reverse Z, 0-1: the depth buffer's own value is NDC z); the
+        // shader takes NDC y = 2v - 1 (Vulkan's, down), so an unflipped projection gets y turned over here.
+        var flipY = Projection.Identity; if (proj.Y.Y > 0) flipY.Y = new Vector4(0, -1, 0, 0);
+        Put(mats, 0, proj.Inverse() * flipY);
         var x = data.GetCamTransform();
         Put(mats, 16, new Projection(x));
         rd!.BufferUpdate(ubo, 0, 128, MemoryMarshal.AsBytes(mats.AsSpan()).ToArray());
@@ -135,7 +138,7 @@ public partial class BrushEffect : CompositorEffect
             size.X, size.Y, half.X, half.Y,
             s.R * scale, s.Sharp, s.Hard, s.Str,
             s.Tex, s.Len * scale, s.Wid, Mathf.DegToRad(s.Ang),
-            2f / (proj.Y.Y * size.Y), ortho ? 1 : 0, s.Feather * scale, s.Dbg,
+            2f / (Mathf.Abs(proj.Y.Y) * size.Y), ortho ? 1 : 0, s.Feather * scale, s.Dbg,
         };
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
 

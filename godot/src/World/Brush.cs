@@ -23,7 +23,7 @@ public partial class Brush : Node
 
     public sealed class Spec
     {
-        public float R = 3, Str = 0.7f, Tex = 0.12f, Len = 10, Wid = 3, Sharp = 8, Hard = 8, Ang = 35, Feather = 1.5f, Dbg;
+        public float R = 3, Str = 0.75f, Tex = 0.2f, Len = 10, Wid = 3, Sharp = 8, Hard = 8, Ang = 35, Feather = 1.5f, Dbg;
         public bool Time;
 
         public static Spec? Parse(string? spec)
@@ -84,7 +84,7 @@ public partial class Brush : Node
         maskCam = new Camera3D
         {
             CullMask = MaskLayer, Current = true,
-            Environment = new Godot.Environment { BackgroundMode = Godot.Environment.BGMode.ClearColor, TonemapMode = Godot.Environment.ToneMapper.Linear },
+            Environment = new Godot.Environment { BackgroundMode = Godot.Environment.BGMode.Color, BackgroundColor = new Color(0, 0, 0, 0), BackgroundEnergyMultiplier = 0, AmbientLightSource = Godot.Environment.AmbientSource.Disabled, TonemapMode = Godot.Environment.ToneMapper.Linear },
             Attributes = new CameraAttributesPractical { DofBlurFarEnabled = false, DofBlurNearEnabled = false, AutoExposureEnabled = false },
         };
         mask.AddChild(maskCam);
