@@ -124,7 +124,7 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 
 Each Poly Haven asset is credited to its scanners and artists, by name.
 
-The ground: raw material for our own ground materials in `godot/art/ground` (recoloured and rebuilt by `tools/assets/env_ground.py`; the photos are kept outside the repo), and shipped as they are in `public/assets/ground` for the web game (`tools/assets/ground.py`):
+The ground's raw material (`godot/art/ground` is our own, recoloured and rebuilt from these, with the photos kept out of the game; `public/assets/ground`, the web game's, ships them as they are):
 
 - "Sparse Grass" by Amal Kumar (https://polyhaven.com/a/sparse_grass): grass
 - "Forest Leaves 02" by Rob Tuytel (https://polyhaven.com/a/forest_leaves_02): leaves

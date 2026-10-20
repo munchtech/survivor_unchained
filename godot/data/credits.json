@@ -488,12 +488,10 @@
           "entries": []
         },
         {
-          "title": "The ground (raw material)",
+          "title": "The ground's raw material",
           "sub": true,
           "links": [],
-          "notes": [
-            "Recoloured and rebuilt into our own ground materials."
-          ],
+          "notes": [],
           "entries": [
             {
               "name": "Sparse Grass",

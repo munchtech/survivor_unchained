@@ -95,7 +95,7 @@ public class CreditsTests
         var cc0 = book.Sections.Single(s => s.Short == "Third-party works under CC0");
         Assert.Contains(cc0.Groups, g => g.Title == "Poly Haven models");
         Assert.Contains(cc0.Groups, g => g.Title == "ambientCG");
-        Assert.Contains(cc0.Groups, g => g.Title == "The ground (raw material)" && g.Sub);
+        Assert.Contains(cc0.Groups, g => g.Title == "The ground's raw material" && g.Sub);
         Assert.Contains(cc0.Groups.Single(g => g.Title == "Kenney").Entries, e => e.Links.Contains("https://kenney.nl/assets/rpg-audio"));
         // The web game's own packages are not this game's.
         Assert.DoesNotContain(book.Sections, s => s.Title.Contains("web game"));
