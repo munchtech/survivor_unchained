@@ -1,0 +1,5 @@
+flick0_m|arcanist|-|cast_flick@0.0|day|0.6|315|female
+flick1_m|arcanist|-|cast_flick@0.033|day|0.6|315|female
+flick4_c|arcanist|-|cast_flick@0.13|day|1|315|female
+flick8_m|arcanist|-|cast_flick@0.27|day|0.6|315|female
+flick4_run_c|arcanist --hold-base run_arcanist_wand@0.17|-|cast_flick@0.13|day|1|315|female

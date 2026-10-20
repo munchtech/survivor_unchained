@@ -953,6 +953,9 @@ def _cast_release(rig, keys, frm=16, to=28, lag=1.75):
     return post
 
 
+FLK = {}
+
+
 def cast_flick(rig):
     """The wand's spell: the whole arm whipped out from over the shoulder at
     the foe, ending pointed straight at it, the free hand flung open behind
@@ -985,18 +988,19 @@ def cast_flick(rig):
         p["foot_r"]["pole"] = pole(-14, -1)
         p["hips"]["pos"] = (0.02 * weight, -0.022 - 0.012 * abs(weight), 0.06 * weight)
         return p
-    aim = (0.02, -0.15, 0.49)
+    aim = FLK.get("aim", (0.0, 0.07, 0.49)); free = FLK.get("free", (0.04, -0.35, 0.18)); fpole = FLK.get("fpole", (-0.2, -0.4, -1.0))
+    blade = FLK.get("blade", (-0.42, -0.38, 0.84)); FLK.setdefault("kn", (0.0, -1.0, 0.2)); clav = FLK.get("clav", (4, 15)); pole8 = FLK.get("pole8", (-0.8, -0.4, -0.2))
     keys = [
         (0, body(step(-0.4), hips=(-10, -2, 0), spine=(-18, -4, 0), head=(22, 0, 0),
                  hand_r=arm((-0.25, 0.12, 0.18), (-0.8, -0.3, -0.4), blade=_n(-0.45, 0.6, -0.65),
                             knuckles=_n(-0.862, -0.507, 0.0)),
                  hand_l=arm((0.13, -0.46, 0.04), (0.5, -0.2, -0.9)), fingers_r="grip", fingers_l="relaxed"), "fast"),
         (3, body(step(0.6), hips=(6, 6, 0), spine=(10, 6, 0), head=(-12, -4, 0),
-                 hand_r=arm(aim, (-0.8, -0.4, -0.2), blade=_n(-0.42, -0.34, 0.84)),
-                 hand_l=arm((0.14, -0.38, 0.08), (0.5, -0.3, -0.8)), fingers_r="grip", fingers_l="relaxed"), "ease"),
+                 hand_r=arm(aim, pole8, blade=_n(*blade), **({"knuckles": _n(*FLK["kn"])} if "kn" in FLK else {})),
+                 hand_l=arm(free, fpole), fingers_r="grip", fingers_l="relaxed", clav_r=clav), "ease"),
         (8, body(step(0.6), hips=(6, 6, 0), spine=(11, 6, 0), head=(-13, -4, 0),
-                 hand_r=arm(aim, (-0.8, -0.4, -0.2), blade=_n(-0.42, -0.34, 0.84)),
-                 hand_l=arm((0.14, -0.38, 0.08), (0.5, -0.3, -0.8)), fingers_r="grip", fingers_l="relaxed"), "auto"),
+                 hand_r=arm(aim, pole8, blade=_n(*blade), **({"knuckles": _n(*FLK["kn"])} if "kn" in FLK else {})),
+                 hand_l=arm(free, fpole), fingers_r="grip", fingers_l="relaxed", clav_r=clav), "auto"),
         (18, body(step(0.0), hand_r=arm((0.0, -0.36, 0.14), (-0.6, -0.4, -0.5), blade=_n(-0.1, 0.5, 0.85)),
                   hand_l=arm((0.0, -0.38, 0.08), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]

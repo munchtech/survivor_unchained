@@ -1,0 +1,4 @@
+[1/1] chain_strike 5s
+clip                           set                  piece      depth frame  part                         >10mm  share  outfit frame  part                  hold h_out frame  hold part
+chain_strike                   axe                  axe         11.3     0  middle_01_l                 1/28       4%    11.3     0  middle_01_l            0.0   0.0     0  -
+1 clips, 1 sets, 5 s

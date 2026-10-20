@@ -1,0 +1,3 @@
+(body ready in 1.2 s)
+cast_flick               | l: up    0 fa    0 hd   34 br    0 pit   0 war  78 arc  34 rea  79 ran  61 r: up    8 fa    0 hd    0 br    0 pit   0 war  15 arc  14 rea  19 ran  14 | vol el 66/46 wr 102/65 kn 96/94 | l:f0/e-0/r0/u-0/roll0 r:f-28/e55/r24/u34/roll31 | slide 0.0/0.2 (13.6 s)
+chain_strike             | l: up    8 fa    0 hd   12 br    0 pit   0 war  16 arc  13 rea  31 ran  15 r: up   10 fa    0 hd    8 br    5 pit   0 war  18 arc  16 rea  18 ran  16 | vol el 50/53 wr 63/78 kn 71/76 | l:f3/e60/r0/u37/roll48 r:f-18/e49/r23/u36/roll48 | slide 13.6/16.5 (13.6 s)
