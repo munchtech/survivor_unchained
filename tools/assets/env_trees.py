@@ -74,7 +74,7 @@ def spray(seed):
     col = np.zeros((H, W, 3), np.float32)
     al = np.zeros((H, W), np.float32)
     hg = np.zeros((H, W), np.float32)
-    pal = [srgb(h) for h in ('#0b150f', '#15271b', '#213c29', '#355336', '#557548')]
+    pal = [srgb(h) for h in ('#122117', '#223b28', '#345537', '#4d7244', '#76955a')]
 
     def shade(v):
         v = float(np.clip(v, 0, 0.999)) * (len(pal) - 1)
@@ -177,8 +177,8 @@ def spray(seed):
                 tip = 0.5 * s ** 1.2 + 0.2 * smooth(0.55, 1.0, s)  # (light only toward the shoot's end)
                 jit = rng.normal(0, 0.04)
                 flank = 0.12 * (-x)                                # (the lit flank)
-                c1 = (shade(0.1 + vb + 0.25 * tip + 0.5 * flank + jit) * 255).astype(int).tolist()
-                c2 = (shade(0.22 + vb + 0.6 * tip + flank + 0.12 * abs(x) ** 2 + jit) * 255).astype(int).tolist()
+                c1 = (shade(0.16 + vb + 0.25 * tip + 0.5 * flank + jit) * 255).astype(int).tolist()
+                c2 = (shade(0.25 + vb + 0.6 * tip + flank + 0.12 * abs(x) ** 2 + jit) * 255).astype(int).tolist()
                 w = int(max(2, 3.0 * S * rng.uniform(0.8, 1.2)))
                 stroke(p + (e - p) * 0.1, mid, c1, w, cimg, aimg, himg, int(120 + 60 * tip))
                 stroke(mid, e, c2, w, cimg, aimg, himg, int(160 + 80 * tip))
@@ -437,7 +437,9 @@ def shadow_proxy(H, R, seed):
     for k in range(tiers):
         h0 = hs + k * th
         t = (h0 - hs) / (H - hs)
-        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.92
+        # (0.8 of the crown: the outer sprays stand outside it, so they take the key light; only the
+        # crown's inside falls in the tree's own shadow)
+        r = R * ((1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05) * 0.8
         n = int(rng.integers(12, 16))
         az0 = rng.uniform(0, 6.28)
         ring = []

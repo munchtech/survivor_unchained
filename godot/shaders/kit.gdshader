@@ -203,9 +203,9 @@ void fragment() {
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
 		float tip = smoothstep(0.55, 1.0, COLOR.g) * smoothstep(0.75, 1.0, COLOR.r);
 		float lum = dot(ALBEDO, LW);
-		ALBEDO = mix(ALBEDO, vec3(lum) * vec3(0.94, 1.0, 1.02), 0.16 * low_sun * (1.0 - tip));
+		ALBEDO = mix(ALBEDO, vec3(lum) * vec3(0.8, 1.0, 1.16), 0.28 * low_sun * (1.0 - tip));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
-		ALBEDO *= mix(0.5, 1.0, open_) * mix(1.0, 0.9, night);
+		ALBEDO *= mix(mix(0.5, 0.6, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
 		// light through the needles from behind; under the moon a third of it, deep blue-green
 		BACKLIGHT = ALBEDO * mix(vec3(0.18, 0.22, 0.24), vec3(0.04, 0.07, 0.065), night) * open_;
 		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
