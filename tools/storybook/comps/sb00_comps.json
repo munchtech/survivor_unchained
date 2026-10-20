@@ -65,14 +65,14 @@
         {"name": "hills", "z": 6, "map": "#2f4a7a", "note": "the far ridge beyond the lip", "shapes": [
           {"k": "poly", "p": [[0, 560], [600, 470], [1200, 520], [2000, 430], [2700, 500], [3200, 460], [3200, 780], [0, 780]], "c": "#0d1018"}
         ]},
-        {"name": "curve", "z": 2.3, "map": "#e8e0c8", "note": "inside the doorway: one pale ribbed curve, bone-pale, coming out of the earth; its own faint cold glow narrows to a line and goes out", "shapes": [
+        {"name": "curve", "z": 1.0, "map": "#e8e0c8", "note": "inside the doorway: one pale ribbed curve, bone-pale, coming out of the earth; its own faint cold glow narrows to a line and goes out", "shapes": [
           {"k": "rect", "r": [1100, 2600, 900, 800], "c": "#0a0909"},
-          {"k": "ellipse", "at": [1560, 3480], "r": [640, 700], "c": "#cfc6b0"},
-          {"k": "line", "p": [[1050, 3150], [1250, 2980], [1560, 2900], [1870, 2980], [2070, 3150]], "c": "#a49a84", "w": 30},
-          {"k": "line", "p": [[1000, 3330], [1250, 3120], [1560, 3050], [1870, 3120], [2110, 3330]], "c": "#a49a84", "w": 30},
-          {"k": "glow", "at": [1560, 3050], "r": 520, "ry": 380, "c": "#e4ecff", "a": 0.45}
+          {"k": "ellipse", "at": [1560, 3480], "r": [640, 700], "c": "#8e8778"},
+          {"k": "line", "p": [[1050, 3150], [1250, 2980], [1560, 2900], [1870, 2980], [2070, 3150]], "c": "#6f695d", "w": 30},
+          {"k": "line", "p": [[1000, 3330], [1250, 3120], [1560, 3050], [1870, 3120], [2110, 3330]], "c": "#6f695d", "w": 30},
+          {"k": "glow", "at": [1560, 3050], "r": 520, "ry": 380, "c": "#c9d8f2", "a": 0.22}
         ]},
-        {"name": "cut_floor", "z": 2.0, "map": "#6a4a3a", "note": "the floor of the cut: the stone doorway of fitted megaliths, letters carved on the lintel, pools of torchlight", "shapes": [
+        {"name": "cut_floor", "z": 1.0, "map": "#6a4a3a", "note": "the floor of the cut: the stone doorway of fitted megaliths, letters carved on the lintel, pools of torchlight", "shapes": [
           {"k": "rect", "r": [0, 2350, 3200, 1250], "c": "#100d0b"},
           {"k": "cut", "p": [[1180, 2640], [1920, 2640], [1920, 3350], [1180, 3350]]},
           {"k": "poly", "p": [[980, 2510], [2120, 2510], [2140, 2650], [960, 2650]], "c": "#3a342c"},
@@ -83,19 +83,19 @@
           {"k": "glow", "at": [650, 3280], "r": 320, "c": "#ff9a40", "a": 0.25},
           {"k": "glow", "at": [2550, 3240], "r": 320, "c": "#ff9a40", "a": 0.25}
         ]},
-        {"name": "door_slab", "z": 1.95, "map": "#9a8a6a", "note": "the great slab beside the doorway; slides left to close it", "shapes": [
+        {"name": "door_slab", "z": 1.0, "map": "#9a8a6a", "note": "the great slab beside the doorway; slides left to close it", "shapes": [
           {"k": "poly", "p": [[2090, 2600], [2700, 2610], [2700, 3360], [2090, 3360]], "c": "#2c2823"}
         ]},
-        {"name": "cut_walls", "z": 1.4, "map": "#7a3a2a", "note": "the cut's walls; a ramp winds down the right wall with the torch column (torches flicker)", "shapes": [
+        {"name": "cut_walls", "z": 1.0, "map": "#7a3a2a", "note": "the cut's walls; a ramp winds down the right wall with the torch column (torches flicker)", "shapes": [
           {"k": "poly", "p": [[0, 700], [900, 820], [1150, 1400], [1000, 2400], [960, 3360], [0, 3360]], "c": "#1a1512"},
           {"k": "poly", "p": [[3200, 700], [2300, 820], [2050, 1500], [2150, 2400], [2260, 3360], [3200, 3360]], "c": "#1c1714"},
           {"k": "line", "p": [[2380, 900], [2120, 1350], [2380, 1850], [2160, 2350], [2330, 2900], [2250, 3300]], "c": "#2c241c", "w": 70},
           {"k": "row", "pose": "stand", "path": [[2380, 900, 120], [2120, 1350, 105], [2380, 1850, 92], [2160, 2350, 82], [2330, 2900, 72], [2250, 3300, 66]], "n": 30, "face": "front", "c": "#3a1a14", "torch": "#ffb050", "jitter": 0.12, "seed": 4}
         ]},
-        {"name": "chain", "z": 1.2, "map": "#5a5a6a", "note": "the chain, links as tall as a man, from the anvil down the left wall and in through the doorway", "shapes": [
+        {"name": "chain", "z": 0.99, "map": "#5a5a6a", "note": "the chain, links as tall as a man, from the anvil down the left wall and in through the doorway", "shapes": [
           {"k": "chain", "p": [[1000, 980], [1080, 1500], [1150, 2200], [1230, 2900], [1290, 3300]], "link": [120, 62], "c": "#2b2622", "hi": "#6a5a48"}
         ]},
-        {"name": "lip", "z": 1.0, "map": "#c0503a", "note": "the near lip: the smiths at the anvil, the standard VII, legionaries in rust-red and dull bronze", "shapes": [
+        {"name": "lip", "z": 0.95, "map": "#c0503a", "note": "the near lip: the smiths at the anvil, the standard VII, legionaries in rust-red and dull bronze", "shapes": [
           {"k": "poly", "p": [[0, 640], [700, 700], [1000, 820], [1200, 900], [950, 1010], [0, 1010]], "c": "#1e1813"},
           {"k": "poly", "p": [[3200, 640], [2400, 720], [2250, 860], [2500, 970], [3200, 970]], "c": "#1e1813"},
           {"k": "rect", "r": [920, 900, 180, 80], "c": "#2a2420"},
@@ -118,7 +118,7 @@
       "prompt": "A dark painted illustration looking down into a great cut in a hillside at night. At the top, on the lip of the cut, Roman legionaries in rust-red cloaks and dull bronze crested helmets: two smiths in leather aprons hammer a giant iron chain link on an anvil, sparks flying; a standard with a rust-red banner and the number VII; big burning torches at the top corners. A heavy iron chain with links as tall as a man runs from the anvil down the left wall of the cut into the dark. A long column of small soldiers carrying torches winds down a ramp cut into the right wall. Far below at the bottom of the cut, a massive stone doorway of fitted megaliths with letters carved on its lintel; inside the doorway one smooth pale curved surface with ribs, glowing faintly; a great stone slab stands beside the doorway. Deep shadow, firelight. Full-bleed, no border."
     },
     {
-      "id": "p2", "title": "Ember", "at": 15.5, "until": 25.5,
+      "id": "p2", "title": "Ember", "at": 15.5, "until": 25.5, "rest": [1600, 830],
       "size": [3200, 3400], "gen": [1536, 1632], "bg": "#070605",
       "camera": [
         {"t": 0, "x": 1600, "y": 2760, "zoom": 1.12},
@@ -137,7 +137,7 @@
         {"name": "hills", "z": 6, "map": "#2f4a7a", "note": "dark hills", "shapes": [
           {"k": "poly", "p": [[0, 700], [500, 620], [1100, 680], [1700, 600], [2400, 660], [3200, 610], [3200, 920], [0, 920]], "c": "#10141c"}
         ]},
-        {"name": "town", "z": 2.0, "map": "#c8783a", "note": "the Waystation: stone and timber roofs where three roads meet, warm lamps in the windows, chimney smoke", "shapes": [
+        {"name": "town", "z": 1.0, "map": "#c8783a", "note": "the Waystation: stone and timber roofs where three roads meet, warm lamps in the windows, chimney smoke", "shapes": [
           {"k": "houses", "region": [1050, 800, 1200, 300], "n": 10, "c": "#26201b", "win": "#ffbe6a", "seed": 3}
         ]},
         {"name": "ground", "z": 1.0, "map": "#7a5a3a", "note": "the ground surface (road, stall, cart, river bank) and the cross-section below it: soil with roots and small glowing stones, gravel, rock, the buried door; one plane", "shapes": [
@@ -164,9 +164,9 @@
           {"k": "glow", "at": [640, 1050], "r": 70, "c": "#ff8a3a", "a": 0.6},
           {"k": "glow", "at": [1540, 1050], "r": 45, "c": "#ff9a40", "a": 0.8}
         ]},
-        {"name": "threads", "z": 0.95, "blend": "add", "map": "#ffd890", "note": "threads of light rising from the door to the surface, pale deep down, orange-gold near the top (they drift upward); the faint pale glow at the door", "shapes": [
-          {"k": "glow", "at": [1600, 3220], "r": 620, "ry": 300, "c": "#cdd6ea", "a": 0.35},
-          {"k": "threads", "from": [1300, 1900, 3140], "to": [250, 2950, 1230], "n": 18, "c0": "#dfe6f5", "c1": "#ffb060", "w": 6, "seed": 9}
+        {"name": "threads", "z": 1.0, "blend": "add", "map": "#ffd890", "note": "threads of light rising from the door to the surface, pale deep down, orange-gold near the top (they drift upward); the faint pale glow at the door", "shapes": [
+          {"k": "glow", "at": [1600, 3220], "r": 620, "ry": 300, "c": "#cdd6ea", "a": 0.22},
+          {"k": "threads", "from": [1300, 1900, 3140], "to": [250, 2950, 1230], "n": 11, "c0": "#9fabc2", "c1": "#ffb060", "w": 4, "seed": 9}
         ]}
       ],
       "prompt": "A storybook cross-section illustration, a painted cutaway of the earth under a small valley town at night. At the bottom, deep dark rock and, buried far down, a small ancient stone door with a faint pale light leaking around its edges. Thin threads of light rise slowly up through the dark rock, gravel and roots like sparks rising through water, pale at the bottom and warm orange-gold near the top, where they gather as many small glowing orange stones in the soil and in a riverbed. At the top, above the ground line: stone and timber houses where three roads meet, warm gold lamps in the windows, a hearth glowing through an open door, a market stall where one person hands coins to another for a small glowing stone, a cart of glowing stones on the road, a river at the right, dark hills, a night sky. Full-bleed, no border, no text."
@@ -200,7 +200,7 @@
           {"k": "rect", "r": [0, 940, 5400, 90], "c": "#1c2026"}
         ]},
         {"name": "field", "z": 1.0, "map": "#6a7a8a", "note": "the near field: frost, ember glinting in the soil, the crack; dawn version", "shapes": [
-          {"k": "rect", "r": [0, 1000, 5400, 1000], "grad": ["#1a1f28", "#242b36"]},
+          {"k": "rect", "r": [0, 1000, 5400, 1000], "grad": ["#2e3540", "#3d4450"]},
           {"k": "dots", "region": [0, 1020, 5400, 960], "n": 420, "c": "#8a94a6", "r": [2, 5], "a": 0.6, "seed": 11},
           {"k": "dots", "region": [300, 1300, 1400, 650], "n": 60, "c": "#ff8a3a", "r": [4, 9], "glow": true, "seed": 12},
           {"k": "dots", "region": [2400, 1400, 2100, 550], "n": 70, "c": "#ff8a3a", "r": [4, 9], "glow": true, "seed": 13},
@@ -225,8 +225,6 @@
         ]},
         {"name": "watchman", "z": 0.98, "map": "#5a7ab0", "note": "the Watchman: slate blue-gray cloak and tabard, round wooden shield, gray beard, small lamp on his belt, breath smoking; dawn pose: leaning on his spear", "shapes": [
           {"k": "fig", "pose": "spear_thrust", "at": [3250, 1680], "h": 840, "face": "left", "c": "#3a4250", "rim": "#ffb060"},
-          {"k": "line", "p": [[3170, 1250], [2840, 1205]], "c": "#6a5a44", "w": 12},
-          {"k": "ellipse", "at": [3340, 1300], "r": [120, 140], "c": "#4a3a2a"},
           {"k": "glow", "at": [3225, 1430], "r": 28, "c": "#ffd590", "a": 0.9},
           {"k": "ellipse", "at": [3080, 1030], "r": [90, 38], "c": "#8a90a0", "a": 0.4}
         ]},
@@ -239,7 +237,7 @@
           {"k": "fig", "pose": "lying", "at": [4100, 1720], "h": 760, "face": "right", "c": "#1c1e20"}
         ]},
         {"name": "foreground", "z": 0.75, "map": "#2a2a3a", "note": "dark frosted tussocks along the bottom edge", "shapes": [
-          {"k": "poly", "p": [[0, 1880], [600, 1840], [1400, 1900], [2200, 1850], [3000, 1910], [3800, 1860], [4600, 1900], [5400, 1850], [5400, 2000], [0, 2000]], "c": "#0c0e12"}
+          {"k": "poly", "p": [[0, 1720], [300, 1660], [600, 1700], [1000, 1650], [1400, 1740], [1800, 1690], [2200, 1710], [2600, 1650], [3000, 1750], [3400, 1700], [3800, 1720], [4200, 1745], [4600, 1760], [5000, 1690], [5400, 1700], [5800, 1650], [6000, 1700], [6000, 2000], [0, 2000]], "c": "#0c0e12"}
         ]}
       ],
       "prompt": "A grim painted illustration, a wide frieze at night on a frosted field beside a road, low dark hills, a dark sky. Small orange embers glint in the frozen soil like coals in ash. Left: the frost has cracked open in a jagged line with orange light inside, and a dead man's hand is coming up out of the crack. Center-left: a dead man stands upright, slack and blank-faced, arms hanging, an orange light glowing inside him that shows at his mouth, his empty eye sockets and his wounds, like a lamp behind paper. Center-right: an old soldier with a gray beard in a slate blue-gray cloak and tabard, a round wooden shield on his arm and a small lamp on his belt, drives a spear into another standing dead man; orange light pours out of the wound and falls onto the frost as a scatter of small glowing stones; the old soldier's breath smokes in the cold. Right: a dead body lying dark and empty on the frost among a few glowing stones. Full-bleed, no border."
@@ -301,8 +299,7 @@
           {"k": "ellipse", "at": [4420, 380], "r": [160, 60], "c": "#5a5650", "a": 0.4},
           {"k": "line", "p": [[4110, 1430], [4215, 560]], "c": "#4a3a2a", "w": 14},
           {"k": "line", "p": [[4195, 1430], [4290, 560]], "c": "#4a3a2a", "w": 14},
-          {"k": "fig", "pose": "ladder_pour", "at": [4175, 1060], "h": 430, "face": "right", "c": "#4a5064", "rim": "#ffd04a"},
-          {"k": "ellipse", "at": [4275, 600], "r": [32, 30], "c": "#6a5030"}
+          {"k": "fig", "pose": "ladder_pour", "at": [4175, 1060], "h": 430, "face": "right", "c": "#4a5064", "rim": "#ffd04a"}
         ]},
         {"name": "divider", "z": 0.7, "map": "#202028", "note": "a dark willow trunk in the foreground; the pan passes behind it (years pass)", "shapes": [
           {"k": "poly", "p": [[2760, 0], [3100, 0], [3170, 1800], [2700, 1800]], "c": "#0a0a0c"},
@@ -425,7 +422,7 @@
           {"k": "dots", "region": [3400, 1150, 900, 70], "n": 10, "c": "#2a3040", "r": [30, 60], "flat": 0.35, "seed": 42}
         ]},
         {"name": "camp", "z": 1.0, "map": "#c07a4a", "note": "the road, the fire, the log, the bedroll with its folded blanket, the pack; the ground lit warm by the fire", "shapes": [
-          {"k": "rect", "r": [0, 940, 2600, 960], "c": "#1e1a16"},
+          {"k": "poly", "p": [[0, 940], [2450, 940], [2700, 1100], [2850, 1400], [2950, 1900], [0, 1900]], "c": "#1e1a16"},
           {"k": "poly", "p": [[0, 1500], [450, 1180], [640, 940], [700, 940], [700, 1180], [320, 1900], [0, 1900]], "c": "#2a2620"},
           {"k": "poly", "p": [[1650, 1460], [2150, 1470], [2150, 1530], [1650, 1525]], "c": "#2a1c12"},
           {"k": "poly", "p": [[700, 1570], [1250, 1530], [1290, 1650], [720, 1690]], "c": "#4a3a2a"},
@@ -439,7 +436,7 @@
           {"k": "fig", "pose": "kneel_back", "at": [3750, 1195], "h": 300, "face": "back", "c": "#1a1e28", "rim": "#8ac8ff"}
         ]},
         {"name": "foreground", "z": 0.7, "map": "#2a2a3a", "note": "dark grass at the bottom left", "shapes": [
-          {"k": "poly", "p": [[0, 1740], [800, 1800], [1200, 1900], [0, 1900]], "c": "#0c0a08"}
+          {"k": "poly", "p": [[0, 1560], [500, 1600], [900, 1680], [1250, 1800], [1350, 1900], [0, 1900]], "c": "#0c0a08"}
         ]}
       ],
       "prompt": "A painted illustration at dusk, the last light: a deep blue sky over a dull rose band on the horizon. Left: a small camp beside a dirt road: a campfire burning high, a log, a bedroll unrolled with a folded blanket on it, a pack; a lone traveler in a long dark hooded wool coat sits on the log with the hood up, seen from behind, reading a folded letter by the firelight. Far up the road in the distance, the small warm lamps of a town, one lamp higher than the rest. Right: the ground slopes down out of the firelight into cold blue shadow to a river as smooth as a mirror with flat stones at its edge; the same hooded traveler kneels on the stones at the water's edge, seen from behind, holding a flask under the water; upstream, three small blue lights glow low through dark trees. Full-bleed, no border."
@@ -471,22 +468,18 @@
           {"k": "ellipse", "at": [1550, 1490], "r": [260, 42], "c": "#3a4a60", "a": 0.3, "stroke": 5}
         ]},
         {"name": "reflection_blue", "z": 1.2, "blend": "add", "map": "#8ac8ff", "note": "the lamp's blue in the water: slides in from the right, grows over the reflected face until it erases it", "shapes": [
-          {"k": "ellipse", "at": [2350, 1700], "r": [90, 380], "c": "#8ac8ff", "a": 0.55},
+          {"k": "ellipse", "at": [2350, 1700], "r": [55, 220], "c": "#8ac8ff", "a": 0.35},
           {"k": "glow", "at": [1250, 1700], "r": 320, "c": "#8ac8ff", "a": 0.3}
         ]},
         {"name": "bank", "z": 0.9, "map": "#4a4a5a", "note": "flat wet stones at the edge, under the traveler", "shapes": [
           {"k": "poly", "p": [[0, 1380], [900, 1420], [1300, 1470], [1250, 1570], [0, 1610]], "c": "#1e2228"}
         ]},
         {"name": "traveler", "z": 0.95, "map": "#e0e060", "note": "the traveler leaning over the water, hood up, from behind and to the side (drawn poses: head down; head lifting); gloved hand with the flask under", "shapes": [
-          {"k": "poly", "p": [[300, 700], [950, 850], [1100, 1300], [800, 1500], [200, 1500], [100, 1100]], "c": "#181a20"},
-          {"k": "poly", "p": [[950, 880], [1250, 820], [1480, 950], [1560, 1200], [1480, 1400], [1250, 1430], [1000, 1320], [900, 1100]], "c": "#1c1e24"},
-          {"k": "poly", "p": [[1150, 1250], [1400, 1350], [1560, 1470], [1500, 1520], [1300, 1450], [1080, 1380]], "c": "#1a1c22"},
-          {"k": "ellipse", "at": [1550, 1480], "r": [42, 38], "c": "#2a2620"}
+          {"k": "fig", "pose": "kneel_back", "at": [750, 1480], "h": 1100, "face": "right", "c": "#181a20", "rim": "#8ac8ff"}
         ]},
         {"name": "lamp", "z": 1.1, "blend": "add", "map": "#bfe4ff", "note": "the blue lamp a hand's breadth above the water, level with the hood; its glare hides what holds it; its light on the hood's edge", "shapes": [
-          {"k": "glow", "at": [2350, 1300], "r": 28, "c": "#e8f6ff", "a": 1.0},
-          {"k": "glow", "at": [2350, 1300], "r": 280, "c": "#8ac8ff", "a": 0.6},
-          {"k": "line", "p": [[1480, 950], [1560, 1200], [1480, 1400]], "c": "#8ac8ff", "w": 10, "a": 0.7}
+          {"k": "glow", "at": [2350, 1180], "r": 28, "c": "#e8f6ff", "a": 1.0},
+          {"k": "glow", "at": [2350, 1180], "r": 200, "c": "#8ac8ff", "a": 0.55}
         ]}
       ],
       "prompt": "A dark painted illustration, close at a river's edge at the last of dusk. A traveler in a dark wool hooded coat kneels on flat wet stones at the left, seen from behind and to the side, leaning down over the water with the hood up and the face hidden, a gloved hand holding a flask under the water, small rings spreading. Below, in the smooth black water, the traveler's hooded reflection, the face lost in shadow and ripples. To the right, just above the surface, a cold bright blue lamp glares a hand's breadth above the water and level with the hood, so bright that whatever holds it is hidden; its blue light washes the edge of the hood and streaks across the water. Full-bleed, no border."
@@ -501,10 +494,11 @@
       "layers": [
         {"name": "under", "z": 1.0, "map": "#1a4a3a", "note": "black-green water, the underside of the surface", "shapes": [
           {"k": "rect", "r": [0, 0, 3200, 1800], "grad": ["#0c1a14", "#030806"]},
-          {"k": "line", "p": [[0, 260], [800, 240], [1600, 280], [2400, 230], [3200, 260]], "c": "#2a4a40", "w": 10, "a": 0.6}
+          {"k": "line", "p": [[0, 440], [800, 410], [1600, 450], [2400, 400], [3200, 430]], "c": "#2a4a40", "w": 10, "a": 0.6}
         ]},
-        {"name": "lamp_warped", "z": 1.5, "blend": "add", "map": "#8ac8ff", "note": "the blue lamp seen through the surface, warped", "shapes": [
-          {"k": "glow", "at": [1900, 200], "r": 170, "ry": 60, "c": "#8ac8ff", "a": 0.6}
+        {"name": "lamp_warped", "z": 1.0, "blend": "add", "map": "#8ac8ff", "note": "the blue lamp seen through the surface, warped", "shapes": [
+          {"k": "glow", "at": [1900, 410], "r": 300, "ry": 110, "c": "#8ac8ff", "a": 0.75},
+          {"k": "glow", "at": [1900, 410], "r": 70, "ry": 35, "c": "#d8f0ff", "a": 0.9}
         ]},
         {"name": "bubbles", "z": 0.9, "map": "#c0e0d8", "note": "bubbles rushing up (also particles)", "shapes": [
           {"k": "dots", "region": [1000, 380, 1400, 1400], "n": 60, "c": "#9ab8b0", "r": [6, 24], "a": 0.5, "seed": 51}
