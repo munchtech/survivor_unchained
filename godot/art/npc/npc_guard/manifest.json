@@ -29,13 +29,13 @@
      "beyondHers": 949
     },
     "after": {
-     "n": 108,
+     "n": 110,
      "deepMm": 2.42,
      "beyondHers": 25
     },
     "byMaterial": {
      "hair": {
-      "n": 66,
+      "n": 68,
       "points": 59520,
       "deepMm": 1.38,
       "beyondHers": 0
@@ -58,18 +58,18 @@
    "liftMaxMm": 17.24,
    "lastNeedMm": 2.81,
    "cardLod": {
-    "tolMm": 0.84,
+    "tolMm": 1.92,
     "cards": 2286,
     "tris": {
      "before": 86740,
-     "after": 8000,
-     "hair": 6208,
-     "hair_fine": 1792
+     "after": 6900,
+     "hair": 5314,
+     "hair_fine": 1586
     },
     "culled": {
      "offRoot": 20,
      "lone": 0,
-     "hidden": 0
+     "hidden": 117
     },
     "rootMm": [
      2.5,
@@ -78,22 +78,29 @@
     ]
    },
    "fringe": {
-    "cards": 183,
-    "tris": 732,
+    "cards": 580,
+    "tris": 2320,
     "roots": {
-     "candidates": 5667,
-     "seen": 887,
-     "picked": 183,
+     "candidates": 13579,
+     "seen": 3827,
+     "picked": 580,
      "noDir": 0
     },
     "spacingMm": 1.8
+   },
+   "rootFeather": {
+    "seen": 519,
+    "cards": 2142,
+    "rampMm": 9,
+    "lo": 0.1,
+    "depthLifted": 27143
    }
   },
   "paint": {
    "pixels": {
-    "scalp": 1251485,
-    "roots": 1198231,
-    "brows": 11003,
+    "scalp": 1379505,
+    "roots": 1308549,
+    "brows": 10998,
     "beard": 0
    },
    "life": {
@@ -122,20 +129,20 @@
    "landmarks": {
     "eyeHalf": 0.0287,
     "eyeY": 1.5858,
-    "mouthY": 1.5177
+    "mouthY": 1.5178
    }
   }
  },
  "nipples": {
   "l": [
-   1.36,
-   0.16,
-   4.65
+   1.13,
+   0.22,
+   4.59
   ],
   "r": [
-   1.36,
-   0.16,
-   4.65
+   1.14,
+   0.22,
+   4.59
   ],
   "tips": {
    "l": 8510,
@@ -144,14 +151,14 @@
  },
  "rest": {
   "before": {
-   "deg": 78.028,
+   "deg": 77.749,
    "bone": "hand_r"
   },
   "after": {
    "deg": 0.011,
    "bone": "thumb_04_leaf_l"
   },
-  "headMoved": 4.49e-16
+  "headMoved": 4.75e-16
  },
  "name": "npc_guard",
  "sex": "male",
@@ -160,71 +167,71 @@
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_body": 2567,
-   "lod_npc_wool": 786,
-   "lod_npc_linen": 1343,
-   "lod_darkleather": 379,
-   "lod_steel": 1381,
-   "lod_hair": 2546
+   "lod_body": 2801,
+   "lod_npc_wool": 954,
+   "lod_npc_linen": 1219,
+   "lod_darkleather": 542,
+   "lod_steel": 1410,
+   "lod_hair": 2284
   },
-  "total": 9002,
-  "shadowTris": 2313,
-  "shadowHair": 491,
+  "total": 9210,
+  "shadowTris": 2248,
+  "shadowHair": 429,
   "errMm": {
    "cut": 3,
    "lod_body.skin": {
-    "p99": 3.42,
+    "p99": 3.37,
     "max": 10.93
    },
    "lod_body.skin_head": {
-    "p99": 3.44,
-    "max": 3.98
+    "p99": 3.6,
+    "max": 5.07
    },
    "lod_body.eyes": {
     "p99": 3.22,
-    "max": 3.22
+    "max": 4.19
    },
    "lod_npc_wool": {
-    "p99": 2.73,
-    "max": 4.53
+    "p99": 2.68,
+    "max": 8.56
    },
    "lod_npc_linen": {
-    "p99": 3.51,
-    "max": 4.3
+    "p99": 3.37,
+    "max": 5.66
    },
    "lod_darkleather": {
-    "p99": 34.04,
-    "max": 48.31
+    "p99": 27.3,
+    "max": 48.26
    },
    "lod_steel": {
-    "p99": 2.86,
-    "max": 14.92
+    "p99": 3.06,
+    "max": 16.26
    },
    "lod_hair.hair_cap": {
-    "p99": 3.56,
+    "p99": 3.71,
     "max": 7.35
    },
    "lod_hair": "cards whole"
   },
   "movedMm": {
-   "lod_body.skin": 4.5,
-   "lod_body.skin_head": 4.44,
-   "lod_npc_wool": 2.79,
-   "lod_npc_linen": 4.4,
+   "lod_body.skin": 4.21,
+   "lod_body.skin_head": 4.5,
+   "lod_npc_wool": 4.5,
+   "lod_npc_linen": 4.34,
    "lod_darkleather": 4.5,
-   "lod_steel": 4.35,
-   "lod_hair.hair_cap": 3.34
+   "lod_steel": 4.08,
+   "lod_hair.hair_cap": 3.35
   },
   "dropped": [
    {
     "mat": "gold",
-    "areaPct": 0.74
+    "areaPct": 0.77
    }
   ],
   "cards": {
-   "kept": 593,
-   "of": 1695,
-   "tris": 2252
+   "kept": 561,
+   "of": 1604,
+   "tris": 1986
   }
  },
  "maps": {
@@ -351,39 +358,41 @@
  ],
  "tris": {
   "body": 29528,
-  "bodyDrawn": 23113,
-  "skinHidden": 6415,
+  "bodyDrawn": 22776,
+  "skinHidden": 6752,
   "pieces": {
    "warden.boots": 8994
   },
-  "hair": 11393,
+  "hair": 11881,
   "wear": {
-   "trousers": 1295,
-   "gambeson": 3694
+   "trousers": 1395,
+   "gambeson": 3764,
+   "belt": 452,
+   "buckle": 38
   },
   "over": [],
   "surfaces": {
-   "skin": 12141,
+   "skin": 11804,
    "skin_head": 8200,
-   "npc_wool": 1295,
-   "npc_linen": 3694,
-   "darkleather": 1162,
+   "npc_wool": 1395,
+   "npc_linen": 3764,
+   "darkleather": 1614,
    "gold": 2446,
-   "steel": 5386,
+   "steel": 5424,
    "eyes": 544,
    "teeth": 1780,
    "tongue": 448,
-   "hair:hair": 6208,
+   "hair:hair": 5314,
    "hair:hair_cap": 2661,
-   "hair:hair_fine": 2524
+   "hair:hair_fine": 3906
   },
-  "total": 48489,
-  "drawn": 48489,
+  "total": 49300,
+  "drawn": 49300,
   "budget": 60000
  },
  "baked": true,
  "bake": {
-  "bytes": 9650296,
+  "bytes": 9785928,
   "nodes": [
    {
     "name": "npc_guard",
@@ -396,7 +405,7 @@
      "gold",
      "steel"
     ],
-    "tris": 29504,
+    "tris": 29827,
     "morphs": 0
    },
    {
@@ -439,35 +448,42 @@
      "hair_cap",
      "hair_fine"
     ],
-    "tris": 11393,
+    "tris": 11881,
     "morphs": 0
    }
   ],
-  "skinDeleted": 6415,
+  "skinDeleted": 6752,
   "rims": {
-   "edges": 695,
+   "edges": 894,
    "open": {
     "rest": 26,
-    "any": 31
+    "any": 41
    },
-   "tight": 4,
+   "tight": 5,
    "byBone": {
-    "ball_r": 15,
     "ball_l": 15,
-    "foot_r": 1
+    "ball_r": 14,
+    "thigh_l": 7,
+    "thigh_r": 2,
+    "foot_r": 1,
+    "spine_01": 1,
+    "pelvis": 1
    }
   },
   "holes": {
-   "of": 6415,
-   "rest": 370,
-   "any": 535,
-   "beyond15cm": 157,
+   "of": 6752,
+   "rest": 392,
+   "any": 612,
+   "beyond15cm": 219,
    "byBone": {
     "ball_l": 241,
-    "ball_r": 223,
+    "ball_r": 221,
+    "thigh_r": 39,
+    "thigh_l": 37,
     "calf_r": 31,
-    "foot_r": 28,
-    "foot_l": 12
+    "foot_r": 25,
+    "foot_l": 14,
+    "pelvis": 4
    }
   },
   "poses": 7
@@ -495,7 +511,130 @@
    "colour": "#3d4839"
   },
   "why": "a guard: a padded gambeson over trousers (\"guard\"); lean: ease capped",
-  "skinCovered": 1488,
+  "skinCovered": 1774,
+  "tuck": {
+   "poses": [
+    "rest",
+    "Walk_Loop@0.25",
+    "Walk_Loop@0.75",
+    "Crouch_Idle_Loop@0.5",
+    "Sprint_Loop@0.3",
+    "Sword_Attack@0.45",
+    "arms_overhead",
+    "Walk_Loop@0",
+    "Walk_Loop@0.125",
+    "Walk_Loop@0.375",
+    "Walk_Loop@0.5",
+    "Walk_Loop@0.625",
+    "Walk_Loop@0.875"
+   ],
+   "layers": [
+    {
+     "lower": "trousers",
+     "under": [
+      "gambeson"
+     ],
+     "before": {
+      "points": 83,
+      "bareAtHem": 0,
+      "deepMm": 19.7,
+      "perPose": [
+       "rest 9 / 4.7 mm",
+       "Walk_Loop@0.25 19 / 19.2 mm",
+       "Walk_Loop@0.75 17 / 16.3 mm",
+       "Crouch_Idle_Loop@0.5 15 / 18.4 mm",
+       "Sprint_Loop@0.3 22 / 19.4 mm",
+       "Sword_Attack@0.45 28 / 19.4 mm",
+       "arms_overhead 9 / 4.7 mm",
+       "Walk_Loop@0 24 / 17.6 mm",
+       "Walk_Loop@0.125 15 / 19 mm",
+       "Walk_Loop@0.375 23 / 19.7 mm",
+       "Walk_Loop@0.5 28 / 18.5 mm",
+       "Walk_Loop@0.625 27 / 19.1 mm",
+       "Walk_Loop@0.875 15 / 17 mm"
+      ],
+      "where": {
+       "thigh_l": 40,
+       "thigh_r": 30,
+       "pelvis": 15
+      }
+     },
+     "after": {
+      "points": 31,
+      "bareAtHem": 0,
+      "deepMm": 19.8,
+      "perPose": [
+       "rest 7 / 4.7 mm",
+       "Walk_Loop@0.25 9 / 18.1 mm",
+       "Walk_Loop@0.75 12 / 12 mm",
+       "Crouch_Idle_Loop@0.5 8 / 18.4 mm",
+       "Sprint_Loop@0.3 7 / 15.5 mm",
+       "Sword_Attack@0.45 15 / 18.6 mm",
+       "arms_overhead 7 / 4.7 mm",
+       "Walk_Loop@0 12 / 14.8 mm",
+       "Walk_Loop@0.125 9 / 10.9 mm",
+       "Walk_Loop@0.375 11 / 19.8 mm",
+       "Walk_Loop@0.5 9 / 10.5 mm",
+       "Walk_Loop@0.625 9 / 8.8 mm",
+       "Walk_Loop@0.875 6 / 8.3 mm"
+      ],
+      "where": {
+       "thigh_l": 14,
+       "thigh_r": 10,
+       "pelvis": 8
+      }
+     },
+     "moved": 144,
+     "maxMm": 22
+    }
+   ],
+   "skin": {
+    "before": {
+     "points": 177,
+     "bareAtHem": 3,
+     "deepMm": 19.8,
+     "perPose": [
+      "rest 2 / 1.3 mm",
+      "Walk_Loop@0.25 25 / 8.2 mm",
+      "Walk_Loop@0.75 22 / 7.9 mm",
+      "Crouch_Idle_Loop@0.5 53 / 15.7 mm",
+      "Sprint_Loop@0.3 90 / 18.2 mm",
+      "Sword_Attack@0.45 78 / 19.8 mm",
+      "arms_overhead 3 / 2 mm",
+      "Walk_Loop@0 24 / 7.5 mm",
+      "Walk_Loop@0.125 26 / 8.3 mm",
+      "Walk_Loop@0.375 18 / 6.4 mm",
+      "Walk_Loop@0.5 19 / 5.3 mm",
+      "Walk_Loop@0.625 19 / 5.1 mm",
+      "Walk_Loop@0.875 24 / 7.1 mm"
+     ],
+     "where": {
+      "spine_03": 78,
+      "lowerarm_share_r": 17,
+      "upperarm_r": 15,
+      "upperarm_l": 13,
+      "Head": 10,
+      "lowerarm_r": 9
+     }
+    },
+    "after": {
+     "points": 2,
+     "bareAtHem": 1,
+     "deepMm": 5.2,
+     "perPose": [
+      "Crouch_Idle_Loop@0.5 1 / 0.7 mm",
+      "Sprint_Loop@0.3 1 / 5.2 mm"
+     ],
+     "where": {
+      "thigh_r": 1,
+      "thigh_l": 1
+     }
+    },
+    "moved": 487,
+    "maxMm": 22,
+    "lost": 336
+   }
+  },
   "garments": {
    "trousers": {
     "spec": {
@@ -513,21 +652,43 @@
      "thin": {
       "before": 1712,
       "after": 1295
-     }
+     },
+     "band": 114
     },
     "body": {
-     "moved": 242,
-     "maxMm": 24.5
+     "moved": 265,
+     "maxMm": 24.6
     },
     "skin": {
      "through": 0,
-     "close": 47,
+     "close": 50,
      "maxMm": 3.6
     },
     "hang": 0,
-    "under": 44,
-    "dropped": 0,
-    "tris": 1295,
+    "edges": 3,
+    "skin5": {
+     "through": 0,
+     "close": 18,
+     "maxMm": 2.2
+    },
+    "bands": 57,
+    "hull": null,
+    "open": {
+     "bare": 0,
+     "bareCm": 0,
+     "loops": 3,
+     "maxTurn": 41.5,
+     "p95Turn": 31
+    },
+    "under": 80,
+    "dropped": 14,
+    "weights": {
+     "free": 0,
+     "spread": 0,
+     "of": 732,
+     "lim": null
+    },
+    "tris": 1395,
     "maps": {
      "size": 2048,
      "texelMm": 0.69,
@@ -539,20 +700,20 @@
      ]
     },
     "spots": {
-     "through": 8,
-     "under": 1404,
-     "deepMm": 3.1,
+     "through": 6,
+     "under": 1401,
+     "deepMm": 1.5,
      "where": [
-      -0.083,
-      0.018,
-      -0.063
+      -0.098,
+      -0.007,
+      -0.077
      ]
     },
     "through": {
-     "pct": 2.405,
-     "areaPct": 1.532,
-     "deepMm": 31.73,
-     "worst": "Crouch_Idle_Loop@0.5:78"
+     "pct": 2.284,
+     "areaPct": 1.625,
+     "deepMm": 31.84,
+     "worst": "Crouch_Idle_Loop@0.5:67"
     }
    },
    "gambeson": {
@@ -593,61 +754,204 @@
      ],
      "thin": {
       "before": 7370,
-      "after": 3694
-     }
+      "after": 3540
+     },
+     "band": 224
     },
     "body": {
-     "moved": 250,
-     "maxMm": 12.4
+     "moved": 316,
+     "maxMm": 11
     },
     "skin": {
-     "through": 0,
-     "close": 7,
-     "maxMm": 1.2
+     "through": 3,
+     "close": 14,
+     "maxMm": 6.8
     },
-    "drape": 333,
-    "hang": 116,
-    "cinch": 80,
-    "tent": 594,
-    "fall": 58,
+    "drape": 305,
+    "hang": 0,
+    "cinch": 93,
+    "tent": 810,
+    "cinch2": 93,
+    "fall": 48,
+    "shell": {
+     "moved": 1747,
+     "beforeMm": {
+      "torso": 27.6,
+      "upperArm": 23.3,
+      "forearm": 21.2
+     },
+     "afterMm": {
+      "torso": 15,
+      "upperArm": 10.9,
+      "forearm": 7.2
+     }
+    },
+    "bridge": 543,
     "skin2": {
-     "through": 2,
-     "close": 4,
-     "maxMm": 7.1
+     "through": 92,
+     "close": 182,
+     "maxMm": 14.7
     },
-    "over": {
-     "moved": 74,
-     "maxMm": 2
+    "pad": {
+     "moved": 850,
+     "region": 501,
+     "capMm": 9.5,
+     "beforeMm": 11.3,
+     "afterMm": 9.1,
+     "widthCm": 1.7
+    },
+    "skin3": {
+     "through": 0,
+     "close": 49,
+     "maxMm": 2.9
     },
     "layer": {
+     "through": 23,
+     "close": 52,
+     "maxMm": 13.6
+    },
+    "skirt": 123,
+    "cinch3": 87,
+    "skin4": {
+     "through": 0,
+     "close": 1,
+     "maxMm": 1.7
+    },
+    "layer2": {
+     "through": 5,
+     "close": 14,
+     "maxMm": 8.1
+    },
+    "edges": 4,
+    "skin5": {
      "through": 2,
-     "close": 8,
-     "maxMm": 8.7
+     "close": 11,
+     "maxMm": 6.8
+    },
+    "bands": 112,
+    "hull": {
+     "maxMm": 8,
+     "p95Mm": 0.7,
+     "pts": 275
+    },
+    "open": {
+     "bare": 0,
+     "bareCm": 0,
+     "loops": 4,
+     "maxTurn": 40.8,
+     "p95Turn": 28.7
     },
     "under": 0,
+    "belt": {
+     "kind": "leather",
+     "clamped": 46,
+     "blended": 47,
+     "hold": {
+      "points": 12,
+      "outside": 0,
+      "worstMm": 0,
+      "minClearMm": 2.8
+     },
+     "surf": {
+      "cuts": 442,
+      "outside": 0,
+      "worstMm": 0
+     }
+    },
     "dropped": 0,
-    "tris": 3694,
+    "weights": {
+     "free": 436,
+     "spread": 830,
+     "of": 1936,
+     "lim": {
+      "breast": 0,
+      "thigh": {
+       "moved": 44,
+       "worst": 0.0001,
+       "its": 13
+      }
+     }
+    },
+    "tris": 3764,
     "maps": {
      "size": 2048,
-     "texelMm": 0.84,
-     "used": 0.54,
+     "texelMm": 0.79,
+     "used": 0.53,
      "KB": [
-      266,
-      359,
-      22
+      256,
+      357,
+      15
      ]
     },
     "spots": {
      "through": 0,
-     "under": 2456,
+     "under": 2658,
      "deepMm": 0,
      "where": null
     },
     "through": {
-     "pct": 2.038,
-     "areaPct": 1.587,
-     "deepMm": 37.2,
-     "worst": "Crouch_Idle_Loop@0.5:209"
+     "pct": 3.397,
+     "areaPct": 3.681,
+     "deepMm": 39.97,
+     "worst": "Crouch_Idle_Loop@0.5:261"
+    }
+   },
+   "belt": {
+    "spec": {
+     "type": "belt",
+     "belt": "leather"
+    },
+    "material": "darkleather",
+    "tris": 452,
+    "on": "gambeson",
+    "kind": "leather",
+    "clamped": 46,
+    "blended": 47,
+    "hold": {
+     "points": 12,
+     "outside": 0,
+     "worstMm": 0,
+     "minClearMm": 2.8
+    },
+    "surf": {
+     "cuts": 442,
+     "outside": 0,
+     "worstMm": 0
+    },
+    "through": {
+     "pct": 2.75,
+     "areaPct": 2.58,
+     "deepMm": 39.82,
+     "worst": "Crouch_Idle_Loop@0.5:51"
+    }
+   },
+   "buckle": {
+    "spec": {
+     "type": "belt",
+     "belt": "leather"
+    },
+    "material": "steel",
+    "tris": 38,
+    "on": "gambeson",
+    "kind": "leather",
+    "clamped": 46,
+    "blended": 47,
+    "hold": {
+     "points": 12,
+     "outside": 0,
+     "worstMm": 0,
+     "minClearMm": 2.8
+    },
+    "surf": {
+     "cuts": 442,
+     "outside": 0,
+     "worstMm": 0
+    },
+    "through": {
+     "pct": 3.383,
+     "areaPct": 3.286,
+     "deepMm": 9.59,
+     "worst": "Crouch_Idle_Loop@0.5:9"
     }
    }
   }
@@ -666,13 +970,13 @@
    "locked": 0,
    "errMm": 1.2,
    "clip": {
-    "fullPct": 0.297,
-    "fullAreaPct": 0.182,
-    "fullDeepMm": 23.73,
-    "areaPct": 0.07,
-    "pct": 0.07,
-    "deepMm": 19.35,
-    "worst": "Sword_Attack@0.45:37",
+    "fullPct": 0.292,
+    "fullAreaPct": 0.176,
+    "fullDeepMm": 23.83,
+    "areaPct": 0.06,
+    "pct": 0.068,
+    "deepMm": 13.87,
+    "worst": "Sword_Attack@0.45:36",
     "down": 0,
     "held": true,
     "conservedMm": 4,
@@ -680,22 +984,22 @@
      [
       0,
       8994,
-      0.07,
-      0.07,
-      19.35
+      0.068,
+      0.06,
+      13.87
      ]
     ]
    },
    "through": {
-    "pct": 0.07,
-    "areaPct": 0.07,
-    "deepMm": 19.35,
-    "worst": "Sword_Attack@0.45:37"
+    "pct": 0.068,
+    "areaPct": 0.06,
+    "deepMm": 13.87,
+    "worst": "Sword_Attack@0.45:36"
    },
-   "share": 20505,
+   "share": 19694,
    "devMm": {
-    "max": 20.24,
-    "p99": 10.49
+    "max": 16.43,
+    "p99": 9.22
    },
    "rungs": [
     0,
@@ -726,25 +1030,25 @@
   },
   {
    "id": "cloth-through",
-   "words": "No skin shows through the clothes at rest",
+   "words": "No skin shows through the clothes at rest or in motion (the walk, crouch, sprint, a swing, arms up)",
    "ok": false,
-   "value": "8 points, deepest 3.1 mm",
-   "limit": "no point deeper than 2 mm",
-   "where": "trousers [-0.083,0.018,-0.063]"
+   "value": "6 points at rest, deepest 1.5 mm; in motion 177 -> 2 points (deepest 19.8 -> 5.2 mm), 487 tucked in up to 22 mm",
+   "limit": "no point deeper than 2 mm at rest, none deeper than 0.5 mm in motion",
+   "where": "in motion 2 points, Crouch_Idle_Loop@0.5 1 / 0.7 mm; Sprint_Loop@0.3 1 / 5.2 mm"
   },
   {
    "id": "layer-through",
    "words": "No garment shows through the garment over it (a waistband through a tunic)",
-   "ok": true,
-   "value": "0 points, deepest 0 mm",
+   "ok": false,
+   "value": "0 points at rest, deepest 0 mm; in motion 83 -> 31 points",
    "limit": 0,
-   "where": null
+   "where": "trousers under gambeson"
   },
   {
    "id": "budget",
    "words": "The model fits its triangle budget (game model and the far LOD)",
    "ok": true,
-   "value": "drawn 48489 of 60000, LOD 9002",
+   "value": "drawn 49300 of 60000, LOD 9210",
    "limit": "60000 drawn, 12000 LOD",
    "where": null
   },
@@ -752,7 +1056,7 @@
    "id": "clipping",
    "words": "Armor and clothes do not cut through the skin in any of the poses",
    "ok": true,
-   "value": "worst 1.59% of area, deepest 37.2 mm",
+   "value": "worst 3.68% of area, deepest 39.97 mm",
    "limit": "5% of area",
    "where": null
   },
@@ -762,6 +1066,38 @@
    "ok": true,
    "value": "largest 1.26x",
    "limit": "under 1.3x on any axis",
+   "where": null
+  },
+  {
+   "id": "cloth-hull",
+   "words": "Loose clothes bridge the body's hollows (the cleavage, under the bust) instead of following the skin",
+   "ok": true,
+   "value": "0.7 mm (95% of the front's points within it)",
+   "limit": "at most 4 mm in from the cloth's own outline",
+   "where": null
+  },
+  {
+   "id": "open-edges",
+   "words": "Hems, cuffs and necklines are closed (rolled) and smooth, with no open seams",
+   "ok": true,
+   "value": "0 open edges, edges turn at most 31 deg (95%)",
+   "limit": "0 open, 35 deg (a coarse loop turns 20 at its corners)",
+   "where": null
+  },
+  {
+   "id": "shoulder-line",
+   "words": "Clothes do not grow the shoulders (padding over the shoulders and upper arms is capped)",
+   "ok": true,
+   "value": "shoulders 1.7 cm wider over the clothes, upper arm 9.1 mm off the skin",
+   "limit": "at most 3 cm wider",
+   "where": null
+  },
+  {
+   "id": "belt-hold",
+   "words": "A belt is a real strap round the waist and the cloth stays inside it",
+   "ok": true,
+   "value": "all inside, nearest 2.8 mm under it",
+   "limit": "no cloth outside the belt at rest",
    "where": null
   },
   {
@@ -809,7 +1145,7 @@
    "id": "shoulder-hip",
    "words": "Shoulders and hips are in proportion for this build",
    "ok": true,
-   "value": "ratio 1.52 (not checked on men)",
+   "value": "ratio 1.41 (not checked on men)",
    "limit": null,
    "where": null
   },
@@ -817,7 +1153,7 @@
    "id": "hairline-cut",
    "words": "The hairline has no hard cut where the cap meets the skin",
    "ok": true,
-   "value": "791 of 791 seen hairline points kept, fade off by at most 0.21",
+   "value": "787 of 787 seen hairline points kept, fade off by at most 0.21",
    "limit": "no seen point dropped",
    "where": null
   }
