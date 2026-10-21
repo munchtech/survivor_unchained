@@ -1038,7 +1038,11 @@ def build_cuirass():
     oR = orim[pos[orim, 0] < -0.6 * nx]
     G["CUP_PEAK"]["r"] = pos[oR[np.argmax(pos[oR, 2])]]
     G["CUP_PEAK"]["l"] = G["CUP_PEAK"]["r"] * mirror
-    FIT["rim_r"] = pos[oloop]
+    # (the band's seam: build_plate_top takes its rim's points furthest back. The cuirass's furthest back are its top
+    # corners (her upper chest recedes): the band started there, at her neck, and ran 1.3 m. So only its side seams:
+    # rim points beyond her nipple's |x|, below her nipple)
+    sr_ = oloop[(np.abs(pos[oloop, 0]) > nx) & (pos[oloop, 2] < nipz)]
+    FIT["rim_r"] = pos[sr_ if len(sr_) > 8 else oloop]
     FIT["x_min"] = float(ww)
     FIT["window_rim"] = pos[wloop]
     G["ONE_ISLAND"].add(cname)
@@ -1105,7 +1109,7 @@ def build_cuirass():
         if not tn.startswith(cname + "_bind"):
             continue
         cur = tb["curve"]
-        isw = np.hypot(cur[:, 0].mean(), cur[:, 2].mean() - wzw) < 0.03
+        isw = np.ptp(cur[:, 0]) < 2.5 * ww
         rec = lambda m, closed: {"closed": closed, "points": gl(cur[m]).round(5).tolist(), "normals": gl(tb["nrm"][m]).round(4).tolist(),
                                  "outward": gl(tb["outward"][m]).round(4).tolist(), "weights": [blend] * int(m.sum()),
                                  "roll": {"width": tb["width"], "height": tb["height"], "overhang": tb["overhang"]}, "tube": tn}
@@ -1146,7 +1150,7 @@ def cuirass_measure():
     bb = BVHTree.FromPolygons([tuple(p) for p in bv0], [p_.vertices[:] for p_ in me.polygons])
     out["standoff_mm"] = {"plate": standoff(f"{PID}.plate", bb)}
     wt_ = [tb for tn, tb in CAP["tubes"].items() if tn.startswith(f"{PID}.plate_bind") and
-           np.hypot(tb["curve"][:, 0].mean(), tb["curve"][:, 2].mean() - CUIR["window_design"]["widest_z"]) < 0.03]
+           np.ptp(tb["curve"][:, 0]) < 2.5 * FIT["x_min"]]
     if wt_:
         tb = wt_[0]
         cur = tb["curve"]
