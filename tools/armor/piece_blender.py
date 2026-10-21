@@ -2981,6 +2981,8 @@ def tuck_rekey_shipped(fp):
         new["t"] = [got[k] for k in ks]
     with open(fp, "wb") as f_:
         f_.write(struct.pack("<I", len(ks)) + new.tobytes())
+    global TUCK_N
+    TUCK_N = len(ks)
     NUM["tuck_rekey"] = {"records": int(n), "moved": moved, "dropped": dropped, "written": len(ks)}
     print("TUCK REKEY %s: %d records, %d off her shipped points moved to them, %d dropped, %d written" % (PID, n, moved, dropped, len(ks)))
 
