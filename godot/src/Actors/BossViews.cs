@@ -317,7 +317,7 @@ public partial class OrbView : Node3D, IOrb
     // The heartbeat's period (s); the light's swing about its mean (+-; the veins' is the shader's beat_amp).
     const double Period = 1.55;
     float lightAmp = 0.12f, lightK = 0.12f, lightAtt = 0.8f;
-    const float FistK = 0.012f;
+    const float FistK = 0.002f;
 
     static Mesh? heartMesh;
     static Aabb heartBox;
@@ -392,7 +392,9 @@ public partial class OrbView : Node3D, IOrb
                 case "light_range": range = v; break;
                 default: heart.SetShaderParameter(key, v); break;
             }
-        light = new OmniLight3D { LightColor = c, OmniRange = range, OmniAttenuation = lightAtt, ShadowEnabled = false, LightSpecular = 0.6f, LightVolumetricFogEnergy = 0.3f };
+        // (a fist's light sits in its upper part: with the steep falloff, whatever it lies on would burn white at 5 cm)
+        light = new OmniLight3D { LightColor = c, OmniRange = range, OmniAttenuation = lightAtt, ShadowEnabled = false, LightSpecular = 0.6f, LightVolumetricFogEnergy = 0.3f,
+            Position = fist ? new Vector3(0, this.size * 0.6f, 0) : Vector3.Zero };
         AddChild(light);
         drips = Drips(this.size, c);
         AddChild(drips);

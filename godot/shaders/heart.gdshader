@@ -1,11 +1,11 @@
 // The Warden's heart (E7c, look bible 10 "The trick" 4): a fist-sized wet stone with cold light in its cracks.
 // The mesh (tools/assets/env_heart.py) carries the broad chipped faces and the bake (COLOR: r edge wear, g cavity,
 // b broad occlusion); everything finer is drawn here in the stone's own space, so it stays sharp at an 85 mm close-up:
-//   the stone: the one stone sheet (stone_albedo, E5) triplanar, darkened cool, its grain a bump;
-//   the veins: cracks along the borders of a warped 3D cell pattern, broken where a slow noise says (cracks that run
-//     and stop, a few finer ones off them); each a groove in the surface, only its thin core over the glow threshold,
-//     a faint light in the stone either side and a scorched dark rim between;
-//   the water: a wet film (dark albedo, low roughness) with streaks running DOWN the world as the stone turns.
+//   the stone: the one stone sheet (stone_albedo, E5) triplanar, cool slate, its grain a bump;
+//   the veins: cracks along the borders of a warped 3D cell pattern, their width set by a gate noise, so half the cells
+//     open and each crack tapers from ~4 px to a 1 px free end (E7c r2); each sunk in a groove with a darkened lip, only
+//     its off-white core over the glow threshold, a deeper blue light in the stone either side; a fine network at 30%;
+//   the water: a wet film, a few low-roughness runs down the world from the top face, and a wet highlight on the top edge.
 // beat (0..1, the heartbeat's shape) and level (the orb's Light) come from OrbView each frame, so the veins and the
 // light pulse together, the same in every run (no TIME).
 shader_type spatial;
@@ -14,20 +14,20 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 uniform sampler2D stone_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float tex_rep = 1.3;                 // the sheet's repeats across the unit stone
 uniform vec3 tint : source_color = vec3(0.64, 0.68, 0.74);  // the heart's stone: a cool slate
-uniform float stone_gain = 2.24;             // the sheet's brightness (E7c r2: 1.6 x 1.4, toward E5's slate)
+uniform float stone_gain = 4.0;              // the sheet's brightness (E7c r2: 1.6 -> 4.0, toward E5's slate: ~1.4x luma at mid distance: AgX and the wet spec make it slow)
 uniform float grain_bump = 0.004;            // the grain's relief (unit-stone lengths)
 uniform vec3 core_color : source_color = vec3(0.686, 0.863, 1.0);  // a crack's core: off-white (sRGB 175,220,255)
 uniform vec3 glow_color : source_color = vec3(0.235, 0.51, 1.0);   // the light about it (sRGB 60,130,255)
 uniform float vein_scale = 0.9;              // crack cells across the unit stone
 uniform float vein_warp = 0.22;
-uniform float vein_core = 0.011;             // a crack's half-width at its widest (unit-stone lengths: ~4 px at c03 s8)
+uniform float vein_core = 0.009;             // a crack's half-width at its widest (unit-stone lengths: ~4 px at c03 s8)
 uniform float vein_glow_w = 0.03;            // the light in the stone either side
-uniform float vein_energy = 7.0;             // the core's emission at level 1, beat mid
-uniform float vein_glow = 0.2;               // the light in the stone's emission (kept under the glow threshold)
+uniform float vein_energy = 2.0;             // the core's emission at level 1, beat mid
+uniform float vein_glow = 0.35;              // the light in the stone's emission (kept under the glow threshold)
 uniform float vein_gate = 0.5;               // how much of the cell border network is a crack (higher: fewer)
 uniform float vein_taper = 0.22;             // how long a crack's taper to its free end is (noise units)
 uniform float open_freq = 2.6;               // the gate's fast noise: cuts single cell edges (open cells, free ends)
-uniform float fine_core = 0.0035;            // the fine network's half-width at its widest (~1.3 px at s8)
+uniform float fine_core = 0.0025;            // the fine network's half-width at its widest (~1 px at s8)
 uniform float fine_gate = 0.42;
 uniform float fine_energy = 0.3;             // the fine network's brightness, of the main cracks'
 uniform float groove = 0.012;                // a crack's depth (unit-stone lengths)
@@ -37,6 +37,7 @@ uniform float beat = 0.5;
 uniform float level = 1.0;
 uniform float wet = 1.0;
 uniform float flow_t = 0.0;
+uniform float film_dark = 0.8;              // the wet film darkens the stone to
 uniform float streak_rough = 0.15;           // the runs of water
 uniform float film_rough = 0.42;             // the wet film between them
 uniform float sheen = 0.35;                  // the wet top edge's highlight
@@ -106,8 +107,9 @@ void fragment() {
 	float hw1 = vein_core * wv * t1, hw2 = fine_core * wv * t2;
 	float f1 = max(fwidth(d1), 1e-5), f2 = max(fwidth(d2), 1e-5);
 	float e1 = smoothstep(0.0, 0.12, t1), e2 = smoothstep(0.0, 0.12, t2);
-	float c1 = e1 * (1.0 - smoothstep(hw1 - 0.6 * f1, hw1 + 0.6 * f1, d1));
-	float c2 = e2 * (1.0 - smoothstep(hw2 - 0.6 * f2, hw2 + 0.6 * f2, d2)) * (1.0 - c1);
+	// (a crack thinner than a pixel draws a pixel's line at its share of the light, so a far stone isn't a full web)
+	float c1 = e1 * (1.0 - smoothstep(hw1 - 0.6 * f1, hw1 + 0.6 * f1, d1)) * clamp(2.0 * hw1 / f1, 0.0, 1.0);
+	float c2 = e2 * (1.0 - smoothstep(hw2 - 0.6 * f2, hw2 + 0.6 * f2, d2)) * clamp(2.0 * hw2 / f2, 0.0, 1.0) * (1.0 - c1);
 	float core = c1 + c2 * fine_energy;          // emission weight
 	float hole = max(c1, c2);                    // what the core covers of the stone
 	float glow = max(t1 * exp(-max(d1 - hw1, 0.0) / vein_glow_w), fine_energy * t2 * exp(-max(d2 - hw2, 0.0) / (vein_glow_w * 0.4)));
@@ -135,7 +137,7 @@ void fragment() {
 	float streak = smoothstep(0.56, 0.66, col_n) * smoothstep(reach - 0.25, reach + 0.1, wd.y);
 	streak = max(streak, top);
 	float film = wet * (0.75 + 0.25 * streak);
-	col *= mix(1.0, 0.62, film);
+	col *= mix(1.0, film_dark, film);
 	ALBEDO = col * (1.0 - hole);
 	ROUGHNESS = mix(0.8, mix(film_rough, streak_rough, streak), wet);
 	SPECULAR = mix(0.5, 0.75, film);
