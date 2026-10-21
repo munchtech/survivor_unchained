@@ -93,7 +93,7 @@ public partial class CreateScreen
             v.AddChild(Kit.Head("Hair"));
             v.AddChild(Cycle($"Hair {c + 1}/{k.Cuts.Count}", c, k.Cuts.Count, i => Set(() => { d.Section = LookHair; d.HairStyle = k.Cuts[i].Id; }), "cycle:hair"));
         }
-        v.AddChild(Kit.Head("Hair colour"));
+        v.AddChild(Kit.Head("Hair color"));
         v.AddChild(Beads(Lore.Hairs, d.Hair, id => { d.Section = LookHair; d.Hair = id; }, Bead.Kind.Hair, OwnHair().ToHtml(false)));
         if (k.Eyes.Count > 1)
         {
@@ -120,7 +120,7 @@ public partial class CreateScreen
         int c = Math.Max(0, cuts.IndexOf(d.HairStyle));
         return Style.V(Style.Gap2,
             Kit.Head("Hair"), Cycle($"Hair {c + 1}/{cuts.Count}", c, cuts.Count, i => Set(() => { d.Section = LookHair; d.HairStyle = cuts[i]; }), "cycle:hair"),
-            Kit.Head("Hair colour"), Beads(Lore.Hairs, d.Hair, id => { d.Section = LookHair; d.Hair = id; }, Bead.Kind.Hair, "#6a5a48"),
+            Kit.Head("Hair color"), Beads(Lore.Hairs, d.Hair, id => { d.Section = LookHair; d.Hair = id; }, Bead.Kind.Hair, "#6a5a48"),
             Kit.Head("Skin"), Beads(Lore.Skins, d.Skin, id => { d.Section = LookFace; d.Skin = id; d.SkinPicked = true; }, Bead.Kind.Skin, "#f2c4a8"),
             NameRow());
     }
