@@ -263,6 +263,8 @@ public partial class ZoneView : Node3D
     public const uint LampLayer = 1u << 11;
     readonly Dictionary<int, List<Node3D>> lampGlass = new();
     readonly List<(int Light, Flame Flame)> lampFlames = new();
+    /// <summary>The zone's own torches (props_own.json "lit"): burning by night only.</summary>
+    readonly List<(Node3D Holder, Flame Flame)> ownTorches = new();
     Queue<float>? lampDebugAt;
     bool nearDone;
 
@@ -349,7 +351,9 @@ public partial class ZoneView : Node3D
                         fm.SetShaderParameter("intensity", (float)fm.GetShaderParameter("intensity") * 2f);
                     }
                 Lamps.Inner(holder, at + Vector3.Up * FlameKit.Spec(FlameKind.Torch).H * 0.8f * 0.35f, false, FlameKit.Spec(FlameKind.Torch).H * 0.8f * 0.75f);
-                Lamps.SetLit(holder, true);
+                tf.Visible = Night;
+                Lamps.SetLit(holder, Night);
+                ownTorches.Add((holder, tf));
                 continue;
             }
             if (best == null) { Lamps.SetLit(holder, false); continue; }
@@ -516,6 +520,7 @@ public partial class ZoneView : Node3D
         foreach (var n in Data.Meta.NightNodes) if (Node(n) is Node3D node) node.Visible = on;
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) Campfire.ChimneyLook(c, on);
+        foreach (var (h, f) in ownTorches) { f.Visible = on; Lamps.SetLit(h, on); }
         Shadows();
     }
 

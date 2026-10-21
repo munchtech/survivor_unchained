@@ -342,7 +342,7 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14):
             h = tree.ray_cast(o, w, 0.45)
             if h[0] is not None:
                 hit += 1.0 - (h[3] / 0.45) * 0.6
-        occ.append(1.0 - 0.75 * hit / rays)
+        occ.append(1.0 - 0.75 * GRIME.get('ao', 1.0) * hit / rays)
         c = 0.0
         for e in v.link_edges:
             o2 = e.other_vert(v).co - v.co
@@ -1663,7 +1663,7 @@ def fence(p):
         if broken and x > -L * 0.05 and rng() < 0.7:
             continue
         ph = H * rng(0.94, 1.04) - 0.1
-        w = rng(0.12, 0.15)
+        w = rng(*p.get('paling_w', (0.12, 0.15)))
         if i in hang:
             parts.append(Part(paling_bm(w, ph, 0.025, rng), 'wood', wood * 0.95, T(x, H - 0.42, 0.137) @ R('Z', 2.6 + rng(-0.2, 0.2)) @ T(0, -ph * 0.15, 0), cap='endgrain', jitter=0.1))
             continue
@@ -1945,7 +1945,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
         along = Vector((0.0, 0.0, 1.0))
         frame = basis(along, up, down)  # local x along the ridge, y off the slope, z down it
         # the underlay: a dark deck under the slabs (what a slipped slab shows)
-        parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.32, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06)) @ frame, cap='stone', jitter=0.0))
+        parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.45, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06)) @ frame, cap='stone', jitter=0.0))
         course = 0.56
         nk = int(run / course + 0.999)
         for k in range(nk):
@@ -1955,7 +1955,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
             t = (s0 + course / 2) / run
             for a, b in zip(xs, xs[1:]):
                 xm = (a + b) / 2
-                if rng() < 0.035 and 0 < k < nk - 1:
+                if rng() < 0.015 and 0 < k < nk - 1:
                     continue  # slipped: the underlay shows
                 sw, sl = b - a - 0.035, course + 0.16
                 mz = 0.5 + 0.55 * hnoise(Vector((xm * 1.7, 0, s0 * 1.7 + sx * 3.1)), 61)
@@ -1966,6 +1966,8 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
                 if rng() < 0.14:
                     tn = tn.lerp(Vector((0.86, 0.85, 0.74)), rng(0.3, 0.6))  # pale lichen
                 tn = tn.lerp(moss * rng(0.85, 1.1), min(1.0, m * 0.9))
+                if k == nk - 1:
+                    tn = tn.lerp(Vector((0.26, 0.33, 0.15)), 0.55 + 0.3 * smooth01(0.4, 0.7, mz))  # the eave: dark, mossed
                 pos = ridge + down * (s0 + sl / 2 - 0.08) + up * (th / 2 + lift * (1 - (k % 2) * 0.3)) + along * xm
                 tilt = R('X', -0.06 + rng(-0.025, 0.025))  # the tail down, the butt up over the course below
                 parts.append(Part(stone_block(sw, th * rng(0.85, 1.1), sl, rng, bevel=0.02, chip=0.7, jag=0.02), 'stone', tn,
@@ -2069,6 +2071,7 @@ def main():
             bpy.data.objects.remove(o)
         GRIME['h'], GRIME['moss'] = p.get('grime', 0.0), p.get('moss_top', 0.0)
         GRIME['top'], GRIME['foot'], GRIME['streak'] = p.get('h', 0.0), p.get('foot', 0.0), p.get('streak', 0.0)
+        GRIME['ao'] = p.get('ao', 1.0)
         parts = KINDS[p['kind']](p)
         ob = finish(name, parts, mat, p['seed'])
         obs = [ob]
