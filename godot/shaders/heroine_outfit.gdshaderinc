@@ -14,6 +14,8 @@ uniform vec3 tint : source_color = vec3(1.0);
 uniform float stitch_in = 0.0045;
 uniform float stitch_len = 0.004;
 uniform vec3 thread : source_color = vec3(0.78, 0.7, 0.55);
+uniform vec3 dye : source_color = vec3(1.0);        // (a dye zone's colour: HerWear sets it with dye_amount 1 on the surfaces of that zone)
+uniform float dye_amount = 0.0;                    // (0 = as built, bit for bit)
 uniform float grain = 0.6;                         // how strongly the fine grain shows
 uniform float view_pull = 0.0;                     // metres drawn toward the camera (a decal on her skin: the ink, never z-fighting it)
 uniform bool test_flat = false;                  // (the legal motion check: every garment flat grey, coverage unchanged)
@@ -71,6 +73,14 @@ varying float painted;                             // (1 where stitches are pain
 varying float flag;                                // (COLOR.a: 0 a rolled binding, drawn matte if leather; 0.5 a plate brushed along its UVs' u; 1 neither)
 varying vec3 opos;                                 // (the point in the piece's own space: metal is brushed by it, not by its UV islands)
 
+// A sampled colour c recoloured to the dye, keeping its texture's variation: the dye scaled by c's luma over the
+// material's mean colour m. Untouched (not even clamped) when dye_amount is 0.
+vec3 dye_apply(vec3 c, vec3 m) {
+	if (dye_amount <= 0.0) return c;
+	float lc = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	float lm = dot(m, vec3(0.2126, 0.7152, 0.0722));
+	return clamp(mix(c, dye * (lc / max(lm, 1e-3)), dye_amount), 0.0, 1.0);
+}
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
 	vec2 i = floor(p), f = fract(p);
@@ -126,6 +136,7 @@ void fragment() {
 	}
 	vec2 m = UV / repeats;                          // (metres)
 	vec3 col = texture(albedo, UV).rgb * tint;
+	if (dye_amount > 0.0) col = dye_apply(col, textureLod(albedo, vec2(0.5), 20.0).rgb * tint);
 	vec3 nrm = texture(normal_map, UV).rgb;
 	float rough = has_orm ? texture(orm, UV).g : roughness_value;
 	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value) * (1.0 - step(0.95, metallic_value))) : metallic_value;   // (touch-up 3: a fully metallic key ignores its scan's metal map, whose specks dropped to non-metal as white flecks on the steel; grime and pits come from the shared detail and the baked masks. Rust keeps its map)
@@ -179,10 +190,10 @@ void fragment() {
 		// (the scan's colour flattened to its mean: a formed plate reads as one
 		// smooth surface; its stains and patches, even faint, read as lumps)
 		vec3 mean_col = textureLod(albedo, vec2(0.5), 20.0).rgb * tint;   // (its smallest mip, one texel: the true mean)
-		col = mean_col;
+		col = dye_apply(mean_col, mean_col);
 		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
 		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
-		gold_emit = mean_col * gold * gold_floor;
+		gold_emit = dye_apply(mean_col, mean_col) * gold * gold_floor;
 		float rusty = 1.0 - step(0.95, metallic_value);   // (rust: the only metal not built fully metallic)
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
@@ -215,7 +226,7 @@ void fragment() {
 		rough += (dtl.b - 0.5) * detail_rough * (0.7 + 0.6 * wear);
 		// Colour: aged brass for gold (darker, less saturated, browner), the rest as built.
 		vec3 brass = gold_tone * brass_dim;
-		col = mix(col, brass, gold);
+		col = mix(col, brass, gold * (1.0 - dye_amount));   // (a dyed gold takes the dye, not the brass)
 		rough = mix(rough, rough + brass_rough_add, gold);
 		col *= 0.9 + 0.2 * blot;                                  // (an uneven patina)
 		col *= mix(mix(1.0, steel_dim, 1.0 - gold) * mix(vec3(1.0), steel_warm, 1.0 - gold), vec3(metal_wear_bright), wear);                              // (bright bare metal on the worn edges)
@@ -235,7 +246,7 @@ void fragment() {
 		vec3 dirt = vec3(0.045, 0.036, 0.027);
 		if (rusty > 0.5) {
 			// rust: its scan kept (half), rough and mostly dull, its edges worn back to dark iron
-			col = mix(mean_col, texture(albedo, UV).rgb * tint, 0.5) * (0.9 + 0.2 * blot);
+			col = mix(dye_apply(mean_col, mean_col), dye_apply(texture(albedo, UV).rgb * tint, mean_col), 0.5) * (0.9 + 0.2 * blot);
 			rough = max(rough + 0.2, 0.62) - 0.15 * wear;
 		}
 		col = mix(col, dirt, grime * 0.8);

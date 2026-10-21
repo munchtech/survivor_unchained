@@ -36,3 +36,10 @@ Every `material` and every adornment `mat` is an entry name in `godot/art/people
 
 ## The adornment library
 `mesh` and `row` take either a file shipped beside piece.json (`<file>.glb`, life size, its origin at the socket point, +Z out) or a library id. The game's library is the truth: `godot/art/armor/lib/<id>.glb`, built procedurally by `tools/armor/lib.py` (same frame convention). Ids: rows `rivet`, `stud`, `dome`, `grommet`; meshes `gem_round`, `gem_oval`, `boss`, `rune_plate`, `filigree_plate`, `buckle`. Marionette's kit pull copies the library for its preview; its own stand-ins are previews only.
+
+## Hair
+An armor index row may carry `"hair": "hide"` (default `"keep"`). While that piece is worn in the head slot, her hair mesh is not added (her scalp skin stays as is) and the game logs `her wear: hair hidden by <id>`. Set it on closed helms only; `arcanist.head` keeps her hair. Her show-helm toggle (`CharacterData.Headgear`, shot flag `--helm 0|1`) shows nothing at all in the head slot when off: neither an equipped head piece nor her calling's fill (`Wear.Look`'s `hide` set), and her hair then shows.
+
+## Dye zones
+Every entry in `godot/art/people/outfit_materials.json` has a `"zone"`: `metal` (steels and irons), `trim` (gold, claspgold, wiregold, rivetbronze, bronze), `leather`, `cloth` (cloth, twill, satin, gloss, sheer, fur, lace, velvet, down), or `none` (gems, amethyst, ink, bone). A new material entry needs its zone (a test fails without it). A piece's dye zones are the zones of its meshes' material suffixes (the part after the last `.`); a piece should have 1 to 3 (`DyeHelmTests` prints the exceptions).
+A worn item carries `ItemInstance.Dye`: zone -> `"#rrggbb"` (sRGB), plus `"thread"` for leather's stitch thread. The shader recolors the albedo to the dye keeping its texture's variation (`dye`, `dye_amount` in `heroine_outfit.gdshaderinc`); fur and sheer take it on their tint at its own luma. Shot flag `--dye metal=#8a2a2a,leather=#203040` dyes every worn piece, over item dyes.

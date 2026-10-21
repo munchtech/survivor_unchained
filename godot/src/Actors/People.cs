@@ -108,6 +108,7 @@ public static class People
         // his outfits are made; till then the kit's man, and --body hero shows him.
         if (body == SurvivorUnchained.Play.Loadouts.HisBody && ResourceLoader.Exists("res://art/people/hero.glb") && Args.Get("body") == "hero") body = "hero";
         bool her = body == "heroine";
+        string? hairHider = null;   // (the worn head piece whose row says "hair": "hide": her hair mesh is left off)
         if (her) Perf.Lap("play: (before her)");
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "hero" => Hero(look), "anime" => Her(look), _ => Build(look) };
         if (her) Perf.Lap("play: her body");
@@ -118,7 +119,7 @@ public static class People
         // (piece by piece when her equipment wears a piece or a shot says --wear: HerWear)
         if (her && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string set)
         {
-            if (HerWear.LookFor(set[4..], spec.Worn) is { } wear) HerWear.Apply(p, set[4..], wear);
+            if (HerWear.LookFor(set[4..], spec.Worn, spec.HideSlots) is { } wear) { HerWear.Apply(p, set[4..], wear, spec.WornDye); hairHider = HerWear.HairHider(wear); }
             else HerOutfit(p, set[4..]);
         }
         if (her) Perf.Lap("play: her outfit");
@@ -127,7 +128,9 @@ public static class People
         // her face shaped, and the paint on it.
         if (her)
         {
-            HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
+            var hairStyle = HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0];
+            if (hairHider == null) HerHair(p, hairStyle, look.HairColor ?? HerHairColour);
+            else { p.HairStyle = hairStyle; GD.Print($"her wear: hair hidden by {hairHider}"); }
             HerScalp(p, look.HairColor ?? HerHairColour);
             HerFaceKey(p, look.FaceShape);
             Perf.Lap("play: her hair");
@@ -1106,6 +1109,9 @@ public static class People
             if (kind == 1) metalShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_metal.gdshader");
             var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : outfitShader };
             m.SetShaderParameter("kind", kind);
+            // (its dye zone, from the table: HerWear.DyeMesh sets the dye on the surfaces of the zone a piece is dyed in)
+            m.SetMeta("zone", entry.TryGetValue("zone", out var zn) ? (string)zn : "none");
+            m.SetMeta("kind", kind);
             if (kind == 1)
             {
                 metalDetail ??= GD.Load<Texture2D>("res://art/outfit/metal_wear_detail.png");
@@ -1182,6 +1188,7 @@ public static class People
                 outfitTable ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/outfit_materials.json")).AsGodotDictionary();
                 if (outfitTable.TryGetValue("stocking", out var st) && st.AsGodotDictionary().TryGetValue("tint", out var tv) && tv.AsGodotArray() is { Count: 3 } t)
                     sm.SetShaderParameter("tint", new Color((float)t[0], (float)t[1], (float)t[2]));
+                sm.SetMeta("zone", ZoneOf("stocking"));
                 mi.SetSurfaceOverrideMaterial(s, sm);
                 continue;
             }
@@ -1209,8 +1216,16 @@ public static class People
                 if (last != null) last.NextPass = m; else first = m;
                 last = m;
             }
+            first?.SetMeta("zone", ZoneOf(src.ResourceName));
             mi.SetSurfaceOverrideMaterial(s, first);
         }
+    }
+
+    /// <summary>A material's dye zone, from art/people/outfit_materials.json ("none" where it names none).</summary>
+    static string ZoneOf(string key)
+    {
+        outfitTable ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/outfit_materials.json")).AsGodotDictionary();
+        return outfitTable.TryGetValue(key, out var e) && e.AsGodotDictionary().TryGetValue("zone", out var z) ? (string)z : "none";
     }
 
     /// <summary>Her outfits, in the order of their channels in her vertex

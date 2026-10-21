@@ -21,6 +21,8 @@ public sealed class ItemInstance
     public List<AffixRoll> Affixes = new();
     /// <summary>Given name for storied items ("Maeca's Last Arrow").</summary>
     public string? Name;
+    /// <summary>Dye zones of the pieces it wears (outfit_materials.json "zone": metal, trim, leather, cloth, or thread) -> "#rrggbb" (sRGB). Null: as made.</summary>
+    public Dictionary<string, string>? Dye;
     /// <summary>Where it came from, one line per owner.</summary>
     public List<string>? History;
     /// <summary>How much more it can be worked (docs/CRAFTING_DESIGN.md, "Heat"): every

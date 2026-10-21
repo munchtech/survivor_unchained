@@ -21,6 +21,13 @@ public static class HerWear
     public static readonly string[]? Override = Args.Get("wear") is string w && w != "1"
         ? w.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : null;
 
+    /// <summary>--helm 0|1: her show-helm toggle for the run (over CharacterData.Headgear).</summary>
+    public static readonly bool? HelmOverride = Args.Get("helm") is string hm ? hm != "0" : null;
+
+    /// <summary>--dye zone=#hex,zone=#hex: a dye on every piece she wears, over her items' own (zones: metal, trim, leather, cloth, thread).</summary>
+    public static readonly Dictionary<string, string>? DyeOverride = Args.Get("dye") is string dy && dy != "1"
+        ? dy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.Split('=', 2)).Where(x => x.Length == 2).ToDictionary(x => x[0].Trim(), x => x[1].Trim()) : null;
+
     const string Meta = "her_wear";
     static readonly Dictionary<string, PackedScene> scenes = new();
     static readonly Dictionary<string, (long Key, float T)[]> tucks = new();
@@ -28,14 +35,16 @@ public static class HerWear
     static readonly Dictionary<ulong, long[][]> bodyKeys = new();
 
     /// <summary>Her look from her equipment's pieces and --wear, over her calling's own (null: neither wears a piece).</summary>
-    public static Dictionary<string, string>? LookFor(string calling, IReadOnlyDictionary<string, string>? worn)
+    public static Dictionary<string, string>? LookFor(string calling, IReadOnlyDictionary<string, string>? worn, IReadOnlyCollection<string>? hide = null)
     {
         var ix = ArmorIndex.Shared;
         var w = new Dictionary<string, string>(worn ?? new Dictionary<string, string>());
         if (Override != null) foreach (var id in Override) w[ix.SlotOf(id)] = id;
-        if (w.Count == 0 && Override == null) return null;
+        // (her show-helm toggle off: "head" stays empty, which needs the piece path even with nothing worn)
+        if (HelmOverride is bool shown) hide = shown ? null : new[] { "head" };
+        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0)) return null;
         var notes = new List<string>();
-        var look = Wear.Look(w, calling, ix, notes);
+        var look = Wear.Look(w, calling, ix, notes, hide);
         foreach (var n in notes) GD.PushWarning(n);
         return look;
     }
@@ -44,7 +53,57 @@ public static class HerWear
     static long Key(long x, long y, long z) => ((x + (1 << 20)) << 42) | ((y + (1 << 20)) << 21) | (z + (1 << 20));
     internal static long Key(Vector3 v) => Key((long)Math.Round(v.X * 1e5), (long)Math.Round(v.Y * 1e5), (long)Math.Round(v.Z * 1e5));
 
-    public static void Apply(People.Person p, string calling, IReadOnlyDictionary<string, string> look)
+    /// <summary>The worn piece that hides her hair (its row says "hair": "hide"), or null.</summary>
+    public static string? HairHider(IReadOnlyDictionary<string, string>? look)
+    {
+        if (look == null || !look.TryGetValue("head", out var id)) return null;
+        return ArmorIndex.Shared.Find(id) is { Hair: "hide" } ? id : null;
+    }
+
+    /// <summary>A piece's dye: its item's (piece id -> zone -> hex), then --dye over it.</summary>
+    static Dictionary<string, string>? DyeFor(string id, IReadOnlyDictionary<string, Dictionary<string, string>>? dyes)
+    {
+        Dictionary<string, string>? d = null;
+        if (dyes != null && dyes.TryGetValue(id, out var own)) d = new Dictionary<string, string>(own);
+        if (DyeOverride != null) { d ??= new(); foreach (var (z, h) in DyeOverride) d[z] = h; }
+        return d;
+    }
+
+    /// <summary>Sets a dye on a mesh's material surfaces by their zone (People.OutfitMaterials tags each ShaderMaterial with its
+    /// zone and kind): shaders/heroine_outfit.gdshaderinc recolors keeping the texture's variation; leather's "thread" zone sets
+    /// its stitch thread; fur and sheer (zone cloth) take the dye on their tint, keeping its luma.</summary>
+    internal static void DyeMesh(MeshInstance3D mi, IReadOnlyDictionary<string, string> dye)
+    {
+        for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
+        {
+            if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !m.HasMeta("zone")) continue;
+            var zone = (string)m.GetMeta("zone");
+            bool outfit = m.HasMeta("kind");
+            if (outfit && (int)m.GetMeta("kind") == 0 && dye.TryGetValue("thread", out var th)) m.SetShaderParameter("thread", new Color(th));
+            if (!dye.TryGetValue(zone, out var hex)) continue;
+            var c = new Color(hex);
+            if (outfit)
+            {
+                m.SetShaderParameter("dye", c);
+                m.SetShaderParameter("dye_amount", 1.0f);
+                continue;
+            }
+            // (fur's shells and sheer: the tint toward the dye, at its own luma)
+            var lin = c.SrgbToLinear();
+            float ld = Math.Max(Luma(lin), 1e-3f);
+            for (var pass = m; pass != null; pass = pass.NextPass as ShaderMaterial)
+            {
+                var old = pass.GetShaderParameter("tint");
+                var t = old.VariantType == Variant.Type.Color ? old.AsColor() : Colors.White;
+                float k = Luma(t.SrgbToLinear()) / ld;
+                pass.SetShaderParameter("tint", new Color(Math.Min(lin.R * k, 1f), Math.Min(lin.G * k, 1f), Math.Min(lin.B * k, 1f), t.A).LinearToSrgb());
+            }
+        }
+    }
+
+    static float Luma(Color c) => 0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B;
+
+    public static void Apply(People.Person p, string calling, IReadOnlyDictionary<string, string> look, IReadOnlyDictionary<string, Dictionary<string, string>>? dyes = null)
     {
         var ix = ArmorIndex.Shared;
         var rows = look.Values.Select(id => ix.Find(id)).Where(r => r != null).Select(r => r!).OrderBy(r => r.Layer).ToList();
@@ -85,11 +144,14 @@ public static class HerWear
                     WearPiece(p, mi, r.Id);
                     anyFull ??= mi;
                     laid.Add(mi);
+                    var dye = DyeFor(r.Id, dyes);
+                    if (dye != null) DyeMesh(mi, dye);
                     var mat = mn[(mn.LastIndexOf('.') + 1)..];
                     if (found.TryGetValue($"{r.Id}_lod1_{mat}", out var lm) && lm != mi && lm.GetParent() != null)
                     {
                         Lay(p, lm, r.Id);
                         People.OutfitMaterials(lm);
+                        if (dye != null) DyeMesh(lm, dye);
                         lodPairs.Add((mi, lm));
                     }
                 }
