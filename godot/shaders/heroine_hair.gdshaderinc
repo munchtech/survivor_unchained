@@ -24,7 +24,7 @@ uniform float through = 0.5;
 // lift raises it toward its swatch; both fade out with the dye's saturation and darkness: face 34)
 uniform float ash = 1.0;
 uniform vec3 ash_tone = vec3(0.72, 1.0, 1.0);
-uniform float lift = 0.3;
+uniform float lift = 0.55;
 // (20 October, face 32 r2b: the pixie only, People.HerHair. A card is a lock
 // of fibres, lit alike from either side; drawn two-sided, Godot turned its
 // normal in on its underside, so where a lifted card's underside showed, at
@@ -153,7 +153,8 @@ void fragment() {
 	vec3 tint = mix(colour, mix(dark, light, clamp(t.g * 0.96 + COLOR.g * 0.04, 0.0, 1.0)), variation);
 	// (gray as well as platinum went mauve by the fire, hue 32: the ash reaches the light grays, the lift only the palest)
 	float dye_neutral = 1.0 - smoothstep(0.2, 0.5, dye_sat), dye_lum = dot(colour, vec3(0.2126, 0.7152, 0.0722));
-	tint = min(tint * mix(vec3(1.0), ash_tone, ash * dye_neutral * smoothstep(0.1, 0.35, dye_lum)) * (1.0 + lift * dye_neutral * smoothstep(0.3, 0.6, dye_lum)), vec3(1.0));
+	tint = min(tint * (1.0 + lift * dye_neutral * smoothstep(0.3, 0.6, dye_lum)), vec3(1.0));
+	float ash_w = ash * dye_neutral * smoothstep(0.1, 0.35, dye_lum);
 	float depth = COLOR.r;                                        // 1 outermost, darker within
 	strand = normalize(BINORMAL);                                 // along its V: root to tip
 	sparkle = t.g;
@@ -186,6 +187,9 @@ void fragment() {
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
 		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
+	// (the ash on the lighter strands only: on the dark ones, deep in the hair and lit by the sky, it turned them
+	// blue-grey, 0.5% to 6.9% of her crown's pixels bluish: judge j1, face 34)
+	ALBEDO *= mix(vec3(1.0), ash_tone, ash_w * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
 #if defined(SOFT) || defined(OVER)
 	ALPHA = cover;
 #elif defined(BLEND)

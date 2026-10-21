@@ -829,6 +829,23 @@ public partial class Game
                     if (c.Bool("snap", true)) life.Snap();
                     break;
                 }
+                case "eyes":
+                {
+                    // Her eye shader's catchlight for a shot, put back when the cinematic ends
+                    // (face 34: C01 s8, looking up from the ground, the catchlight window sat in her
+                    // pupils' middle, a hard white dot: judge j1).
+                    if (!people.TryGetValue(c.Actor, out var v)) break;
+                    foreach (var mi in v.Person.Skeleton.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+                        for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                            if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath == "res://shaders/heroine_eye.gdshader")
+                            {
+                                foreach (var key in new[] { "catchlight", "catch_size" })
+                                    if (c.Get(key).ValueKind == JsonValueKind.Number) SetEye(m, key, (float)c.Num(key));
+                                var at = c.Get("catch_at");
+                                if (at.ValueKind == JsonValueKind.Array) SetEye(m, "catch_at", new Vector2((float)at[0].GetDouble(), (float)at[1].GetDouble()));
+                            }
+                    break;
+                }
                 case "lids":
                 {
                     if (Life(c.Actor) is not { } life) break;
@@ -1432,11 +1449,21 @@ public partial class Game
         float keyReach = -1;
         readonly HashSet<int> sized = new();
 
+        // Eye-shader values the cinematic changed: the first original of each, put back at the end.
+        readonly Dictionary<(ShaderMaterial, string), Godot.Variant> eyeWas = new();
+        void SetEye(ShaderMaterial m, string key, Godot.Variant val)
+        {
+            if (!eyeWas.ContainsKey((m, key))) eyeWas[(m, key)] = m.GetShaderParameter(key);
+            m.SetShaderParameter(key, val);
+        }
+
         public void Finish()
         {
             g.cineSat = null;
             foreach (int i in sized) g.scene?.View.SetSize(i, 0);
             sized.Clear();
+            foreach (var ((em, ek), was) in eyeWas) if (IsInstanceValid(em)) em.SetShaderParameter(ek, was);
+            eyeWas.Clear();
             if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;
             // Play starts exactly where the cinematic leaves her, facing as she
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
