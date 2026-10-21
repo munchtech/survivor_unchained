@@ -946,6 +946,16 @@ def build_cuirass():
     pos, nor, H, ok, tris, Am, n = cast_sheet(c, unit, tris, front, PRM.get("membrane", 2), sym=sym)
     skin_pos = pos.copy()
     pos = pos + nor * lift
+    # (params.lift_zone (c3): the upper outer quarters stood further off her, `mm` more, eased in over |x| from `x0` to `x1`
+    # and over height from `z0` to `z1` above her nipple: her pectoral and armpit skin (clavicle-weighted) rise 8 mm into
+    # the rigid plate in idle_warden_break's shrug and the town runs, 4.9 mm through it at the 1.2 mm lift)
+    lz = PRM.get("lift_zone")
+    if lz:
+        nr0 = G["NIPPLE"]["r"]
+        sx_ = np.clip((np.abs(pos[:, 0]) - lz["x0"]) / (lz["x1"] - lz["x0"]), 0, 1)
+        sz_ = np.clip((pos[:, 2] - float(nr0[2]) - lz["z0"]) / (lz["z1"] - lz["z0"]), 0, 1)
+        w_ = (sx_ * sx_ * (3 - 2 * sx_)) * (sz_ * sz_ * (3 - 2 * sz_))
+        pos = pos + nor * (lz["mm"] * w_)[:, None]
     ax = np.abs(pos[:, 0])
     # The landmarks: her notch (where her sternum's front line meets her neck: the deepest point of her front at x = 0
     # between her collarbones' height and her neck), her shoulder balls.
