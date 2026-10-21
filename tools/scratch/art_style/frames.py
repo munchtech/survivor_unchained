@@ -49,6 +49,8 @@ SETS = {
     "wagonday": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "2.5,62.5"], 1),
     "closedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     "roadrock": (NIGHT + ["--spots-clear", "--spots", "3,64"], 1),
+    # (env lead 12: armor's verge combat camera, where it saw "rainbow rocks" under the canopy, seed 1, toward the mobs)
+    "verge": (["--zone", "verge", "--seed", "1", "--auto", "toward"], 2),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
