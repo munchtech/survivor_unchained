@@ -92,7 +92,8 @@ ARC_STOP_CURL = {
 # idle's, so the shaft's foot clears her right leg as it comes through (101 mm or more; at the idle's own aim 46 mm at f9
 # of the left stop), the crescent still 148 mm or more outside her brim as she pitches over the fist. (13 Oct it was
 # (-0.10, 1.0, 0.04) in the chest's frame, leant out past the brim; animation 46.)
-STOP_ARC_BLADE = (-0.30, 1.0, -0.07)
+# (Animation 47: per idle.ARC_CAND, its "stop_blade"; R1's (-0.30, 1.0, -0.07).)
+STOP_ARC_BLADE = idle._ARC["stop_blade"]
 
 
 def stop(rig, calling, side):

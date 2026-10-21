@@ -316,27 +316,31 @@ def warden_break(rig):
 
 
 # The idle's right hand (her character's frame, idle_arcanist's first frame, the grip's blade and knuckles as
-# keyed._whole_aims fills them) and the staff's line in it (10 deg forward, 16 out: scratch anim46 held.py).
-ARC_BLADE0_R = (-0.3547, 0.9342, -0.0275)
-ARC_KNUCKLES_R = (-0.4739, -0.1537, 0.8666)
-ARC_STAFF_LINE = (-0.275, 0.936, 0.163)
+# keyed._whole_aims fills them) and the staff's line in it: idle.arc_aim, per ARC_CAND (R1: 10 deg forward, 16 out).
+# At the staff's roll peak (brk_c, f60-70, the head up and the brim tipped back) the fist ARC_BRK_OUT further out
+# (metres, her right) and the staff ARC_BRK_TIP deg more out, easing back after (the max judge, animation 46, Fix B:
+# the blade edge-on, gem and tuft 1-3 cm off her hair from facing 45). A delta on whichever arm ARC_CAND picks.
+ARC_BRK_OUT = 0.04
+ARC_BRK_TIP = 3.0
 
 
 def arcanist_break(rig):
     base = idle.base_of(rig, "arcanist")
     tuck = {"pos": (0.13, 1.62, 0.04), "pole": (1.0, 0.2, -0.3), "knuckles": (0.0, 0.5, -0.85)}
     # The staff turning in her fingers: the idle's hand (idle.ARC_HAND_R, in her character's frame) turned about the
-    # staff's own line (ARC_STAFF_LINE), so the staff turns in place. (Animation 46: these keys kept the chest-frame aim
+    # staff's own line (idle.arc_aim's), so the staff turns in place. (Animation 46: these keys kept the chest-frame aim
     # of 13 Oct, blade (-0.12, 1.0, 0.18), the grip 7 cm back, and swung the crescent back over her face as the idle's
     # was re-aimed off it; turned about the blade instead, the line swung 7 deg in at the peak, over her face from
     # facing 45, and its foot to 73 mm of her leg. `roll`: the turn from the idle's hand; turned the other way past
     # about 10 deg, the staff, on the fist's diagonal, comes round toward her right leg and the crescent before her
     # face from facing 45.)
-    from rig import qaxis
-    def staff(roll):
-        q = qaxis(ARC_STAFF_LINE, roll)
-        return {"arc": arc_of(idle.ARC_HAND_R), "pole": (0.0, -1.0, -0.2), "frame": "char",
-                "blade": tuple(qrot(q, np.array(ARC_BLADE0_R))), "knuckles": tuple(qrot(q, np.array(ARC_KNUCKLES_R))),
+    from rig import qaxis, qmul
+    blade0, knuckles0, line = idle.arc_aim(rig)
+    def staff(roll, peak=0.0):
+        # (`peak` 0..1: Fix B's share, the fist out along her right and the whole hand turned about her forward.)
+        q = qmul(qaxis((0.0, 0.0, 1.0), ARC_BRK_TIP * peak), qaxis(line, roll))
+        return {"arc": arc_of(np.array(idle.ARC_HAND_R) + (-ARC_BRK_OUT * peak, 0.0, 0.0)), "pole": idle.ARC_POLE_R,
+                "frame": "char", "blade": tuple(qrot(q, np.array(blade0))), "knuckles": tuple(qrot(q, np.array(knuckles0))),
                 "twist": 0.6}
     if rig.body == "him":
         # His: a hand to the back of his neck, kneading it, the head rolled
@@ -389,7 +393,7 @@ def arcanist_break(rig):
         *([lift, w36, w39, lowering] if rig.body != "him" else []),
         # Up at the sky, the staff turning in her fingers.
         (44 + d, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
-        (60 + d, over("arcanist", head=(14, -26, 0), hand_r=staff(5)), "auto"),
+        (60 + d, over("arcanist", head=(14, -26, 0), hand_r=staff(5, peak=1.0)), "auto"),
         (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-25)), "ease"),
         (100, over("arcanist"), "ease"),
     ]

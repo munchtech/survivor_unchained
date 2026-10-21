@@ -16,6 +16,7 @@ ride the chest as it moves.
 from __future__ import annotations
 
 import math
+import os
 
 import numpy as np
 
@@ -105,17 +106,35 @@ def _arc_hand_fingers():
 
 
 # Her staff hand at rest (the shoulder to the wrist, and the staff's line, in her character's frame), shared with the
-# breaks and the stops (soul.py, sprint_stop.py).
-ARC_HAND_R = (-0.24, -0.26, 0.28)
-ARC_BLADE_R = (-0.38, 1.0, -0.03)
-# Her fist that much lower on the staff's shaft in the combat idle and the clips that take its arm (the break, the stops,
-# the flourish): metres, keyed.build's "grip_slide" (animation 47). The staff stays where ARC_HAND_R / ARC_BLADE_R put it
-# and the arm reaches down to it: the max judge, round 1, "fist 8-9 cm lower, at the hip bone, the staff where it is".
-# (Animation 47: 0 for now. On her fist fit the staff leaves the fist 64 deg from the forearm's line, so with the staff
-# kept upright a neutral wrist needs the forearm ABOVE level; every cm lower costs wrist bend. At 0.085 the wrist
-# stops at its radial limit (22) and the staff tips 7-10 deg forward and out (the tip 12-25 cm); held exactly
-# (the hand rolled about the shaft) the wrist must flex 50 deg toward the palm. Scratch anim/a47/slide, s0*.txt.)
-ARC_GRIP_SLIDE = 0.0
+# breaks and the stops (soul.py, sprint_stop.py), and the elbow's pole. Animation 47: candidates for the max judge,
+# picked by ARC_CAND (env "ARC_CAND"; every clip that takes the idle's arm follows it). Each: "arc" (shoulder to
+# wrist, metres), "blade" (the staff's aim), "pole", "slide" (keyed.build's "grip_slide", metres: her fist that much
+# lower on the shaft, the staff where the aim puts it), "stop_blade" (the stops' aim, sprint_stop.py).
+# R1: animation 46's (PASSED at 45/90/play; FAILED close-up 0/315/135: the forearm level and swung 35-37 deg out
+#   from her front, the fist 36 cm out of the hip joint at waist height, "a shelf", "handing the staff to someone").
+# (On her fist fit the staff leaves the fist 64 deg off the forearm's line, so with the staff upright the forearm
+# can't drop below level without the wrist at its radial limit (22) and the staff tipping; the slide costs the same.
+# Scratch anim/a47/slide, s0*.txt, and a47/cand, ev.py.)
+ARC_CANDS = {
+    "R1": {"arc": (-0.24, -0.26, 0.28), "blade": (-0.38, 1.0, -0.03), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
+           "stop_blade": (-0.30, 1.0, -0.07)},
+    # A: toward the town arm. The fist 11 cm in toward her hip and 5 cm forward, so the forearm points ahead from the
+    #   elbow (13-16 deg out of her forward, not 34-37), the elbow by her side (14 deg out, 21 forward). The face at
+    #   facing 45 sets the staff: with the fist in and forward the crescent comes onto the line from that camera to her
+    #   face (at R1's 10 deg forward it covered 50-95 % of it, close-up pitch 15) unless the staff stands upright
+    #   forward (2) and leans further out (28). Lower can't be: the wrist is at 21.9 of its 22 radial.
+    "A": {"arc": (-0.13, -0.24, 0.33), "blade": (-0.72, 1.0, -0.17), "pole": (-0.15, -1.0, -0.2), "slide": 0.0,
+          "stop_blade": (-0.60, 1.0, -0.18)},
+    # C: halfway (the forearm 23-26 deg out, the fist 5 cm in), the staff nearer R1's lean (21 out, 3 forward).
+    "C": {"arc": (-0.19, -0.24, 0.30), "blade": (-0.52, 1.0, -0.15), "pole": (-0.15, -1.0, -0.2), "slide": 0.0,
+          "stop_blade": (-0.45, 1.0, -0.18)},
+}
+ARC_CAND = os.environ.get("ARC_CAND", "A")
+_ARC = ARC_CANDS[ARC_CAND]
+ARC_HAND_R = _ARC["arc"]
+ARC_BLADE_R = _ARC["blade"]
+ARC_POLE_R = _ARC["pole"]
+ARC_GRIP_SLIDE = _ARC["slide"]
 
 
 def arcanist(t, f):
@@ -136,10 +155,51 @@ def arcanist(t, f):
         # 8 cm further out and 9 cm forward, held ready ahead of her hip, the elbow bent 58, not 87; the crescent
         # 197-232 mm outside the brim, the shaft 104 mm or more off her legs, the wrist 20 deg toward the thumb, not 22.
         # Further out swings the shaft's foot into her right thigh (at 15 deg out with the fist 3 cm nearer, 63 mm).)
-        "hand_r": {"arc": arc_of(ARC_HAND_R), "pole": (0.0, -1.0, -0.2), "frame": "char",
+        "hand_r": {"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
                    "blade": _n(ARC_BLADE_R), "twist": 0.5},
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
+
+
+_arc_aims = {}
+
+
+def arc_aim(rig):
+    """The idle's right hand at its first frame (her character's frame): the grip's blade and knuckles as
+    keyed._whole_aims fills them for a key that aims it by the blade alone (the blade as keyed), and the staff's line in it (the shaft
+    through the fitted fist, data/arms_local.json mage_staff@hand_r, as scratch held.py reads it). For the break's
+    staff turning about its own line (soul.arcanist_break). R1 keeps animation 46's numbers as they were."""
+    if ARC_CAND == "R1":
+        return (-0.3547, 0.9342, -0.0275), (-0.4739, -0.1537, 0.8666), (-0.275, 0.936, 0.163)
+    if ARC_CAND not in _arc_aims:
+        import json
+        from keyed import grip_of, wrap_of
+        from rig import DATA, qaxis, qmul, qrot
+        base = base_of(rig, "arcanist")
+        grip, wrap = rig.grip, rig.wrap
+        rig.grip, rig.wrap = grip_of("staff"), wrap_of("staff")
+        rig.swivel_force = {}
+        local, pos = rig.solve(_on_hip(rig, base, arcanist)(0, 0), base=(base.rot[0], base.pos[0]))
+        rig.swivel_force = None
+        g, _ = rig.globals(local, pos)
+        hq = g[0, rig.I["hand_r"]]
+        q = qmul(hq, qaxis([1.0, 0, 0], -rig.grip.get("r", 0.0)))
+        rig.grip, rig.wrap = grip, wrap
+        v = np.array(json.loads((DATA / "arms_local.json").read_text())["mage_staff@hand_r"]["v"], float)
+        c0 = v.mean(0)
+        d0 = np.linalg.svd(v - c0, full_matrices=False)[2][0]
+        t0 = v @ d0
+        thin = v[(t0 > -0.7) & (t0 < 0.25)]
+        d = np.linalg.svd(thin - thin.mean(0), full_matrices=False)[2][0]
+        if d @ d0 < 0:
+            d = -d
+        line = qrot(hq, d)
+        if line[1] < 0:
+            line = -line
+        # (The blade as the idle keys it, as R1's was: the solved one differs by the wrist's clamp, ~1.5 deg.)
+        _arc_aims[ARC_CAND] = (_n(ARC_BLADE_R), tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
+                               tuple(float(x) for x in line))
+    return _arc_aims[ARC_CAND]
 
 
 def _on_hip(rig, base, arms):
