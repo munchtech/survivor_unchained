@@ -62,6 +62,15 @@ public sealed class OwnClips
     /// skeleton (the figure stands 1.04 times it in the world); 0 for none.</summary>
     public float Speed(string clip) => Meta(clip, "speed").VariantType == Variant.Type.Nil ? 0 : (float)Meta(clip, "speed");
 
+    /// <summary>How far the piece in her right hand sits along its shaft inside her fist while the clip plays, in
+    /// metres (meta "grip_slide", animation 47); 0 for none. Takes the clip with or without this library's prefix.</summary>
+    public float GripSlide(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "grip_slide");
+        return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
+    }
+
     /// <summary>A gesture (a nod, an exhale), laid over what plays rather
     /// than played in its place (Gestures); and whether it holds its end.</summary>
     public bool Gesture(string clip) => Meta(clip, "layer").VariantType == Variant.Type.String && (string)Meta(clip, "layer") == "gesture";

@@ -32,7 +32,10 @@ public partial class HeadTurn : SkeletonModifier3D
         if (head < 0)
         {
             head = sk.FindBone("Head");
+            // (her skeleton's neck is neck_01: found as "Neck" alone her look turned her head only, 33 deg on one
+            // joint in town's close-up, and her neck's skin between pinched; Face lead 32, 21 Oct)
             neck = sk.FindBone("Neck");
+            if (neck < 0) neck = sk.FindBone("neck_01");
             if (head < 0) return;
             var hr = sk.GetBoneGlobalRest(head).Basis.Orthonormalized().Inverse();
             headForward = (hr * Vector3.Back).Normalized();

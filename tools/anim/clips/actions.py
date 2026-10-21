@@ -988,7 +988,7 @@ def cast_flick(rig):
         p["foot_r"]["pole"] = pole(-14, -1)
         p["hips"]["pos"] = (0.02 * weight, -0.022 - 0.012 * abs(weight), 0.06 * weight)
         return p
-    aim = FLK.get("aim", (0.0, 0.07, 0.49)); free = FLK.get("free", (0.04, -0.35, 0.18)); fpole = FLK.get("fpole", (-0.2, -0.4, -1.0))
+    aim = FLK.get("aim", (0.0, 0.07, 0.49)); free = FLK.get("free", (0.12, -0.34, 0.18)); fpole = FLK.get("fpole", (-0.2, -0.4, -1.0))
     blade = FLK.get("blade", (-0.42, -0.38, 0.84)); FLK.setdefault("kn", (0.0, -1.0, 0.2)); clav = FLK.get("clav", (4, 15)); pole8 = FLK.get("pole8", (-0.8, -0.4, -0.2))
     keys = [
         (0, body(step(-0.4), hips=(-10, -2, 0), spine=(-18, -4, 0), head=(22, 0, 0),

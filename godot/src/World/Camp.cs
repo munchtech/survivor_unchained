@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -27,7 +27,7 @@ public static class Camp
 
     /// <summary>Hides the blocked-out camp among the landmarks (not yet in
     /// the tree) and returns the made one, to add beside them.</summary>
-    public static Node3D Dress(Node3D landmarks)
+    public static Node3D Dress(Node3D landmarks, bool logs = true)
     {
         foreach (var n in landmarks.FindChildren("*", "MeshInstance3D", true, false))
         {
@@ -37,6 +37,8 @@ public static class Camp
             var c = (t * mi.GetAabb()).GetCenter();
             foreach (var k in Crude) if (c.DistanceTo(k) < 0.06f) { mi.Visible = false; break; }
         }
+        // (The zone's data may place our own logs instead: OwnProps, props_own.json.)
+        if (!logs) return new Node3D { Name = "Camp" };
         var bark = new Sheet();
         var ends = new Sheet();
         // The seat, east of the fire, north to south: the title's stranger

@@ -1,0 +1,148 @@
+{
+ "_doc": "Our own props in this zone (OwnProps.cs; the presets: tools/assets/env_props.json, built by env_props.py). pieces: a kit piece of props.json -> the preset standing in for it wherever it stands (fitted to the kit piece's height, on its footprint). keep: [x, z] places where the kit piece stays (another lead's). place: a preset stood at x, z (on the ground, + y), turned rot radians about up, scaled; or along a line from a to b ([x, y, z], the preset's long axis on it) at radius r (a log). bare: [r, k] the grass gone within r and thinning out to k times r (with the fires, the first four in the zone). hide: [x, z, r, max height] the web game's blocked-out meshes there go (not its kit pieces). lamps: a lamp holder's light by its glow node: color, energy (times the road lamps'), range, att. nudge: [x, z, dx, dz, degrees] the preset standing in for the kit piece at x, z shifted and turned (the chest off the log's end). drop: landmark nodes that go (the unlit standing lantern west of the camp, a crate in its place). kits (E7b): a KayKit piece of landmarks.glb (kk-PACK-NAME-N) -> our preset standing in for it (a list: the copies take them in turn by N), built in the kit piece's own units and frame so it stands where the kit piece stood, inside its collider; {\"preset\", \"over\": the made piece (Pieces.cs) stays under it, minus what the preset is (the crypt keeps its slate roof, coping and iron door), \"scale\"}; \"flora:NAME\" is one of our own trees. flora_move (E7b r3): [x, z, dx, dz] shifts the zone's flora copy at x, z (within 0.5 m), [x, z] drops it (nine trees north-east of the Watch-post, on the dawn sun's line to its walls' tops (out to 30 m: the sun is 18 degrees up), moved 4-10 m aside, so the wood keeps its density). lit_light: the \"lit\" torches' own light (color, energy times the kit torch's, range, att). The barrow's crosses and the headstone at (-17, 0) are nudged (turned) so their faces meet the play camera (their kit frames had them edge-on).",
+ "pieces": {
+  "props/Chest_Wood": "chest",
+  "props/Crate_Wooden": "crate",
+  "props/Barrel": "barrel",
+  "props/Bag": "pack",
+  "props/Table_Large": "table",
+  "props/Chair_1": "chair"
+ },
+ "keep": [],
+ "nudge": [
+  [
+   -12.1,
+   88.3,
+   -0.3,
+   0.0,
+   12
+  ],
+  [19.6, 29.0, -0.7, 0.14, 0],
+  [-21.0, 5.0, 0, 0, -84.1],
+  [-19.5, 9.0, 0, 0, 82.0],
+  [-12.5, 3.5, 0, 0, -112.6],
+  [-17.0, 0.0, 0, 0, -79.4]
+ ],
+ "flora_move": [
+  [23.51, 20.77, -8.25, 3.25],
+  [26.01, 21.47, 0.75, 8.25],
+  [27.33, 22.36, 5.50, 7.00],
+  [23.07, 18.53, -9.50, 0.00],
+  [27.46, 18.47, 7.75, -3.75],
+  [26.04, 13.75, -1.75, -5.25],
+  [30.78, 7.38, -4.75, -1.25],
+  [32.58, 3.73, -4.00, -2.00],
+  [32.68, 7.14, 7.00, 3.50]
+ ],
+ "lit_light": {"energy": 5.0, "range": 5.0, "att": 1.2},
+ "lit": [[18.9, 29.14]],
+ "drop": [
+  "kk-halloween-lantern_standing-0"
+ ],
+ "place": [
+  {
+   "preset": "bedroll_open",
+   "x": -12.9,
+   "z": 92.4,
+   "rot": 0.9,
+   "hide": [
+    -12.9,
+    92.4,
+    1.4,
+    0.7
+   ],
+   "bare": [
+    1.05,
+    1.5
+   ]
+  },
+  {
+   "preset": "log_long",
+   "a": [
+    -8.79,
+    0.22,
+    89.26
+   ],
+   "b": [
+    -7.81,
+    0.228,
+    91.34
+   ],
+   "r": 0.265
+  },
+  {
+   "preset": "log_short",
+   "a": [
+    -10.1,
+    0.19,
+    88.12
+   ],
+   "b": [
+    -11.7,
+    0.19,
+    88.28
+   ],
+   "r": 0.215
+  },
+  {
+   "preset": "crate",
+   "x": -13.7,
+   "z": 89.1,
+   "rot": 0.35,
+   "scale": 0.72
+  },
+  {
+   "preset": "wagon",
+   "x": 5,
+   "z": 60,
+   "rot": 0.5,
+   "hide": [
+    5,
+    60,
+    2.6,
+    1.9
+   ]
+  }
+ ],
+ "lamps": {
+  "glow-1-0": {
+   "color": "#ffa040",
+   "energy": 1.4
+  }
+ },
+ "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
+ "kits": {
+  "dungeon/wall_cracked": "wall_cracked",
+  "dungeon/wall_broken": "wall_broken",
+  "dungeon/wall_half": "wall_half",
+  "dungeon/pillar": [
+   "pillar",
+   "pillar_broken"
+  ],
+  "dungeon/rubble_large": "rubble_large",
+  "dungeon/rubble_half": "rubble_half",
+  "dungeon/banner_thin_red": "banner",
+  "halloween/fence": [
+   "fence_a",
+   "fence_b"
+  ],
+  "halloween/fence_broken": "fence_broken",
+  "halloween/grave_A": "grave_round",
+  "halloween/grave_B": "grave_gothic",
+  "halloween/grave_A_destroyed": "grave_open",
+  "halloween/gravestone": [
+   "headstone_a",
+   "headstone_b"
+  ],
+  "halloween/gravemarker_A": "marker_cross",
+  "halloween/gravemarker_B": "marker_lashed",
+  "halloween/crypt": {
+   "preset": "crypt",
+   "over": true
+  },
+  "halloween/tree_dead_large": {
+   "preset": "flora:snag_a",
+   "scale": 0.5
+  }
+ }
+}

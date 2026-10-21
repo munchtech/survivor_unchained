@@ -1,168 +1,209 @@
 {
  "steel": {
   "kind": "metal",
-  "repeats": 2.5
+  "repeats": 2.5,
+  "zone": "metal"
  },
  "darksteel": {
   "kind": "metal",
-  "repeats": 2.5
+  "repeats": 2.5,
+  "zone": "metal"
  },
  "iron": {
   "kind": "metal",
-  "repeats": 2.5
+  "repeats": 2.5,
+  "zone": "metal"
  },
  "rivetbronze": {
   "kind": "metal",
-  "repeats": 2.5
+  "repeats": 2.5,
+  "zone": "trim"
  },
  "gold": {
   "kind": "metal",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "trim"
  },
  "claspgold": {
   "kind": "metal",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "trim"
  },
  "rust": {
   "kind": "metal",
-  "repeats": 2.5
+  "repeats": 2.5,
+  "zone": "metal"
  },
  "leather": {
   "kind": "leather",
-  "repeats": 4
+  "repeats": 4,
+  "zone": "leather"
  },
  "darkleather": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "redleather": {
   "kind": "leather",
-  "repeats": 4
+  "repeats": 4,
+  "zone": "leather"
  },
  "oldleather": {
   "kind": "leather",
-  "repeats": 4
+  "repeats": 4,
+  "zone": "leather"
  },
  "velvet": {
   "kind": "cloth",
-  "repeats": 5
+  "repeats": 5,
+  "zone": "cloth"
  },
  "linen": {
   "kind": "cloth",
-  "repeats": 5
+  "repeats": 5,
+  "zone": "cloth"
  },
  "fur": {
   "kind": "fur",
-  "repeats": 4
+  "repeats": 4,
+  "zone": "cloth"
  },
  "arcvelvet": {
   "kind": "cloth",
-  "repeats": 5
+  "repeats": 5,
+  "zone": "cloth"
  },
  "plumleather": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "blackleather": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "brownleather": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "lace": {
   "kind": "cloth",
-  "repeats": 14
+  "repeats": 14,
+  "zone": "cloth"
  },
  "darkpurple": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "satin": {
   "kind": "gloss",
-  "repeats": 10
+  "repeats": 10,
+  "zone": "cloth"
  },
  "glovesatin": {
   "kind": "satin",
-  "repeats": 40
+  "repeats": 40,
+  "zone": "cloth"
  },
  "glovepipe": {
   "kind": "satin",
-  "repeats": 40
+  "repeats": 40,
+  "zone": "cloth"
  },
  "wiregold": {
   "kind": "metal",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "trim"
  },
  "glovethread": {
   "kind": "satin",
-  "repeats": 60
+  "repeats": 60,
+  "zone": "cloth"
  },
  "gloveblack": {
   "kind": "satin",
-  "repeats": 40
+  "repeats": 40,
+  "zone": "cloth"
  },
  "amethyst": {
   "kind": "gloss",
-  "repeats": 10
+  "repeats": 10,
+  "zone": "none"
  },
  "greenleather": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "bronze": {
   "kind": "metal",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "trim"
  },
  "ink": {
   "kind": "cloth",
   "repeats": 10,
-  "pull": 0.0015
+  "pull": 0.0015,
+  "zone": "none"
  },
  "stocking": {
   "kind": "sheer",
-  "repeats": 14
+  "repeats": 14,
+  "zone": "cloth"
  },
  "down": {
   "kind": "fur",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "cloth"
  },
  "bone": {
   "kind": "leather",
-  "repeats": 12
+  "repeats": 12,
+  "zone": "none"
  },
  "browncloth": {
   "kind": "twill",
-  "repeats": 18
+  "repeats": 18,
+  "zone": "cloth"
  },
  "forestleather": {
   "kind": "leather",
-  "repeats": 3
+  "repeats": 3,
+  "zone": "leather"
  },
  "bootleather": {
   "kind": "leather",
-  "repeats": 7
+  "repeats": 7,
+  "zone": "leather"
  },
  "thread": {
   "kind": "gloss",
-  "repeats": 60
+  "repeats": 60,
+  "zone": "trim"
  },
  "gem_garnet": {
   "kind": "gloss",
-  "repeats": 70
+  "repeats": 70,
+  "zone": "none"
  },
  "gem_amethyst": {
   "kind": "gloss",
-  "repeats": 70
+  "repeats": 70,
+  "zone": "none"
  },
  "gem_sapphire": {
   "kind": "gloss",
-  "repeats": 70
+  "repeats": 70,
+  "zone": "none"
  },
  "gem_emerald": {
   "kind": "gloss",
-  "repeats": 70
+  "repeats": 70,
+  "zone": "none"
  },
  "blacksteel": {
   "kind": "metal",
@@ -172,6 +213,7 @@
    0.29,
    0.305
   ],
-  "roughness": 0.3
+  "roughness": 0.3,
+  "zone": "metal"
  }
 }

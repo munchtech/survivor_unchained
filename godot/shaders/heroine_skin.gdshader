@@ -53,6 +53,11 @@ uniform vec3 terminator = vec3(0.32, 0.15, 0.1);
 // made her neck under it grey-violet (Oklab hue 31° against her portraits' 51°) on every face (the owner,
 // 10 October 2026). 1 (his) as before.
 uniform vec3 ambient_tint = vec3(1.0);
+// Her share of the sky's light (the ambient), every lamp's light on her kept (light() divides it back out). The town's
+// close view by day (GameCloseUp, face 34): the waystation's grey-blue sky (hemi 0.9, env 0.8) was the largest light on
+// her face, level on every plane (it lifted the shade side of her jaw 31.7 to 45 Oklab L), so her face read flat, pale
+// and grey, as under a flash. 1 everywhere else.
+uniform float sky_share = 1.0;
 // Her sheen's strength (SPECULAR), for her light() to read.
 varying float sheen;
 // Rougher where the skin is seen edge on: there a light from behind
@@ -550,6 +555,8 @@ void fragment() {
 		AO = min(AO, 1.0 - mouth_occ * mo);
 		EMISSION += mcol * mouth_fill * mc * (1.0 - 0.6 * mo);
 	}
+	ALBEDO *= sky_share;   // (after the mouth's own colour: light() divides every lamp's light by it, the mouth's too)
+	SPECULAR *= sky_share;   // (the sky's sheen on her too: her lamps' sheen is light()'s own, from `sheen`)
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
@@ -591,7 +598,7 @@ void light() {
 	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
-	vec3 un = 1.0 / mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w);        // (the lamps' light on her as without the tint)
+	vec3 un = 1.0 / (mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w) * max(sky_share, 1e-3));        // (the lamps' light on her as without the tint)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {

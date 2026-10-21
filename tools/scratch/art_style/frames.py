@@ -8,7 +8,7 @@ SETS, comma-separated: town (the square, the east road, the north street by day)
 night: camp, road A, road B, the ford, the wood road, two ford lamps), close (the close view at camp,
 closest zoom, twice facing away from the fire and twice facing it), camp (the camp at the play camera), towndawn, forddawn,
 road (the wood road by night, and the ford road), roaddawn, stones (E5: the ford's stepping stones,
-the post's pebbles, a boulder field, by day).
+the post's pebbles, a boulder field, by day), post, postdawn, barrow, barrowdawn (E7b: the Watch-post ruin and the Barrow).
 Frames land in godot/.shots/ as ROUND_SET_VARIANT_*.png; tables as godot/.shots/ROUND_SET_g.bin.
 """
 import os, subprocess, sys, time
@@ -45,8 +45,24 @@ SETS = {
     "stonesnight": (NIGHT + ["--spots-clear", "--spots", "1,3;-71,-38"], 2),
     # (E5c: only the rock frames of ford and road: the ford's lantern post (ford 03, 05) and the road's faceted boulder (road 01))
     "fordpost": (NIGHT + ["--spots", "0,-38;0,-37"], 2),
+    # (E7a: our props by day: the broken wagon on the road, and the camp at the close view, closest zoom, as "close" does by night)
+    "wagonday": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "2.5,62.5"], 1),
+    "closedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     "roadrock": (NIGHT + ["--spots-clear", "--spots", "3,64"], 1),
+    # (E7 round 2: the close view at its closest zoom on the bedroll and the pack, behind her on either side, night and
+    # dawn; and on the broken wagon by day, from its low side and its end)
+    "closebed": (NIGHT + ["--spots", "-11.0,96.8,1,0;-14.4,96.2,1,0"], 2),
+    "closebeddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "-11.0,96.8,1,0;-14.4,96.2,1,0"], 2),
+    "closewagon": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "1.6,62.4,1,0;5.2,62.8,1,0"], 2),
+    # (env lead 12: armor's verge combat camera, where it saw "rainbow rocks" under the canopy, seed 1, toward the mobs)
+    "verge": (["--zone", "verge", "--seed", "1", "--auto", "toward"], 2),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
+    # (E7b: our Watch-post ruin and the Barrow at the play camera, the living held off: the post from its middle and by
+    # the watchman's chest; the Barrow's graves, and its crypt; one dawn each. x="--props-own-off" is the before)
+    "post": (NIGHT + ["--spots-clear", "--spots", "18,32;15.5,29.5"], 2),
+    "postdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "19.1,31.6"], 1),  # (E7b r3: in the dawn beam through the gap between the back wall and the east pillar (at 15, 31.5 she stood in the back wall's shadow, near-black); r2: the sunlit verge, the south stub's warm top)
+    "barrow": (NIGHT + ["--spots-clear", "--spots", "-16,5;-22.5,2"], 2),
+    "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)

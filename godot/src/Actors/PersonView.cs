@@ -59,6 +59,20 @@ public partial class PersonView : Node3D, INpcView
         }
     }
 
+    // The seat each held piece had in its hand mount (Slide's base): re-read when the mount is a new one (Sheathe
+    // swaps the mount node), so a sheath transform never gets cached.
+    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Vector3 seat)> seats = new();
+
+    /// <summary>The piece in a hand slot sits this far along its own shaft (metres) from its seat, so the fist grips
+    /// lower on it (animation 47: the arcanist's combat idle). Does nothing while the piece is sheathed.</summary>
+    public void Slide(string slot, float metres)
+    {
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith("mount:")) return;
+        if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece) return;
+        if (!seats.TryGetValue(slot, out var s) || s.piece != piece) seats[slot] = s = (piece, piece.Position);
+        piece.Position = s.seat + (piece.Transform.Basis * Vector3.Up).Normalized() * metres;
+    }
+
     public People.Person Person => person;
 
     public void Place(double x, double y, double z, double heading, bool visible)

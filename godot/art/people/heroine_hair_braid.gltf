@@ -1526,6 +1526,9 @@
      "face_sunborn",
      "face_vixen",
      "face_wildling"
+    ],
+    "shape_falloff": [
+     "sunborn"
     ]
    },
    "name": "hair_braid",
@@ -3084,7 +3087,7 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 73,
+   "bufferView": 319,
    "componentType": 5126,
    "count": 63290,
    "max": [
@@ -4100,19 +4103,10 @@
    "min": [
     -0.007309935986995697,
     -0.010634660720825195,
-    -0.0009316951036453247
+    -0.0008519887924194336
    ],
-   "sparse": {
-    "count": 3286,
-    "indices": {
-     "bufferView": 157,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 158
-    }
-   },
-   "type": "VEC3"
+   "type": "VEC3",
+   "bufferView": 320
   },
   {
    "componentType": 5126,
@@ -5108,26 +5102,17 @@
    "componentType": 5126,
    "count": 363,
    "max": [
-    0,
-    0,
-    0
+    0.0,
+    0.0,
+    0.0
    ],
    "min": [
-    0,
-    0,
-    0
+    0.0,
+    0.0,
+    0.0
    ],
-   "sparse": {
-    "count": 1,
-    "indices": {
-     "bufferView": 242,
-     "componentType": 5121
-    },
-    "values": {
-     "bufferView": 243
-    }
-   },
-   "type": "VEC3"
+   "type": "VEC3",
+   "bufferView": 321
   },
   {
    "componentType": 5126,
@@ -6012,18 +5997,18 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 315,
+   "bufferView": 322,
    "componentType": 5126,
    "count": 7980,
    "max": [
-    0.0032322555780410767,
-    -0.0002779960632324219,
-    0.019176598638296127
+    0.0032232028897851706,
+    -0.00027851571212522686,
+    0.019176552072167397
    ],
    "min": [
     -0.004567831754684448,
     -0.009463906288146973,
-    0.001422397792339325
+    0.0017486120341345668
    ],
    "type": "VEC3"
   },
@@ -7719,6 +7704,26 @@
    "buffer": 0,
    "byteLength": 4416,
    "byteOffset": 21636240
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 21640656,
+   "byteLength": 759480
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 22400136,
+   "byteLength": 84492
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 22484628,
+   "byteLength": 4356
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 22488984,
+   "byteLength": 95760
   }
  ],
  "samplers": [
@@ -7729,7 +7734,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 21640656,
+   "byteLength": 22584744,
    "uri": "heroine_hair_braid.bin"
   }
  ]

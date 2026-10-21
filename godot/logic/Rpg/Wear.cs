@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,6 +13,11 @@ public static class Wear
     public static readonly string[] VisualSlots = ["top", "bottom", "legwear", "gloves", "skirt", "belt", "collar", "bracers", "greaves", "boots", "pauldrons", "cloak", "head"];
 
     static readonly string[] None = [];
+
+    /// <summary>A slot whose piece hangs from another slot's piece (a skirt hangs from its belt): slot -> slot it hangs from.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Hangs = new Dictionary<string, string> { ["skirt"] = "belt" };
+
+    static string SourceOf(ArmorIndex ix, string id) => ix.Find(id)?.Outfit ?? id[..Math.Max(id.LastIndexOf('.'), 0)];
 
     /// <summary>The visual slots an item slot covers (none for weapons, amulets, rings, relic).</summary>
     public static IReadOnlyList<string> Group(EquipSlot s) => s switch
@@ -47,13 +53,16 @@ public static class Wear
     /// (loot the player put on must show): a fill whose covers reach a slot an equipped piece shows in is dropped, and
     /// its own slot is filled by the first calling in FallbackOrder whose piece for that slot covers that slot only, or
     /// left empty with a note. A piece the index does not know is left off, with a note why.</summary>
-    public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null)
+    public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null, IReadOnlyCollection<string>? hide = null)
     {
+        // (`hide`: visual slots left empty, no equipped piece and no fill: her show-helm toggle off leaves "head" bare)
+        bool Hid(string slot) => hide != null && hide.Contains(slot);
         var eq = new Dictionary<string, string>();
         foreach (var (vs, id) in worn)
         {
             if (ix.Find(id) is not { } row) { notes?.Add($"wear: piece '{id}' (for {vs}) is in no armor index; left off"); continue; }
             if (row.Slot == Ink) { notes?.Add($"wear: piece '{id}' is ink, which comes with its calling; left off"); continue; }
+            if (Hid(row.Slot)) continue;
             eq[row.Slot] = id;
         }
         // (what equipped pieces hide: each other too)
@@ -66,7 +75,12 @@ public static class Wear
         foreach (var (slot, id) in ix.Calling(calling))
         {
             if (slot == Ink) { r[slot] = id; continue; }
-            if (eq.ContainsKey(slot) || hidden.Contains(slot)) continue;
+            if (eq.ContainsKey(slot) || hidden.Contains(slot) || Hid(slot)) continue;
+            if (Hangs.TryGetValue(slot, out var from) && eq.TryGetValue(from, out var held) && SourceOf(ix, held) != SourceOf(ix, id))
+            {
+                notes?.Add($"wear: {calling}'s '{id}' hangs from {from}, which holds '{held}'; {slot} left empty");
+                continue;
+            }
             if (!HidesEquipped(slot, id)) { r[slot] = id; continue; }
             var fb = FallbackOrder.Select(c => ix.Find($"{c}.{slot}")).FirstOrDefault(p => p is { } p_ && p_.Covers.Count == 1 && p_.Covers[0] == slot);
             if (fb != null) { r[slot] = fb.Id; notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece; {slot} filled with '{fb.Id}'"); }
@@ -79,12 +93,15 @@ public static class Wear
             foreach (var c in ix.Find(id)!.Covers)
                 if (c != slot && c != Ink && !eq.ContainsKey(c)) r.Remove(c);
         }
+        if (hide != null) foreach (var h in hide) r.Remove(h);
         return r;
     }
 
     /// <summary>The look's visual slots the calling's own full set wears exactly (and nothing else).</summary>
     public static bool IsCallingSet(IReadOnlyDictionary<string, string> look, string calling, ArmorIndex ix)
     {
+        // (a stand-in piece (a row's `replaces`) is not the calling's own outfit file: not its full set)
+        if (look.Values.Any(id => ix.Find(id)?.Replaces != null)) return false;
         var full = Look(new Dictionary<string, string>(), calling, ix);
         return full.Count == look.Count && full.All(kv => look.TryGetValue(kv.Key, out var v) && v == kv.Value);
     }
@@ -99,6 +116,20 @@ public static class Wear
             if (eq[s] is not { } it || find(it.Def)?.Wear is not { } wear) continue;
             var group = Group(s);
             foreach (var p in wear) if (group.Contains(SlotOf(p))) r[SlotOf(p)] = p;
+        }
+        return r;
+    }
+
+    /// <summary>Piece id -> dye zone -> "#rrggbb", from the equipped items that wear pieces and carry a dye (ItemInstance.Dye).</summary>
+    public static Dictionary<string, Dictionary<string, string>> DyeOf(Equipment eq, System.Func<string, ItemDef?>? find = null)
+    {
+        find ??= Items.Find;
+        var r = new Dictionary<string, Dictionary<string, string>>();
+        foreach (var s in Items.EquipSlots)
+        {
+            if (eq[s] is not { Dye: { Count: > 0 } dye } it || find(it.Def)?.Wear is not { } wear) continue;
+            var group = Group(s);
+            foreach (var p in wear) if (group.Contains(SlotOf(p))) r[p] = new Dictionary<string, string>(dye);
         }
         return r;
     }

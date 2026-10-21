@@ -88,13 +88,19 @@ ARC_STOP_CURL = {
 }
 
 
+# Her staff's line through the stops (her character's frame, as idle_arcanist's): 3 deg nearer upright than the
+# idle's, so the shaft's foot clears her right leg as it comes through (101 mm or more; at the idle's own aim 46 mm at f9
+# of the left stop), the crescent still 148 mm or more outside her brim as she pitches over the fist. (13 Oct it was
+# (-0.10, 1.0, 0.04) in the chest's frame, leant out past the brim; animation 46.)
+# (Animation 47: per idle.ARC_CAND, its "stop_blade"; R1's (-0.30, 1.0, -0.07).)
+STOP_ARC_BLADE = idle._ARC["stop_blade"]
+
+
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
     arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
     if calling == "arcanist":
-        # The staff's head leant out past her hat's brim: braking, her head and hat pitch over the fist (13 Oct, with
-        # the staff seated in the fist's hollow, the idle's lean put the head 1 mm into the brim).
-        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n((-0.10, 1.0, 0.04))}
+        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(STOP_ARC_BLADE)}
     s = 1 if side == "l" else -1
     front, back = f"foot_{side}", f"foot_{'r' if side == 'l' else 'l'}"
     w = 0.09 if calling == "warden" else 0.05

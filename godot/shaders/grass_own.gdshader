@@ -125,8 +125,9 @@ void vertex() {
 	dens *= 1.0 - leafy * 0.5;
 	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, zuv, 0.0).r));
 	float keep = step(h3, dens * density * edge);
-	// (a fire's pit bare, the camp round it thinning out to `clear` times its radius)
-	for (int i = 0; i < 4; i++) keep *= step(h4, smoothstep(bare_at[i].z, bare_at[i].z * clear, length(wp - bare_at[i].xy)));
+	// (a fire's pit bare, the camp round it thinning out to `clear` times its radius; a prop's patch (OwnProps "bare")
+	// thins out to its own w times its radius)
+	for (int i = 0; i < 4; i++) keep *= step(h4, smoothstep(bare_at[i].z, bare_at[i].z * (bare_at[i].w > 0.0 ? bare_at[i].w : clear), length(wp - bare_at[i].xy)));
 	// Size: smaller at a drift's edge, each clump its own.
 	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
 	// Facing the camera (its forward, flattened), turned up to `yaw` off it; half of them mirrored.

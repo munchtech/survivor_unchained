@@ -135,6 +135,36 @@ public class WearTests
     [{"id": "plate_top_plain", "slot": "top", "layer": 1, "covers": ["top"], "meshes": ["plate_top_plain.steel"], "tuck": "armor_tuck/plate_top_plain.bin", "file": "res://art/armor/plate_top_plain.gltf", "tier": "plain"}]
     """;
 
+    const string HangIndex = """
+    [
+     {"id": "warden.skirt", "outfit": "warden", "slot": "skirt", "layer": 1, "covers": ["skirt"], "meshes": ["warden.skirt.steel"], "tuck": null},
+     {"id": "warden.belt", "outfit": "warden", "slot": "belt", "layer": 1, "covers": ["belt"], "meshes": ["warden.belt.steel"], "tuck": null},
+     {"id": "ranger.belt", "outfit": "ranger", "slot": "belt", "layer": 1, "covers": ["belt"], "meshes": ["ranger.belt.leather"], "tuck": null}
+    ]
+    """;
+
+    [Fact]
+    public void A_skirt_does_not_hang_from_another_sources_belt()
+    {
+        var ix = ArmorIndex.Parse(HangIndex);
+        var notes = new List<string>();
+        var l = Wear.Look(W("ranger.belt"), "warden", ix, notes);
+        Assert.Equal("ranger.belt", l["belt"]);
+        Assert.False(l.ContainsKey("skirt"));
+        Assert.Contains(notes, n => n.Contains("hangs from belt"));
+    }
+
+    [Fact]
+    public void A_skirt_fills_with_its_own_belt_or_an_empty_belt_slot()
+    {
+        var ix = ArmorIndex.Parse(HangIndex);
+        var l = Wear.Look(W(), "warden", ix);
+        Assert.Equal("warden.skirt", l["skirt"]);
+        Assert.Equal("warden.belt", l["belt"]);
+        l = Wear.Look(W("warden.belt"), "warden", ix);
+        Assert.Equal("warden.skirt", l["skirt"]);
+    }
+
     static Dictionary<string, string> W(params string[] ids) => ids.ToDictionary(i => Wear.SlotOfId(i), i => i);
 
     [Fact]
@@ -156,6 +186,37 @@ public class WearTests
         var l = Wear.Look(W(), "warden", ix);
         Assert.Equal(new Dictionary<string, string> { ["top"] = "warden.top", ["bottom"] = "warden.bottom", ["boots"] = "warden.boots" }, l);
         Assert.True(Wear.IsCallingSet(l, "warden", ix));
+    }
+
+    const string ReplIndex = """
+    [
+     {"id": "warden.pauldrons", "outfit": "warden", "slot": "pauldrons", "layer": 1, "covers": ["pauldrons"], "meshes": ["warden.pauldrons.steel"], "tuck": null},
+     {"id": "ranger.pauldrons", "outfit": "ranger", "slot": "pauldrons", "layer": 1, "covers": ["pauldrons"], "meshes": ["ranger.pauldrons.steel"], "tuck": null},
+     {"id": "plate_pauldrons_warden", "slot": "pauldrons", "layer": 1, "covers": ["pauldrons"], "meshes": ["plate_pauldrons_warden.steel"], "tuck": null, "replaces": "warden.pauldrons"}
+    ]
+    """;
+
+    [Fact]
+    public void A_row_that_replaces_a_calling_row_is_that_callings_fill()
+    {
+        var ix = ArmorIndex.Parse(ReplIndex);
+        var w = Wear.Look(W(), "warden", ix);
+        Assert.Equal("plate_pauldrons_warden", w["pauldrons"]);
+        Assert.False(Wear.IsCallingSet(w, "warden", ix));
+        Assert.Equal("ranger.pauldrons", Wear.Look(W(), "ranger", ix)["pauldrons"]);
+        Assert.Equal("plate_pauldrons_warden", ix.Calling("warden")["pauldrons"]);
+        Assert.Equal("warden.pauldrons", Wear.Look(new Dictionary<string, string> { ["pauldrons"] = "warden.pauldrons" }, "ranger", ix)["pauldrons"]);
+    }
+
+    [Fact]
+    public void The_game_index_dresses_the_warden_in_the_brass_pauldrons_and_the_others_as_before()
+    {
+        ArmorIndex.Reset();
+        var ix = ArmorIndex.Shared;
+        Assert.Equal("warden.pauldrons", ix.Find("plate_pauldrons_warden")?.Replaces);
+        Assert.Equal("plate_pauldrons_warden", Wear.Look(W(), "warden", ix)["pauldrons"]);
+        foreach (var c in new[] { "ranger", "arcanist", "reaver" })
+            foreach (var (slot, id) in ix.Calling(c)) Assert.Equal($"{c}.{slot}", id);
     }
 
     [Fact]
@@ -246,7 +307,7 @@ public class WearTests
         {
             var l = Wear.Look(W(), c, ix);
             Assert.True(l.Count >= 6, c);
-            Assert.All(l.Values, id => Assert.StartsWith(c + ".", id));
+            Assert.All(l.Values, id => Assert.True(id.StartsWith(c + ".") || ix.Find(id)!.Replaces?.StartsWith(c + ".") == true, id));
             Assert.All(l.Values, id => Assert.NotEmpty(ix.Find(id)!.Meshes));
         }
         Assert.Equal("reaver.ink", Wear.Look(W(), "reaver", ix)["ink"]);

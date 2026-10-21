@@ -51,6 +51,10 @@ public sealed class PersonSpec
     public string? FaceShape;
     /// <summary>The pieces her equipment wears (Rpg.Wear.Of: visual slot -> piece id), or none: her calling's outfit whole.</summary>
     public Dictionary<string, string>? Worn;
+    /// <summary>Visual slots left empty on her ("head": her show-helm toggle off).</summary>
+    public List<string>? HideSlots;
+    /// <summary>Dyes on the pieces she wears: piece id -> dye zone -> "#rrggbb" (Rpg.Wear.DyeOf).</summary>
+    public Dictionary<string, Dictionary<string, string>>? WornDye;
 }
 
 public sealed class Held { public string? Right, Left, Forearm; }

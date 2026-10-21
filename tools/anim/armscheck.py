@@ -72,6 +72,9 @@ SETS = {
     "crossbow": [("crossbow", "crossbow@hand_r")],
     "daggers": [("dagger_r", "daggers@hand_r"), ("dagger_l", "dagger_b@hand_l")],
 }
+# The kind of each right-hand piece (keyed.slide_dir: the line a clip's grip slide moves it along).
+PIECE_KIND = {"mage_staff": "staff", "chevalier_sword": "sword", "viking_sword": "sword", "oathbrand": "sword",
+              "viking_axe": "axe", "wand": "wand", "crossbow": "crossbow", "daggers": "daggers"}
 ALIAS = {
     "warden": "warden_sword_shield", "worn_oathblade": "warden_sword_shield",
     "oath": "oath_shield", "judgement_disc_item": "oath_shield",
@@ -304,9 +307,28 @@ class Checker:
                 return skin_mm, out_mm, ("hold " + self.where(nq[j])) if out_mm > 0 or skin_mm > 0 else "-"
 
     def clip(self, name, folder, pieces, step=1):
-        """{key: (worst mm per frame, where per frame[, outfit mm, outfit where])} over the sampled frames."""
+        """{key: (worst mm per frame, where per frame[, outfit mm, outfit where])} over the sampled frames.
+        A clip's "grip_slide" (metres, animation 47: keyed.build) moves the piece in her right fist that far along its
+        shaft (keyed.slide_dir of its kind, PIECE_KIND), as the game does (PersonView.Slide)."""
+        c = self.b.clip(name, folder)
+        s = float(c.meta.get("grip_slide", 0.0) or 0.0)
+        kept = {}
+        if s:
+            from keyed import slide_dir
+            for k in pieces:
+                d = slide_dir(PIECE_KIND.get(k.split("@")[0])) if k.endswith("@hand_r") else None
+                if d is not None:
+                    kept[k] = (self.local[k], self.pts[k], self.coarse[k])
+                    v, t = self.local[k]
+                    self.local[k], self.pts[k], self.coarse[k] = (v + s * d, t), self.pts[k] + s * d, self.coarse[k] + s * d
+        try:
+            return self._clip(c, pieces, step)
+        finally:
+            for k, (lo, pt, co) in kept.items():
+                self.local[k], self.pts[k], self.coarse[k] = lo, pt, co
+
+    def _clip(self, c, pieces, step=1):
         b = self.b
-        c = b.clip(name, folder)
         Gs = b.frames(c)
         # Per piece: body mm, where, outfit mm, where (each the worst of the rest of her and the
         # holding arm), then the holding arm alone: skin mm, outfit mm, where.

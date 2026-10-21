@@ -1512,6 +1512,9 @@
      "face_sunborn",
      "face_vixen",
      "face_wildling"
+    ],
+    "shape_falloff": [
+     "sunborn"
     ]
    },
    "name": "hair_pixie",
@@ -2977,19 +2980,10 @@
    "min": [
     -0.007292810827493668,
     -0.010597944259643555,
-    -0.0015289783477783203
+    -0.0008296668529510498
    ],
-   "sparse": {
-    "count": 52946,
-    "indices": {
-     "bufferView": 76,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 77
-    }
-   },
-   "type": "VEC3"
+   "type": "VEC3",
+   "bufferView": 247
   },
   {
    "componentType": 5126,
@@ -3965,19 +3959,10 @@
    "min": [
     -0.007309935986995697,
     -0.010634660720825195,
-    -0.0009316951036453247
+    -0.0008519887924194336
    ],
-   "sparse": {
-    "count": 3126,
-    "indices": {
-     "bufferView": 158,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 159
-    }
-   },
-   "type": "VEC3"
+   "type": "VEC3",
+   "bufferView": 248
   },
   {
    "componentType": 5126,
@@ -4953,19 +4938,10 @@
    "min": [
     -0.006417125463485718,
     -0.010523200035095215,
-    -0.0005980953574180603
+    0.0
    ],
-   "sparse": {
-    "count": 12797,
-    "indices": {
-     "bufferView": 240,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 241
-    }
-   },
-   "type": "VEC3"
+   "type": "VEC3",
+   "bufferView": 249
   },
   {
    "componentType": 5126,
@@ -6295,6 +6271,21 @@
    "buffer": 0,
    "byteLength": 4416,
    "byteOffset": 25242136
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 25246552,
+   "byteLength": 751344
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 25997896,
+   "byteLength": 44880
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 26042776,
+   "byteLength": 188988
   }
  ],
  "samplers": [
@@ -6305,7 +6296,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 25246552,
+   "byteLength": 26231764,
    "uri": "heroine_hair_pixie.bin"
   }
  ]

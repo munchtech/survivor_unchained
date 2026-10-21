@@ -33,9 +33,17 @@ public sealed class ArmorPiece
     [JsonPropertyName("tuck_count")] public int? TuckCount { get; set; }
     [JsonPropertyName("body_hash")] public string? BodyHash { get; set; }
     [JsonPropertyName("hold")] public ArmorHold? Hold { get; set; }
+    /// <summary>A rigid piece (a plate style, or a free mesh made only of `_rigid` parts): the garment tuck never bends it
+    /// (GarmentTuck.Over is false with it inner), so its plates keep their shape under any piece over it.</summary>
+    [JsonPropertyName("rigid")] public bool Rigid { get; set; }
     /// <summary>Its own file (res://art/armor/ID.gltf) for a new piece; null: its outfit's heroine_outfit_OUTFIT.gltf.</summary>
     [JsonPropertyName("file")] public string? File { get; set; }
     [JsonPropertyName("tier")] public JsonElement? Tier { get; set; }
+    /// <summary>What it does to her hair while worn: "keep" (default) or "hide" (a closed helm: her hair mesh is left off).</summary>
+    [JsonPropertyName("hair")] public string Hair { get; set; } = "keep";
+    /// <summary>The id of a calling's outfit row this piece stands in for: a calling's fill (ArmorIndex.Calling) wears this piece
+    /// where it would wear that row. The piece keeps its own row.</summary>
+    [JsonPropertyName("replaces")] public string? Replaces { get; set; }
     /// <summary>The index's folder under art/ ("people" or "armor"), which its tuck path is relative to.</summary>
     [JsonIgnore] public string Dir { get; set; } = "people";
 }
@@ -104,7 +112,12 @@ public sealed class ArmorIndex
         return ix;
     }
 
-    /// <summary>A calling's own pieces (its outfit's rows), by visual slot.</summary>
-    public Dictionary<string, string> Calling(string calling) =>
-        Pieces.Values.Where(r => r.Outfit == calling).ToDictionary(r => r.Slot, r => r.Id);
+    /// <summary>A calling's own pieces (its outfit's rows), by visual slot; a row another piece `replaces` is given as that piece.</summary>
+    public Dictionary<string, string> Calling(string calling)
+    {
+        var own = Pieces.Values.Where(r => r.Outfit == calling).ToDictionary(r => r.Slot, r => r.Id);
+        foreach (var r in Pieces.Values)
+            if (r.Replaces is { } from && own.TryGetValue(r.Slot, out var cur) && cur == from) own[r.Slot] = r.Id;
+        return own;
+    }
 }
