@@ -19,11 +19,14 @@ before and after), so the exporter's own normals stay everywhere the shape did n
     python tools/assets/heroine_shape_falloff.py --measure [face ...]  (no faces: all nine; nothing written)
     python tools/assets/heroine_shape_falloff.py --glb IN.glb [--out OUT.glb] ...
 
---measure gives, per face and side, the relief the mask would take out (mm, max and 95th percentile inside it) and
-how far each point would move: a face like Sunborn stands out against Doe (passed at the Look).
+--measure gives, per face and side, the highest ridge and deepest groove (mm) inside the mask at about a centimetre's
+reach (RIDGE_ITER), and how far a run would move each point. Before this ran (20 October 2026): Sunborn's ridge 1.95
+mm, every other face 1.43 or under (Doe, passed at the Look, 1.05); RIDGE_LIKE (1.6) flags a face like Sunborn's.
 
 Idempotent: each face done is named in her head mesh's extras (shape_falloff), and is left on a second run.
-The chain: after heroine_seam.py (heroine_head.py runs it on every heroine.glb it writes).
+The chain: after heroine_seam.py (heroine_head.py runs it on every heroine.glb it writes). Her hair's face keys
+(heroine_hair_*.gltf, made from the blend's keys by heroine_hair.py) are given the same change at the scalp, from
+heroine_face/shape_falloff_<face>.npz; run this again after a hair rebuild (each hair is marked in its extras).
 """
 import argparse
 import os
@@ -39,11 +42,13 @@ import heroine_seam as hs  # noqa: E402
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 GLB = os.path.join(ROOT, "godot", "art", "people", "heroine.glb")
 HAIRS = os.path.join(ROOT, "godot", "art", "people", "heroine_hair_%s.gltf")
+DELTAS = os.path.join(ROOT, "tools", "assets", "heroine_face", "shape_falloff_%s.npz")  # (each face's change to her head)
 HAIR_STYLES = ["braid", "ponytail", "pixie", "bob", "long"]
 HAIR_NEAR, HAIR_FAR = 0.025, 0.05  # (a hair point follows the scalp under it fully within NEAR of it, not past FAR)
 FACES = ["doe", "fey", "hardwon", "highborn", "moonlit", "saffron", "sunborn", "vixen", "wildling"]
 FIX = ["sunborn"]                  # (the faces this is run on: those whose --measure stands out like Sunborn's)
 
+RIDGE_ITER, RIDGE_LIKE = 15, 1.6  # (--measure: the ridge's reach, and the height (mm) that reads as Sunborn's did)
 ITER, LAM = 80, 0.5                # (the diffusion that finds the broad shape: its steps and rate)
 Y0, Y_EASE = 1.772, 0.014          # (her forehead from Y0 up, eased in over Y_EASE: her brows' tops are at ~1.772)
 HAIR_Y, HAIR_EASE = 1.855, 0.015   # (and eased out by HAIR_Y, under her hair)
@@ -155,7 +160,6 @@ def run(path=GLB, out=None, faces=None, measure=False):
     n0 = h.normals(V)
     done = hm.setdefault("extras", {}).setdefault("shape_falloff", {}) if not measure else hm.get("extras", {}).get("shape_falloff", {})
     wrote = False
-    moved_hair = {}
     for f in faces:
         key = "face_" + f
         if key not in names:
@@ -168,12 +172,19 @@ def run(path=GLB, out=None, faces=None, measure=False):
         d2 = d + w[:, None] * (g - d)
         mv = np.linalg.norm(d2 - d, axis=1) * 1000
         if measure:
+            # (the fine relief, at RIDGE_ITER steps' reach (~1 cm): a ridge stands above it, a groove below)
+            gf = d.copy()
+            for _ in range(RIDGE_ITER):
+                gf = gf + LAM * (h.avg(gf) - gf)
+            fine = ((d - gf) * n0).sum(1) * 1000
             s = []
             for side, sm in (("R", V[:, 0] < 0), ("L", V[:, 0] > 0)):
                 m = sm & (w > 0.5)
-                s.append("%s relief max %.2f p95 %.2f" % (side, np.abs(hi[m]).max(), np.percentile(np.abs(hi[m]), 95)))
-            print("FALLOFF %-9s %s | would move max %.2f mm (mask>0.5), %.2f mm where mask<0.05%s" % (
-                f, "; ".join(s), mv[w > 0.5].max(), mv[w < 0.05].max(), "  [done]" if f in done else ""))
+                s.append("%s ridge %.2f groove %.2f" % (side, fine[m].max(), -fine[m].min()))
+            like = max(fine[w > 0.5].max(), 0) > RIDGE_LIKE
+            print("FALLOFF %-9s %s | would move max %.2f mm (mask>0.5), %.2f mm where mask<0.05%s%s" % (
+                f, "; ".join(s), mv[w > 0.5].max(), mv[w < 0.05].max(), "  LIKE SUNBORN" if like else "",
+                "  [done]" if f in done else ""))
             continue
         if f in done:
             print("FALLOFF: %s already done in %s - left" % (f, path))
@@ -183,16 +194,27 @@ def run(path=GLB, out=None, faces=None, measure=False):
         done[f] = {"iter": ITER, "y0": Y0, "r": [R0, R1], "max_mm": round(float(mv.max()), 2),
                    "below_brow_mm": round(float(mv[below].max()), 2)}
         wrote = True
-        moved_hair[f] = (d2 - d)
+        ch = (d2 - d).astype(np.float32)
+        rows = np.where(np.abs(ch).max(1) > 0)[0]
+        np.savez_compressed(DELTAS % f, rows=rows.astype(np.int32), delta=ch[rows], n=len(V))
         print("FALLOFF %s: relief taken out inside the mask; moved max %.2f mm (mask>0.5), %.2f mm where mask<0.05, "
               "%.2f mm below brow level (y<1.765), 0 where mask=0 (%.2g)" % (
                   f, mv[w > 0.5].max(), mv[w < 0.05].max(), mv[below].max(), mv[w == 0].max() if (w == 0).any() else 0))
     if wrote:
         hs._save(out or path, js, chunks)
         print("FALLOFF: written", out or path)
-        if out is None or os.path.abspath(out) == os.path.abspath(GLB):
-            for style in HAIR_STYLES:
-                hair(HAIRS % style, V, moved_hair)
+    if not measure and (out is None or os.path.abspath(out) == os.path.abspath(GLB)):
+        # (her hair's keys, from each face's saved change: also after a hair rebuild alone, the head being done)
+        moved = {}
+        for f in faces:
+            if os.path.exists(DELTAS % f):
+                z = np.load(DELTAS % f)
+                if int(z["n"]) == len(V):
+                    dd = np.zeros_like(V)
+                    dd[z["rows"]] = z["delta"]
+                    moved[f] = dd
+        for style in HAIR_STYLES:
+            hair(HAIRS % style, V, moved)
 
 
 def hair(path, V, moved):
