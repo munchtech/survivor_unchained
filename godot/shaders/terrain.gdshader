@@ -525,39 +525,51 @@ void fragment() {
 			float bk_lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
 			vec3 bk_silt = water_silt.rgb * (0.8 + 0.25 * nF.g + 0.15 * nM.b) * mix(1.0, clamp(bk_lum / 0.12, 0.6, 1.4), 0.15);
 			vec3 bk_bedc = mix(albedo, bk_silt, water_bed.y);
-			// River stones lying loose in it: at most one a 0.26 m cell, most cells (pebbles 0.7: about 35% of the bed), each its own size (radius
-			// 4-20 cm, so 8-40 cm across) and place; rounded, lit by its distance from its own centre, with a soft
+			// (the ground's own relief and occlusion silted over too: a path's setts left their joints in the bed)
+			n_w = normalize(mix(n_w, n_geo, bk_sunk * 0.9));
+			ao = mix(ao, 1.0, bk_sunk * 0.9);
+			// River stones lying loose in it: at most one a 0.26 m cell, gathered in drifts (pebbles 0.85: about a third of the bed), each its own
+			// size (radius 5-20 cm, so 10-40 cm across) and place; rounded (a dome's normal), its own tone, with a soft
 			// shadow in the silt at its foot. No joints: the silt runs between them. Gone past ~0.6 m deep.
 			vec2 q = w / 0.26;
 			vec2 qi = floor(q);
 			float sd = 9.0, sr = 1.0, shid = 0.0, occ = 1.0;
+			vec2 sv = vec2(0.0);
 			for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
 				vec2 cid = qi + vec2(float(i), float(j));
 				float h0 = hash12(cid + 41.7);
-				if (h0 > water_bed.x * (0.75 + 0.5 * nM.g)) continue;
+				// (gathered in drifts a few metres across, with bare silt between: never an even scatter)
+				if (h0 > water_bed.x * (0.75 + 0.5 * nM.g) * smoothstep(0.25, 0.7, nF.r + (hash12(cid + 9.7) - 0.5) * 0.3) * 1.35) continue;
 				float h1 = hash12(cid + 5.3);
-				float r = mix(0.04, 0.2, h1 * sqrt(h1)) / 0.26;
+				float r = mix(0.05, 0.2, h1 * sqrt(h1)) / 0.26;
 				vec2 c = cid + 0.5 + (vec2(hash12(cid), hash12(cid + 17.3)) - 0.5) * (1.0 - r);
 				float d = length((q - c) * vec2(1.0, 1.0 + 0.35 * hash12(cid + 3.1))) / r;
 				occ = min(occ, mix(0.8, 1.0, smoothstep(0.9, 1.45, d)));
-				if (d < sd) { sd = d; sr = r; shid = h0 + h1; }
+				if (d < sd) { sd = d; sr = r; shid = h0 + h1; sv = (q - c) / r; }
 			}
 			float bk_deep = water_level.x - w_pos.y;
 			float aa = fwidth(sd) * 1.5 + 0.04;
 			float bk_peb = (1.0 - smoothstep(1.0 - aa, 1.0, sd)) * (1.0 - smoothstep(0.45, 0.75, bk_deep));
-			vec3 bk_stone = mix(bk_silt * 1.1, vec3(dot(bk_silt, vec3(0.333)) * 1.25), 0.55) * (0.8 + 0.4 * fract(shid * 7.31));
-			bk_stone *= 0.72 + 0.38 * (1.0 - sd * sd);
+			// (each its own tone, from darker than the silt to a pale grey; the edge a little darker where it beds in)
+			float st = fract(shid * 7.31);
+			vec3 bk_stone = mix(bk_silt * vec3(0.72, 0.74, 0.76), vec3(dot(bk_silt, vec3(0.333))) * 1.3, st) * (0.85 + 0.25 * fract(shid * 3.17));
+			bk_stone *= 0.8 + 0.2 * (1.0 - sd * sd);
 			bk_bedc *= mix(1.0, occ, 1.0 - smoothstep(0.45, 0.75, bk_deep));
 			bk_bedc = mix(bk_bedc, bk_stone, bk_peb);
+			// (rounded but flattish, as river stones lie: a low dome's normal, so the light models each stone, a lit side and a shaded one)
+			vec3 bk_dome = normalize(vec3(sv.x * 0.6, sqrt(max(1.0 - sd * sd, 0.0)) * 0.8 + 0.35, sv.y * 0.6));
+			n_w = normalize(mix(n_w, bk_dome, bk_peb * bk_sunk));
 			albedo = mix(albedo, bk_bedc, bk_sunk);
-			rough = mix(rough, 0.55, bk_sunk);
+			rough = mix(rough, mix(0.55, 0.75, bk_peb), bk_sunk);
 		}
 		// The wet bank: a strip above the waterline 0.1-0.5 m wide (its width wandering at a few metres), feathered over
 		// a quarter metre at its top and fading into the water at its foot; darker by wet_dark, never a black curb.
 		float bk_wide = mix(0.1, 0.5, smoothstep(0.3, 0.7, nM.b * 0.7 + nF.r * 0.3)) * water_bed.z / 0.35;
 		float bk_wet = (1.0 - smoothstep(bk_wide - 0.125, bk_wide + 0.125, bk_above)) * smoothstep(-0.25, 0.0, bk_above) * step(0.001, water_bed.z);
-		albedo *= 1.0 - bk_wet * water_bed.w;
-		rough = mix(rough, 0.4, bk_wet);
+		// (the bank's foot takes the river's silt, wet: no dark earth strip between the water and the grass)
+		vec3 bk_mud = mix(albedo, water_silt.rgb * (0.85 + 0.3 * nF.g), 0.6 * water_bed.y);
+		albedo = mix(albedo, bk_mud * (1.0 - water_bed.w), bk_wet);
+		rough = mix(rough, 0.6, bk_wet);
 	}
 
 	ALBEDO = albedo;

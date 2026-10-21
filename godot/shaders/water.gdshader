@@ -157,7 +157,7 @@ void fragment() {
 			vec3 b = (INV_VIEW_MATRIX * vec4(view_at(uv, INV_PROJECTION_MATRIX, depth_tex), 1.0)).xyz;
 			// Something there stands within a hand of the surface, or above it: a breaker.
 			// (only what stands there: a post or a body nearer the camera that hides the spot is not in the river)
-			float brk = (1.0 - smoothstep(0.02, 0.1, up.y - b.y)) * (1.0 - smoothstep(0.25, 0.45, length(b.xz - up.xz)));
+			float brk = (1.0 - smoothstep(0.02, 0.1, up.y - b.y)) * (1.0 - smoothstep(0.15, 0.5, length(b.xz - up.xz)));
 			if (i == 0) { bow = brk; continue; }
 			float fade = 1.0 - (float(i) - 1.0 + bub) / 3.0;
 			wk = max(wk, brk * fade * fade);
