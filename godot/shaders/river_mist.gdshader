@@ -15,6 +15,9 @@ uniform vec3 mist : source_color = vec3(0.17, 0.22, 0.3);
 // The key's light (linear, its energy in): what the lit side of a bank takes.
 uniform vec3 key_light = vec3(0.0);
 uniform float opacity = 0.3;
+// The most this sheet veils (MistLayers sets each sheet's, so all three stacked never hide more than ~40%: the bed's
+// stones keep over half their contrast through the thickest bank; judge E6 r1, the night ford read milky).
+uniform float cap = 1.0;
 // The finer noise's drift (metres a second, scaled) and the banks' (metres a second, down the course).
 uniform float drift = 0.02;
 uniform float bank_drift = 0.25;
@@ -47,5 +50,5 @@ void fragment() {
 	vec3 nrm = normalize(vec3(-(bx - b0) / e * 30.0, 1.0, -(bz - b0) / e * 30.0));
 	float lam = clamp(dot(nrm, normalize(key_dir.xyz)), 0.0, 1.0);
 	ALBEDO = mist * (0.85 + 0.3 * n) + key_light * (0.1 + 0.9 * lam) * 0.3;
-	ALPHA = clamp(body * opacity, 0.0, 1.0);
+	ALPHA = clamp(body * opacity, 0.0, cap);
 }

@@ -1,4 +1,6 @@
+using System;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -18,14 +20,22 @@ public static class Water
     {
         var root = new Node3D { Name = "Water" };
         var dir = z.Dir;
+        // A zone with no bed of its own keeps a dry ground (the globals outlive the zone).
+        RenderingServer.GlobalShaderParameterSet("water_bed", Vector4.Zero);
         if (!FileAccess.FileExists($"{dir}/water.json")) return root;
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/water.json"));
         var bin = FileAccess.GetFileAsBytes($"{dir}/water.bin");
         int at = 0;
         float[] Floats(int n) { var f = new float[n]; System.Buffer.BlockCopy(bin, at, f, 0, n * 4); at += n * 4; return f; }
         var shader = GD.Load<Shader>("res://shaders/water.gdshader");
+        // The hand-set look (water_look.json, one object a body of water, in water.json's order) over the exported one: the
+        // exporter rewrites water.json, never this.
+        var over = FileAccess.FileExists($"{dir}/water_look.json") ? JsonNode.Parse(FileAccess.GetFileAsString($"{dir}/water_look.json")) as JsonArray : null;
+        int wi = 0;
         foreach (var w in meta.RootElement.EnumerateArray())
         {
+            var look = Merge(w.GetProperty("look"), over != null && wi < over.Count ? over[wi] : null);
+            wi++;
             int nv = w.GetProperty("vertices").GetInt32(), ni = w.GetProperty("indices").GetInt32();
             var pos = Floats(nv * 3);
             var flow = Floats(nv * 2);
@@ -57,11 +67,50 @@ public static class Water
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
             var mat = new ShaderMaterial { Shader = shader };
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+            mat.SetShaderParameter("grad_tex", Grad());
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
-            Look(mat, w.GetProperty("look"));
+            Look(mat, look);
+            Bed(look);
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         return root;
+    }
+
+    static ImageTexture? grad;
+
+    /// <summary>The noise's slopes, once (the shader's grad_tex): RG the slope of its R channel (x, y), BA of its B, per
+    /// texel, as 0.5 + slope x 12 (R) and x 6 (B), wrapping as the noise tiles.</summary>
+    public static ImageTexture Grad()
+    {
+        if (grad != null) return grad;
+        var src = NoiseTex.Get().GetImage();
+        if (src.IsCompressed()) src.Decompress();
+        int n = src.GetWidth();
+        var px = src.GetData();
+        var data = new byte[n * n * 4];
+        byte B(double v) => (byte)Math.Clamp(Math.Round(v * 255), 0, 255);
+        double At(int x, int y, int c) => px[((((y % n) + n) % n) * n + (((x % n) + n) % n)) * 4 + c] / 255.0;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                int i = (y * n + x) * 4;
+                data[i] = B(0.5 + (At(x + 1, y, 0) - At(x - 1, y, 0)) * 0.5 * 12);
+                data[i + 1] = B(0.5 + (At(x, y + 1, 0) - At(x, y - 1, 0)) * 0.5 * 12);
+                data[i + 2] = B(0.5 + (At(x + 1, y, 2) - At(x - 1, y, 2)) * 0.5 * 6);
+                data[i + 3] = B(0.5 + (At(x, y + 1, 2) - At(x, y - 1, 2)) * 0.5 * 6);
+            }
+        var img = Image.CreateFromData(n, n, false, Image.Format.Rgba8, data);
+        img.GenerateMipmaps();
+        return grad = ImageTexture.CreateFromImage(img);
+    }
+
+    /// <summary>The exported look with the hand-set one's keys over it (a key in both: the hand-set one; "bed" whole).</summary>
+    public static JsonElement Merge(JsonElement look, JsonNode? over)
+    {
+        if (over is not JsonObject o) return look;
+        var n = look.ValueKind == JsonValueKind.Object ? JsonNode.Parse(look.GetRawText()) as JsonObject ?? new JsonObject() : new JsonObject();
+        foreach (var (k, v) in o) n[k] = v?.DeepClone();
+        return JsonSerializer.SerializeToElement(n);
     }
 
     /// <summary>The water's colours as the zone gives them (WaterOpts: sRGB
@@ -78,5 +127,38 @@ public static class Water
         var flow = new Vector2(0.02f, 0.35f);
         if (look.TryGetProperty("flow", out var f) && f.ValueKind == JsonValueKind.Array) flow = new Vector2(f[0].GetSingle(), f[1].GetSingle());
         mat.SetShaderParameter("flow", flow);
+        // E6: the depth, shore, foam and ripple keys (docs/art/look_bible/04_water_shore.md); any left out as the shader has them.
+        foreach (var key in Keys)
+            if (look.TryGetProperty(key, out var k) && k.ValueKind == JsonValueKind.Number) mat.SetShaderParameter(key, k.GetSingle());
+        if (System.Environment.GetEnvironmentVariable("WATER_DEBUG") is { } dbg && int.TryParse(dbg, out var dv)) mat.SetShaderParameter("debug_view", dv);
+        // (a look tried without editing the data: WATER_SET="key=v;key=v", any of Keys)
+        if (System.Environment.GetEnvironmentVariable("WATER_SET") is { } ws)
+            foreach (var kv in ws.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                if (kv.Split('=') is [var k2, var v2] && System.Array.IndexOf(Keys, k2) >= 0 && float.TryParse(v2, System.Globalization.CultureInfo.InvariantCulture, out var f2)) mat.SetShaderParameter(k2, f2);
+    }
+
+    /// <summary>The look's numbers (water.json "look"): clarity (m the bed fades through), deep (m: the body full past it),
+    /// shore (m: the sheen fading in from the bank), foam_depth (m: how near the surface a thing breaks it), foam_amt, wake
+    /// (m of foam behind a stone or a leg, 0 none), ripple_size (m), ripple_bend, refract, gloss (the glints' roughness),
+    /// glint_cap, glint_spread, glint_bend and glint_near (a near light's glint: its roughness, how much steeper its facets, its gain), wake_taper (how fast a wake narrows: length = width / it),
+    /// lace_size (m: the shore foam's lace).</summary>
+    public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss", "glint_cap", "glint_spread", "glint_bend", "glint_near", "glint_sheen", "wake_taper", "lace_size"];
+
+    /// <summary>The bed and the bank (water.json "look" "bed"; the terrain shader's global water_bed, water_silt): pebbles
+    /// (0-1, river stones in the silt), silt (0-1, how far the bed takes the silt's colour), wet (m above the water the bank
+    /// is dark and slick), wet_dark (0-1), relief (m: the stones' lit and shaded sides and their tone against the silt fade by
+    /// e over it, as the water veils them). None: a dry bank and the ground's own paint under the water.</summary>
+    public static void Bed(JsonElement look)
+    {
+        var b = look.TryGetProperty("bed", out var bb) && bb.ValueKind == JsonValueKind.Object ? bb : default;
+        float N(string key, float fallback) => b.ValueKind == JsonValueKind.Object && b.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : fallback;
+        bool on = b.ValueKind == JsonValueKind.Object;
+        // (WATER_NOSTONES: the bed bare, to measure what its stones add)
+        float peb = System.Environment.GetEnvironmentVariable("WATER_NOSTONES") is null ? N("pebbles", 0.5f) : 0f;
+        RenderingServer.GlobalShaderParameterSet("water_bed", on ? new Vector4(peb, N("silt", 0.6f), N("wet", 0.35f), N("wet_dark", 0.45f)) : Vector4.Zero);
+        string silt = on && b.TryGetProperty("silt_color", out var sc) && sc.ValueKind == JsonValueKind.String ? sc.GetString()! : "#4a4234";
+        var sl = new Color(silt).SrgbToLinear();
+        sl.A = N("relief", 0.08f);
+        RenderingServer.GlobalShaderParameterSet("water_silt", sl);
     }
 }
