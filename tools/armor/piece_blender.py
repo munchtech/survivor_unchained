@@ -361,14 +361,14 @@ def standoff(sheet_name, skin_bvh, rim_d=0.012):
     uk, cn = np.unique(e_, axis=0, return_counts=True)
     rim = np.unique(uk[cn == 1])
     dr = cKDTree(sp[rim]).query(sp)[0]
-    ax_ = np.abs(sp[:, 0])
-    nipz = G["NIPPLE"]["r"][2]
-    inner = (dr < rim_d) & (ax_ < FIT["x_min"] + 0.015)
-    lower = (dr < rim_d) & (sp[:, 2] < nipz - 0.015) & ~inner
     st_ = lambda m: {"n": int(m.sum()), "max": round(float(d[m].max()), 2), "p99": round(float(np.percentile(d[m], 99)), 2),
                      "p50": round(float(np.median(d[m])), 2)} if m.any() else None
     if not sheet_name.endswith(".cups"):
         return {"all": st_(np.ones(len(d), bool)), "rim": st_(dr < rim_d)}
+    ax_ = np.abs(sp[:, 0])
+    nipz = G["NIPPLE"]["r"][2]
+    inner = (dr < rim_d) & (ax_ < FIT["x_min"] + 0.015)
+    lower = (dr < rim_d) & (sp[:, 2] < nipz - 0.015) & ~inner
     FIT["standoff_worst_at"] = {"lower_rim": nip_rel(sp[lower][np.argsort(-d[lower])[:6]]) if lower.any() else [],
                                 "crown": nip_rel(sp[dr > 0.03][np.argsort(-d[dr > 0.03])[:6]])}
     return {"lower_rim": st_(lower), "inner_rim": st_(inner), "rim_all": st_(dr < rim_d), "crown": st_(dr > 0.03), "all": st_(np.ones(len(d), bool))}
@@ -1109,6 +1109,10 @@ if MESH:
     STYLES[(SLOT, "mesh")] = build_mesh
 stamp("building %s (%s/%s)" % (PID, SLOT, SPEC_PIECE["style"]))
 B = STYLES[(SLOT, SPEC_PIECE["style"])]()
+# (armor 10: the rolled edges whose rims carry the native rivet rows, the trim strip and the rolled-edge numbers: a
+# style names them by prefix (`roll_prefix`); the plate top's are its cups' binds)
+ROLLS = tuple(B.get("roll_prefix", [f"{PID}.cups_bind"]))
+TOP_PLATE = (SLOT, SPEC_PIECE["style"]) == ("top", "plate")
 G["finish"], G["tube"], G["stitches"] = _finish, _tube, _stitches
 
 # ------------------------------------------------------------ adornment --
@@ -1127,7 +1131,7 @@ for ad in SPEC_PIECE.get("adorn", []):
         stree = cKDTree(sheet_pos)
         pts, nrs, spc = [], [], {}
         for tn, tb in CAP["tubes"].items():
-            if not tn.startswith(f"{PID}.cups_bind"):
+            if not tn.startswith(ROLLS):
                 continue
             cur, ow = tb["curve"], tb["outward"]
             cw = np.vstack([cur, cur[:1]])
@@ -1251,7 +1255,7 @@ def trim_uv(obj, tb, band):
 
 
 for tn, tb in CAP["tubes"].items():
-    if tn.startswith(f"{PID}.cups_bind"):
+    if tn.startswith(ROLLS):
         trim_uv(tb["obj"], tb, "rolled_edge")
 
 # ------------------------------------------------ her skin's tuck under it --
@@ -1393,7 +1397,7 @@ def shell_tree(dg=None):
 
 
 # ------------------------------------- poses, and the shell pushed out where her skin comes through --
-POSES = {
+POSES_ARMS = {
     "arms_overhead": [("clavicle_l", (0, 1, 0), 25, (0, 0, 1)), ("clavicle_r", (0, 1, 0), 25, (0, 0, 1)),
                       ("upperarm_l", (0, 1, 0), 110, (0, 0, 1)), ("upperarm_r", (0, 1, 0), 110, (0, 0, 1))],
     "reach_across_r": [("upperarm_r", (0, 0, 1), 80, (1, -1, 0)), ("lowerarm_r", (0, 0, 1), 60, (1, -1, 0))],
@@ -1405,6 +1409,29 @@ POSES = {
     "arms_down": [("upperarm_l", (0, 1, 0), 40, (0, 0, -1)), ("upperarm_r", (0, 1, 0), 40, (0, 0, -1))],
     "arms_forward": [("upperarm_l", (1, 0, 0), 75, (0, -1, 0)), ("upperarm_r", (1, 0, 0), 75, (0, -1, 0))],
 }
+# (armor 10, b_design_spec "Machinery" (a): the poses per slot, so the push-out and the pose check see the moves that
+# load each piece. Pauldrons: the arm poses + a shrug (both collarbones 20 deg up). Legs: a stride (her left thigh 55 deg
+# forward, her right 25 back), a lunge (thigh 80, calf 95), a crouch (thighs 105, calves 120), a spread (thighs 35 out).
+# Head: a look up 35, down 40, a turn 70 (each 2/5 her neck's, 3/5 her head's, as HeadTurn shares a look).)
+POSES_LEGS = {
+    "stride": [("thigh_l", (1, 0, 0), 55, (0, -1, 0)), ("thigh_r", (1, 0, 0), 25, (0, 1, 0))],
+    "lunge": [("thigh_l", (1, 0, 0), 80, (0, -1, 0)), ("calf_l", (1, 0, 0), 95, (0, 1, 0))],
+    "crouch": [("thigh_l", (1, 0, 0), 105, (0, -1, 0)), ("thigh_r", (1, 0, 0), 105, (0, -1, 0)),
+               ("calf_l", (1, 0, 0), 120, (0, 1, 0)), ("calf_r", (1, 0, 0), 120, (0, 1, 0))],
+    "spread": [("thigh_l", (0, 1, 0), 35, (1, 0, 0)), ("thigh_r", (0, 1, 0), 35, (-1, 0, 0))],
+}
+POSES_HEAD = {
+    "look_up": [("neck_01", (1, 0, 0), 14, (0, 1, 0)), ("Head", (1, 0, 0), 21, (0, 1, 0))],
+    "look_down": [("neck_01", (1, 0, 0), 16, (0, -1, 0)), ("Head", (1, 0, 0), 24, (0, -1, 0))],
+    "turn": [("neck_01", (0, 0, 1), 28, (1, 0, 0)), ("Head", (0, 0, 1), 42, (1, 0, 0))],
+}
+POSES_BY_SLOT = {
+    "top": POSES_ARMS,
+    "pauldrons": dict(POSES_ARMS, shrug=[("clavicle_l", (0, 1, 0), 20, (0, 0, 1)), ("clavicle_r", (0, 1, 0), 20, (0, 0, 1))]),
+    "bottom": POSES_LEGS, "legwear": POSES_LEGS, "greaves": POSES_LEGS, "boots": POSES_LEGS,
+    "head": POSES_HEAD,
+}
+POSES = POSES_BY_SLOT.get(SLOT, POSES_ARMS)
 
 
 def pose_body(rots):
@@ -1562,6 +1589,27 @@ for o in made:
         PARTS_OF[o.name] = rigid_parts(o, names)
         n_parts += PARTS_OF[o.name]
 stamp("helpers split; %d rigid parts each on one blend" % n_parts)
+# (armor 10: a style's rigid plates (`blend_group` on each part: a plate, its rolled edge, its rivets) back on ONE common
+# blend after the helpers' split, the mean of all their points', so a plate and what is on it never part)
+BLEND_GROUPS = {}
+for o in made:
+    if o.get("blend_group"):
+        BLEND_GROUPS.setdefault(o["blend_group"], []).append(o)
+for bg_, objs_ in BLEND_GROUPS.items():
+    tot = {}
+    for o in objs_:
+        gname = {g.index: g.name for g in o.vertex_groups}
+        for v in o.data.vertices:
+            for g in v.groups:
+                if gname[g.group] in names:
+                    tot[gname[g.group]] = tot.get(gname[g.group], 0.0) + g.weight
+    keep_ = sorted(tot, key=tot.get, reverse=True)[:4]
+    s_ = sum(tot[k] for k in keep_) or 1.0
+    for o in objs_:
+        for g in list(o.vertex_groups):
+            if g.name in names and g.name not in keep_:
+                o.vertex_groups.remove(g)
+        set_one_blend(o, [(k, tot[k] / s_) for k in keep_])
 if MESH:
     # (each `_rigid` source after the helpers' split: how many distinct blends its points carry (1: it never bends))
     # (a source's parts (its plate and its rivets, split by material) back on ONE common blend after the split, the
@@ -1610,7 +1658,7 @@ def envelope(objs):
 
 # (the cups' shell, the gore excepted (item 1.3); and with the cups' rolled edges)
 NUM["envelope_mm"] = envelope(B.get("envelope", B["shell"]))
-NUM["envelope_with_rolled_edge_mm"] = envelope(B.get("envelope", B["shell"]) + [tb["obj"] for tn, tb in CAP["tubes"].items() if tn.startswith(f"{PID}.cups_bind")])
+NUM["envelope_with_rolled_edge_mm"] = envelope(B.get("envelope", B["shell"]) + [tb["obj"] for tn, tb in CAP["tubes"].items() if tn.startswith(ROLLS)])
 # Her skin against the shell, at her body's own points (the game's, after the steps above), at rest and posed.
 # Covered: a ray out along her normal meets the shell's inner face within 30 mm (gap = that distance). Through:
 # no ray out meets it, but one back in does within 12 mm (her skin stands outside the shell). Each counted with her
@@ -1663,6 +1711,8 @@ def region_gaps():
 
 if MESH:
     NUM["import"] = IMPORT       # (a free mesh: no cups, gore, band or straps to measure; its import numbers instead)
+elif not TOP_PLATE:
+    NUM.update(B.get("numbers", {}))     # (another style measures its own places: its build's numbers)
 else:
     NUM["gaps_by_place_mm"] = region_gaps()
     _body_bvh = BVHTree.FromPolygons([tuple(p) for p in bv0], [p_.vertices[:] for p_ in me.polygons])
@@ -1679,7 +1729,7 @@ NUM["rest"]["largest_gaps_at"] = gl(bv0[_gw]).round(3).tolist()
 # (rolled edges: the widths each rim was given and the width each roll measures across)
 rw = {}
 for tn, tb in CAP["tubes"].items():
-    if tn.startswith(f"{PID}.cups_bind"):
+    if tn.startswith(ROLLS):
         o = tb["obj"]
         co = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices])
         cur = tb["curve"]
@@ -1705,10 +1755,10 @@ for o in made:
           "buckle_l_tongue": "buckles", "buckle_r_tongue": "buckles", "buckle_back": "buckles", "buckle_back_bar": "buckles",
           "buckle_back_tongue": "buckles"}.get(k_, k_)
     NUM["triangles_by"][k_] = NUM["triangles_by"].get(k_, 0) + sum(len(p.vertices) - 2 for p in o.data.polygons)
-NUM["triangles_by"]["cups_rolled_edge"] = sum(sum(len(p.vertices) - 2 for p in tb["obj"].data.polygons) for tn, tb in CAP["tubes"].items() if tn.startswith(f"{PID}.cups_bind"))
+NUM["triangles_by"]["cups_rolled_edge" if TOP_PLATE else "rolled_edges"] = sum(sum(len(p.vertices) - 2 for p in tb["obj"].data.polygons) for tn, tb in CAP["tubes"].items() if tn.startswith(ROLLS))
 NUM["parts"] = len(made)
 NUM["push_out"] = PUSH
-NUM["band"] = None if MESH else {"seam_z": [round(BAND["seam_z"][0], 4), round(BAND["seam_z"][1], 4)], "anchor_z": round(BAND["z_anc"], 4),
+NUM["band"] = None if not BAND else {"seam_z": [round(BAND["seam_z"][0], 4), round(BAND["seam_z"][1], 4)], "anchor_z": round(BAND["z_anc"], 4),
                "length_mm": round(float(np.linalg.norm(np.diff(BAND["cols"][1], axis=0), axis=1).sum() * 1000), 1),
                "on_plate_mm": round(float(BAND["on_plate"].sum() * PRM.get("band_step", 0.004) * 1000), 1),
                "lift_on_skin_mm": [round(float(BAND["lift"][~BAND["on_plate"]].min() * 1000), 2), round(float(BAND["lift"][~BAND["on_plate"]].max() * 1000), 2)]}
@@ -1748,7 +1798,7 @@ def strap_sets():
     return out
 
 
-STRAP_SETS = [] if MESH else strap_sets()
+STRAP_SETS = strap_sets() if BAND else []     # (the plate top's band and straps only: b_design_spec (b))
 
 
 def arm_in_torso(bv, tbvh, arm_i):
@@ -1864,7 +1914,7 @@ def pose_check():
             pose_dump(pname, bv, bn, dg)
         except Exception as ex:
             print("POSE DUMP failed", pname, repr(ex))
-        straps_ = None if MESH else strap_check(bv, bn, dg)
+        straps_ = strap_check(bv, bn, dg) if STRAP_SETS else None
         try:
             g_ = gore_in_pose(bv, dg, gore_rest)
         except Exception as ex:
@@ -2000,7 +2050,7 @@ sockets = {"id": PID, "slot": SLOT, "body_hash": BODY_HASH, "space": "glTF / God
                           normals=gl(a_["normals"]).round(4).tolist()) for a_ in ADORN_REC],
            "uv_surface": {"mesh": f"{PID}.{SLOT}.{MKEY}", "layer": "UVMap (TEXCOORD_0)",
                           "units": "metres x the material's repeats (outfit_materials.json), one projection along the cup's facing"},
-           "trim_uv": {"layer": "trim (TEXCOORD_2)", "atlas": "res://art/armor/trim_strip.png", "on": sorted(t for t in CAP["tubes"] if t.startswith(f"{PID}.cups_bind")),
+           "trim_uv": {"layer": "trim (TEXCOORD_2)", "atlas": "res://art/armor/trim_strip.png", "on": sorted(t for t in CAP["tubes"] if t.startswith(ROLLS)),
                        "band": "rolled_edge"}}
 json.dump(sockets, open(os.path.join(ART, f"{PID}.sockets.json"), "w", encoding="utf-8"), indent=1)
 

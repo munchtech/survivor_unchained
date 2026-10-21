@@ -7468,10 +7468,34 @@ PL_SPOTS = []   # (the pauldron's rivets as laid: plate, centre; for its checks)
 PL_ROWS = {}    # (each pauldron plate's one blend of bones)
 
 
+PL_LIMB = ("upperarm", "lowerarm", "hand", "index", "middle", "pinky", "ring", "thumb")
+
+
+def pl_limb_frame(sd="l", bone="upperarm", child="lowerarm", ref=None):
+    """A limb's frame for pl_frame (armor 10): the centre at `bone`'s head, the
+    axis down to `child`'s head, bearing 0 toward `ref` (default: the top of
+    her shoulder, as the ranger's pauldrons) and + to her front on either
+    side (her right's frame is the left's mirror, so a piece built on the
+    left and mirrored with SWAP has the same (s, bearing) there)."""
+    ctr = head(f"{bone}_{sd}")
+    ax_ = head(f"{child}_{sd}") - ctr
+    ax_ /= np.linalg.norm(ax_)
+    ref = shoulder(sd) if ref is None else np.asarray(ref, float)
+    e0 = (ref - ctr) - ax_ * ((ref - ctr) @ ax_)
+    e0 /= np.linalg.norm(e0)
+    return (ctr, ax_, e0, np.cross(ax_, e0) * (1 if sd == "l" else -1))
+
+
+def pl_mirror(pos, wt, tris):
+    """A sheet on her left made her right's: x mirrored, its weights' sides
+    swapped (SWAP, as the plate cups are), its faces turned back outward."""
+    return np.asarray(pos, float) * np.array([-1.0, 1.0, 1.0]), np.asarray(wt, float)[:, SWAP], np.asarray(tris)[:, ::-1]
+
+
 def pl_frame(Q, F_):
-    """Points in her left arm's frame: `s` down the arm from the ball of her
-    shoulder, the bearing round it (0 up her outer arm, + to her front) and
-    the distance off its axis."""
+    """Points in a limb's frame (her left arm's by default: pl_limb_frame):
+    `s` down the limb from its joint's ball, the bearing round it (0 up her
+    outer arm, + to her front) and the distance off its axis."""
     c_, a_, e0_, e1_ = F_
     d_ = np.atleast_2d(Q) - c_
     s_ = d_ @ a_
@@ -7484,16 +7508,16 @@ def pl_point(s_, th_, rho_, F_):
     return c_ + np.outer(s_, a_) + np.asarray(rho_)[:, None] * (np.outer(np.cos(th_), e0_) + np.outer(np.sin(th_), e1_))
 
 
-def pl_row(base, w):
-    """A plate's one blend of bones: `w` of her upper arm, the rest the
+def pl_row(base, w, sd="l", bone="upperarm", limb=PL_LIMB):
+    """A plate's one blend of bones: `w` of her upper arm (`bone` on side
+    `sd`, the limb's bones `limb` taken out of the rest), the rest the
     shoulder's own blend under the dome (her collarbone, chest and neck)."""
-    arm_l = [BI[n] for n in BONES if n.endswith("_l") and n.split("_")[0] in
-             ("upperarm", "lowerarm", "hand", "index", "middle", "pinky", "ring", "thumb")]
+    arm_l = [BI[n] for n in BONES if n.endswith(f"_{sd}") and n.split("_")[0] in limb]
     rest = np.array(base, float)
     rest[arm_l] = 0
     rest /= rest.sum()
     row = rest * (1 - w)
-    row[BI["upperarm_l"]] += w
+    row[BI[f"{bone}_{sd}"]] += w
     return four_bones(row[None])[0]
 
 
@@ -7542,7 +7566,8 @@ def pl_rim(pos, tris, F_):
 
 
 def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.003,
-            rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009, cut=None):
+            rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009, cut=None, mkey="bronze", rivet_key="darksteel",
+            roll=(0.0045, 0.0005, 0.0015), bevel=0.0012, crease=None, rv_r=0.0032, rv_step=0.028, budget=3000):
     """A lame: a band round her arm under the rim of the plate above it, built
     in her arm's frame and never drawn on her skin (an outline on her skin,
     lifted off it, slid 10 to 18 mm, and no tuck survived: judge 5). Its top
@@ -7553,7 +7578,11 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
     that plate everywhere they overlap), narrowing down her arm by `taper`,
     the hidden top bent `joggle` further in, the lower edge flared `flare`
     out over its last 12 mm. Laid out round her arm (its brushing runs round
-    it, one island), bound all round, rivets `rv_up` above its lower edge."""
+    it, one island), bound all round, rivets `rv_up` above its lower edge.
+    (armor 10: any limb, by its frame F_ (pl_limb_frame); `mkey`, `rivet_key`,
+    `roll` (the rolled edge's width, height, overhang), `bevel`, `rv_r` and
+    `rv_step`, `budget` as the ranger's by default; `crease` (depth, half-width): a
+    ridge pressed out along bearing 0, a V that rises `depth` at it.)"""
     from numpy.polynomial import chebyshev as cheb
     from scipy.interpolate import LinearNDInterpolator
     pa, ta = above
@@ -7626,7 +7655,8 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
 
     def law(th, d):
         return (cheb.chebval(xb(th), coef) - shift + taper * d + flare * np.clip((d - (V - 0.012)) / 0.012, 0, 1) ** 2
-                - joggle * np.clip(-d / O, 0, 1) ** 2)
+                - joggle * np.clip(-d / O, 0, 1) ** 2
+                + (crease[0] * np.clip(1 - np.abs(u_of(th)) / crease[1], 0, 1) if crease else 0.0))
     X = pl_point(uv2[:, 1], th_g, law(th_g, d_), F_)
     at = np.c_[np.zeros((len(X), 3)), np.repeat(row[None], len(X), 0), t_, d_, field]
     pos, at, tris = clip(field, X, at, tri)
@@ -7638,7 +7668,7 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
         tris = tris[:, ::-1]
         nr = -nr
     at[:, :3] = nr
-    pos, beads = bind_edges(name, pos, at, tris, "bronze", 0.0045, 0.0005, 0.0015, thick, sigma=0.003)
+    pos, beads = bind_edges(name, pos, at, tris, mkey, roll[0], roll[1], roll[2], thick, sigma=0.003)
     # (how far the bound sheet stands off its own law: rigid, none)
     sp, thp, rp = pl_frame(pos, F_)
     q2 = np.c_[u_of(thp), sp]
@@ -7648,15 +7678,15 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
           "lowered %.1f mm" % (name, (L - 2 * E) * 1000, len(pos), dev.max() * 1000, np.percentile(dev, 99) * 1000, shift * 1000))
     SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
     RIGID_UV[name] = (F_[0], F_[1], True)
-    made = [finish(name, pos, at[:, 3:3 + NB], tris, "bronze", thick, 0.0012, 3000)] + beads
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget)] + beads
     # (rivets in one row `rv_up` above its lower edge, `rv_end` in from its ends)
-    n = max(2, int(round((L - 2 * E - 2 * rv_end) / 0.028)) + 1)
+    n = max(2, int(round((L - 2 * E - 2 * rv_end) / rv_step)) + 1)
     tk = np.linspace(E + rv_end, L - E - rv_end, n)
     pk = np.c_[np.interp(tk, tt, C[:, 0]), np.interp(tk, tt, C[:, 1])] + (V - rv_up) * np.c_[np.interp(tk, tt, Nn[:, 0]), np.interp(tk, tt, Nn[:, 1])]
     thk = th_of(pk[:, 0])
     spots = pl_point(pk[:, 1], thk, law(thk, np.full(n, V - rv_up)), F_)
     _, jv = cKDTree(pos).query(spots)
-    made += rivets(name, pos, at, tris, thick, "darksteel", spots=(spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0)))
+    made += rivets(name, pos, at, tris, thick, rivet_key, r=rv_r, spots=(spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0)))
     PL_SPOTS.extend((name, p) for p in spots)
     pl_one_blend([o for o in made if o is not None], row)
     PL_ROWS[name] = row
