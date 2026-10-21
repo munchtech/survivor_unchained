@@ -230,7 +230,9 @@ void fragment() {
 		rough = mix(rough, rough + brass_rough_add, gold);
 		col *= 0.9 + 0.2 * blot;                                  // (an uneven patina)
 		col *= mix(mix(1.0, steel_dim, 1.0 - gold) * mix(vec3(1.0), steel_warm, 1.0 - gold), vec3(metal_wear_bright), wear);                              // (bright bare metal on the worn edges)
-		if (finish == 1) {
+		// (a dyed blued key drops its oxide: the dye is the metal's colour, worn back at its edges as any bare
+		// metal; the oxide over it hid every metal dye, armor 9)
+		if (finish == 1 && dye_amount <= 0.0) {
 			// Blued steel: a deep blue-black oxide (darker on a darker key), a faint violet temper
 			// in patches; chipped back to the bright steel under it along the worn rims and, in
 			// scuffs, on what stands out (the edge and convexity masks, never painted).
