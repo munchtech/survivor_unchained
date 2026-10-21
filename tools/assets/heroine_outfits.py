@@ -4664,7 +4664,9 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     # A large piece keeps enough triangles to hold her curves (thinned too
     # far, it flattens and her skin pokes through between its points).
     area = sum(p.area for p in me.polygons)
-    budget = max(budget, int(area * 60000))
+    # (CAP_DENSITY: a piece build's own floor, triangles a square metre; tools/armor sets it for one part (the cuirass's
+    # plate, armor 12 c3); unset, 60000 as always)
+    budget = max(budget, int(area * globals().get("CAP_DENSITY", 60000)))
     if len(me.polygons) > budget:
         # Only the inside is thinned: the edge and two rows in from it keep
         # every point, so a cut line stays the smooth curve it was made.

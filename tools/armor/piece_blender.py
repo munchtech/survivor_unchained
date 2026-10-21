@@ -1105,7 +1105,14 @@ def build_cuirass():
     G["MIRROR_BIND"].add(cname)
     G["BIND_TOP"][cname] = (wc * 0 + np.array([0.0, float(pos[wloop, 1].mean()), wzw]), (wroll["width"], wroll["height"], wroll.get("overhang", 0.0018)))
     pos, beads = G["bind_edges"](cname, pos, at, tris, MKEY, roll["width"], roll["height"], roll.get("overhang", 0.0018), thick)
-    shell = finish_cap(cname, pos, at[:, 3:3 + NB], tris, MKEY, thick, 0.0, PRM.get("plate_budget", 9000))
+    # (params.cap_density (c3): the plate's triangle floor a square metre (heroine_outfits.finish's 60000 unset): the
+    # wrap's larger plate went 1.1k over the 20k budget)
+    if PRM.get("cap_density"):
+        NS["CAP_DENSITY"] = PRM["cap_density"]
+    try:
+        shell = finish_cap(cname, pos, at[:, 3:3 + NB], tris, MKEY, thick, 0.0, PRM.get("plate_budget", 9000))
+    finally:
+        NS.pop("CAP_DENSITY", None)
     shell["hides"] = True
     for b_ in beads:
         b_["hides"] = False
