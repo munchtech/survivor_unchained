@@ -1,0 +1,10 @@
+sw0_m|arcanist|ember_staff|idle_arcanist_staff_town@0|day|0.6|315|female
+sw25_m|arcanist|ember_staff|idle_arcanist_staff_town@1.425|day|0.6|315|female
+sw50_m|arcanist|ember_staff|idle_arcanist_staff_town@2.85|day|0.6|315|female
+sw75_m|arcanist|ember_staff|idle_arcanist_staff_town@4.275|day|0.6|315|female
+sw_c|arcanist|ember_staff|idle_arcanist_staff_town@0|day|1|315|female
+sw0_c|arcanist|ember_staff|idle_arcanist_staff_town@0|day|1|0|female
+sw45_c|arcanist|ember_staff|idle_arcanist_staff_town@0|day|1|45|female
+sw90_c|arcanist|ember_staff|idle_arcanist_staff_town@0|day|1|90|female
+sw135_c|arcanist|ember_staff|idle_arcanist_staff_town@0|day|1|135|female
+sw_p315|arcanist|ember_staff|idle_arcanist_staff_town@0|day|0|315|female

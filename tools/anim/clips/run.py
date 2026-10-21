@@ -296,12 +296,12 @@ RUNS = {
     # The free right hand a loose fist (hilt judge r1: open and limp, beside the still left arm the run read inert).
     "run_warden_town": (replace(WARDEN, fingers="relaxed", fingers_r="fist", swing=SWING), {}, ""),
     # Her other callings in town (animation 44): run_warden_town's free arms and hands on each calling's own carriage,
-    # no hilt to hold (the armed runs' fists closed round a sheathed piece's absence). The arcanist's is the wand's
-    # alone (OwnClips: run_<calling>_<kind>_town first): her staff stays in hand in town and keeps run_arcanist.
+    # no hilt to hold (the armed runs' fists closed round a sheathed piece's absence). The arcanist's serves the wand
+    # (on her belt) and the staff (slung on her back, animation 45): Sheath.Names falls through to run_<calling>_town.
     # (The stalker on her armed run's free-arm swing: on SWING her sprint's hands went 34 mm into her thighs. The
     # arcanist's right on the wand run's, out behind her past the wand on her belt.)
     "run_reaver_town": (replace(REAVER, fingers="relaxed", fingers_r="fist", swing=SWING, swing_r=None), {}, ""),
-    "run_arcanist_wand_town": (replace(ARCANIST, fingers="relaxed", fingers_r="fist", swing=SWING, swing_r=((6, 10, 80, 25), (-30, 13, 70, -35))), {}, ""),
+    "run_arcanist_town": (replace(ARCANIST, fingers="relaxed", fingers_r="fist", swing=SWING, swing_r=((6, 10, 80, 25), (-30, 13, 70, -35))), {}, ""),
     "run_stalker_town": (replace(STALKER, fingers="relaxed", fingers_r="fist", swing=((6, 10, 80, 20), (-30, 12, 62, -35)), swing_r=None), {}, ""),
 }
 

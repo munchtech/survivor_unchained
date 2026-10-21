@@ -14,10 +14,11 @@ public static class WeaponSockets
 {
     /// <summary>The named sockets (rows of Arms.Sockets, and the keys of the clearance file).</summary>
     public const string Back = "back", HipBlade = "hip_blade", HipLoop = "hip_loop", HipBelt = "hip_belt",
-        BeltBack = "belt_back", Sling = "sling", BackDiag = "back_diag";
-    public static readonly string[] All = { Back, HipBlade, HipLoop, HipBelt, BeltBack, Sling, BackDiag };
+        BeltBack = "belt_back", Sling = "sling", BackDiag = "back_diag",
+        BackStaff = "back_staff"; // unused: the slung staff failed under the arcanist's hat (animation 45); for a hatless outfit, unjudged
+    public static readonly string[] All = { Back, HipBlade, HipLoop, HipBelt, BeltBack, Sling, BackDiag, BackStaff };
 
-    /// <summary>The socket a kind rides in sheathed; null if it stays in her hand (a staff is a walking staff).</summary>
+    /// <summary>The socket a kind rides in sheathed; null if it stays in her hand (the staff: carried upright on the combat mount, animation 45).</summary>
     public static string? SocketOf(WeaponKind kind) => kind switch
     {
         WeaponKind.Shield => Back,
