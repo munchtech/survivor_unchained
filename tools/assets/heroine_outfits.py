@@ -2652,6 +2652,8 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
                 ws_, hs_, os_, ts_ = BIND_SLIM[name]
                 w_r, h_r, o_r, t_r = (v_ + sl_ * (s_ - v_) for v_, s_ in ((width, ws_), (height, hs_), (overhang, os_), (thick, ts_)))
                 print("BIND_SLIM %s_bind%d: %d of %d rings slimmed (to %.1f by %.1f mm)" % (name, k, int((sl_ > 0.5).sum()), len(cur), ws_ * 1000, (ts_ + 2 * hs_) * 1000))
+        if os.environ.get("RIB_DUMP"):
+            np.savez(os.path.join(os.environ["RIB_DUMP"], f"{name}_bind{k}.npz"), cur=cur, nrm=nrm, outward=outward)
         beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, w_r, h_r, o_r, t_r,
                           pos, at[:, 3:3 + NB]))
         if name in BIND_FIT:
@@ -3380,6 +3382,7 @@ def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
 # PAUL_SEAT_BAND from the rim: a plate resting on her shoulder, flaring off her arm below. Off: PAUL_SEAT=0)
 PAUL_SEAT = os.environ.get("PAUL_SEAT", "1") == "1"
 STRAP_FINAL = os.environ.get("STRAP_FINAL", "1") == "1"
+RIB_TRIM = os.environ.get("RIB_TRIM", "warden.strap").split(",")   # (the ribbons whose gold is laid from their own line, by name prefix, see ribbon; "": all cut from their sheet as before)
 PAUL_BESIDE = tuple(float(v) for v in os.environ.get("PAUL_BESIDE", "0.019,0.006").split(","))   # (its rim beside the strap: metres from the strap's line, and the reach; 0 = off; see seated)   # (the warden's shoulder straps laid on final_skin_bvh, see warden())
 PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_STRAP_CLEAR = (float(v) for v in os.environ.get("PAUL_SEAT_K", "0.003,0.035,0.019").split(","))
 PAUL_SEAT_IN = tuple(float(v) for v in os.environ.get("PAUL_SEAT_IN", "0.0,0.03").split(","))   # (its neck side: metres in from the ball of her shoulder)
@@ -4007,6 +4010,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         if len(tr):
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr, edge=30)
+            if os.environ.get("RIB_DUMP"):
+                np.savez(os.path.join(os.environ["RIB_DUMP"], name + "_trim.npz"), tp=tp, tr=tr, sp=pos, st=tris, edge=at[:, -1])
             made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel, 1500))
     # Only the piece itself hides her skin: its binding, trim, studs and
     # stitches overhang its edge, and skin hidden under them showed as holes
@@ -4818,6 +4823,8 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
 
 
 RIBBON_LINE = {}   # (each ribbon's centre line as laid on her)
+RIBBON_FRAME = {}   # (STRAP_ROWS: the frames of the straps whose rows are evened after export)
+STRAP_ROWS = os.environ.get("STRAP_ROWS", "warden.strap").split(",")
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
@@ -5042,7 +5049,44 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         wt = sm3(wt)
     edge = (wrow[:, None] / 2 - np.abs(off[None, :] * wrow[:, None])).ravel()
     at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
-    made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
+    if os.environ.get("RIB_DUMP"):
+        # (RIB_DUMP, a folder: each ribbon's laid line, frame and sheet, for measuring its edges)
+        np.savez(os.path.join(os.environ["RIB_DUMP"], name + ".npz"), c=c, nrm=nrm, tg=tg, bn=bn, pos=pos.reshape(len(c), cols, 3),
+                 wrow=wrow, lrow=lrow)
+    if not follow and onto is None and any(name.startswith(k_) for k_ in STRAP_ROWS if k_):
+        # (STRAP_ROWS: its frame, so its rows are evened again after the export's weight passes; tools/assets/strap_rows.py)
+        import strap_rows
+        RIBBON_FRAME[name] = strap_rows.frame(c, bn, nrm, wrow.max() / 2 + 0.0006, lrow.min() - 0.001,
+                                              lrow.max() + thick + (trim[2] + trim[3] if trim else 0.0) + 0.0025)
+    if trim and any(name.startswith(k_) for k_ in RIB_TRIM if k_):
+        # (RIB_TRIM, 21 Oct, armor 8 r4: its gold laid as the strap is, from its own line: each edge's band offset from
+        # the laid centre line across it and lifted along its eased normal. Cut from the sheet, lifted by that thin
+        # band's own normals and its two edges eased along themselves (relax), over the crest of her shoulder its
+        # edges drew in toward the bend's centre, 1.5-2.5 mm down into the leather and 0.5-1 mm across, unevenly:
+        # the gold piping wavered like a hand-drawn line at the creation Look and broke up on the skyline)
+        made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, None, budget=10 ** 7)
+        tkey, tw_, th_, tt_ = trim
+        kc = max(3, int(np.ceil(tw_ / 0.0015)) + 1)
+        fr_ = np.linspace(0.0, 1.0, kc)
+        tps, trs, tws = [], [], []
+        for sg_ in (-1.0, 1.0):
+            uu = sg_ * (wrow[:, None] / 2 - tw_ * (1 - fr_)[None, :])
+            p_ = c[:, None, :] + nrm[:, None, :] * (lrow + thick + th_)[:, None, None] + bn[:, None, :] * uu[:, :, None]
+            ci = np.clip(np.rint((uu / wrow[:, None] + 0.5) * (cols - 1)).astype(int), 0, cols - 1)
+            tws.append(np.take_along_axis(wt, ci[:, :, None], 1).reshape(len(c) * kc, -1))
+            g_ = grid(len(c), kc)
+            if sg_ > 0:
+                g_ = g_[:, ::-1]
+            trs.append(g_ + sum(len(t_) for t_ in tps))
+            tps.append(p_.reshape(-1, 3))
+        tp_, tr_ = np.vstack(tps), np.vstack(trs)
+        if (vertex_normals(tp_, tr_) * np.repeat(nrm, kc, 0)[np.r_[np.arange(len(c) * kc), np.arange(len(c) * kc)]]).sum(1).mean() < 0:
+            tr_ = tr_[:, ::-1]
+        if os.environ.get("RIB_DUMP"):
+            np.savez(os.path.join(os.environ["RIB_DUMP"], name + "_trim.npz"), tp=tp_, tr=tr_, edge=np.zeros(len(tp_)))
+        made.append(finish(name + "_trim", tp_, np.vstack(tws), tr_, tkey, tt_, 0.0008))
+    else:
+        made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
         o["hides"] = hides and o is made[0]
     if kind(mkey) == "leather" and width >= 0.012:
@@ -5277,6 +5321,8 @@ def trimmed(name, pos, at, tris, mkey, thick, bevel, trim, budget=3000):
         if len(tr):
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr, edge=30)
+            if os.environ.get("RIB_DUMP"):
+                np.savez(os.path.join(os.environ["RIB_DUMP"], name + "_trim.npz"), tp=tp, tr=tr, sp=pos, st=tris, edge=at[:, -1])
             made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel))
     return made
 
@@ -10502,6 +10548,11 @@ for name in OUTFITS:
     import heroine_neck
     if float(os.environ.get("NECK_CUT", "0.03")):
         heroine_neck.match_pieces(path, heroine_neck.field())
+    # (STRAP_ROWS, armor 8 r4: the straps' rows share their weights again after that, see tools/assets/strap_rows.py)
+    fr_ = {k_: v_ for k_, v_ in RIBBON_FRAME.items() if k_.startswith(name + ".")}
+    if fr_:
+        import strap_rows
+        strap_rows.even(path, fr_)
     # (each mesh's slot, material and rank in its material's join, as glTF extras: heroine_lod.py and the game read them)
     g_ = _json.load(open(path, encoding="utf-8"))
     for m_ in g_["meshes"]:

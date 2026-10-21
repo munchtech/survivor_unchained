@@ -338,6 +338,8 @@ FIT = {}
 NUM_FIT = {}
 BAND = {}
 STRAPS = {}
+STRAP_FRAMES = {}
+STRAP_ROWS = os.environ.get("PLATE_STRAP_ROWS", "1") == "1"   # (PLATE_STRAP_ROWS: see build_plate_top and tools/assets/strap_rows.py)
 
 
 def nip_rel(pts):
@@ -540,6 +542,9 @@ def bvh_of(objs):
     return BVHTree.FromPolygons(vs, fs)
 
 
+STRAP_EXACT = os.environ.get("STRAP_EXACT", "1") == "1"   # (the shoulder straps' edges set off their centre line, see build_plate_top)
+
+
 def skin_hit(o, d, bvh=None):
     """Her skin where a ray from o along d first meets it, and its normal facing along d (None if it misses). `bvh`:
     that skin instead of the scene's (final_skin_bvh, STRAP_FINAL)."""
@@ -696,16 +701,32 @@ def build_plate_top():
         bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
         sc, sn = [], []
         for o_ in (-0.5, 0.0, 0.5):
-            h_ = [skin_hit(centre, p + b * o_ * sw - centre, fsk) for p, b in zip(c, bn)]
+            if STRAP_EXACT:
+                # (STRAP_EXACT, 21 Oct, armor 8 r4: each line along it set off its laid centre line across it, then
+                # dropped onto her along her (eased) normal there, never sideways: laid by rays out from her chest,
+                # each edge on its own, they wandered across her where those rays met her skin aslant)
+                h_ = [skin_hit(p + b * o_ * sw + n_ * 0.03, -n_, fsk) for p, b, n_ in zip(c, bn, nr)]
+                h_ = [(h[0], -h[1]) if h[0] is not None else skin_hit(centre, p + b * o_ * sw - centre, fsk) for h, p, b in zip(h_, c, bn)]
+            else:
+                h_ = [skin_hit(centre, p + b * o_ * sw - centre, fsk) for p, b in zip(c, bn)]
             sc.append(np.array([h[0] for h in h_]))
             sn.append(np.array([h[1] for h in h_]))
         sn = np.array(sn)
+        if os.environ.get("RIB_DUMP"):
+            np.savez(os.path.join(os.environ["RIB_DUMP"], f"{PID}.strap_{sd}.npz"), c=sc[1], nrm=nr, tg=tg, bn=bn,
+                     pos=np.stack(sc, 1), wrow=np.full(len(c), sw), lrow=np.zeros(len(c)))
         for _ in range(3):
             sn[:, 1:-1] = (sn[:, :-2] + 2 * sn[:, 1:-1] + sn[:, 2:]) / 4
         sn /= np.linalg.norm(sn, axis=2)[:, :, None]
+        # (STRAP_ROWS, armor 8 r4: one set of weights across it, eased along, so each row moves as one and its edges stay
+        # parallel; each line its own (r3's `follow`, for the band under her arm), its width swung 12-19 mm in her idle
+        # over the crest of her shoulder. Its rows are evened again after the graft's weight pass: strap_rows.py)
         strap_objs[sd], sinfo = skin_band(f"{PID}.strap_{sd}", sc, sn, "darkleather", PRM.get("strap_lift", 0.002), 0.003,
-                                          under=under_s, sheet=(sheet_pos, sheet_wt))
+                                          under=under_s, sheet=(sheet_pos, sheet_wt), follow=not STRAP_ROWS)
         STRAPS[sd] = dict(sinfo, objs=strap_objs[sd])
+        if STRAP_ROWS:
+            import strap_rows
+            STRAP_FRAMES[f"{PID}.strap_{sd}"] = strap_rows.frame(sc[1], bn, nr, sw / 2 + 0.0006, -0.001, float(sinfo["lift"].max()) + 0.0055)
     allstraps = [o for v_ in strap_objs.values() for o in v_]
     # The fixings: a rivet where each shoulder strap meets the band, two through each tab of the band on its cup, one
     # through each shoulder strap's foot on its cup.
@@ -1624,6 +1645,9 @@ bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_t
 import heroine_neck  # noqa: E402
 if float(os.environ.get("NECK_CUT", "0.03")):
     heroine_neck.match_pieces(path, heroine_neck.field())
+if STRAP_FRAMES:
+    import strap_rows  # noqa: E402
+    strap_rows.even(path, STRAP_FRAMES)
 g_ = json.load(open(path, encoding="utf-8"))
 # (the steel's metal map (Metal038, shared with the outfits) drops to non-metal in specks, which lit as white paint
 # spatter on the cups: this piece's steel is metal all over at the map's mean roughness. Wear is the touch-up shader's,
