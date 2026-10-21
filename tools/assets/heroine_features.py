@@ -177,6 +177,17 @@ if os.environ.get("HAIRLINE_TAIL", "1") == "1":
     # the Look's profiles) up to her hairline)
     _lo = 0.020 + 0.008 * smooth((np.degrees(np.abs(theta)) - 80) / 30)
     scalp = np.maximum(scalp, float(os.environ.get("HAIRLINE_TAIL_AMT", "0.35")) * smooth((rise + _lo) / _lo))
+# (20 October, face 31: and a hair's density under her hairline, its colour, from 7 mm under it to half at it and on
+# into the cap's shade over it. At the Look's front her hairline was the cards' crisp edge with a band of her skin
+# under it, Oklab L 0.66-0.69 C 0.06-0.07 against her forehead's 0.83/0.095 and her hair's 0.34/0.089: the scalp
+# shade there was 0.07 at her hairline (0.35 with the tail), so her skin went from her hair to her bare skin in a
+# step, not through thinning hair. HAIRLINE_DENSITY=0: as before.)
+if os.environ.get("HAIRLINE_DENSITY", "1") == "1":
+    _dn = float(os.environ.get("HAIRLINE_DENSITY_AMT", "0.9"))
+    _dlo = float(os.environ.get("HAIRLINE_DENSITY_LO", "0.007"))
+    _dhi = float(os.environ.get("HAIRLINE_DENSITY_HI", "0.004"))
+    _front = 1 - smooth((np.degrees(np.abs(theta)) - 95) / 25)        # (her front and temples: not her nape)
+    scalp = np.maximum(scalp, _dn * _front * smooth((rise + _dlo) / (_dlo + _dhi)))
 # Not her ears (what her ears' own keys move, and 6 mm round them): darkened
 # with her scalp they turned the colour of her hair.
 from scipy.spatial import cKDTree  # noqa: E402
@@ -265,6 +276,22 @@ if _ear.any():
 spath = os.path.join(OUT, "heroine_shadow.png")
 Image.fromarray((sh[::-1] * 255 + 0.5).astype(np.uint8)).save(spath)
 print("SCALP", spath, "%d texels" % (sh[..., 1] > 0.5).sum())
+# (20 October, face 31: her face's tone (the features' blue) on up over her hairline at her front and temples, under
+# her hair. It ended with her face's own paint, about 2 mm under her hairline, and between there and her hair her
+# skin took her head's untoned paint, greyer: a dull band of skin under her hair at the Look. Laid into
+# heroine_features.png's blue alone, the most of it and what was there (so with SHADOW_ONLY too, its red and green
+# kept). Not her ears. HAIRLINE_TONE=0: as before.)
+if os.environ.get("HAIRLINE_TONE", "1") == "1" and os.path.exists(path):
+    _tn = smooth((rise + 0.008) / 0.006) * (1 - smooth((np.degrees(np.abs(theta)) - 80) / 15))
+    if _ear.any():
+        _tn *= smooth((_d - 0.004) / 0.006)
+    _tt = np.zeros((SIZE, SIZE), np.float32)
+    _tt[rows, cols] = _tn
+    _tt = np.clip(ndimage.gaussian_filter(_tt, 1.5) * inside, 0, 1)[::-1]
+    _fi = np.asarray(Image.open(path).convert("RGBA"), np.float32)
+    _fi[..., 2] = np.maximum(_fi[..., 2], _tt * 255)
+    Image.fromarray((_fi + 0.5).astype(np.uint8)).save(path)
+    print("HAIRLINE TONE", path, "%d texels raised" % (_tt * 255 > 2).sum())
 if os.environ.get("SHADOW_ONLY"):
     sys.exit(0)
 
