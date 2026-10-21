@@ -540,10 +540,11 @@ def bvh_of(objs):
     return BVHTree.FromPolygons(vs, fs)
 
 
-def skin_hit(o, d):
-    """Her skin where a ray from o along d first meets it, and its normal facing along d (None if it misses)."""
+def skin_hit(o, d, bvh=None):
+    """Her skin where a ray from o along d first meets it, and its normal facing along d (None if it misses). `bvh`:
+    that skin instead of the scene's (final_skin_bvh, STRAP_FINAL)."""
     d = np.asarray(d, float) / np.linalg.norm(d)
-    h = G["SKIN_BVH"].ray_cast(Vector(tuple(o)), Vector(tuple(d)), 0.6)
+    h = (bvh or G["SKIN_BVH"]).ray_cast(Vector(tuple(o)), Vector(tuple(d)), 0.6)
     if h[0] is None:
         return None, None
     n = np.array(h[1][:])
@@ -674,14 +675,18 @@ def build_plate_top():
     under_s = bvh_of(cup_parts + band)
     centre = np.array([0.0, 0.0, 1.33])
     strap_objs = {}
+    # (STRAP_FINAL, 21 Oct, armor 8 r3: laid on her skin as her body build leaves it, not the scene's: over the crest
+    # of her shoulder the scene's skin stands up to 8 mm above hers, so the strap stood 7-13 mm off her there and
+    # flicked up beside her neck over a pauldron at the play camera)
+    fsk = G["final_skin_bvh"]() if os.environ.get("STRAP_FINAL", "1") == "1" else None
     for sd, cv in straps:
         c = G["spline"](cv, step=0.004)
-        lay = lambda pts: np.array([skin_hit(centre, p - centre)[0] for p in pts])
+        lay = lambda pts: np.array([skin_hit(centre, p - centre, fsk)[0] for p in pts])
         c = lay(c)
         for _ in range(3):
             c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
             c = lay(c)
-        nr = np.array([skin_hit(centre, p - centre)[1] for p in c])
+        nr = np.array([skin_hit(centre, p - centre, fsk)[1] for p in c])
         for _ in range(4):
             nr[1:-1] = (nr[:-2] + 2 * nr[1:-1] + nr[2:]) / 4
         nr /= np.linalg.norm(nr, axis=1)[:, None]
@@ -691,7 +696,7 @@ def build_plate_top():
         bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
         sc, sn = [], []
         for o_ in (-0.5, 0.0, 0.5):
-            h_ = [skin_hit(centre, p + b * o_ * sw - centre) for p, b in zip(c, bn)]
+            h_ = [skin_hit(centre, p + b * o_ * sw - centre, fsk) for p, b in zip(c, bn)]
             sc.append(np.array([h[0] for h in h_]))
             sn.append(np.array([h[1] for h in h_]))
         sn = np.array(sn)

@@ -3379,6 +3379,8 @@ def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
 # seated onto her where her skin faces up, the top of her shoulder, PAUL_SEAT_GAP off her, eased in over
 # PAUL_SEAT_BAND from the rim: a plate resting on her shoulder, flaring off her arm below. Off: PAUL_SEAT=0)
 PAUL_SEAT = os.environ.get("PAUL_SEAT", "1") == "1"
+STRAP_FINAL = os.environ.get("STRAP_FINAL", "1") == "1"
+PAUL_BESIDE = tuple(float(v) for v in os.environ.get("PAUL_BESIDE", "0.019,0.006").split(","))   # (its rim beside the strap: metres from the strap's line, and the reach; 0 = off; see seated)   # (the warden's shoulder straps laid on final_skin_bvh, see warden())
 PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_STRAP_CLEAR = (float(v) for v in os.environ.get("PAUL_SEAT_K", "0.003,0.035,0.019").split(","))
 PAUL_SEAT_IN = tuple(float(v) for v in os.environ.get("PAUL_SEAT_IN", "0.0,0.03").split(","))   # (its neck side: metres in from the ball of her shoulder)
 PAUL_SEAT_UP = tuple(float(v) for v in os.environ.get("PAUL_SEAT_UP", "0.2,0.5").split(","))
@@ -3393,7 +3395,17 @@ def strap_clear(name, clear):
     return np.where(lateral, d - clear, -d - clear)
 
 
+_FINAL_SKIN = []
+
+
 def final_skin_bvh():
+    """(once per run, see _final_skin_bvh)"""
+    if not _FINAL_SKIN:
+        _FINAL_SKIN.append(_final_skin_bvh())
+    return _FINAL_SKIN[0]
+
+
+def _final_skin_bvh():
     """Her skin as her last body build left it (PAUL_SEAT_BODY, default godot/art/people/heroine.glb), in this scene's
     axes: the build's own skin stands up to 8 mm above it on top of her shoulder near her neck (the neck cut and nape
     ease move it after the pieces are cut), so a piece seated within millimetres of her is seated on this. None if
@@ -3424,11 +3436,13 @@ def final_skin_bvh():
     return BVHTree.FromPolygons([tuple(p_) for p_ in np.vstack(vs)], np.vstack(fs).tolist())
 
 
-def seated(name, pos, tris, edge, gap_to, band, up, where=None):
+def seated(name, pos, tris, edge, gap_to, band, up, where=None, beside=None):
     """A plate's rim brought down onto her: each point within `band` of its edge, where her skin under it faces up
     (its normal's height, ramped over `up`), moved in along her (smoothed) normal until it stands `gap_to` off her
     at the rim, eased to nothing `band` in, so the plate turns down onto her as a rolled flange does. `where`, a
-    weight by place (the pauldron's neck side only: its far end rides her arm)."""
+    weight by place (the pauldron's neck side only: its far end rides her arm). `beside` (a ribbon's name, distance,
+    reach): its rim where it runs beside that strap set that far from the strap's laid centre line, across her
+    (PAUL_BESIDE)."""
     skin_ = final_skin_bvh() or BVH
 
     def near(p_):
@@ -3453,6 +3467,49 @@ def seated(name, pos, tris, edge, gap_to, band, up, where=None):
         q, _ = near(pos)
         g = ((pos - q) * n).sum(1)
         pos = pos - n * (w * np.maximum(g - gap_to, 0.0))[:, None]
+    if beside is not None:
+        # (21 Oct, armor 8 r3, a max judge on the seated pauldron: where the top's strap runs beside its cut neck side
+        # the gap between them pinched to a busy double gold line at the top (4.0 to 8.8 mm, gold to strap). The cut
+        # is made on this scene's skin and the plate is then shelled and seated, so its rim wanders across her from
+        # the cut. Now each rim point beside the strap is set `dist` from the strap's laid centre line, measured
+        # across her (in her skin's plane, square to the strap), fully within `reach` of that and fading out over
+        # the next `reach`; the sheet in from the rim follows, eased to nothing over the seat's band)
+        lname, dist, reach = beside
+        line = RIBBON_LINE[lname]
+        tl = np.gradient(line, axis=0)
+        tl /= np.linalg.norm(tl, axis=1)[:, None] + 1e-12
+        e_ = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+        u_, c_ = np.unique(e_, axis=0, return_counts=True)
+        rim_ = np.zeros(len(pos), bool)
+        rim_[u_[c_ == 1].ravel()] = True
+
+        def across(p_):
+            _, j_ = cKDTree(line).query(p_)
+            r_ = p_ - line[j_]
+            r_ = r_ - tl[j_] * (r_ * tl[j_]).sum(1)[:, None]
+            r_ = r_ - n_s * (r_ * n_s).sum(1)[:, None]
+            return r_
+        _, n_s = near(pos)
+        r0 = across(pos)
+        d0 = np.linalg.norm(r0, axis=1)
+        k_ = rim_ & (d0 < dist + 2 * reach)
+        wk = (1 - ramp(d0, dist + reach, dist + 2 * reach)) * k_
+        D = np.zeros_like(pos)
+        D[k_] = (r0[k_] / (d0[k_, None] + 1e-12)) * ((dist - d0[k_]) * wk[k_])[:, None]
+        Dr = D.copy()
+        fall = 1 - ramp(edge, 0.0, band)
+        for _ in range(40):
+            D = A @ D
+            D[rim_] = Dr[rim_]
+            D *= fall[:, None]
+            D[rim_] = Dr[rim_]
+        pos = pos + D
+        d1 = np.linalg.norm(across(pos), axis=1)
+        full = k_ & (wk > 0.99)
+        if full.any():
+            print("BESIDE %s: %d rim points set %.1f mm from %s's line (were %.1f..%.1f, now %.1f..%.1f), %d fading out; most moved %.1f mm"
+                  % (name, full.sum(), dist * 1000, lname, d0[full].min() * 1000, d0[full].max() * 1000, d1[full].min() * 1000,
+                     d1[full].max() * 1000, int((k_ & ~full & (wk > 0)).sum()), np.linalg.norm(D, axis=1).max() * 1000))
     q, _ = near(pos)
     g = ((pos - q) * n).sum(1)
     pos = pos + n * (np.maximum(gap_to - g, 0.0) * (w > 0.01))[:, None]
@@ -4764,7 +4821,7 @@ RIBBON_LINE = {}   # (each ribbon's centre line as laid on her)
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
-           hides=False, follow=False, flare=None, onto=None, taper=None, taut=0, closed=False, nape=None):
+           hides=False, follow=False, flare=None, onto=None, taper=None, taut=0, closed=False, nape=None, skin=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
@@ -4786,7 +4843,10 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     `closed`: its first and last control points are one, and it is eased
     across that join as along the rest (a cord round her neck). `nape`
     (height, y): with `taut`, its points behind y slide along her, eased
-    straight and no higher than that height (NAPE_CORD)."""
+    straight and no higher than that height (NAPE_CORD). `skin`, a BVH: laid on that and not this scene's skin
+    (final_skin_bvh: her skin as her body build leaves it, STRAP_FINAL)."""
+    SKIN_BVH = skin if skin is not None else globals()["SKIN_BVH"]
+
     def sm3(a):
         # (one [1 2 1]/4 pass along it; round the join when closed)
         a = a.copy()
@@ -5504,8 +5564,12 @@ def warden():
         # put a kink in it)
         straps.append([top, np.array([sg * 0.11, 0.03, 1.565]),
                        np.array([sg * 0.1, 0.11, 1.47]), np.array([sg * 0.085, 0.125, back_z])])
+    # (STRAP_FINAL, 21 Oct, armor 8 r3: laid on her skin as her body build leaves it (final_skin_bvh), not this scene's:
+    # over the crest of her shoulder the scene's skin stands up to 8 mm above hers, so the strap stood 9-14 mm off her
+    # there, its dark underside a notch beside her neck at the play camera and a crumpled crest from the front)
+    skin_ = final_skin_bvh() if STRAP_FINAL else None
     strap_objs = [o for k, cv in enumerate(straps) for o in ribbon(f"warden.strap{k}", cv, 0.018, "darkleather", thick=0.003,
-                                                                  trim=gold(0.003), centre=(0.0, 0.0, 1.33))]
+                                                                  trim=gold(0.003), centre=(0.0, 0.0, 1.33), skin=skin_)]
     backstrap = girdle("warden.backstrap", lambda a_: np.full_like(a_, back_z), 0.022, "darkleather", lift=0.003, thick=0.003,
                        trim=gold(0.003), arc=(1.48, 2 * np.pi - 1.48), mask=arms < 0.3)
     belt = girdle("warden.belt", belt_z, 0.05, "darkleather", lift=0.006, thick=0.005, trim=gold(0.005))
@@ -5580,7 +5644,8 @@ def warden():
             *piece(f"warden.pauldron_{sd}", ANDR(cap(shoulder(sd), 0.11), strap_clear(f"warden.strap{0 if sd == 'l' else 1}", PAUL_STRAP_CLEAR), 0.015)
                    if PAUL_SEAT else cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold",
                    rigid=head(f"upperarm_{sd}"), seat=(PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_SEAT_UP,
-                                                                   lambda q_, c_=abs(shoulder(sd)[0]): ramp(c_ - np.abs(q_[:, 0]), *PAUL_SEAT_IN)) if PAUL_SEAT else None,
+                                                                   lambda q_, c_=abs(shoulder(sd)[0]): ramp(c_ - np.abs(q_[:, 0]), *PAUL_SEAT_IN),
+                                                                   (f"warden.strap{0 if sd == 'l' else 1}", *PAUL_BESIDE) if PAUL_BESIDE[0] > 0 else None) if PAUL_SEAT else None,
                    blend_from=cap(shoulder(sd), 0.11) if PAUL_SEAT else None),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
             *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold", rim_clean=GREAVE_RIM,
