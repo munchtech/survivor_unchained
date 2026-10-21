@@ -94,6 +94,12 @@ ARC_STOP_CURL = {
 # (-0.10, 1.0, 0.04) in the chest's frame, leant out past the brim; animation 46.)
 # (Animation 47: per idle.ARC_CAND, its "stop_blade"; R1's (-0.30, 1.0, -0.07).)
 STOP_ARC_BLADE = idle._ARC["stop_blade"]
+# (Animation 48, the tilted grip: on the first key only, the staff arm 6 deg further out, its elbow pole 0.3 toward her
+# right and the staff 0.05 further forward (the face stays clear), so the upper arm clears the warden's and the reaver's trunk as she pitches over at the landing; 0 mm, was 6 and 5.)
+ARC_DX0 = 6.0
+BX0 = 0.0
+BZ0 = 0.05
+POLE_DX0 = -0.3
 
 
 def stop(rig, calling, side):
@@ -102,13 +108,19 @@ def stop(rig, calling, side):
         idle.base_of(rig, "arcanist")  # (on a restaged stand, idle.ARC_ST, its free hand is read off the base)
     arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
     if calling == "arcanist":
-        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(STOP_ARC_BLADE)}
+        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(idle._ARC.get(f"stop_blade_{side}", STOP_ARC_BLADE))}
     s = 1 if side == "l" else -1
     front, back = f"foot_{side}", f"foot_{'r' if side == 'l' else 'l'}"
     w = 0.09 if calling == "warden" else 0.05
 
-    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0):
+    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0, pole_dx=0.0):
         a = arms
+        if pole_dx and calling == "arcanist" and "tilt" in idle._ARC:
+            hr = arms["hand_r"]
+            ax = ARC_DX0
+            a = {**arms, "hand_r": {**hr, "pole": (hr["pole"][0] + pole_dx, hr["pole"][1], hr["pole"][2]),
+                                    "arc": (hr["arc"][0] - ax, hr["arc"][1], hr["arc"][2]),
+                                    "blade": (hr["blade"][0] + BX0, hr["blade"][1], hr["blade"][2] + BZ0)}}
         if calling == "stalker" and isinstance(arms.get("hand_l"), dict):
             # (The left elbow turned a little out as she brakes: by her side as in the idle, the inner upper arm
             # pressed 4.5 mm into her side as the lean was thrown back.)
@@ -126,7 +138,7 @@ def stop(rig, calling, side):
 
     keys = [
         # Coming down on the front foot, the back leg still behind.
-        (0, p(0.34, -0.48, 0.12, 25, -0.08, 0.04, 16, out=0.015), "auto"),
+        (0, p(0.34, -0.48, 0.12, 25, -0.08, 0.04, 16, out=0.015, pole_dx=POLE_DX0), "auto"),
         # Over it and braking: the body carried on, the back foot coming through.
         (5, p(0.30, -0.12, 0.10, 10, -0.13, 0.12, 4, roll=2, out=0.015), "auto"),
         # Down beside it, the weight back on the heels, the lean thrown back.

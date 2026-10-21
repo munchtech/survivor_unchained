@@ -148,7 +148,10 @@ ARC_CANDS = {
 #   forearm 27-31 deg below level (S2H1/R1 9-12), the upper arm 11-14 deg off straight down (21-24), the fist 21 cm out
 #   past her hip's side (26.5) and 3.6 cm lower on the shaft, the wrist 12-14 toward the thumb (radial limit 22).
 ARC_CANDS["T1"] = {"arc": (-0.205, -0.318, 0.251), "blade": (-0.44, 1.0, -0.13), "pole": (0.285, -1.0, -0.052), "slide": 0.036,
-                   "tilt": 20.0, "stop_blade": (-0.36, 1.0, -0.17)}
+                   "tilt": 20.0, "stop_blade": (-0.36, 1.0, -0.17),
+                   # (The stops' own aim per side, animation 48: with the tilt the one aim above put the right stop's crescent
+                   # over her face from her right (cover 0.82) and its foot 30 mm from her leg; scratch anim/st/stops.)
+                   "stop_blade_l": (-0.30, 1.0, -0.11), "stop_blade_r": (-0.30, 1.0, 0.0)}
 # (Unset: T1 on a restaged stand, R1 with R1's stand: ARC_ST=R1 alone builds R1 as it was; ARC_ST=S2H1 ARC_CAND=R1 round 1.)
 ARC_CAND = os.environ.get("ARC_CAND", "R1" if os.environ.get("ARC_ST", "S2H2") in ("R1", "") else "T1")
 _ARC = ARC_CANDS[ARC_CAND]
