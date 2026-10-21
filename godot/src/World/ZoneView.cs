@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Core;
@@ -60,19 +60,24 @@ public partial class ZoneView : Node3D
         foreach (var f in z.Meta.Fires)
             if (f.Ring)
             {
-                pits.Add(new Vector3((float)f.X, (float)f.Z, 0.95f * (float)f.Size));
+                pits.Add(new Vector4((float)f.X, (float)f.Z, 0.95f * (float)f.Size, 0));
                 Bare(flora, new Vector3((float)f.X, (float)f.Y, (float)f.Z), 0.95f * (float)f.Size);
             }
         Perf.Lap("flora");
         if (Scatter.Build(z) is { } sc) AddChild(sc);
         Perf.Lap("scatter");
+        foreach (var p in OwnProps.For(z.Id)?.Places ?? new())
+            if (p.Bare is Vector2 b) pits.Add(new Vector4(p.At.X, p.At.Y, b.X, b.Y));
         props = Dressing.Props(z);
         AddChild(props);
         Perf.Lap("props");
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
-        // The camp on the Low Ford road, made for its close-ups (Camp.cs).
-        if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root));
+        // Our own props placed by the zone's data (OwnProps: props_own.json "place"), the blocked-out ones hidden.
+        var ownProps = OwnProps.For(z.Id);
+        if (ownProps != null) AddChild(OwnProps.Dress(z, ownProps, Landmarks.Root));
+        // The camp on the Low Ford road, made for its close-ups (Camp.cs); its logs ours where the data places them.
+        if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root, logs: ownProps == null || !ownProps.Places.Exists(p => p.Preset.StartsWith("log"))));
         Perf.Lap("landmarks");
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
@@ -332,6 +337,14 @@ public partial class ZoneView : Node3D
             LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : LampScale, holder);
             if (!torch) { lights[li].LightColor = new Color(LampColor); lights[li].OmniRange = LampRange; lights[li].OmniAttenuation = LampAtt; }
             specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
+            // A lamp of the zone's own (props_own.json "lamps", by its glow node): the camp's lantern burns amber, not the road's pale warm.
+            if (OwnProps.For(Data.Id)?.Lamps.GetValueOrDefault(best) is OwnProps.Lamp own)
+            {
+                if (own.Color is Color oc) lights[li].LightColor = oc;
+                if (own.Range > 0) lights[li].OmniRange = own.Range;
+                if (own.Att > 0) lights[li].OmniAttenuation = own.Att;
+                specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
+            }
             lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
             glowLight.Remove(best);
         }
@@ -522,6 +535,10 @@ public partial class ZoneView : Node3D
     /// each one's instance collapsed to nothing where it stood.</summary>
     public void HideProps(string id, float x, float z, float r)
     {
+        // (our own props, OwnProps, stand one to a node)
+        foreach (var n in props.GetChildren().OfType<Node3D>())
+            if (n is not MultiMeshInstance3D && n.HasMeta("at1") && n.GetMeta("prop").AsString() == id
+                && n.GetMeta("at1").AsVector3() is var o && new Vector2(o.X - x, o.Z - z).Length() < r) n.Visible = false;
         foreach (var mmi in props.GetChildren().OfType<MultiMeshInstance3D>())
         {
             if (!mmi.HasMeta("prop") || mmi.GetMeta("prop").AsString() != id) continue;
@@ -532,8 +549,9 @@ public partial class ZoneView : Node3D
         }
     }
 
-    /// <summary>The fires' pits, (x, z, radius): bare of grass.</summary>
-    readonly List<Vector3> pits = new();
+    /// <summary>The fires' pits, (x, z, radius, 0), and our props' patches (OwnProps "bare": x, z, radius, how far out
+    /// the grass thins, times it): bare of grass (the first four).</summary>
+    readonly List<Vector4> pits = new();
 
     /// <summary>Every plant of the flora within r of a point taken away.</summary>
     static void Bare(Node3D flora, Vector3 at, float r)
@@ -577,7 +595,7 @@ public partial class ZoneView : Node3D
         if (pits.Count > 0 && grass.Multimesh.Mesh.SurfaceGetMaterial(0) is ShaderMaterial gm)
         {
             var bare = new Vector4[4];
-            for (int i = 0; i < Mathf.Min(4, pits.Count); i++) bare[i] = new Vector4(pits[i].X, pits[i].Y, pits[i].Z, 0);
+            for (int i = 0; i < Mathf.Min(4, pits.Count); i++) bare[i] = pits[i];
             gm.SetShaderParameter("bare_at", bare);
         }
         grassAt = at;
