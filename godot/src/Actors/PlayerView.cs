@@ -256,8 +256,13 @@ public partial class PlayerView : Node3D
         aim = aimHold = 0;
     }
 
+    // The clips in the one-shots, by the name the library knows, and the grip slide now (metres).
+    string fullClip = "", upperClip = "";
+    float slide;
+
     void Upper(string clip, double speed)
     {
+        upperClip = clip;
         upper.Animation = People.Clip(person, clip);
         upperNative = upper.Animation.ToString().StartsWith(own.Prefix);
         tree.Set("parameters/upperScale/scale", speed);
@@ -268,6 +273,7 @@ public partial class PlayerView : Node3D
     bool UpperHer(string clip, double speed)
     {
         if (!mine || !own.Has(clip)) return false;
+        upperClip = clip;
         // Standing, a stance swing takes her whole body (its own feet set and hips into the blow), soft:
         // it gives way to the run the moment she moves. Moving, it rides her upper body over the run.
         if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
@@ -284,6 +290,7 @@ public partial class PlayerView : Node3D
 
     void Full(string clip, double speed)
     {
+        fullClip = clip;
         full.Animation = People.Clip(person, clip);
         fullNative = full.Animation.ToString().StartsWith(own.Prefix);
         fullSoft = false;
@@ -296,6 +303,7 @@ public partial class PlayerView : Node3D
     bool FullHer(string clip, double speed, bool soft)
     {
         if (!mine || !own.Has(clip)) return false;
+        fullClip = clip;
         full.Animation = own.Prefix + clip;
         fullNative = true;
         fullSoft = soft;
@@ -438,6 +446,8 @@ public partial class PlayerView : Node3D
         {
             tree.Active = false;
             if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town")); }
+            slide = own.GripSlide(hold[0]); // the clip's grip, straight (no easing)
+            view?.Slide("handslot.r", slide);
             // An upper-body clip (a swing) is held as play shows it: over her idle's hips and legs (the
             // upperShot filter), not on the clip's own keyed legs. --hold-full shows the clip's legs.
             var sk = person.Skeleton;
@@ -694,6 +704,14 @@ public partial class PlayerView : Node3D
         tree.Set("parameters/move/runScale/scale", Mathf.Clamp(speed / natural, 0.55f, 1.5f));
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
+        // The staff slid in her fist by whichever clip plays (animation 47), eased between them.
+        if (idleNode != null && runNode != null)
+        {
+            float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), w,
+                own.GripSlide(idleNode.Animation), own.GripSlide(runNode.Animation));
+            slide = GripSlide.Ease(slide, to, dt);
+            view?.Slide("handslot.r", slide);
+        }
         float lowerT = fullOn ? (fullNative ? 1 : 0) : 1;
         float upperT = fullOn ? (fullNative ? 1 : 0) : upperOn ? (upperNative ? 1 : 0) : 1;
         if (person.Pose is HerPose hp)
