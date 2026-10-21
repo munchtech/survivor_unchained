@@ -11,12 +11,39 @@
  "replaces": "warden.pauldrons",
  "adorn": [
   {
-   "kind": "gild",
-   "parts": [
-    "rolled_rim"
-   ],
-   "lift": 0.00025,
-   "facing": -0.3,
+   "kind": "trim",
+   "rim": "cop_rim",
+   "profile": "bead_lo",
+   "width": 0.004,
+   "height": 0.0015,
+   "inset": 0.0,
+   "gap": 0.0,
+   "step": 0.009,
+   "lod_step": 0.012,
+   "mat": "gold"
+  },
+  {
+   "kind": "trim",
+   "rim": "lame1_rim",
+   "profile": "bead_lo",
+   "width": 0.004,
+   "height": 0.0015,
+   "inset": 0.0,
+   "gap": 0.0,
+   "step": 0.009,
+   "lod_step": 0.012,
+   "mat": "gold"
+  },
+  {
+   "kind": "trim",
+   "rim": "lame2_rim",
+   "profile": "bead_lo",
+   "width": 0.004,
+   "height": 0.0015,
+   "inset": 0.0,
+   "gap": 0.0,
+   "step": 0.009,
+   "lod_step": 0.012,
    "mat": "gold"
   }
  ],

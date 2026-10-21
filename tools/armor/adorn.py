@@ -527,8 +527,11 @@ PROFILES = {
     "filigree": [(-1, 0), (-1, 0.5), (-0.7, 0.8), (-0.35, 0.6), (0, 1.0), (0.35, 0.6), (0.7, 0.8), (1, 0.5), (1, 0)],
     # (r2, F1: a raised half-round bead, so it draws a lit line over a shadow line: a short foot wall, then the round)
     "bead": [(-1, 0)] + [(np.cos(a), 0.12 + 0.88 * np.sin(a)) for a in np.linspace(np.pi, 0, 9)] + [(1, 0)],
+    # (a lighter bead for a long run of small rims: five points over the round)
+    "bead_lo": [(-1, 0)] + [(np.cos(a), 0.12 + 0.88 * np.sin(a)) for a in np.linspace(np.pi, 0, 5)] + [(1, 0)],
 }
 LOD_PROFILES = {"bead": [(-1, 0)] + [(np.cos(a), 0.12 + 0.88 * np.sin(a)) for a in np.linspace(np.pi, 0, 4)] + [(1, 0)]}
+LOD_PROFILES["bead_lo"] = LOD_PROFILES["bead"]
 
 
 def trim_band(surf, rim, ad, step, leather, lod=False):
@@ -927,6 +930,9 @@ def compact(m):
 
 
 # ------------------------------------------------------------------------------------------ the pose check --
+TRIM_IDS = set()
+
+
 def pose_check(shell_id, model, new_by_mesh, base_full):
     """Every new vertex skinned into each test pose (her skinning matrices from the shell's build, poses.npz), and
     its signed distance to her posed skin there: through if under it. The shell's own vertices skinned the same way
@@ -972,8 +978,12 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
                 sd = sd + tk[j]
             out_ = np.where(d[:, :1] < 0.03, np.median(sd, 1)[:, None], 1.0)[:, 0]
             return (out_, (d, j)) if back else out_
-        for m, sel, src in new_by_mesh:
+        for m, sel, src, *tmk in new_by_mesh:
             sd = signed(pose(m, sel))
+            if tmk and tmk[0].any() and tk is not None:
+                # (a trim rides the shell's own rolled edge, which the game draws against her skin tucked in: held to the
+                # same standard as the shell and its gilt)
+                sd[tmk[0]] = signed(pose(m, sel[tmk[0]]), tucked=True)
             g = ~np.isnan(src[:, 0])
             if g.any() and tk is not None:
                 # (the gilt is a skin on the shell: held to the shell's own standard, her skin tucked as the game draws it)
@@ -1185,7 +1195,9 @@ def build(pid, post=False):
             for rn in rim_names(sock, ad["rim"]):
                 rim = sock["rims"][rn]
                 tb = trim_band(S_full, rim, ad, ad.get("step", 0.0022), obst)
-                full_new.setdefault(mat, []).append((tb["P"], tb["N"], tb["U0"], tb["U1"], tb["C"], tb["W"], tb["T"]))
+                t_ = (tb["P"], tb["N"], tb["U0"], tb["U1"], tb["C"], tb["W"], tb["T"])
+                TRIM_IDS.add(id(t_))
+                full_new.setdefault(mat, []).append(t_)
                 gap = ad.get("gap", 0.001)
                 w, dc = ad.get("width", 0.005), ad.get("inset", 0.0)
                 grooves = []
@@ -1243,7 +1255,8 @@ def build(pid, post=False):
             if lodn == "full":
                 # (a gilt vertex's steel under it, for the pose check: NaN for the rest)
                 src = np.concatenate([p[7] if len(p) > 7 else np.full((len(p[0]), 3), np.nan) for p in parts if len(p[0])])
-                new_sel.append((m, np.arange(n0, len(m["attrs"]["POSITION"][0])), src))
+                tm_ = np.concatenate([np.full(len(p[0]), id(p) in TRIM_IDS) for p in parts if len(p[0])])
+                new_sel.append((m, np.arange(n0, len(m["attrs"]["POSITION"][0])), src, tm_))
     # numbers
     full = [m for m in model.meshes if not m["extras"].get("lod")]
     lod1 = [m for m in model.meshes if m["extras"].get("lod") == "lod1"]
