@@ -303,7 +303,8 @@ void light() {
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
 	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
-	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) : 1.0;
+	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) * (1.0 - flora_light.y) : 1.0;
+	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
 	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d * lift + BACKLIGHT * (1.0 - d)) / PI;
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
 }
