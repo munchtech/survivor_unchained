@@ -32,8 +32,8 @@ SETS = {
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
     # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),
-    # (E4h: an elder bush in the open by day, at the play camera: its cream flower heads)
-    "elder": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "37.5,-1.0"], 1),
+    # (E4h: the town's elders in the open by day (-36,-34: 14 m from any tree), at the play camera: their cream flower heads)
+    "elder": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-37.5,-30.5"], 1),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")

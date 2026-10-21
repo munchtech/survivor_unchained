@@ -52,6 +52,10 @@ uniform float hue_floor = 100.0;
 uniform float core = 1.0;
 uniform float night_fill = 0.1;
 uniform float near_dim = 0.2;
+// (under the moon a species' leaves turned this many degrees toward blue-green and held to this value: judge E4h, the
+// alder and the hazel the greenest masses by night)
+uniform float night_hue = 0.0;
+uniform float night_value = 1.0;
 // (and its light through the needles cut by this much by day: judge E4 r3, the nearest roaddawn spruce still the frame's mintiest)
 uniform float near_back = 0.25;
 // (a packed species, env_trees.py: its pieces in one mesh, each vertex's COLOR.a its piece, (index + 0.5) / 8; each
@@ -262,6 +266,7 @@ void fragment() {
 		ALBEDO *= mix(mix(0.5, 0.8, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
 		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
 		ALBEDO *= mix(vec3(1.0), vec3(0.7, 1.15, 0.9), night);
+		ALBEDO = max(hue_turn(ALBEDO, radians(night_hue * night)), vec3(0.0)) * mix(1.0, night_value, night);
 		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
 		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
 		// the key's tint taken back out; under the moon a third of it, deep blue-green

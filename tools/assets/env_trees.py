@@ -356,12 +356,13 @@ def leafspray(seed, pal=None, big=1.0, narrow=False, umbels=0):
     # 4. the elder's umbels: a few flat-topped cream heads on the upper clumps (small, muted: never confetti)
     for c, rc in sorted(clumps, key=lambda c: c[0][1])[:umbels]:
         q = c + np.array([rng.uniform(-0.2, 0.2), -0.25]) * rc
-        ru = rc * rng.uniform(0.22, 0.28)
-        for _ in range(34):
+        # (E4h: wider and paler, so a head reads as one cream disc at the play camera, judge E4f: none found at 1:1)
+        ru = rc * rng.uniform(0.32, 0.38)
+        for _ in range(60):
             a, rr = rng.uniform(0, 6.28), math.sqrt(rng.uniform(0, 1))
             o = P(q + np.array([math.cos(a) * ru * rr, math.sin(a) * ru * rr * 0.55]))
             v = 0.55 + 0.45 * (1 - rr) * (0.5 + 0.5 * -math.sin(a))
-            cc = (srgb('#77735e') + (srgb('#a9a589') - srgb('#77735e')) * v) * 255
+            cc = (srgb('#8b8770') + (srgb('#c4bfa2') - srgb('#8b8770')) * v) * 255
             cv2.circle(cimg, o, int(rc * 0.07), cc.astype(int).tolist(), -1, cv2.LINE_AA); cv2.circle(aimg, o, int(rc * 0.07), 255, -1, cv2.LINE_AA)
             cv2.circle(himg, o, int(rc * 0.07), 240, -1, cv2.LINE_AA)
     col = cimg.astype(np.float32) / 255; al = aimg.astype(np.float32) / 255; hg = himg.astype(np.float32) / 255
@@ -676,7 +677,7 @@ def grass_clump(seed, olive, cool, flowers=None, nflowers=0, form=0):
 
     side = rng.choice([-1, 1])
     cx = W / 2 + rng.uniform(-0.04, 0.04) * W
-    n = int(rng.integers(3, 6))
+    n = int(rng.integers(4, 6))
     # blades: (root x, lean rad from upright, length, curl, root width, hue mix, value offset)
     # the clump's form (a cell each, so no two read alike): 0 upright and narrow, 1 spreading and low, 2 one long
     # blade arching over the rest, 3 leaning hard to one side
@@ -690,10 +691,10 @@ def grass_clump(seed, olive, cool, flowers=None, nflowers=0, form=0):
         if (form % 4 == 2 and k == n - 1) or rng.random() < 0.15:      # one arching over
             curl = side * rng.uniform(1.3, 1.8); ln = H * rng.uniform(0.75, 0.9)
         blades.append((cx + rng.uniform(-0.06, 0.06) * W + leans[k] * 0.05 * W, leans[k], ln, curl,
-                       rng.uniform(22, 30) * S, float(np.clip(hm + rng.normal(0, 0.28), 0, 1)), rng.uniform(-0.08, 0.06)))
+                       rng.uniform(13, 18) * S, float(np.clip(hm + rng.normal(0, 0.28), 0, 1)), rng.uniform(-0.08, 0.06)))
     # the short dark blades at the foot (drawn first: behind)
     foot = [(cx + rng.uniform(-0.08, 0.08) * W, rng.uniform(-0.9, 0.9), H * rng.uniform(0.2, 0.36), rng.uniform(-0.6, 0.6),
-             rng.uniform(20, 26) * S, float(np.clip(hm + rng.normal(0, 0.2), 0, 1)), -0.12) for _ in range(int(rng.integers(3, 6)))]
+             rng.uniform(11, 15) * S, float(np.clip(hm + rng.normal(0, 0.2), 0, 1)), -0.12) for _ in range(int(rng.integers(3, 6)))]
     order = foot + sorted(blades, key=lambda b: b[2])
     base_y = H - 6 * S
     for (rx, lean, ln, curl, w0, m, vb) in order:
@@ -954,8 +955,10 @@ def shadow_proxy(H, R, seed):
 
     def axis(z):
         return ld * lean * z * (1 - bow * z / H)
+    # (the trunk tapers to a third of its foot by a third of the way up, so its shadow on the road narrows to a point,
+    # not an even bar: judge E4h)
     tube(b, [axis(z) + np.array([0, 0, z]) for z in np.linspace(0, 0.9 * H, 4)],
-         [0.16 * math.sqrt(H / 8), 0.12 * math.sqrt(H / 8), 0.08 * math.sqrt(H / 8), 0.03], 5)
+         [0.16 * math.sqrt(H / 8), 0.055 * math.sqrt(H / 8), 0.035 * math.sqrt(H / 8), 0.02], 5)
     hs = 0.55 + 0.03 * H
     tiers = int(rng.integers(5, 7)) + (1 if H > 9 else 0)
     cuts = np.sort(rng.uniform(0, 1, tiers - 1))

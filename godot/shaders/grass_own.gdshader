@@ -36,6 +36,8 @@ uniform float base = 0.6;
 uniform float clear = 3.5;
 // (the tips' colour held toward their grey: muted, never lime)
 uniform float sat = 0.75;
+// (and by night held further: a lamp's pool lights the clumps, never a glowing cyan)
+uniform float night_sat = 0.55;
 uniform float tone = 1.0;
 uniform vec3 wind = vec3(1.0, 0.35, 1.0);
 uniform vec4 pusher = vec4(0.0, 0.0, 0.0, 0.0);
@@ -60,6 +62,22 @@ varying vec3 v_ground;
 varying float v_frost;
 varying vec2 v_cell;
 varying vec3 v_wp;
+
+// (the warmest hue a sunlit tip may take under a low sun, sRGB degrees, as the trees' hue_floor: sun x olive went yellow)
+uniform float hue_floor = 95.0;
+
+float hue_of(vec3 c) {
+	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
+	if (d < 1e-5) return 120.0;
+	float h = mx == c.r ? mod((c.g - c.b) / d, 6.0) : mx == c.g ? (c.b - c.r) / d + 2.0 : (c.r - c.g) / d + 4.0;
+	return h * 60.0;
+}
+
+vec3 hue_turn(vec3 c, float a) {
+	vec3 k = vec3(0.57735);
+	float ca = cos(a);
+	return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
+}
 
 float gh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
@@ -157,10 +175,14 @@ void fragment() {
 	vec2 uv = (v_cell + vec2(UV.x, 1.0 - UV.y)) / vec2(4.0, 2.0);
 	vec4 tx = texture(atlas, uv);
 	vec3 gb = tx.rgb * v_tint;
-	gb = mix(vec3(dot(gb, vec3(0.2126, 0.7152, 0.0722))), gb, sat);
+	gb = mix(vec3(dot(gb, vec3(0.2126, 0.7152, 0.0722))), gb, mix(sat, night_sat, flora_light.x));
 	// The root in the ground: the ground's colour, darkened, up the first part of the clump.
 	gb = mix(v_ground * base, gb, smoothstep(0.0, 0.3, t));
 	// By night the moonlit tips blue-green.
+	// under a low sun the tips no warmer than hue_floor (the key's hue on them turned back up to it)
+	vec3 key = flora_light.z > 0.0 ? clamp(vec3(flora_light.z, 1.0, flora_light.w), vec3(0.2), vec3(5.0)) : vec3(1.0);
+	float hl = hue_of(sqrt(max(gb * key, vec3(0.0))));
+	gb = max(hue_turn(gb, radians(clamp(hue_floor - hl, 0.0, 60.0) * flora_light.y)), vec3(0.0));
 	gb *= mix(vec3(1.0), night_tint, flora_light.x);
 	// (a flower's pale head no brighter than the moonlit road: dimmed by night)
 	gb *= 1.0 - 0.5 * flora_light.x * smoothstep(0.2, 0.4, dot(tx.rgb, vec3(0.2126, 0.7152, 0.0722)));
@@ -178,7 +200,7 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ROUGHNESS = 0.92;
 	SPECULAR = 0.2;
-	BACKLIGHT = gb * 0.25;
+	BACKLIGHT = gb * 0.25 * (1.0 - 0.6 * flora_light.x);
 	if (flare_live()) {
 		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; vec3 fl_e = EMISSION;
 		flare_blade(v_wp, t, fl_a, fl_r, fl_e);
