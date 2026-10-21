@@ -288,6 +288,9 @@ R_ON = [(0, 0.0), (3, 1.0), (51, 1.0), (56, 0.0)]
 # f21-30 (turned evenly from its hold on the shaft to its opening: RELEASE,
 # OPEN), open to the embers, back to the idle by f54.
 L_SHAFT = [(1, 0.0), (5, 1.0), (CONTACT + 1, 1.0), (30, 0.0)]
+if idle.ARC_ST:
+    # The restaged free hand is palm down, ~45 deg round from the grip: the reach is spread over f0-9 so no frame turns the hand past 30 deg.
+    L_SHAFT = [(0, 0.0), (9, 1.0), (CONTACT + 1, 1.0), (30, 0.0)]
 L_OPEN = [(CONTACT + 1, 0.0), (30, 1.0), (SWEEP + 2, 1.0), (54, 0.0)]
 RELEASE, OPEN = CONTACT + 1, 31
 FINGER_OPEN_AT = {"thumb": 23.5, "index": 23.5, "middle": 24.5, "ring": 25.5, "pinky": 26.5}
