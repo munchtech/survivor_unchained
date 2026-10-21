@@ -738,7 +738,7 @@ public static class People
     /// how much of the dye's colour it takes. (--brows soften,sat tries others.)</summary>
     static readonly (float Soften, float Sat) HerBrows = SurvivorUnchained.Args.Get("brows") is string bw && bw.Split(',') is [var bs, var bt]
         ? (float.Parse(bs, System.Globalization.CultureInfo.InvariantCulture), float.Parse(bt, System.Globalization.CultureInfo.InvariantCulture))
-        : (0.07f, 0.85f);
+        : (0.07f, 0.7f);
 
     /// <summary>Paint on her face (Lore.Her.Paints: art/people/paint/ID.png, laid
     /// out on her head's own paint by tools/assets/heroine_paint.py): drawn
@@ -757,7 +757,10 @@ public static class People
         var file = def == null ? "" : $"res://art/people/paint/{def.Id}.png";
         // (env PAINT_FILE in a shot: another texture for the paint, its variants tried without a build of each)
         if (def != null && SurvivorUnchained.Args.Has("shot") && System.Environment.GetEnvironmentVariable("PAINT_FILE") is { Length: > 0 } pf) file = pf;
-        const string brows = "res://art/people/paint/brows.png";
+        // (each face's brows where its own paint has them: Own's brows.png (heroine_paint.py), every other face's
+        // brows_ID.png (tools/assets/heroine_browdye.py, face 32: before it only Own's were dyed, the others
+        // gray-ash under any hair))
+        var brows = p.FaceShape is null or "" or "own" ? "res://art/people/paint/brows.png" : $"res://art/people/paint/brows_{p.FaceShape}.png";
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
@@ -766,18 +769,19 @@ public static class People
                 // The passes over her skin, in order: her brows, then the paint.
                 ShaderMaterial? first = null, last = null;
                 void Then(ShaderMaterial m) { if (last == null) first = m; else last.NextPass = m; last = m; }
-                // (her own face's brows only: brows.png is where hers are, and on another
-                // face it dyed that face's lid crease, a copper second brow under its own;
-                // each other face keeps its portrait's brows as they are)
-                if (brow is Color b && ResourceLoader.Exists(brows) && p.FaceShape is null or "" or "own")
+                // (Own's brows.png on another face dyed that face's lid crease, a copper second brow under its own)
+                if (brow is Color b && ResourceLoader.Exists(brows))
                 {
                     var m = new ShaderMaterial { Shader = paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
                     m.SetShaderParameter("dyed", true);
                     // (darker than her hair and a little warmer, as brows are: the fairer
                     // her hair the more, so a platinum blonde has ash-brown brows, not grey)
-                    m.SetShaderParameter("dye", b.Darkened(0.25f + 0.15f * b.Luminance).Lerp(new Color("#6a4a30"), 0.2f));
-                    m.SetShaderParameter("skin_paint", skin.GetShaderParameter("paint"));
+                    // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
+                    // darkened, read olive; red hair's read crimson)
+                    m.SetShaderParameter("dye", b.Darkened(0.25f + 0.15f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance));
+                    // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
+                    m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
                     m.SetShaderParameter("skin_tone", skin.GetShaderParameter("tone"));
                     m.SetShaderParameter("soften", HerBrows.Soften);
                     m.SetShaderParameter("dye_sat", HerBrows.Sat);
