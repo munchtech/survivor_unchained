@@ -25,6 +25,8 @@
       "note": "His head and shoulders as the last blow lands on hood and helm, slowed: the light in his eyes gutters. Cut on the impact.",
       "cam": {"pos": {"mark": "w", "off": [-1.6, 3.7, 2.6]}, "at": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "lens": 50, "focus": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "fstop": 2.8},
       "cues": [
+        {"do": "atmosphere", "preset": "now", "key": 1.0, "hemi": 0.35, "env": 0.35, "exposure": 0.95, "keyColor": "#b9c6de", "rim": 1.0},
+        {"do": "grade", "sat": 0.88},
         {"do": "event", "name": "warden_cine"},
         {"do": "music", "mood": "silence"},
         {"do": "anim", "actor": "warden", "clip": "Hit_Head", "from": 0, "speed": 0.3, "blend": 0},
@@ -94,8 +96,9 @@
       "type": "MS",
       "dur": 4.0,
       "note": "A slow push in toward the light: the heart lies on his back over his chest, then lifts off it, a stone the size of a fist full of cold light, turning, water running off it. No line: its hum, and the river.",
-      "cam": {"pos": {"mark": "w", "off": [1.8, 0.9, 3.2]}, "at": {"actor": "heart", "track": true}, "lens": 50, "move": {"push": 0.6, "ease": "slow"}},
+      "cam": {"pos": {"mark": "w", "off": [2.2, 1.2, 1.6]}, "at": {"actor": "heart", "track": true}, "lens": 65, "focus": {"actor": "heart"}, "fstop": 1.6, "move": {"push": 0.4, "ease": "slow"}},
       "cues": [
+        {"do": "hold", "actor": "her", "slot": "handslot.r", "piece": null},
         {"do": "music", "mood": "mystery", "intensity": 0.5, "over": 3.0},
         {"do": "place", "actor": "heart", "where": {"mark": "w", "off": [0, 0, 2.0], "y": -0.75}},
         {"at": 2.3, "do": "move", "actor": "heart", "to": {"mark": "w", "off": [0, 0, 2.0], "y": -0.35}, "dur": 1.7},
@@ -108,13 +111,16 @@
       "type": "OTS",
       "dur": 3.5,
       "note": "Over her shoulder: the heart drifts toward her, like a thing finding its way. Her hand comes up into frame.",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.4, 0.12, 0.7]}, "at": {"actor": "heart"}, "lens": 50},
+      "cam": {"pos": {"mark": "her", "off": [1.7, 1.55, -1.5]}, "at": {"mark": "her", "off": [0.1, 1.45, -0.5]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
+        {"do": "rig", "name": "skin", "from": {"lens": [-0.6, 0.5, 0.3]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9d6", "energy": 0.35, "angle": 32, "range": 4},
+        {"do": "hold", "actor": "her", "slot": "all", "piece": null},
+        {"do": "place", "actor": "her", "mark": "her", "heading": 2.18},
         {"do": "music", "mood": "mystery", "intensity": 0.75, "over": 3.5},
-        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.42, 1.2, -0.5]}, "dur": 3.4},
+        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.05, 1.45, -0.6]}, "dur": 3.4},
         {"do": "gaze", "look": [0, 0.1], "wander": 0.02},
         {"do": "face", "keys": {"eyes_wide": 0.3, "mouth_open": 0.12, "brows_sad": 0.15}, "over": 1.0},
-        {"at": 1.2, "do": "anim", "clip": "her/cast_raise", "from": 0, "speed": 0.45, "blend": 0.5},
+        {"at": 1.2, "do": "anim", "clip": "her/cup_hands", "from": 0, "speed": 0.5, "blend": 0.5},
         {"at": 1.0, "do": "sfx", "name": "heart_hum", "gain": 1.0}
       ]
     },
@@ -123,9 +129,10 @@
       "type": "ECU",
       "dur": 2.0,
       "note": "Side-on: her fingertips and the heart, a hand's breadth apart. Its light leans toward her fingers like a flame in a draught.",
-      "cam": {"pos": {"mark": "her", "off": [1.55, 1.3, -0.3]}, "at": {"mark": "her", "off": [0.43, 1.24, -0.18]}, "lens": 85, "focus": {"actor": "heart"}, "fstop": 2.0},
+      "cam": {"pos": {"mark": "her", "off": [1.75, 1.55, -0.65]}, "at": {"mark": "her", "off": [0.0, 1.42, -0.38]}, "lens": 50, "focus": {"actor": "heart"}, "fstop": 2.8},
       "cues": [
-        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.44, 1.24, -0.3]}, "dur": 2.0}
+        {"do": "rig", "name": "skin", "from": {"lens": [-0.6, 0.5, 0.3]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9d6", "energy": 0.35, "angle": 32, "range": 4},
+        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.0, 1.3, -0.42]}, "dur": 2.0}
       ]
     },
     {
@@ -136,9 +143,11 @@
       "note": "The mud bursts up under her hand: Grimtunnel, up to the waist, snatches the heart out of the air and hugs it to his chest. G1. A hard shake on the burst.",
       "cam": {"pos": {"mark": "her", "off": [3.6, 0.95, 2.4]}, "at": {"mark": "her", "off": [0.5, 1.15, -0.3]}, "lens": 28},
       "cues": [
+        {"do": "hold", "actor": "her", "slot": "all", "piece": "@own"},
+        {"do": "atmosphere", "preset": "now", "key": 0.55, "hemi": 0.7},
         {"do": "music", "mood": "silence"},
         {"do": "place", "mark": "her", "heading": 2.88},
-        {"do": "lamp", "actor": "heart", "glow": 0.15},
+        {"do": "lamp", "actor": "heart", "glow": 0.04},
         {"at": 0.5, "do": "anim", "actor": "grim", "clip": "hug", "where": {"mark": "her", "off": [1.0, 0, 3.0]}},
         {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [1.0, 0, -0.5]}, "style": "burrow", "tag": "grim", "neutral": true, "sink": 0.55},
         {"do": "event", "name": "grim_up"},
@@ -161,7 +170,7 @@
       "dur": 5.0,
       "fit": ["cin_heart_goes_down.downstairs"],
       "note": "From her eye height, down at him: in his arms the heart's light goes on straining out toward her. He looks down at it, up at her, down at it. His head-lamp swings up into her face and his head jerks twice: sniffing. Then he goes still, toad-still, and his head dips: very nearly a bow. G2. Then a laugh shakes him, and he is grinning again.",
-      "cam": {"pos": {"mark": "her", "off": [1.3, 0.85, 1.4]}, "at": {"mark": "her", "off": [1.0, 0.8, -0.5]}, "lens": 40},
+      "cam": {"pos": {"mark": "her", "off": [3.2, 1.2, 1.0]}, "at": {"mark": "her", "off": [0.5, 1.0, -0.3]}, "lens": 35},
       "cues": [
         {"do": "face", "keys": {"eyes_wide": 0.1, "mouth_open": 0.05, "squint": 0.5, "nose_wrinkle": 0.2}, "over": 0.5},
         {"at": 0.8, "do": "sfx", "name": "sniff", "gain": 0.8},
