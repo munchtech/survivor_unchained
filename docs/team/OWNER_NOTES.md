@@ -3,6 +3,7 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 21 October 2026
+- (coordinator 6a6cb394) chain_strike cut (fist-fit limit). Face 34 approved and merged. C03 cinematics lead approved. "grimtunnels model will change": stage around him, no fixes on his surface. **The Warden is boss-tier art: route his model to a full-detail rebuild** (not staffed yet).
 - **Town idles per calling:** "I think having their own is probably better than all the same". Reaver, arcanist (wand and staff) and stalker each get their own relaxed town idle; the Warden keeps WiggleHips. Animation item 5, after its current MR.
 - **Krea may ship:** "we've already put things in the game with krea ... were already at the mercy of the 1m revenue cap". Use Krea freely, shipped art included, and log provenance (ASSET_PROVENANCE AI-01). The enterprise licence has no public price (ask opensource@krea.ai); it's only needed near $1M a year. Keep using Krea.
 - **API credits:** Marionette may spend generation credits wherever they help ($250/month cap). Judges and shifts stay on subagents ("Keep as is"). Fable as coordinator: declined (it costs 2.5x Opus per token).
