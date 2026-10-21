@@ -670,7 +670,7 @@ TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip: the hands a little ahead of the heads.
     "reaver_town": town_idle.on_hip(town_idle.REAVER_HIP_L, free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03)),
     # The wand on the belt at her right hip.
-    "arcanist_town": town_idle.on_hip(town_idle.ARC_WRIST_L, free_arms(reach=1.03)),
+    "arcanist_town": town_idle.on_hip(town_idle.ARC_WRIST_L, free_arms(hand_r=(-0.14, -0.445, 0.08), reach=1.03)),
     # The crossbow slung on her back, the daggers at the back of her belt.
     "stalker_town": free_arms(hand_l=TOWN_ARMS_L["stalker_town"], reach=1.03),
 }

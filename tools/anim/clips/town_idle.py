@@ -195,9 +195,9 @@ def _pole(back):
     return (math.cos(a), 0.0, -math.sin(a))
 
 
-def _relaxed(curl):
+def _relaxed(curl, **more):
     from keyed import FINGER_PRESETS
-    return dict(FINGER_PRESETS["relaxed"], curl=curl)
+    return dict(FINGER_PRESETS["relaxed"], curl=curl, **more)
 
 
 # Her stances (round 1, the max judge: R_A, A_A, S_B pass; the staff hold rides A_A's): the take, its window (seconds),
@@ -230,21 +230,22 @@ def town_base(rig, calling):
 # of the side seam, 1.10 m up at rest), the palm in, the fingers down and forward over the hip, the wrist bent back 40,
 # the elbow out 11 cm and well behind her side (the forearm along her flank), open to 83 (95 would put the hand on her
 # thigh: the hip bone sits 30 cm under her shoulder and her arm is 52 cm).
-_RV_K, _RV_B = _hand((0.105, -0.654, 0.657), (-0.95, -0.277, 0.0))
-REAVER_HIP_L = dict(pos=(0.2155, 1.095, 0.0), pole=_pole(53.0), knuckles=_RV_K, blade=_RV_B, curl=0.06)
+_RV_K, _RV_B = _hand((0.1025, -1.034, 0.4463), (-0.95, -0.3802, 0.0))
+REAVER_HIP_L = dict(pos=(0.2008, 1.2033, 0.0001), pole=_pole(54.4919), knuckles=_RV_K, blade=_RV_B, curl=0.054,
+                    fingers=dict(thumb=0.1495, oppose=0.1713, thumb_in=11.0972))
 # The arcanist: her left wrist resting on the side of her hip bone at the seam (contact 17 cm out, 1.08 m up at rest),
 # the hand hanging soft beside it (the fingers down, the palm back: the back of the hand to the camera, the thumb side
 # of the wrist on her hip), the elbow out 20 cm, open to 86. (The palm turned out, the wrist's very back on her hip,
 # was fitted and dropped: the forearm wrung 156 deg from rest, audit's limit 120, the elbow's flesh kept 38 %.)
 _AR_K, _AR_B = _hand((0.1, -0.97, -0.1), (math.cos(math.radians(-75.0)), 0.0, math.sin(math.radians(-75.0))))
-ARC_WRIST_L = dict(pos=(0.203, 1.20, 0.015), pole=_pole(30.0), knuckles=_AR_K, blade=_AR_B, curl=0.10)
+ARC_WRIST_L = dict(pos=(0.203, 1.20, 0.015), pole=_pole(30.0), knuckles=_AR_K, blade=_AR_B, curl=0.05)
 
 
 def on_hip(spec, free):
     """Arms for a town stand: `free` (idle.free_arms) with the left hand as `spec` keeps it on her pelvis. Returns
     make(rig, base) -> over(t, f) (the hand rides the base's pelvis)."""
     def make(rig, base):
-        return pelvis_hand(rig, base, free, "l", spec["pos"], spec["pole"], _relaxed(spec["curl"]),
+        return pelvis_hand(rig, base, free, "l", spec["pos"], spec["pole"], _relaxed(spec["curl"], **spec.get("fingers", {})),
                            knuckles=spec["knuckles"], blade=spec["blade"], twist=0.5)
     make.needs_base = True
     return make
