@@ -2453,6 +2453,18 @@
    "wear": [
     "mar_her_cuirass"
    ]
+  },
+  "lamed_pauldrons": {
+   "id": "lamed_pauldrons",
+   "name": "Lamed Pauldrons",
+   "kind": "shoulders",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 40,
+   "description": "Lamed Pauldrons: a plain forged pauldrons piece, worn over her own.",
+   "wear": [
+    "plate_pauldrons_plain"
+   ]
   }
  },
  "raritynames": [
