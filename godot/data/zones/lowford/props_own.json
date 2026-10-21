@@ -16,8 +16,10 @@
    -0.3,
    0.0,
    12
-  ]
+  ],
+  [19.6, 29.0, -0.7, 0.14, 0]
  ],
+ "lit": [[18.9, 29.14]],
  "drop": [
   "kk-halloween-lantern_standing-0"
  ],
@@ -92,6 +94,7 @@
    "energy": 1.4
   }
  },
+ "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
  "kits": {
   "dungeon/wall_cracked": "wall_cracked",
   "dungeon/wall_broken": "wall_broken",

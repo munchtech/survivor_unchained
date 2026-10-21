@@ -61,6 +61,9 @@ SETS = {
     # the watchman's chest; the Barrow's graves, and its crypt; one dawn each. x="--props-own-off" is the before)
     "post": (NIGHT + ["--spots-clear", "--spots", "18,32;15.5,29.5"], 2),
     "postdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "18,32"], 1),
+    "pd1": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "18,37"], 1),
+    "pd2": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "15,35"], 1),
+    "pd3": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "20.5,35.5"], 1),
     "barrow": (NIGHT + ["--spots-clear", "--spots", "-16,5;-22.5,2"], 2),
     "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }

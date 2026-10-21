@@ -34,7 +34,7 @@ public static class OwnProps
     /// whether the made piece stays under them (Over), and their scale in the piece's frame (a tree of ours).</summary>
     public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
     public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
-        Dictionary<string, KitEntry>? Kits = null);
+        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -92,7 +92,13 @@ public static class OwnProps
                         ? new KitEntry(Names(v.GetProperty("preset")), v.TryGetProperty("over", out var o) && o.GetBoolean(), v.TryGetProperty("scale", out var sc) ? sc.GetSingle() : 1f)
                         : new KitEntry(Names(v), false, 1f);
                 }
-            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits);
+            // no_gutter: [x, z] of box colliders that are heaps, not wall or building bases (GroundPaint lays no wet gutter round them).
+            var noGut = new List<Vector2>();
+            if (r.TryGetProperty("no_gutter", out var ng)) foreach (var g in ng.EnumerateArray()) noGut.Add(new Vector2(g[0].GetSingle(), g[1].GetSingle()));
+            // lit: [x, z] of wall torches the web game left without a glow (no zone light): each burns with a flame and light of its own.
+            var lit = new List<Vector2>();
+            if (r.TryGetProperty("lit", out var lt)) foreach (var g in lt.EnumerateArray()) lit.Add(new Vector2(g[0].GetSingle(), g[1].GetSingle()));
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit);
         }
         zones[zone] = z;
         return z;

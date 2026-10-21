@@ -61,6 +61,8 @@ public sealed class Landmarks
     bool Swap(Node3D kk)
     {
         var part = kk.Name.ToString().Split('-');
+        // A piece the zone's props_own.json "nudge" moves (E7b: the post's torch out of the wall's face, under its broken top).
+        if (OwnProps.For(zone.Id) is OwnProps.Zone own0) kk.Transform = OwnProps.Nudged(own0, kk.Transform);
         // The ground under a point of the piece, in its frame (the landmarks stand at the world's origin).
         var at = kk.Transform;
         var back = at.AffineInverse();

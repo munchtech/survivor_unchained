@@ -29,7 +29,7 @@ public static partial class Pieces
     /// ground (its height under a point, both in the piece's frame) keeps
     /// what is spread over it on it, and out of the water.</summary>
     /// <summary>ownBody: our own preset stands in this piece's place too (OwnProps "kits" with "over"): the made piece
-    /// drops what the preset is (the crypt keeps only its slate roof, coping and iron door).</summary>
+    /// drops what the preset is (the crypt keeps only its iron door: E7b r2, the preset has its own roof).</summary>
     public static Node3D? For(string pack, string name, int seed = 0, float scale = 1, Func<Vector3, float>? ground = null, bool ownBody = false)
     {
         // The arenas' own pieces (Pieces.Arena.cs) have no KayKit size: they are made to their own.
@@ -398,7 +398,7 @@ public static partial class Pieces
         var st = new SurfaceTool();
         st.CreateFrom(flat, 0);
         st.GenerateTangents();
-        Add(root, st.Commit(), RoofSlates());
+        if (!ownBody) Add(root, st.Commit(), RoofSlates());   // (E7b r2: the preset has its own slab roof)
         // The ridge: capping stones, a little apart; the gables' coping laid up each slope.
         var cope = new Build();
         float rise = th / 2 / Mathf.Cos(ang), ca = 0.05f * w, ch = 0.03f * h;
@@ -416,7 +416,7 @@ public static partial class Pieces
             foreach (float sz in new[] { -1f, 1f })
                 Extrude(cope, Pts(0.04f * w, th / 2 - 0.01f * h, run + 0.01f * w, th / 2 - 0.01f * h, run + 0.01f * w, th / 2 + 0.014f * h, 0.04f * w, th / 2 + 0.014f * h), vw, 0.005f * h,
                     new Transform3D(Basis.FromScale(new Vector3(sx, 1, 1)) * new Basis(Vector3.Back, -ang), ridge + new Vector3(0, 0, sz * (len / 2 - vw / 2 + 0.008f * d))));
-        Add(root, cope.Mesh(true), Coping());
+        if (!ownBody) Add(root, cope.Mesh(true), Coping());
         // The door: dark within, iron-bound, under a lintel.
         float dw = iw * 0.36f, dh = wallH * 0.8f, front = c.Z + id / 2;
         Add(root, new BoxMesh { Size = new Vector3(dw, dh, 0.05f * d) }, Wrought(), At(c.X, y0 + plinth + dh / 2, front + 0.005f));

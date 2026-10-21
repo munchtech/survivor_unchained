@@ -336,9 +336,24 @@ public partial class ZoneView : Node3D
                 if (Node(g) is Node3D gn && InLandmarks(gn).Origin.DistanceSquaredTo(at) is float d && d < bd) { bd = d; best = g; }
             if (SurvivorUnchained.Args.Has("lamp-debug"))
                 GD.Print($"LAMP {kind} at {at} glow {best ?? "-"} {(best != null ? InLandmarks(Node(best)!).Origin : Vector3.Zero)} meshes {string.Join(",", holder.FindChildren("*", "MeshInstance3D", true, false).Select(m => m.Name + ":" + ((MeshInstance3D)m).VisibilityRangeBegin + "-" + ((MeshInstance3D)m).VisibilityRangeEnd + ":" + ((MeshInstance3D)m).Visible))}");
+            bool torch = kind == "torch_mounted";
+            if (best == null && torch && OwnProps.For(Data.Id)?.Lit is { } own0 && own0.Exists(p => new Vector2(at.X - p.X, at.Z - p.Y).Length() < 1.2f))
+            {
+                // A torch of the zone's own (props_own.json "lit", E7b: the Watch-post's): its flame and its own small light.
+                var tf = FlameKit.Add(holder, Vector3.Zero, FlameKind.Torch, false, 0.8f, light: true);
+                tf.Transform = InLandmarks(holder).AffineInverse() * new Transform3D(Basis.Identity, at);
+                foreach (var c in tf.FindChildren("*", "MeshInstance3D", true, false))
+                    if (c is MeshInstance3D card && card.Mesh?.SurfaceGetMaterial(0) is ShaderMaterial fm)
+                    {
+                        fm.SetShaderParameter("soft", LampSoft);
+                        fm.SetShaderParameter("intensity", (float)fm.GetShaderParameter("intensity") * 2f);
+                    }
+                Lamps.Inner(holder, at + Vector3.Up * FlameKit.Spec(FlameKind.Torch).H * 0.8f * 0.35f, false, FlameKit.Spec(FlameKind.Torch).H * 0.8f * 0.75f);
+                Lamps.SetLit(holder, true);
+                continue;
+            }
             if (best == null) { Lamps.SetLit(holder, false); continue; }
             int li = glowLight[best];
-            bool torch = kind == "torch_mounted";
             LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : LampScale, holder);
             if (!torch) { lights[li].LightColor = new Color(LampColor); lights[li].OmniRange = LampRange; lights[li].OmniAttenuation = LampAtt; }
             specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
