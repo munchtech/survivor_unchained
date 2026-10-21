@@ -3,9 +3,11 @@
 VARIANTS, comma-separated: g (as built, with --grade-dump: the live table, for relighting her in the
 paint-overs), r (--grade off: the raw frame the paint-overs start from), t (--grade-try SPEC: direction A), b (t plus the extra flags: x="--brush r=3" for
 every set, or x.SET="..." for one; e.g. the painterly post-filter on top of A).
+o (as built: our own flora, the default since E4h, plus x= flags); g is the kit's flora (--flora-kit).
 SETS, comma-separated: town (the square, the east road, the north street by day), ford (Low Ford by
 night: camp, road A, road B, the ford, the wood road, two ford lamps), close (the close view at camp,
-closest zoom, twice facing away from the fire and twice facing it), camp (the camp at the play camera), towndawn, forddawn.
+closest zoom, twice facing away from the fire and twice facing it), camp (the camp at the play camera), towndawn, forddawn,
+road (the wood road by night, and the ford road), roaddawn.
 Frames land in godot/.shots/ as ROUND_SET_VARIANT_*.png; tables as godot/.shots/ROUND_SET_g.bin.
 """
 import os, subprocess, sys, time
@@ -17,7 +19,8 @@ TP = r"C:\Users\munch\Desktop\survivorsunchained\tools\turn.py"
 HER = ["--quick", "warden", "--sex", "female", "--preset", "own", "--skin", "fair", "--eyes", "moss", "--hair", "braid", "--seed", "7", "--nohud", "--no-labels"]
 NIGHT = ["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "idle"]
 SETS = {
-    "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24"], 3),
+    # (E4c: the fourth spot by the square's trees, -6,-12, so the town shows them)
+    "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24;-7,-7"], 4),
     "ford": (NIGHT + ["--spots", "-7.5,87.5;3,64;9,40;0,-38;-2,-72;0,-37;-7,-46"], 7),
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)
@@ -27,6 +30,11 @@ SETS = {
     # (env lead 9, G1: the dawns, one frame each: the square at dawn, the camp after the prologue)
     "towndawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "3,3"], 1),
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
+    # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)
+    "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),
+    # (E4h: the town's elders in the open by day (-36,-34: 14 m from any tree), at the play camera: their cream flower heads)
+    "elder": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-37.5,-30.5"], 1),
+    "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
 spec = next((a[4:] for a in sys.argv[4:] if a.startswith("try=")), None)
@@ -53,8 +61,10 @@ try:
         extra, n = SETS[s]
         for v in variants:
             name = f"{rnd}_{s}_{v}"; t0 = time.time()
-            va = {"g": ["--grade-dump", os.path.join(shots, f"{rnd}_{s}_g.bin")], "r": ["--grade", "off"], "t": ["--grade-try", specs.get(s, spec) or ""],
-                  "b": ["--grade-try", specs.get(s, spec) or ""] + shlex.split(xs.get(s, xall) or "")}[v]
+            va = {"g": ["--flora-kit", "--grade-dump", os.path.join(shots, f"{rnd}_{s}_g.bin")], "r": ["--grade", "off"], "t": ["--grade-try", specs.get(s, spec) or ""],
+                  "b": ["--grade-try", specs.get(s, spec) or ""] + shlex.split(xs.get(s, xall) or ""),
+                  # o (E4): as built (our own flora, the default since E4h), plus x= flags if any
+                  "o": shlex.split(xs.get(s, xall) or "")}[v]
             args = HER + extra + va + ["--spots-from", "10", "--spots-every", "6", "--shot", name, "--seconds", "15", "--every", "6", "--count", str(n)]
             with open(os.path.join(logs, name + ".log"), "w", encoding="utf-8", errors="replace") as lf:
                 p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080"] + (["--fixed-fps", fps] if fps else []) + ["--"] + args, stdout=lf, stderr=subprocess.STDOUT)

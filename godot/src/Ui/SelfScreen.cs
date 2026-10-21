@@ -55,7 +55,7 @@ public partial class SheetScreen : Overlay
         new[] { ("Staying alive", new[]
         {
             S(Stat.MaxHealth, "Health", v => $"{Math.Round(v)}"),
-            S(Stat.Armor, "Armour", v => $"{Math.Round(v)} · {Math.Round(StatBlock.ArmorReduction(v) * 100)}%"),
+            S(Stat.Armor, "Armor", v => $"{Math.Round(v)} · {Math.Round(StatBlock.ArmorReduction(v) * 100)}%"),
             S(Stat.Regen, "Regeneration", v => $"{v:0.0}/s"),
             S(Stat.Healing, "Healing", Pct),
             S(Stat.Dodge, "Dodge", v => $"{Math.Round(v * 100)}%"),

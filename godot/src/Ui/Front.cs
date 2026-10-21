@@ -628,7 +628,7 @@ public partial class CreateScreen : Overlay
         var bg = Callings.Background(d.Background);
         return Style.V(Style.Gap3,
             DTitle(a.Name), DSub(a.Tagline), DBody(a.Description), Kit.RuleH(),
-            Ledger(($"{a.Base.MaxHealth:0}", "Health"), ($"{a.Base.Armor:0}", "Armour"), ($"{a.Base.MoveSpeed:0.0}", "Speed"), ($"{a.Base.CritChance * 100:0}%", "Precision")),
+            Ledger(($"{a.Base.MaxHealth:0}", "Health"), ($"{a.Base.Armor:0}", "Armor"), ($"{a.Base.MoveSpeed:0.0}", "Speed"), ($"{a.Base.CritChance * 100:0}%", "Precision")),
             Kit.RuleH(),
             Line("Arts", string.Join(" · ", ArtBook.Starting(a.Id).Select(x => Abilities.ById(x).Name))),
             Line("Carries", string.Join(" · ", bg.Items.Select(i => Items.Get(i).Name))),
