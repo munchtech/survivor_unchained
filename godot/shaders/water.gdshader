@@ -258,5 +258,8 @@ void light() {
 		c += LIGHT_COLOR * (as2 / (PI * ds * ds) * F * vis * ndl * ATTENUATION) * glint_sheen * crest;
 	}
 	float m = max(c.r, max(c.g, c.b));
-	SPECULAR_LIGHT += c * min(1.0, glint_cap / max(m, 1e-4)) * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
+	// (E7 round 3: a near light's glint scaled by its light_specular over Godot's 0.5, after the cap: the ford lamps at 0.3
+	// spread blown white patches on the far ripples at the cap; the moon and the sun as before)
+	float sk = LIGHT_IS_DIRECTIONAL ? 1.0 : clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0);
+	SPECULAR_LIGHT += c * min(1.0, glint_cap / max(m, 1e-4)) * sk * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
 }

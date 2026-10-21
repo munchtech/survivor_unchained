@@ -1,0 +1,20 @@
+{
+ "_doc": "The set-dressing props' presets (tools/assets/env_props.py builds one GLB each into godot/art/world/props). kind: which builder; the rest its sizes (metres) and palette (sRGB hex, multiplied over the atlas region's painted near-neutral: tools/assets/env_props_atlas.py). A new variant is a new entry here: a kind, a seed, sizes, colours. A zone then sets which of its pieces each one replaces: godot/data/zones/<zone>/props_own.json.",
+ "presets": {
+  "bedroll_open": {"kind": "bedroll_open", "seed": 1, "len": 1.75, "wide": 0.78,
+                   "blanket": "#868a6c", "band": "#e6d8b4", "sheet": "#5e4a3a", "pillow": "#a08670", "strap": "#ffffff"},
+  "bedroll_rolled": {"kind": "bedroll_rolled", "seed": 2, "len": 0.72, "r": 0.13,
+                     "blanket": "#868a6c", "band": "#e6d8b4", "strap": "#ffffff"},
+  "pack": {"kind": "pack", "seed": 3, "h": 0.58, "r": 0.25,
+           "cloth": "#d8ccb0", "flap": "#ffffff", "strap": "#ffffff", "roll": "#a6a492", "band": "#e8dcc4"},
+  "chest": {"kind": "chest", "seed": 4, "w": 1.24, "d": 0.74, "h": 0.52, "lid": 0.16,
+            "wood": "#9c9894", "iron": "#ffffff"},
+  "crate": {"kind": "crate", "seed": 5, "w": 0.84, "d": 0.9, "h": 0.88, "wood": "#e6dccb"},
+  "barrel": {"kind": "barrel", "seed": 6, "h": 0.9, "r": 0.35, "r_end": 0.29, "wood": "#c9ae92", "iron": "#ffffff"},
+  "log_long": {"kind": "log", "seed": 7, "len": 2.3, "r": 0.27, "flat": 0.0, "bark": "#a8a098", "cut": "#ffffff"},
+  "log_short": {"kind": "log", "seed": 8, "len": 1.6, "r": 0.22, "flat": 0.0, "bark": "#a29a92", "cut": "#ffffff"},
+  "pylon": {"kind": "pylon", "seed": 10, "w": 1.0, "h": 4.4, "stone": "#f4f0ea"},
+  "wagon": {"kind": "wagon", "seed": 9, "len": 3.1, "wide": 1.5, "side": 0.38, "wheel_r": 0.56, "roll": 0.3,
+            "wood": "#cfc6b8", "iron": "#ffffff", "sack": "#b39e7d", "sack2": "#a49072"}
+ }
+}
