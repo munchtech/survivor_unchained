@@ -22,13 +22,14 @@ public static class Dressing
         piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb"
         : piece.StartsWith("own:") ? $"res://art/world/flora/{OwnFile(piece)}.gltf" : $"res://assets/env/{kit}/{piece}.gltf";
 
-    /// <summary>--flora-own (E4, a developer's switch while our own flora replaces the kit's, default off): the kit's
+    /// <summary>Our own flora (E4; the default since E4h, --flora-kit for the kit's, kept to compare): the kit's
     /// pines, broadleaf trees, dead trees, bushes and ferns drawn as ours (tools/assets/env_trees.py), the same count,
     /// places and sizes. Which kit piece is which of ours is data: godot/data/flora_species.json (a zone may override it).</summary>
-    public static readonly bool FloraOwn = SurvivorUnchained.Args.Has("flora-own");
-    /// <summary>The piece as this zone draws it: "own:a" (or "own:a|b|c", one per copy by its place) under --flora-own.</summary>
-    public static string Own(string piece, string zone = "") =>
-        FloraOwn && FloraSpecies.OwnFor(zone, piece) is { } o ? "own:" + string.Join('|', o) : piece;
+    public static readonly bool FloraOwn = !SurvivorUnchained.Args.Has("flora-kit");
+    /// <summary>The piece as this zone draws it: "own:a" (or "own:a|b|c", one per copy by its place) with our own flora,
+    /// null where ours drops it (an empty list: the kit's clover, flowers and mushrooms; our grass has its own flowers).</summary>
+    public static string? Own(string piece, string zone = "") =>
+        FloraOwn && FloraSpecies.OwnFor(zone, piece) is { } o ? (o.Length == 0 ? null : "own:" + string.Join('|', o)) : piece;
 
     /// <summary>Where our own flora changes LOD (a cell's middle from the camera, m; flora_species.json's "lod" per
     /// species, --flora-lod1/--flora-lod2/--flora-cell override every species, for measuring): lod0 inside the first,

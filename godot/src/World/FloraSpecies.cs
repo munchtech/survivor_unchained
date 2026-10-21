@@ -80,6 +80,21 @@ public static class FloraSpecies
         return map.TryGetValue(kitPiece, out var o) ? o : null;
     }
 
+    /// <summary>The grass kind this zone draws (flora_species.json "grass": its "use" and "kinds"; a zone's own file may
+    /// set its own "use" or add kinds): the kind's JSON (atlas, palettes, card, cell, drift, shader).</summary>
+    public static JsonElement GrassFor(string zone)
+    {
+        var root = Load(Path).GetProperty("grass");
+        string use = root.GetProperty("use").GetString()!;
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone != "" && FileAccess.FileExists(zp) && Load(zp).TryGetProperty("grass", out var zg))
+        {
+            if (zg.TryGetProperty("use", out var u)) use = u.GetString()!;
+            if (zg.TryGetProperty("kinds", out var zk) && zk.TryGetProperty(use, out var k)) return k.Clone();
+        }
+        return root.GetProperty("kinds").GetProperty(use).Clone();
+    }
+
     /// <summary>The species a piece of ours belongs to ("spruce_a": spruce).</summary>
     public static Species Of(string piece)
     {

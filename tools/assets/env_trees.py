@@ -612,6 +612,8 @@ def cells(species):
 
 
 def tex(species):
+    if species == 'grass':
+        return grass_tex()
     sys.path.insert(0, os.path.dirname(__file__))
     import paint_tex as pt
     from PIL import Image
@@ -633,6 +635,142 @@ def tex(species):
     out = os.path.join(OUT, f'{species}_atlas.png')
     Image.fromarray((np.clip(atlas, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA').save(out)
     print(out)
+
+
+# ---------------------------------------------------------------- step D's grass (E4h): painted clump cards
+
+GC = 256            # a grass clump's cell (the atlas: 4 x 2 cells, 1024 x 512)
+
+
+def grass_kinds():
+    import json
+    with open(os.path.join(ROOT, 'godot', 'data', 'flora_species.json'), encoding='utf-8') as f:
+        return json.load(f)['grass']['kinds']
+
+
+def grass_clump(seed, olive, cool, flowers=None, nflowers=0, form=0):
+    """One grass clump in a GC x GC cell (rgb, alpha, height): three to five blades from one root, never a fan of
+    even spokes: the roots a little apart, the clump leaning to one side (its blades' leans uneven, one or two arching
+    over), each blade tapered to a point, dark at its root (the ground's shadow in the clump) and lighter to its tip,
+    a muted olive or a blue-green per blade; two or three short dark blades at the foot bulk the base. With flowers,
+    a few small muted heads on thin stems over the clump (never confetti). Seen side-on (the card faces the camera),
+    so at the play camera a clump is a tuft leaning its own way, not a star. Drawn at twice the size and halved."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    S = 2
+    W = H = GC * S
+    cimg = np.zeros((H, W, 3), np.uint8)
+    a8 = np.zeros((H, W), np.uint8)
+    h8 = np.zeros((H, W), np.uint8)
+    po, pc = [srgb(h) for h in olive], [srgb(h) for h in cool]
+
+    def shade(v, m):
+        v = float(np.clip(v, 0, 0.999)) * (len(po) - 1)
+        i = int(v); f = v - i
+        a = po[i] * (1 - f) + po[i + 1] * f
+        b = pc[i] * (1 - f) + pc[i + 1] * f
+        return a * (1 - m) + b * m
+
+    def c8(c):
+        return (np.clip(c, 0, 1) * 255).astype(int).tolist()
+
+    side = rng.choice([-1, 1])
+    cx = W / 2 + rng.uniform(-0.04, 0.04) * W
+    n = int(rng.integers(3, 6))
+    # blades: (root x, lean rad from upright, length, curl, root width, hue mix, value offset)
+    # the clump's form (a cell each, so no two read alike): 0 upright and narrow, 1 spreading and low, 2 one long
+    # blade arching over the rest, 3 leaning hard to one side
+    spread, lmin, lmax, lean0 = [(0.3, 0.6, 0.92, 0.08), (0.75, 0.38, 0.62, 0.1), (0.45, 0.45, 0.75, 0.15), (0.35, 0.5, 0.82, 0.45)][form % 4]
+    leans = np.sort(rng.uniform(-spread, spread, n)) + side * lean0 + rng.normal(0, 0.1, n)
+    hm = rng.uniform(0, 1) ** 1.6       # (mostly olive; the blue-green comes with the low ground and the night)
+    blades = []
+    for k in range(n):
+        ln = H * rng.uniform(lmin, lmax)
+        curl = np.sign(leans[k] + 1e-3) * rng.uniform(0.2, 0.7)
+        if (form % 4 == 2 and k == n - 1) or rng.random() < 0.15:      # one arching over
+            curl = side * rng.uniform(1.3, 1.8); ln = H * rng.uniform(0.75, 0.9)
+        blades.append((cx + rng.uniform(-0.06, 0.06) * W + leans[k] * 0.05 * W, leans[k], ln, curl,
+                       rng.uniform(22, 30) * S, float(np.clip(hm + rng.normal(0, 0.28), 0, 1)), rng.uniform(-0.08, 0.06)))
+    # the short dark blades at the foot (drawn first: behind)
+    foot = [(cx + rng.uniform(-0.08, 0.08) * W, rng.uniform(-0.9, 0.9), H * rng.uniform(0.2, 0.36), rng.uniform(-0.6, 0.6),
+             rng.uniform(20, 26) * S, float(np.clip(hm + rng.normal(0, 0.2), 0, 1)), -0.12) for _ in range(int(rng.integers(3, 6)))]
+    order = foot + sorted(blades, key=lambda b: b[2])
+    base_y = H - 6 * S
+    for (rx, lean, ln, curl, w0, m, vb) in order:
+        N = 28
+        pts = []
+        p = np.array([rx, base_y], np.float64)
+        for i in range(N + 1):
+            pts.append(p.copy())
+            a = lean + curl * (i / N) ** 2
+            p = p + np.array([math.sin(a), -math.cos(a)]) * ln / N
+            p[0] = np.clip(p[0], 0.06 * W, 0.94 * W); p[1] = max(p[1], 0.04 * H)
+        pts = np.array(pts)
+        tw = rng.uniform(0, 6.28)
+        wd = lambda s: w0 * 0.5 * (1 - s) ** 0.85 * (1 + 0.08 * math.sin(9 * s + tw))
+        for i in range(N):
+            s0, s1 = i / N, (i + 1) / N
+            d = pts[i + 1] - pts[i]
+            nv = np.array([-d[1], d[0]]) / max(np.linalg.norm(d), 1e-6)
+            q = np.array([pts[i] + nv * wd(s0), pts[i + 1] + nv * wd(s1), pts[i + 1] - nv * wd(s1), pts[i] - nv * wd(s0)])
+            sm = (s0 + s1) / 2
+            qi = np.round(q * 4).astype(np.int32)
+            cv2.fillConvexPoly(cimg, qi, c8(shade(0.06 + 0.86 * sm ** 0.75 + vb + rng.normal(0, 0.02), m)), cv2.LINE_AA, 2)
+            cv2.fillConvexPoly(a8, qi, 255, cv2.LINE_AA, 2)
+            cv2.fillConvexPoly(h8, qi, int(90 + 140 * sm), cv2.LINE_AA, 2)
+        # the blade's lit edge: a thin lighter stroke along one side of its upper half (painted, not a midrib)
+        for i in range(N // 2, N - 2):
+            s = i / N
+            d = pts[i + 1] - pts[i]
+            nv = np.array([-d[1], d[0]]) / max(np.linalg.norm(d), 1e-6) * (-side)
+            off = nv * wd(s) * 0.5
+            cv2.line(cimg, tuple(np.round(pts[i] + off).astype(int)), tuple(np.round(pts[i + 1] + off).astype(int)),
+                     c8(shade(0.2 + 0.86 * s ** 0.75 + vb, m) * 1.08), max(2, int(w0 * 0.2 * (1 - s))), cv2.LINE_AA)
+    if flowers and nflowers:
+        # a few small heads on thin stems, over the clump: muted cream or pale lilac (one colour a clump)
+        fc = srgb(flowers[int(rng.integers(0, len(flowers)))])
+        for k in range(nflowers):
+            fx = cx + rng.uniform(-0.22, 0.22) * W
+            top = H * rng.uniform(0.3, 0.5)
+            r0 = (int(cx + (fx - cx) * 0.3), int(base_y))
+            cv2.line(cimg, r0, (int(fx), int(top)), c8(shade(0.35, hm)), 3 * S, cv2.LINE_AA)
+            cv2.line(a8, r0, (int(fx), int(top)), 255, 3 * S, cv2.LINE_AA)
+            for j in range(int(rng.integers(4, 7))):
+                r = int(rng.uniform(3.5, 5.5) * S)
+                ctr = (int(fx + rng.normal(0, 5) * S), int(top + rng.normal(0, 3.5) * S))
+                cv2.circle(cimg, ctr, r, c8(fc * rng.uniform(0.82, 1.0)), -1, cv2.LINE_AA)
+                cv2.circle(a8, ctr, r, 255, -1, cv2.LINE_AA)
+                cv2.circle(h8, ctr, r, 230, -1, cv2.LINE_AA)
+    col = cv2.resize(cimg.astype(np.float32) / 255, (GC, GC), interpolation=cv2.INTER_AREA)
+    al = cv2.resize(a8.astype(np.float32) / 255, (GC, GC), interpolation=cv2.INTER_AREA)
+    hg = cv2.resize(h8.astype(np.float32) / 255, (GC, GC), interpolation=cv2.INTER_AREA)
+    col = np.clip(col / np.maximum(al, 1e-3)[..., None], 0, 1) * (al > 0)[..., None]
+    return col, al, cv2.GaussianBlur(hg, (5, 5), 1.2)
+
+
+def grass_tex():
+    """Each grass kind's atlas (flora_species.json "grass" "kinds"): 4 x 2 clump cells, the last `flower_cells` of
+    them with a few heads; painted as the trees' sprays are (paint_tex, foliage): grass_<kind>_atlas.png. The cards
+    themselves are made in the game (World/Grass.cs), not here."""
+    sys.path.insert(0, os.path.dirname(__file__))
+    import paint_tex as pt
+    from PIL import Image
+    os.makedirs(OUT, exist_ok=True)
+    pf = pt.preset('foliage', {})
+    for ki, (name, k) in enumerate(grass_kinds().items()):
+        atlas = np.zeros((GC * 2, GC * 4, 4), np.float32)
+        nf = int(k.get('flower_cells', 0))
+        for j in range(8):
+            fl = j >= 8 - nf
+            cc, a, hh = grass_clump(700 + j * 19 + ki * 101, k['olive'], k['cool'], k.get('flowers'), 3 if fl else 0, form=j)
+            cc = bleed(cc, a)
+            p = pt.paint(cc, normals(hh, 2.0), pf)
+            r, c = j // 4, j % 4
+            atlas[r * GC:(r + 1) * GC, c * GC:(c + 1) * GC, :3] = p
+            atlas[r * GC:(r + 1) * GC, c * GC:(c + 1) * GC, 3] = a
+        out = os.path.join(OUT, f"{k['atlas']}_atlas.png")
+        Image.fromarray((np.clip(atlas, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA').save(out)
+        print(out)
 
 
 # ---------------------------------------------------------------- geometry (Blender)
