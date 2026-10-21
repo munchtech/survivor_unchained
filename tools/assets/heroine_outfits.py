@@ -7410,7 +7410,9 @@ def arcanist():
                           [np.array([x + (x * 0.82 - x) * t, 0.0, (UNDERBUST - 0.024) + (1.03 - UNDERBUST + 0.024) * t]) for t in np.linspace(0, 1, 7)],
                           0.012, "plumleather", lift=0.0002, thick=0.0007, onto="arcanist.corset",
                           taper=BONING_TAPER or None)],
-        *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
+        # (the choker is cut, armor 9, 21 Oct: its mask (neck weight over 0.4 with Head under 0.3) only ever held a
+        # fragment at the back of her neck since the neck seam, which showed at the close-up as a dark comma behind her
+        # right shoulder; a full ring, if wanted, is an outfits item)
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
     for sd in "lr":

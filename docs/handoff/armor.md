@@ -2,6 +2,13 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Armor 9 (21 Oct), in progress
+Worktree armor-7 (integration 423bfef0 merged: heroine.glb = integration geometry + armor's COLOR_0 tuck colours grafted, `scratch armor\glb\graft.py` + cmp.py). Scratch `...\6a6cb394-317c-45d7-aa08-3523481011e7\scratchpad\armor` (p9_judge.md, shoot2.sh multi-frame, p9*_list.txt, h1/h2 briefs).
+- **Judge r2 (max), a9_* in godot/.shots/armor9:** PASS: warden straps at the Look front and -40 (crest closed; a small tab on the front skyline, optional geometry fix), warden close-up, combat at the arena play camera (rev, mix_legs; lea/pla pass clipping but didn't read: restaged, plate with `--helm 0`, leather with `--auto away`), dye (steel/bronze/oxblood). FAIL: the "plate strap flick" in pla_close = the ARCANIST CHOKER (a back-only fragment since ~19 Oct; proven by A/B shots: stays without the plate top and without pauldrons). Cut in heroine_outfits.py and detached from the built gltf (nodes 91/92), LODs re-run.
+- **Dye bug fixed:** the blued finish painted over every metal dye (heroine_outfit.gdshaderinc: a dyed blued key drops its oxide). Open: a navy band under her right cup stays undyed (d_zones shot finds its zone).
+- **Swap hitch:** h1 edd74c14 (tuck 1.5-1.8 s -> 0.2-0.3 s, bit-identical), h2 d35e8195/ec258eaf/b7d56dba (live swap laid on a worker, latest wins; worst main-thread frame 723 -> 78 ms; the rest is PlayerView rebuild ~60 ms + shader compiles). Closed at the round cap; follow-up: redress in place on a gear-only swap + precompile outfit shaders (P9 with the LODs).
+- `--tuck-weights 0` shot switch added.
+
 ## Paused here (armor lead 8, 21 Oct, coordinator wind-down); next:
 Worktree `.claude/worktrees/armor-7`, branch `armor-7` @ 8c4ebc3b (pushed; integration ec27099b + env df377545 merged). Junction rules as below. Scratch: C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\489a0bd2-e3b7-44cc-9b4a-68d66b041337\scratchpad\armor (texts backed up to survivorsunchained_inputs\scratch_armor8\). Briefs there: r1-r4_brief.md (the rebuild solvers), p8_judge.md + p8_list.txt + shoot.sh (judge shoot), b_design_spec.md (B design, DONE).
 - **THE ONE REBUILD: DONE** on the new neck (24cdc909, then 1a157d99, then 8c4ebc3b). The recipe that matches integration is a full build with `NAPE=0`, then `rebuild
