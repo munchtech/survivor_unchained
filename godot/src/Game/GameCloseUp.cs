@@ -137,7 +137,7 @@ public partial class Game
         {
             // (By night: the key CloseKeyAzNight degrees off her face, on the lens's side of it. She stands turned 0.6 rad
             // from the lens, so round 2's key at 0.7 rad was 6 degrees off her face: frontal, flat, waxy.)
-            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? CloseKeyElNight : 25);
+            float a = cam.Yaw + 0.6f - Mathf.DegToRad(night ? CloseKeyAzNight : CloseKeyAzDay), up = Mathf.DegToRad(night ? CloseKeyElNight : CloseKeyElDay);
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
         }
@@ -203,5 +203,9 @@ public partial class Game
     static readonly Color CloseKeyColourNight = new(1f, 0.6f, 0.35f);
     // --close-key E, --close-lamp L: the day key's strength and her lamp's share by day, for pictures.
     static float CloseKey => Args.Has("close-key") ? Args.Num("close-key", 0.7f) : 0.7f;
+    // --close-key-az-day D, --close-key-el-day D: the day key's angle off her face toward the lens, and its elevation (degrees).
+    // (Before face 34 it stood 0.7 rad off the lens, 6 degrees off her face (she turns 0.6 from it): frontal, her face flat under the town's day light.)
+    static float CloseKeyAzDay => Args.Num("close-key-az-day", -6f);
+    static float CloseKeyElDay => Args.Num("close-key-el-day", 25f);
     static float CloseLampByDay => Args.Has("close-lamp") ? Args.Num("close-lamp", 0.25f) : 0.25f;
 }

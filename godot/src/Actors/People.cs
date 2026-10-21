@@ -951,7 +951,25 @@ public static class People
                 if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v;
             }
         var c = hair.Darkened(dark);
-        return Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
+        c = Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
+        // (a pale near-neutral dye, platinum: its scalp shade cooled as its cards are, heroine_hair.gdshaderinc's ash,
+        // or her hairline went peach-orange under pale hair in the Look's warm light: face 34)
+        var l = c.SrgbToLinear();
+        float pn = PaleNeutral(hair);
+        return pn <= 0 ? c : new Color(l.R * Mathf.Lerp(1f, AshTone.X, pn), l.G * Mathf.Lerp(1f, AshTone.Y, pn), l.B * Mathf.Lerp(1f, AshTone.Z, pn)).LinearToSrgb();
+    }
+
+    /// <summary>heroine_hair.gdshaderinc's ash_tone (at its ash 1).</summary>
+    static readonly Vector3 AshTone = new(0.72f, 1f, 1f);
+
+    /// <summary>How pale and near-neutral a dye is, 0 to 1, as heroine_hair.gdshaderinc's ash share: 1 for platinum and
+    /// gray, 0 for every saturated or dark dye.</summary>
+    public static float PaleNeutral(Color hair)
+    {
+        var l = hair.SrgbToLinear();
+        float mx = Mathf.Max(l.R, Mathf.Max(l.G, l.B)), mn = Mathf.Min(l.R, Mathf.Min(l.G, l.B));
+        float sat = (mx - mn) / Mathf.Max(mx, 0.001f), lum = 0.2126f * l.R + 0.7152f * l.G + 0.0722f * l.B;
+        return (1f - Mathf.SmoothStep(0.2f, 0.5f, sat)) * Mathf.SmoothStep(0.1f, 0.35f, lum);
     }
 
     public static void HerScalp(Person p, Color hair)
