@@ -45,13 +45,13 @@ uniform float grey_hair = 0.8;
 // (face 33: how much darker than the dye the darkest hairs go, past the brow's core)
 uniform float dye_deep = 0.5;
 // (face 33: the darkest a dye is drawn (linear luma), and how far a floored one is warmed)
-uniform float dye_floor = 0.035;
-uniform float dye_floor_warm = 0.7;
+uniform float dye_floor = 0.028;
+uniform float dye_floor_warm = 0.45;
 // (face 33: the least of its colour a dye held darker for her skin takes; over 1, more than its own)
 uniform float dye_sat_held = 1.6;
 // (face 33: the skin lightness (linear) a dye starts turning warmer on, and where it is wholly turned; how far)
 uniform vec2 dye_deep_skin = vec2(0.35, 0.15);
-uniform float dye_deep_warm = 0.5;
+uniform float dye_deep_warm = 0.8;
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
