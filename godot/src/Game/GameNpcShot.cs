@@ -109,23 +109,26 @@ public partial class Game
         scene.AddChild(v);
         v.Loop(idle);
         GD.Print($"npc shot: {name} plays {idle}");
-        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap")));
+        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest")));
     }
 
     sealed partial class NpcShotDriver : Node
     {
         readonly Game game;
         readonly PersonView v;
-        readonly bool walk, swap;
+        readonly bool walk, swap, chest;
         double t;
+        Camera3D? chestCam, playCam;
 
-        public NpcShotDriver(Game game, PersonView v, bool walk, bool swap) { this.game = game; this.v = v; this.walk = walk; this.swap = swap; }
+        public NpcShotDriver(Game game, PersonView v, bool walk, bool swap, bool chest = false) { this.game = game; this.v = v; this.walk = walk; this.swap = swap || chest; this.chest = chest; }
 
         public override void _Process(double delta)
         {
             t += delta;
             if (game.scene == null || game.Battle?.Player is not { } pl || GetViewport().GetCamera3D() is not Camera3D cam) return;
             if (swap && game.scene.Player is { } her) her.Visible = false;
+            if (chest && chestCam == null) playCam = cam;
+            if (chest && playCam != null) cam = playCam;
             var c = cam.GlobalPosition;
             double x = pl.X, z = pl.Z;
             if (!swap)
@@ -155,6 +158,22 @@ public partial class Game
             // (in her place, the close-up framed on its own head, not hers: a shorter NPC's head sat low in her frame,
             // a taller one's took the camera inside it; the lift eased, as the bones settle in the first frames)
             var nh = HeadOf(v);
+            if (chest)
+            {
+                if (chestCam == null)
+                {
+                    chestCam = new Camera3D { Fov = 30, KeepAspect = Camera3D.KeepAspectEnum.Height, Near = 0.05f, Far = 1400 };
+                    game.scene.AddChild(chestCam);
+                    chestCam.MakeCurrent();
+                    GD.Print("npc shot: chest camera at 1.4 m, fov 30");
+                }
+                if (nh is { } hp)
+                {
+                    var f = new Vector3((float)Math.Sin(heading), 0, (float)Math.Cos(heading)).Rotated(Vector3.Up, Mathf.DegToRad(15f));
+                    chestCam.GlobalPosition = hp + f * 1.4f + new Vector3(0, 0.0f, 0);
+                    chestCam.LookAt(hp + new Vector3(0, -0.08f, 0), Vector3.Up);
+                }
+            }
             var hh = game.scene.Player is { } h ? HeadOf(h) : null;
             if (swap && nh is { } na && hh is { } hb) game.cam.AimLift = (float)Mathf.Lerp(game.cam.AimLift, na.Y - hb.Y, Math.Min(1, delta * 4));
             if (nh is { } q && (int)(t * 2) != (int)((t - delta) * 2) && t > 6)
