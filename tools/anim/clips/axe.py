@@ -75,7 +75,23 @@ RUN_DH, RUN_BL = (0.0, 0.0, 0.0), (0.62, -0.45, 0.64)
 RUN_SY = 16
 RUN_T11, RUN_H11 = 0, (0.10, -0.30, 0.50)
 RUN_HSY = 16
-RUN_HDH, RUN_HBL = (0.0, 0.04, 0.0), (0.5, -0.8, 0.35)
+RUN_HDH, RUN_HBL = (-0.07, 0.04, 0.03), (0.5, -0.8, 0.35)
+# (Animation 46, judge r4: over the run the heavy's blade read edge-on from 315, a pole.) The haft's roll at the
+# finish over the run: the knuckles turned this many degrees about the haft, so the head's flat shows.
+RUN_HROLL = 40
+RUN_HROLL10 = 1.0  # the share of it kept at the hold's end (f10)
+RUN_HPOLE = None  # the elbow's pole at the finish over the run (None: the standing one)
+# (Animation 46, judge r4: the wind-up read as a hoist, the pelvis 2 of 8 cm down.) The heavy's sink: the wind-up's
+# hips this much lower (m), and the blow's crouch (the hips lead the hands 1.5 frames, so the blow's key is what f1-f2
+# show).
+HV_SINK, HV_CROUCH3 = 0.03, 0.10
+
+
+def _rolled(k, axis, deg):
+    """The knuckles k turned deg about axis (Rodrigues)."""
+    k, ax = np.asarray(k, float), np.asarray(axis, float) / np.linalg.norm(axis)
+    a = math.radians(deg)
+    return tuple(float(x) for x in k * math.cos(a) + np.cross(ax, k) * math.sin(a) + ax * (ax @ k) * (1 - math.cos(a)))
 
 GUARD = pose(0, 0, (-0.06, -0.26, 0.22), _n(-0.3, 0.75, 0.55), pole=(-0.7, -0.5, -0.4), off=(-0.02, -0.28, 0.20))
 
@@ -165,6 +181,9 @@ def _heavy_keys(run=False):
     dh, bl = (RUN_HDH, _n(*RUN_HBL)) if run else ((0, 0, 0), _n(0.75, -0.55, 0.45))
     sy = RUN_HSY if run else 0
     h6 = (0.20 + dh[0], -0.16 + dh[1], 0.44 + dh[2])
+    kn6 = _rolled((0.43, -0.15, -0.89), bl, RUN_HROLL) if run else (0.43, -0.15, -0.89)
+    kn10 = _rolled((0.43, -0.15, -0.89), bl, RUN_HROLL * RUN_HROLL10) if run else (0.43, -0.15, -0.89)
+    hoff0 = (HV_OFF[0], HV_OFF[1] - HV_SINK, HV_OFF[2])
     return [
         # (Solver 5a, judge r2: apart from fore's: wound further, arched back, the elbow high and back, the haft
         # laid back so the head drops behind her shoulders.)
@@ -172,21 +191,21 @@ def _heavy_keys(run=False):
         # and the back arched more.)
         (0, pose(-26 + HV_YAW[0], -54 + HV_YAW[1], (-0.18, 0.28, -0.18), _n(-0.25, 0.3, -0.95), pole=(-0.6, 1.0, -0.6),
                  off=(0.08, -0.06, 0.34), weight=-0.6, pitch=-14 + HV_PITCH, knuckles=(-0.782, 0.412, 0.467),
-                 hips_off=HV_OFF), "fast"),
+                 hips_off=hoff0), "fast"),
         (3, pose(-6, -8, (-0.02, 0.0, 0.42), _n(0.0, 0.2, 1.0), pole=(-0.6, -0.5, -0.4),
-                 off=(0.04, -0.28, 0.16), weight=0.2, pitch=10, knuckles=(-0.211, -0.901, 0.378)), "linear"),
+                 off=(0.04, -0.28, 0.16), weight=0.2, pitch=10, crouch=HV_CROUCH3, knuckles=(-0.211, -0.901, 0.378)), "linear"),
         # (As axe_fore's finish, anim 42, but heavier: 10 deg more hinge, the head lower and further out.)
         # (Solver 4: as fore's, the arm in front of her breast; and apart from fore: the head about 13 cm lower
         # and 15 further out, the haft steeper, the knees deeper, held two frames longer.)
         # (Solver 5a, judge r2: heavier than fore at the finish: the spine 14 deg more pitched, the head lower and
         # further forward; the haft rolled (knuckles) so the head's flat shows to the camera, edge leading, not
         # end-on; the free hand loose, out from her hip.)
-        (6, pose(28, 34 + sy, h6, bl, pole=(-0.9, -0.3, 0.1),
+        (6, pose(28, 34 + sy, h6, bl, pole=RUN_HPOLE[0] if run and RUN_HPOLE else (-0.9, -0.3, 0.1),
                  off=(0.20, -0.28, 0.22), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.8, pivot=0.8, pitch=40,
-                 roll=-14, hinge=23, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89), hroll=HH6, hpitch=HP6), "ease"),
-        (10, pose(31, 36 + sy, h6, bl, pole=(-0.9, -0.3, 0.2),
+                 roll=-14, hinge=23, clav_r=(6, 14), crouch=0.07, knuckles=kn6, hroll=HH6, hpitch=HP6), "ease"),
+        (10, pose(31, 36 + sy, h6, bl, pole=RUN_HPOLE[1] if run and RUN_HPOLE else (-0.9, -0.3, 0.2),
                   off=(0.20, -0.28, 0.22), left_pole=(0.4, -0.2, -0.9), free="relaxed", weight=0.9, pivot=0.9,
-                  pitch=42, roll=-16, hinge=25, clav_r=(6, 14), crouch=0.07, knuckles=(0.43,-0.15,-0.89),
+                  pitch=42, roll=-16, hinge=25, clav_r=(6, 14), crouch=0.07, knuckles=kn10,
                   hroll=HH10, hpitch=HP10), "ease"),
         (22, pose(6, 10, (0.0, -0.26, 0.24), _n(0.2, 0.6, 0.75), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2, knuckles=(-0.005, -0.932, 0.362)),
          "auto"),

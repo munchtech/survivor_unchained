@@ -232,11 +232,15 @@ AXE_ARM = ((6, 10, 80, 10), (-20, 11, 70, -10))
 # small bend goes out, not forward) and the wrist at its ulnar end. Swing +14/-20, elbow 152-146, 14 out (at 12 the arm
 # met her trunk's cover, 1 mm). Measured (m7c): haft 14-32 back, head 39-41 cm clear of knee, shin and feet, never
 # ahead of the knee (4 cm at most, with the knee passing back), fist always behind her hip crease, edge back.
-AXES_L = ((14, 14, 152, -95), (-20, 14, 146, -95))
+# Anim 46 judge r4: the arm flared ~40 deg out on screen from 315. Swing +10/-10 (the back swing made the flare), elbow
+# 150-148, 13/10 out: upper arm on screen 42 -> 28 (sprint 48 -> 31), out of her side <= 13. At 10 out forward it met her
+# trunk's cover (warden 6 mm, sprint 9) and +14 forward put it there too; 14+ forward out (or elbow 152) flips the sprint's
+# elbow round (its own -5) and brings the second axe's head onto her knee (6 cm). Haft-to-leg min 31.6 (sprint 30.8).
+AXES_L = ((10, 13, 150, -95), (-10, 10, 148, -95))
 # The wand run's free fist (anim 44 judge r3: T-rex arms, the fist never behind her): forward at her lower ribs, under
 # the bust (fist 129 cm in her rest frame, the underbust 130, navel 115) and 13 cm in front of it, the elbow 85 and
 # 27 cm out; back behind the hip (7.5 cm in the run, 15 in the sprint), the elbow opened to 112 and the forearm less out.
-WAND_L = ((10, 18, 85, 0), (-48, 8, 112, -10))
+WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
 WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
@@ -253,7 +257,7 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
                head_up=6, arm_fwd=(0.0, -0.18, 0.26), arm_back=(0.03, -0.30, -0.24), elbow_out=0.2,
                swing=((6, 10, 80, 20), (-32, 12, 70, -25)))
 
-AXE_HANG = dict(back=17.0, out=-10.0, edge=0.0, swing=0.0)
+AXE_HANG = dict(back=26.0, out=-10.0, edge=0.0, swing=6.0)
 
 
 def axe_hang(back=17.0, out=6.0, edge=0.0, swing=0.0):
