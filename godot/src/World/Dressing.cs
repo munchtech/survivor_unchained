@@ -305,30 +305,51 @@ public static class Dressing
         float water = z.Meta.Places.TryGetValue("WATER_Y", out var wy) ? wy.GetSingle() : -1000f;
         var key = (sp.Name, KitLook.Look.Plain);
         if (!merged.TryGetValue(key, out var mg)) merged[key] = mg = (sp, new(), new());
+        // (E5b: each row drifts across by up to 'drift' m, slowly ('drift_len' m a wave), so the rows weave as one braided
+        // path; 'row_skip' a share left out per row (a sparse middle row: the stones between); 'dry': none where the bed is
+        // higher than the water + dry m (the cobbled ramp's dry end))
+        float drift = F("drift", 0f), driftLen = F("drift_len", 7f), dry = F("dry", 1000f);
+        var rowSkip = w.TryGetProperty("row_skip", out var rs) ? rs.EnumerateArray().Select(e => e.GetSingle()).ToArray() : null;
+        // ('step_var' how far each step strays from 'step' (0.35: 0.65-1.35 of it); 'clear' m the least gap kept between any two
+        // stones' rims (about 0.35 m a unit of scale from the middle), so the drifting rows never pile up)
+        float stepVar = F("step_var", 0.35f), clear = F("clear", -10f), stagger = F("stagger", -1f), shared = F("drift_shared", 0f);
+        var placed = new List<(Vector2 P, float S)>();
+        bool stats = System.Environment.GetEnvironmentVariable("CAUSEWAY_STATS") != null;
         int n = sp.Pieces.Length, r = 0;
         foreach (var row in w.GetProperty("rows").EnumerateArray())
         {
             float H(int k) => Mathf.PosMod(Mathf.Sin(r * 127.1f + k * 311.7f + seed * 74.7f) * 43758.5453f, 1f);
-            float t = step * 0.6f * H(0);
+            // ('stagger': each row starts that share of a step after the one before, so the rows' stones alternate, a zigzag;
+            // 'drift_shared': that share of the drift the whole path's, its rows weaving together, the rest each row's own)
+            float t = stagger >= 0f ? step * (stagger * r + 0.15f * H(0)) : step * 0.6f * H(0);
+            float ph1 = H(-1) * Mathf.Tau, ph2 = H(-2) * Mathf.Tau, rowSk = rowSkip != null && r < rowSkip.Length ? rowSkip[r] : skip;
             int i = 0, last = -1;
             while (t < len)
             {
                 int k = i * 9 + 1;
-                if (H(k) > skip)
+                float dr = drift * ((1f - shared) * (0.7f * Mathf.Sin(t / driftLen * Mathf.Tau + ph1) + 0.3f * Mathf.Sin(t / driftLen * 2.3f * Mathf.Tau + ph2))
+                    + shared * (0.7f * Mathf.Sin(t / driftLen * Mathf.Tau + seed) + 0.3f * Mathf.Sin(t / driftLen * 2.3f * Mathf.Tau + 2.1f * seed)));
+                // (staggered rows keep their grid, each stone nudged along it by up to stepVar/2 of a step: the zigzag holds)
+                float tAt = stagger >= 0f ? t + (H(k + 9) - 0.5f) * stepVar * step : t;
+                var p0 = a + dir * tAt + side * (row.GetSingle() + dr + (H(k + 1) - 0.5f) * 2f * jitter);
+                if (H(k) > rowSk && z.HeightAt(p0.X, p0.Y) <= water + dry)
                 {
-                    var p = a + dir * t + side * (row.GetSingle() + (H(k + 1) - 0.5f) * 2f * jitter);
+                    var p = p0;
                     int v = (int)(H(k + 2) * n) % n;
                     if (v == last) v = (v + 1 + r) % n;
                     last = v;
                     float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4));
+                    if (placed.Any(q => q.P.DistanceTo(p) < 0.35f * (q.S + s) + clear)) { t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9)); i++; continue; }
+                    placed.Add((p, s));
                     float topY = Mathf.Max(water + Mathf.Lerp(above.X, above.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
                     float ta = H(k + 6) * Mathf.Tau;
                     var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(5f * H(k + 7)))
                         * new Basis(Vector3.Up, H(k + 8) * Mathf.Tau).Scaled(new Vector3(s, sy, s));
                     mg.At.Add(new Transform3D(basis, new Vector3(p.X, topY - top * sy, p.Y)));
                     mg.Var.Add(v);
+                    if (stats) GD.Print($"causeway stone row {r} t {tAt:F2} across {(p - a).Dot(side):F2} drift {dr:F2} scale {s:F2} top {topY - water:F3} ground {z.HeightAt(p.X, p.Y) - water:F3} at {p.X:F2},{p.Y:F2}");
                 }
-                t += step * Mathf.Lerp(0.65f, 1.35f, H(k + 9));
+                t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9));
                 i++;
             }
             r++;

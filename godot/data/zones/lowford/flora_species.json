@@ -1,12 +1,60 @@
 {
-  "_doc": ["Low Ford's own over godot/data/flora_species.json.",
-           "causeways: stepping stones Dressing lays (with our own flora; --flora-kit keeps the kit's): a line 'from' 'to' (x, z),",
-           "'rows' (offsets across it, m), about 'step' m apart along a row (each step 0.65-1.35 of it), nudged up to 'jitter' m across,",
-           "a share 'skip' left out, 'scale' [lo, hi], 'species' (its pieces, flat-topped at 'top' m), each top 'above' [lo, hi] m over",
-           "the water (or 6 cm over the ground, if higher); the kit's copies of the kinds in 'drop' within 'width' of the line dropped.",
-           "The old causeway at the ford (src/world/zones/lowford.ts: 18 kit rocks at scale 0.34 x 0.2, 2.2 m apart, two rows)."],
+  "_doc": [
+    "Low Ford's own over godot/data/flora_species.json.",
+    "causeways: stepping stones Dressing lays (with our own flora; --flora-kit keeps the kit's): a line 'from' 'to' (x, z),",
+    "'rows' (offsets across it, m), about 'step' m apart along a row (each step 0.65-1.35 of it), nudged up to 'jitter' m across,",
+    "a share 'skip' left out, 'scale' [lo, hi], 'species' (its pieces, flat-topped at 'top' m), each top 'above' [lo, hi] m over",
+    "the water (or 6 cm over the ground, if higher); the kit's copies of the kinds in 'drop' within 'width' of the line dropped.",
+    "The old causeway at the ford (src/world/zones/lowford.ts: 18 kit rocks at scale 0.34 x 0.2, 2.2 m apart, two rows).",
+    "E5b: 'drift' m each row weaves across (a slow wave, 'drift_len' m long), 'row_skip' a share left out per row (overrides 'skip'; a sparse middle row:",
+    "the stones between the outer two, one braided path), 'dry' none where the bed is over the water + dry m, 'step_var' each step's stray (0.35: 0.65-1.35 of 'step'),",
+    "'clear' m the least gap between two stones' rims (about 0.35 m a unit of scale from the middle) (CAUSEWAY_STATS=1 prints each stone).",
+    "'stagger' each row starts that share of a step after the one before (0.5: the rows alternate, a zigzag, one path), 'drift_shared' the",
+    "share of the drift the whole path's (its rows weave together)."
+  ],
   "causeways": [
-    {"from": [0.2, -54.0], "to": [-0.2, -34.6], "rows": [-1.55, 1.6], "step": 2.15, "jitter": 0.4, "skip": 0.08, "scale": [0.85, 1.2],
-     "species": "stepping", "top": 0.75, "above": [0.04, 0.13], "drop": ["rock"], "width": 5.4, "seed": 3}
+    {
+      "from": [
+        0.2,
+        -54.0
+      ],
+      "to": [
+        -0.2,
+        -34.6
+      ],
+      "rows": [
+        -0.62,
+        0.62
+      ],
+      "step": 2.0,
+      "jitter": 0.12,
+      "skip": 0.08,
+      "scale": [
+        0.7,
+        1.25
+      ],
+      "species": "stepping",
+      "top": 0.75,
+      "above": [
+        0.12,
+        0.22
+      ],
+      "drop": [
+        "rock"
+      ],
+      "width": 5.4,
+      "seed": 3,
+      "row_skip": [
+        0.0,
+        0.0
+      ],
+      "drift": 0.55,
+      "drift_len": 8.0,
+      "dry": -0.08,
+      "step_var": 0.15,
+      "clear": 0.2,
+      "stagger": 0.5,
+      "drift_shared": 0.7
+    }
   ]
 }

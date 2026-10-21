@@ -36,7 +36,11 @@ SETS = {
     # (E4h: the town's elders in the open by day (-36,-34: 14 m from any tree), at the play camera: their cream flower heads)
     "elder": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-37.5,-30.5"], 1),
     # (env lead 10, E5: our stones by day at the play camera: the ford's stepping stones, the post's pebbles and boulders, a boulder field)
-    "stones": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "1.5,-44;9,40;18,-80"], 3),
+    # (E5b: 18,-80 showed only canopy: a boulder, field rocks and pebbles by the road (1,3), and the one open place boulders,
+    # field rocks and cliff chunks meet (-58,-53, the west bank))
+    "stones": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "1.5,-44;9,40;1,3;-58,-53"], 4),
+    # (E5b: the same rocks by night)
+    "stonesnight": (NIGHT + ["--spots-clear", "--spots", "1,3;-58,-53"], 2),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")

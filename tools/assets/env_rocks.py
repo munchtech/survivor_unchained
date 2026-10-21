@@ -66,14 +66,16 @@ PRESETS = {
     'pebbles': dict(lods=(600, 200, 200), shadow=False, variants=[
         dict(seed=401, n=6), dict(seed=409, n=5), dict(seed=419, n=8), dict(seed=421, n=7),
     ]),
-    # ford stepping stone: flat-topped, worn round its rim, a deep body sunk in the bed (real size, m; top at 0.75)
+    # ford stepping stone (E5b, judge r1): a rounded slab, its outline 'sides' (5-7) soft vertical cuts round an ellipse of
+    # L:W 1.2-1.8, its crown pressed flat ('dome' m of fall to the rim, <= 3 cm), worn round its rim, a deep body sunk in the
+    # bed (real size, m; top at 0.75; the causeway's 'scale' sizes its footprint)
     'stepping': dict(lods=(1200, 400, 140), shadow=False, variants=[
-        dict(seed=501, ax=(0.62, 0.5, 0.6), cz=0.4, planes=6, k=0.07, tilt=0.5, amp=0.06, freq=2.2, fine=0.008, top=0.75, foot=0.0, cut=0.25),
-        dict(seed=503, ax=(0.55, 0.45, 0.6), cz=0.4, planes=5, k=0.08, tilt=0.45, amp=0.07, freq=2.0, fine=0.008, top=0.75, foot=0.0, cut=0.25),
-        dict(seed=509, ax=(0.7, 0.42, 0.6), cz=0.4, planes=7, k=0.06, tilt=0.5, amp=0.05, freq=2.4, fine=0.008, top=0.75, foot=0.0, cut=0.25),
-        dict(seed=521, ax=(0.5, 0.5, 0.6), cz=0.4, planes=5, k=0.09, tilt=0.4, amp=0.07, freq=1.9, fine=0.008, top=0.75, foot=0.0, cut=0.25),
-        dict(seed=523, ax=(0.66, 0.52, 0.6), cz=0.4, planes=8, k=0.06, tilt=0.55, amp=0.05, freq=2.3, fine=0.008, top=0.75, foot=0.0, cut=0.25),
-        dict(seed=541, ax=(0.58, 0.4, 0.6), cz=0.4, planes=6, k=0.07, tilt=0.5, amp=0.06, freq=2.1, fine=0.008, top=0.75, foot=0.0, cut=0.25),
+        dict(seed=501, ax=(0.5, 0.38, 0.6), cz=0.4, sides=6, k=0.06, amp=0.04, freq=2.2, fine=0.006, top=0.75, dome=0.022, foot=0.0, cut=0.25),
+        dict(seed=503, ax=(0.52, 0.32, 0.6), cz=0.4, sides=5, k=0.07, amp=0.05, freq=2.0, fine=0.006, top=0.75, dome=0.026, foot=0.0, cut=0.25),
+        dict(seed=509, ax=(0.54, 0.31, 0.6), cz=0.4, sides=7, k=0.05, amp=0.04, freq=2.4, fine=0.006, top=0.75, dome=0.018, foot=0.0, cut=0.25),
+        dict(seed=521, ax=(0.46, 0.37, 0.6), cz=0.4, sides=5, k=0.07, amp=0.05, freq=1.9, fine=0.006, top=0.75, dome=0.024, foot=0.0, cut=0.25),
+        dict(seed=523, ax=(0.5, 0.35, 0.6), cz=0.4, sides=7, k=0.05, amp=0.04, freq=2.3, fine=0.006, top=0.75, dome=0.02, foot=0.0, cut=0.25),
+        dict(seed=541, ax=(0.52, 0.4, 0.6), cz=0.4, sides=6, k=0.06, amp=0.04, freq=2.1, fine=0.006, top=0.75, dome=0.025, foot=0.0, cut=0.25),
     ]),
 }
 
@@ -117,15 +119,31 @@ def fbm(N, rng, octs, aniso=1.0):
     return out / tot
 
 
-def cracks(N, n, rng):
-    """Tileable Voronoi edges (a few joints and cracks), 0 on a crack, rising away from it (px)."""
-    from scipy.spatial import cKDTree
-    pts = rng.random((n, 2)) * N
-    allp = np.concatenate([pts + [dx * N, dy * N] for dx in (-1, 0, 1) for dy in (-1, 0, 1)])
-    t = cKDTree(allp)
-    ys, xs = np.mgrid[0:N, 0:N].astype(np.float32)
-    d, _ = t.query(np.stack([xs.ravel(), ys.ravel()], 1), k=2)
-    return (d[:, 1] - d[:, 0]).reshape(N, N)
+def fractures(N, n, rng):
+    """Tileable long open fractures (E5b, judge: not a polygon net): n wandering lines, each 0.4-0.75 of the sheet long,
+    drawn on a 3 x 3 tiling so they wrap; returns each pixel's distance to the nearest (px) and that line's own width."""
+    import cv2
+    M = np.zeros((3 * N, 3 * N), np.uint8)
+    W = np.zeros((3 * N, 3 * N), np.float32)
+    for j in range(n):
+        p = rng.random(2) * N
+        ang = rng.uniform(0, math.pi)
+        L = rng.uniform(0.4, 0.75) * N
+        w = rng.uniform(1.6, 3.2)
+        pts = [p.copy()]
+        for _ in range(int(L / 6)):
+            ang += rng.normal(0, 0.12)
+            p = p + 6 * np.array([math.cos(ang), math.sin(ang)])
+            pts.append(p.copy())
+        P = np.array(pts)
+        for dx in (0, 1, 2):
+            for dy in (0, 1, 2):
+                q = (P + [dx * N, dy * N]).astype(np.int32).reshape(-1, 1, 2)
+                cv2.polylines(M, [q], False, 255, 1)
+                cv2.polylines(W, [q], False, float(w), 7)
+    d = cv2.distanceTransform((255 - M), cv2.DIST_L2, 5)
+    W = cv2.dilate(W, np.ones((9, 9), np.uint8))
+    return d[N:2 * N, N:2 * N], np.maximum(W[N:2 * N, N:2 * N], 1.6)
 
 
 def tex():
@@ -141,10 +159,11 @@ def tex():
     body = fbm(N, rng, ((3, 0.45), (6, 0.3), (12, 0.15), (24, 0.1)))
     grain = fbm(N, rng, ((8, 0.6), (20, 0.4)), aniso=3.0)
     pits = fbm(N, rng, ((48, 0.6), (96, 0.4)))
-    cr = cracks(N, 14, rng)
-    crack = 1 - smooth(0.0, 5.0, cr + 6 * (fbm(N, rng, ((16, 1.0),)) - 0.5))
-    crack *= smooth(0.35, 0.65, fbm(N, rng, ((5, 1.0),)))   # (cracks broken, not a net)
-    hgt = 0.55 * body + 0.2 * grain + 0.12 * smooth(0.55, 0.85, pits) - 0.35 * crack
+    # (E5b: a few long open fractures, 2-3 across a stepping stone, fading in and out along their length; not a net)
+    fd, fw = fractures(N, int(sd.get('fractures', 8)), rng)
+    crack = 1 - smooth(0.0, fw, fd + 1.5 * (fbm(N, rng, ((24, 1.0),)) - 0.5))
+    crack *= smooth(0.25, 0.55, fbm(N, rng, ((4, 1.0),)))
+    hgt = 0.55 * body + 0.2 * grain + 0.035 * smooth(0.55, 0.85, pits) - 0.22 * crack   # (E5b: pits faint: at 0.12 their lit rims read as a crazed net)
     # colour: dark to light by the body and grain, warm and cool patches, the cracks dark
     v = np.clip(0.15 + 0.85 * (0.65 * body + 0.35 * grain - 0.1), 0, 1)
     seg = v * (len(pal) - 1)
@@ -154,7 +173,7 @@ def tex():
     col = P[i0] * (1 - t) + P[i0 + 1] * t
     wc = fbm(N, rng, ((4, 0.6), (9, 0.4)))
     col = col + (warm - col) * (0.35 * smooth(0.55, 0.8, wc))[..., None] + (cool - col) * (0.3 * smooth(0.55, 0.2, wc))[..., None]
-    col = col * (1 - 0.55 * crack)[..., None] * (1 - 0.12 * smooth(0.6, 0.9, pits))[..., None]
+    col = col * (1 - float(sd.get('crack_dark', 0.28)) * crack)[..., None] * (1 - 0.05 * smooth(0.6, 0.9, pits))[..., None]
     gy, gx = np.gradient(np.tile(hgt, (3, 3))[N - 1:2 * N + 1, N - 1:2 * N + 1] * 6.0)
     gy, gx = gy[1:-1, 1:-1], gx[1:-1, 1:-1]
     nrm = np.dstack([-gx, gy, np.ones_like(hgt)])
@@ -224,6 +243,17 @@ def sculpt(prm):
         dist = rn * rng.uniform(0.72, 0.92)
         dn = D @ n
         R.append(np.where(dn > 1e-3, dist / np.maximum(dn, 1e-3), 1e3))
+    if prm.get('sides'):
+        # (a slab's outline: 'sides' near-vertical cuts spaced round it, each a little off even, inside the ellipse)
+        ns = prm['sides']
+        for j in range(ns):
+            th = 2 * math.pi * (j + rng.uniform(-0.22, 0.22)) / ns
+            n = np.array([math.cos(th), math.sin(th), rng.uniform(-0.08, 0.08)])
+            n /= np.linalg.norm(n)
+            rn = 1 / math.sqrt(((n / ax) ** 2).sum())
+            dist = rn * rng.uniform(0.8, 0.88)
+            dn = D @ n
+            R.append(np.where(dn > 1e-3, dist / np.maximum(dn, 1e-3), 1e3))
     r = softmin(np.stack(R, 1), prm['k']) if len(R) > 1 else re
     P = D * r[:, None]
     r *= 1 + prm['amp'] * fbm3(P, prm['freq'], prm['seed'])
@@ -243,7 +273,9 @@ def sculpt(prm):
         # a worn flat top: the stone's crown pressed to 'top' (soft rim), dished by a few mm
         k = 0.05
         z = P[:, 2]
-        P[:, 2] = -k * np.log(np.exp(-z / k) + np.exp(-prm['top'] / k)) + 0.006 * fbm3(P, 3.0, prm['seed'] + 3, 2)
+        # (a low crown: the pressed height falls 'dome' m from its middle to its rim)
+        tz = prm['top'] - prm.get('dome', 0.0) * np.clip((P[:, 0] / ax[0]) ** 2 + (P[:, 1] / ax[1]) ** 2, 0, 1.2)
+        P[:, 2] = -k * np.log(np.exp(-z / k) + np.exp(-tz / k)) + 0.004 * fbm3(P, 3.0, prm['seed'] + 3, 2)
     k = 0.08
     z = P[:, 2]
     P[:, 2] = k * np.log(np.exp(z / k) + np.exp(prm['foot'] / k))
@@ -255,7 +287,8 @@ def pebble_cluster(prm):
     Vs, Fs, o = [], [], 0
     placed = []
     for i in range(prm['n']):
-        rad = rng.uniform(0.045, 0.11) * (1.3 if i == 0 else 1.0)
+        # (E5b: 10-30 cm in the zone (its pebbles at scale ~1.8), one larger anchor stone first)
+        rad = rng.uniform(0.085, 0.1) if i == 0 else rng.uniform(0.028, 0.07)
         for _ in range(40):
             c = rng.uniform(-0.17, 0.17, 2)
             if all(np.linalg.norm(c - q) > (rad + qr) * 0.8 for q, qr in placed):
@@ -364,6 +397,14 @@ def mesh(only=None):
                 kd.insert(q, i)
             kd.balance()
             dense.append((V, F, C, N, kd))
+            if name == 'stepping':
+                up = N[:, 2] > 0.9
+                zt = V[up, 2]
+                band = V[(V[:, 2] > prm['top'] - 0.15) & (V[:, 2] < prm['top'] - 0.1)][:, :2]
+                c = band - band.mean(0)
+                ev = np.linalg.eigh(np.cov(c.T))[1]
+                ext = np.ptp(c @ ev, 0)
+                print(f'  stepping {vi}: sides {prm["sides"]}, dome {zt.max() - np.percentile(zt, 3):.3f} m, footprint {ext.max():.2f} x {ext.min():.2f} m, L:W {ext.max() / ext.min():.2f}')
             print(f'  {name} {vi}: {len(F)} dense tris, size {np.ptp(V, 0).round(2)}, edge>0.5 {np.mean(C[:, 0] > 0.5):.2f} cavity>0.5 {np.mean(C[:, 1] > 0.5):.2f} broad>0.5 {np.mean(C[:, 2] > 0.5):.2f}')
         tris = []
         names = ['lod0', 'lod1', 'lod2'] + (['shadow'] if pre['shadow'] else [])

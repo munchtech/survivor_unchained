@@ -68,6 +68,9 @@ uniform float moss_amount = 0.5;
 uniform vec4 moss_color : source_color = vec4(0.27, 0.31, 0.17, 1.0);
 uniform vec2 moss_side = vec2(0.0, -1.0);
 uniform float moss_side_amount = 0.25;
+// (how far up a face must turn for moss, lo to hi, and how much worn rims shed it: a boulder's rounded crown is all rim)
+uniform vec2 moss_face = vec2(0.45, 0.85);
+uniform float moss_edge = 0.3;
 uniform float lichen_amount = 0.25;
 uniform vec4 lichen_color : source_color = vec4(0.56, 0.58, 0.47, 1.0);
 uniform float grime_h = 0.45;
@@ -80,6 +83,13 @@ uniform float stone_rough = 0.88;
 uniform vec3 shade = vec3(0.92, 0.98, 1.1);
 uniform float shade_floor = 0.025;
 uniform float night_fill = 0.1;
+// (E5b, judge r1: under the moon the stone darkened and warmed by this, so the moon's blue makes it blue-grey, not ice-cyan)
+uniform vec3 night_tint = vec3(1.0);
+// (a stepping stone's wet band: if wet_share > 0, up wet_share of its side above the water, its top the piece's wet_top m
+// up, scaled with it; else wet_above m over the water, every stone alike)
+uniform float wet_share = 0.0;
+uniform float wet_top = 0.75;
+varying float v_top;
 varying vec3 v_wpos;
 varying vec3 v_wnrm;
 varying float v_foot;
@@ -197,6 +207,7 @@ void vertex() {
 	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
+	v_top = MODEL_MATRIX[3].y + wet_top * length(MODEL_MATRIX[1].xyz);
 #endif
 #ifdef REVEAL
 	// The rim is drawn again only for a piece near the line from her to the
@@ -358,18 +369,21 @@ void fragment() {
 		// moss on what faces up (and toward moss_side), in patches, more in the hollows, less on worn rims
 		vec2 ms = moss_side / max(length(moss_side), 1e-4);
 		float face = bn.y + moss_side_amount * dot(bn.xz, ms);
-		float mz = smoothstep(0.45, 0.85, face) * smoothstep(0.35, 0.75, st.a + 0.3 * COLOR.g + 0.2 * COLOR.b - 0.3 * COLOR.r);
+		float mz = smoothstep(moss_face.x, moss_face.y, face) * smoothstep(0.35, 0.75, st.a + 0.3 * COLOR.g + 0.2 * COLOR.b - moss_edge * COLOR.r);
 		// lichen: pale spots on its tops and sides
 		float lich = texture(stone_tex, wp.zx / (tile * 0.37) + 0.5).a;
 		float lz = smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
 		// wet: under the water's height + wet_above, dark and glossy, its edge ragged; no moss or lichen there
 		float wy = water_level.w > 0.5 ? water_level.x : -1e5;
-		float wet = 1.0 - smoothstep(wy + wet_above * 0.5, wy + wet_above * (1.0 + 0.8 * st.a), wp.y);
+		float w0 = wet_share > 0.0 ? wy + wet_share * (v_top - wy) - 0.02 : wy + wet_above * 0.5;
+		float w1 = wet_share > 0.0 ? w0 + 0.015 + 0.035 * st.a : wy + wet_above * (1.0 + 0.8 * st.a);
+		float wet = 1.0 - smoothstep(w0, w1, wp.y);
 		mz *= moss_amount * (1.0 - wet);
 		lz *= 1.0 - wet;
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
 		col *= mix(1.0, wet_dark, wet);
+		col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(stone_rough, wet_rough, wet);
 		SPECULAR = mix(0.35, 0.5, wet);

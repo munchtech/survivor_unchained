@@ -25,15 +25,15 @@
     "bracken": {"pieces": ["bracken_a", "bracken_b"], "packed": true, "kind": "fern", "lod": [70], "end": 80, "cell": 64, "shadow": false, "wind": 0.45,
                 "shader": {"broadleaf": 1, "flutter": 1.6, "hue_floor": 100, "core": 0.7}},
     "boulder": {"pieces": ["boulder_a", "boulder_b", "boulder_c", "boulder_d"], "packed": true, "kind": "rock", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0,
-                "shader": {"moss_amount": 0.55, "edge_light": 0.3}},
+                "shader": {"moss_amount": 0.75, "moss_color": "#394023", "moss_face": [0.3, 0.72], "moss_edge": 0.1, "edge_light": 0.3}},
     "fieldrock": {"pieces": ["fieldrock_a", "fieldrock_b", "fieldrock_c", "fieldrock_d", "fieldrock_e"], "packed": true, "kind": "rock", "lod": [36, 90], "end": 160, "cell": 48, "shadow": true, "wind": 0,
                   "shader": {"lichen_amount": 0.6}},
     "cliff": {"pieces": ["cliff_a", "cliff_b", "cliff_c", "cliff_d"], "packed": true, "kind": "rock", "lod": [50, 120], "cell": 48, "shadow": true, "wind": 0,
               "shader": {"moss_amount": 0.45, "lichen_amount": 0.35}},
     "pebbles": {"pieces": ["pebbles_a", "pebbles_b", "pebbles_c", "pebbles_d"], "packed": true, "kind": "pebble", "lod": [30], "end": 60, "cell": 48, "shadow": false, "wind": 0,
-                "shader": {"moss_amount": 0.0, "edge_light": 0.15, "grime_h": 0.0}},
+                "shader": {"moss_amount": 0.0, "edge_light": 0.15, "stone_tint": [1.45, 1.42, 1.36], "grime_h": 0.035, "grime_dark": 0.5}},
     "stepping": {"pieces": ["step_a", "step_b", "step_c", "step_d", "step_e", "step_f"], "packed": true, "kind": "rock", "lod": [40], "cell": 48, "shadow": false, "wind": 0,
-                 "shader": {"moss_amount": 0.35, "edge_light": 0.4}}
+                 "shader": {"moss_amount": 0.35, "edge_light": 0.4, "wet_share": 0.67, "wet_top": 0.75, "wet_dark": 0.42}}
   },
   "own": {
     "Pine_1": "spruce_a", "Pine_3": "spruce_a", "Pine_2": "spruce_b", "Pine_5": "spruce_b", "Pine_4": "spruce_c",
@@ -62,16 +62,18 @@
              "paints its sheet from 'palette' (dark to light, sRGB), 'warm' and 'cool' (its patches); kit.gdshader's OWN_ROCK draws it",
              "triplanar in world space ('tile' m a repeat), with the pieces' baked edge wear, cavity and occlusion, moss on what faces",
              "up and toward 'moss_side' (world x, z), lichen, grime from the foot ('grime_h' m), and under the water's height + 'wet_above'",
-             "m a dark wet band ('wet_dark', 'wet_rough'); 'shade' the colour its shade keeps, 'night_fill' its moonlit floor. 'shader'",
+             "m a dark wet band ('wet_dark', 'wet_rough'; or, wet_share > 0, that share of its side up to its top, the piece's 'wet_top' m:",
+             "the stepping stones); 'shade' the colour its shade keeps, 'night_fill' its moonlit floor, 'night_tint' its albedo under the",
+             "moon (darker, warmer: blue-grey under the moon's blue). 'fractures' long open cracks per sheet, 'crack_dark' their darkness. 'shader'",
              "here is every stone's; a species' own 'shader' overrides any key (numbers, [x, y(, z)], or '#rrggbb' colours)."],
-    "palette": ["#2c2926", "#48433d", "#665f55", "#857b6d", "#a39888"],
-    "warm": "#8c7560", "cool": "#5b6168", "paint": {"warm": "1.0,3.0", "pull": "0.06", "chroma": "0.95"},
+    "palette": ["#2f2a24", "#4b443a", "#6a6052", "#897d6a", "#a79884"], "fractures": 8, "crack_dark": 0.28,
+    "warm": "#8c7560", "cool": "#5b6168", "paint": {"warm": "1.0,3.0", "pull": "0.06", "chroma": "0.95", "cavity": "0.38", "edge": "0.22"},
     "albedo": "res://art/world/flora/stone_albedo.png", "normal": "res://art/world/flora/stone_normal.png",
     "shader": {"tile": 1.9, "stone_tint": [1.0, 1.0, 1.0], "macro": 0.22, "bump": 0.55, "edge_light": 0.32, "cavity_dark": 0.45, "occl_dark": 0.4,
                "moss_amount": 0.5, "moss_color": "#46502c", "moss_side": [0.0, -1.0], "moss_side_amount": 0.25,
                "lichen_amount": 0.25, "lichen_color": "#8f9479",
                "grime_h": 0.45, "grime_dark": 0.3, "wet_above": 0.09, "wet_dark": 0.55, "wet_rough": 0.32,
-               "stone_rough": 0.88, "shade": [0.92, 0.98, 1.1], "shade_floor": 0.025, "night_fill": 0.1}
+               "stone_rough": 0.88, "shade": [0.92, 0.98, 1.1], "shade_floor": 0.025, "night_fill": 0.05, "night_tint": [0.86, 0.75, 0.62]}
   },
   "grass": {
     "_doc": ["Our own grass (World/Grass.cs, shaders/grass_own.gdshader): a painted clump card (3-5 blades) per cell, facing the camera",
@@ -88,7 +90,7 @@
                  "cool": ["#101812", "#1e2d22", "#2d4232", "#3f5944", "#567259"],
                  "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.015,
                  "card": [0.62, 0.55], "cell": 0.8, "yaw": 35, "drift": [0.46, 0.54],
-                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.88, 1.0, 1.0], "night": [0.62, 0.9, 0.64], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.06, 1.0, 0.84], "size_var": 0.3}}
+                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.88, 1.0, 1.0], "night": [0.62, 0.9, 0.64], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.02, 1.0, 0.95], "sun_body": [1.05, 1.0, 0.86], "size_var": 0.3}}
     }
   }
 }

@@ -68,6 +68,9 @@ uniform float hue_floor = 95.0;
 // (E5, judge E4i: the key's light on a clump's upper part warmed toward olive by this, by day and under a low sun, not the
 // moon nor a lamp: a drift in sun takes the lit ground's warmth, not pasted on; its shade keeps the sky's blue-green)
 uniform vec3 sun_tip = vec3(1.0);
+// (E5b, judge E5: the key's light on the whole blade, root to tip, by day and dawn: its sunlit body turned from teal toward
+// green (hue ~90-100), its shade and the night untouched)
+uniform vec3 sun_body = vec3(1.0);
 // (each clump's card size within +-size_var of its own, half white noise and half a 3 m field, so a dense drift is not stamped)
 uniform float size_var = 0.3;
 
@@ -225,6 +228,6 @@ void light() {
 	float fl = 1.0 + fd90m1 * pow(1.0 - cnl, 5.0), fv = 1.0 + fd90m1 * pow(1.0 - cnv, 5.0);
 	float d = fl * fv * cnl;
 	vec3 lc = LIGHT_COLOR * ATTENUATION;
-	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t) * (1.0 - flora_light.x));
+	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_body * mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t)), 1.0 - flora_light.x);
 	DIFFUSE_LIGHT += lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
 }
