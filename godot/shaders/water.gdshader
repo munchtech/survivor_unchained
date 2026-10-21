@@ -238,7 +238,8 @@ void light() {
 	DIFFUSE_LIGHT += ndl * ATTENUATION * LIGHT_COLOR / PI * (debug_view == 9 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
 	vec3 h = normalize(VIEW + LIGHT);
 	// (a near light glints on the steeper facets, broader: E6c, judge r2, her ember's glint was lost behind the post)
-	vec3 gn = LIGHT_IS_DIRECTIONAL ? NORMAL : glint_n;
+	// (glint_bend 0: as the moon's; E6c: 3 spread the pylons' lamps into sparkle clumps and still never showed her ember)
+	vec3 gn = LIGHT_IS_DIRECTIONAL || glint_bend <= 0.0 ? NORMAL : glint_n;
 	float ndh = clamp(dot(gn, h), 0.0, 1.0);
 	float a = LIGHT_IS_DIRECTIONAL ? ROUGHNESS * ROUGHNESS : max(ROUGHNESS, glint_spread) * max(ROUGHNESS, glint_spread);
 	float a2 = a * a;
