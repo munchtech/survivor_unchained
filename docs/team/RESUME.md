@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 21 October: coordinator 6a6cb394 (running)
+Restarted Face 33, Marionette 10, Armor 9, Animation 48, Env 12. Merged face-31@423bfef0 (left neck, Sunborn temple, LOD, brows; tests 1018/0/8, pushed); ui-create worktree removed. Face 33's routed marks (face.md "Face 33"): platinum hair peach-pink at the Look; neck/chest flat-lit at the Look; pauldron off the shoulder at Look turn -40 (sent to Armor 9); C01 s8 braid slab + gray under-eye; town light flattening her face at the close-up. chain_strike CUT (coordinator, fist-fit limit). Rainbow rocks not reproduced (likely a mid-import frame).
+
 ## 21 October: coordinator 489a0bd2 WIND-DOWN (read this first)
 Merged today into integration (now a9115759, pushed): neck-31 (ec27099b), E5 rocks (16846e33), npc-1 armored guard package (ce68ff22), face-31 paints/tone/hairline/pixie (be7f9dea), freshness.py now watching art/npc recursively (7eb28b7b), E6 ford water (a9115759). Tests 1018/0/8 on the merged tree. Owner decisions: OWNER_NOTES "21 October 2026" (NPCs GENERATED fully dressed, Meshy/Tripo parity, layers only for the main characters, Marionette = generation + FIXER, per-calling town idles, Krea may ship). Scratch: THIS session's scratchpad `...\489a0bd2-e3b7-44cc-9b4a-68d66b041337\scratchpad\<area>` (texts backed up to survivorsunchained_inputs\scratch_<area>47/32/11/armor8/489a0bd2_marionette9).
 **RESTART ORDER (fresh successors, lead_brief.md):**
