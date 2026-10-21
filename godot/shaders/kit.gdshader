@@ -75,7 +75,7 @@ uniform float grime_dark = 0.3;
 uniform float wet_above = 0.09;
 uniform float wet_dark = 0.55;
 uniform float wet_rough = 0.32;
-uniform float rough = 0.88;
+uniform float stone_rough = 0.88;
 // (the colour its shade keeps, a little of its own albedo given back: never grey-black; more under the moon)
 uniform vec3 shade = vec3(0.92, 0.98, 1.1);
 uniform float shade_floor = 0.025;
@@ -371,7 +371,7 @@ void fragment() {
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
 		col *= mix(1.0, wet_dark, wet);
 		ALBEDO = col;
-		ROUGHNESS = mix(rough, wet_rough, wet);
+		ROUGHNESS = mix(stone_rough, wet_rough, wet);
 		SPECULAR = mix(0.35, 0.5, wet);
 		NORMAL = normalize((VIEW_MATRIX * vec4(bn, 0.0)).xyz);
 		// its shade keeps colour: a little of its own albedo given back, cool by day, more under the moon

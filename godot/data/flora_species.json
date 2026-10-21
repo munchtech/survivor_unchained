@@ -71,7 +71,7 @@
                "moss_amount": 0.5, "moss_color": "#46502c", "moss_side": [0.0, -1.0], "moss_side_amount": 0.25,
                "lichen_amount": 0.25, "lichen_color": "#8f9479",
                "grime_h": 0.45, "grime_dark": 0.3, "wet_above": 0.09, "wet_dark": 0.55, "wet_rough": 0.32,
-               "rough": 0.88, "shade": [0.92, 0.98, 1.1], "shade_floor": 0.025, "night_fill": 0.1}
+               "stone_rough": 0.88, "shade": [0.92, 0.98, 1.1], "shade_floor": 0.025, "night_fill": 0.1}
   },
   "grass": {
     "_doc": ["Our own grass (World/Grass.cs, shaders/grass_own.gdshader): a painted clump card (3-5 blades) per cell, facing the camera",
@@ -88,7 +88,7 @@
                  "cool": ["#101812", "#1e2d22", "#2d4232", "#3f5944", "#567259"],
                  "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.015,
                  "card": [0.62, 0.55], "cell": 0.8, "yaw": 35, "drift": [0.46, 0.54],
-                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.88, 1.0, 1.0], "night": [0.62, 0.9, 0.64], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.0, 1.0, 1.0], "size_var": 0.3}}
+                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.88, 1.0, 1.0], "night": [0.62, 0.9, 0.64], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.06, 1.0, 0.84], "size_var": 0.3}}
     }
   }
 }
