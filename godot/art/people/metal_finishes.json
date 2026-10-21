@@ -3,10 +3,11 @@
  "steel": "blued",
  "darksteel": "blued",
  "pieces": {
-  "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her cups and pauldrons keep the key's 0.45 / 0.3.",
+  "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her cups and pauldrons keep the key's 0.45 / 0.3. Armor 12 (c3): the cuirass's plate (piece word 'plate': only the cuirass has one; set 'plate' is every plate_* armor mesh) a step crisper at 0.38, its patina's patches halved (metal_blot, 1 the key's own).",
   "steel": {
    "warden.greave": {"metal_rough": 0.36, "metal_env_graze": 0.45},
-   "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45}
+   "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45},
+   "plate.plate": {"metal_rough": 0.38, "metal_blot": 0.5}
   }
  }
 }

@@ -62,6 +62,7 @@ uniform float metal_env_graze = 0.3;               // (metal r3: at grazing angl
 uniform vec4 piece_id = vec4(-1.0);                // (up to four pieces of this key with a finish of their own: their baked piece number, People.PieceNumber; -1 none.
 uniform vec4 piece_rough = vec4(-1.0);             //  Each piece's metal_rough and metal_env_graze, -1 the key's own; art/people/metal_finishes.json "pieces".
 uniform vec4 piece_graze = vec4(-1.0);             //  Metal r4: the greaves and sabatons smoother with more edge sheen, a tube's line of light, not a boot's)
+uniform vec4 piece_blot = vec4(-1.0);              //  (and its patina's patches' strength in its colour and roughness, 1 the key's own: armor 12, the cuirass's cloudy blotches halved)
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
@@ -219,8 +220,11 @@ void fragment() {
 		if (flag > 0.25 && flag < 0.75) brush = brushed(m);     // (a plate laid out round her arm brushed along it, by its UVs, judge 6)
 		// Roughness: satin, varied; smoother where worn, rougher where dirty; scratched (more where worn).
 		float p_rough = metal_rough;
+		float p_blot = 1.0;
 		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_rough[i] >= 0.0) p_rough = piece_rough[i];
-		rough = p_rough + 0.10 * (blot - 0.5) + 0.05 * (brush - 0.5);
+		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_blot[i] >= 0.0) p_blot = piece_blot[i];
+		float blot_c = 0.5 + (blot - 0.5) * p_blot;                 // (the patina's patches in its colour and roughness; grime's own patchiness keeps blot)
+		rough = p_rough + 0.10 * (blot_c - 0.5) + 0.05 * (brush - 0.5);
 		rough = mix(rough, metal_rough_wear, wear);
 		rough = mix(rough, 0.72, grime);
 		rough += (dtl.b - 0.5) * detail_rough * (0.7 + 0.6 * wear);
@@ -228,7 +232,7 @@ void fragment() {
 		vec3 brass = gold_tone * brass_dim;
 		col = mix(col, brass, gold * (1.0 - dye_amount));   // (a dyed gold takes the dye, not the brass)
 		rough = mix(rough, rough + brass_rough_add, gold);
-		col *= 0.9 + 0.2 * blot;                                  // (an uneven patina)
+		col *= 0.9 + 0.2 * blot_c;                                // (an uneven patina)
 		col *= mix(mix(1.0, steel_dim, 1.0 - gold) * mix(vec3(1.0), steel_warm, 1.0 - gold), vec3(metal_wear_bright), wear);                              // (bright bare metal on the worn edges)
 		// (a dyed blued key drops its oxide: the dye is the metal's colour, worn back at its edges as any bare
 		// metal; the oxide over it hid every metal dye, armor 9)
