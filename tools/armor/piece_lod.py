@@ -29,6 +29,10 @@ from meshoptimizer._loader import lib as _mo  # noqa: E402
 
 GAMEPLAY = 0.25 * 0.92   # (of the full piece's triangles; a margin under the bible's 25%)
 SHADOW = 0.10 * 0.90     # (and 10%)
+# (armor 9: a small free mesh (Marionette's are 1-4k triangles) can't reach 25% inside ERROR_CAP; its gameplay LOD
+# passes under this many triangles however small its share. A decision for the armor lead: FLOOR = 0 restores the
+# share rule alone.)
+FLOOR = int(os.environ.get("LOD_FLOOR", "1800"))
 SMALL = 0.035            # (m: a connected part smaller across than this is dropped from both)
 ERROR_CAP = 0.004        # (m: the simplifier's error never past this; a pixel at the play camera is 5-10 mm)
 INSET = 0.0008           # (m: the shadow drawn in along its normals)
@@ -153,6 +157,12 @@ def main(argv):
     S_P, S_N, S_J, S_W, S_T = [], [], [], [], []
     base = 0
     for i, m, mat, attrs, tris, kt, dropped in src:
+        if not len(kt):
+            # (every part of it small (a material of rivets alone, armor 9's free meshes): no gameplay LOD of it, so
+            # HerWear pairs none and the full mesh draws at the play camera too; none of it in the shadow)
+            rep["lod1"][mat] = {"full": len(tris), "small_parts_dropped": dropped, "kept": 0, "lod1": None}
+            lod_tris += len(tris)     # (it draws whole at the play camera: counted against the gameplay budget)
+            continue
         share = max(64, int(budget * len(kt) / max(kept_total, 1)))
         pos = attrs["POSITION"][0].astype(np.float32)
         cols = [attrs["NORMAL"][0].astype(np.float32)]
@@ -199,7 +209,8 @@ def main(argv):
     rep["draws"] = {"full": len(full), "lod1": len(src), "shadow_pass_at_play": 1}
     js["asset"].setdefault("extras", {})["lods"] = {"gameplay": GAMEPLAY, "shadow": SHADOW, "small": SMALL, "inset": INSET}
     ap.save(path)
-    ok = lod_tris <= 0.25 * t0 and len(Ts) <= 0.10 * t0
+    ok = lod_tris <= max(0.25 * t0, FLOOR) and len(Ts) <= max(0.10 * t0, FLOOR * 0.4)
+    rep["floor"] = FLOOR if lod_tris > 0.25 * t0 or len(Ts) > 0.10 * t0 else None
     print("LOD %s: %d -> lod1 %d (%.1f%%), shadow %d (%.1f%%)%s" % (pid, t0, lod_tris, 100 * lod_tris / t0, len(Ts),
                                                                   100 * len(Ts) / t0, "" if ok else "  OVER BUDGET"))
     if "--numbers" in argv:

@@ -10,6 +10,12 @@ her point is DEEP or more inside the cover's edge (a boot's shaft under its top;
 eased in from the edge over that many mm instead (the game spreads it out past the edge: GarmentTuck.Spread).
 HerWear reads max(tuck, cover) a point as the piece's footprint for the garment tuck.
 
+A row's "cover_grow": [grow, ramp] (m; piece.json "cover_grow", build.py copies it): the cover carried on over her skin
+past its edge, FULL for `grow` along her surface (her skin's edges, so never across to a limb beside it), then easing
+to 0 over `ramp`. What lies under such a piece is laid flat around it too, not only under it (b2r3, the lamed
+pauldrons over the arcanist top: its capped sleeve swelled back up right at the cop's rim and read as one lumpy
+shoulder with the plate). Any piece may carry it; it touches only the garments under it (her skin's tuck is its own).
+
     python tools/armor/cover.py [--pieces a,b,..] [--reach 45] [--ramp 0] [--deep 25]
 """
 import json
@@ -45,7 +51,7 @@ def skin_body(rows):
     TS = loc[body.T[(body.kind[body.T] == "skin").all(1)]]
     Ps = body.P[isk]
     Ns = wc.skin._normals(Ps, TS)
-    return body, pid, Ps, Ns
+    return body, pid, Ps, Ns, TS
 
 
 def cover_of(Ps, Ns, kd_s, PB, TB, reach, ramp, deep):
@@ -88,6 +94,27 @@ def cover_of(Ps, Ns, kd_s, PB, TB, reach, ramp, deep):
     return c
 
 
+def grown(Ps, TS, c, grow, ramp):
+    """The cover carried on past its edge over her surface: FULL within `grow`, easing to 0 over `ramp` more."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import dijkstra
+    src = np.nonzero(c > 0)[0]
+    if not len(src) or grow + ramp <= 0:
+        return c
+    e = np.unique(np.sort(np.vstack([TS[:, [0, 1]], TS[:, [1, 2]], TS[:, [2, 0]]]), 1), axis=0)
+    # (her skin's split copies, one place: joined, or the walk stops at every seam)
+    _, inv = np.unique(np.round(Ps * 1e5).astype(np.int64), axis=0, return_inverse=True)
+    inv = np.asarray(inv).ravel()
+    o_ = np.argsort(inv, kind="stable")
+    same = o_[:-1][inv[o_[:-1]] == inv[o_[1:]]], o_[1:][inv[o_[:-1]] == inv[o_[1:]]]
+    e = np.vstack([e, np.c_[same[0], same[1]]])
+    w = np.linalg.norm(Ps[e[:, 0]] - Ps[e[:, 1]], axis=1) + 1e-9
+    A = coo_matrix((np.r_[w, w], (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(len(Ps), len(Ps))).tocsr()
+    d = dijkstra(A, indices=src, min_only=True, limit=grow + ramp + 1e-6)
+    add = FULL * np.clip(1 - (d - grow) / max(ramp, 1e-9), 0, 1)
+    return np.maximum(c, np.where(np.isfinite(d), add, 0.0))
+
+
 def write(path, Ps, c):
     q = np.round(Ps.astype(np.float64) * 1e5).astype(np.int64)
     k = np.nonzero(c > 0)[0]
@@ -123,12 +150,16 @@ def main(argv):
                 rr["path"] = os.path.join(base, rr["file"].replace("res://art/armor/", "")) if rr.get("file") else os.path.join(base, f"heroine_outfit_{rr['outfit']}.gltf")
                 rr["tuck_path"] = os.path.join(base, rr["tuck"])
                 rows.append(rr)
-    body, pid, Ps, Ns = skin_body(rows)
+    body, pid, Ps, Ns, TS = skin_body(rows)
     kd_s = cKDTree(Ps)
     for r in rows:
         v = np.nonzero(pid == r["id"])[0]
         T = body.T[(pid[body.T] == r["id"]).all(1)]
         c = cover_of(Ps, Ns, kd_s, body.P, T, reach, ramp, deep)
+        if r.get("cover_grow"):
+            c0 = int((c > 0).sum())
+            c = grown(Ps, TS, c, *[float(x) for x in r["cover_grow"]])
+            print(f"cover: {r['id']} grown {r['cover_grow']}: {c0} -> {int((c > 0).sum())} points")
         n = write(os.path.abspath(cover_path(r)), Ps, c)
         print(f"cover: {r['id']:20} {len(v):6d} verts, {n:6d} points ({int((c >= FULL).sum())} full, {int((c >= HIDDEN).sum())} hidden)")
 
