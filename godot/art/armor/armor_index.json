@@ -94,6 +94,31 @@
   ]
  },
  {
+  "id": "plate_pauldrons_warden",
+  "outfit": null,
+  "slot": "pauldrons",
+  "layer": 3,
+  "covers": [
+   "pauldrons"
+  ],
+  "meshes": [
+   "plate_pauldrons_warden.pauldrons.darkleather",
+   "plate_pauldrons_warden.pauldrons.gold",
+   "plate_pauldrons_warden.pauldrons.steel"
+  ],
+  "tuck": "armor_tuck/plate_pauldrons_warden.bin",
+  "tuck_count": 599,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "file": "res://art/armor/plate_pauldrons_warden.gltf",
+  "tier": 1,
+  "cover_grow": [
+   0.02,
+   0.025
+  ],
+  "base": "plate_pauldrons_plain",
+  "replaces": "warden.pauldrons"
+ },
+ {
   "id": "plate_top_etched",
   "outfit": null,
   "slot": "top",

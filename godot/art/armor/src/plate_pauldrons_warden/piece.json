@@ -1,0 +1,26 @@
+{
+ "id": "plate_pauldrons_warden",
+ "name": "Warden's Pauldrons",
+ "slot": "pauldrons",
+ "base": "plate_pauldrons_plain",
+ "base_adorn": false,
+ "tier": 1,
+ "tier_name": "warden brass",
+ "material": "steel",
+ "tint": null,
+ "replaces": "warden.pauldrons",
+ "adorn": [
+  {
+   "kind": "gild",
+   "parts": [
+    "rolled_rim"
+   ],
+   "lift": 0.00025,
+   "facing": -0.3,
+   "mat": "gold"
+  }
+ ],
+ "covers": [
+  "pauldrons"
+ ]
+}

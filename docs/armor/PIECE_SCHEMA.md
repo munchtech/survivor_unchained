@@ -15,6 +15,7 @@ The contract between Marionette's armor workshop (which writes it) and `tools/ar
 | `tier`, `tier_name` | 1 plain forged, 2 etched, 3 gilded |
 | `material`, `tint` | a name from `godot/art/people/outfit_materials.json`; tint an sRGB hex or null |
 | `adorn` | list, below |
+| `replaces` | optional: a calling row id (`warden.pauldrons`). Build copies it to the armor index row; `ArmorIndex.Calling` then gives this piece in that row's slot (the calling's default look wears it; the row itself stays, and a look with a stand-in is no longer the calling's full outfit set: `Wear.IsCallingSet` is false). |
 | `covers` | visual slots it hides (defaults to `[slot]`) |
 | `hold` | optional `{amount, squash}` for her jiggle under it (rigid plate: 0.55, 0) |
 

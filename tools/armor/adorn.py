@@ -1299,6 +1299,8 @@ def build(pid, post=False):
             row["covers"] = piece["covers"]
         if piece.get("hold"):
             row["hold"] = piece["hold"]
+        if piece.get("replaces"):
+            row["replaces"] = piece["replaces"]      # (a calling row id: ArmorIndex.Calling wears this piece in its place)
         rows.append(row)
         rows.sort(key=lambda r: r["id"])
         json.dump(rows, open(ix_path, "w", encoding="utf-8"), indent=1)
