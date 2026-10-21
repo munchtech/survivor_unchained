@@ -642,8 +642,8 @@ public static class Dressing
             foreach (var (mesh, local) in PartsOf(id[..slash], id[(slash + 1)..]))
                 kit = kit is Aabb k ? k.Merge(local * mesh.GetAabb()) : local * mesh.GetAabb();
             if (kit is not Aabb box || OwnProps.Fitted(preset, box) is not Node3D n) continue;
-            n.Transform = at;
-            // Which piece, and where it stands, for taking it away in play (HideProps).
+            n.Transform = own != null ? OwnProps.Nudged(own, at) : at;
+            // Which piece, and where it stood in the kit, for taking it away in play (HideProps).
             n.SetMeta("prop", id);
             n.SetMeta("at1", at.Origin);
             root.AddChild(n);

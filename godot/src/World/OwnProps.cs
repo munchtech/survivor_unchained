@@ -15,7 +15,8 @@ namespace SurvivorUnchained.View;
 /// piece's box), "keep" names places where the kit piece stays; "place" stands a preset at a place
 /// (or along a line, a log from a to b), hiding the web game's blocked-out meshes there ("hide") and baring the grass
 /// under it ("bare": radius, and how far out the grass thins, times it; with the fires, the first four);
-/// "lamps" gives a lamp holder's light its own colour, energy and reach (by its glow node).
+/// "lamps" gives a lamp holder's light its own colour, energy and reach (by its glow node); "nudge" [x, z, dx, dz, degrees]
+/// shifts and turns the preset standing in for a kit piece at x, z (a chest set off a log's end).
 /// </summary>
 public static class OwnProps
 {
@@ -26,7 +27,8 @@ public static class OwnProps
     public sealed record Hide(Vector2 At, float R, float MaxH);
     public sealed record Place(string Preset, Vector2 At, float Rot, float Scale, float Y, Vector3? A, Vector3? B, float R, Hide? Hide, Vector2? Bare);
     public sealed record Lamp(Color? Color, float Energy, float Range, float Att);
-    public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps);
+    public sealed record Nudge(Vector2 At, Vector2 By, float Turn);
+    public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -67,7 +69,11 @@ public static class OwnProps
                     float F(string n, float d) => l.Value.TryGetProperty(n, out var v) ? v.GetSingle() : d;
                     lamps[l.Name] = new Lamp(l.Value.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0));
                 }
-            z = new Zone(pieces, keep, places, lamps);
+            var nudges = new List<Nudge>();
+            if (r.TryGetProperty("nudge", out var nu))
+                foreach (var n in nu.EnumerateArray())
+                    nudges.Add(new Nudge(new Vector2(n[0].GetSingle(), n[1].GetSingle()), new Vector2(n[2].GetSingle(), n[3].GetSingle()), Mathf.DegToRad(n[4].GetSingle())));
+            z = new Zone(pieces, keep, places, lamps, nudges);
         }
         zones[zone] = z;
         return z;
@@ -79,6 +85,15 @@ public static class OwnProps
         if (!z.Pieces.TryGetValue(id, out var preset) || !ResourceLoader.Exists($"{Dir}/{preset}.glb")) return null;
         foreach (var k in z.Keep) if (new Vector2(at.X - k.X, at.Z - k.Y).Length() < 0.5f) return null;
         return preset;
+    }
+
+    /// <summary>Where a swapped piece at a kit place stands once nudged (its kit transform if no nudge names the place).</summary>
+    public static Transform3D Nudged(Zone z, Transform3D at)
+    {
+        foreach (var n in z.Nudges ?? new())
+            if (new Vector2(at.Origin.X - n.At.X, at.Origin.Z - n.At.Y).Length() < 0.5f)
+                return new Transform3D(new Basis(Vector3.Up, n.Turn) * at.Basis, at.Origin + new Vector3(n.By.X, 0, n.By.Y));
+        return at;
     }
 
     /// <summary>A preset's box as built (art/world/props/props.json "box").</summary>

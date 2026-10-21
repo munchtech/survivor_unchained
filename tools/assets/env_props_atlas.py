@@ -95,7 +95,8 @@ def wood(h, w, m, rng):
     ppm = w / m
     y, x = np.mgrid[0:h, 0:w].astype(np.float32)
     # Grain: lines down y, warped, with growth-ring bands of uneven width.
-    warp = (fbm(h, w, 6, 3, rng, 3) - 0.5) * 0.08 * ppm + (fbm(h, w, 24, 8, rng, 2) - 0.5) * 0.012 * ppm
+    # (round 2: the warp a third of what it was, so the grain runs straight with a lean, not in noodles)
+    warp = (fbm(h, w, 6, 3, rng, 3) - 0.5) * 0.03 * ppm + (fbm(h, w, 24, 8, rng, 2) - 0.5) * 0.006 * ppm
     u = (x + warp) / ppm  # metres across
     # Ring spacing uneven across the board (a log's fast and slow years), lines thin and soft.
     freq = 34 + 18 * fbm(h, w, 2, 6, rng, 2)
@@ -112,28 +113,76 @@ def wood(h, w, m, rng):
         kn = np.maximum(kn, np.exp(-d * d) * 0.9 + 0.3 * np.exp(-((d - 1.5) ** 2) * 4))
     weather = fbm(h, w, 8, 4, rng, 4)  # silvered and darker patches
     split = ss(0.985, 1.0, fbm(h, w, 6, 160, rng, 2) + 0.35 * (fbm(h, w, 40, 6, rng, 1) - 0.5))  # checks along the grain
-    base = mix(srgb("#7d6550"), srgb("#a08e78"), 0.6 * weather + 0.4 * streak)  # warm weathered brown toward silver-tan
-    col = mix(base, srgb("#57422f"), 0.38 * late + 0.2 * (fine - 0.5))
-    col = mix(col, srgb("#2e2119"), 0.8 * kn)
-    col = mix(col, srgb("#241a14"), 0.85 * split)
+    # Round 2 (the judge at the close view: bold black grain read as drawn lines): the late wood only
+    # ~15% darker than the early, broken up by the fibres so it reads as streaks, not lines; the base
+    # less orange (weathered brown-grey); knots and checks softer.
+    fib = fbm(h, w, 160, 10, rng, 2)  # long fibrous streaks down the grain
+    late = late * (0.45 + 0.55 * ss(0.35, 0.7, fib))
+    base = mix(srgb("#76624f"), srgb("#968774"), 0.6 * weather + 0.4 * streak)
+    col = mix(base, srgb("#5e4c3c"), 0.42 * late + 0.25 * (fine - 0.5) + 0.2 * (fib - 0.5))
+    col = mix(col, srgb("#3a2c22"), 0.6 * kn)
+    col = mix(col, srgb("#2e231b"), 0.7 * split)
     hgt = -0.0012 * late - 0.0006 * fine - 0.004 * split + 0.0008 * kn
     rough = 0.82 + 0.1 * weather
     return col, hgt, rough, np.zeros_like(rough)
 
 
-def bark(h, w, m, rng):
-    ppm = w / m
+def cells(h, w, gy, gx, rng, warp):
+    """Periodic jittered-grid Voronoi over h x w px (gy x gx cells): F1, F2 (in cell units)
+    and each pixel's cell value (0-1). warp: (dy, dx) pixel offsets bending the cells."""
     y, x = np.mgrid[0:h, 0:w].astype(np.float32)
-    plates = fbm(h, w, 10, 14, rng, 3)
-    # Fissures: deep cracks running down the trunk, joined across now and then.
-    f = np.abs(np.sin((x / ppm + 0.04 * fbm(h, w, 8, 4, rng, 2)) * 2 * np.pi * 16))
-    fis = 1 - ss(0.0, 0.28, f) * ss(0.25, 0.6, fbm(h, w, 14, 20, rng, 2) + 0.2)
-    moss = ss(0.62, 0.8, fbm(h, w, 5, 4, rng, 4))
-    col = mix(srgb("#6a625a"), srgb("#463d36"), plates)  # grey-brown pine bark, dead a season
-    col = mix(col, srgb("#1a1512"), 0.85 * fis)
-    col = mix(col, srgb("#5d6640"), 0.4 * moss * (1 - fis))
-    hgt = 0.006 * (1 - fis) + 0.002 * plates
-    return col, hgt, 0.9 + 0.08 * plates, np.zeros((h, w), np.float32)
+    v = (y + warp[0]) * gy / h
+    u = (x + warp[1]) * gx / w
+    jy, jx, val = rng.random((gy, gx)), rng.random((gy, gx)), rng.random((gy, gx))
+    ci, cj = np.floor(v).astype(int), np.floor(u).astype(int)
+    f1 = np.full((h, w), 9.0, np.float32)
+    f2 = np.full((h, w), 9.0, np.float32)
+    idv = np.zeros((h, w), np.float32)
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            ii, jj = ci + di, cj + dj
+            py = ii + 0.1 + 0.8 * jy[ii % gy, jj % gx]
+            px = jj + 0.1 + 0.8 * jx[ii % gy, jj % gx]
+            d = np.sqrt((v - py) ** 2 + (u - px) ** 2)
+            closer = d < f1
+            f2 = np.where(closer, f1, np.minimum(f2, d))
+            idv = np.where(closer, val[ii % gy, jj % gx], idv)
+            f1 = np.minimum(f1, d)
+    return f1, f2, idv
+
+
+def bark(h, w, m, rng):
+    """Fissured bark (round 2): long irregular plates split by deep fissures that wander and
+    branch (no drawn wavy lines), each plate its own value (15-25% across them), short cross
+    cracks in the plates; dark warm grey-brown, about #4e4236 overall (sRGB luma under 0.35:
+    a pale grey went pink under the fire and the moon)."""
+    ppm = w / m
+    warp = ((fbm(h, w, 6, 4, rng, 3) - 0.5) * 0.10 * ppm,
+            (fbm(h, w, 8, 4, rng, 3) - 0.5) * 0.03 * ppm + (fbm(h, w, 60, 30, rng, 2) - 0.5) * 0.006 * ppm)
+    # plates about 4-5 cm across and 20-30 cm down the trunk (a dead pine's long plates)
+    f1, f2, pv = cells(h, w, int(round(m * h / w / 0.3)), int(round(m / 0.045)), rng, warp)
+    edge = f2 - f1
+    wid = 0.06 + 0.16 * fbm(h, w, 10, 6, rng, 2)  # fissures wide and narrow by turns
+    fis = 1 - ss(0.0, 1.0, edge / wid)  # 1 in the crack
+    lip = ss(0.0, 1.0, edge / (wid * 2.6))  # 0 at the crack's lip, 1 on the plate's back
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32)
+    # short cross cracks on the plates (across the grain), broken
+    cx = np.abs(np.sin((y + warp[0] * 0.6) / ppm * 2 * np.pi * 26 + 6 * fbm(h, w, 12, 8, rng, 2)))
+    cross = (1 - ss(0.0, 0.12, cx)) * ss(0.55, 0.75, fbm(h, w, 20, 14, rng, 2)) * lip
+    mott = fbm(h, w, 24, 16, rng, 3)
+    fibre = fbm(h, w, 90, 16, rng, 2)  # fine fibres down the trunk
+    col = mix(srgb("#4a3f34"), srgb("#5e5142"), 0.65 * pv + 0.35 * mott)  # plate to plate
+    col = col * (0.92 + 0.12 * fibre[..., None])
+    col = mix(col, srgb("#6a5d4e"), 0.35 * ss(0.6, 1.0, lip) * ss(0.45, 0.8, mott))  # weathered plate backs
+    flake = ss(0.58, 0.72, fbm(h, w, 36, 18, rng, 3)) * lip  # outer scales lifted off: the warmer bark under
+    col = mix(col, srgb("#5c4535"), 0.45 * flake)
+    rough = fbm(h, w, 140, 70, rng, 2)  # a scaly tooth at one scale
+    col = col * (0.94 + 0.1 * rough[..., None])
+    col = mix(col, srgb("#3a3026"), 0.35 * (1 - lip) * (1 - fis))  # into the crack
+    col = mix(col, srgb("#1f1813"), 0.9 * fis)
+    col = mix(col, srgb("#2f261e"), 0.6 * cross)
+    hgt = 0.004 * lip - 0.003 * fis + 0.0015 * pv + 0.0012 * mott - 0.0015 * cross - 0.001 * flake + 0.0005 * rough
+    return col, hgt, 0.88 + 0.1 * pv, np.zeros((h, w), np.float32)
 
 
 def endgrain(h, w, m, rng):
@@ -143,13 +192,15 @@ def endgrain(h, w, m, rng):
     dx, dy = (x - cx) / ppm, (y - cy) / ppm
     r = np.sqrt(dx * dx + dy * dy) + 0.004 * (fbm(h, w, 6, 6, rng, 2) - 0.5)
     ang = np.arctan2(dy, dx)
-    rings = ss(0.5, 0.95, np.sin(r * 2 * np.pi * 70 + 2 * fbm(h, w, 4, 4, rng, 2)))
+    # (round 2: the rings out of round and uneven, the log's lean and its fast and slow years)
+    r = r * (1 + 0.06 * np.cos(ang - 0.7) + 0.03 * np.sin(3 * ang + 1.3))
+    rings = ss(0.5, 0.95, np.sin(r * 2 * np.pi * 70 + 9 * r + 2 * fbm(h, w, 4, 4, rng, 2))) * (0.6 + 0.4 * fbm(h, w, 3, 3, rng, 2))
     checks = np.zeros((h, w), np.float32)
     for _ in range(5):
         a0 = rng.random() * 2 * np.pi
         da = np.abs(np.angle(np.exp(1j * (ang - a0))))
         checks = np.maximum(checks, ss(0.02, 0.0, da * r * 8) * ss(0.05, 0.2, r))
-    col = mix(srgb("#b59a74"), srgb("#8a6a48"), 0.5 * rings + 0.3 * ss(0.0, 0.24, r))
+    col = mix(srgb("#a88a66"), srgb("#86684a"), 0.5 * rings + 0.3 * ss(0.0, 0.24, r))
     col = mix(col, srgb("#3a2a1e"), 0.9 * checks)
     # Outside r 0.24 m: the bark rim (a log's cap is mapped so its edge lands here).
     rim = ss(0.225, 0.235, r)
@@ -196,11 +247,14 @@ def cloth(h, w, m, rng):
 
 
 def canvas(h, w, m, rng):
-    over, s = weave(h, w, m, rng, 300, 2)
+    # Round 2: burlap, not oat cloth: a coarse open weave (about 4 threads a cm), a dull grey-brown
+    # (~#9a8466), slubs in the threads and dark gaps between them.
+    over, s = weave(h, w, m, rng, 170, 3)
     stains = ss(0.55, 0.8, fbm(h, w, 5, 5, rng, 4))
-    col = mix(srgb("#b8a684"), srgb("#9c8a6a"), 0.5 * s + 0.25 * (1 - over))
-    col = mix(col, srgb("#6e5c44"), 0.45 * stains)
-    hgt = 0.0009 * over
+    col = mix(srgb("#a69a86"), srgb("#867b68"), 0.55 * s + 0.2 * (1 - over))
+    col = mix(col, srgb("#4a3f32"), 0.55 * ss(0.35, 0.0, over))  # the gaps between threads
+    col = mix(col, srgb("#6a5b46"), 0.4 * stains)
+    hgt = 0.0012 * over
     return col, hgt, np.full((h, w), 0.95, np.float32), np.zeros((h, w), np.float32)
 
 

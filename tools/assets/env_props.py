@@ -14,6 +14,9 @@ sizes in metres and a palette. Kinds:
   crate           a slatted crate: corner posts, rails, slats, a brace on each side
   barrel          staves with their seams, four iron hoops, a head inset under the chime
   log             a log to sit on: bark, sawn ends (rings), an adze-flattened seat, a stub
+  pylon           a ford pier of dressed stone (E7 round 2, for the Low Ford's lamp posts): a stepped
+                  plinth, courses of blocks (whole and halved, in bond), a corbel and a capping slab
+                  overhanging; the lower courses darker and greened (the river's)
   wagon           a two-wheeled cart down on one side: its wheel off and broken on the
                   ground, the bed rolled onto its axle stub, shafts down, sacks spilled
 
@@ -308,9 +311,15 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14):
     for poly in me.polygons:
         tint = tints[poly.index]
         hard = kind_of_face[poly.index] in ('wood', 'iron', 'endgrain', 'stone', 'bark')
+        barky = kind_of_face[poly.index] == 'bark'
         for li in poly.loop_indices:
             vi = me.loops[li].vertex_index
             y = bm.verts[vi].co.y
+            if barky and ground:
+                # (round 2) moss and lichen where the bark meets the ground, in patches
+                co = bm.verts[vi].co
+                mf = min(1.0, max(0.0, (0.16 - y) / 0.12)) * min(1.0, max(0.0, 0.5 + 1.6 * hnoise(co * 3.0, 17)))
+                tint = tint.lerp(Vector((tint.x * 0.72, tint.y * 0.95, tint.z * 0.42)), mf)
             s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground else 1.0)
             if hard:
                 s *= 1.0 + 0.35 * max(0.0, min(conv[vi], 0.6))
@@ -545,9 +554,9 @@ def chest(p):
     for k in range(nb):
         y = bh * (k + 0.5)
         for sz in (-1, 1):  # front and back boards (grain along x: turn local y to x)
-            parts.append(Part(box(bh - 0.006, W, t, 0.004), 'wood', wood, T(0, y, sz * (D / 2 - t / 2)) @ R('Z', math.pi / 2), cap='endgrain'))
+            parts.append(Part(box(bh - 0.006, W, t, 0.004), 'wood', wood, T(0, y, sz * (D / 2 - t / 2)) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.08))
         for sx in (-1, 1):
-            parts.append(Part(box(bh - 0.006, D - 2 * t, t, 0.004), 'wood', wood, T(sx * (W / 2 - t / 2), y, 0) @ R('Y', math.pi / 2) @ R('Z', math.pi / 2), cap='endgrain'))
+            parts.append(Part(box(bh - 0.006, D - 2 * t, t, 0.004), 'wood', wood, T(sx * (W / 2 - t / 2), y, 0) @ R('Y', math.pi / 2) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.08))
     parts.append(Part(box(W - 0.01, 0.025, D - 0.01), 'wood', wood * 0.8, T(0, 0.0125, 0)))
     # The lid: slats along x on an arc over z, end pieces.
     ns = 6
@@ -558,7 +567,7 @@ def chest(p):
         a = -half + 2 * half * (k + 0.5) / ns
         w = 2 * Rl * math.sin(half / ns) - 0.004
         parts.append(Part(box(0.026, W + 0.012, w, 0.004), 'wood', wood,
-                          T(0, cy, 0) @ R('X', -a) @ T(0, Rl, 0) @ R('Z', math.pi / 2), cap='endgrain'))
+                          T(0, cy, 0) @ R('X', -a) @ T(0, Rl, 0) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.08))
     for sx in (-1, 1):
         prof = [(Vector((0, H, -D / 2)))]
         bm = bmesh.new()
@@ -587,6 +596,22 @@ def chest(p):
         parts.append(Part(torus(0.06, 0.011, 8, 4, 0, math.pi), 'iron', iron, T(sx * (W / 2 + 0.02), H * 0.66, 0) @ basis((0, 0, 1), (-1, 0, 0), (0, -1, 0))))
         for z in (-0.06, 0.06):
             parts.append(Part(box(0.014, 0.03, 0.02), 'iron', iron, T(sx * (W / 2 + 0.008), H * 0.66, z)))
+    # (round 2) rivets: down the bands front and back, two where each band crosses a lid slat, two on each corner iron
+    def rivet(at):
+        parts.append(Part(lathe([(0.0085, 0.0), (0.0055, 0.0048), (0.0, 0.0062)], 5, cap0=False, cap1=False), 'iron', iron * 1.15, at, smooth=True, jitter=0.0))
+    for bx in (-W * 0.3, W * 0.3):
+        for sz in (-1, 1):
+            for k in range(4):
+                rivet(T(bx, 0.06 + (H - 0.12) * k / 3, sz * (D / 2 + 0.008)) @ R('X', sz * math.pi / 2))
+        for k in range(ns):
+            a = -half + 2 * half * (k + 0.5) / ns
+            for dx in (-0.017, 0.017):
+                rivet(T(bx + dx, cy, 0) @ R('X', -a) @ T(0, Rl + 0.021, 0))
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            for y in (0.06, H - 0.06):
+                rivet(T(sx * (W / 2 + 0.012), y, sz * (D / 2 - 0.05)) @ R('Z', -sx * math.pi / 2))
+                rivet(T(sx * (W / 2 - 0.05), y, sz * (D / 2 + 0.012)) @ R('X', sz * math.pi / 2))
     parts.append(Part(box(0.07, 0.16, 0.01), 'iron', iron, T(0, H - 0.02, D / 2 + 0.012)))
     parts.append(Part(box(0.09, 0.1, 0.035, 0.006), 'iron', iron, T(0, H - 0.1, D / 2 + 0.025)))
     return parts
@@ -685,7 +710,7 @@ def log(p):
     bark, cut = hexlin(p['bark']), hexlin(p['cut'])
     seed = p['seed']
     parts = []
-    segs, rings = 16, max(6, int(L / 0.16))
+    segs, rings = 18, max(8, int(L / 0.11))
     # a little thinner toward +y (the top of the tree), out of round, bowed, the bark lumpy in plates
     prof = [(r * (1.0 - 0.1 * k / rings), -L / 2 + L * k / rings) for k in range(rings + 1)]
     bm = lathe(prof, segs, cap0=False, cap1=False)
@@ -693,9 +718,12 @@ def log(p):
     for v in bm.verts:
         a = math.atan2(v.co.z, v.co.x)
         k = (1 + 0.05 * hnoise(v.co * 4.5, seed) + 0.025 * math.sin(a * 5 + v.co.y * 3 + seed)) * (1 + 0.05 * math.cos(2 * a + seed))
+        # (round 2) swellings and pinches along the length, so the top edge isn't a ruler
+        k *= 1 + 0.06 * hnoise(Vector((0.3, v.co.y * 1.6, 0.7)), seed + 3) + 0.03 * math.sin(v.co.y * 7.3 + seed)
         v.co.x *= k
         v.co.z *= k
         v.co.x += 0.025 * (1 - (2 * v.co.y / L) ** 2)  # bowed up in the middle
+        v.co.z += 0.035 * math.sin(math.pi * v.co.y / L + seed)  # and a little crooked sideways
     # local y is the log's axis; it lies along game x, so its "up" is local +x before the turn.
     seat = []
     if flat > 0:
@@ -734,9 +762,19 @@ def log(p):
             f.normal_flip()
         bmesh.ops.triangulate(cbm, faces=cbm.faces[:])
         parts.append(Part(cbm, 'endgrain', cut, turn, cap='endgrain', capr=r, jitter=0.0))
-    # A branch stub.
-    st = lathe([(0.055, 0.0), (0.04, 0.12), (0.03, 0.2)], 6, cap0=False, cap1=True)
+    # Two branch stubs (sideways, so the log's height, which scales it to its radius, stays the bark's),
+    # the second snapped short, its broken end showing wood.
+    st = lathe([(0.065, -0.03), (0.055, 0.0), (0.04, 0.12), (0.03, 0.2)], 7, cap0=False, cap1=True)
     parts.append(Part(st, 'bark', bark * 0.9, turn @ T(r * 0.2, L * 0.18, r * 0.75) @ R('X', 1.2), smooth=True, jitter=0.0))
+    st2 = lathe([(0.05, -0.03), (0.042, 0.0), (0.034, 0.07)], 7, cap0=False, cap1=False)
+    parts.append(Part(st2, 'bark', bark * 0.85, turn @ T(-r * 0.15, -L * 0.3, -r * 0.82) @ R('X', -1.75), smooth=True, jitter=0.0))
+    tip = bmesh.new()
+    ring = [tip.verts.new((0.034 * math.cos(-a * 2 * math.pi / 7), 0.07 + 0.012 * math.sin(a * 2.3), 0.034 * math.sin(-a * 2 * math.pi / 7))) for a in range(7)]
+    tf = tip.faces.new(ring)
+    tip.normal_update()
+    if tf.normal.y < 0:
+        tf.normal_flip()
+    parts.append(Part(tip, 'endgrain', cut * 0.8, turn @ T(-r * 0.15, -L * 0.3, -r * 0.82) @ R('X', -1.75), cap='endgrain', capr=0.034, jitter=0.0))
     return parts
 
 
@@ -776,6 +814,13 @@ def sack(H, Rr, seed, lie=False):
         v.co.x *= k
         v.co.z *= k * 0.85
     return bm
+
+
+def sack_parts(H, Rr, seed, tint, at):
+    """A sack and the cord tied round its neck (round 2: a tied neck, so it reads as a sack, not a loaf)."""
+    tie = torus(Rr * 0.26, 0.011, 10, 4)
+    return [Part(sack(H, Rr, seed), 'canvas', tint, at, smooth=True, jitter=0.0),
+            Part(tie, 'leather', Vector((0.55, 0.5, 0.42)), at @ T(0, H * 0.93, 0), smooth=True, jitter=0.0)]
 
 
 def wagon(p):
@@ -832,14 +877,52 @@ def wagon(p):
     # Spilled sacks off the low side, one still in the bed against the low side.
     for (x, z, ry, rz, h, r, c) in ((-Wd / 2 - 0.45, -0.6, 0.4, 1.35, 0.62, 0.22, sk), (-Wd / 2 - 0.25, 0.15, -0.9, 1.45, 0.58, 0.21, sk2),
                                      (-Wd / 2 - 1.05, -1.25, 2.1, 1.5, 0.55, 0.2, sk)):
-        sbm = sack(h, r, int(x * 10 + z * 7))
-        parts.append(Part(sbm, 'canvas', c, T(x, r * 0.8, z) @ R('Y', ry) @ R('Z', rz) @ T(0, -h / 2, 0), smooth=True, jitter=0.0))
-    sbm = sack(0.6, 0.21, 11)
-    parts.append(Part(sbm, 'canvas', sk2, up @ T(-Wd / 2 + 0.35, bed_y + 0.2, -0.5) @ R('X', 1.4) @ R('Y', 0.3) @ T(0, -0.3, 0), smooth=True, jitter=0.0))
+        parts += sack_parts(h, r, int(x * 10 + z * 7), c, T(x, r * 0.8, z) @ R('Y', ry) @ R('Z', rz) @ T(0, -h / 2, 0))
+    parts += sack_parts(0.6, 0.21, 11, sk2, up @ T(-Wd / 2 + 0.35, bed_y + 0.2, -0.5) @ R('X', 1.4) @ R('Y', 0.3) @ T(0, -0.3, 0))
     return parts
 
 
-KINDS = {'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
+def pylon(p):
+    W, H = p['w'], p['h']
+    stone = hexlin(p['stone'])
+    rng = Rng(p['seed'])
+    parts = []
+    y = 0.0
+
+    def block(sx, sy, sz, x, y0, z, k):
+        # a dressed block, a little off square and off true, its tint its own (+-8%), the lower ones darker
+        low = 1.0 - 0.3 * max(0.0, 1.0 - y0 / (H * 0.3))
+        t = Vector((stone.x * low * 0.96, stone.y * low * (1.0 + 0.03 * (1 - low)), stone.z * low * 0.92)) if low < 1 else stone
+        parts.append(Part(box(sx, sy, sz, 0.012), 'stone', t * (1 + rng(-0.08, 0.08)),
+                          T(x + rng(-0.008, 0.008), y0 + sx / 2, z + rng(-0.008, 0.008)) @ R('Y', rng(-0.025, 0.025)) @ R('Z', math.pi / 2),
+                          cap='stone', jitter=0.0))
+    # plinth: two stepped courses
+    for (hw, ch) in ((W * 0.5, 0.22), (W * 0.45, 0.2)):
+        block(ch - 0.01, 2 * hw, 2 * hw, 0, y, 0, 0)
+        y += ch
+    # shaft: courses, alternately one block and two halves (split along x, then z)
+    hw = W * 0.38
+    cap_h = 0.32
+    n = max(4, int(round((H - y - cap_h) / 0.34)))
+    ch = (H - y - cap_h) / n
+    for k in range(n):
+        if k % 3 == 0:
+            block(ch - 0.012, 2 * hw, 2 * hw, 0, y, 0, k)
+        elif k % 3 == 1:
+            for sx in (-1, 1):
+                block(ch - 0.012, hw - 0.006, 2 * hw, sx * hw / 2, y, 0, k)
+        else:
+            for sz in (-1, 1):
+                block(ch - 0.012, 2 * hw, hw - 0.006, 0, y, sz * hw / 2, k)
+        y += ch
+    # corbel and capping slab, overhanging
+    block(0.13, 2 * W * 0.43, 2 * W * 0.43, 0, y, 0, 99)
+    y += 0.13
+    block(cap_h - 0.13, 2 * W * 0.48, 2 * W * 0.48, 0, y, 0, 100)
+    return parts
+
+
+KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon}
 
 

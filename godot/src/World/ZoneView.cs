@@ -381,6 +381,19 @@ public partial class ZoneView : Node3D
                     if (!FordPylonLit && c is Node3D pillar && pillar.Name.ToString().StartsWith("kk-halloween-pillar")
                         && new Vector2(pillar.Position.X - foot.X, pillar.Position.Z - foot.Z).Length() < 0.6f)
                         foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+                // E7 round 2: our own pier (OwnProps preset "pylon": painted dressed stone, tools/assets/env_props.py) for the
+                // code-made pillar, which read as a flat black slab at night under a capital its lamp flared white; the pier
+                // is kept out of its own lamp's light (its top is under the lamp's foot) and shows by the moon.
+                if (!SurvivorUnchained.Args.Has("ford-pier-off"))
+                    foreach (var c in Landmarks.Root.GetChildren())
+                        if (c is Node3D pillar && pillar.Name.ToString().StartsWith("kk-halloween-pillar")
+                            && new Vector2(pillar.Position.X - foot.X, pillar.Position.Z - foot.Z).Length() < 0.6f
+                            && OwnProps.Fitted("pylon", new Aabb(new Vector3(-0.5f, 0, -0.5f), new Vector3(1, 4.4f, 1))) is Node3D pier)
+                        {
+                            foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Visible = false;
+                            pillar.AddChild(pier);
+                            foreach (var m in pier.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+                        }
                 lights[li].LightCullMask &= ~LampLayer;
                 lights[li].LightColor = new Color(FordColor);
                 lights[li].OmniRange = FordRange;

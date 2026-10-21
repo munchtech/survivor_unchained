@@ -8,12 +8,13 @@
   "pack": {"kind": "pack", "seed": 3, "h": 0.58, "r": 0.25,
            "cloth": "#d8ccb0", "flap": "#ffffff", "strap": "#ffffff", "roll": "#a6a492", "band": "#e8dcc4"},
   "chest": {"kind": "chest", "seed": 4, "w": 1.24, "d": 0.74, "h": 0.52, "lid": 0.16,
-            "wood": "#a29a92", "iron": "#ffffff"},
+            "wood": "#9c9894", "iron": "#ffffff"},
   "crate": {"kind": "crate", "seed": 5, "w": 0.84, "d": 0.9, "h": 0.88, "wood": "#e6dccb"},
   "barrel": {"kind": "barrel", "seed": 6, "h": 0.9, "r": 0.35, "r_end": 0.29, "wood": "#c9ae92", "iron": "#ffffff"},
   "log_long": {"kind": "log", "seed": 7, "len": 2.3, "r": 0.27, "flat": 0.0, "bark": "#ffffff", "cut": "#ffffff"},
   "log_short": {"kind": "log", "seed": 8, "len": 1.6, "r": 0.22, "flat": 0.0, "bark": "#e8e4dc", "cut": "#ffffff"},
+  "pylon": {"kind": "pylon", "seed": 10, "w": 1.0, "h": 4.4, "stone": "#d6d2cc"},
   "wagon": {"kind": "wagon", "seed": 9, "len": 3.1, "wide": 1.5, "side": 0.38, "wheel_r": 0.56, "roll": 0.3,
-            "wood": "#cfc6b8", "iron": "#ffffff", "sack": "#d8ccb0", "sack2": "#c4b896"}
+            "wood": "#cfc6b8", "iron": "#ffffff", "sack": "#e4e0da", "sack2": "#d0ccc4"}
  }
 }
