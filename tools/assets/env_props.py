@@ -371,8 +371,8 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14):
                 lt = lt.lerp(Vector((lt.x * 0.86, lt.y * 0.94, lt.z * 0.64)), (1 - g) * min(1.0, max(0.0, nz)))
                 up = poly.normal.z
                 if GRIME['moss'] > 0 and up > 0.55 and kind_of_face[poly.index] == 'stone':
-                    m = GRIME['moss'] * min(1.0, max(0.0, (nz - 0.35) * 2.5)) * min(1.0, (up - 0.55) * 4)
-                    lt = lt.lerp(Vector((lt.x * 0.62, lt.y * 0.8, lt.z * 0.42)), m)
+                    m = GRIME['moss'] * min(1.0, max(0.0, (nz - 0.2) * 2.0)) * min(1.0, (up - 0.55) * 4)
+                    lt = lt.lerp(Vector((lt.x * 0.5, lt.y * 0.66, lt.z * 0.34)), m)
             s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground else 1.0)
             if hard:
                 s *= 1.0 + 0.35 * max(0.0, min(conv[vi], 0.6))
@@ -1181,8 +1181,8 @@ def fallen(parts, rng, n, xs, side_z, D, ch, bl, stone, at=Matrix.Identity(4), f
         sz = side_z if rng() < 0.75 else -side_z
         z = sz * (D / 2 + rng(0.15, far))
         sx, sy, sd = bl * rng(0.55, 1.0), ch * rng(0.85, 1.0), D * rng(0.5, 0.9)
-        tilt = rng(-0.35, 0.35)
-        sblock(parts, (sx, sy, sd), at @ T(x, sy * 0.38, z) @ R('Y', rng(-1.2, 1.2)) @ R('X', tilt) @ R('Z', rng(-0.25, 0.25)),
+        tilt = rng(-0.55, 0.55)
+        sblock(parts, (sx, sy, sd), at @ T(x, sy * 0.22, z) @ R('Y', rng(-1.2, 1.2)) @ R('X', tilt) @ R('Z', rng(-0.25, 0.25)),
                stone * 0.9, rng, chip=0.8)
         for j in range(2):
             s = rng(0.1, 0.22)
@@ -1306,7 +1306,7 @@ def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cel
     ext = 1.18
     nu = max(4, int(2 * a * ext / step))
     nv = max(4, int(2 * b * ext / step))
-    mossc = Vector((0.55, 0.68, 0.36))
+    mossc = Vector((0.78, 0.94, 0.6))  # grassed over: near the ground's own value, so the heap doesn't outline itself
     def fn(u, v):
         x, z = (u - 0.5) * 2 * a * ext, (v - 0.5) * 2 * b * ext
         return (cx + x, mound_y(x, z, a, b, h, seed, sag), cz + z)
@@ -1417,7 +1417,7 @@ def grave(p):
         return parts
     headstone(parts, p['head'], W, Hs, t, T(0, 0.1, z0) @ R('X', -lean) @ R('Z', rng(-0.05, 0.05)), stone, rng, chip=p.get('chip', 0.0))
     mz = z0 + 0.22 + ml / 2
-    parts += mound(W * 0.42, ml / 2, p.get('mh', 0.3), p['seed'], soil, cz=mz, sag=p.get('sag', 0.4), moss=p.get('moss', 0.5))
+    parts += mound(W * 0.42, ml / 2, p.get('mh', 0.3), p['seed'], soil, cz=mz, sag=p.get('sag', 0.4), moss=p.get('moss', 0.85))
     if p.get('kerb'):
         for sx in (-1, 1):
             sblock(parts, (0.16, 0.2, ml * 0.98), T(sx * W * 0.5, 0.05, mz) @ R('Z', sx * rng(0.0, 0.08)), stone * 0.85, rng, drop=('-y',))
@@ -1432,7 +1432,7 @@ def gravestone(p):
     parts = []
     W, Hs, t = p['w'], p['hs'], p['t']
     headstone(parts, p['head'], W, Hs, t, T(0, -0.12, 0) @ R('X', p.get('lean', -0.1)) @ R('Z', p.get('roll', 0.06)), stone, rng, chip=p.get('chip', 0.0))
-    parts += mound(W * 0.46, 0.5, 0.14, p['seed'], soil, cz=0.55, sag=0.2, moss=0.6)
+    parts += mound(W * 0.46, 0.5, 0.14, p['seed'], soil, cz=0.55, sag=0.2, moss=0.85)
     return parts
 
 
@@ -1455,7 +1455,7 @@ def marker(p):
         rope = hexlin(p.get('rope', '#9a8a6a'))
         for k in range(3):
             parts.append(Part(torus(0.064, 0.009, 9, 4), 'canvas', rope, lean @ T(0, h * 0.68 + (k - 1) * 0.022, 0.04) @ R('Z', 0.55 * (1 if k % 2 else -1)) @ R('X', math.pi / 2), smooth=True, jitter=0.0))
-    parts += mound(0.34, p.get('mlen', 0.85), 0.16, p['seed'], soil, cz=p.get('mz', 0.75), sag=0.3, moss=0.55)
+    parts += mound(0.34, p.get('mlen', 0.85), 0.16, p['seed'], soil, cz=p.get('mz', 0.75), sag=0.3, moss=0.8)
     return parts
 
 
@@ -1535,10 +1535,10 @@ def rubble(p):
         return max(0.0, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07))
     def fn(u, v):
         x, z = cx + (u - 0.5) * 2 * a * 1.15, (v - 0.5) * 2 * b * 1.15
-        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07), z)
+        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.16), z)
     def ft(c):
         return Vector((1, 1, 1)) * (0.8 + 0.25 * hnoise(Vector((c.x * 2.0, 0, c.z * 2.0)), p['seed'] + 2))
-    parts += patches(fn, max(6, int(2 * a * 1.15 / 0.3)), max(6, int(2 * b * 1.15 / 0.3)), 2, 2, 'stone', dirt, ft)
+    parts += patches(fn, max(6, int(2 * a * 1.15 / 0.3)), max(6, int(2 * b * 1.15 / 0.3)), 2, 2, 'soil', dirt, ft)
     ch, bl, D = p.get('course', 0.42), p.get('block', 0.8), p.get('d', 0.6)
     for i in range(p.get('blocks', 16)):
         ang = rng(0, 6.283)
@@ -1546,7 +1546,7 @@ def rubble(p):
         x, z = cx + math.cos(ang) * a * rr, math.sin(ang) * b * rr
         sx, sy, sd = bl * rng(0.5, 1.05), ch * rng(0.8, 1.0), D * rng(0.6, 1.0)
         y = hy(x, z)
-        sblock(parts, (sx, sy, sd), T(x, y + sy * 0.25, z) @ R('Y', rng(-3.1, 3.1)) @ R('X', rng(-0.5, 0.5)) @ R('Z', rng(-0.5, 0.5)), stone * rng(0.82, 1.05), rng, chip=0.9)
+        sblock(parts, (sx, sy, sd), T(x, y + sy * 0.08, z) @ R('Y', rng(-3.1, 3.1)) @ R('X', rng(-0.45, 0.45)) @ R('Z', rng(-0.45, 0.45)), stone * rng(0.62, 0.92), rng, chip=0.9)
     # a couple still bedded together: two courses' worth, askew, at one end
     bx = cx - a * 0.45
     for k in range(2):
@@ -1594,8 +1594,8 @@ def banner(p):
         u = c.x / W + 0.5
         vv = (top - c.y) / Lc
         col = Vector((1, 1, 1))
-        band = (0.08 < vv < 0.12) or (0.8 < vv < 0.84)
-        tower = (abs(u - 0.5) < 0.09 and 0.28 < vv < 0.66) or (abs(u - 0.5) < 0.17 and 0.24 < vv < 0.32 and (int(u * 14) % 2 == 0))
+        band = (0.09 < vv < 0.135) or (0.82 < vv < 0.865)
+        tower = 0.4 < u < 0.6 and 0.135 < vv < 0.82  # a pale down its middle
         if band or tower:
             col = Vector((pale.x / cloth.x, pale.y / cloth.y, pale.z / cloth.z))
         fade = 1.0 + 0.18 * smooth01(0.4, 0.0, vv)
@@ -1640,11 +1640,11 @@ def chair(p):
     for sx in (-1, 1):
         for sz in (-1, 1):
             lh = H if sz < 0 else sh
-            parts.append(Part(box(0.045, lh, 0.045, 0.006), 'wood', wood * 0.85, T(sx * (W / 2 - 0.04), lh / 2, sz * (D / 2 - 0.04)) @ R('X', 0.04 * sz if sz < 0 else 0), cap='endgrain'))
+            parts.append(Part(box(0.085, lh, 0.085, 0.01), 'wood', wood * 0.85, T(sx * (W / 2 - 0.04), lh / 2, sz * (D / 2 - 0.04)) @ R('X', 0.04 * sz if sz < 0 else 0), cap='endgrain'))
     for i in range(2):
-        parts.append(Part(box(0.035, W - 0.02, D / 2 - 0.01, 0.005), 'wood', wood * (1 + rng(-0.06, 0.06)), T(0, sh, -D / 4 + i * D / 2) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.06))
+        parts.append(Part(box(0.07, W - 0.02, D / 2 - 0.01, 0.008), 'wood', wood * (1 + rng(-0.06, 0.06)), T(0, sh, -D / 4 + i * D / 2) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.06))
     for k in range(3):
-        parts.append(Part(box(0.06, W - 0.1, 0.025, 0.004), 'wood', wood * 0.9, T(0, sh + 0.16 + k * (H - sh - 0.22) / 2.4, -D / 2 + 0.035) @ R('Z', math.pi / 2), cap='endgrain'))
+        parts.append(Part(box(0.11, W - 0.1, 0.04, 0.006), 'wood', wood * 0.9, T(0, sh + 0.16 + k * (H - sh - 0.22) / 2.4, -D / 2 + 0.035) @ R('Z', math.pi / 2), cap='endgrain'))
     for sx in (-1, 1):
         parts.append(Part(box(0.035, D - 0.1, 0.035, 0.004), 'wood', wood * 0.8, T(sx * (W / 2 - 0.04), sh * 0.35, 0) @ R('X', math.pi / 2), cap='endgrain'))
     return parts
