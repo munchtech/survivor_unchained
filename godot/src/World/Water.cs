@@ -18,6 +18,8 @@ public static class Water
     {
         var root = new Node3D { Name = "Water" };
         var dir = z.Dir;
+        // A zone with no bed of its own keeps a dry ground (the globals outlive the zone).
+        RenderingServer.GlobalShaderParameterSet("water_bed", Vector4.Zero);
         if (!FileAccess.FileExists($"{dir}/water.json")) return root;
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/water.json"));
         var bin = FileAccess.GetFileAsBytes($"{dir}/water.bin");
@@ -59,6 +61,7 @@ public static class Water
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
             Look(mat, w.GetProperty("look"));
+            Bed(w.GetProperty("look"));
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         return root;
@@ -78,5 +81,27 @@ public static class Water
         var flow = new Vector2(0.02f, 0.35f);
         if (look.TryGetProperty("flow", out var f) && f.ValueKind == JsonValueKind.Array) flow = new Vector2(f[0].GetSingle(), f[1].GetSingle());
         mat.SetShaderParameter("flow", flow);
+        // E6: the depth, shore, foam and ripple keys (docs/art/look_bible/04_water_shore.md); any left out as the shader has them.
+        foreach (var key in Keys)
+            if (look.TryGetProperty(key, out var k) && k.ValueKind == JsonValueKind.Number) mat.SetShaderParameter(key, k.GetSingle());
+        if (System.Environment.GetEnvironmentVariable("WATER_DEBUG") is { } dbg && int.TryParse(dbg, out var dv)) mat.SetShaderParameter("debug_view", dv);
+    }
+
+    /// <summary>The look's numbers (water.json "look"): clarity (m the bed fades through), deep (m: the body full past it),
+    /// shore (m: the sheen fading in from the bank), foam_depth (m: how near the surface a thing breaks it), foam_amt, wake
+    /// (m of foam behind a stone or a leg, 0 none), ripple_size (m), ripple_bend, refract, gloss (the glints' roughness).</summary>
+    public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss"];
+
+    /// <summary>The bed and the bank (water.json "look" "bed"; the terrain shader's global water_bed, water_silt): pebbles
+    /// (0-1, river stones in the silt), silt (0-1, how far the bed takes the silt's colour), wet (m above the water the bank
+    /// is dark and slick), wet_dark (0-1). None: a dry bank and the ground's own paint under the water.</summary>
+    public static void Bed(JsonElement look)
+    {
+        var b = look.TryGetProperty("bed", out var bb) && bb.ValueKind == JsonValueKind.Object ? bb : default;
+        float N(string key, float fallback) => b.ValueKind == JsonValueKind.Object && b.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : fallback;
+        bool on = b.ValueKind == JsonValueKind.Object;
+        RenderingServer.GlobalShaderParameterSet("water_bed", on ? new Vector4(N("pebbles", 0.5f), N("silt", 0.6f), N("wet", 0.35f), N("wet_dark", 0.45f)) : Vector4.Zero);
+        string silt = on && b.TryGetProperty("silt_color", out var sc) && sc.ValueKind == JsonValueKind.String ? sc.GetString()! : "#4a4234";
+        RenderingServer.GlobalShaderParameterSet("water_silt", new Color(silt).SrgbToLinear());
     }
 }

@@ -53,6 +53,11 @@ uniform int debug_view = 0;
 // the preset's amount and thaw (Atmosphere: x amount, y thaw), the rime's value, and how far down the heights it reaches.
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
 global uniform vec4 ground_frost;
+// E6: the river (Water.cs): the water's height (x; w 1 when the zone has one), and its bed and bank (water.json "look"
+// "bed": x pebbles 0-1, y silt 0-1, z m above the water the bank is wet, w how dark it is), the silt's colour.
+global uniform vec4 water_level;
+global uniform vec4 water_bed;
+global uniform vec4 water_silt;
 // The rime: the ground under it lifted by frost_tone, greyed and cooled, never past frost_cap (frost is never
 // the brightest thing at night: look bible 1c).
 uniform float frost_tone = 1.7;
@@ -508,6 +513,38 @@ void fragment() {
 	// Only true blight glows (the Verge's paint runs to 0.55): a faint wash (Low Ford's graveyard, 0.35 at most) is dead
 	// ground, not neon veins (its few noise-tipped patches drew a hard green squiggle by the crypt; judge 2, item 6).
 	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b);
+
+	// E6: the river's bed (silt and river stones, under the water) and its wet bank (dark and slick a hand above it),
+	// both wobbling so the waterline never runs straight.
+	if (water_level.w > 0.5 && water_bed.y + water_bed.z > 0.0) {
+		float bk_above = w_pos.y - water_level.x + (nF.b - 0.5) * 0.08 + (nM.r - 0.5) * 0.06;
+		float bk_sunk = 1.0 - smoothstep(-0.1, 0.0, bk_above);
+		if (bk_sunk > 0.0) {
+			// River stones: a cell each about 0.3 m, some left out, their edges shaded into the silt.
+			vec2 q = w * 3.4;
+			vec2 qi = floor(q), qf = fract(q);
+			float f1 = 8.0, f2 = 8.0, hid = 0.0;
+			for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+				vec2 o = vec2(float(i), float(j));
+				vec2 c = o + vec2(hash12(qi + o), hash12(qi + o + 17.3)) * 0.8 + 0.1 - qf;
+				float d = dot(c, c);
+				if (d < f1) { f2 = f1; f1 = d; hid = hash12(qi + o + 41.7); } else if (d < f2) f2 = d;
+			}
+			float bk_rim = sqrt(f2) - sqrt(f1);
+			float bk_peb = smoothstep(0.06, 0.2, bk_rim) * step(hid, water_bed.x * (0.6 + 0.8 * nM.g));
+			float bk_lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+			vec3 bk_silt = water_silt.rgb * (0.82 + 0.36 * nF.g);
+			vec3 bk_bedc = mix(albedo, bk_silt * mix(1.0, bk_lum / 0.12, 0.25), water_bed.y);
+			vec3 bk_stone = mix(bk_silt * 1.15, vec3(dot(bk_silt, vec3(0.333)) * 1.2), 0.5) * (0.85 + 0.3 * fract(hid * 7.31));
+			bk_bedc = mix(bk_bedc * mix(0.86, 1.0, smoothstep(0.0, 0.14, bk_rim)), bk_stone, bk_peb * 0.7);
+			albedo = mix(albedo, bk_bedc, bk_sunk);
+			rough = mix(rough, 0.55, bk_sunk);
+		}
+		// (the bed under the water as wet as the bank's foot: no lighter strip where the water takes it)
+		float bk_wet = (1.0 - smoothstep(0.0, water_bed.z, bk_above)) * step(0.001, water_bed.z);
+		albedo *= 1.0 - bk_wet * water_bed.w;
+		rough = mix(rough, 0.28, bk_wet);
+	}
 
 	ALBEDO = albedo;
 	if (debug_view == 1) ALBEDO = pm.rgb;
