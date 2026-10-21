@@ -18,6 +18,7 @@ rows (its body, gable fronts, chimney) take their house's number too (E9b2).
 """
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -28,6 +29,11 @@ def main():
     zone = sys.argv[1] if len(sys.argv) > 1 else "waystation"
     d = ROOT / "godot" / "data" / "zones" / zone
     rows = json.loads((d / "props.json").read_text())
+    own_path = d / "props_own.json"
+    own = json.loads(own_path.read_text()) if own_path.exists() else {}
+    # (each roof's old house and look, so a re-run keeps the looks the town was judged with)
+    old_look = own.get("walls", {}).get("houses", {})
+    old_roof = {i: old_look.get(str(r.get("h"))) for i, r in enumerate(rows) if r["id"].startswith("village/Roof")}
     for r in rows:
         r.pop("h", None)
     runs, cur = [], []
@@ -36,10 +42,10 @@ def main():
         if r["id"].startswith("village/") and not s.startswith(("Roof", "Prop_")):
             cur.append(i)
         elif cur:
-            runs.append((cur, s.startswith("Roof")))
+            runs.append((cur, i if s.startswith("Roof") else -1))
             cur = []
     if cur:
-        runs.append((cur, False))
+        runs.append((cur, -1))
 
     def org(i):
         t = rows[i]["t"]
@@ -47,7 +53,8 @@ def main():
 
     hid = 0
     houses = {}  # h -> (cx, cz, is_house)
-    for run, roofed in runs:
+    for run, roof_i in runs:
+        roofed = roof_i >= 0
         segs = [[run[0]]]
         for a, b in zip(run, run[1:]):
             (ax, ay, az), (bx, by, bz) = org(a), org(b)
@@ -60,11 +67,23 @@ def main():
             xs = [org(i)[0] for i in seg]
             zs = [org(i)[2] for i in seg]
             return min(xs) - 1, max(xs) + 1, min(zs) - 1, max(zs) + 1
-        last = bbox(segs[-1])
+        # the house: the run's last stretch and every stretch inside its roof's footprint. (E9b4: a house 10 m
+        # across jumps 10 m between its faces, so its first face and its upper storey's first face came apart as
+        # houses of their own, with no look: house 21's west face drew plain stone behind its own timbers.)
+        boxes = [bbox(segs[-1])]
+        if roofed:
+            rr = rows[roof_i]
+            m = re.search(r"_(\d+)x(\d+)$", rr["id"])
+            if m:
+                t = rr["t"]
+                a, b_ = float(m.group(1)) / 2, float(m.group(2)) / 2
+                ex = abs(t[0]) * a + abs(t[6]) * b_
+                ez = abs(t[2]) * a + abs(t[8]) * b_
+                boxes.append((t[9] - ex, t[9] + ex, t[11] - ez, t[11] + ez))
         groups = {}
         for seg in segs:
             b = bbox(seg)
-            overl = roofed and not (b[1] < last[0] or b[0] > last[1] or b[3] < last[2] or b[2] > last[3])
+            overl = roofed and any(not (b[1] < o[0] or b[0] > o[1] or b[3] < o[2] or b[2] > o[3]) for o in boxes)
             key = "house" if overl else id(seg)
             groups.setdefault(key, []).extend(seg)
         for key, seg in groups.items():
@@ -72,7 +91,7 @@ def main():
                 rows[i]["h"] = hid
             xs = [org(i)[0] for i in seg]
             zs = [org(i)[2] for i in seg]
-            houses[hid] = ((min(xs) + max(xs)) / 2, (min(zs) + max(zs)) / 2, key == "house")
+            houses[hid] = ((min(xs) + max(xs)) / 2, (min(zs) + max(zs)) / 2, key == "house", old_roof.get(roof_i) if key == "house" else None)
             hid += 1
 
     # each house's look: greedy, the most crowded first
@@ -80,7 +99,14 @@ def main():
     near = {h: [o for o in ids if o != h and math.hypot(houses[h][0] - houses[o][0], houses[h][1] - houses[o][1]) < 18] for h in ids}
     look = {}
     used_t, used_s = [0] * 6, [0] * 3
+    for h in ids:
+        if houses[h][3]:
+            look[h] = list(houses[h][3][:2])
+            used_t[look[h][0]] += 1
+            used_s[look[h][1]] += 1
     for h in sorted(ids, key=lambda h: -len(near[h])):
+        if h in look:
+            continue
         nt = {look[o][0] for o in near[h] if o in look}
         ns = [look[o][1] for o in near[h] if o in look]
         t = min((t for t in range(6) if t not in nt), key=lambda t: (used_t[t], t), default=h % 6)
@@ -91,7 +117,13 @@ def main():
     # each house's roof (E9b2): its covering (0 clay pantiles, 1 oak shingles) and that covering's tint (0-3), so
     # neighbors differ: no two houses within 18 m share both, the nearest three mostly differ in covering
     used_r = {}
+    for h in ids:
+        if houses[h][3] and len(houses[h][3]) > 3:
+            look[h] += list(houses[h][3][2:4])
+            used_r[tuple(look[h][2:])] = used_r.get(tuple(look[h][2:]), 0) + 1
     for h in sorted(ids, key=lambda h: -len(near[h])):
+        if len(look[h]) > 2:
+            continue
         by_d = sorted(near[h], key=lambda o: math.hypot(houses[h][0] - houses[o][0], houses[h][1] - houses[o][1]))
         def cost(rt, ti):
             same = sum(1 for o in near[h] if len(look[o]) > 2 and look[o][2:] == [rt, ti])
@@ -113,8 +145,6 @@ def main():
             cur = r["h"] if houses.get(r["h"], (0, 0, False))[2] else -1
 
     (d / "props.json").write_text(json.dumps(rows, separators=(",", ":")) + chr(10))
-    own_path = d / "props_own.json"
-    own = json.loads(own_path.read_text()) if own_path.exists() else {}
     own.setdefault("walls", {})["houses"] = {str(h): v for h, v in sorted(look.items())}
     own_path.write_text(json.dumps(own, indent=1))
     print(f"{zone}: {hid} groups, {len(ids)} houses; tints {used_t}, treatments {used_s}, roofs {sorted(used_r.items())}")
