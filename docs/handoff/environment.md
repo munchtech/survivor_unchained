@@ -1,6 +1,29 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (env lead 10, 20 Oct): E4 foliage DONE (judged), MR next; then E5 rocks
+## Paused here (env lead 10, 20 Oct night); next: E5 fix round 2 (the judge's six fixes), reshoot, judge, MR
+- Branch `env-4` (pushed). **E4 is MERGED** (87c640e6). Scratch and texts are backed up in `survivorsunchained_inputs\scratch_env10\`: `e5a_brief.md` (the E5 build brief), `e5a_judge.md` (the judge brief: reuse it for round 2 with the changes), **`e5a_verdict.md` (round 1's verdict, the fix list)**, `g1_judge_common.md` (the judge rules), `final_e4.sh` (tests, Release perf and the teach run; copy it for the MR).
+- **E5 so far (47ae68f5, unjudged-to-pass):**
+  - The generator `tools/assets/env_rocks.py` has presets: boulder, fieldrock, cliff, pebbles, stepping (4-6 variants each, LODs, baked edge-wear vertex colour).
+  - One stone material: `OWN_ROCK` in `godot/shaders/kit.gdshader` (triplanar paint, moss, grime, wet band, global `water_level`; the uniform is `stone_rough`). The palette is data in `flora_species.json` `"stone"`.
+  - Swapped through `flora_species.json` (`"kind/piece"` keys).
+  - The ford causeway is data in `godot/data/zones/lowford/flora_species.json`. The old one was 18 kit rocks from `src/world/zones/lowford.ts:322`. Dressing drops kit rocks within 2.7 m of the line.
+  - `--flora-kit` brings back the kit rocks too. There is a perf flip `rocks`.
+  - The `stones` shot set (frames.py) has three day spots.
+  - Perf at road_night: rocks 6 draws, 12 shadow, ~0.03 ms.
+- **Round 1 judge (xhigh): rocks FAIL, stepping stones FAIL (close).** Fix list in `e5a_verdict.md`:
+  1. Turtle-shell tops: open fractures, flatter crowns, 5-7 sided slabs.
+  2. One braided path, not two rows; drop the stones on the dry ramp.
+  3. Night value -25%, a warmer brown-grey, moss on boulder tops.
+  4. Stones 12-22 cm proud with the wet band visible.
+  5. Visible pebble clusters.
+  6. A reshoot showing boulders, field rocks and cliffs by day and by night; `stones_o_02` showed no rock and needs a new spot.
+- **Carried notes:**
+  - Grass, from the E4 judge and still open: sunlit blades read teal/mint. Move the blade body's hue toward green in sun, not just the tips (`sun_tip` in `grass_own.gdshader` didn't do it). The ±35% size variance is FIXED.
+  - **E7: the camp lantern's cyan pool** (`LampColor` #ffc890 in `ZoneView.cs` is every road lamp; the camp lantern needs its own amber), and the few olive-yellow grass tips in it.
+  - E6 owns, at the stones: contact foam rings and a short downstream wake, a bed seen through 10-30 cm, shore darkening meeting the wet band, wading ripples, her standing on the surface in a gap, debris on the surface, a lens-flare ring on the bank at ford_o_05.
+- **Order after E5:** E6 water, E7 camp, E9 town (the dawn mud decal gate), then **E8 castle/gate/walls and E10 perf close, both confirmed as env's** (the coordinator, 20 Oct). Build every remake as a generator or kit with data presets. Each MR says in one line what a new zone gets free and what it still needs. The town comes first; don't let it add rounds.
+
+## Done (env lead 10, 20 Oct): E4 foliage (MERGED 87c640e6)
 - Branch `env-4`. Scratch and briefs: `survivorsunchained_inputs\scratch_env10\` (backed up at each stretch's end): judges `e4e_judge.md` (r3), `e4g_judge.md` (r4 + step C), `e4i_judge.md` (step D); solver briefs `e4f_brief.md`, `e4h_brief.md`; `final_e4.sh` (tests, Release perf, teach run).
 - **E4 is ours and the DEFAULT:** spruce, alder, snags (dead spruce), hazel and elder bushes, bracken, and grass, all from `tools/assets/env_trees.py` (presets `SPRUCE`, `ALDER`, `SNAG`, `BUSH`, `BRACKEN`, `PAL`, grass; `tex [--species X]`, then `blender -b -P tools/assets/env_trees.py -- mesh [--species X]`, then `Godot_console --headless --path godot --import`; frames.py does not reimport). `--flora-kit` brings the kit back (frames.py `g`).
   - **Data:** `godot/data/flora_species.json` (kit-to-own map with per-copy picks, LODs, cells, shadows, wind, shader values, `night_hue`/`night_value`, the `grass` section; an empty `own` list drops a kit piece), read by `FloraSpecies.cs`. A zone overrides with `godot/data/zones/<zone>/flora_species.json`. **A new zone gets the six species and the grass for free by data; it needs only new species presets if its biome differs.**
@@ -8,8 +31,7 @@
   - Light: **LowFordNight moon 20 -> 28 degrees, strength x0.55** (`Atmospheres.cs`), so the spruce shadows read as conifers, not bars; the lit ground holds G1's value; her close-up hair stays copper (hue 39).
 - **Judges (xhigh):** r3 spruce PASS, alder PASS-WITH-NOTES, shadows FAIL -> moon raised; r4 every frame GATE YES, shadows PASS, snags/bracken PASS, bushes PASS-WITH-NOTES; step D every frame (8) GATE YES, grass PASS-WITH-NOTES, elder closed as plain elder (no flowers at 1:1).
 - **Riding to E5's round** (the judge: none blocks E4's merge): warm the sunlit grass tips toward olive (hue 85-95) so drifts don't look pasted on at forddawn; vary grass card size ±35% and mix 2-3 clump shapes (stamped look in dense drifts). **Riding to E7:** the camp lantern's cyan pool (and the few olive-yellow tips in it) once the lantern is amber.
-- **Perf at road_night:** flora 63 draws (was 99), 106 shadow draws (192), 0.30 ms GPU (0.46); grass 2 draws, 0.20 ms (kit 1.07 ms). LOD2 impostors were dropped: unneeded at these numbers. Release runs: see the MR line below.
-- **Next:** E5 rocks and ford stones (a generator with presets, like env_trees.py), then E6, E7, E9, E8, E10 (the coordinator: E8 and E10 stay env's, after E9; build every remake as a generator or kit with data presets so the next zone is mostly a data file; one line per MR on what a new zone gets free).
+- **Perf at road_night:** flora 63 draws (was 99), 106 shadow draws (192), 0.30 ms GPU (0.46); grass 2 draws, 0.20 ms (kit 1.07 ms). LOD2 impostors were dropped: unneeded at these numbers. Release (`env_perf1\e4\`): Low Ford 1440p high fps 106/172/242 (G1 108/136/172), median shadow draws 265 (503); hub 92 fps (CPU-bound). Tests 1018/0/8; teach 11/11.
 
 ## Paused here (env lead 9, 20 Oct); next: judge E4 step B round 2, then step C
 - Branch `env-4` (pushed). G1 is MERGED. Scratch, briefs and measuring scripts are backed up in `survivorsunchained_inputs\scratch_env9\` (`e4\` holds the tree work; briefs `e4a_brief.md` to `e4d_brief.md`, judges `e4a_judge.md`, `e4b_judge.md`, `e4c_judge.md`). Shots are in the worktree's `godot\.shots\` (`e4a_` to `e4d_`; `_g_` is the kit, `_o_` is ours).
