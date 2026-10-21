@@ -1724,6 +1724,17 @@ public static class People
                     m.SetShaderParameter("look_rig", w);   // (her outfit too: its steel and leather rougher under the rig, s29)
     }
 
+    /// <summary>Her share of the sky's light on her skin (the skin shader's sky_share, 1 as everywhere): GameCloseUp sets it in
+    /// the town's close view by day, where the grey sky's light lay level over her face (face 34).</summary>
+    public static void HerSkyShare(Person p, float w)
+    {
+        if (p.Body != "heroine") return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                    m.SetShaderParameter("sky_share", w);
+    }
+
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
     static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
 
