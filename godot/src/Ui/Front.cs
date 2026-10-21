@@ -456,7 +456,7 @@ public partial class CreateScreen : Overlay
         b.CustomMinimumSize = row.GetCombinedMinimumSize() + new Vector2(0, 4);
         row.Position = new Vector2(0, 2);
         // (its focus rings its mark, glyph and words, not the column's width)
-        Nav.Framed(b, row);
+        Nav.Framed(b, row, icon);
         b.MouseEntered += () => title.AddThemeColorOverride("font_color", Kit.Ink);
         b.MouseExited += () => title.AddThemeColorOverride("font_color", ink);
         b.Pressed += act;
@@ -494,6 +494,8 @@ public partial class CreateScreen : Overlay
         v.AddChild(Arms(a));
         v.AddChild(Style.Gap(Style.Gap2));
         v.AddChild(Origin());
+        // (the height of the weapon rows a calling lacks, kept here at the foot so the frame and foot stay put)
+        if (a.Weapons.Count < 3) v.AddChild(Style.Gap((3 - a.Weapons.Count) * weaponRowH));
         return v;
     }
 
@@ -502,7 +504,7 @@ public partial class CreateScreen : Overlay
     /// him. The pair centred on the panel's middle.</summary>
     Control SexRow()
     {
-        var woman = Nav.Underlined(Nav.Id(Kit.Tab("A woman", Her, () => { if (!Her) Set(() => d.SetSex(Sex.Female)); }, 19), "sex:Female"));
+        var woman = Nav.Loud(Nav.Underlined(Nav.Id(Kit.Tab("A woman", Her, () => { if (!Her) Set(() => d.SetSex(Sex.Female)); }, 19, 0.6f), "sex:Female")));
         var man = Kit.Tab("A man", !Her, () => { }, 19);
         man.Disabled = true;
         man.MouseFilter = MouseFilterEnum.Ignore;
@@ -531,25 +533,26 @@ public partial class CreateScreen : Overlay
     /// <summary>The arms: the calling's weapons as its rows (room kept for three, so the rows under them
     /// never move between callings), and the four arts it starts with as words, the one in hand's kind and
     /// pace under them (the right panel reads both closely).</summary>
+    float weaponRowH;
+
     Control Arms(Archetype a)
     {
         var v = Style.V(Style.Gap2, Kit.Head("Weapon"));
-        float rowH = 0;
+        weaponRowH = 0;
         foreach (var id in a.Weapons)
         {
             var it = Items.Get(id);
             var w = it.Weapon != null ? Weapons.All.GetValueOrDefault(it.Weapon.Id) : null;
             var r = Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => { d.Section = 1; d.WeaponItem = id; }),
                 w != null ? ItemViews.SchoolColors[w.School] : null);
-            rowH = r.CustomMinimumSize.Y;
+            weaponRowH = r.CustomMinimumSize.Y;
             v.AddChild(r);
         }
-        for (int n = a.Weapons.Count; n < 3; n++) v.AddChild(Style.Gap(rowH));
         v.AddChild(Style.Gap(Style.Gap1));
         v.AddChild(Kit.Head("Art in hand"));
         v.AddChild(Flow(ArtBook.Starting(a.Id).Select(id => (Abilities.ById(id).Name, d.Ability == id, (Action)(() => Set(() => { d.Section = 1; d.Ability = id; })), $"art:{id}"))));
         var ab = Abilities.ById(d.Ability);
-        v.AddChild(Note($"{(ab.Movement ? "A way of moving" : "The calling's own")} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}. All four known; more on the road."));
+        v.AddChild(Note($"{(ab.Movement ? "A way of moving" : "The calling's own")} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}"));
         return v;
     }
 
@@ -575,10 +578,10 @@ public partial class CreateScreen : Overlay
     static Control Flow(IEnumerable<(string Text, bool On, Action Press, string Id)> words)
     {
         var list = words.ToList();
-        var f = Kit.TabFlow(list.Select(w => (w.Text, w.On, w.Press)), 17, 26, 4);
+        var f = Kit.TabFlow(list.Select(w => (w.Text, w.On, w.Press)), 17, 26, 4, 0.6f);
         f.Alignment = FlowContainer.AlignmentMode.Begin;
         int i = 0;
-        foreach (var b in f.GetChildren().OfType<Button>()) Nav.Underlined(Nav.Id(b, list[i++].Id));
+        foreach (var b in f.GetChildren().OfType<Button>()) Nav.Loud(Nav.Underlined(Nav.Id(b, list[i++].Id)));
         return Indent(f);
     }
 
@@ -687,7 +690,7 @@ public partial class CreateScreen : Overlay
         var bg = Callings.Background(d.Background);
         return Style.V(Style.Gap3, DTitle(d.Name.Trim() == "" ? "Nameless" : d.Name.Trim()), DSub($"{bg.Name} {a.Name}"), DBody(bg.Story, true), Kit.RuleH(),
             Line("Carries", Items.Get(d.WeaponItem).Name + string.Concat(bg.Items.Select(i => $", {Items.Get(i).Name}"))),
-            Line("Hands", Abilities.ById(d.Ability).Name),
+            Line("In hand", Abilities.ById(d.Ability).Name),
             Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))), Kit.RuleH(),
             Style.Label("Night is falling on the Low Ford road. The fire is low. What you do from here, the world will remember.", Style.TextItalic, 17, Kit.HeadInk, true, HorizontalAlignment.Center, false));
     }

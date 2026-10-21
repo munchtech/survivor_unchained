@@ -224,7 +224,7 @@ public partial class CreateScreen
             var b = new Bead(kind, col, c.Ring != "" ? new Color(c.Ring) : col, now == id, c.Color == "" && kind == Bead.Kind.Eye);
             if (named) b.TooltipText = c.Name;
             void Take() => Set(() => set(id));
-            Nav.Rounded(b, 19);
+            Nav.Loud(Nav.Rounded(b, 21));
             Nav.Mark(b, $"bead:{kind}:{id}", Take, focus: named ? () => caption.Text = c.Name : null, blur: named ? () => { if (IsInstanceValid(caption)) caption.Text = chosen; } : null);
             b.Pressed += Take;
             line!.AddChild(b);
@@ -303,7 +303,6 @@ public partial class Bead : Button
         var c = Size / 2;
         float r = 15;
         bool hover = IsHovered();
-        if (on) for (int i = 5; i >= 1; i--) DrawCircle(c, r + 2 + i * 1.6f, new Color(1, 0.45f, 0.15f, 0.07f));
         DrawCircle(c + new Vector2(0, 2), r + 1, new Color(0, 0, 0, 0.6f));
         if (kind != Kind.Eye)
         {
@@ -319,8 +318,9 @@ public partial class Bead : Button
                 DrawCircle(c + new Vector2(-5, -6), 2.2f, new Color(1, 1, 1, 0.35f));
         }
         else DrawArc(c, r - 0.5f, 0, Mathf.Tau, 48, new Color(0.02f, 0.02f, 0.03f, 0.8f), 2, true);
+        // (the choice made: a plain gold ring, no glow; the focus, drawn by Nav, is the louder)
         var edge = on ? Style.GoldHi : hover ? Style.LineHi : new Color(0, 0, 0, 0.85f);
-        DrawArc(c, r + (on ? 2.5f : 0.5f), 0, Mathf.Tau, 48, edge, on ? 2.5f : 1.2f, true);
+        DrawArc(c, r + (on ? 2f : 0.5f), 0, Mathf.Tau, 48, edge, on ? 2f : 1.2f, true);
     }
 }
 
