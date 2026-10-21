@@ -3379,7 +3379,7 @@ def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
 # seated onto her where her skin faces up, the top of her shoulder, PAUL_SEAT_GAP off her, eased in over
 # PAUL_SEAT_BAND from the rim: a plate resting on her shoulder, flaring off her arm below. Off: PAUL_SEAT=0)
 PAUL_SEAT = os.environ.get("PAUL_SEAT", "1") == "1"
-PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_STRAP_CLEAR = (float(v) for v in os.environ.get("PAUL_SEAT_K", "0.0025,0.035,0.019").split(","))
+PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_STRAP_CLEAR = (float(v) for v in os.environ.get("PAUL_SEAT_K", "0.003,0.035,0.019").split(","))
 PAUL_SEAT_IN = tuple(float(v) for v in os.environ.get("PAUL_SEAT_IN", "0.0,0.03").split(","))   # (its neck side: metres in from the ball of her shoulder)
 PAUL_SEAT_UP = tuple(float(v) for v in os.environ.get("PAUL_SEAT_UP", "0.2,0.5").split(","))
 
@@ -3446,6 +3446,9 @@ def seated(name, pos, tris, edge, gap_to, band, up, where=None):
     w = (1 - ramp(edge, 0.0, band)) * ramp(n[:, 2], *up) * (where(pos) if where is not None else 1.0)
     for _ in range(4):
         w = 0.5 * w + 0.5 * (A @ w)
+    if name in os.environ.get("DUMP", "").split(","):
+        # (its sheet as it comes to be seated, with the seat's weight and normals, for study)
+        np.savez(os.path.join(os.environ.get("TEMP", "."), f"dump_{name}_3seat.npz"), pos=pos, tris=tris, w=w, n=n, edge=edge)
     for it in range(3):
         q, _ = near(pos)
         g = ((pos - q) * n).sum(1)
@@ -3453,19 +3456,44 @@ def seated(name, pos, tris, edge, gap_to, band, up, where=None):
     q, _ = near(pos)
     g = ((pos - q) * n).sum(1)
     pos = pos + n * (np.maximum(gap_to - g, 0.0) * (w > 0.01))[:, None]
-    q, _ = near(pos)
-    g = ((pos - q) * n).sum(1)
-    rim = (edge < 0.004) & (w > 0.5)
-    fn = np.cross(pos[tris[:, 1]] - pos[tris[:, 0]], pos[tris[:, 2]] - pos[tris[:, 0]])
-    fn /= np.linalg.norm(fn, axis=1)[:, None] + 1e-15
     e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
     fi = np.tile(np.arange(len(tris)), 3)
     o = np.lexsort((e[:, 1], e[:, 0]))
     e, fi = e[o], fi[o]
     same = np.nonzero((e[1:] == e[:-1]).all(1))[0]
-    fa, fb = fi[same], fi[same + 1]
+    fa, fb, ed2 = fi[same], fi[same + 1], e[same]
     band_f = (w[tris] > 0.05).any(1)
-    flip = ((fn[fa] * fn[fb]).sum(1) < 0) & (band_f[fa] | band_f[fb])
+
+    def flipped(p_):
+        fn = np.cross(p_[tris[:, 1]] - p_[tris[:, 0]], p_[tris[:, 2]] - p_[tris[:, 0]])
+        fn /= np.linalg.norm(fn, axis=1)[:, None] + 1e-15
+        return ((fn[fa] * fn[fb]).sum(1) < 0) & (band_f[fa] | band_f[fb])
+    # (a sliver at its rim folded back under its neighbour (the left pauldron kept one, 0.15 mm2, its tip 0.4 mm into
+    # her): the smaller face's free corner laid out flat in its neighbour's plane on the far side of their shared
+    # edge, so the seated rim is clean)
+    for _ in range(5):
+        flip = flipped(pos)
+        if not flip.any():
+            break
+        for i in np.nonzero(flip)[0]:
+            ea, eb = pos[ed2[i, 0]], pos[ed2[i, 1]]
+            ar = [np.linalg.norm(np.cross(pos[tris[f, 1]] - pos[tris[f, 0]], pos[tris[f, 2]] - pos[tris[f, 0]])) for f in (fa[i], fb[i])]
+            small, big = (fa[i], fb[i]) if ar[0] <= ar[1] else (fb[i], fa[i])
+            tip = [v for v in tris[small] if v not in ed2[i]][0]
+            far = [v for v in tris[big] if v not in ed2[i]][0]
+            u = (eb - ea) / (np.linalg.norm(eb - ea) + 1e-15)
+
+            def off(v_):
+                r_ = pos[v_] - ea
+                return r_ - u * (r_ @ u)
+            o_far = off(far)
+            side = -o_far / (np.linalg.norm(o_far) + 1e-15)
+            r_tip = pos[tip] - ea
+            pos[tip] = ea + u * (r_tip @ u) + side * np.linalg.norm(off(tip))
+    flip = flipped(pos)
+    q, _ = near(pos)
+    g = ((pos - q) * n).sum(1)
+    rim = (edge < 0.004) & (w > 0.5)
     print("SEAT %s: %d rim points seated (gap before %.1f..%.1f mm), now %.1f mm median, %.1f max; %d points eased in; "
           "%d flipped face pairs in the band" % (name, rim.sum(), g0[rim].min() * 1000 if rim.any() else 0, g0[rim].max() * 1000 if rim.any() else 0,
                                                  np.median(g[rim]) * 1000 if rim.any() else 0, g[rim].max() * 1000 if rim.any() else 0,
