@@ -386,16 +386,18 @@ def sag(m, hd, amount, seed, wob=0.006, xe=None, rake=0.0, bow=0.0, hw=None):
         # (E9b6 r4) the sag across the slopes: full at the ridge and at the eave's tail, 0.6 of it over the wall's
         # face (the covering keeps clear of the wall's top); the plan bow: the eaves spread out under the sagging
         # ridge, and the whole roof racks a little to one side (the play camera looks down: sideways reads)
-        pr = 1.0
+        pr, lw = 1.0, 1.0
         if hw and xe:
             a = abs(x)
             if a > 0.5 * hw:
-                pr = 1.0 - 0.4 * min(1.0, (a - 0.5 * hw) / (0.5 * hw)) ** 2 if a <= hw else 0.6 + 0.4 * min(1.0, (a - hw) / (xe - hw))
-        rk = 0.09 * (1 if hsh(seed, 2.2) > 0.5 else -1) * (1.0 - min(abs(x) / xe, 1.0)) if xe else 0.0
-        dx = w * (bow * (x / xe if xe else 0.0) + rk)   # the eaves spread by bow, the ridge snakes 9 cm
+                k = min(1.0, (a - 0.5 * hw) / (0.5 * hw)) ** 2 if a <= hw else 1.0 - min(1.0, (a - hw) / (xe - hw))
+                pr, lw = 1.0 - 0.4 * k, 1.0 - 0.85 * k
+        # the eaves spread by half the bow; the rest is the game's (kit.gdshader roof_lean: the whole roof racked
+        # toward the play camera, so a far eave's spread never cancels its sag on screen)
+        dx = w * 0.5 * bow * (x / xe if xe else 0.0)
         m.P[i] = (x + dx, y - amount * w * pr - wb - dr, z)
         r, g, b, _ = m.C[i]
-        m.C[i] = (r, g, b, w)
+        m.C[i] = (r, g, b, w * lw)   # (E9b6 r4: the game's sag and lean held off over the wall's face, so no wall top shows through)
 
 
 def body(p):

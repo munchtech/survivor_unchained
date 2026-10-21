@@ -201,7 +201,9 @@ float wall_noise(vec2 p) {
 uniform vec3 clay_tints[4];      // (godot/data/house_look.json)
 uniform vec3 shingle_tints[4];
 uniform vec4 chimneys[32];       // each stack's top (xyz), w 1; OwnWalls.Build
-uniform float roof_sag = 0.04;   // each house's roof sags this much more at most (m), by its copy's hash
+uniform float roof_sag = 0.04;
+uniform float roof_lean = 0.12;          // (E9b6 r4) each roof racked sideways at its middle this much (m)
+uniform vec2 roof_lean_dir = vec2(0.0, 1.0);  // world x, z: toward the play camera   // each house's roof sags this much more at most (m), by its copy's hash
 uniform float tile_val = 0.12;   // each tile lighter or darker
 uniform float tile_warm = 0.5;   // and warmer or cooler
 uniform float roof_val_noise = 0.08;
@@ -211,12 +213,12 @@ uniform float soot_dark = 0.6;
 uniform float stack_soot = 0.75; // a stack's own top
 uniform float roof_moss = 0.6;   // on slopes facing moss_dir (north), thickest toward the eaves
 uniform vec2 moss_dir = vec2(0.0, -1.0);
-uniform vec4 roof_moss_color : source_color = vec4(0.29, 0.32, 0.16, 1.0);
+uniform vec4 roof_moss_color : source_color = vec4(0.25, 0.29, 0.18, 1.0);
 uniform float roof_occl = 0.55;
 uniform float old_tile = 0.16;     // (E9b6 r4) the share of tiles old and dark: darker and browner (about one in 6)
 uniform float tile_tilt = 0.09;    // each tile's normal turned +-this (a tile bedded a few degrees off its neighbours)
 uniform float trough_dirt = 0.45;   // dirt streaks running down the slope (narrow, broken), this much darker
-uniform float moss_any = 0.8;      // moss in patches on every slope's lower courses (not only the north ones)
+uniform float moss_any = 0.5;     // moss in patches on every slope's lower courses (not only the north ones)
 varying vec3 v_wn;
 varying float v_rh;
 varying float v_lz;
@@ -300,6 +302,15 @@ void vertex() {
 #ifdef OWN_ROOF
 	v_wall = INSTANCE_CUSTOM;
 	VERTEX.y -= COLOR.a * roof_sag * fract(INSTANCE_CUSTOM.b * 7.13 + 0.31);
+	{
+		// (E9b6 r4) each roof racked sideways at its middle (the sag's weight): toward roof_lean_dir (the play camera)
+		// where its slopes face that way, so the far eave's bow adds to its sag on screen; else by its hash
+		vec3 lx = MODEL_MATRIX[0].xyz;
+		float sx = max(length(lx), 1e-4);
+		float t = dot(lx.xz / sx, roof_lean_dir);
+		float sg = abs(t) > 0.3 ? sign(t) : (fract(INSTANCE_CUSTOM.b * 3.71) > 0.5 ? 1.0 : -1.0);
+		VERTEX.x += COLOR.a * roof_lean * (0.8 + 0.4 * fract(INSTANCE_CUSTOM.b * 5.3)) * sg / sx;
+	}
 	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
 	v_rh = VERTEX.y;
 	v_lz = VERTEX.z;
@@ -495,9 +506,9 @@ void fragment() {
 			float hm = 0.45 + 0.55 * wall_hash(v_wall.bb * 5.1 + 0.7);
 			float em = mix(1.0, 0.35, smoothstep(0.4, 3.5, v_rh));
 			float m = roof_moss * hm * em * smoothstep(0.05, 0.45, fn) * smoothstep(0.3, 0.7, mn);
-			m += moss_any * hm * smoothstep(0.56, 0.68, mn) * mix(1.0, 0.6, smoothstep(0.4, 3.5, v_rh));
+			m += moss_any * hm * smoothstep(0.6, 0.72, mn) * mix(1.0, 0.6, smoothstep(0.4, 3.5, v_rh));
 			m = clamp(m, 0.0, 0.85);
-			col = mix(col, roof_moss_color.rgb * (0.75 + 0.5 * mn), m);
+			col = mix(col, roof_moss_color.rgb * (0.55 + 0.4 * mn), m);   // (E9b6 r4: darker, it read chartreuse in the sun)
 			rough = mix(rough, 1.0, m);
 		}
 		col *= mix(1.0 - roof_occl, 1.0, COLOR.r);
