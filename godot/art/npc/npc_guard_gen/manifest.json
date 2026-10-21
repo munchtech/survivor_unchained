@@ -1,12 +1,12 @@
 {
  "hair": {
   "style": "crop",
-  "colour": "#6b635b",
+  "colour": "#302723",
   "base": "dark brown",
-  "grey": 0.74,
+  "grey": 0,
   "beard": "none",
   "brows": true,
-  "why": "style seeded; colour from \"dark brown hair\"; greyed 63% (64 years)",
+  "why": "chosen in the app",
   "file": null,
   "carry": {
    "style": "crop",
@@ -167,42 +167,42 @@
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_body": 775,
-   "lod_generated": 9115,
-   "lod_hair": 2109
+   "lod_body": 625,
+   "lod_generated": 7266,
+   "lod_hair": 2096
   },
-  "total": 11999,
-  "shadowTris": 2127,
-  "shadowHair": 456,
+  "total": 9987,
+  "shadowTris": 2117,
+  "shadowHair": 453,
   "errMm": {
-   "cut": 6,
+   "cut": 7,
    "lod_body.skin": {
-    "p99": 6.38,
-    "max": 10.37
+    "p99": 8.75,
+    "max": 11.48
    },
    "lod_body.skin_head": {
-    "p99": 7.24,
-    "max": 9.34
+    "p99": 8.83,
+    "max": 11.58
    },
    "lod_body.eyes": {
     "p99": 6.1,
     "max": 6.1
    },
    "lod_generated": {
-    "p99": 7.95,
-    "max": 20.01
+    "p99": 8.53,
+    "max": 21.5
    },
    "lod_hair.hair_cap": {
-    "p99": 6.89,
-    "max": 10.77
+    "p99": 9.31,
+    "max": 11.71
    },
    "lod_hair": "cards whole"
   },
   "movedMm": {
-   "lod_body.skin": 9,
-   "lod_body.skin_head": 9,
-   "lod_generated": 9,
-   "lod_hair.hair_cap": 7.19
+   "lod_body.skin": 9.93,
+   "lod_body.skin_head": 10.29,
+   "lod_generated": 10.5,
+   "lod_hair.hair_cap": 10.13
   },
   "dropped": [],
   "cards": {
@@ -340,11 +340,11 @@
   "trim": {
    "npc_guard_gen": {
     "before": 21936,
-    "after": 10041
+    "after": 9978
    },
    "npc_guard_genHead": {
     "before": 4820,
-    "after": 4755
+    "after": 4749
    }
   },
   "dress": {
@@ -465,21 +465,37 @@
     "steelWhole": 6
    },
    "liner": {
-    "sectors": "20/64",
-    "neckFound": 64,
-    "neckMm": 64,
-    "tris": 108,
+    "sectors": "64/64",
+    "bridged": 3,
+    "shards": 68,
+    "paintCut": 13,
+    "ringOffMm": 4,
+    "ringMm": 78,
+    "neckMm": 69,
+    "neckOffMm": 10,
+    "rimMm": [
+     -48,
+     -6,
+     41
+    ],
+    "tris": 384,
     "gapMm": [
-     4,
-     34,
-     55
+     0,
+     7,
+     50
     ],
-    "baseDropped": 101,
+    "baseDropped": 170,
     "uv": [
-     0.8411,
-     0.9128
+     0.8301,
+     0.947
     ],
-    "darkL": 10.1
+    "darkL": 12.3
+   },
+   "capSnap": {
+    "points": 3740,
+    "moved": 0,
+    "maxMm": 7.8,
+    "p95Mm": 4.7
    },
    "capFade": {
     "points": 3740,
@@ -499,12 +515,22 @@
      "hair_fine",
      "hair_fine"
     ]
+   },
+   "hairFromConcept": {
+    "hex": "#302723",
+    "lab": [
+     16.7,
+     3,
+     4.7
+    ],
+    "grey": 0.12,
+    "n": 2775
    }
   }
  },
  "baked": true,
  "bake": {
-  "bytes": 16138356,
+  "bytes": 15958312,
   "nodes": [
    {
     "name": "npc_guard_gen",
@@ -513,7 +539,7 @@
      "skin_head",
      "generated"
     ],
-    "tris": 46154,
+    "tris": 46354,
     "morphs": 0
    },
    {
@@ -522,7 +548,7 @@
      "skin",
      "skin_head"
     ],
-    "tris": 4755,
+    "tris": 4749,
     "morphs": 28
    },
    {
@@ -566,9 +592,9 @@
   "generated": 36005,
   "hair": 11949,
   "surfaces": {
-   "skin": 6616,
-   "skin_head": 8180,
-   "generated": 36113,
+   "skin": 6554,
+   "skin_head": 8173,
+   "generated": 36376,
    "eyes": 544,
    "teeth": 1780,
    "tongue": 448,
@@ -576,8 +602,8 @@
    "hair:hair_cap": 2661,
    "hair:hair_fine": 3934
   },
-  "total": 65630,
-  "drawn": 65630,
+  "total": 65824,
+  "drawn": 65824,
   "budget": null,
   "note": "LOD0 over the procedural NPC budget (60k): accepted for generated NPCs for now"
  },
