@@ -298,6 +298,9 @@ public partial class ZoneView : Node3D
     static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 12f);
     /// <summary>--ford-color HEX, --ford-range M, --ford-att A: the ford lamps' cold light (a pale blue, AgX greys it).</summary>
     static readonly string FordColor = SurvivorUnchained.Args.Get("ford-color") ?? "#8cb9ff";
+    /// <summary>--ford-specular S: the ford lamps' glints on the water (E7 round 3: 0.3; at Godot's 0.5 the far lamps' glints
+    /// spread to blown white patches on the ripples).</summary>
+    static readonly float FordSpecular = SurvivorUnchained.Args.Num("ford-specular", 0.3f);
     static readonly float FordRange = SurvivorUnchained.Args.Num("ford-range", 16f), FordAtt = SurvivorUnchained.Args.Num("ford-att", 2.3f);
     /// <summary>--ford-core H, --ford-wide K, --ford-body K, --ford-core-k K: the ford flame's core start, width, body and core brightness
     /// (a small blue teardrop with a small pale core, not the road lamps' broad bright point).</summary>
@@ -398,6 +401,7 @@ public partial class ZoneView : Node3D
                         }
                 lights[li].LightCullMask &= ~LampLayer;
                 lights[li].LightColor = new Color(FordColor);
+                lights[li].LightSpecular = FordSpecular;
                 lights[li].OmniRange = FordRange;
                 lights[li].OmniAttenuation = FordAtt;
                 specs[li] = specs[li] with { At = at + Vector3.Up * FordLightUp, Intensity = specs[li].Intensity * FordEnergy };

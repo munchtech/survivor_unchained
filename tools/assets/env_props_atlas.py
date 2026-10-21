@@ -175,17 +175,17 @@ def bark(h, w, m, rng):
     cross = (1 - ss(0.0, 0.12, cx)) * ss(0.55, 0.75, fbm(h, w, 20, 14, rng, 2)) * lip
     mott = fbm(h, w, 24, 16, rng, 3)
     fibre = fbm(h, w, 90, 16, rng, 2)  # fine fibres down the trunk
-    col = mix(srgb("#4a3f34"), srgb("#5e5142"), 0.65 * pv + 0.35 * mott)  # plate to plate
+    col = mix(srgb("#4a3626"), srgb("#5e4630"), 0.65 * pv + 0.35 * mott)  # plate to plate (round 3: warmer, B/R ~0.5)
     col = col * (0.92 + 0.12 * fibre[..., None])
-    col = mix(col, srgb("#6a5d4e"), 0.35 * ss(0.6, 1.0, lip) * ss(0.45, 0.8, mott))  # weathered plate backs
+    col = mix(col, srgb("#6a5440"), 0.35 * ss(0.6, 1.0, lip) * ss(0.45, 0.8, mott))  # weathered plate backs
     flake = ss(0.58, 0.72, fbm(h, w, 36, 18, rng, 3)) * lip  # outer scales lifted off: the warmer bark under
-    col = mix(col, srgb("#5c4535"), 0.45 * flake)
+    col = mix(col, srgb("#5e3c26"), 0.45 * flake)
     rough = fbm(h, w, 140, 70, rng, 2)  # a scaly tooth at one scale
     col = col * (0.94 + 0.1 * rough[..., None])
-    col = mix(col, srgb("#3a3026"), 0.35 * (1 - lip) * (1 - fis))  # into the crack
-    col = mix(col, srgb("#221a14"), 0.75 * fis)
-    col = mix(col, srgb("#2f261e"), 0.6 * cross)
-    col = mix(col, srgb("#2a221b"), 0.75 * sub * lip)
+    col = mix(col, srgb("#3a2a1c"), 0.35 * (1 - lip) * (1 - fis))  # into the crack
+    col = mix(col, srgb("#22170f"), 0.75 * fis)
+    col = mix(col, srgb("#2f2218"), 0.6 * cross)
+    col = mix(col, srgb("#2a1e15"), 0.75 * sub * lip)
     stri = fbm(h, w, 30, 120, rng, 2)  # fibrous striations down the plates
     col = col * (0.9 + 0.2 * stri[..., None])
     hgt = -0.0015 * sub * lip + 0.0025 * lip - 0.003 * fis + 0.0015 * pv + 0.0012 * mott - 0.0015 * cross - 0.001 * flake + 0.0005 * rough
@@ -193,29 +193,48 @@ def bark(h, w, m, rng):
 
 
 def endgrain(h, w, m, rng):
+    """A sawn end (round 3): warm tan (~#8a6a48), the pith off-centre, the rings out of round with fast and
+    slow years (uneven spacing), two or three radial cracks opening toward the bark, a dark uneven bark rim
+    (r 0.235 m: a log's cap is mapped so its edge lands there), saw marks across."""
     ppm = w / m
     y, x = np.mgrid[0:h, 0:w].astype(np.float32)
-    cx = cy = w / 2
+    cx, cy = w / 2 + 0.035 * ppm, h / 2 - 0.022 * ppm  # the pith 4 cm off the middle (the tree leaned)
     dx, dy = (x - cx) / ppm, (y - cy) / ppm
-    r = np.sqrt(dx * dx + dy * dy) + 0.004 * (fbm(h, w, 6, 6, rng, 2) - 0.5)
     ang = np.arctan2(dy, dx)
-    # (round 2: the rings out of round and uneven, the log's lean and its fast and slow years)
-    r = r * (1 + 0.06 * np.cos(ang - 0.7) + 0.03 * np.sin(3 * ang + 1.3))
-    rings = ss(0.5, 0.95, np.sin(r * 2 * np.pi * 70 + 9 * r + 2 * fbm(h, w, 4, 4, rng, 2))) * (0.6 + 0.4 * fbm(h, w, 3, 3, rng, 2))
+    # (r0: from the tile's middle, where the cap's edge is mapped: the bark rim; r: from the pith, the rings)
+    r0 = np.sqrt(((x - w / 2) / ppm) ** 2 + ((y - h / 2) / ppm) ** 2)
+    r = np.sqrt(dx * dx + dy * dy)
+    r = r * (1 + 0.07 * np.cos(ang - 0.7) + 0.035 * np.sin(3 * ang + 1.3)) + 0.003 * (fbm(h, w, 6, 6, rng, 2) - 0.5)
+    # the rings' age: a random, always-rising function of r (wide early years, packed late ones, bands of both)
+    rr = np.linspace(0, 0.4, 4096)
+    knots = rng.random(40)
+    width = (0.35 + 1.3 * np.interp(rr, np.linspace(0, 0.4, 40), knots) ** 1.5) * (1.5 - 1.8 * rr)  # outer rings tighter
+    age = np.cumsum(1.0 / np.maximum(width, 0.25)) * (rr[1] - rr[0]) * 95.0
+    yr = np.interp(r, rr, age)
+    ph = np.mod(yr, 1.0)
+    # the late wood a dark band, sharp on its outer edge and fading into the next year's early wood
+    late = np.where(ph < 0.8, ss(0.45, 0.8, ph), ss(1.0, 0.9, ph))
+    rings = late * (0.45 + 0.55 * fbm(h, w, 3, 3, rng, 2)) * (0.75 + 0.25 * fbm(h, w, 24, 24, rng, 2))
     checks = np.zeros((h, w), np.float32)
-    for _ in range(5):
-        a0 = rng.random() * 2 * np.pi
-        da = np.abs(np.angle(np.exp(1j * (ang - a0))))
-        checks = np.maximum(checks, ss(0.02, 0.0, da * r * 8) * ss(0.05, 0.2, r))
-    col = mix(srgb("#a88a66"), srgb("#86684a"), 0.5 * rings + 0.3 * ss(0.0, 0.24, r))
-    col = mix(col, srgb("#3a2a1e"), 0.9 * checks)
-    # Outside r 0.24 m: the bark rim (a log's cap is mapped so its edge lands here).
-    rim = ss(0.225, 0.235, r)
-    col = mix(col, srgb("#3c2f25"), rim)
-    pith = np.exp(-(r / 0.006) ** 2)
-    col = mix(col, srgb("#5a4030"), pith)
-    hgt = -0.0008 * rings - 0.003 * checks + 0.002 * rim
-    return col, hgt, np.full((h, w), 0.86, np.float32), np.zeros((h, w), np.float32)
+    for k in range(3):
+        a0 = rng.random() * 2 * np.pi if k == 0 else a0 + 2.0 + rng.random() * 0.9
+        wob = 0.08 * (fbm(h, w, 2, 8, rng, 2) - 0.5)
+        da = np.abs(np.angle(np.exp(1j * (ang - a0 - wob))))
+        start = 0.05 + 0.1 * rng.random()  # from partway in, widening out to the rim
+        wide = 0.004 + 0.012 * ss(start, 0.22, r0)
+        checks = np.maximum(checks, ss(1.0, 0.4, da * r / wide) * ss(start, start + 0.03, r) * (r0 < 0.226))
+    saw = 0.5 + 0.5 * np.sin((x * 0.8 + y * 0.6) / ppm * 2 * np.pi * 9 + 3 * fbm(h, w, 4, 4, rng, 2))
+    col = mix(srgb("#b48f64"), srgb("#86623e"), 0.55 * rings + 0.25 * ss(0.0, 0.22, r0))
+    col = col * (0.95 + 0.07 * saw[..., None]) * (0.93 + 0.12 * fbm(h, w, 12, 12, rng, 3)[..., None])
+    col = mix(col, srgb("#5c4029"), 0.5 * ss(0.17, 0.222, r0) * fbm(h, w, 5, 5, rng, 2))  # the sapwood weathered darker
+    col = mix(col, srgb("#2e2016"), 0.92 * checks)
+    rimw = 0.218 + 0.012 * fbm(h, w, 2, 10, rng, 2)
+    rim = ss(rimw - 0.004, rimw + 0.004, r0)
+    col = mix(col, srgb("#33251b"), rim)
+    pith = np.exp(-(r / 0.007) ** 2)
+    col = mix(col, srgb("#4e3524"), 0.9 * pith)
+    hgt = -0.0006 * rings - 0.003 * checks + 0.0025 * rim - 0.0002 * saw
+    return col, hgt, np.full((h, w), 0.9, np.float32), np.zeros((h, w), np.float32)
 
 
 def iron(h, w, m, rng):

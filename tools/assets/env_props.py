@@ -82,9 +82,10 @@ class Part:
     (a board's end grain); capc/capr: a log's cap centre and radius (its rings).
     smooth: shade smooth (cloth, sacks, logs) or flat (boards, iron)."""
 
-    def __init__(self, bm, region, tint, at=Matrix.Identity(4), cap=None, smooth=False, jitter=0.06, capr=None, capto=0.23):
+    def __init__(self, bm, region, tint, at=Matrix.Identity(4), cap=None, smooth=False, jitter=0.06, capr=None, capto=0.23, cyl=None):
         self.bm, self.region, self.tint, self.at = bm, region, Vector(tint), at
         self.cap, self.smooth, self.jitter, self.capr, self.capto = cap, smooth, jitter, capr, capto
+        self.cyl = cyl  # a tube about local y of this radius: unwrapped round it, not box-projected
 
 
 def basis(xa, ya, za):
@@ -219,11 +220,45 @@ def grid(nu, nv, fn, skirt=None):
 
 # ------------------------------------------------------------------- UVs --
 
+def uv_cyl(p, rng, uvl):
+    """Round 3: a log's bark unwrapped round its axis (local y), so the plates run down the trunk at their true
+    size everywhere (box projection stretched them 1.4x at the diagonals and the region's fit to a 2.3 m log
+    blew them up 1.9x: they read as cobbles). Four quarter islands round it (seams on the diagonals), each
+    cut in lengths that fit the region, each island at a random spot in it."""
+    u0, v0, u1, v1 = ATLAS[p.region]['uv']
+    mu, mv = ATLAS[p.region]['m']
+    r = p.cyl
+    ys = [v.co.y for v in p.bm.verts]
+    ymin, ymax = min(ys), max(ys)
+    n = max(1, math.ceil((ymax - ymin) / (mv - 0.04)))
+    cl = (ymax - ymin) / n
+    q = math.pi / 2
+    offs = {}
+    for f in p.bm.faces:
+        c = f.calc_center_median()
+        a = math.atan2(c.z, c.x)
+        sec = int(math.floor((a + q / 2) / q)) % 4
+        ac = sec * q
+        ch = min(n - 1, int((c.y - ymin) / cl))
+        if (sec, ch) not in offs:
+            offs[(sec, ch)] = (rng(0.03, max(0.031, mu - q * r - 0.03)), rng(0.0, max(0.0, mv - cl - 0.02)))
+        oa, ob = offs[(sec, ch)]
+        for l in f.loops:
+            co = l.vert.co
+            da = math.atan2(math.sin(math.atan2(co.z, co.x) - ac), math.cos(math.atan2(co.z, co.x) - ac))
+            uu = (oa + (da + q / 2) * r) / mu
+            vv = (ob + 0.01 + co.y - (ymin + ch * cl)) / mv
+            l[uvl].uv = (u0 + (u1 - u0) * min(max(uu, 0.004), 0.996), v0 + (v1 - v0) * min(max(vv, 0.004), 0.996))
+
+
 def uv_part(p, rng):
     """Box-project the part's faces into its region, in its own frame (grain along local y),
     each island placed at a random spot in the region (shrunk only if it is bigger)."""
     bm = p.bm
     uvl = bm.loops.layers.uv.verify()
+    if p.cyl:
+        uv_cyl(p, rng, uvl)
+        return
     groups = {}
     for f in bm.faces:
         n = f.normal
@@ -753,7 +788,7 @@ def log(p):
         # the seat's grain runs along the log (local y): wood, box-projected on its own up axis
         sbm.normal_update()
         parts.append(Part(sbm, 'wood', cut * 0.85, turn, smooth=False, jitter=0.0))
-    parts.append(Part(bm, 'bark', bark, turn, smooth=True, jitter=0.0))
+    parts.append(Part(bm, 'bark', bark, turn, smooth=True, jitter=0.0, cyl=r))
     # Sawn ends: the end rings of the bark tube, filled.
     for sgn in (-1, 1):
         cbm = bmesh.new()
@@ -813,20 +848,45 @@ def wheel(R_, rim_w, spokes, broken=(), split=None):
 
 
 def sack(H, Rr, seed, lie=False):
-    prof = [(Rr * 0.7, 0.0), (Rr * 0.95, 0.04), (Rr, 0.14), (Rr * 0.95, H * 0.62), (Rr * 0.6, H * 0.85), (Rr * 0.2, H * 0.95), (Rr * 0.28, H)]
-    bm = lathe(prof, 12)
+    """A grain sack (round 3): the body slumped, its shoulders sagging to one side, the neck pinched by a cord
+    and the cloth over it a bunched, ruffled tuft (not a ring)."""
+    prof = [(Rr * 0.7, 0.0), (Rr * 0.95, 0.04 * H), (Rr, 0.16 * H), (Rr * 0.99, 0.42 * H), (Rr * 0.93, 0.58 * H),
+            (Rr * 0.74, 0.7 * H), (Rr * 0.42, 0.78 * H), (Rr * 0.17, 0.83 * H), (Rr * 0.15, 0.85 * H),
+            (Rr * 0.3, 0.88 * H), (Rr * 0.44, 0.93 * H), (Rr * 0.4, 0.97 * H), (Rr * 0.18, H)]
+    bm = lathe(prof, 16)
+    ph = seed * 1.37
     for v in bm.verts:
+        a = math.atan2(v.co.z, v.co.x)
+        t = v.co.y / H
         k = 1 + 0.08 * hnoise(v.co * 6, seed)
+        tuft = max(0.0, min(1.0, (t - 0.85) / 0.06))
+        # the tuft's folds: deep, uneven ruffles, its lip ragged up and down
+        k *= 1 + tuft * (0.3 * math.sin(7 * a + ph) + 0.18 * math.sin(11 * a + 2 * ph))
         v.co.x *= k
         v.co.z *= k * 0.85
+        v.co.y += tuft * H * (0.025 * math.sin(5 * a + ph) + 0.015 * math.sin(9 * a))
+        # the top sags: over the shoulder line it slumps down and leans to one side
+        sag = max(0.0, (t - 0.5) / 0.5) ** 2
+        v.co.y -= sag * H * (0.07 + 0.04 * math.cos(a - ph))
+        v.co.x += sag * Rr * 0.22 * math.cos(ph)
+        v.co.z += sag * Rr * 0.22 * math.sin(ph)
+    bm.normal_update()
     return bm
 
 
 def sack_parts(H, Rr, seed, tint, at):
-    """A sack and the cord tied round its neck (round 2: a tied neck, so it reads as a sack, not a loaf)."""
-    tie = torus(Rr * 0.26, 0.011, 10, 4)
-    return [Part(sack(H, Rr, seed), 'canvas', tint, at, smooth=True, jitter=0.0),
-            Part(tie, 'leather', Vector((0.55, 0.5, 0.42)), at @ T(0, H * 0.93, 0), smooth=True, jitter=0.0)]
+    """A sack and the cord tied round its pinched neck, a loose end hanging (round 3: plain fine weave, the cloth
+    region, tinted to burlap)."""
+    ph = seed * 1.37
+    # where the neck went after the sag (t 0.84: sag ((0.84 - 0.5) / 0.5)^2 = 0.46)
+    sag = 0.4624
+    ny = 0.84 * H - sag * H * 0.07
+    nx, nz = sag * Rr * 0.22 * math.cos(ph), sag * Rr * 0.22 * math.sin(ph)
+    tie = torus(Rr * 0.16 + 0.004, 0.008, 12, 5)
+    end = lathe([(0.0065, 0.0), (0.006, -0.05), (0.008, -0.075)], 6, cap0=False, cap1=True)
+    return [Part(sack(H, Rr, seed), 'cloth', tint, at, smooth=True, jitter=0.0),
+            Part(tie, 'leather', Vector((0.55, 0.5, 0.42)), at @ T(nx, ny, nz), smooth=True, jitter=0.0),
+            Part(end, 'leather', Vector((0.55, 0.5, 0.42)), at @ T(nx + Rr * 0.17 * math.cos(ph + 1.2), ny, nz + Rr * 0.17 * math.sin(ph + 1.2)) @ R('Z', 0.35), smooth=True, jitter=0.0)]
 
 
 def wagon(p):
