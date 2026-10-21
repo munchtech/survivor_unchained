@@ -72,7 +72,7 @@
       "note": "From behind her, low: he folds forward into the water and is still. The mist closes over him. A beat of nothing. Then the water over his chest lightens from beneath.",
       "cam": {"pos": {"mark": "her", "off": [-5.0, 1.6, 0.8]}, "at": {"mark": "w", "off": [0, 0.8, 2.2]}, "lens": 28},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [2.5, 1.5, -2.5]}, "aim": {"actor": "her", "bone": "chest"}, "color": "#ffe9da", "energy": 6.0, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [2.5, 1.5, -2.5]}, "aim": {"actor": "her", "bone": "chest"}, "color": "#f7ece6", "energy": 3.2, "angle": 32, "range": 6},
         {"do": "skin", "sky": 0.3, "ear": 0.4},
         {"do": "anim", "actor": "warden", "clip": "folk/m_fold_forward", "from": 0, "speed": 1, "blend": 0.2},
         {"at": 1.0, "do": "sfx", "name": "water_close", "gain": 0.4},
@@ -103,7 +103,7 @@
       "note": "Over her shoulder: the heart drifts toward her, like a thing finding its way. Her hand comes up into frame.",
       "cam": {"pos": {"mark": "her", "off": [1.9, 1.6, -1.6]}, "at": {"mark": "her", "off": [0.0, 1.5, -1.0]}, "lens": 40, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [1.25, 0.75, -1.25]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9da", "energy": 1.4, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [1.25, 0.75, -1.25]}, "aim": {"actor": "her", "bone": "head"}, "color": "#f7ece6", "energy": 0.8, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 140},
         {"do": "hold", "actor": "her", "slot": "all", "piece": null},
         {"do": "place", "actor": "her", "mark": "her", "heading": 2.18},
@@ -123,7 +123,7 @@
       "note": "Side-on: her fingertips and the heart, a hand's breadth apart. Its light leans toward her fingers like a flame in a draught.",
       "cam": {"pos": {"mark": "her", "off": [1.75, 1.55, -0.65]}, "at": {"mark": "her", "off": [0.0, 1.42, -0.38]}, "lens": 50, "focus": {"actor": "heart"}, "fstop": 2.8},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9da", "energy": 1.0, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#f7ece6", "energy": 0.6, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 160},
         {"do": "lamp", "actor": "heart", "glow": 1.5, "over": 0.8},
         {"do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "hand_l", "off": [0, 0, -0.05]}, "color": "#6fa8ff", "energy": 1.0, "angle": 35, "range": 2},
@@ -139,7 +139,7 @@
       "note": "The mud bursts up under her hand: Grimtunnel, up to the waist, snatches the heart out of the air and hugs it to his chest. G1. A hard shake on the burst.",
       "cam": {"pos": {"mark": "her", "off": [3.6, 0.95, 2.4]}, "at": {"mark": "her", "off": [0.5, 1.15, -0.3]}, "lens": 28},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [2.1, 1.3, -2.1]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9da", "energy": 4.0, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [2.1, 1.3, -2.1]}, "aim": {"actor": "her", "bone": "head"}, "color": "#f7ece6", "energy": 2.2, "angle": 32, "range": 6},
         {"do": "hold", "actor": "her", "slot": "all", "piece": "@own"},
         {"do": "atmosphere", "preset": "now", "key": 0.55, "hemi": 0.7, "azimuth": 250},
         {"do": "music", "mood": "silence"},
@@ -170,7 +170,7 @@
       "note": "From her eye height, down at him: in his arms the heart's light goes on straining out toward her. He looks down at it, up at her, down at it. His head-lamp swings up into her face and his head jerks twice: sniffing. Then he goes still, toad-still, and his head dips: very nearly a bow. G2. Then a laugh shakes him, and he is grinning again.",
       "cam": {"pos": {"mark": "her", "off": [2.5, 1.7, -1.25]}, "at": {"mark": "her", "off": [0.0, 1.55, -0.05]}, "lens": 65, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [1.4, 0.85, -1.4]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9da", "energy": 1.9, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [1.4, 0.85, -1.4]}, "aim": {"actor": "her", "bone": "head"}, "color": "#f7ece6", "energy": 1.0, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 153},
         {"do": "gaze", "look": [-0.5, 0.5], "wander": 0.02},
         {"do": "face", "keys": {"eyes_wide": 0.1, "mouth_open": 0.05, "squint": 0.5, "nose_wrinkle": 0.2}, "over": 0.5},
@@ -189,7 +189,7 @@
       "note": "G3, broken in the middle, half over his shoulder; he dives head first, still clutching the heart; the hole folds in behind him; the heart's light shows in the churned mud for a moment going down, then is gone.",
       "cam": {"pos": {"mark": "her", "off": [2.0, 1.3, -2.9]}, "at": {"mark": "her", "off": [0.6, 1.2, -0.4]}, "lens": 32},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [1.75, 1.0, -1.75]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffe9da", "energy": 3.0, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [1.75, 1.0, -1.75]}, "aim": {"actor": "her", "bone": "head"}, "color": "#f7ece6", "energy": 1.7, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 250},
         {"do": "anim", "actor": "grim", "clip": "hug", "where": {"mark": "her", "off": [3.0, 0, -1.5]}},
         {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [1.2, 0.56, -0.6]}, "dur": 0.05},
