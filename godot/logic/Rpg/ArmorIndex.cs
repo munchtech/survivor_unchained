@@ -36,6 +36,8 @@ public sealed class ArmorPiece
     /// <summary>Its own file (res://art/armor/ID.gltf) for a new piece; null: its outfit's heroine_outfit_OUTFIT.gltf.</summary>
     [JsonPropertyName("file")] public string? File { get; set; }
     [JsonPropertyName("tier")] public JsonElement? Tier { get; set; }
+    /// <summary>What it does to her hair while worn: "keep" (default) or "hide" (a closed helm: her hair mesh is left off).</summary>
+    [JsonPropertyName("hair")] public string Hair { get; set; } = "keep";
     /// <summary>The index's folder under art/ ("people" or "armor"), which its tuck path is relative to.</summary>
     [JsonIgnore] public string Dir { get; set; } = "people";
 }

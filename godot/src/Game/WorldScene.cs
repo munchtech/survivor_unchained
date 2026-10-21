@@ -83,7 +83,6 @@ public partial class WorldScene : Node3D, IZoneLook
     }
 
     public override void _EnterTree() => GetTree().NodeAdded += FxNoShadow;
-    public override void _ExitTree() => GetTree().NodeAdded -= FxNoShadow;
 
     /// <summary>Nothing under the Fx root casts a shadow (E1): many fx meshes are made without
     /// setting CastShadow, and Godot's default is On. Corpses (Gore) count as fx.</summary>
@@ -120,19 +119,61 @@ public partial class WorldScene : Node3D, IZoneLook
         var key = Loadouts.Look(lo);
         if (Player != null && key == look) return;
         look = key;
+        // A swap still being dressed gives way to this one (the latest wins: nothing of the older is shown).
+        DropIncoming();
+        if (Player != null && key == shown) return;
         var old = Player;
-        Player = new PlayerView(lo);
+        Perf.Lap("swap: (before)");
+        // (a live swap: her new figure's garment tuck is laid over the next frames, on a worker; she wears what she wore
+        // till it is done: Update)
+        HerWear.Live = old != null;
+        PlayerView next;
+        try { next = new PlayerView(lo); }
+        finally { HerWear.Live = false; }
+        Perf.Lap("swap: the player view made");
+        if (old != null && HerWear.Busy(next.Person)) { incoming = next; return; }
+        Show(next, key);
+    }
+
+    /// <summary>Her new figure in place of the old.</summary>
+    void Show(PlayerView next, string key)
+    {
+        var old = Player;
+        Player = next;
+        shown = key;
         AddChild(Player);
+        Perf.Lap("swap: the player view added");
         // The new figure stands where the old one stood, facing its way, already posed.
         // The old one goes out of sight now: freed at the frame's end, it was drawn over the new
         // one for that frame, and the two showed through each other.
         if (old != null) { Player.Follow(old); old.Visible = false; old.QueueFree(); }
     }
 
+    void DropIncoming()
+    {
+        if (incoming == null) return;
+        HerWear.Cancel(incoming.Person);
+        incoming.Free();   // (never in the tree)
+        incoming = null;
+    }
+
+    /// <summary>Her next figure while a live swap dresses it (HerWear.Busy), and the look she shows.</summary>
+    PlayerView? incoming;
+    string shown = "";
+
+    public override void _ExitTree()
+    {
+        GetTree().NodeAdded -= FxNoShadow;
+        DropIncoming();
+    }
+
     string look = "";
 
     public void Update(double dt)
     {
+        // A live swap's figure dressed over frames, shown once it is.
+        HerWear.Pump();
+        if (incoming != null && !HerWear.Busy(incoming.Person)) { var next = incoming; incoming = null; Show(next, look); }
         var b = Battle;
         Time += dt;
         hitstopCd = Math.Max(0, hitstopCd - dt);
