@@ -36,6 +36,8 @@ public static class OwnProps
     public static Zone? For(string zone)
     {
         if (zones.TryGetValue(zone, out var hit)) return hit;
+        // --props-own-off: the kit's and the web game's pieces as they were (before/after measures).
+        if (SurvivorUnchained.Args.Has("props-own-off")) return zones[zone] = null;
         var path = $"res://data/zones/{zone}/props_own.json";
         Zone? z = null;
         if (FileAccess.FileExists(path))

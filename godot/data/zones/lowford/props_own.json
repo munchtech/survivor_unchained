@@ -14,6 +14,6 @@
   {"preset": "wagon", "x": 5, "z": 60, "rot": 0.5, "hide": [5, 60, 2.6, 1.9]}
  ],
  "lamps": {
-  "glow-1-0": {"color": "#ffa040", "energy": 1.0}
+  "glow-1-0": {"color": "#ffa040", "energy": 1.4}
  }
 }
