@@ -316,9 +316,9 @@ def beam(m, a, b, w, z0, d, rng, sag=0.012, reg='timber', col=(1.0, 0.0, 1.0, 1.
         p, q = pts[k], pts[k + 1]
         lk = np.linalg.norm(q - p)
         axk = (q - p) / lk
+        # (E9b6 r4) the box's y axis a quarter turn left of its length, never flipped: a flipped one turned the box's
+        # front (+z) face to the back, and every timber leaning left (or a post a hair off plumb) drew as two hairlines
         ayk = np.array([-axk[1], axk[0], 0.0])
-        if ayk[1] < 0:
-            ayk = -ayk
         ext = 0.01 if 0 < k or segs == 1 else 0.0  # (lengths overlap a centimetre at the joint)
         cen = (p + q) / 2 + np.array([0, 0, z0 + d / 2])
         box(m, cen, axk, ayk, (lk / 2 + ext, w / 2, d / 2), reg, off=(off[0] + k * lk, off[1]), skip=skip, col=col)
