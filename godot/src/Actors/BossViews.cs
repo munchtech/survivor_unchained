@@ -297,47 +297,191 @@ public partial class EmberCoreView : Node3D, IOrb
     void IOrb.Dispose() => QueueFree();
 }
 
-/// <summary>The Warden's heart: a stone the size of a fist, cut in a few broad faces, with a cold
-/// light in it. Its faces catch the light unevenly as it turns, so it reads as a thing and not a
-/// glare; the light inside rises and falls with Light.</summary>
+/// <summary>The Warden's heart (E7c, look bible 10): a wet stone the size of a fist, cut in a few broad chipped faces
+/// (tools/assets/env_heart.py), cold light in its cracks pulsing like a slow heartbeat (shaders/heart.gdshader), water
+/// running down it and dripping off its underside while it is wet, and a short cold light that pulses with the veins and
+/// lights the hands holding it and the water about it. No halo: the cracks' cores alone cross the glow threshold.
+/// size is its longest half-length (m). --heart-old draws the old faceted glass ball and its ring halo (the before
+/// shots); --heart-try k=v,... sets the shader's uniforms and the light's (light_k, light_att, light_amp, light_range).</summary>
 public partial class OrbView : Node3D, IOrb
 {
-    readonly MeshInstance3D ball;
+    readonly Node3D ball;
     readonly OmniLight3D light;
-    readonly StandardMaterial3D stone;
+    readonly StandardMaterial3D? stone;
+    readonly ShaderMaterial? heart;
+    readonly GpuParticles3D? drips;
+    readonly MeshInstance3D? bead;
+    Vector3 bottom;
+    readonly float size;
+    double lightIn, t, shownT;
+    bool wasShown;
+
+    // The heartbeat's period (s); the light's swing about its mean (+-; the veins' is the shader's beat_amp).
+    const double Period = 1.55;
+    float lightAmp = 0.12f, lightK = 0.12f, lightAtt = 0.8f;
+    const float FistK = 0.002f;
+
+    static Mesh? heartMesh;
+    static Aabb heartBox;
+    static Vector3 heartLow;
+    static Shader? heartShader;
 
     public OrbView(string color, double size)
     {
+        this.size = (float)size;
         var c = new Color(color);
-        stone = new StandardMaterial3D
+        if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--heart-old") >= 0 || !LoadHeart())
         {
-            AlbedoColor = c.Darkened(0.7f), Metallic = 0.35f, Roughness = 0.12f,
-            EmissionEnabled = true, Emission = new Color(c.R * 0.3f, c.G * 0.6f, c.B * 0.95f), EmissionEnergyMultiplier = 0.5f,
-            RimEnabled = true, Rim = 0.6f, RimTint = 0.8f,
-        };
-        ball = new MeshInstance3D { Mesh = Facets((float)size), MaterialOverride = stone, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            // (--heart-old-k K: its size times K, as the before was drawn: c03's heart was 0.11 before E7c, 0.05 now: K 2.2)
+            if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--heart-old") >= 0) size *= SurvivorUnchained.Args.Num("heart-old-k", 1);
+            stone = new StandardMaterial3D
+            {
+                AlbedoColor = c.Darkened(0.7f), Metallic = 0.35f, Roughness = 0.12f,
+                EmissionEnabled = true, Emission = new Color(c.R * 0.3f, c.G * 0.6f, c.B * 0.95f), EmissionEnergyMultiplier = 0.5f,
+                RimEnabled = true, Rim = 0.6f, RimTint = 0.8f,
+            };
+            ball = new MeshInstance3D { Mesh = Facets((float)size), MaterialOverride = stone, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            AddChild(ball);
+            AddChild(new MeshInstance3D
+            {
+                Mesh = new QuadMesh { Size = Vector2.One * (float)size * 4.5f },
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                MaterialOverride = new StandardMaterial3D
+                {
+                    ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                    BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                    AlbedoTexture = new GradientTexture2D
+                    {
+                        Gradient = new Gradient { Colors = [new Color(1, 1, 1, 0), new Color(1, 1, 1, 0), new Color(1, 1, 1, 0.55f), new Color(1, 1, 1, 0)], Offsets = [0, 0.16f, 0.24f, 1] },
+                        Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
+                    },
+                    AlbedoColor = new Color(c, 0.35f),
+                },
+            });
+            light = new OmniLight3D { LightColor = c, OmniRange = 14, OmniAttenuation = 1.3f };
+            AddChild(light);
+            Visible = false;
+            return;
+        }
+        // The stone: the mesh scaled so its longest half-length is size, turned and pulsed by Place/Turn about its middle.
+        ball = new Node3D();
         AddChild(ball);
-        // A soft halo about it, as a bright thing has in mist.
-        AddChild(new MeshInstance3D
+        float half = Mathf.Max(heartBox.Size.X, Mathf.Max(heartBox.Size.Y, heartBox.Size.Z)) * 0.5f;
+        float k = this.size / Mathf.Max(half, 1e-4f);
+        heart = new ShaderMaterial { Shader = heartShader };
+        heart.SetShaderParameter("stone_tex", GD.Load<Texture2D>("res://art/world/flora/stone_albedo.png"));
+        // (the cores a little off white, the light about them a deeper blue: c03's #bfe6ff gives sRGB 175,220,255 and 60,130,255)
+        heart.SetShaderParameter("core_color", new Color(c.R * 0.916f, c.G * 0.957f, c.B));
+        heart.SetShaderParameter("glow_color", new Color(c.R * 0.31f, c.G * 0.565f, c.B));
+        heart.SetShaderParameter("unit", k);
+        var mi = new MeshInstance3D
         {
-            Mesh = new QuadMesh { Size = Vector2.One * (float)size * 4.5f },
+            Mesh = heartMesh, MaterialOverride = heart, Scale = Vector3.One * k, Position = -heartBox.GetCenter() * k,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        };
+        ball.AddChild(mi);
+        // The light: short, cold, unshadowed (the frame's one shadowed light is the sky's); its range from the stone's size
+        // (a fist at a close-up: 1 m and a steep falloff, so it lights the fingers near it and little else (E7c r2); the play
+        // camera's larger stand-in: as far as the old one reached).
+        bool fist = this.size <= 0.1f;
+        float range = fist ? 1f : this.size * 32;
+        if (fist) { lightK = FistK; lightAtt = 2f; }
+        foreach (var (key, v) in Tries())
+            switch (key)
+            {
+                case "light_k": lightK = v; break;
+                case "light_att": lightAtt = v; break;
+                case "light_amp": lightAmp = v; break;
+                case "light_range": range = v; break;
+                default: heart.SetShaderParameter(key, v); break;
+            }
+        // (a fist's light sits in its upper part: with the steep falloff, whatever it lies on would burn white at 5 cm)
+        light = new OmniLight3D { LightColor = c, OmniRange = range, OmniAttenuation = lightAtt, ShadowEnabled = false, LightSpecular = 0.6f, LightVolumetricFogEnergy = 0.3f,
+            Position = fist ? new Vector3(0, this.size * 0.6f, 0) : Vector3.Zero };
+        AddChild(light);
+        drips = Drips(this.size, c);
+        AddChild(drips);
+        // One clear drop at a time gathering on its lowest point and falling (E7c r3): big enough to read at 1:1 in an
+        // 85 mm close-up (~2 mm across: 7 px at c03 s8), glossy, the heart's blue in it.
+        bottom = (heartLow - heartBox.GetCenter()) * k;
+        bead = new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = this.size * 0.02f, Height = this.size * 0.04f, RadialSegments = 12, Rings = 8 },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             MaterialOverride = new StandardMaterial3D
             {
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-                AlbedoTexture = new GradientTexture2D
-                {
-                    // A ring of light about the stone, clear at the middle, so the stone's faces read through it.
-                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 0), new Color(1, 1, 1, 0), new Color(1, 1, 1, 0.55f), new Color(1, 1, 1, 0)], Offsets = [0, 0.16f, 0.24f, 1] },
-                    Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
-                },
-                AlbedoColor = new Color(new Color(color), 0.35f),
+                AlbedoColor = new Color(0.5f, 0.6f, 0.72f, 0.9f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                Roughness = 0.03f, Metallic = 0, MetallicSpecular = 1f,
+                EmissionEnabled = true, Emission = new Color(c.R * 0.55f, c.G * 0.75f, c.B), EmissionEnergyMultiplier = 2.6f,
+                RimEnabled = true, Rim = 1f, RimTint = 0.15f,
             },
+            Visible = false,
+        };
+        // (its highlight: a hot point near its top, where it catches the light)
+        bead.AddChild(new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = this.size * 0.0065f, Height = this.size * 0.013f, RadialSegments = 8, Rings = 4 },
+            Position = new Vector3(0, this.size * 0.011f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.9f, 0.96f, 1f) },
         });
-        light = new OmniLight3D { LightColor = new Color(color), OmniRange = 14, OmniAttenuation = 1.3f };
-        AddChild(light);
+        AddChild(bead);
         Visible = false;
+    }
+
+    static IEnumerable<(string, float)> Tries()
+    {
+        var a = OS.GetCmdlineUserArgs();
+        int i = Array.IndexOf(a, "--heart-try");
+        if (i < 0 || i + 1 >= a.Length) yield break;
+        foreach (var kv in a[i + 1].Split(','))
+            if (kv.Split('=') is [var key, var val] && float.TryParse(val, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                yield return (key.Trim(), f);
+    }
+
+    static bool LoadHeart()
+    {
+        if (heartMesh != null) return true;
+        var scene = ResourceLoader.Exists("res://art/world/props/heart.gltf") ? GD.Load<PackedScene>("res://art/world/props/heart.gltf") : null;
+        if (scene?.Instantiate() is not Node3D root) return false;
+        if (root.FindChild("lod0", true, false) is MeshInstance3D m && m.Mesh != null)
+        {
+            heartMesh = m.Mesh;
+            heartBox = m.Mesh.GetAabb();
+            heartLow = heartBox.GetCenter();
+            foreach (var v in m.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array())
+                if (v.Y < heartLow.Y) heartLow = v;
+            heartShader = GD.Load<Shader>("res://shaders/heart.gdshader");
+        }
+        root.QueueFree();
+        return heartMesh != null;
+    }
+
+    /// <summary>Water dripping off its underside: a few small drops gathering under it and falling (world space, so they
+    /// fall straight as it moves), each carrying a little of its light.</summary>
+    static GpuParticles3D Drips(float size, Color c)
+    {
+        float r = size * 0.05f;
+        var pm = new ParticleProcessMaterial
+        {
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Ring,
+            EmissionRingAxis = Vector3.Up, EmissionRingRadius = size * 0.35f, EmissionRingInnerRadius = 0, EmissionRingHeight = size * 0.1f,
+            Direction = Vector3.Down, Spread = 8, InitialVelocityMin = 0.0f, InitialVelocityMax = 0.12f,
+            Gravity = new Vector3(0, -9.8f, 0), ScaleMin = 0.6f, ScaleMax = 1.2f,
+        };
+        var drop = new SphereMesh { Radius = r, Height = r * 2.8f, RadialSegments = 8, Rings = 5 };
+        drop.Material = new StandardMaterial3D
+        {
+            AlbedoColor = new Color(0.7f, 0.8f, 0.88f, 0.35f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+            Roughness = 0.04f, Metallic = 0, MetallicSpecular = 1f,
+            EmissionEnabled = true, Emission = c, EmissionEnergyMultiplier = 0.15f,
+            RimEnabled = true, Rim = 0.7f, RimTint = 0.3f,
+        };
+        return new GpuParticles3D
+        {
+            Amount = 8, Lifetime = 0.45, LocalCoords = false, ProcessMaterial = pm, DrawPass1 = drop,
+            Position = new Vector3(0, -size * 0.72f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            VisibilityAabb = new Aabb(new Vector3(-1, -4, -1), new Vector3(2, 5, 2)),
+        };
     }
 
     bool IOrb.Visible { get => Visible; set => Visible = value; }
@@ -347,19 +491,101 @@ public partial class OrbView : Node3D, IOrb
         Position = new Vector3((float)x, (float)y, (float)z);
         ball.Rotation = new Vector3(0, (float)spin, 0);
         ball.Scale = Vector3.One * (float)scale;
+        Bead();
+    }
+
+    // The drop's cycle (s): it gathers (swelling on the stone's lowest point), then falls.
+    const double BeadGather = 1.35, BeadFall = 0.35;
+    static readonly bool beadLog = Array.IndexOf(OS.GetCmdlineUserArgs(), "--bead-log") >= 0;
+    int beadTick = -1;
+
+    void Bead()
+    {
+        if (bead == null) return;
+        // (while it is wet: soaked to 40 s shown)
+        bead.Visible = Visible && shownT < 40;
+        if (!bead.Visible) return;
+        double ph = t % (BeadGather + BeadFall);
+        float r = size * 0.02f;
+        var low = ball.Transform.Basis * bottom;
+        if (ph < BeadGather)
+        {
+            float g = (float)Mathf.SmoothStep(0, 1, ph / BeadGather);
+            float sc = Mathf.Lerp(0.35f, 1f, g);
+            // (hanging: a little long, just under the point)
+            bead.Scale = new Vector3(sc, sc * Mathf.Lerp(1f, 1.2f, g), sc);
+            bead.Position = low + new Vector3(0, -r * sc * 0.9f, 0);
+        }
+        else
+        {
+            float f = (float)(ph - BeadGather);
+            bead.Scale = new Vector3(0.92f, 1.2f, 0.92f);
+            bead.Position = low + new Vector3(0, -r * 0.9f - 4.9f * f * f, 0);
+        }
+        if (beadLog && (int)(t * 4) != beadTick && GetViewport().GetCamera3D() is { } cam)
+        {
+            beadTick = (int)(t * 4);
+            GD.Print($"bead t={t:0.00} ph={ph:0.00} px={cam.UnprojectPosition(bead.GlobalPosition)} behind={cam.IsPositionBehind(bead.GlobalPosition)} low={low}");
+        }
     }
 
     public double Light
     {
         set
         {
-            light.LightEnergy = (float)(value / Math.PI);
-            // The light inside, not a glare: the faces must still read at full strength.
-            stone.EmissionEnergyMultiplier = 0.35f + Mathf.Clamp((float)value, 0, 6) * 0.15f;
+            lightIn = value;
+            if (heart == null)
+            {
+                light.LightEnergy = (float)(value / Math.PI);
+                stone!.EmissionEnergyMultiplier = 0.35f + Mathf.Clamp((float)value, 0, 6) * 0.15f;
+            }
+            else Pulse();
         }
     }
 
-    /// <summary>A rough-cut stone: a squashed, uneven sphere of a few flat faces.</summary>
+    /// <summary>The heartbeat's shape (0..1): a soft double beat (lub, dub) on a slow swell, never a strobe.</summary>
+    static double Beat(double t)
+    {
+        double ph = t / Period % 1.0;
+        double lub = Math.Exp(-Math.Pow((ph - 0.12) / 0.11, 2)), dub = 0.65 * Math.Exp(-Math.Pow((ph - 0.38) / 0.13, 2));
+        double swell = 0.5 + 0.5 * Math.Sin(2 * Math.PI * ph - 0.6);
+        return Math.Clamp(0.75 * Math.Max(lub, dub) + 0.25 * swell, 0, 1);
+    }
+
+    void Pulse()
+    {
+        double b = Beat(t);
+        // (the orb's Light: c03's glow x 6 (0.8 -> 4.8), the play's 16-18: the veins at 1 for 4.8, up to 1.6 for the play's)
+        float level = (float)Math.Clamp(lightIn / 4.8, 0, 1.6);
+        heart!.SetShaderParameter("beat", (float)b);
+        heart.SetShaderParameter("level", level);
+        heart.SetShaderParameter("flow_t", (float)t);
+        float sizeK = size / 0.05f;
+        light.LightEnergy = (float)(lightIn * lightK * sizeK * (1 + lightAmp * (2 * b - 1)));
+        light.Visible = lightIn > 0.01;
+        // Wet from the water: soaked for its first 20 s shown, drying to a damp sheen by 60 s; the drips thin out by 25 s.
+        float wet = (float)Math.Clamp(1 - (shownT - 20) / 40, 0.35, 1);
+        heart.SetShaderParameter("wet", wet);
+        if (drips != null)
+        {
+            double ratio = Math.Clamp(1 - (shownT - 12) / 13, 0, 1);
+            drips.Emitting = ratio > 0.02;
+            drips.AmountRatio = (float)ratio;
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        if (heart == null) return;
+        if (!Visible) { wasShown = false; return; }
+        if (!wasShown) { wasShown = true; shownT = 0; }
+        t += delta;
+        shownT += delta;
+        Pulse();
+        Bead();
+    }
+
+    /// <summary>The old look (--heart-old): a squashed, uneven sphere of a few flat faces.</summary>
     static Mesh Facets(float size)
     {
         var src = new SphereMesh { Radius = size, Height = size * 1.7f, RadialSegments = 7, Rings = 4 };
@@ -368,7 +594,6 @@ public partial class OrbView : Node3D, IOrb
         st.Deindex();
         var arrays = st.Commit().SurfaceGetArrays(0);
         var verts = (Vector3[])arrays[(int)Mesh.ArrayType.Vertex];
-        // Each corner pushed in or out a little, the same for the same corner, so the faces are uneven.
         for (int i = 0; i < verts.Length; i++)
         {
             var v = verts[i];
