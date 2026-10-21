@@ -27,7 +27,7 @@ cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangl
 without the tuck (the baseline).
 
     python tools/armor/wearcheck.py [--pieces a,b,..] [--clips c1,c2,..] [--step 2] [--same] [--grid 2.5]
-                                    [--out <dir>] [--no-skin] [--garment-tuck [--tuck-r 0] [--tuck-off] [--order ..]]
+                                    [--out <dir>] [--no-skin] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
 import json
@@ -264,7 +264,8 @@ def main(argv):
     same = "--same" in argv
     gt = "--garment-tuck" in argv
     gt_off = "--tuck-off" in argv
-    gt_r = float(opt("--tuck-r", "0")) / 1000
+    gt_r = float(opt("--tuck-r", "20")) / 1000
+    gt_w = "--tuck-weights" in argv     # (a prototype: the laid part of A skinned toward B's weights by its value)
     order = opt("--order", "").split(",") if "--order" in argv else \
         json.load(open(os.path.join(HERE, "slot_map.json"), encoding="utf-8"))["order"]
     out_dir = opt("--out", os.path.join(os.environ.get("TEMP", "."), "wearcheck"))
@@ -327,7 +328,8 @@ def main(argv):
                 kept = T[~(tv[T] >= G_GONE).all(1)]
                 alive = np.zeros(len(P0), bool)
                 alive[kept.ravel()] = True
-                lay_cache[(A, B)] = (Dd, alive, int((np.abs(disp).sum(1) > 0).sum()), int(len(T) - len(kept)))
+                lay_cache[(A, B)] = (Dd, alive, int((np.abs(disp).sum(1) > 0).sum()), int(len(T) - len(kept)),
+                                     np.where(tv > G_FULL, 1.0, np.clip(tv, 0, 1)))
             return lay_cache[(A, B)]
 
     def rest_footprint(O, D, Bid):
@@ -381,7 +383,7 @@ def main(argv):
                 D = N0[sA["near"]]
                 info = None
                 if tuck and not gt_off:
-                    Dd, alive, nmoved, ncull = laid(A, B)
+                    Dd, alive, nmoved, ncull, _ = laid(A, B)
                     O = O + Dd[sA["samples"]]
                     O = np.where(alive[sA["samples"]][:, None], O, 1e3)
                     info = (nmoved, ncull)
@@ -424,6 +426,11 @@ def main(argv):
             x["dir"] = pc[x["A"]]["near"][fp["idx"]]
             if x.get("laid"):
                 x["dA"] = laid(x["A"], x["B"])[0][x["pts"]]
+                if gt_w:
+                    vB = np.nonzero(pid == x["B"])[0]
+                    _, nb = pc[x["B"]]["kdv"].query(P0[x["pts"]] + x["dA"])
+                    x["wsh"] = laid(x["A"], x["B"])[4][x["pts"]]
+                    x["nB"] = vB[nb]
         TB = pc[x["B"]]["T"]
         x["hitv"] = TB[fp["hit"]]
         x["candv"] = TB[fp["cand"]]
@@ -468,6 +475,12 @@ def main(argv):
                         Jp, Wp = body.J[x["pts"]], body.W[x["pts"]]
                         M = sum(Wp[:, k, None, None] * S[Jp[:, k], :3, :3] for k in range(Jp.shape[1]))
                         O = O + np.einsum("nij,nj->ni", M, x["dA"])
+                        if "nB" in x:
+                            Jb, Wb = body.J[x["nB"]], body.W[x["nB"]]
+                            Mb = sum(Wb[:, k, None, None] * S[Jb[:, k]] for k in range(Jb.shape[1]))
+                            pr = np.c_[P0[x["pts"]] + x["dA"], np.ones(len(x["pts"]))]
+                            Ob = np.einsum("nij,nj->ni", Mb[:, :3, :], pr)
+                            O = O + x["wsh"][:, None] * (Ob - O)
                     # (tracked: B's rest hit face's posed plane)
                     H = Pp[at[x["hitv"]]]
                     hp = (H * x["fp"]["bary"][:, :, None]).sum(1)

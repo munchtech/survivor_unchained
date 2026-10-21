@@ -1,6 +1,6 @@
 {
   "_doc": "Each built outfit piece's slot (tools/assets/heroine_outfits.py, docs/handoff/armor.md section 1). Per outfit, entries: a slot, the slots it covers, and regexes matched in full against the piece's name after '<outfit>.'. Every piece must match exactly one entry, or the build fails naming it. Riders (trims, binds, stitches, rivets, clasps, laces) go with the piece they sit on. 'ink' (layer 0) is not a garment: the reaver's tattoos, worn on her skin.",
-  "order": ["top", "bottom", "legwear", "gloves", "boots", "skirt", "collar", "bracers", "greaves", "belt", "pauldrons", "cloak", "head"],
+  "order": ["bottom", "top", "legwear", "gloves", "boots", "skirt", "collar", "bracers", "greaves", "belt", "pauldrons", "cloak", "head"],
   "_order_doc": "The garment tuck's slots, innermost first (docs/armor/PIECE_SCHEMA.md 'Garment tuck'; Rpg/GarmentTuck.cs Order, pinned to this by a test): a worn piece lies down under any later one not of its own outfit. Ink takes no part.",
   "layers": {
     "ink": 0,

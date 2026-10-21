@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SurvivorUnchained.Rpg;
 
@@ -15,7 +17,10 @@ public sealed class SkinPoints
     public readonly float[] P, N;
     public readonly long[] Keys;
     public readonly Dictionary<long, int> ByKey = new();
-    readonly Dictionary<long, List<int>> cells = new();
+    // (a dense grid of Cell cells over her box: each cell's points, cellStart[c]..cellStart[c + 1] in cellPts)
+    readonly int nx, ny, nz;
+    readonly float ox, oy, oz;
+    readonly int[] cellStart, cellPts;
 
     public int Count => Keys.Length;
 
@@ -40,18 +45,29 @@ public sealed class SkinPoints
         P = pos.ToArray();
         N = nrm.ToArray();
         Keys = ks.ToArray();
+        float x0 = float.MaxValue, y0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue, z1 = float.MinValue;
         for (int i = 0; i < Keys.Length; i++)
         {
             float l = MathF.Sqrt(N[i * 3] * N[i * 3] + N[i * 3 + 1] * N[i * 3 + 1] + N[i * 3 + 2] * N[i * 3 + 2]);
             if (l > 1e-12f) for (int c = 0; c < 3; c++) N[i * 3 + c] /= l;
-            long k = CellKey(Q(P[i * 3]), Q(P[i * 3 + 1]), Q(P[i * 3 + 2]));
-            if (!cells.TryGetValue(k, out var l2)) cells[k] = l2 = new List<int>();
-            l2.Add(i);
+            x0 = MathF.Min(x0, P[i * 3]); y0 = MathF.Min(y0, P[i * 3 + 1]); z0 = MathF.Min(z0, P[i * 3 + 2]);
+            x1 = MathF.Max(x1, P[i * 3]); y1 = MathF.Max(y1, P[i * 3 + 1]); z1 = MathF.Max(z1, P[i * 3 + 2]);
         }
+        if (Keys.Length == 0) { x0 = y0 = z0 = x1 = y1 = z1 = 0; }
+        ox = x0; oy = y0; oz = z0;
+        nx = (int)((x1 - x0) / Cell) + 1; ny = (int)((y1 - y0) / Cell) + 1; nz = (int)((z1 - z0) / Cell) + 1;
+        var cnt = new int[nx * ny * nz + 1];
+        var at = new int[Keys.Length];
+        for (int i = 0; i < Keys.Length; i++) cnt[at[i] = CellOf(P[i * 3], P[i * 3 + 1], P[i * 3 + 2])]++;
+        cellStart = new int[cnt.Length];
+        for (int c = 0, sum = 0; c < cnt.Length; c++) { cellStart[c] = sum; sum += cnt[c]; }
+        cellPts = new int[Keys.Length];
+        var fill = (int[])cellStart.Clone();
+        for (int i = 0; i < Keys.Length; i++) cellPts[fill[at[i]]++] = i;
     }
 
-    static int Q(float v) => (int)MathF.Floor(v / Cell);
-    static long CellKey(int x, int y, int z) => (((long)x + (1 << 20)) << 42) | (((long)y + (1 << 20)) << 21) | ((long)z + (1 << 20));
+    int CellOf(float x, float y, float z) =>
+        (Math.Clamp((int)((z - oz) / Cell), 0, nz - 1) * ny + Math.Clamp((int)((y - oy) / Cell), 0, ny - 1)) * nx + Math.Clamp((int)((x - ox) / Cell), 0, nx - 1);
 
     float D2(int i, float x, float y, float z)
     {
@@ -59,29 +75,41 @@ public sealed class SkinPoints
         return dx * dx + dy * dy + dz * dz;
     }
 
+    void Cell1(int cx, int cy, int cz, float x, float y, float z, ref int best, ref float bd)
+    {
+        if (cx < 0 || cy < 0 || cz < 0 || cx >= nx || cy >= ny || cz >= nz) return;
+        int c = (cz * ny + cy) * nx + cx;
+        for (int e = cellStart[c]; e < cellStart[c + 1]; e++)
+        {
+            int i = cellPts[e];
+            float d = D2(i, x, y, z);
+            if (d < bd) { bd = d; best = i; }
+        }
+    }
+
     /// <summary>The nearest point to (x, y, z) within `max` m, or -1.</summary>
     public int Nearest(float x, float y, float z, float max = 0.08f)
     {
-        int cx = Q(x), cy = Q(y), cz = Q(z);
+        int cx = (int)MathF.Floor((x - ox) / Cell), cy = (int)MathF.Floor((y - oy) / Cell), cz = (int)MathF.Floor((z - oz) / Cell);
         int best = -1;
         float bd = max * max;
         int rings = (int)MathF.Ceiling(max / Cell);
         for (int k = 0; k <= rings; k++)
         {
             // (ring k's cells are all at least (k - 1) cells away: done once the best is nearer)
-            if (best >= 0 && (k - 1) * Cell > 0 && ((k - 1) * Cell) * ((k - 1) * Cell) >= bd) break;
+            float lo = (k - 1) * Cell;
+            if (k > 1 && lo * lo >= bd) break;
             for (int ix = -k; ix <= k; ix++)
                 for (int iy = -k; iy <= k; iy++)
-                    for (int iz = -k; iz <= k; iz++)
+                {
+                    bool edge = ix == -k || ix == k || iy == -k || iy == k;
+                    if (edge) for (int iz = -k; iz <= k; iz++) Cell1(cx + ix, cy + iy, cz + iz, x, y, z, ref best, ref bd);
+                    else
                     {
-                        if (Math.Max(Math.Abs(ix), Math.Max(Math.Abs(iy), Math.Abs(iz))) != k) continue;
-                        if (!cells.TryGetValue(CellKey(cx + ix, cy + iy, cz + iz), out var l)) continue;
-                        foreach (int i in l)
-                        {
-                            float d = D2(i, x, y, z);
-                            if (d < bd) { bd = d; best = i; }
-                        }
+                        Cell1(cx + ix, cy + iy, cz - k, x, y, z, ref best, ref bd);
+                        if (k > 0) Cell1(cx + ix, cy + iy, cz + k, x, y, z, ref best, ref bd);
                     }
+                }
         }
         return best;
     }
@@ -93,13 +121,16 @@ public sealed class SkinPoints
     public void Within(float x, float y, float z, float r, List<int> into)
     {
         into.Clear();
-        int k = (int)MathF.Ceiling(r / Cell), cx = Q(x), cy = Q(y), cz = Q(z);
-        for (int ix = -k; ix <= k; ix++)
-            for (int iy = -k; iy <= k; iy++)
-                for (int iz = -k; iz <= k; iz++)
+        int ax = Math.Max((int)MathF.Floor((x - r - ox) / Cell), 0), bx = Math.Min((int)MathF.Floor((x + r - ox) / Cell), nx - 1);
+        int ay = Math.Max((int)MathF.Floor((y - r - oy) / Cell), 0), by = Math.Min((int)MathF.Floor((y + r - oy) / Cell), ny - 1);
+        int az = Math.Max((int)MathF.Floor((z - r - oz) / Cell), 0), bz = Math.Min((int)MathF.Floor((z + r - oz) / Cell), nz - 1);
+        for (int cz = az; cz <= bz; cz++)
+            for (int cy = ay; cy <= by; cy++)
+                for (int cx = ax; cx <= bx; cx++)
                 {
-                    if (!cells.TryGetValue(CellKey(cx + ix, cy + iy, cz + iz), out var l)) continue;
-                    foreach (int j in l) if (D2(j, x, y, z) <= r * r) into.Add(j);
+                    int c = (cz * ny + cy) * nx + cx;
+                    for (int e = cellStart[c]; e < cellStart[c + 1]; e++)
+                        if (D2(cellPts[e], x, y, z) <= r * r) into.Add(cellPts[e]);
                 }
     }
 }
@@ -113,14 +144,14 @@ public static class GarmentTuck
     /// <summary>A triangle whose three vertices read this or more is removed (hidden under what covers it).</summary>
     public const float Gone = 0.995f;
     /// <summary>The footprint's spread over her body, m (motion: the outer piece's edge moves over the inner).</summary>
-    public const float Spread = 0.0f;
+    public const float Spread = 0.020f;
     /// <summary>The radius her footprint, surface and normal are smoothed over under a vertex, m.</summary>
     public const float Smooth = 0.010f;
     /// <summary>A vertex farther than this from her body has no anchor (and never moves), m.</summary>
     public const float Reach = 0.08f;
 
     /// <summary>The slots from innermost to outermost (tools/armor/slot_map.json "order"; ink takes no part).</summary>
-    public static readonly string[] Order = ["top", "bottom", "legwear", "gloves", "boots", "skirt", "collar", "bracers", "greaves", "belt", "pauldrons", "cloak", "head"];
+    public static readonly string[] Order = ["bottom", "top", "legwear", "gloves", "boots", "skirt", "collar", "bracers", "greaves", "belt", "pauldrons", "cloak", "head"];
 
     public static int OrderOf(string slot) => Array.IndexOf(Order, slot);
 
@@ -192,8 +223,9 @@ public static class GarmentTuck
         int n = pos.Length / 3;
         anchor = new int[n];
         t = new float[n];
-        bool moved = false;
-        var near = new List<int>();
+        int moved = 0;
+        var anc = anchor;
+        var tv = t;
         // (her covered points' box, out by Reach: a vertex past it has no anchor that reads)
         float x0 = float.MaxValue, y0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue, z1 = float.MinValue;
         for (int i = 0; i < field.Length; i++)
@@ -203,14 +235,20 @@ public static class GarmentTuck
             x1 = MathF.Max(x1, s.P[i * 3]); y1 = MathF.Max(y1, s.P[i * 3 + 1]); z1 = MathF.Max(z1, s.P[i * 3 + 2]);
         }
         float m = Reach + 2 * Smooth;
-        for (int v = 0; v < n; v++)
+        // (each vertex alone: in parallel, a list of her near points a worker)
+        Parallel.For(0, n, () => new List<int>(), (v, _, near) =>
         {
-            anchor[v] = -1;
+            Vertex(v, near);
+            return near;
+        }, _ => { });
+        void Vertex(int v, List<int> near)
+        {
+            anc[v] = -1;
             float x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
-            if (x < x0 - m || y < y0 - m || z < z0 - m || x > x1 + m || y > y1 + m || z > z1 + m) continue;
+            if (x < x0 - m || y < y0 - m || z < z0 - m || x > x1 + m || y > y1 + m || z > z1 + m) return;
             int a = s.Nearest(x, y, z, Reach);
-            anchor[v] = a;
-            if (a < 0 || !reach[a]) continue;
+            anc[v] = a;
+            if (a < 0 || !reach[a]) return;
             float ha = (x - s.P[a * 3]) * s.N[a * 3] + (y - s.P[a * 3 + 1]) * s.N[a * 3 + 1] + (z - s.P[a * 3 + 2]) * s.N[a * 3 + 2];
             float fx = x - s.N[a * 3] * ha, fy = y - s.N[a * 3 + 1] * ha, fz = z - s.N[a * 3 + 2] * ha;
             s.Within(fx, fy, fz, Smooth, near);
@@ -225,18 +263,18 @@ public static class GarmentTuck
                 px += w * s.P[j * 3]; py += w * s.P[j * 3 + 1]; pz += w * s.P[j * 3 + 2];
                 nx += w * s.N[j * 3]; ny += w * s.N[j * 3 + 1]; nz += w * s.N[j * 3 + 2];
             }
-            t[v] = (float)(sf / sw);
-            if (t[v] <= 0) continue;
+            tv[v] = (float)(sf / sw);
+            if (tv[v] <= 0) return;
             double nl = Math.Sqrt(nx * nx + ny * ny + nz * nz);
-            if (nl < 1e-9) continue;
+            if (nl < 1e-9) return;
             nx /= nl; ny /= nl; nz /= nl;
             double h = (x - px / sw) * nx + (y - py / sw) * ny + (z - pz / sw) * nz;
-            if (h <= Offset) continue;
-            double d = (h - Offset) * Amount(t[v]);
+            if (h <= Offset) return;
+            double d = (h - Offset) * Amount(tv[v]);
             pos[v * 3] = (float)(x - nx * d);
             pos[v * 3 + 1] = (float)(y - ny * d);
             pos[v * 3 + 2] = (float)(z - nz * d);
-            moved = true;
+            Interlocked.Exchange(ref moved, 1);
         }
         var kept = new List<int>(index.Length);
         for (int i = 0; i + 2 < index.Length; i += 3)
@@ -244,7 +282,7 @@ public static class GarmentTuck
             {
                 kept.Add(index[i]); kept.Add(index[i + 1]); kept.Add(index[i + 2]);
             }
-        if (!moved && kept.Count == index.Length) return null;
+        if (moved == 0 && kept.Count == index.Length) return null;
         // (nothing of it shows: one degenerate triangle keeps the surface, and its material's place)
         if (kept.Count == 0 && index.Length > 0) kept.AddRange(new[] { index[0], index[0], index[0] });
         return kept.ToArray();

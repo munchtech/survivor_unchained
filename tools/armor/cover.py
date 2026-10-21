@@ -4,11 +4,13 @@ body's bind point x 1e5 rounded, f32 value), written to armor_cover/<id>.bin bes
 
 A piece's tuck records mark only her skin that would come through it (a belt or a pauldron standing clear of her has
 none), so they cannot say what a piece covers. Its cover: her body points whose outward normal ray (from 4 mm under her
-skin, out to REACH) meets the piece's faces, the hit standing over that point of her (not over a nearer limb); the
-value is FULL (lain all the way down, never removed: only a tuck record's 0.995 removes) over all of it (--ramp: eased
-in from its edge over that many mm instead; the game spreads it out past the edge, GarmentTuck.Spread). HerWear reads max(tuck, cover) a point as the piece's footprint for the garment tuck.
+skin, out to REACH) meets the piece's faces, the hit standing over that point of her (not over a nearer limb). The
+value: FULL (lain all the way down) over all of it, and HIDDEN (what lies under it removed: GarmentTuck.Gone) where
+her point is DEEP or more inside the cover's edge (a boot's shaft under its top; a narrow belt has none). --ramp:
+eased in from the edge over that many mm instead (the game spreads it out past the edge: GarmentTuck.Spread).
+HerWear reads max(tuck, cover) a point as the piece's footprint for the garment tuck.
 
-    python tools/armor/cover.py [--pieces a,b,..] [--reach 45] [--ramp 0]
+    python tools/armor/cover.py [--pieces a,b,..] [--reach 45] [--ramp 0] [--deep 25]
 """
 import json
 import os
@@ -23,6 +25,7 @@ sys.path.insert(0, HERE)
 import wearcheck as wc  # noqa: E402
 
 FULL = 0.98
+HIDDEN = 1.0
 
 
 def skin_body(rows):
@@ -45,8 +48,8 @@ def skin_body(rows):
     return body, pid, Ps, Ns
 
 
-def cover_of(Ps, Ns, kd_s, PB, TB, reach, ramp):
-    """A piece's cover of her body points Ps (normals Ns): 0..FULL a point."""
+def cover_of(Ps, Ns, kd_s, PB, TB, reach, ramp, deep):
+    """A piece's cover of her body points Ps (normals Ns): 0..HIDDEN a point."""
     c = np.zeros(len(Ps))
     if not len(TB):
         return c
@@ -80,6 +83,8 @@ def cover_of(Ps, Ns, kd_s, PB, TB, reach, ramp):
         return c
     din, _ = cKDTree(Ps[~hit]).query(Ps[hit])
     c[hit] = FULL * np.clip(din / ramp, 0, 1) if ramp > 0 else FULL
+    if deep > 0:
+        c[np.nonzero(hit)[0][din >= deep]] = HIDDEN
     return c
 
 
@@ -107,6 +112,7 @@ def main(argv):
     only = set(opt("--pieces", "").split(",")) - {""} or None
     reach = float(opt("--reach", "45")) / 1000
     ramp = float(opt("--ramp", "0")) / 1000
+    deep = float(opt("--deep", "25")) / 1000
     rows = [r for r in wc.catalogue(only) if r["slot"] != "ink"]
     # (the cloak too: it covers what is under it)
     for path in wc.INDEXES:
@@ -122,9 +128,9 @@ def main(argv):
     for r in rows:
         v = np.nonzero(pid == r["id"])[0]
         T = body.T[(pid[body.T] == r["id"]).all(1)]
-        c = cover_of(Ps, Ns, kd_s, body.P, T, reach, ramp)
+        c = cover_of(Ps, Ns, kd_s, body.P, T, reach, ramp, deep)
         n = write(os.path.abspath(cover_path(r)), Ps, c)
-        print(f"cover: {r['id']:20} {len(v):6d} verts, {n:6d} points ({int((c >= FULL).sum())} full)")
+        print(f"cover: {r['id']:20} {len(v):6d} verts, {n:6d} points ({int((c >= FULL).sum())} full, {int((c >= HIDDEN).sum())} hidden)")
 
 
 if __name__ == "__main__":

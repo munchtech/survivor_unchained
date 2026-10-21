@@ -31,6 +31,7 @@ public static class HerWear
         ? dy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.Split('=', 2)).Where(x => x.Length == 2).ToDictionary(x => x[0].Trim(), x => x[1].Trim()) : null;
 
     const string Meta = "her_wear";
+    static readonly bool Prof = Args.Get("tuck-prof") != null;
     static readonly Dictionary<string, PackedScene> scenes = new();
     static readonly Dictionary<string, (long Key, float T)[]> tucks = new();
     /// <summary>A body mesh's vertices, a surface's at a time, by their quantized bind position (Key).</summary>
@@ -257,11 +258,14 @@ public static class HerWear
         {
             var over = rows.Where(b => GarmentTuck.Over(b, a)).ToList();
             if (over.Count == 0 || !meshes.TryGetValue(a.Id, out var mis)) continue;
+            var c0 = System.Diagnostics.Stopwatch.StartNew();
             sp ??= SkinOf(p);
+            if (Prof) GD.Print($"garment tuck: skin {c0.Elapsed.TotalMilliseconds:F1} ms");
             if (sp == null) return under;
             var sig = string.Join("+", over.Select(b => b.Id).OrderBy(x => x));
             float[]? field = null;
             bool[]? near = null;
+            Aabb? box = null;
             foreach (var mi in mis)
             {
                 if (mi.Mesh is not ArrayMesh src) continue;
@@ -271,7 +275,15 @@ public static class HerWear
                     field ??= GarmentTuck.Field(sp, over.Select(Footprint));
                     if (field == null) break;
                     near ??= GarmentTuck.Near(sp, field);
+                    box ??= Covered(sp, field);
+                    if (!src.GetAabb().Grow(GarmentTuck.Reach + 2 * GarmentTuck.Smooth).Intersects(box.Value))
+                    {
+                        laidMeshes[key] = (null!, Array.Empty<(int, float)>());
+                        continue;
+                    }
+                    var ck = System.Diagnostics.Stopwatch.StartNew();
                     laidMeshes[key] = got = LaidMesh(src, sp, field, near);
+                    if (Prof) GD.Print($"garment tuck: {a.Id} {mi.Name} {src.GetSurfaceCount()} surfaces {ck.Elapsed.TotalMilliseconds:F1} ms");
                 }
                 if (got.Mesh == null) continue;
                 mi.Mesh = got.Mesh;
@@ -286,6 +298,21 @@ public static class HerWear
             }
         }
         return under;
+    }
+
+    /// <summary>The box of her points a footprint covers.</summary>
+    static Aabb Covered(SkinPoints sp, float[] field)
+    {
+        var lo = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        var hi = -lo;
+        for (int i = 0; i < field.Length; i++)
+            if (field[i] > 0)
+            {
+                var v = new Vector3(sp.P[i * 3], sp.P[i * 3 + 1], sp.P[i * 3 + 2]);
+                lo = lo.Min(v);
+                hi = hi.Max(v);
+            }
+        return new Aabb(lo, hi - lo);
     }
 
     /// <summary>A piece's footprint on her: the larger of its tuck and its cover (armor_cover/ID.bin, tools/armor/cover.py)
@@ -350,7 +377,9 @@ public static class HerWear
                 var idx = idxV.VariantType == Variant.Type.Nil ? Enumerable.Range(0, vs.Length).ToArray() : idxV.AsInt32Array();
                 var pos = new float[vs.Length * 3];
                 for (int i = 0; i < vs.Length; i++) { pos[i * 3] = vs[i].X; pos[i * 3 + 1] = vs[i].Y; pos[i * 3 + 2] = vs[i].Z; }
+                var c1 = System.Diagnostics.Stopwatch.StartNew();
                 var kept = GarmentTuck.Lay(sp, field, near, pos, idx, out var anchor, out var t);
+                if (Prof) GD.Print($"garment tuck:   lay {vs.Length} verts {c1.Elapsed.TotalMilliseconds:F1} ms");
                 if (kept != null)
                 {
                     any = true;
