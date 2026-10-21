@@ -167,18 +167,18 @@
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_body": 641,
-   "lod_generated": 7443,
+   "lod_body": 661,
+   "lod_generated": 7210,
    "lod_hair": 2097
   },
-  "total": 10181,
-  "shadowTris": 2058,
+  "total": 9968,
+  "shadowTris": 2117,
   "shadowHair": 454,
   "errMm": {
    "cut": 7,
    "lod_body.skin": {
-    "p99": 9.7,
-    "max": 19.81
+    "p99": 8.69,
+    "max": 11.48
    },
    "lod_body.skin_head": {
     "p99": 8.8,
@@ -189,8 +189,8 @@
     "max": 6.1
    },
    "lod_generated": {
-    "p99": 8.51,
-    "max": 12.17
+    "p99": 8.61,
+    "max": 20.01
    },
    "lod_hair.hair_cap": {
     "p99": 9.31,
@@ -340,7 +340,7 @@
   "trim": {
    "npc_guard_gen": {
     "before": 21936,
-    "after": 9998
+    "after": 10093
    },
    "npc_guard_genHead": {
     "before": 4820,
@@ -350,119 +350,119 @@
   "dress": {
    "offsetScale": 0.9919,
    "wrapGapMm": {
-    "mean": 15.5,
-    "median": 13.4,
-    "p90": 30.4,
-    "p99": 58.4
+    "mean": 15.7,
+    "median": 13.3,
+    "p90": 31.6,
+    "p99": 59.4
    },
    "wrapGapRegionsMm": {
     "headNeck": {
-     "n": 953,
-     "mean": 12.3,
-     "p90": 24.1
+     "n": 974,
+     "mean": 11.4,
+     "p90": 23.1
     },
     "arms": {
-     "n": 8771,
-     "mean": 17.4,
-     "p90": 33.4
+     "n": 8010,
+     "mean": 18.8,
+     "p90": 37.4
     },
     "legs": {
-     "n": 3344,
-     "mean": 12,
-     "p90": 22.6
+     "n": 5457,
+     "mean": 12.5,
+     "p90": 23.8
     },
     "torso": {
-     "n": 4061,
+     "n": 4298,
      "mean": 14.9,
-     "p90": 28.1
+     "p90": 28.2
     }
    },
-   "rigid": 16,
+   "rigid": 12,
    "skinRef": [
-    100,
-    62,
-    46
+    103,
+    65,
+    49
    ],
-   "collarInner": 599,
-   "collarSlivers": 3,
-   "collarSkin": 125,
-   "islandsDropped": 151,
+   "collarInner": 352,
+   "collarSlivers": 0,
+   "collarSkin": 68,
+   "islandsDropped": 195,
    "cuts": {
     "collar": {
-     "endMm": 20,
+     "endMm": 25,
      "edgeMm": [
-      0,
-      40
+      1,
+      46
      ]
     },
     "cuff_l": {
-     "endMm": 101,
+     "endMm": 76,
      "edgeMm": [
-      61,
-      107
+      36,
+      99
      ]
     },
     "cuff_r": {
-     "endMm": 107,
+     "endMm": 102,
      "edgeMm": [
-      68,
+      63,
       115
      ]
     }
    },
    "profile": {
-    "collar": "2 refs, last undefined, tops 20 40 40 40 40 40 40 40 40 30 20 20 20 20 20 20",
+    "collar": "2 refs, last undefined, tops 25 25 45 45 45 45 45 45 45 25 25 25 25 25 25 25",
     "cuff_l": "3 refs, last metal",
     "cuff_r": "3 refs, last metal"
    },
-   "genTris": 35884,
-   "genCut": 2880,
+   "genTris": 36005,
+   "genCut": 2956,
    "base": {
-    "npc_guard_gen": 9998,
+    "npc_guard_gen": 10093,
     "npc_guard_genHead": 4804
    },
-   "tucked": 384,
-   "poked": 54,
+   "tucked": 400,
+   "poked": 78,
    "bare": 0,
    "weights": {
-    "copied": 41,
-    "far": 10.4,
+    "copied": 54.3,
+    "far": 11.3,
     "dotHist": [
-     26,
-     7,
-     4,
-     4,
-     4,
-     12,
-     4,
+     31,
      5,
-     8,
-     27
+     3,
+     2,
+     2,
+     10,
+     2,
+     3,
+     6,
+     35
     ],
     "inpaint": {
-     "unknown": 8885,
-     "bones": 65,
-     "itMean": 31,
-     "itMax": 60
+     "unknown": 7207,
+     "bones": 66,
+     "itMean": 27,
+     "itMax": 72
     },
     "smoothed": {
      "iters": 2,
-     "edgeMm": 18.3,
-     "bones": 65
+     "edgeMm": 22.6,
+     "bones": 66
     },
     "wrist": {
      "l": {
       "to": "lowerarm_twist_02_l",
-      "points": 526,
-      "handWeightMoved": 403.2
+      "points": 219,
+      "handWeightMoved": 149.7
      },
      "r": {
       "to": "lowerarm_twist_02_r",
-      "points": 583,
-      "handWeightMoved": 428.4
+      "points": 300,
+      "handWeightMoved": 203
      }
     },
-    "steelWhole": 8
+    "steelWhole": 6
    },
    "hair": {
     "style": "crop",
@@ -480,7 +480,7 @@
  },
  "baked": true,
  "bake": {
-  "bytes": 15900576,
+  "bytes": 15645996,
   "nodes": [
    {
     "name": "npc_guard_gen",
@@ -489,7 +489,7 @@
      "skin_head",
      "generated"
     ],
-    "tris": 45882,
+    "tris": 46098,
     "morphs": 0
    },
    {
@@ -539,12 +539,12 @@
   "skinDeleted": 0
  },
  "tris": {
-  "generated": 35884,
+  "generated": 36005,
   "hair": 11949,
   "surfaces": {
-   "skin": 6602,
+   "skin": 6697,
    "skin_head": 8200,
-   "generated": 35884,
+   "generated": 36005,
    "eyes": 544,
    "teeth": 1780,
    "tongue": 448,
@@ -552,8 +552,8 @@
    "hair:hair_cap": 2661,
    "hair:hair_fine": 3934
   },
-  "total": 65407,
-  "drawn": 65407,
+  "total": 65623,
+  "drawn": 65623,
   "budget": null,
   "note": "LOD0 over the procedural NPC budget (60k): accepted for generated NPCs for now"
  },
