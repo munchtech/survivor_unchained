@@ -2,6 +2,14 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Armor lead 7 (20 Oct, evening): the 3-set proof, in progress
+Worktree `.claude/worktrees/armor-7`, branch `armor-7` (junction to its OWN public/assets; .godot seeded from main). Scope: OWNER_NOTES 20 Oct "Player gear". Approved split (coordinator): **MR A** = the engine on existing shells (revealing = reaver, leather = ranger, plate = warden + plate tops; P1-P6 + P8); **MR B** = the true sexy full plate (P7: cuirass with a boob window and bare midriff, cuisses with a high-rise g-string, open-face helm), its shell brief written while A's judge runs. Then import_mesh.py (Marionette and artist meshes share one import; seam routed to Marionette lead 7).
+- P1 DONE 31ae4238: 21 set items (items.json `wear`), `--equip a,b` (Game.Begin), `--swap-at T:ids;T:ids` (live Gear path).
+- P2 wearcheck.py (mixed-look clipping matrix through her core clips): solver running. P3 = the general per-slot-pair envelope tuck (design 1.3), from P2's numbers.
+- P5 show-helm (Headgear, `--helm`), row `"hair": "hide"`; P6 dye zones (outfit_materials `zone`, ItemInstance.Dye, `--dye`, shader recolor): worker running.
+- P4 live swap: already wired (Game.Gear -> WorldScene.SetLoadout rebuilds the figure); measure the hitch, else HerWear.Apply in place.
+Scratch: the coordinator's scratchpad `armor7\`.
+
 ## Armor lead 6 (19 Oct): MR READY, the hilt carry (warden town run and sprint), judge r2 PASS 8/8
 Worktree `.claude/worktrees/armor-5`, branch `armor-5` (junction: never stash, reset --hard or checkout .). Integration merged in.
 - **What:** `run.hilt_carry` post-pass (tools/anim/clips/run.py `HILT`, `POST`; `sprint_stop.sprint` applies it too). Her left hand rests on the sheathed sword's throat at her left hip in run_warden_town and sprint_warden_town. idle and the stops are byte-identical. The free right hand is a loose fist (`fingers_r="fist"`, the town run only).
