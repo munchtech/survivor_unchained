@@ -3372,6 +3372,107 @@ def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
     return pos
 
 
+# (20 Oct, armor 8, a face judge's whole-frame FAIL at creation's Look: the warden's pauldron, a fair dome stood 12 mm
+# off her everywhere, rose off the top of her shoulder like a hoop with the forest behind it (turn -40), and its neck
+# side ran along her top's strap, so the strap's edge showed ragged under its gold binding (front). Now its neck side
+# is cut back clear of the strap (PAUL_STRAP_CLEAR from the strap's laid centre line, corners rounded) and its rim is
+# seated onto her where her skin faces up, the top of her shoulder, PAUL_SEAT_GAP off her, eased in over
+# PAUL_SEAT_BAND from the rim: a plate resting on her shoulder, flaring off her arm below. Off: PAUL_SEAT=0)
+PAUL_SEAT = os.environ.get("PAUL_SEAT", "1") == "1"
+PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_STRAP_CLEAR = (float(v) for v in os.environ.get("PAUL_SEAT_K", "0.0025,0.035,0.019").split(","))
+PAUL_SEAT_IN = tuple(float(v) for v in os.environ.get("PAUL_SEAT_IN", "0.0,0.03").split(","))   # (its neck side: metres in from the ball of her shoulder)
+PAUL_SEAT_UP = tuple(float(v) for v in os.environ.get("PAUL_SEAT_UP", "0.2,0.5").split(","))
+
+
+def strap_clear(name, clear):
+    """A field on her skin (metres, positive allowed): out of the ribbon `name`'s way on the far side of it from her
+    middle, at least `clear` from its laid centre line."""
+    line = RIBBON_LINE[name]
+    d, j = cKDTree(line).query(P)
+    lateral = np.abs(X) > np.abs(line[j, 0])
+    return np.where(lateral, d - clear, -d - clear)
+
+
+def final_skin_bvh():
+    """Her skin as her last body build left it (PAUL_SEAT_BODY, default godot/art/people/heroine.glb), in this scene's
+    axes: the build's own skin stands up to 8 mm above it on top of her shoulder near her neck (the neck cut and nape
+    ease move it after the pieces are cut), so a piece seated within millimetres of her is seated on this. None if
+    there is no such file."""
+    import json as json_
+    import struct as struct_
+    path = os.environ.get("PAUL_SEAT_BODY", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb"))
+    if not os.path.exists(path):
+        return None
+    b = open(path, "rb").read()
+    jl = struct_.unpack_from("<I", b, 12)[0]
+    g = json_.loads(b[20:20 + jl])
+    bn = b[20 + jl + 8:]
+
+    def acc(i):
+        a = g["accessors"][i]
+        v = g["bufferViews"][a["bufferView"]]
+        dt = {5126: np.float32, 5125: np.uint32, 5123: np.uint16}[a["componentType"]]
+        nc = {"SCALAR": 1, "VEC3": 3}[a["type"]]
+        return np.frombuffer(bn, dt, a["count"] * nc, v.get("byteOffset", 0) + a.get("byteOffset", 0)).reshape(-1, nc)
+    mi = next(n["mesh"] for n in g["nodes"] if n.get("name") == "Heroine" and "mesh" in n)
+    vs, fs, off = [], [], 0
+    for pr in g["meshes"][mi]["primitives"]:
+        q = acc(pr["attributes"]["POSITION"]).astype(float)
+        vs.append(np.stack([q[:, 0], -q[:, 2], q[:, 1]], 1))
+        fs.append(acc(pr["indices"]).reshape(-1, 3).astype(np.int64) + off)
+        off += len(q)
+    return BVHTree.FromPolygons([tuple(p_) for p_ in np.vstack(vs)], np.vstack(fs).tolist())
+
+
+def seated(name, pos, tris, edge, gap_to, band, up, where=None):
+    """A plate's rim brought down onto her: each point within `band` of its edge, where her skin under it faces up
+    (its normal's height, ramped over `up`), moved in along her (smoothed) normal until it stands `gap_to` off her
+    at the rim, eased to nothing `band` in, so the plate turns down onto her as a rolled flange does. `where`, a
+    weight by place (the pauldron's neck side only: its far end rides her arm)."""
+    skin_ = final_skin_bvh() or BVH
+
+    def near(p_):
+        q_, n_ = np.zeros_like(p_), np.zeros_like(p_)
+        for i in range(len(p_)):
+            h = skin_.find_nearest(Vector(p_[i]))
+            q_[i], n_[i] = h[0][:], h[1][:]
+        return q_, n_
+    A = adjacency(len(pos), tris)
+    q, n = near(pos)
+    g0 = ((pos - q) * n).sum(1)
+    for _ in range(6):
+        n = A @ n
+        n /= np.linalg.norm(n, axis=1)[:, None] + 1e-12
+    w = (1 - ramp(edge, 0.0, band)) * ramp(n[:, 2], *up) * (where(pos) if where is not None else 1.0)
+    for _ in range(4):
+        w = 0.5 * w + 0.5 * (A @ w)
+    for it in range(3):
+        q, _ = near(pos)
+        g = ((pos - q) * n).sum(1)
+        pos = pos - n * (w * np.maximum(g - gap_to, 0.0))[:, None]
+    q, _ = near(pos)
+    g = ((pos - q) * n).sum(1)
+    pos = pos + n * (np.maximum(gap_to - g, 0.0) * (w > 0.01))[:, None]
+    q, _ = near(pos)
+    g = ((pos - q) * n).sum(1)
+    rim = (edge < 0.004) & (w > 0.5)
+    fn = np.cross(pos[tris[:, 1]] - pos[tris[:, 0]], pos[tris[:, 2]] - pos[tris[:, 0]])
+    fn /= np.linalg.norm(fn, axis=1)[:, None] + 1e-15
+    e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    fi = np.tile(np.arange(len(tris)), 3)
+    o = np.lexsort((e[:, 1], e[:, 0]))
+    e, fi = e[o], fi[o]
+    same = np.nonzero((e[1:] == e[:-1]).all(1))[0]
+    fa, fb = fi[same], fi[same + 1]
+    band_f = (w[tris] > 0.05).any(1)
+    flip = ((fn[fa] * fn[fb]).sum(1) < 0) & (band_f[fa] | band_f[fb])
+    print("SEAT %s: %d rim points seated (gap before %.1f..%.1f mm), now %.1f mm median, %.1f max; %d points eased in; "
+          "%d flipped face pairs in the band" % (name, rim.sum(), g0[rim].min() * 1000 if rim.any() else 0, g0[rim].max() * 1000 if rim.any() else 0,
+                                                 np.median(g[rim]) * 1000 if rim.any() else 0, g[rim].max() * 1000 if rim.any() else 0,
+                                                 int((w > 0.01).sum()), int(flip.sum())))
+    return pos
+
+
 NEST = {}   # (plates nested in a set: their directions and radii so far)
 
 
@@ -3626,7 +3727,7 @@ def edge_lining(name, pos, at, tris, spec, sel):
     return np.vstack(LP), np.vstack(LW), np.array(LT)
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False, line=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False, line=None, seat=None, blend_from=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -3742,9 +3843,23 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         else:
             pos = shell(name, pos, np.asarray(rigid, float), lift if clear is None else clear)
         # (one blend for the whole plate, its skin's mean: it moves rigidly)
-        at[:, 3:3 + NB] = four_bones(at[:, 3:3 + NB].mean(0, keepdims=True))
+        blend_ = at[:, 3:3 + NB].mean(0, keepdims=True)
+        if blend_from is not None:
+            # (`blend_from`: the blend of the plate as cut from that field instead, made exactly as above, so a plate
+            # cut back (PAUL_SEAT) swings as it did)
+            fb_ = smooth_field(np.minimum.reduce([blend_from, (0.3 - wsum(*keep_off)) * 0.1, (0.5 - HAIR) * 0.1,
+                                                  np.where(slot_m, -0.004, 1.0)]), soften)
+            ab_ = np.hstack([N, W, -np.ones((len(P), 1)), np.ones((len(P), 1)), fb_[:, None], np.ones((len(P), 1))])
+            pb_, ab_, tb_ = clip(fb_, P, ab_, TRI)
+            pb_, ab_, tb_ = weld(pb_, ab_, tb_, joined=name in FOLD_SAFE)
+            blend_ = ab_[:, 3:3 + NB].mean(0, keepdims=True)
+        at[:, 3:3 + NB] = four_bones(blend_)
+        print("RIGID %s: %s" % (name, ", ".join("%s %.4f" % (BONES[k_], at[0, 3 + k_]) for k_ in np.nonzero(at[0, 3:3 + NB] > 0)[0])))
     if not dome and not filled:
         pos = clear_of_skin(pos, lift if clear is None else (clear(pos) if callable(clear) else clear), tris)
+    if seat is not None:
+        # (`seat`: its rim brought down onto her where `seat` asks, see seated)
+        pos = seated(name, pos, tris, at[:, -1], *seat)
     dump(name, "3pre", pos, tris, at[:, -1])  # SOLVER1 TEMP
     # Every edge bound: in the trim's colour where one is asked, else in the
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
@@ -4617,6 +4732,9 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
     return OR(*parts), ub
 
 
+RIBBON_LINE = {}   # (each ribbon's centre line as laid on her)
+
+
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
            hides=False, follow=False, flare=None, onto=None, taper=None, taut=0, closed=False, nape=None):
     """A strap as a strap is made: a ribbon of even width laid along a
@@ -4786,6 +4904,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         if len(bad_):
             print("BONING %s: ends %.0f mm inside %s's edge, %d of %d points past it dropped" % (name, BONING_CLIP * 1000, onto, len(c) - bad_[0], len(c)))
             c = c[:bad_[0]]
+    RIBBON_LINE[name] = c.copy()   # (its laid centre line, for pieces kept clear of it: PAUL_SEAT)
     if onto is not None:
         # (its normal the sheet's own, outward as it was lifted)
         nrm = s_nrm[cKDTree(s_pos).query(c)[1]]
@@ -5430,7 +5549,11 @@ def warden():
     out += studs_on("warden.skirt_rivets", belt, aims, "gold", r=0.0028)
     for sd, sg in (("l", 1), ("r", -1)):
         out += [
-            *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold", rigid=head(f"upperarm_{sd}")),
+            *piece(f"warden.pauldron_{sd}", ANDR(cap(shoulder(sd), 0.11), strap_clear(f"warden.strap{0 if sd == 'l' else 1}", PAUL_STRAP_CLEAR), 0.015)
+                   if PAUL_SEAT else cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold",
+                   rigid=head(f"upperarm_{sd}"), seat=(PAUL_SEAT_GAP, PAUL_SEAT_BAND, PAUL_SEAT_UP,
+                                                                   lambda q_, c_=abs(shoulder(sd)[0]): ramp(c_ - np.abs(q_[:, 0]), *PAUL_SEAT_IN)) if PAUL_SEAT else None,
+                   blend_from=cap(shoulder(sd), 0.11) if PAUL_SEAT else None),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
             *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold", rim_clean=GREAVE_RIM,
                    line=(GREAVE_LINE, lambda p_, lp_: p_[lp_, 2].mean() < p_[:, 2].mean())),

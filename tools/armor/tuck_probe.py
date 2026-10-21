@@ -53,13 +53,19 @@ me = body.data
 hides = [o for o in made if o.name.startswith(OUTFIT + ".") and o.get("hides")]
 shides = [o for o in hides if G["slot_entry"](o.name)["slot"] == SLOT]
 stamp("%d hiding pieces, %d in slot %s: %s" % (len(hides), len(shides), SLOT, [o.name for o in shides]))
+# (a slot that hides nothing, a rigid plate's (armor 8: the warden's pauldrons): its pieces all checked, her skin untucked)
+spieces = shides or [o for o in made if o.name.startswith(OUTFIT + ".") and G["slot_entry"](o.name)["slot"] == SLOT]
 res = {}
 for mode in (0, 1):
     G["TUCK_SMOOTH"] = bool(mode)
     res[f"whole{mode}"] = G["tuck_of"](OUTFIT, hides)[0]
     res[f"whole{mode}_cos"] = G["TUCK_LAST"]["cos"]
-    res[f"slot{mode}"] = G["tuck_of"](OUTFIT, shides, SLOT)[0]
-    res[f"slot{mode}_cos"] = G["TUCK_LAST"]["cos"]
+    if shides:
+        res[f"slot{mode}"] = G["tuck_of"](OUTFIT, shides, SLOT)[0]
+        res[f"slot{mode}_cos"] = G["TUCK_LAST"]["cos"]
+    else:
+        res[f"slot{mode}"] = np.zeros(len(me.vertices))
+        res[f"slot{mode}_cos"] = np.zeros(len(me.vertices))
     stamp("mode %d done" % mode)
 
 # ---- pose check (piece_blender.py's, on the slot's pieces): her skin through them, untucked and tucked
@@ -99,7 +105,7 @@ def pose(rots):
     bn = np.array([(body.matrix_world.to_3x3() @ v.normal)[:] for v in m_.vertices])
     be.to_mesh_clear()
     vs, fs = [], []
-    for o in shides:
+    for o in spieces:
         oe = o.evaluated_get(dg)
         mm = oe.to_mesh()
         base = len(vs)
@@ -109,6 +115,7 @@ def pose(rots):
     return bv, bn, BVHTree.FromPolygons(vs, fs), np.array(vs)
 
 
+BF = [list(p_.vertices) for p_ in me.polygons]
 bv0, bn0, _, sv0 = pose([])
 lo, hi = sv0.min(0) - 0.03, sv0.max(0) + 0.03
 NEAR = np.nonzero(((bv0 > lo) & (bv0 < hi)).all(1))[0]
@@ -116,6 +123,15 @@ PC = {}
 for pname, rots in [("rest", [])] + list(POSES.items()):
     bv, bn, tree, sv = pose(rots)
     row = {"piece_moved_mm": round(float(np.abs(sv - sv0).max() * 1000), 1)}
+    # (how deep the slot's pieces go into her skin: its points under her surface, nearest-face signed)
+    btree = BVHTree.FromPolygons([tuple(v) for v in bv], BF)
+    sd_ = []
+    for v in sv:
+        q_, n_, _, _ = btree.find_nearest(Vector(v))
+        sd_.append((Vector(v) - q_).dot(n_) if q_ is not None else 1.0)
+    sd_ = np.array(sd_)
+    row["piece_in_1mm"] = int((sd_ < -0.001).sum())
+    row["piece_deepest_mm"] = round(float(-sd_.min() * 1000), 1)
     for mode in (0, 1):
         tk = res[f"slot{mode}"]
         thr = 0
