@@ -202,7 +202,7 @@ uniform vec3 clay_tints[4];      // (godot/data/house_look.json)
 uniform vec3 shingle_tints[4];
 uniform vec4 chimneys[32];       // each stack's top (xyz), w 1; OwnWalls.Build
 uniform float roof_sag = 0.04;
-uniform float roof_lean = 0.12;          // (E9b6 r4) each roof racked sideways at its middle this much (m)
+uniform float roof_lean = 0.14;          // (E9b6 r4) each roof racked sideways at its middle this much (m)
 uniform vec2 roof_lean_dir = vec2(0.0, 1.0);  // world x, z: toward the play camera   // each house's roof sags this much more at most (m), by its copy's hash
 uniform float tile_val = 0.12;   // each tile lighter or darker
 uniform float tile_warm = 0.5;   // and warmer or cooler
