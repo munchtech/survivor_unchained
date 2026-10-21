@@ -51,7 +51,8 @@ public class DyeHelmTests
     public void Every_material_has_a_valid_zone_by_the_rule()
     {
         var t = Materials();
-        var trim = new[] { "gold", "claspgold", "wiregold", "rivetbronze", "bronze" };
+        // (stitch thread dyes with the trim, armor 7 4ade4e8b: no piece over three zones)
+        var trim = new[] { "gold", "claspgold", "wiregold", "rivetbronze", "bronze", "thread" };
         foreach (var (k, v) in t)
         {
             Assert.True(v.TryGetProperty("zone", out var z), $"{k} has no zone");
