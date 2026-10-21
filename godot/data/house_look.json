@@ -23,10 +23,10 @@
  "house_val": 0.06,
  "occl": 0.5,
  "clay_tints": [
-  "#f4c0a4",
-  "#e2a08a",
-  "#f2d0aa",
-  "#d0b4a6"
+  "#ff9a74",
+  "#e8806a",
+  "#ffb084",
+  "#d09482"
  ],
  "shingle_tints": [
   "#b8b4ae",
@@ -35,7 +35,7 @@
   "#c8c0b0"
  ],
  "roof_sag": 0.04,
- "tile_val": 0.12,
+ "tile_val": 0.05,
  "tile_warm": 0.5,
  "roof_val_noise": 0.08,
  "roof_house_val": 0.06,
