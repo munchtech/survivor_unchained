@@ -61,11 +61,30 @@ public sealed class Landmarks
     bool Swap(Node3D kk)
     {
         var part = kk.Name.ToString().Split('-');
+        // A piece the zone's props_own.json "nudge" moves (E7b: the post's torch out of the wall's face, under its broken top).
+        if (OwnProps.For(zone.Id) is OwnProps.Zone own0) kk.Transform = OwnProps.Nudged(own0, kk.Transform);
         // The ground under a point of the piece, in its frame (the landmarks stand at the world's origin).
         var at = kk.Transform;
         var back = at.AffineInverse();
         float Ground(Vector3 p) { var w = at * p; return (back * new Vector3(w.X, zone.HeightAt(w.X, w.Z), w.Z)).Y; }
-        if (part.Length < 4 || Pieces.For(part[1], part[2], int.TryParse(part[3], out var i) ? i : 0, at.Basis.Scale.Y, Ground) is not Node3D piece) return false;
+        if (part.Length < 4) return false;
+        int i = int.TryParse(part[3], out var num) ? num : 0;
+        // Our own piece where the zone's props_own.json "kits" names one (E7b: the Watch-post's ruin, the Barrow):
+        // built in the kit piece's units and frame, it stands where the kit piece stood; "over" keeps the made piece too.
+        Node3D? piece = null;
+        if (OwnProps.For(zone.Id) is OwnProps.Zone own && OwnProps.Kit(own, $"{part[1]}/{part[2]}", i) is OwnProps.KitEntry e && OwnProps.KitPiece(e) is Node3D ours)
+        {
+            piece = ours;
+            if (e.Over && Pieces.For(part[1], part[2], i, at.Basis.Scale.Y, Ground, ownBody: true) is Node3D made)
+            {
+                var both = new Node3D { Name = ours.Name };
+                both.AddChild(made);
+                both.AddChild(ours);
+                piece = both;
+            }
+        }
+        piece ??= Pieces.For(part[1], part[2], i, at.Basis.Scale.Y, Ground);
+        if (piece == null) return false;
         foreach (var c in kk.GetChildren()) { kk.RemoveChild(c); c.QueueFree(); }
         kk.AddChild(piece);
         if (piece.HasMeta("lamp")) Holders.Add(piece);

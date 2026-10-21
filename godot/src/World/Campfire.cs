@@ -419,8 +419,9 @@ public static class Campfire
     }
 
     /// <summary>--ember-w W, --ember-l L: a spark's streak (m). Thin, so at the close-up it is a streak 1-3 px wide, not a
-    /// soft round disc (11 mm wide, a radial blob, it read as an orb).</summary>
-    static readonly float EmberW = SurvivorUnchained.Args.Num("ember-w", 0.006f), EmberL = SurvivorUnchained.Args.Num("ember-l", 0.4f);
+    /// soft round disc (11 mm wide, a radial blob, it read as an orb). 12 cm long, not 40 (E7b r3: at the close-up a 40 cm streak
+    /// read as a thin straight white line through the flames, the same in every shot); they wander more, so their paths bend.</summary>
+    static readonly float EmberW = SurvivorUnchained.Args.Num("ember-w", 0.006f), EmberL = SurvivorUnchained.Args.Num("ember-l", 0.12f);
 
     /// <summary>Sparks: few and small, each a short streak along its flight, rising off the coals,
     /// wandering a little and fading within a metre or two (not a spray).</summary>
@@ -436,7 +437,7 @@ public static class Campfire
             // Hot, not blinding: kept just under the bloom's threshold, so the glow doesn't
             // spread them into one orange ball over the fire.
             ColorRamp = Ramp((0, new Color(1.05f, 0.6f, 0.2f, 1)), (0.55f, new Color(0.95f, 0.34f, 0.06f, 0.9f)), (1, new Color(0.5f, 0.1f, 0.02f, 0))),
-            TurbulenceEnabled = true, TurbulenceNoiseStrength = 1.2f, TurbulenceNoiseScale = 1.2f, TurbulenceInfluenceMin = 0.06f, TurbulenceInfluenceMax = 0.16f,
+            TurbulenceEnabled = true, TurbulenceNoiseStrength = 1.2f, TurbulenceNoiseScale = 1.2f, TurbulenceInfluenceMin = 0.1f, TurbulenceInfluenceMax = 0.24f,
         };
         if (emberLook == null)
         {

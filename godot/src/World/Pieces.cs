@@ -28,7 +28,9 @@ public static partial class Pieces
     /// scale it is placed at keeps what has a size in life that size; the
     /// ground (its height under a point, both in the piece's frame) keeps
     /// what is spread over it on it, and out of the water.</summary>
-    public static Node3D? For(string pack, string name, int seed = 0, float scale = 1, Func<Vector3, float>? ground = null)
+    /// <summary>ownBody: our own preset stands in this piece's place too (OwnProps "kits" with "over"): the made piece
+    /// drops what the preset is (the crypt keeps only its iron door: E7b r2, the preset has its own roof).</summary>
+    public static Node3D? For(string pack, string name, int seed = 0, float scale = 1, Func<Vector3, float>? ground = null, bool ownBody = false)
     {
         // The arenas' own pieces (Pieces.Arena.cs) have no KayKit size: they are made to their own.
         if (pack == "arena") return Arena(name, seed, ground);
@@ -42,7 +44,7 @@ public static partial class Pieces
             ("halloween", "grave_A") => Grave(box, Head.Round, seed),
             ("halloween", "grave_B") => Grave(box, Head.Gothic, seed),
             ("halloween", "grave_A_destroyed") => Grave(box, Head.Broken, seed),
-            ("halloween", "crypt") => Crypt(box),
+            ("halloween", "crypt") => Crypt(box, ownBody),
             ("halloween", "fence") => Fence(box, false, seed),
             ("halloween", "fence_broken") => Fence(box, true, seed),
             ("halloween", "post_lantern") => Lamps.Holder("post_lantern") ?? LampPost(box, true),
@@ -85,6 +87,10 @@ public static partial class Pieces
         if (made != null) made.Name = $"{pack}_{name}";
         return made;
     }
+
+    /// <summary>A KayKit piece's box as authored (data/zones/kaykit.json), or null.</summary>
+    public static Aabb? KitBox(string pack, string name) =>
+        Sizes.TryGetValue($"{pack}/{name}", out var s) ? new Aabb(new Vector3(s[0], s[1], s[2]), new Vector3(s[3] - s[0], s[4] - s[1], s[5] - s[2])) : null;
 
     /* ------------------------------------------------------------ fitting -- */
 
@@ -311,7 +317,7 @@ public static partial class Pieces
     }
 
     /// <summary>A crypt: a plinth, walls of dressed stone, a pitched roof, an iron door, a cross at the gable.</summary>
-    static Node3D Crypt(Aabb box)
+    static Node3D Crypt(Aabb box, bool ownBody = false)
     {
         var root = new Node3D();
         var c = box.GetCenter();
@@ -325,7 +331,7 @@ public static partial class Pieces
         Extrude(stone, Pts(-iw / 2 - 0.04f * w, plinth + wallH, iw / 2 + 0.04f * w, plinth + wallH, iw / 2 + 0.04f * w, plinth + wallH + 0.05f * h, -iw / 2 - 0.04f * w, plinth + wallH + 0.05f * h), id + 0.08f * d, 0.01f * h, At(c.X, y0, c.Z));
         float eave = plinth + wallH + 0.05f * h;
         Extrude(stone, Pts(-iw / 2, eave, iw / 2, eave, 0, eave + roofH), id, 0.01f * h, At(c.X, y0, c.Z));
-        Add(root, stone.Mesh(true), Blocks());
+        if (!ownBody) Add(root, stone.Mesh(true), Blocks());
         // The roof: two slabs of stone slate, laid in courses along the ridge
         // (its own UVs, so the courses run true), wet enough to catch the sky,
         // lichen and moss creeping up from the eaves (vertex colours); capping
@@ -392,7 +398,7 @@ public static partial class Pieces
         var st = new SurfaceTool();
         st.CreateFrom(flat, 0);
         st.GenerateTangents();
-        Add(root, st.Commit(), RoofSlates());
+        if (!ownBody) Add(root, st.Commit(), RoofSlates());   // (E7b r2: the preset has its own slab roof)
         // The ridge: capping stones, a little apart; the gables' coping laid up each slope.
         var cope = new Build();
         float rise = th / 2 / Mathf.Cos(ang), ca = 0.05f * w, ch = 0.03f * h;
@@ -410,7 +416,7 @@ public static partial class Pieces
             foreach (float sz in new[] { -1f, 1f })
                 Extrude(cope, Pts(0.04f * w, th / 2 - 0.01f * h, run + 0.01f * w, th / 2 - 0.01f * h, run + 0.01f * w, th / 2 + 0.014f * h, 0.04f * w, th / 2 + 0.014f * h), vw, 0.005f * h,
                     new Transform3D(Basis.FromScale(new Vector3(sx, 1, 1)) * new Basis(Vector3.Back, -ang), ridge + new Vector3(0, 0, sz * (len / 2 - vw / 2 + 0.008f * d))));
-        Add(root, cope.Mesh(true), Coping());
+        if (!ownBody) Add(root, cope.Mesh(true), Coping());
         // The door: dark within, iron-bound, under a lintel.
         float dw = iw * 0.36f, dh = wallH * 0.8f, front = c.Z + id / 2;
         Add(root, new BoxMesh { Size = new Vector3(dw, dh, 0.05f * d) }, Wrought(), At(c.X, y0 + plinth + dh / 2, front + 0.005f));
@@ -429,11 +435,11 @@ public static partial class Pieces
         for (int k = 0; k < 2; k++)
             Extrude(cols, Pts(-dw * 0.9f + k * dw * 0.1f, 0, dw * 0.9f - k * dw * 0.1f, 0, dw * 0.9f - k * dw * 0.1f, plinth * 0.5f, -dw * 0.9f + k * dw * 0.1f, plinth * 0.5f),
                 d * 0.12f - k * d * 0.05f, 0.005f * h, At(c.X, y0 + k * plinth * 0.5f, box.End.Z - d * 0.04f + k * d * 0.02f));
-        Add(root, cols.Mesh(true), Blocks());
+        if (!ownBody) Add(root, cols.Mesh(true), Blocks());
         // A cross on the ridge at the front.
         float cs = h * 0.12f;
         Extrude(lintel, Outline(Head.Cross, cs, cs * 1.4f, 0), 0.04f * d, 0.004f * h, At(c.X, y0 + eave + roofH + 0.02f * h, front - 0.02f * d));
-        Add(root, lintel.Mesh(true), Headstone());
+        if (!ownBody) Add(root, lintel.Mesh(true), Headstone());
         return root;
     }
 

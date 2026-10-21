@@ -986,7 +986,7 @@ public sealed class Prologue : ZoneRuntime
         W.Facts["prologue.dawn_south"] = south;
         if (!G.Cinematic("c04a", () =>
             {
-                dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); if (!dousedByCine) Douse(false);
+                dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); G.Look.SetNight(false); if (!dousedByCine) Douse(false);
                 // On from C03, she never waded back for what he left: it is hers on the road.
                 if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
             }))
@@ -1096,6 +1096,8 @@ public sealed class Prologue : ZoneRuntime
             // Loaded after the prologue: the road at dawn, the dead at rest.
             Now = Stage.Exit; stageT = 0; dawnK = 1; doused = true;
             G.SetAtmosphere(Atmospheres.LowFordDawn);
+            // (the host set the night from the time before the stage was known: the post's own torch burned on at dawn, E7b r3)
+            G.Look.SetNight(false);
             b.Collision.RemoveTagged("gate");
             foreach (var p in pylons) G.Look.SetLit(p.Light, false);
             ai.Mode = "dead"; wardenGone = true;
