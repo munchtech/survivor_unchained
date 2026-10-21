@@ -310,6 +310,8 @@ public partial class OrbView : Node3D, IOrb
     readonly StandardMaterial3D? stone;
     readonly ShaderMaterial? heart;
     readonly GpuParticles3D? drips;
+    readonly MeshInstance3D? bead;
+    Vector3 bottom;
     readonly float size;
     double lightIn, t, shownT;
     bool wasShown;
@@ -321,6 +323,7 @@ public partial class OrbView : Node3D, IOrb
 
     static Mesh? heartMesh;
     static Aabb heartBox;
+    static Vector3 heartLow;
     static Shader? heartShader;
 
     public OrbView(string color, double size)
@@ -398,6 +401,30 @@ public partial class OrbView : Node3D, IOrb
         AddChild(light);
         drips = Drips(this.size, c);
         AddChild(drips);
+        // One clear drop at a time gathering on its lowest point and falling (E7c r3): big enough to read at 1:1 in an
+        // 85 mm close-up (~2 mm across: 7 px at c03 s8), glossy, the heart's blue in it.
+        bottom = (heartLow - heartBox.GetCenter()) * k;
+        bead = new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = this.size * 0.02f, Height = this.size * 0.04f, RadialSegments = 12, Rings = 8 },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            MaterialOverride = new StandardMaterial3D
+            {
+                AlbedoColor = new Color(0.5f, 0.6f, 0.72f, 0.9f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                Roughness = 0.03f, Metallic = 0, MetallicSpecular = 1f,
+                EmissionEnabled = true, Emission = new Color(c.R * 0.55f, c.G * 0.75f, c.B), EmissionEnergyMultiplier = 2.6f,
+                RimEnabled = true, Rim = 1f, RimTint = 0.15f,
+            },
+            Visible = false,
+        };
+        // (its highlight: a hot point near its top, where it catches the light)
+        bead.AddChild(new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = this.size * 0.0065f, Height = this.size * 0.013f, RadialSegments = 8, Rings = 4 },
+            Position = new Vector3(0, this.size * 0.011f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.9f, 0.96f, 1f) },
+        });
+        AddChild(bead);
         Visible = false;
     }
 
@@ -420,6 +447,9 @@ public partial class OrbView : Node3D, IOrb
         {
             heartMesh = m.Mesh;
             heartBox = m.Mesh.GetAabb();
+            heartLow = heartBox.GetCenter();
+            foreach (var v in m.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array())
+                if (v.Y < heartLow.Y) heartLow = v;
             heartShader = GD.Load<Shader>("res://shaders/heart.gdshader");
         }
         root.QueueFree();
@@ -461,6 +491,42 @@ public partial class OrbView : Node3D, IOrb
         Position = new Vector3((float)x, (float)y, (float)z);
         ball.Rotation = new Vector3(0, (float)spin, 0);
         ball.Scale = Vector3.One * (float)scale;
+        Bead();
+    }
+
+    // The drop's cycle (s): it gathers (swelling on the stone's lowest point), then falls.
+    const double BeadGather = 1.35, BeadFall = 0.35;
+    static readonly bool beadLog = Array.IndexOf(OS.GetCmdlineUserArgs(), "--bead-log") >= 0;
+    int beadTick = -1;
+
+    void Bead()
+    {
+        if (bead == null) return;
+        // (while it is wet: soaked to 40 s shown)
+        bead.Visible = Visible && shownT < 40;
+        if (!bead.Visible) return;
+        double ph = t % (BeadGather + BeadFall);
+        float r = size * 0.02f;
+        var low = ball.Transform.Basis * bottom;
+        if (ph < BeadGather)
+        {
+            float g = (float)Mathf.SmoothStep(0, 1, ph / BeadGather);
+            float sc = Mathf.Lerp(0.35f, 1f, g);
+            // (hanging: a little long, just under the point)
+            bead.Scale = new Vector3(sc, sc * Mathf.Lerp(1f, 1.2f, g), sc);
+            bead.Position = low + new Vector3(0, -r * sc * 0.9f, 0);
+        }
+        else
+        {
+            float f = (float)(ph - BeadGather);
+            bead.Scale = new Vector3(0.92f, 1.2f, 0.92f);
+            bead.Position = low + new Vector3(0, -r * 0.9f - 4.9f * f * f, 0);
+        }
+        if (beadLog && (int)(t * 4) != beadTick && GetViewport().GetCamera3D() is { } cam)
+        {
+            beadTick = (int)(t * 4);
+            GD.Print($"bead t={t:0.00} ph={ph:0.00} px={cam.UnprojectPosition(bead.GlobalPosition)} behind={cam.IsPositionBehind(bead.GlobalPosition)} low={low}");
+        }
     }
 
     public double Light
@@ -516,6 +582,7 @@ public partial class OrbView : Node3D, IOrb
         t += delta;
         shownT += delta;
         Pulse();
+        Bead();
     }
 
     /// <summary>The old look (--heart-old): a squashed, uneven sphere of a few flat faces.</summary>

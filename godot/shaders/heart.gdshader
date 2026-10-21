@@ -42,6 +42,15 @@ uniform float streak_rough = 0.15;           // the runs of water
 uniform float film_rough = 0.42;             // the wet film between them
 uniform float sheen = 0.35;                  // the wet top edge's highlight
 uniform vec3 sheen_color : source_color = vec3(0.62, 0.72, 0.86);
+uniform float run_az = 2.985;                // the one clear run of water: its side of the stone (object azimuth, rad:
+                                             //   c03 s8's front facet; the stone turns about y, so object y is down)
+uniform float run_w = 0.06;                  // its half-width (unit-stone lengths: ~20 px across at s8_3)
+uniform float run_top = 0.95;                // from the top face...
+uniform float run_bot = -0.5;                // ...down to here, narrowing
+uniform float run_dark = 0.45;               // its albedo (soaked stone)
+uniform float run_rough = 0.1;
+uniform float far_floor = 0.0;               // a sub-pixel crack's least share of its light (0.5 tried in r3: no change at s7_2)
+uniform float dbg = 0.0;                     // 1: the stone's own azimuth and height as colour (tuning the run's place)
 uniform float unit = 0.05;                   // world metres per unit-stone length (OrbView: its scale)
 
 varying vec3 op;
@@ -108,8 +117,8 @@ void fragment() {
 	float f1 = max(fwidth(d1), 1e-5), f2 = max(fwidth(d2), 1e-5);
 	float e1 = smoothstep(0.0, 0.12, t1), e2 = smoothstep(0.0, 0.12, t2);
 	// (a crack thinner than a pixel draws a pixel's line at its share of the light, so a far stone isn't a full web)
-	float c1 = e1 * (1.0 - smoothstep(hw1 - 0.6 * f1, hw1 + 0.6 * f1, d1)) * clamp(2.0 * hw1 / f1, 0.0, 1.0);
-	float c2 = e2 * (1.0 - smoothstep(hw2 - 0.6 * f2, hw2 + 0.6 * f2, d2)) * clamp(2.0 * hw2 / f2, 0.0, 1.0) * (1.0 - c1);
+	float c1 = e1 * (1.0 - smoothstep(hw1 - 0.6 * f1, hw1 + 0.6 * f1, d1)) * clamp(2.0 * hw1 / f1, far_floor, 1.0);
+	float c2 = e2 * (1.0 - smoothstep(hw2 - 0.6 * f2, hw2 + 0.6 * f2, d2)) * clamp(2.0 * hw2 / f2, far_floor, 1.0) * (1.0 - c1);
 	float core = c1 + c2 * fine_energy;          // emission weight
 	float hole = max(c1, c2);                    // what the core covers of the stone
 	float glow = max(t1 * exp(-max(d1 - hw1, 0.0) / vein_glow_w), fine_energy * t2 * exp(-max(d2 - hw2, 0.0) / (vein_glow_w * 0.4)));
@@ -138,9 +147,20 @@ void fragment() {
 	streak = max(streak, top);
 	float film = wet * (0.75 + 0.25 * streak);
 	col *= mix(1.0, film_dark, film);
+	// (the one clear run: a band down the stone's front from the top face, its edges uneven, narrowing as it goes down)
+	vec2 rd = vec2(cos(run_az), sin(run_az));
+	float across = dot(op.xz, vec2(-rd.y, rd.x)) + 0.03 * (vnoise(vec3(op.y * 6.0, 4.1, 0.0)) - 0.5);
+	float rw = run_w * (0.8 + 0.45 * vnoise(vec3(op.y * 4.0, 9.7, 2.0)) + 0.15 * (vnoise(vec3(op.y * 17.0, 1.3, 5.0)) - 0.5))
+		* mix(0.45, 1.0, smoothstep(run_bot, run_bot + 0.5, op.y));
+	float run = wet * (1.0 - smoothstep(rw * 0.75, rw * 1.1, abs(across))) * smoothstep(0.0, 0.15, dot(op.xz, rd))
+		* smoothstep(run_bot - 0.1, run_bot + 0.08, op.y) * (1.0 - smoothstep(run_top - 0.1, run_top, op.y));
+	col *= mix(1.0, run_dark, run);
+	// (its lit edge: a thin bright line down one side, where the water's meniscus turns to the light)
+	float run_lip = wet * smoothstep(rw * 0.55, rw * 0.85, across) * (1.0 - smoothstep(rw * 0.85, rw * 1.1, across))
+		* smoothstep(0.0, 0.15, dot(op.xz, rd)) * smoothstep(run_bot - 0.1, run_bot + 0.08, op.y) * (1.0 - smoothstep(run_top - 0.1, run_top, op.y));
 	ALBEDO = col * (1.0 - hole);
-	ROUGHNESS = mix(0.8, mix(film_rough, streak_rough, streak), wet);
-	SPECULAR = mix(0.5, 0.75, film);
+	ROUGHNESS = mix(mix(0.8, mix(film_rough, streak_rough, streak), wet), run_rough, run);
+	SPECULAR = mix(mix(0.5, 0.75, film), 0.35, run);   // (the run: the mist it mirrors would lift it flat, so less)
 	METALLIC = 0.0;
 	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 3.0);
 	float edge = fres * smoothstep(0.05, 0.45, wn.y) * wet;
@@ -148,7 +168,7 @@ void fragment() {
 	// --- the relief: the cracks' grooves (as wide as the lip), the grain, the runs' ripple, by screen-space derivatives
 	float g1 = t1 * (1.0 - smoothstep(0.0, hw1 + vein_core * 1.5, d1));
 	float g2 = t2 * 0.5 * (1.0 - smoothstep(0.0, hw2 + fine_core * 1.5, d2));
-	float h = (-groove * max(g1, g2) + grain_bump * lum + 0.0015 * streak * wet) * unit;
+	float h = (-groove * max(g1, g2) + grain_bump * lum + 0.0015 * streak * wet + 0.003 * run) * unit;
 	vec3 dpx = dFdx(VERTEX), dpy = dFdy(VERTEX);
 	vec3 nn = normalize(NORMAL);
 	vec3 r1 = cross(dpy, nn), r2 = cross(nn, dpx);
@@ -158,6 +178,12 @@ void fragment() {
 
 	// --- the light: the cores cross the glow threshold; the light in the stone stays under it; the wet edge a sheen
 	float b = (1.0 - beat_amp) + 2.0 * beat_amp * beat;
-	EMISSION = level * b * (core_color * core * vein_energy + glow_color * glow * vein_glow * (1.0 - hole))
-		+ sheen_color * sheen * edge * (1.0 - hole);
+	// (the run is soaked: the light in the stone and the edge sheen dim under it, its lit edge a thin line)
+	EMISSION = level * b * (core_color * core * vein_energy + glow_color * glow * vein_glow * (1.0 - hole) * (1.0 - 0.8 * run))
+		+ sheen_color * (sheen * edge * (1.0 - run) + 0.08 * run_lip) * (1.0 - hole);
+	if (dbg > 0.5) {
+		float az = atan(op.z, op.x) / 6.2831853 + 0.5;
+		ALBEDO = vec3(0.0); ROUGHNESS = 1.0; SPECULAR = 0.0;
+		EMISSION = 0.4 * vec3(az, clamp(op.y * 0.5 + 0.5, 0.0, 1.0), 1.0 - az);
+	}
 }
