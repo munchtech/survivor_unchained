@@ -738,7 +738,60 @@ public static class People
     /// how much of the dye's colour it takes. (--brows soften,sat tries others.)</summary>
     static readonly (float Soften, float Sat) HerBrows = SurvivorUnchained.Args.Get("brows") is string bw && bw.Split(',') is [var bs, var bt]
         ? (float.Parse(bs, System.Globalization.CultureInfo.InvariantCulture), float.Parse(bt, System.Globalization.CultureInfo.InvariantCulture))
-        : (0.07f, 0.85f);
+        : (0.07f, 0.7f);
+
+    /// <summary>Her brows' dye kept in a warm hue band (Oklab degrees; face 33, round 3): the most a
+    /// copper's (or any darker hair's) dye may lean to yellow, the most a blonde's, and the least chroma it
+    /// keeps. (--browhue red,blonde,chroma tries others.)</summary>
+    static readonly (float Red, float Blonde, float Chroma) BrowHue = SurvivorUnchained.Args.Get("browhue") is string bh && bh.Split(',') is [var h0, var h1, var h2]
+        ? (float.Parse(h0, System.Globalization.CultureInfo.InvariantCulture), float.Parse(h1, System.Globalization.CultureInfo.InvariantCulture), float.Parse(h2, System.Globalization.CultureInfo.InvariantCulture))
+        : (45f, 60f, 0.065f);
+
+    static float SrgbToLin(float c) => c <= 0.04045f ? c / 12.92f : Mathf.Pow((c + 0.055f) / 1.055f, 2.4f);
+    static float LinToSrgb(float c) => c <= 0.0031308f ? c * 12.92f : 1.055f * Mathf.Pow(c, 1f / 2.4f) - 0.055f;
+
+    /// <summary>A colour's Oklab lightness, chroma and hue (degrees).</summary>
+    static (float L, float C, float H) Oklch(Color c)
+    {
+        float r = SrgbToLin(c.R), g = SrgbToLin(c.G), b = SrgbToLin(c.B);
+        float l = Mathf.Pow(0.4122214708f * r + 0.5363325363f * g + 0.0514459929f * b, 1f / 3f);
+        float m = Mathf.Pow(0.2119034982f * r + 0.6806995451f * g + 0.1073969566f * b, 1f / 3f);
+        float s = Mathf.Pow(0.0883024619f * r + 0.2817188376f * g + 0.6299787005f * b, 1f / 3f);
+        float L = 0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s;
+        float A = 1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s;
+        float B = 0.0259040371f * l + 0.7827675558f * m - 0.8086757660f * s;
+        return (L, Mathf.Sqrt(A * A + B * B), Mathf.RadToDeg(Mathf.Atan2(B, A)));
+    }
+
+    static Color FromOklch(float L, float C, float H)
+    {
+        float A = C * Mathf.Cos(Mathf.DegToRad(H)), B = C * Mathf.Sin(Mathf.DegToRad(H));
+        float l = L + 0.3963377774f * A + 0.2158037573f * B, m = L - 0.1055613458f * A - 0.0638541728f * B, s = L - 0.0894841775f * A - 1.2914855480f * B;
+        l *= l * l; m *= m * m; s *= s * s;
+        float r = 4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s;
+        float g = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s;
+        float b = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s;
+        return new Color(LinToSrgb(Mathf.Clamp(r, 0f, 1f)), LinToSrgb(Mathf.Clamp(g, 0f, 1f)), LinToSrgb(Mathf.Clamp(b, 0f, 1f)));
+    }
+
+    /// <summary>Her brows' dye from her hair: darker and a little warmer (face 32), then its hue held in a
+    /// warm band and its chroma kept (face 33, round 3: a darkened yellow is olive, and the game's teal night
+    /// grade took a copper's brows to olive-brown and a blonde's to khaki; a blonde's brows are golden, a
+    /// copper's auburn). A near-black's or a grey's left as it was: they have no hue to keep.</summary>
+    static Color BrowDye(Color b)
+    {
+        var dye = b.Darkened(0.42f + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
+        var (hL, hC, _) = Oklch(b);
+        // (round 4: a fair grey or platinum hair's brows a soft grey-brown, not the warm lerp's tan)
+        float wg = Mathf.SmoothStep(0.5f, 0.6f, hL) * (1f - Mathf.SmoothStep(0.02f, 0.05f, hC));
+        if (wg > 0f) { var (gL, gC, gH) = Oklch(dye); dye = FromOklch(gL, Mathf.Lerp(gC, Mathf.Min(gC, 0.03f), wg), gH); }
+        float w = Mathf.SmoothStep(0.30f, 0.40f, hL) * Mathf.SmoothStep(0.02f, 0.05f, hC);
+        if (w <= 0f) return dye;
+        var (L, C, H) = Oklch(dye);
+        float hi = Mathf.Lerp(BrowHue.Red, BrowHue.Blonde, Mathf.SmoothStep(0.55f, 0.72f, hL));
+        float h = Mathf.Lerp(H, Mathf.Clamp(H, 30f, hi), w), c = Mathf.Lerp(C, Mathf.Max(C, BrowHue.Chroma), w);
+        return FromOklch(L, c, h);
+    }
 
     /// <summary>Paint on her face (Lore.Her.Paints: art/people/paint/ID.png, laid
     /// out on her head's own paint by tools/assets/heroine_paint.py): drawn
@@ -757,7 +810,10 @@ public static class People
         var file = def == null ? "" : $"res://art/people/paint/{def.Id}.png";
         // (env PAINT_FILE in a shot: another texture for the paint, its variants tried without a build of each)
         if (def != null && SurvivorUnchained.Args.Has("shot") && System.Environment.GetEnvironmentVariable("PAINT_FILE") is { Length: > 0 } pf) file = pf;
-        const string brows = "res://art/people/paint/brows.png";
+        // (each face's brows where its own paint has them: Own's brows.png (heroine_paint.py), every other face's
+        // brows_ID.png (tools/assets/heroine_browdye.py, face 32: before it only Own's were dyed, the others
+        // gray-ash under any hair))
+        var brows = p.FaceShape is null or "" or "own" ? "res://art/people/paint/brows.png" : $"res://art/people/paint/brows_{p.FaceShape}.png";
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
@@ -766,21 +822,25 @@ public static class People
                 // The passes over her skin, in order: her brows, then the paint.
                 ShaderMaterial? first = null, last = null;
                 void Then(ShaderMaterial m) { if (last == null) first = m; else last.NextPass = m; last = m; }
-                // (her own face's brows only: brows.png is where hers are, and on another
-                // face it dyed that face's lid crease, a copper second brow under its own;
-                // each other face keeps its portrait's brows as they are)
-                if (brow is Color b && ResourceLoader.Exists(brows) && p.FaceShape is null or "" or "own")
+                // (Own's brows.png on another face dyed that face's lid crease, a copper second brow under its own)
+                if (brow is Color b && ResourceLoader.Exists(brows))
                 {
                     var m = new ShaderMaterial { Shader = paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
                     m.SetShaderParameter("dyed", true);
                     // (darker than her hair and a little warmer, as brows are: the fairer
                     // her hair the more, so a platinum blonde has ash-brown brows, not grey)
-                    m.SetShaderParameter("dye", b.Darkened(0.25f + 0.15f * b.Luminance).Lerp(new Color("#6a4a30"), 0.2f));
-                    m.SetShaderParameter("skin_paint", skin.GetShaderParameter("paint"));
+                    // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
+                    // darkened, read olive; red hair's read crimson)
+                    m.SetShaderParameter("dye", BrowDye(b));
+                    // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
+                    m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
                     m.SetShaderParameter("skin_tone", skin.GetShaderParameter("tone"));
                     m.SetShaderParameter("soften", HerBrows.Soften);
-                    m.SetShaderParameter("dye_sat", HerBrows.Sat);
+                    // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
+                    // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
+                    // olive; a near-black's 0.85, warmed in the shader instead)
+                    m.SetShaderParameter("dye_sat", HerBrows.Sat / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
                     m.SetShaderParameter("rough", 0.8f);
                     Then(m);
                 }

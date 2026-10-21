@@ -13,6 +13,7 @@ namespace SurvivorUnchained.Play;
 public partial class Game
 {
     readonly CloseUp closeUp = new();
+    static readonly float CloseTurn = Args.Has("close-turn") ? (float)Args.Num("close-turn", 0.6f) : 0.6f;
     double closeDrift;
     bool closeDrives;
 
@@ -51,6 +52,7 @@ public partial class Game
         bool moving = p != null && p.Vx * p.Vx + p.Vz * p.Vz > 0.16;
         var sit = new CloseUp.Situation(!zone.Combat, held, Battle is { } b && CloseUp.Threat(b), moving);
         scene.Player?.Calm(sit.Safe, sit.Threat);
+        if (scene.Player != null && Args.Has("hairdump")) HairDump.Tick(scene.Player.Person, dt);
         if (controls.Touched) { controls.Touched = false; closeUp.Input(); }
         double notches = controls.Wheel;
         controls.Wheel = 0;
@@ -93,7 +95,8 @@ public partial class Game
         if (turn)
         {
             // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)
-            pv.Turned = cam.Yaw + 0.6f;
+            // (--close-turn R: pictures only, her turn from the lens in radians; -0.6 the mirror, her left side to it)
+            pv.Turned = cam.Yaw + CloseTurn;
             pv.Watch = cam.Camera;
         }
         else if (closeDrives) { pv.Turned = null; pv.Watch = null; }

@@ -21,6 +21,10 @@ public static class HerWear
     public static readonly string[]? Override = Args.Get("wear") is string w && w != "1"
         ? w.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : null;
 
+    /// <summary>--tuck-scale K: every worn piece's tuck of her skin times K (0: none), for pictures that test what the
+    /// tuck does at her skin's visible edges (face 32, her left neck's step under the arcanist's collar).</summary>
+    static readonly float TuckScale = Args.Has("tuck-scale") ? (float)Args.Num("tuck-scale", 1f) : 1f;
+
     const string Meta = "her_wear";
     static readonly Dictionary<string, PackedScene> scenes = new();
     static readonly Dictionary<string, (long Key, float T)[]> tucks = new();
@@ -171,7 +175,7 @@ public static class HerWear
         {
             if (r.Tuck == null) continue;
             foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}"))
-                if (!at.TryGetValue(k, out var o) || t > o) at[k] = t;
+                if (!at.TryGetValue(k, out var o) || t * TuckScale > o) at[k] = t * TuckScale;
         }
         var bodies = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(People.TuckBody).ToList();
         var seen = new HashSet<long>();
