@@ -11,7 +11,9 @@ namespace SurvivorUnchained.View;
 /// its file onto her skeleton, as People.HerOutfit lays a whole outfit, her hold (HerJiggle) from the top she wears,
 /// and her skin's tuck under them all: the largest of the worn pieces' tucks (armor_tuck/ID.bin, by her bind-pose
 /// points), written a value a vertex into a float texture each body surface's skin reads by VERTEX_ID
-/// (heroine_skin.gdshader, tuck_channel -2). Her gameplay model (HerLod): one calling's full set uses
+/// (heroine_skin.gdshader, tuck_channel -2). And each piece's garment tuck (Rpg.GarmentTuck, docs/armor/PIECE_SCHEMA.md
+/// "Garment tuck"): laid down under the pieces of other outfits outside it, new meshes before her gameplay model
+/// and her play-camera merge take them. Her gameplay model (HerLod): one calling's full set uses
 /// its outfit file; a mixed look uses the gameplay and shadow meshes inside each piece's own file, if it has them.
 /// --wear a.slot,b.slot,...: those pieces over her equipment, for a shot.
 /// </summary>
@@ -33,6 +35,11 @@ public static class HerWear
     static readonly Dictionary<string, (long Key, float T)[]> tucks = new();
     /// <summary>A body mesh's vertices, a surface's at a time, by their quantized bind position (Key).</summary>
     static readonly Dictionary<ulong, long[][]> bodyKeys = new();
+    /// <summary>Her body's points for the garment tuck, by her body meshes.</summary>
+    static readonly Dictionary<string, SkinPoints> skinPoints = new();
+    /// <summary>A piece mesh laid under what covers it (by the source mesh and the pieces over it), and her points it
+    /// lies on with their values (her skin is tucked under it as much).</summary>
+    static readonly Dictionary<(ulong, string), (ArrayMesh Mesh, (int Point, float T)[] Under)> laidMeshes = new();
 
     /// <summary>Her look from her equipment's pieces and --wear, over her calling's own (null: neither wears a piece).</summary>
     public static Dictionary<string, string>? LookFor(string calling, IReadOnlyDictionary<string, string>? worn, IReadOnlyCollection<string>? hide = null)
@@ -120,6 +127,7 @@ public static class HerWear
         }
 
         var lodPairs = new List<(MeshInstance3D Full, MeshInstance3D Lod)>();
+        var ofPiece = new Dictionary<string, List<MeshInstance3D>>();
         var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
         var laid = new List<MeshInstance3D>();
 
@@ -142,6 +150,7 @@ public static class HerWear
                         continue;
                     }
                     WearPiece(p, mi, r.Id);
+                    Of(ofPiece, r.Id).Add(mi);
                     anyFull ??= mi;
                     laid.Add(mi);
                     var dye = DyeFor(r.Id, dyes);
@@ -153,16 +162,23 @@ public static class HerWear
                         People.OutfitMaterials(lm);
                         if (dye != null) DyeMesh(lm, dye);
                         lodPairs.Add((mi, lm));
+                        Of(ofPiece, r.Id).Add(lm);
                     }
                 }
                 if (anyFull != null && found.TryGetValue($"{r.Id}_shadow", out var sm) && sm.GetParent() != null)
                 {
                     Lay(p, sm, r.Id);
                     lodShadows.Add((sm, anyFull));
+                    Of(ofPiece, r.Id).Add(sm);
                 }
             }
             scene.Free();
         }
+
+        // Each piece laid under the other outfits' pieces outside it (one calling's full set: none).
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var under = GarmentTucks(p, rows, ofPiece, out int laidN);
+        double laidMs = clock.Elapsed.TotalMilliseconds;
 
         // Her hold, from the top she wears (plate holds her: People.HerOutfit).
         var hold = look.TryGetValue("top", out var top) ? ix.Find(top)?.Hold : null;
@@ -183,7 +199,7 @@ public static class HerWear
                 for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
                     if (People.IsSkin(mi.GetSurfaceOverrideMaterial(s))) ((ShaderMaterial)mi.GetSurfaceOverrideMaterial(s)).SetShaderParameter("tuck_channel", ch);
         }
-        else TuckMap(p, rows);
+        else TuckMap(p, rows, under);
         if (full) HerLod.Attach(p, calling);
         if (lodPairs.Count > 0 || lodShadows.Count > 0)
         {
@@ -201,7 +217,8 @@ public static class HerWear
         }
         // What draws of it at the play camera, one mesh a material (HerLod.Merge).
         HerLod.For(p)?.Merge(laid);
-        GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)"));
+        GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)")
+            + (laidN > 0 ? $", garment tuck: {laidN} meshes laid in {laidMs:F1} ms" : ""));
     }
 
     /// <summary>A piece's full mesh onto a person's skeleton, drawn as what it is made of (her pieces, and a Marionette
@@ -225,8 +242,139 @@ public static class HerWear
         mi.SetMeta(Meta, id);
     }
 
-    /// <summary>The worn pieces' tuck of her skin, the largest at each of her points, into each body surface's tuck_map.</summary>
-    static void TuckMap(People.Person p, List<ArmorPiece> rows)
+    static List<MeshInstance3D> Of(Dictionary<string, List<MeshInstance3D>> d, string id) =>
+        d.TryGetValue(id, out var l) ? l : d[id] = new List<MeshInstance3D>();
+
+    /// <summary>The garment tuck: each worn piece's meshes laid down under the worn pieces over it (Rpg.GarmentTuck.Over:
+    /// later in its slot order, of another outfit), new meshes in their place. Returns her points under laid pieces with
+    /// their values (her skin goes in as far there, never removed by it), null if none.</summary>
+    static Dictionary<long, float>? GarmentTucks(People.Person p, List<ArmorPiece> rows, Dictionary<string, List<MeshInstance3D>> meshes, out int laid)
+    {
+        laid = 0;
+        Dictionary<long, float>? under = null;
+        SkinPoints? sp = null;
+        foreach (var a in rows)
+        {
+            var over = rows.Where(b => GarmentTuck.Over(b, a)).ToList();
+            if (over.Count == 0 || !meshes.TryGetValue(a.Id, out var mis)) continue;
+            sp ??= SkinOf(p);
+            if (sp == null) return under;
+            var sig = string.Join("+", over.Select(b => b.Id).OrderBy(x => x));
+            float[]? field = null;
+            bool[]? near = null;
+            foreach (var mi in mis)
+            {
+                if (mi.Mesh is not ArrayMesh src) continue;
+                var key = (src.GetInstanceId(), sig);
+                if (!laidMeshes.TryGetValue(key, out var got))
+                {
+                    field ??= GarmentTuck.Field(sp, over.Select(Footprint));
+                    if (field == null) break;
+                    near ??= GarmentTuck.Near(sp, field);
+                    laidMeshes[key] = got = LaidMesh(src, sp, field, near);
+                }
+                if (got.Mesh == null) continue;
+                mi.Mesh = got.Mesh;
+                laid++;
+                under ??= new Dictionary<long, float>();
+                foreach (var (i, t) in got.Under)
+                {
+                    long k = sp.Keys[i];
+                    float v = MathF.Min(t, 0.98f);
+                    if (!under.TryGetValue(k, out var o) || v > o) under[k] = v;
+                }
+            }
+        }
+        return under;
+    }
+
+    /// <summary>A piece's footprint on her: the larger of its tuck and its cover (armor_cover/ID.bin, tools/armor/cover.py)
+    /// at each of her points.</summary>
+    static IReadOnlyList<(long Key, float T)> Footprint(ArmorPiece r)
+    {
+        var path = $"res://art/{r.Dir}/armor_cover/{r.Id}.bin";
+        if (tucks.TryGetValue("foot:" + path, out var f)) return f;
+        var d = new Dictionary<long, float>();
+        if (r.Tuck != null) foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}")) d[k] = t;
+        if (FileAccess.FileExists(path))
+            foreach (var (k, t) in Records(path))
+                if (!d.TryGetValue(k, out var o) || t > o) d[k] = t;
+        return tucks["foot:" + path] = d.Select(kv => (kv.Key, kv.Value)).ToArray();
+    }
+
+    /// <summary>Her body's points (her skin surfaces' bind positions and normals), once for her body meshes.</summary>
+    static SkinPoints? SkinOf(People.Person p)
+    {
+        var bodies = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(People.TuckBody).ToList();
+        var id = string.Join(",", bodies.Select(b => b.Mesh?.GetInstanceId() ?? 0));
+        if (skinPoints.TryGetValue(id, out var sp)) return sp;
+        var pos = new List<float>();
+        var nrm = new List<float>();
+        var keys = new List<long>();
+        foreach (var mi in bodies)
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount() && s < mi.GetSurfaceOverrideMaterialCount(); s++)
+            {
+                if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !People.IsSkin(m)) continue;
+                var arr = mi.Mesh.SurfaceGetArrays(s);
+                var vs = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                var ns = arr[(int)Mesh.ArrayType.Normal].AsVector3Array();
+                if (ns.Length != vs.Length) continue;
+                for (int i = 0; i < vs.Length; i++)
+                {
+                    pos.Add(vs[i].X); pos.Add(vs[i].Y); pos.Add(vs[i].Z);
+                    nrm.Add(ns[i].X); nrm.Add(ns[i].Y); nrm.Add(ns[i].Z);
+                    keys.Add(Key(vs[i]));
+                }
+            }
+        if (keys.Count == 0) return null;
+        return skinPoints[id] = new SkinPoints(pos, nrm, keys);
+    }
+
+    /// <summary>A copy of a piece mesh laid down by GarmentTuck.Lay (its blend shapes kept, as People's masked meshes;
+    /// null Mesh: nothing of it moved), and her points under it with their values.</summary>
+    static (ArrayMesh Mesh, (int Point, float T)[] Under) LaidMesh(ArrayMesh am, SkinPoints sp, float[] field, bool[] near)
+    {
+        var mesh = new ArrayMesh { BlendShapeMode = am.BlendShapeMode };
+        // (A run without a screen cannot read shape keys back from a mesh: it goes without.)
+        bool shapes = am.GetBlendShapeCount() > 0 && DisplayServer.GetName() != "headless";
+        if (shapes) for (int k = 0; k < am.GetBlendShapeCount(); k++) mesh.AddBlendShape(am.GetBlendShapeName(k));
+        bool any = false;
+        var under = new Dictionary<int, float>();
+        for (int s = 0; s < am.GetSurfaceCount(); s++)
+        {
+            var arr = am.SurfaceGetArrays(s);
+            if (am.SurfaceGetPrimitiveType(s) == Mesh.PrimitiveType.Triangles)
+            {
+                var vs = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                var idxV = arr[(int)Mesh.ArrayType.Index];
+                var idx = idxV.VariantType == Variant.Type.Nil ? Enumerable.Range(0, vs.Length).ToArray() : idxV.AsInt32Array();
+                var pos = new float[vs.Length * 3];
+                for (int i = 0; i < vs.Length; i++) { pos[i * 3] = vs[i].X; pos[i * 3 + 1] = vs[i].Y; pos[i * 3 + 2] = vs[i].Z; }
+                var kept = GarmentTuck.Lay(sp, field, near, pos, idx, out var anchor, out var t);
+                if (kept != null)
+                {
+                    any = true;
+                    for (int i = 0; i < vs.Length; i++) vs[i] = new Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+                    arr[(int)Mesh.ArrayType.Vertex] = vs;
+                    arr[(int)Mesh.ArrayType.Index] = kept;
+                    for (int i = 0; i < anchor.Length; i++)
+                        if (anchor[i] >= 0 && t[i] > 0 && (!under.TryGetValue(anchor[i], out var o) || t[i] > o)) under[anchor[i]] = t[i];
+                }
+            }
+            long fmt = (long)am.SurfaceGetFormat(s);
+            var flags = (Mesh.ArrayFormat)(fmt & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift)));
+            mesh.AddSurfaceFromArrays(am.SurfaceGetPrimitiveType(s), arr, shapes ? am.SurfaceGetBlendShapeArrays(s) : new Godot.Collections.Array<Godot.Collections.Array>(), null, flags);
+            mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
+            mesh.SurfaceSetName(s, am.SurfaceGetName(s));
+        }
+        if (!any) return (null!, Array.Empty<(int, float)>());
+        mesh.ResourceName = am.ResourceName;
+        return (mesh, under.Select(kv => (kv.Key, kv.Value)).ToArray());
+    }
+
+    /// <summary>The worn pieces' tuck of her skin, the largest at each of her points, into each body surface's tuck_map
+    /// (and `under`: her points under garment-tucked pieces).</summary>
+    static void TuckMap(People.Person p, List<ArmorPiece> rows, Dictionary<long, float>? under = null)
     {
         var at = new Dictionary<long, float>();
         foreach (var r in rows)
@@ -235,6 +383,9 @@ public static class HerWear
             foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}"))
                 if (!at.TryGetValue(k, out var o) || t > o) at[k] = t;
         }
+        if (under != null)
+            foreach (var (k, t) in under)
+                if (!at.TryGetValue(k, out var o) || t > o) at[k] = t;
         var bodies = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(People.TuckBody).ToList();
         var seen = new HashSet<long>();
         foreach (var mi in bodies)

@@ -20,8 +20,14 @@ pairs: --same adds them as a control. Skin: her skin tucked by the piece's own a
 of it past 0.973, eight bits, and none of her drawn where marked 0.995 and over, as her shader reads it) vs the piece,
 per piece (a control).
 
+Garment tuck (--garment-tuck, as HerWear draws it: Rpg/GarmentTuck.cs, docs/armor/PIECE_SCHEMA.md "Garment tuck"):
+a mixed pair's inner piece is the earlier in the slot order (tools/armor/slot_map.json "order", or --order a,b,..),
+laid down onto her skin under the outer piece's footprint (max of its armor_tuck and armor_cover records, tools/armor/
+cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangles all past 0.995 removed (their samples dropped). --tuck-off: that pairing
+without the tuck (the baseline).
+
     python tools/armor/wearcheck.py [--pieces a,b,..] [--clips c1,c2,..] [--step 2] [--same] [--grid 2.5]
-                                    [--out <dir>] [--no-skin]
+                                    [--out <dir>] [--no-skin] [--garment-tuck [--tuck-r 0] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
 import json
@@ -149,6 +155,98 @@ def tuck_of(path, P):
     return 0.010 * np.where(t > 0.973, 1.0, t), t >= 0.995
 
 
+# ------------------------------------------------------------ garment tuck --
+G_OFFSET, G_FULL, G_GONE, G_SMOOTH, G_REACH = 0.0003, 0.973, 0.995, 0.010, 0.08   # (Rpg/GarmentTuck.cs)
+
+
+def records(path):
+    """A tuck-format record file: {(x, y, z): value}."""
+    if not os.path.isfile(path):
+        return {}
+    raw = open(path, "rb").read()
+    n = struct.unpack("<I", raw[:4])[0]
+    rec = np.frombuffer(raw[4:4 + 16 * n], dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")])
+    return {(int(r["x"]), int(r["y"]), int(r["z"])): float(r["t"]) for r in rec}
+
+
+def footprint_records(r):
+    """A piece's footprint on her body: the larger of its tuck and its cover a point."""
+    d = records(r["tuck_path"])
+    for k, t in records(os.path.join(os.path.dirname(r["tuck_path"]), "..", "armor_cover", f"{r['id']}.bin")).items():
+        if t > d.get(k, 0):
+            d[k] = t
+    return d
+
+
+class SkinPts:
+    """Her body's points one a key (split copies merged, normals averaged), as GarmentTuck.SkinPoints."""
+
+    def __init__(self, P, N):
+        q = np.round(P.astype(np.float64) * 1e5).astype(np.int64)
+        uq, first, inv = np.unique(q, axis=0, return_index=True, return_inverse=True)
+        inv = np.asarray(inv).ravel()
+        self.P = P[first]
+        n = np.zeros((len(uq), 3))
+        np.add.at(n, inv, N)
+        self.N = n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+        self.key = {tuple(int(c) for c in k): i for i, k in enumerate(uq)}
+        self.kd = cKDTree(self.P)
+
+    def field(self, recs, spread):
+        f = np.zeros(len(self.P))
+        for d in recs:
+            for k, t in d.items():
+                i = self.key.get(k)
+                if i is not None and t > f[i]:
+                    f[i] = t
+        if spread > 0 and (f > 0).any():
+            nz = np.nonzero(f > 0)[0]
+            g = f.copy()
+            for i, js in zip(nz, self.kd.query_ball_point(self.P[nz], spread)):
+                js = np.asarray(js, int)
+                fall = 1 - np.linalg.norm(self.P[js] - self.P[i], axis=1) / spread
+                g[js] = np.maximum(g[js], f[i] * fall)
+            f = g
+        return f
+
+    def lay(self, PA, f):
+        """GarmentTuck.Lay: each point's displacement [n, 3] and value."""
+        disp = np.zeros_like(PA)
+        t = np.zeros(len(PA))
+        nz = np.nonzero(f > 0)[0]
+        if not len(nz):
+            return disp, t
+        d, a = self.kd.query(PA, distance_upper_bound=G_REACH)
+        ok = np.isfinite(d)
+        # (only points near her footprint)
+        dn, _ = cKDTree(self.P[nz]).query(PA, distance_upper_bound=G_REACH + 2 * G_SMOOTH)
+        idx = np.nonzero(ok & np.isfinite(dn))[0]
+        if not len(idx):
+            return disp, t
+        a = a[idx]
+        ha = ((PA[idx] - self.P[a]) * self.N[a]).sum(1)
+        F = PA[idx] - self.N[a] * ha[:, None]
+        lists = self.kd.query_ball_point(F, G_SMOOTH)
+        cnt = np.array([len(l) for l in lists])
+        lists = [l if len(l) else [int(a[i])] for i, l in enumerate(lists)]
+        cnt1 = np.array([len(l) for l in lists])
+        row = np.repeat(np.arange(len(idx)), cnt1)
+        col = np.concatenate([np.asarray(l, int) for l in lists])
+        q = 1 - ((self.P[col] - F[row]) ** 2).sum(1) / G_SMOOTH ** 2
+        w = np.where(cnt[row] == 0, 1.0, np.maximum(q, 0) ** 2 + 1e-9)
+        sw = np.bincount(row, w, len(idx))
+        tt = np.bincount(row, w * f[col], len(idx)) / sw
+        Pm = np.stack([np.bincount(row, w * self.P[col, c], len(idx)) for c in range(3)], 1) / sw[:, None]
+        Nm = np.stack([np.bincount(row, w * self.N[col, c], len(idx)) for c in range(3)], 1)
+        Nm = Nm / np.maximum(np.linalg.norm(Nm, axis=1, keepdims=True), 1e-12)
+        h = ((PA[idx] - Pm) * Nm).sum(1)
+        amt = np.where(tt > G_FULL, 1.0, np.clip(tt, 0, 1))
+        dd = np.where((tt > 0) & (h > G_OFFSET), (h - G_OFFSET) * amt, 0)
+        disp[idx] = -Nm * dd[:, None]
+        t[idx] = tt
+        return disp, t
+
+
 def hold_key(*rows):
     top = next((r for r in rows if r["slot"] == "top"), None)
     h = (top or {}).get("hold") or DEFAULT_HOLD
@@ -164,6 +262,11 @@ def main(argv):
     step = int(opt("--step", "2"))
     grid = float(opt("--grid", "2.5")) / 1000
     same = "--same" in argv
+    gt = "--garment-tuck" in argv
+    gt_off = "--tuck-off" in argv
+    gt_r = float(opt("--tuck-r", "0")) / 1000
+    order = opt("--order", "").split(",") if "--order" in argv else \
+        json.load(open(os.path.join(HERE, "slot_map.json"), encoding="utf-8"))["order"]
     out_dir = opt("--out", os.path.join(os.environ.get("TEMP", "."), "wearcheck"))
     os.makedirs(out_dir, exist_ok=True)
     t_start = time.time()
@@ -204,6 +307,28 @@ def main(argv):
         T = body.T[tri_piece == r["id"]]
         pc[r["id"]] = {"samples": smp, "near": ish[near], "skin_mm": dist * 1000, "T": T,
                        "kd": cKDTree(P0[T].mean(1)), "kdv": cKDTree(P0[v])}
+
+    if gt:
+        sp = SkinPts(P0[isk], N0[isk])
+        foot = {r["id"]: footprint_records(r) for r in rows}
+        lay_cache = {}
+
+        def laid(A, B):
+            """A laid under B: its vertices' rest displacement (by vertex index), which of them a kept face has, and
+            how many moved and how many faces were removed."""
+            if (A, B) not in lay_cache:
+                v = np.nonzero(pid == A)[0]
+                disp, t = sp.lay(P0[v], sp.field([foot[B]], gt_r))
+                Dd = np.zeros_like(P0)
+                Dd[v] = disp
+                tv = np.zeros(len(P0))
+                tv[v] = t
+                T = pc[A]["T"]
+                kept = T[~(tv[T] >= G_GONE).all(1)]
+                alive = np.zeros(len(P0), bool)
+                alive[kept.ravel()] = True
+                lay_cache[(A, B)] = (Dd, alive, int((np.abs(disp).sum(1) > 0).sum()), int(len(T) - len(kept)))
+            return lay_cache[(A, B)]
 
     def rest_footprint(O, D, Bid):
         """Rest: which samples meet B within REACH, the gap, the hit face and its K neighbours."""
@@ -246,18 +371,27 @@ def main(argv):
             if ctrl and not same:
                 continue
             orders = [(a, b)] if ra["layer"] < rb["layer"] else [(b, a)] if rb["layer"] < ra["layer"] else [(a, b), (b, a)]
+            tuck = gt and not ctrl and ra["slot"] in order and rb["slot"] in order
+            if tuck:
+                orders = [(a, b)] if order.index(ra["slot"]) < order.index(rb["slot"]) else [(b, a)]
             found = []
             for A, B in orders:
                 sA = pc[A]
                 O = P0[sA["samples"]]
                 D = N0[sA["near"]]
+                info = None
+                if tuck and not gt_off:
+                    Dd, alive, nmoved, ncull = laid(A, B)
+                    O = O + Dd[sA["samples"]]
+                    O = np.where(alive[sA["samples"]][:, None], O, 1e3)
+                    info = (nmoved, ncull)
                 fp = rest_footprint(O, D, B)
                 if fp is not None:
-                    found.append((A, B, fp))
+                    found.append((A, B, fp, info))
             if len(found) == 2:
                 found = [max(found, key=lambda f: np.median(f[2]["gap"]))]
-            for A, B, fp in found:
-                tests.append({"A": A, "B": B, "kind": "control" if ctrl else "mixed", "fp": fp,
+            for A, B, fp, info in found:
+                tests.append({"A": A, "B": B, "kind": "control" if ctrl else "mixed", "fp": fp, "laid": info,
                               "hold": hold_key(byid[A], byid[B]),
                               "reversed": bool(byid[A]["layer"] < byid[B]["layer"] and np.median(fp["gap"]) < 0)})
     # Her skin under each piece (tucked by the piece's record).
@@ -288,6 +422,8 @@ def main(argv):
         else:
             x["pts"] = pc[x["A"]]["samples"][fp["idx"]]
             x["dir"] = pc[x["A"]]["near"][fp["idx"]]
+            if x.get("laid"):
+                x["dA"] = laid(x["A"], x["B"])[0][x["pts"]]
         TB = pc[x["B"]]["T"]
         x["hitv"] = TB[fp["hit"]]
         x["candv"] = TB[fp["cand"]]
@@ -318,6 +454,7 @@ def main(argv):
             frames = body.frames(clip)
             for f in range(0, len(frames), step):
                 Pp = body.pose(frames[f], need)
+                S = body.skin_mats(frames[f]) if any("dA" in x for x in group) else None
                 Np = np.zeros_like(Pp)
                 Np[sh_local] = skin._normals(Pp[sh_local], TS)
                 kd_frame = {}
@@ -326,6 +463,11 @@ def main(argv):
                     D = Np[at[x["dir"]]]
                     if x["A"] == "skin":
                         O = O - D * x["tuck"][:, None] + D * 1e-5
+                    elif "dA" in x:
+                        # (skinning is linear in the rest point: the displacement goes through its blend of bones)
+                        Jp, Wp = body.J[x["pts"]], body.W[x["pts"]]
+                        M = sum(Wp[:, k, None, None] * S[Jp[:, k], :3, :3] for k in range(Jp.shape[1]))
+                        O = O + np.einsum("nij,nj->ni", M, x["dA"])
                     # (tracked: B's rest hit face's posed plane)
                     H = Pp[at[x["hitv"]]]
                     hp = (H * x["fp"]["bary"][:, :, None]).sum(1)
@@ -392,7 +534,7 @@ def main(argv):
              "worst_bone": str(bone[body.J[pt, int(body.W[pt].argmax())]]),
              "rest_gap_min_mm": round(x["rest_min_mm"], 2), "rest_gap_median_mm": round(x["rest_med_mm"], 2),
              "per_clip": {c: [round(-v[0] * 1000, 1), int(v[1].sum())] for c, v in x["per_clip"].items()},
-             "reversed": x["reversed"], "lost_share": round(x["lost"] / max(x["seen"], 1), 4)}
+             "laid": x.get("laid"), "reversed": x["reversed"], "lost_share": round(x["lost"] / max(x["seen"], 1), 4)}
         if A != "skin":
             fi = x["fp"]["idx"]
             e["A_skin_mm_median"] = round(float(np.median(pc[A]["skin_mm"][fi])), 2)
@@ -401,7 +543,7 @@ def main(argv):
         out.append(e)
     out.sort(key=lambda e: (-e["out_n_over_2"], -(e["worst_mm"] if e["worst_mm"] is not None else -99)))
     took = time.time() - t_start
-    meta = {"clips": clips, "step": step, "grid_mm": grid * 1000, "reach_mm": REACH * 1000, "K": K, "seconds": round(took),
+    meta = {"garment_tuck": gt and not gt_off, "tuck_r_mm": gt_r * 1000, "order": order, "clips": clips, "step": step, "grid_mm": grid * 1000, "reach_mm": REACH * 1000, "K": K, "seconds": round(took),
             "pieces": [r["id"] for r in rows], "note": "worst_mm/p99_mm: penetration of A past B's inner face (negative: "
             "the least clearance); n_*: A samples (grid voxels) ever past by more than 0.5 / 2 mm; rest_n_over_2 at rest; "
             "per_clip: [worst mm, samples past 2 mm]; out_*: the same past B's OUTER face (what shows; inside B's shell "
