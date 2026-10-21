@@ -90,7 +90,7 @@
         {"at": 3.2, "do": "event", "name": "grim_up"},
         {"at": 3.2, "do": "sfx", "name": "burst", "gain": 1.0},
         {"at": 3.2, "do": "vfx", "kind": "shake", "amount": 0.45},
-        {"at": 3.25, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.9, -0.1, -1.2]}, "dur": 0.2},
+        {"at": 3.25, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [1.4, -0.6, -1.6]}, "dur": 0.2},
         {"at": 3.25, "do": "face", "keys": {"eyes_wide": 0.7, "mouth_open": 0.22, "brows_sad": 0.0}, "over": 0.12},
         {"at": 3.25, "do": "lids", "value": 1, "over": 0.06},
         {"at": 3.43, "do": "lids", "value": null},
@@ -99,9 +99,10 @@
         {"at": 3.7, "do": "line", "id": "cin_heart_goes_down.nobodys"},
         {"at": 7.1, "do": "sfx", "name": "sniff", "gain": 0.8},
         {"at": 7.6000000000000005, "do": "sfx", "name": "sniff", "gain": 0.8},
-        {"at": 3.25, "do": "lamp", "actor": "heart", "glow": 1.0, "over": 0.3},
-        {"at": 3.25, "do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.8, "angle": 40, "range": 3},
-        {"at": 3.25, "do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.0, "angle": 40, "range": 3}
+        {"at": 3.25, "do": "lamp", "actor": "heart", "glow": 0.6, "over": 0.3},
+        {"at": 3.25, "do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.4, "angle": 40, "range": 3},
+        {"at": 3.25, "do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.0, "angle": 40, "range": 3},
+        {"at": 3.25, "do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.9, "angle": 32, "range": 6}
       ]
     },
     {
