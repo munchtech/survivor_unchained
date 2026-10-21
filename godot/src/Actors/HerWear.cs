@@ -30,6 +30,9 @@ public static class HerWear
     /// <summary>--dye zone=#hex,zone=#hex: a dye on every piece she wears, over her items' own (zones: metal, trim, leather, cloth, thread).</summary>
     public static readonly Dictionary<string, string>? DyeOverride = Args.Get("dye") is string dy && dy != "1"
         ? dy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.Split('=', 2)).Where(x => x.Length == 2).ToDictionary(x => x[0].Trim(), x => x[1].Trim()) : null;
+    /// <summary>--tuck-scale K: every worn piece's tuck of her skin times K (0: none), for pictures that test what the
+    /// tuck does at her skin's visible edges (face 32, her left neck's step under the arcanist's collar).</summary>
+    static readonly float TuckScale = Args.Has("tuck-scale") ? (float)Args.Num("tuck-scale", 1f) : 1f;
 
     const string Meta = "her_wear";
     static readonly bool Prof = Args.Get("tuck-prof") != null;
@@ -1090,7 +1093,7 @@ public static class HerWear
         {
             if (r.Tuck == null) continue;
             foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}"))
-                if (!at.TryGetValue(k, out var o) || t > o) at[k] = t;
+                if (!at.TryGetValue(k, out var o) || t * TuckScale > o) at[k] = t * TuckScale;
         }
         if (under != null)
             foreach (var (k, t) in under)
