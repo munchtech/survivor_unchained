@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Godot;
 
@@ -29,7 +30,11 @@ public static class OwnProps
     public sealed record Place(string Preset, Vector2 At, float Rot, float Scale, float Y, Vector3? A, Vector3? B, float R, Hide? Hide, Vector2? Bare);
     public sealed record Lamp(Color? Color, float Energy, float Range, float Att);
     public sealed record Nudge(Vector2 At, Vector2 By, float Turn);
-    public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null);
+    /// <summary>A KayKit piece's own stand-ins (one per copy, by the landmark's number: Preset is the one chosen),
+    /// whether the made piece stays under them (Over), and their scale in the piece's frame (a tree of ours).</summary>
+    public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
+    public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
+        Dictionary<string, KitEntry>? Kits = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -77,10 +82,37 @@ public static class OwnProps
                     nudges.Add(new Nudge(new Vector2(n[0].GetSingle(), n[1].GetSingle()), new Vector2(n[2].GetSingle(), n[3].GetSingle()), Mathf.DegToRad(n[4].GetSingle())));
             var drop = new List<string>();
             if (r.TryGetProperty("drop", out var dr)) foreach (var d in dr.EnumerateArray()) drop.Add(d.GetString()!);
-            z = new Zone(pieces, keep, places, lamps, nudges, drop);
+            var kits = new Dictionary<string, KitEntry>();
+            if (r.TryGetProperty("kits", out var kt))
+                foreach (var k in kt.EnumerateObject())
+                {
+                    var v = k.Value;
+                    static string[] Names(JsonElement e) => e.ValueKind == JsonValueKind.Array ? e.EnumerateArray().Select(x => x.GetString()!).ToArray() : [e.GetString()!];
+                    kits[k.Name] = v.ValueKind == JsonValueKind.Object
+                        ? new KitEntry(Names(v.GetProperty("preset")), v.TryGetProperty("over", out var o) && o.GetBoolean(), v.TryGetProperty("scale", out var sc) ? sc.GetSingle() : 1f)
+                        : new KitEntry(Names(v), false, 1f);
+                }
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits);
         }
         zones[zone] = z;
         return z;
+    }
+
+    /// <summary>The own stand-in for a KayKit piece (PACK/NAME) and its landmark number N (kk-PACK-NAME-N), or null to keep
+    /// the made one (Pieces). The copies take the entry's presets in turn by N.</summary>
+    public static KitEntry? Kit(Zone z, string id, int n)
+    {
+        if (z.Kits == null || !z.Kits.TryGetValue(id, out var e) || e.Presets.Length == 0) return null;
+        return e with { Preset = e.Presets[n % e.Presets.Length] };
+    }
+
+    /// <summary>A kit stand-in's node in the kit piece's frame, unscaled (the presets are built in the kit's units),
+    /// or null if it was never built. "flora:NAME" is one of our own trees (Dressing.OwnTree).</summary>
+    public static Node3D? KitPiece(KitEntry e)
+    {
+        var n = e.Preset.StartsWith("flora:") ? Dressing.OwnTree(e.Preset[6..]) : Piece(e.Preset);
+        if (n != null && e.Scale != 1f) n.Scale = Vector3.One * e.Scale;
+        return n;
     }
 
     /// <summary>The preset standing in for a kit piece at a place, or null to keep the kit's.</summary>

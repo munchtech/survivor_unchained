@@ -86,6 +86,8 @@ class Part:
         self.bm, self.region, self.tint, self.at = bm, region, Vector(tint), at
         self.cap, self.smooth, self.jitter, self.capr, self.capto = cap, smooth, jitter, capr, capto
         self.cyl = cyl  # a tube about local y of this radius: unwrapped round it, not box-projected
+        self.ftint = None  # (E7b) a face's own tint factor by its middle (local): a banner's device, moss on earth
+        self.weld = False  # (E7b) welded to the parts it meets (patches of one surface, smooth across their seams)
 
 
 def basis(xa, ya, za):
@@ -301,6 +303,9 @@ def uv_part(p, rng):
 
 # ---------------------------------------------------------------- shading --
 
+GRIME = {'h': 0.0, 'moss': 0.0}  # (E7b) the preset's grime height (m) and moss on its stone's tops (env_props.json)
+
+
 def bake_colours(me, tints, kind_of_face, ground=True, rays=14):
     """Vertex colours per face corner: tint x occlusion (rays against the mesh and the
     ground plane y = 0) x contact darkening x lit convex edges (wood and iron)."""
@@ -355,11 +360,24 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14):
                 co = bm.verts[vi].co
                 mf = min(1.0, max(0.0, (0.16 - y) / 0.12)) * min(1.0, max(0.0, 0.5 + 1.6 * hnoise(co * 3.0, 17)))
                 tint = tint.lerp(Vector((tint.x * 0.72, tint.y * 0.95, tint.z * 0.42)), mf)
+            lt = tint
+            if GRIME['h'] > 0 and kind_of_face[poly.index] in ('stone', 'soil'):
+                # (E7b) grime rising from the ground: the foot darker and greened in patches, moss on what faces up
+                co = bm.verts[vi].co
+                g = min(1.0, max(0.0, y / GRIME['h']))
+                g = g * g * (3 - 2 * g)
+                nz = 0.5 + 0.9 * hnoise(co * 1.7, 23)
+                lt = lt * (0.58 + 0.42 * g)
+                lt = lt.lerp(Vector((lt.x * 0.86, lt.y * 0.94, lt.z * 0.64)), (1 - g) * min(1.0, max(0.0, nz)))
+                up = poly.normal.z
+                if GRIME['moss'] > 0 and up > 0.55 and kind_of_face[poly.index] == 'stone':
+                    m = GRIME['moss'] * min(1.0, max(0.0, (nz - 0.35) * 2.5)) * min(1.0, (up - 0.55) * 4)
+                    lt = lt.lerp(Vector((lt.x * 0.62, lt.y * 0.8, lt.z * 0.42)), m)
             s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground else 1.0)
             if hard:
                 s *= 1.0 + 0.35 * max(0.0, min(conv[vi], 0.6))
             s *= 1.0 + 0.4 * min(0.0, max(conv[vi], -0.5)) * 0.6
-            c = tint * s
+            c = lt * s
             ca.data[li].color = (min(c.x, 1.0), min(c.y, 1.0), min(c.z, 1.0), 1.0)
     me.color_attributes.active_color = ca
     bm.free()
@@ -371,9 +389,11 @@ def finish(name, parts, mat, seed):
     bm = bmesh.new()
     lay_t = bm.faces.layers.int.new('part')
     info = []
+    lay_s = bm.faces.layers.int.new('sub')
     for pi, p in enumerate(parts):
         p.bm.normal_update()
         uv_part(p, rng)
+        ft = [p.ftint(f.calc_center_median()) for f in p.bm.faces] if p.ftint else None
         p.bm.transform(G2B @ p.at)
         if p.at.determinant() < 0:
             bmesh.ops.reverse_faces(p.bm, faces=p.bm.faces[:])
@@ -385,18 +405,27 @@ def finish(name, parts, mat, seed):
         p.bm.free()
         bm.faces.ensure_lookup_table()
         lay_t = bm.faces.layers.int.get('part') or bm.faces.layers.int.new('part')
-        for f in bm.faces[n0:]:
+        lay_s = bm.faces.layers.int.get('sub')
+        for k, f in enumerate(bm.faces[n0:]):
             f[lay_t] = pi
-        info.append((p.tint * (1.0 + rng(-p.jitter, p.jitter)), p.region, p.smooth))
+            f[lay_s] = k
+        info.append((p.tint * (1.0 + rng(-p.jitter, p.jitter)), p.region, p.smooth, ft))
+    welded = {i for i, p in enumerate(parts) if p.weld}
+    if welded:
+        lay_t = bm.faces.layers.int.get('part')
+        vs = list({v for f in bm.faces if f[lay_t] in welded for v in f.verts})
+        bmesh.ops.remove_doubles(bm, verts=vs, dist=1e-4)
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     lay_t = bm.faces.layers.int.get('part')
+    lay_s = bm.faces.layers.int.get('sub')
     pidx = [f[lay_t] for f in bm.faces]
+    sidx = [f[lay_s] for f in bm.faces]
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
     for poly in me.polygons:
         poly.use_smooth = info[pidx[poly.index]][2]
-    tints = [info[i][0] for i in pidx]
+    tints = [info[i][0] if info[i][3] is None else Vector([a * b for a, b in zip(info[i][0], info[i][3][k])]) for i, k in zip(pidx, sidx)]
     kinds = [info[i][1] for i in pidx]
     bake_colours(me, tints, kinds)
     me.materials.append(mat)
@@ -988,8 +1017,740 @@ def pylon(p):
     return parts
 
 
+# ------------------------------------------------- E7b: stone kit, graves --
+# The Watch-post's ruin and the Barrow at Low Ford. Every preset is built in the KayKit piece's own units and
+# frame (the box in godot/data/zones/kaykit.json), so it stands in the kk node exactly where the kit piece did,
+# inside its collider (OwnProps "kits"). The stone pieces share one block maker (dressed, beveled, hand-cut
+# arrises, chipped corners) laid in courses with mortar between, so E8's gate and walls reuse lay_course/wall.
+
+def along(a, b, side=Vector((0, 0, 1))):
+    """A piece's length and frame from a to b (local y along it, local z toward side)."""
+    a, b = Vector(a), Vector(b)
+    ya = (b - a).normalized()
+    za = (side - ya * ya.dot(side)).normalized()
+    return (b - a).length, T(*((a + b) / 2)) @ basis(ya.cross(za), ya, za)
+
+
+def smooth01(a, b, x):
+    t = min(1.0, max(0.0, (x - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+
+
+def stone_block(sx, sy, sz, rng, bevel=0.03, chip=0.45, jag=0.01, drop=()):
+    """A dressed block about its middle (x long, y up, z deep): beveled, its arrises jittered (hand-cut),
+    a corner or two knocked off; drop: main faces hidden in the bond ('+x', '-x', '+y', '-y', '+z', '-z')."""
+    bv = min(bevel, sx * 0.2, sy * 0.2, sz * 0.2)
+    bm = box(sx, sy, sz, bv)
+    for v in bm.verts:
+        v.co += Vector((rng(-jag, jag), rng(-jag, jag) * 0.7, rng(-jag, jag)))
+    for _ in range(2):
+        if rng() < chip:
+            cn = Vector((sx / 2 * (1 if rng() < 0.5 else -1), sy / 2 * (1 if rng() < 0.65 else -1), sz / 2 * (1 if rng() < 0.5 else -1)))
+            c = min(sx, sy, sz) * rng(0.18, 0.34)
+            for v in bm.verts:
+                d = (v.co - cn).length
+                if d < c * 1.6:
+                    v.co -= Vector((math.copysign(1, cn.x), math.copysign(1, cn.y), math.copysign(1, cn.z))) * (c * 1.6 - d) * 0.42
+    if drop:
+        ax = {'x': 0, 'y': 1, 'z': 2}
+        half = (sx / 2, sy / 2, sz / 2)
+        gone = []
+        bm.normal_update()
+        for f in bm.faces:
+            for d in drop:
+                i, s = ax[d[1]], (1 if d[0] == '+' else -1)
+                if f.normal[i] * s > 0.97 and abs(f.calc_center_median()[i] - s * half[i]) < 0.05:
+                    gone.append(f)
+                    break
+        bmesh.ops.delete(bm, geom=gone, context='FACES')
+    return bm
+
+
+def chunk(s, rng):
+    """A broken stone: a box knocked irregular (rubble, spalls)."""
+    bm = box(s * rng(0.8, 1.3), s * rng(0.5, 0.9), s * rng(0.7, 1.2), s * 0.08)
+    for v in bm.verts:
+        v.co += Vector((rng(-0.22, 0.22), rng(-0.18, 0.18), rng(-0.22, 0.22))) * s
+    return bm
+
+
+def sblock(parts, size, at, tint, rng, **kw):
+    parts.append(Part(stone_block(*size, rng, **kw), 'stone', tint * (1 + rng(-0.07, 0.07)), at, cap='stone', jitter=0.0))
+
+
+def lay_course(xa, xb, bl, rng, half_first, forced=()):
+    """One course's joints from xa to xb: blocks about bl long (0.75-1.2x), the first a half (running bond)
+    when half_first, joints forced at the given x (an opening's edges); no sliver under 0.28 bl."""
+    xs = [xa]
+    x = xa
+    first = True
+    while x < xb - 1e-6:
+        n = bl * (rng(0.45, 0.6) if (first and half_first) else rng(0.75, 1.2))
+        first = False
+        nx = min(xb, x + n)
+        for f in forced:
+            if x + 0.15 < f < nx - 0.05:
+                nx = f
+        if xb - nx < 0.28 * bl:
+            nx = xb
+        xs.append(nx)
+        x = nx
+    return xs
+
+
+def wall_parts(parts, rng, L, H, D, ch, bl, stone, mortar, keep, x0, at=Matrix.Identity(4), holes=(), crack=None,
+               gap=0.024, sink=0.3, base_course=None, cap_free=True):
+    """A wall in courses (local x along it from x0, y up, z through it, centred on z = 0) laid into parts:
+    keep(x) the broken top's height there (blocks whose middles stand under it, carried by the course below);
+    holes: (xa, xb, ya, yb) openings; crack: (x at the foot, x at the top) a settled crack, the blocks past it
+    dropped and turned; mortar runs behind each course's blocks. Returns the courses' blocks [(k, xa, xb, y0, y1)]."""
+    rows = []
+    y = 0.0
+    k = 0
+    while y < H - 0.08:
+        cy = min(ch * rng(0.9, 1.1), H - y)
+        if H - (y + cy) < 0.18:
+            cy = H - y
+        forced = [h[0] for h in holes if h[2] - 0.01 <= y < h[3]] + [h[1] for h in holes if h[2] - 0.01 <= y < h[3]]
+        xs = lay_course(x0, x0 + L, bl, rng, k % 2 == 1, forced)
+        row = []
+        for i in range(len(xs) - 1):
+            a, b = xs[i], xs[i + 1]
+            m = (a + b) / 2
+            ok = y + cy * 0.5 < keep(m)
+            if ok and y + cy > keep(m) - cy * 0.7 and rng() < 0.22:
+                ok = False  # a block lost from the broken edge
+            for h in holes:
+                if h[0] - 0.01 <= a and b <= h[1] + 0.01 and h[2] - 0.01 <= y < h[3]:
+                    ok = False
+            if ok and rows:
+                below = [r for r in rows[-1] if r[1] - 0.05 <= m <= r[2] + 0.05]
+                ok = bool(below)
+            if ok:
+                row.append((k, a, b, y, y + cy))
+        rows.append(row)
+        y += cy
+        k += 1
+    out = []
+    for k, row in enumerate(rows):
+        above = rows[k + 1] if k + 1 < len(rows) else []
+        for i, (kk, a, b, y0, y1) in enumerate(row):
+            drop = ['-y']
+            if any(r[1] <= a + 0.06 for r in above) and any(r[2] >= b - 0.06 for r in above) and \
+                    all(not (r[2] < b - 0.06 and r[2] > a + 0.06 and not any(q[1] <= r[2] + 0.06 and q[1] >= r[2] - 0.06 for q in above)) for r in above):
+                covered = sum(max(0.0, min(b, r[2]) - max(a, r[1])) for r in above)
+                if covered > (b - a) * 0.97:
+                    drop.append('+y')
+            if i > 0 and abs(row[i - 1][2] - a) < 1e-4:
+                drop.append('-x')
+            if i + 1 < len(row) and abs(row[i + 1][1] - b) < 1e-4:
+                drop.append('+x')
+            yb = y0 - (sink if k == 0 else 0.0)
+            sx, sy = b - a - gap, y1 - yb - gap
+            dx, dy, turn = 0.0, 0.0, 0.0
+            if crack:
+                cx = crack[0] + (crack[1] - crack[0]) * (y0 / max(H, 1e-3))
+                if (a + b) / 2 > cx and k >= 2:
+                    dy, turn = -0.012 * (k - 1), -0.008
+                    if a < cx + 0.6 * bl:
+                        sx -= 0.03
+                        dx = 0.03
+                    drop = [d for d in drop if d not in ('-x',)]
+            zb = rng(-0.012, 0.012)
+            tint = stone * (1 + rng(-0.09, 0.09))
+            sblock(parts, (sx, sy, D - rng(0.0, 0.035)), at @ T((a + b) / 2 + dx, (yb + y1) / 2 + dy, zb) @ R('Z', turn) @ R('Y', rng(-0.012, 0.012)),
+                   tint, rng, drop=tuple(drop))
+            out.append((k, a, b, y0, y1))
+        # mortar behind the course's runs of blocks
+        runs = []
+        for (kk, a, b, y0, y1) in row:
+            if runs and abs(runs[-1][1] - a) < 1e-4:
+                runs[-1][1] = b
+            else:
+                runs.append([a, b, y0, y1])
+        for a, b, y0, y1 in runs:
+            yb = y0 - (sink if k == 0 else 0.0)
+            parts.append(Part(box(b - a - 0.05, y1 - yb - 0.01, D - 0.07), 'stone', mortar, at @ T((a + b) / 2, (yb + y1) / 2 - 0.004, 0), cap='stone', jitter=0.03))
+    return out
+
+
+def fallen(parts, rng, n, xs, side_z, D, ch, bl, stone, at=Matrix.Identity(4), far=1.0):
+    """Blocks fallen from a wall: lying at its feet (mostly on one side), half sunk, turned; spalls round them."""
+    for i in range(n):
+        x = rng(*xs)
+        sz = side_z if rng() < 0.75 else -side_z
+        z = sz * (D / 2 + rng(0.15, far))
+        sx, sy, sd = bl * rng(0.55, 1.0), ch * rng(0.85, 1.0), D * rng(0.5, 0.9)
+        tilt = rng(-0.35, 0.35)
+        sblock(parts, (sx, sy, sd), at @ T(x, sy * 0.38, z) @ R('Y', rng(-1.2, 1.2)) @ R('X', tilt) @ R('Z', rng(-0.25, 0.25)),
+               stone * 0.9, rng, chip=0.8)
+        for j in range(2):
+            s = rng(0.1, 0.22)
+            parts.append(Part(chunk(s, rng), 'stone', stone * rng(0.75, 0.95),
+                              at @ T(x + rng(-0.6, 0.6), s * 0.2, z + rng(-0.4, 0.4)) @ R('Y', rng(0, 6.28)), cap='stone', jitter=0.0))
+
+
+def profile_fn(pts, H, rng, jag=0.0):
+    """keep(x) from [x, h-fraction] points (linear), a little ragged."""
+    def keep(x):
+        if x <= pts[0][0]:
+            h = pts[0][1]
+        elif x >= pts[-1][0]:
+            h = pts[-1][1]
+        else:
+            for (xa, ha), (xb, hb) in zip(pts, pts[1:]):
+                if xa <= x <= xb:
+                    h = ha + (hb - ha) * (x - xa) / max(xb - xa, 1e-6)
+                    break
+        return H * h + jag * math.sin(x * 7.3 + 1.1)
+    return keep
+
+
+def wall(p):
+    """A ruined wall section of dressed stone (dungeon wall_cracked / wall_broken / wall_half): courses in running
+    bond, mortar, the top broken to p['top'] ([x, height fraction] along it), fallen blocks at its feet."""
+    rng = Rng(p['seed'])
+    L, H, D = p['len'], p['h'], p['d']
+    x0 = p.get('x0', -L / 2)
+    stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
+    parts = []
+    keep = profile_fn(p['top'], H, rng, 0.05)
+    wall_parts(parts, rng, L, H, D, p.get('course', 0.44), p.get('block', 0.82), stone, mortar, keep, x0,
+               crack=p.get('crack') and (x0 + p['crack'][0] * L, x0 + p['crack'][1] * L))
+    fallen(parts, rng, p.get('fallen', 4), (x0 + 0.2, x0 + L - 0.2), p.get('side', 1), D, p.get('course', 0.44), p.get('block', 0.82), stone, far=p.get('far', 0.9))
+    return parts
+
+
+def pillar(p):
+    """A square pillar of dressed stone (dungeon pillar): a stepped plinth, the shaft in courses (whole and halved,
+    in bond), a capital; broken: the shaft stops ragged, its top stone askew, one fallen at its foot."""
+    rng = Rng(p['seed'])
+    W, H = p['w'], p['h']
+    stone = hexlin(p['stone'])
+    parts = []
+    gr = p.get('grime', 1.2)
+    def tint(y):
+        low = 0.72 + 0.28 * smooth01(0, gr, y)
+        return Vector((stone.x * low, stone.y * low, stone.z * low * 0.97))
+    y = -0.3
+    for hw, chh in ((W * 0.5, 0.52), (W * 0.43, 0.24)):
+        sblock(parts, (2 * hw, chh - 0.02, 2 * hw), T(0, y + chh / 2, 0) @ R('Y', rng(-0.03, 0.03)), tint(y), rng, drop=('-y',))
+        y += chh
+    hw = W * 0.34
+    top = H - 0.42 if not p.get('broken') else H * p['broken']
+    ch = 0.46
+    k = 0
+    while y < top - 0.1:
+        cy = min(ch, top - y)
+        last = y + cy >= top - 0.1
+        if last and p.get('broken'):
+            # the top stone halved and askew
+            sblock(parts, (2 * hw * 0.62, cy - 0.02, 2 * hw), T(-hw * 0.38, y + cy / 2 + 0.02, 0.02) @ R('Z', 0.09) @ R('Y', 0.12), tint(y), rng, chip=1.0)
+            break
+        if k % 3 == 0:
+            sblock(parts, (2 * hw, cy - 0.02, 2 * hw), T(0, y + cy / 2, 0) @ R('Y', rng(-0.02, 0.02)), tint(y), rng, drop=('-y', '+y'))
+        elif k % 3 == 1:
+            for sx in (-1, 1):
+                sblock(parts, (hw - 0.02, cy - 0.02, 2 * hw), T(sx * hw / 2, y + cy / 2, 0), tint(y), rng, drop=('-y', '+y', '-x' if sx > 0 else '+x'))
+        else:
+            for sz in (-1, 1):
+                sblock(parts, (2 * hw, cy - 0.02, hw - 0.02), T(0, y + cy / 2, sz * hw / 2), tint(y), rng, drop=('-y', '+y', '-z' if sz > 0 else '+z'))
+        y += cy
+        k += 1
+    if not p.get('broken'):
+        sblock(parts, (2 * W * 0.4, 0.16, 2 * W * 0.4), T(0, y + 0.08, 0), tint(y), rng, drop=('-y',))
+        sblock(parts, (2 * W * 0.46, 0.24, 2 * W * 0.46), T(0, y + 0.28, 0) @ R('Y', 0.02), tint(y), rng, chip=0.7)
+    else:
+        sblock(parts, (2 * hw, 0.44, 2 * hw * 0.9), T(W * 0.75, 0.2, W * 0.45) @ R('Y', 0.6) @ R('X', 0.25), tint(0), rng, chip=1.0)
+        for j in range(4):
+            s = rng(0.14, 0.26)
+            parts.append(Part(chunk(s, rng), 'stone', tint(0) * 0.9, T(rng(-1, 1) * W * 0.9, s * 0.2, rng(0.3, 1.0) * W) @ R('Y', rng(0, 6.28)), cap='stone', jitter=0.0))
+    return parts
+
+
+def mound_y(x, z, a, b, h, seed, sag=0.0, lump=0.04):
+    """A heap of earth (elliptic, a by b), its rim under the ground, settled in the middle by sag."""
+    r = math.sqrt((x / a) ** 2 + (z / b) ** 2)
+    if r < 1:
+        y = h * (1 - r * r) ** 0.55 - sag * h * math.exp(-r * r * 3)
+    else:
+        y = -0.12 * (r - 1) * max(a, b)
+    return y + lump * hnoise(Vector((x * 2.3, 0.0, z * 2.3)), seed) * min(1.0, 1.4 - r)
+
+
+def patches(fn, nu, nv, cu, cv, region, tint, ftint=None, flip=False):
+    """A surface fn(u, v) -> (x, y, z) in nu x nv quads, cut in blocks of cu x cv quads, each a part of its own
+    (its own island in the region, at true size) and welded to its neighbours (smooth across the seams)."""
+    P = [[Vector(fn(i / nu, j / nv)) for j in range(nv + 1)] for i in range(nu + 1)]
+    parts = []
+    for i0 in range(0, nu, cu):
+        for j0 in range(0, nv, cv):
+            bm = bmesh.new()
+            V = {}
+            for i in range(i0, min(nu, i0 + cu) + 1):
+                for j in range(j0, min(nv, j0 + cv) + 1):
+                    V[i, j] = bm.verts.new(P[i][j])
+            for i in range(i0, min(nu, i0 + cu)):
+                for j in range(j0, min(nv, j0 + cv)):
+                    q = (V[i, j], V[i, j + 1], V[i + 1, j + 1], V[i + 1, j])
+                    bm.faces.new(tuple(reversed(q)) if flip else q)
+            pt = Part(bm, region, tint, smooth=True, jitter=0.0)
+            pt.weld = True
+            pt.ftint = ftint
+            parts.append(pt)
+    return parts
+
+
+def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cell=3):
+    """A grave's earth as patches of soil, mossed in patches and toward its foot."""
+    ext = 1.18
+    nu = max(4, int(2 * a * ext / step))
+    nv = max(4, int(2 * b * ext / step))
+    mossc = Vector((0.55, 0.68, 0.36))
+    def fn(u, v):
+        x, z = (u - 0.5) * 2 * a * ext, (v - 0.5) * 2 * b * ext
+        return (cx + x, mound_y(x, z, a, b, h, seed, sag), cz + z)
+    def ft(c):
+        m = moss * smooth01(0.1, 0.6, 0.5 + 0.9 * hnoise(Vector((c.x * 3.1, 0, c.z * 3.1)), seed + 5))
+        return Vector((1, 1, 1)).lerp(mossc, m)
+    return patches(fn, nu, nv, cell, cell, 'soil', tint, ft)
+
+
+def outline(kind, w, h, rng):
+    """A headstone's face outline (x, y), anticlockwise from the foot's left."""
+    pts = [(-w / 2, 0.0), (w / 2, 0.0)]
+    if kind == 'round':
+        s = h - w / 2
+        pts += [(w / 2, s)] + [(w / 2 * math.cos(math.pi * k / 10), s + w / 2 * math.sin(math.pi * k / 10)) for k in range(1, 10)] + [(-w / 2, s)]
+    elif kind == 'shoulder':
+        s = h * 0.74
+        r = w * 0.36
+        pts += [(w / 2, s), (w / 2 - w * 0.08, s), (w / 2 - w * 0.08, s + h * 0.04), (r, h - r)]
+        pts += [(r * math.cos(math.pi * k / 8), h - r + r * math.sin(math.pi * k / 8)) for k in range(1, 8)]
+        pts += [(-r, h - r), (-w / 2 + w * 0.08, s + h * 0.04), (-w / 2 + w * 0.08, s), (-w / 2, s)]
+    elif kind == 'gothic':
+        R_ = w
+        s = h - R_ * math.sin(math.pi / 3)
+        pts += [(w / 2, s)]
+        pts += [(-w / 2 + R_ * math.cos(math.pi / 3 * k / 5), s + R_ * math.sin(math.pi / 3 * k / 5)) for k in range(1, 5)]
+        pts += [(0.0, h)]
+        pts += [(w / 2 - R_ * math.cos(math.pi / 3 * k / 5), s + R_ * math.sin(math.pi / 3 * k / 5)) for k in range(4, 0, -1)]
+        pts += [(-w / 2, s)]
+    else:  # broken: a jagged break across at about half
+        s = h
+        pts += [(w / 2, s * 0.62)]
+        n = 6
+        for k in range(1, n):
+            pts.append((w / 2 - w * k / n, s * (0.5 + 0.18 * rng(-1, 1)) + (0.08 * s if k == 2 else 0)))
+        pts += [(-w / 2, s * 0.7)]
+    return pts
+
+
+def prism(pts, t, bevel=0.012):
+    """An outline (x, y) extruded t deep about z = 0, its arrises beveled."""
+    bm = bmesh.new()
+    f = [bm.verts.new((x, y, t / 2)) for x, y in pts]
+    b = [bm.verts.new((x, y, -t / 2)) for x, y in pts]
+    n = len(pts)
+    bm.faces.new(f)
+    bm.faces.new(list(reversed(b)))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((f[j], f[i], b[i], b[j]))
+    bm.normal_update()
+    _outward(bm)
+    if bevel > 0:
+        es = [e for e in bm.edges if len(e.link_faces) == 2 and e.calc_face_angle(0) > 0.6]
+        bmesh.ops.bevel(bm, geom=es, offset=bevel, segments=1, affect='EDGES', profile=0.5, clamp_overlap=True)
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
+    return bm
+
+
+def headstone(parts, kind, w, h, t, at, tint, rng, chip=0.0):
+    bm = prism(outline(kind, w, h, rng), t, 0.014)
+    for v in bm.verts:
+        v.co += Vector((rng(-0.006, 0.006), rng(-0.004, 0.004), rng(-0.004, 0.004)))
+        if chip and v.co.y > h * 0.6 and v.co.x > w * 0.25:
+            v.co.x -= chip * smooth01(h * 0.6, h, v.co.y) * smooth01(w * 0.25, w * 0.5, v.co.x) * w * 0.4
+    parts.append(Part(bm, 'stone', tint, at, cap='stone', jitter=0.0))
+
+
+def grave(p):
+    """A grave (halloween grave_A / grave_B / grave_A_destroyed): a headstone (round, gothic, shouldered) on a
+    plinth stone, sunk and leaning, its earth heaped in front, settled and mossed; a kerb round some; open: the
+    pit dug out (dark), the spoil heaped beside it, the stone broken and its top fallen, coffin boards splintered."""
+    rng = Rng(p['seed'])
+    stone, soil = hexlin(p['stone']), hexlin(p['soil'])
+    parts = []
+    W, Hs, t = p['w'], p['hs'], p['t']
+    z0 = p.get('z0', -0.3)
+    lean = p.get('lean', 0.05)
+    ml = p.get('mlen', 2.4)
+    # the plinth stone, half sunk
+    sblock(parts, (W * 1.18, 0.26, t * 2.4), T(0, 0.04, z0) @ R('Y', rng(-0.04, 0.04)), stone * 0.88, rng, chip=0.6, drop=('-y',))
+    if p.get('open'):
+        headstone(parts, 'broken', W, Hs, t, T(0, 0.12, z0) @ R('X', -lean) @ R('Z', 0.06), stone, rng)
+        # its top half fallen across the spoil
+        headstone(parts, 'round', W * 0.98, Hs * 0.42, t, T(W * 0.75, 0.12, z0 + 0.7) @ R('Z', 1.25) @ R('Y', 0.5) @ T(0, -Hs * 0.2, 0), stone * 0.95, rng)
+        # the pit: a rim of turned earth round a dark hollow; the spoil heaped to +x
+        pa, pb = W * 0.42, ml * 0.42
+        pc = z0 + 0.25 + pb
+        def fn(u, v):
+            x, z = (u - 0.5) * 2 * pa * 1.9, (v - 0.5) * 2 * pb * 1.5
+            r = max(abs(x) / pa, abs(z) / pb)
+            if r < 1:
+                y = 0.05 - 0.02 * (1 - r)          # the hollow's floor (dark: reads as depth)
+            else:
+                y = 0.32 * math.exp(-((r - 1.12) / 0.16) ** 2) - 0.1 * max(0.0, r - 1.5)
+            y += 0.035 * hnoise(Vector((x * 3.0, 0, z * 3.0)), p['seed'])
+            return (x, y, pc + z)
+        dark = Vector((0.2, 0.18, 0.16))
+        def ft(c):
+            r = max(abs(c.x) / pa, abs(c.z - pc) / pb)
+            return Vector((1, 1, 1)).lerp(dark, smooth01(1.08, 0.92, r))
+        parts += patches(fn, 18, 22, 3, 3, 'soil', soil, ft)
+        parts += mound(pa * 0.9, pb * 1.1, 0.42, p['seed'] + 3, soil * 1.05, cx=pa * 2.0, cz=pc + 0.1, moss=0.15)
+        wood = hexlin(p.get('wood', '#8a8076'))
+        parts.append(Part(box(0.26, 1.5, 0.03, 0.004), 'wood', wood * 0.7, T(-pa * 0.35, 0.22, pc + 0.15) @ R('X', 0.0) @ basis((1, 0, 0), (0, 0.35, 0.94), (0, 0.94, -0.35)), cap='endgrain', jitter=0.1))
+        parts.append(Part(box(0.24, 1.1, 0.03, 0.004), 'wood', wood * 0.8, T(pa * 1.7, 0.42, pc - 0.3) @ basis((0.94, 0, 0.34), (-0.3, 0.3, 0.9), (0.1, 0.95, -0.3)), cap='endgrain', jitter=0.1))
+        parts.append(Part(box(0.2, 0.6, 0.03, 0.004), 'wood', wood * 0.75, T(pa * 0.6, 0.36, pc + pb * 1.2) @ R('Y', 0.7) @ R('X', 1.45), cap='endgrain', jitter=0.1))
+        return parts
+    headstone(parts, p['head'], W, Hs, t, T(0, 0.1, z0) @ R('X', -lean) @ R('Z', rng(-0.05, 0.05)), stone, rng, chip=p.get('chip', 0.0))
+    mz = z0 + 0.22 + ml / 2
+    parts += mound(W * 0.42, ml / 2, p.get('mh', 0.3), p['seed'], soil, cz=mz, sag=p.get('sag', 0.4), moss=p.get('moss', 0.5))
+    if p.get('kerb'):
+        for sx in (-1, 1):
+            sblock(parts, (0.16, 0.2, ml * 0.98), T(sx * W * 0.5, 0.05, mz) @ R('Z', sx * rng(0.0, 0.08)), stone * 0.85, rng, drop=('-y',))
+        sblock(parts, (W * 0.84, 0.2, 0.16), T(0, 0.04, mz + ml / 2 - 0.05) @ R('X', 0.1), stone * 0.85, rng, drop=('-y',))
+    return parts
+
+
+def gravestone(p):
+    """A lone headstone (halloween gravestone): sunk, leaning, chipped, a little heap at its foot."""
+    rng = Rng(p['seed'])
+    stone, soil = hexlin(p['stone']), hexlin(p['soil'])
+    parts = []
+    W, Hs, t = p['w'], p['hs'], p['t']
+    headstone(parts, p['head'], W, Hs, t, T(0, -0.12, 0) @ R('X', p.get('lean', -0.1)) @ R('Z', p.get('roll', 0.06)), stone, rng, chip=p.get('chip', 0.0))
+    parts += mound(W * 0.46, 0.5, 0.14, p['seed'], soil, cz=0.55, sag=0.2, moss=0.6)
+    return parts
+
+
+def marker(p):
+    """A wooden cross over a grave (halloween gravemarker_A / _B): two weathered boards nailed, or two rough poles
+    lashed with cord; leaning as the ground settles; a low heap before it."""
+    rng = Rng(p['seed'])
+    wood, soil = hexlin(p['wood']), hexlin(p['soil'])
+    parts = []
+    h, w = p['h'], p['w']
+    lean = T(0, 0, 0) @ R('Z', p.get('roll', 0.08)) @ R('X', p.get('lean', -0.06))
+    if not p.get('lashed'):
+        parts.append(Part(box(0.13, h + 0.3, 0.06, 0.008), 'wood', wood, lean @ T(0, (h - 0.3) / 2, 0), cap='endgrain', jitter=0.06))
+        parts.append(Part(box(0.11, w, 0.05, 0.008), 'wood', wood * 0.95, lean @ T(0, h * 0.7, 0.055) @ R('Z', math.pi / 2 + 0.05), cap='endgrain', jitter=0.06))
+        for dx in (-0.03, 0.03):
+            parts.append(Part(box(0.014, 0.014, 0.012), 'iron', Vector((1, 1, 1)), lean @ T(dx, h * 0.7 + dx, 0.083)))
+    else:
+        parts.append(Part(lathe([(0.05, -0.3), (0.046, h * 0.6), (0.042, h)], 7), 'wood', wood, lean, cyl=0.048, smooth=True, cap='endgrain', jitter=0.06))
+        parts.append(Part(lathe([(0.04, -w / 2), (0.036, w / 2)], 7), 'wood', wood * 0.95, lean @ T(0, h * 0.68, 0.075) @ R('Z', math.pi / 2 - 0.1), cyl=0.038, smooth=True, cap='endgrain', jitter=0.06))
+        rope = hexlin(p.get('rope', '#9a8a6a'))
+        for k in range(3):
+            parts.append(Part(torus(0.064, 0.009, 9, 4), 'canvas', rope, lean @ T(0, h * 0.68 + (k - 1) * 0.022, 0.04) @ R('Z', 0.55 * (1 if k % 2 else -1)) @ R('X', math.pi / 2), smooth=True, jitter=0.0))
+    parts += mound(0.34, p.get('mlen', 0.85), 0.16, p['seed'], soil, cz=p.get('mz', 0.75), sag=0.3, moss=0.55)
+    return parts
+
+
+def paling_bm(w, h, t, rng):
+    pts = [(-w / 2, 0.0), (w / 2, 0.0), (w / 2, h - w * 0.55), (0.0 + rng(-0.01, 0.01), h), (-w / 2, h - w * 0.55)]
+    # (grain along local y: x across, y up, z through)
+    bm = bmesh.new()
+    f = [bm.verts.new((x, y, t / 2)) for x, y in pts]
+    b = [bm.verts.new((x, y, -t / 2)) for x, y in pts]
+    bm.faces.new(f)
+    bm.faces.new(list(reversed(b)))
+    for i in range(5):
+        j = (i + 1) % 5
+        bm.faces.new((f[j], f[i], b[i], b[j]))
+    _outward(bm)
+    return bm
+
+
+def fence(p):
+    """A length of weathered paling fence (halloween fence / fence_broken): posts at its ends and middle, two rails,
+    pointed palings, some lost, some leaning or hung from one nail; broken: the top rail down at one end, half the
+    palings gone (two in the grass), its end post leaning."""
+    rng = Rng(p['seed'])
+    wood = hexlin(p['wood'])
+    parts = []
+    L, H = p['len'], p['h']
+    broken = p.get('broken', False)
+    lost = set(p.get('lost', []))
+    hang = set(p.get('hang', []))
+    posts = [-L / 2 + 0.08, 0.0, L / 2 - 0.08]
+    for i, x in enumerate(posts):
+        tilt = (p.get('lean_post', 0.0) if i == 2 else rng(-0.03, 0.03))
+        parts.append(Part(box(0.14, H + 0.35, 0.14, 0.012), 'wood', wood * 0.85,
+                          T(x, -0.35, 0) @ R('Z', -tilt) @ T(0, (H + 0.35) / 2 - 0.0, 0) @ R('Y', rng(-0.1, 0.1)), cap='endgrain', jitter=0.08))
+        parts.append(Part(box(0.17, 0.05, 0.17, 0.01), 'wood', wood * 0.78, T(x, 0, 0) @ R('Z', -tilt) @ T(0, H + 0.02, 0) @ R('Y', 0.3), cap='endgrain', jitter=0.05))
+    rails = [(0.42, 0.0), (H - 0.42, 0.0)]
+    for k, (y, _) in enumerate(rails):
+        if broken and k == 1:
+            # the top rail split off its middle post and down at the end
+            a = Vector((-L / 2 + 0.1, y, 0.1))
+            b = Vector((L * 0.08, 0.12, 0.38))
+            d = b - a
+            ln, at = along(a, b)
+            parts.append(Part(box(0.12, ln, 0.045, 0.006), 'wood', wood, at, cap='endgrain', jitter=0.08))
+            continue
+        parts.append(Part(box(0.12, L - 0.04, 0.045, 0.006), 'wood', wood, T(0, y + rng(-0.02, 0.02), 0.1) @ R('Z', math.pi / 2 + rng(-0.01, 0.01)), cap='endgrain', jitter=0.08))
+    n = p.get('n', 12)
+    for i in range(n):
+        x = -L / 2 + 0.25 + (L - 0.5) * (i + 0.5) / n + rng(-0.02, 0.02)
+        if i in lost or any(abs(x - q) < 0.1 for q in posts):
+            continue
+        if broken and x > -L * 0.05 and rng() < 0.7:
+            continue
+        ph = H * rng(0.94, 1.04) - 0.1
+        w = rng(0.12, 0.15)
+        if i in hang:
+            parts.append(Part(paling_bm(w, ph, 0.025, rng), 'wood', wood * 0.95, T(x, H - 0.42, 0.137) @ R('Z', 2.6 + rng(-0.2, 0.2)) @ T(0, -ph * 0.15, 0), cap='endgrain', jitter=0.1))
+            continue
+        parts.append(Part(paling_bm(w, ph, 0.025, rng), 'wood', wood * (1 + rng(-0.1, 0.06)),
+                          T(x, -0.12, 0.137) @ R('Z', rng(-0.05, 0.05)) @ R('X', rng(-0.04, 0.04)), cap='endgrain', jitter=0.08))
+    if broken:
+        for x, a in ((L * 0.2, 0.4), (L * 0.36, -0.3)):
+            parts.append(Part(paling_bm(0.13, H * 0.9, 0.025, rng), 'wood', wood * 0.9, T(x, 0.03, 0.45) @ R('Y', a) @ R('X', -math.pi / 2 + 0.06), cap='endgrain', jitter=0.1))
+    return parts
+
+
+def rubble(p):
+    """A heap of fallen masonry (dungeon rubble_large / rubble_half): a low mound of spoil and spalls, dressed
+    blocks tumbled on and round it, a few still bedded together."""
+    rng = Rng(p['seed'])
+    stone, dirt = hexlin(p['stone']), hexlin(p['dirt'])
+    parts = []
+    L, Wd, Hm = p['len'], p['wide'], p['h']
+    cx = p.get('x0', -L / 2) + L / 2
+    a, b = L * 0.42, Wd * 0.42
+    def hy(x, z):
+        return max(0.0, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07))
+    def fn(u, v):
+        x, z = cx + (u - 0.5) * 2 * a * 1.15, (v - 0.5) * 2 * b * 1.15
+        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07), z)
+    def ft(c):
+        return Vector((1, 1, 1)) * (0.8 + 0.25 * hnoise(Vector((c.x * 2.0, 0, c.z * 2.0)), p['seed'] + 2))
+    parts += patches(fn, max(6, int(2 * a * 1.15 / 0.3)), max(6, int(2 * b * 1.15 / 0.3)), 2, 2, 'stone', dirt, ft)
+    ch, bl, D = p.get('course', 0.42), p.get('block', 0.8), p.get('d', 0.6)
+    for i in range(p.get('blocks', 16)):
+        ang = rng(0, 6.283)
+        rr = math.sqrt(rng(0.0, 1.0)) * 1.15
+        x, z = cx + math.cos(ang) * a * rr, math.sin(ang) * b * rr
+        sx, sy, sd = bl * rng(0.5, 1.05), ch * rng(0.8, 1.0), D * rng(0.6, 1.0)
+        y = hy(x, z)
+        sblock(parts, (sx, sy, sd), T(x, y + sy * 0.25, z) @ R('Y', rng(-3.1, 3.1)) @ R('X', rng(-0.5, 0.5)) @ R('Z', rng(-0.5, 0.5)), stone * rng(0.82, 1.05), rng, chip=0.9)
+    # a couple still bedded together: two courses' worth, askew, at one end
+    bx = cx - a * 0.45
+    for k in range(2):
+        for j in range(2 - k):
+            sblock(parts, (bl * 0.9, ch, D), T(bx + (j - 0.5 + k * 0.5) * bl * 0.95, hy(bx, 0) * 0.6 + ch * (k + 0.3), -0.1) @ R('Z', 0.12) @ R('Y', 0.2), stone, rng, chip=0.5)
+    for i in range(p.get('chunks', 14)):
+        ang = rng(0, 6.283)
+        rr = rng(0.3, 1.25)
+        x, z = cx + math.cos(ang) * a * rr, math.sin(ang) * b * rr
+        s = rng(0.1, 0.28)
+        parts.append(Part(chunk(s, rng), 'stone', stone * rng(0.7, 0.95), T(x, hy(x, z) + s * 0.15, z) @ R('Y', rng(0, 6.28)) @ R('X', rng(-0.4, 0.4)), cap='stone', jitter=0.0))
+    return parts
+
+
+def banner(p):
+    """The Watch's banner, long faded (dungeon banner_thin_red): an iron arm out of the wall, a pole with knobbed
+    ends, the cloth hanging in folds, its foot torn ragged; dull madder gone brown-rose, a pale band and the
+    Watch's tower in faded linen; darker and stained toward the foot, faded at the top."""
+    rng = Rng(p['seed'])
+    cloth, pale, iron, wood = hexlin(p['cloth']), hexlin(p['pale']), hexlin(p['iron']), hexlin(p['wood'])
+    parts = []
+    W, Lc, top, zw = p['w'], p['len'], p['top'], p['wall']
+    zc = zw + 0.3
+    # the arm, its bracket plate on the wall, the pole across
+    parts.append(Part(box(0.05, 0.36, 0.05), 'iron', iron, T(0, top + 0.08, (zw + zc) / 2) @ R('X', math.pi / 2)))
+    parts.append(Part(box(0.05, 0.36, 0.05), 'iron', iron, T(0, top - 0.06, zw + 0.12) @ R('X', math.pi / 2 - 0.85)))
+    parts.append(Part(box(0.16, 0.36, 0.03), 'iron', iron * 0.9, T(0, top, zw + 0.015)))
+    parts.append(Part(lathe([(0.03, -W / 2 - 0.08), (0.03, W / 2 + 0.08)], 6), 'wood', wood, T(0, top + 0.06, zc) @ R('Z', math.pi / 2), cyl=0.03, smooth=True, cap='endgrain'))
+    for sx in (-1, 1):
+        parts.append(Part(lathe([(0.0, 0.0), (0.045, 0.02), (0.05, 0.05), (0.03, 0.09), (0.0, 0.1)], 6), 'iron', iron, T(sx * (W / 2 + 0.07), top + 0.06, zc) @ R('Z', -sx * math.pi / 2), smooth=True))
+    nu, nv = 10, 22
+    cut = [0.0] * (nu + 1)
+    for i in range(nu + 1):
+        u = i / nu
+        cut[i] = 0.07 * abs(math.sin(u * 9.1 + 1.3)) + 0.05 * rng() + (0.12 if 0.55 < u < 0.75 else 0.0) * (1 - abs(u - 0.65) / 0.1)
+    def fn(u, v):
+        x = (u - 0.5) * W
+        iu = min(nu, int(round(u * nu)))
+        vv = v * (1 - cut[iu])
+        y = top - vv * Lc
+        z = zc + 0.035 * math.sin(u * 6.28 * 2.2 + 0.4) * (0.3 + vv) + 0.05 * vv * vv + 0.02 * math.sin(vv * 5 + u * 3)
+        x *= 1 - 0.04 * vv
+        return (x, y, z)
+    def ft(c):
+        u = c.x / W + 0.5
+        vv = (top - c.y) / Lc
+        col = Vector((1, 1, 1))
+        band = (0.08 < vv < 0.12) or (0.8 < vv < 0.84)
+        tower = (abs(u - 0.5) < 0.09 and 0.28 < vv < 0.66) or (abs(u - 0.5) < 0.17 and 0.24 < vv < 0.32 and (int(u * 14) % 2 == 0))
+        if band or tower:
+            col = Vector((pale.x / cloth.x, pale.y / cloth.y, pale.z / cloth.z))
+        fade = 1.0 + 0.18 * smooth01(0.4, 0.0, vv)
+        stain = 1.0 - 0.35 * smooth01(0.55, 1.0, vv)
+        return col * fade * stain
+    parts += patches(fn, nu, nv, 2, 4, 'cloth', cloth, ft)
+    parts += patches(lambda u, v: Vector(fn(u, v)) + Vector((0, 0, 0.012)), nu, nv, 2, 4, 'cloth', cloth * 0.8, ft, flip=True)
+    return parts
+
+
+def table(p):
+    """A long trestle table (props Table_Large): planks on two cross-legged trestles, a stretcher between; one
+    plank cracked short, the boards cupped and grey."""
+    rng = Rng(p['seed'])
+    wood = hexlin(p['wood'])
+    parts = []
+    L, H, D = p['len'], p['h'], p['d']
+    n = 4
+    for i in range(n):
+        z = -D / 2 + D * (i + 0.5) / n
+        ln = L * (0.72 if i == 2 else 1.0)
+        x = -(L - ln) / 2
+        parts.append(Part(box(0.05, ln, D / n - 0.012, 0.006), 'wood', wood * (1 + rng(-0.08, 0.05)), T(x, H - 0.025 + rng(-0.004, 0.004), z) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.08))
+    for sx in (-1, 1):
+        x = sx * L * 0.34
+        parts.append(Part(box(0.07, D * 0.9, 0.08, 0.008), 'wood', wood * 0.85, T(x, H - 0.09, 0) @ R('X', math.pi / 2), cap='endgrain'))
+        for sz in (-1, 1):
+            a = Vector((x, 0.0, sz * D * 0.42))
+            b = Vector((x, H - 0.1, -sz * D * 0.1))
+            ln, at = along(a, b)
+            parts.append(Part(box(0.08, ln, 0.06, 0.008), 'wood', wood * 0.82, at, cap='endgrain', jitter=0.08))
+    parts.append(Part(box(0.07, L * 0.68, 0.06, 0.006), 'wood', wood * 0.8, T(0, H * 0.36, 0) @ R('Z', math.pi / 2), cap='endgrain'))
+    return parts
+
+
+def chair(p):
+    """A plain joined chair (props Chair_1): four legs, a plank seat, two back posts with three slats."""
+    rng = Rng(p['seed'])
+    wood = hexlin(p['wood'])
+    parts = []
+    W, H, D, sh = p['w'], p['h'], p['d'], p['seat']
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            lh = H if sz < 0 else sh
+            parts.append(Part(box(0.045, lh, 0.045, 0.006), 'wood', wood * 0.85, T(sx * (W / 2 - 0.04), lh / 2, sz * (D / 2 - 0.04)) @ R('X', 0.04 * sz if sz < 0 else 0), cap='endgrain'))
+    for i in range(2):
+        parts.append(Part(box(0.035, W - 0.02, D / 2 - 0.01, 0.005), 'wood', wood * (1 + rng(-0.06, 0.06)), T(0, sh, -D / 4 + i * D / 2) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.06))
+    for k in range(3):
+        parts.append(Part(box(0.06, W - 0.1, 0.025, 0.004), 'wood', wood * 0.9, T(0, sh + 0.16 + k * (H - sh - 0.22) / 2.4, -D / 2 + 0.035) @ R('Z', math.pi / 2), cap='endgrain'))
+    for sx in (-1, 1):
+        parts.append(Part(box(0.035, D - 0.1, 0.035, 0.004), 'wood', wood * 0.8, T(sx * (W / 2 - 0.04), sh * 0.35, 0) @ R('X', math.pi / 2), cap='endgrain'))
+    return parts
+
+
+def crypt(p):
+    """The Barrow's crypt in our stone (halloween crypt): a plinth course, walls in courses round a door opening
+    (jambs and a lintel standing proud), a cornice, gables in courses under the roof, columns either side of the
+    door on bases with capitals, two worn steps, a cross at the gable. The roof (stone slates), its coping and
+    the iron door stay the zone's (Pieces.Crypt, drawn over this: OwnProps "over")."""
+    rng = Rng(p['seed'])
+    stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
+    parts = []
+    w, d, h = p['w'], p['d'], p['h']
+    plinth, wallH, roofH = h * 0.08, h * 0.5, h * 0.3
+    iw, idp = w * 0.86, d * 0.86
+    Dw = 0.62
+    ch, bl = 0.5, 0.95
+    gr = p.get('grime', 2.2)
+    def tint(y):
+        low = 0.68 + 0.32 * smooth01(0, gr, y)
+        return Vector((stone.x * low, stone.y * low * (1 + 0.02 * (1 - low)), stone.z * low * 0.95))
+    # plinth: one deep course round, sunk
+    for side in range(4):
+        L_ = (w if side % 2 == 0 else d - 1.8)
+        at = (T(0, 0, (d / 2 - 0.45) * (1 if side == 0 else -1)) if side % 2 == 0 else T((w / 2 - 0.45) * (1 if side == 1 else -1), 0, 0) @ R('Y', math.pi / 2))
+        wall_parts(parts, rng, L_, plinth, 0.9, plinth, 1.1, tint(0), mortar, lambda x: 9.0, -L_ / 2, at=at, sink=0.3)
+    # walls: front (+z, the door), back, sides; corners alternate course by course (quoins)
+    door = (-0.98, 0.98, 0.0, 3.2)
+    y0 = plinth
+    for side in range(4):
+        if side % 2 == 0:
+            L_ = iw
+            at = T(0, y0, (idp / 2 - Dw / 2) * (1 if side == 0 else -1))
+        else:
+            L_ = idp - 2 * Dw
+            at = T((iw / 2 - Dw / 2) * (1 if side == 1 else -1), y0, 0) @ R('Y', math.pi / 2)
+        holes = [door] if side == 0 else []
+        st = tint(y0 + 1.0)
+        wall_parts(parts, rng, L_, wallH, Dw, ch, bl, st, mortar, lambda x: 9.0, -L_ / 2, at=at, holes=holes, sink=0.0)
+    fz = idp / 2
+    # jambs and lintel, proud of the face
+    for sx in (-1, 1):
+        y = y0
+        k = 0
+        while y < y0 + 3.2 - 0.05:
+            hh = min(0.62 if k % 2 == 0 else 0.48, y0 + 3.2 - y)
+            wj = 0.42 if k % 2 == 0 else 0.3
+            sblock(parts, (wj, hh - 0.02, 0.3), T(sx * (0.98 + wj / 2 - 0.04), y + hh / 2, fz + 0.06), tint(y), rng, chip=0.3, drop=('-y', '-z'))
+            y += hh
+            k += 1
+    sblock(parts, (2.8, 0.52, 0.42), T(0, y0 + 3.2 + 0.26, fz + 0.1), tint(4), rng, chip=0.5, drop=('-z',))
+    # cornice
+    yc = y0 + wallH
+    for side in range(4):
+        L_ = (iw + 0.3) if side % 2 == 0 else (idp + 0.3 - 2 * 0.56)
+        at = (T(0, yc, (idp / 2 + 0.15 - 0.28) * (1 if side == 0 else -1)) if side % 2 == 0 else T((iw / 2 + 0.15 - 0.28) * (1 if side == 1 else -1), yc, 0) @ R('Y', math.pi / 2))
+        xs = lay_course(-L_ / 2, L_ / 2, 1.3, rng, False)
+        for a, b in zip(xs, xs[1:]):
+            sblock(parts, (b - a - 0.02, 0.38, 0.56), at @ T((a + b) / 2, 0.19, 0), tint(yc), rng, chip=0.3, drop=('-y',))
+    # gables in courses, their outer corners under the roof's slope
+    eave = yc + h * 0.05
+    for sz in (1, -1):
+        y = eave
+        k = 0
+        while y < eave + roofH - 0.3:
+            cy = 0.48
+            hw = (iw / 2) * (1 - (y + cy - eave) / roofH)
+            if hw < 0.25:
+                break
+            xs = lay_course(-hw, hw, bl, rng, k % 2 == 1)
+            for a, b in zip(xs, xs[1:]):
+                sblock(parts, (b - a - 0.024, cy - 0.024, Dw), T((a + b) / 2, y + cy / 2, sz * (idp / 2 - Dw / 2)), tint(y), rng, drop=('-y',))
+            y += cy
+            k += 1
+    # the columns (code's places), on bases, with capitals
+    cr = w * 0.05
+    for sx in (-1, 1):
+        cx, cz = sx * (0.93 + cr * 2.8), fz + cr * 1.6
+        sblock(parts, (cr * 2.9, 0.4, cr * 2.9), T(cx, y0 + 0.2, cz), tint(0.5), rng, chip=0.6, drop=('-y',))
+        sh = wallH - 0.8
+        parts.append(Part(lathe([(cr * 1.0, 0.0), (cr * 0.92, sh * 0.5), (cr * 0.86, sh)], 10, cap0=False, cap1=False), 'stone', tint(2.0), T(cx, y0 + 0.4, cz), cyl=cr, smooth=True, jitter=0.0))
+        parts.append(Part(lathe([(cr * 1.12, 0.0), (cr * 1.12, 0.08), (cr * 0.92, 0.14)], 10, cap0=False, cap1=False), 'stone', tint(0.5), T(cx, y0 + 0.4, cz), smooth=True, jitter=0.0))
+        sblock(parts, (cr * 2.6, 0.22, cr * 2.6), T(cx, y0 + 0.4 + sh + 0.11, cz), tint(3), rng, chip=0.4)
+        sblock(parts, (cr * 3.2, 0.2, cr * 3.2), T(cx, y0 + 0.4 + sh + 0.32, cz) @ R('Y', 0.02), tint(3), rng, chip=0.5)
+    # two worn steps up to the door
+    for k in range(2):
+        sw = 1.86 * 0.9 * 2 - k * 1.86 * 0.2
+        dd = d * 0.12 - k * d * 0.05
+        z = d / 2 - d * 0.04 + k * d * 0.02
+        xs = lay_course(-sw / 2, sw / 2, 1.15, rng, k == 1)
+        for a, b in zip(xs, xs[1:]):
+            sblock(parts, (b - a - 0.02, plinth * 0.5 + (0.3 if k == 0 else 0) - 0.01, dd), T((a + b) / 2, k * plinth * 0.5 + (plinth * 0.25 - (0.15 if k == 0 else 0)), z - 0.1), tint(0), rng, bevel=0.06, chip=0.7, drop=('-y',))
+    # a cross on the front gable's apex
+    cs = h * 0.12
+    ap = eave + roofH + 0.02 * h
+    cpts = [(-0.09 * cs, 0), (0.09 * cs, 0), (0.09 * cs, 0.82 * cs), (0.38 * cs, 0.82 * cs), (0.38 * cs, 1.0 * cs), (0.09 * cs, 1.0 * cs),
+            (0.09 * cs, 1.4 * cs), (-0.09 * cs, 1.4 * cs), (-0.09 * cs, 1.0 * cs), (-0.38 * cs, 1.0 * cs), (-0.38 * cs, 0.82 * cs), (-0.09 * cs, 0.82 * cs)]
+    parts.append(Part(prism(cpts, 0.2, 0.02), 'stone', tint(9), T(0, ap - 0.1, fz - 0.02 * d), cap='stone', jitter=0.0))
+    return parts
+
+
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
-         'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon}
+         'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
+         'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair,
+         'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt}
 
 
 # ---------------------------------------------------------------- build --
@@ -1037,6 +1798,7 @@ def main():
         p = dict(data[name])
         for o in list(bpy.context.scene.collection.objects):
             bpy.data.objects.remove(o)
+        GRIME['h'], GRIME['moss'] = p.get('grime', 0.0), p.get('moss_top', 0.0)
         parts = KINDS[p['kind']](p)
         ob = finish(name, parts, mat, p['seed'])
         obs = [ob]
@@ -1044,7 +1806,7 @@ def main():
         if p['kind'] == 'log':
             meta['axis'] = [round(p['r'] * 0.85, 4), p['r']]  # the axis's height and the bark's radius (OwnProps lays logs by it)
         if meta['tris'] > 1000:
-            lo = lod1(ob)
+            lo = lod1(ob, p.get('lod1', 0.45))
             obs.append(lo)
             meta['tris_lod1'] = tris(lo)
         bb = [B2G @ Vector(c) for c in ob.bound_box]

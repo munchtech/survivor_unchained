@@ -384,6 +384,18 @@ public static class Dressing
     /// <summary>Our own flora of one file and look: its copies in cells (the species' cell), each cell a MultiMesh
     /// per LOD shown by distance, and its shadow proxy (if it casts) in cells twice as wide. A packed file's copies
     /// carry which of its pieces each is (custom data r: (index + 0.5) / 8, matched against the vertex's COLOR.a).</summary>
+    /// <summary>One of our own trees as a node of its own (E7b: the Barrow's dead tree, a KayKit piece's stand-in),
+    /// drawn as the zone's flora draws it (its LODs, its shadow proxy, its species' shader), or null if it isn't built.</summary>
+    public static Node3D? OwnTree(string piece)
+    {
+        var sp = FloraSpecies.Of(piece);
+        var (file, v) = sp.FileOf(piece);
+        if (!ResourceLoader.Exists($"res://art/world/flora/{file}.gltf")) return null;
+        var root = new Node3D { Name = "own_" + piece };
+        OwnFlora(root, sp, file, KitLook.Look.Plain with { Wind = sp.Wind ?? 0 }, [Transform3D.Identity], [v]);
+        return root;
+    }
+
     static void OwnFlora(Node3D root, FloraSpecies.Species sp, string file, KitLook.Look look, List<Transform3D> all, List<int> vars)
     {
         var lods = LodsOf(file);
