@@ -251,7 +251,7 @@ def bark(seed, W=512, H=2048):
     return col, hgt
 
 
-def leafspray(seed):
+def leafspray(seed, pal=None, big=1.0, narrow=False, umbels=0):
     """One alder spray in a CW x CH cell (as spray: rgb, alpha, height): a leafy branchlet, its twig
     from the cell's foot with one to three side twigs, the leaves in four to six clumps along their
     outer parts and one at each twig's end (so a spray ends blunt, in a clump). A clump is the brush
@@ -263,7 +263,8 @@ def leafspray(seed):
     S = 2
     W, H = CW * S, CH * S
     # a muted olive (hue 80-90: beside the spruce's blue-green, never yellow)
-    pal = [srgb(h) for h in ('#151b0f', '#263119', '#3a4826', '#536534', '#73874c')]
+    pal = [srgb(h) for h in (pal or ('#151b0f', '#263119', '#3a4826', '#536534', '#73874c'))]
+    # (big: the clump a size larger in its cell, fewer of them: a bush's card is half an alder's, its clump the same in the world)
 
     def shade(v):
         v = float(np.clip(v, 0, 0.999)) * (len(pal) - 1)
@@ -276,7 +277,8 @@ def leafspray(seed):
             a = ang + curl * (i / n)
             pts.append(pts[-1] + np.array([math.cos(a), math.sin(a)]) * length / n)
         pts = np.array(pts)
-        pts[:, 0] = np.clip(pts[:, 0], 110 * S, W - 110 * S); pts[:, 1] = np.maximum(pts[:, 1], 110 * S)
+        mg = 110 * S * big
+        pts[:, 0] = np.clip(pts[:, 0], mg, W - mg); pts[:, 1] = np.maximum(pts[:, 1], mg)
         return pts
 
     def P(q):
@@ -287,18 +289,18 @@ def leafspray(seed):
     bend = rng.choice([-1, 1]) * rng.uniform(0.3, 0.6)
     twig = path(foot, up - 0.4 * bend, H * rng.uniform(0.74, 0.84), bend, 30)
     twigs = [(twig, 7.0 * S)]
-    for c in np.sort(rng.uniform(0.25, 0.62, int(rng.integers(1, 4)))):
+    for c in np.sort(rng.uniform(0.25, 0.62, int(rng.integers(1, 4 if big == 1 else 3)))):
         p = twig[int(c * (len(twig) - 1))]
         sd = rng.choice([-1, 1])
         twigs.append((path(p, up + sd * math.radians(rng.uniform(28, 62)), H * rng.uniform(0.22, 0.36) * (1.1 - 0.5 * c), sd * rng.uniform(0.1, 0.5), 14), 5.0 * S))
     # the clumps: one at each twig's end, the rest along the twigs' outer parts
-    clumps = [(tw[-1] + rng.normal(0, 8 * S, 2), rng.uniform(110, 140) * S) for tw, _ in twigs]
-    for c in np.sort(rng.uniform(0.22, 0.85, int(rng.integers(3, 5)))):   # (down the main twig: no bare stalk)
+    clumps = [(tw[-1] + rng.normal(0, 8 * S, 2), rng.uniform(110, 140) * S * big) for tw, _ in twigs]
+    for c in np.sort(rng.uniform(0.22, 0.85, int(rng.integers(3, 5) if big == 1 else rng.integers(1, 3)))):   # (down the main twig: no bare stalk)
         q = twig[int(c * (len(twig) - 1))]
-        clumps.append((q + rng.normal(0, 22 * S, 2), rng.uniform(100, 130) * S * (0.85 + 0.2 * c)))
+        clumps.append((q + rng.normal(0, 22 * S, 2), rng.uniform(100, 130) * S * (0.85 + 0.2 * c) * big))
     for tw, _ in twigs[1:]:
         q = tw[int(rng.uniform(0.35, 0.6) * (len(tw) - 1))]
-        clumps.append((q + rng.normal(0, 12 * S, 2), rng.uniform(85, 110) * S))
+        clumps.append((q + rng.normal(0, 12 * S, 2), rng.uniform(85, 110) * S * big))
     clumps.sort(key=lambda c: -c[0][1])                   # (back to front: the lower clumps first)
     cimg = np.zeros((H, W, 3), np.uint8); aimg = np.zeros((H, W), np.uint8); himg = np.zeros((H, W), np.uint8)
     # 1. the twigs (grey-brown, showing in the gaps)
@@ -330,7 +332,7 @@ def leafspray(seed):
             q = c + np.array([math.cos(a), math.sin(a)]) * rr * rc
             ang = a + rng.normal(0, 0.45)                      # (fanned out from the twig)
             Ll = rc * rng.uniform(0.3, 0.42) * (0.8 + 0.3 * rr)
-            Wl = Ll * rng.uniform(0.62, 0.78)
+            Wl = Ll * (rng.uniform(0.4, 0.5) if narrow else rng.uniform(0.62, 0.78))
             dv = np.array([math.cos(ang), math.sin(ang)]); nv = np.array([-dv[1], dv[0]])
             # round-obovate: widest three quarters out, the tip a round end (no point, no notch: the
             # crown's rim scalloped, judge E4c)
@@ -351,6 +353,17 @@ def leafspray(seed):
             # the leaf's light half (its blade tilted to the sky), and its midrib a shade darker
             cv2.fillPoly(cimg, [np.array(left + [notch, q0 + dv * Ll * 0.9, q0], np.int32)], shade(v + 0.08), cv2.LINE_AA)
             cv2.line(cimg, P(q0), P(q0 + dv * Ll * 0.85), shade(v - 0.06), max(1, S), cv2.LINE_AA)
+    # 4. the elder's umbels: a few flat-topped cream heads on the upper clumps (small, muted: never confetti)
+    for c, rc in sorted(clumps, key=lambda c: c[0][1])[:umbels]:
+        q = c + np.array([rng.uniform(-0.2, 0.2), -0.25]) * rc
+        ru = rc * rng.uniform(0.22, 0.28)
+        for _ in range(34):
+            a, rr = rng.uniform(0, 6.28), math.sqrt(rng.uniform(0, 1))
+            o = P(q + np.array([math.cos(a) * ru * rr, math.sin(a) * ru * rr * 0.55]))
+            v = 0.55 + 0.45 * (1 - rr) * (0.5 + 0.5 * -math.sin(a))
+            cc = (srgb('#77735e') + (srgb('#a9a589') - srgb('#77735e')) * v) * 255
+            cv2.circle(cimg, o, int(rc * 0.07), cc.astype(int).tolist(), -1, cv2.LINE_AA); cv2.circle(aimg, o, int(rc * 0.07), 255, -1, cv2.LINE_AA)
+            cv2.circle(himg, o, int(rc * 0.07), 240, -1, cv2.LINE_AA)
     col = cimg.astype(np.float32) / 255; al = aimg.astype(np.float32) / 255; hg = himg.astype(np.float32) / 255
     col = cv2.resize(col, (CW, CH), interpolation=cv2.INTER_AREA)
     al = cv2.resize(al, (CW, CH), interpolation=cv2.INTER_AREA)
@@ -425,6 +438,179 @@ def bleed(col, al):
     return out
 
 
+# ---------------------------------------------------------------- step C's textures (E4f): snag bark, bush leaves, bracken fronds
+
+# (palettes, dark to light: the clump's shut-in core to its lit rim; a muted olive to blue-green, never yellow, never lime)
+PAL = {
+    'alder': ('#151b0f', '#263119', '#3a4826', '#536534', '#73874c'),     # hue 80-90
+    'hazel': ('#141b10', '#25321b', '#384a29', '#4f6538', '#6a8250'),     # a shade bluer than the alder: hue 90-95
+    'elder': ('#111a13', '#1f2f22', '#2f4533', '#445f46', '#5e7a5d'),     # blue-green, darker: hue 115-125
+    'bracken': ('#131a0e', '#232f17', '#364723', '#4b6131', '#637a43'),   # olive, hue 85-90, its tips no lighter than the alder's
+}
+
+
+def snag_bark(seed, W=512, H=2048):
+    """The snag's strip: a dead spruce's wood, weathered silver-grey: long grain streaks up the trunk (a slight
+    twist), deep checks (long cracks), knots where the branches were, a few plates of bark left (dark brown-grey),
+    pale lichen in spots; seamless round the trunk (u)."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    lowf = np.zeros((H, W), np.float32)
+    for s, w in ((128, 0.5), (40, 0.3), (12, 0.2)):
+        n = rng.random((H // s + 2, W // s + 1)).astype(np.float32)
+        n = np.concatenate([n, n[:, :1]], 1)
+        lowf += w * cv2.resize(n, (W + s, H + 2 * s), interpolation=cv2.INTER_CUBIC)[:H, :W]
+    # the grain: noise stretched 40 times along v, sheared a little (the twist), wrapped in u
+    g = rng.random((H // 40 + 2, W // 2)).astype(np.float32)
+    g = np.concatenate([g, g[:, :1]], 1)
+    grain = cv2.resize(g, (W + 2, H + 80), interpolation=cv2.INTER_CUBIC)[:H, :W]
+    ys = np.arange(H)[:, None]
+    grain = np.take_along_axis(np.tile(grain, (1, 3)), (np.arange(W)[None, :] + W + (ys * 0.06).astype(int)) % (3 * W), 1)
+    base, light, dark, crev, plate, lich = srgb('#6b6862'), srgb('#8a867d'), srgb('#4b4843'), srgb('#24211e'), srgb('#3e352e'), srgb('#7f8774')
+    t = np.clip(0.55 * grain + 0.45 * lowf, 0, 1)
+    col = dark[None, None] + (light - dark)[None, None] * smooth(0.25, 0.85, t)[..., None]
+    col = col * 0.55 + base[None, None] * 0.45
+    hgt = 0.4 * grain + 0.3 * lowf
+    cim = (np.clip(col, 0, 1) * 255).astype(np.uint8)
+    him = (np.clip(hgt, 0, 1) * 255).astype(np.uint8)
+    cc = (crev * 255).astype(int).tolist()
+    # checks: long, nearly straight cracks up the wood
+    for _ in range(18):
+        x = rng.uniform(0, W); y = rng.uniform(-200, H); L = rng.uniform(200, 900)
+        pts = [(x + 4 * math.sin(k * 0.3 + x) + k * L / 30 * 0.06, y + k * L / 30) for k in range(31)]
+        wd = int(rng.integers(2, 5))
+        for dx in (-W, 0, W):
+            pp = np.array([(a + dx, b) for a, b in pts], np.int32)
+            cv2.polylines(cim, [pp], False, cc, wd, cv2.LINE_AA); cv2.polylines(him, [pp], False, 0, wd + 1, cv2.LINE_AA)
+    # knots: dark ovals with a lighter ring, the grain round them
+    for _ in range(9):
+        x, y = rng.uniform(0, W), rng.uniform(0, H)
+        ax = (int(rng.uniform(8, 16)), int(rng.uniform(12, 24)))
+        for dx in (-W, 0, W):
+            c = (int(x + dx), int(y))
+            cv2.ellipse(cim, c, (ax[0] + 5, ax[1] + 7), 0, 0, 360, (light * 235).astype(int).tolist(), -1, cv2.LINE_AA)
+            cv2.ellipse(cim, c, ax, 0, 0, 360, (plate * 200).astype(int).tolist(), -1, cv2.LINE_AA)
+            cv2.ellipse(him, c, ax, 0, 0, 360, 40, -1, cv2.LINE_AA)
+    col = cim.astype(np.float32) / 255
+    hgt = him.astype(np.float32) / 255
+    # plates of bark left, low on the trunk (v small: the image's bottom rows), ragged-edged
+    pm = smooth(0.62, 0.7, lowf) * (1 - smooth(0.25, 0.6, 1 - ys / H))
+    col = col + (plate - col) * (0.85 * pm)[..., None]
+    hgt = hgt + 0.25 * pm
+    lm = smooth(0.74, 0.86, lowf) * (1 - pm)
+    col = col + (lich - col) * (0.4 * lm)[..., None]
+    return col, cv2.GaussianBlur(hgt, (3, 3), 0.8)
+
+
+def stipe_strip(seed, W=512, H=2048):
+    """The bracken's strip (its stems, under the fronds): a dark brown-green, faintly streaked."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    n = rng.random((H // 32 + 2, W // 8 + 1)).astype(np.float32)
+    n = np.concatenate([n, n[:, :1]], 1)
+    f = cv2.resize(n, (W + 8, H + 64), interpolation=cv2.INTER_CUBIC)[:H, :W]
+    a, b = srgb('#1d2014'), srgb('#3a3a24')
+    return a[None, None] + (b - a)[None, None] * f[..., None], 0.4 * f
+
+
+def frond(seed, pal):
+    """One bracken frond in a CW x CH cell (rgb, alpha, height): its stipe from the cell's foot (the lower fifth, dark:
+    the clump's dark base), then a triangular blade, eight to eleven pairs of pinnae off a bent rachis, the lower ones
+    longest, each pinna a lanceolate mass with a lobed (pinnule) edge, dark at the rachis and lighter to its tip, its lit
+    flank (up and -x) lighter. At the play camera a frond is one feathery wedge; the pinnae its broken edge. Drawn
+    at twice the size and halved."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    S = 2
+    W, H = CW * S, CH * S
+    pl = [srgb(h) for h in pal]
+
+    def shade(v):
+        v = float(np.clip(v, 0, 0.999)) * (len(pl) - 1)
+        i = int(v); f = v - i
+        return ((pl[i] * (1 - f) + pl[i + 1] * f) * 255).astype(int).tolist()
+
+    cimg = np.zeros((H, W, 3), np.uint8); aimg = np.zeros((H, W), np.uint8); himg = np.zeros((H, W), np.uint8)
+    foot = np.array([W / 2 + rng.uniform(-20, 20) * S, H - 4 * S])
+    bend = rng.choice([-1, 1]) * rng.uniform(0.15, 0.35)
+    n = 40
+    rach = [foot]
+    for i in range(n):
+        a = -math.pi / 2 + bend * (i / n) ** 1.5
+        rach.append(rach[-1] + np.array([math.cos(a), math.sin(a)]) * H * 0.95 / n)
+    rach = np.array(rach)
+    rach[:, 0] = np.clip(rach[:, 0], 80 * S, W - 80 * S)
+    t0 = rng.uniform(0.2, 0.25)                     # where the blade starts
+    # the stipe and rachis
+    for i in range(n):
+        t = i / n
+        w = int(max(2, (9 if t < t0 else 6 * (1 - t)) * S))
+        c = (46, 44, 30) if t < t0 else shade(0.12)
+        cv2.line(cimg, tuple(int(x) for x in rach[i]), tuple(int(x) for x in rach[i + 1]), c, w, cv2.LINE_AA)
+        cv2.line(aimg, tuple(int(x) for x in rach[i]), tuple(int(x) for x in rach[i + 1]), 255, w, cv2.LINE_AA)
+        cv2.line(himg, tuple(int(x) for x in rach[i]), tuple(int(x) for x in rach[i + 1]), 70, w, cv2.LINE_AA)
+    npairs = int(rng.integers(12, 16))
+    ts = t0 + (0.97 - t0) * (np.arange(npairs) / npairs) ** 0.85
+    for k, t in enumerate(ts):
+        u = (t - t0) / (0.97 - t0)
+        i = int(t * n)
+        p = rach[i]
+        tang = rach[min(i + 1, n)] - rach[max(i - 1, 0)]; tang /= np.linalg.norm(tang)
+        for side in (-1, 1):
+            Lp = W * 0.5 * (1 - u) ** 0.8 * rng.uniform(0.85, 1.05) + W * 0.04
+            ang = math.atan2(tang[1], tang[0]) + side * math.radians(rng.uniform(55, 72) - 18 * u)
+            dv = np.array([math.cos(ang), math.sin(ang)]); nv = np.array([-dv[1], dv[0]])
+            q0 = p + side * tang * 0  # (off the rachis)
+            q0 = q0 + tang * side * rng.uniform(0, 10) * S * (1 - u)
+            wp = Lp * rng.uniform(0.38, 0.46)
+            m = 14
+            nl = max(3, int(Lp / (34 * S)))      # pinnules along it
+            top, bot = [], []
+            for j in range(m + 1):
+                v = j / m
+                lob = 0.62 + 0.38 * abs(math.sin(v * nl * math.pi))
+                hw = wp / 2 * (1 - v) ** 0.75 * (0.6 + 0.4 * math.sin(math.pi * min(1, v * 3 + 0.2))) * lob
+                cc = q0 + dv * Lp * v + nv * Lp * 0.05 * math.sin(v * 2.6) * side   # (a slight curve)
+                top.append(cc + nv * hw); bot.append(cc - nv * hw)
+            poly = np.array(top + bot[::-1], np.int32)
+            lit = 0.5 * (-dv[0] * 0.6 - dv[1] * 0.8) + 0.5
+            v0 = 0.36 + 0.12 * u + 0.22 * lit + rng.normal(0, 0.04)
+            cv2.fillPoly(cimg, [poly], shade(v0), cv2.LINE_AA); cv2.fillPoly(aimg, [poly], 255, cv2.LINE_AA)
+            cv2.fillPoly(himg, [poly], int(120 + 80 * lit), cv2.LINE_AA)
+            # its outer half lighter (the pinnules' lit tips), its midrib dark
+            outer = np.array(top[m // 2:] + bot[m // 2:][::-1], np.int32)
+            cv2.fillPoly(cimg, [outer], shade(v0 + 0.16), cv2.LINE_AA)
+            half = np.array(top[:m] + [q0 + dv * Lp * 0.95], np.int32)
+            cv2.fillPoly(cimg, [half], shade(v0 + 0.07 + 0.1 * lit), cv2.LINE_AA)
+            cv2.line(cimg, tuple(int(x) for x in q0), tuple(int(x) for x in q0 + dv * Lp * 0.85), shade(v0 - 0.15), max(1, S), cv2.LINE_AA)
+    col = cimg.astype(np.float32) / 255; al = aimg.astype(np.float32) / 255; hg = himg.astype(np.float32) / 255
+    col = cv2.resize(col, (CW, CH), interpolation=cv2.INTER_AREA)
+    al = cv2.resize(al, (CW, CH), interpolation=cv2.INTER_AREA)
+    hg = cv2.resize(hg, (CW, CH), interpolation=cv2.INTER_AREA)
+    col = np.clip(col / np.maximum(al, 1e-3)[..., None], 0, 1) * (al > 0)[..., None]
+    ys = np.mgrid[0:CH, 0:CW][0].astype(np.float32)
+    # darker toward the foot (the clump's base, under the blades)
+    col *= (0.55 + 0.45 * smooth(0.0, 0.45, 1 - ys / CH))[..., None]
+    return col, al, cv2.GaussianBlur(hg, (5, 5), 1.5)
+
+
+# What each species' atlas holds: its six cells (rgb, alpha, height) and its strip (rgb, height); and its paint presets.
+def cells(species):
+    if species == 'spruce':
+        return [spray(100 + j * 7) for j in range(6)], bark(5)
+    if species == 'alder':
+        return [leafspray(200 + j * 11) for j in range(6)], alder_bark(9)
+    if species == 'snag':
+        return None, snag_bark(13)
+    if species == 'bush':
+        # cells 0-2 hazel, 3-5 elder (narrower leaves; umbels in cells 4 and 5: a few, never confetti)
+        return ([leafspray(300 + j * 13, pal=PAL['hazel'], big=1.45) for j in range(3)]
+                + [leafspray(400 + j * 13, pal=PAL['elder'], big=1.45, narrow=True, umbels=(0, 1, 2)[j]) for j in range(3)]), alder_bark(17)
+    if species == 'bracken':
+        return [frond(500 + j * 17, PAL['bracken']) for j in range(6)], stipe_strip(19)
+    raise SystemExit(f'no species {species}')
+
+
 def tex(species):
     sys.path.insert(0, os.path.dirname(__file__))
     import paint_tex as pt
@@ -432,17 +618,18 @@ def tex(species):
     os.makedirs(OUT, exist_ok=True)
     atlas = np.zeros((A, A, 4), np.float32)
     pf = pt.preset('foliage', {})
-    for j in range(6):
-        c, a, h = spray(100 + j * 7) if species == 'spruce' else leafspray(200 + j * 11)
-        c = bleed(c, a)
-        p = pt.paint(c, normals(h, 3.0), pf)
+    cs, (c, h) = cells(species)
+    for j, (cc, a, hh) in enumerate(cs or []):
+        cc = bleed(cc, a)
+        p = pt.paint(cc, normals(hh, 3.0), pf)
         r, k = j // 3, j % 3          # row 0 = the atlas's top half
         atlas[r * CH:(r + 1) * CH, k * CW:(k + 1) * CW, :3] = p
         atlas[r * CH:(r + 1) * CH, k * CW:(k + 1) * CW, 3] = a
-    c, h = bark(5) if species == 'spruce' else alder_bark(9)
     p = pt.paint(c, normals(h, 2.0), pt.preset('bark', {}))
     atlas[:, int(BU * A):, :3] = p
     atlas[:, int(BU * A):, 3] = 1
+    if cs is None:   # (a bark-only species: its unused cells its strip's mean, so the mips stay clean)
+        atlas[:, :int(BU * A), :3] = p.mean((0, 1)); atlas[:, :int(BU * A), 3] = 1
     out = os.path.join(OUT, f'{species}_atlas.png')
     Image.fromarray((np.clip(atlas, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA').save(out)
     print(out)
@@ -852,11 +1039,279 @@ def alder_proxy(H, R, seed, stems):
     return b
 
 
+# ---------------------------------------------------------------- step C (E4f): snags, bushes, bracken
+
+# Each species a preset: its pieces (sizes and looks; packed in one file, told apart by COLOR.a) and their shapes.
+# The runtime's rules (which kit pieces they replace, LODs, cells, shadow) are godot/data/flora_species.json.
+SNAG = {
+    # (as tall as the kit's dead trees they stand for: DeadTree_1 9.2 m, 2-4 11.2-12.9 m, 5 16.1 m)
+    'snag_a': dict(H=9.2, seed=51, top='snapped'),
+    'snag_b': dict(H=12.3, seed=63, top='thin'),
+    'snag_c': dict(H=16.0, seed=77, top='snapped'),
+}
+BUSH = {
+    # (the kit's Bush_Common stands 1.35 m, 2 m across; hazel for it, elder for its flowering one)
+    'hazel_a': dict(H=1.05, R=0.85, seed=81, look='hazel', proxy=False),
+    'hazel_b': dict(H=1.55, R=1.15, seed=93, look='hazel', proxy=True),
+    'elder_a': dict(H=1.15, R=0.9, seed=105, look='elder', proxy=False),
+    'elder_b': dict(H=1.7, R=1.2, seed=117, look='elder', proxy=True),
+}
+BRACKEN = {
+    # (as the kit's: Fern_1 a spreading patch 9 m across and 2.4 m tall before its placements' x0.57; Plant_1_Big one
+    # upright clump 3.7 m tall before their x0.3)
+    'bracken_a': dict(H=2.4, R=4.4, seed=131, clumps=5, fronds=(6, 4, 2), ln=(2.4, 3.0), el=(38, 60)),
+    'bracken_b': dict(H=3.7, R=1.5, seed=143, clumps=1, fronds=(9, 6, 3), ln=(3.3, 3.9), el=(55, 74)),
+}
+PACKED = {'snag': SNAG, 'bush': BUSH, 'bracken': BRACKEN}
+
+
+class Dome:
+    """A bush's (or a bracken clump's) mass: an oval round (0, 0, zc), R across, hz up. Normals out from its middle and
+    up (it shades as one mass); how open a point is, by how far out in it, and darker toward the ground (its base)."""
+    def __init__(self, R, zc, hz, H):
+        self.R, self.zc, self.hz, self.H = R, zc, hz, H
+
+    def rel(self, p):
+        return np.array([p[0] / self.R, p[1] / self.R, (p[2] - self.zc) / self.hz])
+
+    def normal(self, p, cn, d):
+        q = self.rel(p)
+        ln = np.linalg.norm(q)
+        o = q / ln if ln > 0.1 else np.array([0, 0, 1.0])
+        n = o * 0.6 + np.array([0, 0, 0.55]) + cn * 0.3
+        return n / np.linalg.norm(n)
+
+    def occl(self, p):
+        o = 0.35 + 0.65 * float(smooth(0.2, 0.95, np.linalg.norm(self.rel(p))))
+        return o * (0.4 + 0.6 * float(smooth(0.0, 0.55 * self.H, p[2])))
+
+
+def snag_trunk(b, H, rb, sides, rings, rng, top):
+    """The dead trunk: tapering, leaning, bent a little; its foot flared and dark (the base); its top snapped (a ragged
+    ring of splinters round a sunken break) or thinned to a bent spike."""
+    lean = rng.normal(0, 0.035, 2)
+    bendp = rng.uniform(0, 6.28)
+    Ht = H * (1.0 if top == 'thin' else 1.0)
+    P, N, UV, C = [], [], [], []
+    for k in range(rings + 1):
+        t = k / rings
+        z = -0.25 + (Ht + 0.25) * t
+        if top == 'thin':
+            rad = max(0.012, rb * (1 - t) ** 0.95)
+        else:
+            rad = rb * (1 - 0.72 * t) ** 1.1
+        flare = 1 + 0.6 * math.exp(-max(z, 0) / 0.4)
+        off = np.array([lean[0] * z, lean[1] * z, 0]) + 0.12 * math.sin(t * 2.5 + bendp) * t * np.array([math.cos(bendp), math.sin(bendp), 0])
+        rowP, rowN, rowU, rowC = [], [], [], []
+        for i in range(sides + 1):
+            a = i / sides * 2 * math.pi
+            bump = 1 + 0.2 * math.cos(a * 3 + 0.4) * math.exp(-max(z, 0) / 0.5)
+            zz = z
+            if top != 'thin' and k == rings:
+                zz = z + (rng.uniform(0.15, 0.7) if i % 2 == 0 else rng.uniform(-0.1, 0.15)) * (1 if i < sides else 0)
+            rr = rad * flare * bump
+            rowP.append(np.array([math.cos(a) * rr, math.sin(a) * rr, zz]) + off)
+            rowN.append(np.array([math.cos(a), math.sin(a), 0.12]) / 1.007)
+            rowU.append((BU + (1 - BU) * i / sides * 0.995, 0.01 + 0.98 * (z + 0.25) / (Ht + 0.5)))
+            rowC.append((0.05 + 0.95 * float(smooth(-0.1, 1.4, zz)), 0.0, 0.0))
+        if top != 'thin' and k == rings:
+            rowP[-1] = rowP[0]
+        P.append(rowP); N.append(rowN); UV.append(rowU); C.append(rowC)
+    b.quad_grid(P, N, UV, sides, rings, C)
+    top_c = (P[-1][0] + P[-1][sides // 2]) / 2
+    if top != 'thin':
+        # the break: the splinters' ring down to a sunken middle (pale fresh-ish wood: the strip's light grain)
+        cz = top_c + np.array([0, 0, -0.08])
+        Pc = [P[-1], [cz] * (sides + 1)]
+        Nc = [[np.array([0, 0, 1.0])] * (sides + 1)] * 2
+        Uc = [[(BU + 0.12, 0.6)] * (sides + 1)] * 2
+        b.quad_grid(Pc, Nc, Uc, sides, 1, [[(1.0, 0.0, 0.0)] * (sides + 1)] * 2)
+    return lambda z: np.array([lean[0] * z, lean[1] * z, 0]) + 0.12 * math.sin(z / Ht * 2.5 + bendp) * (z / Ht) * np.array([math.cos(bendp), math.sin(bendp), 0])
+
+
+def snag(H, seed, lod, top, proxy=False):
+    """A dead spruce: the grey trunk and whorls of broken stubs, short and snapped low down, longer and drooping in the
+    middle (a few forked), short and upturned near the top. lod 0 every whorl, 4-sided stubs; 1 the longer stubs, 3
+    sides; 2 the trunk and the longest few. proxy: the trunk and the longer stubs (thin), so its shadow is branchy."""
+    rng = np.random.default_rng(seed)
+    b = Build()
+    rb = 0.02 * H + 0.07
+    sides, rings = ((10, 12), (7, 6), (5, 3))[lod] if not proxy else (5, 3)
+    axis = snag_trunk(b, H, rb, sides, rings, np.random.default_rng(seed + 1), top)
+    h = 0.9 + rng.uniform(0, 0.3)
+    az0 = rng.uniform(0, 6.28)
+    stubs = []
+    while h < H * (0.93 if top == 'thin' else 0.97):
+        t = h / H
+        for k in range(int(rng.integers(2, 5))):
+            az = az0 + k * 2 * math.pi / 4 + rng.normal(0, 0.35)
+            if t < 0.3:
+                L = rng.uniform(0.12, 0.45)                       # snapped low down
+                pitch = rng.uniform(-25, 5)
+            elif t < 0.75:
+                L = rng.uniform(0.25, 1.5) * (1.2 - 0.4 * t)       # the middle: some long, drooping
+                pitch = rng.uniform(-40, -8)
+            else:
+                L = rng.uniform(0.2, 0.75)
+                pitch = rng.uniform(-10, 25)
+            stubs.append((h, az, L, math.radians(pitch), rng.random() < 0.3 and L > 0.7))
+        h += rng.uniform(0.45, 0.85)
+        az0 += 2.4
+    for h, az, L, pitch, fork in stubs:
+        if proxy and L < 0.6:
+            continue
+        if lod == 1 and L < 0.45 and not proxy:
+            continue
+        if lod == 2 and L < 0.9 and not proxy:
+            continue
+        t = h / H
+        rt = max(0.018, rb * (1 - 0.72 * t) * 0.85)
+        d = np.array([math.cos(az) * math.cos(pitch), math.sin(az) * math.cos(pitch), math.sin(pitch)])
+        p0 = axis(h) + np.array([0, 0, h]) + np.array([math.cos(az), math.sin(az), 0]) * rt * 0.5
+        r0 = max(0.02, 0.03 + 0.05 * (L / 1.5)) * (1 + 0.3 * (1 - t))
+        droop = np.array([0, 0, -0.12 * L * L])
+        pts = [p0, p0 + d * L * 0.55 + droop * 0.3, p0 + d * L + droop]
+        ns = 3 if (lod or proxy) else 4
+        tube(b, pts if lod == 0 and not proxy else [pts[0], pts[2]], [r0, r0 * 0.7, r0 * 0.45] if lod == 0 and not proxy else [r0, r0 * 0.45], ns, occ=0.85)
+        if fork and lod == 0 and not proxy:
+            q = pts[1]
+            d2 = d + np.array([math.cos(az + 1.4), math.sin(az + 1.4), 0.2]) * 0.6
+            d2 /= np.linalg.norm(d2)
+            tube(b, [q, q + d2 * L * 0.45], [r0 * 0.55, r0 * 0.25], 3, occ=0.85)
+    return b
+
+
+def lump(b, rng, c, rx, rz, nu=9, nv=5):
+    """A rough ellipsoid (a shadow proxy's mass), its radius jittered."""
+    uv = (BU + 0.1, 0.5)
+    P = []
+    jit = rng.uniform(0.82, 1.18, (nv + 1, nu))
+    for jv in range(nv + 1):
+        th = math.pi * jv / nv
+        row = []
+        for iu in range(nu + 1):
+            ph = 2 * math.pi * (iu % nu) / nu
+            o = np.array([math.sin(th) * math.cos(ph), math.sin(th) * math.sin(ph), math.cos(th)])
+            row.append(c + o * np.array([rx, rx, rz]) * (jit[jv, iu % nu] if 0 < jv < nv else 1.0))
+        P.append(row)
+    N = [[np.array([0, 0, 1.0])] * (nu + 1)] * (nv + 1)
+    UV = [[uv] * (nu + 1)] * (nv + 1)
+    b.quad_grid(P, N, UV, nu, nv)
+
+
+def bush(H, R, seed, lod, look):
+    """A hazel or an elder: a low multi-stemmed dome of leaf-clump cards (the alder's clump, a size larger in its cell),
+    the stems showing low down, its base dark. lod 0: some 10-14 clumps, two crossed cards each, and the stems; 1:
+    fewer, larger, one card each; 2: four big cards."""
+    rng = np.random.default_rng(seed)
+    b = Build()
+    zc, hz = 0.45 * H, 0.55 * H
+    dome = Dome(R, zc, hz, H)
+    j0 = 0 if look == 'hazel' else 3
+    if lod == 0:
+        for k in range(int(rng.integers(4, 7))):
+            az = rng.uniform(0, 6.28); el = math.radians(rng.uniform(55, 80))
+            d = np.array([math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el)])
+            p0 = np.array([math.cos(az), math.sin(az), 0]) * rng.uniform(0.02, 0.12) + np.array([0, 0, -0.1])
+            L = H * rng.uniform(0.55, 0.8)
+            tube(b, [p0, p0 + d * L * 0.5, p0 + d * L], [0.03, 0.022, 0.012], 3, occ=0.4)
+    nc = max(3, round((12, 7, 4)[lod] * (R / 1.0) ** 0.6))
+    for i in range(nc):
+        zf = 1 - 1.45 * (i + 0.5) / nc
+        a = i * 2.39996 + rng.normal(0, 0.3)
+        rxy = math.sqrt(max(0.0, 1 - zf * zf))
+        o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
+        tip = np.array([0, 0, zc]) + o * np.array([R, R, hz]) * rng.uniform(0.82, 1.0)
+        dout = o * np.array([1, 1, 0.6]) + np.array([0, 0, 0.35])
+        dout /= np.linalg.norm(dout)
+        ln = (0.95, 1.2, 1.55)[lod] * R * rng.uniform(0.85, 1.15)
+        wd = ln * rng.uniform(0.8, 0.95)
+        c0 = tip - dout * ln * 0.78
+        c0[2] = max(c0[2], -0.05)
+        roll, j = rng.uniform(-0.6, 0.6), j0 + int(rng.integers(0, 3))
+        card(b, c0, dout, ln, wd, roll, 0.1, 0.12, j, H, R, segs_l=(2, 2, 1)[lod], segs_w=(2, 1, 1)[lod],
+             mirror=bool(rng.random() < 0.5), crown=dome)
+        if lod == 0:
+            r2 = roll + rng.choice([-1, 1]) * math.radians(rng.uniform(25, 40))
+            card(b, c0 + dout * ln * 0.05, dout, ln * rng.uniform(0.8, 0.95), wd * rng.uniform(0.85, 1.0), r2, 0.12, 0.14, j0 + (j - j0 + int(rng.integers(1, 3))) % 3, H, R,
+                 segs_l=2, segs_w=1, mirror=bool(rng.random() < 0.5), crown=dome)
+    return b
+
+
+def bush_proxy(H, R, seed):
+    rng = np.random.default_rng(seed + 5)
+    b = Build()
+    lump(b, rng, np.array([0, 0, 0.42 * H]), 0.62 * R, 0.42 * H, 8, 4)
+    for k in range(3):
+        a = rng.uniform(0, 6.28)
+        lump(b, rng, np.array([math.cos(a) * 0.45 * R, math.sin(a) * 0.45 * R, 0.4 * H]), 0.42 * R, 0.32 * H, 6, 3)
+    return b
+
+
+def bracken(H, R, seed, lod, clumps, fronds, ln, el):
+    """Bracken: clumps of fronds as cards, each from the ground up and out on its stipe, the blade arching over (a
+    frond's card: its foot the stipe, dark; the clump's base dark under the blades). Several clumps spread through a
+    patch (Fern_1's) or one upright clump (Plant_1_Big's)."""
+    rng = np.random.default_rng(seed)
+    b = Build()
+    cs = [np.zeros(3)]
+    while len(cs) < clumps:
+        a, r = rng.uniform(0, 6.28), R * rng.uniform(0.25, 0.55)
+        c = np.array([math.cos(a) * r, math.sin(a) * r, 0])
+        if all(np.linalg.norm(c - q) > R * 0.3 for q in cs):
+            cs.append(c)
+    for ci, c in enumerate(cs):
+        dome = Dome(R * (0.45 if clumps > 1 else 0.9), 0.0, H, H)
+        nf = fronds[lod] + (int(rng.integers(-1, 2)) if lod == 0 else 0)
+        az0 = rng.uniform(0, 6.28)
+        for k in range(nf):
+            az = az0 + k * 2 * math.pi / nf + rng.normal(0, 0.3)
+            e = math.radians(rng.uniform(*el))
+            d = np.array([math.cos(az) * math.cos(e), math.sin(az) * math.cos(e), math.sin(e)])
+            L = rng.uniform(*ln) * (1.12 if lod else 1.0)
+            wd = L * rng.uniform(0.5, 0.6)
+            c0 = c + np.array([math.cos(az), math.sin(az), 0]) * rng.uniform(0, 0.12) * R / 4 + np.array([0, 0, -0.05])
+
+            class Local:
+                # (the clump's own mass: normals out from its foot and up, darker toward the ground)
+                def normal(self, p, cn, dd, c=c, dome=dome):
+                    return dome.normal(p - np.array([c[0], c[1], 0]), cn, dd)
+
+                def occl(self, p, c=c, dome=dome):
+                    return dome.occl(p - np.array([c[0], c[1], 0]))
+            # (the blade lies over: rolled flat-ish, the front its upper side)
+            card(b, c0, d, L, wd, rng.uniform(-0.35, 0.35), 0.05, rng.uniform(0.28, 0.42), int(rng.integers(0, 6)), H, R,
+                 segs_l=(3, 2, 1)[lod], segs_w=(2, 1, 1)[lod], mirror=bool(rng.random() < 0.5), crown=Local())
+    return b
+
+
+def piece_build(species, prm, lod, proxy=False):
+    """One packed species' piece at a LOD (or its proxy, or None if it casts none)."""
+    if species == 'snag':
+        return snag(prm['H'], prm['seed'], 2 if proxy else lod, prm['top'], proxy=proxy)
+    if species == 'bush':
+        if proxy:
+            return bush_proxy(prm['H'], prm['R'], prm['seed']) if prm['proxy'] else None
+        return bush(prm['H'], prm['R'], prm['seed'], lod, prm['look'])
+    if species == 'bracken':
+        return None if proxy else bracken(prm['H'], prm['R'], prm['seed'], lod, prm['clumps'], prm['fronds'], prm['ln'], prm['el'])
+
+
+def pack_into(dst, src, alpha):
+    """src's geometry appended to dst, each vertex's COLOR.a alpha (a packed file's piece: (index + 0.5) / 8)."""
+    o = len(dst.v)
+    dst.v += src.v; dst.n += src.n; dst.uv += src.uv
+    dst.c += [(c[0], c[1], c[2], alpha) for c in src.c]
+    dst.f += [tuple(i + o for i in f) for f in src.f]
+
+
 def mesh(species):
     import bpy
     os.makedirs(OUT, exist_ok=True)
     img_path = os.path.join(OUT, f'{species}_atlas.png')
-    for size, prm in (SPRUCE if species == 'spruce' else ALDER).items():
+    # (a packed species: one file, its pieces told apart by COLOR.a; else a file per piece)
+    jobs = [(species, PACKED[species])] if species in PACKED else [(f'{species}_{size}', prm) for size, prm in (SPRUCE if species == 'spruce' else ALDER).items()]
+    for fname, prm in jobs:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         img = bpy.data.images.load(img_path)
         mat = bpy.data.materials.new(f'Leaves_Own{species.capitalize()}')
@@ -871,7 +1326,17 @@ def mesh(species):
         mat.use_backface_culling = False
         tris = []
         for lod in range(4):
-            if species == 'spruce':
+            if species in PACKED:
+                b = Build()
+                for v, (nm, pp) in enumerate(prm.items()):
+                    pb = piece_build(species, pp, lod, proxy=lod == 3)
+                    if pb is None:
+                        continue
+                    print(f'  {nm} {"lod%d" % lod if lod < 3 else "shadow"}: {sum(2 for f in pb.f)} tris')
+                    pack_into(b, pb, (v + 0.5) / 8)
+                if not b.f:
+                    continue
+            elif species == 'spruce':
                 b = spruce(prm['H'], prm['R'], prm['seed'], lod) if lod < 3 else shadow_proxy(prm['H'], prm['R'], prm['seed'])
             else:
                 b = alder(prm['H'], prm['R'], prm['seed'], lod, prm['stems']) if lod < 3 else alder_proxy(prm['H'], prm['R'], prm['seed'], prm['stems'])
@@ -885,13 +1350,13 @@ def mesh(species):
             me.normals_split_custom_set_from_vertices([tuple(n) for n in b.n])
             ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
             for i, c in enumerate(b.c):
-                ca.data[i].color = (c[0], c[1], c[2], 1.0)
+                ca.data[i].color = (c[0], c[1], c[2], c[3] if len(c) > 3 else 1.0)
             me.color_attributes.active_color = ca
             me.materials.append(mat)
             ob = bpy.data.objects.new(name, me)
             bpy.context.scene.collection.objects.link(ob)
             tris.append(sum(len(p.vertices) - 2 for p in me.polygons))
-        out = os.path.join(OUT, f'{species}_{size}.gltf')
+        out = os.path.join(OUT, f'{fname}.gltf')
         bpy.ops.export_scene.gltf(filepath=out, export_format='GLTF_SEPARATE', export_texture_dir='', export_normals=True,
                                   export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
                                   export_keep_originals=True, export_yup=True, export_apply=True,

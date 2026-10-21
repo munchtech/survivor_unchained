@@ -18,7 +18,7 @@
                "shader": {"hue_floor": 108, "near_dim": 0.45}},
     "alder": {"pieces": ["alder_a", "alder_b", "alder_c"], "packed": false, "kind": "broadleaf", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
               "shader": {"broadleaf": 1, "flutter": 2.2, "hue_floor": 98, "core": 0.3, "sun_lift": 0.7}},
-    "snag": {"pieces": ["snag_a", "snag_b", "snag_c"], "packed": true, "kind": "dead", "lod": [44, 100], "cell": 24, "shadow": true, "wind": 0.2,
+    "snag": {"pieces": ["snag_a", "snag_b", "snag_c"], "packed": true, "kind": "dead", "lod": [44, 100], "cell": 48, "shadow": true, "wind": 0.2,
              "shader": {"tint": [0.74, 0.74, 0.72], "sat": 0.7}},
     "bush": {"pieces": ["hazel_a", "hazel_b", "elder_a", "elder_b"], "packed": true, "kind": "bush", "lod": [40], "end": 90, "cell": 48, "shadow": true, "wind": 0.5,
              "shader": {"broadleaf": 1, "flutter": 1.8, "hue_floor": 100, "core": 0.6}},
