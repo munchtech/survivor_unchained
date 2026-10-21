@@ -70,7 +70,7 @@ Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout
 Branch `anim-40` (godot/assets is a junction: no stash, reset --hard or checkout .). The by-products are never committed. Files are in `tools/scratch/anim40/`.
 
 **Item 3, idle life (her part): DONE.**
-- In a safe place, the reaver, arcanist (wand) and stalker now sheathe and play relaxed town idles: `idle_reaver_town`, `idle_arcanist_town`, `idle_stalker_town`. All are on the Warden's WiggleHips take, each on its own stretch.
+- In a safe place, the reaver, arcanist (wand) and stalker now sheathe and play relaxed town idles: `idle_reaver_town`, `idle_arcanist_town`, `idle_stalker_town`. All are on the Warden's WiggleHips take, each on its own stretch. **Superseded (the owner, 20 Oct): "having their own is probably better than all the same".** Each calling gets its OWN relaxed town idle (a different take or pose language: reaver heavy and swaggering, arcanist poised and elegant, stalker loose but watchful); WiggleHips stays the Warden's alone. Animation 47 item 5, after the current MR.
 - They also play town runs (`run_reaver_town`, `run_arcanist_wand_town`, `run_stalker_town`), and the sprints follow.
 - Max judges: idle 1 (`judge_idle1_verdict.md`) passed the stalker and failed the reaver and arcanist on the sheathed pieces. Idle 2 (`judge_idle2_verdict.md`) PASSED all 8 frames.
 - **Code:**
