@@ -1953,6 +1953,9 @@ def push_field(Q, D, A, X, sigma):
     return out
 
 
+PUSH_ACC = {}
+
+
 def push_apply(Q, D, A, sigma):
     """Every part of the piece moved by the push field (a plate, its rolled edge, its rivets and the band's tab all
     together, so nothing parts), and the sheet, sockets and rims with it."""
@@ -1966,6 +1969,12 @@ def push_apply(Q, D, A, sigma):
         dw = push_field(Q, D, A, co @ mw[:3, :3].T + mw[:3, 3], sigma)
         if not np.abs(dw).max() > 1e-7:
             continue
+        # no shell vertex moves more than push_cap in all rounds (her skin points flag differently each round)
+        acc = PUSH_ACC.setdefault(o.name, np.zeros(len(co)))
+        mag = np.linalg.norm(dw, axis=1)
+        sc = np.minimum(1.0, np.maximum(PUSH_CAP - acc, 0.0) / np.maximum(mag, 1e-12))
+        dw = dw * sc[:, None]
+        acc += mag * sc
         dl = dw @ inv3.T
         me_.vertices.foreach_set("co", (co + dl).ravel())
         for kb in (me_.shape_keys.key_blocks if me_.shape_keys else []):
@@ -2038,7 +2047,7 @@ for rnd in range(PRM.get("push_rounds", 4)):
     push_apply(bv0[ii], D, A, PUSH_SIGMA)
     sv, sf, _ = mesh_world(B["shell"])
 PUSH["at"] = nip_rel(bv0[sorted(pushed)])[:12] if pushed else []
-PUSH["total_mm"] = round(max(pushed.values(), default=0) * 1000, 2)
+PUSH["total_mm"] = round(max([a.max() for a in PUSH_ACC.values()], default=0) * 1000, 2)
 stamp("push-out: %s" % json.dumps(PUSH))
 
 TUCKDIR = os.path.join(SCRATCH, "tuck")
@@ -2548,6 +2557,8 @@ row["tier"] = SPEC_PIECE.get("tier")
 # _rigid parts: the plate tops are cups on leather straps that must still lie under the pauldrons, armor 9)
 if SPEC_PIECE.get("rigid") is True or (MESH and IMPORT.get("rigid")):
     row["rigid"] = True
+if SPEC_PIECE.get("replaces"):
+    row["replaces"] = SPEC_PIECE["replaces"]         # (a calling row id: ArmorIndex.Calling wears this piece in its place)
 if SPEC_PIECE.get("cover_grow"):
     row["cover_grow"] = SPEC_PIECE["cover_grow"]     # (tools/armor/cover.py: the cover carried on past its edge, b2r3)
 if MESH:
