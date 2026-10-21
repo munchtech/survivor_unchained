@@ -138,7 +138,7 @@ ARC_CANDS = {
     "R3": {"arc": (-0.214, -0.291, 0.254), "blade": (-0.397, 1.0, -0.057), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
            "knuckles": (-0.2495, -0.0439, 0.9674), "stop_blade": (-0.317, 1.0, -0.097)},
 }
-ARC_CAND = os.environ.get("ARC_CAND", "R3")
+ARC_CAND = os.environ.get("ARC_CAND", "R1")
 _ARC = ARC_CANDS[ARC_CAND]
 ARC_HAND_R = _ARC["arc"]
 ARC_BLADE_R = _ARC["blade"]
