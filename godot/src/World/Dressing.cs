@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using SurvivorUnchained.World;
+using ColliderKind = SurvivorUnchained.Sim.ColliderKind;
 
 namespace SurvivorUnchained.View;
 
@@ -213,8 +215,12 @@ public static class Dressing
             }
             return false;
         }
-        foreach (var g in z.Flora)
+        var clear = Clearance.Of(z);
+        foreach (var g0 in z.Flora)
         {
+            // (the clearance first: a stone nudged off a trunk, or dropped; a tree off a boulder's crown dropped)
+            var g = clear.Apply(g0);
+            if (g.At.Length == 0) continue;
             if (ways.Length > 0 && g.At.Any(t => Dropped(g.Kind, t.Origin)))
             {
                 var kept = g.At.Where(t => !Dropped(g.Kind, t.Origin)).ToArray();
@@ -227,7 +233,8 @@ public static class Dressing
             if (!g.Piece.StartsWith("own:")) { flora.Add(g); continue; }
             Merge(g);
         }
-        foreach (var w in ways) Causeway(z, w, merged);
+        foreach (var w in ways) Causeway(z, w, merged, clear);
+        clear.Report(z);
         void Merge(ZoneData.FloraGroup g)
         {
             var names = g.Piece[4..].Split('|');
@@ -242,7 +249,24 @@ public static class Dressing
                 mg.At.Add(t); mg.Var.Add(v);
             }
         }
-        foreach (var ((file, look), (sp, at, vars)) in merged) OwnFlora(root, sp, file, look, at, vars);
+        // (--flora-hide A,B: a developer's switch, these species or kinds of ours left out (a frame's diff finds what they are))
+        var hide = SurvivorUnchained.Args.Get("flora-hide")?.Split(',') ?? [];
+        foreach (var ((file, look), (sp, at, vars)) in merged)
+            if (!hide.Contains(sp.Name) && !hide.Contains(sp.Kind)) OwnFlora(root, sp, file, look, at, vars);
+        // (a stone darkened under a crown (sky_dark, the pebbles) reads the ground's exposure, as the ground's litter does)
+        int skySet = 0;
+        if (z.Place == null && merged.Keys.Any(k => merged[k].Sp.Stone && merged[k].Sp.Shader.ContainsKey("sky_dark")))
+        {
+            var expo = GroundPaint.Of(z).Exposure;
+            var done = new HashSet<ulong>();
+            foreach (var n in root.GetChildren().OfType<MultiMeshInstance3D>())
+                if (n.Multimesh.Mesh is Mesh m)
+                    for (int i = 0; i < m.GetSurfaceCount(); i++)
+                        for (var mat = m.SurfaceGetMaterial(i) as ShaderMaterial; mat != null; mat = mat.NextPass as ShaderMaterial)
+                            if (mat.GetShaderParameter("sky_dark").VariantType == Godot.Variant.Type.Float && (float)mat.GetShaderParameter("sky_dark") > 0f && done.Add(mat.GetInstanceId()))
+                            { mat.SetShaderParameter("expo_tex", expo); mat.SetShaderParameter("zone_size", z.Size); skySet++; }
+        }
+        if (System.Environment.GetEnvironmentVariable("CLEAR_STATS") != null) GD.Print($"sky_dark: {skySet} stone materials given the ground's exposure");
         foreach (var g in flora)
         {
             var low = Low.Contains(g.Kind);
@@ -293,7 +317,7 @@ public static class Dressing
     /// <summary>A causeway's stepping stones (a zone's flora_species.json "causeways"; flora_species.json's _doc there): each
     /// row's stones at uneven steps, nudged across, turned, tilted and sized by their own hashes, no two neighbours alike, each
     /// set so its top stands 'above' over the water (or a little over the ground, where that is higher), its body sunk in the bed.</summary>
-    static void Causeway(ZoneData z, System.Text.Json.JsonElement w, Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)> merged)
+    static void Causeway(ZoneData z, System.Text.Json.JsonElement w, Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)> merged, Clearance clearOf)
     {
         static Vector2 V2(System.Text.Json.JsonElement e) => new(e[0].GetSingle(), e[1].GetSingle());
         float F(string k, float d) => w.TryGetProperty(k, out var v) ? v.GetSingle() : d;
@@ -312,6 +336,7 @@ public static class Dressing
         var rowSkip = w.TryGetProperty("row_skip", out var rs) ? rs.EnumerateArray().Select(e => e.GetSingle()).ToArray() : null;
         // ('step_var' how far each step strays from 'step' (0.35: 0.65-1.35 of it); 'clear' m the least gap kept between any two
         // stones' rims (about 0.35 m a unit of scale from the middle), so the drifting rows never pile up)
+        var cl = clearOf;
         float stepVar = F("step_var", 0.35f), clear = F("clear", -10f), stagger = F("stagger", -1f), shared = F("drift_shared", 0f);
         var placed = new List<(Vector2 P, float S)>();
         bool stats = System.Environment.GetEnvironmentVariable("CAUSEWAY_STATS") != null;
@@ -339,7 +364,7 @@ public static class Dressing
                     if (v == last) v = (v + 1 + r) % n;
                     last = v;
                     float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4));
-                    if (placed.Any(q => q.P.DistanceTo(p) < 0.35f * (q.S + s) + clear)) { t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9)); i++; continue; }
+                    if (placed.Any(q => q.P.DistanceTo(p) < 0.35f * (q.S + s) + clear) || cl.NearProp(p, 0.35f * s)) { t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9)); i++; continue; }
                     placed.Add((p, s));
                     float topY = Mathf.Max(water + Mathf.Lerp(above.X, above.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
                     float ta = H(k + 6) * Mathf.Tau;
@@ -417,6 +442,148 @@ public static class Dressing
         {
             var sh = Mmi(proxy, $"shadow_{cx}_{cz}", idx, shAt); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
             root.AddChild(sh);
+        }
+    }
+
+    /// <summary>What our stones keep clear of (flora_species.json "stone" "clear"; its _doc): a tree whose trunk stands within a
+    /// stone's radius + 'gap' (judge E5b: a trunk out of a boulder's crown) is dropped; a stone, or a causeway's, within 'props' m
+    /// of a prop or a solid tagged collider (a pylon, a chest, a gate: judge E5b, a stone in the ford's lantern post) is dropped.</summary>
+    sealed class Clearance
+    {
+        readonly HashSet<string> trees = new();
+        // (each stone kind: its radius, m a unit of its scale, and what gives way when a trunk stands in it: "tree" (dropped),
+        // "nudge" (the stone moved off the trunk, dropped if it can't be), "none")
+        readonly Dictionary<string, (float R, string Mode)> stoneKinds = new();
+        float trunk, gap, propGap;
+        readonly List<(Vector2 P, float R)> crowns = new();     // the stones a tree gives way to
+        readonly List<(Vector2 P, float R)> trunks = new();     // the trees a stone gives way to
+        readonly List<(Vector2 P, float R)> discs = new();
+        readonly List<ColliderDef> boxes = new();
+        int treesDropped, stonesDropped, stonesNudged;
+        float minTree = float.MaxValue, minProp = float.MaxValue, minStone = float.MaxValue;
+
+        static float ScaleOf(Transform3D t) => t.Basis.X.Length();
+
+        public static Clearance Of(ZoneData z)
+        {
+            var c = new Clearance();
+            if (!FloraOwn || !FloraSpecies.Stone.TryGetProperty("clear", out var d)) return c;
+            foreach (var k in d.GetProperty("trees").EnumerateArray()) c.trees.Add(k.GetString()!);
+            foreach (var k in d.GetProperty("stones").EnumerateObject()) c.stoneKinds[k.Name] = (k.Value.GetProperty("r").GetSingle(), k.Value.GetProperty("mode").GetString()!);
+            c.trunk = d.GetProperty("trunk").GetSingle(); c.gap = d.GetProperty("gap").GetSingle(); c.propGap = d.GetProperty("props").GetSingle();
+            foreach (var col in z.Meta.Colliders)
+            {
+                if (col.Tag == null || col.Soft) continue;
+                if (col.Kind == ColliderKind.Box) c.boxes.Add(col);
+                else c.discs.Add((new Vector2((float)col.X, (float)col.Z), (float)col.R));
+            }
+            foreach (var (id, at) in z.Props)
+            {
+                int sl = id.IndexOf('/');
+                Aabb? b = null;
+                foreach (var (mesh, local) in PartsOf(id[..sl], id[(sl + 1)..])) { var a = local * mesh.GetAabb(); b = b is Aabb o ? o.Merge(a) : a; }
+                if (b is not Aabb bb) continue;
+                c.discs.Add((new Vector2(at.Origin.X, at.Origin.Z) + new Vector2(bb.GetCenter().X, bb.GetCenter().Z) * ScaleOf(at), 0.5f * Mathf.Max(bb.Size.X, bb.Size.Z) * ScaleOf(at)));
+            }
+            foreach (var g in z.Flora)
+            {
+                if (c.stoneKinds.TryGetValue(g.Kind, out var sk) && sk.Mode == "tree")
+                    foreach (var t in g.At) c.crowns.Add((new Vector2(t.Origin.X, t.Origin.Z), sk.R * ScaleOf(t)));
+                if (c.trees.Contains(g.Kind))
+                    foreach (var t in g.At) c.trunks.Add((new Vector2(t.Origin.X, t.Origin.Z), c.trunk * ScaleOf(t)));
+            }
+            // (the trees that give way are out of the trunks the stones give way to)
+            c.trunks.RemoveAll(tr => Nearest(c.crowns, tr.P, tr.R, out _) < c.gap);
+            return c;
+        }
+
+        /// <summary>How far a disc's rim stands from the nearest prop or tagged collider (negative: inside it).</summary>
+        float PropGap(Vector2 p, float r)
+        {
+            float best = float.MaxValue;
+            foreach (var (q, qr) in discs) best = Mathf.Min(best, p.DistanceTo(q) - qr - r);
+            foreach (var b in boxes)
+            {
+                // (into the box's own frame: its half sizes hw, hd, turned by rot)
+                var d = p - new Vector2((float)b.X, (float)b.Z);
+                float cs = Mathf.Cos(-(float)b.Rot), sn = Mathf.Sin(-(float)b.Rot);
+                var l = new Vector2(d.X * cs - d.Y * sn, d.X * sn + d.Y * cs);
+                var o = new Vector2(Mathf.Max(Mathf.Abs(l.X) - (float)b.Hw, 0f), Mathf.Max(Mathf.Abs(l.Y) - (float)b.Hd, 0f));
+                best = Mathf.Min(best, o.Length() - r);
+            }
+            return best;
+        }
+
+        public bool NearProp(Vector2 p, float r)
+        {
+            if (discs.Count + boxes.Count == 0) return false;
+            float g = PropGap(p, r);
+            if (g < propGap) { stonesDropped++; return true; }
+            minProp = Mathf.Min(minProp, g);
+            return false;
+        }
+
+        static float Nearest(List<(Vector2 P, float R)> l, Vector2 p, float r, out Vector2 at)
+        {
+            float best = float.MaxValue; at = p;
+            foreach (var (q, qr) in l)
+            {
+                if (Mathf.Abs(q.X - p.X) > qr + r + 4f || Mathf.Abs(q.Y - p.Y) > qr + r + 4f) continue;
+                float d = p.DistanceTo(q) - qr - r;
+                if (d < best) { best = d; at = q; }
+            }
+            return best;
+        }
+
+        /// <summary>A group with its copies cleared: a tree too near a boulder dropped; a stone too near a trunk nudged off it
+        /// (dropped if two tries leave it near one), or too near a prop dropped.</summary>
+        public ZoneData.FloraGroup Apply(ZoneData.FloraGroup g)
+        {
+            bool tree = trees.Contains(g.Kind);
+            bool stone = stoneKinds.TryGetValue(g.Kind, out var sk);
+            if (!tree && !stone) return g;
+            var outAt = new List<Transform3D>(g.At.Length);
+            bool changed = false;
+            foreach (var t0 in g.At)
+            {
+                var t = t0;
+                var p = new Vector2(t.Origin.X, t.Origin.Z);
+                if (tree)
+                {
+                    float d = Nearest(crowns, p, trunk * ScaleOf(t), out _);
+                    if (d < gap) { treesDropped++; changed = true; continue; }
+                    minTree = Mathf.Min(minTree, d);
+                    outAt.Add(t);
+                    continue;
+                }
+                float r = sk.R * ScaleOf(t);
+                if (sk.Mode == "nudge")
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        float d = Nearest(trunks, p, r, out var q);
+                        if (d >= gap) break;
+                        var away = (p - q).LengthSquared() > 1e-6f ? (p - q).Normalized() : Vector2.Right;
+                        p += away * (gap - d + 0.02f);
+                        if (k == 0) stonesNudged++;
+                        changed = true;
+                    }
+                    float d2 = Nearest(trunks, p, r, out _);
+                    if (d2 < gap) { stonesDropped++; changed = true; continue; }
+                    minStone = Mathf.Min(minStone, d2);
+                    t.Origin = new Vector3(p.X, t.Origin.Y, p.Y);
+                }
+                if (NearProp(p, r)) { changed = true; continue; }
+                outAt.Add(t);
+            }
+            return changed ? g with { At = outAt.ToArray() } : g;
+        }
+
+        public void Report(ZoneData z)
+        {
+            if (System.Environment.GetEnvironmentVariable("CLEAR_STATS") == null) return;
+            GD.Print($"clearance {z.Id}: trees dropped {treesDropped}, stones nudged {stonesNudged}, stones dropped {stonesDropped}; nearest kept trunk to a boulder's rim {minTree:F2} m,"
+                + $" nearest nudged-kind stone to a trunk {minStone:F2} m, nearest kept stone to a prop {minProp:F2} m");
         }
     }
 

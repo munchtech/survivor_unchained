@@ -41,11 +41,14 @@ DATA = os.path.join(ROOT, 'godot', 'data', 'flora_species.json')
 # lods: triangles per variant at lod0, lod1, lod2; shadow: lod2 cast as the piece's shadow (else it casts none).
 PRESETS = {
     # river boulder: rounded, water-worn, a few broad soft facets (the kit's boulders: scale ~1.7, 5 m across)
+    # (E5c, judge r2: the soft-faceted ones read as smooth grey domes: each now broken by 'fract' (2-3) real fracture planes,
+    # flat faces 'fdepth' of its radius in, their rims a hard 'fk' m bevel the bake lights; set facing up-and-out 'fup' so the
+    # play camera, looking down, sees them, spaced round it)
     'boulder': dict(lods=(2200, 700, 220), shadow=True, variants=[
-        dict(seed=101, ax=(1.6, 1.3, 1.2), cz=0.8, planes=4, k=0.35, tilt=0.6, amp=0.07, freq=1.1, fine=0.012, foot=-0.45, cut=-0.3),
-        dict(seed=113, ax=(1.5, 1.45, 1.05), cz=0.75, planes=5, k=0.3, tilt=0.7, amp=0.08, freq=1.3, fine=0.012, foot=-0.45, cut=-0.3),
-        dict(seed=127, ax=(1.7, 1.2, 1.25), cz=0.85, planes=3, k=0.4, tilt=0.5, amp=0.06, freq=0.9, fine=0.01, foot=-0.45, cut=-0.3),
-        dict(seed=131, ax=(1.45, 1.35, 1.15), cz=0.7, planes=6, k=0.28, tilt=0.8, amp=0.09, freq=1.5, fine=0.012, foot=-0.45, cut=-0.3),
+        dict(seed=101, ax=(1.6, 1.3, 1.2), cz=0.8, planes=4, k=0.35, tilt=0.6, amp=0.07, freq=1.1, fine=0.012, foot=-0.45, cut=-0.3, fract=3, fk=0.05, fdepth=(0.74, 0.84), fup=(0.25, 0.7)),
+        dict(seed=113, ax=(1.5, 1.45, 1.05), cz=0.75, planes=5, k=0.3, tilt=0.7, amp=0.08, freq=1.3, fine=0.012, foot=-0.45, cut=-0.3, fract=2, fk=0.05, fdepth=(0.7, 0.8), fup=(0.3, 0.75)),
+        dict(seed=127, ax=(1.7, 1.2, 1.25), cz=0.85, planes=3, k=0.4, tilt=0.5, amp=0.06, freq=0.9, fine=0.01, foot=-0.45, cut=-0.3, fract=3, fk=0.045, fdepth=(0.72, 0.82), fup=(0.2, 0.65)),
+        dict(seed=131, ax=(1.45, 1.35, 1.15), cz=0.7, planes=6, k=0.28, tilt=0.8, amp=0.09, freq=1.5, fine=0.012, foot=-0.45, cut=-0.3, fract=3, fk=0.055, fdepth=(0.74, 0.84), fup=(0.3, 0.75)),
     ]),
     # field rock: angular, broken faces with soft bevels, lichened in the shader (the kit's 'rock': scale ~0.6, squashed)
     'fieldrock': dict(lods=(1600, 500, 160), shadow=True, variants=[
@@ -62,20 +65,22 @@ PRESETS = {
         dict(seed=311, ax=(1.6, 1.5, 1.2), cz=0.8, planes=9, k=0.06, tilt=0.4, amp=0.06, freq=1.2, fine=0.01, strata=4, foot=-0.45, cut=-0.3),
         dict(seed=313, ax=(1.75, 1.3, 1.25), cz=0.75, planes=8, k=0.05, tilt=0.35, amp=0.05, freq=1.5, fine=0.01, strata=5, foot=-0.45, cut=-0.3),
     ]),
-    # pebble cluster: five to eight water-rounded pebbles in one piece, sunk a third (the kit's pebbles: 0.45 m, scale ~1.8)
+    # pebble cluster (E5c, judge r2: not 6-12 equal pale balls): one anchor, one or two middling, one to three small (three
+    # sizes), each 1-2 of its diameters from its neighbour, flat (height 0.45 of its width) and sunk 30%; each stone its own
+    # colour (UV: u its class, slate / ochre / umber, v its value; the shader's 'stone_mix') (the kit's pebbles: 0.45 m, scale ~1.8)
     'pebbles': dict(lods=(600, 200, 200), shadow=False, variants=[
-        dict(seed=401, n=6), dict(seed=409, n=5), dict(seed=419, n=8), dict(seed=421, n=7),
+        dict(seed=401, n=(1, 2, 2)), dict(seed=409, n=(1, 1, 2)), dict(seed=419, n=(1, 2, 3)), dict(seed=421, n=(1, 1, 1)),
     ]),
     # ford stepping stone (E5b, judge r1): a rounded slab, its outline 'sides' (5-7) soft vertical cuts round an ellipse of
     # L:W 1.2-1.8, its crown pressed flat ('dome' m of fall to the rim, <= 3 cm), worn round its rim, a deep body sunk in the
     # bed (real size, m; top at 0.75; the causeway's 'scale' sizes its footprint)
     'stepping': dict(lods=(1200, 400, 140), shadow=False, variants=[
-        dict(seed=501, ax=(0.5, 0.38, 0.6), cz=0.4, sides=6, k=0.06, amp=0.04, freq=2.2, fine=0.006, top=0.75, dome=0.022, foot=0.0, cut=0.25),
-        dict(seed=503, ax=(0.52, 0.32, 0.6), cz=0.4, sides=5, k=0.07, amp=0.05, freq=2.0, fine=0.006, top=0.75, dome=0.026, foot=0.0, cut=0.25),
-        dict(seed=509, ax=(0.54, 0.31, 0.6), cz=0.4, sides=7, k=0.05, amp=0.04, freq=2.4, fine=0.006, top=0.75, dome=0.018, foot=0.0, cut=0.25),
-        dict(seed=521, ax=(0.46, 0.37, 0.6), cz=0.4, sides=5, k=0.07, amp=0.05, freq=1.9, fine=0.006, top=0.75, dome=0.024, foot=0.0, cut=0.25),
-        dict(seed=523, ax=(0.5, 0.35, 0.6), cz=0.4, sides=7, k=0.05, amp=0.04, freq=2.3, fine=0.006, top=0.75, dome=0.02, foot=0.0, cut=0.25),
-        dict(seed=541, ax=(0.52, 0.4, 0.6), cz=0.4, sides=6, k=0.06, amp=0.04, freq=2.1, fine=0.006, top=0.75, dome=0.025, foot=0.0, cut=0.25),
+        dict(seed=501, ax=(0.5, 0.38, 0.6), cz=0.4, sides=6, k=0.035, amp=0.04, freq=2.2, fine=0.006, top=0.75, dome=0.022, foot=0.0, cut=0.25),
+        dict(seed=503, ax=(0.52, 0.32, 0.6), cz=0.4, sides=5, k=0.04, amp=0.05, freq=2.0, fine=0.006, top=0.75, dome=0.026, foot=0.0, cut=0.25),
+        dict(seed=509, ax=(0.54, 0.31, 0.6), cz=0.4, sides=7, k=0.03, amp=0.04, freq=2.4, fine=0.006, top=0.75, dome=0.018, foot=0.0, cut=0.25),
+        dict(seed=521, ax=(0.46, 0.37, 0.6), cz=0.4, sides=5, k=0.04, amp=0.05, freq=1.9, fine=0.006, top=0.75, dome=0.024, foot=0.0, cut=0.25),
+        dict(seed=523, ax=(0.5, 0.35, 0.6), cz=0.4, sides=7, k=0.03, amp=0.04, freq=2.3, fine=0.006, top=0.75, dome=0.02, foot=0.0, cut=0.25),
+        dict(seed=541, ax=(0.52, 0.4, 0.6), cz=0.4, sides=6, k=0.035, amp=0.04, freq=2.1, fine=0.006, top=0.75, dome=0.025, foot=0.0, cut=0.25),
     ]),
 }
 
@@ -255,8 +260,29 @@ def sculpt(prm):
             dn = D @ n
             R.append(np.where(dn > 1e-3, dist / np.maximum(dn, 1e-3), 1e3))
     r = softmin(np.stack(R, 1), prm['k']) if len(R) > 1 else re
+    if prm.get('fract'):
+        # fracture planes: spaced round it (each a little off even), leaning up by fup, cut fdepth of its radius in, hard rims
+        nf = prm['fract']
+        a0 = rng.uniform(0, 2 * math.pi)
+        Rf = [r]
+        for j in range(nf):
+            th = a0 + 2 * math.pi * (j + rng.uniform(-0.18, 0.18)) / nf
+            up = rng.uniform(*prm['fup'])
+            n = np.array([math.cos(th) * math.sqrt(1 - up * up), math.sin(th) * math.sqrt(1 - up * up), up])
+            dn = D @ n
+            # (its depth against the soft body's own surface that way, not the ellipsoid's: the soft cuts sit well inside it)
+            rn = r[np.argmax(dn)]
+            Rf.append(np.where(dn > 1e-3, rn * rng.uniform(*prm['fdepth']) / np.maximum(dn, 1e-3), 1e3))
+        Rf = np.stack(Rf, 1)
+        r = softmin(Rf, prm['fk'])
+        # (the faces, for the report: each plane's share of the surface it is (within 1 cm))
+        prm['_faces'] = [float(np.mean((Rf[:, j] - r < 0.01) & (Rf[:, 0] - Rf[:, j] > 0.02))) for j in range(1, nf + 1)]
     P = D * r[:, None]
-    r *= 1 + prm['amp'] * fbm3(P, prm['freq'], prm['seed'])
+    flat = np.zeros(len(r))
+    if prm.get('fract'):
+        # (a fracture face stays near flat: its lumps a fifth of the body's)
+        flat = smooth(0.0, 0.03, Rf[:, 0] - r) * 0.8
+    r *= 1 + prm['amp'] * (1 - flat) * fbm3(P, prm['freq'], prm['seed'])
     P = D * r[:, None]
     P += D * (prm['fine'] * fbm3(P, 6.0, prm['seed'] + 1, 3))[:, None]
     if prm.get('strata'):
@@ -270,8 +296,8 @@ def sculpt(prm):
         P[:, :2] *= (1 - inset)[:, None]
     P[:, 2] += prm['cz']
     if 'top' in prm:
-        # a worn flat top: the stone's crown pressed to 'top' (soft rim), dished by a few mm
-        k = 0.05
+        # a worn flat top: the stone's crown pressed to 'top' (soft rim, E5c: a 3-4 cm bevel, 'rim_k'), dished by a few mm
+        k = prm.get('rim_k', 0.035)
         z = P[:, 2]
         # (a low crown: the pressed height falls 'dome' m from its middle to its rim)
         tz = prm['top'] - prm.get('dome', 0.0) * np.clip((P[:, 0] / ax[0]) ** 2 + (P[:, 1] / ax[1]) ** 2, 0, 1.2)
@@ -283,25 +309,42 @@ def sculpt(prm):
 
 
 def pebble_cluster(prm):
+    """A cluster's stones (V, F) and each dense vertex's UV (u its colour class's middle, v its value: one per stone)."""
     rng = np.random.default_rng(prm['seed'])
-    Vs, Fs, o = [], [], 0
+    Vs, Fs, Us, o = [], [], [], 0
     placed = []
-    for i in range(prm['n']):
-        # (E5b: 10-30 cm in the zone (its pebbles at scale ~1.8), one larger anchor stone first)
-        rad = rng.uniform(0.085, 0.1) if i == 0 else rng.uniform(0.028, 0.07)
-        for _ in range(40):
-            c = rng.uniform(-0.17, 0.17, 2)
-            if all(np.linalg.norm(c - q) > (rad + qr) * 0.8 for q, qr in placed):
-                break
+    # (sizes: anchor 8-9.5 cm, middling 4.5-5.5, small 2.2-3 (radius; in the zone at scale ~1.8))
+    sizes = [rng.uniform(0.08, 0.095) for _ in range(prm['n'][0])]         + [rng.uniform(0.045, 0.055) for _ in range(prm['n'][1])] + [rng.uniform(0.022, 0.03) for _ in range(prm['n'][2])]
+    cls = rng.permutation([0, 1, 2] * 3)
+    for i, rad in enumerate(sizes):
+        c = np.zeros(2)
+        if placed:
+            for _ in range(200):
+                q, qr = placed[rng.integers(len(placed))]
+                # (a gap of 1-2 of the smaller one's diameter from a neighbour, never nearer than one to any other)
+                gap = rng.uniform(1.0, 2.0) * 2 * min(rad, qr)
+                a = rng.uniform(0, 2 * math.pi)
+                c = q + (rad + qr + gap) * np.array([math.cos(a), math.sin(a)])
+                if all(np.linalg.norm(c - p2) >= rad + r2 + 1.0 * 2 * min(rad, r2) - 1e-6 for p2, r2 in placed):
+                    break
         placed.append((c, rad))
         D, F = icosphere(4)
-        ax = np.array([rad, rad * rng.uniform(0.6, 0.9), rad * rng.uniform(0.4, 0.6)])
+        ax = np.array([rad, rad * rng.uniform(0.7, 0.9), rad * 0.45])
         ang = rng.uniform(0, math.pi)
         Rz = np.array([[math.cos(ang), -math.sin(ang), 0], [math.sin(ang), math.cos(ang), 0], [0, 0, 1]])
-        P = (D * ax) * (1 + 0.08 * fbm3(D, 1.4, prm['seed'] + i, 2))[:, None]
-        P = P @ Rz.T + np.array([c[0], c[1], ax[2] * 0.45])
+        P = (D * ax) * (1 + 0.07 * fbm3(D, 1.4, prm['seed'] + i, 2))[:, None]
+        # (sunk 30% of its height: its middle 0.4 of its half-height up)
+        P = P @ Rz.T + np.array([c[0], c[1], ax[2] * 0.4])
         Vs.append(P); Fs.append(F + o); o += len(P)
-    return np.concatenate(Vs), np.concatenate(Fs)
+        Us.append(np.tile([(cls[i % len(cls)] + 0.5) / 3, rng.random()], (len(P), 1)))
+    V = np.concatenate(Vs)
+    V[:, :2] -= V[:, :2].mean(0)
+    gaps = []
+    for i, (c, r) in enumerate(placed):
+        gaps.append(min((np.linalg.norm(c - c2) - r - r2) / (2 * min(r, r2)) for j, (c2, r2) in enumerate(placed) if j != i) if len(placed) > 1 else 0)
+    print(f'  pebbles {prm["seed"]}: {len(placed)} stones, diameters (cm) {sorted(round(200 * r, 1) for _, r in placed)}, height/width 0.45,'
+          f' sunk 30%, nearest gap in diameters {np.round(gaps, 2).tolist()}, classes {[int(cls[i % 9]) for i in range(len(placed))]}')
+    return V, np.concatenate(Fs), np.concatenate(Us)
 
 
 def vertex_normals(V, F):
@@ -390,13 +433,21 @@ def mesh(only=None):
         mat.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.85
         dense = []
         for vi, prm in enumerate(pre['variants']):
-            V, F = pebble_cluster(prm) if name == 'pebbles' else sculpt(prm)
+            if name == 'pebbles':
+                V, F, U = pebble_cluster(prm)
+            else:
+                (V, F), U = sculpt(prm), None
+            if U is None:
+                U = np.tile([0.5, 0.5], (len(V), 1))
             C, N = bake(V, F)
+            if prm.get('_faces') is not None:
+                fc = prm['_faces']
+                print(f'  {name} {vi}: fracture faces {sum(f > 0.03 for f in fc)} of {len(fc)} over 3% of its surface, shares {np.round(fc, 3).tolist()}')
             kd = kdtree.KDTree(len(V))
             for i, q in enumerate(V):
                 kd.insert(q, i)
             kd.balance()
-            dense.append((V, F, C, N, kd))
+            dense.append((V, F, C, N, kd, U))
             if name == 'stepping':
                 up = N[:, 2] > 0.9
                 zt = V[up, 2]
@@ -410,17 +461,17 @@ def mesh(only=None):
         names = ['lod0', 'lod1', 'lod2'] + (['shadow'] if pre['shadow'] else [])
         for li, nm in enumerate(names):
             target = pre['lods'][min(li, 2)]
-            allV, allN, allC, allF, o = [], [], [], [], 0
-            for vi, (V, F, C, N, kd) in enumerate(dense):
+            allV, allN, allC, allF, allU, o = [], [], [], [], [], 0
+            for vi, (V, F, C, N, kd, U) in enumerate(dense):
                 # (the dense mesh cut first, so the triangles go to what shows)
                 cz = pre['variants'][vi].get('cut')
                 Vc, Fc = (V, F) if cz is None else cut(V, F, cz)
                 Vd, Fd = decimate(Vc, Fc, target)
                 idx = np.array([kd.find(p)[1] for p in Vd])
-                allV.append(Vd); allN.append(N[idx]); allF.append(Fd + o)
+                allV.append(Vd); allN.append(N[idx]); allF.append(Fd + o); allU.append(U[idx])
                 allC.append(np.concatenate([C[idx], np.full((len(Vd), 1), (vi + 0.5) / 8)], 1))
                 o += len(Vd)
-            V, F, N, C = np.concatenate(allV), np.concatenate(allF), np.concatenate(allN), np.concatenate(allC)
+            V, F, N, C, UV = np.concatenate(allV), np.concatenate(allF), np.concatenate(allN), np.concatenate(allC), np.concatenate(allU)
             me = bpy.data.meshes.new(nm)
             me.from_pydata(V.tolist(), [], F.tolist())
             for p in me.polygons:
@@ -429,6 +480,11 @@ def mesh(only=None):
             ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
             ca.data.foreach_set('color', C.astype(np.float32).ravel())
             me.color_attributes.active_color = ca
+            # (UV: a pebble's own colour class and value (u, v), one per stone; 0.5, 0.5 for the rest)
+            uvl = me.uv_layers.new(name='UVMap')
+            li = np.zeros(len(me.loops), np.int64)
+            me.loops.foreach_get('vertex_index', li)
+            uvl.data.foreach_set('uv', UV[li].astype(np.float32).ravel())
             me.materials.append(mat)
             ob = bpy.data.objects.new(nm, me)
             bpy.context.scene.collection.objects.link(ob)

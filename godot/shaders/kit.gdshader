@@ -89,6 +89,26 @@ uniform vec3 night_tint = vec3(1.0);
 // up, scaled with it; else wet_above m over the water, every stone alike)
 uniform float wet_share = 0.0;
 uniform float wet_top = 0.75;
+// (E5c, judge r2) each copy's own value, +-inst_val (its hash), and a share cool_share of them tinted cool_tint (the stepping
+// stones' variety); each stone of a cluster its own colour, its UV (env_rocks.py's pebbles: u its class, slate / ochre /
+// umber, v its value), stone_mix of the class's tint and +-stone_val; a thin algae line at the water's edge (algae: how
+// much, algae_w m high); and amb_occl the ambient light it takes (AO: in shade it darkens as the ground round it does)
+uniform float inst_val = 0.07;
+uniform float cool_share = 0.0;
+uniform vec3 cool_tint = vec3(1.0);
+uniform float stone_mix = 0.0;
+uniform float stone_val = 0.0;
+uniform vec3 stone_a = vec3(1.0);
+uniform vec3 stone_b = vec3(1.0);
+uniform vec3 stone_c = vec3(1.0);
+uniform float algae = 0.0;
+uniform vec4 algae_color : source_color = vec4(0.22, 0.2, 0.11, 1.0);
+uniform float algae_w = 0.025;
+uniform float amb_occl = 1.0;
+// (a pebble under a crown darkens as the ground's litter does there: GroundPaint's exposure (R the open sky), sky_dark of it; Dressing sets it)
+uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
+uniform float zone_size = 260.0;
+uniform float sky_dark = 0.0;
 varying float v_top;
 varying vec3 v_wpos;
 varying vec3 v_wnrm;
@@ -361,11 +381,17 @@ void fragment() {
 		vec3 col = st.rgb * stone_tint;
 		// (a broad value patch over many repeats, so a cliff's sheet does not read as tiles; each copy its own shade)
 		float mac = texture(stone_tex, wp.xz / (tile * 7.3) + vec2(0.37, 0.11)).a;
-		col *= mix(1.0 - macro, 1.0 + macro, mac) * (0.93 + 0.14 * v_jit);
+		col *= mix(1.0 - macro, 1.0 + macro, mac) * (1.0 + inst_val * (2.0 * v_jit - 1.0));
+		if (fract(v_jit * 13.71) < cool_share) col *= cool_tint;
+		if (stone_mix > 0.0) {
+			vec3 cls = UV.x < 0.3333 ? stone_a : UV.x < 0.6667 ? stone_b : stone_c;
+			col *= mix(vec3(1.0), cls, stone_mix) * (1.0 + stone_val * (2.0 * UV.y - 1.0));
+		}
 		// the baked rims, cracks and hollows
 		col *= (1.0 + edge_light * COLOR.r) * (1.0 - cavity_dark * COLOR.g) * (1.0 - occl_dark * COLOR.b);
 		// grime from the foot up, its line broken by the sheet's patches
 		if (grime_h > 0.0) col *= mix(1.0 - grime_dark, 1.0, smoothstep(0.0, grime_h, v_foot + 0.3 * grime_h * (st.a - 0.5)));
+		if (sky_dark > 0.0) col *= mix(1.0 - sky_dark, 1.0, smoothstep(0.42, 0.82, textureLod(expo_tex, (wp.xz + zone_size * 0.5) / zone_size, 0.0).r));
 		// moss on what faces up (and toward moss_side), in patches, more in the hollows, less on worn rims
 		vec2 ms = moss_side / max(length(moss_side), 1e-4);
 		float face = bn.y + moss_side_amount * dot(bn.xz, ms);
@@ -383,10 +409,16 @@ void fragment() {
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
 		col *= mix(1.0, wet_dark, wet);
+		if (algae > 0.0 && water_level.w > 0.5) {
+			float ab = smoothstep(wy - 0.02, wy - 0.005, wp.y) * (1.0 - smoothstep(wy + algae_w * (0.5 + 0.8 * st.a), wy + algae_w * (0.9 + 1.0 * st.a), wp.y));
+			col = mix(col, algae_color.rgb * (0.8 + 0.4 * st.a), algae * ab);
+		}
 		col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(stone_rough, wet_rough, wet);
 		SPECULAR = mix(0.35, 0.5, wet);
+		AO = amb_occl;
+		AO_LIGHT_AFFECT = 0.0;
 		NORMAL = normalize((VIEW_MATRIX * vec4(bn, 0.0)).xyz);
 		// its shade keeps colour: a little of its own albedo given back, cool by day, more under the moon
 		EMISSION += col * shade * mix(shade_floor, night_fill, flora_light.x);
