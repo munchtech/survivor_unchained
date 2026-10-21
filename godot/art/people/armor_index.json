@@ -174,22 +174,6 @@
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
-  "id": "arcanist.collar",
-  "outfit": "arcanist",
-  "slot": "collar",
-  "layer": 2,
-  "covers": [
-   "collar"
-  ],
-  "meshes": [
-   "arcanist.collar.blackleather",
-   "arcanist.collar.thread"
-  ],
-  "tuck": "armor_tuck/arcanist.collar.bin",
-  "tuck_count": 30,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
- },
- {
   "id": "arcanist.gloves",
   "outfit": "arcanist",
   "slot": "gloves",

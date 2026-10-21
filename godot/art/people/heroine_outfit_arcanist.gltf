@@ -1740,67 +1740,63 @@
    "skin": 0
   },
   {
+   "name": "arcanist.collar.blackleather"
+  },
+  {
+   "name": "arcanist.collar.thread"
+  },
+  {
    "mesh": 7,
-   "name": "arcanist.collar.blackleather",
-   "skin": 0
-  },
-  {
-   "mesh": 8,
-   "name": "arcanist.collar.thread",
-   "skin": 0
-  },
-  {
-   "mesh": 9,
    "name": "arcanist.gloves.glovepipe",
    "skin": 0
   },
   {
-   "mesh": 10,
+   "mesh": 8,
    "name": "arcanist.gloves.glovesatin",
    "skin": 0
   },
   {
-   "mesh": 11,
+   "mesh": 9,
    "name": "arcanist.head.darkpurple",
    "skin": 0
   },
   {
-   "mesh": 12,
+   "mesh": 10,
    "name": "arcanist.head.plumleather",
    "skin": 0
   },
   {
-   "mesh": 13,
+   "mesh": 11,
    "name": "arcanist.legwear.satin",
    "skin": 0
   },
   {
-   "mesh": 14,
+   "mesh": 12,
    "name": "arcanist.legwear.stocking",
    "skin": 0
   },
   {
-   "mesh": 15,
+   "mesh": 13,
    "name": "arcanist.top.amethyst",
    "skin": 0
   },
   {
-   "mesh": 16,
+   "mesh": 14,
    "name": "arcanist.top.claspgold",
    "skin": 0
   },
   {
-   "mesh": 17,
+   "mesh": 15,
    "name": "arcanist.top.darkpurple",
    "skin": 0
   },
   {
-   "mesh": 18,
+   "mesh": 16,
    "name": "arcanist.top.plumleather",
    "skin": 0
   },
   {
-   "mesh": 19,
+   "mesh": 17,
    "name": "arcanist.top.thread",
    "skin": 0
   },
@@ -2284,70 +2280,6 @@
      [
       1,
       1104
-     ]
-    ]
-   }
-  },
-  {
-   "name": "arcanist.collar.blackleather",
-   "primitives": [
-    {
-     "attributes": {
-      "POSITION": 57,
-      "NORMAL": 58,
-      "TEXCOORD_0": 59,
-      "TEXCOORD_1": 60,
-      "COLOR_0": 61,
-      "JOINTS_0": 62,
-      "WEIGHTS_0": 63
-     },
-     "indices": 64,
-     "material": 0
-    }
-   ],
-   "extras": {
-    "outfit": "arcanist",
-    "slot": "collar",
-    "material": "blackleather",
-    "rank": 0,
-    "pieces": [
-     [
-      0,
-      3250
-     ],
-     [
-      1,
-      3144
-     ]
-    ]
-   }
-  },
-  {
-   "name": "arcanist.collar.thread",
-   "primitives": [
-    {
-     "attributes": {
-      "POSITION": 65,
-      "NORMAL": 66,
-      "TEXCOORD_0": 67,
-      "TEXCOORD_1": 68,
-      "COLOR_0": 69,
-      "JOINTS_0": 70,
-      "WEIGHTS_0": 71
-     },
-     "indices": 72,
-     "material": 3
-    }
-   ],
-   "extras": {
-    "outfit": "arcanist",
-    "slot": "collar",
-    "material": "thread",
-    "rank": 2,
-    "pieces": [
-     [
-      14,
-      1392
      ]
     ]
    }
