@@ -97,9 +97,9 @@ def pantile(h, w, rng):
     chip = (ss(0.9, 1.0, s) * ss(0.82, 0.95, fbm(h, w, 40, 160, rng, 2)) * per(tile, rng.random(nt) < 0.35)).astype(np.float32)
     hgt -= 0.006 * chip
     # each tile's value and warmth: N(1, .075); 7% old and dark, 4% new and pale
-    val = rng.normal(1.0, 0.075, nt)
+    val = rng.normal(1.0, 0.1, nt)   # (E9b6 r4: 0.1, from 0.075; 12% old, from 7%)
     old = rng.random(nt)
-    val = np.where(old < 0.07, val * 0.78, np.where(old > 0.96, val * 1.12, val))
+    val = np.where(old < 0.12, val * 0.74, np.where(old > 0.96, val * 1.12, val))
     warm = rng.random(nt)
     base = mix(srgb("#b9aa9e"), srgb("#c8b098"), per(tile, warm))           # greyer purple-brown .. warmer orange
     big = fbm(h, w, 3, 8, rng, 4)
@@ -110,10 +110,10 @@ def pantile(h, w, rng):
     col = mix(col, col * np.array([0.92, 0.9, 0.9], np.float32), ss(0.55, 0.8, wear))  # weathered patches on a tile's face
     trough = ss(0.1, -0.7, prof) * (0.6 + 0.4 * s)
     col = col * (0.8 + 0.3 * ss(-0.5, 0.9, prof))[..., None]                 # the roll's crown lit, its flanks turning away
-    col = mix(col, srgb("#3e352e"), 0.5 * trough)                           # grime and shade down the troughs
+    col = mix(col, srgb("#3e352e"), 0.65 * trough)                          # grime and shade down the troughs
     col = mix(col, srgb("#2a221d"), 0.78 * (1 - ss(0.06, 0.17, s)))          # the butt above's shadow
     col = mix(col, srgb("#6a5a50"), 0.5 * chip)
-    lich = ss(0.8, 0.86, fbm(h, w, 30, 96, rng, 3)) * per(tile, rng.random(nt) < 0.3) * ss(0.2, 0.5, s)
+    lich = ss(0.74, 0.82, fbm(h, w, 30, 96, rng, 3)) * per(tile, rng.random(nt) < 0.5) * ss(0.2, 0.5, s)   # (E9b6 r4: more lichen)
     col = mix(col, srgb("#c4c2ae"), 0.6 * lich)
     hgt += 0.0006 * grit + 0.0008 * lich
     rough = 0.82 + 0.06 * wear - 0.04 * per(tile, old > 0.96)
@@ -158,8 +158,8 @@ def shingle(h, w, rng):
     has_split = rng.random(nt) < 0.25
     splitd = np.abs(u - per(sid, split_at)) * 60
     split = (per(sid, has_split) * ss(3.0, 0.0, splitd * 3) * ss(0.15, 0.6, s)).astype(np.float32)
-    gap = ss(2.6, 0.4, gapd) * (0.55 + 0.45 * ss(0.1, 0.5, s))   # thin dark joints, fainter where the course above laps them
-    val = rng.normal(1.0, 0.06, nt)
+    gap = ss(9.0, 2.5, gapd) * (0.7 + 0.3 * ss(0.1, 0.5, s))   # (E9b6 r4) joints 1.5-2 cm, so a course breaks into shingles at the play camera (it read as planks)   # thin dark joints, fainter where the course above laps them
+    val = rng.normal(1.0, 0.11, nt)
     silver = rng.random(nt)
     fib = fbm(h, w, 6, 220, rng, 3)          # grain down the slope (fine across x)
     streak = fbm(h, w, 3, 60, rng, 3)

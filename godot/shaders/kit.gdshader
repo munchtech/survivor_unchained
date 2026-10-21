@@ -215,8 +215,8 @@ uniform vec4 roof_moss_color : source_color = vec4(0.29, 0.32, 0.16, 1.0);
 uniform float roof_occl = 0.55;
 uniform float old_tile = 0.16;     // (E9b6 r4) the share of tiles old and dark: darker and browner (about one in 6)
 uniform float tile_tilt = 0.09;    // each tile's normal turned +-this (a tile bedded a few degrees off its neighbours)
-uniform float trough_dirt = 0.3;   // dirt streaks running down the slope (narrow, broken), this much darker
-uniform float moss_any = 0.55;     // moss in patches on every slope's lower courses (not only the north ones)
+uniform float trough_dirt = 0.45;   // dirt streaks running down the slope (narrow, broken), this much darker
+uniform float moss_any = 0.8;      // moss in patches on every slope's lower courses (not only the north ones)
 varying vec3 v_wn;
 varying float v_rh;
 varying float v_lz;
@@ -470,7 +470,7 @@ void fragment() {
 			// dirt run down the slope: narrow streaks (5-15 cm across, along the ridge), broken lengthwise, darker toward the eaves
 			float sd = wall_noise(vec2(v_lz * 7.0, v_rh * 0.45 + v_wall.b * 13.0));
 			float sb = wall_noise(vec2(v_lz * 1.3 + 4.1, v_rh * 1.6));
-			col *= 1.0 - trough_dirt * smoothstep(0.62, 0.8, sd) * smoothstep(0.35, 0.65, sb) * mix(1.0, 0.5, smoothstep(1.0, 4.0, v_rh)) * vec3(1.0, 1.02, 1.08);
+			col *= 1.0 - trough_dirt * smoothstep(0.56, 0.74, sd) * smoothstep(0.3, 0.6, sb) * mix(1.0, 0.5, smoothstep(1.0, 4.0, v_rh)) * vec3(1.0, 1.02, 1.08);
 		}
 		// broad value patches over the roofs, each roof a little lighter or darker
 		float vn = 0.6 * wall_noise(v_wp.xz * 0.45 + v_wp.y * 0.3) + 0.4 * wall_noise(v_wp.xz * 0.11 + 5.1);
@@ -495,7 +495,7 @@ void fragment() {
 			float hm = 0.45 + 0.55 * wall_hash(v_wall.bb * 5.1 + 0.7);
 			float em = mix(1.0, 0.35, smoothstep(0.4, 3.5, v_rh));
 			float m = roof_moss * hm * em * smoothstep(0.05, 0.45, fn) * smoothstep(0.3, 0.7, mn);
-			m += moss_any * hm * smoothstep(0.6, 0.74, mn) * em;
+			m += moss_any * hm * smoothstep(0.56, 0.68, mn) * mix(1.0, 0.6, smoothstep(0.4, 3.5, v_rh));
 			m = clamp(m, 0.0, 0.85);
 			col = mix(col, roof_moss_color.rgb * (0.75 + 0.5 * mn), m);
 			rough = mix(rough, 1.0, m);

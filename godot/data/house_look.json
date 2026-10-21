@@ -5,7 +5,7 @@
   "#e8c99a",
   "#e6c4b6",
   "#c9cdb6",
-  "#d2cdc2",
+  "#dacbb2",
   "#dccaa8"
  ],
  "timber_tints": [
@@ -43,7 +43,7 @@
  "roof_val_noise": 0.08,
  "roof_house_val": 0.06,
  "soot_r": 2.0,
- "soot_dark": 0.6,
+ "soot_dark": 0.7,
  "stack_soot": 0.75,
  "roof_moss": 0.6,
  "moss_dir": [

@@ -9,7 +9,7 @@
    "eave": 0.42,
    "sag": 0.13,
    "seed": 2100,
-   "bow": 0.06
+   "bow": 0.09
   },
   "roof_s_4x6": {
    "kind": "body",
@@ -19,7 +19,7 @@
    "eave": 0.52,
    "sag": 0.151,
    "seed": 2101,
-   "bow": 0.06
+   "bow": 0.09
   },
   "roof_p_6x6": {
    "kind": "body",
@@ -29,7 +29,7 @@
    "eave": 0.46,
    "sag": 0.142,
    "seed": 2102,
-   "bow": 0.06
+   "bow": 0.09
   },
   "roof_s_6x6": {
    "kind": "body",
@@ -39,7 +39,7 @@
    "eave": 0.56,
    "sag": 0.133,
    "seed": 2103,
-   "bow": 0.06
+   "bow": 0.09
   },
   "roof_p_6x8": {
    "kind": "body",
@@ -49,7 +49,7 @@
    "eave": 0.5,
    "sag": 0.24,
    "seed": 2104,
-   "bow": 0.088
+   "bow": 0.128
   },
   "roof_s_6x8": {
    "kind": "body",
@@ -59,7 +59,7 @@
    "eave": 0.43,
    "sag": 0.225,
    "seed": 2105,
-   "bow": 0.1
+   "bow": 0.14
   },
   "roof_p_6x10": {
    "kind": "body",
@@ -69,7 +69,7 @@
    "eave": 0.53,
    "sag": 0.21,
    "seed": 2106,
-   "bow": 0.112
+   "bow": 0.152
   },
   "roof_s_6x10": {
    "kind": "body",
@@ -79,7 +79,7 @@
    "eave": 0.47,
    "sag": 0.245,
    "seed": 2107,
-   "bow": 0.084
+   "bow": 0.124
   },
   "roof_p_8x8": {
    "kind": "body",
@@ -89,7 +89,7 @@
    "eave": 0.57,
    "sag": 0.23,
    "seed": 2108,
-   "bow": 0.096
+   "bow": 0.136
   },
   "roof_s_8x8": {
    "kind": "body",
@@ -99,7 +99,7 @@
    "eave": 0.51,
    "sag": 0.215,
    "seed": 2109,
-   "bow": 0.108
+   "bow": 0.148
   },
   "roof_p_8x10": {
    "kind": "body",
@@ -109,7 +109,7 @@
    "eave": 0.45,
    "sag": 0.2,
    "seed": 2110,
-   "bow": 0.08
+   "bow": 0.12
   },
   "roof_s_8x10": {
    "kind": "body",
@@ -119,7 +119,7 @@
    "eave": 0.55,
    "sag": 0.235,
    "seed": 2111,
-   "bow": 0.092
+   "bow": 0.132
   },
   "roof_p_8x12": {
    "kind": "body",
@@ -129,7 +129,7 @@
    "eave": 0.49,
    "sag": 0.22,
    "seed": 2112,
-   "bow": 0.104
+   "bow": 0.144
   },
   "roof_s_8x12": {
    "kind": "body",
@@ -139,7 +139,7 @@
    "eave": 0.43,
    "sag": 0.205,
    "seed": 2113,
-   "bow": 0.116
+   "bow": 0.156
   },
   "gable4_p": {
    "kind": "gable",

@@ -298,9 +298,10 @@ def sbox(m, c, ax, ay, h, reg, off=(0.0, 0.0), skip=(), col=None, bev=('+z',), b
                 poly3(pts, sum(sig[k] * E[k] for k in range(3)), jc)
 
 
-def beam(m, a, b, w, z0, d, rng, sag=0.012, reg='timber', col=(1.0, 0.0, 1.0, 1.0), skip=('-z',), segs=2):
+def beam(m, a, b, w, z0, d, rng, sag=0.012, reg='timber', col=(1.0, 0.0, 1.0, 1.0), skip=('-z', '-x', '+x'), segs=2):
     """A timber in the wall's face plane from a to b (x, y), w wide, from z0 out to z0 + d; it sags and
-    leans a little (two lengths, its middle off the line)."""
+    leans a little (two lengths, its middle off the line). (E9b6 r4) Its end faces left out by default (they butt
+    other timbers, 3-5 cm deep: the house under 25k triangles); a beam whose end shows passes skip=('-z',)."""
     a, b = np.array([a[0], a[1], 0.0]), np.array([b[0], b[1], 0.0])
     L = np.linalg.norm(b - a)
     ax = (b - a) / L
@@ -609,7 +610,7 @@ def dressings(m, mat, op, rng):
                     skip=('-z',), col=(1.0, 0.0, 0.0, 1.0), grain=1)
     else:
         if sill > 0:
-            beam(m, (-hw - 0.08, sill - 0.035), (hw + 0.08, sill - 0.035), 0.07, 0.0, 0.06, rng, sag=0.003, segs=1)
+            beam(m, (-hw - 0.08, sill - 0.035), (hw + 0.08, sill - 0.035), 0.07, 0.0, 0.06, rng, sag=0.003, segs=1, skip=('-z',))
 
 
 def wall(p):

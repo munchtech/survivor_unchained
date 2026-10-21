@@ -56,6 +56,7 @@ BLEND = 0.25                         # the knee's curve, either side
 COVER = 0.09                         # the covering's depth over the boarding (top to soffit, vertical)
 STEP = 0.016                         # a course's butt over the course below
 VERGE = 0.35
+RAKE = {4: 0.06, 6: 0.08, 8: 0.095}   # (E9b6 r4) each slope's dish between ridge and eave by the width, body and gable alike (the verge bends)
 
 
 def hsh(*a):
@@ -161,7 +162,7 @@ def courses(m, R, side, z0, z1, kind, seed):
     total = L[-1]
     n = math.ceil(total / c)
     phase = z0 - 4.0 * hsh(seed, 3.1)
-    zs = zbreaks(z0, z1, phase, 0.75)
+    zs = zbreaks(z0, z1, phase, 1.6)   # (E9b6 r4: 1.6 m, from 0.75: the house under 25k triangles; the butts' wander and the sag still bend)
     tw = 0.333 if kind == 'pantile' else 0.17   # a tile's or shingle's width (a slipped one)
 
     def jit(k, z):
@@ -227,7 +228,7 @@ def eaves(m, R, side, z0, z1, rng, nraft):
     ytop = R.top(xe) + STEP
     ysof = R.under(xe)
     phase = z0
-    zs = zbreaks(z0, z1, phase, 1.0)
+    zs = zbreaks(z0, z1, phase, 2.0)
     # fascia: a board's face at the eave edge, its top under the first course's butt
     for za, zb in zip(zs, zs[1:]):
         kk = math.floor((za - phase) / 4.0 + 1e-6)
@@ -236,7 +237,7 @@ def eaves(m, R, side, z0, z1, rng, nraft):
         quad(m, P, uvq('boards', ua, ub, 1.0, 0.2), (0.6, 0.5, 0.0, 1.0), (side, 0, 0))   # (E9b3: 0.6, it read as a pale band)
         # its underside lip
     # soffit: from the eave edge in to the wall's face, under the boarding (two strips through the knee)
-    xs = [R.xe, R.xk + BLEND * 0.3, R.hw - 0.15]  # (E9b6 r4: into the wall, so the eaves' plan bow opens no slit)
+    xs = [R.xe, R.xk + BLEND * 0.3, R.hw - 0.3]  # (E9b6 r4: into the wall, so the eaves' plan bow opens no slit)
     for xa, xb in zip(xs, xs[1:]):
         for za, zb in zip(zs, zs[1:]):
             kk = math.floor((za - phase) / 4.0 + 1e-6)
@@ -285,7 +286,7 @@ def ridge_caps(m, R, z0, z1, rng, seed):
     # the cap's section: from the left bedding edge (on the slope) over the crown to the right
     xb = 0.2
     yb = R.top(xb) + 0.005
-    sec = [(-xb, yb)] + [(rx * math.cos(a), yc + ry * math.sin(a)) for a in np.linspace(math.pi, 0, 6)] + [(xb, yb)]
+    sec = [(-xb, yb)] + [(rx * math.cos(a), yc + ry * math.sin(a)) for a in np.linspace(math.pi, 0, 5)] + [(xb, yb)]
     sl = arclen(sec)
     for i in range(n):
         za, zb = z0 + i * cl - (0.02 if i else 0), z0 + (i + 1) * cl
@@ -345,7 +346,7 @@ def verges(m, R, hd, rng):
                 ya, yb = y0 + STEP + 0.02, y1 + STEP + 0.02
                 d = 0.26
                 # the outer face, the inner face, the lower edge
-                for z, fl in ((zo, zs < 0), (zi, zs > 0)):
+                for z, fl in ((zo, zs < 0),):   # (E9b6 r4: the inner face left out, under the covering)
                     P = [(side * x0, ya - d, z), (side * x1, yb - d, z), (side * x1, yb, z), (side * x0, ya, z)]
                     quad(m, P, uvq('boards', (off + L) / 4 % 1, (off + L + ln) / 4 % 1 if (off + L) // 4 == (off + L + ln) // 4 else 1.0, 0.95, 0.05),
                          (0.85 if z == zo else 0.6, 0.5, 0.0, 1.0), (0, 0, zs if z == zo else -zs))
@@ -390,7 +391,8 @@ def sag(m, hd, amount, seed, wob=0.006, xe=None, rake=0.0, bow=0.0, hw=None):
             a = abs(x)
             if a > 0.5 * hw:
                 pr = 1.0 - 0.4 * min(1.0, (a - 0.5 * hw) / (0.5 * hw)) ** 2 if a <= hw else 0.6 + 0.4 * min(1.0, (a - hw) / (xe - hw))
-        dx = bow * w * ((x / xe if xe else 0.0) + 0.45 * (1 if hsh(seed, 2.2) > 0.5 else -1))
+        rk = 0.09 * (1 if hsh(seed, 2.2) > 0.5 else -1) * (1.0 - min(abs(x) / xe, 1.0)) if xe else 0.0
+        dx = w * (bow * (x / xe if xe else 0.0) + rk)   # the eaves spread by bow, the ridge snakes 9 cm
         m.P[i] = (x + dx, y - amount * w * pr - wb - dr, z)
         r, g, b, _ = m.C[i]
         m.C[i] = (r, g, b, w)
@@ -406,13 +408,13 @@ def body(p):
     m = H.Mesh()
     for side in (1, -1):
         courses(m, R, side, z0, z1, kind, p['seed'] + side)
-        eaves(m, R, side, z0, z1, rng, max(2, round((d - 0.5) / 0.62) + 1))
+        eaves(m, R, side, z0, z1, rng, max(2, round((d - 0.5) / 0.8) + 1))   # (E9b6 r4: a rafter every 0.8 m)
     if kind == 'pantile':
         ridge_caps(m, R, z0 - 0.02, z1 + 0.02, rng, p['seed'])
     else:
         ridge_boards(m, R, z0, z1, rng)
     verges(m, R, hd, rng)
-    sag(m, hd, p['sag'], p['seed'], xe=R.xe, rake=p.get('rake', 0.035), bow=p.get('bow', 0.0), hw=R.hw)
+    sag(m, hd, p['sag'], p['seed'], xe=R.xe, rake=p.get('rake', RAKE[w]), bow=p.get('bow', 0.0), hw=R.hw)
     meas = {"ridge_sag_cm": round(100 * p['sag'], 1), "eave_cm": round(100 * p['eave'], 1), "pitch_deg": round(math.degrees(math.atan(R.t)), 1),
             "ridge_y": round(R.ridge(), 3)}
     return {"Roof_Own": m}, meas
@@ -445,14 +447,14 @@ def gable(p):
         reach = 0.8 + 0.14 * math.sin(3.1 * s + ph[2]) + 0.06 * math.sin(7.3 * s + ph[0])
         st = min(1.0, max(0.0, 1 - (ut - 0.04) / reach)) * 0.85
         return (1.0 - 0.45 * max(0.0, 1 - ut / 0.6), st, 0.0, 1.0)
-    H.face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), [poly], 'plaster', off=(rng(0, 4), rng(0, 1)), disp=disp, col=col, grid=(0.5, 0.25))
+    H.face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), [poly], 'plaster', off=(rng(0, 4), rng(0, 1)), disp=disp, col=col, grid=(0.8, 0.5))
     # the owl hole under the apex: a dark triangle set in
     oy = yr - 0.75
     tri = [(-0.13, oy), (0.13, oy), (0.0, oy + 0.2)]
     H.face(m, (0, 0, 0.004), (1, 0, 0), (0, 1, 0), [tri], 'glass', col=lambda s, t: (0.15, 0.0, 0.0, 1.0))
     tc = (1.0, 0.0, 1.0, 1.0)
     # the tie beam: the gable's sill, a little proud of the wall's band
-    H.beam(m, (-hw - 0.04, 0.1), (hw + 0.04, 0.1), 0.2, 0.0, 0.11, rng, sag=0.008, col=tc, segs=3)
+    H.beam(m, (-hw - 0.04, 0.1), (hw + 0.04, 0.1), 0.2, 0.0, 0.11, rng, sag=0.008, col=tc, segs=3, skip=('-z',))
     pat = p['pattern']
     # (E9b6 r4) a real timber-framed gable, members 15-20 cm at the timber's value so it reads at the play camera:
     # close studs every ~1 m (so no plaster panel is wider than ~1.1 m), a collar at about half the height, a mid
@@ -509,6 +511,11 @@ def gable(p):
     for sx in (-1, 1):
         xs_ = x_at(yc + 0.5 * (yr - yc)) * 0.8
         H.beam(m, (sx * 0.1, yc + 0.12), (sx * xs_, yc + 0.55 * (yr - yc)), 0.13, 0.0, TD - 0.012, rng, sag=0.0, col=tc, segs=1)
+    # (E9b6 r4) the face dished under the slopes as the body's rafters are (RAKE), so the verge bends with no gap over it
+    xe = R.xe
+    for i, (x, y, z) in enumerate(m.P):
+        f = min(max(y / max(R.under(abs(x)), 0.05), 0.0), 1.0)
+        m.P[i] = (x, y - RAKE[w] * math.sin(math.pi * min(abs(x) / xe, 1.0)) * f, z)
     return {"Wall_Own": m}, {}
 
 
