@@ -180,6 +180,7 @@ uniform sampler2D ground_h : filter_linear, repeat_disable;  // (E9b3) the terra
 uniform vec4 ground_rect = vec4(0.0);  // its world x, z origin and size; z 0: no map (the house's own ground instead)
 uniform float plaster_mottle = 0.1;  // value mottling on plaster at 1-2 m
 uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off (the lath behind)
+uniform float big_lost = 0.4;        // (E9b6) the share of 2.5 m cells with a 40-80 cm patch fallen off
 uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
 varying vec4 v_wall;
 varying float v_hgt;
@@ -405,6 +406,20 @@ void fragment() {
 			float rim = (smoothstep(0.7, 0.74, pn) - smoothstep(0.75, 0.78, pn)) * pm;
 			float lath = smoothstep(0.25, 0.4, fract(v_wp.y * 26.0)) * (0.75 + 0.25 * wall_noise(vec2((v_wp.x + v_wp.z) * 6.0, v_wp.y * 26.0)));
 			vec3 lc = mix(vec3(0.07, 0.055, 0.045), vec3(0.3, 0.24, 0.18) * (0.8 + 0.4 * wall_noise(wq * 9.0)), lath);
+			// (E9b6) and a bigger patch now and then, 40-80 cm, ragged: one 2.5 m cell in about 2.5 has one (its centre
+			// kept 0.5 m inside the cell, so no patch crosses a cell's edge), so a 6 m face shows one or two
+			vec2 ci = floor(wq / 2.5);
+			float ph = wall_hash(ci * 1.7 + 0.31);
+			if (ph < big_lost) {
+				vec2 pc = (ci + 0.2 + 0.6 * vec2(wall_hash(ci + 5.1), wall_hash(ci + 9.7))) * 2.5;
+				float rx = 0.2 + 0.2 * wall_hash(ci + 2.9);
+				vec2 pr = vec2(rx, rx * (0.6 + 0.4 * wall_hash(ci + 7.3)));
+				float pd = length((wq - pc) / pr) + 0.45 * (wall_noise(wq * 6.0 + ci) - 0.5) + 0.2 * (wall_noise(wq * 17.0) - 0.5);
+				float bl = (1.0 - smoothstep(0.97, 1.0, pd)) * smoothstep(0.5, 0.9, h);
+				float br = (1.0 - smoothstep(1.0, 1.14, pd)) * smoothstep(0.5, 0.9, h) - bl;
+				lost = max(lost, bl);
+				rim = max(rim, max(br, 0.0));
+			}
 			col = mix(col * (1.0 - 0.35 * rim), lc, lost);
 		}
 		// grime from the ground: a brown-green band, darkest to 0.6 m (E9b4: the street often meets the wall 0.4 m up), streaked with splash, gone by 1.2 m

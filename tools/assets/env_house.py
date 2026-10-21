@@ -197,6 +197,107 @@ def box(m, c, ax, ay, h, reg, off=(0.0, 0.0), skip=(), col=None, grain=0):
         face(m, o, U, V, [rect(0, 0, lu, lv)], reg, off, rot=rot, col=colf)
 
 
+JOINT = 0.02  # (E9b6) a dressed block's chamfer: its joints read as a V-groove, lit on top and dark under, at the play camera
+JCOL = 0.45   # the chamfers' vertex r (the shader's occlusion: a joint reads darker than the stone's face in any light)
+
+
+def sbox(m, c, ax, ay, h, reg, off=(0.0, 0.0), skip=(), col=None, bev=('+z',), b=JOINT):
+    """A dressed block (E9b6): box() with the edges of its 'bev' faces chamfered by b, so a course of ashlar shows
+    each stone and its joints instead of a flat band. An edge is chamfered where either of its faces is in bev
+    (to a skipped face's plane too, closing the groove against a butting block); corners take a triangle."""
+    c, ax, ay = (np.asarray(x, float) for x in (c, ax, ay))
+    ax /= np.linalg.norm(ax)
+    ay /= np.linalg.norm(ay)
+    E = (ax, ay, np.cross(ax, ay))
+    hh = h
+    N = {('x', 1): '+x', ('x', -1): '-x', ('y', 1): '+y', ('y', -1): '-y', ('z', 1): '+z', ('z', -1): '-z'}
+    A = 'xyz'
+    b = min(b, 0.45 * min(hh))
+    jc = (JCOL * (col[0] if col else 1.0), 0.0, 0.0, 1.0)
+
+    def ch(f, g):
+        return f in bev or g in bev
+
+    def vert(a, sa, sig):
+        """face (axis a, sign sa)'s vertex at the corner of signs sig, inset along each chamfered edge"""
+        P = c + sum(sig[k] * hh[k] * E[k] for k in range(3))
+        for k in range(3):
+            if k != a and ch(N[(A[a], sa)], N[(A[k], sig[k])]):
+                P = P - sig[k] * b * E[k]
+        return P
+
+    def poly3(pts, out, cl):
+        O = pts[0]
+        U = pts[1] - O
+        if np.linalg.norm(U) < 1e-6:
+            return
+        U = U / np.linalg.norm(U)
+        V = None
+        for p in pts[2:]:
+            d = (p - O) - np.dot(p - O, U) * U
+            if np.linalg.norm(d) > 1e-6:
+                V = d / np.linalg.norm(d)
+                break
+        if V is None:
+            return
+        if np.dot(np.cross(U, V), out) < 0:
+            V = -V
+        st = [(float(np.dot(p - O, U)), float(np.dot(p - O, V))) for p in pts]
+        if area(st) < 0:
+            st = st[::-1]
+        face(m, O, U, V, [st], reg, off, col=lambda s, t: cl)
+
+    colf = (lambda s, t: col) if col is not None else None
+    for a in range(3):
+        for sa in (1, -1):
+            name = N[(A[a], sa)]
+            if name in skip:
+                continue
+            k1, k2 = [k for k in range(3) if k != a]
+            # the face's own frame as in box(): its corners, inset
+            cs = [vert(a, sa, tuple(sa if k == a else (s1 if k == k1 else s2) for k in range(3))) for s1, s2 in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+            out = sa * E[a]
+            along_x = A[a] in 'zy'
+            rot = not along_x
+            # (box()'s mapping: U along its first axis; keep the grain the same way)
+            U0, V0 = cs[1] - cs[0], cs[3] - cs[0]
+            lu, lv = np.linalg.norm(U0), np.linalg.norm(V0)
+            if lu < 1e-6 or lv < 1e-6:
+                continue
+            U0, V0 = U0 / lu, V0 / lv
+            O = cs[0]
+            if np.dot(np.cross(U0, V0), out) < 0:
+                O, U0, lu = cs[1], -U0, lu
+            face(m, O, U0, V0, [rect(0, 0, lu, lv)], reg, off, rot=rot and A[a] == 'x', col=colf)
+    # the chamfers along the edges
+    for a in range(3):
+        for k in range(a + 1, 3):
+            j = 3 - a - k
+            for sa in (1, -1):
+                for sk in (1, -1):
+                    f, g = N[(A[a], sa)], N[(A[k], sk)]
+                    if not ch(f, g) or (f in skip and g in skip) or not ((f in bev and f not in skip) or (g in bev and g not in skip)):
+                        continue
+                    sig = [0, 0, 0]
+                    sig[a], sig[k] = sa, sk
+                    pts = []
+                    for (ax_, s_), sj in (((a, sa), -1), ((a, sa), 1), ((k, sk), 1), ((k, sk), -1)):
+                        sg = list(sig)
+                        sg[j] = sj
+                        pts.append(vert(ax_, s_, tuple(sg)))
+                    poly3(pts, sa * E[a] + sk * E[k], jc)
+    # the corners
+    for sx in (1, -1):
+        for sy in (1, -1):
+            for sz in (1, -1):
+                sig = (sx, sy, sz)
+                fs = [N[(A[k], sig[k])] for k in range(3)]
+                if sum(f not in skip for f in fs) < 2 or not any(f in bev and f not in skip for f in fs):
+                    continue
+                pts = [vert(k, sig[k], sig) for k in range(3)]
+                poly3(pts, sum(sig[k] * E[k] for k in range(3)), jc)
+
+
 def beam(m, a, b, w, z0, d, rng, sag=0.012, reg='timber', col=(1.0, 0.0, 1.0, 1.0), skip=('-z',), segs=2):
     """A timber in the wall's face plane from a to b (x, y), w wide, from z0 out to z0 + d; it sags and
     leans a little (two lengths, its middle off the line)."""
@@ -293,8 +394,9 @@ def occl_under_band(s, t):
     return (1.0 - 0.28 * max(0.0, 1 - (BAND[0] - t) / 0.35) if t <= BAND[0] + 1e-6 else 1.0, 0.0, 0.0, 1.0)
 
 
-def stain_col(op):
-    """The vertex colour of a face round an opening: occlusion under the band, a stain under the sill."""
+def stain_col(op, runs=None):
+    """The vertex colour of a face round an opening: occlusion under the band, a stain under the sill; (E9b6) on
+    plaster, 'runs' (phases): the rain off the plate band, stains 0.6-1.0 m down the face (the shader streaks them)."""
     w, sill, head, rise = OPENINGS[op] if op else (0, 0, 0, 0)
 
     def c(s, t):
@@ -302,6 +404,9 @@ def stain_col(op):
         g = 0.0
         if op and sill > 0 and t <= sill + 1e-6 and abs(s) <= w / 2 + 0.05 + 1e-6:
             g = max(0.0, 1 - (sill - t) / 0.9)
+        if runs:
+            reach = 0.8 + 0.14 * math.sin(4.1 * s + runs[0]) + 0.08 * math.sin(9.3 * s + runs[1])
+            g = max(g, 0.8 * min(1.0, max(0.0, 1 - (BAND[0] - t) / reach)))
         return (r, g, 0.0, 1.0)
     return c
 
@@ -327,7 +432,10 @@ def front_face(m, mat, rng, op, off, amp):
     if op and sill > 0:  # (the stain's fade line)
         y = max(sill - 0.9, 0.05)
         split = [r for qq in split for r in (clip(qq, 1, y, False), clip(qq, 1, y, True)) if len(r) >= 3 and abs(area(r)) > 1e-7]
-    face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), split, reg, off, disp=bow(rng, amp, op), col=stain_col(op), grid=(0.5, 0.75))
+    runs = (off[0] * 1.7, off[1] * 2.3) if mat == 'plaster' else None  # (phases from the sheet offset: the rng's draws unchanged)
+    if runs:  # (the runs' foot: a cut at their longest reach, so the stain fades down to there, not to the next grid line)
+        split = [r for qq in split for r in (clip(qq, 1, BAND[0] - 1.0, False), clip(qq, 1, BAND[0] - 1.0, True)) if len(r) >= 3 and abs(area(r)) > 1e-7]
+    face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), split, reg, off, disp=bow(rng, amp, op), col=stain_col(op, runs), grid=(0.5, 0.75))
     # the inner face (seen only through the see-through window): plain plaster, dim
     inner = [rect(-1, 0, 1, BAND[0])] if not op else [clip(p, 1, BAND[0], False) for p in outline_cols(op)]
     inner = [[(-s, t) for (s, t) in reversed(p)] for p in inner if len(p) >= 3]
@@ -348,8 +456,8 @@ def band(m, mat, rng):
             if 1.0 - x - L < 0.25:
                 L = 1.0 - x
             dy = rng(-0.006, 0.006)
-            box(m, (x + L / 2, (y0 + y1) / 2 + dy, (PROUD - 0.31) / 2), (1, 0, 0), (0, 1, 0), (L / 2 - 0.004, (y1 - y0) / 2, (PROUD + 0.31) / 2),
-                'ashlar', off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z', '-x', '+x') if L > 0.3 else ('-z',), col=(1.0, 0.0, 0.0, 1.0))
+            sbox(m, (x + L / 2, (y0 + y1) / 2 + dy, (PROUD - 0.31) / 2), (1, 0, 0), (0, 1, 0), (L / 2 - 0.004, (y1 - y0) / 2, (PROUD + 0.31) / 2),
+                 'ashlar', off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z', '-x', '+x') if L > 0.3 else ('-z',), col=(1.0, 0.0, 0.0, 1.0))
             x += L
     else:
         beam(m, (-1.0, (y0 + y1) / 2), (1.0, (y0 + y1) / 2), y1 - y0, -0.31, PROUD + 0.31, rng, sag=0.008, skip=('-z', '-x', '+x'), segs=2)
@@ -518,7 +626,10 @@ def wall(p):
 
 def quoin(p):
     """A stone storey's outer corner: dressed quoins in alternating courses, long and short, a few mm out of
-    true, standing 3 cm proud of both faces (the corner at x = z = 0, the walls running to -x and -z)."""
+    true, standing 3 cm proud of both faces (the corner at x = z = 0, the walls running to -x and -z).
+    (E9b6) each stone long on one face and short on the other, by turns, so BOTH faces show the long-and-short
+    rhythm (before, the side face's 'long' stones were 26-34 cm against 25 cm: a flat strip, read as a timber);
+    each stone chamfered (sbox), so the joints read at the play camera."""
     rng = Rng(p['seed'])
     m = Mesh()
     y = SKIRT
@@ -529,17 +640,18 @@ def quoin(p):
         h = min(h, BAND[1] - y)
         if BAND[1] - (y + h) < 0.12:
             h = BAND[1] - y
-        L = rng(0.42, 0.55) if k % 2 == 0 else rng(0.26, 0.34)
+        last = y + h >= BAND[1] - 1e-6
+        L = rng(0.44, 0.56)
         dx, dz = rng(-0.006, 0.006), rng(-0.006, 0.006)
         cy = y + h / 2
-        o = (0.0, 0.0, 0.0) if y >= 0 else (0.85, 0.0, 0.0, 1.0)
         col = (1.0, 0.0, 0.0, 1.0) if y >= 0 else (0.8, 0.0, 0.0, 1.0)
+        sk = ('-z', '-y') + (() if last else ('+y',))
         if k % 2 == 0:  # long along the front (x), short along the side (z)
-            box(m, (-(L - pr) / 2 + dx, cy, (pr - 0.22) / 2 + dz), (1, 0, 0), (0, 1, 0), ((L + pr) / 2, h / 2 - 0.005, (0.22 + pr) / 2), 'ashlar',
-                off=(rng(0, 2.4), rng(0, 0.05)), skip=('-z',), col=col)
-        else:
-            box(m, ((pr - 0.22) / 2 + dx, cy, -(L - pr) / 2 + dz), (0, 0, -1), (0, 1, 0), ((L + pr) / 2, h / 2 - 0.005, (0.22 + pr) / 2), 'ashlar',
-                off=(rng(0, 2.4), rng(0, 0.05)), skip=('-z',), col=col)
+            sbox(m, (-(L - pr) / 2 + dx, cy, (pr - 0.22) / 2 + dz), (1, 0, 0), (0, 1, 0), ((L + pr) / 2, h / 2 - 0.005, (0.22 + pr) / 2), 'ashlar',
+                 off=(rng(0, 2.4), rng(0, 0.05)), skip=sk, col=col, bev=('+z', '+x'))
+        else:           # long along the side (z), short along the front
+            sbox(m, ((pr - 0.22) / 2 + dx, cy, -(L - pr) / 2 + dz), (0, 0, -1), (0, 1, 0), ((L + pr) / 2, h / 2 - 0.005, (0.22 + pr) / 2), 'ashlar',
+                 off=(rng(0, 2.4), rng(0, 0.05)), skip=sk, col=col, bev=('+z', '-x'))
         y += h
         k += 1
     return m
@@ -579,8 +691,8 @@ def pier(p):
         cut = rng(0.08, 0.2) * (1 if k % 2 == 0 else -1)
         dz = rng(-0.005, 0.005)
         for x0, x1 in ((-W, cut), (cut, W)):
-            box(m, ((x0 + x1) / 2 + rng(-0.003, 0.003), y + h / 2, reach / 2 + dz), (1, 0, 0), (0, 1, 0),
-                ((x1 - x0) / 2 - 0.004, h / 2 - 0.005, reach / 2), 'ashlar', off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z',),
+            sbox(m, ((x0 + x1) / 2 + rng(-0.003, 0.003), y + h / 2, reach / 2 + dz), (1, 0, 0), (0, 1, 0),
+                 ((x1 - x0) / 2 - 0.004, h / 2 - 0.005, reach / 2), 'ashlar', off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z', '-y'),
                 col=col if y >= 0 else (0.8, 0.0, 0.0, 1.0))
         y += h
         k += 1

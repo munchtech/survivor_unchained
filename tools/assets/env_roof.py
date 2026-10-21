@@ -432,8 +432,8 @@ def gable(p):
 
     def col(s, t):
         ut = R.under(s) - t
-        # (E9b3) the water stain under the barge boards: the shader's sill streaks (vertex g), 20-40 cm down, ragged
-        reach = 0.3 + 0.1 * math.sin(3.1 * s + ph[2]) + 0.05 * math.sin(7.3 * s + ph[0])
+        # (E9b3) the water stain under the barge boards: the shader's sill streaks (vertex g), ragged; (E9b6) 0.6-1.0 m down
+        reach = 0.8 + 0.14 * math.sin(3.1 * s + ph[2]) + 0.06 * math.sin(7.3 * s + ph[0])
         st = min(1.0, max(0.0, 1 - (ut - 0.04) / reach)) * 0.85
         return (1.0 - 0.45 * max(0.0, 1 - ut / 0.6), st, 0.0, 1.0)
     H.face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), [poly], 'plaster', off=(rng(0, 4), rng(0, 1)), disp=disp, col=col, grid=(0.5, 0.25))
