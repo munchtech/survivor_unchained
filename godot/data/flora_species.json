@@ -1,6 +1,6 @@
 {
   "_doc": [
-    "Our own flora (tools/assets/env_trees.py builds the art; Dressing.cs and KitLook.cs read this). Behind --flora-own until E4 closes.",
+    "Our own flora (tools/assets/env_trees.py builds the art; Dressing.cs and KitLook.cs read this). The default since E4h (--flora-kit draws the kit's flora and grass, to compare).",
     "species: each one atlas and material (Leaves_Own<Species>) in godot/art/world/flora/. 'pieces' are its sizes and looks;",
     "'packed': all its pieces in one file, <species>.gltf, told apart per vertex (COLOR.a) and drawn as one MultiMesh per cell (the",
     "kit shader's OWN_FOLIAGE collapses the pieces an instance is not); else one file per piece, <piece>.gltf.",
