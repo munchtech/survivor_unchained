@@ -71,7 +71,7 @@
       "note": "Side-on, close: the heart drifts in from frame right, like a thing finding its way; her hand comes up under it, and they hang a hand's breadth apart, its blue light in her palm and on her fingers and chin.",
       "cam": {"pos": {"mark": "her", "off": [2.36, 1.75, -0.54]}, "at": {"mark": "her", "off": [0.0, 1.5, -0.18]}, "lens": 50, "focus": {"actor": "heart"}, "fstop": 4.0},
       "cues": [
-        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.45, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.6, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 160, "key": 0.7, "hemi": 0.75, "rim": 0.05},
         {"do": "skin", "sky": 0.3, "ear": 0.4},
         {"do": "hold", "actor": "her", "slot": "all", "piece": null},
@@ -86,7 +86,7 @@
         {"do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "hand_l", "off": [0, 0, -0.05]}, "color": "#6fa8ff", "energy": 7.0, "angle": 35, "range": 3},
         {"do": "sfx", "name": "heart_hum", "gain": 1.0},
         {"at": 0.6, "do": "head", "actor": "her", "where": {"mark": "her", "off": [0.0, 1.29, -0.5]}, "amount": 1.0, "over": 1.0},
-        {"do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#6fa8ff", "energy": 2.5, "angle": 40, "range": 2.5}
+        {"do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#6fa8ff", "energy": 1.3, "angle": 40, "range": 2.5}
       ]
     },
     {
