@@ -107,7 +107,7 @@ public partial class Game
     // (--look-dof: the portrait's depth of field, off since 10 October 2026: blended
     // hair took the backdrop's depth and blurred, and the focus edge moved every frame)
     static readonly bool LookDof = Args.Has("look-dof");
-    SpotLight3D? keyLight;
+    SpotLight3D? keyLight, bodyKey;
 
     /// <summary>How near the figure is asked to be framed (0 all of her, 1 her face).</summary>
     public float FigureZoom => figZoom;
@@ -179,6 +179,18 @@ public partial class Game
     }
 
     SpotLight3D? fillLight, edgeLight, rimLight, bounceLight;
+    // --key-aim Y: the key's aim over her eyes (metres; -0.05 as before face 34), --key-falloff E (see the key).
+    // --key-body S: the key's share on its broad cone (bodyKey; 1: all of it, as before face 34).
+    // (Face 34: the key's own cone 4.5 degrees (about 18 cm at her), its edge falloff 1.5, aimed 2 cm under her eyes, a quarter
+    // of its light on the broad cone: her chest down the frame 77-79 to 69-63 Oklab L, her face within 2 of before (forehead
+    // 84.0 to 83.2, cheeks 75.8/73.4 to 74.3/71.4); at 7 degrees it still lit her chest at her face's level (72-75).)
+    // --key-face-gain G: the key's own cone's light against its share (with a quarter on the broad cone her shade cheek fell 3 L).
+    static readonly float KeyFaceGain = Args.Num("key-face-gain", 1.2f);
+    static readonly float KeyCone = Args.Num("key-cone", 4.5f);
+    static readonly float KeyAim = Args.Num("key-aim", -0.02f), KeyFalloff = Args.Num("key-falloff", 1.5f), KeyBody = Args.Num("key-body", 0.25f);
+    static readonly Color BodyWarm = Args.Get("key-body-colour") is string bwc && bwc.Split(',') is { Length: 3 } bw
+        ? new Color(float.Parse(bw[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bw[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bw[2], System.Globalization.CultureInfo.InvariantCulture))
+        : new Color(1f, 0.9f, 0.82f);
     float bounce = -1;
     float ambientBase = -1;
     Vector2 bounceAt = new(1.3f, 1.0f);
@@ -235,18 +247,28 @@ public partial class Game
             // (--key-colour R,G,B: its colour, for judging it (pictures))
             if (Args.Get("key-colour") is string kcs && kcs.Split(',') is { Length: 3 } kp)
                 keyC = new Color(float.Parse(kp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kp[2], System.Globalization.CultureInfo.InvariantCulture));
-            keyLight = Spot(white ? Colors.White : keyC, 20, true, 0.3f);
+            keyLight = Spot(white ? Colors.White : keyC, KeyCone, true, 0.3f);
             keyLight.LightSize = 0.3f;
             // (--key-spec X: its highlight's strength, for judging it (pictures))
             if (Args.Get("key-spec") is string kss) keyLight.LightSpecular = float.Parse(kss, System.Globalization.CultureInfo.InvariantCulture);
             // (--key-cone ANGLE: its cone's half angle, for judging it (pictures))
-            if (Args.Get("key-cone") is string kc) keyLight.SpotAngle = float.Parse(kc, System.Globalization.CultureInfo.InvariantCulture);
+            // (--key-falloff E: its cone's edge falloff (Godot's spot_angle_attenuation), for judging it (pictures))
+            keyLight.SpotAngleAttenuation = KeyFalloff;
             // --key-shadow off | SIZE: the key's shadow off, or its light size (softness), for judging what it casts (pictures).
             if (Args.Get("key-shadow") is string ks)
             {
                 if (ks == "off") { keyLight.ShadowEnabled = false; keyLight.LightSize = 0; }
                 else if (float.TryParse(ks, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sz)) keyLight.LightSize = sz;
             }
+            // The key's body share (face 34): the same lamp, its old broad cone, at KeyBody of the key's light, the rest in
+            // the key's own narrow cone on her face. Under one broad key her neck and chest took as much light as her face,
+            // high on the tone curve's shoulder, where their relief (the neck's turn, collarbones, the notch) flattened to a
+            // featureless peach plane.
+            // (Warmer than the key (--key-body-colour R,G,B): lit by it alone, at L 63-69 her chest's chroma fell 7.2-9.3 to 5.6-5.9, grey
+            // beside her face's 8.6, the cool rim and the neutral fill showing there once the key no longer drowned them.)
+            var bodyC = white ? Colors.White : keyLight.LightColor * BodyWarm;
+            bodyKey = Spot(bodyC, 20, keyLight.ShadowEnabled, keyLight.LightSpecular);
+            bodyKey.LightSize = keyLight.LightSize;
         }
         // The fill is near white: cool, it turned the shade under her jaw grey; warm (1/0.95/0.9), with a strong warm
         // bounce, it gave every face a fake tan (cheek chroma 25-43% over its portrait, judge j1). A faint warm bounce
@@ -315,7 +337,10 @@ public partial class Game
             if (Args.Get("key-at") is string ka && ka.Split(',') is [var kx, var ky])
                 keyAt = new Vector2(float.Parse(kx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(ky, System.Globalization.CultureInfo.InvariantCulture));
         }
-        Aim(keyLight, eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p);
+        // (the whole figure's 0.15 on the broad cone, as before)
+        var keyPos = eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y;
+        Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain);
+        if (bodyKey != null) Aim(bodyKey, keyPos, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p * KeyBody);
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
         // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
         // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
@@ -367,8 +392,8 @@ public partial class Game
     {
         figTurn = figTurnNow = figZoom = 0;
         figureBody = "";
-        foreach (var l in new Light3D?[] { keyLight, fillLight, edgeLight, rimLight, bounceLight, herFire }) l?.QueueFree();
-        keyLight = fillLight = edgeLight = rimLight = bounceLight = null;
+        foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, herFire }) l?.QueueFree();
+        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         if (figure?.Person is { } herRig) People.HerLookRig(herRig, 0);
         Campfire.ClearNear(0);

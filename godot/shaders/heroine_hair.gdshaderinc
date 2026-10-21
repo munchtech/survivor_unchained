@@ -20,6 +20,11 @@ uniform float shine2_width = 40.0;
 uniform float shift = 0.06;
 uniform float shift2 = -0.1;
 uniform float through = 0.5;
+// (a pale near-neutral dye (platinum) held pale and neutral in warm light: ash cools its tone toward ash_tone,
+// lift raises it toward its swatch; both fade out with the dye's saturation and darkness: face 34)
+uniform float ash = 1.0;
+uniform vec3 ash_tone = vec3(0.72, 1.0, 1.0);
+uniform float lift = 0.55;
 // (20 October, face 32 r2b: the pixie only, People.HerHair. A card is a lock
 // of fibres, lit alike from either side; drawn two-sided, Godot turned its
 // normal in on its underside, so where a lifted card's underside showed, at
@@ -138,10 +143,18 @@ void fragment() {
 	t.r = mix(0.15, 0.85, t.r);
 	// Strand by strand (the atlas's green) and lock by lock (the card's green),
 	// from a deeper auburn to a lighter copper.
-	vec3 dark = colour * vec3(0.62, 0.5, 0.45);
+	// (the deeper tone's warm shift in step with the dye's own saturation: copper deepens to auburn, but a
+	// near-neutral dye keeps its own hue as it darkens; at full shift platinum's deep strands went pink, Oklab
+	// hue 25 against its swatch's 85, and the whole head read peach, strawberry blonde: face 34)
+	float dye_sat = (max(colour.r, max(colour.g, colour.b)) - min(colour.r, min(colour.g, colour.b))) / max(max(colour.r, max(colour.g, colour.b)), 0.001);
+	vec3 dark = colour * mix(vec3(0.53), vec3(0.62, 0.5, 0.45), smoothstep(0.2, 0.5, dye_sat));
 	vec3 light = min(colour * vec3(1.4, 1.5, 1.55), vec3(1.0));
 	// (the card's own share small: at 0.12 each card took a flat tone of its own, a block on her crown)
 	vec3 tint = mix(colour, mix(dark, light, clamp(t.g * 0.96 + COLOR.g * 0.04, 0.0, 1.0)), variation);
+	// (gray as well as platinum went mauve by the fire, hue 32: the ash reaches the light grays, the lift only the palest)
+	float dye_neutral = 1.0 - smoothstep(0.2, 0.5, dye_sat), dye_lum = dot(colour, vec3(0.2126, 0.7152, 0.0722));
+	tint = min(tint * (1.0 + lift * dye_neutral * smoothstep(0.3, 0.6, dye_lum)), vec3(1.0));
+	float ash_w = ash * dye_neutral * smoothstep(0.1, 0.35, dye_lum);
 	float depth = COLOR.r;                                        // 1 outermost, darker within
 	strand = normalize(BINORMAL);                                 // along its V: root to tip
 	sparkle = t.g;
@@ -174,6 +187,9 @@ void fragment() {
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
 		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
+	// (the ash on the lighter strands only: on the dark ones, deep in the hair and lit by the sky, it turned them
+	// blue-grey, 0.5% to 6.9% of her crown's pixels bluish: judge j1, face 34)
+	ALBEDO *= mix(vec3(1.0), ash_tone, ash_w * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
 #if defined(SOFT) || defined(OVER)
 	ALPHA = cover;
 #elif defined(BLEND)

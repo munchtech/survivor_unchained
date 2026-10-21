@@ -62,6 +62,28 @@ public class GarmentTuckTests
         Assert.False(GarmentTuck.Over(ink, skirt));
     }
 
+    /// <summary>The rigid-piece rule (armor 9): a row's "rigid" flag is read, and a rigid inner piece is never laid by
+    /// the garment tuck (a plate is never bent); a rigid piece over a soft one still lays that one.</summary>
+    [Fact]
+    public void Rigid_inner_piece_is_never_laid()
+    {
+        var ix = ArmorIndex.Parse("""
+            [{"id": "mar_her_cuirass", "outfit": null, "slot": "top", "rigid": true},
+             {"id": "mar_her_pauldrons", "outfit": null, "slot": "pauldrons", "rigid": true},
+             {"id": "soft_top", "outfit": null, "slot": "top"},
+             {"id": "ranger.belt", "outfit": "ranger", "slot": "belt"}]
+            """, "armor");
+        var cuirass = ix.Find("mar_her_cuirass")!;
+        var pauldrons = ix.Find("mar_her_pauldrons")!;
+        var soft = ix.Find("soft_top")!;
+        Assert.True(cuirass.Rigid);
+        Assert.False(soft.Rigid);
+        Assert.False(GarmentTuck.Over(pauldrons, cuirass));      // rigid inner: never laid
+        Assert.False(GarmentTuck.Over(ix.Find("ranger.belt")!, cuirass));
+        Assert.True(GarmentTuck.Over(pauldrons, soft));          // rigid outer over a soft piece: lays it
+        Assert.True(GarmentTuck.Over(ix.Find("ranger.belt")!, soft));
+    }
+
     [Fact]
     public void Nearest_matches_a_brute_search()
     {

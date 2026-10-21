@@ -19,7 +19,7 @@ Regions (image pixels at 2048, x right, y down; the metres each spans across):
   leather  1024,1536 512x512   0.4 m           creased hide, scuffs
   rollend  1536,1536 256x256   0.3 m           a rolled blanket's end: a spiral of layers
   stone    1536,1792 512x256   1.0 m x 0.5 m   dressed stone, warm grey
-  (1792,1536 256x256 free)
+  soil     1792,1536 256x256   0.5 m           (E7b) grave earth: dark loam, clods, pebbles, root threads
 
 Out (godot/art/world/props/): props_albedo.jpg (sRGB), props_normal.png (OpenGL,
 green up), props_orm.png (R ao=1, G roughness, B metal), props_atlas.json (the
@@ -51,6 +51,7 @@ REGIONS = {
     "leather": ((1024, 1536, 512, 512), 0.4, "plain", {"detail": 0.35, "hue": "12,22", "pull": "0.15"}),
     "rollend": ((1536, 1536, 256, 256), 0.3, "plain", {"detail": 0.5, "warm": "0,0", "stroke": 0.015}),
     "stone": ((1536, 1792, 512, 256), 1.0, "stone", {"chroma": 0.8, "warm": "1,2", "pull": "0.05"}),
+    "soil": ((1792, 1536, 256, 256), 0.5, "plain", {"detail": 0.4, "chroma": 0.85, "stroke": 0.02}),
 }
 
 
@@ -326,8 +327,24 @@ def stone(h, w, m, rng):
     return col, hgt, 0.88 + 0.08 * grit, np.zeros((h, w), np.float32)
 
 
+def soil(h, w, m, rng):
+    # (E7b) grave earth, near-neutral (the graves' tint browns it): loam in soft clods, darker hollows between,
+    # a few pale pebbles, thin root threads
+    big = fbm(h, w, 3, 3, rng, 4)
+    clod = fbm(h, w, 14, 14, rng, 3)
+    grit = fbm(h, w, 64, 64, rng, 2)
+    peb = ss(0.78, 0.86, fbm(h, w, 20, 20, rng, 2))
+    roots = 1 - ss(0.0, 0.01, np.abs(fbm(h, w, 4, 4, rng, 3) - 0.5))
+    col = mix(srgb("#8c8478"), srgb("#a29a8c"), big)
+    col = mix(col, srgb("#5e574e"), 0.55 * ss(0.55, 0.3, clod) + 0.2 * grit)
+    col = mix(col, srgb("#c4bcac"), 0.7 * peb)
+    col = mix(col, srgb("#6e6250"), 0.35 * roots)
+    hgt = 0.006 * clod + 0.003 * peb + 0.001 * grit
+    return col, hgt, 0.95 - 0.1 * peb, np.zeros((h, w), np.float32)
+
+
 MAKERS = {"wood": wood, "bark": bark, "endgrain": endgrain, "iron": iron, "cloth": cloth, "canvas": canvas,
-          "leather": leather, "rollend": rollend, "stone": stone}
+          "leather": leather, "rollend": rollend, "stone": stone, "soil": soil}
 
 
 def normals(hgt, ppm):

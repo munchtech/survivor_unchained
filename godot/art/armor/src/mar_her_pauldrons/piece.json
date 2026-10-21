@@ -1,0 +1,22 @@
+{
+ "id": "mar_her_pauldrons",
+ "name": "Riveted pauldrons, cut for her",
+ "slot": "pauldrons",
+ "style": "mesh",
+ "params": {
+  "file": "mar_her_pauldrons.glb"
+ },
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "riveted",
+ "covers": [
+  "pauldrons"
+ ],
+ "hold": {
+  "amount": 0.55,
+  "squash": 0
+ },
+ "adorn": [],
+ "body_sha1": "e185d855ebc4b99b3cdf025ad68c9a779906c5b1"
+}
