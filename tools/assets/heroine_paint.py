@@ -5,8 +5,10 @@ head (a cylinder about her head's upright axis: across, the arc round it;
 down, her height), where it is easy to draw a stripe from temple to temple
 or a line under an eye. This tool then lays each design onto her head's own
 UV layout (art/people/head_tex/heroine_head.jpg), so the game draws it over
-her skin as a pass of its own (shaders/heroine_paint.gdshader, People.HerPaint)
-and it moves with her face as it is shaped and speaks.
+her skin, in her skin's own shader so it takes her skin's light
+(shaders/heroine_skin.gdshader's face_paint, People.HerPaint; never over her
+nostrils: tools/assets/heroine_nostril_mask.py), and it moves with her face
+as it is shaped and speaks.
 
 It reads her head from art/people/heroine.glb, so it is run again whenever
 her head is rebuilt (its UVs may change):
@@ -426,8 +428,10 @@ def woad(shape, f, seed=31):
     drawn down her cheek to the jaw. Chalky, broken where the woad ran dry,
     the skin's grain through it."""
     L = layer(shape)
-    # (toward cyan: the game's tone mapping turns a pure blue violet)
-    blue = hexc('#0b4aa4')
+    # (real woad: a deep, chalky, greyed indigo, not a dye's electric blue (#0b4aa4
+    # read as lit from within at the Look); laid a little thinner, so where the
+    # fingers ran dry her skin shows through)
+    blue = hexc('#2c3b5e')
     grain = pigment(shape, seed, 16, 0.18)
     cov = np.zeros(shape, np.float32)
     # The band over her brow (above her brows, below her hairline), a little higher at the temples.
@@ -444,8 +448,8 @@ def woad(shape, f, seed=31):
             pts = [(x, y0), (x + out * 6, y0 + 130), (x + out * (14 + k * 8), y0 + 290), (x + out * (20 + k * 14), y0 + 470)]
             cov = np.maximum(cov, stroke(shape, pts, [56, 60, 52, 26], dry=0.55, streaks=0.5, soft=0.26, seed=seed + 3 + side * 2 + k,
                                          taper=(0.05, 0.45), streak_px=6, edge=0.45))
-    lay(L, cov, blue, 0.96, grain, through=0.3)
-    return firm(L, 1.45)
+    lay(L, cov, blue, 0.94, grain, through=0.3)
+    return firm(L, 1.25)
 
 
 def ochre(shape, f, seed=41):
@@ -470,7 +474,8 @@ def ash(shape, f, seed=51):
     """Pale ash from a dead fire, thumbed under each eye and dragged down the
     cheek: thick where the thumb pressed, smeared thin as it was drawn."""
     L = layer(shape)
-    grey = hexc('#e8e4dc')
+    # (a grey ash, not chalk white: near-white (#e8e4dc) glowed against her skin's light)
+    grey = hexc('#aca8a0')
     cov = np.zeros(shape, np.float32)
     for side, hole in enumerate(f['holes']):
         ys, xs = np.nonzero(hole)

@@ -736,9 +736,9 @@ public static class People
 
     /// <summary>Paint on her face (Lore.Her.Paints: art/people/paint/ID.png, laid
     /// out on her head's own paint by tools/assets/heroine_paint.py): drawn
-    /// over her skin as a pass of its own, so it lies on the skin rather than
-    /// in it, with its own sheen (chalky woad, waxy kohl, bright leaf), and
-    /// moves with her face as it shapes and speaks. None: taken off.
+    /// in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
+    /// light exactly, with its own sheen (chalky woad, waxy kohl, bright leaf),
+    /// and moves with her face as it shapes and speaks. None: taken off.
     /// Under it, her brows dyed her hair's colour (art/people/paint/brows.png:
     /// her painted brows, found), since they are painted copper into her skin;
     /// her hair as it grew dyes them too, her own copper (as painted they read
@@ -776,11 +776,25 @@ public static class People
                     m.SetShaderParameter("rough", 0.8f);
                     Then(m);
                 }
-                if (def != null && ResourceLoader.Exists(file))
+                // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
+                // light exactly; --paint-pass draws it over her as a pass of its own again (as before
+                // 20 October), to compare.
+                bool own = def != null && ResourceLoader.Exists(file);
+                bool pass = own && SurvivorUnchained.Args.Has("paint-pass");
+                skin.SetShaderParameter("has_face_paint", own && !pass);
+                skin.SetShaderParameter("face_paint", own && !pass ? GD.Load<Texture2D>(file) : null);
+                if (own && !pass)
+                {
+                    skin.SetShaderParameter("paint_rough", (float)def!.Rough);
+                    skin.SetShaderParameter("paint_metal", (float)def.Metal);
+                    const string keep = "res://art/people/paint/nostril_keep.png";
+                    if (ResourceLoader.Exists(keep)) skin.SetShaderParameter("face_paint_keep", GD.Load<Texture2D>(keep));
+                }
+                if (pass)
                 {
                     var m = new ShaderMaterial { Shader = paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(file));
-                    m.SetShaderParameter("rough", (float)def.Rough);
+                    m.SetShaderParameter("rough", (float)def!.Rough);
                     m.SetShaderParameter("metal", (float)def.Metal);
                     Then(m);
                 }
