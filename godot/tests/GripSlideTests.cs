@@ -17,17 +17,17 @@ public class GripSlideTests
     [Fact]
     public void MoveBlendMixesIdleAndRunAndClamps()
     {
-        Assert.Equal(0.08f, GripSlide.Target(false, 0, false, 0, 0f, 0.08f, 0f), 5);
-        Assert.Equal(0.04f, GripSlide.Target(false, 0, false, 0, 0.5f, 0.08f, 0f), 5);
-        Assert.Equal(0.08f, GripSlide.Target(false, 0, false, 0, -3f, 0.08f, 0f), 5);
-        Assert.Equal(0f, GripSlide.Target(false, 0, false, 0, 7f, 0.08f, 0f), 5);
+        Assert.Equal(0.08f, GripSlide.Target(false, 0, false, 0, 0f, 0.08f, 0f), 1e-5f);
+        Assert.Equal(0.04f, GripSlide.Target(false, 0, false, 0, 0.5f, 0.08f, 0f), 1e-5f);
+        Assert.Equal(0.08f, GripSlide.Target(false, 0, false, 0, -3f, 0.08f, 0f), 1e-5f);
+        Assert.Equal(0f, GripSlide.Target(false, 0, false, 0, 7f, 0.08f, 0f), 1e-5f);
     }
 
     [Fact]
     public void EaseKeepsAtZeroDtAndReachesTargetWithLargeDt()
     {
         Assert.Equal(0.02f, GripSlide.Ease(0.02f, 0.09f, 0f));
-        Assert.Equal(0.09f, GripSlide.Ease(0.02f, 0.09f, 100f), 4);
+        Assert.Equal(0.09f, GripSlide.Ease(0.02f, 0.09f, 100f), 1e-4f);
     }
 
     [Fact]
