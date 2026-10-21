@@ -274,22 +274,37 @@ public sealed class Nav
         var cur = Current;
         ring.Visible = Enabled && KeyMode && cur != null;
         if (!ring.Visible) return;
-        // A word set as type (KEEP on Self's ledger) is marked by an ember line under it, not a ring round it.
-        bool under = cur!.Value.C.HasMeta("nav_underline");
-        if (under != underlined)
+        var cc = cur!.Value.C;
+        // (a control that shows its own focus: no ring at all)
+        if (cc.HasMeta("nav_own")) { ring.Visible = false; return; }
+        // A word set as type (KEEP on Self's ledger) is marked by an ember line under it, not a ring round it;
+        // a round thing (a bead) by a round ring; a row by a ring round what it shows (nav_frame), not its width.
+        int mode = cc.HasMeta("nav_underline") ? 1 : cc.HasMeta("nav_round") ? 2 : 0;
+        if (mode != ringMode)
         {
-            underlined = under;
-            ring.AddThemeStyleboxOverride("panel", under ? Underline : Style.FocusFrame());
+            ringMode = mode;
+            ring.AddThemeStyleboxOverride("panel", mode switch { 1 => Underline, 2 => Round, _ => Style.FocusFrame() });
         }
-        var r = under ? cur.Value.C.GetGlobalRect() : cur.Value.C.GetGlobalRect().Grow(4);
+        bool under = mode == 1;
+        var r = cc.GetGlobalRect().Grow(4);
+        if (under) r = cc.GetGlobalRect();
+        else if (mode == 2) { float rad = (float)cc.GetMeta("nav_round"); r = new Rect2(cc.GetGlobalRect().GetCenter() - new Vector2(rad, rad), new Vector2(rad, rad) * 2); }
+        else if (cc.HasMeta("nav_frame") && cc.GetMeta("nav_frame").AsGodotObject() is Control fr && GodotObject.IsInstanceValid(fr)) r = fr.GetGlobalRect().GrowIndividual(10, 4, 10, 4);
         ring.GlobalPosition = under ? new Vector2(r.Position.X, r.End.Y - 1) : r.Position;
         ring.Size = under ? new Vector2(r.Size.X, 3) : r.Size;
         ring.Modulate = Colors.White with { A = 0.8f + 0.2f * Mathf.Sin((float)t * 4) };
     }
 
-    bool underlined;
+    int ringMode;
+    static readonly StyleBoxFlat Round = new() { DrawCenter = false, BorderColor = Style.Ember, BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, CornerRadiusTopLeft = 64, CornerRadiusTopRight = 64, CornerRadiusBottomLeft = 64, CornerRadiusBottomRight = 64, AntiAliasing = true, ShadowColor = Style.Ember with { A = 0.3f }, ShadowSize = 4 };
     static readonly StyleBoxFlat Underline = new() { BgColor = Style.Ember with { A = 0.85f }, ShadowColor = Style.Ember with { A = 0.35f }, ShadowSize = 4 };
 
     /// <summary>Marked by an ember line under it when it has focus, not a ring: for words set as type.</summary>
     public static T Underlined<T>(T c) where T : Control { c.SetMeta("nav_underline", true); return c; }
+    /// <summary>Marked by a round ring of this radius about its middle when it has focus (a bead).</summary>
+    public static T Rounded<T>(T c, float radius) where T : Control { c.SetMeta("nav_round", radius); return c; }
+    /// <summary>Its ring drawn round what it shows (frame), not its whole width (a row of type in a column).</summary>
+    public static T Framed<T>(T c, Control frame) where T : Control { c.SetMeta("nav_frame", frame); return c; }
+    /// <summary>It shows its own focus (a cycle lights its arrows): no ring.</summary>
+    public static T Own<T>(T c) where T : Control { c.SetMeta("nav_own", true); return c; }
 }

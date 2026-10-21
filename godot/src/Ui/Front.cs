@@ -240,6 +240,8 @@ public sealed class CreationDraft
     /// closely on the right; the look's: 0 her face's rows, 1 her hair's, framing her for it), and the
     /// face's group of sliders (kept for the data; no sliders are offered).</summary>
     public int Section, FaceGroup;
+    /// <summary>Her eyes or her skin chosen by hand this creation (not saved): a face taken after keeps them.</summary>
+    public bool EyesPicked, SkinPicked;
 
     public CreationChoice Choice() => new()
     {
@@ -313,6 +315,7 @@ public partial class CreateScreen : Overlay
         string cut = d.HairStyle;
         change();
         G.DressFigure(d);
+        G.FigureArms(d.Step != LookStep);
         // A new screen or row frames the figure for it (the look's rows come near: her hair, her face);
         // a new cut turns her so it shows (a braid down her back is seen from behind).
         if (d.Step != step || d.Section != section || d.HairStyle != cut) G.FrameFigure(SectionZoom(), SectionTurn());
@@ -359,7 +362,7 @@ public partial class CreateScreen : Overlay
         // The figure between the panels: dragged, she turns; the wheel brings her near.
         AddChild(Stage());
         // The left panel: the screens on their chain, the screen's question, the choices, the way on.
-        var col = Fitted(new Vector2(Inset, Inset), PanelW);
+        var col = Solid(Fitted(new Vector2(Inset, Inset), PanelW));
         // (the screens are turned with LB and RB, or [ and ], drawn at the chain's ends)
         var steps = new ChainTabs(Steps.Select(s => (s, "")).ToArray(), d.Step, k => { if (k != d.Step) { Sound.Sfx.Page(); Go(k); } },
             (G.Key(Act.TabPrev), G.Key(Act.TabNext)), 20) { SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
@@ -376,10 +379,26 @@ public partial class CreateScreen : Overlay
         }
         col.AddChild(Foot());
         // The right panel, its twin: what the group last touched means, read closely; then who they are.
-        var right = Fitted(new Vector2(1920 - Inset - PanelW, Inset), PanelW);
+        var right = Solid(Fitted(new Vector2(1920 - Inset - PanelW, Inset), PanelW));
         right.AddChild(d.Step == CallingStep ? d.Section switch { 1 => ArmsDetail(), 2 => OriginDetail(), _ => CallingDetail(a) } : LookDetail(a));
         // Who they are becoming, set on the ground at the figure's feet (not by her face: the name's field shows it).
         if (d.Step == CallingStep) AddChild(Nameplate(a));
+    }
+
+    /// <summary>Creation's panels nearly opaque (about 0.95, over the house's 0.84): the bright world by the
+    /// fire showed through them behind the choices. A dark ground under the painted one, inside its edge.</summary>
+    VBoxContainer Solid(VBoxContainer col)
+    {
+        if (col.GetParent() is not Control panel) return col;
+        panel.SelfModulate = Colors.White;
+        var under = new Panel { MouseFilter = MouseFilterEnum.Ignore };
+        under.AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = Kit.Ground with { A = 0.5f }, CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4, CornerRadiusBottomLeft = 4, CornerRadiusBottomRight = 4 });
+        AddChild(under);
+        MoveChild(under, panel.GetIndex());
+        void Fit() { under.Position = panel.Position + new Vector2(4, 4); under.Size = panel.Size - new Vector2(8, 8); }
+        panel.Resized += Fit;
+        Fit();
+        return col;
     }
 
     /// <summary>The panel's foot: back (or leave) and the way on, each its key and its word, at
@@ -436,6 +455,8 @@ public partial class CreateScreen : Overlay
         b.AddChild(row);
         b.CustomMinimumSize = row.GetCombinedMinimumSize() + new Vector2(0, 4);
         row.Position = new Vector2(0, 2);
+        // (its focus rings its mark, glyph and words, not the column's width)
+        Nav.Framed(b, row);
         b.MouseEntered += () => title.AddThemeColorOverride("font_color", Kit.Ink);
         b.MouseExited += () => title.AddThemeColorOverride("font_color", ink);
         b.Pressed += act;
@@ -476,45 +497,59 @@ public partial class CreateScreen : Overlay
         return v;
     }
 
-    /// <summary>A woman, or a man: his own body is still to come, so he is shown greyed, said to be
-    /// coming, never pressed nor come to by the keys; no picture of him.</summary>
+    /// <summary>A woman, or a man: his own body is still to come, so he is shown greyed with "coming
+    /// later" under him as a calling's line is, never pressed nor come to by the keys; no picture of
+    /// him. The pair centred on the panel's middle.</summary>
     Control SexRow()
     {
-        var woman = Nav.Id(Kit.Tab("A woman", Her, () => { if (!Her) Set(() => d.SetSex(Sex.Female)); }, 19), "sex:Female");
+        var woman = Nav.Underlined(Nav.Id(Kit.Tab("A woman", Her, () => { if (!Her) Set(() => d.SetSex(Sex.Female)); }, 19), "sex:Female"));
         var man = Kit.Tab("A man", !Her, () => { }, 19);
         man.Disabled = true;
         man.MouseFilter = MouseFilterEnum.Ignore;
         man.MouseDefaultCursorShape = CursorShape.Arrow;
         man.AddThemeColorOverride("font_disabled_color", Kit.Dim);
         man.Modulate = Colors.White with { A = 0.45f };
+        man.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         Nav.Skip(man);
-        var later = Style.Label("coming later", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false);
-        // (on the word's line: the tab's foot holds its underline's room)
-        later.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        later.CustomMinimumSize = new Vector2(0, 0);
-        var him = Style.H(Style.Gap2, man, later);
-        var row = Style.H(40, woman, him);
+        var later = Style.Label("coming later", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Center, false);
+        // (the tab's foot leaves room for an underline it never has: its line tucks up under the word)
+        var him = Style.V(-8, man, later);
+        // (each word in a cell as wide as the other's, so the pair's middle is the panel's middle)
+        float w = Math.Max(woman.GetCombinedMinimumSize().X, Math.Max(man.GetCombinedMinimumSize().X, later.GetCombinedMinimumSize().X)) + 8;
+        var left = new HBoxContainer { CustomMinimumSize = new Vector2(w, 0), Alignment = BoxContainer.AlignmentMode.Center, MouseFilter = MouseFilterEnum.Ignore };
+        left.AddChild(woman);
+        woman.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        him.CustomMinimumSize = new Vector2(w, 0);
+        var row = Style.H(40, left, him);
         row.Alignment = BoxContainer.AlignmentMode.Center;
         return row;
     }
 
-    /// <summary>The arms: the calling's weapons as its rows, and the four arts it starts with as words,
-    /// the one in hand's kind and pace under them (the right panel reads both closely).</summary>
+    /// <summary>Where a list's words begin (past its mark and glyph): the word rows and their lines align to it.</summary>
+    const int TextEdge = 74;
+
+    /// <summary>The arms: the calling's weapons as its rows (room kept for three, so the rows under them
+    /// never move between callings), and the four arts it starts with as words, the one in hand's kind and
+    /// pace under them (the right panel reads both closely).</summary>
     Control Arms(Archetype a)
     {
         var v = Style.V(Style.Gap2, Kit.Head("Weapon"));
+        float rowH = 0;
         foreach (var id in a.Weapons)
         {
             var it = Items.Get(id);
             var w = it.Weapon != null ? Weapons.All.GetValueOrDefault(it.Weapon.Id) : null;
-            v.AddChild(Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => { d.Section = 1; d.WeaponItem = id; }),
-                w != null ? ItemViews.SchoolColors[w.School] : null));
+            var r = Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => { d.Section = 1; d.WeaponItem = id; }),
+                w != null ? ItemViews.SchoolColors[w.School] : null);
+            rowH = r.CustomMinimumSize.Y;
+            v.AddChild(r);
         }
+        for (int n = a.Weapons.Count; n < 3; n++) v.AddChild(Style.Gap(rowH));
         v.AddChild(Style.Gap(Style.Gap1));
-        v.AddChild(Kit.Head("Art in hand", "all four known; more on the road"));
+        v.AddChild(Kit.Head("Art in hand"));
         v.AddChild(Flow(ArtBook.Starting(a.Id).Select(id => (Abilities.ById(id).Name, d.Ability == id, (Action)(() => Set(() => { d.Section = 1; d.Ability = id; })), $"art:{id}"))));
         var ab = Abilities.ById(d.Ability);
-        v.AddChild(Note($"{(ab.Movement ? "A way of moving" : "The calling's own")} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}"));
+        v.AddChild(Note($"{(ab.Movement ? "A way of moving" : "The calling's own")} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}. All four known; more on the road."));
         return v;
     }
 
@@ -523,17 +558,28 @@ public partial class CreateScreen : Overlay
         Flow(Callings.Backgrounds.Select(p => (p.Value.Name, d.Background == p.Key, (Action)(() => { var id = p.Key; Set(() => { d.Section = 2; d.Background = id; }); }), $"origin:{p.Key}"))),
         Note(Callings.Background(d.Background).Summary));
 
-    /// <summary>A chosen word's line, quiet italic under its words.</summary>
-    static Label Note(string text) => Style.Label(text, Style.TextItalic, 16, Kit.Dim, true, HorizontalAlignment.Center, false);
+    /// <summary>A chosen word's line, quiet italic under its words, from the lists' text edge.</summary>
+    static Control Note(string text) => Indent(Style.Label(text, Style.TextItalic, 16, Kit.Dim, true, HorizontalAlignment.Left, false));
 
-    /// <summary>Words to choose between, as the house's tabs in centred lines, each with its focus id.</summary>
-    static HFlowContainer Flow(IEnumerable<(string Text, bool On, Action Press, string Id)> words)
+    /// <summary>Set in from the panel's edge to the lists' text edge.</summary>
+    static MarginContainer Indent(Control c)
+    {
+        var m = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+        m.AddThemeConstantOverride("margin_left", TextEdge);
+        m.AddChild(c);
+        return m;
+    }
+
+    /// <summary>Words to choose between, as the house's tabs from the lists' text edge, each with its focus
+    /// id; focused, an ember line under the word, not a box.</summary>
+    static Control Flow(IEnumerable<(string Text, bool On, Action Press, string Id)> words)
     {
         var list = words.ToList();
         var f = Kit.TabFlow(list.Select(w => (w.Text, w.On, w.Press)), 17, 26, 4);
+        f.Alignment = FlowContainer.AlignmentMode.Begin;
         int i = 0;
-        foreach (var b in f.GetChildren().OfType<Button>()) Nav.Id(b, list[i++].Id);
-        return f;
+        foreach (var b in f.GetChildren().OfType<Button>()) Nav.Underlined(Nav.Id(b, list[i++].Id));
+        return Indent(f);
     }
 
     /* ------------------------------------------- the right panel's type -- */
@@ -573,11 +619,18 @@ public partial class CreateScreen : Overlay
         return line;
     }
 
-    Control CallingDetail(Archetype a) => Style.V(Style.Gap3,
-        DTitle(a.Name), DSub(a.Tagline), DBody(a.Description), Kit.RuleH(),
-        Ledger(($"{a.Base.MaxHealth:0}", "Health"), ($"{a.Base.Armor:0}", "Armour"), ($"{a.Base.MoveSpeed:0.0}", "Speed"), ($"{a.Base.CritChance * 100:0}%", "Precision")),
-        Kit.RuleH(),
-        Line("Arms", string.Join(" · ", a.Weapons.Select(w => Items.Get(w).Name))), Line("Arts", string.Join(" · ", a.Abilities.Select(x => Abilities.ById(x).Name))));
+    Control CallingDetail(Archetype a)
+    {
+        // (what the left does not list: the four arts they start with, and what the origin chosen gives)
+        var bg = Callings.Background(d.Background);
+        return Style.V(Style.Gap3,
+            DTitle(a.Name), DSub(a.Tagline), DBody(a.Description), Kit.RuleH(),
+            Ledger(($"{a.Base.MaxHealth:0}", "Health"), ($"{a.Base.Armor:0}", "Armour"), ($"{a.Base.MoveSpeed:0.0}", "Speed"), ($"{a.Base.CritChance * 100:0}%", "Precision")),
+            Kit.RuleH(),
+            Line("Arts", string.Join(" · ", ArtBook.Starting(a.Id).Select(x => Abilities.ById(x).Name))),
+            Line("Carries", string.Join(" · ", bg.Items.Select(i => Items.Get(i).Name))),
+            Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))));
+    }
 
     Control ArmsDetail()
     {
@@ -643,11 +696,21 @@ public partial class CreateScreen : Overlay
     {
         if (nameBox != null && nameBox.HasFocus())
         {
-            // Typing a name: the letters are the name's, not the menu's (W and S among them); the
-            // arrows up and down leave the name for the rows, Enter begins.
-            if (a is Act.Up or Act.Down && (Input.IsPhysicalKeyPressed(Godot.Key.Up) || Input.IsPhysicalKeyPressed(Godot.Key.Down))) { nameBox.ReleaseFocus(); return false; }
+            // Typing a name: the letters are the name's, not the menu's (W, S and Backspace among them);
+            // the arrows up and down and Tab leave the name for the row beside it, left and right stay
+            // in the text, Escape only lets the name go, Enter begins.
+            bool Held(Godot.Key k) => Input.IsPhysicalKeyPressed(k);
+            if (a is Act.Up or Act.Down && (Held(Godot.Key.Up) || Held(Godot.Key.Down)) || a == Act.Inventory && Held(Godot.Key.Tab))
+            {
+                nameBox.ReleaseFocus();
+                Nav.KeyMode = true;
+                Nav.FocusId = "name";
+                Nav.Key(a == Act.Up ? Act.Up : Act.Down);
+                return true;
+            }
             if (a == Act.Confirm) { nameBox.ReleaseFocus(); Begin(); return true; }
-            if (a != Act.Cancel) return true;
+            if (a == Act.Cancel && Held(Godot.Key.Escape)) nameBox.ReleaseFocus();
+            return true;
         }
         if (a == Act.TabNext) { Go(d.Step + 1); return true; }
         if (a == Act.TabPrev) { Go(d.Step - 1); return true; }

@@ -239,6 +239,12 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
+    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).</summary>
+    public void ShowHeld(bool shown)
+    {
+        foreach (var m in held.Values) if (IsInstanceValid(m)) m.Visible = shown;
+    }
+
     public void Hold(string slot, string? pack, string? piece)
     {
         if (held.Remove(slot, out var old)) old.QueueFree();

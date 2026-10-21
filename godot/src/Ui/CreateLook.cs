@@ -33,11 +33,17 @@ public partial class CreateScreen
 
     /// <summary>How near the figure is framed, and how far she is turned (her hair seen from the side,
     /// where a cut shows): all of her on the first screen; on the second, by the row last touched.</summary>
-    float SectionZoom() => d.Step != LookStep ? 0 : d.Section == LookHair ? 0.55f : 1f;
+    /// (a pixie is short: her head is brought nearer for it, to fill the frame as a braid's length does)
+    float SectionZoom() => d.Step != LookStep ? 0 : d.Section != LookHair ? 1f : d.HairStyle == "pixie" ? 0.75f : 0.55f;
     float SectionTurn() => d.Step != LookStep || d.Section != LookHair ? 0 : d.HairStyle switch { "ponytail" => -1.4f, "braid" => -1.75f, _ => -0.95f };
 
-    /// <summary>The figure framed for the screen and row as they are now.</summary>
-    public void FrameForStep() => G.FrameFigure(SectionZoom(), SectionTurn());
+    /// <summary>The figure framed for the screen and row as they are now; on the look, her weapon and
+    /// shield put away, so nothing stands in front of her face and hair.</summary>
+    public void FrameForStep()
+    {
+        G.FrameFigure(SectionZoom(), SectionTurn());
+        G.FigureArms(d.Step != LookStep);
+    }
 
     /* ---------------------------------------------------------- the stage -- */
 
@@ -92,10 +98,10 @@ public partial class CreateScreen
         if (k.Eyes.Count > 1)
         {
             v.AddChild(Kit.Head("Eyes"));
-            v.AddChild(Beads(k.Eyes, d.Eyes, id => { d.Section = LookFace; d.Eyes = id; }, Bead.Kind.Eye, ""));
+            v.AddChild(Beads(k.Eyes, d.Eyes, id => { d.Section = LookFace; d.Eyes = id; d.EyesPicked = true; }, Bead.Kind.Eye, ""));
         }
         v.AddChild(Kit.Head("Skin"));
-        v.AddChild(Beads(Lore.Skins, d.Skin, id => { d.Section = LookFace; d.Skin = id; }, Bead.Kind.Skin, "#f2c4a8"));
+        v.AddChild(Beads(Lore.Skins, d.Skin, id => { d.Section = LookFace; d.Skin = id; d.SkinPicked = true; }, Bead.Kind.Skin, "#f2c4a8"));
         if (k.Paints.Count > 1)
         {
             // (the first is bare, "No paint"; the rest numbered from one)
@@ -115,17 +121,18 @@ public partial class CreateScreen
         return Style.V(Style.Gap2,
             Kit.Head("Hair"), Cycle($"Hair {c + 1}/{cuts.Count}", c, cuts.Count, i => Set(() => { d.Section = LookHair; d.HairStyle = cuts[i]; }), "cycle:hair"),
             Kit.Head("Hair colour"), Beads(Lore.Hairs, d.Hair, id => { d.Section = LookHair; d.Hair = id; }, Bead.Kind.Hair, "#6a5a48"),
-            Kit.Head("Skin"), Beads(Lore.Skins, d.Skin, id => { d.Section = LookFace; d.Skin = id; }, Bead.Kind.Skin, "#f2c4a8"),
+            Kit.Head("Skin"), Beads(Lore.Skins, d.Skin, id => { d.Section = LookFace; d.Skin = id; d.SkinPicked = true; }, Bead.Kind.Skin, "#f2c4a8"),
             NameRow());
     }
 
-    /// <summary>A face to start from, taken: its shape, and its skin and eyes where it has its own.</summary>
+    /// <summary>A face to start from, taken: its shape, and its skin and eyes where it has its own and the
+    /// player has not yet chosen them (a face never undoes a choice made in its rows).</summary>
     void Choose(FaceShape f)
     {
         d.FaceShape = f.Id;
         d.Face = new Dictionary<string, double>(f.Shape);
-        if (f.Skin is { } skin && Lore.Skins.Any(s => s.Id == skin)) d.Skin = skin;
-        if (f.Eyes is { } eyes && Hero is { } k && k.Eyes.Any(e => e.Id == eyes)) d.Eyes = eyes;
+        if (!d.SkinPicked && f.Skin is { } skin && Lore.Skins.Any(s => s.Id == skin)) d.Skin = skin;
+        if (!d.EyesPicked && f.Eyes is { } eyes && Hero is { } k && k.Eyes.Any(e => e.Id == eyes)) d.Eyes = eyes;
     }
 
     /// <summary>Their name, written on a rule as a name is signed in a ledger (no field's box), and
@@ -136,7 +143,7 @@ public partial class CreateScreen
         Style.Font(box, Style.Display, 26, Kit.Ink, false);
         box.AddThemeColorOverride("font_placeholder_color", Kit.Faint);
         box.AddThemeColorOverride("caret_color", Style.EmberHi);
-        StyleBoxFlat Ruled(Color c) => new() { BgColor = Colors.Transparent, BorderColor = c, BorderWidthBottom = 1, ContentMarginLeft = 2, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 };
+        StyleBoxFlat Ruled(Color c) => new() { BgColor = Colors.Transparent, BorderColor = c, BorderWidthBottom = 1, ContentMarginLeft = 10, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 };
         box.AddThemeStyleboxOverride("normal", Ruled(Kit.Edge));
         box.AddThemeStyleboxOverride("focus", Ruled(Style.Ember));
         box.TextChanged += t =>
@@ -147,12 +154,12 @@ public partial class CreateScreen
         };
         box.TextSubmitted += _ => Begin();
         void Type() { if (GodotObject.IsInstanceValid(box) && box.IsInsideTree()) box.GrabFocus(); }
-        // (moving by keys, the name is a row like the rest: come to it and type; A on a pad begins)
-        Nav.Mark(box, "name", Begin, focus: () => { if (!Controls.Instance.UsingPad) Type(); });
+        // (moving by keys, the name is a row like the rest: come to it and type; A on a pad begins.
+        // Its focus is its own rule lit in ember: the nav's line lies along it)
+        Nav.Underlined(Nav.Mark(box, "name", Begin, focus: () => { if (!Controls.Instance.UsingPad) Type(); }));
         var road = Nav.Id(Kit.Word("A name from the road", () => Set(() => d.Name = Names[Random.Shared.Next(Names.Length)]), Style.EmberHi, 16), "roadname");
         road.SizeFlagsVertical = SizeFlags.ShrinkEnd;
-        // (the pointer's player types at once; one moving by keys comes to the name when they choose)
-        if (!Controls.Instance.UsingPad && !Nav.KeyMode) Callable.From(Type).CallDeferred();
+        // (never taken at once: the rows above are reached first; a click or the keys come to the name)
         return Style.V(Style.Gap2, Kit.Head("Name"), Style.H(Style.Gap4, box, road));
     }
 
@@ -180,34 +187,54 @@ public partial class CreateScreen
         row.MouseFilter = MouseFilterEnum.Pass;
         // (what it shows is chosen: Enter or A on it walks on, as on a choice already taken)
         row.SetMeta("on", true);
+        Nav.Own(row);
         Nav.Mark(row, id, null, focus: () => prev.Lit = next.Lit = true, blur: () => prev.Lit = next.Lit = false, adjust: Turn);
         return row;
     }
 
     /* ---------------------------------------------------------- colours -- */
 
-    /// <summary>A row of colours as beads: skin as skin, hair as a lock's sheen,
-    /// her eyes as irises; the one chosen ringed in gold, its name under the row.</summary>
+    /// <summary>A row of colours as beads: skin as skin, hair as a lock's sheen, her eyes as irises; the
+    /// one chosen ringed in gold. More than a line holds is laid as two even rows, the second centred under
+    /// the first. The name under them is the focused bead's, else the chosen one's. Skin carries no name
+    /// anywhere (the owner: no name that could read as race) and is laid light to deep.</summary>
     Control Beads(List<LookChoice> list, string now, Action<string> set, Bead.Kind kind, string own)
     {
-        var wrap = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center };
-        wrap.AddThemeConstantOverride("h_separation", 6);
-        wrap.AddThemeConstantOverride("v_separation", 6);
-        foreach (var c in list)
+        Color Of(LookChoice c) => c.Color != "" ? new Color(c.Color) : own != "" ? new Color(own) : new Color("#6b8a3a");
+        bool named = kind != Bead.Kind.Skin;
+        if (!named) list = list.OrderByDescending(c => Of(c).Luminance).ToList();
+        string chosen = named ? list.FirstOrDefault(c => c.Id == now)?.Name ?? "" : "";
+        var caption = Style.Label(chosen, Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Center, false);
+        // (a bead is 38 wide and 6 apart: as many as the column's 500 px hold to a line)
+        const int perLine = 11;
+        int lines = (list.Count + perLine - 1) / perLine, each = (list.Count + lines - 1) / Math.Max(1, lines);
+        var rows = Style.V(6);
+        HBoxContainer? line = null;
+        for (int i = 0; i < list.Count; i++)
         {
+            if (i % each == 0)
+            {
+                line = Style.H(6);
+                line.Alignment = BoxContainer.AlignmentMode.Center;
+                rows.AddChild(line);
+            }
+            var c = list[i];
             var id = c.Id;
-            var col = c.Color != "" ? new Color(c.Color) : own != "" ? new Color(own) : new Color("#6b8a3a");
-            var b = new Bead(kind, col, c.Ring != "" ? new Color(c.Ring) : col, now == id, c.Color == "" && kind == Bead.Kind.Eye) { TooltipText = c.Name };
-            Nav.Id(b, $"bead:{kind}:{id}");
-            b.Pressed += () => Set(() => set(id));
-            wrap.AddChild(b);
+            var col = Of(c);
+            var b = new Bead(kind, col, c.Ring != "" ? new Color(c.Ring) : col, now == id, c.Color == "" && kind == Bead.Kind.Eye);
+            if (named) b.TooltipText = c.Name;
+            void Take() => Set(() => set(id));
+            Nav.Rounded(b, 19);
+            Nav.Mark(b, $"bead:{kind}:{id}", Take, focus: named ? () => caption.Text = c.Name : null, blur: named ? () => { if (IsInstanceValid(caption)) caption.Text = chosen; } : null);
+            b.Pressed += Take;
+            line!.AddChild(b);
         }
-        var v = Style.V(2, wrap, Style.Label(list.FirstOrDefault(c => c.Id == now)?.Name ?? "", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Center, false));
-        return v;
+        return named ? Style.V(2, rows, caption) : rows;
     }
 
     /// <summary>Hair "as it grew": hers copper, a kit body's its paint's brown.</summary>
-    Color OwnHair() => Her ? People.HerHairColour : new Color("#6a5a48");
+    /// (hers as her copper reads on her at the fire, lighter than its paint: the bead is shaded darker toward its edge)
+    Color OwnHair() => Her ? new Color("#a4551f") : new Color("#6a5a48");
 
     /* ------------------------------------------------------- read closely -- */
 
@@ -222,7 +249,7 @@ public partial class CreateScreen
         Label Quiet(string t) => Style.Label(t, Style.Ui, 15, Kit.Dim, true, HorizontalAlignment.Left, false);
         if (pad)
         {
-            var stick = Style.H(Style.Gap2, Style.PadButton("Right stick"), Quiet($"turns {them} and comes near"));
+            var stick = Style.H(Style.Gap2, Style.PadButton("RS"), Quiet($"turns {them} and comes near"));
             foreach (var c in stick.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             v.AddChild(stick);
         }

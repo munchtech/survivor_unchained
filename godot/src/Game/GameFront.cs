@@ -119,6 +119,9 @@ public partial class Game
         figZoom = Mathf.Clamp(figZoom + zoom, 0, 1);
     }
 
+    /// <summary>The figure's weapon and shield shown or put away (away on creation's look screen).</summary>
+    public void FigureArms(bool shown) => figure?.ShowHeld(shown);
+
     /// <summary>Framed for a step or a part of the look: so near, turned so far.</summary>
     public void FrameFigure(float zoom, float turn = 0)
     {
