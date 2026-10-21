@@ -35,12 +35,13 @@ public static class HairDump
     static readonly string[] Skip = ["hair", "lash", "brow", "eye", "teeth", "tongue"];
 
     /// <summary>Each frame of creation (GameFront.UpdateCreate).</summary>
-    public static void Tick(PersonView? figure, double dt)
+    public static void Tick(PersonView? figure, double dt) { if (figure != null) Tick(figure.Person, dt); }
+
+    /// <summary>Each frame of play too (Game.UpdateCloseUp, the player's figure): her pose as a close-up shot draws it.</summary>
+    public static void Tick(People.Person p, double dt)
     {
-        if (figure == null) return;
         dir ??= Args.Get("hairdump");
         if (string.IsNullOrEmpty(dir)) return;
-        var p = figure.Person;
         if (wiredOn != p.Skeleton) { wiredOn = p.Skeleton; wired = false; }
         if (!wired)
         {
@@ -118,6 +119,9 @@ public static class HairDump
                     using var w = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.idx")));
                     foreach (var q in keep) w.Write(q);
                     I = keep;
+                    // (sNN.rest: its vertices as imported, float32 xyz, to match them to the glb's)
+                    using var wr = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.rest")));
+                    foreach (var v in P) { wr.Write(v.X); wr.Write(v.Y); wr.Write(v.Z); }
                 }
                 surfs.Add(x);
                 var mname = (mat?.ResourceName is { Length: > 0 } rn ? rn : mat?.ResourcePath is { Length: > 0 } rp ? Path.GetFileNameWithoutExtension(rp) : $"surf{s}").Replace(' ', '_');
@@ -219,6 +223,13 @@ public static class HairDump
             foreach (var v in P) { var q = g * v; w.Write(q.X); w.Write(q.Y); w.Write(q.Z); }
         }
         foreach (var hs in chains) for (int i = 0; i < 8; i++) { var c = hs.ChainWorld[i]; w.Write(c.X); w.Write(c.Y); w.Write(c.Z); }
+        // The view as drawn (cam.txt, a line per frame: frame, fov, near, the camera's basis x y z columns and origin).
+        if (p.Skeleton.GetViewport()?.GetCamera3D() is { } cam)
+        {
+            var t = cam.GlobalTransform;
+            File.AppendAllText(Path.Combine(dir!, "cam.txt"), FormattableString.Invariant(
+                $"{frame} {cam.Fov} {cam.Near} {t.Basis.X.X} {t.Basis.X.Y} {t.Basis.X.Z} {t.Basis.Y.X} {t.Basis.Y.Y} {t.Basis.Y.Z} {t.Basis.Z.X} {t.Basis.Z.Y} {t.Basis.Z.Z} {t.Origin.X} {t.Origin.Y} {t.Origin.Z} {cam.KeepAspect}") + "\n");
+        }
         frame++;
     }
 }

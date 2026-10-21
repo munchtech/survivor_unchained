@@ -224,6 +224,8 @@ public partial class PlayerView : Node3D
     }
 
     public Vector3 FigurePosition => person.Root.GlobalPosition;
+    /// <summary>Her figure (shot tools: --hairdump in play).</summary>
+    public People.Person Person => person;
     /// <summary>Out of the picture while a cinematic's double plays her.</summary>
     public bool Hidden;
     /// <summary>The way she turns to while she stands (the book open: to the view); null: her own.</summary>
