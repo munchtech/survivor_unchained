@@ -62,6 +62,35 @@ def closest_on_tris(Q, V, T, kd, k=24):
     return X[r, j], dist[r, j]
 
 
+def order_gap(t, fa, reach):
+    """Out along the lower plate's normal: the first face of the plate above ahead. An entry face (its inner face): the
+    gap, its distance. An exit face (the ray starts inside the plate above: crossed): minus the distance back to the
+    nearest entry face behind (or 0.1 mm). None ahead within reach: nan (slid off: no overlap, no crossing)."""
+    t = np.where(np.isfinite(t) & (np.abs(t) < reach), t, np.nan)
+    ahead = np.where(t >= 0, t, np.inf)
+    j = ahead.argmin(1)
+    r = np.arange(len(t))
+    tf, ff = ahead[r, j], fa[r, j]
+    back = np.where((t < 0) & (fa < 0), t, -np.inf).max(1)
+    g = np.where(np.isfinite(tf), np.where(ff < 0, tf, np.where(np.isfinite(back), back, -0.0001)), np.nan)
+    return g
+
+
+def edge_in(Q, ctr, ax, sd, cp):
+    """How far inside the cop's outline (pl_limb_frame's s and bearing: b_design_spec section 1) each point lies, m."""
+    ref = ctr + np.array([0.02 * (1 if sd == "l" else -1), 0.06, 0.0])
+    e0 = (ref - ctr) - ax * ((ref - ctr) @ ax)
+    e0 /= np.linalg.norm(e0)
+    e1 = np.cross(ax, e0) * (1 if sd == "l" else -1)
+    d = Q - ctr
+    s = d @ ax
+    r = d - np.outer(s, ax)
+    th = np.arctan2(r @ e1, r @ e0)
+    rho = np.linalg.norm(r, axis=1)
+    lo = cp["low"] - cp["rise"] * (th / (np.pi / 2)) ** 2
+    return np.minimum.reduce([s - cp["medial"], lo - s, rho * (th - np.radians(cp["back"])), rho * (np.radians(cp["front"]) - th)])
+
+
 def islands(T, n):
     e = np.vstack([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])
     g = coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n))
@@ -107,6 +136,8 @@ def main(argv):
     Ptk = P0 - N0 * tk[:, None]
     out = {"piece": pid, "tucked_skin_points": int((tk > 0).sum()), "gone_points": int(gone.sum())}
 
+    _, WREP, WELD = np.unique(np.round(P0 * 1e6).astype(np.int64), axis=0, return_index=True, return_inverse=True)
+    WELD = np.asarray(WELD).ravel()
     # the plates: by blend row, per side
     TG = body.T[(body.kind[body.T] == "garment").all(1)]
     key = np.round(np.concatenate([body.J[ig], body.W[ig]], 1), 4)
@@ -147,16 +178,35 @@ def main(argv):
         fn = np.cross(P0[Tc[:, 1]] - P0[Tc[:, 0]], P0[Tc[:, 2]] - P0[Tc[:, 0]])
         for k in range(3):
             np.add.at(nrm, Tc[:, k], fn)
-        lab = islands(Tc, len(P0))
-        big = np.bincount(lab[cop]).argmax()
-        cand = cop[lab[cop] == big]
-        X, d = closest_on_tris(P0[cand], Ptk, TSk_drawn, kd_tk)
-        inner = ((X - P0[cand]) * nrm[cand]).sum(1) > 0
+        # (its inner face: the island with the most points whose normal faces her skin; the outer face, the comb, the
+        # rolled edge and the rivets are islands of their own or face away)
+        # (welded first: the file splits its points at UV and normal seams, the inner face in two)
+        nrm_w = np.zeros_like(P0)
+        np.add.at(nrm_w, WELD[cop], nrm[cop])
+        nrm[cop] = nrm_w[WELD[cop]]
+        lab = islands(WELD[Tc], len(P0))[WELD]
+        X, d = closest_on_tris(P0[cop], Ptk, TSk_drawn, kd_tk)
+        fac = ((X - P0[cop]) * nrm[cop]).sum(1) > 0
+        ar = np.linalg.norm(fn, axis=1)
+        big = np.bincount(lab[Tc[:, 0]], weights=ar).argmax()
+        sel = fac & (lab[cop] == big)
+        cand, X, d = cop, X, d
+        inner = sel
+        sel_full = np.zeros(len(P0), bool)
+        sel_full[cop[sel]] = True
         q = cand[inner]
         s_ = (P0[q] - ctr) @ ax
         neck = s_ < S_MED + 0.012
         _, du = closest_on_tris(P0[q], P0, TSk, kd_un)
         out.setdefault("standoff_cop_mm", {})[sd] = {"all": stats(d[inner]), "neck_rim": stats(d[inner][neck])}
+        # (the lip: its inner face within 4 mm of its own edge, where the gap under it can be seen; all round, and at
+        # its neck edge)
+        ein = edge_in(P0[q], ctr, ax, sd, pj["params"]["cop"])
+        lip = ein < 0.004
+        if os.environ.get("PC_DEBUG"):
+            print("edge_in", sd, np.round(np.percentile(ein, [0, 5, 25, 50, 75, 95, 100]) * 1000, 1))
+        out.setdefault("lip_mm", {})[sd] = {"all": stats(d[inner][lip]), "neck": stats(d[inner][lip & neck]),
+                                            "untucked_all": stats(du[lip]), "untucked_neck": stats(du[lip & neck])}
         out.setdefault("standoff_cop_untucked_mm", {})[sd] = {"all": stats(du), "neck_rim": stats(du[neck])}
         # (where the neck rim stands farthest off: s mm, bearing deg (pl_limb_frame's: 0 up the outer arm, + front))
         ref = ctr + np.array([0.02 * (1 if sd == "l" else -1), 0.06, 0.0])
@@ -167,6 +217,8 @@ def main(argv):
         th = np.degrees(np.arctan2(rr @ e1, rr @ e0))
         wn = np.nonzero(neck)[0][np.argsort(-d[inner][neck])[:5]]
         out.setdefault("neck_rim_worst_at", {})[sd] = [[round(float(s_[i] * 1000), 1), round(float(th[i]), 0), round(float(d[inner][i] * 1000), 1)] for i in wn]
+        wa = np.argsort(-du)[:6]
+        out.setdefault("cop_worst_untucked_at", {})[sd] = [[round(float(s_[i] * 1000), 1), round(float(th[i]), 0), round(float(du[i] * 1000), 1), round(float(ein[i] * 1000), 1)] for i in wa]
         wa = np.argsort(-d[inner])[:5]
         out.setdefault("cop_worst_at", {})[sd] = [[round(float(s_[i] * 1000), 1), round(float(th[i]), 0), round(float(d[inner][i] * 1000), 1)] for i in wa]
         tkq = tk[isk][np.linalg.norm(P0[isk] - P0[q].mean(0), axis=1) < 0.06]
@@ -187,6 +239,12 @@ def main(argv):
             m_lo = np.zeros(len(P0), bool)
             m_lo[lo] = True
             Tu, Tl = TG[m_up[TG].all(1)], TG[m_lo[TG].all(1)]
+            # (the lower plate's own sheet: its largest island, never its rivets or rolled edge)
+            lab = islands(Tl, len(P0))
+            ar = np.linalg.norm(np.cross(P0[Tl[:, 1]] - P0[Tl[:, 0]], P0[Tl[:, 2]] - P0[Tl[:, 0]]), axis=1)
+            big = np.bincount(lab[Tl[:, 0]], weights=ar).argmax()
+            lo = lo[lab[lo] == big]
+            Tl = Tl[lab[Tl[:, 0]] == big]
             nl = np.zeros_like(P0)
             fl = np.cross(P0[Tl[:, 1]] - P0[Tl[:, 0]], P0[Tl[:, 2]] - P0[Tl[:, 0]])
             for k in range(3):
@@ -200,8 +258,10 @@ def main(argv):
             O, D = P0[outer], nl[outer]
             _, cand = kd_u.query(O, k=min(48, len(Tu)))
             t, fa, _, _ = wc.cast(O, D, P0[Tu[cand]])
-            g, _, _ = wc.signed_gap(t, fa, 0.008)
-            ov = np.isfinite(g)
+            g = order_gap(t, fa, 0.008)
+            ov = np.isfinite(g) & (g >= 0)
+            print("order rest", sd, up_i, "outer", len(outer), "finite", int(np.isfinite(g).sum()), "ok", int(ov.sum()),
+                  "neg", int((g < 0).sum()), np.round(np.nanpercentile(g, [0, 50, 100]) * 1000, 2) if np.isfinite(g).any() else None)
             tests.append({"side": sd, "pair": f"{['cop', 'lame1', 'lame2'][up_i]}>{['cop', 'lame1', 'lame2'][up_i + 1]}",
                           "pts": outer[ov], "candv": Tu[cand[ov]], "rest": g[ov], "Tl": Tl, "lo": lo,
                           "min": np.full(ov.sum(), np.inf), "bad": 0, "frames": 0, "worst": (np.inf, None, None)})
@@ -223,14 +283,14 @@ def main(argv):
                 D /= np.maximum(np.linalg.norm(D, axis=1, keepdims=True), 1e-12)
                 O = Pp[at[x["pts"]]]
                 t, fa, _, _ = wc.cast(O, D, Pp[at[x["candv"]]])
-                g, _, _ = wc.signed_gap(t, fa, 0.02)
+                g = order_gap(t, fa, 0.02)
                 gg = np.where(np.isfinite(g), g, np.inf)
                 x["min"] = np.minimum(x["min"], gg)
                 x["frames"] += 1
                 if (gg < omin).any():
                     x["bad"] += 1
-                k = int(gg.argmin())
-                if gg[k] < x["worst"][0]:
+                k = int(gg.argmin()) if len(gg) else 0
+                if len(gg) and gg[k] < x["worst"][0]:
                     x["worst"] = (float(gg[k]), c, f)
         print(f"paul_check: {c}", flush=True)
     out["order"] = [{"side": x["side"], "pair": x["pair"], "samples": int(len(x["pts"])),

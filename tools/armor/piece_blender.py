@@ -1119,8 +1119,12 @@ def paul_measure():
     its neck edge from her neck_01-weighted skin at rest and in the shrug, the rim's fairness (its largest turn over
     3 mm), the weight ladder."""
     S_MED = PAUL["S_MED"]
-    out = {"cop_build": {k: PAUL.get(k) for k in ("cop_lift_mm", "cop_clear_mm_before_push")}, "sides": PAUL["sides"], "tab_on_plate_mm": PAUL.get("tab_on_plate_mm")}
+    out = {"cop_build": {k: PAUL.get(k) for k in ("cop_lift_mm", "cop_clear_mm_before_push")}, "sides": PAUL["sides"], "tab_on_plate_mm": PAUL.get("tab_on_plate_mm"),
+           "tuck_under": PAUL.get("tuck_under")}
     bb = BVHTree.FromPolygons([tuple(p) for p in bv0], [p_.vertices[:] for p_ in me.polygons])
+    # (b2r2: the standoff off her FINAL skin (heroine.glb), not this scene's body, which stands up to 8 mm off it near
+    # her neck; tucked by the piece's record as the game draws it: tools/armor/paul_check.py, after the install)
+    bb = G["final_skin_bvh"]() or bb
     _, jp = cKDTree(P).query(bv0)
     neck_w = W[jp, BI["neck_01"]] > PRM.get("neck_w", 0.1)
     st_ = lambda d: {"n": int(len(d)), "p50": round(float(np.median(d)), 2), "p99": round(float(np.percentile(d, 99)), 2),
@@ -1578,6 +1582,51 @@ hides = [o for o in made if o.get("hides")]
 tuck, hid = G["tuck_of"](PID, hides, SLOT)
 tuck_of_out = tuck.copy()
 stamp("tuck: %d of her vertices under it" % hid)
+# (armor 10 b2r2, params.tuck_under: her skin under named plates (`plates`: name prefixes after "<id>.") sunk as the
+# gore's is, its mark `edge` at the footprint's border climbing to `full` `in` m inside, so a rigid plate over a
+# moving joint (the pauldrons' cop and lames over her deltoid) never has her skin come up through it, and what shows
+# at its rim sinks least. The footprint: her points whose ray out along her normal (from 3 mm under her) meets one
+# of the plates within `reach`; split copies of a point one point; holes up to `close` m closed across her skin.
+# The standard rule tucks only skin a piece lies within 4.5 mm of: the pauldrons stand 3-6 mm off, so it marked 154
+# points under the cop and her deltoid came up 10.6 mm through it in the swings.)
+TU = PRM.get("tuck_under")
+if TU:
+    pl_objs = [o for o in made if o.type == "MESH" and o.name.split(".", 1)[-1].startswith(tuple(TU.get("plates", ["cop", "lame"])))]
+    vs_, fs_ = [], []
+    for o in pl_objs:
+        b_ = len(vs_)
+        vs_ += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs_ += [[b_ + i for i in p_.vertices] for p_ in o.data.polygons]
+    ttree_ = BVHTree.FromPolygons(vs_, fs_)
+    bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+    nm_ = body.matrix_world.to_3x3().inverted().transposed()
+    bn_ = np.array([(nm_ @ v.normal).normalized()[:] for v in me.vertices])
+    reach_ = TU.get("reach", 0.025)
+    pv_ = np.array(vs_)
+    near_ = np.nonzero(cKDTree(pv_).query(bw_, distance_upper_bound=reach_ + 0.01)[0] < reach_ + 0.01)[0]
+    hit_ = np.zeros(len(bw_), bool)
+    for i in near_:
+        h_ = ttree_.ray_cast(Vector(bw_[i] - bn_[i] * 0.003), Vector(bn_[i]), reach_ + 0.003)
+        hit_[i] = h_[0] is not None
+    _, gid_ = np.unique(np.round(bw_ / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+    gid_ = np.asarray(gid_).ravel()
+    gh_ = np.zeros(gid_.max() + 1, bool)
+    np.logical_or.at(gh_, gid_, hit_)
+    inm_ = gh_[gid_]
+    on_ = np.zeros(len(bw_), bool)
+    on_[np.array([i for p_ in me.polygons for i in p_.vertices])] = True
+    cl_ = TU.get("close", 0.004)
+    if cl_ > 0:
+        dil_ = on_ & (inm_ | (cKDTree(bw_[inm_]).query(bw_)[0] <= cl_))
+        ero_ = dil_ & (cKDTree(bw_[on_ & ~dil_]).query(bw_)[0] > cl_)
+        inm_ = inm_ | ero_
+    inF_ = np.nonzero(inm_ & on_)[0]
+    din_ = cKDTree(bw_[on_ & ~inm_]).query(bw_[inF_])[0]
+    e_, f_, w_ = TU.get("edge", 0.3), TU.get("full", 0.98), TU.get("in", 0.008)
+    want_ = e_ + (f_ - e_) * np.clip((din_ - 0.002) / max(w_ - 0.002, 1e-6), 0.0, 1.0)
+    tuck[inF_] = np.maximum(tuck[inF_], want_)
+    PAUL["tuck_under"] = {"footprint": int(len(inF_)), "full": int((want_ > 0.973).sum()), "plates": len(pl_objs)}
+    stamp("tuck under the plates: %d footprint points (%d full), %d plates" % (len(inF_), int((want_ > 0.973).sum()), len(pl_objs)))
 # (r3, F7: her skin under the gore's footprint sunk at least 3 mm (a mark of 0.3: 10 mm times it), all of it in the
 # middle, so the gore stands clear of her in every calling's idle. The footprint: her points whose ray out along her
 # normal meets the gore's inner face within 20 mm, plus those within 2 mm of it across her skin (its margin). Over
@@ -1857,6 +1906,13 @@ for rnd in range(PRM.get("push_rounds", 4)):
                 "untucked": int(r_["through"].sum()), "tucked": int(r_["through_t"].sum()),
                 "deepest_untucked_mm": round(float(du.max() * 1000), 2) if r_["through"].any() else 0.0,
                 "deepest_tucked_mm": round(r_["deep_t"] * 1000, 2)}
+        # (params.push_tucked_only: her skin as the game draws it, tucked, is what must stay under it: the untucked
+        # skin under a deep tuck (tuck_under) is never drawn)
+        if PRM.get("push_tucked_only"):
+            for k in np.nonzero(r_["through_t"])[0]:
+                i = int(NEAR[k])
+                defs[i] = max(defs.get(i, 0.0), float(r_["deep_t_k"][k]))
+            continue
         for k in np.nonzero(r_["through"] | r_["through_t"])[0]:
             i = int(NEAR[k])
             defs[i] = max(defs.get(i, 0.0), float(max(du[k], r_["deep_t_k"][k])))
