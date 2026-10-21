@@ -318,9 +318,29 @@ def _free_fingers(hand, t):
                 spreads={"index": -2.0 + 1.0 * b, "middle": 0.0, "ring": 3.0, "pinky": 8.0 - 1.5 * b}, spread=5.0)
 
 
-def _free_spec(rig, hand, g, p):
+def chest_pitch(rig, g, f):
+    """Her chest's pitch at frame f of globals g (deg, + leaning forward), from its rest."""
+    from rig import qmul, qinv, qrot
+    s3 = rig.I["spine_03"]
+    fw = qrot(qmul(g[f, s3], qinv(rig.sk.rest_globals()[0][0][s3])), [0.0, 0.0, 1.0])
+    return math.degrees(math.atan2(-fw[1], fw[2]))
+
+
+def pitched(arc, deg):
+    """An arc (azimuth, elevation, reach) turned `deg` about her left-right axis (+ forward and down)."""
+    az, el, r = arc
+    a, e, t = (math.radians(x) for x in (az, el, deg))
+    v = np.array([math.sin(a) * math.cos(e), math.sin(e), math.cos(a) * math.cos(e)]) * r
+    c, s_ = math.cos(t), math.sin(t)
+    return arc_of((v[0], v[1] * c - v[2] * s_, v[1] * s_ + v[2] * c))
+
+
+def _free_spec(rig, hand, g, p, upright=None):
     """f -> the free hand's key (ARC_FREE[hand]) at frame f of a clip whose globals are (g, p): on its own pelvis
-    (H1) or chest (H2), in the chest's frame the solver reads."""
+    (H1) or chest (H2), in the chest's frame the solver reads.
+    `upright` (deg, the stand's chest pitch, or f, pitch -> deg): a chest-held hand (H2) turned against the clip's chest pitch away from
+    it, so the arm hangs as in the idle while the trunk leans (the stops' thrown-back lean swung it out ahead of her
+    and up, "thrown out", animation 49)."""
     from rig import qmul, qinv, qrot
     I = rig.I
     grest, prest = (a[0] for a in rig.sk.rest_globals())
@@ -335,7 +355,11 @@ def _free_spec(rig, hand, g, p):
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
         if "arc" in H:
             way = _n
-            h = {"arc": arc_of(H["arc"]), "pole": H["pole"], "frame": "chest", "twist": 1.0}
+            arc = arc_of(H["arc"])
+            if upright is not None:
+                P = chest_pitch(rig, g, f)
+                arc = pitched(arc, (upright(f, P) if callable(upright) else upright) - P)
+            h = {"arc": arc, "pole": H["pole"], "frame": "chest", "twist": 1.0}
         else:
             W = p[f, pel] + qrot(dp, np.array(H["pos"]) - prest[pel])
             way = lambda v: tuple(qrot(ic, qrot(dp, np.array(_n(v)))))
@@ -377,7 +401,7 @@ def pitch_head(rig, clip: Clip, want) -> Clip:
     return Clip(clip.name, clip.fps, rot, clip.pos, loop=clip.loop,
                 meta={**clip.meta, "changes": clip.meta.get("changes", "") + f"; head's mean pitch brought to {want:+.0f} deg"})
 
-def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0, phase=None):
+def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0, phase=None, upright=None):
     """`clip` with her left hand laid on her hip (ARC_HIP, idle_arcanist's) where the weight w(frame) > 0, kept on
     the clip's OWN pelvis frame by frame, and the left arm and fingers slerped by w from the clip's own into it.
     For the clips that took the idle's frame-0 hand in the chest's frame (the breaks, the stops, the Flare's settle,
@@ -389,7 +413,8 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0, phase=None):
     her hand's thenar).
     On a restaged stand (ARC_ST, animation 48) the hand it lays is the idle's FREE hand (ARC_FREE, _free_spec) on the
     clip's own pelvis, blended in and out by the same w, its fingers the idle's (_free_fingers) at `phase`(frame)
-    (default 0, the idle's first frame); `curl` (a hand on her hip's contact) does not apply."""
+    (default 0, the idle's first frame); `curl` (a hand on her hip's contact) does not apply; `upright` (_free_spec):
+    the free hand held against the clip's chest pitch away from the stand's."""
     from keyed import solve_frames
     from rig import qmul, qinv, qrot, qslerp
     I = rig.I
@@ -403,7 +428,7 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0, phase=None):
     for j in arm:
         arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
     hand0 = arcanist(0, 0)["hand_l"]
-    free = _free_spec(rig, ARC_STS[ARC_ST]["hand"], g, p) if ARC_ST else None
+    free = _free_spec(rig, ARC_STS[ARC_ST]["hand"], g, p, upright=upright) if ARC_ST else None
 
     def fingers(f):
         fx = _arc_hand_fingers()
