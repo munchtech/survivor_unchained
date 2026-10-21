@@ -1504,14 +1504,20 @@ public static class People
     {
         // (11 October 2026, the Look's rig made near white: each face's cheek taken to its portrait's chroma and hue,
         // on top of HerBodyTone below, which these partly undo on the face; judge j2's trims, measured at the Look)
-        ["own"] = new(1.358f, 0.890f, 0.660f), ["highborn"] = new(1.168f, 0.905f, 0.824f),
-        ["vixen"] = new(1.170f, 0.878f, 0.730f), ["moonlit"] = new(1.159f, 0.947f, 0.841f),
-        ["fey"] = new(1.320f, 0.973f, 0.816f), ["doe"] = new(1.167f, 0.947f, 0.783f),
-        ["wildling"] = new(1.102f, 0.928f, 0.765f), ["hardwon"] = new(1.166f, 0.948f, 0.813f),
-        ["saffron"] = new(1.071f, 0.963f, 0.887f),
+        ["own"] = new(1.358f, 0.890f, 0.660f), ["highborn"] = new(1.009f, 0.763f, 0.641f),
+        ["vixen"] = new(1.052f, 0.766f, 0.616f), ["moonlit"] = new(1.038f, 0.831f, 0.699f),
+        ["fey"] = new(1.171f, 0.847f, 0.665f), ["doe"] = new(1.034f, 0.780f, 0.669f),
+        ["wildling"] = new(0.952f, 0.728f, 0.637f), ["hardwon"] = new(1.166f, 0.948f, 0.813f),
+        ["saffron"] = new(0.906f, 0.748f, 0.682f),
         // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
         // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
-        ["sunborn"] = new(1.146f, 1.262f, 1.646f),
+        // (Refitted 20 October 2026, face 31 tone r1-r2, after the body's rebuild: every face but Own and Hardwon read
+        // 4-7 Oklab L lighter than her lit upper chest at its own skin, and Sunborn's 10 deg yellower at her brow, olive
+        // grey over a red-brown body (the Look's judge). Each cheek taken to her chest's L + 0.015 (Own's, judged), her
+        // neck's and chest's mean hue + 1 deg, chroma at least 1.12 of her chest's: tools/scratch/face31/tone_fit.py, two passes. Before, as above:
+        // highborn 1.168/0.905/0.824, vixen 1.170/0.878/0.730, moonlit 1.159/0.947/0.841, fey 1.320/0.973/0.816,
+        // doe 1.167/0.947/0.783, wildling 1.102/0.928/0.765, saffron 1.071/0.963/0.887, sunborn 1.146/1.262/1.646.)
+        ["sunborn"] = new(0.999f, 0.851f, 0.840f),
     };
 
     /// <summary>Her skin's own colour for each face, all of her (linear, on her swatch's HerTone): her neck and
