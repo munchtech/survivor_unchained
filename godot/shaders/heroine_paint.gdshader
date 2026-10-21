@@ -36,12 +36,22 @@ uniform float dye_sat = 0.85;  // (People.HerBrows: 0.7 since face 32, red hair'
 // the hue moved (Own's brows before). The brow's core darkness against the skin is in the mask's red
 // (tools/assets/heroine_browdye.py: per face, Fey's faint brows 0.11, Own's 0.46).)
 uniform float dye_light = 1.0;
-uniform float dye_gamma = 0.7;
+uniform float dye_gamma = 0.5;
 // (the dye's lightness held to this share of her skin's at most, so a platinum blonde's brows on deep skin are a
 // darker blonde, never a pale patch)
-uniform float dye_room = 0.6;
+uniform float dye_room = 0.75;
 // (how much a hair as grey as can be counts, against a dark one: 1 the same)
 uniform float grey_hair = 0.8;
+// (face 33: how much darker than the dye the darkest hairs go, past the brow's core)
+uniform float dye_deep = 0.5;
+// (face 33: the darkest a dye is drawn (linear luma), and how far a floored one is warmed)
+uniform float dye_floor = 0.035;
+uniform float dye_floor_warm = 0.7;
+// (face 33: the least of its colour a dye held darker for her skin takes; over 1, more than its own)
+uniform float dye_sat_held = 1.6;
+// (face 33: the skin lightness (linear) a dye starts turning warmer on, and where it is wholly turned; how far)
+uniform vec2 dye_deep_skin = vec2(0.35, 0.15);
+uniform float dye_deep_warm = 0.5;
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -76,17 +86,38 @@ void fragment() {
 		float sk = skin * tl;
 		float hl = max(dot(here, lum), 1e-3);
 		vec3 skin_col = near_skin * skin_tone * (skin / max(dot(near_skin, lum), 1e-3));
-		float dl = max(dot(dye, lum), 1e-3);
+		// (face 33: a near-black dye floored at `dye_floor`'s lightness, warmed: at its own near-zero light every
+		// game grade's blue toe took her brows to a blue-black; a dark warm brown reads near black after it)
+		float dl0 = max(dot(dye, lum), 1e-4);
+		// (face 33: deep skin: its floor lower, so a black-haired woman's brows on it stay near black, not brown)
+		float deep_skin = smoothstep(dye_deep_skin.x, dye_deep_skin.y, sk);
+		float floor_l = dye_floor * mix(1.0, 0.7, deep_skin);
+		const vec3 warm = vec3(0.195, 0.088, 0.034);
+		vec3 dye_n = mix(dye / dl0, warm / dot(warm, lum), dye_floor_warm * clamp(1.0 - dl0 / floor_l, 0.0, 1.0));
+		vec3 dyev = dye_n * max(dl0, floor_l);
+		float dl = max(dot(dyev, lum), 1e-3);
 		// (held darker than her skin, a fair dye is warmed as it is darkened: a blonde's brows on deep skin a golden
 		// brown; the dye's yellow only darkened read olive-grey)
 		float room = min(1.0, sk * dye_room / dl);
-		const vec3 warm = vec3(0.195, 0.088, 0.034);
-		vec3 dye_held = mix(warm * (dl / dot(warm, lum)), dye, room);
-		vec3 dye_col = mix(vec3(dl), dye_held, dye_sat) * room;
-		float r = pow(clamp(raw, 0.0, 1.4), dye_gamma);
-		vec3 dyed_col = max(mix(skin_col, dye_col, r), vec3(0.0));
+		// (face 33: on deep skin a fair dye turns a warmer, oranger brown at its own lightness: a blonde's brows on
+		// Sunborn's skin read khaki beside it, a golden brown there; a red's, already warmer, kept)
+		const vec3 deep_warm = vec3(0.254, 0.08, 0.021);
+		float deep = deep_skin * smoothstep(0.35, 0.5, dyev.g / max(dyev.r, 1e-3))
+			* smoothstep(0.05, 0.09, dl0);
+		dyev = mix(dyev, deep_warm * (dl / dot(deep_warm, lum)), dye_deep_warm * deep) * (1.0 + 0.1 * deep);
+		vec3 dye_held = mix(warm * (dl / dot(warm, lum)), dyev, pow(room, 2.5));
+		// (face 33: held, it keeps its whole colour, so a blonde's or redhead's brows on deep skin stay golden-brown
+		// or auburn, never grey-green)
+		vec3 dye_col = max(mix(vec3(dl), dye_held, mix(max(dye_sat, dye_sat_held), dye_sat, room)), vec3(0.0)) * room;
+		// (face 33: never mixed past the dye, which pushed a dark dye away from the skin's warmth into blue-black
+		// and clipped its red to nothing; a hair darker than the brow's core is the dye darkened, its hue kept)
+		float r = pow(clamp(raw, 0.0, 1.0), dye_gamma);
+		// (face 33: mixed in ratio, not in sum: a half-dark hair keeps the warmth of the skin and the dye between
+		// them, where a sum's grey middle went blue-grey under a grade's toe)
+		vec3 sc = max(skin_col, vec3(1e-3));
+		vec3 dyed_col = sc * pow(max(dye_col, vec3(1e-3)) / sc, vec3(r)) * (1.0 - dye_deep * clamp(raw - 1.0, 0.0, 0.4) / 0.4);
 		// (dye_light 0: as painted, its hue the dye's: Own's brows before face 32)
-		vec3 painted = mix(vec3(1.0), dye / dl, dye_sat) * mix(hl, skin, soften) * tl;
+		vec3 painted = mix(vec3(1.0), dyev / dl, dye_sat) * mix(hl, skin, soften) * tl;
 		ALBEDO = clamp(mix(painted, dyed_col, dye_light), 0.0, 1.0);
 		ALPHA = p.a * smoothstep(0.08, 0.6, hair) * strength;
 	} else {
@@ -95,5 +126,5 @@ void fragment() {
 	}
 	ROUGHNESS = rough;
 	METALLIC = metal;
-	SPECULAR = dyed ? 0.25 : 0.5;
+	SPECULAR = dyed ? 0.0 : 0.5;
 }

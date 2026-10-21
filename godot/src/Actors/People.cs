@@ -779,12 +779,15 @@ public static class People
                     // her hair the more, so a platinum blonde has ash-brown brows, not grey)
                     // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
                     // darkened, read olive; red hair's read crimson)
-                    m.SetShaderParameter("dye", b.Darkened(0.25f + 0.15f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance));
+                    m.SetShaderParameter("dye", b.Darkened(0.42f + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance));
                     // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
                     m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
                     m.SetShaderParameter("skin_tone", skin.GetShaderParameter("tone"));
                     m.SetShaderParameter("soften", HerBrows.Soften);
-                    m.SetShaderParameter("dye_sat", HerBrows.Sat);
+                    // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
+                    // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
+                    // olive; a near-black's 0.85, warmed in the shader instead)
+                    m.SetShaderParameter("dye_sat", HerBrows.Sat / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
                     m.SetShaderParameter("rough", 0.8f);
                     Then(m);
                 }
