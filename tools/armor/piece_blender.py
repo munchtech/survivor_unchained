@@ -952,9 +952,9 @@ def build_cuirass():
     zz = np.arange(nipz + 0.06, nipz + 0.26, 0.002)
     fy = np.array([G["front_point"](0.0, z)[1] for z in zz])
     neck0 = G["NECK"]
-    # (the notch: going up her front, the first height where her surface turns back by 15 mm over 1 cm (into her neck))
-    k_ = next((k for k in range(len(zz) - 5) if fy[k + 5] - fy[k] > 0.015 and zz[k] > nipz + 0.10), int(np.argmax(np.diff(fy))))
-    notch_z = float(zz[k_])
+    # (her notch: the deepest (furthest back) point of her front at x = 0 under her chin, 100-200 mm over her nipple)
+    m_n = (zz > nipz + 0.10) & (zz < nipz + 0.20)
+    notch_z = float(zz[m_n][np.argmax(fy[m_n])])
     ball = G["head"]("upperarm_l")
     z0 = nipz + PRM.get("neck", 0.12)
     nrise, nxr = PRM.get("neck_rise", 0.03), PRM.get("neck_x", 0.12)
@@ -987,8 +987,12 @@ def build_cuirass():
     CUIR["crease_mm_under_nipple"] = {f"{int(round(b * 1000))}": round(float((nipz - z) * 1000), 1) for b, z in zip(bins[::5], zc[::5])}
     CUIR["lower_rim_z"] = {f"{int(round(b * 1000))}": round(float(z), 4) for b, z in zip(bins[::5], zlow[::5])}
     win, (wzt, wzb, wzw, ww) = lozenge_field(nipz, ub)
+    # (the side seam: `back` behind her nipple below her nipple's height, letting go above it (`back_open` m a metre up),
+    # where the armhole (`scye`, round her shoulder ball) takes over: held everywhere, it cut her upper chest away, which
+    # recedes 60 mm behind her nipple by her collarbones)
+    backlim = nr[1] + PRM.get("back", 0.06) + PRM.get("back_open", 2.0) * np.maximum(pos[:, 2] - nipz, 0.0)
     f = np.minimum.reduce([zneck - pos[:, 2], scye, (nx + PRM.get("side", 0.045)) - ax,
-                           (nr[1] + PRM.get("back", 0.06)) - pos[:, 1],
+                           backlim - pos[:, 1],
                            pos[:, 2] - np.interp(ax, bins, zlow), win(pos[:, 0], pos[:, 2]),
                            np.where(ok, 1.0, -1.0)])
     # One blend for the whole plate: her soft weights at its sternum centre, her breast and arm bones out, its four
@@ -1004,7 +1008,16 @@ def build_cuirass():
     for n_, w_ in blend:
         row4[BI[n_] if isinstance(BI, dict) else BONES.index(n_)] = w_
     attr = np.hstack([nor, np.repeat(row4[None], n, 0), np.zeros((n, 1))])
+    if os.environ.get("CUIRASS_DUMP"):
+        comps = np.array([zneck - pos[:, 2], scye, (nx + PRM.get("side", 0.045)) - ax, backlim - pos[:, 1],
+                          pos[:, 2] - np.interp(ax, bins, zlow), win(pos[:, 0], pos[:, 2])])
+        np.savez(os.path.join(SCRATCH, "cuirass_dump.npz"), pos=pos, ok=ok, H=H, comps=comps, bins=bins, zc=zc, zlow=zlow,
+                 notch_z=notch_z, ball=ball, z0=z0, fy=fy, zz=zz, nip=nr, ub=ub, skin=skin_pos)
+        print("CUIRASS DUMP", json.dumps({k: v for k, v in CUIR.items()}), "notch", notch_z, "ball", ball.tolist())
+        if os.environ.get("CUIRASS_DUMP") == "stop":
+            raise SystemExit(0)
     pos, at, tris, rim, loops = cut_sheet(f, pos, attr, tris, 0.2)
+    print("CUIRASS loops", len(loops), [len(lp) for lp in loops])
     # (the window's loop: the one round the window's middle)
     wc = np.array([0.0, 0.0, wzw])
     cent = [np.array(pos[lp])[:, [0, 2]].mean(0) for lp in loops]
@@ -1058,7 +1071,7 @@ def build_cuirass():
         up = np.asarray(up, float) - n * (np.asarray(up, float) @ n)
         up /= np.linalg.norm(up)
         socks[name] = {"point": gl(p).round(5).tolist(), "normal": gl(n).round(5).tolist(), "up": gl(up).round(5).tolist(),
-                       "weights": wts}
+                       "weights": top4(np.asarray(wts, float)) if isinstance(wts, np.ndarray) else wts}
 
     def on_plate(q):
         """The plate's outer face over her skin point q (cast in from 30 mm out along her normal there)."""
@@ -2811,7 +2824,9 @@ path = os.path.join(EXP, f"{PID}.gltf")
 bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_texture_dir="tex", use_selection=True,
                           export_skins=True, export_animations=False, export_yup=True, export_vertex_color="ACTIVE")
 import heroine_neck  # noqa: E402
-if float(os.environ.get("NECK_CUT", "0.03")):
+# (params.graft false (the cuirass): no graft match. It adds her neck graft's weight change to whatever lies near her
+# neck, and a rigid plate on one blend took it at 5512 points, bending at its neckline)
+if float(os.environ.get("NECK_CUT", "0.03")) and PRM.get("graft", True):
     heroine_neck.match_pieces(path, heroine_neck.field())
 if STRAP_FRAMES:
     import strap_rows  # noqa: E402
