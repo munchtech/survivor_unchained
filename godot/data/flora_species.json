@@ -1,0 +1,36 @@
+{
+  "_doc": [
+    "Our own flora (tools/assets/env_trees.py builds the art; Dressing.cs and KitLook.cs read this). Behind --flora-own until E4 closes.",
+    "species: each one atlas and material (Leaves_Own<Species>) in godot/art/world/flora/. 'pieces' are its sizes and looks;",
+    "'packed': all its pieces in one file, <species>.gltf, told apart per vertex (COLOR.a) and drawn as one MultiMesh per cell (the",
+    "kit shader's OWN_FOLIAGE collapses the pieces an instance is not); else one file per piece, <piece>.gltf.",
+    "kind: the flora kind its merged groups take (perf flips: pine, broadleaf, dead, bush, fern). lod: where lod0 ends (and lod1,",
+    "if two), m from the camera to a cell's middle; the last LOD shown to 'end' (0: always). cell: the side of the squares its",
+    "copies are gathered in, m; shadow: whether it casts (by its file's 'shadow' node, the proxy; pieces without one cast none),",
+    "in cells twice as wide. wind: one wind for all its copies (so groups merge across); null keeps each group's own.",
+    "shader: the material's parameters (kit.gdshader's OWN_FOLIAGE uniforms); 'broadleaf': 1 for the leaf light (OWN_BROADLEAF);",
+    "'tint' and 'sat' the weathering (default 0.7,0.76,0.7 and 0.86).",
+    "own: the kit's pieces drawn as ours (a list: one per copy, by its place's hash). A zone overrides any key in",
+    "godot/data/zones/<zone>/flora_species.json (its own 'own' and 'species' entries, merged over these)."
+  ],
+  "species": {
+    "spruce": {"pieces": ["spruce_a", "spruce_b", "spruce_c"], "packed": false, "kind": "pine", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
+               "shader": {"hue_floor": 108, "near_dim": 0.45}},
+    "alder": {"pieces": ["alder_a", "alder_b", "alder_c"], "packed": false, "kind": "broadleaf", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
+              "shader": {"broadleaf": 1, "flutter": 2.2, "hue_floor": 98, "core": 0.3, "sun_lift": 0.7}},
+    "snag": {"pieces": ["snag_a", "snag_b", "snag_c"], "packed": true, "kind": "dead", "lod": [44, 100], "cell": 24, "shadow": true, "wind": 0.2,
+             "shader": {"tint": [0.74, 0.74, 0.72], "sat": 0.7}},
+    "bush": {"pieces": ["hazel_a", "hazel_b", "elder_a", "elder_b"], "packed": true, "kind": "bush", "lod": [40], "end": 90, "cell": 48, "shadow": true, "wind": 0.5,
+             "shader": {"broadleaf": 1, "flutter": 1.8, "hue_floor": 100, "core": 0.6}},
+    "bracken": {"pieces": ["bracken_a", "bracken_b"], "packed": true, "kind": "fern", "lod": [40], "end": 80, "cell": 48, "shadow": false, "wind": 0.45,
+                "shader": {"broadleaf": 1, "flutter": 1.6, "hue_floor": 100, "core": 0.7}}
+  },
+  "own": {
+    "Pine_1": "spruce_a", "Pine_3": "spruce_a", "Pine_2": "spruce_b", "Pine_5": "spruce_b", "Pine_4": "spruce_c",
+    "CommonTree_1": "alder_a", "CommonTree_5": "alder_a", "CommonTree_2": "alder_b", "CommonTree_3": "alder_c", "CommonTree_4": "alder_c",
+    "DeadTree_1": "snag_a", "DeadTree_2": "snag_b", "DeadTree_3": "snag_b", "DeadTree_4": "snag_b", "DeadTree_5": "snag_c",
+    "Bush_Common": ["hazel_a", "hazel_a", "hazel_b"],
+    "Bush_Common_Flowers": ["elder_a", "elder_b"],
+    "Fern_1": "bracken_a", "Plant_1_Big": "bracken_b"
+  }
+}

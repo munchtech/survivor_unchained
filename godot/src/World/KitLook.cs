@@ -116,7 +116,9 @@ public static class KitLook
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
         // (our alder, a broadleaf: its own light, the key's shadow taken in part, OWN_BROADLEAF)
         ownLeaf ??= new Shader { Code = own.Code.Replace("#define OWN_FOLIAGE", "#define OWN_FOLIAGE\n#define OWN_BROADLEAF") };
-        bool alder = mine && s.ResourceName.Contains("Alder");
+        // (the species' data, godot/data/flora_species.json: its shader parameters; "broadleaf" the leaf light)
+        var sp = mine ? FloraSpecies.ByMaterial(s.ResourceName) : null;
+        bool alder = sp?.Broadleaf ?? (mine && s.ResourceName.Contains("Alder"));
         m = new ShaderMaterial { Shader = alder ? ownLeaf : mine ? own : foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
         m.SetShaderParameter("albedo_tex", s.AlbedoTexture);
         m.SetShaderParameter("albedo_color", s.AlbedoColor);
@@ -132,12 +134,23 @@ public static class KitLook
         // (ours are painted for the look: weathered lightly, and trunk and needles sway as one)
         // (the vertex colour is their occlusion, read in OWN_FOLIAGE, not paint)
         if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); m.SetShaderParameter("use_vcolor", false); }
+        // (a packed species: its pieces in one file, each copy drawing only its own, OWN_FOLIAGE)
+        if (sp is { Packed: true }) m.SetShaderParameter("packed", true);
         // (our alder, a broadleaf: its leaves flutter more than needles, and its olive is held off yellow under a low sun)
         // (the floors are set above the hue wanted on screen, ~100 and ~88: the grade warms them by 8-12 degrees, measured at roaddawn)
         // (alder at 86 left its sunlit tops pale yellow-olive at dawn, judge E4c: its brightest tenth at hue 90 or above wanted;
         // its crown core lightened, core 0.45, as its top by day read as a hole)
-        if (alder) { m.SetShaderParameter("flutter", 2.2f); m.SetShaderParameter("hue_floor", 98f); m.SetShaderParameter("core", 0.3f); }
-        else if (mine) m.SetShaderParameter("hue_floor", 108f);
+        // (the alder's flutter 2.2, hue floor 98 and core 0.3, the spruce's floor 108: now flora_species.json's "shader")
+        if (sp != null)
+            foreach (var (k, v) in sp.Shader)
+            {
+                if (k == "broadleaf") continue;
+                if (k == "tint") { m.SetShaderParameter("weather_tint", new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()) * look.Shade); continue; }
+                m.SetShaderParameter(k == "sat" ? "weather_sat" : k, v.GetSingle());
+            }
+        if (alder && SurvivorUnchained.Args.Has("flora-sun-lift")) m.SetShaderParameter("sun_lift", SurvivorUnchained.Args.Num("flora-sun-lift", 0.1f));
+        // (--flora-near-back F, --flora-near-dim F: a near tree's light through its leaves and its albedo cut by day, for pictures)
+        if (mine) { m.SetShaderParameter("near_back", SurvivorUnchained.Args.Num("flora-near-back", 0.25f)); if (SurvivorUnchained.Args.Has("flora-near-dim")) m.SetShaderParameter("near_dim", SurvivorUnchained.Args.Num("flora-near-dim", 0.2f)); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         // (ours keep their own greens: the kit's autumn recolour gave gold tops, cut for the cinematics)
         if (foliage && !mine && look.LeafA is Color a && look.LeafB is Color b)

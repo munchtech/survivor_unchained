@@ -52,6 +52,11 @@ uniform float hue_floor = 100.0;
 uniform float core = 1.0;
 uniform float night_fill = 0.1;
 uniform float near_dim = 0.2;
+// (and its light through the needles cut by this much by day: judge E4 r3, the nearest roaddawn spruce still the frame's mintiest)
+uniform float near_back = 0.25;
+// (a packed species, env_trees.py: its pieces in one mesh, each vertex's COLOR.a its piece, (index + 0.5) / 8; each
+// copy draws only its own, its MultiMesh's custom data r, the rest collapsed to one point: one draw for all its pieces)
+uniform bool packed = false;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
@@ -59,6 +64,8 @@ uniform float self_shadow = 0.5;
 uniform float wrap = 1.0;
 // (and the sky's blue in its shade by day less than the needles', so its shade stays olive)
 uniform float sky_amb = 0.45;
+// (its sun-facing half lifted by this much by day, the shade side as it was: judge E4 r3, the town alder darker and cooler than the square)
+uniform float sun_lift = 0.1;
 #endif
 
 float hue_of(vec3 c) {
@@ -139,6 +146,9 @@ void vertex() {
 #endif
 	VERTEX.x += sway;
 	VERTEX.z += sway * 0.5;
+#ifdef OWN_FOLIAGE
+	if (packed && abs(COLOR.a - INSTANCE_CUSTOM.r) > 0.06) VERTEX = vec3(0.0);
+#endif
 #ifdef REVEAL
 	// The rim is drawn again only for a piece near the line from her to the
 	// camera (within 14 m of it on the ground); every other copy is put out of
@@ -257,6 +267,7 @@ void fragment() {
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
 		float bl = dot(ALBEDO * vec3(0.18, 0.22, 0.24) * key, LW) / dot(vec3(0.45, 1.0, 0.53), LW);
 		BACKLIGHT = mix(vec3(0.45, 1.0, 0.53) * bl / key, ALBEDO * vec3(0.04, 0.07, 0.065), night) * open_;
+		BACKLIGHT *= 1.0 - near_back * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
 		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
 		// shut out; at night the needles take less of the moonlit sky still)
 		// (judge E4c: at 0.36 the shaded crowns under the moon went black, below the shaded road: the moonlit
@@ -292,7 +303,8 @@ void light() {
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
 	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
-	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d + BACKLIGHT * (1.0 - d)) / PI;
+	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) : 1.0;
+	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d * lift + BACKLIGHT * (1.0 - d)) / PI;
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
 }
 #endif
