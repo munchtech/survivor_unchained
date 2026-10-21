@@ -782,6 +782,9 @@ public static class People
     {
         var dye = b.Darkened(0.42f + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
         var (hL, hC, _) = Oklch(b);
+        // (round 4: a fair grey or platinum hair's brows a soft grey-brown, not the warm lerp's tan)
+        float wg = Mathf.SmoothStep(0.5f, 0.6f, hL) * (1f - Mathf.SmoothStep(0.02f, 0.05f, hC));
+        if (wg > 0f) { var (gL, gC, gH) = Oklch(dye); dye = FromOklch(gL, Mathf.Lerp(gC, Mathf.Min(gC, 0.03f), wg), gH); }
         float w = Mathf.SmoothStep(0.30f, 0.40f, hL) * Mathf.SmoothStep(0.02f, 0.05f, hC);
         if (w <= 0f) return dye;
         var (L, C, H) = Oklch(dye);

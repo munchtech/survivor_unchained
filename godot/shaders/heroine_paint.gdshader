@@ -58,6 +58,12 @@ uniform float dye_deep_warm = 0.8;
 uniform vec3 dye_held_warm = vec3(0.26, 0.075, 0.035);
 uniform float dye_deep_dark = 0.8;
 uniform vec2 dye_dark_skin = vec2(0.35, 0.15);
+// (face 33 round 4: a fair (blonde) dye on tan and deeper skin: how much of its held colour it keeps, and how
+// much of the deep-skin warm shift it takes (whole, it read brassy amber, near ginger, under butter-blonde hair))
+uniform float dye_fair_sat = 0.85;
+// (round 4: the honey brown a blonde dye turns on tan and deeper skin (linear, Oklab hue 55: about 48 on screen; beside her orange skin 61 and over read olive))
+uniform vec3 dye_honey = vec3(0.24, 0.1, 0.04);
+uniform float dye_fair_warm = 0.0;
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -101,8 +107,15 @@ void fragment() {
 		const vec3 warm = vec3(0.195, 0.088, 0.034);
 		vec3 dye_n = mix(dye / dl0, warm / dot(warm, lum), dye_floor_warm * clamp(1.0 - dl0 / floor_l, 0.0, 1.0));
 		vec3 dyev = dye_n * max(dl0, floor_l);
-		dyev *= mix(1.0, dye_deep_dark, smoothstep(dye_dark_skin.x, dye_dark_skin.y, sk) * smoothstep(0.07, 0.11, dl0));
+		float fair = smoothstep(dye_dark_skin.x, dye_dark_skin.y, sk) * smoothstep(0.07, 0.11, dl0);
+		dyev *= mix(1.0, dye_deep_dark, fair);
 		float dl = max(dot(dyev, lum), 1e-3);
+		// (round 4: a fair dye on tan and deeper skin a honey brown, a pale grey's most of the way: a grey-brown, not tan
+		// nor mauve)
+		float dmx = max(dyev.r, max(dyev.g, dyev.b));
+		float s_dye = smoothstep(0.5, 0.75, (dmx - min(dyev.r, min(dyev.g, dyev.b))) / max(dmx, 1e-4));
+		vec3 honey_n = dye_honey / dot(dye_honey, lum);
+		dyev = mix(dyev, mix(mix(vec3(1.0), honey_n, 0.75), honey_n, s_dye) * dl, fair);
 		// (held darker than her skin, a fair dye is warmed as it is darkened: a blonde's brows on deep skin a golden
 		// brown; the dye's yellow only darkened read olive-grey)
 		float room = min(1.0, sk * dye_room / dl);
@@ -111,12 +124,15 @@ void fragment() {
 		const vec3 deep_warm = vec3(0.254, 0.08, 0.021);
 		float deep = deep_skin * smoothstep(0.35, 0.5, dyev.g / max(dyev.r, 1e-3))
 			* smoothstep(0.05, 0.09, dl0);
-		dyev = mix(dyev, deep_warm * (dl / dot(deep_warm, lum)), dye_deep_warm * deep) * (1.0 + 0.1 * deep);
-		vec3 held_to = mix(warm, dye_held_warm, smoothstep(0.025, 0.04, dl0));
+		dyev = mix(dyev, deep_warm * (dl / dot(deep_warm, lum)), dye_deep_warm * deep * mix(1.0, dye_fair_warm, fair)) * (1.0 + 0.1 * deep);
+		// (round 4: a fair dye held keeps its own hue, a honey brown, not the copper warm: a blonde on deep skin read
+		// as the default's auburn)
+		vec3 held_to = mix(mix(warm, dye_held_warm, smoothstep(0.025, 0.04, dl0)), dyev / dl, fair);
 		vec3 dye_held = mix(held_to * (dl / dot(held_to, lum)), dyev, pow(room, 2.5));
 		// (face 33: held, it keeps its whole colour, so a blonde's or redhead's brows on deep skin stay golden-brown
 		// or auburn, never grey-green)
-		vec3 dye_col = max(mix(vec3(dl), dye_held, mix(max(dye_sat, dye_sat_held), dye_sat, room)), vec3(0.0)) * room;
+		vec3 dye_col = max(mix(vec3(dl), dye_held, mix(max(dye_sat, dye_sat_held), dye_sat, max(room, fair))), vec3(0.0)) * room;
+		dye_col = mix(vec3(dot(dye_col, lum)), dye_col, mix(1.0, dye_fair_sat, fair));
 		// (face 33: never mixed past the dye, which pushed a dark dye away from the skin's warmth into blue-black
 		// and clipped its red to nothing; a hair darker than the brow's core is the dye darkened, its hue kept)
 		float r = pow(clamp(raw, 0.0, 1.0), dye_gamma);
