@@ -212,6 +212,7 @@ public static class NpcPackage
         // Her twist and share bones (and any others the rig's helpers name), driven from the pose the clips make.
         skel.AddChild(new HerJoints());
         skel.AddChild(new NpcHeadLevel()); // package NPCs only: head kept level under the heroine's clips
+        skel.AddChild(new NpcHands()); // package NPCs only: a loose resting curl over the clips' straight, fanned fingers
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", People.Clips());
