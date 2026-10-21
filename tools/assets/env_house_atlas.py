@@ -102,7 +102,10 @@ def rubble(h, w, rng):
     its colour pulled to ours: its luminance keeps the stones and joints, its hue and saturation halved toward a
     grey-buff, a broad value patch of our own over it. The normal is the photo's (OpenGL)."""
     diff = cv2.cvtColor(cv2.imread(str(RAW / "castle_wall_varriation_diff_2k.jpg")), cv2.COLOR_BGR2RGB).astype(np.float32) / 255
-    nor = cv2.cvtColor(cv2.imread(str(RAW / "castle_wall_varriation_nor_gl_2k.png"), cv2.IMREAD_UNCHANGED)[..., :3], cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    nor = cv2.imread(str(RAW / "castle_wall_varriation_nor_gl_2k.png"), cv2.IMREAD_UNCHANGED)
+    # (E9b6) the photo's normal is 16-bit: read over its own range (over 255 it clipped to white, a normal leaning 55
+    # degrees up and right over every rubble wall, so the rubble lit brighter than its paint and the dressed stone beside it dark)
+    nor = cv2.cvtColor(nor[..., :3], cv2.COLOR_BGR2RGB).astype(np.float32) / float(np.iinfo(nor.dtype).max)
     s = h  # 2 m at PPM
     diff = cv2.resize(diff, (s, s), interpolation=cv2.INTER_AREA)
     nor = cv2.resize(nor, (s, s), interpolation=cv2.INTER_AREA)
