@@ -158,6 +158,7 @@ public partial class Game
         readonly Dictionary<string, WardenView> bosses = new();
         readonly Dictionary<string, OrbView> orbs = new();
         readonly Dictionary<string, double> orbLight = new();
+        float skinSky = 1, skinEar = 1;
         /// <summary>A crowd of extras by its cast name: its members' names, in order.</summary>
         readonly Dictionary<string, List<string>> groups = new();
         /// <summary>A crowd's cue, staggered down its members: done when the clock reaches it.</summary>
@@ -453,6 +454,8 @@ public partial class Game
                 foreach (var (hq, hat, hr) in globeHalos)
                     if (GodotObject.IsInstanceValid(hq)) hq.GlobalPosition = hat + (hcam.GlobalPosition - hat).Normalized() * hr;
             PlaceRigs();
+            if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hsk))
+            { SurvivorUnchained.View.People.HerSkyShare(hsk.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hsk.Person, skinEar); }
             // No ember or smoke between a close lens and her (C01 s10: a drifting ember was a soft
             // orange disc across her cheek): the Look's ClearNear, to just short of her face.
             float lensToHer = people.TryGetValue("her", out var hv) && hv.Visible && ActorAt("her", "eyes") is V3 ey ? g.camera.GlobalPosition.DistanceTo(V(ey)) : 99;
@@ -475,6 +478,24 @@ public partial class Game
                     foreach (var name in people.Keys)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
                             .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.000},{p.Y:0.000},{p.Z:0.000})" : "")));
+                // --cinebones also prints where her bones land on screen, as fractions of the frame
+                // (u right, v down) and the frame-height size of 10 cm at her eyes: boxes for measuring stills.
+                if (Args.Has("cinebones") && people.ContainsKey("her") && g.camera != null)
+                {
+                    var vs = g.camera.GetViewport().GetVisibleRect().Size;
+                    string Px(Vector3 w) => g.camera.IsPositionBehind(w) ? "behind" : $"({g.camera.UnprojectPosition(w).X / vs.X:0.0000},{g.camera.UnprojectPosition(w).Y / vs.Y:0.0000})";
+                    var parts = new List<string>();
+                    foreach (var bn in new[] { "eyes", "head", "hand_r", "hand_l", "lowerarm_r", "lowerarm_l" })
+                        if (ActorAt("her", bn) is V3 bp) parts.Add($"{bn}={Px(V(bp))}");
+                    if (ActorAt("her", "eyes") is V3 ep)
+                    {
+                        var e3 = V(ep); var r3 = g.camera.GlobalTransform.Basis.X * 0.1f;
+                        float s10 = g.camera.IsPositionBehind(e3) ? 0 : (g.camera.UnprojectPosition(e3 + r3) - g.camera.UnprojectPosition(e3)).Length() / vs.Y;
+                        parts.Add($"s10={s10:0.0000}");
+                    }
+                    foreach (var (on, o) in orbs) if (o.Visible) parts.Add($"orb_{on}={Px(o.GlobalPosition)}");
+                    GD.Print($"cinepx {file.Id} s{shot.Id} k{stillK} her " + string.Join(" ", parts));
+                }
                 if (Args.Has("cinebones"))
                 {
                     // A held blade's tip, the cast's creatures (where drawn: their feet, sunk or not) and the orbs.
@@ -1085,6 +1106,16 @@ public partial class Game
                     PlaceRigs();
                     break;
                 }
+                case "skin":
+                {
+                    // Her skin's share of the sky's light, for the cinematic (1 as built; play's given back at its end): a scene whose
+                    // key is a shot's own rig takes her off the blue ambient (C03, judge r1: cyan from s7 to s10 under the night's fill).
+                    // "ear": her ears' warm shade, 1 as built (a warm ear against her cheek once the key is the rig).
+                    skinSky = (float)c.Num("sky", skinSky);
+                    skinEar = (float)c.Num("ear", skinEar);
+                    if (people.TryGetValue("her", out var hs)) { SurvivorUnchained.View.People.HerSkyShare(hs.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, skinEar); }
+                    break;
+                }
                 case "glow":
                 {
                     // A light seen far off (the ford's lamps from the camp, one lamp high up the
@@ -1285,6 +1316,22 @@ public partial class Game
                     // "over", or cuts to without it. A fire-lit close-up's skin goes over-saturated at a
                     // 2700 K key, so that shot pulls it down and the next shot's first cue sets sat 1 again;
                     // the cinematic's end hands it back to play (the lerp in Game.cs eases to 1).
+                    // Its palette too, for the cinematic (play's own given back at its end): "moonSat", "moonHue", "moonDrop", "moonTop",
+                    // "moonWidth" (the grade's moon step: what it lays on the weakly coloured, and up to what lightness, as GradeSettings has it), "shade" and "shadeK" (the
+                    // paint grade's colour for the darks), "shadowTint", "hiTint", "vib". (C03's night, judge r1: the moon, the lamps,
+                    // the ambient and the heart one blue, so the heart wasn't special: the moon silver, the shade violet.)
+                    if (new[] { "moonSat", "moonHue", "moonDrop", "moonTop", "moonWidth", "shade", "shadeK", "shadowTint", "hiTint", "vib" }.Any(c.Has))
+                    {
+                        double? Opt(string k) => c.Has(k) ? c.Num(k) : null;
+                        double? ms = Opt("moonSat"), mh = Opt("moonHue"), md = Opt("moonDrop"), mt = Opt("moonTop"), mw = Opt("moonWidth"), sk = Opt("shadeK"), vb = Opt("vib");
+                        string? sh = c.Str("shade"), st = c.Str("shadowTint"), ht = c.Str("hiTint");
+                        g.air.SetCineGrade(gs => gs with
+                        {
+                            MoonSat = ms ?? gs.MoonSat, MoonHue = mh ?? gs.MoonHue, MoonDrop = md ?? gs.MoonDrop, MoonTop = mt ?? gs.MoonTop, MoonWidth = mw ?? gs.MoonWidth,
+                            PaintShadow = sh ?? gs.PaintShadow, PaintShadowK = sk ?? gs.PaintShadowK, PaintVib = vb ?? gs.PaintVib,
+                            ShadowTint = st ?? gs.ShadowTint, HighlightTint = ht ?? gs.HighlightTint,
+                        });
+                    }
                     double gsat = c.Num("sat", 1);
                     double gfrom = g.cineSat ?? 1;
                     if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { g.cineSat = gfrom + (gsat - gfrom) * k; }));
@@ -1302,7 +1349,7 @@ public partial class Game
 
         /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
         /// "hemi", "env", "exposure", "fog" and "rim" scale the preset's own; "azimuth" and "elevation" (degrees)
-        /// move the moon or sun for the shot; "keyColor" and "fogColor" replace its colours.</summary>
+        /// move the moon or sun for the shot; "keyColor", "fogColor", "hemiSky", "hemiGround" and "rimColor" replace its colours.</summary>
         static AtmospherePreset Tuned(AtmospherePreset p, CineCue c) => p with
         {
             KeyIntensity = p.KeyIntensity * c.Num("key", 1), HemiIntensity = p.HemiIntensity * c.Num("hemi", 1),
@@ -1310,6 +1357,7 @@ public partial class Game
             FogDensity = p.FogDensity * c.Num("fog", 1), RimStrength = p.RimStrength * c.Num("rim", 1),
             KeyAzimuth = c.Has("azimuth") ? c.Num("azimuth") : p.KeyAzimuth, KeyElevation = c.Has("elevation") ? c.Num("elevation") : p.KeyElevation,
             KeyColor = c.Str("keyColor") ?? p.KeyColor, FogColor = c.Str("fogColor") ?? p.FogColor,
+            HemiSky = c.Str("hemiSky") ?? p.HemiSky, HemiGround = c.Str("hemiGround") ?? p.HemiGround, Rim = c.Str("rimColor") ?? p.Rim,
             Sky = c.Has("skySat") ? SkySat(p.Sky, c.Num("skySat")) : p.Sky,
         };
 
@@ -1460,6 +1508,10 @@ public partial class Game
         public void Finish()
         {
             g.cineSat = null;
+            if (g.air.CineGrade != null) g.air.SetCineGrade(null);
+            if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
+            { SurvivorUnchained.View.People.HerSkyShare(hs.Person, 1); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, 1); }
+            skinSky = 1; skinEar = 1;
             foreach (int i in sized) g.scene?.View.SetSize(i, 0);
             sized.Clear();
             foreach (var ((em, ek), was) in eyeWas) if (IsInstanceValid(em)) em.SetShaderParameter(ek, was);
