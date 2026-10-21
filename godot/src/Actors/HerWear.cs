@@ -51,6 +51,9 @@ public static class HerWear
     /// lies on with their values (her skin is tucked under it as much).</summary>
     static readonly Dictionary<(ulong, string), (ArrayMesh Mesh, (int Point, float T)[] Under, Skin? Skin)> laidMeshes = new();
 
+    /// <summary>--standin 0: a calling's stood-in rows ignored at load (her outfit file as before; for an ABAB).</summary>
+    static readonly bool StandIns = Args.Get("standin") != "0";
+
     /// <summary>Her look from her equipment's pieces and --wear, over her calling's own (null: neither wears a piece).</summary>
     public static Dictionary<string, string>? LookFor(string calling, IReadOnlyDictionary<string, string>? worn, IReadOnlyCollection<string>? hide = null)
     {
@@ -59,7 +62,10 @@ public static class HerWear
         if (Override != null) foreach (var id in Override) w[ix.SlotOf(id)] = id;
         // (her show-helm toggle off: "head" stays empty, which needs the piece path even with nothing worn)
         if (HelmOverride is bool shown) hide = shown ? null : new[] { "head" };
-        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0)) return null;
+        // (a calling whose index row is stood in for (a row's "replaces") takes the piece path too, or her outfit file would
+        // draw the replaced piece; --standin 0: the outfit file as before, for an ABAB)
+        bool standIn = StandIns && ix.Calling(calling).Any(kv => ix.Find(kv.Value) is { } r && r.Outfit != calling);
+        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0) && !standIn) return null;
         var notes = new List<string>();
         var look = Wear.Look(w, calling, ix, notes, hide);
         foreach (var n in notes) GD.PushWarning(n);
