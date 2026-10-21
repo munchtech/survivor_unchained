@@ -183,7 +183,7 @@
  "thread": {
   "kind": "gloss",
   "repeats": 60,
-  "zone": "cloth"
+  "zone": "trim"
  },
  "gem_garnet": {
   "kind": "gloss",
