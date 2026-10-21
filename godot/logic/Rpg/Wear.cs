@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,6 +13,11 @@ public static class Wear
     public static readonly string[] VisualSlots = ["top", "bottom", "legwear", "gloves", "skirt", "belt", "collar", "bracers", "greaves", "boots", "pauldrons", "cloak", "head"];
 
     static readonly string[] None = [];
+
+    /// <summary>A slot whose piece hangs from another slot's piece (a skirt hangs from its belt): slot -> slot it hangs from.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Hangs = new Dictionary<string, string> { ["skirt"] = "belt" };
+
+    static string SourceOf(ArmorIndex ix, string id) => ix.Find(id)?.Outfit ?? id[..Math.Max(id.LastIndexOf('.'), 0)];
 
     /// <summary>The visual slots an item slot covers (none for weapons, amulets, rings, relic).</summary>
     public static IReadOnlyList<string> Group(EquipSlot s) => s switch
@@ -70,6 +76,11 @@ public static class Wear
         {
             if (slot == Ink) { r[slot] = id; continue; }
             if (eq.ContainsKey(slot) || hidden.Contains(slot) || Hid(slot)) continue;
+            if (Hangs.TryGetValue(slot, out var from) && eq.TryGetValue(from, out var held) && SourceOf(ix, held) != SourceOf(ix, id))
+            {
+                notes?.Add($"wear: {calling}'s '{id}' hangs from {from}, which holds '{held}'; {slot} left empty");
+                continue;
+            }
             if (!HidesEquipped(slot, id)) { r[slot] = id; continue; }
             var fb = FallbackOrder.Select(c => ix.Find($"{c}.{slot}")).FirstOrDefault(p => p is { } p_ && p_.Covers.Count == 1 && p_.Covers[0] == slot);
             if (fb != null) { r[slot] = fb.Id; notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece; {slot} filled with '{fb.Id}'"); }

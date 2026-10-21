@@ -30,6 +30,7 @@ without the tuck (the baseline).
                                     [--out <dir>] [--no-skin] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
+
 import json
 import os
 import struct
@@ -62,6 +63,9 @@ DEFAULT_HOLD = {"amount": 1, "squash": 1}
 
 
 # ----------------------------------------------------------------- geometry --
+# A slot whose piece hangs from another slot's piece (mirror of Wear.Hangs in godot/logic/Rpg/Wear.cs).
+HANGS = {"skirt": "belt"}
+
 def _cross(a, b):
     """np.cross over the last axis, without its axis shuffling (the hot loop)."""
     a0, a1, a2 = a[..., 0], a[..., 1], a[..., 2]
@@ -372,6 +376,8 @@ def main(argv):
             ctrl = ra["source"] == rb["source"]
             if ctrl and not same:
                 continue
+            if not ctrl and (HANGS.get(ra["slot"]) == rb["slot"] or HANGS.get(rb["slot"]) == ra["slot"]):
+                continue  # a skirt never hangs from another source's belt (Wear.Look)
             orders = [(a, b)] if ra["layer"] < rb["layer"] else [(b, a)] if rb["layer"] < ra["layer"] else [(a, b), (b, a)]
             tuck = gt and not ctrl and ra["slot"] in order and rb["slot"] in order
             if tuck:

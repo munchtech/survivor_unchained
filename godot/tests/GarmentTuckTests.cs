@@ -142,4 +142,25 @@ public class GarmentTuckTests
         var all = FieldWhere(s, (x, y) => 1f);
         Assert.Equal(new[] { 0, 0, 0 }, GarmentTuck.Lay(s, all, pos, new[] { 0, 1, 2 }, out _, out _));
     }
+
+    [Fact]
+    public void BlendWeights_ends_are_A_and_B_and_the_middle_keeps_the_top_N()
+    {
+        int[] ja = [1, 2, 0, 0]; float[] wa = [0.6f, 0.4f, 0, 0];
+        int[] jb = [3, 2, 0, 0]; float[] wb = [0.7f, 0.3f, 0, 0];
+        var jo = new int[4]; var wo = new float[4];
+        GarmentTuck.BlendWeights(ja, wa, jb, wb, 0f, jo, wo);
+        Assert.Equal(new[] { 1, 2 }, jo.Take(2));
+        Assert.Equal(0.6, wo[0], 4);
+        GarmentTuck.BlendWeights(ja, wa, jb, wb, 1f, jo, wo);
+        Assert.Equal(new[] { 3, 2 }, jo.Take(2));
+        Assert.Equal(0.7, wo[0], 4);
+        GarmentTuck.BlendWeights(ja, wa, jb, wb, 0.5f, jo, wo);
+        Assert.Equal(1.0, wo.Sum(), 4);
+        Assert.Equal(2, jo[0]);   // bone 2: 0.2 + 0.15 = 0.35, ties bone 3 (0.35), beats bone 1 (0.3); first seen wins
+        var j2 = new int[2]; var w2 = new float[2];
+        GarmentTuck.BlendWeights(ja, wa, jb, wb, 0.5f, j2, w2);
+        Assert.Equal(1.0, w2.Sum(), 4);
+        Assert.DoesNotContain(1, j2);
+    }
 }

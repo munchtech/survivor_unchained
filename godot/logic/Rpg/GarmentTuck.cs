@@ -287,4 +287,49 @@ public static class GarmentTuck
         if (kept.Count == 0 && index.Length > 0) kept.AddRange(new[] { index[0], index[0], index[0] });
         return kept.ToArray();
     }
+
+    /// <summary>Whether a laid piece takes the outer piece's bone weights (HerWear.LaidMesh); false: it keeps its own.</summary>
+    public static bool Weights = true;
+
+    /// <summary>A laid vertex's bone weights blended toward the outer piece's nearest vertex: (1 - s) * A + s * B, over the
+    /// union of their bones (B's already in A's bone indices), the largest jo.Length kept (4 or 8), renormalized to sum 1.
+    /// A bone left over pads with index 0, weight 0.</summary>
+    public static void BlendWeights(ReadOnlySpan<int> ja, ReadOnlySpan<float> wa, ReadOnlySpan<int> jb, ReadOnlySpan<float> wb, float s, Span<int> jo, Span<float> wo)
+    {
+        s = Math.Clamp(s, 0f, 1f);
+        Span<int> bj = stackalloc int[ja.Length + jb.Length];
+        Span<float> bw = stackalloc float[ja.Length + jb.Length];
+        int n = 0;
+        for (int pass = 0; pass < 2; pass++)
+        {
+            var jx = pass == 0 ? ja : jb;
+            var wx = pass == 0 ? wa : wb;
+            float f = pass == 0 ? 1f - s : s;
+            for (int i = 0; i < jx.Length; i++)
+            {
+                float w = f * wx[i];
+                if (w <= 0f) continue;
+                int k = 0;
+                while (k < n && bj[k] != jx[i]) k++;
+                if (k < n) bw[k] += w;
+                else { bj[n] = jx[i]; bw[n] = w; n++; }
+            }
+        }
+        int keep = Math.Min(n, jo.Length);
+        for (int a = 0; a < keep; a++)
+        {
+            int m = a;
+            for (int k = a + 1; k < n; k++) if (bw[k] > bw[m]) m = k;
+            (bj[a], bj[m]) = (bj[m], bj[a]);
+            (bw[a], bw[m]) = (bw[m], bw[a]);
+        }
+        float sum = 0f;
+        for (int k = 0; k < keep; k++) sum += bw[k];
+        for (int k = 0; k < jo.Length; k++)
+        {
+            bool has = k < keep && sum > 0f;
+            jo[k] = has ? bj[k] : 0;
+            wo[k] = has ? bw[k] / sum : 0f;
+        }
+    }
 }

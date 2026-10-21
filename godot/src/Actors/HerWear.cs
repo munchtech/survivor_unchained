@@ -40,7 +40,7 @@ public static class HerWear
     static readonly Dictionary<string, SkinPoints> skinPoints = new();
     /// <summary>A piece mesh laid under what covers it (by the source mesh and the pieces over it), and her points it
     /// lies on with their values (her skin is tucked under it as much).</summary>
-    static readonly Dictionary<(ulong, string), (ArrayMesh Mesh, (int Point, float T)[] Under)> laidMeshes = new();
+    static readonly Dictionary<(ulong, string), (ArrayMesh Mesh, (int Point, float T)[] Under, Skin? Skin)> laidMeshes = new();
 
     /// <summary>Her look from her equipment's pieces and --wear, over her calling's own (null: neither wears a piece).</summary>
     public static Dictionary<string, string>? LookFor(string calling, IReadOnlyDictionary<string, string>? worn, IReadOnlyCollection<string>? hide = null)
@@ -266,6 +266,7 @@ public static class HerWear
             float[]? field = null;
             bool[]? near = null;
             Aabb? box = null;
+            OuterWeights? outer = null;
             foreach (var mi in mis)
             {
                 if (mi.Mesh is not ArrayMesh src) continue;
@@ -278,15 +279,17 @@ public static class HerWear
                     box ??= Covered(sp, field);
                     if (!src.GetAabb().Grow(GarmentTuck.Reach + 2 * GarmentTuck.Smooth).Intersects(box.Value))
                     {
-                        laidMeshes[key] = (null!, Array.Empty<(int, float)>());
+                        laidMeshes[key] = (null!, Array.Empty<(int, float)>(), null);
                         continue;
                     }
                     var ck = System.Diagnostics.Stopwatch.StartNew();
-                    laidMeshes[key] = got = LaidMesh(src, sp, field, near);
+                    outer ??= GarmentTuck.Weights ? OuterOf(p, over.Select(b => b.Id).Where(meshes.ContainsKey).SelectMany(id => meshes[id])) : null;
+                    laidMeshes[key] = got = LaidMesh(src, sp, field, near, mi, outer);
                     if (Prof) GD.Print($"garment tuck: {a.Id} {mi.Name} {src.GetSurfaceCount()} surfaces {ck.Elapsed.TotalMilliseconds:F1} ms");
                 }
                 if (got.Mesh == null) continue;
                 mi.Mesh = got.Mesh;
+                if (got.Skin != null) mi.Skin = got.Skin;   // (mi is a fresh instance each Apply: nothing to restore)
                 laid++;
                 under ??= new Dictionary<long, float>();
                 foreach (var (i, t) in got.Under)
@@ -298,6 +301,172 @@ public static class HerWear
             }
         }
         return under;
+    }
+
+    /// <summary>The outer pieces' rest vertices in her skeleton's space with their bone weights, on a 10 mm hash.</summary>
+    sealed class OuterWeights
+    {
+        const float Cell = 0.01f;
+        readonly List<Vector3> pos = new();
+        readonly List<int> bones = new();      // 8 per vertex, ids into names (-1: none)
+        readonly List<float> weights = new();  // 8 per vertex
+        readonly List<string> names = new();
+        readonly List<Transform3D> poses = new();
+        readonly Dictionary<string, int> nameId = new();
+        readonly Dictionary<(int, int, int), List<int>> grid = new();
+
+        public int Count => pos.Count;
+
+        static string BindName(Skin skin, int i, Skeleton3D? skel)
+        {
+            var n = skin.GetBindName(i).ToString();
+            if (n.Length == 0 && skel != null && skin.GetBindBone(i) is var bb and >= 0) n = skel.GetBoneName(bb);
+            return n;
+        }
+
+        public void Add(MeshInstance3D b, Skeleton3D? skel)
+        {
+            if (b.Mesh is not ArrayMesh am || b.Skin is not { } skin) return;
+            var map = new int[skin.GetBindCount()];
+            for (int i = 0; i < map.Length; i++)
+            {
+                var n = BindName(skin, i, skel);
+                if (n.Length == 0) { map[i] = -1; continue; }
+                if (!nameId.TryGetValue(n, out var id)) { nameId[n] = id = names.Count; names.Add(n); poses.Add(skin.GetBindPose(i)); }
+                map[i] = id;
+            }
+            for (int s = 0; s < am.GetSurfaceCount(); s++)
+            {
+                if (am.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles) continue;
+                var arr = am.SurfaceGetArrays(s);
+                if (arr[(int)Mesh.ArrayType.Bones].VariantType == Variant.Type.Nil || arr[(int)Mesh.ArrayType.Weights].VariantType == Variant.Type.Nil) continue;
+                var vs = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                var bj = arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
+                var bw = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+                int st = vs.Length == 0 ? 0 : bj.Length / vs.Length;
+                if (st == 0) continue;
+                for (int i = 0; i < vs.Length; i++)
+                {
+                    var q = b.Transform * vs[i];
+                    int v = pos.Count;
+                    pos.Add(q);
+                    for (int k = 0; k < 8; k++)
+                    {
+                        bool has = k < st && bj[i * st + k] >= 0 && bj[i * st + k] < map.Length;
+                        bones.Add(has ? map[bj[i * st + k]] : -1);
+                        weights.Add(has ? bw[i * st + k] : 0f);
+                    }
+                    var key = ((int)MathF.Floor(q.X / Cell), (int)MathF.Floor(q.Y / Cell), (int)MathF.Floor(q.Z / Cell));
+                    if (!grid.TryGetValue(key, out var l)) grid[key] = l = new List<int>();
+                    l.Add(v);
+                }
+            }
+        }
+
+        int Nearest(Vector3 q, float reach)
+        {
+            int cx = (int)MathF.Floor(q.X / Cell), cy = (int)MathF.Floor(q.Y / Cell), cz = (int)MathF.Floor(q.Z / Cell);
+            int rings = (int)MathF.Ceiling(reach / Cell);
+            int best = -1;
+            float bd = reach * reach;
+            for (int r = 0; r <= rings; r++)
+            {
+                for (int x = cx - r; x <= cx + r; x++)
+                    for (int y = cy - r; y <= cy + r; y++)
+                        for (int z = cz - r; z <= cz + r; z++)
+                        {
+                            if (Math.Max(Math.Abs(x - cx), Math.Max(Math.Abs(y - cy), Math.Abs(z - cz))) != r) continue;
+                            if (!grid.TryGetValue((x, y, z), out var l)) continue;
+                            foreach (var v in l)
+                            {
+                                float d = (pos[v] - q).LengthSquared();
+                                if (d < bd) { bd = d; best = v; }
+                            }
+                        }
+                // (everything in a ring past r is at least r cells away)
+                if (best >= 0 && bd <= (r * Cell) * (r * Cell)) break;
+            }
+            return best;
+        }
+
+        /// <summary>Blends each laid vertex's weights in `arr` toward its nearest outer vertex's, by GarmentTuck.Amount of
+        /// its lay value; binds the outer pieces use that `skin` lacks are added to it. True if any vertex changed.</summary>
+        public bool Reweight(Godot.Collections.Array arr, float[] pos3, float[] t, Transform3D toSkel, Skin skin, Skeleton3D? skel, bool fmt8)
+        {
+            if (arr[(int)Mesh.ArrayType.Bones].VariantType == Variant.Type.Nil || arr[(int)Mesh.ArrayType.Weights].VariantType == Variant.Type.Nil) return false;
+            var bj = arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
+            var bw = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+            int n = t.Length;
+            int st = n == 0 ? 0 : bj.Length / n;
+            if (st == 0) return false;
+            var bindOf = new Dictionary<string, int>();
+            for (int i = 0; i < skin.GetBindCount(); i++)
+            {
+                var nm = BindName(skin, i, skel);
+                if (nm.Length > 0) bindOf[nm] = i;
+            }
+            var toA = new int[names.Count];
+            Array.Fill(toA, -2);
+            int Local(int g)
+            {
+                if (toA[g] != -2) return toA[g];
+                if (!bindOf.TryGetValue(names[g], out var bi))
+                {
+                    bi = skin.GetBindCount();
+                    skin.AddNamedBind(names[g], poses[g]);
+                    bindOf[names[g]] = bi;
+                }
+                return toA[g] = bi;
+            }
+            int cap = Math.Min(fmt8 ? 8 : 4, st);
+            Span<int> jb = stackalloc int[8];
+            Span<float> wb = stackalloc float[8];
+            Span<int> jo = stackalloc int[cap];
+            Span<float> wo = stackalloc float[cap];
+            bool changed = false;
+            for (int i = 0; i < n; i++)
+            {
+                float s = GarmentTuck.Amount(t[i]);
+                if (s <= 0f) continue;
+                var q = toSkel * new Vector3(pos3[i * 3], pos3[i * 3 + 1], pos3[i * 3 + 2]);
+                int v = Nearest(q, GarmentTuck.Reach);
+                if (v < 0) continue;
+                int m = 0;
+                for (int k = 0; k < 8; k++)
+                {
+                    int g = bones[v * 8 + k];
+                    if (g < 0 || weights[v * 8 + k] <= 0f) continue;
+                    jb[m] = Local(g); wb[m] = weights[v * 8 + k]; m++;
+                }
+                if (m == 0) continue;
+                GarmentTuck.BlendWeights(bj.AsSpan(i * st, st), bw.AsSpan(i * st, st), jb[..m], wb[..m], s, jo, wo);
+                for (int k = 0; k < st; k++)
+                {
+                    bj[i * st + k] = k < cap ? jo[k] : 0;
+                    bw[i * st + k] = k < cap ? wo[k] : 0f;
+                }
+                changed = true;
+            }
+            if (changed)
+            {
+                arr[(int)Mesh.ArrayType.Bones] = bj;
+                arr[(int)Mesh.ArrayType.Weights] = bw;
+            }
+            return changed;
+        }
+    }
+
+    /// <summary>The outer pieces' full meshes (not their LOD or shadow copies) as a weight lookup.</summary>
+    static OuterWeights? OuterOf(People.Person p, IEnumerable<MeshInstance3D> mis)
+    {
+        var o = new OuterWeights();
+        foreach (var b in mis)
+        {
+            var n = b.Name.ToString();
+            if (n.Contains("_lod") || n.EndsWith("_shadow")) continue;
+            o.Add(b, p.Skeleton);
+        }
+        return o.Count > 0 ? o : null;
     }
 
     /// <summary>The box of her points a footprint covers.</summary>
@@ -359,8 +528,10 @@ public static class HerWear
 
     /// <summary>A copy of a piece mesh laid down by GarmentTuck.Lay (its blend shapes kept, as People's masked meshes;
     /// null Mesh: nothing of it moved), and her points under it with their values.</summary>
-    static (ArrayMesh Mesh, (int Point, float T)[] Under) LaidMesh(ArrayMesh am, SkinPoints sp, float[] field, bool[] near)
+    static (ArrayMesh Mesh, (int Point, float T)[] Under, Skin? Skin) LaidMesh(ArrayMesh am, SkinPoints sp, float[] field, bool[] near, MeshInstance3D a, OuterWeights? outer)
     {
+        Skin? skin = outer != null && a.Skin != null ? (Skin)a.Skin.Duplicate() : null;
+        bool reskinned = false;
         var mesh = new ArrayMesh { BlendShapeMode = am.BlendShapeMode };
         // (A run without a screen cannot read shape keys back from a mesh: it goes without.)
         bool shapes = am.GetBlendShapeCount() > 0 && DisplayServer.GetName() != "headless";
@@ -386,6 +557,12 @@ public static class HerWear
                     for (int i = 0; i < vs.Length; i++) vs[i] = new Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
                     arr[(int)Mesh.ArrayType.Vertex] = vs;
                     arr[(int)Mesh.ArrayType.Index] = kept;
+                    if (skin != null)
+                    {
+                        var c2 = System.Diagnostics.Stopwatch.StartNew();
+                        reskinned |= outer!.Reweight(arr, pos, t, a.Transform, skin, a.GetParent() as Skeleton3D, ((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights) != 0);
+                        if (Prof) GD.Print($"garment tuck:   weights {vs.Length} verts {c2.Elapsed.TotalMilliseconds:F1} ms");
+                    }
                     for (int i = 0; i < anchor.Length; i++)
                         if (anchor[i] >= 0 && t[i] > 0 && (!under.TryGetValue(anchor[i], out var o) || t[i] > o)) under[anchor[i]] = t[i];
                 }
@@ -396,9 +573,9 @@ public static class HerWear
             mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
             mesh.SurfaceSetName(s, am.SurfaceGetName(s));
         }
-        if (!any) return (null!, Array.Empty<(int, float)>());
+        if (!any) return (null!, Array.Empty<(int, float)>(), null);
         mesh.ResourceName = am.ResourceName;
-        return (mesh, under.Select(kv => (kv.Key, kv.Value)).ToArray());
+        return (mesh, under.Select(kv => (kv.Key, kv.Value)).ToArray(), reskinned ? skin : null);
     }
 
     /// <summary>The worn pieces' tuck of her skin, the largest at each of her points, into each body surface's tuck_map
