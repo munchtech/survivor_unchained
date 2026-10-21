@@ -473,7 +473,8 @@
     "plates": {
      "metal": 5472,
      "restricted": 2214,
-     "ring": 1170,
+     "soft": 2258,
+     "halfMm": "43 13 0 42 17 0 28 28 66 57 81 0",
      "caps": "upperarm_l 465, lowerarm_l 116, calf_l 0, upperarm_r 453, lowerarm_r 109, calf_r 0"
     },
     "steelWhole": 6
@@ -530,6 +531,228 @@
      "hair_fine"
     ]
    },
+   "palette": {
+    "views": [
+     {
+      "figure": [
+       709,
+       1010
+      ],
+      "head": 10778,
+      "hands": 2818,
+      "kept": 231180
+     },
+     {
+      "figure": [
+       693,
+       1003
+      ],
+      "head": 10970,
+      "hands": 817,
+      "kept": 231316
+     }
+    ],
+    "sampled": 26.4,
+    "regions": [
+     {
+      "region": "metal",
+      "share": 0.4,
+      "seen": 311458,
+      "before": {
+       "lab": [
+        36.8,
+        0.2,
+        -0.3
+       ],
+       "metal": 0.99,
+       "rough": 0.47
+      },
+      "target": [
+       55.3,
+       0.8,
+       1.5
+      ],
+      "after": {
+       "lab": [
+        55.1,
+        0.8,
+        1.5
+       ],
+       "metal": 0.7,
+       "rough": 0.5
+      }
+     },
+     {
+      "region": "c0",
+      "share": 0.13,
+      "seen": 38716,
+      "before": {
+       "lab": [
+        7.3,
+        0.2,
+        0.2
+       ],
+       "metal": 0,
+       "rough": 0.96
+      },
+      "target": [
+       16.6,
+       0.9,
+       2.7
+      ],
+      "after": {
+       "lab": [
+        16.6,
+        0.9,
+        2.7
+       ],
+       "metal": 0,
+       "rough": 0.9
+      }
+     },
+     {
+      "region": "c1",
+      "share": 0.12,
+      "seen": 69006,
+      "before": {
+       "lab": [
+        13.9,
+        4.3,
+        6.3
+       ],
+       "metal": 0.01,
+       "rough": 0.69
+      },
+      "target": [
+       27.3,
+       5.7,
+       8.6
+      ],
+      "after": {
+       "lab": [
+        27.3,
+        5.7,
+        8.6
+       ],
+       "metal": 0,
+       "rough": 0.82
+      }
+     },
+     {
+      "region": "c2",
+      "share": 0.09,
+      "seen": 12033,
+      "before": {
+       "lab": [
+        6.1,
+        10,
+        4.1
+       ],
+       "metal": 0,
+       "rough": 0.99
+      },
+      "target": [
+       15.1,
+       8.7,
+       5.7
+      ],
+      "after": {
+       "lab": [
+        15.2,
+        8.8,
+        5.7
+       ],
+       "metal": 0,
+       "rough": 0.9
+      }
+     },
+     {
+      "region": "c3",
+      "share": 0.05,
+      "seen": 25762,
+      "before": {
+       "lab": [
+        26.2,
+        4.3,
+        7.6
+       ],
+       "metal": 0.02,
+       "rough": 0.64
+      },
+      "target": [
+       31.2,
+       2.7,
+       9.8
+      ],
+      "after": {
+       "lab": [
+        31.2,
+        2.8,
+        9.8
+       ],
+       "metal": 0,
+       "rough": 0.83
+      }
+     },
+     {
+      "region": "c4",
+      "share": 0.16,
+      "seen": 92744,
+      "before": {
+       "lab": [
+        8.1,
+        14,
+        5.8
+       ],
+       "metal": 0,
+       "rough": 0.99
+      },
+      "target": [
+       17,
+       13.9,
+       7.3
+      ],
+      "after": {
+       "lab": [
+        16.9,
+        13.8,
+        7.3
+       ],
+       "metal": 0,
+       "rough": 0.9
+      }
+     },
+     {
+      "region": "c5",
+      "share": 0.05,
+      "seen": 4598,
+      "before": {
+       "lab": [
+        38.1,
+        17.8,
+        17.8
+       ],
+       "metal": 0,
+       "rough": 0.65
+      },
+      "target": [
+       30.4,
+       10.2,
+       8.6
+      ],
+      "after": {
+       "lab": [
+        30.5,
+        10.2,
+        8.6
+       ],
+       "metal": 0,
+       "rough": 0.81
+      }
+     }
+    ],
+    "sigma": 1.6
+   },
    "hairFromConcept": {
     "hex": "#302723",
     "lab": [
@@ -544,7 +767,7 @@
  },
  "baked": true,
  "bake": {
-  "bytes": 15936244,
+  "bytes": 16550740,
   "nodes": [
    {
     "name": "npc_guard_gen",
