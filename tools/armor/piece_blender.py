@@ -843,7 +843,270 @@ def build_plate_top():
                 lift=lift, sockets=socks, rims=rims, roll=roll, avoid=[np.asarray(cv[0]) for _, cv in straps])
 
 
+# ------------------------------------------------- the shell: a free mesh --
+# (armor 9, IM1: docs/armor/PIECE_SCHEMA.md "Free meshes: the import contract". tools/armor/import_mesh.py checks the
+# file first (bounds, units, materials, budget, transforms, body) and runs this build. The mesh carries shape and
+# material names only: her weights, the push-out to the slot band, the tuck, LODs, sockets, rims and the row are ours.)
+MESH = SPEC_PIECE.get("style") == "mesh"
+# (the slot band: how far the inner face must stand off her skin at rest, by the slot's layer (slot_map.json "layers"):
+# second-skin pieces 1 mm, layer 2 (belts, bracers, greaves, boots) 2 mm, layer 3 (pauldrons, cloak, head) 3 mm)
+SLOT_BAND = {0: 0.0005, 1: 0.0010, 2: 0.0020, 3: 0.0030}
+IMPORT = {}
+
+
+def _base_name(n):
+    import re
+    return re.sub(r"\.\d{3}$", "", n)
+
+
+def build_mesh():
+    import math
+    import re
+    from mathutils import Matrix
+    f = os.path.join(os.path.dirname(PIECE_JSON), PRM["file"])
+    ext = os.path.splitext(f)[1].lower()
+    before = set(bpy.data.objects)
+    if ext in (".glb", ".gltf"):
+        bpy.ops.import_scene.gltf(filepath=f)
+    elif ext == ".fbx":
+        bpy.ops.import_scene.fbx(filepath=f)          # (its axes converted to Blender's by the importer: Y up in, Z up here)
+    elif ext == ".blend":
+        with bpy.data.libraries.load(f, link=False) as (src_, dst_):
+            dst_.objects = list(src_.objects)
+        for o in dst_.objects:
+            if o is not None:
+                bpy.context.collection.objects.link(o)
+    else:
+        raise SystemExit("ARMOR REFUSED: %s: a free mesh is .glb, .gltf, .fbx or .blend" % f)
+    new = [o for o in bpy.data.objects if o not in before]
+    srcs = [o for o in new if o.type == "MESH" and len(o.data.polygons)]
+    # (the file's materials named aside: the game's own of each name (heroine_outfits.mat) takes the name)
+    for o in srcs:
+        for m_ in o.data.materials:
+            if m_ is not None and not m_.name.startswith("src~"):
+                m_["key"] = _base_name(m_.name)
+                m_.name = "src~" + m_.name
+    keep_w = bool(PRM.get("keep_weights"))
+    # (named empties: the artist's sockets, at their place, +Z out of the surface)
+    empties = {_base_name(o.name): np.array(o.matrix_world) for o in new if o.type == "EMPTY" and not o.children}
+    # Every transform applied (identity objects), parents and armatures let go: the mesh in her world as the file has it.
+    for o in srcs:
+        mw = o.matrix_world.copy()
+        o.parent = None
+        o.data.transform(mw)
+        o.matrix_world = Matrix.Identity(4)
+        for m_ in list(o.modifiers):
+            o.modifiers.remove(m_)
+        if not keep_w:
+            o.vertex_groups.clear()
+        else:
+            for g in list(o.vertex_groups):
+                if g.name not in BI:
+                    o.vertex_groups.remove(g)
+    for o in new:
+        if o not in srcs:
+            bpy.data.objects.remove(o)
+    # Mirrored, when asked: each object copied across her middle (x -> -x), _l and _r swapped in its name.
+    if PRM.get("mirror"):
+        for o in list(srcs):
+            c = o.copy()
+            c.data = o.data.copy()
+            bpy.context.collection.objects.link(c)
+            c.data.transform(Matrix.Scale(-1.0, 4, Vector((1, 0, 0))))
+            c.data.flip_normals()
+            nm = _base_name(o.name)
+            sw = re.sub(r"_l(?=_|$)", "_R_", nm)
+            sw = re.sub(r"_r(?=_|$)", "_l", sw).replace("_R_", "_r")
+            c.name = sw if sw != nm else nm + "_mirror"
+            if keep_w:
+                for g in c.vertex_groups:
+                    if g.name.endswith("_l") or g.name.endswith("_r"):
+                        g.name = g.name[:-1] + ("r" if g.name.endswith("_l") else "l") + "~"
+                for g in c.vertex_groups:
+                    g.name = g.name.rstrip("~")
+            srcs.append(c)
+    # Each object split by material (one material a part: the export joins a slot's parts by material); the material
+    # is the game's own entry of that name (outfit_materials.json), its UVs laid out at the material's true size.
+    parts, rigid_of = [], {}
+    for o in srcs:
+        bname = _base_name(o.name)
+        rigid = bname.endswith("_rigid")
+        bm_ = bmesh.new()
+        bm_.from_mesh(o.data)
+        bmesh.ops.remove_doubles(bm_, verts=bm_.verts, dist=0.00001)
+        bmesh.ops.triangulate(bm_, faces=bm_.faces)
+        bm_.to_mesh(o.data)
+        bm_.free()
+        o.data.update()
+        # her weights at its points (soft: averaged over her skin round each point, four bones)
+        co = np.array([v.co[:] for v in o.data.vertices])
+        wt = G["four_bones"](G["soft_weights"](co)) if not keep_w else None
+        row = None
+        if rigid:
+            # (a rigid part rides ONE blend from her skin at its centre: the mean of its points' blends, its four
+            # largest shares, so it never bends; heroine_outfits' rigid_again keeps it on that blend after the helpers)
+            if wt is None:
+                wt = G["four_bones"](G["soft_weights"](co))
+            m_ = wt.mean(0)
+            k_ = [i for i in np.argsort(-m_)[:4] if m_[i] > 1e-4]
+            row = [(BONES[i], float(m_[i] / sum(m_[j] for j in k_))) for i in k_]
+        mats = [m.get("key") if m else None for m in o.data.materials]
+        used = sorted({p.material_index for p in o.data.polygons})
+        for mi in used:
+            mkey = _base_name(mats[mi]) if mi < len(mats) and mats[mi] else None
+            if mkey not in G["SPEC"]:
+                raise SystemExit("ARMOR REFUSED: %s: material %r is not in outfit_materials.json" % (bname, mkey))
+            bm_ = bmesh.new()
+            bm_.from_mesh(o.data)
+            bmesh.ops.delete(bm_, geom=[fc for fc in bm_.faces if fc.material_index != mi], context="FACES")
+            bmesh.ops.delete(bm_, geom=[v for v in bm_.verts if not v.link_faces], context="VERTS")
+            nm = f"{PID}.{bname}" + ("" if len(used) == 1 else f"_{mkey}")
+            me_ = bpy.data.meshes.new(nm)
+            bm_.to_mesh(me_)
+            bm_.free()
+            p_ = bpy.data.objects.new(nm, me_)
+            bpy.context.collection.objects.link(p_)
+            pc = np.array([v.co[:] for v in me_.vertices])
+            if keep_w:
+                # (the artist's weights, by nearest source point: same positions)
+                _, jj = cKDTree(co).query(pc)
+                srcg = {g.index: g.name for g in o.vertex_groups}
+                for k, j in enumerate(jj):
+                    for g in o.data.vertices[int(j)].groups:
+                        nmg = srcg[g.group]
+                        (p_.vertex_groups.get(nmg) or p_.vertex_groups.new(name=nmg)).add([k], g.weight, "REPLACE")
+                if row is not None:
+                    set_one_blend(p_, row)
+            elif row is not None:
+                set_one_blend(p_, row)
+            else:
+                _, jj = cKDTree(co).query(pc)
+                groups = {}
+                for k, j in enumerate(jj):
+                    r_ = wt[int(j)]
+                    top = np.argsort(-r_)[:4]
+                    tot = r_[top].sum() or 1.0
+                    for b_ in top:
+                        if r_[b_] > 0.003:
+                            if b_ not in groups:
+                                groups[b_] = p_.vertex_groups.new(name=BONES[b_])
+                            groups[b_].add([k], float(r_[b_] / tot), "REPLACE")
+            # UVs: one smart projection, scaled to the material's metres (as heroine_outfits.finish lays a sheet)
+            bpy.ops.object.select_all(action="DESELECT")
+            p_.select_set(True)
+            bpy.context.view_layer.objects.active = p_
+            me_.uv_layers.new()
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.select_all(action="SELECT")
+            bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.01, scale_to_bounds=False)
+            bpy.ops.object.mode_set(mode="OBJECT")
+            uv = me_.uv_layers.active.data
+            a3 = sum(p.area for p in me_.polygons)
+            a2 = 0.0
+            for p in me_.polygons:
+                l_ = [uv[k].uv for k in p.loop_indices]
+                for k in range(1, len(l_) - 1):
+                    a2 += abs((l_[k] - l_[0]).cross(l_[k + 1] - l_[0])) / 2
+            sc = math.sqrt(a3 / max(a2, 1e-12)) * G["SPEC"][mkey][3]
+            for d in uv:
+                d.uv = d.uv * sc
+            me_.materials.append(G["mat"](mkey))
+            for p in me_.polygons:
+                p.use_smooth = True
+            me_.set_sharp_from_angle(angle=math.radians(50))
+            p_.parent = arm
+            am = p_.modifiers.new("Armature", "ARMATURE")
+            am.object = arm
+            p_["hides"] = True
+            p_["source_part"] = bname
+            parts.append(p_)
+            rigid_of[p_.name] = bool(rigid)
+        bpy.data.objects.remove(o)
+    # ---- pushed out to the slot band: her skin at rest, any point of the piece nearer her than the band along her
+    # normal (or inside her) is moved out by a smooth bump `push_sigma` wide, the whole piece together, so nothing parts.
+    band = SLOT_BAND[json.load(open(os.path.join(HERE, "slot_map.json"), encoding="utf-8"))["layers"][SLOT]]
+    sig = PRM.get("band_sigma", 0.010)
+    allco = [np.array([v.co[:] for v in p_.data.vertices]) for p_ in parts]
+    start = np.vstack(allco)
+    for rnd in range(6):
+        X = np.vstack(allco)
+        Q, D, A = [], [], []
+        for x in X:
+            h = G["SKIN_BVH"].find_nearest(Vector(x), 0.03)
+            if h[0] is None:
+                continue
+            q, n = np.array(h[0][:]), np.array(h[1][:])
+            s = (x - q) @ n
+            if s < band - 0.00005:
+                Q.append(x)
+                D.append(n)
+                A.append(band - s)
+        if not Q:
+            break
+        Q, D, A = np.array(Q), np.array(D), np.array(A)
+        out = []
+        for co_ in allco:
+            mv = np.zeros_like(co_)
+            for a0 in range(0, len(co_), 400):
+                x = co_[a0:a0 + 400]
+                g = np.exp(-((x[:, None, :] - Q[None]) ** 2).sum(2) / (2 * sig ** 2)) * A[None]
+                mag = g.max(1)
+                dv = (g[:, :, None] * D[None]).sum(1)
+                dv /= np.linalg.norm(dv, axis=1)[:, None] + 1e-12
+                mv[a0:a0 + 400] = dv * mag[:, None]
+            out.append(co_ + mv)
+        allco = out
+        IMPORT.setdefault("band_rounds", []).append({"points": int(len(Q)), "deepest_mm": round(float(A.max() * 1000), 2)})
+    for p_, co_ in zip(parts, allco):
+        p_.data.vertices.foreach_set("co", co_.ravel())
+        p_.data.update()
+    moved = np.linalg.norm(np.vstack(allco) - start, axis=1) * 1000
+    IMPORT["band_mm"] = band * 1000
+    IMPORT["push_to_band_mm"] = {"max": round(float(moved.max()), 2), "p99": round(float(np.percentile(moved, 99)), 2),
+                                 "moved_points": int((moved > 0.01).sum()), "points": int(len(moved))}
+    IMPORT["rigid_parts"] = sorted({p_["source_part"] for p_ in parts if rigid_of[p_.name]})
+    IMPORT["bending_parts"] = sorted({p_["source_part"] for p_ in parts if not rigid_of[p_.name]})
+    IMPORT["rigid"] = bool(parts) and all(rigid_of.values())
+    # ---- sockets: the file's named empties (glTF frame); rims: each part's open boundary loops (best effort)
+    socks, rims = {}, {}
+    for nm, M in empties.items():
+        p = M[:3, 3]
+        z = M[:3, 2] / (np.linalg.norm(M[:3, 2]) + 1e-12)
+        y = M[:3, 1] - z * (M[:3, 1] @ z)
+        y /= np.linalg.norm(y) + 1e-12
+        socks[nm] = {"point": gl(p).round(5).tolist(), "normal": gl(z).round(5).tolist(), "up": gl(y).round(5).tolist(),
+                     "weights": top4(G["soft_weights"](p[None])[0])}
+    for p_ in parts:
+        me_ = p_.data
+        co_ = np.array([v.co[:] for v in me_.vertices])
+        tr_ = np.array([pl.vertices[:] for pl in me_.polygons])
+        if len(tr_) < 8:
+            continue
+        nr_ = G["vertex_normals"](co_, tr_)
+        for k, lp in enumerate(G["edge_loops"](tr_)):
+            lp = np.asarray(lp)
+            if len(lp) < 8:
+                continue
+            cur = co_[lp]
+            c_ = cur.mean(0)
+            nn = nr_[lp]
+            ow = cur - c_
+            ow -= nn * (ow * nn).sum(1)[:, None]
+            ow /= np.linalg.norm(ow, axis=1)[:, None] + 1e-12
+            rw = G["soft_weights"](cur)
+            rims[f"{p_['source_part']}_rim{k}"] = {"closed": True, "points": gl(cur).round(5).tolist(), "normals": gl(nn).round(4).tolist(),
+                                                     "outward": gl(ow).round(4).tolist(), "weights": [top4(r_) for r_ in rw]}
+    IMPORT["sockets"] = sorted(socks)
+    IMPORT["rims"] = len(rims)
+    stamp("mesh imported: %d parts (%d rigid sources), band %.1f mm, pushed %s" % (len(parts), len(IMPORT["rigid_parts"]), band * 1000, IMPORT["push_to_band_mm"]))
+    z3 = np.zeros((0, 3))
+    return dict(parts=parts, shell=parts, envelope=parts, gore=[], sheet=(z3, np.zeros((0, NB)), np.zeros((0, 3), int)), thick=0.0,
+                lift=band, sockets=socks, rims=rims, roll=None, avoid=[])
+
+
 STYLES = {("top", "plate"): build_plate_top}
+if MESH:
+    STYLES[(SLOT, "mesh")] = build_mesh
 stamp("building %s (%s/%s)" % (PID, SLOT, SPEC_PIECE["style"]))
 B = STYLES[(SLOT, SPEC_PIECE["style"])]()
 G["finish"], G["tube"], G["stitches"] = _finish, _tube, _stitches
@@ -1239,9 +1502,12 @@ NEAR = np.nonzero(((bv0 > lo) & (bv0 < hi)).all(1))[0]
 PUSH = {"rounds": []}
 PUSH_SIGMA, PUSH_CLEAR, PUSH_CAP = PRM.get("push_sigma", 0.012), PRM.get("push_clear", 0.0008), PRM.get("push_cap", 0.006)
 pushed = {}
+# (a free mesh: at rest only unless params.pose_push. Its rigid plates don't bend in a pose, so her skin coming
+# through one there is her own skin folding (an elbow, a shoulder): a rest-pose bump for it only dents the plate;
+# the pose check below still counts it)
 for rnd in range(PRM.get("push_rounds", 4)):
     defs = {}
-    for pname, rots in [("rest", [])] + list(POSES.items()):
+    for pname, rots in [("rest", [])] + ([] if MESH and not PRM.get("pose_push") else list(POSES.items())):
         bv, bn, dg = pose_body(rots)
         r_ = skin_vs_shell(bv, bn, NEAR, tuck, shell_tree(dg))
         du = r_.get("deep_u", np.zeros(len(NEAR)))
@@ -1296,6 +1562,37 @@ for o in made:
         PARTS_OF[o.name] = rigid_parts(o, names)
         n_parts += PARTS_OF[o.name]
 stamp("helpers split; %d rigid parts each on one blend" % n_parts)
+if MESH:
+    # (each `_rigid` source after the helpers' split: how many distinct blends its points carry (1: it never bends))
+    # (a source's parts (its plate and its rivets, split by material) back on ONE common blend after the split, the
+    # mean of all their points', so the rivets never drift off the plate)
+    by_src = {}
+    for o in made:
+        if o.get("source_part", "").endswith("_rigid"):
+            by_src.setdefault(o["source_part"], []).append(o)
+    for sp_, objs_ in by_src.items():
+        tot = {}
+        for o in objs_:
+            gname = {g.index: g.name for g in o.vertex_groups}
+            for v in o.data.vertices:
+                for g in v.groups:
+                    if gname[g.group] in names:
+                        tot[gname[g.group]] = tot.get(gname[g.group], 0.0) + g.weight
+        keep_ = sorted(tot, key=tot.get, reverse=True)[:4]
+        s_ = sum(tot[k] for k in keep_) or 1.0
+        for o in objs_:
+            set_one_blend(o, [(k, tot[k] / s_) for k in keep_])
+            for g in list(o.vertex_groups):
+                if g.name in names and g.name not in keep_:
+                    o.vertex_groups.remove(g)
+    bl_ = {}
+    for o in made:
+        if o.get("source_part", "").endswith("_rigid"):
+            gname = {g.index: g.name for g in o.vertex_groups}
+            for v in o.data.vertices:
+                bl_.setdefault(o["source_part"], set()).add(tuple(sorted((gname[g.group], round(g.weight, 4)) for g in v.groups
+                                                                         if g.weight > 1e-4 and gname[g.group] in names)))
+    IMPORT["blends_per_rigid_part"] = {k: len(v) for k, v in sorted(bl_.items())}
 
 # ------------------------------------------------------------- numbers --
 NUM = {"id": PID, "body_hash": BODY_HASH, "tuck_records": TUCK_N, "tuck_vertices": int(hid)}
@@ -1364,12 +1661,15 @@ def region_gaps():
     return out
 
 
-NUM["gaps_by_place_mm"] = region_gaps()
-_body_bvh = BVHTree.FromPolygons([tuple(p) for p in bv0], [p_.vertices[:] for p_ in me.polygons])
-NUM["standoff_mm"] = {"cups": standoff(f"{PID}.cups", _body_bvh), "gore": standoff(f"{PID}.gore", _body_bvh)}
-NUM["standoff_worst_at"] = FIT.get("standoff_worst_at")
-NUM["cup_extent_mm"] = {"nipple_x": round(float(abs(G["NIPPLE"]["r"][0]) * 1000), 1), "rim_max_abs_x": round(float(np.abs(FIT["rim_r"][:, 0]).max() * 1000), 1),
-                        "rim_min_z_below_nipple": round(float((G["NIPPLE"]["r"][2] - FIT["rim_r"][:, 2].min()) * 1000), 1)}
+if MESH:
+    NUM["import"] = IMPORT       # (a free mesh: no cups, gore, band or straps to measure; its import numbers instead)
+else:
+    NUM["gaps_by_place_mm"] = region_gaps()
+    _body_bvh = BVHTree.FromPolygons([tuple(p) for p in bv0], [p_.vertices[:] for p_ in me.polygons])
+    NUM["standoff_mm"] = {"cups": standoff(f"{PID}.cups", _body_bvh), "gore": standoff(f"{PID}.gore", _body_bvh)}
+    NUM["standoff_worst_at"] = FIT.get("standoff_worst_at")
+    NUM["cup_extent_mm"] = {"nipple_x": round(float(abs(G["NIPPLE"]["r"][0]) * 1000), 1), "rim_max_abs_x": round(float(np.abs(FIT["rim_r"][:, 0]).max() * 1000), 1),
+                            "rim_min_z_below_nipple": round(float((G["NIPPLE"]["r"][2] - FIT["rim_r"][:, 2].min()) * 1000), 1)}
 NUM["rivet_rows"] = RIVET_ROWS
 NUM["gore_shape"] = NUM_FIT
 NUM["rest"]["through_untucked_at"] = nip_rel(bv0[NEAR[R0["through"]]])
@@ -1408,7 +1708,7 @@ for o in made:
 NUM["triangles_by"]["cups_rolled_edge"] = sum(sum(len(p.vertices) - 2 for p in tb["obj"].data.polygons) for tn, tb in CAP["tubes"].items() if tn.startswith(f"{PID}.cups_bind"))
 NUM["parts"] = len(made)
 NUM["push_out"] = PUSH
-NUM["band"] = {"seam_z": [round(BAND["seam_z"][0], 4), round(BAND["seam_z"][1], 4)], "anchor_z": round(BAND["z_anc"], 4),
+NUM["band"] = None if MESH else {"seam_z": [round(BAND["seam_z"][0], 4), round(BAND["seam_z"][1], 4)], "anchor_z": round(BAND["z_anc"], 4),
                "length_mm": round(float(np.linalg.norm(np.diff(BAND["cols"][1], axis=0), axis=1).sum() * 1000), 1),
                "on_plate_mm": round(float(BAND["on_plate"].sum() * PRM.get("band_step", 0.004) * 1000), 1),
                "lift_on_skin_mm": [round(float(BAND["lift"][~BAND["on_plate"]].min() * 1000), 2), round(float(BAND["lift"][~BAND["on_plate"]].max() * 1000), 2)]}
@@ -1448,7 +1748,7 @@ def strap_sets():
     return out
 
 
-STRAP_SETS = strap_sets()
+STRAP_SETS = [] if MESH else strap_sets()
 
 
 def arm_in_torso(bv, tbvh, arm_i):
@@ -1564,7 +1864,7 @@ def pose_check():
             pose_dump(pname, bv, bn, dg)
         except Exception as ex:
             print("POSE DUMP failed", pname, repr(ex))
-        straps_ = strap_check(bv, bn, dg)
+        straps_ = None if MESH else strap_check(bv, bn, dg)
         try:
             g_ = gore_in_pose(bv, dg, gore_rest)
         except Exception as ex:
@@ -1715,6 +2015,12 @@ if SPEC_PIECE.get("hold"):
     row["hold"] = SPEC_PIECE["hold"]
 row["file"] = f"res://art/armor/{PID}.gltf"
 row["tier"] = SPEC_PIECE.get("tier")
+# (armor 9, the rigid-piece rule: a rigid piece is never bent by the garment tuck (Rpg/GarmentTuck.cs Over, HerWear,
+# wearcheck --garment-tuck). A plate style is rigid; a free mesh is when every part of it is `_rigid`.)
+if SPEC_PIECE.get("style") == "plate" or (MESH and IMPORT.get("rigid")):
+    row["rigid"] = True
+if MESH:
+    row["source"] = "mesh"
 rows.append(row)
 rows.sort(key=lambda r: r["id"])
 json.dump(rows, open(ix_path, "w", encoding="utf-8"), indent=1)

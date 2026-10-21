@@ -2417,6 +2417,42 @@
     "arcanist.head"
    ],
    "lore": "A pointed hat gone grey at the brim. It has heard things no hat should."
+  },
+  "riveted_bracers_cut_for_her": {
+   "id": "riveted_bracers_cut_for_her",
+   "name": "Riveted bracers, cut for her",
+   "kind": "bracers",
+   "rarity": 2,
+   "icon": "armor_light",
+   "value": 80,
+   "description": "Riveted bracers, cut for her: a riveted bracers piece, worn over her own.",
+   "wear": [
+    "mar_her_bracers"
+   ]
+  },
+  "riveted_pauldrons_cut_for_her": {
+   "id": "riveted_pauldrons_cut_for_her",
+   "name": "Riveted pauldrons, cut for her",
+   "kind": "shoulders",
+   "rarity": 2,
+   "icon": "armor_light",
+   "value": 80,
+   "description": "Riveted pauldrons, cut for her: a riveted pauldrons piece, worn over her own.",
+   "wear": [
+    "mar_her_pauldrons"
+   ]
+  },
+  "riveted_breastplate_cut_for_her": {
+   "id": "riveted_breastplate_cut_for_her",
+   "name": "Riveted breastplate, cut for her",
+   "kind": "body",
+   "rarity": 2,
+   "icon": "armor_heavy",
+   "value": 80,
+   "description": "Riveted breastplate, cut for her: a riveted top piece, worn over her own.",
+   "wear": [
+    "mar_her_cuirass"
+   ]
   }
  },
  "raritynames": [

@@ -22,7 +22,7 @@ per piece (a control).
 
 Garment tuck (--garment-tuck, as HerWear draws it: Rpg/GarmentTuck.cs, docs/armor/PIECE_SCHEMA.md "Garment tuck"):
 a mixed pair's inner piece is the earlier in the slot order (tools/armor/slot_map.json "order", or --order a,b,..),
-laid down onto her skin under the outer piece's footprint (max of its armor_tuck and armor_cover records, tools/armor/
+laid down (unless it is rigid: its row's "rigid", never laid) onto her skin under the outer piece's footprint (max of its armor_tuck and armor_cover records, tools/armor/
 cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangles all past 0.995 removed (their samples dropped). --tuck-off: that pairing
 without the tuck (the baseline).
 
@@ -367,6 +367,7 @@ def main(argv):
 
     # The pairs, and their rest footprints.
     tests = []
+    RIGID_LAY = {}
     ids = [r["id"] for r in rows if r["id"] in pc]
     for i, a in enumerate(ids):
         for b in ids[i + 1:]:
@@ -388,7 +389,10 @@ def main(argv):
                 O = P0[sA["samples"]]
                 D = N0[sA["near"]]
                 info = None
-                if tuck and not gt_off:
+                if tuck and not gt_off and byid[A].get("rigid"):
+                    info = None     # (the rigid-piece rule: a rigid inner piece is never laid, GarmentTuck.Over)
+                    RIGID_LAY[(A, B)] = {"applied_mm": 0.0, "would_be_mm": round(float(np.linalg.norm(laid(A, B)[0], axis=1).max() * 1000), 2)}
+                elif tuck and not gt_off:
                     Dd, alive, nmoved, ncull, _ = laid(A, B)
                     O = O + Dd[sA["samples"]]
                     O = np.where(alive[sA["samples"]][:, None], O, 1e3)
@@ -553,7 +557,7 @@ def main(argv):
              "worst_bone": str(bone[body.J[pt, int(body.W[pt].argmax())]]),
              "rest_gap_min_mm": round(x["rest_min_mm"], 2), "rest_gap_median_mm": round(x["rest_med_mm"], 2),
              "per_clip": {c: [round(-v[0] * 1000, 1), int(v[1].sum())] for c, v in x["per_clip"].items()},
-             "laid": x.get("laid"), "reversed": x["reversed"], "lost_share": round(x["lost"] / max(x["seen"], 1), 4)}
+             "laid": x.get("laid"), "rigid_inner": bool(byid.get(A, {}).get("rigid")), "rigid_lay": RIGID_LAY.get((A, B)), "reversed": x["reversed"], "lost_share": round(x["lost"] / max(x["seen"], 1), 4)}
         if A != "skin":
             fi = x["fp"]["idx"]
             e["A_skin_mm_median"] = round(float(np.median(pc[A]["skin_mm"][fi])), 2)
@@ -572,12 +576,12 @@ def main(argv):
         fh.write(f"{'A':18} {'B':18} {'slots':18} {'kind':7} {'worst':>6} {'p99':>6} {'>0.5':>5} {'>2':>5} {'rest>2':>6} "
                  f"{'rmin':>6} {'rmed':>6} {'foot':>5} {'Askin':>5} {'Bskin':>5} {'Bshl':>4} {'OUT':>5} {'OUT>2':>5} {'rOUT>2':>6} worst_clip@frame bone\n")
         for e in out:
-            fh.write(f"{e['A']:18} {e['B']:18} {e['slots']:18} {e['kind']:7} {e['worst_mm']:6.1f} {e['p99_mm']:6.1f} "
+            fh.write(f"{e['A']:18} {e['B']:18} {e['slots']:18} {e['kind']:7} {e['worst_mm'] if e['worst_mm'] is not None else float('nan'):6.1f} {e['p99_mm'] if e['p99_mm'] is not None else float('nan'):6.1f} "
                      f"{e['n_over_0_5']:5d} {e['n_over_2']:5d} {e['rest_n_over_2']:6d} {e['rest_gap_min_mm']:6.1f} "
                      f"{e['rest_gap_median_mm']:6.1f} {e['footprint']:5d} {e.get('A_skin_mm_median', 0):5.1f} "
                      f"{e.get('B_skin_mm_median', 0):5.1f} {e['B_shell_mm_median']:4.1f} {e['out_worst_mm'] or 0:5.1f} {e['out_n_over_2']:5d} "
                      f"{e['rest_out_n_over_2']:6d} {e['worst_clip']}@{e['worst_frame']} {e['worst_bone']}"
-                     f"{' REVERSED' if e['reversed'] else ''}\n")
+                     f"{' REVERSED' if e['reversed'] else ''}{' RIGID-INNER' if e.get('rigid_lay') else ''}\n")
     print(f"wearcheck: {len(out)} tests in {took:.0f} s -> {out_dir}")
 
 

@@ -1,5 +1,77 @@
 [
  {
+  "id": "mar_her_bracers",
+  "outfit": null,
+  "slot": "bracers",
+  "layer": 2,
+  "covers": [
+   "bracers"
+  ],
+  "meshes": [
+   "mar_her_bracers.bracers.rivetbronze",
+   "mar_her_bracers.bracers.steel"
+  ],
+  "tuck": "armor_tuck/mar_her_bracers.bin",
+  "tuck_count": 166,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  },
+  "file": "res://art/armor/mar_her_bracers.gltf",
+  "tier": 2,
+  "rigid": true,
+  "source": "mesh"
+ },
+ {
+  "id": "mar_her_cuirass",
+  "outfit": null,
+  "slot": "top",
+  "layer": 1,
+  "covers": [
+   "top"
+  ],
+  "meshes": [
+   "mar_her_cuirass.top.rivetbronze",
+   "mar_her_cuirass.top.steel"
+  ],
+  "tuck": "armor_tuck/mar_her_cuirass.bin",
+  "tuck_count": 517,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  },
+  "file": "res://art/armor/mar_her_cuirass.gltf",
+  "tier": 2,
+  "rigid": true,
+  "source": "mesh"
+ },
+ {
+  "id": "mar_her_pauldrons",
+  "outfit": null,
+  "slot": "pauldrons",
+  "layer": 3,
+  "covers": [
+   "pauldrons"
+  ],
+  "meshes": [
+   "mar_her_pauldrons.pauldrons.rivetbronze",
+   "mar_her_pauldrons.pauldrons.steel"
+  ],
+  "tuck": "armor_tuck/mar_her_pauldrons.bin",
+  "tuck_count": 3,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  },
+  "file": "res://art/armor/mar_her_pauldrons.gltf",
+  "tier": 2,
+  "rigid": true,
+  "source": "mesh"
+ },
+ {
   "id": "plate_top_etched",
   "outfit": null,
   "slot": "top",

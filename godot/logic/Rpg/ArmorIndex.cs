@@ -33,6 +33,9 @@ public sealed class ArmorPiece
     [JsonPropertyName("tuck_count")] public int? TuckCount { get; set; }
     [JsonPropertyName("body_hash")] public string? BodyHash { get; set; }
     [JsonPropertyName("hold")] public ArmorHold? Hold { get; set; }
+    /// <summary>A rigid piece (a plate style, or a free mesh made only of `_rigid` parts): the garment tuck never bends it
+    /// (GarmentTuck.Over is false with it inner), so its plates keep their shape under any piece over it.</summary>
+    [JsonPropertyName("rigid")] public bool Rigid { get; set; }
     /// <summary>Its own file (res://art/armor/ID.gltf) for a new piece; null: its outfit's heroine_outfit_OUTFIT.gltf.</summary>
     [JsonPropertyName("file")] public string? File { get; set; }
     [JsonPropertyName("tier")] public JsonElement? Tier { get; set; }
