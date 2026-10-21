@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Godot;
@@ -34,7 +35,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim, ownRock, ownRockRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim, ownRock, ownRockRim, ownWall, ownWallRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -114,6 +115,8 @@ public static class KitLook
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         // (our own rocks, tools/assets/env_rocks.py: Stone_Own<Species>, the one stone, OWN_ROCK)
         if (s.ResourceName.StartsWith("Stone_Own")) return cache[key] = Rock(s, look);
+        // (our own town walls, tools/assets/env_house.py: Wall_Own, the trim sheet, OWN_WALL)
+        if (s.ResourceName.StartsWith("Wall_Own")) return cache[key] = Wall();
         // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
         bool mine = foliage && s.ResourceName.Contains("Own");
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
@@ -179,6 +182,46 @@ public static class KitLook
         }
         m.NextPass = rim;
         cache[key] = m;
+        return m;
+    }
+
+    /// <summary>Our own town walls (kit.gdshader's OWN_WALL, OwnWalls): the trim sheet, each house's plaster and
+    /// timber tint by its copy's custom data (godot/data/house_look.json: the palettes and the weathering), grime
+    /// from the house's ground up, stains under the sills; drawn with the see-through window's rim like the rest.</summary>
+    static ShaderMaterial Wall()
+    {
+        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL") };
+        ownWallRim ??= Rim(ownWall);
+        const string dir = "res://art/world/house";
+        var m = new ShaderMaterial { Shader = ownWall };
+        m.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{dir}/house_albedo.jpg"));
+        m.SetShaderParameter("use_normal", true);
+        m.SetShaderParameter("normal_tex", GD.Load<Texture2D>($"{dir}/house_normal.png"));
+        m.SetShaderParameter("aux_tex", GD.Load<Texture2D>($"{dir}/house_aux.png"));
+        m.SetShaderParameter("use_vcolor", false);
+        m.SetShaderParameter("jitter", 0f);
+        m.SetShaderParameter("wind", 0f);
+        var look = "res://data/house_look.json";
+        if (FileAccess.FileExists(look))
+        {
+            using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(look));
+            Vector3 Lin(string hex) { var c = new Color(hex).SrgbToLinear(); return new Vector3(c.R, c.G, c.B); }
+            foreach (var kv in doc.RootElement.EnumerateObject())
+            {
+                if (kv.Name.StartsWith('_')) continue;
+                var v = kv.Value;
+                if (v.ValueKind == JsonValueKind.Array && v[0].ValueKind == JsonValueKind.String)
+                    m.SetShaderParameter(kv.Name, v.EnumerateArray().Select(e => Lin(e.GetString()!)).ToArray());
+                else if (v.ValueKind == JsonValueKind.Number) m.SetShaderParameter(kv.Name, v.GetSingle());
+            }
+        }
+        var rim = new ShaderMaterial { Shader = ownWallRim };
+        foreach (var u in m.Shader.GetShaderUniformList())
+        {
+            var name = (string)u.AsGodotDictionary()["name"];
+            rim.SetShaderParameter(name, m.GetShaderParameter(name));
+        }
+        m.NextPass = rim;
         return m;
     }
 

@@ -159,6 +159,35 @@ vec3 hue_turn(vec3 c, float a) {
 // (foliage: its leaves' undersides are not a roof's; KitLook)
 uniform bool leaves = false;
 
+#ifdef OWN_WALL
+// Our own town walls (tools/assets/env_house.py, OwnWalls, KitLook.Wall): the trim sheet's aux (r its tint class:
+// 1 plaster, .5 timber; g roughness; b a grime noise tiling with its region); each copy's custom data r its house's
+// tint ((i + .5) / 8), g its height above its house's ground, b its own hash, a its treatment; the vertex colour
+// r occlusion, g the stain under a sill, b 1 on timber that takes the house's timber tint.
+uniform sampler2D aux_tex : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec3 plaster_tints[6];  // (godot/data/house_look.json: arrays take no defaults)
+uniform vec3 timber_tints[3];
+uniform float grime_h = 1.4;      // the grime's height above the house's ground (m)
+uniform float grime_dark = 0.4;   // how much darker at the ground
+uniform float splash_h = 0.45;    // the splash band (rain off the street)
+uniform float splash_dark = 0.2;
+uniform float house_rise = 0.12;  // the house's ground storey this much darker than its 6 m line
+uniform float stain_dark = 0.45;  // the streaks under a sill
+uniform float val_noise = 0.1;    // broad value patches over the walls (world space)
+uniform float house_val = 0.06;   // each house a little lighter or darker
+uniform float occl = 0.5;         // the vertex occlusion's reach
+varying vec4 v_wall;
+varying float v_hgt;
+varying vec3 v_wp;
+
+float wall_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float wall_noise(vec2 p) {
+	vec2 i = floor(p), f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(wall_hash(i), wall_hash(i + vec2(1.0, 0.0)), f.x), mix(wall_hash(i + vec2(0.0, 1.0)), wall_hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+#endif
+
 varying float v_up;
 varying float v_jit;
 varying float v_y;
@@ -228,6 +257,11 @@ void vertex() {
 	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
 	v_top = MODEL_MATRIX[3].y + wet_top * length(MODEL_MATRIX[1].xyz);
+#endif
+#ifdef OWN_WALL
+	v_wall = INSTANCE_CUSTOM;
+	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
+	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 #endif
 #ifdef REVEAL
 	// The rim is drawn again only for a piece near the line from her to the
@@ -305,6 +339,33 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	if (use_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+#ifdef OWN_WALL
+	{
+		vec3 ax = texture(aux_tex, UV).rgb;
+		int ti = clamp(int(v_wall.r * 8.0), 0, 5);
+		vec3 tint = vec3(1.0);
+		if (ax.r > 0.75) tint = plaster_tints[ti];
+		else if (ax.r > 0.25 && COLOR.b > 0.5) tint = timber_tints[ti % 3];
+		vec3 col = c.rgb * tint;
+		// broad value patches over the town's walls (a run never reads as one flat paint), each house a little lighter or darker
+		vec2 wq = vec2(v_wp.x + v_wp.z, v_wp.y);
+		float vn = 0.6 * wall_noise(wq * 0.55) + 0.4 * wall_noise(wq * 0.13 + 7.3);
+		col *= 1.0 + val_noise * (2.0 * vn - 1.0) + house_val * (2.0 * wall_hash(v_wall.ra * 17.0) - 1.0);
+		// grime from the house's ground up, its line broken by the sheet's noise; the ground storey darker as a whole;
+		// the splash band at the foot (rain off the street), browner
+		float gn = ax.b;
+		float h = v_hgt;
+		col *= mix(1.0 - grime_dark, 1.0, smoothstep(0.0, grime_h, h + grime_h * 0.4 * (gn - 0.5)));
+		col *= mix(1.0 - house_rise, 1.0, smoothstep(0.0, 6.0, h));
+		col *= mix(vec3(1.0 - splash_dark) * vec3(1.0, 0.94, 0.86), vec3(1.0), smoothstep(0.0, splash_h, h + 0.3 * (gn - 0.5)));
+		// stains under the sills: streaks running down (the sheet's noise stretched down the wall)
+		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
+		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);
+		col *= mix(1.0 - occl, 1.0, COLOR.r);
+		ALBEDO = col;
+		ROUGHNESS = ax.g;
+	}
+#endif
 #ifdef OWN_FOLIAGE
 	// The crown's normals point out from the trunk on both faces of a card (Godot turns a back
 	// face's round), so a crown shades as one mass; light through the needles from behind; each

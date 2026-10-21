@@ -1,0 +1,281 @@
+{
+ "_doc": "Our own props in this zone. walls (E9b1; OwnWalls.cs): pieces maps a KayKit village piece of props.json to our presets (tools/assets/env_house.json, art/world/house) as treatments: a house takes the list of its treatment (houses: \"<h>\": [plaster tint 0-5, treatment 0 plain / 1 crosses / 2 braces], written by tools/godot/house_ids.py so neighbors differ), each copy one of that list by its place; an empty list drops the kit piece (its window glass, door frame or door is in our wall piece).",
+ "walls": {
+  "pieces": {
+   "village/Wall_UnevenBrick_Straight": [
+    [
+     "stone_a",
+     "stone_b",
+     "stone_c"
+    ]
+   ],
+   "village/Corner_Exterior_Brick": [
+    [
+     "quoin_a",
+     "quoin_b"
+    ]
+   ],
+   "village/Corner_Exterior_Wood": [
+    [
+     "post"
+    ]
+   ],
+   "village/Wall_Plaster_Straight": [
+    [
+     "plaster_plain_a",
+     "plaster_plain_b"
+    ],
+    [
+     "plaster_x"
+    ],
+    [
+     "plaster_k",
+     "plaster_k2"
+    ]
+   ],
+   "village/Wall_Plaster_Straight_Base": [
+    [
+     "base_plain"
+    ],
+    [
+     "base_x"
+    ],
+    [
+     "base_k"
+    ]
+   ],
+   "village/Wall_UnevenBrick_Window_Wide_Round": [
+    [
+     "stone_win_wide_round"
+    ]
+   ],
+   "village/Wall_Plaster_Window_Wide_Round": [
+    [
+     "plaster_win_wide_round"
+    ],
+    [
+     "plaster_win_wide_round_framed"
+    ],
+    [
+     "plaster_win_wide_round_framed"
+    ]
+   ],
+   "village/Window_Wide_Round1": [],
+   "village/WindowShutters_Wide_Round_Open": [
+    [
+     "shutters_wide_round"
+    ]
+   ],
+   "village/Wall_UnevenBrick_Window_Thin_Round": [
+    [
+     "stone_win_thin_round"
+    ]
+   ],
+   "village/Wall_Plaster_Window_Thin_Round": [
+    [
+     "plaster_win_thin_round"
+    ],
+    [
+     "plaster_win_thin_round_framed"
+    ],
+    [
+     "plaster_win_thin_round_framed"
+    ]
+   ],
+   "village/Window_Thin_Round1": [],
+   "village/WindowShutters_Thin_Round_Open": [
+    [
+     "shutters_thin_round"
+    ]
+   ],
+   "village/Wall_UnevenBrick_Window_Wide_Flat": [
+    [
+     "stone_win_wide_flat"
+    ]
+   ],
+   "village/Wall_Plaster_Window_Wide_Flat": [
+    [
+     "plaster_win_wide_flat"
+    ],
+    [
+     "plaster_win_wide_flat_framed"
+    ],
+    [
+     "plaster_win_wide_flat_framed"
+    ]
+   ],
+   "village/Window_Wide_Flat1": [],
+   "village/WindowShutters_Wide_Flat_Open": [
+    [
+     "shutters_wide_flat"
+    ]
+   ],
+   "village/Wall_UnevenBrick_Door_Round": [
+    [
+     "stone_door_round"
+    ]
+   ],
+   "village/Wall_UnevenBrick_Door_Flat": [
+    [
+     "stone_door_flat"
+    ]
+   ],
+   "village/Wall_Plaster_Door_Round": [
+    [
+     "plaster_door_round"
+    ],
+    [
+     "plaster_door_round_framed"
+    ],
+    [
+     "plaster_door_round_framed"
+    ]
+   ],
+   "village/Wall_Plaster_Door_Flat": [
+    [
+     "plaster_door_round"
+    ],
+    [
+     "plaster_door_round_framed"
+    ],
+    [
+     "plaster_door_round_framed"
+    ]
+   ],
+   "village/DoorFrame_Round_WoodDark": [],
+   "village/DoorFrame_Flat_WoodDark": [],
+   "village/Door_1_Round": [],
+   "village/Door_1_Flat": []
+  },
+  "houses": {
+   "0": [
+    2,
+    2
+   ],
+   "2": [
+    3,
+    0
+   ],
+   "3": [
+    4,
+    1
+   ],
+   "5": [
+    5,
+    2
+   ],
+   "7": [
+    1,
+    1
+   ],
+   "9": [
+    3,
+    0
+   ],
+   "10": [
+    4,
+    1
+   ],
+   "11": [
+    5,
+    2
+   ],
+   "12": [
+    0,
+    0
+   ],
+   "13": [
+    1,
+    1
+   ],
+   "15": [
+    4,
+    2
+   ],
+   "18": [
+    0,
+    0
+   ],
+   "19": [
+    2,
+    1
+   ],
+   "21": [
+    4,
+    2
+   ],
+   "24": [
+    0,
+    0
+   ],
+   "26": [
+    5,
+    1
+   ],
+   "27": [
+    1,
+    1
+   ],
+   "29": [
+    0,
+    0
+   ],
+   "31": [
+    1,
+    1
+   ],
+   "32": [
+    3,
+    0
+   ],
+   "33": [
+    2,
+    2
+   ],
+   "34": [
+    5,
+    0
+   ],
+   "35": [
+    3,
+    0
+   ],
+   "36": [
+    1,
+    2
+   ],
+   "37": [
+    0,
+    2
+   ],
+   "38": [
+    4,
+    1
+   ],
+   "39": [
+    5,
+    2
+   ],
+   "40": [
+    0,
+    0
+   ],
+   "41": [
+    1,
+    1
+   ],
+   "42": [
+    2,
+    2
+   ],
+   "43": [
+    3,
+    0
+   ],
+   "44": [
+    2,
+    1
+   ]
+  }
+ }
+}
