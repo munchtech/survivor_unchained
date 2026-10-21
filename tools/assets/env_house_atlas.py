@@ -186,7 +186,7 @@ def ashlar(h, w, rng):
     fleck = ss(0.78, 0.86, fbm(h, w, 16, 160, rng, 2))
     rust = ss(0.72, 0.85, fbm(h, w, 3, 18, rng, 4))
     lichen = ss(0.74, 0.84, fbm(h, w, 4, 24, rng, 4))
-    col = mix(srgb("#a89a82"), srgb("#958670"), big)
+    col = mix(srgb("#a89a82"), srgb("#958670"), big) * 1.17   # (E9b5: paler, the rubble's hue, so a quoin column or ledge reads lighter than the wall, not as timber)
     col = col * (0.9 + 0.2 * mid[..., None]) * (0.95 + 0.1 * grit[..., None]) * (1 - 0.07 * bat[..., None])
     col = mix(col, srgb("#5a5045"), 0.55 * pits)
     col = mix(col, srgb("#c4b8a2"), 0.35 * fleck)
