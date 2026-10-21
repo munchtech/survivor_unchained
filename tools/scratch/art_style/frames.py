@@ -60,7 +60,7 @@ SETS = {
     # (E7b: our Watch-post ruin and the Barrow at the play camera, the living held off: the post from its middle and by
     # the watchman's chest; the Barrow's graves, and its crypt; one dawn each. x="--props-own-off" is the before)
     "post": (NIGHT + ["--spots-clear", "--spots", "18,32;15.5,29.5"], 2),
-    "postdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "15,31.5"], 1),  # (E7b r2: 3 m west of the yard's middle: the dawn beam across the setts, the sunlit verge, the south stub's warm top)
+    "postdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "19.1,31.6"], 1),  # (E7b r3: in the dawn beam through the gap between the back wall and the east pillar (at 15, 31.5 she stood in the back wall's shadow, near-black); r2: the sunlit verge, the south stub's warm top)
     "barrow": (NIGHT + ["--spots-clear", "--spots", "-16,5;-22.5,2"], 2),
     "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }
