@@ -855,6 +855,27 @@ public static class People
     /// (head_tex/heroine_shadow.png from tools/assets/heroine_features.py:
     /// green from her hairline up), so between the cards there is hair, not
     /// skin: bare, her scalp read as a pale, bald brow, worst under dark hair.</summary>
+    /// <summary>Her scalp's shade colour from her hair's (the skin shader multiplies her head's paint by it, times 2.4,
+    /// under her hair): her hair darkened. With it her shade's reach (scalp_max, 1: all of it where the mask is full,
+    /// not his stubble's 0.85, as what stayed of her head's pale paint greyed it) and its hue ahead of its dark
+    /// (scalp_lead, see heroine_skin.gdshader): face 32, 20 October, her hairline's grey band at the Look. (env SCALP
+    /// "dark=0.3,sat=1,max=1,lead=1" in a shot: tried without a build.)</summary>
+    public static float ScalpMax = 1f, ScalpLead = 1f;
+    public static Color ScalpColour(Color hair)
+    {
+        float dark = 0.3f, sat = 1.0f;
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("SCALP") is { Length: > 0 } sc)
+            foreach (var kv in sc.Split(','))
+            {
+                var t = kv.Split('=');
+                if (t.Length != 2) continue;
+                float v = float.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v;
+            }
+        var c = hair.Darkened(dark);
+        return Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
+    }
+
     public static void HerScalp(Person p, Color hair)
     {
         const string file = "res://art/people/head_tex/heroine_shadow.png";
@@ -868,7 +889,9 @@ public static class People
                 m.SetShaderParameter("shadow_mask", mask);
                 m.SetShaderParameter("scalp_shadow", 1.0f);
                 m.SetShaderParameter("scalp_stubs", 0.0f);
-                m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
+                m.SetShaderParameter("shadow_colour", ScalpColour(hair));
+                m.SetShaderParameter("scalp_max", ScalpMax);
+                m.SetShaderParameter("scalp_lead", ScalpLead);
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");

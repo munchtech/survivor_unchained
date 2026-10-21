@@ -223,6 +223,16 @@ uniform float scalp_shadow = 0.0;
 // even shade: broken into dots, her hairline read as speckled)
 uniform float scalp_stubs = 1.0;
 uniform vec3 shadow_colour : source_color = vec3(0.16, 0.12, 0.1);
+// (how far her scalp's shade goes to shadow_colour where its mask is full: 0.85 as his stubble; hers 1.0
+// (People.HerScalp), as what stayed of her head's paint under it, a pale grey-cream, greyed the shade at her
+// hairline to Oklab C 0.06 against her hair's and forehead's 0.09: face 32, 20 October)
+uniform float scalp_max = 0.85;
+// (and its hue ahead of its dark, where it thins out at her hairline: its tint (shadow_colour at a luminance of 1) and
+// its dark laid one after the other, the tint at ws^scalp_lead, the dark at ws, so the same where it's full but
+// half-way her skin already her hair's hue, not darkened toward grey. 0: one mix, as before (his). Hers 1.0
+// (People.ScalpLead): her hairline's band C 0.061-0.073 at the Look, front, to 0.088-0.091; under 1 overshot, a
+// saturated rim at C 0.11.)
+uniform float scalp_lead = 0.0;
 // His brows (painted with his face; the blue of shadow_mask) dyed his
 // hair's colour: their paint scaled from its own colour (brow_paint) to
 // brow_colour, every hair of it kept.
@@ -461,7 +471,17 @@ void fragment() {
 		float stubs = smoothstep(0.3, 0.7, texture(pores, UV * pore_scale * 1.62 + vec2(0.37, 0.11)).a);
 		float dots = mix(0.55, 1.0, stubs);
 		stubble = clamp(g.r * beard_shadow * dots + g.g * scalp_shadow * mix(1.0, dots, scalp_stubs), 0.0, 1.0);
-		ALBEDO = mix(ALBEDO, ALBEDO * shadow_colour * 2.4, stubble * 0.85);
+		float wb = g.r * beard_shadow * dots * 0.85, ws = g.g * scalp_shadow * mix(1.0, dots, scalp_stubs) * scalp_max;
+		vec3 sc = shadow_colour * 2.4;
+		if (scalp_lead <= 0.0) ALBEDO = mix(ALBEDO, ALBEDO * sc, clamp(wb + ws, 0.0, 0.85));        // (as before: stubble * 0.85)
+		else {
+			// (her scalp's shade: its hue ahead of its dark, so where it thins out at her hairline her skin goes
+			// toward her hair's colour before it darkens, not grey; all of it, the same, where it's full)
+			ALBEDO = mix(ALBEDO, ALBEDO * sc, clamp(wb, 0.0, 1.0));
+			float ls = max(dot(sc, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+			ws = clamp(ws, 0.0, 1.0);
+			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead)) * mix(1.0, ls, ws), vec3(1.0));
+		}
 	}
 	if (has_relief) {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
