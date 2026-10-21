@@ -159,6 +159,9 @@ public partial class Game : Node, IZoneHost
         return face;
     }
 
+    /// <summary>--preset's own skin, when no --skin is given (as the Look's Choose gives it).</summary>
+    static string? QuickSkin() => Args.Get("preset") is string ps ? Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps)?.Skin : null;
+
     /// <summary>A stock survivor straight into the game (tools and tests).</summary>
     void Quick()
     {
@@ -175,7 +178,7 @@ public partial class Game : Node, IZoneHost
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
             // [--hair STYLE --figure F --skin ID]: the heroine by default (the owner, 19 Oct: the male hero is
             // out of testing, and runs without --sex played him); --sex male for the old hero.
-            Sex = Args.Get("sex") == "male" ? null : Sex.Female, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
+            Sex = Args.Get("sex") == "male" ? null : Sex.Female, HairStyle = Args.Get("hair"), Skin = Args.Get("skin") ?? QuickSkin(),
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
             // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
             FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),

@@ -20,6 +20,12 @@ uniform float shine2_width = 40.0;
 uniform float shift = 0.06;
 uniform float shift2 = -0.1;
 uniform float through = 0.5;
+// (20 October, face 32 r2b: the pixie only, People.HerHair. A card is a lock
+// of fibres, lit alike from either side; drawn two-sided, Godot turned its
+// normal in on its underside, so where a lifted card's underside showed, at
+// her crown's outline turned 40 degrees, it took no light: a row of dark
+// beads along it. With fibre_back its underside keeps its outward normal.)
+uniform bool fibre_back = false;
 // Her scalp under the hair (its cap): fine strands lying the way her hair is
 // combed, dark (under the hair), thinning out at her hairline (its vertex
 // alpha) to bare skin. A braid's strands are drawn so too.
@@ -126,6 +132,7 @@ void vertex() {
 }
 
 void fragment() {
+	if (fibre_back && !FRONT_FACING) NORMAL = -NORMAL;
 	vec4 t = texture(strands, UV, strand_bias);
 	// (its shade kept from going too dark or too light, strand to strand)
 	t.r = mix(0.15, 0.85, t.r);
