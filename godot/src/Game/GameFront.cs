@@ -433,6 +433,8 @@ public partial class Game
         {
             draft.FaceShape = pf.Id;
             foreach (var kv in pf.Shape) draft.Face.TryAdd(kv.Key, kv.Value);
+            // (its own skin, as the Look's Choose gives it when none is picked: without it Sunborn shot on Fair)
+            if (pf.Skin is { } fs && SurvivorUnchained.World.Lore.Skins.Any(s => s.Id == fs)) draft.Skin = fs;
         }
         if (Args.Get("skin") is string sk) draft.Skin = sk;
         if (Args.Get("eyes") is string ey) draft.Eyes = ey;
