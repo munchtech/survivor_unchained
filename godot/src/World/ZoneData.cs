@@ -97,6 +97,26 @@ public sealed class ZoneData
             int n = g.GetProperty("count").GetInt32();
             var list = new Transform3D[n];
             for (int i = 0; i < n; i++, at += 12) list[i] = Read(floats, at);
+            // (props_own.json "flora_move": a copy shifted, its height read off the ground, or dropped)
+            if (OwnProps.For(Id)?.FloraMove is { Count: > 0 } moves)
+            {
+                var kept = new List<Transform3D>(n);
+                foreach (var t0 in list)
+                {
+                    var ft = t0;
+                    bool gone = false;
+                    foreach (var (mAt, by) in moves)
+                    {
+                        if (new Vector2(ft.Origin.X, ft.Origin.Z).DistanceTo(mAt) > 0.5f) continue;
+                        if (by is not { } d) { gone = true; break; }
+                        float x = ft.Origin.X + d.X, z = ft.Origin.Z + d.Y;
+                        ft.Origin = new Vector3(x, ft.Origin.Y + (float)(Ground.HeightAt(x, z) - Ground.HeightAt(ft.Origin.X, ft.Origin.Z)), z);
+                        break;
+                    }
+                    if (!gone) kept.Add(ft);
+                }
+                list = kept.ToArray();
+            }
             // The kind's look: wind, its leaves' colours (sRGB hex, as the web
             // game writes them; linear here, as three.js makes them) and moss.
             Color? la = null, lb = null;

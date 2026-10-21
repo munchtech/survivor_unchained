@@ -343,6 +343,15 @@ public partial class ZoneView : Node3D
             {
                 // A torch of the zone's own (props_own.json "lit", E7b: the Watch-post's): its flame and its own small light.
                 var tf = FlameKit.Add(holder, Vector3.Zero, FlameKind.Torch, false, 0.8f, light: true);
+                // (props_own.json "lit_light": its pool on the ground under it, E7b r3)
+                if (own0 is { } && OwnProps.For(Data.Id)?.LitLight is { } ll && tf.Light is { } tl)
+                {
+                    if (ll.Color is Color lc) tl.LightColor = lc;
+                    if (ll.Range > 0) tl.OmniRange = ll.Range;
+                    if (ll.Att > 0) tl.OmniAttenuation = ll.Att;
+                    tf.Energy *= ll.Energy;
+                    tl.LightEnergy = tf.Energy;
+                }
                 tf.Transform = InLandmarks(holder).AffineInverse() * new Transform3D(Basis.Identity, at);
                 foreach (var c in tf.FindChildren("*", "MeshInstance3D", true, false))
                     if (c is MeshInstance3D card && card.Mesh?.SurfaceGetMaterial(0) is ShaderMaterial fm)

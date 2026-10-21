@@ -18,7 +18,8 @@ namespace SurvivorUnchained.View;
 /// under it ("bare": radius, and how far out the grass thins, times it; with the fires, the first four);
 /// "lamps" gives a lamp holder's light its own colour, energy and reach (by its glow node); "nudge" [x, z, dx, dz, degrees]
 /// shifts and turns the preset standing in for a kit piece at x, z (a chest set off a log's end); "drop" names landmarks
-/// that go (the web game's unlit standing lantern by the camp, which read as an iron cage).
+/// that go (the web game's unlit standing lantern by the camp, which read as an iron cage); "flora_move" [x, z, dx, dz]
+/// shifts a tree of the zone's flora (or [x, z] drops it), read where the flora is loaded (ZoneData).
 /// </summary>
 public static class OwnProps
 {
@@ -34,7 +35,7 @@ public static class OwnProps
     /// whether the made piece stays under them (Over), and their scale in the piece's frame (a tree of ours).</summary>
     public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
     public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
-        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null);
+        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -98,7 +99,20 @@ public static class OwnProps
             // lit: [x, z] of wall torches the web game left without a glow (no zone light): each burns with a flame and light of its own.
             var lit = new List<Vector2>();
             if (r.TryGetProperty("lit", out var lt)) foreach (var g in lt.EnumerateArray()) lit.Add(new Vector2(g[0].GetSingle(), g[1].GetSingle()));
-            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit);
+            // flora_move: [x, z, dx, dz] shifts the flora copy whose trunk stands within half a metre of x, z (its ground height
+            // follows); [x, z] alone drops it (a canopy thinned where it shades a place: the post's dawn sun, E7b).
+            var fm = new List<(Vector2 At, Vector2? By)>();
+            if (r.TryGetProperty("flora_move", out var fmv))
+                foreach (var m in fmv.EnumerateArray())
+                    fm.Add((new Vector2(m[0].GetSingle(), m[1].GetSingle()), m.GetArrayLength() > 3 ? new Vector2(m[2].GetSingle(), m[3].GetSingle()) : null));
+            // lit_light: those torches' own light (color, energy times the kit torch's, range, att), so it pools on the ground under them.
+            Lamp? litLight = null;
+            if (r.TryGetProperty("lit_light", out var ll))
+            {
+                float F(string n, float d) => ll.TryGetProperty(n, out var v) ? v.GetSingle() : d;
+                litLight = new Lamp(ll.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0));
+            }
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight);
         }
         zones[zone] = z;
         return z;
