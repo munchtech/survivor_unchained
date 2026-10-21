@@ -9398,6 +9398,11 @@ if BODY_OUT:
     # hair that took those weights follow, match_pieces, through the field. Off: NAPE=0)
     if os.environ.get("NAPE", "1") == "1" and float(os.environ.get("NECK_CUT", "0.03")):
         heroine_neck.nape(BODY_OUT)
+    # (21 Oct, the owner's frame from play: her left neck outline jogged out below her jaw. Her graft's top and her
+    # head's lowest skin round her neck's sides and back met halfway each side and faired (positions and normals
+    # only): heroine_neck.fair_seam. Off: NECK_FAIR=0)
+    if os.environ.get("NECK_FAIR", "1") == "1":
+        heroine_neck.fair_seam(BODY_OUT)
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     armor_tuck_rekey(_tuck_pre, BODY_OUT, os.path.dirname(OUT))
     print("BODY", BODY_OUT)

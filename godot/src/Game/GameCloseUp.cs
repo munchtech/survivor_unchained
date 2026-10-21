@@ -13,6 +13,7 @@ namespace SurvivorUnchained.Play;
 public partial class Game
 {
     readonly CloseUp closeUp = new();
+    static readonly float CloseTurn = Args.Has("close-turn") ? (float)Args.Num("close-turn", 0.6f) : 0.6f;
     double closeDrift;
     bool closeDrives;
 
@@ -94,7 +95,8 @@ public partial class Game
         if (turn)
         {
             // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)
-            pv.Turned = cam.Yaw + 0.6f;
+            // (--close-turn R: pictures only, her turn from the lens in radians; -0.6 the mirror, her left side to it)
+            pv.Turned = cam.Yaw + CloseTurn;
             pv.Watch = cam.Camera;
         }
         else if (closeDrives) { pv.Turned = null; pv.Watch = null; }

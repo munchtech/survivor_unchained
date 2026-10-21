@@ -578,3 +578,122 @@ def nape(path, save=True, merge=True):
         out = out[:8] + struct.pack("<I", len(out)) + out[12:]
         open(path, "wb").write(out)
     return _merge_fields(a, b)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Her neck's seam (Face lead 32, 21 October 2026, the owner's frame from play: her LEFT neck outline jogged out
+# partway down below her jaw, in town's close-up with her head turned to her right). Measured on the game's own
+# frame (--hairdump in play: her skin as drawn, the camera, her bones), the jog was her skin's shape, not her
+# weights: the graft's top and her head's lowest skin (rest y 1.62-1.65, round her neck's sides and back) carried
+# lumps of 1-3 mm, worse on her left (her graft's left sat 2-3 mm in at rest y 1.59-1.62 where her right did not,
+# her head's neck 1-1.5 mm out to her left): a 1.7 px shelf at 1080 (1.5 mm) on her left, 1.0 px on her right.
+# Weights mirrored from her right changed nothing (1.74 -> 1.69 px); her right's shape mirrored onto her left took
+# it to 1.06. heroine_throat_skin.soften fairs her neck's front and sides but holds the skin near the weld, and
+# ease_nape is weights only, so nothing faired the seam's band. Here it is faired: Taubin (lambda/mu, so it takes
+# lumps out without shrinking her neck), the welded skin of her graft and head between FAIR_Y, faded over
+# FAIR_FADE at each end and round her neck from FAIR_TH off her front (her throat and the skin under her chin
+# held), each point moved along its normal only (no sliding: its weights and UVs stay where they were). Positions
+# and normals only, at rest (the cut moves the head's joint, not points), so the same on a built glb as in the
+# build; once (FAIR_MARK). Off: NECK_FAIR=0.
+FAIR_Y = (1.60, 1.68)             # (rest y, m: the band faired, whole between, faded over FAIR_FADE outside)
+FAIR_FADE = 0.01
+FAIR_TH = (45.0, 65.0)            # (deg round her neck from her front: none within the first, whole past the second)
+FAIR_ITERS = int(os.environ.get("NECK_FAIR_ITERS", "150"))   # (lambda/mu pairs: 80 -> 0.66 px left, 150 -> 0.47)
+FAIR_LM = (0.5, -0.53)
+FAIR_SYM = float(os.environ.get("NECK_FAIR_SYM", "1.0"))   # (share of her two sides' difference taken out first)
+FAIR_MARK = "heroine_neck_fair"
+
+
+def fair_seam(path, save=True):
+    """Her graft's top and her head's lowest skin faired round her neck's sides and back (see above). Returns the
+    largest move (m), or None when the glb has had it."""
+    import numpy as np
+    import scipy.sparse as sp
+    G = _Gl(path)
+    if G.g.get("asset", {}).get("extras", {}).get(FAIR_MARK):
+        print("NECK_FAIR: %s has had it" % path)
+        return None
+    prims, kind, Ps, off, wid, U, Dw, E, c = _nape_mesh(G)
+    nw = len(U)
+    body = np.zeros(nw, bool)
+    for k, kk in enumerate(kind):
+        if kk not in ("skin_graft", "skin_head"):
+            body[wid[off[k]:off[k + 1]]] = True
+    th = np.degrees(np.arctan2(U[:, 0] - c[0], U[:, 2] - c[2]))
+    r = np.hypot(U[:, 0] - c[0], U[:, 2] - c[2])
+
+    def ss(x):
+        x = np.clip(x, 0, 1)
+        return x * x * (3 - 2 * x)
+    f = ss((U[:, 1] - FAIR_Y[0] + FAIR_FADE) / FAIR_FADE) * ss((FAIR_Y[1] + FAIR_FADE - U[:, 1]) / FAIR_FADE) * \
+        ss((np.abs(th) - FAIR_TH[0]) / (FAIR_TH[1] - FAIR_TH[0])) * (r < NAPE_BOX[2]) * ~body
+    A = sp.coo_matrix((np.ones(2 * len(E)), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(nw, nw)).tocsr()
+    Wn = (sp.diags(1 / np.maximum(np.asarray(A.sum(1)).ravel(), 1)) @ A).tocsr()
+    F = np.concatenate([G.get(p["indices"]).reshape(-1, 3).astype(int) + off[k] for k, p in enumerate(prims)])
+    Tw = wid[F]
+    Tw = Tw[(Tw[:, 0] != Tw[:, 1]) & (Tw[:, 1] != Tw[:, 2]) & (Tw[:, 2] != Tw[:, 0])]
+
+    def vn(X):
+        q = np.cross(X[Tw[:, 1]] - X[Tw[:, 0]], X[Tw[:, 2]] - X[Tw[:, 0]])
+        n = np.zeros_like(X)
+        for k in range(3):
+            np.add.at(n, Tw[:, k], q)
+        return n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    N0 = vn(U)
+    X = U.copy()
+    if FAIR_SYM > 0:
+        # (first her two sides met halfway, each point along its normal by half its distance from the other side's
+        # skin mirrored (the plane through her neck's axis), so the faired band is the same each side)
+        from scipy.spatial import cKDTree
+        band = (U[:, 1] > FAIR_Y[0] - 2 * FAIR_FADE) & (U[:, 1] < FAIR_Y[1] + 2 * FAIR_FADE) & (r < NAPE_BOX[2])
+        bi = np.nonzero(band)[0]
+        M = U[bi] * [-1, 1, 1] + [2 * c[0], 0, 0]
+        MN = N0[bi] * [-1, 1, 1]
+        mi = np.nonzero(f > 0)[0]
+        d, j = cKDTree(M).query(U[mi], k=4)
+        sd = np.einsum("nkj,nkj->nk", U[mi][:, None] - M[j], MN[j]).mean(1)
+        sd[d[:, 0] > 0.006] = 0
+        X[mi] -= (FAIR_SYM * 0.5 * sd * f[mi])[:, None] * N0[mi]
+    for _ in range(FAIR_ITERS):
+        for lm in FAIR_LM:
+            X = X + lm * f[:, None] * (Wn @ X - X)
+    V = U + np.einsum("ij,ij->i", X - U, N0)[:, None] * N0
+    mv = np.linalg.norm(V - U, axis=1)
+    # (normals: each point's own turned by its surface's change, so her shading's smoothing is kept)
+    dN = vn(V) - N0
+    for k, p in enumerate(prims):
+        if kind[k] not in ("skin_graft", "skin_head"):
+            continue
+        ix = wid[off[k]:off[k + 1]]
+        if mv[ix].max() < 1e-6:
+            continue
+        G.put(p["attributes"]["POSITION"], V[ix].astype(np.float32))
+        if "NORMAL" in p["attributes"]:
+            Nr = G.get(p["attributes"]["NORMAL"]).astype(float) + dN[ix] * (mv[ix] > 1e-7)[:, None]
+            G.put(p["attributes"]["NORMAL"], (Nr / np.maximum(np.linalg.norm(Nr, axis=1, keepdims=True), 1e-12)).astype(np.float32))
+    print("NECK_FAIR: %d points of her neck's seam band faired, largest move %.2f mm, mean %.2f mm" %
+          (int((mv > 1e-5).sum()), mv.max() * 1000, mv[mv > 1e-5].mean() * 1000 if (mv > 1e-5).any() else 0))
+    if save:
+        G.save()
+        _mark(path, FAIR_MARK, {"y": FAIR_Y, "fade": FAIR_FADE, "th": FAIR_TH, "iters": FAIR_ITERS, "lm": FAIR_LM, "sym": FAIR_SYM})
+    return float(mv.max())
+
+
+def _mark(path, key, val):
+    """The glb's asset extras given key: val (a step's done-mark)."""
+    d = open(path, "rb").read()
+    jl = struct.unpack("<I", d[12:16])[0]
+    g = json.loads(d[20:20 + jl])
+    g.setdefault("asset", {}).setdefault("extras", {})[key] = val
+    js = json.dumps(g, separators=(",", ":")).encode()
+    js += b" " * ((4 - len(js) % 4) % 4)
+    out = d[:12] + struct.pack("<I", len(js)) + d[16:20] + js + d[20 + jl:]
+    out = out[:8] + struct.pack("<I", len(out)) + out[12:]
+    open(path, "wb").write(out)
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 2 and sys.argv[1] == "fair":
+        for p_ in sys.argv[2:]:
+            fair_seam(p_)
