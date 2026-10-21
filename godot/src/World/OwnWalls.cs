@@ -35,6 +35,7 @@ public sealed class OwnWalls
     readonly HashSet<string> byRoof = new();
     readonly Dictionary<int, float> ground = new();
     ZoneData? zone;
+    readonly List<(Vector3 At, float Foot)> feet = new();
     readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data)>> groups = new();
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
@@ -85,6 +86,7 @@ public sealed class OwnWalls
         var k = (preset, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
         if (!groups.TryGetValue(k, out var l)) groups[k] = l = new();
         l.Add((at, data));
+        if (!isRoof && ground.TryGetValue(house, out var gf)) feet.Add((at.Origin, gf));
         return true;
     }
 
@@ -138,6 +140,13 @@ public sealed class OwnWalls
             for (int j = 0; j < h; j++)
                 for (int i = 0; i < w; i++)
                     img.SetPixel(i, j, new Color(zone.HeightAt(x0 + (i + 0.5f) * (x1 - x0) / w, z0 + (j + 0.5f) * (z1 - z0) / h), 0, 0));
+            // (the terrain is pressed down under the houses: within 1.2 m of a wall piece the ground is at least its house's foot,
+            // where the street meets the wall)
+            float sx = w / (x1 - x0), sz = h / (z1 - z0);
+            foreach (var (p, foot) in feet)
+                for (int j = Mathf.Max(0, (int)((p.Z - 1.2f - z0) * sz)); j <= Mathf.Min(h - 1, (int)((p.Z + 1.2f - z0) * sz)); j++)
+                    for (int i = Mathf.Max(0, (int)((p.X - 1.2f - x0) * sx)); i <= Mathf.Min(w - 1, (int)((p.X + 1.2f - x0) * sx)); i++)
+                        if (img.GetPixel(i, j).R < foot + 0.04f) img.SetPixel(i, j, new Color(foot + 0.04f, 0, 0));
             KitLook.SetGround(ImageTexture.CreateFromImage(img), new Vector4(x0, z0, x1 - x0, z1 - z0));
         }
         foreach (var ((preset, _, _), list) in groups)
