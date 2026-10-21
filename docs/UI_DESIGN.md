@@ -555,18 +555,41 @@ Continue; side panels on plates with plaques take focus. **Why kept**: short
 (Hick) and in the world; only light touches in the second pass.
 
 ### 7.2 Making a survivor
-**Composition** (second pass, `create_b_crested` over `create_a_rows`): a
-forged column down the left (the painted plate, running off the screen's
-edge), the figure by the fire in the middle, the choice read closely on a
-plate at the right, and who they are becoming on a **banner** at the figure's
-feet ("NAMELESS · Hunter Warden"). In the column: the four steps as a **road
-of medallions** (I Calling, II Arms, III Origin, IV Name) on LB/RB, then the
-choices as crested cards, each with its medallion mark, a name and a line.
-The figure changes at once. Pad: A takes a choice, A again moves on;
-left/right move the figure slider; on the name step a pad is offered "a name
-from the road" (it cannot type). **Why**: every choice shows its consequence
-before the commitment (R9), a pad can finish creation without a keyboard, and
-the fire stays the centre of the screen.
+**Two screens** (20 October 2026, the owner: "for character creation we can
+probably dial it back. no sliders. the faces can be a cycle through with arrows
+(and just face 1, 2, 3 no names) same with hair. eyes can show as they are its
+neat. ... creation should basically be pick calling /arms and look/name . just
+the 2 screens"). The figure by the fire stands in the middle between two panels
+over the world (no fades): the choices on the left, the group last touched read
+closely on the right. LB/RB (or [ and ]) turn the screens on the chain at the
+column's head; A or Enter takes a choice, and on one already taken walks on.
+
+**I. Calling and arms.** "A woman", and "A man" greyed with a quiet "coming
+later": he is not pressable, the keys never come to him, and no picture of him
+is shown until his own model ships. Then the four callings as rows (mark, name,
+line); the weapon (the calling's two or three, as rows); the art in hand (the
+four it starts with as words, the chosen one's kind and pace under them); the
+origin (four words, its summary under them). The origin stays here as a row,
+not a screen, because it is a real choice: it gives traits, things carried and
+story openings. The right panel reads the calling, the arms or the origin,
+whichever was touched last; the name and calling lie on the ground at her feet.
+
+**II. Look and name**, all on one page, no sliders: Face as an arrow cycle
+(`<  Face 3/10  >`, numbered, no names; a face is taken whole, its shape and its
+own skin and eyes), Hair the same over her cuts (braid, ponytail, pixie), the
+hair's colour, her eyes (the irises as they are) and her skin as beads, the
+paint on her face as a cycle ("No paint", then "Paint 1/7"...), then her name on
+its rule with "A name from the road" (a pad cannot type). Left and right turn a
+cycle and walk the beads; the arrows are drawn chevrons, ember under the pointer
+or the focus, no box. The figure is framed for the row last touched: the face's
+rows bring her face near, the hair's show her head and shoulders turned so the
+cut shows; drag, the wheel, a double click or the right stick still turn her and
+bring her near. The right panel reads back who they are, and how to turn her.
+**Why**: the owner wants creation short and readable; numbered cycles say there
+is more to see without naming faces; every choice still shows at once on her
+(R9), a pad can finish without a keyboard, and the fire stays the centre of the
+screen. The outfit palette, cloak dye and hand-shaped face are kept in the data
+(saves load as they were) but no longer offered.
 
 ### 7.3 Pause
 **Composition** (second pass, `pause_b_side` over `pause_a_box`): the game

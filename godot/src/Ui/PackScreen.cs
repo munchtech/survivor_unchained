@@ -277,7 +277,7 @@ public partial class InventoryScreen : Overlay
 
     static readonly (string Key, string Name)[] Shown =
     {
-        (Stat.MaxHealth, "Health"), (Stat.Armor, "Armour"), (Stat.Damage, "Damage"), (Stat.CritChance, "Critical"), (Stat.MoveSpeed, "Speed"), (Stat.Regen, "Regeneration"),
+        (Stat.MaxHealth, "Health"), (Stat.Armor, "Armor"), (Stat.Damage, "Damage"), (Stat.CritChance, "Critical"), (Stat.MoveSpeed, "Speed"), (Stat.Regen, "Regeneration"),
     };
 
     static string Format(string key, double v) => key switch

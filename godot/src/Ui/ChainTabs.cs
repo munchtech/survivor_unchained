@@ -92,6 +92,9 @@ public partial class ChainTabs : Control
         TextureFilter = TextureFilterEnum.LinearWithMipmaps;
         bool pad = Controls.Instance?.UsingPad == true;
         row = Style.H(gap);
+        // (with keys at its ends, the row is as high with the keyboard's caps as with the pad's bumpers,
+        // so a panel under it does not move when the device changes)
+        if (ends != null) row.CustomMinimumSize = new Vector2(0, 26);
         if (pad) row.AddChild(Style.PadButton("LB"));
         for (int i = 0; i < tabs.Length; i++)
         {

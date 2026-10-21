@@ -16,6 +16,7 @@ public static class Grass
     public static MultiMeshInstance3D Build(ZoneData z, Vector2 centre, float radius, float cell = 0.3f)
     {
         if (z.Place != null && z.GrassMask != null) return Arena(z, centre, radius, cell);
+        if (Dressing.FloraOwn) return Own(z, centre, radius, cell);
         // A tuft: seven thin tapered blades fanned out from one root, each
         // three segments, leaning outward by its own amount; x across a
         // blade, y up (0..1). Its colour for the shader rides in UV2: the
@@ -73,6 +74,67 @@ public static class Grass
         for (int i = 0; i < at.Count; i++) mm.SetInstanceTransform(i, at[i]);
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/grass.gdshader") };
+        Meadow(mat, z, centre, radius);
+        blade.SurfaceSetMaterial(0, mat);
+        return new MultiMeshInstance3D
+        {
+            Multimesh = mm, Name = "Grass", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            // It is wherever the survivor is: never culled as a whole.
+            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
+        };
+    }
+
+    /// <summary>Our own meadow (E4h; --flora-kit keeps the tufts above): a painted clump card per cell
+    /// (shaders/grass_own.gdshader), the zone's grass kind from flora_species.json (FloraSpecies.GrassFor): its
+    /// atlas, card, drifts and colour. The card is two quads up (the lower third stiff, the rest bending), turned
+    /// to the camera in the shader; the grid is the picture's quality times the kind's "cell".</summary>
+    static MultiMeshInstance3D Own(ZoneData z, Vector2 centre, float radius, float cell)
+    {
+        var k = FloraSpecies.GrassFor(z.Id);
+        float F(string n, float d) => k.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : d;
+        Vector2 V2(string n, Vector2 d) => k.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.Array ? new(v[0].GetSingle(), v[1].GetSingle()) : d;
+        var card = new ArrayMesh();
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = new Vector3[] { new(-0.5f, 0, 0), new(0.5f, 0, 0), new(-0.5f, 0.33f, 0), new(0.5f, 0.33f, 0), new(-0.5f, 1, 0), new(0.5f, 1, 0) };
+        arrays[(int)Mesh.ArrayType.Normal] = new[] { Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up, Vector3.Up };
+        arrays[(int)Mesh.ArrayType.TexUV] = new Vector2[] { new(0, 0), new(1, 0), new(0, 0.33f), new(1, 0.33f), new(0, 1), new(1, 1) };
+        arrays[(int)Mesh.ArrayType.Index] = new[] { 0, 2, 1, 1, 2, 3, 2, 4, 3, 3, 4, 5 };
+        card.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        float step = cell * F("cell", 1.15f);
+        int n = (int)(radius * 2 / step);
+        var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = card, InstanceCount = n * n };
+        var rng = new RandomNumberGenerator { Seed = 7 };
+        int i = 0;
+        for (int j = 0; j < n; j++)
+            for (int q = 0; q < n; q++)
+            {
+                float x = centre.X - radius + (q + rng.Randf()) * step, zz = centre.Y - radius + (j + rng.Randf()) * step;
+                mm.SetInstanceTransform(i++, new Transform3D(Basis.Identity, new Vector3(x, 0, zz)));
+            }
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/grass_own.gdshader") };
+        Meadow(mat, z, centre, radius);
+        mat.SetShaderParameter("atlas", GD.Load<Texture2D>($"res://art/world/flora/{k.GetProperty("atlas").GetString()}_atlas.png"));
+        mat.SetShaderParameter("card", V2("card", new(0.55f, 0.5f)));
+        mat.SetShaderParameter("drift", V2("drift", new(0.4f, 0.6f)));
+        mat.SetShaderParameter("yaw", F("yaw", 35));
+        mat.SetShaderParameter("flower_share", F("flower_share", 0.04f));
+        mat.SetShaderParameter("flower_cells", F("flower_cells", 2));
+        if (k.TryGetProperty("shader", out var sh))
+            foreach (var kv in sh.EnumerateObject())
+                mat.SetShaderParameter(kv.Name == "night" ? "night_tint" : kv.Name, kv.Value.ValueKind == JsonValueKind.Array
+                    ? new Vector3(kv.Value[0].GetSingle(), kv.Value[1].GetSingle(), kv.Value[2].GetSingle()) : kv.Value.GetSingle());
+        card.SurfaceSetMaterial(0, mat);
+        return new MultiMeshInstance3D
+        {
+            Multimesh = mm, Name = "Grass", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
+        };
+    }
+
+    /// <summary>A meadow material's ground: the zone's paint, masks, frost, heights and wrap (both meadows).</summary>
+    static void Meadow(ShaderMaterial mat, ZoneData z, Vector2 centre, float radius)
+    {
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         // The paint as the ground draws it, and the road's mask: none on its made surface or in the ruts.
         var paint = GroundPaint.Of(z);
@@ -98,13 +160,6 @@ public static class Grass
         mat.SetShaderParameter("heights", ImageTexture.CreateFromImage(Image.CreateFromData(g.Res, g.Res, false, Image.Format.Rf, hb)));
         mat.SetShaderParameter("h_size", (float)g.Size);
         mat.SetShaderParameter("h_res", (float)g.Res);
-        blade.SurfaceSetMaterial(0, mat);
-        return new MultiMeshInstance3D
-        {
-            Multimesh = mm, Name = "Grass", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            // It is wherever the survivor is: never culled as a whole.
-            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
-        };
     }
 
     /// <summary>A tussock: long blades arching out from one root, the outer
