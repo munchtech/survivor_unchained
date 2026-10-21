@@ -153,6 +153,38 @@ vec2 g_uv(int i, vec3 p, vec3 n, vec3 px, vec3 py, out mat3 tbn, out vec2 dx, ou
 
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
+// E6c: one layer of the river bed's loose stones, the nearest to p (m): a stone in a cell of 'cell' m by chance 'dens' (x0
+// the stone's drift is looked up at its own centre, so a drift's edge never cuts a stone), radius rmin..rmax m on a power
+// law (most near rmin), up to 2.5x as long as wide, lying within 20 deg of the flow (+x). Each reaches at most a cell from
+// its own, so the four cells round the nearest corner hold every stone that can cover p. Returns x its distance in radii
+// (1 its edge), y its id, zw its slope (the dome's world xz, -1..1 at the edge).
+vec4 bed_stone(vec2 p, float cell, float dens, float rmin, float rmax, float drift_k, sampler2D nt) {
+	vec2 q = p / cell;
+	vec2 q0 = floor(q - 0.5);
+	vec4 best = vec4(9.0, 0.0, 0.0, 0.0);
+	for (int j = 0; j <= 1; j++) for (int i = 0; i <= 1; i++) {
+		vec2 cid = q0 + vec2(float(i), float(j));
+		float dn = dens;
+		if (drift_k > 0.0) {
+			vec2 cc = (cid + 0.5) * cell;
+			dn *= smoothstep(0.52, 0.66, textureLod(nt, cc * 0.061 + 0.37, 0.0).r * 0.75 + textureLod(nt, cc * 0.29 + 0.71, 0.0).r * 0.25);
+		}
+		if (hash12(cid + 41.7) >= dn) continue;
+		float h1 = hash12(cid + 5.3);
+		float r = rmin * pow(rmax / rmin, h1 * h1 * h1) / cell;
+		float asp = min(1.0 + 1.5 * hash12(cid + 3.1) * hash12(cid + 8.9), 0.95 / r);
+		float ang = (hash12(cid + 23.1) - 0.5) * 0.7;
+		vec2 ax = vec2(cos(ang), sin(ang));
+		float reach = r * max(asp, 1.0);
+		vec2 c = cid + 0.5 + (vec2(hash12(cid), hash12(cid + 17.3)) - 0.5) * 2.0 * max(0.95 - reach, 0.0);
+		vec2 dq = q - c;
+		vec2 l = vec2(dot(dq, ax) / asp, dot(dq, vec2(-ax.y, ax.x))) / r;
+		float d = length(l);
+		if (d < best.x) best = vec4(d, h1 + hash12(cid + 2.2), ax * (l.x / asp) + vec2(-ax.y, ax.x) * l.y);
+	}
+	return best;
+}
+
 // One material's three maps at uv (layer `ly`; the setts from their own arrays).
 void fetch3(int k, vec2 uv, float ly, vec2 dx, vec2 dy, out vec4 a, out vec4 n, out vec4 h) {
 	if (k == SETTS) {
@@ -528,37 +560,35 @@ void fragment() {
 			// (the ground's own relief and occlusion silted over too: a path's setts left their joints in the bed)
 			n_w = normalize(mix(n_w, n_geo, bk_sunk * 0.9));
 			ao = mix(ao, 1.0, bk_sunk * 0.9);
-			// River stones lying loose in it: at most one a 0.26 m cell, gathered in drifts (pebbles 0.85: about a third of the bed), each its own
-			// size (radius 5-20 cm, so 10-40 cm across) and place; rounded (a dome's normal), its own tone, with a soft
-			// shadow in the silt at its foot. No joints: the silt runs between them. Gone past ~0.6 m deep.
-			vec2 q = w / 0.26;
-			vec2 qi = floor(q);
-			float sd = 9.0, sr = 1.0, shid = 0.0, occ = 1.0;
-			vec2 sv = vec2(0.0);
-			for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-				vec2 cid = qi + vec2(float(i), float(j));
-				float h0 = hash12(cid + 41.7);
-				// (gathered in drifts a few metres across, with bare silt between: never an even scatter)
-				if (h0 > water_bed.x * (0.75 + 0.5 * nM.g) * smoothstep(0.25, 0.7, nF.r + (hash12(cid + 9.7) - 0.5) * 0.3) * 1.35) continue;
-				float h1 = hash12(cid + 5.3);
-				float r = mix(0.05, 0.2, h1 * sqrt(h1)) / 0.26;
-				vec2 c = cid + 0.5 + (vec2(hash12(cid), hash12(cid + 17.3)) - 0.5) * (1.0 - r);
-				float d = length((q - c) * vec2(1.0, 1.0 + 0.35 * hash12(cid + 3.1))) / r;
-				occ = min(occ, mix(0.8, 1.0, smoothstep(0.9, 1.45, d)));
-				if (d < sd) { sd = d; sr = r; shid = h0 + h1; sv = (q - c) / r; }
-			}
+			// River stones lying loose in it (E6c, judge r2: never an even scatter of discs): two layers, pebbles and cobbles
+			// 8-60 cm across in drifts 2-4 m wide (at least half the bed bare silt) and specks 3-10 cm, fewer outside them;
+			// each its own tone about the silt's. As the water deepens it veils them: their lit and shaded sides and their
+			// foot's shade fade by e every 'relief' m (water_silt.a), so past 0.2 m only the tones' mottle is left, no rims.
+			// Gone past ~0.6 m deep.
 			float bk_deep = water_level.x - w_pos.y;
-			float aa = fwidth(sd) * 1.5 + 0.04;
-			float bk_peb = (1.0 - smoothstep(1.0 - aa, 1.0, sd)) * (1.0 - smoothstep(0.45, 0.75, bk_deep));
-			// (each its own tone, from darker than the silt to a pale grey; the edge a little darker where it beds in)
-			float st = fract(shid * 7.31);
-			vec3 bk_stone = mix(bk_silt * vec3(0.72, 0.74, 0.76), vec3(dot(bk_silt, vec3(0.333))) * 1.3, st) * (0.85 + 0.25 * fract(shid * 3.17));
-			bk_stone *= 0.8 + 0.2 * (1.0 - sd * sd);
-			bk_bedc *= mix(1.0, occ, 1.0 - smoothstep(0.45, 0.75, bk_deep));
+			float bk_fade = exp(-max(bk_deep, 0.0) / max(water_silt.a, 0.01));
+			float bk_gone = 1.0 - smoothstep(0.45, 0.75, bk_deep);
+			// (the drift: the noise's R is cells a quarter of its tile, 4 m at nM's scale, broken at its edge by nF's 0.9 m)
+			float bk_drift = smoothstep(0.52, 0.66, nM.r * 0.75 + nF.r * 0.25);
+			vec4 sa = bed_stone(w, 0.4, water_bed.x * 0.95, 0.04, 0.3, 1.0, noise_tex);
+			vec4 sb = bed_stone(w + 7.3, 0.12, water_bed.x * (0.15 + 0.55 * bk_drift), 0.015, 0.05, 0.0, noise_tex);
+			float aa_a = fwidth(sa.x) * 1.5 + 0.12, aa_b = fwidth(sb.x) * 1.5 + 0.12;
+			float ma = 1.0 - smoothstep(1.0 - aa_a, 1.0, sa.x), mb = 1.0 - smoothstep(1.0 - aa_b, 1.0, sb.x);
+			vec4 sn = ma >= mb ? sa : sb;
+			float bk_peb = max(ma, mb) * bk_gone;
+			// (each its own tone, from a cool grey under the silt to a pale one over it: under the night's water, where the bed
+			// is a third of what is seen, about +-15% of the value; its shading is what the depth takes)
+			float st = fract(sn.y * 7.31), sj = fract(sn.y * 3.17);
+			vec3 bk_grey = vec3(dot(bk_silt, vec3(0.333)));
+			vec3 bk_stone = mix(bk_silt * vec3(0.62, 0.64, 0.66), bk_grey * 1.3, st) * (0.8 + 0.4 * sj);
+			// (rounded at its edge into the silt, a soft gradient, never an outline; the silt at its foot a little shaded)
+			bk_stone *= 1.0 - 0.1 * smoothstep(0.35, 1.0, sn.x) * bk_fade;
+			float occ = mix(0.88, 1.0, smoothstep(0.9, 1.7, min(sa.x, sb.x * 1.4)));
+			bk_bedc *= mix(1.0, occ, bk_fade * bk_gone);
 			bk_bedc = mix(bk_bedc, bk_stone, bk_peb);
-			// (rounded but flattish, as river stones lie: a low dome's normal, so the light models each stone, a lit side and a shaded one)
-			vec3 bk_dome = normalize(vec3(sv.x * 0.6, sqrt(max(1.0 - sd * sd, 0.0)) * 0.8 + 0.35, sv.y * 0.6));
-			n_w = normalize(mix(n_w, bk_dome, bk_peb * bk_sunk));
+			// (rounded but flattish, as river stones lie: a low dome's normal, so the light models each stone in the shallows)
+			vec3 bk_dome = normalize(vec3(sn.z * 0.5, sqrt(max(1.0 - sn.x * sn.x, 0.0)) * 0.8 + 0.45, sn.w * 0.5));
+			n_w = normalize(mix(n_w, bk_dome, bk_peb * bk_sunk * bk_fade));
 			albedo = mix(albedo, bk_bedc, bk_sunk);
 			rough = mix(rough, mix(0.55, 0.75, bk_peb), bk_sunk);
 		}
