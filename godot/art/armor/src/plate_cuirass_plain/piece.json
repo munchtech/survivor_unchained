@@ -17,7 +17,6 @@
   "plate_budget": 3800,
   "rim_probe": 0.004,
   "graft": "leather",
-  "plate_blend": {"spine_03": 0.65, "spine_02": 0.35},
   "band_seam": 0.6,
   "tab": 0.026,
   "neck": 0.11,
@@ -49,7 +48,7 @@
   "back_width": 0.02,
   "push_cap": 0.003,
   "push_tucked_only": true,
-  "tuck_under": {"plates": ["plate"], "edge": 0.3, "full": 0.98, "in": 0.008, "reach": 0.025, "close": 0.004, "bound": true}
+  "tuck_under": {"plates": ["plate"], "edge": 0.3, "full": 0.98, "in": 0.008, "reach": 0.025, "close": 0.004, "bound": true, "horiz": 0.3}
  },
  "adorn": [],
  "covers": ["top"],

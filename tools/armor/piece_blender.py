@@ -2074,9 +2074,20 @@ if TU:
     pv_ = np.array(vs_)
     near_ = np.nonzero(cKDTree(pv_).query(bw_, distance_upper_bound=reach_ + 0.01)[0] < reach_ + 0.01)[0]
     hit_ = np.zeros(len(bw_), bool)
+    # (tuck_under.horiz (the cuirass, c2): also cast along the level part of her normal. In the underbust crease and on
+    # the belly's top under the lower rim her normal points up or down along the plate and the ray missed it, so that
+    # skin was never tucked and came up 5-7 mm through the lower rim in the town runs)
+    hz_ = TU.get("horiz", 0.0)
     for i in near_:
         h_ = ttree_.ray_cast(Vector(bw_[i] - bn_[i] * 0.003), Vector(bn_[i]), reach_ + 0.003)
         hit_[i] = h_[0] is not None
+        if not hit_[i] and hz_:
+            nh_ = np.array([bn_[i][0], bn_[i][1], 0.0])
+            ln_ = float(np.linalg.norm(nh_))
+            if ln_ > hz_:
+                nh_ /= ln_
+                h_ = ttree_.ray_cast(Vector(bw_[i] - nh_ * 0.003), Vector(nh_), reach_ + 0.003)
+                hit_[i] = h_[0] is not None
     _, gid_ = np.unique(np.round(bw_ / 1e-6).astype(np.int64), axis=0, return_inverse=True)
     gid_ = np.asarray(gid_).ravel()
     gh_ = np.zeros(gid_.max() + 1, bool)
@@ -2908,6 +2919,7 @@ def tuck_rekey_shipped(fp):
     here keyed its records on the blend's points, so the cuirass's 98 at her neck's base were on none of her vertices
     in the game. Each record whose point is not in her shipped glb goes to the nearest shipped point no blend point
     sits on (a moved point's new place), within 8 mm; else dropped.)"""
+    import struct
     import heroine_neck as hn_
     G_ = hn_._Gl(os.path.join(ROOT, "godot", "art", "people", "heroine.glb"))
     post = np.unique(np.concatenate([np.round(G_.get(p_["attributes"]["POSITION"]).astype(np.float64) * 1e5).astype(np.int64)
