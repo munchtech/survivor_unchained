@@ -232,7 +232,11 @@ AXE_ARM = ((6, 10, 80, 10), (-20, 11, 70, -10))
 # small bend goes out, not forward) and the wrist at its ulnar end. Swing +14/-20, elbow 152-146, 14 out (at 12 the arm
 # met her trunk's cover, 1 mm). Measured (m7c): haft 14-32 back, head 39-41 cm clear of knee, shin and feet, never
 # ahead of the knee (4 cm at most, with the knee passing back), fist always behind her hip crease, edge back.
-AXES_L = ((14, 10, 150, -95), (-10, 9, 148, -95))
+# Anim 46 judge r4: the arm flared ~40 deg out on screen from 315. Swing +10/-10 (the back swing made the flare), elbow
+# 150-148, 13/10 out: upper arm on screen 42 -> 28 (sprint 48 -> 31), out of her side <= 13. At 10 out forward it met her
+# trunk's cover (warden 6 mm, sprint 9) and +14 forward put it there too; 14+ forward out (or elbow 152) flips the sprint's
+# elbow round (its own -5) and brings the second axe's head onto her knee (6 cm). Haft-to-leg min 31.6 (sprint 30.8).
+AXES_L = ((10, 13, 150, -95), (-10, 10, 148, -95))
 # The wand run's free fist (anim 44 judge r3: T-rex arms, the fist never behind her): forward at her lower ribs, under
 # the bust (fist 129 cm in her rest frame, the underbust 130, navel 115) and 13 cm in front of it, the elbow 85 and
 # 27 cm out; back behind the hip (7.5 cm in the run, 15 in the sprint), the elbow opened to 112 and the forearm less out.
