@@ -977,6 +977,13 @@ def build_cuirass():
     cf = PRM.get("crease_from", 0.035)
     zc = np.where(bins < cf, np.interp(cf, bins, zc), zc)
     zc = gaussian_filter1d(zc, PRM.get("crease_ease", 4.0), mode="nearest")
+    # (params.wrap (c3, judge K1): the plate carried round under each breast to her chest wall. Beyond the crease's
+    # lowest point the lower rim no longer rises with it (it rose 70 mm up her side, leaving her breasts' lower outer
+    # flanks bare): held at that point's height, plus `hold`.)
+    wrap = PRM.get("wrap")
+    if wrap:
+        k_ = int(np.argmin(zc))
+        zc[k_:] = np.minimum(zc[k_:], zc[k_] + wrap.get("hold", 0.0))
     lip = PRM.get("lip", 0.008)
     zt_w = ub + PRM.get("win_bot", 0.018)
     z_tip = zt_w - PRM.get("gore_drop", 0.022)
@@ -991,8 +998,16 @@ def build_cuirass():
     # where the armhole (`scye`, round her shoulder ball) takes over: held everywhere, it cut her upper chest away, which
     # recedes 60 mm behind her nipple by her collarbones)
     backlim = nr[1] + PRM.get("back", 0.06) + PRM.get("back_open", 2.0) * np.maximum(pos[:, 2] - nipz, 0.0)
-    f = np.minimum.reduce([zneck - pos[:, 2], scye, (nx + PRM.get("side", 0.045)) - ax,
-                           backlim - pos[:, 1],
+    f_side = (nx + PRM.get("side", 0.045)) - ax
+    f_back = backlim - pos[:, 1]
+    if wrap:
+        # (the wrap's side edge: round her vertical axis to `az` degrees off her front (her chest wall behind her breast's
+        # outer flank, which ends near 62), from the lower rim up to `z_top` over her nipple, where the armhole takes it)
+        phi_ = np.arctan2(ax, -pos[:, 1])
+        waz_ = (np.radians(wrap.get("az", 66.0)) - phi_) * np.hypot(ax, pos[:, 1])
+        f_side = np.maximum(np.minimum(f_side, f_back), np.minimum(waz_, (nipz + wrap.get("z_top", 0.10)) - pos[:, 2]))
+        f_back = np.ones_like(f_side)
+    f = np.minimum.reduce([zneck - pos[:, 2], scye, f_side, f_back,
                            pos[:, 2] - np.interp(ax, bins, zlow), win(pos[:, 0], pos[:, 2]),
                            np.where(ok, 1.0, -1.0)])
     # One blend for the whole plate: her soft weights at its sternum centre, her breast and arm bones out, its four
@@ -1016,10 +1031,12 @@ def build_cuirass():
         row4[BI[n_] if isinstance(BI, dict) else BONES.index(n_)] = w_
     attr = np.hstack([nor, np.repeat(row4[None], n, 0), np.zeros((n, 1))])
     if os.environ.get("CUIRASS_DUMP"):
-        comps = np.array([zneck - pos[:, 2], scye, (nx + PRM.get("side", 0.045)) - ax, backlim - pos[:, 1],
+        comps = np.array([zneck - pos[:, 2], scye, f_side, f_back,
                           pos[:, 2] - np.interp(ax, bins, zlow), win(pos[:, 0], pos[:, 2])])
         np.savez(os.path.join(SCRATCH, "cuirass_dump.npz"), pos=pos, ok=ok, H=H, comps=comps, bins=bins, zc=zc, zlow=zlow,
-                 notch_z=notch_z, ball=ball, z0=z0, fy=fy, zz=zz, nip=nr, ub=ub, skin=skin_pos)
+                 notch_z=notch_z, ball=ball, z0=z0, fy=fy, zz=zz, nip=nr, ub=ub, skin=skin_pos,
+                 pf=np.asarray(G["P_FILLED"]), tri=np.asarray(G["TRI"]),
+                 pfw=G["soft_weights"](np.asarray(G["P_FILLED"]))[:, [BONES.index(b_) for b_ in BONES if "breast" in b_.lower()]].sum(1))
         print("CUIRASS DUMP", json.dumps({k: v for k, v in CUIR.items()}), "notch", notch_z, "ball", ball.tolist())
         if os.environ.get("CUIRASS_DUMP") == "stop":
             raise SystemExit(0)
