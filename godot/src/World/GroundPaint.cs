@@ -180,10 +180,11 @@ public sealed class GroundPaint
         var lap0 = lap;
         lap = Blur(Blur(lap, n, 2), n, 2);
 
-        // The gutters: wall and building bases.
+        // The gutters: wall and building bases (not a heap of rubble: props_own.json no_gutter; E7b judge, a wet black square round the post's heaps).
         var boxes = new List<ColliderDef>();
         foreach (var c in z.Meta.Colliders)
-            if (c.Kind == ColliderKind.Box && !c.Soft && Math.Min(c.Hw, c.Hd) >= 0.4) boxes.Add(c);
+            if (c.Kind == ColliderKind.Box && !c.Soft && Math.Min(c.Hw, c.Hd) >= 0.4 && !Heap(c)) boxes.Add(c);
+        bool Heap(ColliderDef c) => OwnProps.For(z.Id)?.NoGutter is { } ng && ng.Exists(g => Math.Abs(g.X - c.X) < 0.5 && Math.Abs(g.Y - c.Z) < 0.5);
         var gut = new float[mr * mr];
         foreach (var c in boxes)
         {
