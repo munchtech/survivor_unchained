@@ -308,7 +308,7 @@ public static class HerWear
         }
         // What draws of it at the play camera, one mesh a material (HerLod.Merge).
         if (Prof) GD.Print($"wear prof: lod {ap.Elapsed.TotalMilliseconds:F1} ms");
-        HerLod.For(p)?.Merge(laid);
+        if (HerLod.For(p) is { } hl) foreach (var mt in hl.MergeSteps(laid)) yield return mt;
         if (Prof) GD.Print($"wear prof: merge {ap.Elapsed.TotalMilliseconds:F1} ms");
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)")
             + (laidN > 0 ? $", garment tuck: {laidN} meshes laid in {laidMs:F1} ms (worker {tuck.WorkerMs:F1} ms)" : ""));
