@@ -40,9 +40,9 @@ SETS = {
     # field rocks and cliff chunks meet (-58,-53, the west bank))
     # (E5c, judge r2: her on the ford's near (north) bank, not on the water (2.5,-30.5); a pebble patch on open ground (21,23);
     # the west bank's cliff chunk (-73.8,-46.1) 8 m up the frame, her on land below it (-71,-38), not the old spot in the water)
-    "stones": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "2.5,-30.5;21,23;1,3;53.5,-45"], 4),
+    "stones": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "2.5,-30.5;21,23;1,3;-71,-38"], 4),
     # (E5b: the same rocks by night)
-    "stonesnight": (NIGHT + ["--spots-clear", "--spots", "1,3;53.5,-45"], 2),
+    "stonesnight": (NIGHT + ["--spots-clear", "--spots", "1,3;-71,-38"], 2),
     # (E5c: only the rock frames of ford and road: the ford's lantern post (ford 03, 05) and the road's faceted boulder (road 01))
     "fordpost": (NIGHT + ["--spots", "0,-38;0,-37"], 2),
     "roadrock": (NIGHT + ["--spots-clear", "--spots", "3,64"], 1),
