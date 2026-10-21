@@ -337,9 +337,11 @@
   "dressed": true,
   "source": "generated/model_gmvhuj8nzavw.glb (TRELLIS.2), Fix -> generated/game/guard_clean.glb",
   "portrait": {
-   "image": "generated/refine_gmvigk7c36wd.png",
-   "source": "Krea 2 Turbo img2img (refine, denoise 0.5, seed 21) of the concept generated/edit_gmvhuhtnwj4v.png face crop (480,0,160)",
-   "prompt": "close-up head portrait photo of a weathered rugged man about forty-five years old, straight front view, looking at the camera, short messy dark brown hair, short dark brown stubble beard flecked with a little gray on the jaw, chin and upper lip, deep lines beside the mouth, crow's feet, forehead lines, a stern slight frown, heavy brow, deep-set eyes, weathered ruddy skin with natural pores, flat even soft frontal studio light, no harsh shadows, plain light gray background, highly detailed realistic skin, sharp focus"
+   "image": "generated/refine_gmvigk7c36wd.png (Marionette)",
+   "tool": "Krea 2 Turbo img2img via the app's refine route (local ComfyUI), denoise 0.5, seed 21",
+   "from": "concept generated/edit_gmvhuhtnwj4v.png, face crop x480 y0 160px",
+   "prompt": "close-up head portrait photo of a weathered rugged man about forty-five years old, straight front view, looking at the camera, short messy dark brown hair, short dark brown stubble beard flecked with a little gray on the jaw, chin and upper lip, deep lines beside the mouth, crow's feet, forehead lines, a stern slight frown, heavy brow, deep-set eyes, weathered ruddy skin with natural pores, flat even soft frontal studio light, no harsh shadows, plain light gray background, highly detailed realistic skin, sharp focus",
+   "applied": "portrait.js faceFromPortrait (Marionette 0b4f725)"
   },
   "note": "concept -> TRELLIS.2 -> Fix (cleanup) -> dress (genfix: the base's head, hands and hair; the generated clothes carried to the rig's rest, cut at the collar and cuffs, weighted) -> dressPackage",
   "trim": {
