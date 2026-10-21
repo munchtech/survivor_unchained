@@ -44,6 +44,9 @@ uniform float ripple_bend = 0.55;
 uniform float refract = 0.03;
 // The glints' sharpness (roughness at the ripples' crests).
 uniform float gloss = 0.06;
+// The brightest a light's glint gets (linear, its brightest channel): under the tonemap's white, so a lamp's glint keeps
+// the lamp's own colour (and the moon's its own) instead of burning to white.
+uniform float glint_cap = 1.6;
 // The whole river's light scaled, for a cinematic's grade (GameCinema "water"); 1 as built.
 uniform float level = 1.0;
 // 1 foam, 2 depth (m, 1 = white), 3 the wake, 4 the bed through (no body), unlit.
@@ -53,6 +56,8 @@ uniform int debug_view = 0;
 global uniform vec4 water_air;
 
 varying vec3 w_pos;
+// The glints' strength (the fragment's SPECULAR, which light() can't read).
+varying float spec_k;
 
 void vertex() {
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -116,24 +121,32 @@ void fragment() {
 	vec2 fside = vec2(-fdir.y, fdir.x);
 	vec2 fp = vec2(dot(wv.xz, fdir), dot(wv.xz, fside));
 	float fspeed = length(flow);
-	float fn = texture(noise_tex, vec2(fp.x - t * fspeed, fp.y * 2.2) * 0.11).g * 0.6 + texture(noise_tex, vec2(fp.x * 1.8 - t * fspeed * 1.8, fp.y * 3.0) * 0.23 + 0.5).a * 0.4;
-	float touch = 1.0 - smoothstep(foam_depth * 0.3, foam_depth * (0.7 + 0.8 * fn), wd);
+	// (two broad octaves only: a finer third read as pixel snow by night at the play camera, judge E6 r1)
+	float fn = texture(noise_tex, vec2(fp.x - t * fspeed, fp.y * 2.2) * 0.11).g * 0.6 + texture(noise_tex, vec2(fp.x * 1.3 - t * fspeed * 1.3, fp.y * 2.6) * 0.16 + 0.5).a * 0.4;
+	// (its edge widened by the depth's own change across a pixel, capped, so a stone's foot rings as soft froth, not
+	// single lit pixels)
+	float fw = min(fwidth(wd), foam_depth) * 1.5;
+	float touch = 1.0 - smoothstep(foam_depth * 0.3 - fw, foam_depth * (0.7 + 0.8 * fn) + fw, wd);
 	// A stone's foot or a leg (what it meets is steep) rings whole; a shelving bank only in lace, here and there, so the
 	// shore is a soft wet edge and never a drawn line.
 	vec3 bn = cross(dFdx(bed_ws), dFdy(bed_ws));
-	float steep = 1.0 - smoothstep(0.55, 0.85, abs(bn.y) / max(length(bn), 1e-6));
+	float steep = 1.0 - smoothstep(0.45, 0.95, abs(bn.y) / max(length(bn), 1e-6));
 	float lace = smoothstep(0.5, 0.75, fn) * smoothstep(0.35, 0.65, texture(noise_tex, wv.xz * 0.045 + 0.3).r);
-	float ring = touch * mix(lace * 0.45, 0.7 * smoothstep(0.3, 0.7, fn + touch * 0.2), steep);
+	float ring = touch * mix(lace * 0.45, 0.7 * smoothstep(0.25, 0.75, fn + touch * 0.2), steep);
 
 	// The wake: anything breaking the surface upstream of here (a stone, a leg) trails foam down the current.
 	float wk = 0.0, bow = 0.0;
+	// (the looks' spacing dithered from the mipmapped noise, sampled out here where the branch can't break its filtering:
+	// far off the bubbles average out instead of sparkling; a per-pixel hash read as snow by night)
+	float bub0 = texture(noise_tex, vec2(fp.x - t * fspeed, fp.y) * 0.6).r * 2.0;
+	float streaks = smoothstep(0.45, 0.85, texture(noise_tex, vec2(fp.x * 0.7 - t * fspeed * 0.7, fp.y * 4.0) * 0.3).b + fn * 0.4);
 	if (wake > 0.0 && !stream && wd > foam_depth * 0.5) {
 		mat4 vp = PROJECTION_MATRIX * VIEW_MATRIX;
 		// Three looks upstream, their spacing wobbled by the flow's noise so the breaker's outline never repeats in stamps.
 		// (and one just downstream: the cushion where the current piles against a stone's upstream face)
 		for (int i = 0; i <= 3; i++) {
 			// (each look's spacing dithered by bubbles a few cm across, drifting with the flow: the stamps melt into froth)
-			float bub = fract(sin(dot(floor(vec2(fp.x - t * fspeed, fp.y) * 28.0) + float(i) * 7.1, vec2(12.9898, 78.233))) * 43758.5453);
+			float bub = fract(bub0 + float(i) * 0.618);
 			float L = i == 0 ? -(0.1 + 0.22 * bub) : wake * (float(i) - 1.0 + bub) / 3.0;
 			// Wider the further behind (the wake spreads), wobbling with the flow.
 			float wob = (fn - 0.5) * 0.5 * abs(L) / wake;
@@ -149,7 +162,6 @@ void fragment() {
 			float fade = 1.0 - (float(i) - 1.0 + bub) / 3.0;
 			wk = max(wk, brk * fade * fade);
 		}
-		float streaks = smoothstep(0.5, 0.8, texture(noise_tex, vec2(fp.x * 0.7 - t * fspeed * 0.7, fp.y * 4.0) * 0.3).b + fn * 0.4);
 		wk *= streaks;
 	}
 	bow *= smoothstep(0.4, 0.75, fn + 0.15);
@@ -166,12 +178,35 @@ void fragment() {
 	ROUGHNESS = mix(gloss, 0.7, foam);
 	// Water's 2% straight on (Godot's dielectric F0 is 0.08 x SPECULAR), none where it thins to nothing at the shore.
 	SPECULAR = 0.25 * in_k * (1.0 - foam) * level;
+	spec_k = SPECULAR;
 	METALLIC = 0.0;
 
 	if (debug_view > 0) {
 		float m = debug_view == 1 ? foam : debug_view == 2 ? wd : wk;
 		ALBEDO = vec3(0.0);
 		SPECULAR = 0.0;
+		spec_k = 0.0;
 		EMISSION = debug_view == 4 ? seen : vec3(clamp(m, 0.0, 1.0)) * 4.0;
 	}
+}
+
+// The lights on the water: lambert for the body's little diffuse, and each light's glint in its own colour (GGX on the
+// rippled normal), its brightest channel held under glint_cap so a warm lamp's glint stays warm.
+void light() {
+	float ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	DIFFUSE_LIGHT += ndl * ATTENUATION * LIGHT_COLOR / PI;
+	vec3 h = normalize(VIEW + LIGHT);
+	float ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
+	float a = ROUGHNESS * ROUGHNESS;
+	float a2 = a * a;
+	float dd = ndh * ndh * (a2 - 1.0) + 1.0;
+	float D = a2 / (PI * dd * dd);
+	float f0 = 0.08 * spec_k * min(SPECULAR_AMOUNT, 1.0);
+	float F = (f0 + (1.0 - f0) * pow(1.0 - clamp(dot(VIEW, h), 0.0, 1.0), 5.0)) * clamp(spec_k * 4.0, 0.0, 1.0);
+	float k = a * 0.5;
+	float ndv = clamp(dot(NORMAL, VIEW), 1e-3, 1.0);
+	float vis = 0.25 / ((ndl * (1.0 - k) + k) * (ndv * (1.0 - k) + k) + 1e-4);
+	vec3 c = LIGHT_COLOR * (D * F * vis * ndl * ATTENUATION);
+	float m = max(c.r, max(c.g, c.b));
+	SPECULAR_LIGHT += c * min(1.0, glint_cap / max(m, 1e-4));
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -27,8 +28,14 @@ public static class Water
         int at = 0;
         float[] Floats(int n) { var f = new float[n]; System.Buffer.BlockCopy(bin, at, f, 0, n * 4); at += n * 4; return f; }
         var shader = GD.Load<Shader>("res://shaders/water.gdshader");
+        // The hand-set look (water_look.json, one object a body of water, in water.json's order) over the exported one: the
+        // exporter rewrites water.json, never this.
+        var over = FileAccess.FileExists($"{dir}/water_look.json") ? JsonNode.Parse(FileAccess.GetFileAsString($"{dir}/water_look.json")) as JsonArray : null;
+        int wi = 0;
         foreach (var w in meta.RootElement.EnumerateArray())
         {
+            var look = Merge(w.GetProperty("look"), over != null && wi < over.Count ? over[wi] : null);
+            wi++;
             int nv = w.GetProperty("vertices").GetInt32(), ni = w.GetProperty("indices").GetInt32();
             var pos = Floats(nv * 3);
             var flow = Floats(nv * 2);
@@ -62,8 +69,8 @@ public static class Water
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
             mat.SetShaderParameter("grad_tex", Grad());
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
-            Look(mat, w.GetProperty("look"));
-            Bed(w.GetProperty("look"));
+            Look(mat, look);
+            Bed(look);
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         return root;
@@ -97,6 +104,15 @@ public static class Water
         return grad = ImageTexture.CreateFromImage(img);
     }
 
+    /// <summary>The exported look with the hand-set one's keys over it (a key in both: the hand-set one; "bed" whole).</summary>
+    public static JsonElement Merge(JsonElement look, JsonNode? over)
+    {
+        if (over is not JsonObject o) return look;
+        var n = look.ValueKind == JsonValueKind.Object ? JsonNode.Parse(look.GetRawText()) as JsonObject ?? new JsonObject() : new JsonObject();
+        foreach (var (k, v) in o) n[k] = v?.DeepClone();
+        return JsonSerializer.SerializeToElement(n);
+    }
+
     /// <summary>The water's colours as the zone gives them (WaterOpts: sRGB
     /// hex), any it leaves out as the web game's water has them.</summary>
     public static void Look(ShaderMaterial mat, JsonElement look)
@@ -120,7 +136,7 @@ public static class Water
     /// <summary>The look's numbers (water.json "look"): clarity (m the bed fades through), deep (m: the body full past it),
     /// shore (m: the sheen fading in from the bank), foam_depth (m: how near the surface a thing breaks it), foam_amt, wake
     /// (m of foam behind a stone or a leg, 0 none), ripple_size (m), ripple_bend, refract, gloss (the glints' roughness).</summary>
-    public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss"];
+    public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss", "glint_cap"];
 
     /// <summary>The bed and the bank (water.json "look" "bed"; the terrain shader's global water_bed, water_silt): pebbles
     /// (0-1, river stones in the silt), silt (0-1, how far the bed takes the silt's colour), wet (m above the water the bank
