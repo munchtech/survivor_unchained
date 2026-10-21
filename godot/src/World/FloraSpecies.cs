@@ -14,6 +14,8 @@ public static class FloraSpecies
     {
         /// <summary>A piece's file (without .gltf) and its index in it (0 when each piece is its own file).</summary>
         public (string File, int Variant) FileOf(string piece) => Packed ? (Name, System.Array.IndexOf(Pieces, piece)) : (piece, 0);
+        /// <summary>One of our stones (env_rocks.py; kinds rock and pebble): drawn with the one stone material, no look of its kind's.</summary>
+        public bool Stone => Kind is "rock" or "pebble";
         public bool Broadleaf => Shader.TryGetValue("broadleaf", out var b) && b.GetDouble() > 0;
     }
 
@@ -59,8 +61,10 @@ public static class FloraSpecies
         return into;
     }
 
-    /// <summary>The kit piece's own pieces in this zone (its file's "own" over the game's), or null.</summary>
-    public static string[]? OwnFor(string zone, string kitPiece)
+    /// <summary>The kit piece's own pieces in this zone (its file's "own" over the game's), or null. A key "kind/piece"
+    /// ("cliff/Rock_Medium_1") wins over the piece's own for copies of that kind (the kit's one rock is a field rock, a
+    /// boulder or a cliff by its kind).</summary>
+    public static string[]? OwnFor(string zone, string kitPiece, string? kind = null)
     {
         Ensure();
         if (!own.TryGetValue(zone, out var map))
@@ -77,7 +81,22 @@ public static class FloraSpecies
             }
             own[zone] = map;
         }
+        if (kind != null && map.TryGetValue($"{kind}/{kitPiece}", out var ok)) return ok;
         return map.TryGetValue(kitPiece, out var o) ? o : null;
+    }
+
+    /// <summary>The one stone's data (flora_species.json "stone": its sheet, palette and OWN_ROCK's parameters).</summary>
+    public static JsonElement Stone => stone ??= Load(Path).GetProperty("stone").Clone();
+    static JsonElement? stone;
+
+    /// <summary>A zone's causeways (its flora_species.json "causeways"; none if it has none): stepping stones laid by Dressing.</summary>
+    public static JsonElement[] CausewaysFor(string zone)
+    {
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone == "" || !FileAccess.FileExists(zp) || !Load(zp).TryGetProperty("causeways", out var c)) return [];
+        var l = new List<JsonElement>();
+        foreach (var e in c.EnumerateArray()) l.Add(e.Clone());
+        return [.. l];
     }
 
     /// <summary>The grass kind this zone draws (flora_species.json "grass": its "use" and "kinds"; a zone's own file may
@@ -93,6 +112,13 @@ public static class FloraSpecies
             if (zg.TryGetProperty("kinds", out var zk) && zk.TryGetProperty(use, out var k)) return k.Clone();
         }
         return root.GetProperty("kinds").GetProperty(use).Clone();
+    }
+
+    /// <summary>A species by its name ("stepping").</summary>
+    public static Species Named(string name)
+    {
+        Ensure();
+        return species!.TryGetValue(name, out var s) ? s : throw new KeyNotFoundException($"flora_species.json: no species {name}");
     }
 
     /// <summary>The species a piece of ours belongs to ("spruce_a": spruce).</summary>
