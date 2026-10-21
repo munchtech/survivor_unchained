@@ -2,7 +2,18 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 20 October, evening: coordinator 746784c6 WIND-DOWN (read this first)
+## 20 October, night: coordinator 091551ea WIND-DOWN (read this first)
+Merged today: two-screen character creation (7f96019c), American spelling (caa5cb68), E4 foliage, our own trees and grass by default (917502b3). Tests 1018/0/8. Owner decisions: OWNER_NOTES "20 October 2026" (player gear scope, armor gate = her body, creation with no names on faces or skin, env kits). Leads' scratch is in THIS session's scratchpad: C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\091551ea-dc86-4dda-afd9-ac20b9b02c0c\scratchpad\<area> (texts backed up to survivorsunchained_inputs\scratch_<area>).
+**RESTART ORDER (fresh successors, lead_brief.md):**
+1. **Face 32:** worktree .claude\worktrees\ui-create, branch face-31@9bb66740, face.md "Paused here (Face 31 ...)". FIRST: re-run the hair on the new neck npz, then land the neck as its own early MR (branch neck-31; no plate_top files); armor-7 waits on it. Then paint, tone and hairline (built, not judged), Doe's neck tone, and the pixie one-pass.
+2. **Armor 8:** armor-7, armor.md top "Paused here (armor lead 7 ...)". Milestone A (engine proof) and then B (sexy full plate). The tuck-smoothing rule fixes the owner's breast dimple; ONE rebuild after neck-31 merges. CONTRACTS docs/armor/PIECE_SCHEMA.md@03a0029f.
+3. **Env lead 11:** env-4@f6cc4534, environment.md "Paused here (env lead 10 ...)". E5 failed judge round 1 with six fixes (scratch_env10\e5a_verdict.md); then E6, E7, E9, E8, E10.
+4. **Animation 47:** anim-40@bdf0aeb9, animation.md top. The combat staff failed r1 (4/8); the lead's call is a per-clip grip offset (chain_strike needs it too). The 5 KNOWN attack fixes are WIP and unjudged (the axes run has new contacts). Close the crossbow and phase items.
+5. **Marionette lead 8:** pipeline-1@ba56aa8 (solver Q's round 7 is after the lead's pause at 94f91be; see ARMOR_ON_BASE.md "Round 7": fit flags done, guard flips 0, plate-through still fails up to 25 mm in jog/lean, fix = the cuirass lower lames follow the lean), HANDOFF.md top. Close armor on the base cheaply, then the workshop for her against PIECE_SCHEMA.
+**Owner pending:** none.
+**Cleanup:** the scratch folders above (env10 backed up, binning failed); the empty .claude\worktrees\env-1 (busy); storybook-1 leftover. The ui-create worktree now holds face-31.
+
+## 20 October, evening: coordinator 746784c6 WIND-DOWN (history)
 Merged today: anim attack poses, idle life, armed folk idles (heroine 100 clips); E3; art-style r2 tools; two baked NPCs (twice); **G1: the painted light and grade are the DEFAULT** (on her unmasked, max judge passed). Tests 1017/0/8. Owner liked the new colours.
 **RESTART ORDER (fresh successors, lead_brief.md; the junction-merge rule is new):**
 1. **Env lead 10:** env-4, environment.md "Paused here (env lead 9 ...)". E4 foliage in progress, then E5 rocks, E6 water (fixes the ford), E7 camp (amber lantern, iron), E9 buildings/well/stalls/setts relief (dawn mud decals black in shade = E9 gate item). Painted look built into each remake, judged vs survivorsunchained_inputsrt_style

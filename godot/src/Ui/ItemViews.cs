@@ -103,7 +103,7 @@ void fragment() {
 
     static readonly Dictionary<string, string> StatNames = new()
     {
-        ["maxHealth"] = "Health", ["armor"] = "Armour", ["damage"] = "Damage", ["cooldown"] = "Weapon speed", ["area"] = "Area", ["critChance"] = "Critical chance",
+        ["maxHealth"] = "Health", ["armor"] = "Armor", ["damage"] = "Damage", ["cooldown"] = "Weapon speed", ["area"] = "Area", ["critChance"] = "Critical chance",
         ["moveSpeed"] = "Speed", ["regen"] = "Regeneration", ["damage.fire"] = "Fire damage", ["damage.frost"] = "Frost damage", ["damage.holy"] = "Holy damage",
         ["damage.physical"] = "Physical damage", ["resist.fire"] = "Fire resistance", ["resist.nature"] = "Nature resistance",
     };
@@ -166,7 +166,7 @@ void fragment() {
     /// <summary>What a thing is, in a word, after its tier ("Epic helm").</summary>
     static readonly Dictionary<ItemKind, string> Nouns = new()
     {
-        [ItemKind.Weapon] = "weapon", [ItemKind.Offhand] = "off-hand", [ItemKind.Head] = "helm", [ItemKind.Body] = "body armour", [ItemKind.Cloak] = "cloak",
+        [ItemKind.Weapon] = "weapon", [ItemKind.Offhand] = "off-hand", [ItemKind.Head] = "helm", [ItemKind.Body] = "body armor", [ItemKind.Cloak] = "cloak",
         [ItemKind.Amulet] = "amulet", [ItemKind.Ring] = "ring", [ItemKind.Relic] = "relic",
         [ItemKind.Shoulders] = "pauldrons", [ItemKind.Bracers] = "bracers", [ItemKind.Hands] = "gloves", [ItemKind.Belt] = "belt", [ItemKind.Legs] = "leggings", [ItemKind.Feet] = "boots",
     };
@@ -387,7 +387,7 @@ void fragment() {
 
     static string Noun(string stat)
     {
-        if (StatNames.TryGetValue(stat, out var n)) return n.ToLowerInvariant() is var l && l == "armour" ? "armour" : Style.Lower1(n);
+        if (StatNames.TryGetValue(stat, out var n)) return n.ToLowerInvariant() is var l && l == "armor" ? "armor" : Style.Lower1(n);
         int dot = stat.IndexOf('.');
         if (dot > 0)
         {

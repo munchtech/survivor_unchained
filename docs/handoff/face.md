@@ -2,6 +2,21 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Neck notch at the creation Look (from UI creation lead 1, 20 Oct)
+- **The owner's report:** a crop of her neck at a close camera, with the night forest behind and her neck and shoulders bare. The arrow points at the neck's outline just below her RIGHT ear (screen left), where the silhouette has a notch or step. That is about where the head mesh meets the body's neck graft. The owner asked: "this passed judging? or is there yet more to do". The 18 Oct fix (`heroine_neck.match_graft`; outfits.md "Neck seam fix") passed max judges at the Look and in the C01 close-ups, so those judges missed it.
+- **Frames shot, not yet looked at or measured** (ui-create@e6c8229f code, which is integration plus creation; the art is unchanged from integration). They are in `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\091551ea-dc86-4dda-afd9-ac20b9b02c0c\scratchpad\uicreate1\neck\r0\`, with the list in `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\091551ea-dc86-4dda-afd9-ac20b9b02c0c\scratchpad\uicreate1\neck\list0.txt` and the runner in `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\091551ea-dc86-4dda-afd9-ac20b9b02c0c\scratchpad\uicreate1\shoot.sh <list> <outdir>`, inside one Godot turn.
+  - Look at zoom 1, faces own and hardwon, pixie and ponytail: front (`*_f`), turn 40 (`*_q`), and own pixie at turn -40 (`own_px_qr`).
+  - own braid front; the Reaver with pixie at zoom 0.75.
+  - At 1440: `own_px_f1440` and `own_pt_q1440`.
+  - Close-up in the Low Ford: `cu_px_f` (facing 0) and `cu_pt_q` (facing 40).
+  - Note: `--step 1` is now creation's look-and-name screen. Screen 2 hides the weapon and shield.
+- **Suspected cause (not verified):** the head-to-graft blend in `match_graft`, which fades out between 2 and 7 cm. Or the 30 mm Head rest cut (`shorten_glb`) leaves a curvature step in the neck's side profile below the ear: a silhouette step, not a gap. The fix measured gaps and pokes, not the outline's curvature, so a smooth-but-stepped profile would pass its numbers.
+- **Next:**
+  1. Find the frame: 1:1 crops of the neck side from r0, front and three-quarter.
+  2. Measure the outline: the side-profile radius along the neck from ear to collarbone, head against graft, in the rest pose and in 20-45 degree head turns (`tools/scratch/neck_seam/` has sd.py and motion.py).
+  3. Fix with a medium solver: geometry or weights, whichever holds in turns, run once per fresh export (`match_graft` is NOT idempotent). Don't touch the face shape.
+  4. A max judge whose brief names this exact mark first, then the whole-frame gate. Cap at 2 rounds.
+
 ## Start here (touch-up lead 4, 18 Oct; MR READY)
 **Done in this MR (final max judge, 18 Oct; verdict summary below; frames in `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_touchup4\r3\`, briefs and rules in that folder):** throat PASS (touch-up 3). Reaver cord PASS: a closed loop, never under her skin at rest or with the head turned 60 degrees (4f869e00). Worn metal PASS under fire, moon, town and Look (round 4; spec in `docs/art/look_bible/01_armor_metal.md` "As built"). Braid and ponytail hairlines PASS. C01 s10 (restaged by cinematics 3) has no strand under the ear, and the nape matches. Face vs neck tone is the moon (cinematics). `tools/legal/test_gate_shader.py` was fixed for the shader stub (bb4a6de2).
 **Closed as known:** the ponytail's side block in s10 (borderline). The greaves in dawn shade read a little like boots (the C04 shot is cut; slot-part shape work takes it). Moonlit lames stay bluish (the moon's color).

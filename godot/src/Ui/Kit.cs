@@ -213,7 +213,7 @@ public static class Kit
     }
 
     /// <summary>One word of the house's tabs: on, in full ink over the ember's underline; off, dim.</summary>
-    public static Button Tab(string text, bool on, Action press, int size = 15)
+    public static Button Tab(string text, bool on, Action press, int size = 15, float onAlpha = 1f)
     {
         var b = new Button { Text = text, FocusMode = Control.FocusModeEnum.None, MouseDefaultCursorShape = Control.CursorShape.PointingHand };
         Style.Font(b, Style.UiBold, size, on ? Ink : Dim, false);
@@ -222,7 +222,7 @@ public static class Kit
         StyleBox Pad(StyleBox s) { s.ContentMarginLeft = s.ContentMarginRight = 0; s.ContentMarginTop = 2; s.ContentMarginBottom = 8; return s; }
         if (on)
         {
-            var u = new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthBottom = 2 };
+            var u = new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember with { A = onAlpha }, BorderWidthBottom = 2 };
             foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, Pad(UiArt.Frame("tab_on", u)));
             b.SetMeta("on", true);
         }
@@ -239,12 +239,12 @@ public static class Kit
 
     /// <summary>Many words to choose between (more than a line holds), as the house's tabs in
     /// centred lines: the chosen one over the ember's underline.</summary>
-    public static HFlowContainer TabFlow(IEnumerable<(string Text, bool On, Action Press)> words, int size = 16, int gapX = 24, int gapY = 2)
+    public static HFlowContainer TabFlow(IEnumerable<(string Text, bool On, Action Press)> words, int size = 16, int gapX = 24, int gapY = 2, float onAlpha = 1f)
     {
         var f = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = FlowContainer.AlignmentMode.Center };
         f.AddThemeConstantOverride("h_separation", gapX);
         f.AddThemeConstantOverride("v_separation", gapY);
-        foreach (var (text, on, press) in words) f.AddChild(Tab(text, on, () => { if (!on) { Sound.Sfx.Page(); press(); } }, size));
+        foreach (var (text, on, press) in words) f.AddChild(Tab(text, on, () => { if (!on) { Sound.Sfx.Page(); press(); } }, size, onAlpha));
         return f;
     }
 
