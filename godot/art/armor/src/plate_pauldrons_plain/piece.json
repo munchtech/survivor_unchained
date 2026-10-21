@@ -22,11 +22,16 @@
    "budget": 600,
    "rmin": 0.016,
    "sigma": 0.01,
-   "bevel": 0.0
+   "bevel": 0.0,
+   "neck_band": 0.02,
+   "neck_off": 0.0035,
+   "neck_sigma": 0.003,
+   "dip": 0.003
   },
   "comb": {
-   "h": 0.0025,
-   "w": 0.012
+   "h": 0.004,
+   "w": 0.009,
+   "fade": 0.012
   },
   "lames": {
    "O": [
@@ -58,12 +63,25 @@
    "overhang": 0.0015
   },
   "tab": {
-   "width": 0.022,
-   "run": 0.028,
+   "width": 0.02,
+   "run": 0.022,
    "under": 0.01,
-   "lift": 0.0015,
-   "thick": 0.0025,
-   "rivet_r": 0.0024
+   "lift": 0.0004,
+   "thick": 0.0016,
+   "rivet_r": 0.0022,
+   "cols": 5,
+   "round_end": true,
+   "end_min": 0.35,
+   "hold": 3,
+   "ease": 1.0,
+   "plain_edge": true,
+   "skive": [
+    0.3,
+    0.004
+   ],
+   "end_rivet": 0.006,
+   "end_rivet_r": 0.0019,
+   "step": 0.0025
   },
   "weights": {
    "steps": [
@@ -90,5 +108,9 @@
  "adorn": [],
  "covers": [
   "pauldrons"
+ ],
+ "cover_grow": [
+  0.02,
+  0.025
  ]
 }

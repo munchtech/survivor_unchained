@@ -157,7 +157,7 @@ def main(argv):
         info = []
         for rv in np.unique(rowv[mine]):
             v = mine[rowv[mine] == rv]
-            if len(v) < 30:
+            if len(v) < 150:     # (a rivet on her skin's weights, the throat tab's end rivet (b2r3), is no plate)
                 continue
             arm = sum(body.W[v[0], k] for k in range(body.W.shape[1]) if body.J[v[0], k] in arm_bones[sd])
             info.append((arm, v))
