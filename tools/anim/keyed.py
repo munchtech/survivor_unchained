@@ -509,6 +509,10 @@ class Rig:
                 target = pos_t
             else:
                 target = gpos[ha]
+            if "shift" in spec:
+                # The wrist moved in her space after the key is placed (solve_frames' grip slide: the fist lower
+                # on the shaft, the piece where the key put it).
+                target = np.asarray(target, float) + np.asarray(spec["shift"], float)
             # A hand planted on the ground ("plant", 0..1, on "ground" at
             # that height): laid flat on it, the wrist at the palm's depth
             # over it whatever height the key gave (Rig._planted, Rig._lay).
@@ -1111,6 +1115,31 @@ def wrap_of(weapon):
 WRAP_LEFT = {"daggers": "daggers_l"}
 
 
+# The fitted line of her right fist per weapon (WeaponSockets.PocketR's Dir, hand_r's space: the shaft from the grip
+# toward the tip, the seated piece's +Y), for a clip's grip slide (slide_dir).
+POCKET_DIR = {"staff": "FistDirR", "sword": "BladeDirR", "wand": "BladeDirR", "axe": "BladeDirR", "axes": "BladeDirR",
+              "daggers": "DaggerDirR", "crossbow": "CrossbowDirR"}
+_pocket_dirs = {}
+
+
+def slide_dir(weapon):
+    """The way a piece slides in her right fist for a clip's "grip_slide" (animation 47): the fitted pocket's line in
+    hand_r's space (WeaponSockets.cs PocketR Dir, the shaft from the grip toward the tip; the game moves the seated
+    piece along its own +Y, which the seat lays on that line: PersonView.Slide). None for a weapon without a pocket."""
+    main = (weapon or "").split("+")[0]
+    name = POCKET_DIR.get(main)
+    if name is None:
+        return None
+    if name not in _pocket_dirs:
+        import re
+        from rig import REPO
+        src = (REPO / "godot" / "logic" / "Play" / "WeaponSockets.cs").read_text(encoding="utf-8")
+        m = re.search(rf"{name}\s*=\s*(?:Vector3\.Normalize\()?new(?:\s*Vector3)?\(([^)]*)\)", src)
+        v = np.array([float(x.strip().rstrip("f")) for x in m.group(1).split(",")])
+        _pocket_dirs[name] = v / np.linalg.norm(v)
+    return _pocket_dirs[name]
+
+
 def finger_curl(spec):
     if isinstance(spec, dict) and "bends" in spec:
         return {k: [float(a) for a in v] for k, v in spec["bends"].items()}
@@ -1613,7 +1642,31 @@ def grip_of(weapon):
     return {"r": GRIP[main]} if main in GRIP else {}
 
 
-def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None):
+def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, slide=0.0):
+    """_solve_frames, with the clip's grip slide (`slide`, metres; its meta's "grip_slide"; animation 47): the piece in
+    her right fist sits `slide` further along its shaft toward the tip (the game moves it so, PersonView.Slide), so
+    every frame whose hand_r is aimed by a "blade" has its wrist moved back down the shaft by as much (a "shift" in
+    her space), the shaft being the line the solved hand holds the piece on (slide_dir through hand_r's solved
+    turn): the piece stays where the keys put it and her fist grips it lower. The shaft's way depends on the solved
+    turn, so the clip is solved again with the shift until it settles (four solves). Limits: a blade-only key lets the
+    hand roll about the blade as the forearm moves (about 0.25 deg of line and 5 mm at the tip per cm of slide on
+    idle_arcanist), and where the lower wrist passes its range (Rig's RADIAL 22 first) the hand is clamped and the
+    piece tips with it. 0 solves as before (bit-identical)."""
+    d = slide_dir(weapon) if slide else None
+    if d is None:
+        return _solve_frames(rig, poses, bases, loop, sigma, weapon, pin_first, pin_path)
+    aimed = [isinstance(p.get("hand_r"), dict) and "blade" in p["hand_r"] for p in poses]
+    ha = rig.I["hand_r"]
+    shifted = poses
+    for _ in range(3):
+        rot, pos = _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path)
+        g, _p = rig.sk.fk(rot, pos)
+        shifted = [dict(p, hand_r=dict(p["hand_r"], shift=tuple(-slide * qrot(g[fr, ha], d)))) if aimed[fr] else p
+                   for fr, p in enumerate(poses)]
+    return _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path)
+
+
+def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
@@ -1731,7 +1784,13 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
     frames (Rig.solve's base): turns add to its turns, hands and feet given
     are solved afresh. `lead`: see Track. A weapon in the meta ("weapon")
     sits in the fist's diagonal grip (GRIP). `pin_first` (int, or {side: frames})
-    and `pin_path` ({side: n}) pin the elbows at the start: see solve_frames."""
+    and `pin_path` ({side: n}) pin the elbows at the start: see solve_frames.
+    A "grip_slide" in the meta (metres; animation 47) has her right fist grip the
+    piece that much lower on its shaft: every frame whose hand_r has a "blade"
+    reaches that much further down the shaft the solved hand holds (slide_dir),
+    so the piece stays where the keys put it while the game slides it up the
+    fist by as much (OwnClips.GripSlide, PersonView.Slide). Absent or 0: as before.
+    The measuring tools (armscheck.py, held checks) move the piece by it too."""
     rig.grip = grip_of((meta or {}).get("weapon")) if rig.grips else {}
     keys = _one_frame(rig, keys, base)
     track = Track(keys)
@@ -1742,7 +1801,8 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
         poses.append(post(fr, pose) if post else pose)
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
-    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path)
+    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path,
+                            slide=float((meta or {}).get("grip_slide", 0.0)))
     m ={"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)

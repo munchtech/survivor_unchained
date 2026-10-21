@@ -30,7 +30,7 @@ def layered(name, rig, base: Clip, over, meta=None) -> Clip:
     from keyed import solve_frames
     n = base.frames
     rot, pos = solve_frames(rig, [over(f / max(n - 1, 1), f) for f in range(n)], [(base.rot[f], base.pos[f]) for f in range(n)],
-                            loop=base.loop, weapon=(meta or {}).get("weapon", ""))
+                            loop=base.loop, weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)))
     m = dict(base.meta)
     m.update(meta or {})
     return Clip(name, base.fps, rot, pos, loop=base.loop, meta=m)
@@ -108,6 +108,14 @@ def _arc_hand_fingers():
 # breaks and the stops (soul.py, sprint_stop.py).
 ARC_HAND_R = (-0.24, -0.26, 0.28)
 ARC_BLADE_R = (-0.38, 1.0, -0.03)
+# Her fist that much lower on the staff's shaft in the combat idle and the clips that take its arm (the break, the stops,
+# the flourish): metres, keyed.build's "grip_slide" (animation 47). The staff stays where ARC_HAND_R / ARC_BLADE_R put it
+# and the arm reaches down to it: the max judge, round 1, "fist 8-9 cm lower, at the hip bone, the staff where it is".
+# (Animation 47: 0 for now. On her fist fit the staff leaves the fist 64 deg from the forearm's line, so with the staff
+# kept upright a neutral wrist needs the forearm ABOVE level; every cm lower costs wrist bend. At 0.085 the wrist
+# stops at its radial limit (22) and the staff tips 7-10 deg forward and out (the tip 12-25 cm); held exactly
+# (the hand rolled about the shaft) the wrist must flex 50 deg toward the palm. Scratch anim/a47/slide, s0*.txt.)
+ARC_GRIP_SLIDE = 0.0
 
 
 def arcanist(t, f):
@@ -612,7 +620,10 @@ def clips(rig, want):
         base = base_of(rig, SHARES_BASE.get(name, name[5:]))
         if arms is arcanist:
             arms = _on_hip(rig, base, arms)
-        clip = layered(name, rig, base, arms, {"weapon": weapon})
+        meta = {"weapon": weapon}
+        if name == "idle_arcanist" and ARC_GRIP_SLIDE:
+            meta["grip_slide"] = ARC_GRIP_SLIDE
+        clip = layered(name, rig, base, arms, meta)
         if name[5:] in TOWN or name == "idle_arcanist_staff_town":
             clip = level_head(rig, clip)
         out.append(clip)
