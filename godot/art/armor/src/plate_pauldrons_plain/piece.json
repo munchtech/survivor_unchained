@@ -1,0 +1,116 @@
+{
+ "id": "plate_pauldrons_plain",
+ "name": "Lamed Pauldrons",
+ "slot": "pauldrons",
+ "style": "lamed",
+ "tier": 1,
+ "tier_name": "plain forged",
+ "material": "steel",
+ "tint": null,
+ "params": {
+  "cop": {
+   "back": -105,
+   "front": 95,
+   "medial": -0.034,
+   "low": 0.03,
+   "rise": 0.014,
+   "corner": 0.02,
+   "clear": 0.0025,
+   "most": 0.006,
+   "thick": 0.002,
+   "grid": 0.003,
+   "budget": 600,
+   "rmin": 0.016,
+   "sigma": 0.01,
+   "bevel": 0.0,
+   "neck_band": 0.02,
+   "neck_off": 0.0035,
+   "neck_sigma": 0.003,
+   "dip": 0.003
+  },
+  "comb": {
+   "h": 0.004,
+   "w": 0.009,
+   "fade": 0.012
+  },
+  "lames": {
+   "O": [
+    0.014,
+    0.012
+   ],
+   "V": [
+    0.026,
+    0.024
+   ],
+   "tuck": 0.0045,
+   "joggle": 0.003,
+   "flare": 0.003,
+   "thick": 0.0018,
+   "rc": 0.01,
+   "E": 0.014,
+   "crease": 0.0015,
+   "crease_w": 0.01,
+   "rv_up": 0.008,
+   "rv_step": 0.03,
+   "rivet_r": 0.0026,
+   "budget": 350,
+   "grid": 0.003,
+   "bevel": 0.0
+  },
+  "roll": {
+   "width": 0.0045,
+   "height": 0.001,
+   "overhang": 0.0015
+  },
+  "tab": {
+   "width": 0.02,
+   "run": 0.010,
+   "under": 0.01,
+   "lift": 0.0004,
+   "thick": 0.0016,
+   "rivet_r": 0.0022,
+   "cols": 5,
+   "round_end": true,
+   "end_min": 0.35,
+   "hold": 2,
+   "ease": 1.0,
+   "plain_edge": true,
+   "skive": [
+    0.3,
+    0.004
+   ],
+   "end_rivet": 0.006,
+   "end_rivet_r": 0.0019,
+   "step": 0.0025
+  },
+  "weights": {
+   "steps": [
+    0.05,
+    0.05
+   ]
+  },
+  "roll_step": 0.006,
+  "roll_nv": 6,
+  "push_cap": 0.002,
+  "push_tucked_only": true,
+  "tuck_under": {
+   "plates": [
+    "cop",
+    "lame"
+   ],
+   "edge": 0.3,
+   "full": 0.98,
+   "in": 0.006,
+   "reach": 0.025,
+   "close": 0.004
+  }
+ },
+ "adorn": [],
+ "covers": [
+  "pauldrons"
+ ],
+ "cover_grow": [
+  0.02,
+  0.025
+ ]
+}

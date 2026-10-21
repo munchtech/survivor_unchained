@@ -177,11 +177,11 @@ public static class GarmentTuck
     public static int OrderOf(string slot) => Array.IndexOf(Order, slot);
 
     /// <summary>Whether `outer` lies over `inner` (and tucks it): later in Order, and not built with it (one outfit's
-    /// pieces are fitted together).</summary>
+    /// pieces are fitted together). A rigid inner piece (ArmorPiece.Rigid) is never laid: a plate is never bent.</summary>
     public static bool Over(ArmorPiece outer, ArmorPiece inner)
     {
         int o = OrderOf(outer.Slot), i = OrderOf(inner.Slot);
-        if (o < 0 || i < 0 || o <= i || outer.Id == inner.Id) return false;
+        if (o < 0 || i < 0 || o <= i || outer.Id == inner.Id || inner.Rigid) return false;
         return !(outer.Outfit != null && outer.Outfit == inner.Outfit);
     }
 

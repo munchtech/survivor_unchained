@@ -100,6 +100,8 @@ public static class Wear
     /// <summary>The look's visual slots the calling's own full set wears exactly (and nothing else).</summary>
     public static bool IsCallingSet(IReadOnlyDictionary<string, string> look, string calling, ArmorIndex ix)
     {
+        // (a stand-in piece (a row's `replaces`) is not the calling's own outfit file: not its full set)
+        if (look.Values.Any(id => ix.Find(id)?.Replaces != null)) return false;
         var full = Look(new Dictionary<string, string>(), calling, ix);
         return full.Count == look.Count && full.All(kv => look.TryGetValue(kv.Key, out var v) && v == kv.Value);
     }

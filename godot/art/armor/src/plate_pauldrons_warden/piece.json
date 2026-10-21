@@ -1,0 +1,53 @@
+{
+ "id": "plate_pauldrons_warden",
+ "name": "Warden's Pauldrons",
+ "slot": "pauldrons",
+ "base": "plate_pauldrons_plain",
+ "base_adorn": false,
+ "tier": 1,
+ "tier_name": "warden brass",
+ "material": "steel",
+ "tint": null,
+ "replaces": "warden.pauldrons",
+ "adorn": [
+  {
+   "kind": "trim",
+   "rim": "cop_rim",
+   "profile": "bead_lo",
+   "width": 0.004,
+   "height": 0.0015,
+   "inset": 0.0,
+   "gap": 0.0,
+   "step": 0.009,
+   "lod_step": 0.012,
+   "mat": "gold"
+  },
+  {
+   "kind": "trim",
+   "rim": "lame1_rim",
+   "profile": "bead_lo",
+   "width": 0.004,
+   "height": 0.0015,
+   "inset": 0.0,
+   "gap": 0.0,
+   "step": 0.009,
+   "lod_step": 0.012,
+   "mat": "gold"
+  },
+  {
+   "kind": "trim",
+   "rim": "lame2_rim",
+   "profile": "bead_lo",
+   "width": 0.004,
+   "height": 0.0015,
+   "inset": 0.0,
+   "gap": 0.0,
+   "step": 0.009,
+   "lod_step": 0.012,
+   "mat": "gold"
+  }
+ ],
+ "covers": [
+  "pauldrons"
+ ]
+}
