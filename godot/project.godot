@@ -123,6 +123,10 @@ view_from={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+water_level={
+"type": "vec4",
+"value": Vector4(0, -1000, 0, 0)
+}
 flora_light={
 "type": "vec4",
 "value": Vector4(0, 0, 1, 1)

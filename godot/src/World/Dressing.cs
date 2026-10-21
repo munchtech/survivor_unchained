@@ -28,8 +28,8 @@ public static class Dressing
     public static readonly bool FloraOwn = !SurvivorUnchained.Args.Has("flora-kit");
     /// <summary>The piece as this zone draws it: "own:a" (or "own:a|b|c", one per copy by its place) with our own flora,
     /// null where ours drops it (an empty list: the kit's clover, flowers and mushrooms; our grass has its own flowers).</summary>
-    public static string? Own(string piece, string zone = "") =>
-        FloraOwn && FloraSpecies.OwnFor(zone, piece) is { } o ? (o.Length == 0 ? null : "own:" + string.Join('|', o)) : piece;
+    public static string? Own(string piece, string zone = "", string? kind = null) =>
+        FloraOwn && FloraSpecies.OwnFor(zone, piece, kind) is { } o ? (o.Length == 0 ? null : "own:" + string.Join('|', o)) : piece;
 
     /// <summary>Where our own flora changes LOD (a cell's middle from the camera, m; flora_species.json's "lod" per
     /// species, --flora-lod1/--flora-lod2/--flora-cell override every species, for measuring): lod0 inside the first,
@@ -197,16 +197,47 @@ public static class Dressing
         // MultiMesh's custom data). Ours keep their own greens (no recolour) and their species' wind.
         var flora = new List<ZoneData.FloraGroup>();
         var merged = new Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)>();
+        // (a zone's causeways, its flora_species.json: the kit's stones there dropped, ours laid in their place)
+        var ways = FloraOwn ? FloraSpecies.CausewaysFor(z.Id) : [];
+        bool Dropped(string kind, Vector3 o)
+        {
+            foreach (var w in ways)
+            {
+                bool any = false;
+                foreach (var k in w.GetProperty("drop").EnumerateArray()) any |= k.GetString() == kind;
+                if (!any) continue;
+                var (a, b) = (new Vector2(w.GetProperty("from")[0].GetSingle(), w.GetProperty("from")[1].GetSingle()), new Vector2(w.GetProperty("to")[0].GetSingle(), w.GetProperty("to")[1].GetSingle()));
+                var p = new Vector2(o.X, o.Z);
+                float t = Mathf.Clamp((p - a).Dot(b - a) / (b - a).LengthSquared(), -0.1f, 1.1f);
+                if (p.DistanceTo(a + (b - a) * t) < w.GetProperty("width").GetSingle() * 0.5f) return true;
+            }
+            return false;
+        }
         foreach (var g in z.Flora)
         {
+            if (ways.Length > 0 && g.At.Any(t => Dropped(g.Kind, t.Origin)))
+            {
+                var kept = g.At.Where(t => !Dropped(g.Kind, t.Origin)).ToArray();
+                if (kept.Length == 0) continue;
+                var gg = g with { At = kept };
+                if (!g.Piece.StartsWith("own:")) { flora.Add(gg); continue; }
+                Merge(gg);
+                continue;
+            }
             if (!g.Piece.StartsWith("own:")) { flora.Add(g); continue; }
+            Merge(g);
+        }
+        foreach (var w in ways) Causeway(z, w, merged);
+        void Merge(ZoneData.FloraGroup g)
+        {
             var names = g.Piece[4..].Split('|');
             foreach (var t in g.At)
             {
                 var name = OwnPick(names, t.Origin);
                 var sp = FloraSpecies.Of(name);
                 var (file, v) = sp.FileOf(name);
-                var look = g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
+                // (our stones take no look: one material whatever the kind's moss and wind, so they merge across kinds)
+                var look = sp.Stone ? KitLook.Look.Plain : g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
                 if (!merged.TryGetValue((file, look), out var mg)) merged[(file, look)] = mg = (sp, new(), new());
                 mg.At.Add(t); mg.Var.Add(v);
             }
@@ -257,6 +288,51 @@ public static class Dressing
             }
         }
         return root;
+    }
+
+    /// <summary>A causeway's stepping stones (a zone's flora_species.json "causeways"; flora_species.json's _doc there): each
+    /// row's stones at uneven steps, nudged across, turned, tilted and sized by their own hashes, no two neighbours alike, each
+    /// set so its top stands 'above' over the water (or a little over the ground, where that is higher), its body sunk in the bed.</summary>
+    static void Causeway(ZoneData z, System.Text.Json.JsonElement w, Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)> merged)
+    {
+        static Vector2 V2(System.Text.Json.JsonElement e) => new(e[0].GetSingle(), e[1].GetSingle());
+        float F(string k, float d) => w.TryGetProperty(k, out var v) ? v.GetSingle() : d;
+        var sp = FloraSpecies.Named(w.GetProperty("species").GetString()!);
+        Vector2 a = V2(w.GetProperty("from")), b = V2(w.GetProperty("to"));
+        Vector2 dir = (b - a).Normalized(), side = new(-dir.Y, dir.X);
+        float len = (b - a).Length(), step = F("step", 2.2f), jitter = F("jitter", 0.35f), skip = F("skip", 0.1f), top = F("top", 0.75f), seed = F("seed", 1);
+        Vector2 above = w.TryGetProperty("above", out var ab) ? V2(ab) : new(0.05f, 0.14f), scale = w.TryGetProperty("scale", out var sc) ? V2(sc) : new(0.85f, 1.2f);
+        float water = z.Meta.Places.TryGetValue("WATER_Y", out var wy) ? wy.GetSingle() : -1000f;
+        var key = (sp.Name, KitLook.Look.Plain);
+        if (!merged.TryGetValue(key, out var mg)) merged[key] = mg = (sp, new(), new());
+        int n = sp.Pieces.Length, r = 0;
+        foreach (var row in w.GetProperty("rows").EnumerateArray())
+        {
+            float H(int k) => Mathf.PosMod(Mathf.Sin(r * 127.1f + k * 311.7f + seed * 74.7f) * 43758.5453f, 1f);
+            float t = step * 0.6f * H(0);
+            int i = 0, last = -1;
+            while (t < len)
+            {
+                int k = i * 9 + 1;
+                if (H(k) > skip)
+                {
+                    var p = a + dir * t + side * (row.GetSingle() + (H(k + 1) - 0.5f) * 2f * jitter);
+                    int v = (int)(H(k + 2) * n) % n;
+                    if (v == last) v = (v + 1 + r) % n;
+                    last = v;
+                    float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4));
+                    float topY = Mathf.Max(water + Mathf.Lerp(above.X, above.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
+                    float ta = H(k + 6) * Mathf.Tau;
+                    var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(5f * H(k + 7)))
+                        * new Basis(Vector3.Up, H(k + 8) * Mathf.Tau).Scaled(new Vector3(s, sy, s));
+                    mg.At.Add(new Transform3D(basis, new Vector3(p.X, topY - top * sy, p.Y)));
+                    mg.Var.Add(v);
+                }
+                t += step * Mathf.Lerp(0.65f, 1.35f, H(k + 9));
+                i++;
+            }
+            r++;
+        }
     }
 
     /// <summary>Our own flora of one file and look: its copies in cells (the species' cell), each cell a MultiMesh

@@ -65,6 +65,11 @@ varying vec3 v_wp;
 
 // (the warmest hue a sunlit tip may take under a low sun, sRGB degrees, as the trees' hue_floor: sun x olive went yellow)
 uniform float hue_floor = 95.0;
+// (E5, judge E4i: the key's light on a clump's upper part warmed toward olive by this, by day and under a low sun, not the
+// moon nor a lamp: a drift in sun takes the lit ground's warmth, not pasted on; its shade keeps the sky's blue-green)
+uniform vec3 sun_tip = vec3(1.0);
+// (each clump's card size within +-size_var of its own, half white noise and half a 3 m field, so a dense drift is not stamped)
+uniform float size_var = 0.3;
 
 float hue_of(vec3 c) {
 	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
@@ -120,7 +125,7 @@ void vertex() {
 	// (a fire's pit bare, the camp round it thinning out to `clear` times its radius)
 	for (int i = 0; i < 4; i++) keep *= step(h4, smoothstep(bare_at[i].z, bare_at[i].z * clear, length(wp - bare_at[i].xy)));
 	// Size: smaller at a drift's edge, each clump its own.
-	float sz = mix(0.55, 1.2, smoothstep(0.0, 0.8, cover)) * (0.7 + 0.6 * gh(wp * 6.3 + 1.0)) * keep;
+	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
 	// Facing the camera (its forward, flattened), turned up to `yaw` off it; half of them mirrored.
 	vec3 fwd = -INV_VIEW_MATRIX[2].xyz;
 	vec2 f = normalize(-fwd.xz + vec2(1e-4, 0.0));
@@ -130,7 +135,7 @@ void vertex() {
 	vec2 r = vec2(-f.y, f.x) * (h5 * 0.6 + nF.b * 0.8 < 0.7 ? 1.0 : -1.0);
 	float t = clamp(off.y, 0.0, 1.0);
 	v_t = t;
-	float asp = 0.8 + 0.4 * gh(wp * 8.7 + 3.0);
+	float asp = 0.75 + 0.5 * gh(wp * 8.7 + 3.0);
 	vec3 p = vec3(r.x, 0.0, r.y) * off.x * card.x * sz * asp + vec3(0.0, off.y * card.y * sz / asp, 0.0);
 	p.xz -= f * off.y * card.y * sz * tilt;
 	// (its foot a hair behind, toward the camera's far side, so it stands in the ground, not on it)
@@ -190,6 +195,8 @@ void fragment() {
 	float fl = min(dot(gb, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap);
 	gb = mix(gb, vec3(0.86, 0.93, 1.0) * fl, fr * 0.8);
 	ALBEDO = debug_view == 4 ? vec3(fr * 0.8, 0.0, 1.0 - fr * 0.8) : gb;
+	// (--ground-debug 5: the grass alone, flat magenta, a mask for measuring its pixels in a frame shot the same)
+	if (debug_view == 5) { ALBEDO = vec3(0.0); EMISSION = vec3(1.0, 0.0, 1.0) * 4.0; }
 	// (the blades' coverage kept down the mips: thin blades fade out of an averaged alpha, so it is raised with the mip
 	// the texel footprint picks)
 	vec2 ts = vec2(textureSize(atlas, 0));
@@ -206,4 +213,18 @@ void fragment() {
 		flare_blade(v_wp, t, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+}
+
+// The key's light on the blades as the built-in gives it (Burley, and the back light through them), its sunlit upper
+// part warmed by sun_tip (the key alone, by day and dawn; never the moon or a lamp).
+void light() {
+	float cnl = max(dot(NORMAL, LIGHT), 0.0);
+	float cnv = max(dot(NORMAL, VIEW), 1e-3);
+	float clh = max(dot(LIGHT, normalize(LIGHT + VIEW)), 0.0);
+	float fd90m1 = 2.0 * clh * clh * ROUGHNESS - 0.5;
+	float fl = 1.0 + fd90m1 * pow(1.0 - cnl, 5.0), fv = 1.0 + fd90m1 * pow(1.0 - cnv, 5.0);
+	float d = fl * fv * cnl;
+	vec3 lc = LIGHT_COLOR * ATTENUATION;
+	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t) * (1.0 - flora_light.x));
+	DIFFUSE_LIGHT += lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
 }

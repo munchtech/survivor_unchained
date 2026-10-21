@@ -38,11 +38,54 @@ uniform bool foot = false;
 global uniform vec4 survivor;
 global uniform vec4 view_from;
 
-#ifdef OWN_FOLIAGE
-// The key light's kind for our own trees (Atmosphere sets it): x how much it is the moon (0 by day,
+#if defined(OWN_FOLIAGE) || defined(OWN_ROCK)
+// The key light's kind for our own trees and stones (Atmosphere sets it): x how much it is the moon (0 by day,
 // 1 at night), y how much a low warm sun (dawn, dusk); z, w the key's red and blue against its
 // green (linear), so the needles' back light and their lit tips can be held to a hue.
 global uniform vec4 flora_light;
+// (a packed species, env_trees.py / env_rocks.py: its pieces in one mesh, each vertex's COLOR.a its piece, (index + 0.5) / 8; each
+// copy draws only its own, its MultiMesh's custom data r, the rest collapsed to one point: one draw for all its pieces)
+uniform bool packed = false;
+#endif
+
+#ifdef OWN_ROCK
+// Our own stone (tools/assets/env_rocks.py; look bible 07: one stone for the rocks, the river's stones and, later, the
+// footings): one painted sheet drawn triplanar in world space (its alpha the moss's breakup), the pieces' baked vertex
+// colour (r edge wear, g cavity, b broad occlusion), moss on what faces up and toward moss_side, pale lichen spots,
+// grime from the foot, and under the water's height a dark wet band (flora_species.json "stone": every value here).
+uniform sampler2D stone_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D stone_nor : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+// (where the zone's water stands: x its height, w 1 if it has any; ZoneView sets it)
+global uniform vec4 water_level;
+uniform float tile = 1.9;
+uniform vec3 stone_tint = vec3(1.0);
+uniform float macro = 0.22;
+uniform float bump = 0.55;
+uniform float edge_light = 0.32;
+uniform float cavity_dark = 0.45;
+uniform float occl_dark = 0.4;
+uniform float moss_amount = 0.5;
+uniform vec4 moss_color : source_color = vec4(0.27, 0.31, 0.17, 1.0);
+uniform vec2 moss_side = vec2(0.0, -1.0);
+uniform float moss_side_amount = 0.25;
+uniform float lichen_amount = 0.25;
+uniform vec4 lichen_color : source_color = vec4(0.56, 0.58, 0.47, 1.0);
+uniform float grime_h = 0.45;
+uniform float grime_dark = 0.3;
+uniform float wet_above = 0.09;
+uniform float wet_dark = 0.55;
+uniform float wet_rough = 0.32;
+uniform float rough = 0.88;
+// (the colour its shade keeps, a little of its own albedo given back: never grey-black; more under the moon)
+uniform vec3 shade = vec3(0.92, 0.98, 1.1);
+uniform float shade_floor = 0.025;
+uniform float night_fill = 0.1;
+varying vec3 v_wpos;
+varying vec3 v_wnrm;
+varying float v_foot;
+#endif
+
+#ifdef OWN_FOLIAGE
 // (a species' own: its leaves' flutter in the wind, the spruce's 1; the warmest hue its sunlit
 // tips may take under a low sun, sRGB degrees)
 uniform float flutter = 1.0;
@@ -58,9 +101,6 @@ uniform float night_hue = 0.0;
 uniform float night_value = 1.0;
 // (and its light through the needles cut by this much by day: judge E4 r3, the nearest roaddawn spruce still the frame's mintiest)
 uniform float near_back = 0.25;
-// (a packed species, env_trees.py: its pieces in one mesh, each vertex's COLOR.a its piece, (index + 0.5) / 8; each
-// copy draws only its own, its MultiMesh's custom data r, the rest collapsed to one point: one draw for all its pieces)
-uniform bool packed = false;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
@@ -150,8 +190,13 @@ void vertex() {
 #endif
 	VERTEX.x += sway;
 	VERTEX.z += sway * 0.5;
-#ifdef OWN_FOLIAGE
+#if defined(OWN_FOLIAGE) || defined(OWN_ROCK)
 	if (packed && abs(COLOR.a - INSTANCE_CUSTOM.r) > 0.06) VERTEX = vec3(0.0);
+#endif
+#ifdef OWN_ROCK
+	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
+	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
 #endif
 #ifdef REVEAL
 	// The rim is drawn again only for a piece near the line from her to the
@@ -289,6 +334,48 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
 		ALBEDO *= mix(0.6, 1.0, open_);
+	}
+#endif
+
+#ifdef OWN_ROCK
+	{
+		vec3 wp = v_wpos;
+		vec3 wn = normalize(v_wnrm);
+		vec3 bw = pow(abs(wn), vec3(4.0));
+		bw /= dot(bw, vec3(1.0));
+		vec2 ux = wp.zy / tile, uy = wp.xz / tile + 0.31, uz = wp.xy / tile + 0.57;
+		vec4 st = texture(stone_tex, ux) * bw.x + texture(stone_tex, uy) * bw.y + texture(stone_tex, uz) * bw.z;
+		vec2 nx = texture(stone_nor, ux).rg * 2.0 - 1.0, ny = texture(stone_nor, uy).rg * 2.0 - 1.0, nz = texture(stone_nor, uz).rg * 2.0 - 1.0;
+		vec3 bn = normalize(wn + bump * (vec3(0.0, nx.y, nx.x) * bw.x + vec3(ny.x, 0.0, ny.y) * bw.y + vec3(nz.x, nz.y, 0.0) * bw.z));
+		vec3 col = st.rgb * stone_tint;
+		// (a broad value patch over many repeats, so a cliff's sheet does not read as tiles; each copy its own shade)
+		float mac = texture(stone_tex, wp.xz / (tile * 7.3) + vec2(0.37, 0.11)).a;
+		col *= mix(1.0 - macro, 1.0 + macro, mac) * (0.93 + 0.14 * v_jit);
+		// the baked rims, cracks and hollows
+		col *= (1.0 + edge_light * COLOR.r) * (1.0 - cavity_dark * COLOR.g) * (1.0 - occl_dark * COLOR.b);
+		// grime from the foot up, its line broken by the sheet's patches
+		if (grime_h > 0.0) col *= mix(1.0 - grime_dark, 1.0, smoothstep(0.0, grime_h, v_foot + 0.3 * grime_h * (st.a - 0.5)));
+		// moss on what faces up (and toward moss_side), in patches, more in the hollows, less on worn rims
+		vec2 ms = moss_side / max(length(moss_side), 1e-4);
+		float face = bn.y + moss_side_amount * dot(bn.xz, ms);
+		float mz = smoothstep(0.45, 0.85, face) * smoothstep(0.35, 0.75, st.a + 0.3 * COLOR.g + 0.2 * COLOR.b - 0.3 * COLOR.r);
+		// lichen: pale spots on its tops and sides
+		float lich = texture(stone_tex, wp.zx / (tile * 0.37) + 0.5).a;
+		float lz = smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
+		// wet: under the water's height + wet_above, dark and glossy, its edge ragged; no moss or lichen there
+		float wy = water_level.w > 0.5 ? water_level.x : -1e5;
+		float wet = 1.0 - smoothstep(wy + wet_above * 0.5, wy + wet_above * (1.0 + 0.8 * st.a), wp.y);
+		mz *= moss_amount * (1.0 - wet);
+		lz *= 1.0 - wet;
+		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
+		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
+		col *= mix(1.0, wet_dark, wet);
+		ALBEDO = col;
+		ROUGHNESS = mix(rough, wet_rough, wet);
+		SPECULAR = mix(0.35, 0.5, wet);
+		NORMAL = normalize((VIEW_MATRIX * vec4(bn, 0.0)).xyz);
+		// its shade keeps colour: a little of its own albedo given back, cool by day, more under the moon
+		EMISSION += col * shade * mix(shade_floor, night_fill, flora_light.x);
 	}
 #endif
 

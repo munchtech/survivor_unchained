@@ -7,7 +7,8 @@ o (as built: our own flora, the default since E4h, plus x= flags); g is the kit'
 SETS, comma-separated: town (the square, the east road, the north street by day), ford (Low Ford by
 night: camp, road A, road B, the ford, the wood road, two ford lamps), close (the close view at camp,
 closest zoom, twice facing away from the fire and twice facing it), camp (the camp at the play camera), towndawn, forddawn,
-road (the wood road by night, and the ford road), roaddawn.
+road (the wood road by night, and the ford road), roaddawn, stones (E5: the ford's stepping stones,
+the post's pebbles, a boulder field, by day).
 Frames land in godot/.shots/ as ROUND_SET_VARIANT_*.png; tables as godot/.shots/ROUND_SET_g.bin.
 """
 import os, subprocess, sys, time
@@ -34,6 +35,8 @@ SETS = {
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),
     # (E4h: the town's elders in the open by day (-36,-34: 14 m from any tree), at the play camera: their cream flower heads)
     "elder": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-37.5,-30.5"], 1),
+    # (env lead 10, E5: our stones by day at the play camera: the ford's stepping stones, the post's pebbles and boulders, a boulder field)
+    "stones": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "1.5,-44;9,40;18,-80"], 3),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
