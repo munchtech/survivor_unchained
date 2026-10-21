@@ -337,8 +337,12 @@ def match_pieces(path, field, hair=False):
 
 SPIKE_L1 = 0.3                    # (a point's weights this far (L1) from its ring's mean: a spike)
 NAPE_BOX = (1.50, 1.74, 0.11)     # (rest y from, to, and radius round her neck's axis, m)
-NAPE_TH = 45.0                    # (deg round her neck from her front left alone: her throat, ease's; at 70 a fold
+NAPE_TH = 30.0                    # (deg round her neck from her front left alone: her throat, ease's; at 70 a fold
 #                                    under her left ear (Head 0.55 -> 0.70 in 5 mm, rest y 1.64) stayed)
+NAPE_FEATHER = 45.0               # (deg past NAPE_TH over which the eased weights blend in from her held ones. 20 Oct:
+#                                    a hard edge at 45 left a crease along it under her left ear (rest y 1.64, her
+#                                    throat's ramp there steeper than her right's): 7 deg -> 77 turned 45 to her right,
+#                                    49 chin down. Blended 30 -> 75 it is 15 and 11, her right side the same or better)
 NAPE_HEAD = 0.98                  # (her head's skin at this much Head and over is held: her face and scalp)
 NAPE_LOW = 0.005                  # (Head + neck_01 under this: her back and shoulders, held)
 
@@ -540,6 +544,10 @@ def ease_nape(path, save=True, merge=True):
     oth[none, sj] = rest[none, 0]
     oth[:, hj], oth[:, nk] = hn_[:, 0], hn_[:, 1]
     X[fi] = oth
+    # (blended in round her neck from NAPE_TH to NAPE_TH + NAPE_FEATHER, smoothstep, so no edge between her held
+    # throat and her eased nape folds in a turn)
+    t = np.clip((np.abs(th) - NAPE_TH) / max(NAPE_FEATHER, 1e-6), 0, 1)
+    X = Dw + (t * t * (3 - 2 * t))[:, None] * (X - Dw)
     chg = free & (np.abs(X - Dw).sum(1) > 1e-3)
     print("NAPE_EASE: %d points round her neck's back and sides refilled between her body and her head" % int(free.sum()))
     return _nape_write(G, prims, kind, Ps, off, wid, X, chg, names, save, merge, "NAPE_EASE")
@@ -562,7 +570,7 @@ def nape(path, save=True, merge=True):
     if save:
         d = open(path, "rb").read()
         g = json.loads(d[20:20 + jl])
-        g.setdefault("asset", {}).setdefault("extras", {})[NAPE_MARK] = {"spike_l1": SPIKE_L1, "th": NAPE_TH,
+        g.setdefault("asset", {}).setdefault("extras", {})[NAPE_MARK] = {"spike_l1": SPIKE_L1, "th": NAPE_TH, "feather": NAPE_FEATHER,
                                                                            "ease": b is not None}
         js = json.dumps(g, separators=(",", ":")).encode()
         js += b" " * ((4 - len(js) % 4) % 4)
