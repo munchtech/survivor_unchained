@@ -162,6 +162,10 @@ def bark(h, w, m, rng):
     # plates about 4-5 cm across and 20-30 cm down the trunk (a dead pine's long plates)
     f1, f2, pv = cells(h, w, int(round(m * h / w / 0.17)), int(round(m / 0.055)), rng, warp)
     edge = f2 - f1
+    # (round 2b: a second, finer net of shallow splits inside the plates, so they read as flaking bark, not
+    # clean puffy scales like a hide)
+    g1, g2, _ = cells(h, w, int(round(m * h / w / 0.07)), int(round(m / 0.03)), rng, warp)
+    sub = (1 - ss(0.0, 0.11, g2 - g1)) * ss(0.3, 0.6, fbm(h, w, 14, 10, rng, 2))
     wid = 0.06 + 0.16 * fbm(h, w, 10, 6, rng, 2)  # fissures wide and narrow by turns
     fis = 1 - ss(0.0, 1.0, edge / wid)  # 1 in the crack
     lip = ss(0.0, 1.0, edge / (wid * 2.6))  # 0 at the crack's lip, 1 on the plate's back
@@ -179,9 +183,12 @@ def bark(h, w, m, rng):
     rough = fbm(h, w, 140, 70, rng, 2)  # a scaly tooth at one scale
     col = col * (0.94 + 0.1 * rough[..., None])
     col = mix(col, srgb("#3a3026"), 0.35 * (1 - lip) * (1 - fis))  # into the crack
-    col = mix(col, srgb("#1f1813"), 0.9 * fis)
+    col = mix(col, srgb("#221a14"), 0.75 * fis)
     col = mix(col, srgb("#2f261e"), 0.6 * cross)
-    hgt = 0.004 * lip - 0.003 * fis + 0.0015 * pv + 0.0012 * mott - 0.0015 * cross - 0.001 * flake + 0.0005 * rough
+    col = mix(col, srgb("#2a221b"), 0.75 * sub * lip)
+    stri = fbm(h, w, 30, 120, rng, 2)  # fibrous striations down the plates
+    col = col * (0.9 + 0.2 * stri[..., None])
+    hgt = -0.0015 * sub * lip + 0.0025 * lip - 0.003 * fis + 0.0015 * pv + 0.0012 * mott - 0.0015 * cross - 0.001 * flake + 0.0005 * rough
     return col, hgt, 0.88 + 0.1 * pv, np.zeros((h, w), np.float32)
 
 
