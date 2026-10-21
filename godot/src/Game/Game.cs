@@ -1745,7 +1745,7 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, softshadow, ssao, msaa, interp,
+        // grass, fires, lamps, lampshadows, pines, broadleaf, pieces, labels, sunshadows, softshadow, ssao, msaa, interp,
         // flora, props, landmarks, ground, water, fx, volfog, mist (the river's sheets), fog, glow, fsr;
         // or quality:Q, scale:S, aa:A (that quality, resolution or smoothing while out).
         if (Args.Get("perf-flip") is string flips)
@@ -1753,7 +1753,8 @@ public partial class Game : Node, IZoneHost
             var flipped = flips.Split(',').ToHashSet();
             double every = Args.Num("perf-flip-every", 1);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            bool outNow = false, wasOut = false;
+            bool outNow = false, wasOut = false, pinesOut = false, broadOut = false;
+            List<Node3D>? pines = null, broad = null;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
             // aa:NAME: the edges smoothed so while out (Graphics.Aa); interp: drawn from the last step while out (Interp).
@@ -1795,6 +1796,21 @@ public partial class Game : Node, IZoneHost
                         flipped.Contains("water") && nm == "Water" || flipped.Contains("scatter") && nm == "Scatter" ||
                         flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Scatter" or "Fires" or "Lights"))
                         n.Visible = on;
+                }
+                // pines: the place's pines alone (the kit's, or ours under --flora-own: E4 measures each), found
+                // once (Dressing's flora_pine group) and switched only as the flip turns (no list made each frame).
+                if (flipped.Contains("pines") && outNow != pinesOut)
+                {
+                    pinesOut = outNow;
+                    pines ??= [.. GetTree().GetNodesInGroup("flora_pine").OfType<Node3D>()];
+                    foreach (var p in pines) p.Visible = on;
+                }
+                // broadleaf: the place's broadleaf trees (the kit's CommonTrees, green and autumn, or our alders)
+                if (flipped.Contains("broadleaf") && outNow != broadOut)
+                {
+                    broadOut = outNow;
+                    broad ??= [.. GetTree().GetNodesInGroup("flora_broadleaf").OfType<Node3D>(), .. GetTree().GetNodesInGroup("flora_autumn").OfType<Node3D>()];
+                    foreach (var p in broad) p.Visible = on;
                 }
                 // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
                 if (flipped.Contains("lampshadows")) ShadowLamp.Enabled = on;

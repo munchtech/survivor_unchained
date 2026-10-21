@@ -119,6 +119,9 @@ public partial class Game
         figZoom = Mathf.Clamp(figZoom + zoom, 0, 1);
     }
 
+    /// <summary>The figure's weapon and shield shown or put away (away on creation's look screen).</summary>
+    public void FigureArms(bool shown) => figure?.ShowHeld(shown);
+
     /// <summary>Framed for a step or a part of the look: so near, turned so far.</summary>
     public void FrameFigure(float zoom, float turn = 0)
     {
@@ -413,8 +416,9 @@ public partial class Game
             var a = SurvivorUnchained.Rpg.Callings.Archetype(arch);
             draft.Archetype = arch; draft.WeaponItem = a.Weapons[0]; draft.Ability = a.Abilities[0]; draft.Palette = a.Palettes[0].Id; draft.Model = a.Model;
         }
-        // --step N --part N (pictures of a step, and of the look's part).
-        if (Args.Get("step") is string st && int.TryParse(st, out var sn)) draft.Step = Math.Clamp(sn, 0, 4);
+        // --step N --part N (pictures of a screen, 0 or 1, and of its group: the calling's 0 calling, 1 arms,
+        // 2 origin; the look's 0 her face, 1 her hair).
+        if (Args.Get("step") is string st && int.TryParse(st, out var sn)) draft.Step = Math.Clamp(sn, 0, 1);
         if (Args.Get("part") is string pt && int.TryParse(pt, out var pn)) draft.Section = pn;
         // --face slider=v,slider=v (pictures of a face shaped so), --hair ID
         if (Args.Get("face") is string fc)
@@ -432,6 +436,8 @@ public partial class Game
         }
         if (Args.Get("skin") is string sk) draft.Skin = sk;
         if (Args.Get("eyes") is string ey) draft.Eyes = ey;
+        // --paint ID: the paint on her face (Lore.Hero's paints: none, kohl, woad...).
+        if (Args.Get("paint") is string pa) draft.Paint = pa;
         DressFigure(draft);
         PoseCreate();
         // --look-time day|dawn|dusk: the Look in that light, not the fire's night (pictures of her hair by day).

@@ -109,8 +109,11 @@ public static class Atmospheres
     /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#90b6ff", KeyIntensity = 4.9,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
-        KeyElevation = 20, KeyAzimuth = 250, ShadowStrength = 0.9,
+        KeyColor = "#90b6ff", KeyIntensity = 4.9 * 0.55,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
+        // (E4f, judge E4 r3: at 20 degrees the trees' shadows lay across the camp and road as a fence of long straight bars; up
+        // to 28. Measured at the camp: x0.73 (sin 20 / sin 28) left the moonlit ground 1.6-2.5 OKLab L brighter (p85, p95); x0.55
+        // holds it (35.5 / 45.4 against 35.4 / 46.0). The frame's median still rises 1.6 L*: the shadows are shorter, the point)
+        KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
         HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.6, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
         Grade = PlayNightGrade, Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,

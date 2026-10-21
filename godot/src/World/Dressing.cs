@@ -17,9 +17,52 @@ public static class Dressing
 
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
-    /// <summary>A piece's file: a photoscan (art/world) or a kit piece.</summary>
+    /// <summary>A piece's file: a photoscan (art/world), one of our own trees (art/world/flora) or a kit piece.</summary>
     static string FileOf(string kit, string piece) =>
-        piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb" : $"res://assets/env/{kit}/{piece}.gltf";
+        piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb"
+        : piece.StartsWith("own:") ? $"res://art/world/flora/{OwnFile(piece)}.gltf" : $"res://assets/env/{kit}/{piece}.gltf";
+
+    /// <summary>Our own flora (E4; the default since E4h, --flora-kit for the kit's, kept to compare): the kit's
+    /// pines, broadleaf trees, dead trees, bushes and ferns drawn as ours (tools/assets/env_trees.py), the same count,
+    /// places and sizes. Which kit piece is which of ours is data: godot/data/flora_species.json (a zone may override it).</summary>
+    public static readonly bool FloraOwn = !SurvivorUnchained.Args.Has("flora-kit");
+    /// <summary>The piece as this zone draws it: "own:a" (or "own:a|b|c", one per copy by its place) with our own flora,
+    /// null where ours drops it (an empty list: the kit's clover, flowers and mushrooms; our grass has its own flowers).</summary>
+    public static string? Own(string piece, string zone = "") =>
+        FloraOwn && FloraSpecies.OwnFor(zone, piece) is { } o ? (o.Length == 0 ? null : "own:" + string.Join('|', o)) : piece;
+
+    /// <summary>Where our own flora changes LOD (a cell's middle from the camera, m; flora_species.json's "lod" per
+    /// species, --flora-lod1/--flora-lod2/--flora-cell override every species, for measuring): lod0 inside the first,
+    /// lod1 to the second, lod2 beyond. The play camera (23 m back at 56 degrees, 34 degrees high) sees no ground
+    /// farther than about 40 m from it, so lod0 is only what is on screen in play. The copies are gathered in
+    /// cells for this, so a tree's LOD goes by its own square, not by its bucket's middle. The shadows are cast by
+    /// the piece's shadow proxy alone (the file's "shadow" node), in cells twice as wide.</summary>
+    static float[] LodsFor(FloraSpecies.Species sp)
+    {
+        float l1 = sp.Lod.Length > 0 ? sp.Lod[0] : 44, l2 = sp.Lod.Length > 1 ? sp.Lod[1] : 0;
+        if (SurvivorUnchained.Args.Has("flora-lod1")) l1 = SurvivorUnchained.Args.Num("flora-lod1", l1);
+        if (SurvivorUnchained.Args.Has("flora-lod2")) l2 = SurvivorUnchained.Args.Num("flora-lod2", l2);
+        return [l1, l2];
+    }
+    static float CellFor(FloraSpecies.Species sp) => SurvivorUnchained.Args.Has("flora-cell") ? SurvivorUnchained.Args.Num("flora-cell", 24) : sp.Cell;
+
+    /// <summary>An own file's meshes: lod0, lod1, lod2 (a missing one is the one before it) and its shadow proxy
+    /// (null if the file has none).</summary>
+    static Mesh?[] LodsOf(string file)
+    {
+        var scene = GD.Load<PackedScene>($"res://art/world/flora/{file}.gltf").Instantiate<Node3D>();
+        var m = new Mesh?[4];
+        for (int i = 0; i < 4; i++) m[i] = scene.FindChild(i < 3 ? $"lod{i}" : "shadow", true, false) is MeshInstance3D mi ? mi.Mesh : i < 3 ? m[Mathf.Max(i - 1, 0)] : null;
+        scene.Free();
+        return m;
+    }
+
+    /// <summary>One own piece of a copy: "own:a|b" chooses by the copy's place.</summary>
+    static string OwnPick(string[] names, Vector3 o) =>
+        names.Length == 1 ? names[0] : names[(int)((uint)(Mathf.FloorToInt(o.X * 3.7f) * 73856093 ^ Mathf.FloorToInt(o.Z * 2.9f) * 19349663) % (uint)names.Length)];
+
+    /// <summary>An own piece's file (without .gltf).</summary>
+    static string OwnFile(string piece) { var p0 = piece[4..].Split('|')[0]; return FloraSpecies.Of(p0).FileOf(p0).File; }
 
     /// <summary>Every file the place's flora and props are made from (Prefetch asks for them ahead).</summary>
     public static IEnumerable<string> Files(ZoneData z)
@@ -58,6 +101,7 @@ public static class Dressing
     /// variant): GroundPaint reads its crown from it, for the frost's sky exposure.</summary>
     public static Aabb BoundsOf(string piece)
     {
+        if (piece.StartsWith("own:")) return LodsOf(OwnFile(piece))[0]!.GetAabb();
         var list = piece.StartsWith("scan:") ? VariantsOf(piece[5..]) : PartsOf("nature", piece);
         Aabb? b = null;
         foreach (var (mesh, local) in list)
@@ -147,7 +191,28 @@ public static class Dressing
     public static Node3D Flora(ZoneData z)
     {
         var root = new Node3D { Name = "Flora" };
+        // Our own flora gathered across the zone's groups (the kit's Pine_1 and Pine_3 are both spruce_a, its
+        // broadleaf and autumn CommonTrees both alders, in many groups): one set of cells per file and look, not per
+        // group (E4c: the trees' draws). A packed species' pieces share one file (each copy told which it is, its
+        // MultiMesh's custom data). Ours keep their own greens (no recolour) and their species' wind.
+        var flora = new List<ZoneData.FloraGroup>();
+        var merged = new Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)>();
         foreach (var g in z.Flora)
+        {
+            if (!g.Piece.StartsWith("own:")) { flora.Add(g); continue; }
+            var names = g.Piece[4..].Split('|');
+            foreach (var t in g.At)
+            {
+                var name = OwnPick(names, t.Origin);
+                var sp = FloraSpecies.Of(name);
+                var (file, v) = sp.FileOf(name);
+                var look = g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
+                if (!merged.TryGetValue((file, look), out var mg)) merged[(file, look)] = mg = (sp, new(), new());
+                mg.At.Add(t); mg.Var.Add(v);
+            }
+        }
+        foreach (var ((file, look), (sp, at, vars)) in merged) OwnFlora(root, sp, file, look, at, vars);
+        foreach (var g in flora)
         {
             var low = Low.Contains(g.Kind);
             if (g.Piece.StartsWith("scan:"))
@@ -181,18 +246,86 @@ public static class Dressing
             {
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = g.At.Length };
                 for (int i = 0; i < g.At.Length; i++) mm.SetInstanceTransform(i, g.At[i] * local);
-                root.AddChild(new MultiMeshInstance3D
+                root.AddChild(Kind(new MultiMeshInstance3D
                 {
                     Multimesh = mm,
                     Name = $"{g.Kind}:{g.Piece}",
                     CastShadow = low ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On,
                     // Undergrowth goes before it gets small on screen.
                     VisibilityRangeEnd = low ? 70 : 0,
-                });
+                }, g.Kind));
             }
         }
         return root;
     }
+
+    /// <summary>Our own flora of one file and look: its copies in cells (the species' cell), each cell a MultiMesh
+    /// per LOD shown by distance, and its shadow proxy (if it casts) in cells twice as wide. A packed file's copies
+    /// carry which of its pieces each is (custom data r: (index + 0.5) / 8, matched against the vertex's COLOR.a).</summary>
+    static void OwnFlora(Node3D root, FloraSpecies.Species sp, string file, KitLook.Look look, List<Transform3D> all, List<int> vars)
+    {
+        var lods = LodsOf(file);
+        var lr = LodsFor(sp);
+        float cell = CellFor(sp);
+        MultiMeshInstance3D Mmi(Mesh mesh, string tag, List<int> idx, List<Transform3D> at)
+        {
+            var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = sp.Packed, Mesh = Looked(mesh, look), InstanceCount = idx.Count };
+            for (int i = 0; i < idx.Count; i++)
+            {
+                mm.SetInstanceTransform(i, at[idx[i]]);
+                if (sp.Packed) mm.SetInstanceCustomData(i, new Color((vars[idx[i]] + 0.5f) / 8f, 0, 0, 0));
+            }
+            return Kind(new MultiMeshInstance3D { Multimesh = mm, Name = $"{sp.Kind}:{file}:{tag}", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off }, sp.Kind);
+        }
+        static Dictionary<(int, int), List<int>> Cells(List<Transform3D> at, float side)
+        {
+            var cells = new Dictionary<(int, int), List<int>>();
+            for (int i = 0; i < at.Count; i++)
+            {
+                var k = (Mathf.FloorToInt(at[i].Origin.X / side), Mathf.FloorToInt(at[i].Origin.Z / side));
+                if (!cells.TryGetValue(k, out var l)) cells[k] = l = new();
+                l.Add(i);
+            }
+            return cells;
+        }
+        foreach (var ((cx, cz), idx) in Cells(all, cell))
+        {
+            // lod0 to lr[0]; lod1 to lr[1] (if any), then lod2; the last to the species' end (0: always)
+            var l0 = Mmi(lods[0]!, $"lod0_{cx}_{cz}", idx, all); l0.VisibilityRangeEnd = lr[0]; l0.VisibilityRangeEndMargin = 2;
+            var l1 = Mmi(lods[1]!, $"lod1_{cx}_{cz}", idx, all); l1.VisibilityRangeBegin = lr[0]; l1.VisibilityRangeBeginMargin = 2;
+            root.AddChild(l0); root.AddChild(l1);
+            if (lr[1] > lr[0])
+            {
+                l1.VisibilityRangeEnd = lr[1]; l1.VisibilityRangeEndMargin = 4;
+                var l2 = Mmi(lods[2]!, $"lod2_{cx}_{cz}", idx, all); l2.VisibilityRangeBegin = lr[1]; l2.VisibilityRangeBeginMargin = 4;
+                if (sp.End > 0) l2.VisibilityRangeEnd = sp.End;
+                root.AddChild(l2);
+            }
+            else if (sp.End > 0) l1.VisibilityRangeEnd = sp.End;
+        }
+        if (!sp.Shadow || lods[3] is not Mesh proxy) return;
+        // (cast as the kit's pines are: by the key and by a lamp in reach, every one of them)
+        // Each copy's shadow its own (judge E4b: the camp's night shadows stood as identical blades): the proxy
+        // turned about the trunk and stretched by its own hash, width within 15%; its height within 30% (judge
+        // E4c: under the low moon the tips stood in a line, a fence of spikes).
+        var shAt = new List<Transform3D>(all.Count);
+        foreach (var t in all)
+        {
+            float h1 = Mathf.PosMod(Mathf.Sin(t.Origin.X * 12.9898f + t.Origin.Z * 78.233f) * 43758.5453f, 1f);
+            float h2 = Mathf.PosMod(h1 * 91.7f + 0.31f, 1f), h3 = Mathf.PosMod(h1 * 57.3f + 0.67f, 1f);
+            var jit = new Basis(Vector3.Up, h1 * Mathf.Tau).Scaled(new Vector3(0.85f + 0.3f * h2, 0.7f + 0.6f * h3, 0.85f + 0.3f * h2));
+            shAt.Add(t * new Transform3D(jit, Vector3.Zero));
+        }
+        foreach (var ((cx, cz), idx) in Cells(shAt, 2 * cell))
+        {
+            var sh = Mmi(proxy, $"shadow_{cx}_{cz}", idx, shAt); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+            root.AddChild(sh);
+        }
+    }
+
+    /// <summary>A flora node in its kind's group ("flora_pine"; perf's pines flip finds them so: Godot
+    /// renames a second node of one name, so the names can't be matched).</summary>
+    static T Kind<T>(T n, string kind) where T : Node { n.AddToGroup($"flora_{kind}"); return n; }
 
     /// <summary>The side of the squares the kit pieces are gathered in
     /// (--prop-cell to measure others). Measured in the Waystation by day:

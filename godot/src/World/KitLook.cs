@@ -33,7 +33,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -111,7 +111,15 @@ public static class KitLook
         if (cache.TryGetValue(key, out var m)) return m;
         solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
-        m = new ShaderMaterial { Shader = foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
+        // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
+        bool mine = foliage && s.ResourceName.Contains("Own");
+        own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
+        // (our alder, a broadleaf: its own light, the key's shadow taken in part, OWN_BROADLEAF)
+        ownLeaf ??= new Shader { Code = own.Code.Replace("#define OWN_FOLIAGE", "#define OWN_FOLIAGE\n#define OWN_BROADLEAF") };
+        // (the species' data, godot/data/flora_species.json: its shader parameters; "broadleaf" the leaf light)
+        var sp = mine ? FloraSpecies.ByMaterial(s.ResourceName) : null;
+        bool alder = sp?.Broadleaf ?? (mine && s.ResourceName.Contains("Alder"));
+        m = new ShaderMaterial { Shader = alder ? ownLeaf : mine ? own : foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
         m.SetShaderParameter("albedo_tex", s.AlbedoTexture);
         m.SetShaderParameter("albedo_color", s.AlbedoColor);
         m.SetShaderParameter("use_vcolor", s.VertexColorUseAsAlbedo);
@@ -123,21 +131,44 @@ public static class KitLook
             if (re.IsMatch(s.ResourceName)) { m.SetShaderParameter("weather_sat", sat); m.SetShaderParameter("weather_tint", foliage ? tint * look.Shade : tint); break; }
         // (--kit-paint: a painted sheet carries its own warmth, so it is weathered as its painter says)
         if (Textures.PaintedWeather(s.AlbedoTexture) is var (psat, ptint)) { m.SetShaderParameter("weather_sat", psat); m.SetShaderParameter("weather_tint", ptint); }
+        // (ours are painted for the look: weathered lightly, and trunk and needles sway as one)
+        // (the vertex colour is their occlusion, read in OWN_FOLIAGE, not paint)
+        if (mine) { m.SetShaderParameter("weather_sat", 0.86f); m.SetShaderParameter("weather_tint", new Vector3(0.7f, 0.76f, 0.7f) * look.Shade); m.SetShaderParameter("use_vcolor", false); }
+        // (a packed species: its pieces in one file, each copy drawing only its own, OWN_FOLIAGE)
+        if (sp is { Packed: true }) m.SetShaderParameter("packed", true);
+        // (our alder, a broadleaf: its leaves flutter more than needles, and its olive is held off yellow under a low sun)
+        // (the floors are set above the hue wanted on screen, ~100 and ~88: the grade warms them by 8-12 degrees, measured at roaddawn)
+        // (alder at 86 left its sunlit tops pale yellow-olive at dawn, judge E4c: its brightest tenth at hue 90 or above wanted;
+        // its crown core lightened, core 0.45, as its top by day read as a hole)
+        // (the alder's flutter 2.2, hue floor 98 and core 0.3, the spruce's floor 108: now flora_species.json's "shader")
+        if (sp != null)
+            foreach (var (k, v) in sp.Shader)
+            {
+                if (k == "broadleaf") continue;
+                if (k == "tint") { m.SetShaderParameter("weather_tint", new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()) * look.Shade); continue; }
+                m.SetShaderParameter(k == "sat" ? "weather_sat" : k, v.GetSingle());
+            }
+        if (alder && SurvivorUnchained.Args.Has("flora-sun-lift")) m.SetShaderParameter("sun_lift", SurvivorUnchained.Args.Num("flora-sun-lift", 0.1f));
+        // (--flora-near-back F, --flora-near-dim F: a near tree's light through its leaves and its albedo cut by day, for pictures)
+        if (mine) { m.SetShaderParameter("near_back", SurvivorUnchained.Args.Num("flora-near-back", 0.25f)); if (SurvivorUnchained.Args.Has("flora-near-dim")) m.SetShaderParameter("near_dim", SurvivorUnchained.Args.Num("flora-near-dim", 0.2f)); }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
-        if (foliage && look.LeafA is Color a && look.LeafB is Color b)
+        // (ours keep their own greens: the kit's autumn recolour gave gold tops, cut for the cinematics)
+        if (foliage && !mine && look.LeafA is Color a && look.LeafB is Color b)
         {
             m.SetShaderParameter("recolor_a", new Vector4(a.R, a.G, a.B, look.LeafAmount));
             m.SetShaderParameter("recolor_b", new Vector3(b.R, b.G, b.B));
         }
         m.SetShaderParameter("moss", foliage ? 0f : look.Moss);
-        m.SetShaderParameter("jitter", foliage ? 0.14f : 0.08f);
+        m.SetShaderParameter("jitter", mine ? 0f : foliage ? 0.14f : 0.08f);  // (ours: OWN_FOLIAGE jitters each tree itself)
         m.SetShaderParameter("foot", foot);
         m.SetShaderParameter("leaves", foliage);
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
         solidRim ??= Rim(solid);
         twoSidedRim ??= Rim(twoSided);
-        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : twoSidedRim };
+        ownRim ??= Rim(own);
+        ownLeafRim ??= Rim(ownLeaf);
+        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : m.Shader == own ? ownRim : m.Shader == ownLeaf ? ownLeafRim : twoSidedRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {
             var name = (string)u.AsGodotDictionary()["name"];
