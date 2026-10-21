@@ -50,6 +50,16 @@ uniform float run_bot = -0.5;                // ...down to here, narrowing
 uniform float run_dark = 0.45;               // its albedo (soaked stone)
 uniform float run_rough = 0.1;
 uniform float far_floor = 0.0;               // a sub-pixel crack's least share of its light (0.5 tried in r3: no change at s7_2)
+// (mid distance, E7c r4: as the stone gets small on screen, its cracks widen and brighten so they hold their light
+// instead of averaging away, and the stone and its sheen step back; m = 0 at an s8 close-up (a few grazing edges ~0.2), 1 at s7's distance)
+uniform float far_lo = 1.0;                  // a pixel's size over vein_core where the mid-distance look starts...
+uniform float far_hi = 1.5;                  // ...and where it is full
+uniform float far_wide = 1.8;                // the cracks' width at full m (x)
+uniform float far_boost = 3.0;               // the cores' emission at full m (x)
+uniform float far_glow = 1.5;                // the light in the stone at full m (x)
+uniform float far_stone = 0.75;               // the stone's albedo at full m (x)
+uniform float far_sheen = 0.3;               // the wet edge sheen at full m (x)
+uniform float far_fine = 0.5;                // the fine network at full m (x)
 uniform float dbg = 0.0;                     // 1: the stone's own azimuth and height as colour (tuning the run's place)
 uniform float unit = 0.05;                   // world metres per unit-stone length (OrbView: its scale)
 
@@ -113,13 +123,17 @@ void fragment() {
 	float n2 = 0.5 * vnoise(op * 1.1 + 11.3) + 0.5 * vnoise(op * open_freq * 1.7 + 23.1);
 	float t2 = smoothstep(fine_gate, fine_gate + vein_taper, n2);
 	float wv = 0.75 + 0.5 * vnoise(op * 3.0 + 5.0);
-	float hw1 = vein_core * wv * t1, hw2 = fine_core * wv * t2;
+	// (a pixel's size in unit-stone lengths, the lesser axis so a grazing edge at s8 doesn't count as far)
+	vec3 ox = dFdx(op), oy = dFdy(op);
+	float px = sqrt(min(dot(ox, ox), dot(oy, oy)));
+	float m = smoothstep(far_lo, far_hi, px / vein_core);
+	float hw1 = vein_core * wv * t1 * mix(1.0, far_wide, m), hw2 = fine_core * wv * t2;
 	float f1 = max(fwidth(d1), 1e-5), f2 = max(fwidth(d2), 1e-5);
 	float e1 = smoothstep(0.0, 0.12, t1), e2 = smoothstep(0.0, 0.12, t2);
 	// (a crack thinner than a pixel draws a pixel's line at its share of the light, so a far stone isn't a full web)
 	float c1 = e1 * (1.0 - smoothstep(hw1 - 0.6 * f1, hw1 + 0.6 * f1, d1)) * clamp(2.0 * hw1 / f1, far_floor, 1.0);
 	float c2 = e2 * (1.0 - smoothstep(hw2 - 0.6 * f2, hw2 + 0.6 * f2, d2)) * clamp(2.0 * hw2 / f2, far_floor, 1.0) * (1.0 - c1);
-	float core = c1 + c2 * fine_energy;          // emission weight
+	float core = c1 * mix(1.0, far_boost, m) + c2 * fine_energy * mix(1.0, far_fine, m);          // emission weight
 	float hole = max(c1, c2);                    // what the core covers of the stone
 	float glow = max(t1 * exp(-max(d1 - hw1, 0.0) / vein_glow_w), fine_energy * t2 * exp(-max(d2 - hw2, 0.0) / (vein_glow_w * 0.4)));
 	// (the lip: 1-2 px of darkened stone either side of the core, where the crack's edge breaks down into the groove)
@@ -133,7 +147,7 @@ void fragment() {
 	float lum = dot(st.rgb, vec3(0.333));
 	vec3 col = mix(vec3(lum), st.rgb, 0.35) * tint * stone_gain;
 	col *= 1.0 + 0.45 * COLOR.r - 0.5 * COLOR.g - 0.3 * COLOR.b;
-	col *= 1.0 - scorch * lip;
+	col *= (1.0 - scorch * lip) * mix(1.0, far_stone, m);
 	// (the light in the stone either side of a crack tints its face, as light through a thin edge)
 	col = mix(col, col * 0.75 + glow_color * 0.1, glow * 0.35);
 
@@ -179,9 +193,12 @@ void fragment() {
 	// --- the light: the cores cross the glow threshold; the light in the stone stays under it; the wet edge a sheen
 	float b = (1.0 - beat_amp) + 2.0 * beat_amp * beat;
 	// (the run is soaked: the light in the stone and the edge sheen dim under it, its lit edge a thin line)
-	EMISSION = level * b * (core_color * core * vein_energy + glow_color * glow * vein_glow * (1.0 - hole) * (1.0 - 0.8 * run))
-		+ sheen_color * (sheen * edge * (1.0 - run) + 0.08 * run_lip) * (1.0 - hole);
-	if (dbg > 0.5) {
+	EMISSION = level * b * (core_color * core * vein_energy + glow_color * glow * vein_glow * mix(1.0, far_glow, m) * (1.0 - hole) * (1.0 - 0.8 * run))
+		+ sheen_color * (sheen * mix(1.0, far_sheen, m) * edge * (1.0 - run) + 0.08 * run_lip) * (1.0 - hole);
+	if (dbg > 1.5) {   // 2: the mid-distance look's share m, red over green (tuning far_lo/far_hi)
+		ALBEDO = vec3(0.0); ROUGHNESS = 1.0; SPECULAR = 0.0;
+		EMISSION = 0.5 * vec3(m, 1.0 - m, 0.0);
+	} else if (dbg > 0.5) {
 		float az = atan(op.z, op.x) / 6.2831853 + 0.5;
 		ALBEDO = vec3(0.0); ROUGHNESS = 1.0; SPECULAR = 0.0;
 		EMISSION = 0.4 * vec3(az, clamp(op.y * 0.5 + 0.5, 0.0, 1.0), 1.0 - az);
