@@ -8916,6 +8916,89 @@ def armor_tuck_rekey(pre, path, folder):
     print("ARMOR TUCK REKEY: %d of her glb's points moved after export; %d tuck records followed them" % (int(mv.sum()), moved))
 
 
+# (armor 7, 20 Oct: THE BOUNDED TUCK. The owner's crop, the warden's cups in town: a small round pinch on her
+# left breast just outside the cup's inner rim, its mirror smooth. Her skin's tuck was each point's own, from its
+# own 12 mm ray (a gap's few mm of noise became up to 8 mm of depth, neighbours 0.25 to 0.77, left and right 0.5
+# apart), and a ray grazing a rolled rim from just outside the piece tucked skin the piece never covered. Now, for
+# every piece and outfit: a point is under a piece only if its ray meets the piece face-on (|cos| >= TUCK_GRAZE;
+# a grazing hit is the rim seen from outside), and over her welded skin the tuck is the rays' need smoothed
+# (TUCK_SMOOTH_IT averaging rounds within the footprint), raised to an envelope that climbs no faster than
+# TUCK_SLOPE (tuck per metre of her surface) and TUCK_STEP between neighbours, and capped by the same climb in from
+# the footprint's border: no neighbour step past either, a slope in from every edge, nothing outside. The
+# rules that mean to be hard (a nipple's disc and bump, a boot's deep tuck) keep their values as floors.)
+TUCK_SMOOTH = os.environ.get("TUCK_SMOOTH", "1") == "1"
+TUCK_GRAZE = float(os.environ.get("TUCK_GRAZE", "0.5"))
+TUCK_SLOPE = float(os.environ.get("TUCK_SLOPE", "30"))
+TUCK_SMOOTH_IT = int(os.environ.get("TUCK_SMOOTH_IT", "4"))
+TUCK_STEP = float(os.environ.get("TUCK_STEP", "0.15"))   # (and no more than this between two neighbours, however far apart)
+
+
+def _tuck_graph():
+    """Her skin welded (copies at one point are one), its edges and their lengths in metres (world)."""
+    if "_tuck_g" not in globals():
+        me_ = body.data
+        co_ = np.array([(body.matrix_world @ v.co)[:] for v in me_.vertices])
+        _, gid_ = np.unique(np.round(np.array([v.co[:] for v in me_.vertices]) / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+        gid_ = np.asarray(gid_).ravel()
+        ng_ = int(gid_.max()) + 1
+        cg_ = np.zeros((ng_, 3))
+        cg_[gid_] = co_
+        ev_ = gid_[np.array([e.vertices[:] for e in me_.edges])]
+        ev_ = np.unique(np.sort(ev_[ev_[:, 0] != ev_[:, 1]], 1), axis=0)
+        a_, b_ = np.r_[ev_[:, 0], ev_[:, 1]], np.r_[ev_[:, 1], ev_[:, 0]]
+        globals()["_tuck_g"] = (gid_, ng_, a_, b_, np.linalg.norm(cg_[a_] - cg_[b_], axis=1))
+    return globals()["_tuck_g"]
+
+
+def tuck_bound(t, hard=None, under=None, say=print, label=""):
+    """THE BOUNDED TUCK (above) of a per-vertex tuck `t`; `under`: her points under the piece (its footprint, a
+    loose part's zero tucks too; None: where t > 0); `hard`: points whose value is a floor."""
+    gid_, ng_, a_, b_, l_ = _tuck_graph()
+    need = np.zeros(ng_)
+    np.maximum.at(need, gid_, t)
+    hd = np.zeros(ng_, bool)
+    if hard is not None:
+        np.logical_or.at(hd, gid_, hard & (t > 0))
+    U = need > 0
+    if under is not None:
+        np.logical_or.at(U, gid_, under)
+    if not U.any():
+        return t
+    inn = U[a_] & U[b_]
+    # (each edge's allowance: TUCK_SLOPE over its length, at most TUCK_STEP; her rows are 4 to 15 mm apart there)
+    lw_ = np.minimum(TUCK_SLOPE * l_, TUCK_STEP)
+    ai, bi, li = a_[inn], b_[inn], lw_[inn]
+    # (the need smoothed over the footprint: each round, a point's mean with its neighbours under the piece)
+    s = need.copy()
+    deg = np.bincount(bi, minlength=ng_).astype(float)
+    for _ in range(TUCK_SMOOTH_IT):
+        acc = np.bincount(bi, weights=s[ai], minlength=ng_)
+        s = np.where(U, (s + acc) / (1.0 + deg), 0.0)
+    s[hd] = np.maximum(s[hd], need[hd])
+    # (raised to the least envelope climbing no faster than TUCK_SLOPE over her surface)
+    E = s.copy()
+    for _ in range(400):
+        c_ = np.full(ng_, -1.0)
+        np.maximum.at(c_, bi, E[ai] - li)
+        En = np.maximum(E, c_)
+        if np.abs(En - E).max() < 1e-7:
+            break
+        E = En
+    # (capped by the slope in from the footprint's border: distance over her skin from the nearest point outside it)
+    bd = np.unique(a_[~U[a_] & U[b_]])
+    sub = U.copy()
+    sub[bd] = True
+    keep = sub[a_] & sub[b_]
+    gr = sparse.csr_matrix((lw_[keep], (a_[keep], b_[keep])), shape=(ng_, ng_))
+    d_ = sparse.csgraph.dijkstra(gr, directed=True, indices=bd, min_only=True, limit=1.01) if len(bd) else np.full(ng_, np.inf)
+    F = np.where(U, np.minimum(E, d_), 0.0)
+    F[hd] = np.maximum(F[hd], need[hd])
+    F = np.clip(F, 0.0, 1.0)
+    say("TUCK BOUND %s: %d points of her welded skin under it, %d hard; mean %.3f -> %.3f, max %.2f -> %.2f"
+        % (label, int(U.sum()), int(hd.sum()), need[U].mean(), F[U].mean(), need.max(), F.max()))
+    return F[gid_]
+
+
 def tuck_of(name, objs, slot=None):
     """Her skin's tuck (0..1 a vertex of her body, as one channel of its `hide` colours holds it) under `objs`,
     the hiding pieces of outfit `name`: all of them (slot None: that outfit's channel, as it always was), or
@@ -8945,6 +9028,10 @@ def tuck_of(name, objs, slot=None):
     tree = BVHTree.FromPolygons(vs, fs)
     reach = 0.03 if any(d is not None for d in deep) else 0.012
     hid = 0
+    cos_ = np.full(len(me.vertices), np.nan)   # (each point's ray: |cos| of the angle it meets the piece at)
+    hard_ = np.zeros(len(me.vertices), bool)
+    under_ = np.zeros(len(me.vertices), bool)   # (its ray met a piece face-on: under it, however loose)
+    grazed = 0
     # Her skin under a piece (it faces the piece, within 12 mm), and
     # where her skin stands proud of the filled form the pieces are cut
     # from (a nipple's tip under a plate cup), from behind too. Never
@@ -8990,9 +9077,18 @@ def tuck_of(name, objs, slot=None):
             t_ = float(ramp(min(d_), 0.04, 0.08))
         if hit[0] is not None and hit[3] > 0.012 and t_ <= 0:
             hit = (None, None, None, None)
+        if hit[0] is not None:
+            cos_[v.index] = abs(hit[1].dot(n))
+            # (THE BOUNDED TUCK: a ray grazing the piece, its rolled rim seen from outside, is no piece over her)
+            if TUCK_SMOOTH and t_ <= 0 and cos_[v.index] < TUCK_GRAZE:
+                hit = (None, None, None, None)
+                grazed += 1
         if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
             t[v.index] = 1
+            hard_[v.index] = True
         elif hit[0] is not None:
+            under_[v.index] = True
+            hard_[v.index] = bool(bump[v.index]) or t_ > 0
             t[v.index] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
             t[v.index] = t[v.index] * (1 - t_) + t_
         hid += t[v.index] > 0
@@ -9021,12 +9117,17 @@ def tuck_of(name, objs, slot=None):
         np.maximum.at(gm_, _body_cw[0], t[:])
         say("TUCK WELD %s: %d points of hers split in copies, %d of them marked unequally" % (name, int((np.bincount(_body_cw[0]) > 1).sum()), int((np.abs(gm_[_body_cw[0]] - t[:]) > 1e-6).sum())))
         t[:] = gm_[_body_cw[0]]
-    under = t[:] > 0
-    reached, ring = ~under, np.zeros(len(under))
-    for r_ in (1, 2):
-        nxt = under & ~reached & (((_body_cw[1] if welded else _body_nb) @ reached.astype(float)) > 0)
-        ring[nxt], reached = r_, reached | nxt
-    t[:] *= np.where(ring > 0, ring / 3, 1.0)
+    globals()["TUCK_LAST"] = {"need": t.copy(), "cos": cos_, "hard": hard_.copy(), "under": under_ | (t > 0), "grazed": grazed}
+    if TUCK_SMOOTH:
+        say("TUCK GRAZE %s: %d rays of hers met the piece at a graze (|cos| < %.2f), left untucked" % (name, grazed, TUCK_GRAZE))
+        t[:] = tuck_bound(t, hard_, under_ | (t > 0), say, name)
+    else:
+        under = t[:] > 0
+        reached, ring = ~under, np.zeros(len(under))
+        for r_ in (1, 2):
+            nxt = under & ~reached & (((_body_cw[1] if welded else _body_nb) @ reached.astype(float)) > 0)
+            ring[nxt], reached = r_, reached | nxt
+        t[:] *= np.where(ring > 0, ring / 3, 1.0)
     # Under a held edge (held_edges: a leotard's leg lines) she is tucked
     # all the way, out to HOLD_BAND from it, so a look in under the edge
     # meets the piece's inside, not her; the last row before the edge only

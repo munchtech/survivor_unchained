@@ -969,6 +969,7 @@ for tn, tb in CAP["tubes"].items():
 me = body.data
 hides = [o for o in made if o.get("hides")]
 tuck, hid = G["tuck_of"](PID, hides, SLOT)
+tuck_of_out = tuck.copy()
 stamp("tuck: %d of her vertices under it" % hid)
 # (r3, F7: her skin under the gore's footprint sunk at least 3 mm (a mark of 0.3: 10 mm times it), all of it in the
 # middle, so the gore stands clear of her in every calling's idle. The footprint: her points whose ray out along her
@@ -1003,6 +1004,11 @@ if f"{PID}.gore" in CAP["sheet"]:
     if len(marg_):
         tuck[marg_] = np.maximum(tuck[marg_], 0.3)
     stamp("tuck under the gore: %d footprint points (%d full), %d margin" % (len(inF_), int((tuck[inF_] > 0.973).sum()) if len(inF_) else 0, len(marg_)))
+    # (armor 7, THE BOUNDED TUCK (heroine_outfits.py, tuck_bound): the gore's footprint taken through the same rule,
+    # so its 0.3 margin and 8 mm climb slope in from the border like every other piece's; ARMOR_GORE_BOUND=0: as it was)
+    if G.get("TUCK_SMOOTH") and os.environ.get("ARMOR_GORE_BOUND", "1") == "1":
+        tuck_pre_bound = tuck.copy()
+        tuck = G["tuck_bound"](tuck, G["TUCK_LAST"]["hard"], G["TUCK_LAST"]["under"] | (tuck > 0), label=PID + " with the gore")
 # (her coverage at rest, her skin tucked as the game draws it: 10 mm times the tuck)
 _, jb = cKDTree(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])).query(P)
 G["cover_report"](PID, made, 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb]))
@@ -1569,6 +1575,15 @@ if POSE_DUMP:
     np.savez_compressed(os.path.join(SCRATCH, "poses.npz"), names=np.array(sorted(POSE_DUMP)),
                         **{f"{k}__{f}": np.asarray(v[f]) for k, v in POSE_DUMP.items() for f in ("skin", "skin_n", "bones", "mats", "shell", "tuck")})
 stamp("numbers measured")
+# (armor 7: ARMOR_SCRATCH_ONLY=1, a proof run: the numbers and her tuck into the scratch dir, nothing into godot/art)
+if os.environ.get("ARMOR_SCRATCH_ONLY") == "1":
+    NUM["push"] = PUSH
+    json.dump(NUM, open(os.path.join(SCRATCH, "numbers.json"), "w", encoding="utf-8"), indent=1)
+    _ed = np.array([e.vertices[:] for e in me.edges])
+    np.savez_compressed(os.path.join(SCRATCH, "tuck_probe.npz"), tuck=tuck, tuck_of=tuck_of_out, need=G["TUCK_LAST"]["need"], cos=G["TUCK_LAST"]["cos"], under=G["TUCK_LAST"]["under"],
+                        hard=G["TUCK_LAST"]["hard"], bv0=bv0, bn0=bn0, edges=_ed, co_local=np.array([v.co[:] for v in me.vertices]))
+    stamp("scratch only: numbers and tuck in %s; nothing written to godot/art" % SCRATCH)
+    raise SystemExit(0)
 
 # --------------------------------------------------------------- export --
 mine = made
