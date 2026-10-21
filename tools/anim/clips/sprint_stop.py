@@ -105,16 +105,7 @@ POLE_DX0 = -0.3
 STOP_HOLD = 1.0
 # (And the staff's head eased back (its aim's z, keys 9 and 15) per side: with the fist held back the shaft's foot met
 # her right leg as it came through on the left stop (35 mm, was 71); its head back also clears her cheek from 45.)
-STOP_BACK = {"l": (0.08, 0.05), "r": (0.14, 0.07)}
-# (Animation 49, round 3: the staff wrist laid at idle_arcanist's place on her PELVIS (character axes, m: its mean over the
-# loop, heldt) from 0.17 to 0.50 s, eased in from the landing and out to the settle. Leant back ~11 deg her shoulder goes
-# ~10 cm back, and the arm only turned against the lean hung from there: the fist behind its idle place, at her
-# under-bust from the raised close-up at 315, a shelf again (max judge r2).)
-ARC_STOP_WRIST = (-0.4053, 0.0722, 0.1923)
-# (The wrist 1.5 cm further out and 3 cm further forward than the idle's, and the elbow's pole turned back (idle's z
-# -0.05): on the idle's own place and pole the upper arm met the warden's plate at her side 2-18 mm at f4-5 and f15,
-# where the body still leans forward over the pelvis it rides.)
-ARC_STOP_POLE = (0.285, -1.0, -0.3)
+STOP_BACK = {"l": (0.08, 0.05), "r": (0.0, 0.0)}
 
 
 def stop(rig, calling, side):
@@ -181,8 +172,6 @@ def stop(rig, calling, side):
         # (Her left hand kept on the crossbow's fore-stock as she brakes: idle.ride_stock.)
         return idle.ride_stock(rig, lambda post: build(f"stop_{calling}_{side}", rig, keys, meta=meta, post=post))
     clip = build(f"stop_{calling}_{side}", rig, keys, meta=meta)
-    if calling == "arcanist" and "tilt" in idle._ARC:
-        clip = _fist_on_pelvis(rig, clip, keys)
     if calling == "arcanist":
         # Her left hand kept on her hip as the hips brake and rock under her (it floated 10-17 mm off in the chest's frame).
         # (On a restaged stand, idle.ARC_ST: the idle's free hand kept on her pelvis the same way; no curl, no contact.)
@@ -190,41 +179,6 @@ def stop(rig, calling, side):
         # 0.30 s it was swung out ahead of her, "thrown out", max judge, animation 49; at the landing as it passed.)
         clip = idle.hip_layer(rig, clip, lambda f: 1.0, curl=ARC_STOP_CURL[side],
                               upright=lambda f, P: P + min(1.0, f / 5.0) * (stand - P))
-    return clip
-
-
-def _fist_on_pelvis(rig, clip, keys):
-    """The staff wrist at ARC_STOP_WRIST on the clip's own pelvis, frame by frame, weighted full over keys 5-15 and
-    eased in (0-5) and out (15-24); the staff's aim, pole and grip as keyed (the aim linear between the keys)."""
-    from keyed import solve_frames
-    from rig import qslerp
-    I = rig.I
-    _, p = rig.sk.fk(clip.rot, clip.pos)
-    n, pel = clip.frames, I["pelvis"]
-    arm = [I["upperarm_r"]]
-    for j in arm:
-        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
-    kt = [k[0] for k in keys]
-    kb = [np.array(k[1]["hand_r"]["blade"], float) for k in keys]
-
-    def w(f):
-        if f <= 7:
-            return idle._smooth(f / 7.0)
-        return 1.0 if f <= 15 else idle._smooth((24 - f) / 9.0)
-
-    def blade(f):
-        i = max(j for j in range(len(kt)) if kt[j] <= f) if f < kt[-1] else len(kt) - 2
-        u = min(1.0, (f - kt[i]) / (kt[i + 1] - kt[i]))
-        return tuple(kb[i] + u * (kb[i + 1] - kb[i]))
-    hr = keys[1][1]["hand_r"]
-    idx = [f for f in range(n) if w(f) > 0]
-    specs = [{"hand_r": {**{k: v for k, v in hr.items() if k != "arc"}, "pos": tuple(p[f, pel] + ARC_STOP_WRIST), "pole": ARC_STOP_POLE,
-                         "blade": blade(f)}, "fingers_r": keys[1][1].get("fingers_r", "grip")} for f in idx]
-    rot, _ = solve_frames(rig, specs, [(clip.rot[f], clip.pos[f]) for f in idx], weapon=(clip.meta or {}).get("weapon", ""),
-                          tilt=float((clip.meta or {}).get("grip_tilt", 0) or 0))
-    for i, f in enumerate(idx):
-        for j in arm:
-            clip.rot[f, j] = qslerp(clip.rot[f, j], rot[i, j], w(f))
     return clip
 
 
