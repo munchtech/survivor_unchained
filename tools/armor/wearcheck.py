@@ -27,7 +27,7 @@ cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangl
 without the tuck (the baseline).
 
     python tools/armor/wearcheck.py [--pieces a,b,..] [--clips c1,c2,..] [--step 2] [--same] [--grid 2.5]
-                                    [--out <dir>] [--no-skin] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
+                                    [--out <dir>] [--no-skin] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
 
@@ -270,6 +270,7 @@ def main(argv):
     gt_off = "--tuck-off" in argv
     gt_r = float(opt("--tuck-r", "20")) / 1000
     gt_w = "--tuck-weights" in argv     # (a prototype: the laid part of A skinned toward B's weights by its value)
+    dump = "--dump" in argv             # (per sample of each skin test: its least gap and where: <out>/skin_<B>.npz)
     order = opt("--order", "").split(",") if "--order" in argv else \
         json.load(open(os.path.join(HERE, "slot_map.json"), encoding="utf-8"))["order"]
     out_dir = opt("--out", os.path.join(os.environ.get("TEMP", "."), "wearcheck"))
@@ -278,6 +279,12 @@ def main(argv):
 
     rows = catalogue(only)
     byid = {r["id"]: r for r in rows}
+    # (--file id=<gltf> / --tuck-file id=<bin>: a candidate in place of the installed piece or its tuck record)
+    for flag, fld in (("--file", "path"), ("--tuck-file", "tuck_path")):
+        for i_, a_ in enumerate(argv):
+            if a_ == flag and "=" in argv[i_ + 1]:
+                k_, v_ = argv[i_ + 1].split("=", 1)
+                byid[k_][fld] = v_
     sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
     files = [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin"),
              (skin.PEOPLE / "heroine.glb", lambda n: n == "HeroineHead", "head")]
@@ -520,6 +527,10 @@ def main(argv):
                     x["min_out"] = np.minimum(x["min_out"], np.where(np.isfinite(go), go, np.inf))
                     x["seen"] += len(g)
                     gg = np.where(np.isfinite(g), g, np.inf)
+                    if dump:
+                        nw = gg < x["min"]
+                        x.setdefault("at_c", np.full(len(gg), -1))[nw] = clips.index(c)
+                        x.setdefault("at_f", np.full(len(gg), -1))[nw] = f
                     x["min"] = np.minimum(x["min"], gg)
                     k = int(gg.argmin())
                     pc_ = x["per_clip"].setdefault(c, [np.inf, np.zeros(len(gg), bool)])
@@ -572,6 +583,13 @@ def main(argv):
             "per_clip: [worst mm, samples past 2 mm]; out_*: the same past B's OUTER face (what shows; inside B's shell "
             "is hidden); table sorted by out_n_over_2 then worst_mm"}
     json.dump({"meta": meta, "pairs": out}, open(os.path.join(out_dir, "matrix.json"), "w"), indent=1)
+    if dump:
+        for x in tests:
+            if x["A"] == "skin":
+                np.savez(os.path.join(out_dir, f"skin_{x['B']}.npz"), pts=x["pts"], rest=P0[x["pts"]], min=x["min"],
+                         min_out=x["min_out"], tuck=x["tuck"], at_c=x.get("at_c", np.full(len(x["min"]), -1)),
+                         at_f=x.get("at_f", np.full(len(x["min"]), -1)), clips=np.array(clips), J=body.J[x["pts"]],
+                         W=body.W[x["pts"]], names=np.array(body.sk.names), rest_gap=x["fp"]["gap"])
     with open(os.path.join(out_dir, "table.txt"), "w") as fh:
         fh.write(f"{'A':18} {'B':18} {'slots':18} {'kind':7} {'worst':>6} {'p99':>6} {'>0.5':>5} {'>2':>5} {'rest>2':>6} "
                  f"{'rmin':>6} {'rmed':>6} {'foot':>5} {'Askin':>5} {'Bskin':>5} {'Bshl':>4} {'OUT':>5} {'OUT>2':>5} {'rOUT>2':>6} worst_clip@frame bone\n")
