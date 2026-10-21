@@ -136,6 +136,8 @@ def stop(rig, calling, side):
         (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0, out=0.015), "ease"),
     ]
     meta = {"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]}
+    if calling == "arcanist":
+        meta.update(idle.arc_grip())   # (the idle's grip: the staff tilted in her fist as the idle holds it, animation 48)
     if calling == "stalker":
         # (Her left hand kept on the crossbow's fore-stock as she brakes: idle.ride_stock.)
         return idle.ride_stock(rig, lambda post: build(f"stop_{calling}_{side}", rig, keys, meta=meta, post=post))

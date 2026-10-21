@@ -31,7 +31,8 @@ def layered(name, rig, base: Clip, over, meta=None) -> Clip:
     from keyed import solve_frames
     n = base.frames
     rot, pos = solve_frames(rig, [over(f / max(n - 1, 1), f) for f in range(n)], [(base.rot[f], base.pos[f]) for f in range(n)],
-                            loop=base.loop, weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)))
+                            loop=base.loop, weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)),
+                            tilt=float((meta or {}).get("grip_tilt", 0.0)))
     m = dict(base.meta)
     m.update(meta or {})
     return Clip(name, base.fps, rot, pos, loop=base.loop, meta=m)
@@ -138,12 +139,20 @@ ARC_CANDS = {
     "R3": {"arc": (-0.214, -0.291, 0.254), "blade": (-0.397, 1.0, -0.057), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
            "knuckles": (-0.2495, -0.0439, 0.9674), "stop_blade": (-0.317, 1.0, -0.097)},
 }
-ARC_CAND = os.environ.get("ARC_CAND", "R1")
+# T1 (animation 48, restage round 2, the default on a restaged stand): the staff TILTED in her fist ("tilt", degrees: the
+#   clip's "grip_tilt", keyed.grip_of / WRAP_TILT, the game's OwnClips.GripTilt), so the forearm slopes down to the fist
+#   with the staff upright and the wrist easy (round 1's max judge: at 315/135 R1's arm on the restaged stand still read
+#   as "a level white bar at waist height"; the wall was the fist fit's 64 deg, scratch anim/st/c).
+ARC_CANDS["T1"] = {"arc": (-0.24, -0.26, 0.28), "blade": (-0.38, 1.0, -0.03), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
+                   "tilt": 20.0, "stop_blade": (-0.30, 1.0, -0.07)}
+# (Unset: T1 on a restaged stand, R1 with R1's stand: ARC_ST=R1 alone builds R1 as it was; ARC_ST=S2H1 ARC_CAND=R1 round 1.)
+ARC_CAND = os.environ.get("ARC_CAND", "R1" if os.environ.get("ARC_ST", "S2H2") in ("R1", "") else "T1")
 _ARC = ARC_CANDS[ARC_CAND]
 ARC_HAND_R = _ARC["arc"]
 ARC_BLADE_R = _ARC["blade"]
 ARC_POLE_R = _ARC["pole"]
 ARC_GRIP_SLIDE = _ARC["slide"]
+ARC_GRIP_TILT = _ARC.get("tilt", 0.0)
 ARC_KNUCKLES_R = _ARC.get("knuckles")   # (R3: the fist rolled about the shaft; None: the least turn from the forearm)
 
 
@@ -170,6 +179,12 @@ def arcanist(t, f):
         "hand_r": _arc_hand_r(),
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
+
+
+def arc_grip():
+    """The meta every clip that holds the idle's hold carries: its grip slide and tilt (keyed.build; the game eases
+    the staff between clips by them, OwnClips.GripSlide / GripTilt). Empty for R1's."""
+    return {k: v for k, v in (("grip_slide", ARC_GRIP_SLIDE), ("grip_tilt", ARC_GRIP_TILT)) if v}
 
 
 def _arc_hand_r():
@@ -207,7 +222,7 @@ def arc_aim(rig):
         from rig import DATA, qaxis, qmul, qrot
         base = base_of(rig, "arcanist")
         grip, wrap = rig.grip, rig.wrap
-        rig.grip, rig.wrap = grip_of("staff"), wrap_of("staff")
+        rig.grip, rig.wrap = grip_of("staff", ARC_GRIP_TILT), wrap_of("staff", ARC_GRIP_TILT)
         rig.swivel_force = {}
         layer = _free_hand(rig, base, arcanist, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arcanist)
         local, pos = rig.solve(layer(0, 0), base=(base.rot[0], base.pos[0]))
@@ -224,6 +239,8 @@ def arc_aim(rig):
         d = np.linalg.svd(thin - thin.mean(0), full_matrices=False)[2][0]
         if d @ d0 < 0:
             d = -d
+        if ARC_GRIP_TILT:   # (the staff turned in her fist by the clip's grip_tilt, about hand_r +X)
+            d = qrot(qaxis([1.0, 0, 0], ARC_GRIP_TILT), d)
         line = qrot(hq, d)
         if line[1] < 0:
             line = -line
@@ -262,7 +279,8 @@ def _on_hip(rig, base, arms):
 # knees). H1 "spell ready": the left hand ahead of her hip, palm down and in, fingers loose; H2 "low and charged": the
 # arm down, the hand out from her thigh, fingers open.
 # "stand": stand()'s arguments; "head": her head's mean pitch wanted (deg, + chin down; Neutral +2, WiggleHips +5).
-ARC_ST = os.environ.get("ARC_ST", "S2H1")
+# (Round 2, the max judge: H2 ships, its elbow 13 deg softer and H1's slow finger curl; H1 stays selectable.)
+ARC_ST = os.environ.get("ARC_ST", "S2H2")
 ARC_ST = "" if ARC_ST == "R1" else ARC_ST
 _S1 = {"style": "Strutting", "stand": {"knee": 16.0, "over": 0.0, "pitch": -6.0, "width": 0.29, "stagger": 0.03}, "head": -2.0,
        "free_pos": {"H1": (0.275, 1.135, 0.15)}}
@@ -274,17 +292,19 @@ ARC_STS = {"S1H1": dict(_S1, hand="H1"), "S2H1": dict(_S2, hand="H1"), "S1H2": d
 ARC_FREE = {
     "H1": {"pos": (0.26, 1.16, 0.22), "knuckles": (-0.25, -0.6, 1.0), "blade": (-0.87, 0.5, 0.0), "pole": (0.35, -0.3, -1.0)},
     # (H2 rides her chest, as the town's free arms do: "arc" the wrist from the shoulder in the chest's frame, its
-    # length 0.507 for the elbow soft at 25 deg; on the pelvis the arm went straight, 176.)
-    "H2": {"arc": (0.125, -0.47, 0.15), "thumb": (0.15, -0.1, 1.0), "pole": (0.3, -0.2, -1.0)},
+    # length 0.4925 for the elbow soft at 38 deg (round 1's 0.507 at 25: "10-15 deg softer", the max judge, round 2), the
+    # hand as low, 1 cm further ahead; on the pelvis the arm went straight, 176.)
+    "H2": {"arc": (0.12, -0.45, 0.16), "thumb": (0.15, -0.1, 1.0), "pole": (0.3, -0.2, -1.0)},
 }
 
 
 def _free_fingers(hand, t):
-    """The free hand's fingers: H1 loose between "relaxed" and "spread", softly curled, a slow life (one swell of the
-    curl and one of the fan over the loop, out of phase with each other); H2 open, a little spread."""
+    """The free hand's fingers: loose between "relaxed" and "spread", softly curled, a slow life (one swell of the curl
+    and one of the fan over the loop, out of phase with each other): H1's, and H2's since round 2 (the max judge: "H1's
+    slow finger curl"); "H2r1" round 1's H2 (open, a little spread)."""
     from keyed import FINGER_PRESETS
     a, b = math.sin(2 * math.pi * t + 1.3), math.sin(2 * math.pi * t + 3.4)
-    if hand == "H1":
+    if hand in ("H1", "H2"):
         return dict(FINGER_PRESETS["relaxed"], curl=0.06 + 0.02 * a, thumb=0.2,
                     spreads={"index": -3.5 + 1.5 * b, "middle": 0.0, "ring": 4.0 - 1.0 * b, "pinky": 11.0 - 2.0 * b}, spread=3.0)
     return dict(FINGER_PRESETS["relaxed"], curl=0.04 + 0.015 * a, thumb=0.1,
@@ -831,8 +851,8 @@ def clips(rig, want):
         if arms is arcanist:
             arms = _free_hand(rig, base, arms, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arms)
         meta = {"weapon": weapon}
-        if name == "idle_arcanist" and ARC_GRIP_SLIDE:
-            meta["grip_slide"] = ARC_GRIP_SLIDE
+        if name == "idle_arcanist":
+            meta.update(arc_grip())
         clip = layered(name, rig, base, arms, meta)
         if name[5:] in TOWN or name == "idle_arcanist_staff_town":
             clip = level_head(rig, clip)

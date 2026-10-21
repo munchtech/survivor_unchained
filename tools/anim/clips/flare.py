@@ -57,6 +57,10 @@ M_R = np.array([-0.025, 0.075, 0.0])                 # the mount: the shaft thro
 AXIS = np.array([-0.2116, 0.4141, 0.8853])           # the shaft's line, butt toward head (WeaponSockets.FistDirR)
 AXIS = AXIS / np.linalg.norm(AXIS)
 SHAFT0 = np.array([-0.0326, 0.0841, -0.0104])        # the shaft's centre where it crosses the fist (WeaponSockets.FistAtR)
+# (Animation 48: on the idle's tilted grip, idle.ARC_GRIP_TILT, the clip holds the staff so for its whole length, the
+# line turned in the fist about hand +X through the pocket, keyed.grip_pose; the hand leans the tilt less, below.)
+if idle.ARC_GRIP_TILT:
+    AXIS = qrot(qaxis([1.0, 0, 0], idle.ARC_GRIP_TILT), AXIS)
 BUTT = SHAFT0 - 0.7877 * AXIS                        # the butt's foot (on the shaft's line)
 LEFT_AT = 0.235                                      # the left fist this far up the shaft (m along it)
 # On the drive the left fist slides a little up the shaft (eased over f16-20, held to its letting go): at the plant
@@ -358,7 +362,7 @@ class Flare:
         # turned back from it by GRIP["staff"] about its +X (18 Oct; keyed with the hand's own +Z the fist was 18 deg
         # off its line and her right arm went 54 mm into her).
         from keyed import GRIP
-        lq = qaxis([1.0, 0, 0], -GRIP.get("staff", 0.0)) if rig.grips else np.array([0, 0, 0, 1.0])
+        lq = qaxis([1.0, 0, 0], -(GRIP.get("staff", 0.0) - idle.ARC_GRIP_TILT)) if rig.grips else np.array([0, 0, 0, 1.0])
         self.gz, self.gy = qrot(lq, np.array([0, 0, 1.0])), qrot(lq, np.array([0, 1.0, 0]))
         _, rp = rig.sk.rest_globals()
         I = rig.I
@@ -581,7 +585,7 @@ class Flare:
             p["fingers_l"] = self.fingers(fr)
             return p
         meta = {"layer": "full", "weapon": "staff", "contact": CONTACT / 30, "contacts": [CONTACT / 30, SWEEP / 30],
-                "blend_out": BLEND / 30}
+                "blend_out": BLEND / 30, **idle.arc_grip()}
         return build(NAME, self.rig, self.keys, meta=meta, post=post, base=self.base)
 
     def hands_of(self, clip):
@@ -688,7 +692,7 @@ def _settle(rig, F, clip, a=50, b=56):
     lo = a - 6
     idx = [(fr - END) % n for fr in range(lo, END + 7)]
     rot, _ = solve_frames(rig, [idle.arcanist(0, 0) for _ in idx], [(base.rot[k], base.pos[k]) for k in idx],
-                          loop=False, weapon="staff")
+                          loop=False, weapon="staff", slide=idle.ARC_GRIP_SLIDE, tilt=idle.ARC_GRIP_TILT)
     I, sk = rig.I, rig.sk
     arm = [I["upperarm_r"]]
     for j in arm:

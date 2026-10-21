@@ -179,7 +179,7 @@ def arcanist_show(rig):
                           "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
     ]
-    clip = build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff", **idle.arc_grip()})
     return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 12) if f < 12 else idle._smooth((f - 55) / 23),
                           phase=lambda f: f / (clip.frames - 1))
 
@@ -420,7 +420,7 @@ def arcanist_break(rig):
         (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-25)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
-    clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff", **idle.arc_grip()})
     # The hand on her hip as it leaves and from where it is back (f44 on it floated 3-10 mm in the chest's frame).
     # (On a restaged stand, idle.ARC_ST, the idle's free hand instead, its fingers' slow life one round over the clip,
     # so both ends meet the idle's first frame.)
