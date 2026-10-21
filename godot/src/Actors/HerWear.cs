@@ -119,6 +119,8 @@ public static class HerWear
 
     public static void Apply(People.Person p, string calling, IReadOnlyDictionary<string, string> look, IReadOnlyDictionary<string, Dictionary<string, string>>? dyes = null)
     {
+        // (--tuck-weights 0: laid pieces keep their own bone weights; pictures that tell a weights mark from a lay mark)
+        if (Args.Get("tuck-weights") == "0") GarmentTuck.Weights = false;
         var steps = ApplySteps(p, calling, look, dyes).GetEnumerator();
         if (Live)
         {
