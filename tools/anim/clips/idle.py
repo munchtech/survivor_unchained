@@ -23,6 +23,7 @@ import numpy as np
 from clips.mocap import idle_loop
 from gait import arc_of
 from rig import Clip
+from clips import town_idle
 
 
 def layered(name, rig, base: Clip, over, meta=None) -> Clip:
@@ -654,15 +655,21 @@ def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0
     return arms
 
 
-# Her town stands (animation 44): warden_town's base, the WiggleHips take (the owner, 19 Oct: "I adore the idle sway"),
-# another stretch of it each (TOWN_WINDOW, seconds into the take), her arms free and clear of her sheathed pieces.
+# Her town stands (animation 44; animation 48: each calling its own standing, town_idle.STANCES), her arms free and clear
+# of her sheathed pieces (free_arms; the reaver's and the arcanist's left hand on her hip, town_idle.on_hip).
+TOWN_ARMS_L = {
+    # The stalker's left arm in 9 deg and the elbow 17 deg softer (round 1, the max judge): the hand 2-4 cm off her hip.
+    "stalker_town": (0.1117, -0.4466, 0.0971),
+    # The staff stand's free left arm the same way (round 1's polish): the elbow 15 deg softer, the hand 3-4 cm off her hip.
+    "arcanist_staff_town": (0.10, -0.455, 0.10),
+}
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip: the hands a little ahead of the heads.
-    "reaver_town": free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03),
+    "reaver_town": town_idle.on_hip(town_idle.REAVER_HIP_L, free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03)),
     # The wand on the belt at her right hip.
-    "arcanist_town": free_arms(reach=1.03),
+    "arcanist_town": town_idle.on_hip(town_idle.ARC_WRIST_L, free_arms(reach=1.03)),
     # The crossbow slung on her back, the daggers at the back of her belt.
-    "stalker_town": free_arms(reach=1.03),
+    "stalker_town": free_arms(hand_l=TOWN_ARMS_L["stalker_town"], reach=1.03),
 }
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
 def staff_town(t, f):
@@ -687,11 +694,23 @@ def staff_town(t, f):
     return d
 
 
-# (Animation 44, solver idle 2: the arcanist's stretch from (4, 12) to (2, 10), 100STYLE frames 876-1218: on the old one
-# the chest rolled against her hips, so her right wrist rose 13 cm to her hip's height and out at 25/75 %; on this one
-# it rides her hip as the warden's does, 26-28 cm out of the hip joint and within 5 cm of its height; the warden's
-# 26-27 and 2. It shares 3 s with the reaver's (frames 744-1050), 2.2 s out of phase.)
-TOWN_WINDOW = {"reaver_town": (0, 8), "arcanist_town": (2, 10), "stalker_town": (9, 16)}
+def _staff_town_l(hand_l):
+    """staff_town with its free left hand at `hand_l` (free_arms', reach 1.03)."""
+    free = free_arms(hand_l=hand_l, reach=1.03)
+
+    def arms(t, f):
+        d = staff_town(t, f)
+        d["hand_l"] = free(t, f)["hand_l"]
+        return d
+    return arms
+
+
+TOWN["arcanist_staff_town"] = _staff_town_l(TOWN_ARMS_L["arcanist_staff_town"])
+
+
+# A captured standing's stretch (seconds into the take) where not the first 8 s. (Animation 44's WiggleHips windows for
+# the town stands, (0, 8), (2, 10), (9, 16), went with them: town_idle.STANCES has each calling's own.)
+TOWN_WINDOW = {}
 
 
 def level_head(rig, clip: Clip, keep=0.4) -> Clip:
@@ -726,10 +745,12 @@ IDLES = {
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
     "idle_warden_town": ("WiggleHips", warden_town, ""),
-    "idle_reaver_town": ("WiggleHips", TOWN["reaver_town"], ""),
-    "idle_arcanist_town": ("WiggleHips", TOWN["arcanist_town"], ""),
-    "idle_stalker_town": ("WiggleHips", TOWN["stalker_town"], ""),
-    "idle_arcanist_staff_town": ("WiggleHips", staff_town, "staff"),
+    # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
+    # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
+    "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),
+    "idle_arcanist_town": ("GracefulArms", TOWN["arcanist_town"], ""),
+    "idle_stalker_town": ("HandsInPockets", TOWN["stalker_town"], ""),
+    "idle_arcanist_staff_town": ("GracefulArms", TOWN["arcanist_staff_town"], "staff"),
 }
 
 
@@ -826,7 +847,10 @@ def base_of(rig, calling):
         st = ARC_STS[ARC_ST] if calling == "arcanist" and ARC_ST else None
         if st:
             style = st["style"]
-        base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0), window=TOWN_WINDOW.get(calling))
+        if calling in town_idle.STANCES:
+            base = town_idle.town_base(rig, calling)
+        else:
+            base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0), window=TOWN_WINDOW.get(calling))
         if calling in STAND:
             base = stand(rig, base, **STAND[calling])
         if st:
@@ -853,6 +877,8 @@ def clips(rig, want):
         base = base_of(rig, SHARES_BASE.get(name, name[5:]))
         if arms is arcanist:
             arms = _free_hand(rig, base, arms, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arms)
+        elif getattr(arms, "needs_base", False):
+            arms = arms(rig, base)
         meta = {"weapon": weapon}
         if name == "idle_arcanist":
             meta.update(arc_grip())

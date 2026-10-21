@@ -176,3 +176,75 @@ def pelvis_hand(rig, base, arms, side, pos, pole, fingers, knuckles=None, blade=
         d[f"fingers_{side}"] = fingers(t) if callable(fingers) else fingers
         return d
     return over
+
+
+def _hand(fingers, palm):
+    """(knuckles, blade) for a LEFT hand from the way its fingers point and its palm faces (the palm made square to
+    the fingers): the hand's +Y the fingers, +X the palm, +Z (the thumb side) X x Y."""
+    k = np.asarray(fingers, float)
+    k = k / np.linalg.norm(k)
+    p = np.asarray(palm, float)
+    p = p - k * float(p @ k)
+    p = p / np.linalg.norm(p)
+    return tuple(k), tuple(np.cross(p, k))
+
+
+def _pole(back):
+    """An elbow pole out to her left side, swung `back` degrees behind it (the chest's frame)."""
+    a = math.radians(back)
+    return (math.cos(a), 0.0, -math.sin(a))
+
+
+def _relaxed(curl):
+    from keyed import FINGER_PRESETS
+    return dict(FINGER_PRESETS["relaxed"], curl=curl)
+
+
+# Her stances (round 1, the max judge: R_A, A_A, S_B pass; the staff hold rides A_A's): the take, its window (seconds),
+# contra()'s and look()'s arguments.
+STANCES = {
+    # Heavy and swaggering: the Proud take (a broad chest leaned back, chin level), the weight sunk into her left hip.
+    "reaver_town": ("Proud", None, dict(side="l", shift=0.07, roll=7, yaw=5, width=0.32, knee=5, settle=0.3, counter=0.5,
+                                        free_turn=10), None),
+    # Poised: the GracefulArms take, the weight on her back (right) leg, the left foot 8 cm ahead and turned out.
+    "arcanist_town": ("GracefulArms", (3, 11), dict(side="r", shift=0.05, roll=5, yaw=4, width=0.20, knee=5, settle=0.2,
+                                                    counter=0.4, free_fwd=0.08, free_turn=20), None),
+    # Loose but watchful: the HandsInPockets take, the weight on her left leg, a slow look to her right and back.
+    "stalker_town": ("HandsInPockets", (0, 8), dict(side="l", shift=0.05, roll=5, yaw=4, width=0.24, knee=9, settle=0.4,
+                                                    counter=0.5, free_turn=10), dict(deg=-28.0, start=0.2, hold=0.3, ease=0.17)),
+}
+
+
+def town_base(rig, calling):
+    """A calling's town standing: its take looped, stood with her weight on one hip (contra), the head's look."""
+    from clips.mocap import idle_loop
+    take, window, ck, lk = STANCES[calling]
+    b = contra(rig, idle_loop(f"idle_{calling}_base", rig, take, seconds=(5.0, 8.0), window=window), **ck)
+    return look(rig, b, **lk) if lk else b
+
+
+# Round 2 (the max judge: every hand on the hip read "a stomach-ache", on the front of her lower belly). The hands now
+# rest on the SIDE of her pelvis, over the hip bone at the side seam (pelvis_hand: on it frame by frame). Fitted on her
+# body and outfit (scratch anim/town2 opt.py: 0 mm into her, the resting part 0-3 mm off).
+# The reaver: the heel of her left hand on the side of her hip at the belt (contact 17 cm out of her middle, 1 cm ahead
+# of the side seam, 1.10 m up at rest), the palm in, the fingers down and forward over the hip, the wrist bent back 40,
+# the elbow out 11 cm and well behind her side (the forearm along her flank), open to 83 (95 would put the hand on her
+# thigh: the hip bone sits 30 cm under her shoulder and her arm is 52 cm).
+_RV_K, _RV_B = _hand((0.105, -0.654, 0.657), (-0.95, -0.277, 0.0))
+REAVER_HIP_L = dict(pos=(0.2155, 1.095, 0.0), pole=_pole(53.0), knuckles=_RV_K, blade=_RV_B, curl=0.06)
+# The arcanist: her left wrist resting on the side of her hip bone at the seam (contact 17 cm out, 1.08 m up at rest),
+# the hand hanging soft beside it (the fingers down, the palm back: the back of the hand to the camera, the thumb side
+# of the wrist on her hip), the elbow out 20 cm, open to 86. (The palm turned out, the wrist's very back on her hip,
+# was fitted and dropped: the forearm wrung 156 deg from rest, audit's limit 120, the elbow's flesh kept 38 %.)
+_AR_K, _AR_B = _hand((0.1, -0.97, -0.1), (math.cos(math.radians(-75.0)), 0.0, math.sin(math.radians(-75.0))))
+ARC_WRIST_L = dict(pos=(0.203, 1.20, 0.015), pole=_pole(30.0), knuckles=_AR_K, blade=_AR_B, curl=0.10)
+
+
+def on_hip(spec, free):
+    """Arms for a town stand: `free` (idle.free_arms) with the left hand as `spec` keeps it on her pelvis. Returns
+    make(rig, base) -> over(t, f) (the hand rides the base's pelvis)."""
+    def make(rig, base):
+        return pelvis_hand(rig, base, free, "l", spec["pos"], spec["pole"], _relaxed(spec["curl"]),
+                           knuckles=spec["knuckles"], blade=spec["blade"], twist=0.5)
+    make.needs_base = True
+    return make
