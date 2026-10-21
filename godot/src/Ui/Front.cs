@@ -236,7 +236,9 @@ public sealed class CreationDraft
     /// (her own face where none is moved) and the face it started from.</summary>
     public string Eyes = "moss", Paint = "none", FaceShape = "own";
     public Dictionary<string, double> Face = new();
-    /// <summary>The look step's part (hair, face, shape, paint, body) and the face's group of sliders.</summary>
+    /// <summary>The group last touched, by screen (the calling's: 0 calling, 1 arms, 2 origin, read
+    /// closely on the right; the look's: 0 her face's rows, 1 her hair's, framing her for it), and the
+    /// face's group of sliders (kept for the data; no sliders are offered).</summary>
     public int Section, FaceGroup;
 
     public CreationChoice Choice() => new()
@@ -278,28 +280,27 @@ public sealed class CreationDraft
 }
 
 /// <summary>
-/// Making the survivor, by the fire (the web game's screens/Create.tsx).
-/// Five steps, each a question the world will ask again later: Calling (who
-/// sits here, a woman or a man, and how do they fight?), Look (what does she
-/// look like? second, so no one misses it), Arms (with what, and what do
-/// their hands do?), Origin (where are they from?), Name (who are they?).
-/// The figure by the fire changes as you choose, and can be turned
-/// (drag, or the right stick) and brought near (the wheel, or the right
-/// stick) to her face; the panel on the right says what each choice means.
+/// Making the survivor, by the fire (the web game's screens/Create.tsx; docs/UI_DESIGN.md 7.2).
+/// Two screens, as the owner asked ("pick calling/arms and look/name, just the 2 screens"): the
+/// first, who sits here and how they fight (a woman; the man greyed until his own model ships),
+/// the calling, the weapon and the art in hand, and the origin, whose traits, things carried and
+/// story openings are its own; the second, her look and her name on one page, with no sliders
+/// (her face, cut and paint as numbered cycles, her hair's colour, eyes and skin as beads).
+/// The figure by the fire changes as you choose, and can be turned (drag, or the right stick)
+/// and brought near (the wheel, or the right stick) to her face; the panel on the right reads
+/// closely the group last touched, then, on the second screen, who they are.
 /// Enter or A on a choice takes it; on the one already taken, it moves on
-/// (so A, A walks through); LB and RB turn the steps, LT and RT the look's parts.
+/// (so A, A walks through); LB and RB turn the screens.
 /// </summary>
 public partial class CreateScreen : Overlay
 {
     public override string Kind => "create";
     public override bool Dismissable => false;
     readonly CreationDraft d;
-    static readonly string[] Steps = { "Calling", "Look", "Arms", "Origin", "Name" };
-    static readonly string[] Numerals = { "I", "II", "III", "IV", "V" };
-    /// <summary>The look comes straight after the calling: the calling dresses her, then she is shaped.</summary>
-    public const int CallingStep = 0, LookStep = 1, ArmsStep = 2, OriginStep = 3, NameStep = 4;
+    static readonly string[] Steps = { "Calling and arms", "Look and name" };
+    /// <summary>The two screens: who they are and how they fight, then how they look and their name.</summary>
+    public const int CallingStep = 0, LookStep = 1;
     static readonly Dictionary<string, string> ClassGlyph = new() { ["warden"] = "shield", ["reaver"] = "axe", ["arcanist"] = "staff", ["stalker"] = "bow" };
-    static readonly Dictionary<string, string> BgGlyph = new() { ["hunter"] = "claw", ["scholar"] = "book", ["outcast"] = "mask", ["devout"] = "sun" };
     // Never a name the story has spent or nearly spent (Ashe, Kell, Orrin; Ysolde, Brannoc, Corran, Holloway, Tam).
     static readonly string[] Names = { "Alder", "Bryony", "Cass", "Dace", "Edda", "Fen", "Garrow", "Hester", "Ilse", "Jessamy", "Kit", "Lorne", "Maren", "Nolly", "Orla", "Pim", "Quill", "Rhosyn", "Sabre", "Tegan", "Ulla", "Voss", "Wren", "Yarrow" };
     LineEdit? nameBox;
@@ -312,11 +313,18 @@ public partial class CreateScreen : Overlay
         string cut = d.HairStyle;
         change();
         G.DressFigure(d);
-        // A new step or part frames the figure for it (the look's parts come near: her hair, her face);
+        // A new screen or row frames the figure for it (the look's rows come near: her hair, her face);
         // a new cut turns her so it shows (a braid down her back is seen from behind).
         if (d.Step != step || d.Section != section || d.HairStyle != cut) G.FrameFigure(SectionZoom(), SectionTurn());
         Refresh();
     }
+
+    /// <summary>To a screen: its first group (the calling; her face, near).</summary>
+    void Go(int step) => Set(() =>
+    {
+        step = Math.Clamp(step, CallingStep, LookStep);
+        if (step != d.Step) { d.Step = step; d.Section = 0; }
+    });
 
     void ChooseArchetype(string id)
     {
@@ -331,22 +339,15 @@ public partial class CreateScreen : Overlay
         if (!CanBegin)
         {
             // No name yet: offer one from the road (a pad cannot type), and wait for a second word.
-            Set(() => { d.Step = NameStep; d.Name = Names[Random.Shared.Next(Names.Length)]; });
+            Set(() => { d.Step = LookStep; d.Name = Names[Random.Shared.Next(Names.Length)]; });
             Nav.FocusId = "begin";
             return;
         }
         G.BeginJourney(d.Choice());
     }
 
-    /// <summary>Each step's question, the title over its column: the world asks them again later.</summary>
-    string Question => d.Step switch
-    {
-        CallingStep => "Who sits here?",
-        LookStep => Her ? "What does she look like?" : "What does he look like?",
-        ArmsStep => "With what?",
-        OriginStep => Her ? "Where is she from?" : "Where is he from?",
-        _ => Her ? "Who is she?" : "Who is he?",
-    };
+    /// <summary>Each screen's question, the title over its column: the world asks them again later.</summary>
+    string Question => d.Step == CallingStep ? "Who sits here?" : Her ? "Who is she?" : "Who is he?";
 
     /// <summary>The two panels' width and their inset from the screen's edges: the choices on the
     /// left, what the one taken means on the right, mirrored, the figure standing between them.</summary>
@@ -357,33 +358,38 @@ public partial class CreateScreen : Overlay
         var a = Callings.Archetype(d.Archetype);
         // The figure between the panels: dragged, she turns; the wheel brings her near.
         AddChild(Stage());
-        // The left panel: the steps on their chain, the step's question, the choices, the way on.
+        // The left panel: the screens on their chain, the screen's question, the choices, the way on.
         var col = Fitted(new Vector2(Inset, Inset), PanelW);
-        // (the steps are turned with LB and RB, or [ and ], drawn at the chain's ends)
-        var steps = new ChainTabs(Steps.Select(s => (s, "")).ToArray(), d.Step, k => { if (k != d.Step) { Sound.Sfx.Page(); Set(() => d.Step = k); } },
+        // (the screens are turned with LB and RB, or [ and ], drawn at the chain's ends)
+        var steps = new ChainTabs(Steps.Select(s => (s, "")).ToArray(), d.Step, k => { if (k != d.Step) { Sound.Sfx.Page(); Go(k); } },
             (G.Key(Act.TabPrev), G.Key(Act.TabNext)), 20) { SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
         col.AddChild(steps);
         var head = Style.V(2, new Title(Question, 30, false),
             Style.Label("By the fire on the Low Ford road", Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
         col.AddChild(head);
-        if (d.Step == LookStep) col.AddChild(SectionTabs());
-        col.AddChild(d.Step switch { CallingStep => Calling(), LookStep => Look(a), ArmsStep => Arms(a), OriginStep => Origin(), _ => NamePage(a) });
+        if (d.Step == CallingStep) col.AddChild(Calling(a));
+        else
+        {
+            // (from the pad, the look starts at her face; the keyboard types her name at once)
+            Nav.Prefer = "cycle:face";
+            col.AddChild(Look());
+        }
         col.AddChild(Foot());
-        // The right panel, its twin: what the choice means, read closely.
+        // The right panel, its twin: what the group last touched means, read closely; then who they are.
         var right = Fitted(new Vector2(1920 - Inset - PanelW, Inset), PanelW);
-        right.AddChild(d.Step switch { CallingStep => CallingDetail(a), LookStep => LookDetail(a), ArmsStep => ArmsDetail(), OriginStep => OriginDetail(), _ => Summary(a) });
-        // Who they are becoming, set on the ground at the figure's feet (not while the look is near her face).
-        if (d.Step != LookStep) AddChild(Nameplate(a));
+        right.AddChild(d.Step == CallingStep ? d.Section switch { 1 => ArmsDetail(), 2 => OriginDetail(), _ => CallingDetail(a) } : LookDetail(a));
+        // Who they are becoming, set on the ground at the figure's feet (not by her face: the name's field shows it).
+        if (d.Step == CallingStep) AddChild(Nameplate(a));
     }
 
     /// <summary>The panel's foot: back (or leave) and the way on, each its key and its word, at
-    /// either end; from the calling, the way on names what the look holds, so no one walks past it.</summary>
+    /// either end; from the calling, the way on names what the next screen holds, so no one walks past it.</summary>
     Control Foot()
     {
-        var back = Kit.Keyed(Act.Cancel, d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); });
+        var back = Kit.Keyed(Act.Cancel, d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Go(d.Step - 1); else G.CancelCreation(); });
         Nav.Id(back, "back");
-        string next = d.Step + 1 == LookStep ? $"Next: {Their.ToLowerInvariant()} hair, face and paint" : $"Next: {Steps[Math.Min(d.Step + 1, NameStep)].ToLowerInvariant()}";
-        var on = d.Step < NameStep ? Nav.Id(Kit.Keyed(Act.Confirm, next, () => Set(() => d.Step++), Style.EmberHi), "next") : Nav.Id(Kit.Keyed(Act.Confirm, "Begin the journey", Begin, Style.EmberHi), "begin");
+        var on = d.Step < LookStep ? Nav.Id(Kit.Keyed(Act.Confirm, $"Next: {Their.ToLowerInvariant()} look and name", () => Go(d.Step + 1), Style.EmberHi), "next")
+            : Nav.Id(Kit.Keyed(Act.Confirm, "Begin the journey", Begin, Style.EmberHi), "begin");
         var row = Style.H(0, back, new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore }, on);
         return Style.V(Style.Gap3, Kit.RuleH(), row);
     }
@@ -454,51 +460,46 @@ public partial class CreateScreen : Overlay
         return tabs;
     }
 
-    /// <summary>Who sits here (a woman or a man: the first thing anyone asks), and how they fight.</summary>
-    Control Calling()
+    /// <summary>The first screen: who sits here (a woman or a man: the first thing anyone asks), how
+    /// they fight (the calling, then the weapon and the art in hand), and where they are from.</summary>
+    Control Calling(Archetype a)
     {
         var v = Style.V(Style.Gap2);
-        v.AddChild(Words(new[] { "A woman", "A man" }, Her ? 0 : 1, k => Set(() => d.SetSex(k == 0 ? Sex.Female : Sex.Male)), new[] { "sex:Female", "sex:Male" }));
+        v.AddChild(SexRow());
         v.AddChild(Style.Gap(Style.Gap1));
-        foreach (var (id, a) in Callings.Archetypes)
-            v.AddChild(Choice(ClassGlyph.GetValueOrDefault(id, "sword"), a.Name, a.Tagline, d.Archetype == id, () => Set(() => ChooseArchetype(id))));
+        foreach (var (id, c) in Callings.Archetypes)
+            v.AddChild(Choice(ClassGlyph.GetValueOrDefault(id, "sword"), c.Name, c.Tagline, d.Archetype == id, () => Set(() => { d.Section = 0; ChooseArchetype(id); })));
         v.AddChild(Style.Gap(Style.Gap2));
-        v.AddChild(Kit.RuleH());
+        v.AddChild(Arms(a));
         v.AddChild(Style.Gap(Style.Gap2));
-        v.AddChild(LookInvite());
+        v.AddChild(Origin());
         return v;
     }
 
-    /// <summary>The look, offered under the callings: her portrait in its ring and what can be
-    /// shaped, so the step that makes her theirs is seen before anyone walks past it. No card:
-    /// the portrait is the one painted thing on the panel.</summary>
-    Button LookInvite()
+    /// <summary>A woman, or a man: his own body is still to come, so he is shown greyed, said to be
+    /// coming, never pressed nor come to by the keys; no picture of him.</summary>
+    Control SexRow()
     {
-        var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
-        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
-        Nav.Id(b, "invite:look");
-        b.Pressed += () => Set(() => { d.Step = LookStep; d.Section = 0; });
-        const int size = 104;
-        var face = new Cameo(Art("look"), "", false, () => { }, size, null, "mask") { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(size + 14, size + 4) };
-        bool pad = Controls.Instance.UsingPad;
-        string them = Her ? "her" : "him", their = Their.ToLowerInvariant();
-        var head = Style.Label($"II  ·  {Their} look".ToUpperInvariant(), Style.Display, 20, Kit.Ink, false, HorizontalAlignment.Left, false);
-        var line = Style.Label(Kit.Balance($"{Their} hair and its colour, {their} face and eyes, the paint on it, {their} skin.", Style.Text, 16, 330), Style.Text, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
-        var shape = Style.Label($"Shape {them}", Style.TextItalic, 16, Style.EmberHi, false, HorizontalAlignment.Left, false);
-        var go = Style.H(Style.Gap2, pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext)), shape);
-        foreach (var c in go.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        var words = Style.V(Style.Gap1, head, line, go);
-        words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        var row = Style.H(Style.Gap4, face, words);
-        row.MouseFilter = MouseFilterEnum.Ignore;
-        foreach (var c in row.GetChildren().OfType<Control>()) c.MouseFilter = MouseFilterEnum.Ignore;
-        b.AddChild(row);
-        b.CustomMinimumSize = row.GetCombinedMinimumSize();
-        b.MouseEntered += () => head.AddThemeColorOverride("font_color", new Color("#fff2d8"));
-        b.MouseExited += () => head.AddThemeColorOverride("font_color", Kit.Ink);
-        return b;
+        var woman = Nav.Id(Kit.Tab("A woman", Her, () => { if (!Her) Set(() => d.SetSex(Sex.Female)); }, 19), "sex:Female");
+        var man = Kit.Tab("A man", !Her, () => { }, 19);
+        man.Disabled = true;
+        man.MouseFilter = MouseFilterEnum.Ignore;
+        man.MouseDefaultCursorShape = CursorShape.Arrow;
+        man.AddThemeColorOverride("font_disabled_color", Kit.Dim);
+        man.Modulate = Colors.White with { A = 0.45f };
+        Nav.Skip(man);
+        var later = Style.Label("coming later", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false);
+        // (on the word's line: the tab's foot holds its underline's room)
+        later.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        later.CustomMinimumSize = new Vector2(0, 0);
+        var him = Style.H(Style.Gap2, man, later);
+        var row = Style.H(40, woman, him);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        return row;
     }
 
+    /// <summary>The arms: the calling's weapons as its rows, and the four arts it starts with as words,
+    /// the one in hand's kind and pace under them (the right panel reads both closely).</summary>
     Control Arms(Archetype a)
     {
         var v = Style.V(Style.Gap2, Kit.Head("Weapon"));
@@ -506,68 +507,34 @@ public partial class CreateScreen : Overlay
         {
             var it = Items.Get(id);
             var w = it.Weapon != null ? Weapons.All.GetValueOrDefault(it.Weapon.Id) : null;
-            v.AddChild(Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => d.WeaponItem = id),
+            v.AddChild(Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => { d.Section = 1; d.WeaponItem = id; }),
                 w != null ? ItemViews.SchoolColors[w.School] : null));
         }
-        v.AddChild(Style.Gap(Style.Gap2));
+        v.AddChild(Style.Gap(Style.Gap1));
         v.AddChild(Kit.Head("Art in hand", "all four known; more on the road"));
-        foreach (var id in ArtBook.Starting(a.Id))
-        {
-            var ab = Abilities.ById(id);
-            string kind = ab.Movement ? "a way of moving" : "the calling's own";
-            v.AddChild(Choice(ab.Icon, ab.Name, $"{kind} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}", d.Ability == id, () => Set(() => d.Ability = id)));
-        }
-        return v;
-    }
-
-    Control Origin()
-    {
-        var v = Style.V(Style.Gap2);
-        foreach (var (id, bg) in Callings.Backgrounds)
-            v.AddChild(Choice(BgGlyph.GetValueOrDefault(id, "map"), bg.Name, bg.Summary, d.Background == id, () => Set(() => d.Background = id)));
-        return v;
-    }
-
-    /// <summary>The last step: their name, written on a line (typed, or one from the road), and
-    /// who they are, read back before the journey begins.</summary>
-    Control NamePage(Archetype a)
-    {
-        var v = Style.V(Style.Gap2, Kit.Head("Name"));
-        nameBox = new LineEdit { Text = d.Name, PlaceholderText = "Your name", MaxLength = 18, CustomMinimumSize = new Vector2(300, 44), SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        Style.Font(nameBox, Style.Display, 26, Kit.Ink, false);
-        nameBox.AddThemeColorOverride("font_placeholder_color", Kit.Faint);
-        nameBox.AddThemeColorOverride("caret_color", Style.EmberHi);
-        // Written on a rule, as a name is signed in a ledger: no field's box.
-        StyleBoxFlat Ruled(Color c) => new() { BgColor = Colors.Transparent, BorderColor = c, BorderWidthBottom = 1, ContentMarginLeft = 2, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 };
-        nameBox.AddThemeStyleboxOverride("normal", Ruled(Kit.Edge));
-        nameBox.AddThemeStyleboxOverride("focus", Ruled(Style.Ember));
-        nameBox.TextChanged += t =>
-        {
-            var clean = new string(t.Where(c => char.IsLetter(c) || c is '\'' or ' ' or '-').ToArray());
-            d.Name = clean;
-            if (clean != t) { nameBox.Text = clean; nameBox.CaretColumn = clean.Length; }
-        };
-        nameBox.TextSubmitted += _ => Begin();
-        var road = Nav.Id(Kit.Word("A name from the road", () => Set(() => d.Name = Names[Random.Shared.Next(Names.Length)]), Style.EmberHi, 16), "roadname");
-        road.SizeFlagsVertical = SizeFlags.ShrinkEnd;
-        v.AddChild(Style.H(Style.Gap4, Nav.Skip(nameBox), road));
-        // The keyboard types at once; a pad cannot type, so it is offered names instead.
-        if (!Controls.Instance.UsingPad) Callable.From(() => nameBox?.GrabFocus()).CallDeferred();
-        else if (d.Name.Trim() == "") Nav.Prefer = "roadname";
-        // Who they are, each step's answer on its line; a press goes back to it.
-        v.AddChild(Style.Gap(Style.Gap3));
-        v.AddChild(Kit.Head(Her ? "Who she is" : "Who he is"));
-        var bg = Callings.Background(d.Background);
+        v.AddChild(Flow(ArtBook.Starting(a.Id).Select(id => (Abilities.ById(id).Name, d.Ability == id, (Action)(() => Set(() => { d.Section = 1; d.Ability = id; })), $"art:{id}"))));
         var ab = Abilities.ById(d.Ability);
-        v.AddChild(Recall(CallingStep, ClassGlyph.GetValueOrDefault(d.Archetype, "sword"), a.Name, a.Tagline));
-        v.AddChild(Recall(LookStep, "mask", Her ? "Her look" : "His look", LookWords()));
-        v.AddChild(Recall(ArmsStep, ab.Icon, Items.Get(d.WeaponItem).Name, $"and {ab.Name} in hand"));
-        v.AddChild(Recall(OriginStep, BgGlyph.GetValueOrDefault(d.Background, "map"), bg.Name, bg.Summary));
+        v.AddChild(Note($"{(ab.Movement ? "A way of moving" : "The calling's own")} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}"));
         return v;
     }
 
-    /// <summary>A step's answer, read back: pressed, it goes back to that step.</summary>
-    Button Recall(int step, string glyph, string name, string words) => Row(glyph, name, words, false, () => Set(() => d.Step = step), $"recall:{step}", null, false);
+    /// <summary>Where they are from, as words, the one chosen in a line under them.</summary>
+    Control Origin() => Style.V(Style.Gap2, Kit.Head("Origin"),
+        Flow(Callings.Backgrounds.Select(p => (p.Value.Name, d.Background == p.Key, (Action)(() => { var id = p.Key; Set(() => { d.Section = 2; d.Background = id; }); }), $"origin:{p.Key}"))),
+        Note(Callings.Background(d.Background).Summary));
+
+    /// <summary>A chosen word's line, quiet italic under its words.</summary>
+    static Label Note(string text) => Style.Label(text, Style.TextItalic, 16, Kit.Dim, true, HorizontalAlignment.Center, false);
+
+    /// <summary>Words to choose between, as the house's tabs in centred lines, each with its focus id.</summary>
+    static HFlowContainer Flow(IEnumerable<(string Text, bool On, Action Press, string Id)> words)
+    {
+        var list = words.ToList();
+        var f = Kit.TabFlow(list.Select(w => (w.Text, w.On, w.Press)), 17, 26, 4);
+        int i = 0;
+        foreach (var b in f.GetChildren().OfType<Button>()) Nav.Id(b, list[i++].Id);
+        return f;
+    }
 
     /* ------------------------------------------- the right panel's type -- */
 
@@ -662,7 +629,7 @@ public partial class CreateScreen : Overlay
         return v;
     }
 
-    Control Summary(Archetype a)
+    VBoxContainer Summary(Archetype a)
     {
         var bg = Callings.Background(d.Background);
         return Style.V(Style.Gap3, DTitle(d.Name.Trim() == "" ? "Nameless" : d.Name.Trim()), DSub($"{bg.Name} {a.Name}"), DBody(bg.Story, true), Kit.RuleH(),
@@ -674,25 +641,22 @@ public partial class CreateScreen : Overlay
 
     public override bool Key(Act a)
     {
-        // Typing a name: the letters are the name's, not the menu's.
-        if (nameBox != null && nameBox.HasFocus() && a is not (Act.Cancel or Act.Confirm)) return true;
-        if (nameBox != null && nameBox.HasFocus() && a == Act.Confirm) { nameBox.ReleaseFocus(); Begin(); return true; }
-        if (a == Act.TabNext) { Set(() => d.Step = Math.Min(NameStep, d.Step + 1)); return true; }
-        if (a == Act.TabPrev) { Set(() => d.Step = Math.Max(0, d.Step - 1)); return true; }
-        // The look's parts, on the triggers (or , and .).
-        if (d.Step == LookStep && a is Act.SubNext or Act.SubPrev)
+        if (nameBox != null && nameBox.HasFocus())
         {
-            int n = Sections.Length;
-            Set(() => d.Section = (d.Section + (a == Act.SubNext ? 1 : n - 1)) % n);
-            Sound.Sfx.Page();
-            return true;
+            // Typing a name: the letters are the name's, not the menu's (W and S among them); the
+            // arrows up and down leave the name for the rows, Enter begins.
+            if (a is Act.Up or Act.Down && (Input.IsPhysicalKeyPressed(Godot.Key.Up) || Input.IsPhysicalKeyPressed(Godot.Key.Down))) { nameBox.ReleaseFocus(); return false; }
+            if (a == Act.Confirm) { nameBox.ReleaseFocus(); Begin(); return true; }
+            if (a != Act.Cancel) return true;
         }
-        if (a == Act.Cancel) { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); return true; }
+        if (a == Act.TabNext) { Go(d.Step + 1); return true; }
+        if (a == Act.TabPrev) { Go(d.Step - 1); return true; }
+        if (a == Act.Cancel) { if (d.Step > 0) Go(d.Step - 1); else G.CancelCreation(); return true; }
         if (a == Act.Confirm)
         {
             // On a choice not yet taken, Enter or A takes it (focus does it); otherwise, onward.
             if (Nav.KeyMode && Nav.Current is { } c && !c.C.HasMeta("on")) return false;
-            if (d.Step < NameStep) Set(() => d.Step++); else Begin();
+            if (d.Step < LookStep) Go(d.Step + 1); else Begin();
             return true;
         }
         return false;
