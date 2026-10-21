@@ -1466,7 +1466,7 @@ public static class People
                 m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
                 m.SetShaderParameter("ear_amount", 1f);
                 m.SetShaderParameter("ear_light", 0.7f);
-                m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));
+                m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));   // (HerEarWarmth's too)
             }
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
@@ -1735,6 +1735,23 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
                     m.SetShaderParameter("sky_share", w);
+    }
+
+    /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
+    /// (C03, judge r1: a warm ear against a cool face under the moon); 1 gives it back.</summary>
+    public static void HerEarWarmth(Person p, float k)
+    {
+        if (p.Body != "heroine") return;
+        var t = new Vector3(1, 1, 1).Lerp(new Vector3(0.80f, 0.52f, 0.44f), k);
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    // (and the light through her ears, red: a moon behind her lit them like a lamp's)
+                    if (!m.HasMeta("backlight0")) m.SetMeta("backlight0", m.GetShaderParameter("backlight").VariantType == Variant.Type.Nil ? 0.18f : m.GetShaderParameter("backlight"));
+                    m.SetShaderParameter("backlight", (float)m.GetMeta("backlight0") * k);
+                    if ((float)m.GetShaderParameter("ear_amount") > 0) m.SetShaderParameter("ear_tint", t);
+                }
     }
 
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
