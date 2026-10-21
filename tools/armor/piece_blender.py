@@ -2017,7 +2017,9 @@ row["file"] = f"res://art/armor/{PID}.gltf"
 row["tier"] = SPEC_PIECE.get("tier")
 # (armor 9, the rigid-piece rule: a rigid piece is never bent by the garment tuck (Rpg/GarmentTuck.cs Over, HerWear,
 # wearcheck --garment-tuck). A plate style is rigid; a free mesh is when every part of it is `_rigid`.)
-if SPEC_PIECE.get("style") == "plate" or (MESH and IMPORT.get("rigid")):
+# (rigid only when the piece says so, piece.json "rigid": true (B's cuirass, cuisses), or a free mesh made only of
+# _rigid parts: the plate tops are cups on leather straps that must still lie under the pauldrons, armor 9)
+if SPEC_PIECE.get("rigid") is True or (MESH and IMPORT.get("rigid")):
     row["rigid"] = True
 if MESH:
     row["source"] = "mesh"
