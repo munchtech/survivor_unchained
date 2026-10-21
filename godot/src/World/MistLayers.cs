@@ -16,6 +16,8 @@ public static class MistLayers
     static readonly List<ShaderMaterial> mats = new();
     static readonly List<Node3D> roots = new();
     static readonly float[] Rise = { 0.25f, 0.7f, 1.4f }, Share = { 1f, 0.7f, 0.45f }, Drift = { 0.02f, 0.03f, 0.014f }, BankDrift = { 0.22f, 0.3f, 0.4f };
+    // Each sheet's most (the three stacked: 1 - 0.78 x 0.85 x 0.9, about 40% veiled at the thickest, so the bed shows through).
+    static readonly float[] Cap = { 0.22f, 0.15f, 0.1f };
     static Color tint = new(0.3f, 0.36f, 0.45f), keyLight;
     static float thick;
     static bool shown = true;
@@ -75,6 +77,7 @@ public static class MistLayers
             mat.SetShaderParameter("drift", Drift[k]);
             mat.SetShaderParameter("bank_drift", BankDrift[k]);
             mat.SetShaderParameter("layer", (float)k);
+            mat.SetShaderParameter("cap", Cap[k]);
             mat.SetMeta("share", Share[k]);
             mats.Add(mat);
             root.AddChild(new MeshInstance3D { Name = $"Mist{k}", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
