@@ -252,17 +252,32 @@ def match_pieces(path, field, hair=False):
     from scipy.spatial import cKDTree
     G = _Gl(path)
     g = G.g
-    T = cKDTree(field["P"])
-    To = cKDTree(np.concatenate([field["body"], field["head"]]) if hair else field["body"])
+    FP, FD = field["P"], field["D"]
+    if not len(FP):
+        return
+    T = cKDTree(FP)
+    Oth = np.concatenate([field["body"], field["head"]]) if hair else field["body"]
+    To = cKDTree(Oth) if len(Oth) else None
     hit = 0
     for si, sk in enumerate(g.get("skins", [])):
         pn = G.names(si)
         col = [field["names"].index(n) if n in field["names"] else -1 for n in pn]
-        Dp = np.zeros((len(field["P"]), len(pn)))
+        Dp = np.zeros((len(FP), len(pn)))
         for k, c in enumerate(col):
             if c >= 0:
-                Dp[:, k] = field["D"][:, c]
-        if np.abs(field["D"]).sum() - np.abs(Dp).sum() > 1e-6 * max(1.0, np.abs(field["D"]).sum()):
+                Dp[:, k] = FD[:, c]
+        # (a joint the piece lacks (hair has no upperarm_share) gives its change to its nearest forebear the piece has,
+        # where the field knows her skeleton)
+        par = field.get("parents") or {}
+        for c, nm in enumerate(field["names"]):
+            if nm in pn or not np.abs(FD[:, c]).any():
+                continue
+            up = par.get(nm)
+            while up is not None and up not in pn:
+                up = par.get(up)
+            if up is not None:
+                Dp[:, pn.index(up)] += FD[:, c]
+        if np.abs(FD).sum() - np.abs(Dp).sum() > 1e-6 * max(1.0, np.abs(FD).sum()):
             print("GRAFT_MATCH: %s lacks a joint the graft's change uses; skipped" % path)
             continue
         meshes = {n["mesh"] for n in g["nodes"] if n.get("skin") == si and "mesh" in n}
@@ -275,7 +290,7 @@ def match_pieces(path, field, hair=False):
                 done.add(at["WEIGHTS_0"])
                 P = G.get(at["POSITION"]).astype(float)
                 d, ix = T.query(P, k=8)
-                do, _ = To.query(P)
+                do = To.query(P)[0] if To is not None else np.full(len(P), np.inf)
                 f = ((d[:, 0] < do) & (hair | (d[:, 0] < PIECE_FAR))).astype(float)
                 if hair:
                     t = np.clip((d[:, 0] - HAIR_NEAR) / (HAIR_FAR - HAIR_NEAR), 0, 1)
@@ -295,3 +310,271 @@ def match_pieces(path, field, hair=False):
     if hit:
         G.save()
     print("GRAFT_MATCH: %d points of %s follow her neck's skin under them" % (hit, os.path.basename(path)))
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Her nape (the owner's crop at creation's Look, 20 October 2026: a step in her neck's outline just below her right
+# ear, a pale wedge pointing up with her turned 40). Measured on the built glb, two faults, both her weights:
+#  1. Spikes. Two points of her head's skin at her nape (x -0.038/-0.041, y 1.650, z -0.06, rest) had Head 0.05
+#     (neck_01 0.65, spine_03 0.24, clavicle_r 0.06: a sample from inside her body when her head was rigged) among
+#     points with Head 0.44-0.50. The cut drops each point 30 mm x its Head weight: those two dropped 1.4 mm, their
+#     ring 14-20 mm, so they stood 13-18 mm up out of her nape's outline (the head's triangles round them folded
+#     over, 155-174 deg). Her nape's midline row on the head-graft seam the same, softer (Head 0.16-0.18 among 0.4).
+#  2. A step. Round her neck's back and sides her Head weight rose 0 -> 0.5 up the graft, held about 0.5-0.6 for
+#     4 cm (match_graft gives the graft her head's rim), then 0.6 -> 1.0 within 1 cm on her head's own skin (rest
+#     y 1.66-1.67): the cut took 1 cm of her skin there to 2-5 mm, a crease round her nape that her chin up folds
+#     further. heroine_throat_skin.ease spread her front and sides' ramp over her whole neck, but not her back, and
+#     never her head's own skin.
+# The 18 Oct checks measured gaps and pokes between her head and the graft, which the two of them stepping together
+# pass. So, her head, graft and body welded as one: despike refills a point whose weights stand off its ring's (L1
+# > SPIKE_L1) from the points round it; ease_nape then refills every weight round her neck's back and sides, from
+# where her body has no Head or neck_01 up to where her head's skin is all Head (both held), biharmonic, as ease
+# did her front: the 3 cm the cut takes is spread down her nape. Weights only, so they give the same on a built glb
+# (cut already) as in the build (after heroine_throat_skin.soften, before shorten_glb); once per export (nape marks
+# the glb, and leaves a marked one). The points they change join the graft's field, so pieces and hair that took those weights follow
+# (match_pieces: an outfit's point at her nape took the graft's weights, which are her head's skin's there). Off:
+# NAPE_EASE=0.
+
+SPIKE_L1 = 0.3                    # (a point's weights this far (L1) from its ring's mean: a spike)
+NAPE_BOX = (1.50, 1.74, 0.11)     # (rest y from, to, and radius round her neck's axis, m)
+NAPE_TH = 30.0                    # (deg round her neck from her front left alone: her throat, ease's; at 70 a fold
+#                                    under her left ear (Head 0.55 -> 0.70 in 5 mm, rest y 1.64) stayed)
+NAPE_FEATHER = 45.0               # (deg past NAPE_TH over which the eased weights blend in from her held ones. 20 Oct:
+#                                    a hard edge at 45 left a crease along it under her left ear (rest y 1.64, her
+#                                    throat's ramp there steeper than her right's): 7 deg -> 77 turned 45 to her right,
+#                                    49 chin down. Blended 30 -> 75 it is 15 and 11, her right side the same or better)
+NAPE_HEAD = 0.98                  # (her head's skin at this much Head and over is held: her face and scalp)
+NAPE_LOW = 0.005                  # (Head + neck_01 under this: her back and shoulders, held)
+
+
+def _nape_mesh(G):
+    """Her body's, graft's and head's skin welded by place, rest: (prims, kinds, positions, offsets, weld ids, welded
+    points, welded weights, edges, her neck's axis point)."""
+    import numpy as np
+    g = G.g
+    N = g["nodes"]
+    nj = len(G.names())
+    hb = [n for n in N if n.get("name") == "Heroine"][0]
+    hh = [n for n in N if n.get("name") == "HeroineHead"][0]
+    prims = [p for p in g["meshes"][hb["mesh"]]["primitives"] if "JOINTS_0" in p["attributes"]]
+    prims += [p for p in g["meshes"][hh["mesh"]]["primitives"] if g["materials"][p["material"]].get("name") == "skin_head"]
+    kind = [g["materials"][p["material"]].get("name") for p in prims]
+    Ps = [G.get(p["attributes"]["POSITION"]).astype(float) for p in prims]
+    D = np.concatenate([_dense(G.get(p["attributes"]["JOINTS_0"]), G.get(p["attributes"]["WEIGHTS_0"]).astype(float), nj)
+                        for p in prims])
+    off = np.cumsum([0] + [len(x) for x in Ps])
+    P = np.concatenate(Ps)
+    F = np.concatenate([G.get(p["indices"]).reshape(-1, 3).astype(int) + off[k] for k, p in enumerate(prims)])
+    _, wid = np.unique(np.round(P / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+    wid = wid.ravel()
+    nw = wid.max() + 1
+    U = np.zeros((nw, 3))
+    U[wid] = P
+    Dw = np.zeros((nw, nj))
+    np.add.at(Dw, wid, D)
+    Dw /= np.bincount(wid, minlength=nw)[:, None]
+    E = wid[np.r_[F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]]
+    E = np.unique(np.sort(E, 1), axis=0)
+    E = E[E[:, 0] != E[:, 1]]
+    par = {c: i for i, n in enumerate(N) for c in n.get("children", [])}
+    i, c = [k for k, n in enumerate(N) if n.get("name") == "neck_01"][0], np.zeros(3)
+    while True:
+        n = N[i]
+        x, y, z, w = n.get("rotation", [0, 0, 0, 1])
+        R = np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                      [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                      [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]) * np.array(n.get("scale", [1, 1, 1]))
+        c = R @ c + np.array(n.get("translation", [0, 0, 0]))
+        if i not in par:
+            break
+        i = par[i]
+    return prims, kind, Ps, off, wid, U, Dw, E, c
+
+
+def _nape_write(G, prims, kind, Ps, off, wid, X, chg, names, save, merge, tag):
+    """X (welded weights) written to the points chg marks; the change returned as a field for match_pieces, and
+    added to this run's field (merge)."""
+    import numpy as np
+    from scipy.spatial import cKDTree
+    nj = len(names)
+    keep = []
+    for k, p in enumerate(prims):
+        ix = wid[off[k]:off[k + 1]]
+        f = chg[ix]
+        if not f.any():
+            continue
+        J, Wt = G.get(p["attributes"]["JOINTS_0"]), G.get(p["attributes"]["WEIGHTS_0"]).astype(np.float32)
+        old = _dense(J[f], Wt[f].astype(float), nj)
+        top, tw = _top4(X[ix[f]])
+        J[f], Wt[f] = top, tw
+        G.put(p["attributes"]["JOINTS_0"], J)
+        G.put(p["attributes"]["WEIGHTS_0"], Wt)
+        keep.append((Ps[k][f], _dense(top, tw, nj) - old))
+    if not keep:
+        return None
+    if save:
+        G.save()
+    Pn, Dn = (np.concatenate([q[j] for q in keep]) for j in range(2))
+    s = np.abs(Dn).sum(1) > 1e-6
+    Pn, Dn = Pn[s], Dn[s]
+    if not len(Pn):
+        return None
+    # (the field: the changed points, and every unchanged graft and head point within 10 cm with none, so a piece's
+    # point takes the change only where the skin point it took its weights from changed; her body's others the rest)
+    Tn = cKDTree(Pn)
+    near = lambda Q: (Tn.query(Q, distance_upper_bound=0.1)[0] < 1) & (Tn.query(Q)[0] > 1e-6)
+    pick = lambda m: np.concatenate([x for x, kk in zip(Ps, kind) if m(kk)] or [np.zeros((0, 3))])
+    Pg, Ph = pick(lambda kk: kk == "skin_graft"), pick(lambda kk: kk == "skin_head")
+    Pb = pick(lambda kk: kk not in ("skin_graft", "skin_head"))
+    Pg, Ph, Pb = Pg[near(Pg)], Ph[near(Ph)], Pb[near(Pb)]
+    fld = dict(P=np.concatenate([Pn, Pg, Ph]), D=np.concatenate([Dn, np.zeros((len(Pg) + len(Ph), nj))]),
+               names=names, body=Pb, head=np.zeros((0, 3)),
+               parents={G.g["nodes"][c].get("name"): G.g["nodes"][i].get("name")
+                        for i, n in enumerate(G.g["nodes"]) for c in n.get("children", [])})
+    if merge and _FIELD and list(_FIELD[0]["names"]) == list(names):
+        f0 = _FIELD[0]
+        d, j = cKDTree(f0["P"]).query(Pn)
+        same = d < 1e-6
+        Fd = f0["D"].copy()
+        np.add.at(Fd, j[same], Dn[same])
+        f0["P"] = np.concatenate([f0["P"], Pn[~same]])
+        f0["D"] = np.concatenate([Fd, Dn[~same]])
+        # (a head point that changed is the field's now, not one of the rest)
+        if len(f0["head"]):
+            f0["head"] = f0["head"][cKDTree(Pn).query(f0["head"])[0] > 1e-6]
+        if save:
+            np.savez_compressed(FIELD_FILE, P=f0["P"].astype(np.float32), D=f0["D"].astype(np.float32),
+                                names=np.array(names), body=f0["body"].astype(np.float32), head=f0["head"].astype(np.float32))
+    print("%s: %d points of her skin changed weights in %s" % (tag, int(len(Pn)), G.path))
+    return fld
+
+
+def _merge_fields(a, b):
+    """Two changes as one field (b's after a's)."""
+    if a is None or b is None:
+        return a if b is None else b
+    import numpy as np
+    from scipy.spatial import cKDTree
+    d, j = cKDTree(a["P"]).query(b["P"])
+    same = d < 1e-6
+    D = a["D"].copy()
+    np.add.at(D, j[same], b["D"][same])
+    return dict(P=np.concatenate([a["P"], b["P"][~same]]), D=np.concatenate([D, b["D"][~same]]),
+                names=a["names"], parents=a.get("parents"),
+                body=a["body"] if len(a["body"]) >= len(b["body"]) else b["body"], head=a["head"])
+
+
+def despike(path, save=True, merge=True):
+    """Her nape's weight spikes refilled from their rings (see above). Returns the change as a field, or None."""
+    import numpy as np
+    import scipy.sparse as sp
+    G = _Gl(path)
+    names = G.names()
+    nj = len(names)
+    prims, kind, Ps, off, wid, U, Dw, E, c = _nape_mesh(G)
+    nw = len(U)
+    hj = names.index("Head")
+    r = np.hypot(U[:, 0] - c[0], U[:, 2] - c[2])
+    th = np.degrees(np.arctan2(U[:, 0] - c[0], U[:, 2] - c[2]))
+    A = sp.coo_matrix((np.ones(2 * len(E)), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(nw, nw)).tocsr()
+    deg = np.asarray(A.sum(1)).ravel()
+    ring_h = (A @ Dw[:, hj]) / np.maximum(deg, 1)
+    trans = ((Dw[:, hj] > 0.02) & (Dw[:, hj] < NAPE_HEAD)) | ((ring_h > 0.02) & (ring_h < NAPE_HEAD))
+    band = (U[:, 1] > NAPE_BOX[0]) & (U[:, 1] < NAPE_BOX[1]) & (r < NAPE_BOX[2]) & (np.abs(th) > NAPE_TH) & trans
+    X = Dw.copy()
+    bad = np.zeros(nw, bool)
+    for _ in range(6):
+        ok = (~bad).astype(float)
+        k = A @ ok
+        dev = np.abs(X - (A @ (X * ok[:, None])) / np.maximum(k, 1)[:, None]).sum(1)
+        new = band & ~bad & (k > 0) & (dev > SPIKE_L1)
+        if not new.any():
+            break
+        bad |= new
+        bi = np.where(bad)[0]
+        Ab = A[bi]
+        for _ in range(200):     # (the spikes filled harmonically from the points round them)
+            X[bi] = (Ab @ X) / np.maximum(deg[bi], 1)[:, None]
+    X = np.clip(X, 0, None)
+    X /= X.sum(1, keepdims=True)
+    print("NAPE_SPIKES: %d of her neck's points had weights off their rings' (L1 > %.2f), refilled from them"
+          % (int(bad.sum()), SPIKE_L1))
+    return _nape_write(G, prims, kind, Ps, off, wid, X, bad, names, save, merge, "NAPE_SPIKES")
+
+
+def ease_nape(path, save=True, merge=True):
+    """Her weights round her neck's back and sides refilled (biharmonic) between her body and her head (see above).
+    After despike. Returns the change as a field, or None."""
+    import numpy as np
+    import scipy.sparse as sp
+    from scipy.sparse.linalg import splu
+    G = _Gl(path)
+    names = G.names()
+    prims, kind, Ps, off, wid, U, Dw, E, c = _nape_mesh(G)
+    nw = len(U)
+    hj, nk = names.index("Head"), names.index("neck_01")
+    r = np.hypot(U[:, 0] - c[0], U[:, 2] - c[2])
+    th = np.degrees(np.arctan2(U[:, 0] - c[0], U[:, 2] - c[2]))
+    free = (U[:, 1] > NAPE_BOX[0]) & (U[:, 1] < NAPE_BOX[1]) & (r < NAPE_BOX[2]) & (np.abs(th) > NAPE_TH) & \
+        (Dw[:, hj] < NAPE_HEAD) & (Dw[:, hj] + Dw[:, nk] > NAPE_LOW)
+    # (only the part of that joined to her neck's back: an ear's or a shoulder's stray point is left)
+    A = sp.coo_matrix((np.ones(2 * len(E)), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(nw, nw)).tocsr()
+    from scipy.sparse.csgraph import connected_components
+    fi = np.nonzero(free)[0]
+    _, lab = connected_components(A[fi][:, fi], directed=False)
+    big = np.bincount(lab).argmax()
+    free[fi[lab != big]] = False
+    fi, bi = np.nonzero(free)[0], np.nonzero(~free)[0]
+    L = (sp.diags(np.asarray(A.sum(1)).ravel()) - A).tocsr()
+    L2 = (L @ L).tocsr()
+    lu = splu(L2[fi][:, fi].tocsc())
+    rhs = -(L2[fi][:, bi] @ Dw[bi])
+    # (her head's and neck's shares solved; the rest of each point's weight kept in its own proportions (her spine,
+    # clavicles, breasts), or her spine's if it had none, so no clavicle or arm is drawn up her neck)
+    X = Dw.copy()
+    hn_ = np.clip(np.stack([lu.solve(rhs[:, hj]), lu.solve(rhs[:, nk])], 1), 0, 1)
+    hn_ /= np.maximum(hn_.sum(1, keepdims=True), 1)
+    oth = Dw[fi].copy()
+    oth[:, [hj, nk]] = 0
+    so = oth.sum(1, keepdims=True)
+    rest = 1 - hn_.sum(1, keepdims=True)
+    sj = names.index("spine_03")
+    none = so[:, 0] < 1e-6
+    oth[~none] *= rest[~none] / so[~none]
+    oth[none, sj] = rest[none, 0]
+    oth[:, hj], oth[:, nk] = hn_[:, 0], hn_[:, 1]
+    X[fi] = oth
+    # (blended in round her neck from NAPE_TH to NAPE_TH + NAPE_FEATHER, smoothstep, so no edge between her held
+    # throat and her eased nape folds in a turn)
+    t = np.clip((np.abs(th) - NAPE_TH) / max(NAPE_FEATHER, 1e-6), 0, 1)
+    X = Dw + (t * t * (3 - 2 * t))[:, None] * (X - Dw)
+    chg = free & (np.abs(X - Dw).sum(1) > 1e-3)
+    print("NAPE_EASE: %d points round her neck's back and sides refilled between her body and her head" % int(free.sum()))
+    return _nape_write(G, prims, kind, Ps, off, wid, X, chg, names, save, merge, "NAPE_EASE")
+
+
+NAPE_MARK = "heroine_nape"        # (the glb's asset extras, once done: ease_nape is a solve, not a fixed point)
+
+
+def nape(path, save=True, merge=True):
+    """despike, then ease_nape (NAPE_EASE=0: despike only), once per export (a glb marked done is left); their
+    change as one field for match_pieces, or None."""
+    d = open(path, "rb").read()
+    jl = struct.unpack("<I", d[12:16])[0]
+    g = json.loads(d[20:20 + jl])
+    if g.get("asset", {}).get("extras", {}).get(NAPE_MARK):
+        print("NAPE: %s has had it" % path)
+        return None
+    a = despike(path, save, merge)
+    b = ease_nape(path, save, merge) if os.environ.get("NAPE_EASE", "1") == "1" else None
+    if save:
+        d = open(path, "rb").read()
+        g = json.loads(d[20:20 + jl])
+        g.setdefault("asset", {}).setdefault("extras", {})[NAPE_MARK] = {"spike_l1": SPIKE_L1, "th": NAPE_TH, "feather": NAPE_FEATHER,
+                                                                           "ease": b is not None}
+        js = json.dumps(g, separators=(",", ":")).encode()
+        js += b" " * ((4 - len(js) % 4) % 4)
+        out = d[:12] + struct.pack("<I", len(js)) + d[16:20] + js + d[20 + jl:]
+        out = out[:8] + struct.pack("<I", len(out)) + out[12:]
+        open(path, "wb").write(out)
+    return _merge_fields(a, b)

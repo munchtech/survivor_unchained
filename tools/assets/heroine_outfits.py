@@ -9495,6 +9495,12 @@ if BODY_OUT:
         import heroine_throat_skin
         heroine_throat_skin.ease(BODY_OUT)
         heroine_throat_skin.soften(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
+    # (20 Oct, the owner's crop at creation's Look: a step in her neck's outline under her right ear. Her nape's weight
+    # spikes refilled from the points round them, then her weights round her neck's back and sides eased between her
+    # body and her head, so the cut below spreads down her nape instead of folding it: heroine_neck.nape. The pieces and
+    # hair that took those weights follow, match_pieces, through the field. Off: NAPE=0)
+    if os.environ.get("NAPE", "1") == "1" and float(os.environ.get("NECK_CUT", "0.03")):
+        heroine_neck.nape(BODY_OUT)
     heroine_neck.shorten_glb(BODY_OUT, float(os.environ.get("NECK_CUT", "0.03")))
     armor_tuck_rekey(_tuck_pre, BODY_OUT, os.path.dirname(OUT))
     print("BODY", BODY_OUT)
