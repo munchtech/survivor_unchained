@@ -98,11 +98,18 @@ public sealed class SkinPoints
 
     /// <summary>The nearest point to (x, y, z) within `max` m, or -1.</summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public int Nearest(float x, float y, float z, float max = 0.08f)
+    public int Nearest(float x, float y, float z, float max = 0.08f, int hint = -1)
     {
         int cx = (int)MathF.Floor((x - ox) / Cell), cy = (int)MathF.Floor((y - oy) / Cell), cz = (int)MathF.Floor((z - oz) / Cell);
         int best = -1;
         float bd = max * max;
+        // (a hint, a neighbour's nearest: nothing farther than it can win, so its distance bounds the search from the start;
+        // the first of equals in ring order still wins, so the answer is the same to the bit)
+        if (hint >= 0)
+        {
+            float dh = D2(hint, x, y, z);
+            if (dh < bd) bd = MathF.BitIncrement(dh);
+        }
         int rings = (int)MathF.Ceiling(max / Cell);
         for (int k = 0; k <= rings; k++)
         {
@@ -269,19 +276,21 @@ public static class GarmentTuck
             x1 = MathF.Max(x1, s.P[i * 3]); y1 = MathF.Max(y1, s.P[i * 3 + 1]); z1 = MathF.Max(z1, s.P[i * 3 + 2]);
         }
         float m = Reach + 2 * Smooth;
-        // (each vertex alone: in parallel, a list of her near points a worker)
-        Parallel.For(0, n, () => new List<int>(), (v, _, near) =>
+        // (each vertex alone: in parallel, runs of vertices a worker, each run's last anchor the next one's hint)
+        Parallel.ForEach(Partitioner.Create(0, n, 1024), rg =>
         {
-            Vertex(v, near);
-            return near;
-        }, _ => { });
+            var near = new List<int>();
+            int hint = -1;
+            for (int v = rg.Item1; v < rg.Item2; v++) Vertex(v, near, ref hint);
+        });
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        void Vertex(int v, List<int> near)
+        void Vertex(int v, List<int> near, ref int hint)
         {
             anc[v] = -1;
             float x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
             if (x < x0 - m || y < y0 - m || z < z0 - m || x > x1 + m || y > y1 + m || z > z1 + m) return;
-            int a = s.Nearest(x, y, z, Reach);
+            int a = s.Nearest(x, y, z, Reach, hint);
+            if (a >= 0) hint = a;
             anc[v] = a;
             if (a < 0 || !reach[a]) return;
             float ha = (x - s.P[a * 3]) * s.N[a * 3] + (y - s.P[a * 3 + 1]) * s.N[a * 3 + 1] + (z - s.P[a * 3 + 2]) * s.N[a * 3 + 2];

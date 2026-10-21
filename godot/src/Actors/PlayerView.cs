@@ -26,6 +26,8 @@ public partial class PlayerView : Node3D
 {
     readonly Loadout loadout;
     readonly People.Person person;
+    /// <summary>Her figure (HerWear.Busy: a live swap dressing it).</summary>
+    public People.Person Person => person;
     readonly AnimationTree tree;
     // (A name made once, not a new one every frame for the collector.)
     static readonly StringName BlendPosition = "parameters/move/blend_position";

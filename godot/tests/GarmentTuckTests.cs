@@ -83,6 +83,22 @@ public class GarmentTuckTests
     }
 
     [Fact]
+    public void A_hint_never_changes_the_nearest()
+    {
+        // (points on a coarse lattice, so equal distances happen: the first of equals must still win)
+        var rng = new Random(5);
+        var p = Enumerable.Range(0, 3000).Select(_ => (float)(rng.Next(-15, 16) * 0.01)).ToArray();
+        var s = new SkinPoints(p, Enumerable.Repeat(1f, p.Length).ToArray(), Enumerable.Range(0, 1000).Select(i => (long)i).ToArray());
+        for (int q = 0; q < 400; q++)
+        {
+            float x = (float)(rng.Next(-18, 19) * 0.005), y = (float)(rng.Next(-18, 19) * 0.005), z = (float)(rng.Next(-18, 19) * 0.005);
+            int want = s.Nearest(x, y, z, 0.08f);
+            for (int h = 0; h < 6; h++) Assert.Equal(want, s.Nearest(x, y, z, 0.08f, rng.Next(0, 1000)));
+            if (want >= 0) Assert.Equal(want, s.Nearest(x, y, z, 0.08f, want));
+        }
+    }
+
+    [Fact]
     public void Split_copies_are_one_point()
     {
         var s = new SkinPoints(new[] { 0f, 0, 0, 0, 0, 0, 1, 0, 0 }, new[] { 1f, 0, 0, 0, 1, 0, 0, 0, 1 }, new long[] { 7, 7, 8 });

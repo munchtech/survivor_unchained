@@ -64,6 +64,8 @@ public partial class HerLod
     internal void Merge(IEnumerable<MeshInstance3D> candidates)
     {
         if (MergeOff) return;
+        var mp = System.Diagnostics.Stopwatch.StartNew();
+        double tKey = 0, tSig = 0;
         var groups = new Dictionary<string, List<Part>>();
         var order = new List<string>();
         var taken = new List<MeshInstance3D>();
@@ -82,8 +84,11 @@ public partial class HerLod
             {
                 int fs = mine.Count == 1 ? mine[0].Map[s] : s;
                 if (mine.Count == 1 && (mine[0].Own[s] || f.GetSurfaceOverrideMaterial(fs) == null)) { ok = false; break; }
+                double k0 = mp.Elapsed.TotalMilliseconds;
                 var key = MatKey(f.GetSurfaceOverrideMaterial(fs) ?? fm.SurfaceGetMaterial(fs));
+                double k1 = mp.Elapsed.TotalMilliseconds;
                 var sig = Sig(sm, s, out var arr);
+                tKey += k1 - k0; tSig += mp.Elapsed.TotalMilliseconds - k1;
                 if (key == null || sig == null) { ok = false; break; }
                 parts.Add((sig + "#" + key, new Part { Full = f, Src = src, Surface = s, FullSurface = fs, Arr = arr }));
             }
@@ -109,13 +114,17 @@ public partial class HerLod
         var gone = new List<MeshInstance3D>();
         foreach (var q in pairs.Where(q => set.Contains(q.Full)).ToList()) { pairs.Remove(q); gone.Add(q.Lod); }
 
+        double tPre = mp.Elapsed.TotalMilliseconds, tCat = 0;
         int made = 0, from = 0;
         foreach (var k in order)
         {
             var g = groups[k];
             var skin = new Skin();
             var mesh = new ArrayMesh();
-            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, Concat(g.Select(p => (p.Arr, p.Src.Skin!)).ToList(), skin, false), null, null, Flags(g[0].Src.Mesh, g[0].Surface, false));
+            double c0 = mp.Elapsed.TotalMilliseconds;
+            var cat = Concat(g.Select(p => (p.Arr, p.Src.Skin!)).ToList(), skin, false);
+            tCat += mp.Elapsed.TotalMilliseconds - c0;
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, cat, null, null, Flags(g[0].Src.Mesh, g[0].Surface, false));
             var mi = Add($"her_merge_{made}", mesh, skin, GeometryInstance3D.ShadowCastingSetting.Off);
             var first = g[0];
             pairs.Add((first.Full, mi, new[] { first.FullSurface }, new[] { false }, true));
@@ -123,6 +132,7 @@ public partial class HerLod
             made++; from += g.Count;
         }
         foreach (var f in taken) if (!fulls.Contains(f)) fulls.Add(f);
+        double tMain = mp.Elapsed.TotalMilliseconds;
         // Her outfit's shadow at the play camera, one mesh a weight count (its geometry alone: the outfit is opaque).
         int shadows = 0;
         foreach (var g in shadowSrc.SelectMany(m => Enumerable.Range(0, m.Mesh.GetSurfaceCount()).Select(s => (m, s)))
@@ -142,6 +152,7 @@ public partial class HerLod
             l.QueueFree();
         }
         on = null;   // (switch afresh next frame)
+        if (Args.Get("tuck-prof") != null) GD.Print($"merge prof: keys {tKey:F1} sigs {tSig:F1} pre {tPre:F1} concat {tCat:F1} main {tMain:F1} all {mp.Elapsed.TotalMilliseconds:F1} ms");
         GD.Print($"her merge: {taken.Count} meshes, {from} surfaces into {made} by material, {shadowSrc.Count} shadow casters into {shadows}");
     }
 
