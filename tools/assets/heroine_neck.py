@@ -595,7 +595,8 @@ def nape(path, save=True, merge=True):
 # held), each point moved along its normal only (no sliding: its weights and UVs stay where they were). Positions
 # and normals only, at rest (the cut moves the head's joint, not points), so the same on a built glb as in the
 # build; once (FAIR_MARK). Off: NECK_FAIR=0.
-FAIR_Y = (1.60, 1.68)             # (rest y, m: the band faired, whole between, faded over FAIR_FADE outside)
+FAIR_Y = (float(os.environ.get("NECK_FAIR_Y0", "1.615")), 1.68)            # (rest y, m: the band faired, whole between, faded over FAIR_FADE outside;
+#                                    from 1.60 the arcanist collar's pokes rose 15 -> 23 at a 45 turn: 1.615 keeps 15)
 FAIR_FADE = 0.01
 FAIR_TH = (45.0, 65.0)            # (deg round her neck from her front: none within the first, whole past the second)
 FAIR_ITERS = int(os.environ.get("NECK_FAIR_ITERS", "150"))   # (lambda/mu pairs: 80 -> 0.66 px left, 150 -> 0.47)
