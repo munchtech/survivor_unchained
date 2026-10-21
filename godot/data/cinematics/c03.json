@@ -110,7 +110,7 @@
       "type": "ELS",
       "dur": 16.0,
       "note": "Behind her, low: the end of G3; Grimtunnel turns away and dives head first, still clutching the heart; the mud closes, its light shows going down and is gone. The camera rises and pulls back high over the north bank, far east of the ford: her small in it, the road's lamps ember-blue. Silence; then a groan from under everything; the river shivers; every lamp dips and comes back; the sky's lowest edge has gone rose and grey.",
-      "cam": {"pos": {"abs": [16.7, 4.8, -34.2]}, "at": {"abs": [1.3, 1.4, -35.5]}, "lens": 28, "move": {"start": 0.0, "end": 9.0, "pos": {"abs": [30.0, 8.5, -34.0]}, "at": {"abs": [-4.0, 5.0, -31.0]}, "lens": 24, "ease": "out"}},
+      "cam": {"pos": {"abs": [16.7, 4.8, -34.2]}, "at": {"abs": [1.3, -0.3, -35.5]}, "lens": 28, "move": {"start": 0.0, "end": 9.0, "pos": {"abs": [30.0, 8.5, -34.0]}, "at": {"abs": [-4.0, 5.0, -31.0]}, "lens": 24, "ease": "out"}},
       "cues": [
         {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [1.0, 0, -0.5]}, "style": "burrow", "tag": "grim", "neutral": true, "sink": 0.55},
         {"at": 0.3, "do": "line", "id": "cin_heart_goes_down.downstairs"},
