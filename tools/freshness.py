@@ -16,8 +16,8 @@ import sys
 from pathlib import Path
 
 INTEGRATION = "claude/vigilant-galileo-l6jqyx"
-WATCHED = ["godot/art/people", "godot/art/anim", "godot/shaders", "public/assets/weapons", "godot/tools_scenes"]
-MODELS = ["art/people", "assets/weapons"]  # res:// folders whose .glb/.gltf imports are checked
+WATCHED = ["godot/art/people", "godot/art/npc", "godot/art/anim", "godot/shaders", "public/assets/weapons", "godot/tools_scenes"]
+MODELS = ["art/people", "art/npc", "assets/weapons"]  # res:// folders whose .glb/.gltf imports are checked
 
 
 def git(*a, cwd):
@@ -41,7 +41,7 @@ def stale_imports(root):
         d = g / folder
         if not d.is_dir():
             continue
-        for f in list(d.glob("*.glb")) + list(d.glob("*.gltf")):
+        for f in list(d.rglob("*.glb")) + list(d.rglob("*.gltf")):
             res = "res://" + f.relative_to(g).as_posix()
             m = imp / f"{f.name}-{hashlib.md5(res.encode()).hexdigest()}.md5"
             if not m.is_file():

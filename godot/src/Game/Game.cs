@@ -159,6 +159,9 @@ public partial class Game : Node, IZoneHost
         return face;
     }
 
+    /// <summary>--preset's own skin, when no --skin is given (as the Look's Choose gives it).</summary>
+    static string? QuickSkin() => Args.Get("preset") is string ps ? Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps)?.Skin : null;
+
     /// <summary>A stock survivor straight into the game (tools and tests).</summary>
     void Quick()
     {
@@ -175,7 +178,7 @@ public partial class Game : Node, IZoneHost
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
             // [--hair STYLE --figure F --skin ID]: the heroine by default (the owner, 19 Oct: the male hero is
             // out of testing, and runs without --sex played him); --sex male for the old hero.
-            Sex = Args.Get("sex") == "male" ? null : Sex.Female, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
+            Sex = Args.Get("sex") == "male" ? null : Sex.Female, HairStyle = Args.Get("hair"), Skin = Args.Get("skin") ?? QuickSkin(),
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
             // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
             FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),
@@ -1753,8 +1756,8 @@ public partial class Game : Node, IZoneHost
             var flipped = flips.Split(',').ToHashSet();
             double every = Args.Num("perf-flip-every", 1);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            bool outNow = false, wasOut = false, pinesOut = false, broadOut = false;
-            List<Node3D>? pines = null, broad = null;
+            bool outNow = false, wasOut = false, pinesOut = false, broadOut = false, rocksOut = false;
+            List<Node3D>? pines = null, broad = null, rocks = null;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
             // aa:NAME: the edges smoothed so while out (Graphics.Aa); interp: drawn from the last step while out (Interp).
@@ -1811,6 +1814,13 @@ public partial class Game : Node, IZoneHost
                     broadOut = outNow;
                     broad ??= [.. GetTree().GetNodesInGroup("flora_broadleaf").OfType<Node3D>(), .. GetTree().GetNodesInGroup("flora_autumn").OfType<Node3D>()];
                     foreach (var p in broad) p.Visible = on;
+                }
+                // rocks: the place's rocks and pebbles alone (the kit's rock, boulder, cliff and pebble groups, or our own stones, E5)
+                if (flipped.Contains("rocks") && outNow != rocksOut)
+                {
+                    rocksOut = outNow;
+                    rocks ??= [.. new[] { "flora_rock", "flora_boulder", "flora_cliff", "flora_pebble" }.SelectMany(k => GetTree().GetNodesInGroup(k).OfType<Node3D>())];
+                    foreach (var p in rocks) p.Visible = on;
                 }
                 // lampshadows: every lamp's shadow (the one-shadow arbiter's) off while out.
                 if (flipped.Contains("lampshadows")) ShadowLamp.Enabled = on;

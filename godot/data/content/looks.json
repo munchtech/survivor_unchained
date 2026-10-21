@@ -170,9 +170,9 @@
     {"id": "rouge", "name": "Kohl and rouge", "words": "Kohl, and her lips stained the red of crushed rosehip.", "rough": 0.45},
     {"id": "woad", "name": "Woad", "words": "The old blue of the hill people, banded over her brow and down her cheeks.", "rough": 0.85},
     {"id": "ochre", "name": "Hunter's ochre", "words": "A band of red earth across the eyes, temple to temple, laid on with two fingers.", "rough": 0.8},
-    {"id": "ash", "name": "Ash", "words": "Gray from a dead fire, thumbed under the eyes. Mourning, or a promise.", "rough": 0.9},
+    {"id": "ash", "name": "Ash", "words": "Gray from a dead fire, thumbed under the eyes. Mourning, or a promise.", "rough": 0.85, "shine": 0.25, "scatter": 0.15},
     {"id": "blood", "name": "Blood oath", "words": "Three fingers of blood drawn down over her left eye, brow to jaw.", "rough": 0.5},
-    {"id": "gilt", "name": "Gilt", "words": "Gold leaf pressed along her cheekbones, torn at its edges.", "rough": 0.3, "metal": 1.0}
+    {"id": "gilt", "name": "Gilt", "words": "Gold leaf pressed along her cheekbones, torn at its edges.", "rough": 0.4, "metal": 0.55, "scatter": 0.2}
    ],
    "faces": [
     {"id": "own", "name": "As she is", "words": "Her own face, as the road left it.", "shape": {}, "skin": "fair", "eyes": "moss", "freckles": 0.18, "pupil": 0.22, "lips": 0.7, "lid": 0.03, "whites": 1.25, "cover": 0.2},

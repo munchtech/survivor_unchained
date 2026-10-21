@@ -50,6 +50,8 @@ public partial class ZoneView : Node3D
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         AddChild(Water.Build(z));
+        // (the water's height for our own stones' wet band, kit.gdshader's OWN_ROCK; none: far under everything)
+        RenderingServer.GlobalShaderParameterSet("water_level", z.Meta.Places.TryGetValue("WATER_Y", out var wly) ? new Vector4(wly.GetSingle(), 0, 0, 1) : new Vector4(0, -1000, 0, 0));
         if (MistLayers.Build(z) is { } mist) AddChild(mist);
         Perf.Lap("ground and water");
         var flora = Dressing.Flora(z);
