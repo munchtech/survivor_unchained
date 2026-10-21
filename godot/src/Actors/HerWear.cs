@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Godot;
 using SurvivorUnchained.Rpg;
 
@@ -32,6 +33,11 @@ public static class HerWear
 
     const string Meta = "her_wear";
     static readonly bool Prof = Args.Get("tuck-prof") != null;
+    /// <summary>--tuck-dump PATH: each laid mesh's vertices, bones, weights and index (and its skin's binds) into PATH, an
+    /// Apply after another (a check that a change to the tuck lays the same).</summary>
+    static readonly string? DumpPath = Args.Get("tuck-dump") is string dp && dp != "1" ? dp : null;
+    static System.IO.BinaryWriter? dump;
+    static int dumpApply;
     static readonly Dictionary<string, PackedScene> scenes = new();
     static readonly Dictionary<string, (long Key, float T)[]> tucks = new();
     /// <summary>A body mesh's vertices, a surface's at a time, by their quantized bind position (Key).</summary>
@@ -249,11 +255,14 @@ public static class HerWear
     /// <summary>The garment tuck: each worn piece's meshes laid down under the worn pieces over it (Rpg.GarmentTuck.Over:
     /// later in its slot order, of another outfit), new meshes in their place. Returns her points under laid pieces with
     /// their values (her skin goes in as far there, never removed by it), null if none.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     static Dictionary<long, float>? GarmentTucks(People.Person p, List<ArmorPiece> rows, Dictionary<string, List<MeshInstance3D>> meshes, out int laid)
     {
         laid = 0;
+        dumpApply++;
         Dictionary<long, float>? under = null;
         SkinPoints? sp = null;
+        var outers = new Dictionary<string, OuterWeights?>();   // (by the meshes in it and how: one piece's may serve another)
         foreach (var a in rows)
         {
             var over = rows.Where(b => GarmentTuck.Over(b, a)).ToList();
@@ -266,30 +275,73 @@ public static class HerWear
             float[]? field = null;
             bool[]? near = null;
             Aabb? box = null;
-            OuterWeights? outer = null;
+            List<IReadOnlyList<(long Key, float T)>>? feet = null;
+            Aabb? pre = null;
+            // (the outer pieces' weights, built when a mesh of this one first moves: by the outer meshes as they are now)
+            OuterWeights? outerW = null;
+            bool outerBuilt = false;
+            Func<OuterWeights?>? outer = !GarmentTuck.Weights ? null : () =>
+            {
+                if (outerBuilt) return outerW;
+                outerBuilt = true;
+                var cw = System.Diagnostics.Stopwatch.StartNew();
+                // (a laid vertex moves at most 2 Reach + Smooth, and looks Reach further: an outer mesh past that has no
+                // vertex any of this piece's can take)
+                Aabb? region = null;
+                foreach (var m in mis)
+                    if (m.Mesh != null)
+                    {
+                        var bx = m.Transform * m.Mesh.GetAabb();
+                        region = region == null ? bx : region.Value.Merge(bx);
+                    }
+                outerW = region == null ? null : OuterOf(p, over.Select(b => b.Id).Where(meshes.ContainsKey).SelectMany(id => meshes[id]),
+                    region.Value.Grow(3 * GarmentTuck.Reach + GarmentTuck.Smooth + 0.02f), outers);
+                if (Prof) GD.Print($"garment tuck:   outer {outerW?.Count ?? 0} verts {cw.Elapsed.TotalMilliseconds:F1} ms");
+                return outerW;
+            };
             foreach (var mi in mis)
             {
                 if (mi.Mesh is not ArrayMesh src) continue;
                 var key = (src.GetInstanceId(), sig);
                 if (!laidMeshes.TryGetValue(key, out var got))
                 {
-                    field ??= GarmentTuck.Field(sp, over.Select(Footprint));
-                    if (field == null) break;
-                    near ??= GarmentTuck.Near(sp, field);
-                    box ??= Covered(sp, field);
+                    if (feet == null)
+                    {
+                        feet = over.Select(Footprint).ToList();
+                        pre = FootBox(sp, feet);
+                    }
+                    // (no footprint on her: the field is none, as Field finds; one that misses this mesh by the spread misses it
+                    // spread too, and the field is made only when one may reach a mesh)
+                    if (pre == null) break;
+                    if (!src.GetAabb().Grow(GarmentTuck.Reach + 2 * GarmentTuck.Smooth).Intersects(pre.Value.Grow(GarmentTuck.Spread + 0.001f)))
+                    {
+                        laidMeshes[key] = (null!, Array.Empty<(int, float)>(), null);
+                        continue;
+                    }
+                    if (field == null)
+                    {
+                        var cf = System.Diagnostics.Stopwatch.StartNew();
+                        field = GarmentTuck.Field(sp, feet);
+                        if (field == null) break;
+                        double tg = cf.Elapsed.TotalMilliseconds;   // (feet: a footprint's records, loaded once)
+                        near = GarmentTuck.Near(sp, field);
+                        double tn = cf.Elapsed.TotalMilliseconds;
+                        box = Covered(sp, field);
+                        if (Prof) GD.Print($"garment tuck: {a.Id} field {tg:F1} ms, near {tn - tg:F1} ms");
+                    }
                     if (!src.GetAabb().Grow(GarmentTuck.Reach + 2 * GarmentTuck.Smooth).Intersects(box.Value))
                     {
                         laidMeshes[key] = (null!, Array.Empty<(int, float)>(), null);
                         continue;
                     }
                     var ck = System.Diagnostics.Stopwatch.StartNew();
-                    outer ??= GarmentTuck.Weights ? OuterOf(p, over.Select(b => b.Id).Where(meshes.ContainsKey).SelectMany(id => meshes[id])) : null;
-                    laidMeshes[key] = got = LaidMesh(src, sp, field, near, mi, outer);
+                    laidMeshes[key] = got = LaidMesh(src, sp, field, near!, mi, outer);
                     if (Prof) GD.Print($"garment tuck: {a.Id} {mi.Name} {src.GetSurfaceCount()} surfaces {ck.Elapsed.TotalMilliseconds:F1} ms");
                 }
                 if (got.Mesh == null) continue;
                 mi.Mesh = got.Mesh;
                 if (got.Skin != null) mi.Skin = got.Skin;   // (mi is a fresh instance each Apply: nothing to restore)
+                if (DumpPath != null) Dump(a.Id, mi);
                 laid++;
                 under ??= new Dictionary<long, float>();
                 foreach (var (i, t) in got.Under)
@@ -303,38 +355,61 @@ public static class HerWear
         return under;
     }
 
-    /// <summary>The outer pieces' rest vertices in her skeleton's space with their bone weights, on a 10 mm hash.</summary>
+    /// <summary>One laid mesh into --tuck-dump.</summary>
+    static void Dump(string id, MeshInstance3D mi)
+    {
+        dump ??= new System.IO.BinaryWriter(System.IO.File.Create(DumpPath!));
+        var w = dump;
+        var am = (ArrayMesh)mi.Mesh;
+        w.Write(dumpApply); w.Write(id); w.Write(mi.Name.ToString()); w.Write(am.GetSurfaceCount());
+        for (int s = 0; s < am.GetSurfaceCount(); s++)
+        {
+            var arr = am.SurfaceGetArrays(s);
+            var vs = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            w.Write(vs.Length);
+            foreach (var v in vs) { w.Write(v.X); w.Write(v.Y); w.Write(v.Z); }
+            var bj = arr[(int)Mesh.ArrayType.Bones].VariantType == Variant.Type.Nil ? Array.Empty<int>() : arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
+            var bw = arr[(int)Mesh.ArrayType.Weights].VariantType == Variant.Type.Nil ? Array.Empty<float>() : arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+            var ix = arr[(int)Mesh.ArrayType.Index].VariantType == Variant.Type.Nil ? Array.Empty<int>() : arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+            w.Write(bj.Length); foreach (var x in bj) w.Write(x);
+            w.Write(bw.Length); foreach (var x in bw) w.Write(x);
+            w.Write(ix.Length); foreach (var x in ix) w.Write(x);
+        }
+        var sk = mi.Skin;
+        int bc = sk?.GetBindCount() ?? 0;
+        w.Write(bc);
+        for (int i = 0; i < bc; i++) w.Write(sk!.GetBindName(i).ToString());
+        w.Flush();
+    }
+
+    /// <summary>The outer pieces' rest vertices in her skeleton's space with their bone weights, on a 10 mm grid (dense over
+    /// their box; a cell's vertices in the order they were added, so the nearest is the first of equals as it always was).</summary>
     sealed class OuterWeights
     {
         const float Cell = 0.01f;
-        readonly List<Vector3> pos = new();
-        readonly List<int> bones = new();      // 8 per vertex, ids into names (-1: none)
-        readonly List<float> weights = new();  // 8 per vertex
+        Vector3[] pos = new Vector3[4096];
+        int[] bones = new int[4096 * 8];        // 8 per vertex, ids into names (-1: none)
+        float[] weights = new float[4096 * 8];  // 8 per vertex
+        int n;
         readonly List<string> names = new();
         readonly List<Transform3D> poses = new();
         readonly Dictionary<string, int> nameId = new();
-        readonly Dictionary<(int, int, int), List<int>> grid = new();
+        // (the grid: cells gx0..gx0+nx-1 etc.; a cell's vertices order[start[c]..start[c + 1]]; sparse: a cell's slot by key)
+        int gx0, gy0, gz0, nx, ny, nz;
+        int[] start = Array.Empty<int>(), order = Array.Empty<int>();
+        float[] sx = Array.Empty<float>(), sy = Array.Empty<float>(), sz = Array.Empty<float>();   // (positions in cell order)
+        Dictionary<long, int>? sparse;
 
-        public int Count => pos.Count;
+        public int Count => n;
 
-        static string BindName(Skin skin, int i, Skeleton3D? skel)
+        /// <summary>A source mesh's skinned triangle surfaces (vertices, bones, weights, bones a vertex), read once.</summary>
+        static readonly Dictionary<ulong, (Vector3[] V, int[] J, float[] W, int St)[]> raw = new();
+
+        static (Vector3[] V, int[] J, float[] W, int St)[] Raw(ArrayMesh am)
         {
-            var n = skin.GetBindName(i).ToString();
-            if (n.Length == 0 && skel != null && skin.GetBindBone(i) is var bb and >= 0) n = skel.GetBoneName(bb);
-            return n;
-        }
-
-        public void Add(MeshInstance3D b, Skeleton3D? skel)
-        {
-            if (b.Mesh is not ArrayMesh am || b.Skin is not { } skin) return;
-            var map = new int[skin.GetBindCount()];
-            for (int i = 0; i < map.Length; i++)
-            {
-                var n = BindName(skin, i, skel);
-                if (n.Length == 0) { map[i] = -1; continue; }
-                if (!nameId.TryGetValue(n, out var id)) { nameId[n] = id = names.Count; names.Add(n); poses.Add(skin.GetBindPose(i)); }
-                map[i] = id;
-            }
+            ulong id = am.GetInstanceId();
+            if (raw.TryGetValue(id, out var r)) return r;
+            var l = new List<(Vector3[], int[], float[], int)>();
             for (int s = 0; s < am.GetSurfaceCount(); s++)
             {
                 if (am.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles) continue;
@@ -345,131 +420,347 @@ public static class HerWear
                 var bw = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
                 int st = vs.Length == 0 ? 0 : bj.Length / vs.Length;
                 if (st == 0) continue;
-                for (int i = 0; i < vs.Length; i++)
+                l.Add((vs, bj, bw, st));
+            }
+            if (raw.Count > 256) raw.Clear();
+            return raw[id] = l.ToArray();
+        }
+
+        static string BindName(Skin skin, int i, Skeleton3D? skel)
+        {
+            var n = skin.GetBindName(i).ToString();
+            if (n.Length == 0 && skel != null && skin.GetBindBone(i) is var bb and >= 0) n = skel.GetBoneName(bb);
+            return n;
+        }
+
+        /// <summary>b's vertices and binds (verts false: its binds alone, so a bind's pose is still the first piece's).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public void Add(MeshInstance3D b, Skeleton3D? skel, bool verts = true)
+        {
+            if (b.Mesh is not ArrayMesh am || b.Skin is not { } skin) return;
+            var map = new int[skin.GetBindCount()];
+            for (int i = 0; i < map.Length; i++)
+            {
+                var nm = BindName(skin, i, skel);
+                if (nm.Length == 0) { map[i] = -1; continue; }
+                if (!nameId.TryGetValue(nm, out var id)) { nameId[nm] = id = names.Count; names.Add(nm); poses.Add(skin.GetBindPose(i)); }
+                map[i] = id;
+            }
+            if (!verts) return;
+            var xf = b.Transform;
+            foreach (var (vs, bj, bw, st) in Raw(am))
+            {
+                if (n + vs.Length > pos.Length)
                 {
-                    var q = b.Transform * vs[i];
-                    int v = pos.Count;
-                    pos.Add(q);
-                    for (int k = 0; k < 8; k++)
-                    {
-                        bool has = k < st && bj[i * st + k] >= 0 && bj[i * st + k] < map.Length;
-                        bones.Add(has ? map[bj[i * st + k]] : -1);
-                        weights.Add(has ? bw[i * st + k] : 0f);
-                    }
-                    var key = ((int)MathF.Floor(q.X / Cell), (int)MathF.Floor(q.Y / Cell), (int)MathF.Floor(q.Z / Cell));
-                    if (!grid.TryGetValue(key, out var l)) grid[key] = l = new List<int>();
-                    l.Add(v);
+                    int cap = Math.Max(pos.Length * 2, n + vs.Length);
+                    Array.Resize(ref pos, cap);
+                    Array.Resize(ref bones, cap * 8);
+                    Array.Resize(ref weights, cap * 8);
                 }
+                // (each vertex alone: in parallel)
+                int n0 = n;
+                var (P, B, W) = (pos, bones, weights);
+                System.Threading.Tasks.Parallel.ForEach(System.Collections.Concurrent.Partitioner.Create(0, vs.Length, 4096), rg =>
+                {
+                    for (int i = rg.Item1; i < rg.Item2; i++)
+                    {
+                        int o = n0 + i;
+                        P[o] = xf * vs[i];
+                        for (int k = 0; k < 8; k++)
+                        {
+                            bool has = k < st && bj[i * st + k] >= 0 && bj[i * st + k] < map.Length;
+                            B[o * 8 + k] = has ? map[bj[i * st + k]] : -1;
+                            W[o * 8 + k] = has ? bw[i * st + k] : 0f;
+                        }
+                    }
+                });
+                n += vs.Length;
             }
         }
 
-        int Nearest(Vector3 q, float reach)
+        static int CellOf(float x) => (int)MathF.Floor(x / Cell);
+
+        /// <summary>The grid over what was added (a counting sort: each cell's vertices in the order added).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public void Build()
         {
-            int cx = (int)MathF.Floor(q.X / Cell), cy = (int)MathF.Floor(q.Y / Cell), cz = (int)MathF.Floor(q.Z / Cell);
+            if (n == 0) return;
+            var cb = System.Diagnostics.Stopwatch.StartNew();
+            var cx = new int[n];
+            var cy = new int[n];
+            var cz = new int[n];
+            int x0 = int.MaxValue, y0 = int.MaxValue, z0 = int.MaxValue, x1 = int.MinValue, y1 = int.MinValue, z1 = int.MinValue;
+            for (int v = 0; v < n; v++)
+            {
+                cx[v] = CellOf(pos[v].X); cy[v] = CellOf(pos[v].Y); cz[v] = CellOf(pos[v].Z);
+                x0 = Math.Min(x0, cx[v]); y0 = Math.Min(y0, cy[v]); z0 = Math.Min(z0, cz[v]);
+                x1 = Math.Max(x1, cx[v]); y1 = Math.Max(y1, cy[v]); z1 = Math.Max(z1, cz[v]);
+            }
+            gx0 = x0; gy0 = y0; gz0 = z0;
+            nx = x1 - x0 + 1; ny = y1 - y0 + 1; nz = z1 - z0 + 1;
+            var cell = new int[n];
+            int slots;
+            if ((long)nx * ny * nz <= 1 << 24) // (a stray far vertex: cells by key instead)
+            {
+                slots = nx * ny * nz;
+                for (int v = 0; v < n; v++) cell[v] = ((cx[v] - gx0) * ny + (cy[v] - gy0)) * nz + (cz[v] - gz0);
+            }
+            else
+            {
+                sparse = new Dictionary<long, int>();
+                for (int v = 0; v < n; v++)
+                {
+                    long key = Key(cx[v] - gx0, cy[v] - gy0, cz[v] - gz0);
+                    if (!sparse.TryGetValue(key, out var sl)) sparse[key] = sl = sparse.Count;
+                    cell[v] = sl;
+                }
+                slots = sparse.Count;
+            }
+            start = new int[slots + 1];
+            for (int v = 0; v < n; v++) start[cell[v] + 1]++;
+            for (int c = 0; c < slots; c++) start[c + 1] += start[c];
+            var at = (int[])start.Clone();
+            order = new int[n];
+            for (int v = 0; v < n; v++) order[at[cell[v]]++] = v;
+            sx = new float[n]; sy = new float[n]; sz = new float[n];
+            for (int k = 0; k < n; k++) { var pv = pos[order[k]]; sx[k] = pv.X; sy[k] = pv.Y; sz[k] = pv.Z; }
+            if (Prof) GD.Print($"garment tuck:     grid {nx}x{ny}x{nz} {cb.Elapsed.TotalMilliseconds:F1} ms");
+        }
+
+        long Key(int x, int y, int z) => ((long)x * ny + y) * nz + z;
+
+        /// <summary>The nearest added vertex to q within reach (-1: none): ring after ring of cells out from q's, the first
+        /// of equals in ring, x, y, z and added order.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        int Nearest(Vector3 q, float reach, int hint = -1)
+        {
+            int cx = CellOf(q.X), cy = CellOf(q.Y), cz = CellOf(q.Z);
             int rings = (int)MathF.Ceiling(reach / Cell);
+            int gx1 = gx0 + nx - 1, gy1 = gy0 + ny - 1, gz1 = gz0 + nz - 1;
+            if (n == 0 || cx + rings < gx0 || cx - rings > gx1 || cy + rings < gy0 || cy - rings > gy1 || cz + rings < gz0 || cz - rings > gz1) return -1;
             int best = -1;
             float bd = reach * reach;
+            // (a hint, the vertex before's nearest: nothing farther than it can win, so its distance bounds the search from
+            // the start; the first of equals in the order above still wins)
+            if (hint >= 0)
+            {
+                float dh = (pos[hint] - q).LengthSquared();
+                if (dh < bd) bd = MathF.BitIncrement(dh);
+            }
             for (int r = 0; r <= rings; r++)
             {
-                for (int x = cx - r; x <= cx + r; x++)
-                    for (int y = cy - r; y <= cy + r; y++)
-                        for (int z = cz - r; z <= cz + r; z++)
+                int xa = Math.Max(cx - r, gx0), xb = Math.Min(cx + r, gx1);
+                int ya = Math.Max(cy - r, gy0), yb = Math.Min(cy + r, gy1);
+                int za = Math.Max(cz - r, gz0), zb = Math.Min(cz + r, gz1);
+                for (int x = xa; x <= xb; x++)
+                {
+                    bool xe = x == cx - r || x == cx + r;
+                    float dx = Gap(q.X, x);
+                    if (dx * dx > bd) continue;
+                    for (int y = ya; y <= yb; y++)
+                    {
+                        float dy = Gap(q.Y, y);
+                        float dxy = dx * dx + dy * dy;
+                        if (dxy > bd) continue;
+                        if (xe || y == cy - r || y == cy + r)
+                            for (int z = za; z <= zb; z++) Visit(x, y, z, dxy, q, ref best, ref bd);
+                        else
                         {
-                            if (Math.Max(Math.Abs(x - cx), Math.Max(Math.Abs(y - cy), Math.Abs(z - cz))) != r) continue;
-                            if (!grid.TryGetValue((x, y, z), out var l)) continue;
-                            foreach (var v in l)
-                            {
-                                float d = (pos[v] - q).LengthSquared();
-                                if (d < bd) { bd = d; best = v; }
-                            }
+                            // (inside the ring's box: only its two z faces)
+                            if (cz - r >= gz0 && cz - r <= gz1) Visit(x, y, cz - r, dxy, q, ref best, ref bd);
+                            if (r > 0 && cz + r >= gz0 && cz + r <= gz1) Visit(x, y, cz + r, dxy, q, ref best, ref bd);
                         }
+                    }
+                }
                 // (everything in a ring past r is at least r cells away)
                 if (best >= 0 && bd <= (r * Cell) * (r * Cell)) break;
+                // (nor nearer than q's distance to the faces of the box of rings 0..r: past the best, or reach, nothing out
+                // there can win)
+                float lo = MathF.Min(MathF.Min(Out(q.X, cx, r), Out(q.Y, cy, r)), Out(q.Z, cz, r));
+                if (lo > 0 && lo * lo > bd) break;
             }
+            if (best < 0 && hint >= 0) return Nearest(q, reach);
             return best;
         }
 
+        // (a slack past float rounding at cell faces: a cull never drops a vertex that could win, so the nearest is the same)
+        const float Slack = 1e-5f;
+
+        /// <summary>How far coordinate v lies outside cell c along its axis, less the slack (0: within).</summary>
+        static float Gap(float v, int c)
+        {
+            float lo = c * Cell - Slack, hi = (c + 1) * Cell + Slack;
+            return v < lo ? lo - v : v > hi ? v - hi : 0f;
+        }
+
+        /// <summary>How far coordinate v (in cell c) lies inside the faces of cells c - r..c + r, less the slack.</summary>
+        static float Out(float v, int c, int r) => MathF.Min(v - (c - r) * Cell, (c + r + 1) * Cell - v) - Slack;
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+        void Visit(int x, int y, int z, float dxy, Vector3 q, ref int best, ref float bd)
+        {
+            float dz = Gap(q.Z, z);
+            if (dxy + dz * dz > bd) return;
+            int c;
+            if (sparse == null) c = ((x - gx0) * ny + (y - gy0)) * nz + (z - gz0);
+            else if (!sparse.TryGetValue(Key(x - gx0, y - gy0, z - gz0), out c)) return;
+            float qx = q.X, qy = q.Y, qz = q.Z;
+            for (int k = start[c], e = start[c + 1]; k < e; k++)
+            {
+                // (as (pos - q).LengthSquared(), to the bit)
+                float ex = sx[k] - qx, ey = sy[k] - qy, ez = sz[k] - qz;
+                float d = ex * ex + ey * ey + ez * ez;
+                if (d < bd) { bd = d; best = order[k]; }
+            }
+        }
+
         /// <summary>Blends each laid vertex's weights in `arr` toward its nearest outer vertex's, by GarmentTuck.Amount of
-        /// its lay value; binds the outer pieces use that `skin` lacks are added to it. True if any vertex changed.</summary>
-        public bool Reweight(Godot.Collections.Array arr, float[] pos3, float[] t, Transform3D toSkel, Skin skin, Skeleton3D? skel, bool fmt8)
+        /// its lay value; binds the outer pieces use that the skin lacks are added to it (`skinOf`: the laid copy's skin, made
+        /// on first need). True if any vertex changed.</summary>
+        public bool Reweight(Godot.Collections.Array arr, float[] pos3, float[] t, Transform3D toSkel, Func<Skin> skinOf, Skeleton3D? skel, bool fmt8)
         {
             if (arr[(int)Mesh.ArrayType.Bones].VariantType == Variant.Type.Nil || arr[(int)Mesh.ArrayType.Weights].VariantType == Variant.Type.Nil) return false;
             var bj = arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
             var bw = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
-            int n = t.Length;
-            int st = n == 0 ? 0 : bj.Length / n;
+            int count = t.Length;
+            int st = count == 0 ? 0 : bj.Length / count;
             if (st == 0) return false;
-            var bindOf = new Dictionary<string, int>();
-            for (int i = 0; i < skin.GetBindCount(); i++)
+            // (each vertex's nearest outer vertex alone: in parallel)
+            var cr = System.Diagnostics.Stopwatch.StartNew();
+            var nearest = new int[count];
+            System.Threading.Tasks.Parallel.ForEach(System.Collections.Concurrent.Partitioner.Create(0, count, 512), rg => Run(rg.Item1, rg.Item2));
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+            void Run(int i0, int i1)
             {
-                var nm = BindName(skin, i, skel);
-                if (nm.Length > 0) bindOf[nm] = i;
+                int hint = -1;
+                for (int i = i0; i < i1; i++)
+                {
+                    nearest[i] = -1;
+                    if (GarmentTuck.Amount(t[i]) <= 0f) continue;
+                    var q = toSkel * new Vector3(pos3[i * 3], pos3[i * 3 + 1], pos3[i * 3 + 2]);
+                    nearest[i] = Nearest(q, GarmentTuck.Reach, hint);
+                    if (nearest[i] >= 0) hint = nearest[i];
+                }
             }
+            double tNear = cr.Elapsed.TotalMilliseconds;
+            Skin? skin = null;
+            Dictionary<string, int>? bindOf = null;
             var toA = new int[names.Count];
             Array.Fill(toA, -2);
             int Local(int g)
             {
                 if (toA[g] != -2) return toA[g];
+                if (bindOf == null)
+                {
+                    skin = skinOf();
+                    bindOf = new Dictionary<string, int>();
+                    for (int i = 0; i < skin.GetBindCount(); i++)
+                    {
+                        var nm = BindName(skin, i, skel);
+                        if (nm.Length > 0) bindOf[nm] = i;
+                    }
+                }
                 if (!bindOf.TryGetValue(names[g], out var bi))
                 {
-                    bi = skin.GetBindCount();
+                    bi = skin!.GetBindCount();
                     skin.AddNamedBind(names[g], poses[g]);
                     bindOf[names[g]] = bi;
                 }
                 return toA[g] = bi;
             }
-            int cap = Math.Min(fmt8 ? 8 : 4, st);
-            Span<int> jb = stackalloc int[8];
-            Span<float> wb = stackalloc float[8];
-            Span<int> jo = stackalloc int[cap];
-            Span<float> wo = stackalloc float[cap];
-            bool changed = false;
-            for (int i = 0; i < n; i++)
+            // (the binds the outer vertices bring, added to the skin in the order a pass over the vertices first meets them)
+            for (int i = 0; i < count; i++)
             {
-                float s = GarmentTuck.Amount(t[i]);
-                if (s <= 0f) continue;
-                var q = toSkel * new Vector3(pos3[i * 3], pos3[i * 3 + 1], pos3[i * 3 + 2]);
-                int v = Nearest(q, GarmentTuck.Reach);
+                int v = nearest[i];
                 if (v < 0) continue;
-                int m = 0;
                 for (int k = 0; k < 8; k++)
-                {
-                    int g = bones[v * 8 + k];
-                    if (g < 0 || weights[v * 8 + k] <= 0f) continue;
-                    jb[m] = Local(g); wb[m] = weights[v * 8 + k]; m++;
-                }
-                if (m == 0) continue;
-                GarmentTuck.BlendWeights(bj.AsSpan(i * st, st), bw.AsSpan(i * st, st), jb[..m], wb[..m], s, jo, wo);
-                for (int k = 0; k < st; k++)
-                {
-                    bj[i * st + k] = k < cap ? jo[k] : 0;
-                    bw[i * st + k] = k < cap ? wo[k] : 0f;
-                }
-                changed = true;
+                    if (bones[v * 8 + k] >= 0 && weights[v * 8 + k] > 0f && toA[bones[v * 8 + k]] == -2) Local(bones[v * 8 + k]);
             }
+            // (then each vertex's blend alone: in parallel)
+            int cap = Math.Min(fmt8 ? 8 : 4, st);
+            int any = 0;
+            System.Threading.Tasks.Parallel.ForEach(System.Collections.Concurrent.Partitioner.Create(0, count, 1024), rg => Blend(rg.Item1, rg.Item2));
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+            void Blend(int i0, int i1)
+            {
+                Span<int> jb = stackalloc int[8];
+                Span<float> wb = stackalloc float[8];
+                Span<int> jo = stackalloc int[cap];
+                Span<float> wo = stackalloc float[cap];
+                for (int i = i0; i < i1; i++)
+                {
+                    int v = nearest[i];
+                    if (v < 0) continue;
+                    float s = GarmentTuck.Amount(t[i]);
+                    int m = 0;
+                    for (int k = 0; k < 8; k++)
+                    {
+                        int g = bones[v * 8 + k];
+                        if (g < 0 || weights[v * 8 + k] <= 0f) continue;
+                        jb[m] = toA[g]; wb[m] = weights[v * 8 + k]; m++;
+                    }
+                    if (m == 0) continue;
+                    GarmentTuck.BlendWeights(bj.AsSpan(i * st, st), bw.AsSpan(i * st, st), jb[..m], wb[..m], s, jo, wo);
+                    for (int k = 0; k < st; k++)
+                    {
+                        bj[i * st + k] = k < cap ? jo[k] : 0;
+                        bw[i * st + k] = k < cap ? wo[k] : 0f;
+                    }
+                    any = 1;
+                }
+            }
+            bool changed = any != 0;
+            double tBlend = cr.Elapsed.TotalMilliseconds;
             if (changed)
             {
                 arr[(int)Mesh.ArrayType.Bones] = bj;
                 arr[(int)Mesh.ArrayType.Weights] = bw;
             }
+            if (Prof) GD.Print($"garment tuck:     nearest {tNear:F1} ms ({nearest.Count(v => v >= 0)} found), blend {tBlend - tNear:F1} ms, back {cr.Elapsed.TotalMilliseconds - tBlend:F1} ms");
             return changed;
         }
     }
 
-    /// <summary>The outer pieces' full meshes (not their LOD or shadow copies) as a weight lookup.</summary>
-    static OuterWeights? OuterOf(People.Person p, IEnumerable<MeshInstance3D> mis)
+    /// <summary>The outer pieces' full meshes (not their LOD or shadow copies) as a weight lookup; a mesh whose box misses
+    /// `region` (where the laid piece's vertices may look) gives its binds alone.</summary>
+    static OuterWeights? OuterOf(People.Person p, IEnumerable<MeshInstance3D> mis, Aabb region, Dictionary<string, OuterWeights?> made)
     {
-        var o = new OuterWeights();
+        var use = new List<(MeshInstance3D B, bool Verts)>();
         foreach (var b in mis)
         {
             var n = b.Name.ToString();
             if (n.Contains("_lod") || n.EndsWith("_shadow")) continue;
-            o.Add(b, p.Skeleton);
+            use.Add((b, b.Mesh == null || (b.Transform * b.Mesh.GetAabb()).Grow(0.02f).Intersects(region)));
         }
-        return o.Count > 0 ? o : null;
+        var key = string.Join(",", use.Select(u => $"{u.B.GetInstanceId()}:{u.B.Mesh?.GetInstanceId() ?? 0}:{u.Verts}"));
+        if (made.TryGetValue(key, out var got)) return got;
+        var o = new OuterWeights();
+        foreach (var (b, verts) in use) o.Add(b, p.Skeleton, verts);
+        if (o.Count == 0) return made[key] = null;
+        o.Build();
+        return made[key] = o;
+    }
+
+    /// <summary>The box of her points the footprints' records cover (before their spread; null: none of hers).</summary>
+    static Aabb? FootBox(SkinPoints sp, List<IReadOnlyList<(long Key, float T)>> feet)
+    {
+        var lo = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        var hi = -lo;
+        bool any = false;
+        foreach (var recs in feet)
+            foreach (var (k, t) in recs)
+                if (t > 0 && sp.ByKey.TryGetValue(k, out int i))
+                {
+                    var v = new Vector3(sp.P[i * 3], sp.P[i * 3 + 1], sp.P[i * 3 + 2]);
+                    lo = lo.Min(v);
+                    hi = hi.Max(v);
+                    any = true;
+                }
+        return any ? new Aabb(lo, hi - lo) : null;
     }
 
     /// <summary>The box of her points a footprint covers.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     static Aabb Covered(SkinPoints sp, float[] field)
     {
         var lo = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
@@ -499,6 +790,7 @@ public static class HerWear
     }
 
     /// <summary>Her body's points (her skin surfaces' bind positions and normals), once for her body meshes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     static SkinPoints? SkinOf(People.Person p)
     {
         var bodies = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(People.TuckBody).ToList();
@@ -528,54 +820,74 @@ public static class HerWear
 
     /// <summary>A copy of a piece mesh laid down by GarmentTuck.Lay (its blend shapes kept, as People's masked meshes;
     /// null Mesh: nothing of it moved), and her points under it with their values.</summary>
-    static (ArrayMesh Mesh, (int Point, float T)[] Under, Skin? Skin) LaidMesh(ArrayMesh am, SkinPoints sp, float[] field, bool[] near, MeshInstance3D a, OuterWeights? outer)
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    static (ArrayMesh Mesh, (int Point, float T)[] Under, Skin? Skin) LaidMesh(ArrayMesh am, SkinPoints sp, float[] field, bool[] near, MeshInstance3D a, Func<OuterWeights?>? outer)
     {
-        Skin? skin = outer != null && a.Skin != null ? (Skin)a.Skin.Duplicate() : null;
+        Skin? skin = null;   // (a copy of a's, made when a bind is added)
         bool reskinned = false;
         var mesh = new ArrayMesh { BlendShapeMode = am.BlendShapeMode };
         // (A run without a screen cannot read shape keys back from a mesh: it goes without.)
         bool shapes = am.GetBlendShapeCount() > 0 && DisplayServer.GetName() != "headless";
         if (shapes) for (int k = 0; k < am.GetBlendShapeCount(); k++) mesh.AddBlendShape(am.GetBlendShapeName(k));
         bool any = false;
-        var under = new Dictionary<int, float>();
+        // (her points under it: each one's largest value, in the order first met)
+        var underT = new float[sp.Count];
+        var underAt = new List<int>();
+        var cm = System.Diagnostics.Stopwatch.StartNew();
+        double tRead = 0, tAdd = 0;
         for (int s = 0; s < am.GetSurfaceCount(); s++)
         {
+            double r0 = cm.Elapsed.TotalMilliseconds;
             var arr = am.SurfaceGetArrays(s);
+            tRead += cm.Elapsed.TotalMilliseconds - r0;
             if (am.SurfaceGetPrimitiveType(s) == Mesh.PrimitiveType.Triangles)
             {
                 var vs = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
                 var idxV = arr[(int)Mesh.ArrayType.Index];
                 var idx = idxV.VariantType == Variant.Type.Nil ? Enumerable.Range(0, vs.Length).ToArray() : idxV.AsInt32Array();
                 var pos = new float[vs.Length * 3];
-                for (int i = 0; i < vs.Length; i++) { pos[i * 3] = vs[i].X; pos[i * 3 + 1] = vs[i].Y; pos[i * 3 + 2] = vs[i].Z; }
+                System.Threading.Tasks.Parallel.ForEach(System.Collections.Concurrent.Partitioner.Create(0, vs.Length, 8192), rg =>
+                {
+                    for (int i = rg.Item1; i < rg.Item2; i++) { pos[i * 3] = vs[i].X; pos[i * 3 + 1] = vs[i].Y; pos[i * 3 + 2] = vs[i].Z; }
+                });
                 var c1 = System.Diagnostics.Stopwatch.StartNew();
                 var kept = GarmentTuck.Lay(sp, field, near, pos, idx, out var anchor, out var t);
                 if (Prof) GD.Print($"garment tuck:   lay {vs.Length} verts {c1.Elapsed.TotalMilliseconds:F1} ms");
                 if (kept != null)
                 {
                     any = true;
-                    for (int i = 0; i < vs.Length; i++) vs[i] = new Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+                    System.Threading.Tasks.Parallel.ForEach(System.Collections.Concurrent.Partitioner.Create(0, vs.Length, 8192), rg =>
+                    {
+                        for (int i = rg.Item1; i < rg.Item2; i++) vs[i] = new Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+                    });
                     arr[(int)Mesh.ArrayType.Vertex] = vs;
                     arr[(int)Mesh.ArrayType.Index] = kept;
-                    if (skin != null)
+                    if (a.Skin != null && outer?.Invoke() is { } ow)
                     {
                         var c2 = System.Diagnostics.Stopwatch.StartNew();
-                        reskinned |= outer!.Reweight(arr, pos, t, a.Transform, skin, a.GetParent() as Skeleton3D, ((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights) != 0);
+                        reskinned |= ow.Reweight(arr, pos, t, a.Transform, () => skin ??= (Skin)a.Skin.Duplicate(), a.GetParent() as Skeleton3D, ((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights) != 0);
                         if (Prof) GD.Print($"garment tuck:   weights {vs.Length} verts {c2.Elapsed.TotalMilliseconds:F1} ms");
                     }
                     for (int i = 0; i < anchor.Length; i++)
-                        if (anchor[i] >= 0 && t[i] > 0 && (!under.TryGetValue(anchor[i], out var o) || t[i] > o)) under[anchor[i]] = t[i];
+                        if (anchor[i] >= 0 && t[i] > 0)
+                        {
+                            if (underT[anchor[i]] <= 0) { underAt.Add(anchor[i]); underT[anchor[i]] = t[i]; }
+                            else if (t[i] > underT[anchor[i]]) underT[anchor[i]] = t[i];
+                        }
                 }
             }
             long fmt = (long)am.SurfaceGetFormat(s);
             var flags = (Mesh.ArrayFormat)(fmt & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift)));
+            double a0 = cm.Elapsed.TotalMilliseconds;
             mesh.AddSurfaceFromArrays(am.SurfaceGetPrimitiveType(s), arr, shapes ? am.SurfaceGetBlendShapeArrays(s) : new Godot.Collections.Array<Godot.Collections.Array>(), null, flags);
+            tAdd += cm.Elapsed.TotalMilliseconds - a0;
             mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
             mesh.SurfaceSetName(s, am.SurfaceGetName(s));
         }
+        if (Prof) GD.Print($"garment tuck:   mesh read {tRead:F1} ms, add {tAdd:F1} ms ({am.GetBlendShapeCount()} shapes), all {cm.Elapsed.TotalMilliseconds:F1} ms");
         if (!any) return (null!, Array.Empty<(int, float)>(), null);
         mesh.ResourceName = am.ResourceName;
-        return (mesh, under.Select(kv => (kv.Key, kv.Value)).ToArray(), reskinned ? skin : null);
+        return (mesh, underAt.Select(k => (k, underT[k])).ToArray(), reskinned ? skin : null);
     }
 
     /// <summary>The worn pieces' tuck of her skin, the largest at each of her points, into each body surface's tuck_map

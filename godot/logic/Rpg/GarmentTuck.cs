@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,11 +23,13 @@ public sealed class SkinPoints
     readonly int nx, ny, nz;
     readonly float ox, oy, oz;
     readonly int[] cellStart, cellPts;
+    readonly float[] cellP;   // (each cellPts entry's point, xyz: the searches read memory in order)
 
     public int Count => Keys.Length;
 
     /// <summary>Points p and normals n (xyz a vertex) keyed by `keys` (their quantized bind positions); copies of a key are
     /// one point (their normals averaged).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public SkinPoints(IReadOnlyList<float> p, IReadOnlyList<float> n, IReadOnlyList<long> keys)
     {
         var pos = new List<float>();
@@ -64,30 +68,36 @@ public sealed class SkinPoints
         cellPts = new int[Keys.Length];
         var fill = (int[])cellStart.Clone();
         for (int i = 0; i < Keys.Length; i++) cellPts[fill[at[i]]++] = i;
+        cellP = new float[Keys.Length * 3];
+        for (int e = 0; e < Keys.Length; e++) for (int c = 0; c < 3; c++) cellP[e * 3 + c] = P[cellPts[e] * 3 + c];
     }
 
     int CellOf(float x, float y, float z) =>
         (Math.Clamp((int)((z - oz) / Cell), 0, nz - 1) * ny + Math.Clamp((int)((y - oy) / Cell), 0, ny - 1)) * nx + Math.Clamp((int)((x - ox) / Cell), 0, nx - 1);
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     float D2(int i, float x, float y, float z)
     {
         float dx = P[i * 3] - x, dy = P[i * 3 + 1] - y, dz = P[i * 3 + 2] - z;
         return dx * dx + dy * dy + dz * dz;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     void Cell1(int cx, int cy, int cz, float x, float y, float z, ref int best, ref float bd)
     {
         if (cx < 0 || cy < 0 || cz < 0 || cx >= nx || cy >= ny || cz >= nz) return;
         int c = (cz * ny + cy) * nx + cx;
-        for (int e = cellStart[c]; e < cellStart[c + 1]; e++)
+        for (int e = cellStart[c], end = cellStart[c + 1]; e < end; e++)
         {
-            int i = cellPts[e];
-            float d = D2(i, x, y, z);
-            if (d < bd) { bd = d; best = i; }
+            // (as D2, to the bit)
+            float dx = cellP[e * 3] - x, dy = cellP[e * 3 + 1] - y, dz = cellP[e * 3 + 2] - z;
+            float d = dx * dx + dy * dy + dz * dz;
+            if (d < bd) { bd = d; best = cellPts[e]; }
         }
     }
 
     /// <summary>The nearest point to (x, y, z) within `max` m, or -1.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int Nearest(float x, float y, float z, float max = 0.08f)
     {
         int cx = (int)MathF.Floor((x - ox) / Cell), cy = (int)MathF.Floor((y - oy) / Cell), cz = (int)MathF.Floor((z - oz) / Cell);
@@ -118,6 +128,7 @@ public sealed class SkinPoints
     public void Within(int i, float r, List<int> into) => Within(P[i * 3], P[i * 3 + 1], P[i * 3 + 2], r, into);
 
     /// <summary>The points within r of (x, y, z), into `into` (cleared).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Within(float x, float y, float z, float r, List<int> into)
     {
         into.Clear();
@@ -129,8 +140,11 @@ public sealed class SkinPoints
                 for (int cx = ax; cx <= bx; cx++)
                 {
                     int c = (cz * ny + cy) * nx + cx;
-                    for (int e = cellStart[c]; e < cellStart[c + 1]; e++)
-                        if (D2(cellPts[e], x, y, z) <= r * r) into.Add(cellPts[e]);
+                    for (int e = cellStart[c], end = cellStart[c + 1]; e < end; e++)
+                    {
+                        float dx = cellP[e * 3] - x, dy = cellP[e * 3 + 1] - y, dz = cellP[e * 3 + 2] - z;
+                        if (dx * dx + dy * dy + dz * dz <= r * r) into.Add(cellPts[e]);
+                    }
                 }
     }
 }
@@ -166,6 +180,7 @@ public static class GarmentTuck
 
     /// <summary>The footprint on her points of the pieces over one: the largest of their values a point (records: her bind
     /// key, value), spread out by `spread` m (falling off linearly to 0 there). Null if none of them covers any of her.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static float[]? Field(SkinPoints s, IEnumerable<IReadOnlyList<(long Key, float T)>> outer, float spread = Spread)
     {
         var f = new float[s.Count];
@@ -176,22 +191,39 @@ public static class GarmentTuck
         if (!any) return null;
         if (spread <= 0) return f;
         var g = (float[])f.Clone();
-        var near = new List<int>();
-        for (int i = 0; i < f.Length; i++)
+        // (each covered point spreads alone: in parallel, into a worker's own copy, the largest of them all kept)
+        var src = new List<int>();
+        for (int i = 0; i < f.Length; i++) if (f[i] > 0) src.Add(i);
+        var lk = new object();
+        Parallel.ForEach(Partitioner.Create(0, src.Count, 256), () => (new float[f.Length], new List<int>()), (rg, _, w) =>
         {
-            if (f[i] <= 0) continue;
-            s.Within(i, spread, near);
-            foreach (int j in near)
+            Spread(rg.Item1, rg.Item2, w.Item1, w.Item2);
+            return w;
+        }, w =>
+        {
+            lock (lk) for (int j = 0; j < g.Length; j++) if (w.Item1[j] > g[j]) g[j] = w.Item1[j];
+        });
+        return g;
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        void Spread(int k0, int k1, float[] into, List<int> near)
+        {
+            for (int k = k0; k < k1; k++)
             {
-                float dx = s.P[j * 3] - s.P[i * 3], dy = s.P[j * 3 + 1] - s.P[i * 3 + 1], dz = s.P[j * 3 + 2] - s.P[i * 3 + 2];
-                float v = f[i] * (1 - MathF.Sqrt(dx * dx + dy * dy + dz * dz) / spread);
-                if (v > g[j]) g[j] = v;
+                int i = src[k];
+                s.Within(i, spread, near);
+                foreach (int j in near)
+                {
+                    float dx = s.P[j * 3] - s.P[i * 3], dy = s.P[j * 3 + 1] - s.P[i * 3 + 1], dz = s.P[j * 3 + 2] - s.P[i * 3 + 2];
+                    float v = f[i] * (1 - MathF.Sqrt(dx * dx + dy * dy + dz * dz) / spread);
+                    if (v > into[j]) into[j] = v;
+                }
             }
         }
-        return g;
     }
 
     /// <summary>A footprint value as it moves a vertex: all of it past Full.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static float Amount(float t) => t > Full ? 1f : Math.Clamp(t, 0f, 1f);
 
     /// <summary>Lays one surface down: each vertex (pos, xyz, changed in place) toward her body by the footprint under
@@ -205,6 +237,7 @@ public static class GarmentTuck
 
     /// <summary>Her points a footprint can reach a vertex through (within 2 Smooth + a cell of its nonzero points): a vertex
     /// anchored elsewhere reads 0, unsearched (Lay's cost stays with what is covered).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static bool[] Near(SkinPoints s, float[] field)
     {
         var near = new bool[s.Count];
@@ -218,6 +251,7 @@ public static class GarmentTuck
         return near;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static int[]? Lay(SkinPoints s, float[] field, bool[] reach, float[] pos, int[] index, out int[] anchor, out float[] t)
     {
         int n = pos.Length / 3;
@@ -241,6 +275,7 @@ public static class GarmentTuck
             Vertex(v, near);
             return near;
         }, _ => { });
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         void Vertex(int v, List<int> near)
         {
             anc[v] = -1;
@@ -294,6 +329,7 @@ public static class GarmentTuck
     /// <summary>A laid vertex's bone weights blended toward the outer piece's nearest vertex: (1 - s) * A + s * B, over the
     /// union of their bones (B's already in A's bone indices), the largest jo.Length kept (4 or 8), renormalized to sum 1.
     /// A bone left over pads with index 0, weight 0.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static void BlendWeights(ReadOnlySpan<int> ja, ReadOnlySpan<float> wa, ReadOnlySpan<int> jb, ReadOnlySpan<float> wb, float s, Span<int> jo, Span<float> wo)
     {
         s = Math.Clamp(s, 0f, 1f);
