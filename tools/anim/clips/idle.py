@@ -148,6 +148,8 @@ ARC_KNUCKLES_R = _ARC.get("knuckles")   # (R3: the fist rolled about the shaft; 
 
 
 def arcanist(t, f):
+    if ARC_ST:
+        return _arc_free_arms(t)
     return {
         # (ARC_HIP at the captured standing's first frame, in the chest's frame, for the clips that take the idle's
         # arms as they are: its breaks, the stops, the Flare's settle.)
@@ -165,12 +167,29 @@ def arcanist(t, f):
         # 8 cm further out and 9 cm forward, held ready ahead of her hip, the elbow bent 58, not 87; the crescent
         # 197-232 mm outside the brim, the shaft 104 mm or more off her legs, the wrist 20 deg toward the thumb, not 22.
         # Further out swings the shaft's foot into her right thigh (at 15 deg out with the fist 3 cm nearer, 63 mm).)
-        "hand_r": dict({"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
-                        "blade": _n(ARC_BLADE_R), "twist": 0.5}, **({"knuckles": _n(ARC_KNUCKLES_R)} if ARC_KNUCKLES_R else {})),
+        "hand_r": _arc_hand_r(),
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
 
 
+def _arc_hand_r():
+    return dict({"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
+                 "blade": _n(ARC_BLADE_R), "twist": 0.5}, **({"knuckles": _n(ARC_KNUCKLES_R)} if ARC_KNUCKLES_R else {}))
+
+
+def _arc_free_arms(t):
+    """arcanist()'s arms on a restaged stand (ARC_ST): the left hand free (ARC_FREE), as it is at the captured
+    standing's first frame in the chest's frame (_free0, filled by base_of; every caller takes the base first), its
+    fingers as the idle's at phase t. (The clips keyed from these arms, the break, the show, the stops, the Flare,
+    start and end on the idle's free hand; hip_layer then keeps it on each clip's own pelvis.)"""
+    a = {"hand_r": _arc_hand_r(), "fingers_l": _free_fingers(ARC_STS[ARC_ST]["hand"], t), "fingers_r": "grip"}
+    if ARC_ST not in _free0:
+        raise RuntimeError("idle.arcanist(): base_of(rig, 'arcanist') must run first on a restaged stand (ARC_ST)")
+    a["hand_l"] = dict(_free0[ARC_ST])
+    return a
+
+
+_free0 = {}
 _arc_aims = {}
 
 
@@ -179,9 +198,10 @@ def arc_aim(rig):
     keyed._whole_aims fills them for a key that aims it by the blade alone (the blade as keyed), and the staff's line in it (the shaft
     through the fitted fist, data/arms_local.json mage_staff@hand_r, as scratch held.py reads it). For the break's
     staff turning about its own line (soul.arcanist_break). R1 keeps animation 46's numbers as they were."""
-    if ARC_CAND == "R1":
+    if ARC_CAND == "R1" and not ARC_ST:
         return (-0.3547, 0.9342, -0.0275), (-0.4739, -0.1537, 0.8666), (-0.275, 0.936, 0.163)
-    if ARC_CAND not in _arc_aims:
+    key = (ARC_CAND, ARC_ST)
+    if key not in _arc_aims:
         import json
         from keyed import grip_of, wrap_of
         from rig import DATA, qaxis, qmul, qrot
@@ -189,7 +209,8 @@ def arc_aim(rig):
         grip, wrap = rig.grip, rig.wrap
         rig.grip, rig.wrap = grip_of("staff"), wrap_of("staff")
         rig.swivel_force = {}
-        local, pos = rig.solve(_on_hip(rig, base, arcanist)(0, 0), base=(base.rot[0], base.pos[0]))
+        layer = _free_hand(rig, base, arcanist, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arcanist)
+        local, pos = rig.solve(layer(0, 0), base=(base.rot[0], base.pos[0]))
         rig.swivel_force = None
         g, _ = rig.globals(local, pos)
         hq = g[0, rig.I["hand_r"]]
@@ -207,9 +228,9 @@ def arc_aim(rig):
         if line[1] < 0:
             line = -line
         # (The blade as the idle keys it, as R1's was: the solved one differs by the wrist's clamp, ~1.5 deg.)
-        _arc_aims[ARC_CAND] = (_n(ARC_BLADE_R), _n(ARC_KNUCKLES_R) if ARC_KNUCKLES_R else tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
+        _arc_aims[key] = (_n(ARC_BLADE_R), _n(ARC_KNUCKLES_R) if ARC_KNUCKLES_R else tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
                                tuple(float(x) for x in line))
-    return _arc_aims[ARC_CAND]
+    return _arc_aims[key]
 
 
 def _on_hip(rig, base, arms):
@@ -241,7 +262,8 @@ def _on_hip(rig, base, arms):
 # knees). H1 "spell ready": the left hand ahead of her hip, palm down and in, fingers loose; H2 "low and charged": the
 # arm down, the hand out from her thigh, fingers open.
 # "stand": stand()'s arguments; "head": her head's mean pitch wanted (deg, + chin down; Neutral +2, WiggleHips +5).
-ARC_ST = os.environ.get("ARC_ST", "")
+ARC_ST = os.environ.get("ARC_ST", "S2H1")
+ARC_ST = "" if ARC_ST == "R1" else ARC_ST
 _S1 = {"style": "Strutting", "stand": {"knee": 16.0, "over": 0.0, "pitch": -6.0, "width": 0.29, "stagger": 0.03}, "head": -2.0,
        "free_pos": {"H1": (0.275, 1.135, 0.15)}}
 _S2 = {"style": "HandsInPockets", "stand": {"knee": 15.0, "over": 0.0, "pitch": 2.0, "width": 0.29, "stagger": 0.05, "drop": 0.06},
@@ -269,20 +291,19 @@ def _free_fingers(hand, t):
                 spreads={"index": -2.0 + 1.0 * b, "middle": 0.0, "ring": 3.0, "pinky": 8.0 - 1.5 * b}, spread=5.0)
 
 
-def _free_hand(rig, base, arms, hand):
-    """`arms` with the left hand held free (ARC_FREE[hand]) on her pelvis frame by frame, in the chest's frame."""
+def _free_spec(rig, hand, g, p):
+    """f -> the free hand's key (ARC_FREE[hand]) at frame f of a clip whose globals are (g, p): on its own pelvis
+    (H1) or chest (H2), in the chest's frame the solver reads."""
     from rig import qmul, qinv, qrot
     I = rig.I
     grest, prest = (a[0] for a in rig.sk.rest_globals())
     pel, s3, ua = I["pelvis"], I["spine_03"], I["upperarm_l"]
-    g, p = rig.sk.fk(base.rot, base.pos)
     H = dict(ARC_FREE[hand])
     # (Each stand carries her pelvis to its own place: the wrist as measured onto the hip's front, scratch anim/st lh.py.)
     if ARC_ST and hand in ARC_STS[ARC_ST].get("free_pos", {}):
         H["pos"] = ARC_STS[ARC_ST]["free_pos"][hand]
 
-    def over(t, f):
-        d = dict(arms(t, f))
+    def spec(f):
         dp = qmul(g[f, pel], qinv(grest[pel]))
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
         if "arc" in H:
@@ -293,7 +314,17 @@ def _free_hand(rig, base, arms, hand):
             way = lambda v: tuple(qrot(ic, qrot(dp, np.array(_n(v)))))
             h = {"arc": arc_of(qrot(ic, W - p[f, ua])), "pole": H["pole"], "frame": "chest", "twist": 1.0}
         h.update({k: way(H[k]) for k in ("knuckles", "blade", "thumb") if k in H})
-        d["hand_l"] = h
+        return h
+    return spec
+
+
+def _free_hand(rig, base, arms, hand):
+    """`arms` with the left hand held free (ARC_FREE[hand]) on her pelvis frame by frame, in the chest's frame."""
+    spec = _free_spec(rig, hand, *rig.sk.fk(base.rot, base.pos))
+
+    def over(t, f):
+        d = dict(arms(t, f))
+        d["hand_l"] = spec(f)
         d["fingers_l"] = _free_fingers(hand, t)
         return d
     return over
@@ -319,7 +350,7 @@ def pitch_head(rig, clip: Clip, want) -> Clip:
     return Clip(clip.name, clip.fps, rot, clip.pos, loop=clip.loop,
                 meta={**clip.meta, "changes": clip.meta.get("changes", "") + f"; head's mean pitch brought to {want:+.0f} deg"})
 
-def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
+def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0, phase=None):
     """`clip` with her left hand laid on her hip (ARC_HIP, idle_arcanist's) where the weight w(frame) > 0, kept on
     the clip's OWN pelvis frame by frame, and the left arm and fingers slerped by w from the clip's own into it.
     For the clips that took the idle's frame-0 hand in the chest's frame (the breaks, the stops, the Flare's settle,
@@ -328,7 +359,10 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
     joint; opened at the knuckle alone) where the clip's legs move the surface under it (the stops; following the thigh instead sank the thumb).
     `thumb_pow`: the left thumb's joints slerped by w**thumb_pow instead of w, so the thumb takes the clip's own shape
     before the hand leaves her hip (the Flare's reach: at w 0.25, f4, her glove's thumb sleeve folded 1.3 mm into
-    her hand's thenar)."""
+    her hand's thenar).
+    On a restaged stand (ARC_ST, animation 48) the hand it lays is the idle's FREE hand (ARC_FREE, _free_spec) on the
+    clip's own pelvis, blended in and out by the same w, its fingers the idle's (_free_fingers) at `phase`(frame)
+    (default 0, the idle's first frame); `curl` (a hand on her hip's contact) does not apply."""
     from keyed import solve_frames
     from rig import qmul, qinv, qrot, qslerp
     I = rig.I
@@ -342,6 +376,7 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
     for j in arm:
         arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
     hand0 = arcanist(0, 0)["hand_l"]
+    free = _free_spec(rig, ARC_STS[ARC_ST]["hand"], g, p) if ARC_ST else None
 
     def fingers(f):
         fx = _arc_hand_fingers()
@@ -357,6 +392,9 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
         return fx
 
     def spec(f):
+        if ARC_ST:
+            hand = ARC_STS[ARC_ST]["hand"]
+            return {"hand_l": free(f), "fingers_l": _free_fingers(hand, phase(f) if phase else 0.0)}
         dp = qmul(g[f, pel], qinv(grest[pel]))
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
         W = p[f, pel] + qrot(dp, np.array(ARC_HIP["pos"]) - prest[pel])
@@ -770,8 +808,18 @@ def base_of(rig, calling):
             base = stand(rig, base, **STAND[calling])
         if st:
             base = pitch_head(rig, stand(rig, base, **st["stand"]), st["head"])
+            _free0[ARC_ST] = _free_spec(rig, st["hand"], *rig.sk.fk(base.rot[:1], base.pos[:1]))(0)
         _bases[calling] = base
     return _bases[calling]
+
+
+def base_r1(rig):
+    """R1's captured standing (the Strutting take as it was, before the restage): the breaks' keys in her character's
+    frame were made on it, and are carried from it onto a restaged stand (soul.arcanist_break)."""
+    if "_r1" not in _bases:
+        _bases["_r1"] = idle_loop("idle_arcanist_base", rig, IDLES["idle_arcanist"][0], seconds=(5.0, 8.0),
+                                  window=TOWN_WINDOW.get("arcanist"))
+    return _bases["_r1"]
 
 
 def clips(rig, want):

@@ -103,6 +103,12 @@ def _stand(rig, base):
     for s in "lr":
         fo, ba = I[f"foot_{s}"], I[f"ball_{s}"]
         out[s] = _euler(qmul(g[0, fo], qinv(rig.grest[fo]))) + (p[0, ba].copy(),)
+        # (Her knee's way in the idle, off the hip-ankle line: on a restaged stand, idle.ARC_ST, the legs' pole, so
+        # the last frame's thighs meet the idle's; on the fixed (+-0.15, 0, 1) they came 4.5 deg twisted off it.)
+        h, k, a = p[0, I[f"thigh_{s}"]], p[0, I[f"calf_{s}"]], p[0, fo]
+        ax = (a - h) / np.linalg.norm(a - h)
+        m = (k - h) - ax * float((k - h) @ ax)
+        out["pole_" + s] = tuple(float(x) for x in m / np.linalg.norm(m))
     return out
 
 
@@ -135,9 +141,40 @@ def _foot_at(keys, fr):
 
 
 # ------------------------------------------------------------------ body --
+# On a restaged stand (idle.ARC_ST: the HandsInPockets take stood) her pelvis and chest stand 10-11 deg further over
+# her feet than on the Strutting take these keys were made on: in the lunge the planted fist came 50-80 mm nearer her
+# shoulder, the right elbow went back into her side (upper arm 25 mm into her, 45 into the warden's plate, f20-40).
+# The hips pitched back by FLARE_LEAN over the move (eased in over f0-7, out over f43-54), so her body in the lunge
+# leans as it did, and the chest rolled FLARE_ROLL toward her left (her right shoulder up: the stand carries it 5 deg
+# lower), the plant's elbow keyed further out (FLARE_PLANT_E): at the contact (f20) the upper arm went 14-30 mm into her
+# side with the lean alone; now 0 (the warden's plate 5 mm, R1 10). Her head, carried 15 deg further chin-down and
+# 10-14 deg further toward her right shoulder by the stand, given back FLARE_HEAD (pitch) and FLARE_HROLL (roll): the look
+# to the sky as high as R1's (f28-40, 46-51 deg up), and the hat's brim, tipped down to her right, off the planted
+# crescent (f21-22 and f45 at 1-6 mm; now 40-68, R1 30-57). The ends stay the idle's.
+FLARE_LEAN = -10.0
+FLARE_ROLL = 7.0
+FLARE_PLANT_E = (-0.9, -0.45, -0.1)
+FLARE_HEAD = -15.0
+FLARE_HROLL = -16.0
+FLARE_SHIFT = 0.0   # (hips, m, + her left; tried, no help to the brim)
+FLARE_YAW = 0.0     # (head, deg; tried, no help)
+
+
+def _lean_at(fr):
+    if fr <= 0 or fr >= 54:
+        return 0.0
+    return FLARE_LEAN * min(_smooth(fr / 7.0), 1.0 - _smooth((fr - 43) / 11.0))
+
+
 def _body_keys():
     def k(fr, ease="auto", hips=(0, 0, 0), hrot=(0, 0, 0), spine=(0, 0, 0), neck=(0, 0, 0), head=(0, 0, 0),
           cl=(0, 0), cr=(0, 0)):
+        if idle.ARC_ST:
+            w = _lean_at(fr) / FLARE_LEAN
+            hrot = (hrot[0], hrot[1] + FLARE_LEAN * w, hrot[2])
+            spine = (spine[0], spine[1], spine[2] + FLARE_ROLL * w)
+            head = (head[0] + FLARE_YAW * w, head[1] + FLARE_HEAD * w, head[2] + FLARE_HROLL * w)
+            hips = (hips[0] + FLARE_SHIFT * w, hips[1], hips[2])
         return (fr, {"hips": {"pos": hips, "rot": hrot}, "spine": spine, "neck": neck, "head": head,
                      "clav_l": cl, "clav_r": cr}, ease)
     return [
@@ -232,7 +269,7 @@ STAFF = [
     # the butt and the left fist within her reach.
     # (18 Oct, the refitted fist: the plant's elbow keyed out to her right, -0.60 (was 0.15 in, as the hold's): at
     # f20 the upper arm went 31 mm into her side.)
-    (CONTACT, "butt", BUTT_AT, _n(-0.200, 0.975, 0.095), _n(-0.60, -0.80, -0.10), "E"),
+    (CONTACT, "butt", BUTT_AT, _n(-0.200, 0.975, 0.095), _n(*FLARE_PLANT_E) if idle.ARC_ST else _n(-0.60, -0.80, -0.10), "E"),
     (22, "butt", BUTT_AT, _n(-0.120, 0.985, 0.120), _n(0.15, -0.97, -0.10), "E"),
     (28, "butt", BUTT_AT, _n(-0.047, 0.992, 0.117), _n(0.15, -0.97, -0.10), "E"),
     (40, "butt", BUTT_AT, _n(-0.033, 0.990, 0.133), _n(0.15, -0.97, -0.10), "E"),
@@ -359,7 +396,8 @@ class Flare:
         q = qeuler(yaw, pitch + lift, roll)
         ankle = ball - qrot(q, rig.prest[ba] - rig.prest[fo])
         return {"pos": (float(ankle[0]), float(ankle[1] - rig.prest[fo][1]), float(ankle[2])),
-                "rot": (yaw, pitch + lift, roll), "toe": float(lift), "pole": ((0.15 if s == "l" else -0.15), 0, 1.0)}
+                "rot": (yaw, pitch + lift, roll), "toe": float(lift),
+                "pole": self.stand["pole_" + s] if idle.ARC_ST else ((0.15 if s == "l" else -0.15), 0, 1.0)}
 
     # -- the right hand's wanted wrist and blade at each frame
     def right(self, S_r, chest):
@@ -631,7 +669,10 @@ def flare_burns_twice(rig, rounds=10, log=None):
     # frame with the relaxed fingers it sank up to 29 mm into her hip and spread at the settle.
     # (The thumb slerped by w squared, with Flare.fingers' thumb leading the reach: at f4 her glove's thumb sleeve
     # folded 1.3 mm into her hand's thenar, 2 points; now none. Animation 33.)
-    return idle.hip_layer(rig, clip, lambda f: 1.0 - _curve(L_SHAFT, f) - _curve(L_OPEN, f), thumb_pow=2.0)
+    # (On a restaged stand, idle.ARC_ST: the idle's free hand, its fingers in phase with the idle's, frame END its first.)
+    n = idle.base_of(rig, "arcanist").frames - 1
+    return idle.hip_layer(rig, clip, lambda f: 1.0 - _curve(L_SHAFT, f) - _curve(L_OPEN, f), thumb_pow=2.0,
+                          phase=lambda f: (f - END) / n)
 
 
 def _settle(rig, F, clip, a=50, b=56):
@@ -650,6 +691,10 @@ def _settle(rig, F, clip, a=50, b=56):
     for j in arm:
         arm += [k for k, p in enumerate(sk.parent) if p == j and k not in arm]
     toes = [I["ball_l"], I["ball_r"]]
+    if idle.ARC_ST:
+        # (On a restaged stand the legs too, as the toes: the joints land where the idle's are, but the thighs came
+        # 2-4.5 deg rolled about their own line off the idle's capture.)
+        toes += [I[f"{j}_{s}"] for j in ("thigh", "calf", "foot") for s in "lr"]
     for fr in range(a, END + 1):
         w = _smooth((fr - a) / (b - a))
         for j in arm:

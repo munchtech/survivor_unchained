@@ -98,6 +98,8 @@ STOP_ARC_BLADE = idle._ARC["stop_blade"]
 
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
+    if calling == "arcanist":
+        idle.base_of(rig, "arcanist")  # (on a restaged stand, idle.ARC_ST, its free hand is read off the base)
     arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
     if calling == "arcanist":
         arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(STOP_ARC_BLADE)}
@@ -140,6 +142,7 @@ def stop(rig, calling, side):
     clip = build(f"stop_{calling}_{side}", rig, keys, meta=meta)
     if calling == "arcanist":
         # Her left hand kept on her hip as the hips brake and rock under her (it floated 10-17 mm off in the chest's frame).
+        # (On a restaged stand, idle.ARC_ST: the idle's free hand kept on her pelvis the same way; no curl, no contact.)
         clip = idle.hip_layer(rig, clip, lambda f: 1.0, curl=ARC_STOP_CURL[side])
     return clip
 
