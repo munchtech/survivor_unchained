@@ -542,7 +542,7 @@ void fragment() {
 		}
 		// (the bed under the water as wet as the bank's foot: no lighter strip where the water takes it)
 		float bk_wet = (1.0 - smoothstep(0.0, water_bed.z, bk_above)) * step(0.001, water_bed.z);
-		albedo *= 1.0 - bk_wet * water_bed.w;
+		albedo *= 1.0 - bk_wet * water_bed.w * (1.0 - 0.4 * bk_sunk);
 		rough = mix(rough, 0.28, bk_wet);
 	}
 

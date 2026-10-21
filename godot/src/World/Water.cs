@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json;
 using Godot;
 
@@ -59,12 +60,41 @@ public static class Water
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
             var mat = new ShaderMaterial { Shader = shader };
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+            mat.SetShaderParameter("grad_tex", Grad());
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
             Look(mat, w.GetProperty("look"));
             Bed(w.GetProperty("look"));
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         return root;
+    }
+
+    static ImageTexture? grad;
+
+    /// <summary>The noise's slopes, once (the shader's grad_tex): RG the slope of its R channel (x, y), BA of its B, per
+    /// texel, as 0.5 + slope x 12 (R) and x 6 (B), wrapping as the noise tiles.</summary>
+    public static ImageTexture Grad()
+    {
+        if (grad != null) return grad;
+        var src = NoiseTex.Get().GetImage();
+        if (src.IsCompressed()) src.Decompress();
+        int n = src.GetWidth();
+        var px = src.GetData();
+        var data = new byte[n * n * 4];
+        byte B(double v) => (byte)Math.Clamp(Math.Round(v * 255), 0, 255);
+        double At(int x, int y, int c) => px[((((y % n) + n) % n) * n + (((x % n) + n) % n)) * 4 + c] / 255.0;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                int i = (y * n + x) * 4;
+                data[i] = B(0.5 + (At(x + 1, y, 0) - At(x - 1, y, 0)) * 0.5 * 12);
+                data[i + 1] = B(0.5 + (At(x, y + 1, 0) - At(x, y - 1, 0)) * 0.5 * 12);
+                data[i + 2] = B(0.5 + (At(x + 1, y, 2) - At(x - 1, y, 2)) * 0.5 * 6);
+                data[i + 3] = B(0.5 + (At(x, y + 1, 2) - At(x, y - 1, 2)) * 0.5 * 6);
+            }
+        var img = Image.CreateFromData(n, n, false, Image.Format.Rgba8, data);
+        img.GenerateMipmaps();
+        return grad = ImageTexture.CreateFromImage(img);
     }
 
     /// <summary>The water's colours as the zone gives them (WaterOpts: sRGB

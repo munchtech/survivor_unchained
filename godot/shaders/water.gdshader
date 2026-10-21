@@ -11,10 +11,12 @@
 // Stream mode (the Verge's ribbon, export_zone.mjs): the ripples run in the stream's own coordinates (UV: across, along)
 // and UV2.x is the bank's distance; the rest is the same.
 shader_type spatial;
-render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specular_schlick_ggx, shadows_disabled;
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
-uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
+// The noise's slopes (Water.Grad: RG the swell's (noise R), BA the chop's (noise B), 0.5 flat), so a ripple's normal is one look.
+uniform sampler2D grad_tex : filter_linear_mipmap, repeat_enable;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform bool stream = true;
 // The body: color its scattered light where deep, murk past 'deep' m, shallow the tint the bed takes through it.
@@ -56,15 +58,6 @@ void vertex() {
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
-// The surface's height (0-1) at p (m, in the flow's frame), drifting downstream: a swell and a quicker cross-swell.
-// (The noise is tiled ripple_size x 4 m, so a texel is 2 cm: its bilinear facets stay under a pixel at the play camera.)
-float wh(vec2 p, vec2 v, float t) {
-	float s = 1.0 / (ripple_size * 4.0);
-	float a = texture(noise_tex, (p - v * t) * s).r;
-	float b = texture(noise_tex, (p - v * t * 1.6) * s * 0.83 + vec2(0.37, 0.71)).g;
-	return a * 0.6 + b * 0.4;
-}
-
 // The view-space point the depth buffer holds at uv.
 vec3 view_at(vec2 uv, mat4 inv_proj, sampler2D dt) {
 	vec4 p = inv_proj * vec4(uv * 2.0 - 1.0, texture(dt, uv).r, 1.0);
@@ -77,15 +70,17 @@ void fragment() {
 	vec2 rp = stream ? vec2(UV.x, -UV.y) : wv.xz;
 	vec2 v = flow;
 	float t = TIME;
-	float e = ripple_size * 4.0 / 256.0 * 2.5;
-	float h0 = wh(rp, v, t), hx = wh(rp + vec2(e, 0.0), v, t), hz = wh(rp + vec2(0.0, e), v, t);
-	// The chop that breaks the lights' glints: finer, quicker.
-	float cs = 1.0 / (ripple_size * 4.0);
-	vec2 cp = (rp - v * t * 1.3) * cs + vec2(0.53, 0.19);
-	float ce = e * cs;
-	float c0 = texture(noise_tex, cp).b, cx = texture(noise_tex, cp + vec2(ce, 0.0)).b, cz = texture(noise_tex, cp + vec2(0.0, ce)).b;
+	// The surface's slope (per m), drifting downstream: a swell, a quicker cross-swell, and a finer chop that breaks the
+	// lights' glints. (The noise is tiled ripple_size x 4 m, so a texel is 2 cm: its facets stay under a pixel.)
+	float s = 1.0 / (ripple_size * 4.0);
+	vec4 ga = texture(grad_tex, (rp - v * t) * s);
+	vec4 gb = texture(grad_tex, (rp - v * t * 1.6) * s * 0.83 + vec2(0.37, 0.71));
+	vec4 gc = texture(grad_tex, (rp - v * t * 1.3) * s + vec2(0.53, 0.19));
+	float tm = 256.0 * s;
+	vec2 swell = ((ga.rg - 0.5) / 12.0 * 0.6 + (gb.rg - 0.5) / 12.0 * 0.4 * 0.83) * tm;
+	vec2 chop = (gc.ba - 0.5) / 6.0 * tm;
 	float bend = ripple_bend * water_air.z;
-	vec2 g = vec2(hx - h0, hz - h0) / e * 0.3 + vec2(cx - c0, cz - c0) / e * 0.05;
+	vec2 g = swell * 0.3 + chop * 0.03;
 	vec3 n_w = normalize(vec3(-g.x * bend, 1.0, -g.y * bend));
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 	vec3 vdir = normalize(-VERTEX);
@@ -110,7 +105,8 @@ void fragment() {
 	vec3 under = texture(screen_tex, bent).rgb;
 
 	// The body: its colour deepening to murk, lit by the scene (ALBEDO); in by the shore's band.
-	float in_k = smoothstep(0.0, shore, wd);
+	// (its width wandering along the bank, so the clear strip at the edge is never an even ribbon)
+	float in_k = smoothstep(0.0, shore * (0.35 + 1.3 * texture(noise_tex, wv.xz * 0.07 + 0.11).g), wd);
 	vec3 body = mix(color, murk, smoothstep(0.3, deep, wd));
 	body = mix(body, shallow * 0.6, sh * 0.5);
 	float opaque = 1.0 - dot(trans, vec3(0.3333));
@@ -127,19 +123,20 @@ void fragment() {
 	vec3 bn = cross(dFdx(bed_ws), dFdy(bed_ws));
 	float steep = 1.0 - smoothstep(0.55, 0.85, abs(bn.y) / max(length(bn), 1e-6));
 	float lace = smoothstep(0.5, 0.75, fn) * smoothstep(0.35, 0.65, texture(noise_tex, wv.xz * 0.045 + 0.3).r);
-	float ring = touch * mix(lace * 0.6, smoothstep(0.35, 0.65, fn + touch * 0.25), steep);
+	float ring = touch * mix(lace * 0.45, 0.7 * smoothstep(0.3, 0.7, fn + touch * 0.2), steep);
 
 	// The wake: anything breaking the surface upstream of here (a stone, a leg) trails foam down the current.
-	float wk = 0.0;
+	float wk = 0.0, bow = 0.0;
 	if (wake > 0.0 && !stream && wd > foam_depth * 0.5) {
 		mat4 vp = PROJECTION_MATRIX * VIEW_MATRIX;
-		// Four looks upstream, their spacing wobbled by the flow's noise so the breaker's outline never repeats in stamps.
-		for (int i = 1; i <= 4; i++) {
+		// Three looks upstream, their spacing wobbled by the flow's noise so the breaker's outline never repeats in stamps.
+		// (and one just downstream: the cushion where the current piles against a stone's upstream face)
+		for (int i = 0; i <= 3; i++) {
 			// (each look's spacing dithered by bubbles a few cm across, drifting with the flow: the stamps melt into froth)
 			float bub = fract(sin(dot(floor(vec2(fp.x - t * fspeed, fp.y) * 28.0) + float(i) * 7.1, vec2(12.9898, 78.233))) * 43758.5453);
-			float L = wake * (float(i) - 1.0 + bub) / 4.0;
+			float L = i == 0 ? -(0.1 + 0.22 * bub) : wake * (float(i) - 1.0 + bub) / 3.0;
 			// Wider the further behind (the wake spreads), wobbling with the flow.
-			float wob = (fn - 0.5) * 0.5 * L / wake;
+			float wob = (fn - 0.5) * 0.5 * abs(L) / wake;
 			vec3 up = vec3(wv.x, wv.y, wv.z) - vec3(fdir.x, 0.0, fdir.y) * L + vec3(fside.x, 0.0, fside.y) * wob;
 			vec4 cl = vp * vec4(up, 1.0);
 			vec2 uv = cl.xy / cl.w * 0.5 + 0.5;
@@ -148,19 +145,21 @@ void fragment() {
 			// Something there stands within a hand of the surface, or above it: a breaker.
 			// (only what stands there: a post or a body nearer the camera that hides the spot is not in the river)
 			float brk = (1.0 - smoothstep(0.02, 0.1, up.y - b.y)) * (1.0 - smoothstep(0.25, 0.45, length(b.xz - up.xz)));
-			float fade = 1.0 - (float(i) - 1.0 + bub) / 4.0;
+			if (i == 0) { bow = brk; continue; }
+			float fade = 1.0 - (float(i) - 1.0 + bub) / 3.0;
 			wk = max(wk, brk * fade * fade);
 		}
 		float streaks = smoothstep(0.5, 0.8, texture(noise_tex, vec2(fp.x * 0.7 - t * fspeed * 0.7, fp.y * 4.0) * 0.3).b + fn * 0.4);
 		wk *= streaks;
 	}
-	float foam = clamp(max(ring, wk * 0.55) * foam_amt, 0.0, 1.0);
+	bow *= smoothstep(0.4, 0.75, fn + 0.15);
+	float foam = clamp(max(max(ring, bow * 0.45), wk * 0.55) * foam_amt, 0.0, 1.0);
 
 	// The shore's wet lip: the bed darkens as the water takes it, under the sheen's own fade.
 	vec3 seen = under * trans * mix(1.0, 0.82, in_k);
 	float lv = level * water_air.x;
 	vec3 skyr = sky * water_air.y * fres * in_k;
-	vec3 sick = murk * glow * (0.6 + 0.4 * h0);
+	vec3 sick = murk * glow * (0.6 + 0.4 * fn);
 
 	ALBEDO = (mix(body * opaque * in_k, foam_color * 0.55, foam * 0.8)) * lv;
 	EMISSION = (seen * (1.0 - fres * in_k) * (1.0 - foam * 0.8) + skyr * (1.0 - foam) + sick + foam_color * foam * 0.05) * lv;
