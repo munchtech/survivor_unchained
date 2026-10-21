@@ -90,8 +90,9 @@ def pantile(h, w, rng):
     u = (xc / cw) % 1.0
     k = 0.62
     prof = np.where(u < k, -np.sin(np.pi * u / k), np.sin(np.pi * (u - k) / (1 - k)))
-    hgt = np.where(u < k, 0.010, 0.014) * prof + 0.010 * s
-    hgt -= 0.012 * ss(0.965, 1.0, s)        # the butt's rounded lip
+    # the S profile at a real pantile's depth (a 3-4 cm roll over a broad pan), so the normal turns the roll's flanks to and from the sun
+    hgt = np.where(u < k, 0.024, 0.034) * prof + 0.014 * s
+    hgt -= 0.014 * ss(0.965, 1.0, s)        # the butt's rounded lip
     # chips out of a few butts' corners
     chip = (ss(0.9, 1.0, s) * ss(0.82, 0.95, fbm(h, w, 40, 160, rng, 2)) * per(tile, rng.random(nt) < 0.35)).astype(np.float32)
     hgt -= 0.006 * chip
@@ -108,9 +109,9 @@ def pantile(h, w, rng):
     col = col * (0.96 + 0.08 * grit[..., None])
     col = mix(col, col * np.array([0.92, 0.9, 0.9], np.float32), ss(0.55, 0.8, wear))  # weathered patches on a tile's face
     trough = ss(0.1, -0.7, prof) * (0.6 + 0.4 * s)
-    col = col * (0.84 + 0.24 * ss(-0.3, 0.9, prof))[..., None]                # the roll's crown lit, its flanks turning away
-    col = mix(col, srgb("#4e443c"), 0.45 * trough)                           # grime and shade down the troughs
-    col = mix(col, srgb("#3a302a"), 0.55 * (1 - ss(0.0, 0.14, s)))           # the butt above's shadow
+    col = col * (0.8 + 0.3 * ss(-0.5, 0.9, prof))[..., None]                 # the roll's crown lit, its flanks turning away
+    col = mix(col, srgb("#3e352e"), 0.5 * trough)                           # grime and shade down the troughs
+    col = mix(col, srgb("#2a221d"), 0.78 * (1 - ss(0.06, 0.17, s)))          # the butt above's shadow
     col = mix(col, srgb("#6a5a50"), 0.5 * chip)
     lich = ss(0.8, 0.86, fbm(h, w, 30, 96, rng, 3)) * per(tile, rng.random(nt) < 0.3) * ss(0.2, 0.5, s)
     col = mix(col, srgb("#c4c2ae"), 0.6 * lich)
@@ -133,7 +134,7 @@ def shingle(h, w, rng):
     for i in range(rows):
         ws = []
         while sum(ws) < w:
-            ws.append(rng.uniform(52, 150))
+            ws.append(rng.uniform(51, 128))      # 10-25 cm
         ws = np.array(ws) * w / sum(ws)
         e = np.concatenate([[0], np.cumsum(ws)]) + rng.uniform(0, w)
         edges.append(e)
@@ -157,20 +158,23 @@ def shingle(h, w, rng):
     has_split = rng.random(nt) < 0.25
     splitd = np.abs(u - per(sid, split_at)) * 60
     split = (per(sid, has_split) * ss(3.0, 0.0, splitd * 3) * ss(0.15, 0.6, s)).astype(np.float32)
-    gap = ss(3.5, 0.5, gapd)
-    val = rng.normal(1.0, 0.09, nt)
+    gap = ss(2.6, 0.4, gapd) * (0.55 + 0.45 * ss(0.1, 0.5, s))   # thin dark joints, fainter where the course above laps them
+    val = rng.normal(1.0, 0.06, nt)
     silver = rng.random(nt)
     fib = fbm(h, w, 6, 220, rng, 3)          # grain down the slope (fine across x)
     streak = fbm(h, w, 3, 60, rng, 3)
     weather = fbm(h, w, 3, 10, rng, 4)
-    base = mix(srgb("#9f9282"), srgb("#b2aca2"), per(sid, silver))
+    base = mix(srgb("#8f877d"), srgb("#a29f99"), per(sid, silver))      # weathered silver-brown oak
     col = base * (per(sid, val) * (0.94 + 0.12 * weather))[..., None]
     col = mix(col, col * 0.8, 0.5 * ss(0.4, 0.8, fib) + 0.2 * streak)
     col = mix(col, col * 1.08, 0.5 * ss(0.85, 1.0, s))                       # sun-bleached butts
-    col = mix(col, srgb("#2e2620"), 0.8 * gap + 0.7 * split)
-    col = mix(col, srgb("#2c241e"), 0.6 * (1 - ss(0.0, 0.16, s)))            # the course above's shadow
-    hgt = 0.008 * s + 0.0025 * (2 * np.abs(u - 0.5)) ** 2 * s - 0.004 * gap - 0.003 * split - 0.0009 * fib
-    hgt -= 0.006 * ss(0.975, 1.0, s)
+    col = mix(col, srgb("#2e2620"), 0.6 * gap + 0.6 * split)
+    # under each course's butts: a hard dark line (the butt's shadow, 5 cm), then the lap's shade fading up the face
+    col = mix(col, srgb("#1e1813"), 0.88 * (1 - ss(0.13, 0.21, s)))
+    col = col * (0.8 + 0.2 * ss(0.2, 0.55, s))[..., None]
+    # each shingle a wedge thickening to its butt (1.6 cm), so the slope's normal tilts course by course and the butt's riser catches the sun
+    hgt = 0.016 * s + 0.003 * (2 * np.abs(u - 0.5)) ** 2 * s - 0.004 * gap - 0.003 * split - 0.0009 * fib
+    hgt -= 0.008 * ss(0.97, 1.0, s)
     rough = 0.86 + 0.06 * weather
     tid = per(sid, (rng.permutation(nt) % 32 + 0.5) / 32)
     return col, hgt, rough, tid

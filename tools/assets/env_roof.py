@@ -161,32 +161,63 @@ def courses(m, R, side, z0, z1, kind, seed):
     total = L[-1]
     n = math.ceil(total / c)
     phase = z0 - 4.0 * hsh(seed, 3.1)
-    zs = zbreaks(z0, z1, phase)
+    zs = zbreaks(z0, z1, phase, 0.5)
+    tw = 0.333 if kind == 'pantile' else 0.17   # a tile's or shingle's width (a slipped one)
+
+    def jit(k, z):
+        """Each course's butts off their line (E9b3: +-2-3 cm along the slope, never a ruler edge)."""
+        f = [hsh(seed, k, i, 9.1) for i in range(4)]
+        return 0.026 * (0.55 * math.sin(z * (1.3 + f[0]) + 6.283 * f[1]) + 0.45 * math.sin(z * (3.7 + 2 * f[2]) + 6.283 * f[3]))
+
     for k in range(n):
         se, sr = total - k * c, max(total - (k + 1) * c, 0.0)  # the butt (eave side), the top (ridge side), from the ridge
         pe, de = at_len(pts, L, se)
         ps, ds = at_len(pts, L, sr)
         ne = np.array([de[1], -de[0]]) * -1  # the outward normal (up and out)
         ne = ne if ne[1] > 0 else -ne
-        nsr = np.array([ds[1], -ds[0]])
-        nsr = nsr if nsr[1] > 0 else -nsr
-        butt = pe + ne * STEP
-        top = ps
+        # the top runs on 4 cm under the course above (whose butts wander), so no gap opens
+        ext = 0.04 if sr > 0 else 0.0
+        pt, _ = at_len(pts, L, max(sr - ext, 0.0))
         row = (k + int(seed * 7)) % rows
         v_top, v_butt = row / rows, (row + 1) / rows
         frac = (se - sr) / c  # the last course at the ridge, partial: its top cut off
         v_top = v_butt - frac / rows
+        v_ext = max(v_top - (sr - max(sr - ext, 0.0)) / c / rows, row / rows - 0.004)
         for za, zb in zip(zs, zs[1:]):
             kk = math.floor((za - phase) / 4.0 + 1e-6)
             ua, ub = (za - phase) / 4.0 - kk, (zb - phase) / 4.0 - kk
             g = hsh(seed, k, kk, side)
-            P = [(side * butt[0], butt[1], za), (side * butt[0], butt[1], zb), (side * top[0], top[1], zb), (side * top[0], top[1], za)]
-            quad(m, P, uvq(reg, ua, ub, v_butt, v_top), (1.0, g, 1.0, 1.0), (side * 0.5, 1, 0))
+            ja, jb = (jit(k, za), jit(k, zb)) if k > 0 else (0.0, 0.0)
+            ba, bb = pe + ne * STEP + de * ja, pe + ne * STEP + de * jb
+            P = [(side * ba[0], ba[1], za), (side * bb[0], bb[1], zb), (side * pt[0], pt[1], zb), (side * pt[0], pt[1], za)]
+            quad(m, P, uvq(reg, ua, ub, v_butt, v_ext), (1.0, g, 1.0, 1.0), (side * 0.5, 1, 0))
             # the riser under this course's butt, down to the course below (or the fascia's top at the eave)
             if k > 0:
-                lo = pe
-                P = [(side * lo[0], lo[1], za), (side * lo[0], lo[1], zb), (side * butt[0], butt[1], zb), (side * butt[0], butt[1], za)]
+                la, lb = pe + de * ja, pe + de * jb
+                P = [(side * la[0], la[1], za), (side * lb[0], lb[1], zb), (side * bb[0], bb[1], zb), (side * ba[0], ba[1], za)]
                 quad(m, P, uvq(reg, ua, ub, v_butt, v_butt - 0.05 / rows), (0.6, g, 1.0, 1.0), (side * de[0], de[1], 0))
+        # now and then a slipped tile (or shingle): 5-8 cm down its course, proud of it, a little askew
+        if 1 < k < n - 2:
+            zz = z0 + 0.3
+            while zz < z1 - 0.3 - tw:
+                if hsh(seed, k, zz * 3.1, side, 4.4) < 0.014 * tw / 0.17:
+                    slip = 0.05 + 0.03 * hsh(seed, k, zz, 1.9)
+                    sk = 0.02 * (hsh(seed, k, zz, 2.7) - 0.5)
+                    lift = ne * (STEP * 0.75)
+                    b0 = pe + de * slip + lift
+                    t0 = ps + de * slip + lift + ne * 0.004
+                    za, zb = zz, zz + tw
+                    kk = math.floor((za - phase) / 4.0 + 1e-6)
+                    ua = (za - phase) / 4.0 - kk
+                    ub = min(ua + tw / 4.0, 1.0)
+                    g = hsh(seed, k, zz, 6.6)
+                    P = [(side * b0[0], b0[1], za + sk), (side * b0[0], b0[1], zb + sk), (side * t0[0], t0[1], zb), (side * t0[0], t0[1], za)]
+                    quad(m, P, uvq(reg, ua, ub, (row + 1) / rows, row / rows + 0.002), (0.95, g, 1.0, 1.0), (side * 0.5, 1, 0))
+                    lo = b0 - lift - ne * 0.002
+                    P = [(side * lo[0], lo[1], za + sk), (side * lo[0], lo[1], zb + sk), (side * b0[0], b0[1], zb + sk), (side * b0[0], b0[1], za + sk)]
+                    quad(m, P, uvq(reg, ua, ub, (row + 1) / rows, (row + 1) / rows - 0.05 / rows), (0.55, g, 1.0, 1.0), (side * de[0], de[1], 0))
+                    zz += tw * 3
+                zz += tw
     return pts, L
 
 
@@ -196,13 +227,13 @@ def eaves(m, R, side, z0, z1, rng, nraft):
     ytop = R.top(xe) + STEP
     ysof = R.under(xe)
     phase = z0
-    zs = zbreaks(z0, z1, phase)
+    zs = zbreaks(z0, z1, phase, 0.5)
     # fascia: a board's face at the eave edge, its top under the first course's butt
     for za, zb in zip(zs, zs[1:]):
         kk = math.floor((za - phase) / 4.0 + 1e-6)
         ua, ub = (za - phase) / 4.0 - kk, (zb - phase) / 4.0 - kk
         P = [(side * xe, ysof - 0.03, za), (side * xe, ysof - 0.03, zb), (side * xe, ytop, zb), (side * xe, ytop, za)]
-        quad(m, P, uvq('boards', ua, ub, 1.0, 0.2), (0.9, 0.5, 0.0, 1.0), (side, 0, 0))
+        quad(m, P, uvq('boards', ua, ub, 1.0, 0.2), (0.6, 0.5, 0.0, 1.0), (side, 0, 0))   # (E9b3: 0.6, it read as a pale band)
         # its underside lip
     # soffit: from the eave edge in to the wall's face, under the boarding (two strips through the knee)
     xs = [R.xe, R.xk + BLEND * 0.3, R.hw + 0.02]
@@ -259,7 +290,7 @@ def ridge_caps(m, R, z0, z1, rng, seed):
     for i in range(n):
         za, zb = z0 + i * cl - (0.02 if i else 0), z0 + (i + 1) * cl
         s = 1.0 + (0.03 if i % 2 else 0.0)
-        dy, tilt = rng(-0.005, 0.005), rng(-0.012, 0.012)
+        dy, tilt = (1 if i % 2 else -1) * rng(0.01, 0.02), rng(-0.02, 0.02)   # (E9b3) each cap stepped 2-4 cm off its neighbours
         ua, ub = (i % 10) / 10, (i % 10 + 1) / 10
         g = hsh(seed, i, 7.7)
         for j in range(len(sec) - 1):
@@ -281,7 +312,7 @@ def ridge_caps(m, R, z0, z1, rng, seed):
 def ridge_boards(m, R, z0, z1, rng):
     """A shingled roof's ridge: two boards along the ridge, one lapping over the other."""
     yr = R.ridge() + 0.005
-    zs = zbreaks(z0, z1, z0)
+    zs = zbreaks(z0, z1, z0, 0.5)
     t = R.t
     c = 1 / math.hypot(1, t)
     for side, wid, lap in ((1, 0.2, 0.03), (-1, 0.17, 0.0)):
@@ -342,14 +373,16 @@ def verges(m, R, hd, rng):
             quad(m, P, uvq('endgrain', 0.1, 0.1 + wb / 0.25, 0.1, 0.1 + hb / 0.25), (0.8, 0.5, 0.0, 1.0), (0, 0, zs))
 
 
-def sag(m, hd, amount, seed, wob=0.006):
-    """Ridge and eaves down by amount at the middle (a parabola, nothing at the gables), a few mm of wobble; the
-    vertex alpha the same weight (the game's own per-house sag)."""
+def sag(m, hd, amount, seed, wob=0.006, xe=None, rake=0.0):
+    """Ridge and eaves down by amount at the middle (a parabola, nothing at the gables), a few mm of wobble; each
+    slope dished by rake between ridge and eave (the rafters' own sag, E9b3: so a verge is never a ruler line); the
+    vertex alpha the along-the-ridge weight (the game's own per-house sag)."""
     ph = [hsh(seed, i, 5.5) * 6.283 for i in range(3)]
     for i, (x, y, z) in enumerate(m.P):
         w = max(0.0, 1.0 - (z / hd) ** 2) if hd > 0 else 0.0
         wb = wob * (0.6 * math.sin(z * 1.3 + ph[0]) + 0.4 * math.sin(z * 3.1 + ph[1])) * min(abs(z) / max(hd, 1e-6), 1.0) * w ** 0.3
-        m.P[i] = (x, y - amount * w - wb, z)
+        dr = rake * math.sin(math.pi * min(abs(x) / xe, 1.0)) if xe else 0.0
+        m.P[i] = (x, y - amount * w - wb - dr, z)
         r, g, b, _ = m.C[i]
         m.C[i] = (r, g, b, w)
 
@@ -370,7 +403,7 @@ def body(p):
     else:
         ridge_boards(m, R, z0, z1, rng)
     verges(m, R, hd, rng)
-    sag(m, hd, p['sag'], p['seed'])
+    sag(m, hd, p['sag'], p['seed'], xe=R.xe, rake=p.get('rake', 0.035))
     meas = {"ridge_sag_cm": round(100 * p['sag'], 1), "eave_cm": round(100 * p['eave'], 1), "pitch_deg": round(math.degrees(math.atan(R.t)), 1),
             "ridge_y": round(R.ridge(), 3)}
     return {"Roof_Own": m}, meas
@@ -399,8 +432,11 @@ def gable(p):
 
     def col(s, t):
         ut = R.under(s) - t
-        return (1.0 - 0.45 * max(0.0, 1 - ut / 0.6), 0.0, 0.0, 1.0)
-    H.face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), [poly], 'plaster', off=(rng(0, 4), rng(0, 1)), disp=disp, col=col, grid=(1.0, 1.0))
+        # (E9b3) the water stain under the barge boards: the shader's sill streaks (vertex g), 20-40 cm down, ragged
+        reach = 0.3 + 0.1 * math.sin(3.1 * s + ph[2]) + 0.05 * math.sin(7.3 * s + ph[0])
+        st = min(1.0, max(0.0, 1 - (ut - 0.04) / reach)) * 0.85
+        return (1.0 - 0.45 * max(0.0, 1 - ut / 0.6), st, 0.0, 1.0)
+    H.face(m, (0, 0, 0), (1, 0, 0), (0, 1, 0), [poly], 'plaster', off=(rng(0, 4), rng(0, 1)), disp=disp, col=col, grid=(0.25, 0.2))
     # the owl hole under the apex: a dark triangle set in
     oy = yr - 0.75
     tri = [(-0.13, oy), (0.13, oy), (0.0, oy + 0.2)]

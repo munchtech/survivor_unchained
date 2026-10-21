@@ -33,6 +33,10 @@ SETS = {
     # (E9a: the square at the close view, closest zoom, by day and at dawn: the square, and by its trees)
     "townclose": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3,1,0;-7,-7,1,0"], 2),
     "townclosedawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "3,3,1,0;-7,-7,1,0"], 2),
+    # (E9b3: our roofs at the play camera: by day the north street's two chimneys, house 44's clay roof and house 29's
+    # shingles (stacks at -0.2,-33 and -6.2,-31), her 12 m south of them; at dawn the north street, its buildings in frame)
+    "townroofs": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-3,-19"], 1),
+    "townroofsdawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,-26"], 1),
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
     # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),

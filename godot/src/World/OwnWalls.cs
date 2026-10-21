@@ -34,6 +34,7 @@ public sealed class OwnWalls
     readonly Dictionary<int, (int Tint, int Style, int Roof, int RoofTint)> houses = new();
     readonly HashSet<string> byRoof = new();
     readonly Dictionary<int, float> ground = new();
+    ZoneData? zone;
     readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data)>> groups = new();
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
@@ -45,7 +46,7 @@ public sealed class OwnWalls
         if (!FileAccess.FileExists(path)) return null;
         using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(path));
         if (!doc.RootElement.TryGetProperty("walls", out var w) || !w.TryGetProperty("pieces", out var ps)) return null;
-        var o = new OwnWalls();
+        var o = new OwnWalls { zone = z };
         foreach (var p in ps.EnumerateObject())
             o.pieces[p.Name] = p.Value.EnumerateArray().Select(g => g.EnumerateArray().Select(s => s.GetString()!).ToArray()).ToArray();
         if (w.TryGetProperty("houses", out var hs))
@@ -126,6 +127,19 @@ public sealed class OwnWalls
             foreach (var (at, _) in list) tops.Add(at * new Vector3(0, top, 0));
         }
         KitLook.SetChimneys(tops);
+        // the terrain's height under the town (0.5 m cells), so the walls' grime rises from the ground itself (E9b3)
+        if (zone != null && groups.Count > 0)
+        {
+            var at = groups.Values.SelectMany(l => l).Select(t => t.At.Origin).ToList();
+            float x0 = at.Min(p => p.X) - 10f, z0 = at.Min(p => p.Z) - 10f, x1 = at.Max(p => p.X) + 10f, z1 = at.Max(p => p.Z) + 10f;
+            const float c = 0.5f;
+            int w = Mathf.Min(1024, Mathf.CeilToInt((x1 - x0) / c) + 1), h = Mathf.Min(1024, Mathf.CeilToInt((z1 - z0) / c) + 1);
+            var img = Image.CreateEmpty(w, h, false, Image.Format.Rf);
+            for (int j = 0; j < h; j++)
+                for (int i = 0; i < w; i++)
+                    img.SetPixel(i, j, new Color(zone.HeightAt(x0 + (i + 0.5f) * (x1 - x0) / w, z0 + (j + 0.5f) * (z1 - z0) / h), 0, 0));
+            KitLook.SetGround(ImageTexture.CreateFromImage(img), new Vector4(x0, z0, x1 - x0, z1 - z0));
+        }
         foreach (var ((preset, _, _), list) in groups)
             foreach (var (mesh, local) in PartsOf(preset))
             {

@@ -176,6 +176,10 @@ uniform float stain_dark = 0.45;  // the streaks under a sill
 uniform float val_noise = 0.1;    // broad value patches over the walls (world space)
 uniform float house_val = 0.06;   // each house a little lighter or darker
 uniform float occl = 0.5;         // the vertex occlusion's reach
+uniform sampler2D ground_h : filter_linear, repeat_disable;  // (E9b3) the terrain's height under the town (OwnWalls.Build)
+uniform vec4 ground_rect = vec4(0.0);  // its world x, z origin and size; z 0: no map (the house's own ground instead)
+uniform float plaster_mottle = 0.1;  // value mottling on plaster at 1-2 m
+uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off (the lath behind)
 varying vec4 v_wall;
 varying float v_hgt;
 varying vec3 v_wp;
@@ -386,9 +390,29 @@ void fragment() {
 		// the splash band at the foot (rain off the street), browner
 		float gn = ax.b;
 		float h = v_hgt;
-		col *= mix(1.0 - grime_dark, 1.0, smoothstep(0.0, grime_h, h + grime_h * 0.4 * (gn - 0.5)));
+		// (E9b3) the height above the terrain itself where the town has its map, so the grime shows where grass or a slope hides the foot
+		if (ground_rect.z > 0.0) {
+			vec2 gq = (v_wp.xz - ground_rect.xy) / ground_rect.zw;
+			if (gq.x > 0.0 && gq.y > 0.0 && gq.x < 1.0 && gq.y < 1.0) h = v_wp.y - texture(ground_h, gq).r;
+		}
+		if (ax.r > 0.75) {
+			// plaster: mottled at 1-2 m, and here and there fallen off to the lath (30-60 cm patches, a dark broken rim)
+			col *= 1.0 + plaster_mottle * (2.0 * wall_noise(wq * 0.75 + 3.1) - 1.0);
+			float pn = 0.7 * wall_noise(wq * 1.9 + v_wall.b * 37.0) + 0.3 * wall_noise(wq * 7.0 + 1.3);
+			float pm = smoothstep(0.55, 0.7, wall_noise(wq * 0.33 + 11.7 + v_wall.b * 5.0)) * smoothstep(0.7, 1.4, h) * lost_plaster;
+			float lost = smoothstep(0.74, 0.76, pn) * pm;
+			float rim = (smoothstep(0.7, 0.74, pn) - smoothstep(0.75, 0.78, pn)) * pm;
+			float lath = smoothstep(0.25, 0.4, fract(v_wp.y * 26.0)) * (0.75 + 0.25 * wall_noise(vec2((v_wp.x + v_wp.z) * 6.0, v_wp.y * 26.0)));
+			vec3 lc = mix(vec3(0.07, 0.055, 0.045), vec3(0.3, 0.24, 0.18) * (0.8 + 0.4 * wall_noise(wq * 9.0)), lath);
+			col = mix(col * (1.0 - 0.35 * rim), lc, lost);
+		}
+		// grime from the ground: a brown-green band, darkest to 0.5 m, streaked with splash, gone by 1.2 m
+		float sn = wall_noise(vec2((v_wp.x + v_wp.z) * 11.0, v_wp.y * 1.3));
+		float hn = h + 0.25 * (gn - 0.5);
+		col *= 1.0 - grime_dark * (1.0 - smoothstep(0.35, grime_h, hn + 0.2 * (sn - 0.5)));
 		col *= mix(1.0 - house_rise, 1.0, smoothstep(0.0, 6.0, h));
-		col *= mix(vec3(1.0 - splash_dark) * vec3(1.0, 0.94, 0.86), vec3(1.0), smoothstep(0.0, splash_h, h + 0.3 * (gn - 0.5)));
+		float splash = 1.0 - smoothstep(0.0, splash_h, hn - 0.25 * sn);
+		col *= mix(vec3(1.0), vec3(1.0 - splash_dark) * vec3(0.95, 0.97, 0.82), splash);
 		// stains under the sills: streaks running down (the sheet's noise stretched down the wall)
 		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
 		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);

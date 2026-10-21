@@ -1,5 +1,5 @@
 {
- "_doc": "The roof kit's presets (tools/assets/env_roof.py; E9b2): body (a roof over W x D walls: cover pantile or shingle, eave the overhang past the walls in m, sag the ridge's and eaves' sag in m), gable (the triangle under a W roof: pattern plain, x crosses, k braces, as the walls' treatments), spire (a 4 m tower's), chimney (wall brick or stone, h its height from its foot, pots).",
+ "_doc": "The roof kit's presets (tools/assets/env_roof.py; E9b2): body (a roof over W x D walls: cover pantile or shingle, eave the overhang past the walls in m, sag the ridge's and eaves' sag in m (E9b3: 10-15 cm on runs of 8 m or more, 5-8 cm on shorter), rake each slope's dish between ridge and eave (default 0.035 m)), gable (the triangle under a W roof: pattern plain, x crosses, k braces, as the walls' treatments), spire (a 4 m tower's), chimney (wall brick or stone, h its height from its foot, pots).",
  "presets": {
   "roof_p_4x6": {
    "kind": "body",
@@ -7,7 +7,7 @@
    "d": 6,
    "cover": "pantile",
    "eave": 0.42,
-   "sag": 0.015,
+   "sag": 0.074,
    "seed": 2100
   },
   "roof_s_4x6": {
@@ -16,7 +16,7 @@
    "d": 6,
    "cover": "shingle",
    "eave": 0.52,
-   "sag": 0.021,
+   "sag": 0.063,
    "seed": 2101
   },
   "roof_p_6x6": {
@@ -25,7 +25,7 @@
    "d": 6,
    "cover": "pantile",
    "eave": 0.46,
-   "sag": 0.027,
+   "sag": 0.051,
    "seed": 2102
   },
   "roof_s_6x6": {
@@ -34,7 +34,7 @@
    "d": 6,
    "cover": "shingle",
    "eave": 0.56,
-   "sag": 0.019,
+   "sag": 0.07,
    "seed": 2103
   },
   "roof_p_6x8": {
@@ -43,7 +43,7 @@
    "d": 8,
    "cover": "pantile",
    "eave": 0.5,
-   "sag": 0.025,
+   "sag": 0.114,
    "seed": 2104
   },
   "roof_s_6x8": {
@@ -52,7 +52,7 @@
    "d": 8,
    "cover": "shingle",
    "eave": 0.43,
-   "sag": 0.016,
+   "sag": 0.145,
    "seed": 2105
   },
   "roof_p_6x10": {
@@ -61,7 +61,7 @@
    "d": 10,
    "cover": "pantile",
    "eave": 0.53,
-   "sag": 0.022,
+   "sag": 0.125,
    "seed": 2106
   },
   "roof_s_6x10": {
@@ -70,7 +70,7 @@
    "d": 10,
    "cover": "shingle",
    "eave": 0.47,
-   "sag": 0.028,
+   "sag": 0.106,
    "seed": 2107
   },
   "roof_p_8x8": {
@@ -79,7 +79,7 @@
    "d": 8,
    "cover": "pantile",
    "eave": 0.57,
-   "sag": 0.02,
+   "sag": 0.137,
    "seed": 2108
   },
   "roof_s_8x8": {
@@ -88,7 +88,7 @@
    "d": 8,
    "cover": "shingle",
    "eave": 0.51,
-   "sag": 0.026,
+   "sag": 0.118,
    "seed": 2109
   },
   "roof_p_8x10": {
@@ -97,7 +97,7 @@
    "d": 10,
    "cover": "pantile",
    "eave": 0.45,
-   "sag": 0.017,
+   "sag": 0.149,
    "seed": 2110
   },
   "roof_s_8x10": {
@@ -106,7 +106,7 @@
    "d": 10,
    "cover": "shingle",
    "eave": 0.55,
-   "sag": 0.023,
+   "sag": 0.13,
    "seed": 2111
   },
   "roof_p_8x12": {
@@ -115,7 +115,7 @@
    "d": 12,
    "cover": "pantile",
    "eave": 0.49,
-   "sag": 0.03,
+   "sag": 0.111,
    "seed": 2112
   },
   "roof_s_8x12": {
@@ -124,7 +124,7 @@
    "d": 12,
    "cover": "shingle",
    "eave": 0.43,
-   "sag": 0.021,
+   "sag": 0.142,
    "seed": 2113
   },
   "gable4_p": {

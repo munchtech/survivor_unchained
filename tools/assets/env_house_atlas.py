@@ -173,17 +173,27 @@ def planks(h, w, rng):
 
 
 def ashlar(h, w, rng):
+    """Tooled dressed stone (E9b3: the rubble's own buff and its detail at the same scale, so a quoin or a pier is not a
+    blurry grey speckle): broad weathering, diagonal batter marks, pits and flecks at 1-3 cm, rust and lichen spots."""
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32)
     big = fbm(h, w, 2, 12, rng, 4)
-    tool = fbm(h, w, 4, 24, rng, 2)  # tooling, soft and even (it is turned on a quoin's ends)
-    grit = fbm(h, w, 16, 128, rng, 2)
-    lichen = ss(0.7, 0.82, fbm(h, w, 4, 24, rng, 4))
-    col = mix(srgb("#a69d8d"), srgb("#958b7b"), big)
-    col = col * (0.97 + 0.04 * tool[..., None] + 0.02 * grit[..., None])
-    col = mix(col, srgb("#8f9070"), 0.35 * lichen)
-    hgt = 0.002 * big + 0.0008 * tool + 0.0005 * grit
-    return col, hgt, 0.86 + 0.06 * grit
-
-
+    mid = fbm(h, w, 6, 48, rng, 3)
+    grit = fbm(h, w, 24, 256, rng, 2)
+    # batter: fine parallel chisel strokes on the diagonal, broken up
+    bat = 0.5 + 0.5 * np.sin((x + y) * 2 * np.pi / 7.0 + 6.0 * fbm(h, w, 3, 20, rng, 2))
+    bat *= ss(0.35, 0.65, fbm(h, w, 4, 30, rng, 2))
+    pits = ss(0.74, 0.82, fbm(h, w, 12, 128, rng, 2))
+    fleck = ss(0.78, 0.86, fbm(h, w, 16, 160, rng, 2))
+    rust = ss(0.72, 0.85, fbm(h, w, 3, 18, rng, 4))
+    lichen = ss(0.74, 0.84, fbm(h, w, 4, 24, rng, 4))
+    col = mix(srgb("#a89a82"), srgb("#958670"), big)
+    col = col * (0.9 + 0.2 * mid[..., None]) * (0.95 + 0.1 * grit[..., None]) * (1 - 0.07 * bat[..., None])
+    col = mix(col, srgb("#5a5045"), 0.55 * pits)
+    col = mix(col, srgb("#c4b8a2"), 0.35 * fleck)
+    col = mix(col, srgb("#8a6a48"), 0.3 * rust)
+    col = mix(col, srgb("#9a9a78"), 0.35 * lichen)
+    hgt = 0.003 * big + 0.0015 * mid + 0.0004 * bat - 0.0012 * pits + 0.0005 * grit
+    return col, hgt, 0.84 + 0.08 * grit
 def iron(h, w, rng):
     big = fbm(h, w, 3, 3, rng, 4)
     rust = ss(0.55, 0.75, fbm(h, w, 6, 6, rng, 4))
@@ -198,7 +208,7 @@ def glass(h, w, rng):
     ripple = fbm(h, w, 6, 6, rng, 3)
     col = mix(srgb("#1f262a"), srgb("#3a4448"), 0.5 * big + 0.5 * ss(0.5, 0.8, ripple))
     hgt = 0.002 * ripple
-    return col, hgt, 0.12 + 0.1 * big
+    return col, hgt, 0.25 + 0.1 * big   # (E9b3: 0.25-0.35, a pane read as a white blob at 0.12)
 
 
 MAKERS = {"rubble": rubble, "plaster": plaster, "timber": timber, "ashlar": ashlar, "iron": iron, "glass": glass, "planks": planks}

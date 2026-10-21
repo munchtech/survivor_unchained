@@ -204,8 +204,28 @@ public static class KitLook
         m.SetShaderParameter("jitter", 0f);
         m.SetShaderParameter("wind", 0f);
         HouseLook(m);
+        if (groundTex != null) { m.SetShaderParameter("ground_h", groundTex); m.SetShaderParameter("ground_rect", groundRect); }
         m.NextPass = RimOf(m, ownWallRim);
+        walls.Add(m);
         return m;
+    }
+
+    static readonly List<ShaderMaterial> walls = new();
+    static Texture2D? groundTex;
+    static Vector4 groundRect;
+
+    /// <summary>The terrain's height under the town (OwnWalls.Build; E9b3): the walls' grime rises from the ground itself,
+    /// not from each house's lowest piece (rect: world x, z origin and size).</summary>
+    public static void SetGround(Texture2D tex, Vector4 rect)
+    {
+        groundTex = tex;
+        groundRect = rect;
+        foreach (var m in walls)
+            foreach (var mm in new[] { m, m.NextPass as ShaderMaterial })
+            {
+                mm?.SetShaderParameter("ground_h", tex);
+                mm?.SetShaderParameter("ground_rect", rect);
+            }
     }
 
     /// <summary>godot/data/house_look.json's palettes (arrays of hex colours) and numbers as shader parameters.</summary>
