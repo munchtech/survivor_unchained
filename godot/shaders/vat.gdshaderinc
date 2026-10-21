@@ -143,7 +143,11 @@ void fragment() {
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
-	ROUGHNESS = rough;
+	// Never fully rough: Godot's RIM falls off as pow(1 - NdotV, (1 - ROUGHNESS) * 16), so at roughness 1 (an imported
+	// texture's default: the lamplings' and the skeletons' bodies) the "rim" is 1 everywhere and RIM lays every light's
+	// colour over the whole body, mostly white (rim_tint 0.35). Grimtunnel's dark mauve hide read as glowing cyan in C03's
+	// ford lamps. At 0.9 it is a rim again ((1 - NdotV)^1.6) and the sheen barely moves.
+	ROUGHNESS = min(rough, 0.9);
 	SPECULAR = 0.5 * (1.0 - busy);
 	METALLIC = metallic;
 	RIM = rim_amount * (1.0 - busy);

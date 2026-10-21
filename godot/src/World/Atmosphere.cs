@@ -48,7 +48,7 @@ public partial class Atmosphere : Node3D
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
         if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
         ViewHighlightsNeutral = k;
-        var lut = GradeLut(ViewGrade(Own(Current)), Mute);
+        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
     // (#bcbcbc is linear 0.5: the grade adds a tint as its distance from 0.5, so this one adds nothing.)
@@ -66,6 +66,16 @@ public partial class Atmosphere : Node3D
             PaintShadowK = Mathf.Lerp((float)g.PaintShadowK, (float)Atmospheres.CloseNightPaint.PaintShadowK, ViewHighlightsNeutral),
             PaintLift = Mathf.Lerp((float)g.PaintLift, (float)Atmospheres.CloseNightPaint.PaintLift, ViewHighlightsNeutral),
         };
+    /// <summary>A cinematic's own grade over the preset's (GameCinema's "grade" cue: the moon's colour, the painted shade),
+    /// null outside one; SetCineGrade remakes the table at once, and the cinematic's end gives play's back.</summary>
+    public Func<GradeSettings, GradeSettings>? CineGrade { get; private set; }
+    GradeSettings Cine(GradeSettings g) => CineGrade?.Invoke(g) ?? g;
+    public void SetCineGrade(Func<GradeSettings, GradeSettings>? f)
+    {
+        CineGrade = f;
+        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute);
+        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+    }
     /// <summary>--close-vib V, --close-vib-dark D: the close view's paint vibrance and its share in the darks (pictures).</summary>
     static readonly float CloseVib = SurvivorUnchained.Args.Num("close-vib", (float)Atmospheres.CloseNightPaint.PaintVib),
         CloseVibDark = SurvivorUnchained.Args.Num("close-vib-dark", (float)Atmospheres.CloseNightPaint.PaintVibDark);
@@ -246,7 +256,7 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
-        if (grade) { var lut = GradeLut(ViewGrade(Own(p)), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
+        if (grade) { var lut = GradeLut(Cine(ViewGrade(Own(p))), Mute); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;

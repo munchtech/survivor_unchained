@@ -806,7 +806,8 @@ public partial class Game : Node, IZoneHost
     public void Capture(bool on) => controls.Captured = on;
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
-    public void AnnounceZone() { if (zone != null) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
+    // --cine (pictures of a cinematic, played at once): no name card over its first shots; in play a fight comes first.
+    public void AnnounceZone() { if (zone != null && !Args.Has("cine")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
 
     public void Revived(double x, double z)
     {

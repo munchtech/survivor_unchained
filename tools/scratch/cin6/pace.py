@@ -3,7 +3,7 @@ For each shot: its laid-out start and length (lines at their takes' length, fits
 the lines in it (start-end, shot-local), the last thing that starts or ends in it, the quiet tail after that,
 the camera's move, and her motion between the --stills frames (max bone travel in cm between consecutive stills)."""
 import json, re, sys, math
-G = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a59432fe3bfc6eb92\godot\data"
+G = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\cine-4\godot\data"
 idx = json.load(open(G + r"\vo\index.json", encoding="utf-8"))["lines"]
 dia = json.load(open(G + r"\content\dialogue.json", encoding="utf-8"))
 
