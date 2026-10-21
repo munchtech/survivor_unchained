@@ -710,7 +710,7 @@ def log(p):
     bark, cut = hexlin(p['bark']), hexlin(p['cut'])
     seed = p['seed']
     parts = []
-    segs, rings = 18, max(8, int(L / 0.11))
+    segs, rings = 20, max(10, int(L / 0.07))
     # a little thinner toward +y (the top of the tree), out of round, bowed, the bark lumpy in plates
     prof = [(r * (1.0 - 0.1 * k / rings), -L / 2 + L * k / rings) for k in range(rings + 1)]
     bm = lathe(prof, segs, cap0=False, cap1=False)
@@ -719,7 +719,11 @@ def log(p):
         a = math.atan2(v.co.z, v.co.x)
         k = (1 + 0.05 * hnoise(v.co * 4.5, seed) + 0.025 * math.sin(a * 5 + v.co.y * 3 + seed)) * (1 + 0.05 * math.cos(2 * a + seed))
         # (round 2) swellings and pinches along the length, so the top edge isn't a ruler
-        k *= 1 + 0.06 * hnoise(Vector((0.3, v.co.y * 1.6, 0.7)), seed + 3) + 0.03 * math.sin(v.co.y * 7.3 + seed)
+        k *= 1 + 0.08 * hnoise(Vector((0.3, v.co.y * 1.6, 0.7)), seed + 3) + 0.035 * math.sin(v.co.y * 7.3 + seed)
+        # burls: two knobs on the upper side that break the top edge
+        for (by, ba, bs) in ((-0.22 * L, 0.5, 0.13), (0.31 * L, -0.35, 0.1)):
+            dy, da = (v.co.y - by) / bs, math.atan2(math.sin(a - ba), math.cos(a - ba)) / 0.9
+            k += 0.16 * math.exp(-(dy * dy + da * da))
         v.co.x *= k
         v.co.z *= k
         v.co.x += 0.025 * (1 - (2 * v.co.y / L) ** 2)  # bowed up in the middle
@@ -768,6 +772,8 @@ def log(p):
     parts.append(Part(st, 'bark', bark * 0.9, turn @ T(r * 0.2, L * 0.18, r * 0.75) @ R('X', 1.2), smooth=True, jitter=0.0))
     st2 = lathe([(0.05, -0.03), (0.042, 0.0), (0.034, 0.07)], 7, cap0=False, cap1=False)
     parts.append(Part(st2, 'bark', bark * 0.85, turn @ T(-r * 0.15, -L * 0.3, -r * 0.82) @ R('X', -1.75), smooth=True, jitter=0.0))
+    st3 = lathe([(0.045, -0.03), (0.036, 0.0), (0.026, 0.11), (0.018, 0.17)], 6, cap0=False, cap1=True)
+    parts.append(Part(st3, 'bark', bark * 0.9, turn @ T(r * 0.55, L * 0.05, -r * 0.55) @ R('Y', 0.8) @ R('Z', -0.9), smooth=True, jitter=0.0))
     tip = bmesh.new()
     ring = [tip.verts.new((0.034 * math.cos(-a * 2 * math.pi / 7), 0.07 + 0.012 * math.sin(a * 2.3), 0.034 * math.sin(-a * 2 * math.pi / 7))) for a in range(7)]
     tf = tip.faces.new(ring)
@@ -975,6 +981,8 @@ def main():
         ob = finish(name, parts, mat, p['seed'])
         obs = [ob]
         meta = {'tris': tris(ob)}
+        if p['kind'] == 'log':
+            meta['axis'] = [round(p['r'] * 0.85, 4), p['r']]  # the axis's height and the bark's radius (OwnProps lays logs by it)
         if meta['tris'] > 1000:
             lo = lod1(ob)
             obs.append(lo)

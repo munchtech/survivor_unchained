@@ -32,6 +32,7 @@ public static class OwnProps
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
+    static readonly Dictionary<string, Vector2> axes = new();
     static OrmMaterial3D? mat;
 
     /// <summary>A zone's own-props data, or null if it has none.</summary>
@@ -111,6 +112,7 @@ public static class OwnProps
                     var b = p.Value.GetProperty("box");
                     var lo = new Vector3(b[0].GetSingle(), b[1].GetSingle(), b[2].GetSingle());
                     boxes[p.Name] = new Aabb(lo, new Vector3(b[3].GetSingle(), b[4].GetSingle(), b[5].GetSingle()) - lo);
+                    if (p.Value.TryGetProperty("axis", out var ax)) axes[p.Name] = new Vector2(ax[0].GetSingle(), ax[1].GetSingle());
                 }
             }
         }
@@ -193,13 +195,15 @@ public static class OwnProps
             {
                 // Along a line (a log from a to b, its axis at their height): the preset's long axis (x) on it, its radius r.
                 var d = b - a;
-                float len = d.Length(), k = p.R > 0 ? p.R / (box.Size.Y / 2) : 1;
+                // (a log's own axis and radius where props.json gives them, so a stub or burl over the top doesn't shrink it)
+                var axis = axes.TryGetValue(p.Preset, out var av) ? av : new Vector2(box.GetCenter().Y, box.Size.Y / 2);
+                float len = d.Length(), k = p.R > 0 ? p.R / axis.Y : 1;
                 var along = d / len;
                 var side = Vector3.Up.Cross(along).Normalized();
                 var basis = new Basis(along * (len / box.Size.X), Vector3.Up * k, -side * k);
                 var mid = (a + b) / 2;
                 // the preset's axis is at its box's middle height: put it on the line
-                piece.Transform = new Transform3D(basis, mid - basis * new Vector3(0, box.GetCenter().Y, 0));
+                piece.Transform = new Transform3D(basis, mid - basis * new Vector3(0, axis.X, 0));
             }
             else
             {

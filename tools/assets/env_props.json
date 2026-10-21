@@ -13,7 +13,7 @@
   "barrel": {"kind": "barrel", "seed": 6, "h": 0.9, "r": 0.35, "r_end": 0.29, "wood": "#c9ae92", "iron": "#ffffff"},
   "log_long": {"kind": "log", "seed": 7, "len": 2.3, "r": 0.27, "flat": 0.0, "bark": "#ffffff", "cut": "#ffffff"},
   "log_short": {"kind": "log", "seed": 8, "len": 1.6, "r": 0.22, "flat": 0.0, "bark": "#e8e4dc", "cut": "#ffffff"},
-  "pylon": {"kind": "pylon", "seed": 10, "w": 1.0, "h": 4.4, "stone": "#d6d2cc"},
+  "pylon": {"kind": "pylon", "seed": 10, "w": 1.0, "h": 4.4, "stone": "#f4f0ea"},
   "wagon": {"kind": "wagon", "seed": 9, "len": 3.1, "wide": 1.5, "side": 0.38, "wheel_r": 0.56, "roll": 0.3,
             "wood": "#cfc6b8", "iron": "#ffffff", "sack": "#e4e0da", "sack2": "#d0ccc4"}
  }

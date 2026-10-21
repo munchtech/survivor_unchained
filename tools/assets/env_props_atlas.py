@@ -158,9 +158,9 @@ def bark(h, w, m, rng):
     a pale grey went pink under the fire and the moon)."""
     ppm = w / m
     warp = ((fbm(h, w, 6, 4, rng, 3) - 0.5) * 0.10 * ppm,
-            (fbm(h, w, 8, 4, rng, 3) - 0.5) * 0.03 * ppm + (fbm(h, w, 60, 30, rng, 2) - 0.5) * 0.006 * ppm)
+            (fbm(h, w, 8, 4, rng, 3) - 0.5) * 0.05 * ppm + (fbm(h, w, 60, 30, rng, 2) - 0.5) * 0.008 * ppm)
     # plates about 4-5 cm across and 20-30 cm down the trunk (a dead pine's long plates)
-    f1, f2, pv = cells(h, w, int(round(m * h / w / 0.3)), int(round(m / 0.045)), rng, warp)
+    f1, f2, pv = cells(h, w, int(round(m * h / w / 0.17)), int(round(m / 0.055)), rng, warp)
     edge = f2 - f1
     wid = 0.06 + 0.16 * fbm(h, w, 10, 6, rng, 2)  # fissures wide and narrow by turns
     fis = 1 - ss(0.0, 1.0, edge / wid)  # 1 in the crack

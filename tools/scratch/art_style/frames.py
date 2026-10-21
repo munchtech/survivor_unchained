@@ -49,6 +49,11 @@ SETS = {
     "wagonday": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "2.5,62.5"], 1),
     "closedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     "roadrock": (NIGHT + ["--spots-clear", "--spots", "3,64"], 1),
+    # (E7 round 2: the close view at its closest zoom on the bedroll and the pack, behind her on either side, night and
+    # dawn; and on the broken wagon by day, from its low side and its end)
+    "closebed": (NIGHT + ["--spots", "-10.9,94.8,1,0;-14.2,94.6,1,0"], 2),
+    "closebeddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "-10.9,94.8,1,0;-14.2,94.6,1,0"], 2),
+    "closewagon": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots", "4.0,63.2,1,0;6.6,63.0,1,0"], 2),
     # (env lead 12: armor's verge combat camera, where it saw "rainbow rocks" under the canopy, seed 1, toward the mobs)
     "verge": (["--zone", "verge", "--seed", "1", "--auto", "toward"], 2),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),

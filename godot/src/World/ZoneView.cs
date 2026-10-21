@@ -282,8 +282,9 @@ public partial class ZoneView : Node3D
         LampPull = SurvivorUnchained.Args.Num("lamp-pull", 0.15f);
     /// <summary>--ford-flame S: the ford lamps' flame scale (the lamp kind's 0.16 m card), for a 0.5 m cage.</summary>
     /// <summary>--ford-light-up M, --ford-pylon-dark: the ford light's height over the flame's base (0.9: over the iron, which
-    /// it leaves out, a soft pool on the pylon's top, not the hot square it laid from 0.16), and the pylon kept out of it, for pictures.</summary>
-    static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.9f);
+    /// it leaves out, a soft pool on the pylon's top, not the hot square it laid from 0.16), and the pylon kept out of it, for pictures.
+    /// (E7 round 2: 0.35, in the cage by the flame, now our pier is kept out of its lamp's light and the iron is on its own layer.)</summary>
+    static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.35f);
     static readonly bool FordPylonLit = !SurvivorUnchained.Args.Has("ford-pylon-dark");
     /// <summary>--ford-flame-k K: the ford flames' brightness over the road lamps' (AgX whitens a bright blue).</summary>
     static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.25f);
@@ -292,11 +293,12 @@ public partial class ZoneView : Node3D
     /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>
     static readonly float LampScale = SurvivorUnchained.Args.Num("lamp-scale", 1.3f);
     static readonly float FordFlame = SurvivorUnchained.Args.Num("ford-flame", 1.5f);
-    /// <summary>--ford-energy K: the ford lamps' light, for pictures.</summary>
-    static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 1f);
+    /// <summary>--ford-energy K: the ford lamps' light, for pictures. (E7 round 2: 12 with --ford-att 2.3, so the lamp lays a pool
+    /// round its pier, the water at 1 m twice as bright as at 4 m, where at 1 and 1.7 the moon's wash drowned it: 1.4x.)</summary>
+    static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 12f);
     /// <summary>--ford-color HEX, --ford-range M, --ford-att A: the ford lamps' cold light (a pale blue, AgX greys it).</summary>
     static readonly string FordColor = SurvivorUnchained.Args.Get("ford-color") ?? "#8cb9ff";
-    static readonly float FordRange = SurvivorUnchained.Args.Num("ford-range", 16f), FordAtt = SurvivorUnchained.Args.Num("ford-att", 1.7f);
+    static readonly float FordRange = SurvivorUnchained.Args.Num("ford-range", 16f), FordAtt = SurvivorUnchained.Args.Num("ford-att", 2.3f);
     /// <summary>--ford-core H, --ford-wide K, --ford-body K, --ford-core-k K: the ford flame's core start, width, body and core brightness
     /// (a small blue teardrop with a small pale core, not the road lamps' broad bright point).</summary>
     static readonly float FordCore = SurvivorUnchained.Args.Num("ford-core", 0.4f), FordWide = SurvivorUnchained.Args.Num("ford-wide", 2.6f),
