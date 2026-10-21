@@ -10,8 +10,10 @@ near-neutral where the game tints it per house (the plaster and the timber: aux 
 through paint_tex.paint (painterly realism, as the props atlas).
 
 Regions (image pixels, x right, y down; metres across x down y):
-  rubble   0,0       2048x768   4.0 x 1.5   roughly coursed rubble in lime mortar (stone storeys, plinths)
-  plaster  0,768     2048x768   4.0 x 1.5   lime plaster: trowel waves, hairline cracks, a few patched spots
+  rubble   0,0       2048x1024  4.0 x 2.0   coursed rubble in lime mortar (stone storeys, plinths): rebuilt from a CC0 photo
+                                            (Poly Haven castle_wall_varriation, 2 m, raw material only, outside the repo:
+                                            survivorsunchained_inputs/raw_materials/house/, sha256 in SOURCE.txt there)
+  plaster  0,1024    2048x512   4.0 x 1.0   lime plaster: trowel waves, hairline cracks, a few patched spots
   timber   0,1536    2048x128   4.0 x 0.25  an adzed oak beam's face, grain along x, checks
   ashlar   0,1664    1536x192   3.0 x 0.375 tooled dressed stone (quoins, sills, coping, voussoirs; joints are geometry)
   iron     1536,1664 256x192    0.5 x 0.375 forged black iron, rust
@@ -43,10 +45,10 @@ PPM = 512
 
 # name: (x, y, w, h), painter preset, overrides, tint class
 REGIONS = {
-    "rubble": ((0, 0, 2048, 768), "stone", {"chroma": 0.85, "warm": "1,3", "pull": "0.08"}, 0.0),
-    "plaster": ((0, 768, 2048, 768), "plain", {"detail": 0.25, "chroma": 0.9, "warm": "0,1", "stroke": 0.02}, 1.0),
+    "rubble": ((0, 0, 2048, 1024), "stone", {"chroma": 0.85, "warm": "1,3", "pull": "0.08"}, 0.0),
+    "plaster": ((0, 1024, 2048, 512), "plain", {"detail": 0.25, "chroma": 0.9, "warm": "0,1", "stroke": 0.02}, 1.0),
     "timber": ((0, 1536, 2048, 128), "wood", {"chroma": 0.9, "warm": "1,2", "pull": "0.1"}, 0.5),
-    "ashlar": ((0, 1664, 1536, 192), "stone", {"chroma": 0.8, "warm": "1,2", "pull": "0.05"}, 0.0),
+    "ashlar": ((0, 1664, 1536, 192), "plain", {"detail": 0.35, "chroma": 0.85, "warm": "1,2", "stroke": 0.015}, 0.0),
     "iron": ((1536, 1664, 256, 192), "plain", {"chroma": 0.9, "warm": "1,3", "stroke": 0.02}, 0.0),
     "glass": ((1792, 1664, 256, 192), "plain", {"detail": 0.6, "stroke": 0.01}, 0.0),
     "planks": ((0, 1856, 2048, 192), "wood", {"chroma": 0.9, "warm": "1,2", "pull": "0.1"}, 0.5),
@@ -58,38 +60,65 @@ def wrapd(d, p):
     return (d + p / 2) % p - p / 2
 
 
+def coursed_cells(h, w, rows, per_row, rng, warp, aspect=2.2):
+    """Periodic Voronoi with its seeds laid in courses (each row's seeds near its middle line), distances
+    squeezed across the courses (aspect), so stones lie flat and long in rough courses: F1, F2, cell value."""
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32)
+    v = (y + warp[0]) * rows / h
+    u = (x + warp[1]) * per_row / w
+    seeds = []
+    for i in range(rows):
+        n = per_row
+        xs = np.sort(rng.random(n)) * per_row
+        for xx in xs:
+            seeds.append((i + 0.5 + rng.normal(0, 0.1), xx, rng.random()))
+    f1 = np.full((h, w), 99.0, np.float32)
+    f2 = np.full((h, w), 99.0, np.float32)
+    idv = np.zeros((h, w), np.float32)
+    for (sy, sx, val) in seeds:
+        for oy in (-rows, 0, rows):
+            for ox in (-per_row, 0, per_row):
+                py, px = sy + oy, sx + ox
+                if py < -1.5 or py > rows + 1.5 or px < -2 or px > per_row + 2:
+                    continue
+                y0, y1 = int(max(0, (py - 1.6) * h / rows)), int(min(h, (py + 1.6) * h / rows))
+                x0, x1 = int(max(0, (px - 3) * w / per_row)), int(min(w, (px + 3) * w / per_row))
+                if y1 <= y0 or x1 <= x0:
+                    continue
+                d = np.sqrt(((v[y0:y1, x0:x1] - py) * aspect) ** 2 + (u[y0:y1, x0:x1] - px) ** 2)
+                F1, F2, ID = f1[y0:y1, x0:x1], f2[y0:y1, x0:x1], idv[y0:y1, x0:x1]
+                closer = d < F1
+                F2[:] = np.where(closer, F1, np.minimum(F2, d))
+                ID[:] = np.where(closer, val, ID)
+                F1[:] = np.minimum(F1, d)
+    return f1, f2, idv
+
+
+RAW = Path.home() / "Desktop" / "survivorsunchained_inputs" / "raw_materials" / "house" / "castle_wall_varriation"
+
+
 def rubble(h, w, rng):
-    """Roughly coursed rubble: angular stones (a stretched Voronoi, about 0.34 x 0.19 m, a few large and small),
-    each its own shade (grey, buff, a few rust-brown), flat-faced with chipped arrises, in thin recessed
-    lime mortar. Tiles both ways."""
-    from env_props_atlas import cells
-    warp = ((fbm(h, w, 6, 16, rng, 3) - 0.5) * 0.06 * PPM, (fbm(h, w, 6, 16, rng, 3) - 0.5) * 0.08 * PPM)
-    f1, f2, sid = cells(h, w, 8, 12, rng, warp)
-    g1, g2, sid2 = cells(h, w, 16, 26, rng, (warp[0] * 0.5, warp[1] * 0.5))
-    gap = f2 - f1
-    gap2 = g2 - g1
-    width = 0.03 + 0.04 * fbm(h, w, 8, 20, rng, 2)
-    inside = ss(width, width + 0.05, gap)
-    # small packing stones where the big ones meet
-    small = (1 - ss(width * 0.4, width + 0.16, gap)) * ss(0.08, 0.16, gap2) * ss(0.45, 0.6, sid2)
-    stone = np.clip(inside + small, 0, 1)
-    v = np.where(small > inside, sid2, sid)
-    chips = fbm(h, w, 24, 64, rng, 3)
-    grit = fbm(h, w, 64, 160, rng, 2)
-    big = fbm(h, w, 3, 8, rng, 4)
-    hgt = 0.018 * ss(0.0, 0.35, gap) * inside + 0.01 * small + stone * (0.005 * (chips - 0.5) + 0.0008 * grit) - 0.008 * (1 - stone)
-    grey = srgb("#8b867d")
-    buff = srgb("#a0937c")
-    rust = srgb("#7f6753")
-    dark = srgb("#6a665f")
-    col = mix(grey, buff, ss(0.35, 0.75, v))
-    col = mix(col, rust, ss(0.84, 0.94, v) * 0.75)
-    col = mix(col, dark, ss(0.22, 0.0, v) * 0.9)
-    col = col * (0.9 + 0.2 * big[..., None]) * (0.94 + 0.1 * chips[..., None])
-    mortar = mix(srgb("#9d968a"), srgb("#827c71"), fbm(h, w, 16, 40, rng, 3))
-    col = mix(mortar, col, stone)
-    rough = 0.9 - 0.05 * stone * chips
-    return col, hgt, rough
+    """The photo's coursed rubble (2 m, tiled twice across), its light taken out (divided by its broad blur) and
+    its colour pulled to ours: its luminance keeps the stones and joints, its hue and saturation halved toward a
+    grey-buff, a broad value patch of our own over it. The normal is the photo's (OpenGL)."""
+    diff = cv2.cvtColor(cv2.imread(str(RAW / "castle_wall_varriation_diff_2k.jpg")), cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    nor = cv2.cvtColor(cv2.imread(str(RAW / "castle_wall_varriation_nor_gl_2k.png"), cv2.IMREAD_UNCHANGED)[..., :3], cv2.COLOR_BGR2RGB).astype(np.float32) / 255
+    s = h  # 2 m at PPM
+    diff = cv2.resize(diff, (s, s), interpolation=cv2.INTER_AREA)
+    nor = cv2.resize(nor, (s, s), interpolation=cv2.INTER_AREA)
+    lum = diff @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    broad = cv2.GaussianBlur(np.pad(lum, s // 4, mode="wrap"), (0, 0), s / 10)[s // 4:-(s // 4), s // 4:-(s // 4)]
+    flat = diff * (lum.mean() / np.maximum(broad, 1e-3))[..., None]
+    fl = flat @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    ours = mix(srgb("#8e887c"), srgb("#a09276"), fbm(s, s, 3, 3, rng, 4))
+    col = mix(flat, fl[..., None] * ours / max(float((ours @ np.array([0.2126, 0.7152, 0.0722])).mean()), 1e-3), 0.55)
+    col = np.clip(col * 1.05, 0, 1)
+    rough = 0.9 - 0.05 * ss(0.4, 0.8, fl)
+    RUBBLE_NOR[0] = np.tile(nor, (1, w // s, 1))
+    return np.tile(col, (1, w // s, 1)), None, np.tile(rough, (1, w // s))
+
+
+RUBBLE_NOR = [None]
 
 
 def plaster(h, w, rng):
@@ -145,11 +174,11 @@ def planks(h, w, rng):
 
 def ashlar(h, w, rng):
     big = fbm(h, w, 2, 12, rng, 4)
-    tool = fbm(h, w, 24, 10, rng, 2)  # claw-tooling strokes
-    grit = fbm(h, w, 24, 96, rng, 2)
+    tool = fbm(h, w, 4, 24, rng, 2)  # tooling, soft and even (it is turned on a quoin's ends)
+    grit = fbm(h, w, 16, 128, rng, 2)
     lichen = ss(0.7, 0.82, fbm(h, w, 4, 24, rng, 4))
     col = mix(srgb("#a69d8d"), srgb("#958b7b"), big)
-    col = col * (0.97 + 0.05 * tool[..., None] + 0.02 * grit[..., None])
+    col = col * (0.97 + 0.04 * tool[..., None] + 0.02 * grit[..., None])
     col = mix(col, srgb("#8f9070"), 0.35 * lichen)
     hgt = 0.002 * big + 0.0008 * tool + 0.0005 * grit
     return col, hgt, 0.86 + 0.06 * grit
@@ -188,7 +217,7 @@ def main():
     for i, (name, ((x0, y0, w, h), pre, over, tint)) in enumerate(REGIONS.items()):
         rng = np.random.default_rng(900 + i)
         col, hgt, rough = MAKERS[name](h, w, rng)
-        n = normals(hgt, PPM)
+        n = normals(hgt, PPM) if hgt is not None else RUBBLE_NOR[0]
         if not a.raw:
             col = paint_tex.paint(np.clip(col, 0, 1), n, paint_tex.preset(pre, over))
         alb[y0:y0 + h, x0:x0 + w] = col

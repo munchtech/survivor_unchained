@@ -1,6 +1,6 @@
 {
  "stone_a": {
-  "tris": 84,
+  "tris": 94,
   "box": [
    -1.0,
    -0.7,
@@ -11,7 +11,7 @@
   ]
  },
  "stone_b": {
-  "tris": 122,
+  "tris": 114,
   "box": [
    -1.0,
    -0.7,
@@ -22,7 +22,7 @@
   ]
  },
  "stone_c": {
-  "tris": 104,
+  "tris": 108,
   "box": [
    -1.0,
    -0.7,
@@ -33,7 +33,7 @@
   ]
  },
  "plaster_plain_a": {
-  "tris": 110,
+  "tris": 122,
   "box": [
    -1.001,
    -0.7,
@@ -44,7 +44,7 @@
   ]
  },
  "plaster_plain_b": {
-  "tris": 96,
+  "tris": 108,
   "box": [
    -1.001,
    -0.7,
@@ -55,7 +55,7 @@
   ]
  },
  "plaster_x": {
-  "tris": 214,
+  "tris": 226,
   "box": [
    -1.005,
    -0.7,
@@ -66,7 +66,7 @@
   ]
  },
  "plaster_k": {
-  "tris": 200,
+  "tris": 210,
   "box": [
    -1.001,
    -0.7,
@@ -77,7 +77,7 @@
   ]
  },
  "plaster_k2": {
-  "tris": 194,
+  "tris": 206,
   "box": [
    -1.001,
    -0.7,
@@ -88,7 +88,7 @@
   ]
  },
  "base_plain": {
-  "tris": 158,
+  "tris": 172,
   "box": [
    -1.001,
    -0.7,
@@ -99,7 +99,7 @@
   ]
  },
  "base_x": {
-  "tris": 232,
+  "tris": 244,
   "box": [
    -1.001,
    -0.7,
@@ -110,7 +110,7 @@
   ]
  },
  "base_k": {
-  "tris": 214,
+  "tris": 226,
   "box": [
    -1.004,
    -0.7,
@@ -121,7 +121,7 @@
   ]
  },
  "stone_win_wide_round": {
-  "tris": 502,
+  "tris": 524,
   "box": [
    -1.0,
    -0.7,
@@ -132,7 +132,7 @@
   ]
  },
  "plaster_win_wide_round": {
-  "tris": 384,
+  "tris": 430,
   "box": [
    -1.001,
    -0.7,
@@ -143,7 +143,7 @@
   ]
  },
  "plaster_win_wide_round_framed": {
-  "tris": 540,
+  "tris": 562,
   "box": [
    -1.005,
    -0.7,
@@ -165,7 +165,7 @@
   ]
  },
  "stone_win_thin_round": {
-  "tris": 446,
+  "tris": 476,
   "box": [
    -1.0,
    -0.7,
@@ -176,7 +176,7 @@
   ]
  },
  "plaster_win_thin_round": {
-  "tris": 404,
+  "tris": 410,
   "box": [
    -1.001,
    -0.7,
@@ -187,7 +187,7 @@
   ]
  },
  "plaster_win_thin_round_framed": {
-  "tris": 506,
+  "tris": 554,
   "box": [
    -1.001,
    -0.7,
@@ -209,7 +209,7 @@
   ]
  },
  "stone_win_wide_flat": {
-  "tris": 318,
+  "tris": 322,
   "box": [
    -1.0,
    -0.7,
@@ -220,7 +220,7 @@
   ]
  },
  "plaster_win_wide_flat": {
-  "tris": 288,
+  "tris": 300,
   "box": [
    -1.001,
    -0.7,
@@ -231,7 +231,7 @@
   ]
  },
  "plaster_win_wide_flat_framed": {
-  "tris": 438,
+  "tris": 450,
   "box": [
    -1.001,
    -0.7,
@@ -253,7 +253,7 @@
   ]
  },
  "stone_door_round": {
-  "tris": 486,
+  "tris": 452,
   "box": [
    -1.0,
    -0.7,
@@ -264,7 +264,7 @@
   ]
  },
  "stone_door_flat": {
-  "tris": 244,
+  "tris": 260,
   "box": [
    -1.0,
    -0.7,
@@ -275,7 +275,7 @@
   ]
  },
  "plaster_door_round": {
-  "tris": 380,
+  "tris": 394,
   "box": [
    -1.001,
    -0.7,
@@ -286,7 +286,7 @@
   ]
  },
  "plaster_door_round_framed": {
-  "tris": 460,
+  "tris": 510,
   "box": [
    -1.001,
    -0.7,
