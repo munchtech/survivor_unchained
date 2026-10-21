@@ -20,7 +20,7 @@ armor_cover/*.bin: i32 x, y, z of the bind point x 1e5, f32 value) re-keyed for 
 and any piece's points over the patch carried by the move of the skin under them (follow_piece).
 
     python tools/assets/breast_sym_post.py <heroine.glb in> <heroine.glb out> [--report]
-    python tools/assets/breast_sym_post.py --art <art dir copy>      (body, then outfits' records and pieces, in place)
+    python tools/assets/breast_sym_post.py --art <art dir copy> [--no-follow]  (body, then outfits' records [and pieces], in place)
 """
 import json
 import os
@@ -355,13 +355,14 @@ if __name__ == "__main__":
                             h = remap_records(os.path.join(dd, fn), fld)
                             if h:
                                 print("BREAST_SYM: %s/%s re-keyed %d" % (sub, fn, h))
-            for o in ("warden", "arcanist", "ranger", "reaver"):
+            # (--no-follow: her body and the records only; no piece file touched, the owner's "no outfit refit")
+            for o in (() if "--no-follow" in a else ("warden", "arcanist", "ranger", "reaver")):
                 pth = os.path.join(art, "heroine_outfit_%s.gltf" % o)
                 if os.path.exists(pth):
                     print("BREAST_SYM: %s pieces followed, largest %.2f mm" % (o, follow_piece(pth, fld) * 1000))
             # (the slot pieces fitted to her: armor/*.gltf; a piece standing clear of the patch is untouched)
             ad = os.path.join(os.path.dirname(art.rstrip("/\\")), "armor")
-            for fn in sorted(os.listdir(ad)) if os.path.isdir(ad) else []:
+            for fn in sorted(os.listdir(ad)) if os.path.isdir(ad) and "--no-follow" not in a else []:
                 if fn.endswith(".gltf"):
                     big = follow_piece(os.path.join(ad, fn), fld)
                     if big > 0:
