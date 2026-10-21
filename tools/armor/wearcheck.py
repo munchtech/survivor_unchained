@@ -169,6 +169,10 @@ def confirm_gap(O, F, inner, thick):
     n /= np.linalg.norm(n, axis=1)[:, None] + 1e-30
     side = ((O - Q[rows, k]) * n).sum(1)
     dk, ik = d[rows, k], inner[rows, k]
+    # (in front of a face that faced away at rest counts as through only square to it: a nearest point on its edge
+    # (cos under 0.8) is B's rim beside her, her skin past the plate's end, not out through it)
+    cs = np.abs(side) / np.maximum(dk, 1e-9)
+    ik = ik | ((side >= 0) & (cs < 0.8) & (dk > thick))
     g = np.where(ik, np.where(side >= 0, dk, -dk), np.where(side >= 0, -(dk + thick), -np.maximum(thick - dk, 0.0)))
     go = np.where(ik, np.where(side >= 0, dk + thick, thick - dk), np.where(side >= 0, -dk, dk))
     return g, go

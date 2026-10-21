@@ -1048,6 +1048,13 @@ def build_cuirass():
         if fl["edge"] == "low":
             hd_ = pos[:, 2] - np.interp(np.abs(pos[:, 0]), bins, zlow)
             hd_ = np.where(pos[:, 2] < nipz, hd_, np.inf)
+        elif fl["edge"] == "neck":
+            # ("neck": its neckline's outer reaches, from `x_from` (none) to `x_full` of |x| (all): the top outer corners,
+            # where her upper chest rises with her clavicles in the idle's shrug)
+            ax_ = np.abs(pos[:, 0])
+            hd_ = (z0 + nrise * np.minimum(ax_ / nxr, 1.6) ** 2) - pos[:, 2]
+            xs_ = np.clip((ax_ - fl.get("x_from", 0.06)) / max(fl.get("x_full", 0.09) - fl.get("x_from", 0.06), 1e-6), 0, 1)
+            hd_ = np.where(xs_ > 0, hd_ / np.maximum(xs_ * xs_ * (3 - 2 * xs_), 1e-6), np.inf)
         else:
             bx_ = np.c_[np.sign(pos[:, 0]) * abs(ball[0]), np.full(len(pos), ball[1]), np.full(len(pos), ball[2])]
             hd_ = np.linalg.norm(pos - bx_, axis=1) - PRM.get("scye", 0.11)
