@@ -128,13 +128,23 @@ ARC_CANDS = {
     # C: halfway (the forearm 23-26 deg out, the fist 5 cm in), the staff nearer R1's lean (21 out, 3 forward).
     "C": {"arc": (-0.19, -0.24, 0.30), "blade": (-0.52, 1.0, -0.15), "pole": (-0.15, -1.0, -0.2), "slide": 0.0,
           "stop_blade": (-0.45, 1.0, -0.18)},
+    # R3 (round 3, the default): the forearm PITCHED down, not swung (the judge: R1/A/C's level forearm read as a shelf
+    #   at 315/135). The fist rolled 14 deg about the shaft ("knuckles"), so the wrist takes the staff's 64 deg off the
+    #   forearm in 13-20 palmar as well as 21 radial: the forearm 8-13.5 deg below level (R1 4-10), the elbow 117
+    #   inner (122), the upper arm 13 out of her side (18.5), the fist 4 cm lower and 3 cm nearer her hip, the staff on
+    #   R1's line (7 fwd, 16 out). No lower can be (scratch anim/a47/r3, opt*.py): leaning the staff further out (the
+    #   judge's 21) to let the forearm sink swings its foot to her right knee (10-80 mm), and keeping the foot off
+    #   (>= 95 mm) leaves the fist where it is; the town hold on this stand is level (0.6-6).
+    "R3": {"arc": (-0.214, -0.291, 0.254), "blade": (-0.397, 1.0, -0.057), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
+           "knuckles": (-0.2495, -0.0439, 0.9674), "stop_blade": (-0.317, 1.0, -0.097)},
 }
-ARC_CAND = os.environ.get("ARC_CAND", "A")
+ARC_CAND = os.environ.get("ARC_CAND", "R3")
 _ARC = ARC_CANDS[ARC_CAND]
 ARC_HAND_R = _ARC["arc"]
 ARC_BLADE_R = _ARC["blade"]
 ARC_POLE_R = _ARC["pole"]
 ARC_GRIP_SLIDE = _ARC["slide"]
+ARC_KNUCKLES_R = _ARC.get("knuckles")   # (R3: the fist rolled about the shaft; None: the least turn from the forearm)
 
 
 def arcanist(t, f):
@@ -155,8 +165,8 @@ def arcanist(t, f):
         # 8 cm further out and 9 cm forward, held ready ahead of her hip, the elbow bent 58, not 87; the crescent
         # 197-232 mm outside the brim, the shaft 104 mm or more off her legs, the wrist 20 deg toward the thumb, not 22.
         # Further out swings the shaft's foot into her right thigh (at 15 deg out with the fist 3 cm nearer, 63 mm).)
-        "hand_r": {"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
-                   "blade": _n(ARC_BLADE_R), "twist": 0.5},
+        "hand_r": dict({"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
+                        "blade": _n(ARC_BLADE_R), "twist": 0.5}, **({"knuckles": _n(ARC_KNUCKLES_R)} if ARC_KNUCKLES_R else {})),
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
 
@@ -197,7 +207,7 @@ def arc_aim(rig):
         if line[1] < 0:
             line = -line
         # (The blade as the idle keys it, as R1's was: the solved one differs by the wrist's clamp, ~1.5 deg.)
-        _arc_aims[ARC_CAND] = (_n(ARC_BLADE_R), tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
+        _arc_aims[ARC_CAND] = (_n(ARC_BLADE_R), _n(ARC_KNUCKLES_R) if ARC_KNUCKLES_R else tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
                                tuple(float(x) for x in line))
     return _arc_aims[ARC_CAND]
 
