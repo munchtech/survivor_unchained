@@ -25,17 +25,19 @@ public sealed class Sheath
     }
 
     /// <summary>The own clips to try, in order, for a stand or a run ("idle", "run") of a calling holding a kind. Sheathed:
-    /// the kind's own town clip (idle_arcanist_staff_town: the staff stays in her hand), then the calling's
-    /// (idle_arcanist_town), then the armed ones. Drawn: the kind's (idle_stalker_daggers), then the calling's.</summary>
+    /// the kind's own town clip (idle_arcanist_staff_town), then the calling's
+    /// (idle_arcanist_town; skipped for a kind that stays in her hand: its free-armed town clips are not for it), then the armed ones. Drawn: the kind's (idle_stalker_daggers), then the calling's.</summary>
     public static string[] Names(string stem, string calling, string kind, bool sheathed) => sheathed
-        ? [$"{stem}_{calling}_{kind}_town", $"{stem}_{calling}_town", $"{stem}_{calling}_{kind}", $"{stem}_{calling}"]
+        ? (StaysInHand(kind)
+            ? [$"{stem}_{calling}_{kind}_town", $"{stem}_{calling}_{kind}", $"{stem}_{calling}"]
+            : [$"{stem}_{calling}_{kind}_town", $"{stem}_{calling}_town", $"{stem}_{calling}_{kind}", $"{stem}_{calling}"])
         : [$"{stem}_{calling}_{kind}", $"{stem}_{calling}"];
 
     /// <summary>Whether a calling holding a kind has a town stand (and so sheathes in a safe place).</summary>
     public static bool HasTown(string calling, string kind, System.Func<string, bool> has) =>
         has($"idle_{calling}_{kind}_town") || (!StaysInHand(kind) && has($"idle_{calling}_town"));
 
-    /// <summary>A kind with no sheathed socket (today the staff) stays in her hand, so the calling's town stand, made
+    /// <summary>A kind with no sheathed socket (the staff) stays in her hand, so the calling's town stand, made
     /// for empty hands, does not do for it.</summary>
     static bool StaysInHand(string kind)
     {

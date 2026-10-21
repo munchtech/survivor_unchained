@@ -5,10 +5,11 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 ## 20 October, evening: coordinator 746784c6 WIND-DOWN (read this first)
 Merged today: anim attack poses, idle life, armed folk idles (heroine 100 clips); E3; art-style r2 tools; two baked NPCs (twice); **G1: the painted light and grade are the DEFAULT** (on her unmasked, max judge passed). Tests 1017/0/8. Owner liked the new colours.
 **RESTART ORDER (fresh successors, lead_brief.md; the junction-merge rule is new):**
-1. **Env lead 10:** env-4, environment.md "Paused here (env lead 9 ...)". E4 foliage in progress, then E5 rocks, E6 water (fixes the ford), E7 camp (amber lantern, iron), E9 buildings/well/stalls/setts relief (dawn mud decals black in shade = E9 gate item). Painted look built into each remake, judged vs survivorsunchained_inputsrt_style2	arget_town.png. ~40-60 h total.
-2. **Animation 46:** anim-40, animation.md "Paused here (animation 45 ...)". The staff-in-town owner call, then the attack KNOWN fixes and chain_strike restage. Repack her on integration at each merge.
+1. **Env lead 10:** env-4, environment.md "Paused here (env lead 9 ...)". E4 foliage in progress, then E5 rocks, E6 water (fixes the ford), E7 camp (amber lantern, iron), E9 buildings/well/stalls/setts relief (dawn mud decals black in shade = E9 gate item). Painted look built into each remake, judged vs survivorsunchained_inputsrt_style
+2	arget_town.png. ~40-60 h total.
+2. **Animation 46:** anim-40, animation.md "Paused here (animation 45 ...)". Optional crossbow nudge and idle phases, then the attack KNOWN fixes and chain_strike restage. Repack her on integration at each merge.
 3. **Marionette lead 7:** Marionette pipeline-1@1588304 (local), HANDOFF.md "Paused here (20 Oct, Marionette lead 6)"; armor on the base at solver round 5 (plates bend under the clearance push, cuirass rim floats 44 mm, pauldron lames gap 30 mm), ~5-8 h to MR; then game-look preview, hair tool. Scratch marionette6\ in this session's scratchpad (texts backed up).
-**Owner pending:** her staff in town: (a) in hand, with a close-up camera nudge off the face-cover facing (main recommends), or (b) stowed.
+**Owner pending:** none. Her staff in town is MERGED in hand (idle_arcanist_staff_town, max judge 10/10, no face cover at any facing; heroine repacked, 103 clips, 19387d95). Follow-up: her combat idle_arcanist still aims the staff ~30 deg forward; check one facing-45 close-up frame.
 **Cleanup:** marionette5\ scratch folder (backed up) still in this session's scratchpad; a Recycle Bin "Delete folder?" dialog may be open on the desktop. Leftover non-git folders in .claude/worktrees: armor-5, env-1, story-lore, storybook-1. Worktrees: anim-40, npc-1 (nothing pending; keep for Marionette), env-4.
 
 ## 20 October, day: coordinator 746784c6 (history)

@@ -116,8 +116,10 @@ public class SheathTests
     [Fact]
     public void SheathedTriesTheKindsTownClipThenTheCallingsThenTheArmedOnes()
     {
-        Assert.Equal(new[] { "idle_arcanist_staff_town", "idle_arcanist_town", "idle_arcanist_staff", "idle_arcanist" },
+        Assert.Equal(new[] { "idle_arcanist_staff_town", "idle_arcanist_staff", "idle_arcanist" },
             Sheath.Names("idle", "arcanist", "staff", true));
+        Assert.Equal(new[] { "idle_arcanist_wand_town", "idle_arcanist_town", "idle_arcanist_wand", "idle_arcanist" },
+            Sheath.Names("idle", "arcanist", "wand", true));
         Assert.Equal(new[] { "run_stalker_daggers", "run_stalker" }, Sheath.Names("run", "stalker", "daggers", false));
         // The warden has one town stand for every kind she holds.
         var have = new System.Collections.Generic.HashSet<string> { "idle_warden_town", "idle_arcanist_staff_town" };
@@ -135,5 +137,14 @@ public class SheathTests
         Assert.True(Sheath.HasTown("arcanist", "wand", have.Contains));
         foreach (var kind in new[] { "axe", "axes", "sword", "daggers", "crossbow", "sword+shield" })
             Assert.True(Sheath.HasTown("arcanist", kind, have.Contains), kind);
+    }
+
+    [Fact]
+    public void AStaffSheathedNeverTriesTheCallingsFreeArmedTownClips()
+    {
+        Assert.DoesNotContain("run_arcanist_town", Sheath.Names("run", "arcanist", "staff", true));
+        Assert.DoesNotContain("idle_arcanist_town", Sheath.Names("idle", "arcanist", "staff", true));
+        Assert.Equal(new[] { "run_arcanist_staff_town", "run_arcanist_staff", "run_arcanist" }, Sheath.Names("run", "arcanist", "staff", true));
+        Assert.Contains("run_arcanist_town", Sheath.Names("run", "arcanist", "wand", true));
     }
 }

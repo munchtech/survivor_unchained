@@ -315,6 +315,16 @@ public static class Arms
         // grip high on the right), the tip down toward her left hip, flat to her back.
         // (armor 5 solver, 19 October: the tip turned 11 degrees out from her back, off her calves.)
         [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.201f), new(0.281f, -0.944f, -0.185f), new(0.003f, 0.193f, -0.981f), new(0, 0, -1)),
+        // Staff (animation 45, 20 October; judge round 1 turn): slung across her back on a steep diagonal (29 deg off
+        // vertical), the head (the piece's +Y) up behind and outside her right shoulder, the foot down outside her left
+        // calf. The crescent's face looks out along her back-left/front-right diagonal, so from the three-quarter front
+        // it shows edge-on behind her head and its short inner horn lies toward her shoulder blade. The turn swings that
+        // horn in toward her head, so the row sits 18 cm lower, 9 cm farther out and 5 cm farther back than the first
+        // fit: past the arcanist's wide hat brim 6.4 cm (the sprint's lean), her braid 6.9 cm, her upper back 7 cm, the
+        // run's kicked-back calf 8 cm, 0 mm into her skin and outfit, both hands 32 cm or more off it
+        // (tools/scratch/anim45/staffcheck.py). `At` is the grip (no anchor_sheath); its clearance is the 5 mm air alone.
+        // The bead charms are stripped while it rides (StripCharms). Unused: the slung staff failed under the arcanist's hat (animation 45); for a hatless outfit, unjudged.
+        [WeaponSockets.BackStaff] = new("spine_03", new(-0.0518f, 0.9148f, -0.3175f), new(-0.4657f, 0.8782f, -0.1086f), new(0.6607f, 0.2634f, -0.7029f), new(0, 0, -1)),
     };
 
     static WeaponSockets.Clearance? clearance;
@@ -404,6 +414,7 @@ public static class Arms
         var info = Info(id);
         var w = Make(id);
         w.Transform = PieceTransform(id);
+        if (KindOf(id) == WeaponKind.Staff) StripCharms(w);
         root.AddChild(w);
         if (Scabbarded(KindOf(id)))
         {
@@ -417,6 +428,78 @@ public static class Arms
             foreach (var c in root.GetChildren())
                 if (c is Node3D n) n.Position -= off;
         return root;
+    }
+
+    static readonly Dictionary<ArrayMesh, ArrayMesh> Uncharmed = new();
+
+    /// <summary>The staff slung on her back (animation 45): its two bead charms hang plumb from the crescent only while
+    /// it is held upright, so slung at 24 deg they lean with the shaft (an earring at the close-up). They go while it
+    /// rides: the detached pieces of the head no wider than 5.2 cm and of 30 welded vertices or more (the beads and
+    /// links; the loose single-face trim stays) whose centre hangs off the shaft (|x| > 5 cm) between 1.40 and 1.90 m.</summary>
+    // Unused: the slung staff failed under the arcanist's hat (animation 45); for a hatless outfit, unjudged.
+    static void StripCharms(Node n)
+    {
+        if (n is MeshInstance3D mi && mi.Mesh is ArrayMesh am)
+        {
+            if (!Uncharmed.TryGetValue(am, out var cut)) Uncharmed[am] = cut = Uncharm(am);
+            mi.Mesh = cut;
+        }
+        foreach (var c in n.GetChildren()) StripCharms(c);
+    }
+
+    static ArrayMesh Uncharm(ArrayMesh am)
+    {
+        var o = new ArrayMesh();
+        for (int si = 0; si < am.GetSurfaceCount(); si++)
+        {
+            var a = am.SurfaceGetArrays(si);
+            var v = a[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            var idx = a[(int)Mesh.ArrayType.Index].VariantType == Variant.Type.Nil ? null : a[(int)Mesh.ArrayType.Index].AsInt32Array();
+            if (idx == null || am.SurfaceGetPrimitiveType(si) != Mesh.PrimitiveType.Triangles) { CopySurface(am, si, o, a); continue; }
+            // Weld by position (0.1 mm), then join each triangle's corners.
+            var weld = new Dictionary<(int, int, int), int>();
+            var wid = new int[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                var k = ((int)MathF.Round(v[i].X * 1e4f), (int)MathF.Round(v[i].Y * 1e4f), (int)MathF.Round(v[i].Z * 1e4f));
+                if (!weld.TryGetValue(k, out wid[i])) weld[k] = wid[i] = weld.Count;
+            }
+            var up = new int[weld.Count];
+            for (int i = 0; i < up.Length; i++) up[i] = i;
+            int Find(int x) { while (up[x] != x) x = up[x] = up[up[x]]; return x; }
+            for (int t = 0; t + 2 < idx.Length; t += 3)
+            {
+                int r0 = Find(wid[idx[t]]);
+                up[Find(wid[idx[t + 1]])] = r0;
+                up[Find(wid[idx[t + 2]])] = r0;
+            }
+            var lo = new Dictionary<int, Vector3>(); var hi = new Dictionary<int, Vector3>(); var cnt = new Dictionary<int, int>();
+            var seen = new bool[weld.Count];
+            for (int i = 0; i < v.Length; i++)
+            {
+                int r = Find(wid[i]);
+                if (!lo.ContainsKey(r)) { lo[r] = v[i]; hi[r] = v[i]; cnt[r] = 0; }
+                lo[r] = lo[r].Min(v[i]); hi[r] = hi[r].Max(v[i]);
+                if (!seen[wid[i]]) { seen[wid[i]] = true; cnt[r]++; }
+            }
+            bool Charm(int r)
+            {
+                var e = hi[r] - lo[r]; var m = (hi[r] + lo[r]) / 2;
+                return Mathf.Max(e.X, Mathf.Max(e.Y, e.Z)) <= 0.052f && cnt[r] >= 30 && MathF.Abs(m.X) > 0.05f && m.Y > 1.40f && m.Y < 1.90f;
+            }
+            var keep = new List<int>(idx.Length);
+            for (int t = 0; t + 2 < idx.Length; t += 3)
+                if (!Charm(Find(wid[idx[t]]))) { keep.Add(idx[t]); keep.Add(idx[t + 1]); keep.Add(idx[t + 2]); }
+            a[(int)Mesh.ArrayType.Index] = keep.ToArray();
+            CopySurface(am, si, o, a);
+        }
+        return o;
+    }
+
+    static void CopySurface(ArrayMesh from, int si, ArrayMesh to, Godot.Collections.Array a)
+    {
+        to.AddSurfaceFromArrays(from.SurfaceGetPrimitiveType(si), a);
+        to.SurfaceSetMaterial(to.GetSurfaceCount() - 1, from.SurfaceGetMaterial(si));
     }
 
     /// <summary>Which kinds ride in a scabbard: the one-handed blades (by kind, never by item).</summary>

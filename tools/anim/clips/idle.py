@@ -426,27 +426,29 @@ TOWN = {
     # The crossbow slung on her back, the daggers at the back of her belt.
     "stalker_town": free_arms(reach=1.03),
 }
-# A staff stays in her hand in town (WeaponSockets.SocketOf: a walking staff), slid STAFF_WALK down through her fist
-# along its line (Arms.Walking, WeaponSockets.StaffWalk: m, hand_r's space, along FistDirR).
-STAFF_WALK = 0.26
+# A staff stays in her hand in town (WeaponSockets.SocketOf: null).
 def staff_town(t, f):
     """The staff upright at her right side as her armed stand holds it (idle_arcanist's arm: the grip forward of her
-    hip, the elbow easy by her side), a little lower, riding her chest as she sways; slid down through her fist
-    (STAFF_WALK) so its foot hangs a hand off the ground. The left arm free. (Planted on the ground it cannot be: on
+    hip, the elbow easy by her side), a little lower, riding her chest as she sways, on the combat mount, its foot off the ground as her armed stand holds it
+    (a planted walking staff cannot be: the plain shaft ends 1.11 m up, her elbow can't come below 1.25 m; animation 45).
+    The left arm free. (Planted on the ground it cannot be: on
     the fitted fist's diagonal, WRAP["staff"], the shaft runs head-toward-the-fingers, so an upright staff needs the
     forearm near level and the wrist at 1.1 m or more, and the plain shaft above the drawn grip allows a slide of
     25 cm at most before her fingers reach the head: its foot stays 15 cm or more up. A pinned staff in her root
     frame drifted 24 cm, the wrist unable to hold its line as she swayed.)"""
     d = free_arms(reach=1.03)(t, f)
     # (The wrist rides her chest, the staff's line is kept in her character's space, "char": on the chest's, its foot
-    # swung 57 cm across as the WiggleHips chest rolls.)
-    d["hand_r"] = {"arc": arc_of((-0.16, -0.31, 0.18)), "pole": (-0.2, -0.6, -0.75), "frame": "char",
-                   "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5}
+    # swung 57 cm across as the WiggleHips chest rolls.) Re-aimed (judge round 3: the crescent hung over her face from
+    # facing 45 at 26 deg forward, 2 out): the real line 9-13 deg forward, 15-19 out, the fist 4 cm out, 8 cm
+    # forward, 4 cm higher, the elbow 9 deg more open (72), the elbow pole down. Lower or further out cannot be:
+    # the wrist's radial limit (22) leaves the line leaning forward with the forearm below level, and 22 deg out
+    # swings the foot 30 mm into her right thigh.
+    d["hand_r"] = {"arc": arc_of((-0.21, -0.26, 0.25)), "pole": (0.0, -1.0, -0.2), "frame": "char",
+                   "blade": _n((-0.34, 1.0, -0.05)), "twist": 0.5}
     d["fingers_r"] = "grip"
     return d
 
 
-# (staff_town is not shipped: it needs a walking-staff fist fit, a later item.)
 # (Animation 44, solver idle 2: the arcanist's stretch from (4, 12) to (2, 10), 100STYLE frames 876-1218: on the old one
 # the chest rolled against her hips, so her right wrist rose 13 cm to her hip's height and out at 25/75 %; on this one
 # it rides her hip as the warden's does, 26-28 cm out of the hip joint and within 5 cm of its height; the warden's
@@ -489,12 +491,13 @@ IDLES = {
     "idle_reaver_town": ("WiggleHips", TOWN["reaver_town"], ""),
     "idle_arcanist_town": ("WiggleHips", TOWN["arcanist_town"], ""),
     "idle_stalker_town": ("WiggleHips", TOWN["stalker_town"], ""),
+    "idle_arcanist_staff_town": ("WiggleHips", staff_town, "staff"),
 }
 
 
 _bases = {}
 # An idle that stands on another's captured base (the same standing, other arms).
-SHARES_BASE = {"idle_stalker_daggers": "stalker"}
+SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_arcanist_staff_town": "arcanist_town"}
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
@@ -598,7 +601,7 @@ def clips(rig, want):
         if arms is arcanist:
             arms = _on_hip(rig, base, arms)
         clip = layered(name, rig, base, arms, {"weapon": weapon})
-        if name[5:] in TOWN:
+        if name[5:] in TOWN or name == "idle_arcanist_staff_town":
             clip = level_head(rig, clip)
         out.append(clip)
     return out
