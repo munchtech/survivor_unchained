@@ -123,10 +123,8 @@ public static class HerWear
         if (Live)
         {
             // (a live swap: up to the first lay here, the rest over the next frames)
-            pending.Remove(p);
-            var job = new Pending(steps);
-            job.Step(0);
-            if (!job.Done) pending[p] = job;
+            // (nothing more this frame: her new figure is being made in it)
+            pending[p] = new Pending(steps);
             return;
         }
         while (steps.MoveNext()) steps.Current?.Wait();
@@ -385,9 +383,15 @@ public static class HerWear
                 ow = region == null ? null : OuterOf(p, over.Select(b => b.Id).Where(meshes.ContainsKey).SelectMany(id => meshes[id]),
                     region.Value.Grow(3 * GarmentTuck.Reach + GarmentTuck.Smooth + 0.02f), outers);
                 if (Prof) GD.Print($"garment tuck:   outer {ow?.Count ?? 0} verts read {cw.Elapsed.TotalMilliseconds:F1} ms");
+                yield return null;
             }
             var cr = System.Diagnostics.Stopwatch.StartNew();
-            var jobs = miss.Select(mi => ReadLay(mi, sig, ow != null)).ToList();
+            var jobs = new List<LayMesh>();
+            foreach (var mi in miss)
+            {
+                jobs.Add(ReadLay(mi, sig, ow != null));
+                yield return null;
+            }
             if (Prof) GD.Print($"garment tuck: {a.Id} {jobs.Count} meshes read {cr.Elapsed.TotalMilliseconds:F1} ms");
             var id = a.Id;
             var s0 = sp;
