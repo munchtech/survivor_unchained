@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://p0svlx7kycr4"
+path="res://.godot/imported/plate_cuirass_plain.gltf-b30d27d6e6fee9317e080e4bc53b361d.scn"
 
 [deps]
 
+source_file="res://art/armor/plate_cuirass_plain.gltf"
+dest_files=["res://.godot/imported/plate_cuirass_plain.gltf-b30d27d6e6fee9317e080e4bc53b361d.scn"]
 
 [params]
 

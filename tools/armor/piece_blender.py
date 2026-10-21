@@ -1040,6 +1040,20 @@ def build_cuirass():
     tent = np.clip(1 - np.abs(pos[:, 0]) / (rg["w"] / 2), 0, 1)
     nn_ = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
     pos = pos + nn_ * (rg["h"] * tent * fade)[:, None]
+    # (params.flare (c2): the plate's edge turned out off her, `mm` at the rim easing to none `over` m in: "low" its
+    # lower rim (her belly and crease skin there, spine_03 0.5 / spine_02 0.3, came 5-7 mm through the 2 mm the rim stood
+    # off her in the town runs), "scye" its armholes (her upper chest under them rises with her clavicles in the idle's
+    # shrug). A cuirass's turned edge.)
+    for fl in PRM.get("flare", []):
+        if fl["edge"] == "low":
+            hd_ = pos[:, 2] - np.interp(np.abs(pos[:, 0]), bins, zlow)
+            hd_ = np.where(pos[:, 2] < nipz, hd_, np.inf)
+        else:
+            bx_ = np.c_[np.sign(pos[:, 0]) * abs(ball[0]), np.full(len(pos), ball[1]), np.full(len(pos), ball[2])]
+            hd_ = np.linalg.norm(pos - bx_, axis=1) - PRM.get("scye", 0.11)
+        t_ = np.clip(1 - np.maximum(hd_, 0) / fl["over"], 0, 1)
+        pos = pos + nn_ * (fl["mm"] * t_ * t_ * (3 - 2 * t_))[:, None]
+        CUIR.setdefault("flare", {})[fl["edge"]] = int((t_ > 0).sum())
     # The top outer corners (the straps' roots): the highest rim points beyond 0.6 x her nipple's |x|.
     orim = oloop
     oR = orim[pos[orim, 0] < -0.6 * nx]
@@ -2060,52 +2074,57 @@ stamp("tuck: %d of her vertices under it" % hid)
 # points under the cop and her deltoid came up 10.6 mm through it in the swings.)
 TU = PRM.get("tuck_under")
 if TU:
-    pl_objs = [o for o in made if o.type == "MESH" and o.name.split(".", 1)[-1].startswith(tuple(TU.get("plates", ["cop", "lame"])))]
-    vs_, fs_ = [], []
-    for o in pl_objs:
-        b_ = len(vs_)
-        vs_ += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
-        fs_ += [[b_ + i for i in p_.vertices] for p_ in o.data.polygons]
-    ttree_ = BVHTree.FromPolygons(vs_, fs_)
-    bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
-    nm_ = body.matrix_world.to_3x3().inverted().transposed()
-    bn_ = np.array([(nm_ @ v.normal).normalized()[:] for v in me.vertices])
-    reach_ = TU.get("reach", 0.025)
-    pv_ = np.array(vs_)
-    near_ = np.nonzero(cKDTree(pv_).query(bw_, distance_upper_bound=reach_ + 0.01)[0] < reach_ + 0.01)[0]
-    hit_ = np.zeros(len(bw_), bool)
-    # (tuck_under.horiz (the cuirass, c2): also cast along the level part of her normal. In the underbust crease and on
-    # the belly's top under the lower rim her normal points up or down along the plate and the ray missed it, so that
-    # skin was never tucked and came up 5-7 mm through the lower rim in the town runs)
-    hz_ = TU.get("horiz", 0.0)
-    for i in near_:
-        h_ = ttree_.ray_cast(Vector(bw_[i] - bn_[i] * 0.003), Vector(bn_[i]), reach_ + 0.003)
-        hit_[i] = h_[0] is not None
-        if not hit_[i] and hz_:
-            nh_ = np.array([bn_[i][0], bn_[i][1], 0.0])
-            ln_ = float(np.linalg.norm(nh_))
-            if ln_ > hz_:
-                nh_ /= ln_
-                h_ = ttree_.ray_cast(Vector(bw_[i] - nh_ * 0.003), Vector(nh_), reach_ + 0.003)
-                hit_[i] = h_[0] is not None
-    _, gid_ = np.unique(np.round(bw_ / 1e-6).astype(np.int64), axis=0, return_inverse=True)
-    gid_ = np.asarray(gid_).ravel()
-    gh_ = np.zeros(gid_.max() + 1, bool)
-    np.logical_or.at(gh_, gid_, hit_)
-    inm_ = gh_[gid_]
-    on_ = np.zeros(len(bw_), bool)
-    on_[np.array([i for p_ in me.polygons for i in p_.vertices])] = True
-    cl_ = TU.get("close", 0.004)
-    if cl_ > 0:
-        dil_ = on_ & (inm_ | (cKDTree(bw_[inm_]).query(bw_)[0] <= cl_))
-        ero_ = dil_ & (cKDTree(bw_[on_ & ~dil_]).query(bw_)[0] > cl_)
-        inm_ = inm_ | ero_
-    inF_ = np.nonzero(inm_ & on_)[0]
-    din_ = cKDTree(bw_[on_ & ~inm_]).query(bw_[inF_])[0]
-    e_, f_, w_ = TU.get("edge", 0.3), TU.get("full", 0.98), TU.get("in", 0.008)
-    want_ = e_ + (f_ - e_) * np.clip((din_ - 0.002) / max(w_ - 0.002, 1e-6), 0.0, 1.0)
-    tuck[inF_] = np.maximum(tuck[inF_], want_)
-    PAUL["tuck_under"] = {"footprint": int(len(inF_)), "full": int((want_ > 0.973).sum()), "plates": len(pl_objs)}
+    # (tuck_under.extra (c2): more footprints, each its own plates and marks (the cuirass's straps, shallow))
+    for TU_ in [TU] + list(TU.get("extra", [])):
+        pl_objs = [o for o in made if o.type == "MESH" and o.name.split(".", 1)[-1].startswith(tuple(TU_.get("plates", ["cop", "lame"])))]
+        vs_, fs_ = [], []
+        for o in pl_objs:
+            b_ = len(vs_)
+            vs_ += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+            fs_ += [[b_ + i for i in p_.vertices] for p_ in o.data.polygons]
+        ttree_ = BVHTree.FromPolygons(vs_, fs_)
+        bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+        nm_ = body.matrix_world.to_3x3().inverted().transposed()
+        bn_ = np.array([(nm_ @ v.normal).normalized()[:] for v in me.vertices])
+        reach_ = TU_.get("reach", 0.025)
+        pv_ = np.array(vs_)
+        near_ = np.nonzero(cKDTree(pv_).query(bw_, distance_upper_bound=reach_ + 0.01)[0] < reach_ + 0.01)[0]
+        hit_ = np.zeros(len(bw_), bool)
+        # (tuck_under.horiz (the cuirass, c2): also cast along the level part of her normal. In the underbust crease and on
+        # the belly's top under the lower rim her normal points up or down along the plate and the ray missed it, so that
+        # skin was never tucked and came up 5-7 mm through the lower rim in the town runs)
+        hz_ = TU_.get("horiz", 0.0)
+        for i in near_:
+            h_ = ttree_.ray_cast(Vector(bw_[i] - bn_[i] * 0.003), Vector(bn_[i]), reach_ + 0.003)
+            hit_[i] = h_[0] is not None
+            if not hit_[i] and hz_:
+                nh_ = np.array([bn_[i][0], bn_[i][1], 0.0])
+                ln_ = float(np.linalg.norm(nh_))
+                if ln_ > hz_:
+                    nh_ /= ln_
+                    h_ = ttree_.ray_cast(Vector(bw_[i] - nh_ * 0.003), Vector(nh_), reach_ + 0.003)
+                    hit_[i] = h_[0] is not None
+        _, gid_ = np.unique(np.round(bw_ / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+        gid_ = np.asarray(gid_).ravel()
+        gh_ = np.zeros(gid_.max() + 1, bool)
+        np.logical_or.at(gh_, gid_, hit_)
+        inm_ = gh_[gid_]
+        on_ = np.zeros(len(bw_), bool)
+        on_[np.array([i for p_ in me.polygons for i in p_.vertices])] = True
+        cl_ = TU_.get("close", 0.004)
+        if cl_ > 0:
+            dil_ = on_ & (inm_ | (cKDTree(bw_[inm_]).query(bw_)[0] <= cl_))
+            ero_ = dil_ & (cKDTree(bw_[on_ & ~dil_]).query(bw_)[0] > cl_)
+            inm_ = inm_ | ero_
+        inF_ = np.nonzero(inm_ & on_)[0]
+        din_ = cKDTree(bw_[on_ & ~inm_]).query(bw_[inF_])[0]
+        e_, f_, w_ = TU_.get("edge", 0.3), TU_.get("full", 0.98), TU_.get("in", 0.008)
+        want_ = e_ + (f_ - e_) * np.clip((din_ - 0.002) / max(w_ - 0.002, 1e-6), 0.0, 1.0)
+        tuck[inF_] = np.maximum(tuck[inF_], want_)
+        if TU_ is TU:
+            PAUL["tuck_under"] = {"footprint": int(len(inF_)), "full": int((want_ > 0.973).sum()), "plates": len(pl_objs)}
+        else:
+            PAUL.setdefault("tuck_under_extra", []).append({"plates": TU_.get("plates"), "footprint": int(len(inF_)), "max": round(float(want_.max()), 3) if len(want_) else 0})
     # (tuck_under.bound (the cuirass): the footprint taken through the bounded tuck (tuck_bound), as the gore's is, so its
     # border slopes in like every other piece's: the window's rim is where a dimple would sit)
     if TU.get("bound") and G.get("TUCK_SMOOTH"):

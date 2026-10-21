@@ -48,7 +48,9 @@
   "back_width": 0.02,
   "push_cap": 0.003,
   "push_tucked_only": true,
-  "tuck_under": {"plates": ["plate"], "edge": 0.3, "full": 0.98, "in": 0.008, "reach": 0.025, "close": 0.004, "bound": true, "horiz": 0.3}
+  "tuck_under": {"plates": ["plate"], "edge": 0.3, "full": 0.98, "in": 0.008, "reach": 0.025, "close": 0.004, "bound": true, "horiz": 0.3,
+    "extra": [{"plates": ["strap"], "edge": 0.15, "full": 0.5, "in": 0.005, "reach": 0.015, "close": 0.003}]},
+  "flare": [{"edge": "low", "mm": 0.006, "over": 0.03}, {"edge": "scye", "mm": 0.003, "over": 0.02}]
  },
  "adorn": [],
  "covers": ["top"],
