@@ -557,13 +557,16 @@ void fragment() {
 	}
 	ALBEDO *= sky_share;   // (after the mouth's own colour: light() divides every lamp's light by it, the mouth's too)
 	SPECULAR *= sky_share;   // (the sky's sheen on her too: her lamps' sheen is light()'s own, from `sheen`)
+	vec3 alb_dbg = ALBEDO / max(sky_share, 1e-3);
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
 	// (dbg_gate 9: her UV, emitted, to find a picture's point on her mesh, with --tonemap linear --grade off)
 	if (dbg_gate > 8.5) { EMISSION = vec3(UV, 0.0); }
 	// (dbg_gate 10 and 11: her UV unclipped, blue the scale: 10 its whole, red/blue and green/blue; 11 its sixteenths)
-	if (dbg_gate > 9.5) { EMISSION = 0.25 * vec3(dbg_gate > 10.5 ? fract(UV * 16.0) : UV, 1.0); }
+	if (dbg_gate > 9.5 && dbg_gate < 11.5) { EMISSION = 0.25 * vec3(dbg_gate > 10.5 ? fract(UV * 16.0) : UV, 1.0); }
+	// (dbg_gate 12: her albedo as toned, emitted; 13: her paint alone, emitted (with --tonemap linear --grade off; face 35))
+	if (dbg_gate > 11.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = dbg_gate > 12.5 ? texture(paint, UV).rgb : alb_dbg; }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
