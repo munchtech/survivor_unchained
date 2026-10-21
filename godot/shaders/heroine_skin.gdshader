@@ -223,9 +223,47 @@ uniform float scalp_shadow = 0.0;
 // even shade: broken into dots, her hairline read as speckled)
 uniform float scalp_stubs = 1.0;
 uniform vec3 shadow_colour : source_color = vec3(0.16, 0.12, 0.1);
+// (how far her scalp's shade goes to shadow_colour where its mask is full: 0.85 as his stubble; hers 1.0
+// (People.HerScalp), as what stayed of her head's paint under it, a pale grey-cream, greyed the shade at her
+// hairline to Oklab C 0.06 against her hair's and forehead's 0.09: face 32, 20 October)
+uniform float scalp_max = 0.85;
+// (and its hue ahead of its dark, where it thins out at her hairline: its tint (shadow_colour at a luminance of 1) and
+// its dark laid one after the other, the tint at ws^scalp_lead, the dark at ws, so the same where it's full but
+// half-way her skin already her hair's hue, not darkened toward grey. 0: one mix, as before (his). Hers 1.0
+// (People.ScalpLead): her hairline's band C 0.061-0.073 at the Look, front, to 0.088-0.091; under 1 overshot, a
+// saturated rim at C 0.11.)
+uniform float scalp_lead = 0.0;
+// (its tint by her skin's lightness against her own fair's (tone's luminance over scalp_hue_ref): red
+// hair's tint is over 1 in red, and on Sunborn's brown and on deep skin it left a red-orange rim under her front hair
+// and down her temples, face 32 r2; her own fair as it was. scalp_hue 0: the tint at full on every skin, as round 1)
+uniform float scalp_hue = 1.0;
+uniform float scalp_hue_ref = 0.75;
+// (and its dark the same way, down to this much of it on the darkest skin: on deep skin her scalp's shade laid a darker
+// band beside the pale curve down her temple (face 32 r2), and her own skin, dark already, has no pale scalp to hide)
+uniform float scalp_dark_min = 0.4;
 // His brows (painted with his face; the blue of shadow_mask) dyed his
 // hair's colour: their paint scaled from its own colour (brow_paint) to
 // brow_colour, every hair of it kept.
+// Paint on her face (People.HerPaint: art/people/paint/ID.png, laid out on her head's paint by
+// tools/assets/heroine_paint.py), drawn in her skin, so it takes her skin's light exactly (her key, soft, edge
+// and sky tones, her shade's tint, the Look's rig): as a pass of its own, under Godot's light, the woad read lit
+// from within beside her skin (face 31). Laid over her paint after her tone, so it keeps its own colour; her
+// skin's grain and a little of her pores through it; its own roughness and sheen, and the gilt's metal.
+uniform sampler2D face_paint : source_color, hint_default_transparent, filter_linear_mipmap_anisotropic;
+uniform bool has_face_paint = false;
+// (where no paint may go, whatever it is: her nostrils, her nose's wings and their creases, white elsewhere;
+// tools/assets/heroine_nostril_mask.py. Every paint looked off where it reached her nostrils: the owner, 20 Oct)
+uniform sampler2D face_paint_keep : hint_default_white, filter_linear_mipmap;
+uniform float paint_rough = 0.7;
+uniform float paint_metal = 0.0;
+uniform float paint_shine = 0.5;
+// (how much of her pores' relief is kept under it, and of her light carried under the skin)
+uniform float paint_pores = 0.6;
+uniform float paint_scatter = 0.5;
+// (the paint's share of a texel, for light(): it takes her light's strength, its softness at the terminator, her
+// shade and AO, but not her skin's colour fits (ambient_tint, key/sky/edge/soft tones, shade_tint), which are
+// fitted to her skin against her portrait: through them a grey ash came out her skin's own peach and vanished)
+varying float paint_w;
 uniform float brow_dye = 0.0;
 uniform vec3 brow_paint : source_color = vec3(0.2, 0.15, 0.12);
 uniform vec3 brow_colour : source_color = vec3(0.2, 0.15, 0.12);
@@ -329,6 +367,9 @@ uniform float fold = 1.0;
 // (the most one lamp's sheen gives, in linear light: 0.2 took the c02 s8 cheek from 877-4176 clipped pixels to 0-74, the
 // Look by day and night and the town close-up unchanged (face 30 cine; 0.3 left 252, 0.12 dulled her cheek 8 L))
 uniform float spec_cap = 0.2;
+// (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
+// cheek at the Look, face 32 r2: a gold sheen under 0.8)
+uniform float metal_cap = 0.8;
 varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
@@ -400,6 +441,13 @@ void fragment() {
 		float l = dot(ALBEDO, lw) / max(dot(brow_paint * tone, lw), 0.02);
 		ALBEDO = mix(ALBEDO, brow_colour * tone * pow(clamp(l, 0.0, 1.15), 0.5), bm);
 	}
+	float pa = 0.0;
+	if (has_face_paint) {
+		vec4 fp = texture(face_paint, UV);
+		pa = fp.a * texture(face_paint_keep, UV).r;
+		ALBEDO = mix(ALBEDO, fp.rgb, pa);
+	}
+	paint_w = pa;
 	vec2 f = fm.rg;
 	if (far > 0.0) {
 		// (the marks grown to the pixel: the most of them anywhere in it, from its
@@ -411,12 +459,12 @@ void fragment() {
 	}
 	f = clamp(f * far_bold, 0.0, 1.0) * far;
 	ALBEDO *= 1.0 - far_dark * f.x;
-	ALBEDO = mix(ALBEDO, far_lips * tone, 0.75 * f.y);
+	ALBEDO = mix(ALBEDO, far_lips * tone, 0.75 * f.y * (1.0 - pa));
 	// (two offset tiles, so no grid shows, their depth varying over her in
 	// soft patches as real pores do)
 	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
 	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
-	float depth = mix(seam_depth, pore_depth, hw) * mix(0.35, 1.0, patchy);
+	float depth = mix(seam_depth, pore_depth, hw) * mix(0.35, 1.0, patchy) * mix(1.0, paint_pores, pa);
 	// (where her freckles' map says, its blue: her head and up her neck, none from her collarbones down)
 	float ga = grain_amount * (1.0 - fm.b) * fk.b;
 	if (ga > 0.0) {
@@ -433,7 +481,18 @@ void fragment() {
 		float stubs = smoothstep(0.3, 0.7, texture(pores, UV * pore_scale * 1.62 + vec2(0.37, 0.11)).a);
 		float dots = mix(0.55, 1.0, stubs);
 		stubble = clamp(g.r * beard_shadow * dots + g.g * scalp_shadow * mix(1.0, dots, scalp_stubs), 0.0, 1.0);
-		ALBEDO = mix(ALBEDO, ALBEDO * shadow_colour * 2.4, stubble * 0.85);
+		float wb = g.r * beard_shadow * dots * 0.85, ws = g.g * scalp_shadow * mix(1.0, dots, scalp_stubs) * scalp_max;
+		vec3 sc = shadow_colour * 2.4;
+		if (scalp_lead <= 0.0) ALBEDO = mix(ALBEDO, ALBEDO * sc, clamp(wb + ws, 0.0, 0.85));        // (as before: stubble * 0.85)
+		else {
+			// (her scalp's shade: its hue ahead of its dark, so where it thins out at her hairline her skin goes
+			// toward her hair's colour before it darkens, not grey; all of it, the same, where it's full)
+			ALBEDO = mix(ALBEDO, ALBEDO * sc, clamp(wb, 0.0, 1.0));
+			float ls = max(dot(sc, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+			ws = clamp(ws, 0.0, 1.0);
+			float tk = mix(1.0, clamp(dot(tone, vec3(0.2126, 0.7152, 0.0722)) / scalp_hue_ref, 0.0, 1.0), scalp_hue);
+			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead) * tk) * mix(1.0, ls, ws * mix(scalp_dark_min, 1.0, tk)), vec3(1.0));
+		}
 	}
 	if (has_relief) {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
@@ -451,6 +510,8 @@ void fragment() {
 	vec4 rm = texture(rough_map, UV);
 	float rmv = rough_channel == 0 ? rm.r : (rough_channel == 1 ? rm.g : (rough_channel == 2 ? rm.b : (rough_channel == 3 ? rm.a : rm.r)));
 	ROUGHNESS = clamp(mix(seam_rough, rough * rmv, hw) + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
+	ROUGHNESS = mix(ROUGHNESS, clamp(paint_rough + (q.a - 0.5) * 0.1, 0.0, 1.0), pa);
+	METALLIC = paint_metal * pa;
 	// (no sheen where her head's own shade is deep: in the crease where her
 	// lips meet and the mouth behind, the rim light's reflection on her lips'
 	// inner linings showed as white slivers along their line at a turn)
@@ -459,11 +520,12 @@ void fragment() {
 	float ao = mix(aot.r, max(aot.r, lip_ao_open), max(lip_w, lips_apart * (1.0 - lips_narrow) * smoothstep(0.6, 0.95, fm.g))) * ea;
 	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
 	SPECULAR *= mix(1.0, lip_spec, lip_w * lip_tone);
+	SPECULAR = mix(SPECULAR, paint_shine * smoothstep(0.45, 0.95, ao), pa);
 	sheen = SPECULAR;
 	AO = ao;
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
-	SSS_STRENGTH = scatter;
+	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
 	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
@@ -477,7 +539,7 @@ void fragment() {
 	// BEFORE's, own and Sunborn alike, by day and at night; judge rj2v fix 4, 13 October 2026)
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
-	ALBEDO *= ambient_tint / body_back;
+	ALBEDO *= mix(ambient_tint / body_back, vec3(1.0), pa);
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
@@ -529,7 +591,7 @@ void light() {
 	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
-	vec3 un = body_back / max(ambient_tint, vec3(1e-3));        // (the lamps' light on her as without the tint)
+	vec3 un = 1.0 / mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w);        // (the lamps' light on her as without the tint)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {
@@ -557,8 +619,10 @@ void light() {
 		vec3 elw = vec3(0.2126, 0.7152, 0.0722);
 		kt *= mix(vec3(1.0), edge_tone * dot(ea, elw) / max(dot(ea * edge_tone, elw), 1e-4), key_w * soft_w * edge_w);
 	}
+	rich = mix(rich, vec3(1.0), paint_w);
+	kt = mix(kt, vec3(1.0), paint_w);
 	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
-		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w);
+		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w * (1.0 - paint_w));
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
@@ -573,13 +637,16 @@ void light() {
 		float k = a / (1.0 - c_ndh * c_ndh + da * da);
 		float d_ggx = k * k / PI;
 		float v_ggx = 0.5 / mix(2.0 * c_ndl * c_ndv, c_ndl + c_ndv, a);
-		float f0 = 0.16 * sheen * sheen;
-		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
-		float f = f0 + (f90 - f0) * schlick(c_ldh);
+		// (a metal's sheen its own colour: the gilt's gold leaf; METALLIC 0 everywhere else)
+		vec3 f0 = mix(vec3(0.16 * sheen * sheen), ALBEDO * un, METALLIC);
+		vec3 f90 = clamp(f0 * 50.0, 0.0, 1.0);
+		vec3 f = f0 + (f90 - f0) * schlick(c_ldh);
 		vec3 spec = mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
 		float sl = max(max(spec.r, spec.g), spec.b);
-		SPECULAR_LIGHT += sl > spec_cap ? spec * (spec_cap / sl) : spec;
+		// (gold leaf's glint let through: held under her skin's cap, the gilt read as dull olive, never gold)
+		float cap = mix(spec_cap, metal_cap, METALLIC);
+		SPECULAR_LIGHT += sl > cap ? spec * (cap / sl) : spec;
 	}
 	}
 }

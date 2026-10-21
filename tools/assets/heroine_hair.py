@@ -336,14 +336,15 @@ def roots(spacing, above=0.0, below=None, soft=0.0):
 
 
 # --------------------------------------------------------------- falling --
-def lie(starts, dirs, comb, L, steps, offset, side=None, lift=0.0, stop=None):
+def lie(starts, dirs, comb, L, steps, offset, side=None, lift=0.0, stop=None, face_past=0.004):
     """Each strand laid along her scalp from its root, `offset` off it, a
     link at a time, turned more and more the way `comb` (a function of
     where it is, and which side of a parting its root is: `side`, or her
     parting's) says, for as many links as `steps` says (each its own),
     rising `lift` more off her by its tip; a strand stops where `stop`
     says (its last points then all there): combed hair lies on the head
-    before it falls."""
+    before it falls. With `face_past` (each its own), how far past her
+    hairline over her face it may go (else 4 mm: the pixie's fringe)."""
     S = len(starts)
     K = int(steps.max()) + 1
     paths = np.zeros((S, K, 3))
@@ -371,7 +372,7 @@ def lie(starts, dirs, comb, L, steps, offset, side=None, lift=0.0, stop=None):
         q = q - n * (((q - c) * n).sum(1) - h)[:, None]
         # (never down over her face: a strand laid on her scalp stops at her
         # hairline over her brow and temples, as a stray one ran down her cheek)
-        onto_face = (rise(q) < np.minimum(r0, 0.0) - 0.004) & (q[:, 1] < -0.02) & (q[:, 2] > EYE_Z - 0.13)
+        onto_face = (rise(q) < np.minimum(r0, 0.0) - face_past) & (q[:, 1] < -0.02) & (q[:, 2] > EYE_Z - 0.13)
         go = (k <= steps) & ~held & ~onto_face
         held |= onto_face
         p = np.where(go[:, None], q, p)
@@ -470,7 +471,7 @@ def onto(Q, want, lying):
     return flat.reshape(Q.shape)
 
 
-def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.0015, out_pts=None, u_by_width=False):
+def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.0015, out_pts=None, u_by_width=False, edge_in=True):
     """A card along each guide: a strip of the atlas (a column chosen from
     `columns`) as wide as `width` at its root, narrowing to its tip, facing
     out from her, three points across: where it lies on her, curved round her
@@ -518,11 +519,13 @@ def cards(P, width, columns, off, root=None, narrow=0.55, face=None, floor=0.001
     held = np.maximum(sd, floor)
     Lv = onto(P - side * w[:, :, None] / 2, held, lying)
     Rv = onto(P + side * w[:, :, None] / 2, held, lying)
-    # (where it lies, no edge of it past her hairline: drawn in toward its middle)
+    # (where it lies, no edge of it past her hairline: drawn in toward its
+    # middle; but not those with `edge_in` False, a fringe over her forehead)
     rp = rise(flat).reshape(S, K)
+    edge_in = np.broadcast_to(np.asarray(edge_in, bool), (S,))[:, None]
     for Q in (Lv, Rv):
         rq = rise(Q.reshape(-1, 3)).reshape(S, K)
-        k_ = np.where(lying & (rq < 0.002) & (rp > rq), np.clip((rp - 0.002) / (rp - rq + 1e-9), 0, 1), 1.0)
+        k_ = np.where(edge_in & lying & (rq < 0.002) & (rp > rq), np.clip((rp - 0.002) / (rp - rq + 1e-9), 0, 1), 1.0)
         Q[:] = P + (Q - P) * k_[:, :, None]
     Mv = onto(P + out * (w * 0.08)[:, :, None], held + 0.0008, lying)
     V = np.concatenate([Lv, Mv, Rv], axis=1)                  # S x 3K x 3
@@ -1311,18 +1314,108 @@ def style_pixie():
         # tips under them, pixie_nape_row, the edge)
         past = 0.001 + 0.002 * np.random.default_rng(len(pts) + 7).random(len(pts))
         at_nape = nape > 0.3
-        stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < EYE_Z + 0.04)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
+        # (20 October, face 32: every fringe card stopped at one height, EYE_Z
+        # + 4 cm, a ruled edge straight across her forehead. Now each at its
+        # own, 3 mm under to 6 mm over it, so the fringe ends raggedly)
+        fz = EYE_Z + 0.04 + np.random.default_rng(len(pts) + 11).uniform(-0.003, 0.006, len(pts))
+        stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < fz)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
                           | (at_nape & (rise(q) < -past)))
+        # (face 32: over her forehead each held 4 mm past her hairline, all of
+        # them: her fringe was her hairline's own even curve, a painted
+        # shell's edge. Now in front (within 45 degrees) each may fall 4 to
+        # 16 mm past it, its own, to its fringe line at most: a fringe)
+        # (r3: so the under layer, all reaching alike, still drew one smooth
+        # edge. Now the under layer stops by her hairline (0 to 4 mm past
+        # it) and the two over it fall in locks, most a little way, a few far)
+        fringe = th_ < 45
+        u_ = np.random.default_rng(len(pts) + 13).random(len(pts))
+        fpast = np.where(fringe, 0.004 * u_ if off < 0.003 else 0.004 + 0.018 * u_ ** 1.5, 0.004)
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(len(pts), points - 1),
-                off, side=no_part(pts), lift=0.007 * top, stop=stop)
+                off, side=no_part(pts), lift=0.007 * top, stop=stop, face_past=fpast)
         P = resample(P, points)
         # (stopped in the crease over her neck, their edges sank 2-3 mm into her: held 2.8 mm off at her nape)
-        layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0),
-                            floor=np.where(at_nape, 0.0028, 0.0015)[:, None]))
+        # (face 32: tips narrowed to 38% of the root's width, not 45%, and faded out: build's tip_fade)
+        c = cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0),
+                  floor=np.where(at_nape, 0.0028, 0.0015)[:, None], narrow=PIXIE_NARROW, edge_in=~fringe)
+        c["tip_fade"] = PIXIE_TIP
+        if off >= 0.003:
+            # (the over layers' fringe cards drawn from the atlas's lock
+            # columns, gathered to a point at the tip: pointed locks)
+            lock = np.repeat(fringe & (np.random.default_rng(len(pts) + 17).random(len(pts)) < 0.7), 3 * points)
+            colk = np.repeat(np.random.default_rng(len(pts) + 19).integers(11, 14, len(pts)), 3 * points)
+            third = np.tile(np.repeat([0.0, 0.5, 1.0], points), len(pts))
+            c["UV"][lock, 0] = (colk[lock] + 0.002 * COLUMNS + third[lock] * (1 - 0.004 * COLUMNS)) / COLUMNS
+        layers.append(c)
         print("  layer: %d cards" % len(pts))
     layers += hairline_hairs(comb_pixie, sides=no_part)
     layers += pixie_crown_fill(layers[:3]) + pixie_nape_row()
+    layers += pixie_fringe_row() + pixie_flyaways()
     return layers
+
+
+PIXIE_NARROW = 0.62            # (a card's tip 38% as wide as its root)
+PIXIE_TIP = (0.35, 0.014)      # (faded out over its last 35%, at most 14 mm)
+
+
+def pixie_fringe_row():
+    """(20 October, face 32: her fringe's edge was its wide cards' ends, one
+    even line.) A row of fine, fainter cards over her fringe, rooted over her
+    forehead's hairline, combed as it is, each ending at its own height (2 mm
+    under the fringe's line to 8 mm over it), narrow and faded to its tip: the
+    fringe's edge uneven and soft, strands of it seen."""
+    rng = np.random.default_rng(32)
+    pts, nrm = roots(0.0055, above=0.004, below=0.03)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = th < 55
+    pts, nrm = pts[keep], nrm[keep]
+    n, points = len(pts), 10
+    top = np.clip((pts[:, 2] - (EYE_Z + 0.05)) / 0.05, 0, 1) + np.clip(-pts[:, 1] / 0.06, 0, 1) * 0.5
+    top = np.clip(top, 0, 1)
+    L = (0.028 + 0.06 * top) * rng.uniform(0.8, 1.15, n)
+    # (each its own reach past her hairline, most short, a few long: locks
+    # gathered to a point (the atlas's lock columns), of her hair proper)
+    fz = EYE_Z + 0.034 + rng.uniform(0, 0.012, n)
+    stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < fz)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005)))
+    P = lie(pts - nrm * 0.001, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(n, points - 1),
+            0.006, side=no_part(pts), lift=0.005 * top, stop=stop, face_past=0.006 + 0.022 * rng.random(n) ** 1.5)
+    P = resample(P, points)
+    c = cards(P, rng.uniform(0.005, 0.009, n), [11, 12, 13], 0.006, narrow=0.65, floor=0.002, edge_in=False)
+    c["alpha"] = np.repeat(rng.uniform(0.85, 1.0, n), 3 * points)
+    c["tip_fade"] = (0.35, 0.010)
+    print("  fringe row: %d cards" % n)
+    return [c]
+
+
+def pixie_flyaways():
+    """(20 October, face 32: her outline, crown to temples, one smooth shell.)
+    A few fine strands lifted off the mass on her crown, at her fringe and
+    temples, a little astray of the comb: her silhouette broken, not frizz."""
+    rng = np.random.default_rng(33)
+    pts, nrm = roots(0.009, above=0.006)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    crown = pts[:, 2] > EYE_Z + 0.07
+    keep = (crown | (th < 95)) & (rng.random(len(pts)) < 0.6)
+    pts, nrm = pts[keep], nrm[keep]
+    n, points = len(pts), 10
+    turn = rng.normal(0, 0.3, n)
+
+    def astray(p, side=None):
+        w = comb_pixie(p, side)
+        return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
+    top = np.clip((pts[:, 2] - (EYE_Z + 0.05)) / 0.05, 0, 1)
+    L = (0.03 + 0.04 * top) * rng.uniform(0.8, 1.2, n)
+    fz = EYE_Z + 0.045 + rng.uniform(0, 0.008, n)
+    stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < fz)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z + 0.005)))
+    P = lie(pts - nrm * 0.001, combed(pts, nrm, astray(pts)), astray, L / (points - 1), np.full(n, points - 1),
+            0.009, side=no_part(pts), lift=rng.uniform(0.01, 0.022, n), stop=stop)
+    P = resample(P, points)
+    c = cards(P, rng.uniform(0.0016, 0.0026, n), [11, 12, 13], 0.009, narrow=0.7, floor=0.003)
+    c["alpha"] = np.repeat(rng.uniform(0.7, 0.95, n), 3 * points)
+    c["mat"] = 3
+    c["tip_fade"] = (0.3, 0.012)
+    c["lit"] = True                                          # (r5: shaded as deep in hair, near black arcs off her crown; r6, flat as the baby hairs, pale scratches over it; now only undarkened)
+    print("  flyaways: %d cards" % n)
+    return [c]
 
 
 def pixie_crown_fill(layers):
@@ -1510,6 +1603,16 @@ def build(style):
         if mat in (0, 3) and "arc" in c and not c.get("blunt"):
             ramp = np.clip(c["arc"] / np.minimum(0.008, c["length"] / 3 + 1e-6), 0, 1)
             alpha = alpha * ramp * ramp * (3 - 2 * ramp)
+        if "tip_fade" in c:
+            # (20 October, face 32: the pixie only. Its cards ended at full
+            # cover, a hard even edge at her fringe, temples and nape, a
+            # painted shell. Each now fades out over its last `tip_fade` of
+            # its length (no more than `tip_max` metres), to near nothing at
+            # its tip: its edges dissolve, as real cut hair's do.)
+            frac, most = c["tip_fade"]
+            span = np.minimum(frac * c["length"], most) + 1e-6
+            tf = np.clip((c["length"] - c["arc"]) / span, 0, 1)
+            alpha = alpha * (0.04 + 0.96 * tf * tf * (3 - 2 * tf))
         C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0), alpha])
         base += len(c["V"])
     # How deep in her hair each point is: darker the more hair lies over it
@@ -1538,6 +1641,8 @@ def build(style):
     flat = np.concatenate([np.full(len(c["V"]), bool(c.get("flat"))) for c in layers])
     Ch[flat, 0] = 1.0
     Ch[flat, 2] = 1.0
+    lit = np.concatenate([np.full(len(c["V"]), bool(c.get("lit"))) for c in layers])
+    Ch[lit, 0] = 1.0                                         # (face 32: the pixie's flyaways, off the mass: no depth darkening)
     # (a tail's cards under its tie: one shade, its outer hair's (the 75th
     # percentile just below), over their first `shared[0]` metres, easing to
     # their own by `shared[1]`: no light and dark blocks under the tie)

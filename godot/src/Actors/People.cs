@@ -633,7 +633,13 @@ public static class People
             p.Hair.Add(mi);
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
-                    mi.SetSurfaceOverrideMaterial(s, Hair(src, colour));
+                {
+                    var hm = Hair(src, colour);
+                    // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
+                    if (style == "pixie" && hm is ShaderMaterial sm)
+                        foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
+                    mi.SetSurfaceOverrideMaterial(s, hm);
+                }
             mi.AddChild(new HairSway { Style = style });
         }
         scene.Free();
@@ -739,9 +745,9 @@ public static class People
 
     /// <summary>Paint on her face (Lore.Her.Paints: art/people/paint/ID.png, laid
     /// out on her head's own paint by tools/assets/heroine_paint.py): drawn
-    /// over her skin as a pass of its own, so it lies on the skin rather than
-    /// in it, with its own sheen (chalky woad, waxy kohl, bright leaf), and
-    /// moves with her face as it shapes and speaks. None: taken off.
+    /// in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
+    /// light exactly, with its own sheen (chalky woad, waxy kohl, bright leaf),
+    /// and moves with her face as it shapes and speaks. None: taken off.
     /// Under it, her brows dyed her hair's colour (art/people/paint/brows.png:
     /// her painted brows, found), since they are painted copper into her skin;
     /// her hair as it grew dyes them too, her own copper (as painted they read
@@ -752,6 +758,8 @@ public static class People
         p.Brow = brow;
         var def = paint == null ? null : SurvivorUnchained.World.Lore.Her.Paints.FirstOrDefault(x => x.Id == paint);
         var file = def == null ? "" : $"res://art/people/paint/{def.Id}.png";
+        // (env PAINT_FILE in a shot: another texture for the paint, its variants tried without a build of each)
+        if (def != null && SurvivorUnchained.Args.Has("shot") && System.Environment.GetEnvironmentVariable("PAINT_FILE") is { Length: > 0 } pf) file = pf;
         const string brows = "res://art/people/paint/brows.png";
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
@@ -779,11 +787,32 @@ public static class People
                     m.SetShaderParameter("rough", 0.8f);
                     Then(m);
                 }
-                if (def != null && ResourceLoader.Exists(file))
+                // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
+                // light exactly; --paint-pass draws it over her as a pass of its own again (as before
+                // 20 October), to compare.
+                bool own = def != null && ResourceLoader.Exists(file);
+                bool pass = own && SurvivorUnchained.Args.Has("paint-pass");
+                skin.SetShaderParameter("has_face_paint", own && !pass);
+                skin.SetShaderParameter("face_paint", own && !pass ? GD.Load<Texture2D>(file) : null);
+                if (own && !pass)
+                {
+                    skin.SetShaderParameter("paint_rough", (float)def!.Rough);
+                    skin.SetShaderParameter("paint_metal", (float)def.Metal);
+                    skin.SetShaderParameter("paint_shine", (float)def.Shine);
+                    skin.SetShaderParameter("paint_scatter", (float)def.Scatter);
+                    // (env PAINT_SET "scatter=0,shine=0.2,pores=0.6,rough=0.9,metal=0": the skin shader's paint_* tried in a shot)
+                    if (SurvivorUnchained.Args.Has("shot") && System.Environment.GetEnvironmentVariable("PAINT_SET") is { Length: > 0 } ps)
+                        foreach (var kv in ps.Split(','))
+                            if (kv.Split('=') is [var k, var v])
+                                skin.SetShaderParameter("paint_" + k, float.Parse(v, System.Globalization.CultureInfo.InvariantCulture));
+                    const string keep = "res://art/people/paint/nostril_keep.png";
+                    if (ResourceLoader.Exists(keep)) skin.SetShaderParameter("face_paint_keep", GD.Load<Texture2D>(keep));
+                }
+                if (pass)
                 {
                     var m = new ShaderMaterial { Shader = paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(file));
-                    m.SetShaderParameter("rough", (float)def.Rough);
+                    m.SetShaderParameter("rough", (float)def!.Rough);
                     m.SetShaderParameter("metal", (float)def.Metal);
                     Then(m);
                 }
@@ -844,6 +873,27 @@ public static class People
     /// (head_tex/heroine_shadow.png from tools/assets/heroine_features.py:
     /// green from her hairline up), so between the cards there is hair, not
     /// skin: bare, her scalp read as a pale, bald brow, worst under dark hair.</summary>
+    /// <summary>Her scalp's shade colour from her hair's (the skin shader multiplies her head's paint by it, times 2.4,
+    /// under her hair): her hair darkened. With it her shade's reach (scalp_max, 1: all of it where the mask is full,
+    /// not his stubble's 0.85, as what stayed of her head's pale paint greyed it) and its hue ahead of its dark
+    /// (scalp_lead, see heroine_skin.gdshader): face 32, 20 October, her hairline's grey band at the Look. (env SCALP
+    /// "dark=0.3,sat=1,max=1,lead=1" in a shot: tried without a build.)</summary>
+    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f;
+    public static Color ScalpColour(Color hair)
+    {
+        float dark = 0.3f, sat = 1.0f;
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("SCALP") is { Length: > 0 } sc)
+            foreach (var kv in sc.Split(','))
+            {
+                var t = kv.Split('=');
+                if (t.Length != 2) continue;
+                float v = float.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v;
+            }
+        var c = hair.Darkened(dark);
+        return Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
+    }
+
     public static void HerScalp(Person p, Color hair)
     {
         const string file = "res://art/people/head_tex/heroine_shadow.png";
@@ -857,7 +907,10 @@ public static class People
                 m.SetShaderParameter("shadow_mask", mask);
                 m.SetShaderParameter("scalp_shadow", 1.0f);
                 m.SetShaderParameter("scalp_stubs", 0.0f);
-                m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
+                m.SetShaderParameter("shadow_colour", ScalpColour(hair));
+                m.SetShaderParameter("scalp_max", ScalpMax);
+                m.SetShaderParameter("scalp_lead", ScalpLead);
+                m.SetShaderParameter("scalp_hue", ScalpHue);
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
@@ -1505,14 +1558,20 @@ public static class People
     {
         // (11 October 2026, the Look's rig made near white: each face's cheek taken to its portrait's chroma and hue,
         // on top of HerBodyTone below, which these partly undo on the face; judge j2's trims, measured at the Look)
-        ["own"] = new(1.358f, 0.890f, 0.660f), ["highborn"] = new(1.168f, 0.905f, 0.824f),
-        ["vixen"] = new(1.170f, 0.878f, 0.730f), ["moonlit"] = new(1.159f, 0.947f, 0.841f),
-        ["fey"] = new(1.320f, 0.973f, 0.816f), ["doe"] = new(1.167f, 0.947f, 0.783f),
-        ["wildling"] = new(1.102f, 0.928f, 0.765f), ["hardwon"] = new(1.166f, 0.948f, 0.813f),
-        ["saffron"] = new(1.071f, 0.963f, 0.887f),
+        ["own"] = new(1.358f, 0.890f, 0.660f), ["highborn"] = new(1.009f, 0.763f, 0.641f),
+        ["vixen"] = new(1.052f, 0.766f, 0.616f), ["moonlit"] = new(1.038f, 0.831f, 0.699f),
+        ["fey"] = new(1.171f, 0.847f, 0.665f), ["doe"] = new(1.034f, 0.780f, 0.669f),
+        ["wildling"] = new(0.952f, 0.728f, 0.637f), ["hardwon"] = new(1.166f, 0.948f, 0.813f),
+        ["saffron"] = new(0.906f, 0.748f, 0.682f),
         // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
         // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
-        ["sunborn"] = new(1.146f, 1.262f, 1.646f),
+        // (Refitted 20 October 2026, face 31 tone r1-r2, after the body's rebuild: every face but Own and Hardwon read
+        // 4-7 Oklab L lighter than her lit upper chest at its own skin, and Sunborn's 10 deg yellower at her brow, olive
+        // grey over a red-brown body (the Look's judge). Each cheek taken to her chest's L + 0.015 (Own's, judged), her
+        // neck's and chest's mean hue + 1 deg, chroma at least 1.12 of her chest's: tools/scratch/face31/tone_fit.py, two passes. Before, as above:
+        // highborn 1.168/0.905/0.824, vixen 1.170/0.878/0.730, moonlit 1.159/0.947/0.841, fey 1.320/0.973/0.816,
+        // doe 1.167/0.947/0.783, wildling 1.102/0.928/0.765, saffron 1.071/0.963/0.887, sunborn 1.146/1.262/1.646.)
+        ["sunborn"] = new(0.999f, 0.851f, 0.840f),
     };
 
     /// <summary>Her skin's own colour for each face, all of her (linear, on her swatch's HerTone): her neck and

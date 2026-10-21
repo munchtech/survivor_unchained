@@ -148,6 +148,9 @@ public sealed class FacePaint
 {
     public string Id = "", Name = "", Words = "";
     public double Rough = 0.7, Metal;
+    /// <summary>(its sheen's strength and how much of her skin's light under it shows through, heroine_skin's paint_shine
+    /// and paint_scatter; 0.5 each if not given: face 32, ash matte and dry, the gilt's leaf not lit from under)</summary>
+    public double Shine = 0.5, Scatter = 0.5;
 }
 
 /// <summary>One of her face's sliders (the view's shape keys ID+ and ID-): its
