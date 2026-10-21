@@ -1,22 +1,22 @@
 {
  "hair": {
   "style": "crop",
-  "colour": "#9f8156",
-  "base": "blond",
+  "colour": "#302723",
+  "base": "dark brown",
   "grey": 0,
   "beard": "none",
   "brows": true,
-  "why": "style seeded; colour seeded",
+  "why": "chosen in the app",
   "file": null,
   "carry": {
    "style": "crop",
    "fieldPoints": 11518,
    "scalpPoints": 5116,
-   "scale": 1.0703,
-   "turnDeg": 2.05,
+   "scale": 1.1621,
+   "turnDeg": 2.62,
    "residualMm": {
-    "rms": 5.34,
-    "max": 18.08
+    "rms": 7.49,
+    "max": 17.59
    },
    "through": {
     "her": {
@@ -24,218 +24,191 @@
      "deepMm": 2
     },
     "before": {
-     "n": 1505,
-     "deepMm": 4.34,
-     "beyondHers": 949
+     "n": 2054,
+     "deepMm": 5.49,
+     "beyondHers": 1431
     },
     "after": {
-     "n": 110,
-     "deepMm": 2.42,
-     "beyondHers": 25
+     "n": 96,
+     "deepMm": 2.14,
+     "beyondHers": 19
     },
     "byMaterial": {
      "hair": {
-      "n": 68,
+      "n": 58,
       "points": 59520,
-      "deepMm": 1.38,
+      "deepMm": 1.44,
       "beyondHers": 0
      },
      "hair_cap": {
-      "n": 31,
+      "n": 24,
       "points": 3740,
-      "deepMm": 2.42,
-      "beyondHers": 25
+      "deepMm": 2.14,
+      "beyondHers": 19
      },
      "hair_fine": {
-      "n": 11,
+      "n": 14,
       "points": 12455,
-      "deepMm": 0.74,
+      "deepMm": 0.75,
       "beyondHers": 0
      }
     }
    },
    "pushPasses": 6,
-   "liftMaxMm": 17.24,
-   "lastNeedMm": 2.81,
+   "liftMaxMm": 13.98,
+   "lastNeedMm": 2.75,
    "cardLod": {
-    "tolMm": 1.92,
+    "tolMm": 1.07,
     "cards": 2286,
     "tris": {
      "before": 86740,
      "after": 6900,
-     "hair": 5314,
-     "hair_fine": 1586
+     "hair": 5364,
+     "hair_fine": 1536
     },
     "culled": {
-     "offRoot": 20,
+     "offRoot": 25,
      "lone": 0,
-     "hidden": 117
+     "hidden": 354
     },
     "rootMm": [
-     2.5,
-     3.5,
-     5.7
+     2.7,
+     3.8,
+     6
     ]
    },
    "fringe": {
-    "cards": 580,
-    "tris": 2320,
+    "cards": 623,
+    "tris": 2492,
     "roots": {
-     "candidates": 13579,
-     "seen": 3827,
-     "picked": 580,
-     "noDir": 0
+     "candidates": 13656,
+     "seen": 3912,
+     "picked": 638,
+     "noDir": 15
     },
-    "spacingMm": 1.8
+    "spacingMm": 1.81
    },
    "rootFeather": {
-    "seen": 519,
-    "cards": 2142,
+    "seen": 479,
+    "cards": 1900,
     "rampMm": 9,
     "lo": 0.1,
-    "depthLifted": 27143
+    "depthLifted": 26028
    }
   },
   "paint": {
    "pixels": {
-    "scalp": 1379505,
-    "roots": 1308549,
-    "brows": 10998,
+    "scalp": 1384254,
+    "roots": 1299448,
+    "brows": 10191,
     "beard": 0
    },
    "life": {
     "k": {
-     "cheek": 0.372,
-     "nose": 0.643,
-     "ear": 0.804,
-     "under": 0.592,
+     "cheek": 0.477,
+     "nose": 0.813,
+     "ear": 0.673,
+     "under": 0.863,
      "jaw": 0.55,
-     "mottle": 0.945
+     "mottle": 1.698
     },
     "tip": [
      0,
-     1.5432,
-     0.1321
+     1.5704,
+     0.1058
     ],
     "ear": [
-     0.0927,
-     1.5851,
-     -0.0031
+     0.1082,
+     1.6215,
+     -0.047
     ],
     "color": 2595722,
     "rough": 2595722
    },
    "map": 2048,
    "landmarks": {
-    "eyeHalf": 0.0287,
-    "eyeY": 1.5858,
-    "mouthY": 1.5178
+    "eyeHalf": 0.0331,
+    "eyeY": 1.6171,
+    "mouthY": 1.5496
    }
   }
  },
  "nipples": {
   "l": [
-   1.13,
-   0.22,
-   4.59
+   0.93,
+   0.07,
+   3.2
   ],
   "r": [
-   1.14,
-   0.22,
-   4.59
+   0.93,
+   0.07,
+   3.2
   ],
   "tips": {
-   "l": 8510,
-   "r": 1838
+   "l": 8522,
+   "r": 1850
   }
  },
  "rest": {
   "before": {
-   "deg": 77.749,
+   "deg": 82.15,
    "bone": "hand_r"
   },
   "after": {
    "deg": 0.011,
    "bone": "thumb_04_leaf_l"
   },
-  "headMoved": 4.75e-16
+  "headMoved": 4.03e-16
  },
  "name": "npc_guard",
  "sex": "male",
- "height": 1.7652,
- "ownHeight": 1.7652,
+ "height": 1.7886,
+ "ownHeight": 1.7886,
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_body": 2771,
-   "lod_npc_wool": 951,
-   "lod_npc_linen": 1474,
-   "lod_darkleather": 542,
-   "lod_steel": 2388,
-   "lod_hair": 2284
+   "lod_body": 698,
+   "lod_generated": 9058,
+   "lod_hair": 2118
   },
-  "total": 10410,
-  "shadowTris": 2217,
-  "shadowHair": 429,
+  "total": 11874,
+  "shadowTris": 2156,
+  "shadowHair": 494,
   "errMm": {
-   "cut": 3,
+   "cut": 6,
    "lod_body.skin": {
-    "p99": 3.34,
-    "max": 10.93
+    "p99": 6.79,
+    "max": 8.32
    },
    "lod_body.skin_head": {
-    "p99": 3.6,
-    "max": 5.07
+    "p99": 6.81,
+    "max": 8.88
    },
    "lod_body.eyes": {
-    "p99": 3.22,
-    "max": 4.19
+    "p99": 4.85,
+    "max": 4.85
    },
-   "lod_npc_wool": {
-    "p99": 3.11,
-    "max": 8.56
-   },
-   "lod_npc_linen": {
-    "p99": 3.37,
-    "max": 5.65
-   },
-   "lod_darkleather": {
-    "p99": 27.3,
-    "max": 48.26
-   },
-   "lod_steel": {
-    "p99": 4.27,
-    "max": 14.9
+   "lod_generated": {
+    "p99": 8.19,
+    "max": 19.6
    },
    "lod_hair.hair_cap": {
-    "p99": 3.71,
-    "max": 7.35
+    "p99": 8.63,
+    "max": 10.96
    },
    "lod_hair": "cards whole"
   },
   "movedMm": {
-   "lod_body.skin": 4.21,
-   "lod_body.skin_head": 4.5,
-   "lod_npc_wool": 4.5,
-   "lod_npc_linen": 4.5,
-   "lod_darkleather": 4.5,
-   "lod_steel": 4.5,
-   "lod_hair.hair_cap": 3.35
+   "lod_body.skin": 7.4,
+   "lod_body.skin_head": 8.75,
+   "lod_generated": 9,
+   "lod_hair.hair_cap": 9
   },
-  "dropped": [
-   {
-    "mat": "gold",
-    "areaPct": 0.63
-   },
-   {
-    "mat": "rivetbronze",
-    "areaPct": 0.13
-   }
-  ],
+  "dropped": [],
   "cards": {
-   "kept": 561,
-   "of": 1604,
-   "tris": 1986
+   "kept": 495,
+   "of": 1413,
+   "tris": 1946
   }
  },
  "maps": {
@@ -261,6 +234,12 @@
   },
   "tongue": {
    "map": 1024
+  },
+  "generated": {
+   "map": 2048,
+   "normalMap": 2048,
+   "metalnessMap": 2048,
+   "roughnessMap": 2048
   }
  },
  "frame": "glTF / Godot: Y up, metres; bind pose = the heroine's (heroine.glb), the body's own proportions",
@@ -353,96 +332,458 @@
   ]
  },
  "body": "body.glb",
- "pieces": [
-  {
-   "id": "warden.boots",
-   "slot": "boots",
-   "tris": 8994
+ "pieces": [],
+ "generated": {
+  "dressed": true,
+  "source": "generated/model_gmvhuj8nzavw.glb (TRELLIS.2), Fix -> generated/game/guard_clean.glb",
+  "portrait": {
+   "image": "generated/refine_gmvigk7c36wd.png (Marionette)",
+   "tool": "Krea 2 Turbo img2img via the app's refine route (local ComfyUI), denoise 0.5, seed 21",
+   "from": "concept generated/edit_gmvhuhtnwj4v.png, face crop x480 y0 160px",
+   "prompt": "close-up head portrait photo of a weathered rugged man about forty-five years old, straight front view, looking at the camera, short messy dark brown hair, short dark brown stubble beard flecked with a little gray on the jaw, chin and upper lip, deep lines beside the mouth, crow's feet, forehead lines, a stern slight frown, heavy brow, deep-set eyes, weathered ruddy skin with natural pores, flat even soft frontal studio light, no harsh shadows, plain light gray background, highly detailed realistic skin, sharp focus",
+   "applied": "portrait.js faceFromPortrait (Marionette 0b4f725)"
   },
-  {
-   "id": "guard_cuirass_t2",
-   "slot": "top",
-   "tris": 3280,
-   "fit": "flagged"
+  "note": "concept -> TRELLIS.2 -> Fix (cleanup) -> dress (genfix: the base's head, hands and hair; the generated clothes carried to the rig's rest, cut at the collar and cuffs, weighted) -> dressPackage",
+  "trim": {
+   "npc_guard": {
+    "before": 21936,
+    "after": 10030
+   },
+   "npc_guardHead": {
+    "before": 4820,
+    "after": 4780
+   }
   },
-  {
-   "id": "guard_pauldrons_t2",
-   "slot": "pauldrons",
-   "tris": 1909,
-   "fit": "flagged"
-  },
-  {
-   "id": "guard_bracers_t2",
-   "slot": "bracers",
-   "tris": 1078,
-   "fit": "flagged"
+  "dress": {
+   "offsetScale": 0.9919,
+   "wrapGapMm": {
+    "mean": 15.7,
+    "median": 13.3,
+    "p90": 31.6,
+    "p99": 59.5
+   },
+   "wrapGapRegionsMm": {
+    "headNeck": {
+     "n": 973,
+     "mean": 11,
+     "p90": 23.2
+    },
+    "arms": {
+     "n": 8012,
+     "mean": 18.8,
+     "p90": 37.4
+    },
+    "legs": {
+     "n": 5457,
+     "mean": 12.5,
+     "p90": 23.8
+    },
+    "torso": {
+     "n": 4297,
+     "mean": 14.9,
+     "p90": 28.1
+    }
+   },
+   "rigid": 1,
+   "skinRef": [
+    102,
+    65,
+    49
+   ],
+   "collarInner": 358,
+   "collarSlivers": 0,
+   "collarSkin": 67,
+   "islandsDropped": 232,
+   "cuts": {
+    "collar": {
+     "endMm": 25,
+     "edgeMm": [
+      1,
+      41
+     ]
+    },
+    "cuff_l": {
+     "endMm": 65,
+     "edgeMm": [
+      25,
+      80
+     ],
+     "planeMm": 65,
+     "planeCut": 56
+    },
+    "cuff_r": {
+     "endMm": 81,
+     "edgeMm": [
+      41,
+      91
+     ],
+     "planeMm": 81,
+     "planeCut": 38
+    }
+   },
+   "cuffMetal": {
+    "cuff_l": "-254:62 -249:59 -244:43 -239:69 -234:43 -229:54 -224:42 -219:54 -214:26 -209:15 -204:22 -199:17 -194:14 -189:30 -184:20 -179:21 -174:14 -169:15 -164:23 -159:17 -154:28 -149:32 -144:36 -139:43 -134:40 -129:43 -124:47 -119:60 -114:47 -109:65 -104:51 -99:36 -94:45 -89:40 -84:40 -79:33 -74:48 -69:35 -64:54 -59:51 -54:51 -49:67 -44:47 -39:51 -34:45 -29:50 -24:55 -19:51 -14:46 -9:62 -4:53 1:59 6:69 11:46 16:62 21:69 26:63 31:74 36:61 41:59 46:56 51:59 56:63 61:68 66:73 71:50 76:39 81:23 86:36 91:31 96:24 101:0 106:0 111:0 116:0 121:0 126:0 131:0 136:0 141:0 146:0 151:0 156:0 161:0 166:0 171:0 176:0 181:0 186:0 191:0 196:0",
+    "cuff_r": "-253:32 -248:41 -243:31 -238:31 -233:50 -228:32 -223:42 -218:41 -213:29 -208:19 -203:40 -198:24 -193:15 -188:14 -183:19 -178:33 -173:46 -168:33 -163:33 -158:18 -153:39 -148:23 -143:27 -138:32 -133:42 -128:48 -123:30 -118:38 -113:48 -108:57 -103:36 -98:46 -93:38 -88:41 -83:38 -78:38 -73:53 -68:42 -63:57 -58:58 -53:62 -48:66 -43:47 -38:47 -33:57 -28:68 -23:68 -18:42 -13:49 -8:41 -3:35 2:43 7:43 12:55 17:70 22:50 27:59 32:59 37:64 42:75 47:62 52:70 57:68 62:72 67:58 72:76 77:48 82:54 87:25 92:42 97:50 102:38 107:5 112:0 117:0 122:0 127:0 132:0 137:0 142:0 147:0 152:0 157:0 162:0 167:0 172:0 177:0 182:0 187:0 192:0 197:0"
+   },
+   "profile": {
+    "collar": "2 refs, last undefined, tops 25 25 45 45 45 45 45 45 45 25 25 25 25 25 25 25",
+    "cuff_l": "3 refs, last metal",
+    "cuff_r": "3 refs, last metal"
+   },
+   "tidy": {
+    "teeth": 29,
+    "slivers": 0,
+    "parts": 0,
+    "moved": 121,
+    "maxMoveMm": 4,
+    "loops": 15
+   },
+   "genTris": 35609,
+   "genCut": 3224,
+   "base": {
+    "npc_guard": 10127,
+    "npc_guardHead": 4804
+   },
+   "tucked": 94,
+   "poked": 5,
+   "bare": 0,
+   "handGirth": {
+    "build": 0.1587,
+    "ref": 0.1447,
+    "factor": 1.145,
+    "points": 3878
+   },
+   "weights": {
+    "copied": 53.8,
+    "far": 11.2,
+    "dotHist": [
+     31,
+     5,
+     3,
+     2,
+     2,
+     11,
+     2,
+     3,
+     6,
+     35
+    ],
+    "inpaint": {
+     "unknown": 7088,
+     "bones": 66,
+     "itMean": 24,
+     "itMax": 72
+    },
+    "smoothed": {
+     "iters": 2,
+     "edgeMm": 22.6,
+     "bones": 66
+    },
+    "wrist": {
+     "l": {
+      "to": "lowerarm_twist_02_l",
+      "points": 958,
+      "handWeightMoved": 187.5
+     },
+     "r": {
+      "to": "lowerarm_twist_02_r",
+      "points": 987,
+      "handWeightMoved": 209
+     }
+    },
+    "capFlare": {
+     "points": 131,
+     "maxMm": 68,
+     "bind": "rigid"
+    },
+    "plates": {
+     "metal": 5418,
+     "restricted": 2168,
+     "soft": 2072,
+     "halfMm": "40 11 0 40 15 0 25 31 66 58 75 0",
+     "caps": "upperarm_l 460, lowerarm_l 116, calf_l 0, upperarm_r 453, lowerarm_r 109, calf_r 0"
+    }
+   },
+   "liner": {
+    "sectors": "64/64",
+    "bridged": 1,
+    "shards": 51,
+    "paintCut": 5,
+    "ringOffMm": 6,
+    "ringMm": 78,
+    "neckMm": 69,
+    "neckOffMm": 7,
+    "rimMm": [
+     -48,
+     -5,
+     36
+    ],
+    "tris": 384,
+    "gapMm": [
+     0,
+     15,
+     57
+    ],
+    "baseDropped": 121,
+    "uv": [
+     0.8301,
+     0.947
+    ],
+    "darkL": 12.3
+   },
+   "roundPlates": {
+    "moved": 10690,
+    "maxDeg": 39.6
+   },
+   "capSnap": {
+    "points": 3740,
+    "moved": 0,
+    "maxMm": 8.6,
+    "p95Mm": 5.1
+   },
+   "capFade": {
+    "points": 3740,
+    "edge": 901,
+    "meanBefore": 0.677,
+    "meanAfter": 0.502,
+    "widthMm": 15
+   },
+   "hair": {
+    "style": "crop",
+    "meshes": 4,
+    "tris": 12053,
+    "errMm": 5,
+    "of": [
+     "hair",
+     "hair_cap",
+     "hair_fine",
+     "hair_fine"
+    ]
+   },
+   "soften": {
+    "islands": 2972,
+    "keep": 0.3,
+    "radius": 20,
+    "metalKeep": 0,
+    "metalRadius": 6,
+    "broadTiltDeg": [
+     7.6,
+     1.2
+    ]
+   },
+   "palette": {
+    "views": [
+     {
+      "figure": [
+       709,
+       1010
+      ],
+      "head": 10778,
+      "hands": 2818,
+      "kept": 231180
+     }
+    ],
+    "sampled": 13,
+    "regions": [
+     {
+      "region": "metal",
+      "share": 0.4,
+      "seen": 151207,
+      "before": {
+       "lab": [
+        36.8,
+        0.2,
+        -0.3
+       ],
+       "metal": 0.99,
+       "rough": 0.47
+      },
+      "target": [
+       60.1,
+       0.7,
+       1.3
+      ],
+      "after": {
+       "lab": [
+        59.9,
+        0.7,
+        1.3
+       ],
+       "metal": 0.7,
+       "rough": 0.5
+      }
+     },
+     {
+      "region": "c0",
+      "share": 0.13,
+      "seen": 19374,
+      "before": {
+       "lab": [
+        7.3,
+        0.3,
+        0.3
+       ],
+       "metal": 0,
+       "rough": 0.96
+      },
+      "target": [
+       15.8,
+       0.8,
+       2.7
+      ],
+      "after": {
+       "lab": [
+        15.9,
+        0.8,
+        2.7
+       ],
+       "metal": 0,
+       "rough": 0.89
+      }
+     },
+     {
+      "region": "c1",
+      "share": 0.02,
+      "seen": 1648,
+      "before": {
+       "lab": [
+        36.4,
+        15.2,
+        14.3
+       ],
+       "metal": 0,
+       "rough": 0.66
+      },
+      "target": [
+       32.6,
+       10.8,
+       8.5
+      ],
+      "after": {
+       "lab": [
+        32.8,
+        11,
+        8.8
+       ],
+       "metal": 0,
+       "rough": 0.81
+      }
+     },
+     {
+      "region": "c2",
+      "share": 0.25,
+      "seen": 47260,
+      "before": {
+       "lab": [
+        7.3,
+        12.7,
+        5.2
+       ],
+       "metal": 0,
+       "rough": 0.99
+      },
+      "target": [
+       16.2,
+       12.3,
+       7
+      ],
+      "after": {
+       "lab": [
+        16.2,
+        12.3,
+        7
+       ],
+       "metal": 0,
+       "rough": 0.9
+      }
+     },
+     {
+      "region": "c3",
+      "share": 0.16,
+      "seen": 45414,
+      "before": {
+       "lab": [
+        15.6,
+        4.3,
+        6.6
+       ],
+       "metal": 0.01,
+       "rough": 0.67
+      },
+      "target": [
+       27.2,
+       6,
+       9.1
+      ],
+      "after": {
+       "lab": [
+        27,
+        6,
+        9
+       ],
+       "metal": 0,
+       "rough": 0.82
+      }
+     },
+     {
+      "region": "c4",
+      "share": 0.02,
+      "seen": 8544,
+      "before": {
+       "lab": [
+        35.1,
+        3.5,
+        7.6
+       ],
+       "metal": 0.01,
+       "rough": 0.72
+      },
+      "target": null,
+      "after": "kept"
+     },
+     {
+      "region": "c5",
+      "share": 0.02,
+      "seen": 152,
+      "before": {
+       "lab": [
+        38.4,
+        20.9,
+        21.6
+       ],
+       "metal": 0,
+       "rough": 0.64
+      },
+      "target": null,
+      "after": "kept"
+     }
+    ],
+    "sigma": 3
+   },
+   "hairFromConcept": {
+    "hex": "#302723",
+    "lab": [
+     16.7,
+     3,
+     4.7
+    ],
+    "grey": 0.12,
+    "n": 2775
+   }
   }
- ],
- "tris": {
-  "body": 29528,
-  "bodyDrawn": 22776,
-  "skinHidden": 6752,
-  "pieces": {
-   "warden.boots": 8994,
-   "guard_cuirass_t2": 3280,
-   "guard_pauldrons_t2": 1909,
-   "guard_bracers_t2": 1078
-  },
-  "hair": 11881,
-  "wear": {
-   "trousers": 1395,
-   "gambeson": 3764,
-   "belt": 452,
-   "buckle": 38
-  },
-  "over": [
-   "guard_cuirass_t2",
-   "guard_pauldrons_t2"
-  ],
-  "surfaces": {
-   "skin": 11804,
-   "skin_head": 8200,
-   "npc_wool": 1395,
-   "npc_linen": 3764,
-   "darkleather": 1614,
-   "gold": 2446,
-   "steel": 10635,
-   "rivetbronze": 1056,
-   "eyes": 544,
-   "teeth": 1780,
-   "tongue": 448,
-   "hair:hair": 5314,
-   "hair:hair_cap": 2661,
-   "hair:hair_fine": 3906
-  },
-  "total": 55567,
-  "drawn": 55567,
-  "budget": 60000
- },
- "detail": {
-  "surfaces": 8,
-  "points": 4443,
-  "ms": 358,
-  "missingBody": [],
-  "missingLod": []
  },
  "baked": true,
  "bake": {
-  "bytes": 10128628,
+  "bytes": 16853196,
   "nodes": [
    {
     "name": "npc_guard",
     "surfaces": [
      "skin",
      "skin_head",
-     "npc_wool",
-     "npc_linen",
-     "darkleather",
-     "gold",
-     "steel",
-     "rivetbronze"
+     "generated"
     ],
-    "tris": 36094,
+    "tris": 46018,
     "morphs": 0
    },
    {
@@ -451,7 +792,7 @@
      "skin",
      "skin_head"
     ],
-    "tris": 4820,
+    "tris": 4780,
     "morphs": 28
    },
    {
@@ -485,1949 +826,35 @@
      "hair_cap",
      "hair_fine"
     ],
-    "tris": 11881,
+    "tris": 12053,
     "morphs": 0
    }
   ],
-  "skinDeleted": 6752,
-  "rims": {
-   "edges": 894,
-   "open": {
-    "rest": 29,
-    "any": 53
-   },
-   "tight": 8,
-   "byBone": {
-    "ball_l": 15,
-    "ball_r": 14,
-    "spine_03": 7,
-    "thigh_l": 7,
-    "thigh_r": 4,
-    "spine_02": 2,
-    "spine_01": 2,
-    "foot_r": 1
-   }
-  },
-  "holes": {
-   "of": 6752,
-   "rest": 391,
-   "any": 632,
-   "beyond15cm": 215,
-   "byBone": {
-    "ball_l": 241,
-    "ball_r": 221,
-    "thigh_r": 39,
-    "thigh_l": 34,
-    "calf_r": 31,
-    "foot_r": 25,
-    "foot_l": 14,
-    "spine_01": 11,
-    "spine_02": 7,
-    "spine_03": 5
-   }
-  },
-  "poses": 7
+  "skinDeleted": 0
  },
- "wear": {
-  "top": {
-   "type": "gambeson",
-   "length": 0.38,
-   "loose": 0.22,
-   "sleeves": "long",
-   "neck": "crew",
-   "cloth": "linen",
-   "belt": "leather",
-   "quilt": "vertical",
-   "closure": "buttons",
-   "dye": "oxblood",
-   "colour": "#58302a"
+ "tris": {
+  "generated": 35609,
+  "hair": 12053,
+  "surfaces": {
+   "skin": 6610,
+   "skin_head": 8200,
+   "generated": 35988,
+   "eyes": 544,
+   "teeth": 1780,
+   "tongue": 448,
+   "hair:hair": 5364,
+   "hair:hair_cap": 2661,
+   "hair:hair_fine": 4028
   },
-  "bottom": {
-   "type": "trousers",
-   "length": 1,
-   "loose": 0.2,
-   "cloth": "wool",
-   "dye": "dark green",
-   "colour": "#3d4839"
-  },
-  "why": "a guard: a padded gambeson over trousers (\"guard\"); lean: ease capped",
-  "skinCovered": 1774,
-  "tuck": {
-   "poses": [
-    "rest",
-    "Walk_Loop@0.25",
-    "Walk_Loop@0.75",
-    "Idle_Loop@0.5",
-    "Idle_Talking_Loop@0.3",
-    "Idle_Talking_Loop@0.7",
-    "Jog_Fwd_Loop@0.25",
-    "Jog_Fwd_Loop@0.75",
-    "Sword_Idle@0.5",
-    "Walk_Loop@0",
-    "Walk_Loop@0.125",
-    "Walk_Loop@0.375",
-    "Walk_Loop@0.5",
-    "Walk_Loop@0.625",
-    "Walk_Loop@0.875"
-   ],
-   "layers": [
-    {
-     "lower": "trousers",
-     "under": [
-      "plates"
-     ],
-     "before": {
-      "points": 0,
-      "deepMm": 0
-     },
-     "after": {
-      "points": 0,
-      "deepMm": 0,
-      "notIn": 0,
-      "atCap": 0,
-      "other": 0
-     },
-     "moved": 0,
-     "maxMm": 0,
-     "pin": null
-    },
-    {
-     "lower": "gambeson",
-     "under": [
-      "plates"
-     ],
-     "before": {
-      "points": 187,
-      "deepMm": 25
-     },
-     "after": {
-      "points": 77,
-      "deepMm": 24,
-      "notIn": 52,
-      "atCap": 19,
-      "other": 6
-     },
-     "moved": 281,
-     "maxMm": 45,
-     "pin": null
-    },
-    {
-     "lower": "belt",
-     "under": [
-      "plates"
-     ],
-     "before": {
-      "points": 17,
-      "deepMm": 24.9
-     },
-     "after": {
-      "points": 17,
-      "deepMm": 24.9,
-      "notIn": 17,
-      "atCap": 0,
-      "other": 0
-     },
-     "moved": 0,
-     "maxMm": 0,
-     "pin": null
-    },
-    {
-     "lower": "buckle",
-     "under": [
-      "plates"
-     ],
-     "before": {
-      "points": 8,
-      "deepMm": 23.9
-     },
-     "after": {
-      "points": 8,
-      "deepMm": 23.9,
-      "notIn": 8,
-      "atCap": 0,
-      "other": 0
-     },
-     "moved": 0,
-     "maxMm": 0,
-     "pin": null
-    },
-    {
-     "lower": "gambeson",
-     "under": [],
-     "before": {
-      "points": 81,
-      "bareAtHem": 7,
-      "deepMm": 19.8,
-      "perPose": [
-       "rest 72 / 4.9 mm",
-       "Walk_Loop@0.25 44 / 17.7 mm",
-       "Walk_Loop@0.75 44 / 14 mm",
-       "Idle_Loop@0.5 39 / 12.4 mm",
-       "Idle_Talking_Loop@0.3 39 / 17.9 mm",
-       "Idle_Talking_Loop@0.7 37 / 14.9 mm",
-       "Jog_Fwd_Loop@0.25 42 / 16.9 mm",
-       "Jog_Fwd_Loop@0.75 40 / 18.5 mm",
-       "Sword_Idle@0.5 45 / 13.7 mm",
-       "Walk_Loop@0 59 / 16.7 mm",
-       "Walk_Loop@0.125 59 / 19.8 mm",
-       "Walk_Loop@0.375 40 / 14.7 mm",
-       "Walk_Loop@0.5 41 / 11.3 mm",
-       "Walk_Loop@0.625 40 / 13.1 mm",
-       "Walk_Loop@0.875 57 / 12.4 mm"
-      ],
-      "where": {
-       "spine_03": 29,
-       "upperarm_l": 19,
-       "lowerarm_twist_02_l": 18,
-       "hand_r": 14,
-       "lowerarm_twist_02_r": 9,
-       "upperarm_share_l": 8
-      }
-     },
-     "after": {
-      "points": 36,
-      "bareAtHem": 4,
-      "deepMm": 17.9,
-      "perPose": [
-       "rest 27 / 4.6 mm",
-       "Walk_Loop@0.25 30 / 15.6 mm",
-       "Walk_Loop@0.75 30 / 11.2 mm",
-       "Idle_Loop@0.5 32 / 11.9 mm",
-       "Idle_Talking_Loop@0.3 29 / 17.9 mm",
-       "Idle_Talking_Loop@0.7 27 / 14.9 mm",
-       "Jog_Fwd_Loop@0.25 32 / 14.5 mm",
-       "Jog_Fwd_Loop@0.75 32 / 14.6 mm",
-       "Sword_Idle@0.5 27 / 13.7 mm",
-       "Walk_Loop@0 35 / 14 mm",
-       "Walk_Loop@0.125 31 / 15.2 mm",
-       "Walk_Loop@0.375 30 / 13.8 mm",
-       "Walk_Loop@0.5 31 / 11.1 mm",
-       "Walk_Loop@0.625 30 / 10.7 mm",
-       "Walk_Loop@0.875 31 / 10.1 mm"
-      ],
-      "where": {
-       "lowerarm_twist_02_l": 17,
-       "hand_r": 9,
-       "lowerarm_twist_02_r": 8,
-       "upperarm_l": 5
-      }
-     },
-     "moved": 130,
-     "maxMm": 22
-    },
-    {
-     "lower": "trousers",
-     "under": [
-      "gambeson"
-     ],
-     "before": {
-      "points": 95,
-      "bareAtHem": 0,
-      "deepMm": 19.8,
-      "perPose": [
-       "rest 9 / 4.7 mm",
-       "Walk_Loop@0.25 19 / 19.2 mm",
-       "Walk_Loop@0.75 17 / 16.3 mm",
-       "Idle_Loop@0.5 32 / 19.7 mm",
-       "Idle_Talking_Loop@0.3 26 / 17.5 mm",
-       "Idle_Talking_Loop@0.7 25 / 18.1 mm",
-       "Jog_Fwd_Loop@0.25 22 / 19.8 mm",
-       "Jog_Fwd_Loop@0.75 20 / 17.8 mm",
-       "Sword_Idle@0.5 35 / 18.7 mm",
-       "Walk_Loop@0 24 / 17.6 mm",
-       "Walk_Loop@0.125 15 / 19 mm",
-       "Walk_Loop@0.375 23 / 19.7 mm",
-       "Walk_Loop@0.5 28 / 18.5 mm",
-       "Walk_Loop@0.625 27 / 19.1 mm",
-       "Walk_Loop@0.875 15 / 17 mm"
-      ],
-      "where": {
-       "thigh_l": 42,
-       "thigh_r": 40,
-       "pelvis": 15
-      }
-     },
-     "after": {
-      "points": 38,
-      "bareAtHem": 0,
-      "deepMm": 19.8,
-      "perPose": [
-       "rest 7 / 4.7 mm",
-       "Walk_Loop@0.25 10 / 18.1 mm",
-       "Walk_Loop@0.75 13 / 16.9 mm",
-       "Idle_Loop@0.5 14 / 11.7 mm",
-       "Idle_Talking_Loop@0.3 16 / 19.7 mm",
-       "Idle_Talking_Loop@0.7 14 / 10.1 mm",
-       "Jog_Fwd_Loop@0.25 8 / 12.3 mm",
-       "Jog_Fwd_Loop@0.75 9 / 16.8 mm",
-       "Sword_Idle@0.5 20 / 18.3 mm",
-       "Walk_Loop@0 13 / 14.8 mm",
-       "Walk_Loop@0.125 10 / 15.6 mm",
-       "Walk_Loop@0.375 12 / 19.8 mm",
-       "Walk_Loop@0.5 10 / 11.7 mm",
-       "Walk_Loop@0.625 10 / 9.6 mm",
-       "Walk_Loop@0.875 6 / 8.3 mm"
-      ],
-      "where": {
-       "thigh_r": 18,
-       "thigh_l": 12,
-       "pelvis": 9
-      }
-     },
-     "moved": 150,
-     "maxMm": 22
-    }
-   ],
-   "skin": {
-    "before": {
-     "points": 164,
-     "bareAtHem": 7,
-     "deepMm": 20,
-     "perPose": [
-      "rest 7 / 2.8 mm",
-      "Walk_Loop@0.25 38 / 17.1 mm",
-      "Walk_Loop@0.75 32 / 16.2 mm",
-      "Idle_Loop@0.5 32 / 10.6 mm",
-      "Idle_Talking_Loop@0.3 75 / 19.3 mm",
-      "Idle_Talking_Loop@0.7 68 / 17.8 mm",
-      "Jog_Fwd_Loop@0.25 107 / 19.8 mm",
-      "Jog_Fwd_Loop@0.75 92 / 19.9 mm",
-      "Sword_Idle@0.5 45 / 19.4 mm",
-      "Walk_Loop@0 38 / 20 mm",
-      "Walk_Loop@0.125 40 / 17.2 mm",
-      "Walk_Loop@0.375 29 / 18 mm",
-      "Walk_Loop@0.5 33 / 18.4 mm",
-      "Walk_Loop@0.625 31 / 17.3 mm",
-      "Walk_Loop@0.875 37 / 14.9 mm"
-     ],
-     "where": {
-      "spine_03": 63,
-      "upperarm_r": 18,
-      "upperarm_l": 17,
-      "lowerarm_share_r": 16,
-      "lowerarm_share_l": 11,
-      "lowerarm_r": 9
-     }
-    },
-    "after": {
-     "points": 10,
-     "bareAtHem": 5,
-     "deepMm": 19.2,
-     "perPose": [
-      "Walk_Loop@0.25 1 / 18.9 mm",
-      "Walk_Loop@0.75 1 / 19.2 mm",
-      "Idle_Loop@0.5 2 / 16.1 mm",
-      "Idle_Talking_Loop@0.3 5 / 13.1 mm",
-      "Idle_Talking_Loop@0.7 5 / 13.2 mm",
-      "Jog_Fwd_Loop@0.25 1 / 3.7 mm",
-      "Jog_Fwd_Loop@0.75 5 / 3.4 mm",
-      "Sword_Idle@0.5 2 / 11.6 mm",
-      "Walk_Loop@0 1 / 12.3 mm",
-      "Walk_Loop@0.125 1 / 14.7 mm",
-      "Walk_Loop@0.875 1 / 15.8 mm"
-     ],
-     "where": {
-      "upperarm_l": 4,
-      "upperarm_r": 3,
-      "upperarm_twist_01_r": 1,
-      "upperarm_share_r": 1,
-      "thigh_r": 1
-     }
-    },
-    "moved": 395,
-    "maxMm": 22,
-    "lost": 282
-   },
-   "plates": {
-    "maxMm": 24.9,
-    "over1": 1412,
-    "where": "guard_cuirass_t2 front_lame2 (Jog_Fwd_Loop@0.75)"
-   }
-  },
-  "underPlate": [
-   {
-    "garment": "top",
-    "type": "gambeson",
-    "from": "oak grey",
-    "to": "oxblood",
-    "colour": "#58302a",
-    "value": 0.345
-   }
-  ],
-  "garments": {
-   "trousers": {
-    "spec": {
-     "type": "trousers",
-     "length": 1,
-     "loose": 0.2,
-     "cloth": "wool",
-     "dye": "dark green",
-     "colour": "#3d4839"
-    },
-    "material": "npc_wool",
-    "colour": "#3d4839",
-    "tailored": {
-     "type": "trousers",
-     "thin": {
-      "before": 1712,
-      "after": 1295
-     },
-     "band": 114
-    },
-    "body": {
-     "moved": 265,
-     "maxMm": 24.6
-    },
-    "skin": {
-     "through": 0,
-     "close": 50,
-     "maxMm": 3.6
-    },
-    "hang": 0,
-    "edges": 3,
-    "skin5": {
-     "through": 0,
-     "close": 18,
-     "maxMm": 2.2
-    },
-    "bands": 57,
-    "hull": null,
-    "open": {
-     "bare": 0,
-     "bareCm": 0,
-     "loops": 3,
-     "maxTurn": 41.5,
-     "p95Turn": 31
-    },
-    "under": 80,
-    "dropped": 14,
-    "weights": {
-     "free": 0,
-     "spread": 0,
-     "of": 732,
-     "lim": null
-    },
-    "tris": 1395,
-    "maps": {
-     "size": 2048,
-     "texelMm": 0.69,
-     "used": 0.55,
-     "KB": [
-      110,
-      309,
-      13
-     ]
-    },
-    "spots": {
-     "through": 6,
-     "under": 1401,
-     "deepMm": 1.5,
-     "where": [
-      -0.098,
-      -0.007,
-      -0.077
-     ]
-    },
-    "through": {
-     "pct": 2.509,
-     "areaPct": 1.751,
-     "deepMm": 31.84,
-     "worst": "Crouch_Idle_Loop@0.5:70"
-    }
-   },
-   "gambeson": {
-    "spec": {
-     "type": "gambeson",
-     "length": 0.38,
-     "loose": 0.22,
-     "sleeves": "long",
-     "neck": "crew",
-     "cloth": "linen",
-     "belt": "leather",
-     "quilt": "vertical",
-     "closure": "buttons",
-     "dye": "oxblood",
-     "colour": "#58302a"
-    },
-    "material": "npc_linen",
-    "colour": "#58302a",
-    "tailored": {
-     "type": "gambeson",
-     "neck": "crew",
-     "hemRows": 518,
-     "sleeveRows": [
-      240,
-      280
-     ],
-     "walks": [
-      {
-       "side": "Right",
-       "wristCm": 28.4,
-       "rings": 6
-      },
-      {
-       "side": "Left",
-       "wristCm": 29.6,
-       "rings": 7
-      }
-     ],
-     "thin": {
-      "before": 7370,
-      "after": 3540
-     },
-     "band": 224
-    },
-    "body": {
-     "moved": 316,
-     "maxMm": 11
-    },
-    "skin": {
-     "through": 3,
-     "close": 14,
-     "maxMm": 6.8
-    },
-    "drape": 305,
-    "hang": 0,
-    "cinch": 93,
-    "tent": 810,
-    "cinch2": 93,
-    "fall": 48,
-    "shell": {
-     "moved": 1747,
-     "beforeMm": {
-      "torso": 27.6,
-      "upperArm": 23.3,
-      "forearm": 21.2
-     },
-     "afterMm": {
-      "torso": 15,
-      "upperArm": 10.9,
-      "forearm": 7.2
-     }
-    },
-    "bridge": 543,
-    "skin2": {
-     "through": 92,
-     "close": 182,
-     "maxMm": 14.7
-    },
-    "pad": {
-     "moved": 850,
-     "region": 501,
-     "capMm": 9.5,
-     "beforeMm": 11.3,
-     "afterMm": 9.1,
-     "widthCm": 1.7
-    },
-    "skin3": {
-     "through": 0,
-     "close": 49,
-     "maxMm": 2.9
-    },
-    "layer": {
-     "through": 23,
-     "close": 52,
-     "maxMm": 13.6
-    },
-    "skirt": 123,
-    "cinch3": 87,
-    "skin4": {
-     "through": 0,
-     "close": 1,
-     "maxMm": 1.7
-    },
-    "layer2": {
-     "through": 5,
-     "close": 14,
-     "maxMm": 8.1
-    },
-    "edges": 4,
-    "skin5": {
-     "through": 2,
-     "close": 11,
-     "maxMm": 6.8
-    },
-    "bands": 112,
-    "hull": {
-     "maxMm": 8,
-     "p95Mm": 0.7,
-     "pts": 275
-    },
-    "open": {
-     "bare": 0,
-     "bareCm": 0,
-     "loops": 4,
-     "maxTurn": 40.8,
-     "p95Turn": 28.7
-    },
-    "under": 0,
-    "belt": {
-     "kind": "leather",
-     "clamped": 46,
-     "blended": 47,
-     "hold": {
-      "points": 12,
-      "outside": 0,
-      "worstMm": 0,
-      "minClearMm": 2.8
-     },
-     "surf": {
-      "cuts": 442,
-      "outside": 0,
-      "worstMm": 0
-     }
-    },
-    "dropped": 0,
-    "weights": {
-     "free": 436,
-     "spread": 830,
-     "of": 1936,
-     "lim": {
-      "breast": 0,
-      "thigh": {
-       "moved": 44,
-       "worst": 0.0001,
-       "its": 13
-      }
-     }
-    },
-    "tris": 3764,
-    "maps": {
-     "size": 2048,
-     "texelMm": 0.79,
-     "used": 0.53,
-     "KB": [
-      234,
-      357,
-      15
-     ]
-    },
-    "spots": {
-     "through": 0,
-     "under": 2658,
-     "deepMm": 0,
-     "where": null
-    },
-    "through": {
-     "pct": 3.83,
-     "areaPct": 4.356,
-     "deepMm": 39.97,
-     "worst": "Crouch_Idle_Loop@0.5:269"
-    }
-   },
-   "belt": {
-    "spec": {
-     "type": "belt",
-     "belt": "leather"
-    },
-    "material": "darkleather",
-    "tris": 452,
-    "on": "gambeson",
-    "kind": "leather",
-    "clamped": 46,
-    "blended": 47,
-    "hold": {
-     "points": 12,
-     "outside": 0,
-     "worstMm": 0,
-     "minClearMm": 2.8
-    },
-    "surf": {
-     "cuts": 442,
-     "outside": 0,
-     "worstMm": 0
-    },
-    "through": {
-     "pct": 2.75,
-     "areaPct": 2.58,
-     "deepMm": 39.82,
-     "worst": "Crouch_Idle_Loop@0.5:51"
-    }
-   },
-   "buckle": {
-    "spec": {
-     "type": "belt",
-     "belt": "leather"
-    },
-    "material": "steel",
-    "tris": 38,
-    "on": "gambeson",
-    "kind": "leather",
-    "clamped": 46,
-    "blended": 47,
-    "hold": {
-     "points": 12,
-     "outside": 0,
-     "worstMm": 0,
-     "minClearMm": 2.8
-    },
-    "surf": {
-     "cuts": 442,
-     "outside": 0,
-     "worstMm": 0
-    },
-    "through": {
-     "pct": 3.383,
-     "areaPct": 3.286,
-     "deepMm": 9.59,
-     "worst": "Crouch_Idle_Loop@0.5:9"
-    }
-   }
-  }
+  "total": 65623,
+  "drawn": 65623,
+  "budget": null,
+  "note": "LOD0 over the procedural NPC budget (60k): accepted for generated NPCs for now"
  },
  "decimate": {
   "hair": {
    "errMm": 5,
-   "share": 10000,
-   "devMm": {
-    "max": 0,
-    "p99": 0
-   }
-  },
-  "warden.boots": {
-   "covered": 32,
-   "locked": 0,
-   "errMm": 1.2,
-   "clip": {
-    "fullPct": 0.292,
-    "fullAreaPct": 0.176,
-    "fullDeepMm": 23.83,
-    "areaPct": 0.06,
-    "pct": 0.068,
-    "deepMm": 13.87,
-    "worst": "Sword_Attack@0.45:36",
-    "down": 0,
-    "held": true,
-    "conservedMm": 4,
-    "tried": [
-     [
-      0,
-      8994,
-      0.068,
-      0.06,
-      13.87
-     ]
-    ]
-   },
-   "through": {
-    "pct": 0.068,
-    "areaPct": 0.06,
-    "deepMm": 13.87,
-    "worst": "Sword_Attack@0.45:36"
-   },
-   "share": 19179,
-   "devMm": {
-    "max": 16.43,
-    "p99": 9.22
-   },
-   "rungs": [
-    0,
-    0,
-    0
-   ]
-  },
-  "guard_cuirass_t2": {
-   "covered": 0,
-   "locked": 0,
-   "errMm": 1.2,
-   "through": {
-    "pct": 6.363,
-    "areaPct": 4.449,
-    "deepMm": 39.95,
-    "worst": "arms_overhead:453"
-   },
-   "share": 1500,
-   "devMm": {
-    "max": 0,
-    "p99": 0
-   }
-  },
-  "guard_pauldrons_t2": {
-   "covered": 0,
-   "locked": 0,
-   "errMm": 1.2,
-   "through": {
-    "pct": 4.924,
-    "areaPct": 3.727,
-    "deepMm": 39.98,
-    "worst": "rest:212"
-   },
-   "share": 1500,
-   "devMm": {
-    "max": 0,
-    "p99": 0
-   }
-  },
-  "guard_bracers_t2": {
-   "covered": 0,
-   "locked": 0,
-   "errMm": 1.2,
-   "through": {
-    "pct": 0.053,
-    "areaPct": 0.014,
-    "deepMm": 1.6,
-    "worst": "Sword_Attack@0.45:4"
-   },
-   "share": 1500,
-   "devMm": {
-    "max": 0,
-    "p99": 0
-   }
+   "share": 10000
   }
- },
- "base": {
-  "guard_cuirass_t2": {
-   "tris": 3280,
-   "plateTris": 2404,
-   "adorn": {
-    "rows": 3,
-    "rivets": 40,
-    "trims": 1,
-    "tris": 876
-   },
-   "geom": {
-    "tris": 2404,
-    "flipped": 0,
-    "crossing": 9,
-    "crossingWhere": {
-     "front_lame/front_lame2": 2,
-     "front": 7
-    },
-    "rimTurnMaxDeg": 24.6,
-    "rimTurnWorst": "front"
-   },
-   "pokeMaxMm": 25,
-   "pokeOver1": 3219,
-   "platePokeMaxMm": 1.06,
-   "rim": {
-    "p95Mm": 40.9,
-    "maxMm": 47.2,
-    "allP95Mm": 28.5,
-    "within10Pct": 56.47
-   },
-   "stretchPct": 0.012,
-   "lameGapMm": 0,
-   "lameGapMainMm": 0,
-   "lameGapApartMm": {
-    "jog": 0,
-    "armed": 0
-   },
-   "afterTuck": {
-    "maxMm": 24.9,
-    "over1": 1192,
-    "platesMm": 1.06,
-    "kinds": {
-     "cloth": 1001,
-     "skin": 106,
-     "strap": 85
-    },
-    "byGroup": {
-     "main": {
-      "maxMm": 22.4,
-      "platesMm": 1.1
-     },
-     "jog": {
-      "maxMm": 24.9,
-      "platesMm": 1.1
-     },
-     "armed": {
-      "maxMm": 24.8,
-      "platesMm": 1.1
-     }
-    }
-   },
-   "fit": {
-    "fit": "flagged",
-    "why": "22.4 mm through after the tuck",
-    "apart": "jog: 24.9 mm through; armed: 24.8 mm through"
-   },
-   "plates": {
-    "back": {
-     "bone": "spine_03",
-     "tris": 553,
-     "pokeMaxMm": 24.99,
-     "pokeOver1": 1253,
-     "pokeKinds": {
-      "cloth": 1253
-     },
-     "pokePose": "Walk_Loop@0.25",
-     "pokePerPose": {
-      "Walk_Loop@0.25": 25,
-      "Walk_Loop@0.75": 24.6,
-      "Idle_Loop@0.5": 24.9,
-      "Idle_Talking_Loop@0.3": 24.3,
-      "Idle_Talking_Loop@0.7": 24.7,
-      "Jog_Fwd_Loop@0.25": 25,
-      "Jog_Fwd_Loop@0.75": 24.3,
-      "Sword_Idle@0.5": 24.8,
-      "Walk_Loop@0": 25,
-      "Walk_Loop@0.125": 24.9,
-      "Walk_Loop@0.375": 25,
-      "Walk_Loop@0.5": 24.2,
-      "Walk_Loop@0.625": 24.7,
-      "Walk_Loop@0.875": 25
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 40.9,
-     "rimMaxMm": 47.2,
-     "rimPose": "Walk_Loop@0",
-     "rimGroups": {
-      "main": [
-       40.9,
-       47.2
-      ],
-      "jog": [
-       39.7,
-       47.3
-      ],
-      "armed": [
-       37.4,
-       43.9
-      ]
-     },
-     "rimSides": {
-      "v1": [
-       40.9,
-       47.2
-      ]
-     }
-    },
-    "front": {
-     "bone": "spine_03",
-     "tris": 668,
-     "pokeMaxMm": 25,
-     "pokeOver1": 601,
-     "pokeKinds": {
-      "cloth": 601
-     },
-     "pokePose": "Walk_Loop@0.625",
-     "pokePerPose": {
-      "Walk_Loop@0.25": 24.9,
-      "Walk_Loop@0.75": 24.9,
-      "Idle_Loop@0.5": 24.7,
-      "Idle_Talking_Loop@0.3": 24.9,
-      "Idle_Talking_Loop@0.7": 24.8,
-      "Jog_Fwd_Loop@0.25": 24.8,
-      "Jog_Fwd_Loop@0.75": 24.3,
-      "Sword_Idle@0.5": 24.6,
-      "Walk_Loop@0": 24.1,
-      "Walk_Loop@0.125": 24.4,
-      "Walk_Loop@0.375": 24.9,
-      "Walk_Loop@0.5": 24,
-      "Walk_Loop@0.625": 25,
-      "Walk_Loop@0.875": 24.4
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 34.7,
-     "rimMaxMm": 45.7,
-     "rimPose": "Idle_Talking_Loop@0.7",
-     "rimGroups": {
-      "main": [
-       34.7,
-       45.7
-      ],
-      "jog": [
-       31.3,
-       36.1
-      ],
-      "armed": [
-       39,
-       41.7
-      ]
-     },
-     "rimSides": {
-      "u1": [
-       9.4,
-       13
-      ],
-      "v1": [
-       35.8,
-       45.7
-      ],
-      "u0": [
-       15.3,
-       15.9
-      ]
-     }
-    },
-    "back_lame": {
-     "bone": "spine_03",
-     "tris": 251,
-     "pokeMaxMm": 24.11,
-     "pokeOver1": 159,
-     "pokeKinds": {
-      "cloth": 151,
-      "skin": 8
-     },
-     "pokePose": "Jog_Fwd_Loop@0.75",
-     "pokePerPose": {
-      "Walk_Loop@0.25": 8.2,
-      "Walk_Loop@0.75": 7.8,
-      "Idle_Loop@0.5": 9.1,
-      "Idle_Talking_Loop@0.3": 8.3,
-      "Idle_Talking_Loop@0.7": 11.4,
-      "Jog_Fwd_Loop@0.25": 14.1,
-      "Jog_Fwd_Loop@0.75": 24.1,
-      "Sword_Idle@0.5": 17.7,
-      "Walk_Loop@0": 8.8,
-      "Walk_Loop@0.125": 8.8,
-      "Walk_Loop@0.375": 6.2,
-      "Walk_Loop@0.5": 8.8,
-      "Walk_Loop@0.625": 5.9,
-      "Walk_Loop@0.875": 8.3
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 15.6,
-     "rimMaxMm": 17.2,
-     "rimPose": "Walk_Loop@0.875",
-     "rimGroups": {
-      "main": [
-       15.6,
-       17.2
-      ],
-      "jog": [
-       15.6,
-       17.2
-      ],
-      "armed": [
-       14.2,
-       17.2
-      ]
-     },
-     "rimSides": {
-      "v1": [
-       15.6,
-       17.2
-      ]
-     }
-    },
-    "back_lame2": {
-     "bone": "spine_03",
-     "tris": 276,
-     "pokeMaxMm": 24.32,
-     "pokeOver1": 244,
-     "pokeKinds": {
-      "cloth": 157,
-      "skin": 87
-     },
-     "pokePose": "Jog_Fwd_Loop@0.75",
-     "pokePerPose": {
-      "Walk_Loop@0.25": 4.7,
-      "Walk_Loop@0.75": 3.4,
-      "Idle_Loop@0.5": 0,
-      "Idle_Talking_Loop@0.7": 5.3,
-      "Jog_Fwd_Loop@0.25": 23,
-      "Jog_Fwd_Loop@0.75": 24.3,
-      "Sword_Idle@0.5": 17,
-      "Walk_Loop@0": 10.9,
-      "Walk_Loop@0.125": 8.5,
-      "Walk_Loop@0.375": 5.4,
-      "Walk_Loop@0.5": 6.4,
-      "Walk_Loop@0.625": 3.8,
-      "Walk_Loop@0.875": 5.5
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 16.5,
-     "rimMaxMm": 18.9,
-     "rimPose": "Walk_Loop@0.625",
-     "rimGroups": {
-      "main": [
-       16.5,
-       18.9
-      ],
-      "jog": [
-       60,
-       64.6
-      ],
-      "armed": [
-       50.2,
-       53.5
-      ]
-     },
-     "rimSides": {
-      "v0": [
-       11.3,
-       15.6
-      ],
-      "v1": [
-       17.2,
-       18.9
-      ]
-     }
-    },
-    "front_lame": {
-     "bone": "spine_03",
-     "tris": 306,
-     "pokeMaxMm": 25,
-     "pokeOver1": 357,
-     "pokeKinds": {
-      "skin": 153,
-      "cloth": 204
-     },
-     "pokePose": "Sword_Idle@0.5",
-     "pokePerPose": {
-      "Jog_Fwd_Loop@0.25": 24.8,
-      "Jog_Fwd_Loop@0.75": 3.9,
-      "Sword_Idle@0.5": 25
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 22,
-     "rimMaxMm": 22.8,
-     "rimPose": "Walk_Loop@0.875",
-     "rimGroups": {
-      "main": [
-       22,
-       22.8
-      ],
-      "jog": [
-       22,
-       22.8
-      ],
-      "armed": [
-       21.4,
-       22.8
-      ]
-     },
-     "rimSides": {
-      "u1": [
-       22.8,
-       22.8
-      ],
-      "v1": [
-       21.4,
-       22.6
-      ],
-      "u0": [
-       22,
-       22
-      ]
-     }
-    },
-    "front_lame2": {
-     "bone": "spine_03",
-     "tris": 350,
-     "pokeMaxMm": 24.9,
-     "pokeOver1": 605,
-     "pokeKinds": {
-      "skin": 255,
-      "cloth": 265,
-      "strap": 85
-     },
-     "pokePose": "Jog_Fwd_Loop@0.75",
-     "pokePerPose": {
-      "Jog_Fwd_Loop@0.25": 24.5,
-      "Jog_Fwd_Loop@0.75": 24.9,
-      "Sword_Idle@0.5": 24.8
-     },
-     "platePokeMm": 1.06,
-     "rimP95Mm": 21.6,
-     "rimMaxMm": 33.4,
-     "rimPose": "Walk_Loop@0",
-     "rimGroups": {
-      "main": [
-       21.6,
-       33.4
-      ],
-      "jog": [
-       40.1,
-       55
-      ],
-      "armed": [
-       48.4,
-       51.5
-      ]
-     },
-     "rimSides": {
-      "v0": [
-       24.6,
-       33.4
-      ],
-      "u1": [
-       21.1,
-       21.1
-      ],
-      "v1": [
-       16.2,
-       16.3
-      ],
-      "u0": [
-       19.3,
-       19.3
-      ]
-     }
-    }
-   },
-   "lames": {
-    "back_lame over back": {
-     "restOverlapped": "38/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    },
-    "back_lame2 over back_lame": {
-     "restOverlapped": "40/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    },
-    "front_lame over front": {
-     "restOverlapped": "38/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    },
-    "front_lame2 over front_lame": {
-     "restOverlapped": "40/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    }
-   }
-  },
-  "guard_pauldrons_t2": {
-   "tris": 1909,
-   "plateTris": 1573,
-   "adorn": {
-    "rows": 2,
-    "rivets": 28,
-    "trims": 0,
-    "tris": 336
-   },
-   "geom": {
-    "tris": 1573,
-    "flipped": 0,
-    "crossing": 0,
-    "crossingWhere": {},
-    "rimTurnMaxDeg": 23.4,
-    "rimTurnWorst": "lame2_r"
-   },
-   "pokeMaxMm": 13.87,
-   "pokeOver1": 20,
-   "platePokeMaxMm": 0,
-   "rim": {
-    "p95Mm": 29.6,
-    "maxMm": 30,
-    "allP95Mm": 28.5,
-    "within10Pct": 56.47
-   },
-   "stretchPct": 0.0099,
-   "lameGapMm": 0,
-   "lameGapMainMm": 0,
-   "lameGapApartMm": {
-    "jog": 0,
-    "armed": 0
-   },
-   "afterTuck": {
-    "maxMm": 13.87,
-    "over1": 9,
-    "platesMm": 0,
-    "kinds": {
-     "cloth": 9
-    },
-    "byGroup": {
-     "armed": {
-      "maxMm": 11.7,
-      "platesMm": 0
-     },
-     "main": {
-      "maxMm": 13.9,
-      "platesMm": 0
-     },
-     "jog": {
-      "maxMm": 9,
-      "platesMm": 0
-     }
-    }
-   },
-   "fit": {
-    "fit": "flagged",
-    "why": "13.9 mm through after the tuck",
-    "apart": "jog: 9 mm through; armed: 11.7 mm through"
-   },
-   "plates": {
-    "cop_l": {
-     "bone": "upperarm_l",
-     "tris": 315,
-     "pokeMaxMm": 1.99,
-     "pokeOver1": 2,
-     "pokeKinds": {
-      "cloth": 2
-     },
-     "pokePose": "Sword_Idle@0.5",
-     "pokePerPose": {
-      "Sword_Idle@0.5": 2
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 29.6,
-     "rimMaxMm": 29.9,
-     "rimPose": "Walk_Loop@0.875",
-     "rimGroups": {
-      "main": [
-       29.6,
-       29.9
-      ],
-      "jog": [
-       29.1,
-       29.9
-      ],
-      "armed": [
-       29.1,
-       29.9
-      ]
-     },
-     "rimSides": {
-      "v1": [
-       29.6,
-       29.9
-      ]
-     }
-    },
-    "lame1_l": {
-     "bone": "upperarm_l",
-     "tris": 269,
-     "pokeMaxMm": 12.97,
-     "pokeOver1": 1,
-     "pokeKinds": {
-      "cloth": 1
-     },
-     "pokePose": "Idle_Loop@0.5",
-     "pokePerPose": {
-      "Idle_Loop@0.5": 13
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 10.5,
-     "rimMaxMm": 14.1,
-     "rimPose": "Idle_Talking_Loop@0.3",
-     "rimGroups": {
-      "main": [
-       10.5,
-       14.1
-      ],
-      "jog": [
-       12.3,
-       15.3
-      ],
-      "armed": [
-       10.6,
-       12
-      ]
-     },
-     "rimSides": {
-      "u1": [
-       5.6,
-       6.3
-      ],
-      "v1": [
-       10.5,
-       11.3
-      ],
-      "u0": [
-       12.6,
-       14.1
-      ]
-     }
-    },
-    "lame2_l": {
-     "bone": "upperarm_l",
-     "tris": 224,
-     "pokeMaxMm": 2.74,
-     "pokeOver1": 9,
-     "pokeKinds": {
-      "cloth": 9
-     },
-     "pokePose": "Walk_Loop@0.25",
-     "pokePerPose": {
-      "Walk_Loop@0.25": 2.7,
-      "Walk_Loop@0.75": 2.5,
-      "Walk_Loop@0.375": 2.7,
-      "Walk_Loop@0.5": 1.5,
-      "Walk_Loop@0.625": 2
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 13,
-     "rimMaxMm": 19.1,
-     "rimPose": "Walk_Loop@0",
-     "rimGroups": {
-      "main": [
-       13,
-       19.1
-      ],
-      "jog": [
-       19.7,
-       21.5
-      ],
-      "armed": [
-       20.3,
-       22.5
-      ]
-     },
-     "rimSides": {
-      "u1": [
-       4.2,
-       4.2
-      ],
-      "v1": [
-       13.7,
-       19.1
-      ],
-      "u0": [
-       3.3,
-       9.2
-      ]
-     }
-    },
-    "cop_r": {
-     "bone": "upperarm_r",
-     "tris": 297,
-     "pokeMaxMm": 0,
-     "pokeOver1": 0,
-     "pokeKinds": {},
-     "pokePose": null,
-     "pokePerPose": {},
-     "platePokeMm": 0,
-     "rimP95Mm": 23.5,
-     "rimMaxMm": 27.1,
-     "rimPose": "Walk_Loop@0.25",
-     "rimGroups": {
-      "main": [
-       23.5,
-       27.1
-      ],
-      "jog": [
-       23,
-       25.9
-      ],
-      "armed": [
-       23,
-       26
-      ]
-     },
-     "rimSides": {
-      "v1": [
-       23.5,
-       27.1
-      ]
-     }
-    },
-    "lame1_r": {
-     "bone": "upperarm_r",
-     "tris": 248,
-     "pokeMaxMm": 12.56,
-     "pokeOver1": 6,
-     "pokeKinds": {
-      "cloth": 6
-     },
-     "pokePose": "Walk_Loop@0.625",
-     "pokePerPose": {
-      "Walk_Loop@0.75": 9.6,
-      "Jog_Fwd_Loop@0.75": 9,
-      "Sword_Idle@0.5": 11.7,
-      "Walk_Loop@0.375": 12,
-      "Walk_Loop@0.625": 12.6
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 23.1,
-     "rimMaxMm": 30,
-     "rimPose": "Idle_Talking_Loop@0.3",
-     "rimGroups": {
-      "main": [
-       23.1,
-       30
-      ],
-      "jog": [
-       18,
-       20.2
-      ],
-      "armed": [
-       18.2,
-       20.2
-      ]
-     },
-     "rimSides": {
-      "u1": [
-       25.8,
-       26.6
-      ],
-      "v1": [
-       18.2,
-       20.2
-      ],
-      "u0": [
-       25.9,
-       30
-      ]
-     }
-    },
-    "lame2_r": {
-     "bone": "upperarm_r",
-     "tris": 220,
-     "pokeMaxMm": 13.87,
-     "pokeOver1": 2,
-     "pokeKinds": {
-      "cloth": 2
-     },
-     "pokePose": "Walk_Loop@0.875",
-     "pokePerPose": {
-      "Idle_Talking_Loop@0.3": 2.8,
-      "Walk_Loop@0.875": 13.9
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 10.2,
-     "rimMaxMm": 16.6,
-     "rimPose": "Idle_Talking_Loop@0.3",
-     "rimGroups": {
-      "main": [
-       10.2,
-       16.6
-      ],
-      "jog": [
-       16.5,
-       26.9
-      ],
-      "armed": [
-       12.4,
-       12.9
-      ]
-     },
-     "rimSides": {
-      "u1": [
-       4.9,
-       8.3
-      ],
-      "v1": [
-       10.2,
-       16.6
-      ],
-      "u0": [
-       9.9,
-       12.9
-      ]
-     }
-    }
-   },
-   "lames": {
-    "cop_l over lame1_l": {
-     "restOverlapped": "9/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    },
-    "lame1_l over lame2_l": {
-     "restOverlapped": "38/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    },
-    "cop_r over lame1_r": {
-     "restOverlapped": "12/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    },
-    "lame1_r over lame2_r": {
-     "restOverlapped": "37/40",
-     "openPts": 0,
-     "worstGapMm": 0,
-     "worstPose": null,
-     "byGroup": {}
-    }
-   }
-  },
-  "guard_bracers_t2": {
-   "tris": 1078,
-   "plateTris": 838,
-   "adorn": {
-    "rows": 2,
-    "rivets": 20,
-    "trims": 0,
-    "tris": 240
-   },
-   "geom": {
-    "tris": 838,
-    "flipped": 0,
-    "crossing": 0,
-    "crossingWhere": {},
-    "rimTurnMaxDeg": 22.6,
-    "rimTurnWorst": "bracer_r"
-   },
-   "pokeMaxMm": 5.53,
-   "pokeOver1": 57,
-   "platePokeMaxMm": 0,
-   "rim": {
-    "p95Mm": 11.7,
-    "maxMm": 22.2,
-    "allP95Mm": 28.5,
-    "within10Pct": 56.47
-   },
-   "stretchPct": 0.0058,
-   "lameGapMm": 0,
-   "lameGapMainMm": 0,
-   "lameGapApartMm": {
-    "jog": 0,
-    "armed": 0
-   },
-   "afterTuck": {
-    "maxMm": 21,
-    "over1": 211,
-    "platesMm": 0,
-    "kinds": {
-     "cloth": 211
-    },
-    "byGroup": {
-     "main": {
-      "maxMm": 17,
-      "platesMm": 0
-     },
-     "jog": {
-      "maxMm": 9.7,
-      "platesMm": 0
-     },
-     "armed": {
-      "maxMm": 21,
-      "platesMm": 0
-     }
-    }
-   },
-   "fit": {
-    "fit": "flagged",
-    "why": "17 mm through after the tuck",
-    "apart": "jog: 9.7 mm through; armed: 21 mm through"
-   },
-   "plates": {
-    "bracer_l": {
-     "bone": "lowerarm_l",
-     "tris": 419,
-     "pokeMaxMm": 3.28,
-     "pokeOver1": 16,
-     "pokeKinds": {
-      "cloth": 16
-     },
-     "pokePose": "Jog_Fwd_Loop@0.75",
-     "pokePerPose": {
-      "Idle_Talking_Loop@0.3": 1.5,
-      "Idle_Talking_Loop@0.7": 1.6,
-      "Jog_Fwd_Loop@0.25": 2.3,
-      "Jog_Fwd_Loop@0.75": 3.3
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 8.9,
-     "rimMaxMm": 17.9,
-     "rimPose": "Idle_Talking_Loop@0.7",
-     "rimGroups": {
-      "main": [
-       8.9,
-       17.9
-      ],
-      "jog": [
-       13.7,
-       15.4
-      ],
-      "armed": [
-       9.6,
-       12.7
-      ]
-     },
-     "rimSides": {
-      "v0": [
-       8,
-       17.9
-      ],
-      "v1": [
-       9.3,
-       14.2
-      ]
-     }
-    },
-    "bracer_r": {
-     "bone": "lowerarm_r",
-     "tris": 419,
-     "pokeMaxMm": 5.53,
-     "pokeOver1": 41,
-     "pokeKinds": {
-      "cloth": 41
-     },
-     "pokePose": "Sword_Idle@0.5",
-     "pokePerPose": {
-      "Walk_Loop@0.75": 0.4,
-      "Idle_Talking_Loop@0.3": 3.3,
-      "Idle_Talking_Loop@0.7": 2.4,
-      "Jog_Fwd_Loop@0.25": 0.3,
-      "Jog_Fwd_Loop@0.75": 1.8,
-      "Sword_Idle@0.5": 5.5,
-      "Walk_Loop@0": 0.9,
-      "Walk_Loop@0.125": 0.6,
-      "Walk_Loop@0.875": 0.3
-     },
-     "platePokeMm": 0,
-     "rimP95Mm": 11.7,
-     "rimMaxMm": 22.2,
-     "rimPose": "Idle_Talking_Loop@0.3",
-     "rimGroups": {
-      "main": [
-       11.7,
-       22.2
-      ],
-      "jog": [
-       12.6,
-       16.9
-      ],
-      "armed": [
-       16.5,
-       19.4
-      ]
-     },
-     "rimSides": {
-      "v0": [
-       6.4,
-       11.7
-      ],
-      "v1": [
-       14.4,
-       22.2
-      ]
-     }
-    }
-   },
-   "lames": {}
-  }
- },
- "carry": {
-  "scales": {
-   "warden.boots": {
-    "max": 1.261
-   },
-   "guard_cuirass_t2": {
-    "max": 1
-   },
-   "guard_pauldrons_t2": {
-    "max": 1
-   },
-   "guard_bracers_t2": {
-    "max": 1
-   }
-  }
- },
- "readability": {
-  "pieces": [
-   {
-    "id": "guard_cuirass_t2",
-    "material": "steel",
-    "plateValue": 0.7,
-    "under": "gambeson",
-    "underDye": "oxblood",
-    "underValue": 0.345
-   },
-   {
-    "id": "guard_pauldrons_t2",
-    "material": "steel",
-    "plateValue": 0.7,
-    "under": "gambeson",
-    "underDye": "oxblood",
-    "underValue": 0.345
-   },
-   {
-    "id": "guard_bracers_t2",
-    "material": "steel",
-    "plateValue": 0.7,
-    "under": "gambeson",
-    "underDye": "oxblood",
-    "underValue": 0.345
-   }
-  ],
-  "underPlate": [
-   {
-    "garment": "top",
-    "type": "gambeson",
-    "from": "oak grey",
-    "to": "oxblood",
-    "colour": "#58302a",
-    "value": 0.345
-   }
-  ]
- },
- "checks": [
-  {
-   "id": "bare",
-   "words": "Every NPC wears a top and a bottom (garment or armor piece), unless the description asks for bare",
-   "ok": true,
-   "value": "dressed",
-   "limit": "top and bottom",
-   "where": null,
-   "refuse": true,
-   "fix": {
-    "label": "Use the description's clothes"
-   }
-  },
-  {
-   "id": "cloth-through",
-   "words": "No skin shows through the clothes at rest or in motion (the walk, crouch, sprint, a swing, arms up)",
-   "ok": false,
-   "value": "6 points at rest, deepest 1.5 mm; in motion 164 -> 10 points (deepest 20 -> 19.2 mm), 395 tucked in up to 22 mm",
-   "limit": "no point deeper than 2 mm at rest, none deeper than 0.5 mm in motion",
-   "where": "in motion 10 points, Walk_Loop@0.25 1 / 18.9 mm; Walk_Loop@0.75 1 / 19.2 mm; Idle_Loop@0.5 2 / 16.1 mm; Idle_Talking_Loop@0.3 5 / 13.1 mm; Idle_Talking_Loop@0.7 5 / 13.2 mm; Jog_Fwd_Loop@0.25 1 / 3.7 mm; Jog_Fwd_Loop@0.75 5 / 3.4 mm; Sword_Idle@0.5 2 / 11.6 mm; Walk_Loop@0 1 / 12.3 mm; Walk_Loop@0.125 1 / 14.7 mm; Walk_Loop@0.875 1 / 15.8 mm"
-  },
-  {
-   "id": "layer-through",
-   "words": "No garment shows through the garment over it (a waistband through a tunic)",
-   "ok": false,
-   "value": "0 points at rest, deepest 0 mm; in motion 388 -> 176 points",
-   "limit": 0,
-   "where": "gambeson under plates; belt under plates; buckle under plates; gambeson under ; trousers under gambeson"
-  },
-  {
-   "id": "budget",
-   "words": "The model fits its triangle budget (game model and the far LOD)",
-   "ok": true,
-   "value": "drawn 55567 of 60000, LOD 10410",
-   "limit": "60000 drawn, 12000 LOD",
-   "where": null
-  },
-  {
-   "id": "clipping",
-   "words": "Armor and clothes do not cut through the skin in any of the poses",
-   "ok": true,
-   "value": "worst 4.45% of area, deepest 39.98 mm",
-   "limit": "5% of area",
-   "where": null
-  },
-  {
-   "id": "scale",
-   "words": "No metal piece is stretched to fit (a smith resizes a plate, not stretches it)",
-   "ok": true,
-   "value": "largest 1.26x",
-   "limit": "under 1.3x on any axis",
-   "where": null
-  },
-  {
-   "id": "cloth-hull",
-   "words": "Loose clothes bridge the body's hollows (the cleavage, under the bust) instead of following the skin",
-   "ok": true,
-   "value": "0.7 mm (95% of the front's points within it)",
-   "limit": "at most 4 mm in from the cloth's own outline",
-   "where": null
-  },
-  {
-   "id": "open-edges",
-   "words": "Hems, cuffs and necklines are closed (rolled) and smooth, with no open seams",
-   "ok": true,
-   "value": "0 open edges, edges turn at most 31 deg (95%)",
-   "limit": "0 open, 35 deg (a coarse loop turns 20 at its corners)",
-   "where": null
-  },
-  {
-   "id": "shoulder-line",
-   "words": "Clothes do not grow the shoulders (padding over the shoulders and upper arms is capped)",
-   "ok": true,
-   "value": "shoulders 1.7 cm wider over the clothes, upper arm 9.1 mm off the skin",
-   "limit": "at most 3 cm wider",
-   "where": null
-  },
-  {
-   "id": "belt-hold",
-   "words": "A belt is a real strap round the waist and the cloth stays inside it",
-   "ok": true,
-   "value": "all inside, nearest 2.8 mm under it",
-   "limit": "no cloth outside the belt at rest",
-   "where": null
-  },
-  {
-   "id": "floating-plate",
-   "words": "No armor plate stands off what it rests on where you can see it: the gap at its outline is at most 10 mm at 95% of the outline and never over 18 mm, at rest and in the clips an NPC plays",
-   "ok": false,
-   "value": "outline gap 40.9 mm (95% of each plate's seen outline), at most 47.2 mm",
-   "limit": "10 mm at 95%, 18 mm at most",
-   "where": "guard_cuirass_t2 back 40.9/47.2 mm (Walk_Loop@0); guard_cuirass_t2 front 34.7/45.7 mm (Idle_Talking_Loop@0.7); guard_cuirass_t2 back_lame 15.6/17.2 mm (Walk_Loop@0.875); guard_cuirass_t2 back_lame2 16.5/18.9 mm (Walk_Loop@0.625); guard_cuirass_t2 front_lame 22/22.8 mm (Walk_Loop@0.875); guard_cuirass_t2 front_lame2 21.6/33.4 mm (Walk_Loop@0); guard_pauldrons_t2 cop_l 29.6/29.9 mm (Walk_Loop@0.875); guard_pauldrons_t2 lame1_l 10.5/14.1 mm (Idle_Talking_Loop@0.3); guard_pauldrons_t2 lame2_l 13/19.1 mm (Walk_Loop@0); guard_pauldrons_t2 cop_r 23.5/27.1 mm (Walk_Loop@0.25); guard_pauldrons_t2 lame1_r 23.1/30 mm (Idle_Talking_Loop@0.3); guard_pauldrons_t2 lame2_r 10.2/16.6 mm (Idle_Talking_Loop@0.3); guard_bracers_t2 bracer_r 11.7/22.2 mm (Idle_Talking_Loop@0.3)"
-  },
-  {
-   "id": "plate-clean",
-   "words": "Armor plates are clean forged shapes: no triangle faces the wrong way, none cuts another, and their outlines run smooth",
-   "ok": false,
-   "value": "0 flipped, 9 crossing triangles, outlines turn at most 24.6 deg between edges",
-   "limit": "0 flipped, 0 crossing, under 25 deg",
-   "where": "guard_cuirass_t2: 0 flipped, 9 crossing, outline turns 24.6 deg (front)"
-  },
-  {
-   "id": "plate-through",
-   "words": "Nothing comes out through an armor plate in the clips an NPC plays (after the bake tucks the cloth and skin in under it), and lames stay overlapped",
-   "ok": false,
-   "value": "deepest 22.4 mm through a plate (idle, talk, walk), lames open at most 0 mm; apart, not gated: jog 24.9 mm, armed lean 24.8 mm",
-   "limit": "1 mm, 2 mm",
-   "where": "guard_cuirass_t2: 22.4 mm through; guard_pauldrons_t2: 13.9 mm through; guard_bracers_t2: 17 mm through"
-  },
-  {
-   "id": "armor-fit",
-   "words": "Each armor piece fit this body (its plates carried clean and nothing comes out through them after the tuck)",
-   "ok": false,
-   "value": "3 of 3 pieces did not fit this body",
-   "limit": "clean carry, at most 1 mm through after the tuck",
-   "where": "guard_cuirass_t2: 22.4 mm through after the tuck; guard_pauldrons_t2: 13.9 mm through after the tuck; guard_bracers_t2: 17 mm through after the tuck | apart, not gated: guard_cuirass_t2 jog: 24.9 mm through; armed: 24.8 mm through; guard_pauldrons_t2 jog: 9 mm through; armed: 11.7 mm through; guard_bracers_t2 jog: 9.7 mm through; armed: 21 mm through",
-   "say": "Armor did not fit this body: guard_cuirass_t2: 22.4 mm through after the tuck; guard_pauldrons_t2: 13.9 mm through after the tuck; guard_bracers_t2: 17 mm through after the tuck",
-   "warn": true
-  },
-  {
-   "id": "plate-read",
-   "words": "Armor plates read as metal against what is under them: their colour differs from the clothes under them by at least 0.15 in value, and every plate carries the shading data the game metal needs",
-   "ok": true,
-   "value": "plates and the clothes under them at least 0.35 apart in value; shading data on 8 plate surfaces (4443 points); gambeson dyed oxblood (was oak grey)",
-   "limit": "0.15 apart, every plate surface shaded",
-   "where": null,
-   "warn": true
-  },
-  {
-   "id": "gaze",
-   "words": "Her eyes look straight ahead, level, and not crossed",
-   "ok": true,
-   "value": "1 deg down",
-   "limit": "at most 1 deg down",
-   "where": null,
-   "fix": {
-    "label": "Refit face"
-   }
-  },
-  {
-   "id": "lids",
-   "words": "Her lids are open to a natural width (not doll eyes, not sleepy)",
-   "ok": true,
-   "value": "13.7% of the iris covered (lid -0.7)",
-   "limit": "at most 15% covered",
-   "where": null,
-   "fix": {
-    "label": "Refit face"
-   }
-  },
-  {
-   "id": "mouth",
-   "words": "Her mouth is a natural size and resting closed",
-   "ok": true,
-   "value": "gap 0, corners 0.5 (seen), droop -0.1, pout -7.19 (mm), balance 0.1",
-   "limit": "gap <= 1, corners 0.3..2, droop >= -0.15, pout <= -0.8, balance 0..0.1",
-   "where": null,
-   "fix": {
-    "label": "Refit face"
-   }
-  },
-  {
-   "id": "shoulder-hip",
-   "words": "Shoulders and hips are in proportion for this build",
-   "ok": true,
-   "value": "ratio 1.41 (not checked on men)",
-   "limit": null,
-   "where": null
-  },
-  {
-   "id": "hairline-cut",
-   "words": "The hairline has no hard cut where the cap meets the skin",
-   "ok": true,
-   "value": "787 of 787 seen hairline points kept, fade off by at most 0.21",
-   "limit": "no seen point dropped",
-   "where": null
-  }
- ]
+ }
 }
