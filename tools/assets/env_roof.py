@@ -236,7 +236,7 @@ def eaves(m, R, side, z0, z1, rng, nraft):
         quad(m, P, uvq('boards', ua, ub, 1.0, 0.2), (0.6, 0.5, 0.0, 1.0), (side, 0, 0))   # (E9b3: 0.6, it read as a pale band)
         # its underside lip
     # soffit: from the eave edge in to the wall's face, under the boarding (two strips through the knee)
-    xs = [R.xe, R.xk + BLEND * 0.3, R.hw + 0.02]
+    xs = [R.xe, R.xk + BLEND * 0.3, R.hw - 0.15]  # (E9b6 r4: into the wall, so the eaves' plan bow opens no slit)
     for xa, xb in zip(xs, xs[1:]):
         for za, zb in zip(zs, zs[1:]):
             kk = math.floor((za - phase) / 4.0 + 1e-6)
@@ -290,7 +290,7 @@ def ridge_caps(m, R, z0, z1, rng, seed):
     for i in range(n):
         za, zb = z0 + i * cl - (0.02 if i else 0), z0 + (i + 1) * cl
         s = 1.0 + (0.03 if i % 2 else 0.0)
-        dy, tilt = (1 if i % 2 else -1) * rng(0.01, 0.02), rng(-0.02, 0.02)   # (E9b3) each cap stepped 2-4 cm off its neighbours
+        dy, tilt = (1 if i % 2 else -1) * rng(0.02, 0.03), rng(-0.025, 0.025)   # (E9b6 r4) each cap settled +-2-3 cm off true
         ua, ub = (i % 10) / 10, (i % 10 + 1) / 10
         g = hsh(seed, i, 7.7)
         for j in range(len(sec) - 1):
@@ -373,7 +373,7 @@ def verges(m, R, hd, rng):
             quad(m, P, uvq('endgrain', 0.1, 0.1 + wb / 0.25, 0.1, 0.1 + hb / 0.25), (0.8, 0.5, 0.0, 1.0), (0, 0, zs))
 
 
-def sag(m, hd, amount, seed, wob=0.006, xe=None, rake=0.0):
+def sag(m, hd, amount, seed, wob=0.006, xe=None, rake=0.0, bow=0.0, hw=None):
     """Ridge and eaves down by amount at the middle (a parabola, nothing at the gables), a few mm of wobble; each
     slope dished by rake between ridge and eave (the rafters' own sag, E9b3: so a verge is never a ruler line); the
     vertex alpha the along-the-ridge weight (the game's own per-house sag)."""
@@ -382,7 +382,16 @@ def sag(m, hd, amount, seed, wob=0.006, xe=None, rake=0.0):
         w = max(0.0, 1.0 - (z / hd) ** 2) if hd > 0 else 0.0
         wb = wob * (0.6 * math.sin(z * 1.3 + ph[0]) + 0.4 * math.sin(z * 3.1 + ph[1])) * min(abs(z) / max(hd, 1e-6), 1.0) * w ** 0.3
         dr = rake * math.sin(math.pi * min(abs(x) / xe, 1.0)) if xe else 0.0
-        m.P[i] = (x, y - amount * w - wb - dr, z)
+        # (E9b6 r4) the sag across the slopes: full at the ridge and at the eave's tail, 0.6 of it over the wall's
+        # face (the covering keeps clear of the wall's top); the plan bow: the eaves spread out under the sagging
+        # ridge, and the whole roof racks a little to one side (the play camera looks down: sideways reads)
+        pr = 1.0
+        if hw and xe:
+            a = abs(x)
+            if a > 0.5 * hw:
+                pr = 1.0 - 0.4 * min(1.0, (a - 0.5 * hw) / (0.5 * hw)) ** 2 if a <= hw else 0.6 + 0.4 * min(1.0, (a - hw) / (xe - hw))
+        dx = bow * w * ((x / xe if xe else 0.0) + 0.45 * (1 if hsh(seed, 2.2) > 0.5 else -1))
+        m.P[i] = (x + dx, y - amount * w * pr - wb - dr, z)
         r, g, b, _ = m.C[i]
         m.C[i] = (r, g, b, w)
 
@@ -403,7 +412,7 @@ def body(p):
     else:
         ridge_boards(m, R, z0, z1, rng)
     verges(m, R, hd, rng)
-    sag(m, hd, p['sag'], p['seed'], xe=R.xe, rake=p.get('rake', 0.035))
+    sag(m, hd, p['sag'], p['seed'], xe=R.xe, rake=p.get('rake', 0.035), bow=p.get('bow', 0.0), hw=R.hw)
     meas = {"ridge_sag_cm": round(100 * p['sag'], 1), "eave_cm": round(100 * p['eave'], 1), "pitch_deg": round(math.degrees(math.atan(R.t)), 1),
             "ridge_y": round(R.ridge(), 3)}
     return {"Roof_Own": m}, meas
@@ -445,27 +454,61 @@ def gable(p):
     # the tie beam: the gable's sill, a little proud of the wall's band
     H.beam(m, (-hw - 0.04, 0.1), (hw + 0.04, 0.1), 0.2, 0.0, 0.11, rng, sag=0.008, col=tc, segs=3)
     pat = p['pattern']
-    TD = H.TD
-    # a king post up the middle, under the owl hole
-    H.beam(m, (rng(-0.02, 0.02), 0.2), (rng(-0.02, 0.02), oy - 0.06), 0.16, 0.0, TD, rng, sag=0.004, col=tc, segs=1)
-    if pat == 'plain':
-        # (E9b6) queen posts either side of the king post, so a plain gable is no 5-8 m sheet of bare plaster
+    # (E9b6 r4) a real timber-framed gable, members 15-20 cm at the timber's value so it reads at the play camera:
+    # close studs every ~1 m (so no plaster panel is wider than ~1.1 m), a collar at about half the height, a mid
+    # rail under it on the big gables, the king post to the owl hole, two braces (plain: raking up to the king
+    # post; x: a St Andrew's cross either side; k: struts from the king post's foot to the collar's ends).
+    # Horizontal members stand a centimetre prouder than the posts, braces a centimetre back (no z-fighting).
+    TD = 0.05
+
+    def x_at(y):
+        """|x| where the roof's underside (less 6 cm) comes down to y, on the main pitch."""
+        return R.xk - (y + 0.06 + COVER - KNEE_Y) / R.t
+
+    def post(x, y0, y1, wd=0.17, d=TD):
+        H.beam(m, (x + rng(-0.015, 0.015), y0), (x + rng(-0.015, 0.015), y1), wd, 0.0, d, rng, sag=0.003, col=tc, segs=1)
+
+    yc = round(0.52 * yr, 3)                     # the collar
+    xc = x_at(yc + 0.09)
+    nb = max(2, math.ceil(hw / 1.1))
+    sp = hw / nb                                 # the studs' spacing (about 1 m)
+    # the king post up to the owl hole, the studs up to the rafters
+    post(rng(-0.01, 0.01), 0.2, oy - 0.06, 0.18)
+    studs = []
+    for k in range(1, nb):
+        x = k * sp
+        top = R.under(x) - 0.06
+        if top < 0.55:
+            continue
+        studs.append(x)
         for sx in (-1, 1):
-            x = sx * hw * rng(0.46, 0.52)
-            H.beam(m, (x, 0.2), (x + rng(-0.02, 0.02), R.under(x) - 0.05), 0.14, 0.0, TD, rng, sag=0.003, col=tc, segs=1)
+            post(sx * x, 0.2, top)
+    # the collar from rafter to rafter, a mid rail on the tall gables (between the studs, under the collar)
+    H.beam(m, (-xc, yc), (xc, yc), 0.18, 0.0, TD + 0.012, rng, sag=0.01, col=tc, segs=2)
+    if yc > 2.2:
+        yrl = round(0.5 * (yc + 0.2), 3)
+        xr = min(hw - 0.15, x_at(yrl + 0.08))
+        H.beam(m, (-xr, yrl), (xr, yrl), 0.15, 0.0, TD + 0.008, rng, sag=0.008, col=tc, segs=2)
+    else:
+        yrl = yc
+    # the two braces
+    xo = studs[-1] if studs else hw * 0.6
     if pat == 'x':
         for sx in (-1, 1):
-            x0, x1 = sx * 0.12, sx * (hw * 0.62)
-            yt = R.under(x1) - 0.05
-            H.beam(m, (x0, 0.24), (x1, yt * 0.9), 0.12, 0.0, TD * 0.9, rng, sag=0.0, col=tc, segs=1)
-            H.beam(m, (x1, 0.24), (x0, min(yt * 0.9, R.under(x0) - 0.3)), 0.12, 0.0, TD * 0.9, rng, sag=0.0, col=tc, segs=1)
-            H.beam(m, (x1 + sx * 0.04, 0.2), (x1 + sx * 0.04, R.under(x1) - 0.04), 0.13, 0.0, TD, rng, sag=0.003, col=tc, segs=1)
+            xa, xb = sx * sp * 0.08, sx * min(sp, xo)
+            for (p0, p1) in (((xa, 0.24), (xb, yrl - 0.04)), ((xb, 0.24), (xa, yrl - 0.04))):
+                H.beam(m, p0, p1, 0.15, 0.0, TD - 0.012, rng, sag=0.0, col=tc, segs=1)
     elif pat == 'k':
         for sx in (-1, 1):
-            # raking struts from the king post's foot up toward the rafters
-            H.beam(m, (sx * 0.1, 0.24), (sx * hw * 0.55, R.under(hw * 0.55) - 0.08), 0.13, 0.0, TD * 0.9, rng, sag=0.004, col=tc, segs=1)
-            # a collar under the apex
-        H.beam(m, (-hw * 0.38, R.under(hw * 0.38) - 0.12), (hw * 0.38, R.under(hw * 0.38) - 0.12), 0.13, 0.0, TD, rng, sag=0.006, col=tc, segs=2)
+            H.beam(m, (sx * 0.1, 0.26), (sx * xc * 0.85, yc - 0.06), 0.15, 0.0, TD - 0.012, rng, sag=0.004, col=tc, segs=1)
+    else:
+        for sx in (-1, 1):
+            x0 = sx * min(xo, hw - 0.5)
+            H.beam(m, (x0, 0.26), (sx * 0.1, yrl - 0.06), 0.15, 0.0, TD - 0.012, rng, sag=0.004, col=tc, segs=1)
+    # short struts over the collar from the king post up to the rafters (the apex is never a bare triangle)
+    for sx in (-1, 1):
+        xs_ = x_at(yc + 0.5 * (yr - yc)) * 0.8
+        H.beam(m, (sx * 0.1, yc + 0.12), (sx * xs_, yc + 0.55 * (yr - yc)), 0.13, 0.0, TD - 0.012, rng, sag=0.0, col=tc, segs=1)
     return {"Wall_Own": m}, {}
 
 
