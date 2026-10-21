@@ -1041,7 +1041,8 @@ def build_cuirass():
     # (the band's seam: build_plate_top takes its rim's points furthest back. The cuirass's furthest back are its top
     # corners (her upper chest recedes): the band started there, at her neck, and ran 1.3 m. So only its side seams:
     # rim points beyond her nipple's |x|, below her nipple)
-    sr_ = oloop[(np.abs(pos[oloop, 0]) > nx) & (pos[oloop, 2] < nipz)]
+    # (her right side only, as fitted_cups' rim_r is: band_and_straps mirrors its anchor onto her left)
+    sr_ = oloop[(pos[oloop, 0] < -nx) & (pos[oloop, 2] < nipz)]
     FIT["rim_r"] = pos[sr_ if len(sr_) > 8 else oloop]
     FIT["x_min"] = float(ww)
     FIT["window_rim"] = pos[wloop]
@@ -1149,6 +1150,15 @@ def cuirass_measure():
     out = {"cuirass": {k: v for k, v in CUIR.items() if k != "front_profile"}}
     bb = BVHTree.FromPolygons([tuple(p) for p in bv0], [p_.vertices[:] for p_ in me.polygons])
     out["standoff_mm"] = {"plate": standoff(f"{PID}.plate", bb)}
+    ev_, _, _ = mesh_world(B["envelope"])
+    e_ = np.array([np.linalg.norm(np.array(filled_bvh.find_nearest(Vector(q))[0][:]) - q) for q in ev_])
+    top_ = np.argsort(-e_)[:max(1, len(e_) // 100)]
+    q_ = ev_[top_]
+    out["envelope_top1pct"] = {"n": int(len(top_)), "min_mm": round(float(e_[top_].min() * 1000), 2),
+                               "on_ridge": int((np.abs(q_[:, 0]) < 0.007).sum()),
+                               "below_window": int((q_[:, 2] < CUIR["window_design"]["bottom_z"]).sum()),
+                               "above_window": int((q_[:, 2] > CUIR["window_design"]["top_z"]).sum()),
+                               "at": nip_rel(q_[::max(1, len(q_) // 10)])}
     wt_ = [tb for tn, tb in CAP["tubes"].items() if tn.startswith(f"{PID}.plate_bind") and
            np.ptp(tb["curve"][:, 0]) < 2.5 * FIT["x_min"]]
     if wt_:

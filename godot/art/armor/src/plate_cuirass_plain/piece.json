@@ -15,6 +15,7 @@
   "lift": 0.0012,
   "thick": 0.0028,
   "plate_budget": 3800,
+  "rim_probe": 0.004,
   "graft": false,
   "neck": 0.11,
   "neck_rise": 0.03,
