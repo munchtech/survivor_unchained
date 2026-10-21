@@ -49,6 +49,11 @@ public partial class HerPose : SkeletonModifier3D
     public float ChinUp;
     /// <summary>--chin-up DEG: tries another (every figure with her pose).</summary>
     static readonly float? ChinUpTry = SurvivorUnchained.Args.Has("chin-up") ? SurvivorUnchained.Args.Num("chin-up", 0f) : null;
+    /// <summary>--head-yaw DEG: turns her head about her neck's up axis, positive to her own left (she faces the
+    /// skeleton's +Z, so +Y turns +Z toward +X, her left). --head-pitch DEG: positive lowers her chin, the opposite of
+    /// --chin-up. For pictures of the neck at other turns; without them nothing changes.</summary>
+    static readonly float HeadYawTry = SurvivorUnchained.Args.Num("head-yaw", 0f);
+    static readonly float HeadPitchTry = SurvivorUnchained.Args.Num("head-pitch", 0f);
 
     public HerPose() { Name = "HerPose"; }
 
@@ -125,6 +130,15 @@ public partial class HerPose : SkeletonModifier3D
         {
             Turn(sk, neck, Vector3.Right, -up / 3);
             Turn(sk, head, Vector3.Right, -up * 2 / 3);
+        }
+        // Shot-only head turns, after the chin lift so they turn the head as posed. Half sits on the neck and half on
+        // the head, as a real turn does (the measuring scripts posed their "N+H" turns so).
+        if (HeadYawTry != 0 || HeadPitchTry != 0)
+        {
+            Turn(sk, neck, Vector3.Up, HeadYawTry / 2);
+            Turn(sk, head, Vector3.Up, HeadYawTry / 2);
+            Turn(sk, neck, Vector3.Right, HeadPitchTry / 2);
+            Turn(sk, head, Vector3.Right, HeadPitchTry / 2);
         }
     }
 
