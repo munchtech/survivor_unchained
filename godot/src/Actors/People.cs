@@ -630,7 +630,13 @@ public static class People
             p.Hair.Add(mi);
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
-                    mi.SetSurfaceOverrideMaterial(s, Hair(src, colour));
+                {
+                    var hm = Hair(src, colour);
+                    // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
+                    if (style == "pixie" && hm is ShaderMaterial sm)
+                        foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
+                    mi.SetSurfaceOverrideMaterial(s, hm);
+                }
             mi.AddChild(new HairSway { Style = style });
         }
         scene.Free();
