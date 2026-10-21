@@ -7,7 +7,8 @@ o (as built: our own flora, the default since E4h, plus x= flags); g is the kit'
 SETS, comma-separated: town (the square, the east road, the north street by day), ford (Low Ford by
 night: camp, road A, road B, the ford, the wood road, two ford lamps), close (the close view at camp,
 closest zoom, twice facing away from the fire and twice facing it), camp (the camp at the play camera), towndawn, forddawn,
-road (the wood road by night, and the ford road), roaddawn.
+road (the wood road by night, and the ford road), roaddawn, stones (E5: the ford's stepping stones,
+the post's pebbles, a boulder field, by day).
 Frames land in godot/.shots/ as ROUND_SET_VARIANT_*.png; tables as godot/.shots/ROUND_SET_g.bin.
 """
 import os, subprocess, sys, time
@@ -34,6 +35,17 @@ SETS = {
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),
     # (E4h: the town's elders in the open by day (-36,-34: 14 m from any tree), at the play camera: their cream flower heads)
     "elder": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-37.5,-30.5"], 1),
+    # (env lead 10, E5: our stones by day at the play camera: the ford's stepping stones, the post's pebbles and boulders, a boulder field)
+    # (E5b: 18,-80 showed only canopy: a boulder, field rocks and pebbles by the road (1,3), and the one open place boulders,
+    # field rocks and cliff chunks meet (-58,-53, the west bank))
+    # (E5c, judge r2: her on the ford's near (north) bank, not on the water (2.5,-30.5); a pebble patch on open ground (21,23);
+    # the west bank's cliff chunk (-73.8,-46.1) 8 m up the frame, her on land below it (-71,-38), not the old spot in the water)
+    "stones": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "2.5,-30.5;21,23;1,3;-71,-38"], 4),
+    # (E5b: the same rocks by night)
+    "stonesnight": (NIGHT + ["--spots-clear", "--spots", "1,3;-71,-38"], 2),
+    # (E5c: only the rock frames of ford and road: the ford's lantern post (ford 03, 05) and the road's faceted boulder (road 01))
+    "fordpost": (NIGHT + ["--spots", "0,-38;0,-37"], 2),
+    "roadrock": (NIGHT + ["--spots-clear", "--spots", "3,64"], 1),
     "roaddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-2,-72"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")

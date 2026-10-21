@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Godot;
 
@@ -33,7 +34,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim, ownRock, ownRockRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -111,6 +112,8 @@ public static class KitLook
         if (cache.TryGetValue(key, out var m)) return m;
         solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
+        // (our own rocks, tools/assets/env_rocks.py: Stone_Own<Species>, the one stone, OWN_ROCK)
+        if (s.ResourceName.StartsWith("Stone_Own")) return cache[key] = Rock(s, look);
         // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
         bool mine = foliage && s.ResourceName.Contains("Own");
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
@@ -176,6 +179,47 @@ public static class KitLook
         }
         m.NextPass = rim;
         cache[key] = m;
+        return m;
+    }
+
+    static Texture2D? stoneTex, stoneNor;
+
+    /// <summary>Our own stone (kit.gdshader's OWN_ROCK): the sheet and parameters of flora_species.json's "stone", its
+    /// species' "shader" over them; drawn with the see-through window's rim like the rest.</summary>
+    static ShaderMaterial Rock(StandardMaterial3D s, Look look)
+    {
+        ownRock ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_ROCK") };
+        ownRockRim ??= Rim(ownRock);
+        var st = FloraSpecies.Stone;
+        stoneTex ??= GD.Load<Texture2D>(st.GetProperty("albedo").GetString()!);
+        stoneNor ??= GD.Load<Texture2D>(st.GetProperty("normal").GetString()!);
+        var m = new ShaderMaterial { Shader = ownRock };
+        m.SetShaderParameter("stone_tex", stoneTex);
+        m.SetShaderParameter("stone_nor", stoneNor);
+        m.SetShaderParameter("use_vcolor", false);
+        m.SetShaderParameter("jitter", 0f);
+        m.SetShaderParameter("wind", 0f);
+        void Set(string k, JsonElement v)
+        {
+            if (k == "broadleaf") return;
+            if (v.ValueKind == JsonValueKind.Number) m.SetShaderParameter(k, v.GetSingle());
+            else if (v.ValueKind == JsonValueKind.String && v.GetString()!.StartsWith('#')) m.SetShaderParameter(k, new Color(v.GetString()!));
+            else if (v.ValueKind == JsonValueKind.Array && v.GetArrayLength() == 2) m.SetShaderParameter(k, new Vector2(v[0].GetSingle(), v[1].GetSingle()));
+            else if (v.ValueKind == JsonValueKind.Array && v.GetArrayLength() == 3) m.SetShaderParameter(k, new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()));
+        }
+        foreach (var kv in st.GetProperty("shader").EnumerateObject()) Set(kv.Name, kv.Value);
+        if (FloraSpecies.ByMaterial(s.ResourceName) is { } sp)
+        {
+            foreach (var (k, v) in sp.Shader) Set(k, v);
+            if (sp.Packed) m.SetShaderParameter("packed", true);
+        }
+        var rim = new ShaderMaterial { Shader = ownRockRim };
+        foreach (var u in m.Shader.GetShaderUniformList())
+        {
+            var name = (string)u.AsGodotDictionary()["name"];
+            rim.SetShaderParameter(name, m.GetShaderParameter(name));
+        }
+        m.NextPass = rim;
         return m;
     }
 }
