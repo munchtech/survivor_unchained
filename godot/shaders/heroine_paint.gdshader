@@ -64,6 +64,8 @@ uniform float dye_fair_sat = 0.85;
 // (round 4: the honey brown a blonde dye turns on tan and deeper skin (linear, Oklab hue 55: about 48 on screen; beside her orange skin 61 and over read olive))
 uniform vec3 dye_honey = vec3(0.24, 0.1, 0.04);
 uniform float dye_fair_warm = 0.0;
+// (j3: skin lightness (linear, times tone) from which a fair dye takes the platinum's ash-brown, not honey: Sunborn deep 0.056, tan 0.24)
+uniform vec2 dye_ash_skin = vec2(0.14, 0.08);
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -115,7 +117,10 @@ void fragment() {
 		float dmx = max(dyev.r, max(dyev.g, dyev.b));
 		float s_dye = smoothstep(0.5, 0.75, (dmx - min(dyev.r, min(dyev.g, dyev.b))) / max(dmx, 1e-4));
 		vec3 honey_n = dye_honey / dot(dye_honey, lum);
-		dyev = mix(dyev, mix(mix(vec3(1.0), honey_n, 0.75), honey_n, s_dye) * dl, fair);
+		// (j3: on deep skin a blonde's brows the platinum's neutral dark ash-brown: a honey darker than red-brown skin
+		// read olive-khaki beside it; honey stays for tan skin)
+		float deeper = smoothstep(dye_ash_skin.x, dye_ash_skin.y, sk);
+		dyev = mix(dyev, mix(mix(vec3(1.0), honey_n, 0.75), honey_n, s_dye * (1.0 - deeper)) * dl, fair);
 		// (held darker than her skin, a fair dye is warmed as it is darkened: a blonde's brows on deep skin a golden
 		// brown; the dye's yellow only darkened read olive-grey)
 		float room = min(1.0, sk * dye_room / dl);
