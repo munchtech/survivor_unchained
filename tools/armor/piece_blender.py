@@ -1043,6 +1043,30 @@ def build_pauldrons_lamed():
         pos, at, tris = G["clip"](field, X, at, tri)
         pos, at, tris = G["weld"](pos, at, tris)
         tris = G["islands"](pos, tris)
+        if NBAND > 0:
+            # (and once more on the cut sheet itself, its own points as they will be bound: build 2's grid read its neck
+            # rim at most 4.7 mm off her after the sink while the bound sheet stood 7.7-9.3 there)
+            sq_, tq_, _ = G["pl_frame"](pos, F_)
+            wq_ = np.clip(1 - (sq_ - s_med(tq_)) / NBAND, 0, 1) * np.clip(
+                (np.radians(cp.get("neck_fade_to", 110.0)) - np.abs(tq_)) / np.radians(cp.get("neck_fade_over", 25.0)), 0, 1)
+            wq_ = wq_ * wq_ * (3 - 2 * wq_)
+            Aq_ = G["adjacency"](len(pos), tris)
+            nbq_ = sq_ < S_MED + 0.012
+            dq_, _ = off_skin(pos)
+            pre_ = dq_.copy()
+            for _ in range(cp.get("neck_rounds", 6)):
+                dq_, uq_ = off_skin(pos)
+                exq_ = np.maximum(dq_ - NOFF, 0.0) * wq_
+                if exq_.max() < 0.0002:
+                    break
+                es_ = exq_.copy()
+                for _ in range(4):
+                    es_ = 0.5 * es_ + 0.5 * (Aq_ @ es_)
+                exq_ = np.clip(np.maximum(es_, 0.5 * exq_), 0, np.maximum(dq_ - CLEAR, 0.0))
+                pos = pos - uq_ * exq_[:, None]
+            dq_, _ = off_skin(pos)
+            stamp(sd + " cop sheet (cut, unbound) neck rim off her final skin: before its sink max %.1f p50 %.1f, after max %.1f p50 %.1f mm; all max %.1f"
+                  % (pre_[nbq_].max() * 1000, np.median(pre_[nbq_]) * 1000, dq_[nbq_].max() * 1000, np.median(dq_[nbq_]) * 1000, dq_.max() * 1000))
         nr = G["vertex_normals"](pos, tris)
         if (nr * (pos - ctr)).sum(1).mean() < 0:
             tris = tris[:, ::-1]
@@ -1051,6 +1075,15 @@ def build_pauldrons_lamed():
         cname = f"{PID}.cop_{sd}"
         pos, beads = G["bind_edges"](cname, pos, at, tris, MKEY, roll["width"], roll["height"], roll.get("overhang", 0.0015), THK,
                                      sigma=0.003, rmin=cp.get("rmin", 0.010))
+        if NBAND > 0:
+            dq_, _ = off_skin(pos)
+            sq_ = G["pl_frame"](pos, F_)[0]
+            nbq_ = sq_ < S_MED + 0.012
+            wq_ = np.argmax(np.where(nbq_, dq_, -1))
+            stamp(sd + " cop sheet bound: neck rim max %.1f p50 %.1f mm (worst at s %.0f mm, bearing %.0f deg)"
+                  % (dq_[nbq_].max() * 1000, np.median(dq_[nbq_]) * 1000, sq_[wq_] * 1000, np.degrees(G["pl_frame"](pos[wq_:wq_ + 1], F_)[1][0])))
+            if os.environ.get("PAUL_DUMP"):
+                np.savez(os.path.join(os.environ["PAUL_DUMP"], f"cop_{sd}.npz"), X=X, field=field, uv2=uv2, pos=pos, tris=tris)
         G["RIGID_UV"][cname] = (ctr, ax_, False)
         cop = [G["finish"](cname, pos, at[:, 3:3 + NB], tris, MKEY, THK, cp.get("bevel", 0.0012), cp.get("budget", 1200))] + beads
         cop = [o for o in cop if o is not None]
