@@ -31,7 +31,7 @@
    "warden.boots.steel"
   ],
   "tuck": "armor_tuck/warden.boots.bin",
-  "tuck_count": 3228,
+  "tuck_count": 3374,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -47,7 +47,7 @@
    "warden.bottom.thread"
   ],
   "tuck": "armor_tuck/warden.bottom.bin",
-  "tuck_count": 289,
+  "tuck_count": 290,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -80,7 +80,7 @@
    "warden.greaves.steel"
   ],
   "tuck": "armor_tuck/warden.greaves.bin",
-  "tuck_count": 0,
+  "tuck_count": 195,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -131,7 +131,7 @@
    "warden.top.thread"
   ],
   "tuck": "armor_tuck/warden.top.bin",
-  "tuck_count": 683,
+  "tuck_count": 890,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
   "hold": {
    "amount": 0.55,
@@ -153,7 +153,7 @@
    "arcanist.boots.thread"
   ],
   "tuck": "armor_tuck/arcanist.boots.bin",
-  "tuck_count": 5664,
+  "tuck_count": 5837,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -170,7 +170,7 @@
    "arcanist.bottom.thread"
   ],
   "tuck": "armor_tuck/arcanist.bottom.bin",
-  "tuck_count": 34,
+  "tuck_count": 33,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -202,7 +202,7 @@
    "arcanist.gloves.glovesatin"
   ],
   "tuck": "armor_tuck/arcanist.gloves.bin",
-  "tuck_count": 2311,
+  "tuck_count": 2309,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -253,7 +253,7 @@
    "arcanist.top.thread"
   ],
   "tuck": "armor_tuck/arcanist.top.bin",
-  "tuck_count": 5311,
+  "tuck_count": 5959,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -287,7 +287,7 @@
    "ranger.boots.thread"
   ],
   "tuck": "armor_tuck/ranger.boots.bin",
-  "tuck_count": 4944,
+  "tuck_count": 5011,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -306,7 +306,7 @@
    "ranger.bottom.thread"
   ],
   "tuck": "armor_tuck/ranger.bottom.bin",
-  "tuck_count": 2363,
+  "tuck_count": 2407,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -323,7 +323,7 @@
    "ranger.bracers.iron"
   ],
   "tuck": "armor_tuck/ranger.bracers.bin",
-  "tuck_count": 0,
+  "tuck_count": 239,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -339,7 +339,7 @@
    "ranger.gloves.thread"
   ],
   "tuck": "armor_tuck/ranger.gloves.bin",
-  "tuck_count": 1862,
+  "tuck_count": 1870,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -358,7 +358,7 @@
    "ranger.pauldrons.thread"
   ],
   "tuck": "armor_tuck/ranger.pauldrons.bin",
-  "tuck_count": 376,
+  "tuck_count": 671,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -377,7 +377,7 @@
    "ranger.top.thread"
   ],
   "tuck": "armor_tuck/ranger.top.bin",
-  "tuck_count": 3373,
+  "tuck_count": 3488,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -412,7 +412,7 @@
    "reaver.boots.thread"
   ],
   "tuck": "armor_tuck/reaver.boots.bin",
-  "tuck_count": 458,
+  "tuck_count": 3321,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -429,7 +429,7 @@
    "reaver.bottom.thread"
   ],
   "tuck": "armor_tuck/reaver.bottom.bin",
-  "tuck_count": 318,
+  "tuck_count": 319,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -448,7 +448,7 @@
    "reaver.bracers.thread"
   ],
   "tuck": "armor_tuck/reaver.bracers.bin",
-  "tuck_count": 778,
+  "tuck_count": 992,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -463,7 +463,7 @@
    "reaver.cloak.fur"
   ],
   "tuck": "armor_tuck/reaver.cloak.bin",
-  "tuck_count": 7,
+  "tuck_count": 37,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -494,7 +494,7 @@
    "reaver.ink.ink"
   ],
   "tuck": "armor_tuck/reaver.ink.bin",
-  "tuck_count": 180,
+  "tuck_count": 179,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  },
  {
@@ -527,7 +527,7 @@
    "reaver.top.thread"
   ],
   "tuck": "armor_tuck/reaver.top.bin",
-  "tuck_count": 730,
+  "tuck_count": 902,
   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
  }
 ]
