@@ -233,6 +233,14 @@ uniform float scalp_max = 0.85;
 // (People.ScalpLead): her hairline's band C 0.061-0.073 at the Look, front, to 0.088-0.091; under 1 overshot, a
 // saturated rim at C 0.11.)
 uniform float scalp_lead = 0.0;
+// (its tint by her skin's lightness against her own fair's (tone's luminance over scalp_hue_ref): red
+// hair's tint is over 1 in red, and on Sunborn's brown and on deep skin it left a red-orange rim under her front hair
+// and down her temples, face 32 r2; her own fair as it was. scalp_hue 0: the tint at full on every skin, as round 1)
+uniform float scalp_hue = 1.0;
+uniform float scalp_hue_ref = 0.75;
+// (and its dark the same way, down to this much of it on the darkest skin: on deep skin her scalp's shade laid a darker
+// band beside the pale curve down her temple (face 32 r2), and her own skin, dark already, has no pale scalp to hide)
+uniform float scalp_dark_min = 0.4;
 // His brows (painted with his face; the blue of shadow_mask) dyed his
 // hair's colour: their paint scaled from its own colour (brow_paint) to
 // brow_colour, every hair of it kept.
@@ -359,7 +367,9 @@ uniform float fold = 1.0;
 // (the most one lamp's sheen gives, in linear light: 0.2 took the c02 s8 cheek from 877-4176 clipped pixels to 0-74, the
 // Look by day and night and the town close-up unchanged (face 30 cine; 0.3 left 252, 0.12 dulled her cheek 8 L))
 uniform float spec_cap = 0.2;
-uniform float metal_cap = 1.5;
+// (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
+// cheek at the Look, face 32 r2: a gold sheen under 0.8)
+uniform float metal_cap = 0.8;
 varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
@@ -480,7 +490,8 @@ void fragment() {
 			ALBEDO = mix(ALBEDO, ALBEDO * sc, clamp(wb, 0.0, 1.0));
 			float ls = max(dot(sc, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 			ws = clamp(ws, 0.0, 1.0);
-			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead)) * mix(1.0, ls, ws), vec3(1.0));
+			float tk = mix(1.0, clamp(dot(tone, vec3(0.2126, 0.7152, 0.0722)) / scalp_hue_ref, 0.0, 1.0), scalp_hue);
+			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead) * tk) * mix(1.0, ls, ws * mix(scalp_dark_min, 1.0, tk)), vec3(1.0));
 		}
 	}
 	if (has_relief) {

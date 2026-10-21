@@ -472,19 +472,39 @@ def ochre(shape, f, seed=41):
 
 def ash(shape, f, seed=51):
     """Pale ash from a dead fire, thumbed under each eye and dragged down the
-    cheek: thick where the thumb pressed, smeared thin as it was drawn."""
+    cheek: thick where the thumb pressed, smeared thin as it was drawn.
+    (face 32: at 1.2 firm, #aca8a0 and a fingertip's width a player picking Ash at the Look saw two faint
+    tear-tracks, Oklab C 0.072, her skin's peach: now a whole thumb's smear, a pale cool grey, laid thick as a
+    powder in clumps and grit. The Look's night grade gives any pale grey Oklab C 0.07-0.08 (with it off: 0.004), so at
+    night it reads by its lightness, +0.07 L; cooler than #c6ccd6 it went pink-lilac at night (#a8b6cc hue 30, #8ea6d6
+    hue 316); by day C 0.02-0.04, grey)"""
     L = layer(shape)
     # (a grey ash, not chalk white: near-white (#e8e4dc) glowed against her skin's light)
-    grey = hexc('#aca8a0')
+    grey = hexc(os.environ.get('ASH_GREY', '#c6ccd6'))
+    wk = float(os.environ.get('ASH_WIDE', '1.6'))
     cov = np.zeros(shape, np.float32)
     for side, hole in enumerate(f['holes']):
         ys, xs = np.nonzero(hole)
         out = 1 if side == 1 else -1
         x, y = xs.mean() + out * 10, ys.max() + 22
-        pts = [(x - out * 70, y + 4), (x, y + 20), (x + out * 30, y + 130), (x + out * 46, y + 250)]
-        cov = np.maximum(cov, stroke(shape, pts, [110, 124, 100, 44], dry=0.45, streaks=0.5, soft=0.4, seed=seed + side, taper=(0.08, 0.6), streak_px=11, edge=0.55))
-    lay(L, cov, grey, 1.0, pigment(shape, seed + 5, 9, 0.35), through=0.3)
-    return firm(L, 1.2)
+        pts = [(x - out * 80, y + 2), (x, y + 24), (x + out * 34, y + 150), (x + out * 52, y + 290)]
+        cov = np.maximum(cov, stroke(shape, pts, [w * wk for w in (110, 124, 104, 52)], dry=0.45, streaks=0.55, soft=0.4, seed=seed + side, taper=(0.08, 0.55), streak_px=11, edge=0.55))
+    # (powder, not a coat: thick and thin in clumps (pigment's two scales) and a fine grit over it)
+    # and its own light and dark: laid thick (firm) the coat's alpha is full, so the clumps are in its colour too, paler
+    # where it lies thick, greyer where the thumb thinned it (a flat coat read as a pink sticker at the Look)
+    grit = np.clip(0.85 + 0.3 * noise(shape, 4.0, seed + 9), 0, 1)
+    clump = pigment(shape, seed + 5, 14, 0.4) * grit
+    # the thumb's second press: a shorter smear out under each eye toward its outer corner, so it isn't one wedge
+    for side, hole in enumerate(f['holes']):
+        ys, xs = np.nonzero(hole)
+        out = 1 if side == 1 else -1
+        x, y = xs.mean() + out * 40, ys.max() + 64
+        pts = [(x, y), (x + out * 70, y + 12), (x + out * 120, y + 50)]
+        cov = np.maximum(cov, 0.7 * stroke(shape, pts, [90 * wk, 70 * wk, 30], dry=0.6, streaks=0.6, soft=0.45, seed=seed + 7 + side, taper=(0.1, 0.6), streak_px=9, edge=0.6))
+    lay(L, cov, grey, 1.0, clump, through=0.25)
+    shade = np.clip(0.86 + 0.07 * (clump - clump.mean()) / (clump.std() + 1e-6) + 0.1 * cov, 0.72, 1.05)
+    L[..., :3] *= shade[..., None]
+    return firm(L, float(os.environ.get('ASH_FIRM', '1.5')))
 
 
 def blood(shape, f, seed=61):
@@ -511,7 +531,9 @@ def gilt(shape, f, seed=71):
     band, broader at its middle, with a few flecks broken off around it."""
     L = layer(shape)
     rng = np.random.default_rng(seed)
-    gold = hexc('#e8bc58')
+    # (face 32: warm gold (#c4a84a: the night grade turns hue 16 deg toward orange, #c89b3c came out hue 67), half metal (looks.json): at full metal and #e8bc58 the leaf mirrored the Look's green
+    # ferns, olive in its shade; and leaf, 2-6 mm pieces (12-38 px), not 9 mm blobs that read as moss)
+    gold = hexc(os.environ.get('GILT_GOLD', '#c4a84a'))
     spots = []
     for side, hole in enumerate(f['holes']):
         ys, xs = np.nonzero(hole)
@@ -519,15 +541,15 @@ def gilt(shape, f, seed=71):
         # The band's line: under the eye's inner corner, along the bone, up toward the temple.
         x0, y0 = xs.mean() - out * 20, ys.max() + 92
         line = spline([(x0, y0), (x0 + out * 80, y0 + 8), (x0 + out * 180, y0 - 14), (x0 + out * 260, y0 - 70)], 200)
-        for i in range(46):
+        for i in range(110):
             t = rng.random()
             px, py = line[min(int(t * len(line)), len(line) - 1)]
             wide = 14 + 18 * np.sin(np.pi * t)
-            spots.append((px + rng.normal(0, 6), py + rng.normal(0, wide * 0.3), (10 + 18 * np.sin(np.pi * t)) * rng.uniform(0.6, 1.1)))
-        for _ in range(14):
+            spots.append((px + rng.normal(0, 6), py + rng.normal(0, wide * 0.32), (7 + 11 * np.sin(np.pi * t)) * rng.uniform(0.6, 1.1)))
+        for _ in range(22):
             t = rng.random()
             px, py = line[min(int(t * len(line)), len(line) - 1)]
-            spots.append((px + rng.normal(0, 30), py + rng.normal(0, 40), rng.uniform(4, 10)))
+            spots.append((px + rng.normal(0, 30), py + rng.normal(0, 40), rng.uniform(3, 7)))
     for x, y, s in spots:
         n = rng.integers(6, 11)
         ang = np.sort(rng.uniform(0, 2 * np.pi, n))
@@ -538,7 +560,8 @@ def gilt(shape, f, seed=71):
         poly = np.c_[x + px * np.cos(rot) - py * np.sin(rot), y + px * np.sin(rot) + py * np.cos(rot)].astype(np.int32)
         m = np.zeros(shape, np.uint8)
         cv2.fillPoly(m, [poly], 1, cv2.LINE_AA)
-        tone = rng.uniform(0.85, 1.08)
+        # (each leaf at its own angle to the light: some bright, some dull, as leaf catches it)
+        tone = rng.uniform(0.72, 1.1)
         lay(L, m.astype(np.float32), [g * tone for g in gold], 1.0)
     return L
 

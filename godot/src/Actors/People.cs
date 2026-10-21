@@ -749,6 +749,8 @@ public static class People
         p.Brow = brow;
         var def = paint == null ? null : SurvivorUnchained.World.Lore.Her.Paints.FirstOrDefault(x => x.Id == paint);
         var file = def == null ? "" : $"res://art/people/paint/{def.Id}.png";
+        // (env PAINT_FILE in a shot: another texture for the paint, its variants tried without a build of each)
+        if (def != null && SurvivorUnchained.Args.Has("shot") && System.Environment.GetEnvironmentVariable("PAINT_FILE") is { Length: > 0 } pf) file = pf;
         const string brows = "res://art/people/paint/brows.png";
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
@@ -787,6 +789,13 @@ public static class People
                 {
                     skin.SetShaderParameter("paint_rough", (float)def!.Rough);
                     skin.SetShaderParameter("paint_metal", (float)def.Metal);
+                    skin.SetShaderParameter("paint_shine", (float)def.Shine);
+                    skin.SetShaderParameter("paint_scatter", (float)def.Scatter);
+                    // (env PAINT_SET "scatter=0,shine=0.2,pores=0.6,rough=0.9,metal=0": the skin shader's paint_* tried in a shot)
+                    if (SurvivorUnchained.Args.Has("shot") && System.Environment.GetEnvironmentVariable("PAINT_SET") is { Length: > 0 } ps)
+                        foreach (var kv in ps.Split(','))
+                            if (kv.Split('=') is [var k, var v])
+                                skin.SetShaderParameter("paint_" + k, float.Parse(v, System.Globalization.CultureInfo.InvariantCulture));
                     const string keep = "res://art/people/paint/nostril_keep.png";
                     if (ResourceLoader.Exists(keep)) skin.SetShaderParameter("face_paint_keep", GD.Load<Texture2D>(keep));
                 }
@@ -860,7 +869,7 @@ public static class People
     /// not his stubble's 0.85, as what stayed of her head's pale paint greyed it) and its hue ahead of its dark
     /// (scalp_lead, see heroine_skin.gdshader): face 32, 20 October, her hairline's grey band at the Look. (env SCALP
     /// "dark=0.3,sat=1,max=1,lead=1" in a shot: tried without a build.)</summary>
-    public static float ScalpMax = 1f, ScalpLead = 1f;
+    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f;
     public static Color ScalpColour(Color hair)
     {
         float dark = 0.3f, sat = 1.0f;
@@ -870,7 +879,7 @@ public static class People
                 var t = kv.Split('=');
                 if (t.Length != 2) continue;
                 float v = float.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture);
-                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v;
+                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v;
             }
         var c = hair.Darkened(dark);
         return Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
@@ -892,6 +901,7 @@ public static class People
                 m.SetShaderParameter("shadow_colour", ScalpColour(hair));
                 m.SetShaderParameter("scalp_max", ScalpMax);
                 m.SetShaderParameter("scalp_lead", ScalpLead);
+                m.SetShaderParameter("scalp_hue", ScalpHue);
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
