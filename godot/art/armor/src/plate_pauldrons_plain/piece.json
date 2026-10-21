@@ -1,0 +1,82 @@
+{
+ "id": "plate_pauldrons_plain",
+ "name": "Lamed Pauldrons",
+ "slot": "pauldrons",
+ "style": "lamed",
+ "tier": 1,
+ "tier_name": "plain forged",
+ "material": "steel",
+ "tint": null,
+ "params": {
+  "cop": {
+   "back": -105,
+   "front": 95,
+   "medial": -0.034,
+   "low": 0.03,
+   "rise": 0.014,
+   "corner": 0.02,
+   "clear": 0.003,
+   "most": 0.006,
+   "thick": 0.002,
+   "grid": 0.003,
+   "budget": 600,
+   "rmin": 0.016,
+   "sigma": 0.01,
+   "bevel": 0.0
+  },
+  "comb": {
+   "h": 0.0025,
+   "w": 0.012
+  },
+  "lames": {
+   "O": [
+    0.014,
+    0.012
+   ],
+   "V": [
+    0.026,
+    0.024
+   ],
+   "tuck": 0.0035,
+   "joggle": 0.003,
+   "flare": 0.003,
+   "thick": 0.0018,
+   "rc": 0.01,
+   "E": 0.014,
+   "crease": 0.0015,
+   "crease_w": 0.01,
+   "rv_up": 0.008,
+   "rv_step": 0.03,
+   "rivet_r": 0.0026,
+   "budget": 350,
+   "grid": 0.003,
+   "bevel": 0.0
+  },
+  "roll": {
+   "width": 0.0045,
+   "height": 0.001,
+   "overhang": 0.0015
+  },
+  "tab": {
+   "width": 0.022,
+   "run": 0.028,
+   "under": 0.01,
+   "lift": 0.0015,
+   "thick": 0.0025,
+   "rivet_r": 0.0024
+  },
+  "weights": {
+   "steps": [
+    0.07,
+    0.07
+   ]
+  },
+  "roll_step": 0.006,
+  "roll_nv": 6,
+  "push_cap": 0.002
+ },
+ "adorn": [],
+ "covers": [
+  "pauldrons"
+ ]
+}

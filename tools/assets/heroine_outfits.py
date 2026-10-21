@@ -7567,7 +7567,8 @@ def pl_rim(pos, tris, F_):
 
 def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.003,
             rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009, cut=None, mkey="bronze", rivet_key="darksteel",
-            roll=(0.0045, 0.0005, 0.0015), bevel=0.0012, crease=None, rv_r=0.0032, rv_step=0.028, budget=3000):
+            roll=(0.0045, 0.0005, 0.0015), bevel=0.0012, crease=None, rv_r=0.0032, rv_step=0.028, budget=3000,
+            rivet_fn=None, h=0.0015):
     """A lame: a band round her arm under the rim of the plate above it, built
     in her arm's frame and never drawn on her skin (an outline on her skin,
     lifted off it, slid 10 to 18 mm, and no tuck survived: judge 5). Its top
@@ -7581,7 +7582,8 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
     it, one island), bound all round, rivets `rv_up` above its lower edge.
     (armor 10: any limb, by its frame F_ (pl_limb_frame); `mkey`, `rivet_key`,
     `roll` (the rolled edge's width, height, overhang), `bevel`, `rv_r` and
-    `rv_step`, `budget` as the ranger's by default; `crease` (depth, half-width): a
+    `rv_step`, `budget` as the ranger's by default (`rivet_fn(name, points,
+    normals, rows)`: other rivet heads; `h` its grid's step); `crease` (depth, half-width): a
     ridge pressed out along bearing 0, a V that rises `depth` at it.)"""
     from numpy.polynomial import chebyshev as cheb
     from scipy.interpolate import LinearNDInterpolator
@@ -7608,7 +7610,6 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
     # (a grid over the band's box, each point placed along the rim and below it)
     inb = (tt >= E) & (tt <= L - E)
     box = np.vstack([C[inb] + d * Nn[inb] for d in (-O, V)])
-    h = 0.0015
     gu = np.arange(box[:, 0].min() - 0.004, box[:, 0].max() + 0.004, h)
     gs = np.arange(box[:, 1].min() - 0.004, box[:, 1].max() + 0.004, h)
     UU, SS = np.meshgrid(gu, gs, indexing="ij")
@@ -7686,7 +7687,10 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
     thk = th_of(pk[:, 0])
     spots = pl_point(pk[:, 1], thk, law(thk, np.full(n, V - rv_up)), F_)
     _, jv = cKDTree(pos).query(spots)
-    made += rivets(name, pos, at, tris, thick, rivet_key, r=rv_r, spots=(spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0)))
+    if rivet_fn is None:
+        made += rivets(name, pos, at, tris, thick, rivet_key, r=rv_r, spots=(spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0)))
+    else:
+        made += rivet_fn(name, spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0))
     PL_SPOTS.extend((name, p) for p in spots)
     pl_one_blend([o for o in made if o is not None], row)
     PL_ROWS[name] = row
