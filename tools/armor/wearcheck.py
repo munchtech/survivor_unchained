@@ -125,6 +125,55 @@ def signed_gap(t, facing, reach):
     return g, j, gout
 
 
+def closest_on_tri(p, A, B, C):
+    """Closest points on triangles A, B, C [..., 3] to points p [..., 3] (broadcast; Ericson's regions)."""
+    ab, ac, ap = B - A, C - A, p - A
+    d1, d2 = (ab * ap).sum(-1), (ac * ap).sum(-1)
+    bp = p - B
+    d3, d4 = (ab * bp).sum(-1), (ac * bp).sum(-1)
+    cp = p - C
+    d5, d6 = (ab * cp).sum(-1), (ac * cp).sum(-1)
+    va, vb, vc = d3 * d6 - d5 * d4, d5 * d2 - d1 * d6, d1 * d4 - d3 * d2
+    den = va + vb + vc
+    den = np.where(np.abs(den) < 1e-30, 1e-30, den)
+    v, w = vb / den, vc / den
+    Q = A + ab * v[..., None] + ac * w[..., None]
+    def sel(m, R):
+        return np.where(m[..., None], R, Q)
+    sd = lambda x, y: np.where(np.abs(x - y) < 1e-30, 1e-30, x - y)
+    t = (d4 - d3) / sd(d4 - d3 + d5 - d6, 0)
+    Q = sel((va <= 0) & (d4 - d3 >= 0) & (d5 - d6 >= 0), B + (C - B) * t[..., None])
+    t = d2 / sd(d2, d6)
+    Q = sel((vb <= 0) & (d2 >= 0) & (d6 <= 0), A + ac * t[..., None])
+    t = d1 / sd(d1, d3)
+    Q = sel((vc <= 0) & (d1 >= 0) & (d3 <= 0), A + ab * t[..., None])
+    Q = sel((d6 >= 0) & (d5 <= d6), C)
+    Q = sel((d3 >= 0) & (d4 <= d3), B)
+    Q = sel((d1 <= 0) & (d2 <= 0), A)
+    return Q
+
+
+def confirm_gap(O, F, inner, thick):
+    """(--confirm, armor 10 c2) A ray-cast gap checked by the nearest face: O [m, 3] samples, F [m, k, 3, 3] B's posed
+    faces near each, inner [m, k] (the face looked at the sample at rest: B's inner face there), thick B's shell (m).
+    A ray nearly along B (her normal at the underbust crease points up the plate's inner face) read 15-21 mm past it
+    where the sample stood 6-13 mm clear of every face. Here a sample is past B only when it is inside B's steel (on
+    the back of its nearest face) or in front of B (on the front of a face that faced away from it at rest). Returns
+    (gap to the inner face, gap to the outer face), negative: past it."""
+    A, B, C = F[:, :, 0], F[:, :, 1], F[:, :, 2]
+    Q = closest_on_tri(O[:, None], A, B, C)
+    d = np.linalg.norm(Q - O[:, None], axis=2)
+    k = d.argmin(1)
+    rows = np.arange(len(O))
+    n = np.cross(B - A, C - A)[rows, k]
+    n /= np.linalg.norm(n, axis=1)[:, None] + 1e-30
+    side = ((O - Q[rows, k]) * n).sum(1)
+    dk, ik = d[rows, k], inner[rows, k]
+    g = np.where(ik, np.where(side >= 0, dk, -dk), np.where(side >= 0, -(dk + thick), -np.maximum(thick - dk, 0.0)))
+    go = np.where(ik, np.where(side >= 0, dk + thick, thick - dk), np.where(side >= 0, -dk, dk))
+    return g, go
+
+
 # ------------------------------------------------------------------ catalogue --
 def catalogue(only=None):
     rows = []
@@ -270,6 +319,7 @@ def main(argv):
     gt_off = "--tuck-off" in argv
     gt_r = float(opt("--tuck-r", "20")) / 1000
     gt_w = "--tuck-weights" in argv     # (a prototype: the laid part of A skinned toward B's weights by its value)
+    conf = "--confirm" in argv          # (skin tests: each gap past B checked by the nearest face, confirm_gap)
     dump = "--dump" in argv             # (per sample of each skin test: its least gap and where: <out>/skin_<B>.npz)
     order = opt("--order", "").split(",") if "--order" in argv else \
         json.load(open(os.path.join(HERE, "slot_map.json"), encoding="utf-8"))["order"]
@@ -456,6 +506,19 @@ def main(argv):
         x["min"] = np.full(n, np.inf)
         x["min_out"] = np.full(n, np.inf)
         x["worst"] = (np.inf, None, None)
+        if conf and x["A"] == "skin":
+            O0 = P0[x["pts"]] - N0[x["dir"]] * x["tuck"][:, None]
+            F0 = P0[x["candv"]]
+            n0 = np.cross(F0[:, :, 1] - F0[:, :, 0], F0[:, :, 2] - F0[:, :, 0])
+            x["inner0"] = (n0 * (O0[:, None] - F0.mean(2))).sum(2) > 0
+            x["thick"] = float(np.median(fp["out"] - fp["gap"]))
+            x["raw_min"] = np.full(n, np.inf)
+            rr0 = np.nonzero(fp["gap"] < -0.0005)[0]
+            if len(rr0):
+                g0, go0 = confirm_gap(O0[rr0], F0[rr0], x["inner0"][rr0], x["thick"])
+                fp["gap"] = fp["gap"].copy()
+                fp["out"] = fp["out"].copy()
+                fp["gap"][rr0], fp["out"][rr0] = g0, go0
         x["rest_min_mm"] = float(fp["gap"].min() * 1000)
         x["rest_med_mm"] = float(np.median(fp["gap"]) * 1000)
         x["rest_through2"] = int((fp["gap"] < -0.002).sum())
@@ -524,7 +587,17 @@ def main(argv):
                             gr[lost], gor[lost] = gl, gol
                             x["lost"] += int((~np.isfinite(gl)).sum())
                         g[r], go[r] = gr, gor
+                    if conf and x["A"] == "skin":
+                        x["raw_min"] = np.minimum(x["raw_min"], np.where(np.isfinite(g), g, np.inf))
+                        rc = np.nonzero(g < -0.0005)[0]
+                        if len(rc):
+                            g[rc], go[rc] = confirm_gap(O[rc], Pp[at[x["candv"][rc]]], x["inner0"][rc], x["thick"])
                     x["min_out"] = np.minimum(x["min_out"], np.where(np.isfinite(go), go, np.inf))
+                    # (WC_PROBE=<clip>:<frame>,..: that frame's skin samples, rays, gaps and B's posed faces written to
+                    # <out>/probe_<B>_<clip>_<frame>.npz, for a check by other means; nothing else changes)
+                    if x["A"] == "skin" and f"{c}:{f}" in os.environ.get("WC_PROBE", "").split(","):
+                        np.savez(os.path.join(out_dir, f"probe_{x['B']}_{c}_{f}.npz"), O=O, D=D, g=g, go=go, pts=x["pts"],
+                                 T=Pp[at[SvB[x["B"]]]])
                     x["seen"] += len(g)
                     gg = np.where(np.isfinite(g), g, np.inf)
                     if dump:
@@ -569,6 +642,10 @@ def main(argv):
              "rest_gap_min_mm": round(x["rest_min_mm"], 2), "rest_gap_median_mm": round(x["rest_med_mm"], 2),
              "per_clip": {c: [round(-v[0] * 1000, 1), int(v[1].sum())] for c, v in x["per_clip"].items()},
              "laid": x.get("laid"), "rigid_inner": bool(byid.get(A, {}).get("rigid")), "rigid_lay": RIGID_LAY.get((A, B)), "reversed": x["reversed"], "lost_share": round(x["lost"] / max(x["seen"], 1), 4)}
+        if "raw_min" in x:
+            e["confirm"] = True
+            e["raw_worst_mm"] = round(float(-x["raw_min"][np.isfinite(x["raw_min"])].min() * 1000), 2)
+            e["raw_n_over_2"] = int((x["raw_min"] < -0.002).sum())
         if A != "skin":
             fi = x["fp"]["idx"]
             e["A_skin_mm_median"] = round(float(np.median(pc[A]["skin_mm"][fi])), 2)

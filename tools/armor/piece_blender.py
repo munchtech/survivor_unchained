@@ -1003,6 +1003,13 @@ def build_cuirass():
         if any(k in bn_.lower() for k in ("breast", "clavicle", "upperarm", "lowerarm", "hand", "shoulder")):
             row[i_] = 0.0
     row = row / row.sum()
+    # (params.plate_blend (r2): the blend given, {bone: share}. Her sternum's own (spine_03 0.978) left her belly and
+    # crease skin under the lower rim (spine_03 0.5 / spine_02 0.3) coming up through it in the combat swings)
+    if PRM.get("plate_blend"):
+        row = np.zeros_like(row)
+        for n_, w_ in PRM["plate_blend"].items():
+            row[BONES.index(n_)] = float(w_)
+        row = row / row.sum()
     blend = top4(row)
     row4 = np.zeros(NB)
     for n_, w_ in blend:
@@ -2840,8 +2847,14 @@ bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_t
 import heroine_neck  # noqa: E402
 # (params.graft false (the cuirass): no graft match. It adds her neck graft's weight change to whatever lies near her
 # neck, and a rigid plate on one blend took it at 5512 points, bending at its neckline)
-if float(os.environ.get("NECK_CUT", "0.03")) and PRM.get("graft", True):
-    heroine_neck.match_pieces(path, heroine_neck.field())
+# (params.graft "leather" (the cuirass, r2): the graft on its leather meshes only (straps and band, which lie on her
+# skin and took her skin's weights): without it the strap tops stood 8-14 mm off her shoulders in the combat clips)
+_gr = PRM.get("graft", True)
+if float(os.environ.get("NECK_CUT", "0.03")) and _gr:
+    if _gr is True:
+        heroine_neck.match_pieces(path, heroine_neck.field())
+    else:
+        heroine_neck.match_pieces(path, heroine_neck.field(), only=lambda n, k=str(_gr): k in n)
 if STRAP_FRAMES:
     import strap_rows  # noqa: E402
     strap_rows.even(path, STRAP_FRAMES)
@@ -2887,6 +2900,54 @@ for bn_ in missing:
     os.makedirs(os.path.join(ART, "tex"), exist_ok=True)
     shutil.copyfile(os.path.join(EXP, "tex", bn_), os.path.join(ART, "tex", bn_))
 shutil.copyfile(os.path.join(TUCKDIR, "armor_tuck", f"{PID}.{SLOT}.bin"), os.path.join(ART, "armor_tuck", f"{PID}.bin"))
+
+
+def tuck_rekey_shipped(fp):
+    """(armor 10 c2: the body build's steps after her export (throat soften, nape, seam fair) move her neck's points in
+    the shipped glb, and the outfit build rekeys its tucks to them (heroine_outfits.armor_tuck_rekey); a piece built
+    here keyed its records on the blend's points, so the cuirass's 98 at her neck's base were on none of her vertices
+    in the game. Each record whose point is not in her shipped glb goes to the nearest shipped point no blend point
+    sits on (a moved point's new place), within 8 mm; else dropped.)"""
+    import heroine_neck as hn_
+    G_ = hn_._Gl(os.path.join(ROOT, "godot", "art", "people", "heroine.glb"))
+    post = np.unique(np.concatenate([np.round(G_.get(p_["attributes"]["POSITION"]).astype(np.float64) * 1e5).astype(np.int64)
+                                     for m_ in G_.g["meshes"] for p_ in m_["primitives"]]), axis=0)
+    me_ = body.data
+    bp_ = np.empty(len(me_.vertices) * 3, np.float32)
+    me_.vertices.foreach_get("co", bp_)
+    bp_ = bp_.reshape(-1, 3)
+    pre = np.unique(np.round(np.stack([bp_[:, 0], bp_[:, 2], -bp_[:, 1]], 1).astype(np.float64) * 1e5).astype(np.int64), axis=0)
+    pset = set(map(tuple, post.tolist()))
+    pre_set = set(map(tuple, pre.tolist()))
+    newk = np.array([k for k in post.tolist() if tuple(k) not in pre_set], np.int64)
+    d = open(fp, "rb").read()
+    n = struct.unpack_from("<I", d, 0)[0]
+    rec = np.frombuffer(d, dtype=[("x", "<i4"), ("y", "<i4"), ("z", "<i4"), ("t", "<f4")], count=n, offset=4)
+    got, moved, dropped = {}, 0, 0
+    tree_ = cKDTree(newk) if len(newk) else None
+    for x, y, z, t in rec:
+        k = (int(x), int(y), int(z))
+        if k not in pset:
+            dd, j = tree_.query(k) if tree_ is not None else (np.inf, -1)
+            if dd > 800:
+                dropped += 1
+                continue
+            k = tuple(int(v) for v in newk[j])
+            moved += 1
+        got[k] = max(got.get(k, 0.0), float(t))
+    ks = sorted(got)
+    new = np.zeros(len(ks), dtype=rec.dtype)
+    if ks:
+        arr = np.array(ks, np.int64)
+        new["x"], new["y"], new["z"] = arr[:, 0], arr[:, 1], arr[:, 2]
+        new["t"] = [got[k] for k in ks]
+    with open(fp, "wb") as f_:
+        f_.write(struct.pack("<I", len(ks)) + new.tobytes())
+    NUM["tuck_rekey"] = {"records": int(n), "moved": moved, "dropped": dropped, "written": len(ks)}
+    print("TUCK REKEY %s: %d records, %d off her shipped points moved to them, %d dropped, %d written" % (PID, n, moved, dropped, len(ks)))
+
+
+tuck_rekey_shipped(os.path.join(ART, "armor_tuck", f"{PID}.bin"))
 NUM["meshes"] = sorted(ranks)
 
 # sockets, rims, the UV surface
