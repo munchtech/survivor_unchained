@@ -220,6 +220,30 @@ public class WearTests
     }
 
     [Fact]
+    public void A_displaced_arcanist_top_leaves_the_warden_bottom_and_belt_under_it()
+    {
+        ArmorIndex.Reset();
+        var ix = ArmorIndex.Shared;
+        var cu = new Dictionary<string, string> { ["top"] = "plate_cuirass_plain" };
+        var l = Wear.Look(cu, "arcanist", ix);
+        Assert.Equal("warden.bottom", l["bottom"]);
+        Assert.Equal("warden.belt", l["belt"]);
+        Assert.Equal("plate_cuirass_plain", l["top"]);
+        Assert.DoesNotContain("arcanist.top", l.Values);
+        var none = Wear.Look(W(), "arcanist", ix);
+        Assert.Equal("arcanist.bottom", none["bottom"]);
+        Assert.Equal("arcanist.top", none["top"]);
+        Assert.False(none.ContainsKey("belt"));
+        var l2 = Wear.Look(new Dictionary<string, string> { ["top"] = "plate_cuirass_plain", ["belt"] = "reaver.belt" }, "arcanist", ix);
+        Assert.Equal("reaver.belt", l2["belt"]);
+        Assert.Equal("warden.bottom", l2["bottom"]);
+        var w = Wear.Look(cu, "warden", ix);
+        Assert.Equal("warden.bottom", w["bottom"]);
+        Assert.Equal("warden.belt", w["belt"]);
+        Assert.Equal("plate_cuirass_plain", w["top"]);
+    }
+
+    [Fact]
     public void An_equipped_piece_replaces_the_callings()
     {
         var ix = ArmorIndex.Parse(Index).Add(Index2, "armor");

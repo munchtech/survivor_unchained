@@ -10610,6 +10610,7 @@ for name in OUTFITS:
                            "covers": e_.get("covers", [slot]), "meshes": sorted(meshes_),
                            "tuck": f"armor_tuck/{name}.{slot}.bin" if tk_ else None,
                            "tuck_count": ARMOR_TUCK_N.get((name, slot)), "body_hash": ARMOR_BODY_HASH,
+                           **({"under": e_["under"]} if "under" in e_ else {}),
                            **({"hold": {"amount": 0.55, "squash": 0}} if (name, slot) == ("warden", "top") else {})})  # (plate holds her: HerJiggle)
     print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)
 # (armor lead 1: one row per (outfit, slot); body_hash as armor_tuck_write has it)
