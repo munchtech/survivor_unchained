@@ -22,8 +22,9 @@
    ],
    "village/Wall_Plaster_Straight": [
     [
+     "plaster_frame_a",
      "plaster_plain_a",
-     "plaster_plain_b"
+     "plaster_frame_b"
     ],
     [
      "plaster_x"
@@ -35,6 +36,7 @@
    ],
    "village/Wall_Plaster_Straight_Base": [
     [
+     "base_frame",
      "base_plain"
     ],
     [

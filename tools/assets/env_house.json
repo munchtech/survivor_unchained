@@ -1,5 +1,5 @@
 {
- "_doc": "The town wall kit presets (env_house.py, its docstring): kind wall|quoin|post|shutters|pier (a town wall's mid-run joint: reach, top, foot); wall stone|plaster|base; pattern plain|posts|x|k|k2; opening wide_round|thin_round|wide_flat|door_round|door_flat; seed; off [u, v] metres into the sheet (else from the seed).",
+ "_doc": "The town wall kit presets (env_house.py, its docstring): kind wall|quoin|post|shutters|pier (a town wall's mid-run joint: reach, top, foot); wall stone|plaster|base; pattern plain|posts|frame (E9b6: a stud each side of the rail)|x|k|k2; opening wide_round|thin_round|wide_flat|door_round|door_flat; seed; off [u, v] metres into the sheet (else from the seed).",
  "presets": {
   "stone_a": {
    "kind": "wall",
@@ -48,6 +48,26 @@
     1.1
    ]
   },
+  "plaster_frame_a": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "frame",
+   "seed": 23,
+   "off": [
+    1.1,
+    0.6
+   ]
+  },
+  "plaster_frame_b": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "frame",
+   "seed": 24,
+   "off": [
+    3.0,
+    0.2
+   ]
+  },
   "plaster_x": {
    "kind": "wall",
    "wall": "plaster",
@@ -71,6 +91,12 @@
    "wall": "base",
    "pattern": "plain",
    "seed": 31
+  },
+  "base_frame": {
+   "kind": "wall",
+   "wall": "base",
+   "pattern": "frame",
+   "seed": 33
   },
   "base_x": {
    "kind": "wall",

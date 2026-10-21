@@ -24,7 +24,7 @@
  "occl": 0.5,
  "plaster_mottle": 0.18,
  "lost_plaster": 1.0,
- "big_lost": 0.4,
+ "big_lost": 0.55,
  "clay_tints": [
   "#ff9a74",
   "#e8806a",

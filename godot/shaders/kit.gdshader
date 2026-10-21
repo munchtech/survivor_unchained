@@ -421,6 +421,7 @@ void fragment() {
 				rim = max(rim, max(br, 0.0));
 			}
 			col = mix(col * (1.0 - 0.35 * rim), lc, lost);
+			if (grime_debug > 1.5) col = vec3(lost, rim, 0.3) * 3.0;  // (E9b6) 2: the lost plaster (r) and its rim (g)
 		}
 		// grime from the ground: a brown-green band, darkest to 0.6 m (E9b4: the street often meets the wall 0.4 m up), streaked with splash, gone by 1.2 m
 		float sn = wall_noise(vec2((v_wp.x + v_wp.z) * 11.0, v_wp.y * 1.3));
@@ -434,7 +435,7 @@ void fragment() {
 		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
 		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);
 		col *= mix(1.0 - occl, 1.0, COLOR.r);
-		if (grime_debug > 0.0) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
+		if (grime_debug > 0.0 && grime_debug < 1.5) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
 	}

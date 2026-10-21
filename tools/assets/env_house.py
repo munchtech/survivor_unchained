@@ -501,6 +501,12 @@ def pattern(m, pat, rng, op=None, base=False):
             beam(m, (-1 + PW / 2, lo + 0.04 if sgn > 0 else rail - 0.06), (1 - PW / 2, rail - 0.06 if sgn > 0 else lo + 0.04), 0.13, 0.0, TD * 0.9, rng, sag=0.006, skip=('-z',), segs=1)
         # a stud up the middle above the rail
         beam(m, (rng(-0.04, 0.04), rail + 0.06), (rng(-0.04, 0.04), hi), 0.13, 0.0, TD, rng, sag=0.005, skip=('-z',), segs=1)
+    elif pat == 'frame':
+        # (E9b6) a plain house's plain run, framed: a stud up the middle, below and above the rail (panels of 0.9 m by
+        # 1.1-1.7 m), so no bare stretch of lime plaster runs 3 m and more at the play camera
+        sx = rng(-0.06, 0.06)
+        beam(m, (sx, lo + 0.03), (sx + rng(-0.01, 0.01), rail - 0.07), 0.13, 0.0, TD, rng, sag=0.004, skip=('-z',), segs=1)
+        beam(m, (sx + rng(-0.01, 0.01), rail + 0.07), (sx + rng(-0.02, 0.02), hi), 0.13, 0.0, TD, rng, sag=0.004, skip=('-z',), segs=1)
     elif pat in ('k', 'k2'):
         sgn = 1 if pat == 'k' else -1
         beam(m, (sgn * (-1 + PW / 2), rail + 0.06), (sgn * (1 - PW / 2) * 0.15, hi - 0.03), 0.14, 0.0, TD * 0.9, rng, sag=0.008, skip=('-z',), segs=1)

@@ -186,13 +186,13 @@ def ashlar(h, w, rng):
     fleck = ss(0.78, 0.86, fbm(h, w, 16, 160, rng, 2))
     rust = ss(0.72, 0.85, fbm(h, w, 3, 18, rng, 4))
     lichen = ss(0.74, 0.84, fbm(h, w, 4, 24, rng, 4))
-    col = mix(srgb("#a89a82"), srgb("#958670"), big) * 1.17   # (E9b5: paler, the rubble's hue, so a quoin column or ledge reads lighter than the wall, not as timber)
+    col = mix(srgb("#ada591"), srgb("#9b917d"), big) * 1.24   # (E9b5: paler, the rubble's hue, so a quoin column or ledge reads lighter than the wall, not as timber; E9b6: paler and less red again, ~25% over the rubble in frame)
     col = col * (0.9 + 0.2 * mid[..., None]) * (0.95 + 0.1 * grit[..., None]) * (1 - 0.07 * bat[..., None])
     col = mix(col, srgb("#5a5045"), 0.22 * pits)
     col = mix(col, srgb("#c4b8a2"), 0.35 * fleck)
     col = mix(col, srgb("#8a6a48"), 0.3 * rust)
     col = mix(col, srgb("#9a9a78"), 0.35 * lichen)
-    hgt = 0.003 * big + 0.0015 * mid + 0.0004 * bat - 0.0012 * pits + 0.0005 * grit
+    hgt = 0.003 * big + 0.0015 * mid + 0.0004 * bat - 0.0005 * pits + 0.0005 * grit
     return col, hgt, 0.84 + 0.08 * grit
 def iron(h, w, rng):
     big = fbm(h, w, 3, 3, rng, 4)

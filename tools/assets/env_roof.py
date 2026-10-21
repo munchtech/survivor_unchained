@@ -448,6 +448,11 @@ def gable(p):
     TD = H.TD
     # a king post up the middle, under the owl hole
     H.beam(m, (rng(-0.02, 0.02), 0.2), (rng(-0.02, 0.02), oy - 0.06), 0.16, 0.0, TD, rng, sag=0.004, col=tc, segs=1)
+    if pat == 'plain':
+        # (E9b6) queen posts either side of the king post, so a plain gable is no 5-8 m sheet of bare plaster
+        for sx in (-1, 1):
+            x = sx * hw * rng(0.46, 0.52)
+            H.beam(m, (x, 0.2), (x + rng(-0.02, 0.02), R.under(x) - 0.05), 0.14, 0.0, TD, rng, sag=0.003, col=tc, segs=1)
     if pat == 'x':
         for sx in (-1, 1):
             x0, x1 = sx * 0.12, sx * (hw * 0.62)
