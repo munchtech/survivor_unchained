@@ -145,6 +145,9 @@ public static class Loadouts
             FaceShape = kit != null && kit.Faces.Any(f => f.Id == ch.FaceShape) ? ch.FaceShape : null,
             // What her equipment wears, piece by piece (People: HerWear), over her calling's outfit.
             Worn = her && Rpg.Wear.Of(ch) is { Count: > 0 } worn ? worn : null,
+            // Her show-helm toggle off: her head shows nothing (no helm, no calling's fill) and the helm's hair is hers again.
+            HideSlots = her && ch.Headgear == false ? new List<string> { "head" } : null,
+            WornDye = her && Rpg.Wear.DyeOf(ch.Equipment) is { Count: > 0 } wd ? wd : null,
             // The calling's colours dye the cloth; trousers take the darker
             // colour (or the cloth's, darker still).
             Dye = pal.Paint.TryGetValue("cloth", out var cloth)

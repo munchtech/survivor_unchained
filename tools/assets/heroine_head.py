@@ -1586,4 +1586,7 @@ export([her, head] + _game_parts, os.path.join(ART, "heroine.glb"), export_forma
 # (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
 import heroine_seam  # noqa: E402
 heroine_seam.seam(os.path.join(ART, "heroine.glb"))
+# (Sunborn's temple ridge smoothed out of her face key, her hair's keys following: heroine_shape_falloff.py)
+import heroine_shape_falloff  # noqa: E402
+heroine_shape_falloff.run(os.path.join(ART, "heroine.glb"))
 print("WRITTEN", OUT_BLEND, "and", ART)

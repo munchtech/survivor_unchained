@@ -371,7 +371,23 @@ public partial class Game : Node, IZoneHost
         // SB00 played to its end: C01 does not hear the drowning again.
         if (storyEnded) { World.Facts["sb00.ended"] = true; storyEnded = false; }
         Hook();
+        // --equip a,b,c: those items worn from the start, before her first figure is built
+        // (Begin runs ahead of the first Travel/StartBattle, which read Loadouts.Of).
+        if (Args.Get("equip") is string eq0) WearItems(eq0);
     }
+
+    /// <summary>Each item id added to her pack and worn in its slot (shots: --equip, --swap-at).</summary>
+    void WearItems(string ids)
+    {
+        foreach (var id in ids.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var it = Inventory.Make(Journey.Ch, id);
+            if (!Inventory.AddToPack(Journey.Ch, it)) { GD.Print($"armor: no room for {id}"); continue; }
+            Journey.Equip(it.Uid, null, Battle);
+        }
+    }
+
+    List<(double T, string Ids)>? swaps;
 
     int FreeSlot()
     {
@@ -1413,6 +1429,19 @@ public partial class Game : Node, IZoneHost
         {
             chestDone = true;
             sbb.SpawnPickup(PickupKind.Chest, sbb.Player.X + 0.4, sbb.Player.Z, 1, "strongbox");
+        }
+        // --swap-at T:a,b,c[;T2:d,e]: those items worn through the live gear path once Playtime passes T.
+        if (Args.Get("swap-at") is string swapArg && Journey != null)
+        {
+            swaps ??= swapArg.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split(':', 2))
+                .Where(x => x.Length == 2 && double.TryParse(x[0], System.Globalization.CultureInfo.InvariantCulture, out _))
+                .Select(x => (double.Parse(x[0], System.Globalization.CultureInfo.InvariantCulture), x[1])).OrderBy(x => x.Item1).ToList();
+            while (swaps.Count > 0 && Journey.Playtime >= swaps[0].T)
+            {
+                var sw = swaps[0]; swaps.RemoveAt(0);
+                Gear((j, b) => WearItems(sw.Ids));
+                GD.Print($"armor swap: t={sw.T.ToString(System.Globalization.CultureInfo.InvariantCulture)} {sw.Ids}");
+            }
         }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {

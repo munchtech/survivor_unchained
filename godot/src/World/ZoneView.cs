@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Core;
@@ -60,19 +60,24 @@ public partial class ZoneView : Node3D
         foreach (var f in z.Meta.Fires)
             if (f.Ring)
             {
-                pits.Add(new Vector3((float)f.X, (float)f.Z, 0.95f * (float)f.Size));
+                pits.Add(new Vector4((float)f.X, (float)f.Z, 0.95f * (float)f.Size, 0));
                 Bare(flora, new Vector3((float)f.X, (float)f.Y, (float)f.Z), 0.95f * (float)f.Size);
             }
         Perf.Lap("flora");
         if (Scatter.Build(z) is { } sc) AddChild(sc);
         Perf.Lap("scatter");
+        foreach (var p in OwnProps.For(z.Id)?.Places ?? new())
+            if (p.Bare is Vector2 b) pits.Add(new Vector4(p.At.X, p.At.Y, b.X, b.Y));
         props = Dressing.Props(z);
         AddChild(props);
         Perf.Lap("props");
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
-        // The camp on the Low Ford road, made for its close-ups (Camp.cs).
-        if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root));
+        // Our own props placed by the zone's data (OwnProps: props_own.json "place"), the blocked-out ones hidden.
+        var ownProps = OwnProps.For(z.Id);
+        if (ownProps != null) AddChild(OwnProps.Dress(z, ownProps, Landmarks.Root));
+        // The camp on the Low Ford road, made for its close-ups (Camp.cs); its logs ours where the data places them.
+        if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root, logs: ownProps == null || !ownProps.Places.Exists(p => p.Preset.StartsWith("log"))));
         Perf.Lap("landmarks");
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
@@ -277,8 +282,9 @@ public partial class ZoneView : Node3D
         LampPull = SurvivorUnchained.Args.Num("lamp-pull", 0.15f);
     /// <summary>--ford-flame S: the ford lamps' flame scale (the lamp kind's 0.16 m card), for a 0.5 m cage.</summary>
     /// <summary>--ford-light-up M, --ford-pylon-dark: the ford light's height over the flame's base (0.9: over the iron, which
-    /// it leaves out, a soft pool on the pylon's top, not the hot square it laid from 0.16), and the pylon kept out of it, for pictures.</summary>
-    static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.9f);
+    /// it leaves out, a soft pool on the pylon's top, not the hot square it laid from 0.16), and the pylon kept out of it, for pictures.
+    /// (E7 round 2: 0.35, in the cage by the flame, now our pier is kept out of its lamp's light and the iron is on its own layer.)</summary>
+    static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.35f);
     static readonly bool FordPylonLit = !SurvivorUnchained.Args.Has("ford-pylon-dark");
     /// <summary>--ford-flame-k K: the ford flames' brightness over the road lamps' (AgX whitens a bright blue).</summary>
     static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.25f);
@@ -287,11 +293,15 @@ public partial class ZoneView : Node3D
     /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>
     static readonly float LampScale = SurvivorUnchained.Args.Num("lamp-scale", 1.3f);
     static readonly float FordFlame = SurvivorUnchained.Args.Num("ford-flame", 1.5f);
-    /// <summary>--ford-energy K: the ford lamps' light, for pictures.</summary>
-    static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 1f);
+    /// <summary>--ford-energy K: the ford lamps' light, for pictures. (E7 round 2: 12 with --ford-att 2.3, so the lamp lays a pool
+    /// round its pier, the water at 1 m twice as bright as at 4 m, where at 1 and 1.7 the moon's wash drowned it: 1.4x.)</summary>
+    static readonly float FordEnergy = SurvivorUnchained.Args.Num("ford-energy", 12f);
     /// <summary>--ford-color HEX, --ford-range M, --ford-att A: the ford lamps' cold light (a pale blue, AgX greys it).</summary>
     static readonly string FordColor = SurvivorUnchained.Args.Get("ford-color") ?? "#8cb9ff";
-    static readonly float FordRange = SurvivorUnchained.Args.Num("ford-range", 16f), FordAtt = SurvivorUnchained.Args.Num("ford-att", 1.7f);
+    /// <summary>--ford-specular S: the ford lamps' glints on the water (E7 round 3: 0.3; at Godot's 0.5 the far lamps' glints
+    /// spread to blown white patches on the ripples).</summary>
+    static readonly float FordSpecular = SurvivorUnchained.Args.Num("ford-specular", 0.3f);
+    static readonly float FordRange = SurvivorUnchained.Args.Num("ford-range", 16f), FordAtt = SurvivorUnchained.Args.Num("ford-att", 2.3f);
     /// <summary>--ford-core H, --ford-wide K, --ford-body K, --ford-core-k K: the ford flame's core start, width, body and core brightness
     /// (a small blue teardrop with a small pale core, not the road lamps' broad bright point).</summary>
     static readonly float FordCore = SurvivorUnchained.Args.Num("ford-core", 0.4f), FordWide = SurvivorUnchained.Args.Num("ford-wide", 2.6f),
@@ -332,6 +342,14 @@ public partial class ZoneView : Node3D
             LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : LampScale, holder);
             if (!torch) { lights[li].LightColor = new Color(LampColor); lights[li].OmniRange = LampRange; lights[li].OmniAttenuation = LampAtt; }
             specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
+            // A lamp of the zone's own (props_own.json "lamps", by its glow node): the camp's lantern burns amber, not the road's pale warm.
+            if (OwnProps.For(Data.Id)?.Lamps.GetValueOrDefault(best) is OwnProps.Lamp own)
+            {
+                if (own.Color is Color oc) lights[li].LightColor = oc;
+                if (own.Range > 0) lights[li].OmniRange = own.Range;
+                if (own.Att > 0) lights[li].OmniAttenuation = own.Att;
+                specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
+            }
             lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
             glowLight.Remove(best);
         }
@@ -368,8 +386,22 @@ public partial class ZoneView : Node3D
                     if (!FordPylonLit && c is Node3D pillar && pillar.Name.ToString().StartsWith("kk-halloween-pillar")
                         && new Vector2(pillar.Position.X - foot.X, pillar.Position.Z - foot.Z).Length() < 0.6f)
                         foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+                // E7 round 2: our own pier (OwnProps preset "pylon": painted dressed stone, tools/assets/env_props.py) for the
+                // code-made pillar, which read as a flat black slab at night under a capital its lamp flared white; the pier
+                // is kept out of its own lamp's light (its top is under the lamp's foot) and shows by the moon.
+                if (!SurvivorUnchained.Args.Has("ford-pier-off"))
+                    foreach (var c in Landmarks.Root.GetChildren())
+                        if (c is Node3D pillar && pillar.Name.ToString().StartsWith("kk-halloween-pillar")
+                            && new Vector2(pillar.Position.X - foot.X, pillar.Position.Z - foot.Z).Length() < 0.6f
+                            && OwnProps.Fitted("pylon", new Aabb(new Vector3(-0.5f, 0, -0.5f), new Vector3(1, 4.4f, 1))) is Node3D pier)
+                        {
+                            foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Visible = false;
+                            pillar.AddChild(pier);
+                            foreach (var m in pier.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+                        }
                 lights[li].LightCullMask &= ~LampLayer;
                 lights[li].LightColor = new Color(FordColor);
+                lights[li].LightSpecular = FordSpecular;
                 lights[li].OmniRange = FordRange;
                 lights[li].OmniAttenuation = FordAtt;
                 specs[li] = specs[li] with { At = at + Vector3.Up * FordLightUp, Intensity = specs[li].Intensity * FordEnergy };
@@ -522,6 +554,10 @@ public partial class ZoneView : Node3D
     /// each one's instance collapsed to nothing where it stood.</summary>
     public void HideProps(string id, float x, float z, float r)
     {
+        // (our own props, OwnProps, stand one to a node)
+        foreach (var n in props.GetChildren().OfType<Node3D>())
+            if (n is not MultiMeshInstance3D && n.HasMeta("at1") && n.GetMeta("prop").AsString() == id
+                && n.GetMeta("at1").AsVector3() is var o && new Vector2(o.X - x, o.Z - z).Length() < r) n.Visible = false;
         foreach (var mmi in props.GetChildren().OfType<MultiMeshInstance3D>())
         {
             if (!mmi.HasMeta("prop") || mmi.GetMeta("prop").AsString() != id) continue;
@@ -532,8 +568,9 @@ public partial class ZoneView : Node3D
         }
     }
 
-    /// <summary>The fires' pits, (x, z, radius): bare of grass.</summary>
-    readonly List<Vector3> pits = new();
+    /// <summary>The fires' pits, (x, z, radius, 0), and our props' patches (OwnProps "bare": x, z, radius, how far out
+    /// the grass thins, times it): bare of grass (the first four).</summary>
+    readonly List<Vector4> pits = new();
 
     /// <summary>Every plant of the flora within r of a point taken away.</summary>
     static void Bare(Node3D flora, Vector3 at, float r)
@@ -577,7 +614,7 @@ public partial class ZoneView : Node3D
         if (pits.Count > 0 && grass.Multimesh.Mesh.SurfaceGetMaterial(0) is ShaderMaterial gm)
         {
             var bare = new Vector4[4];
-            for (int i = 0; i < Mathf.Min(4, pits.Count); i++) bare[i] = new Vector4(pits[i].X, pits[i].Y, pits[i].Z, 0);
+            for (int i = 0; i < Mathf.Min(4, pits.Count); i++) bare[i] = pits[i];
             gm.SetShaderParameter("bare_at", bare);
         }
         grassAt = at;

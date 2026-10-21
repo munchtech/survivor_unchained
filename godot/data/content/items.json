@@ -1972,6 +1972,451 @@
    ],
    "downside": "Above four fifths of your health you deal 15% less.",
    "lore": "Firepot Nan's, from the Roost's kitchen. It has jointed everything the road brought in, and the road brought in a great deal. She will want it back."
+  },
+  "reaver_harness": {
+   "id": "reaver_harness",
+   "name": "Reaver's Harness",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 40,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "reaver.top",
+    "reaver.collar"
+   ],
+   "lore": "Straps and a collar of scarred hide. It shows what it was made to show and stops nothing it was not asked to."
+  },
+  "reaver_loinbelt": {
+   "id": "reaver_loinbelt",
+   "name": "Reaver's Loinbelt",
+   "kind": "belt",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 40,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "reaver.belt",
+    "reaver.skirt"
+   ],
+   "lore": "A belt of knotted cord and a skirt of cut hide. Reavers wear it so the other side knows how little they fear them."
+  },
+  "reaver_gstring": {
+   "id": "reaver_gstring",
+   "name": "Reaver's Breechcloth",
+   "kind": "legs",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 40,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "reaver.bottom"
+   ],
+   "lore": "A strip of hide between the legs and a prayer that nobody gets close enough to matter."
+  },
+  "reaver_wristfurs": {
+   "id": "reaver_wristfurs",
+   "name": "Reaver's Wristfurs",
+   "kind": "bracers",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 40,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "reaver.bracers"
+   ],
+   "lore": "Fur bound at the wrist with sinew. It keeps the blood off the grip, which is most of what it does."
+  },
+  "reaver_furboots": {
+   "id": "reaver_furboots",
+   "name": "Reaver's Furboots",
+   "kind": "feet",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 40,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "reaver.boots"
+   ],
+   "lore": "Boots of pelt, worn bare-ankled. The snow gets in and the wearer does not seem to mind."
+  },
+  "ranger_corset": {
+   "id": "ranger_corset",
+   "name": "Ranger's Corset",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.top"
+   ],
+   "lore": "Laced leather, boiled stiff and cut close. The lacing is the only part of it that was ever gentle."
+  },
+  "ranger_belt": {
+   "id": "ranger_belt",
+   "name": "Ranger's Belt",
+   "kind": "belt",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.belt"
+   ],
+   "lore": "A wide strap that carries the knife, the flint and the last of the water."
+  },
+  "ranger_breeches": {
+   "id": "ranger_breeches",
+   "name": "Ranger's Breeches",
+   "kind": "legs",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.bottom"
+   ],
+   "lore": "Hide breeches, patched at the knee where the road has taken its share."
+  },
+  "ranger_spaulders": {
+   "id": "ranger_spaulders",
+   "name": "Ranger's Spaulders",
+   "kind": "shoulders",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.pauldrons"
+   ],
+   "lore": "Leather caps over the shoulders, scored by claws that did not quite find the bone."
+  },
+  "ranger_bracers": {
+   "id": "ranger_bracers",
+   "name": "Ranger's Bracers",
+   "kind": "bracers",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.bracers"
+   ],
+   "lore": "Bracers of layered hide. A bowstring has worn a groove in the left one."
+  },
+  "ranger_gloves": {
+   "id": "ranger_gloves",
+   "name": "Ranger's Gloves",
+   "kind": "hands",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.gloves"
+   ],
+   "lore": "Thin gloves, stained dark to the wrist. They remember every neck they have closed on."
+  },
+  "ranger_boots": {
+   "id": "ranger_boots",
+   "name": "Ranger's Boots",
+   "kind": "feet",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 60,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "ranger.boots"
+   ],
+   "lore": "Soft-soled boots for those who would rather not be heard coming."
+  },
+  "gilded_plate_top": {
+   "id": "gilded_plate_top",
+   "name": "Gilded Plate Top",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 80,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_top_gilded"
+   ],
+   "lore": "A breastplate gilt at the edges. The gold is for the funeral, and the steel is for the meantime."
+  },
+  "etched_plate_top": {
+   "id": "etched_plate_top",
+   "name": "Etched Plate Top",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 70,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_top_etched"
+   ],
+   "lore": "Plate etched with a pattern worn smooth by a long line of hands that did not live to keep it."
+  },
+  "plain_plate_top": {
+   "id": "plain_plate_top",
+   "name": "Plain Plate Top",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 50,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_top_plain"
+   ],
+   "lore": "A breastplate with nothing on it. It does not need anything on it."
+  },
+  "warden_tassets": {
+   "id": "warden_tassets",
+   "name": "Warden's Tassets",
+   "kind": "belt",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 60,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "warden.belt",
+    "warden.skirt"
+   ],
+   "lore": "Plates hung from the belt to guard the hips. They ring when she walks, so nobody has to wonder where she is."
+  },
+  "warden_legplate": {
+   "id": "warden_legplate",
+   "name": "Warden's Legplate",
+   "kind": "legs",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 70,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "warden.bottom",
+    "warden.greaves"
+   ],
+   "lore": "Steel from hip to shin, dented at the knee from praying on stone."
+  },
+  "warden_pauldrons": {
+   "id": "warden_pauldrons",
+   "name": "Warden's Pauldrons",
+   "kind": "shoulders",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 60,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "warden.pauldrons"
+   ],
+   "lore": "Heavy shoulder plates. They have turned more blades than their owners could count."
+  },
+  "warden_vambraces": {
+   "id": "warden_vambraces",
+   "name": "Warden's Vambraces",
+   "kind": "bracers",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 60,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "warden.bracers"
+   ],
+   "lore": "Steel forearm guards, buckled tight enough to hurt. The hurt is how she knows they are on."
+  },
+  "warden_sabatons": {
+   "id": "warden_sabatons",
+   "name": "Warden's Sabatons",
+   "kind": "feet",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 60,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "warden.boots"
+   ],
+   "lore": "Plated boots that crush what they step on. Most of it was already dead."
+  },
+  "arcanist_hat": {
+   "id": "arcanist_hat",
+   "name": "Arcanist's Hat",
+   "kind": "head",
+   "rarity": 1,
+   "icon": "helm_light",
+   "value": 50,
+   "description": "+2 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "arcanist.head"
+   ],
+   "lore": "A pointed hat gone grey at the brim. It has heard things no hat should."
   }
  },
  "raritynames": [

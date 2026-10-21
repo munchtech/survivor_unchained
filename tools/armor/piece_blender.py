@@ -338,6 +338,8 @@ FIT = {}
 NUM_FIT = {}
 BAND = {}
 STRAPS = {}
+STRAP_FRAMES = {}
+STRAP_ROWS = os.environ.get("PLATE_STRAP_ROWS", "1") == "1"   # (PLATE_STRAP_ROWS: see build_plate_top and tools/assets/strap_rows.py)
 
 
 def nip_rel(pts):
@@ -540,10 +542,14 @@ def bvh_of(objs):
     return BVHTree.FromPolygons(vs, fs)
 
 
-def skin_hit(o, d):
-    """Her skin where a ray from o along d first meets it, and its normal facing along d (None if it misses)."""
+STRAP_EXACT = os.environ.get("STRAP_EXACT", "1") == "1"   # (the shoulder straps' edges set off their centre line, see build_plate_top)
+
+
+def skin_hit(o, d, bvh=None):
+    """Her skin where a ray from o along d first meets it, and its normal facing along d (None if it misses). `bvh`:
+    that skin instead of the scene's (final_skin_bvh, STRAP_FINAL)."""
     d = np.asarray(d, float) / np.linalg.norm(d)
-    h = G["SKIN_BVH"].ray_cast(Vector(tuple(o)), Vector(tuple(d)), 0.6)
+    h = (bvh or G["SKIN_BVH"]).ray_cast(Vector(tuple(o)), Vector(tuple(d)), 0.6)
     if h[0] is None:
         return None, None
     n = np.array(h[1][:])
@@ -674,14 +680,18 @@ def build_plate_top():
     under_s = bvh_of(cup_parts + band)
     centre = np.array([0.0, 0.0, 1.33])
     strap_objs = {}
+    # (STRAP_FINAL, 21 Oct, armor 8 r3: laid on her skin as her body build leaves it, not the scene's: over the crest
+    # of her shoulder the scene's skin stands up to 8 mm above hers, so the strap stood 7-13 mm off her there and
+    # flicked up beside her neck over a pauldron at the play camera)
+    fsk = G["final_skin_bvh"]() if os.environ.get("STRAP_FINAL", "1") == "1" else None
     for sd, cv in straps:
         c = G["spline"](cv, step=0.004)
-        lay = lambda pts: np.array([skin_hit(centre, p - centre)[0] for p in pts])
+        lay = lambda pts: np.array([skin_hit(centre, p - centre, fsk)[0] for p in pts])
         c = lay(c)
         for _ in range(3):
             c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
             c = lay(c)
-        nr = np.array([skin_hit(centre, p - centre)[1] for p in c])
+        nr = np.array([skin_hit(centre, p - centre, fsk)[1] for p in c])
         for _ in range(4):
             nr[1:-1] = (nr[:-2] + 2 * nr[1:-1] + nr[2:]) / 4
         nr /= np.linalg.norm(nr, axis=1)[:, None]
@@ -691,16 +701,32 @@ def build_plate_top():
         bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
         sc, sn = [], []
         for o_ in (-0.5, 0.0, 0.5):
-            h_ = [skin_hit(centre, p + b * o_ * sw - centre) for p, b in zip(c, bn)]
+            if STRAP_EXACT:
+                # (STRAP_EXACT, 21 Oct, armor 8 r4: each line along it set off its laid centre line across it, then
+                # dropped onto her along her (eased) normal there, never sideways: laid by rays out from her chest,
+                # each edge on its own, they wandered across her where those rays met her skin aslant)
+                h_ = [skin_hit(p + b * o_ * sw + n_ * 0.03, -n_, fsk) for p, b, n_ in zip(c, bn, nr)]
+                h_ = [(h[0], -h[1]) if h[0] is not None else skin_hit(centre, p + b * o_ * sw - centre, fsk) for h, p, b in zip(h_, c, bn)]
+            else:
+                h_ = [skin_hit(centre, p + b * o_ * sw - centre, fsk) for p, b in zip(c, bn)]
             sc.append(np.array([h[0] for h in h_]))
             sn.append(np.array([h[1] for h in h_]))
         sn = np.array(sn)
+        if os.environ.get("RIB_DUMP"):
+            np.savez(os.path.join(os.environ["RIB_DUMP"], f"{PID}.strap_{sd}.npz"), c=sc[1], nrm=nr, tg=tg, bn=bn,
+                     pos=np.stack(sc, 1), wrow=np.full(len(c), sw), lrow=np.zeros(len(c)))
         for _ in range(3):
             sn[:, 1:-1] = (sn[:, :-2] + 2 * sn[:, 1:-1] + sn[:, 2:]) / 4
         sn /= np.linalg.norm(sn, axis=2)[:, :, None]
+        # (STRAP_ROWS, armor 8 r4: one set of weights across it, eased along, so each row moves as one and its edges stay
+        # parallel; each line its own (r3's `follow`, for the band under her arm), its width swung 12-19 mm in her idle
+        # over the crest of her shoulder. Its rows are evened again after the graft's weight pass: strap_rows.py)
         strap_objs[sd], sinfo = skin_band(f"{PID}.strap_{sd}", sc, sn, "darkleather", PRM.get("strap_lift", 0.002), 0.003,
-                                          under=under_s, sheet=(sheet_pos, sheet_wt))
+                                          under=under_s, sheet=(sheet_pos, sheet_wt), follow=not STRAP_ROWS)
         STRAPS[sd] = dict(sinfo, objs=strap_objs[sd])
+        if STRAP_ROWS:
+            import strap_rows
+            STRAP_FRAMES[f"{PID}.strap_{sd}"] = strap_rows.frame(sc[1], bn, nr, sw / 2 + 0.0006, -0.001, float(sinfo["lift"].max()) + 0.0055)
     allstraps = [o for v_ in strap_objs.values() for o in v_]
     # The fixings: a rivet where each shoulder strap meets the band, two through each tab of the band on its cup, one
     # through each shoulder strap's foot on its cup.
@@ -969,6 +995,7 @@ for tn, tb in CAP["tubes"].items():
 me = body.data
 hides = [o for o in made if o.get("hides")]
 tuck, hid = G["tuck_of"](PID, hides, SLOT)
+tuck_of_out = tuck.copy()
 stamp("tuck: %d of her vertices under it" % hid)
 # (r3, F7: her skin under the gore's footprint sunk at least 3 mm (a mark of 0.3: 10 mm times it), all of it in the
 # middle, so the gore stands clear of her in every calling's idle. The footprint: her points whose ray out along her
@@ -1003,6 +1030,11 @@ if f"{PID}.gore" in CAP["sheet"]:
     if len(marg_):
         tuck[marg_] = np.maximum(tuck[marg_], 0.3)
     stamp("tuck under the gore: %d footprint points (%d full), %d margin" % (len(inF_), int((tuck[inF_] > 0.973).sum()) if len(inF_) else 0, len(marg_)))
+    # (armor 7, THE BOUNDED TUCK (heroine_outfits.py, tuck_bound): the gore's footprint taken through the same rule,
+    # so its 0.3 margin and 8 mm climb slope in from the border like every other piece's; ARMOR_GORE_BOUND=0: as it was)
+    if G.get("TUCK_SMOOTH") and os.environ.get("ARMOR_GORE_BOUND", "1") == "1":
+        tuck_pre_bound = tuck.copy()
+        tuck = G["tuck_bound"](tuck, G["TUCK_LAST"]["hard"], G["TUCK_LAST"]["under"] | (tuck > 0), label=PID + " with the gore")
 # (her coverage at rest, her skin tucked as the game draws it: 10 mm times the tuck)
 _, jb = cKDTree(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])).query(P)
 G["cover_report"](PID, made, 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb]))
@@ -1569,6 +1601,15 @@ if POSE_DUMP:
     np.savez_compressed(os.path.join(SCRATCH, "poses.npz"), names=np.array(sorted(POSE_DUMP)),
                         **{f"{k}__{f}": np.asarray(v[f]) for k, v in POSE_DUMP.items() for f in ("skin", "skin_n", "bones", "mats", "shell", "tuck")})
 stamp("numbers measured")
+# (armor 7: ARMOR_SCRATCH_ONLY=1, a proof run: the numbers and her tuck into the scratch dir, nothing into godot/art)
+if os.environ.get("ARMOR_SCRATCH_ONLY") == "1":
+    NUM["push"] = PUSH
+    json.dump(NUM, open(os.path.join(SCRATCH, "numbers.json"), "w", encoding="utf-8"), indent=1)
+    _ed = np.array([e.vertices[:] for e in me.edges])
+    np.savez_compressed(os.path.join(SCRATCH, "tuck_probe.npz"), tuck=tuck, tuck_of=tuck_of_out, need=G["TUCK_LAST"]["need"], cos=G["TUCK_LAST"]["cos"], under=G["TUCK_LAST"]["under"],
+                        hard=G["TUCK_LAST"]["hard"], bv0=bv0, bn0=bn0, edges=_ed, co_local=np.array([v.co[:] for v in me.vertices]))
+    stamp("scratch only: numbers and tuck in %s; nothing written to godot/art" % SCRATCH)
+    raise SystemExit(0)
 
 # --------------------------------------------------------------- export --
 mine = made
@@ -1604,6 +1645,9 @@ bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_t
 import heroine_neck  # noqa: E402
 if float(os.environ.get("NECK_CUT", "0.03")):
     heroine_neck.match_pieces(path, heroine_neck.field())
+if STRAP_FRAMES:
+    import strap_rows  # noqa: E402
+    strap_rows.even(path, STRAP_FRAMES)
 g_ = json.load(open(path, encoding="utf-8"))
 # (the steel's metal map (Metal038, shared with the outfits) drops to non-metal in specks, which lit as white paint
 # spatter on the cups: this piece's steel is metal all over at the map's mean roughness. Wear is the touch-up shader's,

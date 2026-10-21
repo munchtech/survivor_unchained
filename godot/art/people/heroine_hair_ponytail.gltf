@@ -1526,6 +1526,9 @@
      "face_sunborn",
      "face_vixen",
      "face_wildling"
+    ],
+    "shape_falloff": [
+     "sunborn"
     ]
    },
    "name": "hair_ponytail",
@@ -3039,7 +3042,7 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 68,
+   "bufferView": 291,
    "componentType": 5126,
    "count": 89262,
    "max": [
@@ -4010,19 +4013,10 @@
    "min": [
     -0.007309935986995697,
     -0.010634660720825195,
-    -0.0009316951036453247
+    -0.0008519887924194336
    ],
-   "sparse": {
-    "count": 3292,
-    "indices": {
-     "bufferView": 147,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 148
-    }
-   },
-   "type": "VEC3"
+   "type": "VEC3",
+   "bufferView": 292
   },
   {
    "componentType": 5126,
@@ -4898,7 +4892,7 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 219,
+   "bufferView": 293,
    "componentType": 5126,
    "count": 363,
    "max": [
@@ -5760,18 +5754,18 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 287,
+   "bufferView": 294,
    "componentType": 5126,
    "count": 7938,
    "max": [
     0.004176147282123566,
-    -0.0012000799179077148,
+    -0.001435343292541802,
     0.020041676238179207
    ],
    "min": [
-    -0.0031801387667655945,
+    -0.003181692212820053,
     -0.009939312934875488,
-    0.001985296607017517
+    0.0022908172104507685
    ],
    "type": "VEC3"
   },
@@ -7355,6 +7349,26 @@
    "buffer": 0,
    "byteLength": 4416,
    "byteOffset": 30228172
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 30232588,
+   "byteLength": 1071144
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 31303732,
+   "byteLength": 47484
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 31351216,
+   "byteLength": 4356
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 31355572,
+   "byteLength": 95256
   }
  ],
  "samplers": [
@@ -7365,7 +7379,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 30232588,
+   "byteLength": 31450828,
    "uri": "heroine_hair_ponytail.bin"
   }
  ]

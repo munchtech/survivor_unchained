@@ -35,12 +35,13 @@ public static class HairDump
     static readonly string[] Skip = ["hair", "lash", "brow", "eye", "teeth", "tongue"];
 
     /// <summary>Each frame of creation (GameFront.UpdateCreate).</summary>
-    public static void Tick(PersonView? figure, double dt)
+    public static void Tick(PersonView? figure, double dt) { if (figure != null) Tick(figure.Person, dt); }
+
+    /// <summary>Each frame of play too (Game.UpdateCloseUp, the player's figure): her pose as a close-up shot draws it.</summary>
+    public static void Tick(People.Person p, double dt)
     {
-        if (figure == null) return;
         dir ??= Args.Get("hairdump");
         if (string.IsNullOrEmpty(dir)) return;
-        var p = figure.Person;
         if (wiredOn != p.Skeleton) { wiredOn = p.Skeleton; wired = false; }
         if (!wired)
         {
@@ -118,6 +119,24 @@ public static class HairDump
                     using var w = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.idx")));
                     foreach (var q in keep) w.Write(q);
                     I = keep;
+                    // (sNN.rest: its vertices as imported, float32 xyz, to match them to the glb's)
+                    using var wr = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.rest")));
+                    foreach (var v in P) { wr.Write(v.X); wr.Write(v.Y); wr.Write(v.Z); }
+                    // (sNN.bw: int32 weights per vertex, then per vertex that many int32 skeleton bones and float32 weights;
+                    //  sNN.bind: per skin bind, int32 skeleton bone and its bind pose, 12 float32 basis columns then origin)
+                    var bb = a[(int)Mesh.ArrayType.Bones].AsInt32Array(); var bw = a[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+                    int bst = P.Length > 0 ? bb.Length / P.Length : 0;
+                    using (var wb = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.bw"))))
+                    {
+                        wb.Write(bst);
+                        for (int v = 0; v < P.Length * bst; v++) wb.Write(mi.Skin != null ? BoneOf(sk, mi.Skin, bb[v]) : bb[v]);
+                        for (int v = 0; v < P.Length * bst; v++) wb.Write(bw[v]);
+                    }
+                    if (mi.Skin != null)
+                    {
+                        using var wk = new BinaryWriter(File.Create(Path.Combine(dir!, $"s{i:D2}.bind")));
+                        for (int b = 0; b < mi.Skin.GetBindCount(); b++) { wk.Write(BoneOf(sk, mi.Skin, b)); Xf(wk, mi.Skin.GetBindPose(b)); }
+                    }
                 }
                 surfs.Add(x);
                 var mname = (mat?.ResourceName is { Length: > 0 } rn ? rn : mat?.ResourcePath is { Length: > 0 } rp ? Path.GetFileNameWithoutExtension(rp) : $"surf{s}").Replace(' ', '_');
@@ -128,6 +147,11 @@ public static class HairDump
         }
         for (int b = 0; b < sk.GetBoneCount(); b++) meta.Add($"B {b} {sk.GetBoneName(b)}");
         File.WriteAllLines(Path.Combine(dir!, "meta.txt"), meta);
+    }
+
+    static void Xf(BinaryWriter w, Transform3D t)
+    {
+        foreach (var c in new[] { t.Basis.Column0, t.Basis.Column1, t.Basis.Column2, t.Origin }) { w.Write(c.X); w.Write(c.Y); w.Write(c.Z); }
     }
 
     static int BoneOf(Skeleton3D sk, Skin skin, int bind)
@@ -160,6 +184,12 @@ public static class HairDump
     static void Dump(People.Person p)
     {
         if (surfs.Count == 0) Setup(p);
+        // (bNN.bin: the skeleton's global transform, then each bone's global pose, 12 float32 each)
+        using (var wbn = new BinaryWriter(File.Create(Path.Combine(dir!, $"b{frame:D2}.bin"))))
+        {
+            Xf(wbn, p.Skeleton.GlobalTransform);
+            for (int b = 0; b < p.Skeleton.GetBoneCount(); b++) Xf(wbn, p.Skeleton.GetBoneGlobalPose(b));
+        }
         var baked = new Dictionary<MeshInstance3D, ArrayMesh>();
         using var w = new BinaryWriter(File.Create(Path.Combine(dir!, $"k{frame:D2}.bin")));
         w.Write((float)(next - 0.25));
@@ -219,6 +249,13 @@ public static class HairDump
             foreach (var v in P) { var q = g * v; w.Write(q.X); w.Write(q.Y); w.Write(q.Z); }
         }
         foreach (var hs in chains) for (int i = 0; i < 8; i++) { var c = hs.ChainWorld[i]; w.Write(c.X); w.Write(c.Y); w.Write(c.Z); }
+        // The view as drawn (cam.txt, a line per frame: frame, fov, near, the camera's basis x y z columns and origin).
+        if (p.Skeleton.GetViewport()?.GetCamera3D() is { } cam)
+        {
+            var t = cam.GlobalTransform;
+            File.AppendAllText(Path.Combine(dir!, "cam.txt"), FormattableString.Invariant(
+                $"{frame} {cam.Fov} {cam.Near} {t.Basis.X.X} {t.Basis.X.Y} {t.Basis.X.Z} {t.Basis.Y.X} {t.Basis.Y.Y} {t.Basis.Y.Z} {t.Basis.Z.X} {t.Basis.Z.Y} {t.Basis.Z.Z} {t.Origin.X} {t.Origin.Y} {t.Origin.Z} {cam.KeepAspect}") + "\n");
+        }
         frame++;
     }
 }

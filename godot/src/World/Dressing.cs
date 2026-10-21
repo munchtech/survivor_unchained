@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.World;
@@ -606,8 +606,12 @@ public static class Dressing
         var root = new Node3D { Name = "Props" };
         var groups = new Dictionary<(string, int, int), List<Transform3D>>();
         float cell = PropCell;
+        // Our own props where the zone swaps a kit piece for one (OwnProps: its props_own.json "pieces").
+        var own = OwnProps.For(z.Id);
+        var ours = new List<(string Id, string Preset, Transform3D At)>();
         foreach (var (id, at) in z.Props)
         {
+            if (own != null && OwnProps.Swap(own, id, at.Origin) is string preset) { ours.Add((id, preset, at)); continue; }
             var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
             list.Add(at);
@@ -630,6 +634,19 @@ public static class Dressing
                 mmi.SetMeta("at", new Godot.Collections.Array<Vector3>(list.Select(t => t.Origin)));
                 root.AddChild(mmi);
             }
+        }
+        foreach (var (id, preset, at) in ours)
+        {
+            int slash = id.IndexOf('/');
+            Aabb? kit = null;
+            foreach (var (mesh, local) in PartsOf(id[..slash], id[(slash + 1)..]))
+                kit = kit is Aabb k ? k.Merge(local * mesh.GetAabb()) : local * mesh.GetAabb();
+            if (kit is not Aabb box || OwnProps.Fitted(preset, box) is not Node3D n) continue;
+            n.Transform = own != null ? OwnProps.Nudged(own, at) : at;
+            // Which piece, and where it stood in the kit, for taking it away in play (HideProps).
+            n.SetMeta("prop", id);
+            n.SetMeta("at1", at.Origin);
+            root.AddChild(n);
         }
         return root;
     }
