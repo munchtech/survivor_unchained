@@ -152,6 +152,13 @@ def warden_show(rig):
     return build("warden_show", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
 
 
+# The staff lifted (f12) and struck down (f18-55), on the idle's frame and aim (idle.ARC_HAND_R, ARC_BLADE_R).
+# (Animation 46: in the chest's frame, at 5-8 deg out, the crescent hung before her face from facing 45 the whole time
+# it was down.)
+SHOW_LIFT = {"arc": arc_of((-0.24, -0.02, 0.23)), "pole": (0.0, -1.0, -0.2), "frame": "char", "blade": _n(-0.28, 1.0, 0.0), "twist": 0.5}
+SHOW_STRUCK = {"arc": arc_of((-0.26, -0.28, 0.23)), "pole": (0.0, -1.0, -0.2), "frame": "char", "blade": _n(-0.30, 1.0, -0.06), "twist": 0.5}
+
+
 def arcanist_show(rig):
     """The staff lifted and struck down on the ground; the free hand rises
     open as if the light came to it; her chin lifts."""
@@ -159,18 +166,15 @@ def arcanist_show(rig):
     keys = [
         (0, over("arcanist"), "auto"),
         (12, over("arcanist", head=(0, -8, 0),
-                  hand_r={"arc": arc_of((-0.16, -0.02, 0.14)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
-                          "blade": _n(-0.1, 1.0, 0.1), "twist": 0.5},
+                  hand_r=SHOW_LIFT,
                   hand_l={"arc": arc_of((0.20, -0.30, 0.14)), "pole": (0.8, -0.4, -0.4), "frame": "chest",
                           "knuckles": _n(0.3, 0.2, 0.9)}, fingers_l="relaxed"), "fast"),
         (18, over("arcanist", spine=(0, 4, 0), head=(-10, -16, 0),
-                  hand_r={"arc": arc_of((-0.16, -0.30, 0.14)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
-                          "blade": _n(-0.1, 1.0, 0.12), "twist": 0.5},
+                  hand_r=SHOW_STRUCK,
                   hand_l={"arc": arc_of((0.30, -0.16, 0.22)), "pole": (0.8, -0.6, -0.2), "frame": "chest",
                           "knuckles": _n(0.6, 0.3, 0.75)}, fingers_l="spread"), "ease"),
         (55, over("arcanist", spine=(0, 3, 0), head=(-12, -18, 0),
-                  hand_r={"arc": arc_of((-0.16, -0.30, 0.14)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
-                          "blade": _n(-0.1, 1.0, 0.12), "twist": 0.5},
+                  hand_r=SHOW_STRUCK,
                   hand_l={"arc": arc_of((0.32, -0.12, 0.22)), "pole": (0.8, -0.6, -0.2), "frame": "chest",
                           "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
@@ -311,13 +315,29 @@ def warden_break(rig):
     return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"}, pin_first={"r": 4})
 
 
+# The idle's right hand (her character's frame, idle_arcanist's first frame, the grip's blade and knuckles as
+# keyed._whole_aims fills them) and the staff's line in it (10 deg forward, 16 out: scratch anim46 held.py).
+ARC_BLADE0_R = (-0.3547, 0.9342, -0.0275)
+ARC_KNUCKLES_R = (-0.4739, -0.1537, 0.8666)
+ARC_STAFF_LINE = (-0.275, 0.936, 0.163)
+
+
 def arcanist_break(rig):
     base = idle.base_of(rig, "arcanist")
     tuck = {"pos": (0.13, 1.62, 0.04), "pole": (1.0, 0.2, -0.3), "knuckles": (0.0, 0.5, -0.85)}
+    # The staff turning in her fingers: the idle's hand (idle.ARC_HAND_R, in her character's frame) turned about the
+    # staff's own line (ARC_STAFF_LINE), so the staff turns in place. (Animation 46: these keys kept the chest-frame aim
+    # of 13 Oct, blade (-0.12, 1.0, 0.18), the grip 7 cm back, and swung the crescent back over her face as the idle's
+    # was re-aimed off it; turned about the blade instead, the line swung 7 deg in at the peak, over her face from
+    # facing 45, and its foot to 73 mm of her leg. `roll`: the turn from the idle's hand; turned the other way past
+    # about 10 deg, the staff, on the fist's diagonal, comes round toward her right leg and the crescent before her
+    # face from facing 45.)
+    from rig import qaxis
     def staff(roll):
-        a = math.radians(roll)
-        return {"arc": arc_of((-0.16, -0.28, 0.12)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
-                "blade": _n(-0.12, 1.0, 0.18), "knuckles": _n(math.sin(a), 0.0, math.cos(a)), "twist": 0.6}
+        q = qaxis(ARC_STAFF_LINE, roll)
+        return {"arc": arc_of(idle.ARC_HAND_R), "pole": (0.0, -1.0, -0.2), "frame": "char",
+                "blade": tuple(qrot(q, np.array(ARC_BLADE0_R))), "knuckles": tuple(qrot(q, np.array(ARC_KNUCKLES_R))),
+                "twist": 0.6}
     if rig.body == "him":
         # His: a hand to the back of his neck, kneading it, the head rolled
         # forward and aside into it.
@@ -369,8 +389,8 @@ def arcanist_break(rig):
         *([lift, w36, w39, lowering] if rig.body != "him" else []),
         # Up at the sky, the staff turning in her fingers.
         (44 + d, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
-        (60 + d, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
-        (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
+        (60 + d, over("arcanist", head=(14, -26, 0), hand_r=staff(5)), "auto"),
+        (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-25)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
     clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})

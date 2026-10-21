@@ -104,6 +104,12 @@ def _arc_hand_fingers():
     return dict(FINGER_PRESETS["relaxed"], **ARC_HIP_FINGERS)
 
 
+# Her staff hand at rest (the shoulder to the wrist, and the staff's line, in her character's frame), shared with the
+# breaks and the stops (soul.py, sprint_stop.py).
+ARC_HAND_R = (-0.24, -0.26, 0.28)
+ARC_BLADE_R = (-0.38, 1.0, -0.03)
+
+
 def arcanist(t, f):
     return {
         # (ARC_HIP at the captured standing's first frame, in the chest's frame, for the clips that take the idle's
@@ -116,8 +122,14 @@ def arcanist(t, f):
         # (18 Oct, animation 38: the grip 7 cm forward and the elbow's pole turned down and in, from (0.12 forward,
         # pole (-0.8, -0.3, -0.6)): at the close-up the elbow stood cocked out and back; now 20 deg out of her
         # side, not 32 (the hip arm's 26), 85 mm out from the shoulder, not 132, and 15 deg back, not 35.)
-        "hand_r": {"arc": arc_of((-0.16, -0.28, 0.19)), "pole": (-0.2, -0.6, -0.75), "frame": "chest",
-                   "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5},
+        # (20 Oct, animation 46: re-aimed as staff_town was. On the chest's frame at 12-16 deg forward and -4..+1 out,
+        # the crescent sat 9-30 mm inside her hat's brim and covered her whole face at the close-up from facing 45.
+        # Now on her character's frame (the line steady as the chest sways), 10 deg forward and 16-17 out, the fist
+        # 8 cm further out and 9 cm forward, held ready ahead of her hip, the elbow bent 58, not 87; the crescent
+        # 197-232 mm outside the brim, the shaft 104 mm or more off her legs, the wrist 20 deg toward the thumb, not 22.
+        # Further out swings the shaft's foot into her right thigh (at 15 deg out with the fist 3 cm nearer, 63 mm).)
+        "hand_r": {"arc": arc_of(ARC_HAND_R), "pole": (0.0, -1.0, -0.2), "frame": "char",
+                   "blade": _n(ARC_BLADE_R), "twist": 0.5},
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
 
