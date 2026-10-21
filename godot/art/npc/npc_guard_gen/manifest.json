@@ -1,0 +1,566 @@
+{
+ "hair": {
+  "style": "crop",
+  "colour": "#6b635b",
+  "base": "dark brown",
+  "grey": 0.74,
+  "beard": "none",
+  "brows": true,
+  "why": "style seeded; colour from \"dark brown hair\"; greyed 63% (64 years)",
+  "file": null,
+  "carry": {
+   "style": "crop",
+   "fieldPoints": 11518,
+   "scalpPoints": 5116,
+   "scale": 1.1251,
+   "turnDeg": 2.27,
+   "residualMm": {
+    "rms": 5.56,
+    "max": 18.44
+   },
+   "through": {
+    "her": {
+     "n": 386,
+     "deepMm": 2
+    },
+    "before": {
+     "n": 2258,
+     "deepMm": 5.61,
+     "beyondHers": 1638
+    },
+    "after": {
+     "n": 112,
+     "deepMm": 2.15,
+     "beyondHers": 23
+    },
+    "byMaterial": {
+     "hair": {
+      "n": 72,
+      "points": 59520,
+      "deepMm": 1.41,
+      "beyondHers": 0
+     },
+     "hair_cap": {
+      "n": 28,
+      "points": 3740,
+      "deepMm": 2.15,
+      "beyondHers": 23
+     },
+     "hair_fine": {
+      "n": 12,
+      "points": 12455,
+      "deepMm": 0.75,
+      "beyondHers": 0
+     }
+    }
+   },
+   "pushPasses": 6,
+   "liftMaxMm": 16.35,
+   "lastNeedMm": 2.75,
+   "cardLod": {
+    "tolMm": 1.01,
+    "cards": 2286,
+    "tris": {
+     "before": 86740,
+     "after": 6900,
+     "hair": 5354,
+     "hair_fine": 1546
+    },
+    "culled": {
+     "offRoot": 21,
+     "lone": 0,
+     "hidden": 348
+    },
+    "rootMm": [
+     2.6,
+     3.7,
+     5.9
+    ]
+   },
+   "fringe": {
+    "cards": 597,
+    "tris": 2388,
+    "roots": {
+     "candidates": 13653,
+     "seen": 3813,
+     "picked": 613,
+     "noDir": 16
+    },
+    "spacingMm": 1.8
+   },
+   "rootFeather": {
+    "seen": 492,
+    "cards": 1910,
+    "rampMm": 9,
+    "lo": 0.1,
+    "depthLifted": 26432
+   }
+  },
+  "paint": {
+   "pixels": {
+    "scalp": 1383198,
+    "roots": 1304844,
+    "brows": 10095,
+    "beard": 0
+   },
+   "life": {
+    "k": {
+     "cheek": 0.634,
+     "nose": 0.733,
+     "ear": 0.62,
+     "under": 0.874,
+     "jaw": 0.55,
+     "mottle": 1.518
+    },
+    "tip": [
+     0,
+     1.5699,
+     0.1058
+    ],
+    "ear": [
+     0.1021,
+     1.6215,
+     -0.047
+    ],
+    "color": 2595722,
+    "rough": 2595722
+   },
+   "map": 2048,
+   "landmarks": {
+    "eyeHalf": 0.031,
+    "eyeY": 1.6173,
+    "mouthY": 1.5478
+   }
+  }
+ },
+ "nipples": {
+  "l": [
+   0.93,
+   0.07,
+   3.2
+  ],
+  "r": [
+   0.93,
+   0.07,
+   3.2
+  ],
+  "tips": {
+   "l": 8522,
+   "r": 1850
+  }
+ },
+ "rest": {
+  "before": {
+   "deg": 82.15,
+   "bone": "hand_r"
+  },
+  "after": {
+   "deg": 0.011,
+   "bone": "thumb_04_leaf_l"
+  },
+  "headMoved": 3.54e-16
+ },
+ "name": "npc_guard_gen",
+ "sex": "male",
+ "height": 1.7935,
+ "ownHeight": 1.7935,
+ "lod": {
+  "file": "lod.glb",
+  "tris": {
+   "lod_body": 641,
+   "lod_generated": 7443,
+   "lod_hair": 2097
+  },
+  "total": 10181,
+  "shadowTris": 2058,
+  "shadowHair": 454,
+  "errMm": {
+   "cut": 7,
+   "lod_body.skin": {
+    "p99": 9.7,
+    "max": 19.81
+   },
+   "lod_body.skin_head": {
+    "p99": 8.8,
+    "max": 12.48
+   },
+   "lod_body.eyes": {
+    "p99": 6.1,
+    "max": 6.1
+   },
+   "lod_generated": {
+    "p99": 8.51,
+    "max": 12.17
+   },
+   "lod_hair.hair_cap": {
+    "p99": 9.31,
+    "max": 11.71
+   },
+   "lod_hair": "cards whole"
+  },
+  "movedMm": {
+   "lod_body.skin": 10.5,
+   "lod_body.skin_head": 10.5,
+   "lod_generated": 10.5,
+   "lod_hair.hair_cap": 10.13
+  },
+  "dropped": [],
+  "cards": {
+   "kept": 497,
+   "of": 1421,
+   "tris": 1946
+  }
+ },
+ "maps": {
+  "skin": {
+   "map": 1024,
+   "normalMap": 1024,
+   "roughnessMap": 1024
+  },
+  "skin_head": {
+   "map": 2048,
+   "normalMap": 2048,
+   "roughnessMap": 2048
+  },
+  "eyes": {
+   "map": 1024,
+   "specularIntensityMap": 256,
+   "clearcoatMap": 256,
+   "clearcoatNormalMap": 512
+  },
+  "teeth": {
+   "map": 1024,
+   "roughnessMap": 1024
+  },
+  "tongue": {
+   "map": 1024
+  },
+  "generated": {
+   "map": 2048,
+   "normalMap": 2048,
+   "metalnessMap": 2048,
+   "roughnessMap": 2048
+  }
+ },
+ "frame": "glTF / Godot: Y up, metres; bind pose = the heroine's (heroine.glb), the body's own proportions",
+ "skin": {
+  "areolas": "none",
+  "look": true
+ },
+ "skeleton": {
+  "joints": 79,
+  "names": [
+   "root",
+   "pelvis",
+   "spine_01",
+   "spine_02",
+   "spine_03",
+   "neck_01",
+   "Head",
+   "clavicle_l",
+   "upperarm_l",
+   "lowerarm_l",
+   "hand_l",
+   "index_01_l",
+   "index_02_l",
+   "index_03_l",
+   "index_04_leaf_l",
+   "middle_01_l",
+   "middle_02_l",
+   "middle_03_l",
+   "middle_04_leaf_l",
+   "pinky_01_l",
+   "pinky_02_l",
+   "pinky_03_l",
+   "pinky_04_leaf_l",
+   "ring_01_l",
+   "ring_02_l",
+   "ring_03_l",
+   "ring_04_leaf_l",
+   "thumb_01_l",
+   "thumb_02_l",
+   "thumb_03_l",
+   "thumb_04_leaf_l",
+   "clavicle_r",
+   "upperarm_r",
+   "lowerarm_r",
+   "hand_r",
+   "index_01_r",
+   "index_02_r",
+   "index_03_r",
+   "index_04_leaf_r",
+   "middle_01_r",
+   "middle_02_r",
+   "middle_03_r",
+   "middle_04_leaf_r",
+   "pinky_01_r",
+   "pinky_02_r",
+   "pinky_03_r",
+   "pinky_04_leaf_r",
+   "ring_01_r",
+   "ring_02_r",
+   "ring_03_r",
+   "ring_04_leaf_r",
+   "thumb_01_r",
+   "thumb_02_r",
+   "thumb_03_r",
+   "thumb_04_leaf_r",
+   "thigh_l",
+   "calf_l",
+   "foot_l",
+   "ball_l",
+   "ball_leaf_l",
+   "thigh_r",
+   "calf_r",
+   "foot_r",
+   "ball_r",
+   "ball_leaf_r",
+   "upperarm_twist_01_l",
+   "upperarm_twist_01_r",
+   "lowerarm_twist_01_l",
+   "lowerarm_twist_01_r",
+   "lowerarm_twist_02_l",
+   "lowerarm_twist_02_r",
+   "upperarm_share_l",
+   "upperarm_share_r",
+   "lowerarm_share_l",
+   "lowerarm_share_r",
+   "lowerarm_point_l",
+   "lowerarm_point_r",
+   "calf_share_l",
+   "calf_share_r"
+  ]
+ },
+ "body": "body.glb",
+ "pieces": [],
+ "generated": {
+  "dressed": true,
+  "source": "generated/model_gmvhuj8nzavw.glb (TRELLIS.2), Fix -> generated/game/guard_clean.glb",
+  "note": "concept -> TRELLIS.2 -> Fix (cleanup) -> dress (genfix: the base's head, hands and hair; the generated clothes carried to the rig's rest, cut at the collar and cuffs, weighted) -> dressPackage",
+  "trim": {
+   "npc_guard_gen": {
+    "before": 21936,
+    "after": 9998
+   },
+   "npc_guard_genHead": {
+    "before": 4820,
+    "after": 4804
+   }
+  },
+  "dress": {
+   "offsetScale": 0.9919,
+   "wrapGapMm": {
+    "mean": 15.5,
+    "median": 13.4,
+    "p90": 30.4,
+    "p99": 58.4
+   },
+   "wrapGapRegionsMm": {
+    "headNeck": {
+     "n": 953,
+     "mean": 12.3,
+     "p90": 24.1
+    },
+    "arms": {
+     "n": 8771,
+     "mean": 17.4,
+     "p90": 33.4
+    },
+    "legs": {
+     "n": 3344,
+     "mean": 12,
+     "p90": 22.6
+    },
+    "torso": {
+     "n": 4061,
+     "mean": 14.9,
+     "p90": 28.1
+    }
+   },
+   "rigid": 16,
+   "skinRef": [
+    100,
+    62,
+    46
+   ],
+   "collarInner": 599,
+   "collarSlivers": 3,
+   "collarSkin": 125,
+   "islandsDropped": 151,
+   "cuts": {
+    "collar": {
+     "endMm": 20,
+     "edgeMm": [
+      0,
+      40
+     ]
+    },
+    "cuff_l": {
+     "endMm": 101,
+     "edgeMm": [
+      61,
+      107
+     ]
+    },
+    "cuff_r": {
+     "endMm": 107,
+     "edgeMm": [
+      68,
+      115
+     ]
+    }
+   },
+   "profile": {
+    "collar": "2 refs, last undefined, tops 20 40 40 40 40 40 40 40 40 30 20 20 20 20 20 20",
+    "cuff_l": "3 refs, last metal",
+    "cuff_r": "3 refs, last metal"
+   },
+   "genTris": 35884,
+   "genCut": 2880,
+   "base": {
+    "npc_guard_gen": 9998,
+    "npc_guard_genHead": 4804
+   },
+   "tucked": 384,
+   "poked": 54,
+   "bare": 0,
+   "weights": {
+    "copied": 41,
+    "far": 10.4,
+    "dotHist": [
+     26,
+     7,
+     4,
+     4,
+     4,
+     12,
+     4,
+     5,
+     8,
+     27
+    ],
+    "inpaint": {
+     "unknown": 8885,
+     "bones": 65,
+     "itMean": 31,
+     "itMax": 60
+    },
+    "smoothed": {
+     "iters": 2,
+     "edgeMm": 18.3,
+     "bones": 65
+    },
+    "wrist": {
+     "l": {
+      "to": "lowerarm_twist_02_l",
+      "points": 526,
+      "handWeightMoved": 403.2
+     },
+     "r": {
+      "to": "lowerarm_twist_02_r",
+      "points": 583,
+      "handWeightMoved": 428.4
+     }
+    },
+    "steelWhole": 8
+   },
+   "hair": {
+    "style": "crop",
+    "meshes": 4,
+    "tris": 11949,
+    "errMm": 5,
+    "of": [
+     "hair",
+     "hair_cap",
+     "hair_fine",
+     "hair_fine"
+    ]
+   }
+  }
+ },
+ "baked": true,
+ "bake": {
+  "bytes": 15900576,
+  "nodes": [
+   {
+    "name": "npc_guard_gen",
+    "surfaces": [
+     "skin",
+     "skin_head",
+     "generated"
+    ],
+    "tris": 45882,
+    "morphs": 0
+   },
+   {
+    "name": "npc_guard_genHead",
+    "surfaces": [
+     "skin",
+     "skin_head"
+    ],
+    "tris": 4804,
+    "morphs": 28
+   },
+   {
+    "name": "npc_guard_genEyes",
+    "surfaces": [
+     "eyes"
+    ],
+    "tris": 544,
+    "morphs": 0
+   },
+   {
+    "name": "npc_guard_genTeeth",
+    "surfaces": [
+     "teeth"
+    ],
+    "tris": 1780,
+    "morphs": 28
+   },
+   {
+    "name": "npc_guard_genTongue",
+    "surfaces": [
+     "tongue"
+    ],
+    "tris": 448,
+    "morphs": 28
+   },
+   {
+    "name": "hair",
+    "surfaces": [
+     "hair",
+     "hair_cap",
+     "hair_fine"
+    ],
+    "tris": 11949,
+    "morphs": 0
+   }
+  ],
+  "skinDeleted": 0
+ },
+ "tris": {
+  "generated": 35884,
+  "hair": 11949,
+  "surfaces": {
+   "skin": 6602,
+   "skin_head": 8200,
+   "generated": 35884,
+   "eyes": 544,
+   "teeth": 1780,
+   "tongue": 448,
+   "hair:hair": 5354,
+   "hair:hair_cap": 2661,
+   "hair:hair_fine": 3934
+  },
+  "total": 65407,
+  "drawn": 65407,
+  "budget": null,
+  "note": "LOD0 over the procedural NPC budget (60k): accepted for generated NPCs for now"
+ },
+ "decimate": {
+  "hair": {
+   "errMm": 5,
+   "share": 10000
+  }
+ }
+}
