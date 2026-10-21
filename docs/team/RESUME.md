@@ -9,7 +9,7 @@ Merged today: two-screen character creation (7f96019c), American spelling (caa5c
 2. **Armor 8:** armor-7, armor.md top "Paused here (armor lead 7 ...)". Milestone A (engine proof) and then B (sexy full plate). The tuck-smoothing rule fixes the owner's breast dimple; ONE rebuild after neck-31 merges. CONTRACTS docs/armor/PIECE_SCHEMA.md@03a0029f.
 3. **Env lead 11:** env-4@f6cc4534, environment.md "Paused here (env lead 10 ...)". E5 failed judge round 1 with six fixes (scratch_env10\e5a_verdict.md); then E6, E7, E9, E8, E10.
 4. **Animation 47:** anim-40@bdf0aeb9, animation.md top. The combat staff failed r1 (4/8); the lead's call is a per-clip grip offset (chain_strike needs it too). The 5 KNOWN attack fixes are WIP and unjudged (the axes run has new contacts). Close the crossbow and phase items.
-5. **Marionette lead 8:** pipeline-1, HANDOFF.md top. Close armor on the base cheaply, then the workshop for her against PIECE_SCHEMA.
+5. **Marionette lead 8:** pipeline-1@ba56aa8 (solver Q's round 7 is after the lead's pause at 94f91be; see ARMOR_ON_BASE.md "Round 7": fit flags done, guard flips 0, plate-through still fails up to 25 mm in jog/lean, fix = the cuirass lower lames follow the lean), HANDOFF.md top. Close armor on the base cheaply, then the workshop for her against PIECE_SCHEMA.
 **Owner pending:** none.
 **Cleanup:** the scratch folders above (env10 backed up, binning failed); the empty .claude\worktrees\env-1 (busy); storybook-1 leftover. The ui-create worktree now holds face-31.
 
