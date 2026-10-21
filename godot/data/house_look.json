@@ -14,9 +14,9 @@
   "#a8786a"
  ],
  "grime_h": 1.2,
- "grime_dark": 0.3,
- "splash_h": 0.55,
- "splash_dark": 0.22,
+ "grime_dark": 0.5,
+ "splash_h": 0.6,
+ "splash_dark": 0.26,
  "house_rise": 0.12,
  "stain_dark": 0.45,
  "val_noise": 0.1,
@@ -31,10 +31,10 @@
   "#d09482"
  ],
  "shingle_tints": [
-  "#a2a6a6",
-  "#a09e96",
-  "#8c8e8c",
-  "#aeb0ac"
+  "#5d6472",
+  "#5c5f67",
+  "#505561",
+  "#646a76"
  ],
  "roof_sag": 0.02,
  "tile_val": 0.05,

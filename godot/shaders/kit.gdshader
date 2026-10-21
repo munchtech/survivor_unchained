@@ -180,6 +180,7 @@ uniform sampler2D ground_h : filter_linear, repeat_disable;  // (E9b3) the terra
 uniform vec4 ground_rect = vec4(0.0);  // its world x, z origin and size; z 0: no map (the house's own ground instead)
 uniform float plaster_mottle = 0.1;  // value mottling on plaster at 1-2 m
 uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off (the lath behind)
+uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
 varying vec4 v_wall;
 varying float v_hgt;
 varying vec3 v_wp;
@@ -406,10 +407,11 @@ void fragment() {
 			vec3 lc = mix(vec3(0.07, 0.055, 0.045), vec3(0.3, 0.24, 0.18) * (0.8 + 0.4 * wall_noise(wq * 9.0)), lath);
 			col = mix(col * (1.0 - 0.35 * rim), lc, lost);
 		}
-		// grime from the ground: a brown-green band, darkest to 0.5 m, streaked with splash, gone by 1.2 m
+		// grime from the ground: a brown-green band, darkest to 0.6 m (E9b4: the street often meets the wall 0.4 m up), streaked with splash, gone by 1.2 m
 		float sn = wall_noise(vec2((v_wp.x + v_wp.z) * 11.0, v_wp.y * 1.3));
 		float hn = h + 0.25 * (gn - 0.5);
-		col *= 1.0 - grime_dark * (1.0 - smoothstep(0.35, grime_h, hn + 0.2 * (sn - 0.5)));
+		float gr = 1.0 - smoothstep(0.6, grime_h, hn + 0.2 * (sn - 0.5));
+		col *= (1.0 - grime_dark * gr) * mix(vec3(1.0), vec3(0.97, 0.98, 0.86), gr);
 		col *= mix(1.0 - house_rise, 1.0, smoothstep(0.0, 6.0, h));
 		float splash = 1.0 - smoothstep(0.0, splash_h, hn - 0.25 * sn);
 		col *= mix(vec3(1.0), vec3(1.0 - splash_dark) * vec3(0.95, 0.97, 0.82), splash);
@@ -417,6 +419,7 @@ void fragment() {
 		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
 		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);
 		col *= mix(1.0 - occl, 1.0, COLOR.r);
+		if (grime_debug > 0.0) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
 	}

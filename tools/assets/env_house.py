@@ -557,6 +557,45 @@ def post(p):
     return m
 
 
+def pier(p):
+    """A town wall's pier (E9b4): where the kit set a corner piece in the middle of a straight run (a joint every
+    8 m), a dressed stone buttress, not a corner's quoins standing in the wall face like a post. In its wall's own
+    frame (the face at z = 0, out to +z), centred on the joint: courses of ashlar in two blocks with the joint
+    alternating, a weathered set-off at the top sloping back to the next reach (the lower storey: from 'reach' to
+    'top'; the upper: from 'top' to the coping's 9 cm), a few mm out of true."""
+    rng = Rng(p['seed'])
+    m = Mesh()
+    W = p.get('width', 0.72) / 2
+    reach, top = p['reach'], p['top']
+    y0 = SKIRT if p.get('foot', True) else 0.0
+    ya, yb = BAND[0] - 0.32, BAND[0]
+    col = (1.0, 0.0, 0.0, 1.0)
+    y, k = y0, 0
+    while y < ya - 1e-6:
+        h = rng(0.27, 0.36) if y >= 0 else -y0
+        h = min(h, ya - y)
+        if ya - (y + h) < 0.12:
+            h = ya - y
+        cut = rng(0.08, 0.2) * (1 if k % 2 == 0 else -1)
+        dz = rng(-0.005, 0.005)
+        for x0, x1 in ((-W, cut), (cut, W)):
+            box(m, ((x0 + x1) / 2 + rng(-0.003, 0.003), y + h / 2, reach / 2 + dz), (1, 0, 0), (0, 1, 0),
+                ((x1 - x0) / 2 - 0.004, h / 2 - 0.005, reach / 2), 'ashlar', off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z',),
+                col=col if y >= 0 else (0.8, 0.0, 0.0, 1.0))
+        y += h
+        k += 1
+    # the set-off: the next reach's body up to the band, and a sloping slab from this reach back to it
+    box(m, (0.0, (ya + yb + 0.246) / 2, top / 2), (1, 0, 0), (0, 1, 0), (W - 0.004, (yb + 0.246 - ya) / 2, top / 2), 'ashlar',
+        off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z', '-y'), col=col)
+    A, B = np.array([0.0, ya, reach]), np.array([0.0, yb, top])
+    sv = (B - A) / np.linalg.norm(B - A)
+    az = np.cross([1.0, 0.0, 0.0], sv)
+    t = 0.13
+    box(m, (A + B) / 2 - az * t / 2 + np.array([0.0, 0.0, 0.0]), (1, 0, 0), sv,
+        (W + 0.01, np.linalg.norm(B - A) / 2 + 0.02, t / 2), 'ashlar', off=(rng(0, 2.4), rng(0, 0.1)), skip=('-z', '-y'), col=col)
+    return m
+
+
 def shutters(p):
     """A window's two shutters, open against the wall beside it: boards (grain up), two ledges, iron hinges."""
     rng = Rng(p['seed'])
@@ -576,7 +615,7 @@ def shutters(p):
     return m
 
 
-KINDS = {'wall': wall, 'quoin': quoin, 'post': post, 'shutters': shutters}
+KINDS = {'wall': wall, 'quoin': quoin, 'post': post, 'shutters': shutters, 'pier': pier}
 
 
 # ------------------------------------------------------------------- glb --

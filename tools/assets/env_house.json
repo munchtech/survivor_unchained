@@ -1,5 +1,5 @@
 {
- "_doc": "The town wall kit presets (env_house.py, its docstring): kind wall|quoin|post|shutters; wall stone|plaster|base; pattern plain|posts|x|k|k2; opening wide_round|thin_round|wide_flat|door_round|door_flat; seed; off [u, v] metres into the sheet (else from the seed).",
+ "_doc": "The town wall kit presets (env_house.py, its docstring): kind wall|quoin|post|shutters|pier (a town wall's mid-run joint: reach, top, foot); wall stone|plaster|base; pattern plain|posts|x|k|k2; opening wide_round|thin_round|wide_flat|door_round|door_flat; seed; off [u, v] metres into the sheet (else from the seed).",
  "presets": {
   "stone_a": {
    "kind": "wall",
@@ -196,6 +196,19 @@
   "post": {
    "kind": "post",
    "seed": 93
+  },
+  "pier_lo": {
+   "kind": "pier",
+   "seed": 95,
+   "reach": 0.42,
+   "top": 0.3
+  },
+  "pier_hi": {
+   "kind": "pier",
+   "seed": 97,
+   "reach": 0.3,
+   "top": 0.1,
+   "foot": false
   }
  }
 }

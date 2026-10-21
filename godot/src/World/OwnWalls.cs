@@ -34,6 +34,11 @@ public sealed class OwnWalls
     readonly Dictionary<int, (int Tint, int Style, int Roof, int RoofTint)> houses = new();
     readonly HashSet<string> byRoof = new();
     readonly Dictionary<int, float> ground = new();
+    // (E9b4) corner pieces the kit set in the middle of a straight run (the town walls' joints every 8 m): drawn as
+    // piers in their wall's frame, the lower storey's ("pier_lo") or the top one's ("pier_hi"), not as an outer
+    // corner's quoins (which stood in the face like a post crossing the coping)
+    readonly Dictionary<(int, int, int), (Basis Wall, bool Top)> piers = new();
+    static (int, int, int) Key(Vector3 p) => (Mathf.RoundToInt(p.X * 4), Mathf.RoundToInt(p.Y * 4), Mathf.RoundToInt(p.Z * 4));
     ZoneData? zone;
     readonly List<(Vector3 At, float Foot)> feet = new();
     readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data)>> groups = new();
@@ -64,6 +69,17 @@ public sealed class OwnWalls
             float y = z.Props[i].At.Origin.Y;
             o.ground[h] = o.ground.TryGetValue(h, out var g) ? Mathf.Min(g, y) : y;
         }
+        // the mid-run corners: a wall piece each side of it, opposite, on its storey
+        var walls = z.Props.Where(p => p.Id.StartsWith("village/Wall_")).Select(p => p.At).ToList();
+        var corners = z.Props.Where(p => p.Id.StartsWith("village/Corner_Exterior")).Select(p => p.At.Origin).ToList();
+        foreach (var c in corners)
+        {
+            var near = walls.Where(t => Mathf.Abs(t.Origin.Y - c.Y) < 0.3f && new Vector2(t.Origin.X - c.X, t.Origin.Z - c.Z).Length() is > 0.5f and < 1.3f).ToList();
+            var pair = near.FirstOrDefault(a => near.Any(b => (new Vector2(a.Origin.X + b.Origin.X - 2 * c.X, a.Origin.Z + b.Origin.Z - 2 * c.Z)).Length() < 0.3f));
+            if (pair.Basis == default) continue;
+            bool top = !corners.Any(u => u.Y > c.Y + 2.5f && u.Y < c.Y + 3.5f && new Vector2(u.X - c.X, u.Z - c.Z).Length() < 0.4f);
+            o.piers[Key(c)] = (pair.Basis, top);
+        }
         return o;
     }
 
@@ -80,6 +96,11 @@ public sealed class OwnWalls
         var list = lists[(isRoof ? roof : style) % lists.Length];
         // (a copy's pick by its place, mixed with its house's, so two houses' runs don't repeat alike)
         var preset = list[(int)((hs ^ (uint)(house * 2654435761u)) % (uint)list.Length)];
+        if (id.StartsWith("village/Corner_Exterior") && piers.TryGetValue(Key(at.Origin), out var pier))
+        {
+            preset = pier.Top ? "pier_hi" : "pier_lo";
+            at = new Transform3D(pier.Wall, at.Origin);
+        }
         if (!ResourceLoader.Exists($"{Dir}/{preset}.glb")) return false;
         float gy = ground.TryGetValue(house, out var g0) ? at.Origin.Y - g0 : 0f;
         var data = new Color((tint + 0.5f) / 8f, gy, (hs % 997) / 997f, isRoof ? (style * 8 + roofTint + 0.5f) / 32f : (style + 0.5f) / 4f);
