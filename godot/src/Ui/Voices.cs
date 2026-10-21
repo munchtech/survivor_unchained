@@ -44,6 +44,8 @@ public partial class Voices : Node3D
     /// <summary>The close view of her is in (GameCloseUp): the names step away (eased out, back at once), so
     /// none floats beside her head.</summary>
     public bool Away;
+    /// <summary>No name plates or quest marks at all (set by shots that must keep the frame clear; Away and Quiet are driven by the game).</summary>
+    public bool Bare;
     float plateK = 1;
 
     public Voices() { Name = "Voices"; }
@@ -172,7 +174,7 @@ public partial class Voices : Node3D
     {
         float quiet = Quiet ? 0 : 1;
         plateK = Away ? Mathf.Max(0, plateK - (float)delta / 0.4f) : 1;
-        float pk = quiet * plateK;
+        float pk = Bare ? 0 : quiet * plateK;
         foreach (var (n, m) in plates.Values) { n.Transparency = 1 - pk; m.Transparency = 1 - pk; n.Visible = pk > 0; }
         for (int i = barks.Count - 1; i >= 0; i--)
         {
