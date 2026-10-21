@@ -48,7 +48,7 @@
       "dur": 4.0,
       "fit": ["cin_heart_goes_down.morning"],
       "note": "Wide, low, from the west: his kneeling profile against the moonlit water, the lamp held up before his face, its light the only light on him. He looks at the lamp, not at her. W4, in a tired man's voice.",
-      "cam": {"pos": {"mark": "w", "off": [-6.5, 1.1, 1.4]}, "at": {"mark": "w", "off": [0.2, 2.3, 0.2]}, "lens": 36},
+      "cam": {"pos": {"mark": "w", "off": [-6.5, 1.1, 1.4]}, "at": {"mark": "w", "off": [0.2, 2.65, 0.2]}, "lens": 36},
       "cues": [
         {"do": "atmosphere", "preset": "now", "azimuth": 15},
         {"at": 1.4, "do": "line", "id": "cin_heart_goes_down.morning"}
@@ -59,7 +59,7 @@
       "type": "LS",
       "dur": 5.8,
       "note": "Low at the water from the west, the moon behind him: the fist lowers and the lamp goes under, glowing in the river beside him; then he folds forward into the water and is still. A beat. The water over his back lightens from beneath.",
-      "cam": {"pos": {"mark": "w", "off": [-6.0, 0.9, 3.4]}, "at": {"mark": "w", "off": [0.3, 1.3, 0.2]}, "lens": 32},
+      "cam": {"pos": {"mark": "w", "off": [-6.0, 0.9, 3.4]}, "at": {"mark": "w", "off": [0.3, 1.75, 0.2]}, "lens": 32},
       "cues": [
         {"do": "rig", "name": "skin", "from": {"lens": [2.5, 1.5, -2.5]}, "aim": {"actor": "her", "bone": "chest"}, "color": "#ffd8b0", "energy": 3.2, "angle": 32, "range": 6},
         {"do": "skin", "sky": 0.3, "ear": 0.4},
@@ -150,7 +150,7 @@
       "dur": 8.6,
       "fit": ["cin_heart_goes_down.downstairs"],
       "note": "From his eye line, up at her, close: in his arms the heart's light goes on straining out toward her, blue on her chin. Sniffs; G2 (downstairs); a laugh. G3 begins over her face and runs on over the dive.",
-      "cam": {"pos": {"mark": "her", "off": [1.0, 1.35, -1.33]}, "at": {"mark": "her", "off": [0.0, 1.67, -0.02]}, "lens": 40, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 4.0},
+      "cam": {"pos": {"mark": "her", "off": [0.3, 1.35, -1.65]}, "at": {"mark": "her", "off": [0.0, 1.67, -0.02]}, "lens": 40, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 4.0},
       "cues": [
         {"do": "rig", "name": "skin", "from": {"lens": [0.45, 0.1, -0.25]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 1.0, "angle": 32, "range": 6},
         {"do": "gaze", "look": [-0.5, 0.5], "wander": 0.02},
