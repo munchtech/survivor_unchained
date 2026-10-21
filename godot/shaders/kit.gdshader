@@ -159,7 +159,7 @@ vec3 hue_turn(vec3 c, float a) {
 // (foliage: its leaves' undersides are not a roof's; KitLook)
 uniform bool leaves = false;
 
-#ifdef OWN_WALL
+#if defined(OWN_WALL) || defined(OWN_ROOF)
 // Our own town walls (tools/assets/env_house.py, OwnWalls, KitLook.Wall): the trim sheet's aux (r its tint class:
 // 1 plaster, .5 timber; g roughness; b a grime noise tiling with its region); each copy's custom data r its house's
 // tint ((i + .5) / 8), g its height above its house's ground, b its own hash, a its treatment; the vertex colour
@@ -186,6 +186,29 @@ float wall_noise(vec2 p) {
 	f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(wall_hash(i), wall_hash(i + vec2(1.0, 0.0)), f.x), mix(wall_hash(i + vec2(0.0, 1.0)), wall_hash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
+#endif
+#ifdef OWN_ROOF
+// Our own roofs (tools/assets/env_roof.py, KitLook.Roof; E9b2), on the walls' uniforms above and the roof sheet: its aux
+// r the class (1 clay, .75 shingle, .5 timber taking the house's timber tint, 0 untinted), g roughness, b each tile's id;
+// the vertex colour r occlusion, g the face's hash, b 1 on the covering (on a chimney: its soot), a the sag weight;
+// each copy's custom data as the walls' with a = (treatment * 8 + roof tint + .5) / 32.
+uniform vec3 clay_tints[4];      // (godot/data/house_look.json)
+uniform vec3 shingle_tints[4];
+uniform vec4 chimneys[32];       // each stack's top (xyz), w 1; OwnWalls.Build
+uniform float roof_sag = 0.04;   // each house's roof sags this much more at most (m), by its copy's hash
+uniform float tile_val = 0.12;   // each tile lighter or darker
+uniform float tile_warm = 0.5;   // and warmer or cooler
+uniform float roof_val_noise = 0.08;
+uniform float roof_house_val = 0.06;
+uniform float soot_r = 2.0;      // the soot round a chimney's top (m)
+uniform float soot_dark = 0.6;
+uniform float stack_soot = 0.75; // a stack's own top
+uniform float roof_moss = 0.6;   // on slopes facing moss_dir (north), thickest toward the eaves
+uniform vec2 moss_dir = vec2(0.0, -1.0);
+uniform vec4 roof_moss_color : source_color = vec4(0.29, 0.32, 0.16, 1.0);
+uniform float roof_occl = 0.55;
+varying vec3 v_wn;
+varying float v_rh;
 #endif
 
 varying float v_up;
@@ -262,6 +285,14 @@ void vertex() {
 	v_wall = INSTANCE_CUSTOM;
 	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
 	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+#endif
+#ifdef OWN_ROOF
+	v_wall = INSTANCE_CUSTOM;
+	VERTEX.y -= COLOR.a * roof_sag * fract(INSTANCE_CUSTOM.b * 7.13 + 0.31);
+	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
+	v_rh = VERTEX.y;
+	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 #endif
 #ifdef REVEAL
 	// The rim is drawn again only for a piece near the line from her to the
@@ -364,6 +395,57 @@ void fragment() {
 		col *= mix(1.0 - occl, 1.0, COLOR.r);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
+	}
+#endif
+#ifdef OWN_ROOF
+	{
+		vec3 ax = texture(aux_tex, UV).rgb;
+		int ti = clamp(int(v_wall.r * 8.0), 0, 5);
+		int rt = int(v_wall.a * 32.0) % 8;
+		vec3 tint = vec3(1.0);
+		if (ax.r > 0.9) tint = clay_tints[rt % 4];
+		else if (ax.r > 0.6) tint = shingle_tints[rt % 4];
+		else if (ax.r > 0.25) tint = timber_tints[ti % 3];
+		vec3 col = c.rgb * tint;
+		bool cover = COLOR.b > 0.5 && ax.r > 0.6;
+		if (cover) {
+			// each tile again its own value and warmth: its id on the sheet (32 steps), its run's hash, its roof's
+			float th = wall_hash(vec2(floor(ax.b * 32.0), COLOR.g * 131.0 + v_wall.b * 17.0));
+			float tw = wall_hash(vec2(th * 91.0, 3.7));
+			col *= 1.0 + tile_val * (2.0 * th - 1.0);
+			col *= mix(vec3(0.95, 0.99, 1.04), vec3(1.05, 0.99, 0.93), mix(0.5, tw, tile_warm));
+		}
+		// broad value patches over the roofs, each roof a little lighter or darker
+		float vn = 0.6 * wall_noise(v_wp.xz * 0.45 + v_wp.y * 0.3) + 0.4 * wall_noise(v_wp.xz * 0.11 + 5.1);
+		col *= 1.0 + roof_val_noise * (2.0 * vn - 1.0) + roof_house_val * (2.0 * wall_hash(v_wall.ba * 23.0) - 1.0);
+		// soot round each chimney's top, spreading down the roof more than up, patchy
+		float soot = 0.0;
+		for (int i = 0; i < 32; i++) {
+			vec4 ch = chimneys[i];
+			if (ch.w <= 0.0) break;
+			vec3 d = v_wp - ch.xyz;
+			float up = max(d.y + 1.2, 0.0);
+			soot += exp(-(dot(d.xz, d.xz) + up * up * 3.0) / (soot_r * soot_r));
+		}
+		float sn = wall_noise(v_wp.xz * 2.3 + v_wp.y * 1.7);
+		col *= 1.0 - soot_dark * clamp(soot * (0.55 + 0.9 * sn), 0.0, 1.0);
+		if (ax.r < 0.25) col *= 1.0 - stack_soot * COLOR.b;
+		float rough = ax.g;
+		if (cover) {
+			// moss on the slopes facing north, patchy, thickest toward the eaves and on the shaded roofs' lower courses
+			float fn = dot(v_wn.xz, moss_dir);
+			float mn = 0.6 * wall_noise(v_wp.xz * 1.7 + v_wp.y * 1.3) + 0.4 * wall_noise(v_wp.xz * 6.1 - v_wp.y * 2.9);
+			float hm = 0.45 + 0.55 * wall_hash(v_wall.bb * 5.1 + 0.7);
+			float em = mix(1.0, 0.35, smoothstep(0.4, 3.5, v_rh));
+			float m = roof_moss * hm * em * smoothstep(0.05, 0.45, fn) * smoothstep(0.3, 0.7, mn);
+			m += 0.25 * roof_moss * hm * smoothstep(0.62, 0.82, mn) * em;
+			m = clamp(m, 0.0, 0.85);
+			col = mix(col, roof_moss_color.rgb * (0.75 + 0.5 * mn), m);
+			rough = mix(rough, 1.0, m);
+		}
+		col *= mix(1.0 - roof_occl, 1.0, COLOR.r);
+		ALBEDO = col;
+		ROUGHNESS = rough;
 	}
 #endif
 #ifdef OWN_FOLIAGE

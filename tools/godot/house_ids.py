@@ -13,7 +13,8 @@ Then each house's look, so neighbors differ (look bible 08: "neighboring buildin
 least two of roof, color and height"): a plaster tint (0-5) and a timber treatment (0 plain plaster,
 1 framed with crosses, 2 framed with braces), chosen greedily so no two houses within 18 m share a
 tint, and they share a treatment only when no other is left; written to props_own.json "walls"
-"houses": {"<h>": [tint, treatment]} (the rest of props_own.json kept).
+"houses": {"<h>": [tint, treatment, roof covering, roof tint]} (the rest of props_own.json kept). The roof's
+rows (its body, gable fronts, chimney) take their house's number too (E9b2).
 """
 import json
 import math
@@ -87,13 +88,36 @@ def main():
         look[h] = [t, s]
         used_t[t] += 1
         used_s[s] += 1
+    # each house's roof (E9b2): its covering (0 clay pantiles, 1 oak shingles) and that covering's tint (0-3), so
+    # neighbors differ: no two houses within 18 m share both, the nearest three mostly differ in covering
+    used_r = {}
+    for h in sorted(ids, key=lambda h: -len(near[h])):
+        by_d = sorted(near[h], key=lambda o: math.hypot(houses[h][0] - houses[o][0], houses[h][1] - houses[o][1]))
+        def cost(rt, ti):
+            same = sum(1 for o in near[h] if len(look[o]) > 2 and look[o][2:] == [rt, ti])
+            close = sum(1 for o in by_d[:3] if len(look[o]) > 2 and look[o][2] == rt)
+            return 4 * same + 1.5 * close + 0.3 * used_r.get((rt, ti), 0) + (0.4 if rt == 1 else 0.0)
+        rt, ti = min(((rt, ti) for rt in range(2) for ti in range(4)), key=lambda c: (cost(*c), c))
+        look[h] += [rt, ti]
+        used_r[(rt, ti)] = used_r.get((rt, ti), 0) + 1
+    # the roof's rows (its body, gable fronts and chimney, written after its walls) take the house's number
+    cur = -1
+    for r in rows:
+        s_ = r["id"].split("/")[-1]
+        if not r["id"].startswith("village/"):
+            continue
+        if s_.startswith(("Roof", "Prop_Chimney")):
+            if cur >= 0:
+                r["h"] = cur
+        elif "h" in r:
+            cur = r["h"] if houses.get(r["h"], (0, 0, False))[2] else -1
 
     (d / "props.json").write_text(json.dumps(rows, separators=(",", ":")) + chr(10))
     own_path = d / "props_own.json"
     own = json.loads(own_path.read_text()) if own_path.exists() else {}
     own.setdefault("walls", {})["houses"] = {str(h): v for h, v in sorted(look.items())}
     own_path.write_text(json.dumps(own, indent=1))
-    print(f"{zone}: {hid} groups, {len(ids)} houses; tints {used_t}, treatments {used_s}")
+    print(f"{zone}: {hid} groups, {len(ids)} houses; tints {used_t}, treatments {used_s}, roofs {sorted(used_r.items())}")
 
 
 if __name__ == "__main__":

@@ -19,6 +19,11 @@ namespace SurvivorUnchained.View;
 /// Each copy's custom data: r its tint ((i + 0.5) / 8), g its height above its house's ground (the grime rises
 /// from the ground, not from each storey's foot), b its own hash (value), a its treatment.
 /// One MultiMesh per preset per square of the props' cells, as the kit pieces are drawn.
+///
+/// Roofs (E9b2; tools/assets/env_roof.py, KitLook.Roof): the roof bodies, spires and chimneys "by_roof" lists take the list
+/// of their house's roof covering (its third number: 0 clay pantiles, 1 oak shingles) and carry its roof tint (the fourth)
+/// in their custom data's a ((treatment * 8 + roof tint + 0.5) / 32); the gable fronts take their house's treatment's list
+/// like the walls. Each chimney's top goes to KitLook.SetChimneys (the soot round it on the roofs).
 /// --walls-kit: the kit's walls as they were (before/after measures).
 /// </summary>
 public sealed class OwnWalls
@@ -26,7 +31,8 @@ public sealed class OwnWalls
     public const string Dir = "res://art/world/house";
 
     readonly Dictionary<string, string[][]> pieces = new();
-    readonly Dictionary<int, (int Tint, int Style)> houses = new();
+    readonly Dictionary<int, (int Tint, int Style, int Roof, int RoofTint)> houses = new();
+    readonly HashSet<string> byRoof = new();
     readonly Dictionary<int, float> ground = new();
     readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data)>> groups = new();
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
@@ -43,7 +49,11 @@ public sealed class OwnWalls
         foreach (var p in ps.EnumerateObject())
             o.pieces[p.Name] = p.Value.EnumerateArray().Select(g => g.EnumerateArray().Select(s => s.GetString()!).ToArray()).ToArray();
         if (w.TryGetProperty("houses", out var hs))
-            foreach (var h in hs.EnumerateObject()) o.houses[int.Parse(h.Name)] = (h.Value[0].GetInt32(), h.Value[1].GetInt32());
+            foreach (var h in hs.EnumerateObject())
+                o.houses[int.Parse(h.Name)] = (h.Value[0].GetInt32(), h.Value[1].GetInt32(),
+                    h.Value.GetArrayLength() > 2 ? h.Value[2].GetInt32() : 0, h.Value.GetArrayLength() > 3 ? h.Value[3].GetInt32() : 0);
+        if (w.TryGetProperty("by_roof", out var br))
+            foreach (var id in br.EnumerateArray()) o.byRoof.Add(id.GetString()!);
         // each house's ground: its lowest wall piece's foot
         for (int i = 0; i < z.Props.Count && i < z.PropHouse.Count; i++)
         {
@@ -62,14 +72,15 @@ public sealed class OwnWalls
     {
         if (!pieces.TryGetValue(id, out var lists)) return false;
         if (lists.Length == 0 || lists[0].Length == 0) return true;
-        var (tint, style) = houses.TryGetValue(house, out var hl) ? hl : ((int)(Hash(at.Origin) % 6), 0);
+        var (tint, style, roof, roofTint) = houses.TryGetValue(house, out var hl) ? hl : ((int)(Hash(at.Origin) % 6), 0, 0, 0);
         uint hs = Hash(at.Origin);
-        var list = lists[style % lists.Length];
+        bool isRoof = byRoof.Contains(id);
+        var list = lists[(isRoof ? roof : style) % lists.Length];
         // (a copy's pick by its place, mixed with its house's, so two houses' runs don't repeat alike)
         var preset = list[(int)((hs ^ (uint)(house * 2654435761u)) % (uint)list.Length)];
         if (!ResourceLoader.Exists($"{Dir}/{preset}.glb")) return false;
         float gy = ground.TryGetValue(house, out var g0) ? at.Origin.Y - g0 : 0f;
-        var data = new Color((tint + 0.5f) / 8f, gy, (hs % 997) / 997f, (style + 0.5f) / 4f);
+        var data = new Color((tint + 0.5f) / 8f, gy, (hs % 997) / 997f, isRoof ? (style * 8 + roofTint + 0.5f) / 32f : (style + 0.5f) / 4f);
         var k = (preset, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
         if (!groups.TryGetValue(k, out var l)) groups[k] = l = new();
         l.Add((at, data));
@@ -106,6 +117,15 @@ public sealed class OwnWalls
     public void Build(Node3D root)
     {
         int n = 0;
+        // the chimneys' tops, for the soot on the roofs round them
+        var tops = new List<Vector3>();
+        foreach (var ((preset, _, _), list) in groups)
+        {
+            if (!preset.StartsWith("chim_")) continue;
+            float top = PartsOf(preset).Select(p => p.Local * p.Mesh.GetAabb().End).Select(v => v.Y).DefaultIfEmpty(3f).Max();
+            foreach (var (at, _) in list) tops.Add(at * new Vector3(0, top, 0));
+        }
+        KitLook.SetChimneys(tops);
         foreach (var ((preset, _, _), list) in groups)
             foreach (var (mesh, local) in PartsOf(preset))
             {
@@ -121,6 +141,6 @@ public sealed class OwnWalls
                 root.AddChild(mmi);
                 n += list.Count;
             }
-        GD.Print($"own walls: {n} pieces in {groups.Count} groups");
+        GD.Print($"own walls: {n} pieces in {groups.Count} groups, {tops.Count} chimneys");
     }
 }

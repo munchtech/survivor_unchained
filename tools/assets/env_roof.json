@@ -1,0 +1,225 @@
+{
+ "_doc": "The roof kit's presets (tools/assets/env_roof.py; E9b2): body (a roof over W x D walls: cover pantile or shingle, eave the overhang past the walls in m, sag the ridge's and eaves' sag in m), gable (the triangle under a W roof: pattern plain, x crosses, k braces, as the walls' treatments), spire (a 4 m tower's), chimney (wall brick or stone, h its height from its foot, pots).",
+ "presets": {
+  "roof_p_4x6": {
+   "kind": "body",
+   "w": 4,
+   "d": 6,
+   "cover": "pantile",
+   "eave": 0.42,
+   "sag": 0.015,
+   "seed": 2100
+  },
+  "roof_s_4x6": {
+   "kind": "body",
+   "w": 4,
+   "d": 6,
+   "cover": "shingle",
+   "eave": 0.52,
+   "sag": 0.021,
+   "seed": 2101
+  },
+  "roof_p_6x6": {
+   "kind": "body",
+   "w": 6,
+   "d": 6,
+   "cover": "pantile",
+   "eave": 0.46,
+   "sag": 0.027,
+   "seed": 2102
+  },
+  "roof_s_6x6": {
+   "kind": "body",
+   "w": 6,
+   "d": 6,
+   "cover": "shingle",
+   "eave": 0.56,
+   "sag": 0.019,
+   "seed": 2103
+  },
+  "roof_p_6x8": {
+   "kind": "body",
+   "w": 6,
+   "d": 8,
+   "cover": "pantile",
+   "eave": 0.5,
+   "sag": 0.025,
+   "seed": 2104
+  },
+  "roof_s_6x8": {
+   "kind": "body",
+   "w": 6,
+   "d": 8,
+   "cover": "shingle",
+   "eave": 0.43,
+   "sag": 0.016,
+   "seed": 2105
+  },
+  "roof_p_6x10": {
+   "kind": "body",
+   "w": 6,
+   "d": 10,
+   "cover": "pantile",
+   "eave": 0.53,
+   "sag": 0.022,
+   "seed": 2106
+  },
+  "roof_s_6x10": {
+   "kind": "body",
+   "w": 6,
+   "d": 10,
+   "cover": "shingle",
+   "eave": 0.47,
+   "sag": 0.028,
+   "seed": 2107
+  },
+  "roof_p_8x8": {
+   "kind": "body",
+   "w": 8,
+   "d": 8,
+   "cover": "pantile",
+   "eave": 0.57,
+   "sag": 0.02,
+   "seed": 2108
+  },
+  "roof_s_8x8": {
+   "kind": "body",
+   "w": 8,
+   "d": 8,
+   "cover": "shingle",
+   "eave": 0.51,
+   "sag": 0.026,
+   "seed": 2109
+  },
+  "roof_p_8x10": {
+   "kind": "body",
+   "w": 8,
+   "d": 10,
+   "cover": "pantile",
+   "eave": 0.45,
+   "sag": 0.017,
+   "seed": 2110
+  },
+  "roof_s_8x10": {
+   "kind": "body",
+   "w": 8,
+   "d": 10,
+   "cover": "shingle",
+   "eave": 0.55,
+   "sag": 0.023,
+   "seed": 2111
+  },
+  "roof_p_8x12": {
+   "kind": "body",
+   "w": 8,
+   "d": 12,
+   "cover": "pantile",
+   "eave": 0.49,
+   "sag": 0.03,
+   "seed": 2112
+  },
+  "roof_s_8x12": {
+   "kind": "body",
+   "w": 8,
+   "d": 12,
+   "cover": "shingle",
+   "eave": 0.43,
+   "sag": 0.021,
+   "seed": 2113
+  },
+  "gable4_p": {
+   "kind": "gable",
+   "w": 4,
+   "pattern": "plain",
+   "seed": 2212
+  },
+  "gable4_x": {
+   "kind": "gable",
+   "w": 4,
+   "pattern": "x",
+   "seed": 2213
+  },
+  "gable4_k": {
+   "kind": "gable",
+   "w": 4,
+   "pattern": "k",
+   "seed": 2214
+  },
+  "gable6_p": {
+   "kind": "gable",
+   "w": 6,
+   "pattern": "plain",
+   "seed": 2218
+  },
+  "gable6_x": {
+   "kind": "gable",
+   "w": 6,
+   "pattern": "x",
+   "seed": 2219
+  },
+  "gable6_k": {
+   "kind": "gable",
+   "w": 6,
+   "pattern": "k",
+   "seed": 2220
+  },
+  "gable8_p": {
+   "kind": "gable",
+   "w": 8,
+   "pattern": "plain",
+   "seed": 2224
+  },
+  "gable8_x": {
+   "kind": "gable",
+   "w": 8,
+   "pattern": "x",
+   "seed": 2225
+  },
+  "gable8_k": {
+   "kind": "gable",
+   "w": 8,
+   "pattern": "k",
+   "seed": 2226
+  },
+  "spire_c": {
+   "kind": "spire",
+   "cover": "pantile",
+   "eave": 0.5,
+   "seed": 2301
+  },
+  "spire_s": {
+   "kind": "spire",
+   "cover": "shingle",
+   "eave": 0.45,
+   "seed": 2302
+  },
+  "chim_brick_a": {
+   "kind": "chimney",
+   "wall": "brick",
+   "h": 3.1,
+   "pots": 2,
+   "seed": 2401
+  },
+  "chim_brick_b": {
+   "kind": "chimney",
+   "wall": "brick",
+   "h": 3.45,
+   "pots": 1,
+   "seed": 2402
+  },
+  "chim_stone_a": {
+   "kind": "chimney",
+   "wall": "stone",
+   "h": 3.0,
+   "pots": 0,
+   "seed": 2403
+  },
+  "chim_stone_b": {
+   "kind": "chimney",
+   "wall": "stone",
+   "h": 3.35,
+   "pots": 1,
+   "seed": 2404
+  }
+ }
+}
