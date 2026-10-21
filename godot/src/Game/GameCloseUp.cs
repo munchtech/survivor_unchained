@@ -87,6 +87,7 @@ public partial class Game
         {
             closeDrives = false;
             if (scene?.Player is { } pv0) { pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
+            if (scene?.Player is { } pv1 && skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv1.Person, 1); }
             if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false;
             return;
         }
@@ -128,7 +129,7 @@ public partial class Game
             closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.6f, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
-        closeKey.LightColor = night ? CloseKeyColourNight : new Color(1f, 0.95f, 0.88f);
+        closeKey.LightColor = night ? CloseKeyColourNight : CloseKeyColourDay;
         float want = lit ? (night ? CloseKeyNight : CloseKey) * day : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
         closeKey.Visible = closeKey.LightEnergy > 0.005f;
@@ -137,12 +138,18 @@ public partial class Game
         {
             // (By night: the key CloseKeyAzNight degrees off her face, on the lens's side of it. She stands turned 0.6 rad
             // from the lens, so round 2's key at 0.7 rad was 6 degrees off her face: frontal, flat, waxy.)
-            float a = cam.Yaw + (night ? 0.6f - Mathf.DegToRad(CloseKeyAzNight) : 0.7f), up = Mathf.DegToRad(night ? CloseKeyElNight : 25);
+            float a = cam.Yaw + 0.6f - Mathf.DegToRad(night ? CloseKeyAzNight : CloseKeyAzDay), up = Mathf.DegToRad(night ? CloseKeyElNight : CloseKeyElDay);
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
         }
+        // By day her share of the sky's light comes down in the close view (her skin only, the town as it is): the waystation's
+        // grey-blue sky (hemi 0.9, env 0.8) was the largest light on her face and lay level on every plane. With it off, the
+        // shade side of her jaw went 45 to 31.7 Oklab L, her forehead 74 to 68: the flat, pale, flash-lit look was the sky's.
+        // (Set each frame while it is in force: her skin is made again when her look changes.)
+        float sky = lit && !night ? Mathf.Lerp(1, CloseSkyDay, day) : 1;
+        if (sky != 1 || skyShown != 1) { skyShown = sky; SurvivorUnchained.View.People.HerSkyShare(pv.Person, sky); }
         air.SetViewExposure(lit && night ? Mathf.Lerp(1, CloseExposureNight, day) : 1);
-        air.SetViewHighlights(lit && night ? day : 0);
+        air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
         closeRim.LightEnergy = Mathf.Lerp(closeRim.LightEnergy, wantRim, 1 - Mathf.Exp(-3 * (float)dt));
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
@@ -174,6 +181,7 @@ public partial class Game
     }
 
     SpotLight3D? closeKey, closeRim;
+    float skyShown = 1;
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
     // filled her shadow side almost to her lit side). Art style round 2 (20 Oct): 0.75, rim 3, night key 2.2, under the paint grade.
@@ -203,5 +211,20 @@ public partial class Game
     static readonly Color CloseKeyColourNight = new(1f, 0.6f, 0.35f);
     // --close-key E, --close-lamp L: the day key's strength and her lamp's share by day, for pictures.
     static float CloseKey => Args.Has("close-key") ? Args.Num("close-key", 0.7f) : 0.7f;
+    // --close-key-az-day D, --close-key-el-day D: the day key's angle off her face toward the lens, and its elevation (degrees).
+    // (Before face 34 it stood 0.7 rad off the lens, 6 degrees off her face (she turns 0.6 from it): frontal, her face flat under the town's day light.)
+    // (Face 34: -30, 64 degrees off the lens on the sun's side, warmer (1, 0.8, 0.66) against the sun's yellow (lit cheek hue 65
+    // against the Look's 51), with her sky share at 0.45: lit cheek 74.1 to 69.9 Oklab L (the night close-up's 69.9), shade
+    // cheek 58 to 46, cheek split -16 to -24, forehead to jaw sides +18 (the night's +18.4).)
+    static float CloseKeyAzDay => Args.Num("close-key-az-day", -30f);
+    static float CloseKeyElDay => Args.Num("close-key-el-day", 25f);
+    // --close-sky-day S: her share of the sky's light in the close view by day (1: as play).
+    static float CloseSkyDay => Args.Num("close-sky-day", 0.45f);
+    // --close-key-colour-day R,G,B: the day key's colour. --close-grade-day K: how much of the close view's own grade
+    // (the night's and the Look's paint grade, Atmosphere.ViewGrade) it takes by day (0: play's; at 1 her cheek's chroma 6.5 to 6.4, so 0).
+    static readonly Color CloseKeyColourDay = Args.Get("close-key-colour-day") is string kcd && kcd.Split(',') is { Length: 3 } kd
+        ? new Color(float.Parse(kd[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kd[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kd[2], System.Globalization.CultureInfo.InvariantCulture))
+        : new Color(1f, 0.8f, 0.66f);
+    static float CloseGradeDay => Args.Num("close-grade-day", 0f);
     static float CloseLampByDay => Args.Has("close-lamp") ? Args.Num("close-lamp", 0.25f) : 0.25f;
 }
