@@ -2465,6 +2465,26 @@
    "wear": [
     "plate_pauldrons_plain"
    ]
+  },
+  "forged_cuirass": {
+   "id": "forged_cuirass",
+   "name": "Forged Cuirass",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 50,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_cuirass_plain"
+   ]
   }
  },
  "raritynames": [

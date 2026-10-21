@@ -72,6 +72,29 @@
   "source": "mesh"
  },
  {
+  "id": "plate_cuirass_plain",
+  "outfit": null,
+  "slot": "top",
+  "layer": 1,
+  "covers": [
+   "top"
+  ],
+  "meshes": [
+   "plate_cuirass_plain.top.darkleather",
+   "plate_cuirass_plain.top.steel"
+  ],
+  "tuck": "armor_tuck/plate_cuirass_plain.bin",
+  "tuck_count": 1321,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "hold": {
+   "amount": 1.0,
+   "squash": 0
+  },
+  "file": "res://art/armor/plate_cuirass_plain.gltf",
+  "tier": 1,
+  "rigid": true
+ },
+ {
   "id": "plate_pauldrons_plain",
   "outfit": null,
   "slot": "pauldrons",
