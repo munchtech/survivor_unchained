@@ -490,7 +490,9 @@ class Flare:
                 ws = 0.0  # (the first round: no staff yet to hold)
             wi = max(0.0, 1.0 - ws - wo)
             Wi = S_l[fr] + qrot(chest[fr], v_idle)
-            ki = qrot(chest[fr], np.array(idle_l["knuckles"], float))
+            # (H2's free hand is keyed by its thumb, the wrist straight: its fingers run down the arm, ARC_FREE "arc".)
+            ki = qrot(chest[fr], np.array(idle_l["knuckles"] if "knuckles" in idle_l else
+                                          idle._n(idle.ARC_FREE[idle.ARC_STS[idle.ARC_ST]["hand"]]["arc"]), float))
             pole_i = qrot(chest[fr], np.array(idle_l["pole"], float))
             Wo = S_l[fr] + qrot(chest[fr], _open_arc(fr))
             ko = qrot(chest[fr], L_OPEN_KNUCKLES)

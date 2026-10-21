@@ -1123,7 +1123,14 @@ def wrap_of(weapon, tilt=0.0):
 # (grip_of) and its fingers close on the turned shaft in a fist fitted for it (WRAP_TILT, by weapon and tilt:
 # fistfit.py <piece> --fit --grip-tilt <deg>). The game turns the seated piece so (OwnClips.GripTilt, PersonView.Slide,
 # eased across blends as the slide is); the measuring tools by grip_pose.
-WRAP_TILT = {"staff": {}}
+# 21 October (animation 48): the staff at 20 (idle.ARC_CANDS "T1"), fistfit staff --fit --grip-tilt 20 on idle_arcanist's
+# frame: the best seat's fist, not yet the pass (7 of its checks: the outer pads 1.7-4.9 mm off the shaft, the little
+# finger 166 deg round with its tip 4.3 mm short, 0.9 mm of a pad into it; the square grip's old trouble, the little
+# finger's reach, as 18 October found square across the fingers).
+WRAP_TILT = {"staff": {20.0: {"bends": {"index": (77.9, 60.1, 60.1), "middle": (68.4, 81.1, 45.2), "ring": (69.2, 73.5, 55.1),
+                                        "pinky": (41.6, 94.7, 27.7), "thumb": (-14.08, 16.52, 84.32)},
+                              "spreads": {"index": -9.6, "middle": -1.2, "ring": 9.1, "pinky": 5.8},
+                              "oppose": 0.53, "thumb_roll": -43.88, "thumb_in": -13.01}}}
 
 
 # The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on

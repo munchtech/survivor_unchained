@@ -143,8 +143,11 @@ ARC_CANDS = {
 #   clip's "grip_tilt", keyed.grip_of / WRAP_TILT, the game's OwnClips.GripTilt), so the forearm slopes down to the fist
 #   with the staff upright and the wrist easy (round 1's max judge: at 315/135 R1's arm on the restaged stand still read
 #   as "a level white bar at waist height"; the wall was the fist fit's 64 deg, scratch anim/st/c).
-ARC_CANDS["T1"] = {"arc": (-0.24, -0.26, 0.28), "blade": (-0.38, 1.0, -0.03), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
-                   "tilt": 20.0, "stop_blade": (-0.30, 1.0, -0.07)}
+#   Found by search on the stand's frame 0 (scratch anim/st/c opt.py, opt_run.py), checked over the loop (heldt.py): the
+#   forearm 27-31 deg below level (S2H1/R1 9-12), the upper arm 11-14 deg off straight down (21-24), the fist 21 cm out
+#   past her hip's side (26.5) and 3.6 cm lower on the shaft, the wrist 12-14 toward the thumb (radial limit 22).
+ARC_CANDS["T1"] = {"arc": (-0.205, -0.318, 0.251), "blade": (-0.44, 1.0, -0.13), "pole": (0.285, -1.0, -0.052), "slide": 0.036,
+                   "tilt": 20.0, "stop_blade": (-0.36, 1.0, -0.17)}
 # (Unset: T1 on a restaged stand, R1 with R1's stand: ARC_ST=R1 alone builds R1 as it was; ARC_ST=S2H1 ARC_CAND=R1 round 1.)
 ARC_CAND = os.environ.get("ARC_CAND", "R1" if os.environ.get("ARC_ST", "S2H2") in ("R1", "") else "T1")
 _ARC = ARC_CANDS[ARC_CAND]
