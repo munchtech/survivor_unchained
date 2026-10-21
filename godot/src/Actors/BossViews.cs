@@ -328,6 +328,8 @@ public partial class OrbView : Node3D, IOrb
         var c = new Color(color);
         if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--heart-old") >= 0 || !LoadHeart())
         {
+            // (--heart-old-k K: its size times K, as the before was drawn: c03's heart was 0.11 before E7c, 0.05 now: K 2.2)
+            if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--heart-old") >= 0) size *= SurvivorUnchained.Args.Num("heart-old-k", 1);
             stone = new StandardMaterial3D
             {
                 AlbedoColor = c.Darkened(0.7f), Metallic = 0.35f, Roughness = 0.12f,
