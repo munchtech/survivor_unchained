@@ -52,6 +52,12 @@ uniform float dye_sat_held = 1.6;
 // (face 33: the skin lightness (linear) a dye starts turning warmer on, and where it is wholly turned; how far)
 uniform vec2 dye_deep_skin = vec2(0.35, 0.15);
 uniform float dye_deep_warm = 0.8;
+// (face 33 round 3: the warm a chromatic dye held darker for her skin turns toward (linear; Oklab hue 42: the old
+// `warm`, hue 60, read olive under the night grade on deep skin), and how much darker a fair dye goes on deep skin
+// (a blonde's brows on Sunborn read as a mustard tint at the skin's own lightness, not as hair))
+uniform vec3 dye_held_warm = vec3(0.26, 0.075, 0.035);
+uniform float dye_deep_dark = 0.8;
+uniform vec2 dye_dark_skin = vec2(0.35, 0.15);
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -95,6 +101,7 @@ void fragment() {
 		const vec3 warm = vec3(0.195, 0.088, 0.034);
 		vec3 dye_n = mix(dye / dl0, warm / dot(warm, lum), dye_floor_warm * clamp(1.0 - dl0 / floor_l, 0.0, 1.0));
 		vec3 dyev = dye_n * max(dl0, floor_l);
+		dyev *= mix(1.0, dye_deep_dark, smoothstep(dye_dark_skin.x, dye_dark_skin.y, sk) * smoothstep(0.07, 0.11, dl0));
 		float dl = max(dot(dyev, lum), 1e-3);
 		// (held darker than her skin, a fair dye is warmed as it is darkened: a blonde's brows on deep skin a golden
 		// brown; the dye's yellow only darkened read olive-grey)
@@ -105,7 +112,8 @@ void fragment() {
 		float deep = deep_skin * smoothstep(0.35, 0.5, dyev.g / max(dyev.r, 1e-3))
 			* smoothstep(0.05, 0.09, dl0);
 		dyev = mix(dyev, deep_warm * (dl / dot(deep_warm, lum)), dye_deep_warm * deep) * (1.0 + 0.1 * deep);
-		vec3 dye_held = mix(warm * (dl / dot(warm, lum)), dyev, pow(room, 2.5));
+		vec3 held_to = mix(warm, dye_held_warm, smoothstep(0.025, 0.04, dl0));
+		vec3 dye_held = mix(held_to * (dl / dot(held_to, lum)), dyev, pow(room, 2.5));
 		// (face 33: held, it keeps its whole colour, so a blonde's or redhead's brows on deep skin stay golden-brown
 		// or auburn, never grey-green)
 		vec3 dye_col = max(mix(vec3(dl), dye_held, mix(max(dye_sat, dye_sat_held), dye_sat, room)), vec3(0.0)) * room;
