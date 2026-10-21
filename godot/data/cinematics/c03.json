@@ -93,11 +93,12 @@
       "id": "6",
       "type": "MS",
       "dur": 4.0,
-      "note": "A slow push in toward the light: the heart rises out of the water, a stone the size of a fist full of cold light, turning, water running off it. No line: its hum, and the river.",
+      "note": "A slow push in toward the light: the heart lies on his back over his chest, then lifts off it, a stone the size of a fist full of cold light, turning, water running off it. No line: its hum, and the river.",
       "cam": {"pos": {"mark": "w", "off": [1.8, 0.9, 3.2]}, "at": {"actor": "heart", "track": true}, "lens": 50, "move": {"push": 0.6, "ease": "slow"}},
       "cues": [
         {"do": "music", "mood": "mystery", "intensity": 0.5, "over": 3.0},
-        {"do": "move", "actor": "heart", "to": {"mark": "w", "off": [0, 0, 2.0], "y": -0.35}, "dur": 3.4},
+        {"do": "place", "actor": "heart", "where": {"mark": "w", "off": [0, 0, 2.0], "y": -0.75}},
+        {"at": 2.3, "do": "move", "actor": "heart", "to": {"mark": "w", "off": [0, 0, 2.0], "y": -0.35}, "dur": 1.7},
         {"do": "lamp", "actor": "heart", "glow": 0.8, "over": 2.5},
         {"do": "sfx", "name": "heart_hum", "gain": 0.8}
       ]

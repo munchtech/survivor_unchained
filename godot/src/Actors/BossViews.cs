@@ -317,6 +317,7 @@ public partial class OrbView : Node3D, IOrb
     // The heartbeat's period (s); the light's swing about its mean (+-; the veins' is the shader's beat_amp).
     const double Period = 1.55;
     float lightAmp = 0.12f, lightK = 0.12f, lightAtt = 0.8f;
+    const float FistK = 0.012f;
 
     static Mesh? heartMesh;
     static Aabb heartBox;
@@ -366,7 +367,9 @@ public partial class OrbView : Node3D, IOrb
         float k = this.size / Mathf.Max(half, 1e-4f);
         heart = new ShaderMaterial { Shader = heartShader };
         heart.SetShaderParameter("stone_tex", GD.Load<Texture2D>("res://art/world/flora/stone_albedo.png"));
-        heart.SetShaderParameter("vein_color", c.Lightened(0.15f));
+        // (the cores a little off white, the light about them a deeper blue: c03's #bfe6ff gives sRGB 175,220,255 and 60,130,255)
+        heart.SetShaderParameter("core_color", new Color(c.R * 0.916f, c.G * 0.957f, c.B));
+        heart.SetShaderParameter("glow_color", new Color(c.R * 0.31f, c.G * 0.565f, c.B));
         heart.SetShaderParameter("unit", k);
         var mi = new MeshInstance3D
         {
@@ -375,8 +378,11 @@ public partial class OrbView : Node3D, IOrb
         };
         ball.AddChild(mi);
         // The light: short, cold, unshadowed (the frame's one shadowed light is the sky's); its range from the stone's size
-        // (a fist at a close-up: 3 m; the play camera's larger stand-in: as far as the old one reached).
-        float range = Mathf.Max(3f, this.size * 32);
+        // (a fist at a close-up: 1 m and a steep falloff, so it lights the fingers near it and little else (E7c r2); the play
+        // camera's larger stand-in: as far as the old one reached).
+        bool fist = this.size <= 0.1f;
+        float range = fist ? 1f : this.size * 32;
+        if (fist) { lightK = FistK; lightAtt = 2f; }
         foreach (var (key, v) in Tries())
             switch (key)
             {

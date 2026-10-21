@@ -13,24 +13,34 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 
 uniform sampler2D stone_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float tex_rep = 1.3;                 // the sheet's repeats across the unit stone
-uniform vec3 tint : source_color = vec3(0.64, 0.68, 0.74);  // the heart's stone: a cool dark slate
+uniform vec3 tint : source_color = vec3(0.64, 0.68, 0.74);  // the heart's stone: a cool slate
+uniform float stone_gain = 2.24;             // the sheet's brightness (E7c r2: 1.6 x 1.4, toward E5's slate)
 uniform float grain_bump = 0.004;            // the grain's relief (unit-stone lengths)
-uniform vec3 vein_color : source_color = vec3(0.62, 0.86, 1.0);
+uniform vec3 core_color : source_color = vec3(0.686, 0.863, 1.0);  // a crack's core: off-white (sRGB 175,220,255)
+uniform vec3 glow_color : source_color = vec3(0.235, 0.51, 1.0);   // the light about it (sRGB 60,130,255)
 uniform float vein_scale = 0.9;              // crack cells across the unit stone
 uniform float vein_warp = 0.22;
-uniform float vein_core = 0.010;             // the bright core's half-width (unit-stone lengths)
-uniform float vein_glow_w = 0.035;           // the light in the stone either side
+uniform float vein_core = 0.011;             // a crack's half-width at its widest (unit-stone lengths: ~4 px at c03 s8)
+uniform float vein_glow_w = 0.03;            // the light in the stone either side
 uniform float vein_energy = 7.0;             // the core's emission at level 1, beat mid
 uniform float vein_glow = 0.2;               // the light in the stone's emission (kept under the glow threshold)
-uniform float vein_gate = 0.6;               // how much of the cell border network is a crack (higher: fewer)
-uniform float vein_fine = 0.25;              // the finer cracks' share
+uniform float vein_gate = 0.5;               // how much of the cell border network is a crack (higher: fewer)
+uniform float vein_taper = 0.22;             // how long a crack's taper to its free end is (noise units)
+uniform float open_freq = 2.6;               // the gate's fast noise: cuts single cell edges (open cells, free ends)
+uniform float fine_core = 0.0035;            // the fine network's half-width at its widest (~1.3 px at s8)
+uniform float fine_gate = 0.42;
+uniform float fine_energy = 0.3;             // the fine network's brightness, of the main cracks'
 uniform float groove = 0.012;                // a crack's depth (unit-stone lengths)
-uniform float scorch = 0.55;                 // the dark rim either side of a crack
+uniform float scorch = 0.5;                  // the dark lip either side of a crack (albedo x (1 - scorch))
 uniform float beat_amp = 0.38;               // the veins' swing about their mean (+-)
 uniform float beat = 0.5;
 uniform float level = 1.0;
 uniform float wet = 1.0;
 uniform float flow_t = 0.0;
+uniform float streak_rough = 0.15;           // the runs of water
+uniform float film_rough = 0.42;             // the wet film between them
+uniform float sheen = 0.35;                  // the wet top edge's highlight
+uniform vec3 sheen_color : source_color = vec3(0.62, 0.72, 0.86);
 uniform float unit = 0.05;                   // world metres per unit-stone length (OrbView: its scale)
 
 varying vec3 op;
@@ -82,45 +92,61 @@ void vertex() {
 }
 
 void fragment() {
-	// --- the veins: the borders' distance in unit-stone lengths, warped, gated, a finer set off them
+	// --- the veins: the borders' distance in unit-stone lengths, warped. A crack's half-width follows a gate noise
+	// (slow: where the cracks gather; fast: cuts single cell edges), so cells open and each crack tapers to a free end
+	// instead of stopping square; the AA is a pixel's width (fwidth), so an end goes down to a 1 px line, then out.
 	vec3 w = op + vein_warp * (vec3(vnoise(op * 2.3), vnoise(op * 2.3 + 17.1), vnoise(op * 2.3 + 41.7)) - 0.5);
 	float d1 = border(w * vein_scale) / vein_scale;
 	float d2 = border(w * vein_scale * 2.6 + 7.3) / (vein_scale * 2.6);
-	// (the gate's noise is slow, so a crack goes whole or fades out along a long run, never in dashes)
-	float g1 = smoothstep(vein_gate - 0.15, vein_gate + 0.15, vnoise(op * 0.85 + 3.1));
-	float g2 = smoothstep(vein_gate, vein_gate + 0.25, vnoise(op * 1.3 + 11.3)) * vein_fine;
-	// (a crack's width breathes along it)
-	float wv = 0.7 + 0.6 * vnoise(op * 3.0 + 5.0);
-	float c1 = g1 * (1.0 - smoothstep(vein_core * wv * 0.35, vein_core * wv, d1));
-	float c2 = g2 * (1.0 - smoothstep(vein_core * wv * 0.2, vein_core * wv * 0.6, d2));
-	float core = max(c1, c2);
-	float glow = max(g1 * exp(-d1 / vein_glow_w), g2 * 0.6 * exp(-d2 / (vein_glow_w * 0.6)));
-	float rim = max(g1 * smoothstep(vein_core * 3.5, vein_core, d1), g2 * smoothstep(vein_core * 2.0, vein_core * 0.5, d2)) * (1.0 - core);
+	float n1 = 0.55 * vnoise(op * 0.85 + 3.1) + 0.45 * vnoise(op * open_freq + 9.7);
+	float t1 = smoothstep(vein_gate, vein_gate + vein_taper, n1);
+	float n2 = 0.5 * vnoise(op * 1.1 + 11.3) + 0.5 * vnoise(op * open_freq * 1.7 + 23.1);
+	float t2 = smoothstep(fine_gate, fine_gate + vein_taper, n2);
+	float wv = 0.75 + 0.5 * vnoise(op * 3.0 + 5.0);
+	float hw1 = vein_core * wv * t1, hw2 = fine_core * wv * t2;
+	float f1 = max(fwidth(d1), 1e-5), f2 = max(fwidth(d2), 1e-5);
+	float e1 = smoothstep(0.0, 0.12, t1), e2 = smoothstep(0.0, 0.12, t2);
+	float c1 = e1 * (1.0 - smoothstep(hw1 - 0.6 * f1, hw1 + 0.6 * f1, d1));
+	float c2 = e2 * (1.0 - smoothstep(hw2 - 0.6 * f2, hw2 + 0.6 * f2, d2)) * (1.0 - c1);
+	float core = c1 + c2 * fine_energy;          // emission weight
+	float hole = max(c1, c2);                    // what the core covers of the stone
+	float glow = max(t1 * exp(-max(d1 - hw1, 0.0) / vein_glow_w), fine_energy * t2 * exp(-max(d2 - hw2, 0.0) / (vein_glow_w * 0.4)));
+	// (the lip: 1-2 px of darkened stone either side of the core, where the crack's edge breaks down into the groove)
+	float lip = max(e1 * smoothstep(hw1 + 2.2 * f1, hw1 + 0.6 * f1, d1), e2 * 0.7 * smoothstep(hw2 + 1.6 * f2, hw2 + 0.5 * f2, d2)) * (1.0 - hole);
 
-	// --- the stone: the sheet triplanar in its own space, cool and dark, the bake's rims and cavities
+	// --- the stone: the sheet triplanar in its own space, cool slate, the bake's rims and cavities
 	vec3 bw = pow(abs(normalize(on)), vec3(4.0));
 	bw /= bw.x + bw.y + bw.z;
 	vec3 q = op * tex_rep;
 	vec4 st = texture(stone_tex, q.yz) * bw.x + texture(stone_tex, q.zx + 0.31) * bw.y + texture(stone_tex, q.xy + 0.67) * bw.z;
 	float lum = dot(st.rgb, vec3(0.333));
-	vec3 col = mix(vec3(lum), st.rgb, 0.35) * tint * 1.6;
+	vec3 col = mix(vec3(lum), st.rgb, 0.35) * tint * stone_gain;
 	col *= 1.0 + 0.45 * COLOR.r - 0.5 * COLOR.g - 0.3 * COLOR.b;
-	col *= 1.0 - scorch * rim;
+	col *= 1.0 - scorch * lip;
 	// (the light in the stone either side of a crack tints its face, as light through a thin edge)
-	col = mix(col, col * 0.7 + vein_color * 0.12, glow * 0.4);
+	col = mix(col, col * 0.75 + glow_color * 0.1, glow * 0.35);
 
-	// --- the water: a film over it, streaks running down the world
-	float streak = smoothstep(0.45, 0.85, vnoise(vec3(wd.x * 9.0, wd.y * 1.6 + flow_t * 1.4, wd.z * 9.0)));
-	float film = wet * (0.7 + 0.3 * streak);
-	col *= mix(1.0, 0.55, film);
-	ALBEDO = col * (1.0 - core);
-	ROUGHNESS = mix(0.8, mix(0.38, 0.12, streak), film);
-	SPECULAR = mix(0.5, 0.7, film);
+	// --- the water: a film over it, a few runs down the world from the top face (columns in the world's x/z, each
+	// reaching down its own length), the top face pooled; the top edge an unbroken wet highlight
+	vec3 wn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	float top = smoothstep(0.3, 0.8, wn.y);
+	float col_n = vnoise(vec3(wd.x * 1.7, wd.y * 0.25 - flow_t * 0.15, wd.z * 1.7) + 31.0);
+	float reach = mix(-0.9, 0.2, vnoise(vec3(wd.x * 1.7, 0.0, wd.z * 1.7) + 57.0));
+	float streak = smoothstep(0.56, 0.66, col_n) * smoothstep(reach - 0.25, reach + 0.1, wd.y);
+	streak = max(streak, top);
+	float film = wet * (0.75 + 0.25 * streak);
+	col *= mix(1.0, 0.62, film);
+	ALBEDO = col * (1.0 - hole);
+	ROUGHNESS = mix(0.8, mix(film_rough, streak_rough, streak), wet);
+	SPECULAR = mix(0.5, 0.75, film);
 	METALLIC = 0.0;
+	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 3.0);
+	float edge = fres * smoothstep(0.05, 0.45, wn.y) * wet;
 
-	// --- the relief: the cracks' grooves, the grain, the streaks' ripple, by screen-space derivatives (metres)
-	float h = (-groove * (1.0 - smoothstep(0.0, vein_core * 3.0, min(d1 + (1.0 - g1), d2 + (1.0 - g2) + 0.004))) + grain_bump * lum
-		+ 0.0015 * streak * wet) * unit;
+	// --- the relief: the cracks' grooves (as wide as the lip), the grain, the runs' ripple, by screen-space derivatives
+	float g1 = t1 * (1.0 - smoothstep(0.0, hw1 + vein_core * 1.5, d1));
+	float g2 = t2 * 0.5 * (1.0 - smoothstep(0.0, hw2 + fine_core * 1.5, d2));
+	float h = (-groove * max(g1, g2) + grain_bump * lum + 0.0015 * streak * wet) * unit;
 	vec3 dpx = dFdx(VERTEX), dpy = dFdy(VERTEX);
 	vec3 nn = normalize(NORMAL);
 	vec3 r1 = cross(dpy, nn), r2 = cross(nn, dpx);
@@ -128,7 +154,8 @@ void fragment() {
 	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
 	NORMAL = normalize(abs(det) * nn - grad);
 
-	// --- the light: only the cores cross the glow threshold; the light in the stone stays well under it
+	// --- the light: the cores cross the glow threshold; the light in the stone stays under it; the wet edge a sheen
 	float b = (1.0 - beat_amp) + 2.0 * beat_amp * beat;
-	EMISSION = vein_color * level * b * (core * vein_energy + glow * vein_glow * (1.0 - core));
+	EMISSION = level * b * (core_color * core * vein_energy + glow_color * glow * vein_glow * (1.0 - hole))
+		+ sheen_color * sheen * edge * (1.0 - hole);
 }
