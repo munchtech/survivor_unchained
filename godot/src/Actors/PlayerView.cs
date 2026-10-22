@@ -453,7 +453,7 @@ public partial class PlayerView : Node3D
         if (mine && Hold is { Length: 2 } hold)
         {
             tree.Active = false;
-            if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town")); }
+            if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town") || SurvivorUnchained.Args.Has("sheathed")); } // (--sheathed: her pieces at their sockets, as in a safe place)
             slide = own.GripSlide(hold[0]); // the clip's grip, straight (no easing)
             tilt = own.GripTilt(hold[0]);
             view?.Slide("handslot.r", slide, tilt);
@@ -705,7 +705,8 @@ public partial class PlayerView : Node3D
         if (stillT > 1.0) ranFor = 0;
         bool calm = b.NearestHostile(p.X, p.Z, 14) == null && (!Busy || fullSoft);
         if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
-        if (ranFor > 6 && stillT > 0.75)
+        // (Only with her left hand free: a shield or an off-hand piece would swing across her head; FreeHand.)
+        if (ranFor > 6 && stillT > 0.75 && FreeHand.Left(loadout.Arms, sheath.Sheathed, id => WeaponSockets.SocketOf(Arms.KindOf(id)) != null))
         {
             ranFor = 0;
             FullHer("catch_breath", 1, true);
