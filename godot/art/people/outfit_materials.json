@@ -76,7 +76,10 @@
  },
  "plumleather": {
   "kind": "leather",
-  "rough_floor": 0.58,
+  "rough_floor": 0.52,
+  "rough_var": 0.6,
+  "clearcoat": 0.2,
+  "clearcoat_rough": 0.25,
   "repeats": 3,
   "zone": "leather"
  },
