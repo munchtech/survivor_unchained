@@ -48,6 +48,15 @@ VECTOR = True
 UNTANGLE = 85          # deg: no face of hers turned more than this by the move
 UNDER_ = (-0.55, -0.25)  # the window eased out where her skin faces down (her breast's underside, its fold: thin folded faces)
 FOLLOW = (0.01, 0.03)   # a piece's point follows the skin under it in full within 1 cm, none past 3
+# (d4: her skin mirrored in x = 0 itself, not about the fitted plane. The fit's plane (x = 2 mm) is a 4 mm shift of the
+# mirrored skin, more than the whole fault, and turned it round: round 1 read her left wall as 3 mm proud and moved it
+# 1.1 mm deeper; the ray-cast along her normal onto the x = 0 mirror (d3) finds it 3 mm inside, a hollow, as seen)
+FIT_PLANE = False
+NORMALS_MIRROR = True
+CARRY_RINGS = 2
+MIRROR_AGREE = (25.0, 40.0)
+WELD_DEG = 10.0         # her split copies' normals (a UV seam's) shared where they part by more than this, in the window
+WELD_BOX = ((0.004, 0.075), (1.335, 1.415), 0.04)  # x' left of her midline, y, z above: her left inner breast only
 
 
 def _ss(x):
@@ -183,6 +192,9 @@ def correct(path_in, path_out, report=True):
         return None
     p, P, wid, U, F = _body(G)
     R, t, rms = mirror_fit(U, F)
+    fit_mid = t[0] / 2
+    if not FIT_PLANE:
+        R, t = np.eye(3), np.zeros(3)
     mid = t[0] / 2
     f = window(U, mid)
     ix = np.nonzero(f > 0)[0]
@@ -230,21 +242,91 @@ def correct(path_in, path_out, report=True):
     untangled = it
     mv = np.linalg.norm(X - U, axis=1)
     N0, N1 = _vn(U, F), _vn(X, F)
-    dN = N1 - N0
+    # (the carried turn read off her vertex normals smoothed CARRY_RINGS rings: her fold's slivers alone turn wildly)
+    N0s, N1s = N0.copy(), N1.copy()
+    for _ in range(CARRY_RINGS):
+        N0s = Wn @ N0s; N0s /= np.maximum(np.linalg.norm(N0s, axis=1, keepdims=True), 1e-12)
+        N1s = Wn @ N1s; N1s /= np.maximum(np.linalg.norm(N1s, axis=1, keepdims=True), 1e-12)
+    dN = np.where((mv > 1e-7)[:, None], N1s - N0s, 0)
     # (written back per vertex: seam duplicates take their welded point's move)
     P1 = X[wid].astype(np.float32)
     G.put(p["attributes"]["POSITION"], P1)
     Nr = G.get(p["attributes"]["NORMAL"]).astype(float)
     turn = np.linalg.norm(dN, axis=1)[wid] > 1e-7
     Nr[turn] += dN[wid][turn]
-    G.put(p["attributes"]["NORMAL"], (Nr / np.maximum(np.linalg.norm(Nr, axis=1, keepdims=True), 1e-12)).astype(np.float32))
+    Nr /= np.maximum(np.linalg.norm(Nr, axis=1, keepdims=True), 1e-12)
+    if NORMALS_MIRROR:
+        # (d4: carried by the change of her own vertex normals, the patch's slivers (faces of 0.01-0.3 mm2 in her fold)
+        # turned her stored normals up to 50 deg. Her moved skin now lies on her right's mirror, so it takes her right's
+        # stored normals, mirrored and read at the matched point, by the window's weight; a designed crease (a split
+        # copy group parting by more than WELD_DEG outside WELD_BOX: her breast's underside fold) keeps its own)
+        S = np.diag([-1.0, 1, 1])
+        N0r = G.get(p["attributes"]["NORMAL"]).astype(float)
+        Nw = np.zeros_like(U)
+        np.add.at(Nw, wid, N0r / np.maximum(np.linalg.norm(N0r, axis=1, keepdims=True), 1e-12))
+        Nw = (Nw / np.maximum(np.linalg.norm(Nw, axis=1, keepdims=True), 1e-12)) @ S.T
+        Q = (U @ S.T) @ R.T + t
+        jx = np.nonzero(f > 0)[0]
+        cpm, trm = _Surf(Q, F).near(X[jx])
+        a_, b_, c_ = Q[F[trm, 0]], Q[F[trm, 1]], Q[F[trm, 2]]
+        v0, v1, v2 = b_ - a_, c_ - a_, cpm - a_
+        d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
+        d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-30)
+        bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
+        bu = 1 - bv - bw
+        Nm = Nw[F[trm, 0]] * bu[:, None] + Nw[F[trm, 1]] * bv[:, None] + Nw[F[trm, 2]] * bw[:, None]
+        Nm /= np.maximum(np.linalg.norm(Nm, axis=1, keepdims=True), 1e-12)
+        Ng = _vn(X, F)[jx]
+        good = (np.linalg.norm(X[jx] - cpm, axis=1) < 0.002) & ((Nm * Ng).sum(1) > 0.5)
+        # (only where her own moved skin agrees with the mirror's normal: eased out from MIRROR_AGREE[0] to [1] deg off
+        # her own smoothed normal, so a stretch the move could not match keeps its own shading)
+        agree = np.degrees(np.arccos(np.clip((Nm * N1s[jx]).sum(1), -1, 1)))
+        fa = _ss((MIRROR_AGREE[1] - agree) / (MIRROR_AGREE[1] - MIRROR_AGREE[0]))
+        # (a group's split before, per welded point)
+        spl = np.zeros(len(U))
+        Nn0 = N0r / np.maximum(np.linalg.norm(N0r, axis=1, keepdims=True), 1e-12)
+        np.maximum.at(spl, wid, np.degrees(np.arccos(np.clip((Nn0 * (Nw @ S.T)[wid]).sum(1), -1, 1))))
+        wx, wy, wz = WELD_BOX
+        inbox0 = ((U[:, 0] - mid > wx[0]) & (U[:, 0] - mid < wx[1]) & (U[:, 1] > wy[0]) & (U[:, 1] < wy[1]) & (U[:, 2] > wz))
+        crease = (spl > WELD_DEG / 2) & ~inbox0
+        wgt = np.zeros(len(U))
+        wgt[jx] = np.where(good & ~crease[jx], f[jx] * fa, 0)
+        mirN = np.zeros_like(U)
+        mirN[jx] = Nm
+        on = wgt[wid] > 0
+        Nr[on] = Nr[on] * (1 - wgt[wid][on, None]) + mirN[wid][on] * wgt[wid][on, None]
+        Nr /= np.maximum(np.linalg.norm(Nr, axis=1, keepdims=True), 1e-12)
+        if report:
+            print("BREAST_SYM: normals from her right's mirror on %d welded points (%d unmatched, %d crease points kept)"
+                  % (int((wgt > 0).sum()), int((~good).sum()), int(crease[jx].sum())))
+    # (the seam's split copies: one normal, their mean, where they part by more than WELD_DEG in the box: the fold line)
+    wx, wy, wz = WELD_BOX
+    inbox = ((U[:, 0] - mid > wx[0]) & (U[:, 0] - mid < wx[1]) & (U[:, 1] > wy[0]) & (U[:, 1] < wy[1]) & (U[:, 2] > wz))
+    welded, split0, before, nb = 0, 0.0, 0.0, 0
+    Nb = G.get(p["attributes"]["NORMAL"]).astype(float)
+    Nb /= np.maximum(np.linalg.norm(Nb, axis=1, keepdims=True), 1e-12)
+    for g in np.unique(wid[inbox[wid]]):
+        ii = np.nonzero(wid == g)[0]
+        if len(ii) < 2:
+            continue
+        sb = np.degrees(np.arccos(np.clip(Nb[ii] @ Nb[ii].T, -1, 1))).max()
+        before, nb = max(before, sb), nb + (len(ii) if sb > WELD_DEG else 0)
+        nn = Nr[ii]
+        sp = np.degrees(np.arccos(np.clip(nn @ nn.T, -1, 1))).max()
+        if sp > WELD_DEG:
+            m = nn.sum(0)
+            Nr[ii] = m / np.linalg.norm(m)
+            welded += len(ii)
+            split0 = max(split0, sp)
+    G.put(p["attributes"]["NORMAL"], Nr.astype(np.float32))
     acc = G.g["accessors"][p["attributes"]["POSITION"]]
     lo, hi = P1.min(0).tolist(), P1.max(0).tolist()
     G.save()
     # (the accessor's bounds, and the done-mark, in the json)
     _bounds(path_out, p["attributes"]["POSITION"], lo, hi)
     _mark(path_out, MARK, {"core_x": CORE_X, "core_y": CORE_Y, "fade": FADE, "mid": round(float(mid), 6),
-                           "passes": PASSES, "max_mm": round(float(mv.max()) * 1000, 3)})
+                           "passes": PASSES, "max_mm": round(float(mv.max()) * 1000, 3), "weld_copies": welded})
     moved = mv > 1e-7
     if report:
         keys = G.g["meshes"][[n for n in G.g["nodes"] if n.get("name") == "Heroine"][0]["mesh"]].get("extras", {}).get("targetNames", [])
@@ -258,6 +340,9 @@ def correct(path_in, path_out, report=True):
               (mid * 1000, rms * 1000, int(moved.sum()), int(moved[wid].sum()), mv.max() * 1000,
                mv[moved].mean() * 1000 if moved.any() else 0, mv[f == 0].max(initial=0) * 1000, int(turn.sum()),
                np.degrees(np.arccos(np.clip((N0 * N1).sum(1), -1, 1))).max(), untangled, kd))
+        print("BREAST_SYM: mirror x = %.2f mm (the fitted plane would be %.2f); seam copies in the box parting > %g deg: "
+              "%d before (largest %.1f deg), %d after the mirror's normals (largest %.1f), welded" %
+              (mid * 1000, fit_mid * 1000, WELD_DEG, nb, before, welded, split0))
     keep = moved[wid]
     return dict(P0=P[keep].astype(np.float32), P1=P1[keep], mid=mid, R=R, t=t)
 
