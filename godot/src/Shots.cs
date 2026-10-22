@@ -103,6 +103,9 @@ public partial class Shots : Node
     public override void _Process(double delta)
     {
         time += delta;
+        // --geom-normals (dent d3, a developer's test): 1.5 s before the picture her skin's stored normals are swapped
+        // for ones recomputed from her bind geometry (area-weighted, split copies shared), to tell normal data from shape.
+        if (Args.Has("geom-normals") && !geomDone && time >= Args.Num("seconds", 3) - 1.5) { geomDone = true; GeomNormals(); }
         // --no-taa, --mipbias B: the picture without TAA, or its textures
         // sampled sharper (B < 0), to tell what softens fine detail (each
         // frame: the graphics settings are applied after this wakes).
@@ -144,6 +147,7 @@ public partial class Shots : Node
         GetViewport().GetTexture().GetImage().SavePng(file);
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}");
         if (Args.Has("mark-bones")) PrintMarks();
+        if (Args.Get("dump-her") is string dumpTo) DumpHer(dumpTo);
         // --navcheck: the open screen's focus routes walked as the picture is taken.
         if (Args.Has("navcheck")) Audit(GetTree().Root);
         taken++;
@@ -153,6 +157,112 @@ public partial class Shots : Node
     /// <summary>Where her chest is on the screen this frame (the game sets it while pictures are taken), for crops of her.</summary>
     public static Vector2? Her;
     static string HerAt() => Her is { } h ? $" her {h.X:0} {h.Y:0}" : "";
+
+    /// <summary>--dump-her PATH (dent d3, a developer's measure): her skin surfaces skinned on the CPU at the picture's
+    /// frame (shipped weights and pose; blend shapes listed, not applied), per surface PATH_sK.bin: int nv, int ni, then per
+    /// vertex 29 floats (world xyz, skinned stored normal xyz, screen xy, depth, uv, bind xyz, bind normal xyz, the blended skin matrix's basis columns and origin), then the
+    /// indices; and every playing AnimationPlayer's clip and time.</summary>
+    bool geomDone;
+    void GeomNormals()
+    {
+        var stack = new Stack<Node>(); stack.Push(GetTree().Root);
+        while (stack.Count > 0)
+        {
+            var n = stack.Pop();
+            foreach (var c in n.GetChildren()) stack.Push(c);
+            if (n is not MeshInstance3D mi || mi.Name != "Heroine" || mi.Mesh is not ArrayMesh mesh) continue;
+            int ns = mesh.GetSurfaceCount();
+            var arrs = new Godot.Collections.Array[ns];
+            var acc = new Dictionary<(long, long, long), Vector3>();
+            static (long, long, long) K(Vector3 p) => ((long)System.Math.Round(p.X * 1e5), (long)System.Math.Round(p.Y * 1e5), (long)System.Math.Round(p.Z * 1e5));
+            for (int s = 0; s < ns; s++)
+            {
+                arrs[s] = mesh.SurfaceGetArrays(s);
+                var v = arrs[s][(int)Mesh.ArrayType.Vertex].AsVector3Array(); var ix = arrs[s][(int)Mesh.ArrayType.Index].AsInt32Array();
+                for (int t = 0; t < ix.Length; t += 3)
+                {
+                    var fn = -(v[ix[t + 1]] - v[ix[t]]).Cross(v[ix[t + 2]] - v[ix[t]]);
+                    for (int j = 0; j < 3; j++) { var k = K(v[ix[t + j]]); acc[k] = acc.GetValueOrDefault(k) + fn; }
+                }
+            }
+            var nm = new ArrayMesh { BlendShapeMode = mesh.BlendShapeMode };
+            for (int b = 0; b < mesh.GetBlendShapeCount(); b++) nm.AddBlendShape(mesh.GetBlendShapeName(b));
+            var over = new Material?[ns];
+            for (int s = 0; s < ns; s++) over[s] = mi.GetSurfaceOverrideMaterial(s);
+            double dev = 0; int cnt = 0;
+            for (int s = 0; s < ns; s++)
+            {
+                var v = arrs[s][(int)Mesh.ArrayType.Vertex].AsVector3Array(); var old = arrs[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
+                var nn = new Vector3[v.Length];
+                for (int i = 0; i < v.Length; i++) { nn[i] = acc[K(v[i])].Normalized(); dev += Mathf.RadToDeg(old[i].Normalized().AngleTo(nn[i])); cnt++; }
+                arrs[s][(int)Mesh.ArrayType.Normal] = nn;
+                long fmt = (long)mesh.SurfaceGetFormat(s);
+                GD.Print($"GEOMNORMALS surf {s} format 0x{fmt:X}");
+                nm.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrs[s], mesh.SurfaceGetBlendShapeArrays(s), null, (Mesh.ArrayFormat)(fmt & (0x1FFE000L | (1L << 27))));
+                nm.SurfaceSetMaterial(s, mesh.SurfaceGetMaterial(s));
+            }
+            mi.Mesh = nm;
+            for (int s = 0; s < ns; s++) mi.SetSurfaceOverrideMaterial(s, over[s]);
+            GD.Print($"GEOMNORMALS {mi.GetPath()} surfaces {ns} mean change {dev / System.Math.Max(1, cnt):0.00} deg");
+        }
+    }
+
+    void DumpHer(string path)
+    {
+        var cam = GetViewport().GetCamera3D();
+        int k = 0;
+        var stack = new Stack<Node>(); stack.Push(GetTree().Root);
+        while (stack.Count > 0)
+        {
+            var n = stack.Pop();
+            foreach (var c in n.GetChildren()) stack.Push(c);
+            if (n is AnimationPlayer ap0 && ap0.GetPath().ToString().Contains("Survivor")) GD.Print($"HERANIM {ap0.GetPath()} cur {ap0.CurrentAnimation} assigned {ap0.AssignedAnimation} pos {(ap0.IsPlaying() ? ap0.CurrentAnimationPosition : -1):0.000}");
+            if (n is AnimationTree at && at.GetPath().ToString().Contains("Survivor")) GD.Print($"HERTREE {at.GetPath()} active {at.Active}");
+            if (n is AnimationPlayer ap && ap.IsPlaying()) GD.Print($"ANIM {ap.GetPath()} {ap.CurrentAnimation} {ap.CurrentAnimationPosition:0.000}");
+            if (n is not MeshInstance3D mi || mi.Mesh is not ArrayMesh mesh || mi.Skin is not Skin skin) continue;
+            var skel = mi.GetNodeOrNull<Skeleton3D>(mi.Skeleton);
+            if (skel == null) continue;
+            var mats = new Transform3D[skin.GetBindCount()];
+            for (int b = 0; b < mats.Length; b++)
+            {
+                int bone = skin.GetBindBone(b);
+                if (bone < 0) bone = skel.FindBone(skin.GetBindName(b));
+                mats[b] = bone < 0 ? Transform3D.Identity : skel.GlobalTransform * skel.GetBoneGlobalPose(bone) * skin.GetBindPose(b);
+            }
+            for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.GetActiveMaterial(s) is not ShaderMaterial sm || sm.Shader?.ResourcePath?.Contains("heroine_skin") != true) continue;
+                var arr = mesh.SurfaceGetArrays(s);
+                var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                var nr = arr[(int)Mesh.ArrayType.Normal].AsVector3Array();
+                var uv = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+                var bo = arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
+                var we = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+                var ix = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+                int per = bo.Length / System.Math.Max(1, v.Length);
+                string bs = "";
+                for (int q = 0; q < mesh.GetBlendShapeCount(); q++) bs += $" {mesh.GetBlendShapeName(q)}={mi.GetBlendShapeValue(q):0.###}";
+                GD.Print($"DUMP {mi.GetPath()} surf {s} mat {sm.ResourceName} nv {v.Length} ni {ix.Length} per {per} binds {mats.Length} shapes:{bs}");
+                using var w = new System.IO.BinaryWriter(System.IO.File.Create($"{path}_s{k++}.bin"));
+                w.Write(v.Length); w.Write(ix.Length);
+                for (int i = 0; i < v.Length; i++)
+                {
+
+                    Vector3 P = Vector3.Zero, N = Vector3.Zero; var B = new Basis(Vector3.Zero, Vector3.Zero, Vector3.Zero); var O = Vector3.Zero;
+                    for (int j = 0; j < per; j++)
+                    {
+                        float wt = we[i * per + j]; if (wt <= 0) continue;
+                        var m = mats[bo[i * per + j]];
+                        P += wt * (m * v[i]); N += wt * (m.Basis * nr[i]); B.X += wt * m.Basis.X; B.Y += wt * m.Basis.Y; B.Z += wt * m.Basis.Z; O += wt * m.Origin;
+                    }
+                    N = N.Normalized();
+                    var sc = cam.UnprojectPosition(P); float d = cam.GlobalPosition.DistanceTo(P);
+                    foreach (var f in new[] { P.X, P.Y, P.Z, N.X, N.Y, N.Z, sc.X, sc.Y, d, uv[i].X, uv[i].Y, v[i].X, v[i].Y, v[i].Z, nr[i].X, nr[i].Y, nr[i].Z, B.X.X, B.X.Y, B.X.Z, B.Y.X, B.Y.Y, B.Y.Z, B.Z.X, B.Z.Y, B.Z.Z, O.X, O.Y, O.Z }) w.Write(f);
+                }
+                foreach (var i in ix) w.Write(i);
+            }
+        }
+    }
 
     /// <summary>--mark-bones: "MARK x y" per marked point, in viewport pixels. Today the top of her sternum (the
     /// midpoint of her two clavicle bones' origins), so a sheet's ticks come from her skeleton, not from the picture's lightness.</summary>
