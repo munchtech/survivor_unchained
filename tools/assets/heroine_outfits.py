@@ -8758,6 +8758,7 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
 #     centre, the top drawn down WRAP_PINCH[0] and the bottom up WRAP_PINCH[1] over a Gaussian WRAP_PINCH[2] wide.)
 WRAP_GLB = os.environ.get("WRAP_GLB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb"))
 WRAP_DIP = float(os.environ.get("WRAP_DIP", "0.5"))
+WRAP_TAUT = float(os.environ.get("WRAP_TAUT", "1.0"))  # (d3: how much of any hollow but the cleavage it bridges)
 WRAP_PRESS = [float(v) for v in os.environ.get("WRAP_PRESS", "0.002,0.0045,0.004").split(",")]
 WRAP_Z = [float(v) for v in os.environ.get("WRAP_Z", "-0.040,0.024").split(",")]
 WRAP_PINCH = [float(v) for v in os.environ.get("WRAP_PINCH", "0.012,0.018,0.025").split(",")]
@@ -8883,7 +8884,19 @@ def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=500
     gap = Rh - Rr
     front = np.cos(a)[None, :] > 0.5
     bad = (Rr <= 0) | ((gap > 0.035) & ~front)
-    Rs = np.where(bad, Rh, Rr + WRAP_DIP * gap)
+    # (d3, 22 Oct, the owner: "is this a dent in reaver". Only the cleavage is drawn in: each row's run of hollow
+    # holding her front centre, out to where the hull meets her breasts. Every other hollow is bridged, the band
+    # taut on the hull: the side of her chest, between each breast and her back (her skin 18-25 mm under the hull
+    # at 85-100 deg round her), took the band WRAP_DIP of the way in, a 10-12 mm dent beside each cup, a dark
+    # vertical patch by day and night. WRAP_TAUT of the hollow bridged there (1: the hull))
+    cl = np.zeros_like(gap, bool)
+    for k in range(len(zl)):
+        for st in (1, -1):
+            i = 0
+            while abs(i) < nu // 2 and gap[k, i % nu] > 0.0005:
+                cl[k, i % nu] = True
+                i += st
+    Rs = np.where(bad, Rh, np.where(cl, Rr + WRAP_DIP * gap, Rr + WRAP_TAUT * gap))
     # (her nipples' bumps and the hull's bridges over her arms' gaps taken out: the wrap no higher than WRAP_BUMP over
     # its own shape smoothed ~1 cm round her and ~5 mm up and down, three times; r1's first build carried each
     # nipple's 2-4 mm bump through the leather as a poke and a dark spot by day, and a step at her arm)
