@@ -88,6 +88,31 @@ uniform float streak_cap = 0.5;
 // (linear); a light matched by direction from the water, within about 2 degrees. Others keep their light's colour.
 uniform vec4 streak_at[4];
 uniform vec3 streak_tint[4];
+// C03 env r4 (judge r3: from s12's higher crane the streak was "a solid bar as wide as the pier", brighter than the lamp,
+// "a glowing pillar under the water"): the streak tamed as the camera rises out of the mirror's grazing angle, by the
+// mirror's own fade (1 along the water: s2 as judged; toward 0 by mirror_from): narrower (to 0.4 of streak_w), shorter
+// (to 0.15 of streak_l, so the pier's dark reflection shows between its foot and the glint), its cap down with the fade
+// squared, and centred where each ripple's own tilt mirrors the light, so it breaks into dashes (a real lamp's path seen
+// from higher is a few separate glints round its mirror point). 0 r2's streak at every angle.
+uniform float streak_tame = 1.0;
+// The streak's share for one shot (GameCinema "water" "streak"; C03 s8: the far lamp's cyan column stood beside the
+// heart in the heart's colour); 1 as built.
+uniform float streak_shot = 1.0;
+// The brightest the mirror shows anything (linear, its brightest channel; GameCinema "water" "mirror_cap" for one shot,
+// C03 s8: the far lamp mirrored as a cyan column beside the heart in the heart's own colour); 100 none.
+uniform float mirror_cap = 100.0;
+// ...and as the camera stands high over the water (m over the surface, streak_h0 to streak_h1: s2 at 1 m and s8 at 1.75 m
+// untouched, s12's crane at 5-9 m all of it): the per-pixel fade alone left s12's far piers at full streak (their water seen
+// at 10 deg), so the camera's own height tames it up to streak_high, and a near light's glint cap down to glint_high of
+// glint_cap (the lamp's mirror point was a white blob brighter than the lamp's glass).
+uniform float streak_h0 = 2.5;
+uniform float streak_h1 = 4.5;
+// ...up to streak_h2-h3, where the play camera's height begins (FollowCamera at 23 m: 16-19 m up), which keeps its
+// glints as judged.
+uniform float streak_h2 = 11.0;
+uniform float streak_h3 = 14.0;
+uniform float streak_high = 1.0;
+uniform float glint_high = 0.1;
 // The air's say over the river (Atmosphere.Set, play's presets, E1): x its light, y the sky in it, z how far the
 // ripples bend it (under 1 the moon's glints gather into a band toward it); (1, 1, 1) as built.
 global uniform vec4 water_air;
@@ -100,6 +125,8 @@ varying vec3 glint_n;
 varying float crest;
 // How grazing the view is (0 the play camera, 1 along the water) times mirror; and the flat surface's normal (view space).
 varying float graze;
+// The camera's height over this point of the water, as tamed (0 low, 1 by streak_h1).
+varying float cam_hi;
 varying vec3 flat_n;
 
 void vertex() {
@@ -172,6 +199,8 @@ void fragment() {
 	float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
 	flat_n = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	graze = mirror * (1.0 - smoothstep(mirror_to, mirror_from, abs(dot(vdir, flat_n))));
+	float cam_y = INV_VIEW_MATRIX[3].y - w_pos.y;
+	cam_hi = smoothstep(streak_h0, streak_h1, cam_y) * (1.0 - smoothstep(streak_h2, streak_h3, cam_y));
 
 	// The bed under this point (straight down the view), and through the ripples.
 	vec3 bed_s = view_at(SCREEN_UV, INV_PROJECTION_MATRIX, depth_tex);
@@ -284,6 +313,7 @@ void fragment() {
 	if (gk > 0.001) {
 		vec3 rn = normalize(mix(flat_n, NORMAL, mirror_ripple));
 		vec4 mr = mirror_at(VERTEX, reflect(normalize(VERTEX), rn), PROJECTION_MATRIX, INV_PROJECTION_MATRIX);
+		mr.rgb *= min(1.0, mirror_cap / max(max(mr.r, max(mr.g, mr.b)), 1e-4));
 		float k = gk * mr.a;
 		EMISSION = mix(EMISSION, mr.rgb, k);
 		ALBEDO *= 1.0 - k;
@@ -331,7 +361,10 @@ void light() {
 	if (!LIGHT_IS_DIRECTIONAL && streak > 0.0 && graze > 0.001) {
 		vec3 ax = normalize(cross(flat_n, VIEW));
 		vec3 al = cross(ax, flat_n);
-		float hx = dot(h, ax) / streak_w, hl = dot(h, al) / streak_l;
+		float tame = streak_tame * max(1.0 - clamp(graze / max(mirror, 1e-4), 0.0, 1.0), streak_high * cam_hi);
+		float hx = (dot(h, ax) - tame * dot(NORMAL, ax)) / (streak_w * (1.0 - 0.6 * tame));
+		float hl = (dot(h, al) - tame * dot(NORMAL, al)) / (streak_l * (1.0 - 0.85 * tame));
+		float scap = streak_cap * (1.0 - tame) * streak_shot;
 		// (broken into dashes by the chop's crests, and held under streak_cap in its own hue: r2's first cut lay under each
 		// ford pier as a solid white-blue bar from s12's higher camera)
 		vec3 lc = LIGHT_COLOR;
@@ -342,12 +375,13 @@ void light() {
 				lc = t * (max(lc.r, max(lc.g, lc.b)) / max(t.r, max(t.g, t.b)));
 			}
 		}
-		vec3 cs = lc * ATTENUATION * streak * graze * exp(-hx * hx - hl * hl) * mix(0.12, 1.8, crest * crest) * clamp(spec_k * 4.0, 0.0, 1.0);
-		c += cs * min(1.0, streak_cap / max(max(cs.r, max(cs.g, cs.b)), 1e-4));
+		vec3 cs = lc * ATTENUATION * streak * streak_shot * graze * exp(-hx * hx - hl * hl) * mix(0.12, 1.8, crest * crest) * clamp(spec_k * 4.0, 0.0, 1.0);
+		c += cs * min(1.0, scap / max(max(cs.r, max(cs.g, cs.b)), 1e-4));
 	}
 	float m = max(c.r, max(c.g, c.b));
 	// (E7 round 3: a near light's glint scaled by its light_specular over Godot's 0.5, after the cap: the ford lamps at 0.3
 	// spread blown white patches on the far ripples at the cap; the moon and the sun as before)
 	float sk = LIGHT_IS_DIRECTIONAL ? 1.0 : clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0);
-	SPECULAR_LIGHT += c * min(1.0, glint_cap / max(m, 1e-4)) * sk * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
+	float gcap = LIGHT_IS_DIRECTIONAL ? glint_cap : glint_cap * mix(1.0, glint_high, cam_hi * streak_tame);
+	SPECULAR_LIGHT += c * min(1.0, gcap / max(m, 1e-4)) * sk * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
 }

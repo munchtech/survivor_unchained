@@ -384,6 +384,8 @@ public partial class Game
         /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
         readonly HashSet<ShaderMaterial> waters = new();
         readonly Dictionary<ShaderMaterial, float> waterFoam = new();
+        bool stonesSet;
+        readonly Dictionary<ShaderMaterial, float> stoneEdge = new();
 
         /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
         void PlaceRigs()
@@ -1320,11 +1322,38 @@ public partial class Game
                             if (!waterFoam.ContainsKey(wsm)) waterFoam[wsm] = wsm.GetShaderParameter("foam_amt").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("foam_amt") : 1f;
                             wsm.SetShaderParameter("foam_amt", waterFoam[wsm] * (float)c.Num("foam", 1));
                         }
+                        // ("streak": the lamps' streaks on the water, a share, held from this shot on: C03 s8's far lamp
+                        // laid a cyan column beside the heart in the heart's own colour; 1 back as built, as is the end)
+                        if (c.Has("streak")) wsm.SetShaderParameter("streak_shot", (float)c.Num("streak", 1));
+                        // ("mirror_cap": the brightest the grazing mirror shows a thing (linear, its brightest channel), for this
+                        // shot on: C03 s8's far ford lamp mirrored as a cyan column beside the heart; MIRROR_CAP=v tries a value)
+                        if (c.Has("mirror_cap")) wsm.SetShaderParameter("mirror_cap", System.Environment.GetEnvironmentVariable("MIRROR_CAP") is { } mcs && c.Num("mirror_cap", 100) < 100 ? float.Parse(mcs, System.Globalization.CultureInfo.InvariantCulture) : (float)c.Num("mirror_cap", 100));
                         if (!hasLevel) continue;
                         float wfrom = wsm.GetShaderParameter("level").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("level") : 1f;
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => wsm.SetShaderParameter("level", Mathf.Lerp(wfrom, wto, (float)k))));
                         else wsm.SetShaderParameter("level", wto);
                     }
+                    break;
+                }
+                case "stones":
+                {
+                    // The stepping stones' damp tops for this shot on ("top": their light, a share; 1 as built): C03 s8's near
+                    // stone crown, out of focus beside her, the palest broad thing after her. Put back as the cinematic ends.
+                    stonesSet = true;
+                    // (STONE_TOP=v tries a value over the cue's, numbers first)
+                    float top = System.Environment.GetEnvironmentVariable("STONE_TOP") is { } stt && float.TryParse(stt, System.Globalization.CultureInfo.InvariantCulture, out var stv) && c.Num("top", 1) < 1 ? stv : (float)c.Num("top", 1);
+                    var sset = c.Bool("all") ? KitLook.Rocks : KitLook.Stepping;
+                    // ("edge": their worn rims' light, a share of as built: s8's out-of-focus stone rim read as a pale crown)
+                    if (c.Has("edge"))
+                        foreach (var sm in sset)
+                        {
+                            if (!IsInstanceValid(sm)) continue;
+                            if (!stoneEdge.ContainsKey(sm)) stoneEdge[sm] = (float)sm.GetShaderParameter("edge_light");
+                            sm.SetShaderParameter("edge_light", stoneEdge[sm] * (float)c.Num("edge", 1));
+                            (sm.NextPass as ShaderMaterial)?.SetShaderParameter("edge_light", stoneEdge[sm] * (float)c.Num("edge", 1));
+                        }
+                    foreach (var sm in sset) if (IsInstanceValid(sm)) { sm.SetShaderParameter("top_level", top); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("top_level", top); }
+                    if (System.Environment.GetEnvironmentVariable("CAUSEWAY_STATS") != null) GD.Print($"STONES cue: top {top} on {sset.Count} materials");
                     break;
                 }
                 case "grade":
@@ -1580,10 +1609,14 @@ public partial class Game
             rigs.Clear();
             foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
             globes.Clear();
-            foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
+            foreach (var wsm in waters) { wsm.SetShaderParameter("level", 1f); wsm.SetShaderParameter("streak_shot", 1f); wsm.SetShaderParameter("mirror_cap", 100f); }
             foreach (var (wsm, wf) in waterFoam) wsm.SetShaderParameter("foam_amt", wf);
             waters.Clear();
             waterFoam.Clear();
+            if (stonesSet) foreach (var sm in KitLook.Rocks) if (IsInstanceValid(sm)) { sm.SetShaderParameter("top_level", 1f); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("top_level", 1f); }
+            foreach (var (sm, se) in stoneEdge) if (IsInstanceValid(sm)) { sm.SetShaderParameter("edge_light", se); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("edge_light", se); }
+            stoneEdge.Clear();
+            stonesSet = false;
             // Her prints stay: they are in the frost whether it played or not.
             // The decals' frost goes as play takes over (under a second): the ground's own frost, by exposure, carries it
             // from here (judge 1, E3 fix 3: the decals were the brightest ground in the hand-back's frame).
