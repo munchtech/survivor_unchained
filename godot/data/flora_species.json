@@ -13,9 +13,13 @@
     "own: the kit's pieces drawn as ours (a list: one per copy, by its place's hash). A zone overrides any key in",
     "godot/data/zones/<zone>/flora_species.json (its own 'own' and 'species' entries, merged over these)."
   ],
+  "stands": {
+    "_doc": "C03 env (judge C03: the ridge one pine copied at equal height and spacing): a copy of 'kind' with at least 'dense' others of it within 'r' m (a zone's edge wall: a tree on every cell of its 3.3 m grid; the forest inside is thinner) is kept by a clump field ('clump' m across: 'keep' its mean share kept, near all in a clump's heart, few between), its size 'scale' [lo, hi] of 'base' (the larger in a clump's heart), turned anew. Dressing.Stands; FLORA_STATS=1 prints the counts.",
+    "pine": {"r": 5.0, "dense": 5, "keep": 0.5, "clump": 16.0, "base": 1.13, "scale": [0.75, 1.3]}
+  },
   "species": {
     "spruce": {"pieces": ["spruce_a", "spruce_b", "spruce_c"], "packed": false, "kind": "pine", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
-               "shader": {"hue_floor": 108, "near_dim": 0.5}},
+               "shader": {"hue_floor": 108, "near_dim": 0.5, "lean": 10, "lean_h": 8.8, "stretch_lo": 0.8, "stretch_hi": 1.2, "leader_from": 6.0, "leader_lo": 0.55, "leader_hi": 1.6}},
     "alder": {"pieces": ["alder_a", "alder_b", "alder_c"], "packed": false, "kind": "broadleaf", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
               "shader": {"broadleaf": 1, "flutter": 2.2, "hue_floor": 98, "core": 0.3, "sun_lift": 1.0, "night_hue": 10, "night_value": 0.9}},
     "snag": {"pieces": ["snag_a", "snag_b", "snag_c"], "packed": true, "kind": "dead", "lod": [44, 100], "cell": 24, "shadow": true, "wind": 0.2,
@@ -35,7 +39,7 @@
                            "stone_mix": 0.65, "stone_val": 0.12, "stone_a": [0.8, 0.9, 1.08], "stone_b": [1.2, 1.02, 0.72], "stone_c": [0.92, 0.78, 0.62],
                            "amb_occl": 0.5, "sky_dark": 0.35, "shade_floor": 0.0, "night_fill": 0.02, "night_tint": [0.53, 0.47, 0.39]}},
     "stepping": {"pieces": ["step_a", "step_b", "step_c", "step_d", "step_e", "step_f"], "packed": true, "kind": "rock", "lod": [40], "cell": 48, "shadow": false, "wind": 0,
-                 "shader": {"moss_amount": 0.35, "edge_light": 0.4, "wet_share": 0.67, "wet_top": 0.75, "wet_dark": 0.42,
+                 "shader": {"moss_amount": 0.35, "edge_light": 0.25, "wet_share": 0.5, "wet_top": 0.75, "wet_dark": 0.5, "top_damp": 0.85, "damp_gloss": 0,
                             "inst_val": 0.1, "cool_share": 0.33, "cool_tint": [0.88, 0.94, 1.04], "algae": 0.85, "algae_color": "#3d3b22", "algae_w": 0.03}}
   },
   "own": {

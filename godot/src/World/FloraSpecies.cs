@@ -89,6 +89,19 @@ public static class FloraSpecies
     public static JsonElement Stone => stone ??= Load(Path).GetProperty("stone").Clone();
     static JsonElement? stone;
 
+    /// <summary>flora_species.json "stands": how a dense stand of a kind (a zone's edge wall, a tree on every cell of its
+    /// grid) is thinned into clumps and given its sizes (Dressing.Stands); none: as placed.</summary>
+    public static JsonElement? Stands
+    {
+        get
+        {
+            if (!standsRead) { standsRead = true; stands = Load(Path).TryGetProperty("stands", out var v) ? v.Clone() : null; }
+            return stands;
+        }
+    }
+    static JsonElement? stands;
+    static bool standsRead;
+
     /// <summary>A zone's causeways (its flora_species.json "causeways"; none if it has none): stepping stones laid by Dressing.</summary>
     public static JsonElement[] CausewaysFor(string zone)
     {

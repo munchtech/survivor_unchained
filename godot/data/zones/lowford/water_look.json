@@ -1,2 +1,2 @@
-[{"sky":"#5a7890","shallow":"#8aa08a","foam":"#c4cec8","clarity":0.8,"deep":1.6,"shore":0.15,"foam_depth":0.07,"wake":1.0,"wake_taper":0.4,"lace_size":0.7,"ripple_size":1.4,"glint_cap":1.6,"glint_spread":0,"glint_bend":0,"glint_near":1,"glint_sheen":0,
+[{"sky":"#5a7890","shallow":"#8aa08a","foam":"#c4cec8","clarity":0.8,"deep":1.6,"shore":0.15,"foam_depth":0.07,"wake":1.0,"wake_taper":0.4,"lace_size":0.7,"ripple_size":1.4,"glint_cap":1.6,"glint_spread":0,"glint_bend":0,"glint_near":1,"glint_sheen":0,"mirror":0.85,"streak":3.0,"streak_l":0.5,"streak_cap":0.25,
   "bed":{"pebbles":0.85,"silt":0.9,"silt_color":"#6a5638","wet":0.35,"wet_dark":0.25,"relief":0.08}}]
