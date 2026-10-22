@@ -31,9 +31,9 @@ uniform float look_leather_rough = 0.60;
 // (armor 16, judge A2: at the Look her pauldrons read as flat toon navy. The rig's lights aim at her face, her shoulders
 // at their cones' edges, and the night around the camp gives plate nothing to reflect: under the rig only, the key's
 // softbox (high, near the lens, to camera right: GameFront's keyAt) and a dim cool dome over her, in its reflection)
-uniform float look_metal_env = 0.0;               // (0 = as before, bit for bit)
-uniform float look_metal_key = 4.0;
-uniform float look_metal_dome = 0.5;
+uniform float look_metal_env = 0.0;               // (0 = as before, bit for bit; People sets 2.6 on her metal)
+uniform float look_metal_key = 6.0;
+uniform float look_metal_dome = 0.45;
 uniform vec3 look_key_dir = vec3(0.22, 0.6, 0.76);  // (view space: right, up, toward the lens)
 uniform float leather_rough_floor = 0.0;          // (armor 14, 22 Oct: a leather's roughness floor off its burnished edges, from its outfit_materials.json row "rough_floor". The arcanist bodysuit's plumleather at 0.58: at 0.42 its cups caught the key as a pointed highlight at each apex (read as nipple pokes) and a dark band under it (a crease), and a plastic streak at night; the shape alone was smooth)
 uniform float leather_rough_var = 1.0;            // (armor 14: its roughness map's spread kept, 1 as scanned; under 1 the map's blotches ease toward the floor)

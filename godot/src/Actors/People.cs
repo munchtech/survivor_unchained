@@ -1366,7 +1366,7 @@ public static class People
             // LOOK_METAL_ENV=env,key,dome tries others)
             if (kind == 1)
             {
-                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,4,0.5").Split(',');
+                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "2.6,6,0.45").Split(',');
                 float L(int i) => float.Parse(le[i], System.Globalization.CultureInfo.InvariantCulture);
                 m.SetShaderParameter("look_metal_env", L(0)); m.SetShaderParameter("look_metal_key", L(1)); m.SetShaderParameter("look_metal_dome", L(2));
             }
