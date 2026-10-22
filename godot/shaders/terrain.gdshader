@@ -116,7 +116,9 @@ uniform float setts_moss = 1.0;
 // E3 G: the mud collar at the foot of what stands (metres), and the mud's value.
 uniform float setts_collar = 0.45;
 uniform float mud_tone = 1.0;
-uniform float mud_sat = 1.5;
+uniform float mud_sat = 1.45;
+// (E9a: how far the mud lifts the occlusion of the joints it fills, 0-1.)
+uniform float mud_ao = 0.8;
 // ... and its specular (the sky's sheen greyed the dark mud).
 uniform float mud_spec = 0.1;
 // Style r2 (--setts-paint): the street's mud painted, an opaque matte darker browner earth (a calm sheet, no grain), flat,
@@ -411,7 +413,11 @@ void fragment() {
 	// saturation (the town's grade greys the setts' own warmth by a third); wetter and darker in the joints and at the
 	// collar, a paler dried crust where it rides over a stone. sRGB about 0.26, 0.185, 0.11.)
 	float mdep = clamp((lvl - hgt) * 5.0, 0.0, 1.0);
-	vec3 mud_col = mix(vec3(0.048, 0.034, 0.011), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.08, 0.78, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
+	// (E9a: at dawn the shaded mud went black and blue, p10 15 and mean 20 against the shaded stone's 39, hue 237: its
+	// blue, pushed through mud_sat 1.5, clamped to zero, so the blue shade lit nothing of it but the sky's sheen. Lighter,
+	// with blue left in it (sat 1.45 over a base whose blue survives it), and its occlusion lifted where it fills a joint:
+	// dark wet earth, with value and hue. Shaded p10/mean 15/20 -> 20/25 at towndawn; lit by day 0.77 of the stone, was 0.65.)
+	vec3 mud_col = mix(vec3(0.071, 0.048, 0.025), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.04, 0.86, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
 	// (A grain of its own at 5-20 cm: a flat sheet read as a decal. Not the tile's, whose stones showed through.)
 	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
 	mud_col *= mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.93 + 0.1 * mgr.r, mud_paint);
@@ -425,6 +431,7 @@ void fragment() {
 	rough = mix(rough, mix(mix(0.85, 0.65, mdep * collar), 0.97, mud_paint), mud_c);
 	n_w = normalize(mix(n_w, n_geo, mud_c * mix(0.85, 1.0, mud_paint)));
 	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
+	ao = mix(ao, 1.0, mud_c * mud_ao * (1.0 - mud_paint));
 	float dbg_mud_c = step(0.5, mud_c) * w_setts;
 	float mud_s = mud_c * w_setts;
 	float dbg_collar = step(0.5, collar);

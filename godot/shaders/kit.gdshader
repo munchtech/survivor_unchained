@@ -159,6 +159,71 @@ vec3 hue_turn(vec3 c, float a) {
 // (foliage: its leaves' undersides are not a roof's; KitLook)
 uniform bool leaves = false;
 
+#if defined(OWN_WALL) || defined(OWN_ROOF)
+// Our own town walls (tools/assets/env_house.py, OwnWalls, KitLook.Wall): the trim sheet's aux (r its tint class:
+// 1 plaster, .5 timber; g roughness; b a grime noise tiling with its region); each copy's custom data r its house's
+// tint ((i + .5) / 8), g its height above its house's ground, b its own hash, a its treatment; the vertex colour
+// r occlusion, g the stain under a sill, b 1 on timber that takes the house's timber tint.
+uniform sampler2D aux_tex : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec3 plaster_tints[6];  // (godot/data/house_look.json: arrays take no defaults)
+uniform vec3 timber_tints[3];
+uniform float grime_h = 1.4;      // the grime's height above the house's ground (m)
+uniform float grime_dark = 0.4;   // how much darker at the ground
+uniform float splash_h = 0.45;    // the splash band (rain off the street)
+uniform float splash_dark = 0.2;
+uniform float house_rise = 0.12;  // the house's ground storey this much darker than its 6 m line
+uniform float stain_dark = 0.45;  // the streaks under a sill
+uniform float val_noise = 0.1;    // broad value patches over the walls (world space)
+uniform float house_val = 0.06;   // each house a little lighter or darker
+uniform float occl = 0.5;         // the vertex occlusion's reach
+uniform sampler2D ground_h : filter_linear, repeat_disable;  // (E9b3) the terrain's height under the town (OwnWalls.Build)
+uniform vec4 ground_rect = vec4(0.0);  // its world x, z origin and size; z 0: no map (the house's own ground instead)
+uniform float plaster_mottle = 0.1;  // value mottling on plaster at 1-2 m
+uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off (the lath behind)
+uniform float big_lost = 0.4;        // (E9b6) the share of 2.5 m cells with a 40-80 cm patch fallen off
+uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
+varying vec4 v_wall;
+varying float v_hgt;
+varying vec3 v_wp;
+
+float wall_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float wall_noise(vec2 p) {
+	vec2 i = floor(p), f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(wall_hash(i), wall_hash(i + vec2(1.0, 0.0)), f.x), mix(wall_hash(i + vec2(0.0, 1.0)), wall_hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+#endif
+#ifdef OWN_ROOF
+// Our own roofs (tools/assets/env_roof.py, KitLook.Roof; E9b2), on the walls' uniforms above and the roof sheet: its aux
+// r the class (1 clay, .75 shingle, .5 timber taking the house's timber tint, 0 untinted), g roughness, b each tile's id;
+// the vertex colour r occlusion, g the face's hash, b 1 on the covering (on a chimney: its soot), a the sag weight;
+// each copy's custom data as the walls' with a = (treatment * 8 + roof tint + .5) / 32.
+uniform vec3 clay_tints[4];      // (godot/data/house_look.json)
+uniform vec3 shingle_tints[4];
+uniform vec4 chimneys[32];       // each stack's top (xyz), w 1; OwnWalls.Build
+uniform float roof_sag = 0.04;
+uniform float roof_lean = 0.14;          // (E9b6 r4) each roof racked sideways at its middle this much (m)
+uniform vec2 roof_lean_dir = vec2(0.0, 1.0);  // world x, z: toward the play camera   // each house's roof sags this much more at most (m), by its copy's hash
+uniform float tile_val = 0.12;   // each tile lighter or darker
+uniform float tile_warm = 0.5;   // and warmer or cooler
+uniform float roof_val_noise = 0.08;
+uniform float roof_house_val = 0.06;
+uniform float soot_r = 2.0;      // the soot round a chimney's top (m)
+uniform float soot_dark = 0.6;
+uniform float stack_soot = 0.75; // a stack's own top
+uniform float roof_moss = 0.6;   // on slopes facing moss_dir (north), thickest toward the eaves
+uniform vec2 moss_dir = vec2(0.0, -1.0);
+uniform vec4 roof_moss_color : source_color = vec4(0.25, 0.29, 0.18, 1.0);
+uniform float roof_occl = 0.55;
+uniform float old_tile = 0.16;     // (E9b6 r4) the share of tiles old and dark: darker and browner (about one in 6)
+uniform float tile_tilt = 0.09;    // each tile's normal turned +-this (a tile bedded a few degrees off its neighbours)
+uniform float trough_dirt = 0.45;   // dirt streaks running down the slope (narrow, broken), this much darker
+uniform float moss_any = 0.5;     // moss in patches on every slope's lower courses (not only the north ones)
+varying vec3 v_wn;
+varying float v_rh;
+varying float v_lz;
+#endif
+
 varying float v_up;
 varying float v_jit;
 varying float v_y;
@@ -228,6 +293,29 @@ void vertex() {
 	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
 	v_top = MODEL_MATRIX[3].y + wet_top * length(MODEL_MATRIX[1].xyz);
+#endif
+#ifdef OWN_WALL
+	v_wall = INSTANCE_CUSTOM;
+	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
+	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+#endif
+#ifdef OWN_ROOF
+	v_wall = INSTANCE_CUSTOM;
+	VERTEX.y -= COLOR.a * roof_sag * fract(INSTANCE_CUSTOM.b * 7.13 + 0.31);
+	{
+		// (E9b6 r4) each roof racked sideways at its middle (the sag's weight): toward roof_lean_dir (the play camera)
+		// where its slopes face that way, so the far eave's bow adds to its sag on screen; else by its hash
+		vec3 lx = MODEL_MATRIX[0].xyz;
+		float sx = max(length(lx), 1e-4);
+		float t = dot(lx.xz / sx, roof_lean_dir);
+		float sg = abs(t) > 0.3 ? sign(t) : (fract(INSTANCE_CUSTOM.b * 3.71) > 0.5 ? 1.0 : -1.0);
+		VERTEX.x += COLOR.a * roof_lean * (0.8 + 0.4 * fract(INSTANCE_CUSTOM.b * 5.3)) * sg / sx;
+	}
+	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
+	v_rh = VERTEX.y;
+	v_lz = VERTEX.z;
+	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 #endif
 #ifdef REVEAL
 	// The rim is drawn again only for a piece near the line from her to the
@@ -305,6 +393,129 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	if (use_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+#ifdef OWN_WALL
+	{
+		vec3 ax = texture(aux_tex, UV).rgb;
+		int ti = clamp(int(v_wall.r * 8.0), 0, 5);
+		vec3 tint = vec3(1.0);
+		if (ax.r > 0.75) tint = plaster_tints[ti];
+		else if (ax.r > 0.25 && COLOR.b > 0.5) tint = timber_tints[ti % 3];
+		vec3 col = c.rgb * tint;
+		// broad value patches over the town's walls (a run never reads as one flat paint), each house a little lighter or darker
+		vec2 wq = vec2(v_wp.x + v_wp.z, v_wp.y);
+		float vn = 0.6 * wall_noise(wq * 0.55) + 0.4 * wall_noise(wq * 0.13 + 7.3);
+		col *= 1.0 + val_noise * (2.0 * vn - 1.0) + house_val * (2.0 * wall_hash(v_wall.ra * 17.0) - 1.0);
+		// grime from the house's ground up, its line broken by the sheet's noise; the ground storey darker as a whole;
+		// the splash band at the foot (rain off the street), browner
+		float gn = ax.b;
+		float h = v_hgt;
+		// (E9b3) the height above the terrain itself where the town has its map, so the grime shows where grass or a slope hides the foot
+		if (ground_rect.z > 0.0) {
+			vec2 gq = (v_wp.xz - ground_rect.xy) / ground_rect.zw;
+			if (gq.x > 0.0 && gq.y > 0.0 && gq.x < 1.0 && gq.y < 1.0) h = v_wp.y - texture(ground_h, gq).r;
+		}
+		if (ax.r > 0.75) {
+			// plaster: mottled at 1-2 m, and here and there fallen off to the lath (30-60 cm patches, a dark broken rim)
+			col *= 1.0 + plaster_mottle * (2.0 * wall_noise(wq * 0.75 + 3.1) - 1.0);
+			float pn = 0.7 * wall_noise(wq * 1.9 + v_wall.b * 37.0) + 0.3 * wall_noise(wq * 7.0 + 1.3);
+			float pm = smoothstep(0.55, 0.7, wall_noise(wq * 0.33 + 11.7 + v_wall.b * 5.0)) * smoothstep(0.7, 1.4, h) * lost_plaster;
+			float lost = smoothstep(0.74, 0.76, pn) * pm;
+			float rim = (smoothstep(0.7, 0.74, pn) - smoothstep(0.75, 0.78, pn)) * pm;
+			float lath = smoothstep(0.25, 0.4, fract(v_wp.y * 26.0)) * (0.75 + 0.25 * wall_noise(vec2((v_wp.x + v_wp.z) * 6.0, v_wp.y * 26.0)));
+			vec3 lc = mix(vec3(0.07, 0.055, 0.045), vec3(0.3, 0.24, 0.18) * (0.8 + 0.4 * wall_noise(wq * 9.0)), lath);
+			// (E9b6) and a bigger patch now and then, 40-80 cm, ragged: one 2.5 m cell in about 2.5 has one (its centre
+			// kept 0.5 m inside the cell, so no patch crosses a cell's edge), so a 6 m face shows one or two
+			vec2 ci = floor(wq / 2.5);
+			float ph = wall_hash(ci * 1.7 + 0.31);
+			if (ph < big_lost) {
+				vec2 pc = (ci + 0.2 + 0.6 * vec2(wall_hash(ci + 5.1), wall_hash(ci + 9.7))) * 2.5;
+				float rx = 0.2 + 0.2 * wall_hash(ci + 2.9);
+				vec2 pr = vec2(rx, rx * (0.6 + 0.4 * wall_hash(ci + 7.3)));
+				float pd = length((wq - pc) / pr) + 0.45 * (wall_noise(wq * 6.0 + ci) - 0.5) + 0.2 * (wall_noise(wq * 17.0) - 0.5);
+				float bl = (1.0 - smoothstep(0.97, 1.0, pd)) * smoothstep(0.5, 0.9, h);
+				float br = (1.0 - smoothstep(1.0, 1.14, pd)) * smoothstep(0.5, 0.9, h) - bl;
+				lost = max(lost, bl);
+				rim = max(rim, max(br, 0.0));
+			}
+			col = mix(col * (1.0 - 0.35 * rim), lc, lost);
+			if (grime_debug > 1.5) col = vec3(lost, rim, 0.3) * 3.0;  // (E9b6) 2: the lost plaster (r) and its rim (g)
+		}
+		// grime from the ground: a brown-green band, darkest to 0.6 m (E9b4: the street often meets the wall 0.4 m up), streaked with splash, gone by 1.2 m
+		float sn = wall_noise(vec2((v_wp.x + v_wp.z) * 11.0, v_wp.y * 1.3));
+		float hn = h + 0.25 * (gn - 0.5);
+		float gr = 1.0 - smoothstep(0.6, grime_h, hn + 0.2 * (sn - 0.5));
+		col *= (1.0 - grime_dark * gr) * mix(vec3(1.0), vec3(0.97, 0.98, 0.86), gr);
+		col *= mix(1.0 - house_rise, 1.0, smoothstep(0.0, 6.0, h));
+		float splash = 1.0 - smoothstep(0.0, splash_h, hn - 0.25 * sn);
+		col *= mix(vec3(1.0), vec3(1.0 - splash_dark) * vec3(0.95, 0.97, 0.82), splash);
+		// stains under the sills: streaks running down (the sheet's noise stretched down the wall)
+		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
+		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);
+		col *= mix(1.0 - occl, 1.0, COLOR.r);
+		if (grime_debug > 0.0 && grime_debug < 1.5) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
+		ALBEDO = col;
+		ROUGHNESS = ax.g;
+	}
+#endif
+#ifdef OWN_ROOF
+	{
+		vec3 ax = texture(aux_tex, UV).rgb;
+		int ti = clamp(int(v_wall.r * 8.0), 0, 5);
+		int rt = int(v_wall.a * 32.0) % 8;
+		vec3 tint = vec3(1.0);
+		if (ax.r > 0.9) tint = clay_tints[rt % 4];
+		else if (ax.r > 0.6) tint = shingle_tints[rt % 4];
+		else if (ax.r > 0.25) tint = timber_tints[ti % 3];
+		vec3 col = c.rgb * tint;
+		bool cover = COLOR.b > 0.5 && ax.r > 0.6;
+		if (cover) {
+			// each tile again its own value and warmth: its id on the sheet (32 steps), its run's hash, its roof's
+			float th = wall_hash(vec2(floor(ax.b * 32.0), COLOR.g * 131.0 + v_wall.b * 17.0));
+			float tw = wall_hash(vec2(th * 91.0, 3.7));
+			col *= 1.0 + tile_val * (2.0 * th - 1.0);
+			col *= mix(vec3(0.95, 0.99, 1.04), vec3(1.05, 0.99, 0.93), mix(0.5, tw, tile_warm));
+			// (E9b6 r4) now and then an old tile, darker and browner; each tile bedded a few degrees off true
+			float to = wall_hash(vec2(th * 53.0 + 1.3, tw * 17.0));
+			if (to < old_tile) col *= vec3(0.74, 0.69, 0.64) * (0.92 + 0.16 * wall_hash(vec2(to * 71.0, 2.1)));
+			NORMAL_MAP.xy += (vec2(wall_hash(vec2(th * 37.0, 5.3)), wall_hash(vec2(tw * 29.0, 8.9))) - 0.5) * tile_tilt;
+			// dirt run down the slope: narrow streaks (5-15 cm across, along the ridge), broken lengthwise, darker toward the eaves
+			float sd = wall_noise(vec2(v_lz * 7.0, v_rh * 0.45 + v_wall.b * 13.0));
+			float sb = wall_noise(vec2(v_lz * 1.3 + 4.1, v_rh * 1.6));
+			col *= 1.0 - trough_dirt * smoothstep(0.56, 0.74, sd) * smoothstep(0.3, 0.6, sb) * mix(1.0, 0.5, smoothstep(1.0, 4.0, v_rh)) * vec3(1.0, 1.02, 1.08);
+		}
+		// broad value patches over the roofs, each roof a little lighter or darker
+		float vn = 0.6 * wall_noise(v_wp.xz * 0.45 + v_wp.y * 0.3) + 0.4 * wall_noise(v_wp.xz * 0.11 + 5.1);
+		col *= 1.0 + roof_val_noise * (2.0 * vn - 1.0) + roof_house_val * (2.0 * wall_hash(v_wall.ba * 23.0) - 1.0);
+		// soot round each chimney's top, spreading down the roof more than up, patchy
+		float soot = 0.0;
+		for (int i = 0; i < 32; i++) {
+			vec4 ch = chimneys[i];
+			if (ch.w <= 0.0) break;
+			vec3 d = v_wp - ch.xyz;
+			float up = max(d.y + 1.2, 0.0);
+			soot += exp(-(dot(d.xz, d.xz) + up * up * 3.0) / (soot_r * soot_r));
+		}
+		float sn = wall_noise(v_wp.xz * 2.3 + v_wp.y * 1.7);
+		col *= 1.0 - soot_dark * clamp(soot * (0.55 + 0.9 * sn), 0.0, 1.0);
+		if (ax.r < 0.25) col *= 1.0 - stack_soot * COLOR.b;
+		float rough = ax.g;
+		if (cover) {
+			// moss on the slopes facing north, patchy, thickest toward the eaves and on the shaded roofs' lower courses
+			float fn = dot(v_wn.xz, moss_dir);
+			float mn = 0.6 * wall_noise(v_wp.xz * 1.7 + v_wp.y * 1.3) + 0.4 * wall_noise(v_wp.xz * 6.1 - v_wp.y * 2.9);
+			float hm = 0.45 + 0.55 * wall_hash(v_wall.bb * 5.1 + 0.7);
+			float em = mix(1.0, 0.35, smoothstep(0.4, 3.5, v_rh));
+			float m = roof_moss * hm * em * smoothstep(0.05, 0.45, fn) * smoothstep(0.3, 0.7, mn);
+			m += moss_any * hm * smoothstep(0.6, 0.72, mn) * mix(1.0, 0.6, smoothstep(0.4, 3.5, v_rh));
+			m = clamp(m, 0.0, 0.85);
+			col = mix(col, roof_moss_color.rgb * (0.55 + 0.4 * mn), m);   // (E9b6 r4: darker, it read chartreuse in the sun)
+			rough = mix(rough, 1.0, m);
+		}
+		col *= mix(1.0 - roof_occl, 1.0, COLOR.r);
+		ALBEDO = col;
+		ROUGHNESS = rough;
+	}
+#endif
 #ifdef OWN_FOLIAGE
 	// The crown's normals point out from the trunk on both faces of a card (Godot turns a back
 	// face's round), so a crown shades as one mass; light through the needles from behind; each
