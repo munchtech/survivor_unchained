@@ -11,7 +11,7 @@
     "'clear' m the least gap between two stones' rims (about 0.35 m a unit of scale from the middle) (CAUSEWAY_STATS=1 prints each stone).",
     "'stagger' each row starts that share of a step after the one before (0.5: the rows alternate, a zigzag, one path), 'drift_shared' the",
     "share of the drift the whole path's (its rows weave together).",
-    "C03 env fix: 'tilt' [lo, hi] deg each stone leans, 'low' a share standing only 'low_above' [lo, hi] m proud; heights 7-28 cm (and the low ones), sizes 1:2.5, so no ruler row from a camera at the water."
+    "C03 env fix: 'tilt' [lo, hi] deg each stone leans, 'low' a share standing only 'low_above' [lo, hi] m proud (r2: sunk 10-14 cm under, a stone seen through the water: none a pale sliver at the surface, none under the foam's depth); heights 7-28 cm, sizes 1:2.5, so no ruler row from a camera at the water."
   ],
   "causeways": [
     {
@@ -62,8 +62,8 @@
       ],
       "low": 0.1,
       "low_above": [
-        0.01,
-        0.035
+        -0.14,
+        -0.1
       ]
     }
   ]

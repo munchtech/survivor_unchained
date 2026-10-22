@@ -326,6 +326,10 @@ public static class KitLook
         if (FloraSpecies.ByMaterial(s.ResourceName) is { } sp)
         {
             foreach (var (k, v) in sp.Shader) Set(k, v);
+            // (a stone look tried without editing the data: STONE_SET="key=v;key=v", numbers, on the stepping stones)
+            if (sp.Shader.ContainsKey("top_damp") && System.Environment.GetEnvironmentVariable("STONE_SET") is { } ss)
+                foreach (var kv in ss.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                    m.SetShaderParameter(kv.Split('=')[0], float.Parse(kv.Split('=')[1], System.Globalization.CultureInfo.InvariantCulture));
             if (sp.Packed) m.SetShaderParameter("packed", true);
         }
         var rim = new ShaderMaterial { Shader = ownRockRim };

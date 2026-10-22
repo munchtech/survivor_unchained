@@ -383,6 +383,7 @@ public partial class Game
         readonly HashSet<Node3D> bossHidden = new();
         /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
         readonly HashSet<ShaderMaterial> waters = new();
+        readonly Dictionary<ShaderMaterial, float> waterFoam = new();
 
         /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
         void PlaceRigs()
@@ -1299,11 +1300,20 @@ public partial class Game
                     // The river's light, all of it, scaled for this cinematic ("level" 1 as built; 0.4 about
                     // a stop and a third down: the ford's water was the brightest broad thing at night),
                     // faded over "over"; put back as built when the cinematic ends.
+                    // ("foam": the foam's amount, a share of as built, held from this shot on: C03 s8's close stone
+                    // ringed too white beside her face; put back as built when the cinematic ends too)
                     float wto = (float)c.Num("level", 1);
+                    bool hasLevel = c.Has("level");
                     foreach (var wmi in g.scene!.View.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
                     {
                         if (wmi.MaterialOverride is not ShaderMaterial wsm || wsm.Shader?.ResourcePath.EndsWith("water.gdshader") != true) continue;
                         waters.Add(wsm);
+                        if (c.Has("foam"))
+                        {
+                            if (!waterFoam.ContainsKey(wsm)) waterFoam[wsm] = wsm.GetShaderParameter("foam_amt").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("foam_amt") : 1f;
+                            wsm.SetShaderParameter("foam_amt", waterFoam[wsm] * (float)c.Num("foam", 1));
+                        }
+                        if (!hasLevel) continue;
                         float wfrom = wsm.GetShaderParameter("level").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("level") : 1f;
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => wsm.SetShaderParameter("level", Mathf.Lerp(wfrom, wto, (float)k))));
                         else wsm.SetShaderParameter("level", wto);
@@ -1563,7 +1573,9 @@ public partial class Game
             foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
             globes.Clear();
             foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
+            foreach (var (wsm, wf) in waterFoam) wsm.SetShaderParameter("foam_amt", wf);
             waters.Clear();
+            waterFoam.Clear();
             // Her prints stay: they are in the frost whether it played or not.
             // The decals' frost goes as play takes over (under a second): the ground's own frost, by exposure, carries it
             // from here (judge 1, E3 fix 3: the decals were the brightest ground in the hand-back's frame).

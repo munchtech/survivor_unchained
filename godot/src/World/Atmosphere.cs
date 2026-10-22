@@ -22,8 +22,6 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class Atmosphere : Node3D
 {
-    /// <summary>How much the key is the moon (0 by day or dawn, 0.28 a cinematic's near-white moon, 0.9 the ford's blue night): the last atmosphere set (ZoneView's ford piers cast no shadow under it).</summary>
-    public static float MoonKey;
     public readonly Godot.Environment Env;
     public readonly DirectionalLight3D Key;
     readonly ShaderMaterial sky;
@@ -246,7 +244,6 @@ public partial class Atmosphere : Node3D
         float moon = Mathf.Clamp((kc.B - kc.R) * 4f, 0f, 1f);
         float lowSun = Mathf.Clamp((kc.R - kc.B) * 3f, 0f, 1f) * (1f - Mathf.SmoothStep(15f, 35f, (float)p.KeyElevation));
         var kl = kc.SrgbToLinear();
-        MoonKey = moon;
         RenderingServer.GlobalShaderParameterSet("flora_light", new Vector4(moon, lowSun, kl.R / Mathf.Max(kl.G, 1e-3f), kl.B / Mathf.Max(kl.G, 1e-3f)));
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed

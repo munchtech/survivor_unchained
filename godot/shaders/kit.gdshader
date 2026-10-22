@@ -92,6 +92,9 @@ uniform float wet_top = 0.75;
 // (C03 env fix: a stepping stone's top damp at night (any blue in the key: a cinematic's near-white moon too), the river's spray: its albedo down by up to top_damp, patchy (drier
 // spots), its roughness toward wet_rough by half that share, so a moon or lamp catches it in a spot, not a pale even cap)
 uniform float top_damp = 0.0;
+// (C03 env r2: how far the damp top's roughness goes toward wet_rough, a share of the damp (0.5 as r1): a glossy damp crown
+// mirrored the bright sky at a low camera's grazing angle as a pale, flat "ice floe" (c03 s8); the stepping stones 0)
+uniform float damp_gloss = 0.5;
 // (E5c, judge r2) each copy's own value, +-inst_val (its hash), and a share cool_share of them tinted cool_tint (the stepping
 // stones' variety); each stone of a cluster its own colour, its UV (env_rocks.py's pebbles: u its class, slate / ochre /
 // umber, v its value), stone_mix of the class's tint and +-stone_val; a thin algae line at the water's edge (algae: how
@@ -631,7 +634,7 @@ void fragment() {
 		}
 		col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
-		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, 0.5 * damp / max(top_damp, 1e-3));
+		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));
 		SPECULAR = mix(0.35, 0.5, wet);
 		AO = amb_occl;
 		AO_LIGHT_AFFECT = 0.0;
