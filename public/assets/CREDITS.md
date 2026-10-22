@@ -124,6 +124,8 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 
 Each Poly Haven asset is credited to its scanners and artists, by name.
 
+The town walls' rubble (`godot/art/world/house/house_albedo.jpg`, our own trim sheet, recoloured and repainted from it; the photo kept out of the game): castle_wall_varriation, Rob Tuytel, CC0 (raw material record: `survivorsunchained_inputs/raw_materials/house/SOURCE.txt`).
+
 The ground's raw material (`godot/art/ground` is our own, recoloured and rebuilt from these, with the photos kept out of the game; `public/assets/ground`, the web game's, ships them as they are):
 
 - "Sparse Grass" by Amal Kumar (https://polyhaven.com/a/sparse_grass): grass
