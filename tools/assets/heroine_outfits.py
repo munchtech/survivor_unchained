@@ -8743,7 +8743,7 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
 WRAP_GLB = os.environ.get("WRAP_GLB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb"))
 WRAP_DIP = float(os.environ.get("WRAP_DIP", "0.5"))
 WRAP_PRESS = [float(v) for v in os.environ.get("WRAP_PRESS", "0.002,0.0045,0.004").split(",")]
-WRAP_Z = [float(v) for v in os.environ.get("WRAP_Z", "-0.095,0.024").split(",")]
+WRAP_Z = [float(v) for v in os.environ.get("WRAP_Z", "-0.040,0.024").split(",")]
 WRAP_PINCH = [float(v) for v in os.environ.get("WRAP_PINCH", "0.012,0.018,0.025").split(",")]
 WRAP_ON = os.environ.get("WRAP", "1") == "1"
 WRAP_BUMP = float(os.environ.get("WRAP_BUMP", "0.001"))
@@ -8757,8 +8757,26 @@ def _wrap_skin():
     _, _, _, Ug, Fg = _bs_body(G_)
     Q = np.c_[Ug[:, 0], -Ug[:, 2], Ug[:, 1]]
     j_ = cKDTree(P).query(Q)[1]
-    keep = ((ARMW["l"] + ARMW["r"])[j_] < 0.25) & (HAIR[j_] < 0.5)
-    return Q, Fg[keep[Fg].all(1)]
+    # (r2: her arms are taken out of each outline by shape, _wrap_torso; by weight (r1: arm weight 0.25 and over) it
+    # took her back and flanks too, which carry her arms' share at this height, and the band's sides and back fell
+    # inside her, 14-20 mm under her skin at rest)
+    keep = HAIR[j_] < 0.5
+    # (and her final skin's own weights, welded points averaged, as this scene's BONES: the wrap takes the weights of
+    # the skin under it, so her skin can't slide past its sides when her arms swing (r1: 30 mm through at the sides))
+    p_, P_, wid_, _, _ = _bs_body(G_)
+    g_ = G_.g
+    hb_ = [n for n in g_["nodes"] if n.get("name") == "Heroine"][0]
+    names_ = [g_["nodes"][k]["name"] for k in g_["skins"][hb_["skin"]]["joints"]]
+    col_ = np.array([BONES.index(n) if n in BONES else -1 for n in names_])
+    J_ = G_.get(p_["attributes"]["JOINTS_0"]).astype(int)
+    Wt_ = G_.get(p_["attributes"]["WEIGHTS_0"]).astype(float)
+    Wq = np.zeros((len(Q), NB))
+    c_ = col_[J_]
+    for k in range(J_.shape[1]):
+        ok_ = c_[:, k] >= 0
+        np.add.at(Wq, (wid_[ok_], c_[ok_, k]), Wt_[ok_, k])
+    Wq /= np.maximum(Wq.sum(1, keepdims=True), 1e-9)
+    return Q, Fg[keep[Fg].all(1)], Wq
 
 
 def _wrap_segments(Q, F, z):
@@ -8778,6 +8796,26 @@ def _wrap_segments(Q, F, z):
     return np.take_along_axis(pts[good], o[:, :, None], 1)
 
 
+def _wrap_torso(seg, xmax=0.168):
+    """Her torso's outline alone: each loop of seg lying wholly past 12 cm off her middle (an arm) dropped, and where an
+    arm joins her (the armpit) anything past xmax."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    n = len(seg)
+    if n == 0:
+        return seg
+    pts = seg.reshape(-1, 2)
+    pr = cKDTree(pts).query_pairs(1e-6, output_type="ndarray").reshape(-1, 2)
+    i = np.r_[np.arange(n) * 2, pr[:, 0]]
+    j = np.r_[np.arange(n) * 2 + 1, pr[:, 1]]
+    _, lab = connected_components(coo_matrix((np.ones(len(i)), (i, j)), shape=(2 * n, 2 * n)), directed=False)
+    near = np.zeros(lab.max() + 1)
+    np.maximum.at(near, lab, (np.abs(pts[:, 0]) < 0.12).astype(float))
+    lab = lab[0::2]
+    ok = (near[lab] > 0) & (np.abs(seg[:, :, 0]).max(1) < xmax)
+    return seg[ok]
+
+
 def _wrap_rays(seg, c, a):
     """The farthest crossing along each ray from c at angles a (0 in front, -y), of segments seg (0: none)."""
     d = np.stack([np.sin(a), -np.cos(a)], 1)
@@ -8794,16 +8832,21 @@ def _wrap_rays(seg, c, a):
 def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=5000):
     """THE WRAP (above): a fitted leather wrap round her breasts from zb to zt."""
     from scipy.spatial import ConvexHull
-    Q, F = _wrap_skin()
+    from scipy.signal import savgol_filter
+    Q, F, Wq = _wrap_skin()
     a = np.linspace(0, 2 * np.pi, nu, endpoint=False)
     # (its edges round her: gathered at the front centre)
     g = np.exp(-0.5 * (0.15 * np.sin(a) / WRAP_PINCH[2]) ** 2) * (np.cos(a) > 0)
     zb_a, zt_a = zb + WRAP_PINCH[1] * g, zt - WRAP_PINCH[0] * g
     zl = np.arange(zb - 0.004, zt + 0.0045, 0.001)
-    cxy = _wrap_segments(Q, F, (zb + zt) / 2).reshape(-1, 2).mean(0)
+    # (r2: the centre the middle of her outline's bounding box at mid-height; the mean of the outline's points, pulled
+    # forward by her breasts' dense mesh, sat in front of her sternum on the higher band, its front rays met no skin of
+    # hers and the whole front fell back to the hull, a tube bridging her cleavage)
+    _pt = _wrap_torso(_wrap_segments(Q, F, (zb + zt) / 2)).reshape(-1, 2)
+    cxy = (_pt.min(0) + _pt.max(0)) / 2
     Rr, Rh = np.zeros((len(zl), nu)), np.zeros((len(zl), nu))
     for k, z in enumerate(zl):
-        seg = _wrap_segments(Q, F, z)
+        seg = _wrap_torso(_wrap_segments(Q, F, z))
         Rr[k] = _wrap_rays(seg, cxy, a)
         pt = seg.reshape(-1, 2)
         hv = pt[ConvexHull(pt).vertices]
@@ -8817,13 +8860,17 @@ def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=500
     # (her nipples' bumps and the hull's bridges over her arms' gaps taken out: the wrap no higher than WRAP_BUMP over
     # its own shape smoothed ~1 cm round her and ~5 mm up and down, three times; r1's first build carried each
     # nipple's 2-4 mm bump through the leather as a poke and a dark spot by day, and a step at her arm)
+    # (r2: the smoothing a quadratic fit, Savitzky-Golay, ~25 mm up and down and round her: a plain blur of a breast's
+    # convex outline lies inside it, and r1's clamp to it cut the band up to a centimetre into her lower poles (her skin
+    # through it in ragged patches) and dimpled each apex (a soft dark spot by day); a quadratic fit keeps her curve
+    # and still takes out the nipple's narrow bump)
+    Rs0 = Rs.copy()
     for _ in range(3):
-        G_ = Rs.copy()
-        for _ in range(60):
-            G_[1:-1] = (G_[:-2] + 2 * G_[1:-1] + G_[2:]) / 4
-        for _ in range(16):
-            G_ = (np.roll(G_, 1, 1) + 2 * G_ + np.roll(G_, -1, 1)) / 4
+        G_ = savgol_filter(Rs, 25, 2, axis=0, mode="interp")
+        G_ = savgol_filter(G_, 7, 2, axis=1, mode="wrap")
         Rs = np.minimum(Rs, G_ + WRAP_BUMP)
+    cut = (Rs0 - Rs)[:, np.cos(a) > 0.3]
+    print("WRAP bump clamp: cut max %.1f mm, p99 %.1f mm" % (1000 * cut.max(), 1000 * np.percentile(cut, 99)))
     for _ in range(10):
         Rs[1:-1] = (Rs[:-2] + 2 * Rs[1:-1] + Rs[2:]) / 4
     for _ in range(6):
@@ -8842,8 +8889,11 @@ def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=500
     if (nor[:, :2] * (pos[:, :2] - cxy)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
         nor = -nor
-    _, j = cKDTree(P).query(pos)
-    at = np.hstack([nor, W[j].astype(float), edge.reshape(-1, 1)])
+    used = np.unique(F)
+    dq, jq = cKDTree(Q[used]).query(pos, k=4)
+    iw = 1.0 / np.maximum(dq, 1e-4)
+    wq = (Wq[used[jq]] * iw[:, :, None]).sum(1) / iw.sum(1)[:, None]
+    at = np.hstack([nor, wq, edge.reshape(-1, 1)])
     UNSTEADIED.add(name)
     beads = []
     if trim:
