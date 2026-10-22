@@ -36,11 +36,12 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
      an armpit hollow behind it) and raise_crease_l/r (the crease under each breast half filled, its lower edge's
      shear smoothed), authored on her posed shape at full raise; HerRaise drives them per side; the arcanist, ranger
      and reaver tops and pauldrons carry the same morphs (they follow her skin) (armor 16 R1)  [axilla_fold; outfit's axilla_fold]
-  7c. shoulder_psd_post: her shoulders and armpits as an arm rises, pose-space correctives shoulder_{abd110,abd140,
-     flex110,flex140,up175,abd140s,flex140s,up175s}_l/r (delta-mush targets at sample raises, the s ones with her
-     clavicle shrugged 30 deg; an armpit hollow; the shoulder top filled round), HerRaise drives them from each upper
-     arm's direction in her torso frame (Play/ShoulderPsd); every outfit's tops, pauldrons, cloak and collar carry
-     them (armor 17 C1)                                                  [shoulder_psd; outfit's shoulder_psd]
+  7c. shoulder_psd_post: her shoulders and armpits as an arm rises, pose-space correctives shoulder_{abd117,abd140,
+     flex117,flex140,up175,abd140s,flex140s,up175s}_l/r, authored with HerShrug's clavicle lift (helpers.shrug; the s
+     ones 30 deg past it): delta-mush targets, then sculpted (a deltoid cap, the pec and lat folds as webs over the
+     pit's crease, the hollow between, folded faces untangled) (armor 17 C1, C2); HerRaise drives them from each upper
+     arm's direction in her torso frame (Play/ShoulderPsd); every outfit's tops, cloak and collar carry them, the
+     pauldrons the whole of the shoulder's move  [shoulder_psd; outfit's shoulder_psd, shoulder_psd_pauldrons]
   8. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]

@@ -21,15 +21,15 @@ public class ShoulderPsdTests
     [Fact]
     public void SamplesAreWhole()
     {
-        Assert.Equal(1f, W(110f, 0f)[0], 0.00001f); Assert.Equal(1f, W(140f, 0f)[1], 0.00001f);
-        Assert.Equal(1f, W(110f, 90f)[2], 0.00001f); Assert.Equal(1f, W(140f, 90f)[3], 0.00001f);
+        Assert.Equal(1f, W(117f, 0f)[0], 0.00001f); Assert.Equal(1f, W(140f, 0f)[1], 0.00001f);
+        Assert.Equal(1f, W(117f, 90f)[2], 0.00001f); Assert.Equal(1f, W(140f, 90f)[3], 0.00001f);
         Assert.Equal(1f, W(175f, 30f)[4], 0.00001f); Assert.Equal(1f, W(180f, 0f)[4], 0.00001f);
     }
 
     [Fact]
     public void BetweenSamplesSumsToOne()
     {
-        foreach (var a in new[] { 115f, 125f, 139f, 150f, 170f })
+        foreach (var a in new[] { 118f, 125f, 139f, 150f, 170f })
             foreach (var az in new[] { -40f, 0f, 30f, 60f, 90f, 130f })
             foreach (var rise in new[] { -5f, 0f, 12f, 45f })
             {
@@ -42,10 +42,13 @@ public class ShoulderPsdTests
     [Fact]
     public void ShrugHandsOverToTwins()
     {
-        Assert.Equal(1f, W(140f, 0f, 30f)[5], 0.00001f); Assert.Equal(0f, W(140f, 0f, 30f)[1], 0.00001f);
-        Assert.Equal(1f, W(175f, 0f, 60f)[7], 0.00001f);
-        Assert.Equal(0.5f, W(175f, 0f, 15f)[4], 0.00001f);
-        Assert.Equal(1f, W(110f, 0f, 30f)[0], 0.00001f);   // (A 110 has no twin)
+        // (the twins are read past HerShrug's own lift: ClavicleLift.Target)
+        float t140 = ClavicleLift.Target(140f), t175 = ClavicleLift.Target(175f);
+        Assert.Equal(1f, W(140f, 0f, t140 + 30f)[5], 0.00001f); Assert.Equal(0f, W(140f, 0f, t140 + 30f)[1], 0.00001f);
+        Assert.Equal(1f, W(140f, 0f, t140)[1], 0.00001f);
+        Assert.Equal(1f, W(175f, 0f, t175 + 60f)[7], 0.00001f);
+        Assert.Equal(0.5f, W(175f, 0f, t175 + 15f)[4], 0.00001f);
+        Assert.Equal(1f, W(117f, 0f, 30f)[0], 0.00001f);   // (A 117 has no twin)
         Assert.All(W(60f, 0f, 30f), v => Assert.Equal(0f, v));
     }
 

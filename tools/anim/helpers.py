@@ -34,7 +34,7 @@ import math
 
 import numpy as np
 
-from rig import REPO, Skeleton, qaxis, qinv, qmatrix, qmul, qnorm, qrot, qslerp
+from rig import REPO, Skeleton, qaxis, qbetween, qinv, qmatrix, qmul, qnorm, qrot, qslerp
 
 SPEC_FILE = REPO / "godot" / "art" / "people" / "rig_helpers.json"
 
@@ -466,15 +466,119 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
     return rot
 
 
+# ------------------------------------------------------------ clavicle lift --
+# Her shoulder girdle as an arm rises above level (armor 17 C2): a real clavicle and scapula carry about a third of the
+# raise past 90 degrees. Many clips leave her clavicle where it rests, so the raised shoulder sat no higher than the
+# resting one and the arm looked plugged into her chest. Per side: A = the upper arm's angle from her torso's down axis
+# (pelvis to neck_01; 90 level, 180 overhead); the clavicle's wanted rise above its rest is SHRUG_K x (A - 90) (eased in
+# over the first SHRUG_EASE degrees: none at and below level); the clip's own rise counts (the larger wins, never a sum);
+# the outer end rolls forward SHRUG_ROLL of the added rise. The hand stays where the clip puts it (two-bone re-aim of the
+# upper and lower arm, the elbow kept in the clip's bend plane; its world turn kept); where the lifted shoulder can't
+# reach the hand the lift is cut back until it can. The game's twin: Play/ClavicleLift.cs, run by HerShrug before
+# HerRaise. SHRUG_OFF=1 (env) turns it off (the game: --shrug-off).
+SHRUG_K, SHRUG_EASE, SHRUG_ROLL, SHRUG_REACH = 0.36, 8.0, 0.25, 0.999
+
+
+def shrug_target(A):
+    """The clavicle's wanted rise (degrees above rest) for an upper arm at A degrees."""
+    x = A - 90.0
+    if x <= 0:
+        return 0.0
+    g = x * x / (2 * SHRUG_EASE) if x < SHRUG_EASE else x - SHRUG_EASE / 2
+    return SHRUG_K * g
+
+
+def _torso(grot, gpos, I):
+    down = gpos[I["pelvis"]] - gpos[I["neck_01"]]
+    down = down / np.linalg.norm(down)
+    left = qrot(grot[I["spine_03"]], [1.0, 0, 0])
+    left = left - (left @ down) * down
+    left = left / np.linalg.norm(left)
+    return down, left, np.cross(down, left)
+
+
+def _elev(v, down):
+    return math.degrees(math.asin(float(np.clip(-(v @ down) / np.linalg.norm(v), -1, 1))))
+
+
+def shrug(sk: Skeleton, rot, report=None):
+    """Her clavicle lift (the block above) on local rotations rot [J, 4], changed in place. `report` (a dict), if
+    given, gets per side (A, rise before, added lift, hand move m, elbow move m)."""
+    import os
+    I = sk.index
+    if os.environ.get("SHRUG_OFF") or "clavicle_l" not in I or "pelvis" not in I:
+        return rot
+    rest = getattr(sk, "_shrug_rest", None)
+    if rest is None:
+        g0, p0 = sk.fk(sk.rest_rot[None])
+        d0 = _torso(g0[0], p0[0], I)[0]
+        rest = {s: _elev(p0[0][I["upperarm_" + s]] - p0[0][I["clavicle_" + s]], d0) for s in "lr"}
+        sk._shrug_rest = rest
+    grot, gpos = sk.fk(rot[None])
+    grot, gpos = grot[0], gpos[0]
+    down, left, fwd = _torso(grot, gpos, I)
+    for s in "lr":
+        c, u, lo, h = (I[n + "_" + s] for n in ("clavicle", "upperarm", "lowerarm", "hand"))
+        lat = left if s == "l" else -left
+        Pc, S, E, H = gpos[c], gpos[u], gpos[lo], gpos[h]
+        A = math.degrees(math.acos(float(np.clip((E - S) / np.linalg.norm(E - S) @ down, -1, 1))))
+        rise = _elev(S - Pc, down) - rest[s]
+        t = shrug_target(A)
+        d = min(t, max(0.0, t - rise))   # (none at and below level, even with the clip's clavicle dropped)
+        if d < 1e-4:
+            if report is not None:
+                report[s] = (A, rise, 0.0, 0.0, 0.0)
+            continue
+        up_ax, roll_ax = np.cross(down, lat), np.cross(lat, fwd)   # outer end up; outer end forward
+        L1, L2 = np.linalg.norm(E - S), np.linalg.norm(H - E)
+
+        def lifted(k):
+            q = qmul(qaxis(roll_ax, SHRUG_ROLL * k), qaxis(up_ax, k))
+            return q, Pc + qrot(q, S - Pc)
+        q, S2 = lifted(d)
+        if np.linalg.norm(H - S2) > SHRUG_REACH * (L1 + L2):        # cut back until the hand is in reach
+            lo_k, hi_k = 0.0, d
+            for _ in range(20):
+                m = 0.5 * (lo_k + hi_k)
+                if np.linalg.norm(H - lifted(m)[1]) > SHRUG_REACH * (L1 + L2):
+                    hi_k = m
+                else:
+                    lo_k = m
+            d = lo_k
+            q, S2 = lifted(d)
+        Dv = H - S2
+        D = np.linalg.norm(Dv)
+        ax = Dv / D
+        pole = (E - S) - ((E - S) @ ax) * ax                      # the clip's bend plane
+        if np.linalg.norm(pole) < 1e-6:
+            pole = qrot(q, E - S) - (qrot(q, E - S) @ ax) * ax
+        pole = pole / max(np.linalg.norm(pole), 1e-12)
+        ca = float(np.clip((L1 * L1 + D * D - L2 * L2) / (2 * L1 * D), -1, 1))
+        E2 = S2 + L1 * (ca * ax + math.sqrt(1 - ca * ca) * pole)
+        Cg = qmul(q, grot[c])
+        Ug = qnorm(qmul(qbetween(E - S, E2 - S2), grot[u]))
+        Lg = qnorm(qmul(qbetween(H - E, H - E2), grot[lo]))
+        rot[c] = qnorm(qmul(qinv(grot[sk.parent[c]]), Cg))
+        rot[u] = qnorm(qmul(qinv(Cg), Ug))
+        rot[lo] = qnorm(qmul(qinv(Ug), Lg))
+        rot[h] = qnorm(qmul(qinv(Lg), grot[h]))
+        if report is not None:
+            g2, p2 = sk.fk(rot[None])
+            report[s] = (A, rise, d, float(np.linalg.norm(p2[0][h] - H)), float(np.linalg.norm(p2[0][lo] - E)))
+    return rot
+
+
 def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
     """Her helpers posed from the pose (local rotations [J, 4], changed in
     place): the forearm's roll handed to the hand, the twists shared out, the
     shares half bent and swollen across the bend (`scale` [J, 3], if given,
     takes their stretch, and `shift` [J, 3] the move in the bone's own frame
-    that holds its pivot still). As HerJoints.cs does it, after every other layer.
+    that holds its pivot still). As HerJoints.cs does it, after every other layer;
+    her clavicle lift first (shrug, as HerShrug does before HerRaise).
     `state` and `dt`: the panels' fall from frame to frame (drive_panels)."""
     I = sk.index
     ident = np.array([0, 0, 0, 1.0])
+    shrug(sk, rot)   # her clavicle lift first (HerShrug runs before every other layer of hers)
     for s in "lr":
         la, h = I.get(f"lowerarm_{s}"), I.get(f"hand_{s}")
         if f"lowerarm_twist_01_{s}" not in I:

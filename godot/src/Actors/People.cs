@@ -360,6 +360,8 @@ public static class People
         skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
+        // Her clavicle lift as an arm rises above level (the hands kept), before the shapes and twists read the arm.
+        skel.AddChild(new HerShrug());
         // The pectoral's pull on her breasts as an arm rises, before the springs follow it.
         skel.AddChild(new HerRaise());
         skel.AddChild(new HerJiggle());

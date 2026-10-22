@@ -4,7 +4,7 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>
 /// Her shoulder and armpit pose-space correctives (tools/assets/shoulder_psd_post.py, armor 17 C1): morphs
-/// authored at sample raises of one upper arm (A 110 and 140 sideways and forward, 175 overhead), weighted here
+/// authored at sample raises of one upper arm (A 117 and 140 sideways and forward, 175 overhead; C2: 117, where the close-range clips live, was 110), weighted here
 /// from the arm's direction in her torso frame. A is the angle from her torso's down axis (neck_01 to pelvis):
 /// 90 level with the shoulder, 180 overhead; the azimuth is 0 out to her side, 90 forward, negative back.
 /// Nothing up to <see cref="EaseFrom"/> (rest and arms-down poses are untouched), eased in to the first samples,
@@ -17,28 +17,32 @@ public static class ShoulderPsd
     /// <summary>The shapes (each with _l or _r), in the order <see cref="Weights"/> fills.</summary>
     public static readonly string[] Shapes =
     {
-        "shoulder_abd110", "shoulder_abd140", "shoulder_flex110", "shoulder_flex140", "shoulder_up175",
+        "shoulder_abd117", "shoulder_abd140", "shoulder_flex117", "shoulder_flex140", "shoulder_up175",
         "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s",
     };
 
-    /// <summary>Her clavicle's rise (degrees above its rest) at which the 140 and 175 samples are wholly their
-    /// shrugged twins (authored with the clavicle raised this much, as the clips raise it overhead).</summary>
+    /// <summary>The first samples' raise (A degrees).</summary>
+    public const float First = 117f;
+
+    /// <summary>Her clavicle's rise past <see cref="ClavicleLift.Target"/> (degrees) at which the 140 and 175 samples are
+    /// wholly their shrugged twins (the plain samples are authored with the clavicle lift HerShrug gives, the twins
+    /// this much higher, as leap raises it).</summary>
     public const float Shrug = 30f;
 
     static float Ramp(float x, float a, float b) => Math.Clamp((x - a) / (b - a), 0f, 1f);
 
     /// <summary>The shapes' weights for an upper arm at (a, azimuth) degrees with its clavicle risen
-    /// <paramref name="rise"/> degrees above rest, into <paramref name="w"/> (Shapes' order).</summary>
+    /// <paramref name="rise"/> degrees above rest (HerShrug's lift in), into <paramref name="w"/> (Shapes' order).</summary>
     public static void Weights(float a, float azimuth, float rise, Span<float> w)
     {
-        float e = Ramp(a, EaseFrom, 110f);
+        float e = Ramp(a, EaseFrom, First);
         e = e * e * (3 - 2 * e);
-        float t110 = e * (1 - Ramp(a, 110f, 140f));
-        float t140 = Ramp(a, 110f, 140f) * (1 - Ramp(a, 140f, 175f));
+        float t110 = e * (1 - Ramp(a, First, 140f));
+        float t140 = Ramp(a, First, 140f) * (1 - Ramp(a, 140f, 175f));
         float t175 = Ramp(a, 140f, 175f);
         float s = MathF.Sin(Math.Clamp(azimuth, 0f, 90f) * MathF.PI / 180f);
         float wf = s * s, wa = 1 - wf;
-        float r = Math.Clamp(rise / Shrug, 0f, 1f);
+        float r = Math.Clamp((rise - ClavicleLift.Target(a)) / Shrug, 0f, 1f);
         w[0] = wa * t110; w[1] = wa * t140 * (1 - r); w[2] = wf * t110; w[3] = wf * t140 * (1 - r); w[4] = t175 * (1 - r);
         w[5] = wa * t140 * r; w[6] = wf * t140 * r; w[7] = t175 * r;
     }
