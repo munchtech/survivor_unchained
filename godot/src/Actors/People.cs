@@ -1595,6 +1595,11 @@ public static class People
         m.SetShaderParameter("shade_by_soft", mode == "soft" ? 1f : 0f);
         m.SetShaderParameter("shade_from", gate.X);
         m.SetShaderParameter("shade_to", gate.Y);
+        // (her jaw's underside keeps most of that richness: at the shader's 0.75 the shade under her jaw at the Look,
+        // turned 40, was a grey band (Oklab C 2.1-3.3 at L 34-37, hue 36-46, against her lit neck's 6.2 at hue 55),
+        // read as stubble (judge J1, face 36); at 0.15 C 5.0-5.8, hue 50. Turned 80 (the orange wedge the 0.75 was for)
+        // C 6.0 at L 38 against her lit neck's 4.8. The play camera unchanged (mean 0.05 of 255). --shade-thin X: another.)
+        m.SetShaderParameter("shade_thin", (float)SurvivorUnchained.Args.Num("shade-thin", 0.15f));
     }
 
     static Vector3 HerAmbient(Look look)
