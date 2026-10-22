@@ -1,0 +1,240 @@
+{
+ "_doc": "The town wall kit presets (env_house.py, its docstring): kind wall|quoin|post|shutters|pier (a town wall's mid-run joint: reach, top, foot); wall stone|plaster|base; pattern plain|posts|frame (E9b6: a stud each side of the rail)|x|k|k2; opening wide_round|thin_round|wide_flat|door_round|door_flat; seed; off [u, v] metres into the sheet (else from the seed).",
+ "presets": {
+  "stone_a": {
+   "kind": "wall",
+   "wall": "stone",
+   "seed": 11,
+   "off": [
+    0.0,
+    0.0
+   ]
+  },
+  "stone_b": {
+   "kind": "wall",
+   "wall": "stone",
+   "seed": 12,
+   "off": [
+    1.3,
+    0.9
+   ]
+  },
+  "stone_c": {
+   "kind": "wall",
+   "wall": "stone",
+   "seed": 13,
+   "off": [
+    2.6,
+    0.4
+   ]
+  },
+  "plaster_plain_a": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "plain",
+   "seed": 21,
+   "off": [
+    0.2,
+    0.3
+   ]
+  },
+  "plaster_plain_b": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "plain",
+   "seed": 22,
+   "off": [
+    2.1,
+    1.1
+   ]
+  },
+  "plaster_frame_a": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "frame",
+   "seed": 23,
+   "off": [
+    1.1,
+    0.6
+   ]
+  },
+  "plaster_frame_b": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "frame",
+   "seed": 24,
+   "off": [
+    3.0,
+    0.2
+   ]
+  },
+  "plaster_x": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "x",
+   "seed": 23
+  },
+  "plaster_k": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "k",
+   "seed": 24
+  },
+  "plaster_k2": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "k2",
+   "seed": 25
+  },
+  "base_plain": {
+   "kind": "wall",
+   "wall": "base",
+   "pattern": "plain",
+   "seed": 31
+  },
+  "base_frame": {
+   "kind": "wall",
+   "wall": "base",
+   "pattern": "frame",
+   "seed": 33
+  },
+  "base_x": {
+   "kind": "wall",
+   "wall": "base",
+   "pattern": "x",
+   "seed": 32
+  },
+  "base_k": {
+   "kind": "wall",
+   "wall": "base",
+   "pattern": "k",
+   "seed": 33
+  },
+  "stone_win_wide_round": {
+   "kind": "wall",
+   "wall": "stone",
+   "opening": "wide_round",
+   "seed": 52
+  },
+  "plaster_win_wide_round": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "plain",
+   "opening": "wide_round",
+   "seed": 53
+  },
+  "plaster_win_wide_round_framed": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "x",
+   "opening": "wide_round",
+   "seed": 54
+  },
+  "shutters_wide_round": {
+   "kind": "shutters",
+   "opening": "wide_round",
+   "seed": 75
+  },
+  "stone_win_thin_round": {
+   "kind": "wall",
+   "wall": "stone",
+   "opening": "thin_round",
+   "seed": 56
+  },
+  "plaster_win_thin_round": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "plain",
+   "opening": "thin_round",
+   "seed": 57
+  },
+  "plaster_win_thin_round_framed": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "x",
+   "opening": "thin_round",
+   "seed": 58
+  },
+  "shutters_thin_round": {
+   "kind": "shutters",
+   "opening": "thin_round",
+   "seed": 79
+  },
+  "stone_win_wide_flat": {
+   "kind": "wall",
+   "wall": "stone",
+   "opening": "wide_flat",
+   "seed": 60
+  },
+  "plaster_win_wide_flat": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "plain",
+   "opening": "wide_flat",
+   "seed": 61
+  },
+  "plaster_win_wide_flat_framed": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "x",
+   "opening": "wide_flat",
+   "seed": 62
+  },
+  "shutters_wide_flat": {
+   "kind": "shutters",
+   "opening": "wide_flat",
+   "seed": 83
+  },
+  "stone_door_round": {
+   "kind": "wall",
+   "wall": "stone",
+   "opening": "door_round",
+   "seed": 94
+  },
+  "stone_door_flat": {
+   "kind": "wall",
+   "wall": "stone",
+   "opening": "door_flat",
+   "seed": 95
+  },
+  "plaster_door_round": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "plain",
+   "opening": "door_round",
+   "seed": 81
+  },
+  "plaster_door_round_framed": {
+   "kind": "wall",
+   "wall": "plaster",
+   "pattern": "x",
+   "opening": "door_round",
+   "seed": 82
+  },
+  "quoin_a": {
+   "kind": "quoin",
+   "seed": 91
+  },
+  "quoin_b": {
+   "kind": "quoin",
+   "seed": 92
+  },
+  "post": {
+   "kind": "post",
+   "seed": 93
+  },
+  "pier_lo": {
+   "kind": "pier",
+   "seed": 95,
+   "reach": 0.42,
+   "top": 0.3
+  },
+  "pier_hi": {
+   "kind": "pier",
+   "seed": 97,
+   "reach": 0.3,
+   "top": 0.1,
+   "foot": false
+  }
+ }
+}

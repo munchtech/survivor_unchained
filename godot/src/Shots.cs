@@ -143,6 +143,8 @@ public partial class Shots : Node
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}");
+        // (E9b4: the camera, so a frame's pixel can be traced back to the world)
+        if (GetViewport().GetCamera3D() is { } cam3) GD.Print($"camera {cam3.GlobalTransform} fov {cam3.Fov}");
         if (Args.Has("mark-bones")) PrintMarks();
         // --navcheck: the open screen's focus routes walked as the picture is taken.
         if (Args.Has("navcheck")) Audit(GetTree().Root);

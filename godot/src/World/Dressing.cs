@@ -621,8 +621,12 @@ public static class Dressing
         // Our own props where the zone swaps a kit piece for one (OwnProps: its props_own.json "pieces").
         var own = OwnProps.For(z.Id);
         var ours = new List<(string Id, string Preset, Transform3D At)>();
-        foreach (var (id, at) in z.Props)
+        // Our own town walls where the zone has them (OwnWalls: props_own.json "walls").
+        var walls = OwnWalls.For(z);
+        for (int pi = 0; pi < z.Props.Count; pi++)
         {
+            var (id, at) = z.Props[pi];
+            if (walls != null && walls.Take(id, pi < z.PropHouse.Count ? z.PropHouse[pi] : -1, at, cell)) continue;
             if (own != null && OwnProps.Swap(own, id, at.Origin) is string preset) { ours.Add((id, preset, at)); continue; }
             var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
@@ -647,6 +651,7 @@ public static class Dressing
                 root.AddChild(mmi);
             }
         }
+        walls?.Build(root);
         foreach (var (id, preset, at) in ours)
         {
             int slash = id.IndexOf('/');
