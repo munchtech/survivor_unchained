@@ -16,12 +16,12 @@ uniform vec3 shine_colour : source_color = vec3(1.0, 0.93, 0.86);
 // (face 38 r2, the judge: one broken band, two lobes along the strand: a primary tinted 40% by the hair, shifted
 // toward the root, tight; a secondary albedo-tinted, toward the tip, broad; each lock's shift jittered +-0.05)
 uniform float shine = 0.5;                 // (face 38: 0.1, r1 0.25, r3 0.2; r4 the judge: no band showed)
-uniform float shine_width = 50.0;         // (face 38 r2: 140, r3 80)
-uniform float shine2 = 0.3;                // (face 38 r2: 0.35)
+uniform float shine_width = 110.0;        // (face 38 r2: 140, r3 80, r4 50; r5 the judge: a narrow band)
+uniform float shine2 = 0.12;               // (face 38 r2: 0.35, r4 0.3; r5 a weak deep-copper secondary)
 uniform float shine2_width = 18.0;        // (face 38 r2: 40)
 uniform float shift = -0.05;               // (face 38 r2: 0.06)
 uniform float shift2 = 0.08;               // (face 38 r2: -0.1)
-uniform float shine_tint = 0.2;            // (face 38 r2: the primary's share of the hair's own hue)
+uniform float shine_tint = 0.55;           // (face 38 r2: the primary's share of the hair's own hue)
 uniform float lock_jitter = 0.02;          // (face 38 r2: each lock's shift, by its card number)
 uniform float strand_jitter = 0.1;         // (face 38 r2: 0.5, strand to strand, which scattered it into grains)
 uniform float through = 0.5;
@@ -175,6 +175,9 @@ void fragment() {
 	sparkle = t.g;
 	lock_n = COLOR.g;
 	fibre = t.r * (cap ? 0.35 : 1.0);                            // (the cap's under the hair: little highlight)
+	// (face 38 r5: blue 0.45-0.55 on a strand card is the matte mark (braid sideburns, baby hairs, edge wisps): base colour, no shine)
+	float matte = (!cap && !tie) ? step(0.45, COLOR.b) * step(COLOR.b, 0.55) : 0.0;
+	fibre *= 1.0 - matte;
 	float cover = 1.0;
 	if (tie) {
 		ALBEDO = vec3(0.055, 0.035, 0.024);
@@ -193,7 +196,7 @@ void fragment() {
 		// (darker only well under the cards (fade 0.85 to 1): from 0.4 it drew a dark band just over her
 		// hairline, where the cards do not yet cover; and thinned strand by strand over most of its fade, its
 		// cover about 0.3 to 0.9 over 7 to 10 mm, not all in its first 3)
-		ALBEDO = tint * tr * mix(1.0, 0.5, smoothstep(0.85, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.78, 1.0, depth), rope);   // (face 38 r2: 0.55, a dark net round the braid's diamonds)
+		ALBEDO = tint * tr * mix(1.0, 0.75, smoothstep(0.85, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.78, 1.0, depth), rope);   // (face 38 r2: 0.55, a dark net round the braid's diamonds)
 		cover = max(fade * fade, t.a * smoothstep(0.0, 0.8, fade + (t.g - 0.5) * 0.35));
 		if (contact > 0.001) {                                    // (a dark hair-tinted shade on her skin, not strands)
 			ALBEDO = mix(ALBEDO, tint * 0.4, 1.0 - smoothstep(0.0, 0.3, fade));
@@ -206,7 +209,7 @@ void fragment() {
 		// band, and an outer card at 1.8 times an inner one's light a block)
 		ALBEDO = tint * t.r * mix(1.0 - roots * (1.0 - depth), 1.0, smoothstep(0.0, 0.1, along)) * mix(0.75, 1.0, depth);
 		// (the baby hairs at her hairline (their blue): a lighter copper, sunlit fine hair, not grey strokes)
-		ALBEDO = mix(ALBEDO, light * mix(0.8, 1.0, t.r), COLOR.b * 0.35);   // (face 38 r2: 0.7, a pale wisp)
+		ALBEDO = mix(ALBEDO, light * mix(0.8, 1.0, t.r), COLOR.b * 0.35 * (1.0 - matte));   // (face 38 r2: 0.7, a pale wisp)
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
 		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
@@ -268,5 +271,5 @@ void light() {
 	float s1 = along_strand(normalize(strand + NORMAL * (shift + jitter)), h, shine_width);
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);
-	SPECULAR_LIGHT += lc * seen * fibre * fibre * (shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint) * shine * s1 + ALBEDO * shine2 * s2 * (0.4 + 1.2 * sparkle));
+	SPECULAR_LIGHT += lc * seen * fibre * fibre * (shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint) * shine * s1 + ALBEDO * vec3(1.0, 0.55, 0.35) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
 }
