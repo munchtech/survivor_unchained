@@ -2018,19 +2018,18 @@ def crown_clusters(T, comb, n_want=CROWN_CLUSTERS):
     r_ = rise(pts)
     th = np.degrees(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1])))
     far = np.linalg.norm(pts - T, axis=1) > 0.07
-    dy = pts[:, 1] - CENTRE[1]                                # (over her crown, not behind it: -4 to +3 cm about her skull's middle)
-    far &= (dy > -0.04) & (dy < 0.03)
-    top = np.nonzero(far & (nrm[:, 2] > 0.8))[0]           # (two on top, her outline from the front and the close-up)
-    side = np.nonzero(far & (nrm[:, 2] > 0.45) & (nrm[:, 2] < 0.8) & (np.abs(pts[:, 0]) > 0.03))[0]   # (two up her sides, her outline turned)
+    dy = pts[:, 1] - CENTRE[1]                                # (front to back about her skull's middle)
+    # (rooted 0.5-3.5 cm before the top of her crown, where her scalp still climbs: each, leaving back and up
+    # at 15-30 degrees off it, rises over the top and crosses her outline as the cameras (the close-up's above
+    # her eyes, the Look's level) see it; rooted on or behind the top they ran down its far side, hidden.
+    # None within 2.2 cm of another, across her.)
+    ridge = np.nonzero(far & (nrm[:, 2] > 0.8) & (dy > -0.035) & (dy < -0.005))[0]
     pick = []
-    for group, k_ in ((top, 2), (side, 2)):
-        got = 0
-        for j in rng.permutation(group):                     # (none within 3 cm of another; the side two on her two sides)
-            if got >= k_:
-                break
-            if all(np.linalg.norm(pts[j] - pts[q]) > 0.03 for q in pick) and not (group is side and got == 1 and np.sign(pts[j, 0]) == np.sign(pts[pick[-1], 0])):
-                pick.append(j)
-                got += 1
+    for j in rng.permutation(ridge):
+        if len(pick) >= n_want:
+            break
+        if all(np.linalg.norm(pts[j] - pts[q]) > 0.022 for q in pick):
+            pick.append(j)
     pick = pick[:n_want]
     pick = np.array(pick)
     m = len(pick)
@@ -2050,13 +2049,21 @@ def crown_clusters(T, comb, n_want=CROWN_CLUSTERS):
     wd = wi * np.cos(fan)[:, None] + si * np.sin(fan)[:, None]
     dd = wd * np.cos(a)[:, None] + ni * np.sin(a)[:, None]
     L = rng.uniform(0.02, 0.03, m)[ci] * rng.uniform(0.85, 1.0, n)
+    if os.environ.get("DBG_CC_BIG") == "1":                  # (test only: where they land on screen)
+        L = L * 3
     root = p0[ci] + ni * (0.0045 + np.interp(r_[pick][ci], [0.06, 0.09, 0.12], [0.0, 0.003, 0.004]))[:, None]         + si * rng.uniform(-0.0008, 0.0008, n)[:, None]
     P = root[:, None] + dd[:, None] * (L[:, None] * np.linspace(0, 1, points))[..., None]
-    c = cards(P, rng.uniform(0.0005, 0.0007, n), [0, 1, 2], 0.006, narrow=0.7, floor=0.002)
-    c["alpha"] = np.repeat(rng.uniform(0.7, 0.85, n), 3 * points)
+    c = cards(P, rng.uniform(0.0007, 0.0009, n) * (4 if os.environ.get("DBG_CC_BIG") == "1" else 1), [0, 1, 2], 0.006, narrow=0.7, floor=0.002)
+    fin = np.clip(c["arc"] / 0.003, 0, 1)                    # (in over its first 3 mm, out over its last 8: most of it seen)
+    out_ = np.clip((c["length"] - c["arc"]) / 0.008, 0, 1)
+    c["alpha"] = np.repeat(rng.uniform(0.8, 0.95, n), 3 * points) * fin * fin * (3 - 2 * fin) * (0.05 + 0.95 * out_ * out_ * (3 - 2 * out_))
+    c["blunt"] = True
     c["mat"] = 3
-    c["tip_fade"] = (0.5, 0.012)
     c["lit"] = True
+    if os.environ.get("DBG_CC_BIG") == "1":
+        for i in range(n):
+            print("    cc %d: root %s tip %s, out %.1f mm, nrm %s" % (ci[i], np.round((P[i, 0] - CENTRE) * 1000), np.round((P[i, -1] - CENTRE) * 1000),
+                  (np.linalg.norm(P[i, -1] - CENTRE) - np.linalg.norm(P[i, 0] - CENTRE)) * 1000, np.round(ni[i], 2)))
     print("  crown clusters: %d (%d hairs, %d-%d each), 20-30 mm, 15-30 deg off; roots rise %s mm, at x y z mm from her skull's middle %s" % (
         m, n, per.min(), per.max(), " ".join("%.0f" % (v * 1000) for v in r_[pick]), " ".join("(%.0f %.0f %.0f)" % tuple((pts[q] - CENTRE) * 1000) for q in pick)))
     return [c]
