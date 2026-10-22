@@ -19,7 +19,7 @@ public partial class WardenView : Node3D, IBossView
 {
     readonly PersonView view;
     readonly OmniLight3D light;
-    readonly Node3D lamp, flame, grip;
+    readonly Node3D lamp, grip;
     readonly List<StandardMaterial3D> eyes = new(), skin = new();
     string pose = "";
     double heading, time, flash;
@@ -33,21 +33,8 @@ public partial class WardenView : Node3D, IBossView
     public float HaloLevel { get => haloLevel; set { haloLevel = value; Tint(); } }
     float flameLevel = 1, haloLevel = 1;
     Color? flameColor;
-    StandardMaterial3D? coreMat, haloMat;
-    static readonly Color CoreBase = new(1.4f, 2.4f, 3.2f), HaloBase = new(0.55f, 0.8f, 1f, 0.6f);
-    void Tint()
-    {
-        if (coreMat == null || haloMat == null) return;
-        var c = CoreBase;
-        if (flameColor is Color fc && Mathf.Max(fc.R, Mathf.Max(fc.G, fc.B)) > 1e-4f)
-        {
-            var l = fc.SrgbToLinear();
-            c = new Color(l.R, l.G, l.B) * (3.2f / Mathf.Max(l.R, Mathf.Max(l.G, l.B)));
-        }
-        coreMat.AlbedoColor = new Color(c.R * flameLevel, c.G * flameLevel, c.B * flameLevel);
-        var h = flameColor is Color hc ? new Color(hc.R, hc.G, hc.B, HaloBase.A) : HaloBase;
-        haloMat.AlbedoColor = new Color(h.R, h.G, h.B, h.A * haloLevel);
-    }
+    LampFire? fire;
+    void Tint() => fire?.Look(flameColor, flameLevel, haloLevel);
     /// <summary>Where his lamp hangs (for framing a cinematic on it).</summary>
     public Vector3 LampAt => lamp.GlobalPosition;
     /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
@@ -69,7 +56,7 @@ public partial class WardenView : Node3D, IBossView
             Sex = Sex.Male, Outfit = Lore.OutfitFor(Sex.Male, "ranger", true, true), Beard = true, HairColor = "#6a6660", Skin = "#8e9680",
             Dye = new Dye { Cloth = "#3a3e44" },
         };
-        view = new PersonView(spec, new Held { Right = "zweihander" }, 0.8 * Size)
+        view = new PersonView(spec, new Held { Right = "watch_blade" }, 0.8 * Size)
         { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop" };
         AddChild(view);
         foreach (var mi in view.Person.Meshes)
@@ -100,31 +87,11 @@ public partial class WardenView : Node3D, IBossView
         at.AddChild(grip);
         lamp = LampIron.Make(Bail);
         AddChild(lamp);
-        flame = new Node3D { Position = new Vector3(0, LampIron.FlameY, 0) };
-        lamp.AddChild(flame);
-        flame.AddChild(new MeshInstance3D
-        {
-            Mesh = new SphereMesh { Radius = 0.026f, Height = 0.075f, Material = coreMat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = CoreBase } },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-        });
-        flame.AddChild(new MeshInstance3D
-        {
-            Mesh = new QuadMesh { Size = Vector2.One * 0.3f },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            MaterialOverride = new StandardMaterial3D
-            {
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-                AlbedoTexture = new GradientTexture2D
-                {
-                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.15f), new Color(1, 1, 1, 0)], Offsets = [0, 0.25f, 1] },
-                    Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
-                },
-                AlbedoColor = new Color(0.55f, 0.8f, 1f, 0.6f),
-            },
-        });
-        haloMat = (StandardMaterial3D)((MeshInstance3D)flame.GetChild(1)).MaterialOverride;
-        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = false };
+        // The flame (LampIron.Fire: the kit's cold flame and a soft glow; the glass lit by it).
+        fire = LampIron.Fire(lamp);
+        Tint();
+        // LightSize: soft shadows (the cage's bars throw broad soft stripes, not hard lines, from the flame).
+        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f };
         AddChild(light);
     }
 
@@ -198,9 +165,9 @@ public partial class WardenView : Node3D, IBossView
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
         Hang();
-        Light(g, (float)y);
+        Light(g, (float)y, false);
         lamp.Visible = pose != "dead" || g > 0.01;
-        flame.Visible = LampLit && g > 0.01;
+        fire!.Lit(LampLit && g > 0.01);
     }
 
     /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,
@@ -210,9 +177,9 @@ public partial class WardenView : Node3D, IBossView
         time += dt;
         Visible = true;
         Hang();
-        Light(Glow, view.GlobalPosition.Y);
+        Light(Glow, view.GlobalPosition.Y, true);
         lamp.Visible = true;
-        flame.Visible = LampLit && Glow > 0.01;
+        fire!.Lit(LampLit && Glow > 0.01);
     }
 
     /// <summary>The bail's length, ring to fist, in the lamp's own measure.</summary>
@@ -227,7 +194,9 @@ public partial class WardenView : Node3D, IBossView
             grip.GlobalPosition - new Vector3(0, Bail * s, 0));
     }
 
-    void Light(double g, float ground)
+    /// <summary>The eyes and the lamp's light; atFlame (a cinematic): the light burns at the flame itself, inside the
+    /// cage, so the bars throw their shadows over him and whatever he holds it to.</summary>
+    void Light(double g, float ground, bool atFlame)
     {
         foreach (var m in eyes)
         {
@@ -241,6 +210,7 @@ public partial class WardenView : Node3D, IBossView
         light.LightEnergy = (float)(i / Math.PI);
         // The one shadowed positional light of the scene, ahead of any lamp (ShadowLamp).
         if (light.LightEnergy > 0) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
+        if (atFlame && fire != null) { light.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
         light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
     }
@@ -250,47 +220,6 @@ public partial class WardenView : Node3D, IBossView
     void IBossView.Dispose() => QueueFree();
 
     public override void _ExitTree() => ShadowLamp.Withdraw(light);
-}
-
-/// <summary>
-/// A keeper's lamp-iron: black iron, an open cage so the flame shows, hung by a
-/// ring at the top. The Warden carries one, and the same pattern burns in the
-/// toll tower's window (C04) and stands on Vonnra's table (C09), so the eye can
-/// tie them together before anyone says so. The flame is the caller's.
-/// </summary>
-public static class LampIron
-{
-    /// <summary>Where the flame sits, from the ring at the top (the origin).</summary>
-    public const float FlameY = -0.15f;
-    /// <summary>The underside of the base: set it here to stand the lamp on a sill.</summary>
-    public const float FootY = -0.23f;
-    static StandardMaterial3D? iron;
-
-    /// <summary>The lamp-iron; with a bail, an iron loop up from its ring that long, to hang it by.</summary>
-    public static Node3D Make(float bail = 0)
-    {
-        iron ??= new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
-        var lamp = new Node3D { Name = "LampIron" };
-        void Iron(Mesh m, Vector3 at)
-        {
-            m.SurfaceSetMaterial(0, iron);
-            lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at });
-        }
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
-        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
-        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
-            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
-        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
-        if (bail > 0)
-        {
-            // Two thin rods from the ring's sides up to a hook where the fist closes.
-            foreach (int side in new[] { -1, 1 })
-                Iron(new BoxMesh { Size = new Vector3(0.007f, bail, 0.007f) }, new Vector3(side * 0.02f, bail / 2 + 0.02f, 0));
-            Iron(new BoxMesh { Size = new Vector3(0.05f, 0.008f, 0.008f) }, new Vector3(0, bail + 0.02f, 0));
-        }
-        return lamp;
-    }
 }
 
 /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
