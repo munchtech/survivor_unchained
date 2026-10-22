@@ -1,6 +1,14 @@
 # The Ford-Warden: boss-tier model rebuild (handoff)
 
 ## Start here / Paused here; next:
+**Warden lead 2 (21 Oct night), in progress.** Scratch: coordinator 9cf2b0ed's scratchpad `warden\` (inputs backed up to `survivorsunchained_inputs\warden_concepts	urn_r2\` + `scripts2\`).
+- Turnaround (A + B's layered wear): xhigh r1 FAIL (dwarf arms, dry beard, no pendant room), r2 PASS-WITH-NOTES (`turn_r2\cut_front/back.png`: 2D arm +25% (`arms.py`), legs +10% (`prep.py`), drowned face/beard inpaint, emblem small low-left, buckle gone, back sleeve fixed). Head built as its own part (`turn_r2\hd_3.png` -> TRELLIS bust `scratch mb\model_s5.glb`).
+- Body: TRELLIS 2 front+back (`scratch m1\model_s11.glb`) -> Marionette `generateNpc` (clean, detail, wrap, portrait, package; `scratch run_pipe.js`, `p1un.sh`, ports 8893/9393) -> `ford_warden_a` (base head, no hood) -> `tools/assets/warden_head.py` grafts the bust (hood/face/beard on Head, skirt on the mantle's weights) -> `godot/art/npc/ford_warden/` (0dbf5cc4).
+- Game: WardenView builds `npc:ford_warden`, eye lights from manifest `head.eyes`, chest lamp pendant (`Pendant.cs`, damped swing) (4cb7247d).
+- Planned: A's long cape as a separate cloth mesh on spring bones under the mantle; drowned surface (tide line, weed cards, wet shader) at the paint stage.
+- Next: C02/C03 stills (`scratch cine\shoot.py r1.json`) + a fight frame -> judge (max at the close framings, xhigh play).
+
+## Lead 1 (history)
 **PAUSED (21 Oct, Warden lead 1, coordinator wind-down). Owner's pick: "Build A, the Drowned Watchman, and add B's lamp pendant and layered wear."** So: A's long hooded shoulder cape, Watch-blue tabard with the lamp emblem, mail to the knee split front and back, gauntlets; plus B's iron lamp pendant on a chain at the chest and B's layered wear (quilted gambeson showing under the tabard, worn leather straps and patches).
 **Paused here; next:** A + B's pendant and layered wear. (1) Turnaround of that design (A-pose front/back, Marionette `comfy.kreaPairGraph`; start from `turn3\A_s317` / `A_s301`, add the pendant and quilting; wet, dark beard in clumps with stringy weed, longer legs: Krea's A-pose comes out stocky), judge it against the hero (xhigh). (2) TRELLIS 2 by part: full figure (front + back), the hooded head-and-beard bust, the gauntlet gripping the lamp's ring (`comfy.trellisGraph`/`meshGraph`, res 1536, texture 4096). Then fixers, wrap/weights, Blender pass, package, game (plan below). No generation was started.
 **Files (backed up, the scratchpad may be cleared):** `C:\Users\munch\Desktop\survivorsunchained_inputs\warden_concepts\`: `warden_concepts_pick(_half).jpg` (the owner's sheet), `pick\` (A/B hero, wet busts with eye-lights, fists; `A_bust_wet.png`, `B_hero.png` for the pendant), `turn3\` (A/B turnarounds, unjudged), `scripts\` (gen_concepts*.cjs, gen_turn3.cjs, gen_r5.cjs = wet-beard inpaint graph, eyes2.py, sheet.py).
