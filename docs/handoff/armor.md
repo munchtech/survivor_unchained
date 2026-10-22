@@ -2,6 +2,43 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Handed off (Armor 15, 22 Oct, at ~255k): bust MERGED (integration 9922c080); reaver-dent-15 MR READY; next: the arm judge and MR
+**Done:**
+- bust-15 merged.
+- **reaver-dent-15@48a529bf: MR READY,** waiting for main. The band was sinking 10-11.6 mm into the hollow beside each cup. `WRAP_TAUT` in wrap() now bridges every hollow except the cleavage.
+  - Judges: max J5 PASS-WITH-NOTES; max J6 on the REAL eye-level camera, all six tops, no FAIL.
+  - The fix is also on armor-7 as b32bc326, built on the arm body.
+  - If main asks for changes, the integration-body build recipe is in the D3 brief (`scratchpad\armor\d3\brief.md` step 3b; built files in `d3\int\`).
+
+**Arms: built on armor-7, UNJUDGED.**
+- Commits: 5a1c7088 (code) and b15e3041 (art, 64 files).
+- `tools/assets/heroine_arm_shape.py` is heroine_body_post step 6, mark `heroine_arm_shape`.
+- Girth at 25-40%: 32.1-32.5 -> 28.7-28.8 cm. Deltoid swell 4.5 mm. Armpit web slimmed (knobs WEB / WEB_TORSO / WEB_T). Seam gap 0. L/R within 1.56 mm.
+- Wearcheck: no outfit worse.
+- Solver report: the A1 agent's numbers above. Shots in `godot/.shots/armor15/a1` were taken on the OLD camera DLL, so RESHOOT them.
+
+**Next:**
+1. `dotnet build`, then shoot the arms set:
+   - nude: Look front and 40, close-up day / night / q;
+   - each top: close-up day;
+   - one arms-up frame: find a cast_raise shot arg, or `--hold`.
+   For the before frames use integration: shoot from a clean copy with `scratchpad\armor\dmshot.sh` (edit its branch and list).
+2. One max judge, A2: Look + close-up, nude and each top. Ask about:
+   - the armpit fold;
+   - the deltoid;
+   - the taper;
+   - "does she look like a real, attractive, athletic woman";
+   - arms-up deformation.
+   Cap 2. Scrap rule after the first fail.
+3. Arms MR, a plumbing build off integration as bust-15 was (`scratchpad\armor\mr\brief.md` is the worker template). It needs heroine.glb plus every follower file, so whoever merges second re-runs the chain (Face 39 may add a brow step).
+4. Then the outside notes, cheapest first:
+   - the plate's night cup highlight (J6: roughness +0.05);
+   - the arcanist neckline notch screen-left of her throat (turned frames);
+   - the arcanist puff sleeves reading inflated;
+   - flat white satin gloves;
+   - the reaver fur cape reading as plush (J5).
+   Then B2.
+
 **SHOOT RULE (Armor 15):** run `dotnet build SurvivorUnchained.csproj` in godot/ BEFORE shooting, after any merge or C# edit. Godot console runs don't rebuild C#. J4's "new camera" frames really used the old camera DLL. Copies of a branch for verify shoots: `scratchpad\armor\dmshot.sh` (archive, `dotnet build`, `--import`, shoot, remove the copy after a link check).
 
 ## Armor 15 (22 Oct): bust MR READY (bust-15@eb667858); next: the upper-arm sculpt once it merges, then B2
