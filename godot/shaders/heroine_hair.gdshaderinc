@@ -22,6 +22,15 @@ uniform float shine2_width = 18.0;        // (face 38 r2: 40)
 uniform float shift = -0.05;               // (face 38 r2: 0.06)
 uniform float shift2 = 0.08;               // (face 38 r2: -0.1)
 uniform float shine_tint = 0.55;           // (face 38 r2: the primary's share of the hair's own hue)
+// (face 39 dye: a dark dye's primary highlight (black, dark brown) narrower, dimmer and near-neutral: lit by the
+// fire's warm key, tinted toward its own warm hue at full strength, a black head showed large copper-orange patches.
+// Real black hair has a soft grey-white sheen band. Weighted by the dye's linear luminance, dark_from (all) to
+// dark_to (none): copper #7a4824 (0.088) untouched, brown and chestnut (0.06) about a third, black all.)
+uniform float dark_from = 0.03;
+uniform float dark_to = 0.08;
+uniform float dark_shine = 1.0;            // the shine's share left on a black dye (0.5 and 0.8: no sheen left, a flat blue-black)
+uniform float dark_narrow = 1.8;           // its width's exponent times this
+uniform float dark_neutral = 0.85;         // how far the light's own colour is greyed in it
 uniform float lock_jitter = 0.02;          // (face 38 r2: each lock's shift, by its card number)
 uniform float strand_jitter = 0.1;         // (face 38 r2: 0.5, strand to strand, which scattered it into grains)
 uniform float through = 0.5;
@@ -268,8 +277,10 @@ void light() {
 	// (each strand's highlight a little up or down it from the next's: the
 	// highlight broken into strands, not one smooth band)
 	float jitter = (sparkle - 0.5) * strand_jitter + (lock_n - 0.5) * 2.0 * lock_jitter;
-	float s1 = along_strand(normalize(strand + NORMAL * (shift + jitter)), h, shine_width);
+	float dk = 1.0 - smoothstep(dark_from, dark_to, dot(colour, vec3(0.2126, 0.7152, 0.0722)));
+	float s1 = along_strand(normalize(strand + NORMAL * (shift + jitter)), h, shine_width * mix(1.0, dark_narrow, dk));
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);
-	SPECULAR_LIGHT += lc * seen * fibre * fibre * (shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint) * shine * s1 + ALBEDO * vec3(1.0, 0.55, 0.35) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	vec3 lc1 = mix(lc, vec3(dot(lc, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk);
+	SPECULAR_LIGHT += seen * fibre * fibre * (lc1 * shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk) * s1 + lc * ALBEDO * vec3(1.0, 0.55, 0.35) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
 }

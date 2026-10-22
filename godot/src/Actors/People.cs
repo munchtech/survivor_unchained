@@ -789,7 +789,7 @@ public static class People
     /// how much of the dye's colour it takes. (--brows soften,sat tries others.)</summary>
     static readonly (float Soften, float Sat) HerBrows = SurvivorUnchained.Args.Get("brows") is string bw && bw.Split(',') is [var bs, var bt]
         ? (float.Parse(bs, System.Globalization.CultureInfo.InvariantCulture), float.Parse(bt, System.Globalization.CultureInfo.InvariantCulture))
-        : (0.07f, 1.2f);
+        : (0.07f, 1.2f);   // (face 39 dye: the red hairs' only, BrowRed)
 
     /// <summary>Her brows' dye kept in a warm hue band (Oklab degrees; face 33, round 3): the most a
     /// copper's (or any darker hair's) dye may lean to yellow, the most a blonde's, and the least chroma it
@@ -833,9 +833,23 @@ public static class People
     // against the copper, read as drawn on"; now a shade or two under her copper, its own warmth kept. --brow-dark tries others)
     static readonly float BrowDark = SurvivorUnchained.Args.Num("brow-dark", 0.38f);
 
+    /// <summary>How far a hair's brows take the red settings (face 39's: sat 1.2, BrowDark 0.38, dye_gamma 0.9,
+    /// hair_lo 0.2) over the old ones (0.7, 0.42, 0.5, 0.08): all for a red (hue 25 degrees or less, saturation
+    /// 0.5 or more: copper, auburn, strawberry, chestnut, brown), none for a blonde (hue 35 or more) or a hair
+    /// with little colour (saturation under 0.3: black, grey, platinum), blended between. (Judge j1, face 39:
+    /// the red settings turned a blonde's brows ginger and a black's warmer.)</summary>
+    public static float BrowRed(Color b) => (1f - Mathf.SmoothStep(25f, 35f, b.H * 360f)) * Mathf.SmoothStep(0.3f, 0.5f, b.S);
+
+    /// <summary>How blonde a hair is (hue 35 degrees or more, its colour kept, light: honey, fair): its brows lighter
+    /// and less saturated than the old settings gave (BrowDark 0.42 to 0.3, sat 0.7 to 0.6). The old settings left
+    /// fair's brow strokes at 0.57 of the hair's brightness but more saturated than the hair (0.68 to 0.54), an
+    /// orange-gold; the judge's target is a dark blonde, no more saturated than the hair (about #8a7550).</summary>
+    public static float BrowBlonde(Color b) => Mathf.SmoothStep(25f, 35f, b.H * 360f) * Mathf.SmoothStep(0.3f, 0.45f, b.S) * Mathf.SmoothStep(0.35f, 0.5f, b.Luminance);
+
     static Color BrowDye(Color b)
     {
-        var dye = b.Darkened(BrowDark + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
+        float dark = SurvivorUnchained.Args.Get("brow-dark") != null ? BrowDark : Mathf.Lerp(Mathf.Lerp(0.42f, 0.3f, BrowBlonde(b)), BrowDark, BrowRed(b));
+        var dye = b.Darkened(dark + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
         var (hL, hC, _) = Oklch(b);
         // (round 4: a fair grey or platinum hair's brows a soft grey-brown, not the warm lerp's tan)
         float wg = Mathf.SmoothStep(0.5f, 0.6f, hL) * (1f - Mathf.SmoothStep(0.02f, 0.05f, hC));
@@ -895,14 +909,15 @@ public static class People
                     // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
                     // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
                     // olive; a near-black's 0.85, warmed in the shader instead)
-                    m.SetShaderParameter("dye_sat", HerBrows.Sat / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
+                    float red = SurvivorUnchained.Args.Get("brows") != null ? 1f : BrowRed(b);
+                    m.SetShaderParameter("dye_sat", Mathf.Lerp(Mathf.Lerp(0.7f, 0.6f, BrowBlonde(b)), HerBrows.Sat, red) / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
                     m.SetShaderParameter("rough", 0.8f);
                     // (face 39: each hair's own darkness counted as it is (gamma 0.5 to 0.9), the darkest less past the
                     // core (0.5 to 0.25), and the faint texels between strokes left skin (from 0.08 to 0.2): the half-dark
                     // texels filled the strokes into one felt block)
-                    m.SetShaderParameter("dye_gamma", 0.9f);
+                    m.SetShaderParameter("dye_gamma", Mathf.Lerp(0.5f, 0.9f, red));
                     m.SetShaderParameter("dye_deep", 0.25f);
-                    m.SetShaderParameter("hair_lo", 0.2f);
+                    m.SetShaderParameter("hair_lo", Mathf.Lerp(0.08f, 0.2f, red));
                     m.SetShaderParameter("hair_hi", 0.7f);
                     // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
                     if (SurvivorUnchained.Args.Get("brow-set") is string bs)
