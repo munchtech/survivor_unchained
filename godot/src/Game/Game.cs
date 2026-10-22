@@ -161,7 +161,8 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--hair-highlight HEX|default (pictures of her hair's highlights): a colour, or her --hair-colour's own
     /// (World.Lore.DefaultHighlight), as a "#rrggbb"; null without it.</summary>
-    public static string? HighlightArg() => Args.Get("hair-highlight") is string hl
+    // (Its presence also forces highlights on while they are parked: World.Lore.ForceHighlights.)
+    public static string? HighlightArg() => Args.Get("hair-highlight") is string hl && (SurvivorUnchained.World.Lore.ForceHighlights = true)
         ? hl is "default" or "auto" ? SurvivorUnchained.World.Lore.HighlightColor(Args.Get("hair-colour"), SurvivorUnchained.World.Lore.HighlightAuto) : hl
         : null;
 

@@ -259,6 +259,18 @@ public static class Lore
         return lum < 0.2 ? "copper" : lum < 0.5 ? "honey" : "platinum";
     }
 
+    /// <summary>Whether character creation offers highlights and her hair shows them (face 40, 22 Oct): PARKED, off.
+    /// The highlights failed their judge (j1: tiger stripes, crown crumbs, a half-head panel) and wait for a rebuild;
+    /// until then the Look hides the row and a saved look's highlight loads but renders off (ShownHighlight). Set
+    /// true to bring them back. (--hair-highlight still forces them on in pictures: ForceHighlights.)</summary>
+    public const bool ShowHighlights = false;
+    /// <summary>Highlights shown even while parked (the shot switch --hair-highlight, and tests).</summary>
+    public static bool ForceHighlights;
+    /// <summary>The highlight her hair renders with: HighlightColor while highlights are shown (ShowHighlights or
+    /// ForceHighlights), else none.</summary>
+    public static string? ShownHighlight(string? hair, string? choice) =>
+        ShowHighlights || ForceHighlights ? HighlightColor(hair, choice) : null;
+
     /// <summary>Her hair's highlights' colour ("#rrggbb"), or null for none: a choice null or "" is off, "auto" (or
     /// "default") the hair's own (DefaultHighlight), else a HairHighlights id or a "#rrggbb" of its own.</summary>
     public static string? HighlightColor(string? hair, string? choice)

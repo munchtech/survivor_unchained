@@ -9,8 +9,13 @@ namespace SurvivorUnchained.Tests;
 
 /// <summary>Her hair's highlights (the owner, 22 Oct): a second colour on some of her locks, off by default,
 /// each hair colour's own when turned on, saved with her look.</summary>
-public class HairHighlightTests
+public class HairHighlightTests : System.IDisposable
 {
+    // (parked since face 40: Lore.ShowHighlights off; these tests force them on, as the shot switch does, except
+    // Parked_hides_them)
+    public HairHighlightTests() => Lore.ForceHighlights = true;
+    public void Dispose() => Lore.ForceHighlights = false;
+
     static CharacterData Her(string? hair, string? highlight)
     {
         var a = Callings.Archetype("reaver");
@@ -80,5 +85,22 @@ public class HairHighlightTests
         var rgb = Enumerable.Range(0, 3).Select(i => System.Convert.ToInt32(p.Color.Substring(1 + 2 * i, 2), 16) / 255f).ToArray();
         float max = rgb.Max(), min = rgb.Min();
         Assert.True(max > 0.95f && (max - min) / max < 0.04f && rgb[0] - rgb[2] < 0.03f, $"platinum {p.Color}: light ash, not pink");
+    }
+
+    [Fact]
+    public void Parked_hides_them()
+    {
+        // (face 40: the highlights failed their judge and are parked: with the switch off a saved look's highlight
+        // still loads, but her hair shows none)
+        Assert.False(Lore.ShowHighlights);
+        Lore.ForceHighlights = false;
+        var ch = Json.Parse<CharacterData>(Json.Write(Her("black", Lore.HighlightAuto)));
+        Assert.Equal(Lore.HighlightAuto, ch.HairHighlight);
+        Assert.Null(Loadouts.Of(ch).Person.HairHighlight);
+        Assert.Null(Loadouts.Of(Her("fair", "auburn")).Person.HairHighlight);
+        Assert.Equal(Loadouts.Look(Loadouts.Of(Her("black", null))), Loadouts.Look(Loadouts.Of(Her("black", Lore.HighlightAuto))));
+        // (forced on, as --hair-highlight does, it shows)
+        Lore.ForceHighlights = true;
+        Assert.Equal(Hex("copper"), Loadouts.Of(ch).Person.HairHighlight);
     }
 }

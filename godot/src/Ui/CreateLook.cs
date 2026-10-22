@@ -97,7 +97,8 @@ public partial class CreateScreen
         v.AddChild(Beads(Lore.Hairs, d.Hair, id => { d.Section = LookHair; d.Hair = id; }, Bead.Kind.Hair, OwnHair().ToHtml(false)));
         // (highlights: a second colour on some of her locks, off by default; on, her hair colour's own until one is
         // picked (copper on black, honey on brown, platinum on blonde: Lore.DefaultHighlight))
-        if (Lore.HairHighlights.Count > 0)
+        // (parked, face 40: the row hidden while Lore.ShowHighlights is off; a saved highlight loads but shows off)
+        if ((Lore.ShowHighlights || Lore.ForceHighlights) && Lore.HairHighlights.Count > 0)
         {
             bool on = d.HairHighlight != "";
             v.AddChild(Kit.Head("Highlights"));
