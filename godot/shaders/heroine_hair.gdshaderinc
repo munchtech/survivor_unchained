@@ -31,6 +31,7 @@ uniform float through = 0.5;
 uniform float fibre_lo = 0.3;              // (face 38: 0.15, r1 0.08; r2 the judge: grey locks)
 uniform float fibre_hi = 0.8;              // (face 38: 0.85, r1 0.92)
 uniform float lock_share = 0.04;
+uniform float rope_floor = 0.55;          // (face 38 r3: the braid strands' diamond gap floor)
 uniform float wrap = 0.25;                 // (face 38: 0.45)
 // (a pale near-neutral dye (platinum) held pale and neutral in warm light: ash cools its tone toward ash_tone,
 // lift raises it toward its swatch; both fade out with the dye's saturation and darkness: face 34)
@@ -182,15 +183,22 @@ void fragment() {
 		// (at her hairline, where its strands are seen, as bright as hair; dark under the cards)
 		float fade = COLOR.a;
 		// (a rope of hair, a braid's strand (its blue), as bright as hair, deep in it darker)
-		float rope = COLOR.b;
+		// (face 38 r3: blue under 0.5 on the cap is the braid's forehead contact shade, not a rope)
+		float rope = step(0.5, COLOR.b);
+		float contact = COLOR.b < 0.5 ? COLOR.b : 0.0;
+		float tr = mix(t.r, max(t.r, rope_floor), rope);          // (face 38 r3: the braid's diamond gaps no darker than this)
 		// (at her hairline as light as her hair, not a darker band over it;
 		// and its strands ending each at its own height, by its number (the
 		// atlas's green), a ragged line, not a smooth fade along an arc)
 		// (darker only well under the cards (fade 0.85 to 1): from 0.4 it drew a dark band just over her
 		// hairline, where the cards do not yet cover; and thinned strand by strand over most of its fade, its
 		// cover about 0.3 to 0.9 over 7 to 10 mm, not all in its first 3)
-		ALBEDO = tint * t.r * mix(1.0, 0.5, smoothstep(0.85, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.78, 1.0, depth), rope);   // (face 38 r2: 0.55, a dark net round the braid's diamonds)
+		ALBEDO = tint * tr * mix(1.0, 0.5, smoothstep(0.85, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.78, 1.0, depth), rope);   // (face 38 r2: 0.55, a dark net round the braid's diamonds)
 		cover = max(fade * fade, t.a * smoothstep(0.0, 0.8, fade + (t.g - 0.5) * 0.35));
+		if (contact > 0.001) {                                    // (a dark hair-tinted shade on her skin, not strands)
+			ALBEDO = mix(ALBEDO, tint * 0.4, 1.0 - smoothstep(0.0, 0.3, fade));
+			cover = max(cover, contact);
+		}
 	} else {
 		float along = UV.y;                                       // 0 at the root, 1 at the tip
 		// (layer by layer only a little darker within, and a root dark only

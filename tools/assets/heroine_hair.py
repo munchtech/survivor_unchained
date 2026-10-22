@@ -704,7 +704,8 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
         spacing = 0.0019
     pts, nrm = roots(spacing, above=-0.001, below=0.022, soft=0.014)
     if fine:
-        keep = RNG.random(len(pts)) < np.interp(rise(pts), [0.0, 0.004, 0.012, 0.022], [1.0, 0.9, 0.45, 0.2])
+        rj = rise(pts) - hl_jit(pts)                             # (face 38 r3: from the jittered edge; none in its recesses)
+        keep = (RNG.random(len(pts)) < np.interp(rj, [0.0, 0.004, 0.012, 0.022], [1.0, 0.9, 0.45, 0.2])) & (rj > -0.001)
         pts, nrm = pts[keep], nrm[keep]
     theta = np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))
     near = (np.abs(np.degrees(theta)) < 125) & high(pts)
@@ -719,10 +720,15 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
     P = lie(pts - nrm * 0.001, dirs, comb, L / (points - 1), np.full(len(pts), points - 1), 0.004,
             side=sides(pts) if sides else None, stop=lambda q: rise(q) < -0.004)
     P = resample(P, points)                                      # (one stopped short ends where it stopped)
-    c = cards(P, RNG.uniform(0.003, 0.006, len(pts)) * (0.5 if fine else 0.75), list(range(6, 16)), 0.004, floor=0.002 if fine else 0.0025)
+    wd_ = RNG.uniform(0.003, 0.006, len(pts))
+    if fine:                                                     # (face 38 r3: one stroke each, 0.4-0.6 mm, from the dense columns: ~1 px at the Look)
+        c = cards(P, wd_ * 0 + np.random.default_rng(381).uniform(0.0004, 0.0006, len(pts)), [0, 1, 2], 0.004, floor=0.002)
+        c["shade"] = 0.85
+    else:
+        c = cards(P, wd_ * 0.75, list(range(6, 16)), 0.004, floor=0.0025)
     c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)) * 0.8, 3 * points)
     if fine:                                                     # (face 38 r2: 0.6 at her hairline to 0.15 2 cm back, by its root)
-        c["alpha"] = c["alpha"] / 0.8 * np.repeat(np.interp(rise(pts), [0.0, 0.02], [0.6, 0.15]), 3 * points)
+        c["alpha"] = c["alpha"] / 0.8 * np.repeat(np.interp(rise(pts) - hl_jit(pts), [0.0, 0.02], [0.6, 0.15]), 3 * points)
     c["mat"] = 3
     if os.environ.get("DBG_NOHL") != "1":                       # (test only)
         out.append(c)
@@ -744,6 +750,7 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
     pts, nrm = roots(0.0021 if fine else 0.0026, above=0.0, below=0.004 if fine else 0.003)
     th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
     keep = (RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.6, 0.85, 1.0])) & high(pts)
+    keep &= rise(pts) - hl_jit(pts) > -0.002                     # (face 38 r3: fewer in the recesses)
     pts, nrm = pts[keep], nrm[keep]
     n, k = len(pts), 6
     turn = RNG.normal(0, 0.2, n) + np.where(RNG.random(n) < 0.08, np.clip(RNG.normal(0, 0.5, n), -0.7, 0.7), 0)
@@ -767,6 +774,26 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
 def rise(p):
     """How far over her hairline each point is."""
     return p[:, 2] - hairline_z(np.arctan2(p[:, 0] - CENTRE[0], -(p[:, 1] - CENTRE[1])))
+
+
+# (21 October, face 38 r3, the braid only (HL_JIT, set by gathered(vol)): its
+# hairline one crisp painted curve at the front Look. Its solid edge now
+# pushed back and forth +-3 mm every ~10 mm along it, and recessed 6 mm at
+# each temple: how far back her hair's edge is drawn there, in metres.)
+HL_JIT = False
+_HLK = np.random.default_rng(38).uniform(-0.003, 0.003, 80)
+
+
+def hl_jit(p):
+    if not HL_JIT:
+        return np.zeros(len(p))
+    th = np.arctan2(p[:, 0] - CENTRE[0], -(p[:, 1] - CENTRE[1]))
+    s = (th + np.pi) * 0.085 / 0.010                              # (knots ~10 mm apart along her hairline)
+    i = np.floor(s).astype(int) % 80
+    f = s - np.floor(s)
+    f = f * f * (3 - 2 * f)
+    j = _HLK[i] * (1 - f) + _HLK[(i + 1) % 80] * f
+    return j + 0.006 * np.exp(-((np.degrees(np.abs(th)) - 52.0) / 11.0) ** 2)
 
 
 def comb_long(p, side=None):
@@ -965,8 +992,10 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
     """Her hair drawn back along her scalp from every root to a tie at T,
     each strand laid along her head to it and ending under the tie (with
     `lift`, standing that much off her on top: some body)."""
+    global HL_JIT
     comb = toward(T)
     out = []
+    HL_JIT = bool(vol)
     for spacing, width, cols, off in layers:
         pts, nrm = roots(spacing, above=0.004)
         L = np.linalg.norm(T - pts, axis=1) * 1.6 + 0.02          # (more than enough: each stops at the tie)
@@ -992,6 +1021,18 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
             P[lowg] = (pts[lowg] - nrm[lowg] * 0.004)[:, None]
             print("  DBG_NOLOWG: %d cards hidden" % lowg.sum())
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
+        if vol:
+            c_ = out[-1]
+            S_, K3 = len(P), len(c_["V"]) // len(P)
+            # (face 38 r3: rooted in the jittered edge's recesses, faded out: her hair's edge as drawn back)
+            a_ = np.repeat(np.clip((rise(P[:, 0]) - hl_jit(P[:, 0])) / 0.003, 0, 1), K3)
+            if len(out) == 3:                                    # (outer: 20% ragged tips, 70-100% long, an 8 mm taper)
+                rg = np.random.default_rng(383)
+                cut = np.repeat(np.where(rg.random(S_) < 0.2, rg.uniform(0.70, 1.0, S_), 1.0), K3)
+                t_ = np.clip((c_["length"] * cut - c_["arc"]) / 0.008, 0, 1)
+                a_ = a_ * np.where(cut < 1, t_ * t_ * (3 - 2 * t_), 1.0)
+                print("  ragged tips: %d cards" % int((cut[::K3] < 1).sum()))
+            c_["alpha"] = a_
         if vol:
             print("  ears: %d cards cut short behind her ear" % clear_ears(out[-1], points))
         print("  gathered: %d cards" % len(pts))
@@ -1293,6 +1334,7 @@ def style_braid():
         # (loose hairs over each strand of it)
         fuzz = np.stack([path[:end + 2] + out[:end + 2] * 0.008 * taper[:end + 2, None]])
         _fz = cards(resample(fuzz, 32), np.array([0.026]), list(range(6, 11)), 0.012)
+        _fz["alpha"] = np.r_[np.full(32, 0.45), np.ones(32), np.full(32, 0.45)]       # (face 38 r3: feathered)
         if os.environ.get("DBG_NOFUZZ") != "1":
             parts.append(_fz)
     # Tied off, and a short tail below.
@@ -1318,6 +1360,7 @@ def style_braid():
             q = C[:end + 1] + ac[:end + 1] * (sd * (reach_[:end + 1] - inset))[:, None] + out[:end + 1] * (0.006 * taper[:end + 1])[:, None]
             q = np.vstack([T + (q[0] - T) * (0.1 if grow else 0.4), q])   # (from up under her gathered hair)
             _cv = cards(resample(q[None], 40), np.array([wd]), list(range(0, 6)), 0.012, root=np.array([0.6]), narrow=0.35)
+            _cv["alpha"] = np.r_[np.full(40, 0.45), np.ones(40), np.full(40, 0.45)]   # (face 38 r3: its edges feathered)
             if os.environ.get("DBG_NOCOVER") != "1":
                 parts.append(_cv)
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
@@ -1659,7 +1702,14 @@ def cap(comb, sides=part_side):
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
     # (across her hairline, not by height: fs.hairline_across)
     across = fs.hairline_across(theta, V[:, 2] - hairline_z(theta), np.hypot(V[:, 0] - CENTRE[0], V[:, 1] - CENTRE[1]))
-    fade = np.clip((across + 0.001 + 0.5 * wav) / 0.011, 0, 1)
+    edge = across + 0.001 + 0.5 * wav - hl_jit(V)
+    fade = np.clip(edge / 0.011, 0, 1)
+    # (face 38 r3, braid: a contact shade on her forehead under it, its blue
+    # (the shader's `contact`): ~0.12 dark over the 5 mm under her hairline,
+    # to 0.2 of her hair's tint in its last 3 mm, gone 3 mm into the fade)
+    sm = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
+    contact = (0.12 * sm((edge + 0.005) / 0.002) + 0.08 * sm((edge + 0.003) / 0.003)) * (1 - sm(edge / 0.003))
+    contact = np.where(HL_JIT, contact, 0.0)
     # (and at her ears, faded out over the 3 mm next to each: her hair grows
     # to her ear, its edge there soft, not the cap's cut edge)
     if FLAP_TREE is not None:
@@ -1682,7 +1732,7 @@ def cap(comb, sides=part_side):
     M = (A.T @ A + 1e-8 * identity(len(V))).tocsc()
     v = spsolve(M, A.T @ (d * fl).sum(1))
     u = spsolve(M, A.T @ (d * ac).sum(1))
-    return dict(V=V, N=N, F=F, UV=np.c_[u - u.min(), v - v.min()] / 0.025, fade=fade)
+    return dict(V=V, N=N, F=F, UV=np.c_[u - u.min(), v - v.min()] / 0.025, fade=fade, contact=contact)
 
 
 BRAID_FLY = 32                 # (flyaways over her crown and temples, braid)
@@ -1724,9 +1774,10 @@ def braid_flyaways(T, comb, n_want=BRAID_FLY):
 
 
 def build(style):
-    global RNG, CHAIN
+    global RNG, CHAIN, HL_JIT
     import zlib
     CHAIN = None
+    HL_JIT = False
     RNG = np.random.default_rng(zlib.crc32(style.encode()))  # (each style the same however many are made)
     old = bpy.data.objects.get(f"hair_{style}")             # (from a run before, saved in the blend)
     if old:
@@ -1793,6 +1844,7 @@ def build(style):
     Ch[flat, 2] = 1.0
     lit = np.concatenate([np.full(len(c["V"]), bool(c.get("lit"))) for c in layers])
     Ch[lit, 0] = 1.0                                         # (face 32: the pixie's flyaways, off the mass: no depth darkening)
+    Ch[:, 0] *= np.concatenate([np.full(len(c["V"]), float(c.get("shade", 1.0))) for c in layers])   # (face 38 r3: fine hairs 0.85x)
     # (a tail's cards under its tie: one shade, its outer hair's (the 75th
     # percentile just below), over their first `shared[0]` metres, easing to
     # their own by `shared[1]`: no light and dark blocks under the tie)
@@ -1815,7 +1867,7 @@ def build(style):
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])
     F.extend((cp["F"] + base).tolist())
     M.extend([1] * len(cp["F"]))
-    C.append(np.c_[np.full(len(cp["V"]), 0.4), np.full(len(cp["V"]), 0.5), np.zeros(len(cp["V"])), cp["fade"]])
+    C.append(np.c_[np.full(len(cp["V"]), 0.4), np.full(len(cp["V"]), 0.5), np.minimum(cp["contact"], 0.45), cp["fade"]])
     at = np.vstack([c.get("at", c["V"]) for c in layers] + [cp["V"]])
     V, N, UV, C = np.vstack(V), np.vstack(N), np.vstack(UV), np.vstack(C)
     me = bpy.data.meshes.new(f"hair_{style}")
