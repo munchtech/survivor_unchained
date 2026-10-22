@@ -20,8 +20,17 @@ outfit gltf, and carries everything on it.
   - Her skin stays under: the inner face is kept >= MIN_GAP off her rest skin where the smoothing would bring it
     closer (pushed out along her normal; the outer face and the riders over it go with it).
 
+Then (the dome, armor 14 s3: shell(.., dome=True), done-mark "bust_dome") each cup's front is made one round, full dome
+at the 3-6 cm scale (it was a flat top with a tight shoulder 4-5 cm out, which drew an apex highlight and a crease from
+under it to the zip): a paraboloid height field over the apex's plane fitted to the outer face (Gaussian DOME_SIGMA
+round the apex; the opening's rolled edge within DOME_RIM[1] and the fold under the cup left out), its radii held
+within DOME_RADII (opened out: fuller), the outer face blended onto it (weight 1 within DOME_R[0] of the apex, easing
+to 0 by DOME_R[1], the cup's border and the fold; the rolled edge carried by the moves beside it), inward only at the
+apex (DOME_TIP), her tucked skin kept MIN_GAP under, the inner face and riders carried and normals remade as above.
+It drops the "bust_detail" mark, so the convexity below is baked again from the new shape.
+
 Then (detail(), armor 14 s2) the leather's baked convexity over the cups (UV2.y, read by the outfit shader) is made
-smooth to match: it was baked on the old shape, and its poke and hollow drew a glossy spot at each apex and a dark
+smooth to match (s3: baked again from the piece's current shape, heroine_outfits.detail's formula): it was baked on the old shape, and its poke and hollow drew a glossy spot at each apex and a dark
 crease from under it to the zip after the shape was smooth. Done-mark "bust_detail".
 
 Idempotent: done-mark "bust_shell" in the gltf's asset extras (the largest move, mm); a file that has it is skipped.
@@ -42,6 +51,7 @@ from heroine_neck import _Gl  # noqa: E402
 from breast_sym_post import _body, _vn, _ss, _closest_tri  # noqa: E402
 
 MARK = "bust_shell"
+DOME_MARK = "bust_dome"
 SIGMA = 0.012
 REACH = 0.030       # fit neighbourhood radius
 ITERS = 16
@@ -52,6 +62,13 @@ RIM = (0.001, 0.004)    # the opening's rolled edge: carried within RIM[0] of it
 RIMFIT = 0.003      # and the fits leave out its points within this of the rim (the roll doesn't bend the cup's fit)
 RELAX = 30          # passes relaxing the carried shell points' moves along its edges
 FOLD = 0.7          # a fit's neighbours: normals within ~45 deg of the point's (full weight past ~35)
+# the dome (armor 14 s3): the cup's front at the 3-6 cm scale
+DOME_SIGMA = 0.030  # the dome's fit: a Gaussian weight round the apex (the front's 3-6 cm shape, not its 1 cm detail)
+DOME_RADII = (0.080, 0.140)   # the dome's radii held within these (a rounder cup is opened out to 8 cm: fuller)
+DOME_R = (0.035, 0.075)   # weight 1 within DOME_R[0] of the cup's apex, easing to 0 by DOME_R[1] (and the cup's border)
+DOME_TIP = 0.025    # inward moves only within this of the apex (the cone tip; eased over 10 mm past it)
+DOME_RIM = (0.002, 0.008)  # the opening's rolled edge: left out of the fit within DOME_RIM[1], carried within it
+DOME_FOLD = (-0.6, -0.3)   # faces turned down past n_y DOME_FOLD[0] (the fold under the cup): out of the fit and weight
 CONFIG = {
     # centre (x, y) of her left cup, radii (x, y) of the full-weight ellipse (mirrored for her right), the ease past
     # it, and the least z of a point it moves
@@ -94,14 +111,14 @@ def cup_weight(X, cfg, ease=None):
     return w * (X[:, 2] > cfg["zmin"])
 
 
-def mls(Q, C, keep=None, NQ=None, NC=None, sigma=SIGMA, reach=REACH):
+def mls(Q, C, keep=None, NQ=None, NC=None, sigma=SIGMA, reach=REACH, k=160):
     """Heights of points Q over the quadric fitted (Gaussian sigma) to the cloud C round each, in its local frame
     (the weighted plane's normal n). keep: C's points the fits may use. NQ, NC: the points' (designed) normals; a
     neighbour whose normal parts from the point's past ~40 deg is left out (a fold, e.g. under the cup, is not
     bridged). Returns (h, n): Q + h n lies on the fit."""
     use = np.arange(len(C)) if keep is None else np.where(keep)[0]
     T = cKDTree(C[use])
-    d, j = T.query(Q, k=160, distance_upper_bound=reach)
+    d, j = T.query(Q, k=k, distance_upper_bound=reach)
     ok = np.isfinite(d)
     j = np.where(ok, j, 0)
     Y = C[use][j] - Q[:, None]
@@ -231,8 +248,39 @@ def offset(X, skin):
     return g
 
 
-def plan(G, cfg, skin, report=True):
-    """The shell's welded points U, their displacement D, the outer mask, the field over the outer surface."""
+def _fair(X, NX, fit, free, a, report=True):
+    """A cup's outer points' moves onto one round dome: a quadric height field (a paraboloid: one even curvature in
+    each direction) over the plane through its apex a (normal: the mean of its points' normals within 30 mm), fitted
+    by least squares to the fit points (not the opening's rolled edge, not the fold under the cup) with a Gaussian
+    (DOME_SIGMA) weight round the apex. Returns each point's move onto it (along the plane's normal)."""
+    nz = NX[np.linalg.norm(X - a, axis=1) < 0.03].mean(0)
+    nz /= np.linalg.norm(nz)
+    e1 = np.cross([0.0, 1.0, 0.0], nz)
+    e1 /= np.linalg.norm(e1)
+    e2 = np.cross(nz, e1)
+    Y = X - a
+    u, v, h = Y @ e1, Y @ e2, Y @ nz
+    ok = fit & ((NX @ nz) > 0.4)
+    wt = np.exp(-0.5 * (np.linalg.norm(Y, axis=1) / DOME_SIGMA) ** 2) * ok
+    M = np.c_[u * u, u * v, v * v, u, v, np.ones_like(u)]
+    c = np.linalg.lstsq(M * np.sqrt(wt)[:, None], h * np.sqrt(wt), rcond=None)[0]
+    # (its radii held within DOME_RADII: a cup rounder than the smallest is opened out to it, about the apex: fuller)
+    k, ev = np.linalg.eigh(np.array([[2 * c[0], c[1]], [c[1], 2 * c[2]]]))
+    k = np.clip(k, -1 / DOME_RADII[0], -1 / DOME_RADII[1])
+    S = ev @ np.diag(k) @ ev.T
+    c[0], c[1], c[2] = S[0, 0] / 2, S[0, 1], S[1, 1] / 2
+    d = M @ c - h
+    if report:
+        q = free & ok
+        print("BUST_DOME: cup at x %+.3f: dome radii %.1f, %.1f cm; moves over its weight %.2f..%.2f mm" %
+              (a[0], -100 / k[0], -100 / k[1], d[q].min() * 1000, d[q].max() * 1000))
+    return d[:, None] * nz
+
+
+def plan(G, cfg, skin, report=True, dome=False):
+    """The shell's welded points U, their displacement D, the outer mask, the field over the outer surface. dome: the
+    s3 step (the cup's front onto a large-scale fit) instead of the 1-3 cm smoothing."""
+    tag = "BUST_DOME" if dome else "BUST_SHELL"
     B, BN, bt = skin[:3]
     p = _prim(G, cfg["shell"])
     P0 = G.get(p["attributes"]["POSITION"]).astype(float)
@@ -257,8 +305,29 @@ def plan(G, cfg, skin, report=True):
     # (the opening's rolled edge is carried, not smoothed: the weight eases in over RIM off the rim)
     rim = np.where((np.abs(nd) <= 0.5) & reg)[0]
     drim = cKDTree(U[rim]).query(X)[0] if len(rim) else np.full(len(X), 1.0)
-    ramp = _ss((drim - RIM[0]) / (RIM[1] - RIM[0]))
+    rr = DOME_RIM if dome else RIM
+    ramp = _ss((drim - rr[0]) / (rr[1] - rr[0]))
     w = W[oi] * ramp
+    if dome:
+        # (weight: 1 round each cup's apex (its outer face's most forward point), easing to 0 by DOME_R[1] and at the
+        # cup's border; not on the fold under the cup)
+        X0 = U[oi]
+        side = np.where(X0[:, 0] >= 0, 0, 1)
+        dap = np.full(len(X0), 9.0)
+        apex = []
+        for sd, sg in ((0, 1), (1, -1)):
+            q = np.where((side == sd) & (cup_weight(X0, cfg) > 0.999))[0]
+            a = X0[q[X0[q, 2].argmax()]]
+            dap[side == sd] = np.linalg.norm(X0[side == sd] - a, axis=1)
+            apex.append(a)
+            if report:
+                print("BUST_DOME: apex %+d at %s" % (sg, np.round(a, 3)))
+        wd = _ss((DOME_R[1] - dap) / (DOME_R[1] - DOME_R[0])) * cup_weight(X0, cfg) * \
+            _ss((NU[oi][:, 1] - DOME_FOLD[0]) / (DOME_FOLD[1] - DOME_FOLD[0]))
+        w = wd * ramp
+        live = w > 0
+        tip = _ss((DOME_TIP + 0.010 - dap) / 0.010)
+        fitpts = (drim > DOME_RIM[1]) & (NU[oi][:, 1] > DOME_FOLD[0])
     # (and moves with the surface beside it: its points take the Gaussian (5 mm) mean move of the points past the ramp)
     edge = np.where(live & (ramp < 0.999))[0]
     core = np.where(ramp >= 0.999)[0]
@@ -280,11 +349,21 @@ def plan(G, cfg, skin, report=True):
     keep0 = drim > RIMFIT
     keep = keep0.copy()
     held = 0
-    for it in range(ITERS):
-        h, n = mls(X[live], X, keep, NX[live], NX)
-        # (moved along its designed normal, onto the fit: no sliding along the surface)
-        c = np.abs((n * NX[live]).sum(1))
-        X[live] += (w[live] * h * np.sign((n * NX[live]).sum(1)) / np.maximum(c, 0.5))[:, None] * NX[live]
+    for it in range(1 if dome else ITERS):
+        if dome:
+            # (each cup's front faired as a thin plate over its apex plane: out freely, in only at the apex)
+            mv = np.zeros_like(X)
+            for sd in (0, 1):
+                q = side == sd
+                mv[q] = _fair(X[q], NX[q], fitpts[q], w[q] > 0.5, apex[sd], report)
+            nm = (mv * NX).sum(1)
+            mv -= (np.minimum(nm, 0) * (1 - tip))[:, None] * NX
+            X[live] += w[live, None] * mv[live]
+        else:
+            h, n = mls(X[live], X, keep, NX[live], NX)
+            # (moved along its designed normal, onto the fit: no sliding along the surface)
+            c = np.abs((n * NX[live]).sum(1))
+            X[live] += (w[live] * h * np.sign((n * NX[live]).sum(1)) / np.maximum(c, 0.5))[:, None] * NX[live]
         if cfg.get("mirror", True):
             # (the fuller of the cup and its mirror: each point out to its mirror's surface where that is proud)
             M = X.copy(); M[:, 0] *= -1
@@ -306,7 +385,9 @@ def plan(G, cfg, skin, report=True):
             g = np.where(ok, lo[lo > 1e-6][np.where(ok, jj, 0)] * np.exp(-0.5 * (np.where(ok, dd, 0) / 0.006) ** 2), 0)
             # (along the point's own normal, by what her normal's share of it needs)
             X[li] += (g.max(1) / np.maximum((NX[li] * out_n[li]).sum(1), 0.5))[:, None] * NX[li]
-        if it < ITERS - 4:
+        if dome:
+            pass
+        elif it < ITERS - 4:
             r, _ = mls(X, X, keep, NX, NX)
             keep = keep0 & (np.abs(r) < ROBUST)
         else:
@@ -336,20 +417,22 @@ def plan(G, cfg, skin, report=True):
     near = cup_weight(U, cfg, cfg["ease"] + 0.02) > 0
     fld = _Field(U[near], (np.cumsum(near) - 1)[F[near[F].all(1)]], D[near])
     if report and held:
-        print("BUST_SHELL: %d outer points held out so the inner face keeps %.1f mm over her skin" % (held, MIN_GAP * 1000))
+        print(tag + ": %d outer points held out so the inner face keeps %.1f mm over her skin" % (held, MIN_GAP * 1000))
     if report:
-        print("BUST_SHELL: %d outer points smoothed (%d at full weight), %d shell points carried, largest move %.2f mm" %
+        print(tag + ": %d outer points smoothed (%d at full weight), %d shell points carried, largest move %.2f mm" %
               (int(live.sum()), int((w > 0.999).sum()), len(rest), np.linalg.norm(D, axis=1).max() * 1000))
     return U, wid, D, outer, fld
 
 
-def shell(path, cfg, art, force=False, report=True):
-    """The step on one outfit gltf, in place; returns the largest move (m), or None when it has had it."""
+def shell(path, cfg, art, force=False, report=True, dome=False):
+    """The step on one outfit gltf, in place; returns the largest move (m), or None when it has had it. dome: the s3
+    step (done-mark DOME_MARK; it drops the convexity bake's mark, so detail() bakes again from the new shape)."""
     G = _Gl(path)
-    if G.g.get("asset", {}).get("extras", {}).get(MARK) is not None and not force:
-        print("BUST_SHELL: %s has had it" % os.path.basename(path))
+    mark, tag = (DOME_MARK, "BUST_DOME") if dome else (MARK, "BUST_SHELL")
+    if G.g.get("asset", {}).get("extras", {}).get(mark) is not None and not force:
+        print("%s: %s has had it" % (tag, os.path.basename(path)))
         return None
-    U, wid, D, outer, fld = plan(G, cfg, _skin(art, cfg.get("tuck")), report)
+    U, wid, D, outer, fld = plan(G, cfg, _skin(art, cfg.get("tuck")), report, dome)
     big = 0.0
     for name in (cfg["shell"],) + tuple(cfg["riders"]):
         pr = _prim(G, name)
@@ -374,8 +457,11 @@ def shell(path, cfg, art, force=False, report=True):
         mm = float(np.linalg.norm(mvp, axis=1).max())
         big = max(big, mm)
         if report:
-            print("BUST_SHELL:   %s: %d points moved, largest %.2f mm" % (name, int(moved.sum()), mm * 1000))
-    G.g.setdefault("asset", {}).setdefault("extras", {})[MARK] = round(big * 1000, 3)
+            print(tag + ":   %s: %d points moved, largest %.2f mm" % (name, int(moved.sum()), mm * 1000))
+    ex = G.g.setdefault("asset", {}).setdefault("extras", {})
+    ex[mark] = round(big * 1000, 3)
+    if dome:
+        ex.pop(DMARK, None)
     G.save()
     return big
 
@@ -385,6 +471,35 @@ DMARK = "bust_detail"
 DSIGMA = 0.020      # the convexity's smoothing over the cups (m)
 DFLOOR = 0.45       # no less convex than this over the cups: the shader's `hollow` (darker, rougher) starts under 0.45
 DEDGE = (0.004, 0.008)  # the opening's rolled edge (baked edge distance, m) keeps its own value, eased in over this
+
+
+def _convexity(P, N, I):
+    """heroine_outfits.detail's convexity of each point (0.5 flat; over it convex), from the welded shape: how far it
+    stands out from the mean of its edge neighbours along its normal per mean edge length, smoothed over ~12 mm."""
+    import scipy.sparse as sparse
+    U, wid = _weld(P)
+    T = wid[I]
+    NU = np.zeros_like(U)
+    np.add.at(NU, wid, N)
+    NU /= np.maximum(np.linalg.norm(NU, axis=1, keepdims=True), 1e-12)
+    e = np.unique(np.sort(np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]], 1), axis=0)
+    e = e[e[:, 0] != e[:, 1]]
+    Am = sparse.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])),
+                           shape=(len(U), len(U))).tocsr()
+    Am.data[:] = 1
+    deg = np.asarray(Am.sum(1)).ravel()
+    has = deg > 0
+    mnb = lambda x: np.where(has if x.ndim == 1 else has[:, None],
+                             (Am @ x) / np.maximum(deg, 1).reshape((-1,) + (1,) * (x.ndim - 1)), x)
+    L = np.linalg.norm(U[e[:, 0]] - U[e[:, 1]], axis=1)
+    el = np.zeros(len(U))
+    np.add.at(el, e[:, 0], L)
+    np.add.at(el, e[:, 1], L)
+    el = el / np.maximum(deg, 1) + 1e-6
+    c = np.where(has, -((mnb(U) - U) * NU).sum(1) / el, 0.0)
+    for _ in range(int(np.clip((0.012 / max(float(np.median(el)), 1e-4)) ** 2, 3, 120))):
+        c = 0.5 * c + 0.5 * mnb(c)
+    return (np.tanh(c * 4) * 0.5 + 0.5)[wid]
 
 
 def detail(path, cfg, art, force=False, report=True):
@@ -405,13 +520,16 @@ def detail(path, cfg, art, force=False, report=True):
     P = G.get(A["POSITION"]).astype(float)
     N = G.get(A["NORMAL"]).astype(float)
     D = G.get(A["TEXCOORD_1"]).astype(float)
+    # (s3: the convexity baked again from the piece's current shape, heroine_outfits.detail's formula, so a shape step
+    # before this (the dome) is what the shader sees; then smoothed and floored as below)
+    cs = _convexity(P, N, G.get(pr["indices"]).astype(np.int64).reshape(-1, 3))
     B, BN, bt = _skin(art)[:3]
     _, j = bt.query(P)
     out = (N * BN[j]).sum(1) > 0.5
     w = cup_weight(P, cfg) * out * _ss((D[:, 0] - DEDGE[0]) / (DEDGE[1] - DEDGE[0])) * _ss((N[:, 1] + 0.85) / 0.15)
     U, wid = _weld(P[out])
     cu = np.zeros(len(U))
-    np.add.at(cu, wid, D[out, 1])
+    np.add.at(cu, wid, cs[out])
     cu /= np.bincount(wid, minlength=len(U))
     nu = np.zeros_like(U)
     np.add.at(nu, wid, N[out])
@@ -426,6 +544,10 @@ def detail(path, cfg, art, force=False, report=True):
         sm[k] = (g * cu[js]).sum() / max(g.sum(), 1e-12)
     new = D[:, 1].copy()
     new[sel] = D[sel, 1] + w[sel] * (np.maximum(sm, DFLOOR) - D[sel, 1])
+    if report:
+        q = sel[w[sel] > 0.999]
+        print("BUST_DETAIL: from the shape over the cups p1/p50/p99 %.3f/%.3f/%.3f; set %.3f..%.3f" %
+              (*np.percentile(cs[q], [1, 50, 99]), new[q].min(), new[q].max()))
     big = float(np.abs(new - D[:, 1]).max())
     D[:, 1] = new
     G.put(A["TEXCOORD_1"], D.astype(np.float32))
@@ -443,6 +565,7 @@ def main(a):
         pth = os.path.join(art, "heroine_outfit_%s.gltf" % o)
         if os.path.exists(pth) and o in CONFIG:
             shell(pth, CONFIG[o], art, force="--force" in a)
+            shell(pth, CONFIG[o], art, force="--force" in a, dome=True)
             detail(pth, CONFIG[o], art, force="--force" in a)
 
 

@@ -13,9 +13,11 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
      hollow), each outfit marked breast_sym_follow (armor 12, the owner's dent)  [breast_sym]
   3. bust_shell_post: the arcanist bodysuit's leather over her cups as a smooth, full shell (no hollow at her left
      lower inner breast, no lumps along the zip edges, no nipple pokes; the stitching and piping carried, her tucked
-     skin kept >= 1 mm under it); per-outfit config, only the arcanist (armor 14, the owner 21 Oct); then its
-     baked convexity (UV2.y) over the cups made smooth to match (s2: it kept the old poke and hollow)
-                                                                    [outfit's bust_shell, bust_detail]
+     skin kept >= 1 mm under it); per-outfit config, only the arcanist (armor 14, the owner 21 Oct); then (s3)
+     each cup's front as one round, full dome at the 3-6 cm scale (no apex highlight, no crease to the zip); then
+     its baked convexity (UV2.y) over the cups baked again from that shape and made smooth (s2: it kept the old
+     poke and hollow). Order: shell, dome, detail; the dome drops bust_detail so the bake follows it
+                                                                    [outfit's bust_shell, bust_dome, bust_detail]
   4. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
      follow, records re-keyed (face 36)                                          [heroine_neck_shape]
   5. heroine_neck_relief: her collar's soft relief, a normal map on skin_graft (softened face 37: SOFT)  [heroine_neck_relief]
