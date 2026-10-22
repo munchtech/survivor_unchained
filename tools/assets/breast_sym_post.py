@@ -398,12 +398,18 @@ def remap_records(path, field):
     return hit
 
 
-def follow_piece(path, field):
+def follow_piece(path, field, mark=None):
     """A piece file's points over the patch carried by the move of her skin under them (the nearest moved bind
-    point's move, in full within FOLLOW[0], none past FOLLOW[1]). Returns the largest move (m)."""
+    point's move, in full within FOLLOW[0], none past FOLLOW[1]). Returns the largest move (m).
+    (armor 14: each moved point's stored normal turned by its surface's change, as correct() carries hers: the moved
+    points kept their old normals before, so a garment kept the old hollow's shading. mark: a done-mark written in the
+    file's asset extras, and a file that has it is skipped)"""
     if not len(field["P0"]):
         return 0.0
     G = _Gl(path)
+    if mark and G.g.get("asset", {}).get("extras", {}).get(mark):
+        print("BREAST_SYM: %s has had %s" % (os.path.basename(path), mark))
+        return 0.0
     T = cKDTree(field["P0"])
     Dm = field["P1"].astype(float) - field["P0"].astype(float)
     big = 0.0
@@ -418,17 +424,58 @@ def follow_piece(path, field):
                 continue
             P1 = (P + mv).astype(np.float32)
             G.put(p["attributes"]["POSITION"], P1)
+            if "NORMAL" in p["attributes"] and "indices" in p:
+                # (welded by place, so a UV seam's split copies turn alike)
+                _, wid = np.unique(np.round(P * 1e6).astype(np.int64), axis=0, return_inverse=True)
+                wid = wid.ravel()
+                F = wid[G.get(p["indices"]).astype(np.int64).reshape(-1, 3)]
+                U0 = np.zeros((wid.max() + 1, 3)); U0[wid] = P
+                U1 = np.zeros_like(U0); U1[wid] = P1
+                dN = _vn(U1, F) - _vn(U0, F)
+                N = G.get(p["attributes"]["NORMAL"]).astype(float)
+                on = np.linalg.norm(mv, axis=1) > 1e-7
+                N[on] += dN[wid][on]
+                N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+                G.put(p["attributes"]["NORMAL"], N.astype(np.float32))
             a = G.g["accessors"][p["attributes"]["POSITION"]]
             a["min"], a["max"] = P1.min(0).tolist(), P1.max(0).tolist()
             big = max(big, float(np.linalg.norm(mv, axis=1).max()))
-    if big > 0:
+    if mark:
+        G.g.setdefault("asset", {}).setdefault("extras", {})[mark] = round(big * 1000, 3)
+    if big > 0 or mark:
         G.save()
     return big
 
 
+OUTFIT_MARK = "breast_sym_follow"
+
+
+def follow_outfits(art, field):
+    """(armor 14, 22 October: the arcanist bodysuit's dent on her left breast, the owner's crop
+    bodysuit_dent_closeup.png.) The outfits are built on her body as Blender exports it, before this step; with
+    --no-follow her skin moved out up to 3.2 mm and the garments over it kept the old hollow (the arcanist top's
+    plumleather: a 2.1 mm pit at her left lower inner breast against 1.4 on her right). So the four outfits' points over
+    the patch now follow her skin, as a piece's do; not a refit (nothing else moves). The slot pieces (armor/*.gltf)
+    are fitted after this by build.py --all, so they never need it."""
+    for o in ("warden", "arcanist", "ranger", "reaver"):
+        pth = os.path.join(art, "heroine_outfit_%s.gltf" % o)
+        if os.path.exists(pth):
+            print("BREAST_SYM: outfit %s followed, largest %.2f mm" % (o, follow_piece(pth, field, OUTFIT_MARK) * 1000))
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
-    if a and a[0] == "--art":
+    if a and a[0] == "--outfits-from":
+        # (a one-off on built art whose body has had the step: the field from the body before and after it, e.g.
+        # git show d7d35321^:godot/art/people/heroine.glb and d7d35321:..., same build so the same point order)
+        def _pts(f):
+            G = _Gl(f)
+            p = G.g["meshes"][0]["primitives"][0]
+            return G.get(p["attributes"]["POSITION"]).astype(float)
+        A, B = _pts(a[1]), _pts(a[2])
+        mv = np.linalg.norm(B - A, axis=1) > 1e-7
+        follow_outfits(a[3], {"P0": A[mv], "P1": B[mv]})
+    elif a and a[0] == "--art":
         art = a[1]
         fld = correct(os.path.join(art, "heroine.glb"), os.path.join(art, "heroine.glb"))
         if fld is not None:
@@ -440,11 +487,9 @@ if __name__ == "__main__":
                             h = remap_records(os.path.join(dd, fn), fld)
                             if h:
                                 print("BREAST_SYM: %s/%s re-keyed %d" % (sub, fn, h))
-            # (--no-follow: her body and the records only; no piece file touched, the owner's "no outfit refit")
-            for o in (() if "--no-follow" in a else ("warden", "arcanist", "ranger", "reaver")):
-                pth = os.path.join(art, "heroine_outfit_%s.gltf" % o)
-                if os.path.exists(pth):
-                    print("BREAST_SYM: %s pieces followed, largest %.2f mm" % (o, follow_piece(pth, fld) * 1000))
+            # (--no-follow: no slot piece touched; the outfits follow unless --no-outfit-follow (armor 14))
+            if "--no-outfit-follow" not in a:
+                follow_outfits(art, fld)
             # (the slot pieces fitted to her: armor/*.gltf; a piece standing clear of the patch is untouched)
             ad = os.path.join(os.path.dirname(art.rstrip("/\\")), "armor")
             for fn in sorted(os.listdir(ad)) if os.path.isdir(ad) and "--no-follow" not in a else []:
