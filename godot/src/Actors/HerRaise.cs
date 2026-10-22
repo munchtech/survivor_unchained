@@ -121,7 +121,7 @@ public partial class HerRaise : SkeletonModifier3D
             var dir = (inv * sk.GetBoneGlobalPose(lower[i]).Origin - inv * sk.GetBoneGlobalPose(upper[i]).Origin).Normalized();
             float el = RaiseRamp.Elevation(dir.Y);
             float w = RaiseRamp.Weight(el, Start, Full);
-            if (print) GD.Print($"raise {(i == 0 ? "l" : "r")} el {el:0.0} w {w:0.00}");
+            if (print) GD.Print($"raise {(i == 0 ? "l" : "r")} el {el:0.0} w {w:0.00} squash {squash:0.00}");
             // her pec fold (heroine.glb's axilla_fold_l/r, tools/assets/axilla_fold_post.py), on under steel too
             SetFold(sk, i, w, w * Mathf.Lerp(Rigid, 1f, squash));
             if (w <= 0) continue;
