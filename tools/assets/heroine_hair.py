@@ -305,7 +305,7 @@ def depth_in(c):
     return np.array([outer.get(k, r_) - r_ for k, r_ in zip(key(tc, c[:, 2]), rc)])
 
 
-def roots(spacing, above=0.0, below=None, soft=0.0):
+def roots(spacing, above=0.0, below=None, soft=0.0, soft_at=None):
     """Points over her scalp about `spacing` apart (randomly, evenly), at
     least `above` over her hairline (and with `below`, no more than that);
     with `soft`, fewer and fewer of them toward that edge over so far (no
@@ -347,8 +347,8 @@ def roots(spacing, above=0.0, below=None, soft=0.0):
     pts, nrm = pts[good], nrm[good]
     if soft > 0:
         th = np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))
-        m = above * np.interp(np.degrees(np.abs(th)), [0, 50, 80], [1.0, 1.0, 0.25])
-        p = np.clip((rise(pts) - m) / soft, 0, 1)
+        m = (above if soft_at is None else soft_at) * np.interp(np.degrees(np.abs(th)), [0, 50, 80], [1.0, 1.0, 0.25])
+        p = np.clip((rise(pts) - (0.0 if soft_at is None else hl_jit(pts)) - m) / soft, 0, 1)   # (soft_at: from the jittered edge, r6)
         keep = RNG.random(len(pts)) < 0.12 + 0.88 * p * p * (3 - 2 * p)
         pts, nrm = pts[keep], nrm[keep]
     return pts, nrm
@@ -702,7 +702,7 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
     # narrower: a sparse row of fine strands thinning out from the edge.)
     if fine:
         spacing = 0.0019
-    pts, nrm = roots(spacing, above=-0.001, below=0.022, soft=0.014)
+    pts, nrm = roots(spacing, above=-0.007 if fine else -0.001, below=0.03 if fine else 0.022, soft=0.014, soft_at=-0.003 if fine else None)   # (r6: round the jittered edge)
     if fine:
         rj = rise(pts) - hl_jit(pts)                             # (face 38 r3: from the jittered edge; none in its recesses)
         keep = (RNG.random(len(pts)) < np.interp(rj, [0.0, 0.004, 0.012, 0.022], [1.0, 0.9, 0.45, 0.2])) & (rj > -0.001)
@@ -764,10 +764,12 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
     # never more than 0.7 rad) with a gentle curl, a lighter copper with no
     # darkening at the root or within (flat: their vertex colour's blue), and
     # fainter (0.3 to 0.55), denser at the edge.)
-    pts, nrm = roots(0.0021 if fine else 0.0026, above=0.0, below=0.004 if fine else 0.003)
+    pts, nrm = roots(0.0021 if fine else 0.0026, above=-0.007 if fine else 0.0, below=0.016 if fine else 0.003)   # (r6: a band round the jittered edge)
     th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
     keep = (RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.6, 0.85, 1.0])) & high(pts)
     keep &= rise(pts) - hl_jit(pts) > -0.002                     # (face 38 r3: fewer in the recesses)
+    if fine:                                                     # (r6: the first 4 mm over the jittered edge, as the plain edge's were)
+        keep &= (rise(pts) - hl_jit(pts) < 0.004) & (np.random.default_rng(3910).random(len(pts)) < 0.6)
     pts, nrm = pts[keep], nrm[keep]
     n, k = len(pts), 6
     turn = RNG.normal(0, 0.2, n) + np.where(RNG.random(n) < 0.08, np.clip(RNG.normal(0, 0.5, n), -0.7, 0.7), 0)
@@ -795,33 +797,78 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
     return out
 
 
-def edge_wisps(comb, sides, n_want=14):
+EDGE_CLUSTERS = 12             # (face 39 r6: the braid's edge clusters at her front hairline)
+
+
+def edge_wisps(comb, sides, n_want=EDGE_CLUSTERS):
     """(face 38 r5, the judge: the front hairline a cap rim at 1:1.) 10-15
     wisps from the jittered edge reaching 3-5 mm onto her forehead,
-    60-70% opaque, base colour, matte."""
-    rng = np.random.default_rng(3805)
-    pts, nrm = roots(0.003, above=0.0, below=0.003)
-    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    60-70% opaque, base colour, matte.
+    (22 October, face 39 r6, the judge: wisps a hair wide vanished at the
+    front Look, the edge one even arc. Now CLUSTERS: 10-14 of 3-6 hairs, each
+    sharing a root, a little apart and fanning out toward their tips (1-2 px
+    across at the Look), reaching 5-8 mm past the jittered edge onto her skin,
+    ~80% opaque at the root fading to nothing at the tip, base colour, matte;
+    placed irregularly, more by her temples and her parting, none mirrored.)"""
+    rng = np.random.default_rng(3906)
+    pts, nrm = roots(0.0012, above=-0.007, below=0.02)
+    th = np.degrees(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1])))
     rj = rise(pts) - hl_jit(pts)
-    cand = np.nonzero((th < 55) & (rj > 0.0) & (rj < 0.003))[0]
-    pick = rng.choice(cand, min(n_want, len(cand)), replace=False)
-    pts, nrm = pts[pick], nrm[pick]
-    n, k = len(pts), 6
-    turn = rng.uniform(-0.5, 0.5, n)
+    cand = np.nonzero((np.abs(th) < 58) & (rj > 0.0005) & (rj < 0.0025))[0]
+    # (more at her temples and by her parting (part_side's, her left))
+    w = 0.08 + np.exp(-((np.abs(th[cand]) - 44.0) / 7.0) ** 2) + 0.9 * np.exp(-((pts[cand, 0] - 0.022) / 0.007) ** 2)
+    pick = []
+    for i in rng.permutation(len(cand)):                     # (weighted, none within 6-9 mm of another)
+        if len(pick) >= n_want:
+            break
+        j = cand[i]
+        if rng.random() > w[i] / w.max():
+            continue
+        if any(np.linalg.norm(pts[j] - pts[k]) < rng.uniform(0.005, 0.008) for k in pick):
+            continue
+        pick.append(j)
+    pick = np.array(pick)
+    m = len(pick)
+    per = rng.integers(3, 7, m)                               # (3-6 hairs a cluster)
+    ci = np.repeat(np.arange(m), per)
+    n, k = len(ci), 7
+    side_ = np.cross(nrm[pick], -comb(pts[pick], sides(pts[pick]) if sides else None) if sides else -comb(pts[pick]))
+    side_ /= np.linalg.norm(side_, axis=1)[:, None] + 1e-9
+    r_pts = pts[pick][ci] + side_[ci] * rng.uniform(-0.0003, 0.0003, n)[:, None]
+    r_nrm = nrm[pick][ci]
+    turn = (rng.uniform(-0.45, 0.45, m))[ci] + rng.uniform(-0.12, 0.12, n)      # (the cluster's way, each hair fanning a little off it)
 
-    def down(p, side=None):                                      # (out over her forehead: against the comb, a little aside)
-        w = -(comb(p, side) if side is not None else comb(p))
-        return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
-    L = rise(pts) - hl_jit(pts) + rng.uniform(0.003, 0.005, n)
-    P = lie(pts - nrm * 0.0005, combed(pts, nrm, down(pts)), down, L / (k - 1), np.full(n, k - 1), 0.0008,
-            side=sides(pts) if sides else None, face_past=0.006)
+    def down(p, side=None):                                      # (down onto her forehead (against the comb lies flat there), a little aside)
+        w_ = np.array([0.0, 0.0, -1.0]) - 0.3 * (comb(p, side) if side is not None else comb(p))
+        w_ = w_ / np.linalg.norm(w_, axis=1)[:, None]
+        return w_ * np.cos(turn)[:, None] + np.cross(r_nrm, w_) * np.sin(turn)[:, None]
+    reach = (rng.uniform(0.005, 0.008, m))[ci] * rng.uniform(0.85, 1.0, n)
+    L = (rise(r_pts) - hl_jit(r_pts) + reach) * 1.8 + 0.002
+    sd = sides(r_pts) if sides else None
+    P = lie(r_pts - r_nrm * 0.0005, combed(r_pts, r_nrm, down(r_pts, sd)), down, L / (k - 1), np.full(n, k - 1), 0.0008,
+            side=sd, face_past=0.004 + reach + np.maximum(0.0, -hl_jit(r_pts)))
+    e_ = rise(P.reshape(-1, 3)).reshape(n, -1) - hl_jit(P.reshape(-1, 3)).reshape(n, -1)
+    for i in range(n):                                       # (cut where it is its reach past the edge)
+        past = np.nonzero(e_[i] < -reach[i])[0]
+        if len(past):
+            j = past[0]
+            f_ = (e_[i, j - 1] + reach[i]) / max(e_[i, j - 1] - e_[i, j], 1e-6)
+            P[i, j] = P[i, j - 1] + (P[i, j] - P[i, j - 1]) * f_
+            P[i, j + 1:] = P[i, j]
     P = resample(P, k)
-    c = cards(P, rng.uniform(0.0006, 0.0009, n), [0, 1, 2], 0.0008, narrow=0.6, floor=0.0008)
-    c["alpha"] = np.repeat(rng.uniform(0.6, 0.7, n), 3 * k)
-    c["tip_fade"] = (0.4, 0.002)
+    c = cards(P, rng.uniform(0.0003, 0.00045, n), [0, 1, 2], 0.0008, narrow=0.6, floor=0.0006)
+    s_ = np.clip(c["arc"] / np.maximum(c["length"], 1e-6), 0, 1)
+    fin = np.clip(c["arc"] / 0.0012, 0, 1)
+    # (each hair ~0.5 at its root: three to six overlapping read ~80% there; to nothing at the tip)
+    c["alpha"] = 0.5 * fin * fin * (3 - 2 * fin) * (1 - s_) ** 1.3
+    c["blunt"] = True
     c["mat"] = 3
     c["lit"], c["matte"] = True, True
-    print("  edge wisps: %d cards" % n)
+    reached = (rise(P[:, -1]) - hl_jit(P[:, -1]))
+    print("  edge clusters: %d (%d hairs, %d-%d each), reach past the edge %.1f-%.1f mm (median %.1f)" % (
+        m, n, per.min(), per.max(), -reached.max() * 1000, -reached.min() * 1000, -np.median(reached) * 1000))
+    print("    reach past the edge, mm: %s" % " ".join("%.1f" % (-v * 1000) for v in np.sort(reached)))
+    print("    at deg: %s" % " ".join("%.0f" % t for t in np.sort(th[pick])))
     return c
 
 
@@ -835,19 +882,33 @@ def rise(p):
 # pushed back and forth +-3 mm every ~10 mm along it, and recessed 6 mm at
 # each temple: how far back her hair's edge is drawn there, in metres.)
 HL_JIT = False
-_HLK = np.random.default_rng(38).uniform(0.002, 0.004, 80) * np.where(np.arange(80) % 2, 1, -1) * np.where(np.random.default_rng(39).random(80) < 0.25, -1, 1)   # (r5: +-2-4 mm, seen at 1:1)
+# (22 October, face 39 r6, the judge: still an even arc, a +-2-4 mm sine. Now irregular: knots 6-16 mm apart
+# along her hairline, each 3.5-6 mm back or forward (mostly but not always the other way from the last), and a
+# finer +-1.2 mm ripple every 3-5 mm over it; recessed 9.5 mm at her right temple, 8.5 at her left (with the wave ~7 and ~10), not mirrored.)
+_HL_R = np.random.default_rng(3907)
+_HLS = np.cumsum(_HL_R.uniform(0.006, 0.016, 70))                     # (knots, metres along her hairline, from behind her)
+_HLV = _HL_R.uniform(0.0035, 0.006, 70) * np.cumprod(np.where(_HL_R.random(70) < 0.7, -1, 1))
+_HLS2 = np.cumsum(_HL_R.uniform(0.003, 0.005, 200))
+_HLV2 = _HL_R.uniform(-0.0012, 0.0012, 200)
+HL_RECESS = ((-50.0, 10.0, 0.0095), (54.0, 12.0, 0.0085))           # (her right, her left: degrees, width, depth)
+
+
+def _knots(s, S, Vk):
+    i = np.clip(np.searchsorted(S, s) - 1, 0, len(S) - 2)
+    f = np.clip((s - S[i]) / (S[i + 1] - S[i]), 0, 1)
+    f = f * f * (3 - 2 * f)
+    return Vk[i] * (1 - f) + Vk[i + 1] * f
 
 
 def hl_jit(p):
     if not HL_JIT:
         return np.zeros(len(p))
     th = np.arctan2(p[:, 0] - CENTRE[0], -(p[:, 1] - CENTRE[1]))
-    s = (th + np.pi) * 0.085 / 0.010                              # (knots ~10 mm apart along her hairline)
-    i = np.floor(s).astype(int) % 80
-    f = s - np.floor(s)
-    f = f * f * (3 - 2 * f)
-    j = _HLK[i] * (1 - f) + _HLK[(i + 1) % 80] * f
-    return j + 0.006 * np.exp(-((np.degrees(np.abs(th)) - 52.0) / 11.0) ** 2)
+    s = (th + np.pi) * 0.085                                      # (along her hairline, ~8.5 cm round)
+    j = _knots(s, _HLS, _HLV) + _knots(s, _HLS2, _HLV2)
+    d = np.degrees(th)
+    rec = sum(dep * np.exp(-((d - at) / wd) ** 2) for at, wd, dep in HL_RECESS)
+    return j * (1 - 0.5 * rec / 0.0095) + rec                    # (the wave calmer in the recesses: their depth reads)
 
 
 def comb_long(p, side=None):
@@ -1206,6 +1267,20 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
                 t_ = np.clip((c_["length"] * cut - c_["arc"]) / 0.008, 0, 1)
                 a_ = a_ * np.where(cut < 1, t_ * t_ * (3 - 2 * t_), 1.0)
                 print("  ragged tips: %d cards" % int((cut[::K3] < 1).sum()))
+            # (22 October, face 39 r6, the judge: a pale smear over her front right at the Look: the inner and
+            # middle layers' front cards, seen through the outer one, each throwing its own shine (the shine is
+            # not darkened with depth), a lattice of lit lines across the outer layer's way. Over her front
+            # (the first 3 cm over the jittered edge, thinning out by 7 cm; the middle layer only within 30-45
+            # degrees of her front, so her side keeps its band at the turned Look) those two layers are matte:
+            # base colour, the shine left to the outer layer, one band. BRAID_UNDERMATTE=0: as before.)
+            if os.environ.get("BRAID_UNDERMATTE", "1") == "1" and len(out) <= 2:
+                rm_ = np.random.default_rng(3908 + len(out)).random(S_)
+                th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+                zone = rm_ < np.interp(rise(pts) - hl_jit(pts), [0.03, 0.07], [1.0, 0.0]) * (1.0 if len(out) == 1 else np.interp(th_, [30.0, 45.0], [1.0, 0.0]))
+                c_["matte"] = np.repeat(zone, K3)
+                print("  under-layer matte: layer %d, %d front cards" % (len(out) - 1, zone.sum()))
+            if str(len(out) - 1) in os.environ.get("DBG_DROP", ""):     # (test only: hide gathered layer i)
+                a_ = a_ * 0.0
             c_["alpha"] = a_
             c_["floor"] = 0.88                                   # (r5: the inner layer at most ~10% darker: no blotches in the gaps)
         if vol:
@@ -1928,6 +2003,65 @@ def cap(comb, sides=part_side):
 BRAID_FLY = 8                  # (flyaways over her crown and temples, braid)
 
 
+CROWN_CLUSTERS = 4             # (face 39 r6: flyaway clusters over her crown, braid)
+
+
+def crown_clusters(T, comb, n_want=CROWN_CLUSTERS):
+    """(22 October, face 39 r6, the judge: at the close-up her crown one
+    clean dome.) 3-4 clusters of 2-4 straight hairs over her crown, each
+    cluster from one root (within a millimetre), 2-3 cm long, leaving the
+    mass at 15-30 degrees a little astray of the comb, fanning a few degrees
+    apart; lit as the outer hair, shine and all (no depth darkening), faded
+    at their tips. No wire arc, no halo: four breaks in the outline."""
+    rng = np.random.default_rng(3909)
+    pts, nrm = roots(0.006, above=0.05)
+    r_ = rise(pts)
+    th = np.degrees(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1])))
+    far = np.linalg.norm(pts - T, axis=1) > 0.07
+    dy = pts[:, 1] - CENTRE[1]                                # (over her crown, not behind it: -4 to +3 cm about her skull's middle)
+    far &= (dy > -0.04) & (dy < 0.03)
+    top = np.nonzero(far & (nrm[:, 2] > 0.8))[0]           # (two on top, her outline from the front and the close-up)
+    side = np.nonzero(far & (nrm[:, 2] > 0.45) & (nrm[:, 2] < 0.8) & (np.abs(pts[:, 0]) > 0.03))[0]   # (two up her sides, her outline turned)
+    pick = []
+    for group, k_ in ((top, 2), (side, 2)):
+        got = 0
+        for j in rng.permutation(group):                     # (none within 3 cm of another; the side two on her two sides)
+            if got >= k_:
+                break
+            if all(np.linalg.norm(pts[j] - pts[q]) > 0.03 for q in pick) and not (group is side and got == 1 and np.sign(pts[j, 0]) == np.sign(pts[pick[-1], 0])):
+                pick.append(j)
+                got += 1
+    pick = pick[:n_want]
+    pick = np.array(pick)
+    m = len(pick)
+    per = rng.integers(2, 5, m)
+    ci = np.repeat(np.arange(m), per)
+    n, points = len(ci), 10
+    p0, n0 = pts[pick], nrm[pick]
+    w = combed(p0, n0, comb(p0))
+    tw = rng.normal(0, 0.25, m)                               # (each cluster a little astray of the comb)
+    w = w * np.cos(tw)[:, None] + np.cross(n0, w) * np.sin(tw)[:, None]
+    w -= n0 * (w * n0).sum(1)[:, None]
+    w /= np.linalg.norm(w, axis=1)[:, None]
+    a = np.radians(rng.uniform(15, 30, m))[ci] + np.radians(rng.uniform(-3, 3, n))
+    fan = np.radians(rng.uniform(-5, 5, n))                   # (fanning apart within the cluster)
+    wi, ni = w[ci], n0[ci]
+    si = np.cross(ni, wi)
+    wd = wi * np.cos(fan)[:, None] + si * np.sin(fan)[:, None]
+    dd = wd * np.cos(a)[:, None] + ni * np.sin(a)[:, None]
+    L = rng.uniform(0.02, 0.03, m)[ci] * rng.uniform(0.85, 1.0, n)
+    root = p0[ci] + ni * (0.0045 + np.interp(r_[pick][ci], [0.06, 0.09, 0.12], [0.0, 0.003, 0.004]))[:, None]         + si * rng.uniform(-0.0008, 0.0008, n)[:, None]
+    P = root[:, None] + dd[:, None] * (L[:, None] * np.linspace(0, 1, points))[..., None]
+    c = cards(P, rng.uniform(0.0005, 0.0007, n), [0, 1, 2], 0.006, narrow=0.7, floor=0.002)
+    c["alpha"] = np.repeat(rng.uniform(0.7, 0.85, n), 3 * points)
+    c["mat"] = 3
+    c["tip_fade"] = (0.5, 0.012)
+    c["lit"] = True
+    print("  crown clusters: %d (%d hairs, %d-%d each), 20-30 mm, 15-30 deg off; roots rise %s mm, at x y z mm from her skull's middle %s" % (
+        m, n, per.min(), per.max(), " ".join("%.0f" % (v * 1000) for v in r_[pick]), " ".join("(%.0f %.0f %.0f)" % tuple((pts[q] - CENTRE) * 1000) for q in pick)))
+    return [c]
+
+
 def braid_flyaways(T, comb, n_want=BRAID_FLY):
     """(21 October, face 38: the braid's outline one smooth dome.) Fine
     strands lifted off the drawn-back mass at her crown and temples, a little
@@ -1944,6 +2078,8 @@ def braid_flyaways(T, comb, n_want=BRAID_FLY):
     pick = rng.choice(cand, min(n_want, len(cand)), replace=False)
     pts, nrm = pts[pick], nrm[pick]
     n, points = len(pts), 10
+    if os.environ.get("FLY_R6", "1") == "1":                    # (face 39 r6: clusters)
+        return crown_clusters(T, comb)
     if os.environ.get("FLY_R5", "1") == "1":                    # (face 38 r5: no wire arc; each leaves the mass at 10-30 deg)
         w = combed(pts, nrm, comb(pts))
         tw_ = rng.normal(0, 0.15, n)
@@ -2078,7 +2214,7 @@ def build(style):
         at0 += len(c["V"])
     blue = np.concatenate([np.full(len(c["V"]), float(c.get("blue", 0.0))) for c in layers])
     Ch[:, 2] = np.maximum(Ch[:, 2], blue)
-    matte = np.concatenate([np.full(len(c["V"]), bool(c.get("matte"))) for c in layers])
+    matte = np.concatenate([np.broadcast_to(np.asarray(c.get("matte", False), bool), (len(c["V"]),)) for c in layers])
     Ch[matte, 2] = 0.5                                       # (face 38 r5: the shader matte mark: base colour, no shine)
     C = [Ch]
     cp = cap(comb, sides)
