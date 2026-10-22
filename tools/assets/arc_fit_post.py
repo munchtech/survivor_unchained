@@ -1,4 +1,8 @@
-"""The arcanist top's shoulder caps fitted and its collar made even (armor 16 N1, 22 October 2026; max judges J4/J5/A2
+"""RETIRED (armor 17 N3): no longer in heroine_body_post's chain. A max judge (OJ1) failed both steps: the caps' dome
+was her own deltoid (a thinner shell could not fix it) and the notch still showed. heroine_outfits.py now cuts both
+right at the source (CAP_TOP / CAP_LIFT / CAP_THICK, KEEP_SYM). Kept for its measures.
+
+The arcanist top's shoulder caps fitted and its collar made even (armor 16 N1, 22 October 2026; max judges J4/J5/A2
 at the close-up: "the cap sleeves read as inflated pads"; "a small notch in the neckline, screen-left of her throat").
 
 Two post-steps on the built outfit gltf, in place, each with its done-mark in the asset extras (a marked file is

@@ -24,9 +24,10 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   6. heroine_arm_shape --art: her upper arms slimmer on the inner side (girth ~32 -> ~28.5 cm at 25-50%, tapering to
      the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
      records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
-  6b. arc_fit_post: the arcanist top's shoulder caps fitted to her deltoids (~6 -> ~3 mm, the hem's lip closer
-     still) and its collar's top edge on her right stretched to her left's mirror (it ran up to 2.5 cm lower over the
-     front of her neck: a step at the collar's corner) (armor 16 N1)                       [outfit's arc_caps, arc_collar]
+  6b. (retired, armor 17 N3) arc_fit_post fitted the arcanist's caps and evened its collar on the built gltf (armor 16
+     N1); a max judge failed both as cut. heroine_outfits.py now cuts them right: caps ending above her deltoid's bulge,
+     CAP_LIFT off her and CAP_THICK of the leather's thickness (THIN_ZONE), and the collar cut on her Head weight made
+     the same both sides (KEEP_SYM). Not run.
   7. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
@@ -92,8 +93,7 @@ def main(a):
         run(os.path.join(HERE, "heroine_neck_relief.py"), glb, glb)
     if "heroine_arm_shape" not in m:
         run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
-    # (the outfit carries its own done-marks, arc_caps and arc_collar; a marked file is skipped)
-    run(os.path.join(HERE, "arc_fit_post.py"), art, "--only", "caps")  # (collar: not yet, see its docstring)
+    # (6b arc_fit_post retired, armor 17 N3: the caps and collar are cut right in heroine_outfits.py itself)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     # (the body's morphs skipped when on the glb, each outfit's follow when its file is marked)
