@@ -309,18 +309,23 @@ class Checker:
     def clip(self, name, folder, pieces, step=1):
         """{key: (worst mm per frame, where per frame[, outfit mm, outfit where])} over the sampled frames.
         A clip's "grip_slide" (metres, animation 47: keyed.build) moves the piece in her right fist that far along its
-        shaft (keyed.slide_dir of its kind, PIECE_KIND), as the game does (PersonView.Slide)."""
+        shaft (keyed.slide_dir of its kind, PIECE_KIND), and its "grip_tilt" (degrees, animation 48) turns it in the
+        fist about the palm's normal through the pocket first (keyed.grip_pose), as the game does (PersonView.Slide)."""
         c = self.b.clip(name, folder)
         s = float(c.meta.get("grip_slide", 0.0) or 0.0)
+        tl = float(c.meta.get("grip_tilt", 0.0) or 0.0)
         kept = {}
-        if s:
-            from keyed import slide_dir
+        if s or tl:
+            from keyed import slide_dir, grip_pose
             for k in pieces:
-                d = slide_dir(PIECE_KIND.get(k.split("@")[0])) if k.endswith("@hand_r") else None
+                kind = PIECE_KIND.get(k.split("@")[0])
+                d = slide_dir(kind) if k.endswith("@hand_r") else None
                 if d is not None:
                     kept[k] = (self.local[k], self.pts[k], self.coarse[k])
                     v, t = self.local[k]
-                    self.local[k], self.pts[k], self.coarse[k] = (v + s * d, t), self.pts[k] + s * d, self.coarse[k] + s * d
+                    R, tr = grip_pose(kind, s, tl)
+                    self.local[k], self.pts[k], self.coarse[k] = ((v @ R.T + tr, t), self.pts[k] @ R.T + tr,
+                                                                  self.coarse[k] @ R.T + tr)
         try:
             return self._clip(c, pieces, step)
         finally:

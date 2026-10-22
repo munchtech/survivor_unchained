@@ -71,6 +71,16 @@ public sealed class OwnClips
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
 
+    /// <summary>How far the piece in her right hand is turned in her fist about the palm's normal while the clip plays,
+    /// in degrees, + its head away from her fingers (meta "grip_tilt", animation 48: keyed.py grip_of); 0 for none.
+    /// Takes the clip with or without this library's prefix.</summary>
+    public float GripTilt(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "grip_tilt");
+        return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
+    }
+
     /// <summary>A gesture (a nod, an exhale), laid over what plays rather
     /// than played in its place (Gestures); and whether it holds its end.</summary>
     public bool Gesture(string clip) => Meta(clip, "layer").VariantType == Variant.Type.String && (string)Meta(clip, "layer") == "gesture";
