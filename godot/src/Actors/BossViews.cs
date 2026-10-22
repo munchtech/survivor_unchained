@@ -61,11 +61,15 @@ public partial class WardenView : Node3D, IBossView
     public WardenView()
     {
         Name = "FordWarden";
-        view = new PersonView(new PersonSpec
+        // His own baked package (art/npc/ford_warden); the Quaternius townsman only if the package is missing.
+        bool package = NpcPackage.Read("ford_warden") != null;
+        if (!package) GD.Print("WardenView: no ford_warden package, using the old townsman");
+        var spec = package ? new PersonSpec { Sex = Sex.Male, Body = "npc:ford_warden" } : new PersonSpec
         {
             Sex = Sex.Male, Outfit = Lore.OutfitFor(Sex.Male, "ranger", true, true), Beard = true, HairColor = "#6a6660", Skin = "#8e9680",
             Dye = new Dye { Cloth = "#3a3e44" },
-        }, new Held { Right = "zweihander" }, 0.8 * Size)
+        };
+        view = new PersonView(spec, new Held { Right = "zweihander" }, 0.8 * Size)
         { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop" };
         AddChild(view);
         foreach (var mi in view.Person.Meshes)
@@ -82,6 +86,8 @@ public partial class WardenView : Node3D, IBossView
         // white, and read as a white cowl round the face C02 holds in close-up. Until he
         // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
         // brighter paint, so all of it comes out dark with the river.
+        if (package) { EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); }
+        else
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial dyed && dyed.ResourceName == "MI_Ranger")
@@ -120,6 +126,36 @@ public partial class WardenView : Node3D, IBossView
         haloMat = (StandardMaterial3D)((MeshInstance3D)flame.GetChild(1)).MaterialOverride;
         light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = false };
         AddChild(light);
+    }
+
+    static readonly Color EyeBlue = new("#7ac8ff");
+
+    /// <summary>Two small glowing points in his hood, on the head bone at the manifest's head.eyes sockets
+    /// (Head-bone local, metres). Unshaded, so Light() drives their albedo too: eyes off is really off.</summary>
+    void EyeLights()
+    {
+        Vector3 l = new(0.0352f, 0.0833f, 0.1582f), r = new(-0.0352f, 0.0832f, 0.1593f);
+        var d = Json.ParseString(FileAccess.GetFileAsString($"{NpcPackage.Dir("ford_warden")}/manifest.json")).AsGodotDictionary();
+        if (d.TryGetValue("head", out var hv) && hv.VariantType == Godot.Variant.Type.Dictionary
+            && hv.AsGodotDictionary().TryGetValue("eyes", out var ev) && ev.VariantType == Godot.Variant.Type.Dictionary)
+        {
+            var e = ev.AsGodotDictionary();
+            static Vector3 P(Godot.Variant a) { var x = a.AsGodotArray(); return new Vector3((float)x[0], (float)x[1], (float)x[2]); }
+            if (e.TryGetValue("l", out var lv) && e.TryGetValue("r", out var rv)) { l = P(lv); r = P(rv); }
+        }
+        var skel = view.Person.Skeleton;
+        var at = new BoneAttachment3D { Name = "EyeLights", BoneName = skel.FindBone("Head") >= 0 ? "Head" : "head" };
+        skel.AddChild(at);
+        foreach (var p in new[] { l, r })
+        {
+            var m = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = EyeBlue, EmissionEnabled = true, Emission = EyeBlue };
+            at.AddChild(new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = 0.0045f, Height = 0.009f, RadialSegments = 12, Rings = 6, Material = m },
+                Position = p, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            });
+            eyes.Add(m);
+        }
     }
 
     public void SetPose(string p)
@@ -193,7 +229,13 @@ public partial class WardenView : Node3D, IBossView
 
     void Light(double g, float ground)
     {
-        foreach (var m in eyes) m.EmissionEnergyMultiplier = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
+        foreach (var m in eyes)
+        {
+            float k = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
+            m.EmissionEnergyMultiplier = k;
+            // (the unshaded eye lights show their albedo, so it follows the glow: dark at 0)
+            if (m.ShadingMode == BaseMaterial3D.ShadingModeEnum.Unshaded) { float b = Mathf.Clamp(k / 3.6f, 0, 1.5f); m.AlbedoColor = new Color(EyeBlue.R * b, EyeBlue.G * b, EyeBlue.B * b); }
+        }
         // The light is the lamp in his fist, hung a little out from the body.
         double i = LampLit ? g * (5 + Math.Sin(time * 3.1) * 0.8 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
         light.LightEnergy = (float)(i / Math.PI);
