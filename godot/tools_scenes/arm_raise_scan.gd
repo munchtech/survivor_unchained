@@ -19,6 +19,13 @@ func _init():
 	var chest = sk.find_bone("spine_03")
 	var ua = {"l": sk.find_bone("upperarm_l"), "r": sk.find_bone("upperarm_r")}
 	var la = {"l": sk.find_bone("lowerarm_l"), "r": sk.find_bone("lowerarm_r")}
+	var neck = sk.find_bone("neck_01")
+	if neck < 0:
+		for b in n:
+			if sk.get_bone_name(b).begins_with("neck"):
+				neck = b
+				break
+	var pelvis = sk.find_bone("pelvis")
 	var f = FileAccess.open(out, FileAccess.WRITE)
 	for name in lib.get_animation_list():
 		var anim: Animation = lib.get_animation(name)
@@ -38,6 +45,9 @@ func _init():
 		var mx = {"l": -999.0, "r": -999.0}
 		var mt = {"l": 0.0, "r": 0.0}
 		var above = {"l": 0.0, "r": 0.0}
+		var amx = {"l": -999.0, "r": -999.0}
+		var amt = {"l": 0.0, "r": 0.0}
+		var aab = {"l": 0.0, "r": 0.0}
 		var steps = int(ceil(anim.length * 30.0))
 		for i in range(steps + 1):
 			var tm = min(i / 30.0, anim.length)
@@ -54,7 +64,15 @@ func _init():
 				var par = sk.get_bone_parent(b)
 				g[b] = loc if par < 0 else g[par] * loc
 			var inv: Basis = g[chest].basis.orthonormalized().inverse()
+			var axis: Vector3 = (g[neck].origin - g[pelvis].origin).normalized()
 			for s in ["l", "r"]:
+				var ad = (g[la[s]].origin - g[ua[s]].origin).normalized()
+				var aa = rad_to_deg(acos(clamp(ad.dot(-axis), -1.0, 1.0)))
+				if aa > amx[s]:
+					amx[s] = aa
+					amt[s] = tm
+				if aa > 110.0:
+					aab[s] += 1.0 / 30.0
 				var d = (inv * (g[la[s]].origin - g[ua[s]].origin)).normalized()
 				var e = rad_to_deg(asin(clamp(d.y, -1.0, 1.0)))
 				if e > mx[s]:
@@ -65,7 +83,10 @@ func _init():
 		f.store_line(JSON.stringify({"name": name, "length": anim.length,
 			"max_l": snapped(mx["l"], 0.1), "t_l": snapped(mt["l"], 0.01),
 			"max_r": snapped(mx["r"], 0.1), "t_r": snapped(mt["r"], 0.01),
-			"above30_l": snapped(above["l"], 0.01), "above30_r": snapped(above["r"], 0.01)}))
+			"above30_l": snapped(above["l"], 0.01), "above30_r": snapped(above["r"], 0.01),
+			"A_l": snapped(amx["l"], 0.1), "tA_l": snapped(amt["l"], 0.01),
+			"A_r": snapped(amx["r"], 0.1), "tA_r": snapped(amt["r"], 0.01),
+			"A110_l": snapped(aab["l"], 0.01), "A110_r": snapped(aab["r"], 0.01)}))
 	f.close()
 	scene.free()
 	quit()
