@@ -233,6 +233,7 @@ void fragment() {
 			if (piece_fine[i] >= 0.0) p_fine = piece_fine[i];
 		}
 		float rimm = flag < 0.25 ? 1.0 : 0.0;                       // (a rolled edge)
+		float fw_ = max(fwidth(op.x), fwidth(op.y));               // (outside the branch: derivatives in uniform control flow)
 		if (p_fine > 0.0) {
 			// Fine scratches: two crossing sets of thin streaks (about 0.6 mm by 12 mm), their heading wandering over
 			// the piece; worn bright through the patina. Below about 1 mm a pixel they fade to their mean, never shimmer.
@@ -241,7 +242,6 @@ void fragment() {
 			vec2 q2 = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * q;
 			float s1 = smoothstep(0.80, 0.93, noise(vec2(q.x * 1600.0, q.y * 80.0)));
 			float s2 = smoothstep(0.82, 0.94, noise(vec2(q2.x * 1400.0, q2.y * 60.0) + 11.0));
-			float fw_ = max(fwidth(op.x), fwidth(op.y));
 			float lod = 1.0 - smoothstep(0.0005, 0.0014, fw_);
 			float fs = p_fine * mix(0.06, clamp(s1 + s2, 0.0, 1.0), lod) * (1.0 - 0.5 * rimm);
 			wear = max(wear, fs);
