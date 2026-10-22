@@ -31,6 +31,10 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
      sets it while the reaver's top is worn) (armor 15 w1)                                    [worn_reaver]
+  7b. axilla_fold_post: her pec fold as an arm rises, the morphs axilla_fold_l/r (a ridge along the pec's outer edge,
+     an armpit hollow behind it) and raise_crease_l/r (the crease under each breast half filled, its lower edge's
+     shear smoothed), authored on her posed shape at full raise; HerRaise drives them per side; the arcanist, ranger
+     and reaver tops and pauldrons carry the same morphs (they follow her skin) (armor 16 R1)  [axilla_fold; outfit's axilla_fold]
   8. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]
@@ -92,6 +96,8 @@ def main(a):
     run(os.path.join(HERE, "arc_fit_post.py"), art, "--only", "caps")  # (collar: not yet, see its docstring)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
+    # (the body's morphs skipped when on the glb, each outfit's follow when its file is marked)
+    run(os.path.join(HERE, "axilla_fold_post.py"), art)
     if "--no-lod" not in a:
         run(os.path.join(HERE, "heroine_lod.py"), art)
     print("BODY_POST: marks now", sorted(marks(glb)))

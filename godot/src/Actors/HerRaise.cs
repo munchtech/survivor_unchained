@@ -13,18 +13,19 @@ namespace SurvivorUnchained.View;
 /// the cup moves rigidly and never stretches. Every top carries her skin
 /// weights, so all of them follow. Arms down nothing changes.
 /// Knobs: --raise-off, --raise-start/-full (deg), --raise-pitch/-yaw (deg),
-/// --raise-up/-out/-back (m), --raise-sup/-sside (stretch), --raise-rigid (lift under plate), --raise-log.
+/// --raise-up/-out/-back (m), --raise-sup/-sside (stretch), --raise-rigid (lift under plate), --raise-log;
+/// the pec fold morphs (tools/assets/axilla_fold_post.py): --fold K, --crease K (strengths), --fold-off.
 /// </summary>
 public partial class HerRaise : SkeletonModifier3D
 {
     public float Start = Args.Num("raise-start", -10f);
     public float Full = Args.Num("raise-full", 70f);
-    public float Pitch = Args.Num("raise-pitch", 24f);
-    public float Yaw = Args.Num("raise-yaw", 8f);
-    public float Up = Args.Num("raise-up", 0.026f);
-    public float Out = Args.Num("raise-out", 0.008f);
+    public float Pitch = Args.Num("raise-pitch", 20f);
+    public float Yaw = Args.Num("raise-yaw", 12f);
+    public float Up = Args.Num("raise-up", 0.034f);
+    public float Out = Args.Num("raise-out", 0.010f);
     public float Back = Args.Num("raise-back", 0.006f);
-    public float StretchUp = Args.Num("raise-sup", 0.16f);
+    public float StretchUp = Args.Num("raise-sup", 0.22f);
     public float StretchSide = Args.Num("raise-sside", 0.03f);
     /// <summary>How much of the lift a held top (plate) still makes.</summary>
     public float Rigid = Args.Num("raise-rigid", 0f);   // (0: steel cups are one rigid piece with the centre; at 0.5 a gap opened at full raise)
@@ -35,6 +36,62 @@ public partial class HerRaise : SkeletonModifier3D
     double logT;
 
     public HerRaise() { Name = "HerRaise"; }
+
+    readonly bool foldOff = Args.Has("fold-off");
+    readonly float foldK = Args.Num("fold", 1f), creaseK = Args.Num("crease", 1f);
+    // each mesh carrying the morphs (her body, and the cloth tops that follow it): its axilla_fold_l/r and
+    // raise_crease_l/r indices (-1: none)
+    System.Collections.Generic.List<(MeshInstance3D Mi, int[] Ix)>? folds;
+    static readonly string[] FoldShapes = { "axilla_fold_l", "axilla_fold_r", "raise_crease_l", "raise_crease_r" };
+    readonly float[] foldLast = { -1, -1, -1, -1 };
+    double foldScan;
+
+    /// <summary>One side's pec fold (w, on under steel too) and its crease (w times the lift's share).</summary>
+    void SetFold(Skeleton3D sk, int side, float fold, float crease)
+    {
+        if (folds == null)
+        {
+            folds = new();
+            foreach (var c in sk.GetChildren())
+                if (c is MeshInstance3D mi && mi.Mesh != null && mi.FindBlendShapeByName("axilla_fold_l") >= 0)
+                    folds.Add((mi, System.Array.ConvertAll(FoldShapes, n => mi.FindBlendShapeByName(n))));
+            if (log) GD.Print($"raise: fold on {folds.Count} meshes: {string.Join(" ", folds.ConvertAll(f => f.Mi.Name.ToString()))}");
+        }
+        Set(side, foldOff ? 0 : fold * foldK);
+        Set(side + 2, foldOff ? 0 : crease * creaseK);
+
+        void Set(int k, float v)
+        {
+            if (v == foldLast[k]) return;
+            foldLast[k] = v;
+            foreach (var (mi, ix) in folds!)
+                if (GodotObject.IsInstanceValid(mi) && ix[k] >= 0) mi.SetBlendShapeValue(ix[k], v);
+        }
+    }
+
+    // --pose-dump PATH: every bone's skeleton-space pose after all her modifiers, rewritten each half second
+    // (tools/assets/axilla_fold_post.py poses her body and tops with it to measure the fold and poke-through).
+    readonly string? dumpPath = Args.Get("pose-dump");
+    double dumpT;
+
+    public override void _Ready()
+    {
+        if (dumpPath == null || GetSkeleton() is not Skeleton3D sk) return;
+        sk.SkeletonUpdated += () =>
+        {
+            if ((dumpT += GetProcessDeltaTime()) < 0.5) return;
+            dumpT = 0;
+            var sb = new System.Text.StringBuilder("{");
+            for (int b = 0; b < sk.GetBoneCount(); b++)
+            {
+                var t = sk.GetBoneGlobalPose(b);
+                var c = System.Globalization.CultureInfo.InvariantCulture;
+                string f(float v) => v.ToString("R", c);
+                sb.Append(b > 0 ? "," : "").Append($"\"{sk.GetBoneName(b)}\":[{f(t.Basis.X.X)},{f(t.Basis.X.Y)},{f(t.Basis.X.Z)},{f(t.Basis.Y.X)},{f(t.Basis.Y.Y)},{f(t.Basis.Y.Z)},{f(t.Basis.Z.X)},{f(t.Basis.Z.Y)},{f(t.Basis.Z.Z)},{f(t.Origin.X)},{f(t.Origin.Y)},{f(t.Origin.Z)}]");
+            }
+            System.IO.File.WriteAllText(dumpPath, sb.Append('}').ToString());
+        };
+    }
 
     public override void _ProcessModificationWithDelta(double delta)
     {
@@ -52,6 +109,8 @@ public partial class HerRaise : SkeletonModifier3D
             }
         }
         if (chest < 0) return;
+        // (her meshes change as tops are worn: the fold's meshes looked up again each second)
+        if ((foldScan += delta) > 1) { foldScan = 0; folds = null; System.Array.Fill(foldLast, -1f); }
         float squash = sk.GetNodeOrNull<HerJiggle>("../HerJiggle") is HerJiggle j ? j.Squash : 1f;
         var inv = sk.GetBoneGlobalPose(chest).AffineInverse();
         bool print = log && (logT += delta) > 0.1;
@@ -63,6 +122,8 @@ public partial class HerRaise : SkeletonModifier3D
             float el = RaiseRamp.Elevation(dir.Y);
             float w = RaiseRamp.Weight(el, Start, Full);
             if (print) GD.Print($"raise {(i == 0 ? "l" : "r")} el {el:0.0} w {w:0.00}");
+            // her pec fold (heroine.glb's axilla_fold_l/r, tools/assets/axilla_fold_post.py), on under steel too
+            SetFold(sk, i, w, w * Mathf.Lerp(Rigid, 1f, squash));
             if (w <= 0) continue;
             // Left is +X in her chest's frame. Breast bones are children of
             // spine_03, so their pose is already in the chest's frame.
