@@ -89,7 +89,8 @@ public partial class HerJiggle : SkeletonModifier3D
             var local = parent >= 0 ? sk.GetBoneGlobalPose(parent).AffineInverse() * global : global;
             sk.SetBonePoseRotation(m.Index, local.Basis.GetRotationQuaternion());
             float side = 1 / Mathf.Sqrt(Mathf.Max(k, 0.5f));
-            sk.SetBonePoseScale(m.Index, new Vector3(side, k, side));
+            // (times what HerRaise set, the pectoral's stretch as an arm rises)
+            sk.SetBonePoseScale(m.Index, sk.GetBonePoseScale(m.Index) * new Vector3(side, k, side));
         }
     }
 
