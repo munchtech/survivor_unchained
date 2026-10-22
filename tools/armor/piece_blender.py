@@ -1685,6 +1685,385 @@ def paul_measure():
     return out
 
 
+# ---------------------------------------------- the shell: the g-string --
+# (armor 13 g1, b_design_spec 3a: the high-rise g-string. A darkleather front panel and gusset cut from her skin (as
+# warden.thong), two side strings riding high over her bare hip bones to her waist and down behind to a small leather
+# triangle at her sacral dimples, a back string down the cleft flaring into the gusset, and a steel ring at each of the
+# panel's top corners. Everything but the rings follows her skin; each ring is rigid on the panel's blend at its foot.)
+GSTR = {}
+HIP = {}
+
+
+def hip_landmarks():
+    """Her pelvis landmarks for hip_line (both bodies have them; cached): `c` the rays' centre (her pelvis bone's x, y),
+    `asis` {sd: z} the ASIS bump (the most forward point of her front at |x| `asis_x`, between 40 and 180 mm over her
+    crotch), `crest` her iliac crest's estimate (the narrowest point of her side's width between the ASIS and 120 mm
+    above it would be her waist; the crest is taken as the ASIS + `crest_rise`, 35 mm, the anatomical rise of the crest's
+    highest point over the ASIS), `waist` (spine_01's head), `crotch`."""
+    if HIP:
+        return HIP
+    pel = G["head"]("pelvis")
+    cr = float(G["CROTCH"])
+    ax = PRM.get("asis_x", 0.09)
+    asis = {}
+    for sd, s in (("l", 1.0), ("r", -1.0)):
+        zz = np.arange(cr + 0.04, cr + 0.18, 0.002)
+        fy = np.array([G["front_point"](s * ax, z)[1] for z in zz])
+        # (local most-forward point: the ASIS stands proud of the flank below and the waist above; the belly's own
+        # forward bulge lies inside |x| 0.09)
+        k = int(np.argmin(fy))
+        asis[sd] = float(zz[k])
+        sy = [float(G["side_point"](sd, float(pel[1]), z)[0]) if "side_point" in G else 0.0 for z in zz[::5]]
+        print("HIP profile %s: z-crotch mm, front y mm at |x| %.3f, side |x| mm" % (sd, ax),
+              [(round((z - cr) * 1000), round(y * 1000, 1), round(abs(x_) * 1000, 1)) for z, y, x_ in zip(zz[::5], fy[::5], sy)])
+    HIP.update(c=np.array([0.0, float(pel[1]), 0.0]), asis=asis, waist=float(G["WAIST"]), crotch=cr,
+               crest={sd: asis[sd] + PRM.get("crest_rise", 0.035) for sd in "lr"})
+    return HIP
+
+
+def hip_ray(sd, a, z, c=None):
+    """Her skin where a level ray from her pelvis centre (at height z) at azimuth `a` meets it: a = 0 straight ahead,
+    pi/2 out to side `sd` ('l' is +x), pi straight behind. (point, outward normal) or (None, None)."""
+    s = 1.0 if sd == "l" else -1.0
+    c = HIP["c"] if c is None else c
+    d = np.array([s * np.sin(a), -np.cos(a), 0.0])
+    o = np.array([c[0], c[1], z])
+    h = G["SKIN_BVH"].ray_cast(Vector(tuple(o)), Vector(tuple(d)), 0.6)
+    if h[0] is None:
+        return None, None
+    n = np.array(h[1][:])
+    return np.array(h[0][:]), (n if n @ d > 0 else -n)
+
+
+def _az_at_x(sd, z, x_abs, back=False):
+    """The azimuth whose hit at height z lies at |x| = x_abs, on her front (or her back)."""
+    lo, hi = (0.0, np.pi / 2) if not back else (np.pi / 2, np.pi)
+    for _ in range(40):
+        m = (lo + hi) / 2
+        p, _ = hip_ray(sd, m, z)
+        xa = abs(p[0]) if p is not None else 0.0
+        if (xa < x_abs) != back:
+            lo = m
+        else:
+            hi = m
+    return (lo + hi) / 2
+
+
+def hip_line(sd, panel_top=None, panel_hw=None, cross_rise=None, side_z=None, y_z=None, y_hw=None, step=0.004):
+    """The g-string's string path on side `sd` ('l' +x, 'r' -x), on her skin, laid by level rays from her pelvis centre
+    (hip_landmarks()["c"]), from the front panel's top corner round to the back triangle's top corner:
+      1. from the corner (|x| `panel_hw`, `panel_top` over her crotch) up over her ASIS, crossing |x| `asis_x` (0.09)
+         `cross_rise` (25 mm) above the bump, so the bone shows under it;
+      2. to `side_z` (WAIST, spine_01's head) at her side (azimuth 90 deg);
+      3. down behind to the Y's corner (|x| `y_hw`) at `y_z` (CROTCH + 0.15, her sacral dimples).
+    The height is a monotone (PCHIP) curve of the azimuth through those four keys, so it never overshoots between them.
+    Defaults are the piece's params (b_design_spec 3a); every one is an offset from a landmark both bodies have.
+    Returns {"points": (n, 3) on her skin, "normals": (n, 3) outward, "s": (n,) metres along it from the corner,
+    "keys": {"corner", "cross", "side", "y"}: (index, point)}. The cuisses' garter (3b) ends on it, so neither piece
+    needs the other built first."""
+    from scipy.interpolate import PchipInterpolator
+    L = hip_landmarks()
+    cr = L["crotch"]
+    panel_top = PRM.get("panel_top", 0.08) if panel_top is None else panel_top
+    panel_hw = PRM.get("panel_hw", 0.035) if panel_hw is None else panel_hw
+    cross_rise = PRM.get("cross_rise", 0.025) if cross_rise is None else cross_rise
+    side_z = L["waist"] + PRM.get("side_dz", 0.0) if side_z is None else side_z
+    y_z = cr + PRM.get("y_z", 0.15) if y_z is None else y_z
+    y_hw = PRM.get("y_hw", 0.016) if y_hw is None else y_hw
+    ax = PRM.get("asis_x", 0.09)
+    z0 = cr + panel_top
+    z1 = max(L["asis"][sd] + cross_rise + PRM.get("cross_margin", 0.004), z0 + 0.01)
+    a0 = _az_at_x(sd, z0, panel_hw)
+    a1 = _az_at_x(sd, z1, ax)
+    a3 = _az_at_x(sd, y_z, y_hw, back=True)
+    ka = np.array([a0, a1, np.pi / 2, a3])
+    kz = np.array([z0, z1, side_z, y_z])
+    zf = PchipInterpolator(ka, kz)
+    aa = np.linspace(a0, a3, 1400)
+    pts, nrs, az = [], [], []
+    for a in aa:
+        p, n = hip_ray(sd, a, float(zf(a)))
+        if p is not None:
+            pts.append(p), nrs.append(n), az.append(a)
+    pts, nrs, az = np.array(pts), np.array(nrs), np.array(az)
+    run_ = np.r_[0, np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1))]
+    ss = np.linspace(0, run_[-1], max(8, int(round(run_[-1] / step))) + 1)
+    res = lambda a_: np.stack([np.interp(ss, run_, a_[:, k]) for k in range(a_.shape[1])], 1)
+    pts, nrs = res(pts), res(nrs)
+    azs = np.interp(ss, run_, az)
+    nrs /= np.linalg.norm(nrs, axis=1)[:, None]
+    keys = {}
+    for nm, a in (("corner", a0), ("cross", a1), ("side", np.pi / 2), ("y", a3)):
+        k = int(np.argmin(np.abs(azs - a)))
+        keys[nm] = (k, pts[k])
+    return {"points": pts, "normals": nrs, "s": ss, "keys": keys, "az": azs}
+
+
+def _torus(p0, n, w, R, r, nu=12, nv=6):
+    """A ring (major radius R, minor r) lying flat on the point p0's tangent plane, raised r + 0.3 mm along n."""
+    n = np.asarray(n, float) / np.linalg.norm(n)
+    t = np.cross(n, [0, 0, 1.0]) if abs(n[2]) < 0.9 else np.cross(n, [1.0, 0, 0])
+    t /= np.linalg.norm(t)
+    b = np.cross(n, t)
+    c = p0 + n * (r + 0.0003)
+    q = []
+    for i in range(nu):
+        u = 2 * np.pi * i / nu
+        e = np.cos(u) * t + np.sin(u) * b
+        for j in range(nv):
+            v = 2 * np.pi * j / nv
+            q.append(c + e * (R + r * np.cos(v)) + n * (r * np.sin(v)))
+    q = np.array(q)
+    tri = []
+    for i in range(nu):
+        for j in range(nv):
+            a_, b_ = i * nv + j, ((i + 1) % nu) * nv + j
+            c_, d_ = ((i + 1) % nu) * nv + (j + 1) % nv, i * nv + (j + 1) % nv
+            tri += [(a_, b_, c_), (a_, c_, d_)]
+    return q, np.repeat(np.asarray(w, float)[None], len(q), 0), np.array(tri)
+
+
+def _band_along_mid(name, line, width, lift, thick, hides=False, ncol=5, sigma=None):
+    """A skin_band (follow) along a line down her middle (the back string in her cleft), `width` (scalar or per point)
+    across it along x: its columns found by casting in from 20 mm out along the line's own frame normal (the line's
+    tangent crossed with x, facing away from her pelvis centre), never her skin's normal, which in the cleft faces a
+    cheek. Returns its objects."""
+    line = np.asarray(line, float)
+    tng = np.gradient(line, axis=0)
+    tng /= np.linalg.norm(tng, axis=1)[:, None]
+    acr = np.repeat(np.array([[1.0, 0.0, 0.0]]), len(line), 0)
+    nrs = np.cross(tng, acr)
+    nrs /= np.linalg.norm(nrs, axis=1)[:, None]
+    cc = np.c_[np.zeros(len(line)), np.full(len(line), HIP["c"][1]), np.full(len(line), HIP["crotch"] + 0.06)]
+    nrs = np.where(((nrs * (line - cc)).sum(1) < 0)[:, None], -nrs, nrs)
+    wid = np.broadcast_to(np.asarray(width, float), (len(line),))
+    cols, cn = [], []
+    for k in range(ncol):
+        f_ = k / (ncol - 1) - 0.5
+        cp, cq = [], []
+        for p, n, a, w_ in zip(line, nrs, acr, wid):
+            h, hn = skin_hit(p + a * f_ * w_ + n * 0.02, -n)
+            if h is None:
+                h, hn = p + a * f_ * w_, n
+            cp.append(h), cq.append(-hn if hn @ n < 0 else hn)
+        cols.append(cp), cn.append(cq)
+    objs, info = skin_band(name, np.array(cols), np.array(cn), "darkleather", lift, thick,
+                           sigma=PRM.get("string_sigma", 0.008) if sigma is None else sigma, follow=True)
+    for o in objs:
+        o["hides"] = bool(hides)
+    return objs
+
+
+def drop_strays(obj, zlo, zhi):
+    """A piece's points outside the height band [zlo, zhi] (world) deleted, with their faces: the unbound gusset cut
+    from her skin came out with two points at her calf (z 0.24) on a sliver joining them, as cut (g1 pv5, pv7)."""
+    bm_ = bmesh.new()
+    bm_.from_mesh(obj.data)
+    mw_ = obj.matrix_world
+    bad = [v for v in bm_.verts if not (zlo <= (mw_ @ v.co).z <= zhi)]
+    if bad:
+        bmesh.ops.delete(bm_, geom=bad, context="VERTS")
+        bm_.to_mesh(obj.data)
+        obj.data.update()
+        print("STRAYS %s: %d points outside z %.3f..%.3f dropped" % (obj.name, len(bad), zlo, zhi))
+    bm_.free()
+    return len(bad)
+
+
+def thin_to(obj, tris, sym=False):
+    """A finished piece thinned to about `tris` triangles (Blender's collapse decimate, its weights carried; mirrored
+    across her middle when `sym`: g1 pv5, mirrored, the gusset threw two points 70 cm down to her calf). finish() keeps every point of a piece's edge and two rows in from it, which for
+    a small or narrow piece cut from her fine skin is most of it (the gusset: 5.7k triangles at a 280 budget)."""
+    n0 = sum(len(p_.vertices) - 2 for p_ in obj.data.polygons)
+    if n0 <= tris:
+        return n0
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    am_ = [m_ for m_ in obj.modifiers if m_.type == "ARMATURE"]
+    for m_ in am_:
+        obj.modifiers.remove(m_)
+    co0 = np.array([v.co[:] for v in obj.data.vertices])
+    dc = obj.modifiers.new("thin2", "DECIMATE")
+    dc.decimate_type = "COLLAPSE"
+    dc.ratio = tris / n0
+    dc.use_symmetry = sym
+    dc.symmetry_axis = "X"
+    bpy.ops.object.modifier_apply(modifier=dc.name)
+    obj.data.calc_loop_triangles()
+    co1 = np.array([v.co[:] for v in obj.data.vertices])
+    far = cKDTree(co0).query(co1)[0]
+    assert far.max() < 0.004, "THIN %s moved a point %.1f mm off the piece" % (obj.name, far.max() * 1000)
+    am = obj.modifiers.new("Armature", "ARMATURE")
+    am.object = arm
+    n1 = len(obj.data.loop_triangles)
+    print("THIN %s: %d -> %d triangles" % (obj.name, n0, n1))
+    return n1
+
+
+def build_gstring():
+    L = hip_landmarks()
+    X, Y, Z = G["X"], G["Y"], G["Z"]
+    cr = L["crotch"]
+    panel_top, panel_hw = PRM.get("panel_top", 0.08), PRM.get("panel_hw", 0.035)
+    lift, thick = PRM.get("lift", 0.0012), PRM.get("thick", 0.0018)
+    y_z = cr + PRM.get("y_z", 0.15)
+    parts = []
+    # (params.cap_density: the leather pieces' triangle floor a square metre (finish's 60000 unset), so each
+    # piece's `*_budget` holds: the whole piece is at most 5k)
+    NS["CAP_DENSITY"] = PRM.get("cap_density", 6000)
+    # ---- the front panel: a piece of her skin (as warden.thong), its sides along her inguinal creases: half-width
+    # `hw_bot` at her crotch widening to `panel_hw` at its top edge (`panel_top` over her crotch), into the gusset
+    hb = PRM.get("hw_bot", 0.015)
+    fz = np.clip((Z - cr) / panel_top, 0.0, 1.0) ** PRM.get("panel_curve", 1.0)
+    hw = hb + (panel_hw - hb) * fz
+    pf = G["AND"](G["FRONT"] - 0.3, hw - np.abs(X), (cr + panel_top) - Z, Z - (cr - 0.03))
+    panel = G["piece"](f"{PID}.panel", pf, "darkleather", lift=lift, thick=thick, smooth=2, soften=0, budget=PRM.get("panel_budget", 500))
+    if panel and panel[0]:
+        thin_to(panel[0], PRM.get("panel_tris", 900))
+    parts += [o for o in panel if o]
+    # ---- the Y: a small leather triangle at her sacral dimples, top edge `y_hw` + 4 mm each side of her middle at
+    # y_z + 4 mm, its tip `tri_h` (30 mm) below
+    th = PRM.get("tri_h", 0.03)
+    yhw = PRM.get("y_hw", 0.016) + 0.004
+    tz = np.clip((Z - (y_z - th)) / th, 0.0, 1.0)
+    xc_ = (G["head"]("glute_l")[0] + G["head"]("glute_r")[0]) / 2
+    tf = G["AND"](0.003 + yhw * tz - np.abs(X - xc_ * (1 - tz)), (y_z + 0.004) - Z, Z - (y_z - th), Y - L["c"][1])
+    tri_ = G["piece"](f"{PID}.y", tf, "darkleather", lift=lift, thick=thick, smooth=2, soften=0, budget=PRM.get("y_budget", 150))
+    if tri_ and tri_[0]:
+        thin_to(tri_[0], PRM.get("y_tris", 260))
+    parts += [o for o in tri_ if o]
+    # ---- the back string: down the cleft from under the triangle's tip, flaring into the gusset (as warden.thong_back,
+    # a ribbon; laid here as a skin_band on 3 lines, `back_step` apart along it, for the triangle budget)
+    # (back_string: midway between her glute bones (a ray down x = 0 itself passes through the slit between her
+    # cheeks); the triangle's tip leans to it)
+    back = G["back_string"](y_z - th + 0.008, cr + 0.012, n=24)
+    bl = G["spline"](back, step=PRM.get("back_step", 0.006))
+    bw0, (bw1, blen) = PRM.get("back_w", 0.014), PRM.get("back_flare", [0.03, 0.03])
+    brun = np.r_[0, np.cumsum(np.linalg.norm(np.diff(bl, axis=0), axis=1))]
+    bwid = bw0 + (bw1 - bw0) * np.clip((brun - (brun[-1] - blen)) / blen, 0, 1) ** 2
+    parts += _band_along_mid(f"{PID}.back", bl, bwid, PRM.get("back_lift", 0.0015), PRM.get("back_thick", 0.002), hides=True,
+                             ncol=PRM.get("back_cols", 5))
+    # (the gusset (heroine_outfits gusset()), with a triangle budget and unbound: the binding was 1.3k triangles)
+    gf = G["AND"](0.016 - np.abs(X), (0.96 - np.abs(G["N"][:, 0])) * 0.02, (bl[-1][1] + 0.015) - Y, Y - (G["GAP_F"] - 0.006),
+                  Z - (cr - 0.015), (cr + 0.03) - Z)
+    gus = G["piece"](f"{PID}.gusset", gf, "darkleather", lift=0.001, thick=thick, smooth=2, soften=0, slot=False, bind=False,
+                     budget=PRM.get("gusset_budget", 400))
+    if gus and gus[0]:
+        gus[0]["tuck"] = 0.3
+        drop_strays(gus[0], cr - 0.03, cr + 0.045)
+        thin_to(gus[0], PRM.get("gusset_tris", 700))
+    parts += [o for o in gus if o]
+    # ---- the side strings: skin_bands along hip_line, `string_w` wide, from `in_corner` inside the panel's corner
+    # to `in_y` inside the triangle's corner
+    sw = PRM.get("string_w", 0.015)
+    ncol = PRM.get("string_cols", 3)
+    rows_ = {}
+    for sd in "lr":
+        hl = hip_line(sd, step=PRM.get("string_step", 0.008))
+        pts, nrs = hl["points"], hl["normals"]
+        tng = np.gradient(pts, axis=0)
+        tng /= np.linalg.norm(tng, axis=1)[:, None]
+        acr = np.cross(nrs, tng)
+        acr /= np.linalg.norm(acr, axis=1)[:, None]
+        # (overlaps: carried a few mm on past each end, along its own line, onto the panel and the triangle)
+        ext = PRM.get("string_overlap", 0.006)
+        pre = pts[0] - tng[0] * ext
+        post = pts[-1] + tng[-1] * ext
+        P_ = np.vstack([pre, pts, post])
+        N_ = np.vstack([nrs[:1], nrs, nrs[-1:]])
+        A_ = np.vstack([acr[:1], acr, acr[-1:]])
+        cols, cn = [], []
+        for k in range(ncol):
+            off = (k / (ncol - 1) - 0.5) * sw
+            cp, cq = [], []
+            for p, n, a in zip(P_, N_, A_):
+                h, hn = skin_hit(p + a * off + n * 0.02, -n)
+                if h is None:
+                    h, hn = p + a * off, n
+                cp.append(h), cq.append(-hn if hn @ n < 0 else hn)
+            cols.append(cp), cn.append(cq)
+        cn = np.array(cn)
+        cn = np.where(((cn * N_[None]).sum(2) < 0)[..., None], -cn, cn)
+        objs, info = skin_band(f"{PID}.string_{sd}", np.array(cols), cn, "darkleather", PRM.get("string_lift", 0.0015),
+                               PRM.get("string_thick", 0.0022), sigma=PRM.get("string_sigma", 0.008), follow=True)
+        for o in objs:
+            o["hides"] = bool(PRM.get("string_hides", False))
+        parts += objs
+        GSTR[sd] = dict(hl=hl, info=info)
+    NS.pop("CAP_DENSITY", None)
+    # ---- the rings at the panel's top corners, rigid, on the panel's blend at their foot
+    rr = PRM.get("ring_r", 0.009)
+    socks = {}
+
+    def sock(name, p, n, up, row):
+        n = np.asarray(n, float) / np.linalg.norm(n)
+        up = np.asarray(up, float) - n * (np.asarray(up, float) @ n)
+        up /= np.linalg.norm(up)
+        socks[name] = {"point": gl(p).round(5).tolist(), "normal": gl(n).round(5).tolist(), "up": gl(up).round(5).tolist(),
+                       "weights": top4(np.asarray(row, float))}
+    rp, rw, rt = [], [], []
+    for sd in "lr":
+        k0, p0 = GSTR[sd]["hl"]["keys"]["corner"]
+        n0 = GSTR[sd]["hl"]["normals"][k0]
+        foot = p0 + n0 * (thick + lift)
+        row = G["soft_weights"](p0[None], sigma=0.008)[0]
+        q, w, t = _torus(foot, n0, row, rr, PRM.get("ring_wire", 0.0016), nu=PRM.get("ring_nu", 12), nv=PRM.get("ring_nv", 6))
+        t = t + sum(len(x) for x in rp)
+        rp.append(q), rw.append(w), rt.append(t)
+        sock(f"ring_{sd}", foot, n0, [0, 0, 1.0], row)
+        GSTR.setdefault("ring_at", {})[sd] = foot
+    pp, ww, tt = np.vstack(rp), np.vstack(rw), np.vstack(rt)
+    cen = np.vstack([np.repeat(GSTR["ring_at"][sd][None], len(q_), 0) for sd, q_ in zip("lr", rp)])
+    o_ = finish_cap(f"{PID}.rings", pp, ww, tt, PRM.get("ring_mat", "steel"), 0.0, 0.0, 10 ** 7, scraps=False)
+    o_["hides"] = False
+    o_["rigid_part"] = True
+    parts.append(o_)
+    # ---- sockets: the panel's front, the rings, the Y behind
+    fp = G["front_point"](0.0, cr + panel_top * 0.6)
+    fn = G["SKIN_BVH"].find_nearest(Vector(fp))[1][:]
+    sock("front", fp + np.array(fn) * (lift + thick), fn, [0, 0, 1.0], G["soft_weights"](fp[None], sigma=0.008)[0])
+    yp, yn = hip_ray("l", np.pi, y_z - th / 2)
+    sock("y_back", yp + yn * (lift + thick), yn, [0, 0, 1.0], G["soft_weights"](yp[None], sigma=0.008)[0])
+    leather = [o for o in parts if o is not o_]
+    sname = f"{PID}.panel"
+    sh = CAP["sheet"].get(sname) or next(iter(CAP["sheet"].values()))
+    GSTR["landmarks"] = {k: (v if not isinstance(v, np.ndarray) else v.tolist()) for k, v in L.items()}
+    tris_ = {o.name: sum(len(p_.vertices) - 2 for p_ in o.data.polygons) for o in parts}
+    print("GSTRING landmarks", json.dumps(GSTR["landmarks"]), "triangles", sum(tris_.values()), json.dumps(tris_))
+    return dict(parts=parts, shell=leather, envelope=leather, gore=[], sheet=(sh[0], sh[1], sh[2]), thick=thick, lift=lift,
+                sockets=socks, rims={}, roll={}, avoid=[], roll_prefix=[], measure=gstring_measure)
+
+
+def gstring_measure():
+    """The g-string's own numbers (b_design_spec 3a, Proof): each string's standoff off her skin at rest across its
+    width (p50/p99/max of its inner face's distance to her skin), the ASIS crossing's height over the bump at |x|
+    asis_x, side_z over her iliac crest (estimate) and over the bump, the strings' length."""
+    out = {"landmarks": GSTR.get("landmarks")}
+    skin = G["SKIN_BVH"]
+    for sd in "lr":
+        info, hl = GSTR[sd]["info"], GSTR[sd]["hl"]
+        C, Nn, lift = info["cols"], info["nrm"], info["lift"]
+        # (the inner face: the band's points lifted off her, as skin_band laid them; their nearest skin)
+        Q = C + Nn * lift[None, :, None]
+        # (and the middle of each cell between its rows and columns: where it would bridge a hollow)
+        Q = np.concatenate([Q.reshape(-1, 3), ((Q[1:, 1:] + Q[:-1, :-1] + Q[1:, :-1] + Q[:-1, 1:]) / 4).reshape(-1, 3)])[None]
+        d = np.array([[np.linalg.norm(np.array(skin.find_nearest(Vector(tuple(q)))[0][:]) - q) for q in row] for row in Q]) * 1000
+        k1 = hl["keys"]["cross"][0]
+        ax = PRM.get("asis_x", 0.09)
+        pts = hl["points"]
+        # (the height where the string's centre line crosses |x| asis_x, on her front)
+        fr = pts[: hl["keys"]["side"][0]]
+        j = int(np.argmin(np.abs(np.abs(fr[:, 0]) - ax)))
+        out[f"string_{sd}"] = {"standoff_mm": {"p50": round(float(np.median(d)), 2), "p99": round(float(np.percentile(d, 99)), 2),
+                                               "max": round(float(d.max()), 2)},
+                               "asis_cross_over_bump_mm": round(float((pts[j, 2] - HIP["asis"][sd]) * 1000), 1),
+                               "side_z_over_crest_mm": round(float((hl["keys"]["side"][1][2] - HIP["crest"][sd]) * 1000), 1),
+                               "side_z_over_asis_mm": round(float((hl["keys"]["side"][1][2] - HIP["asis"][sd]) * 1000), 1),
+                               "length_mm": round(float(hl["s"][-1] * 1000), 1)}
+    return {"gstring": out}
+
+
 # ------------------------------------------------- the shell: a free mesh --
 # (armor 9, IM1: docs/armor/PIECE_SCHEMA.md "Free meshes: the import contract". tools/armor/import_mesh.py checks the
 # file first (bounds, units, materials, budget, transforms, body) and runs this build. The mesh carries shape and
@@ -1946,7 +2325,8 @@ def build_mesh():
                 lift=band, sockets=socks, rims=rims, roll=None, avoid=[])
 
 
-STYLES = {("top", "plate"): build_plate_top, ("pauldrons", "lamed"): build_pauldrons_lamed, ("top", "cuirass"): build_cuirass}
+STYLES = {("top", "plate"): build_plate_top, ("pauldrons", "lamed"): build_pauldrons_lamed, ("top", "cuirass"): build_cuirass,
+          ("bottom", "gstring"): build_gstring}
 if MESH:
     STYLES[(SLOT, "mesh")] = build_mesh
 stamp("building %s (%s/%s)" % (PID, SLOT, SPEC_PIECE["style"]))
@@ -2014,6 +2394,19 @@ for o in made:
         o["hides"] = False
 stamp("piece made: %d parts" % len(made))
 if os.environ.get("ARMOR_PREVIEW") == "1":
+    if not TOP_PLATE:
+        # (another style: its parts' triangles and the scene, then out; its numbers come from the full build)
+        for o in made:
+            co_ = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices])
+            print("PREVIEW part %s %d bbox %s %s" % (o.name, sum(len(p_.vertices) - 2 for p_ in o.data.polygons),
+                                                     co_.min(0).round(3).tolist(), co_.max(0).round(3).tolist()))
+        if B.get("measure"):
+            print("PREVIEW measure", json.dumps(B["measure"]()))
+        for o in list(bpy.data.objects):
+            if o not in made and o is not body and o is not arm:
+                bpy.data.objects.remove(o)
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SCRATCH, "preview.blend"), copy=True)
+        raise SystemExit(0)
     # (a quick look while shaping: her skin as built on (P, N), not the game's; the full build measures that)
     def _qgap(objs):
         vs_, fs_ = [], []

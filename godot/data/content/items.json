@@ -2485,6 +2485,26 @@
    "wear": [
     "plate_cuirass_plain"
    ]
+  },
+  "forged_gstring": {
+   "id": "forged_gstring",
+   "name": "Forged G-string",
+   "kind": "legs",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 30,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_gstring_plain"
+   ]
   }
  },
  "raritynames": [
