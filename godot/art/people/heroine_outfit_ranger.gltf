@@ -3,7 +3,8 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "6dbf1d20f2714747eac1482f86c48e22"
+   "data": "e5573fbb544b77a7dbcb503bccca364f",
+   "breast_sym_follow": 3.209
   }
  },
  "scene": 0,
@@ -5146,7 +5147,7 @@
    "max": [
     0.19681601226329803,
     1.4616144895553589,
-    0.1770535260438919
+    0.17702823877334595
    ],
    "min": [
     -0.16960063576698303,
