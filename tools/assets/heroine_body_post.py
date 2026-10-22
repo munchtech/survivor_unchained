@@ -11,10 +11,14 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   2. breast_sym_post --no-follow: her left breast's inner slope onto her right's mirror; records re-keyed, no slot
      piece touched; the four outfits' points over it follow her skin (armor 14: the bodysuit had kept the old
      hollow), each outfit marked breast_sym_follow (armor 12, the owner's dent)  [breast_sym]
-  3. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
+  3. bust_shell_post: the arcanist bodysuit's leather over her cups as a smooth, full shell (no hollow at her left
+     lower inner breast, no lumps along the zip edges, no nipple pokes; the stitching and piping carried, her tucked
+     skin kept >= 1 mm under it); per-outfit config, only the arcanist (armor 14, the owner 21 Oct)
+                                                                                 [outfit's bust_shell]
+  4. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
      follow, records re-keyed (face 36)                                          [heroine_neck_shape]
-  4. heroine_neck_relief: her collar's fine relief, a normal map on skin_graft  [heroine_neck_relief]
-  5. heroine_lod: the play LODs of every outfit, from the final body and pieces.
+  5. heroine_neck_relief: her collar's fine relief, a normal map on skin_graft  [heroine_neck_relief]
+  6. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]
 """
@@ -63,6 +67,8 @@ def main(a):
     m = marks(glb)
     if "breast_sym" not in m:
         run(os.path.join(HERE, "breast_sym_post.py"), "--art", art, "--no-follow")
+    # (the outfit carries its own done-mark; the step skips a file that has it)
+    run(os.path.join(HERE, "bust_shell_post.py"), art, "arcanist")
     if "heroine_neck_shape" not in m:
         run(os.path.join(HERE, "heroine_neck_shape.py"), "--art", art)
     if "heroine_neck_relief" not in m:
