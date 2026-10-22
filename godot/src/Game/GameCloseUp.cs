@@ -126,7 +126,7 @@ public partial class Game
         if (closeRim == null || !IsInstanceValid(closeRim) || closeRim.GetParent() != scene)
         {
             // (On her and people, not her hair (PlayerView.HerHairLayer): from behind it lifted her copper crown.)
-            closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.6f, LightEnergy = 0 };
+            closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = CloseRimSpec, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
         closeKey.LightColor = night ? CloseKeyColourNight : CloseKeyColourDay;
@@ -194,6 +194,10 @@ public partial class Game
     // pinkish-tan, toward strawberry blonde (crown Oklab L 52.6, 44.9 now, her face 79.9 and 79.4: the crown to face of
     // art style r2's frame, 0.56); low, the rim's cool edge grazes her shoulders and arms.)
     static float CloseRimNight => Args.Num("close-rim", 3f);   // (G1 r3: 1.5; 3 lifted the crown to 47.9 at frame 03, at az 0.9 it fills her shade side. G1 r4: 3, off her hair (PlayerView.HerHairLayer): her far edge +4.4 to +5.1 L at hue 240, the crown 39.7 as without it)
+    // --close-rim-spec S: the moon rim's sheen (Light3D.light_specular). At 0.6 it lay down the side of her neck as a broad
+    // pale lavender band, plastic not skin (the owner's night close-up, 21 Oct; face 35: band Oklab L 51 C 4.3 hue -67, at 0
+    // L 38.7 hue -5, her warm skin), and read as a lump on her left neck.
+    static float CloseRimSpec => Args.Num("close-rim-spec", 0f);
     // --close-rim-el D: the rim's elevation (degrees).
     static float CloseRimEl => Args.Num("close-rim-el", 10f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
