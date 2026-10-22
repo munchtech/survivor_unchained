@@ -15,14 +15,14 @@ uniform float variation = 0.35;
 uniform vec3 shine_colour : source_color = vec3(1.0, 0.93, 0.86);
 // (face 38 r2, the judge: one broken band, two lobes along the strand: a primary tinted 40% by the hair, shifted
 // toward the root, tight; a secondary albedo-tinted, toward the tip, broad; each lock's shift jittered +-0.05)
-uniform float shine = 0.2;                 // (face 38: 0.1, r1 0.25)
-uniform float shine_width = 80.0;         // (face 38 r2: 140)
+uniform float shine = 0.5;                 // (face 38: 0.1, r1 0.25, r3 0.2; r4 the judge: no band showed)
+uniform float shine_width = 50.0;         // (face 38 r2: 140, r3 80)
 uniform float shine2 = 0.3;                // (face 38 r2: 0.35)
 uniform float shine2_width = 18.0;        // (face 38 r2: 40)
 uniform float shift = -0.05;               // (face 38 r2: 0.06)
 uniform float shift2 = 0.08;               // (face 38 r2: -0.1)
-uniform float shine_tint = 0.4;            // (face 38 r2: the primary's share of the hair's own hue)
-uniform float lock_jitter = 0.05;          // (face 38 r2: each lock's shift, by its card number)
+uniform float shine_tint = 0.2;            // (face 38 r2: the primary's share of the hair's own hue)
+uniform float lock_jitter = 0.02;          // (face 38 r2: each lock's shift, by its card number)
 uniform float strand_jitter = 0.1;         // (face 38 r2: 0.5, strand to strand, which scattered it into grains)
 uniform float through = 0.5;
 // (face 37: the strands' read. fibre_lo/fibre_hi: a strand's shade range in the atlas (was fixed 0.15/0.85);
