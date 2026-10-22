@@ -44,6 +44,8 @@ uniform float look_box_w = 0.7;                    // (the box's half-width and 
 uniform float look_box_h = 0.45;
 uniform vec3 look_box_tint = vec3(0.90, 0.95, 1.0);
 uniform float look_metal_mute = 0.0;
+uniform float look_gold_rough = 0.3;               // (armor 17 N5: gold's roughness under the Look's rig)
+uniform float look_gold_floor_cut = 0.75;          // (and the share of its floor glow cut there)
 uniform float look_gold_key = 1.0;                  // (the gold's share of the box, of the plate's)
 uniform float leather_rough_floor = 0.0;          // (armor 14, 22 Oct: a leather's roughness floor off its burnished edges, from its outfit_materials.json row "rough_floor". The arcanist bodysuit's plumleather at 0.58: at 0.42 its cups caught the key as a pointed highlight at each apex (read as nipple pokes) and a dark band under it (a crease), and a plastic streak at night; the shape alone was smooth)
 uniform float leather_rough_var = 1.0;            // (armor 14: its roughness map's spread kept, 1 as scanned; under 1 the map's blotches ease toward the floor)
@@ -500,6 +502,11 @@ void fragment() {
 		metal = 0.0;
 	}
 	if (kind == 1) rough = mix(rough, max(rough, look_metal_rough), look_rig * (1.0 - gold));
+	// (armor 17 N5, OJ2: at the Look the gold trim read as a flat yellow cel outline: there it is polished gold at
+	// look_gold_rough, its flat floor glow mostly gone, and darker where it sits in the plate's shadow (its baked sky))
+	if (kind == 1) rough = mix(rough, look_gold_rough, look_rig * gold);
+	if (kind == 1) col *= mix(1.0, mix(0.55, 1.0, sky), look_rig * gold);
+	if (kind == 1) gold_emit *= 1.0 - look_gold_floor_cut * look_rig * gold;
 	if (kind == 1) col *= mix(1.0, look_metal_dim, look_rig * (1.0 - gold));
 	if (kind == 0) rough = mix(rough, max(rough, look_leather_rough), look_rig);
 #ifdef OUTFIT_METAL_LIGHT
@@ -526,6 +533,8 @@ void fragment() {
 	if (debug_view == 10) { ALBEDO = clamp(col, 0.0, 1.0); }   // (armor 14: no sky occlusion)
 	if (debug_view == 11) { ALBEDO = clamp(texture(albedo, UV).rgb * tint * mix(0.55, 1.0, sky), 0.0, 1.0); }   // (armor 14: the texture and sky only, no mottle/wear)
 	if (debug_view == 9) { ROUGHNESS = 0.55; }
+	if (debug_view == 12) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = (NORMAL * 0.5 + 0.5) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (armor 17 N5: its interpolated vertex normal, view space, as colour)
+	if (debug_view == 13) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = vec3(fract(UV * 8.0), 0.0) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (and its UV, as colour)
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }
 

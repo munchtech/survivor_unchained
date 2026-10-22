@@ -1380,7 +1380,8 @@ public static class People
             if (kind == 1)
             {
                 // (N4: env,key,dome,mute,gold: a soft box, the rig's lamps muted on the plate, the gold's share)
-                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,3.5,0.45,0.75,1.6").Split(',');
+                // (N5, OJ2: the key 3.5 to 5.0 and the dome 0.45 to 0.6, the muted plate read dark slate; the gold 1.6 to 1.3, now glossier)
+                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,5.0,0.6,0.75,1.3").Split(',');
                 float L(int i) => float.Parse(le[i], System.Globalization.CultureInfo.InvariantCulture);
                 m.SetShaderParameter("look_metal_env", L(0)); m.SetShaderParameter("look_metal_key", L(1)); m.SetShaderParameter("look_metal_dome", L(2));
                 if (le.Length > 3) m.SetShaderParameter("look_metal_mute", L(3));
