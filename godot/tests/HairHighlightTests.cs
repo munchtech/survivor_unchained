@@ -68,4 +68,17 @@ public class HairHighlightTests
         // (and it changes what shows)
         Assert.NotEqual(Loadouts.Look(Loadouts.Of(Her("black", null))), Loadouts.Look(Loadouts.Of(Her("black", Lore.HighlightAuto))));
     }
+
+    [Fact]
+    public void Platinum_covers_twice_and_honey_is_stronger()
+    {
+        // (face 40, the judge: platinum 2x coverage, ash and lighter; honey 1.5x strength; the rest as they were)
+        var p = Lore.HairHighlights.Single(h => h.Id == "platinum");
+        Assert.Equal(2f, p.Share);
+        Assert.Equal(1.5f, Lore.HairHighlights.Single(h => h.Id == "honey").Strength);
+        Assert.Equal(1f, Lore.HairHighlights.Single(h => h.Id == "copper").Share);
+        var rgb = Enumerable.Range(0, 3).Select(i => System.Convert.ToInt32(p.Color.Substring(1 + 2 * i, 2), 16) / 255f).ToArray();
+        float max = rgb.Max(), min = rgb.Min();
+        Assert.True(max > 0.95f && (max - min) / max < 0.04f && rgb[0] - rgb[2] < 0.03f, $"platinum {p.Color}: light ash, not pink");
+    }
 }

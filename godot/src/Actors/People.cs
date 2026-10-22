@@ -634,7 +634,7 @@ public static class People
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                 {
-                    var hm = Hair(src, colour, highlight);
+                    var hm = Hair(src, colour, highlight, style);
                     // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
                     if (style == "pixie" && hm is ShaderMaterial sm)
                         foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
@@ -835,7 +835,7 @@ public static class People
 
     /// <summary>The least Oklab chroma a brow dye with little colour of its own takes on deep skin (face 39 dye2;
     /// --brow-deep-warm tries others).</summary>
-    static readonly float BrowDeepWarm = SurvivorUnchained.Args.Num("brow-deep-warm", 0.055f);
+    static readonly float BrowDeepWarm = SurvivorUnchained.Args.Num("brow-deep-warm", 0.07f);
 
     /// <summary>How far a hair's brows take the red settings (face 39's: sat 1.2, BrowDark 0.38, dye_gamma 0.9,
     /// hair_lo 0.2) over the old ones (0.7, 0.42, 0.5, 0.08): all for a red (hue 25 degrees or less, saturation
@@ -944,13 +944,32 @@ public static class People
                     m.SetShaderParameter("dye_deep", 0.25f);
                     // (face 39 dye2: on deep skin the faint texels left skin too, a blonde's grey-mauve haze over its strokes)
                     m.SetShaderParameter("hair_lo", Mathf.Lerp(Mathf.Lerp(0.08f, 0.2f, red), 0.2f, deep));
-                    m.SetShaderParameter("hair_hi", 0.7f);
+                    m.SetShaderParameter("hair_hi", Mathf.Lerp(0.7f, 0.5f, deep));
+                    // (face 40, the judge: on deep skin her brows sat near the skin's value and she read browless at the
+                    // Look (brow/skin 0.65-0.86 in screen value): the dye held to a smaller share of her skin's lightness,
+                    // black's least, a blonde's most (0.24 to 0.34, was 0.75 for all, which held every dye alike), each
+                    // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
+                    // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
+                    // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
+                    if (deep > 0f)
+                    {
+                        float room = Mathf.Lerp(0.24f, 0.34f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
+                        m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
+                        m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
+                        m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
+                        m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 1.2f, deep));
+                    }
                     // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
                     if (SurvivorUnchained.Args.Get("brow-set") is string bs)
                         foreach (var kv in bs.Split(','))
-                            if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
-                                    System.Globalization.CultureInfo.InvariantCulture, out var x))
-                                m.SetShaderParameter(k.Trim(), x);
+                            if (kv.Split('=') is [var k, var v])
+                            {
+                                var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                                if (xs.Any(float.IsNaN)) continue;
+                                if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                                else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
+                            }
                     Then(m);
                 }
                 // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
@@ -1004,7 +1023,7 @@ public static class People
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
                     if (m.Shader == hairShader || m.Shader == hairSoftShader || Coverage.On && m.Shader == Coverage.Hair || HairDraw.IsHair(m.Shader))
-                        foreach (var pass in HairDraw.Passes(m)) { pass.SetShaderParameter("colour", colour); Highlight(pass, look.Highlight); }
+                        foreach (var pass in HairDraw.Passes(m)) { pass.SetShaderParameter("colour", colour); Highlight(pass, look.Highlight, p.HairStyle); }
                     else if (m.ResourceName == "brows") Coverage.Colour(m, colour.Darkened(0.45f));
                     else if (m.Shader == skinShader2)
                     {
@@ -1256,7 +1275,7 @@ public static class People
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
     /// strands, darker at the roots and deep in, with the long highlight
     /// across them.</summary>
-    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null)
+    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
         hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
@@ -1274,7 +1293,7 @@ public static class People
             pass.SetShaderParameter("colour", colour);
             pass.SetShaderParameter("cap", src.ResourceName == "hair_cap");
             pass.SetShaderParameter("tie", src.ResourceName == "hair_tie");
-            Highlight(pass, highlight);
+            Highlight(pass, highlight, style);
             HairSet(pass, src.ResourceName);
         }
         return m;
@@ -1282,11 +1301,21 @@ public static class People
 
     /// <summary>Her hair's highlights (heroine_hair.gdshaderinc's highlight): a second colour on some of her
     /// locks, in the hair's own colour, or none.</summary>
-    static void Highlight(ShaderMaterial pass, Color? highlight)
+    static void Highlight(ShaderMaterial pass, Color? highlight, string? style = null)
     {
         pass.SetShaderParameter("highlights", highlight is null ? 0f : 1f);
-        if (highlight is Color h) pass.SetShaderParameter("highlight", h);
+        if (highlight is not Color h) return;
+        pass.SetShaderParameter("highlight", h);
+        // (face 40, the judge: pixie's and ponytail's locks are shorter and lie closer, so half the braid's share, or
+        // they read as tiger stripes; a swatch's own share and strength from looks.json: platinum twice the locks,
+        // honey half as strong again)
+        var sw = SurvivorUnchained.World.Lore.HairHighlights.FirstOrDefault(x => x.Color.Length > 0 && new Color(x.Color).IsEqualApprox(h));
+        pass.SetShaderParameter("hl_locks", Mathf.Min(HighlightLocks * (style is "pixie" or "ponytail" ? 0.5f : 1f) * (sw?.Share ?? 1f), 0.95f));
+        pass.SetShaderParameter("hl_strength", sw?.Strength ?? 1f);
     }
+
+    /// <summary>The share of the locks in her highlights' panels that take them, on the braid (heroine_hair.gdshaderinc's hl_locks).</summary>
+    const float HighlightLocks = 0.45f;
 
     /// <summary>--hair-set "hair:shine=0.3;*:wrap=0.2": a developer's switch, her hair's uniforms tried without a build,
     /// by part (hair, hair_cap, hair_fine, hair_tie; "*" for every part); a/b/c is a vec3.</summary>
@@ -1301,7 +1330,8 @@ public static class People
                         var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
                             System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
                         if (xs.Any(float.IsNaN)) continue;
-                        if (xs.Length == 3) sm.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                        if (xs.Length == 4) sm.SetShaderParameter(k.Trim(), new Vector4(xs[0], xs[1], xs[2], xs[3]));
+                        else if (xs.Length == 3) sm.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
                         else if (xs.Length == 1) sm.SetShaderParameter(k.Trim(), xs[0]);
                     }
     }

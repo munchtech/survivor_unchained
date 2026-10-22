@@ -124,6 +124,9 @@ public sealed class LookChoice
     public string Ring = "";
     /// <summary>A hair colour's highlights when they are turned on and none is picked (looks.json's hairHighlights' id).</summary>
     public string Highlight = "";
+    /// <summary>A highlight's share of the locks and its strength, against the others' (looks.json's hairHighlights:
+    /// face 40, platinum 2 and honey 1.5).</summary>
+    public float Share = 1f, Strength = 1f;
 }
 
 /// <summary>One of a hero's own hairstyles (the heroine's: the view's heroine_hair_ID), and how it is worn.</summary>
