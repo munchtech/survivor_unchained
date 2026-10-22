@@ -454,7 +454,7 @@ public partial class Game
         // --hair-colour ID: pictures of her with that hair (and brows) colour.
         if (Args.Get("hair-colour") is string hc) draft.Hair = hc;
         // --hair-highlight HEX|default: her hair's highlights (Game.HighlightArg).
-        if (Game.HighlightArg() is string hl) draft.HairHighlight = hl;
+        if (Game.HighlightArg() is string hl) draft.HairHighlight = Args.Get("hair-highlight") is "default" or "auto" ? Lore.HighlightAuto : hl;
         // --preset ID: one of her faces to start from (its sliders and painting); --skin ID, --eyes ID
         if (Args.Get("preset") is string ps && Loadouts.HeroKit(draft.Sex)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf)
         {
