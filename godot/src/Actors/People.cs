@@ -1255,7 +1255,7 @@ public static class People
                 if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
                 {
                     string set = mi.Name.ToString().Split('_')[0];
-                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids; var pb = ids; var prr = ids; var prb = ids; var pf = ids;
+                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids; var pb = ids; var prr = ids; var prb = ids; var pf = ids; var ps = ids; var pfm = ids;
                     int n = 0;
                     foreach (var (pn, pv) in byKey.AsGodotDictionary())
                     {
@@ -1269,6 +1269,8 @@ public static class People
                         if (o.TryGetValue("metal_rim_rough", out var rr)) prr[n] = (float)rr;
                         if (o.TryGetValue("metal_rim_bright", out var rb)) prb[n] = (float)rb;
                         if (o.TryGetValue("metal_fine", out var fi)) pf[n] = (float)fi;
+                        if (o.TryGetValue("metal_rim_steel", out var rs)) ps[n] = (float)rs;
+                        if (o.TryGetValue("metal_form", out var fm)) pfm[n] = (float)fm;
                         n++;
                     }
                     m.SetShaderParameter("piece_id", ids);
@@ -1278,6 +1280,8 @@ public static class People
                     m.SetShaderParameter("piece_rim_rough", prr);
                     m.SetShaderParameter("piece_rim_bright", prb);
                     m.SetShaderParameter("piece_fine", pf);
+                    m.SetShaderParameter("piece_rim_steel", ps);
+                    m.SetShaderParameter("piece_form", pfm);
                 }
             }
             m.SetShaderParameter("albedo", src.AlbedoTexture);

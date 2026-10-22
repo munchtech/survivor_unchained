@@ -66,11 +66,16 @@ uniform vec4 piece_blot = vec4(-1.0);              //  (and its patina's patches
 uniform vec4 piece_rim_rough = vec4(-1.0);         //  (armor 13 c4: its rolled edges' (COLOR.a flag 0) roughness, -1 as the plate; glossier rims read as steel, not leather)
 uniform vec4 piece_rim_bright = vec4(-1.0);        //  (and their colour scaled by this, -1 none)
 uniform vec4 piece_fine = vec4(-1.0);              //  (fine scratches: thin streaks a few mm long worn bright through it, this strong; -1 none. Instead of cloudy patches)
+uniform vec4 piece_rim_steel = vec4(-1.0);         //  (armor 13 c5: its rolled edges worn to bare steel, this grey (linear F0), fading `rim_fade` m onto the plate; -1 none)
+uniform vec4 piece_form = vec4(-1.0);              //  (and its wear and grime by its shape (high points bright, recesses dark) this strong, its oxide lifted toward steel grey; -1 none)
+uniform float rim_fade = 0.002;                    // (the bare band's fade past the rolled edge's inner side, 3 mm in from the cut)
+uniform float rim_floor = 0.10;                    // (its own grey added as a dim emission, as gold's gold_floor, less in crevices)
+uniform float rim_metal = 0.85;                    // (and its metalness: scratched bright steel scatters a little, so the edge holds a light line by night, where a mirror shows the dark it faces)
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
 global uniform vec4 ground_bounce;                   // (Atmosphere: the key's light off the ground, linear; metal reflects it below the horizon)
-uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone)
+uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone; 6 the c5 bare rim's mask)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
 varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
@@ -117,6 +122,10 @@ void vertex() {
 	}
 }
 
+// (a piece's baked number as the shader sees it: the vertex colour comes in as 8 bits, truncated, not rounded
+// (c5: the cuirass's 0.227 arrived as 57/255, 0.0035 off, and none of its own finish matched))
+bool piece_is(float p, float id) { return id >= 0.0 && (abs(p - id) < 0.0025 || abs(p - floor(id * 255.0) / 255.0) < 0.0015); }
+
 vec3 blend_normals(vec3 a, vec3 b, float k) {      // (two normal-map texels, the second laid over the first; encoded as maps are)
 	vec3 n1 = a * 2.0 - 1.0, n2 = b * 2.0 - 1.0;
 	return normalize(vec3(n1.xy + n2.xy * k, n1.z)) * 0.5 + 0.5;
@@ -147,6 +156,7 @@ void fragment() {
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
 	vec3 gold_emit = vec3(0.0);
+	vec3 dbg6 = vec3(0.0);
 	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
@@ -224,15 +234,21 @@ void fragment() {
 		// Roughness: satin, varied; smoother where worn, rougher where dirty; scratched (more where worn).
 		float p_rough = metal_rough;
 		float p_blot = 1.0;
-		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_rough[i] >= 0.0) p_rough = piece_rough[i];
-		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_blot[i] >= 0.0) p_blot = piece_blot[i];
-		float p_rimr = -1.0, p_rimb = 1.0, p_fine = 0.0;
-		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025) {
+		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i]) && piece_rough[i] >= 0.0) p_rough = piece_rough[i];
+		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i]) && piece_blot[i] >= 0.0) p_blot = piece_blot[i];
+		float p_rimr = -1.0, p_rimb = 1.0, p_fine = 0.0, p_steel = -1.0, p_form = 0.0;
+		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i])) {
+			if (piece_rim_steel[i] >= 0.0) p_steel = piece_rim_steel[i];
+			if (piece_form[i] >= 0.0) p_form = piece_form[i];
 			if (piece_rim_rough[i] >= 0.0) p_rimr = piece_rim_rough[i];
 			if (piece_rim_bright[i] >= 0.0) p_rimb = piece_rim_bright[i];
 			if (piece_fine[i] >= 0.0) p_fine = piece_fine[i];
 		}
 		float rimm = flag < 0.25 ? 1.0 : 0.0;                       // (a rolled edge)
+		// (armor 13 c5: a rolled edge worn to bare steel all along, its band fading onto the plate past the
+		// roll's inner side, 3 mm in from the cut, broken a little by the fine wear; 0 on every other piece)
+		float bare = 0.0;
+		if (p_steel >= 0.0) bare = max(rimm, (1.0 - rimm) * (1.0 - smoothstep(0.003, 0.003 + rim_fade, edge + 0.0015 * (fleck - 0.5))));
 		float fw_ = max(fwidth(op.x), fwidth(op.y));               // (outside the branch: derivatives in uniform control flow)
 		if (p_fine > 0.0) {
 			// Fine scratches: two crossing sets of thin streaks (about 0.6 mm by 12 mm), their heading wandering over
@@ -245,6 +261,12 @@ void fragment() {
 			float lod = 1.0 - smoothstep(0.0005, 0.0014, fw_);
 			float fs = p_fine * mix(0.06, clamp(s1 + s2, 0.0, 1.0), lod) * (1.0 - 0.5 * rimm);
 			wear = max(wear, fs);
+		}
+		if (p_form > 0.0) {
+			// (its wear and dirt by its shape, not even clouds: high points rubbed brighter, recesses and the
+			// skin-side shadowed (the baked sky seen) darker and duller)
+			wear = max(wear, p_form * bulge * smoothstep(0.45, 0.75, fleck + 0.2 * blot) * 0.6);
+			grime = max(grime, p_form * 0.5 * clamp(hollow * 0.8 + (1.0 - sky) * 0.6, 0.0, 1.0) * (1.0 - rimm));
 		}
 		float blot_c = 0.5 + (blot - 0.5) * p_blot;                 // (the patina's patches in its colour and roughness; grime's own patchiness keeps blot)
 		rough = p_rough + 0.10 * (blot_c - 0.5) + 0.05 * (brush - 0.5);
@@ -268,6 +290,7 @@ void fragment() {
 			// (its rim sits under the trim: the chipping reaches 14 mm in, broken up, worst at the very edge)
 			float rim = 1.0 - smoothstep(0.003, 0.014, edge);
 			float chip = clamp(max(smoothstep(0.35, 0.6, wear * (0.75 + 0.5 * fleck)), rim * smoothstep(0.62, 0.8, fleck + 0.25 * rim + 0.15 * blot)) * blued_chip, 0.0, 1.0);
+			if (p_form > 0.0) oxide = mix(oxide, vec3(0.50, 0.52, 0.56) * dot(oxide, vec3(0.3, 0.59, 0.11)) / 0.44, 0.10 * p_form);   // (lifted toward steel grey, never bluer)
 			col = mix(oxide, col, chip);
 			rough = mix(rough + 0.03, rough, chip);
 		}
@@ -290,15 +313,25 @@ void fragment() {
 		// (armor 13 c4: a piece's rolled edges glossier and brighter than its plate, so its outline catches the light)
 		if (p_rimr >= 0.0) rough = mix(rough, p_rimr, rimm * (1.0 - grime));
 		col *= mix(1.0, p_rimb, rimm);
+		if (bare > 0.0) {
+			// (bare steel: neutral grey at its own F0, the oxide and its blue gone, smooth, never grimed)
+			col = mix(col, vec3(p_steel) * (0.94 + 0.08 * fleck), bare);
+			rough = mix(rough, p_rimr >= 0.0 ? p_rimr : 0.2, bare);
+			grime *= 1.0 - bare;
+			metal = mix(metal, rim_metal, bare);
+			gold_emit += vec3(p_steel) * bare * rim_floor;          // (as gold's floor: the edge never goes black at night)
+		}
+		if (debug_view == 6) dbg6 = p_steel >= 0.0 ? (rimm > 0.5 ? vec3(1.0, 0.0, 1.0) : vec3(bare, 1.0, 0.0)) * 0.25 : vec3(0.0);   // (a mask: the piece's rolled edge magenta, its plate green, the band's fade yellow)
 #ifdef OUTFIT_METAL_LIGHT
 		// Its reflection held to what it can see: no probe, so the sky's (a bright dome lit to
 		// light the scene) is kept only in part, least at the horizon (trees, walls, the camp)
 		// and in what the sky can't reach (specular occlusion from the baked sky seen).
 		vec3 rw = (INV_VIEW_MATRIX * vec4(reflect(-VIEW, NORMAL), 0.0)).xyz;
-		float keep = metal_env * mix(metal_env_horizon, 1.0, smoothstep(0.05, 0.6, abs(rw.y))) * mix(0.3, 1.0, sky);
+		float sky_k = mix(sky, max(sky, 0.85), bare);                // (a bare rolled edge stands proud: it sees the sky the baked value, eased over the plate, undercounts)
+		float keep = metal_env * mix(metal_env_horizon, 1.0, smoothstep(0.05, 0.6, abs(rw.y))) * mix(0.3, 1.0, sky_k);
 		float graze = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 		float p_graze = metal_env_graze;
-		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_graze[i] >= 0.0) p_graze = piece_graze[i];
+		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i]) && piece_graze[i] >= 0.0) p_graze = piece_graze[i];
 		keep = max(keep, p_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
@@ -364,6 +397,7 @@ void fragment() {
 	if (debug_view == 2) { ALBEDO = vec3(conv); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 4) { ALBEDO = vec3(0.0); EMISSION = vec3(gold, 0.0, gold) * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 5) { ALBEDO = vec3(0.30, 0.30, 0.36); ROUGHNESS = 0.4; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (its shape alone: flat colour, no normal map, no mottle)
+	if (debug_view == 6) { ALBEDO = vec3(0.0); EMISSION = dbg6 * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 3) { ALBEDO = vec3(sky); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }
