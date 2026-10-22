@@ -571,8 +571,9 @@ void fragment() {
 	if (dbg_gate > 8.5) { EMISSION = vec3(UV, 0.0); }
 	// (dbg_gate 10 and 11: her UV unclipped, blue the scale: 10 its whole, red/blue and green/blue; 11 its sixteenths)
 	if (dbg_gate > 9.5 && dbg_gate < 11.5) { EMISSION = 0.25 * vec3(dbg_gate > 10.5 ? fract(UV * 16.0) : UV, 1.0); }
-	// (dbg_gate 12: red her world normal's y (0.5 + y/2), green its facing of the lens (n.v), blue 1 for scale (dent d2))
-	if (dbg_gate > 11.5) { ALBEDO = vec3(0.0); EMISSION = 0.25 * vec3(wd * 0.5 + 0.5, clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.0); }
+	// (dbg_gate 14: red her world normal's y (0.5 + y/2), green its facing of the lens (n.v), blue 1 for scale (dent d2);
+	// 15: her sky share, sky_w, emitted grey, 1 white)
+	if (dbg_gate > 13.5) { ALBEDO = vec3(0.0); EMISSION = 0.25 * (dbg_gate > 14.5 ? vec3(sky_w) * 4.0 : vec3(wd * 0.5 + 0.5, clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.0)); }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
