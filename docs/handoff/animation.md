@@ -2,6 +2,31 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 0000000000000000000. MR READY 2 (animation 49, 21 Oct); the area is free after the merge (slot to the boss Warden rebuild)
+Branch `anim-40` (junction rules below; never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json, *.import). Integration merged at 67824ba8. No helpers or turns held. Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\c4134bd3-ebec-4f59-ad97-c6010364bcd4\scratchpad\anim\`. It holds stp\ (judge briefs r1-r4, shots to shots4, heldt2.py, a per-frame staff/fist dump), mr2\ (checks), and tools\gshoot.sh and clipdiff.py. Texts are backed up to survivorsunchained_inputs\scratch_anim49.
+**MR2 is 10 clips:**
+- The combat staff restage: idle_arcanist, idle_arcanist_break, arcanist_show, flare_burns_twice, stop_arcanist_l/r. The idle and its set passed max r2 10/10.
+- Her own town idles: idle_arcanist_town, idle_arcanist_staff_town, idle_reaver_town, idle_stalker_town. Max r2 PASS.
+Every other clip builds identical to integration (full build plus clipdiff). Main repacks her after the merge.
+**Arcanist stops: 3 rounds of max judges.**
+- r1: the landing frames PASS. The 0.30 s frames FAIL: a shelf at 315; at 45 the ring sat on her cheek and the free arm was thrown out.
+- r2 (fa59b760): the staff arc and the free arm are counter-rotated against the trunk's lean. Code: `idle.pitched`/`chest_pitch`, `hip_layer(upright=)`, `STOP_HOLD`, `STOP_BACK`. This fixed 45 and the free arm. A mild shelf stays at the 315 close-up at 0.30 s (gate YES): **closed as known**.
+- r3: IK'd the fist to the idle's pelvis spot. It was worse (it levelled the forearm), so it is reverted (8028bd41).
+- **Bug found and fixed (c8b97de1):** r2's new `p(back=)` parameter shadowed the back foot's name and dropped the back foot's key from EVERY stop. After the fix the non-arcanist stops are identical to integration, and the arcanist stops' leg tracks are bit-identical to integration's. A confirmation judge saw the upper body unchanged at 1:1; the legs are the shipped legs.
+- Numbers: forearm 28-35 deg below level, face cover 0, 0 mm into outfits, audit 0. The staff passes 24 mm from her right leg at 0.30 s on the left stop, 112 mm on the right.
+**Checks:**
+- Audit: 0 flags on the stops.
+- motion --outfits: 0 mm into each calling's own outfit. Against integration: the combat arcanist's left hand into other callings' outfits 22 -> 0 mm; the Flare's staff arm into the warden outfit 10 -> 3 mm.
+- Known: idle_arcanist_town goes 15 mm into the warden outfit when another calling's outfit is worn (gear).
+- dotnet 1046/0/8.
+**Closed as known:** the stops' mild 315 shelf at 0.30 s; the reaver thumb-in-belt polish (skipped by the coordinator).
+**For main:** integration's out/clips holds two orphans that no code makes (`run_/sprint_arcanist_wand_town`, 20 Oct), and they get packed.
+**Routed:**
+- [staff asset] At 45 the gem reads as a flat, unlit blue slab.
+- [body] Her bare upper arms read heavy at the close-up.
+- [outfit] The bodysuit's gloss over the bust looks plasticky at the close-up.
+- [face] A blink is caught in shots4\sl9_c.
+
 ## 000000000000000000. Paused here (animation 48, 21 Oct, coordinator wind-down); next:
 Branch `anim-40` (junction rules below; never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json, *.import). MR1 MERGED (51b8455f: the 5 KNOWN fixes, R1 staff, grip slide). No helpers or turns held. Scratch: `...\6a6cb394-317c-45d7-aa08-3523481011e7\scratchpad\anim\` (st\ staff: briefs, b\ round 1, c\ round 2 + pipe.sh/heldt.py; town\ town2\ town3\; judge_r2.md; mr1\ checks; tools\clipdiff.py).
 **chain_strike: CUT** (coordinator agreed): gated off as before; the Grapple landing plays her passed heavy blow; the staff's fist-fit limit blocked it through 4 rounds.
