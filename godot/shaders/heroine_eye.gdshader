@@ -129,6 +129,19 @@ uniform float pupil_wet = 1.0;
 uniform float skin_deep = 0.0;
 uniform float deep_white = 1.0;
 uniform float deep_iris = 0.0;
+// (face 38 r3: the iris seen through the cornea, as a real eye's is: turned away, its pattern and pupil
+// foreshortened far less than the white round it (the cornea's lens), so a pupil read as a cat's slit at 40
+// degrees. `cornea_round` 0 as before; 1 the pupil round on screen at any angle (its outline kept as it is);
+// measured by the eye's own UV footprint on screen, so it also squares the paint's UV stretch (~4%) head-on.
+// `catch_round`: the catchlight round on screen (1) rather than drawn on the ball (0); `catch_drift` how far it
+// slides with the view (0.3 as before); `far_iso` the eye's size on screen taken from its footprint's short side
+// (1), not its long one (0, as before: turned, the eye counted as far off and its catchlight was put out))
+uniform float cornea_round = 0.0;
+uniform float catch_round = 0.0;
+uniform float catch_drift = 0.3;
+uniform float far_iso = 0.0;
+// (developer's view: 1 the iris's regions as laid on the ball (red pupil, blue to half, green to its edge); 2 as seen)
+uniform float dbg = 0.0;
 
 varying float under_lid;
 varying float corner;
@@ -160,6 +173,16 @@ void fragment() {
 	vec2 uv = UV - shift;
 	// (the pupil opened or closed: the iris's paint stretched about its middle)
 	vec2 dd = (uv - c) / iris_r;
+	// (the eye's UV footprint on screen: `ax` the UV direction squeezed most, `asq` how much (1 round))
+	vec2 ux = dFdx(UV), uy = dFdy(UV);
+	float jxx = ux.x * ux.x + uy.x * uy.x, jxy = ux.x * ux.y + uy.x * uy.y, jyy = ux.y * ux.y + uy.y * uy.y;
+	float jh = 0.5 * (jxx + jyy), jd = sqrt(max(0.25 * (jxx - jyy) * (jxx - jyy) + jxy * jxy, 0.0));
+	float jmax = jh + jd, jmin = max(jh - jd, 1e-12);
+	vec2 ax = abs(jxy) > 1e-12 ? normalize(vec2(jmax - jyy, jxy)) : (jxx >= jyy ? vec2(1.0, 0.0) : vec2(0.0, 1.0));
+	float asq = sqrt(jmin / max(jmax, 1e-12));
+	// (the pattern within the outline drawn out along it, fully at the middle, none at the edge)
+	float st = mix(pow(max(asq, 0.15), cornea_round), 1.0, min(dot(dd, dd), 1.0));
+	dd += ax * dot(dd, ax) * (st - 1.0);
 	float rr = length(dd);
 	float t = clamp((rr - pupil) / (1.0 - pupil), 0.0, 1.0);
 	float src = mix(0.28, 1.0, t);
@@ -187,6 +210,7 @@ void fragment() {
 	ir *= iris_light;
 	vec2 tx = UV * vec2(textureSize(eye, 0));
 	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
+	lod = mix(lod, 0.5 * log2(jmin * dot(vec2(textureSize(eye, 0)), vec2(textureSize(eye, 0))) * 0.5), far_iso);
 	float far = smoothstep(far_from, far_to, lod);
 	if (far_sat > 0.0 || far_iris > 0.0 || iris_sat != 1.0) {
 		float fl = dot(ir, vec3(0.2126, 0.7152, 0.0722));
@@ -221,8 +245,10 @@ void fragment() {
 	// (the tear film pooled along the lower lid: a thin brighter wet line, in its light and its sheen)
 	float lw = low_y + 0.2 * d0.x * d0.x;
 	float wet_line = smoothstep(lw - 0.12, lw - 0.03, d0.y) * (1.0 - smoothstep(lw - 0.03, lw + 0.04, d0.y));
-	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
-	vec2 dc = abs((d - at_c) * vec2(1.0, 1.25));
+	vec2 at_c = catch_at + v.xy * vec2(catch_drift, -catch_drift);
+	vec2 dq = d - at_c;
+	dq += ax * dot(dq, ax) * (mix(1.0, asq, catch_round) - 1.0);
+	vec2 dc = abs(dq * vec2(1.0, 1.25));
 	float cr = mix(length(dc), pow(pow(dc.x, 4.0) + pow(dc.y, 4.0), 0.25), catch_window);
 	float cs = catch_size * (1.0 - catch_far_size * far);
 	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * cs, (0.06 + 0.025 * catch_soft) * cs, cr);
@@ -241,6 +267,12 @@ void fragment() {
 	NORMAL_MAP_DEPTH = 1.0;
 	SSS_STRENGTH = 0.2 * white;
 	EMISSION = catch_colour * glint * catchlight * (1.0 - catch_far * far);
+	if (dbg > 2.5) { ALBEDO = vec3(0.0); EMISSION = vec3(asq, abs(ax.x) * asq, abs(ax.y) * asq) * 0.3 * in_iris; }
+	else if (dbg > 0.0) {
+		vec2 q = dbg > 1.5 ? dd : d;
+		ALBEDO = vec3(0.0);
+		float lq = length(q); EMISSION = (lq < pupil ? vec3(1.0, 0.0, 0.0) : lq < 0.5 ? vec3(0.0, 0.0, 1.0) : lq < 1.0 ? vec3(0.0, 1.0, 0.0) : vec3(0.0)) * 0.25;
+	}
 }
 
 float schlick(float u) {

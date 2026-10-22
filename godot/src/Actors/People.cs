@@ -683,11 +683,16 @@ public static class People
     /// than a brown iris, they read as cataracts); the whites ivory, lit from below, the upper lid's shadow at
     /// its visible margin, a wet line on the lower lid. Per face (looks.json faces): the iris's size, the pupil,
     /// how light the whites stand, and where the lid covers the iris.</summary>
+    /// <summary>Her pupils over each face's own (looks.json's "pupil"), face 38 r3.</summary>
+    public const float PupilOpen = 1.35f;
+
     static void HerEyes(ShaderMaterial e, string? face, Color? skin = null)
     {
         var f = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(x => x.Id == (face is { Length: > 0 } ? face : "own"));
         e.SetShaderParameter("iris_r", f is { Iris: > 0 } ? (float)f.Iris : 0.117f);
-        e.SetShaderParameter("pupil", f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f);
+        // (face 38 r3, judge j2b: the pupils opened a third (the Look's read 0.19 of the iris, tight and hard; ~0.27
+        // softer and more alive, and turned it stays a pupil, not a slit))
+        e.SetShaderParameter("pupil", Mathf.Min(PupilOpen * (f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f), 0.4f));
         bool dyed = e.GetShaderParameter("recolour").AsSingle() > 0f;
         e.SetShaderParameter("limbal", dyed ? 0.32f : 0.42f);
         e.SetShaderParameter("limbal_from", 0.85f);
@@ -723,6 +728,14 @@ public static class People
         e.SetShaderParameter("catch_far", 0.35f);
         e.SetShaderParameter("catch_far_size", 0.4f);
         e.SetShaderParameter("pupil_dark", 0.010f);
+        // (face 38 r3: turned 40 the near eye's pupil read a cat's slit (3x8 px) and its catchlight went out: the
+        // iris and pupil seen through the cornea's lens, foreshortened less than the ball; the catchlight round on
+        // screen and held near the pupil; the eye's size on screen from its footprint's short side, so turning
+        // her does not count as distance)
+        e.SetShaderParameter("cornea_round", 0.7f);
+        e.SetShaderParameter("catch_round", 1f);
+        e.SetShaderParameter("catch_drift", 0.12f);
+        e.SetShaderParameter("far_iso", 1f);
         var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
         // (deeper skin, its whites a little lower and warmer: at full white they glowed against it, face 38;
         // `deep` 0 at her fair skin's lightness (Oklab L ~0.75 and over), 1 at a deep one's)
