@@ -49,7 +49,7 @@
   "push_cap": 0.003,
   "push_tucked_only": true,
   "tuck_under": {"plates": ["plate"], "edge": 0.3, "full": 0.98, "in": 0.008, "reach": 0.025, "close": 0.004, "bound": true, "horiz": 0.3,
-    "extra": [{"plates": ["strap"], "edge": 0.3, "full": 0.7, "in": 0.005, "reach": 0.015, "close": 0.003}]},
+    "extra": [{"plates": ["strap"], "edge": 0.15, "full": 0.5, "in": 0.005, "reach": 0.015, "close": 0.003}]},
   "flare": [{"edge": "low", "mm": 0.005, "over": 0.015}, {"edge": "scye", "mm": 0.004, "over": 0.02}, {"edge": "neck", "mm": 0.003, "over": 0.02, "x_from": 0.06, "x_full": 0.09}],
   "strap_lift": 0.0035,
   "wrap": {"az": 66.0, "z_top": 0.10, "hold": 0.0},
