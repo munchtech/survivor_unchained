@@ -3,9 +3,10 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "2e3105876f131a1bda049227a70f5a13",
+   "data": "1cba3cfe8affff8a38e9a14ae6d76f81",
    "breast_sym_follow": 1.592,
-   "bust_shell": 3.418
+   "bust_shell": 3.418,
+   "bust_detail": 0.1675
   }
  },
  "scene": 0,

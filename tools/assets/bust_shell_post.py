@@ -20,6 +20,10 @@ outfit gltf, and carries everything on it.
   - Her skin stays under: the inner face is kept >= MIN_GAP off her rest skin where the smoothing would bring it
     closer (pushed out along her normal; the outer face and the riders over it go with it).
 
+Then (detail(), armor 14 s2) the leather's baked convexity over the cups (UV2.y, read by the outfit shader) is made
+smooth to match: it was baked on the old shape, and its poke and hollow drew a glossy spot at each apex and a dark
+crease from under it to the zip after the shape was smooth. Done-mark "bust_detail".
+
 Idempotent: done-mark "bust_shell" in the gltf's asset extras (the largest move, mm); a file that has it is skipped.
 Per-outfit config in CONFIG (heroine_body_post runs it for the arcanist only; ranger, warden, reaver could be added).
 
@@ -376,6 +380,62 @@ def shell(path, cfg, art, force=False, report=True):
     return big
 
 
+# ------------------------------------------------------------------------------------------ the baked detail --
+DMARK = "bust_detail"
+DSIGMA = 0.020      # the convexity's smoothing over the cups (m)
+DFLOOR = 0.45       # no less convex than this over the cups: the shader's `hollow` (darker, rougher) starts under 0.45
+DEDGE = (0.004, 0.008)  # the opening's rolled edge (baked edge distance, m) keeps its own value, eased in over this
+
+
+def detail(path, cfg, art, force=False, report=True):
+    """The leather's baked convexity over the cups made to match the smooth shell (armor 14 s2). heroine_outfits.detail
+    bakes each point's convexity (UV2.y: the shader's leather is lighter and glossier where it is over 0.55, darker
+    and rougher under 0.45) from the piece as made, so the old nipple poke and the hollow at her lower inner cup stayed
+    in it after the shell step smoothed the shape: dips to 0.34 under each cup's apex toward the zip (a dark, rough
+    trail: the crease) round an apex at 0.45 (a lighter, glossier spot: the poke). Over the cups' outward faces (the
+    cup weight, eased off within DEDGE of the opening's edge and on faces turned down past n_y -0.7..-0.85: the fold under the cup keeps
+    its crease) the value becomes its Gaussian (DSIGMA) mean over the outer face, floored at DFLOOR. The rest of the
+    leather, its inner face and the riders are left as baked. Idempotent: done-mark DMARK (the largest change)."""
+    G = _Gl(path)
+    if G.g.get("asset", {}).get("extras", {}).get(DMARK) is not None and not force:
+        print("BUST_DETAIL: %s has had it" % os.path.basename(path))
+        return None
+    pr = _prim(G, cfg["shell"])
+    A = pr["attributes"]
+    P = G.get(A["POSITION"]).astype(float)
+    N = G.get(A["NORMAL"]).astype(float)
+    D = G.get(A["TEXCOORD_1"]).astype(float)
+    B, BN, bt = _skin(art)[:3]
+    _, j = bt.query(P)
+    out = (N * BN[j]).sum(1) > 0.5
+    w = cup_weight(P, cfg) * out * _ss((D[:, 0] - DEDGE[0]) / (DEDGE[1] - DEDGE[0])) * _ss((N[:, 1] + 0.85) / 0.15)
+    U, wid = _weld(P[out])
+    cu = np.zeros(len(U))
+    np.add.at(cu, wid, D[out, 1])
+    cu /= np.bincount(wid, minlength=len(U))
+    nu = np.zeros_like(U)
+    np.add.at(nu, wid, N[out])
+    nu /= np.maximum(np.linalg.norm(nu, axis=1, keepdims=True), 1e-12)
+    sel = np.where(w > 0)[0]
+    T = cKDTree(U)
+    nb = T.query_ball_point(P[sel], 3 * DSIGMA)
+    sm = np.empty(len(sel))
+    for k, (i, js) in enumerate(zip(sel, nb)):
+        js = np.asarray(js)
+        g = np.exp(-0.5 * (np.linalg.norm(U[js] - P[i], axis=1) / DSIGMA) ** 2) * _ss((nu[js] @ N[i] - FOLD) / 0.15)
+        sm[k] = (g * cu[js]).sum() / max(g.sum(), 1e-12)
+    new = D[:, 1].copy()
+    new[sel] = D[sel, 1] + w[sel] * (np.maximum(sm, DFLOOR) - D[sel, 1])
+    big = float(np.abs(new - D[:, 1]).max())
+    D[:, 1] = new
+    G.put(A["TEXCOORD_1"], D.astype(np.float32))
+    G.g.setdefault("asset", {}).setdefault("extras", {})[DMARK] = round(big, 4)
+    G.save()
+    if report:
+        print("BUST_DETAIL: %s: %d points' convexity set, largest change %.3f" % (cfg["shell"], len(sel), big))
+    return big
+
+
 def main(a):
     pos = [x for x in a if not x.startswith("--")]
     art = pos[0] if pos else "godot/art/people"
@@ -383,6 +443,7 @@ def main(a):
         pth = os.path.join(art, "heroine_outfit_%s.gltf" % o)
         if os.path.exists(pth) and o in CONFIG:
             shell(pth, CONFIG[o], art, force="--force" in a)
+            detail(pth, CONFIG[o], art, force="--force" in a)
 
 
 if __name__ == "__main__":
