@@ -8,12 +8,27 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
 
   1. nape (heroine_neck.nape, weights only, merge off), the outfits' points that took those weights follow
      (match_pieces), and the straps' rows evened again (strap_rows.even)       [done-mark heroine_nape]
-  2. breast_sym_post --no-follow: her left breast's inner slope onto her right's mirror; records re-keyed, no piece
-     touched (armor 12, the owner's dent)                                       [breast_sym]
-  3. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
+  2. breast_sym_post --no-follow: her left breast's inner slope onto her right's mirror; records re-keyed, no slot
+     piece touched; the four outfits' points over it follow her skin (armor 14: the bodysuit had kept the old
+     hollow), each outfit marked breast_sym_follow (armor 12, the owner's dent)  [breast_sym]
+  3. bust_shell_post: the arcanist bodysuit's leather over her cups as a smooth, full shell (no hollow at her left
+     lower inner breast, no lumps along the zip edges, no nipple pokes; the stitching and piping carried, her tucked
+     skin kept >= 1 mm under it); per-outfit config, only the arcanist (armor 14, the owner 21 Oct); then (s3)
+     each cup's front as one round, full dome at the 3-6 cm scale (no apex highlight, no crease to the zip); then
+     its baked convexity (UV2.y) over the cups baked again from that shape and made smooth (s2: it kept the old
+     poke and hollow). Order: shell, dome, detail; the dome drops bust_detail so the bake follows it
+                                                                    [outfit's bust_shell, bust_dome, bust_detail]
+  4. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
      follow, records re-keyed (face 36)                                          [heroine_neck_shape]
-  4. heroine_neck_relief: her collar's soft relief, a normal map on skin_graft (softened face 37: SOFT)  [heroine_neck_relief]
-  5. heroine_lod: the play LODs of every outfit, from the final body and pieces.
+  5. heroine_neck_relief: her collar's soft relief, a normal map on skin_graft (softened face 37: SOFT)  [heroine_neck_relief]
+  6. heroine_arm_shape --art: her upper arms slimmer on the inner side (girth ~32 -> ~28.5 cm at 25-50%, tapering to
+     the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
+     records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
+  7. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
+     calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
+     breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
+     sets it while the reaver's top is worn) (armor 15 w1)                                    [worn_reaver]
+  8. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]
 """
@@ -62,10 +77,16 @@ def main(a):
     m = marks(glb)
     if "breast_sym" not in m:
         run(os.path.join(HERE, "breast_sym_post.py"), "--art", art, "--no-follow")
+    # (the outfit carries its own done-mark; the step skips a file that has it)
+    run(os.path.join(HERE, "bust_shell_post.py"), art, "arcanist")
     if "heroine_neck_shape" not in m:
         run(os.path.join(HERE, "heroine_neck_shape.py"), "--art", art)
     if "heroine_neck_relief" not in m:
         run(os.path.join(HERE, "heroine_neck_relief.py"), glb, glb)
+    if "heroine_arm_shape" not in m:
+        run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
+    # (the channel is rebuilt on every run, the morph only on a glb without it)
+    run(os.path.join(HERE, "worn_reaver_post.py"), art)
     if "--no-lod" not in a:
         run(os.path.join(HERE, "heroine_lod.py"), art)
     print("BODY_POST: marks now", sorted(marks(glb)))

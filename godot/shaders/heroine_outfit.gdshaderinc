@@ -28,6 +28,10 @@ uniform float look_rig = 0.0;
 uniform float look_metal_rough = 0.30;
 uniform float look_metal_dim = 1.0;                // (r4: was 0.70, older than the 1.2 highlight cap: the Look pauldron went a black lacquered ball. And its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
 uniform float look_leather_rough = 0.60;
+uniform float leather_rough_floor = 0.0;          // (armor 14, 22 Oct: a leather's roughness floor off its burnished edges, from its outfit_materials.json row "rough_floor". The arcanist bodysuit's plumleather at 0.58: at 0.42 its cups caught the key as a pointed highlight at each apex (read as nipple pokes) and a dark band under it (a crease), and a plastic streak at night; the shape alone was smooth)
+uniform float leather_rough_var = 1.0;            // (armor 14: its roughness map's spread kept, 1 as scanned; under 1 the map's blotches ease toward the floor)
+uniform float leather_clearcoat = 0.0;            // (armor 14: a thin clear sheen over a leather, off its edges; 0 none)
+uniform float leather_clearcoat_rough = 0.3;
 // Metal's standard (touch-up, 18 Oct): worn, forged; never a mirror.
 uniform float metal_rough = 0.45;                  // (its plate's satin roughness, varied about this over the piece: 0.35-0.55 with the detail)
 uniform float metal_rough_wear = 0.26;             // (where worn bright: its edges and, in patches, what stands out; 0.2-0.3)
@@ -139,6 +143,7 @@ void fragment() {
 	if (dye_amount > 0.0) col = dye_apply(col, textureLod(albedo, vec2(0.5), 20.0).rgb * tint);
 	vec3 nrm = texture(normal_map, UV).rgb;
 	float rough = has_orm ? texture(orm, UV).g : roughness_value;
+	float cc = 0.0;
 	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value) * (1.0 - step(0.95, metallic_value))) : metallic_value;   // (touch-up 3: a fully metallic key ignores its scan's metal map, whose specks dropped to non-metal as white flecks on the steel; grime and pits come from the shared detail and the baked masks. Rust keeps its map)
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
@@ -160,6 +165,9 @@ void fragment() {
 		// burnished to 0.28, a rolled binding seen edge-on caught the sky as a pale
 		// line along its top that read as a gap, judge 5)
 		rough = clamp(rough * 0.9 - 0.08 * bulge - 0.1 * near_edge + 0.1 * hollow, mix(0.42, 0.36, near_edge), 0.95);
+		rough = max(rough, leather_rough_floor * (1.0 - near_edge));
+		rough = mix(max(leather_rough_floor, 0.42) * (1.0 - near_edge) + rough * near_edge, rough, leather_rough_var);
+		cc = leather_clearcoat * (1.0 - near_edge);
 		// Stitches: dashes along the edge, `stitch_in` in, square to the
 		// edge's way (its direction from how the distance changes on screen).
 		vec2 g = vec2(dFdx(edge), dFdy(edge));
@@ -326,6 +334,8 @@ void fragment() {
 #endif
 	NORMAL_MAP = nrm;
 	ROUGHNESS = rough;
+	CLEARCOAT = cc;
+	CLEARCOAT_ROUGHNESS = leather_clearcoat_rough;
 	METALLIC = metal;
 	AO = sky;
 	EMISSION = gold_emit * mix(0.4, 1.0, sky);
@@ -335,6 +345,11 @@ void fragment() {
 	if (debug_view == 4) { ALBEDO = vec3(0.0); EMISSION = vec3(gold, 0.0, gold) * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 5) { ALBEDO = vec3(0.30, 0.30, 0.36); ROUGHNESS = 0.4; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (its shape alone: flat colour, no normal map, no mottle)
 	if (debug_view == 3) { ALBEDO = vec3(sky); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
+	if (debug_view == 7) { NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (armor 14: its normal map alone off)
+	if (debug_view == 8) { ALBEDO = vec3(0.10, 0.09, 0.16); }   // (armor 14: its albedo alone flat)
+	if (debug_view == 10) { ALBEDO = clamp(col, 0.0, 1.0); }   // (armor 14: no sky occlusion)
+	if (debug_view == 11) { ALBEDO = clamp(texture(albedo, UV).rgb * tint * mix(0.55, 1.0, sky), 0.0, 1.0); }   // (armor 14: the texture and sky only, no mottle/wear)
+	if (debug_view == 9) { ROUGHNESS = 0.55; }   // (armor 14: its roughness alone flat)
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }
 

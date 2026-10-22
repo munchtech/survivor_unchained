@@ -3,10 +3,12 @@
  "steel": "blued",
  "darksteel": "blued",
  "pieces": {
-  "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her cups and pauldrons keep the key's 0.45 / 0.3.",
+  "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her pauldrons keep the key's 0.45 / 0.3. Armor 15 (b1): the cups (warden.cups, and plate.cups: every plate_* top's cups) polished at 0.22, patches at 0.2: at 0.45 the close-up's warm night key spread over each apex as a cloudy pink blot (read as a stain or a nipple, J1); now one small warm highlight.",
   "steel": {
    "warden.greave": {"metal_rough": 0.36, "metal_env_graze": 0.45},
-   "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45}
+   "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45},
+   "warden.cups": {"metal_rough": 0.22, "metal_blot": 0.2},
+   "plate.cups": {"metal_rough": 0.22, "metal_blot": 0.2}
   }
  }
 }

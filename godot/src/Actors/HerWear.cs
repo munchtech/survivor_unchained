@@ -134,6 +134,8 @@ public static class HerWear
     {
         // (--tuck-weights 0: laid pieces keep their own bone weights; pictures that tell a weights mark from a lay mark)
         if (Args.Get("tuck-weights") == "0") GarmentTuck.Weights = false;
+        // (her worn shape under the reaver's top: People.WornShape)
+        People.WornShape(p, "reaver", look.TryGetValue("top", out var wornTop) && wornTop == "reaver.top");
         var steps = ApplySteps(p, calling, look, dyes).GetEnumerator();
         if (Live)
         {

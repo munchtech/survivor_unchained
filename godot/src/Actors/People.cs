@@ -1305,6 +1305,7 @@ public static class People
         }
         // Her skin under the outfit's fitted pieces is drawn tucked in: each
         // outfit marks it in one channel of her vertex colours.
+        WornShape(p, "reaver", set == "reaver");
         int ch = System.Array.IndexOf(OutfitChannels, set);
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
             if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
@@ -1382,6 +1383,11 @@ public static class People
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
             // (a metal key's own satin roughness, where its row names one: blacksteel, the etched tier's blackened ground at 0.3)
             if (kind == 1 && entry.ContainsKey("roughness")) m.SetShaderParameter("metal_rough", (float)entry["roughness"]);
+            // (a leather's roughness floor, where its row names one: the arcanist bodysuit's plumleather, armor 14)
+            if (kind == 0 && entry.ContainsKey("rough_floor")) m.SetShaderParameter("leather_rough_floor", (float)entry["rough_floor"]);
+            if (kind == 0 && entry.ContainsKey("rough_var")) m.SetShaderParameter("leather_rough_var", (float)entry["rough_var"]);
+            if (kind == 0 && entry.ContainsKey("clearcoat")) m.SetShaderParameter("leather_clearcoat", (float)entry["clearcoat"]);
+            if (kind == 0 && entry.ContainsKey("clearcoat_rough")) m.SetShaderParameter("leather_clearcoat_rough", (float)entry["clearcoat_rough"]);
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
@@ -1473,6 +1479,15 @@ public static class People
         string n = mi.Name.ToString();
         if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
         return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
+    }
+
+    /// <summary>Her body's worn shape (heroine.glb's morph worn_KEY, tools/assets/worn_reaver_post.py): 1 while the
+    /// garment it belongs to is worn, else 0. worn_reaver: under the reaver's top her breasts' undersides a little
+    /// heavier, a soft roll under its lower edge (armor 15 w1).</summary>
+    internal static void WornShape(Person p, string key, bool on)
+    {
+        foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
+            if (mi.Mesh != null && mi.FindBlendShapeByName("worn_" + key) is int i and >= 0) mi.SetBlendShapeValue(i, on ? 1f : 0f);
     }
 
     internal static bool IsSkin(Material? m) => m is ShaderMaterial sm && skinShader2 != null && sm.Shader == skinShader2;
