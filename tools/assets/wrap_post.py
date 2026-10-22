@@ -15,7 +15,8 @@ tuck of her skin from the wrap's own shape:
     python tools/assets/wrap_post.py <build dir> [art dir, default godot/art/people] [--margin 0.0015] [--dry]
 
 <build dir> holds heroine_outfit_reaver.gltf (and .bin) and wrap_reaver.strap.npz from heroine_outfits.py. The new
-top data is appended to the installed .bin (the old top's bytes stay, unreferenced). Then run cover.py --pieces
+top data replaces the old top's and the installed .bin is written compactly (compact(): only the accessors and buffer
+views still referenced, packed in order; r3). Then run cover.py --pieces
 reaver.top and heroine_lod.py <art> reaver.
 """
 import json
@@ -32,7 +33,35 @@ from breast_sym_post import _body, _vn  # noqa: E402
 
 TUCK = 0.010   # (her shader's full tuck, metres)
 REACH, SKIRT, EDGE_MARGIN = 0.015, 0.010, 0.001
-ARM = ("upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
+# (r3: no arm-weight filter: r1's matched "upperarm" and so caught her flanks' upperarm_share skin, but it was never
+# applied; her arms are left out by the facing and REACH tests below)
+
+
+def skin_union(G):
+    """Her body's skin AND its back graft (skin_graft: her upper back and nape, 1.386 m up), welded together by place:
+    (U, F, J, W) with J/W each point's joints and weights (one of its copies). r3: _body() is the main primitive
+    alone, so the wrap's back (and its tuck) saw no skin of hers above 1.386 m behind: its rows there fell to the
+    front's hull and lay 9-25 mm inside her back."""
+    g = G.g
+    hb = [n for n in g["nodes"] if n.get("name") == "Heroine"][0]
+    ps = [p for p in g["meshes"][hb["mesh"]]["primitives"] if g["materials"][p["material"]].get("name") != "skin_head"]
+    Ps, Fs, Js, Ws, o = [], [], [], [], 0
+    for p in ps:
+        P = G.get(p["attributes"]["POSITION"]).astype(float)
+        Ps.append(P)
+        Fs.append(G.get(p["indices"]).reshape(-1, 3).astype(int) + o)
+        Js.append(G.get(p["attributes"]["JOINTS_0"]).astype(int))
+        W = G.get(p["attributes"]["WEIGHTS_0"]).astype(float)
+        if W.max() > 1.5:
+            W = W / 255.0 if W.max() <= 255 else W / 65535.0
+        Ws.append(W)
+        o += len(P)
+    P = np.vstack(Ps)
+    _, first, wid = np.unique(np.round(P / 1e-6).astype(np.int64), axis=0, return_index=True, return_inverse=True)
+    wid = wid.ravel()
+    F = wid[np.vstack(Fs)]
+    F = F[(F[:, 0] != F[:, 1]) & (F[:, 1] != F[:, 2]) & (F[:, 2] != F[:, 0])]
+    return P[first], F, np.vstack(Js)[first], np.vstack(Ws)[first], wid
 
 
 def transplant(fresh, inst):
@@ -76,23 +105,94 @@ def transplant(fresh, inst):
     I.buf = buf
     I.g["buffers"][0]["byteLength"] = len(buf)
     print("WRAP_POST: %s replaced from the build" % ", ".join(done))
+    return compact(I)
+
+
+def compact(I):
+    """I with only the accessors and buffer views something still references, its .bin packed in their order (no
+    dead bytes left by a replaced piece)."""
+    g = I.g
+    used = []
+
+    def acc(i):
+        if i not in used:
+            used.append(i)
+    for m in g.get("meshes", []):
+        for p in m["primitives"]:
+            for v in p["attributes"].values():
+                acc(v)
+            if "indices" in p:
+                acc(p["indices"])
+            for tg in p.get("targets", []):
+                for v in tg.values():
+                    acc(v)
+    for sk in g.get("skins", []):
+        if "inverseBindMatrices" in sk:
+            acc(sk["inverseBindMatrices"])
+    for an in g.get("animations", []):
+        for sm in an["samplers"]:
+            acc(sm["input"])
+            acc(sm["output"])
+    used.sort()
+    amap = {o: n for n, o in enumerate(used)}
+    accs = [dict(g["accessors"][o]) for o in used]
+    for a in accs:
+        if "sparse" in a:
+            a["sparse"] = json.loads(json.dumps(a["sparse"]))
+    sp = [a["sparse"][k] for a in accs if "sparse" in a for k in ("indices", "values")]
+    views = sorted({a["bufferView"] for a in accs if "bufferView" in a} | {x["bufferView"] for x in sp} |
+                   {im["bufferView"] for im in g.get("images", []) if "bufferView" in im})
+    vmap = {o: n for n, o in enumerate(views)}
+    buf, nv = bytearray(), []
+    for o in views:
+        bv = dict(g["bufferViews"][o])
+        while len(buf) % 4:
+            buf.append(0)
+        st = I.b0 + bv.get("byteOffset", 0)
+        data = I.buf[st:st + bv["byteLength"]]
+        bv["byteOffset"] = len(buf)
+        buf.extend(data)
+        nv.append(bv)
+    while len(buf) % 4:
+        buf.append(0)
+    for a in accs:
+        if "bufferView" in a:
+            a["bufferView"] = vmap[a["bufferView"]]
+    for x in sp:
+        x["bufferView"] = vmap[x["bufferView"]]
+    for im in g.get("images", []):
+        if "bufferView" in im:
+            im["bufferView"] = vmap[im["bufferView"]]
+
+    def remap(p):
+        p["attributes"] = {k: amap[v] for k, v in p["attributes"].items()}
+        if "indices" in p:
+            p["indices"] = amap[p["indices"]]
+        for tg in p.get("targets", []):
+            for k in list(tg):
+                tg[k] = amap[tg[k]]
+    for m in g.get("meshes", []):
+        for p in m["primitives"]:
+            remap(p)
+    for sk in g.get("skins", []):
+        if "inverseBindMatrices" in sk:
+            sk["inverseBindMatrices"] = amap[sk["inverseBindMatrices"]]
+    for an in g.get("animations", []):
+        for sm in an["samplers"]:
+            sm["input"], sm["output"] = amap[sm["input"]], amap[sm["output"]]
+    old = len(I.buf) - I.b0
+    g["accessors"], g["bufferViews"] = accs, nv
+    I.buf, I.b0 = buf, 0
+    g["buffers"][0]["byteLength"] = len(buf)
+    print("WRAP_POST: .bin compacted %d -> %d bytes (%d accessors, %d views)" % (old, len(buf), len(accs), len(nv)))
     return I
 
 
 def tuck(art, npz, margin):
     """reaver.top's tuck records (keys, values) from the wrap's shape."""
     H = _Gl(os.path.join(art, "heroine.glb"))
-    p, P, wid, U, Fw = _body(H)
+    U, Fw, _, _, _ = skin_union(H)
     Nw = _vn(U, Fw)
-    J = H.get(p["attributes"]["JOINTS_0"]).astype(int)
-    Wt = H.get(p["attributes"]["WEIGHTS_0"]).astype(float)
-    if Wt.max() > 1.5:
-        Wt = Wt / 255.0 if Wt.max() <= 255 else Wt / 65535.0
-    names = H.names()
-    isarm = np.array([n.split("_")[0] in ARM and n[-2:] in ("_l", "_r") for n in names])
-    armw = (Wt * isarm[J]).sum(1)
-    aw = np.zeros(len(U))
-    np.maximum.at(aw, wid, armw)
     z = np.load(npz)
     c, a, zz, R, thick = z["cxy"], z["a"], z["zz"], z["R"], float(z["thick"])
     # (her points in the build's frame: x, -z, y)
@@ -160,6 +260,16 @@ def main(a):
     I = transplant(os.path.join(build, "heroine_outfit_reaver.gltf"), os.path.join(art, "heroine_outfit_reaver.gltf"))
     I.save()
     write_tuck(os.path.join(art, "armor_tuck", "reaver.top.bin"), keys, vals)
+    # (r3: the index's tuck_count, as tuck_fix.py keeps it)
+    ip = os.path.join(art, "armor_index.json")
+    txt = open(ip, encoding="utf-8").read()
+    idx = json.loads(txt)
+    rows = idx if isinstance(idx, list) else idx.get("pieces", [])
+    for r in rows:
+        if r.get("id") == "reaver.top":
+            r["tuck_count"] = int(len(keys))
+    nl = "\n" if txt.endswith("\n") else ""
+    open(ip, "w", encoding="utf-8", newline="\n").write(json.dumps(idx, indent=1) + nl)
 
 
 if __name__ == "__main__":

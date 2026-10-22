@@ -4743,6 +4743,24 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
             for g in vs[j].groups:
                 obj.vertex_groups[g.group].add([int(i)], g.weight, "REPLACE")
         print("WEIGHTS given to", len(bare), "bare points of", name)
+    # (r3: a wrap takes her final skin's weights again here, after the easing above: eased, its sides lost part of
+    # her arms' share and her skin slid out past them as she ran, 22 mm)
+    wk = [k for k in WRAP_SKINW if name.startswith(k)]
+    if wk:
+        Qs, Ws = WRAP_SKINW[wk[0]]
+        co = np.array([v.co[:] for v in vs])
+        dq, jq = cKDTree(Qs).query(co, k=4)
+        iw = 1.0 / np.maximum(dq, 1e-4)
+        ws = four_bones((Ws[jq] * iw[:, :, None]).sum(1) / iw.sum(1)[:, None])
+        for vg in list(obj.vertex_groups):
+            obj.vertex_groups.remove(vg)
+        groups = {}
+        for i in range(len(ws)):
+            for j in np.nonzero(ws[i] > 0.003)[0]:
+                if j not in groups:
+                    groups[j] = obj.vertex_groups.new(name=BONES[j])
+                groups[j].add([i], float(ws[i, j] / ws[i, ws[i] > 0.003].sum()), "REPLACE")
+        print("WRAP weights: %s takes her skin's again (%d points)" % (name, len(ws)))
     me.set_sharp_from_angle(angle=math.radians(50))
     obj.parent = arm
     am = obj.modifiers.new("Armature", "ARMATURE")
@@ -8747,34 +8765,39 @@ WRAP_Z = [float(v) for v in os.environ.get("WRAP_Z", "-0.040,0.024").split(",")]
 WRAP_PINCH = [float(v) for v in os.environ.get("WRAP_PINCH", "0.012,0.018,0.025").split(",")]
 WRAP_ON = os.environ.get("WRAP", "1") == "1"
 WRAP_BUMP = float(os.environ.get("WRAP_BUMP", "0.001"))
+# (r3: its top edge drawn down WRAP_SIDE[0] at her sides and back, eased in from WRAP_SIDE[1] degrees past her
+# nipples' angle round her to WRAP_SIDE[2] degrees off the front; the front from breast to breast as it was. r2's top
+# ran level round her at nipple + 2.4 cm, and where her arm joins her (spine_03 + upperarm_share skin, 1.443-1.448 m)
+# her skin came 15-18 mm through it at rest)
+WRAP_SIDE = [float(v) for v in os.environ.get("WRAP_SIDE", "0.015,12,95").split(",")]
+WRAP_SKINW = {}  # (r3: pieces whose final points take her final skin's weights again after finish()'s easing)
 
 
 def _wrap_skin():
     """Her final skin (heroine.glb's body, welded), in this scene's frame, less her arms and hair."""
     import heroine_neck as hn_
-    from breast_sym_post import _body as _bs_body
+    from wrap_post import skin_union
     G_ = hn_._Gl(WRAP_GLB)
-    _, _, _, Ug, Fg = _bs_body(G_)
+    # (r3: her body AND its back graft (skin_graft, her upper back from 1.386 m): without it the wrap's back saw no
+    # skin of hers and lay on the front's hull, 9-25 mm inside her back)
+    Ug, Fg, J_, Wt_, _ = skin_union(G_)
     Q = np.c_[Ug[:, 0], -Ug[:, 2], Ug[:, 1]]
     j_ = cKDTree(P).query(Q)[1]
     # (r2: her arms are taken out of each outline by shape, _wrap_torso; by weight (r1: arm weight 0.25 and over) it
     # took her back and flanks too, which carry her arms' share at this height, and the band's sides and back fell
     # inside her, 14-20 mm under her skin at rest)
     keep = HAIR[j_] < 0.5
-    # (and her final skin's own weights, welded points averaged, as this scene's BONES: the wrap takes the weights of
-    # the skin under it, so her skin can't slide past its sides when her arms swing (r1: 30 mm through at the sides))
-    p_, P_, wid_, _, _ = _bs_body(G_)
+    # (and her final skin's own weights as this scene's BONES: the wrap takes the weights of the skin under it, so her
+    # skin can't slide past its sides when her arms swing (r1: 30 mm through at the sides))
     g_ = G_.g
     hb_ = [n for n in g_["nodes"] if n.get("name") == "Heroine"][0]
     names_ = [g_["nodes"][k]["name"] for k in g_["skins"][hb_["skin"]]["joints"]]
     col_ = np.array([BONES.index(n) if n in BONES else -1 for n in names_])
-    J_ = G_.get(p_["attributes"]["JOINTS_0"]).astype(int)
-    Wt_ = G_.get(p_["attributes"]["WEIGHTS_0"]).astype(float)
     Wq = np.zeros((len(Q), NB))
     c_ = col_[J_]
     for k in range(J_.shape[1]):
         ok_ = c_[:, k] >= 0
-        np.add.at(Wq, (wid_[ok_], c_[ok_, k]), Wt_[ok_, k])
+        np.add.at(Wq, (np.nonzero(ok_)[0], c_[ok_, k]), Wt_[ok_, k])
     Wq /= np.maximum(Wq.sum(1, keepdims=True), 1e-9)
     return Q, Fg[keep[Fg].all(1)], Wq
 
@@ -8838,12 +8861,18 @@ def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=500
     # (its edges round her: gathered at the front centre)
     g = np.exp(-0.5 * (0.15 * np.sin(a) / WRAP_PINCH[2]) ** 2) * (np.cos(a) > 0)
     zb_a, zt_a = zb + WRAP_PINCH[1] * g, zt - WRAP_PINCH[0] * g
+    _pt = _wrap_torso(_wrap_segments(Q, F, (zb + zt) / 2)).reshape(-1, 2)
+    cxy = (_pt.min(0) + _pt.max(0)) / 2
+    an = np.degrees(np.mean([abs(np.arctan2(NIPPLE[sd][0] - cxy[0], -(NIPPLE[sd][1] - cxy[1]))) for sd in "lr"]))
+    ad = np.degrees(np.abs(np.arctan2(np.sin(a), np.cos(a))))
+    sd_ = np.clip((ad - (an + WRAP_SIDE[1])) / (WRAP_SIDE[2] - an - WRAP_SIDE[1]), 0, 1)
+    zt_a = zt_a - WRAP_SIDE[0] * sd_ * sd_ * (3 - 2 * sd_)
+    print("WRAP side drop: nipples at %.1f deg round her; top down %.1f mm from %.1f to %.1f deg" % (
+        an, 1000 * WRAP_SIDE[0], an + WRAP_SIDE[1], WRAP_SIDE[2]))
     zl = np.arange(zb - 0.004, zt + 0.0045, 0.001)
     # (r2: the centre the middle of her outline's bounding box at mid-height; the mean of the outline's points, pulled
     # forward by her breasts' dense mesh, sat in front of her sternum on the higher band, its front rays met no skin of
     # hers and the whole front fell back to the hull, a tube bridging her cleavage)
-    _pt = _wrap_torso(_wrap_segments(Q, F, (zb + zt) / 2)).reshape(-1, 2)
-    cxy = (_pt.min(0) + _pt.max(0)) / 2
     Rr, Rh = np.zeros((len(zl), nu)), np.zeros((len(zl), nu))
     for k, z in enumerate(zl):
         seg = _wrap_torso(_wrap_segments(Q, F, z))
@@ -8895,6 +8924,7 @@ def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=500
     wq = (Wq[used[jq]] * iw[:, :, None]).sum(1) / iw.sum(1)[:, None]
     at = np.hstack([nor, wq, edge.reshape(-1, 1)])
     UNSTEADIED.add(name)
+    WRAP_SKINW[name] = (Q[used], Wq[used])
     beads = []
     if trim:
         tkey, w, h, tt = trim
