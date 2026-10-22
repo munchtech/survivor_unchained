@@ -121,6 +121,14 @@ uniform float far_sat = 0.0;
 uniform float iris_sat = 1.0;
 uniform float far_iris = 0.0;
 uniform float catch_far_size = 0.0;
+// (face 38 r2: the parallax's view slope capped (turned 40 the iris smeared into streaks and the pupil to a sliver;
+// 4 = the old floor); the cornea's sheen and sky over the pupil (navy over the black); the skin's depth, 0 to 1
+// (set from her skin), with how much it lowers and warms the whites and darkens the iris)
+uniform float par_max = 4.0;
+uniform float pupil_wet = 1.0;
+uniform float skin_deep = 0.0;
+uniform float deep_white = 1.0;
+uniform float deep_iris = 0.0;
 
 varying float under_lid;
 varying float corner;
@@ -146,7 +154,9 @@ void fragment() {
 	vec3 tu = normalize(TANGENT - n * dot(TANGENT, n));
 	vec3 tv = normalize(BINORMAL - n * dot(BINORMAL, n) - tu * dot(BINORMAL, tu));
 	vec3 v = normalize(vec3(dot(VIEW, tu), dot(VIEW, -tv), dot(VIEW, n)));
-	vec2 shift = v.xy / max(v.z, 0.25) * depth * iris_r * (1.0 - r * r) * in_iris;
+	vec2 tv2 = v.xy / max(v.z, 0.25);
+	tv2 /= max(1.0, length(tv2) / par_max);
+	vec2 shift = tv2 * depth * iris_r * (1.0 - r * r) * in_iris;
 	vec2 uv = UV - shift;
 	// (the pupil opened or closed: the iris's paint stretched about its middle)
 	vec2 dd = (uv - c) / iris_r;
@@ -182,9 +192,11 @@ void fragment() {
 		float fl = dot(ir, vec3(0.2126, 0.7152, 0.0722));
 		ir = max(vec3(fl) + (ir - vec3(fl)) * (iris_sat + far_sat * far), vec3(0.0)) * (1.0 - far_iris * far);
 	}
+	ir *= 1.0 - deep_iris * skin_deep;
 	// (the pupil laid after the iris's tint, so its darkness is its own on a painted iris too; its edge a
 	// little soft, as a lens's is)
-	vec3 irt = mix(vec3(pupil_dark), ir * tint, smoothstep(pupil - 0.02, pupil + 0.015, rr));
+	float pup_in = (1.0 - smoothstep(pupil - 0.02, pupil + 0.015, rr)) * in_iris;
+	vec3 irt = mix(vec3(pupil_dark), ir * tint, 1.0 - pup_in / max(in_iris, 1e-4));
 	vec3 col = mix(texture(eye, UV).rgb, irt, in_iris);
 	// The limbal ring: the iris's edge dark, as the sclera meets it.
 	col *= 1.0 - limbal * smoothstep(limbal_from, 0.98, r) * (1.0 - smoothstep(1.0, 1.1, r));
@@ -192,7 +204,7 @@ void fragment() {
 	float white = 1.0 - in_iris;
 	vec2 d0 = (UV - c0) / iris_r;
 	float lit_below = 1.0 - 0.23 * white_grad + white_grad * smoothstep(-0.05, 0.5, d0.y);
-	col = mix(col, col * white_tint * lit_below, white);
+	col = mix(col, col * white_tint * mix(vec3(1.0), vec3(0.784, 0.735, 0.69), skin_deep * deep_white) * lit_below, white);
 	// (pinker toward the corners, where the white is thinner over the blood)
 	col = mix(col, col * vec3(1.0, 0.8, 0.78), corner * white * corner_pink);
 	float shade = (1.0 - lids * under_lid) * (1.0 - 0.5 * corner);
@@ -221,9 +233,9 @@ void fragment() {
 	// Wet: a sharp highlight off the cornea's dome over the iris (no brighter:
 	// the portrait's broad key light made it a second blob).
 	ROUGHNESS = wet_rough;
-	sheen = wet * mix(1.0, 0.55, under_lid);
+	sheen = wet * mix(1.0, 0.55, under_lid) * mix(1.0, pupil_wet, pup_in);
 	sheen *= 1.0 + low_wet * wet_line;
-	SPECULAR = sky_wet * mix(1.0, 0.55, under_lid);
+	SPECULAR = sky_wet * mix(1.0, 0.55, under_lid) * mix(1.0, pupil_wet, pup_in);
 	vec2 slope = r < 1.0 ? -2.0 * dome * d : vec2(0.0);
 	NORMAL_MAP = normalize(vec3(-slope.x, slope.y, 1.0 / 0.35)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;

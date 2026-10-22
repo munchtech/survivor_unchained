@@ -694,34 +694,45 @@ public static class People
         e.SetShaderParameter("iris_contrast", 0.45f);
         e.SetShaderParameter("ring_to", 0.35f);
         e.SetShaderParameter("ring_light", 0.8f);
-        e.SetShaderParameter("iris_light", 1.3f);
+        e.SetShaderParameter("iris_light", 1.0f);
         // (the catchlight a soft window over the pupil's upper edge, 11 to 1 o'clock as in the portraits, about a
         // sixth of the iris's radius across; a small hard dot at 10 to 11 read as a render, judge j2)
         e.SetShaderParameter("catch_size", 1.6f);
         e.SetShaderParameter("catchlight", 0.45f);
         e.SetShaderParameter("catch_soft", 1.8f);
-        e.SetShaderParameter("catch_window", 0.5f);
-        e.SetShaderParameter("catch_at", new Vector2(0.06f, -0.32f));
+        e.SetShaderParameter("catch_window", 0.2f);
+        e.SetShaderParameter("catch_at", new Vector2(-0.2f, -0.28f));
         e.SetShaderParameter("catch_colour", new Vector3(0.9f, 0.95f, 1.08f));
         e.SetShaderParameter("catch_dim", 0.4f);
         // (face 38: at the Look the 2.8-wide square window, full white over the pupil, read glassy: smaller, softer,
         // rounder, the cornea a little less wet, the iris a little less saturated (D))
         e.SetShaderParameter("wet", 0.3f);
-        e.SetShaderParameter("iris_sat", 0.8f);
+        e.SetShaderParameter("iris_sat", 1.1f);
+        // (face 38 r2, judge j1: at the Look the iris darker (L 0.47 to ~0.40) and its green back (C ~0.05); the
+        // catchlight rounder, at 10 to 11 o'clock over the pupil's edge; the pupil's reflection (navy, L 0.28) cut;
+        // turned 40 the parallax's slope capped and halved (the pupil a sliver, the far iris streaked))
+        e.SetShaderParameter("pupil_wet", 0.2f);
+        e.SetShaderParameter("depth", 0.06f);
+        e.SetShaderParameter("par_max", 1.2f);
         // (small on screen, the town close-up's ~7 px iris: iris and white had gone one grey (iris Oklab C 0.02, L
         // above the white's), its catchlight a 2 px blob at L 0.8; the white kept, the iris its own green and
         // darker than the white, the catchlight dimmed and shrunk)
         e.SetShaderParameter("far_white", 0.45f);
-        e.SetShaderParameter("far_sat", 1.3f);
-        e.SetShaderParameter("far_iris", 0.3f);
+        e.SetShaderParameter("far_sat", 1.0f);
+        e.SetShaderParameter("far_iris", 0.15f);
         e.SetShaderParameter("catch_far", 0.35f);
         e.SetShaderParameter("catch_far_size", 0.4f);
-        e.SetShaderParameter("pupil_dark", 0.020f);
+        e.SetShaderParameter("pupil_dark", 0.010f);
         var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
         // (deeper skin, its whites a little lower and warmer: at full white they glowed against it, face 38;
         // `deep` 0 at her fair skin's lightness (Oklab L ~0.75 and over), 1 at a deep one's)
         float deep = skin is Color sk ? Mathf.Clamp((0.75f - Oklch(sk).L) / 0.3f, 0f, 1f) : 0f;
-        e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f).Lerp(new Vector3(0.58f, 0.50f, 0.40f), deep) * w);
+        // (the lowering and warming done in the shader, `skin_deep`: deep_white 1 = (0.58, 0.50, 0.40) at deep)
+        e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
+        e.SetShaderParameter("skin_deep", deep);
+        // (deep: the whites lowered half as far (they sat on the iris at the Look), the iris darkened with them)
+        e.SetShaderParameter("deep_white", 0.5f);
+        e.SetShaderParameter("deep_iris", 0.3f);
         e.SetShaderParameter("white_grad", 0.35f);
         e.SetShaderParameter("corner_pink", 0.3f);
         // (the lid's shadow from where the face's lid covers its iris: its margin a twentieth of a radius above
