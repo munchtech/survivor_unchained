@@ -22,9 +22,41 @@ uniform float shine2_width = 18.0;        // (face 38 r2: 40)
 uniform float shift = -0.05;               // (face 38 r2: 0.06)
 uniform float shift2 = 0.08;               // (face 38 r2: -0.1)
 uniform float shine_tint = 0.55;           // (face 38 r2: the primary's share of the hair's own hue)
+// (face 39 dye: a dark dye's primary highlight (black, dark brown) narrower, dimmer and near-neutral: lit by the
+// fire's warm key, tinted toward its own warm hue at full strength, a black head showed large copper-orange patches.
+// Real black hair has a soft grey-white sheen band. Weighted by the dye's linear luminance, dark_from (all) to
+// dark_to (none): copper #7a4824 (0.088) untouched, brown and chestnut (0.06) about a third, black all.)
+uniform float dark_from = 0.03;
+uniform float dark_to = 0.08;
+uniform float dark_shine = 1.0;            // the shine's share left on a black dye (0.5 and 0.8: no sheen left, a flat blue-black)
+uniform float dark_narrow = 1.45;          // its width's exponent times this (r8: 1.8, three grey bands, one per layer, on the pixie's side)
+// (face 39 r8, the judge: on a black pixie at turn 40 the narrow dark-dye band lit each shell layer apart, three
+// evenly spaced grey-blue stripes. For a dark dye only: its shine broken by a strand-clump mask (dark_clump: the
+// least it leaves, 3-6 mm clumps across a card, long along it) and each card's shift jittered by +-dark_card_jitter,
+// so the layers' bands don't line up)
+uniform float dark_clump = 0.35;
+uniform float dark_card_jitter = 0.08;
+// (r8: the dark-dye hairline's warm brown wash is not her hair: with the cap and fine hairs dyed other colours
+// (--hair-set) it stays, and thinning them (fewer band cards, the cap's fade cut to strands) moved it by 0.1 L*)
+uniform float dark_neutral = 0.85;         // how far the light's own colour is greyed in it
 uniform float lock_jitter = 0.02;          // (face 38 r2: each lock's shift, by its card number)
 uniform float strand_jitter = 0.1;         // (face 38 r2: 0.5, strand to strand, which scattered it into grains)
 uniform float through = 0.5;
+// Highlights (the owner, 22 Oct: "have a black version, just those are highlights"): a second colour on some of
+// her locks, in the albedo (so it holds in every light), mostly her front and crown, stronger toward the tips, in
+// streaks along the strands; each lock somewhere from the highlight toward a brown between it and her hair.
+uniform float highlights = 0.0;            // on (1) or off (0: her dye one colour)
+uniform vec3 highlight : source_color = vec3(0.6, 0.29, 0.125);
+uniform float hl_locks = 0.4;              // the share of her front and crown locks that take it
+uniform float hl_scale = 12.0;             // its sections' size (a noise over her head at rest, per metre): highlights in sections, as foils lay them
+uniform float hl_jitter = 0.35;            // lock by lock within and about them
+uniform vec3 hl_seed = vec3(3.1, 1.7, 5.3);         // where on her head its sections fall
+uniform float hl_back = 0.3;               // of that, the share away from her front and crown
+uniform float hl_strands = 0.6;            // the share of a lock's strands
+uniform float hl_root = 0.6;              // its strength at the root, of the tip's
+uniform float hl_brown = 0.6;              // how far a lock may lean toward the brown
+uniform vec4 hl_front = vec4(0.0, 0.09, 0.12, 0.2);   // (front: z from, to; crown: y from, to; metres from her head joint at rest)
+uniform mat3 head_turn = mat3(1.0);        // her head's turn from its rest (HairSway)
 // (face 37: the strands' read. fibre_lo/fibre_hi: a strand's shade range in the atlas (was fixed 0.15/0.85);
 // lock_share: how much each card's own tone (its vertex green) moves it (was fixed 0.04); wrap: the light
 // wrapped round the hair (was fixed 0.45))
@@ -109,6 +141,15 @@ varying vec3 strand;
 varying float sparkle;
 varying float fibre;
 varying float lock_n;
+varying vec3 hl_at;
+
+float hl_hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+float hl_noise(vec3 p) {
+	vec3 i = floor(p), f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(hl_hash(i), hl_hash(i + vec3(1, 0, 0)), f.x), mix(hl_hash(i + vec3(0, 1, 0)), hl_hash(i + vec3(1, 1, 0)), f.x), f.y),
+		mix(mix(hl_hash(i + vec3(0, 0, 1)), hl_hash(i + vec3(1, 0, 1)), f.x), mix(hl_hash(i + vec3(0, 1, 1)), hl_hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
 
 vec3 turned(vec4 q, vec3 v) {
 	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
@@ -119,6 +160,7 @@ void vertex() {
 	float hang = clamp(((past ? head_then.y : head.y) - VERTEX.y) / 0.35, 0.0, 1.0);
 	float tip = (cap || tie) ? 1.0 : smoothstep(0.0, 1.0, UV.y);
 	float moves = (cap && COLOR.b < 0.5) ? 0.0 : 1.0;           // (not the cap on her scalp; a braid's strands, yes)
+	hl_at = transpose(head_turn) * (VERTEX - (past ? head_then : head));   // (where it lies on her head at rest)
 	vec3 air = vec3(sin(TIME * 1.1 + VERTEX.y * 5.0), 0.0, cos(TIME * 0.9 + VERTEX.x * 7.0)) * 0.0025;
 	if (UV2.y > 0.0) {
 		float s = clamp(UV2.x, 0.0, 1.0) * 7.0;
@@ -161,13 +203,25 @@ void fragment() {
 	// (the deeper tone's warm shift in step with the dye's own saturation: copper deepens to auburn, but a
 	// near-neutral dye keeps its own hue as it darkens; at full shift platinum's deep strands went pink, Oklab
 	// hue 25 against its swatch's 85, and the whole head read peach, strawberry blonde: face 34)
-	float dye_sat = (max(colour.r, max(colour.g, colour.b)) - min(colour.r, min(colour.g, colour.b))) / max(max(colour.r, max(colour.g, colour.b)), 0.001);
-	vec3 dark = colour * mix(vec3(0.53), vec3(0.62, 0.5, 0.45), smoothstep(0.2, 0.5, dye_sat));
-	vec3 light = min(colour * vec3(1.4, 1.5, 1.55), vec3(1.0));
+	// (face 39 r1: a graded matte mark, 0.45 to 0.5 none to full, full to 0.55; full from 0.495, as 0.5 may come in at 127/255)
+	float matte = (!cap && !tie) ? clamp((COLOR.b - 0.45) / 0.045, 0.0, 1.0) * step(COLOR.b, 0.55) : 0.0;
+	// Highlights: a lock (its card's number) taken or not, by where it lies (front and crown), streaked strand by strand
+	// (the atlas's green), stronger toward its tip; not the cap, the tie or the matte-marked hairs.
+	float hl_h = fract(COLOR.g * 91.7 + 0.37);
+	float hl_where = mix(hl_back, 1.0, max(smoothstep(hl_front.x, hl_front.y, hl_at.z), smoothstep(hl_front.z, hl_front.w, hl_at.y)));
+	float hl_w = highlights * ((cap || tie) ? 0.0 : 1.0) * (1.0 - matte)
+		* smoothstep(-0.04, 0.04, hl_locks * hl_where - 1.0 + mix(hl_noise(hl_at * hl_scale + hl_seed), hl_h, hl_jitter))
+		* smoothstep(0.42, 0.58, fract(t.g + hl_h * 3.7) + hl_strands - 0.5)
+		* mix(hl_root, 1.0, smoothstep(0.0, 0.7, UV.y));
+	vec3 hl_c = mix(highlight, mix(highlight, colour, 0.45) * 0.85, hl_brown * fract(hl_h * 7.3));
+	vec3 dye = mix(colour, hl_c, hl_w);
+	float dye_sat = (max(dye.r, max(dye.g, dye.b)) - min(dye.r, min(dye.g, dye.b))) / max(max(dye.r, max(dye.g, dye.b)), 0.001);
+	vec3 dark = dye * mix(vec3(0.53), vec3(0.62, 0.5, 0.45), smoothstep(0.2, 0.5, dye_sat));
+	vec3 light = min(dye * vec3(1.4, 1.5, 1.55), vec3(1.0));
 	// (the card's own share small: at 0.12 each card took a flat tone of its own, a block on her crown)
-	vec3 tint = mix(colour, mix(dark, light, clamp(t.g * (1.0 - lock_share) + COLOR.g * lock_share, 0.0, 1.0)), variation);
+	vec3 tint = mix(dye, mix(dark, light, clamp(t.g * (1.0 - lock_share) + COLOR.g * lock_share, 0.0, 1.0)), variation);
 	// (gray as well as platinum went mauve by the fire, hue 32: the ash reaches the light grays, the lift only the palest)
-	float dye_neutral = 1.0 - smoothstep(0.2, 0.5, dye_sat), dye_lum = dot(colour, vec3(0.2126, 0.7152, 0.0722));
+	float dye_neutral = 1.0 - smoothstep(0.2, 0.5, dye_sat), dye_lum = dot(dye, vec3(0.2126, 0.7152, 0.0722));
 	tint = min(tint * (1.0 + lift * dye_neutral * smoothstep(0.3, 0.6, dye_lum)), vec3(1.0));
 	float ash_w = ash * dye_neutral * smoothstep(0.1, 0.35, dye_lum);
 	float depth = COLOR.r;                                        // 1 outermost, darker within
@@ -176,8 +230,12 @@ void fragment() {
 	lock_n = COLOR.g;
 	fibre = t.r * (cap ? 0.35 : 1.0);                            // (the cap's under the hair: little highlight)
 	// (face 38 r5: blue 0.45-0.55 on a strand card is the matte mark (braid sideburns, baby hairs, edge wisps): base colour, no shine)
-	float matte = (!cap && !tie) ? step(0.45, COLOR.b) * step(COLOR.b, 0.55) : 0.0;
 	fibre *= 1.0 - matte;
+	float dk_f = 1.0 - smoothstep(dark_from, dark_to, dot(colour, vec3(0.2126, 0.7152, 0.0722)));
+	if (dk_f > 0.0 && !cap && !tie) {
+		float cl = hl_noise(vec3(UV.x * 30.0 + COLOR.g * 17.0, UV.y * 4.0, COLOR.g * 37.0));
+		fibre *= mix(1.0, sqrt(mix(dark_clump, 1.0, smoothstep(0.25, 0.75, cl))), dk_f);
+	}
 	float cover = 1.0;
 	if (tie) {
 		ALBEDO = vec3(0.055, 0.035, 0.024);
@@ -209,7 +267,7 @@ void fragment() {
 		// band, and an outer card at 1.8 times an inner one's light a block)
 		ALBEDO = tint * t.r * mix(1.0 - roots * (1.0 - depth), 1.0, smoothstep(0.0, 0.1, along)) * mix(0.75, 1.0, depth);
 		// (the baby hairs at her hairline (their blue): a lighter copper, sunlit fine hair, not grey strokes)
-		ALBEDO = mix(ALBEDO, light * mix(0.8, 1.0, t.r), COLOR.b * 0.35 * (1.0 - matte));   // (face 38 r2: 0.7, a pale wisp)
+		ALBEDO = mix(ALBEDO, light * mix(0.8, 1.0, t.r), COLOR.b * 0.35 * (1.0 - step(0.45, COLOR.b) * step(COLOR.b, 0.55)));   // (face 38 r2: 0.7, a pale wisp)
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
 		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
@@ -268,8 +326,11 @@ void light() {
 	// (each strand's highlight a little up or down it from the next's: the
 	// highlight broken into strands, not one smooth band)
 	float jitter = (sparkle - 0.5) * strand_jitter + (lock_n - 0.5) * 2.0 * lock_jitter;
-	float s1 = along_strand(normalize(strand + NORMAL * (shift + jitter)), h, shine_width);
+	float dk = 1.0 - smoothstep(dark_from, dark_to, dot(colour, vec3(0.2126, 0.7152, 0.0722)));
+	jitter += dk * (fract(lock_n * 7.31 + 0.21) - 0.5) * 2.0 * dark_card_jitter;
+	float s1 = along_strand(normalize(strand + NORMAL * (shift + jitter)), h, shine_width * mix(1.0, dark_narrow, dk));
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);
-	SPECULAR_LIGHT += lc * seen * fibre * fibre * (shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint) * shine * s1 + ALBEDO * vec3(1.0, 0.55, 0.35) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	vec3 lc1 = mix(lc, vec3(dot(lc, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk);
+	SPECULAR_LIGHT += seen * fibre * fibre * (lc1 * shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk) * s1 + lc * ALBEDO * vec3(1.0, 0.55, 0.35) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
 }
