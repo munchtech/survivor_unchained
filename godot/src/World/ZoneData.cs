@@ -21,6 +21,8 @@ public sealed class ZoneData
     public readonly Image Splat;
     public readonly List<FloraGroup> Flora = new();
     public readonly List<(string Id, Transform3D At)> Props = new();
+    /// <summary>Each prop's house (props.json "h", tools/godot/house_ids.py), -1 for none: OwnWalls tints and treats a house as one.</summary>
+    public readonly List<int> PropHouse = new();
     public readonly List<LightSpec> Lights = new();
     /// <summary>An ember arena's place, its second paint, how far inside its ring each
     /// height sample is, its edge and its streams (Maps/ArenaGen.cs); null elsewhere.</summary>
@@ -140,6 +142,7 @@ public sealed class ZoneData
             int k = 0;
             foreach (var v in p.GetProperty("t").EnumerateArray()) t[k++] = v.GetSingle();
             Props.Add((p.GetProperty("id").GetString()!, Read(t, 0)));
+            PropHouse.Add(p.TryGetProperty("h", out var hv) ? hv.GetInt32() : -1);
         }
         foreach (var l in Meta.Lights)
             Lights.Add(new LightSpec(new Vector3((float)l.X, (float)l.Y, (float)l.Z), new Color(l.Color),
@@ -195,7 +198,10 @@ public sealed class ZoneData
             Flora.Add(new FloraGroup(key.Kind, key.Piece, list.ToArray(), look));
         }
         foreach (var p in m.Props)
+        {
+            PropHouse.Add(-1);
             Props.Add((p.Id, new Transform3D(new Basis(Vector3.Up, (float)p.Rot).Scaled(Vector3.One * (float)p.Scale), new Vector3((float)p.X, (float)p.Y, (float)p.Z))));
+        }
         foreach (var l in Meta.Lights)
             Lights.Add(new LightSpec(new Vector3((float)l.X, (float)l.Y, (float)l.Z), new Color(l.Color),
                 (float)l.Intensity, (float)l.Distance, (float)l.Flicker, l.On));

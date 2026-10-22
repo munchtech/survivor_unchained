@@ -179,8 +179,9 @@ def arcanist_show(rig):
                           "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
     ]
-    clip = build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
-    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 12) if f < 12 else idle._smooth((f - 55) / 23))
+    clip = build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff", **idle.arc_grip()})
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 12) if f < 12 else idle._smooth((f - 55) / 23),
+                          phase=lambda f: f / (clip.frames - 1))
 
 
 def reaver_show(rig):
@@ -385,6 +386,28 @@ def arcanist_break(rig):
     w36 = (36, {"hand_l": {"pos": (0.1912, 1.4792, 0.0170), "pole": (0.45, -0.72, 0.5), "knuckles": (-0.2001, 0.9279, 0.3144), "blade": (-0.0365, 0.3134, -0.9481)}}, "auto")
     w39 = (39, {"hand_l": {"pos": (0.2066, 1.3838, 0.0674), "pole": (0.55, -0.71, 0.43), "knuckles": (-0.2865, 0.5744, 0.7666), "blade": (-0.0990, 0.7780, -0.6193)}}, "auto")
     d = 0 if rig.body == "him" else 5
+    if idle.ARC_ST and rig.body != "him":
+        # (Animation 48, the restaged stand: her head stands 9-12 cm further forward than on R1's Strutting take and
+        # her shoulders 8-10, so these keys, made in her character's frame on R1, sat the hand behind her ear 10 cm
+        # back in her hair and collar (the reaver's outfit 30 mm into the forearm, f11-38) and took it through her
+        # breast on the way down (9 mm, f39-42). Each carried rigidly from R1's base to this one at its own frame:
+        # by her head where it is up at her ear, by her chest below.)
+        r1 = idle.base_r1(rig)
+        g1, p1 = rig.sk.fk(r1.rot, r1.pos)
+        g2, p2 = rig.sk.fk(base.rot, base.pos)
+
+        def carried(key):
+            fr, spec, ease = key
+            h = dict(spec["hand_l"])
+            j = rig.I["Head" if h["pos"][1] > 1.55 else "spine_03"]
+            dq = qmul(g2[fr, j], qinv(g1[fr, j]))
+            h["pos"] = tuple(float(x) for x in p2[fr, j] + qrot(dq, np.array(h["pos"]) - p1[fr, j]))
+            for k in ("pole", "knuckles", "blade"):
+                if k in h:
+                    h[k] = tuple(float(x) for x in qrot(dq, np.array(h[k], float)))
+            return (fr, dict(spec, hand_l=h), ease)
+        rising, w12, w15, first, second, lift, w36, w39, lowering = (
+            carried(k) for k in (rising, w12, w15, first, second, lift, w36, w39, lowering))
     keys = [
         (0, over("arcanist"), "auto"),
         *([rising, w12, w15] if rig.body != "him" else []),
@@ -397,9 +420,12 @@ def arcanist_break(rig):
         (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-25)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
-    clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff", **idle.arc_grip()})
     # The hand on her hip as it leaves and from where it is back (f44 on it floated 3-10 mm in the chest's frame).
-    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 9) if f < 9 else idle._smooth((f - 36 - d) / 8))
+    # (On a restaged stand, idle.ARC_ST, the idle's free hand instead, its fingers' slow life one round over the clip,
+    # so both ends meet the idle's first frame.)
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 9) if f < 9 else idle._smooth((f - 36 - d) / 8),
+                          phase=lambda f: f / (clip.frames - 1))
 
 
 def reaver_break(rig):

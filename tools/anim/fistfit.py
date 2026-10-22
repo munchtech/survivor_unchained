@@ -11,6 +11,10 @@
                                                         hand_l), measured in hand_r's frame through the mirror (MIRROR)
     python tools/anim/fistfit.py viking_sword --slide -30    a piece's grip point moved along its shaft (Arms.Spec.Grip)
                                                         modelled, never written
+    python tools/anim/fistfit.py staff --fit --grip-tilt 20  the fist on the piece turned 20 deg in it about the palm's
+                                                        normal through the pocket (a clip's "grip_tilt", keyed.grip_pose,
+                                                        animation 48): its fitted wrap printed for keyed.WRAP_TILT, the
+                                                        table measured on the turned line (nothing written)
     python tools/anim/fistfit.py sword --fit --write    write the fitted WRAP["sword"] into keyed.py (and the seat into
                                                         WeaponSockets.cs if it moved: then rebuild the clips and re-dump
                                                         arms_local, tools_scenes/arms_dump.gd)
@@ -141,9 +145,21 @@ def _check_mirror():
     assert err < 2e-5, f"WeaponSockets.MirrorRL is {err:.2e} off the skeleton's mirror: re-derive it\n{MIRROR}"
 
 
+# A clip's grip tilt modelled (--grip-tilt, degrees; keyed.grip_pose): the piece and its line turned about hand_r +X
+# through the pocket's point (right fist only).
+GRIP_TILT = 0.0
+
+
+def _tilt_R():
+    return np.stack([qrot(qaxis([1.0, 0, 0], GRIP_TILT), e) for e in np.eye(3)], 1)
+
+
 def _arms_v(piece):
     """The piece's mesh from arms_local in its hand's space, a left piece's taken to hand_r's frame (MIRROR)."""
     V = np.array(json.load(open(DATA / "arms_local.json"))[PIECES[piece]["arms"]]["v"], float)
+    if GRIP_TILT and side_of(piece) == "r":
+        At, _ = _pocket(piece)
+        V = (V - At) @ _tilt_R().T + At
     return V @ MIRROR if side_of(piece) == "l" else V
 
 
@@ -195,7 +211,11 @@ def dump_line(piece):
 
 def built_wrap(piece):
     """The fist the piece's clips are built with: its WRAP, else (none fitted yet) the sword's as the fit's seed and the
-    table's reference."""
+    table's reference. Under --grip-tilt the tilt's own (keyed.WRAP_TILT) where one is fitted."""
+    if GRIP_TILT:
+        for k, w in keyed.WRAP_TILT.get(wrap_key(piece), {}).items():
+            if abs(k - GRIP_TILT) < 0.05:
+                return w
     return keyed.WRAP.get(wrap_key(piece)) or keyed.WRAP[PIECES[piece].get("seed", "sword")]
 
 
@@ -203,6 +223,9 @@ def read_seat(piece):
     """The grip's line in hand_r space as the game seats the piece: (a point on it, its direction). For a piece the dump
     seats, the pocket itself; for one it doesn't yet (PIECES "dump"), its own line laid on the pocket (dump_line)."""
     At, Dir = _pocket(piece)
+    if GRIP_TILT and side_of(piece) == "r":
+        assert "dump" not in PIECES[piece], "--grip-tilt: a seated piece only"
+        return At, _tilt_R() @ Dir
     if "dump" not in PIECES[piece]:
         return At, Dir
     G, my, c, Dh, R = dump_line(piece)
@@ -1139,9 +1162,15 @@ def main(argv):
     ap.add_argument("--tilt", default=None, help="flexion tilt to lay: 'derive' (tilt_for on this hand) or JSON "
                     "{finger: deg}; default keyed.FLEX_TILT")
     ap.add_argument("--relaxed", action="store_true", help="the relaxed hand's checks (relaxed()) and stop")
+    ap.add_argument("--grip-tilt", type=float, default=0.0, help="deg: the piece turned in the right fist about the palm's "
+                    "normal through the pocket (a clip's grip_tilt, keyed.grip_pose), modelled; never written")
     ap.add_argument("--side", choices=("r", "l"), default="r", help="l: her left fist on the piece's left twin "
                     "(PIECES 'left'): its table, or with --fit its own WRAP and seat (in hand_r's frame, mirrored)")
     a = ap.parse_args(argv)
+    if a.grip_tilt:
+        global GRIP_TILT
+        assert not a.write and a.side == "r", "--grip-tilt: the right fist, printed for keyed.WRAP_TILT, never written"
+        GRIP_TILT = a.grip_tilt
     if a.side == "l":
         assert "left" in PIECES[a.piece] and not a.hand, f"{a.piece}: no left twin (or --hand, right only)"
         a.piece = PIECES[a.piece]["left"]
@@ -1162,7 +1191,8 @@ def main(argv):
     y0s = [float(v) for v in a.seat.split(",")] if a.seat else None
     wrap, A, prof = fit(a.piece, y0s)
     A0, _ = read_seat(a.piece)
-    print(f'WRAP["{wrap_key(a.piece)}"] = {json.dumps(wrap)}')
+    print(f'WRAP_TILT["{wrap_key(a.piece)}"][{GRIP_TILT}] = {json.dumps(wrap)}' if GRIP_TILT
+          else f'WRAP["{wrap_key(a.piece)}"] = {json.dumps(wrap)}')
     moved = np.linalg.norm(A - A0) > 5e-4   # 0.5 mm: the seat search's own tolerance below that
     print(f"seat {PIECES[a.piece]['at']} = {np.round(A, 4).tolist()}" + (" (moved)" if moved else " (kept)"))
     fails = table(a.piece, wrap, A, prof)

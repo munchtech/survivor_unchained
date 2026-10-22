@@ -23,6 +23,7 @@ import numpy as np
 from clips.mocap import idle_loop
 from gait import arc_of
 from rig import Clip
+from clips import town_idle
 
 
 def layered(name, rig, base: Clip, over, meta=None) -> Clip:
@@ -31,7 +32,8 @@ def layered(name, rig, base: Clip, over, meta=None) -> Clip:
     from keyed import solve_frames
     n = base.frames
     rot, pos = solve_frames(rig, [over(f / max(n - 1, 1), f) for f in range(n)], [(base.rot[f], base.pos[f]) for f in range(n)],
-                            loop=base.loop, weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)))
+                            loop=base.loop, weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)),
+                            tilt=float((meta or {}).get("grip_tilt", 0.0)))
     m = dict(base.meta)
     m.update(meta or {})
     return Clip(name, base.fps, rot, pos, loop=base.loop, meta=m)
@@ -138,16 +140,32 @@ ARC_CANDS = {
     "R3": {"arc": (-0.214, -0.291, 0.254), "blade": (-0.397, 1.0, -0.057), "pole": (0.0, -1.0, -0.2), "slide": 0.0,
            "knuckles": (-0.2495, -0.0439, 0.9674), "stop_blade": (-0.317, 1.0, -0.097)},
 }
-ARC_CAND = os.environ.get("ARC_CAND", "R1")
+# T1 (animation 48, restage round 2, the default on a restaged stand): the staff TILTED in her fist ("tilt", degrees: the
+#   clip's "grip_tilt", keyed.grip_of / WRAP_TILT, the game's OwnClips.GripTilt), so the forearm slopes down to the fist
+#   with the staff upright and the wrist easy (round 1's max judge: at 315/135 R1's arm on the restaged stand still read
+#   as "a level white bar at waist height"; the wall was the fist fit's 64 deg, scratch anim/st/c).
+#   Found by search on the stand's frame 0 (scratch anim/st/c opt.py, opt_run.py), checked over the loop (heldt.py): the
+#   forearm 27-31 deg below level (S2H1/R1 9-12), the upper arm 11-14 deg off straight down (21-24), the fist 21 cm out
+#   past her hip's side (26.5) and 3.6 cm lower on the shaft, the wrist 12-14 toward the thumb (radial limit 22).
+ARC_CANDS["T1"] = {"arc": (-0.205, -0.318, 0.251), "blade": (-0.44, 1.0, -0.13), "pole": (0.285, -1.0, -0.052), "slide": 0.036,
+                   "tilt": 20.0, "stop_blade": (-0.36, 1.0, -0.17),
+                   # (The stops' own aim per side, animation 48: with the tilt the one aim above put the right stop's crescent
+                   # over her face from her right (cover 0.82) and its foot 30 mm from her leg; scratch anim/st/stops.)
+                   "stop_blade_l": (-0.30, 1.0, -0.11), "stop_blade_r": (-0.30, 1.0, 0.0)}
+# (Unset: T1 on a restaged stand, R1 with R1's stand: ARC_ST=R1 alone builds R1 as it was; ARC_ST=S2H1 ARC_CAND=R1 round 1.)
+ARC_CAND = os.environ.get("ARC_CAND", "R1" if os.environ.get("ARC_ST", "S2H2") in ("R1", "") else "T1")
 _ARC = ARC_CANDS[ARC_CAND]
 ARC_HAND_R = _ARC["arc"]
 ARC_BLADE_R = _ARC["blade"]
 ARC_POLE_R = _ARC["pole"]
 ARC_GRIP_SLIDE = _ARC["slide"]
+ARC_GRIP_TILT = _ARC.get("tilt", 0.0)
 ARC_KNUCKLES_R = _ARC.get("knuckles")   # (R3: the fist rolled about the shaft; None: the least turn from the forearm)
 
 
 def arcanist(t, f):
+    if ARC_ST:
+        return _arc_free_arms(t)
     return {
         # (ARC_HIP at the captured standing's first frame, in the chest's frame, for the clips that take the idle's
         # arms as they are: its breaks, the stops, the Flare's settle.)
@@ -165,12 +183,35 @@ def arcanist(t, f):
         # 8 cm further out and 9 cm forward, held ready ahead of her hip, the elbow bent 58, not 87; the crescent
         # 197-232 mm outside the brim, the shaft 104 mm or more off her legs, the wrist 20 deg toward the thumb, not 22.
         # Further out swings the shaft's foot into her right thigh (at 15 deg out with the fist 3 cm nearer, 63 mm).)
-        "hand_r": dict({"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
-                        "blade": _n(ARC_BLADE_R), "twist": 0.5}, **({"knuckles": _n(ARC_KNUCKLES_R)} if ARC_KNUCKLES_R else {})),
+        "hand_r": _arc_hand_r(),
         "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
 
 
+def arc_grip():
+    """The meta every clip that holds the idle's hold carries: its grip slide and tilt (keyed.build; the game eases
+    the staff between clips by them, OwnClips.GripSlide / GripTilt). Empty for R1's."""
+    return {k: v for k, v in (("grip_slide", ARC_GRIP_SLIDE), ("grip_tilt", ARC_GRIP_TILT)) if v}
+
+
+def _arc_hand_r():
+    return dict({"arc": arc_of(ARC_HAND_R), "pole": ARC_POLE_R, "frame": "char",
+                 "blade": _n(ARC_BLADE_R), "twist": 0.5}, **({"knuckles": _n(ARC_KNUCKLES_R)} if ARC_KNUCKLES_R else {}))
+
+
+def _arc_free_arms(t):
+    """arcanist()'s arms on a restaged stand (ARC_ST): the left hand free (ARC_FREE), as it is at the captured
+    standing's first frame in the chest's frame (_free0, filled by base_of; every caller takes the base first), its
+    fingers as the idle's at phase t. (The clips keyed from these arms, the break, the show, the stops, the Flare,
+    start and end on the idle's free hand; hip_layer then keeps it on each clip's own pelvis.)"""
+    a = {"hand_r": _arc_hand_r(), "fingers_l": _free_fingers(ARC_STS[ARC_ST]["hand"], t), "fingers_r": "grip"}
+    if ARC_ST not in _free0:
+        raise RuntimeError("idle.arcanist(): base_of(rig, 'arcanist') must run first on a restaged stand (ARC_ST)")
+    a["hand_l"] = dict(_free0[ARC_ST])
+    return a
+
+
+_free0 = {}
 _arc_aims = {}
 
 
@@ -179,17 +220,19 @@ def arc_aim(rig):
     keyed._whole_aims fills them for a key that aims it by the blade alone (the blade as keyed), and the staff's line in it (the shaft
     through the fitted fist, data/arms_local.json mage_staff@hand_r, as scratch held.py reads it). For the break's
     staff turning about its own line (soul.arcanist_break). R1 keeps animation 46's numbers as they were."""
-    if ARC_CAND == "R1":
+    if ARC_CAND == "R1" and not ARC_ST:
         return (-0.3547, 0.9342, -0.0275), (-0.4739, -0.1537, 0.8666), (-0.275, 0.936, 0.163)
-    if ARC_CAND not in _arc_aims:
+    key = (ARC_CAND, ARC_ST)
+    if key not in _arc_aims:
         import json
         from keyed import grip_of, wrap_of
         from rig import DATA, qaxis, qmul, qrot
         base = base_of(rig, "arcanist")
         grip, wrap = rig.grip, rig.wrap
-        rig.grip, rig.wrap = grip_of("staff"), wrap_of("staff")
+        rig.grip, rig.wrap = grip_of("staff", ARC_GRIP_TILT), wrap_of("staff", ARC_GRIP_TILT)
         rig.swivel_force = {}
-        local, pos = rig.solve(_on_hip(rig, base, arcanist)(0, 0), base=(base.rot[0], base.pos[0]))
+        layer = _free_hand(rig, base, arcanist, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arcanist)
+        local, pos = rig.solve(layer(0, 0), base=(base.rot[0], base.pos[0]))
         rig.swivel_force = None
         g, _ = rig.globals(local, pos)
         hq = g[0, rig.I["hand_r"]]
@@ -203,13 +246,15 @@ def arc_aim(rig):
         d = np.linalg.svd(thin - thin.mean(0), full_matrices=False)[2][0]
         if d @ d0 < 0:
             d = -d
+        if ARC_GRIP_TILT:   # (the staff turned in her fist by the clip's grip_tilt, about hand_r +X)
+            d = qrot(qaxis([1.0, 0, 0], ARC_GRIP_TILT), d)
         line = qrot(hq, d)
         if line[1] < 0:
             line = -line
         # (The blade as the idle keys it, as R1's was: the solved one differs by the wrist's clamp, ~1.5 deg.)
-        _arc_aims[ARC_CAND] = (_n(ARC_BLADE_R), _n(ARC_KNUCKLES_R) if ARC_KNUCKLES_R else tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
+        _arc_aims[key] = (_n(ARC_BLADE_R), _n(ARC_KNUCKLES_R) if ARC_KNUCKLES_R else tuple(float(x) for x in qrot(q, [0, 1.0, 0])),
                                tuple(float(x) for x in line))
-    return _arc_aims[ARC_CAND]
+    return _arc_aims[key]
 
 
 def _on_hip(rig, base, arms):
@@ -241,7 +286,9 @@ def _on_hip(rig, base, arms):
 # knees). H1 "spell ready": the left hand ahead of her hip, palm down and in, fingers loose; H2 "low and charged": the
 # arm down, the hand out from her thigh, fingers open.
 # "stand": stand()'s arguments; "head": her head's mean pitch wanted (deg, + chin down; Neutral +2, WiggleHips +5).
-ARC_ST = os.environ.get("ARC_ST", "")
+# (Round 2, the max judge: H2 ships, its elbow 13 deg softer and H1's slow finger curl; H1 stays selectable.)
+ARC_ST = os.environ.get("ARC_ST", "S2H2")
+ARC_ST = "" if ARC_ST == "R1" else ARC_ST
 _S1 = {"style": "Strutting", "stand": {"knee": 16.0, "over": 0.0, "pitch": -6.0, "width": 0.29, "stagger": 0.03}, "head": -2.0,
        "free_pos": {"H1": (0.275, 1.135, 0.15)}}
 _S2 = {"style": "HandsInPockets", "stand": {"knee": 15.0, "over": 0.0, "pitch": 2.0, "width": 0.29, "stagger": 0.05, "drop": 0.06},
@@ -252,48 +299,83 @@ ARC_STS = {"S1H1": dict(_S1, hand="H1"), "S2H1": dict(_S2, hand="H1"), "S1H2": d
 ARC_FREE = {
     "H1": {"pos": (0.26, 1.16, 0.22), "knuckles": (-0.25, -0.6, 1.0), "blade": (-0.87, 0.5, 0.0), "pole": (0.35, -0.3, -1.0)},
     # (H2 rides her chest, as the town's free arms do: "arc" the wrist from the shoulder in the chest's frame, its
-    # length 0.507 for the elbow soft at 25 deg; on the pelvis the arm went straight, 176.)
-    "H2": {"arc": (0.125, -0.47, 0.15), "thumb": (0.15, -0.1, 1.0), "pole": (0.3, -0.2, -1.0)},
+    # length 0.4925 for the elbow soft at 38 deg (round 1's 0.507 at 25: "10-15 deg softer", the max judge, round 2), the
+    # hand as low, 1 cm further ahead; on the pelvis the arm went straight, 176.)
+    "H2": {"arc": (0.12, -0.45, 0.16), "thumb": (0.15, -0.1, 1.0), "pole": (0.3, -0.2, -1.0)},
 }
 
 
 def _free_fingers(hand, t):
-    """The free hand's fingers: H1 loose between "relaxed" and "spread", softly curled, a slow life (one swell of the
-    curl and one of the fan over the loop, out of phase with each other); H2 open, a little spread."""
+    """The free hand's fingers: loose between "relaxed" and "spread", softly curled, a slow life (one swell of the curl
+    and one of the fan over the loop, out of phase with each other): H1's, and H2's since round 2 (the max judge: "H1's
+    slow finger curl"); "H2r1" round 1's H2 (open, a little spread)."""
     from keyed import FINGER_PRESETS
     a, b = math.sin(2 * math.pi * t + 1.3), math.sin(2 * math.pi * t + 3.4)
-    if hand == "H1":
+    if hand in ("H1", "H2"):
         return dict(FINGER_PRESETS["relaxed"], curl=0.06 + 0.02 * a, thumb=0.2,
                     spreads={"index": -3.5 + 1.5 * b, "middle": 0.0, "ring": 4.0 - 1.0 * b, "pinky": 11.0 - 2.0 * b}, spread=3.0)
     return dict(FINGER_PRESETS["relaxed"], curl=0.04 + 0.015 * a, thumb=0.1,
                 spreads={"index": -2.0 + 1.0 * b, "middle": 0.0, "ring": 3.0, "pinky": 8.0 - 1.5 * b}, spread=5.0)
 
 
-def _free_hand(rig, base, arms, hand):
-    """`arms` with the left hand held free (ARC_FREE[hand]) on her pelvis frame by frame, in the chest's frame."""
+def chest_pitch(rig, g, f):
+    """Her chest's pitch at frame f of globals g (deg, + leaning forward), from its rest."""
+    from rig import qmul, qinv, qrot
+    s3 = rig.I["spine_03"]
+    fw = qrot(qmul(g[f, s3], qinv(rig.sk.rest_globals()[0][0][s3])), [0.0, 0.0, 1.0])
+    return math.degrees(math.atan2(-fw[1], fw[2]))
+
+
+def pitched(arc, deg):
+    """An arc (azimuth, elevation, reach) turned `deg` about her left-right axis (+ forward and down)."""
+    az, el, r = arc
+    a, e, t = (math.radians(x) for x in (az, el, deg))
+    v = np.array([math.sin(a) * math.cos(e), math.sin(e), math.cos(a) * math.cos(e)]) * r
+    c, s_ = math.cos(t), math.sin(t)
+    return arc_of((v[0], v[1] * c - v[2] * s_, v[1] * s_ + v[2] * c))
+
+
+def _free_spec(rig, hand, g, p, upright=None):
+    """f -> the free hand's key (ARC_FREE[hand]) at frame f of a clip whose globals are (g, p): on its own pelvis
+    (H1) or chest (H2), in the chest's frame the solver reads.
+    `upright` (deg, the stand's chest pitch, or f, pitch -> deg): a chest-held hand (H2) turned against the clip's chest pitch away from
+    it, so the arm hangs as in the idle while the trunk leans (the stops' thrown-back lean swung it out ahead of her
+    and up, "thrown out", animation 49)."""
     from rig import qmul, qinv, qrot
     I = rig.I
     grest, prest = (a[0] for a in rig.sk.rest_globals())
     pel, s3, ua = I["pelvis"], I["spine_03"], I["upperarm_l"]
-    g, p = rig.sk.fk(base.rot, base.pos)
     H = dict(ARC_FREE[hand])
     # (Each stand carries her pelvis to its own place: the wrist as measured onto the hip's front, scratch anim/st lh.py.)
     if ARC_ST and hand in ARC_STS[ARC_ST].get("free_pos", {}):
         H["pos"] = ARC_STS[ARC_ST]["free_pos"][hand]
 
-    def over(t, f):
-        d = dict(arms(t, f))
+    def spec(f):
         dp = qmul(g[f, pel], qinv(grest[pel]))
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
         if "arc" in H:
             way = _n
-            h = {"arc": arc_of(H["arc"]), "pole": H["pole"], "frame": "chest", "twist": 1.0}
+            arc = arc_of(H["arc"])
+            if upright is not None:
+                P = chest_pitch(rig, g, f)
+                arc = pitched(arc, (upright(f, P) if callable(upright) else upright) - P)
+            h = {"arc": arc, "pole": H["pole"], "frame": "chest", "twist": 1.0}
         else:
             W = p[f, pel] + qrot(dp, np.array(H["pos"]) - prest[pel])
             way = lambda v: tuple(qrot(ic, qrot(dp, np.array(_n(v)))))
             h = {"arc": arc_of(qrot(ic, W - p[f, ua])), "pole": H["pole"], "frame": "chest", "twist": 1.0}
         h.update({k: way(H[k]) for k in ("knuckles", "blade", "thumb") if k in H})
-        d["hand_l"] = h
+        return h
+    return spec
+
+
+def _free_hand(rig, base, arms, hand):
+    """`arms` with the left hand held free (ARC_FREE[hand]) on her pelvis frame by frame, in the chest's frame."""
+    spec = _free_spec(rig, hand, *rig.sk.fk(base.rot, base.pos))
+
+    def over(t, f):
+        d = dict(arms(t, f))
+        d["hand_l"] = spec(f)
         d["fingers_l"] = _free_fingers(hand, t)
         return d
     return over
@@ -319,7 +401,7 @@ def pitch_head(rig, clip: Clip, want) -> Clip:
     return Clip(clip.name, clip.fps, rot, clip.pos, loop=clip.loop,
                 meta={**clip.meta, "changes": clip.meta.get("changes", "") + f"; head's mean pitch brought to {want:+.0f} deg"})
 
-def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
+def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0, phase=None, upright=None):
     """`clip` with her left hand laid on her hip (ARC_HIP, idle_arcanist's) where the weight w(frame) > 0, kept on
     the clip's OWN pelvis frame by frame, and the left arm and fingers slerped by w from the clip's own into it.
     For the clips that took the idle's frame-0 hand in the chest's frame (the breaks, the stops, the Flare's settle,
@@ -328,7 +410,11 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
     joint; opened at the knuckle alone) where the clip's legs move the surface under it (the stops; following the thigh instead sank the thumb).
     `thumb_pow`: the left thumb's joints slerped by w**thumb_pow instead of w, so the thumb takes the clip's own shape
     before the hand leaves her hip (the Flare's reach: at w 0.25, f4, her glove's thumb sleeve folded 1.3 mm into
-    her hand's thenar)."""
+    her hand's thenar).
+    On a restaged stand (ARC_ST, animation 48) the hand it lays is the idle's FREE hand (ARC_FREE, _free_spec) on the
+    clip's own pelvis, blended in and out by the same w, its fingers the idle's (_free_fingers) at `phase`(frame)
+    (default 0, the idle's first frame); `curl` (a hand on her hip's contact) does not apply; `upright` (_free_spec):
+    the free hand held against the clip's chest pitch away from the stand's."""
     from keyed import solve_frames
     from rig import qmul, qinv, qrot, qslerp
     I = rig.I
@@ -342,6 +428,7 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
     for j in arm:
         arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
     hand0 = arcanist(0, 0)["hand_l"]
+    free = _free_spec(rig, ARC_STS[ARC_ST]["hand"], g, p, upright=upright) if ARC_ST else None
 
     def fingers(f):
         fx = _arc_hand_fingers()
@@ -357,6 +444,9 @@ def hip_layer(rig, clip, w, curl=None, thumb_pow=1.0):
         return fx
 
     def spec(f):
+        if ARC_ST:
+            hand = ARC_STS[ARC_ST]["hand"]
+            return {"hand_l": free(f), "fingers_l": _free_fingers(hand, phase(f) if phase else 0.0)}
         dp = qmul(g[f, pel], qinv(grest[pel]))
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
         W = p[f, pel] + qrot(dp, np.array(ARC_HIP["pos"]) - prest[pel])
@@ -593,15 +683,21 @@ def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0
     return arms
 
 
-# Her town stands (animation 44): warden_town's base, the WiggleHips take (the owner, 19 Oct: "I adore the idle sway"),
-# another stretch of it each (TOWN_WINDOW, seconds into the take), her arms free and clear of her sheathed pieces.
+# Her town stands (animation 44; animation 48: each calling its own standing, town_idle.STANCES), her arms free and clear
+# of her sheathed pieces (free_arms; the reaver's and the arcanist's left hand on her hip, town_idle.on_hip).
+TOWN_ARMS_L = {
+    # The stalker's left arm in 9 deg and the elbow 17 deg softer (round 1, the max judge): the hand 2-4 cm off her hip.
+    "stalker_town": (0.1117, -0.4466, 0.0971),
+    # The staff stand's free left arm the same way (round 1's polish): the elbow 15 deg softer, the hand 3-4 cm off her hip.
+    "arcanist_staff_town": (0.10, -0.455, 0.10),
+}
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip: the hands a little ahead of the heads.
-    "reaver_town": free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03),
+    "reaver_town": town_idle.on_hip(town_idle.REAVER_HIP_L, free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03)),
     # The wand on the belt at her right hip.
-    "arcanist_town": free_arms(reach=1.03),
+    "arcanist_town": town_idle.on_hip(town_idle.ARC_WRIST_L, free_arms(reach=1.03)),
     # The crossbow slung on her back, the daggers at the back of her belt.
-    "stalker_town": free_arms(reach=1.03),
+    "stalker_town": free_arms(hand_l=TOWN_ARMS_L["stalker_town"], reach=1.03),
 }
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
 def staff_town(t, f):
@@ -626,11 +722,23 @@ def staff_town(t, f):
     return d
 
 
-# (Animation 44, solver idle 2: the arcanist's stretch from (4, 12) to (2, 10), 100STYLE frames 876-1218: on the old one
-# the chest rolled against her hips, so her right wrist rose 13 cm to her hip's height and out at 25/75 %; on this one
-# it rides her hip as the warden's does, 26-28 cm out of the hip joint and within 5 cm of its height; the warden's
-# 26-27 and 2. It shares 3 s with the reaver's (frames 744-1050), 2.2 s out of phase.)
-TOWN_WINDOW = {"reaver_town": (0, 8), "arcanist_town": (2, 10), "stalker_town": (9, 16)}
+def _staff_town_l(hand_l):
+    """staff_town with its free left hand at `hand_l` (free_arms', reach 1.03)."""
+    free = free_arms(hand_l=hand_l, reach=1.03)
+
+    def arms(t, f):
+        d = staff_town(t, f)
+        d["hand_l"] = free(t, f)["hand_l"]
+        return d
+    return arms
+
+
+TOWN["arcanist_staff_town"] = _staff_town_l(TOWN_ARMS_L["arcanist_staff_town"])
+
+
+# A captured standing's stretch (seconds into the take) where not the first 8 s. (Animation 44's WiggleHips windows for
+# the town stands, (0, 8), (2, 10), (9, 16), went with them: town_idle.STANCES has each calling's own.)
+TOWN_WINDOW = {}
 
 
 def level_head(rig, clip: Clip, keep=0.4) -> Clip:
@@ -665,10 +773,12 @@ IDLES = {
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
     "idle_warden_town": ("WiggleHips", warden_town, ""),
-    "idle_reaver_town": ("WiggleHips", TOWN["reaver_town"], ""),
-    "idle_arcanist_town": ("WiggleHips", TOWN["arcanist_town"], ""),
-    "idle_stalker_town": ("WiggleHips", TOWN["stalker_town"], ""),
-    "idle_arcanist_staff_town": ("WiggleHips", staff_town, "staff"),
+    # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
+    # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
+    "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),
+    "idle_arcanist_town": ("GracefulArms", TOWN["arcanist_town"], ""),
+    "idle_stalker_town": ("HandsInPockets", TOWN["stalker_town"], ""),
+    "idle_arcanist_staff_town": ("GracefulArms", TOWN["arcanist_staff_town"], "staff"),
 }
 
 
@@ -765,13 +875,26 @@ def base_of(rig, calling):
         st = ARC_STS[ARC_ST] if calling == "arcanist" and ARC_ST else None
         if st:
             style = st["style"]
-        base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0), window=TOWN_WINDOW.get(calling))
+        if calling in town_idle.STANCES:
+            base = town_idle.town_base(rig, calling)
+        else:
+            base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0), window=TOWN_WINDOW.get(calling))
         if calling in STAND:
             base = stand(rig, base, **STAND[calling])
         if st:
             base = pitch_head(rig, stand(rig, base, **st["stand"]), st["head"])
+            _free0[ARC_ST] = _free_spec(rig, st["hand"], *rig.sk.fk(base.rot[:1], base.pos[:1]))(0)
         _bases[calling] = base
     return _bases[calling]
+
+
+def base_r1(rig):
+    """R1's captured standing (the Strutting take as it was, before the restage): the breaks' keys in her character's
+    frame were made on it, and are carried from it onto a restaged stand (soul.arcanist_break)."""
+    if "_r1" not in _bases:
+        _bases["_r1"] = idle_loop("idle_arcanist_base", rig, IDLES["idle_arcanist"][0], seconds=(5.0, 8.0),
+                                  window=TOWN_WINDOW.get("arcanist"))
+    return _bases["_r1"]
 
 
 def clips(rig, want):
@@ -782,9 +905,11 @@ def clips(rig, want):
         base = base_of(rig, SHARES_BASE.get(name, name[5:]))
         if arms is arcanist:
             arms = _free_hand(rig, base, arms, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arms)
+        elif getattr(arms, "needs_base", False):
+            arms = arms(rig, base)
         meta = {"weapon": weapon}
-        if name == "idle_arcanist" and ARC_GRIP_SLIDE:
-            meta["grip_slide"] = ARC_GRIP_SLIDE
+        if name == "idle_arcanist":
+            meta.update(arc_grip())
         clip = layered(name, rig, base, arms, meta)
         if name[5:] in TOWN or name == "idle_arcanist_staff_town":
             clip = level_head(rig, clip)

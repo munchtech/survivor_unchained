@@ -94,19 +94,52 @@ ARC_STOP_CURL = {
 # (-0.10, 1.0, 0.04) in the chest's frame, leant out past the brim; animation 46.)
 # (Animation 47: per idle.ARC_CAND, its "stop_blade"; R1's (-0.30, 1.0, -0.07).)
 STOP_ARC_BLADE = idle._ARC["stop_blade"]
+# (Animation 48, the tilted grip: on the first key only, the staff arm 6 deg further out, its elbow pole 0.3 toward her
+# right and the staff 0.05 further forward (the face stays clear), so the upper arm clears the warden's and the reaver's trunk as she pitches over at the landing; 0 mm, was 6 and 5.)
+ARC_DX0 = 6.0
+BX0 = 0.0
+BZ0 = 0.05
+POLE_DX0 = -0.3
+# (Animation 49: from the second key on, the staff arm's arc turned against the chest's pitch (1.0: wholly, the arm
+# hung from the shoulder as the idle's whatever the lean), so the thrown-back lean no longer lifts the fist to a shelf.)
+STOP_HOLD = 1.0
+# (And the staff's head eased back (its aim's z, keys 9 and 15) per side: with the fist held back the shaft's foot met
+# her right leg as it came through on the left stop; its head back also clears her cheek from 45. With the back foot's
+# key restored (animation 49) the staff passes 24 mm from that leg at 0.30 s, never touching; right stop 112 mm.)
+STOP_BACK = {"l": (0.08, 0.05), "r": (0.0, 0.0)}
 
 
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
+    if calling == "arcanist":
+        idle.base_of(rig, "arcanist")  # (on a restaged stand, idle.ARC_ST, its free hand is read off the base)
     arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
     if calling == "arcanist":
-        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(STOP_ARC_BLADE)}
+        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(idle._ARC.get(f"stop_blade_{side}", STOP_ARC_BLADE))}
     s = 1 if side == "l" else -1
     front, back = f"foot_{side}", f"foot_{'r' if side == 'l' else 'l'}"
     w = 0.09 if calling == "warden" else 0.05
 
-    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0):
+    if calling == "arcanist":
+        g0, _ = rig.sk.fk(idle.base_of(rig, "arcanist").rot[:1], idle.base_of(rig, "arcanist").pos[:1])
+        stand = idle.chest_pitch(rig, g0, 0)   # (the idle's chest pitch, 4.4 deg forward on S2H2)
+
+    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0, pole_dx=0.0, head_back=0.0):
         a = arms
+        if not pole_dx and calling == "arcanist" and "tilt" in idle._ARC:
+            # After the landing the staff arm held against the trunk's lean, as the idle's (its arc is in the chest's
+            # frame): thrown back -7 at 0.30 s, the arm swung forward with the chest, the forearm near level and the
+            # fist up at her under-bust, "holding the staff out to someone" (max judge, animation 49). Now the shoulder
+            # extends with the lean, the elbow back at her side, the fist down and back toward her hip.
+            hr = arms["hand_r"]
+            a = {**arms, "hand_r": {**hr, "arc": idle.pitched(hr["arc"], stand - lean * STOP_HOLD),
+                                    "blade": (hr["blade"][0], hr["blade"][1], hr["blade"][2] - head_back)}}
+        if pole_dx and calling == "arcanist" and "tilt" in idle._ARC:
+            hr = arms["hand_r"]
+            ax = ARC_DX0
+            a = {**arms, "hand_r": {**hr, "pole": (hr["pole"][0] + pole_dx, hr["pole"][1], hr["pole"][2]),
+                                    "arc": (hr["arc"][0] - ax, hr["arc"][1], hr["arc"][2]),
+                                    "blade": (hr["blade"][0] + BX0, hr["blade"][1], hr["blade"][2] + BZ0)}}
         if calling == "stalker" and isinstance(arms.get("hand_l"), dict):
             # (The left elbow turned a little out as she brakes: by her side as in the idle, the inner upper arm
             # pressed 4.5 mm into her side as the lean was thrown back.)
@@ -124,23 +157,29 @@ def stop(rig, calling, side):
 
     keys = [
         # Coming down on the front foot, the back leg still behind.
-        (0, p(0.34, -0.48, 0.12, 25, -0.08, 0.04, 16, out=0.015), "auto"),
+        (0, p(0.34, -0.48, 0.12, 25, -0.08, 0.04, 16, out=0.015, pole_dx=POLE_DX0), "auto"),
         # Over it and braking: the body carried on, the back foot coming through.
         (5, p(0.30, -0.12, 0.10, 10, -0.13, 0.12, 4, roll=2, out=0.015), "auto"),
         # Down beside it, the weight back on the heels, the lean thrown back.
-        (9, p(0.26, 0.10, 0.0, 0, -0.12, 0.10, -7, brot=0, out=0.015), "auto"),
+        (9, p(0.26, 0.10, 0.0, 0, -0.12, 0.10, -7, brot=0, out=0.015, head_back=STOP_BACK[side][0]), "auto"),
         # The rebound and the settle.
-        (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0, out=0.015), "auto"),
+        (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0, out=0.015, head_back=STOP_BACK[side][1]), "auto"),
         (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0, out=0.015), "ease"),
     ]
     meta = {"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]}
+    if calling == "arcanist":
+        meta.update(idle.arc_grip())   # (the idle's grip: the staff tilted in her fist as the idle holds it, animation 48)
     if calling == "stalker":
         # (Her left hand kept on the crossbow's fore-stock as she brakes: idle.ride_stock.)
         return idle.ride_stock(rig, lambda post: build(f"stop_{calling}_{side}", rig, keys, meta=meta, post=post))
     clip = build(f"stop_{calling}_{side}", rig, keys, meta=meta)
     if calling == "arcanist":
         # Her left hand kept on her hip as the hips brake and rock under her (it floated 10-17 mm off in the chest's frame).
-        clip = idle.hip_layer(rig, clip, lambda f: 1.0, curl=ARC_STOP_CURL[side])
+        # (On a restaged stand, idle.ARC_ST: the idle's free hand kept on her pelvis the same way; no curl, no contact.)
+        # (The free hand, chest-held on the restaged stand, held against the lean the same way from the landing on: at
+        # 0.30 s it was swung out ahead of her, "thrown out", max judge, animation 49; at the landing as it passed.)
+        clip = idle.hip_layer(rig, clip, lambda f: 1.0, curl=ARC_STOP_CURL[side],
+                              upright=lambda f, P: P + min(1.0, f / 5.0) * (stand - P))
     return clip
 
 
