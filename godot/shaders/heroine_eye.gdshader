@@ -109,6 +109,9 @@ uniform float low_lift = 0.0;
 // pixel covering 2^far_from of its paint's texels to 2^far_to.
 uniform float far_from = 4.0;
 uniform float far_to = 6.0;
+// (the catchlight dimmed as the eye gets small on screen: at the town close-up her iris is ~7 px and the full window,
+// spread by the glow, washed the whole iris a pale icy grey, the owner's "glassy eyes"; face 38. 0 = as before)
+uniform float catch_far = 0.0;
 
 varying float under_lid;
 varying float corner;
@@ -211,7 +214,7 @@ void fragment() {
 	NORMAL_MAP = normalize(vec3(-slope.x, slope.y, 1.0 / 0.35)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;
 	SSS_STRENGTH = 0.2 * white;
-	EMISSION = catch_colour * glint * catchlight;
+	EMISSION = catch_colour * glint * catchlight * (1.0 - catch_far * far);
 }
 
 float schlick(float u) {
