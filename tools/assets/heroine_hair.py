@@ -1163,6 +1163,8 @@ def ear_zone(Q):
         bad |= sd & (a | b)
     if FLAP_TREE is not None:
         bad |= (FLAP_TREE.query(Q)[0] < EAR_ZONE["inside"]) & (Q[:, 2] < max(e["top"] for e in _EARF.values()))
+    if PIXIE_ZONE:
+        bad |= Q[:, 2] < pixie_burn_line(Q)
     return bad
 
 
@@ -1179,7 +1181,11 @@ def ear_zone_cut(c):
         return 0, None
     V = c["V"].reshape(-1, 3, K, 3)
     A = c["at"].reshape(-1, 3, K, 3) if "at" in c else None
-    bad = ear_zone(V.reshape(-1, 3)).reshape(V.shape[:3]).any(1)
+    Q_ = V.reshape(-1, 3)
+    bad = ear_zone(Q_) | (pixie_ear_zone(Q_) if PIXIE_ZONE else False)
+    # (face 40 p1, the pixie: a card's spine (its middle row) alone: its cards stop off her ear as laid, and an
+    # edge reaching a few mm further in side view, lying on her scalp under her ear's rim, cut there bluntly)
+    bad = bad.reshape(V.shape[:3])[:, 1] if PIXIE_ZONE else bad.reshape(V.shape[:3]).any(1)
     hit = bad.any(1)
     for i in np.nonzero(hit)[0]:
         k = max(int(np.argmax(bad[i])), 1)
@@ -1828,16 +1834,101 @@ def style_bob():
     return layers
 
 
+# (22 October, face 40 p1, the owner: "the pixie hair over the ear doesn't look good". Its side cards ran
+# straight down into her ear and were cut where they met it (clear_ears, ear_zone_cut: points folded onto the
+# last clear one), so every card there ended at full width and full opacity in one chopped row over her helix,
+# a flat smear with no tips; and the sideburn ended in a ruled line (EYE_Z - 5 mm), a dangling strand by the
+# tragus. Now, the pixie only: her sides combed down and back AROUND her ear (comb_pixie turns the strand's way
+# off the ear's outline, side view, an ellipse fitted to each flap), each side card STOPPED short of it as it is
+# laid (lie's stop, so it is cut there and keeps its tapered, faded tip: cards() measures it as it is), each its
+# own distance off (`clear` over, `under` for the wide under layer, so the locks over it make the edge), narrower
+# by the ear (`narrow`) and most drawn from the atlas's lock columns (pointed); in front of her ear a sideburn
+# combed straight down to a point (pixie_burn_line: its tip 5 mm before her ear's outline, 12 mm over the ear zone's
+# tragus mark, its back edge rising steeply to the ear, its front edge gently to the old line); strands rooted in
+# that zone (by her tragus) folded away. Hair stays clear of her ear:
+# it reads at the Look, front and turned, and nothing can pass through it in play.)
+PIXIE_EAR = dict(clear=(0.0015, 0.006), under=(0.005, 0.009), turn=(0.004, 0.016), narrow=0.65, near=0.03, lock=0.85,
+                 tip=(-0.005, 0.012), back_rise=0.004, front_slope=1.0, tip_jit=0.0015, burn_down=0.1, cut_in=-0.0005,
+                 reach=(0.035, 0.07), long=1.35, burn_long=1.6)
+_PEAR = {}
+if FLAP_TREE is not None:
+    for _sg in (-1, 1):
+        _F = HP[_flap & (np.sign(HP[:, 0]) == _sg)]
+        _lo, _hi = _F.min(0), _F.max(0)
+        _PEAR[_sg] = dict(c=(_lo + _hi) / 2, a=(_hi - _lo) / 2)
+        print("  pixie ear %+d: y %.1f to %.1f, z %.1f to %.1f mm, |x| %.1f to %.1f" % (_sg, _lo[1] * 1e3, _hi[1] * 1e3, _lo[2] * 1e3, _hi[2] * 1e3, np.abs(_F[:, 0]).min() * 1e3, np.abs(_F[:, 0]).max() * 1e3))
+PIXIE_ZONE = False              # (build sets it for the pixie: ear_zone takes the sideburn's line, ear_zone_cut pixie_ear_zone)
+
+
+def pixie_ear_gap(Q):
+    """Each point's side-view (y, z) distance outside the ellipse fitted to the ear flap on its side, and the
+    ellipse's outward normal there (y, z); +inf (and 0) where the gap is not kept: |x| under 4.5 cm, or the lower
+    back quarter (behind and below the ear's middle, the hair behind her ear, under its flap)."""
+    g = np.full(len(Q), np.inf)
+    n = np.zeros((len(Q), 2))
+    for sg, e in _PEAR.items():
+        m = (np.sign(Q[:, 0]) == sg) & (np.abs(Q[:, 0]) > 0.045)
+        m &= (Q[:, 2] > e["c"][2]) | (Q[:, 1] < e["c"][1])
+        u = (Q[m][:, 1:] - e["c"][1:]) / e["a"][1:]
+        rho = np.linalg.norm(u, axis=1) + 1e-9
+        gr = u / e["a"][1:]                                   # (rho's gradient, times rho)
+        gl = np.linalg.norm(gr, axis=1) + 1e-12
+        g[m] = (rho - 1) * rho / gl
+        n[m] = gr / gl[:, None]
+    return g, n
+
+
+def pixie_burn_line(Q, jit=0.0):
+    """The sideburn's lower edge before each ear: the height (z) under which no pixie hair goes, at each point. A
+    point at the tip (PIXIE_EAR tip: `tip[0]` before the front of the ear's outline, `tip[1]` over the ear zone's
+    tragus mark), its back edge rising to the helix root's height `back_rise` behind the tip (the ear's outline
+    and its clearance hold it off the ear), its front edge at `front_slope` up toward her temple (to EYE_Z + 1 cm);
+    `jit` lowers or raises the tip, per strand. -inf where it does not apply: away from her ears' fronts."""
+    zl = np.full(len(Q), -np.inf)
+    cfg = PIXIE_EAR
+    for sg, e in _EARF.items():
+        yt, zt = _PEAR[sg]["c"][1] - _PEAR[sg]["a"][1] + cfg["tip"][0], e["tragus"] + cfg["tip"][1] + jit
+        yb = yt + cfg["back_rise"]
+        zt_ = np.broadcast_to(np.asarray(zt, float), (len(Q),))
+        m = (np.sign(Q[:, 0]) == sg) & (np.abs(Q[:, 0]) > 0.05) & (Q[:, 1] < e["yf"] + 0.004) & (Q[:, 1] > yt - 0.03)
+        back = zt_ + (e["root"] - zt_) * np.clip((Q[:, 1] - yt) / (yb - yt), 0, None)
+        front = np.minimum(zt_ + cfg["front_slope"] * (yt - Q[:, 1]), EYE_Z + 0.01)
+        zl = np.where(m, np.where(Q[:, 1] > yt, back, front), zl)
+    return zl
+
+
+def pixie_ear_zone(Q):
+    """For the pixie's cards (ear_zone_cut): inside her ear's side-view outline, or under the sideburn line."""
+    return (pixie_ear_gap(Q)[0] < PIXIE_EAR["cut_in"]) | (Q[:, 2] < pixie_burn_line(Q))
+
+
 def comb_pixie(p, side=None):
     """How her pixie cut is combed: on top and in front swept forward to her
-    right (a fringe across her forehead); her sides and nape down and back."""
+    right (a fringe across her forehead); her sides and nape down and back,
+    (face 40 p1) turned round her ears (none of their way into an ear, within
+    PIXIE_EAR turn of its outline), and before each ear straight down."""
     top = np.clip((p[:, 2] - (EYE_Z + 0.06)) / 0.04, 0, 1)
     front = np.clip(-p[:, 1] / 0.05, 0, 1)
     w = np.clip(top + front * 0.6, 0, 1)[:, None]
     sweep = np.array([-0.8, -0.45, -0.25])
     down = np.array([0.0, 0.45, -1.0])
+    if _PEAR:
+        # (before each ear, down from its top's height to the sideburn's tip: combed straight down)
+        bd = np.zeros(len(p))
+        for sg, e in _EARF.items():
+            bd = np.maximum(bd, ((np.sign(p[:, 0]) == sg) & (np.abs(p[:, 0]) > 0.05)) * np.clip((e["yf"] + 0.002 - p[:, 1]) / 0.004, 0, 1)
+                            * np.clip((p[:, 1] - (e["yf"] - 0.03)) / 0.01, 0, 1) * np.clip((e["top"] + 0.004 - p[:, 2]) / 0.008, 0, 1))
+        down = down[None, :] * (1 - bd[:, None]) + np.array([0.0, PIXIE_EAR["burn_down"], -1.0])[None, :] * bd[:, None]
     v = sweep * w + down * (1 - w)
-    return v / np.linalg.norm(v, axis=1)[:, None]
+    v = v / np.linalg.norm(v, axis=1)[:, None]
+    if _PEAR:
+        g, n = pixie_ear_gap(p)
+        t0, t1 = PIXIE_EAR["turn"]
+        k = np.clip((t1 - g) / (t1 - t0), 0, 1)               # (full within t0 of her ear's outline, none past t1)
+        into = np.minimum((v[:, 1:] * n).sum(1), 0.0)
+        v[:, 1:] -= (k * into)[:, None] * n
+        v = v / (np.linalg.norm(v, axis=1)[:, None] + 1e-9)
+    return v
 
 
 def style_pixie():
@@ -1859,6 +1950,11 @@ def style_pixie():
         # (face 30: 1 to 5 mm past it, the fine row under them, pixie_nape_row, thinning out past their tips)
         reach = np.maximum(rise(pts), 0) + 0.001 + 0.004 * np.random.default_rng(len(pts)).random(len(pts))
         L = L * (1 - nape) + np.minimum(L, np.maximum(reach, 0.008)) * nape
+        # (face 40 p1: over her ears and before them, long enough to reach her ear's outline and the sideburn's line,
+        # where each stops (below): the cut follows her ear, not where the cards' lengths ran out)
+        g_ = pixie_ear_gap(pts)[0]
+        L = L * np.where(g_ < PIXIE_EAR["reach"][0], PIXIE_EAR["long"], 1.0)
+        L = L * np.where(np.isfinite(pixie_burn_line(pts)) & (pts[:, 2] < EYE_Z + PIXIE_EAR["reach"][1]), PIXIE_EAR["burn_long"], 1.0)
         points = 12
         # (round 3, the judge: still spikes, skin between, at 135 and 180: the
         # 8 mm least length took those rooted by her hairline 5 to 8 mm past it.
@@ -1870,8 +1966,14 @@ def style_pixie():
         # + 4 cm, a ruled edge straight across her forehead. Now each at its
         # own, 3 mm under to 6 mm over it, so the fringe ends raggedly)
         fz = EYE_Z + 0.04 + np.random.default_rng(len(pts) + 11).uniform(-0.003, 0.006, len(pts))
-        stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < fz)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005))
-                          | (at_nape & (rise(q) < -past)))
+        # (face 40 p1: by her ears each stops its own distance off the ear's outline (PIXIE_EAR clear, the
+        # under layer `under`), and before them on the sideburn's line, its tip its own +-1.5 mm)
+        _er = np.random.default_rng(len(pts) + 23)
+        eclr = _er.uniform(*(PIXIE_EAR["under"] if off < 0.003 else PIXIE_EAR["clear"]), len(pts))
+        bjit = _er.uniform(-1, 1, len(pts)) * PIXIE_EAR["tip_jit"]
+        side_line = lambda q: np.where(np.isfinite(pixie_burn_line(q)), pixie_burn_line(q, bjit), -np.inf)
+        stop = lambda q: (((q[:, 1] < -0.02) & (q[:, 2] < fz)) | ((np.abs(q[:, 0]) > 0.06) & (q[:, 2] < EYE_Z - 0.005) & ~np.isfinite(pixie_burn_line(q)))
+                          | (at_nape & (rise(q) < -past)) | (pixie_ear_gap(q)[0] < eclr) | (q[:, 2] < side_line(q)))
         # (face 32: over her forehead each held 4 mm past her hairline, all of
         # them: her fringe was her hairline's own even curve, a painted
         # shell's edge. Now in front (within 45 degrees) each may fall 4 to
@@ -1884,12 +1986,36 @@ def style_pixie():
         fpast = np.where(fringe, 0.004 * u_ if off < 0.003 else 0.004 + 0.018 * u_ ** 1.5, 0.004)
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb_pixie(pts)), comb_pixie, L / (points - 1), np.full(len(pts), points - 1),
                 off, side=no_part(pts), lift=0.007 * top, stop=stop, face_past=fpast)
+        # (face 40 p1: a strand stops on the step that took it past its ear stop: that step taken back, so its tip
+        # lies outside her ear's zone (ear_zone_cut would fold it there, its tip no tip))
+        q_, kk_ = P.reshape(-1, 3), P.shape[1]
+        bl_ = pixie_burn_line(q_)
+        bz = ((pixie_ear_gap(q_)[0] < np.repeat(eclr, kk_)) | ear_zone(q_)
+              | (q_[:, 2] < np.where(np.isfinite(bl_), pixie_burn_line(q_, np.repeat(bjit, kk_)), -np.inf))).reshape(P.shape[:2])
+        bz[:, 0] = False
+        for i in np.nonzero(bz.any(1))[0]:
+            j = int(np.argmax(bz[i]))
+            P[i, j:] = P[i, j - 1]
         P = resample(P, points)
         # (stopped in the crease over her neck, their edges sank 2-3 mm into her: held 2.8 mm off at her nape)
         # (face 32: tips narrowed to 38% of the root's width, not 45%, and faded out: build's tip_fade)
-        c = cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0),
+        # (face 40 p1: narrower by her ears, so the locks there part)
+        wid = RNG.uniform(*width, len(pts))
+        by_ear = pixie_ear_gap(pts)[0] < PIXIE_EAR["near"]
+        wid = np.where(by_ear, wid * PIXIE_EAR["narrow"], wid)
+        c = cards(P, wid, list(cols), off, root=np.clip(rise(pts) / 0.03, 0.4, 1.0),
                   floor=np.where(at_nape, 0.0028, 0.0015)[:, None], narrow=PIXIE_NARROW, edge_in=~fringe)
         c["tip_fade"] = PIXIE_TIP
+        # (face 40 p1: rooted inside her ear's outline or under the sideburn's line (her hairline runs down to her
+        # tragus there): folded onto its root, unseen; one hung by her tragus, a dangling strand)
+        rb = (pixie_ear_gap(pts)[0] < 0.001) | (pts[:, 2] < pixie_burn_line(pts))
+        if rb.any():
+            for key_ in ("V", "at"):
+                if key_ in c:
+                    X_ = c[key_].reshape(len(pts), 3, points, 3)
+                    X_[rb] = X_[rb][:, :, :1]
+                    c[key_] = X_.reshape(-1, 3)
+            print("  rooted in her ear's zone: %d cards folded" % rb.sum())
         if off >= 0.003:
             # (the over layers' fringe cards drawn from the atlas's lock
             # columns, gathered to a point at the tip: pointed locks)
@@ -1897,6 +2023,15 @@ def style_pixie():
             colk = np.repeat(np.random.default_rng(len(pts) + 19).integers(11, 14, len(pts)), 3 * points)
             third = np.tile(np.repeat([0.0, 0.5, 1.0], points), len(pts))
             c["UV"][lock, 0] = (colk[lock] + 0.002 * COLUMNS + third[lock] * (1 - 0.004 * COLUMNS)) / COLUMNS
+            # (face 40 p1: and the cards ending by her ears (within 1.2 cm of an ear's outline or on the sideburn's
+            # line), most of them: pointed locks round her ear)
+            tip = P[:, -1]
+            at_ear = (pixie_ear_gap(tip)[0] < 0.012) | (tip[:, 2] < pixie_burn_line(tip) + 0.004)
+            _lr = np.random.default_rng(len(pts) + 29)
+            lk2 = np.repeat(at_ear & ~fringe & (_lr.random(len(pts)) < PIXIE_EAR["lock"]), 3 * points)
+            ck2 = np.repeat(_lr.integers(11, 14, len(pts)), 3 * points)
+            c["UV"][lk2, 0] = (ck2[lk2] + 0.002 * COLUMNS + third[lk2] * (1 - 0.004 * COLUMNS)) / COLUMNS
+            print("  ear locks: %d of %d cards ending by her ears" % (int(lk2.sum() // (3 * points)), int(at_ear.sum())))
         layers.append(c)
         print("  layer: %d cards" % len(pts))
     old_hl = hairline_hairs(comb_pixie, sides=no_part)
@@ -1911,9 +2046,9 @@ def style_pixie():
             K3 = 3 * 12
             r0 = c["at"].reshape(-1, K3, 3)[:, 0]
             c["alpha"] = np.repeat(np.clip((rise(r0) - hl_jit(r0)) / 0.007, 0, 1), K3)   # (over 7 mm: at 3 a cut notch at her temple)
-            print("  ears: %d cards cut short" % clear_ears(c, 12))
+            print("  ears: %d cards cut short" % clear_ears(c, 12, PIXIE_EAR_CLEAR))
         layers += _keep_rng(lambda: hairline_hairs(comb_pixie, sides=no_part, low=low_, fine=True))
-        print("  ears (fine hairline): %d cut short" % clear_ears(layers[-3], 8))
+        print("  ears (fine hairline): %d cut short" % clear_ears(layers[-3], 8, PIXIE_EAR_CLEAR))
     else:
         layers += old_hl
     layers += pixie_crown_fill(layers[:3]) + pixie_nape_row()
@@ -1923,6 +2058,7 @@ def style_pixie():
     return layers
 
 
+PIXIE_EAR_CLEAR = 0.0015       # (face 40 p1: clear_ears for the pixie; its cards stop off her ear as laid)
 PIXIE_NARROW = 0.62            # (a card's tip 38% as wide as its root)
 PIXIE_TIP = (0.35, 0.014)      # (faded out over its last 35%, at most 14 mm)
 
@@ -2646,10 +2782,11 @@ def hl_profile():
 
 
 def build(style):
-    global RNG, CHAIN, HL_JIT, EDGE, _CLUMP_C
+    global RNG, CHAIN, HL_JIT, EDGE, _CLUMP_C, PIXIE_ZONE
     import zlib
     CHAIN = None
     HL_JIT = False
+    PIXIE_ZONE = style == "pixie"
     _CLUMP_C = None
     EDGE = EDGE_CFG.get(style) if os.environ.get("EDGE_R7", "1") == "1" else None
     RNG = np.random.default_rng(zlib.crc32(style.encode()))  # (each style the same however many are made)
@@ -2675,9 +2812,11 @@ def build(style):
         hl_profile()
     if os.environ.get("EAR_ZONE", "1") == "1":
         cut_, near_ = 0, []
-        for c in layers:
+        for li_, c in enumerate(layers):
             if c.get("mat", 0) in (0, 3):
                 h_, n_ = ear_zone_cut(c)
+                if h_ and PIXIE_ZONE:
+                    print("    ear zone, layer %d (mat %d): %d cut" % (li_, c.get("mat", 0), h_))
                 cut_ += h_
                 near_ += [] if n_ is None else [n_]
         print("  ear zone: %d cards cut short; nearest card tip to an ear (below its top): %s mm; ears %s" % (
