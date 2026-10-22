@@ -111,7 +111,7 @@ public partial class HerRaise : SkeletonModifier3D
         if (chest < 0) return;
         // (her meshes change as tops are worn: the fold's meshes looked up again each second)
         if ((foldScan += delta) > 1) { foldScan = 0; folds = null; System.Array.Fill(foldLast, -1f); }
-        float squash = sk.GetNodeOrNull<HerJiggle>("../HerJiggle") is HerJiggle j ? j.Squash : 1f;
+        float squash = sk.GetNodeOrNull<HerJiggle>("HerJiggle") is HerJiggle j ? j.Squash : 1f;
         var inv = sk.GetBoneGlobalPose(chest).AffineInverse();
         bool print = log && (logT += delta) > 0.1;
         if (print) logT = 0;
