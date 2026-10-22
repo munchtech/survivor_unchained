@@ -8726,6 +8726,141 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     return made
 
 
+# (armor 15 r1, 22 Oct: THE WRAP. Max judge J1 on the reaver's bandeau at 1:1: "still rigid spheres. The band is
+# a straight tube that squeezes nothing, and the breasts below it are perfect half-spheres." The bandeau's rows lay
+# on the convex hull of her chest, 1.5 mm off: a rigid cylinder bridging the cleavage, standing off her, pressing
+# nothing, with the lower half of each breast bare below it. The wrap is leather worn tight on a soft body:
+#   - its rows lie on her own outline at each height (her final skin, heroine.glb: the shape the game draws), so it
+#     follows each breast's curve; between them it is drawn in toward her sternum, WRAP_DIP of the way from the
+#     hull to her skin (a band can't reach the bottom of her cleavage);
+#   - it is pressed into her: its inner face WRAP_PRESS[0] under her rest skin across its middle, WRAP_PRESS[1] at
+#     its edges (eased over WRAP_PRESS[2]), so its outer face sits on her and its edges bite in, her skin past them
+#     standing proud of it as flesh swells from under a tight edge (the skin under it is tucked: wrap_tuck_post.py
+#     writes reaver.top's tuck from this shape, so no ray of the old rule decides it);
+#   - it covers her breasts down to WRAP_Z[0] (about a centimetre above her underbust fold, the lower edge pressed in)
+#     and up to WRAP_Z[1] over her nipples, both from the build's nipple height; at the front it is gathered at the
+#     centre, the top drawn down WRAP_PINCH[0] and the bottom up WRAP_PINCH[1] over a Gaussian WRAP_PINCH[2] wide.)
+WRAP_GLB = os.environ.get("WRAP_GLB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb"))
+WRAP_DIP = float(os.environ.get("WRAP_DIP", "0.5"))
+WRAP_PRESS = [float(v) for v in os.environ.get("WRAP_PRESS", "0.002,0.0045,0.004").split(",")]
+WRAP_Z = [float(v) for v in os.environ.get("WRAP_Z", "-0.095,0.024").split(",")]
+WRAP_PINCH = [float(v) for v in os.environ.get("WRAP_PINCH", "0.012,0.018,0.025").split(",")]
+WRAP_ON = os.environ.get("WRAP", "1") == "1"
+WRAP_BUMP = float(os.environ.get("WRAP_BUMP", "0.001"))
+
+
+def _wrap_skin():
+    """Her final skin (heroine.glb's body, welded), in this scene's frame, less her arms and hair."""
+    import heroine_neck as hn_
+    from breast_sym_post import _body as _bs_body
+    G_ = hn_._Gl(WRAP_GLB)
+    _, _, _, Ug, Fg = _bs_body(G_)
+    Q = np.c_[Ug[:, 0], -Ug[:, 2], Ug[:, 1]]
+    j_ = cKDTree(P).query(Q)[1]
+    keep = ((ARMW["l"] + ARMW["r"])[j_] < 0.25) & (HAIR[j_] < 0.5)
+    return Q, Fg[keep[Fg].all(1)]
+
+
+def _wrap_segments(Q, F, z):
+    """Her outline at height z as segments (n, 2, 2): where each of her triangles crosses it."""
+    zt = Q[F, 2]
+    f = F[(zt.min(1) < z) & (zt.max(1) > z)]
+    pts = []
+    for i, j in ((0, 1), (1, 2), (2, 0)):
+        p, q = Q[f[:, i]], Q[f[:, j]]
+        s = (p[:, 2] - z) * (q[:, 2] - z) < 0
+        t = np.where(s, (z - p[:, 2]) / np.where(s, q[:, 2] - p[:, 2], 1), np.nan)
+        pts.append(p[:, :2] + t[:, None] * (q[:, :2] - p[:, :2]))
+    pts = np.stack(pts, 1)
+    ok = np.isfinite(pts[:, :, 0])
+    good = ok.sum(1) == 2
+    o = np.argsort(~ok[good], 1, kind="stable")[:, :2]
+    return np.take_along_axis(pts[good], o[:, :, None], 1)
+
+
+def _wrap_rays(seg, c, a):
+    """The farthest crossing along each ray from c at angles a (0 in front, -y), of segments seg (0: none)."""
+    d = np.stack([np.sin(a), -np.cos(a)], 1)
+    p0, e = seg[:, 0] - c, seg[:, 1] - seg[:, 0]
+    den = d[:, None, 0] * e[None, :, 1] - d[:, None, 1] * e[None, :, 0]
+    ok = np.abs(den) > 1e-12
+    dn = np.where(ok, den, 1)
+    t = (p0[None, :, 0] * e[None, :, 1] - p0[None, :, 1] * e[None, :, 0]) / dn
+    u = (p0[None, :, 0] * d[:, None, 1] - p0[None, :, 1] * d[:, None, 0]) / dn
+    hit = ok & (t > 0) & (u >= 0) & (u <= 1)
+    return np.where(hit, t, 0).max(1)
+
+
+def wrap(name, mkey, zb, zt, thick=0.003, trim=None, rows=41, nu=240, budget=5000):
+    """THE WRAP (above): a fitted leather wrap round her breasts from zb to zt."""
+    from scipy.spatial import ConvexHull
+    Q, F = _wrap_skin()
+    a = np.linspace(0, 2 * np.pi, nu, endpoint=False)
+    # (its edges round her: gathered at the front centre)
+    g = np.exp(-0.5 * (0.15 * np.sin(a) / WRAP_PINCH[2]) ** 2) * (np.cos(a) > 0)
+    zb_a, zt_a = zb + WRAP_PINCH[1] * g, zt - WRAP_PINCH[0] * g
+    zl = np.arange(zb - 0.004, zt + 0.0045, 0.001)
+    cxy = _wrap_segments(Q, F, (zb + zt) / 2).reshape(-1, 2).mean(0)
+    Rr, Rh = np.zeros((len(zl), nu)), np.zeros((len(zl), nu))
+    for k, z in enumerate(zl):
+        seg = _wrap_segments(Q, F, z)
+        Rr[k] = _wrap_rays(seg, cxy, a)
+        pt = seg.reshape(-1, 2)
+        hv = pt[ConvexHull(pt).vertices]
+        Rh[k] = _wrap_rays(np.stack([hv, np.roll(hv, -1, 0)], 1), cxy, a)
+    # (her own outline, drawn in WRAP_DIP of the way where the hull bridges a hollow; where the ray meets no skin of
+    # hers (her arms left out) or the hollow is past 3.5 cm off the front, the hull)
+    gap = Rh - Rr
+    front = np.cos(a)[None, :] > 0.5
+    bad = (Rr <= 0) | ((gap > 0.035) & ~front)
+    Rs = np.where(bad, Rh, Rr + WRAP_DIP * gap)
+    # (her nipples' bumps and the hull's bridges over her arms' gaps taken out: the wrap no higher than WRAP_BUMP over
+    # its own shape smoothed ~1 cm round her and ~5 mm up and down, three times; r1's first build carried each
+    # nipple's 2-4 mm bump through the leather as a poke and a dark spot by day, and a step at her arm)
+    for _ in range(3):
+        G_ = Rs.copy()
+        for _ in range(60):
+            G_[1:-1] = (G_[:-2] + 2 * G_[1:-1] + G_[2:]) / 4
+        for _ in range(16):
+            G_ = (np.roll(G_, 1, 1) + 2 * G_ + np.roll(G_, -1, 1)) / 4
+        Rs = np.minimum(Rs, G_ + WRAP_BUMP)
+    for _ in range(10):
+        Rs[1:-1] = (Rs[:-2] + 2 * Rs[1:-1] + Rs[2:]) / 4
+    for _ in range(6):
+        Rs = (np.roll(Rs, 1, 1) + 2 * Rs + np.roll(Rs, -1, 1)) / 4
+    u = np.linspace(0, 1, rows)
+    zz = zb_a[None, :] + u[:, None] * (zt_a - zb_a)[None, :]
+    R = np.stack([np.interp(zz[:, i], zl, Rs[:, i]) for i in range(nu)], 1)
+    edge = np.minimum(zz - zb_a[None, :], zt_a[None, :] - zz)
+    R = R - (WRAP_PRESS[0] + (WRAP_PRESS[1] - WRAP_PRESS[0]) * np.exp(-edge / WRAP_PRESS[2]))
+    aa = np.repeat(a[None, :], rows, 0)
+    pos = np.stack([cxy[0] + R * np.sin(aa), cxy[1] - R * np.cos(aa), zz], -1).reshape(-1, 3)
+    idx = np.arange(rows * nu).reshape(rows, nu)
+    idx = np.c_[idx, idx[:, :1]].ravel()
+    tris = idx[grid(rows, nu + 1)]
+    nor = vertex_normals(pos, tris)
+    if (nor[:, :2] * (pos[:, :2] - cxy)).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+        nor = -nor
+    _, j = cKDTree(P).query(pos)
+    at = np.hstack([nor, W[j].astype(float), edge.reshape(-1, 1)])
+    UNSTEADIED.add(name)
+    beads = []
+    if trim:
+        tkey, w, h, tt = trim
+        pos, beads = bind_edges(name, pos, at, tris, tkey, max(w, 0.005), max(h, 0.0006), 0.0018, thick,
+                                stitch=kind(mkey) == "leather")
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, 0.001, budget=budget)] + beads
+    for o in made:
+        o["hides"] = o is made[0]
+    made[0]["tuck"] = 0.8
+    # (the shape the tuck post-step reads: centre, angles, rows' heights and inner radii, this scene's frame)
+    np.savez(os.path.join(os.path.dirname(OUT), "wrap_%s.npz" % name), cxy=cxy, a=a, zz=zz, R=R, thick=thick)
+    print("WRAP %s: %.3f to %.3f, dip %.2f, press %s; cleavage drawn in %.1f of %.1f mm" % (
+        name, zb, zt, WRAP_DIP, WRAP_PRESS, 1000 * (Rs - Rr)[:, 0].mean(), 1000 * gap[:, 0].mean()))
+    return made
+
+
 def limb_angle(sd, legs=True):
     """Each point's angle round a limb's upper segment (radians)."""
     a, b = (LEG[sd][0], LEG[sd][1]) if legs else (ARM[sd][0], ARM[sd][1])
@@ -8796,7 +8931,8 @@ def reaver():
     out = [
         # (pulled tight: standing off her by 4 mm, the camera above saw down
         # behind its top to her areola as she ran)
-        *bandeau("reaver.strap", "oldleather", nz - 0.01, 0.07, lift=0.0015, trim=edge()),
+        *(wrap("reaver.strap", "oldleather", nz + WRAP_Z[0], nz + WRAP_Z[1], trim=edge()) if WRAP_ON else
+          bandeau("reaver.strap", "oldleather", nz - 0.01, 0.07, lift=0.0015, trim=edge())),
         *girdle("reaver.belt", lambda a: bz0 + 0.05 * np.clip(np.abs(0.17 * np.sin(a)) / 0.15, 0, 1) ** 2
                + 0.07 * ramp(-np.cos(a), -0.15, 0.35), 0.036, "oldleather", lift=0.006, thick=0.004, trim=edge(0.005)),
         *frame("reaver.buckle", buckle_at + buckle_n * 0.017, buckle_n, np.array([0, 0, 1.0]), 0.05, 0.042, "rust", r=0.0034,
