@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cam5bmfgtvgdm"
-path="res://.godot/imported/body.glb-946de306e500175a82000b6662a9edb3.scn"
+path="res://.godot/imported/body.glb-e24d691e46cff9f6f35342f87937e6cb.scn"
 
 [deps]
 
 source_file="res://art/npc/npc_guard/body.glb"
-dest_files=["res://.godot/imported/body.glb-946de306e500175a82000b6662a9edb3.scn"]
+dest_files=["res://.godot/imported/body.glb-e24d691e46cff9f6f35342f87937e6cb.scn"]
 
 [params]
 
