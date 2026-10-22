@@ -227,6 +227,11 @@ varying float neck_w;
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
 uniform bool has_relief = false;
+// (her collar's relief (heroine_neck_relief.py): its slopes' strength, and how much rougher her skin is on them, so the
+// sheen on a slope spreads; sharp, on deep skin the clavicle's edge and the tendons beside the notch read as ashy
+// whitish streaks, judge J2, face 36. 1 and 0: as the hero's.)
+uniform float relief_amount = 1.0;
+uniform float relief_rough = 0.0;
 // A man's shaved shadow (the hero's: People.HisShadow): where his beard and
 // his hair grow (shadow_mask, red his beard's ground, green his scalp's),
 // each as dark as chosen, of the hair's own colour; stubble, not a stain:
@@ -394,6 +399,14 @@ uniform float spec_cap = 0.2;
 // (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
 // cheek at the Look, face 32 r2: a gold sheen under 0.8)
 uniform float metal_cap = 0.8;
+// (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
+// clavicle and across her chest as whitish-grey, violet under a cool lamp ("an ashy smear", judge J2, face 36; with
+// spec_cap 0 her chest's hue 25 against her face's 39, at 0.2 -14). Where her albedo's luminance is under deep_lum.x (all
+// of it) to deep_lum.y (none), her lamps' sheen is deep_spec of itself and takes deep_tint of her albedo's own hue (the
+// cap never held there: at 0.2 or 0.1 the same). 1 and 0: none, as the hero's.)
+uniform float deep_spec = 1.0;
+uniform float deep_tint = 0.0;
+uniform vec2 deep_lum = vec2(0.06, 0.16);
 varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
@@ -520,10 +533,12 @@ void fragment() {
 			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead) * tk) * mix(1.0, ls, ws * mix(scalp_dark_min, 1.0, tk)), vec3(1.0));
 		}
 	}
+	float relief_slope = 0.0;
 	if (has_relief) {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
 		// normal map): the pores' slopes added to the body's, at their depth.
-		vec2 a = texture(relief, UV).xy * 2.0 - 1.0;
+		vec2 a = (texture(relief, UV).xy * 2.0 - 1.0) * relief_amount;
+		relief_slope = length(a);
 		vec2 b = (q.xy * 2.0 - 1.0) * depth;
 		vec3 n = normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a)))));
 		NORMAL_MAP = vec3(n.xy * 0.5 + 0.5, 1.0);
@@ -537,6 +552,7 @@ void fragment() {
 	float rmv = rough_channel == 0 ? rm.r : (rough_channel == 1 ? rm.g : (rough_channel == 2 ? rm.b : (rough_channel == 3 ? rm.a : rm.r)));
 	ROUGHNESS = clamp(mix(seam_rough, rough * rmv, hw) + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	ROUGHNESS = mix(ROUGHNESS, clamp(paint_rough + (q.a - 0.5) * 0.1, 0.0, 1.0), pa);
+	ROUGHNESS = clamp(ROUGHNESS + relief_rough * smoothstep(0.0, 0.12, relief_slope), 0.0, 1.0);
 	METALLIC = paint_metal * pa;
 	// (no sheen where her head's own shade is deep: in the crease where her
 	// lips meet and the mouth behind, the rim light's reflection on her lips'
@@ -679,6 +695,9 @@ void light() {
 		vec3 f = f0 + (f90 - f0) * schlick(c_ldh);
 		vec3 spec = mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
+		float alum = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
+		float dk = (1.0 - smoothstep(deep_lum.x, deep_lum.y, alum)) * (1.0 - METALLIC);
+		spec = mix(spec, spec * ALBEDO / max(alum, 1e-3), deep_tint * dk) * mix(1.0, deep_spec, dk);
 		float sl = max(max(spec.r, spec.g), spec.b);
 		// (gold leaf's glint let through: held under her skin's cap, the gilt read as dull olive, never gold)
 		float cap = mix(spec_cap, metal_cap, METALLIC);

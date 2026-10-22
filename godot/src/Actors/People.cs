@@ -1580,6 +1580,13 @@ public static class People
         // 0.015, portrait's 0.051); gated by each lamp's light at the point, it went warm (0.040) but the key's weak
         // light along her jaw's edge took her paint's colour too, an orange band. --shade-tint off | ndl | light |
         // soft (the default) and --shade-gate FROM,TO, for judging them (pictures).)
+        // (her collar's relief: --relief-amount A its slopes' strength, --relief-rough R her skin that much rougher on them,
+        // so its sheen spreads: heroine_skin.gdshader's relief_amount and relief_rough)
+        m.SetShaderParameter("relief_amount", (float)SurvivorUnchained.Args.Num("relief-amount", 1f));
+        m.SetShaderParameter("relief_rough", (float)SurvivorUnchained.Args.Num("relief-rough", 0f));
+        // (deep skin's sheen, heroine_skin.gdshader's deep_spec and deep_tint: --deep-spec S, --deep-tint T)
+        m.SetShaderParameter("deep_spec", (float)SurvivorUnchained.Args.Num("deep-spec", 0.6f));
+        m.SetShaderParameter("deep_tint", (float)SurvivorUnchained.Args.Num("deep-tint", 0.6f));
         var mode = SurvivorUnchained.Args.Get("shade-tint") is string st && st != "" ? st : "soft";
         if (mode == "off") return;
         var b = BodyTone(look);
