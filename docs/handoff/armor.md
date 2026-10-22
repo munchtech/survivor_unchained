@@ -2,6 +2,53 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Paused here (Armor 16, 22 Oct, coordinator wind-down); next:
+Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\a36cc4dd-fb3f-4250-b59c-d2116ef79a9a\scratchpad\armor`. Subfolders:
+- a2: the arm judge.
+- r16: the raise corrective's briefs, judge and verdict1, plus the pristine pre-morph glb and outfits.
+- o1: the outfit-notes shoot and the OJ1 verdict.
+- n1, n2, n4: the solver briefs.
+- common16.md: the shared solver rules.
+
+**Done:** the arms are MERGED (arms-16 = integration 3582c9d8, max A2 PASS-WITH-NOTES). The coordinator said to skip the shoulder-cap trim. armor-7 has merged integration (cc4b0c77).
+
+**1. TOP: the owner's "really really bad" arms-overhead frame** (nude, town, shield and weapon over her head). It's one of R1's forced holds: `godot/.shots/armor16/r1|r2/r16*_cast_raise_nude_*.png` (or `_leap_`).
+- `cast_raise` is the ARCANIST's cast clip (wand/staff, Loadout.cs Spell_Simple_Enter). We forced it onto the warden loadout (`--quick warden --hold cast_raise@0.10`), so the shield and sword through her head never happen in play.
+- What she really does with her arms overhead:
+  - `leap`: Crashing Leap, 78 deg (PlayerView.cs:557, any calling), and the reaver's Butcher's Bill flare;
+  - `bull_rush`: warden, 69 deg;
+  - `cast_raise`: arcanist, 63 deg;
+  - `chain_strike`: 41 deg.
+- The buckled traps and shoulders, pinched armpits and flattened breasts are the rig's skinning at 60-80 deg. They are in BEFORE (corrective off) too. The arm sculpt was on in both, and this pose was never shot pre-sculpt: shoot one from a 9922c080 copy to confirm.
+- Next: reshoot each overhead clip with its OWN calling's loadout (arcanist for cast_raise; leap with each). Then fix the shoulder, trap and armpit deformation at high raise (corrective bones or morphs; HerRaise already computes the per-side raise weight) together with item 2.
+
+**2. The bust corrective for raised arms.**
+- Built: HerRaise.cs + RaiseRamp.cs, and the morphs axilla_fold_l/r and raise_crease_l/r from `tools/assets/axilla_fold_post.py` (body_post step 7b). The arcanist, ranger and reaver tops carry the morphs.
+- Round 1: max RJ1 PASS-WITH-NOTES. Keep it. The lift was timid, there was no pec fold, and a tick showed at cast_raise.
+- Round 2 (3802a7ab + e12e8890 WIP): the fold morphs plus the knobs (up 3.4 cm, yaw 12, stretch 0.22, pitch 20). Built and shot (`.shots/armor16/r2/sheet_*.png`), UNJUDGED.
+- **Open bug:** under plate_top_plain and the warden top, `HerJiggle.Squash` reads 1 (HerWear.cs:289 `ix.Find(top)?.Hold` is null). So the steel cups still lift and splay with a gap at the centre. Fix that lookup first.
+- N1's arc_fit_post caps let skin through at the hem with her arms raised (up to 10 mm at cast). Revisit them with item 3's cap re-cut.
+- Then one max judge on the raised poses, nude + tops (round 2 of 2), then its MR: plumbing off integration. heroine.glb changed, so whoever merges second re-runs the chain.
+
+**3. Outfit notes, round 2 of 2** (max OJ1 verdict: `o1\verdict1.md`).
+- N4, 2822c6bb (UNJUDGED; sheets `.shots/armor16/n4/sheet_*.png`, BEFORE = round 1):
+  - plate night cup: the pink muted to steel (metal_spec_mute 0.85, roughness back to 0.22);
+  - gloves: ivory body 0.64, a wider sheen, and a wrinkle bump drawn in the shader;
+  - Look pauldrons: a cool softbox off the dome's pole;
+  - reaver fur polish (OJ1 passed it with notes).
+- NOT STARTED: solver N3, the arcanist REBUILD (`heroine_outfits.py --only arcanist` + the post chain). Run it after item 2, because both touch the body post chain.
+  - Re-cut the caps (OJ1: "linebacker shoulders"): end each cap above the deltoid's widest bulge, about 3-4 cm below the shoulder point on the outside, tapering to nothing at the armpit, with a flush bound edge and no lip. Dropping the caps for wide straps is the alternative, a design change: ask main.
+  - Mirror the neckline cut to fix the visible notch: asymmetric head weights cut her right collar 2.5 cm lower.
+- Then ONE max judge on items 1-6 (the coordinator).
+- Also routed by OJ1 (rendering): the arcanist hat brim's underside is a flat black disc when the camera looks up.
+
+**4. B2** (the cuirass passed K5 on armor-7; the g-string is WIP), its own MR later.
+
+**Tooling notes:**
+- `tools/freshness.py --root X` ignores --root and checks the cwd checkout; turn.py passes the root correctly.
+- Merging integration with `-X ours` still takes NON-conflicting text hunks from integration. That put one of integration's accessor bounds into a built .gltf (fixed in d80574b1). After such a merge, diff your built files against your own last commit.
+- `material_table()` now keeps hand-set material keys across a rebuild (a887d4b3).
+
 ## Handed off (Armor 15, 22 Oct, at ~255k): bust MERGED (integration 9922c080); reaver-dent-15 MR READY; next: the arm judge and MR
 **Done:**
 - bust-15 merged.
