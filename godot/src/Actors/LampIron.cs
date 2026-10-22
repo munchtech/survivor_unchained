@@ -24,7 +24,9 @@ public static class LampIron
     static Shader? glassShader;
 
     /// <summary>The lamp's old iron (shaders/keeper_iron.gdshader), shared.</summary>
-    public static ShaderMaterial Iron => iron ??= IronMat(false);
+    public static ShaderMaterial Iron => iron ??= Sooty(IronMat(false));
+
+    static ShaderMaterial Sooty(ShaderMaterial m) { m.SetShaderParameter("soot_k", 1f); return m; }
 
     static ShaderMaterial IronMat(bool sword)
     {
@@ -155,8 +157,10 @@ public sealed class LampFire
         bool warm = hue is Color h && h.R > h.B;
         flame.SetCard("cold", warm ? 0f : 1f);
         flame.SetCard("cold_pale", warm ? 0f : 1f);
-        // The cinematics' levels were set for the old 3.2-linear egg (C02's night 0.28): 0.28 and up is the kit's own flame.
-        float k = Mathf.Clamp(0.55f + 0.45f * flameLevel / 0.28f, 0.3f, 1.25f);
+        // Its white-hot heart pulled a little toward blue: the night grade warms what clips, and the core read cream.
+        flame.SetCard("core_blue", warm ? 0f : 0.45f);
+        // The cinematics' levels were set for the old 3.2-linear egg (C02's night 0.28): 0.28 is the kit's flame a little under its own (its core clipped and the night grade warmed it).
+        float k = Mathf.Clamp(0.45f + 0.35f * flameLevel / 0.28f, 0.3f, 1.1f);
         flame.SetCard("intensity", k);
         col = Cold;
         if (hue is Color c && Mathf.Max(c.R, Mathf.Max(c.G, c.B)) > 1e-4f)

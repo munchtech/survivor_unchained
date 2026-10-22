@@ -25,6 +25,10 @@ uniform float silt_fade = 0.05;
 // The pitting's depth (world metres per unit of height).
 uniform float bump = 0.5;
 uniform float wet = 0.35;
+// Soot inside the lamp's cage (model units: the cage's inner half-width and its top and bottom): matte black where
+// the flame's own light falls closest, so the inside never burns white. 0 for anything that isn't the lamp.
+uniform float soot_k = 0.0;
+uniform vec3 cage = vec3(0.0655, -0.0625, -0.2055);
 
 varying vec3 opos;
 varying vec3 onrm;
@@ -73,6 +77,11 @@ void fragment() {
 		h = m.g;
 		bk = bump * 0.6;
 	}
+	float inside = smoothstep(cage.x + 0.002, cage.x - 0.002, max(abs(opos.x), abs(opos.z)))
+		* smoothstep(cage.y + 0.002, cage.y - 0.002, opos.y) * smoothstep(cage.z - 0.002, cage.z + 0.002, opos.y) * soot_k;
+	col = mix(col, vec3(0.012, 0.011, 0.010) * (0.8 + 0.4 * m.g), inside);
+	metal = mix(metal, 0.0, inside);
+	rough = mix(rough, 0.95, inside);
 	// Wet: darker where it isn't metal, glossier everywhere.
 	col *= mix(1.0, 0.72, wet * (1.0 - metal));
 	rough = mix(rough, rough * 0.55, wet);

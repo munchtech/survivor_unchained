@@ -16,7 +16,7 @@ uniform vec3 flame_at = vec3(0.0, -0.15, 0.0);
 uniform float spot_r = 0.045;
 uniform float edge_k = 0.5;
 uniform vec3 sheen = vec3(0.16, 0.19, 0.23);
-uniform float sheen_k = 0.3;
+uniform float sheen_k = 0.12;
 
 varying vec3 opos;
 
@@ -42,5 +42,5 @@ void fragment() {
 	float light = lit * glow_k * (0.25 + 1.6 * spot) * (0.35 + 0.9 * grime) * (1.0 - 0.75 * soot) + lit * edge_k * glow_k * edge;
 	float f = pow(1.0 - clamp(abs(dot(NORMAL, VIEW)), 0.0, 1.0), 3.0);
 	ALBEDO = glow * light + sheen * f * sheen_k + vec3(0.025, 0.024, 0.02) * grime;
-	ALPHA = clamp(0.05 + 0.22 * grime + 0.5 * soot + 0.4 * f + 0.6 * clamp(light, 0.0, 0.5), 0.0, 0.85);
+	ALPHA = clamp(0.05 + 0.22 * grime + 0.5 * soot + 0.2 * f + 0.6 * clamp(light, 0.0, 0.5), 0.0, 0.85);
 }
