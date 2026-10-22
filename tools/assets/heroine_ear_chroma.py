@@ -30,9 +30,11 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DONE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "ear_chroma_done.json")
 # (the ear's chroma factor per face: the rendered ear-over-cheek chroma ratio brought to about 1.07, ears a touch warmer
 # than a cheek as in life)
+# (round 2, 21 Oct: own 0.6 .. saffron 0.9 brought them to 0.88-1.01 at the Look turned 40, the low end "slightly paler and
+# grayer than the cheek, a little waxy" (judge J2); each now from its two measured points (factor 1 and round 2's) to 1.04)
 FIXES = {
-    "own": 0.6, "vixen": 0.6, "highborn": 0.55, "moonlit": 0.55, "fey": 0.62,
-    "doe": 0.8, "hardwon": 0.78, "wildling": 0.8, "saffron": 0.9,
+    "own": 0.76, "vixen": 0.66, "highborn": 0.62, "moonlit": 0.6, "fey": 0.75,
+    "doe": 0.89, "hardwon": 0.89, "wildling": 0.87, "saffron": 0.96,
 }
 
 
