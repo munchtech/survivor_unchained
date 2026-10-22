@@ -59,9 +59,11 @@ public sealed class FollowCamera
     /// <summary>The ground's height at a point (a near, low view never goes under a rise).</summary>
     public System.Func<float, float, float>? Ground;
     /// <summary>The close view's two framings (pitch in degrees, distance and the height on her it looks at, in
-    /// metres): her whole figure filling the frame, and her from the hips up. --close-mid / --close-near P,D,H.</summary>
+    /// metres): her whole figure filling the frame, and her from the hips up. --close-mid / --close-near P,D,H.
+    /// The nearest looks 3 degrees down from about her eye height (the owner, 22 Oct: at 9 degrees it looked down on
+    /// her crown and her hair read as a helmet).</summary>
     public static readonly (float Pitch, float Distance, float Height) CloseMid = Frame("close-mid", (15, 4.2f, 1.0f)),
-        CloseNear = Frame("close-near", (9, 1.95f, 1.6f));
+        CloseNear = Frame("close-near", (3, 1.95f, 1.6f));
     float closeNow, orbitNow, room = 1;
     /// <summary>How near the close view is now (eased).</summary>
     public float CloseShown => closeNow;
