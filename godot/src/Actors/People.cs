@@ -1182,6 +1182,8 @@ public static class People
     }
 
     static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
+    // (--hair-atlas PATH: her hair's strands atlas from a file, tried before a build)
+    static Texture2D? hairAtlas;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
@@ -1201,12 +1203,31 @@ public static class People
         if (soft || src.ResourceName == "hair" && HairDraw.Blended) m = HairDraw.WithErase(m);
         foreach (var pass in HairDraw.Passes(m))
         {
-            pass.SetShaderParameter("strands", src.AlbedoTexture);
+            pass.SetShaderParameter("strands", src.AlbedoTexture?.ResourcePath.EndsWith("hair_strands.png") == true ? (hairAtlas ??= TryFile("hair-atlas")) ?? src.AlbedoTexture : src.AlbedoTexture);
             pass.SetShaderParameter("colour", colour);
             pass.SetShaderParameter("cap", src.ResourceName == "hair_cap");
             pass.SetShaderParameter("tie", src.ResourceName == "hair_tie");
+            HairSet(pass, src.ResourceName);
         }
         return m;
+    }
+
+    /// <summary>--hair-set "hair:shine=0.3;*:wrap=0.2": a developer's switch, her hair's uniforms tried without a build,
+    /// by part (hair, hair_cap, hair_fine, hair_tie; "*" for every part); a/b/c is a vec3.</summary>
+    static void HairSet(Material pass, string part)
+    {
+        if (SurvivorUnchained.Args.Get("hair-set") is not string hs || pass is not ShaderMaterial sm) return;
+        foreach (var one in hs.Split(';'))
+            if (one.Split(':') is [var who, var kvs] && (who == "*" || who == part))
+                foreach (var kv in kvs.Split(','))
+                    if (kv.Split('=') is [var k, var v])
+                    {
+                        var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                        if (xs.Any(float.IsNaN)) continue;
+                        if (xs.Length == 3) sm.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                        else if (xs.Length == 1) sm.SetShaderParameter(k.Trim(), xs[0]);
+                    }
     }
 
     /// <summary>One of her outfits (tools/assets/heroine_outfits.py: a file
@@ -1457,9 +1478,11 @@ public static class People
             m.SetShaderParameter("back_spec", HerBackSpec);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
-        if (src.NormalTexture != null)
+        // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)
+        var reliefTry = src.ResourceName == "skin_graft" ? TryFile("relief-map") : null;
+        if ((reliefTry ?? src.NormalTexture) is Texture2D reliefTex)
         {
-            m.SetShaderParameter("relief", src.NormalTexture);
+            m.SetShaderParameter("relief", reliefTex);
             m.SetShaderParameter("has_relief", true);
         }
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
