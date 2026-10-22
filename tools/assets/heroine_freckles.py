@@ -17,7 +17,8 @@ Written to <out>: heroine_freckles.png (her head's UVs, 2048) and
 heroine_freckles_graft.png (the graft's: her neck, shoulders and upper chest,
 1024): red each texel's freckle (its depth, soft at its edge), green its rank,
 blue how much of her face's grain her skin takes there (all of her head and
-neck, none from her collarbones down).
+neck, none from her collarbones down); the graft's alpha 1 less how much of her
+face's sky share it keeps (her neck's column only; the head map's alpha is 1).
 Run again when her head is rebuilt (heroine_head.py).
 """
 import os
@@ -213,4 +214,20 @@ known = np.zeros(img.shape[:2], bool)
 known[rows, cols] = True
 _, (iy, ix) = ndimage.distance_transform_edt(~known, return_indices=True)
 img[..., 2] = img[..., 2][iy, ix]
+# Alpha: 1 less her sky mask, how much of her face's sky share (the skin shader's sky_share, against her body's
+# sky_body at the day close-up) her skin keeps here: her neck's column only, the blue's 8 cm feather up its front
+# (1.47 to 1.55 m) times 1 within 7.5 cm of her midline, none past 11.5 cm (her trapezius and shoulders' tops take her
+# body's, as her arms do), and none within 1 cm of her body's paint, all by 4 cm (fade): no step where the graft meets
+# her body or arms (dent d6: the blue alone kept part of the face's on her shoulders' tops, a line on her deltoid).
+# Stored as 1 - mask so a part without the map (default black, alpha 1) reads 0; the import keeps alpha unaltered
+# (fix_alpha_border off).
+lat = 1 - smooth((np.abs(P[:, 0]) - 0.075) / 0.04)
+keep = smooth((P[:, 2] - 1.47) / 0.08) * lat * fade
+img[rows, cols, 3] = 1 - keep
+img[..., 3] = img[..., 3][iy, ix]
+edge = off < 0.012
+print("SKY MASK: keep max %.3f within 1.2 cm of her body's paint; max %.3f past |x| 0.115; texels kept > 0.5: %d of %d; "
+      "body edge z %.3f to %.3f at |x| < 0.075" % (keep[edge].max() if edge.any() else 0, keep[np.abs(P[:, 0]) > 0.115].max(),
+      (keep > 0.5).sum(), len(keep), P[edge & (np.abs(P[:, 0]) < 0.075), 2].min() if (edge & (np.abs(P[:, 0]) < 0.075)).any() else -1,
+      P[edge & (np.abs(P[:, 0]) < 0.075), 2].max() if (edge & (np.abs(P[:, 0]) < 0.075)).any() else -1))
 save(img, os.path.join(OUT, "heroine_freckles_graft.png"))
