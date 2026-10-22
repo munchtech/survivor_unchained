@@ -2,7 +2,33 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
-## Paused here (Armor 17, 22 Oct, coordinator wind-down); next:
+## Paused here (Armor 18, 22 Oct, shoulder-only session); next: the owner's call on the ARM ROOT
+Worktree `.claude/worktrees/armor-7`, branch armor-7 (junction worktree). Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\543ece4a-9bcd-4cea-b6df-915822bec5eb\scratchpad\armor18` (texts backed up to `survivorsunchained_inputs\scratch_543ece4a\armor18`): cj2.md and rj1.md (judge briefs), r1/r2/d1 briefs and their scripts (r1\araise.py torso A per frame; r2\hl.py, axe.py, wpn.py; d1\m1-m4.py mesh, weights, collapse), run.sh with list1-3.txt (shoots), sheet2.py.
+- **CJ2 (max) on C2: FAIL, far** (`godot/.shots/armor17/c2/verdict_cj2.md`). Correctives can't make the shape.
+- **R1 (d2eb0c5c, a34f735f): reaver_show, catch_breath and flask_drink restaged to A <= 90** (117/117/99 -> 83/89/88). RJ1 (max) passed the shoulder; **the owner and main overturned it on reaver_show's peak.** These crops in `owner_frames_22oct\` are all FAIL; calibrate every judge on them: reaver_show_shoulder_top_facets_r1.png, reaver_show_armpit_notch_r1.png, reaver_show_shoulder_r1_1to1.png, reaver_show_upper_arm.png.
+- **R2 (e65deb17), unjudged and unshot:**
+  - catch_breath plays only with both hands free (`logic/Play/FreeHand.cs` Both, FreeHandTests); held pieces had gone 60-90 mm into her thigh. Its hair push is polished.
+  - reaver_show's axe head stays in frame.
+  - New `--sheathed` shot arg (PlayerView's hold line).
+  - Judge list `list3.txt`. dotnet 1076/0/8.
+- **D1 diagnosis (numbers): the ARM ROOT is the mesh first, then the weights. FAR.**
+  - The arm is the coarsest skin on her (decimated triangles, no loops). Median edge: upper arm 1.27 cm (slivers to 6.2 cm), deltoid 0.96, breast 0.74, face 0.18.
+  - At the close-up (2.80 m, 24 deg, 9.4 px/cm, LOD0, smooth normals) the outline chords are 11-13 px with 14-22 deg corners.
+  - The bicep crease is the twist hand-off across one 6.2 cm sliver.
+  - The pit is at the 4-bone cap and already pinched in the bind pose.
+  - Upper-arm section keeps 0.79/0.70 of rest at A 82.
+- **Proposed source-fix round (NOT started; the owner decides):**
+  - Remesh a patch from mid-clavicle and the pit to the elbow crease at about 0.4 cm, with a deltoid cap and an opened pit.
+  - Transfer the weights and smooth the twist band; project the UVs and re-bake; rebuild the correctives.
+  - Then the lead-8 chain: NAPE=0, nape_post, neck graft restore (check it), build.py --all, cover.py, heroine_lod.py, reimport. Re-judge the arms-down frames too.
+  - Cost 300-400k, 8-12 h; risk high.
+  - The lead suggests it become a body item with its own lead, and asks whether a clean MakeHuman/Marionette arm could be grafted instead.
+- **MR state: nothing to merge.**
+  - armor-7 holds the earlier judged pieces, the C1/C2 art and the R1/R2 clips, unjudged as a whole.
+  - heroine.res and heroine_clips.json are packed locally, not committed.
+- Wearcheck over 22 clips, correctives off vs on: `armor18\wc_off` and `armor18\wc_on` tables.
+
+## Paused here (Armor 17, 22 Oct, coordinator wind-down); history
 Worktree `.claude/worktrees/armor-7`, branch armor-7 (junction worktree: remove `godot\assets` before merging integration, remake after). Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\67a4f142-1816-491a-be2f-c6d6488eb39a\scratchpad\armor`. Subfolders: a1 = leak audit and AJ1; c1, c2 = corrective briefs and frames; n3, n5, s1 = solver briefs; `shoot2.sh` and `run.sh` = shoot with a turn (run.sh's 4th arg `import` reimports first). API judges are blocked until 1 Nov (usage limit): every judge is a su-lead-max subagent.
 
 **1. TOP: her raised shoulder and armpit** (the owner on reaver_show's armpit: "oof thats bad").
