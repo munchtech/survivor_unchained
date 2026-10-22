@@ -16,12 +16,20 @@ public static class ShoulderPsd
 
     /// <summary>The shapes (each with _l or _r), in the order <see cref="Weights"/> fills.</summary>
     public static readonly string[] Shapes =
-        { "shoulder_abd110", "shoulder_abd140", "shoulder_flex110", "shoulder_flex140", "shoulder_up175" };
+    {
+        "shoulder_abd110", "shoulder_abd140", "shoulder_flex110", "shoulder_flex140", "shoulder_up175",
+        "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s",
+    };
+
+    /// <summary>Her clavicle's rise (degrees above its rest) at which the 140 and 175 samples are wholly their
+    /// shrugged twins (authored with the clavicle raised this much, as the clips raise it overhead).</summary>
+    public const float Shrug = 30f;
 
     static float Ramp(float x, float a, float b) => Math.Clamp((x - a) / (b - a), 0f, 1f);
 
-    /// <summary>The five shapes' weights for an upper arm at (a, azimuth) degrees, into <paramref name="w"/>.</summary>
-    public static void Weights(float a, float azimuth, Span<float> w)
+    /// <summary>The shapes' weights for an upper arm at (a, azimuth) degrees with its clavicle risen
+    /// <paramref name="rise"/> degrees above rest, into <paramref name="w"/> (Shapes' order).</summary>
+    public static void Weights(float a, float azimuth, float rise, Span<float> w)
     {
         float e = Ramp(a, EaseFrom, 110f);
         e = e * e * (3 - 2 * e);
@@ -30,7 +38,17 @@ public static class ShoulderPsd
         float t175 = Ramp(a, 140f, 175f);
         float s = MathF.Sin(Math.Clamp(azimuth, 0f, 90f) * MathF.PI / 180f);
         float wf = s * s, wa = 1 - wf;
-        w[0] = wa * t110; w[1] = wa * t140; w[2] = wf * t110; w[3] = wf * t140; w[4] = t175;
+        float r = Math.Clamp(rise / Shrug, 0f, 1f);
+        w[0] = wa * t110; w[1] = wa * t140 * (1 - r); w[2] = wf * t110; w[3] = wf * t140 * (1 - r); w[4] = t175 * (1 - r);
+        w[5] = wa * t140 * r; w[6] = wf * t140 * r; w[7] = t175 * r;
+    }
+
+    /// <summary>A line's elevation in degrees above the plane square to <paramref name="down"/>.</summary>
+    public static float Elevation((float X, float Y, float Z) v, (float X, float Y, float Z) down)
+    {
+        float n = MathF.Sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z) * MathF.Sqrt(down.X * down.X + down.Y * down.Y + down.Z * down.Z);
+        if (n < 1e-9f) return 0;
+        return MathF.Asin(Math.Clamp(-(v.X * down.X + v.Y * down.Y + v.Z * down.Z) / n, -1f, 1f)) * 180f / MathF.PI;
     }
 
     /// <summary>(A, azimuth) in degrees of an upper arm direction, given her torso's down axis and the lateral axis

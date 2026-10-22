@@ -98,20 +98,36 @@ public partial class HerRaise : SkeletonModifier3D
     readonly bool psdOff = Args.Has("psd-off"), psdLog = Args.Has("psd-log");
     readonly float psdK = Args.Num("psd", 1f);
     System.Collections.Generic.List<(MeshInstance3D Mi, int[] Ix)>? psd;
-    readonly float[] psdLast = new float[2 * 5];
-    readonly float[] psdW = new float[5];
+    static readonly int NS = ShoulderPsd.Shapes.Length;
+    readonly float[] psdLast = new float[2 * NS];
+    readonly float[] psdW = new float[NS];
+    readonly int[] clav = { -1, -1 };
+    readonly float[] clavRest = new float[2];
     int pelvis = -1, neck = -1;
     double psdLogT;
 
     void Psd(Skeleton3D sk, double delta)
     {
-        if (pelvis < 0) { pelvis = sk.FindBone("pelvis"); neck = sk.FindBone("neck_01"); }
+        if (pelvis < 0)
+        {
+            pelvis = sk.FindBone("pelvis"); neck = sk.FindBone("neck_01");
+            clav[0] = sk.FindBone("clavicle_l"); clav[1] = sk.FindBone("clavicle_r");
+            if (pelvis < 0 || neck < 0) return;
+            // her clavicles' elevation at rest, in her rest torso frame (the shrug is read against it)
+            var rdown = sk.GetBoneGlobalRest(pelvis).Origin - sk.GetBoneGlobalRest(neck).Origin;
+            for (int i = 0; i < 2; i++)
+                if (clav[i] >= 0 && upper[i] >= 0)
+                {
+                    var v = sk.GetBoneGlobalRest(upper[i]).Origin - sk.GetBoneGlobalRest(clav[i]).Origin;
+                    clavRest[i] = ShoulderPsd.Elevation((v.X, v.Y, v.Z), (rdown.X, rdown.Y, rdown.Z));
+                }
+        }
         if (pelvis < 0 || neck < 0 || chest < 0) return;
         if (psd == null)
         {
             psd = new();
-            var names = new string[2 * ShoulderPsd.Shapes.Length];
-            for (int i = 0; i < ShoulderPsd.Shapes.Length; i++) { names[i] = ShoulderPsd.Shapes[i] + "_l"; names[5 + i] = ShoulderPsd.Shapes[i] + "_r"; }
+            var names = new string[2 * NS];
+            for (int i = 0; i < NS; i++) { names[i] = ShoulderPsd.Shapes[i] + "_l"; names[NS + i] = ShoulderPsd.Shapes[i] + "_r"; }
             foreach (var c in sk.GetChildren())
                 if (c is MeshInstance3D mi && mi.Mesh != null && mi.FindBlendShapeByName(names[0]) >= 0)
                     psd.Add((mi, System.Array.ConvertAll(names, n => mi.FindBlendShapeByName(n))));
@@ -129,12 +145,18 @@ public partial class HerRaise : SkeletonModifier3D
             var d = sk.GetBoneGlobalPose(lower[i]).Origin - sk.GetBoneGlobalPose(upper[i]).Origin;
             var lat = i == 0 ? left : -left;
             var (a, az) = ShoulderPsd.Angles((d.X, d.Y, d.Z), (down.X, down.Y, down.Z), (lat.X, lat.Y, lat.Z), (fwd.X, fwd.Y, fwd.Z));
-            ShoulderPsd.Weights(a, az, psdW);
-            if (print) GD.Print($"psd {(i == 0 ? "l" : "r")} A {a:0.0} az {az:0.0} w {string.Join(" ", System.Array.ConvertAll(psdW, x => x.ToString("0.00")))}");
-            for (int k = 0; k < 5; k++)
+            float rise = 0;
+            if (clav[i] >= 0)
+            {
+                var c = sk.GetBoneGlobalPose(upper[i]).Origin - sk.GetBoneGlobalPose(clav[i]).Origin;
+                rise = ShoulderPsd.Elevation((c.X, c.Y, c.Z), (down.X, down.Y, down.Z)) - clavRest[i];
+            }
+            ShoulderPsd.Weights(a, az, rise, psdW);
+            if (print) GD.Print($"psd {(i == 0 ? "l" : "r")} A {a:0.0} az {az:0.0} rise {rise:0.0} w {string.Join(" ", System.Array.ConvertAll(psdW, x => x.ToString("0.00")))}");
+            for (int k = 0; k < NS; k++)
             {
                 float v = psdOff ? 0 : psdW[k] * psdK;
-                int slot = 5 * i + k;
+                int slot = NS * i + k;
                 if (v == psdLast[slot]) continue;
                 psdLast[slot] = v;
                 foreach (var (mi, ix) in psd)

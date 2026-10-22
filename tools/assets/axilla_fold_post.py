@@ -177,7 +177,7 @@ FOLLOW_NEAR, FOLLOW_FAR = 0.015, 0.03
 FOLLOW_K, FOLLOW_POW = 3, 4
 
 
-def follow(path, U, shapes, mark="axilla_fold", parts=(".top.", ".pauldrons.")):
+def follow(path, U, shapes, mark="axilla_fold", parts=(".top.", ".pauldrons."), near=FOLLOW_NEAR, far=FOLLOW_FAR):
     """An outfit's tops (and pauldrons) carry the same two morphs, each point moved as her skin under it moves
     (her nearest points' deltas, inverse-distance weighted; whole within FOLLOW_NEAR of her, none past FOLLOW_FAR), so
     the gap between them holds and nothing pokes through. Done-mark axilla_fold on the file."""
@@ -198,7 +198,7 @@ def follow(path, U, shapes, mark="axilla_fold", parts=(".top.", ".pauldrons.")):
             d, j = tree.query(P, k=FOLLOW_K)
             w = 1 / np.maximum(d, 1e-4) ** FOLLOW_POW
             w /= w.sum(1, keepdims=True)
-            fade = 1 - _ss((d[:, 0] - FOLLOW_NEAR) / (FOLLOW_FAR - FOLLOW_NEAR))
+            fade = 1 - _ss((d[:, 0] - near) / (far - near))
             Ff = G.get(p["indices"]).reshape(-1, 3).astype(int) if "indices" in p else np.arange(len(P)).reshape(-1, 3)
             for _, D in shapes:
                 Dp = (D[j] * w[..., None]).sum(1) * fade[:, None]
@@ -215,7 +215,7 @@ def follow(path, U, shapes, mark="axilla_fold", parts=(".top.", ".pauldrons.")):
         mesh.setdefault("extras", {}).setdefault("targetNames", []).extend([nm for nm, _ in shapes])
         k = len(shapes)
         mesh["weights"] = list(mesh.get("weights", [0] * (len(mesh["primitives"][0]["targets"]) - k))) + [0] * k
-    g.setdefault("asset", {}).setdefault("extras", {})[mark] = {"follow_mm": [FOLLOW_NEAR * 1000, FOLLOW_FAR * 1000]}
+    g.setdefault("asset", {}).setdefault("extras", {})[mark] = {"follow_mm": [near * 1000, far * 1000]}
     while len(binb) % 4:
         binb.append(0)
     g["buffers"][0]["byteLength"] = len(binb)

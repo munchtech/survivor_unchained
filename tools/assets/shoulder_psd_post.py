@@ -45,24 +45,31 @@ from heroine_neck import _Gl  # noqa: E402
 from wrap_post import skin_union  # noqa: E402
 from worn_reaver_post import _sparse, _vn, _ss  # noqa: E402
 
-# (way, A): the samples, in the order of SHAPES
-SAMPLES = [("abd", 110.0), ("abd", 140.0), ("flex", 110.0), ("flex", 140.0), ("up", 175.0)]
-SHAPES = ["shoulder_abd110", "shoulder_abd140", "shoulder_flex110", "shoulder_flex140", "shoulder_up175"]
+# (way, A, shrug): the samples, in the order of SHAPES. The shrugged ones (her clavicle raised SHRUG degrees above its
+# rest, as the clips raise it overhead: cast_raise about 15-19, leap 55-60) carry the trap's fold the clavicle makes
+SHRUG = 30.0
+SAMPLES = [("abd", 110.0, 0.0), ("abd", 140.0, 0.0), ("flex", 110.0, 0.0), ("flex", 140.0, 0.0), ("up", 175.0, 0.0),
+           ("abd", 140.0, SHRUG), ("flex", 140.0, SHRUG), ("up", 175.0, SHRUG)]
+SHAPES = ["shoulder_abd110", "shoulder_abd140", "shoulder_flex110", "shoulder_flex140", "shoulder_up175",
+          "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s"]
 EASE_FROM = 90.0
 UP_AZ = 0.0  # the overhead sample's azimuth (0: sideways); overhead the two ways meet
 # HerRaise's knobs (its defaults)
 RAISE = dict(start=-10.0, full=70.0, pitch=20.0, yaw=12.0, up=0.034, out=0.010, back=0.006, sup=0.22, sside=0.03)
 # the region: around her left shoulder joint (rest), metres
-REGION_IN, REGION_OUT = 0.07, 0.15
+REGION_IN, REGION_OUT = 0.08, 0.17
 ARM_KEEP = 0.17   # along the upper arm past the shoulder joint: kept to here, fading over FADE
 FADE = 0.05
 BREAST_KEEP = 0.45  # how much of the smoothing her breast (its bone's weight) still takes
-DM_ITERS = 30
-HOLLOW_D, HOLLOW_R = 0.006, 0.03   # the armpit hollow at full (A 175); scaled by (A - 90) / 85
+DM_ITERS = int(os.environ.get("PSD_DM", 30))
+HOLLOW_D, HOLLOW_R = float(os.environ.get("PSD_HOLLOW", 0.010)), 0.035
+FILL, FILL_ITERS = float(os.environ.get("PSD_FILL", 1.0)), int(os.environ.get("PSD_FILL_IT", 60))   # the armpit hollow at full (A 175); scaled by (A - 90) / 85
 SMOOTH = 3
 # the outfit pieces over her shoulders and armpits that carry the shapes (every calling, the warden's steel too: its
 # pauldrons and top ride the skin under them like everything else skinned there)
 FOLLOW_PARTS = (".top.", ".pauldrons.", ".cloak.", ".collar.")
+# (pauldrons stand well off her shoulder: whole to 6 cm, none past 10)
+FOLLOW_NEAR, FOLLOW_FAR = 0.06, 0.10
 
 
 def _q2m(q):
@@ -129,10 +136,14 @@ def _mq(R):
     return np.asarray(qfrom_matrix(R), float)
 
 
+def _ix(rig):
+    return rig if isinstance(rig, dict) else rig.index
+
+
 def torso_frame(Mg, rig, side):
     """(down, lateral, forward) of her torso in skeleton space: down neck_01 to pelvis, lateral spine_03's X (her
     left; flipped for the right) made square to it, forward their cross (+Z at rest). As Play/ShoulderPsd does."""
-    I = rig.index
+    I = _ix(rig)
     down = Mg[I["pelvis"], :3, 3] - Mg[I["neck_01"], :3, 3]
     down /= np.linalg.norm(down)
     left = Mg[I["spine_03"], :3, 0]
@@ -144,7 +155,7 @@ def torso_frame(Mg, rig, side):
 
 def arm_angles(Mg, rig, side):
     """(A, azimuth) of an upper arm: A from her torso's down axis, azimuth 0 sideways, 90 forward, -90 back."""
-    I = rig.index
+    I = _ix(rig)
     d = Mg[I["lowerarm_" + side], :3, 3] - Mg[I["upperarm_" + side], :3, 3]
     d /= np.linalg.norm(d)
     down, lat, fwd = torso_frame(Mg, rig, side)
@@ -153,7 +164,17 @@ def arm_angles(Mg, rig, side):
     return A, az
 
 
-def sample_pose(rig, side, way, A):
+def clavicle_rise(Mg, M0, rig, side):
+    """Degrees her clavicle is raised above its rest, in her torso frame (its line's elevation, now minus at rest)."""
+    I = _ix(rig)
+    def el(M):
+        v = M[I["upperarm_" + side], :3, 3] - M[I["clavicle_" + side], :3, 3]
+        down = torso_frame(M, rig, side)[0]
+        return math.degrees(math.asin(np.clip(-(v @ down) / np.linalg.norm(v), -1, 1)))
+    return el(Mg) - el(M0)
+
+
+def sample_pose(rig, side, way, A, shrug=0.0):
     """Local (rot, pos, scl) and globals for her rest with one upper arm turned to (way, A), helpers driven as
     HerJoints does and the breast lifted as HerRaise does; and HerRaise's weight there."""
     import helpers as hp
@@ -162,6 +183,12 @@ def sample_pose(rig, side, way, A):
     rot, pos, scl = rig.rest_rot.copy(), rig.rest_pos.copy(), rig.rest_scl.copy()
     M0 = rig.fk(rot, pos, scl)
     down, lat, fwd = torso_frame(M0, rig, side)
+    if shrug:
+        # her clavicle raised about her forward axis (its outer end up), the arm then aimed as wanted
+        c = I["clavicle_" + side]
+        Rg = _axis(fwd, shrug * (1.0 if side == "l" else -1.0)) @ M0[c, :3, :3]
+        rot[c] = _mq(M0[rig.parent[c], :3, :3].T @ Rg)
+        M0 = rig.fk(rot, pos, scl)
     az = UP_AZ if way == "up" else (0.0 if way == "abd" else 90.0)
     a, z = math.radians(A), math.radians(az)
     want = math.cos(a) * down + math.sin(a) * (math.cos(z) * lat + math.sin(z) * fwd)
@@ -201,7 +228,7 @@ def sample_pose(rig, side, way, A):
     return M, w
 
 
-def psd_weights(A, az):
+def psd_weights(A, az, rise=0.0):
     """{shape: weight} for an upper arm at (A, azimuth) (arm_angles): 0 to EASE_FROM, eased in to the first samples,
     then linear between samples (they sum to the ease); the azimuth blends side (<= 0) to front (>= 90).
     The game's twin: godot/logic/Play/ShoulderPsd.cs."""
@@ -214,8 +241,22 @@ def psd_weights(A, az):
     t175 = ramp(A, 140.0, 175.0)
     wf = math.sin(math.radians(float(np.clip(az, 0.0, 90.0)))) ** 2
     wa = 1 - wf
-    return {"shoulder_abd110": wa * t110, "shoulder_abd140": wa * t140, "shoulder_flex110": wf * t110,
-            "shoulder_flex140": wf * t140, "shoulder_up175": t175}
+    # her clavicle's rise (degrees above rest) hands the 140 and 175 samples over to their shrugged twins
+    r = float(np.clip(rise / SHRUG, 0, 1))
+    return {"shoulder_abd110": wa * t110, "shoulder_abd140": wa * t140 * (1 - r), "shoulder_flex110": wf * t110,
+            "shoulder_flex140": wf * t140 * (1 - r), "shoulder_up175": t175 * (1 - r),
+            "shoulder_abd140s": wa * t140 * r, "shoulder_flex140s": wf * t140 * r, "shoulder_up175s": t175 * r}
+
+
+def weights_from_globals(Mg, index, M0):
+    """{shape_side: weight} for bone globals Mg [J, 4, 4] (her skeleton's index; M0 her rest globals): as HerRaise
+    sets them."""
+    out = {}
+    for s in "lr":
+        A, az = arm_angles(Mg, index, s)
+        for k, w in psd_weights(A, az, clavicle_rise(Mg, M0, index, s)).items():
+            out[k + "_" + s] = w
+    return out
 
 
 def _blend(J, W, M):
@@ -305,7 +346,10 @@ def author(G, log=print):
     sh = M0[I["upperarm_l"], :3, 3]
     el = M0[I["lowerarm_l"], :3, 3]
     ax = (el - sh) / np.linalg.norm(el - sh)
-    dist = np.linalg.norm(U - sh, axis=1)
+    # (from the line of her clavicle, its inner end to the shoulder joint: the trap's slope is in)
+    ch = M0[I["clavicle_l"], :3, 3]
+    tt = np.clip((U - ch) @ (sh - ch) / ((sh - ch) @ (sh - ch)), 0, 1)
+    dist = np.linalg.norm(U - (ch + tt[:, None] * (sh - ch)), axis=1)
     along = (U - sh) @ ax
     wsum = lambda names: sum((W * (J == I[n])).sum(1) for n in names if n in I)  # noqa: E731
     neck = wsum(["neck_01", "Head"])
@@ -313,13 +357,13 @@ def author(G, log=print):
                    "lowerarm_point_l"])
     wbr = wsum(["breast_l"])
     reg = (1 - _ss((dist - REGION_IN) / (REGION_OUT - REGION_IN))) * (1 - _ss((along - ARM_KEEP) / FADE))
-    reg *= (1 - _ss(neck / 0.5)) * (1 - _ss(distal / 0.3)) * (1 - (1 - BREAST_KEEP) * _ss(wbr / 0.6)) * left
-    reg = _smooth(reg[:, None], A, deg, 4)[:, 0] * left
+    reg *= (1 - _ss(neck / 0.8)) * (1 - _ss(distal / 0.3)) * (1 - (1 - BREAST_KEEP) * _ss(wbr / 0.6)) * left
+    reg = _smooth(reg[:, None], A, deg, 4)[:, 0] * left * _ss((U[:, 0] - 0.01) / 0.04)  # (none at her midline)
     active = reg > 1e-3
     grow = _smooth(active[:, None].astype(float), A, deg, DM_ITERS + 4)[:, 0] > 0  # the smoothing's reach
     out = {}
-    for (way, Asmp), name in zip(SAMPLES, SHAPES):
-        M, w = sample_pose(rig, "l", way, Asmp)
+    for (way, Asmp, shr), name in zip(SAMPLES, SHAPES):
+        M, w = sample_pose(rig, "l", way, Asmp, shr)
         Ar, az = arm_angles(M, rig, "l")
         Ur = U + w["l"] * (mor.get("axilla_fold_l", 0) + mor.get("raise_crease_l", 0))
         Bm = _blend(J, W, M @ rig.ibm)
@@ -332,10 +376,20 @@ def author(G, log=print):
         loc = np.einsum("nij,nj->ni", Fr, Ur - Us)
         T = Xs + np.einsum("nji,nj->ni", Fp, loc)
         Dp = (T - X) * reg[:, None]
+        # FILL: on top of the shoulder and the trap (posed normal up or out), the creases and the corner filled out
+        # toward a heavily smoothed surface (outward only: the deltoid's cap and the trap's slope made round, nothing
+        # pressed in), as the arm rises past level
+        down, lat, fwd = torso_frame(M, rig, "l")
+        Y = X + Dp
+        Yh = _smooth(Y, A, deg, FILL_ITERS, grow)
+        Ny = _vn(Y, F)
+        out_ = np.maximum(((Yh - Y) * Ny).sum(1), 0.0)
+        top = _ss((-(Ny @ down) + 0.15) / 0.5)
+        k = FILL * float(np.clip((Asmp - 90) / 50, 0, 1))
+        Dp = Dp + Ny * (k * out_ * top * reg)[:, None]
         # the armpit hollow: the deepest point of her posed armpit (the region's point nearest the torso's side,
         # under the shoulder), pressed in along the posed normal
         Np = _vn(X + Dp, F)
-        down, lat, fwd = torso_frame(M, rig, "l")
         shp = M[I["upperarm_l"], :3, 3]
         rel = X - shp
         score = rel @ down * 1.0 - np.abs(rel @ fwd) * 2.0 - np.abs(rel @ lat - 0.0) * 1.0
@@ -382,7 +436,7 @@ def main(a):
             if "shoulder_psd" in ((gg.get("asset") or {}).get("extras") or {}):
                 print("SHOULDER_PSD: %s follows already" % o)
                 continue
-            follow(op, U, shapes, mark="shoulder_psd", parts=FOLLOW_PARTS)
+            follow(op, U, shapes, mark="shoulder_psd", parts=FOLLOW_PARTS, near=FOLLOW_NEAR, far=FOLLOW_FAR)
     if "shoulder_abd110_l" in (mesh.get("extras") or {}).get("targetNames", []):
         print("SHOULDER_PSD: the morphs are on the glb already")
         return

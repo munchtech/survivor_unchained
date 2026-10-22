@@ -8,7 +8,7 @@ namespace SurvivorUnchained.Tests;
 /// level, each sample whole at its own raise, a partition between samples, side to front by the azimuth.</summary>
 public class ShoulderPsdTests
 {
-    static float[] W(float a, float az) { var w = new float[5]; ShoulderPsd.Weights(a, az, w); return w; }
+    static float[] W(float a, float az, float rise = 0f) { var w = new float[ShoulderPsd.Shapes.Length]; ShoulderPsd.Weights(a, az, rise, w); return w; }
 
     [Theory]
     [InlineData(0f, 0f)]
@@ -31,11 +31,29 @@ public class ShoulderPsdTests
     {
         foreach (var a in new[] { 115f, 125f, 139f, 150f, 170f })
             foreach (var az in new[] { -40f, 0f, 30f, 60f, 90f, 130f })
+            foreach (var rise in new[] { -5f, 0f, 12f, 45f })
             {
-                var w = W(a, az);
+                var w = W(a, az, rise);
                 float s = 0; foreach (var v in w) s += v;
                 Assert.Equal(1f, s, 0.0001f);
             }
+    }
+
+    [Fact]
+    public void ShrugHandsOverToTwins()
+    {
+        Assert.Equal(1f, W(140f, 0f, 30f)[5], 0.00001f); Assert.Equal(0f, W(140f, 0f, 30f)[1], 0.00001f);
+        Assert.Equal(1f, W(175f, 0f, 60f)[7], 0.00001f);
+        Assert.Equal(0.5f, W(175f, 0f, 15f)[4], 0.00001f);
+        Assert.Equal(1f, W(110f, 0f, 30f)[0], 0.00001f);   // (A 110 has no twin)
+        Assert.All(W(60f, 0f, 30f), v => Assert.Equal(0f, v));
+    }
+
+    [Fact]
+    public void ElevationOfALine()
+    {
+        Assert.Equal(0f, ShoulderPsd.Elevation((1f, 0f, 0f), (0f, -1f, 0f)), 0.001f);
+        Assert.Equal(30f, ShoulderPsd.Elevation((0.8660254f, 0.5f, 0f), (0f, -1f, 0f)), 0.001f);
     }
 
     [Fact]

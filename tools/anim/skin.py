@@ -88,6 +88,19 @@ class Gltf:
         return out
 
 
+def _psd():
+    import sys
+    sys.path.insert(0, str(REPO / "tools" / "assets"))
+    import shoulder_psd_post
+    return shoulder_psd_post
+
+
+def _psd_names():
+    if os.environ.get("PSD_OFF"):      # (a baseline without them: --psd-off as the game reads it)
+        return []
+    return [n + "_" + s for n in _psd().SHAPES for s in "lr"]
+
+
 def _trs(n):
     m = np.eye(4)
     if "matrix" in n:
@@ -277,7 +290,7 @@ class Body:
                     # Her corrective shapes as built: morph targets, by name.
                     names_t = mesh.get("extras", {}).get("targetNames", [])
                     tgs = pr.get("targets", [])
-                    for cn in hp.corrective_names():
+                    for cn in hp.corrective_names() + _psd_names():
                         k = names_t.index(cn) if cn in names_t else -1
                         tg = tgs[k] if 0 <= k < len(tgs) else {}
                         for key, into in (("POSITION", CP), ("NORMAL", CN)):
@@ -452,7 +465,11 @@ class Body:
                 a, b = G[self.sk.parent[j]][:3, :3], G[j][:3, :3]
                 a, b = a / np.linalg.norm(a, axis=0), b / np.linalg.norm(b, axis=0)
                 rot[j] = qnorm(qfrom_matrix(a.T @ b))
-        return {k: w for k, w in hp.corrective_weights(self.sk, rot).items() if k in self.corr and w > 0}
+        out = {k: w for k, w in hp.corrective_weights(self.sk, rot).items() if k in self.corr and w > 0}
+        # her shoulder pose-space shapes (tools/assets/shoulder_psd_post.py), from the arms' directions as HerRaise sets them
+        if any(k.startswith("shoulder_") for k in self.corr):
+            out.update({k: w for k, w in _psd().weights_from_globals(G, self.sk.index, self.rest).items() if k in self.corr and w > 0})
+        return out
 
     def rest_points(self, G, idx=None):
         """Her points at rest with her corrective shapes in, as set for G."""
