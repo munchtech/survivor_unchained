@@ -125,7 +125,7 @@ public sealed class LookChoice
     /// <summary>A hair colour's highlights when they are turned on and none is picked (looks.json's hairHighlights' id).</summary>
     public string Highlight = "";
     /// <summary>A highlight's share of the locks and its strength, against the others' (looks.json's hairHighlights:
-    /// face 40, platinum 2 and honey 1.5).</summary>
+    /// face 40, platinum 2 and honey 3).</summary>
     public float Share = 1f, Strength = 1f;
 }
 

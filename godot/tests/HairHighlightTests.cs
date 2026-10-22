@@ -72,10 +72,10 @@ public class HairHighlightTests
     [Fact]
     public void Platinum_covers_twice_and_honey_is_stronger()
     {
-        // (face 40, the judge: platinum 2x coverage, ash and lighter; honey 1.5x strength; the rest as they were)
+        // (face 40, the judge: platinum 2x coverage, ash and lighter; honey 1.5x strength, r2 3x; the rest as they were)
         var p = Lore.HairHighlights.Single(h => h.Id == "platinum");
         Assert.Equal(2f, p.Share);
-        Assert.Equal(1.5f, Lore.HairHighlights.Single(h => h.Id == "honey").Strength);
+        Assert.Equal(3f, Lore.HairHighlights.Single(h => h.Id == "honey").Strength);
         Assert.Equal(1f, Lore.HairHighlights.Single(h => h.Id == "copper").Share);
         var rgb = Enumerable.Range(0, 3).Select(i => System.Convert.ToInt32(p.Color.Substring(1 + 2 * i, 2), 16) / 255f).ToArray();
         float max = rgb.Max(), min = rgb.Min();

@@ -835,6 +835,8 @@ public static class People
 
     /// <summary>The least Oklab chroma a brow dye with little colour of its own takes on deep skin (face 39 dye2;
     /// --brow-deep-warm tries others).</summary>
+    static Shader? paintMulShader;
+
     static readonly float BrowDeepWarm = SurvivorUnchained.Args.Num("brow-deep-warm", 0.07f);
 
     /// <summary>How far a hair's brows take the red settings (face 39's: sat 1.2, BrowDark 0.38, dye_gamma 0.9,
@@ -901,7 +903,12 @@ public static class People
                 // (Own's brows.png on another face dyed that face's lid crease, a copper second brow under its own)
                 if (brow is Color b && ResourceLoader.Exists(brows))
                 {
-                    var m = new ShaderMaterial { Shader = paintShader };
+                    var tone = skin.GetShaderParameter("tone").AsColor();
+                    float deep = 1f - Mathf.SmoothStep(0.4f, 0.6f, 0.2126f * tone.R + 0.7152f * tone.G + 0.0722f * tone.B);
+                    // (face 40 r2: on deep skin a multiply over her lit skin (heroine_paint_mul.gdshader): as a lit pass of
+                    // their own they took only the night's blue, every stroke's core blue-black. Chosen before any parameter:
+                    // a shader set after them dropped them)
+                    var m = new ShaderMaterial { Shader = deep >= 0.5f ? (paintMulShader ??= GD.Load<Shader>("res://shaders/heroine_paint_mul.gdshader")) : paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
                     m.SetShaderParameter("dyed", true);
                     // (darker than her hair and a little warmer, as brows are: the fairer
@@ -911,8 +918,6 @@ public static class People
                     // (face 39 dye2: on deep skin (her tone multiplier's luminance under 0.6: Deep's 0.34, Fair's 1.0) a brow
                     // dye with little colour of its own a warm dark brown: a black's, near neutral, mixed in ratio with
                     // her red-brown skin, drew blue-grey strokes, #1e171c, hue 320)
-                    var tone = skin.GetShaderParameter("tone").AsColor();
-                    float deep = 1f - Mathf.SmoothStep(0.4f, 0.6f, 0.2126f * tone.R + 0.7152f * tone.G + 0.0722f * tone.B);
                     var dye = BrowDye(b);
                     if (deep > 0f)
                     {
@@ -947,17 +952,24 @@ public static class People
                     m.SetShaderParameter("hair_hi", Mathf.Lerp(0.7f, 0.5f, deep));
                     // (face 40, the judge: on deep skin her brows sat near the skin's value and she read browless at the
                     // Look (brow/skin 0.65-0.86 in screen value): the dye held to a smaller share of her skin's lightness,
-                    // black's least, a blonde's most (0.24 to 0.34, was 0.75 for all, which held every dye alike), each
+                    // black's least, a blonde's most (r2: 0.25 to 0.34 of her lit skin under the multiply, was 0.75 for all, which held every dye alike), each
                     // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
                     // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
                     // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
                     if (deep > 0f)
                     {
-                        float room = Mathf.Lerp(0.24f, 0.34f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
+                        float room = Mathf.Lerp(0.25f, 0.34f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
                         m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
                         m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
                         m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
                         m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 1.2f, deep));
+                        // (face 40 r2: the hue her brows take her lit skin toward (heroine_paint_mul.gdshader's deep_tint, linear),
+                        // found against the Look's night grade, which takes a neutral or cool dark to mauve and her skin's own warm
+                        // light a warm one to red: a near-neutral warm for black, a yellow-brown for a brown or blonde, an orange-
+                        // brown for a copper)
+                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+                        var tint = new Vector3(1f, 0.95f, 0.55f).Lerp(new Vector3(1f, 0.85f, 0.4f), wc).Lerp(new Vector3(1f, 0.75f, 0.4f), wr);
+                        m.SetShaderParameter("deep_tint", tint);
                     }
                     // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
                     if (SurvivorUnchained.Args.Get("brow-set") is string bs)

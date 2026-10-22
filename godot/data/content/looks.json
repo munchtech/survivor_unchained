@@ -143,7 +143,7 @@
  "hairHighlights": [
   {"id": "copper", "name": "Copper", "color": "#9c5a2e"},
   {"id": "auburn", "name": "Auburn", "color": "#8a2c18"},
-  {"id": "honey", "name": "Honey", "color": "#b4884a", "strength": 1.5},
+  {"id": "honey", "name": "Honey", "color": "#b4884a", "strength": 3},
   {"id": "gold", "name": "Gold", "color": "#d6b46c"},
   {"id": "platinum", "name": "Platinum", "color": "#f4f3ef", "share": 2},
   {"id": "ash", "name": "Ash", "color": "#9a9894"}
