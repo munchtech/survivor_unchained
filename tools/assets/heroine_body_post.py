@@ -17,7 +17,7 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
                                                                                  [outfit's bust_shell]
   4. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
      follow, records re-keyed (face 36)                                          [heroine_neck_shape]
-  5. heroine_neck_relief: her collar's fine relief, a normal map on skin_graft  [heroine_neck_relief]
+  5. heroine_neck_relief: her collar's soft relief, a normal map on skin_graft (softened face 37: SOFT)  [heroine_neck_relief]
   6. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]

@@ -15,6 +15,7 @@ no relief, lies over the graft from there up). Godot hands a glb material's norm
 `relief` (People.Skin: has_relief), so it is one map for every skin tone; her pores still go on over it.
 
     python tools/assets/heroine_neck_relief.py <heroine.glb in> <heroine.glb out> [--png out.png]
+    python tools/assets/heroine_neck_relief.py --remove <heroine.glb>   (takes it off again, e.g. before a re-run with new factors)
 Then reimport. Done-mark `heroine_neck_relief`; runs after heroine_neck_shape (it reads the shaped skin).
 """
 import io
@@ -41,6 +42,17 @@ CLAV_FINE = ((15, 1.577, 0.5, 3.5), (25, 1.572, 1.1, 3.8), (40, 1.566, 1.3, 4.0)
 # the SCM's sternal tendons: (theta deg round her neck from her front, rest y, height mm, sigma mm)
 SCM_FINE = ((26, 1.598, 0.0, 3.2), (20, 1.592, 0.9, 3.2), (14, 1.585, 1.1, 3.2), (10, 1.579, 0.8, 3.2),
             (8, 1.574, 0.0, 3.2))
+# (face 37, 22 Oct, max judge PASS at the close-ups and the Look: at the heights and sigmas above (steepest 15.6 deg) the
+# SCM tendons read as raised veins at the notch and the clavicle edge as a scratch, the owner's "vein things". So both
+# are laid softer: the clavicle 2.5x broader at 0.6x height, the SCM 2.5x broader at 0.35x (steepest 3.8 deg). The
+# switches --clav-h/--clav-s/--scm-h/--scm-s set these factors to try others.)
+SOFT = {"clav_h": 0.6, "clav_s": 2.5, "scm_h": 0.35, "scm_s": 2.5}
+
+
+def _soft(paths, h, sg):
+    return tuple((p0, p1, p2 * h, p3 * sg) for p0, p1, p2, p3 in paths)
+
+
 SCM_TOP = (1.588, 1.596)          # rest y: the tendons whole below the first, none past the second
 EDGE_FADE = (0.006, 0.016)        # flat within the first of her graft's edges, whole past the second
 GREEN = 1                         # (green toward the image's top, glTF and Blender's OpenGL convention, as the hero's baked relief; -1 flips it)
@@ -48,7 +60,8 @@ PAD = 6                           # texels the islands are padded by
 
 
 def _paths():
-    return ((CLAV_FINE, "front", None), (SCM_FINE, "neck", SCM_TOP))
+    return ((_soft(CLAV_FINE, SOFT["clav_h"], SOFT["clav_s"]), "front", None),
+            (_soft(SCM_FINE, SOFT["scm_h"], SOFT["scm_s"]), "neck", SCM_TOP))
 
 
 def _grad(X, M):
@@ -180,6 +193,44 @@ def _embed(path, png, material="skin_graft", name="heroine_graft_relief"):
     open(path, "wb").write(b"glTF" + struct.pack("<II", 2, 12 + len(body)) + body)
 
 
+def remove(path, material="skin_graft", name="heroine_graft_relief"):
+    """The relief taken off again (face 37, 22 October 2026, to lay it again softer: SOFT). Drops the
+    material's normal texture and, where _embed left them last, its texture, image, bufferView and bytes; the
+    done-mark becomes heroine_neck_relief_removed. heroine_neck_shape's geometry stays."""
+    d = open(path, "rb").read()
+    jl = struct.unpack("<I", d[12:16])[0]
+    g = json.loads(d[20:20 + jl])
+    b0 = 20 + jl
+    bl = struct.unpack("<I", d[b0:b0 + 4])[0]
+    binc = bytearray(d[b0 + 8:b0 + 8 + bl])
+    mat = [m for m in g["materials"] if m.get("name") == material][0]
+    ti = mat.pop("normalTexture", {}).get("index")
+    if ti is None:
+        print("NECK_RELIEF: no relief on %s" % path)
+        return
+    ii = g["textures"][ti]["source"]
+    vi = g["images"][ii].get("bufferView")
+    used = [m for m in g["materials"] for k, t in m.items() if isinstance(t, dict) and t.get("index") == ti] +         [m for m in g["materials"] for t in (m.get("pbrMetallicRoughness") or {}).values() if isinstance(t, dict) and t.get("index") == ti]
+    last = (ti == len(g["textures"]) - 1 and ii == len(g["images"]) - 1 and vi == len(g["bufferViews"]) - 1
+            and g["images"][ii].get("name") == name and not used)
+    if last:
+        bv = g["bufferViews"].pop()
+        g["images"].pop()
+        g["textures"].pop()
+        binc = binc[:bv["byteOffset"]]
+        while len(binc) % 4:
+            binc.append(0)
+        g["buffers"][0]["byteLength"] = len(binc)
+    ex = g.setdefault("asset", {}).setdefault("extras", {})
+    ex.pop(MARK, None)
+    ex[MARK + "_removed"] = {"bytes_dropped": bl - len(binc)}
+    js = json.dumps(g, separators=(",", ":")).encode()
+    js += b" " * ((4 - len(js) % 4) % 4)
+    body = struct.pack("<I", len(js)) + b"JSON" + js + struct.pack("<I", len(binc)) + b"BIN\x00" + bytes(binc)
+    open(path, "wb").write(b"glTF" + struct.pack("<II", 2, 12 + len(body)) + body)
+    print("NECK_RELIEF: removed from %s (%s)" % (path, "image dropped" if last else "map unhooked, image left"))
+
+
 def run(path_in, path_out, png_out=None, report=True):
     if os.path.abspath(path_in) != os.path.abspath(path_out):
         shutil.copyfile(path_in, path_out)
@@ -197,7 +248,7 @@ def run(path_in, path_out, png_out=None, report=True):
     if png_out:
         open(png_out, "wb").write(buf.getvalue())
     _embed(path_out, buf.getvalue())
-    _mark(path_out, MARK, {"size": SIZE, "max_tilt_deg": round(tilt, 1)})
+    _mark(path_out, MARK, {"size": SIZE, "max_tilt_deg": round(tilt, 1), "soft": dict(SOFT)})
     if report:
         print("NECK_RELIEF: %d texels carry relief, steepest %.1f deg; %d KB png on skin_graft"
               % (live, tilt, len(buf.getvalue()) // 1024))
@@ -205,5 +256,12 @@ def run(path_in, path_out, png_out=None, report=True):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
+    # (--clav-h/--clav-s/--scm-h/--scm-s F: the softening factors (SOFT) set otherwise, to try)
+    for k in SOFT:
+        if "--" + k.replace("_", "-") in a:
+            SOFT[k] = float(a[a.index("--" + k.replace("_", "-")) + 1])
+    if "--remove" in a:
+        remove(a[a.index("--remove") + 1])
+        sys.exit(0)
     png = a[a.index("--png") + 1] if "--png" in a else None
     run(a[0], a[1], png)
