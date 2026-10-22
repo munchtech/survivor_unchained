@@ -21,11 +21,14 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   4. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
      follow, records re-keyed (face 36)                                          [heroine_neck_shape]
   5. heroine_neck_relief: her collar's soft relief, a normal map on skin_graft (softened face 37: SOFT)  [heroine_neck_relief]
-  6. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
+  6. heroine_arm_shape --art: her upper arms slimmer on the inner side (girth ~32 -> ~28.5 cm at 25-50%, tapering to
+     the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
+     records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
+  7. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
      sets it while the reaver's top is worn) (armor 15 w1)                                    [worn_reaver]
-  7. heroine_lod: the play LODs of every outfit, from the final body and pieces.
+  8. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]
 """
@@ -80,6 +83,8 @@ def main(a):
         run(os.path.join(HERE, "heroine_neck_shape.py"), "--art", art)
     if "heroine_neck_relief" not in m:
         run(os.path.join(HERE, "heroine_neck_relief.py"), glb, glb)
+    if "heroine_arm_shape" not in m:
+        run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     if "--no-lod" not in a:
