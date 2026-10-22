@@ -67,16 +67,22 @@ TAPER = 0.0045                    # (m, at her sides, mid-neck)
 TAPER_POW = 1.5
 TAPER_Y = ((1.560, 0.0), (1.580, 0.25), (1.600, 0.6), (1.622, 1.0), (1.645, 1.0), (1.660, 0.45), (GONION_Y, 0.0))
 # 3. form (mm): paths of (theta deg round her neck from her front, + her left; rest y; height; sigma), her left
-SCM = ((100, 1.672, 0.0, 14.0), (88, 1.655, 1.0, 14.0), (70, 1.638, 1.3, 14.0), (50, 1.620, 1.4, 13.0),
-       (32, 1.603, 1.3, 11.0), (18, 1.590, 1.2, 9.0), (12, 1.582, 0.6, 8.0))
-BEHIND = ((118, 1.652, 0.0, 13.0), (104, 1.632, -0.7, 13.0), (92, 1.612, -0.9, 13.0), (84, 1.596, -0.7, 13.0))
-# clavicle: (x mm from her midline, rest y, height, sigma) on her front skin
-CLAV = ((15, 1.577, 0.5, 8.0), (25, 1.572, 1.2, 9.0), (40, 1.566, 1.2, 10.0), (60, 1.560, 1.1, 12.0),
-        (80, 1.557, 1.1, 13.0), (100, 1.555, 1.1, 13.0), (120, 1.555, 0.9, 13.0), (140, 1.556, 0.5, 13.0),
-        (155, 1.558, 0.0, 13.0))
+SCM = ((100, 1.672, 0.0, 15.0), (88, 1.655, 1.6, 15.0), (70, 1.638, 2.4, 15.0), (50, 1.620, 2.6, 14.0),
+       (32, 1.603, 2.5, 13.0), (18, 1.590, 2.2, 11.0), (12, 1.582, 1.4, 9.0))
+BEHIND = ((118, 1.652, 0.0, 14.0), (104, 1.632, -1.5, 14.0), (92, 1.612, -1.9, 14.0), (84, 1.596, -1.5, 14.0))
+# clavicle: (x mm from her midline, rest y, height, sigma) on her front skin (round 2: about 3 mm, sigma widened
+# laterally where her collar's edges run 12-15 mm, so the mesh carries it as a broad form, not a beaded line)
+CLAV = ((15, 1.577, 1.4, 8.0), (25, 1.572, 2.7, 9.0), (40, 1.566, 3.0, 10.0), (60, 1.560, 3.0, 12.0),
+        (80, 1.557, 2.8, 14.0), (100, 1.555, 2.6, 15.0), (120, 1.555, 2.0, 15.0), (140, 1.556, 1.0, 15.0),
+        (155, 1.558, 0.0, 15.0))
 # blobs: (x mm, rest y, depth mm, sigma x mm, sigma y mm) on her front skin
-BLOBS = (("notch", 0, 1.585, -1.8, 9.0, 7.0), ("keel", 0, 1.607, -2.0, 12.0, 10.0),
-         ("fossa", 62, 1.573, -2.2, 15.0, 10.0))
+BLOBS = (("notch", 0, 1.585, -4.0, 10.0, 8.0), ("keel", 0, 1.607, -3.0, 12.0, 10.0),
+         ("fossa", 62, 1.574, -4.5, 17.0, 11.0))
+# her nape drawn in (m, radially, by max(0, -cos theta) ** NAPE_POW: her neck's front-to-back depth was 1.1-1.15 of
+# its width at mid-neck): a gentle hollow (her neck's lordosis) under her skull, none at her trapezius or her jaw line
+NAPE = 0.0030
+NAPE_POW = 1.5
+NAPE_Y = ((1.585, 0.0), (1.605, 0.6), (1.625, 1.0), (1.645, 1.0), (1.660, 0.45), (GONION_Y, 0.0))
 NSMOOTH = 4                       # rings her normals are smoothed over for the form's direction
 FOLLOW = (0.01, 0.03)             # a piece's point follows the skin under it in full within 1 cm, none past 3
 
@@ -273,7 +279,9 @@ def form_field(X, N, M):
 def taper_field(X):
     th, r, e = _cyl(X)
     g = PchipInterpolator([a for a, _ in TAPER_Y], [b for _, b in TAPER_Y])(np.clip(X[:, 1], TAPER_Y[0][0], TAPER_Y[-1][0]))
-    return -(TAPER * np.clip(g, 0, 1) * np.abs(np.sin(np.radians(th))) ** TAPER_POW)[:, None] * e
+    gn = PchipInterpolator([a for a, _ in NAPE_Y], [b for _, b in NAPE_Y])(np.clip(X[:, 1], NAPE_Y[0][0], NAPE_Y[-1][0]))
+    nape = NAPE * np.clip(gn, 0, 1) * np.maximum(0, -np.cos(np.radians(th))) ** NAPE_POW
+    return -(TAPER * np.clip(g, 0, 1) * np.abs(np.sin(np.radians(th))) ** TAPER_POW + nape)[:, None] * e
 
 
 def windows(X, nrad):
@@ -416,7 +424,7 @@ def correct(path_in, path_out, report=True):
     _rewrite_json(path_out, G.g)
     hy = S.R[:, 1]
     above = (hy > GONION_Y)
-    _mark(path_out, MARK, {"xm": XM, "taper_mm": TAPER * 1000, "gonion_y": GONION_Y, "share_neck": SHARE_NECK,
+    _mark(path_out, MARK, {"xm": XM, "taper_mm": TAPER * 1000, "nape_mm": NAPE * 1000, "round": 2, "gonion_y": GONION_Y, "share_neck": SHARE_NECK,
                            "max_mm": round(float(mv.max()) * 1000, 3)})
     if report:
         print("NECK_SHAPE: %d welded points moved, largest %.2f mm (rest %.2f), mean %.2f; above her gonion line "
