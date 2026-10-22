@@ -743,8 +743,9 @@ public static class People
         // (the lowering and warming done in the shader, `skin_deep`: deep_white 1 = (0.58, 0.50, 0.40) at deep)
         e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
         e.SetShaderParameter("skin_deep", deep);
-        // (deep: the whites lowered half as far (they sat on the iris at the Look), the iris darkened with them)
-        e.SetShaderParameter("deep_white", 0.5f);
+        // (deep: the whites lowered half as far (they sat on the iris at the Look), the iris darkened with them; face 39,
+        // judge j3b: at the Look turned they read a little stark, 0.5 to 1.25 of the way, about a tenth lower and warmer)
+        e.SetShaderParameter("deep_white", 1.25f);
         e.SetShaderParameter("deep_iris", 0.3f);
         e.SetShaderParameter("white_grad", 0.35f);
         e.SetShaderParameter("corner_pink", 0.3f);
@@ -757,6 +758,14 @@ public static class People
         e.SetShaderParameter("low_wet", 1.5f);
         e.SetShaderParameter("low_y", 0.95f);
         e.SetShaderParameter("low_lift", 0.12f);
+        // (face 39, judge j3b: by night (HerEyesNight, the close view's night key) the lids' and corners' shade on
+        // the eye eased 0.6 of itself and the iris lifted 1.8x, held to 0.9 of its colour and warmed to olive: the
+        // fair night close-up's iris read 14-22 of 255, one near-black disc with the pupil, now ~34; deep skin's
+        // eyes left as dark as its face)
+        e.SetShaderParameter("night_lid", 0.6f);
+        e.SetShaderParameter("night_iris", 1.8f);
+        e.SetShaderParameter("night_sat", 0.9f);
+        e.SetShaderParameter("night_warm", 1f);
         // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
         if (SurvivorUnchained.Args.Get("eye-set") is string es)
             foreach (var kv in es.Split(','))
@@ -1827,6 +1836,17 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
                 { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
+    }
+
+    /// <summary>Her eyes by night (heroine_eye.gdshader's night_ease, 0 by day to 1): the lids' shade on them eased
+    /// and the iris lifted (HerEyes' night_*), so under the night key her irises read a dark olive, not black.
+    /// GameCloseUp sets it each frame while its night light is on her.</summary>
+    public static void HerEyesNight(Person p, float k)
+    {
+        if (p.Body != "heroine" || eyeShader == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader) m.SetShaderParameter("night_ease", k);
     }
 
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
