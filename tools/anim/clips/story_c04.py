@@ -115,6 +115,10 @@ def _body_keys():
     return K
 
 
+# How far the right elbow comes in toward her middle while she drinks (0 out, 1 in).
+TUCK = [(96, 0.0), (112, 1.0), (126, 1.0), (132, 0.0)]
+
+
 def _swallows(fr):
     """The head's small lift with each swallow (no throat to bob), degrees of pitch."""
     out = 0.0
@@ -269,7 +273,10 @@ def flask_drink(rig: Rig):
             pos_c = pos_c + (pos_f - pos_c) * w
             blade_c = slerp_dir(blade_c, blade_f, w)
             knuck_c = slerp_dir(knuck_c, knuck_f, w)
-            pole_c = slerp_dir(pole_c, (-0.1, -0.7, 0.7), w)
+            # The elbow in toward her middle only as the flask tips up (it
+            # keeps the elbow at or below the shoulder; earlier, low, it would
+            # press the upper arm into her breast).
+            pole_c = slerp_dir(pole_c, slerp_dir((-0.35, -0.6, 0.7), (-0.1, -0.7, 0.7), float(_ease_between(TUCK, fr, 1))), w)
         pose["hand_r"] = {"pos": tuple(pos_c), "blade": tuple(blade_c), "knuckles": tuple(knuck_c), "pole": tuple(pole_c), "frame": "char"}
         # The left hand: to her teeth for the cork, else in her space.
         pos_l, blade_l, knuck_l, pole_l = _hand_char(CORK_L, fr)

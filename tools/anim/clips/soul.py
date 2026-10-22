@@ -756,8 +756,8 @@ def catch_breath(rig):
     temple = body(stance(0.05), spine=(0, 3, 0), head=(-5, -3, 3),
                   hand_l={"pos": (0.10, 1.555 + hy, 0.11 + hz), "pole": (0.5, -0.8, 0.5), "knuckles": (-0.1, 0.95, 0.2)},
                   hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip")
-    upright = body(stance(0.05), spine=(0, 2, 0), head=(-6, -6, 4),
-                   hand_l={"pos": (0.125, 1.56 + hy, -0.01 + hz), "pole": (0.55, -0.85, 0.3), "knuckles": (-0.15, 0.7, -0.7)},
+    upright = body(stance(0.05), spine=(0, 2, 0), head=(-6, -6, -5),
+                   hand_l={"pos": (0.14, 1.56 + hy, 0.0 + hz), "pole": (0.55, -0.85, 0.3), "knuckles": (-0.15, 0.7, -0.7)},
                    hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip")
     keys = [
         (0, body(stance(0.06), spine=(0, 8, 0), hand_l=arm((-0.02, -0.34, 0.12), (0.6, -0.4, -0.5)),
@@ -776,6 +776,10 @@ def catch_breath(rig):
                   hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
         (93, temple, "auto"),
         (99, upright, "ease"),
+        # Off her hair and forward, so the forearm comes down clear of her breast.
+        (104, body(stance(0.05), spine=(0, 3, 0), head=(-4, -4, -1),
+                   hand_l={"pos": (0.17, 1.40 + hy, 0.25 + hz), "pole": (0.8, -0.5, -0.1), "knuckles": (0.1, 0.8, 0.6)},
+                   hand_r=arm((0.02, -0.365, 0.09), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
         # Down again round the front of her, not back through her shoulder.
         (110, body(stance(0.05), spine=(0, 3, 0), head=(-3, -2, 2),
                    hand_l={"pos": (0.16, 1.24 + hy, 0.20 + hz), "pole": (0.9, -0.3, -0.3), "knuckles": (0.1, 0.55, 0.8)},
