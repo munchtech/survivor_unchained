@@ -8,8 +8,9 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
 
   1. nape (heroine_neck.nape, weights only, merge off), the outfits' points that took those weights follow
      (match_pieces), and the straps' rows evened again (strap_rows.even)       [done-mark heroine_nape]
-  2. breast_sym_post --no-follow: her left breast's inner slope onto her right's mirror; records re-keyed, no piece
-     touched (armor 12, the owner's dent)                                       [breast_sym]
+  2. breast_sym_post --no-follow: her left breast's inner slope onto her right's mirror; records re-keyed, no slot
+     piece touched; the four outfits' points over it follow her skin (armor 14: the bodysuit had kept the old
+     hollow), each outfit marked breast_sym_follow (armor 12, the owner's dent)  [breast_sym]
   3. heroine_neck_shape --art: her neck's taper, SCM, notch, clavicles, left = right; hair, outfits, armor pieces
      follow, records re-keyed (face 36)                                          [heroine_neck_shape]
   4. heroine_neck_relief: her collar's fine relief, a normal map on skin_graft  [heroine_neck_relief]
