@@ -2,6 +2,8 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+**SHOOT RULE (Armor 15):** run `dotnet build SurvivorUnchained.csproj` in godot/ BEFORE shooting, after any merge or C# edit. Godot console runs don't rebuild C#. J4's "new camera" frames really used the old camera DLL. Copies of a branch for verify shoots: `scratchpad\armor\dmshot.sh` (archive, `dotnet build`, `--import`, shoot, remove the copy after a link check).
+
 ## Armor 15 (22 Oct): bust MR READY (bust-15@eb667858); next: the upper-arm sculpt once it merges, then B2
 Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\a36cc4dd-fb3f-4250-b59c-d2116ef79a9a\scratchpad\armor`:
 - r1-r3: the reaver wrap solvers
