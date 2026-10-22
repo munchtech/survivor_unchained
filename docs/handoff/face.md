@@ -2,7 +2,29 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Paused here (Face 35, 21 Oct, coordinator wind-down); next: judge the jaw line + night gloss, then the day neck shape
+## Face 36 (21-22 Oct): "close out her body" MR (face-35), MR READY
+Worktree `.claude/worktrees/face-35`, branch **face-35** (own junction; integration eda25b01 merged: armor's breast_sym + sky_body). F36 = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\9cf2b0ed-abf7-430e-b71e-d9b5f9dd3bd3\scratchpad\face36` (texts backed up to `survivorsunchained_inputs\scratch_face36`). Three max judges (j1-j3, briefs `F36\j*\brief.md`); J3 PASS at round 3 of 3. Tests 1046/0/8. Pre-jaw-blend head paints backed up in `survivorsunchained_inputs\scratch_face35\head_paint_orig_pre_jawblend` (also in git at 8fe913e2^).
+1. **Tone line + jaw outline: PASS (J1, then J2 with sky_body on).** heroine_jaw_blend.py (8fe913e2), skin `rim_down` (144cdeee).
+2. **Night lavender band: PASS.** `--close-rim-spec` 0 on her skin. Her METAL keeps the moon rim through a gear twin (`PlayerView.HerGearLayer` bit 13; `IsMetal` = outfit metal keys or metallic >= 0.5; `--close-rim-gear*`) (f07fb1c5, fdd61d37).
+3. **Neck tube + left lump: PASS (J2/J3).** `tools/assets/heroine_neck_shape.py` (post-step, done-mark `heroine_neck_shape`):
+   - left = right about x +1 mm, neck/jaw 0.85 -> 0.79;
+   - SCM ~2.5 mm, notch 4 mm, clavicle ridge 3 mm + fossa 4.5 mm, nape 3 mm in;
+   - hair, outfits and armor follow; records re-keyed.
+   Plus `heroine_neck_relief.py`: a normal map on skin_graft (clavicle edge, SCM sternal heads). The follow is NOT idempotent: run it once per fresh export.
+4. **Clavicles at the Look: PASS** (same step).
+5. **Ear saturation: PASS.** `tools/assets/heroine_ear_chroma.py` (per-face factors, done-mark json; ear/cheek now 1.03-1.07).
+6. **Gray-blue band under the jaw at the Look 40: PASS.** `People.HerShade` shade_thin 0.75 -> 0.15 (`--shade-thin`).
+7. **Deep skin's cool sheen streaks / violet chest: PASS.** `heroine_skin` `deep_spec` 0.6 / `deep_tint` 0.6 under albedo luminance 0.06-0.16 (`--deep-spec`, `--deep-tint`; shader defaults 1/0).
+8. **The body build's post-steps are now in git:** `tools/assets/heroine_body_post.py` (nape + strap_rows, breast_sym_post --no-follow, neck shape, neck relief, play LODs; done-mark gated). Recipe: full build with NAPE=0, then this, then install, then reimport.
+**Not taken (routed back):** her bare upper arms look heavy at the close-up.
+**Seen by the judges, outside this list:**
+- the hair shell (every frame);
+- deep skin: pale glowing eyes at the day close-up, bright eye whites at the Look (eyes);
+- the arcanist's sleeves and leotard read as plastic;
+- a tiny dark dash on the ear's upper rim at Look 40/80 (a stray hair or paint);
+- the warden's lower skirt plates read violet at night (watch).
+
+## Paused here (Face 35, 21 Oct, coordinator wind-down) (history)
 Worktree `.claude/worktrees/face-35`, branch **face-35** (own junction to its public/assets; integration merged at d151292d). F35 = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\c4134bd3-ebec-4f59-ad97-c6010364bcd4\scratchpad\face35` (texts backed up to `survivorsunchained_inputs\scratch_face35`). Owner frames: `survivorsunchained_inputs\owner_frames_21oct
 eck_tone_line.png` (day town close-up), `neck_weird_night.webp`, `neck_left_lump_zoom.png`, `neck_left_front.png`. Shoot: `F35\shoot.sh <list> <dir>` (one Godot turn); measure: `F35\prof.py` (vertical Oklab profile), `F35
 eg.py F35\cu_regions.json <frames>` (cheek/chin/neck/chest boxes at the 1080 close-up), `F35\jb2\ln.py` (thin-line peak per column). Close-up line: `--quick reaver --sex female --zone waystation --close 1 --idle-after 1 --facing 0 --nohud --hair braid --time day|night [--preset ID] [--close-turn 1.4]`. New debug views: `--skin-set *:dbg_gate=12` (albedo as toned) / `13` (paint alone) with `--tonemap linear --grade off` (b6b3fbd3).
