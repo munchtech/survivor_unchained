@@ -6,12 +6,15 @@ namespace SurvivorUnchained.View;
 /// A small unlit lamp-iron on a chain at the middle of the Warden's chest: the chain runs straight from
 /// the collar to the hang point, and the lantern swings from there as a damped pendulum driven by the
 /// hang point's own world acceleration (spring 30, damping 4, 25 degrees at most). Points are in the
-/// bone's local frame, measured from the ford_warden package's bind pose (spine_03 at (-0.0056, 1.289, -0.113)
-/// tilted 18 degrees: chest front 0.158 m at 1.328 m, hang point 2 cm in front of it, collar 0.13 m at 1.47 m).
+/// package's bind-pose frame (glTF: Y up, metres, front +Z), measured on the ford_warden mesh: his tabard's front
+/// is 0.157-0.166 m out at 1.22-1.30 m and his beard covers the chest above 1.46 m, so the lamp hangs on the
+/// tabard below the beard, its ring 2 cm proud of the cloth, its chain running up under the beard to the collar.
+/// They are turned into the bone's frame through the bone's own rest as the import has it (the glTF's 18 degree
+/// spine_03 tilt did not survive import as the old bone-local offsets assumed: the lamp hung at his belt).
 /// </summary>
 public partial class Pendant : Node3D
 {
-    public static readonly Vector3 Hang = new(0, -0.0533f, 0.2886f), Collar = new(0, 0.0964f, 0.2870f);
+    public static readonly Vector3 Hang = new(0, 1.335f, 0.182f), Collar = new(0, 1.455f, 0.112f);
     const float Spring = 30, Damping = 4, MaxTilt = 25 * Mathf.Pi / 180, LampScale = 0.42f, Drop = 0.09f, G = 9.8f;
     static StandardMaterial3D? chainMat;
     Vector2 tilt, spin;       // world-horizontal tilt (rad) of the lantern's bottom, and its rate
@@ -36,16 +39,18 @@ public partial class Pendant : Node3D
         if (bone == null) { GD.PushWarning("pendant: no chest bone"); return null; }
         var at = new BoneAttachment3D { Name = "PendantAt", BoneName = bone };
         skel.AddChild(at);
+        var toBone = skel.GetBoneGlobalRest(skel.FindBone(bone)).AffineInverse();
+        Vector3 hang = toBone * Hang, collar = toBone * Collar;
         chainMat ??= new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.4f };
-        var d = Collar - Hang;
+        var d = collar - hang;
         var chain = new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = 0.003f, BottomRadius = 0.003f, Height = d.Length(), RadialSegments = 5, Material = chainMat },
-            Position = (Collar + Hang) / 2, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Position = (collar + hang) / 2, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
         chain.Basis = new Basis(new Quaternion(Vector3.Up, d.Normalized()));
         at.AddChild(chain);
-        var p = new Pendant { Position = Hang };
+        var p = new Pendant { Position = hang };
         at.AddChild(p);
         return p;
     }
