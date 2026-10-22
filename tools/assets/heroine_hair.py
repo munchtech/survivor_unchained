@@ -1296,9 +1296,17 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False, groom=False
                 # over: the inner layer matte, the middle layer's cards matte at random, SHINE_MID of them (the
                 # shader's matte mark is all or nothing per card: a partial shine would need it graded, see S7))
                 rm_ = np.random.default_rng(3908 + len(out)).random(S_)
-                zone = rm_ < (1.0 if len(out) == 1 else SHINE_MID)
+                zone = rm_ < (1.0 if len(out) == 1 else EDGE.get("shine_mid", SHINE_MID))
                 c_["matte"] = np.repeat(zone, K3)
                 print("  shine by depth: layer %d, %d of %d cards matte" % (len(out) - 1, zone.sum(), S_))
+            elif EDGE is not None and EDGE.get("temple_matte"):
+                # (r7, the ponytail's pale criss-cross tuft over her ear at lk40: its gathered cards (not the cap
+                # or fine hairs: checked by colour) rooted before and over her ear, crossing as they go back, each
+                # throwing its shine. Those rooted 55-115 deg round and under 3 cm over her ear's top: matte)
+                th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+                zone = (th_ > 55) & (th_ < 115) & (pts[:, 2] < float(HP[EAR, 2].max()) + 0.03)
+                c_["matte"] = np.repeat(zone, K3)
+                print("  temple matte: layer %d, %d cards" % (len(out) - 1, zone.sum()))
             elif os.environ.get("BRAID_UNDERMATTE", "1") == "1" and len(out) <= 2 and vol:
                 rm_ = np.random.default_rng(3908 + len(out)).random(S_)
                 th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
@@ -1819,7 +1827,7 @@ def style_pixie():
         for c in layers[:3]:
             K3 = 3 * 12
             r0 = c["at"].reshape(-1, K3, 3)[:, 0]
-            c["alpha"] = np.repeat(np.clip((rise(r0) - hl_jit(r0)) / 0.003, 0, 1), K3)
+            c["alpha"] = np.repeat(np.clip((rise(r0) - hl_jit(r0)) / 0.007, 0, 1), K3)   # (over 7 mm: at 3 a cut notch at her temple)
             print("  ears: %d cards cut short" % clear_ears(c, 12))
         layers += _keep_rng(lambda: hairline_hairs(comb_pixie, sides=no_part, low=low_, fine=True))
         print("  ears (fine hairline): %d cut short" % clear_ears(layers[-3], 8))
@@ -2031,7 +2039,9 @@ def cap(comb, sides=part_side):
     if EDGE is not None and EDGE.get("cap"):
         # (r7: under the hairline band only skin and the band's strands over the first few millimetres, then
         # the cap; not one opacity fade from the edge, the cap's rim)
-        fade = np.clip((edge - EDGE["cap"][0]) / (EDGE["cap"][1] - EDGE["cap"][0]), 0, 1)
+        if EDGE.get("band"):                                       # (where the band is, eased out over 15 deg past it)
+            a0 = EDGE["cap"][0] * np.clip((EDGE["band"][1] + 15.0 - np.degrees(np.abs(theta))) / 15.0, 0, 1)
+            fade = np.clip((edge - a0) / (EDGE["cap"][1] - a0), 0, 1)
     # (face 38 r3, braid: a contact shade on her forehead under it, its blue
     # (the shader's `contact`): ~0.12 dark over the 5 mm under her hairline,
     # to 0.2 of her hair's tint in its last 3 mm, gone 3 mm into the fade)
@@ -2306,9 +2316,9 @@ EDGE_CFG = {
     # full; was 0-11 mm); front/back: crown outline clusters; L, ang: their length and angle off the mass; clear:
     # how far past her outline each stands (mm); frizz: short strands over the outline zone; shine: the under
     # layers' shine by depth (gathered styles).
-    "braid": dict(band=(0.0, 100.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=True),
-    "ponytail": dict(band=(0.0, 100.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=True),
-    "pixie": dict(band=(42.0, 112.0), cap=(0.003, 0.012), front=5, back=2, L=(0.018, 0.028), ang=(20.0, 40.0), clear=(3.0, 6.0), frizz=55, shine=False, jit_to=100.0),
+    "braid": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=True),
+    "ponytail": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=False, temple_matte=True),   # (shine by depth cost its lk40 gloss, 70.0 to 63.4, no streak to cure)
+    "pixie": dict(band=None, cap=None, front=5, back=2, L=(0.018, 0.028), ang=(20.0, 40.0), clear=(3.0, 6.0), frizz=55, shine=False, jit_to=100.0),
 }
 BAND = dict(spacing=0.0028, depth=0.008, width=(0.0024, 0.0032), L=(0.012, 0.02), alpha=(0.65, 0.95), keep=((-0.0015, 0.0, 0.003, 0.008), (0.15, 0.3, 0.6, 1.0)), root_fade=(0.0015, 0.003))
 
@@ -2495,10 +2505,9 @@ def hairline_band(comb, sides, cfg, rng, low=None):
     s_ = np.clip(c["arc"] / np.maximum(c["length"], 1e-6), 0, 1)
     tf = np.clip((1 - s_) / 0.35, 0, 1)
     c["alpha"] = np.repeat(rng.uniform(*BAND["alpha"], n), 3 * K) * fin * fin * (3 - 2 * fin) * tf * tf * (3 - 2 * tf)
-    # (matte over her front only (no pale lattice there, r6); at her temples and sides shine as the hair by
-    # them does: matte there they read as a dark stripe down her temple at lk40)
-    c["blunt"], c["lit"] = True, True
-    c["matte"] = np.repeat(th[keep] < 35.0, 3 * K)
+    # (matte, base colour: no pale lattice at her front (r6). Within 45 degrees of her front only: run on down
+    # her temples (to 100-118) they read as a pale beaded rope at lk40 lit, a dark stripe matte)
+    c["blunt"], c["lit"], c["matte"] = True, True, True
     print("  hairline band: %d cards (%d rooted within 3 mm of the edge), roots to %.0f mm past the jittered edge, %.0f-%.0f deg" % (
         n, int((rj < 0.003).sum()), BAND["depth"] * 1000, cfg["band"][0], cfg["band"][1]))
     return c
