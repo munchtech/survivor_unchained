@@ -1592,6 +1592,13 @@ public static class People
         // 0.015, portrait's 0.051); gated by each lamp's light at the point, it went warm (0.040) but the key's weak
         // light along her jaw's edge took her paint's colour too, an orange band. --shade-tint off | ndl | light |
         // soft (the default) and --shade-gate FROM,TO, for judging them (pictures).)
+        // (her collar's relief: --relief-amount A its slopes' strength, --relief-rough R her skin that much rougher on them,
+        // so its sheen spreads: heroine_skin.gdshader's relief_amount and relief_rough)
+        m.SetShaderParameter("relief_amount", (float)SurvivorUnchained.Args.Num("relief-amount", 1f));
+        m.SetShaderParameter("relief_rough", (float)SurvivorUnchained.Args.Num("relief-rough", 0f));
+        // (deep skin's sheen, heroine_skin.gdshader's deep_spec and deep_tint: --deep-spec S, --deep-tint T)
+        m.SetShaderParameter("deep_spec", (float)SurvivorUnchained.Args.Num("deep-spec", 0.6f));
+        m.SetShaderParameter("deep_tint", (float)SurvivorUnchained.Args.Num("deep-tint", 0.6f));
         var mode = SurvivorUnchained.Args.Get("shade-tint") is string st && st != "" ? st : "soft";
         if (mode == "off") return;
         var b = BodyTone(look);
@@ -1607,6 +1614,11 @@ public static class People
         m.SetShaderParameter("shade_by_soft", mode == "soft" ? 1f : 0f);
         m.SetShaderParameter("shade_from", gate.X);
         m.SetShaderParameter("shade_to", gate.Y);
+        // (her jaw's underside keeps most of that richness: at the shader's 0.75 the shade under her jaw at the Look,
+        // turned 40, was a grey band (Oklab C 2.1-3.3 at L 34-37, hue 36-46, against her lit neck's 6.2 at hue 55),
+        // read as stubble (judge J1, face 36); at 0.15 C 5.0-5.8, hue 50. Turned 80 (the orange wedge the 0.75 was for)
+        // C 6.0 at L 38 against her lit neck's 4.8. The play camera unchanged (mean 0.05 of 255). --shade-thin X: another.)
+        m.SetShaderParameter("shade_thin", (float)SurvivorUnchained.Args.Num("shade-thin", 0.15f));
     }
 
     static Vector3 HerAmbient(Look look)

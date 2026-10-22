@@ -227,6 +227,11 @@ varying float neck_w;
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
 uniform bool has_relief = false;
+// (her collar's relief (heroine_neck_relief.py): its slopes' strength, and how much rougher her skin is on them, so the
+// sheen on a slope spreads; sharp, on deep skin the clavicle's edge and the tendons beside the notch read as ashy
+// whitish streaks, judge J2, face 36. 1 and 0: as the hero's.)
+uniform float relief_amount = 1.0;
+uniform float relief_rough = 0.0;
 // A man's shaved shadow (the hero's: People.HisShadow): where his beard and
 // his hair grow (shadow_mask, red his beard's ground, green his scalp's),
 // each as dark as chosen, of the hair's own colour; stubble, not a stain:
@@ -317,6 +322,7 @@ uniform float thin_map = 0.0;
 // (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
 // 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
 varying float front_rim;
+varying float rim_dn;
 // Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
 // its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
 // ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
@@ -350,6 +356,14 @@ uniform float thin_to = 0.75;
 // Her rim (`rim`) kept to where the lamp reaches her (rim_gate: smoothstep(0, 0.3, ndl)), and how much of her colour.
 uniform float rim_gate = 0.0;
 uniform float rim_tint = 0.6;
+// (her rim kept off skin facing down (world normal y under -rim_down_from, none past -rim_down_to), from every lamp:
+// along her jaw's lower edge, where her skin turns away from the camera, it lay as a thin pale outline from chin to
+// ear over her neck, by day and night, turned or not (face 35: own day close-up x 945 47 L over a 34-36 L neck, now
+// 34; the turned close-up's 50 L, now 32; her cheeks and chin within 0.5 L; with only lamps above gated, the night
+// fire's left a 5 L line). 0: as before.)
+uniform float rim_down = 1.0;
+uniform float rim_down_from = 0.3;
+uniform float rim_down_to = 0.5;
 // The sheen a lamp behind her gives, against one in front (People.HerBackSpec): skin's fine relief breaks up a light
 // that grazes it from behind; at full, the cool rim lamp lay over her collarbones and upper chest as a lilac sheen.
 uniform float back_spec = 1.0;
@@ -385,6 +399,14 @@ uniform float spec_cap = 0.2;
 // (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
 // cheek at the Look, face 32 r2: a gold sheen under 0.8)
 uniform float metal_cap = 0.8;
+// (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
+// clavicle and across her chest as whitish-grey, violet under a cool lamp ("an ashy smear", judge J2, face 36; with
+// spec_cap 0 her chest's hue 25 against her face's 39, at 0.2 -14). Where her albedo's luminance is under deep_lum.x (all
+// of it) to deep_lum.y (none), her lamps' sheen is deep_spec of itself and takes deep_tint of her albedo's own hue (the
+// cap never held there: at 0.2 or 0.1 the same). 1 and 0: none, as the hero's.)
+uniform float deep_spec = 1.0;
+uniform float deep_tint = 0.0;
+uniform vec2 deep_lum = vec2(0.06, 0.16);
 varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
@@ -511,10 +533,12 @@ void fragment() {
 			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead) * tk) * mix(1.0, ls, ws * mix(scalp_dark_min, 1.0, tk)), vec3(1.0));
 		}
 	}
+	float relief_slope = 0.0;
 	if (has_relief) {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
 		// normal map): the pores' slopes added to the body's, at their depth.
-		vec2 a = texture(relief, UV).xy * 2.0 - 1.0;
+		vec2 a = (texture(relief, UV).xy * 2.0 - 1.0) * relief_amount;
+		relief_slope = length(a);
 		vec2 b = (q.xy * 2.0 - 1.0) * depth;
 		vec3 n = normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a)))));
 		NORMAL_MAP = vec3(n.xy * 0.5 + 0.5, 1.0);
@@ -528,6 +552,7 @@ void fragment() {
 	float rmv = rough_channel == 0 ? rm.r : (rough_channel == 1 ? rm.g : (rough_channel == 2 ? rm.b : (rough_channel == 3 ? rm.a : rm.r)));
 	ROUGHNESS = clamp(mix(seam_rough, rough * rmv, hw) + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	ROUGHNESS = mix(ROUGHNESS, clamp(paint_rough + (q.a - 0.5) * 0.1, 0.0, 1.0), pa);
+	ROUGHNESS = clamp(ROUGHNESS + relief_rough * smoothstep(0.0, 0.12, relief_slope), 0.0, 1.0);
 	METALLIC = paint_metal * pa;
 	// (no sheen where her head's own shade is deep: in the crease where her
 	// lips meet and the mouth behind, the rim light's reflection on her lips'
@@ -544,8 +569,9 @@ void fragment() {
 	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
-	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
+	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
+	rim_dn = rim_down * smoothstep(rim_down_from, rim_down_to, -wd);
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone)
 		* (1.0 - shade_thin * smoothstep(thin_from, thin_to, -wd));
 	soft_w = 1.0 - fm.b;
@@ -569,6 +595,7 @@ void fragment() {
 	}
 	ALBEDO *= sky_w;   // (after the mouth's own colour: light() divides every lamp's light by it, the mouth's too)
 	SPECULAR *= sky_w;   // (the sky's sheen on her too: her lamps' sheen is light()'s own, from `sheen`)
+	vec3 alb_dbg = ALBEDO / max(sky_w, 1e-3);
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
@@ -579,6 +606,8 @@ void fragment() {
 	// (dbg_gate 14: red her world normal's y (0.5 + y/2), green its facing of the lens (n.v), blue 1 for scale (dent d2);
 	// 15: her sky share, sky_w, emitted grey, 1 white)
 	if (dbg_gate > 13.5) { ALBEDO = vec3(0.0); EMISSION = 0.25 * (dbg_gate > 14.5 ? vec3(sky_w) * 4.0 : vec3(wd * 0.5 + 0.5, clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.0)); }
+	// (dbg_gate 12: her albedo as toned, emitted; 13: her paint alone, emitted (with --tonemap linear --grade off; face 35))
+	else if (dbg_gate > 11.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = dbg_gate > 12.5 ? texture(paint, UV).rgb : alb_dbg; }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -650,6 +679,7 @@ void light() {
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
+	rim_light *= 1.0 - rim_dn;
 	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
@@ -665,6 +695,9 @@ void light() {
 		vec3 f = f0 + (f90 - f0) * schlick(c_ldh);
 		vec3 spec = mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
+		float alum = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
+		float dk = (1.0 - smoothstep(deep_lum.x, deep_lum.y, alum)) * (1.0 - METALLIC);
+		spec = mix(spec, spec * ALBEDO / max(alum, 1e-3), deep_tint * dk) * mix(1.0, deep_spec, dk);
 		float sl = max(max(spec.r, spec.g), spec.b);
 		// (gold leaf's glint let through: held under her skin's cap, the gilt read as dull olive, never gold)
 		float cap = mix(spec_cap, metal_cap, METALLIC);
