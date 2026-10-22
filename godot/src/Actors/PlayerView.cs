@@ -60,8 +60,14 @@ public partial class PlayerView : Node3D
     /// strawberry blonde (G1 r4). --close-rim-hair: her hair on HerLayer with the rest of her, as before.</summary>
     public const uint HerHairLayer = 1u << 12;
     static readonly bool RimHair = Args.Has("close-rim-hair");
-    /// <summary>HerLayer and HerHairLayer: every light that lights her on her own layer takes both.</summary>
-    public const uint HerLayers = HerLayer | HerHairLayer;
+    /// <summary>Her gear's own layer (14) while she is on hers: everything of her that is neither her skin nor her hair
+    /// (weapon, armor, outfit, buckles), so the close view's moon rim can keep its sheen on metal and none on her skin
+    /// (GameCloseUp: with the rim's sheen off her neck's lavender band went, but her axe head went flat black, judge J1).
+    /// --close-rim-gear off: her gear on HerLayer with her skin, as before.</summary>
+    public const uint HerGearLayer = 1u << 13;
+    static readonly bool GearOwn = Args.Get("close-rim-gear") != "off";
+    /// <summary>HerLayer, HerHairLayer and HerGearLayer: every light that lights her on her own layer takes all three.</summary>
+    public const uint HerLayers = HerLayer | HerHairLayer | HerGearLayer;
     /// <summary>True: her meshes on HerLayer, not on layer 2 (GameCloseUp, the close view by night).</summary>
     public bool OwnLayer;
     bool ownShown;
@@ -633,14 +639,28 @@ public partial class PlayerView : Node3D
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
 
+    /// <summary>True when any of a mesh's surfaces is her skin (heroine_skin.gdshader).</summary>
+    static bool IsSkin(GeometryInstance3D g)
+    {
+        if (g is not MeshInstance3D m || m.Mesh == null) return false;
+        for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
+            if (m.GetActiveMaterial(s) is ShaderMaterial sm && sm.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true) return true;
+        return false;
+    }
+
     static void Relayer(Node n, bool own, List<MeshInstance3D> hair)
     {
         foreach (var c in n.GetChildren())
         {
             if (c is GeometryInstance3D g)
             {
-                uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer : HerLayer;
-                if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | mine;
+                uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer
+                    : GearOwn && own && (g.Layers & 2u) != 0 && !IsSkin(g) ? HerGearLayer : HerLayer;
+                // (her weapon is the world's (layer 1), not people's: it keeps that and takes her gear's layer too, so her own
+                // lamps (the night key, the moon rim's gear twin) reach it; without them it was flat black by night, judge J1)
+                if (GearOwn && (g.Layers & 1u) != 0 && (g.Layers & 2u) == 0)
+                    g.Layers = own ? g.Layers | HerGearLayer : g.Layers & ~HerGearLayer;
+                else if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | mine;
                 else if (!own && (g.Layers & HerLayers) != 0) g.Layers = (g.Layers & ~HerLayers) | 2u;
             }
             Relayer(c, own, hair);

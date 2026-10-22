@@ -129,6 +129,13 @@ public partial class Game
             closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = CloseRimSpec, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
+        // Its twin on her gear (PlayerView.HerGearLayer: weapon, armor, buckles), the same light with the sheen her skin
+        // no longer takes: with the rim's sheen at 0 her axe head went flat black (judge J1, face 36).
+        if (closeRimGear == null || !IsInstanceValid(closeRimGear) || closeRimGear.GetParent() != scene)
+        {
+            closeRimGear = new SpotLight3D { LightColor = closeRim.LightColor, SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerGearLayer, LightSpecular = CloseRimGearSpec, LightEnergy = 0 };
+            scene.AddChild(closeRimGear);
+        }
         closeKey.LightColor = night ? CloseKeyColourNight : CloseKeyColourDay;
         float want = lit ? (night ? CloseKeyNight : CloseKey) * day : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
@@ -160,6 +167,15 @@ public partial class Game
             closeRim.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeRim.LookAt(chest + new Vector3(0, 0.15f, 0));
         }
+        closeRimGear.LightEnergy = closeRim.LightEnergy * CloseRimGearGain;
+        closeRimGear.Visible = closeRim.Visible && closeRimGear.LightEnergy > 0.005f;
+        if (closeRimGear.Visible)
+        {
+            // (from behind her at CloseRimGearAz off straight behind (the rim's own side by default), as low as the rim)
+            float a = cam.Yaw + Mathf.Pi - CloseRimGearAz, up = Mathf.DegToRad(CloseRimEl);
+            closeRimGear.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
+            closeRimGear.LookAt(chest + new Vector3(0, 0.15f, 0));
+        }
     }
 
     void FireOnHer(bool own, SurvivorUnchained.View.PlayerView pv)
@@ -180,7 +196,7 @@ public partial class Game
         fireFill.Visible = true;
     }
 
-    SpotLight3D? closeKey, closeRim;
+    SpotLight3D? closeKey, closeRim, closeRimGear;
     float skyShown = 1;
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
@@ -198,6 +214,14 @@ public partial class Game
     // pale lavender band, plastic not skin (the owner's night close-up, 21 Oct; face 35: band Oklab L 51 C 4.3 hue -67, at 0
     // L 38.7 hue -5, her warm skin), and read as a lump on her left neck.
     static float CloseRimSpec => Args.Num("close-rim-spec", 0f);
+    // --close-rim-gear-spec S: the rim's sheen on her gear (its twin on PlayerView.HerGearLayer; 0.6, the rim's before face 35).
+    static float CloseRimGearSpec => Args.Num("close-rim-gear-spec", 0.6f);
+    // --close-rim-gear-az R, --close-rim-gear-gain G: the gear twin's angle off straight behind her (radians, + toward her far
+    // cheek as CloseRimAz) and its light against the rim's. -1.2: from behind on her weapon's side, so the axe head at her hip
+    // reads as moonlit steel (mean 9 of 255 by night before, flat black; 17 by the night key alone once on her gear layer; 59
+    // with the twin there); at the rim's own 0.5 it never reached the axe (face 36).
+    static float CloseRimGearAz => Args.Num("close-rim-gear-az", -1.2f);
+    static float CloseRimGearGain => Args.Num("close-rim-gear-gain", 1f);
     // --close-rim-el D: the rim's elevation (degrees).
     static float CloseRimEl => Args.Num("close-rim-el", 10f);
     // --close-rim-az R: the rim's angle off straight behind her (radians, toward her far cheek's side).
