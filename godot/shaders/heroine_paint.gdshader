@@ -66,6 +66,10 @@ uniform vec3 dye_honey = vec3(0.24, 0.1, 0.04);
 uniform float dye_fair_warm = 0.0;
 // (j3: skin lightness (linear, times tone) from which a fair dye takes the platinum's ash-brown, not honey: Sunborn deep 0.056, tan 0.24)
 uniform vec2 dye_ash_skin = vec2(0.14, 0.08);
+// (face 39: how dark against the skin a texel must be to show as hair, from none to whole: the faint texels between
+// her brow's strokes, shown, filled them into one felt block)
+uniform float hair_lo = 0.08;
+uniform float hair_hi = 0.6;
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -148,7 +152,7 @@ void fragment() {
 		// (dye_light 0: as painted, its hue the dye's: Own's brows before face 32)
 		vec3 painted = mix(vec3(1.0), dyev / dl, dye_sat) * mix(hl, skin, soften) * tl;
 		ALBEDO = clamp(mix(painted, dyed_col, dye_light), 0.0, 1.0);
-		ALPHA = p.a * smoothstep(0.08, 0.6, hair) * strength;
+		ALPHA = p.a * smoothstep(hair_lo, hair_hi, hair) * strength;
 	} else {
 		ALBEDO = p.rgb;
 		ALPHA = p.a * strength;

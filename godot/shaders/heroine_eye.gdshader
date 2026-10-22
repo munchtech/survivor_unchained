@@ -142,6 +142,20 @@ uniform float catch_drift = 0.3;
 uniform float far_iso = 0.0;
 // (developer's view: 1 the iris's regions as laid on the ball (red pupil, blue to half, green to its edge); 2 as seen)
 uniform float dbg = 0.0;
+// By night (People.HerEyesNight, the game's night close-up: 0 by day, 1 at night), her lids' and corners'
+// shade on the eye eased by `night_lid` of itself: under the key's low, warm light the shade took the iris to
+// near black (fair cun r3: iris 10-30 of 255, one dark disc with the pupil) and the far eye's outer white to a
+// hard black wedge at the lash line.
+uniform float night_ease = 0.0;
+uniform float night_lid = 0.5;
+// (and her iris lifted by night: green under the fire's orange read near black beside its whites even unshaded,
+// iris 22 of 255 to the whites' 66, where by day it is about half the white)
+uniform float night_iris = 1.0;
+// (its colour held by night to `night_sat` of itself, so lifted it reads a dark olive, not a lit green; and none of
+// it on deep skin, whose eyes stay as dark as its face by night: lifted they glowed out of its shadow side)
+uniform float night_sat = 1.0;
+// (warmed toward olive by `night_warm`: the night grade's blue took a lifted green to teal)
+uniform float night_warm = 0.0;
 
 varying float under_lid;
 varying float corner;
@@ -217,6 +231,9 @@ void fragment() {
 		ir = max(vec3(fl) + (ir - vec3(fl)) * (iris_sat + far_sat * far), vec3(0.0)) * (1.0 - far_iris * far);
 	}
 	ir *= 1.0 - deep_iris * skin_deep;
+	float nk = night_ease * (1.0 - skin_deep);
+	ir *= mix(1.0, night_iris, nk) * mix(vec3(1.0), vec3(1.0, 0.92, 0.6), night_warm * nk);
+	ir = max(mix(vec3(dot(ir, vec3(0.2126, 0.7152, 0.0722))), ir, mix(1.0, night_sat, nk)), vec3(0.0));
 	// (the pupil laid after the iris's tint, so its darkness is its own on a painted iris too; its edge a
 	// little soft, as a lens's is)
 	float pup_in = (1.0 - smoothstep(pupil - 0.02, pupil + 0.015, rr)) * in_iris;
@@ -231,11 +248,12 @@ void fragment() {
 	col = mix(col, col * white_tint * mix(vec3(1.0), vec3(0.784, 0.735, 0.69), skin_deep * deep_white) * lit_below, white);
 	// (pinker toward the corners, where the white is thinner over the blood)
 	col = mix(col, col * vec3(1.0, 0.8, 0.78), corner * white * corner_pink);
-	float shade = (1.0 - lids * under_lid) * (1.0 - 0.5 * corner);
+	float ease = 1.0 - nk * night_lid;
+	float shade = (1.0 - lids * ease * under_lid) * (1.0 - 0.5 * ease * corner);
 	// (the upper lid's own shadow along its margin, on white and iris alike;
 	// held to the eyeball, so the iris moves under it as she looks about)
 	float margin = lid_y + 0.25 * d0.x * d0.x;
-	shade *= 1.0 - lid_shadow * (1.0 - smoothstep(margin, margin + lid_fade, d0.y));
+	shade *= 1.0 - lid_shadow * ease * (1.0 - smoothstep(margin, margin + lid_fade, d0.y));
 	// Small on screen (the game's camera, her eye a pixel or two), the eye
 	// read as one dark mark, as an eye at a distance does (lashes and the
 	// shadow of the lid over it), not a white fleck: the white darkened

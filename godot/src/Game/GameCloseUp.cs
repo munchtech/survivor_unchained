@@ -88,6 +88,7 @@ public partial class Game
             closeDrives = false;
             if (scene?.Player is { } pv0) { pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
             if (scene?.Player is { } pv1 && skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv1.Person, 1); }
+            if (scene?.Player is { } pv2 && eyesNight != 0) { eyesNight = 0; SurvivorUnchained.View.People.HerEyesNight(pv2.Person, 0); }
             if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false;
             return;
         }
@@ -158,6 +159,9 @@ public partial class Game
         // her breast, lit by the sky alone; at 0.45 the pocket between her cups by the gore read as a dent (dent d2).)
         float skyBody = CloseSkyBody < 0 ? -1 : lit && !night ? Mathf.Lerp(1, CloseSkyBody, day) : 1;
         if (sky != 1 || skyShown != 1) { skyShown = sky; SurvivorUnchained.View.People.HerSkyShare(pv.Person, sky, sky == 1 ? -1 : skyBody); }
+        // (her eyes by night, under the night key: the lids' shade eased and the iris lifted, People.HerEyesNight)
+        float en = lit && night ? day : 0;
+        if (en != 0 || eyesNight != 0) { eyesNight = en; SurvivorUnchained.View.People.HerEyesNight(pv.Person, en); }
         air.SetViewExposure(lit && night ? Mathf.Lerp(1, CloseExposureNight, day) : 1);
         air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
@@ -201,6 +205,7 @@ public partial class Game
 
     SpotLight3D? closeKey, closeRim, closeRimGear;
     float skyShown = 1;
+    float eyesNight;
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
     // filled her shadow side almost to her lit side). Art style round 2 (20 Oct): 0.75, rim 3, night key 2.2, under the paint grade.

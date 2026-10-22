@@ -743,8 +743,9 @@ public static class People
         // (the lowering and warming done in the shader, `skin_deep`: deep_white 1 = (0.58, 0.50, 0.40) at deep)
         e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
         e.SetShaderParameter("skin_deep", deep);
-        // (deep: the whites lowered half as far (they sat on the iris at the Look), the iris darkened with them)
-        e.SetShaderParameter("deep_white", 0.5f);
+        // (deep: the whites lowered half as far (they sat on the iris at the Look), the iris darkened with them; face 39,
+        // judge j3b: at the Look turned they read a little stark, 0.5 to 1.25 of the way, about a tenth lower and warmer)
+        e.SetShaderParameter("deep_white", 1.25f);
         e.SetShaderParameter("deep_iris", 0.3f);
         e.SetShaderParameter("white_grad", 0.35f);
         e.SetShaderParameter("corner_pink", 0.3f);
@@ -757,6 +758,14 @@ public static class People
         e.SetShaderParameter("low_wet", 1.5f);
         e.SetShaderParameter("low_y", 0.95f);
         e.SetShaderParameter("low_lift", 0.12f);
+        // (face 39, judge j3b: by night (HerEyesNight, the close view's night key) the lids' and corners' shade on
+        // the eye eased 0.6 of itself and the iris lifted 1.8x, held to 0.9 of its colour and warmed to olive: the
+        // fair night close-up's iris read 14-22 of 255, one near-black disc with the pupil, now ~34; deep skin's
+        // eyes left as dark as its face)
+        e.SetShaderParameter("night_lid", 0.6f);
+        e.SetShaderParameter("night_iris", 1.8f);
+        e.SetShaderParameter("night_sat", 0.9f);
+        e.SetShaderParameter("night_warm", 1f);
         // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
         if (SurvivorUnchained.Args.Get("eye-set") is string es)
             foreach (var kv in es.Split(','))
@@ -780,7 +789,7 @@ public static class People
     /// how much of the dye's colour it takes. (--brows soften,sat tries others.)</summary>
     static readonly (float Soften, float Sat) HerBrows = SurvivorUnchained.Args.Get("brows") is string bw && bw.Split(',') is [var bs, var bt]
         ? (float.Parse(bs, System.Globalization.CultureInfo.InvariantCulture), float.Parse(bt, System.Globalization.CultureInfo.InvariantCulture))
-        : (0.07f, 0.7f);
+        : (0.07f, 1.2f);
 
     /// <summary>Her brows' dye kept in a warm hue band (Oklab degrees; face 33, round 3): the most a
     /// copper's (or any darker hair's) dye may lean to yellow, the most a blonde's, and the least chroma it
@@ -820,9 +829,13 @@ public static class People
     /// warm band and its chroma kept (face 33, round 3: a darkened yellow is olive, and the game's teal night
     /// grade took a copper's brows to olive-brown and a blonde's to khaki; a blonde's brows are golden, a
     /// copper's auburn). A near-black's or a grey's left as it was: they have no hue to keep.</summary>
+    // (face 39: 0.42 to 0.38, with HerBrows' colour 0.7 to 1.2: the owner's "dark brown, thick and felt-textured
+    // against the copper, read as drawn on"; now a shade or two under her copper, its own warmth kept. --brow-dark tries others)
+    static readonly float BrowDark = SurvivorUnchained.Args.Num("brow-dark", 0.38f);
+
     static Color BrowDye(Color b)
     {
-        var dye = b.Darkened(0.42f + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
+        var dye = b.Darkened(BrowDark + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
         var (hL, hC, _) = Oklch(b);
         // (round 4: a fair grey or platinum hair's brows a soft grey-brown, not the warm lerp's tan)
         float wg = Mathf.SmoothStep(0.5f, 0.6f, hL) * (1f - Mathf.SmoothStep(0.02f, 0.05f, hC));
@@ -884,6 +897,19 @@ public static class People
                     // olive; a near-black's 0.85, warmed in the shader instead)
                     m.SetShaderParameter("dye_sat", HerBrows.Sat / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
                     m.SetShaderParameter("rough", 0.8f);
+                    // (face 39: each hair's own darkness counted as it is (gamma 0.5 to 0.9), the darkest less past the
+                    // core (0.5 to 0.25), and the faint texels between strokes left skin (from 0.08 to 0.2): the half-dark
+                    // texels filled the strokes into one felt block)
+                    m.SetShaderParameter("dye_gamma", 0.9f);
+                    m.SetShaderParameter("dye_deep", 0.25f);
+                    m.SetShaderParameter("hair_lo", 0.2f);
+                    m.SetShaderParameter("hair_hi", 0.7f);
+                    // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
+                    if (SurvivorUnchained.Args.Get("brow-set") is string bs)
+                        foreach (var kv in bs.Split(','))
+                            if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out var x))
+                                m.SetShaderParameter(k.Trim(), x);
                     Then(m);
                 }
                 // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
@@ -1812,6 +1838,17 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
                 { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
+    }
+
+    /// <summary>Her eyes by night (heroine_eye.gdshader's night_ease, 0 by day to 1): the lids' shade on them eased
+    /// and the iris lifted (HerEyes' night_*), so under the night key her irises read a dark olive, not black.
+    /// GameCloseUp sets it each frame while its night light is on her.</summary>
+    public static void HerEyesNight(Person p, float k)
+    {
+        if (p.Body != "heroine" || eyeShader == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader) m.SetShaderParameter("night_ease", k);
     }
 
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
