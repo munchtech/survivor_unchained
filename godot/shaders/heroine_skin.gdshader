@@ -307,6 +307,7 @@ uniform float thin_map = 0.0;
 // (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
 // 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
 varying float front_rim;
+varying float rim_dn;
 // Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
 // its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
 // ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
@@ -340,6 +341,14 @@ uniform float thin_to = 0.75;
 // Her rim (`rim`) kept to where the lamp reaches her (rim_gate: smoothstep(0, 0.3, ndl)), and how much of her colour.
 uniform float rim_gate = 0.0;
 uniform float rim_tint = 0.6;
+// (her rim kept off skin facing down (world normal y under -rim_down_from, none past -rim_down_to), from every lamp:
+// along her jaw's lower edge, where her skin turns away from the camera, it lay as a thin pale outline from chin to
+// ear over her neck, by day and night, turned or not (face 35: own day close-up x 945 47 L over a 34-36 L neck, now
+// 34; the turned close-up's 50 L, now 32; her cheeks and chin within 0.5 L; with only lamps above gated, the night
+// fire's left a 5 L line). 0: as before.)
+uniform float rim_down = 1.0;
+uniform float rim_down_from = 0.3;
+uniform float rim_down_to = 0.5;
 // The sheen a lamp behind her gives, against one in front (People.HerBackSpec): skin's fine relief breaks up a light
 // that grazes it from behind; at full, the cool rim lamp lay over her collarbones and upper chest as a lilac sheen.
 uniform float back_spec = 1.0;
@@ -532,8 +541,9 @@ void fragment() {
 	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
-	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
+	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
+	rim_dn = rim_down * smoothstep(rim_down_from, rim_down_to, -wd);
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone)
 		* (1.0 - shade_thin * smoothstep(thin_from, thin_to, -wd));
 	soft_w = 1.0 - fm.b;
@@ -638,6 +648,7 @@ void light() {
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
+	rim_light *= 1.0 - rim_dn;
 	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
