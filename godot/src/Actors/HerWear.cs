@@ -25,6 +25,8 @@ public static class HerWear
         ? w.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : null;
 
     /// <summary>--helm 0|1: her show-helm toggle for the run (over CharacterData.Headgear).</summary>
+    static readonly string[]? HideSlots = Args.Get("hide-slots") is string hs && hs != "1"
+        ? (hs == "all" ? Wear.VisualSlots : hs.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) : null;
     public static readonly bool? HelmOverride = Args.Get("helm") is string hm ? hm != "0" : null;
 
     /// <summary>--dye zone=#hex,zone=#hex: a dye on every piece she wears, over her items' own (zones: metal, trim, leather, cloth, thread).</summary>
@@ -62,6 +64,8 @@ public static class HerWear
         if (Override != null) foreach (var id in Override) w[ix.SlotOf(id)] = id;
         // (her show-helm toggle off: "head" stays empty, which needs the piece path even with nothing worn)
         if (HelmOverride is bool shown) hide = shown ? null : new[] { "head" };
+        // (--hide-slots a,b|all: those slots empty for the run: pictures of her bare body under a garment, same camera)
+        if (HideSlots != null) hide = HideSlots;
         // (a calling whose index row is stood in for (a row's "replaces") takes the piece path too, or her outfit file would
         // draw the replaced piece; --standin 0: the outfit file as before, for an ABAB)
         bool standIn = StandIns && ix.Calling(calling).Any(kv => ix.Find(kv.Value) is { } r && r.Outfit != calling);

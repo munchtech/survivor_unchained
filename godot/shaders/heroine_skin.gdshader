@@ -58,6 +58,16 @@ uniform vec3 ambient_tint = vec3(1.0);
 // her face, level on every plane (it lifted the shade side of her jaw 31.7 to 45 Oklab L), so her face read flat, pale
 // and grey, as under a flash. 1 everywhere else.
 uniform float sky_share = 1.0;
+// Her body's share of it, all but her neck's column (her freckles' map's alpha, 1 less her sky mask: tools/assets/
+// heroine_freckles.py; her head's part always sky_share), -1: sky_share all over. The close view's 0.45 lay on the
+// underside and inner slope of her breast too, which no key reaches (dent d2, 21 Oct: the pocket between her cups by the
+// gore was lit by the sky alone, 50/255 against her other breast's 178). The mask eases over 8 cm of her height up the
+// front of her neck (1.47 to 1.55 m, a smoothstep), about 70 px at the day close-up (the step it adds over any 10 px on a
+// line from her jaw to her sternum is 2.6/255 at most, dent d5), and across 7.5 to 11.5 cm from her midline, 0 within
+// 1 cm of her body's paint: her trapezius and shoulders' tops take her arms' share, no line where the graft ends (dent
+// d6's, on her deltoid, when the map's blue was the mask).
+uniform float sky_body = -1.0;
+varying float sky_w;
 // Her sheen's strength (SPECULAR), for her light() to read.
 varying float sheen;
 // Rougher where the skin is seen edge on: there a light from behind
@@ -439,7 +449,9 @@ void fragment() {
 		} else
 			ALBEDO *= mix(1.0, clamp(lip_floor * dot(tone, vec3(0.2126, 0.7152, 0.0722)) / lum0, 1.0, lip_gain), lip_w);
 	}
-	vec3 fk = texture(freckles, UV).rgb;
+	vec4 fka = texture(freckles, UV);
+	vec3 fk = fka.rgb;
+	sky_w = sky_body < 0.0 || seam_ease ? sky_share : mix(sky_body, sky_share, 1.0 - fka.a);
 	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate) * rig_w;
 	body_back = pow(max(body_tone, vec3(1e-3)), vec3(neck_w - 1.0));
 	ALBEDO *= body_back;
@@ -565,9 +577,9 @@ void fragment() {
 		AO = min(AO, 1.0 - mouth_occ * mo);
 		EMISSION += mcol * mouth_fill * mc * (1.0 - 0.6 * mo);
 	}
-	ALBEDO *= sky_share;   // (after the mouth's own colour: light() divides every lamp's light by it, the mouth's too)
-	SPECULAR *= sky_share;   // (the sky's sheen on her too: her lamps' sheen is light()'s own, from `sheen`)
-	vec3 alb_dbg = ALBEDO / max(sky_share, 1e-3);
+	ALBEDO *= sky_w;   // (after the mouth's own colour: light() divides every lamp's light by it, the mouth's too)
+	SPECULAR *= sky_w;   // (the sky's sheen on her too: her lamps' sheen is light()'s own, from `sheen`)
+	vec3 alb_dbg = ALBEDO / max(sky_w, 1e-3);
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
@@ -575,8 +587,11 @@ void fragment() {
 	if (dbg_gate > 8.5) { EMISSION = vec3(UV, 0.0); }
 	// (dbg_gate 10 and 11: her UV unclipped, blue the scale: 10 its whole, red/blue and green/blue; 11 its sixteenths)
 	if (dbg_gate > 9.5 && dbg_gate < 11.5) { EMISSION = 0.25 * vec3(dbg_gate > 10.5 ? fract(UV * 16.0) : UV, 1.0); }
+	// (dbg_gate 14: red her world normal's y (0.5 + y/2), green its facing of the lens (n.v), blue 1 for scale (dent d2);
+	// 15: her sky share, sky_w, emitted grey, 1 white)
+	if (dbg_gate > 13.5) { ALBEDO = vec3(0.0); EMISSION = 0.25 * (dbg_gate > 14.5 ? vec3(sky_w) * 4.0 : vec3(wd * 0.5 + 0.5, clamp(dot(NORMAL, VIEW), 0.0, 1.0), 1.0)); }
 	// (dbg_gate 12: her albedo as toned, emitted; 13: her paint alone, emitted (with --tonemap linear --grade off; face 35))
-	if (dbg_gate > 11.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = dbg_gate > 12.5 ? texture(paint, UV).rgb : alb_dbg; }
+	else if (dbg_gate > 11.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = dbg_gate > 12.5 ? texture(paint, UV).rgb : alb_dbg; }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -611,7 +626,7 @@ void light() {
 	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
-	vec3 un = 1.0 / (mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w) * max(sky_share, 1e-3));        // (the lamps' light on her as without the tint)
+	vec3 un = 1.0 / (mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {

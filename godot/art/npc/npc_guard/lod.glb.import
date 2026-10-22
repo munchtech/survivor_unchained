@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b7frmbpry4s2t"
-path="res://.godot/imported/lod.glb-ab987b01db0f93054ee491d9542e4876.scn"
+path="res://.godot/imported/lod.glb-fafe856cbbb95ae944650a3839460f83.scn"
 
 [deps]
 
 source_file="res://art/npc/npc_guard/lod.glb"
-dest_files=["res://.godot/imported/lod.glb-ab987b01db0f93054ee491d9542e4876.scn"]
+dest_files=["res://.godot/imported/lod.glb-fafe856cbbb95ae944650a3839460f83.scn"]
 
 [params]
 

@@ -37,9 +37,9 @@
      ],
      "outfit.darkpurple": [
       63314,
-      41904,
+      41908,
       63314,
-      28264
+      28418
      ],
      "outfit.glovepipe": [
       15288,
@@ -55,9 +55,9 @@
      ],
      "outfit.plumleather": [
       118643,
-      57985,
+      58027,
       117932,
-      58606
+      58732
      ],
      "outfit.satin": [
       51780,
@@ -73,27 +73,27 @@
      ],
      "outfit.thread": [
       53655,
-      44508,
+      44495,
       53151,
-      45851
+      45841
      ],
      "body.Material_0.001": [
       42465,
-      18554,
+      18553,
       37541,
-      21003
+      21005
      ],
      "body.skin_graft": [
       6127,
-      2248,
-      5917,
-      3841
+      2253,
+      5920,
+      3860
      ],
      "shadow": [
-      201276,
-      201276,
-      201276,
-      8862
+      201565,
+      201565,
+      201565,
+      8863
      ]
     }
    }
@@ -2726,7 +2726,7 @@
   {
    "bufferView": 33,
    "componentType": 5126,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC3",
    "min": [
     -0.2661939561367035,
@@ -2742,7 +2742,7 @@
   {
    "bufferView": 34,
    "componentType": 5126,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC3",
    "min": [
     -0.9995997548103333,
@@ -2758,38 +2758,38 @@
   {
    "bufferView": 35,
    "componentType": 5126,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC2"
   },
   {
    "bufferView": 36,
    "componentType": 5126,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC2"
   },
   {
    "bufferView": 37,
    "componentType": 5123,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 38,
    "componentType": 5121,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC4"
   },
   {
    "bufferView": 39,
    "componentType": 5126,
-   "count": 21519,
+   "count": 21623,
    "type": "VEC4"
   },
   {
    "bufferView": 40,
    "componentType": 5123,
-   "count": 84792,
+   "count": 85254,
    "type": "SCALAR"
   },
   {
@@ -2933,7 +2933,7 @@
   {
    "bufferView": 57,
    "componentType": 5126,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC3",
    "min": [
     -0.31188514828681946,
@@ -2949,7 +2949,7 @@
   {
    "bufferView": 58,
    "componentType": 5126,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC3",
    "min": [
     -0.9998835921287537,
@@ -2965,38 +2965,38 @@
   {
    "bufferView": 59,
    "componentType": 5126,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC2"
   },
   {
    "bufferView": 60,
    "componentType": 5126,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC2"
   },
   {
    "bufferView": 61,
    "componentType": 5123,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 62,
    "componentType": 5121,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC4"
   },
   {
    "bufferView": 63,
    "componentType": 5126,
-   "count": 37907,
+   "count": 37954,
    "type": "VEC4"
   },
   {
    "bufferView": 64,
    "componentType": 5123,
-   "count": 175818,
+   "count": 176196,
    "type": "SCALAR"
   },
   {
@@ -3140,7 +3140,7 @@
   {
    "bufferView": 81,
    "componentType": 5126,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC3",
    "min": [
     -0.2650291919708252,
@@ -3149,14 +3149,14 @@
    ],
    "max": [
     0.267147421836853,
-    1.620354175567627,
+    1.6203218698501587,
     0.20307697355747223
    ]
   },
   {
    "bufferView": 82,
    "componentType": 5126,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC3",
    "min": [
     -1.0,
@@ -3172,44 +3172,44 @@
   {
    "bufferView": 83,
    "componentType": 5126,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC2"
   },
   {
    "bufferView": 84,
    "componentType": 5126,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC2"
   },
   {
    "bufferView": 85,
    "componentType": 5123,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 86,
    "componentType": 5121,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC4"
   },
   {
    "bufferView": 87,
    "componentType": 5126,
-   "count": 67929,
+   "count": 67919,
    "type": "VEC4"
   },
   {
    "bufferView": 88,
    "componentType": 5125,
-   "count": 137553,
+   "count": 137523,
    "type": "SCALAR"
   },
   {
    "bufferView": 89,
    "componentType": 5126,
-   "count": 15166,
+   "count": 15167,
    "type": "VEC3",
    "min": [
     -0.7080623507499695,
@@ -3225,7 +3225,7 @@
   {
    "bufferView": 90,
    "componentType": 5126,
-   "count": 15166,
+   "count": 15167,
    "type": "VEC3",
    "min": [
     -0.999879777431488,
@@ -3241,101 +3241,101 @@
   {
    "bufferView": 91,
    "componentType": 5126,
-   "count": 15166,
+   "count": 15167,
    "type": "VEC2"
   },
   {
    "bufferView": 92,
    "componentType": 5123,
-   "count": 15166,
+   "count": 15167,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 93,
    "componentType": 5121,
-   "count": 15166,
+   "count": 15167,
    "type": "VEC4"
   },
   {
    "bufferView": 94,
    "componentType": 5126,
-   "count": 15166,
+   "count": 15167,
    "type": "VEC4"
   },
   {
    "bufferView": 95,
    "componentType": 5123,
-   "count": 63009,
+   "count": 63015,
    "type": "SCALAR"
   },
   {
    "bufferView": 96,
    "componentType": 5126,
-   "count": 2726,
+   "count": 2736,
    "type": "VEC3",
    "min": [
     -0.21975603699684143,
     1.3862136602401733,
-    -0.1246504858136177
+    -0.12459296733140945
    ],
    "max": [
     0.22278253734111786,
-    1.6543961763381958,
+    1.6543397903442383,
     0.12098345160484314
    ]
   },
   {
    "bufferView": 97,
    "componentType": 5126,
-   "count": 2726,
+   "count": 2736,
    "type": "VEC3",
    "min": [
     -0.9952001571655273,
     -0.9579882025718689,
-    -0.9996665120124817
+    -0.9999985694885254
    ],
    "max": [
     0.9991483092308044,
-    0.9999833106994629,
-    0.9976859092712402
+    0.9998382329940796,
+    0.9982881546020508
    ]
   },
   {
    "bufferView": 98,
    "componentType": 5126,
-   "count": 2726,
+   "count": 2736,
    "type": "VEC2"
   },
   {
    "bufferView": 99,
    "componentType": 5123,
-   "count": 2726,
+   "count": 2736,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 100,
    "componentType": 5121,
-   "count": 2726,
+   "count": 2736,
    "type": "VEC4"
   },
   {
    "bufferView": 101,
    "componentType": 5126,
-   "count": 2726,
+   "count": 2736,
    "type": "VEC4"
   },
   {
    "bufferView": 102,
    "componentType": 5123,
-   "count": 11523,
+   "count": 11580,
    "type": "SCALAR"
   },
   {
    "bufferView": 103,
    "componentType": 5126,
-   "count": 4897,
+   "count": 4896,
    "type": "VEC3",
    "min": [
     -0.706856906414032,
@@ -3351,7 +3351,7 @@
   {
    "bufferView": 104,
    "componentType": 5126,
-   "count": 4897,
+   "count": 4896,
    "type": "VEC3",
    "min": [
     -0.9997001886367798,
@@ -3367,19 +3367,19 @@
   {
    "bufferView": 105,
    "componentType": 5123,
-   "count": 4897,
+   "count": 4896,
    "type": "VEC4"
   },
   {
    "bufferView": 106,
    "componentType": 5126,
-   "count": 4897,
+   "count": 4896,
    "type": "VEC4"
   },
   {
    "bufferView": 107,
    "componentType": 5123,
-   "count": 26586,
+   "count": 26589,
    "type": "SCALAR"
   }
  ],
@@ -3584,451 +3584,451 @@
   {
    "buffer": 0,
    "byteOffset": 1184908,
-   "byteLength": 258228,
+   "byteLength": 259476,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 1443136,
-   "byteLength": 258228,
+   "byteOffset": 1444384,
+   "byteLength": 259476,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 1701364,
-   "byteLength": 172152,
+   "byteOffset": 1703860,
+   "byteLength": 172984,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 1873516,
-   "byteLength": 172152,
+   "byteOffset": 1876844,
+   "byteLength": 172984,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 2045668,
-   "byteLength": 172152,
+   "byteOffset": 2049828,
+   "byteLength": 172984,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 2217820,
-   "byteLength": 86076,
+   "byteOffset": 2222812,
+   "byteLength": 86492,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 2303896,
-   "byteLength": 344304,
+   "byteOffset": 2309304,
+   "byteLength": 345968,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 2648200,
-   "byteLength": 169584,
+   "byteOffset": 2655272,
+   "byteLength": 170508,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 2817784,
+   "byteOffset": 2825780,
    "byteLength": 80940,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 2898724,
+   "byteOffset": 2906720,
    "byteLength": 80940,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 2979664,
+   "byteOffset": 2987660,
    "byteLength": 53960,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3033624,
+   "byteOffset": 3041620,
    "byteLength": 53960,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3087584,
+   "byteOffset": 3095580,
    "byteLength": 53960,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3141544,
+   "byteOffset": 3149540,
    "byteLength": 26980,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3168524,
+   "byteOffset": 3176520,
    "byteLength": 107920,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3276444,
+   "byteOffset": 3284440,
    "byteLength": 49128,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 3325572,
+   "byteOffset": 3333568,
    "byteLength": 147780,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3473352,
+   "byteOffset": 3481348,
    "byteLength": 147780,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3621132,
+   "byteOffset": 3629128,
    "byteLength": 98520,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3719652,
+   "byteOffset": 3727648,
    "byteLength": 98520,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3818172,
+   "byteOffset": 3826168,
    "byteLength": 98520,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3916692,
+   "byteOffset": 3924688,
    "byteLength": 49260,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 3965952,
+   "byteOffset": 3973948,
    "byteLength": 197040,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 4162992,
+   "byteOffset": 4170988,
    "byteLength": 124008,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 4287000,
-   "byteLength": 454884,
+   "byteOffset": 4294996,
+   "byteLength": 455448,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 4741884,
-   "byteLength": 454884,
+   "byteOffset": 4750444,
+   "byteLength": 455448,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 5196768,
-   "byteLength": 303256,
+   "byteOffset": 5205892,
+   "byteLength": 303632,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 5500024,
-   "byteLength": 303256,
+   "byteOffset": 5509524,
+   "byteLength": 303632,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 5803280,
-   "byteLength": 303256,
+   "byteOffset": 5813156,
+   "byteLength": 303632,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 6106536,
-   "byteLength": 151628,
+   "byteOffset": 6116788,
+   "byteLength": 151816,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 6258164,
-   "byteLength": 606512,
+   "byteOffset": 6268604,
+   "byteLength": 607264,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 6864676,
-   "byteLength": 351636,
+   "byteOffset": 6875868,
+   "byteLength": 352392,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 7216312,
+   "byteOffset": 7228260,
    "byteLength": 30492,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7246804,
+   "byteOffset": 7258752,
    "byteLength": 30492,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7277296,
+   "byteOffset": 7289244,
    "byteLength": 20328,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7297624,
+   "byteOffset": 7309572,
    "byteLength": 20328,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7317952,
+   "byteOffset": 7329900,
    "byteLength": 20328,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7338280,
+   "byteOffset": 7350228,
    "byteLength": 10164,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7348444,
+   "byteOffset": 7360392,
    "byteLength": 40656,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7389100,
+   "byteOffset": 7401048,
    "byteLength": 23304,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 7412404,
+   "byteOffset": 7424352,
    "byteLength": 40224,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7452628,
+   "byteOffset": 7464576,
    "byteLength": 40224,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7492852,
+   "byteOffset": 7504800,
    "byteLength": 26816,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7519668,
+   "byteOffset": 7531616,
    "byteLength": 26816,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7546484,
+   "byteOffset": 7558432,
    "byteLength": 26816,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7573300,
+   "byteOffset": 7585248,
    "byteLength": 13408,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7586708,
+   "byteOffset": 7598656,
    "byteLength": 53632,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 7640340,
+   "byteOffset": 7652288,
    "byteLength": 31110,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 7671452,
-   "byteLength": 815148,
+   "byteOffset": 7683400,
+   "byteLength": 815028,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 8486600,
-   "byteLength": 815148,
+   "byteOffset": 8498428,
+   "byteLength": 815028,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 9301748,
-   "byteLength": 543432,
+   "byteOffset": 9313456,
+   "byteLength": 543352,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 9845180,
-   "byteLength": 543432,
+   "byteOffset": 9856808,
+   "byteLength": 543352,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 10388612,
-   "byteLength": 543432,
+   "byteOffset": 10400160,
+   "byteLength": 543352,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 10932044,
-   "byteLength": 271716,
+   "byteOffset": 10943512,
+   "byteLength": 271676,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 11203760,
-   "byteLength": 1086864,
+   "byteOffset": 11215188,
+   "byteLength": 1086704,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 12290624,
-   "byteLength": 550212,
+   "byteOffset": 12301892,
+   "byteLength": 550092,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 12840836,
-   "byteLength": 181992,
+   "byteOffset": 12851984,
+   "byteLength": 182004,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13022828,
-   "byteLength": 181992,
+   "byteOffset": 13033988,
+   "byteLength": 182004,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13204820,
-   "byteLength": 121328,
+   "byteOffset": 13215992,
+   "byteLength": 121336,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13326148,
-   "byteLength": 121328,
+   "byteOffset": 13337328,
+   "byteLength": 121336,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13447476,
-   "byteLength": 60664,
+   "byteOffset": 13458664,
+   "byteLength": 60668,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13508140,
-   "byteLength": 242656,
+   "byteOffset": 13519332,
+   "byteLength": 242672,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13750796,
-   "byteLength": 126018,
+   "byteOffset": 13762004,
+   "byteLength": 126030,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 13876816,
-   "byteLength": 32712,
+   "byteOffset": 13888036,
+   "byteLength": 32832,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13909528,
-   "byteLength": 32712,
+   "byteOffset": 13920868,
+   "byteLength": 32832,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13942240,
-   "byteLength": 21808,
+   "byteOffset": 13953700,
+   "byteLength": 21888,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13964048,
-   "byteLength": 21808,
+   "byteOffset": 13975588,
+   "byteLength": 21888,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13985856,
-   "byteLength": 10904,
+   "byteOffset": 13997476,
+   "byteLength": 10944,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 13996760,
-   "byteLength": 43616,
+   "byteOffset": 14008420,
+   "byteLength": 43776,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 14040376,
-   "byteLength": 23046,
+   "byteOffset": 14052196,
+   "byteLength": 23160,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 14063424,
-   "byteLength": 58764,
+   "byteOffset": 14075356,
+   "byteLength": 58752,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 14122188,
-   "byteLength": 58764,
+   "byteOffset": 14134108,
+   "byteLength": 58752,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 14180952,
-   "byteLength": 39176,
+   "byteOffset": 14192860,
+   "byteLength": 39168,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 14220128,
-   "byteLength": 78352,
+   "byteOffset": 14232028,
+   "byteLength": 78336,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 14298480,
-   "byteLength": 53172,
+   "byteOffset": 14310364,
+   "byteLength": 53178,
    "target": 34963
   }
  ],
@@ -4278,7 +4278,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 14351652,
+   "byteLength": 14363542,
    "uri": "heroine_outfit_arcanist_lod.bin"
   }
  ]
