@@ -60,8 +60,14 @@ public partial class PlayerView : Node3D
     /// strawberry blonde (G1 r4). --close-rim-hair: her hair on HerLayer with the rest of her, as before.</summary>
     public const uint HerHairLayer = 1u << 12;
     static readonly bool RimHair = Args.Has("close-rim-hair");
-    /// <summary>HerLayer and HerHairLayer: every light that lights her on her own layer takes both.</summary>
-    public const uint HerLayers = HerLayer | HerHairLayer;
+    /// <summary>Her metal's own layer (14) while she is on hers: her weapon and the metal of her outfit and armor (IsMetal;
+    /// her leather, fur and cloth stay on HerLayer: on this layer they went lavender chrome by night, judge J2), so the close view's moon rim can keep its sheen on metal and none on her skin
+    /// (GameCloseUp: with the rim's sheen off her neck's lavender band went, but her axe head went flat black, judge J1).
+    /// --close-rim-gear off: her gear on HerLayer with her skin, as before.</summary>
+    public const uint HerGearLayer = 1u << 13;
+    static readonly bool GearOwn = Args.Get("close-rim-gear") != "off";
+    /// <summary>HerLayer, HerHairLayer and HerGearLayer: every light that lights her on her own layer takes all three.</summary>
+    public const uint HerLayers = HerLayer | HerHairLayer | HerGearLayer;
     /// <summary>True: her meshes on HerLayer, not on layer 2 (GameCloseUp, the close view by night).</summary>
     public bool OwnLayer;
     bool ownShown;
@@ -481,6 +487,9 @@ public partial class PlayerView : Node3D
             bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
             if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
+            // (--close-turn R with it: turned from the close view's lens as its idle turns her, so a held pose can be
+            // seen from her front; without it she keeps her heading, as before.)
+            if (HoldTurn && Turned is float th) Rotation = new Vector3(0, th, 0);
             return;
         }
         if (!p.Alive || fallen)
@@ -633,14 +642,34 @@ public partial class PlayerView : Node3D
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
 
+    /// <summary>True when any of a mesh's surfaces is metal: her outfit's metal keys (People.OutfitMaterials, meta "kind" 1,
+    /// heroine_outfit_metal.gdshader), or a plain material at metallic 0.5 or more. Only these take the moon rim's gear twin:
+    /// with all her gear on it her leather (bandeau, bracers, belt) read as lavender chrome by night (judge J2, face 36).</summary>
+    static bool IsMetal(GeometryInstance3D g)
+    {
+        if (g is not MeshInstance3D m || m.Mesh == null) return false;
+        for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
+            switch (m.GetActiveMaterial(s))
+            {
+                case ShaderMaterial sm when sm.HasMeta("kind") && (int)sm.GetMeta("kind") == 1 || sm.Shader?.ResourcePath.Contains("metal") == true: return true;
+                case BaseMaterial3D bm when bm.Metallic >= 0.5f: return true;
+            }
+        return false;
+    }
+
     static void Relayer(Node n, bool own, List<MeshInstance3D> hair)
     {
         foreach (var c in n.GetChildren())
         {
             if (c is GeometryInstance3D g)
             {
-                uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer : HerLayer;
-                if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | mine;
+                uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer
+                    : GearOwn && own && (g.Layers & 2u) != 0 && IsMetal(g) ? HerGearLayer : HerLayer;
+                // (her weapon is the world's (layer 1), not people's: it keeps that and takes her gear's layer too, so her own
+                // lamps (the night key, the moon rim's gear twin) reach it; without them it was flat black by night, judge J1)
+                if (GearOwn && (g.Layers & 1u) != 0 && (g.Layers & 2u) == 0)
+                    g.Layers = own ? g.Layers | HerGearLayer : g.Layers & ~HerGearLayer;
+                else if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | mine;
                 else if (!own && (g.Layers & HerLayers) != 0) g.Layers = (g.Layers & ~HerLayers) | 2u;
             }
             Relayer(c, own, hair);
@@ -755,6 +784,7 @@ public partial class PlayerView : Node3D
     // pale gold (#ffb070 was) and a steeper falloff, so the moon's shadows inside her pool stay dark, not rust streaks.
     static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 1.8f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
+    static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
