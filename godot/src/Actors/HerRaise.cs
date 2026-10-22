@@ -27,7 +27,7 @@ public partial class HerRaise : SkeletonModifier3D
     public float StretchUp = Args.Num("raise-sup", 0.16f);
     public float StretchSide = Args.Num("raise-sside", 0.03f);
     /// <summary>How much of the lift a held top (plate) still makes.</summary>
-    public float Rigid = Args.Num("raise-rigid", 0.5f);
+    public float Rigid = Args.Num("raise-rigid", 0f);   // (0: steel cups are one rigid piece with the centre; at 0.5 a gap opened at full raise)
     readonly bool off = Args.Has("raise-off"), log = Args.Has("raise-log");
 
     int chest = -1;
