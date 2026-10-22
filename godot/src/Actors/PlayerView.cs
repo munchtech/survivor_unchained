@@ -481,6 +481,9 @@ public partial class PlayerView : Node3D
             bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
             if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
+            // (--close-turn R with it: turned from the close view's lens as its idle turns her, so a held pose can be
+            // seen from her front; without it she keeps her heading, as before.)
+            if (HoldTurn && Turned is float th) Rotation = new Vector3(0, th, 0);
             return;
         }
         if (!p.Alive || fallen)
@@ -755,6 +758,7 @@ public partial class PlayerView : Node3D
     // pale gold (#ffb070 was) and a steeper falloff, so the moon's shadows inside her pool stay dark, not rust streaks.
     static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 1.8f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
+    static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
