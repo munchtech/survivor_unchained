@@ -12,6 +12,7 @@ Merged today into integration (pushed; tests 1046/0/8 at bb3da06d): npc-2 (the G
 4. **Marionette lead 12:** npcgen-1 + npc-2, HANDOFF.md top. One-call NPC generation works. Guard r4 narrowly failed (foil mesh); villager r1 failed its close frames. Solvers D (geometry tools) and E (texture tools), then guard r5 + villager r2 on the API judge.
 5. **Env lead 15:** env-4, environment.md top. C03 marks (puck stones in s8 first, see-through water, slab, banks, pines), then E9c, then E9d/E9e (they must make the town frames pass the whole-frame gate), E8, E10.
 **Routed, no owner:** the staff gem a flat blue at 45; her bare upper arms heavy at the close-up (body; Face 36 may take it); the bodysuit gloss over the bust plasticky (outfits); the arcanist's white gloves bright at the day close-up; Grimtunnel's hat lanterns blown white (his new model); her fingers closing on nothing in C03 s8 (anim, optional).
+**Don't clear this scratchpad wholesale:** `face35\jb\orig\` holds the only originals of the 10 head paints before heroine_jaw_blend; `marionette\` (295 MB) is pointed into by HANDOFF.md. npc-2 holds uncommitted, unjudged test packages (listed in HANDOFF.md). ComfyUI runs detached (PID 103960).
 **Owner pending:** none.
 
 ## 21 October, late: coordinator 6a6cb394 WIND-DOWN (history)
