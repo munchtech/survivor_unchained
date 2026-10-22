@@ -58,12 +58,14 @@ uniform vec3 ambient_tint = vec3(1.0);
 // her face, level on every plane (it lifted the shade side of her jaw 31.7 to 45 Oklab L), so her face read flat, pale
 // and grey, as under a flash. 1 everywhere else.
 uniform float sky_share = 1.0;
-// Her body's share of it from her collarbones down (by her freckles' map's blue, 0 there: her head and neck keep sky_share;
-// her head's part always sky_share), -1: sky_share all over. The close view's 0.45 lay on the underside and inner slope
-// of her breast too, which no key reaches (dent d2, 21 Oct: the pocket between her cups by the gore was lit by the sky
-// alone, 50/255 against her other breast's 178). The blue eases over 8 cm of her height (1.47 to 1.55 m, a smoothstep:
-// tools/assets/heroine_freckles.py), from her upper chest to her neck's base, about 70 px at the day close-up: the step it
-// adds over any 10 px on a line from her jaw to her sternum is 2.6/255 at most (dent d5), so no line at her collarbones.
+// Her body's share of it, all but her neck's column (her freckles' map's alpha, 1 less her sky mask: tools/assets/
+// heroine_freckles.py; her head's part always sky_share), -1: sky_share all over. The close view's 0.45 lay on the
+// underside and inner slope of her breast too, which no key reaches (dent d2, 21 Oct: the pocket between her cups by the
+// gore was lit by the sky alone, 50/255 against her other breast's 178). The mask eases over 8 cm of her height up the
+// front of her neck (1.47 to 1.55 m, a smoothstep), about 70 px at the day close-up (the step it adds over any 10 px on a
+// line from her jaw to her sternum is 2.6/255 at most, dent d5), and across 7.5 to 11.5 cm from her midline, 0 within
+// 1 cm of her body's paint: her trapezius and shoulders' tops take her arms' share, no line where the graft ends (dent
+// d6's, on her deltoid, when the map's blue was the mask).
 uniform float sky_body = -1.0;
 varying float sky_w;
 // Her sheen's strength (SPECULAR), for her light() to read.
@@ -438,8 +440,9 @@ void fragment() {
 		} else
 			ALBEDO *= mix(1.0, clamp(lip_floor * dot(tone, vec3(0.2126, 0.7152, 0.0722)) / lum0, 1.0, lip_gain), lip_w);
 	}
-	vec3 fk = texture(freckles, UV).rgb;
-	sky_w = sky_body < 0.0 || seam_ease ? sky_share : mix(sky_body, sky_share, fk.b);
+	vec4 fka = texture(freckles, UV);
+	vec3 fk = fka.rgb;
+	sky_w = sky_body < 0.0 || seam_ease ? sky_share : mix(sky_body, sky_share, 1.0 - fka.a);
 	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate) * rig_w;
 	body_back = pow(max(body_tone, vec3(1e-3)), vec3(neck_w - 1.0));
 	ALBEDO *= body_back;
