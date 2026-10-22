@@ -2,7 +2,13 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
-## 21 October 2026
+## 22 October 2026
+- (coordinator a36cc4dd) **API credit balance is OUT**: "just switch to usage". Every judge and solver runs as a subagent until the owner says otherwise.
+- **Upper arms:** "Yes: queue the upper-arm sculpt ... (inner arm slimmer, armpit join lower, a small deltoid), with sleeves and armor following". DONE, merged 3582c9d8.
+- **Close-up camera:** "Yes: change the close-up camera to about -3 deg at eye height". DONE, merged 9252a790 (CloseNear pitch 3, FollowCamera.cs).
+- **Hair rounds:** "it can have a couple more rounds if it needs" (braid ran to r6; r5 + r6 merged as improvements).
+- **Reaver:** "reaver needs underboob, its a defining part of its outfit - your adding too much coverage". Kept; band high and narrow. "is this a dent in reaver": yes, DONE 48a529bf.
+- **Hair colour:** the black-dye pixie with copper/brown bands (owner_frames_22oct\hair_black_ref.png): "those look really good"; "have a black version, just those are hilights is all". So plain black has no copper, and a "highlights" dye option reproduces that frame in any light. The pixie hair over the ear "dosn't" look good: fix it.
 - (coordinator 6a6cb394) chain_strike cut (fist-fit limit). Face 34 approved and merged. C03 cinematics lead approved. "grimtunnels model will change": stage around him, no fixes on his surface. **The Warden is boss-tier art: route his model to a full-detail rebuild** (not staffed yet).
 - **Town idles per calling:** "I think having their own is probably better than all the same". Reaver, arcanist (wand and staff) and stalker each get their own relaxed town idle; the Warden keeps WiggleHips. Animation item 5, after its current MR.
 - **Krea may ship:** "we've already put things in the game with krea ... were already at the mercy of the 1m revenue cap". Use Krea freely, shipped art included, and log provenance (ASSET_PROVENANCE AI-01). The enterprise licence has no public price (ask opensource@krea.ai); it's only needed near $1M a year. Keep using Krea.

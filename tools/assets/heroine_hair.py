@@ -245,6 +245,17 @@ for _k in ("ears_out+", "ears_pointed+", "ears_lobes+"):
 _flap = _fm > 0.25
 FLAP_TREE = cKDTree(HP[_flap]) if _flap.any() else None
 print("  ears: %d points their keys move, %d their flaps" % (EAR.sum(), _flap.sum()))
+if os.environ.get("EAR_PROBE") == "1":                      # (test only: her ears' landmarks)
+    for _sg in (-1, 1):
+        _F = HP[_flap & (np.sign(HP[:, 0]) == _sg)]
+        print("  ear %+d: x %.1f..%.1f y %.1f..%.1f z %.1f..%.1f mm" % (_sg, *(np.r_[_F.min(0), _F.max(0)][[0, 3, 1, 4, 2, 5]] * 1000)))
+        for _z in np.arange(_F[:, 2].min(), _F[:, 2].max(), 0.004):
+            _b = _F[(_F[:, 2] >= _z) & (_F[:, 2] < _z + 0.004)]
+            if len(_b):
+                _i = np.argmin(_b[:, 1])
+                print("    z %.1f: front y %.1f at x %.1f (n %d)" % (_z * 1000, _b[_i, 1] * 1000, _b[_i, 0] * 1000, len(_b)))
+    print("  EYE_Z %.1f CENTRE %s" % (EYE_Z * 1000, np.round(CENTRE * 1000, 1)))
+    sys.exit(0)
 # Her neck, between her jaw and her shoulders (her skin there facing out,
 # not up or down), which hair hanging by it is kept well clear of: lying on
 # it, a strand read as a scratch on her skin, and as her head turned, the
@@ -861,6 +872,11 @@ def edge_wisps(comb, sides, n_want=EDGE_CLUSTERS):
     fin = np.clip(c["arc"] / 0.0012, 0, 1)
     # (each hair ~0.5 at its root: three to six overlapping read ~80% there; to nothing at the tip)
     c["alpha"] = 0.5 * fin * fin * (3 - 2 * fin) * (1 - s_) ** 1.3
+    drop = [(a_, b_) for a_, b_ in (EDGE or {}).get("wisp_drop", ())]       # (r8: clusters dropped, by signed degree)
+    if drop:
+        gone = np.array([any(a_ <= th[pick][q] <= b_ for a_, b_ in drop) for q in ci])
+        c["alpha"] = c["alpha"] * np.repeat(~gone, 3 * k)
+        print("  edge clusters dropped: %d hairs (%s deg)" % (gone.sum(), " ".join("%.0f" % t for t in np.unique(th[pick][ci][gone]))))
     c["blunt"] = True
     c["mat"] = 3
     c["lit"], c["matte"] = True, True
@@ -891,6 +907,10 @@ _HLV = _HL_R.uniform(0.0035, 0.006, 70) * np.cumprod(np.where(_HL_R.random(70) <
 _HLS2 = np.cumsum(_HL_R.uniform(0.003, 0.005, 200))
 _HLV2 = _HL_R.uniform(-0.0012, 0.0012, 200)
 HL_RECESS = ((-50.0, 10.0, 0.0095), (54.0, 12.0, 0.0085))           # (her right, her left: degrees, width, depth)
+# (22 October, face 39 r7, the judge: the recesses did not show from the front and the edge read as one arc. With
+# EDGE (r7 styles): recesses 10-12 mm net of the wave, and a 4-6 mm central dip (her hairline lower at her middle,
+# a soft peak), the wave calmed in all three so the shape reads.)
+HL_RECESS7 = ((-50.0, 11.0, 0.0125), (54.0, 12.0, 0.0115), (-2.0, 9.0, -0.0055))
 
 
 def _knots(s, S, Vk):
@@ -907,6 +927,12 @@ def hl_jit(p):
     s = (th + np.pi) * 0.085                                      # (along her hairline, ~8.5 cm round)
     j = _knots(s, _HLS, _HLV) + _knots(s, _HLS2, _HLV2)
     d = np.degrees(th)
+    if EDGE is not None:                                          # (r7: the shape that reads: deeper recesses and a central dip)
+        rec = sum(dep * np.exp(-((d - at) / wd) ** 2) for at, wd, dep in HL_RECESS7)
+        j = j * (1 - 0.6 * np.clip((40.0 - np.abs(d)) / 10.0, 0, 1))   # (calmer over her front 30 deg: the dip is the one there)
+        if EDGE.get("jit_to"):                                     # (the pixie: none of it at her nape, where its nape row lies)
+            j = j * np.clip((EDGE["jit_to"] + 25.0 - np.abs(d)) / 25.0, 0, 1)
+        return j * (1 - 0.6 * np.clip(np.abs(rec) / 0.008, 0, 1)) + rec
     rec = sum(dep * np.exp(-((d - at) / wd) ** 2) for at, wd, dep in HL_RECESS)
     return j * (1 - 0.5 * rec / 0.0095) + rec                    # (the wave calmer in the recesses: their depth reads)
 
@@ -1114,6 +1140,68 @@ def clear_ears(c, K, clr=BRAID_EAR_CLEAR):
     return int(hit.sum())
 
 
+# (r8, the judge: in black a short tuft crossed the helix root and tragus at turn 40, every style.) Before each
+# ear, a zone no strand enters: from 3 mm in front of her ear's front edge back over its front, up to the helix
+# root; and below 5 mm over her tragus, from 12 mm in front of it. A card entering it is cut short there.
+_EARF = {}
+if FLAP_TREE is not None:
+    for _sg in (-1, 1):
+        _F = HP[_flap & (np.sign(HP[:, 0]) == _sg)]
+        _z0, _z1 = float(_F[:, 2].min()), float(_F[:, 2].max())
+        _up_ = _F[_F[:, 2] > _z0 + 0.55 * (_z1 - _z0)]
+        _EARF[_sg] = dict(yf=float(np.percentile(_up_[:, 1], 3)), root=_z1 - 0.008, tragus=_z0 + 0.42 * (_z1 - _z0), top=_z1)
+EAR_ZONE = dict(front=0.003, back=0.010, low_front=0.012, above_tragus=0.005, side=0.055, inside=0.003)
+
+
+def ear_zone(Q):
+    """Which points lie in the zone before either ear (EAR_ZONE), or within `inside` of its flap below its top."""
+    bad = np.zeros(len(Q), bool)
+    for sg, e in _EARF.items():
+        sd = (np.sign(Q[:, 0]) == sg) & (np.abs(Q[:, 0]) > EAR_ZONE["side"]) & (Q[:, 1] < e["yf"] + EAR_ZONE["back"])
+        a = (Q[:, 2] < e["root"]) & (Q[:, 1] > e["yf"] - EAR_ZONE["front"])
+        b = (Q[:, 2] < e["tragus"] + EAR_ZONE["above_tragus"]) & (Q[:, 1] > e["yf"] - EAR_ZONE["low_front"])
+        bad |= sd & (a | b)
+    if FLAP_TREE is not None:
+        bad |= (FLAP_TREE.query(Q)[0] < EAR_ZONE["inside"]) & (Q[:, 2] < max(e["top"] for e in _EARF.values()))
+    return bad
+
+
+def ear_zone_cut(c):
+    """Each strand card of c cut short where it enters ear_zone (its points from there folded onto the last
+    clear one). Returns (cards cut, the least distance from a kept card point below the helix root to an ear's
+    front zone edge or flap, mm)."""
+    if not _EARF or "arc" not in c or len(c["V"]) == 0:
+        return 0, None
+    arc = c["arc"]
+    zz = np.nonzero(arc[1:] == 0)[0]
+    K = int(zz[0] + 1) if len(zz) else len(arc) // 3
+    if len(c["V"]) % (3 * K):
+        return 0, None
+    V = c["V"].reshape(-1, 3, K, 3)
+    A = c["at"].reshape(-1, 3, K, 3) if "at" in c else None
+    bad = ear_zone(V.reshape(-1, 3)).reshape(V.shape[:3]).any(1)
+    hit = bad.any(1)
+    for i in np.nonzero(hit)[0]:
+        k = max(int(np.argmax(bad[i])), 1)
+        V[i, :, k:] = V[i, :, k - 1:k]
+        if A is not None:
+            A[i, :, k:] = A[i, :, k - 1:k]
+    c["V"] = V.reshape(-1, 3)
+    if A is not None:
+        c["at"] = A.reshape(-1, 3)
+    # (each kept card's tip (its middle row's last point; cards cut at the root, nothing left, not counted):
+    # the least distance to either ear's flap, of tips by her ears, below the top of her ear)
+    Mr = V[:, 1]
+    alive = np.linalg.norm(Mr[:, -1] - Mr[:, 0], axis=1) > 0.0005
+    tips = Mr[alive, -1]
+    near = None
+    if len(tips):
+        d = FLAP_TREE.query(tips)[0]
+        m = (np.abs(tips[:, 0]) > EAR_ZONE["side"]) & (tips[:, 2] < max(e["top"] for e in _EARF.values())) & (d < 0.03)
+        near = float(d[m].min()) if m.any() else None
+    return int(hit.sum()), None if near is None else near * 1000
+
+
 BRAID_CLUMPS = dict(n=10, pull=(0.0, 0.25, 0.35), twist=0.5, edge_shade=0.08, seed=384)   # (r5: 0.4/0.6, 0.16: blotchy gaps)
 _CLUMP_C = None
 
@@ -1165,6 +1253,7 @@ def clump_layer(P, pts, side, share, cfg=BRAID_CLUMPS):
     return out, lab, edge
 
 
+SHINE_MID = float(os.environ.get("SHINE_MID", "0.45"))             # (r7: share of the middle layer's cards matte, shine by depth)
 BRAID_CAP = (0.0033, 0.0042, 0.0050)   # (face 38 r5: each layer at most this far off her skin over her front and top)
 
 
@@ -1203,14 +1292,18 @@ def off_brow(P):
     return P, int(bad.any(1).sum())
 
 
-def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
+def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False, groom=False):
     """Her hair drawn back along her scalp from every root to a tie at T,
     each strand laid along her head to it and ending under the tie (with
-    `lift`, standing that much off her on top: some body)."""
+    `lift`, standing that much off her on top: some body). (r7: `groom`, the
+    ponytail: the braid's groom without its volume, clumps, height cap or
+    part: the jittered edge, front stagger, off_brow, clear_ears, the fine
+    hairline, ragged tips and EDGE's band and outline.)"""
     global HL_JIT
     comb = parted(toward(T), push=0.25) if vol else toward(T)          # (r5: 0.6 stood a crest off the part)
     out = []
-    HL_JIT = bool(vol)
+    g_ = bool(vol or groom)
+    HL_JIT = g_
     for spacing, width, cols, off in layers:
         pts, nrm = roots(spacing, above=0.004)
         L = np.linalg.norm(T - pts, axis=1) * 1.6 + 0.02          # (more than enough: each stops at the tie)
@@ -1239,12 +1332,15 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
                 P = cap_height(P, len(out))
             print("  off brow: %d strands cut before the clumps, %d after" % (nb_, nb2_))
             print("  volume: layer %d lifted %.1f mm at her crown, %.1f mm at her sides" % (len(out), mc * 1000, ms * 1000))
+        elif groom:
+            P, nb_ = off_brow(P)
+            print("  off brow: %d strands cut" % nb_)
         if os.environ.get("DBG_NOLOWG") == "1":                 # (test only: the cards rooted beside her nape, below her ear's top, folded away under her scalp)
             lowg = (pts[:, 2] < float(HP[EAR, 2].max())) & (np.abs(pts[:, 0]) > 0.03)
             P[lowg] = (pts[lowg] - nrm[lowg] * 0.004)[:, None]
             print("  DBG_NOLOWG: %d cards hidden" % lowg.sum())
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
-        if vol:
+        if g_:
             c_ = out[-1]
             S_, K3 = len(P), len(c_["V"]) // len(P)
             # (face 38 r3: rooted in the jittered edge's recesses, faded out: her hair's edge as drawn back)
@@ -1273,7 +1369,28 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
             # (the first 3 cm over the jittered edge, thinning out by 7 cm; the middle layer only within 30-45
             # degrees of her front, so her side keeps its band at the turned Look) those two layers are matte:
             # base colour, the shine left to the outer layer, one band. BRAID_UNDERMATTE=0: as before.)
-            if os.environ.get("BRAID_UNDERMATTE", "1") == "1" and len(out) <= 2:
+            if EDGE is not None and EDGE.get("shine") and os.environ.get("SHINE_DEPTH", "1") == "1" and len(out) <= 2:
+                # (r7, the judge's fix 4: the r6 front zones cost the lk40 gloss. Shine by depth instead, all
+                # over: the inner layer matte, the middle layer's cards matte at random, SHINE_MID of them (the
+                # shader's matte mark is all or nothing per card: a partial shine would need it graded, see S7))
+                rm_ = np.random.default_rng(3908 + len(out)).random(S_)
+                zone = rm_ < (1.0 if len(out) == 1 else EDGE.get("shine_mid", SHINE_MID))
+                c_["matte"] = np.repeat(zone, K3)
+                gr_ = float(os.environ.get("MID_GRADE", EDGE.get("mid_grade", 0.0)))
+                if len(out) == 2 and gr_ > 0:                   # (r8: the graded mark: every middle card part matte)
+                    c_["matte"] = np.full(S_ * K3, gr_)
+                    print("  shine by depth: layer 1, every card %.0f%% matte" % (gr_ * 100))
+                else:
+                    print("  shine by depth: layer %d, %d of %d cards matte" % (len(out) - 1, zone.sum(), S_))
+            elif EDGE is not None and EDGE.get("temple_matte"):
+                # (r7, the ponytail's pale criss-cross tuft over her ear at lk40: its gathered cards (not the cap
+                # or fine hairs: checked by colour) rooted before and over her ear, crossing as they go back, each
+                # throwing its shine. Those rooted 55-115 deg round and under 3 cm over her ear's top: matte)
+                th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+                zone = (th_ > 55) & (th_ < 115) & (pts[:, 2] < float(HP[EAR, 2].max()) + 0.03)
+                c_["matte"] = np.repeat(zone, K3)
+                print("  temple matte: layer %d, %d cards" % (len(out) - 1, zone.sum()))
+            elif os.environ.get("BRAID_UNDERMATTE", "1") == "1" and len(out) <= 2 and vol:
                 rm_ = np.random.default_rng(3908 + len(out)).random(S_)
                 th_ = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
                 zone = rm_ < np.interp(rise(pts) - hl_jit(pts), [0.03, 0.07], [1.0, 0.0]) * (1.0 if len(out) == 1 else np.interp(th_, [30.0, 45.0], [1.0, 0.0]))
@@ -1282,13 +1399,28 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
             if str(len(out) - 1) in os.environ.get("DBG_DROP", ""):     # (test only: hide gathered layer i)
                 a_ = a_ * 0.0
             c_["alpha"] = a_
-            c_["floor"] = 0.88                                   # (r5: the inner layer at most ~10% darker: no blotches in the gaps)
-        if vol:
+            if vol:
+                c_["floor"] = 0.88                                   # (r5: the inner layer at most ~10% darker: no blotches in the gaps)
+        if g_:
             print("  ears: %d cards cut short behind her ear" % clear_ears(out[-1], points))
         print("  gathered: %d cards" % len(pts))
-    out += hairline_hairs(comb, sides=part_side if vol else no_part, low=float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01, fine=vol)
+    low_ = float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01
+    if groom and not vol:
+        # (r7: the ponytail's old hairline made and dropped (the RNG, and the tail made after, stays as was);
+        # the braid's fine one, its temple hairs down and back and matte (the lk40 tuft), in its place)
+        HL_JIT = False
+        hairline_hairs(comb, sides=no_part, low=low_, fine=False)
+        HL_JIT = True
+        out += _keep_rng(lambda: hairline_hairs(comb, sides=no_part, low=low_, fine=True))
+        print("  ears (fine hairline): %d cut short" % clear_ears(out[-3], 8))
+    else:
+        out += hairline_hairs(comb, sides=part_side if vol else no_part, low=low_, fine=vol)
     if vol:
-        out += braid_flyaways(T, toward(T))
+        fly = braid_flyaways(T, toward(T))
+        if EDGE is None or os.environ.get("EDGE_OUTLINE", "1") != "1":
+            out += fly
+    if EDGE is not None:
+        out += edge_groom([(c, points) for c in out[:len(layers)]], T, comb, part_side if vol else no_part, low=low_)
     # (18 October, face 30 round 3, the judge: the one lock a side lay on her
     # temple and cheek as a thin dark line, a cut or a scar; drawn back reads
     # cleaner. Made and dropped, so the RNG, and all made after, stays as was.)
@@ -1521,7 +1653,7 @@ def style_ponytail():
     axis = np.array([0.0, 0.55, -0.83])
     parts = gathered(T, ((0.009, (0.024, 0.032), range(0, 6), 0.003),
                          (0.008, (0.016, 0.024), range(0, 9), 0.006),
-                         (0.008, (0.012, 0.018), range(3, 12), 0.009)), lift=0.003)
+                         (0.008, (0.012, 0.018), range(3, 12), 0.009)), lift=0.003, groom=EDGE is not None)
     hang, middle = tail(T + axis * 0.006, axis, ((120, (0.028, 0.038), range(0, 6), 0.004),
                                                  (150, (0.018, 0.028), range(0, 11), 0.008),
                                                  (90, (0.010, 0.016), range(6, 16), 0.012)), 0.46)
@@ -1767,9 +1899,27 @@ def style_pixie():
             c["UV"][lock, 0] = (colk[lock] + 0.002 * COLUMNS + third[lock] * (1 - 0.004 * COLUMNS)) / COLUMNS
         layers.append(c)
         print("  layer: %d cards" % len(pts))
-    layers += hairline_hairs(comb_pixie, sides=no_part)
+    old_hl = hairline_hairs(comb_pixie, sides=no_part)
+    low_ = float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01
+    if EDGE is not None:
+        # (r7: the braid's groom, ported: the jittered edge with its recesses (each card faded in over 3 mm
+        # past it), clear_ears, and the fine hairline (temple hairs down and back, matte) in place of the
+        # old one (made and dropped: the RNG, and all made after, stays as was))
+        global HL_JIT
+        HL_JIT = True
+        for c in layers[:3]:
+            K3 = 3 * 12
+            r0 = c["at"].reshape(-1, K3, 3)[:, 0]
+            c["alpha"] = np.repeat(np.clip((rise(r0) - hl_jit(r0)) / 0.007, 0, 1), K3)   # (over 7 mm: at 3 a cut notch at her temple)
+            print("  ears: %d cards cut short" % clear_ears(c, 12))
+        layers += _keep_rng(lambda: hairline_hairs(comb_pixie, sides=no_part, low=low_, fine=True))
+        print("  ears (fine hairline): %d cut short" % clear_ears(layers[-3], 8))
+    else:
+        layers += old_hl
     layers += pixie_crown_fill(layers[:3]) + pixie_nape_row()
     layers += pixie_fringe_row() + pixie_flyaways()
+    if EDGE is not None:
+        layers += edge_groom([(c, 12) for c in layers[:3]], CENTRE + np.array([0.0, 10.0, 0.0]), comb_pixie, no_part, low=low_)
     return layers
 
 
@@ -1969,6 +2119,12 @@ def cap(comb, sides=part_side):
     across = fs.hairline_across(theta, V[:, 2] - hairline_z(theta), np.hypot(V[:, 0] - CENTRE[0], V[:, 1] - CENTRE[1]))
     edge = across + 0.001 + 0.5 * wav - hl_jit(V)
     fade = np.clip(edge / 0.011, 0, 1)
+    if EDGE is not None and EDGE.get("cap"):
+        # (r7: under the hairline band only skin and the band's strands over the first few millimetres, then
+        # the cap; not one opacity fade from the edge, the cap's rim)
+        if EDGE.get("band"):                                       # (where the band is, eased out over 15 deg past it)
+            a0 = EDGE["cap"][0] * np.clip((EDGE["band"][1] + 15.0 - np.degrees(np.abs(theta))) / 15.0, 0, 1)
+            fade = np.clip((edge - a0) / (EDGE["cap"][1] - a0), 0, 1)
     # (face 38 r3, braid: a contact shade on her forehead under it, its blue
     # (the shader's `contact`): ~0.12 dark over the 5 mm under her hairline,
     # to 0.2 of her hair's tint in its last 3 mm, gone 3 mm into the fade)
@@ -1979,6 +2135,13 @@ def cap(comb, sides=part_side):
     # to her ear, its edge there soft, not the cap's cut edge)
     if FLAP_TREE is not None:
         fade = np.minimum(fade, np.clip((FLAP_TREE.query(V)[0] - 0.0015) / 0.003, 0, 1))
+    if _EARF and os.environ.get("EAR_ZONE", "1") == "1":
+        # (r8: nor in the zone before her ears (ear_zone): its painted strands drew the dark tuft over her helix
+        # root and tragus at turn 40; faded out over the 2 mm next to it)
+        z_ = ear_zone(V) & ~(FLAP_TREE.query(V)[0] < EAR_ZONE["inside"])
+        if z_.any():
+            fade = np.minimum(fade, np.clip(cKDTree(V[z_]).query(V)[0] / 0.002, 0, 1))
+            print("  cap: %d points in the zone before her ears, cleared" % z_.sum())
     # Along the combing (v) and across it (u), each edge as long in them as
     # along and across the combing there (least squares). Across, the same
     # way on both sides of her parting (mirrored there, not torn).
@@ -2131,11 +2294,364 @@ def braid_flyaways(T, comb, n_want=BRAID_FLY):
     return [c]
 
 
+# ------------------------------------------------------- edge cards (r7) --
+# (22 October, face 39 r7, the judge: "edge hairs are made at real size and
+# come out under 1-2 px at the game's cameras": the outline and hairline need
+# TEXTURED multi-strand cards sized to show on screen. One module for the
+# braid, ponytail and pixie: a strip of painted 3-5 strand cards (the bottom
+# of hair_fine_strands.png, the fine material's atlas for these styles: the
+# strand atlas at half size over it), crown outline clusters, a frizz layer
+# and the hairline band. EDGE (set by each style) says which and how.)
+FINE_ATLAS = os.path.join(TEX, "hair_fine_strands.png")
+FA_SIZE, FA_STRIP = (2048, 1280), 256          # (the fine atlas, and the strip's height at its bottom)
+FA_SPLIT = FA_STRIP / FA_SIZE[1]               # (UV v under this: the strip; over it: the strand atlas, squeezed)
+STRIP_COLS = 16
+STRIP_KIND = ["outline"] * 6 + ["band"] * 6 + ["frizz"] * 4
+STRIP_PAD = 12                                 # (px above and below each strip column left empty: no mip bleed)
+EDGE = None
+
+
+def draw_edge_strip(over=3):
+    """The strip: STRIP_COLS columns, each a card of a few painted strands
+    (root at the top), alpha 0 between them. outline: 3-5 strands from one
+    root area fanning a little apart (a flyaway cluster); band: 3-4 nearly
+    parallel strands with skin-wide gaps (a hairline's combed-back hairs);
+    frizz: 2-3 thin wavy ones. Red: shade; green: number; alpha: strands."""
+    from PIL import Image, ImageDraw
+    cw, h = FA_SIZE[0] // STRIP_COLS * over, (FA_STRIP - 2 * STRIP_PAD) * over
+    out = np.zeros((FA_STRIP, FA_SIZE[0], 4), np.float32)
+    for col, kind in enumerate(STRIP_KIND):
+        r = np.random.default_rng(3970 + col)
+        if kind == "outline":
+            n = int(r.integers(3, 6))
+            x0 = 0.5 + r.uniform(-0.16, 0.16, n)
+            x1 = 0.5 + (x0 - 0.5) * r.uniform(1.2, 1.7, n) + r.uniform(-0.05, 0.05, n)
+            wd = r.uniform(0.17, 0.22, n)
+            reach = r.uniform(0.8, 1.0, n)
+            wav = r.uniform(0.005, 0.02, n)
+        elif kind == "band":
+            n = int(r.integers(3, 5))
+            x0 = np.linspace(0.2, 0.8, n) + r.uniform(-0.04, 0.04, n)
+            x1 = x0 + r.uniform(-0.05, 0.05, n)
+            wd = r.uniform(0.17, 0.21, n) * (3.5 / n)
+            reach = r.uniform(0.75, 1.0, n)
+            wav = r.uniform(0.003, 0.012, n)
+        else:
+            n = int(r.integers(2, 4))
+            x0 = 0.5 + r.uniform(-0.2, 0.2, n)
+            x1 = 0.5 + r.uniform(-0.35, 0.35, n)
+            wd = r.uniform(0.1, 0.14, n)
+            reach = r.uniform(0.6, 1.0, n)
+            wav = r.uniform(0.02, 0.05, n)
+        shade, ident, alpha = (Image.new("L", (cw, h), 0) for _ in range(3))
+        ds, di, da = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha)
+        for i in r.permutation(n):
+            t = np.linspace(0, reach[i], 120)
+            f = t / reach[i]
+            xs = (x0[i] + (x1[i] - x0[i]) * f ** 1.3 + wav[i] * np.sin(2 * np.pi * r.uniform(0.8, 2.0) * t + r.uniform(0, 6.3))) * cw
+            ys = t * h
+            sh = r.uniform(0.9, 1.0) if kind == "band" else r.uniform(0.82, 1.0)
+            idv = r.uniform(0.55, 0.95) if kind == "band" else r.uniform(0.3, 0.9)   # (the game's lighter copper end: no dark rim)
+            for k in range(len(t) - 1):
+                w = max(1, int(round(wd[i] * cw * (1 - 0.45 * f[k] ** 1.5))))
+                a = min(1.0, f[k] / 0.03) * min(1.0, (1 - f[k]) / 0.25)
+                seg = [(xs[k], ys[k]), (xs[k + 1], ys[k + 1])]
+                ds.line(seg, fill=int(255 * sh * (0.92 + 0.08 * f[k])), width=w)
+                di.line(seg, fill=int(255 * idv), width=w)
+                da.line(seg, fill=int(255 * a), width=w)
+        small = [np.asarray(im.resize((cw // over, h // over), Image.LANCZOS), np.float32) for im in (shade, ident, alpha)]
+        c = np.maximum(small[2], 1.0) / 255.0
+        s0, s1 = (np.where(small[2] > 8, np.minimum(s / c, 255.0), s) for s in small[:2])
+        x = col * (FA_SIZE[0] // STRIP_COLS)
+        out[STRIP_PAD:FA_STRIP - STRIP_PAD, x:x + cw // over] = np.stack([s0, s1, s0, small[2]], 2)
+    return out
+
+
+def draw_fine_atlas():
+    """hair_fine_strands.png: the strand atlas at half size (its UVs squeezed
+    into the top of it) over the edge strip."""
+    from PIL import Image
+    top = np.asarray(Image.open(ATLAS).convert("RGBA").resize((FA_SIZE[0], FA_SIZE[1] - FA_STRIP), Image.LANCZOS), np.float32)
+    strip = padded(draw_edge_strip())
+    Image.fromarray(np.clip(np.vstack([top, strip]), 0, 255).astype(np.uint8)).save(FINE_ATLAS)
+    print("FINE ATLAS", FINE_ATLAS)
+
+
+def strip_uv(c, K, kind, rng):
+    """A card's UVs set to a strip column of `kind` (its whole width, root
+    to tip), in the fine atlas; marked so build leaves them be."""
+    S = len(c["V"]) // (3 * K)
+    cols = rng.choice([i for i, k in enumerate(STRIP_KIND) if k == kind], S)
+    uf = np.tile(np.repeat([0.0, 0.5, 1.0], K), S)
+    vf = np.tile(np.tile(1 - np.linspace(0, 1, K), 3), S)
+    v0, v1 = STRIP_PAD / FA_SIZE[1], (FA_STRIP - STRIP_PAD) / FA_SIZE[1]
+    m0 = 0.16 if kind == "outline" else 0.04                    # (an outline card on its strands' middle: ~55% cover)
+    c["UV"] = np.c_[(np.repeat(cols, 3 * K) + m0 + (1 - 2 * m0) * uf) / STRIP_COLS, v0 + (v1 - v0) * vf]
+    c["strip"] = True
+    c["mat"] = 3
+    return c
+
+
+def _keep_rng(f):
+    """f() with the global RNG left as it was: what is made after stays."""
+    st = RNG.bit_generator.state
+    try:
+        return f()
+    finally:
+        RNG.bit_generator.state = st
+
+
+EDGE_CFG = {
+    # band: |degrees| round her face it runs (from, to); cap: her scalp cap's fade over the jittered edge (starts,
+    # full; was 0-11 mm); front/back: crown outline clusters; L, ang: their length and angle off the mass; clear:
+    # how far past her outline each stands (mm); frizz: short strands over the outline zone; shine: the under
+    # layers' shine by depth (gathered styles).
+    # lay (r8, the judge: two stalks stood straight up at the braid's lk0 crown): the front ones laid within
+    # ang degrees of the mass along the comb (twist tw rad), their tips clear mm over the lk0 outline, bent
+    # back, faded over their outer `fade`.
+    "braid": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=True,
+                  lay=dict(ang=(6.0, 14.0), clear=(1.0, 4.0), tw=0.12, bend=0.6, fade=0.4)),
+    "ponytail": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=False, temple_matte=True,
+                     wisp_drop=((-45.0, -30.0),)),   # (r8, the judge: the lone dark marks ahead of her hairline at lk40: her right temple's two edge clusters)   # (shine by depth cost its lk40 gloss, 70.0 to 63.4, no streak to cure)
+    "pixie": dict(band=None, cap=None, front=5, back=2, L=(0.018, 0.028), ang=(20.0, 40.0), clear=(3.0, 6.0), frizz=55, shine=False, jit_to=100.0),
+}
+BAND = dict(spacing=0.0028, depth=0.008, width=(0.0024, 0.0032), L=(0.012, 0.02), alpha=(0.65, 0.95), keep=((-0.0015, 0.0, 0.003, 0.008), (0.15, 0.3, 0.6, 1.0)), root_fade=(0.0015, 0.003))
+
+
+def _sph(Q):
+    q = Q - CENTRE
+    R = np.linalg.norm(q, axis=1)
+    az = np.degrees(np.arctan2(q[:, 0], -q[:, 1]))
+    el = np.degrees(np.arcsin(np.clip(q[:, 2] / (R + 1e-9), -1, 1)))
+    return R, np.clip(((az + 180) / 2).astype(int), 0, 179), np.clip(((el + 90) / 2).astype(int), 0, 89)
+
+
+def hair_height(Vs):
+    """Her hair's outside as a height over her skull's middle, per 2-degree
+    direction (max-filtered a bin each way): clearance(Q) is how far each
+    point stands out past it."""
+    from scipy.ndimage import maximum_filter
+    R, a, e = _sph(Vs)
+    H = np.zeros((180, 90))
+    np.maximum.at(H, (a, e), R)
+    H = maximum_filter(H, size=3, mode="wrap")
+
+    def clearance(Q):
+        r, a_, e_ = _sph(Q)
+        return r - H[a_, e_]
+    return clearance
+
+
+def front_outline(Vs):
+    """How far each point stands over her hair's top at its x (1 mm bins): the outline the eye-level close-up sees."""
+    from scipy.ndimage import maximum_filter1d
+    xb = np.floor(Vs[:, 0] / 0.001).astype(int)
+    lo = xb.min()
+    Z = np.full(xb.max() - lo + 1, -1.0)
+    np.maximum.at(Z, xb - lo, Vs[:, 2])
+    Z = maximum_filter1d(Z, 3)
+    return lambda Q: Q[:, 2] - Z[np.clip(np.floor(Q[:, 0] / 0.001).astype(int) - lo, 0, len(Z) - 1)]
+
+
+def _mid_rows(head):
+    """Each head card's middle row: points along it and the way along it."""
+    P, D = [], []
+    for c, K in head:
+        M = c["V"].reshape(-1, 3, K, 3)[:, 1]
+        d = np.gradient(M, axis=1)
+        P.append(M.reshape(-1, 3)), D.append(d.reshape(-1, 3))
+    P, D = np.vstack(P), np.vstack(D)
+    D /= np.linalg.norm(D, axis=1)[:, None] + 1e-9
+    return P, D
+
+
+def _stand(p, d, L, a, tw, K=10, bend=0.25):
+    """Strands from p, leaving the mass (radial out) at `a` off their way d
+    (turned tw about the radial), arcing back a little toward it."""
+    nr = p - CENTRE
+    nr /= np.linalg.norm(nr, axis=1)[:, None]
+    d0 = d - nr * (d * nr).sum(1)[:, None]
+    d0 /= np.linalg.norm(d0, axis=1)[:, None] + 1e-9
+    d0 = d0 * np.cos(tw)[:, None] + np.cross(nr, d0) * np.sin(tw)[:, None]
+    dr = d0 * np.cos(a)[:, None] + nr * np.sin(a)[:, None]
+    s = np.linspace(0, 1, K)[None, :, None] * L[:, None, None]
+    return p[:, None] + dr[:, None] * s - nr[:, None] * (bend * np.sin(a) / L)[:, None, None] * s ** 2, nr
+
+
+def outline_cards(head, T, cfg, rng):
+    """(r7, the judge's fix 2) Crown clusters that break her outline: 3-4 mm
+    cards of 3-5 painted strands (the strip's outline columns), 25-40 mm,
+    20-40 degrees off the mass, base colour at 50-70%; `front` of them where
+    the eye-level close-up sees her outline (her top, each standing clear mm
+    over it), `back` on the upper back of her head (as far clear of her hair
+    all round)."""
+    P, D = _mid_rows(head)
+    allV = np.vstack([c["V"] for c, _ in head])
+    clr = hair_height(allV)
+    fo = front_outline(allV)
+    far = np.linalg.norm(P - T, axis=1) > 0.06
+    R, _, _ = _sph(P)
+    nz = (P[:, 2] - CENTRE[2]) / R
+    lo_, hi_ = cfg["clear"][0] / 1000, cfg["clear"][1] / 1000
+    picks = []
+    for zone, n_want in (("front", cfg["front"]), ("back", cfg["back"])):
+        if zone == "front":
+            cand = np.nonzero(far & (nz > 0.75) & (np.abs(P[:, 0]) < 0.055) & (P[:, 1] < CENTRE[1] + 0.02))[0]
+        else:
+            cand = np.nonzero(far & (nz > 0.1) & (nz < 0.75) & (P[:, 1] > CENTRE[1] + 0.02))[0]
+        got = []
+        lay = zone == "front" and "lay" in cfg          # (r8, the judge: laid along the comb, tips low)
+        ang, (zlo, zhi) = (cfg["lay"]["ang"], cfg["lay"]["clear"]) if lay else (cfg["ang"], (lo_ * 1000, hi_ * 1000))
+        for j in rng.permutation(cand)[:4000]:
+            if len(got) >= n_want:
+                break
+            if any(np.linalg.norm(P[j] - P[q[0]]) < 0.02 for q in picks + got):
+                continue
+            for _ in range(6):
+                L = rng.uniform(*cfg["L"])
+                a = np.radians(rng.uniform(*ang))
+                tw = rng.normal(0, cfg["lay"]["tw"] if lay else 0.35)
+                Q, _ = _stand(P[j:j + 1], D[j:j + 1], np.array([L]), np.array([a]), np.array([tw]), bend=cfg["lay"]["bend"] if lay else 0.25)
+                Q = Q[0]
+                ex = fo(Q).max() if zone == "front" else clr(Q).max()
+                if zlo / 1000 <= ex <= zhi / 1000 and clr(Q[:2]).max() < 0.002:
+                    got.append((j, L, a, tw, ex, zone))
+                    break
+        picks += got
+    n = len(picks)
+    j = np.array([q[0] for q in picks], int)
+    L, a, tw = (np.array([q[i] for q in picks]) for i in (1, 2, 3))
+    isf = np.array([q[5] == "front" for q in picks])
+    bnd = np.where(isf & ("lay" in cfg), cfg["lay"]["bend"] if "lay" in cfg else 0.25, 0.25)
+    Q, nr = _stand(P[j] - (P[j] - CENTRE) / np.linalg.norm(P[j] - CENTRE, axis=1)[:, None] * 0.001, D[j], L, a, tw, bend=bnd)
+    side = np.sign(P[j, 0] + 1e-6)[:, None] * np.array([1.0, 0.0, 0.0])
+    face = np.where(np.array([q[5] == "back" for q in picks])[:, None], 0.6 * side + 0.4 * nr, nr)
+    face /= np.linalg.norm(face, axis=1)[:, None]
+    c = cards(Q, rng.uniform(0.003, 0.004, n), [0], 0.006, narrow=0.35, floor=0.002, out_pts=np.repeat(face[:, None], Q.shape[1], 1), edge_in=False)
+    strip_uv(c, Q.shape[1], "outline", rng)
+    fin = np.clip(c["arc"] / 0.003, 0, 1)
+    c["alpha"] = np.repeat(rng.uniform(0.85, 1.0, n), 3 * Q.shape[1]) * fin * fin * (3 - 2 * fin)   # (x the strip's ~55% strands: 50-70% over the card)
+    if "lay" in cfg:                                            # (r8: the laid front ones faded over their outer 40%)
+        s_ = np.clip(c["arc"] / np.maximum(c["length"], 1e-6), 0, 1)
+        tf = np.clip((1 - s_) / cfg["lay"]["fade"], 0, 1)
+        tf = np.where(np.repeat(isf, 3 * Q.shape[1]), tf * tf * (3 - 2 * tf), 1.0)
+        c["alpha"] = c["alpha"] * tf
+        for i in range(n):
+            print("    outline %s %d: %.0f mm, %.0f deg off, tip %.1f mm over the lk0 outline (most %.1f), %.1f mm off her hair" % (
+                picks[i][5], i, L[i] * 1000, np.degrees(a[i]), fo(Q[i, -1:])[0] * 1000, fo(Q[i]).max() * 1000, clr(Q[i, -1:])[0] * 1000))
+    c["blunt"], c["lit"] = True, True
+    print("  outline clusters: %d front, %d back; cards 3-4 mm, %s mm long, %s deg off; past the outline mm: %s" % (
+        sum(q[5] == "front" for q in picks), sum(q[5] == "back" for q in picks), " ".join("%.0f" % (v * 1000) for v in L),
+        " ".join("%.0f" % np.degrees(v) for v in a), " ".join("%.1f" % (q[4] * 1000) for q in picks)))
+    return c
+
+
+def frizz_cards(head, T, cfg, rng):
+    """(r7) A frizz layer over her outline zone (top and upper back): short
+    2-3 mm wide cards of 2-3 thin wavy strands (the strip's frizz columns),
+    8-14 mm, leaving the mass at 8-16 degrees (tips 2-3 mm off it), 0.3 opaque."""
+    P, D = _mid_rows(head)
+    R, _, _ = _sph(P)
+    nz = (P[:, 2] - CENTRE[2]) / R
+    cand = np.nonzero((np.linalg.norm(P - T, axis=1) > 0.05) & (nz > 0.25) & (rise(P) > 0.02))[0]
+    j = rng.choice(cand, min(cfg["frizz"], len(cand)), replace=False)
+    n = len(j)
+    clr = hair_height(np.vstack([h["V"] for h, _ in head]))
+    L = rng.uniform(0.008, 0.014, n)
+    tw = rng.normal(0, 0.45, n)
+    want = rng.uniform(0.002, 0.003, n)
+    nr = (P[j] - CENTRE) / R[j][:, None]
+    p0 = P[j] - nr * (clr(P[j]) + 0.0005)[:, None]             # (rooted half a millimetre under her hair's outside)
+    a = np.zeros(n)
+    for i in range(n):                                          # (the least angle that stands its tip `want` clear)
+        for deg in np.arange(6.0, 46.0, 2.0):
+            Qi, _ = _stand(p0[i:i + 1], D[j[i]:j[i] + 1], L[i:i + 1], np.radians([deg]), tw[i:i + 1], K=6, bend=0.15)
+            a[i] = np.radians(deg)
+            if clr(Qi[0, -1:])[0] >= want[i]:
+                break
+    Q, _ = _stand(p0, D[j], L, a, tw, K=6, bend=0.15)
+    c = cards(Q, rng.uniform(0.002, 0.003, n), [0], 0.006, narrow=0.3, floor=0.002, edge_in=False)
+    strip_uv(c, 6, "frizz", rng)
+    fin = np.clip(c["arc"] / 0.002, 0, 1)
+    c["alpha"] = 0.3 * fin * fin * (3 - 2 * fin)
+    c["blunt"], c["lit"], c["matte"] = True, True, True
+    tip = clr(Q[:, -1])
+    print("  frizz: %d cards, %.0f-%.0f deg off, tips %.1f-%.1f mm off the mass (median %.1f)" % (n, np.degrees(a.min()), np.degrees(a.max()), np.percentile(tip, 10) * 1000, np.percentile(tip, 90) * 1000, np.median(tip) * 1000))
+    return c
+
+
+def hairline_band(comb, sides, cfg, rng, low=None):
+    """(r7, the judge's fix 3) Her hairline as a transition band, not an
+    opacity fade: combed-back cards of 3-4 painted strands (the strip's band
+    columns, ~0.6 mm strands, skin between them) rooted over the first
+    BAND depth past the jittered edge (sparser at the edge), within
+    cfg band degrees of her front; the cap starts under them (cap())."""
+    pts, nrm = roots(BAND["spacing"], above=-0.008, below=0.014)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    rj = rise(pts) - hl_jit(pts)
+    keep = (rj > BAND["keep"][0][0]) & (rj < BAND["depth"]) & (th >= cfg["band"][0]) & (th <= cfg["band"][1])
+    if low is not None:
+        keep &= (th < 40) | (pts[:, 2] > low)
+    keep &= rng.random(len(pts)) < np.interp(rj, *BAND["keep"])          # (sparse at the edge, skin between; full by 8 mm)
+    pts, nrm, rj = pts[keep], nrm[keep], rj[keep]
+    n, K = len(pts), 8
+
+    def cmb(p, side=None):                                       # (at her temples down and back: no criss-cross)
+        w = comb(p, side) if side is not None else comb(p)
+        tw = np.clip((np.degrees(np.abs(np.arctan2(p[:, 0] - CENTRE[0], -(p[:, 1] - CENTRE[1])))) - 35.0) / 15.0, 0, 1)[:, None]
+        w = w * (1 - tw) + np.array([0.0, 0.55, -0.83]) * tw
+        return w / (np.linalg.norm(w, axis=1)[:, None] + 1e-9)
+    sd = sides(pts) if sides else None
+    L = rng.uniform(*BAND["L"], n)
+    P = lie(pts - nrm * 0.0005, combed(pts, nrm, cmb(pts, sd)), cmb, L / (K - 1), np.full(n, K - 1), 0.0009, side=sd)
+    P = resample(P, K)
+    c = cards(P, rng.uniform(*BAND["width"], n), [0], 0.0009, narrow=0.3, floor=0.0007, edge_in=False)
+    strip_uv(c, K, "band", rng)
+    fin = np.clip(c["arc"] / np.repeat(rng.uniform(*BAND["root_fade"], n), 3 * K), 0, 1)   # (no row of blunt roots: each fades in)
+    fin = 0.25 + 0.75 * fin
+    s_ = np.clip(c["arc"] / np.maximum(c["length"], 1e-6), 0, 1)
+    tf = np.clip((1 - s_) / 0.35, 0, 1)
+    c["alpha"] = np.repeat(rng.uniform(*BAND["alpha"], n), 3 * K) * fin * fin * (3 - 2 * fin) * tf * tf * (3 - 2 * tf)
+    # (matte, base colour: no pale lattice at her front (r6). Within 45 degrees of her front only: run on down
+    # her temples (to 100-118) they read as a pale beaded rope at lk40 lit, a dark stripe matte)
+    c["blunt"], c["lit"], c["matte"] = True, True, True
+    print("  hairline band: %d cards (%d rooted within 3 mm of the edge), roots to %.0f mm past the jittered edge, %.0f-%.0f deg" % (
+        n, int((rj < 0.003).sum()), BAND["depth"] * 1000, cfg["band"][0], cfg["band"][1]))
+    return c
+
+
+def edge_groom(head, T, comb, sides, low=None):
+    """The band, outline clusters and frizz for EDGE's style (own RNGs; the
+    global one left as it was). head: [(card dict, points along each)]."""
+    out = []
+    if EDGE is None:
+        return out
+
+    def make():
+        rng = np.random.default_rng(3972)
+        if EDGE.get("band"):
+            out.append(hairline_band(comb, sides, EDGE, rng, low=low))
+        if os.environ.get("EDGE_OUTLINE", "1") == "1":
+            out.append(outline_cards(head, T, EDGE, rng))
+            out.append(frizz_cards(head, T, EDGE, rng))
+        return out
+    return _keep_rng(make)
+
+
+def hl_profile():
+    d = np.arange(-70, 71, 5.0)
+    th = np.radians(d)
+    p = np.c_[CENTRE[0] + 0.09 * np.sin(th), CENTRE[1] - 0.09 * np.cos(th), np.full(len(th), EYE_Z + 0.05)]
+    print("  hairline edge drawn back (mm) by deg: " + " ".join("%+.0f:%.1f" % (a, v) for a, v in zip(d, hl_jit(p) * 1000)))
+
+
 def build(style):
-    global RNG, CHAIN, HL_JIT
+    global RNG, CHAIN, HL_JIT, EDGE, _CLUMP_C
     import zlib
     CHAIN = None
     HL_JIT = False
+    _CLUMP_C = None
+    EDGE = EDGE_CFG.get(style) if os.environ.get("EDGE_R7", "1") == "1" else None
     RNG = np.random.default_rng(zlib.crc32(style.encode()))  # (each style the same however many are made)
     old = bpy.data.objects.get(f"hair_{style}")             # (from a run before, saved in the blend)
     if old:
@@ -2146,6 +2662,26 @@ def build(style):
         np.savez(os.environ["DBG_DUMP"] + f"_{style}.npz", HP=HP, EAR=EAR, EYE_Z=EYE_Z,
                  **{f"L{i}": c["V"] for i, c in enumerate(layers)},
                  **{f"K{i}": np.array([c.get("mat", 0), len(c.get("F", []))]) for i, c in enumerate(layers)})
+    # (r7: with edge-strip cards, the fine material's atlas is hair_fine_strands.png: the strand atlas squeezed
+    # into its top, the strip under it; every other fine card's v moved up into the top part)
+    for i_ in [int(v) for v in os.environ.get("DBG_ZERO", "").split(",") if v]:    # (test only: layer i unseen)
+        layers[i_]["alpha"] = np.zeros(len(layers[i_]["V"]))
+    strip_mode = any(c.get("strip") for c in layers)
+    for c in layers:
+        if strip_mode and c.get("mat", 0) == 3 and not c.get("strip"):
+            c["UV"] = c["UV"].copy()
+            c["UV"][:, 1] = FA_SPLIT + (1 - FA_SPLIT) * c["UV"][:, 1]
+    if EDGE is not None:
+        hl_profile()
+    if os.environ.get("EAR_ZONE", "1") == "1":
+        cut_, near_ = 0, []
+        for c in layers:
+            if c.get("mat", 0) in (0, 3):
+                h_, n_ = ear_zone_cut(c)
+                cut_ += h_
+                near_ += [] if n_ is None else [n_]
+        print("  ear zone: %d cards cut short; nearest card tip to an ear (below its top): %s mm; ears %s" % (
+            cut_, "%.1f" % min(near_) if near_ else "none", " ".join("%+d: front y %.1f, root z %.1f, tragus z %.1f" % (sg, e["yf"] * 1000, e["root"] * 1000, e["tragus"] * 1000) for sg, e in _EARF.items())))
     V, N, UV, C, F, M = [], [], [], [], [], []
     base = 0
     for li, c in enumerate(layers):
@@ -2221,8 +2757,10 @@ def build(style):
         at0 += len(c["V"])
     blue = np.concatenate([np.full(len(c["V"]), float(c.get("blue", 0.0))) for c in layers])
     Ch[:, 2] = np.maximum(Ch[:, 2], blue)
-    matte = np.concatenate([np.broadcast_to(np.asarray(c.get("matte", False), bool), (len(c["V"]),)) for c in layers])
-    Ch[matte, 2] = 0.5                                       # (face 38 r5: the shader matte mark: base colour, no shine)
+    matte = np.concatenate([np.broadcast_to(np.asarray(c.get("matte", False), float), (len(c["V"]),)) for c in layers])
+    Ch[matte >= 0.999, 2] = 0.5                              # (face 38 r5: the shader matte mark: base colour, no shine)
+    gm_ = (matte > 0.001) & (matte < 0.999)
+    Ch[gm_, 2] = 0.45 + 0.045 * matte[gm_]                   # (r8: graded, 0.45 none to 0.495 full)
     C = [Ch]
     cp = cap(comb, sides)
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])
@@ -2248,7 +2786,7 @@ def build(style):
     o.data.materials.append(hair_material("hair", ATLAS))
     o.data.materials.append(hair_material("hair_cap", SCALP))
     o.data.materials.append(tie_material())
-    o.data.materials.append(hair_material("hair_fine", ATLAS))
+    o.data.materials.append(hair_material("hair_fine", FINE_ATLAS if strip_mode else ATLAS))
     follow_head(o, at)
     # Its chain: each point's place along it and how much it moves with it
     # (a second UV); and the chain, its bone and what it is kept out of, in a
@@ -2478,6 +3016,8 @@ if __name__ == "__main__":
         draw_atlas()
     if not os.path.exists(SCALP) or "atlas" in ONLY:
         draw_scalp()
+    if not os.path.exists(FINE_ATLAS) or "atlas" in ONLY or "fine" in ONLY:
+        draw_fine_atlas()
     for st in [s for s in (ONLY or STYLES) if s in STYLES]:
         export(build(st), st)
     if os.environ.get("HAIR_BLEND"):
