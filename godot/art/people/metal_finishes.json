@@ -8,7 +8,7 @@
    "warden.greave": {"metal_rough": 0.36, "metal_env_graze": 0.45},
    "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45},
    "warden.cups": {"metal_rough": 0.22, "metal_blot": 0.2},
-   "plate.cups": {"metal_rough": 0.22, "metal_blot": 0.2},
+   "plate.cups": {"metal_rough": 0.27, "metal_blot": 0.2},
    "plate.plate": {"metal_rough": 0.38, "metal_blot": 0.2, "metal_fine": 1.0, "metal_rim_rough": 0.2, "metal_rim_bright": 1.15, "metal_rim_steel": 0.57, "metal_form": 1.0}
   }
  }
