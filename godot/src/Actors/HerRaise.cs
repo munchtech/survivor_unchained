@@ -93,10 +93,60 @@ public partial class HerRaise : SkeletonModifier3D
         };
     }
 
+    // her shoulder and armpit pose-space correctives (tools/assets/shoulder_psd_post.py, Play/ShoulderPsd): five shapes
+    // per side from the upper arm's direction in her torso frame. --psd-off, --psd K (strength), --psd-log.
+    readonly bool psdOff = Args.Has("psd-off"), psdLog = Args.Has("psd-log");
+    readonly float psdK = Args.Num("psd", 1f);
+    System.Collections.Generic.List<(MeshInstance3D Mi, int[] Ix)>? psd;
+    readonly float[] psdLast = new float[2 * 5];
+    readonly float[] psdW = new float[5];
+    int pelvis = -1, neck = -1;
+    double psdLogT;
+
+    void Psd(Skeleton3D sk, double delta)
+    {
+        if (pelvis < 0) { pelvis = sk.FindBone("pelvis"); neck = sk.FindBone("neck_01"); }
+        if (pelvis < 0 || neck < 0 || chest < 0) return;
+        if (psd == null)
+        {
+            psd = new();
+            var names = new string[2 * ShoulderPsd.Shapes.Length];
+            for (int i = 0; i < ShoulderPsd.Shapes.Length; i++) { names[i] = ShoulderPsd.Shapes[i] + "_l"; names[5 + i] = ShoulderPsd.Shapes[i] + "_r"; }
+            foreach (var c in sk.GetChildren())
+                if (c is MeshInstance3D mi && mi.Mesh != null && mi.FindBlendShapeByName(names[0]) >= 0)
+                    psd.Add((mi, System.Array.ConvertAll(names, n => mi.FindBlendShapeByName(n))));
+            System.Array.Fill(psdLast, -1f);
+            if (psdLog) GD.Print($"psd: on {psd.Count} meshes: {string.Join(" ", psd.ConvertAll(f => f.Mi.Name.ToString()))}");
+        }
+        var down = (sk.GetBoneGlobalPose(pelvis).Origin - sk.GetBoneGlobalPose(neck).Origin).Normalized();
+        var left = sk.GetBoneGlobalPose(chest).Basis.X;
+        var fwd = down.Cross(left);
+        bool print = psdLog && (psdLogT += delta) > 0.1;
+        if (print) psdLogT = 0;
+        for (int i = 0; i < 2; i++)
+        {
+            if (upper[i] < 0 || lower[i] < 0) continue;
+            var d = sk.GetBoneGlobalPose(lower[i]).Origin - sk.GetBoneGlobalPose(upper[i]).Origin;
+            var lat = i == 0 ? left : -left;
+            var (a, az) = ShoulderPsd.Angles((d.X, d.Y, d.Z), (down.X, down.Y, down.Z), (lat.X, lat.Y, lat.Z), (fwd.X, fwd.Y, fwd.Z));
+            ShoulderPsd.Weights(a, az, psdW);
+            if (print) GD.Print($"psd {(i == 0 ? "l" : "r")} A {a:0.0} az {az:0.0} w {string.Join(" ", System.Array.ConvertAll(psdW, x => x.ToString("0.00")))}");
+            for (int k = 0; k < 5; k++)
+            {
+                float v = psdOff ? 0 : psdW[k] * psdK;
+                int slot = 5 * i + k;
+                if (v == psdLast[slot]) continue;
+                psdLast[slot] = v;
+                foreach (var (mi, ix) in psd)
+                    if (GodotObject.IsInstanceValid(mi) && ix[slot] >= 0) mi.SetBlendShapeValue(ix[slot], v);
+            }
+        }
+    }
+
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
-        if (sk == null || off) return;
+        if (sk == null) return;
         if (chest < 0)
         {
             chest = sk.FindBone("spine_03");
@@ -109,8 +159,11 @@ public partial class HerRaise : SkeletonModifier3D
             }
         }
         if (chest < 0) return;
-        // (her meshes change as tops are worn: the fold's meshes looked up again each second)
-        if ((foldScan += delta) > 1) { foldScan = 0; folds = null; System.Array.Fill(foldLast, -1f); }
+        if ((foldScan += delta) > 1) { foldScan = 0; folds = null; psd = null; System.Array.Fill(foldLast, -1f); }
+        // (before the lift: the arms' direction is the clip's, which the lift doesn't move)
+        Psd(sk, delta);
+        if (off) return;
+        // (her meshes change as tops are worn: the fold's and psd's meshes looked up again each second, above)
         float squash = sk.GetNodeOrNull<HerJiggle>("HerJiggle") is HerJiggle j ? j.Squash : 1f;
         var inv = sk.GetBoneGlobalPose(chest).AffineInverse();
         bool print = log && (logT += delta) > 0.1;

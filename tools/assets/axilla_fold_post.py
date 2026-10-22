@@ -177,20 +177,20 @@ FOLLOW_NEAR, FOLLOW_FAR = 0.015, 0.03
 FOLLOW_K, FOLLOW_POW = 3, 4
 
 
-def follow(path, U, shapes):
+def follow(path, U, shapes, mark="axilla_fold", parts=(".top.", ".pauldrons.")):
     """An outfit's tops (and pauldrons) carry the same two morphs, each point moved as her skin under it moves
     (her nearest points' deltas, inverse-distance weighted; whole within FOLLOW_NEAR of her, none past FOLLOW_FAR), so
     the gap between them holds and nothing pokes through. Done-mark axilla_fold on the file."""
     G = _Gl(path)
     g = G.g
-    if "axilla_fold" in ((g.get("asset") or {}).get("extras") or {}):
-        print("AXILLA_FOLD: %s follows already" % os.path.basename(path))
+    if mark in ((g.get("asset") or {}).get("extras") or {}):
+        print("%s: %s follows already" % (mark.upper(), os.path.basename(path)))
         return
     tree = cKDTree(U)
     binb = bytearray(G.buf)
     moved = 0
     for n in g["nodes"]:
-        if "mesh" not in n or not any(k in n.get("name", "") for k in (".top.", ".pauldrons.")):
+        if "mesh" not in n or not any(k in n.get("name", "") for k in parts):
             continue
         mesh = g["meshes"][n["mesh"]]
         for p in mesh["primitives"]:
@@ -215,13 +215,13 @@ def follow(path, U, shapes):
         mesh.setdefault("extras", {}).setdefault("targetNames", []).extend([nm for nm, _ in shapes])
         k = len(shapes)
         mesh["weights"] = list(mesh.get("weights", [0] * (len(mesh["primitives"][0]["targets"]) - k))) + [0] * k
-    g.setdefault("asset", {}).setdefault("extras", {})["axilla_fold"] = {"follow_mm": [FOLLOW_NEAR * 1000, FOLLOW_FAR * 1000]}
+    g.setdefault("asset", {}).setdefault("extras", {})[mark] = {"follow_mm": [FOLLOW_NEAR * 1000, FOLLOW_FAR * 1000]}
     while len(binb) % 4:
         binb.append(0)
     g["buffers"][0]["byteLength"] = len(binb)
     G.buf = binb
     G.save()
-    print("AXILLA_FOLD: %s follows (%d point moves)" % (os.path.basename(path), moved))
+    print("%s: %s follows (%d point moves)" % (mark.upper(), os.path.basename(path), moved))
 
 
 def main(a):
