@@ -1204,6 +1204,7 @@ public static class People
         }
         // Her skin under the outfit's fitted pieces is drawn tucked in: each
         // outfit marks it in one channel of her vertex colours.
+        WornShape(p, "reaver", set == "reaver");
         int ch = System.Array.IndexOf(OutfitChannels, set);
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
             if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
@@ -1389,6 +1390,15 @@ public static class People
         string n = mi.Name.ToString();
         if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
         return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
+    }
+
+    /// <summary>Her body's worn shape (heroine.glb's morph worn_KEY, tools/assets/worn_reaver_post.py): 1 while the
+    /// garment it belongs to is worn, else 0. worn_reaver: under the reaver's top her breasts' undersides a little
+    /// heavier, a soft roll under its lower edge (armor 15 w1).</summary>
+    internal static void WornShape(Person p, string key, bool on)
+    {
+        foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
+            if (mi.Mesh != null && mi.FindBlendShapeByName("worn_" + key) is int i and >= 0) mi.SetBlendShapeValue(i, on ? 1f : 0f);
     }
 
     internal static bool IsSkin(Material? m) => m is ShaderMaterial sm && skinShader2 != null && sm.Shader == skinShader2;
