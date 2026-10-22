@@ -20,6 +20,13 @@ uniform float shine2_width = 40.0;
 uniform float shift = 0.06;
 uniform float shift2 = -0.1;
 uniform float through = 0.5;
+// (face 37: the strands' read. fibre_lo/fibre_hi: a strand's shade range in the atlas (was fixed 0.15/0.85);
+// lock_share: how much each card's own tone (its vertex green) moves it (was fixed 0.04); wrap: the light
+// wrapped round the hair (was fixed 0.45))
+uniform float fibre_lo = 0.15;
+uniform float fibre_hi = 0.85;
+uniform float lock_share = 0.04;
+uniform float wrap = 0.45;
 // (a pale near-neutral dye (platinum) held pale and neutral in warm light: ash cools its tone toward ash_tone,
 // lift raises it toward its swatch; both fade out with the dye's saturation and darkness: face 34)
 uniform float ash = 1.0;
@@ -140,7 +147,7 @@ void fragment() {
 	if (fibre_back && !FRONT_FACING) NORMAL = -NORMAL;
 	vec4 t = texture(strands, UV, strand_bias);
 	// (its shade kept from going too dark or too light, strand to strand)
-	t.r = mix(0.15, 0.85, t.r);
+	t.r = mix(fibre_lo, fibre_hi, t.r);
 	// Strand by strand (the atlas's green) and lock by lock (the card's green),
 	// from a deeper auburn to a lighter copper.
 	// (the deeper tone's warm shift in step with the dye's own saturation: copper deepens to auburn, but a
@@ -150,7 +157,7 @@ void fragment() {
 	vec3 dark = colour * mix(vec3(0.53), vec3(0.62, 0.5, 0.45), smoothstep(0.2, 0.5, dye_sat));
 	vec3 light = min(colour * vec3(1.4, 1.5, 1.55), vec3(1.0));
 	// (the card's own share small: at 0.12 each card took a flat tone of its own, a block on her crown)
-	vec3 tint = mix(colour, mix(dark, light, clamp(t.g * 0.96 + COLOR.g * 0.04, 0.0, 1.0)), variation);
+	vec3 tint = mix(colour, mix(dark, light, clamp(t.g * (1.0 - lock_share) + COLOR.g * lock_share, 0.0, 1.0)), variation);
 	// (gray as well as platinum went mauve by the fire, hue 32: the ash reaches the light grays, the lift only the palest)
 	float dye_neutral = 1.0 - smoothstep(0.2, 0.5, dye_sat), dye_lum = dot(colour, vec3(0.2126, 0.7152, 0.0722));
 	tint = min(tint * (1.0 + lift * dye_neutral * smoothstep(0.3, 0.6, dye_lum)), vec3(1.0));
@@ -236,7 +243,7 @@ float along_strand(vec3 t, vec3 h, float width) {
 void light() {
 	vec3 lc = LIGHT_COLOR * ATTENUATION / PI;
 	float nl = dot(NORMAL, LIGHT);
-	DIFFUSE_LIGHT += lc * clamp((nl + 0.45) / 1.45, 0.0, 1.0);
+	DIFFUSE_LIGHT += lc * clamp((nl + wrap) / (1.0 + wrap), 0.0, 1.0);
 	DIFFUSE_LIGHT += lc * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
 	vec3 h = normalize(LIGHT + VIEW);
 	// (each strand's highlight a little up or down it from the next's: the
