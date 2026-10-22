@@ -65,7 +65,7 @@ def padded(img):
 
 
 # (face 38: the judged lock setting, a2: lock_shade 0.5, gap 0.9, id_jit 0.05; and the judge's two fixes)
-ATLAS_LOCKS = dict(lock_shade=0.5, gap=0.9, id_jit=0.05, locks=1.0, gap_floor=0.4, lock_cap=1.12)
+ATLAS_LOCKS = dict(lock_shade=0.3, gap=0.9, id_jit=0.05, locks=1.0, gap_floor=0.6, lock_cap=1.12)
 
 
 def draw_atlas(size=(4096, 2048), over=3):
@@ -721,6 +721,8 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None, low=None, fine=Fa
     P = resample(P, points)                                      # (one stopped short ends where it stopped)
     c = cards(P, RNG.uniform(0.003, 0.006, len(pts)) * (0.5 if fine else 0.75), list(range(6, 16)), 0.004, floor=0.002 if fine else 0.0025)
     c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)) * 0.8, 3 * points)
+    if fine:                                                     # (face 38 r2: 0.6 at her hairline to 0.15 2 cm back, by its root)
+        c["alpha"] = c["alpha"] / 0.8 * np.repeat(np.interp(rise(pts), [0.0, 0.02], [0.6, 0.15]), 3 * points)
     c["mat"] = 3
     if os.environ.get("DBG_NOHL") != "1":                       # (test only)
         out.append(c)
@@ -890,25 +892,52 @@ def toward(T):
 # millimetres times its layer's share (the inner layer none, the outer all),
 # easing in over each strand's first 12 mm and out over the 2-7 cm before the
 # tie, so the gather at the back stays put; the sides only above her ears.)
-BRAID_VOL = dict(crown=0.009, side=0.006, share=(0.0, 0.55, 1.0), root=0.012, tie=(0.02, 0.05))
+BRAID_VOL = dict(at=(0.0, 0.02, 0.05, 0.09, 0.14), lift=(0.0015, 0.003, 0.008, 0.0065, 0.004), temple=0.0025,
+                 noise=0.35, wave=(0.0025, 0.03), share=(0.0, 0.55, 1.0), root=0.012, tie=(0.02, 0.05))
 BRAID_EAR_CLEAR = 0.004        # (no card point nearer her ear than this, below its top: cut short there)
 
 
-def lift_layer(P, T, share, vol=BRAID_VOL):
-    """Strands P (S, K, 3) pushed out from her skull's middle: the volume."""
+def lift_layer(P, T, share, vol=BRAID_VOL, waves=False, seed=0):
+    """Strands P (S, K, 3) pushed out from her skull's middle: the volume.
+    (face 38 r2, the judge: an even shell read as a bigger helmet. Now
+    tapered: the front 2 cm at most 3 mm, peaking 8 mm about 5 cm behind her
+    hairline, temples and over her ear 2.5 mm, her nape 2 mm and under (a
+    braid pulls them tight); +-35% strand to strand; with `waves`, +-2.5 mm
+    waves about 30 mm long along each strand.)"""
     if share <= 0:
         return P, 0.0, 0.0
     ss = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
+    rng = np.random.default_rng(3800 + seed)
     ear_top = float(HP[EAR, 2].max()) if EAR.any() else EYE_Z + 0.01
-    z, ax = P[..., 2], np.abs(P[..., 0])
-    crown = ss((z - (EYE_Z + 0.04)) / 0.06)
-    side = ss((ax - 0.035) / 0.03) * ss((z - ear_top) / 0.025)
-    arc = np.concatenate([np.zeros((len(P), 1)), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)], 1)
-    fade = ss(arc / vol["root"]) * ss((np.linalg.norm(P - T, axis=2) - vol["tie"][0]) / (vol["tie"][1] - vol["tie"][0]))
-    amt = share * np.maximum(vol["crown"] * crown, vol["side"] * side) * fade
     r = P - CENTRE
-    r /= np.linalg.norm(r, axis=2)[..., None] + 1e-9
-    top, sid = crown > 0.9, (side > 0.9) & (crown < 0.3)
+    R = np.linalg.norm(r, axis=2)
+    r /= R[..., None] + 1e-9
+    z = P[..., 2]
+    th = np.arctan2(P[..., 0] - CENTRE[0], -(P[..., 1] - CENTRE[1]))
+    e = np.arcsin(np.clip((hairline_z(th.ravel()).reshape(th.shape) - CENTRE[2]) / (R + 1e-9), -1, 1))
+    hf = np.stack([np.sin(th) * np.cos(e), -np.cos(th) * np.cos(e), np.sin(e)], -1)
+    d = R * np.arccos(np.clip((r * hf).sum(-1), -1, 1))          # (over her scalp from her hairline, straight back)
+    crown = np.interp(d, vol["at"], vol["lift"])
+    low = 0.0025 * ss((z - (ear_top - 0.045)) / 0.035) * np.where(np.abs(th) > np.radians(110), 0.8, 1.0)
+    top_w = ss((z - (ear_top + 0.01)) / 0.05)
+    amt = low + (np.maximum(crown, low) - low) * top_w
+    side_w = ss((np.abs(th) - np.radians(30)) / np.radians(30)) * (1 - ss((z - (ear_top + 0.03)) / 0.035))
+    amt = amt + (np.minimum(amt, vol["temple"]) - amt) * side_w
+    amt = amt * (1 + vol["noise"] * rng.uniform(-1, 1, len(P)))[:, None]
+    arc = np.concatenate([np.zeros((len(P), 1)), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)], 1)
+    if waves:
+        amt = amt + vol["wave"][0] * np.sin(2 * np.pi * arc / vol["wave"][1] + rng.uniform(0, 2 * np.pi, len(P))[:, None]) * ss(amt / 0.004) * ss((d - 0.015) / 0.02) * (1 - side_w)
+    amt = np.minimum(amt, np.interp(d, [0.0, 0.02, 0.03], [0.002, vol["lift"][1], 1.0]))   # (her front 2 cm held to 3 mm whatever the noise)
+    fade = ss(arc / vol["root"]) * ss((np.linalg.norm(P - T, axis=2) - vol["tie"][0]) / (vol["tie"][1] - vol["tie"][0]))
+    amt = share * np.clip(amt, 0, None) * fade
+    if share >= 1 and os.environ.get("LIFT_REPORT", "1") == "1":
+        sel = fade > 0.9
+        for nm, m in (("front 2cm", d < 0.02), ("crown 4-6cm", (d > 0.04) & (d < 0.06) & (np.abs(th) < 0.5)),
+                      ("temple", (side_w > 0.7)), ("nape", (z < ear_top) & (np.abs(th) > np.radians(120)))):
+            m = m & sel
+            if m.any():
+                print("    lift %s: mean %.1f max %.1f mm" % (nm, amt[m].mean() * 1000, amt[m].max() * 1000))
+    top, sid = (d > 0.04) & (d < 0.06), side_w > 0.7
     return P + r * amt[..., None], float(amt[top].mean() if top.any() else 0), float(amt[sid].mean() if sid.any() else 0)
 
 
@@ -956,7 +985,7 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
             print("  gathered: %d of %d never reached the tie, cut where nearest it" % (miss.sum(), len(P)))
         P = resample(P, points)
         if vol:
-            P, mc, ms = lift_layer(P, T, BRAID_VOL["share"][min(len(out), 2)])
+            P, mc, ms = lift_layer(P, T, BRAID_VOL["share"][min(len(out), 2)], waves=len(out) >= 2, seed=len(out))
             print("  volume: layer %d lifted %.1f mm at her crown, %.1f mm at her sides" % (len(out), mc * 1000, ms * 1000))
         if os.environ.get("DBG_NOLOWG") == "1":                 # (test only: the cards rooted beside her nape, below her ear's top, folded away under her scalp)
             lowg = (pts[:, 2] < float(HP[EAR, 2].max())) & (np.abs(pts[:, 0]) > 0.03)
@@ -1669,22 +1698,24 @@ def braid_flyaways(T, comb, n_want=BRAID_FLY):
     th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
     crown = pts[:, 2] > EYE_Z + 0.06
     temple = (th > 25) & (th < 80) & (pts[:, 2] > EYE_Z + 0.02)
-    cand = np.nonzero((crown | temple) & (np.linalg.norm(pts - T, axis=1) > 0.06))[0]
+    # (face 38 r2, the judge: ~5 hooked ones at the front of her crown, dark curls: none rooted within 3 cm of her front hairline)
+    front = (th < 35) & (rise(pts) < 0.03)
+    cand = np.nonzero((crown | temple) & ~front & (np.linalg.norm(pts - T, axis=1) > 0.06))[0]
     pick = rng.choice(cand, min(n_want, len(cand)), replace=False)
     pts, nrm = pts[pick], nrm[pick]
     n, points = len(pts), 10
-    turn = rng.normal(0, 0.35, n)
+    turn = np.clip(rng.normal(0, 0.3, n), -0.5, 0.5)          # (curl at most ~30 degrees)
 
     def astray(p, side=None):
         w = comb(p, side)
         return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
     L = rng.uniform(0.035, 0.07, n)
     P = lie(pts - nrm * 0.001, combed(pts, nrm, astray(pts)), astray, L / (points - 1), np.full(n, points - 1),
-            0.011, side=no_part(pts), lift=rng.uniform(0.006, 0.016, n), stop=lambda q: np.linalg.norm(q - T, axis=1) < 0.04)
+            0.011, side=no_part(pts), lift=rng.uniform(0.003, 0.008, n), stop=lambda q: np.linalg.norm(q - T, axis=1) < 0.04)
     P = resample(P, points)
-    P, _, _ = lift_layer(P, T, 1.0)                              # (off the outer layer, not under it)
+    P, _, _ = lift_layer(P, T, 1.0, seed=9)                      # (off the outer layer, not under it)
     c = cards(P, rng.uniform(0.0016, 0.0028, n), [11, 12, 13, 14, 15], 0.011, narrow=0.6, floor=0.003)
-    c["alpha"] = np.repeat(rng.uniform(0.7, 0.95, n), 3 * points)
+    c["alpha"] = np.repeat(rng.uniform(0.35, 0.5, n), 3 * points)   # (face 38 r2: at most 0.5, no dark lines)
     c["mat"] = 3
     c["tip_fade"] = (0.35, 0.015)
     c["lit"] = True
