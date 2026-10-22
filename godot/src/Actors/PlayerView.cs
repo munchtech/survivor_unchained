@@ -705,8 +705,8 @@ public partial class PlayerView : Node3D
         if (stillT > 1.0) ranFor = 0;
         bool calm = b.NearestHostile(p.X, p.Z, 14) == null && (!Busy || fullSoft);
         if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
-        // (Only with her left hand free: a shield or an off-hand piece would swing across her head; FreeHand.)
-        if (ranFor > 6 && stillT > 0.75 && FreeHand.Left(loadout.Arms, sheath.Sheathed, id => WeaponSockets.SocketOf(Arms.KindOf(id)) != null))
+        // (Only with her hands empty, every piece at its socket: FreeHand.)
+        if (ranFor > 6 && stillT > 0.75 && FreeHand.Both(loadout.Arms, sheath.Sheathed, id => WeaponSockets.SocketOf(Arms.KindOf(id)) != null))
         {
             ranFor = 0;
             FullHer("catch_breath", 1, true);
