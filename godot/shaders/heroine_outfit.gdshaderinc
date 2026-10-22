@@ -28,6 +28,7 @@ uniform float look_rig = 0.0;
 uniform float look_metal_rough = 0.30;
 uniform float look_metal_dim = 1.0;                // (r4: was 0.70, older than the 1.2 highlight cap: the Look pauldron went a black lacquered ball. And its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
 uniform float look_leather_rough = 0.60;
+uniform float leather_rough_floor = 0.0;          // (armor 14, 22 Oct: a leather's roughness floor off its burnished edges, from its outfit_materials.json row "rough_floor". The arcanist bodysuit's plumleather at 0.58: at 0.42 its cups caught the key as a pointed highlight at each apex (read as nipple pokes) and a dark band under it (a crease), and a plastic streak at night; the shape alone was smooth)
 // Metal's standard (touch-up, 18 Oct): worn, forged; never a mirror.
 uniform float metal_rough = 0.45;                  // (its plate's satin roughness, varied about this over the piece: 0.35-0.55 with the detail)
 uniform float metal_rough_wear = 0.26;             // (where worn bright: its edges and, in patches, what stands out; 0.2-0.3)
@@ -174,6 +175,7 @@ void fragment() {
 		// burnished to 0.28, a rolled binding seen edge-on caught the sky as a pale
 		// line along its top that read as a gap, judge 5)
 		rough = clamp(rough * 0.9 - 0.08 * bulge - 0.1 * near_edge + 0.1 * hollow, mix(0.42, 0.36, near_edge), 0.95);
+		rough = max(rough, leather_rough_floor * (1.0 - near_edge));
 		// Stitches: dashes along the edge, `stitch_in` in, square to the
 		// edge's way (its direction from how the distance changes on screen).
 		vec2 g = vec2(dFdx(edge), dFdy(edge));
@@ -399,6 +401,11 @@ void fragment() {
 	if (debug_view == 5) { ALBEDO = vec3(0.30, 0.30, 0.36); ROUGHNESS = 0.4; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (its shape alone: flat colour, no normal map, no mottle)
 	if (debug_view == 6) { ALBEDO = vec3(0.0); EMISSION = dbg6 * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 3) { ALBEDO = vec3(sky); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
+	if (debug_view == 7) { NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (armor 14: its normal map alone off)
+	if (debug_view == 8) { ALBEDO = vec3(0.10, 0.09, 0.16); }   // (armor 14: its albedo alone flat)
+	if (debug_view == 10) { ALBEDO = clamp(col, 0.0, 1.0); }   // (armor 14: no sky occlusion)
+	if (debug_view == 11) { ALBEDO = clamp(texture(albedo, UV).rgb * tint * mix(0.55, 1.0, sky), 0.0, 1.0); }   // (armor 14: the texture and sky only, no mottle/wear)
+	if (debug_view == 9) { ROUGHNESS = 0.55; }   // (armor 14: its roughness alone flat)
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }
 
