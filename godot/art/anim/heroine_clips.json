@@ -1,5 +1,7 @@
 {
 	"arcanist_show": {
+		"grip_slide": 0.036,
+		"grip_tilt": 20.0,
 		"layer": "full",
 		"length": 2.59999990463257,
 		"licence": "own work",
@@ -242,6 +244,8 @@
 			0.666666666666667,
 			1.43333333333333
 		],
+		"grip_slide": 0.036,
+		"grip_tilt": 20.0,
 		"layer": "full",
 		"length": 2.0,
 		"licence": "own work",
@@ -289,16 +293,20 @@
 		"source": "keyed (tools/anim)"
 	},
 	"idle_arcanist": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 15 deg, the body turned back 2 deg; head's mean pitch brought to +3 deg",
+		"grip_slide": 0.036,
+		"grip_tilt": 20.0,
 		"layer": "full",
-		"length": 5.43333339691162,
+		"length": 5.0,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE Strutting_ID frames 1153-1479 (60 fps)",
+		"source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
 		"speed": 0.0,
 		"weapon": "staff"
 	},
 	"idle_arcanist_break": {
+		"grip_slide": 0.036,
+		"grip_tilt": 20.0,
 		"layer": "full",
 		"length": 3.33333325386047,
 		"licence": "own work",
@@ -307,22 +315,22 @@
 		"weapon": "staff"
 	},
 	"idle_arcanist_staff_town": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 5 deg, carried 5 cm, knees 15/5 deg, a settle of 20%); head's mean tilt -0.2 deg taken to 40%",
 		"layer": "full",
-		"length": 5.69999980926514,
+		"length": 5.0,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE WiggleHips_ID frames 876-1218 (60 fps)",
+		"source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
 		"speed": 0.0,
 		"weapon": "staff"
 	},
 	"idle_arcanist_town": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 5 deg, carried 5 cm, knees 15/5 deg, a settle of 20%); head's mean tilt -0.2 deg taken to 40%",
 		"layer": "full",
-		"length": 5.69999980926514,
+		"length": 5.0,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE WiggleHips_ID frames 876-1218 (60 fps)",
+		"source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
 		"speed": 0.0,
 		"weapon": ""
 	},
@@ -345,12 +353,12 @@
 		"weapon": "axe"
 	},
 	"idle_reaver_town": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -2.6 deg taken to 40%",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 7 deg, carried 7 cm, knees 5/10 deg, a settle of 30%); head's mean tilt -0.3 deg taken to 40%",
 		"layer": "full",
-		"length": 5.09999990463257,
+		"length": 5.0,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE WiggleHips_ID frames 744-1050 (60 fps)",
+		"source": "100STYLE Proud_ID frames 843-1143 (60 fps)",
 		"speed": 0.0,
 		"weapon": ""
 	},
@@ -383,12 +391,12 @@
 		"weapon": "daggers"
 	},
 	"idle_stalker_town": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -7.1 deg taken to 40%",
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 5 deg, carried 5 cm, knees 9/17 deg, a settle of 40%); a slow look 28 deg to her right and back; head's mean tilt -1.8 deg taken to 40%",
 		"layer": "full",
-		"length": 5.83333349227905,
+		"length": 5.19999980926514,
 		"licence": "CC BY 4.0",
 		"loop": true,
-		"source": "100STYLE WiggleHips_ID frames 1244-1594 (60 fps)",
+		"source": "100STYLE HandsInPockets_ID frames 611-923 (60 fps)",
 		"speed": 0.0,
 		"weapon": ""
 	},
@@ -514,17 +522,6 @@
 		"speed": 5.1,
 		"steps": 2.0,
 		"weapon": "wand"
-	},
-	"run_arcanist_wand_town": {
-		"cycle": 0.666666666666667,
-		"layer": "full",
-		"length": 0.666666686534882,
-		"licence": "own work",
-		"loop": true,
-		"source": "keyed (tools/anim/gait.py)",
-		"speed": 5.1,
-		"steps": 2.0,
-		"weapon": ""
 	},
 	"run_reaver": {
 		"cycle": 0.633333333333333,
@@ -671,17 +668,6 @@
 		"steps": 2.0,
 		"weapon": "wand"
 	},
-	"sprint_arcanist_wand_town": {
-		"cycle": 0.666666666666667,
-		"layer": "full",
-		"length": 0.666666686534882,
-		"licence": "own work",
-		"loop": true,
-		"source": "keyed (tools/anim/gait.py)",
-		"speed": 7.395,
-		"steps": 2.0,
-		"weapon": ""
-	},
 	"sprint_reaver": {
 		"cycle": 0.633333333333333,
 		"layer": "full",
@@ -779,6 +765,8 @@
 		"weapon": "crossbow"
 	},
 	"stop_arcanist_l": {
+		"grip_slide": 0.036,
+		"grip_tilt": 20.0,
 		"layer": "full",
 		"length": 0.800000011920929,
 		"licence": "own work",
@@ -787,6 +775,8 @@
 		"weapon": "staff"
 	},
 	"stop_arcanist_r": {
+		"grip_slide": 0.036,
+		"grip_tilt": 20.0,
 		"layer": "full",
 		"length": 0.800000011920929,
 		"licence": "own work",
