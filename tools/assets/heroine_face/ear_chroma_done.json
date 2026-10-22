@@ -1,0 +1,47 @@
+{
+ "doe": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.89,
+  "sha1": "fe9e3810be1b864c49a98c2a832163ccc9e22f3f"
+ },
+ "fey": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.75,
+  "sha1": "c74d8f15ea7afe5061f329babcdddabd5d5bb8d9"
+ },
+ "hardwon": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.89,
+  "sha1": "38fcbeddb7d1d88e0597ea1eaee29105ba200494"
+ },
+ "highborn": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.62,
+  "sha1": "e4eea88481e8e972651109adcf013a8ab944dec7"
+ },
+ "moonlit": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.6,
+  "sha1": "45dbc543540ad9bfa8441e297e791d15b98e2533"
+ },
+ "own": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.76,
+  "sha1": "b02af1e0f7e1d4949e6c7418421caba0cd1fd50f"
+ },
+ "saffron": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.96,
+  "sha1": "b567bc960210ff0b8b52fb9645644dd2330c2163"
+ },
+ "vixen": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.66,
+  "sha1": "21a97fd070da7d25a8be965e022973afa3366264"
+ },
+ "wildling": {
+  "base": "b684acec4c3bd6023bb0f7247c7f4913cade395d",
+  "c": 0.87,
+  "sha1": "c0b3e50e29d2f988781d9cbf217ea8c4ff85330c"
+ }
+}
