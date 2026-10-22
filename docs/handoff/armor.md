@@ -2,6 +2,55 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Armor 15 (22 Oct): bust MR READY (bust-15@eb667858); next: the upper-arm sculpt once it merges, then B2
+Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\a36cc4dd-fb3f-4250-b59c-d2116ef79a9a\scratchpad\armor`:
+- r1-r3: the reaver wrap solvers
+- w1: the worn shape
+- b1: the night blot
+- j2/j3/j4: the judge briefs and verdicts
+- mr: the MR worker's brief
+- j4.sh: the 20-frame shoot
+- j4\crops.py: box 740,420,1300,940 on the new eye-level close-up
+
+**The reaver:**
+- `wrap()` in heroine_outfits (`WRAP=0` gives the old bandeau), plus `tools/assets/wrap_post.py`. It transplants the `--only reaver` build into the installed outfit, then does `skin_union()` (body + skin_graft), tuck, cover, LOD and `compact()`.
+- Shape:
+  - High and narrow (nz-0.040 to +0.024), underboob bare (the owner: "reaver needs underboob").
+  - It dips 28 of 54 mm into the cleavage, and its edges press in 2-5 mm.
+  - The sides drop 15 mm (`WRAP_SIDE`).
+  - Its weights are re-copied from her final skin (`WRAP_SKINW`).
+- Wearcheck: worst 5.6, p99 3.1 (old band 19.7 / 10.1).
+- `worn_reaver_post.py` (heroine_body_post step 6) rebuilds the reaver channel from armor_tuck/reaver.*.bin and adds the morph `worn_reaver`:
+  - about 1.3 mm of roll under the band;
+  - the lower pole about 3 mm lower and fuller;
+  - the outer side 1.8 mm in.
+  `People.WornShape` sets it, from HerOutfit and HerWear.Apply.
+
+**Warden/plate night blot:** metal_finishes pieces `warden.cups` and `plate.cups` at metal_rough 0.22. Their metal_blot 0.2 only acts with B2's shader.
+
+**Arcanist plumleather:** floor 0.50, spread 0.85, clear coat 0.05 at 0.45 (J3 picked c1).
+
+**Max judges, on usage:**
+- J2 (old camera): nude, warden, plate and ranger PASS; reaver PASS-WITH-NOTES; arcanist FAIL, near (PVC).
+- J3: the arcanist PASS-WITH-NOTES.
+- J4, on the new eye-level close-up: all six PASS or PASS-WITH-NOTES. Its notes:
+  - the reaver band's top edge runs almost straight;
+  - the arcanist's night glow is the glossiest; if the owner says latex, drop the clear coat to 0.02.
+- Sheets: `godot/.shots/armor15/j4/bust_*_half.jpg`.
+
+**Open, outside the bust:**
+- The arcanist's puff sleeves read as inflated pads.
+- A small notch in the arcanist neckline, screen-left of her throat, in the turned frames.
+- The white satin gloves look flat.
+
+**The MR:** bust-15, off integration ededfdad, built with plumbing; tests 1046/0/8. It merges clean onto 9252a790. A verify shoot on a bust-15 copy matches the judged frames (mean abs diff 0.25-1.45 out of 765).
+
+**Next: the upper-arm sculpt** (approved). Face 38's numbers are in `...\scratchpad\face38\arms\report.md`:
+- the inner side 1.5-2 cm slimmer at 15-50%;
+- the armpit join lower;
+- a small deltoid swell at 10-25%.
+It is a mirrored heroine_body_post step, with sleeves and arm pieces re-fitted. One max judge on the Look and the close-up, nude and each top; cap 2; its own MR.
+
 ## Handed off (Armor 14, 22 Oct, at ~245k): PERFECT-BUST pass at judge round 2 of 2; next: the four steps below, then MR
 Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\a36cc4dd-fb3f-4250-b59c-d2116ef79a9a\scratchpad\armor` (s1-s3 = solver briefs + reports, j1\brief.md + verdict.md = the bust judge, j1.txt/j1.sh = its 20-frame shoot, shoot2.sh, setmat.py = plumleather knobs for trials, bustmeas.py/wts.py = measures). **Judges and solvers now run on USAGE (su-lead-max subagents), not the API (owner, via main, 22 Oct).**
 **Done on armor-7 (unmerged; integration merged at e33d611a incl. Face 38's soft neck relief):**
