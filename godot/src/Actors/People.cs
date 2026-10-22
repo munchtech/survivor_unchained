@@ -847,6 +847,9 @@ public static class People
     // (face 39 dye2: saturation 0.58 to 0.65, not 0.3 to 0.5: brown, #5e3e28 (hue 24, saturation 0.57), took the red
     // settings and its brows read crimson-brown, #601203 against a hair of hue 21; copper 0.70, auburn 0.77,
     // strawberry 0.68, chestnut 0.74 stay whole)
+    /// <summary>A red hair's brows on fair skin (HerPaint, face 40 b3): its dye's chroma and lightness times these,
+    /// its hue plus the third (degrees, toward auburn).</summary>
+    static readonly Vector3 BrowCopper = new(0.65f, 0.92f, -10f);
     public static float BrowRed(Color b) => (1f - Mathf.SmoothStep(25f, 35f, b.H * 360f)) * Mathf.SmoothStep(0.58f, 0.65f, b.S);
 
     /// <summary>How blonde a hair is (hue 35 degrees or more, its colour kept, light: honey, fair): its brows lighter
@@ -925,6 +928,22 @@ public static class People
                         float plain = deep * (1f - Mathf.SmoothStep(0.03f, 0.06f, Oklch(b).C));
                         dye = FromOklch(dL, Mathf.Lerp(dC, Mathf.Max(dC, BrowDeepWarm), plain), Mathf.Lerp(dH, 45f, plain));
                     }
+                    // (face 40 b3, the judge: a copper's brows on fair skin read like marker (#783d1b, saturation 0.77): its
+                    // dye's chroma down and darker, its hue toward auburn, as grown brows. Env BROWCOP "chroma,light,hue" in a
+                    // shot: tried without a build)
+                    float fairRed = (1f - deep) * BrowRed(b);
+                    if (fairRed > 0f)
+                    {
+                        var (cc, cl, ch) = (BrowCopper.X, BrowCopper.Y, BrowCopper.Z);
+                        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("BROWCOP") is { Length: > 0 } bc
+                            && bc.Split(',') is [var a0, var a1, var a2])
+                        {
+                            var ci = System.Globalization.CultureInfo.InvariantCulture;
+                            (cc, cl, ch) = (float.Parse(a0, ci), float.Parse(a1, ci), float.Parse(a2, ci));
+                        }
+                        var (rL, rC, rH) = Oklch(dye);
+                        dye = FromOklch(rL * Mathf.Lerp(1f, cl, fairRed), rC * Mathf.Lerp(1f, cc, fairRed), rH + ch * fairRed);
+                    }
                     m.SetShaderParameter("dye", dye);
                     // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
                     m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
@@ -956,9 +975,11 @@ public static class People
                     // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
                     // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
                     // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
+                    // (face 40 b3: a blonde's at most 0.29, was 0.34: with each brow's darkening evened (heroine_paint.gdshaderinc's
+                    // mul_side) a blonde's lighter brow went past 0.6 of the skin beside it)
                     if (deep > 0f)
                     {
-                        float room = Mathf.Lerp(0.25f, 0.34f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
+                        float room = Mathf.Lerp(0.25f, 0.29f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
                         m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
                         m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
                         m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
@@ -1075,7 +1096,7 @@ public static class People
     /// not his stubble's 0.85, as what stayed of her head's pale paint greyed it) and its hue ahead of its dark
     /// (scalp_lead, see heroine_skin.gdshader): face 32, 20 October, her hairline's grey band at the Look. (env SCALP
     /// "dark=0.3,sat=1,max=1,lead=1" in a shot: tried without a build.)</summary>
-    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f;
+    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f, ScalpFollow = 1f, ScalpDarkMin = 0.8f;
     public static Color ScalpColour(Color hair)
     {
         float dark = 0.3f, sat = 1.0f;
@@ -1085,7 +1106,7 @@ public static class People
                 var t = kv.Split('=');
                 if (t.Length != 2) continue;
                 float v = float.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture);
-                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v;
+                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v; else if (t[0] == "follow") ScalpFollow = v; else if (t[0] == "darkmin") ScalpDarkMin = v;
             }
         var c = hair.Darkened(dark);
         c = Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
@@ -1126,6 +1147,11 @@ public static class People
                 m.SetShaderParameter("scalp_max", ScalpMax);
                 m.SetShaderParameter("scalp_lead", ScalpLead);
                 m.SetShaderParameter("scalp_hue", ScalpHue);
+                // (face 40 b3: under a dark hair her skin's own colour at the hairline taken to the hair's: black's rust band on deep skin)
+                // (and its dark there whole, not held lighter on deep skin (scalp_dark_min 0.4): her skin's own red-brown under it)
+                float dk = 1f - Mathf.SmoothStep(0.15f, 0.35f, hair.Luminance);
+                m.SetShaderParameter("scalp_follow", ScalpFollow * dk);
+                m.SetShaderParameter("scalp_dark_min", Mathf.Lerp(0.4f, ScalpDarkMin, dk));
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");

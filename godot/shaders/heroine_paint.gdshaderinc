@@ -63,6 +63,20 @@ uniform float hair_lo = 0.08;
 // a dark warm brown, a near-neutral for black, a paler ash-brown for a blonde))
 uniform vec3 deep_tint = vec3(0.3, 0.2, 0.14);
 uniform float hair_hi = 0.6;
+// (face 40 b3, the judge: at night the darkest strokes went navy and blue-violet (#010002, hue 266): toward a tint of its
+// own the multiply made her lit skin there the night's light times that tint, a near-neutral dark the grade's toe takes
+// blue. Now one darken (that factor's luminance) times a fixed warm tint, so the stroke keeps the hue of her own lit
+// skin under it, warmed (mul_scalar 1; 0 the per-channel factor as r2, held to mul_warm's order if mul_order is 1))
+uniform vec3 mul_warm = vec3(1.0, 0.88, 0.78);
+uniform float mul_scalar = 1.0;
+uniform float mul_order = 0.0;
+// (and each brow's own share of the darkening, over 1 lighter: her paint's two brows are not alike, and under the
+// darken one sat at 0.38 of the skin beside it, the other at 0.49 (black, Look lk0, screen value). Her head's UV has
+// them side by side across UV.x mul_split: mul_side_a under it (her right brow, screen-right at the Look), mul_side_b
+// over; 1.15 and 1.55 bring both to about 0.53)
+uniform float mul_side_a = 1.15;
+uniform float mul_side_b = 1.55;
+uniform float mul_split = 0.512;
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -154,7 +168,16 @@ void fragment() {
 		// (against the texel's own paint, her skin's painted brow in it: against the skin round it, that brow, already dark
 		// and red under a deep tone, went near black (#040308) in the cores and orange-red at the edges; above 1 where the
 		// dye has more of a channel than that paint)
-		ALBEDO = mix(vec3(1.0), clamp(dt / max(here * skin_tone, vec3(2e-3)), 0.0, 8.0), a);
+		vec3 f = clamp(dt / max(here * skin_tone, vec3(2e-3)), 0.0, 8.0);
+		float fl = dot(f, lum);
+		vec3 fo = vec3(f.r, min(f.g, f.r * mul_warm.g / max(mul_warm.r, 1e-3)), 0.0);
+		fo.b = min(f.b, fo.g * mul_warm.b / max(mul_warm.g, 1e-3));
+		f = mix(f, fo * (fl / max(dot(fo, lum), 1e-4)), mul_order);
+		// (the darken: the tint's luminance over her painted skin's there, so the stroke is as light as the tint made it)
+		float k = clamp(dot(dt, lum) / max(dot(here * skin_tone, lum), 2e-3), 0.0, 8.0);
+		f = mix(f, mul_warm * (k / max(dot(mul_warm, lum), 1e-3)), mul_scalar);
+		f *= UV.x < mul_split ? mul_side_a : mul_side_b;
+		ALBEDO = mix(vec3(1.0), f, a);
 		ALPHA = 1.0;
 #else
 		ALBEDO = clamp(mix(painted, dyed_col, dye_light), 0.0, 1.0);
