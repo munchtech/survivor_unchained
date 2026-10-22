@@ -71,16 +71,19 @@ PRESETS = {
     'pebbles': dict(lods=(600, 200, 200), shadow=False, variants=[
         dict(seed=401, n=(1, 2, 2)), dict(seed=409, n=(1, 1, 2)), dict(seed=419, n=(1, 2, 3)), dict(seed=421, n=(1, 1, 1)),
     ]),
-    # ford stepping stone (E5b, judge r1): a rounded slab, its outline 'sides' (5-7) soft vertical cuts round an ellipse of
-    # L:W 1.2-1.8, its crown pressed flat ('dome' m of fall to the rim, <= 3 cm), worn round its rim, a deep body sunk in the
-    # bed (real size, m; top at 0.75; the causeway's 'scale' sizes its footprint)
+    # ford stepping stone (C03 env fix; was E5b's rounded slab, which from a camera at the water read as a row of hockey
+    # pucks: vertical sides, flat pale tops): now a river stone, its crown a dome (an ellipsoid's top, no pressed top) at
+    # about 0.75 m, 'sides' (5-7) soft cuts leaning back ('side_lean') round an ellipse of L:W 1.2-1.8 for its outline
+    # from over it, two soft 'planes' and one fracture breaking a side off the dome, its body deeper than its crown
+    # ('az_lo') and taken in a little under its widest ('waist': the river's undercut, shown where it stands tall);
+    # its sizes and tilts, and how proud it stands, Dressing's (the causeway's data)
     'stepping': dict(lods=(1200, 400, 140), shadow=False, variants=[
-        dict(seed=501, ax=(0.5, 0.38, 0.6), cz=0.4, sides=6, k=0.035, amp=0.04, freq=2.2, fine=0.006, top=0.75, dome=0.022, foot=0.0, cut=0.25),
-        dict(seed=503, ax=(0.52, 0.32, 0.6), cz=0.4, sides=5, k=0.04, amp=0.05, freq=2.0, fine=0.006, top=0.75, dome=0.026, foot=0.0, cut=0.25),
-        dict(seed=509, ax=(0.54, 0.31, 0.6), cz=0.4, sides=7, k=0.03, amp=0.04, freq=2.4, fine=0.006, top=0.75, dome=0.018, foot=0.0, cut=0.25),
-        dict(seed=521, ax=(0.46, 0.37, 0.6), cz=0.4, sides=5, k=0.04, amp=0.05, freq=1.9, fine=0.006, top=0.75, dome=0.024, foot=0.0, cut=0.25),
-        dict(seed=523, ax=(0.5, 0.35, 0.6), cz=0.4, sides=7, k=0.03, amp=0.04, freq=2.3, fine=0.006, top=0.75, dome=0.02, foot=0.0, cut=0.25),
-        dict(seed=541, ax=(0.52, 0.4, 0.6), cz=0.4, sides=6, k=0.035, amp=0.04, freq=2.1, fine=0.006, top=0.75, dome=0.025, foot=0.0, cut=0.25),
+        dict(seed=501, ax=(0.65, 0.49, 0.25), sides=6, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
+        dict(seed=503, ax=(0.68, 0.42, 0.22), sides=5, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
+        dict(seed=509, ax=(0.7, 0.4, 0.27), sides=7, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
+        dict(seed=537, ax=(0.6, 0.48, 0.24), sides=5, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
+        dict(seed=523, ax=(0.65, 0.45, 0.26), sides=7, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
+        dict(seed=541, ax=(0.68, 0.52, 0.23), sides=6, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
     ]),
 }
 
@@ -236,7 +239,9 @@ def sculpt(prm):
     rng = np.random.default_rng(prm['seed'])
     D, F = icosphere(7)
     ax = np.array(prm['ax'])
-    re = 1 / np.sqrt(((D / ax) ** 2).sum(1))
+    # ('az_lo': the ellipsoid's half height under its middle, if not ax z: a body deeper than its crown)
+    axd = np.where(D[:, 2:3] < 0, np.array([ax[0], ax[1], prm.get('az_lo', ax[2])]), ax)
+    re = 1 / np.sqrt(((D / axd) ** 2).sum(1))
     R = [re]
     for _ in range(prm.get('planes', 0)):
         n = rng.normal(size=3)
@@ -253,7 +258,9 @@ def sculpt(prm):
         ns = prm['sides']
         for j in range(ns):
             th = 2 * math.pi * (j + rng.uniform(-0.22, 0.22)) / ns
-            n = np.array([math.cos(th), math.sin(th), rng.uniform(-0.08, 0.08)])
+            # ('side_lean': the cuts lean back that far (normal's z), a shoulder's facets, not a wall; else near vertical)
+            lean = prm.get('side_lean')
+            n = np.array([math.cos(th), math.sin(th), rng.uniform(*lean) if lean else rng.uniform(-0.08, 0.08)])
             n /= np.linalg.norm(n)
             rn = 1 / math.sqrt(((n / ax) ** 2).sum())
             dist = rn * rng.uniform(0.8, 0.88)
@@ -294,13 +301,19 @@ def sculpt(prm):
         fr = h - li
         inset = insets[np.clip(li, 0, L + 2)] + 0.05 * (smooth(0.12, 0.0, fr) + smooth(0.88, 1.0, fr))
         P[:, :2] *= (1 - inset)[:, None]
+    if prm.get('waist'):
+        # (a waist under its widest: the river's undercut at the waterline, 'waist' of its width taken in 'waist_h' m down)
+        wz = smooth(0.0, prm.get('waist_h', 0.18), -P[:, 2])
+        P[:, :2] *= (1 - prm['waist'] * wz)[:, None]
     P[:, 2] += prm['cz']
     if 'top' in prm:
         # a worn flat top: the stone's crown pressed to 'top' (soft rim, E5c: a 3-4 cm bevel, 'rim_k'), dished by a few mm
         k = prm.get('rim_k', 0.035)
         z = P[:, 2]
         # (a low crown: the pressed height falls 'dome' m from its middle to its rim)
-        tz = prm['top'] - prm.get('dome', 0.0) * np.clip((P[:, 0] / ax[0]) ** 2 + (P[:, 1] / ax[1]) ** 2, 0, 1.2)
+        # ('peak' (x, y): the crown's high point off its middle, as a share of its half sizes: a lopsided dome)
+        pk = prm.get('peak', (0.0, 0.0))
+        tz = prm['top'] - prm.get('dome', 0.0) * np.clip(((P[:, 0] - pk[0] * ax[0]) / ax[0]) ** 2 + ((P[:, 1] - pk[1] * ax[1]) / ax[1]) ** 2, 0, 1.6)
         P[:, 2] = -k * np.log(np.exp(-z / k) + np.exp(-tz / k)) + 0.004 * fbm3(P, 3.0, prm['seed'] + 3, 2)
     k = 0.08
     z = P[:, 2]
@@ -451,7 +464,7 @@ def mesh(only=None):
             if name == 'stepping':
                 up = N[:, 2] > 0.9
                 zt = V[up, 2]
-                band = V[(V[:, 2] > prm['top'] - 0.15) & (V[:, 2] < prm['top'] - 0.1)][:, :2]
+                band = V[(V[:, 2] > prm.get('top', 0.75) - 0.15) & (V[:, 2] < prm.get('top', 0.75) - 0.1)][:, :2]
                 c = band - band.mean(0)
                 ev = np.linalg.eigh(np.cov(c.T))[1]
                 ext = np.ptp(c @ ev, 0)

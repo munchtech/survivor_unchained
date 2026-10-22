@@ -22,6 +22,9 @@ public partial class ZoneView : Node3D
     public readonly ZoneData Data;
     public readonly Landmarks Landmarks;
     readonly List<OmniLight3D> lights = new();
+    /// <summary>The ford piers' meshes: no moon shadow (piersMoon: as last set).</summary>
+    readonly List<GeometryInstance3D> piers = new();
+    bool piersMoon;
     readonly List<float> phases = new();
     readonly List<bool> lit = new();
     /// <summary>Every light's spec: the zone's, then those the runtime set down.</summary>
@@ -425,7 +428,14 @@ public partial class ZoneView : Node3D
                         {
                             foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Visible = false;
                             pillar.AddChild(pier);
-                            foreach (var m in pier.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+                            // (C03 env fix: no moon shadow from the pier: a 0.9 m box 4.4 m tall, its moon shadow fell on the
+                            // north bank as a hard black rectangle that read as a black slab lying by the ford (c03 s12); it
+                            // stands in the water, its foam ring grounds it. By day (dawn) it casts, as every tree does: _Process)
+                            foreach (var m in pier.FindChildren("*", "GeometryInstance3D", true, false))
+                            {
+                                ((GeometryInstance3D)m).Layers = LampLayer;
+                                if (!SurvivorUnchained.Args.Has("ford-pier-shadow")) piers.Add((GeometryInstance3D)m);
+                            }
                         }
                 lights[li].LightCullMask &= ~LampLayer;
                 lights[li].LightColor = new Color(FordColor);
@@ -685,6 +695,11 @@ public partial class ZoneView : Node3D
 
     public override void _Process(double delta)
     {
+        if (piers.Count > 0 && (Atmosphere.MoonKey > 0.1f) != piersMoon)
+        {
+            piersMoon = Atmosphere.MoonKey > 0.1f;
+            foreach (var g in piers) g.CastShadow = piersMoon ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
+        }
         time += delta;
         float t = (float)time;
         if (SurvivorUnchained.Args.Has("lamp-debug") && (lampDebugAt ??= new Queue<float>(System.Array.ConvertAll((SurvivorUnchained.Args.Get("lamp-debug-at") ?? "9").Split(','), x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)))).Count > 0 && t > lampDebugAt.Peek())

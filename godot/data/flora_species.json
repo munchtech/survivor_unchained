@@ -35,7 +35,7 @@
                            "stone_mix": 0.65, "stone_val": 0.12, "stone_a": [0.8, 0.9, 1.08], "stone_b": [1.2, 1.02, 0.72], "stone_c": [0.92, 0.78, 0.62],
                            "amb_occl": 0.5, "sky_dark": 0.35, "shade_floor": 0.0, "night_fill": 0.02, "night_tint": [0.53, 0.47, 0.39]}},
     "stepping": {"pieces": ["step_a", "step_b", "step_c", "step_d", "step_e", "step_f"], "packed": true, "kind": "rock", "lod": [40], "cell": 48, "shadow": false, "wind": 0,
-                 "shader": {"moss_amount": 0.35, "edge_light": 0.4, "wet_share": 0.67, "wet_top": 0.75, "wet_dark": 0.42,
+                 "shader": {"moss_amount": 0.35, "edge_light": 0.25, "wet_share": 0.5, "wet_top": 0.75, "wet_dark": 0.5, "top_damp": 0.6,
                             "inst_val": 0.1, "cool_share": 0.33, "cool_tint": [0.88, 0.94, 1.04], "algae": 0.85, "algae_color": "#3d3b22", "algae_w": 0.03}}
   },
   "own": {

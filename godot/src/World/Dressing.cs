@@ -337,6 +337,10 @@ public static class Dressing
         // ('step_var' how far each step strays from 'step' (0.35: 0.65-1.35 of it); 'clear' m the least gap kept between any two
         // stones' rims (about 0.35 m a unit of scale from the middle), so the drifting rows never pile up)
         var cl = clearOf;
+        // (C03 env fix: 'tilt' [lo, hi] deg each stone leans (was 0-5), 'low' a share standing only 'low_above' [lo, hi] m
+        // proud (barely breaking the surface), so from a camera at the water no row of tops lines up like a ruler)
+        Vector2 tilt = w.TryGetProperty("tilt", out var tl) ? V2(tl) : new(0f, 5f), lowAbove = w.TryGetProperty("low_above", out var la) ? V2(la) : new(0.01f, 0.03f);
+        float low = F("low", 0f);
         float stepVar = F("step_var", 0.35f), clear = F("clear", -10f), stagger = F("stagger", -1f), shared = F("drift_shared", 0f);
         var placed = new List<(Vector2 P, float S)>();
         bool stats = System.Environment.GetEnvironmentVariable("CAUSEWAY_STATS") != null;
@@ -366,9 +370,10 @@ public static class Dressing
                     float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4));
                     if (placed.Any(q => q.P.DistanceTo(p) < 0.35f * (q.S + s) + clear) || cl.NearProp(p, 0.35f * s)) { t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9)); i++; continue; }
                     placed.Add((p, s));
-                    float topY = Mathf.Max(water + Mathf.Lerp(above.X, above.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
+                    var ab2 = H(k * 7 + 5003) < low ? lowAbove : above;
+                    float topY = Mathf.Max(water + Mathf.Lerp(ab2.X, ab2.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
                     float ta = H(k + 6) * Mathf.Tau;
-                    var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(5f * H(k + 7)))
+                    var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(Mathf.Lerp(tilt.X, tilt.Y, H(k + 7))))
                         * new Basis(Vector3.Up, H(k + 8) * Mathf.Tau).Scaled(new Vector3(s, sy, s));
                     mg.At.Add(new Transform3D(basis, new Vector3(p.X, topY - top * sy, p.Y)));
                     mg.Var.Add(v);
