@@ -147,10 +147,7 @@ public partial class Game
         // shade side of her jaw went 45 to 31.7 Oklab L, her forehead 74 to 68: the flat, pale, flash-lit look was the sky's.
         // (Set each frame while it is in force: her skin is made again when her look changes.)
         float sky = lit && !night ? Mathf.Lerp(1, CloseSkyDay, day) : 1;
-        // (Her body from her collarbones down keeps more of it, CloseSkyBody: no key reaches the underside and inner slope of
-        // her breast, lit by the sky alone; at 0.45 the pocket between her cups by the gore read as a dent (dent d2).)
-        float skyBody = CloseSkyBody < 0 ? -1 : lit && !night ? Mathf.Lerp(1, CloseSkyBody, day) : 1;
-        if (sky != 1 || skyShown != 1) { skyShown = sky; SurvivorUnchained.View.People.HerSkyShare(pv.Person, sky, sky == 1 ? -1 : skyBody); }
+        if (sky != 1 || skyShown != 1) { skyShown = sky; SurvivorUnchained.View.People.HerSkyShare(pv.Person, sky); }
         air.SetViewExposure(lit && night ? Mathf.Lerp(1, CloseExposureNight, day) : 1);
         air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
@@ -223,8 +220,6 @@ public partial class Game
     static float CloseKeyElDay => Args.Num("close-key-el-day", 25f);
     // --close-sky-day S: her share of the sky's light in the close view by day (1: as play).
     static float CloseSkyDay => Args.Num("close-sky-day", 0.45f);
-    // --close-sky-body S: her body's share from her collarbones down (-1: as her face's, CloseSkyDay).
-    static float CloseSkyBody => Args.Num("close-sky-body", -1f);
     // --close-key-colour-day R,G,B: the day key's colour. --close-grade-day K: how much of the close view's own grade
     // (the night's and the Look's paint grade, Atmosphere.ViewGrade) it takes by day (0: play's; at 1 her cheek's chroma 6.5 to 6.4, so 0).
     static readonly Color CloseKeyColourDay = Args.Get("close-key-colour-day") is string kcd && kcd.Split(',') is { Length: 3 } kd
