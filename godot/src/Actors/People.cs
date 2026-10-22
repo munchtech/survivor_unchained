@@ -512,7 +512,7 @@ public static class People
                 // (his own, when none is chosen: flint grey, Lore.Eyes' "flint")
                 if (who == "hero" && look.Eyes == null) EyeColour(e, HisEyes.Iris, HisEyes.Ring);
                 else EyeColour(e, look.Eyes, look.EyeRing);
-                if (who != "hero") HerEyes(e, look.FaceShape);
+                if (who != "hero") HerEyes(e, look.FaceShape, look.Skin);
                 return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows
@@ -683,7 +683,7 @@ public static class People
     /// than a brown iris, they read as cataracts); the whites ivory, lit from below, the upper lid's shadow at
     /// its visible margin, a wet line on the lower lid. Per face (looks.json faces): the iris's size, the pupil,
     /// how light the whites stand, and where the lid covers the iris.</summary>
-    static void HerEyes(ShaderMaterial e, string? face)
+    static void HerEyes(ShaderMaterial e, string? face, Color? skin = null)
     {
         var f = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(x => x.Id == (face is { Length: > 0 } ? face : "own"));
         e.SetShaderParameter("iris_r", f is { Iris: > 0 } ? (float)f.Iris : 0.117f);
@@ -706,7 +706,10 @@ public static class People
         e.SetShaderParameter("catch_dim", 0.8f);
         e.SetShaderParameter("pupil_dark", 0.020f);
         var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
-        e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
+        // (deeper skin, its whites a little lower and warmer: at full white they glowed against it, face 38;
+        // `deep` 0 at her fair skin's lightness (Oklab L ~0.75 and over), 1 at a deep one's)
+        float deep = skin is Color sk ? Mathf.Clamp((0.75f - Oklch(sk).L) / 0.3f, 0f, 1f) : 0f;
+        e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f).Lerp(new Vector3(0.58f, 0.50f, 0.40f), deep) * w);
         e.SetShaderParameter("white_grad", 0.22f);
         e.SetShaderParameter("corner_pink", 0.3f);
         // (the lid's shadow from where the face's lid covers its iris: its margin a twentieth of a radius above
@@ -916,7 +919,7 @@ public static class People
                     else if (m.Shader == eyeShader)
                     {
                         EyeColour(m, look.Eyes, look.EyeRing);
-                        HerEyes(m, look.FaceShape);
+                        HerEyes(m, look.FaceShape, look.Skin);
                     }
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);

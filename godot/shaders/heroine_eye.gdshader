@@ -112,6 +112,15 @@ uniform float far_to = 6.0;
 // (the catchlight dimmed as the eye gets small on screen: at the town close-up her iris is ~7 px and the full window,
 // spread by the glow, washed the whole iris a pale icy grey, the owner's "glassy eyes"; face 38. 0 = as before)
 uniform float catch_far = 0.0;
+// (small on screen, face 38: how much of the white is taken to the iris's darkness (1 as before: at the close-up
+// it left iris and white one grey, Oklab C 0.02, L within 0.03 of each other); the iris's chroma raised and its
+// light lowered, so it reads its own colour, darker than the white; the catchlight shrunk)
+uniform float far_white = 1.0;
+uniform float far_sat = 0.0;
+// (the iris's chroma at any size: below 1 less saturated)
+uniform float iris_sat = 1.0;
+uniform float far_iris = 0.0;
+uniform float catch_far_size = 0.0;
 
 varying float under_lid;
 varying float corner;
@@ -166,6 +175,13 @@ void fragment() {
 	// (the collarette's light: the paint inside `ring` (as laid, `src`) against the rest)
 	if (ring_light != 1.0) ir *= mix(ring_light, 1.0, smoothstep(ring - 0.1, ring + 0.12, src));
 	ir *= iris_light;
+	vec2 tx = UV * vec2(textureSize(eye, 0));
+	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
+	float far = smoothstep(far_from, far_to, lod);
+	if (far_sat > 0.0 || far_iris > 0.0 || iris_sat != 1.0) {
+		float fl = dot(ir, vec3(0.2126, 0.7152, 0.0722));
+		ir = max(vec3(fl) + (ir - vec3(fl)) * (iris_sat + far_sat * far), vec3(0.0)) * (1.0 - far_iris * far);
+	}
 	// (the pupil laid after the iris's tint, so its darkness is its own on a painted iris too; its edge a
 	// little soft, as a lens's is)
 	vec3 irt = mix(vec3(pupil_dark), ir * tint, smoothstep(pupil - 0.02, pupil + 0.015, rr));
@@ -189,17 +205,15 @@ void fragment() {
 	// shadow of the lid over it), not a white fleck: the white darkened
 	// toward the iris's own darkness, the more the smaller (by how many of
 	// the paint's texels a pixel covers).
-	vec2 tx = UV * vec2(textureSize(eye, 0));
-	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
-	float far = smoothstep(far_from, far_to, lod);
-	col = mix(col, ir * tint * 0.6, far * white);
+	col = mix(col, ir * tint * 0.6, far * white * far_white);
 	// (the tear film pooled along the lower lid: a thin brighter wet line, in its light and its sheen)
 	float lw = low_y + 0.2 * d0.x * d0.x;
 	float wet_line = smoothstep(lw - 0.12, lw - 0.03, d0.y) * (1.0 - smoothstep(lw - 0.03, lw + 0.04, d0.y));
 	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
 	vec2 dc = abs((d - at_c) * vec2(1.0, 1.25));
 	float cr = mix(length(dc), pow(pow(dc.x, 4.0) + pow(dc.y, 4.0), 0.25), catch_window);
-	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * catch_size, (0.06 + 0.025 * catch_soft) * catch_size, cr);
+	float cs = catch_size * (1.0 - catch_far_size * far);
+	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * cs, (0.06 + 0.025 * catch_soft) * cs, cr);
 	glint *= in_iris * (1.0 - under_lid * 0.7);
 	ALBEDO = col * shade * (1.0 - 0.35 * far) * (1.0 + low_lift * wet_line) * (1.0 - catch_dim * glint);
 	ALPHA = texture(eye, UV).a;
