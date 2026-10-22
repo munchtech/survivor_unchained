@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Godot;
@@ -16,6 +18,38 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class Water
 {
+    static readonly List<WeakRef> mats = new();
+    static readonly Dictionary<ulong, (Light3D Light, Color Tint)> tints = new();
+
+    /// <summary>A light's streak on the water in its flame's hue (linear sRGB in, as authored), not the light's own colour
+    /// (C03: the Warden's amber lantern lit by a #8ac8ff light threw a blue streak). Call as the light moves; null takes
+    /// it off. Up to four at once (water.gdshader's streak_at).</summary>
+    public static void StreakTint(Light3D light, Color? flame)
+    {
+        ulong id = light.GetInstanceId();
+        if (flame is Color c && light.LightEnergy > 0 && light.Visible) tints[id] = (light, c);
+        else if (!tints.Remove(id)) return;
+        PushTints();
+    }
+
+    static void PushTints()
+    {
+        var at = new Vector4[4];
+        var tint = new Vector3[4];
+        int n = 0;
+        foreach (var (id, (l, c)) in tints.ToArray())
+        {
+            if (!GodotObject.IsInstanceValid(l) || !l.IsInsideTree()) { tints.Remove(id); continue; }
+            if (n == 4) break;
+            var p = l.GlobalPosition;
+            var lin = c.SrgbToLinear();
+            at[n] = new Vector4(p.X, p.Y, p.Z, 1);
+            tint[n++] = new Vector3(lin.R, lin.G, lin.B);
+        }
+        foreach (var r in mats)
+            if (r.GetRef().Obj is ShaderMaterial m) { m.SetShaderParameter("streak_at", at); m.SetShaderParameter("streak_tint", tint); }
+    }
+
     public static Node3D Build(ZoneData z)
     {
         var root = new Node3D { Name = "Water" };
@@ -72,6 +106,9 @@ public static class Water
             Look(mat, look);
             Bed(look);
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            mats.RemoveAll(r => r.GetRef().Obj == null);
+            mats.Add(GodotObject.WeakRef(mat));
+            PushTints();
         }
         return root;
     }

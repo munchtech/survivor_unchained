@@ -13,6 +13,10 @@
     "own: the kit's pieces drawn as ours (a list: one per copy, by its place's hash). A zone overrides any key in",
     "godot/data/zones/<zone>/flora_species.json (its own 'own' and 'species' entries, merged over these)."
   ],
+  "stands": {
+    "_doc": "C03 env (judge C03: the ridge one pine copied at equal height and spacing): a copy of 'kind' with at least 'dense' others of it within 'r' m (a zone's edge wall: a tree on every cell of its 3.3 m grid; the forest inside is thinner) is kept by a clump field ('clump' m across: 'keep' its mean share kept, near all in a clump's heart, few between), its size 'scale' [lo, hi] of 'base' (the larger in a clump's heart), turned anew. Dressing.Stands; FLORA_STATS=1 prints the counts.",
+    "pine": {"r": 5.0, "dense": 5, "keep": 0.5, "clump": 16.0, "base": 1.13, "scale": [0.75, 1.3]}
+  },
   "species": {
     "spruce": {"pieces": ["spruce_a", "spruce_b", "spruce_c"], "packed": false, "kind": "pine", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
                "shader": {"hue_floor": 108, "near_dim": 0.5}},

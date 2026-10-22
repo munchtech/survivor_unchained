@@ -881,29 +881,39 @@ def spruce(H, R, seed, lod):
     rng = np.random.default_rng(seed)
     b = Build()
     rb = 0.022 * H + 0.05
-    trunk(b, H, rb, (10, 7, 5)[lod], (10, 5, 2)[lod], np.random.default_rng(seed + 1))
+    # (C03 env: the trunk ends inside the leader, not as a bare spike over the crown, judge C03)
+    trunk(b, H - 0.55, rb, (10, 7, 5)[lod], (10, 5, 2)[lod], np.random.default_rng(seed + 1))
+    rng2 = np.random.default_rng(seed + 7)   # (the new draws: lod0's own sprays stay as E4 passed them)
     hs = 0.55 + 0.03 * H                         # the lowest live whorl
-    gap = (0.36, 0.72, 1.4)[lod]
+    # (lod2 a whorl a metre, six sprays, two cards on a long one: at 1.4 m and five single cards a far spruce on a
+    # skyline was a bare trunk with a few slats, judge C03)
+    gap = (0.36, 0.6, 1.0)[lod]
     h = hs
     az0 = rng.uniform(0, 6.28)
     whorls = []
     while h < H - 0.45:
         whorls.append(h)
         h += gap * rng.uniform(0.8, 1.2)
+    # (the crown carried to the tip: short whorls up the last metre, so the top is a narrowing spire of
+    # sprays, no bare stick with a tuft on it; judge C03: 'bare-trunk, tuft-tipped')
+    h = (whorls[-1] if whorls else hs) + min(gap, 0.45)
+    while h < H - 0.2:
+        whorls.append(h)
+        h += min(gap, 0.45) * rng2.uniform(0.8, 1.2)
     for wi, h in enumerate(whorls):
         t = (h - hs) / (H - hs)
         prof = (1 - t) ** 0.92 * (0.78 + 0.22 * smooth(0, 0.14, t)) + 0.05
-        nb = int(rng.integers(5, 8)) if lod < 2 else 5
+        nb = int(rng.integers(5, 8)) if lod < 2 else 6
         az0 += 2.4
         for k in range(nb):
             az = az0 + k * 2 * math.pi / nb + rng.normal(0, 0.22)
             L = R * prof * rng.uniform(0.82, 1.12) * (1.08 if lod else 1.0)
-            if L < 0.25:
+            if L < (0.25 if t < 0.85 else 0.12):
                 continue
             pitch = -math.radians(6 + 22 * (1 - t)) + rng.normal(0, 0.06)
             d = np.array([math.cos(az) * math.cos(pitch), math.sin(az) * math.cos(pitch), math.sin(pitch)])
             c0 = np.array([math.cos(az) * rb * (1 - t) * 0.6, math.sin(az) * rb * (1 - t) * 0.6, h])
-            nc = 1 if lod == 2 else max(1, min(3, round(L / (1.05 if lod == 0 else 1.6))))
+            nc = max(1, min(2, round(L / 1.4))) if lod == 2 else max(1, min(3, round(L / (1.05 if lod == 0 else 1.6))))
             seg = L / nc
             p = c0
             for ci in range(nc):
@@ -914,6 +924,12 @@ def spruce(H, R, seed, lod):
                 wd = ln * (0.7 if lod == 0 else 0.76) * rng.uniform(0.75, 1.25)
                 roll, j = rng.uniform(-0.55, 0.55), int(rng.integers(0, 6))
                 droop = (0.16 + 0.16 * (1 - t)) * (0.6 + 0.4 * f)
+                if lod and rng2.random() < (0, 0.55, 0.6)[lod]:
+                    # (far: a share of the sprays hang on edge, turned toward upright, so from the side a far spruce
+                    # is a mass of hanging sprays, not flat tiers seen edge-on as a bare trunk; from above, where
+                    # the play camera is, they are the thin side of the crown)
+                    roll = rng2.choice([-1, 1]) * rng2.uniform(0.9, 1.35)
+                    droop *= 1.4
                 card(b, p - dd * seg * 0.12, dd, ln, wd, roll, 0.1, droop, j, H, R,
                      segs_l=(3, 2, 1)[lod], segs_w=(2, 2, 1)[lod], mirror=bool(rng.random() < 0.5))
                 if lod == 0:
@@ -929,7 +945,8 @@ def spruce(H, R, seed, lod):
         side = np.array([math.cos(a), math.sin(a), 0])
         u0, v0, du, dv = cell_uv(int(rng.integers(0, 6)))
         ln = 0.95
-        P = [[np.array([0, 0, H - 0.5]) + side * w * 0.25 + d * ln * s for w in (-1, 1)] for s in (0, 1)]
+        # (a narrow leader, 0.24 m across and rising 0.35 m past the trunk: a point, not a tuft)
+        P = [[np.array([0, 0, H - 0.6]) + side * w * 0.12 * (1 - 0.7 * s) + d * ln * s for w in (-1, 1)] for s in (0, 1)]
         N = [[crown_normal(np.array([side[0] * w, side[1] * w, H]), np.array([0, 0, 1.0]), side, H) for w in (-1, 1)] for s in (0, 1)]
         UV = [[(u0 + (w + 1) / 2 * du, v0 + s * dv) for w in (-1, 1)] for s in (0, 1)]
         b.quad_grid(P, N, UV, 1, 1, [[(1.0, 1.0, 0.0)] * 2] * 2)

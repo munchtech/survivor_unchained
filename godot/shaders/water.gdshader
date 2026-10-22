@@ -83,6 +83,11 @@ uniform float streak_w = 0.03;
 uniform float streak_l = 0.2;
 // ...its brightest (linear, its brightest channel), under the glints' cap: a lamp's streak keeps its hue, never a white bar.
 uniform float streak_cap = 0.5;
+// ...in the hue of the flame the camera sees, not its light's (C03: the Warden's amber lantern threw a blue streak, its
+// light #8ac8ff): up to four lights (Water.StreakTint), each its light's world position (w 1 on) and its flame's colour
+// (linear); a light matched by direction from the water, within about 2 degrees. Others keep their light's colour.
+uniform vec4 streak_at[4];
+uniform vec3 streak_tint[4];
 // The air's say over the river (Atmosphere.Set, play's presets, E1): x its light, y the sky in it, z how far the
 // ripples bend it (under 1 the moon's glints gather into a band toward it); (1, 1, 1) as built.
 global uniform vec4 water_air;
@@ -329,7 +334,15 @@ void light() {
 		float hx = dot(h, ax) / streak_w, hl = dot(h, al) / streak_l;
 		// (broken into dashes by the chop's crests, and held under streak_cap in its own hue: r2's first cut lay under each
 		// ford pier as a solid white-blue bar from s12's higher camera)
-		vec3 cs = LIGHT_COLOR * ATTENUATION * streak * graze * exp(-hx * hx - hl * hl) * mix(0.12, 1.8, crest * crest) * clamp(spec_k * 4.0, 0.0, 1.0);
+		vec3 lc = LIGHT_COLOR;
+		vec3 wl = normalize((INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
+		for (int k = 0; k < 4; k++) {
+			if (streak_at[k].w > 0.5 && dot(normalize(streak_at[k].xyz - w_pos), wl) > 0.9994) {
+				vec3 t = max(streak_tint[k], vec3(1e-4));
+				lc = t * (max(lc.r, max(lc.g, lc.b)) / max(t.r, max(t.g, t.b)));
+			}
+		}
+		vec3 cs = lc * ATTENUATION * streak * graze * exp(-hx * hx - hl * hl) * mix(0.12, 1.8, crest * crest) * clamp(spec_k * 4.0, 0.0, 1.0);
 		c += cs * min(1.0, streak_cap / max(max(cs.r, max(cs.g, cs.b)), 1e-4));
 	}
 	float m = max(c.r, max(c.g, c.b));

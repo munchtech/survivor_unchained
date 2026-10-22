@@ -1295,6 +1295,13 @@ public partial class Game
                     }
                     break;
                 }
+                case "haze":
+                {
+                    // The far haze (Atmosphere.Haze): "begin"/"end" m, "curve", "amount" (0-1), "sky" (0-1, the sky's colour
+                    // in it); "off" back to play's fog. Finish takes it off.
+                    g.air.Haze = c.Bool("off") ? null : ((float)c.Num("begin", 40), (float)c.Num("end", 160), (float)c.Num("curve", 1), (float)c.Num("amount", 0.8), (float)c.Num("sky", 1), c.Str("color") is string hc ? new Color(hc) : null);
+                    break;
+                }
                 case "water":
                 {
                     // The river's light, all of it, scaled for this cinematic ("level" 1 as built; 0.4 about
@@ -1519,6 +1526,7 @@ public partial class Game
         {
             g.cineSat = null;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
+            if (g.air.Haze != null) g.air.Haze = null;
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
             { SurvivorUnchained.View.People.HerSkyShare(hs.Person, 1); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, 1); }
             skinSky = 1; skinEar = 1;
