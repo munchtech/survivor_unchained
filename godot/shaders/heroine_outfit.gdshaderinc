@@ -63,6 +63,9 @@ uniform vec4 piece_id = vec4(-1.0);                // (up to four pieces of this
 uniform vec4 piece_rough = vec4(-1.0);             //  Each piece's metal_rough and metal_env_graze, -1 the key's own; art/people/metal_finishes.json "pieces".
 uniform vec4 piece_graze = vec4(-1.0);             //  Metal r4: the greaves and sabatons smoother with more edge sheen, a tube's line of light, not a boot's)
 uniform vec4 piece_blot = vec4(-1.0);              //  (and its patina's patches' strength in its colour and roughness, 1 the key's own: armor 12, the cuirass's cloudy blotches halved)
+uniform vec4 piece_rim_rough = vec4(-1.0);         //  (armor 13 c4: its rolled edges' (COLOR.a flag 0) roughness, -1 as the plate; glossier rims read as steel, not leather)
+uniform vec4 piece_rim_bright = vec4(-1.0);        //  (and their colour scaled by this, -1 none)
+uniform vec4 piece_fine = vec4(-1.0);              //  (fine scratches: thin streaks a few mm long worn bright through it, this strong; -1 none. Instead of cloudy patches)
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
@@ -223,6 +226,26 @@ void fragment() {
 		float p_blot = 1.0;
 		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_rough[i] >= 0.0) p_rough = piece_rough[i];
 		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025 && piece_blot[i] >= 0.0) p_blot = piece_blot[i];
+		float p_rimr = -1.0, p_rimb = 1.0, p_fine = 0.0;
+		for (int i = 0; i < 4; i++) if (abs(piece - piece_id[i]) < 0.0025) {
+			if (piece_rim_rough[i] >= 0.0) p_rimr = piece_rim_rough[i];
+			if (piece_rim_bright[i] >= 0.0) p_rimb = piece_rim_bright[i];
+			if (piece_fine[i] >= 0.0) p_fine = piece_fine[i];
+		}
+		float rimm = flag < 0.25 ? 1.0 : 0.0;                       // (a rolled edge)
+		if (p_fine > 0.0) {
+			// Fine scratches: two crossing sets of thin streaks (about 0.6 mm by 12 mm), their heading wandering over
+			// the piece; worn bright through the patina. Below about 1 mm a pixel they fade to their mean, never shimmer.
+			float a = fbm(op * 6.0 + piece * 3.0) * 3.1416;
+			vec2 q = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a))) * op;
+			vec2 q2 = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * q;
+			float s1 = smoothstep(0.80, 0.93, noise(vec2(q.x * 1600.0, q.y * 80.0)));
+			float s2 = smoothstep(0.82, 0.94, noise(vec2(q2.x * 1400.0, q2.y * 60.0) + 11.0));
+			float fw_ = max(fwidth(op.x), fwidth(op.y));
+			float lod = 1.0 - smoothstep(0.0005, 0.0014, fw_);
+			float fs = p_fine * mix(0.06, clamp(s1 + s2, 0.0, 1.0), lod) * (1.0 - 0.5 * rimm);
+			wear = max(wear, fs);
+		}
 		float blot_c = 0.5 + (blot - 0.5) * p_blot;                 // (the patina's patches in its colour and roughness; grime's own patchiness keeps blot)
 		rough = p_rough + 0.10 * (blot_c - 0.5) + 0.05 * (brush - 0.5);
 		rough = mix(rough, metal_rough_wear, wear);
@@ -264,6 +287,9 @@ void fragment() {
 		rough = clamp(rough, metal_rough_floor, 0.85);
 		// (gold only, a trial knob: glossier by gold_gloss)
 		rough = mix(rough, max(gold_rough - 0.04 * polish, 0.08), gold * gold_gloss);
+		// (armor 13 c4: a piece's rolled edges glossier and brighter than its plate, so its outline catches the light)
+		if (p_rimr >= 0.0) rough = mix(rough, p_rimr, rimm * (1.0 - grime));
+		col *= mix(1.0, p_rimb, rimm);
 #ifdef OUTFIT_METAL_LIGHT
 		// Its reflection held to what it can see: no probe, so the sky's (a bright dome lit to
 		// light the scene) is kept only in part, least at the horizon (trees, walls, the camp)
