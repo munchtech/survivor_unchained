@@ -29,7 +29,15 @@ uniform float shine_tint = 0.55;           // (face 38 r2: the primary's share o
 uniform float dark_from = 0.03;
 uniform float dark_to = 0.08;
 uniform float dark_shine = 1.0;            // the shine's share left on a black dye (0.5 and 0.8: no sheen left, a flat blue-black)
-uniform float dark_narrow = 1.8;           // its width's exponent times this
+uniform float dark_narrow = 1.45;          // its width's exponent times this (r8: 1.8, three grey bands, one per layer, on the pixie's side)
+// (face 39 r8, the judge: on a black pixie at turn 40 the narrow dark-dye band lit each shell layer apart, three
+// evenly spaced grey-blue stripes. For a dark dye only: its shine broken by a strand-clump mask (dark_clump: the
+// least it leaves, 3-6 mm clumps across a card, long along it) and each card's shift jittered by +-dark_card_jitter,
+// so the layers' bands don't line up)
+uniform float dark_clump = 0.35;
+uniform float dark_card_jitter = 0.08;
+// (r8: the dark-dye hairline's warm brown wash is not her hair: with the cap and fine hairs dyed other colours
+// (--hair-set) it stays, and thinning them (fewer band cards, the cap's fade cut to strands) moved it by 0.1 L*)
 uniform float dark_neutral = 0.85;         // how far the light's own colour is greyed in it
 uniform float lock_jitter = 0.02;          // (face 38 r2: each lock's shift, by its card number)
 uniform float strand_jitter = 0.1;         // (face 38 r2: 0.5, strand to strand, which scattered it into grains)
@@ -223,6 +231,11 @@ void fragment() {
 	fibre = t.r * (cap ? 0.35 : 1.0);                            // (the cap's under the hair: little highlight)
 	// (face 38 r5: blue 0.45-0.55 on a strand card is the matte mark (braid sideburns, baby hairs, edge wisps): base colour, no shine)
 	fibre *= 1.0 - matte;
+	float dk_f = 1.0 - smoothstep(dark_from, dark_to, dot(colour, vec3(0.2126, 0.7152, 0.0722)));
+	if (dk_f > 0.0 && !cap && !tie) {
+		float cl = hl_noise(vec3(UV.x * 30.0 + COLOR.g * 17.0, UV.y * 4.0, COLOR.g * 37.0));
+		fibre *= mix(1.0, sqrt(mix(dark_clump, 1.0, smoothstep(0.25, 0.75, cl))), dk_f);
+	}
 	float cover = 1.0;
 	if (tie) {
 		ALBEDO = vec3(0.055, 0.035, 0.024);
@@ -314,6 +327,7 @@ void light() {
 	// highlight broken into strands, not one smooth band)
 	float jitter = (sparkle - 0.5) * strand_jitter + (lock_n - 0.5) * 2.0 * lock_jitter;
 	float dk = 1.0 - smoothstep(dark_from, dark_to, dot(colour, vec3(0.2126, 0.7152, 0.0722)));
+	jitter += dk * (fract(lock_n * 7.31 + 0.21) - 0.5) * 2.0 * dark_card_jitter;
 	float s1 = along_strand(normalize(strand + NORMAL * (shift + jitter)), h, shine_width * mix(1.0, dark_narrow, dk));
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);

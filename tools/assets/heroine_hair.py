@@ -245,6 +245,17 @@ for _k in ("ears_out+", "ears_pointed+", "ears_lobes+"):
 _flap = _fm > 0.25
 FLAP_TREE = cKDTree(HP[_flap]) if _flap.any() else None
 print("  ears: %d points their keys move, %d their flaps" % (EAR.sum(), _flap.sum()))
+if os.environ.get("EAR_PROBE") == "1":                      # (test only: her ears' landmarks)
+    for _sg in (-1, 1):
+        _F = HP[_flap & (np.sign(HP[:, 0]) == _sg)]
+        print("  ear %+d: x %.1f..%.1f y %.1f..%.1f z %.1f..%.1f mm" % (_sg, *(np.r_[_F.min(0), _F.max(0)][[0, 3, 1, 4, 2, 5]] * 1000)))
+        for _z in np.arange(_F[:, 2].min(), _F[:, 2].max(), 0.004):
+            _b = _F[(_F[:, 2] >= _z) & (_F[:, 2] < _z + 0.004)]
+            if len(_b):
+                _i = np.argmin(_b[:, 1])
+                print("    z %.1f: front y %.1f at x %.1f (n %d)" % (_z * 1000, _b[_i, 1] * 1000, _b[_i, 0] * 1000, len(_b)))
+    print("  EYE_Z %.1f CENTRE %s" % (EYE_Z * 1000, np.round(CENTRE * 1000, 1)))
+    sys.exit(0)
 # Her neck, between her jaw and her shoulders (her skin there facing out,
 # not up or down), which hair hanging by it is kept well clear of: lying on
 # it, a strand read as a scratch on her skin, and as her head turned, the
@@ -861,6 +872,11 @@ def edge_wisps(comb, sides, n_want=EDGE_CLUSTERS):
     fin = np.clip(c["arc"] / 0.0012, 0, 1)
     # (each hair ~0.5 at its root: three to six overlapping read ~80% there; to nothing at the tip)
     c["alpha"] = 0.5 * fin * fin * (3 - 2 * fin) * (1 - s_) ** 1.3
+    drop = [(a_, b_) for a_, b_ in (EDGE or {}).get("wisp_drop", ())]       # (r8: clusters dropped, by signed degree)
+    if drop:
+        gone = np.array([any(a_ <= th[pick][q] <= b_ for a_, b_ in drop) for q in ci])
+        c["alpha"] = c["alpha"] * np.repeat(~gone, 3 * k)
+        print("  edge clusters dropped: %d hairs (%s deg)" % (gone.sum(), " ".join("%.0f" % t for t in np.unique(th[pick][ci][gone]))))
     c["blunt"] = True
     c["mat"] = 3
     c["lit"], c["matte"] = True, True
@@ -1124,6 +1140,68 @@ def clear_ears(c, K, clr=BRAID_EAR_CLEAR):
     return int(hit.sum())
 
 
+# (r8, the judge: in black a short tuft crossed the helix root and tragus at turn 40, every style.) Before each
+# ear, a zone no strand enters: from 3 mm in front of her ear's front edge back over its front, up to the helix
+# root; and below 5 mm over her tragus, from 12 mm in front of it. A card entering it is cut short there.
+_EARF = {}
+if FLAP_TREE is not None:
+    for _sg in (-1, 1):
+        _F = HP[_flap & (np.sign(HP[:, 0]) == _sg)]
+        _z0, _z1 = float(_F[:, 2].min()), float(_F[:, 2].max())
+        _up_ = _F[_F[:, 2] > _z0 + 0.55 * (_z1 - _z0)]
+        _EARF[_sg] = dict(yf=float(np.percentile(_up_[:, 1], 3)), root=_z1 - 0.008, tragus=_z0 + 0.42 * (_z1 - _z0), top=_z1)
+EAR_ZONE = dict(front=0.003, back=0.010, low_front=0.012, above_tragus=0.005, side=0.055, inside=0.003)
+
+
+def ear_zone(Q):
+    """Which points lie in the zone before either ear (EAR_ZONE), or within `inside` of its flap below its top."""
+    bad = np.zeros(len(Q), bool)
+    for sg, e in _EARF.items():
+        sd = (np.sign(Q[:, 0]) == sg) & (np.abs(Q[:, 0]) > EAR_ZONE["side"]) & (Q[:, 1] < e["yf"] + EAR_ZONE["back"])
+        a = (Q[:, 2] < e["root"]) & (Q[:, 1] > e["yf"] - EAR_ZONE["front"])
+        b = (Q[:, 2] < e["tragus"] + EAR_ZONE["above_tragus"]) & (Q[:, 1] > e["yf"] - EAR_ZONE["low_front"])
+        bad |= sd & (a | b)
+    if FLAP_TREE is not None:
+        bad |= (FLAP_TREE.query(Q)[0] < EAR_ZONE["inside"]) & (Q[:, 2] < max(e["top"] for e in _EARF.values()))
+    return bad
+
+
+def ear_zone_cut(c):
+    """Each strand card of c cut short where it enters ear_zone (its points from there folded onto the last
+    clear one). Returns (cards cut, the least distance from a kept card point below the helix root to an ear's
+    front zone edge or flap, mm)."""
+    if not _EARF or "arc" not in c or len(c["V"]) == 0:
+        return 0, None
+    arc = c["arc"]
+    zz = np.nonzero(arc[1:] == 0)[0]
+    K = int(zz[0] + 1) if len(zz) else len(arc) // 3
+    if len(c["V"]) % (3 * K):
+        return 0, None
+    V = c["V"].reshape(-1, 3, K, 3)
+    A = c["at"].reshape(-1, 3, K, 3) if "at" in c else None
+    bad = ear_zone(V.reshape(-1, 3)).reshape(V.shape[:3]).any(1)
+    hit = bad.any(1)
+    for i in np.nonzero(hit)[0]:
+        k = max(int(np.argmax(bad[i])), 1)
+        V[i, :, k:] = V[i, :, k - 1:k]
+        if A is not None:
+            A[i, :, k:] = A[i, :, k - 1:k]
+    c["V"] = V.reshape(-1, 3)
+    if A is not None:
+        c["at"] = A.reshape(-1, 3)
+    # (each kept card's tip (its middle row's last point; cards cut at the root, nothing left, not counted):
+    # the least distance to either ear's flap, of tips by her ears, below the top of her ear)
+    Mr = V[:, 1]
+    alive = np.linalg.norm(Mr[:, -1] - Mr[:, 0], axis=1) > 0.0005
+    tips = Mr[alive, -1]
+    near = None
+    if len(tips):
+        d = FLAP_TREE.query(tips)[0]
+        m = (np.abs(tips[:, 0]) > EAR_ZONE["side"]) & (tips[:, 2] < max(e["top"] for e in _EARF.values())) & (d < 0.03)
+        near = float(d[m].min()) if m.any() else None
+    return int(hit.sum()), None if near is None else near * 1000
+
+
 BRAID_CLUMPS = dict(n=10, pull=(0.0, 0.25, 0.35), twist=0.5, edge_shade=0.08, seed=384)   # (r5: 0.4/0.6, 0.16: blotchy gaps)
 _CLUMP_C = None
 
@@ -1298,7 +1376,12 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False, groom=False
                 rm_ = np.random.default_rng(3908 + len(out)).random(S_)
                 zone = rm_ < (1.0 if len(out) == 1 else EDGE.get("shine_mid", SHINE_MID))
                 c_["matte"] = np.repeat(zone, K3)
-                print("  shine by depth: layer %d, %d of %d cards matte" % (len(out) - 1, zone.sum(), S_))
+                gr_ = float(os.environ.get("MID_GRADE", EDGE.get("mid_grade", 0.0)))
+                if len(out) == 2 and gr_ > 0:                   # (r8: the graded mark: every middle card part matte)
+                    c_["matte"] = np.full(S_ * K3, gr_)
+                    print("  shine by depth: layer 1, every card %.0f%% matte" % (gr_ * 100))
+                else:
+                    print("  shine by depth: layer %d, %d of %d cards matte" % (len(out) - 1, zone.sum(), S_))
             elif EDGE is not None and EDGE.get("temple_matte"):
                 # (r7, the ponytail's pale criss-cross tuft over her ear at lk40: its gathered cards (not the cap
                 # or fine hairs: checked by colour) rooted before and over her ear, crossing as they go back, each
@@ -2052,6 +2135,13 @@ def cap(comb, sides=part_side):
     # to her ear, its edge there soft, not the cap's cut edge)
     if FLAP_TREE is not None:
         fade = np.minimum(fade, np.clip((FLAP_TREE.query(V)[0] - 0.0015) / 0.003, 0, 1))
+    if _EARF and os.environ.get("EAR_ZONE", "1") == "1":
+        # (r8: nor in the zone before her ears (ear_zone): its painted strands drew the dark tuft over her helix
+        # root and tragus at turn 40; faded out over the 2 mm next to it)
+        z_ = ear_zone(V) & ~(FLAP_TREE.query(V)[0] < EAR_ZONE["inside"])
+        if z_.any():
+            fade = np.minimum(fade, np.clip(cKDTree(V[z_]).query(V)[0] / 0.002, 0, 1))
+            print("  cap: %d points in the zone before her ears, cleared" % z_.sum())
     # Along the combing (v) and across it (u), each edge as long in them as
     # along and across the combing there (least squares). Across, the same
     # way on both sides of her parting (mirrored there, not torn).
@@ -2316,8 +2406,13 @@ EDGE_CFG = {
     # full; was 0-11 mm); front/back: crown outline clusters; L, ang: their length and angle off the mass; clear:
     # how far past her outline each stands (mm); frizz: short strands over the outline zone; shine: the under
     # layers' shine by depth (gathered styles).
-    "braid": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=True),
-    "ponytail": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=False, temple_matte=True),   # (shine by depth cost its lk40 gloss, 70.0 to 63.4, no streak to cure)
+    # lay (r8, the judge: two stalks stood straight up at the braid's lk0 crown): the front ones laid within
+    # ang degrees of the mass along the comb (twist tw rad), their tips clear mm over the lk0 outline, bent
+    # back, faded over their outer `fade`.
+    "braid": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=True,
+                  lay=dict(ang=(6.0, 14.0), clear=(1.0, 4.0), tw=0.12, bend=0.6, fade=0.4)),
+    "ponytail": dict(band=(0.0, 45.0), cap=(0.003, 0.012), front=6, back=2, L=(0.025, 0.04), ang=(20.0, 40.0), clear=(4.5, 8.5), frizz=70, shine=False, temple_matte=True,
+                     wisp_drop=((-45.0, -30.0),)),   # (r8, the judge: the lone dark marks ahead of her hairline at lk40: her right temple's two edge clusters)   # (shine by depth cost its lk40 gloss, 70.0 to 63.4, no streak to cure)
     "pixie": dict(band=None, cap=None, front=5, back=2, L=(0.018, 0.028), ang=(20.0, 40.0), clear=(3.0, 6.0), frizz=55, shine=False, jit_to=100.0),
 }
 BAND = dict(spacing=0.0028, depth=0.008, width=(0.0024, 0.0032), L=(0.012, 0.02), alpha=(0.65, 0.95), keep=((-0.0015, 0.0, 0.003, 0.008), (0.15, 0.3, 0.6, 1.0)), root_fade=(0.0015, 0.003))
@@ -2405,6 +2500,8 @@ def outline_cards(head, T, cfg, rng):
         else:
             cand = np.nonzero(far & (nz > 0.1) & (nz < 0.75) & (P[:, 1] > CENTRE[1] + 0.02))[0]
         got = []
+        lay = zone == "front" and "lay" in cfg          # (r8, the judge: laid along the comb, tips low)
+        ang, (zlo, zhi) = (cfg["lay"]["ang"], cfg["lay"]["clear"]) if lay else (cfg["ang"], (lo_ * 1000, hi_ * 1000))
         for j in rng.permutation(cand)[:4000]:
             if len(got) >= n_want:
                 break
@@ -2412,19 +2509,21 @@ def outline_cards(head, T, cfg, rng):
                 continue
             for _ in range(6):
                 L = rng.uniform(*cfg["L"])
-                a = np.radians(rng.uniform(*cfg["ang"]))
-                tw = rng.normal(0, 0.35)
-                Q, _ = _stand(P[j:j + 1], D[j:j + 1], np.array([L]), np.array([a]), np.array([tw]))
+                a = np.radians(rng.uniform(*ang))
+                tw = rng.normal(0, cfg["lay"]["tw"] if lay else 0.35)
+                Q, _ = _stand(P[j:j + 1], D[j:j + 1], np.array([L]), np.array([a]), np.array([tw]), bend=cfg["lay"]["bend"] if lay else 0.25)
                 Q = Q[0]
                 ex = fo(Q).max() if zone == "front" else clr(Q).max()
-                if lo_ <= ex <= hi_ and clr(Q[:2]).max() < 0.002:
+                if zlo / 1000 <= ex <= zhi / 1000 and clr(Q[:2]).max() < 0.002:
                     got.append((j, L, a, tw, ex, zone))
                     break
         picks += got
     n = len(picks)
     j = np.array([q[0] for q in picks], int)
     L, a, tw = (np.array([q[i] for q in picks]) for i in (1, 2, 3))
-    Q, nr = _stand(P[j] - (P[j] - CENTRE) / np.linalg.norm(P[j] - CENTRE, axis=1)[:, None] * 0.001, D[j], L, a, tw)
+    isf = np.array([q[5] == "front" for q in picks])
+    bnd = np.where(isf & ("lay" in cfg), cfg["lay"]["bend"] if "lay" in cfg else 0.25, 0.25)
+    Q, nr = _stand(P[j] - (P[j] - CENTRE) / np.linalg.norm(P[j] - CENTRE, axis=1)[:, None] * 0.001, D[j], L, a, tw, bend=bnd)
     side = np.sign(P[j, 0] + 1e-6)[:, None] * np.array([1.0, 0.0, 0.0])
     face = np.where(np.array([q[5] == "back" for q in picks])[:, None], 0.6 * side + 0.4 * nr, nr)
     face /= np.linalg.norm(face, axis=1)[:, None]
@@ -2432,6 +2531,14 @@ def outline_cards(head, T, cfg, rng):
     strip_uv(c, Q.shape[1], "outline", rng)
     fin = np.clip(c["arc"] / 0.003, 0, 1)
     c["alpha"] = np.repeat(rng.uniform(0.85, 1.0, n), 3 * Q.shape[1]) * fin * fin * (3 - 2 * fin)   # (x the strip's ~55% strands: 50-70% over the card)
+    if "lay" in cfg:                                            # (r8: the laid front ones faded over their outer 40%)
+        s_ = np.clip(c["arc"] / np.maximum(c["length"], 1e-6), 0, 1)
+        tf = np.clip((1 - s_) / cfg["lay"]["fade"], 0, 1)
+        tf = np.where(np.repeat(isf, 3 * Q.shape[1]), tf * tf * (3 - 2 * tf), 1.0)
+        c["alpha"] = c["alpha"] * tf
+        for i in range(n):
+            print("    outline %s %d: %.0f mm, %.0f deg off, tip %.1f mm over the lk0 outline (most %.1f), %.1f mm off her hair" % (
+                picks[i][5], i, L[i] * 1000, np.degrees(a[i]), fo(Q[i, -1:])[0] * 1000, fo(Q[i]).max() * 1000, clr(Q[i, -1:])[0] * 1000))
     c["blunt"], c["lit"] = True, True
     print("  outline clusters: %d front, %d back; cards 3-4 mm, %s mm long, %s deg off; past the outline mm: %s" % (
         sum(q[5] == "front" for q in picks), sum(q[5] == "back" for q in picks), " ".join("%.0f" % (v * 1000) for v in L),
@@ -2557,6 +2664,8 @@ def build(style):
                  **{f"K{i}": np.array([c.get("mat", 0), len(c.get("F", []))]) for i, c in enumerate(layers)})
     # (r7: with edge-strip cards, the fine material's atlas is hair_fine_strands.png: the strand atlas squeezed
     # into its top, the strip under it; every other fine card's v moved up into the top part)
+    for i_ in [int(v) for v in os.environ.get("DBG_ZERO", "").split(",") if v]:    # (test only: layer i unseen)
+        layers[i_]["alpha"] = np.zeros(len(layers[i_]["V"]))
     strip_mode = any(c.get("strip") for c in layers)
     for c in layers:
         if strip_mode and c.get("mat", 0) == 3 and not c.get("strip"):
@@ -2564,6 +2673,15 @@ def build(style):
             c["UV"][:, 1] = FA_SPLIT + (1 - FA_SPLIT) * c["UV"][:, 1]
     if EDGE is not None:
         hl_profile()
+    if os.environ.get("EAR_ZONE", "1") == "1":
+        cut_, near_ = 0, []
+        for c in layers:
+            if c.get("mat", 0) in (0, 3):
+                h_, n_ = ear_zone_cut(c)
+                cut_ += h_
+                near_ += [] if n_ is None else [n_]
+        print("  ear zone: %d cards cut short; nearest card tip to an ear (below its top): %s mm; ears %s" % (
+            cut_, "%.1f" % min(near_) if near_ else "none", " ".join("%+d: front y %.1f, root z %.1f, tragus z %.1f" % (sg, e["yf"] * 1000, e["root"] * 1000, e["tragus"] * 1000) for sg, e in _EARF.items())))
     V, N, UV, C, F, M = [], [], [], [], [], []
     base = 0
     for li, c in enumerate(layers):
@@ -2639,8 +2757,10 @@ def build(style):
         at0 += len(c["V"])
     blue = np.concatenate([np.full(len(c["V"]), float(c.get("blue", 0.0))) for c in layers])
     Ch[:, 2] = np.maximum(Ch[:, 2], blue)
-    matte = np.concatenate([np.broadcast_to(np.asarray(c.get("matte", False), bool), (len(c["V"]),)) for c in layers])
-    Ch[matte, 2] = 0.5                                       # (face 38 r5: the shader matte mark: base colour, no shine)
+    matte = np.concatenate([np.broadcast_to(np.asarray(c.get("matte", False), float), (len(c["V"]),)) for c in layers])
+    Ch[matte >= 0.999, 2] = 0.5                              # (face 38 r5: the shader matte mark: base colour, no shine)
+    gm_ = (matte > 0.001) & (matte < 0.999)
+    Ch[gm_, 2] = 0.45 + 0.045 * matte[gm_]                   # (r8: graded, 0.45 none to 0.495 full)
     C = [Ch]
     cp = cap(comb, sides)
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])
