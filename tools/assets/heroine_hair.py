@@ -1051,6 +1051,21 @@ def clump_layer(P, pts, side, share, cfg=BRAID_CLUMPS):
     return out, lab, edge
 
 
+def off_brow(P):
+    """(face 38 r4: the pale comma/hook over her brow was one gathered card run
+    down from her hairline over her forehead into her head.) Each strand cut
+    (its points folded onto the last good one) where it comes over 3 mm under
+    her hairline in front of her face."""
+    sh = P.shape
+    q = P.reshape(-1, 3)
+    bad = ((rise(q) < -0.003) & (q[:, 1] < -0.02) & (q[:, 2] > EYE_Z - 0.13)).reshape(sh[:2])
+    bad[:, 0] = False
+    for i in np.nonzero(bad.any(1))[0]:
+        k = int(np.argmax(bad[i]))
+        P[i, k:] = P[i, k - 1]
+    return P, int(bad.any(1).sum())
+
+
 def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
     """Her hair drawn back along her scalp from every root to a tie at T,
     each strand laid along her head to it and ending under the tie (with
@@ -1078,9 +1093,12 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0, vol=False):
         P = resample(P, points)
         edge_ = None
         if vol:
+            P, nb_ = off_brow(P)
             P, lab_, edge_ = clump_layer(P, pts, part_side(pts), BRAID_CLUMPS["pull"][min(len(out), 2)])
             print("  clumps: layer %d, %d locks, pull %.2f" % (len(out), len(np.unique(lab_)), BRAID_CLUMPS["pull"][min(len(out), 2)]))
             P, mc, ms = lift_layer(P, T, BRAID_VOL["share"][min(len(out), 2)], waves=len(out) >= 2, seed=len(out))
+            P, nb2_ = off_brow(P)
+            print("  off brow: %d strands cut before the clumps, %d after" % (nb_, nb2_))
             print("  volume: layer %d lifted %.1f mm at her crown, %.1f mm at her sides" % (len(out), mc * 1000, ms * 1000))
         if os.environ.get("DBG_NOLOWG") == "1":                 # (test only: the cards rooted beside her nape, below her ear's top, folded away under her scalp)
             lowg = (pts[:, 2] < float(HP[EAR, 2].max())) & (np.abs(pts[:, 0]) > 0.03)
@@ -1856,10 +1874,17 @@ def braid_flyaways(T, comb, n_want=BRAID_FLY):
     P = lie(pts - nrm * 0.001, combed(pts, nrm, astray(pts)), astray, L / (points - 1), np.full(n, points - 1),
             0.006, side=no_part(pts), lift=rng.uniform(0.002, 0.005, n), stop=lambda q: np.linalg.norm(q - T, axis=1) < 0.04)
     P = resample(P, points)
+    # (face 38 r4: the pale comma/hook over her brow: none that heads forward of its root or comes within 1 cm of her hairline)
+    fwd = ((P[:, -1] - P[:, 0]) * (T - P[:, 0])).sum(1) < 0
+    low_ = rise(P.reshape(-1, 3)).reshape(len(P), -1).min(1) < 0.01
+    for i in range(n):
+        print("    fly %d: root rise %.1f mm, th %.0f, min rise %.1f mm, forward %d" % (i, rise(pts[i:i + 1])[0] * 1000, th[pick][i] if False else 0, rise(P[i])[...].min() * 1000, fwd[i]))
+    ok = ~(fwd | low_)
+    P, pts, nrm, n = P[ok], pts[ok], nrm[ok], int(ok.sum())
     P, _, _ = lift_layer(P, T, 1.0, seed=9)                      # (off the outer layer, not under it)
     # (face 38 r4: ~1 px single strokes from the dense columns, 0.6-0.8 alpha, the hair's lit copper)
-    c = cards(P, rng.uniform(0.0005, 0.0007, n), [0, 1, 2], 0.006, narrow=0.7, floor=0.002)
-    c["alpha"] = np.repeat(rng.uniform(0.6, 0.8, n), 3 * points)
+    c = cards(P, rng.uniform(0.0005, 0.0007, len(P)), [0, 1, 2], 0.006, narrow=0.7, floor=0.002)
+    c["alpha"] = np.repeat(rng.uniform(0.6, 0.8, len(P)), 3 * points)
     c["shade"] = 1.15
     c["mat"] = 3
     c["tip_fade"] = (0.35, 0.015)
