@@ -123,7 +123,7 @@ def stop(rig, calling, side):
         g0, _ = rig.sk.fk(idle.base_of(rig, "arcanist").rot[:1], idle.base_of(rig, "arcanist").pos[:1])
         stand = idle.chest_pitch(rig, g0, 0)   # (the idle's chest pitch, 4.4 deg forward on S2H2)
 
-    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0, pole_dx=0.0, back=0.0):
+    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0, pole_dx=0.0, head_back=0.0):
         a = arms
         if not pole_dx and calling == "arcanist" and "tilt" in idle._ARC:
             # After the landing the staff arm held against the trunk's lean, as the idle's (its arc is in the chest's
@@ -132,7 +132,7 @@ def stop(rig, calling, side):
             # extends with the lean, the elbow back at her side, the fist down and back toward her hip.
             hr = arms["hand_r"]
             a = {**arms, "hand_r": {**hr, "arc": idle.pitched(hr["arc"], stand - lean * STOP_HOLD),
-                                    "blade": (hr["blade"][0], hr["blade"][1], hr["blade"][2] - back)}}
+                                    "blade": (hr["blade"][0], hr["blade"][1], hr["blade"][2] - head_back)}}
         if pole_dx and calling == "arcanist" and "tilt" in idle._ARC:
             hr = arms["hand_r"]
             ax = ARC_DX0
@@ -160,9 +160,9 @@ def stop(rig, calling, side):
         # Over it and braking: the body carried on, the back foot coming through.
         (5, p(0.30, -0.12, 0.10, 10, -0.13, 0.12, 4, roll=2, out=0.015), "auto"),
         # Down beside it, the weight back on the heels, the lean thrown back.
-        (9, p(0.26, 0.10, 0.0, 0, -0.12, 0.10, -7, brot=0, out=0.015, back=STOP_BACK[side][0]), "auto"),
+        (9, p(0.26, 0.10, 0.0, 0, -0.12, 0.10, -7, brot=0, out=0.015, head_back=STOP_BACK[side][0]), "auto"),
         # The rebound and the settle.
-        (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0, out=0.015, back=STOP_BACK[side][1]), "auto"),
+        (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0, out=0.015, head_back=STOP_BACK[side][1]), "auto"),
         (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0, out=0.015), "ease"),
     ]
     meta = {"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]}
