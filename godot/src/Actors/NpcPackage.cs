@@ -236,6 +236,8 @@ public static class NpcPackage
                 mi.SetSurfaceOverrideMaterial(s, People.Hair(src, m.HairColour ?? People.HisHairColour));
                 hair = true;
             }
+            // (its clothes and gear: the standard material's look with the sky's light warmer, People.NpcCloth)
+            else if (src.ResourceName == "generated" && src.AlbedoTexture != null) mi.SetSurfaceOverrideMaterial(s, People.NpcCloth(src));
         }
         if (hair) person.Hair.Add(mi);
         // (surfaces with a material laid already are skipped by both)

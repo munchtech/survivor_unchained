@@ -1537,6 +1537,29 @@ public static class People
         return m;
     }
 
+    /// <summary>A generated NPC package's clothes and gear (its baked "generated" surface), drawn as the standard
+    /// material would, but with the sky's light coming off it warmer (shaders/npc_cloth.gdshader, NpcClothAmbientTint;
+    /// metal kept as it is): the town sky turned the villager's green bodice navy in shade beside olive in the sun, and her
+    /// cream linen's folds blue-gray (Marionette lead 12 solver L3, judge r5).</summary>
+    public static Material NpcCloth(BaseMaterial3D src)
+    {
+        npcClothShader ??= GD.Load<Shader>("res://shaders/npc_cloth.gdshader");
+        var m = new ShaderMaterial { Shader = npcClothShader, ResourceName = src.ResourceName };
+        m.SetShaderParameter("albedo", src.AlbedoTexture);
+        m.SetShaderParameter("has_orm", src.RoughnessTexture != null);
+        if (src.RoughnessTexture != null) m.SetShaderParameter("orm", src.RoughnessTexture);
+        m.SetShaderParameter("has_normal", src.NormalEnabled && src.NormalTexture != null);
+        if (src.NormalTexture != null) m.SetShaderParameter("normal_map", src.NormalTexture);
+        m.SetShaderParameter("rough", src.Roughness);
+        m.SetShaderParameter("metal", src.Metallic);
+        m.SetShaderParameter("ambient_tint", NpcClothAmbientTint);
+        return m;
+    }
+    static Shader? npcClothShader;
+    /// <summary>The sky's light off a package NPC's cloth (npc_cloth.gdshader's ambient_tint): gentler than skin's
+    /// (HerAmbientTint 1.3/1.0/0.7), enough that a deep green in shade stays green and cream folds stay warm.</summary>
+    public static Vector3 NpcClothAmbientTint = new(1.25f, 1.0f, 0.75f);
+
     /// <summary>How far light carried under her skin spreads on screen (the skin shader's `scatter`, Godot's
     /// screen-space scattering). Godot spreads the lit colour with her paint in it, so at the Look's close-up its
     /// 0.38 smeared her paint: brows paler than drawn (Doe's darkest third at 0.30 of her skin, her portrait's 0.18),
