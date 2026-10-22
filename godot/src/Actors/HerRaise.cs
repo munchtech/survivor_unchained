@@ -13,19 +13,21 @@ namespace SurvivorUnchained.View;
 /// the cup moves rigidly and never stretches. Every top carries her skin
 /// weights, so all of them follow. Arms down nothing changes.
 /// Knobs: --raise-off, --raise-start/-full (deg), --raise-pitch/-yaw (deg),
-/// --raise-up/-out/-back (m), --raise-sup/-sside (stretch), --raise-log.
+/// --raise-up/-out/-back (m), --raise-sup/-sside (stretch), --raise-rigid (lift under plate), --raise-log.
 /// </summary>
 public partial class HerRaise : SkeletonModifier3D
 {
     public float Start = Args.Num("raise-start", -10f);
     public float Full = Args.Num("raise-full", 70f);
-    public float Pitch = Args.Num("raise-pitch", 14f);
+    public float Pitch = Args.Num("raise-pitch", 24f);
     public float Yaw = Args.Num("raise-yaw", 8f);
-    public float Up = Args.Num("raise-up", 0.016f);
-    public float Out = Args.Num("raise-out", 0.006f);
-    public float Back = Args.Num("raise-back", 0.004f);
-    public float StretchUp = Args.Num("raise-sup", 0.08f);
+    public float Up = Args.Num("raise-up", 0.026f);
+    public float Out = Args.Num("raise-out", 0.008f);
+    public float Back = Args.Num("raise-back", 0.006f);
+    public float StretchUp = Args.Num("raise-sup", 0.16f);
     public float StretchSide = Args.Num("raise-sside", 0.03f);
+    /// <summary>How much of the lift a held top (plate) still makes.</summary>
+    public float Rigid = Args.Num("raise-rigid", 0.5f);
     readonly bool off = Args.Has("raise-off"), log = Args.Has("raise-log");
 
     int chest = -1;
@@ -65,10 +67,13 @@ public partial class HerRaise : SkeletonModifier3D
             // Left is +X in her chest's frame. Breast bones are children of
             // spine_03, so their pose is already in the chest's frame.
             float side = i == 0 ? 1 : -1;
-            var turn = new Quaternion(Vector3.Up, Mathf.DegToRad(Yaw * side * w))
-                     * new Quaternion(Vector3.Right, Mathf.DegToRad(-Pitch * w));
+            // Under a held top (plate, Squash 0) the cups are one shell: they
+            // lift a little with the pec but never splay apart.
+            float held = Mathf.Lerp(Rigid, 1f, squash), splay = squash;
+            var turn = new Quaternion(Vector3.Up, Mathf.DegToRad(Yaw * side * w * splay))
+                     * new Quaternion(Vector3.Right, Mathf.DegToRad(-Pitch * w * held));
             int b = breast[i];
-            sk.SetBonePosePosition(b, sk.GetBonePosePosition(b) + new Vector3(Out * side, Up, -Back) * w);
+            sk.SetBonePosePosition(b, sk.GetBonePosePosition(b) + new Vector3(Out * side * splay, Up * held, -Back * held) * w);
             sk.SetBonePoseRotation(b, (turn * sk.GetBonePoseRotation(b)).Normalized());
             // Bone axes (build_heroine.py): X across, Y out along the breast, Z down the chest.
             var (sx, sy, sz) = RaiseRamp.Stretch(w * squash, StretchUp, StretchSide);
