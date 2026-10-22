@@ -61,7 +61,9 @@ uniform float sky_share = 1.0;
 // Her body's share of it from her collarbones down (by her freckles' map's blue, 0 there: her head and neck keep sky_share;
 // her head's part always sky_share), -1: sky_share all over. The close view's 0.45 lay on the underside and inner slope
 // of her breast too, which no key reaches (dent d2, 21 Oct: the pocket between her cups by the gore was lit by the sky
-// alone, 50/255 against her other breast's 178).
+// alone, 50/255 against her other breast's 178). The blue eases over 8 cm of her height (1.47 to 1.55 m, a smoothstep:
+// tools/assets/heroine_freckles.py), from her upper chest to her neck's base, about 70 px at the day close-up: the step it
+// adds over any 10 px on a line from her jaw to her sternum is 2.6/255 at most (dent d5), so no line at her collarbones.
 uniform float sky_body = -1.0;
 varying float sky_w;
 // Her sheen's strength (SPECULAR), for her light() to read.
