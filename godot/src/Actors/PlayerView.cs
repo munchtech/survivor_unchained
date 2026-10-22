@@ -60,8 +60,8 @@ public partial class PlayerView : Node3D
     /// strawberry blonde (G1 r4). --close-rim-hair: her hair on HerLayer with the rest of her, as before.</summary>
     public const uint HerHairLayer = 1u << 12;
     static readonly bool RimHair = Args.Has("close-rim-hair");
-    /// <summary>Her gear's own layer (14) while she is on hers: everything of her that is neither her skin nor her hair
-    /// (weapon, armor, outfit, buckles), so the close view's moon rim can keep its sheen on metal and none on her skin
+    /// <summary>Her metal's own layer (14) while she is on hers: her weapon and the metal of her outfit and armor (IsMetal;
+    /// her leather, fur and cloth stay on HerLayer: on this layer they went lavender chrome by night, judge J2), so the close view's moon rim can keep its sheen on metal and none on her skin
     /// (GameCloseUp: with the rim's sheen off her neck's lavender band went, but her axe head went flat black, judge J1).
     /// --close-rim-gear off: her gear on HerLayer with her skin, as before.</summary>
     public const uint HerGearLayer = 1u << 13;
@@ -642,12 +642,18 @@ public partial class PlayerView : Node3D
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
 
-    /// <summary>True when any of a mesh's surfaces is her skin (heroine_skin.gdshader).</summary>
-    static bool IsSkin(GeometryInstance3D g)
+    /// <summary>True when any of a mesh's surfaces is metal: her outfit's metal keys (People.OutfitMaterials, meta "kind" 1,
+    /// heroine_outfit_metal.gdshader), or a plain material at metallic 0.5 or more. Only these take the moon rim's gear twin:
+    /// with all her gear on it her leather (bandeau, bracers, belt) read as lavender chrome by night (judge J2, face 36).</summary>
+    static bool IsMetal(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D m || m.Mesh == null) return false;
         for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
-            if (m.GetActiveMaterial(s) is ShaderMaterial sm && sm.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true) return true;
+            switch (m.GetActiveMaterial(s))
+            {
+                case ShaderMaterial sm when sm.HasMeta("kind") && (int)sm.GetMeta("kind") == 1 || sm.Shader?.ResourcePath.Contains("metal") == true: return true;
+                case BaseMaterial3D bm when bm.Metallic >= 0.5f: return true;
+            }
         return false;
     }
 
@@ -658,7 +664,7 @@ public partial class PlayerView : Node3D
             if (c is GeometryInstance3D g)
             {
                 uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer
-                    : GearOwn && own && (g.Layers & 2u) != 0 && !IsSkin(g) ? HerGearLayer : HerLayer;
+                    : GearOwn && own && (g.Layers & 2u) != 0 && IsMetal(g) ? HerGearLayer : HerLayer;
                 // (her weapon is the world's (layer 1), not people's: it keeps that and takes her gear's layer too, so her own
                 // lamps (the night key, the moon rim's gear twin) reach it; without them it was flat black by night, judge J1)
                 if (GearOwn && (g.Layers & 1u) != 0 && (g.Layers & 2u) == 0)
