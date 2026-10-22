@@ -2,6 +2,13 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## Armor 13 (21 Oct): the dent MERGED; B2 cuirass steel round 4
+Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\9cf2b0ed-abf7-430e-b71e-d9b5f9dd3bd3\scratchpad\armor` (j3/j4 = dent judges, d7 = mask solver, c4 = cuirass r3, k3_brief.md, c5 = steel r4).
+- **Breast dent MERGED** (dent-12 d7d35321 -> integration eda25b01, 1046/0/8). Max D3 FAILED sky_body on a deltoid tone line (old mask = freckles blue, bind height only); fixed with its own mask in the graft freckles map's ALPHA (neck column only, 0 at the graft edge; 603a0fa2); D4 PASS, no must-fix. Face 36 wires breast_sym_post into the body build.
+- **Cuirass round 3 (c4: rim gloss, fine scratches, ridge 4x20, 19,948 tris; town worst 4.9, combat 4.6, p99 9.25): judge K3 FAIL on the steel only** (k3_q and night read as leather/latex; the rims don't show at 1:1). Mesh LOCKED. Round 4 = shader only (c5\brief.md): bare-steel rim band 3-4 mm + normal bead, curvature-driven wear, night tint. Re-judge k5_q/f/f_night (+paul).
+- Open: wearcheck's arcanist idle worst 8.0 mm after the 19:31 repack (was 2.3): re-measure on the merged clip at B2's final check.
+- Then: g-string (2), cuisses (4), arcanist rekey, final judge, MR B2; B3.
+
 ## Paused here (Armor 12, 21 Oct, coordinator wind-down); next:
 Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\c4134bd3-ebec-4f59-ad97-c6010364bcd4\scratchpad\armor` (dent\ = briefs d1-d5, j1-j2, scripts; c3\ = cuirass r2; k2_brief.md).
 - **THE BREAST DENT (owner, team top priority; ships as its own small MR BEFORE B2).** Her LEFT breast (screen right), the inner slope above-right of the warden gore boss, in every outfit (owner crops survivorsunchained_inputs\owner_frames_21oct\warden_cup_dent_closeup.png, dent_other_outfit_closeup.png, dent_tiny_crop.png). Three layers stacked; two fixed on armor-7:
