@@ -9193,11 +9193,14 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     # (entries it doesn't make, the armor pieces' own (gold trims' and gems': tools/armor/adorn.py), kept as they are)
-    keep, zones = {}, {}
+    keep, zones, extra = {}, {}, {}
     if os.path.exists(path):
         old = json.load(open(path, encoding="utf-8"))
         keep = {k: v for k, v in old.items() if k not in SPEC}
         zones = {k: v["zone"] for k, v in old.items() if "zone" in v}   # (dye zones are data: kept across a rebuild)
+        # (armor 16: a material's hand-set shading keys (the plumleather's rough_floor and clear coat, the glove satin's
+        # sheen) are data too: every key this build doesn't write is kept)
+        extra = {k: {kk: vv for kk, vv in v.items() if kk not in ("kind", "repeats", "pull", "tint", "zone")} for k, v in old.items() if k in SPEC}
     with open(path, "w", encoding="utf-8") as fh:
         from PIL import Image
 
@@ -9206,7 +9209,7 @@ def material_table(path):
             if not (STOCK_IVORY and kind(k) == "sheer" and os.path.exists(f)):
                 return {}
             return {"tint": [round(float(c) / 255, 4) for c in np.asarray(Image.open(f).convert("RGB"), np.float32).reshape(-1, 3).mean(0)]}
-        json.dump({**{k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k), **({"zone": zones[k]} if k in zones else {})} for k, v in SPEC.items()}, **keep}, fh, indent=1)
+        json.dump({**{k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k), **({"zone": zones[k]} if k in zones else {}), **extra.get(k, {})} for k, v in SPEC.items()}, **keep}, fh, indent=1)
 
 # (s30, for face's hair drape, 18 Oct: BODY_BLEND_OUT=<path> saves a copy of the scene here, her body after the
 # F1 body pass and every body step above, before any outfit is made; object names kept: Heroine, HeroineHead,
