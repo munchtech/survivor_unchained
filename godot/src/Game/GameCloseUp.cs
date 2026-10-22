@@ -223,10 +223,8 @@ public partial class Game
     static float CloseKeyElDay => Args.Num("close-key-el-day", 25f);
     // --close-sky-day S: her share of the sky's light in the close view by day (1: as play).
     static float CloseSkyDay => Args.Num("close-sky-day", 0.45f);
-    // --close-sky-body S: her body's share from her collarbones down (-1: as her face's, CloseSkyDay). 1, as in play (dent d2,
-    // warden close-up: the pocket between her cups by the gore 49.7 to 71.0/255, the arcanist's V 60.1 to 77.4, her face
-    // unchanged; before face 34's light it was 82.2 and 88.1; 1.25 gives 78.8 and 84.2).
-    static float CloseSkyBody => Args.Num("close-sky-body", 1f);
+    // --close-sky-body S: her body's share from her collarbones down (-1: as her face's, CloseSkyDay).
+    static float CloseSkyBody => Args.Num("close-sky-body", -1f);
     // --close-key-colour-day R,G,B: the day key's colour. --close-grade-day K: how much of the close view's own grade
     // (the night's and the Look's paint grade, Atmosphere.ViewGrade) it takes by day (0: play's; at 1 her cheek's chroma 6.5 to 6.4, so 0).
     static readonly Color CloseKeyColourDay = Args.Get("close-key-colour-day") is string kcd && kcd.Split(',') is { Length: 3 } kd
