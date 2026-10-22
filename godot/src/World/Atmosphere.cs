@@ -26,6 +26,30 @@ public partial class Atmosphere : Node3D
     public readonly DirectionalLight3D Key;
     readonly ShaderMaterial sky;
     public AtmospherePreset Current { get; private set; } = Atmospheres.Night;
+
+    /// <summary>A cinematic's far haze (C03: the far ridge 27-33% darker than the sky over it, a cut-out): depth fog from
+    /// Begin to End m (Curve its ramp), at most Amount, its colour the sky's behind it by Sky (aerial perspective), so
+    /// distance pales toward the sky and near stays clear. Null: play's exponential fog. Kept across Set (a blend's tween).</summary>
+    public (float Begin, float End, float Curve, float Amount, float Sky, Color? Tint)? Haze { get => haze; set { haze = value; HazeApply(); } }
+    (float Begin, float End, float Curve, float Amount, float Sky, Color? Tint)? haze;
+
+    void HazeApply()
+    {
+        if (haze is { } h)
+        {
+            Env.FogMode = Godot.Environment.FogModeEnum.Depth;
+            Env.FogDepthBegin = h.Begin; Env.FogDepthEnd = h.End; Env.FogDepthCurve = h.Curve;
+            Env.FogDensity = h.Amount; Env.FogAerialPerspective = h.Sky;
+            if (h.Tint is Color tc) Env.FogLightColor = tc;
+            if (System.Environment.GetEnvironmentVariable("FLORA_STATS") != null) GD.Print($"haze: depth {h.Begin}-{h.End} m, amount {h.Amount}, sky {h.Sky}; fog on {Env.FogEnabled}");
+        }
+        else if (Env.FogMode != Godot.Environment.FogModeEnum.Exponential)
+        {
+            Env.FogMode = Godot.Environment.FogModeEnum.Exponential; Env.FogAerialPerspective = 0;
+            Env.FogLightColor = C(Current.FogColor);
+            Env.FogDensity = (float)(Current.FogDensity * Current.FogDensity * FogMatchDistance);
+        }
+    }
     /// <summary>A touch less exposure at low quality keeps the mood (the web
     /// game's exposureScale).</summary>
     public float ExposureScale = 1;
@@ -217,6 +241,7 @@ public partial class Atmosphere : Node3D
 
         Env.FogLightColor = C(p.FogColor);
         Env.FogDensity = (float)(p.FogDensity * p.FogDensity * FogMatchDistance);
+        HazeApply();
         Env.VolumetricFogAlbedo = C(p.FogColor).Lightened(0.5f);
         Env.VolumetricFogDensity = (float)p.Haze;
         // An ember arena's own air: smoke or dust hanging in it.

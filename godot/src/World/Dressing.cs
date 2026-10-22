@@ -235,6 +235,7 @@ public static class Dressing
         }
         foreach (var w in ways) Causeway(z, w, merged, clear);
         clear.Report(z);
+        Stands(merged);
         void Merge(ZoneData.FloraGroup g)
         {
             var names = g.Piece[4..].Split('|');
@@ -314,6 +315,70 @@ public static class Dressing
         return root;
     }
 
+    /// <summary>Dense stands thinned into clumps (flora_species.json "stands"; its _doc): a zone's edge wall, a tree on every
+    /// cell of its grid at one size, read on a skyline as one pine copied at equal height and spacing (judge C03). A copy with
+    /// at least 'dense' others of its kind within 'r' m is kept by a clump field (smooth value noise 'clump' m across), sized
+    /// within 'scale' of 'base' (larger in a clump's heart) and turned anew; the thinner forest inside, where play is, as placed.</summary>
+    static void Stands(Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)> merged)
+    {
+        if (FloraSpecies.Stands is not { } all) return;
+        bool stats = System.Environment.GetEnvironmentVariable("FLORA_STATS") != null;
+        static float H(float x, float z, int k) => (uint)((Mathf.FloorToInt(x * 4.1f) * 73856093) ^ (Mathf.FloorToInt(z * 3.3f) * 19349663) ^ (k * 83492791)) % 10007u / 10007f;
+        static float L(int i, int j, int k) => (uint)((i * 73856093) ^ (j * 19349663) ^ (k * 83492791)) % 10007u / 10007f;
+        foreach (var st in all.EnumerateObject())
+        {
+            if (st.Name.StartsWith('_')) continue;
+            var c = st.Value;
+            float r = c.GetProperty("r").GetSingle(), cl = c.GetProperty("clump").GetSingle(), keep = c.GetProperty("keep").GetSingle(), bs = c.GetProperty("base").GetSingle();
+            int dense = c.GetProperty("dense").GetInt32();
+            float s0 = c.GetProperty("scale")[0].GetSingle(), s1 = c.GetProperty("scale")[1].GetSingle();
+            var keys = merged.Keys.Where(k => merged[k].Sp.Kind == st.Name).ToList();
+            // every copy of the kind on a grid of r-m cells, to count its neighbours
+            var grid = new Dictionary<(int, int), List<Vector3>>();
+            foreach (var k in keys) foreach (var t in merged[k].At)
+            {
+                var key = (Mathf.FloorToInt(t.Origin.X / r), Mathf.FloorToInt(t.Origin.Z / r));
+                if (!grid.TryGetValue(key, out var l)) grid[key] = l = new();
+                l.Add(t.Origin);
+            }
+            float Field(float x, float z)
+            {
+                // smooth value noise, two octaves: the clumps and their ragged edges
+                float O(float x, float z, float s, int k)
+                {
+                    float fx = x / s, fz = z / s; int i = Mathf.FloorToInt(fx), j = Mathf.FloorToInt(fz);
+                    float u = fx - i, v = fz - j; u = u * u * (3 - 2 * u); v = v * v * (3 - 2 * v);
+                    return Mathf.Lerp(Mathf.Lerp(L(i, j, k), L(i + 1, j, k), u), Mathf.Lerp(L(i, j + 1, k), L(i + 1, j + 1, k), u), v);
+                }
+                return Mathf.Clamp((O(x, z, cl, 11) * 0.7f + O(x, z, cl * 0.4f, 12) * 0.3f - 0.5f) * 2.6f + 0.5f, 0f, 1f);
+            }
+            int seen = 0, thick = 0, kept = 0;
+            foreach (var k in keys)
+            {
+                var (sp, at, vars) = merged[k];
+                var nat = new List<Transform3D>(); var nvar = new List<int>();
+                for (int i = 0; i < at.Count; i++)
+                {
+                    var o = at[i].Origin; seen++;
+                    int n = 0, cx = Mathf.FloorToInt(o.X / r), cz = Mathf.FloorToInt(o.Z / r);
+                    for (int a = -1; a <= 1; a++) for (int b = -1; b <= 1; b++)
+                        if (grid.TryGetValue((cx + a, cz + b), out var l)) foreach (var p in l) if (p != o && p.DistanceSquaredTo(o) < r * r) n++;
+                    if (n < dense) { nat.Add(at[i]); nvar.Add(vars[i]); continue; }
+                    thick++;
+                    float f = Field(o.X, o.Z);
+                    // (the share kept follows the field: 'keep' on average, all of a clump's heart, few in the gaps)
+                    if (H(o.X, o.Z, 1) > Mathf.Clamp(keep + (f - 0.5f) * 1.6f, 0.05f, 1f)) continue;
+                    kept++;
+                    float sc = bs * Mathf.Lerp(s0, s1, Mathf.Clamp(0.55f * f + 0.45f * H(o.X, o.Z, 2), 0f, 1f));
+                    var basis = new Basis(Vector3.Up, H(o.X, o.Z, 3) * Mathf.Tau).Scaled(Vector3.One * sc);
+                    nat.Add(new Transform3D(basis, o)); nvar.Add(vars[i]);
+                }
+                merged[k] = (sp, nat, nvar);
+            }
+            if (stats) GD.Print($"stands {st.Name}: {seen} copies, {thick} in dense stands, {kept} kept ({(thick > 0 ? 100f * kept / thick : 0):0}%)");
+        }
+    }
+
     /// <summary>A causeway's stepping stones (a zone's flora_species.json "causeways"; flora_species.json's _doc there): each
     /// row's stones at uneven steps, nudged across, turned, tilted and sized by their own hashes, no two neighbours alike, each
     /// set so its top stands 'above' over the water (or a little over the ground, where that is higher), its body sunk in the bed.</summary>
@@ -337,6 +402,10 @@ public static class Dressing
         // ('step_var' how far each step strays from 'step' (0.35: 0.65-1.35 of it); 'clear' m the least gap kept between any two
         // stones' rims (about 0.35 m a unit of scale from the middle), so the drifting rows never pile up)
         var cl = clearOf;
+        // (C03 env fix: 'tilt' [lo, hi] deg each stone leans (was 0-5), 'low' a share standing only 'low_above' [lo, hi] m
+        // proud (barely breaking the surface), so from a camera at the water no row of tops lines up like a ruler)
+        Vector2 tilt = w.TryGetProperty("tilt", out var tl) ? V2(tl) : new(0f, 5f), lowAbove = w.TryGetProperty("low_above", out var la) ? V2(la) : new(0.01f, 0.03f);
+        float low = F("low", 0f);
         float stepVar = F("step_var", 0.35f), clear = F("clear", -10f), stagger = F("stagger", -1f), shared = F("drift_shared", 0f);
         var placed = new List<(Vector2 P, float S)>();
         bool stats = System.Environment.GetEnvironmentVariable("CAUSEWAY_STATS") != null;
@@ -366,9 +435,10 @@ public static class Dressing
                     float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4));
                     if (placed.Any(q => q.P.DistanceTo(p) < 0.35f * (q.S + s) + clear) || cl.NearProp(p, 0.35f * s)) { t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9)); i++; continue; }
                     placed.Add((p, s));
-                    float topY = Mathf.Max(water + Mathf.Lerp(above.X, above.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
+                    var ab2 = H(k * 7 + 5003) < low ? lowAbove : above;
+                    float topY = Mathf.Max(water + Mathf.Lerp(ab2.X, ab2.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
                     float ta = H(k + 6) * Mathf.Tau;
-                    var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(5f * H(k + 7)))
+                    var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(Mathf.Lerp(tilt.X, tilt.Y, H(k + 7))))
                         * new Basis(Vector3.Up, H(k + 8) * Mathf.Tau).Scaled(new Vector3(s, sy, s));
                     mg.At.Add(new Transform3D(basis, new Vector3(p.X, topY - top * sy, p.Y)));
                     mg.Var.Add(v);
