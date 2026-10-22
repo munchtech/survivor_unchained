@@ -1725,14 +1725,15 @@ public static class People
     }
 
     /// <summary>Her share of the sky's light on her skin (the skin shader's sky_share, 1 as everywhere): GameCloseUp sets it in
-    /// the town's close view by day, where the grey sky's light lay level over her face (face 34).</summary>
-    public static void HerSkyShare(Person p, float w)
+    /// the town's close view by day, where the grey sky's light lay level over her face (face 34). body: her share from
+    /// her collarbones down (the shader's sky_body), when it differs from her face's (-1: w all over).</summary>
+    public static void HerSkyShare(Person p, float w, float body = -1)
     {
         if (p.Body != "heroine") return;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
-                    m.SetShaderParameter("sky_share", w);
+                { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
     }
 
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
