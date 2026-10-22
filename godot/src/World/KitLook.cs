@@ -299,6 +299,11 @@ public static class KitLook
 
     static Texture2D? stoneTex, stoneNor;
 
+    /// <summary>The stepping stones' materials (a species with a damp top), for a cinematic's "stones" cue.</summary>
+    public static readonly HashSet<ShaderMaterial> Stepping = new();
+    /// <summary>Every own-stone material (the boulders too), for the "stones" cue's "all".</summary>
+    public static readonly HashSet<ShaderMaterial> Rocks = new();
+
     /// <summary>Our own stone (kit.gdshader's OWN_ROCK): the sheet and parameters of flora_species.json's "stone", its
     /// species' "shader" over them; drawn with the see-through window's rim like the rest.</summary>
     static ShaderMaterial Rock(StandardMaterial3D s, Look look)
@@ -326,8 +331,14 @@ public static class KitLook
         if (FloraSpecies.ByMaterial(s.ResourceName) is { } sp)
         {
             foreach (var (k, v) in sp.Shader) Set(k, v);
+            // (a stone look tried without editing the data: STONE_SET="key=v;key=v", numbers, on the stepping stones)
+            if (sp.Shader.ContainsKey("top_damp")) Stepping.Add(m);
+            if (sp.Shader.ContainsKey("top_damp") && System.Environment.GetEnvironmentVariable("STONE_SET") is { } ss)
+                foreach (var kv in ss.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                    m.SetShaderParameter(kv.Split('=')[0], float.Parse(kv.Split('=')[1], System.Globalization.CultureInfo.InvariantCulture));
             if (sp.Packed) m.SetShaderParameter("packed", true);
         }
+        Rocks.Add(m);
         var rim = new ShaderMaterial { Shader = ownRockRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {

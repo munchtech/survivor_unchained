@@ -89,6 +89,15 @@ uniform vec3 night_tint = vec3(1.0);
 // up, scaled with it; else wet_above m over the water, every stone alike)
 uniform float wet_share = 0.0;
 uniform float wet_top = 0.75;
+// (C03 env fix: a stepping stone's top damp at night (any blue in the key: a cinematic's near-white moon too), the river's spray: its albedo down by up to top_damp, patchy (drier
+// spots), its roughness toward wet_rough by half that share, so a moon or lamp catches it in a spot, not a pale even cap)
+uniform float top_damp = 0.0;
+// (C03 env r2: how far the damp top's roughness goes toward wet_rough, a share of the damp (0.5 as r1): a glossy damp crown
+// mirrored the bright sky at a low camera's grazing angle as a pale, flat "ice floe" (c03 s8); the stepping stones 0)
+uniform float damp_gloss = 0.5;
+// (C03 env r4: the damp top's light for one shot (GameCinema "stones"), the top's albedo times it above the wet band, as far
+// as it faces up (1 as built): c03 s8's near stone crown stood 2.4x the water beside it, the frame's palest broad thing after her)
+uniform float top_level = 1.0;
 // (E5c, judge r2) each copy's own value, +-inst_val (its hash), and a share cool_share of them tinted cool_tint (the stepping
 // stones' variety); each stone of a cluster its own colour, its UV (env_rocks.py's pebbles: u its class, slate / ochre /
 // umber, v its value), stone_mix of the class's tint and +-stone_val; a thin algae line at the water's edge (algae: how
@@ -119,6 +128,19 @@ varying float v_foot;
 // (a species' own: its leaves' flutter in the wind, the spruce's 1; the warmest hue its sunlit
 // tips may take under a low sun, sRGB degrees)
 uniform float flutter = 1.0;
+// (C03 env r4, judge r3: a ridge of spruces read as one top copied: each copy's stem bent its own way, its top leaning by up
+// to 'lean' deg (its hash), a curve up the whole stem (h^2, a wind-set tree) and its foot where it stood; lean_h the
+// piece's height (local m) the lean is reached at; 0 straight)
+uniform float lean = 0.0;
+uniform float lean_h = 8.8;
+// ...each copy's height stretched by its hash within stretch_lo-hi (the far LODs alike: the ridge's spires at one height,
+// judge r3), and its crown above leader_from (local m) squashed or drawn out within leader_lo-hi (a stubby top, a long
+// spire: no ridge of one top shape); 1 as built
+uniform float stretch_lo = 1.0;
+uniform float stretch_hi = 1.0;
+uniform float leader_from = 6.0;
+uniform float leader_lo = 1.0;
+uniform float leader_hi = 1.0;
 uniform float hue_floor = 100.0;
 // (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
 // its crown seen from above read as a hole by day, judge E4c)
@@ -281,6 +303,17 @@ void vertex() {
 		float fr = length(VERTEX.xz) * wind;
 		VERTEX.y += sin(TIME * (2.7 + 1.6 * (flutter - 1.0)) + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * flutter * fr;
 		VERTEX.xz += vec2(sin(TIME * 4.3 + dot(VERTEX, vec3(2.1, 1.3, 0.9))), cos(TIME * 3.7 + dot(VERTEX, vec3(0.8, 1.9, 1.7)))) * 0.02 * max(flutter - 1.0, 0.0) * fr;
+	}
+	if (stretch_hi != stretch_lo || leader_hi != leader_lo) {
+		float hl = mix(leader_lo, leader_hi, fract(sin(dot(ip.xz, vec2(51.3, 27.9))) * 37281.41));
+		if (VERTEX.y > leader_from) VERTEX.y = leader_from + (VERTEX.y - leader_from) * hl;
+		VERTEX.y *= mix(stretch_lo, stretch_hi, fract(sin(dot(ip.xz, vec2(17.17, 63.41))) * 19417.83));
+		h = max(VERTEX.y, 0.0);
+	}
+	if (lean > 0.0) {
+		float la = radians(lean) * (fract(sin(dot(ip.xz, vec2(39.35, 11.13))) * 24634.63) * 2.0 - 1.0);
+		float ld = fract(sin(dot(ip.xz, vec2(7.77, 93.51))) * 51721.17) * TAU;
+		VERTEX.xz += vec2(cos(ld), sin(ld)) * tan(la) / (2.0 * lean_h) * h * h;
 	}
 #endif
 	VERTEX.x += sway;
@@ -612,21 +645,23 @@ void fragment() {
 		float lz = smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
 		// wet: under the water's height + wet_above, dark and glossy, its edge ragged; no moss or lichen there
 		float wy = water_level.w > 0.5 ? water_level.x : -1e5;
-		float w0 = wet_share > 0.0 ? wy + wet_share * (v_top - wy) - 0.02 : wy + wet_above * 0.5;
-		float w1 = wet_share > 0.0 ? w0 + 0.015 + 0.035 * st.a : wy + wet_above * (1.0 + 0.8 * st.a);
+		float w0 = wet_share > 0.0 ? wy + wet_share * mix(0.45, 1.35, fract(v_jit * 7.13)) * (v_top - wy) - 0.02 : wy + wet_above * 0.5;
+		float w1 = wet_share > 0.0 ? w0 + 0.03 + 0.06 * st.a : wy + wet_above * (1.0 + 0.8 * st.a);
 		float wet = 1.0 - smoothstep(w0, w1, wp.y);
 		mz *= moss_amount * (1.0 - wet);
 		lz *= 1.0 - wet;
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
 		col *= mix(1.0, wet_dark, wet);
+		float damp = top_damp * smoothstep(0.0, 0.25, flora_light.x) * (1.0 - wet) * mix(0.55, 1.0, smoothstep(0.3, 0.7, st.a + 0.25 * COLOR.g));
+		col *= (1.0 - damp) * mix(1.0, top_level, (1.0 - wet) * smoothstep(0.4, 0.8, v_up));
 		if (algae > 0.0 && water_level.w > 0.5) {
 			float ab = smoothstep(wy - 0.02, wy - 0.005, wp.y) * (1.0 - smoothstep(wy + algae_w * (0.5 + 0.8 * st.a), wy + algae_w * (0.9 + 1.0 * st.a), wp.y));
 			col = mix(col, algae_color.rgb * (0.8 + 0.4 * st.a), algae * ab);
 		}
 		col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
-		ROUGHNESS = mix(stone_rough, wet_rough, wet);
+		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));
 		SPECULAR = mix(0.35, 0.5, wet);
 		AO = amb_occl;
 		AO_LIGHT_AFFECT = 0.0;

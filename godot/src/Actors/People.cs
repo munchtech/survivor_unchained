@@ -1542,6 +1542,10 @@ public static class People
         }
         m.SetShaderParameter("shine", woman ? 0.38f : HisSkin.Shine);
         m.SetShaderParameter("scatter", HerScatter);
+        // Light from all round comes out of skin redder (HerAmbientTint). Without it the town sky's blue on a package
+        // NPC's reddish skin read magenta on the shaded cheek (the generated guard, judge r4: shade hue 22-28 deg
+        // against the paint's 41-50; with it 37-43, warm tan; Marionette lead 12 solver I2, 21 Oct 2026).
+        m.SetShaderParameter("ambient_tint", HerAmbientTint);
         return m;
     }
 

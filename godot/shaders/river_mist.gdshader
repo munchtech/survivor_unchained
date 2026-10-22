@@ -43,6 +43,9 @@ void fragment() {
 	vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);
 	float behind = -v.z / v.w + VERTEX.z;
 	body *= smoothstep(0.0, 1.2, behind);
+	// (C03 env r2: a sheet seen edge-on from a camera at the water, under 25 deg, thins to a quarter, so the water's mirror
+	// shows through and the far reach does not fill with an even milky band; the play camera, looking down, as judged)
+	body *= mix(0.25, 1.0, smoothstep(0.17, 0.42, abs(dot(normalize(-VERTEX), normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz)))));
 	if (body <= 0.002) discard;
 	// The bank's body: its density as a height, its slope a normal (across is world z, along is world x).
 	float e = 2.0;

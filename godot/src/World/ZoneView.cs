@@ -425,7 +425,15 @@ public partial class ZoneView : Node3D
                         {
                             foreach (var m in pillar.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Visible = false;
                             pillar.AddChild(pier);
-                            foreach (var m in pier.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)m).Layers = LampLayer;
+                            // (C03 env fix: the pier casts no key shadow, moon or dawn: a 0.9 m box 4.4 m tall, its shadow crossed
+                            // the water unseen and fell on the north bank as a hard dark parallelogram that read as a black slab
+                            // lying by the ford (c03 s12, both under the moon and as s12 blends to dawn); it stands in the water,
+                            // its foam ring grounds it. '--ford-pier-shadow' casts it, for comparison)
+                            foreach (var m in pier.FindChildren("*", "GeometryInstance3D", true, false))
+                            {
+                                ((GeometryInstance3D)m).Layers = LampLayer;
+                                if (!SurvivorUnchained.Args.Has("ford-pier-shadow")) ((GeometryInstance3D)m).CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                            }
                         }
                 lights[li].LightCullMask &= ~LampLayer;
                 lights[li].LightColor = new Color(FordColor);
