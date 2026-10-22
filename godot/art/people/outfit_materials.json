@@ -111,6 +111,12 @@
  "glovesatin": {
   "kind": "satin",
   "repeats": 40,
+  "sheen": 0.6,
+  "axis": 2,
+  "along": 0.75,
+  "across": 0.22,
+  "body": 0.85,
+  "turn": 0.75,
   "zone": "cloth"
  },
  "glovepipe": {

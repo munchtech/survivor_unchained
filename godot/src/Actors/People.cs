@@ -1274,7 +1274,7 @@ public static class People
         HerLod.For(p)?.Merge(laid);
     }
 
-    static Shader? furShader, sheerShader, outfitShader, metalShader;
+    static Shader? furShader, sheerShader, outfitShader, metalShader, satinShader;
     static Godot.Collections.Dictionary? outfitTable, metalFinishes;
     static Texture2D? metalDetail;
 
@@ -1299,7 +1299,10 @@ public static class People
             // (metal: the same shader with metal's own light and reflection, one shared scratch-and-pit
             // detail and its key's finish; the look bible's armor-metal page)
             if (kind == 1) metalShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_metal.gdshader");
-            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : outfitShader };
+            // (a satin with a sheen, the arcanist's opera gloves: satin's own light, its sheen along the arm, armor 16)
+            bool sheen = kind == 5 && entry.ContainsKey("sheen");
+            if (sheen) satinShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_satin.gdshader");
+            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : sheen ? satinShader : outfitShader };
             m.SetShaderParameter("kind", kind);
             // (its dye zone, from the table: HerWear.DyeMesh sets the dye on the surfaces of the zone a piece is dyed in)
             m.SetMeta("zone", entry.TryGetValue("zone", out var zn) ? (string)zn : "none");
@@ -1359,6 +1362,21 @@ public static class People
             if (kind == 0 && entry.ContainsKey("rough_var")) m.SetShaderParameter("leather_rough_var", (float)entry["rough_var"]);
             if (kind == 0 && entry.ContainsKey("clearcoat")) m.SetShaderParameter("leather_clearcoat", (float)entry["clearcoat"]);
             if (kind == 0 && entry.ContainsKey("clearcoat_rough")) m.SetShaderParameter("leather_clearcoat_rough", (float)entry["clearcoat_rough"]);
+            // (her plate's reflection at the Look, under its rig only (look_rig), armor 16: the key's softbox and a dim dome;
+            // LOOK_METAL_ENV=env,key,dome tries others)
+            if (kind == 1)
+            {
+                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,4,0.5").Split(',');
+                float L(int i) => float.Parse(le[i], System.Globalization.CultureInfo.InvariantCulture);
+                m.SetShaderParameter("look_metal_env", L(0)); m.SetShaderParameter("look_metal_key", L(1)); m.SetShaderParameter("look_metal_dome", L(2));
+            }
+            // (a satin's sheen, where its row names one: the arcanist's opera gloves, armor 16)
+            if (kind == 5 && entry.ContainsKey("sheen")) m.SetShaderParameter("satin_sheen", (float)entry["sheen"]);
+            if (kind == 5 && entry.ContainsKey("axis")) m.SetShaderParameter("satin_axis", (int)entry["axis"]);
+            if (kind == 5 && entry.ContainsKey("along")) m.SetShaderParameter("satin_along", (float)entry["along"]);
+            if (kind == 5 && entry.ContainsKey("across")) m.SetShaderParameter("satin_across", (float)entry["across"]);
+            if (kind == 5 && entry.ContainsKey("body")) m.SetShaderParameter("satin_body", (float)entry["body"]);
+            if (kind == 5 && entry.ContainsKey("turn")) m.SetShaderParameter("satin_turn", (float)entry["turn"]);
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
@@ -1380,6 +1398,15 @@ public static class People
         }
         return ((~c) % 1000) / 1000f;
     }
+
+    /// <summary>The reaver's pelt (armor 16, judge J5: "plush felt, not a pelt"): its shells and knobs.</summary>
+    public static int PeltShells = 24;
+    public static readonly Dictionary<string, float> Pelt = new()
+    {
+        ["fur_length"] = 0.022f, ["density"] = 260f, ["droop"] = 0.25f, ["comb"] = 0.9f,
+        ["root_dark"] = 0.3f, ["tip_light"] = 1.35f, ["backlight"] = 0.3f,
+        ["tuft"] = 0.075f, ["guard"] = 0.22f, ["under_len"] = 0.5f, ["frost"] = 0.12f,
+    };
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
     /// shells (shaders/fur_shell.gdshader), each further out, keeping only
@@ -1407,12 +1434,19 @@ public static class People
             bool down = src.ResourceName == "down";
             furShader ??= GD.Load<Shader>("res://shaders/fur_shell.gdshader");
             ShaderMaterial? first = null, last = null;
-            for (int i = 0; i <= shells; i++)
+            // (fur proper is a pelt, armor 16: longer, in tufts, combed; a few more shells for its length)
+            int n = down ? shells : PeltShells;
+            for (int i = 0; i <= n; i++)
             {
                 var m = new ShaderMaterial { Shader = furShader };
                 m.SetShaderParameter("albedo_tex", src.AlbedoTexture);
                 m.SetShaderParameter("tint", src.AlbedoColor);
-                m.SetShaderParameter("layer", (float)i / shells);
+                m.SetShaderParameter("layer", (float)i / n);
+                if (!down)
+                {
+                    m.SetShaderParameter("pelt", 1.0f);
+                    foreach (var (k, v) in Pelt) m.SetShaderParameter(k, v);
+                }
                 if (down)
                 {
                     m.SetShaderParameter("fur_length", 0.009f);

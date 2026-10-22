@@ -17,6 +17,17 @@ uniform vec3 gravity = vec3(0.0, -1.0, 0.0);
 uniform float root_dark = 0.45;   // (how dark the roots are, shadowed by the pile)
 uniform float backlight = 0.25;   // (light through the strands)
 uniform float droop = 0.35;       // (how far the tips bend down)
+// A pelt (armor 16, the reaver's fur: "plush felt, not a pelt"): the strands grow in pointed
+// tufts that part as they rise (the edge broken, not a felt dome), a dense short underfur
+// under sparse long guard hairs, combed down along the surface, dark at the root and
+// lighter, a little frosted, at the tip. 0 = the plain pile above, bit for bit (the down).
+uniform float pelt = 0.0;
+uniform float tuft = 0.11;        // (tufts per strand cell: one tuft about 9 strands across)
+uniform float guard = 0.22;       // (share of strands that are long guard hairs)
+uniform float under_len = 0.5;    // (the underfur's height, of the guard hairs')
+uniform float tip_light = 1.35;   // (the tips' value, of the texture's)
+uniform float frost = 0.12;       // (the guard hairs' pale tips)
+uniform float comb = 0.9;         // (how far the strands lean down along the surface, of their length)
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -26,6 +37,15 @@ void vertex() {
 	// Strands bend down a little toward their tips.
 	vec3 g = (inverse(MODEL_MATRIX) * vec4(gravity, 0.0)).xyz;
 	VERTEX += NORMAL * fur_length * layer + g * fur_length * droop * layer * layer;
+	if (pelt > 0.0) {
+		// combed: laid along the surface toward the ground, more toward the tips
+		vec3 gt = g - NORMAL * dot(g, NORMAL);
+		VERTEX += gt * fur_length * comb * pow(layer, 1.3);
+	}
+}
+
+vec2 hash2(vec2 p) {
+	return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
 }
 
 void fragment() {
@@ -33,6 +53,46 @@ void fragment() {
 	vec2 id = floor(cell);
 	vec2 f = fract(cell) - 0.5;
 	float h = hash(id);
+	if (pelt > 0.0) {
+		// The tuft: nearest of jittered centres (strand cells / tuft across), its own height and shade.
+		vec2 tc = UV * density * tuft;
+		vec2 ti = floor(tc);
+		float best = 9.0;
+		vec2 bid = ti;
+		for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+			vec2 o = vec2(float(x), float(y));
+			vec2 d = o + hash2(ti + o) * 0.9 + 0.05 - fract(tc);
+			float dd = dot(d, d);
+			if (dd < best) { best = dd; bid = ti + o; }
+		}
+		float td = sqrt(best);                                   // (0 at its centre, ~0.5-0.7 at its edge)
+		float tt = mix(0.7, 1.0, hash(bid + 3.7));               // (the tuft's height)
+		bool is_guard = hash(id + 11.3) < guard;
+		float tall = is_guard ? mix(0.8, 1.0, h) * mix(0.85, 1.0, tt) : mix(0.7, 1.0, h) * under_len * tt;
+		float radius = 0.5 * (1.0 - layer / max(tall, 0.001));
+		// the tuft parts as it rises: past half its height only its core holds strands
+		float core = 0.8 * (1.0 - smoothstep(0.1 * tt, 0.85 * tt, layer)) + 0.1;
+		if (layer > 0.0 && (layer > tall || length(f) > radius || (!is_guard && td > core) || (is_guard && td > core + 0.3))) discard;
+		vec3 c = texture(albedo_tex, UV).rgb * tint.rgb;
+		float shade = mix(0.7, 1.15, hash(bid + 9.1));
+		float up = pow(layer, 0.75);
+		vec3 a = c * shade * mix(root_dark, tip_light, up);
+		if (is_guard) a = mix(a, vec3(dot(c, vec3(0.3, 0.5, 0.2))) * 1.9, frost * smoothstep(0.6, 1.0, layer / tall));
+		// (the tuft's outer strands in its own shadow, its core catching the light)
+		a *= mix(1.0, 0.72, smoothstep(0.0, 0.7, td) * (1.0 - layer));
+		ALBEDO = layer > 0.0 ? a : c * root_dark * 0.55;
+		ROUGHNESS = is_guard ? 0.62 : 0.85;
+		SPECULAR = 0.3;
+		BACKLIGHT = c * backlight;
+		if (test_flat) {
+			ALBEDO = vec3(0.0);
+			METALLIC = 0.0;
+			ROUGHNESS = 1.0;
+			SPECULAR = 0.0;
+			EMISSION = vec3(0.5);
+			BACKLIGHT = vec3(0.0);
+		}
+	} else {
 	// Each strand a cone: wide at the root, a point at its own height.
 	float tall = mix(0.55, 1.0, h) * mix(1.0, hash(floor(UV * density * 0.12)), clump);
 	float radius = 0.5 * (1.0 - layer / max(tall, 0.001));
@@ -50,5 +110,6 @@ void fragment() {
 		SPECULAR = 0.0;
 		EMISSION = vec3(0.5);
 		BACKLIGHT = vec3(0.0);
+	}
 	}
 }

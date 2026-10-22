@@ -28,10 +28,32 @@ uniform float look_rig = 0.0;
 uniform float look_metal_rough = 0.30;
 uniform float look_metal_dim = 1.0;                // (r4: was 0.70, older than the 1.2 highlight cap: the Look pauldron went a black lacquered ball. And its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
 uniform float look_leather_rough = 0.60;
+// (armor 16, judge A2: at the Look her pauldrons read as flat toon navy. The rig's lights aim at her face, her shoulders
+// at their cones' edges, and the night around the camp gives plate nothing to reflect: under the rig only, the key's
+// softbox (high, near the lens, to camera right: GameFront's keyAt) and a dim cool dome over her, in its reflection)
+uniform float look_metal_env = 0.0;               // (0 = as before, bit for bit)
+uniform float look_metal_key = 4.0;
+uniform float look_metal_dome = 0.5;
+uniform vec3 look_key_dir = vec3(0.22, 0.6, 0.76);  // (view space: right, up, toward the lens)
 uniform float leather_rough_floor = 0.0;          // (armor 14, 22 Oct: a leather's roughness floor off its burnished edges, from its outfit_materials.json row "rough_floor". The arcanist bodysuit's plumleather at 0.58: at 0.42 its cups caught the key as a pointed highlight at each apex (read as nipple pokes) and a dark band under it (a crease), and a plastic streak at night; the shape alone was smooth)
 uniform float leather_rough_var = 1.0;            // (armor 14: its roughness map's spread kept, 1 as scanned; under 1 the map's blotches ease toward the floor)
 uniform float leather_clearcoat = 0.0;            // (armor 14: a thin clear sheen over a leather, off its edges; 0 none)
 uniform float leather_clearcoat_rough = 0.3;
+// (armor 16, the arcanist's white opera gloves read as a flat paper tube by day: a stretch satin's
+// light is mostly its sheen, so its body a little darker and turning darker round the form, and its
+// sheen a long soft streak along the arm (heroine_outfit_satin.gdshader's light). Its outfit_materials.json
+// row "sheen" sets it and picks that shader; 0 = as before, bit for bit, on every other satin)
+uniform float satin_sheen = 0.0;
+uniform float satin_body = 1.0;                   // (its body's value, of the texture's)
+uniform float satin_turn = 1.0;                   // (its value where it turns from the eye, of its face-on value)
+uniform float satin_along = 0.75;                 // (heroine_outfit_satin.gdshader: its sheen's roughness along the arm, a long streak)
+uniform float satin_across = 0.22;                // (and across it, narrow: the streak follows the form)
+uniform float satin_spec_cap = 1.6;               // (its sheen eases toward, never past, this times a white card's light)
+uniform int satin_axis = 2;                       // (its long way: 2 its UVs' v, 1 their u)
+#ifdef OUTFIT_SATIN_LIGHT
+varying vec3 v_axis;                              // (the form's long way here, view space)
+varying float v_aniso;                            // (1: streaked along v_axis; 0 round)
+#endif
 // Metal's standard (touch-up, 18 Oct): worn, forged; never a mirror.
 uniform float metal_rough = 0.45;                  // (its plate's satin roughness, varied about this over the piece: 0.35-0.55 with the detail)
 uniform float metal_rough_wear = 0.26;             // (where worn bright: its edges and, in patches, what stands out; 0.2-0.3)
@@ -161,6 +183,7 @@ void fragment() {
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
 	vec3 gold_emit = vec3(0.0);
+	vec3 look_emit = vec3(0.0);                     // (the Look's softbox in her plate, armor 16)
 	vec3 dbg6 = vec3(0.0);
 	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float bulge = smoothstep(0.55, 0.85, conv);
@@ -345,6 +368,18 @@ void fragment() {
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
 		float down = smoothstep(0.0, 0.35, -rw.y);
 		vec3 ground = ground_bounce.rgb * metal_ground * down * mix(0.45, 1.0, sky) * (1.0 - grime);
+		if (look_metal_env > 0.0 && look_rig > 0.0) {
+			// (as emission: the Look's world gives no reflection to add it to)
+			vec3 rv = reflect(-VIEW, NORMAL);
+			float sharp = mix(12.0, 3.0, smoothstep(0.15, 0.7, rough));
+			float lobe = pow(max(dot(rv, normalize(look_key_dir)), 0.0), sharp);
+			float dome = smoothstep(-0.2, 0.9, rw.y);
+			float fr = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+			vec3 f0 = mix(vec3(0.04), clamp(col, 0.0, 1.0), metal);
+			vec3 fres = f0 + (1.0 - f0) * pow(fr, 5.0);
+			look_emit = fres * (vec3(1.0, 0.93, 0.86) * lobe * look_metal_key + vec3(0.62, 0.68, 0.8) * dome * look_metal_dome)
+				* look_metal_env * look_rig * mix(0.3, 1.0, sky);
+		}
 		RADIANCE = vec4(ground / max(1.0 - keep, 1e-3), 1.0 - keep);
 		v_metal = metal;
 #else
@@ -381,6 +416,16 @@ void fragment() {
 		// Not anisotropy: Godot's anisotropic path, even at 0, cost every other outfit material its fine grain)
 		RIM = 0.4;
 		RIM_TINT = 0.5;
+		if (satin_sheen > 0.0) {
+			float nv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+			col *= satin_body * mix(satin_turn, 1.0, smoothstep(0.05, 0.85, nv));
+#ifdef OUTFIT_SATIN_LIGHT
+			// The form's long way, its sheen's streak along it (light(), below): its UVs' v (satin_axis 2), which on her
+			// gloves runs down the arm, or u (1)
+			v_axis = normalize(satin_axis == 1 ? TANGENT : BINORMAL);
+			v_aniso = 1.0;
+#endif
+		}
 	} else {
 		// Gloss: clean and smooth, barely a grain.
 		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.12);
@@ -401,7 +446,7 @@ void fragment() {
 	CLEARCOAT_ROUGHNESS = leather_clearcoat_rough;
 	METALLIC = metal;
 	AO = sky;
-	EMISSION = gold_emit * mix(0.4, 1.0, sky);
+	EMISSION = gold_emit * mix(0.4, 1.0, sky) + look_emit;
 	AO_LIGHT_AFFECT = 0.3;
 	if (debug_view == 1) { ALBEDO = vec3(1.0 - smoothstep(0.0, 0.01, edge), fract(edge / 0.004), 0.0); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 2) { ALBEDO = vec3(conv); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
@@ -413,7 +458,7 @@ void fragment() {
 	if (debug_view == 8) { ALBEDO = vec3(0.10, 0.09, 0.16); }   // (armor 14: its albedo alone flat)
 	if (debug_view == 10) { ALBEDO = clamp(col, 0.0, 1.0); }   // (armor 14: no sky occlusion)
 	if (debug_view == 11) { ALBEDO = clamp(texture(albedo, UV).rgb * tint * mix(0.55, 1.0, sky), 0.0, 1.0); }   // (armor 14: the texture and sky only, no mottle/wear)
-	if (debug_view == 9) { ROUGHNESS = 0.55; }   // (armor 14: its roughness alone flat)
+	if (debug_view == 9) { ROUGHNESS = 0.55; }
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }
 
@@ -446,6 +491,44 @@ void light() {
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
 	float cap = metal_spec_cap * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
 	float knee = metal_spec_knee * cap;
+	float sl = dot(s, lw);
+	if (sl > knee && cap > 1e-6) {
+		float over = cap - knee;
+		s *= (knee + over * (1.0 - exp(-(sl - knee) / over))) / sl;
+	}
+	SPECULAR_LIGHT += s;
+}
+#endif
+
+#ifdef OUTFIT_SATIN_LIGHT
+// A stretch satin's light (armor 16, the arcanist's opera gloves): a soft diffuse, a faint broad gloss,
+// and its sheen, an anisotropic GGX whose highlight runs along the form (v_axis) as a long soft streak,
+// eased toward a cap so a near lamp never blows it to white.
+void light() {
+	float cNdotL = max(dot(NORMAL, LIGHT), 0.0);
+	float cNdotV = max(dot(NORMAL, VIEW), 1e-4);
+	vec3 H = normalize(VIEW + LIGHT);
+	float cNdotH = clamp(dot(NORMAL, H), 0.0, 1.0);
+	float cLdotH = clamp(dot(LIGHT, H), 0.0, 1.0);
+	float r = ROUGHNESS;
+	float fd90 = 2.0 * cLdotH * cLdotH * r - 0.5;
+	float fdv = 1.0 + fd90 * pow(1.0 - cNdotV, 5.0);
+	float fdl = 1.0 + fd90 * pow(1.0 - cNdotL, 5.0);
+	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (1.0 / PI) * fdv * fdl * cNdotL;
+	// the sheen: anisotropic GGX (Burley's), rough along the axis, smooth across it
+	vec3 T = normalize(v_axis - NORMAL * dot(v_axis, NORMAL) + 1e-6);
+	vec3 B = cross(NORMAL, T);
+	float at = mix(satin_across, satin_along, v_aniso), ab = satin_across;
+	at = at * at; ab = ab * ab;
+	float th = dot(T, H) / at, bh = dot(B, H) / ab;
+	float den = th * th + bh * bh + cNdotH * cNdotH;
+	float D = 1.0 / (PI * at * ab * den * den);
+	float G = 0.5 / mix(2.0 * cNdotL * cNdotV, cNdotL + cNdotV, sqrt(at * ab));
+	float F = 0.04 + 0.96 * pow(1.0 - cLdotH, 5.0);
+	vec3 s = cNdotL * D * G * F * satin_sheen * 6.0 * mix(vec3(1.0), ALBEDO, 0.35) * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+	float cap = satin_spec_cap * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
+	float knee = 0.6 * cap;
 	float sl = dot(s, lw);
 	if (sl > knee && cap > 1e-6) {
 		float over = cap - knee;
