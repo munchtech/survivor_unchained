@@ -8,7 +8,7 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 103,
+ "made": 101,
  "planned": 73,
  "clips": [
   {
@@ -29,10 +29,10 @@
    "status": "made",
    "fallback": "Idle_Loop",
    "made_by": "100STYLE Strutting_ID, arms keyed",
-   "source": "100STYLE Strutting_ID frames 1153-1479 (60 fps)",
+   "source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
-   "length": 5.433,
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 15 deg, the body turned back 2 deg; head's mean pitch brought to +3 deg",
+   "length": 5.0,
    "layer": "full"
   },
   {
@@ -977,10 +977,10 @@
    "status": "made",
    "fallback": "-",
    "made_by": "",
-   "source": "100STYLE WiggleHips_ID frames 876-1218 (60 fps)",
+   "source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
-   "length": 5.7,
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 5 deg, carried 5 cm, knees 15/5 deg, a settle of 20%); head's mean tilt -0.2 deg taken to 40%",
+   "length": 5.0,
    "layer": "full"
   },
   {
@@ -989,10 +989,10 @@
    "status": "made",
    "fallback": "-",
    "made_by": "",
-   "source": "100STYLE WiggleHips_ID frames 876-1218 (60 fps)",
+   "source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -4.0 deg taken to 40%",
-   "length": 5.7,
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 5 deg, carried 5 cm, knees 15/5 deg, a settle of 20%); head's mean tilt -0.2 deg taken to 40%",
+   "length": 5.0,
    "layer": "full"
   },
   {
@@ -1001,10 +1001,10 @@
    "status": "made",
    "fallback": "-",
    "made_by": "",
-   "source": "100STYLE WiggleHips_ID frames 744-1050 (60 fps)",
+   "source": "100STYLE Proud_ID frames 843-1143 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -2.6 deg taken to 40%",
-   "length": 5.1,
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 7 deg, carried 7 cm, knees 5/10 deg, a settle of 30%); head's mean tilt -0.3 deg taken to 40%",
+   "length": 5.0,
    "layer": "full"
   },
   {
@@ -1013,10 +1013,10 @@
    "status": "made",
    "fallback": "-",
    "made_by": "",
-   "source": "100STYLE WiggleHips_ID frames 1244-1594 (60 fps)",
+   "source": "100STYLE HandsInPockets_ID frames 611-923 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; head's mean tilt -7.1 deg taken to 40%",
-   "length": 5.833,
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 5 deg, carried 5 cm, knees 9/17 deg, a settle of 40%); a slow look 28 deg to her right and back; head's mean tilt -1.8 deg taken to 40%",
+   "length": 5.2,
    "layer": "full"
   },
   {
@@ -1068,18 +1068,6 @@
    "layer": "full"
   },
   {
-   "clip": "run_arcanist_wand_town",
-   "plays_for": "(not in the plan)",
-   "status": "made",
-   "fallback": "-",
-   "made_by": "",
-   "source": "keyed (tools/anim/gait.py)",
-   "licence": "own work",
-   "changes": "",
-   "length": 0.667,
-   "layer": "full"
-  },
-  {
    "clip": "run_reaver_town",
    "plays_for": "(not in the plan)",
    "status": "made",
@@ -1117,18 +1105,6 @@
   },
   {
    "clip": "sprint_arcanist_town",
-   "plays_for": "(not in the plan)",
-   "status": "made",
-   "fallback": "-",
-   "made_by": "",
-   "source": "keyed (tools/anim/gait.py)",
-   "licence": "own work",
-   "changes": "",
-   "length": 0.667,
-   "layer": "full"
-  },
-  {
-   "clip": "sprint_arcanist_wand_town",
    "plays_for": "(not in the plan)",
    "status": "made",
    "fallback": "-",
