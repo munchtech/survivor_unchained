@@ -59,18 +59,55 @@ public partial class PersonView : Node3D, INpcView
         }
     }
 
-    // The seat each held piece had in its hand mount (Slide's base): re-read when the mount is a new one (Sheathe
-    // swaps the mount node), so a sheath transform never gets cached.
-    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Vector3 seat)> seats = new();
+    // The seat each held piece had in its hand mount (Slide's base), and the point and axis its tilt turns it about
+    // (the fist's fitted pocket and the palm's normal, in the mount's space; none for a piece without a pocket): re-read
+    // when the mount is a new one (Sheathe swaps the mount node), so a sheath transform never gets cached.
+    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Transform3D seat, Vector3? pivot, Vector3 axis)> seats = new();
 
     /// <summary>The piece in a hand slot sits this far along its own shaft (metres) from its seat, so the fist grips
-    /// lower on it (animation 47: the arcanist's combat idle). Does nothing while the piece is sheathed.</summary>
-    public void Slide(string slot, float metres)
+    /// lower on it (animation 47: the arcanist's combat idle), turned `tilt` degrees in the fist about the palm's normal
+    /// through the fitted pocket first (animation 48; a piece without a pocket only slides). Does nothing while the
+    /// piece is sheathed.</summary>
+    public void Slide(string slot, float metres, float tilt = 0f)
     {
         if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith("mount:")) return;
         if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece) return;
-        if (!seats.TryGetValue(slot, out var s) || s.piece != piece) seats[slot] = s = (piece, piece.Position);
-        piece.Position = s.seat + (piece.Transform.Basis * Vector3.Up).Normalized() * metres;
+        if (!seats.TryGetValue(slot, out var s) || s.piece != piece)
+        {
+            Vector3? pivot = null;
+            var axis = Vector3.Right;
+            if (pieces.TryGetValue(slot, out var id) && Arms.All.TryGetValue(id, out var spec))
+            {
+                var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
+                if (WeaponSockets.Pocket(kind, BoneOf(slot)) is { } pocket)
+                {
+                    var inv = mount.Transform.AffineInverse();
+                    pivot = inv * new Vector3(pocket.At.X, pocket.At.Y, pocket.At.Z);
+                    axis = (inv.Basis * Vector3.Right).Normalized();
+                }
+            }
+            seats[slot] = s = (piece, piece.Transform, pivot, axis);
+        }
+        if (s.pivot == null) tilt = 0f;
+        static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+        var (turn, at) = GripSlide.Apply(N(s.seat.Origin), N((s.seat.Basis * Vector3.Up).Normalized()), N(s.pivot ?? Vector3.Zero),
+            N(s.axis), tilt, metres);
+        piece.Transform = new Transform3D(new Basis(new Quaternion(turn.X, turn.Y, turn.Z, turn.W)) * s.seat.Basis, new Vector3(at.X, at.Y, at.Z));
+    }
+
+    // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
+    // figure in town), eased as PlayerView eases it.
+    float ownSlide, ownTilt;
+
+    void OwnGrip(double delta, bool snap = false)
+    {
+        if (Driven || person.Own is not { } own || !held.ContainsKey("handslot.r")) return;
+        var clip = person.Anim.CurrentAnimation.ToString();
+        float s = own.GripSlide(clip), t = own.GripTilt(clip);
+        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0) return;
+        ownSlide = snap ? s : GripSlide.Ease(ownSlide, s, (float)delta);
+        ownTilt = snap ? t : GripSlide.Ease(ownTilt, t, (float)delta);
+        Slide("handslot.r", ownSlide, ownTilt);
     }
 
     public People.Person Person => person;
@@ -311,6 +348,7 @@ public partial class PersonView : Node3D, INpcView
         if (Driven || Cinema || !IsInsideTree()) return;
         if (person.Pose is HerPose hp) hp.Lower = hp.Upper = native;
         if (person.Anim.IsPlaying()) person.Anim.Advance(0);
+        OwnGrip(0, snap: true);
     }
 
     public override void _Process(double delta)
@@ -321,6 +359,7 @@ public partial class PersonView : Node3D, INpcView
             hp.Lower += (native - hp.Lower) * k;
             hp.Upper += (native - hp.Upper) * k;
         }
+        OwnGrip(delta);
         if (Cinema) return;
         if (actLeft > 0 && !holding)
         {
