@@ -13,7 +13,7 @@ uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
 uniform float roots = 0.4;
 uniform float variation = 0.35;
 uniform vec3 shine_colour : source_color = vec3(1.0, 0.93, 0.86);
-uniform float shine = 0.1;
+uniform float shine = 0.25;                // (face 38: 0.1; the judged moderate set, one shine band over her head)
 uniform float shine_width = 140.0;
 uniform float shine2 = 0.35;
 uniform float shine2_width = 40.0;
@@ -23,10 +23,10 @@ uniform float through = 0.5;
 // (face 37: the strands' read. fibre_lo/fibre_hi: a strand's shade range in the atlas (was fixed 0.15/0.85);
 // lock_share: how much each card's own tone (its vertex green) moves it (was fixed 0.04); wrap: the light
 // wrapped round the hair (was fixed 0.45))
-uniform float fibre_lo = 0.15;
-uniform float fibre_hi = 0.85;
+uniform float fibre_lo = 0.08;             // (face 38: 0.15)
+uniform float fibre_hi = 0.92;             // (face 38: 0.85)
 uniform float lock_share = 0.04;
-uniform float wrap = 0.45;
+uniform float wrap = 0.25;                 // (face 38: 0.45)
 // (a pale near-neutral dye (platinum) held pale and neutral in warm light: ash cools its tone toward ash_tone,
 // lift raises it toward its swatch; both fade out with the dye's saturation and darkness: face 34)
 uniform float ash = 1.0;

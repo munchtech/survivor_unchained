@@ -64,46 +64,71 @@ def padded(img):
     return img
 
 
+# (face 38: the judged lock setting, a2: lock_shade 0.5, gap 0.9, id_jit 0.05; and the judge's two fixes)
+ATLAS_LOCKS = dict(lock_shade=0.5, gap=0.9, id_jit=0.05, locks=1.0, gap_floor=0.4, lock_cap=1.12)
+
+
 def draw_atlas(size=(4096, 2048), over=3):
     """The strands: COLUMNS strips side by side, each a clump of strands from
-    its root (the top) to its tip, drawn large and shrunk (soft edges), its
-    strands thinning out toward its sides (no hard edge to a card). Red: each
-    strand's shade, those at the back of the clump darker; green: a number
-    for each strand (the game varies its colour by it); alpha: the strands."""
+    its root (the top) to its tip, drawn large and shrunk (soft edges).
+    (21 October, face 38: ~900 one-pixel strands a card averaged to one flat
+    painted tone at 20-40 px a card. Now drawn in locks (ATLAS_LOCKS): each
+    card a few locks, each its own shade, number and wave, its strands drawn
+    together to its middle, its edge strands thinner and darker (the gaps
+    between locks), never darker than GAP_FLOOR (no near-black grooves), and
+    no lock lighter than LOCK_CAP times the rest (one lock went pale grey).)
+    Red: each strand's shade; green: a number per strand (the game varies its
+    colour by it); alpha: the strands."""
+    LOCK_SHADE, GAP, ID_JIT, LOCKS = ATLAS_LOCKS["lock_shade"], ATLAS_LOCKS["gap"], ATLAS_LOCKS["id_jit"], ATLAS_LOCKS["locks"]
     from PIL import Image, ImageDraw
     cw, h = size[0] // COLUMNS * over, size[1] * over
     out = np.zeros((size[1], size[0], 4), np.float32)
     for col, kind in enumerate(KINDS):
         r = np.random.default_rng(100 + col)
         n = {"dense": 900, "loose": 380, "lock": 300, "wisp": 24}[kind]
+        nl = max(1, int(round({"dense": 7, "loose": 5, "lock": 3, "wisp": 1}[kind] * LOCKS)))
         spread = {"dense": 0.2, "loose": 0.25, "lock": 0.17, "wisp": 0.2}[kind]
         reach = {"dense": (0.8, 1.0), "loose": (0.6, 1.0), "lock": (0.75, 1.0), "wisp": (0.4, 1.0)}[kind]
         gather = {"dense": (0.1, 0.4), "loose": (0.0, 0.3), "lock": (0.6, 0.95), "wisp": (-0.3, 0.3)}[kind]
+        # the locks: centres spread over the card (denser in the middle), widths, shade, number, wave
+        cx = np.sort(np.clip(r.normal(0.5, spread * 1.1, nl), 0.08, 0.92)) if nl > 1 else np.array([0.5])
+        cwid = r.uniform(0.035, 0.07, nl) * (1.6 if kind == "loose" else 1.0)
+        csh = np.minimum(1.0 + LOCK_SHADE * r.uniform(-1.0, 0.6, nl), ATLAS_LOCKS["lock_cap"])
+        cid = r.permutation(np.linspace(0.08, 0.92, nl)) if nl > 1 else np.array([r.uniform(0.2, 0.8)])
+        cwave = [(r.uniform(0.0, 0.02) * cw, r.uniform(0.8, 2.0), r.uniform(0, 6.3)) for _ in range(nl)]
+        cgather = r.uniform(*gather, nl)
         strands = []
         for i in range(n):
-            # (drawn again, not clipped, when off the card: clipped, they piled
-            # up along its sides, a hard straight edge to every card)
-            x0 = r.normal(0.5, spread)
-            while not 0.03 < x0 < 0.97:
+            k = int(r.integers(nl))
+            u = r.normal(0.0, 1.0)
+            while abs(u) > 2.2:
+                u = r.normal(0.0, 1.0)
+            x0 = cx[k] + u * cwid[k] * 0.5
+            if not 0.03 < x0 < 0.97:
                 x0 = r.normal(0.5, spread)
-            # (its root lower the further out it lies, and ragged: a card's
-            # root end rounded, never a straight edge across it)
+                while not 0.03 < x0 < 0.97:
+                    x0 = r.normal(0.5, spread)
+            edge = min(1.0, abs(u) / 2.2)                       # 0 at the lock's middle, 1 at its edge
             t0 = r.uniform(0.0, 0.015) + r.uniform(0.2, 1.0) * 0.06 * abs(2 * x0 - 1) ** 1.5
             x0 *= cw
             t1 = min(1.0, t0 + r.uniform(*reach))
             t = np.linspace(t0, t1, 140)
             f = (t - t0) / (t1 - t0)
-            amp = r.uniform(0.0, 0.025) * cw * (2.5 if kind == "wisp" else 1.0)
-            xs = x0 + (cw / 2 - x0) * r.uniform(*gather) * f ** 2 + amp * np.sin(2 * np.pi * r.uniform(0.8, 2.5) * t + r.uniform(0, 6.3))
-            if r.random() < (0.06 if kind != "wisp" else 0.5):     # a flyaway, drifting off the clump
-                xs += np.sign(x0 - cw / 2) * r.uniform(0.05, 0.25) * cw * f ** 2
-            # (shade: the back of the clump darker, and strand to strand wider
-            # than it was (0.4 to 1): soft-edged now, the strands need their
-            # own light and dark to read as strands)
-            strands.append((xs, t * h, f, r.uniform(0.8, 1.5) * over, min(1.0, (0.5 + 0.6 * i / n) * r.uniform(0.65, 1.05)), r.uniform(0.02, 0.98)))
+            wa, wf, wp = cwave[k]
+            own = r.uniform(0.0, 0.008) * cw * (2.5 if kind == "wisp" else 1.0)
+            # (a strand gathers toward its lock's middle, and the lock toward the card's, tip-ward)
+            lockx = cx[k] * cw + (cw / 2 - cx[k] * cw) * cgather[k] * f ** 2 + wa * np.sin(2 * np.pi * wf * t + wp)
+            xs = lockx + (x0 - cx[k] * cw) * (1.0 - 0.5 * f ** 1.5) + own * np.sin(2 * np.pi * r.uniform(1.5, 3.5) * t + r.uniform(0, 6.3))
+            if r.random() < (0.05 if kind != "wisp" else 0.5):
+                xs += np.sign(x0 - cw / 2) * r.uniform(0.05, 0.2) * cw * f ** 2
+            back = min(1.0, (0.5 + 0.6 * i / n) * r.uniform(0.75, 1.05))
+            sh = min(1.0, max(back * csh[k] * (1.0 - GAP * 0.45 * edge ** 2), ATLAS_LOCKS["gap_floor"]))
+            idv = float(np.clip(cid[k] + r.normal(0.0, ID_JIT), 0.01, 0.99))
+            wd = r.uniform(0.8, 1.5) * over * (1.0 - 0.35 * GAP * edge)
+            strands.append((xs, t * h, f, wd, sh, idv))
+        # draw edge strands first (they lie under the lock's middle)
         shade, ident, alpha, cov = (Image.new("L", (cw, h), 0) for _ in range(4))
         ds, di, da, dc = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha), ImageDraw.Draw(cov)
-        # (back to front: the later, lighter strands over the ones behind)
         for xs, ys, f, wd, sh, idv in strands:
             for c0 in range(0, len(xs) - 1, 20):
                 c1 = min(c0 + 21, len(xs))
@@ -112,9 +137,6 @@ def draw_atlas(size=(4096, 2048), over=3):
                 ds.line(pts, fill=int(255 * sh * (0.9 + 0.1 * f[c0])), width=w, joint="curve")
                 di.line(pts, fill=int(255 * idv), width=w, joint="curve")
                 dc.line(pts, fill=255, width=w, joint="curve")
-        # Alpha: the strands' fading tips (and roots) first, faintest first
-        # (where they cross, the stronger shows: no tip cuts into one behind
-        # it), then all their bodies over them.
         tips = []
         for xs, ys, f, wd, sh, idv in strands:
             for k in np.nonzero((f > 0.9) | (f < 0.03))[0][:-1]:
@@ -128,15 +150,12 @@ def draw_atlas(size=(4096, 2048), over=3):
                 seg = body_[c0:c0 + 21]
                 da.line(list(zip(xs[seg], ys[seg])), fill=255, width=max(1, int(round(wd * (1 - 0.5 * f[seg[0]])))), joint="curve")
         small = [np.asarray(im.resize((cw // over, h // over), Image.LANCZOS), np.float32) for im in (shade, ident, alpha, cov)]
-        # (each strand's own shade and number to its very edge, not darkened
-        # by the empty card shrunk into it: blended, a strand's soft edge took
-        # the dark, and its mips too)
         c = np.maximum(small[3], 1.0) / 255.0
         small[0], small[1] = (np.where(small[3] > 8, np.minimum(s / c, 255.0), s) for s in small[:2])
         x = col * (size[0] // COLUMNS)
         out[:, x:x + cw // over] = np.stack([small[0], small[1], small[0], small[2]], 2)
     Image.fromarray(np.clip(padded(out), 0, 255).astype(np.uint8)).save(ATLAS)
-    print("ATLAS", ATLAS)
+    print("ATLAS", ATLAS, ATLAS_LOCKS)
 
 
 def draw_scalp(size=1024, over=2):
