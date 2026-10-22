@@ -25,16 +25,26 @@ uniform float gold_floor = 0.08;                  // (gold's own colour added as
 // (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
 // leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
 uniform float look_rig = 0.0;
-uniform float look_metal_rough = 0.30;
+uniform float look_metal_rough = 0.38;             // (N4: was 0.30; broader, the dome's facets never show through its highlights)
 uniform float look_metal_dim = 1.0;                // (r4: was 0.70, older than the 1.2 highlight cap: the Look pauldron went a black lacquered ball. And its reflectance: F0 is its colour, so its highlights under the rig's key stay graded, not clipped)
 uniform float look_leather_rough = 0.60;
 // (armor 16, judge A2: at the Look her pauldrons read as flat toon navy. The rig's lights aim at her face, her shoulders
 // at their cones' edges, and the night around the camp gives plate nothing to reflect: under the rig only, the key's
 // softbox (high, near the lens, to camera right: GameFront's keyAt) and a dim cool dome over her, in its reflection)
-uniform float look_metal_env = 0.0;               // (0 = as before, bit for bit; People sets 2.6 on her metal)
+uniform float look_metal_env = 0.0;               // (0 = as before, bit for bit; People sets 1.6 on her metal, N4)
 uniform float look_metal_key = 6.0;
 uniform float look_metal_dome = 0.45;
-uniform vec3 look_key_dir = vec3(0.22, 0.6, 0.76);  // (view space: right, up, toward the lens)
+uniform vec3 look_key_dir = vec3(0.15, 0.85, 0.5);   // (view space: right, up, toward the lens)
+// (armor 16 N4, OJ1: the round-1 lobe, a sharp power of one direction, drew a radial starburst on the pauldrons' domes
+// (their normals fan out from the mesh's pole) in a pink chrome. Now the softbox is a soft rectangle, its middle flat so
+// no facet shows through, neutral to cool; the rig's own lamps' highlights on the plate muted toward the steel's
+// grey-blue (look_metal_mute); the gold trim its own share of the box, a bevel line on each roll)
+uniform float look_box_soft = 0.8;                 // (its edge's share of it: a broad soft falloff, so a facet bends no hard line)
+uniform float look_box_w = 0.7;                    // (the box's half-width and half-height, as tangents off its middle)
+uniform float look_box_h = 0.45;
+uniform vec3 look_box_tint = vec3(0.90, 0.95, 1.0);
+uniform float look_metal_mute = 0.0;
+uniform float look_gold_key = 1.0;                  // (the gold's share of the box, of the plate's)
 uniform float leather_rough_floor = 0.0;          // (armor 14, 22 Oct: a leather's roughness floor off its burnished edges, from its outfit_materials.json row "rough_floor". The arcanist bodysuit's plumleather at 0.58: at 0.42 its cups caught the key as a pointed highlight at each apex (read as nipple pokes) and a dark band under it (a crease), and a plastic streak at night; the shape alone was smooth)
 uniform float leather_rough_var = 1.0;            // (armor 14: its roughness map's spread kept, 1 as scanned; under 1 the map's blotches ease toward the floor)
 uniform float leather_clearcoat = 0.0;            // (armor 14: a thin clear sheen over a leather, off its edges; 0 none)
@@ -50,6 +60,14 @@ uniform float satin_along = 0.75;                 // (heroine_outfit_satin.gdsha
 uniform float satin_across = 0.22;                // (and across it, narrow: the streak follows the form)
 uniform float satin_spec_cap = 1.6;               // (its sheen eases toward, never past, this times a white card's light)
 uniform int satin_axis = 2;                       // (its long way: 2 its UVs' v, 1 their u)
+// (armor 16 N4, OJ1: "satin gloves are never perfectly smooth, and the folds are what make satin read as satin". Its
+// wrinkles as a bump: soft ruching just above the wrist, a few creases inside the elbow, two long diagonal folds round
+// the forearm. Along the arm by its UVs' v (the glove's top at satin_top_v, its wrist at satin_wrist_v, satin_uv_per_m
+// to the metre); round it by the angle People.SatinAround writes into UV2 as (cos, sin), 0 at her front. 0 = none)
+uniform float satin_wrinkle = 0.0;
+uniform float satin_top_v = 1.0;
+uniform float satin_wrist_v = -9.0;
+uniform float satin_uv_per_m = 40.0;
 #ifdef OUTFIT_SATIN_LIGHT
 varying vec3 v_axis;                              // (the form's long way here, view space)
 varying float v_aniso;                            // (1: streaked along v_axis; 0 round)
@@ -93,6 +111,8 @@ uniform vec4 piece_rim_rough = vec4(-1.0);         //  (armor 13 c4: its rolled 
 uniform vec4 piece_rim_bright = vec4(-1.0);        //  (and their colour scaled by this, -1 none)
 uniform vec4 piece_fine = vec4(-1.0);              //  (fine scratches: thin streaks a few mm long worn bright through it, this strong; -1 none. Instead of cloudy patches)
 uniform vec4 piece_rim_steel = vec4(-1.0);         //  (armor 13 c5: its rolled edges worn to bare steel, this grey (linear F0), fading `rim_fade` m onto the plate; -1 none)
+uniform vec4 piece_spec_mute = vec4(-1.0);         //  (armor 16 N4: its lights' highlights muted toward cool steel this much (0..1), keeping their brightness: the night key's warm light read as a salmon-pink core in the cups, OJ1; -1 none)
+uniform vec3 spec_mute_tint = vec3(0.80, 0.86, 0.95);   // (a muted highlight's colour, of its brightness: blued steel's grey-blue)
 uniform vec4 piece_form = vec4(-1.0);              //  (and its wear and grime by its shape (high points bright, recesses dark) this strong, its oxide lifted toward steel grey; -1 none)
 uniform float rim_fade = 0.002;                    // (the bare band's fade past the rolled edge's inner side, 3 mm in from the cut)
 uniform float rim_floor = 0.10;                    // (its own grey added as a dim emission, as gold's gold_floor, less in crevices)
@@ -100,6 +120,7 @@ uniform float rim_metal = 0.85;                    // (and its metalness: scratc
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
+varying float v_spec_mute;                         // (armor 16 N4: piece_spec_mute here, for light())
 global uniform vec4 ground_bounce;                   // (Atmosphere: the key's light off the ground, linear; metal reflects it below the horizon)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone; 6 the c5 bare rim's mask)
 
@@ -133,6 +154,26 @@ float brushed(vec2 st) {
 	float ph = hash(vec2(row, 3.7)) * 64.0;
 	float v = 0.6 * noise(vec2(st.x * 55.0 + ph, row * 0.37)) + 0.4 * noise(vec2(st.x * 210.0 + ph * 1.7, row * 0.11 + 5.0));
 	return mix(v, 0.5, smoothstep(0.0003, 0.0009, fwidth(st.y)));
+}
+
+// (the satin's wrinkles' height, metres, at angle a round the arm and d metres up from the wrist; L the forearm's length)
+float satin_h(float a, float d, float L) {
+	// ruching: soft uneven rings bunched just above the wrist
+	float e1 = smoothstep(-0.006, 0.004, d) * (1.0 - smoothstep(0.03, 0.07, d));
+	float p1 = d * 6.2832 / 0.0105 + 0.9 * sin(2.0 * a + 1.3) + 0.5 * sin(3.0 * a - d * 60.0);
+	float r1 = 0.5 + 0.5 * sin(p1);
+	float h = 0.0007 * e1 * r1 * r1 * (0.55 + 0.45 * sin(a + d * 110.0 + 0.4));
+	// creases inside the elbow: three narrow grooves, unevenly spaced, each bowed down round the front and
+	// fading out to the sides at its own reach
+	float bow = 0.006 * (1.0 - cos(a));
+	h -= 0.0009 * exp(-pow((d - (L - 0.012) + bow) / 0.0022, 2.0)) * pow(0.5 + 0.5 * cos(a - 0.2), 3.0);
+	h -= 0.0007 * exp(-pow((d - (L - 0.027) + bow * 1.3) / 0.0026, 2.0)) * pow(0.5 + 0.5 * cos(a + 0.35), 5.0);
+	h -= 0.0005 * exp(-pow((d - (L - 0.046) + bow * 0.8) / 0.003, 2.0)) * pow(0.5 + 0.5 * cos(a - 0.5), 8.0);
+	// two long diagonal folds winding a quarter turn down the forearm, soft ridges
+	float e3 = smoothstep(0.025, 0.07, d) * (1.0 - smoothstep(L - 0.07, L - 0.03, d));
+	float r3 = 0.5 + 0.5 * sin(2.0 * a + d * 14.0 + 0.7);
+	h += 0.0045 * e3 * r3 * r3 * r3 * (0.6 + 0.4 * sin(a + d * 9.0 + 2.0));
+	return h;
 }
 
 void vertex() {
@@ -275,6 +316,8 @@ void fragment() {
 			if (piece_rim_bright[i] >= 0.0) p_rimb = piece_rim_bright[i];
 			if (piece_fine[i] >= 0.0) p_fine = piece_fine[i];
 		}
+		float p_mute = 0.0;
+		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i]) && piece_spec_mute[i] >= 0.0) p_mute = piece_spec_mute[i];
 		float rimm = flag < 0.25 ? 1.0 : 0.0;                       // (a rolled edge)
 		// (armor 13 c5: a rolled edge worn to bare steel all along, its band fading onto the plate past the
 		// roll's inner side, 3 mm in from the cut, broken a little by the fine wear; 0 on every other piece)
@@ -371,17 +414,25 @@ void fragment() {
 		if (look_metal_env > 0.0 && look_rig > 0.0) {
 			// (as emission: the Look's world gives no reflection to add it to)
 			vec3 rv = reflect(-VIEW, NORMAL);
-			float sharp = mix(12.0, 3.0, smoothstep(0.15, 0.7, rough));
-			float lobe = pow(max(dot(rv, normalize(look_key_dir)), 0.0), sharp);
+			vec3 kz = normalize(look_key_dir);
+			vec3 kx = normalize(cross(vec3(0.0, 1.0, 0.0), kz)), ky = cross(kz, kx);
+			float rz = dot(rv, kz);
+			vec2 bt = vec2(dot(rv, kx), dot(rv, ky)) / max(rz, 0.05);
+			float soft = mix(look_box_soft, 1.0, smoothstep(0.15, 0.7, rough));   // (its edge's share of the box: rougher, softer)
+			vec2 bh = vec2(look_box_w, look_box_h) * (1.0 + 0.6 * smoothstep(0.15, 0.7, rough));
+			vec2 q = abs(bt) / bh;
+			float lobe = step(0.0, rz) * (1.0 - smoothstep(1.0 - soft, 1.0, q.x)) * (1.0 - smoothstep(1.0 - soft, 1.0, q.y));
+			lobe *= mix(1.0, look_gold_key, gold);
 			float dome = smoothstep(-0.2, 0.9, rw.y);
 			float fr = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 			vec3 f0 = mix(vec3(0.04), clamp(col, 0.0, 1.0), metal);
 			vec3 fres = f0 + (1.0 - f0) * pow(fr, 5.0);
-			look_emit = fres * (vec3(1.0, 0.93, 0.86) * lobe * look_metal_key + vec3(0.62, 0.68, 0.8) * dome * look_metal_dome)
+			look_emit = fres * (look_box_tint * lobe * look_metal_key + vec3(0.62, 0.68, 0.8) * dome * look_metal_dome)
 				* look_metal_env * look_rig * mix(0.3, 1.0, sky);
 		}
 		RADIANCE = vec4(ground / max(1.0 - keep, 1e-3), 1.0 - keep);
 		v_metal = metal;
+		v_spec_mute = max(p_mute, look_metal_mute * look_rig * (1.0 - gold)) * (1.0 - bare);
 #else
 		col *= mix(0.75, 1.0, sky);
 #endif
@@ -416,6 +467,22 @@ void fragment() {
 		// Not anisotropy: Godot's anisotropic path, even at 0, cost every other outfit material its fine grain)
 		RIM = 0.4;
 		RIM_TINT = 0.5;
+		if (satin_wrinkle > 0.0) {
+			// its wrinkles as a bump on the surface's own normal (Mikkelsen's surface gradient, by the chain rule
+			// through its smooth coordinates, so no 2x2 blocks)
+			vec2 cs = UV2 / max(length(UV2), 1e-4);
+			float a = atan(cs.y, cs.x);
+			float d = (UV.y - satin_wrist_v) / satin_uv_per_m, L = (satin_top_v - satin_wrist_v) / satin_uv_per_m;
+			float h0 = satin_h(a, d, L);
+			float ha = (satin_h(a + 0.01, d, L) - h0) / 0.01, hd = (satin_h(a, d + 0.0005, L) - h0) / 0.0005;
+			float dax = cs.x * dFdx(cs.y) - cs.y * dFdx(cs.x), day = cs.x * dFdy(cs.y) - cs.y * dFdy(cs.x);
+			float ddx = dFdx(UV.y) / satin_uv_per_m, ddy = dFdy(UV.y) / satin_uv_per_m;
+			float hx = (ha * dax + hd * ddx) * satin_wrinkle, hy = (ha * day + hd * ddy) * satin_wrinkle;
+			vec3 px = dFdx(VERTEX), py = dFdy(VERTEX);
+			vec3 r1 = cross(py, NORMAL), r2 = cross(NORMAL, px);
+			float dt = dot(px, r1);
+			if (abs(dt) > 1e-12) NORMAL = normalize(NORMAL - (r1 * hx + r2 * hy) / dt);
+		}
 		if (satin_sheen > 0.0) {
 			float nv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 			col *= satin_body * mix(satin_turn, 1.0, smoothstep(0.05, 0.85, nv));
@@ -496,6 +563,8 @@ void light() {
 		float over = cap - knee;
 		s *= (knee + over * (1.0 - exp(-(sl - knee) / over))) / sl;
 	}
+	// (armor 16 N4: a muted piece's highlight takes the steel's grey-blue, not the lamp's hue: blued steel under a warm key)
+	s = mix(s, vec3(dot(s, lw)) * spec_mute_tint, v_spec_mute);
 	SPECULAR_LIGHT += s;
 }
 #endif

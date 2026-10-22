@@ -1321,7 +1321,7 @@ public static class People
                 if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
                 {
                     string set = mi.Name.ToString().Split('_')[0];
-                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids; var pb = ids; var prr = ids; var prb = ids; var pf = ids; var ps = ids; var pfm = ids;
+                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids; var pb = ids; var prr = ids; var prb = ids; var pf = ids; var ps = ids; var pfm = ids; var pmu = ids;
                     int n = 0;
                     foreach (var (pn, pv) in byKey.AsGodotDictionary())
                     {
@@ -1337,6 +1337,7 @@ public static class People
                         if (o.TryGetValue("metal_fine", out var fi)) pf[n] = (float)fi;
                         if (o.TryGetValue("metal_rim_steel", out var rs)) ps[n] = (float)rs;
                         if (o.TryGetValue("metal_form", out var fm)) pfm[n] = (float)fm;
+                        if (o.TryGetValue("metal_spec_mute", out var mu)) pmu[n] = (float)mu;
                         n++;
                     }
                     m.SetShaderParameter("piece_id", ids);
@@ -1348,6 +1349,7 @@ public static class People
                     m.SetShaderParameter("piece_fine", pf);
                     m.SetShaderParameter("piece_rim_steel", ps);
                     m.SetShaderParameter("piece_form", pfm);
+                    m.SetShaderParameter("piece_spec_mute", pmu);
                 }
             }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
@@ -1368,9 +1370,12 @@ public static class People
             // LOOK_METAL_ENV=env,key,dome tries others)
             if (kind == 1)
             {
-                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "2.6,6,0.45").Split(',');
+                // (N4: env,key,dome,mute,gold: a soft box, the rig's lamps muted on the plate, the gold's share)
+                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,3.5,0.45,0.75,1.6").Split(',');
                 float L(int i) => float.Parse(le[i], System.Globalization.CultureInfo.InvariantCulture);
                 m.SetShaderParameter("look_metal_env", L(0)); m.SetShaderParameter("look_metal_key", L(1)); m.SetShaderParameter("look_metal_dome", L(2));
+                if (le.Length > 3) m.SetShaderParameter("look_metal_mute", L(3));
+                if (le.Length > 4) m.SetShaderParameter("look_gold_key", L(4));
             }
             // (a satin's sheen, where its row names one: the arcanist's opera gloves, armor 16)
             if (kind == 5 && entry.ContainsKey("sheen")) m.SetShaderParameter("satin_sheen", (float)entry["sheen"]);
@@ -1379,6 +1384,17 @@ public static class People
             if (kind == 5 && entry.ContainsKey("across")) m.SetShaderParameter("satin_across", (float)entry["across"]);
             if (kind == 5 && entry.ContainsKey("body")) m.SetShaderParameter("satin_body", (float)entry["body"]);
             if (kind == 5 && entry.ContainsKey("turn")) m.SetShaderParameter("satin_turn", (float)entry["turn"]);
+            if (kind == 5 && entry.ContainsKey("cap")) m.SetShaderParameter("satin_spec_cap", (float)entry["cap"]);
+            // (its wrinkles: soft ruching at the wrist, creases inside the elbow, long diagonal folds; their way round
+            // the arm written into its UV2, which a satin never reads otherwise, armor 16 N4)
+            if (kind == 5 && entry.ContainsKey("wrinkle") && mi.Mesh is ArrayMesh am
+                && SatinAround(am, s, (float)entry["wrinkle_top"], (float)entry["wrinkle_wrist"]))
+            {
+                m.SetShaderParameter("satin_wrinkle", (float)entry["wrinkle"]);
+                m.SetShaderParameter("satin_top_v", (float)entry["wrinkle_top"]);
+                m.SetShaderParameter("satin_wrist_v", (float)entry["wrinkle_wrist"]);
+                m.SetShaderParameter("satin_uv_per_m", (float)entry["repeats"]);
+            }
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
@@ -1386,6 +1402,57 @@ public static class People
             if (System.Environment.GetEnvironmentVariable("OUTFIT_DEBUG_VIEW") is string dv && int.TryParse(dv, out var dvv)) m.SetShaderParameter("debug_view", dvv);   // (a check: 4 = the gold mask flat magenta)
             mi.SetSurfaceOverrideMaterial(s, m);
         }
+    }
+
+    /// <summary>A glove's way round its arm (armor 16 N4, the satin's wrinkles): each vertex's angle about its forearm's
+    /// axis (0 toward her front, the inside of the elbow), written into the surface's UV2 as (cos, sin) so it blends
+    /// smoothly all the way round. Each arm (the sign of x) on its own: its axis the forearm's long way (between the
+    /// wrist's and the top's UV v), mirrored, so the right glove's folds mirror the left's. False if it can't take it.</summary>
+    static bool SatinAround(ArrayMesh mesh, int s, float topV, float wristV)
+    {
+        var arr = mesh.SurfaceGetArrays(s);
+        if (arr[(int)Mesh.ArrayType.TexUV2].VariantType == Variant.Type.Nil) return false;
+        var P = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var U = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+        var format = mesh.SurfaceGetFormat(s);
+        if ((format & Mesh.ArrayFormat.FlagCompressAttributes) != 0) { GD.PushWarning("SatinAround: compressed attributes"); return false; }
+        var U2 = new Vector2[P.Length];
+        foreach (int side in new[] { 1, -1 })
+        {
+            bool Fore(int i) => Mathf.Sign(P[i].X) == side && U[i].Y < topV - 0.5f && U[i].Y > wristV + 0.5f;
+            var c = Vector3.Zero; int n = 0;
+            for (int i = 0; i < P.Length; i++) if (Fore(i)) { c += P[i]; n++; }
+            if (n < 20) continue;
+            c /= n;
+            // (its long way: the covariance's first axis, by power iteration)
+            var cx = Vector3.Zero; var cy = Vector3.Zero; var cz = Vector3.Zero;
+            for (int i = 0; i < P.Length; i++)
+                if (Fore(i)) { var d = P[i] - c; cx += d * d.X; cy += d * d.Y; cz += d * d.Z; }
+            var ax = new Vector3(side, -1, 0).Normalized();
+            for (int it = 0; it < 32; it++) ax = (cx * ax.X + cy * ax.Y + cz * ax.Z).Normalized();
+            if (ax.X * side < 0) ax = -ax;                     // (toward the hand)
+            var f = (Vector3.Back - ax * ax.Z).Normalized();   // (her front, +z, square to it)
+            var b = ax.Cross(f);
+            for (int i = 0; i < P.Length; i++)
+            {
+                if (Mathf.Sign(P[i].X) != side) continue;
+                var d = P[i] - c; d -= ax * d.Dot(ax);
+                float a = Mathf.Atan2(d.Dot(b), d.Dot(f));
+                U2[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+            }
+        }
+        int vc = P.Length;
+        uint stride = RenderingServer.MeshSurfaceGetFormatAttributeStride((RenderingServer.ArrayFormat)format, vc);
+        uint off = RenderingServer.MeshSurfaceGetFormatOffset((RenderingServer.ArrayFormat)format, vc, (int)Mesh.ArrayType.TexUV2);
+        var attr = RenderingServer.MeshGetSurface(mesh.GetRid(), s)["attribute_data"].AsByteArray();
+        if (attr.Length < stride * vc) return false;
+        for (int i = 0; i < vc; i++)
+        {
+            System.BitConverter.TryWriteBytes(new System.Span<byte>(attr, (int)(i * stride + off), 4), U2[i].X);
+            System.BitConverter.TryWriteBytes(new System.Span<byte>(attr, (int)(i * stride + off + 4), 4), U2[i].Y);
+        }
+        mesh.SurfaceUpdateAttributeRegion(s, 0, attr);
+        return true;
     }
 
     /// <summary>A piece's own number, as heroine_outfits.py bakes it into its vertex
@@ -1402,12 +1469,15 @@ public static class People
     }
 
     /// <summary>The reaver's pelt (armor 16, judge J5: "plush felt, not a pelt"): its shells and knobs.</summary>
-    public static int PeltShells = 24;
+    public static int PeltShells = 30;
     public static readonly Dictionary<string, float> Pelt = new()
     {
-        ["fur_length"] = 0.022f, ["density"] = 260f, ["droop"] = 0.25f, ["comb"] = 0.9f,
+        ["fur_length"] = 0.03f, ["density"] = 260f, ["droop"] = 0.25f, ["comb"] = 0.9f,
         ["root_dark"] = 0.3f, ["tip_light"] = 1.35f, ["backlight"] = 0.3f,
         ["tuft"] = 0.075f, ["guard"] = 0.22f, ["under_len"] = 0.5f, ["frost"] = 0.12f,
+        // (N4, OJ1: the pile 22 mm as before, the fringe up to 30 mm in uneven locks and lighter, the spine darker)
+        ["body_len"] = 0.73f, ["fringe_w"] = 0.024f, ["fringe_light"] = 1.4f, ["spine_dark"] = 0.72f,
+        ["hem_vary"] = 0.55f, ["hem_scale"] = 9f,
     };
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
