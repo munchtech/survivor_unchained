@@ -197,8 +197,8 @@ def reaver_show(rig):
                   hand_r={"arc": arc_of((-0.26, 0.06, 0.22)), "pole": (-0.9, -0.2, -0.2), "frame": "chest",
                           "blade": _n(-0.5, 0.2, 0.85), "twist": 0.5}), "auto"),
         (24, over("reaver", spine=(-6, -10, 0), head=(0, -10, 0),
-                  hand_r={"arc": arc_of((-0.10, 0.36, 0.04)), "pole": (-0.8, 0.4, -0.2), "frame": "chest",
-                          "blade": _n(-0.1, 0.4, -0.9), "twist": 0.5}), "auto"),
+                  hand_r={"arc": arc_of((-0.13, 0.23, 0.12)), "pole": (-0.85, -0.05, 0.5), "frame": "chest",
+                          "blade": _n(-0.1, 0.45, -0.88), "twist": 0.5}), "auto"),
         (30, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -16, -4)), "ease"),
         (60, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
         (72, over("reaver"), "ease"),
@@ -749,8 +749,15 @@ def catch_breath(rig):
             "hand_r": {"pos": (-0.13 - kx, 0.55, 0.22), "pole": (-0.9, 0.2, -0.3), "knuckles": (-0.2, -0.6, 0.75)},
             "fingers_l": "relaxed", "fingers_r": "grip",
         }
+    # The hair pushed back along the side of her head, not over the top: the
+    # wrist at her jaw, the fingers up into the hair at her temple and swept
+    # back over her ear, the elbow forward and down (over the top the upper
+    # arm went 27 degrees above level, the armpit opened to the camera).
+    temple = body(stance(0.05), spine=(0, 3, 0), head=(-5, -3, 3),
+                  hand_l={"pos": (0.10, 1.555 + hy, 0.11 + hz), "pole": (0.5, -0.8, 0.5), "knuckles": (-0.1, 0.95, 0.2)},
+                  hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip")
     upright = body(stance(0.05), spine=(0, 2, 0), head=(-6, -6, 4),
-                   hand_l={"pos": (0.10, 1.66 + hy, 0.06 + hz), "pole": (1.0, 0.3, -0.2), "knuckles": (0.0, 0.4, -0.9)},
+                   hand_l={"pos": (0.125, 1.56 + hy, -0.01 + hz), "pole": (0.55, -0.85, 0.3), "knuckles": (-0.15, 0.7, -0.7)},
                    hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip")
     keys = [
         (0, body(stance(0.06), spine=(0, 8, 0), hand_l=arm((-0.02, -0.34, 0.12), (0.6, -0.4, -0.5)),
@@ -767,7 +774,8 @@ def catch_breath(rig):
         (86, body(stance(0.05), spine=(0, 6, 0), head=(-4, 0, 2),
                   hand_l={"pos": (0.13, 1.30 + hy, 0.22 + hz), "pole": (0.9, -0.2, -0.3), "knuckles": (0.05, 0.9, 0.35)},
                   hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
-        (98, upright, "ease"),
+        (93, temple, "auto"),
+        (99, upright, "ease"),
         # Down again round the front of her, not back through her shoulder.
         (110, body(stance(0.05), spine=(0, 3, 0), head=(-3, -2, 2),
                    hand_l={"pos": (0.16, 1.24 + hy, 0.20 + hz), "pole": (0.9, -0.3, -0.3), "knuckles": (0.1, 0.55, 0.8)},
