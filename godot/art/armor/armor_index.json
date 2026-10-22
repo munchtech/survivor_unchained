@@ -95,6 +95,26 @@
   "rigid": true
  },
  {
+  "id": "plate_gstring_plain",
+  "outfit": null,
+  "slot": "bottom",
+  "layer": 1,
+  "covers": [
+   "bottom",
+   "belt",
+   "skirt"
+  ],
+  "meshes": [
+   "plate_gstring_plain.bottom.darkleather",
+   "plate_gstring_plain.bottom.steel"
+  ],
+  "tuck": "armor_tuck/plate_gstring_plain.bin",
+  "tuck_count": 294,
+  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "file": "res://art/armor/plate_gstring_plain.gltf",
+  "tier": 1
+ },
+ {
   "id": "plate_pauldrons_plain",
   "outfit": null,
   "slot": "pauldrons",

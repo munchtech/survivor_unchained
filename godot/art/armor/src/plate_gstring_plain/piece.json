@@ -44,7 +44,7 @@
   "back_step": 0.008,
   "back_cols": 5,
   "cap_density": 6000,
-  "panel_tris": 1400,
+  "panel_tris": 1150,
   "ring_nu": 10,
   "ring_nv": 5
  },
