@@ -73,7 +73,7 @@ public partial class WardenView : Node3D, IBossView
         // white, and read as a white cowl round the face C02 holds in close-up. Until he
         // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
         // brighter paint, so all of it comes out dark with the river.
-        if (package) { EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); }
+        if (package) { WardenLook.Wet(view.Person, NpcPackage.Dir("ford_warden")); EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); }
         else
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
@@ -110,20 +110,11 @@ public partial class WardenView : Node3D, IBossView
             static Vector3 P(Godot.Variant a) { var x = a.AsGodotArray(); return new Vector3((float)x[0], (float)x[1], (float)x[2]); }
             if (e.TryGetValue("l", out var lv) && e.TryGetValue("r", out var rv)) { l = P(lv); r = P(rv); }
         }
-        var skel = view.Person.Skeleton;
-        var at = new BoneAttachment3D { Name = "EyeLights", BoneName = skel.FindBone("Head") >= 0 ? "Head" : "head" };
-        skel.AddChild(at);
-        foreach (var p in new[] { l, r })
-        {
-            var m = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = EyeBlue, EmissionEnabled = true, Emission = EyeBlue };
-            at.AddChild(new MeshInstance3D
-            {
-                Mesh = new SphereMesh { Radius = 0.0045f, Height = 0.009f, RadialSegments = 12, Rings = 6, Material = m },
-                Position = p, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            });
-            eyes.Add(m);
-        }
+        // (WardenLook: a white-hot core going to cyan, a soft glow, one tiny cold light on brow, cheekbones and beard)
+        eyeLook = WardenLook.Eyes(view.Person.Skeleton, l, r);
     }
+
+    (StandardMaterial3D Core, StandardMaterial3D Glow, OmniLight3D Glint)? eyeLook;
 
     public void SetPose(string p)
     {
@@ -198,6 +189,7 @@ public partial class WardenView : Node3D, IBossView
     /// cage, so the bars throw their shadows over him and whatever he holds it to.</summary>
     void Light(double g, float ground, bool atFlame)
     {
+        if (eyeLook is { } el) WardenLook.Glow(el, g, time);
         foreach (var m in eyes)
         {
             float k = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
