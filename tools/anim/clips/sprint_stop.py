@@ -104,7 +104,8 @@ POLE_DX0 = -0.3
 # hung from the shoulder as the idle's whatever the lean), so the thrown-back lean no longer lifts the fist to a shelf.)
 STOP_HOLD = 1.0
 # (And the staff's head eased back (its aim's z, keys 9 and 15) per side: with the fist held back the shaft's foot met
-# her right leg as it came through on the left stop (35 mm, was 71); its head back also clears her cheek from 45.)
+# her right leg as it came through on the left stop; its head back also clears her cheek from 45. With the back foot's
+# key restored (animation 49) the staff passes 24 mm from that leg at 0.30 s, never touching; right stop 112 mm.)
 STOP_BACK = {"l": (0.08, 0.05), "r": (0.0, 0.0)}
 
 
