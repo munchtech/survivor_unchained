@@ -2,7 +2,23 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 23 October, early: coordinator 543ece4a WIND-DOWN (read this first)
+## 23 October: coordinator 23290ad1 WIND-DOWN (new account; read this first)
+**The owner's scope: the arm/shoulders only.** The owner FAILED the arm graft on sight ("the arms skin looked twisted and weird. not toned or sexy  the one arm looked goofy"; "the idea was correct. her shoulders were too high and there wasn't sexy feminine definition. it just was executed poorly. research and try again"). BJ1's PASS is overruled. Nothing merged; integration still has her original arm. OWNER_NOTES 23 Oct has the owner's words.
+**Body 2 PAUSED at armor-7@5bfab655 (pushed), handoff `docs/handoff/body.md` top "Paused here (Body 2, 23 Oct)".**
+- Research: done.
+- Three diagnoses: done (traps weighted to the upper arm, the shrinkwrap spiral and texture swirl, two arms fitted separately).
+- Clip clavicle hold: committed (tools/anim/clavhold.py; town idles' shoulder lift under 0.25 cm, was up to 5.6). Some two-handed grips still need eye checks.
+- Variants A (graft loops resculpted) and B (her own arm densified, her paint exact): built, UNJUDGED, no one has looked at them. B is the front-runner (idle slope 20.4/21.8 deg vs a 22 deg target); A has a left pit fold at 77 deg and keeps 67-84% of her paint's detail.
+- Cost: about 1.43M tokens, API $0.
+**RESTART ORDER (fresh successor, lead_brief.md):**
+1. **Body 3:** measure B's deformation. Then shoot the OWNER GATE: original | A | B, nude, `--close-turn` 0.8/-0.8, the default close-up and the Look, by day, on one 1:1 sheet. Then one max judge. The owner's words go in as FAIL calibration, along with the 22 Oct crops. Then the coordinator opens the owner's crop regions at 1:1 and sends the owner the sheet. Only on the owner's yes: the G3 chain (outfits, correctives, wearcheck, LOD), the dressed judge, then MR. About 6-8 h after the gate.
+**Owner rules this session:**
+- Expedite with parallel agents on the whole PC.
+- NO API credits this session: judges are su-lead-max subagents at max. The next session's API use is the owner's call. The ledger cap number is still pending ($250, ~$15.8 usable).
+**Don't clear** the Temp scratchpad `23290ad1-...\scratchpad\body2\`: it holds the gate's exports (s_a/s_b heroine.glb, clav\packed, orig_people). Texts are backed up to `survivorsunchained_inputs\scratch_23290ad1\body2\`. The old `543ece4a\scratchpad\armor18\` (~3.6 GB of graft exports) can be binned once A or B is picked.
+**Paused, unchanged:** Face 41, Warden 3, Marionette 12, Env 15, Armor's own list (as below).
+
+## 23 October, early: coordinator 543ece4a WIND-DOWN (history)
 Nothing merged this session (the owner's scope was the shoulder only; the fix became a body build and is unjudged at the owner's angle). Integration = 2f4329b1 + notes commits. Armor 18 handed off at armor-7@1ece79be (pushed) and is stopped.
 **BJ1 (max, API, $2.60) on the ARM GRAFT (Body 1): the arm PASSES at 1:1 in all 15 sheets**: round deltoid, no ramp or facets on the shoulder top, no pinch or fold line at the pit, no lumps on the upper arm, the tattoo flat, a soft inner elbow. The coordinator checked reaver_show 0.77 at 1:1 and agrees. One residue: a faint step where the trap meets the cap, LEFT shoulder, in outline. Four FAILs, none the arm: flask_drink 1.0 s forearm through the torso (the pose; probably old), the arcanist hat brim underside (known), C01 s8 glassy misaligned eyes (face), C01 s10 braid reads as fishnet at night (hair). **NOT certified: the owner's angle (their crops come from a closer, turned camera) and the Look camera.** Verdict: armor-7 `godot/.shots/body1/j1/verdict_bj1.md`; sheets `godot/.shots/body1/j1/sheets/` (index sheets.txt); judge brief `survivorsunchained_inputs\scratch_543ece4a\armor18\bj1.md`.
 **API:** judges run on credits again (the owner upped the console limit). The LOCAL ledger cap is still $250 (`MARIONETTE_AI_CAP_USD` in Marionette's AI env, read by client.cjs); ~$15.8 usable. **Owner decision pending: the new monthly cap number**, then set the env value.
