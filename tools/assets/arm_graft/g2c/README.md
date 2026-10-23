@@ -15,3 +15,14 @@ steps take ~20 min, so run them first with ARM_GRAFT_WORK set and then `SKIP_GRA
 and wrist. g2a/meas.py now also prints the top outline cut where it crosses onto the arm's front (phi > 65 past t 0.1).
 TRAP=0.3 TRAP_CL=0.15 (strip moved medially off the trap) gave shoulder_top chords 3.6/4.2 px but left the t -0.37 junction
 as it was and moves 215 more neck-graft field points (|x| 0.094-0.128), so it is not the default.
+
+## g2d additions (armor 18 g2d, 22 Oct 2026), all defaults in run.sh
+- `WRIST_TC=0.85` (fit.py `wrist_coarsen`): the patch's wrist end halved round the arm (along-arm rows kept) from the base
+  quad ring nearest tf 0.85 to the wrist, the ring before it a 4:2 all-quad transition (6 quads per base quad); quads past
+  tf 1.08 dropped; the loop cuts seed only in the fine quads. Base forearm rings are 20 quads (80 -> 40 round the arm).
+- `WRIST_CORNER=1` (build.py): the wrist loop's staircase (her wrist ring runs 4-6 cm along the arm) cut on the diagonal,
+  one triangle per convex corner. Wrist loop 106/126 -> 58/73 against her 39/46.
+- `GAP=0.008 UNT=30`: the wider gap and the seam untangle clear the folds the coarse rows made at the top of the left wrist.
+- `ELBOW_IT` (post.py, default 0: 20 made the inner elbow worse, 15/13%): x = W_low/(W_up+W_low) Laplacian-smoothed on the elbow's front (t .7-1.3), sum kept.
+- `TOP_IT=80 TOP_PHI1=60` (post.py, `TOP_T`): Taubin fairing of the shoulder top/back (t -.6..0, phi -130..40) on
+  graft-moved vertices only, so no neck-graft npz point on the original blend moves.

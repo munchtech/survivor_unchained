@@ -7,7 +7,7 @@ WK=$1; WSRC=$2; WVG=$3; PEOPLE=$4; TAG=${5:-g2c}
 W=$(cd "$(dirname "$0")/../../../.." && pwd); A=$W/tools/assets/arm_graft
 B=C:/Users/munch/Tools/blender-4.5.14-windows-x64/blender.exe
 SRC=C:/Users/munch/Desktop/survivorsunchained_inputs/armor_src
-export ARM_GRAFT_WORK=$(cygpath -w "$WK") ARM_TO=wrist WRIST_TF=${WRIST_TF:-0.98} WRIST_HW=${WRIST_HW:-0.6} TRAP=${TRAP:-0.5} TRAP_CL=${TRAP_CL:-0.3}
+export ARM_GRAFT_WORK=$(cygpath -w "$WK") ARM_TO=wrist WRIST_TF=${WRIST_TF:-0.98} WRIST_HW=${WRIST_HW:-0.6} TRAP=${TRAP:-0.5} TRAP_CL=${TRAP_CL:-0.3} WRIST_TC=${WRIST_TC:-0.85} WRIST_CORNER=${WRIST_CORNER:-1} GAP=${GAP:-0.008} UNT=${UNT:-30} ELBOW_IT=${ELBOW_IT:-0} TOP_IT=${TOP_IT:-80} TOP_PHI1=${TOP_PHI1:-60}
 [ -f "$WK/her.npz" ] || "$B" -b $SRC/heroine_built.blend --python $A/b_dump.py -- "$WK/her.npz"
 [ -n "${SKIP_GRAFT:-}" ] || python $W/tools/assets/heroine_arm_graft.py
 "$B" -b $SRC/heroine_built.blend --python $A/b_write.py -- "$WK/graft_data.npz" "$WK/graft.blend" 2>&1 | grep -E "SAVED|rror" || true

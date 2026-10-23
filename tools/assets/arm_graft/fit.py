@@ -76,7 +76,7 @@ def her_patch(side):
     m=fin[pairs[:,0]]!=fin[pairs[:,1]]; ob=np.where(fin[pairs[m,0]],pairs[m,1],pairs[m,0]); adj[lo[ob]]=True
     small=(co<300)&adj; fin=fin|((~fin)&small[lo])
     return fin
-def loopcut(V,F,side,lmin):
+def loopcut(V,F,side,lmin,ok=None):
     E_=bone(f"lowerarm_{side}"); H_=bone(f"hand_{side}"); uf=(H_-E_)/np.linalg.norm(H_-E_); Lf=np.linalg.norm(H_-E_)
     key=lambda a,b:(a,b) if a<b else (b,a)
     eq={}
@@ -85,6 +85,7 @@ def loopcut(V,F,side,lmin):
     seeds=[]
     for (a,b) in eq:
         v=V[b]-V[a]; l=np.linalg.norm(v); m=(V[a]+V[b])/2; tf=(m-E_)@uf/Lf; rf=np.linalg.norm((m-E_)-((m-E_)@uf)*uf)
+        if ok is not None and not all(ok[qi] for qi,_ in eq[(a,b)]): continue
         if l>lmin and abs(v@uf)/l>0.7 and -0.05<tf<0.75 and rf<0.07: seeds.append((a,b))
     cut=set(); stack=list(seeds)
     while stack:
@@ -108,6 +109,96 @@ def loopcut(V,F,side,lmin):
         else: out.append(list(q))
     print(side,"loop cut: seed edges",len(seeds),"cut edges",len(cut),"quads",len(F),"->",len(out))
     return V,np.array(out)
+def wrist_coarsen(Vf2,Fs,F,Vc,side,tc):
+    """g2d: the patch's wrist end coarsened round the arm (half the ring count; along-arm rows kept) over the base quads
+    whose centre lies past tc of the lowerarm bone, with one ring of base quads as a 4:2 quad transition (no triangles).
+    Fs must be the two-level Catmull-Clark of the base quads F (face 16*fi+4*i+j)."""
+    E_=bone(f"lowerarm_{side}"); H_=bone(f"hand_{side}"); uf=(H_-E_)/np.linalg.norm(H_-E_); Lf=np.linalg.norm(H_-E_)
+    nb=len(F); assert len(Fs)==16*nb
+    # grid coordinates (0..4) of every level-2 vertex of each base quad
+    Pc=np.array([[0,0],[4,0],[4,4],[0,4]],float); grid=[dict() for _ in range(nb)]
+    for fi in range(nb):
+        for i in range(4):
+            Q=[Pc[i],(Pc[i]+Pc[(i+1)%4])/2,Pc.mean(0),(Pc[i]+Pc[(i-1)%4])/2]
+            for j in range(4):
+                R=[Q[j],(Q[j]+Q[(j+1)%4])/2,np.mean(Q,0),(Q[j]+Q[(j-1)%4])/2]
+                for v,p in zip(Fs[16*fi+4*i+j],R): grid[fi][(int(round(p[0])),int(round(p[1])))]=v
+    ctr=Vc[F].mean(1); tfc=((ctr-E_)@uf)/Lf; rfc=np.linalg.norm((ctr-E_)-np.outer((ctr-E_)@uf,uf),axis=1)
+    d1=Vc[F[:,1]]-Vc[F[:,0]]; d3=Vc[F[:,3]]-Vc[F[:,0]]
+    UC=np.abs(d1@uf)/np.linalg.norm(d1,axis=1)<np.abs(d3@uf)/np.linalg.norm(d3,axis=1)   # grid u runs round the arm
+    key=lambda a,b:(a,b) if a<b else (b,a)
+    em={}
+    for fi,q in enumerate(F):
+        for k in range(4): em.setdefault(key(q[k],q[(k+1)%4]),[]).append((fi,k))
+    def nbr(fi,k):
+        l=[x for x in em[key(F[fi][k],F[fi][(k+1)%4])] if x[0]!=fi]; return l[0][0] if l else -1
+    # whole rings of base quads (walked across their along-the-arm edges): the ring nearest tc starts the coarse end,
+    # the ring before it is the transition, everything past it (to tf 1.08; beyond is dropped, the trim cuts there) coarse
+    def ring(seed):
+        R=[seed]; seen={seed}; st=[seed]
+        while st:
+            fi=st.pop()
+            for k in ((1,3) if UC[fi] else (0,2)):
+                n_=nbr(fi,k)
+                if n_>=0 and n_ not in seen and rfc[n_]<0.09: seen.add(n_); R.append(n_); st.append(n_)
+        return R
+    cand=np.nonzero((rfc<0.07)&(np.abs(tfc-tc)<0.05))[0]; R0=ring(cand[np.argmin(np.abs(tfc[cand]-tc))])
+    R0s=set(R0); Tr=set()
+    for fi in R0:
+        for k in ((0,2) if UC[fi] else (1,3)):
+            n_=nbr(fi,k)
+            if n_>=0 and n_ not in R0s and tfc[n_]<tfc[fi]: Tr.add(n_)
+    reach=np.zeros(nb,bool); reach[R0]=True; st=list(R0)
+    while st:
+        fi=st.pop()
+        for k in range(4):
+            n_=nbr(fi,k)
+            if n_>=0 and not reach[n_] and n_ not in Tr: reach[n_]=True; st.append(n_)
+    drop=reach&(tfc>=1.08); C=reach&~drop
+    print(side,"wrist coarsen: ring",len(R0),"tf %.2f..%.2f"%(tfc[R0].min(),tfc[R0].max()),"transition ring",len(Tr),"dropped past tf 1.08",int(drop.sum()))
+    ccbad=sum(1 for (a,b),l in em.items() if len(l)==2 and C[l[0][0]] and C[l[1][0]] and ((l[0][1]%2==0)==UC[l[0][0]])!=((l[1][1]%2==0)==UC[l[1][0]]))
+    print(side,"coarse-coarse edges disagreeing round/along",ccbad)
+    for it in range(20):
+        T=np.zeros(nb,bool); fs=np.full(nb,-1); bad=[]
+        for fi in np.nonzero(~C&~drop)[0]:
+            ks=[k for k in range(4) if nbr(fi,k)>=0 and C[nbr(fi,k)]]
+            if ks: T[fi]=True; fs[fi]=(ks[0]+2)%4 if len(ks)==1 else -1
+            if len(ks)>1: bad.append(fi)
+        for fi in np.nonzero(T)[0]:
+            if fi in bad: continue
+            k=fs[fi]; o=nbr(fi,k)
+            if o>=0 and (C[o] or T[o]): bad.append(fi); continue
+            cq=nbr(fi,(k+2)%4); kc=[x[1] for x in em[key(F[fi][(k+2)%4],F[fi][(k+3)%4])] if x[0]==cq][0]
+            if (kc%2==0)!=UC[cq]: bad.append(fi); continue
+            for kl in ((k+1)%4,(k+3)%4):
+                n_=nbr(fi,kl)
+                if n_>=0 and not T[n_]: bad.append(fi)
+        if not bad: break
+        C[bad]=True
+    assert not bad, "wrist coarsen: no conforming transition"
+    out=[]; fine=[]
+    for fi in range(nb):
+        g=grid[fi]
+        if drop[fi]: continue
+        if not C[fi] and not T[fi]: out+=list(Fs[16*fi:16*fi+16]); fine+=[True]*16; continue
+        n0_=len(out)
+        if C[fi]:
+            # which grid axis runs round the arm: the one less aligned with the forearm
+            ucirc=UC[fi]
+            for a in (0,2):
+                for b in range(4):
+                    if ucirc: out.append([g[(a,b)],g[(a+2,b)],g[(a+2,b+1)],g[(a,b+1)]])
+                    else: out.append([g[(b,a)],g[(b+1,a)],g[(b+1,a+2)],g[(b,a+2)]])
+            fine+=[False]*(len(out)-n0_); continue
+        k=fs[fi]; o=Pc[k]; ex=(Pc[(k+1)%4]-o)/4; ey=(Pc[(k+3)%4]-o)/4
+        G_=lambda x,y: g[tuple(int(round(c)) for c in o+x*ex+y*ey)]
+        for y in (0,1):
+            for x in range(4): out.append([G_(x,y),G_(x+1,y),G_(x+1,y+1),G_(x,y+1)])
+        f_=[G_(x,2) for x in range(5)]; c0,c1,c2=G_(0,4),G_(2,4),G_(4,4); a,m,b=G_(1,3),G_(2,3),G_(3,3)
+        out+=[[f_[0],f_[1],a,c0],[f_[1],f_[2],m,a],[f_[2],f_[3],b,m],[f_[3],f_[4],c2,b],[a,m,c1,c0],[m,b,c2,c1]]
+        fine+=[False]*(len(out)-n0_)
+    print(side,"wrist coarsen: base quads coarse",int(C.sum()),"transition",int(T.sum()),"quads",len(Fs),"->",len(out))
+    return np.array(out),np.array(fine)
 res={}
 for side in ("r","l"):
     sx=-1 if side=="r" else 1; s_=side
@@ -192,10 +283,14 @@ for side in ("r","l"):
         nfix+=1
         for _s in range(5): Vf2=np.where(sel[:,None],Vf2+0.5*(Wu@Vf2-Vf2),Vf2)
     print(side,"unfold rounds",nfix)
+    if ARM_TO=="wrist" and float(os.environ.get("WRIST_TC","0"))>0:
+        if os.environ.get("WC_DUMP"): np.savez(G+rf"\wc_{side}.npz",Vf2=Vf2,Fs=Fs,F=F,Vc=Vc,E=bone(f"lowerarm_{side}"),H=bone(f"hand_{side}"))
+        Fs,fine_=wrist_coarsen(Vf2,Fs,F,Vc,side,float(os.environ["WRIST_TC"]))
+    else: fine_=None
     if ARM_TO=="wrist" and float(os.environ.get("FA_CUT","0.5"))>0:
         # g2c: the base's forearm loops are 0.75-0.8 cm apart (around it 0.3): loop cuts through every edge ring whose
         # along-the-forearm edges there are longer than FA_CUT cm, new points on her smoothed surface
-        Vf2,Fs=loopcut(Vf2,Fs,side,float(os.environ.get("FA_CUT","0.5"))/100)
+        Vf2,Fs=loopcut(Vf2,Fs,side,float(os.environ.get("FA_CUT","0.5"))/100,fine_)
     Vf2_pre=Vf2
     res[side]=dict(fin=fin,pv=pv,Vc=Vc,F=F,Vf=Vf2,Vfit=Vf2_pre,Fs=Fs,Vsub=Vf,used=used)
     print(side,"patch faces",fin.sum(),"verts",len(pv),"base quads",len(F),"sub quads",len(Fs))

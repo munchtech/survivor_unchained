@@ -134,20 +134,46 @@ for si,side in enumerate(sides):
         while c is not None and c!=a and c not in seen: lp.append(c); seen.add(c); c=nx.get(c)
         loopsB.append(lp)
     print(side,"trimmed quads",len(Fk),"boundary loops",[len(l) for l in loopsB])
+    Fk=[list(q) for q in Fk]
+    if int(os.environ.get("WRIST_CORNER","0")):
+        # g2d: the wrist loop's staircase (the trim crosses the coarse rows on a slant) cut on the diagonal: a quad whose
+        # corner is on the loop and in no other kept quad loses that corner (a triangle), one loop vertex fewer each
+        Hb=d["bh"][list(d["bn"]).index(f"hand_{side}")]
+        lw=min(loopsB,key=lambda l:np.linalg.norm(X[l].mean(0)-Hb)); lws=set(lw)
+        cnt=defaultdict(int)
+        for q in Fk:
+            for v in q: cnt[v]+=1
+        cut=0; usedq=set()
+        for qi,q in enumerate(Fk):
+            if len(q)!=4: continue
+            cs=[k for k in range(4) if q[k] in lws and cnt[q[k]]==1 and q[(k+1)%4] in lws and q[(k+3)%4] in lws]
+            if len(cs)!=1: continue
+            k=cs[0]
+            if q[(k+1)%4] in usedq or q[(k+3)%4] in usedq: continue
+            usedq.update([q[(k+1)%4],q[(k+3)%4]]); Fk[qi]=[q[(k+1)%4],q[(k+2)%4],q[(k+3)%4]]; cut+=1
+        heq=[(qd[k],qd[(k+1)%len(qd)]) for qd in Fk for k in range(len(qd))]
+        hs=set(heq); bhe=[(b,a) for a,b in heq if (b,a) not in hs]
+        nx={a:b for a,b in bhe}; loopsB=[]; seen=set()
+        for a,_ in bhe:
+            if a in seen: continue
+            lp=[a]; seen.add(a); c=nx.get(a)
+            while c is not None and c!=a and c not in seen: lp.append(c); seen.add(c); c=nx.get(c)
+            loopsB.append(lp)
+        print(side,"wrist corners cut",cut,"boundary loops",[len(l) for l in loopsB])
     # boundary loops made smooth along their length (the staircase of quad edges evened), and the next row with them
     for lp in loopsB:
         L_=np.array(lp)
         for _ in range(8):
             X[L_]=X[L_]+0.5*((np.roll(X[L_],1,0)+np.roll(X[L_],-1,0))/2-X[L_])
         X[L_]=Ssm.query(X[L_])[0]
-    bset=set(v for lp in loopsB for v in lp); Ek=edges_of(Fk); Ak=adjacency(len(X),Ek); Wk=umbrella(len(X),Ek)
+    bset=set(v for lp in loopsB for v in lp); Ek=np.unique(np.sort(np.array([(q[k],q[(k+1)%len(q)]) for q in Fk for k in range(len(q))]),1),axis=0); Ak=adjacency(len(X),Ek); Wk=umbrella(len(X),Ek)
     row=np.zeros(len(X),bool); row[list(bset)]=True; row=(Ak@row>0)&~row
     for _ in range(4): X[row]=(X+0.5*(Wk@X-X))[row]
     X[row]=Ssm.query(X[row])[0]
     q,dist,ft,bar=So.query(X); dr=segdist(X)
     w=np.clip(1-dr/BLEND,0,1); w=w*w*(3-2*w); gq=np.linalg.norm(q-X,axis=1); w*=np.clip((0.0015-gq)/0.0005,0,1); Y=X+w[:,None]*(q-X)
     idx={}
-    for v in np.unique(Fk):
+    for v in np.unique(np.concatenate(Fk)):
         i=alloc(); idx[v]=i; newpos[i]=Y[v]
     for qd in Fk: newfaces.append([idx[v] for v in qd]); kinds.append("patch"); groups.append(f"{side}p")
     for lr in loopsR:
