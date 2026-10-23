@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 23 October 2026
+- **ARM GRAFT FAILS ON SIGHT (the owner, 23 Oct, new account):** "basically there was just a massive resculpt/remake and I was unhappy with it"; "the arms skin looked twisted and weird. not toned or sexy  the one arm looked goofy". BJ1's PASS is overruled (the third max judge this item to pass what the owner fails). Body 2 is on HOLD at armor-7@1ece79be, nothing built this session. The graft is unmerged; integration still has her original arm. Route pending the owner's pick (coordinator 23290ad1's recommendation: scrap the graft, keep her own sculpt).
+
 ## 22 October 2026
 - (coordinator 543ece4a, 23 Oct early) **ARM GRAFT JUDGED: the arm PASSES at 1:1 in all 15 sheets (BJ1, max, API $2.60); the coordinator agrees on reaver_show 0.77.** Not yet certified at the owner's turned closer angle or the Look camera: Body 2's first step. Four non-arm fails routed (flask_drink 1.0 s forearm through the torso, hat brim, C01 s8 eyes, C01 s10 braid at night). **Owner decision pending:** the new monthly API cap number for our ledger (still $250, ~$15.8 usable).
 - (coordinator 543ece4a, afternoon) **API credits for judges are back (the owner: "use api credits for judge then - I upped the limit").** The Body 1 (arm root) judge runs on the API at max; solvers and runners stay on usage. If the API still answers 400, the lead falls back to a subagent judge and says so. The lead_brief line "every judge is a su-lead-max subagent until 1 Nov" is superseded for judges.
