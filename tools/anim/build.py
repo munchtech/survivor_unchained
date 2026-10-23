@@ -53,10 +53,25 @@ def modules():
 
 
 def pack(out=OUT, stem="heroine"):
-    lib = REPO / "godot" / "art" / "anim"
+    """Pack the clip JSONs in `out` into the game's library. Her clips pass
+    clavhold first (her clavicles held down while the arm is low; CLAV_HOLD=0
+    packs them as written), staged in ANIM_PACK_STAGE (default
+    tools/anim/out/packed_<stem>/), so the JSONs in `out` stay as the clip code
+    wrote them. ANIM_LIB (a folder) writes <stem>.res and <stem>_clips.json
+    there instead of godot/art/anim/."""
+    lib = Path(os.environ["ANIM_LIB"]) if os.environ.get("ANIM_LIB") else REPO / "godot" / "art" / "anim"
     lib.mkdir(parents=True, exist_ok=True)
+    res = str((lib / f"{stem}.res").resolve()).replace("\\", "/") if os.environ.get("ANIM_LIB") else f"res://art/anim/{stem}.res"
+    src = out
+    if stem == "heroine":
+        import clavhold
+        if clavhold.on():
+            stage = Path(os.environ.get("ANIM_PACK_STAGE", HERE / "out" / f"packed_{stem}"))
+            src = clavhold.stage(out, stage, Skeleton.load(DATA / BODIES[stem][0]))
+        else:
+            print("  clavicle hold OFF (CLAV_HOLD=0)")
     r = subprocess.run([GODOT, "--headless", "--path", str(REPO / "godot"), "-s", "res://tools_scenes/anim_pack.gd", "--",
-                        str(out), f"res://art/anim/{stem}.res", str(lib / f"{stem}_clips.json")],
+                        str(src), res, str(lib / f"{stem}_clips.json")],
                        capture_output=True, text=True)
     for line in (r.stdout + r.stderr).splitlines():
         if "PACKED" in line or "ERROR" in line or "SCRIPT" in line:
