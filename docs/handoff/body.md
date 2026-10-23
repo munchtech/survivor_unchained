@@ -61,10 +61,34 @@ Small residues, numbers only, NOT yet seen at 1:1. The judge decides whether the
 - the shoulder-top chord is 4.2 / 4.5 px;
 - 12% / 10% of inner-elbow faces lose more than half their area at a 112 deg bend.
 
-**Next:**
-1. G2e: re-lay the arm patch's UVs and re-bake the skin. The patch now carries per-face projections from about 100 old islands, with about 12.7 m of seams. The tattoo is an ink piece the build cuts, so it regenerates.
-2. G3: the chain from the armroot blend: NAPE=0 full build, then body_post (the correctives rebuild there; step 6 is off), then restore the neck graft npz, then build.py --all, cover.py, heroine_lod.py and the reimport.
-3. Measure: wearcheck against the baseline, fistfit, neck graft indices.
-4. ONE max judge on the API (the owner, 22 Oct), whole-frame gate, using main's frame list. Include left-arm-raised frames.
+**G3** (a80867bc tools, b8a9cacd art) installed the full chain from the armroot blend (four outfits, body_post with the correctives re-authored, freckles, build.py --all, cover, LOD, reimport). It also fixed a wrist fold in heroine_outfits' weight easing (`WRIST_KEEP`). dotnet 1076/0/8; fistfit unchanged. **G4** (18b7ea05):
+- reaver.top's own tuck re-run (`wrap_post.py --tuck-only`);
+- mar_her_bracers' rigid blend no longer takes the hand (`params.rigid_drop`);
+- wearcheck gained area-weighted columns (`table_area.txt`; `WC_ART` measures another revision). The skin vertex count rose with density alone, so judge by AREA.
 
-Cost so far this round: D1 100k, G1 212k, G2a 183k, G2b 114k, G2c 170k, G2d 145k.
+| Wearcheck | Old art | Now |
+|---|---|---|
+| Area >2 | 224148 | 207222 (-7.6%) |
+| Count | 48417 | 50927 |
+
+Still over baseline by area (combat poses): plate tops and cuirass under the pit (cast_raise), ranger.pauldrons (leap, crossbow_shoot). plate_pauldrons_warden's adornment fails build.py's skin check (399 points in arms_overhead; its base clips there too); etched and gilded fail by 0.1 mm.
+
+**BJ1 (max, API, $2.60): FAIL on 4 of 15 sheets, NONE for the arm.** Verdict: `godot/.shots/body1/j1/verdict_bj1.md`. Sheets: `godot/.shots/body1/j1/sheets/` (index `sheets.txt`). Shot list: `...\armor18\j\j_list.txt` and `cine.json`.
+- The arm passes at 1:1 in every frame: all four faults in the owner's crops are gone (deltoid round, no ramp or facets, no pinch or fold line, no lumps, the tattoo flat, the inner elbow soft). The armpit is a soft hollow where it shows (warden_show, idle_arcanist_break).
+- Residue: a faint trapezius-to-cap step on her LEFT shoulder, in outline (s02, s03-s04).
+- The FAILs are not the arm:
+  - flask_drink 1.0 s: the forearm runs through her torso (the pose; R1 changed only 3-4.4 s, so check whether it was always so);
+  - the arcanist hat brim underside renders black (a known item, out of scope);
+  - C01 s8's face close-up (glassy, misaligned eyes) and C01 s10's braid fishnet at night: face and hair leads.
+- **Not yet certified:** the armpit at the owner's angle. The owner's crops were from a closer, turned camera.
+
+**Next (for the successor):**
+1. Reshoot reaver_show 0.77 and warden_show 0.63 at `--close-turn` 0.8, -0.8 and 1.57, nude and dressed, plus the character-creation Look camera. Add catch_breath 3.3 at a turn that shows the left armpit. Use the worker brief `...\armor18\j_shots_brief.md` with run.sh `import`.
+2. One API re-judge (max), the same brief `...\armor18\bj1.md`, on those sheets only.
+3. If the left trap step shows there, give it one fix in `arm_graft/g2c/post.py` (a directed fill on graft-owned vertices, TOP_*). Re-run the pipeline and the G3 chain.
+4. flask_drink 0.8-1.2 s: scrub it; if the forearm-through-torso is old, it belongs to the clip (story_c04.py), not the arm.
+5. Then the MR: dotnet, wearcheck by area, MR READY with the sheet list.
+
+**For the merge:** the source blend changes to `survivorsunchained_inputs\armor_src\heroine_built_armroot.blend` (build.py's default already points there), and body_post step 6 is off. armor-7 also carries the armor R1/R2 clip work, which is unjudged (armor.md top). Temp scratch armor18 holds about 3.6 GB of exports. Texts and pipeline inputs are backed up to `survivorsunchained_inputs\scratch_543ece4a\armor18`; bin the Temp copy once this round closes.
+
+Cost this round: D1 100k, G1 212k, G2a 183k, G2b 114k, G2c 170k, G2d 145k, G2e 184k, G3 207k, G4 208k, J-shots 68k (about 1.6M tokens); API $2.61.
