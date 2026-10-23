@@ -30,7 +30,7 @@ Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in
 **Baseline wearcheck** (22 clips, today's art, correctives on): `armor18\wc_on\table.txt` (off: `wc_off`). The sum of OUT>2 counts is 48417 on and 47537 off. The C2 correctives made the plate pauldrons worse at flask_drink (skin under plate_pauldrons 29-37 to 155-173).
 
 **State (Armor 18, 22 Oct night).** The pipeline rebuilds from the ORIGINAL blend:
-`bash tools/assets/arm_graft/g2c/run.sh <work> <g2/g1d.npz> <g2/VG_v1.npy> <people dir> [tag]`. Its README is `tools/assets/arm_graft/g2c/README.md`; read the "g2d additions" section. Inputs are in the armor18 scratch `g2\`, backed up to `survivorsunchained_inputs\scratch_543ece4armor18\g2`. Output: `survivorsunchained_inputsrmor_src\heroine_built_armroot.blend`.
+`bash tools/assets/arm_graft/g2c/run.sh <work> <g2/g1d.npz> <g2/VG_v1.npy> <people dir> [tag]`. Its README is `tools/assets/arm_graft/g2c/README.md`; read the "g2d additions" section. Inputs are in the armor18 scratch `g2\`, backed up to `survivorsunchained_inputs\scratch_543ece4a\armor18\g2`. Output: `survivorsunchained_inputs\armor_src\heroine_built_armroot.blend`.
 
 - **G1** (2db153b2): grafted the MakeHuman quad arm from Marionette's base. The fit p95 is under 1 mm. Both arms are done separately; her two sides differ.
 - **G2a** (fc7d26b0): built the measuring harness `arm_graft/g2a/meas.py` and the proxy.
