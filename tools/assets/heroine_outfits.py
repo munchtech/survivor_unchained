@@ -1638,13 +1638,27 @@ print("BREAST WEIGHTS eased at", int((np.abs(W - W_AUTHORED).sum(1) > 1e-4).sum(
 # skin's weights jump from point to point, and where a garment's eased
 # edge lay on them, her skin moved by another rule and came through the
 # edge in steps when she moved. Garments take these, so the two agree.
-_keep = wsum(*[n for n in BONES if n.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb", "Head")]) > 0.05
+# (armor 18 g3: her wrists eased too. Kept at a hand share over 0.05, the wrist's points just under it took the eased
+# hand share (up to 0.4) beside kept points at 0.06-0.1 nearer the hand: weights out of order along her arm, and a bent
+# hand folded her inner wrist (a dark speck at the town close-up). Now the authored rows come back in smoothly between a
+# hand share of 0.05 and WRIST_KEEP (0.6), so the wrist is one 1.5 cm blend and her palm and fingers keep theirs. Her
+# head's rule is as it was. WRIST_KEEP=0 restores the old cut.)
+_hs = wsum(*[n for n in BONES if n.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb")])
+_keep = (_hs > 0.05) | (wsum(*[n for n in BONES if n.split("_")[0] == "Head"]) > 0.05)
+_wk1 = float(os.environ.get("WRIST_KEEP", "0.6"))
 _el = np.linalg.norm(P[TRI[:, 0]] - P[TRI[:, 1]], axis=1)
 _rounds = int(np.clip((0.015 / float(np.median(_el))) ** 2, 0, 80))
 _W = W.copy()
 for _ in range(_rounds):
     _W = ADJ @ _W
-W = np.where(_keep[:, None], W, _W)
+if _wk1 > 0.05:
+    _kh = np.clip((_hs - 0.05) / (_wk1 - 0.05), 0, 1)
+    _kh = _kh * _kh * (3 - 2 * _kh)
+    _kf = np.where(wsum(*[n for n in BONES if n.split("_")[0] == "Head"]) > 0.05, 1.0, _kh)
+    W = _kf[:, None] * W + (1 - _kf[:, None]) * _W
+    print("WRIST_KEEP %.2f: %d points of her wrists blend authored and eased weights" % (_wk1, int(((_kf > 0) & (_kf < 1)).sum())))
+else:
+    W = np.where(_keep[:, None], W, _W)
 _fifth = -np.partition(-W, 4, axis=1)[:, 4]
 W = np.maximum(W - _fifth[:, None], 0)
 W = W / np.maximum(W.sum(1, keepdims=True), 1e-9)

@@ -38,6 +38,31 @@ for sd in "lr":
         x = x + 0.5 * m * (C0.Wn @ x - x)
     VG[:, il] = np.where(su > 1e-6, su * x, VG[:, il]); VG[:, iu] = np.where(su > 1e-6, su * (1 - x), VG[:, iu])
     print("elbow split", sd, "vertices touched", int((m > 0.01).sum()))
+# g3: the wrist's hand / lowerarm split (x = W_hand/(W_hand+W_lower); the export splits lowerarm into its twists) made
+# harmonic on the graft-owned forearm vertices that carry any hand share (x > 0.005, grown by WRIST_GROW rings; t > WRIST_T0,
+# pair sum > 0.2), every other vertex fixed, the pair's sum kept (WRIST=0 skips). The carried rows were
+# non-monotone along the arm (a vertex 4 mm nearer the elbow with 3.7x the hand share) and folded the inner wrist under a
+# bent hand (G2e's lit speck, reaver_show f24).
+her0 = np.load(os.path.join(os.path.dirname(os.path.abspath(a[0])), "her.npz"))["P"]
+own0 = cKDTree(her0).query(P)[0] > 1e-6
+if int(os.environ.get("WRIST", "1")):
+    import scipy.sparse as sp
+    from scipy.sparse.linalg import spsolve
+    Ad = sp.csr_matrix(C0.A, copy=True); Ad.data[:] = 1
+    for sd in "lr":
+        f = C0.frame(sd); ih, i2 = nmL.index("hand_" + sd), nmL.index("lowerarm_" + sd)
+        su = VG[:, ih] + VG[:, i2]; x = np.where(su > 1e-6, VG[:, ih] / np.maximum(su, 1e-9), 0)
+        hb = x > 0.005
+        for _ in range(int(os.environ.get("WRIST_GROW", "2"))): hb = hb | ((Ad @ hb.astype(float)) > 0)
+        I = np.where(f["side"] & hb & (f["t"] > float(os.environ.get("WRIST_T0", "1.25"))) & own0 & (su > 0.2))[0]
+        if not len(I): continue
+        Bm = np.ones(len(P), bool); Bm[I] = False
+        AII = Ad[I][:, I]; deg = np.asarray(Ad[I].sum(1)).ravel()
+        rhs = Ad[I][:, Bm] @ x[Bm]
+        xi = spsolve(sp.diags(deg) - AII, rhs); dx = np.abs(xi - x[I])
+        x[I] = np.clip(xi, 0, 1)
+        VG[I, ih] = su[I] * x[I]; VG[I, i2] = su[I] * (1 - x[I])
+        print("wrist split", sd, "vertices", len(I), "hand share change mean %.3f max %.3f" % (dx.mean(), dx.max()))
 print("weights: kept rows", int(same.sum()), "interpolated", int((~same).sum()), "source dist mm p95 %.2f max %.2f" % (np.percentile(dist, 95) * 1e3, dist.max() * 1e3))
 # shape
 b = Body.heroine(jiggle=False, head=True, helpers=True)
