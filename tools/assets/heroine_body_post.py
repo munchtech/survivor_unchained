@@ -24,6 +24,7 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   6. heroine_arm_shape --art: her upper arms slimmer on the inner side (girth ~32 -> ~28.5 cm at 25-50%, tapering to
      the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
      records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
+     RETIRED (armor 18 g2b): baked into heroine_built_armroot.blend; runs only with --arm-shape (pre-graft blend).
   6b. (retired, armor 17 N3) arc_fit_post fitted the arcanist's caps and evened its collar on the built gltf (armor 16
      N1); a max judge failed both as cut. heroine_outfits.py now cuts them right: caps ending above her deltoid's bulge,
      CAP_LIFT off her and CAP_THICK of the leather's thickness (THIN_ZONE), and the collar cut on her Head weight made
@@ -97,7 +98,10 @@ def main(a):
         run(os.path.join(HERE, "heroine_neck_shape.py"), "--art", art)
     if "heroine_neck_relief" not in m:
         run(os.path.join(HERE, "heroine_neck_relief.py"), glb, glb)
-    if "heroine_arm_shape" not in m:
+    # (6 heroine_arm_shape retired, armor 18 g2b: its field is baked into the arm-root graft's blend,
+    # heroine_built_armroot.blend, with the pit fairing; see tools/assets/arm_graft/g2b/README.md. Applied here too
+    # it would slim her arms twice. The step's code stays for a build from the pre-graft blend.)
+    if "--arm-shape" in a and "heroine_arm_shape" not in m:
         run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
     # (6b arc_fit_post retired, armor 17 N3: the caps and collar are cut right in heroine_outfits.py itself)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
