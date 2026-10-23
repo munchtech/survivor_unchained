@@ -15,7 +15,7 @@
   ],
   "tuck": "armor_tuck/warden.belt.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.boots",
@@ -31,8 +31,8 @@
    "warden.boots.steel"
   ],
   "tuck": "armor_tuck/warden.boots.bin",
-  "tuck_count": 3374,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 3375,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.bottom",
@@ -48,7 +48,7 @@
   ],
   "tuck": "armor_tuck/warden.bottom.bin",
   "tuck_count": 290,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.bracers",
@@ -64,7 +64,7 @@
   ],
   "tuck": "armor_tuck/warden.bracers.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.greaves",
@@ -81,7 +81,7 @@
   ],
   "tuck": "armor_tuck/warden.greaves.bin",
   "tuck_count": 195,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.pauldrons",
@@ -97,7 +97,7 @@
   ],
   "tuck": "armor_tuck/warden.pauldrons.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.skirt",
@@ -114,7 +114,7 @@
   ],
   "tuck": "armor_tuck/warden.skirt.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "warden.top",
@@ -132,7 +132,7 @@
   ],
   "tuck": "armor_tuck/warden.top.bin",
   "tuck_count": 890,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
@@ -154,7 +154,7 @@
   ],
   "tuck": "armor_tuck/arcanist.boots.bin",
   "tuck_count": 5837,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "arcanist.bottom",
@@ -171,7 +171,7 @@
   ],
   "tuck": "armor_tuck/arcanist.bottom.bin",
   "tuck_count": 33,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "arcanist.gloves",
@@ -186,8 +186,8 @@
    "arcanist.gloves.glovesatin"
   ],
   "tuck": "armor_tuck/arcanist.gloves.bin",
-  "tuck_count": 2309,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 7280,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "arcanist.head",
@@ -203,7 +203,7 @@
   ],
   "tuck": "armor_tuck/arcanist.head.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "arcanist.legwear",
@@ -219,7 +219,7 @@
   ],
   "tuck": "armor_tuck/arcanist.legwear.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "arcanist.top",
@@ -237,8 +237,8 @@
    "arcanist.top.thread"
   ],
   "tuck": "armor_tuck/arcanist.top.bin",
-  "tuck_count": 6013,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 8655,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "under": [
    "plate_gstring_plain"
   ]
@@ -258,7 +258,7 @@
   ],
   "tuck": "armor_tuck/ranger.belt.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "ranger.boots",
@@ -275,7 +275,7 @@
   ],
   "tuck": "armor_tuck/ranger.boots.bin",
   "tuck_count": 5011,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "ranger.bottom",
@@ -293,8 +293,8 @@
    "ranger.bottom.thread"
   ],
   "tuck": "armor_tuck/ranger.bottom.bin",
-  "tuck_count": 2407,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 2406,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "ranger.bracers",
@@ -310,8 +310,8 @@
    "ranger.bracers.iron"
   ],
   "tuck": "armor_tuck/ranger.bracers.bin",
-  "tuck_count": 239,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 299,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "ranger.gloves",
@@ -326,8 +326,8 @@
    "ranger.gloves.thread"
   ],
   "tuck": "armor_tuck/ranger.gloves.bin",
-  "tuck_count": 1870,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 1891,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "ranger.pauldrons",
@@ -345,8 +345,8 @@
    "ranger.pauldrons.thread"
   ],
   "tuck": "armor_tuck/ranger.pauldrons.bin",
-  "tuck_count": 671,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 1581,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "ranger.top",
@@ -364,8 +364,8 @@
    "ranger.top.thread"
   ],
   "tuck": "armor_tuck/ranger.top.bin",
-  "tuck_count": 3488,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 3584,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.belt",
@@ -383,7 +383,7 @@
   ],
   "tuck": "armor_tuck/reaver.belt.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.boots",
@@ -399,8 +399,8 @@
    "reaver.boots.thread"
   ],
   "tuck": "armor_tuck/reaver.boots.bin",
-  "tuck_count": 3321,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 3317,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.bottom",
@@ -417,7 +417,7 @@
   ],
   "tuck": "armor_tuck/reaver.bottom.bin",
   "tuck_count": 319,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.bracers",
@@ -435,8 +435,8 @@
    "reaver.bracers.thread"
   ],
   "tuck": "armor_tuck/reaver.bracers.bin",
-  "tuck_count": 992,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 5517,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.cloak",
@@ -450,8 +450,8 @@
    "reaver.cloak.fur"
   ],
   "tuck": "armor_tuck/reaver.cloak.bin",
-  "tuck_count": 37,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 1,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.collar",
@@ -467,7 +467,7 @@
   ],
   "tuck": "armor_tuck/reaver.collar.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.ink",
@@ -481,8 +481,8 @@
    "reaver.ink.ink"
   ],
   "tuck": "armor_tuck/reaver.ink.bin",
-  "tuck_count": 179,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 603,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.skirt",
@@ -498,7 +498,7 @@
   ],
   "tuck": "armor_tuck/reaver.skirt.bin",
   "tuck_count": 0,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
  {
   "id": "reaver.top",
@@ -514,7 +514,7 @@
    "reaver.top.thread"
   ],
   "tuck": "armor_tuck/reaver.top.bin",
-  "tuck_count": 743,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163"
+  "tuck_count": 1109,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  }
 ]

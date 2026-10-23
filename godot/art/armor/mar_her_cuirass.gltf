@@ -6,15 +6,14 @@
    "armor_piece": "mar_her_cuirass",
    "slot": "top",
    "tier": 2,
-   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+   "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
    "source": "godot/art/armor/src/mar_her_cuirass/piece.json",
    "lods": {
     "gameplay": 0.23,
     "shadow": 0.09000000000000001,
     "small": 0.035,
     "inset": 0.0008
-   },
-   "data": "f8a3f444dc3a225f8df6745885dfbb76"
+   }
   }
  },
  "scene": 0,
@@ -2085,12 +2084,12 @@
    "componentType": 5126,
    "count": 813,
    "max": [
-    0.19628849625587463,
+    0.1924958974123001,
     1.5450345277786255,
     0.1390695720911026
    ],
    "min": [
-    -0.1927865892648697,
+    -0.1886623650789261,
     1.086792230606079,
     -0.15024125576019287
    ],
@@ -2150,12 +2149,12 @@
    "componentType": 5126,
    "count": 3306,
    "max": [
-    0.20298027992248535,
+    0.1952757090330124,
     1.5730904340744019,
     0.18362456560134888
    ],
    "min": [
-    -0.20007534325122833,
+    -0.19162534177303314,
     1.0805655717849731,
     -0.1533668041229248
    ],
@@ -2207,15 +2206,15 @@
   {
    "bufferView": 17,
    "componentType": 5126,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC3",
    "min": [
-    -0.20007534325122833,
+    -0.19080911576747894,
     1.0806044340133667,
     -0.1533668041229248
    ],
    "max": [
-    0.20298027992248535,
+    0.1948947012424469,
     1.5730904340744019,
     0.18183383345603943
    ]
@@ -2223,7 +2222,7 @@
   {
    "bufferView": 18,
    "componentType": 5126,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC3",
    "min": [
     -0.9975894093513489,
@@ -2239,52 +2238,52 @@
   {
    "bufferView": 19,
    "componentType": 5126,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC2"
   },
   {
    "bufferView": 20,
    "componentType": 5126,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC2"
   },
   {
    "bufferView": 21,
    "componentType": 5123,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC4",
    "normalized": true
   },
   {
    "bufferView": 22,
    "componentType": 5121,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC4"
   },
   {
    "bufferView": 23,
    "componentType": 5126,
-   "count": 1400,
+   "count": 1402,
    "type": "VEC4"
   },
   {
    "bufferView": 24,
    "componentType": 5123,
-   "count": 3459,
+   "count": 3465,
    "type": "SCALAR"
   },
   {
    "bufferView": 25,
    "componentType": 5126,
-   "count": 283,
+   "count": 282,
    "type": "VEC3",
    "min": [
-    -0.2007344663143158,
+    -0.19158150255680084,
     1.0813120603561401,
     -0.14975528419017792
    ],
    "max": [
-    0.20307207107543945,
+    0.194819837808609,
     1.5704222917556763,
     0.1810598224401474
    ]
@@ -2292,7 +2291,7 @@
   {
    "bufferView": 26,
    "componentType": 5126,
-   "count": 283,
+   "count": 282,
    "type": "VEC3",
    "min": [
     -0.9974237680435181,
@@ -2308,13 +2307,13 @@
   {
    "bufferView": 27,
    "componentType": 5123,
-   "count": 283,
+   "count": 282,
    "type": "VEC4"
   },
   {
    "bufferView": 28,
    "componentType": 5126,
-   "count": 283,
+   "count": 282,
    "type": "VEC4"
   },
   {
@@ -2429,78 +2428,78 @@
   {
    "buffer": 0,
    "byteOffset": 309492,
-   "byteLength": 16800,
+   "byteLength": 16824,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 326292,
-   "byteLength": 16800,
+   "byteOffset": 326316,
+   "byteLength": 16824,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 343092,
-   "byteLength": 11200,
+   "byteOffset": 343140,
+   "byteLength": 11216,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 354292,
-   "byteLength": 11200,
+   "byteOffset": 354356,
+   "byteLength": 11216,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 365492,
-   "byteLength": 11200,
+   "byteOffset": 365572,
+   "byteLength": 11216,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 376692,
-   "byteLength": 5600,
+   "byteOffset": 376788,
+   "byteLength": 5608,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 382292,
-   "byteLength": 22400,
+   "byteOffset": 382396,
+   "byteLength": 22432,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 404692,
-   "byteLength": 6918,
+   "byteOffset": 404828,
+   "byteLength": 6930,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 411612,
-   "byteLength": 3396,
+   "byteOffset": 411760,
+   "byteLength": 3384,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 415008,
-   "byteLength": 3396,
+   "byteOffset": 415144,
+   "byteLength": 3384,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 418404,
-   "byteLength": 2264,
+   "byteOffset": 418528,
+   "byteLength": 2256,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 420668,
-   "byteLength": 4528,
+   "byteOffset": 420784,
+   "byteLength": 4512,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 425196,
+   "byteOffset": 425296,
    "byteLength": 2142,
    "target": 34963
   }
@@ -2513,7 +2512,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 427338,
+   "byteLength": 427438,
    "uri": "mar_her_cuirass.bin"
   }
  ]

@@ -6,7 +6,7 @@
    "armor_piece": "mar_her_bracers",
    "slot": "bracers",
    "tier": 2,
-   "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+   "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
    "source": "godot/art/armor/src/mar_her_bracers/piece.json",
    "lods": {
     "gameplay": 0.23,
@@ -1818,11 +1818,23 @@
    }
   },
   {
+   "name": "mar_her_bracers.bracers.steel",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 9,
+      "NORMAL": 10,
+      "TEXCOORD_0": 11,
+      "TEXCOORD_1": 12,
+      "COLOR_0": 13,
+      "JOINTS_0": 14,
+      "WEIGHTS_0": 15
+     },
+     "indices": 16,
+     "material": 1
+    }
+   ],
    "extras": {
-    "targetNames": [
-     "elbow_point_l",
-     "elbow_point_r"
-    ],
     "outfit": "mar_her_bracers",
     "slot": "bracers",
     "material": "steel",
@@ -1838,53 +1850,23 @@
      ]
     ],
     "tier": 2
-   },
-   "name": "mar_her_bracers.bracers.steel",
-   "primitives": [
-    {
-     "attributes": {
-      "POSITION": 9,
-      "NORMAL": 10,
-      "TEXCOORD_0": 11,
-      "TEXCOORD_1": 12,
-      "COLOR_0": 13,
-      "JOINTS_0": 14,
-      "WEIGHTS_0": 15
-     },
-     "indices": 16,
-     "material": 1,
-     "targets": [
-      {
-       "POSITION": 17,
-       "NORMAL": 18
-      },
-      {
-       "POSITION": 19,
-       "NORMAL": 20
-      }
-     ]
-    }
-   ],
-   "weights": [
-    0,
-    0
-   ]
+   }
   },
   {
    "name": "mar_her_bracers.lod1.steel",
    "primitives": [
     {
      "attributes": {
-      "POSITION": 21,
-      "NORMAL": 22,
-      "TEXCOORD_0": 23,
-      "TEXCOORD_1": 24,
-      "COLOR_0": 25,
-      "JOINTS_0": 26,
-      "WEIGHTS_0": 27
+      "POSITION": 17,
+      "NORMAL": 18,
+      "TEXCOORD_0": 19,
+      "TEXCOORD_1": 20,
+      "COLOR_0": 21,
+      "JOINTS_0": 22,
+      "WEIGHTS_0": 23
      },
      "material": 1,
-     "indices": 28
+     "indices": 24
     }
    ],
    "extras": {
@@ -1900,13 +1882,13 @@
    "primitives": [
     {
      "attributes": {
-      "POSITION": 29,
-      "NORMAL": 30,
-      "JOINTS_0": 31,
-      "WEIGHTS_0": 32
+      "POSITION": 25,
+      "NORMAL": 26,
+      "JOINTS_0": 27,
+      "WEIGHTS_0": 28
      },
      "material": 2,
-     "indices": 33
+     "indices": 29
     }
    ],
    "extras": {
@@ -2194,87 +2176,7 @@
    "type": "SCALAR"
   },
   {
-   "componentType": 5126,
-   "count": 1039,
-   "max": [
-    0,
-    0,
-    0
-   ],
-   "min": [
-    -2.9802322387695312e-08,
-    0,
-    -7.450580596923828e-09
-   ],
-   "sparse": {
-    "count": 515,
-    "indices": {
-     "bufferView": 17,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 18
-    }
-   },
-   "type": "VEC3"
-  },
-  {
-   "componentType": 5126,
-   "count": 1039,
-   "sparse": {
-    "count": 279,
-    "indices": {
-     "bufferView": 19,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 20
-    }
-   },
-   "type": "VEC3"
-  },
-  {
-   "componentType": 5126,
-   "count": 1039,
-   "max": [
-    2.384185791015625e-07,
-    0,
-    0
-   ],
-   "min": [
-    0,
-    -1.1920928955078125e-07,
-    -9.685754776000977e-08
-   ],
-   "sparse": {
-    "count": 524,
-    "indices": {
-     "bufferView": 21,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 22
-    }
-   },
-   "type": "VEC3"
-  },
-  {
-   "componentType": 5126,
-   "count": 1039,
-   "sparse": {
-    "count": 342,
-    "indices": {
-     "bufferView": 23,
-     "componentType": 5123
-    },
-    "values": {
-     "bufferView": 24
-    }
-   },
-   "type": "VEC3"
-  },
-  {
-   "bufferView": 25,
+   "bufferView": 17,
    "componentType": 5126,
    "count": 743,
    "type": "VEC3",
@@ -2290,7 +2192,7 @@
    ]
   },
   {
-   "bufferView": 26,
+   "bufferView": 18,
    "componentType": 5126,
    "count": 743,
    "type": "VEC3",
@@ -2306,44 +2208,44 @@
    ]
   },
   {
-   "bufferView": 27,
+   "bufferView": 19,
    "componentType": 5126,
    "count": 743,
    "type": "VEC2"
   },
   {
-   "bufferView": 28,
+   "bufferView": 20,
    "componentType": 5126,
    "count": 743,
    "type": "VEC2"
   },
   {
-   "bufferView": 29,
+   "bufferView": 21,
    "componentType": 5123,
    "count": 743,
    "type": "VEC4",
    "normalized": true
   },
   {
-   "bufferView": 30,
+   "bufferView": 22,
    "componentType": 5121,
    "count": 743,
    "type": "VEC4"
   },
   {
-   "bufferView": 31,
+   "bufferView": 23,
    "componentType": 5126,
    "count": 743,
    "type": "VEC4"
   },
   {
-   "bufferView": 32,
+   "bufferView": 24,
    "componentType": 5123,
    "count": 1296,
    "type": "SCALAR"
   },
   {
-   "bufferView": 33,
+   "bufferView": 25,
    "componentType": 5126,
    "count": 67,
    "type": "VEC3",
@@ -2359,7 +2261,7 @@
    ]
   },
   {
-   "bufferView": 34,
+   "bufferView": 26,
    "componentType": 5126,
    "count": 67,
    "type": "VEC3",
@@ -2375,19 +2277,19 @@
    ]
   },
   {
-   "bufferView": 35,
+   "bufferView": 27,
    "componentType": 5123,
    "count": 67,
    "type": "VEC4"
   },
   {
-   "bufferView": 36,
+   "bufferView": 28,
    "componentType": 5126,
    "count": 67,
    "type": "VEC4"
   },
   {
-   "bufferView": 37,
+   "bufferView": 29,
    "componentType": 5123,
    "count": 282,
    "type": "SCALAR"
@@ -2497,119 +2399,79 @@
   },
   {
    "buffer": 0,
-   "byteLength": 1030,
-   "byteOffset": 106964
-  },
-  {
-   "buffer": 0,
-   "byteLength": 6180,
-   "byteOffset": 107996
-  },
-  {
-   "buffer": 0,
-   "byteLength": 558,
-   "byteOffset": 114176
-  },
-  {
-   "buffer": 0,
-   "byteLength": 3348,
-   "byteOffset": 114736
-  },
-  {
-   "buffer": 0,
-   "byteLength": 1048,
-   "byteOffset": 118084
-  },
-  {
-   "buffer": 0,
-   "byteLength": 6288,
-   "byteOffset": 119132
-  },
-  {
-   "buffer": 0,
-   "byteLength": 684,
-   "byteOffset": 125420
-  },
-  {
-   "buffer": 0,
-   "byteLength": 4104,
-   "byteOffset": 126104
-  },
-  {
-   "buffer": 0,
-   "byteOffset": 130208,
+   "byteOffset": 106964,
    "byteLength": 8916,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 139124,
+   "byteOffset": 115880,
    "byteLength": 8916,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 148040,
+   "byteOffset": 124796,
    "byteLength": 5944,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 153984,
+   "byteOffset": 130740,
    "byteLength": 5944,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 159928,
+   "byteOffset": 136684,
    "byteLength": 5944,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 165872,
+   "byteOffset": 142628,
    "byteLength": 2972,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 168844,
+   "byteOffset": 145600,
    "byteLength": 11888,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 180732,
+   "byteOffset": 157488,
    "byteLength": 2592,
    "target": 34963
   },
   {
    "buffer": 0,
-   "byteOffset": 183324,
+   "byteOffset": 160080,
    "byteLength": 804,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 184128,
+   "byteOffset": 160884,
    "byteLength": 804,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 184932,
+   "byteOffset": 161688,
    "byteLength": 536,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 185468,
+   "byteOffset": 162224,
    "byteLength": 1072,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteOffset": 186540,
+   "byteOffset": 163296,
    "byteLength": 564,
    "target": 34963
   }
@@ -2622,7 +2484,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 187104,
+   "byteLength": 163860,
    "uri": "mar_her_bracers.bin"
   }
  ]

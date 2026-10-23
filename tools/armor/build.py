@@ -18,8 +18,8 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 BLENDER = os.environ.get("BLENDER", r"C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe")
 # (the outfit build's source scene, copied out of the 181eef02 session's Temp scratchpad (outfits\hs) on 18 Oct;
-# its 10 images are all packed, so it resolves wherever it lies. docs/handoff/outfits.md names the copy. SRC overrides.)
-SRC = os.environ.get("SRC", r"C:\Users\munch\Desktop\survivorsunchained_inputs\armor_src\heroine_built.blend")
+# its 10 images are all packed, so it resolves wherever it lies. docs/handoff/outfits.md names the copy. SRC overrides. Armor 18 g3, 22 Oct: the arm-root graft blend, the body now installed.)
+SRC = os.environ.get("SRC", r"C:\Users\munch\Desktop\survivorsunchained_inputs\armor_src\heroine_built_armroot.blend")
 GUARD = ["godot/art/outfit", "godot/art/people/heroine.glb", "godot/art/people/heroine_outfit_warden.gltf",
          "godot/art/people/heroine_outfit_arcanist.gltf", "godot/art/people/heroine_outfit_ranger.gltf",
          "godot/art/people/heroine_outfit_reaver.gltf", "godot/art/people/outfit_tex", "tools/assets/heroine_neck_graft.npz"]

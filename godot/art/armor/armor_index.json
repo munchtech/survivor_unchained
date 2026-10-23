@@ -12,8 +12,8 @@
    "mar_her_bracers.bracers.steel"
   ],
   "tuck": "armor_tuck/mar_her_bracers.bin",
-  "tuck_count": 166,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 93,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
@@ -36,8 +36,8 @@
    "mar_her_cuirass.top.steel"
   ],
   "tuck": "armor_tuck/mar_her_cuirass.bin",
-  "tuck_count": 517,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 548,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
@@ -60,8 +60,8 @@
    "mar_her_pauldrons.pauldrons.steel"
   ],
   "tuck": "armor_tuck/mar_her_pauldrons.bin",
-  "tuck_count": 3,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 0,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
@@ -84,8 +84,8 @@
    "plate_cuirass_plain.top.steel"
   ],
   "tuck": "armor_tuck/plate_cuirass_plain.bin",
-  "tuck_count": 1803,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 1809,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 1.0,
    "squash": 0
@@ -109,8 +109,8 @@
    "plate_gstring_plain.bottom.steel"
   ],
   "tuck": "armor_tuck/plate_gstring_plain.bin",
-  "tuck_count": 294,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 291,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "file": "res://art/armor/plate_gstring_plain.gltf",
   "tier": 1
  },
@@ -127,8 +127,8 @@
    "plate_pauldrons_plain.pauldrons.steel"
   ],
   "tuck": "armor_tuck/plate_pauldrons_plain.bin",
-  "tuck_count": 599,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 1775,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "file": "res://art/armor/plate_pauldrons_plain.gltf",
   "tier": 1,
   "cover_grow": [
@@ -150,8 +150,8 @@
    "plate_pauldrons_warden.pauldrons.steel"
   ],
   "tuck": "armor_tuck/plate_pauldrons_warden.bin",
-  "tuck_count": 599,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 1775,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "file": "res://art/armor/plate_pauldrons_warden.gltf",
   "tier": 1,
   "cover_grow": [
@@ -175,8 +175,8 @@
    "plate_top_etched.top.steel"
   ],
   "tuck": "armor_tuck/plate_top_etched.bin",
-  "tuck_count": 869,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 862,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
@@ -200,8 +200,8 @@
    "plate_top_gilded.top.steel"
   ],
   "tuck": "armor_tuck/plate_top_gilded.bin",
-  "tuck_count": 869,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 862,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
@@ -223,8 +223,8 @@
    "plate_top_plain.top.steel"
   ],
   "tuck": "armor_tuck/plate_top_plain.bin",
-  "tuck_count": 869,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
+  "tuck_count": 862,
+  "body_hash": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b",
   "hold": {
    "amount": 0.55,
    "squash": 0
