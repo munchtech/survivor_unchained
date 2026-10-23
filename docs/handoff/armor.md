@@ -2,7 +2,8 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
-## Paused here (Armor 18, 22 Oct, shoulder-only session); next: the owner's call on the ARM ROOT
+## Paused here (Armor 18, 22 Oct, shoulder-only session); the arm root became a BODY item
+**Update 23 Oct:** the owner approved the arm-root source fix and it ran on armor-7. Its state and next steps are in `docs/handoff/body.md` ("Arm root (Body 1)"). BJ1 passed the arm at 1:1; an owner-angle reshoot is still due. The armor items below still stand: the R1/R2 clips are unjudged, and nothing is merged.
 Worktree `.claude/worktrees/armor-7`, branch armor-7 (junction worktree). Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\543ece4a-9bcd-4cea-b6df-915822bec5eb\scratchpad\armor18` (texts backed up to `survivorsunchained_inputs\scratch_543ece4a\armor18`): cj2.md and rj1.md (judge briefs), r1/r2/d1 briefs and their scripts (r1\araise.py torso A per frame; r2\hl.py, axe.py, wpn.py; d1\m1-m4.py mesh, weights, collapse), run.sh with list1-3.txt (shoots), sheet2.py.
 - **CJ2 (max) on C2: FAIL, far** (`godot/.shots/armor17/c2/verdict_cj2.md`). Correctives can't make the shape.
 - **R1 (d2eb0c5c, a34f735f): reaver_show, catch_breath and flask_drink restaged to A <= 90** (117/117/99 -> 83/89/88). RJ1 (max) passed the shoulder; **the owner and main overturned it on reaver_show's peak.** These crops in `owner_frames_22oct\` are all FAIL; calibrate every judge on them: reaver_show_shoulder_top_facets_r1.png, reaver_show_armpit_notch_r1.png, reaver_show_shoulder_r1_1to1.png, reaver_show_upper_arm.png.
