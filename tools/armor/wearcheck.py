@@ -50,8 +50,9 @@ import skin  # noqa: E402
 CLIPS = ("idle_warden", "idle_warden_town", "run_warden", "run_warden_town", "sword_heavy", "sword_fore", "idle_reaver",
          "run_reaver_axes", "axe_heavy", "idle_arcanist", "run_arcanist_wand", "cast_flick", "idle_stalker", "run_stalker",
          "crossbow_shoot", "daggers_heavy")
-INDEXES = (os.path.join(ROOT, "godot", "art", "people", "armor_index.json"),
-           os.path.join(ROOT, "godot", "art", "armor", "armor_index.json"))
+# (WC_ART=<dir holding people/ and armor/>: another revision's art, e.g. a baseline from git; set ANIM_PEOPLE to its people/)
+_ART = os.environ.get("WC_ART") or os.path.join(ROOT, "godot", "art")
+INDEXES = (os.path.join(_ART, "people", "armor_index.json"), os.path.join(_ART, "armor", "armor_index.json"))
 SKIP_SLOTS = ("ink", "cloak")
 REACH = 0.025      # rest footprint, m
 REACH_POSED = 0.030
@@ -374,6 +375,15 @@ def main(argv):
         pc[r["id"]] = {"samples": smp, "near": ish[near], "skin_mm": dist * 1000, "T": T,
                        "kd": cKDTree(P0[T].mean(1)), "kdv": cKDTree(P0[v])}
 
+    # (each sample's area in GRID^2 units, g4: her skin is tested at every vertex, so its counts grew with her mesh's
+    # density (the arm-root graft: 2.5 v/cm2 -> 5.9 on her arms) though no more of her came through; the area columns
+    # (aOUT>2 etc.: a skin vertex its third of its triangles' area, a voxel-thinned sample at least one voxel) do not)
+    _tri = body.T
+    _ta = np.linalg.norm(np.cross(P0[_tri[:, 1]] - P0[_tri[:, 0]], P0[_tri[:, 2]] - P0[_tri[:, 0]]), axis=1) / 2
+    VA = np.zeros(len(P0))
+    np.add.at(VA, _tri.ravel(), np.repeat(_ta / 3, 3))
+    VA /= grid * grid
+
     if gt:
         sp = SkinPts(P0[isk], N0[isk])
         foot = {r["id"]: footprint_records(r) for r in rows}
@@ -646,6 +656,10 @@ def main(argv):
              "rest_gap_min_mm": round(x["rest_min_mm"], 2), "rest_gap_median_mm": round(x["rest_med_mm"], 2),
              "per_clip": {c: [round(-v[0] * 1000, 1), int(v[1].sum())] for c, v in x["per_clip"].items()},
              "laid": x.get("laid"), "rigid_inner": bool(byid.get(A, {}).get("rigid")), "rigid_lay": RIGID_LAY.get((A, B)), "reversed": x["reversed"], "lost_share": round(x["lost"] / max(x["seen"], 1), 4)}
+        w_ = VA[x["pts"]] if A == "skin" else np.maximum(VA[x["pts"]], 1.0)
+        e["area_footprint"] = round(float(w_.sum()), 1)
+        e["area_n_over_2"] = round(float(w_[m < -0.002].sum()), 1)
+        e["area_out_n_over_2"] = round(float(w_[mo < -0.002].sum()), 1)
         if "raw_min" in x:
             e["confirm"] = True
             e["raw_worst_mm"] = round(float(-x["raw_min"][np.isfinite(x["raw_min"])].min() * 1000), 2)
@@ -681,6 +695,12 @@ def main(argv):
                      f"{e.get('B_skin_mm_median', 0):5.1f} {e['B_shell_mm_median']:4.1f} {e['out_worst_mm'] or 0:5.1f} {e['out_n_over_2']:5d} "
                      f"{e['rest_out_n_over_2']:6d} {e['worst_clip']}@{e['worst_frame']} {e['worst_bone']}"
                      f"{' REVERSED' if e['reversed'] else ''}{' RIGID-INNER' if e.get('rigid_lay') else ''}\n")
+    with open(os.path.join(out_dir, "table_area.txt"), "w") as fh:
+        fh.write(f"{'A':22} {'B':24} {'foot':>7} {'>2':>7} {'OUT>2':>7} {'afoot':>8} {'a>2':>8} {'aOUT>2':>8}\n")
+        for e in sorted(out, key=lambda e: -e["area_out_n_over_2"]):
+            fh.write(f"{e['A']:22} {e['B']:24} {e['footprint']:7d} {e['n_over_2']:7d} {e['out_n_over_2']:7d} "
+                     f"{e['area_footprint']:8.0f} {e['area_n_over_2']:8.0f} {e['area_out_n_over_2']:8.0f}\n")
+        fh.write(f"TOTAL OUT>2 {sum(e['out_n_over_2'] for e in out)}  aOUT>2 {sum(e['area_out_n_over_2'] for e in out):.0f}\n")
     print(f"wearcheck: {len(out)} tests in {took:.0f} s -> {out_dir}")
 
 

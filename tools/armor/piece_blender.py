@@ -2171,6 +2171,14 @@ def build_mesh():
             m_ = wt.mean(0)
             k_ = [i for i in np.argsort(-m_)[:4] if m_[i] > 1e-4]
             row = [(BONES[i], float(m_[i] / sum(m_[j] for j in k_))) for i in k_]
+            # (params.rigid_drop [bone prefix, ..] (body1 g4): bones left out of every rigid part's blend, the rest
+            # renormalized. The mean of the bracers' points took 8-10% hand from her wrist under their cuff, so every
+            # wrist bend swung the steel tube through her forearm: her skin through it by 2 mm over 55% of its
+            # footprint in the 22-clip wearcheck; without the hand, about 8%)
+            drop_ = tuple(PRM.get("rigid_drop") or ())
+            if drop_:
+                k_ = [i for i in np.argsort(-m_) if m_[i] > 1e-4 and not BONES[i].startswith(drop_)][:4]
+                row = [(BONES[i], float(m_[i] / sum(m_[j] for j in k_))) for i in k_]
         mats = [m.get("key") if m else None for m in o.data.materials]
         used = sorted({p.material_index for p in o.data.polygons})
         for mi in used:
@@ -2905,6 +2913,27 @@ for o in made:
         PARTS_OF[o.name] = rigid_parts(o, names)
         n_parts += PARTS_OF[o.name]
 stamp("helpers split; %d rigid parts each on one blend" % n_parts)
+# (params.rigid_drop, after the helpers' split too: the split eases her wrist's weights onto the hand, and rigid_again's
+# mean put it back on the bracers (9%); each `_rigid` source's points lose those bones, the rest renormalized)
+DROP_ = tuple(PRM.get("rigid_drop") or ())
+if DROP_:
+    nd_ = 0
+    for o in made:
+        if o.type != "MESH" or not o.get("source_part", "").endswith("_rigid"):
+            continue
+        gname_ = {g.index: g.name for g in o.vertex_groups}
+        for v in o.data.vertices:
+            ws_ = [(gname_[g.group], g.weight) for g in v.groups if gname_[g.group] in names]
+            keep_ = [(n_, w_) for n_, w_ in ws_ if not n_.startswith(DROP_)]
+            t_ = sum(w_ for _, w_ in keep_)
+            if len(keep_) == len(ws_) or t_ <= 1e-6:
+                continue
+            for n_, _ in ws_:
+                o.vertex_groups[n_].remove([v.index])
+            for n_, w_ in keep_:
+                o.vertex_groups[n_].add([v.index], w_ / t_, "REPLACE")
+            nd_ += 1
+    stamp("rigid_drop %s: %d points of the rigid parts reweighted" % (list(DROP_), nd_))
 # (armor 10: a style's rigid plates (`blend_group` on each part: a plate, its rolled edge, its rivets) back on ONE common
 # blend after the helpers' split, the mean of all their points', so a plate and what is on it never part)
 BLEND_GROUPS = {}

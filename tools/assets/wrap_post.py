@@ -12,7 +12,7 @@ tuck of her skin from the wrap's own shape:
   - records as armor_tuck_write writes them (her bind point in glTF x 1e5, rounded; f32 tuck), into
     armor_tuck/reaver.top.bin.
 
-    python tools/assets/wrap_post.py <build dir> [art dir, default godot/art/people] [--margin 0.0015] [--dry]
+    python tools/assets/wrap_post.py <build dir> [art dir, default godot/art/people] [--margin 0.0015] [--dry] [--tuck-only]
 
 <build dir> holds heroine_outfit_reaver.gltf (and .bin) and wrap_reaver.strap.npz from heroine_outfits.py. The new
 top data replaces the old top's and the installed .bin is written compactly (compact(): only the accessors and buffer
@@ -257,8 +257,11 @@ def main(a):
     keys, vals = tuck(art, os.path.join(build, "wrap_reaver.strap.npz"), margin)
     if "--dry" in a:
         return
-    I = transplant(os.path.join(build, "heroine_outfit_reaver.gltf"), os.path.join(art, "heroine_outfit_reaver.gltf"))
-    I.save()
+    # (--tuck-only (body1 g4): the installed top already is the build's (a full outfit build installed whole, its .gltf
+    # with sparse morph accessors the transplant can't take): only its tuck is rewritten, on the installed skin)
+    if "--tuck-only" not in a:
+        I = transplant(os.path.join(build, "heroine_outfit_reaver.gltf"), os.path.join(art, "heroine_outfit_reaver.gltf"))
+        I.save()
     write_tuck(os.path.join(art, "armor_tuck", "reaver.top.bin"), keys, vals)
     # (r3: the index's tuck_count, as tuck_fix.py keeps it)
     ip = os.path.join(art, "armor_index.json")

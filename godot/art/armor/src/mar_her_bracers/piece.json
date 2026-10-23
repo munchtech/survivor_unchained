@@ -4,7 +4,10 @@
  "slot": "bracers",
  "style": "mesh",
  "params": {
-  "file": "mar_her_bracers.glb"
+  "file": "mar_her_bracers.glb",
+  "rigid_drop": [
+   "hand_"
+  ]
  },
  "material": "steel",
  "tint": null,
