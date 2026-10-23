@@ -29,4 +29,42 @@ Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in
 
 **Baseline wearcheck** (22 clips, today's art, correctives on): `armor18\wc_on\table.txt` (off: `wc_off`). The sum of OUT>2 counts is 48417 on and 47537 off. The C2 correctives made the plate pauldrons worse at flask_drink (skin under plate_pauldrons 29-37 to 155-173).
 
-**State:** stage 1 (graft fit study) starting.
+**State (Armor 18, 22 Oct night).** The pipeline rebuilds from the ORIGINAL blend:
+`bash tools/assets/arm_graft/g2c/run.sh <work> <g2/g1d.npz> <g2/VG_v1.npy> <people dir> [tag]`. Its README is `tools/assets/arm_graft/g2c/README.md`; read the "g2d additions" section. Inputs are in the armor18 scratch `g2\`, backed up to `survivorsunchained_inputs\scratch_543ece4armor18\g2`. Output: `survivorsunchained_inputsrmor_src\heroine_built_armroot.blend`.
+
+- **G1** (2db153b2): grafted the MakeHuman quad arm from Marionette's base. The fit p95 is under 1 mm. Both arms are done separately; her two sides differ.
+- **G2a** (fc7d26b0): built the measuring harness `arm_graft/g2a/meas.py` and the proxy.
+- **G2b** (aa04bb19):
+  - baked the arm_shape field and the faired pit into the blend;
+  - wrote the pit and cap weights;
+  - retired body_post step 6. `heroine_arm_shape` now runs only with `--arm-shape`. **The source blend must switch to the armroot blend when this merges.**
+- **G2c** (7be25ef3): extended the graft to the wrist, as one pipeline.
+- **G2d** (20c1c510): graded the wrist, faired the shoulder top.
+
+Real export (`heroine_outfits --body --only warden`, no post steps), right / left:
+
+| Measure | Now | Before the round |
+|---|---|---|
+| Pit crease at rest | 33 / 34 deg | 51 / 45 at G1 |
+| Pit edges past 30 deg at A82 | 0 / 3 | |
+| flask_drink pit crease | 44 / 63 | 129 at G1 |
+| Upper-arm sections at A82 (t .15 / .30 / .5) | .79 / .71 / .88 and .81 / .73 / .93 | |
+| Deltoid chord | 3.2 / 2.8 px | D1: 10.8 px / 22 deg |
+| Bicep chord | 4.1 / 3.1 px | |
+| Forearm chord | 4.6-4.7 px | 9-25 |
+| Corners | 1-4 deg | |
+| Elbow ring step | 1.21 / 1.15x | |
+| Wrist ring step | 1.49 / 1.59x | |
+
+Small residues, numbers only, NOT yet seen at 1:1. The judge decides whether they show:
+- the shoulder-top junction turns -14/+14 right and -22/+23 left (deg/cm);
+- the shoulder-top chord is 4.2 / 4.5 px;
+- 12% / 10% of inner-elbow faces lose more than half their area at a 112 deg bend.
+
+**Next:**
+1. G2e: re-lay the arm patch's UVs and re-bake the skin. The patch now carries per-face projections from about 100 old islands, with about 12.7 m of seams. The tattoo is an ink piece the build cuts, so it regenerates.
+2. G3: the chain from the armroot blend: NAPE=0 full build, then body_post (the correctives rebuild there; step 6 is off), then restore the neck graft npz, then build.py --all, cover.py, heroine_lod.py and the reimport.
+3. Measure: wearcheck against the baseline, fistfit, neck graft indices.
+4. ONE max judge on the API (the owner, 22 Oct), whole-frame gate, using main's frame list. Include left-arm-raised frames.
+
+Cost so far this round: D1 100k, G1 212k, G2a 183k, G2b 114k, G2c 170k, G2d 145k.
