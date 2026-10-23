@@ -166,6 +166,12 @@ def m(b, tag="", verbose=True, curv_print=False):
                 r["curv"] = curvature(sl["chain"]) if sl else None; r["curv_chain"] = sl
                 r["A82_P"] = Pw
                 r["top"] = outline_top(b, Pw, G, s, mir, show=getattr(b, "_show", None) and b._show % s)
+                t_ = r["top"]
+                if t_ and "wv" in t_:
+                    # g2c: the window's end crosses onto the arm's front (phi > 65 past t 0.1): the top outline ends there
+                    tt, pp = info["t"][b.rep[t_["wv"]]], np.abs(info["phi"][b.rep[t_["wv"]]])
+                    cut = np.nonzero((tt > 0.1) & (pp > 65))[0]; k = cut[0] if len(cut) else len(tt)
+                    t_["turns_top"] = list(t_["turns"][:k]); t_["min_top"] = float(np.min(t_["turns"][:k])) if k else 0.0
             if pn == "idle":
                 r["idle_P"] = Pw
         out[s] = r
@@ -179,6 +185,8 @@ def m(b, tag="", verbose=True, curv_print=False):
             t_ = r["top"]
             if t_:
                 lines.append(f"      top outline {t_['len_cm']:.1f}cm total {t_['total']:.0f}d min {t_['min']:.1f} d/cm, flat {t_['flat']:.0%}, longest flat run {t_['flat_run']}cm, concave {t_['conc']:.0%}: " + " ".join(f"{x:.0f}" for x in t_["turns"]))
+                if "turns_top" in t_:
+                    lines.append(f"      top outline on the shoulder (to phi 65): min {t_['min_top']:.1f} d/cm, {len(t_['turns_top'])} of {len(t_['turns'])} samples")
                 lines.append("        at t,phi " + " ".join(f"{info['t'][b.rep[v]]:.2f},{info['phi'][b.rep[v]]:.0f}" for v in t_["wv"]))
             if curv_print and c:
                 lines.append("      turns/cm " + " ".join(f"{x:.0f}" for x in c["turns"]))

@@ -68,13 +68,17 @@ for si,side in enumerate(sides):
         for k in range(len(p)):
             key=(min(w[k],w[(k+1)%len(p)]),max(w[k],w[(k+1)%len(p)]))
             if any(side_of[j]==si for j in ed[key]): he.append((p[(k+1)%len(p)],p[k]))
-    nxt={a:b for a,b in he}
+    # traced on welded ids (g2c: her wrist ring has split vertices), each loop vertex the copy its kept face uses
+    repv={}
+    for a,b_ in he: repv.setdefault(wid[a],a); repv.setdefault(wid[b_],b_)
+    nxt={wid[a]:wid[b_] for a,b_ in he}
     loopsR=[]; seen=set()
-    for a,_ in he:
+    for a0,_ in he:
+        a=wid[a0]
         if a in seen: continue
         lp=[a]; seen.add(a); c=nxt.get(a)
         while c is not None and c!=a and c not in seen: lp.append(c); seen.add(c); c=nxt.get(c)
-        loopsR.append(lp)
+        loopsR.append([repv[x] for x in lp])
     print(side,"ring loops",[len(l) for l in loopsR])
     for l in loopsR: ringverts.update(l)
     X=f[f"{side}_Vf"].copy(); Fq=f[f"{side}_Fs"]
