@@ -172,9 +172,11 @@ def reweight(P, W, names, report=None, Pall=None):
         ref[an.index("upperarm_twist_01_" + s)] = 0.4
         ap[A_old <= 1e-3] = ref
         tgt[:, arm] = ap * a_t[k, None]
-        tp = np.where(T_old[:, None] > 1e-3, Wk[:, torso] / np.maximum(T_old[:, None], 1e-12), 0)
-        tp[T_old <= 1e-3, list(np.nonzero(torso)[0]).index(I["spine_03"])] = 1.0
-        tgt[:, torso] = tp * t_t[k, None]
+        # the torso's: her own bones' weights kept (cut back alike where there is less to share), what's added
+        # going to spine_03, so her neck and head (the graft's) gain none here (a head turn would drag her shoulder)
+        tw = Wk[:, torso] * np.minimum(1.0, t_t[k] / np.maximum(T_old, 1e-12))[:, None]
+        tw[:, list(np.nonzero(torso)[0]).index(I["spine_03"])] += t_t[k] - tw.sum(1)
+        tgt[:, torso] = tw
         tgt[:, cl] = g_t[k]
         W[k] = (1 - m[k, None]) * Wk + m[k, None] * tgt
         # the blade
