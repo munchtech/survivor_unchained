@@ -64,6 +64,10 @@ import heroine_boots as BOOTS
 BOOTS.bind(globals())
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_rig as rig_helpers  # noqa: E402  (her helper bones, added just before export)
+# Her upper arm's twist chain (tools/anim/helpers.py SPEC "twist_chain", Body 5 A2): upperarm_twist_02-_04 built into
+# her and split onto her body and every piece. Off by default until the chain's rebuild (correctives and post steps
+# re-solved on its weights) is judged; TWIST_CHAIN=1 builds it.
+TWIST_CHAIN = os.environ.get("TWIST_CHAIN", "0") == "1"
 
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 body = bpy.data.objects["Heroine"]
@@ -10003,7 +10007,7 @@ if BODY_OUT:
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
     mend_folds(me, body)
-    rig_helpers.apply(arm, [body])
+    rig_helpers.apply(arm, [body], chain=TWIST_CHAIN)
     _ff_keep = None
     if HAND_PIVOTS and FINGER_FIX:
         _ffm = body.data
@@ -10250,12 +10254,14 @@ def rigid_again(objs, riders):
 
 PL_RAW = os.environ.get("PL_RAW", "1") == "1"
 SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "0,0,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON", "leather") == "leather" else set()
-SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26,upperarm_twist_01_l:0.27").split(",") if kv)] if os.environ.get("PAULDRON", "leather") == "leather" else []
+# (with her twist chain, TWIST_CHAIN=1, twist_01 carries 0.30 of the roll, not 0.50: the row's 0.27 goes to twist_02,
+# which carries 0.475, so the plates keep the turn they were judged on)
+SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26," + ("upperarm_twist_02_l" if TWIST_CHAIN else "upperarm_twist_01_l") + ":0.27").split(",") if kv)] if os.environ.get("PAULDRON", "leather") == "leather" else []
 RIGID_PIECES = one_blend_pieces(made)
 RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
 _rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
 RIDERS = [(o, r) for o in made if o.type == "MESH" and o not in RIGID_PIECES for r in [rows_of(o)] if _rset & set(r)]
-rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body)
+rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body, chain=TWIST_CHAIN)
 rigid_again(RIGID_PIECES, RIDERS)
 
 # (s23 solver, the elbow glove's top edge, shoulder caps on: heroine_rig shares each point's limb

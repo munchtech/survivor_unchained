@@ -34,12 +34,14 @@ def _active(o):
     bpy.context.view_layer.objects.active = o
 
 
-def add_bones(arm):
+def add_bones(arm, chain=False):
     """The helper bones, if the armature lacks them: twist bones along their
     parents in their parents' frames; share bones at their joints in the
-    lower bone's frame turned about its line onto the joint's hinge."""
+    lower bone's frame turned about its line onto the joint's hinge. The
+    upper arm's twist chain (helpers SPEC "twist_chain") only with `chain`
+    (hers, explicitly: never the hero's or an NPC's)."""
     have = {b.name for b in arm.data.bones}
-    want = [(h, n) for h in hp.SPEC["helpers"] for n in hp.each(h["name"])]
+    want = [(h, n) for h in hp.SPEC["helpers"] if chain or not h.get("chain") for n in hp.each(h["name"])]
     panels = [p for p in hp.SPEC.get("panels", []) if p["parent"] in have]
     if all(n in have for _, n in want) and all(p["name"] in have for p in panels):
         return 0
@@ -500,7 +502,7 @@ def share_keys(objs):
                 o.shape_key_add(name=n, from_mix=False)
 
 
-def apply(arm, meshes, skin=None, body=None):
+def apply(arm, meshes, skin=None, body=None, chain=False):
     # On: judged at 1:1 in motion (animation judges 9-11) and shipped in her
     # body and outfits since 11 October, so a build without them would
     # quietly drop them. --no-helpers after the build's "--" leaves them out
@@ -508,7 +510,7 @@ def apply(arm, meshes, skin=None, body=None):
     if "--no-helpers" in sys.argv:
         print("RIG helpers: off (--no-helpers)")
         return
-    made = add_bones(arm)
+    made = add_bones(arm, chain)
     # (her skin's split, read once, for the pieces she wears to share as it)
     sampler = skin_sampler(arm, body) if (skin is not None and body is not None) else None
     total = 0

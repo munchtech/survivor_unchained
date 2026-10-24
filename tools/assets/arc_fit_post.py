@@ -77,7 +77,7 @@ def _skin(art):
             W = W / W.sum(1, keepdims=True)
         arm = {}
         for sd in "lr":
-            ks = [i for i, n in enumerate(names) if n in (f"upperarm_{sd}", f"upperarm_twist_01_{sd}", f"upperarm_share_{sd}")]
+            ks = [i for i, n in enumerate(names) if n in (f"upperarm_{sd}", f"upperarm_share_{sd}") or (n.startswith("upperarm_twist_") and n.endswith("_" + sd))]   # (twist_01, or her whole chain: helpers twist_chain)
             arm[sd] = (np.isin(J, ks) * W).sum(1)
         Vs.append(V); Fs.append(F + off); Ws.append(np.c_[arm["l"], arm["r"]]); off += len(V)
     B, F, AW = np.concatenate(Vs), np.concatenate(Fs), np.concatenate(Ws)

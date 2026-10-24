@@ -53,6 +53,11 @@ SMOOTH = 6
 
 def _pose(names):
     d = json.load(open(POSE))
+    missing = [n for n in names if n not in d]
+    if missing:
+        # (her twist chain, helpers SPEC "twist_chain": a body built with it needs a pose dumped from it)
+        raise SystemExit(f"axilla_fold_pose.json has no pose for {missing}: dump it again from a game run of this body "
+                         "(--pose-dump, cast_raise at 0.10 s, HerRaise on)")
     T = {}
     for n in names:
         v = d[n]

@@ -17,7 +17,9 @@ spread the turn and the bend over the flesh as a body does:
   hinge): whatever roll a clip gives it is handed down to the hand;
 - **shoulder twist** (`upperarm_twist_01`): the upper arm's turn about its
   length, half undone at the shoulder, where the deltoid is held by the
-  shoulder girdle;
+  shoulder girdle; on her (Body 5 A2) a chain of four (`_01`-`_04`) and five
+  weight nodes down the humerus carries the roll evenly (SPEC "twist_chain"),
+  gated on `upperarm_twist_02` so a body without it moves as before;
 - **shares** (`upperarm_share`, `lowerarm_share`, `calf_share`): half the
   joint's bend, carrying the ring of flesh round the joint, so it bends
   round a corner instead of folding; at the elbow and knee also pushed out
@@ -66,6 +68,15 @@ SPEC = {
          "squeeze": 0.0, "squeeze_x": 0.0, "squeeze_from": 100},
         {"name": "calf_share_{s}", "parent": "thigh_{s}", "kind": "share", "bone": "calf_{s}", "amount": 0.5,
          "bulge": 0.5, "bulge_max": 1.5, "pivot": 0.059, "way": "back"},
+        # Her upper arm's twist chain (Body 5 A2, "twist_chain" below): three more counter-twists down the humerus,
+        # built into HER body only (extend(chain=True), heroine_rig.add_bones(chain=True)); a body without them (the
+        # hero, the NPCs) drives and splits as before. `amount`: how much of the upper arm's roll each undoes.
+        {"name": "upperarm_twist_02_{s}", "parent": "upperarm_{s}", "kind": "counter_twist", "bone": "upperarm_{s}",
+         "at": 0.25, "amount": 0.525, "chain": True},
+        {"name": "upperarm_twist_03_{s}", "parent": "upperarm_{s}", "kind": "counter_twist", "bone": "upperarm_{s}",
+         "at": 0.5, "amount": 0.35, "chain": True},
+        {"name": "upperarm_twist_04_{s}", "parent": "upperarm_{s}", "kind": "counter_twist", "bone": "upperarm_{s}",
+         "at": 0.75, "amount": 0.175, "chain": True},
     ],
     # The forearm bone's own roll on the elbow handed down to the hand.
     "unroll": ["lowerarm_{s}"],
@@ -181,6 +192,34 @@ SPEC = {
          "length": 0.45, "amount": 1.15, "soft": 12.0, "spread_from": 8.0, "spread_to": 20.0, "spread_damp": 0.6,
          "fall_tau": 0.04, "fall_rate": 450.0},
     ],
+    # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
+    # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
+    # 0.78 mid-arm); five weight nodes down the humerus carry it evenly. All of it only on a side that has `gate`
+    # (a body without the chain: the legacy split and drive, unchanged). Per side:
+    "twist_chain": {
+        "gate": "upperarm_twist_02_{s}",
+        # the upper arm's roll (its twist about its own +Y, from rest) read off this bone
+        "roll_bone": "upperarm_{s}",
+        # a legacy helper's amount in a chained arm: twist_01 carries 0.30 of the roll (the chain 0.30, 0.475,
+        # 0.65, 0.825 of it; the elbow all)
+        "amounts": {"upperarm_twist_01_{s}": 0.70},
+        # the shoulder's share also takes this much of the roll (the deltoid follows the humerus by 30%): its
+        # pose rest x slerp(swing, amount) x twist_y(roll x k) x own
+        "roll": {"upperarm_share_{s}": 0.30},
+        # the roll unwrapped frame to frame (nearest to the last frame's, within +-this many degrees), so a
+        # roll through +-180 doesn't flip the chain's counter-twists; one frame on its own reads it as it is
+        "unwrap_max": 270.0,
+        # weights: the upper arm's (after the shares) spread as hats over these nodes, t along the humerus
+        # (0 shoulder, 1 elbow), each a bone (1.0: the upper arm itself)
+        "nodes": [["upperarm_twist_01_{s}", 0.0], ["upperarm_twist_02_{s}", 0.25], ["upperarm_twist_03_{s}", 0.5],
+                  ["upperarm_twist_04_{s}", 0.75], ["upperarm_{s}", 1.0]],
+        # the shoulder share's and the clavicle's weight handed to the chain from t reach[0], all by reach[1]
+        # (smoothstep), so the share no longer reaches down the arm; only near the humerus's line: whole within
+        # radius[0] of it, none past radius[1] (smoothstep; in upper-arm lengths), so her torso keeps its own
+        "reach": [0.10, 0.60],
+        "reach_from": ["upperarm_share_{s}", "clavicle_{s}"],
+        "radius": [0.30, 0.40],
+    },
 }
 
 
@@ -206,6 +245,24 @@ def names():
 
 def has_helpers(sk: Skeleton):
     return "lowerarm_twist_01_l" in sk.index
+
+
+def has_chain(index, s):
+    """The upper arm's twist chain on side `s` (SPEC "twist_chain"): `index` any name lookup (a dict, a set)."""
+    return SPEC["twist_chain"]["gate"].replace("{s}", s) in index
+
+
+def unwrap_roll(last, deg, lim=None):
+    """The roll `deg` (-180..180) as the turn nearest `last` (the last frame's, None: the first), deg or deg +-360
+    within +-lim (SPEC twist_chain unwrap_max), so a roll through +-180 carries on instead of flipping."""
+    if last is None:
+        return deg
+    lim = SPEC["twist_chain"]["unwrap_max"] if lim is None else lim
+    best = deg
+    for c in (deg - 360.0, deg + 360.0):
+        if abs(c) <= lim and abs(c - last) < abs(best - last):
+            best = c
+    return best
 
 
 # --------------------------------------------------------------- geometry --
@@ -240,14 +297,17 @@ def hinge_turn(child_global_rot, joint_from, joint_at, way, front=(0, 0, 1.0)):
 
 
 # ------------------------------------------------------------- skeleton --
-def extend(sk: Skeleton) -> Skeleton:
+def extend(sk: Skeleton, chain=False) -> Skeleton:
     """The skeleton with her helper bones added after its own (if missing),
-    rests as heroine_rig.py builds them."""
+    rests as heroine_rig.py builds them. The upper arm's twist chain
+    (SPEC "twist_chain") only with `chain` (hers, explicitly)."""
     names_, parent = list(sk.names), list(sk.parent)
     rot, pos = list(sk.rest_rot), list(sk.rest_pos)
     I = dict(sk.index)
     grot, gpos = sk.rest_globals()
     for h in SPEC["helpers"]:
+        if h.get("chain") and not chain:
+            continue
         for s in "lr":
             n = h["name"].replace("{s}", s)
             if n in I:
@@ -589,6 +649,17 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
         rot[la] = qnorm(qmul(sk.rest_rot[la], sw))
         rot[h] = qnorm(qmul(tw, rot[h]))
         turn = forearm_turn(sk, h, rot[h])
+        # The upper arm's twist chain (SPEC "twist_chain"): its roll read once, unwrapped from the last frame's.
+        tc = SPEC["twist_chain"]
+        chain = has_chain(I, s)
+        if chain:
+            ub = I[tc["roll_bone"].replace("{s}", s)]
+            _, _, roll = _twist_y(qmul(qinv(sk.rest_rot[ub]), rot[ub]))
+            if state is not None:
+                key = "roll:" + sk.names[ub]
+                roll = state[key] = unwrap_roll(state.get(key), roll)
+            amounts = {k.replace("{s}", s): v for k, v in tc["amounts"].items()}
+            rolls = {k.replace("{s}", s): v for k, v in tc["roll"].items()}
         for hh in SPEC["helpers"]:
             j = I.get(hh["name"].replace("{s}", s))
             if j is None:
@@ -597,12 +668,18 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
                 rot[j] = qaxis([0, 1.0, 0], turn * hh["amount"])
             elif hh["kind"] == "counter_twist":
                 b = I[hh["bone"].replace("{s}", s)]
+                if chain and b == ub:
+                    rot[j] = qaxis([0, 1.0, 0], -roll * amounts.get(sk.names[j], hh["amount"]))
+                    continue
                 _, _, ang = _twist_y(qmul(qinv(sk.rest_rot[b]), rot[b]))
                 rot[j] = qaxis([0, 1.0, 0], -ang * hh["amount"])
             elif hh["kind"] in ("share", "point"):
                 b = I[hh["bone"].replace("{s}", s)]
                 swing, _, _ = _twist_y(qmul(qinv(sk.rest_rot[b]), rot[b]))
                 own = qmul(qinv(sk.rest_rot[b]), sk.rest_rot[j])        # its turn about the line
+                if chain and sk.names[j] in rolls:
+                    # (and its share of the upper arm's roll, about its own line)
+                    own = qmul(qaxis([0, 1.0, 0], roll * rolls[sk.names[j]]), own)
                 rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(qslerp(ident, swing, hh["amount"]), own)))
                 if scale is not None:
                     deg = _swing_deg(swing)
@@ -695,11 +772,14 @@ def split(W, P, index, heads, front=None):
         ua, el = I[f"upperarm_{s}"], I[f"lowerarm_{s}"]
         sh, ax = np.asarray(heads[f"upperarm_{s}"], float), np.asarray(heads[f"lowerarm_{s}"], float) - np.asarray(heads[f"upperarm_{s}"], float)
         u = ((P - sh) @ ax) / (ax @ ax)
-        frac = np.clip(1 - u / cfg["shoulder_twist_to"], 0, 1)
-        frac = frac * frac * (3 - 2 * frac)
-        tw = I[f"upperarm_twist_01_{s}"]
-        W[:, tw] += W[:, ua] * frac
-        W[:, ua] *= 1 - frac
+        if has_chain(I, s):
+            _chain_split(W, P, I, s, sh, ax, u)
+        else:
+            frac = np.clip(1 - u / cfg["shoulder_twist_to"], 0, 1)
+            frac = frac * frac * (3 - 2 * frac)
+            tw = I[f"upperarm_twist_01_{s}"]
+            W[:, tw] += W[:, ua] * frac
+            W[:, ua] *= 1 - frac
         # The forearm's twist bones: hats over the nodes along it.
         la = I[f"lowerarm_{s}"]
         el_p = np.asarray(heads[f"lowerarm_{s}"], float)
@@ -723,6 +803,37 @@ def split(W, P, index, heads, front=None):
         nth = -np.partition(-W, cap, axis=1)[:, cap]
         W = np.maximum(W - nth[:, None], 0)
     return W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+
+
+def _chain_split(W, P, I, s, sh, ax, u):
+    """The upper arm's twist chain's weights (SPEC "twist_chain"), W changed in place: the upper arm's weight (with
+    whatever its chain already had) spread as hats over the nodes by u (along the humerus, 0 shoulder, 1 elbow), the
+    shoulder share's and clavicle's handed to the chain as they reach down the arm, near its line only."""
+    tc = SPEC["twist_chain"]
+    nodes = [(I[n.replace("{s}", s)], t) for n, t in tc["nodes"]]
+    w = np.zeros(len(W))
+    for j, _ in nodes:
+        w += W[:, j]
+        W[:, j] = 0
+    r = np.linalg.norm((P - sh) - u[:, None] * ax, axis=1) / math.sqrt(ax @ ax)
+    r0, r1 = tc["reach"]
+    q0, q1 = tc["radius"]
+    f = _smooth((u - r0) / (r1 - r0)) * (1 - _smooth((r - q0) / (q1 - q0)))
+    for n in tc["reach_from"]:
+        j = I.get(n.replace("{s}", s))
+        if j is None:
+            continue
+        w += W[:, j] * f
+        W[:, j] *= 1 - f
+    ts = [t for _, t in nodes]
+    x = np.clip(u, ts[0], ts[-1])
+    for k, (j, t) in enumerate(nodes):
+        hat = np.ones_like(x)
+        if k > 0:
+            hat = np.where(x < t, (x - ts[k - 1]) / (t - ts[k - 1]), hat)
+        if k + 1 < len(nodes):
+            hat = np.where(x > t, (ts[k + 1] - x) / (ts[k + 1] - t), hat)
+        W[:, j] += w * np.clip(hat, 0, 1)
 
 
 # ----------------------------------------------------------- correctives --
