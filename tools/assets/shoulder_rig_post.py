@@ -110,28 +110,40 @@ def reweight(P, W, names, Grest, frames, Pall):
 
 
 def merge_cap(W, names, frames, cap=4):
-    """Points with more than `cap` bones: the smallest folded into the largest of its own group (each side's arm, the
-    torso, each clavicle and scapula alone; a helper in its parent's group), each group's total kept."""
+    """Points with more than `cap` bones: a bone folded away so nothing moves where the helpers rest (below SPEC
+    A[0]): first the smallest helper's weight back into its parent (her own bones' weights there stay as they were);
+    else the smallest other bone's into the largest other bone of its own group (each
+    side's arm, the torso, each clavicle and scapula alone), helpers left out (a fold into a helper would move with it
+    once it acts), or into its own helper if that is all its group has there."""
     def grp(n):
-        if n in frames:
-            n = frames[n]["parent"]
         s = n[-2:] if n.endswith(("_l", "_r")) else ""
         if n.startswith(("clavicle_", "scap_")):
             return n
         if s and n.split("_")[0] in ARM:
             return "arm" + s
         return "torso"
-    gs = [grp(n) for n in names]
+    I = {n: i for i, n in enumerate(names)}
+    hel = np.array([n in frames for n in names])
+    par = np.array([I[frames[n]["parent"]] if n in frames else -1 for n in names])
+    gs = [grp(frames[n]["parent"]) if n in frames else grp(n) for n in names]
     gid = np.array([sorted(set(gs)).index(x) for x in gs])
     W = W.copy()
     for v in np.nonzero((W > 1e-5).sum(1) > cap)[0]:
         w = W[v]
         while (w > 1e-5).sum() > cap:
             nz = np.nonzero(w > 1e-5)[0]
-            k = nz[np.argmin(w[nz])]
-            same = nz[(gid[nz] == gid[k]) & (nz != k)]
-            if len(same):
-                w[same[np.argmax(w[same])]] += w[k]
+            for k in sorted(nz, key=lambda j: (not hel[j], w[j])):   # a helper first (back to its parent), then the smallest that folds without a move
+                if hel[k]:
+                    w[par[k]] += w[k]
+                    break
+                same = nz[(gid[nz] == gid[k]) & (nz != k) & ~hel[nz]]
+                own = nz[par[nz] == k]
+                if len(same) or len(own):
+                    to = same[np.argmax(w[same])] if len(same) else own[np.argmax(w[own])]
+                    w[to] += w[k]
+                    break
+            else:
+                k = nz[np.argmin(w[nz])]             # (none can: the smallest dropped, as before)
             w[k] = 0
     return W
 
