@@ -3,7 +3,7 @@
 Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in `.claude/worktrees/armor-7` (branch armor-7, junction worktree: never git stash / reset --hard / checkout . / merge / pull with `godot\assets` linked; remove the link before merging integration, remake it after). One writer: the body chain and the armor pieces both live there.
 
 ## Body 6, 24 Oct: nude OWNER GATE sent; WAITING for the owner's ruling
-Scratch B6 = coordinator b8322a60's scratchpad `body6\` (B5 = `body5\`, keep both). Sheet `B6\gate_owner.png` (half `gate_owner_half.jpg`), built by `B6\sheet.py`; TODAY frames `B6	oday\` shot by `B6\shoot.sh` (body of record `B5\lift\post\heroine.glb`; overhead = git res, everything else = `B52\pack`); BEFORE = Body 3 gate7 column 1. Row 7, the worst case: warden cast_raise@0.10 `--sheathed` (A 148-160), front (`B6\shoot1.sh`).
+Scratch B6 = coordinator b8322a60's scratchpad `body6\` (B5 = `body5\`, keep both). Sheet `B6\gate_owner.png` (half `gate_owner_half.jpg`), built by `B6\sheet.py`; TODAY frames `B6\today\` shot by `B6\shoot.sh` (body of record `B5\lift\post\heroine.glb`; overhead = git res, everything else = `B52\pack`); BEFORE = Body 3 gate7 column 1. Row 7, the worst case: warden cast_raise@0.10 `--sheathed` (A 148-160), front (`B6\shoot1.sh`).
 Full test on armor-7@d37180c6 (repo heroine.glb, lift code in): 1082 passed, 0 failed, 8 skipped (1090).
 No new judge (judge 13 stands). Next on the owner's ruling: a raised-arm round on judge 13's fixes (or not), overhead vs lowered, then the G3 chain (see Body 5 below), the dressed judge, the full test, the MR.
 
