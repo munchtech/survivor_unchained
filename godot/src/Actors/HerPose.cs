@@ -55,6 +55,26 @@ public partial class HerPose : SkeletonModifier3D
     static readonly float HeadYawTry = SurvivorUnchained.Args.Num("head-yaw", 0f);
     static readonly float HeadPitchTry = SurvivorUnchained.Args.Num("head-pitch", 0f);
 
+    /// <summary>Creation's Look only (GameFront.FigureArms sets them as the Look starts and LookOn false as it
+    /// ends): her arms brought nearer her body over her own town idle, whatever Upper is. The idle (100STYLE Proud)
+    /// hangs her right upper arm 21 deg out of her chest's frontal plane and her left 44 deg, its hand behind her
+    /// hip and the arm rolled 47 deg in, and at the Look's camera that breadth read as a "football" (Body 5, 24
+    /// October 2026). Degrees: LookArmsDownL/R turn each upper arm toward her body in the frontal plane;
+    /// LookRollL/R roll each about its own length, outward (+); LookSwivelL/R swing the elbow back and in about
+    /// the shoulder-to-wrist line, the hand's place and turn kept (her left hand stays at her hip). Eased in and
+    /// out over LookEase seconds with the idle's crossfade; off the Look nothing here moves.</summary>
+    public float LookArmsDownL, LookArmsDownR, LookRollL, LookRollR, LookSwivelL, LookSwivelR;
+    public bool LookOn;
+    public const float LookEase = 0.3f;
+    float lookW;
+    /// <summary>The Look's eased weight (0 off it, 1 on it): GameFront's framing pan rides it.</summary>
+    public float LookWeight => lookW * lookW * (3 - 2 * lookW);
+    /// <summary>--look-arms-down-l/-r, --look-roll-l/-r, --look-swivel-l/-r DEG: try other values on the Look
+    /// (they replace GameFront's; off the Look they do nothing).</summary>
+    static float? Try(string k) => SurvivorUnchained.Args.Has(k) ? SurvivorUnchained.Args.Num(k, 0f) : null;
+    static readonly float? DownLTry = Try("look-arms-down-l"), DownRTry = Try("look-arms-down-r"), RollLTry = Try("look-roll-l"),
+        RollRTry = Try("look-roll-r"), SwivelLTry = Try("look-swivel-l"), SwivelRTry = Try("look-swivel-r");
+
     public HerPose() { Name = "HerPose"; }
 
     /// <summary>The library's own pelvis at rest (UAL), against which a
@@ -64,7 +84,7 @@ public partial class HerPose : SkeletonModifier3D
     // The bones it moves, found once (asking the skeleton for every bone's
     // name each frame made a string of each, and a frame's worth of garbage).
     Skeleton3D? found;
-    int pelvis = -1, upperL = -1, upperR = -1, spine3 = -1, neck = -1, head = -1;
+    int pelvis = -1, upperL = -1, upperR = -1, spine3 = -1, neck = -1, head = -1, lowerL = -1, lowerR = -1, handL = -1, handR = -1;
     int[] fingers = System.Array.Empty<int>();
 
     void Find(Skeleton3D sk)
@@ -73,6 +93,10 @@ public partial class HerPose : SkeletonModifier3D
         pelvis = sk.FindBone("pelvis");
         upperL = sk.FindBone("upperarm_l");
         upperR = sk.FindBone("upperarm_r");
+        lowerL = sk.FindBone("lowerarm_l");
+        lowerR = sk.FindBone("lowerarm_r");
+        handL = sk.FindBone("hand_l");
+        handR = sk.FindBone("hand_r");
         spine3 = sk.FindBone("spine_03");
         neck = sk.FindBone("neck_01");
         head = sk.FindBone("Head");
@@ -111,6 +135,8 @@ public partial class HerPose : SkeletonModifier3D
             Turn(sk, upperR, Vector3.Forward, ArmsIn * arms);
             if (NeckPitch != 0) Turn(sk, neck, Vector3.Right, NeckPitch * arms);
         }
+        lookW = Mathf.MoveToward(lookW, LookOn ? 1 : 0, (float)delta / LookEase);
+        if (lookW > 0) LookArms(sk, LookWeight);
         if (lib > 0)
         {
             Turn(sk, pelvis, Vector3.Forward, HipTilt * lib);
@@ -141,6 +167,26 @@ public partial class HerPose : SkeletonModifier3D
             Turn(sk, head, Vector3.Right, HeadPitchTry / 2);
         }
     }
+
+    /// <summary>The Look's arm offset at weight w (her left is the skeleton's +X; Vector3.Forward is -Z, so a
+    /// positive turn about it brings the left arm in and a negative one the right). Measured on her town idle
+    /// (body5/pose/meas.py): the left and right signs below are each side's "in", "outward" and "elbow back".</summary>
+    void LookArms(Skeleton3D sk, float w)
+    {
+        float dl = (DownLTry ?? LookArmsDownL) * w, dr = (DownRTry ?? LookArmsDownR) * w;
+        float rl = (RollLTry ?? LookRollL) * w, rr = (RollRTry ?? LookRollR) * w;
+        float sl = (SwivelLTry ?? LookSwivelL) * w, sr = (SwivelRTry ?? LookSwivelR) * w;
+        if (dl != 0) Turn(sk, upperL, Vector3.Forward, dl);
+        if (dr != 0) Turn(sk, upperR, Vector3.Forward, -dr);
+        if (rl != 0) Turn(sk, upperL, Along(sk, upperL, lowerL), -rl);
+        if (rr != 0) Turn(sk, upperR, Along(sk, upperR, lowerR), rr);
+        if (sl != 0) { var a = Along(sk, upperL, handL); Turn(sk, upperL, a, -sl); Turn(sk, handL, a, sl); }
+        if (sr != 0) { var a = Along(sk, upperR, handR); Turn(sk, upperR, a, sr); Turn(sk, handR, a, -sr); }
+    }
+
+    /// <summary>The line from one bone's head to another's, in the skeleton's space.</summary>
+    static Vector3 Along(Skeleton3D sk, int from, int to) =>
+        from < 0 || to < 0 ? Vector3.Down : (sk.GetBoneGlobalPose(to).Origin - sk.GetBoneGlobalPose(from).Origin).Normalized();
 
     /// <summary>A bone turned about an axis of the skeleton's own space, by
     /// `degrees`, about its head.</summary>

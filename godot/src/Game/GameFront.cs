@@ -133,12 +133,22 @@ public partial class Game
             onLook = look;
             figure.Sheathe(look);
             figure.Loop(look ? figure.Person.Own!.Prefix + $"idle_{figure.Person.Calling}_town" : guardIdle, 0.3);
+            // (her arms nearer her body on the Look, eased with the crossfade: HerPose.LookArms. Measured on the town
+            // idle, Body 5, 24 October 2026: upper arms 10.7 and 12.1 deg from her chest's line (were 20.8 and 43.6),
+            // her left roll -11.8 deg against her right's -9.2 (was -47.1), every skin gap 33 mm or more)
+            if (figure.Person.Pose is HerPose hp)
+            {
+                hp.LookOn = look;
+                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 8f; }
+            }
         }
         figure.ShowHeld(shown);
     }
 
     string guardIdle = "";
     bool onLook;
+    /// <summary>--look-pan M: the Look's framing pan (metres) tried at another value.</summary>
+    static readonly float LookPan = Args.Has("look-pan") ? Args.Num("look-pan", 0.04f) : 0.04f;
 
     /// <summary>Framed for a step or a part of the look: so near, turned so far.</summary>
     public void FrameFigure(float zoom, float turn = 0)
@@ -166,6 +176,11 @@ public partial class Game
         var dir = new Vector3(fullPos.X - eyes.X, 0, fullPos.Z - eyes.Z).Normalized();
         // Head and shoulders, then her face: the look a little under the eyes, the lens longer.
         Vector3 bustLook = eyes + new Vector3(0, -0.16f, 0), faceLook = eyes + new Vector3(0, -0.05f, 0);
+        // On the Look, the bust framing panned so she stands LookPan metres right of its middle (about 38 px at the
+        // 0.45 framing): her town idle's right forearm ran under creation's left panel. Faded with her turn (none
+        // with her back to the camera) and with the Look's ease (HerPose.LookWeight); her face framing keeps none.
+        if (figure.Person.Pose is HerPose lp && lp.LookWeight > 0)
+            bustLook -= (-dir).Cross(Vector3.Up).Normalized() * LookPan * lp.LookWeight * Mathf.Max(0, Mathf.Cos(figTurnNow));
         Vector3 bustPos = bustLook + dir * 1.75f + new Vector3(0, 0.08f, 0), facePos = faceLook + dir * 1.3f + new Vector3(0, 0.02f, 0);
         float z = figZoom;
         Vector3 pos, look;
