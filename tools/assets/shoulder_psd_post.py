@@ -5,7 +5,7 @@ of the shoulder (no deltoid cap: "the arm looks plugged into the chest"), and th
 the breast's outer edge runs into the arm; overhead the traps buckle. A bone can't make these: they are pose-space
 shapes.
 
-Shapes (morph targets on heroine.glb's body, per side _l/_r; the left authored, the right its mirror):
+Shapes (morph targets on heroine.glb's body, per side _l/_r; each side authored on its own skin, Body 5 cor):
   shoulder_abd110, shoulder_abd140  arm out to the side (abduction), A = 110 and 140 degrees
   shoulder_flex110, shoulder_flex140  arm forward (flexion), A = 110 and 140
   shoulder_up175  arm overhead (either way), A = 175
@@ -65,7 +65,8 @@ ARM_KEEP = 0.17   # along the upper arm past the shoulder joint: kept to here, f
 FADE = 0.05
 BREAST_KEEP = 0.45  # how much of the smoothing her breast (its bone's weight) still takes
 DM_ITERS = int(os.environ.get("PSD_DM", 30))
-HOLLOW_D, HOLLOW_R = float(os.environ.get("PSD_HOLLOW", 0.016)), 0.032
+# (Body 5 cor, judge 11 "shallower with a wider falloff": 16 mm over 32 -> 6 over 50; the folds 30 mm -> 15, 16 wide -> 22)
+HOLLOW_D, HOLLOW_R = float(os.environ.get("PSD_HOLLOW", 0.006)), 0.05
 FILL, FILL_ITERS = float(os.environ.get("PSD_FILL", 1.0)), int(os.environ.get("PSD_FILL_IT", 60))   # the armpit hollow at full (A 175); scaled by (A - 90) / 85
 SMOOTH = 3
 # C2's sculpt (posed space, at each sample; CJ1: "smoothed targets can soften a notch but can't add shape"):
@@ -77,9 +78,24 @@ SMOOTH = 3
 #     FOLD_F in front of it and FOLD_B behind (FOLD_W wide), her skin lifted onto them along b (fill only); between
 #     them the hollow, its middle pressed in HOLLOW_D (her centre sits higher than the creases either side). Each grows with the raise (full from A 117).
 CAP_ALONG, CAP_AT, CAP_UP = float(os.environ.get("PSD_CAP_ALONG", 0.075)), 0.02, float(os.environ.get("PSD_CAP_UP", 0.004))
-CAP_BULGE, CAP_K = float(os.environ.get("PSD_CAP", 0.008)), 0.012
-FOLD_H, FOLD_F, FOLD_B, FOLD_W = float(os.environ.get("PSD_FOLD", 0.03)), 0.045, 0.045, 0.016
+CAP_BULGE, CAP_K = float(os.environ.get("PSD_CAP", 0.0)), 0.012
+FOLD_H, FOLD_F, FOLD_B, FOLD_W = float(os.environ.get("PSD_FOLD", 0.015)), 0.045, 0.045, 0.022
 FOLD_K = 0.006
+# (Body 5 cor, judge 11: "the shoulder muscle doesn't form a rounded cap. It melts into a hump at the shoulder top, so
+# armpit to elbow is one even cylinder"; the ellipsoid cap's soft max left a corner where it met her skin, CAP_BULGE
+# now 0 by default) the deltoid as a smooth bump along her posed normal: DELT_H high on the arm's top and outer side,
+# centred DELT_AT along the arm from the shoulder joint, a cos^2 bell DELT_L either way, round the arm from its top
+# to DELT_SIDE below its sides; and a soft groove GROOVE_D deep (a gaussian GROOVE_W wide) GROOVE_AT along the arm's
+# line (medial of the joint: the acromion's edge) on the top only, the cap's edge against her trapezius. Grows with
+# the raise from A 90 as the rest (zero at and below it).
+DELT_H, DELT_AT, DELT_L = float(os.environ.get("PSD_DELT", 0.006)), 0.035, 0.055
+DELT_SIDE = 0.35
+GROOVE_D, GROOVE_AT, GROOVE_W = float(os.environ.get("PSD_GROOVE", 0.0025)), -0.012, 0.008
+# (Body 5 cor: the bind's armpit is the A-pose's closed valley, its faces up to 60 deg apart; the delta mush carried
+# that valley's sharpness up with the raise as "detail", the hard crease where the arm's underside meets her chest)
+# the pit's band (her skin below the shoulder joint where her arm's weight gives way to her torso's) takes the
+# smoothed raised shape with only this much of the rest's detail left, at full grow
+PIT_FLAT = float(os.environ.get("PSD_PIT_FLAT", 1.0))
 NECK_KEEP = 0.25   # how much of the region her neck (neck_01's weight) still takes (C1: none past 0.8; the trap spike)
 # the outfit pieces over her shoulders and armpits that carry the shapes (every calling, the warden's steel too: its
 # pauldrons and top ride the skin under them like everything else skinned there)
@@ -388,8 +404,8 @@ def pit_soft(pit, A, deg):
     return np.clip(_smooth(pit[:, None].astype(float), A, deg, 4)[:, 0] * 1.6, 0, 1)
 
 
-def author(G, log=print):
-    """The left side's bind-space shapes {name: (Db [n,3], posed delta)} and the context (U, F, ...)."""
+def author(G, log=print, s="l"):
+    """Side s's (l, r) bind-space shapes {name: (Db [n,3], posed delta)} and the context (U, F, ...)."""
     U, F, J, W, wid = skin_union(G)
     rig = Rig(G)
     I = rig.index
@@ -403,21 +419,27 @@ def author(G, log=print):
     mor = body_morphs(G, wid, len(U))
     A, deg = _adj(F, len(U))
     nb = A.indices[A.indptr[:-1]]
-    left = U[:, 0] > 0.005
+    sd = 1.0 if s == "l" else -1.0
+    left = sd * U[:, 0] > 0.005   # (her side s)
     # the region (rest): round her left shoulder joint, not down the arm, not up the neck
-    sh = M0[I["upperarm_l"], :3, 3]
-    el = M0[I["lowerarm_l"], :3, 3]
+    sh = M0[I[f"upperarm_{s}"], :3, 3]
+    el = M0[I[f"lowerarm_{s}"], :3, 3]
     ax = (el - sh) / np.linalg.norm(el - sh)
     # (from the line of her clavicle, its inner end to the shoulder joint: the trap's slope is in)
-    ch = M0[I["clavicle_l"], :3, 3]
+    ch = M0[I[f"clavicle_{s}"], :3, 3]
     tt = np.clip((U - ch) @ (sh - ch) / ((sh - ch) @ (sh - ch)), 0, 1)
     dist = np.linalg.norm(U - (ch + tt[:, None] * (sh - ch)), axis=1)
     along = (U - sh) @ ax
     wsum = lambda names: sum((W * (J == I[n])).sum(1) for n in names if n in I)  # noqa: E731
     neck, head = wsum(["neck_01"]), wsum(["Head"])
-    distal = wsum(["lowerarm_l", "hand_l", "lowerarm_twist_01_l", "lowerarm_twist_02_l", "lowerarm_share_l",
-                   "lowerarm_point_l"])
-    wbr = wsum(["breast_l"])
+    distal = wsum([f"lowerarm_{s}", f"hand_{s}", f"lowerarm_twist_01_{s}", f"lowerarm_twist_02_{s}", f"lowerarm_share_{s}",
+                   f"lowerarm_point_{s}"])
+    wbr = wsum([f"breast_{s}"])
+    armw = wsum([f"upperarm_{s}", f"upperarm_share_{s}"] + [n for n in rig.names if n.startswith("upperarm_twist_") and n.endswith("_" + s)])
+    down0 = M0[I["pelvis"], :3, 3] - M0[I["neck_01"], :3, 3]
+    down0 /= np.linalg.norm(down0)
+    pband = _ss(armw / 0.15) * (1 - _ss((armw - 0.85) / 0.15)) * _ss(((U - sh) @ down0) / 0.03)
+    pband = np.clip(_smooth(pband[:, None], A, deg, 6)[:, 0] * 1.5, 0, 1)
     reg = (1 - _ss((dist - REGION_IN) / (REGION_OUT - REGION_IN))) * (1 - _ss((along - ARM_KEEP) / FADE))
     reg *= (1 - (1 - NECK_KEEP) * _ss(neck / 0.6)) * (1 - _ss(head / 0.15)) * (1 - _ss(distal / 0.3))
     reg *= (1 - (1 - BREAST_KEEP) * _ss(wbr / 0.6)) * left
@@ -425,21 +447,21 @@ def author(G, log=print):
     rr = U - sh
     ra = rr @ ax
     rp = rr - ra[:, None] * ax
-    zone = (ra > 0.03) & (ra < 0.07) & (wsum(["upperarm_l", "upperarm_share_l"] + [n for n in rig.names if n.startswith("upperarm_twist_") and n.endswith("_l")]) > 0.5) & left
+    zone = (ra > 0.03) & (ra < 0.07) & (wsum([f"upperarm_{s}", f"upperarm_share_{s}"] + [n for n in rig.names if n.startswith("upperarm_twist_") and n.endswith("_" + s)]) > 0.5) & left
     upr = -(M0[I["pelvis"], :3, 3] - M0[I["neck_01"], :3, 3])
     upr = upr - (upr @ ax) * ax
     upr /= np.linalg.norm(upr)
     topz = zone & ((rp @ upr) > 0.5 * np.linalg.norm(rp, axis=1))
     r_arm = float(np.percentile(np.linalg.norm(rp[topz], axis=1), 90)) if topz.any() else 0.045
     log("SHOULDER_PSD: her arm's top radius at the deltoid %.1f mm (%d points)" % (1000 * r_arm, int(topz.sum())))
-    reg = _smooth(reg[:, None], A, deg, 4)[:, 0] * left * _ss((U[:, 0] - 0.01) / 0.04)  # (none at her midline)
+    reg = _smooth(reg[:, None], A, deg, 4)[:, 0] * left * _ss((sd * U[:, 0] - 0.01) / 0.04)  # (none at her midline)
     active = reg > 1e-3
     grow = _smooth(active[:, None].astype(float), A, deg, DM_ITERS + 4)[:, 0] > 0  # the smoothing's reach
     out = {}
     for (way, Asmp, shr), name in zip(SAMPLES, SHAPES):
-        M, w = sample_pose(rig, "l", way, Asmp, shr)
-        Ar, az = arm_angles(M, rig, "l")
-        Ur = U + w["l"] * (mor.get("axilla_fold_l", 0) + mor.get("raise_crease_l", 0))
+        M, w = sample_pose(rig, s, way, Asmp, shr)
+        Ar, az = arm_angles(M, rig, s)
+        Ur = U + w[s] * (mor.get("axilla_fold_" + s, 0) + mor.get("raise_crease_" + s, 0))
         Bm = _blend(J, W, M @ rig.ibm)
         X = np.einsum("nij,nj->ni", Bm, np.c_[Ur, np.ones(len(U))])[:, :3]
         # delta mush on the region's reach: the rest's detail onto the smoothed posed shape
@@ -448,10 +470,11 @@ def author(G, log=print):
         Fr = _frames(Us, _vn(Us, F), nb)
         Fp = _frames(Xs, _vn(Xs, F), nb)
         loc = np.einsum("nij,nj->ni", Fr, Ur - Us)
+        loc *= (1 - PIT_FLAT * float(np.clip((Ar - 90) / (FIRST - 90), 0, 1)) * pband)[:, None]
         T = Xs + np.einsum("nji,nj->ni", Fp, loc)
         Dp = (T - X) * reg[:, None]
-        down, lat, fwd = torso_frame(M, rig, "l")
-        Sp, Ep = M[I["upperarm_l"], :3, 3], M[I["lowerarm_l"], :3, 3]
+        down, lat, fwd = torso_frame(M, rig, s)
+        Sp, Ep = M[I[f"upperarm_{s}"], :3, 3], M[I[f"lowerarm_{s}"], :3, 3]
         ap = (Ep - Sp) / np.linalg.norm(Ep - Sp)
         grow_k = float(np.clip((Ar - 90) / (FIRST - 90), 0, 1))
         # the deltoid cap: her skin on the top and outer side pushed out onto an ellipsoid round the humeral head
@@ -472,6 +495,19 @@ def author(G, log=print):
         wcap = _ss((side + 0.35) / 0.7) * (1 - _ss((qa - 0.06) / 0.05)) * grow_k
         Dcap = q * (rho_t / np.maximum(rho, 1e-9) - 1)[:, None] * (wcap * reg)[:, None]
         Dp = Dp + Dcap
+        if DELT_H > 0 or GROOVE_D > 0:
+            Y = X + Dp
+            Ny = _vn(Y, F)
+            q = Y - Sp
+            qa = q @ ap
+            qp = q - qa[:, None] * ap
+            qpn = np.linalg.norm(qp, axis=1)
+            side = (qp @ up) / np.maximum(qpn, 1e-9)
+            onarm = 1 - _ss((qpn - 1.5 * r_arm) / (0.5 * r_arm))
+            bell = np.cos(np.clip(np.abs(qa - DELT_AT) / DELT_L, 0, 1) * np.pi / 2) ** 2
+            around = _ss((side + DELT_SIDE) / (0.5 + DELT_SIDE))
+            gro = np.exp(-0.5 * ((qa - GROOVE_AT) / GROOVE_W) ** 2) * _ss((side - 0.2) / 0.5)
+            Dp = Dp + Ny * ((DELT_H * bell * around - GROOVE_D * gro) * onarm * grow_k * reg)[:, None]
         # FILL (C1): on top of the shoulder and the trap (posed normal up or out), what creases are left filled out
         # toward a heavily smoothed surface (outward only)
         Y = X + Dp
@@ -491,7 +527,7 @@ def author(G, log=print):
         tn = tn / np.linalg.norm(tn) if np.linalg.norm(tn) > 0.25 else lat
         bp = tn + na
         bp /= np.linalg.norm(bp)
-        tp = np.cross(down, tn)          # along the pit: forward when the arm is out to the side (the pec fold ahead)
+        tp = sd * np.cross(down, tn)     # along the pit: forward when the arm is out to the side (the pec fold ahead)
         tp = tp - (tp @ bp) * bp
         tp /= np.linalg.norm(tp)
         rel = Y - Sp
@@ -547,8 +583,8 @@ def author(G, log=print):
         Db = np.einsum("nij,nj->ni", np.linalg.inv(Bm[:, :3, :3]), Dp)
         Db[np.linalg.norm(Db, axis=1) < 1e-6] = 0
         dn = (Dp * _vn(X, F)).sum(1)
-        log("SHOULDER_PSD %s (A %.1f az %.1f, raise w %.2f): folds %d -> %d; %d points, most %.1f mm, out %.1f in %.1f mm" % (
-            name, Ar, az, w["l"], nf0, nf1, int((np.abs(Db).max(1) > 0).sum()), 1000 * np.linalg.norm(Dp, axis=1).max(),
+        log("SHOULDER_PSD %s_%s (A %.1f az %.1f, raise w %.2f): folds %d -> %d; %d points, most %.1f mm, out %.1f in %.1f mm" % (
+            name, s, Ar, az, w[s], nf0, nf1, int((np.abs(Db).max(1) > 0).sum()), 1000 * np.linalg.norm(Dp, axis=1).max(),
             1000 * dn.max(), -1000 * dn.min()))
         out[name] = (Db, Dp)
     return out, (U, F, J, W, wid, rig)
@@ -563,10 +599,13 @@ def main(a):
     g = G.g
     mesh = g["meshes"][[n for n in g["nodes"] if n.get("name") == "Heroine"][0]["mesh"]]
     prims = [p for p in mesh["primitives"] if g["materials"][p["material"]].get("name") != "skin_head"]
-    out, (U, F, J, W, wid, rig) = author(G)
+    # (Body 5 cor: each side authored on its own skin; her mesh isn't a mirror of itself (points 2 mm apart median,
+    # up to 10), and the left's shapes mirrored left the right's pit creased where the left's had healed)
+    out, (U, F, J, W, wid, rig) = author(G, s="l")
+    out_r, _ = author(G, s="r")
     shapes = []
     for key, (Dl, _) in out.items():
-        shapes += [(key + "_l", Dl), (key + "_r", mirror(U, Dl))]
+        shapes += [(key + "_l", Dl), (key + "_r", out_r[key][0])]
     if "--dry" in a:
         np.savez_compressed(os.path.join(art, "..", "..", ".shots", "shoulder_psd_dry.npz"),
                             **{n: D for n, D in shapes})
@@ -584,7 +623,7 @@ def main(a):
             # pressed her shoulder into them, warden 860 -> 891 points through, ranger 42 -> 81)
             follow(op, U, shapes, mark="shoulder_psd_pauldrons", parts=(".pauldrons.",), near=PAULDRON_NEAR,
                    far=PAULDRON_FAR)
-    if "shoulder_abd110_l" in (mesh.get("extras") or {}).get("targetNames", []):
+    if "shoulder_abd117_l" in (mesh.get("extras") or {}).get("targetNames", []):
         print("SHOULDER_PSD: the morphs are on the glb already")
         return
     binb = bytearray(G.buf[G.b0:G.b0 + g["buffers"][0]["byteLength"]])
@@ -609,7 +648,8 @@ def main(a):
         mesh["weights"] = list(mesh.get("weights", [])) + [0]
     g.setdefault("asset", {}).setdefault("extras", {})["shoulder_psd"] = {
         "samples": SAMPLES, "dm_iters": DM_ITERS, "hollow_mm": HOLLOW_D * 1000, "fold_mm": FOLD_H * 1000,
-        "cap_bulge_mm": CAP_BULGE * 1000, "sculpt": "C2"}
+        "cap_bulge_mm": CAP_BULGE * 1000, "pit_flat": PIT_FLAT, "deltoid_mm": DELT_H * 1000,
+        "groove_mm": GROOVE_D * 1000, "sculpt": "C2 + Body 5 cor (per side)"}
     while len(binb) % 4:
         binb.append(0)
     g["buffers"][0]["byteLength"] = len(binb)
