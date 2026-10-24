@@ -21,6 +21,20 @@ V = D["V"].copy(); W = D["W"].copy(); fl = D["fl"]; fv = D["fv"]; UV = D["uv"].c
 names = [str(x) for x in D["names"]]; d = dict(bn=[str(x) for x in D["bn"]], bh=D["bh"], bt=D["bt"])
 ls = np.r_[0, np.cumsum(fl)[:-1]]
 ni = {n: i for i, n in enumerate(names)}
+# her skin has split vertices (two indices at one position, e.g. along the forearm). Every graph operation below runs on
+# the WELDED topology and every per-vertex field is equal across a weld group, so the two sides of a split never part
+# (they did: one-sided border fades, normals and Laplacians opened slits on the forearms).
+from scipy.sparse.csgraph import connected_components
+_pr = cKDTree(D["V"]).query_pairs(2e-5, output_type="ndarray")
+_, WG = connected_components(sp.coo_matrix((np.ones(len(_pr)), (_pr[:, 0], _pr[:, 1])), shape=(len(D["V"]),) * 2), directed=False)
+WN = np.bincount(WG); print("weld groups (split vertices): %d groups, %d vertices" % ((WN > 1).sum(), WN[WN > 1].sum()))
+
+
+def gmean(A, g):
+    """rows of A averaged over the weld groups g (ids per row)."""
+    _, gi = np.unique(g, return_inverse=True); gi = gi.ravel(); n = np.bincount(gi).astype(float)
+    S_ = np.zeros((len(n),) + A.shape[1:]); np.add.at(S_, gi, A)
+    return (S_ / n.reshape((-1,) + (1,) * (A.ndim - 1)))[gi]
 
 
 def sub(flag):
@@ -32,18 +46,26 @@ def sub(flag):
     outside = np.zeros(len(V), bool)
     for k in np.nonzero(~inreg)[0]: outside[fv[ls[k]:ls[k] + fl[k]]] = True
     cidx = ls[f][:, None] + np.arange(3)
-    return dict(f=f, T=loc[Tg], vid=vid, border=outside[vid], cidx=cidx)
+    outside = np.bincount(WG, weights=outside, minlength=WG.max() + 1)[WG] > 0   # a split vertex whose twin is outside
+    return dict(f=f, T=loc[Tg], vid=vid, border=outside[vid], cidx=cidx, g=WG[vid])
 
 
-def edges_w(X, T):
+def weld_pairs(g):
+    o = np.argsort(g, kind="stable"); gs = g[o]; same = gs[1:] == gs[:-1]
+    return np.c_[o[:-1][same], o[1:][same]]
+
+
+def edges_w(X, T, g=None):
     e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]; e.sort(1); e = np.unique(e, axis=0)
     L = np.linalg.norm(X[e[:, 0]] - X[e[:, 1]], axis=1)
+    if g is not None:   # weld groups joined at ~0 length
+        wp = weld_pairs(g); e = np.r_[e, wp]; L = np.r_[L, np.full(len(wp), 1e-9)]
     n = len(X)
     return e, sp.coo_matrix((np.r_[L, L], (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
 
 
-def border_fade(X, T, border, r0=0.004, r1=0.025):
-    e, G = edges_w(X, T)
+def border_fade(X, T, border, r0=0.004, r1=0.025, g=None):
+    e, G = edges_w(X, T, g)
     dist = dijkstra(G, indices=np.nonzero(border)[0], min_only=True, limit=0.2)
     return ss((dist - r0) / (r1 - r0))
 
@@ -56,10 +78,17 @@ def gsmooth(X, Dv, sigma):
     return (A @ Dv) / den[:, None]
 
 
-def umb(T, n):
-    e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]; e.sort(1); e = np.unique(e, axis=0)
-    A = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
-    return sp.diags(1 / np.maximum(np.asarray(A.sum(1)).ravel(), 1)) @ A
+def umb(T, n, g=None):
+    """umbrella operator; with weld groups g it is the welded one (neighbours of the group, equal on every member)."""
+    if g is None: g = np.arange(n)
+    _, gi = np.unique(g, return_inverse=True); gi = gi.ravel(); m = gi.max() + 1
+    e = gi[np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]]; e.sort(1); e = np.unique(e[e[:, 0] != e[:, 1]], axis=0)
+    A = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(m, m)).tocsr()
+    Ug = sp.diags(1 / np.maximum(np.asarray(A.sum(1)).ravel(), 1)) @ A
+    cnt = np.bincount(gi, minlength=m).astype(float)
+    Pe = sp.coo_matrix((np.ones(n), (np.arange(n), gi)), shape=(n, m)).tocsr()     # group -> member
+    Pa = sp.coo_matrix((1 / cnt[gi], (gi, np.arange(n))), shape=(m, n)).tocsr()    # members -> group mean
+    return Pe @ Ug @ Pa
 
 
 def relax_resample(S, X, Wloc, iters):
@@ -70,7 +99,10 @@ def relax_resample(S, X, Wloc, iters):
     w = Work(X, T, FI, S["border"], ref)
     if iters: w.relax(int(iters), lam=0.4)
     cuv, cd = w.corner_uv(); fi, bar, dist = w.vertex_anchor()
-    Wn = (Wloc[T[fi]] * bar[:, :, None]).sum(1)
+    Wn = gmean((Wloc[T[fi]] * bar[:, :, None]).sum(1), S["g"])
+    Vn = gmean(w.V, S["g"])
+    print("  relax: weld groups spread before mean %.4f mm" % (np.linalg.norm(Vn - w.V, axis=1).max() * 1e3))
+    w.V = Vn
     mv = np.linalg.norm(w.V - X, axis=1)
     print("  relax: moved p95 %.2f max %.2f mm, locate max %.4f mm" % (np.percentile(mv, 95) * 1e3, mv.max() * 1e3, max(cd.max(), dist.max()) * 1e3))
     return w.V, cuv, Wn
@@ -128,12 +160,12 @@ Dv += (tri * angb * (u < 1.02))[:, None] * e
 wf = K["FLAT"] * win(u, 1.62, 1.80, 1.92, 1.985)
 Dv += (-(4.5e-3) * wf * cp * cp + 1.5e-3 * wf * sp_ * sp_)[:, None] * e
 # 6. collarbone hint (off by default)
-fade = border_fade(X0, T, S["border"])
-Dv = gsmooth(X0, Dv, K["SIG"]) * fade[:, None]
+fade = border_fade(X0, T, S["border"], g=S["g"])
+Dv = gmean(gsmooth(X0, Dv, K["SIG"]), S["g"]) * fade[:, None]
 X1 = X0 + Dv
 # 7. pit fairing (as g2c post.py: edit.pit_mask, Taubin), on the moved surface
 pm = win(t, -0.30, -0.18, 0.22, 0.36) * ss((np.abs(phi) - 110) / 30) * ss((0.11 - r) / 0.025) * fade
-Wn = umb(T, len(X1)); m_ = pm[:, None]
+Wn = umb(T, len(X1), S["g"]); m_ = pm[:, None]
 for _ in range(int(K["PIT_IT"])):
     X1 = X1 + 0.5 * m_ * (Wn @ X1 - X1); X1 = X1 + (-0.53) * m_ * (Wn @ X1 - X1)
 mv = np.linalg.norm(X1 - X0, axis=1); print("R shape: moved p95 %.1f max %.1f mm, pit verts %d" % (np.percentile(mv, 95) * 1e3, mv.max() * 1e3, (pm > 0.05).sum()))
@@ -141,9 +173,9 @@ X2, cuv, W2 = relax_resample(S, X1, W0, K["RELAX"])
 # ---------------- right arm: weights ----------------
 c2 = F.coords(X2); t2, phi2 = c2["t"], c2["phi"]
 iu, il, ic, ih = ni["upperarm_r"], ni["lowerarm_r"], ni["clavicle_r"], ni["hand_r"]
-fade2 = border_fade(X2, T, S["border"], 0.0, 0.015)
+fade2 = border_fade(X2, T, S["border"], 0.0, 0.015, g=S["g"])
 # a. the twist hand-off (t 0.15-0.6): Laplacian smoothing of the rows
-Um = umb(T, len(X2)); mw = (win(t2, 0.05, 0.15, 0.60, 0.72) * fade2)[:, None]
+Um = umb(T, len(X2), S["g"]); mw = (win(t2, 0.05, 0.15, 0.60, 0.72) * fade2)[:, None]
 for _ in range(int(K["WSM"])): W2 = W2 + 0.5 * mw * (Um @ W2 - W2)
 dlt = np.zeros(1)
 # c. ~0.05 clavicle on the cap (so ClavicleLift moves it)
@@ -177,13 +209,13 @@ if K["MIRROR"]:
     Q = Q + a1 * ((1 - a2) * offE + a2 * offW)
     TRl = TRl[:, ::-1]   # mirror flips the winding
     SR = Surf(Q, TRl, k=32)
-    nL = vnormals(Y0, TL)
+    nL = gmean(vnormals(Y0, TL), SL["g"]); nL /= np.linalg.norm(nL, axis=1)[:, None]   # welded normals
     Y = Y0.copy()
     for _ in range(4):
         q, dd, fi, bar = SR.query(Y)
         Y = Y + ((q - Y) * nL).sum(1)[:, None] * nL
     q, dd, fi, bar = SR.query(Y)
-    fadeL = border_fade(Y0, TL, SL["border"])
+    fadeL = border_fade(Y0, TL, SL["border"], g=SL["g"])
     move = (Y - Y0) * fadeL[:, None]
     print("L onto mirrored R: along-normal move p50 %.1f p95 %.1f max %.1f mm; residual to target p95 %.2f mm"
           % tuple(np.r_[np.percentile(np.linalg.norm(Y - Y0, axis=1), [50, 95]) * 1e3, np.linalg.norm(Y - Y0, axis=1).max() * 1e3, np.percentile(dd, 95) * 1e3]))
@@ -209,6 +241,11 @@ for sd in "lr":
     ua = W[:, iu]; dl = (ua - np.minimum(ua, cap)) * zone
     W[:, iu] -= dl; W[:, ic] += dl
     print("trap rule %s: %d vertices, %.1f weight moved to the clavicle" % (sd, (dl > 1e-4).sum(), dl.sum()))
+# every weld group shares one position and one weight row (reports what was left to close)
+spread = np.linalg.norm(gmean(V, WG) - V, axis=1); wsp = np.abs(gmean(W, WG) - W).max(1)  # (all groups)
+print("weld check: position off group mean max %.4f mm, weight max %.5f" % (spread.max() * 1e3, wsp.max()))
+tch = np.bincount(WG, weights=((reg > 0) | moved0).astype(float), minlength=WG.max() + 1)[WG] > 0   # groups this script touched
+V[tch] = gmean(V[tch], WG[tch]); W[tch] = gmean(W[tch], WG[tch]).astype(np.float32)
 reg_out = np.where(reg > 0, reg, 3 * moved0)
 np.savez(out, **{**D, "V": V, "W": W, "uv": UV, "region": reg_out})
 print("WROTE", out)
