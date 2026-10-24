@@ -230,6 +230,8 @@ public partial class Game
     float ambientBase = -1;
     Vector2 bounceAt = new(1.3f, 1.0f);
     Vector2? keyAt;
+    static readonly Vector2? BodyKeyAt = Args.Get("body-key-at") is string bk && bk.Split(',') is [var bx, var by]
+        ? new Vector2(float.Parse(bx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(by, System.Globalization.CultureInfo.InvariantCulture)) : null;
     static readonly bool LookReflOff = Args.Get("look-refl") == "off";
     float[]? rig;
     OmniLight3D? herFire, fireSrc;
@@ -375,7 +377,10 @@ public partial class Game
         // (the whole figure's 0.15 on the broad cone, as before)
         var keyPos = eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y;
         Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain);
-        if (bodyKey != null) Aim(bodyKey, keyPos, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p * KeyBody);
+        // (--body-key-at SIDE,UP: the broad cone alone from elsewhere, the face's own cone left where it is: a steeper,
+        // wider body light rakes her collarbones, which the key's lens-near angle lit flat (pictures, Body 5))
+        var bodyPos = BodyKeyAt is { } bka ? eyes + dir * 1.9f - camLeft * bka.X + Vector3.Up * bka.Y : keyPos;
+        if (bodyKey != null) Aim(bodyKey, bodyPos, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p * KeyBody);
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
         // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
         // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
