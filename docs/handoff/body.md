@@ -3,7 +3,7 @@
 Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in `.claude/worktrees/armor-7` (branch armor-7, junction worktree: never git stash / reset --hard / checkout . / merge / pull with `godot\assets` linked; remove the link before merging integration, remake it after). One writer: the body chain and the armor pieces both live there.
 
 ## At the owner gate (Body 3, 23 Oct night); WAIT for main's relay of the owner's pick
-Scratch S3 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\2ea92279-b96d-4eee-9202-d8d2ca78739a\scratchpad\body3` (the coordinator 2ea92279's scratchpad, `body3\` only). Text backups go to `survivorsunchained_inputs\scratch_2ea92279ody3\` at the end.
+Scratch S3 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\2ea92279-b96d-4eee-9202-d8d2ca78739a\scratchpad\body3` (the coordinator 2ea92279's scratchpad, `body3\` only). Text backups go to `survivorsunchained_inputs\scratch_2ea92279\body3\` at the end.
 **Final gate sheet:** `S3\gate7\gate_final.png` (1:1; columns BEFORE eb667858 | today (integration 3559d1dd) | B-mid | B | B-narrow; rows: idle close-up +/-0.8, reaver_show 0.77 at 3/4 (`--facing 45`; `--close-turn` does nothing during `--hold`) and front, the Look front and turn 40 at `--zoom 0.45`). Max judge 7 (`S3\judge7\`): **B-narrow is the pick, medium overall.** The town close-up SHIPs in all three new columns. The Look camera's football shoulders remain in every column (B-narrow cuts them by about a quarter). Rows 3-4 FAIL in every column: the owner's "wrung out towel".
 **Diagnosis (`S3\twist\`):** (1) The towel is the RIG. There is ONE upper-arm twist bone, driven at half the roll; the pit band is about 75% on zero-roll bones; the roll lands at z 2-14 cm (9.5 deg/cm); the pit section goes 1.16 -> 1.83. (2) The football shoulders are the REST shape: breadth 525/530/508 mm vs a 162 mm head (3.1-3.3 head widths, target about 2.7), and B's cap is 1.25x the mid-arm radius. Options sent to main: (a) rig: twist_02/03 plus ramped weights, share 0.4 (1.5-2.5M tokens, 8-12 h); (b) a reaver_show restage (0.2-0.3M; prototype `S3\twist\proto\reaver_show.json`); (c) the shoulder rest shape: NARROW about 22 mm on B-mid's girth plus a smaller cap (0.3-0.5M). Nothing started.
 **Built (all post-stepped; positions keyed, verified against integration):** `S3\post\{B,Bmid,Bnarrow}\heroine.glb`.
@@ -15,7 +15,7 @@ Scratch S3 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-su
 - armor-7 HEAD's `head_tex/heroine_freckles_graft.png` belongs to the arm-root graft. Any old-UV body (orig, B*) needs integration's map (blob 9cfca4db), or a false brown shoulder blotch appears (sky-share alpha).
 - `tools/anim/out/clips` holds Armor 18's RESTAGED reaver_show (d2eb0c5c, arm at/below level). Body 2's `clav\packed` is built from it. Integration's reaver_show is overhead. The owner decides which ships.
 - The worktree's stale heroine.res (22 Oct) is in `S3\stale\`.
-**Measures:** `S3\meas	able4.md`. The grip eye-check found no grip broken by the clav hold.
+**Measures:** `S3\meas\table4.md`. The grip eye-check found no grip broken by the clav hold.
 **Next, after the owner's pick:** the fix(es) the owner picks, then the G3 chain on the chosen variant (outfits, correctives, wearcheck, LOD; the install fills the outfit tuck channels, which the raw exports lack), the dressed judge, the full test, and the MR.
 
 ## Paused here (Body 2, 23 Oct); next:
