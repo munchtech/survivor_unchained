@@ -13,7 +13,8 @@ from lib import Frame, ss, win, profile, show_profile, vnormals
 from remesh import islands, Ref, Work
 from geo import Surf
 
-K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0)
+K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0,
+         NARROW=0.0, DOME=0.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
 for k in K: K[k] = float(os.environ.get(k, K[k]))
 print("K", K)
 D = dict(np.load(sys.argv[1])); out = sys.argv[2]
@@ -241,6 +242,41 @@ for sd in "lr":
     ua = W[:, iu]; dl = (ua - np.minimum(ua, cap)) * zone
     W[:, iu] -= dl; W[:, ic] += dl
     print("trap rule %s: %d vertices, %.1f weight moved to the clavicle" % (sd, (dl > 1e-4).sum(), dl.sum()))
+# 8. narrower shoulders (off by default), both sides, every vertex, after the arm shape and the mirror; a smooth function
+# of rest position only, so a weld group's members move alike and nothing is relaxed or re-sampled.
+#   NARROW (mm): a medial x move, full on the cap's outer face (arm-frame phi 0 = lateral at rest) for t <= 0.2, gone by
+#     t 0.45 down the arm, toward the neck by |x| 14 cm, and over the front/back (((1 + cos phi) / 2)^2: 0.25 at the
+#     front and back, 0 underneath, so the pit does not move).
+#   DOME (0-1): the outer cap's bulge above the chord of its lateral profile r(t) (phi within 30 deg of lateral, chord
+#     from t -0.25 to 0.45) taken in by that fraction, radially, with the same phi falloff: less ball, no facet.
+moved8 = np.zeros(len(V), bool)
+if K["NARROW"] or K["DOME"]:
+    V8 = V.copy()
+    for sd in "rl":
+        Fs = Frame(d, sd); xs = V8[:, 0] * Fs.sx; on = xs > 0.02
+        c8 = Fs.coords(V8); t8, phi8, r8, e8 = c8["t"], c8["phi"], c8["r"], c8["e"]
+        a8 = ((1 + np.cos(np.radians(phi8))) / 2) ** 2
+        wt = ss((0.45 - t8) / 0.25) * ss((t8 + 0.6) / 0.2)
+        dx = K["NARROW"] * 1e-3 * ss((xs - 0.14) / 0.045) * wt * a8 * on
+        # the outer profile R(t): binned max r near phi 0, smoothed; bulge = R - chord, zero at both chord ends
+        tb = np.arange(-0.35, 0.551, 0.01); R = np.full(len(tb), np.nan)
+        lat = on & (np.abs(phi8) < 30) & (r8 < 0.10)
+        for i, tc in enumerate(tb):
+            m = lat & (np.abs(t8 - tc) < 0.015)
+            if m.any(): R[i] = r8[m].max()
+        R = np.interp(tb, tb[~np.isnan(R)], R[~np.isnan(R)])
+        ker = np.exp(-0.5 * (np.arange(-8, 9) * 0.01 / 0.03) ** 2); ker /= ker.sum()
+        Rs = np.convolve(np.r_[np.full(8, R[0]), R, np.full(8, R[-1])], ker, "valid")
+        ta, tb_ = -0.25, 0.45; Ca = np.interp(ta, tb, Rs); Cb = np.interp(tb_, tb, Rs)
+        bul = np.clip(Rs - (Ca + (Cb - Ca) * (tb - ta) / (tb_ - ta)), 0, None) * ss((tb - ta) / 0.08) * ss((tb_ - tb) / 0.08)
+        dr = K["DOME"] * np.interp(t8, tb, bul) * a8 * ss((xs - 0.12) / 0.04) * on * (r8 < 0.10)
+        print("narrow %s: dx max %.1f mm on %d verts; dome bulge max %.1f mm at t %.2f, move max %.1f mm on %d verts"
+              % (sd, dx.max() * 1e3, (dx > 1e-5).sum(), bul.max() * 1e3, tb[np.argmax(bul)], dr.max() * 1e3, (dr > 1e-5).sum()))
+        V[:, 0] -= Fs.sx * dx
+        V -= dr[:, None] * e8
+        moved8 |= (dx > 1e-6) | (dr > 1e-6)
+    prof8 = profile(V[vid], T, F, armkeep(W[vid], "r")); show_profile(prof8, "R narrowed")
+    moved0 = moved0 | moved8
 # every weld group shares one position and one weight row (reports what was left to close)
 spread = np.linalg.norm(gmean(V, WG) - V, axis=1); wsp = np.abs(gmean(W, WG) - W).max(1)  # (all groups)
 print("weld check: position off group mean max %.4f mm, weight max %.5f" % (spread.max() * 1e3, wsp.max()))
