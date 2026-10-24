@@ -75,6 +75,19 @@ public partial class HerPose : SkeletonModifier3D
     static readonly float? DownLTry = Try("look-arms-down-l"), DownRTry = Try("look-arms-down-r"), RollLTry = Try("look-roll-l"),
         RollRTry = Try("look-roll-r"), SwivelLTry = Try("look-swivel-l"), SwivelRTry = Try("look-swivel-r");
 
+    /// <summary>Creation's Look only, her left hand: the town idle shapes it to rest on her hip, and with the arm
+    /// rolled out on the Look it hung beside the hip, its fingers fanned against the grass at the turned Look
+    /// (Body 5 judge, 24 October 2026). LookFanL (0 to 1) brings the index, ring and little finger's spread toward
+    /// the middle finger's, in the palm's plane; LookCurlL (deg) bends each finger toward the palm at its knuckle
+    /// and middle joint, half that at the last; LookThumbL (deg) swings the thumb from under the fingers to beside
+    /// the index's middle joint. Axes come from the posed joints (the palm's plane from the knuckles and wrist), so
+    /// they hold over any idle (measured: body5/hand/hand.py). Eased with LookWeight like the arm fields.</summary>
+    public float LookFanL, LookCurlL, LookThumbL;
+    /// <summary>--look-fan-l F, --look-curl-l DEG, --look-thumb-l DEG: try other values on the Look.</summary>
+    static readonly float? FanLTry = Try("look-fan-l"), CurlLTry = Try("look-curl-l"), ThumbLTry = Try("look-thumb-l");
+    int[] fingL = System.Array.Empty<int>();   // index, middle, ring, pinky: _01, _02, _03 each
+    int thumb1L = -1, thumb3L = -1;
+
     public HerPose() { Name = "HerPose"; }
 
     /// <summary>The library's own pelvis at rest (UAL), against which a
@@ -97,6 +110,12 @@ public partial class HerPose : SkeletonModifier3D
         lowerR = sk.FindBone("lowerarm_r");
         handL = sk.FindBone("hand_l");
         handR = sk.FindBone("hand_r");
+        var fl = new System.Collections.Generic.List<int>();
+        foreach (var f in new[] { "index", "middle", "ring", "pinky" })
+            for (int k = 1; k <= 3; k++) fl.Add(sk.FindBone($"{f}_0{k}_l"));
+        fingL = fl.Contains(-1) ? System.Array.Empty<int>() : fl.ToArray();
+        thumb1L = sk.FindBone("thumb_01_l");
+        thumb3L = sk.FindBone("thumb_03_l");
         spine3 = sk.FindBone("spine_03");
         neck = sk.FindBone("neck_01");
         head = sk.FindBone("Head");
@@ -182,6 +201,50 @@ public partial class HerPose : SkeletonModifier3D
         if (rr != 0) Turn(sk, upperR, Along(sk, upperR, lowerR), rr);
         if (sl != 0) { var a = Along(sk, upperL, handL); Turn(sk, upperL, a, -sl); Turn(sk, handL, a, sl); }
         if (sr != 0) { var a = Along(sk, upperR, handR); Turn(sk, upperR, a, sr); Turn(sk, handR, a, -sr); }
+        float fa = (FanLTry ?? LookFanL) * w, cu = (CurlLTry ?? LookCurlL) * w, th = (ThumbLTry ?? LookThumbL) * w;
+        if ((fa != 0 || cu != 0 || th != 0) && fingL.Length == 12 && handL >= 0) LookHandL(sk, fa, cu, th);
+    }
+
+    /// <summary>The palm's frame from the posed joints: across (index knuckle to little finger's), along (wrist to
+    /// middle knuckle, square to across) and their cross, which points out of the back of her left hand.</summary>
+    (Vector3 across, Vector3 along, Vector3 back) PalmL(Skeleton3D sk)
+    {
+        Vector3 P(int b) => sk.GetBoneGlobalPose(b).Origin;
+        var a = (P(fingL[9]) - P(fingL[0])).Normalized();
+        var m = P(fingL[3]) - P(handL); m = (m - a * a.Dot(m)).Normalized();
+        return (a, m, m.Cross(a));
+    }
+
+    /// <summary>LookFanL, LookCurlL and LookThumbL at their eased values (see LookFanL).</summary>
+    void LookHandL(Skeleton3D sk, float fan, float curl, float thumb)
+    {
+        Vector3 P(int b) => sk.GetBoneGlobalPose(b).Origin;
+        Vector3 Flat(Vector3 v, Vector3 n) => (v - n * n.Dot(v)).Normalized();
+        if (fan != 0)
+            foreach (int f in new[] { 0, 2, 3 })   // index, ring, pinky toward the middle finger
+            {
+                var n = PalmL(sk).back;
+                var dm = Flat(P(fingL[4]) - P(fingL[3]), n); var dp = Flat(P(fingL[f * 3 + 1]) - P(fingL[f * 3]), n);
+                float spread = Mathf.RadToDeg(Mathf.Atan2(dm.Cross(dp).Dot(n), dm.Dot(dp)));
+                Turn(sk, fingL[f * 3], n, -fan * spread);
+            }
+        if (curl != 0)
+            for (int f = 0; f < 4; f++)
+            {
+                var n = PalmL(sk).back;
+                var ax = (P(fingL[f * 3 + 1]) - P(fingL[f * 3])).Normalized().Cross(-n).Normalized();   // + toward her palm
+                Turn(sk, fingL[f * 3], ax, curl);
+                Turn(sk, fingL[f * 3 + 1], ax, curl);
+                Turn(sk, fingL[f * 3 + 2], ax, curl / 2);
+            }
+        if (thumb != 0 && thumb1L >= 0 && thumb3L >= 0)
+        {
+            // toward a point beside the index's middle joint: 15 mm to its thumb side and 8 mm toward the palm
+            var (a, _, n) = PalmL(sk);
+            var t0 = P(thumb1L); var target = P(fingL[1]) - a * 0.015f - n * 0.008f;
+            var axis = (P(thumb3L) - t0).Normalized().Cross((target - t0).Normalized());
+            if (axis.LengthSquared() > 1e-8f) Turn(sk, thumb1L, axis.Normalized(), thumb);
+        }
     }
 
     /// <summary>The line from one bone's head to another's, in the skeleton's space.</summary>

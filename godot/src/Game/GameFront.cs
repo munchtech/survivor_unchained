@@ -135,11 +135,13 @@ public partial class Game
             figure.Loop(look ? figure.Person.Own!.Prefix + $"idle_{figure.Person.Calling}_town" : guardIdle, 0.3);
             // (her arms nearer her body on the Look, eased with the crossfade: HerPose.LookArms. Measured on the town
             // idle, Body 5, 24 October 2026: upper arms 10.7 and 12.1 deg from her chest's line (were 20.8 and 43.6),
-            // her left roll -11.8 deg against her right's -9.2 (was -47.1), every skin gap 33 mm or more)
+            // her left roll -11.8 deg against her right's -9.2 (was -47.1), every skin gap 33 mm or more. Her left hand
+            // then hangs 5 cm off her hip, so it hangs relaxed: fingers within 3.4 deg of the middle's line (index +4.6,
+            // pinky -12.4 before), 25 deg more curl at the knuckles and middle joints, thumb beside the index)
             if (figure.Person.Pose is HerPose hp)
             {
                 hp.LookOn = look;
-                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 8f; }
+                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 8f; hp.LookFanL = 0.8f; hp.LookCurlL = 25f; hp.LookThumbL = 18f; }
             }
         }
         figure.ShowHeld(shown);
