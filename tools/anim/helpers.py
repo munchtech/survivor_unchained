@@ -266,14 +266,17 @@ SPEC = {
         "A": [60.0, 120.0],
         "bones": {
             "delt": {"parent": "upperarm_twist_02_{s}", "pivot": ["hum", 0.05], "aim": [0.30, [0, 0, 0]], "on": "upperarm_{s}",
-                     "follow": 0.0, "ka": 0.0, "kp": 0.0, "sa": -0.10, "sp": 0.30, "off": [0, 0, 0]},
+                     "follow": 0.0, "ka": 0.0, "kp": 0.0, "sa": -0.10, "sp": 0.45, "off": [0, 0, 0]},
             "trap": {"parent": "clavicle_{s}", "pivot": [0.10, 1.535, -0.04], "aim": None, "on": "upperarm_{s}",
                      "follow": 0.0, "ka": 0.0, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0.0, 0.015, 0.0]},
             "pec": {"parent": "spine_03", "pivot": [0.05, 1.42, 0.05], "aim": [0.08, [0, 0, 0.025]], "on": "upperarm_{s}",
-                    "follow": 0.6, "ka": 0.5, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0, 0, 0]},
+                    "follow": 0.2, "ka": 0.5, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0, 0, 0]},
             "lat": {"parent": "spine_03", "pivot": [0.09, 1.20, -0.05], "aim": [0.07, [-0.01, 0, 0.01]], "on": "upperarm_{s}",
-                    "follow": 0.4, "ka": 0.0, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0, 0, 0]},
+                    "follow": 0.15, "ka": 0.0, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0, 0, 0]},
         },
+        # (S2b, 8 weights: the masks eased over her surface; pec and lat follow cut from 0.6 / 0.4, which folded the
+        # breast's top and the pit's lat edge at A 150-160; the delt's bulge 0.30 -> 0.45: its offset 45 -> 55 mm)
+        "smooth": 10,
         "weights": {
             # delt: t (m along the humerus from the joint) in, full, full, out; c the cosine to its top-outer side
             # (in from, full at); none past r m from the humerus
@@ -281,10 +284,10 @@ SPEC = {
             # trap: x in, full, full, out; d below the top of her silhouette (full within, none past)
             "trap": {"x": [0.10, 0.15, 0.17, 0.20], "d": [0.02, 0.045]},
             # pec: x in; y in, full, full, out; z in (the front of her armpit); less over the breast (1 - bre x its weight)
-            "pec": {"x": [0.07, 0.13], "y": [1.39, 1.43, 1.50, 1.54], "z": [0.02, 0.05], "bre": 0.6},
+            "pec": {"x": [0.07, 0.13], "y": [1.39, 1.43, 1.50, 1.54], "z": [0.02, 0.05], "bre": 1.0},
             # lat: x in; y in, full, full, out (the armpit's dome stays on spine_03 and the share); z: out at the front
             # (from, to), in at the back (from, to)
-            "lat": {"x": [0.08, 0.12], "y": [1.22, 1.30, 1.38, 1.43], "z": [0.02, 0.06, -0.10, -0.07]},
+            "lat": {"x": [0.08, 0.12], "y": [1.22, 1.30, 1.38, 1.43], "z": [0.02, 0.06, -0.07, -0.03]},
         },
     },
 }

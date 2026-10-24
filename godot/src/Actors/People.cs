@@ -366,12 +366,13 @@ public static class People
         skel.AddChild(new HerRaise());
         // Her scapulae turned up as each arm rises (only a body built with them: scap_rig_post.py).
         skel.AddChild(new HerScap());
-        // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae (shoulder_rig_post.py).
-        skel.AddChild(new HerShoulder());
         skel.AddChild(new HerJiggle());
         skel.AddChild(new HerFaceLife());
         // Her twist and share bones, from the pose every layer above has made.
         skel.AddChild(new HerJoints());
+        // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae and the twist
+        // bones (the delt is twist_02's child; shoulder_rig_post.py).
+        skel.AddChild(new HerShoulder());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);

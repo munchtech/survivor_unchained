@@ -25,13 +25,13 @@ public static class ShoulderHelpers
         float Follow, float Ka, float Kp, float Sa, float Sp, Vector3 Off);
 
     public static readonly Kind Delt = new("delt", "upperarm_twist_02_{s}", default, 0.05f, new[] { 0.30f }, Vector3.Zero, "upperarm_{s}",
-        0f, 0f, 0f, -0.10f, 0.30f, Vector3.Zero);
+        0f, 0f, 0f, -0.10f, 0.45f, Vector3.Zero);
     public static readonly Kind Trap = new("trap", "clavicle_{s}", new(0.10f, 1.535f, -0.04f), -1f, null, Vector3.Zero, "upperarm_{s}",
         0f, 0f, 0f, 0f, 0f, new(0f, 0.015f, 0f));
     public static readonly Kind Pec = new("pec", "spine_03", new(0.05f, 1.42f, 0.05f), -1f, new[] { 0.08f }, new(0f, 0f, 0.025f), "upperarm_{s}",
-        0.6f, 0.5f, 0f, 0f, 0f, Vector3.Zero);
+        0.2f, 0.5f, 0f, 0f, 0f, Vector3.Zero);
     public static readonly Kind Lat = new("lat", "spine_03", new(0.09f, 1.20f, -0.05f), -1f, new[] { 0.07f }, new(-0.01f, 0f, 0.01f), "upperarm_{s}",
-        0.4f, 0f, 0f, 0f, 0f, Vector3.Zero);
+        0.15f, 0f, 0f, 0f, 0f, Vector3.Zero);
 
     public static readonly Kind[] All = { Delt, Trap, Pec, Lat };
 
