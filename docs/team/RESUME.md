@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 23 October, night: coordinator 2ea92279 (running)
+**Body 4 (armor-7, from Body 3 @4383f4b5):** the owner approved (a) the upper-arm twist rig fix and (c) the shoulder reshape for the Look, on B-narrow ("a + c sadly ... it needs to be done"). Order: (c), (a), a nude owner gate, then the G3 chain once, the dressed judge, the MR. No API. Handoff `docs/handoff/body.md` top "At the owner gate (Body 3, 23 Oct night)". Everything else paused as below.
+
 ## 23 October: coordinator 23290ad1 WIND-DOWN (new account; read this first)
 **The owner's scope: the arm/shoulders only.** The owner FAILED the arm graft on sight ("the arms skin looked twisted and weird. not toned or sexy  the one arm looked goofy"; "the idea was correct. her shoulders were too high and there wasn't sexy feminine definition. it just was executed poorly. research and try again"). BJ1's PASS is overruled. Nothing merged; integration still has her original arm. OWNER_NOTES 23 Oct has the owner's words.
 **Body 2 PAUSED at armor-7@5bfab655 (pushed), handoff `docs/handoff/body.md` top "Paused here (Body 2, 23 Oct)".**
