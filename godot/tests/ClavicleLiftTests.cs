@@ -5,7 +5,7 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>Her clavicle lift (Play/ClavicleLift.cs): none at and below level, a third of the raise past level, the
+/// <summary>Her clavicle lift (Play/ClavicleLift.cs): none at and below 60 degrees, a smoothstep to 34 overhead, the
 /// clip's own lift counted (never a sum), the hand kept, the lift cut back where the hand would be out of reach.</summary>
 public class ClavicleLiftTests
 {
@@ -31,8 +31,8 @@ public class ClavicleLiftTests
     [Theory]
     [InlineData(0f)]
     [InlineData(39f)]   // her rest A-pose
-    [InlineData(90f)]
-    public void NothingAtOrBelowLevel(float a)
+    [InlineData(60f)]
+    public void NothingAtOrBelowSixty(float a)
     {
         var arm = Arm(a, -3f);
         var before = arm;
@@ -43,12 +43,25 @@ public class ClavicleLiftTests
     }
 
     [Fact]
-    public void ATargetOfAThirdPastLevel()
+    public void ACurveEasedInFromSixty()
     {
-        Assert.Equal(0f, ClavicleLift.Target(90f));
-        Assert.InRange(ClavicleLift.Target(117f), 7f, 9f);
-        Assert.InRange(ClavicleLift.Target(175f), 27f, 31f);
-        Assert.True(ClavicleLift.Target(92f) < 0.2f);
+        Assert.Equal(0f, ClavicleLift.Target(60f));
+        Assert.True(ClavicleLift.Target(62f) < 0.05f);
+        Assert.InRange(ClavicleLift.Target(90f), 5f, 5.6f);
+        Assert.InRange(ClavicleLift.Target(115f), 14.5f, 15.2f);
+        Assert.InRange(ClavicleLift.Target(117f), 15.3f, 16.1f);
+        Assert.InRange(ClavicleLift.Target(140f), 24.8f, 25.6f);
+        Assert.InRange(ClavicleLift.Target(175f), 33.5f, 34f);
+        Assert.Equal(34f, ClavicleLift.Target(200f));
+        // rising, and no kink: the slope changes by less than 0.02 deg/deg per degree anywhere (smoothstep: at most 0.0142)
+        float prev = 0, prevSlope = 0;
+        for (float a = 58f; a <= 182f; a += 1f)
+        {
+            float t = ClavicleLift.Target(a), slope = t - prev;
+            Assert.True(slope >= 0f);
+            if (a > 58f) Assert.True(MathF.Abs(slope - prevSlope) < 0.02f, $"kink at {a}");
+            prev = t; prevSlope = slope;
+        }
     }
 
     [Fact]
@@ -63,6 +76,7 @@ public class ClavicleLiftTests
     }
 
     [Theory]
+    [InlineData(90f, 90f)]
     [InlineData(117f, 90f)]
     [InlineData(140f, 40f)]
     [InlineData(170f, 20f)]
@@ -72,19 +86,33 @@ public class ClavicleLiftTests
         var s0 = arm.Shoulder; var h = arm.Hand; var e0 = arm.Elbow;
         var (_, _, lift) = ClavicleLift.Apply(ref arm, Down, Lat, Fwd, RestEl);
         Assert.True(lift > 1f);
-        Assert.True(arm.Shoulder.Y > s0.Y + 0.01f);
+        Assert.True(arm.Shoulder.Y > s0.Y + 0.005f);
         // the re-aimed bones: the upper arm reaches the new elbow, the forearm the old hand
         Assert.Equal(0f, (arm.Shoulder + Vector3.Transform((e0 - s0), arm.UpperTurn) - arm.Elbow).Length(), 0.001f);
         Assert.Equal(0f, (arm.Elbow + Vector3.Transform(h - e0, arm.LowerTurn) - h).Length(), 0.001f);
     }
 
     [Fact]
-    public void AStraightArmOverheadCutsTheLiftBack()
+    public void AStraightArmOutToTheSideCutsTheLiftBack()
     {
-        var arm = Arm(175f, 0f, 0f);
-        var h = arm.Hand;
+        // (lifting the clavicle's outer end draws the shoulder up and in, away from a straight arm's hand out past level: the
+        // shoulder may not move away from the hand, so the lift is cut back, here to nothing)
+        var arm = Arm(100f, 0f, 0f);
+        var h = arm.Hand; var e0 = Arm(100f, 0f, 0f).Elbow;
         var (_, _, lift) = ClavicleLift.Apply(ref arm, Down, Lat, Fwd, RestEl);
-        Assert.True(lift < ClavicleLift.Target(175f));
-        Assert.Equal(0f, (arm.Elbow + Vector3.Transform(h - Arm(175f, 0f, 0f).Elbow, arm.LowerTurn) - h).Length(), 0.001f);
+        Assert.True(lift < ClavicleLift.Target(100f), $"lift {lift} target {ClavicleLift.Target(100f)}");
+        Assert.True((h - arm.Shoulder).Length() <= 0.53f + 1e-4f, $"reach {(h - arm.Shoulder).Length()}");
+        Assert.Equal(0f, (arm.Elbow + Vector3.Transform(h - e0, arm.LowerTurn) - h).Length(), 0.001f);
+    }
+
+    [Fact]
+    public void AStraightArmOverheadKeepsTheWholeLift()
+    {
+        // (overhead the lifted shoulder comes nearer the hand: the elbow bends a little, the hand stays)
+        var arm = Arm(175f, 0f, 0f);
+        var h = arm.Hand; var e0 = Arm(175f, 0f, 0f).Elbow;
+        var (_, _, lift) = ClavicleLift.Apply(ref arm, Down, Lat, Fwd, RestEl);
+        Assert.Equal(ClavicleLift.Target(175f), lift, 0.01f);
+        Assert.Equal(0f, (arm.Elbow + Vector3.Transform(h - e0, arm.LowerTurn) - h).Length(), 0.001f);
     }
 }

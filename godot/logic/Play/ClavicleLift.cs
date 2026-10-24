@@ -4,26 +4,29 @@ using System.Numerics;
 namespace SurvivorUnchained.Play;
 
 /// <summary>
-/// Her shoulder girdle as an arm rises above level (armor 17 C2): a real clavicle and scapula carry about a third of the
-/// raise past 90 degrees, and many clips leave her clavicle at rest (the raised shoulder sat no higher than the resting
-/// one: "the arm looks plugged into the chest"). Per side, A = the upper arm's angle from her torso's down axis (pelvis to
-/// neck_01; 90 level, 180 overhead): the clavicle's wanted rise above its rest is <see cref="K"/> x (A - 90), eased in
-/// over the first <see cref="Ease"/> degrees, none at and below level. The clip's own rise counts (the larger wins, never
-/// a sum). The outer end also rolls forward <see cref="Roll"/> of the added rise. The hand stays where the clip put it:
-/// the upper and lower arm are re-aimed (two-bone, the elbow in the clip's bend plane) and the hand keeps its world turn;
-/// where the lifted shoulder can't reach the hand, the lift is cut back until it can. Engine-free (System.Numerics, all
-/// in skeleton space); View/HerShrug runs it before HerRaise. Python's twin: tools/anim/helpers.py shrug.
+/// Her shoulder girdle as an arm rises (armor 17 C2; body5 lift): a real clavicle and scapula carry the raise with the
+/// arm (scapulohumeral rhythm, about 2:1 glenohumeral to scapular), and many clips leave her clavicle at rest (the raised
+/// arm plugged into a flat shoulder shelf at a V: "a doll's ball joint"). Per side, A = the upper arm's angle from her
+/// torso's down axis (pelvis to neck_01; 90 level, 180 overhead): the clavicle's wanted rise above its rest is
+/// <see cref="Max"/> x smoothstep((A - <see cref="From"/>) / (<see cref="To"/> - <see cref="From"/>)): nothing at and
+/// below 60 (her idles, the Look and the town untouched), eased in, 5 at level, 15 at 115, 25 at 140, easing out to 34
+/// overhead. The clip's own rise counts (the larger wins, never a sum). The outer end also rolls forward
+/// <see cref="Roll"/> of the added rise. The hand stays where the clip put it: the upper and lower arm are re-aimed
+/// (two-bone, the elbow in the clip's bend plane) and the hand keeps its world turn; where the lifted shoulder can't
+/// reach the hand, the lift is cut back until it can. Engine-free (System.Numerics, all in skeleton space);
+/// View/HerShrug runs it before HerRaise. Python's twin: tools/anim/helpers.py shrug.
 /// </summary>
 public static class ClavicleLift
 {
-    public const float K = 0.36f, Ease = 8f, Roll = 0.25f, Reach = 0.999f;
+    public const float Max = 34f, From = 60f, To = 180f, Roll = 0.25f, Reach = 0.999f;
 
     /// <summary>The clavicle's wanted rise in degrees above its rest for an upper arm at <paramref name="a"/> degrees.</summary>
     public static float Target(float a)
     {
-        float x = a - 90f;
+        float x = (a - From) / (To - From);
         if (x <= 0) return 0;
-        return K * (x < Ease ? x * x / (2 * Ease) : x - Ease / 2);
+        x = Math.Min(x, 1f);
+        return Max * x * x * (3 - 2 * x);
     }
 
     /// <summary>A line's elevation in degrees above the plane square to <paramref name="down"/> (unit).</summary>

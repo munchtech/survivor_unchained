@@ -5,10 +5,11 @@ using N = System.Numerics;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// Her clavicle lift as an arm rises above level (armor 17 C2, Play/ClavicleLift): about a third of the raise past 90
-/// degrees goes to her shoulder girdle, the clip's own clavicle counting; her hands stay where the clip put them. Runs
+/// Her clavicle lift as an arm rises (armor 17 C2; body5 lift, Play/ClavicleLift): from 60 degrees her shoulder girdle
+/// rises with the arm (a smoothstep: 5 at level, 15 at 115, 34 overhead), the clip's own clavicle counting; her hands
+/// stay where the clip put them. Runs
 /// before HerRaise (whose pose-space shapes read the lifted clavicle) and HerJoints (whose twists follow the re-aimed arm).
-/// Arms at or below level: nothing changes. Knobs: --shrug-off, --shrug-log. Python's twin: tools/anim/helpers.py shrug
+/// Arms at or below 60 degrees: nothing changes. Knobs: --shrug-off, --shrug-log. Python's twin: tools/anim/helpers.py shrug
 /// (inside helpers.drive, so the bakes and wearcheck pose her the same).
 /// </summary>
 public partial class HerShrug : SkeletonModifier3D

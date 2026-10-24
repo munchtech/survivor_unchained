@@ -527,25 +527,27 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
 
 
 # ------------------------------------------------------------ clavicle lift --
-# Her shoulder girdle as an arm rises above level (armor 17 C2): a real clavicle and scapula carry about a third of the
-# raise past 90 degrees. Many clips leave her clavicle where it rests, so the raised shoulder sat no higher than the
-# resting one and the arm looked plugged into her chest. Per side: A = the upper arm's angle from her torso's down axis
-# (pelvis to neck_01; 90 level, 180 overhead); the clavicle's wanted rise above its rest is SHRUG_K x (A - 90) (eased in
-# over the first SHRUG_EASE degrees: none at and below level); the clip's own rise counts (the larger wins, never a sum);
-# the outer end rolls forward SHRUG_ROLL of the added rise. The hand stays where the clip puts it (two-bone re-aim of the
+# Her shoulder girdle as an arm rises (armor 17 C2; body5 lift, 24 Oct): a real clavicle and scapula carry the raise
+# with the arm (scapulohumeral rhythm, about 2:1 glenohumeral to scapular), and many clips leave her clavicle where it
+# rests, so the raised shoulder sat low and the arm plugged into a flat shelf at a V (judge 12: "a doll's ball joint").
+# Per side: A = the upper arm's angle from her torso's down axis (pelvis to neck_01; 90 level, 180 overhead); the
+# clavicle's wanted rise above its rest is SHRUG_MAX x smoothstep((A - SHRUG_FROM) / (SHRUG_TO - SHRUG_FROM)): nothing
+# at and below SHRUG_FROM (60: her idles, the Look and the town untouched), eased in (no kink), 5 at level, 15 at 115,
+# 25 at 140, easing out to SHRUG_MAX at SHRUG_TO (180). The clip's own rise counts (the larger wins, never a sum); the
+# outer end rolls forward SHRUG_ROLL of the added rise. The hand stays where the clip puts it (two-bone re-aim of the
 # upper and lower arm, the elbow kept in the clip's bend plane; its world turn kept); where the lifted shoulder can't
 # reach the hand the lift is cut back until it can. The game's twin: Play/ClavicleLift.cs, run by HerShrug before
 # HerRaise. SHRUG_OFF=1 (env) turns it off (the game: --shrug-off).
-SHRUG_K, SHRUG_EASE, SHRUG_ROLL, SHRUG_REACH = 0.36, 8.0, 0.25, 0.999
+SHRUG_MAX, SHRUG_FROM, SHRUG_TO, SHRUG_ROLL, SHRUG_REACH = 34.0, 60.0, 180.0, 0.25, 0.999
 
 
 def shrug_target(A):
     """The clavicle's wanted rise (degrees above rest) for an upper arm at A degrees."""
-    x = A - 90.0
+    x = (A - SHRUG_FROM) / (SHRUG_TO - SHRUG_FROM)
     if x <= 0:
         return 0.0
-    g = x * x / (2 * SHRUG_EASE) if x < SHRUG_EASE else x - SHRUG_EASE / 2
-    return SHRUG_K * g
+    x = min(x, 1.0)
+    return SHRUG_MAX * x * x * (3 - 2 * x)
 
 
 def _torso(grot, gpos, I):
@@ -584,7 +586,7 @@ def shrug(sk: Skeleton, rot, report=None):
         A = math.degrees(math.acos(float(np.clip((E - S) / np.linalg.norm(E - S) @ down, -1, 1))))
         rise = _elev(S - Pc, down) - rest[s]
         t = shrug_target(A)
-        d = min(t, max(0.0, t - rise))   # (none at and below level, even with the clip's clavicle dropped)
+        d = min(t, max(0.0, t - rise))   # (none at and below SHRUG_FROM, even with the clip's clavicle dropped)
         if d < 1e-4:
             if report is not None:
                 report[s] = (A, rise, 0.0, 0.0, 0.0)
