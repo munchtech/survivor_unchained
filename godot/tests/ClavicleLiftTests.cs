@@ -65,6 +65,23 @@ public class ClavicleLiftTests
     }
 
     [Fact]
+    public void WithHerScapulaeTheClavicleRisesLess()
+    {
+        Assert.Equal(0f, ClavicleLift.Target(60f, true));
+        Assert.InRange(ClavicleLift.Target(90f, true), 1.9f, 2.1f);
+        Assert.InRange(ClavicleLift.Target(140f, true), 9.4f, 9.8f);
+        Assert.InRange(ClavicleLift.Target(160f, true), 11.9f, 12.4f);
+        Assert.Equal(13f, ClavicleLift.Target(200f, true));
+        // the outer end turned back, not forward: the shoulder lands behind where the old curve put it
+        var a = Arm(160f); var b = Arm(160f);
+        ClavicleLift.Apply(ref a, Down, Lat, Fwd, RestEl, true);
+        ClavicleLift.Apply(ref b, Down, Lat, Fwd, RestEl);
+        var before = Arm(160f).Shoulder;
+        Assert.True(a.Shoulder.Z < before.Z - 0.005f, $"back {a.Shoulder.Z - before.Z}");
+        Assert.True(a.Shoulder.Y - before.Y < b.Shoulder.Y - before.Y);
+    }
+
+    [Fact]
     public void TheClipsOwnLiftCountsNeverASum()
     {
         var arm = Arm(140f, 5f);

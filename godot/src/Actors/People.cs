@@ -364,6 +364,8 @@ public static class People
         skel.AddChild(new HerShrug());
         // The pectoral's pull on her breasts as an arm rises, before the springs follow it.
         skel.AddChild(new HerRaise());
+        // Her scapulae turned up as each arm rises (only a body built with them: scap_rig_post.py).
+        skel.AddChild(new HerScap());
         skel.AddChild(new HerJiggle());
         skel.AddChild(new HerFaceLife());
         // Her twist and share bones, from the pose every layer above has made.

@@ -220,6 +220,35 @@ SPEC = {
         "reach_from": ["upperarm_share_{s}", "clavicle_{s}"],
         "radius": [0.30, 0.40],
     },
+    # Her scapula (Body 6 S1, 24 Oct; the shoulder rig's stage 1). A real shoulder girdle rises with the arm mostly by
+    # the SCAPULA's upward rotation (39-50 deg overhead), the clavicle only ~6 deg up; her clavicle alone carried 34
+    # deg, the shoulder joint rose ~8 cm and the trapezius came up rigid into a corner (football pads, no neck). Per
+    # side, scap_{s} (a child of `parent`, its global rest turn none, at `pivot`: the root of the scapula's spine,
+    # medial and behind; her rest space, game axes, her left, the right mirrored) turns about `axis` (the scapular
+    # plane's normal, 35 deg off her front; her left, the right mirrored as a turn) by per_deg x (A - from), eased in
+    # over `ease` degrees (a quadratic: no kink), A the upper arm's angle from her torso's down axis read after the
+    # clavicle lift. With it her clavicle lift is shrug_max x the smoothstep (13 overhead), its outer end turned
+    # shrug_roll of it (back). Only on a body with the bones (`gate`): the hero, the NPCs and her older bodies drive
+    # as before. Built by tools/assets/scap_rig_post.py, which also writes her weights onto it ("weights").
+    "scap": {
+        "gate": "scap_{s}",
+        "bone": "scap_{s}",
+        "parent": "spine_03",
+        "pivot": [0.075, 1.45, -0.085],
+        "axis": [-0.5736, 0.0, 0.8192],
+        "per_deg": 0.36, "from": 30.0, "ease": 20.0,
+        "shrug_max": 13.0, "shrug_roll": -0.6,
+        "weights": {
+            # along her trapezius' top: the clavicle's share of the non-arm weight a smoothstep in x (m from her
+            # midline) from x0 to x1; the arm's a smoothstep over arm_ramp; full within band[0] m below the top, none
+            # past band[1]; eased back to her own weights over `out` (x)
+            "x0": 0.06, "x1": 0.23, "arm_ramp": [0.165, 0.225], "band": [0.015, 0.05], "out": [0.215, 0.245],
+            # the blade: up to blade_max of the non-arm weight to scap_{s}, full over the x and y spans, eased out
+            # over blade_fade; only behind blade_z (eased over blade_fade)
+            "blade_max": 0.55, "blade_x": [0.07, 0.13], "blade_y": [1.335, 1.435], "blade_fade": 0.04,
+            "blade_z": -0.03,
+        },
+    },
 }
 
 
@@ -541,13 +570,90 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
 SHRUG_MAX, SHRUG_FROM, SHRUG_TO, SHRUG_ROLL, SHRUG_REACH = 34.0, 60.0, 180.0, 0.25, 0.999
 
 
-def shrug_target(A):
-    """The clavicle's wanted rise (degrees above rest) for an upper arm at A degrees."""
+def shrug_target(A, scap=False):
+    """The clavicle's wanted rise (degrees above rest) for an upper arm at A degrees (`scap`: a body with her scapula
+    helpers, SPEC "scap": its shrug_max instead of SHRUG_MAX)."""
     x = (A - SHRUG_FROM) / (SHRUG_TO - SHRUG_FROM)
     if x <= 0:
         return 0.0
     x = min(x, 1.0)
-    return SHRUG_MAX * x * x * (3 - 2 * x)
+    return (SPEC["scap"]["shrug_max"] if scap else SHRUG_MAX) * x * x * (3 - 2 * x)
+
+
+def has_scap(index, s):
+    """Her scapula helper on side `s` (SPEC "scap"): `index` any name lookup."""
+    return SPEC["scap"]["gate"].replace("{s}", s) in index
+
+
+def scap_angle(A):
+    """The scapula's upward rotation (degrees) for an upper arm at A degrees (SPEC "scap"): none at and below
+    `from`, a quadratic over `ease` degrees, then per_deg a degree."""
+    c = SPEC["scap"]
+    x = A - c["from"]
+    if x <= 0:
+        return 0.0
+    e = c["ease"]
+    return c["per_deg"] * (x * x / (2 * e) if x < e else x - e / 2)
+
+
+def scap_axis(s):
+    """The scapula's turning axis for side `s` in her rest space (game axes); the right a mirror (as a turn)."""
+    a = np.asarray(SPEC["scap"]["axis"], float)
+    return a if s == "l" else a * np.array([1.0, -1.0, -1.0])
+
+
+def scap_pivot(s):
+    p = np.asarray(SPEC["scap"]["pivot"], float)
+    return p if s == "l" else p * np.array([-1.0, 1.0, 1.0])
+
+
+def add_scap(sk: Skeleton) -> Skeleton:
+    """The skeleton with her scapula helpers added (if missing), rests as scap_rig_post.py builds them: a child of
+    SPEC scap parent, no global rest turn (the skeleton's axes), at the pivot."""
+    c = SPEC["scap"]
+    names_, parent = list(sk.names), list(sk.parent)
+    rot, pos = list(sk.rest_rot), list(sk.rest_pos)
+    I = dict(sk.index)
+    grot, gpos = sk.rest_globals()
+    for s in "lr":
+        n = c["bone"].replace("{s}", s)
+        if n in I:
+            continue
+        p = I[c["parent"]]
+        I[n] = len(names_)
+        names_.append(n)
+        parent.append(p)
+        rot.append(np.array(qinv(grot[0, p]), float))
+        pos.append(np.array(qrot(qinv(grot[0, p]), scap_pivot(s) - gpos[0, p]), float))
+    out = Skeleton(names=names_, parent=parent, rest_rot=np.array(rot), rest_pos=np.array(pos), path=sk.path)
+    out.index = I
+    return out
+
+
+def scap(sk: Skeleton, rot, report=None):
+    """Her scapulae (SPEC "scap") on local rotations rot [J, 4], changed in place, from the pose as it stands (after
+    her clavicle lift): each scap_{s} its rest x a turn about its axis (in its rest frame) by scap_angle(A). `report`
+    (a dict), if given, gets per side (A, degrees)."""
+    I = sk.index
+    if not any(has_scap(I, s) for s in "lr") or "pelvis" not in I:
+        return rot
+    grot, gpos = sk.fk(rot[None])
+    grot, gpos = grot[0], gpos[0]
+    down = _torso(grot, gpos, I)[0]
+    g0 = getattr(sk, "_scap_rest", None)
+    if g0 is None:
+        g0 = sk._scap_rest = sk.rest_globals()[0][0]
+    for s in "lr":
+        if not has_scap(I, s):
+            continue
+        j = I[SPEC["scap"]["bone"].replace("{s}", s)]
+        S, E = gpos[I["upperarm_" + s]], gpos[I["lowerarm_" + s]]
+        A = math.degrees(math.acos(float(np.clip((E - S) / np.linalg.norm(E - S) @ down, -1, 1))))
+        deg = scap_angle(A)
+        rot[j] = qnorm(qmul(sk.rest_rot[j], qaxis(qrot(qinv(g0[j]), scap_axis(s)), deg)))
+        if report is not None:
+            report[s] = (A, deg)
+    return rot
 
 
 def _torso(grot, gpos, I):
@@ -585,7 +691,8 @@ def shrug(sk: Skeleton, rot, report=None):
         Pc, S, E, H = gpos[c], gpos[u], gpos[lo], gpos[h]
         A = math.degrees(math.acos(float(np.clip((E - S) / np.linalg.norm(E - S) @ down, -1, 1))))
         rise = _elev(S - Pc, down) - rest[s]
-        t = shrug_target(A)
+        sc = has_scap(I, s)
+        t = shrug_target(A, sc)
         d = min(t, max(0.0, t - rise))   # (none at and below SHRUG_FROM, even with the clip's clavicle dropped)
         if d < 1e-4:
             if report is not None:
@@ -594,8 +701,10 @@ def shrug(sk: Skeleton, rot, report=None):
         up_ax, roll_ax = np.cross(down, lat), np.cross(lat, fwd)   # outer end up; outer end forward
         L1, L2 = np.linalg.norm(E - S), np.linalg.norm(H - E)
 
+        roll_k = SPEC["scap"]["shrug_roll"] if sc else SHRUG_ROLL
+
         def lifted(k):
-            q = qmul(qaxis(roll_ax, SHRUG_ROLL * k), qaxis(up_ax, k))
+            q = qmul(qaxis(roll_ax, roll_k * k), qaxis(up_ax, k))
             return q, Pc + qrot(q, S - Pc)
         q, S2 = lifted(d)
         if np.linalg.norm(H - S2) > SHRUG_REACH * (L1 + L2):        # cut back until the hand is in reach
@@ -641,6 +750,7 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
     I = sk.index
     ident = np.array([0, 0, 0, 1.0])
     shrug(sk, rot)   # her clavicle lift first (HerShrug runs before every other layer of hers)
+    scap(sk, rot)    # her scapulae from the lifted arm (as HerScap, after HerShrug and HerRaise)
     for s in "lr":
         la, h = I.get(f"lowerarm_{s}"), I.get(f"hand_{s}")
         if f"lowerarm_twist_01_{s}" not in I:

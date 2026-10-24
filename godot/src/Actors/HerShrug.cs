@@ -18,6 +18,7 @@ public partial class HerShrug : SkeletonModifier3D
     int pelvis = -1, neck = -1, chest = -1;
     readonly int[] clav = { -1, -1 }, upper = { -1, -1 }, lower = { -1, -1 }, hand = { -1, -1 };
     readonly float[] restEl = new float[2];
+    readonly bool[] scap = new bool[2];   // a side with her scapula helper (SPEC "scap"): the lower clavicle curve
     double logT;
 
     public HerShrug() { Name = "HerShrug"; }
@@ -45,6 +46,7 @@ public partial class HerShrug : SkeletonModifier3D
             {
                 clav[i] = sk.FindBone("clavicle_" + s[i]); upper[i] = sk.FindBone("upperarm_" + s[i]);
                 lower[i] = sk.FindBone("lowerarm_" + s[i]); hand[i] = sk.FindBone("hand_" + s[i]);
+                scap[i] = sk.FindBone("scap_" + s[i]) >= 0;
             }
             if (pelvis < 0 || neck < 0 || chest < 0) return;
             var rd = Torso(sk.GetBoneGlobalRest).Down;
@@ -66,7 +68,7 @@ public partial class HerShrug : SkeletonModifier3D
                 Clavicle = V(tc.Origin), Shoulder = V(tu.Origin), Elbow = V(tl.Origin), Hand = V(th.Origin),
                 ClavicleTurn = Q(tc.Basis), UpperTurn = Q(tu.Basis), LowerTurn = Q(tl.Basis),
             };
-            var (a, rise, lift) = ClavicleLift.Apply(ref arm, down, i == 0 ? left : -left, fwd, restEl[i]);
+            var (a, rise, lift) = ClavicleLift.Apply(ref arm, down, i == 0 ? left : -left, fwd, restEl[i], scap[i]);
             if (print) GD.Print($"shrug {(i == 0 ? "l" : "r")} A {a:0.0} rise {rise:0.0} lift {lift:0.00}");
             if (lift <= 0) continue;
             int p = sk.GetBoneParent(clav[i]);

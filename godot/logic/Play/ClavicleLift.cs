@@ -20,13 +20,19 @@ public static class ClavicleLift
 {
     public const float Max = 34f, From = 60f, To = 180f, Roll = 0.25f, Reach = 0.999f;
 
-    /// <summary>The clavicle's wanted rise in degrees above its rest for an upper arm at <paramref name="a"/> degrees.</summary>
-    public static float Target(float a)
+    /// <summary>On a body with her scapula helpers (Body 6 S1; helpers SPEC "scap", View/HerScap): the scapula carries
+    /// most of the girdle's rise, so the clavicle's is <see cref="ScapMax"/> overhead (2 at level, 9.6 at 140) and its
+    /// outer end turns back (<see cref="ScapRoll"/> of it, about 8 overhead).</summary>
+    public const float ScapMax = 13f, ScapRoll = -0.6f;
+
+    /// <summary>The clavicle's wanted rise in degrees above its rest for an upper arm at <paramref name="a"/> degrees
+    /// (<paramref name="scap"/>: a body with her scapula helpers).</summary>
+    public static float Target(float a, bool scap = false)
     {
         float x = (a - From) / (To - From);
         if (x <= 0) return 0;
         x = Math.Min(x, 1f);
-        return Max * x * x * (3 - 2 * x);
+        return (scap ? ScapMax : Max) * x * x * (3 - 2 * x);
     }
 
     /// <summary>A line's elevation in degrees above the plane square to <paramref name="down"/> (unit).</summary>
@@ -64,19 +70,20 @@ public static class ClavicleLift
     /// <paramref name="down"/> her torso's down axis, <paramref name="lateral"/> out to this arm's side (square to down),
     /// <paramref name="forward"/> their cross (down x her left), <paramref name="restElevation"/> the clavicle line's
     /// elevation at her rest. Returns (A, the clip's rise, the lift added) in degrees; the lift is 0 when nothing moved.</summary>
-    public static (float A, float Rise, float Lift) Apply(ref Arm arm, Vector3 down, Vector3 lateral, Vector3 forward, float restElevation)
+    public static (float A, float Rise, float Lift) Apply(ref Arm arm, Vector3 down, Vector3 lateral, Vector3 forward, float restElevation, bool scap = false)
     {
         Vector3 pc = arm.Clavicle, s = arm.Shoulder, e = arm.Elbow, h = arm.Hand;
         var su = Vector3.Normalize(e - s);
         float a = MathF.Acos(Math.Clamp(Vector3.Dot(su, down), -1f, 1f)) * 180f / MathF.PI;
         float rise = Elevation(s - pc, down) - restElevation;
-        float t = Target(a);
+        float t = Target(a, scap);
+        float roll = scap ? ScapRoll : Roll;
         float d = Math.Min(t, Math.Max(0f, t - rise));
         if (d < 1e-4f) return (a, rise, 0f);
         var upAx = Vector3.Cross(down, lateral);        // its outer end up
         var rollAx = Vector3.Cross(lateral, forward);   // its outer end forward
         float l1 = (e - s).Length(), l2 = (h - e).Length(), reach = Reach * (l1 + l2);
-        Quaternion Q(float k) => Axis(rollAx, Roll * k) * Axis(upAx, k);
+        Quaternion Q(float k) => Axis(rollAx, roll * k) * Axis(upAx, k);
         Vector3 Lifted(float k) => pc + Vector3.Transform(s - pc, Q(k));
         if ((h - Lifted(d)).Length() > reach)
         {
