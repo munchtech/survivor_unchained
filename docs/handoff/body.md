@@ -2,6 +2,20 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in `.claude/worktrees/armor-7` (branch armor-7, junction worktree: never git stash / reset --hard / checkout . / merge / pull with `godot\assets` linked; remove the link before merging integration, remake it after). One writer: the body chain and the armor pieces both live there.
 
+## Body 5, 24 Oct: (c) CLOSED after round 3; next (a) the twist rig
+Scratch B5 = the coordinator b8322a60's scratchpad `body5\` (pose, mesh, collar, hand, shots). S4 = 2ea92279's `body4\`. Don't clear either.
+**Body of record (unmerged, not yet in the repo's heroine.glb): cl3** = `VEE=6 VT=0.26 VPHI=30 NOTCH=0 CAPTOP=6 BELLY=6 DOME=0.5 NARROW=14 SLIM=0.5 COLLAR=3 BLN=Scl3 bash S4/shape/run_v.sh S4/bnb/w cl3`, then `post_run.py ... --reaver`. Post-stepped glb: `B5\collar\post\cl3\people\heroine.glb`. Blend: `armor_src\heroine_built_armScl3.blend`. The (a) rig work builds on THIS blend.
+**Code (armor-7):**
+- 7fa02100, bbe3413c: shape.py step 8 VEE/NOTCH/VT (a teardrop cap: a front-lateral fill into the deltoid V).
+- 9cd70cad: step 9 COLLAR (clavicle ridge, hollow and notch; zero near the neck graft's seams).
+- 2f437d9a, 0960dd5a: HerPose Look-only arm fields (LookArmsDown/Roll/Swivel L/R, plus left-hand Fan/Curl/Thumb), eased with the crossfade, set in GameFront.FigureArms; `--look-*` try flags.
+- 05594101: the Look defaults: right down 10, left swivel 31, left hand on her hip (roll/fan/curl/thumb 0), framing pan 0.04 m, and body light B (`--body-key-at`, default 0.55,3.0: the broad body cone only; the face cone is unchanged).
+**Judges:** 9 (r2) NO-close; 10 (r3, last on the cap): town +/-0.8 day and night SHIP, the Look turn 40 with the hand on her hip SHIP. Look front NO-close on one item: the inner two-thirds of the collarbones and the sternal notch stay blank under the Look key. CLOSED AS KNOWN (main's call at the cap). Measured: even a 9 mm ridge (x3 preview) gains about 0 luma on the inner yoke under light B (`B5\collar\cols.py`); geometry can't reach it. The real route is a soft painted clavicle cavity in the neck-graft paint/AO (Face's asset, its next session).
+Clavicle shortening: closed (breadth 2.82-2.86 head widths at the Look).
+Known: a folded face pair on the front of the LEFT upper arm (t 0.21, phi 93; absent on the right, likely from the mirror step). Best guess for the reaver_show "arm tick". Look at it inside (a).
+**Next: (a) the twist rig** (twist_02/03, ramped weights, share ~0.4; helpers.py, HerJoints.cs, skeleton JSON, every outfit re-split; regress raised/rolled clips; measure the towel at reaver_show@0.77 and at the Look arm). Then the nude owner gate, the G3 chain, the dressed judge and the MR.
+Cost of (c) r2+r3: solvers 144+151+172+98k, judges 114+122k, lead ~150k; API $0.
+
 ## Paused after (c), Body 4, 23-24 Oct night
 Scope this session (the owner, via main): step 1 only, which is the B-narrow-on-B-mid build and the (c) measure and shape. Nothing below is merged.
 Scratch S4 = the coordinator 2ea92279's scratchpad `body4\`. It keeps the exports. Texts and scripts are backed up to `survivorsunchained_inputs\scratch_2ea92279\body4\`.
