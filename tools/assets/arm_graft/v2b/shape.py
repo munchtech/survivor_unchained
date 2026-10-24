@@ -14,7 +14,7 @@ from remesh import islands, Ref, Work
 from geo import Surf
 
 K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0,
-         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
+         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0, VEE=0.0, NOTCH=0.0, VPHI=-15.0, NPHI=-45.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
 for k in K: K[k] = float(os.environ.get(k, K[k]))
 print("K", K)
 D = dict(np.load(sys.argv[1])); out = sys.argv[2]
@@ -250,7 +250,7 @@ for sd in "lr":
 #   DOME (0-1): the outer cap's bulge above the chord of its lateral profile r(t) (phi within 30 deg of lateral, chord
 #     from t -0.25 to 0.45) taken in by that fraction, radially, with the same phi falloff: less ball, no facet.
 moved8 = np.zeros(len(V), bool)
-if K["NARROW"] or K["DOME"] or K["CAPTOP"] or K["BELLY"]:
+if K["NARROW"] or K["DOME"] or K["CAPTOP"] or K["BELLY"] or K["VEE"] or K["NOTCH"]:
     V8 = V.copy()
     for sd in "rl":
         Fs = Frame(d, sd); xs = V8[:, 0] * Fs.sx; on = xs > 0.02
@@ -291,6 +291,54 @@ if K["NARROW"] or K["DOME"] or K["CAPTOP"] or K["BELLY"]:
         V[:, 0] -= Fs.sx * (dx + dxb)
         V -= dr[:, None] * e8 + dcap[:, None] * ucap
         moved8 |= (dcap > 1e-6) | (dxb > 1e-6)
+        # teardrop cap (Body 5), radial (out from the humerus axis), on the deltoid's outer half (phi centred VPHI deg,
+        #   0 = lateral at rest, -90 = back), so the cap tapers into the arm instead of a dome sitting on a tube:
+        #   NOTCH (mm, the largest move): within +-90 deg of NPHI (cos^2), the concave dip between the cap and the arm filled toward the upper hull of each
+        #     sector's profile r(t) (t -0.10..0.50, sectors every 10 deg, smoothed in t and phi), fill proportional to
+        #     the dip, so a straight-ish run replaces the notch and nothing convex grows.
+        #   VEE (mm): the deltoid's lower V raised: full t 0.30-0.42, gone by 0.16 and 0.56; its sector narrows down the
+        #     arm (half-width 85 deg at t 0.2 -> 35 at 0.5, cos^2) so the outline runs to a point at the insertion.
+        if K["VEE"] or K["NOTCH"]:
+            dph = (phi8 - K["VPHI"] + 180) % 360 - 180
+            hw = np.interp(t8, [0.2, 0.5], [85.0, 35.0])
+            dv = (K["VEE"] * 1e-3 * win(t8, 0.16, 0.30, 0.42, 0.56) * np.cos(np.radians(np.clip(np.abs(dph) / hw * 90, 0, 90))) ** 2
+                  * ss((xs - 0.12) / 0.04) * on * (r8 < 0.10))
+            dn = np.zeros(len(V8))
+            if K["NOTCH"]:
+                th_ = np.arange(-0.15, 0.601, 0.01); pb = np.arange(-180, 180, 10.0); Dg = np.zeros((len(th_), len(pb)))
+                kt = np.exp(-0.5 * (np.arange(-6, 7) * 0.01 / 0.02) ** 2); kt /= kt.sum()
+                for j, pc in enumerate(pb):
+                    m0 = on & (np.abs((phi8 - pc + 180) % 360 - 180) < 10) & (r8 < 0.10) & (xs > 0.08)
+                    Rj = np.full(len(th_), np.nan)
+                    for i, tc in enumerate(th_):
+                        m = m0 & (np.abs(t8 - tc) < 0.012)
+                        if m.sum() > 1: Rj[i] = r8[m].max()
+                    if np.isfinite(Rj).sum() < 10: continue
+                    Rj = np.interp(th_, th_[np.isfinite(Rj)], Rj[np.isfinite(Rj)])
+                    Rj = np.convolve(np.r_[np.full(6, Rj[0]), Rj, np.full(6, Rj[-1])], kt, "valid")
+                    sel = np.where((th_ >= -0.10) & (th_ <= 0.50))[0]; hull = [sel[0]]
+                    for i in sel[1:]:   # upper hull (monotone chain)
+                        while len(hull) > 1 and ((th_[hull[-1]] - th_[hull[-2]]) * (Rj[i] - Rj[hull[-2]])
+                                                 - (Rj[hull[-1]] - Rj[hull[-2]]) * (th_[i] - th_[hull[-2]])) >= 0: hull.pop()
+                        hull.append(i)
+                    Hj = np.interp(th_, th_[hull], Rj[hull]); Dg[:, j] = np.where((th_ >= -0.10) & (th_ <= 0.50), np.clip(Hj - Rj, 0, None), 0)
+                kp = np.exp(-0.5 * (np.arange(-3, 4) * 10 / 15.0) ** 2); kp /= kp.sum()
+                Dg = np.stack([np.convolve(np.r_[Dg[i, -3:], Dg[i], Dg[i, :3]], kp, "valid") for i in range(len(th_))])
+                Dg = np.stack([np.convolve(np.r_[np.full(6, Dg[0, j]), Dg[:, j], np.full(6, Dg[-1, j])], kt, "valid") for j in range(len(pb))], 1)
+                Dg *= (ss((th_ - 0.0) / 0.08) * ss((0.48 - th_) / 0.08))[:, None]
+                # bilinear lookup (phi periodic)
+                fi = np.clip((t8 - th_[0]) / 0.01, 0, len(th_) - 1.001); i0 = fi.astype(int); ft = fi - i0
+                fj = ((phi8 + 180) % 360) / 10.0; j0 = fj.astype(int) % len(pb); j1 = (j0 + 1) % len(pb); fp = fj - np.floor(fj)
+                dg = ((1 - ft) * ((1 - fp) * Dg[i0, j0] + fp * Dg[i0, j1]) + ft * ((1 - fp) * Dg[i0 + 1, j0] + fp * Dg[i0 + 1, j1]))
+                dpn = (phi8 - K["NPHI"] + 180) % 360 - 180   # the notch's sector: cos^2 over +-90 deg about NPHI (back of the cap)
+                wn = np.cos(np.radians(np.clip(np.abs(dpn), 0, 90))) ** 2 * ss((xs - 0.12) / 0.04) * on * (r8 < 0.10)
+                if os.environ.get("NDBG"):
+                    for j in range(0, len(pb), 3): print("  dip phi %4.0f: " % pb[j] + " ".join("%4.1f" % (x * 1e3) for x in Dg[5:66:5, j]))
+                dg = dg * wn; dn = K["NOTCH"] * 1e-3 * dg / max(dg.max(), 1e-9)
+                print("notch %s: hull dip max %.1f mm at t %.2f phi %.0f" % (sd, dg.max() * 1e3, t8[np.argmax(dg)], phi8[np.argmax(dg)]))
+            print("vee %s: max %.1f mm on %d verts; notch max %.1f mm on %d verts" % (sd, dv.max() * 1e3, (dv > 1e-5).sum(), dn.max() * 1e3, (dn > 1e-5).sum()))
+            V += (dv + dn)[:, None] * e8
+            moved8 |= (dv > 1e-6) | (dn > 1e-6)
         moved8 |= (dx > 1e-6) | (dr > 1e-6)
     prof8 = profile(V[vid], T, F, armkeep(W[vid], "r")); show_profile(prof8, "R narrowed")
     moved0 = moved0 | moved8
