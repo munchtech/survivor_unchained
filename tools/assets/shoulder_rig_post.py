@@ -8,8 +8,9 @@ each at its pivot, its Y toward its aim), each a child of the one bone whose wei
 the clavicle, spine_03, spine_03), appended to the skin's joints. Then her body's weights ("Heroine", every
 primitive): per side and helper, its mask (smoothstep bands, SPEC "weights") of its parent's weight moves to it. Below
 SPEC A[0] each helper moves exactly as its parent, so the move changes nothing there (her idles and the Look); her
-other bones' weights are untouched. Four bones a point: the smallest folded into its own group's largest (a helper in
-its parent's group). Without SHOULDER_RIG=1 in the environment it copies the body unchanged (the build's gate)."""
+other bones' weights are untouched. Eight bones a point (glTF JOINTS_0/WEIGHTS_0 the largest four, JOINTS_1/WEIGHTS_1
+the next four, all eight summing to 1; 5,028 shoulder points need 5-7): over eight, the smallest folded into its own
+group's largest (a helper in its parent's group). Without SHOULDER_RIG=1 in the environment it copies the body unchanged (the build's gate)."""
 import os
 import sys
 
@@ -19,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "anim"))
 sys.path.insert(0, HERE)
 import helpers as hp  # noqa: E402
-from scap_rig_post import Glb, _quat, _S, top4  # noqa: E402
+from scap_rig_post import Glb, _quat, _S  # noqa: E402
 
 ARM = ("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pinky")
 
@@ -71,8 +72,9 @@ def masks(P, Pall, Grest, s):
     rn = np.maximum(np.linalg.norm(r, axis=1), 1e-9)
     cc = (r @ top) / rn
     m = {}
-    d = c["delt"]
-    m["delt"] = _band(t, *d["t"]) * _S((cc - d["c"][0]) / (d["c"][1] - d["c"][0])) * (rn < d["r"])
+    for k, d in c.items():                                    # (delt and any other band along the humerus)
+        if "t" in d:
+            m[k] = _band(t, *d["t"]) * _S((cc - d["c"][0]) / (d["c"][1] - d["c"][0])) * (rn < d["r"])
     xa = Pall[:, 0] * sg
     bins = np.arange(0.03, 0.30, 0.005)
     near = (Pall[:, 1] < 1.63) & (np.abs(Pall[:, 2] + 0.03) < 0.07)
@@ -89,12 +91,30 @@ def masks(P, Pall, Grest, s):
     return m
 
 
-def reweight(P, W, names, Grest, frames, Pall):
-    """Dense weights W [V, J] with each helper's share of its parent's weight moved to it."""
+def smoother(F, n):
+    """A function smoothing a per-point field over the mesh (faces F on welded points): n passes of half toward the
+    mean of each point's neighbours (SPEC shoulder "smooth"; the masks' steps eased over the surface, ~3 mm a pass)."""
+    from scipy.sparse import coo_matrix
+    V = int(F.max()) + 1
+    E = np.r_[F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]
+    A = coo_matrix((np.ones(2 * len(E)), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(V, V)).tocsr()
+    A.data[:] = 1.0
+    deg = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
+
+    def f(m):
+        for _ in range(n):
+            m = 0.5 * m + 0.5 * (A @ m) / deg
+        return m
+    return f
+
+
+def reweight(P, W, names, Grest, frames, Pall, sm=None):
+    """Dense weights W [V, J] with each helper's share of its parent's weight moved to it. sm: an optional function
+    (masks of side s -> masks for P), the masks smoothed over her welded surface (run() passes it)."""
     W = W.copy()
     I = {n: i for i, n in enumerate(names)}
     for s in "lr":
-        m = masks(P, Pall, Grest, s)
+        m = sm(s) if sm else masks(P, Pall, Grest, s)
         m["pec"] = m["pec"] * (1 - hp.SPEC["shoulder"]["weights"]["pec"]["bre"] * _S(W[:, I["breast_" + s]] / 0.3))
         tot = m["pec"] + m["lat"]                  # (both from spine_03: never more than all of it)
         k = tot > 1
@@ -103,10 +123,16 @@ def reweight(P, W, names, Grest, frames, Pall):
         for kind in hp.SPEC["shoulder"]["bones"]:
             n = f"{kind}_{s}"
             p = I[frames[n]["parent"]]
-            mv = W[:, p] * m[kind]
+            mv = W[:, p] * m[hp.SPEC["shoulder"]["bones"][kind].get("mask", kind)]
             W[:, p] -= mv
             W[:, I[n]] += mv
     return W
+
+
+def union_masks(Pu, Fu, Grest):
+    """{side: {mask: [V]}} on her welded points Pu (faces Fu), each smoothed SPEC shoulder "smooth" passes."""
+    f = smoother(Fu, hp.SPEC["shoulder"].get("smooth", 0))
+    return {s: {k: f(v) for k, v in masks(Pu, Pu, Grest, s).items()} for s in "lr"}
 
 
 def merge_cap(W, names, frames, cap=4):
@@ -155,6 +181,16 @@ def run(src, dst):
     hn = [n for n in g["nodes"] if n.get("name") == "Heroine"][0]
     prims = g["meshes"][hn["mesh"]]["primitives"]
     Pall = np.concatenate([G.get(p["attributes"]["POSITION"]).astype(float) for p in prims])
+    # (the masks on her welded surface, smoothed there, then read back per primitive)
+    _, first, wid = np.unique(np.round(Pall / 1e-6).astype(np.int64), axis=0, return_index=True, return_inverse=True)
+    wid = wid.ravel()
+    Fu, o = [], 0
+    for p in prims:
+        Fu.append(wid[G.get(p["indices"]).reshape(-1, 3).astype(int) + o])
+        o += G.g["accessors"][p["attributes"]["POSITION"]]["count"]
+    Pu = Pall[first]
+    Mu = union_masks(Pu, np.vstack(Fu), Grest)
+    o = 0
     for p in prims:
         at = p["attributes"]
         assert "JOINTS_1" not in at
@@ -162,11 +198,20 @@ def run(src, dst):
         J, Wt = G.get(at["JOINTS_0"]).astype(int), G.get(at["WEIGHTS_0"]).astype(float)
         D = np.zeros((len(P), len(names)))
         np.add.at(D, (np.repeat(np.arange(len(P)), J.shape[1]), J.ravel()), Wt.ravel())
-        D2 = merge_cap(reweight(P, D, names, Grest, frames, Pall), names, frames)
-        Jn, Wn = top4(D2)
-        Jn[Wn == 0] = 0
-        G.put(at["JOINTS_0"], Jn)
-        G.put(at["WEIGHTS_0"], Wn.astype(np.float32))
+        ix = wid[o:o + len(P)]
+        o += len(P)
+        D2 = merge_cap(reweight(P, D, names, Grest, frames, Pall, lambda s: {k: v[ix] for k, v in Mu[s].items()}), names, frames, cap=8)
+        top = np.argsort(-D2, 1, kind="stable")[:, :8]
+        tw = np.clip(np.take_along_axis(D2, top, 1), 0, None)
+        tw[tw < 1e-5] = 0
+        tw /= tw.sum(1, keepdims=True)
+        top[tw == 0] = 0
+        ct = g["accessors"][at["JOINTS_0"]]["componentType"]
+        G.put(at["JOINTS_0"], top[:, :4])
+        G.put(at["WEIGHTS_0"], tw[:, :4].astype(np.float32))
+        at["JOINTS_1"] = G.append(top[:, 4:].astype(np.uint16 if ct == 5123 else np.uint8), ct, "VEC4")
+        at["WEIGHTS_1"] = G.append(tw[:, 4:].astype(np.float32), 5126, "VEC4")
+        print("SHOULDER points on 5-8 bones", int((tw[:, 4] > 0).sum()))
         moved = {n: int((D2[:, names.index(n)] > 0.01).sum()) for n in frames}
         print("SHOULDER primitive", len(P), "points;", moved)
     g["asset"].setdefault("extras", {})["shoulder_rig"] = "body6 S2"

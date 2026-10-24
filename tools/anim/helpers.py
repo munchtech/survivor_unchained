@@ -737,13 +737,31 @@ def shoulder_rest(Grest):
     return out
 
 
-def shoulder_helper(f, A, Mp, Gp0, Mon=None, Gon0=None):
+def _blend_move(P1, P2, w):
+    """Rigid moves P1 -> P2 (4x4, rotation and origin) blended by w: the rotation turned along its arc, the origin lerped."""
+    if w <= 0:
+        return P1
+    D = P2[:3, :3] @ P1[:3, :3].T
+    ang = math.acos(float(np.clip((np.trace(D) - 1) / 2, -1, 1)))
+    out = P1.copy()
+    if ang > 1e-9:
+        ax = np.array([D[2, 1] - D[1, 2], D[0, 2] - D[2, 0], D[1, 0] - D[0, 1]])
+        out[:3, :3] = _rotm(ax, ang * w) @ P1[:3, :3]
+    out[:3, 3] = P1[:3, 3] + w * (P2[:3, 3] - P1[:3, 3])
+    return out
+
+
+def shoulder_helper(f, A, Mp, Gp0, Mon=None, Gon0=None, Mc=None, Gc0=None):
     """One helper's posed global 4x4 (rotation x scale, origin) from its parent's posed and rest globals (Mp, Gp0),
-    its aim's carrier's (Mon, Gon0) and A (degrees). g 0: exactly its parent's move."""
+    its aim's carrier's (Mon, Gon0) and A (degrees). g 0: exactly its parent's move. A helper with a "carry" [bone,
+    w] is carried part way (w x g) from its parent's move to that bone's (Mc, Gc0) before it acts (the cap's
+    clavicle-weighted skin taken along with the raised humerus)."""
     c = f["c"]
     g = shoulder_g(A)
     P = Mp @ np.linalg.inv(Gp0) @ f["G0"]
-    Rrel = Mp[:3, :3] @ np.linalg.inv(Gp0[:3, :3])
+    if c.get("carry") and g > 0:
+        P = _blend_move(P, Mc @ np.linalg.inv(Gc0) @ f["G0"], c["carry"][1] * g)
+    Rrel = P[:3, :3] @ np.linalg.inv(f["G0"][:3, :3])
     R, O = P[:3, :3].copy(), P[:3, 3].copy()
     sa = sp = 1.0
     if f["T0"] is not None and g > 0:
@@ -776,7 +794,8 @@ def shoulder_pose(M, Grest, frames, report=None):
         s = f["s"]
         u = M["lowerarm_" + s][:3, 3] - M["upperarm_" + s][:3, 3]
         A = math.degrees(math.acos(float(np.clip(u @ down / np.linalg.norm(u), -1, 1))))
-        out[n] = shoulder_helper(f, A, M[f["parent"]], Grest[f["parent"]], M[f["on"]], Grest[f["on"]])
+        cb = f["c"]["carry"][0].replace("{s}", s) if f["c"].get("carry") else f["on"]
+        out[n] = shoulder_helper(f, A, M[f["parent"]], Grest[f["parent"]], M[f["on"]], Grest[f["on"]], M[cb], Grest[cb])
         if report is not None:
             report[n] = (A, shoulder_g(A))
     return out
