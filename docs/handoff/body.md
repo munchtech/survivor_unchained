@@ -2,7 +2,41 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in `.claude/worktrees/armor-7` (branch armor-7, junction worktree: never git stash / reset --hard / checkout . / merge / pull with `godot\assets` linked; remove the link before merging integration, remake it after). One writer: the body chain and the armor pieces both live there.
 
-## At the owner gate (Body 3, 23 Oct night); WAIT for main's relay of the owner's pick
+## Paused after (c), Body 4, 23-24 Oct night
+Scope this session (the owner, via main): step 1 only, which is the B-narrow-on-B-mid build and the (c) measure and shape. Nothing below is merged.
+Scratch S4 = the coordinator 2ea92279's scratchpad `body4\`. It keeps the exports. Texts and scripts are backed up to `survivorsunchained_inputs\scratch_2ea92279\body4\`.
+**Built:**
+- Bnb, the owner's pick: `SLIM=0.5 NARROW=14 DOME=0.3`, recipe `S4\bnb\run_bnb.sh`. Post-stepped: `S4\post\Bnb\heroine.glb`.
+- c6b6, the chosen variant: `SLIM=0.5 NARROW=14 DOME=0.5 CAPTOP=6 BELLY=6` (ELLO -25, ELHI 60). Post-stepped: `S4\post\c6b6\heroine.glb`. Blend: `armor_src\heroine_built_armSc6b6.blend`.
+- Post-steps use `S3\post\tools\post_run.py <glb> <out> --reaver`.
+**Code:**
+- 5f62eb02: creation's Look loops her town idle, sheathed (GameFront.FigureArms). Before, the guard idle leaned her 5.6 deg forward and sank her head.
+- 1bc8db67: shape.py step 8 gains the CAPTOP and BELLY knobs (0 = Bnb unchanged). The Look's ChinUp goes to 0 (head level; it was 5.8 deg down).
+**Measures** (`S4\look\bnb.txt`, `S4\shape\look_c6b6.txt`; scripts in `S4\look\` look.py, top.py, cap3d.py, neck.py):
+- The Look camera adds nothing (26.7 deg at 2.14 m, against the town's 24 deg at 2.69 m: within 1%).
+- Breadth over head width: rest 3.27 (Bnb) -> 3.23 (c6b6). Straight on 3.10 -> 3.07. Body 2's research spec puts typical women at about 2.9 (bideltoid about 1.96 head heights).
+- The mesh has about 4 mm per side left. Anything more is skeletal: 12-16 mm per side off the clavicles, a rig change.
+- The arm tick is NOT in the paint (no mark in any base color). It's likely a crease or normal fault; skipped.
+**Judge 8 (max, `S4\shape\sheet_r1.png`; columns BEFORE | today | Bnb with the new pose | NEW c6b6; crops in `S4\shape\jcrops\`):** the shoulders at the Look are CLOSE.
+- The town close-up at +/-0.8 SHIPs.
+- The Look front and turn 40 are NO but close. The football read is far better than BEFORE and today: 85-90% of that is the pose, 10-15% the shape.
+- Still left at the Look: her left cap reads as a separate knob (an outline notch and a crease at the arm). At turn 40 the near deltoid is a round dome on a narrower arm. Not deflated.
+- Her face is better with the head level: keep ChinUp 0 (-1 at most).
+- A staging regression: the town idle's right forearm runs under the UI panel at the Look front.
+- The clavicle cut is not worth it now.
+**Next, round 2 of (c):**
+1. Pose: a Look-only arm offset, like ChinUp. Upper arms down from 20-30 deg to 10-15 deg, the left arm turned less inward. Check arm/breast contact, and that the forearm clears the panel; if not, move her about 50 px right.
+2. Mesh: a teardrop cap. Raise the deltoid V to about 8 mm proud, fill the back-of-cap notch 2-3 mm, and don't flatten the dome further.
+3. Optional: a light A/B with more fill from camera right at the Look.
+Reshoot only the NEW Look cells, plus the close-ups after any mesh change, then re-judge. A night shot is needed before (c) closes. Estimate: about 0.3-0.4M tokens, 2-3 h.
+**Then (a), the rig fix:** about 1.5-2.5M tokens, 8-12 h. After it, the nude owner gate (about 0.2-0.3M), and after the owner's yes the G3 chain, the dressed judge, the full test and the MR (about 0.6-0.9M).
+**Owner decision, held:** clavicles 12-16 mm shorter per side, only if the owner still calls her too broad after round 2. It's a skeleton change that touches every clip and every armor fit, so it would ride with (a).
+**Notes for others (judge 8):**
+- Face: the purple patch at the neck base shows in the guard and combat idles, hidden by the new Look pose. Also a dusky shadow at the throat base at the Look front, her face a step paler than her torso, and dark specks on her left forearm at the Look front.
+- Ranger wear: 493 of 603 tuck points are stale.
+Cost: measuring solver 150k, worker 42k, shape solver about 140k, judge 115k, lead about 75k. API $0.
+
+## At the owner gate (Body 3, 23 Oct night); superseded by Body 4 above
 Scratch S3 = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\2ea92279-b96d-4eee-9202-d8d2ca78739a\scratchpad\body3` (the coordinator 2ea92279's scratchpad, `body3\` only). Text backups go to `survivorsunchained_inputs\scratch_2ea92279\body3\` at the end.
 **Final gate sheet:** `S3\gate7\gate_final.png` (1:1; columns BEFORE eb667858 | today (integration 3559d1dd) | B-mid | B | B-narrow; rows: idle close-up +/-0.8, reaver_show 0.77 at 3/4 (`--facing 45`; `--close-turn` does nothing during `--hold`) and front, the Look front and turn 40 at `--zoom 0.45`). Max judge 7 (`S3\judge7\`): **B-narrow is the pick, medium overall.** The town close-up SHIPs in all three new columns. The Look camera's football shoulders remain in every column (B-narrow cuts them by about a quarter). Rows 3-4 FAIL in every column: the owner's "wrung out towel".
 **Diagnosis (`S3\twist\`):** (1) The towel is the RIG. There is ONE upper-arm twist bone, driven at half the roll; the pit band is about 75% on zero-roll bones; the roll lands at z 2-14 cm (9.5 deg/cm); the pit section goes 1.16 -> 1.83. (2) The football shoulders are the REST shape: breadth 525/530/508 mm vs a 162 mm head (3.1-3.3 head widths, target about 2.7), and B's cap is 1.25x the mid-arm radius. Options sent to main: (a) rig: twist_02/03 plus ramped weights, share 0.4 (1.5-2.5M tokens, 8-12 h); (b) a reaver_show restage (0.2-0.3M; prototype `S3\twist\proto\reaver_show.json`); (c) the shoulder rest shape: NARROW about 22 mm on B-mid's girth plus a smaller cap (0.3-0.5M). Nothing started.
