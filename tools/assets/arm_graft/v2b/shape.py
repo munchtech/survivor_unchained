@@ -15,7 +15,7 @@ from geo import Surf
 
 K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0,
          NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0, VEE=0.0, NOTCH=0.0, VPHI=-15.0, NPHI=-45.0, VT=0.36,
-         COLLAR=0.0, CHOL=1.5, CNOT=1.0, CHEAD=1.2, CSR=7.0, CSR2=6.0, CSH=7.0, CSH2=14.0, CVH=16.0, CSN=8.0, CNZ=1.545, CX0=0.018, CX1=0.175, CZ0=1.533, CZ1=1.525, CS=2.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged; step 9 (collarbones): COLLAR 0 = off
+         COLLAR=0.0, CHOL=1.5, CNOT=1.0, CHEAD=1.2, CSR=7.0, CSR2=6.0, CSH=7.0, CSH2=14.0, CVH=16.0, CSN=8.0, CNZ=1.545, CX0=0.018, CX1=0.175, CZ0=1.533, CZ1=1.525, CS=2.0, UNFOLD=0.0, UMINA=4.0, UDEL=2.0, UIT=20)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged; step 9 (collarbones): COLLAR 0 = off
 for k in K: K[k] = float(os.environ.get(k, K[k]))
 print("K", K)
 D = dict(np.load(sys.argv[1])); out = sys.argv[2]
@@ -411,6 +411,77 @@ spread = np.linalg.norm(gmean(V, WG) - V, axis=1); wsp = np.abs(gmean(W, WG) - W
 print("weld check: position off group mean max %.4f mm, weight max %.5f" % (spread.max() * 1e3, wsp.max()))
 tch = np.bincount(WG, weights=((reg > 0) | moved0).astype(float), minlength=WG.max() + 1)[WG] > 0   # groups this script touched
 V[tch] = gmean(V[tch], WG[tch]); W[tch] = gmean(W[tch], WG[tch]).astype(np.float32)
+# 10. unfold (Body 5, off by default): her source mesh has needle triangles (one at the front of her left upper arm, 24 mm
+#   long and 0.7 mm high, its own UV island where three others meet); dense.py splits them into a zero-width strip of
+#   slivers that the left's mirror move then folds (dihedral 144 deg at t 0.21 phi 93), and their auto normals, angle-
+#   weighted, turn the strip's points up to 70 deg off the skin: light and dark nicks at 1:1. Here every point of a sliver
+#   (a face with an angle under UMINA deg, both sides, the region only) is laid onto the skin round it (a quadratic height
+#   field fitted to the points within 8 mm that are not on slivers, gaussian 4 mm) and relaxed in that surface (UIT
+#   uniform umbrella steps, tangential, at most UDEL mm from where it was), so the strip opens into proper triangles and
+#   lies flush; nothing else moves. Each moved corner's UV is re-sampled on its own UV island at the new point; weights
+#   stay (they change little over 2 mm). A weld group moves as one.
+if K["UNFOLD"]:
+    tri, tcor = [], []
+    for k_ in range(len(fl)):
+        for j in range(1, fl[k_] - 1):
+            tri.append((fv[ls[k_]], fv[ls[k_] + j], fv[ls[k_] + j + 1])); tcor.append((ls[k_], ls[k_] + j, ls[k_] + j + 1))
+    tri = np.array(tri); tcor = np.array(tcor); TWu = WG[tri]
+
+    def _angles(X):
+        out = []
+        for i in range(3):
+            u_ = X[tri[:, (i + 1) % 3]] - X[tri[:, i]]; v_ = X[tri[:, (i + 2) % 3]] - X[tri[:, i]]
+            out.append(np.degrees(np.arctan2(np.linalg.norm(np.cross(u_, v_), axis=1), (u_ * v_).sum(1))))
+        return np.stack(out, 1)
+    zt = (reg[tri] > 0).all(1)
+    slv = (_angles(V).min(1) < K["UMINA"]) & zt
+    sv = np.unique(TWu[slv]); isv = np.zeros(WG.max() + 1, bool); isv[sv] = True
+    ng = WG.max() + 1; Vg = np.zeros((ng, 3)); np.add.at(Vg, WG, V); Vg /= np.bincount(WG, minlength=ng)[:, None]
+    fnu = np.cross(V[tri[:, 1]] - V[tri[:, 0]], V[tri[:, 2]] - V[tri[:, 0]]); fcu = V[tri].mean(1)
+    gfi = np.nonzero(~slv)[0]; gtr = cKDTree(fcu[gfi]); vtr = cKDTree(Vg)
+    eu = np.r_[TWu[:, [0, 1]], TWu[:, [1, 2]], TWu[:, [2, 0]]]; eu = eu[eu[:, 0] != eu[:, 1]]
+    ring = {g: set() for g in sv.tolist()}
+    for a_, b_ in eu.tolist():
+        if isv[a_]: ring[a_].add(b_)
+        if isv[b_]: ring[b_].add(a_)
+    fit = {}
+    for g in sv.tolist():
+        p_ = Vg[g]; n_ = fnu[gfi[gtr.query_ball_point(p_, 0.008)]].sum(0); n_ /= np.linalg.norm(n_)
+        t1 = np.cross(n_, [0, 0, 1.0]) if abs(n_[2]) < 0.9 else np.cross(n_, [1.0, 0, 0]); t1 /= np.linalg.norm(t1); t2 = np.cross(n_, t1)
+        nb = [h for h in vtr.query_ball_point(p_, 0.008) if not isv[h]]; Q_ = Vg[nb] - p_
+        x_, y_, z_ = Q_ @ t1, Q_ @ t2, Q_ @ n_; w_ = np.exp(-0.5 * (x_ * x_ + y_ * y_) / 0.004 ** 2)
+        c_ = np.linalg.lstsq(np.c_[np.ones_like(x_), x_, y_, x_ * x_, x_ * y_, y_ * y_] * w_[:, None], z_ * w_, rcond=None)[0] if len(nb) >= 8 else None
+        fit[g] = (p_.copy(), n_, t1, t2, c_)
+
+    def _onskin(g, q_):
+        p_, n_, t1, t2, c_ = fit[g]
+        if c_ is None: return q_
+        d_ = q_ - p_; x_, y_ = d_ @ t1, d_ @ t2
+        return p_ + x_ * t1 + y_ * t2 + np.clip(c_ @ [1, x_, y_, x_ * x_, x_ * y_, y_ * y_], -0.001, 0.001) * n_
+    X_ = Vg.copy(); dmax = K["UDEL"] * 1e-3
+    for g in sv.tolist(): X_[g] = _onskin(g, X_[g])
+    for _ in range(int(K["UIT"])):
+        Xn_ = X_.copy()
+        for g in sv.tolist():
+            p_, n_ = fit[g][:2]; dl_ = X_[list(ring[g])].mean(0) - X_[g]; dl_ -= (dl_ @ n_) * n_
+            q_ = X_[g] + 0.5 * dl_; off = q_ - p_; off -= (off @ n_) * n_; lo = np.linalg.norm(off)
+            if lo > dmax: q_ = q_ - off * (1 - dmax / lo)
+            Xn_[g] = _onskin(g, q_)
+        X_ = Xn_
+    mvv = np.isin(WG, sv); Vnew = X_[WG]
+    # corner UVs re-sampled on their own island, near the moved points only
+    loc = np.nonzero((cKDTree(V[mvv]).query(fcu)[0] < 0.015) | mvv[tri].any(1))[0]
+    UVc = UV[tcor[loc]]; FIu = islands(tri[loc], UVc); refu = Ref(V, tri[loc], UVc, FIu)
+    cm = np.isin(fv, np.nonzero(mvv)[0]); cidx = np.nonzero(cm)[0]
+    # each corner's island: the island of a local triangle that holds this corner
+    cisl = -np.ones(len(fv), int); cisl[tcor[loc].ravel()] = np.repeat(FIu, 3)
+    _, fi_, bar_, dist_ = refu.locate(Vnew[fv[cidx]], cisl[cidx])
+    UV[cidx] = refu.uv(fi_, bar_)
+    mv_ = np.linalg.norm(Vnew[mvv] - V[mvv], axis=1); V[mvv] = Vnew[mvv]
+    a2_ = _angles(V)
+    print("unfold: %d slivers (%d left, %d right), %d points moved p50 %.2f max %.2f mm; corner UVs re-sampled %d (locate max %.3f mm); "
+          "slivers left %d, their min angle p50 %.1f deg" % (slv.sum(), (slv & (V[tri[:, 0], 0] > 0)).sum(), (slv & (V[tri[:, 0], 0] < 0)).sum(),
+          mvv.sum(), np.median(mv_) * 1e3, mv_.max() * 1e3, len(cidx), dist_.max() * 1e3, ((a2_.min(1) < K["UMINA"]) & zt).sum(), np.median(a2_[slv].min(1))))
 reg_out = np.where(reg > 0, reg, 3 * moved0)
 np.savez(out, **{**D, "V": V, "W": W, "uv": UV, "region": reg_out})
 print("WROTE", out)
