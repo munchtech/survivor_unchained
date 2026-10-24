@@ -475,6 +475,8 @@ def lod(folder, outfit):
         J.append(attrs["JOINTS_0"][0][used].astype(np.uint16))
         ww, norm = attrs["WEIGHTS_0"]
         ww = ww[used].astype(np.float32) / ({np.dtype(np.uint8): 255.0, np.dtype(np.uint16): 65535.0}.get(ww.dtype, 1.0) if norm else 1.0)
+        # (her body carries 8 weights since Body 6 S2b: the shadow keeps the largest 4 (JOINTS_0), made whole again)
+        ww = ww / np.maximum(ww.sum(1, keepdims=True), 1e-9)
         W.append(ww)
         T.append(inv.reshape(-1, 3) + base)
         base += len(used)
