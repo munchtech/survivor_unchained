@@ -44,8 +44,10 @@ from worn_reaver_post import _sparse  # noqa: E402
 POSES = os.path.join(HERE, "pit_hollow_poses.json")
 DEPTH, DEPTH_115 = float(os.environ.get("PIT_DEPTH", 0.009)), float(os.environ.get("PIT_DEPTH_115", 0.007))
 P = dict(Ru=0.050, Rv=0.032, Ra=0.06, drop=0.012, relaxR=float(os.environ.get("PIT_RELAX_R", 0.055)), relaxK=0.8, relaxIt=int(os.environ.get("PIT_RELAX_IT", 30)), leftR=0.028, leftIt=12,
-         fold=float(os.environ.get("PIT_FOLD", 0.0025)), foldW=0.020, pull=float(os.environ.get("PIT_PULL", 0.005)),
-         groove=float(os.environ.get("PIT_GROOVE", 0.0018)), grooveW=0.012, smoothIt=int(os.environ.get("PIT_SMOOTH", 40)))
+         fold=float(os.environ.get("PIT_FOLD", 0.010)), foldW=float(os.environ.get("PIT_FOLD_W", 0.026)), foldIt=int(os.environ.get("PIT_FOLD_SMOOTH", 10)), pull=float(os.environ.get("PIT_PULL", 0.023)),
+         groove=float(os.environ.get("PIT_GROOVE", 0.0035)), grooveW=float(os.environ.get("PIT_GROOVE_W", 0.018)), smoothIt=int(os.environ.get("PIT_SMOOTH", 40)),
+         grooveIt=int(os.environ.get("PIT_GROOVE_SMOOTH", 4)), tilt=float(os.environ.get("PIT_TILT", 20.0)),
+         shift=float(os.environ.get("PIT_SHIFT", 0.006)))
 SAMPLES = (("150_l", "cast", "l", DEPTH), ("150_r", "cast", "r", DEPTH), ("115_r", "over", "r", DEPTH_115))
 SLOTS = {"115": ("shoulder_abd117", "shoulder_flex117"),
          "150": ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s",
@@ -159,6 +161,13 @@ def author(b, d, side, depth, p=P, info=None):
     # hollow: the dome along the pit's own axis (its mean normal about the centre), long along the arm
     wa = _bump(np.linalg.norm(Xr - C, axis=1) / 0.02) * sd
     a = _unit((wa[:, None] * Nr).sum(0))
+    # (tilted toward the camera side, forward-down, so a front camera sees its shadow; its centre slid that way too)
+    fd = _unit(np.array([0, -1.0, 1.0]))
+    ft = _unit(fd - (fd @ a) * a)
+    fk = _ss((0.75 - a[2]) / 0.25)   # (the overhead A 114 pit already faces the camera: left as it is)
+    tr = np.radians(p["tilt"]) * fk
+    a = _unit(np.cos(tr) * a + np.sin(tr) * ft)
+    C = C + p["shift"] * fk * ft
     hu = _unit(h - (h @ a) * a)
     hv = np.cross(a, hu)
     q = Xr - C
@@ -193,12 +202,21 @@ def author(b, d, side, depth, p=P, info=None):
     tw = _ss((ta + 0.01) / 0.04) * _ss((0.22 - ta) / 0.06)
     Dg = -p["groove"] * (_bump(dl / p["grooveW"], 3) * tw * (aw > 0.2))[:, None] * Nr
     # the sculpt's move smoothed along her skin (no thin triangle folds where the pit's fan is stretched)
-    S = Dh + Df + Dp + Dg
+    S = Dh
     for _ in range(p["smoothIt"]):
         S = S + 0.5 * b.lap(S)
+    # (the fold and the pull on their own pass: the hollow's 40 steps took a 2.5 mm ridge down to 0.6)
+    Sf = Df + Dp
+    for _ in range(p["foldIt"]):
+        Sf = Sf + 0.5 * b.lap(Sf)
+    S = S + Sf
+    # (the groove after that pass, its own light smoothing only: 40 steps flattened it out of sight)
+    for _ in range(p["grooveIt"]):
+        Dg = Dg + 0.5 * b.lap(Dg)
+    S = S + Dg
     D = Xr + S - X0
     if info is not None:
-        info.update(C=C, a=a, J=J, h=h, P0=P0, P1=P1, Dh=Dh, Dg=Dg, Df=Df, Dp=Dp, relax=Xr - X0, X0=X0)
+        info.update(C=C, a=a, J=J, h=h, P0=P0, P1=P1, Dh=Dh, Dg=Dg, Df=Df, Dp=Dp, relax=Xr - X0, X0=X0, Nr=Nr, S=S)
     return D, B
 
 
