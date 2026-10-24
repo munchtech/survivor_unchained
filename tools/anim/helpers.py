@@ -249,6 +249,44 @@ SPEC = {
             "blade_z": -0.03,
         },
     },
+    # Her shoulder's muscle helpers (Body 6 S2, 24 Oct; the shoulder rig's stage 2): with both arms up the judge saw
+    # "arms as tubes plugged into the corners of a box". Per side, each a child of the one bone (`parent`) whose weight
+    # it takes (tools/assets/shoulder_rig_post.py), so below `A`[0] (the arm's angle from her torso's down axis, as
+    # HerScap reads it) it moves exactly as that bone did: her idles and the Look are unchanged to the bit. Past it, g
+    # (a smoothstep over `A`) of: a turn of `follow` of the way from the bone's line to the aim (a point on her humerus
+    # `aim`[0] m below the joint plus `aim`[1], carried by `on`), a stretch along its line of (L/L0)^ka and across of
+    # (L/L0)^-kp (L the pivot-to-aim length), times 1+`sa` along and 1+`sp` across, and a move of `off` (m, her rest
+    # axes, turned with the parent). `pivot`: her rest space (her left; the right mirrored), or ["hum", m] on the humerus.
+    # delt: the deltoid bunching (wider across, shorter along) on the upper arm's outer side; trap: the outer trapezius
+    # top lifted 15 mm (none near her neck); pec: the pec's lower-lateral band turned and stretched toward the arm (the
+    # front axillary fold); lat: the lat band below the armpit turned in toward the arm's line (the torso narrows from
+    # the armpit down, behind the breast). Weights ("weights"): smoothstep bands in her rest space, x out from her midline.
+    "shoulder": {
+        "gate": "delt_{s}",
+        "A": [60.0, 120.0],
+        "bones": {
+            "delt": {"parent": "upperarm_twist_02_{s}", "pivot": ["hum", 0.05], "aim": [0.30, [0, 0, 0]], "on": "upperarm_{s}",
+                     "follow": 0.0, "ka": 0.0, "kp": 0.0, "sa": -0.10, "sp": 0.30, "off": [0, 0, 0]},
+            "trap": {"parent": "clavicle_{s}", "pivot": [0.10, 1.535, -0.04], "aim": None, "on": "upperarm_{s}",
+                     "follow": 0.0, "ka": 0.0, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0.0, 0.015, 0.0]},
+            "pec": {"parent": "spine_03", "pivot": [0.05, 1.42, 0.05], "aim": [0.08, [0, 0, 0.025]], "on": "upperarm_{s}",
+                    "follow": 0.6, "ka": 0.5, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0, 0, 0]},
+            "lat": {"parent": "spine_03", "pivot": [0.09, 1.20, -0.05], "aim": [0.07, [-0.01, 0, 0.01]], "on": "upperarm_{s}",
+                    "follow": 0.4, "ka": 0.0, "kp": 0.0, "sa": 0.0, "sp": 0.0, "off": [0, 0, 0]},
+        },
+        "weights": {
+            # delt: t (m along the humerus from the joint) in, full, full, out; c the cosine to its top-outer side
+            # (in from, full at); none past r m from the humerus
+            "delt": {"t": [0.0, 0.03, 0.10, 0.14], "c": [-0.3, 0.3], "r": 0.10},
+            # trap: x in, full, full, out; d below the top of her silhouette (full within, none past)
+            "trap": {"x": [0.10, 0.15, 0.17, 0.20], "d": [0.02, 0.045]},
+            # pec: x in; y in, full, full, out; z in (the front of her armpit); less over the breast (1 - bre x its weight)
+            "pec": {"x": [0.07, 0.13], "y": [1.39, 1.43, 1.50, 1.54], "z": [0.02, 0.05], "bre": 0.6},
+            # lat: x in; y in, full, full, out (the armpit's dome stays on spine_03 and the share); z: out at the front
+            # (from, to), in at the back (from, to)
+            "lat": {"x": [0.08, 0.12], "y": [1.22, 1.30, 1.38, 1.43], "z": [0.02, 0.06, -0.10, -0.07]},
+        },
+    },
 }
 
 
@@ -654,6 +692,94 @@ def scap(sk: Skeleton, rot, report=None):
         if report is not None:
             report[s] = (A, deg)
     return rot
+
+
+# ---- her shoulder's muscle helpers (SPEC "shoulder"; Play/ShoulderHelpers.cs is the twin) ----
+def _rotm(ax, ang):
+    ax = np.asarray(ax, float)
+    ax = ax / np.linalg.norm(ax)
+    K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+    return np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * K @ K
+
+
+def has_shoulder(index, s):
+    """Her shoulder helpers on side `s` (SPEC "shoulder"): `index` any name lookup."""
+    return SPEC["shoulder"]["gate"].replace("{s}", s) in index
+
+
+def shoulder_g(A):
+    """How far the shoulder helpers act (0-1) for an upper arm at A degrees: a smoothstep over SPEC shoulder A."""
+    a0, a1 = SPEC["shoulder"]["A"]
+    return float(_smooth((A - a0) / (a1 - a0)))
+
+
+def shoulder_rest(Grest):
+    """{helper name: dict(G0 rest global 4x4, parent, on, T0, L0, c, s, off)} from {bone: rest global 4x4} (her
+    skeleton space): each at its pivot, its Y toward its aim (up if none), X square to Y and her front."""
+    out = {}
+    for s, sg in (("l", 1.0), ("r", -1.0)):
+        J, E = Grest["upperarm_" + s][:3, 3], Grest["lowerarm_" + s][:3, 3]
+        h = (E - J) / np.linalg.norm(E - J)
+        m = np.array([sg, 1.0, 1.0])
+        for k, c in SPEC["shoulder"]["bones"].items():
+            pv = J + c["pivot"][1] * h if c["pivot"][0] == "hum" else np.asarray(c["pivot"], float) * m
+            T0 = None if c["aim"] is None else J + c["aim"][0] * h + np.asarray(c["aim"][1], float) * m
+            Y = np.array([0, 1.0, 0]) if T0 is None else T0 - pv
+            L0 = float(np.linalg.norm(Y))
+            Y = Y / L0
+            X = np.cross(Y, [0, 0, 1.0])
+            X /= np.linalg.norm(X)
+            G0 = np.eye(4)
+            G0[:3, :3] = np.c_[X, Y, np.cross(X, Y)]
+            G0[:3, 3] = pv
+            out[f"{k}_{s}"] = dict(G0=G0, parent=c["parent"].replace("{s}", s), on=c["on"].replace("{s}", s),
+                                   T0=T0, L0=L0, c=c, s=s, off=np.asarray(c["off"], float) * m)
+    return out
+
+
+def shoulder_helper(f, A, Mp, Gp0, Mon=None, Gon0=None):
+    """One helper's posed global 4x4 (rotation x scale, origin) from its parent's posed and rest globals (Mp, Gp0),
+    its aim's carrier's (Mon, Gon0) and A (degrees). g 0: exactly its parent's move."""
+    c = f["c"]
+    g = shoulder_g(A)
+    P = Mp @ np.linalg.inv(Gp0) @ f["G0"]
+    Rrel = Mp[:3, :3] @ np.linalg.inv(Gp0[:3, :3])
+    R, O = P[:3, :3].copy(), P[:3, 3].copy()
+    sa = sp = 1.0
+    if f["T0"] is not None and g > 0:
+        T = (Mon @ np.linalg.inv(Gon0) @ np.r_[f["T0"], 1.0])[:3]
+        d = T - O
+        L = float(np.linalg.norm(d))
+        r = L / f["L0"]
+        ax = np.cross(R[:, 1], d)
+        sn = float(np.linalg.norm(ax))
+        if c["follow"] > 0 and sn > 1e-9:
+            R = _rotm(ax / sn, math.atan2(sn, float(R[:, 1] @ d)) * c["follow"] * g) @ R
+        sa *= 1 + g * (r ** c["ka"] - 1)
+        sp *= 1 + g * (r ** -c["kp"] - 1)
+    sa *= 1 + g * c["sa"]
+    sp *= 1 + g * c["sp"]
+    O = O + g * (Rrel @ f["off"])
+    G = np.eye(4)
+    G[:3, :3] = R @ np.diag([sp, sa, sp])
+    G[:3, 3] = O
+    return G
+
+
+def shoulder_pose(M, Grest, frames, report=None):
+    """{helper: posed global 4x4} from posed globals M {bone: 4x4} (Godot's skeleton space, after HerScap), her rest
+    globals and shoulder_rest's frames. A per side as HerScap reads it (ScapRotation.ArmAngle)."""
+    out = {}
+    down = M["pelvis"][:3, 3] - M["neck_01"][:3, 3]
+    down = down / np.linalg.norm(down)
+    for n, f in frames.items():
+        s = f["s"]
+        u = M["lowerarm_" + s][:3, 3] - M["upperarm_" + s][:3, 3]
+        A = math.degrees(math.acos(float(np.clip(u @ down / np.linalg.norm(u), -1, 1))))
+        out[n] = shoulder_helper(f, A, M[f["parent"]], Grest[f["parent"]], M[f["on"]], Grest[f["on"]])
+        if report is not None:
+            report[n] = (A, shoulder_g(A))
+    return out
 
 
 def _torso(grot, gpos, I):
