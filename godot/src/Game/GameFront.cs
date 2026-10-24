@@ -134,14 +134,14 @@ public partial class Game
             figure.Sheathe(look);
             figure.Loop(look ? figure.Person.Own!.Prefix + $"idle_{figure.Person.Calling}_town" : guardIdle, 0.3);
             // (her arms nearer her body on the Look, eased with the crossfade: HerPose.LookArms. Measured on the town
-            // idle, Body 5, 24 October 2026: upper arms 10.7 and 12.1 deg from her chest's line (were 20.8 and 43.6),
-            // her left roll -11.8 deg against her right's -9.2 (was -47.1), every skin gap 33 mm or more. Her left hand
-            // then hangs 5 cm off her hip, so it hangs relaxed: fingers within 3.4 deg of the middle's line (index +4.6,
-            // pinky -12.4 before), 25 deg more curl at the knuckles and middle joints, thumb beside the index)
+            // idle, Body 5, 24 October 2026: upper arms 10.7 and 13.3 deg from her chest's line (were 20.8 and 43.6),
+            // every skin gap 24 mm or more. Her left hand stays on her hip as the idle shaped it (roll 0): rolled out 8
+            // it hung 6 cm off her hip against open ground at turn 40, and judge 10 preferred it back on the hip.
+            // LookRollL/FanL/CurlL/ThumbL stay as try flags.)
             if (figure.Person.Pose is HerPose hp)
             {
                 hp.LookOn = look;
-                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 8f; hp.LookFanL = 0.8f; hp.LookCurlL = 25f; hp.LookThumbL = 18f; }
+                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 0f; hp.LookFanL = 0f; hp.LookCurlL = 0f; hp.LookThumbL = 0f; }
             }
         }
         figure.ShowHeld(shown);
@@ -230,8 +230,12 @@ public partial class Game
     float ambientBase = -1;
     Vector2 bounceAt = new(1.3f, 1.0f);
     Vector2? keyAt;
-    static readonly Vector2? BodyKeyAt = Args.Get("body-key-at") is string bk && bk.Split(',') is [var bx, var by]
-        ? new Vector2(float.Parse(bx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(by, System.Globalization.CultureInfo.InvariantCulture)) : null;
+    // (Body 5, judge 10: the broad cone from high over the lens, 0.55 m aside and 3.0 m up, a "butterfly" light that gives
+    // her yoke and collarbones form; the face's own cone stays where it was and her face reads unchanged. --body-key-at
+    // SIDE,UP tries another; --body-key-at off puts it back on the face key's position)
+    static readonly Vector2? BodyKeyAt = Args.Get("body-key-at") is string bk
+        ? (bk.Split(',') is [var bx, var by] ? new Vector2(float.Parse(bx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(by, System.Globalization.CultureInfo.InvariantCulture)) : null)
+        : new Vector2(0.55f, 3.0f);
     static readonly bool LookReflOff = Args.Get("look-refl") == "off";
     float[]? rig;
     OmniLight3D? herFire, fireSrc;
