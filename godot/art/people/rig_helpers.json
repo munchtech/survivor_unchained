@@ -70,6 +70,33 @@
    "bulge_max": 1.5,
    "pivot": 0.059,
    "way": "back"
+  },
+  {
+   "name": "upperarm_twist_02_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "counter_twist",
+   "bone": "upperarm_{s}",
+   "at": 0.25,
+   "amount": 0.525,
+   "chain": true
+  },
+  {
+   "name": "upperarm_twist_03_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "counter_twist",
+   "bone": "upperarm_{s}",
+   "at": 0.5,
+   "amount": 0.35,
+   "chain": true
+  },
+  {
+   "name": "upperarm_twist_04_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "counter_twist",
+   "bone": "upperarm_{s}",
+   "at": 0.75,
+   "amount": 0.175,
+   "chain": true
   }
  ],
  "unroll": [
@@ -160,5 +187,50 @@
    "fall_tau": 0.04,
    "fall_rate": 450.0
   }
- ]
+ ],
+ "twist_chain": {
+  "gate": "upperarm_twist_02_{s}",
+  "roll_bone": "upperarm_{s}",
+  "amounts": {
+   "upperarm_twist_01_{s}": 0.7
+  },
+  "roll": {
+   "upperarm_share_{s}": 0.3
+  },
+  "unwrap_max": 270.0,
+  "nodes": [
+   [
+    "upperarm_twist_01_{s}",
+    0.0
+   ],
+   [
+    "upperarm_twist_02_{s}",
+    0.25
+   ],
+   [
+    "upperarm_twist_03_{s}",
+    0.5
+   ],
+   [
+    "upperarm_twist_04_{s}",
+    0.75
+   ],
+   [
+    "upperarm_{s}",
+    1.0
+   ]
+  ],
+  "reach": [
+   0.1,
+   0.6
+  ],
+  "reach_from": [
+   "upperarm_share_{s}",
+   "clavicle_{s}"
+  ],
+  "radius": [
+   0.3,
+   0.4
+  ]
+ }
 }

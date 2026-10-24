@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Godot;
+using N = System.Numerics;
+using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.View;
 
@@ -13,7 +15,11 @@ namespace SurvivorUnchained.View;
 ///   the skin turns as the radius rolls over the ulna, never wrung at the
 ///   elbow or the wrist;
 /// - the shoulder's twist bone half undoes the upper arm's turn about its
-///   length, where the deltoid is held by the shoulder girdle;
+///   length, where the deltoid is held by the shoulder girdle; on her (Body 5
+///   A2: a side with upperarm_twist_02) a chain of four carries the turn
+///   evenly down the humerus, the shoulder's share takes 0.30 of it, and the
+///   roll is unwrapped frame to frame (Play/ArmTwist; rig_helpers.json
+///   "twist_chain"); a body without the chain drives as before;
 /// - each share bone (shoulder, elbow, knee) takes half its joint's bend and,
 ///   at the elbow and knee, pushes the flesh out across the bend as a bent
 ///   tube is pushed (its own Z), so a joint bends round a corner and keeps its
@@ -39,6 +45,7 @@ public partial class HerJoints : SkeletonModifier3D
         public Quaternion Own;      // a share's turn about its line, from the bone it shares
         public float Push, From, To; // a point's push out across the bend (metres), eased in over these degrees
         public float Squeeze, SqueezeX, SqueezeFrom; // a point's width drawn in along its X toward SqueezeX (metres), eased in from SqueezeFrom to To
+        public float RollK;         // a share's part of the upper arm's roll, in a chained arm (twist_chain "roll")
     }
 
     sealed class Side
@@ -46,6 +53,12 @@ public partial class HerJoints : SkeletonModifier3D
         public int Forearm = -1, Hand = -1;
         public Quaternion ForearmRest, HandRest;
         public Vector3 Axis, Thumb0;
+        // The upper arm's twist chain (twist_chain): on only where the side has its gate bone.
+        public bool Chain;
+        public int Upper = -1;
+        public Quaternion UpperRest;
+        public float UnwrapMax = 270f;
+        public float LastRoll = float.NaN;   // last frame's unwrapped roll (degrees)
         public readonly List<Helper> Helpers = new();
         public readonly List<Corrective> Correctives = new();
     }
@@ -135,6 +148,22 @@ public partial class HerJoints : SkeletonModifier3D
             one.HandRest = handRest.Basis.GetRotationQuaternion();
             one.Axis = handRest.Origin.Normalized();
             one.Thumb0 = one.HandRest * Vector3.Back;
+            // Her upper arm's twist chain (helpers SPEC "twist_chain"), where this side has it.
+            var amounts = new Dictionary<string, float>();
+            var rolls = new Dictionary<string, float>();
+            if (s.ContainsKey("twist_chain"))
+            {
+                var tc = s["twist_chain"].AsGodotDictionary();
+                one.Upper = sk.FindBone(((string)tc["roll_bone"]).Replace("{s}", side));
+                one.Chain = one.Upper >= 0 && sk.FindBone(((string)tc["gate"]).Replace("{s}", side)) >= 0;
+                if (one.Chain)
+                {
+                    one.UpperRest = sk.GetBoneRest(one.Upper).Basis.GetRotationQuaternion();
+                    one.UnwrapMax = (float)(double)tc["unwrap_max"];
+                    foreach (var (k, v) in tc["amounts"].AsGodotDictionary()) amounts[((string)k).Replace("{s}", side)] = (float)(double)v;
+                    foreach (var (k, v) in tc["roll"].AsGodotDictionary()) rolls[((string)k).Replace("{s}", side)] = (float)(double)v;
+                }
+            }
             var byName = new Dictionary<string, Godot.Collections.Dictionary>();
             foreach (var hv in s["helpers"].AsGodotArray())
                 byName[(string)hv.AsGodotDictionary()["name"]] = hv.AsGodotDictionary();
@@ -143,12 +172,15 @@ public partial class HerJoints : SkeletonModifier3D
                 var h = hv.AsGodotDictionary();
                 // A point is its share's twin: it bends and swells as the share does.
                 var sh = h.ContainsKey("share") ? byName[(string)h["share"]] : h;
-                int bone = sk.FindBone(((string)h["name"]).Replace("{s}", side));
+                string hname = ((string)h["name"]).Replace("{s}", side);
+                int bone = sk.FindBone(hname);
                 int src = sk.FindBone(((string)h["bone"]).Replace("{s}", side));
                 if (bone < 0 || src < 0) continue;
                 var helper = new Helper
                 {
-                    Kind = (string)h["kind"], Bone = bone, Source = src, Amount = (float)(double)h["amount"],
+                    Kind = (string)h["kind"], Bone = bone, Source = src,
+                    Amount = amounts.TryGetValue(hname, out var ca) ? ca : (float)(double)h["amount"],
+                    RollK = rolls.TryGetValue(hname, out var rk) ? rk : 0f,
                     Bulge = sh.ContainsKey("bulge") ? (float)(double)sh["bulge"] : 0f,
                     BulgeMax = sh.ContainsKey("bulge_max") ? (float)(double)sh["bulge_max"] : 1f,
                     Pivot = sh.ContainsKey("pivot") ? (float)(double)sh["pivot"] : 0f,
@@ -220,6 +252,9 @@ public partial class HerJoints : SkeletonModifier3D
         return (d * t.Inverse(), t, deg);
     }
 
+    static N.Quaternion Nq(Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+    static Quaternion Gq(N.Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
@@ -241,6 +276,13 @@ public partial class HerJoints : SkeletonModifier3D
             var t = hand * Vector3.Back;
             t -= a * t.Dot(a);
             float turn = t0.LengthSquared() > 1e-12f && t.LengthSquared() > 1e-12f ? Mathf.Atan2(t0.Cross(t).Dot(a), t0.Dot(t)) : 0f;
+            // The upper arm's roll, once, unwrapped from the last frame's (a chained arm only).
+            float roll = 0f;
+            if (side.Chain)
+            {
+                roll = ArmTwist.Unwrap(side.LastRoll, ArmTwist.Roll(Nq(side.UpperRest), Nq(sk.GetBonePoseRotation(side.Upper))), side.UnwrapMax);
+                side.LastRoll = roll;
+            }
             foreach (var h in side.Helpers)
             {
                 switch (h.Kind)
@@ -250,6 +292,11 @@ public partial class HerJoints : SkeletonModifier3D
                         break;
                     case "counter_twist":
                     {
+                        if (side.Chain && h.Source == side.Upper)
+                        {
+                            sk.SetBonePoseRotation(h.Bone, Gq(ArmTwist.Counter(roll, h.Amount)));
+                            break;
+                        }
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (_, _, deg) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
                         sk.SetBonePoseRotation(h.Bone, new Quaternion(Vector3.Up, Mathf.DegToRad(-deg * h.Amount)));
@@ -261,6 +308,8 @@ public partial class HerJoints : SkeletonModifier3D
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (bend, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
                         var turned = (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized();
+                        if (side.Chain && h.RollK != 0f)
+                            turned = Gq(ArmTwist.Share(Nq(rest), Nq(sk.GetBonePoseRotation(h.Source)), h.Amount, Nq(h.Own), roll, h.RollK));
                         sk.SetBonePoseRotation(h.Bone, turned);
                         if (h.Bulge > 0 || h.Push > 0 || h.Squeeze > 0)
                         {
