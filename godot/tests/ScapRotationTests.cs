@@ -66,16 +66,17 @@ public class ScapRotationTests
     [Fact]
     public void EasedInNoKink()
     {
-        Assert.Equal(0f, ScapRotation.Angle(30f));
+        Assert.Equal(0f, ScapRotation.Angle(50f));
         Assert.Equal(0f, ScapRotation.Angle(10f));
-        Assert.InRange(ScapRotation.Angle(115f), 26.5f, 27.5f);
-        Assert.InRange(ScapRotation.Angle(150f), 39f, 40.5f);
+        Assert.True(ScapRotation.Angle(60f) < 1f);   // her idles and the Look: the shoulders as they were
+        Assert.InRange(ScapRotation.Angle(115f), 22f, 23.2f);
+        Assert.InRange(ScapRotation.Angle(150f), 37f, 38.2f);
         float prev = 0, prevSlope = 0;
-        for (float a = 28f; a <= 182f; a += 1f)
+        for (float a = 48f; a <= 182f; a += 1f)
         {
             float t = ScapRotation.Angle(a), slope = t - prev;
             Assert.True(slope >= 0f);
-            if (a > 28f) Assert.True(MathF.Abs(slope - prevSlope) < 0.02f, $"kink at {a}");
+            if (a > 48f) Assert.True(MathF.Abs(slope - prevSlope) < 0.02f, $"kink at {a}");
             prev = t; prevSlope = slope;
         }
     }

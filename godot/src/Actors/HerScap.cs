@@ -6,7 +6,7 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// Her scapulae (Body 6 S1, Play/ScapRotation): scap_l/scap_r turned up about the scapular plane's normal as each arm
-/// rises (27 degrees at 115, 40 at 150), read from the arm as HerShrug and HerRaise left it. Only on a skeleton with
+/// rises (22.6 degrees at 115, 37.6 at 150), read from the arm as HerShrug and HerRaise left it. Only on a skeleton with
 /// the bones (tools/assets/scap_rig_post.py builds them into her body): every other body is untouched. Knobs:
 /// --scap-off, --scap-log. Python's twin: tools/anim/helpers.py scap (inside helpers.drive).
 /// </summary>

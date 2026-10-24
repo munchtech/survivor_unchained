@@ -10,12 +10,13 @@ namespace SurvivorUnchained.Play;
 /// child of spine_03, no global rest turn, at the root of the scapula's spine) turns about the scapular plane's
 /// normal (<see cref="Axis"/>) by <see cref="Angle"/> of A, the upper arm's angle from her torso's down axis read
 /// after the clavicle lift: none at and below <see cref="From"/>, a quadratic over <see cref="Ease"/> degrees (no
-/// kink), then <see cref="PerDeg"/> a degree (27 at 115, 40 at 150). Continuous in A, no keys. Engine-free
+/// kink), then <see cref="PerDeg"/> a degree (22.6 at 115, 37.6 at 150, 41.9 at 160; under 1 below 60, so her idles
+/// and the Look keep their shoulders). Continuous in A, no keys. Engine-free
 /// (System.Numerics, skeleton space); View/HerScap runs it after HerShrug and HerRaise, only where the bones are.
 /// </summary>
 public static class ScapRotation
 {
-    public const float PerDeg = 0.36f, From = 30f, Ease = 20f;
+    public const float PerDeg = 0.43f, From = 50f, Ease = 25f;
 
     /// <summary>Her left scapula's turning axis in her rest space (game axes): the scapular plane's normal, 35 degrees
     /// off her front toward her midline; a positive turn lifts its outer end.</summary>

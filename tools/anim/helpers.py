@@ -236,13 +236,13 @@ SPEC = {
         "parent": "spine_03",
         "pivot": [0.075, 1.45, -0.085],
         "axis": [-0.5736, 0.0, 0.8192],
-        "per_deg": 0.36, "from": 30.0, "ease": 20.0,
+        "per_deg": 0.43, "from": 50.0, "ease": 25.0,
         "shrug_max": 13.0, "shrug_roll": -0.6,
         "weights": {
             # along her trapezius' top: the clavicle's share of the non-arm weight a smoothstep in x (m from her
             # midline) from x0 to x1; the arm's a smoothstep over arm_ramp; full within band[0] m below the top, none
             # past band[1]; eased back to her own weights over `out` (x)
-            "x0": 0.06, "x1": 0.23, "arm_ramp": [0.165, 0.225], "band": [0.015, 0.05], "out": [0.215, 0.245],
+            "x0": 0.06, "x1": 0.23, "arm_ramp": [0.19, 0.25], "band": [0.015, 0.05], "out": [0.24, 0.27],
             # the blade: up to blade_max of the non-arm weight to scap_{s}, full over the x and y spans, eased out
             # over blade_fade; only behind blade_z (eased over blade_fade)
             "blade_max": 0.55, "blade_x": [0.07, 0.13], "blade_y": [1.335, 1.435], "blade_fade": 0.04,
