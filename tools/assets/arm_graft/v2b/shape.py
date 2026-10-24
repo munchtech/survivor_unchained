@@ -14,7 +14,7 @@ from remesh import islands, Ref, Work
 from geo import Surf
 
 K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0,
-         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0, VEE=0.0, NOTCH=0.0, VPHI=-15.0, NPHI=-45.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
+         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0, VEE=0.0, NOTCH=0.0, VPHI=-15.0, NPHI=-45.0, VT=0.36)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
 for k in K: K[k] = float(os.environ.get(k, K[k]))
 print("K", K)
 D = dict(np.load(sys.argv[1])); out = sys.argv[2]
@@ -296,12 +296,12 @@ if K["NARROW"] or K["DOME"] or K["CAPTOP"] or K["BELLY"] or K["VEE"] or K["NOTCH
         #   NOTCH (mm, the largest move): within +-90 deg of NPHI (cos^2), the concave dip between the cap and the arm filled toward the upper hull of each
         #     sector's profile r(t) (t -0.10..0.50, sectors every 10 deg, smoothed in t and phi), fill proportional to
         #     the dip, so a straight-ish run replaces the notch and nothing convex grows.
-        #   VEE (mm): the deltoid's lower V raised: full t 0.30-0.42, gone by 0.16 and 0.56; its sector narrows down the
+        #   VEE (mm): the deltoid's lower V raised: full t VT +-0.06, gone by VT +-0.20 (VT 0.36: 0.16-0.56); its sector narrows down the
         #     arm (half-width 85 deg at t 0.2 -> 35 at 0.5, cos^2) so the outline runs to a point at the insertion.
         if K["VEE"] or K["NOTCH"]:
             dph = (phi8 - K["VPHI"] + 180) % 360 - 180
             hw = np.interp(t8, [0.2, 0.5], [85.0, 35.0])
-            dv = (K["VEE"] * 1e-3 * win(t8, 0.16, 0.30, 0.42, 0.56) * np.cos(np.radians(np.clip(np.abs(dph) / hw * 90, 0, 90))) ** 2
+            dv = (K["VEE"] * 1e-3 * win(t8, K["VT"] - 0.20, K["VT"] - 0.06, K["VT"] + 0.06, K["VT"] + 0.20) * np.cos(np.radians(np.clip(np.abs(dph) / hw * 90, 0, 90))) ** 2
                   * ss((xs - 0.12) / 0.04) * on * (r8 < 0.10))
             dn = np.zeros(len(V8))
             if K["NOTCH"]:
