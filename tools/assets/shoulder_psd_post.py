@@ -96,6 +96,18 @@ GROOVE_D, GROOVE_AT, GROOVE_W = float(os.environ.get("PSD_GROOVE", 0.0025)), -0.
 # the pit's band (her skin below the shoulder joint where her arm's weight gives way to her torso's) takes the
 # smoothed raised shape with only this much of the rest's detail left, at full grow
 PIT_FLAT = float(os.environ.get("PSD_PIT_FLAT", 1.0))
+# (Body 5 dm, judge 12: the sculpt's bumps read "a puffed-up tube", "a doll's ball joint": rebuilt from a principled
+# source) PSD_MODE=dm: the target at each sample is a plain delta mush (Mancewicz 2014) of her skinned mesh: the rest
+# (no axilla morphs: her own cap and pit) and the posed mesh each smoothed DMI rounds over the region's reach (its
+# border locked), the rest's detail (rest minus its smoothing, in the smoothed surface's local frame) put back on the
+# posed smoothing; no cap, deltoid, groove, fill, folds or hollow. The fold untangle stays as a safety net.
+MODE = os.environ.get("PSD_MODE", "sculpt")
+DMI = int(os.environ.get("PSD_DM_IT", 90))
+DM_REST = os.environ.get("PSD_DM_REST", "u")          # u: the plain rest; ur: with the axilla morphs at their weight
+DM_PIT_FLAT = float(os.environ.get("PSD_DM_PIT_FLAT", 1.0))   # (the A-pose's closed pit valley isn't carried up)
+PEC_H, PEC_W, PEC_PHI, PEC_LEN = float(os.environ.get("PSD_PEC", 0.003)), 0.022, float(os.environ.get("PSD_PEC_PHI", 60.0)), 0.06
+PEC_HOLLOW = float(os.environ.get("PSD_PEC_HOLLOW", 0.0015))
+UNDER_K, UNDER_T0, UNDER_T1 = float(os.environ.get("PSD_UNDER", 0.7)), 0.07, 0.04
 NECK_KEEP = 0.25   # how much of the region her neck (neck_01's weight) still takes (C1: none past 0.8; the trap spike)
 # the outfit pieces over her shoulders and armpits that carry the shapes (every calling, the warden's steel too: its
 # pauldrons and top ride the skin under them like everything else skinned there)
@@ -399,6 +411,78 @@ def untangle(X, Dp, F, A, deg, grow, reg, rounds=40):
     return Dp + (D - Dp) * np.clip(reg * 4, 0, 1)[:, None], n0, int(bad.sum())
 
 
+def delta_mush(R, P, F, A, deg, nb, iters, mask, keep=None):
+    """Delta mush (Mancewicz 2014): P (posed) smoothed `iters` rounds where mask (else locked), plus R's (rest) detail
+    (R minus its own smoothing, in the smoothed surface's local frame), scaled by keep, carried into P's frames."""
+    Rs = _smooth(R, A, deg, iters, mask)
+    Ps = _smooth(P, A, deg, iters, mask)
+    Fr = _frames(Rs, _vn(Rs, F), nb)
+    Fp = _frames(Ps, _vn(Ps, F), nb)
+    loc = np.einsum("nij,nj->ni", Fr, R - Rs)
+    if keep is not None:
+        loc *= np.asarray(keep, float).reshape(-1, 1)
+    return Ps + np.einsum("nji,nj->ni", Fp, loc)
+
+
+def dm_terms(Y, F, A, deg, grow, M, rig, s, U, J, W, reg, gk):
+    """PSD_MODE=dm's one documented term on top of the delta mush (posed space): judge 12's "a sagging underside",
+    "pit to elbow one even cylinder": the upper arm's underside belly pulled UNDER_K of the way in toward the straight
+    line from the pit to the elbow (slice by slice along the arm, 1 cm; only what stands beyond the chord, faded round
+    the arm by how far a point faces under), at the raise's grow gk. Zero where the underside is already straight."""
+    if (UNDER_K <= 0 and PEC_H <= 0) or gk <= 0:
+        return np.zeros_like(Y)
+    I = rig.index
+    M0 = rig.fk(rig.rest_rot, rig.rest_pos, rig.rest_scl)
+    ua = I[f"upperarm_{s}"]
+    S, El = M[ua, :3, 3], M[I[f"lowerarm_{s}"], :3, 3]
+    L = np.linalg.norm(El - S)
+    ap = (El - S) / L
+    ax0 = M0[I[f"lowerarm_{s}"], :3, 3] - M0[ua, :3, 3]
+    ax0 /= np.linalg.norm(ax0)
+    dn0 = M0[I["pelvis"], :3, 3] - M0[I["neck_01"], :3, 3]
+    ud = dn0 - (dn0 @ ax0) * ax0
+    un = M[ua, :3, :3] @ np.linalg.inv(M0[ua, :3, :3]) @ (ud / np.linalg.norm(ud))   # the arm's underside, posed
+    un -= (un @ ap) * ap
+    un /= np.linalg.norm(un)
+    # (the side that hangs: her torso's down off the arm's line; overhead, where that vanishes, the rest's underside)
+    down = torso_frame(M, rig, s)[0]
+    g = down - (down @ ap) * ap
+    if np.linalg.norm(g) > 0.3:
+        un = g / np.linalg.norm(g)
+    armw = sum((W * (J == j)).sum(1) for n, j in I.items() if n.startswith("upperarm") and n.endswith("_" + s))
+    rel = Y - S
+    t = rel @ ap
+    rp = rel - t[:, None] * ap
+    hu = rp @ un
+    ok = (armw > 0.5) & (np.linalg.norm(rp, axis=1) < 0.08)
+    ts = np.arange(UNDER_T0, L - UNDER_T1 + 1e-6, 0.01)
+    h = np.array([hu[ok & (np.abs(t - x) < 0.005)].max() if (ok & (np.abs(t - x) < 0.005)).any() else np.nan for x in ts])
+    good = ~np.isnan(h)
+    h = np.interp(ts, ts[good], h[good])
+    line = h[0] + (h[-1] - h[0]) * (ts - ts[0]) / (ts[-1] - ts[0])
+    ex = np.interp(t, ts, np.maximum(h - line, 0), left=0, right=0)
+    face = _ss((hu / np.maximum(np.linalg.norm(rp, axis=1), 1e-9) - 0.2) / 0.6)
+    D = -un[None] * (UNDER_K * gk * ex * face * (armw > 0.3))[:, None]
+    # judge 12's second: the chest muscle's outer edge (the front armpit fold) carried PEC_LEN into the arm as a soft
+    # ridge PEC_H high (a gaussian PEC_W wide at half height) on the arm's front-under edge (PEC_PHI from the hanging
+    # side toward her front), fading onto her chest behind the joint, and a shallow hollow PEC_HOLLOW deep on the
+    # underside behind it (toward the back muscle); along her posed normal
+    if PEC_H > 0:
+        fwd = torso_frame(M, rig, s)[2]
+        fp = fwd - (fwd @ ap) * ap - (fwd @ un) * un
+        fp /= max(np.linalg.norm(fp), 1e-9)
+        rpn = np.linalg.norm(rp, axis=1)
+        psi = np.arctan2(rp @ fp, rp @ un)
+        r_ = np.clip(rpn, 0.03, 0.06)
+        sg = PEC_W / 2.355
+        along = _ss((t + 0.02) / 0.02) * (1 - _ss((t - PEC_LEN) / 0.03))
+        ridge = PEC_H * np.exp(-0.5 * (r_ * (psi - math.radians(PEC_PHI)) / sg) ** 2)
+        hol = PEC_HOLLOW * np.exp(-0.5 * (r_ * (psi - math.radians(PEC_PHI - 55)) / (1.3 * sg)) ** 2)
+        Ny = _vn(Y, F)
+        D = D + Ny * (gk * (ridge - hol) * along * (rpn < 0.09))[:, None]
+    return _smooth(D, A, deg, 6, grow) * reg[:, None]
+
+
 def pit_soft(pit, A, deg):
     """The pit's mask made soft at its edge (a few rings)."""
     return np.clip(_smooth(pit[:, None].astype(float), A, deg, 4)[:, 0] * 1.6, 0, 1)
@@ -456,7 +540,9 @@ def author(G, log=print, s="l"):
     log("SHOULDER_PSD: her arm's top radius at the deltoid %.1f mm (%d points)" % (1000 * r_arm, int(topz.sum())))
     reg = _smooth(reg[:, None], A, deg, 4)[:, 0] * left * _ss((sd * U[:, 0] - 0.01) / 0.04)  # (none at her midline)
     active = reg > 1e-3
-    grow = _smooth(active[:, None].astype(float), A, deg, DM_ITERS + 4)[:, 0] > 0  # the smoothing's reach
+    if os.environ.get("PSD_DEBUG"):
+        np.save(os.environ["PSD_DEBUG"] + "_reg_" + s + ".npy", reg)
+    grow = _smooth(active[:, None].astype(float), A, deg, (DMI if MODE == "dm" else DM_ITERS) + 4)[:, 0] > 0  # the smoothing's reach
     out = {}
     for (way, Asmp, shr), name in zip(SAMPLES, SHAPES):
         M, w = sample_pose(rig, s, way, Asmp, shr)
@@ -464,117 +550,124 @@ def author(G, log=print, s="l"):
         Ur = U + w[s] * (mor.get("axilla_fold_" + s, 0) + mor.get("raise_crease_" + s, 0))
         Bm = _blend(J, W, M @ rig.ibm)
         X = np.einsum("nij,nj->ni", Bm, np.c_[Ur, np.ones(len(U))])[:, :3]
-        # delta mush on the region's reach: the rest's detail onto the smoothed posed shape
-        Us = _smooth(Ur, A, deg, DM_ITERS, grow)
-        Xs = _smooth(X, A, deg, DM_ITERS, grow)
-        Fr = _frames(Us, _vn(Us, F), nb)
-        Fp = _frames(Xs, _vn(Xs, F), nb)
-        loc = np.einsum("nij,nj->ni", Fr, Ur - Us)
-        loc *= (1 - PIT_FLAT * float(np.clip((Ar - 90) / (FIRST - 90), 0, 1)) * pband)[:, None]
-        T = Xs + np.einsum("nji,nj->ni", Fp, loc)
+        # delta mush on the region's reach: the rest's detail onto the smoothed posed shape (PSD_MODE=dm: the plain
+        # rest's detail, DMI rounds, the pit band's detail kept but DM_PIT_FLAT; the sculpt's mode: as C2)
+        gk = float(np.clip((Ar - 90) / (FIRST - 90), 0, 1))
+        if MODE == "dm":
+            R0 = Ur if DM_REST == "ur" else U
+            X0 = X if DM_REST == "ur" else np.einsum("nij,nj->ni", Bm, np.c_[U, np.ones(len(U))])[:, :3]
+            T = delta_mush(R0, X0, F, A, deg, nb, DMI, grow, 1 - DM_PIT_FLAT * gk * pband)
+        else:
+            T = delta_mush(Ur, X, F, A, deg, nb, DM_ITERS, grow, 1 - PIT_FLAT * gk * pband)
         Dp = (T - X) * reg[:, None]
+        if os.environ.get("PSD_DEBUG"):
+            np.savez(os.environ["PSD_DEBUG"] + "_dm_" + name + "_" + s + ".npz", X=X, T=T, reg=reg)
         down, lat, fwd = torso_frame(M, rig, s)
         Sp, Ep = M[I[f"upperarm_{s}"], :3, 3], M[I[f"lowerarm_{s}"], :3, 3]
         ap = (Ep - Sp) / np.linalg.norm(Ep - Sp)
         grow_k = float(np.clip((Ar - 90) / (FIRST - 90), 0, 1))
-        # the deltoid cap: her skin on the top and outer side pushed out onto an ellipsoid round the humeral head
-        Y = X + Dp
-        up = -down + 0.6 * lat               # (the arm's top: up and out; overhead, its outer side)
-        up = up - (up @ ap) * ap
-        up /= max(np.linalg.norm(up), 1e-9)
-        Cc = Sp + CAP_AT * ap + CAP_UP * up
-        q = Y - Cc
-        qa = q @ ap
-        qp = q - qa[:, None] * ap
-        qpn = np.linalg.norm(qp, axis=1)
-        Rp = r_arm + CAP_BULGE
-        rho = np.sqrt((qa / CAP_ALONG) ** 2 + (qpn / Rp) ** 2)
-        kk = CAP_K / Rp
-        rho_t = rho + _srelu(1 - rho, kk)                                  # a soft max(rho, 1)
-        side = (qp @ up) / np.maximum(qpn, 1e-9)                         # 1 on top, 0 at the sides, -1 under
-        wcap = _ss((side + 0.35) / 0.7) * (1 - _ss((qa - 0.06) / 0.05)) * grow_k
-        Dcap = q * (rho_t / np.maximum(rho, 1e-9) - 1)[:, None] * (wcap * reg)[:, None]
-        Dp = Dp + Dcap
-        if DELT_H > 0 or GROOVE_D > 0:
+        if MODE == "dm":
+            Dp = Dp + dm_terms(X + Dp, F, A, deg, grow, M, rig, s, U, J, W, reg, gk)
+            Dcap = np.zeros_like(Dp)
+        else:
+            # the deltoid cap: her skin on the top and outer side pushed out onto an ellipsoid round the humeral head
             Y = X + Dp
-            Ny = _vn(Y, F)
-            q = Y - Sp
+            up = -down + 0.6 * lat               # (the arm's top: up and out; overhead, its outer side)
+            up = up - (up @ ap) * ap
+            up /= max(np.linalg.norm(up), 1e-9)
+            Cc = Sp + CAP_AT * ap + CAP_UP * up
+            q = Y - Cc
             qa = q @ ap
             qp = q - qa[:, None] * ap
             qpn = np.linalg.norm(qp, axis=1)
-            side = (qp @ up) / np.maximum(qpn, 1e-9)
-            onarm = 1 - _ss((qpn - 1.5 * r_arm) / (0.5 * r_arm))
-            bell = np.cos(np.clip(np.abs(qa - DELT_AT) / DELT_L, 0, 1) * np.pi / 2) ** 2
-            around = _ss((side + DELT_SIDE) / (0.5 + DELT_SIDE))
-            gro = np.exp(-0.5 * ((qa - GROOVE_AT) / GROOVE_W) ** 2) * _ss((side - 0.2) / 0.5)
-            Dp = Dp + Ny * ((DELT_H * bell * around - GROOVE_D * gro) * onarm * grow_k * reg)[:, None]
-        # FILL (C1): on top of the shoulder and the trap (posed normal up or out), what creases are left filled out
-        # toward a heavily smoothed surface (outward only)
-        Y = X + Dp
-        Yh = _smooth(Y, A, deg, FILL_ITERS, grow)
-        Ny = _vn(Y, F)
-        out_ = np.maximum(((Yh - Y) * Ny).sum(1), 0.0)
-        top = _ss((-(Ny @ down) + 0.15) / 0.5)
-        k = FILL * float(np.clip((Asmp - 90) / 50, 0, 1))
-        Dp = Dp + Ny * (k * out_ * top * reg)[:, None]
-        # the armpit: its frame, its apex, the pec and lat folds as webs across it, the hollow between
-        Y = X + Dp
-        Ny = _vn(Y, F)
-        na = down - (down @ ap) * ap
-        na /= np.linalg.norm(na)
-        # (the torso's face under the arm: the way the arm points, level; out to the side overhead)
-        tn = ap - (ap @ down) * down
-        tn = tn / np.linalg.norm(tn) if np.linalg.norm(tn) > 0.25 else lat
-        bp = tn + na
-        bp /= np.linalg.norm(bp)
-        tp = sd * np.cross(down, tn)     # along the pit: forward when the arm is out to the side (the pec fold ahead)
-        tp = tp - (tp @ bp) * bp
-        tp /= np.linalg.norm(tp)
-        rel = Y - Sp
-        # (under the arm's line and below the shoulder: not the trap, whose normals face out of the pit too)
-        # (and across the pit no further than its walls: the crease's breast side faces forward, so it is in)
-        up_ = np.cross(bp, tp)
-        pit = active & (reg > 0.3) & ((Ny @ bp) > -0.35) & (np.linalg.norm(rel, axis=1) < 0.16) & ((rel @ na) > 0.0)
-        pit &= ((rel @ down) > -0.01)
-        cand = np.nonzero(pit & (np.abs(rel @ tp) < 0.015) & ((Ny @ bp) > 0.2))[0]
-        Dpit = np.zeros_like(Dp)
-        if len(cand) and grow_k > 0:
-            o = Y[cand[np.argmin(rel[cand] @ bp)]]
-            h = (Y - o) @ bp
-            tc = (Y - o) @ tp
-            pit &= np.abs((Y - o) @ up_) < 0.08
-            # (her torso is round: the pit's crease drops away in front and behind, so each fold is a web FOLD_H over
-            # the crease's own depth in its slice; slices 1 cm, the crease a low percentile, smoothed along t)
-            edges = np.arange(-0.12, 0.1201, 0.01)
-            mid = 0.5 * (edges[1:] + edges[:-1])
-            lowh = np.full(len(mid), np.nan)
-            for i_ in range(len(mid)):
-                m_ = pit & (np.abs(tc - mid[i_]) < 0.01)
-                if m_.sum() >= 5:
-                    lowh[i_] = np.percentile(h[m_], 5)
-            ok_ = ~np.isnan(lowh)
-            lowh = np.interp(mid, mid[ok_], lowh[ok_]) if ok_.any() else np.zeros(len(mid))
-            lowh = np.convolve(np.pad(lowh, 2, mode="edge"), np.ones(5) / 5, mode="valid")
-            # (overhead the folds stretch flatter: half height at A 175)
-            fold_k = grow_k * (1 - 0.5 * float(np.clip((Ar - 130) / 45, 0, 1)))
-            web = np.interp(tc, mid, lowh) + FOLD_H * fold_k * (
-                np.exp(-0.5 * ((tc - FOLD_F) / FOLD_W) ** 2) + np.exp(-0.5 * ((tc + FOLD_B) / FOLD_W) ** 2))
-            facing = _ss(((Ny @ bp) + 0.35) / 0.5)
-            reach = 1 - _ss((np.linalg.norm(Y - o, axis=1) - 0.09) / 0.05)
-            lift = _srelu(web - h, FOLD_K)                                       # (a soft max(h, web))
-            lift = 1.4 * FOLD_H * np.tanh(lift / (1.4 * FOLD_H))                  # (no deeper fill than the folds')
-            Dpit += bp[None] * (lift * facing * reach * pit)[:, None]
-            # the hollow: the middle between the folds pressed in along the pit's axis
-            dh = np.sqrt(tc ** 2 + ((Y - o) @ up_) ** 2)
-            depth = HOLLOW_D * grow_k
-            Dpit -= bp[None] * (depth * np.cos(np.clip(dh / HOLLOW_R, 0, 1) * np.pi / 2) ** 2 * facing)[:, None]
-            Dpit = _smooth(Dpit * pit_soft(pit, A, deg)[:, None], A, deg, 8, grow)   # (no ridge sharper than its rings)
-            Dp = Dp + Dpit * reg[:, None]
-            log("  pit: %d points, apex at S %+.0f down %+.0f lat %+.0f fwd%.0f mm; lift most %.1f mm, %d over 5 mm" % (
-                int(pit.sum()), 1000 * ((o - Sp) @ down), 1000 * ((o - Sp) @ lat), 1000 * ((o - Sp) @ fwd), 0,
-                1000 * np.linalg.norm(Dpit, axis=1).max(), int((np.linalg.norm(Dpit, axis=1) > 0.005).sum())))
-            if os.environ.get("PSD_DEBUG"):
-                np.savez(os.environ["PSD_DEBUG"] + "_" + name + ".npz", pit=pit, Dpit=Dpit, Dcap=Dcap, h=h, tc=tc, o=o, X=X)
+            Rp = r_arm + CAP_BULGE
+            rho = np.sqrt((qa / CAP_ALONG) ** 2 + (qpn / Rp) ** 2)
+            kk = CAP_K / Rp
+            rho_t = rho + _srelu(1 - rho, kk)                                  # a soft max(rho, 1)
+            side = (qp @ up) / np.maximum(qpn, 1e-9)                         # 1 on top, 0 at the sides, -1 under
+            wcap = _ss((side + 0.35) / 0.7) * (1 - _ss((qa - 0.06) / 0.05)) * grow_k
+            Dcap = q * (rho_t / np.maximum(rho, 1e-9) - 1)[:, None] * (wcap * reg)[:, None]
+            Dp = Dp + Dcap
+            if DELT_H > 0 or GROOVE_D > 0:
+                Y = X + Dp
+                Ny = _vn(Y, F)
+                q = Y - Sp
+                qa = q @ ap
+                qp = q - qa[:, None] * ap
+                qpn = np.linalg.norm(qp, axis=1)
+                side = (qp @ up) / np.maximum(qpn, 1e-9)
+                onarm = 1 - _ss((qpn - 1.5 * r_arm) / (0.5 * r_arm))
+                bell = np.cos(np.clip(np.abs(qa - DELT_AT) / DELT_L, 0, 1) * np.pi / 2) ** 2
+                around = _ss((side + DELT_SIDE) / (0.5 + DELT_SIDE))
+                gro = np.exp(-0.5 * ((qa - GROOVE_AT) / GROOVE_W) ** 2) * _ss((side - 0.2) / 0.5)
+                Dp = Dp + Ny * ((DELT_H * bell * around - GROOVE_D * gro) * onarm * grow_k * reg)[:, None]
+            # FILL (C1): on top of the shoulder and the trap (posed normal up or out), what creases are left filled out
+            # toward a heavily smoothed surface (outward only)
+            Y = X + Dp
+            Yh = _smooth(Y, A, deg, FILL_ITERS, grow)
+            Ny = _vn(Y, F)
+            out_ = np.maximum(((Yh - Y) * Ny).sum(1), 0.0)
+            top = _ss((-(Ny @ down) + 0.15) / 0.5)
+            k = FILL * float(np.clip((Asmp - 90) / 50, 0, 1))
+            Dp = Dp + Ny * (k * out_ * top * reg)[:, None]
+            # the armpit: its frame, its apex, the pec and lat folds as webs across it, the hollow between
+            Y = X + Dp
+            Ny = _vn(Y, F)
+            na = down - (down @ ap) * ap
+            na /= np.linalg.norm(na)
+            # (the torso's face under the arm: the way the arm points, level; out to the side overhead)
+            tn = ap - (ap @ down) * down
+            tn = tn / np.linalg.norm(tn) if np.linalg.norm(tn) > 0.25 else lat
+            bp = tn + na
+            bp /= np.linalg.norm(bp)
+            tp = sd * np.cross(down, tn)     # along the pit: forward when the arm is out to the side (the pec fold ahead)
+            tp = tp - (tp @ bp) * bp
+            tp /= np.linalg.norm(tp)
+            rel = Y - Sp
+            # (under the arm's line and below the shoulder: not the trap, whose normals face out of the pit too)
+            # (and across the pit no further than its walls: the crease's breast side faces forward, so it is in)
+            up_ = np.cross(bp, tp)
+            pit = active & (reg > 0.3) & ((Ny @ bp) > -0.35) & (np.linalg.norm(rel, axis=1) < 0.16) & ((rel @ na) > 0.0)
+            pit &= ((rel @ down) > -0.01)
+            cand = np.nonzero(pit & (np.abs(rel @ tp) < 0.015) & ((Ny @ bp) > 0.2))[0]
+            Dpit = np.zeros_like(Dp)
+            if len(cand) and grow_k > 0:
+                o = Y[cand[np.argmin(rel[cand] @ bp)]]
+                h = (Y - o) @ bp
+                tc = (Y - o) @ tp
+                pit &= np.abs((Y - o) @ up_) < 0.08
+                # (her torso is round: the pit's crease drops away in front and behind, so each fold is a web FOLD_H over
+                # the crease's own depth in its slice; slices 1 cm, the crease a low percentile, smoothed along t)
+                edges = np.arange(-0.12, 0.1201, 0.01)
+                mid = 0.5 * (edges[1:] + edges[:-1])
+                lowh = np.full(len(mid), np.nan)
+                for i_ in range(len(mid)):
+                    m_ = pit & (np.abs(tc - mid[i_]) < 0.01)
+                    if m_.sum() >= 5:
+                        lowh[i_] = np.percentile(h[m_], 5)
+                ok_ = ~np.isnan(lowh)
+                lowh = np.interp(mid, mid[ok_], lowh[ok_]) if ok_.any() else np.zeros(len(mid))
+                lowh = np.convolve(np.pad(lowh, 2, mode="edge"), np.ones(5) / 5, mode="valid")
+                # (overhead the folds stretch flatter: half height at A 175)
+                fold_k = grow_k * (1 - 0.5 * float(np.clip((Ar - 130) / 45, 0, 1)))
+                web = np.interp(tc, mid, lowh) + FOLD_H * fold_k * (
+                    np.exp(-0.5 * ((tc - FOLD_F) / FOLD_W) ** 2) + np.exp(-0.5 * ((tc + FOLD_B) / FOLD_W) ** 2))
+                facing = _ss(((Ny @ bp) + 0.35) / 0.5)
+                reach = 1 - _ss((np.linalg.norm(Y - o, axis=1) - 0.09) / 0.05)
+                lift = _srelu(web - h, FOLD_K)                                       # (a soft max(h, web))
+                lift = 1.4 * FOLD_H * np.tanh(lift / (1.4 * FOLD_H))                  # (no deeper fill than the folds')
+                Dpit += bp[None] * (lift * facing * reach * pit)[:, None]
+                # the hollow: the middle between the folds pressed in along the pit's axis
+                dh = np.sqrt(tc ** 2 + ((Y - o) @ up_) ** 2)
+                depth = HOLLOW_D * grow_k
+                Dpit -= bp[None] * (depth * np.cos(np.clip(dh / HOLLOW_R, 0, 1) * np.pi / 2) ** 2 * facing)[:, None]
+                Dpit = _smooth(Dpit * pit_soft(pit, A, deg)[:, None], A, deg, 8, grow)   # (no ridge sharper than its rings)
+                Dp = Dp + Dpit * reg[:, None]
+                log("  pit: %d points, apex at S %+.0f down %+.0f lat %+.0f fwd%.0f mm; lift most %.1f mm, %d over 5 mm" % (
+                    int(pit.sum()), 1000 * ((o - Sp) @ down), 1000 * ((o - Sp) @ lat), 1000 * ((o - Sp) @ fwd), 0,
+                    1000 * np.linalg.norm(Dpit, axis=1).max(), int((np.linalg.norm(Dpit, axis=1) > 0.005).sum())))
+                if os.environ.get("PSD_DEBUG"):
+                    np.savez(os.environ["PSD_DEBUG"] + "_" + name + ".npz", pit=pit, Dpit=Dpit, Dcap=Dcap, h=h, tc=tc, o=o, X=X)
         Dp = _smooth(Dp, A, deg, SMOOTH)
         # untangle: faces folded over (their normal against the heavily smoothed surface's) in the region, and two rings
         # round them, relaxed until none is left (the dark fleck in the armpit is such a fold)
@@ -649,7 +742,8 @@ def main(a):
     g.setdefault("asset", {}).setdefault("extras", {})["shoulder_psd"] = {
         "samples": SAMPLES, "dm_iters": DM_ITERS, "hollow_mm": HOLLOW_D * 1000, "fold_mm": FOLD_H * 1000,
         "cap_bulge_mm": CAP_BULGE * 1000, "pit_flat": PIT_FLAT, "deltoid_mm": DELT_H * 1000,
-        "groove_mm": GROOVE_D * 1000, "sculpt": "C2 + Body 5 cor (per side)"}
+        "groove_mm": GROOVE_D * 1000, "sculpt": "C2 + Body 5 cor (per side)", "mode": MODE,
+        "dm": {"iters": DMI, "rest": DM_REST, "pit_flat": DM_PIT_FLAT, "under": UNDER_K, "pec_mm": PEC_H * 1000} if MODE == "dm" else None}
     while len(binb) % 4:
         binb.append(0)
     g["buffers"][0]["byteLength"] = len(binb)
