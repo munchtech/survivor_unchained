@@ -87,8 +87,9 @@ public partial class Game
         figureKey = d.LookKey;
         figureBody = d.BodyKey;
         figure = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
-        // (her chin up to her portraits' level gaze: HerPose.ChinUp)
-        if (figure.Person.Pose is HerPose hp) hp.ChinUp = 12f;
+        // (her chin: HerPose.ChinUp. 12 was set for the guard idle, whose head hung 17.8 deg face-down; the town idle
+        // she loops here carries it level (+0.5 deg) on its own, and 12 would tip her face 11.5 deg up past the lens)
+        if (figure.Person.Pose is HerPose hp) hp.ChinUp = 0f;
         scene!.AddChild(figure);
         // (where the camera looks: she stands in the middle of the screen, between creation's two
         // panels, the fire behind her at her right hand, in view between her and the choices)

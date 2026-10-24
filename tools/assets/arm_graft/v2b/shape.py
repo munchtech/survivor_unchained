@@ -14,7 +14,7 @@ from remesh import islands, Ref, Work
 from geo import Surf
 
 K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0,
-         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
+         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
 for k in K: K[k] = float(os.environ.get(k, K[k]))
 print("K", K)
 D = dict(np.load(sys.argv[1])); out = sys.argv[2]
@@ -250,7 +250,7 @@ for sd in "lr":
 #   DOME (0-1): the outer cap's bulge above the chord of its lateral profile r(t) (phi within 30 deg of lateral, chord
 #     from t -0.25 to 0.45) taken in by that fraction, radially, with the same phi falloff: less ball, no facet.
 moved8 = np.zeros(len(V), bool)
-if K["NARROW"] or K["DOME"]:
+if K["NARROW"] or K["DOME"] or K["CAPTOP"] or K["BELLY"]:
     V8 = V.copy()
     for sd in "rl":
         Fs = Frame(d, sd); xs = V8[:, 0] * Fs.sx; on = xs > 0.02
@@ -275,8 +275,22 @@ if K["NARROW"] or K["DOME"]:
         dr = K["DOME"] * np.interp(t8, tb, bul) * a8 * ss((xs - 0.12) / 0.04) * on * (r8 < 0.10)
         print("narrow %s: dx max %.1f mm on %d verts; dome bulge max %.1f mm at t %.2f, move max %.1f mm on %d verts"
               % (sd, dx.max() * 1e3, (dx > 1e-5).sum(), bul.max() * 1e3, tb[np.argmax(bul)], dr.max() * 1e3, (dr > 1e-5).sum()))
-        V[:, 0] -= Fs.sx * dx
-        V -= dr[:, None] * e8
+        # CAPTOP (mm, Body 4): the cap's top-outer arc taken in toward the joint, so the outline from the acromion runs
+        #   down-out into the deltoid's belly instead of rounding over a ball centred on the joint. Frontal-plane angle
+        #   seen from the joint (0 = straight out, 90 = up): full 25-55 deg, gone by 0 and 80; out of that plane it fades
+        #   as cos^2 (gone by 70 deg front/back); only within 75 mm of the joint (full inside 55).
+        q8 = V8 - Fs.A; X8 = q8[:, 0] * Fs.sx; Z8 = q8[:, 2]; hd = np.hypot(X8, Z8)
+        th8 = np.degrees(np.arctan2(Z8, X8)); ps8 = np.degrees(np.arctan2(np.abs(q8[:, 1]), np.maximum(hd, 1e-9)))
+        dcap = (K["CAPTOP"] * 1e-3 * ss(th8 / 25) * ss((80 - th8) / 25) * np.cos(np.radians(np.clip(ps8 * 90 / 70, 0, 90))) ** 2
+                * ss((0.075 - np.linalg.norm(q8, axis=1)) / 0.02) * on)
+        ucap = q8 / np.maximum(np.linalg.norm(q8, axis=1), 1e-9)[:, None]
+        # BELLY (mm, Body 4): the deltoid's upper belly (t 0.08-0.46, full 0.20-0.33) moved medially (x), lateral face
+        #   only (phi falloff as NARROW), all elevations: the breadth line at t 0.30 comes in, the V (t 0.46) stays.
+        dxb = K["BELLY"] * 1e-3 * win(t8, 0.08, 0.20, 0.33, 0.46) * a8 * ss((xs - 0.14) / 0.045) * on * (r8 < 0.10)
+        print("captop %s: max %.1f mm on %d verts; belly max %.1f mm on %d verts" % (sd, dcap.max() * 1e3, (dcap > 1e-5).sum(), dxb.max() * 1e3, (dxb > 1e-5).sum()))
+        V[:, 0] -= Fs.sx * (dx + dxb)
+        V -= dr[:, None] * e8 + dcap[:, None] * ucap
+        moved8 |= (dcap > 1e-6) | (dxb > 1e-6)
         moved8 |= (dx > 1e-6) | (dr > 1e-6)
     prof8 = profile(V[vid], T, F, armkeep(W[vid], "r")); show_profile(prof8, "R narrowed")
     moved0 = moved0 | moved8
