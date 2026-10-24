@@ -94,7 +94,8 @@ public partial class Game
         // panels, the fire behind her at her right hand, in view between her and the choices)
         float x = Fire.X + 0.95f, z = Fire.Y + 1.0f;
         figure.Place(x, scene.HeightAt(x, z), z, FigureHeading + figTurnNow, true);
-        figure.Loop(lo.Arms.Idle, 0);
+        figure.Loop(guardIdle = lo.Arms.Idle, 0);
+        onLook = false;
         if (changedBody) figure.Flourish(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
     }
 
@@ -120,7 +121,23 @@ public partial class Game
     }
 
     /// <summary>The figure's weapon and shield shown or put away (away on creation's look screen).</summary>
-    public void FigureArms(bool shown) => figure?.ShowHeld(shown);
+    public void FigureArms(bool shown)
+    {
+        if (figure == null) return;
+        // (the Look shows her town idle, sheathed: the guard idle's forward lean sank her head between her shoulders;
+        // a flourish still playing finishes first, then the loop takes over, her pieces already away and out of sight)
+        bool look = !shown && figure.Person.Own is { } own && own.Has($"idle_{figure.Person.Calling}_town");
+        if (look != onLook)
+        {
+            onLook = look;
+            figure.Sheathe(look);
+            figure.Loop(look ? figure.Person.Own!.Prefix + $"idle_{figure.Person.Calling}_town" : guardIdle, 0.3);
+        }
+        figure.ShowHeld(shown);
+    }
+
+    string guardIdle = "";
+    bool onLook;
 
     /// <summary>Framed for a step or a part of the look: so near, turned so far.</summary>
     public void FrameFigure(float zoom, float turn = 0)
