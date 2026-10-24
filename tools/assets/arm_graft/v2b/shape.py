@@ -14,7 +14,8 @@ from remesh import islands, Ref, Work
 from geo import Surf
 
 K = dict(SLIM=1.0, DELT=9.0, TRI=3.5, LOWER=10.0, CAPW=0.12, PIT_IT=60, RELAX=10, WSM=10, FLAT=1.0, MIRROR=1, SIG=0.008, CLAV=0.0,
-         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0, VEE=0.0, NOTCH=0.0, VPHI=-15.0, NPHI=-45.0, VT=0.36)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged
+         NARROW=0.0, DOME=0.0, ELLO=-25.0, ELHI=60.0, CAPTOP=0.0, BELLY=0.0, VEE=0.0, NOTCH=0.0, VPHI=-15.0, NPHI=-45.0, VT=0.36,
+         COLLAR=0.0, CHOL=1.5, CNOT=1.0, CHEAD=1.2, CSR=7.0, CSR2=6.0, CSH=7.0, CSH2=14.0, CVH=16.0, CSN=8.0, CNZ=1.545, CX0=0.018, CX1=0.175, CZ0=1.533, CZ1=1.525, CS=2.0)   # step 8 (narrower shoulders, Body 3 B-narrow): both 0 = off, B rebuilds unchanged; step 9 (collarbones): COLLAR 0 = off
 for k in K: K[k] = float(os.environ.get(k, K[k]))
 print("K", K)
 D = dict(np.load(sys.argv[1])); out = sys.argv[2]
@@ -342,6 +343,69 @@ if K["NARROW"] or K["DOME"] or K["CAPTOP"] or K["BELLY"] or K["VEE"] or K["NOTCH
         moved8 |= (dx > 1e-6) | (dr > 1e-6)
     prof8 = profile(V[vid], T, F, armkeep(W[vid], "r")); show_profile(prof8, "R narrowed")
     moved0 = moved0 | moved8
+# 9. collarbones (Body 5, off by default): her clavicles, the hollow above their outer two-thirds and the sternal notch,
+#   along each vertex's welded normal, a smooth compactly supported function of rest position (a weld group moves as one;
+#   nothing relaxed, weights untouched). The bone's line, per side: from |x| CX0 (off the notch) to CX1 (the acromion),
+#   height CZ0 -> CZ1 with a gentle S (CS mm: the inner half up, the outer down), laid on her front surface (a plane fitted
+#   to the skin every 5 mm, smoothed). Each vertex is measured from it in the surface's up-the-yoke direction (v, + up).
+#   COLLAR (mm): the ridge's height (gaussian in v, sigma CSR mm below the crest, CSR2 above; full s 0.08-0.80 of the line, the inner head CHEAD x as
+#     proud, gone past the acromion); the hollow CHOL x COLLAR deep (sigma CSH mm below, CSH2 above: a steep wall under the bone's top, a long one up to the trapezius; centred CVH mm above the crest, over
+#     s 0.25-1.0: the outer two-thirds); the notch CNOT x COLLAR deep at the midline (height CNZ; sigma CSN mm wide, 7 tall).
+#   Kept off Face's neck graft seam (the open edge under her head: zero within 45 mm of it, full by 60) and off the
+#   graft/body paint seam (zero within 8 mm, full by 18), so neither seam's vertices move.
+moved9 = np.zeros(len(V), bool)
+if K["COLLAR"]:
+    Tq = np.concatenate([fv[ls[np.where(fl == n)[0]][:, None] + np.array([0, k, k + 1])] for n in np.unique(fl) for k in range(1, n - 1)])
+    fn9 = np.cross(V[Tq[:, 1]] - V[Tq[:, 0]], V[Tq[:, 2]] - V[Tq[:, 0]]); N9 = np.zeros_like(V)
+    for k in range(3): np.add.at(N9, Tq[:, k], fn9)
+    N9 = gmean(N9, WG); N9 /= np.maximum(np.linalg.norm(N9, axis=1), 1e-12)[:, None]   # welded normals
+    E9 = np.sort(np.r_[Tq[:, [0, 1]], Tq[:, [1, 2]], Tq[:, [2, 0]]], 1); E9 = WG[E9]; E9.sort(1)
+    eu, ec = np.unique(E9[E9[:, 0] != E9[:, 1]], axis=0, return_counts=True)
+    bnd = np.isin(WG, eu[ec == 1].ravel()) & (V[:, 2] > 1.55)                              # the open edge under her head
+    gr9 = D["graft"] > 0; gseam = np.zeros(len(V), bool)
+    for n in np.unique(fl):   # graft/body seam: vertices of faces that mix graft and body vertices
+        idx = fv[ls[np.where(fl == n)[0]][:, None] + np.arange(n)]; mx = gr9[idx].any(1) & ~gr9[idx].all(1); gseam[idx[mx].ravel()] = True
+    dH = cKDTree(V[bnd]).query(V)[0]; dG = cKDTree(V[gseam]).query(V)[0]
+    keep9 = ss((dH - 0.045) / 0.015) * ss((dG - 0.008) / 0.010)
+    fr = (V[:, 1] < 0.04) & (V[:, 2] > 1.40) & (V[:, 2] < 1.62)
+    tot = np.zeros(len(V)); rid = np.zeros(len(V)); hol = np.zeros(len(V))
+    def gau(u, s, s2=None):   # gaussian, compact (gone by 3 sigma); s2: its sigma above (u > 0)
+        s = np.where(u > 0, s if s2 is None else s2, s); return np.exp(-0.5 * (u / s) ** 2) * ss((3 * s - np.abs(u)) / s)
+    def surf(xc, zc):   # front skin at (x, z): a plane y = a + b dx + c dz over a 7 mm box; returns y and its outward normal
+        for bx in (0.007, 0.011, 0.016):
+            i = np.where(fr & (np.abs(V[:, 0] - xc) < bx) & (np.abs(V[:, 2] - zc) < bx))[0]
+            if len(i) >= 6: break
+        i = i[V[i, 1] < V[i, 1].min() + 0.008]
+        A = np.c_[np.ones(len(i)), V[i, 0] - xc, V[i, 2] - zc]; a, b, c = np.linalg.lstsq(A, V[i, 1], rcond=None)[0]
+        n = np.array([b, -1.0, c]); return a, n / np.linalg.norm(n)
+    for sg in (1.0, -1.0):
+        xs = np.arange(0.0, K["CX1"] + 0.03, 0.005); s9 = (xs - K["CX0"]) / (K["CX1"] - K["CX0"])
+        zc = K["CZ0"] + (K["CZ1"] - K["CZ0"]) * np.clip(s9, 0, 1) + K["CS"] * 1e-3 * np.sin(2 * np.pi * np.clip(s9, 0, 1))
+        sf = [surf(sg * x, z) for x, z in zip(xs, zc)]; yc = np.array([q[0] for q in sf]); nc = np.array([q[1] for q in sf])
+        ker = np.array([1, 2, 3, 2, 1.0]); ker /= ker.sum(); sm = lambda a: np.convolve(np.r_[a[:2][::-1], a, a[-2:][::-1]], ker, "valid")
+        yc = sm(yc); nc = np.stack([sm(nc[:, k]) for k in range(3)], 1); nc /= np.linalg.norm(nc, axis=1)[:, None]
+        on = (V[:, 0] * sg > -0.004) & fr
+        x9 = np.clip(V[:, 0] * sg, 0, xs[-1]); jf = x9 / 0.005; j0 = np.minimum(jf.astype(int), len(xs) - 2); fj = jf - j0
+        L = lambda a: a[j0] * (1 - fj) + a[j0 + 1] * fj if a.ndim == 1 else a[j0] * (1 - fj)[:, None] + a[j0 + 1] * fj[:, None]
+        C = np.c_[V[:, 0], L(yc), L(zc)]; nC = L(nc); nC[:, 0] *= sg
+        tu = np.c_[np.zeros(len(V)), nC[:, 2], -nC[:, 1]]; tu /= np.linalg.norm(tu, axis=1)[:, None]    # up the yoke (up and back)
+        dd = V - C; v = (dd * tu).sum(1); h = (dd * nC).sum(1); sv = (x9 - K["CX0"]) / (K["CX1"] - K["CX0"])
+        sheet = ss((0.030 - np.abs(h)) / 0.010) * on
+        ar = win(sv, -0.08, 0.08, 0.80, 1.05) * (1 + (K["CHEAD"] - 1) * win(sv, -0.08, 0.0, 0.10, 0.30))
+        r_ = K["COLLAR"] * 1e-3 * ar * gau(v, K["CSR"] * 1e-3, K["CSR2"] * 1e-3) * sheet
+        hl = K["CHOL"] * K["COLLAR"] * 1e-3 * win(sv, 0.15, 0.35, 0.85, 1.05) * gau(v - K["CVH"] * 1e-3, K["CSH"] * 1e-3, K["CSH2"] * 1e-3) * sheet
+        rid += r_; hol += hl; tot += r_ - hl
+    # the notch: at the midline, between the bones' inner heads
+    yN, nN = surf(0.0, K["CNZ"]); tN = np.array([0, nN[2], -nN[1]]) / np.hypot(nN[1], nN[2]); dN = V - np.array([0, yN, K["CNZ"]])
+    nt = K["CNOT"] * K["COLLAR"] * 1e-3 * gau(V[:, 0], K["CSN"] * 1e-3) * gau(dN @ tN, 0.007) * ss((0.012 - np.abs(dN @ nN)) / 0.006) * fr
+    tot = (tot - nt) * keep9
+    V += tot[:, None] * N9
+    moved9 = np.abs(tot) > 1e-7
+    print("collar: ridge max %.2f mm, hollow max %.2f mm, notch max %.2f mm; %d vertices moved (max |d| %.2f mm); neck seam %d verts, "
+          "max move within 45 mm of it %.4f mm; graft seam %d verts, max move on it %.4f mm"
+          % (rid.max() * 1e3, hol.max() * 1e3, nt.max() * 1e3, moved9.sum(), np.abs(tot).max() * 1e3, bnd.sum(),
+             np.abs(tot[dH < 0.045]).max() * 1e3, gseam.sum(), np.abs(tot[gseam]).max() * 1e3))
+    moved0 = moved0 | moved9
 # every weld group shares one position and one weight row (reports what was left to close)
 spread = np.linalg.norm(gmean(V, WG) - V, axis=1); wsp = np.abs(gmean(W, WG) - W).max(1)  # (all groups)
 print("weld check: position off group mean max %.4f mm, weight max %.5f" % (spread.max() * 1e3, wsp.max()))
