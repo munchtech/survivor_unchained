@@ -136,7 +136,10 @@ def reweight(P, W, names, report=None, Pall=None):
     """Her shoulder's weights (the module's 1-2) on dense weights W [V, J] at rest points P [V, 3] (Pall: all her
     body's points, for the top of her silhouette; P if None)."""
     Pall = P if Pall is None else Pall
-    c = hp.SPEC["scap"]["weights"]
+    c = dict(hp.SPEC["scap"]["weights"])
+    for k in ("band", "arm_ramp", "out"):    # (env overrides for trials: SCAP_BAND="0.015,0.05")
+        if os.environ.get("SCAP_" + k.upper()):
+            c[k] = [float(v) for v in os.environ["SCAP_" + k.upper()].split(",")]
     I = {n: i for i, n in enumerate(names)}
     W = W.copy()
     for s, sg in (("l", 1.0), ("r", -1.0)):

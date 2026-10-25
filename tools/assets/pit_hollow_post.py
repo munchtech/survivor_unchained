@@ -14,6 +14,7 @@ The sculpt (per side, at each sample):
   hollow  an elliptic dome pushed in along the pit's own axis, long along the arm: DEPTH at A 150, DEPTH_115 at A 114
   fold    the front axillary fold: a soft ridge from the pec's border on the chest into the arm's front, 75 mm down
   pull    the breast's upper-outer edge drawn toward that fold (along her skin)
+  seam    the valley over the shoulder's top where scap_rig_post's arm ramp meets the clavicle, smoothed out
   groove  the biceps/triceps groove up the arm's face toward the pit, shallow with a wide falloff
 
 Driven by the existing machinery: the shapes take Play/ShoulderPsd's names (HerRaise finds them by name; Python twin
@@ -47,7 +48,10 @@ P = dict(Ru=0.050, Rv=0.032, Ra=0.06, drop=0.012, relaxR=float(os.environ.get("P
          fold=float(os.environ.get("PIT_FOLD", 0.010)), foldW=float(os.environ.get("PIT_FOLD_W", 0.026)), foldIt=int(os.environ.get("PIT_FOLD_SMOOTH", 10)), pull=float(os.environ.get("PIT_PULL", 0.023)),
          groove=float(os.environ.get("PIT_GROOVE", 0.0035)), grooveW=float(os.environ.get("PIT_GROOVE_W", 0.018)), smoothIt=int(os.environ.get("PIT_SMOOTH", 40)),
          grooveIt=int(os.environ.get("PIT_GROOVE_SMOOTH", 4)), tilt=float(os.environ.get("PIT_TILT", 20.0)),
-         shift=float(os.environ.get("PIT_SHIFT", 0.006)))
+         shift=float(os.environ.get("PIT_SHIFT", 0.006)),
+         seam=float(os.environ.get("PIT_SEAM", 1.0)), seamR=float(os.environ.get("PIT_SEAM_R", 0.035)),
+         seamIt=int(os.environ.get("PIT_SEAM_IT", 100)), seamFill=int(os.environ.get("PIT_SEAM_FILL", 60)), seamA=[0.228, 1.505, -0.05],
+         seamB=[float(v) for v in os.environ.get("PIT_SEAM_B", "0.20,1.465,0.045").split(",")])
 SAMPLES = (("150_l", "cast", "l", DEPTH), ("150_r", "cast", "r", DEPTH), ("115_r", "over", "r", DEPTH_115))
 SLOTS = {"115": ("shoulder_abd117", "shoulder_flex117"),
          "150": ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s",
@@ -66,6 +70,12 @@ def _ss(x):
 def _bump(r, k=2):
     r = np.clip(r, 0, 1)
     return (1 - r * r) ** k
+
+
+def _segd(U, a, b):
+    v = b - a
+    t = np.clip(((U - a) @ v) / (v @ v), 0, 1)
+    return np.linalg.norm(U - (a + t[:, None] * v), axis=1)
 
 
 def vn(X, F):
@@ -157,6 +167,19 @@ def author(b, d, side, depth, p=P, info=None):
     for _ in range(p["leftIt"]):
         Xr = Xr + 0.5 * wl[:, None] * b.lap(Xr)
         Xr = Xr - 0.53 * wl[:, None] * b.lap(Xr)
+    # seam: the valley over the shoulder's top and down the deltoid's front, where scap_rig_post's arm ramp (x 0.19 to
+    # 0.25) blends the clavicle and the raised arm half and half (linear skinning's crease, the owner's 24 Oct note)
+    # smoothed out along a rest-space line, eased over seamR: plain Laplacian steps (the A 114 valley holds folded
+    # triangles), then outward-only ones (fill, no ridge shrinks). Crease (concave bends within 20 mm of the line, deg*m)
+    # A 114 right 18.5 -> 11.3, A 150 r/l 16.6/20.8 -> 8.8/11.7 (the resting side 5.3); PIT_SEAM=0 turns it off
+    ws = p["seam"] * _bump(_segd(U, np.array([p["seamA"][0] * sg] + p["seamA"][1:]),
+                                    np.array([p["seamB"][0] * sg] + p["seamB"][1:])) / p["seamR"], 2) * sd
+    if ws.any():
+        for _ in range(p["seamIt"]):       # (plain first: the sharpest stretch holds folded triangles)
+            Xr = Xr + 0.5 * ws[:, None] * b.lap(Xr)
+        for _ in range(p["seamFill"]):
+            n = vn(Xr, F)
+            Xr = Xr + 0.5 * ws[:, None] * np.maximum((b.lap(Xr) * n).sum(1), 0)[:, None] * n
     Nr = vn(Xr, F)
     # hollow: the dome along the pit's own axis (its mean normal about the centre), long along the arm
     wa = _bump(np.linalg.norm(Xr - C, axis=1) / 0.02) * sd
