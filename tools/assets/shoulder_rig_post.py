@@ -115,6 +115,7 @@ def reweight(P, W, names, Grest, frames, Pall, sm=None):
     I = {n: i for i, n in enumerate(names)}
     for s in "lr":
         m = sm(s) if sm else masks(P, Pall, Grest, s)
+        m = {k: v * float(os.environ.get("SHOULDER_W_" + k.upper(), 1.0)) for k, v in m.items()}   # (a bisect knob, 1)
         m["pec"] = m["pec"] * (1 - hp.SPEC["shoulder"]["weights"]["pec"]["bre"] * _S(W[:, I["breast_" + s]] / 0.3))
         tot = m["pec"] + m["lat"]                  # (both from spine_03: never more than all of it)
         k = tot > 1
