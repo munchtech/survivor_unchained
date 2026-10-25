@@ -8,7 +8,9 @@ neighbours carry valences 9-12. No sculpt or normal can light such a fan cleanly
 sides, before the sculpt (it runs on Body 8's reweight, ahead of shoulder_sculpt_post):
 
   patch   per side the faces within R (geodesic, 36 mm) of the pole (the highest-valence point at her pit; skipped if
-          it has no more than 12: already rebuilt), grown over every folded or sliver face within R + 15 mm and into
+          it has no more than 12: already rebuilt), grown over every folded or sliver face within R + GROW (35 mm;
+          round 7's 15 left 4 (right) and 6 (left) folded faces at rest within 80 mm, behind the pit at the patch's
+          border and past it, 0 now; Body 9 round 8) and into
           a disk with a smooth border (no notches, no ears; one border loop). The border's points and every face and
           point outside are kept as they were, byte for byte
   remesh  isotropic (Botsch and Kobbelt): split edges > 4/3 L, collapse < 4/5 L (never a border point), flip toward
@@ -59,7 +61,7 @@ from heroine_neck import _Gl, _CT, _NC  # noqa: E402
 from geo import closest_tri  # noqa: E402
 
 _E = os.environ.get
-P = dict(R=float(_E("TOPO_R", 0.036)), grow=float(_E("TOPO_GROW", 0.015)), L=float(_E("TOPO_L", 0.0)),
+P = dict(R=float(_E("TOPO_R", 0.036)), grow=float(_E("TOPO_GROW", 0.035)), L=float(_E("TOPO_L", 0.0)),
          it=int(_E("TOPO_IT", 14)), relax=int(_E("TOPO_RELAX", 4)), pole=int(_E("TOPO_POLE", 12)),
          mu=float(_E("TOPO_MU", 30.0)), fairIt=int(_E("TOPO_FAIR_IT", 4)), post=int(_E("TOPO_POST", 6)),
          wsm=int(_E("TOPO_WSMOOTH", 4)), pad=int(_E("TOPO_PAD", 8)), sliver=float(_E("TOPO_SLIVER", 12.0)))

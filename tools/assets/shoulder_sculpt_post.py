@@ -81,6 +81,18 @@ Round 6 (25 Oct, the contact V where the arm's underside lands on the breast's u
           deeper at the overhead keys (from A 80, whole at 105), its apex up into the arm. RSM (off): the turn field
           smoothed (it didn't take the side wall's streaks: those are the stretched rest shape's). Softens the V; a
           smaller dark notch remains.
+Round 8 (25 Oct, on round 7's armpit topology; the owner: "do not narrow bust", a volume-kept draw-in and a slight
+          push-together allowed): CLOSE's search solved exactly per ball (it stepped 0.5 mm: ~470 points a key took a
+          random 0 / 0.5 mm) and a point no ball reaches takes its met neighbours' fill (it was pushed the whole 20 mm
+          into the facing mass: the cleavage and the fold under the breast "closed" into fold-overs, ~280 folded faces
+          for the untangle to smear; the sculpt moved up to 19 mm for a 1e-9 m change of its input, now 0); the join's
+          zone off the breast's inner and lower sides. JOINT: the two-arm keys sculpted once for both sides and shared
+          out across the sternum (MID), so Godot's sum of the two sides' slots is that one sculpt (rounds 2-7 moved the
+          cleavage twice: the cast's fold-over). VKEEP: both breasts' closed volume never under the skinned key's (her
+          Body 8's), this side's 1% over it: the draw-in's loss goes back on the breast's front and inner-lower side.
+          IMFS: the move smoothed over the breast's lower rim. NTS: the normal's turn field smoothed 8 passes (the fold
+          under the breast lit in a sawtooth of specks). CLEAR: the last faces folded past 90 degrees smoothed out (the
+          shoulder's front-top, the nick in row 1's outline), bounded (CLEARMAX)
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -137,9 +149,13 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          vfX=0.14, vfY=1.40, vfZ=-0.01, vfW=0.06,
          close=float(_E("SCULPT_CLOSE", 1.0)), closeR=float(_E("SCULPT_CLOSER", 0.012)),
          closeRt=float(_E("SCULPT_CLOSERT", 0.018)), closeMax=0.02, closeA=(80.0, 105.0),
-         closeSm=int(_E("SCULPT_CLOSE_SM", 0)),
+         closeSm=int(_E("SCULPT_CLOSE_SM", 0)), closeNever=_E("SCULPT_CLOSE_NEVER", "rim"),
+         closeX=(float(_E("SCULPT_CLOSE_X0", 0.09)), 0.03), closeY=(float(_E("SCULPT_CLOSE_Y0", 1.26)), 0.04),
          bin=float(_E("SCULPT_BIN", 0.012)), binS=(0.0, 0.08, 0.13), binSm=int(_E("SCULPT_BIN_SM", 15)), binA=(float(_E("SCULPT_BIN_A0", 100.0)), 105.0),
-         domeX=float(_E("SCULPT_DOMEX", 0.009)), domeA=(80.0, 105.0), rsm=int(_E("SCULPT_RSM", 0)))
+         domeX=float(_E("SCULPT_DOMEX", 0.009)), domeA=(80.0, 105.0), rsm=int(_E("SCULPT_RSM", 0)),
+         joint=int(_E("SCULPT_JOINT", 1)), mid=float(_E("SCULPT_MID", 0.035)),
+         vkeep=float(_E("SCULPT_VKEEP", 1.0)), vkeepM=float(_E("SCULPT_VKEEP_M", 0.01)),
+         clear=int(_E("SCULPT_CLEAR", 12)), clearMax=float(_E("SCULPT_CLEAR_MAX", 0.002)), imfS=int(_E("SCULPT_IMF_S", 12)), nTs=int(_E("SCULPT_NTS", 8)))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -283,6 +299,23 @@ class Side:
         s.lat0 = _unit(lat0 - (lat0 @ h0) * h0)
         f0 = np.array([0, 0, 1.0])
         s.fr0 = _unit(f0 - (f0 @ h0) * h0 - (f0 @ s.lat0) * s.lat0)
+        # (round 8) her breast's region for its volume (smoothed breast weight > 0.02 on this side; closed by the fan
+        # from its border's centre, so a slide along her chest keeps it) and where a volume top-up goes: the breast's
+        # front and inner-lower side (not the upper-outer side the draw-in takes in): a fuller, slightly pushed-together
+        # breast, the owner's allowance
+        # (and the same for her other breast, whose inner edge this side's breast panel reaches: 0.15% over it)
+        s.vb = []
+        for sgv, bwv in ((sg, s.bw), (-sg, bo)):
+            bsv = H.smooth(bwv, 6)
+            m = (bsv > 0.02) & (U[:, 0] * sgv > 0.005)
+            Fr = b.F[m[b.F].all(1)]
+            E = np.sort(np.r_[Fr[:, [0, 1]], Fr[:, [1, 2]], Fr[:, [2, 0]]], 1)
+            Eu, cnt = np.unique(E, axis=0, return_counts=True)
+            eo = _unit(np.array([sgv * 1.0, 0.8, -0.3]))
+            Bmv = bwv > 0.3
+            so = (U - (U[Bmv] * bwv[Bmv, None]).sum(0) / bwv[Bmv].sum()) @ eo
+            vw = H.smooth(_ss((bsv - 0.25) / 0.35) * _ss((H.NU[:, 2] + 0.2) / 0.6) * (1 - 0.8 * _ss((so - 0.01) / 0.06)), 4)
+            s.vb.append(((Fr, np.unique(Eu[cnt == 1].ravel())), vw))
 
 
 def _solve(H, Pin, phi, delta, anchors=None, c_core=1e-7, c_fix=1e2):
@@ -439,7 +472,7 @@ def _fair_patches(H, X, phi, S, rmin, p):
     return X, "->".join(map(str, log))
 
 
-def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0):
+def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0, never="rim"):
     """(X, fill) (round 5) every fold of the zone tighter than R ROUNDED by a rolling ball of radius R (a morphological
     closing): the balls that touch the surface from outside without cutting it (centres X + R N from the zone and six
     rings round it, kept where no body point is nearer than 0.9 R) make an envelope; each zone point is moved out along
@@ -457,14 +490,70 @@ def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0):
     to = cKDTree(O)
     idx = np.nonzero(zw > 0.01)[0]
     s = np.full(len(idx), np.nan)
-    for sv in np.arange(0, smax + 1e-9, step):
-        d, _ = to.query(X[idx] + sv * Ns[idx])
-        s[np.isnan(s) & (d <= R)] = sv
-    s = np.where(np.isnan(s), smax, s)
+    if never == "cap":
+        for sv in np.arange(0, smax + 1e-9, step):
+            d, _ = to.query(X[idx] + sv * Ns[idx])
+            s[np.isnan(s) & (d <= R)] = sv
+    else:
+        # (round 8) the move to the envelope solved exactly (the ray's first entry into each of the 24 nearest balls,
+        # the least of them), not stepped 0.5 mm at a time: a convex point sat on its own ball's sphere (d == R) and
+        # rounding put it at 0 or at the next step, so ~470 points per key took a random 0 / 0.5 mm, and the joins'
+        # closing amplified it to mm (surface noise)
+        Xi, ni = X[idx], Ns[idx]
+        kk = min(24, len(O))
+        _, jj = to.query(Xi, k=kk, distance_upper_bound=R + smax + 1e-6)
+        jj = jj.reshape(len(idx), kk)
+        okj = jj < len(O)
+        Oj = O[np.where(okj, jj, 0)]
+        q = Xi[:, None] - Oj
+        bq = (q * ni[:, None]).sum(2)
+        cq = (q * q).sum(2) - R * R
+        disc = bq * bq - cq
+        sv = np.where(cq <= R * R * 1e-9, 0.0, -bq - np.sqrt(np.maximum(disc, 0)))
+        hit = okj & ((cq <= R * R * 1e-9) | ((disc >= 0) & (sv >= 0))) & (sv <= smax)
+        sv = np.where(hit, np.maximum(sv, 0), np.inf).min(1)
+        s = np.where(np.isfinite(sv), sv, np.nan)
+    if never == "cap":
+        s = np.where(np.isnan(s), smax, s)
     fill = np.zeros(len(X))
     fill[idx] = s
+    if never != "cap":
+        # (round 8) a point that never meets the envelope within smax has had every ball near it rejected: two masses
+        # facing closer than 0.9 R (the breasts at the cleavage, the arm's underside on her side). Rounds 5-7 pushed it
+        # the whole smax along its normal INTO the facing mass (~30 points per overhead key, ~280 faces folded for the
+        # untangle to smear: the cast's cleavage fold-over, and a result that moved up to 19 mm for a 1e-9 m change of
+        # its input). Now it takes the most its met neighbours (3 rings) were filled (a deep V's floor filled like its
+        # rim), else nothing
+        miss = np.zeros(len(X), bool)
+        miss[idx] = np.isnan(fill[idx])
+        fill[miss] = -1.0
+        Am = H.b.A.tocsr()
+        for _ in range(3):
+            g = np.asarray(Am.multiply(np.maximum(fill, 0)[None, :]).max(axis=1).todense()).ravel()
+            got = miss & (fill < 0) & (g > 0)
+            fill[got] = g[got]
+        fill[fill < 0] = 0.0
+        fill = np.minimum(fill, smax)
     fill = H.smooth(np.minimum(fill, H.smooth(fill, 1) * 1.5), sm) * zw if sm else np.minimum(fill, H.smooth(fill, 1) * 1.5) * zw
     return X + fill[:, None] * Ns, fill
+
+
+def _flips(F, X):
+    """faces whose normal turns past 90 degrees from a neighbour's across an edge (folded over)"""
+    q = np.cross(X[F[:, 1]] - X[F[:, 0]], X[F[:, 2]] - X[F[:, 0]])
+    q /= np.maximum(np.linalg.norm(q, axis=1, keepdims=True), 1e-15)
+    E = np.c_[F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]].reshape(-1, 2)
+    fid = np.repeat(np.arange(len(F)), 3)
+    k = np.sort(E, 1)
+    k = k[:, 0].astype(np.int64) * (F.max() + 1) + k[:, 1]
+    o = np.argsort(k, kind="stable")
+    ks = k[o]
+    i = np.nonzero(ks[1:] == ks[:-1])[0]
+    f1, f2 = fid[o[i]], fid[o[i + 1]]
+    bad = (q[f1] * q[f2]).sum(1) < 0
+    m = np.zeros(len(F), bool)
+    m[f1[bad]] = m[f2[bad]] = True
+    return m
 
 
 def _untangle(H, X, live, rounds=8, its=6):
@@ -484,11 +573,14 @@ def _untangle(H, X, live, rounds=8, its=6):
     return X, (n0, len(_folds(H, X, live)))
 
 
-def author(H, S, d, side, p=P, info=None, **_):
-    """(D the posed move in her chest frame, B blended chest-frame matrices) for one side at one key"""
+def author(H, S, d, side, p=P, info=None, X0in=None, **_):
+    """(D the posed move in her chest frame, B blended chest-frame matrices) for one side at one key; (round 8) X0in:
+    the surface it starts from (the other side's sculpt at a two-arm key) instead of the skinned pose"""
     b = H.b
     F, U = b.F, b.U
     M, T, X0, B = b.pose(d)
+    if X0in is not None:
+        X0 = X0in
     _, A, _ = _angles(H, d, side)
     kA = _ramp(A, *p["kA"])
     # (round 3) the lift's curve: 0 at A 70, LIFT3[1] at 115, LIFT3[2] at 150 (the nipple rises ~23 mm at the A 114-117
@@ -722,15 +814,19 @@ def author(H, S, d, side, p=P, info=None, **_):
         kC = p["close"] * _ramp(A, 60.0, 75.0)
         # (the join's closing only from the overhead keys: at the lowered key it bent the underside's line, sag 3.3
         # -> 4.2 mm at the A 75 front camera, and that line is the owner's note)
-        wj = H.smooth(_ss((phi - 0.1) / 0.3) * (1 - _ss((S.bsm - 0.3) / 0.15)), 2) * p["close"] * _ramp(A, *p["closeA"])
+        # (round 8) the join's zone off her breast's inner and lower sides (lateral of x closeX, over y closeY): its
+        # rest valleys (the cleavage, the fold under the breast) were in it and got "closed" into fold-overs
+        wj = H.smooth(_ss((phi - 0.1) / 0.3) * (1 - _ss((S.bsm - 0.3) / 0.15))
+                      * _ss((xs_ - p["closeX"][0]) / p["closeX"][1]) * _ss((ys_ - p["closeY"][0]) / p["closeY"][1]), 2)
+        wj = wj * p["close"] * _ramp(A, *p["closeA"])
         wt = (_ss((xs_ - p["vfX"]) / 0.03) * _ss((ys_ - p["vfY"]) / 0.04) * (1 - _ss((np.abs(zs_ - p["vfZ"]) - p["vfW"]) / 0.03))
               * (1 - _ss((S.bsm - 0.1) / 0.15)) * _ss((phi - 0.15) / 0.3))
         wt = H.smooth(wt, 3) * kC
         cf = []
         if p["closeRt"] > 0:
-            X, f = _close(H, X, wt, p["closeRt"], p["closeMax"], sm=p["closeSm"])
+            X, f = _close(H, X, wt, p["closeRt"], p["closeMax"], sm=p["closeSm"], never=p["closeNever"])
             cf.append(f)
-        X, f = _close(H, X, wj, p["closeR"], p["closeMax"], sm=p["closeSm"])
+        X, f = _close(H, X, wj, p["closeR"], p["closeMax"], sm=p["closeSm"], never=p["closeNever"])
         cf.append(f)
         if info is not None:
             info["close"] = [1000 * c.max() for c in cf]
@@ -768,6 +864,72 @@ def author(H, S, d, side, p=P, info=None, **_):
         for _ in range(4):
             X = X + 0.5 * ws[:, None] * b.lap(X)
     X, nval = _fair_patches(H, X, phi, S, rm, p)               # (fold-safe: a move that tips a face is taken back)
+    if p.get("imfS", 0) > 0:
+        # (round 8) the fold under her breast: the lift holds the breast's core (smoothed breast weight > 0.45) hard on
+        # its lifted place and solves the skin round it, so the move steps along the core's ragged edge (a vertex
+        # set) and the fold under the breast came out as a jagged dark line (from the first fill on; rounds 2-7, the
+        # "ragged line under the breasts"). The MOVE (not the shape: her skinned fold is smooth) smoothed over the
+        # breast's lower rim, IMFS passes, eased in: the fold rises as one smooth line
+        yn = U[S.nip, 1]
+        wi = (_ss((yn + 0.01 - U[:, 1]) / 0.03) * _ss((S.bsm - 0.08) / 0.15) * (1 - _ss((S.bsm - 0.8) / 0.15))
+              * (phi > 1e-4))
+        wi = np.clip(H.smooth(wi, 3) * 1.5, 0, 1)
+        Dm = H.smooth(X - X0, p["imfS"])
+        X = X + wi[:, None] * (X0 + Dm - X)
+    if p.get("vkeep", 0) > 0:
+        # (round 8) her breast NEVER smaller (the owner: "do not narrow bust"; a draw-in only if "it dosn't get
+        # smaller"): the draw-in (BIN) and the lift's stretch took 5-9% off her breast's volume at the A 114-117 keys.
+        # If the region's closed volume is under the skinned key's (her Body 8 volume there) by VKEEPM, her breast's
+        # front and inner-lower side are filled out along the (smoothed) normal (a smooth field, one scalar solved: two Newton
+        # steps) till it is VKEEPM over it
+        def vol(Y, reg):
+            Fr, bd = reg
+            c = Y[bd].mean(0)
+            return abs((((Y[Fr[:, 0]] - c) * np.cross(Y[Fr[:, 1]] - c, Y[Fr[:, 2]] - c)).sum()) / 6.0)
+        for (reg, vw), mg in zip(S.vb, (p["vkeepM"], 0.15 * p["vkeepM"])):
+            Vt = vol(X0, reg) * (1 + mg)
+            V1 = vol(X, reg)
+            if V1 >= Vt:
+                continue
+            Nv = ph.vn(H.smooth(X, 4), F)                     # (the smoothed surface's: no crumple's noise)
+            q = 0.5 * np.linalg.norm(np.cross(X[F[:, 1]] - X[F[:, 0]], X[F[:, 2]] - X[F[:, 0]]), axis=1)
+            Av = np.zeros(len(X))
+            for k in range(3):
+                np.add.at(Av, F[:, k], q / 3)
+            a = 0.0
+            for _ in range(2):
+                a += (Vt * 1.0005 - vol(X + (a * p["vkeep"] * vw)[:, None] * Nv, reg)) / max((vw * Av).sum() * p["vkeep"], 1e-12)
+            X = X + (a * p["vkeep"] * vw)[:, None] * Nv
+            if info is not None:
+                info.setdefault("vkeep", []).append((1e6 * V1, 1e6 * Vt, 1000 * a))
+    if p.get("clear", 0) > 0:
+        # (round 8) the last folded faces (a face turned past 90 degrees from its neighbour: the join's front-top
+        # under the acromion, where the raise packs the skin; 7-15 per overhead key, the jagged nick in the shoulder's
+        # outline in row 1) smoothed out: their points and two rings round them (not her breast's core), plain
+        # Laplacian passes eased over a ring, till none is left (at most CLEAR rounds of 3)
+        # (a crumple of sub-millimetre faces it can't open stops it: no more than CLEARMAX moved anywhere, and it ends
+        # when two rounds bring no fewer folds, so it never grinds a patch down)
+        lc = H.rings(phi > 1e-4, 1) & (S.bsm < 0.45)
+        Xc = X.copy()
+        best, stall = int((_flips(F, X) & lc[F].all(1)).sum()), 0
+        for _ in range(p["clear"]):
+            fl = _flips(F, X) & lc[F].all(1)
+            if not fl.any():
+                break
+            m = np.zeros(len(X), bool)
+            m[F[fl].ravel()] = True
+            wc = np.clip(H.smooth(H.rings(m, 2).astype(float), 1) * 1.5, 0, 1) * lc
+            for _ in range(3):
+                X = X + 0.5 * wc[:, None] * b.lap(X)
+            n = int((_flips(F, X) & lc[F].all(1)).sum())
+            stall = 0 if n < best else stall + 1
+            best = min(best, n)
+            if stall >= 2:
+                break
+        mv = X - Xc
+        X = Xc + mv * np.minimum(1, p["clearMax"] / np.maximum(np.linalg.norm(mv, axis=1), 1e-12))[:, None]
+        if info is not None:
+            info["clear"] = int((_flips(F, X) & lc[F].all(1)).sum())
     nfold = (nfold[0], nfold[1], len(_folds(H, X, H.rings(phi > 1e-4, 1))))
     if info is not None:
         info.update(X0=X0, Xf=Xf, Xr=Xr, Xa=Xa, Xu=Xu, X=X)
@@ -780,7 +942,7 @@ def _rest(B, D):
     return np.einsum("nab,nb->na", np.linalg.inv(B[:, :3, :3]), D)
 
 
-def _turned_stored(H, X1):
+def _turned_stored(H, X1, sm=0):
     """(round 5) her STORED normal carried by the surface's own local turn from her rest to X1: per triangle the
     turn of its deformation (edges and normal, rest -> X1: the polar of [e1' e2' n'] [e1 e2 n]^-1, which takes the
     rest face normal exactly to the posed one), area-weighted per point and made a turn again, applied to her stored
@@ -803,6 +965,12 @@ def _turned_stored(H, X1):
     Rv = np.zeros((len(U), 3, 3))
     for k in range(3):
         np.add.at(Rv, F[:, k], Rt * a0[:, None, None])
+    if sm > 0:
+        # (round 8) the turn field smoothed over her skin first (SM passes, then made a turn): where the skin is
+        # stretched hard across a crease (the fold under the breast as the lift opens it) the triangles' own turns
+        # scatter, and the per-point turn lit the fold in a sawtooth of bright and dark specks (the "ragged line under
+        # the breasts"); her stored normal's own bend across the fold is kept (only its turn is smoothed)
+        Rv = H.smooth((Rv / np.maximum(np.linalg.norm(Rv.reshape(-1, 9), axis=1), 1e-18)[:, None, None]).reshape(-1, 9), sm).reshape(-1, 3, 3)
     Rv = _polar(Rv + 1e-18 * np.eye(3)[None])
     return _unit(np.einsum("nab,nb->na", Rv, H.Ns))
 
@@ -845,8 +1013,36 @@ def build(G, log=print):
     poses = json.load(open(POSES))
     S = {s: Side(H, s) for s in "lr"}
     samp = {}
+    U = b.U
+    # (round 8) at the two-arm keys (the cast, the old cast) the two sides' regions overlap across her sternum (each
+    # side's breast panel runs to the other breast's inner edge) and Godot ADDS the two sides' slots there: rounds 2-7
+    # moved the cleavage twice (a fold-over, a jagged line between the breasts). Now the key is sculpted ONCE for both
+    # sides (each side re-solved on the other's result, both orders averaged: they differ < 1 mm) and that move is
+    # shared out between the sides' slots by a smooth split across the sternum (MID: all the left's at x > MID, all
+    # the right's at x < -MID, half each on the midline), so the sum at the key is the one sculpt
+    joint = {}
+    for key in ("cast", "cast150"):
+        if not P["joint"] or not all((key, s_) in KEYS for s_ in "lr"):
+            continue
+        d = poses[key]
+        _, _, X0j, Bj = b.pose(d)
+        Dl, _ = author(H, S["l"], d, "l")
+        Dr, _ = author(H, S["r"], d, "r")
+        Drl, _ = author(H, S["r"], d, "r", X0in=X0j + Dl)
+        Dlr, _ = author(H, S["l"], d, "l", X0in=X0j + Dr)
+        Tj = 0.5 * (Dl + Drl + Dr + Dlr)
+        shl = _ss((U[:, 0] + P["mid"]) / (2 * P["mid"]))
+        joint[key] = (Tj, Bj, {"l": shl, "r": 1 - shl})
+        both = (np.linalg.norm(Dl, axis=1) > 1e-4) & (np.linalg.norm(Dr, axis=1) > 1e-4)
+        log("SCULPT %s joint: %d points in both sides' moves (added they reached %.1f mm), orders differ %.2f mm max" % (
+            key, int(both.sum()), 1000 * np.linalg.norm(Dl + Dr, axis=1)[both].max() if both.any() else 0.0,
+            1000 * np.linalg.norm((Dl + Drl) - (Dr + Dlr), axis=1).max()))
     for key, side in KEYS:
-        D, B = author(H, S[side], poses[key], side)
+        if key in joint:
+            Tj, B, sh = joint[key]
+            D = sh[side][:, None] * Tj
+        else:
+            D, B = author(H, S[side], poses[key], side)
         _, _, X0, _ = b.pose(poses[key])
         Mg, A, az = _angles(H, poses[key], side)
         wts = sp.psd_weights(A, az, sp.clavicle_rise(Mg, H.M0, b.I, side))
@@ -862,31 +1058,38 @@ def build(G, log=print):
         # normal without the noise in the join (still no skinned normal in it: the puckers stay fixed)
         L = B[:, :3, :3]
         Li = np.linalg.inv(L)
-        N0, N1 = ph.vn(X0, b.F), ph.vn(X0 + D, b.F)
+        # (round 8) at a joint key the normal target is the one sculpt's (both sides' regions), each side's slots
+        # turning her normal by its share of the way (slot_normals)
+        Dt = joint[key][0] if key in joint else D
+        N0, N1 = ph.vn(X0, b.F), ph.vn(X0 + Dt, b.F)
         g0 = _unit(np.einsum("nab,nb->na", L, H.Ns))
         nt = _unit(np.einsum("nab,nb->na", Li, ph._rot(N0, N1, g0)))
-        ng = _unit(np.einsum("nab,nb->na", Li, N1 if P["nGeo"] else _turned_stored(H, X0 + D)))
-        reg = H.rings(np.maximum(S[side].phi, S[side].phib) > 1e-4, P["nRing"])
+        ng = _unit(np.einsum("nab,nb->na", Li, N1 if P["nGeo"] else _turned_stored(H, X0 + Dt, P["nTs"])))
+        sides = "lr" if key in joint else side
+        reg = H.rings(np.max([np.maximum(S[s_].phi, S[s_].phib) for s_ in sides], 0) > 1e-4, P["nRing"])
         wn = np.clip(H.smooth(reg.astype(float), P["nRing"]) * 2, 0, 1)
         wn = wn * wn * (3 - 2 * wn)
         t = _unit(wn[:, None] * ng + (1 - wn[:, None]) * nt)
         live = (np.linalg.norm(D, axis=1) > 1e-6) | (wn > 1e-4)
-        samp[key + "_" + side] = (_rest(B, D), wts, t, live)
+        shs = joint[key][2][side] if key in joint else None
+        if shs is not None:
+            live &= shs > 1e-4
+        samp[key + "_" + side] = (_rest(B, D), wts, t, live, shs)
         log("SCULPT %s %s: A %.1f az %.1f, posed move max %.1f mm, %d points" % (
             key, side, A, az, 1000 * np.linalg.norm(D, axis=1).max(), int((np.linalg.norm(D, axis=1) > 1e-4).sum())))
     for key in ("show", "low"):
-        Dr, wr, tr, lr = samp[key + "_r"]
+        Dr, wr, tr, lr, _ = samp[key + "_r"]
         lm = ph.mirror(b, np.repeat(lr[:, None], 3, 1).astype(float))[:, 1] > 1e-3
-        samp[key + "_l"] = (ph.mirror(b, Dr), wr, np.where(lm[:, None], _unit(ph.mirror(b, tr)), H.Ns), lm)
+        samp[key + "_l"] = (ph.mirror(b, Dr), wr, np.where(lm[:, None], _unit(ph.mirror(b, tr)), H.Ns), lm, None)
     rest = {}
     for side in "lr":
         # the level slot alone at the lowered key; its share taken off the other keys
-        Dl, wl, _, _ = samp["low_" + side]
+        Dl, wl, _, _, _ = samp["low_" + side]
         rest["lvl80_" + side] = Dl / max(wl[LVL], 1e-6)
         log("SCULPT lvl80 %s: key weight %.2f" % (side, wl[LVL]))
 
         def less(key):
-            D, wk, _, _ = samp[key + "_" + side]
+            D, wk, _, _, _ = samp[key + "_" + side]
             return D - wk[LVL] * rest["lvl80_" + side], wk
         # the A 117 pair: per point abd/flex so each key's weights give back its sculpt (2 x 2, the same for all points)
         (Ds, ws), (Dc, wc) = less("show"), less("cast")
@@ -899,7 +1102,7 @@ def build(G, log=print):
         D150, w150 = less("cast150")
         tot = sum(w150[k] for k in SLOTS150)
         rest["150_" + side] = D150 / max(tot, 1e-6)
-    keys = {k: (v[1], v[2], v[3]) for k, v in samp.items()}
+    keys = {k: (v[1], v[2], v[3], v[4]) for k, v in samp.items()}
     return b, rest, keys
 
 
@@ -909,8 +1112,13 @@ def slot_normals(Ns, w, keys, side):
     (the level slot from the lowered key, the 117 pair from the show and cast keys together, the 150 group from the
     old cast), so the light at each key is the sculpt's exactly; untouched points keep their own"""
     def kw(key):
-        wk, t, live = keys[key + "_" + side]
-        return wk, t[w], live[w]
+        wk, t, live, sh = keys[key + "_" + side]
+        tw = t[w]
+        if sh is not None:
+            # (round 8) a joint key: this side's slots turn her normal its share of the way to the one sculpt's (the
+            # two sides' blends add up to it)
+            tw = _unit(Ns + sh[w][:, None] * (tw - Ns))
+        return wk, tw, live[w]
     out = {}
     wl, tl, ll = kw("low")
     out["lvl80"] = np.where(ll[:, None], _unit_toward((1 - sum(wl.values())) * Ns, wl[LVL], tl), Ns)
