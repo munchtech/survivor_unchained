@@ -52,6 +52,14 @@ Round 3 (25 Oct): NORMALS: each slot's normal is now solved so Godot's blend (ba
           toward the pit, the upper pole 5 mm in; the pec's lower border a round roll (9 mm, 16 mm over the chest,
           12 into the pit, whole from 20 mm off its chest end, fading to nothing at its arm end ~80 mm up the inner
           arm); the groove and the insertion V off (muscle tone is a detail normal map's job now).
+Round 4 (25 Oct, the owner on round 3: "the indent arch from underarm to elbow far too exaggerated"; "the breast
+          work wasn't great"): NO CUT: the solve's turned rest Laplacian (its turn only part of the humerus' within ~40 mm
+          of the joint) thinned the arm's back-underside 9-15 mm there, so the underside line rose into the pit as an
+          arch; every point on the arm side of the joint (not its deltoid top) is put back out to its skinned radius from
+          the humerus wherever the sculpt took it inside (NOCUT); the flat sector and the pit core stop at the joint plane
+          (ARMKEEP). The BREAST lift gentle and near-rigid: its core her rest breast translated whole along the lift
+          (IMFR 1: the fold under it rises with it; no teardrop EDGE pull, no upper-pole FLAT), 0/14.5/24.5 mm at A
+          70/115/150 (nipple ~13 at A 114-117, ~23 at A 150).
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -91,16 +99,18 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          dRu=0.05, dRv=0.038, pull=float(_E("SCULPT_PULL", 0.008)), delt=float(_E("SCULPT_DELT", 0.005)),
          cr=0.2, cd=0.02, cl=0.05, aw=(0.08, 0.12), sf=(0.15, 0.035),
          relax=float(_E("SCULPT_RELAX", 1.0)), relaxIt=int(_E("SCULPT_RELAX_IT", 15)),
-         liftA3=(70.0, 115.0, 150.0), liftV3=(0.0, float(_E("SCULPT_LIFT115", 0.0297)), float(_E("SCULPT_LIFT150", 0.0455))),
-         lback=0.25, llat=0.2, imfR=float(_E("SCULPT_IMFR", 0.38)), edge=float(_E("SCULPT_EDGE", 0.006)),
-         flat=float(_E("SCULPT_FLAT", 0.005)), cb=30.0,
+         liftA3=(70.0, 115.0, 150.0), liftV3=(0.0, float(_E("SCULPT_LIFT115", 0.0145)), float(_E("SCULPT_LIFT150", 0.0245))),
+         lback=0.25, llat=0.2, imfR=float(_E("SCULPT_IMFR", 1.0)), edge=float(_E("SCULPT_EDGE", 0.0)),
+         flat=float(_E("SCULPT_FLAT", 0.0)), cb=30.0,
          lip=float(_E("SCULPT_LIP", 0.009)), lipF=0.016, lipP=0.012,
          groove=float(_E("SCULPT_GROOVE", 0.0)), grooveW=0.009, ins=float(_E("SCULPT_INS", 0.0)), insT=0.45,
          fair=float(_E("SCULPT_FAIR", 1.0)), fairIt=int(_E("SCULPT_FAIR_IT", 12)), kA=(60.0, 114.0),
          nRing=int(_E("SCULPT_NRING", 4)), shrink=float(_E("SCULPT_SHRINK", 1.0)), shrinkP=0.5,
          rmin=float(_E("SCULPT_RMIN", 0.015)), rminLow=float(_E("SCULPT_RMIN_LOW", 0.025)), dip=0.0003,
          vr=0.012, vNew=1 / 0.04, vIt=int(_E("SCULPT_VIT", 16)), vK=0, vFold=0, vDil=3, vProj=1,
-         vLift=float(_E("SCULPT_VLIFT", 0.003)), vLr=0.02, uR=20, cyc=2, spot=int(_E("SCULPT_SPOT", 8)))
+         vLift=float(_E("SCULPT_VLIFT", 0.003)), vLr=0.02, uR=20, cyc=2, spot=int(_E("SCULPT_SPOT", 8)),
+         armKeep=(float(_E("SCULPT_ARMKEEP0", -0.01)), float(_E("SCULPT_ARMKEEP_W", 0.04))),
+         noCut=float(_E("SCULPT_NOCUT", 1.0)), ncT=(-0.01, 0.035), ncOut=0.6)
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -200,9 +210,13 @@ class Side:
         s.phi = phi * (x > 0.02)
         sect = np.maximum(_ss((-0.1 - cosu) / 0.5),
                           _ss((p["sf"][0] - cosu) / 0.35) * _ss((cosf - 0.15) / 0.4) * _ss((t0 + p["sf"][1]) / 0.03))
-        s.kap = 1 - sect * _ss((0.115 - rj) / 0.035) * (1 - _ss((t0 - 0.06) / 0.05))
+        # (round 4) the arm's own underside keeps its curvature: the flat sector and the pit core stop at the joint
+        # plane (fading out over armKeep), so the triceps' round cross-section isn't thin-plated flat (rounds 1-3 cut
+        # the arm's back-underside 9-15 mm in within 40 mm of the joint: the owner's "indent arch" from pit to elbow)
+        keep = 1 - _ss((t0 - p["armKeep"][0]) / p["armKeep"][1]) if p["armKeep"][1] > 0 else 1.0
+        s.kap = 1 - sect * _ss((0.115 - rj) / 0.035) * (1 - _ss((t0 - 0.06) / 0.05)) * keep
         s.arm = _ss((t0 + p["aw"][0]) / p["aw"][1])
-        s.core = _ss((-0.3 - cosu) / 0.4) * _ss((0.09 - rj) / 0.03)
+        s.core = _ss((-0.3 - cosu) / 0.4) * _ss((0.09 - rj) / 0.03) * keep
 
         def arm_pt(t, d):
             i = np.nonzero((s.aw > 0.8) & (np.abs(t0 - t) < 0.006))[0]
@@ -588,6 +602,25 @@ def author(H, S, d, side, p=P, info=None, **_):
         wv = H.smooth(wv, 6)
         off += p["vLift"] * kA * wv / max(wv.max(), 1e-9)
     X = X + off[:, None] * N
+    if p["noCut"] > 0:
+        # (round 4) NO CUT on the arm's underside: the solve's turned Laplacian thinned the arm's back-underside 9-15 mm
+        # within 40 mm of the joint (its turn half the humerus' there), so the underside line rose into the pit as an
+        # arch (the owner, 25 Oct). Every point on the arm side of the joint (eased in over ncT down the humerus) and
+        # not on its top-outer side (the deltoid's: eased out over the upper half) is put back out to its skinned
+        # radius from the humerus wherever the sculpt took it inside it; the push smoothed (no step at the mask's edge)
+        v0, v1 = X0 - J, X - J
+        t0_, t1_ = v0 @ h, v1 @ h
+        q0, q1 = v0 - t0_[:, None] * h, v1 - t1_[:, None] * h
+        r0, r1 = np.linalg.norm(q0, axis=1), np.maximum(np.linalg.norm(q1, axis=1), 1e-9)
+        up_ = _unit(np.array([0, 1.0, 0]) - h[1] * h)
+        cu = (q1 @ up_) / r1
+        mk = (_ss((t1_ - p["ncT"][0]) / p["ncT"][1]) * (1 - _ss((cu - 0.1) / p["ncOut"])) * (r0 < 0.075)
+              * (S.aw > 0.3) * (phi > 1e-4))
+        raw = p["noCut"] * mk * np.maximum(r0 - r1, 0)
+        push = H.smooth(np.maximum(raw, H.smooth(raw, 3)), 2)
+        X = X + push[:, None] * (q1 / r1[:, None])
+        if info is not None:
+            info["nocut"] = 1000 * push.max()
     # untangled: where the bend packs the skin past what her rest shape fits (the join's front-top, the fold's chest
     # end) the solve buckles a few triangles over (dark nicks in Godot): those and two rings round them smoothed
     # (Taubin, no shrink) till none is left

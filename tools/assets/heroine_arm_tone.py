@@ -55,14 +55,17 @@ GREEN = 1                         # (binormal toward the image's top: glTF / Ble
 DELT = ((-80, 38), (-45, 16), (-15, -4), (15, -12), (45, 8), (78, 44), (112, 84),
         (78, 124), (45, 165), (15, 198), (-15, 204), (-45, 178), (-80, 152))
 DELT_A = 2.2                      # mm proud of her arm round it
-DELT_W = 7.0                      # mm: its border band is twice this
+DELT_W = float(os.environ.get("TONE_DELT_W", 7.0))   # mm: its border band is twice this (round 4: 10, soft at strength 2.75)
 DELT_FADE = (-60.0, -20.0)        # s: none above the first (her shoulder's top), whole below the second
 # bellies: (chart, s0, phi0, half-length mm, half-width deg, height mm, plateau share)
 HEADS = (("up", 30, 15, 60, 32, 0.6, 0.35),      # deltoid front head
          ("up", 35, 95, 62, 34, 0.72, 0.35),     # middle head
          ("up", 30, 168, 58, 32, 0.6, 0.35))     # rear head
-DOMES = (("up", 150, -15, 85, 50, 1.8, 0.5),     # biceps
-         ("up", 105, -150, 80, 42, 1.6, 0.5),    # triceps, long head (the underside)
+# (round 4) TONE_SPLIT deg widens the biceps' and the triceps long head's half-widths so their split on the underside
+# is a shallow valley, not a groove line (the owner wants the pit-to-elbow underside line straight)
+_SPL = float(os.environ.get("TONE_SPLIT", 0.0))
+DOMES = (("up", 150, -15, 85, 50 + _SPL, 1.8, 0.5),     # biceps
+         ("up", 105, -150, 80, 42 + _SPL, 1.6, 0.5),    # triceps, long head (the underside)
          ("up", 120, 140, 55, 30, 1.2, 0.45),    # triceps, lateral head
          ("up", 200, 62, 42, 22, 0.7, 0.4),      # brachialis, between them on the outside
          ("fore", 35, 55, 80, 34, 1.3, 0.45))    # brachioradialis (forearm chart: s from the elbow, phi 0 front)
