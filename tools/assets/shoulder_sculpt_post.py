@@ -138,7 +138,7 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          close=float(_E("SCULPT_CLOSE", 1.0)), closeR=float(_E("SCULPT_CLOSER", 0.012)),
          closeRt=float(_E("SCULPT_CLOSERT", 0.018)), closeMax=0.02, closeA=(80.0, 105.0),
          closeSm=int(_E("SCULPT_CLOSE_SM", 0)),
-         bin=float(_E("SCULPT_BIN", 0.012)), binS=(0.0, 0.08, 0.13), binSm=int(_E("SCULPT_BIN_SM", 15)), binA=(60.0, 105.0),
+         bin=float(_E("SCULPT_BIN", 0.012)), binS=(0.0, 0.08, 0.13), binSm=int(_E("SCULPT_BIN_SM", 15)), binA=(float(_E("SCULPT_BIN_A0", 100.0)), 105.0),
          domeX=float(_E("SCULPT_DOMEX", 0.009)), domeA=(80.0, 105.0), rsm=int(_E("SCULPT_RSM", 0)))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
