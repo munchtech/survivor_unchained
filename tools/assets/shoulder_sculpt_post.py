@@ -60,6 +60,18 @@ Round 4 (25 Oct, the owner on round 3: "the indent arch from underarm to elbow f
           (ARMKEEP). The BREAST lift gentle and near-rigid: its core her rest breast translated whole along the lift
           (IMFR 1: the fold under it rises with it; no teardrop EDGE pull, no upper-pole FLAT), 0/14.5/24.5 mm at A
           70/115/150 (nipple ~13 at A 114-117, ~23 at A 150).
+Round 5 (25 Oct, the judge on round 4: breast facets, the pinch where the arm lands on the breast, row 1's V):
+          NORMALS: the target in the region is her STORED normal carried by the sculpt's own local turn (per-triangle
+          polar rotations rest -> sculpt, area-weighted per point: _turned_stored), not the raw area-weighted geometric
+          normal, whose facet noise lit the breasts in straight-edged facets; on the rigid breast core it is her stored
+          normal, in the join the sculpt's normal without the noise (SCULPT_NGEO=1 gives round 4's). CLOSE: no fold in
+          the join tighter than 12 mm at the overhead keys (a rolling ball's closing, _close; from A 80, whole at 105: at
+          the lowered key it bent the underside's line), the shoulder's top with an 18 mm ball (the
+          deltoid and the torso's cap met in a deep narrow fold: the V); DELT 15 mm (was 5: the deltoid's top fuller by
+          the joint); NOCUT's ramp at the overhead keys -0.03..+0.07 down the humerus (ncT2; the lowered key keeps
+          round 4's), so the underside tapers into the back fold. Row 1's V 16 -> 4 px (offline silhouette).
+          NB round 4's "left cast cut" was prof4's frame flipping hand (its 'z > 0' rule at a near-horizontal e1): with
+          a mirror-consistent frame the left cast's back-underside matches the right's.
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -96,7 +108,7 @@ import shoulder_psd_post as sp  # noqa: E402
 POSES = os.path.join(HERE, "shoulder_sculpt_poses.json")
 _E = os.environ.get
 P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.003)), dome=float(_E("SCULPT_DOME", 0.011)),
-         dRu=0.05, dRv=0.038, pull=float(_E("SCULPT_PULL", 0.008)), delt=float(_E("SCULPT_DELT", 0.005)),
+         dRu=0.05, dRv=0.038, pull=float(_E("SCULPT_PULL", 0.008)), delt=float(_E("SCULPT_DELT", 0.015)),
          cr=0.2, cd=0.02, cl=0.05, aw=(0.08, 0.12), sf=(0.15, 0.035),
          relax=float(_E("SCULPT_RELAX", 1.0)), relaxIt=int(_E("SCULPT_RELAX_IT", 15)),
          liftA3=(70.0, 115.0, 150.0), liftV3=(0.0, float(_E("SCULPT_LIFT115", 0.0145)), float(_E("SCULPT_LIFT150", 0.0245))),
@@ -110,7 +122,13 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          vr=0.012, vNew=1 / 0.04, vIt=int(_E("SCULPT_VIT", 16)), vK=0, vFold=0, vDil=3, vProj=1,
          vLift=float(_E("SCULPT_VLIFT", 0.003)), vLr=0.02, uR=20, cyc=2, spot=int(_E("SCULPT_SPOT", 8)),
          armKeep=(float(_E("SCULPT_ARMKEEP0", -0.01)), float(_E("SCULPT_ARMKEEP_W", 0.04))),
-         noCut=float(_E("SCULPT_NOCUT", 1.0)), ncT=(-0.01, 0.035), ncOut=0.6)
+         noCut=float(_E("SCULPT_NOCUT", 1.0)), ncT=(-0.01, 0.035), ncOut=0.6,
+         nGeo=int(_E("SCULPT_NGEO", 0)),
+         ncT2=(-0.03, 0.10), ncA=(80.0, 110.0),
+         vfX=0.14, vfY=1.40, vfZ=-0.01, vfW=0.06,
+         close=float(_E("SCULPT_CLOSE", 1.0)), closeR=float(_E("SCULPT_CLOSER", 0.012)),
+         closeRt=float(_E("SCULPT_CLOSERT", 0.018)), closeMax=0.02, closeA=(80.0, 105.0),
+         closeSm=int(_E("SCULPT_CLOSE_SM", 0)))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -410,6 +428,34 @@ def _fair_patches(H, X, phi, S, rmin, p):
     return X, "->".join(map(str, log))
 
 
+def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0):
+    """(X, fill) (round 5) every fold of the zone tighter than R ROUNDED by a rolling ball of radius R (a morphological
+    closing): the balls that touch the surface from outside without cutting it (centres X + R N from the zone and six
+    rings round it, kept where no body point is nearer than 0.9 R) make an envelope; each zone point is moved out along
+    its smoothed-surface normal till it meets it (a convex or open point meets its own ball at once: 0), at most smax,
+    eased by zw (0-1). So a pinch or a V between two masses becomes a fold of radius R, and nothing wider moves"""
+    F = H.b.F
+    Nn = ph.vn(X, F)
+    Ns = ph.vn(H.smooth(X, 4), F)
+    cand = np.nonzero(H.rings(zw > 0.01, 6))[0]
+    O = X[cand] + R * Nn[cand]
+    dmin, _ = cKDTree(X).query(O)
+    O = O[dmin > 0.9 * R]
+    if not len(O):
+        return X, np.zeros(len(X))
+    to = cKDTree(O)
+    idx = np.nonzero(zw > 0.01)[0]
+    s = np.full(len(idx), np.nan)
+    for sv in np.arange(0, smax + 1e-9, step):
+        d, _ = to.query(X[idx] + sv * Ns[idx])
+        s[np.isnan(s) & (d <= R)] = sv
+    s = np.where(np.isnan(s), smax, s)
+    fill = np.zeros(len(X))
+    fill[idx] = s
+    fill = H.smooth(np.minimum(fill, H.smooth(fill, 1) * 1.5), sm) * zw if sm else np.minimum(fill, H.smooth(fill, 1) * 1.5) * zw
+    return X + fill[:, None] * Ns, fill
+
+
 def _untangle(H, X, live, rounds=8, its=6):
     b = H.b
     n0 = None
@@ -614,13 +660,42 @@ def author(H, S, d, side, p=P, info=None, **_):
         r0, r1 = np.linalg.norm(q0, axis=1), np.maximum(np.linalg.norm(q1, axis=1), 1e-9)
         up_ = _unit(np.array([0, 1.0, 0]) - h[1] * h)
         cu = (q1 @ up_) / r1
-        mk = (_ss((t1_ - p["ncT"][0]) / p["ncT"][1]) * (1 - _ss((cu - 0.1) / p["ncOut"])) * (r0 < 0.075)
+        # (round 5) at the overhead keys the restore ramps in over a longer reach (ncT2: the arm whole only from ~70 mm
+        # down the humerus), so the underside tapers into the back fold by the joint instead of a full round tube
+        # pressed into the torso (row 2's crease down the deltoid's back edge); the lowered key keeps round 4's (its
+        # straight underside, the owner's note)
+        kN = _ramp(A, *p["ncA"])
+        nc0, nc1 = (1 - kN) * p["ncT"][0] + kN * p["ncT2"][0], (1 - kN) * p["ncT"][1] + kN * p["ncT2"][1]
+        mk = (_ss((t1_ - nc0) / nc1) * (1 - _ss((cu - 0.1) / p["ncOut"])) * (r0 < 0.075)
               * (S.aw > 0.3) * (phi > 1e-4))
         raw = p["noCut"] * mk * np.maximum(r0 - r1, 0)
         push = H.smooth(np.maximum(raw, H.smooth(raw, 3)), 2)
         X = X + push[:, None] * (q1 / r1[:, None])
         if info is not None:
             info["nocut"] = 1000 * push.max()
+    if p["close"] > 0:
+        # (round 5) no fold in the join tighter than CLOSER (a rolling ball's closing, _close): the arm's underside
+        # landing on the breast's upper-outer edge in a pinched V (rows 1, 3, 5), the crease down the deltoid's back
+        # edge into the pit (row 2) become folds of that radius; the shoulder's top between the trapezius and the raised
+        # deltoid (row 1's V: two masses meeting in a deep narrow fold) closed with the larger CLOSERT, so the deltoid
+        # flows into the trapezius; the breast core not touched; whole from A 75 (nothing below A 60)
+        sg = 1 if side == "l" else -1
+        xs_, ys_, zs_ = U[:, 0] * sg, U[:, 1], U[:, 2]
+        kC = p["close"] * _ramp(A, 60.0, 75.0)
+        # (the join's closing only from the overhead keys: at the lowered key it bent the underside's line, sag 3.3
+        # -> 4.2 mm at the A 75 front camera, and that line is the owner's note)
+        wj = H.smooth(_ss((phi - 0.1) / 0.3) * (1 - _ss((S.bsm - 0.3) / 0.15)), 2) * p["close"] * _ramp(A, *p["closeA"])
+        wt = (_ss((xs_ - p["vfX"]) / 0.03) * _ss((ys_ - p["vfY"]) / 0.04) * (1 - _ss((np.abs(zs_ - p["vfZ"]) - p["vfW"]) / 0.03))
+              * (1 - _ss((S.bsm - 0.1) / 0.15)) * _ss((phi - 0.15) / 0.3))
+        wt = H.smooth(wt, 3) * kC
+        cf = []
+        if p["closeRt"] > 0:
+            X, f = _close(H, X, wt, p["closeRt"], p["closeMax"], sm=p["closeSm"])
+            cf.append(f)
+        X, f = _close(H, X, wj, p["closeR"], p["closeMax"], sm=p["closeSm"])
+        cf.append(f)
+        if info is not None:
+            info["close"] = [1000 * c.max() for c in cf]
     # untangled: where the bend packs the skin past what her rest shape fits (the join's front-top, the fold's chest
     # end) the solve buckles a few triangles over (dark nicks in Godot): those and two rings round them smoothed
     # (Taubin, no shrink) till none is left
@@ -665,6 +740,33 @@ def author(H, S, d, side, p=P, info=None, **_):
 
 def _rest(B, D):
     return np.einsum("nab,nb->na", np.linalg.inv(B[:, :3, :3]), D)
+
+
+def _turned_stored(H, X1):
+    """(round 5) her STORED normal carried by the surface's own local turn from her rest to X1: per triangle the
+    turn of its deformation (edges and normal, rest -> X1: the polar of [e1' e2' n'] [e1 e2 n]^-1, which takes the
+    rest face normal exactly to the posed one), area-weighted per point and made a turn again, applied to her stored
+    normal. Where the sculpt keeps her rest shape (the near-rigid breast core) it IS her stored normal; where it bends
+    the skin (the join) it is the sculpt's own normal but without the area-weighted normal's facet noise (her stored
+    normals are her smooth surface's; the welded mesh's geometric ones scatter 0.5-0.9 deg median, 3 at p90, up to 8)"""
+    U, F = H.b.U, H.b.F
+
+    def frame(Y):
+        e1, e2 = Y[F[:, 1]] - Y[F[:, 0]], Y[F[:, 2]] - Y[F[:, 0]]
+        n = np.cross(e1, e2)
+        a = np.linalg.norm(n, axis=1)
+        return np.stack([e1, e2, n / np.maximum(a, 1e-15)[:, None]], 2), a
+    E0, a0 = frame(U)
+    E1, _ = frame(X1)
+    ok = a0 > 1e-12
+    Ft = np.tile(np.eye(3), (len(F), 1, 1))
+    Ft[ok] = E1[ok] @ np.linalg.inv(E0[ok])
+    Rt = _polar(Ft)
+    Rv = np.zeros((len(U), 3, 3))
+    for k in range(3):
+        np.add.at(Rv, F[:, k], Rt * a0[:, None, None])
+    Rv = _polar(Rv + 1e-18 * np.eye(3)[None])
+    return _unit(np.einsum("nab,nb->na", Rv, H.Ns))
 
 
 def _unit_toward(c, wsum, t):
@@ -716,12 +818,16 @@ def build(G, log=print):
         # own normal errors (60-90 degrees at the join's front-top under the helper bones, 160 where the skinned
         # skin folds) into the light: the dark puckers Godot showed and Blender (geometric normals) never did.
         # Eased to that old normal over the region's edge (rings beyond it), where it is her stored normal.
+        # (round 5) inside the region that normal is no longer the raw area-weighted geometric one (its facet noise
+        # lit her breasts in straight-edged light/dark facets at 1:1, rows 1 and 5) but her STORED normal carried by
+        # the sculpt's own local turn (_turned_stored): her stored normal on the near-rigid breast core, the sculpt's
+        # normal without the noise in the join (still no skinned normal in it: the puckers stay fixed)
         L = B[:, :3, :3]
         Li = np.linalg.inv(L)
         N0, N1 = ph.vn(X0, b.F), ph.vn(X0 + D, b.F)
         g0 = _unit(np.einsum("nab,nb->na", L, H.Ns))
         nt = _unit(np.einsum("nab,nb->na", Li, ph._rot(N0, N1, g0)))
-        ng = _unit(np.einsum("nab,nb->na", Li, N1))
+        ng = _unit(np.einsum("nab,nb->na", Li, N1 if P["nGeo"] else _turned_stored(H, X0 + D)))
         reg = H.rings(np.maximum(S[side].phi, S[side].phib) > 1e-4, P["nRing"])
         wn = np.clip(H.smooth(reg.astype(float), P["nRing"]) * 2, 0, 1)
         wn = wn * wn * (3 - 2 * wn)
