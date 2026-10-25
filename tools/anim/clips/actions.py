@@ -844,14 +844,20 @@ def cast_raise(rig):
     asked a wrist bent back along the forearm, and brought down to a hand
     hanging low it asked the same the other way; the hand turned over in a
     frame. Across overhead and upright before her chest, it sits in the
-    fists as staffs do.)"""
+    fists as staffs do.)
+
+    (24 Oct, the owner: "twisting like a towel, even the wrist angle is
+    bizarre". Restaged: both arms ~35 deg forward of her side plane, raised
+    to A 121-136 (was 142-151, elbows out and back, upper arms rolled 74-79),
+    the left fist aimed on the staff too (thumb toward her right hand): at
+    f3 roll 45/47, both wrists within 9 deg sideways, 6-14 flexed.)"""
     keys = [
         (0, body(stance(0.06), spine=(0, -6, 0), head=(0, -14, 0),
-                 hand_r=arm((0.06, 0.32, 0.10), (-0.6, 0.2, -0.6), blade=_n(1.0, 0.1, 0.1)),
-                 hand_l=arm((0.0, 0.34, 0.10), (0.6, 0.2, -0.6)), fingers_l="grip", fingers_r="grip"), "ease"),
+                 hand_r=arm((0.0, 0.36, 0.26), (-0.8, 0.0, 0.5), blade=_n(1.0, 0.1, 0.1)),
+                 hand_l=arm((0.0, 0.38, 0.26), (0.8, 0.0, 0.5), blade=_n(-1.0, -0.1, 0.0)), fingers_l="grip", fingers_r="grip"), "ease"),
         (6, body(stance(0.06), spine=(0, -10, 0), head=(0, -20, 0),
-                 hand_r=arm((0.06, 0.40, 0.08), (-0.6, 0.2, -0.6), blade=_n(1.0, 0.15, 0.1)),
-                 hand_l=arm((0.0, 0.42, 0.08), (0.6, 0.2, -0.6)), fingers_l="grip", fingers_r="grip"), "fast"),
+                 hand_r=arm((0.0, 0.42, 0.24), (-0.8, 0.0, 0.5), blade=_n(1.0, 0.15, 0.1)),
+                 hand_l=arm((0.0, 0.44, 0.24), (0.8, 0.0, 0.5), blade=_n(-1.0, -0.1, 0.0)), fingers_l="grip", fingers_r="grip"), "fast"),
         (10, body(stance(0.14, weight=0.3), hips=(0, 14, 0), spine=(0, 18, 0), head=(0, -10, 0),
                   hand_r=arm((0.10, -0.24, 0.30), (-0.7, -0.6, -0.2), blade=_n(0.0, 0.97, -0.25)),
                   hand_l=arm((-0.26, -0.06, 0.26), (0.8, -0.4, -0.3)), fingers_l="grip", fingers_r="grip"), "ease"),
