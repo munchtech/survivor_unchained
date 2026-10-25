@@ -223,3 +223,15 @@ def stage(src: Path, dst: Path, sk: Skeleton, log=print):
             moved.append(f"{d['name']} {m:.1f}")
     log(f"  clavicle hold: {len(moved)} clips lowered (max deg): {', '.join(moved)}")
     return dst
+
+
+def stage_copy(src: Path, dst: Path):
+    """Every clip JSON in src copied unchanged into dst (cleared of JSONs first), for later passes. Returns dst."""
+    if dst.resolve() == src.resolve():
+        raise ValueError("clavhold.stage_copy: dst must not be the clips folder")
+    dst.mkdir(parents=True, exist_ok=True)
+    for f in dst.glob("*.json"):
+        f.unlink()
+    for f in sorted(src.glob("*.json")):
+        shutil.copyfile(f, dst / f.name)
+    return dst

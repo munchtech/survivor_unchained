@@ -55,7 +55,7 @@ def modules():
 def pack(out=OUT, stem="heroine"):
     """Pack the clip JSONs in `out` into the game's library. Her clips pass
     clavhold first (her clavicles held down while the arm is low; CLAV_HOLD=0
-    packs them as written), staged in ANIM_PACK_STAGE (default
+    packs them as written), then arm_roll_fix on the clips it names (ARM_ROLL_FIX=0: off), staged in ANIM_PACK_STAGE (default
     tools/anim/out/packed_<stem>/), so the JSONs in `out` stay as the clip code
     wrote them. ANIM_LIB (a folder) writes <stem>.res and <stem>_clips.json
     there instead of godot/art/anim/."""
@@ -64,12 +64,21 @@ def pack(out=OUT, stem="heroine"):
     res = str((lib / f"{stem}.res").resolve()).replace("\\", "/") if os.environ.get("ANIM_LIB") else f"res://art/anim/{stem}.res"
     src = out
     if stem == "heroine":
+        import arm_roll_fix
         import clavhold
+        stage = Path(os.environ.get("ANIM_PACK_STAGE", HERE / "out" / f"packed_{stem}"))
+        sk = Skeleton.load(DATA / BODIES[stem][0])
         if clavhold.on():
-            stage = Path(os.environ.get("ANIM_PACK_STAGE", HERE / "out" / f"packed_{stem}"))
-            src = clavhold.stage(out, stage, Skeleton.load(DATA / BODIES[stem][0]))
+            src = clavhold.stage(out, stage, sk)
         else:
             print("  clavicle hold OFF (CLAV_HOLD=0)")
+        # Then her arms' roll and wrists into range on the clips it names (arm_roll_fix.CLIPS; ARM_ROLL_FIX=0: off).
+        if arm_roll_fix.on():
+            if src == out:
+                src = clavhold.stage_copy(out, stage)
+            arm_roll_fix.stage(src, sk)
+        else:
+            print("  arm roll fix OFF (ARM_ROLL_FIX=0)")
     r = subprocess.run([GODOT, "--headless", "--path", str(REPO / "godot"), "-s", "res://tools_scenes/anim_pack.gd", "--",
                         str(src), res, str(lib / f"{stem}_clips.json")],
                        capture_output=True, text=True)
