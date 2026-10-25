@@ -13,8 +13,11 @@ The sculpt (per side, at each sample):
           (the lat's front edge, the acromion's top), Taubin too
   hollow  an elliptic dome pushed in along the pit's own axis, long along the arm: DEPTH at A 150, DEPTH_115 at A 114
   fold    the front axillary fold: a soft ridge from the pec's border on the chest into the arm's front, 75 mm down
+          (OFF by default since 24 Oct, PIT_FOLD=0.010 restores S2d: in Godot it IS the owner's "really strange crease at
+          shoulder" at reaver_show A 114; a softer, wider fold (0.005, 45 mm) still creased)
   pull    the breast's upper-outer edge drawn toward that fold (along her skin)
-  seam    the valley over the shoulder's top where scap_rig_post's arm ramp meets the clavicle, smoothed out
+  seam    the valley over the shoulder's top where scap_rig_post's arm ramp meets the clavicle, smoothed out (OFF by
+          default, PIT_SEAM=1 on: measured in Godot it darkened the junction a little, not the owner's crease)
   groove  the biceps/triceps groove up the arm's face toward the pit, shallow with a wide falloff
 
 Driven by the existing machinery: the shapes take Play/ShoulderPsd's names (HerRaise finds them by name; Python twin
@@ -45,11 +48,11 @@ from worn_reaver_post import _sparse  # noqa: E402
 POSES = os.path.join(HERE, "pit_hollow_poses.json")
 DEPTH, DEPTH_115 = float(os.environ.get("PIT_DEPTH", 0.009)), float(os.environ.get("PIT_DEPTH_115", 0.007))
 P = dict(Ru=0.050, Rv=0.032, Ra=0.06, drop=0.012, relaxR=float(os.environ.get("PIT_RELAX_R", 0.055)), relaxK=0.8, relaxIt=int(os.environ.get("PIT_RELAX_IT", 30)), leftR=0.028, leftIt=12,
-         fold=float(os.environ.get("PIT_FOLD", 0.010)), foldW=float(os.environ.get("PIT_FOLD_W", 0.026)), foldIt=int(os.environ.get("PIT_FOLD_SMOOTH", 10)), pull=float(os.environ.get("PIT_PULL", 0.023)),
+         fold=float(os.environ.get("PIT_FOLD", 0.0)), foldW=float(os.environ.get("PIT_FOLD_W", 0.026)), foldIt=int(os.environ.get("PIT_FOLD_SMOOTH", 10)), pull=float(os.environ.get("PIT_PULL", 0.023)),
          groove=float(os.environ.get("PIT_GROOVE", 0.0035)), grooveW=float(os.environ.get("PIT_GROOVE_W", 0.018)), smoothIt=int(os.environ.get("PIT_SMOOTH", 40)),
          grooveIt=int(os.environ.get("PIT_GROOVE_SMOOTH", 4)), tilt=float(os.environ.get("PIT_TILT", 20.0)),
          shift=float(os.environ.get("PIT_SHIFT", 0.006)),
-         seam=float(os.environ.get("PIT_SEAM", 1.0)), seamR=float(os.environ.get("PIT_SEAM_R", 0.035)),
+         seam=float(os.environ.get("PIT_SEAM", 0.0)), seamR=float(os.environ.get("PIT_SEAM_R", 0.035)),
          seamIt=int(os.environ.get("PIT_SEAM_IT", 100)), seamFill=int(os.environ.get("PIT_SEAM_FILL", 60)), seamA=[0.228, 1.505, -0.05],
          seamB=[float(v) for v in os.environ.get("PIT_SEAM_B", "0.20,1.465,0.045").split(",")])
 SAMPLES = (("150_l", "cast", "l", DEPTH), ("150_r", "cast", "r", DEPTH), ("115_r", "over", "r", DEPTH_115))
