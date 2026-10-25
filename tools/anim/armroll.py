@@ -5,16 +5,24 @@ wrist angle is bizarre". The twist chain (helpers SPEC "twist_chain") spreads th
 the humerus, but a roll of 75-110 deg still reads as a wrung towel under linear skinning, and her keyed IK left
 the wrist bent 45-57 deg to the side (a real wrist: under ~20 deg of deviation, ~45 deg of extension).
 
-The fix is the pose, not the skin. Per frame and side, the arm swivels about its shoulder-to-wrist line (the
-elbow swung round that line; the wrist stays where the clip put it, the hand's global turn is kept, so the
-weapon and any two-handed grip are untouched). The swivel is chosen to bring the upper arm's roll (its twist
-about its own line from rest, what the game's twist chain reads) toward a real arm's comfortable range and the
-wrist into its natural range, staying near the clip's own elbow, the elbow and forearm kept clear of her head
-and trunk; one Viterbi pass over every frame picks a smooth path (no pops), then a light Gaussian.
-What the swivel takes off the upper arm's roll lands in the forearm's pronation (the hand's turn about the
-forearm, which the game's forearm twist bones carry), never past a real forearm's range.
+The fix is the pose, not the skin; per frame and side, three steps, each eased over the frames (a Viterbi path on
+a grid, loops closed on themselves, then a light Gaussian):
+1. A raised arm's elbow swivels about its shoulder-to-wrist line (the wrist and the hand's global turn kept): only
+   from arm angle 70-90 up, at most 45 deg, near the clip's own elbow, the elbow kept clear of her head, trunk and
+   the floor; kept for a side only if it cuts its worst roll by GAIN_MIN deg (or that roll is past ROLL_BIG). At
+   the owner's frames (a goalpost arm, the elbow out) it buys little: the hinge fixes that roll.
+2. A near-straight arm's roll is traded into the forearm (rho; the forearm and hand don't move; a bent elbow pays
+   as the forearm leaving its hinge), never past the forearm's own range.
+3. The wrist (the main fix): the hand turned the least way into a comfortable bend (`_comfort`), read in the hand's
+   own frame after the forearm's pronation (keyed.Rig._wrist_split's convention). A raised fist sits square on its
+   forearm (deviation <= W_DEV, extension <= W_EXT_HIGH; the owner's targets, 24 Oct), a hanging hand keeps a
+   relaxed set (W_DEV_LOW, W_EXT). A flexion/extension fix turns the hand about its +Z, the shaft (a round haft
+   reads the same); the turn is capped at TURN_CAP. Not where both hands hold one weapon (the grip kept), nor a
+   planted hand (the floor, a thigh, her trunk, her face).
+The hand's turn carries the weapon it holds. Body 6's chain bones get twist_01's track (chain_tracks).
 
-Off with ARM_ROLL=0. A frame whose arm is already comfortable gets no swivel (the cost is flat there).
+Off with ARM_ROLL=0. Report: `python tools/anim/armroll.py <clip.json> ...` (max roll, dev, ext, flex, pron
+before -> after per side; the swivel, rho, the hand's turn and its shaft's tilt).
 """
 from __future__ import annotations
 
@@ -66,6 +74,12 @@ PLANT_HEAD = (0.22, 0.30)      # a hand at her face (a flask at her lips): wrist
 # the elbow never goes nearer the floor than ELBOW_FLOOR (m) or the clip's own.
 SWIVEL_A = (70.0, 90.0)
 ELBOW_FLOOR = 0.10
+# The roll traded into the forearm (from arm_roll_fix, 24 Oct): the upper arm turned about its own line by rho, the
+# forearm's global kept, so the roll the twist chain reads moves into the forearm's pronation. Free on a straight
+# elbow; a bent one pays for it as the forearm leaving the elbow's hinge (HINGE_OK deg, then steeply).
+RHO_SPAN, RHO_STEP, RHO_STAY = 60, 5, 40.0
+HINGE_OK, HINGE_SCALE = 2.0, 1.0
+HINGE = {"l": (0.985, 0.0, -0.17), "r": (0.985, 0.0, 0.16)}   # the elbow's axis in the upper arm (keyed.Rig's bend)
 # Clearance (m): the elbow from her head's centre and from her trunk's line (pelvis to neck_01), the forearm
 # (elbow to wrist) from her head's centre. Under it the cost climbs steeply (per CLEAR_SCALE m), unless the
 # clip's own arm was already that close (never worse than the clip).
@@ -310,6 +324,45 @@ def solve_rot(sk: Skeleton, rot, pos, fps, loop, report=None):
             lg = qnorm(qmul(qq, grot[f, lo]))
             rot[f, u] = qnorm(qmul(qinv(grot[f, c]), ug))
             rot[f, h] = qnorm(qmul(qinv(lg), grot[f, h]))      # the hand's global turn kept
+    # ---- 1b. the roll traded into the forearm where the elbow is near straight (the forearm and hand kept)
+    grot, gpos = sk.fk(rot, pos)
+    rgrid = np.arange(-RHO_SPAN, RHO_SPAN + 1, RHO_STEP, dtype=float)
+    k0 = int(np.argmin(np.abs(rgrid)))
+    rhos = {}
+    for s in "lr":
+        c, u, lo, h = (I[f"{b}_{s}"] for b in ("clavicle", "upperarm", "lowerarm", "hand"))
+        ud = gpos[:, lo] - gpos[:, u]
+        ud /= np.linalg.norm(ud, axis=-1, keepdims=True)
+        fd = gpos[:, h] - gpos[:, lo]
+        fd /= np.linalg.norm(fd, axis=-1, keepdims=True)
+        q = np.stack([np.stack([qaxis(ud[f], g) for g in rgrid]) for f in range(T)])          # [T, K, 4]
+        Ug = qmul(q, grot[:, None, u])
+        Ul = qmul(qinv(grot[:, None, c]), Ug)
+        Ll = qmul(qinv(Ug), grot[:, None, lo])
+        Hl = np.broadcast_to(rot[:, None, h], Ll.shape)
+        roll = _wrap(twist_y(qmul(qinv(sk.rest_rot[u]), Ul)))
+        pro, fl, dv = wrist(sk, Ll, Hl, s)
+        hx = qrot(Ug, np.broadcast_to(np.array(HINGE[s]) / np.linalg.norm(HINGE[s]), Ug.shape[:-1] + (3,)))
+        h0 = np.degrees(np.arcsin(np.clip(np.abs(np.einsum("tki,ti->tk", hx, fd)), 0, 1)))
+        herr = np.maximum(0.0, h0 - np.maximum(HINGE_OK, h0[:, k0:k0 + 1]))     # (never worse than the clip's)
+        cost = (_hinge(roll, ROLL_OK, ROLL_SCALE) + _hinge(fl, FLEX_OK, FLEX_SCALE) + _hinge(dv, DEV_OK, DEV_SCALE)
+                + _hinge(pro, PRO_OK, PRO_SCALE) + (rgrid[None] / RHO_STAY) ** 2 + 50.0 * (herr / HINGE_SCALE) ** 2)
+        path = _viterbi(cost, rgrid, loop)
+        rr = np.clip(_smooth(rgrid[path], SIGMA, loop), -RHO_SPAN, RHO_SPAN)
+        x = (rr + RHO_SPAN) / RHO_STEP
+        i0 = np.clip(np.floor(x).astype(int), 0, len(rgrid) - 2)
+        fr = x - i0
+        r1 = np.abs((1 - fr) * roll[np.arange(T), i0] + fr * roll[np.arange(T), i0 + 1])
+        gain = float(np.max(np.abs(roll[:, k0]) - r1))     # (per frame: the forearm and hand never move)
+        if gain < GAIN_MIN or np.max(np.abs(rr)) < 0.5:
+            rr = np.zeros(T)
+        rhos[s] = rr
+        for f in range(T):
+            if abs(rr[f]) < 1e-3:
+                continue
+            ug = qnorm(qmul(qaxis(ud[f], rr[f]), grot[f, u]))
+            rot[f, u] = qnorm(qmul(qinv(grot[f, c]), ug))
+            rot[f, lo] = qnorm(qmul(qinv(ug), grot[f, lo]))     # the forearm's global kept (and so the hand's)
     # ---- 2. the wrist: the hand turned the least way into its comfortable range (eased, capped); not where both
     # hands hold one weapon (the grip kept)
     dw = np.linalg.norm(gpos[:, I["hand_l"]] - gpos[:, I["hand_r"]], axis=-1)
@@ -345,6 +398,7 @@ def solve_rot(sk: Skeleton, rot, pos, fps, loop, report=None):
         b, a = _stats(measure(sk, rot0, pos)), _stats(measure(sk, rot, pos))
         for s in "lr":
             report[s] = dict(before=b[s], after=a[s], swivel=float(np.max(np.abs(swiv[s]))), turn=turn[s],
+                             rho=float(np.max(np.abs(rhos[s]))),
                              tilt=tilt[s], two_hand=float(1 - np.min(wone)))
     return rot
 
@@ -372,7 +426,7 @@ def solve_json(sk: Skeleton, d, report=None):
     tracks = [dict(t) for t in d["tracks"]]
     have = {t["bone"]: t for t in tracks if t["type"] == "rot"}
     for s in "lr":
-        for b in (f"upperarm_{s}", f"hand_{s}"):
+        for b in (f"upperarm_{s}", f"lowerarm_{s}", f"hand_{s}"):
             j = I[b]
             if np.max(np.abs(new[:, j] - rot[:, j])) < 1e-7:
                 continue
@@ -413,7 +467,7 @@ def row(name, rep):
         b, a = r["before"], r["after"]
         out.append(f"{name:24s} {s}  roll {b['roll']:4.0f}->{a['roll']:4.0f}  dev {b['dev']:3.0f}->{a['dev']:3.0f}  "
                    f"ext {b['ext']:3.0f}->{a['ext']:3.0f}  flex {b['flex']:3.0f}->{a['flex']:3.0f}  "
-                   f"pron {b['pro']:4.0f}->{a['pro']:4.0f}  swivel {r['swivel']:3.0f}  turn {r['turn']:3.0f}  "
+                   f"pron {b['pro']:4.0f}->{a['pro']:4.0f}  swivel {r['swivel']:3.0f}  rho {r['rho']:3.0f}  turn {r['turn']:3.0f}  "
                    f"tilt {r['tilt']:3.0f}  2h {r['two_hand']:.2f}")
     return out
 
@@ -433,7 +487,7 @@ def stage(src: Path, dst: Path, sk: Skeleton, log=print, table=None):
             chain_tracks(r)
         (dst / f.name).write_text(json.dumps(r, separators=(",", ":")))
         rows += row(d["name"], rep)
-        if max((max(rep[s]["swivel"], rep[s]["turn"]) for s in rep), default=0.0) >= 0.5:
+        if max((max(rep[s]["swivel"], rep[s]["rho"], rep[s]["turn"]) for s in rep), default=0.0) >= 0.5:
             moved.append(d["name"])
     log(f"  arm roll: {len(moved)} clips re-solved")
     if table:
