@@ -93,6 +93,18 @@ Round 8 (25 Oct, on round 7's armpit topology; the owner: "do not narrow bust", 
           IMFS: the move smoothed over the breast's lower rim. NTS: the normal's turn field smoothed 8 passes (the fold
           under the breast lit in a sawtooth of specks). CLEAR: the last faces folded past 90 degrees smoothed out (the
           shoulder's front-top, the nick in row 1's outline), bounded (CLEARMAX)
+Round 9 (25 Oct): JCLOSE, a 24 mm ball's closing on the arm-breast junction pocket at the overhead keys.
+Round 10 (25 Oct, the owner on round 9: "the breasts aren't doin great. if they didn't move at all would there be
+          issues?"; at the raised keys they read squared and boxy: the draw-in took the outer edge in, the top-up went
+          to the front and inner-lower side, heavy-bottomed under flat upper poles). Two breasts, SCULPT_BREAST:
+          NATURAL (default): her rest breast carried up whole by the lift (round 8's nipple rise), NO draw-in (BIN 0),
+          the volume top-up spread round the whole breast (VKEEP_ROUND), the pec's roll carried whole to its chest end
+          and LIPEND onto the breast's upper-outer surface (roll and breast one convex form), the pit's extra depth
+          (DOMEX) eased off its front quarter (DOME_FRONT), the move's smoothing under the breast carried out to its
+          lateral border at the overhead keys (IMF_OUT, 4 passes more). STILL: the sculpt never touches the breasts
+          (no lift, no draw-in, no top-up): both (smoothed breast weight >= STILL_T) ride the chest as the skin and the
+          helpers (HerRaise) carry them, the join's move eased to nothing over STILL_R outside their border, her
+          skinned normal on them. "r9" rebuilds round 9's breasts.
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -128,6 +140,19 @@ import shoulder_psd_post as sp  # noqa: E402
 
 POSES = os.path.join(HERE, "shoulder_sculpt_poses.json")
 _E = os.environ.get
+# (round 10) the breasts' mode, SCULPT_BREAST: "natural" (her rest breast carried up whole by the pec, no draw-in, a
+# volume top-up spread round the breast, the arm-breast pocket closed by the pec's roll), "still" (the sculpt never
+# touches the breasts: they ride the chest as the skin and the helpers carry them, the join's move eased to nothing
+# at their border) or "r9" (round 9's breasts: the draw-in and the front/inner-lower top-up)
+BREAST = _E("SCULPT_BREAST", "natural")
+assert BREAST in ("natural", "still", "r9"), BREAST
+
+
+def _bm(env, r9, still, nat):
+    """a knob whose default follows the breasts' mode (its own env var still wins)"""
+    return float(_E(env, {"r9": r9, "still": still, "natural": nat}[BREAST]))
+
+
 P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.003)), dome=float(_E("SCULPT_DOME", 0.011)),
          dRu=0.05, dRv=0.038, pull=float(_E("SCULPT_PULL", 0.008)), delt=float(_E("SCULPT_DELT", 0.015)),
          cr=0.2, cd=0.02, cl=0.05, aw=(0.08, 0.12), sf=(0.15, 0.035),
@@ -151,13 +176,17 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          closeRt=float(_E("SCULPT_CLOSERT", 0.018)), closeMax=0.02, closeA=(80.0, 105.0),
          closeSm=int(_E("SCULPT_CLOSE_SM", 0)), closeNever=_E("SCULPT_CLOSE_NEVER", "rim"),
          closeX=(float(_E("SCULPT_CLOSE_X0", 0.09)), 0.03), closeY=(float(_E("SCULPT_CLOSE_Y0", 1.26)), 0.04),
-         bin=float(_E("SCULPT_BIN", 0.012)), binS=(0.0, 0.08, 0.13), binSm=int(_E("SCULPT_BIN_SM", 15)), binA=(float(_E("SCULPT_BIN_A0", 100.0)), 105.0),
+         bin=_bm("SCULPT_BIN", 0.012, 0.0, 0.0), binS=(0.0, 0.08, 0.13), binSm=int(_E("SCULPT_BIN_SM", 15)), binA=(float(_E("SCULPT_BIN_A0", 100.0)), 105.0),
          domeX=float(_E("SCULPT_DOMEX", 0.009)), domeA=(80.0, 105.0), rsm=int(_E("SCULPT_RSM", 0)),
          joint=int(_E("SCULPT_JOINT", 1)), mid=float(_E("SCULPT_MID", 0.035)),
-         vkeep=float(_E("SCULPT_VKEEP", 1.0)), vkeepM=float(_E("SCULPT_VKEEP_M", 0.01)),
+         vkeep=_bm("SCULPT_VKEEP", 1.0, 0.0, 1.0), vkeepM=float(_E("SCULPT_VKEEP_M", 0.01)),
+         vkeepRound=_bm("SCULPT_VKEEP_ROUND", 0.0, 0.0, 1.0),
          clear=int(_E("SCULPT_CLEAR", 12)), clearMax=float(_E("SCULPT_CLEAR_MAX", 0.002)), imfS=int(_E("SCULPT_IMF_S", 12)), nTs=int(_E("SCULPT_NTS", 8)),
          jclose=float(_E("SCULPT_JCLOSE", 1.0)), jcloseR=float(_E("SCULPT_JCLOSER", 0.024)),
-         jcloseMax=float(_E("SCULPT_JCLOSE_MAX", 0.012)), jcloseRad=float(_E("SCULPT_JCLOSE_RAD", 0.07)), jcloseA=(95.0, 105.0))
+         jcloseMax=float(_E("SCULPT_JCLOSE_MAX", 0.012)), jcloseRad=float(_E("SCULPT_JCLOSE_RAD", 0.07)), jcloseA=(95.0, 105.0),
+         still=_bm("SCULPT_STILL", 0.0, 1.0, 0.0), stillT=float(_E("SCULPT_STILL_T", 0.1)), stillR=float(_E("SCULPT_STILL_R", 0.02)),
+         domeF=_bm("SCULPT_DOME_FRONT", 0.0, 0.0, 1.0), imfOut=_bm("SCULPT_IMF_OUT", 0.0, 0.0, 1.0),
+         lipEnd=_bm("SCULPT_LIP_END", 0.0, 0.0, 0.035))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -296,6 +325,13 @@ class Side:
         s.bcw = _ss((s.bsm[s.bcore] - 0.45) / 0.15)
         i = np.nonzero(s.bw > 0.5)[0]
         s.nip = int(i[np.argmax(U[i, 2])])
+        # (round 10) STILL: both breasts (smoothed breast weight >= STILLT) kept as the skin carries them; the join's
+        # move eased to nothing at their border (over STILLR along her skin outside it)
+        s.keepB = np.zeros(len(U))
+        if p.get("still", 0) > 0:
+            bb = np.maximum(s.bsm, H.smooth(bo, 6))
+            dg = dijkstra(H.GR, indices=np.nonzero(bb >= p["stillT"])[0], min_only=True, limit=3 * p["stillR"])
+            s.keepB = 1 - _ss(np.where(np.isfinite(dg), dg, 1.0) / p["stillR"])
         # the arm's rest frame square to the humerus: out (the deltoid's side) and front
         lat0 = np.array([sg * 1.0, 0, 0])
         s.lat0 = _unit(lat0 - (lat0 @ h0) * h0)
@@ -317,6 +353,10 @@ class Side:
             Bmv = bwv > 0.3
             so = (U - (U[Bmv] * bwv[Bmv, None]).sum(0) / bwv[Bmv].sum()) @ eo
             vw = H.smooth(_ss((bsv - 0.25) / 0.35) * _ss((H.NU[:, 2] + 0.2) / 0.6) * (1 - 0.8 * _ss((so - 0.01) / 0.06)), 4)
+            if p.get("vkeepRound", 0) > 0:
+                # (round 10) the top-up spread round the whole breast (its core most, nothing at its border): fuller
+                # and still round (round 8's front and inner-lower top-up made them heavy-bottomed and boxy)
+                vw = H.smooth(_ss((bsv - 0.1) / 0.5), 4)
             s.vb.append(((Fr, np.unique(Eu[cnt == 1].ravel())), vw))
 
 
@@ -608,6 +648,9 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         R = _polar(H.smooth(R.reshape(-1, 9), int(p["rsm"])).reshape(-1, 3, 3))
     dR = np.einsum("nab,nb->na", R, H.dU)
     phi = np.maximum(S.phi, S.phib)
+    still = p.get("still", 0) > 0
+    if still:
+        phi = phi * (1 - S.keepB)                             # (round 10) the breasts held as skinned
     if p["shrink"] > 0:
         # (round 3) where the raise packs the skin (the shoulder's top between the neck and the raised deltoid, the
         # join's front-top under the acromion) the rest Laplacian asked for more skin than there is room for, and the
@@ -636,7 +679,7 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
     uo = H.smooth(_ss(((U - U[S.nip]) @ dpit + 0.03) / 0.09), 8)[S.bcore]
     tc = (U[S.bcore] + (Lc * wl)[:, None] * ldir + (p["edge"] * kL * uo)[:, None] * dpit
           - (p["flat"] * kL * _ss((yb - yn) / 0.05))[:, None] * H.NU[S.bcore])
-    abr = [(S.bcore, tc, p["cb"] * S.bcw)]
+    abr = [] if still else [(S.bcore, tc, p["cb"] * S.bcw)]
 
     def fill(Pin, anchors, its=2):
         X = Pin.copy()
@@ -674,7 +717,14 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
     core = np.nonzero((rho < 1.0) & (S.phi > 0.5))[0]
     # (round 6) the pit deeper at the overhead keys (DOMEX more, from A 80, whole at 105): its apex rises into the arm
     # and away from the breast's upper-outer edge, so the contact V opens (the lowered key keeps round 5's dome)
-    dm = kA * p["dome"] + p.get("domeX", 0.0) * _ramp(A, *p.get("domeA", (80.0, 105.0)))
+    dmx = p.get("domeX", 0.0) * _ramp(A, *p.get("domeA", (80.0, 105.0)))
+    dm = kA * p["dome"] + dmx * np.ones(len(core))
+    if p.get("domeF", 0) > 0:
+        # (round 10) that extra depth eased off the pit's FRONT quarter (toward the pec's fold and the breast): there it
+        # deepened the pocket between the pec's roll and the breast's upper-outer side that the front cameras see
+        vf = np.cross(ax, hu)
+        vf = vf if vf[2] > 0 else -vf
+        dm = dm - p["domeF"] * dmx * _ss(((q[core] @ vf) / p["dRv"] - 0.25) / 0.5)
     anc.append((core, Xf[core] - (dm * (1 - rho[core] ** 2) ** 2)[:, None] * ax, p["cd"]))
     up = _unit(np.array([0, 1.0, 0]) - h[1] * h)
     c = np.cross(up, h)
@@ -728,8 +778,15 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         # (round 3) a round roll: whole from 20 mm off its chest end, fading from 40% of the way to nothing at the
         # arm end (~80 mm up the inner arm)
         sm = sl * cum[-1]
-        env = _ss(sm / 0.02) * (1 - _ss((sl - 0.4) / 0.6))
-        env *= np.where((qq == 0) | (qq == ns - 1), _ss(1 - np.abs(al) / 0.02), 1.0)
+        if p.get("lipEnd", 0) > 0:
+            # (round 10) the roll's CHEST END carried onto the breast's upper-outer surface: whole to its end, fading
+            # over LIPEND past it on the breast, so roll and breast read as one convex form (round 3's roll rose from
+            # nothing over its first 20 mm: the notch between them was the pocket rows 1 and 5 look into)
+            env = (1 - _ss((sl - 0.4) / 0.6)) * np.where(qq == 0, _ss(1 - np.maximum(-al, 0) / p["lipEnd"]), 1.0)
+            env *= np.where(qq == ns - 1, _ss(1 - np.abs(al) / 0.02), 1.0)
+        else:
+            env = _ss(sm / 0.02) * (1 - _ss((sl - 0.4) / 0.6))
+            env *= np.where((qq == 0) | (qq == ns - 1), _ss(1 - np.abs(al) / 0.02), 1.0)
         prof = np.where(sx >= 0, np.exp(-(sx / p["lipF"]) ** 2), np.exp(-(sx / p["lipP"]) ** 2))
         off[nr] += p["lip"] * kA * env * prof
     lat, fr = Ra @ S.lat0, Ra @ S.fr0
@@ -888,10 +945,14 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         # "ragged line under the breasts"). The MOVE (not the shape: her skinned fold is smooth) smoothed over the
         # breast's lower rim, IMFS passes, eased in: the fold rises as one smooth line
         yn = U[S.nip, 1]
-        wi = (_ss((yn + 0.01 - U[:, 1]) / 0.03) * _ss((S.bsm - 0.08) / 0.15) * (1 - _ss((S.bsm - 0.8) / 0.15))
+        # (round 10) IMFOUT: at the overhead keys carried out to the breast's lateral border, 4 passes more (the outer
+        # end of the fold under her left breast stayed ragged at the cast)
+        ko = p.get("imfOut", 0) * _ramp(A, 95.0, 105.0)
+        b0 = 0.08 - 0.07 * ko
+        wi = (_ss((yn + 0.01 - U[:, 1]) / 0.03) * _ss((S.bsm - b0) / (0.15 - 0.05 * ko)) * (1 - _ss((S.bsm - 0.8) / 0.15))
               * (phi > 1e-4))
         wi = np.clip(H.smooth(wi, 3) * 1.5, 0, 1)
-        Dm = H.smooth(X - X0, p["imfS"])
+        Dm = H.smooth(X - X0, p["imfS"] + int(round(4 * ko)))
         X = X + wi[:, None] * (X0 + Dm - X)
     if p.get("vkeep", 0) > 0:
         # (round 8) her breast NEVER smaller (the owner: "do not narrow bust"; a draw-in only if "it dosn't get
@@ -947,6 +1008,9 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         X = Xc + mv * np.minimum(1, p["clearMax"] / np.maximum(np.linalg.norm(mv, axis=1), 1e-12))[:, None]
         if info is not None:
             info["clear"] = int((_flips(F, X) & lc[F].all(1)).sum())
+    if still:
+        # (round 10) STILL: nothing on the breasts, the join's move eased to nothing at their border
+        X = X0 + (1 - S.keepB)[:, None] * (X - X0)
     nfold = (nfold[0], nfold[1], len(_folds(H, X, H.rings(phi > 1e-4, 1))))
     if info is not None:
         info.update(X0=X0, Xf=Xf, Xr=Xr, Xa=Xa, Xu=Xu, X=X)
@@ -1086,6 +1150,8 @@ def build(G, log=print):
         reg = H.rings(np.max([np.maximum(S[s_].phi, S[s_].phib) for s_ in sides], 0) > 1e-4, P["nRing"])
         wn = np.clip(H.smooth(reg.astype(float), P["nRing"]) * 2, 0, 1)
         wn = wn * wn * (3 - 2 * wn)
+        if P["still"] > 0:
+            wn = wn * (1 - S[side].keepB)                     # (round 10) STILL: her skinned normal on the breasts
         t = _unit(wn[:, None] * ng + (1 - wn[:, None]) * nt)
         live = (np.linalg.norm(D, axis=1) > 1e-6) | (wn > 1e-4)
         shs = joint[key][2][side] if key in joint else None
