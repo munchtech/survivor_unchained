@@ -4,8 +4,9 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>Her shoulder pose-space correctives' weights (Play/ShoulderPsd.cs): nothing with the arm at or below
-/// level, each sample whole at its own raise, a partition between samples, side to front by the azimuth.</summary>
+/// <summary>Her shoulder pose-space correctives' weights (Play/ShoulderPsd.cs): nothing with the arm below
+/// EaseFrom (60: the Look's and the idles' arms reach ~55), each sample whole at its own raise (the level one at 80),
+/// a partition between samples, side to front by the azimuth.</summary>
 public class ShoulderPsdTests
 {
     static float[] W(float a, float az, float rise = 0f) { var w = new float[ShoulderPsd.Shapes.Length]; ShoulderPsd.Weights(a, az, rise, w); return w; }
@@ -13,8 +14,9 @@ public class ShoulderPsdTests
     [Theory]
     [InlineData(0f, 0f)]
     [InlineData(43f, 10f)]   // her rest A-pose
-    [InlineData(90f, 0f)]
-    [InlineData(90f, 90f)]
+    [InlineData(54.5f, -82f)]   // the Look's left arm (Body 9 dump)
+    [InlineData(53.6f, -52.5f)]   // the town idle's left arm
+    [InlineData(60f, 0f)]
     [InlineData(60f, -60f)]
     public void ArmsDownAreExactlyZero(float a, float az) => Assert.All(W(a, az), v => Assert.Equal(0f, v));
 
@@ -40,6 +42,26 @@ public class ShoulderPsdTests
     }
 
     [Fact]
+    public void LevelSampleWholeAtLevelAndHandedOn()   // (Body 9: the lowered key, A 75, near whole)
+    {
+        foreach (var az in new[] { -60f, 0f, 40f, 90f })
+        {
+            var w = W(80f, az);
+            Assert.Equal(1f, w[8], 0.00001f);
+            for (int k = 0; k < 8; k++) Assert.Equal(0f, w[k]);
+            Assert.Equal(0f, W(117f, az)[8]);
+            foreach (var a in new[] { 85f, 95f, 104f, 113.5f })
+            {
+                float s = 0; foreach (var v in W(a, az)) s += v;
+                Assert.Equal(1f, s, 0.0001f);
+            }
+        }
+        float w75 = W(75.1f, 40.3f)[8];   // the lowered reaver_show swing
+        Assert.True(w75 > 0.8f && w75 < 0.9f);
+        Assert.True(W(65f, 0f)[8] < W(70f, 0f)[8]);
+    }
+
+    [Fact]
     public void ShrugHandsOverToTwins()
     {
         // (the twins are read past HerShrug's own lift: ClavicleLift.Target)
@@ -62,7 +84,7 @@ public class ShoulderPsdTests
     [Fact]
     public void EasesInAboveLevel()
     {
-        Assert.True(W(95f, 0f)[0] > 0f && W(95f, 0f)[0] < 0.2f);
+        Assert.True(W(85f, 0f)[0] > 0f && W(85f, 0f)[0] < 0.2f);
         Assert.True(W(100f, 0f)[0] < W(105f, 0f)[0]);
     }
 

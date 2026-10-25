@@ -55,7 +55,9 @@ SAMPLES = [("abd", FIRST, 0.0), ("abd", 140.0, 0.0), ("flex", FIRST, 0.0), ("fle
            ("abd", 140.0, SHRUG), ("flex", 140.0, SHRUG), ("up", 175.0, SHRUG)]
 SHAPES = ["shoulder_abd117", "shoulder_abd140", "shoulder_flex117", "shoulder_flex140", "shoulder_up175",
           "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s"]
-EASE_FROM = 90.0
+EASE_FROM = 60.0  # (Body 9 round 2, was 90: the level slot eases in from here)
+LEVEL = 80.0  # the level slot (shoulder_lvl80, tools/assets/shoulder_sculpt_post.py's lowered key): whole here, handed
+#              to the first samples by FIRST, so their weights are as before
 UP_AZ = 0.0  # the overhead sample's azimuth (0: sideways); overhead the two ways meet
 # HerRaise's knobs (its defaults)
 RAISE = dict(start=-10.0, full=70.0, pitch=20.0, yaw=12.0, up=0.034, out=0.010, back=0.006, sup=0.22, sside=0.03)
@@ -279,13 +281,15 @@ def sample_pose(rig, side, way, A, shrug=0.0):
 
 
 def psd_weights(A, az, rise=0.0):
-    """{shape: weight} for an upper arm at (A, azimuth) (arm_angles): 0 to EASE_FROM, eased in to the first samples,
-    then linear between samples (they sum to the ease); the azimuth blends side (<= 0) to front (>= 90).
-    The game's twin: godot/logic/Play/ShoulderPsd.cs."""
+    """{shape: weight} for an upper arm at (A, azimuth) (arm_angles): 0 to EASE_FROM, the level slot eased in to
+    LEVEL, handed (eased) to the first samples by FIRST, then linear between samples (they sum to the ease); the
+    azimuth blends side (<= 0) to front (>= 90). The game's twin: godot/logic/Play/ShoulderPsd.cs."""
     def ramp(x, a, b):
         return float(np.clip((x - a) / (b - a), 0, 1))
     import helpers as hp
-    e = ramp(A, EASE_FROM, FIRST)
+    e90 = ramp(A, EASE_FROM, LEVEL)
+    e90 = e90 * e90 * (3 - 2 * e90)
+    e = ramp(A, LEVEL, FIRST)
     e = e * e * (3 - 2 * e)
     t110 = e * (1 - ramp(A, FIRST, 140.0))
     t140 = ramp(A, FIRST, 140.0) * (1 - ramp(A, 140.0, 175.0))
@@ -297,7 +301,8 @@ def psd_weights(A, az, rise=0.0):
     r = float(np.clip((rise - hp.shrug_target(A)) / SHRUG, 0, 1))
     return {"shoulder_abd117": wa * t110, "shoulder_abd140": wa * t140 * (1 - r), "shoulder_flex117": wf * t110,
             "shoulder_flex140": wf * t140 * (1 - r), "shoulder_up175": t175 * (1 - r),
-            "shoulder_abd140s": wa * t140 * r, "shoulder_flex140s": wf * t140 * r, "shoulder_up175s": t175 * r}
+            "shoulder_abd140s": wa * t140 * r, "shoulder_flex140s": wf * t140 * r, "shoulder_up175s": t175 * r,
+            "shoulder_lvl80": e90 * (1 - e)}
 
 
 def weights_from_globals(Mg, index, M0):
