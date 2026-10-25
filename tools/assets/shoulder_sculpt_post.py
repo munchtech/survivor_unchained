@@ -39,6 +39,19 @@ The construction (per side, at each key; m in her rest unless said):
           pit (GROOVE deep, 9 mm wide, 0.04-0.21 down the humerus), the DELTOID'S INSERTION a soft V on the arm's
           outer side closing ~45% down the humerus (INS proud inside the V)
   scale   the anatomy (folds, dome, delt, pull, details) eased in with A: 0 at A 60, whole from A 114
+Round 3 (25 Oct): NORMALS: each slot's normal is now solved so Godot's blend (base x (1 - sum w) + sum w x the slots'
+          unit normals, skinned by the blended matrix) gives the sculpt's own geometric normal at every key (eased to
+          her stored normal over the region's edge); rounds 1-2 turned the SKINNED normal by the sculpt's turn, which
+          carried the helper rig's skinning errors (60-90 degrees at the join's front-top, 160 where the skinned skin
+          folds) into the light: the dark puckers Godot showed and Blender never did. SHRINK: the rest Laplacian's
+          target scaled by the skinned pose's local shrink where the raise packs the skin. FAIR (last): every point
+          that sits in from its 2 x 12 mm patch's quadric (her rest's residual left out) moved onto it, alternated
+          with the untangle, fold-safe; what's left smoothed on the spot. The shoulder's top valley's floor lifted
+          (VLIFT). The breast lift's curve 0/24.5/37.5 mm at A 70/115/150, graded to 0.38 of it at the core's foot
+          (the fold under it rises ~9 mm, the nipple ~23 at A 114-117, ~35 at A 150), its side toward the pit drawn 6 mm
+          toward the pit, the upper pole 5 mm in; the pec's lower border a round roll (9 mm, 16 mm over the chest,
+          12 into the pit, whole from 20 mm off its chest end, fading to nothing at its arm end ~80 mm up the inner
+          arm); the groove and the insertion V off (muscle tone is a detail normal map's job now).
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -78,11 +91,16 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          dRu=0.05, dRv=0.038, pull=float(_E("SCULPT_PULL", 0.008)), delt=float(_E("SCULPT_DELT", 0.005)),
          cr=0.2, cd=0.02, cl=0.05, aw=(0.08, 0.12), sf=(0.15, 0.035),
          relax=float(_E("SCULPT_RELAX", 1.0)), relaxIt=int(_E("SCULPT_RELAX_IT", 15)),
-         lift=float(_E("SCULPT_LIFT", 0.027)), liftA=(70.0, 150.0), lback=0.25, llat=0.2,
-         flat=float(_E("SCULPT_FLAT", 0.003)), cb=30.0,
-         lip=float(_E("SCULPT_LIP", 0.007)), lipF=0.022, lipP=0.009,
-         groove=float(_E("SCULPT_GROOVE", 0.002)), grooveW=0.009, ins=float(_E("SCULPT_INS", 0.002)), insT=0.45,
-         fair=float(_E("SCULPT_FAIR", 1.0)), fairIt=int(_E("SCULPT_FAIR_IT", 12)), kA=(60.0, 114.0))
+         liftA3=(70.0, 115.0, 150.0), liftV3=(0.0, float(_E("SCULPT_LIFT115", 0.0297)), float(_E("SCULPT_LIFT150", 0.0455))),
+         lback=0.25, llat=0.2, imfR=float(_E("SCULPT_IMFR", 0.38)), edge=float(_E("SCULPT_EDGE", 0.006)),
+         flat=float(_E("SCULPT_FLAT", 0.005)), cb=30.0,
+         lip=float(_E("SCULPT_LIP", 0.009)), lipF=0.016, lipP=0.012,
+         groove=float(_E("SCULPT_GROOVE", 0.0)), grooveW=0.009, ins=float(_E("SCULPT_INS", 0.0)), insT=0.45,
+         fair=float(_E("SCULPT_FAIR", 1.0)), fairIt=int(_E("SCULPT_FAIR_IT", 12)), kA=(60.0, 114.0),
+         nRing=int(_E("SCULPT_NRING", 4)), shrink=float(_E("SCULPT_SHRINK", 1.0)), shrinkP=0.5,
+         rmin=float(_E("SCULPT_RMIN", 0.015)), rminLow=float(_E("SCULPT_RMIN_LOW", 0.025)), dip=0.0003,
+         vr=0.012, vNew=1 / 0.04, vIt=int(_E("SCULPT_VIT", 16)), vK=0, vFold=0, vDil=3, vProj=1,
+         vLift=float(_E("SCULPT_VLIFT", 0.003)), vLr=0.02, uR=20, cyc=2, spot=int(_E("SCULPT_SPOT", 8)))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -125,6 +143,16 @@ class Her:
         E = np.unique(np.sort(np.r_[b.F[:, [0, 1]], b.F[:, [1, 2]], b.F[:, [2, 0]]], axis=1), axis=0)
         el = np.linalg.norm(b.U[E[:, 0]] - b.U[E[:, 1]], axis=1)
         s.GR = sps.coo_matrix((np.r_[el, el], (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(n, n)).tocsr()
+        # (round 3) her stored normals (the primitives', welded: what Godot skins), for the normal targets
+        g = G.g
+        mesh = g["meshes"][[nd for nd in g["nodes"] if nd.get("name") == "Heroine"][0]["mesh"]]
+        Ns, o = np.zeros((n, 3)), 0
+        for p in mesh["primitives"]:
+            c = g["accessors"][p["attributes"]["POSITION"]]["count"]
+            Ns[b.wid[o:o + c]] = G.get(p["attributes"]["NORMAL"])
+            o += c
+        s.Ns = _unit(Ns)
+        _NB["U"] = b.U
 
     def rings(s, m, k):
         out = m.copy()
@@ -254,6 +282,120 @@ def _folds(H, X, live):
     return np.nonzero(((q * ph.vn(Xs, F)[F].mean(1)).sum(1) < 0.2) & live[F].all(1))[0]
 
 
+_NB = {}
+
+
+def _ring_nb(A, idx, k=4, K=48):
+    """[len(idx), K] neighbour ids within k rings along the mesh (padded with the point itself), cached"""
+    key = (id(A), k, K, len(idx), int(idx[:50].sum()))
+    if key not in _NB:
+        R = sps.identity(A.shape[0], format="csr") + A
+        Rk = R[idx]
+        for _ in range(k - 1):
+            Rk = Rk @ R
+        Rk = Rk.tocsr()
+        out = np.repeat(idx[:, None], K, 1)
+        U = _NB.get("U")
+        for j in range(len(idx)):
+            c = Rk.indices[Rk.indptr[j]:Rk.indptr[j + 1]]
+            c = c[c != idx[j]]
+            if U is not None and len(c) > K:
+                c = c[np.argsort(np.linalg.norm(U[c] - U[idx[j]], axis=1))]
+            out[j, :min(len(c), K)] = c[:K]
+        _NB[key] = out
+    return _NB[key]
+
+
+def quad(X, N, idx, r=0.010, A=None):
+    """per point of idx: a quadric height field (in the frame of the normal N) fitted to its neighbours within r (a
+    2r patch, itself left out; along the mesh when A is given, so a deep valley's far side never counts): (c0 the
+    fit's height over the point, + = the point sits IN: a dip; the fit's largest concave curvature 1/m, + = a valley)"""
+    if A is None:
+        dist, nb = cKDTree(X).query(X[idx], k=24)
+    else:
+        nb = _ring_nb(A, idx)
+        dist = np.linalg.norm(X[nb] - X[idx][:, None], axis=2)
+    ok = (dist > 1e-9) & (dist < 1.6 * r)
+    n = N[idx]
+    e1 = _unit(np.cross(n, np.where(np.abs(n[:, :1]) < 0.9, np.array([[1.0, 0, 0]]), np.array([[0, 1.0, 0]]))))
+    e2 = np.cross(n, e1)
+    d = X[nb] - X[idx][:, None]
+    a, c, h = (d * e1[:, None]).sum(2), (d * e2[:, None]).sum(2), (d * n[:, None]).sum(2)
+    w = np.where(ok, np.exp(-(dist / (0.7 * r)) ** 2), 0)
+    Am = np.stack([np.ones_like(a), a, c, a * a, a * c, c * c], 2)
+    M = np.einsum("nk,nki,nkj->nij", w, Am, Am) + np.diag([1, r ** 2, r ** 2, r ** 4, r ** 4, r ** 4]) * (1e-4 * (w.sum(1) + 1e-3))[:, None, None]
+    co = np.linalg.solve(M, np.einsum("nk,nki,nk->ni", w, Am, h)[:, :, None])[:, :, 0]
+    Hs = np.stack([np.stack([2 * co[:, 3], co[:, 4]], 1), np.stack([co[:, 4], 2 * co[:, 5]], 1)], 1)
+    return co[:, 0], np.linalg.eigvalsh(Hs)[:, 1]
+
+
+def _fair_patches(H, X, phi, S, rmin, p):
+    """(X, 'rounds: points flagged per round') every flagged point's patch (dilated 2 rings: >= 20 mm across) re-solved
+    to the curvature round it: its Laplacian made the harmonic fill of the Laplacian round the patch, the rest held
+    (so a dip, a fold-over or a V takes the bend of the skin about it and joins it smoothly)"""
+    b = H.b
+    live = (phi > 0.05) & (S.bsm < 0.45)
+    idx = np.nonzero(live)[0]
+    c0u, ku = quad(b.U, H.NU, idx, p["vr"], b.A)
+    log = []
+    for _ in range(p["vIt"]):
+        N = ph.vn(X, b.F)
+        c0, k = quad(X, N, idx, p["vr"], b.A)
+        bad = np.zeros(len(X), bool)
+        val = np.zeros(len(X), bool)
+        val[idx[(k > 1 / rmin) & (k - np.maximum(ku, 0) > p["vNew"])]] = p["vK"] > 0
+        bad[idx[c0 - np.maximum(c0u, 0) > p["dip"]]] = True
+        if p["vFold"]:
+            bad[b.F[_folds(H, X, live)].ravel()] = True
+        log.append("%d/%d" % (int(val.sum()), int(bad.sum())))
+        if not (bad.any() or val.any()):
+            break
+        if val.any():
+            # a valley tighter than rmin opened: its strip (a ring round it, eased) relaxed toward its neighbours'
+            # mean (the floor rises, the sides barely move)
+            wv = np.clip(H.smooth(H.rings(val, 1).astype(float), 2) * 1.5, 0, 1) * live
+            for _ in range(5):
+                X = X + 0.5 * wv[:, None] * b.lap(X)
+            N = ph.vn(X, b.F)
+            c0, _ = quad(X, N, idx, p["vr"], b.A)
+            bad[:] = False
+            bad[idx[c0 - np.maximum(c0u, 0) > p["dip"]]] = True
+        if p["vProj"] and bad.any():
+            # each flagged point (and a ring round it) moved along its normal onto its patch's quadric, by its excess
+            # over her rest's own residual
+            ex = np.zeros(len(X))
+            ex[idx] = c0 - c0u
+            m = H.rings(bad, 1) & live
+            fv = np.zeros(len(X), bool)
+            fv[b.F[_folds(H, X, live)].ravel()] = True
+            m &= ~H.rings(fv, 1)                              # (a tipped face's normals are no guide)
+            Xn = X + (0.8 * ex * m)[:, None] * N
+            # a move that tips a face is taken back
+            tip = np.zeros(len(X), bool)
+            tip[b.F[_folds(H, Xn, live)].ravel()] = True
+            tip &= ~fv
+            X = np.where(H.rings(tip, 1)[:, None], X, Xn)
+            continue
+        m = H.rings(bad, p["vDil"]) & live
+        mi, oi = np.nonzero(m)[0], np.nonzero(~m)[0]
+        dc = H.L @ X
+        # the Laplacian round the patch carried in harmonically
+        Lmm = H.L[mi][:, mi].tocsc()
+        di = dc.copy()
+        lu = splu(Lmm)
+        rhs = -(H.L[mi][:, oi] @ dc[oi])
+        di[mi] = np.stack([lu.solve(rhs[:, j]) for j in range(3)], 1)
+        # X in the patch to it (rows: the patch and a ring round it), the rest held
+        ri = np.nonzero(H.rings(m, 1))[0]
+        Lr = H.L[ri]
+        A_ = Lr[:, mi]
+        lu = splu((A_.T @ A_ + sps.identity(len(mi)) * 1e-9).tocsc())
+        rhs = A_.T @ (di[ri] - Lr[:, oi] @ X[oi])
+        X = X.copy()
+        X[mi] = np.stack([lu.solve(rhs[:, j]) for j in range(3)], 1)
+    return X, "->".join(map(str, log))
+
+
 def _untangle(H, X, live, rounds=8, its=6):
     b = H.b
     n0 = None
@@ -277,7 +419,11 @@ def author(H, S, d, side, p=P, info=None, **_):
     F, U = b.F, b.U
     M, T, X0, B = b.pose(d)
     _, A, _ = _angles(H, d, side)
-    kA, kL = _ramp(A, *p["kA"]), _ramp(A, *p["liftA"])
+    kA = _ramp(A, *p["kA"])
+    # (round 3) the lift's curve: 0 at A 70, LIFT3[1] at 115, LIFT3[2] at 150 (the nipple rises ~23 mm at the A 114-117
+    # keys, ~35 at the old cast's A 148-155)
+    Lc = float(np.interp(A, p["liftA3"], p["liftV3"]))
+    kL = Lc / p["liftV3"][-1]
     sg = 1 if side == "l" else -1
     J = (T @ M["upperarm_" + side])[:3, 3]
     Eb = (T @ M["lowerarm_" + side])[:3, 3]
@@ -292,12 +438,34 @@ def author(H, S, d, side, p=P, info=None, **_):
     R = _polar((1 - kb) * R + kb * np.eye(3)[None])
     dR = np.einsum("nab,nb->na", R, H.dU)
     phi = np.maximum(S.phi, S.phib)
+    if p["shrink"] > 0:
+        # (round 3) where the raise packs the skin (the shoulder's top between the neck and the raised deltoid, the
+        # join's front-top under the acromion) the rest Laplacian asked for more skin than there is room for, and the
+        # solve buckled it (3-7 mm dips there in Godot and the "V with a tick"): its target scaled by the local
+        # shrink of the skinned pose (one-ring area, posed over rest, square-rooted), never grown
+        def va(Y):
+            q = 0.5 * np.linalg.norm(np.cross(Y[F[:, 1]] - Y[F[:, 0]], Y[F[:, 2]] - Y[F[:, 0]]), axis=1)
+            a = np.zeros(len(Y))
+            for k in range(3):
+                np.add.at(a, F[:, k], q)
+            return a
+        sh = np.clip(H.smooth(va(X0) / np.maximum(va(U), 1e-12), 4) ** p["shrinkP"], 0.3, 1.0)
+        dR = dR * (1 - p["shrink"] * phi * (1 - sh))[:, None]
     out = phi < 1e-4
     # the breast lifted: its core her rest breast moved up the chest wall (a little out toward the arm), the upper
     # pole drawn in; held hard
     ldir = _unit(np.array([sg * p["llat"], 1.0, -p["lback"]]))
-    tc = (U[S.bcore] + p["lift"] * kL * ldir
-          - (p["flat"] * kL * _ss((U[S.bcore, 1] - U[S.nip, 1]) / 0.05))[:, None] * H.NU[S.bcore])
+    # (round 3) graded: whole from the nipple up, IMFR of it at the core's foot, so the fold under the breast rises
+    # ~9 mm while the nipple rises ~23 and the lower pole lengthens round; the side toward the pit drawn EDGE along
+    # the chest toward the pit (the teardrop toward the arm); the upper pole drawn FLAT into the pec
+    # (both gradings smooth fields over her skin, eased: a clipped ramp creased the breast along its kink lines)
+    yb, yn = U[S.bcore, 1], U[S.nip, 1]
+    y0 = yb.min()
+    dpit = _unit((U[S.apex] - U[S.nip]) * np.array([1.0, 1.0, 0.3]))
+    wl = H.smooth(p["imfR"] + (1 - p["imfR"]) * _ss((U[:, 1] - y0) / max(yn + 0.03 - y0, 1e-6)), 8)[S.bcore]
+    uo = H.smooth(_ss(((U - U[S.nip]) @ dpit + 0.03) / 0.09), 8)[S.bcore]
+    tc = (U[S.bcore] + (Lc * wl)[:, None] * ldir + (p["edge"] * kL * uo)[:, None] * dpit
+          - (p["flat"] * kL * _ss((yb - yn) / 0.05))[:, None] * H.NU[S.bcore])
     abr = [(S.bcore, tc, p["cb"] * S.bcw)]
 
     def fill(Pin, anchors, its=2):
@@ -384,7 +552,10 @@ def author(H, S, d, side, p=P, info=None, **_):
         vv = X[nr] - Xs[qq]
         sx, al = (vv * bn[qq]).sum(1), (vv * tg[qq]).sum(1)
         sl = qq / (ns - 1.0)
-        env = np.sin(np.pi * np.clip(sl * 1.15 - 0.05, 0, 1)) ** 0.7
+        # (round 3) a round roll: whole from 20 mm off its chest end, fading from 40% of the way to nothing at the
+        # arm end (~80 mm up the inner arm)
+        sm = sl * cum[-1]
+        env = _ss(sm / 0.02) * (1 - _ss((sl - 0.4) / 0.6))
         env *= np.where((qq == 0) | (qq == ns - 1), _ss(1 - np.abs(al) / 0.02), 1.0)
         prof = np.where(sx >= 0, np.exp(-(sx / p["lipF"]) ** 2), np.exp(-(sx / p["lipP"]) ** 2))
         off[nr] += p["lip"] * kA * env * prof
@@ -405,15 +576,57 @@ def author(H, S, d, side, p=P, info=None, **_):
         dv = np.abs(np.angle(np.exp(1j * (ang - np.radians(10)))))
         off += p["ins"] * kA * _ss((hw - dv) / np.radians(14)) * _ss((ta - 0.035) / 0.03) * armm
     off = H.smooth(off, 3)
+    if p["vLift"] > 0:
+        # (round 3) the shoulder's top between the neck and the raised deltoid opened from a V to a U: its floor (a
+        # new valley tighter than 30 mm on a 40 mm patch, her rest's own left out) lifted out by a broad eased field
+        sg = 1 if side == "l" else -1
+        zt = np.nonzero((phi > 0.3) & (S.bsm < 0.2) & (U[:, 0] * sg > 0.14) & (U[:, 1] > 1.43) & (np.abs(U[:, 2] + 0.005) < 0.06))[0]
+        _, kz = quad(X, N, zt, p["vLr"], b.A)
+        _, kzu = quad(U, H.NU, zt, p["vLr"], b.A)
+        wv = np.zeros(len(X))
+        wv[zt] = np.clip((kz - np.maximum(kzu, 0) - 1 / 0.04) / (1 / 0.012 - 1 / 0.04), 0, 1)
+        wv = H.smooth(wv, 6)
+        off += p["vLift"] * kA * wv / max(wv.max(), 1e-9)
     X = X + off[:, None] * N
     # untangled: where the bend packs the skin past what her rest shape fits (the join's front-top, the fold's chest
     # end) the solve buckles a few triangles over (dark nicks in Godot): those and two rings round them smoothed
     # (Taubin, no shrink) till none is left
     X, nfold = _untangle(H, X, H.rings(phi > 1e-4, 1))
+    Xu = X.copy()
+    # (round 3) the LAST stage: every valley the raise made rounded to at least RMIN (a 2 x 12 mm patch's quadric:
+    # its concave curvature) and every point that sits in from its patch lifted onto it (no single-point dip), by
+    # filling only: the points that break either (and a ring round them) moved out along the normal to their
+    # neighbours' mean, never in, till none is left. Her rest valleys (the fold under the breast, the cleavage)
+    # are hers: only curvature the pose added counts. Rows 1-3's puckers (the join's front-top under the acromion,
+    # where the raise packs the skin), the trapezius-deltoid V, the pit floor's V, the lowered fold's line
+    # (the fairing moves along normals, and where the raise packs the skin a few faces tip: untangled again, the
+    # fairing again, twice; the fairing last)
+    rm = p["rmin"] if A > p["kA"][0] + 25 else p["rminLow"]
+    for _ in range(p["cyc"]):
+        X, nval = _fair_patches(H, X, phi, S, rm, p)
+        X, nfold2 = _untangle(H, X, H.rings(phi > 1e-4, 1), rounds=p["uR"], its=6)
+    X, nval = _fair_patches(H, X, phi, S, rm, p)
+    # what's left (a few tipped faces with a dip by them, where the raise packs the skin) smoothed on the spot: those
+    # points and two rings round them, eased, toward their neighbours' mean
+    live = (phi > 0.05) & (S.bsm < 0.45)
+    idx = np.nonzero(live)[0]
+    c0u, _ = quad(U, H.NU, idx, p["vr"], b.A)
+    for _ in range(p["spot"]):
+        spot = np.zeros(len(X), bool)
+        spot[F[_folds(H, X, live)].ravel()] = True
+        c0, _ = quad(X, ph.vn(X, F), idx, p["vr"], b.A)
+        spot[idx[c0 - np.maximum(c0u, 0) > p["dip"]]] = True
+        if not spot.any():
+            break
+        ws = np.clip(H.smooth(H.rings(spot, 1).astype(float), 2) * 1.5, 0, 1) * live
+        for _ in range(4):
+            X = X + 0.5 * ws[:, None] * b.lap(X)
+    X, nval = _fair_patches(H, X, phi, S, rm, p)               # (fold-safe: a move that tips a face is taken back)
+    nfold = (nfold[0], nfold[1], len(_folds(H, X, H.rings(phi > 1e-4, 1))))
     if info is not None:
-        info.update(X0=X0, Xf=Xf, Xr=Xr, Xa=Xa, X=X)
-        info["num"] = "A %.1f kA %.2f kL %.2f: nipple rise %.1f mm (skinned %.1f), detail offset %.1f/%.1f mm, folds %d -> %d" % (
-            A, kA, kL, 1000 * (X[S.nip, 1] - U[S.nip, 1]), 1000 * (X0[S.nip, 1] - U[S.nip, 1]), 1000 * off.min(), 1000 * off.max(), *nfold)
+        info.update(X0=X0, Xf=Xf, Xr=Xr, Xa=Xa, Xu=Xu, X=X)
+        info["num"] = "A %.1f kA %.2f kL %.2f: nipple rise %.1f mm (skinned %.1f), detail offset %.1f/%.1f mm, folds %d -> %d -> %d, valley fill %s" % (
+            A, kA, kL, 1000 * (X[S.nip, 1] - U[S.nip, 1]), 1000 * (X0[S.nip, 1] - U[S.nip, 1]), 1000 * off.min(), 1000 * off.max(), *nfold, nval)
     return X - X0, B
 
 
@@ -421,8 +634,39 @@ def _rest(B, D):
     return np.einsum("nab,nb->na", np.linalg.inv(B[:, :3, :3]), D)
 
 
+def _unit_toward(c, wsum, t):
+    """unit u with c + wsum u along +t (per row): Godot blends a slot's unit normal as base (1 - sum w) + sum w u"""
+    tc = (t * c).sum(1)
+    lam = tc + np.sqrt(np.maximum(tc * tc - (c * c).sum(1) + wsum * wsum, 0))
+    return _unit(lam[:, None] * t - c)
+
+
+def _pair_toward(cs, cc, Wm, ts, tc, its=30):
+    """unit (ua, uf) with cs + Wm[0] . (ua, uf) along +ts and cc + Wm[1] . (ua, uf) along +tc (Newton on the two
+    keys' free lengths); rows where it fails keep the normalised linear answer"""
+    Wi = np.linalg.inv(Wm)
+    p1, q1, r1 = Wi[0, 0] * ts, Wi[0, 1] * tc, Wi[0, 0] * cs + Wi[0, 1] * cc
+    p2, q2, r2 = Wi[1, 0] * ts, Wi[1, 1] * tc, Wi[1, 0] * cs + Wi[1, 1] * cc
+    lam = np.ones((len(ts), 2))
+    for _ in range(its):
+        ua = lam[:, :1] * p1 + lam[:, 1:] * q1 - r1
+        uf = lam[:, :1] * p2 + lam[:, 1:] * q2 - r2
+        f = np.stack([(ua * ua).sum(1) - 1, (uf * uf).sum(1) - 1], 1)
+        Jm = 2 * np.stack([np.stack([(ua * p1).sum(1), (ua * q1).sum(1)], 1),
+                           np.stack([(uf * p2).sum(1), (uf * q2).sum(1)], 1)], 1)
+        ok = np.abs(np.linalg.det(Jm)) > 1e-9
+        step = np.zeros_like(lam)
+        step[ok] = np.linalg.solve(Jm[ok], f[ok][:, :, None])[:, :, 0]
+        lam = lam - np.clip(step, -0.5, 0.5)
+    ua = lam[:, :1] * p1 + lam[:, 1:] * q1 - r1
+    uf = lam[:, :1] * p2 + lam[:, 1:] * q2 - r2
+    good = (np.abs(np.linalg.norm(ua, axis=1) - 1) < 1e-3) & (np.abs(np.linalg.norm(uf, axis=1) - 1) < 1e-3) & (lam > 0).all(1)
+    return _unit(ua), _unit(uf), good
+
+
 def build(G, log=print):
-    """{group_side: rest delta} and {group_side: rest normal delta}"""
+    """{group_side: rest delta}, the keys' rest normal targets and their slot weights (the slots' unit normals are
+    solved per primitive in run, against each primitive's own normals)"""
     H = Her(G)
     b = H.b
     poses = json.load(open(POSES))
@@ -433,45 +677,77 @@ def build(G, log=print):
         _, _, X0, _ = b.pose(poses[key])
         Mg, A, az = _angles(H, poses[key], side)
         wts = sp.psd_weights(A, az, sp.clavicle_rise(Mg, H.M0, b.I, side))
-        samp[key + "_" + side] = (_rest(B, D), wts, (ph.vn(X0, b.F), ph.vn(X0 + D, b.F), B[:, :3, :3], np.linalg.norm(D, axis=1) > 1e-6))
+        # (round 3) the normal Godot is to shade with at the key: the SCULPT'S OWN (the posed surface's geometric
+        # normal) carried back through the blended matrix (Godot skins normals by it), so Godot lights the shape the
+        # solve made; round 1-2 wrote the skinned normal turned by the sculpt's turn, which carried the skinning's
+        # own normal errors (60-90 degrees at the join's front-top under the helper bones, 160 where the skinned
+        # skin folds) into the light: the dark puckers Godot showed and Blender (geometric normals) never did.
+        # Eased to that old normal over the region's edge (rings beyond it), where it is her stored normal.
+        L = B[:, :3, :3]
+        Li = np.linalg.inv(L)
+        N0, N1 = ph.vn(X0, b.F), ph.vn(X0 + D, b.F)
+        g0 = _unit(np.einsum("nab,nb->na", L, H.Ns))
+        nt = _unit(np.einsum("nab,nb->na", Li, ph._rot(N0, N1, g0)))
+        ng = _unit(np.einsum("nab,nb->na", Li, N1))
+        reg = H.rings(np.maximum(S[side].phi, S[side].phib) > 1e-4, P["nRing"])
+        wn = np.clip(H.smooth(reg.astype(float), P["nRing"]) * 2, 0, 1)
+        wn = wn * wn * (3 - 2 * wn)
+        t = _unit(wn[:, None] * ng + (1 - wn[:, None]) * nt)
+        live = (np.linalg.norm(D, axis=1) > 1e-6) | (wn > 1e-4)
+        samp[key + "_" + side] = (_rest(B, D), wts, t, live)
         log("SCULPT %s %s: A %.1f az %.1f, posed move max %.1f mm, %d points" % (
             key, side, A, az, 1000 * np.linalg.norm(D, axis=1).max(), int((np.linalg.norm(D, axis=1) > 1e-4).sum())))
-    # normals: the posed normal turned as the sculpt turned it, back to rest through the same matrix
-    nU = ph.vn(b.U, b.F)
-    dN = {}
-    for k, (_, _, (N0, N1, L, moved)) in samp.items():
-        g0 = _unit(np.einsum("nab,nb->na", L, nU))
-        nr = _unit(np.einsum("nab,nb->na", np.linalg.inv(L), ph._rot(N0, N1, g0)))
-        dN[k] = np.where(moved[:, None], nr - nU, 0)
     for key in ("show", "low"):
-        samp[key + "_l"] = (ph.mirror(b, samp[key + "_r"][0]), samp[key + "_r"][1], None)
-        dN[key + "_l"] = ph.mirror(b, dN[key + "_r"])
-    rest, nrm = {}, {}
+        Dr, wr, tr, lr = samp[key + "_r"]
+        lm = ph.mirror(b, np.repeat(lr[:, None], 3, 1).astype(float))[:, 1] > 1e-3
+        samp[key + "_l"] = (ph.mirror(b, Dr), wr, np.where(lm[:, None], _unit(ph.mirror(b, tr)), H.Ns), lm)
+    rest = {}
     for side in "lr":
         # the level slot alone at the lowered key; its share taken off the other keys
-        Dl, wl, _ = samp["low_" + side]
+        Dl, wl, _, _ = samp["low_" + side]
         rest["lvl80_" + side] = Dl / max(wl[LVL], 1e-6)
-        nrm["lvl80_" + side] = dN["low_" + side] / max(wl[LVL], 1e-6)
         log("SCULPT lvl80 %s: key weight %.2f" % (side, wl[LVL]))
 
         def less(key):
-            D, wk, _ = samp[key + "_" + side]
-            return D - wk[LVL] * rest["lvl80_" + side], dN[key + "_" + side] - wk[LVL] * nrm["lvl80_" + side], wk
+            D, wk, _, _ = samp[key + "_" + side]
+            return D - wk[LVL] * rest["lvl80_" + side], wk
         # the A 117 pair: per point abd/flex so each key's weights give back its sculpt (2 x 2, the same for all points)
-        (Ds, nDs, ws), (Dc, nDc, wc) = less("show"), less("cast")
+        (Ds, ws), (Dc, wc) = less("show"), less("cast")
         Wm = np.array([[ws["shoulder_abd117"], ws["shoulder_flex117"]], [wc["shoulder_abd117"], wc["shoulder_flex117"]]])
         Wi = np.linalg.inv(Wm)
         rest["abd117_" + side] = Wi[0, 0] * Ds + Wi[0, 1] * Dc
         rest["flex117_" + side] = Wi[1, 0] * Ds + Wi[1, 1] * Dc
-        nrm["abd117_" + side] = Wi[0, 0] * nDs + Wi[0, 1] * nDc
-        nrm["flex117_" + side] = Wi[1, 0] * nDs + Wi[1, 1] * nDc
         log("SCULPT 117 %s: key weights abd/flex show %.2f/%.2f cast %.2f/%.2f (level %.2f/%.2f)" % (
             side, *Wm.ravel(), ws[LVL], wc[LVL]))
-        D150, nD150, w150 = less("cast150")
+        D150, w150 = less("cast150")
         tot = sum(w150[k] for k in SLOTS150)
         rest["150_" + side] = D150 / max(tot, 1e-6)
-        nrm["150_" + side] = nD150 / max(tot, 1e-6)
-    return b, rest, nrm
+    keys = {k: (v[1], v[2], v[3]) for k, v in samp.items()}
+    return b, rest, keys
+
+
+def slot_normals(Ns, w, keys, side):
+    """{group: unit normal per point} for one primitive's normals Ns (its welded ids w): each slot's normal solved so
+    Godot's blend (base x (1 - sum w) + sum w x slot normal, then skinned) points along the key's target at every key
+    (the level slot from the lowered key, the 117 pair from the show and cast keys together, the 150 group from the
+    old cast), so the light at each key is the sculpt's exactly; untouched points keep their own"""
+    def kw(key):
+        wk, t, live = keys[key + "_" + side]
+        return wk, t[w], live[w]
+    out = {}
+    wl, tl, ll = kw("low")
+    out["lvl80"] = np.where(ll[:, None], _unit_toward((1 - sum(wl.values())) * Ns, wl[LVL], tl), Ns)
+    (ws, ts, ls), (wc, tc, lc) = kw("show"), kw("cast")
+    cs = (1 - sum(ws.values())) * Ns + ws[LVL] * out["lvl80"]
+    cc = (1 - sum(wc.values())) * Ns + wc[LVL] * out["lvl80"]
+    Wm = np.array([[ws["shoulder_abd117"], ws["shoulder_flex117"]], [wc["shoulder_abd117"], wc["shoulder_flex117"]]])
+    ua, uf, good = _pair_toward(cs, cc, Wm, ts, tc)
+    lv = (ls | lc)[:, None]
+    out["abd117"], out["flex117"] = np.where(lv, ua, Ns), np.where(lv, uf, Ns)
+    w5, t5, l5 = kw("cast150")
+    c5 = (1 - sum(w5.values())) * Ns + w5[LVL] * out["lvl80"] + w5["shoulder_abd117"] * out["abd117"] + w5["shoulder_flex117"] * out["flex117"]
+    out["150"] = np.where(l5[:, None], _unit_toward(c5, sum(w5[k] for k in SLOTS150), t5), Ns)
+    return out, int((~good & lv[:, 0]).sum())
 
 
 def run(src, dst):
@@ -490,24 +766,26 @@ def run(src, dst):
     w0 = list(mesh.get("weights", [0] * len(names0)))
     names = [names0[i] for i in keep]
     weights = [w0[i] for i in keep]
-    b, rest, nrm = build(G)
+    b, rest, keys = build(G)
     binb = bytearray(G.buf[G.b0:G.b0 + g["buffers"][0]["byteLength"]])
-    acc = {}
-    for key, d in rest.items():
-        o = 0
-        acc[key] = []
-        for p in prims:
-            n = g["accessors"][p["attributes"]["POSITION"]]["count"]
-            w = b.wid[o:o + n]
-            o += n
-            Dp, dn = d[w], nrm[key][w]
-            Ns = G.get(p["attributes"]["NORMAL"]).astype(float)
-            Nn = Ns + dn
-            Nn /= np.maximum(np.linalg.norm(Nn, axis=1, keepdims=True), 1e-12)
-            dNp = np.where((np.abs(dn).max(1) > 1e-6)[:, None], Nn - Ns, 0)
-            ip = np.nonzero(np.abs(Dp).max(1) > 1e-7)[0]
-            inn = np.nonzero(np.abs(dNp).max(1) > 1e-6)[0]
-            acc[key].append((_sparse(g, binb, n, ip, Dp[ip]), _sparse(g, binb, n, inn, dNp[inn])))
+    acc = {key: [] for key in rest}
+    o = 0
+    for p in prims:
+        n = g["accessors"][p["attributes"]["POSITION"]]["count"]
+        w = b.wid[o:o + n]
+        o += n
+        Ns = _unit(G.get(p["attributes"]["NORMAL"]).astype(float))
+        for side in "lr":
+            un, bad = slot_normals(Ns, w, keys, side)
+            if bad:
+                print("SCULPT normals %s: %d points kept the normalised linear pair" % (side, bad))
+            for grp, u in un.items():
+                key = grp + "_" + side
+                Dp = rest[key][w]
+                dNp = u - Ns
+                ip = np.nonzero(np.abs(Dp).max(1) > 1e-7)[0]
+                inn = np.nonzero(np.abs(dNp).max(1) > 1e-6)[0]
+                acc[key].append((_sparse(g, binb, n, ip, Dp[ip]), _sparse(g, binb, n, inn, dNp[inn])))
     added = []
     for nm, grp in [(n, n.replace("shoulder_", "")) for n in SLOTS117] + [(n, "150") for n in SLOTS150] + [(LVL, "lvl80")]:
         for side in "lr":
