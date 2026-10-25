@@ -18,6 +18,7 @@ and return to the idle's own arms.
 from __future__ import annotations
 
 import math
+import os
 
 import numpy as np
 
@@ -184,6 +185,19 @@ def arcanist_show(rig):
                           phase=lambda f: f / (clip.frames - 1))
 
 
+def _reaver_over():
+    """reaver_show's overhead swing as the owner saw it on 21 Oct (soul.py before d2eb0c5c): the wheel up with the
+    fist over her brow. Built with REAVER_SHOW_OVER=1 (same clip name) while the owner picks overhead or lowered."""
+    return [
+        (16, over("reaver", spine=(-14, -4, 0),
+                  hand_r={"arc": arc_of((-0.26, 0.06, 0.22)), "pole": (-0.9, -0.2, -0.2), "frame": "chest",
+                          "blade": _n(-0.5, 0.2, 0.85), "twist": 0.5}), "auto"),
+        (24, over("reaver", spine=(-6, -10, 0), head=(0, -10, 0),
+                  hand_r={"arc": arc_of((-0.10, 0.36, 0.04)), "pole": (-0.8, 0.4, -0.2), "frame": "chest",
+                          "blade": _n(-0.1, 0.4, -0.9), "twist": 0.5}), "auto"),
+    ]
+
+
 def reaver_show(rig):
     """The axe swung down off her shoulder, round in a wheel overhead and
     slammed back onto it; her chin up and a grin's worth of swagger."""
@@ -193,6 +207,7 @@ def reaver_show(rig):
         (8, over("reaver", spine=(-10, 6, 0),
                  hand_r={"arc": arc_of((-0.30, -0.32, 0.10)), "pole": (-0.5, -0.8, 0.0), "frame": "chest",
                          "blade": _n(-0.6, -0.7, 0.3), "twist": 0.5}), "fast"),
+    ] + (_reaver_over() if os.environ.get("REAVER_SHOW_OVER") == "1" else [
         # Up before her chest, the haft through upright with the fist still low (armor 18 r2: upright with the fist
         # at her brow put the head out of the close view's top at the peak), then laid back over her shoulder.
         (13, over("reaver", spine=(-12, 0, 0),
@@ -207,6 +222,7 @@ def reaver_show(rig):
         (24, over("reaver", spine=(-6, -10, 0), head=(0, -10, 0),
                   hand_r={"arc": arc_of((-0.13, 0.23, 0.12)), "pole": (-0.85, -0.05, 0.5), "frame": "chest",
                           "blade": _n(-0.1, 0.45, -0.88), "twist": 0.5}), "auto"),
+    ]) + [
         (30, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -16, -4)), "ease"),
         (60, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
         (72, over("reaver"), "ease"),
