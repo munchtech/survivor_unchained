@@ -79,6 +79,14 @@ def pack(out=OUT, stem="heroine"):
             arm_roll_fix.stage(src, sk)
         else:
             print("  arm roll fix OFF (ARM_ROLL_FIX=0)")
+        # Or armroll (every clip: a raised arm's conservative elbow swivel, then the wrist turned into a comfortable
+        # bend, the fist square on a raised forearm; ARM_ROLL=0: off; ARM_ROLL_TABLE=<file>: its report). One of the
+        # two only: armroll runs when arm_roll_fix is off.
+        import armroll
+        if armroll.on() and not arm_roll_fix.on():
+            if src == out:
+                src = clavhold.stage_copy(out, stage)
+            src = armroll.stage(src, src, sk)
     r = subprocess.run([GODOT, "--headless", "--path", str(REPO / "godot"), "-s", "res://tools_scenes/anim_pack.gd", "--",
                         str(src), res, str(lib / f"{stem}_clips.json")],
                        capture_output=True, text=True)
