@@ -72,6 +72,15 @@ Round 5 (25 Oct, the judge on round 4: breast facets, the pinch where the arm la
           round 4's), so the underside tapers into the back fold. Row 1's V 16 -> 4 px (offline silhouette).
           NB round 4's "left cast cut" was prof4's frame flipping hand (its 'z > 0' rule at a near-horizontal e1): with
           a mirror-consistent frame the left cast's back-underside matches the right's.
+Round 6 (25 Oct, the contact V where the arm's underside lands on the breast's upper-outer edge, rows 1, 3, 5): at the
+          game cameras the V's apex is the pit's apex (her armpit pole, a 42-triangle fan with spokes to 35 mm, folded
+          even at rest), and the breast's outline meets it because her lateral breast stands 15-20 mm out past the chest
+          wall under the pit (an occlusion, ~13 cm in front of the arm's underside; no 3D fold to round). BIN: the
+          breast's upper-outer side drawn in and down-medial (12 mm at its far edge, a smooth field from its centre,
+          ~10 mm on its outline at the overhead keys, 3 at the lowered key; nipple rise -0.5 mm); DOMEX: the pit 9 mm
+          deeper at the overhead keys (from A 80, whole at 105), its apex up into the arm. RSM (off): the turn field
+          smoothed (it didn't take the side wall's streaks: those are the stretched rest shape's). Softens the V; a
+          smaller dark notch remains.
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -128,7 +137,9 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          vfX=0.14, vfY=1.40, vfZ=-0.01, vfW=0.06,
          close=float(_E("SCULPT_CLOSE", 1.0)), closeR=float(_E("SCULPT_CLOSER", 0.012)),
          closeRt=float(_E("SCULPT_CLOSERT", 0.018)), closeMax=0.02, closeA=(80.0, 105.0),
-         closeSm=int(_E("SCULPT_CLOSE_SM", 0)))
+         closeSm=int(_E("SCULPT_CLOSE_SM", 0)),
+         bin=float(_E("SCULPT_BIN", 0.012)), binS=(0.0, 0.08, 0.13), binSm=int(_E("SCULPT_BIN_SM", 15)), binA=(60.0, 105.0),
+         domeX=float(_E("SCULPT_DOMEX", 0.009)), domeA=(80.0, 105.0), rsm=int(_E("SCULPT_RSM", 0)))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -496,6 +507,11 @@ def author(H, S, d, side, p=P, info=None, **_):
     R = _polar((1 - w) * _polar(B[:, :3, :3]) + w * ra)
     kb = S.kb[:, None, None]
     R = _polar((1 - kb) * R + kb * np.eye(3)[None])
+    if p.get("rsm", 0) > 0:
+        # (round 6) the turn field smoothed over her skin (RSM passes, re-made a turn): the skinned blend's turn varies
+        # point to point on her side under the pit (the arm's and helpers' weights), and the turned rest Laplacian
+        # carried that noise into the solve as vertical streaks on the side wall and lumps in the pit
+        R = _polar(H.smooth(R.reshape(-1, 9), int(p["rsm"])).reshape(-1, 3, 3))
     dR = np.einsum("nab,nb->na", R, H.dU)
     phi = np.maximum(S.phi, S.phib)
     if p["shrink"] > 0:
@@ -562,7 +578,10 @@ def author(H, S, d, side, p=P, info=None, **_):
     q = Xf - C
     rho = np.sqrt(((q @ hu) / p["dRu"]) ** 2 + ((q - (q @ hu)[:, None] * hu - (q @ ax)[:, None] * ax) ** 2).sum(1) / p["dRv"] ** 2)
     core = np.nonzero((rho < 1.0) & (S.phi > 0.5))[0]
-    anc.append((core, Xf[core] - (kA * p["dome"] * (1 - rho[core] ** 2) ** 2)[:, None] * ax, p["cd"]))
+    # (round 6) the pit deeper at the overhead keys (DOMEX more, from A 80, whole at 105): its apex rises into the arm
+    # and away from the breast's upper-outer edge, so the contact V opens (the lowered key keeps round 5's dome)
+    dm = kA * p["dome"] + p.get("domeX", 0.0) * _ramp(A, *p.get("domeA", (80.0, 105.0)))
+    anc.append((core, Xf[core] - (dm * (1 - rho[core] ** 2) ** 2)[:, None] * ax, p["cd"]))
     up = _unit(np.array([0, 1.0, 0]) - h[1] * h)
     c = np.cross(up, h)
     dt = _unit(np.cos(np.radians(25)) * up + np.sin(np.radians(25)) * (c if c[2] > 0 else -c))
@@ -673,6 +692,25 @@ def author(H, S, d, side, p=P, info=None, **_):
         X = X + push[:, None] * (q1 / r1[:, None])
         if info is not None:
             info["nocut"] = 1000 * push.max()
+    if p.get("bin", 0) > 0:
+        # (round 6) the arm's underside landed on the breast's upper-outer edge in a dark pinched V (rows 1, 3, 5): the
+        # breast's lateral side stood 15-20 mm out past her chest wall under the pit, so its outline met the pit's apex
+        # in the camera's view. The breast's upper-outer side drawn in and down-medial (BIN at its far edge, a smooth
+        # field from its centre (BINS along the outer-up axis: 0 at the centre, whole at 80 mm, gone past 130), its
+        # weight smoothed BINSM passes so no ridge crosses it), eased in from A 60, whole at 105: a strip of chest wall
+        # opens between the pit and the breast (the targets), the breast's core and its lift barely move
+        sg = 1 if side == "l" else -1
+        mb = S.bw > 0.3
+        Bc2 = (X[mb] * S.bw[mb, None]).sum(0) / S.bw[mb].sum()
+        eo = _unit(np.array([sg * 1.0, 0.8, -0.3]))
+        so = (X - Bc2) @ eo
+        s0_, s1_, s2_ = p["binS"]
+        wb = _ss((so - s0_) / (s1_ - s0_)) * (1 - _ss((so - s2_) / 0.03)) * _ss((S.bsm - 0.02) / 0.2)
+        wb = H.smooth(wb, p["binSm"]) * np.clip(H.smooth(phi, 2) * 1.5, 0, 1)
+        md = _unit(np.array([-sg * 0.8, -0.6, 0.0]))
+        X = X + (p["bin"] * _ramp(A, *p["binA"]) * wb)[:, None] * md
+        if info is not None:
+            info["bin"] = 1000 * p["bin"] * _ramp(A, *p["binA"]) * wb.max()
     if p["close"] > 0:
         # (round 5) no fold in the join tighter than CLOSER (a rolling ball's closing, _close): the arm's underside
         # landing on the breast's upper-outer edge in a pinched V (rows 1, 3, 5), the crease down the deltoid's back
