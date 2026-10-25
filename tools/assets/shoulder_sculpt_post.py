@@ -155,7 +155,9 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          domeX=float(_E("SCULPT_DOMEX", 0.009)), domeA=(80.0, 105.0), rsm=int(_E("SCULPT_RSM", 0)),
          joint=int(_E("SCULPT_JOINT", 1)), mid=float(_E("SCULPT_MID", 0.035)),
          vkeep=float(_E("SCULPT_VKEEP", 1.0)), vkeepM=float(_E("SCULPT_VKEEP_M", 0.01)),
-         clear=int(_E("SCULPT_CLEAR", 12)), clearMax=float(_E("SCULPT_CLEAR_MAX", 0.002)), imfS=int(_E("SCULPT_IMF_S", 12)), nTs=int(_E("SCULPT_NTS", 8)))
+         clear=int(_E("SCULPT_CLEAR", 12)), clearMax=float(_E("SCULPT_CLEAR_MAX", 0.002)), imfS=int(_E("SCULPT_IMF_S", 12)), nTs=int(_E("SCULPT_NTS", 8)),
+         jclose=float(_E("SCULPT_JCLOSE", 1.0)), jcloseR=float(_E("SCULPT_JCLOSER", 0.024)),
+         jcloseMax=float(_E("SCULPT_JCLOSE_MAX", 0.012)), jcloseRad=float(_E("SCULPT_JCLOSE_RAD", 0.07)), jcloseA=(95.0, 105.0))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -828,6 +830,21 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
             cf.append(f)
         X, f = _close(H, X, wj, p["closeR"], p["closeMax"], sm=p["closeSm"], never=p["closeNever"])
         cf.append(f)
+        if p.get("jclose", 0) > 0:
+            # (round 9) the arm-breast JUNCTION at the overhead keys (rows 1 and 5's V/wedge where the arm's underside
+            # lands on the breast's upper-outer corner): it is NOT below the join's zone (wj is whole there) and not
+            # tighter than CLOSER (the 12 mm ball rolls in freely: fill 0): it is a pocket 25-40 mm across between
+            # the pec's lower-border roll (LIP), the pit's front wall and the breast's upper-outer side, which the
+            # front cameras look into. A larger ball (JCLOSER) closes that pocket only: the zone round the fold's
+            # chest end (S.a_fc, within JCLOSE_RAD at rest, eased), lateral of the cleavage, off the breast's core,
+            # whole from A 105 (nothing at the lowered key); the fill capped (JCLOSE_MAX)
+            dj = np.linalg.norm(U - U[S.a_fc], axis=1)
+            wk = H.smooth(_ss((p["jcloseRad"] - dj) / 0.03) * (1 - _ss((S.bsm - 0.35) / 0.15))
+                          * _ss((xs_ - 0.10) / 0.03) * (phi > 1e-4), 3)
+            wk = wk * p["jclose"] * _ramp(A, *p["jcloseA"])
+            if wk.max() > 0.01:
+                X, f = _close(H, X, wk, p["jcloseR"], p["jcloseMax"], never=p["closeNever"])
+                cf.append(f)
         if info is not None:
             info["close"] = [1000 * c.max() for c in cf]
     # untangled: where the bend packs the skin past what her rest shape fits (the join's front-top, the fold's chest
