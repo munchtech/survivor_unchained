@@ -312,7 +312,7 @@ public sealed class Prologue : ZoneRuntime
         // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her.
         // The Warden's channel later asks for it by name (au1 item 4).
         if (Now == Stage.Ambush && stageT > 4 && B.FormReady && Crowd(p.X, p.Z, 6) >= 4 && B.Ability is AbilityKind fk && FormWords(fk) is string fw)
-            Teach("form", CalloutKind.Freeze, Abilities.All[fk].Name, $"When your dash glows, it's {fw}", Aim.At("dash"), "dash", after: "dash");
+            Teach("form", CalloutKind.Freeze, Abilities.All[fk].Name, $"When your dash is aflame, it's {fw}", Aim.At("dash"), "dash", after: "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim

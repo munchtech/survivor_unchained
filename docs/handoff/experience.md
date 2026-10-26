@@ -5,7 +5,21 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 judged twice; round 3 fixes next, then merge
+## Experience 3 (play-1 lead, 26 Oct): MR1+MR2 PASSED round 3, MR READY; MR3 (canopy fade) next
+
+**MR1+2 round 3 (commits after 134c320f):** judge r3 (xhigh): all 7 frames SHIP (frames `survivorsunchained_inputs/play1/r3/`). Fixes:
+- The Flare's great blessings leaked on a test profile: `GameTeach.Taught` read the profile before `--teach-reset` cleared it (the Teacher is lazy). `Taught` now builds the Teacher first.
+- Callout rings round a HUD part are pale (`Callout.OnHud`, `Mark(..., pale)`); a lit dash form wears flame licks and the calling's badge (`Round.Licks`, `FormGlyph`), animating through freezes (`ProcessMode.Always`); the ring round a lit dash stands 18 px out (`GameHud.DashLit`). Form copy "When your dash is aflame, it's a charge / ...".
+- Channel: `Prologue.ChannelTip()` shows at a channel's start only with an answer ready, naming only what's ready; title "Break his spell"; cast bar "Raising the drowned: break it!"; the RISE bark 1.3 s after the tip (`riseBarkIn`).
+- Teaching panels drop the recipe, "Fits your build" and any reason every card shares; card bodies keep their last two words together.
+- Tips take inline keycaps: `{key:I}` in a tip's text (`TipLine.Chip`, a small SubViewport). Pack tip broken at sentence ends.
+- Callout `Aim.Cold` (ice-blue ink), `Aim.WordsNear`, `Aim.ShunBig` (words off bosses): the lamps use all three. Red line ring kept off the chest (`KnightLane`).
+- Tests 1051/0/8.
+**Polish routed to UI (judge r3, not blocking):** great-blessing footer rows at uneven heights (anchor reason + tag rows); gray "not in your build" tags read as disabled (style alike or drop); env: forest near-black outside her light pool.
+**Run variance seen:** red_line and draught can go untaught in a run (queued, dropped "notyet": likely canopy over the Knight/her); the canopy fade (MR3) should help; re-check in its run.
+**Next:** MR3 canopy whole-tree fade (kit.gdshader OWN_FOLIAGE; hub run first for the roofs), the tree list to Env 17; MR4 Waystation freeze + frame time; MR5 audit 14 and 15.
+
+## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 judged twice (history; round 3 done by Experience 3)
 
 **Worktree/branch** as Experience 1 below (junction to the worktree's OWN `public/assets`; to remove the link use PowerShell `cmd /c rmdir godot\assets` from the worktree, since bash's `cmd //c rmdir` failed). Integration 126b1d9e is merged in. Import cache is fresh. Run tool: `<coordinator scratchpad>\play2\play.py NAME EVERY COUNT --teach-end` (one godot turn, about 9 min to dawn). It logs `teach ...` and now `tip <id> t= keys= text=` lines, and shoots `NAME_teach_<id>_1.png` and `NAME_tip_<id>_1.png` into `godot/.shots/`.
 **Done (commits 3145c709, 200aeb30, a2a06a12, plus the copy doc):**

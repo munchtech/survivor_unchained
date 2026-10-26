@@ -403,6 +403,8 @@ public partial class Game
             radii.Add(c.Target.Hud switch
             {
                 "art" => Instrument.R + Instrument.Band,
+                // (a lit dash's ring stands outside its flames and badge, round 3 judge)
+                "dash" when hud.DashLit => Instrument.SmallR + Instrument.SmallBand + 18,
                 "dash" or "draught" => Instrument.SmallR + Instrument.SmallBand,
                 "chain" => 22,
                 _ => Instrument.Sock / 2 + 4,

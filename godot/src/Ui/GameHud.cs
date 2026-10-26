@@ -1113,6 +1113,8 @@ public partial class GameHud : CanvasLayer
 
     string? spotKeep;
     AbilityKind? formGlyphOf;
+    /// <summary>Whether the dash's form is lit (its flames and badge showing).</summary>
+    public bool DashLit => irons.Dash.Form >= 1;
     bool spotUp, spotDim, spotSlots, spotWas;
     float spotK, slotK;
 

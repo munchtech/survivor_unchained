@@ -493,6 +493,8 @@ public partial class Round : Control
     {
         this.kind = kind;
         MouseFilter = MouseFilterEnum.Ignore;
+        // (its flames keep licking under a callout's freeze: paused, they stood as a row of ticks, round 3 judge)
+        ProcessMode = ProcessModeEnum.Always;
         Size = Half * 2;
         cuff = new Cuff(Instrument.SmallR, Instrument.SmallBand, kind == Kind.Dash, Half, small: true);
         // The glass first, under the iron.
@@ -574,8 +576,8 @@ public partial class Round : Control
                 float u = (i - 4) / 4f;
                 float a = -Mathf.Pi / 2 + u * 1.25f;
                 float flick = 0.5f + 0.3f * Mathf.Sin(t * (7.1f + i * 1.3f) + i * 2.1f) + 0.2f * Mathf.Sin(t * (12.7f + i * 0.7f) + i);
-                float h = (5.5f + 7.5f * flick) * (1 - 0.55f * u * u);
-                float w = 0.115f * (1 - 0.3f * u * u);
+                float h = (9f + 10f * flick) * (1 - 0.5f * u * u);
+                float w = 0.13f * (1 - 0.3f * u * u);
                 var dir = Vector2.FromAngle(a);
                 var side = new Vector2(-dir.Y, dir.X);
                 float sway = 2.2f * Mathf.Sin(t * (5.3f + i) + i * 1.7f);
@@ -595,7 +597,7 @@ public partial class Round : Control
             if (o.FormGlyph is { } g)
             {
                 var at = c + Vector2.FromAngle(-Mathf.Pi / 4) * (Instrument.SmallR + Instrument.SmallBand + 2);
-                const float br = 11;
+                const float br = 14;
                 DrawCircle(at, br + 2, new Color(0.055f, 0.04f, 0.035f, 0.95f));
                 DrawArc(at, br + 1, 0, Mathf.Tau, 32, new Color(1f, 0.6f, 0.2f, 0.95f), 1.6f, true);
                 DrawTextureRect(g, new Rect2(at - Vector2.One * (br - 1.5f), Vector2.One * (br - 1.5f) * 2), false, new Color(1f, 0.78f, 0.42f));

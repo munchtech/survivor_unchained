@@ -497,12 +497,20 @@ public partial class TipLine : Control
 
     static readonly Regex KeyToken = new(@"\{key:([^}]+)\}");
 
-    /// <summary>A keycap for the words: the HUD's own key (Style.Key), drawn once into a small viewport that
-    /// stays with the tip, its texture set inline in the line.</summary>
+    /// <summary>A keycap for the words, drawn once into a small viewport that stays with the tip, its texture
+    /// set inline in the line: lighter than the HUD's dark key (it must read inside a line of pale words).</summary>
     Texture2D Chip(string key)
     {
-        var cap = Style.Key(key);
-        var size = new Vector2I(Math.Max(26, 12 + 9 * key.Length), 26);
+        var size = new Vector2I(Math.Max(28, 14 + 10 * key.Length), 28);
+        var box = new StyleBoxFlat { BgColor = new Color("#2a221a"), BorderColor = new Color("#e2cf9e"), CornerDetail = 4 };
+        box.SetBorderWidthAll(2);
+        box.SetCornerRadiusAll(5);
+        box.BorderWidthBottom = 4;
+        var cap = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        cap.AddThemeStyleboxOverride("panel", box);
+        var l = Style.Label(key, Style.UiHeavy, 17, new Color("#fff1d0"), false, HorizontalAlignment.Center, false);
+        l.VerticalAlignment = VerticalAlignment.Center;
+        cap.AddChild(l);
         cap.Size = size;
         var vp = new SubViewport { TransparentBg = true, Disable3D = true, Size = size, RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
         vp.AddChild(cap);

@@ -328,6 +328,8 @@ public partial class DraftPanel : Control
             v2.AddChild(pips);
         }
         var text = o.Kind == OfferKind.Evolve && o.Text.Contains(" becomes ") && o.Text.IndexOf(". ") is int dot && dot > 0 ? o.Text[(dot + 2)..] : o.Text;
+        // (no widow: the last two words kept together, round 3 judge)
+        if (text.LastIndexOf(' ') is int sp && sp > 0 && text.Count(ch => ch == ' ') >= 4) text = text[..sp] + "\u00a0" + text[(sp + 1)..];
         var body = Style.Label(text, Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
         // A short line sits in the middle of the card's open space, not under the title with the
@@ -335,7 +337,8 @@ public partial class DraftPanel : Control
         body.VerticalAlignment = VerticalAlignment.Center;
         v2.AddChild(body);
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
-        foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
+        // (on a teaching panel, not a reason every card gives: it tells none of them apart, round 3)
+        foreach (var why in o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2))
             v2.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
         // What a combat skill becomes, and with what (not on a teaching panel: the same line under every
         // card, and "Fits your build" with no build yet, said nothing that told the cards apart, round 2 judge).
