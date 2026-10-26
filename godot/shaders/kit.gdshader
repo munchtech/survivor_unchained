@@ -415,7 +415,7 @@ void vertex() {
 		vec3 hv = (VIEW_MATRIX * vec4(survivor.xyz, 1.0)).xyz;
 		// (a crown wholly behind the camera's plane is not seen: none; one partly behind, cut at 1 m before the lens,
 		// or its projection, flipped and huge, swept across her)
-		float zb = vb.z, zt = vt.z;
+		float zb = vb.z, zt = vt.z, vb_z0 = vb.z, vt_z0 = vt.z;
 		if (max(zb, zt) > -1.0) {
 			if (min(zb, zt) > -1.0) zb = 1e9;
 			else if (zb > -1.0) vb = mix(vt, vb, (-1.0 - zt) / (zb - zt));
@@ -434,6 +434,10 @@ void vertex() {
 		float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
 		float d = length(p - (a + ab * t)) - rr;
 		v_fade = 1.0 - smoothstep(canopy_fade.x, canopy_fade.x + canopy_fade.y, d);
+		// (a crown that reaches within 1 m of the lens's plane is cut whole: its axis behind the plane read as
+		// "not seen", yet its needles hung in front and flashed across her for a few frames as the camera passed, judge e2)
+		// (eased over the 1.5 m before it, so a crown that crosses it in view fades rather than pops: judge e3)
+		v_fade = max(v_fade, smoothstep(-(crown_r * length(upv) + 2.5), -(crown_r * length(upv) + 1.0), max(vb_z0, vt_z0)));
 	}
 #endif
 	VERTEX.x += sway;

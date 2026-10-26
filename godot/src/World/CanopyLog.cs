@@ -17,7 +17,7 @@ public static class CanopyLog
     {
         public Vector3 At, Up;
         public string Species = "";
-        public float Lo, Top, R, Secs, Near = float.MaxValue;
+        public float Lo, Top, R, Secs, F, Near = float.MaxValue;
     }
 
     static float Hash(Vector3 ip, float a, float b, float k)
