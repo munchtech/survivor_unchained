@@ -317,6 +317,8 @@ GRIME = {'h': 0.0, 'moss': 0.0, 'top': 0.0, 'foot': 0.0, 'streak': 0.0}  # (E7b)
 # its height (for the streaks under the top course), the foot band's darkening and the streaks' (env_props.json)
 
 
+OLD = {}  # (lf6d) the preset's "old" (env_props.json): top_chip, the chance a wall's open-topped block is knocked at a corner; jag
+
 MOSS = Vector((0.5, 0.6, 0.34))  # (E7b r2) moss, linear: a pale sage that still reads green under the moon
 
 
@@ -377,7 +379,7 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
             lt = tint
             if vmods and vmods[poly.index]:
                 lt = vmods[poly.index](tint, bm.verts[vi].co)
-            if GRIME['h'] > 0 and kind_of_face[poly.index] in ('stone', 'soil'):
+            if GRIME['h'] > 0 and kind_of_face[poly.index] in ('stone', 'soil') and not (OLD.get('soil_clean') and kind_of_face[poly.index] == 'soil'):
                 # (E7b) grime rising from the ground: the foot darker and greened in patches, moss on what faces up
                 co = bm.verts[vi].co
                 g = min(1.0, max(0.0, y / GRIME['h']))
@@ -469,6 +471,128 @@ def finish(name, parts, mat, seed):
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     return ob
+
+
+# ------------------------------------------------------------ (lf6d) old stone --
+
+MOSS_DARK = Vector((0.2, 0.27, 0.085))   # (lf6d) a cushion moss, linear: dark and rich, so a moonlit top reads stone and moss
+MOSS_SAGE = Vector((0.36, 0.44, 0.17))
+LICHEN = Vector((0.6, 0.6, 0.47))           # pale grey-green crust lichen: the moonlit pops on old stone
+LEAF = (Vector((0.3, 0.16, 0.05)), Vector((0.2, 0.1, 0.04)), Vector((0.36, 0.25, 0.08)), Vector((0.12, 0.08, 0.04)))
+
+
+def _ring(rng, n, rx, rz, rag):
+    pts = []
+    ph = rng(0, 6.28)
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        r = 1.0 + rag * (0.55 * math.sin(3 * a + ph) + 0.45 * math.sin(5 * a + 2.1 * ph)) + rng(-rag, rag) * 0.6
+        pts.append((math.cos(a) * rx * r, math.sin(a) * rz * r))
+    return pts
+
+
+def _cushion(rng, cx, cz, y, rx, rz, rag=0.32, n=11, dome=0.012, lim=None):
+    """A ragged flat cushion (moss, turf, lichen) lying on a local +y face at y: a fan from a raised middle."""
+    bm = bmesh.new()
+    c = bm.verts.new((cx, y + dome, cz))
+    ring = []
+    for x, z in _ring(rng, n, rx, rz, rag):
+        x, z = cx + x, cz + z
+        if lim:
+            x = min(max(x, lim[0]), lim[1])
+            z = min(max(z, lim[2]), lim[3])
+        ring.append(bm.verts.new((x, y + rng(0.0, 0.004), z)))
+    for k in range(n):
+        bm.faces.new((c, ring[(k + 1) % n], ring[k]))
+    return bm
+
+
+def _leaves(rng, pts, s):
+    """Fallen leaves (each a flat diamond, 2 tris) at local points on a +y face."""
+    bm = bmesh.new()
+    for (x, y, z) in pts:
+        a = rng(0, 6.28)
+        L, W = s * rng(0.7, 1.3), s * rng(0.35, 0.55)
+        d, q = Vector((math.cos(a), 0, math.sin(a))), Vector((-math.sin(a), 0, math.cos(a)))
+        o = Vector((x, y + 0.003, z))
+        vs = [bm.verts.new(o + d * L), bm.verts.new(o + q * W + Vector((0, 0.006, 0))), bm.verts.new(o - d * L * 0.8), bm.verts.new(o - q * W)]
+        bm.faces.new((vs[0], vs[3], vs[2], vs[1]))
+    return bm
+
+
+def _leaf_tint(c):
+    h = 0.5 + 0.5 * hnoise(c * 9.7, 91)
+    return LEAF[min(3, int(h * 4))]
+
+
+def dress(parts, d, seed):
+    """(lf6d) Old stone from the play camera: each stone piece's open top (local +y, turned up in the world) dressed
+    with cushions of dark moss (ragged, part of the top), pale lichen crusts, fallen leaves and a tuft or two of
+    grass; lichen crusts on its faces. d (env_props.json "dress"): moss (share of tops), cover (of the top's span),
+    lichen (crusts per top), leaves (per top), tufts (share of tops), side (crusts per upright face),
+    up (how far a top must turn up), min (the smallest top's span), unit (the piece's units a metre)."""
+    rng = Rng(seed * 7 + 911)
+    u = d.get('unit', 1.0)
+    out = list(parts)
+    for pt in parts:
+        if pt.region != 'stone' or pt.bm is None:
+            continue
+        rot = pt.at.to_3x3()
+        pt.bm.normal_update()
+        tops = [f for f in pt.bm.faces if f.normal.y > 0.9]
+        wup = (rot @ Vector((0, 1, 0))).normalized().y
+        if tops and wup > d.get('up', 0.8):
+            vs = [v.co for f in tops for v in f.verts]
+            x0, x1 = min(v.x for v in vs), max(v.x for v in vs)
+            z0, z1 = min(v.z for v in vs), max(v.z for v in vs)
+            y = max(v.y for v in vs)
+            sx, sz = x1 - x0, z1 - z0
+            if min(sx, sz) > d.get('min', 0.12) * u:
+                lim = (x0 + 0.01 * u, x1 - 0.01 * u, z0 + 0.01 * u, z1 - 0.01 * u)
+                if wup < 0.85 and rng() < d.get('moss', 0.6):
+                    # a slope (a roof slab, local z down it): moss along its lower edge, where the water runs off
+                    tn = MOSS_DARK.lerp(MOSS_SAGE, rng(0.0, 0.7)) * rng(0.85, 1.15)
+                    cx = x0 + sx * rng(0.3, 0.7)
+                    out.append(Part(_cushion(rng, cx, z1 - sz * 0.14, y, sx * rng(0.25, 0.5), sz * rng(0.1, 0.17), rag=0.38, n=13, dome=0.006, lim=lim), 'soil', tn, pt.at, jitter=0.0))
+                elif rng() < d.get('moss', 0.6):
+                    k = d.get('cover', 0.4) * rng(0.6, 1.25)
+                    cx, cz = x0 + sx * rng(0.25, 0.75), z0 + sz * rng(0.25, 0.75)
+                    tn = MOSS_DARK.lerp(MOSS_SAGE, rng(0.0, 0.6)) * rng(0.85, 1.2)
+                    out.append(Part(_cushion(rng, cx, cz, y, sx * k, sz * k, lim=lim), 'soil', tn, pt.at, jitter=0.0))
+                    if rng() < 0.5:
+                        # a second, smaller, where the first ran out
+                        cx2, cz2 = x0 + sx * rng(0.15, 0.85), z0 + sz * rng(0.15, 0.85)
+                        out.append(Part(_cushion(rng, cx2, cz2, y + 0.002, sx * k * 0.5, sz * k * 0.5, lim=lim), 'soil', tn * rng(0.8, 1.3), pt.at, jitter=0.0))
+                for _ in range(int(d.get('lichen', 1.0) + rng())):
+                    r = min(sx, sz) * rng(0.07, 0.16)
+                    cx, cz = x0 + sx * rng(0.12, 0.88), z0 + sz * rng(0.12, 0.88)
+                    out.append(Part(_cushion(rng, cx, cz, y + 0.003, r, r * rng(0.7, 1.0), rag=0.2, n=7, dome=0.002, lim=lim), 'soil', LICHEN * rng(0.85, 1.1), pt.at, jitter=0.0))
+                nl = int(d.get('leaves', 3) * rng(0.4, 1.4))
+                if nl:
+                    lp = [(x0 + sx * rng(0.05, 0.95), y + 0.004, z0 + sz * rng(0.05, 0.95)) for _ in range(nl)]
+                    lv = Part(_leaves(rng, lp, 0.045 * u), 'soil', Vector((1, 1, 1)), pt.at, jitter=0.0)
+                    lv.ftint = _leaf_tint
+                    out.append(lv)
+                if rng() < d.get('tufts', 0.25):
+                    w = pt.at @ Vector((x0 + sx * rng(0.2, 0.8), y, z0 + sz * rng(0.2, 0.8)))
+                    out.append(tuft(rng, Vector((w.x, w.y - 0.01 * u, w.z)), rng(0.16, 0.3) * u, n=6))
+        ns = d.get('side', 0.0)
+        if ns > 0:
+            # crusts on the upright faces: the biggest few
+            sides = sorted([f for f in pt.bm.faces if abs(f.normal.y) < 0.3 and f.calc_area() > (0.2 * u) ** 2], key=lambda f: -f.calc_area())[:2]
+            for f in sides:
+                if rng() > ns:
+                    continue
+                n = f.normal.copy()
+                c = f.calc_center_median()
+                t = Vector((0, 1, 0)).cross(n).normalized()
+                r = math.sqrt(f.calc_area()) * rng(0.08, 0.16)
+                # a crust laid on the face: build on +y then turn +y to the face's normal
+                q = n.to_track_quat('Y', 'Z').to_matrix().to_4x4()
+                off = c + n * 0.003 + t * math.sqrt(f.calc_area()) * rng(-0.25, 0.25) + Vector((0, math.sqrt(f.calc_area()) * rng(0.0, 0.3), 0))
+                out.append(Part(_cushion(rng, 0.0, 0.0, 0.0, r, r * rng(0.6, 0.9), rag=0.22, n=7, dome=0.002), 'soil', LICHEN * rng(0.8, 1.05),
+                                pt.at @ T(*off) @ q, jitter=0.0))
+    return out
 
 
 # --------------------------------------------------------------- presets --
@@ -1227,7 +1351,7 @@ def wall_parts(parts, rng, L, H, D, ch, bl, stone, mortar, keep, x0, at=Matrix.I
             a, b = xs[i], xs[i + 1]
             m = (a + b) / 2
             ok = y + cy * 0.5 < keep(m)
-            if ok and y + cy > keep(m) - cy * 0.7 and rng() < 0.22:
+            if ok and y + cy > keep(m) - cy * 0.7 and rng() < OLD.get('lost', 0.22):
                 ok = False  # a block lost from the broken edge
             for h in holes:
                 if h[0] - 0.01 <= a and b <= h[1] + 0.01 and h[2] - 0.01 <= y < h[3]:
@@ -1268,7 +1392,8 @@ def wall_parts(parts, rng, L, H, D, ch, bl, stone, mortar, keep, x0, at=Matrix.I
             zb = rng(-0.012, 0.012)
             tint = stone * (1 + rng(-0.09, 0.09))
             sblock(parts, (sx, sy, D - rng(0.0, 0.035)), at @ T((a + b) / 2 + dx, (yb + y1) / 2 + dy, zb) @ R('Z', turn) @ R('Y', rng(-0.012, 0.012)),
-                   tint, rng, drop=tuple(drop), top_cuts=(2 if GRIME['moss'] > 0 and '+y' not in drop else 0))
+                   tint, rng, drop=tuple(drop), top_cuts=(2 if GRIME['moss'] > 0 and '+y' not in drop else 0),
+                   chip=(OLD.get('top_chip', 0.45) if '+y' not in drop else 0.45), jag=(OLD.get('jag', 0.01) if '+y' not in drop else 0.01))
             out.append((k, a, b, y0, y1))
         # mortar behind the course's runs of blocks
         runs = []
@@ -1365,7 +1490,7 @@ def wall(p):
     x0 = p.get('x0', -L / 2)
     stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
     parts = []
-    keep = profile_fn(p['top'], H, rng, 0.05)
+    keep = profile_fn(p['top'], H, rng, p.get('old', {}).get('jag_top', 0.05))
     wall_parts(parts, rng, L, H, D, p.get('course', 0.44), p.get('block', 0.82), stone, mortar, keep, x0,
                crack=p.get('crack') and (x0 + p['crack'][0] * L, x0 + p['crack'][1] * L))
     fallen_heap(parts, rng, keep, x0, L, p.get('side', 1), D, p.get('course', 0.44), p.get('block', 0.82), stone,
@@ -1420,13 +1545,14 @@ def pillar(p):
     return parts
 
 
-def mound_y(x, z, a, b, h, seed, sag=0.0, lump=0.04):
-    """A heap of earth (elliptic, a by b), its rim under the ground, settled in the middle by sag."""
+def mound_y(x, z, a, b, h, seed, sag=0.0, lump=0.04, pw=0.55):
+    """A heap of earth (elliptic, a by b), its rim under the ground, settled in the middle by sag; pw (lf6d) its
+    shoulder: 0.55 a steep-sided loaf, over 1 a hump whose foot runs out into the ground."""
     r = math.sqrt((x / a) ** 2 + (z / b) ** 2)
     if r < 1:
-        y = h * (1 - r * r) ** 0.55 - sag * h * math.exp(-r * r * 3)
+        y = h * (1 - r * r) ** pw - sag * h * math.exp(-r * r * 3)
     else:
-        y = -0.12 * (r - 1) * max(a, b)
+        y = -(0.12 if pw < 1 else 0.4) * (r - 1) * max(a, b) - (0.0 if pw < 1 else 0.02)
     return y + lump * hnoise(Vector((x * 2.3, 0.0, z * 2.3)), seed) * min(1.0, 1.4 - r)
 
 
@@ -1453,16 +1579,23 @@ def patches(fn, nu, nv, cu, cv, region, tint, ftint=None, flip=False):
     return parts
 
 
-def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cell=3, head=0.45, tufts=10):
+def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cell=3, head=0.45, tufts=10, old=None):
     """A grave's earth as patches of soil (E7b r2: its head end, toward -z, raised; the earth darker at its foot
     where it meets the grass; weeds greening its sides; tufts of grass standing out of them)."""
-    ext = 1.18
+    # (lf6d) old: an old grave grassed over (the zone's night grass), bare earth only where it settled; its foot
+    # running out into the ground (pw), grass standing all over it, leaves caught on it
+    old = old or {}
+    pw, grass = old.get('pw', 0.55), old.get('grass', 0.0)
+    if old:
+        step = old.get('step', step)
+    ext = 1.18 if not old else 1.08
     nu = max(4, int(2 * a * ext / step))
     nv = max(4, int(2 * b * ext / step))
     weed = Vector((0.5, 0.82, 0.32))
+    turf = Vector((old.get('turf', (0.42, 0.62, 0.22))))
     def fn(u, v):
         x, z = (u - 0.5) * 2 * a * ext, (v - 0.5) * 2 * b * ext
-        y = mound_y(x, z, a, b, h, seed, sag)
+        y = mound_y(x, z, a, b, h, seed, sag, pw=pw)
         if y > 0:
             y *= 1 + head * (0.5 - 0.5 * max(-1.0, min(1.0, z / b)))
         return (cx + x, y, cz + z)
@@ -1473,15 +1606,42 @@ def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cel
         m = moss * max(side * 0.85, smooth01(0.1, 0.6, 0.5 + 0.9 * hnoise(Vector((c.x * 3.1, 0, c.z * 3.1)), seed + 5)) * 0.6)
         m *= 0.55 + 0.45 * smooth01(-0.3, 0.3, hnoise(Vector((c.x * 4.3, 0, c.z * 4.3)), seed + 8))
         foot = smooth01(0.72, 1.0, r)
-        return Vector((1, 1, 1)).lerp(weed, m) * (1.0 - 0.32 * foot)
+        col = Vector((1, 1, 1)).lerp(weed, m)
+        if grass > 0:
+            # turf over most of it, in clumps; the settled middle and a few scuffs bare; darker and damper at its foot
+            g = smooth01(-0.25, 0.35, hnoise(Vector((c.x * 3.7, 0, c.z * 3.7)), seed + 13) + 0.45 * smooth01(0.2, 0.9, r) - 0.5 * math.exp(-r * r * 4) * sag)
+            col = col.lerp(turf * (0.8 + 0.4 * (0.5 + 0.5 * hnoise(Vector((c.x * 9.0, 0, c.z * 9.0)), seed + 21))), grass * g)
+            col = col * (0.82 + 0.3 * (0.5 + 0.5 * hnoise(Vector((c.x * 6.1, 0, c.z * 6.1)), seed + 29)))
+            return col * (1.0 - old.get('foot', 0.42) * foot)
+        return col * (1.0 - 0.32 * foot)
     out = patches(fn, nu, nv, cell, cell, 'soil', tint, ft)
     rng = Rng(seed + 77)
     for i in range(tufts):
         sx = 1 if i % 2 else -1
         x = sx * a * rng(0.55, 0.95)
         z = b * rng(-0.85, 0.85)
-        y = max(0.0, mound_y(x, z, a, b, h, seed, sag))
+        y = max(0.0, mound_y(x, z, a, b, h, seed, sag, pw=pw))
         out.append(tuft(rng, Vector((cx + x, y - 0.01, cz + z)), rng(0.2, 0.34)))
+    for i in range(old.get('tufts', 0)):
+        # (lf6d) grass all over, thicker toward the sides; a few leaves
+        rr = math.sqrt(rng(0.04, 1.0)) * 0.98
+        an = rng(0, 6.283)
+        x, z = math.cos(an) * a * rr, math.sin(an) * b * rr
+        y = max(0.0, mound_y(x, z, a, b, h, seed, sag, pw=pw))
+        tf = tuft(rng, Vector((cx + x, y - 0.015, cz + z)), rng(0.14, 0.3), n=int(rng(5, 8)))
+        tf.tint = Vector(old.get('tuft', (0.3, 0.42, 0.16))) * rng(0.8, 1.2)
+        out.append(tf)
+    nl = old.get('leaves', 0)
+    if nl:
+        pts = []
+        for i in range(nl):
+            rr = math.sqrt(rng(0.0, 1.0)) * 0.95
+            an = rng(0, 6.283)
+            x, z = math.cos(an) * a * rr, math.sin(an) * b * rr
+            pts.append((cx + x, mound_y(x, z, a, b, h, seed, sag, pw=pw) + 0.004, cz + z))
+        lv = Part(_leaves(rng, pts, 0.05), 'soil', Vector((1, 1, 1)), jitter=0.0)
+        lv.ftint = _leaf_tint
+        out.append(lv)
     return out
 
 
@@ -1601,7 +1761,7 @@ def grave(p):
         return parts
     headstone(parts, p['head'], W, Hs, t, T(0, 0.1, z0) @ R('X', -lean) @ R('Z', rng(-0.05, 0.05)), stone, rng, chip=p.get('chip', 0.0))
     mz = z0 + 0.22 + ml / 2
-    parts += mound(W * 0.42, ml / 2, p.get('mh', 0.3), p['seed'], soil, cz=mz, sag=p.get('sag', 0.4), moss=p.get('moss', 0.85))
+    parts += mound(W * 0.42, ml / 2, p.get('mh', 0.3), p['seed'], soil, cz=mz, sag=p.get('sag', 0.4), moss=p.get('moss', 0.85), old=p.get('mound'))
     if p.get('kerb'):
         # (E7b r2) a stone curb, not a rail: lengths 0.26 wide and low, joints between, one settled and tipped
         kw = p.get('kerb_w', 0.26)
@@ -1624,7 +1784,7 @@ def gravestone(p):
     parts = []
     W, Hs, t = p['w'], p['hs'], p['t']
     headstone(parts, p['head'], W, Hs, t, T(0, -0.12, 0) @ R('X', p.get('lean', -0.1)) @ R('Z', p.get('roll', 0.06)), stone, rng, chip=p.get('chip', 0.0))
-    parts += mound(W * 0.46, 0.5, 0.14, p['seed'], soil, cz=0.55, sag=0.2, moss=0.85)
+    parts += mound(W * 0.46, 0.5, 0.14, p['seed'], soil, cz=0.55, sag=0.2, moss=0.85, old=p.get('mound'))
     return parts
 
 
@@ -1649,7 +1809,7 @@ def marker(p):
         rope = hexlin(p.get('rope', '#9a8a6a'))
         for k in range(3):
             parts.append(Part(torus(pr * 1.3, pr * 0.18, 9, 4), 'canvas', rope, lean @ T(0, h * 0.68 + (k - 1) * pr * 0.45, pr * 0.8) @ R('Z', 0.55 * (1 if k % 2 else -1)) @ R('X', math.pi / 2), smooth=True, jitter=0.0))
-    parts += mound(0.34, p.get('mlen', 0.85), 0.16, p['seed'], soil, cz=p.get('mz', 0.75), sag=0.3, moss=0.8)
+    parts += mound(0.34, p.get('mlen', 0.85), 0.16, p['seed'], soil, cz=p.get('mz', 0.75), sag=0.3, moss=0.8, old=p.get('mound'))
     return parts
 
 
@@ -2059,13 +2219,21 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
     ln = idp + 2 * over_g
     ridge = Vector((0.0, eave + roofH + 0.12, 0.0))
     th = 0.13
+    # (lf6d) old: the ridge sagged in its middle (sag m), slabs of a wider value spread, more lichen, more slipped
+    # and laid more askew, so the roof reads as weathered courses from above, not a tiled grid
+    ro = p.get('roof_old', {})
+    sag = ro.get('sag', 0.0)
+    vlo, vhi = ro.get('value', (0.74, 1.12))
+    p_lichen, p_slip, yaw = ro.get('lichen', 0.14), ro.get('slip', 0.015), ro.get('yaw', 0.04)
+    def sagged(pos):
+        return pos - Vector((0, sag * max(0.0, 1 - (2 * pos.z / ln) ** 2), 0))
     for sx in (-1, 1):
         down = Vector((sx * math.cos(ang), -math.sin(ang), 0.0))
         up = Vector((sx * math.sin(ang), math.cos(ang), 0.0))
         along = Vector((0.0, 0.0, 1.0))
         frame = basis(along, up, down)  # local x along the ridge, y off the slope, z down it
         # the underlay: a dark deck under the slabs (what a slipped slab shows)
-        parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.45, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06)) @ frame, cap='stone', jitter=0.0))
+        parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.45, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06 - Vector((0, sag, 0)))) @ frame, cap='stone', jitter=0.0))
         course = 0.56
         nk = int(run / course + 0.999)
         for k in range(nk):
@@ -2075,15 +2243,15 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
             t = (s0 + course / 2) / run
             for a, b in zip(xs, xs[1:]):
                 xm = (a + b) / 2
-                if rng() < 0.015 and 0 < k < nk - 1:
+                if rng() < p_slip and 0 < k < nk - 1:
                     continue  # slipped: the underlay shows
                 sw, sl = b - a - 0.035, course + 0.16
                 mz = 0.5 + 0.55 * hnoise(Vector((xm * 1.7, 0, s0 * 1.7 + sx * 3.1)), 61)
                 m = max(smooth01(0.62, 1.0, t), 0.8 * smooth01(0.16, 0.0, t)) * smooth01(0.3, 0.6, mz)
                 m = max(m, 0.35 * smooth01(0.62, 0.8, mz))
                 dark = 1.0 - 0.3 * smooth01(0.7, 1.0, t)
-                tn = slab * rng(0.74, 1.12) * dark
-                if rng() < 0.14:
+                tn = slab * rng(vlo, vhi) * dark
+                if rng() < p_lichen:
                     tn = tn.lerp(Vector((0.86, 0.85, 0.74)), rng(0.3, 0.6))  # pale lichen
                 tn = tn.lerp(moss * rng(0.85, 1.1), min(1.0, m * 0.9))
                 if k == nk - 1:
@@ -2091,7 +2259,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
                 pos = ridge + down * (s0 + sl / 2 - 0.08) + up * (th / 2 + lift * (1 - (k % 2) * 0.3)) + along * xm
                 tilt = R('X', -0.06 + rng(-0.025, 0.025))  # the tail down, the butt up over the course below
                 parts.append(Part(stone_block(sw, th * rng(0.85, 1.1), sl, rng, bevel=0.02, chip=0.7, jag=0.02), 'stone', tn,
-                                  T(*pos) @ frame @ tilt @ R('Y', rng(-0.04, 0.04)), cap='stone', jitter=0.0))
+                                  T(*sagged(pos)) @ frame @ tilt @ R('Y', rng(-yaw, yaw)), cap='stone', jitter=0.0))
         # the gables' coping up each slope, standing proud of the slabs
         for sz in (-1, 1):
             n = int(run / 0.7)
@@ -2102,7 +2270,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
                 tn = slab * 1.05 * rng(0.9, 1.05)
                 tn = tn.lerp(moss, 0.7 * smooth01(0.45, 0.65, mz))
                 parts.append(Part(stone_block(0.5, 0.24, (run - 0.1) / n - 0.03, rng, bevel=0.03, chip=0.6), 'stone', tn,
-                                  T(*pos) @ frame, cap='stone', jitter=0.0))
+                                  T(*sagged(pos)) @ frame, cap='stone', jitter=0.0))
     # the ridge: capping stones, a little apart, mossed in patches
     n = int(ln / 0.62)
     for k in range(n):
@@ -2111,7 +2279,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
         tn = slab * rng(0.9, 1.05)
         tn = tn.lerp(moss, 0.8 * smooth01(0.35, 0.6, mz))
         parts.append(Part(stone_block(0.34, 0.34, ln / n - 0.04, rng, bevel=0.04, chip=0.6), 'stone', tn,
-                          T(0, ridge.y + 0.1, z) @ R('Z', math.pi / 4 + rng(-0.05, 0.05)), cap='stone', jitter=0.0))
+                          T(*sagged(Vector((0, ridge.y + 0.1, z)))) @ R('Z', math.pi / 4 + rng(-0.05, 0.05)), cap='stone', jitter=0.0))
 
 
 def carved_lintel(parts, rng, xface, yc, stone):
@@ -2885,7 +3053,11 @@ def main():
         GRIME['h'], GRIME['moss'] = p.get('grime', 0.0), p.get('moss_top', 0.0)
         GRIME['top'], GRIME['foot'], GRIME['streak'] = p.get('h', 0.0), p.get('foot', 0.0), p.get('streak', 0.0)
         GRIME['ao'] = p.get('ao', 1.0)
+        OLD.clear()
+        OLD.update(p.get('old', {}))
         parts = KINDS[p['kind']](p)
+        if p.get('dress'):
+            parts = dress(parts, p['dress'], p['seed'])
         ob = finish(name, parts, mat, p['seed'])
         obs = [ob]
         if len(ob.data.materials) > 1:

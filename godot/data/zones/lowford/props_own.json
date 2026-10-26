@@ -173,7 +173,8 @@
   "halloween/grave_A_destroyed": "grave_open",
   "halloween/gravestone": [
    "headstone_a",
-   "headstone_b"
+   "headstone_b",
+   "headstone_c"
   ],
   "halloween/gravemarker_A": "marker_cross",
   "halloween/gravemarker_B": "marker_lashed",
