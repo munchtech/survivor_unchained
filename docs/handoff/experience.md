@@ -5,6 +5,30 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 built and judged once (FIX, close); round 2 shot, judge next
+
+**Worktree/branch** as Experience 1 below (junction to the worktree's OWN `public/assets`; to remove the link use PowerShell `cmd /c rmdir godot\assets` from the worktree, since bash's `cmd //c rmdir` failed). Integration 126b1d9e is merged in. Import cache is fresh. Run tool: `<coordinator scratchpad>\play2\play.py NAME EVERY COUNT --teach-end` (one godot turn, about 9 min to dawn). It logs `teach ...` and now `tip <id> t= keys= text=` lines, and shoots `NAME_teach_<id>_1.png` and `NAME_tip_<id>_1.png` into `godot/.shots/`.
+**Done (commits 3145c709, 200aeb30, a2a06a12, plus the copy doc):**
+- au1 4: the channel tip had a dead key, because Act.Ability became Act.Flare on 11 Oct and her calling's art now rides the dash (Forms.cs). The tip now names Bull Rush and the Flare. A new F6b `form` callout in the Ambush. The dash ring glows ember when the form is ready (`Round.Form`), and the gray "Bull Rush: ready" note under the Q orb is gone.
+- au1 9: the lamps callout says how. Callout rings keep out of the top-right HUD corner (`GameTeach.HudCorner`).
+- au1 10: F8 waits for "Your pack" to clear. The Knight doesn't begin its first lunge far from her or under another callout, and holds it once while F7 waits.
+- au1 2: the opening is spread. The great blessing gets its own panel 40 s into Rising, and dash comes after it. Timeline in m2: 0:45 / 0:46 / 0:53 / 0:55 / 1:21 / 1:39 / 1:51 road / 2:09 form.
+- au1 3: `Battle.FlareGreatsHeld` keeps Flare blessings out until F8.
+- au1 13: F12 and its banner now give the counts and tell traits from skills (`Callout.Mark` picks the word marked in ember).
+- au1 17: a line rests 300 s per NPC (`NpcActor.LineRest`). au1 20: the lanes log.
+- Judge round 1 fixes: the blessing kicker is keyed on holding a great blessing, no summon blessings before a summon, teaching panels hide Reroll/Banish/Skip, keys read 1-N, and lamps2 no longer re-fires every frame.
+- Tests 1051/0/8 before round 1.
+**NEXT:** check run m3 (tests chained after it) and frames `m3_teach_{form,level,great_blessing,first_draft,lamps}`, `m3_tip_{channel,pack}`. Then one xhigh judge on those frames only. Then merge to integration (`tools/scratch/coordinator/merge_lead.sh play-1` from main, or tell main) and full tests.
+**Still open from judge 1:**
+- The red_line ring sits at the lane's far end by the chest. Order `KnightLane()` points away from L("chest").
+- The pack tip's "I" chip is dark (`GameHud.HintKeys`, UI).
+- "Cold, Then Not" tail copy (Combat).
+**Then:**
+- MR3: canopy whole-fade per tree instance in kit.gdshader (`see_parts`, OWN_FOLIAGE). Re-check whether E9c's house fade already fixed au1 6 in a hub run.
+- MR4: Waystation 6 s freeze. The audit log breakdown: ground+water 1.8 s, props 1.5 s, her outfit built twice (about 0.5 s), 1126 pipelines. Fix with a black-hold pipeline prewarm before the fade-in. Hub p50 13-15 ms against main 4 + render 4.6 + gpu 3.5: diagnose with a medium solver, art causes to main for Env 17.
+- MR5: au1 14 and 15.
+**Routed (tell main):** night exposure crushes her and the dead at 1:1 and she blows out under the gallows lantern (Rendering); blobby canopies, flat crates, gray boulders and graves (Env); the "blocked" floater collides with the Warden's bark (UI); the zone header reads "Night" at dawn (UI); the Q orb shows the calling's bull icon for the Flare (UI).
+
 ## Experience 1 (play-1 lead, 26 Oct): step 1 MR READY, the audit done, step 3 (fixes) next
 
 **Worktree** `.claude/worktrees/play-1`, branch `play-1` (from integration f91a13ca). `godot/assets` is a junction to this worktree's OWN `public/assets` (skip-worktree): never stash, reset --hard or checkout .; before merging integration, `cmd /c rmdir godot\assets`, merge, remake it. Import cache is current. Commit named files only (the .import/.uid noise stays out). Tests 1046/0/8.
