@@ -13,6 +13,8 @@ public sealed record CalloutLook(string Title, string Line, CalloutKind Kind, Ac
 {
     /// <summary>The thing has its own heading (a draft panel, a banner shown again): the title is not said twice.</summary>
     public bool Headed { get; init; }
+    /// <summary>The word marked in ember (none: the title's, Subject).</summary>
+    public string? Mark { get; init; }
 }
 
 /// <summary>Where a callout points this frame, on the HUD's 1920 by 1080: points (a HUD part, a thing
@@ -35,6 +37,12 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     public float AreaGrow { get; init; } = 12;
     /// <summary>The arrow stops at this height, short of the thing (the chain, under the six places).</summary>
     public float? StopY { get; init; }
+    /// <summary>The marks in cold blue, not ember: things that glow cold themselves (the Warden's lamps).</summary>
+    public bool Cold { get; init; }
+    /// <summary>Where the words would rather stand (the canvas's px; none: toward the middle).</summary>
+    public Vector2? WordsNear { get; init; }
+    /// <summary>Figures the words must not cover (a boss), besides her.</summary>
+    public IReadOnlyList<Rect2>? Shun { get; init; }
 }
 
 /// <summary>The drawing of a callout, as the game drives it (the UI design pass restyles behind it).</summary>
@@ -68,6 +76,7 @@ public interface ICalloutView
 public partial class Callout : Control, ICalloutView
 {
     const float Canvas = 1920, CanvasH = 1080;
+    static readonly Color PaleGlow = new("#dfe6ee");
     static readonly Color Bone = new("#f2e8d4"), LineInk = new("#e8dfcd"), FootInk = new("#cbbd9f"),
         Iron = new(0.055f, 0.04f, 0.035f, 0.94f), Deep = new("#a8380f"), Hot = new("#ff9a40"), White = new("#ffe6a8"),
         Mark = new("#ffa04a"), Warm = new(1f, 0.74f, 0.46f);
@@ -247,7 +256,7 @@ public partial class Callout : Control, ICalloutView
         }
         // A row too wide for the measure breaks into rows of about equal width (never one word left alone).
         rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Balance(r, W, maxW)).ToList();
-        string? subject = Subject(text, look.Title);
+        string? subject = look.Mark ?? Subject(text, look.Title);
         bool marked = false;
         var list = new List<Control>();
         foreach (var r in rows)
@@ -447,6 +456,13 @@ public partial class Callout : Control, ICalloutView
 
     /// <summary>Whether the mark at i is a thing in the world (it stands in a pool of light).</summary>
     bool InWorld(int i) => i >= aim.HudPoints && i < Math.Min(3, aim.Points.Count);
+    /// <summary>Whether a mark rings a part of the HUD: it is drawn pale, not in ember, so it never reads as the
+    /// HUD's own "ready" glow (the dash's form, round 2 judge).</summary>
+    bool OnHud(Vector2 at)
+    {
+        for (int i = 0; i < aim.HudPoints && i < aim.Points.Count; i++) if (aim.Points[i] == at) return true;
+        return false;
+    }
 
     Vector2 Primary() => aim.Points.Count > 0 ? aim.Points[0] : aim.Areas.Count > 0 ? aim.Areas[0].GetCenter() : new Vector2(960, 540);
 
@@ -467,6 +483,8 @@ public partial class Callout : Control, ICalloutView
         // Her figure and her health bar, and a good margin: never words, never an arrow.
         Rect2? her = aim.Her?.Grow(HerMargin);
         if (her is Rect2 h0) keep.Add(h0);
+        if (aim.Shun is { } shun) foreach (var r in shun) keep.Add(r.Grow(24));
+        var near = aim.WordsNear ?? new Vector2(960, 470);
         var aimed = Aimed(marks);
         float best = float.MaxValue;
         var at = new Vector2(960, 400);
@@ -478,7 +496,7 @@ public partial class Callout : Control, ICalloutView
                 bool clear = true;
                 foreach (var k in keep) if (k.Intersects(box)) { clear = false; break; }
                 if (!clear) continue;
-                float cost = 0.1f * Math.Abs(x - 960) + 0.05f * Math.Abs(y - 470);
+                float cost = aim.WordsNear != null ? 0.12f * Math.Abs(x - near.X) + 0.12f * Math.Abs(y - near.Y) : 0.1f * Math.Abs(x - 960) + 0.05f * Math.Abs(y - 470);
                 for (int i = 0; i < marks.Count; i++)
                 {
                     float d = Apart(box, marks[i].Box);
@@ -755,6 +773,12 @@ public partial class Callout : Control, ICalloutView
     partial class Ink : Control
     {
         readonly Callout c;
+        // (a cold callout's ink: the lamps glow ice blue, so their marks do too, round 2 judge)
+        static readonly Color ColdDeep = new("#1f4f86"), ColdHot = new("#7cc4ff"), ColdWhite = new("#e4f4ff");
+        Color Deep => c.aim.Cold ? ColdDeep : Callout.Deep;
+        Color Hot => c.aim.Cold ? ColdHot : Callout.Hot;
+        Color White => c.aim.Cold ? ColdWhite : Callout.White;
+        Color Ember => c.aim.Cold ? ColdHot : Style.Ember;
         readonly bool glow;
         public Ink(Callout c, bool glow) { this.c = c; this.glow = glow; MouseFilter = MouseFilterEnum.Ignore; }
 
@@ -773,7 +797,7 @@ public partial class Callout : Control, ICalloutView
             {
                 var marks = c.Marks();
                 for (int i = 0; i < marks.Count; i++)
-                    if (!c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow);
+                    if (!c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow, c.OnHud(marks[i].C));
             }
             if (c.aim.Edges is { } edges) foreach (var (at, d) in edges) Chevron(at, d, k, breathe, reach, glow);
             foreach (var (way, m) in c.Arrows())
@@ -792,11 +816,11 @@ public partial class Callout : Control, ICalloutView
                     Soft(pts, 30 * k, 40 * k, u =>
                     {
                         float hb = bead is >= 0 and <= 1 ? Mathf.Exp(-Mathf.Pow((u - bead) / 0.08f, 2)) : 0;
-                        return Style.Ember with { A = 0.12f + 0.2f * u + 0.22f * hb };
+                        return Ember with { A = 0.12f + 0.2f * u + 0.22f * hb };
                     }, r);
                     float bloom = (64 + 14 * strike) * k;
-                    DrawTextureRect(Bloom(), new Rect2(tip - Vector2.One * bloom / 2, Vector2.One * bloom), false, Style.Ember with { A = 0.42f + 0.3f * strike });
-                    if (reach >= 1) Mark(m, k, strike, breathe, true);
+                    DrawTextureRect(Bloom(), new Rect2(tip - Vector2.One * bloom / 2, Vector2.One * bloom), false, Ember with { A = 0.42f + 0.3f * strike });
+                    if (reach >= 1) Mark(m, k, strike, breathe, true, c.OnHud(m.C));
                     continue;
                 }
                 // The iron, then the heat inside it, cooler at the words, hottest at the point.
@@ -811,7 +835,7 @@ public partial class Callout : Control, ICalloutView
                 Link(pts[0], da, k);
                 float drawn = (tip - pts[0]).Length();
                 if (drawn > 14) Head(tip, dir, k * Mathf.Clamp(drawn / 80f, 0.45f, 1f));
-                if (reach >= 1) Mark(m, k, strike, breathe, false);
+                if (reach >= 1) Mark(m, k, strike, breathe, false, c.OnHud(m.C));
             }
         }
 
@@ -933,7 +957,7 @@ public partial class Callout : Control, ICalloutView
             float R = EdgeRing * k;
             if (light)
             {
-                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 34 * k, Vector2.One * 68 * k), false, Style.Ember with { A = (0.18f + 0.1f * breathe) * reach });
+                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 34 * k, Vector2.One * 68 * k), false, Ember with { A = (0.18f + 0.1f * breathe) * reach });
                 return;
             }
             var n = new Vector2(-dir.Y, dir.X);
@@ -978,7 +1002,7 @@ public partial class Callout : Control, ICalloutView
 
         /// <summary>The mark where it lands: a ring round a point, brackets at an area's corners;
         /// it strikes bright and a size larger, and settles.</summary>
-        void Mark((Vector2 C, float R, Rect2 Box, bool Round) m, float k, float strike, float breathe, bool light)
+        void Mark((Vector2 C, float R, Rect2 Box, bool Round) m, float k, float strike, float breathe, bool light, bool pale = false)
         {
             float grow = 7 * strike * strike;
             if (m.Round)
@@ -988,11 +1012,11 @@ public partial class Callout : Control, ICalloutView
                 {
                     var ring = new List<Vector2>(65);
                     for (int i = 0; i <= 64; i++) ring.Add(m.C + Vector2.FromAngle(i * Mathf.Tau / 64) * rr);
-                    Soft(ring, 26 * k, 26 * k, _ => Style.Ember with { A = 0.3f + 0.35f * strike }, 1);
+                    Soft(ring, 26 * k, 26 * k, _ => (pale ? PaleGlow : Ember) with { A = (pale ? 0.22f : 0.3f) + 0.35f * strike }, 1);
                     return;
                 }
                 DrawArc(m.C, rr, 0, Mathf.Tau, 64, Iron, 7f * k, true);
-                DrawArc(m.C, rr, 0, Mathf.Tau, 64, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
+                DrawArc(m.C, rr, 0, Mathf.Tau, 64, (pale ? Bone : Hot.Lerp(White, 0.25f + 0.6f * strike)) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
                 return;
             }
             var b = m.Box.Grow(grow);
@@ -1000,7 +1024,7 @@ public partial class Callout : Control, ICalloutView
             foreach (var (corner, sx, sy) in new[] { (b.Position, 1, 1), (new Vector2(b.End.X, b.Position.Y), -1, 1), (b.End, -1, -1), (new Vector2(b.Position.X, b.End.Y), 1, -1) })
             {
                 var p = new[] { corner + new Vector2(sx * arm, 0), corner, corner + new Vector2(0, sy * arm) };
-                if (light) { Soft([.. p], 26 * k, 26 * k, _ => Style.Ember with { A = 0.3f + 0.35f * strike }, 1); continue; }
+                if (light) { Soft([.. p], 26 * k, 26 * k, _ => Ember with { A = 0.3f + 0.35f * strike }, 1); continue; }
                 DrawPolyline(p, Iron, 7f * k, true);
                 DrawPolyline(p, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
             }

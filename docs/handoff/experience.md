@@ -5,6 +5,63 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 3 (play-1 lead, 26 Oct): MR1+2 MR READY (sent to main at 9f3b6c8e); MR3 canopy fade built, motion re-check NEXT
+
+**Start here (Experience 4).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_burst.py, logs, judge_b1 crops).
+1. **Import first:** integration 6d8c2e92 (Env E9d) is merged in (0c658800) with new assets: run `Godot_console.exe --headless --path godot --import` (~4 min) before any shot. One untracked .uid was set aside in `play2/uid_backup/`.
+2. **MR3, the canopy fade** (solver commits 10741942, 943c0eec; tune 34f1bca2). kit.gdshader OWN_FOLIAGE: a tree whose crown covers her or the ground within `canopy_fade.x` m of her (on screen, at her distance) fades whole by the house fade's dither; the lower trunk stays (per-species crown_lo/hi/r/keep in data/flora_species.json); shadows kept; play camera only (`KitLook.CanopyView`). Switches `--canopy R,E,G|off`, `--canopy-log` (CPU mirror, prints the blocking trees).
+   - Judges: the stills (c3_* vs h1_*) SHIP at 7 m / 0.85 (it asked 6 m / 0.80). The MOTION judge (burst b1_*: `SHOT_FROM=143 python play_burst.py NAME 0.05 24`) FAILED the dithered ghost: a screen-door patch over her ember-lit ground and frame-to-frame sizzle (crops `play2/judge_b1/`, p2223.png).
+   - Applied its quick fix, NOT yet re-shot: crowns cut 100% once eased, ease 1.5 m (`canopy_fade` = (6, 1.5, 1, 1) in project.godot).
+   - NEXT: re-shoot in motion (movie mode `--write-movie <file>.avi --fixed-fps 60`, or a burst) covering an ease-in AND an ease-out; judge (xhigh); full test; MR. If the ease band still sizzles, the judge's preferred fix is alpha blend (alpha ~0.2, depth write off) with a shadows-only copy.
+3. **Also on MR3 (coordinator, 26 Oct):** subtitles show through a tree in Env 17's town frame `town_o_03` (UI/text draw order): find the frame in Env's shots and fix it with MR3.
+4. **Sent to Env 17** (aa34beda274ad4169): the tree list. Five spruce trunks stand in the road at z 63-70: (-3.7, 63.2) (-7.9, 69.9) (-5.6, 69.4) (-6.6, 66.9) (-8.0, 64.3); the rest are covered by the fade. Roofs (au1 6): the h1 hub run shows E9c's house cutaway already clears them, so it is closed.
+5. **MR4 baseline (h1 run, `play2/logs/h1.log`):** the Waystation built in 7608 ms (ground+water 2067, props files 949 + props 1574, textures 405, landmarks 231, grass 171, the rest 242) plus pipelines. Her outfit is rebuilt (250-310 ms) at EVERY hand-back (the "her outfit" laps after each cinematic). Hub windows: p50 11.6-13.2 ms against main 3.4-3.7 + render 3.2-3.4 + gpu 3.0 ms, so ~6 ms is unaccounted (engine side: animation mixers, skeletons, physics, navigation? Godot's Performance monitors). The 0.1% and max (230-630 ms) are the shot captures every 20 s, not the game. Perf is noisy while other leads use the GPU (38% GPU use with no game running): measure ABAB. Then MR5 (audit 14, 15).
+
+**MR1+2 round 3 (commits after 134c320f):** judge r3 (xhigh): all 7 frames SHIP (frames `survivorsunchained_inputs/play1/r3/`). Fixes:
+- The Flare's great blessings leaked on a test profile: `GameTeach.Taught` read the profile before `--teach-reset` cleared it (the Teacher is lazy). `Taught` now builds the Teacher first.
+- Callout rings round a HUD part are pale (`Callout.OnHud`, `Mark(..., pale)`); a lit dash form wears flame licks and the calling's badge (`Round.Licks`, `FormGlyph`), animating through freezes (`ProcessMode.Always`); the ring round a lit dash stands 18 px out (`GameHud.DashLit`). Form copy "When your dash is aflame, it's a charge / ...".
+- Channel: `Prologue.ChannelTip()` shows at a channel's start only with an answer ready, naming only what's ready; title "Break his spell"; cast bar "Raising the drowned: break it!"; the RISE bark 1.3 s after the tip (`riseBarkIn`).
+- Teaching panels drop the recipe, "Fits your build" and any reason every card shares; card bodies keep their last two words together.
+- Tips take inline keycaps: `{key:I}` in a tip's text (`TipLine.Chip`, a small SubViewport). Pack tip broken at sentence ends.
+- Callout `Aim.Cold` (ice-blue ink), `Aim.WordsNear`, `Aim.ShunBig` (words off bosses): the lamps use all three. Red line ring kept off the chest (`KnightLane`).
+- Tests 1051/0/8.
+**Polish routed to UI (judge r3, not blocking):** great-blessing footer rows at uneven heights (anchor reason + tag rows); gray "not in your build" tags read as disabled (style alike or drop); env: forest near-black outside her light pool.
+**Run variance seen:** red_line and draught can go untaught in a run (queued, dropped "notyet": likely canopy over the Knight/her); the canopy fade (MR3) should help; re-check in its run.
+**Next:** MR3 canopy whole-tree fade (kit.gdshader OWN_FOLIAGE; hub run first for the roofs), the tree list to Env 17; MR4 Waystation freeze + frame time; MR5 audit 14 and 15.
+
+## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 judged twice (history; round 3 done by Experience 3)
+
+**Worktree/branch** as Experience 1 below (junction to the worktree's OWN `public/assets`; to remove the link use PowerShell `cmd /c rmdir godot\assets` from the worktree, since bash's `cmd //c rmdir` failed). Integration 126b1d9e is merged in. Import cache is fresh. Run tool: `<coordinator scratchpad>\play2\play.py NAME EVERY COUNT --teach-end` (one godot turn, about 9 min to dawn). It logs `teach ...` and now `tip <id> t= keys= text=` lines, and shoots `NAME_teach_<id>_1.png` and `NAME_tip_<id>_1.png` into `godot/.shots/`.
+**Done (commits 3145c709, 200aeb30, a2a06a12, plus the copy doc):**
+- au1 4: the channel tip had a dead key, because Act.Ability became Act.Flare on 11 Oct and her calling's art now rides the dash (Forms.cs). The tip now names Bull Rush and the Flare. A new F6b `form` callout in the Ambush. The dash ring glows ember when the form is ready (`Round.Form`), and the gray "Bull Rush: ready" note under the Q orb is gone.
+- au1 9: the lamps callout says how. Callout rings keep out of the top-right HUD corner (`GameTeach.HudCorner`).
+- au1 10: F8 waits for "Your pack" to clear. The Knight doesn't begin its first lunge far from her or under another callout, and holds it once while F7 waits.
+- au1 2: the opening is spread. The great blessing gets its own panel 40 s into Rising, and dash comes after it. Timeline in m2: 0:45 / 0:46 / 0:53 / 0:55 / 1:21 / 1:39 / 1:51 road / 2:09 form.
+- au1 3: `Battle.FlareGreatsHeld` keeps Flare blessings out until F8.
+- au1 13: F12 and its banner now give the counts and tell traits from skills (`Callout.Mark` picks the word marked in ember).
+- au1 17: a line rests 300 s per NPC (`NpcActor.LineRest`). au1 20: the lanes log.
+- Judge round 1 fixes: the blessing kicker is keyed on holding a great blessing, no summon blessings before a summon, teaching panels hide Reroll/Banish/Skip, keys read 1-N, and lamps2 no longer re-fires every frame.
+- Tests 1051/0/8 before round 1.
+**Round 2 judge (m3 frames): level SHIP; all round-1 asks landed; 6 FIX.** Fix next, in this order:
+1. **Called Shot (a Flare blessing) was still offered at 1:21.** `b.FlareGreatsHeld` is set at Prologue.cs ~1157 and read at LevelUp.cs:293. Find which path still adds FlareGreat: maybe another offer builder for the GreatRoles Answer slot, or setup running on another Battle. Also change the great block's `o.Why.Add("Your calling's own")` to "Suits your calling".
+2. **The form glow can't be told apart:** a callout's HUD-target spotlight is ember too (`hud.Spotlight`). Make the callout highlight neutral (pale), and give `Round.Form` ready a look of its own (flame licks or a horn badge). Re-break the form lines: "When your dash glows, it's a charge / that throws the dead aside. / Big ones stop it, but they're stunned, / and their spell breaks."
+3. **Channel tip:** show it only once the form or the Flare is ready. Hold the Warden's "RISE..." bark until the tip settles. Use one name: cast bar "Raising the drowned: break it!" (Prologue.cs channel case) and title "Break his spell".
+4. **First draft:** hide "Fits your build" and the "Evolves:" lines on teaching panels (Panels.cs, `v.Teaching`). "all the way round" -> "sweeps the whole front of you" (Butcher's Cleaver text).
+5. **Pack tip:** an inline [I] chip (hint text has no inline keys today: `TipLine`), with breaks at sentence ends.
+6. **Lamps:** the off-screen markers are orange flames but the lamps are cold blue (recolor the markers); drop the card lower-left, off the Warden.
+Routed by the judge: Combat card copy (Cold, Then Not tail; "fire" -> "strike"); UI (rarity row floats, dim italic objective, Night icon at dawn, bottom-right counters over bright planks); Env (no visible flame in the lit lamps); Rendering (ferns cover her at the form freeze).
+**The m3 run found:** with the Knight's first lunge gated on her distance (8 m), a kiting run never saw F7 and the Post ran 140 s. Gate removed (commit after d9748814). m4 confirms the fix: F7 showed on its first windup (199.9 s) and the art freeze followed at 214 s.
+**Tests:** PrologueTests updated (the first rise brings its card alone). Full suite 1050+1 green after that fix. Run the full suite before the merge.
+**Still open from judge 1:**
+- The red_line ring sits at the lane's far end by the chest. Order `KnightLane()` points away from L("chest").
+- The pack tip's "I" chip is dark (`GameHud.HintKeys`, UI).
+- "Cold, Then Not" tail copy (Combat).
+**Then:**
+- MR3: canopy whole-fade per tree instance in kit.gdshader (`see_parts`, OWN_FOLIAGE). Re-check whether E9c's house fade already fixed au1 6 in a hub run.
+- MR4: Waystation 6 s freeze. The audit log breakdown: ground+water 1.8 s, props 1.5 s, her outfit built twice (about 0.5 s), 1126 pipelines. Fix with a black-hold pipeline prewarm before the fade-in. Hub p50 13-15 ms against main 4 + render 4.6 + gpu 3.5: diagnose with a medium solver, art causes to main for Env 17.
+- MR5: au1 14 and 15.
+**Routed (tell main):** night exposure crushes her and the dead at 1:1 and she blows out under the gallows lantern (Rendering); blobby canopies, flat crates, gray boulders and graves (Env); the "blocked" floater collides with the Warden's bark (UI); the zone header reads "Night" at dawn (UI); the Q orb shows the calling's bull icon for the Flare (UI).
+
 ## Experience 1 (play-1 lead, 26 Oct): step 1 MR READY, the audit done, step 3 (fixes) next
 
 **Worktree** `.claude/worktrees/play-1`, branch `play-1` (from integration f91a13ca). `godot/assets` is a junction to this worktree's OWN `public/assets` (skip-worktree): never stash, reset --hard or checkout .; before merging integration, `cmd /c rmdir godot\assets`, merge, remake it. Import cache is current. Commit named files only (the .import/.uid noise stays out). Tests 1046/0/8.

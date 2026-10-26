@@ -42,6 +42,8 @@ SETS = {
     # (nothing should fade there). x="--house-fade-hold 0.5" holds every fade at half, for the mid-fade frames)
     "townbehind": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
     "townbehinddawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
+    # (E9d: the town by night: the square, the north street, and the square's trees at the close view: lamps, lit windows, smoke)
+    "townnight": (["--zone", "waystation", "--time", "night", "--auto", "idle", "--spots", "3,3;0,-26;-7,-7,1,0"], 3),
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
     # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),

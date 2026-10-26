@@ -1,5 +1,695 @@
 {
- "_doc": "Our own props in this zone. walls (E9b1; OwnWalls.cs): pieces maps a KayKit village piece of props.json to our presets (tools/assets/env_house.json, art/world/house) as treatments: a house takes the list of its treatment (houses: \"<h>\": [plaster tint 0-5, treatment 0 plain / 1 crosses / 2 braces], written by tools/godot/house_ids.py so neighbors differ), each copy one of that list by its place; an empty list drops the kit piece (its window glass, door frame or door is in our wall piece). Roofs (E9b2; tools/assets/env_roof.py): the roof bodies, spires and chimneys named in \"by_roof\" take the list of their house's roof covering (houses' third number: 0 clay pantiles, 1 oak shingles; the fourth its tint), the gable fronts the list of its treatment like the walls.",
+ "_doc": "Our own props in this zone. walls (E9b1; OwnWalls.cs): pieces maps a KayKit village piece of props.json to our presets (tools/assets/env_house.json, art/world/house) as treatments: a house takes the list of its treatment (houses: \"<h>\": [plaster tint 0-5, treatment 0 plain / 1 crosses / 2 braces], written by tools/godot/house_ids.py so neighbors differ), each copy one of that list by its place; an empty list drops the kit piece (its window glass, door frame or door is in our wall piece). Roofs (E9b2; tools/assets/env_roof.py): the roof bodies, spires and chimneys named in \"by_roof\" take the list of their house's roof covering (houses' third number: 0 clay pantiles, 1 oak shingles; the fourth its tint), the gable fronts the list of its treatment like the walls. (E9d) place: the square's own stalls, notice board and the market's clutter (env_props.json), the web game's stalls and board hidden; clear: [x, z, r] where the kit's wares and stock at the stalls go. (E9d r2) col: [cx, cz, hw, hd], a place's box collider in its preset's frame (ZoneMeta.AddPropColliders); braziers: ours over the web game's stand.",
+ "place": [
+  {
+   "preset": "stall_produce",
+   "x": -8,
+   "z": 7,
+   "rot": 0.4,
+   "hide": [
+    -8,
+    7,
+    2.2,
+    3.0
+   ],
+   "col": [
+    0.0,
+    0.27,
+    1.45,
+    1.18
+   ]
+  },
+  {
+   "preset": "stall_cloth",
+   "x": 8,
+   "z": 8,
+   "rot": -0.3,
+   "hide": [
+    8,
+    8,
+    2.2,
+    3.0
+   ],
+   "col": [
+    0.0,
+    0.27,
+    1.45,
+    1.18
+   ]
+  },
+  {
+   "preset": "stall_herbs",
+   "x": -9,
+   "z": -7,
+   "rot": 2.6,
+   "hide": [
+    -9,
+    -7,
+    2.2,
+    3.0
+   ],
+   "col": [
+    0.0,
+    0.08,
+    1.45,
+    0.99
+   ]
+  },
+  {
+   "preset": "stall_pots",
+   "x": 10,
+   "z": -6,
+   "rot": 3.5,
+   "hide": [
+    10,
+    -6,
+    2.2,
+    3.0
+   ],
+   "col": [
+    0.0,
+    0.27,
+    1.45,
+    1.18
+   ]
+  },
+  {
+   "preset": "notice_board",
+   "x": 6,
+   "z": -5,
+   "rot": -0.6,
+   "hide": [
+    6,
+    -5,
+    1.6,
+    3.0
+   ],
+   "col": [
+    0.01,
+    0.0,
+    1.33,
+    0.35
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": 0.3,
+   "z": 5.8,
+   "rot": -0.05,
+   "col": [
+    0.0,
+    0.45,
+    0.68,
+    1.25
+   ]
+  },
+  {
+   "preset": "heap_sacks",
+   "x": -0.6,
+   "z": 4.6,
+   "rot": 0.5,
+   "col": [
+    0.21,
+    0.16,
+    0.96,
+    0.77
+   ]
+  },
+  {
+   "preset": "trough",
+   "x": 1.9,
+   "z": -1.0,
+   "rot": 1.2,
+   "col": [
+    0.23,
+    0.04,
+    1.13,
+    0.37
+   ]
+  },
+  {
+   "preset": "heap_hay",
+   "x": 1.2,
+   "z": -3.6,
+   "rot": 1.4,
+   "col": [
+    0.39,
+    0.19,
+    1.66,
+    1.14
+   ]
+  },
+  {
+   "preset": "heap_crates",
+   "x": 9.0,
+   "z": -3.4,
+   "rot": 0.2,
+   "col": [
+    0.05,
+    0.14,
+    1.35,
+    1.04
+   ]
+  },
+  {
+   "preset": "heap_pots",
+   "x": 12.2,
+   "z": -6.8,
+   "rot": 0.3,
+   "col": [
+    0.09,
+    0.03,
+    1.08,
+    0.93
+   ]
+  },
+  {
+   "preset": "heap_crates",
+   "x": -10.4,
+   "z": 8.2,
+   "rot": 0.3,
+   "col": [
+    0.05,
+    0.14,
+    1.35,
+    1.04
+   ]
+  },
+  {
+   "preset": "heap_sacks",
+   "x": 10.3,
+   "z": 8.4,
+   "rot": -0.3,
+   "col": [
+    0.21,
+    0.16,
+    0.96,
+    0.77
+   ]
+  },
+  {
+   "preset": "heap_sacks",
+   "x": -11.0,
+   "z": -6.6,
+   "rot": 2.6,
+   "col": [
+    0.21,
+    0.16,
+    0.96,
+    0.77
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": -7.0,
+   "z": 1.8,
+   "rot": 1.9,
+   "col": [
+    0.0,
+    0.45,
+    0.68,
+    1.25
+   ]
+  },
+  {
+   "preset": "heap_crates",
+   "x": -8.6,
+   "z": 3.6,
+   "rot": -0.4,
+   "col": [
+    0.05,
+    0.14,
+    1.35,
+    1.04
+   ]
+  },
+  {
+   "preset": "heap_hay",
+   "x": 12.6,
+   "z": 4.6,
+   "rot": -0.4,
+   "col": [
+    0.39,
+    0.19,
+    1.66,
+    1.14
+   ]
+  },
+  {
+   "preset": "brazier",
+   "x": 5.4,
+   "z": 1.4,
+   "rot": 0.3,
+   "hide": [
+    5.4,
+    1.4,
+    0.8,
+    1.15
+   ],
+   "col": [
+    0.0,
+    -0.0,
+    0.36,
+    0.36
+   ]
+  },
+  {
+   "preset": "brazier",
+   "x": -5.4,
+   "z": -1.8,
+   "rot": 1.1,
+   "hide": [
+    -5.4,
+    -1.8,
+    0.8,
+    1.15
+   ],
+   "col": [
+    0.0,
+    -0.0,
+    0.36,
+    0.36
+   ]
+  },
+  {
+   "preset": "brazier",
+   "x": -2.2,
+   "z": 30.5,
+   "rot": 0.5,
+   "hide": [
+    -2.2,
+    30.5,
+    0.8,
+    1.15
+   ],
+   "col": [
+    0.0,
+    -0.0,
+    0.36,
+    0.36
+   ]
+  },
+  {
+   "preset": "brazier",
+   "x": 2.2,
+   "z": 30.5,
+   "rot": 2.0,
+   "hide": [
+    2.2,
+    30.5,
+    0.8,
+    1.15
+   ],
+   "col": [
+    0.0,
+    -0.0,
+    0.36,
+    0.36
+   ]
+  },
+  {
+   "preset": "woodpile",
+   "x": 17,
+   "z": -7.55,
+   "rot": 0,
+   "col": [
+    0.4,
+    0.22,
+    1.69,
+    0.47
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 13.8,
+   "z": -6.9,
+   "rot": 0.2,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "crates_street",
+   "x": 20.2,
+   "z": -6.3,
+   "rot": -0.15,
+   "col": [
+    -0.03,
+    0.28,
+    1.23,
+    0.79
+   ]
+  },
+  {
+   "preset": "bench_pots",
+   "x": 16,
+   "z": 6.4,
+   "rot": 3.14,
+   "col": [
+    0.05,
+    0.19,
+    1.16,
+    0.36
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": 18.6,
+   "z": 4.9,
+   "rot": 1.45,
+   "col": [
+    0.0,
+    0.45,
+    0.68,
+    1.25
+   ]
+  },
+  {
+   "preset": "heap_sacks",
+   "x": 20.4,
+   "z": 5.7,
+   "rot": 0.4,
+   "col": [
+    0.21,
+    0.16,
+    0.96,
+    0.77
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 29.8,
+   "z": -4.8,
+   "rot": 0.4,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "heap_crates",
+   "x": 32.6,
+   "z": -4.2,
+   "rot": -0.2,
+   "col": [
+    0.05,
+    0.14,
+    1.35,
+    1.04
+   ]
+  },
+  {
+   "preset": "woodpile",
+   "x": 32,
+   "z": 6.4,
+   "rot": 3.14,
+   "col": [
+    0.4,
+    0.22,
+    1.69,
+    0.47
+   ]
+  },
+  {
+   "preset": "crates_street",
+   "x": 28.8,
+   "z": 4.4,
+   "rot": 0.3,
+   "col": [
+    -0.03,
+    0.28,
+    1.23,
+    0.79
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 2.6,
+   "z": -25.8,
+   "rot": 0.3,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "crates_street",
+   "x": 2.0,
+   "z": -29.5,
+   "rot": 1.57,
+   "col": [
+    -0.03,
+    0.28,
+    1.23,
+    0.79
+   ]
+  },
+  {
+   "preset": "bench_pots",
+   "x": -7.6,
+   "z": -21.6,
+   "rot": 0,
+   "col": [
+    0.05,
+    0.19,
+    1.16,
+    0.36
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": -5.6,
+   "z": -20.9,
+   "rot": -0.4,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": 6.2,
+   "z": -21.0,
+   "rot": 0.6,
+   "col": [
+    0.0,
+    0.45,
+    0.68,
+    1.25
+   ]
+  },
+  {
+   "preset": "heap_hay",
+   "x": 8.6,
+   "z": -23.2,
+   "rot": 0.3,
+   "col": [
+    0.39,
+    0.19,
+    1.66,
+    1.14
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": -3.4,
+   "z": -11.3,
+   "rot": 0.5,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 2.4,
+   "z": -13.8,
+   "rot": 0.3,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "heap_hay",
+   "x": 2.8,
+   "z": -16.5,
+   "rot": 0.2,
+   "col": [
+    0.39,
+    0.19,
+    1.66,
+    1.14
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 4.6,
+   "z": -17.6,
+   "rot": -0.3,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "woodpile",
+   "x": -12.6,
+   "z": -13.0,
+   "rot": 1.57,
+   "col": [
+    0.4,
+    0.22,
+    1.69,
+    0.47
+   ]
+  },
+  {
+   "preset": "heap_hay",
+   "x": 10.0,
+   "z": 20.5,
+   "rot": 0.3,
+   "col": [
+    0.39,
+    0.19,
+    1.66,
+    1.14
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": 7.4,
+   "z": 20.2,
+   "rot": 1.2,
+   "col": [
+    0.0,
+    0.45,
+    0.68,
+    1.25
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 12.6,
+   "z": 22.4,
+   "rot": 0.1,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "crates_street",
+   "x": 19.8,
+   "z": 19.8,
+   "rot": 1.57,
+   "col": [
+    -0.03,
+    0.28,
+    1.23,
+    0.79
+   ]
+  },
+  {
+   "preset": "woodpile",
+   "x": 16.5,
+   "z": 17.4,
+   "rot": 0,
+   "col": [
+    0.4,
+    0.22,
+    1.69,
+    0.47
+   ]
+  },
+  {
+   "preset": "heap_sacks",
+   "x": 15.6,
+   "z": -3.4,
+   "rot": 0.3,
+   "col": [
+    0.21,
+    0.16,
+    0.96,
+    0.77
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": 21.4,
+   "z": -3.3,
+   "rot": 1.75,
+   "col": [
+    0.0,
+    0.45,
+    0.68,
+    1.25
+   ]
+  },
+  {
+   "preset": "barrels_door",
+   "x": 13.4,
+   "z": 3.6,
+   "rot": -0.2,
+   "col": [
+    0.12,
+    0.2,
+    0.95,
+    0.55
+   ]
+  },
+  {
+   "preset": "crates_street",
+   "x": 26.8,
+   "z": -3.6,
+   "rot": 0.1,
+   "col": [
+    -0.03,
+    0.28,
+    1.23,
+    0.79
+   ]
+  }
+ ],
+ "clear": [
+  [
+   -8,
+   7,
+   2.3
+  ],
+  [
+   8,
+   8,
+   2.3
+  ],
+  [
+   -9,
+   -7,
+   2.3
+  ],
+  [
+   10,
+   -6,
+   2.3
+  ]
+ ],
  "walls": {
   "pieces": {
    "village/Wall_UnevenBrick_Straight": [

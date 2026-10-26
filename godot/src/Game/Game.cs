@@ -810,7 +810,16 @@ public partial class Game : Node, IZoneHost
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
     public void SetObjectives(List<Tracked> list) { objectivesBase = list; RefreshObjectives(); }
-    public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
+    public void SetHint(Hint? hint)
+    {
+        // (a scripted run logs each tip and shoots it, as it does a callout: its words and keys are checked too)
+        if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
+        {
+            GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
+            Shots.Want("tip_" + hint.Id, 0.9);
+        }
+        hud.Hint(CurrentHint = hint);
+    }
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     public void Capture(bool on) => controls.Captured = on;
     string? draftTip;
@@ -1111,6 +1120,8 @@ public partial class Game : Node, IZoneHost
         if (GetViewport().GetCamera3D() is { } seen)
         {
             RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, 1));
+            // (the canopy fade, our trees over her faded whole: the play camera's only, E3 au1-5)
+            KitLook.CanopyView(Mode == "play" && !InCinematic && !showing);
             // (--see-debug: what stands in the window, listed once the place has settled)
             if (KitLook.SeeDebug && !seeListed && scene.Time > 2.5)
             {
