@@ -21,7 +21,7 @@ public partial class ZoneView
     /// <summary>--wall-lamp-energy K, --wall-lamp-range M: a wall lantern's light (the data's 4.5 over 8 m).</summary>
     static readonly float WallLampEnergy = SurvivorUnchained.Args.Num("wall-lamp-energy", 1.6f), WallLampRange = SurvivorUnchained.Args.Num("wall-lamp-range", 4.2f);
     /// <summary>The kit's Lantern_Wall cage in its own frame: its middle, the flame's foot (m).</summary>
-    static readonly Vector3 CageMid = new(0, 0.29f, 0.808f), CageFoot = new(0, 0.17f, 0.808f);
+    static readonly Vector3 CageMid = new(0, 0.29f, 0.808f), CageFoot = new(0, 0.22f, 0.808f);
 
     /// <summary>The wall lanterns: each light whose glowing ball hangs by a Lantern_Wall copy (within 1.1 m of its cage)
     /// takes a flame in the cage, a glass in it, and its light at the cage.</summary>
@@ -57,7 +57,7 @@ public partial class ZoneView
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                 Position = mid,
             };
-            glass.SetSurfaceOverrideMaterial(0, Lamps.GlassOf(false));   // (a surface override: Lamps.SetLit finds its glass by it)
+            glass.SetSurfaceOverrideMaterial(0, WallGlass ??= WallGlassOf());   // (a surface override: Lamps.SetLit finds its glass by it)
             holder.AddChild(glass);
             Landmarks.Root.AddChild(holder);
             LampFlame(g, li, foot, FlameKind.Lamp, false, LampScale * 0.85f * s, holder);
@@ -77,6 +77,16 @@ public partial class ZoneView
     /// <summary>--wall-lamp-iron K: the kit's pale trim metal on the wall lanterns darkened to blackened iron (it read
     /// pale grey-white against the stone, lit and unlit), its albedo times this.</summary>
     static readonly float WallLampIron = SurvivorUnchained.Args.Num("wall-lamp-iron", 0.3f);
+    static ShaderMaterial? WallGlass;
+    /// <summary>The lamps' warm glass with a fainter fresnel edge: on the narrow six-sided pane the edges stood as white streaks at dawn.</summary>
+    static ShaderMaterial WallGlassOf()
+    {
+        var m = (ShaderMaterial)Lamps.GlassOf(false).Duplicate();
+        m.SetShaderParameter("edge_k", 0.1f);
+        m.SetShaderParameter("edge_alpha", 0.2f);
+        m.RenderPriority = -1;
+        return m;
+    }
     static void DarkIron(MultiMeshInstance3D mmi)
     {
         if (mmi.HasMeta("dark_iron") || mmi.Multimesh?.Mesh is not Mesh mesh) return;

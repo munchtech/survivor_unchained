@@ -134,7 +134,7 @@ public static class Lamps
     static bool IsGlass(MeshInstance3D m)
     {
         for (int i = 0; m.Mesh != null && i < m.Mesh.GetSurfaceCount(); i++)
-            if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial s && (s == warm || s == cold)) return true;
+            if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial s && (s == warm || s == cold || s.Shader == warm?.Shader)) return true;   // (or a copy of it: ZoneView.Town's wall glass)
         return false;
     }
 }
