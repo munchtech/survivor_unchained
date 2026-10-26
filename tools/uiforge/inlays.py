@@ -113,7 +113,22 @@ def build(key, school):
     img = R.render(f"inlay_{key}_{h}", samples=sp["samples"], wear=0, grime=0, grain=0)
     img = img.copy()
     img[..., 3] *= cv2.GaussianBlur(ink.astype(np.float32), (0, 0), 0.6)
-    return F.downsample(img, (N, N))
+    img = F.downsample(img, (N, N))
+    # cut, not printed: at 1080 the render's walls are under a pixel, so the cut's two edges are
+    # set exactly, one shown px each: the wall in shade along the strokes' upper left (inside the
+    # groove), the floor's lit lip along their lower right (outside it)
+    b = max(1, int(round(sp.get("bevel_px", 1.0) * N / 38)))
+    A = img[..., 3].copy()
+    Aul = np.zeros_like(A)
+    Aul[b:, b:] = A[:-b, :-b]
+    dark, lip = A * (1 - Aul), (1 - A) * Aul
+    img[..., :3] *= (1 - sp.get("shade", 0.72) * dark)[..., None]
+    la = lip * sp.get("lip_alpha", 0.7)
+    lc = np.array(sp.get("lip_rgb", [0.56, 0.54, 0.58]), np.float32)
+    oa = A + la * (1 - A)
+    img[..., :3] = (img[..., :3] * A[..., None] + lc * (la * (1 - A))[..., None]) / np.maximum(oa[..., None], 1e-4)
+    img[..., 3] = oa
+    return img
 
 
 def main(keys):

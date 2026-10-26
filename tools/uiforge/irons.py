@@ -125,6 +125,22 @@ def glass(r, size, ss=3, curve=1.0, soft=0.14, window=2.2, rimlight=0.8):
     return np.dstack([rgb, out[..., 3]])
 
 
+def bloom(img, sig=(4.0, 9.0), w=(0.9, 0.35), edge=4):
+    """Heat thrown round a hot piece: an orange bloom from its hot pixels, 3 to 5 shown px out
+    (sigmas in file px), faded to nothing `edge` file px from the picture's sides."""
+    rgb, a = img[..., :3], img[..., 3]
+    hot = np.clip((rgb[..., 0] - 0.5) * 2.5, 0, 1) * np.clip(rgb[..., 0] - rgb[..., 2] - 0.25, 0, 1) * 3 * a
+    g = np.clip(sum(cv2.GaussianBlur(hot, (0, 0), s) * k for s, k in zip(sig, w)), 0, 1)
+    h, ww = g.shape
+    yy, xx = np.mgrid[0:h, 0:ww].astype(np.float32)
+    d = np.minimum(np.minimum(xx, ww - 1 - xx), np.minimum(yy, h - 1 - yy))
+    g = g * np.clip(d / edge, 0, 1)
+    col = np.array([1.0, 0.48, 0.14], np.float32)
+    out_a = a + g * (1 - a)
+    out = (rgb * a[..., None] + col * (g * (1 - a))[..., None]) / np.maximum(out_a[..., None], 1e-4)
+    return np.dstack([out, out_a]).astype(np.float32)
+
+
 def make(pieces):
     os.makedirs(HUD, exist_ok=True)
     made = []
@@ -143,19 +159,22 @@ def make(pieces):
         A = A / max(A.max(), 1e-4)
         rgb = np.where(A[..., None] > 1e-4, pm / np.maximum(pm.max(axis=2, keepdims=True), 1e-4), 0)
         made.append(save(np.dstack([rgb, A]), "cuff_glow"))
-        made.append(save(glass(SPEC["glass"]["r"], SPEC["glass"]["canvas"]), "glass", premult=True))
+        if "glass" in pieces:                                  # (the glass is blender_glass.py's now)
+            made.append(save(glass(SPEC["glass"]["r"], SPEC["glass"]["canvas"]), "glass", premult=True))
     if "small" in pieces:
         made.append(save(shadow(load("cuff_small")), "cuff_small"))
-        made.append(save(glass(SPEC["glass_small"]["r"], SPEC["glass_small"]["canvas"]), "glass_small", premult=True))
+        if "glass" in pieces:
+            made.append(save(glass(SPEC["glass_small"]["r"], SPEC["glass_small"]["canvas"]), "glass_small", premult=True))
     if "seats" in pieces:
         dims = json.load(open(os.path.join(RAW, "dimples.json")))
-        meta = {"size": SPEC["seat"]["canvas"], "seat_at": SPEC["seat"]["at"], "seat": SPEC["seat"]["size"], "dimples": dims}
+        P = SPEC["seat"].get("hot_pad", 0)
+        meta = {"size": SPEC["seat"]["canvas"], "seat_at": SPEC["seat"]["at"], "seat": SPEC["seat"]["size"], "hot_pad": P, "dimples": dims}
         for k in SPEC["seat"]["variants"]:
             full = load(f"seat_{k}")
             col = load(f"seat_collar_{k}")
             made.append(save(shadow(full), f"seat_{k}"))
-            hot = shadow(load(f"seat_hot_{k}"))
-            made.append(save(CH.ember_glow(hot, 0.7, edge=10), f"seat_hot_{k}"))
+            hot = np.pad(shadow(load(f"seat_hot_{k}")), ((2 * P, 2 * P), (2 * P, 2 * P), (0, 0)))
+            made.append(save(bloom(hot), f"seat_hot_{k}"))      # hot_pad shown px wider each side, for its bloom
             # empty: the collar unlit (its rims about 35%), the floor at 60%
             cm = np.clip(col[..., 3] * (col[..., :3] @ np.array([0.3, 0.59, 0.11]) > 0.004), 0, 1)
             e = shadow(full).copy()
@@ -168,7 +187,8 @@ def make(pieces):
     if "tags" in pieces:
         for w in SPEC["tag"]["widths"]:
             made.append(save(shadow(load(f"tag_{w}")), f"tag_{w}"))
-        made.append(save(shadow(load("tag_ring")), "tag_ring"))
+    if "hanger" in pieces:
+        made.append(save(shadow(load("hanger")), "hanger"))
     if "lock" in pieces:
         for n in ("lock", "lock_open"):
             made.append(save(shadow(load(n)), n))
@@ -199,7 +219,7 @@ def write_imports(paths):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    pieces = [a for a in args if not a.startswith("--")] or ["cuff", "small", "seats", "sill", "tags", "lock"]
+    pieces = [a for a in args if not a.startswith("--")] or ["cuff", "small", "seats", "sill", "tags", "hanger", "lock"]
     if "--render" in args:
         blender = os.environ.get("BLENDER", r"C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe")
         os.makedirs(RAW, exist_ok=True)

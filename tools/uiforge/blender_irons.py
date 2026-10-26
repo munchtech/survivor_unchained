@@ -92,9 +92,11 @@ class Stage:
 
 # ------------------------------------------------------------------ materials --
 
-def facets(m, seed, scale=5.5, tilt=0.16, deep=2.6):
-    """Hammer facets: each Voronoi cell tilts the normal its own way (flat facets with crisp
-    edges between them); one cell in six of a coarser pattern is struck deep."""
+def facets(m, seed, cell=9.0, tilt=0.085, deep=2.2):
+    """Hammer facets: each Voronoi cell (about `cell` shown px across, so at 1080 they read as
+    forged planes, never as grain) tilts the normal its own way (flat facets with crisp edges
+    between them); one cell in six of a coarser pattern is struck deep."""
+    scale = 1.0 / (cell * SPEC["scale"] * U)
     nt = m.node_tree
     n, k = nt.nodes, nt.links
     bsdf = n["Principled BSDF"]
@@ -183,46 +185,89 @@ def body_heat_material(name, seed, strength=1.0):
     core.inputs["From Min"].default_value = 0.52
     core.inputs["From Max"].default_value = 0.08
     k.new(ln.outputs["Value"], core.inputs["Value"])
+    crust = scale_crust(n, k, seed)
+    heat = n.new("ShaderNodeMath")
+    heat.operation = "MULTIPLY"
+    k.new(core.outputs[0], heat.inputs[0])
+    k.new(crust, heat.inputs[1])
+    heat_ramp(n, k, heat.outputs[0], bsdf, strength,
+              [(0.0, "#0c0100"), (0.5, "#5a0e04"), (0.85, "#c84a18"), (1.0, "#ff7a28")])
+    return facets(m, seed, cell=8.0, tilt=0.1)
+
+
+def scale_crust(n, k, seed, px=7.0):
+    """Forge scale on hot iron: a few broad dark flakes over the glow, irregular (a low-detail,
+    distorted noise some `px` shown px across, cut hard), never an even pebble of cells."""
     tco = n.new("ShaderNodeTexCoord")
     mp = n.new("ShaderNodeMapping")
     mp.inputs["Location"].default_value = (seed * 1.7, seed * 2.9, 0)
     k.new(tco.outputs["Object"], mp.inputs["Vector"])
     nz = n.new("ShaderNodeTexNoise")
-    nz.inputs["Scale"].default_value = 11.0
-    nz.inputs["Detail"].default_value = 5.0
+    nz.inputs["Scale"].default_value = 1.0 / (px * SPEC["scale"] * U)
+    nz.inputs["Detail"].default_value = 1.5
+    nz.inputs["Distortion"].default_value = 0.8
     k.new(mp.outputs[0], nz.inputs["Vector"])
     crust = n.new("ShaderNodeMapRange")
     k.new(nz.outputs["Fac"], crust.inputs["Value"])
-    crust.inputs["From Min"].default_value = 0.36
-    crust.inputs["From Max"].default_value = 0.62
-    crust.inputs["To Min"].default_value = 0.3
+    crust.inputs["From Min"].default_value = 0.38
+    crust.inputs["From Max"].default_value = 0.5
+    crust.inputs["To Min"].default_value = 0.35
     crust.inputs["To Max"].default_value = 1.0
-    heat = n.new("ShaderNodeMath")
-    heat.operation = "MULTIPLY"
-    k.new(core.outputs[0], heat.inputs[0])
-    k.new(crust.outputs[0], heat.inputs[1])
+    return crust.outputs[0]
+
+
+def heat_ramp(n, k, heat, bsdf, strength, stops=None):
+    """Heat (0 to 1) to the forge's colours, as emission: black-red, dull red, the leading
+    links' orange, and at the top of the ramp yellow-white."""
+    stops = stops or [(0.0, "#0c0100"), (0.45, "#5e1004"), (0.78, "#d8521a"), (1.0, "#ffb050")]
     ramp = n.new("ShaderNodeValToRGB")
     e = ramp.color_ramp.elements
-    e[0].color = B.hexc("#0c0100")
-    e[1].position = 1.0
-    e[1].color = B.hexc("#e8641e")
-    mid = e.new(0.55)
-    mid.color = B.hexc("#7a1404")
-    k.new(heat.outputs[0], ramp.inputs["Fac"])
+    e[0].position, e[0].color = stops[0][0], B.hexc(stops[0][1])
+    e[1].position, e[1].color = stops[-1][0], B.hexc(stops[-1][1])
+    for p, c in stops[1:-1]:
+        e.new(p).color = B.hexc(c)
+    k.new(heat, ramp.inputs["Fac"])
     k.new(ramp.outputs["Color"], bsdf.inputs["Emission Color"])
     st = n.new("ShaderNodeMath")
     st.operation = "MULTIPLY"
     st.inputs[1].default_value = strength
-    k.new(heat.outputs[0], st.inputs[0])
+    k.new(heat, st.inputs[0])
     k.new(st.outputs[0], bsdf.inputs["Emission Strength"])
-    return facets(m, seed, scale=6.0)
+
+
+def collar_heat_material(name, seed, strength=1.6):
+    """A seat's collar heated from the seat inward (it can evolve): the chain's iron, its emission
+    from the vertex colour 'heat' (0 at the collar's outer edge, 1 at its inner wall) broken by
+    forge scale: dull red outside, the leading links' orange across the face, yellow-white at the
+    inner edge. The iron's facets and sheen keep."""
+    m = C.iron_chain_material()
+    m.name = name
+    nt = m.node_tree
+    n, k = nt.nodes, nt.links
+    bsdf = n["Principled BSDF"]
+    at = n.new("ShaderNodeAttribute")
+    at.attribute_name = "heat"
+    crust = scale_crust(n, k, seed, px=6.0)
+    # the scale lies on the cooler outer iron; the inner edge burns through it
+    mix = n.new("ShaderNodeMix")
+    mix.data_type = "FLOAT"
+    k.new(at.outputs["Fac"], mix.inputs[0])
+    k.new(crust, mix.inputs[2])
+    mix.inputs[3].default_value = 1.0
+    heat = n.new("ShaderNodeMath")
+    heat.operation = "MULTIPLY"
+    k.new(at.outputs["Fac"], heat.inputs[0])
+    k.new(mix.outputs[0], heat.inputs[1])
+    heat_ramp(n, k, heat.outputs[0], bsdf, strength,
+              [(0.0, "#0a0100"), (0.3, "#4a0c03"), (0.62, "#c8461a"), (0.86, "#ffa040"), (1.0, "#fff0c0")])
+    return facets(m, seed, cell=8.0, tilt=0.085)
 
 
 def plate(name, color, seed):
     """A dark iron plate (a seat's floor): the chain's iron in a darker colour, less worn."""
     keep = dict(C.SPEC)
     C.SPEC.update({"iron": color, "rust": "#1a120c", "worn": "#5a5660", "worn_rough": 0.35})
-    m = iron(name, seed, tilt=0.07)
+    m = iron(name, seed, tilt=0.05)
     C.SPEC.clear()
     C.SPEC.update(keep)
     return m
@@ -350,8 +395,10 @@ def wear(st, ob, k0=0.22, k1=0.85, ztop=None, zw=0.0, seed=0, zlow=None):
             w = max(w, zw * min(1.0, max(0.0, (z - (ztop - 1.0)) / 1.0)))
         if zlow is not None:                        # nothing rubs down in the hollows
             w *= min(1.0, max(0.0, (v.co.z / (U * S) - zlow) / 1.2))
-        nz = noise.noise(v.co * (1.0 / (U * S * 2.2)) + off)
-        w = w * (0.6 + 0.4 * (nz + 1) / 2) * (0.75 + 0.25 * math.copysign(1, nz))
+        # broken up in patches some 6 px across, smoothly (a hard step at 2 px read as salt and
+        # pepper at 1080)
+        nz = noise.noise(v.co * (1.0 / (U * S * 6.0)) + off)
+        w = w * (0.7 + 0.3 * (nz + 1) / 2)
         ca.data[v.index].color = (w ** 1.2, w ** 1.2, w ** 1.2, 1)
     bm.free()
 
@@ -413,12 +460,12 @@ def cuff(name, big=True):
     cx, cy = cs["center"]
     ri, ro = cs["glass_r"], cs["outer_r"]
     seed = SPEC["seed"] + (0 if big else 5)
-    mat = iron("band", seed, scale=5.5 if big else 7.5)
+    mat = iron("band", seed, cell=10.0 if big else 7.0)
     parts = []
     if big:
         hg, jt, lg = cs["hinge"], cs["joint"], cs["lug"]
         band = ring_band(st, "band", cx, cy, ri, ro, 7.0, seams=(hg["angle"], jt["angle"]), seed=seed, n=2200)
-        wear(st, band, ztop=7.0, zw=cs.get("zw", 0.8), seed=1)
+        wear(st, band, ztop=7.0, zw=cs.get("zw", 0.3), seed=1)
         band.data.materials.append(mat)
         parts.append(band)
         # the hinge at 9 o'clock: three knuckles and a peened pin
@@ -449,18 +496,22 @@ def cuff(name, big=True):
             wear(st, p, seed=9)
             p.data.materials.append(mat)
             parts.append(p)
-        # the lug: a strap under both bands toward the draught, riveted through each
+        # the lug: a forged bar of round-backed section under both bands toward the draught (its
+        # crown lit along its upper side, so it reads as a bar `width` px across at 1080, not a
+        # line), riveted through each band with a proud domed head
         dx, dy = lg["to"]
         la = math.degrees(math.atan2(dy, dx))
         dist = math.hypot(dx, dy)
-        strap = slab(st, "lug", tab(cx, cy, la, ro - 9, dist - SPEC["small"]["outer_r"] + 6, lg["width"]), 0.0, 3.2, 1.0)
-        wear(st, strap, seed=4)
-        strap.data.materials.append(iron("lug", seed + 7))
+        lz, lb = lg.get("z", 4.6), lg.get("bevel", 2.0)
+        strap = slab(st, "lug", tab(cx, cy, la, ro - 9, dist - SPEC["small"]["outer_r"] + 6 - lb, lg["width"] - 2 * lb), 0.0, lz, lb)
+        wear(st, strap, k0=0.18, k1=0.7, ztop=lz, zw=0.35, seed=4)
+        strap.data.materials.append(iron("lug", seed + 7, cell=7.0))
         parts.append(strap)
-        rv = dome(st, "lugrivet", cx + lg["rivet_r"] * math.cos(math.radians(la)), cy + lg["rivet_r"] * math.sin(math.radians(la)),
-                  6.4, 2.3, flat=0.6)
-        wear(st, rv, seed=5)
-        rv.data.materials.append(iron("rivet", seed + 8, tilt=0.05))
+        rr = lg["rivet_r"]
+        rv = dome(st, "lugrivet", cx + rr * math.cos(math.radians(la)), cy + rr * math.sin(math.radians(la)),
+                  lg.get("rivet_z", 7.4), lg.get("rivet", 2.5), flat=0.75)
+        wear(st, rv, k0=0.15, k1=0.6, seed=5)
+        rv.data.materials.append(iron("rivet", seed + 8, tilt=0.04))
         parts.append(rv)
         # the joint, 32 deg below level on the inner side: two ears, a domed rivet
         ja = jt["angle"]
@@ -509,14 +560,18 @@ def cuff(name, big=True):
         st.render(name + "_glow")
     else:
         band = ring_band(st, "band", cx, cy, ri, ro, 4.4, seed=seed, n=1200)
-        wear(st, band, ztop=4.4, zw=0.55, seed=1)
+        wear(st, band, ztop=4.4, zw=cs.get("zw", 0.3), seed=1)
         band.data.materials.append(mat)
         la = math.degrees(math.atan2(-SPEC["cuff"]["lug"]["to"][1], -SPEC["cuff"]["lug"]["to"][0]))
         rr = (ri + ro) / 2 + 0.4
-        rv = dome(st, "lugrivet", cx + rr * math.cos(math.radians(la)), cy + rr * math.sin(math.radians(la)), 4.0, 1.9, flat=0.6)
-        wear(st, rv, seed=5)
-        rv.data.materials.append(iron("rivet", seed + 8, tilt=0.05))
-        ring = tag_ring(st, cx, cy + ro - 2.2, cy + cs["ring_hole_y"] + 0.9, seed)
+        rv = dome(st, "lugrivet", cx + rr * math.cos(math.radians(la)), cy + rr * math.sin(math.radians(la)),
+                  cs.get("rivet_z", 4.9), cs.get("rivet", 2.2), flat=0.75)
+        wear(st, rv, k0=0.15, k1=0.6, seed=5)
+        rv.data.materials.append(iron("rivet", seed + 8, tilt=0.04))
+        # the hole drilled through the band's crown at 6 o'clock, where the key tag's link goes in
+        hr = cs.get("hole_r", 26.5)
+        hole = slab(st, "hole", circle(cx, cy + hr, cs.get("hole", 1.05), 24), -1.0, 6.0, 0.1)
+        hole.data.materials.append(B.plain_material("hole", "#030202", 0.0, 0.9))
         st.render(name)
 
 
@@ -594,7 +649,7 @@ def floor_material(name, seed, span=None, inset=0.0):
         sc.inputs[0].default_value = col[:3]
         k.new(mr.outputs["Result"], sc.inputs["Scale"])
         k.new(sc.outputs[0], b.inputs["Base Color"])
-    return facets(m, seed, scale=4.0, tilt=fs.get("floor_tilt", 0.035), deep=1.8)
+    return facets(m, seed, cell=8.0, tilt=fs.get("floor_tilt", 0.03), deep=1.8)
 
 
 def seat(k, state):
@@ -677,9 +732,26 @@ def seat(k, state):
     zpit = surf(-dd) - dp + Rs                        # its centre
     zb = surf(-dd) - dp                               # the hole's level floor
     lip = sp.get("dimple_lip", 0.3)
+    # this casting's own hammer marks: a few dents in the face, two nicks in its outer edge
+    drnd = random.Random(300 + k)
+    dents = []
+    for _ in range(sp.get("dents", 5)):
+        i0 = drnd.randrange(n)
+        q = drnd.uniform(-0.7, 0.7) * m
+        dents.append((path[i0][0] + nrm[i0][0] * q, path[i0][1] + nrm[i0][1] * q, drnd.uniform(1.2, 2.2), drnd.uniform(0.3, 0.6)))
+    nicks = [(drnd.randrange(n), drnd.uniform(0.35, 0.65)) for _ in range(sp.get("nicks", 2))]
 
     def mod(i, x, y, d, z):
+        for i0, dep in nicks:
+            di = min(abs(i - i0), n - abs(i - i0))
+            if di < 10 and d > 0.4 * m:
+                d -= dep * (1 - di / 10) ** 2 * min(1.0, (d - 0.4 * m) / (0.6 * m))
         px, py = x + nrm[i][0] * d, y + nrm[i][1] * d
+        if z > zch:
+            for (qx, qy, dr, dep) in dents:
+                r2 = (px - qx) ** 2 + (py - qy) ** 2
+                if r2 < dr * dr:
+                    z -= dep * (1 - r2 / (dr * dr)) ** 2
         for (qx, qy) in dim:
             r2 = (px - qx) ** 2 + (py - qy) ** 2
             if shape == "cyl":
@@ -718,7 +790,20 @@ def seat(k, state):
                     if (vx - qx) ** 2 + (vy - qy) ** 2 < (rp + lip * 0.5) ** 2:
                         w = 0.0
             ca_.data[v.index].color = (w, w, w, 1)
-    col.data.materials.append(iron("collar", 40 + k, state=state, scale=7.0, tilt=0.12))
+    if state == "hot":
+        # how far in across the collar each vertex lies: 0 at its outer edge, 1 at its inner wall
+        Mp = len(prof)
+        if "heat" not in col.data.color_attributes:
+            col.data.color_attributes.new("heat", "FLOAT_COLOR", "POINT")
+        ha = col.data.color_attributes["heat"]
+        for v in col.data.vertices:
+            j = v.index % Mp
+            u = 1.0 if j >= j_ch1 else min(1.0, max(0.0, (m - prof[j][0]) / (2 * m + cw)))
+            u = u ** sp.get("heat_pow", 1.4)
+            ha.data[v.index].color = (u, u, u, 1)
+        col.data.materials.append(collar_heat_material("collar_hot", 40 + k, sp.get("heat_strength", 1.6)))
+    else:
+        col.data.materials.append(iron("collar", 40 + k, cell=8.0, tilt=0.085))
     e = m + 1.0
     fl = slab(st, "floor", rrect(ax + e, ay + e, ax + s - e, ay + s - e, 1.2), 0.0, zf, 0.25)
     fl.data.materials.append(floor_material("floor", 60 + k, span=s - 2 * e, inset=m + cw + 0.05 - 1.0))
@@ -739,7 +824,7 @@ def sill(N):
     pts = [(x, y + 0.12 * math.sin(x / 37.0 + N)) for x, y in pts]
     ob = slab(st, "sill", pts, 0.0, 2.4, 0.8)
     wear(st, ob, k0=0.3, k1=1.0, seed=N)
-    ob.data.materials.append(iron("sill", 70 + N, scale=6.5))
+    ob.data.materials.append(iron("sill", 70 + N, cell=10.0))
     for i in range(N - 1):
         x = sp["over"] + sp["seat"] + 3 + sp["pitch"] * i + rnd.uniform(-0.2, 0.2)
         r = dome(st, f"r{i}", x, 3.5, 2.4, 1.55, flat=0.6)
@@ -749,21 +834,77 @@ def sill(N):
 
 
 def tag(w):
+    """A key tag: a plate of the chain's iron, w by 16, an ear on its top whose hole a small link
+    threads. The link runs up `cut` px to the band it hangs from and is cut there by a holdout
+    (in the game the band covers that line). The plate hangs turned a little toward the light,
+    its face rubbed by handling, so the code's pressed letter reads dark on it."""
+    from mathutils import Euler, Matrix
     sp = SPEC["tag"]
     h = sp["height"]
     ax, ay = sp["at"]
-    st = Stage(w + 6, h + 6)
-    hx, hy = ax + w * sp["hole"][0], ay + sp["hole"][1]
-    ob = slab(st, "tag", rrect(ax, ay, ax + w, ay + h, 2.4), 0.3, 1.9, 0.55, holes=[circle(hx, hy, 1.45, 24)[::-1]])
-    wear(st, ob, k0=0.3, k1=1.0, seed=w)
-    ob.data.materials.append(iron("tag", 90 + w, scale=8.0, tilt=0.1))
+    st = Stage(w + ax + 6, ay + h + 6)
+    cxp, bv = ax + w / 2, 0.55
+    plate = slab(st, "tag", rrect(ax + bv, ay + bv, ax + w - bv, ay + h - bv, 2.0), 0.2, 1.9, bv)
+    ew, eh = sp.get("ear", [9.0, 5.0])
+    hy = ay - sp.get("hole_y", 1.7)
+    ear = slab(st, "ear", rrect(cxp - ew / 2 + bv, ay - eh + 1.0 + bv, cxp + ew / 2 - bv, ay + 2.0, 2.2), 0.4, 1.7, bv,
+               holes=[circle(cxp, hy, 1.45, 24)[::-1]])
+    piv = st.P(cxp, hy, 1.0)
+    R = Euler([-math.radians(a) for a in sp.get("tilt", [7.0, 5.0])] + [0.0]).to_matrix().to_4x4()
+    for o in (plate, ear):
+        o.matrix_world = Matrix.Translation(piv) @ R @ Matrix.Translation(-piv) @ o.matrix_world
+    L, Wd, wr = sp.get("link", [10.5, 6.6, 0.95])
+    lk, _ = C.link_mesh("tlink", L * st.S * U, Wd * st.S * U, wr * st.S * U)
+    lk.rotation_euler = (math.radians(sp.get("link_turn", 55)), 0, math.pi / 2)
+    lk.location = st.P(cxp, hy + 0.5 - (L / 2 - wr), 1.05)
+    st.add(lk)
+    bpy.context.view_layer.update()
+    C.mark_wear([lk, ear], wr * st.S * U)
+    lk.data.materials.append(iron("tlink", 95 + w, cell=6.0, tilt=0.03))
+    for o, s in ((plate, w), (ear, w + 1)):
+        wear(st, o, k0=0.3, k1=1.0, ztop=0.85, zw=sp.get("zw", 0.75), seed=s)
+        o.data.materials.append(iron("tag", 90 + s, cell=9.0, tilt=0.05))
+    cut = ay - sp.get("cut", 7.0)
+    W_ = w + ax + 6
+    ho = slab(st, "cutter", [(-4, -12), (W_ + 4, -12), (W_ + 4, cut), (-4, cut)], -1.0, 14.0, 0.05)
+    ho.is_holdout = True
+    ho.visible_shadow = False
     st.render(f"tag_{w}")
 
 
-def ring_only():
-    st = Stage(12, 16)
-    tag_ring(st, 6, 1.5, 12.5, 3)
-    st.render("tag_ring")
+def hanger():
+    """One of the two hangers tying the seats' sill to the chain (so cuff, chain and seats are one
+    object): an eye under the strap, a link face-on through it, and a link on edge through that
+    one, whose foot the game lays inside a face-on link of the chain (drawn over it). Anchor: the
+    eye's foot bar (SPEC hanger.eye)."""
+    sp = SPEC["hanger"]
+    W, H = sp["canvas"]
+    st = Stage(W, H)
+    ex, ey = sp["eye"]
+    re_, rw = sp.get("eye_r", 0.9), sp["wire"]
+    L, Wd = sp["link"]
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.9 * st.S * U, minor_radius=re_ * st.S * U, major_segments=48,
+                                     minor_segments=12, location=st.P(ex, ey - 1.9, 1.6))
+    eye = bpy.context.active_object
+    eye.rotation_euler = (0, math.pi / 2, 0)
+    bpy.ops.object.transform_apply(rotation=True)
+    eye.data.polygons.foreach_set("use_smooth", [True] * len(eye.data.polygons))
+    st.add(eye)
+    ya = ey - re_ - rw + L / 2 - rw                    # A hooked over the eye's foot bar
+    yb = ya + (L / 2 - rw) - 2 * rw + (L / 2 - rw)     # B hooked over A's foot bar
+    a, _ = C.link_mesh("hangA", L * st.S * U, Wd * st.S * U, rw * st.S * U)
+    a.rotation_euler = (0, 0, math.pi / 2)
+    a.location = st.P(ex, ya, 1.6)
+    b, _ = C.link_mesh("hangB", L * st.S * U, Wd * st.S * U, rw * st.S * U)
+    b.rotation_euler = (math.radians(90 - sp.get("turn", 25)), 0, math.pi / 2)
+    b.location = st.P(ex, yb, 1.6)
+    st.add(a)
+    st.add(b)
+    bpy.context.view_layer.update()
+    C.mark_wear([eye, a, b], rw * st.S * U)
+    for i, o in enumerate((eye, a, b)):
+        o.data.materials.append(iron(f"hang{i}", 140 + i, cell=6.0, tilt=0.03))
+    st.render("hanger")
 
 
 def lock(state):
@@ -777,20 +918,21 @@ def lock(state):
     by = sp["body_top"] + drop
     x0, x1 = ax - bw / 2, ax + bw / 2
     body_pts = B.outline(x0, by, x1, by + bh, corners=[8, 8, 13, 13], n_round=16)
-    kh = circle(ax, by + 19.5, 1.75, 24)[::-1]
-    slot = [(ax - 0.7, by + 20.2), (ax + 0.7, by + 20.2), (ax + 0.9, by + 24.2), (ax - 0.9, by + 24.2)][::-1]
+    kh = circle(ax, by + sp.get("keyhole_y", 21.5), 1.3, 24)[::-1]
+    ky = by + sp.get("keyhole_y", 21.5)
+    slot = [(ax - 0.5, ky + 0.6), (ax + 0.5, ky + 0.6), (ax + 0.7, ky + 3.4), (ax - 0.7, ky + 3.4)][::-1]
     body = slab(st, "body", body_pts, 1.5, 7.5, 2.0, holes=[kh])
     wear(st, body, k0=0.25, k1=0.9, seed=1)
     body.data.materials.append(body_heat_material("body", 120, SPEC["lock"].get("heat", 1.0)) if state == "hot"
-                               else iron("body", 120, scale=6.0))
-    core = slab(st, "core", circle(ax, by + 21.5, 3.6, 24), 2.0, 3.0, 0.2)
+                               else iron("body", 120, cell=8.0, tilt=0.11))
+    core = slab(st, "core", circle(ax, ky + 1.5, 3.0, 24), 2.0, 3.0, 0.2)
     core.data.materials.append(B.plain_material("dark", "#050404", 0.2, 0.8))
     slt = slab(st, "slot", slot, 6.6, 7.7, 0.1)
     slt.data.materials.append(B.plain_material("dark2", "#060505", 0.2, 0.8))
     # the shackle: a U of round bar, its apex up behind the link's upper bar, its legs down in
     # front of the lower one into the body
     Rs, bar = 7.0, 1.85
-    apex = ay - 4.0
+    apex = ay - sp.get("apex", 6.8)          # its crown above the link's upper bar (drawn over it in the game)
     pts = []
     ly = by - 2.5 if open_ else by + 3       # sprung, the short leg stands clear of the body
     for i in range(40):                      # left leg up
@@ -854,7 +996,7 @@ def main():
     OUT = argv[1]
     os.makedirs(OUT, exist_ok=True)
     C.SPEC.update(SPEC["material"])
-    want = set(argv[2:]) or {"cuff", "small", "seats", "sill", "tags", "lock"}
+    want = set(argv[2:]) or {"cuff", "small", "seats", "sill", "tags", "hanger", "lock"}
     if "cuff" in want:
         cuff("cuff", True)
     if "small" in want:
@@ -872,7 +1014,8 @@ def main():
     if "tags" in want:
         for w in SPEC["tag"]["widths"]:
             tag(w)
-        ring_only()
+    if "hanger" in want:
+        hanger()
     if "lock" in want:
         for s in ("", "open", "hot"):
             lock(s)
