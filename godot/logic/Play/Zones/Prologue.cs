@@ -208,9 +208,9 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         // Until F7 is seen, its first red line waits for a moment it can be taught in (au1 item 10: the
         // first was drawn off the screen's middle, under another callout, and went untaught): it isn't
-        // begun while the Knight stands far from her or another callout has the screen.
+        // begun while another callout has the screen (a gate on her distance kept a kiting run from ever seeing it, m3).
         if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line")
-            && (Dist(kw.X, kw.Z, B.Player.X, B.Player.Z) > 8 || G.Teaching != null))
+            && G.Teaching != null)
             kw.RangedT = Math.Max(kw.RangedT, 0.25);
         if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
         // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
