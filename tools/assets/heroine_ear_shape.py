@@ -404,6 +404,135 @@ def paint_join(art, faces=None, report=True):
             path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + PAINT_MARK).strip().encode("latin-1"))
 
 
+# ---- the tick: the painted crease at her ear's lower front, eased ----
+TICK_MARK = "ear_tick"
+TICK_T = (0.05, 0.12, 0.36, 0.44)    # the ear's height (t): none under the first, whole from the second to the third
+TICK_Z = (-0.006, -0.004, 0.0045, 0.0065)  # m from the ear's front (z): the same (the crease runs 2-3 mm before it)
+TICK_SIGMA = 0.0015                  # m: the low-pass a texel is held against
+TICK_L = (0.015, 0.05)               # its darkness (OKLab L) under the low-pass: eased from the first, in full from the second
+TICK_A = (0.0, 0.006)                # and its redness (OKLab a) over it: the same (pores and freckles, browner, keep theirs)
+TICK_CUT = 0.5                       # of its excess (redness, darkness, yellow) taken off
+
+
+def _band(x, e):
+    return _ss((x - e[0]) / (e[1] - e[0])) * _ss((e[3] - x) / (e[3] - e[2]))
+
+
+def tick_off(art, faces=None, report=True):
+    """The AI paint's crease line where her tragus meets her cheek, a dark red tick at the Look turned 40 on fair
+    skin (face 41's j5): each texel there darker and redder than its 1.5 mm neighbourhood loses TICK_CUT of its
+    excess darkness and colour. Pores and freckles (browner, not redder) keep theirs. Done-mark: each paint's JPEG comment ear_tick."""
+    from PIL import Image
+    import heroine_ears as he
+    import heroine_brow_strokes as bs
+    tex = os.path.join(art, "head_tex")
+    P, UV, F, head_y = _head(os.path.join(art, "heroine.glb"))
+    paints = [fn for fn in sorted(os.listdir(tex)) if fn.startswith("heroine_head") and fn.endswith(".jpg")]
+    if faces:
+        paints = [fn for fn in paints if fn[len("heroine_head"):-4].lstrip("_") in faces or (fn == "heroine_head.jpg" and "own" in faces)]
+    sides = []
+    for sx in (-1, 1):
+        f = ear_frame(P, sx, head_y)
+        y0, y1 = f["y"]
+        t = (P[:, 1] - y0) / (y1 - y0)
+        dz = P[:, 2] - f["zf"]
+        sel = (np.sign(P[:, 0]) == sx) & (t > TICK_T[0] - 0.15) & (t < TICK_T[3] + 0.15) & (dz > TICK_Z[0] - 0.008) & (dz < TICK_Z[3] + 0.008)
+        sides.append((sx, f, F[sel[F].all(1)]))
+    for fn in paints:
+        path = os.path.join(tex, fn)
+        if TICK_MARK in bs.comment(path):
+            print("EAR_TICK: %s has had it" % fn)
+            continue
+        img = Image.open(path).convert("RGB")
+        size = img.size[0]
+        A = np.asarray(img, np.float32) / 255
+        out = A.copy()
+        for sx, f, T in sides:
+            iy, ix, X = _raster(UV, T, P, size)
+            lab = he.oklab(_lin(A[iy, ix].astype(np.float64)))
+            lo = X.min(0) - 0.01
+            shape = tuple(np.ceil((X.max(0) + 0.01 - lo) / VOX).astype(int) + 1)
+            lp, _ = _lowpass(X, lab, np.ones(len(X), np.float32), TICK_SIGMA, lo, shape)
+            y0, y1 = f["y"]
+            w = _band((X[:, 1] - y0) / (y1 - y0), TICK_T) * _band(X[:, 2] - f["zf"], TICK_Z)
+            w *= _ss((lp[:, 0] - lab[:, 0] - TICK_L[0]) / (TICK_L[1] - TICK_L[0]))
+            w *= _ss((lab[:, 1] - lp[:, 1] - TICK_A[0]) / (TICK_A[1] - TICK_A[0])) * TICK_CUT
+            new = lab - w[:, None] * (lab - lp)
+            res = np.clip(he.unoklab(new), 0, 1)
+            out[iy, ix] = _srgb(res).astype(np.float32)
+            if report:
+                print("EAR_TICK: %s side %+d: %d texels eased (%d over 0.25), largest L lift %.3f" % (
+                    fn, sx, int((w > 0.01).sum()), int((w > 0.25).sum()), float((w * (lp[:, 0] - lab[:, 0])).max())))
+        Image.fromarray(np.clip(out * 255 + 0.5, 0, 255).astype(np.uint8)).save(
+            path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + TICK_MARK).strip().encode("latin-1"))
+
+
+# ---- the ear's front: no paler than her cheek as it renders ----
+FRONT_MARK = "ear_front"
+FRONT_T = (0.20, 0.32, 0.92, 1.02)   # the ear's height (t): its front from the tragus to the helix's top
+FRONT_Z = (0.007, 0.004)             # m behind the ear's front (z): in full within the second, none past the first
+FRONT_EAR = (0.0007, 0.002)          # m from her ear's own points: in full within the first, none past the second
+FRONT_GAP = 0.05                     # OKLab L the ear's front gains over her cheek on its way to the screen (her face's
+                                     # tone on the cheek, none on the ear: +0.04; its front facing the key: +0.047), less
+                                     # the 0.035 a lit rim may keep (measured face 42, braid copper at the Look turned 40)
+FRONT_MAX = 0.06                     # the most L taken off
+FRONT_C = 0.35                       # its chroma raised by this share at the full cut (it rendered 0.83x the cheek's)
+
+
+def front_tone(art, faces=None, report=True):
+    """Her ear's front (the helix root, the crus, down to the tragus) rendered a pale, grey strip beside her cheek at
+    the Look turned 40 (face 42's j1: "a pale near-white band ... on the join the owner flagged"): the cheek takes her
+    face's tone and the ear does not, and the front faces the key. Each paint's ear front is laid darker by its own
+    gap to its cheek (the paint's L there over the cheek's, + FRONT_GAP, up to FRONT_MAX) and a little richer; a face
+    whose ear already paints darker (Sunborn) is left. Done-mark: each paint's JPEG comment ear_front."""
+    from PIL import Image
+    from scipy.spatial import cKDTree
+    import heroine_ears as he
+    import heroine_brow_strokes as bs
+    tex = os.path.join(art, "head_tex")
+    P, UV, F, head_y = _head(os.path.join(art, "heroine.glb"))
+    paints = [fn for fn in sorted(os.listdir(tex)) if fn.startswith("heroine_head") and fn.endswith(".jpg")]
+    if faces:
+        paints = [fn for fn in paints if fn[len("heroine_head"):-4].lstrip("_") in faces or (fn == "heroine_head.jpg" and "own" in faces)]
+    sides = []
+    for sx in (-1, 1):
+        f = ear_frame(P, sx, head_y)
+        y0, y1 = f["y"]
+        t = (P[:, 1] - y0) / (y1 - y0)
+        dz = P[:, 2] - f["zf"]
+        sel = (np.sign(P[:, 0]) == sx) & (t > 0.1) & (t < 1.1) & (dz > -0.015) & (dz < 0.02)
+        sides.append((sx, f, F[sel[F].all(1)], cKDTree(P[f["ear"]])))
+    for fn in paints:
+        path = os.path.join(tex, fn)
+        if FRONT_MARK in bs.comment(path):
+            print("EAR_FRONT: %s has had it" % fn)
+            continue
+        img = Image.open(path).convert("RGB")
+        size = img.size[0]
+        A = np.asarray(img, np.float32) / 255
+        out = A.copy()
+        for sx, f, T, et in sides:
+            iy, ix, X = _raster(UV, T, P, size)
+            lab = he.oklab(_lin(A[iy, ix].astype(np.float64)))
+            y0, y1 = f["y"]
+            t = (X[:, 1] - y0) / (y1 - y0)
+            dz = X[:, 2] - f["zf"]
+            de = et.query(X)[0]
+            ear = (de < 0.0007) & (dz > -0.007) & (t > 0.3) & (t < 0.9)
+            cheek = (de > 0.004) & (dz > 0.004) & (dz < 0.012) & (t > 0.3) & (t < 0.9)
+            cut = float(np.clip(lab[ear, 0].mean() - lab[cheek, 0].mean() + FRONT_GAP, 0, FRONT_MAX))
+            w = _band(t, FRONT_T) * _ss((dz + FRONT_Z[0]) / (FRONT_Z[0] - FRONT_Z[1])) * _ss((FRONT_EAR[1] - de) / (FRONT_EAR[1] - FRONT_EAR[0]))
+            new = lab.copy()
+            new[:, 0] -= w * cut
+            new[:, 1:] *= (1 + FRONT_C * w * cut / FRONT_MAX)[:, None]
+            out[iy, ix] = _srgb(np.clip(he.unoklab(new), 0, 1)).astype(np.float32)
+            if report:
+                print("EAR_FRONT: %s side %+d: ear front L %.3f, cheek %.3f: cut %.3f over %d texels" % (
+                    fn, sx, lab[ear, 0].mean(), lab[cheek, 0].mean(), cut, int((w > 0.5).sum())))
+        Image.fromarray(np.clip(out * 255 + 0.5, 0, 255).astype(np.uint8)).save(
+            path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + FRONT_MARK).strip().encode("latin-1"))
+
+
 # ---- the scalp shade: none on her ear ----
 
 SHADE_MARK = "ear_shade"
@@ -515,6 +644,10 @@ if __name__ == "__main__":
         run_art(a[1], follow="--no-follow" not in a, dry="--dry" in a, keep=keep)
     elif a and a[0] == "--paint":
         paint_join(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
+    elif a and a[0] == "--front":
+        front_tone(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
+    elif a and a[0] == "--tick":
+        tick_off(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
     elif a and a[0] == "--shade":
         # (--shade ART [SRC]: SRC, the shade as heroine_features.py wrote it (unmarked), to lay it again)
         shade_off(a[1], a[2] if len(a) > 2 else None)
