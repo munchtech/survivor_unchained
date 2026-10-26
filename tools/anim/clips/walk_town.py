@@ -50,7 +50,9 @@ CALLINGS = {
 HEEL = {"l": np.array([0.0938, 0.0, -0.0799]), "r": np.array([-0.0886, 0.0, -0.0787])}
 BALL = {"l": np.array([0.1245, 0.0, 0.0648]), "r": np.array([-0.1234, 0.0, 0.0651])}
 UP, FWD, LAT = np.array([0, 1.0, 0]), np.array([0, 0, 1.0]), np.array([1.0, 0, 0])
+CLEAR = 0.015       # the swing foot's sole and toe tip at least this far off the ground (m)
 TOE_OUT = 6.0       # each foot's heading out from straight ahead (deg)
+HIP_CLEAR = 0.147   # the hand's and fingers' least distance from the thigh's bone line (m)
 THUMB = 10.0        # the knuckle line's heading in from straight ahead (deg): thumbs forward, palms to the thighs
 LAG = 2.5          # frames the elbow's bend peaks behind the shoulder's forward swing
 _BASE = {}
@@ -250,6 +252,13 @@ def _trunk(w, c):
         for j, share in ((s2, 0.5), (s3, 0.5)):
             q = np.array([qmul(qaxis(UP, b * share), qaxis(FWD, a * share)) for a, b in zip(dr, dy)])
             w.turn(j, q)
+    # The chest over the pelvis (her_2's sits 1.2 cm to her left of it, its right hand nearer her hip): the lower
+    # spine leaned, the chest turned back level.
+    G, Pp = w.g()
+    dx = float((Pp[:, s3, 0] - Pp[:, pel, 0]).mean())
+    a = math.degrees(math.atan2(dx, float(np.linalg.norm(Pp[:, s3] - Pp[:, s1], axis=1).mean())))
+    w.turn(s1, np.tile(qaxis(FWD, a), (n, 1)), G)
+    w.turn(s3, np.tile(qaxis(FWD, -a), (n, 1)))
     # Shoulders level in the chest (her_2 carries the left 2 cm high), then (down, back) deg, about the chest's axes.
     G, Pp = w.g()
     yl, yr = (np.mean([qrot(qinv(G[t, s3]), Pp[t, I[f"upperarm_{s}"]] - Pp[t, s3])[1] for t in range(n)]) for s in "lr")
@@ -369,6 +378,24 @@ def _arms(w, c, fingers):
     # Fingers: a graded half-curl, the same every frame.
     for name, val in fingers.items():
         w.L[:, I[name]] = val
+    # Clear of her hip: where the hip sways out under a hand (and her outfit with it), the arm let out from the
+    # shoulder until the hand and fingers keep HIP_CLEAR from the thigh's bone line (motion.py checks the outfits).
+    def segd(x, a, b):
+        ab = b - a
+        u = np.clip(np.sum((x - a) * ab, -1) / np.sum(ab * ab, -1), 0, 1)
+        return np.linalg.norm(x - (a + ab * u[..., None]), axis=-1)
+    for _ in range(2):
+        G, Pp = w.g()
+        for s, sg in (("l", 1.0), ("r", -1.0)):
+            pts = [I[nm] for nm in w.sk.names if nm.endswith("_" + s) and nm.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb")]
+            D = np.min([segd(Pp[:, j], Pp[:, I[f"thigh_{s}"]], Pp[:, I[f"calf_{s}"]]) for j in pts], axis=0)
+            lo = np.degrees(np.maximum(HIP_CLEAR - D, 0.0) / 0.5)
+            out_ = lo.copy()
+            for _k in range(40):
+                out_ = np.clip(_smooth(out_, 1.5), lo, 30.0)
+            if out_.max() > 0.01:
+                w.turn(I[f"upperarm_{s}"], np.array([qaxis(FWD, sg * a) for a in out_]), G)
+                G, Pp = w.g()
 
 
 def _finger_pose(rig, w):
@@ -459,6 +486,21 @@ def _feet(w, c, base_w):
                 a = a * a * (3 - 2 * a)
                 corr[t] = a * corr[edge]
         Pf = Pf + corr
+        # Through the swing (away from the stance by more than the ease), the sole and the toe tip kept CLEAR off the
+        # ground (her_2's swing foot passes a centimetre over it and scuffs): the foot lifted by a smooth hump.
+        lf = I[f"ball_leaf_{s}"]
+        toe = np.array([qrot(qinv(G[t, f]), Pp[t, lf] - Pp[t, f]) for t in range(n)])
+        low_ = np.array([min((Pf[t] + qrot(Gf[t], hl))[1], (Pf[t] + qrot(Gf[t], bl))[1], (Pf[t] + qrot(Gf[t], toe[t]))[1] - 0.023)
+                         for t in range(n)])
+        near = np.array([min(min((t - u) % n, (u - t) % n) for u in idx) for t in range(n)])
+        # (and from the frame after toe-off, off the ground at once: a toe left down while the foot eases away slides)
+        after = np.array([(t - idx[-1]) % n for t in range(n)])
+        lo = np.where(near > ramp, np.maximum(CLEAR - low_, 0.0), np.where((after >= 0) & (after <= ramp), np.maximum(0.011 - low_, 0.0), 0.0))
+        hi = np.where(mask & (after != 0), 0.0, 1.0)
+        lift = lo.copy()
+        for _ in range(40):
+            lift = np.clip(_smooth(lift, 1.5), lo, hi)
+        Pf[:, 1] += lift
         out[s] = (Gf, Pf)
         spells[s] = mask
     return out, spells
