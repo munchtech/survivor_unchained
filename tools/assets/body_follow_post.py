@@ -60,6 +60,10 @@ PAULDRON_NEAR, PAULDRON_FAR = 0.11, 0.15
 SHAPE_K, SHAPE_POW = 3, 4
 SHAPE_PARTS = ("top", "cloak", "collar")
 HAIR_WEIGHTS = False            # (hair keeps its own chains' weights; its rest follows)
+# pauldrons (a slot): BF_PAUL_HELPERS=fold folds the helper joints' weight change into their parents (the plate rides
+# the arm and clavicle, not the deltoid's bulge); BF_PAUL_SHAPES=0 carries no shoulder shapes onto them
+PAUL_HELPERS = os.environ.get("BF_PAUL_HELPERS", "on")
+PAUL_SHAPES = os.environ.get("BF_PAUL_SHAPES", "1") != "0"
 
 
 def _say(*a):
@@ -343,10 +347,83 @@ def _add_joints(G, B, need):
     return out
 
 
+def _piece_slot(path, kind):
+    if kind != "armor":
+        return None
+    stem = os.path.basename(path).replace(".gltf", "")
+    try:
+        return [r["slot"] for r in json.load(open(os.path.join(os.path.dirname(path), "armor_index.json"))) if r["id"] == stem][0]
+    except (OSError, IndexError):
+        return None
+
+
+RIGID_MATS = ("steel", "darksteel", "blacksteel", "gold", "bronze", "iron", "rust", "rivetbronze", "claspgold", "bone",
+              "amethyst", "shadow")
+RIGID = os.environ.get("BF_RIGID", "1") != "0"
+
+
+def _rigid_groups(G, prims, inv, offs, Fw, n):
+    """Rigid shells: welded components of the metal meshes (and the shadow proxy) whose points all carry one weight
+    set (skinned rigidly in the game), grouped by that set: [point indices] a group."""
+    g = G.g
+    key = np.full(n, None, object)
+    metal = np.zeros(n, bool)
+    for k, (node, m, p) in enumerate(prims):
+        mat = m.get("name", "").rsplit(".", 1)[-1]
+        a = p["attributes"]
+        if not (mat in RIGID_MATS or mat.startswith("gem_")) or "JOINTS_0" not in a or "skin" not in node:
+            continue
+        sk = g["skins"][node["skin"]]
+        nm = [g["nodes"][j]["name"] for j in sk["joints"]]
+        J, W = _weights(G, a)
+        wi = inv[offs[k]:offs[k + 1]]
+        for i, (jr, wr) in enumerate(zip(J, W)):
+            key[wi[i]] = tuple(sorted((nm[j], round(float(w), 3)) for j, w in zip(jr, wr) if w > 1e-3))
+        metal[wi] = True
+    comp = _components(Fw, n)
+    groups = {}
+    for c in np.unique(comp[metal]):
+        sel = np.nonzero(comp == c)[0]
+        if not metal[sel].all() or len(sel) < 9:
+            continue
+        ks = set(key[sel])
+        if len(ks) == 1:
+            groups.setdefault(ks.pop(), []).append(sel)
+    return [np.concatenate(v) for v in groups.values()]
+
+
+def _kabsch(X, Y):
+    """The rotation and translation that best carry points X onto Y (least squares)."""
+    cx, cy = X.mean(0), Y.mean(0)
+    U, _, Vt = np.linalg.svd((X - cx).T @ (Y - cy))
+    d = np.sign(np.linalg.det(Vt.T @ U.T))
+    R = Vt.T @ np.diag([1, 1, d]) @ U.T
+    return R, cy - cx @ R.T
+
+
+def _fold_helpers(dw, B, A):
+    """dw [n, len(B.names)]: each joint BODY has and BASE lacks (the shoulder helpers) folded into its parent."""
+    bp = {}
+    for i, n in enumerate(B.nodes):
+        for c in n.get("children", []):
+            bp[c] = i
+    dw = dw.copy()
+    for k, nm in enumerate(B.names):
+        if nm in A.names:
+            continue
+        pi = bp[B.joint_nodes[k]]
+        while B.nodes[pi]["name"] not in A.names:
+            pi = bp[pi]
+        dw[:, B.names.index(B.nodes[pi]["name"])] += dw[:, k]
+        dw[:, k] = 0
+    return dw
+
+
 def follow_file(path, fld, kind, shapes, dry=False):
     A, B = fld.A, fld.B
     G = _Gl(path)
     g = G.g
+    pslot = _piece_slot(path, kind)
     ex = g.setdefault("asset", {}).setdefault("extras", {})
     bsha = fld.bsha
     if (ex.get(MARK) or {}).get("body") == bsha:
@@ -378,7 +455,7 @@ def follow_file(path, fld, kind, shapes, dry=False):
     Fw = np.vstack(Fw)
     Fw = Fw[(Fw[:, 0] != Fw[:, 1]) & (Fw[:, 1] != Fw[:, 2]) & (Fw[:, 2] != Fw[:, 0])]
     inb = np.nonzero(((Q > fld.lo) & (Q < fld.hi)).all(1))[0]
-    res = {"pts": len(P), "near": 0, "moved": 0, "max_mm": 0.0, "wpts": 0, "spike_mm": 0.0, "soft": 0, "pit_out": 0}
+    res = {"pts": len(P), "rigid": 0, "bend_mm": 0.0, "near": 0, "moved": 0, "max_mm": 0.0, "wpts": 0, "spike_mm": 0.0, "soft": 0, "pit_out": 0}
     M = np.zeros_like(Q)
     if len(inb):
         d, f, b, sd, n0, _ = A.surface(Q[inb])
@@ -414,6 +491,17 @@ def follow_file(path, fld, kind, shapes, dry=False):
             Q1[kp[out]] += ((want - s1)[out])[:, None] * n1[out]
             res["pit_out"] = int(out.sum())
         M = Q1 - Q
+        # rigid shells moved rigidly: the best-fit rotation and translation of their points' moves
+        res["rigid"], res["bend_mm"] = 0, 0.0
+        if RIGID:
+            for sel in _rigid_groups(G, prims, inv, offs, Fw, len(Q)):
+                if np.abs(M[sel]).max() < 1e-7:
+                    continue
+                R, t = _kabsch(Q[sel], Q1[sel])
+                X1 = Q[sel] @ R.T + t
+                res["bend_mm"] = max(res["bend_mm"], float(np.linalg.norm(X1 - Q1[sel], axis=1).max() * 1000))
+                M[sel] = X1 - Q[sel]
+                res["rigid"] += len(sel)
         res["near"] = int((d < 0.010).sum())
         mv = np.linalg.norm(M, axis=1)
         res["moved"] = int((mv > 1e-5).sum())
@@ -451,6 +539,8 @@ def follow_file(path, fld, kind, shapes, dry=False):
                 dw = dWw[wi]
                 if not (np.abs(dw).max(1) > 1e-4).any():
                     continue
+                if PAUL_HELPERS == "fold" and (pslot or _slot_of(m.get("name", ""), kind)) == "pauldrons":
+                    dw = _fold_helpers(dw, B, A)
                 # dense over BODY's names
                 Dn = np.zeros((len(J), len(B.names)))
                 bix = np.array([B.names.index(pn[j]) for j in range(len(pn))])
@@ -523,7 +613,7 @@ def _shapes(G, prims, Ps, M, inv, offs, fld, shapes, kind, path):
         slot = piece_slot if kind == "armor" else _slot_of(m.get("name", ""), kind)
         if slot in SHAPE_PARTS:
             near, far = SHAPE_NEAR, SHAPE_FAR
-        elif slot == "pauldrons":
+        elif slot == "pauldrons" and PAUL_SHAPES:
             near, far = PAULDRON_NEAR, PAULDRON_FAR
         else:
             continue
@@ -602,8 +692,8 @@ def main(argv):
     for f, kind in files_of(art, parts):
         r = follow_file(f, fld, kind, shapes, dry)
         if r:
-            _say("FOLLOW %-34s %7d pts: %6d within 10 mm of her, %6d moved (max %.2f mm, off its neighbours %.2f; %d over the re-meshed pit, %d of them set back out of her), %6d reweighted, %7d shape moves"
-                 % (os.path.basename(f), r["pts"], r["near"], r["moved"], r["max_mm"], r["spike_mm"], r["soft"], r["pit_out"], r["wpts"], r["shaped"]))
+            _say("FOLLOW %-34s %7d pts: %6d within 10 mm of her, %6d moved (max %.2f mm, off its neighbours %.2f; %d over the re-meshed pit, %d of them set back out of her), %6d reweighted, %7d shape moves; %d points in rigid shells moved rigidly (bend taken out: max %.2f mm)"
+                 % (os.path.basename(f), r["pts"], r["near"], r["moved"], r["max_mm"], r["spike_mm"], r["soft"], r["pit_out"], r["wpts"], r["shaped"], r["rigid"], r["bend_mm"]))
     # records
     subs = []
     if "outfits" in parts:

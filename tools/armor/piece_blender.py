@@ -2536,15 +2536,19 @@ if TU:
         # the belly's top under the lower rim her normal points up or down along the plate and the ray missed it, so that
         # skin was never tucked and came up 5-7 mm through the lower rim in the town runs)
         hz_ = TU_.get("horiz", 0.0)
+        # (tuck_under.from (Body 13, 26 Oct): the ray's start under her skin, m (default 3 mm). A plate laid by its own
+        # law, never on her skin (the lames, under the plate above), can sink deeper into a fuller arm than 3 mm: from
+        # 3 mm its skin's ray started outside it and missed, and that skin came through it untucked at rest)
+        fr_ = TU_.get("from", 0.003)
         for i in near_:
-            h_ = ttree_.ray_cast(Vector(bw_[i] - bn_[i] * 0.003), Vector(bn_[i]), reach_ + 0.003)
+            h_ = ttree_.ray_cast(Vector(bw_[i] - bn_[i] * fr_), Vector(bn_[i]), reach_ + fr_)
             hit_[i] = h_[0] is not None
             if not hit_[i] and hz_:
                 nh_ = np.array([bn_[i][0], bn_[i][1], 0.0])
                 ln_ = float(np.linalg.norm(nh_))
                 if ln_ > hz_:
                     nh_ /= ln_
-                    h_ = ttree_.ray_cast(Vector(bw_[i] - nh_ * 0.003), Vector(nh_), reach_ + 0.003)
+                    h_ = ttree_.ray_cast(Vector(bw_[i] - nh_ * fr_), Vector(nh_), reach_ + fr_)
                     hit_[i] = h_[0] is not None
         _, gid_ = np.unique(np.round(bw_ / 1e-6).astype(np.int64), axis=0, return_inverse=True)
         gid_ = np.asarray(gid_).ravel()
