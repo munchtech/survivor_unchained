@@ -184,16 +184,23 @@ public sealed class OwnWalls
         return false;
     }
 
-    /// <summary>(E9c2) What furnishes each inside, as kit pieces: a floor of boards (or flags, one house in three) on its
-    /// cells, a hearth slab under its chimney with a pot on it, a table and a stool in the middle of a room big enough,
-    /// and a bed (a big house) or a chest in the corner farthest from its door. All under the cut (0.9 m).</summary>
+    /// <summary>(E9c2, E9c3) What furnishes each inside: a floor of boards (or flags, one house in three) on its cells; a hearth
+    /// under its chimney ("hearth": Campfire's stone ring, ash bed, logs and embers, a low ember light) with the cauldron and
+    /// a log pile beside it; a bed of ours ("own:bed") in the corner farthest from the doors (a big house; else a chest), a
+    /// chest at its foot and a rug by it; a table with a bench and a stool on a rug in the middle where the room is big
+    /// enough; what a house keeps along its walls (barrels, sacks, crates, a low cupboard, a workbench, buckets, pots), backs
+    /// to the wall, in runs with gaps, never before a door; strewn rushes ("straw") on the floor left. All under the cut
+    /// (0.9 m). Each inside's bare floor (nothing of these over it; its share of the floor inside the walls) is in Bare.</summary>
     public static List<(string Id, Transform3D At)> Furnish(ZoneData z)
     {
         var o = new List<(string, Transform3D)>();
+        Bare.Clear();
         foreach (var ins in InsidesOf(z))
         {
             var back = ins.To.AffineInverse();
             uint hh = (uint)(ins.House * 2654435761u);
+            uint seq = hh;
+            float Rnd() { seq = seq * 1664525u + 1013904223u; return (seq >> 8) / 16777216f; }
             string floor = hh % 3 == 1 ? "village/Floor_UnevenBrick" : "village/Floor_WoodLight";
             Transform3D At(float u, float v, float y, float yaw, Vector3? scale = null)
             {
@@ -205,58 +212,198 @@ public sealed class OwnWalls
                 o.Add((floor, At(c.GetCenter().X, c.GetCenter().Y, ins.Floor, (hh >> 3) % 2 == 0 ? 0 : Mathf.Pi, new Vector3(c.Size.X / 2f, 1, c.Size.Y / 2f))));
             var r = ins.R;
             const float wall = 0.36f;
+            var inner = r.Grow(-wall);
             var used = new List<Rect2>();
-            bool Free(Rect2 q) => !used.Any(u => u.Intersects(q)) && ins.Cells.Any(c => c.Grow(0.05f).Encloses(q) || c.Intersects(q))
-                && !ins.Doors.Any(d => q.Grow(0.9f).HasPoint(d));
+            var covers = new List<(Rect2 R, float Share)>();
+            bool Inside(Rect2 q) => inner.Grow(0.01f).Encloses(q) && CellsCover(ins, q);
+            bool Free(Rect2 q, float door = 0.9f) => !used.Any(u => u.Intersects(q)) && Inside(q) && !ins.Doors.Any(d => q.Grow(door).HasPoint(d));
+            void Take(Rect2 q, float share = 1f) { used.Add(q); covers.Add((q, share)); }
+            // the hearth: under the chimney, against its nearest wall
             foreach (var ch in ins.Chimneys.Take(1))
             {
-                // (against the nearest wall, within the rectangle)
                 float du0 = ch.X - r.Position.X, du1 = r.End.X - ch.X, dv0 = ch.Y - r.Position.Y, dv1 = r.End.Y - ch.Y;
                 float m = Mathf.Min(Mathf.Min(du0, du1), Mathf.Min(dv0, dv1));
+                const float hr = 0.58f;
+                float u = Mathf.Clamp(ch.X, inner.Position.X + hr + 0.1f, inner.End.X - hr - 0.1f), v = Mathf.Clamp(ch.Y, inner.Position.Y + hr + 0.1f, inner.End.Y - hr - 0.1f);
+                if (m == du0) u = inner.Position.X + hr + 0.12f; else if (m == du1) u = inner.End.X - hr - 0.12f;
+                else if (m == dv0) v = inner.Position.Y + hr + 0.12f; else v = inner.End.Y - hr - 0.12f;
+                var hq = new Rect2(u - hr, v - hr, 2 * hr, 2 * hr);
+                o.Add(("hearth", At(u, v, ins.Floor, (hh % 7) * 0.9f)));
+                Take(hq.Grow(0.12f), 0.9f);
+                // the cauldron and the log pile either side of it, along its wall
                 bool alongU = m == dv0 || m == dv1;
-                float hu = alongU ? 0.75f : 0.5f, hv = alongU ? 0.5f : 0.75f;
-                float u = Mathf.Clamp(ch.X, r.Position.X + wall + hu, r.End.X - wall - hu), v = Mathf.Clamp(ch.Y, r.Position.Y + wall + hv, r.End.Y - wall - hv);
-                if (m == du0) u = r.Position.X + wall + hu; else if (m == du1) u = r.End.X - wall - hu;
-                else if (m == dv0) v = r.Position.Y + wall + hv; else v = r.End.Y - wall - hv;
-                o.Add(("village/Floor_Brick", At(u, v, ins.Floor + 0.04f, alongU ? 0 : Mathf.Pi / 2, new Vector3(0.75f, 5f, 0.5f))));
-                o.Add(("props/Cauldron", At(u, v, ins.Floor + 0.09f, (hh % 7) * 0.9f)));
-                used.Add(new Rect2(u - hu - 0.2f, v - hv - 0.2f, 2 * hu + 0.4f, 2 * hv + 0.4f));
+                var side = alongU ? new Vector2(1, 0) : new Vector2(0, 1);
+                var into = alongU ? new Vector2(0, m == dv0 ? 1 : -1) : new Vector2(m == du0 ? 1 : -1, 0);
+                float wallYaw = Mathf.Atan2(into.X, into.Y);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    var cp = new Vector2(u, v) + side * s * 1.12f;
+                    bool pot = s == ((hh >> 4) % 2 == 0 ? -1 : 1);
+                    var half = pot ? new Vector2(0.5f, 0.5f) : (alongU ? new Vector2(0.32f, 0.5f) : new Vector2(0.5f, 0.32f));
+                    var q = new Rect2(cp - half, half * 2);
+                    if (!Free(q, 0.6f)) continue;
+                    if (pot) o.Add(("props/Cauldron", At(cp.X, cp.Y, ins.Floor, (hh % 5) * 1.2f)));
+                    else
+                    {
+                        // (sawn logs stacked against the wall: two below, one across them)
+                        o.Add(("own:log_short", At(cp.X - into.X * 0.12f - side.X * 0.1f, cp.Y - into.Y * 0.12f - side.Y * 0.1f, ins.Floor, wallYaw + Mathf.Pi / 2, Vector3.One * 0.55f)));
+                        o.Add(("own:log_short", At(cp.X + into.X * 0.12f + side.X * 0.1f, cp.Y + into.Y * 0.12f + side.Y * 0.1f, ins.Floor, wallYaw + Mathf.Pi / 2 + 0.1f, Vector3.One * 0.55f)));
+                        o.Add(("own:log_short", At(cp.X, cp.Y, ins.Floor + 0.1f, wallYaw + Mathf.Pi / 2 - 0.2f, Vector3.One * 0.55f)));
+                    }
+                    Take(q);
+                }
             }
-            // the corner farthest from the doors: a bed in a big house, else a chest
             var door = ins.Doors.Count > 0 ? ins.Doors : new List<Vector2> { r.GetCenter() };
             var corners = new[] { r.Position, new Vector2(r.End.X, r.Position.Y), new Vector2(r.Position.X, r.End.Y), r.End }
                 .OrderByDescending(c => door.Min(d => d.DistanceTo(c))).ToList();
             bool big = r.Area >= 40f;
-            string piece = big ? "props/Bed_Twin1" : "props/Chest_Wood";
-            // (half sizes along the house's u and v: the bed's head to the wall across, the chest's back to the long wall)
-            Vector2 half = big ? new Vector2(0.94f, 1.21f) : new Vector2(0.64f, 0.38f);
+            // the bed (a big house; else a chest) in the corner farthest from the doors, its head to the wall across
             foreach (var c in corners)
             {
                 float su = c.X < r.GetCenter().X ? 1 : -1, sv = c.Y < r.GetCenter().Y ? 1 : -1;
-                var at = new Vector2(c.X + su * (wall + half.X + 0.05f), c.Y + sv * (wall + half.Y + 0.05f));
-                var q = new Rect2(at - half, half * 2);
-                if (!Free(q)) continue;
-                o.Add((piece, At(at.X, at.Y, ins.Floor, big ? (sv > 0 ? Mathf.Pi : 0) : (sv > 0 ? 0 : Mathf.Pi))));
-                used.Add(q);
+                if (big)
+                {
+                    var half = new Vector2(0.93f, 1.22f);
+                    var at = new Vector2(c.X + su * (wall + half.X + 0.06f), c.Y + sv * (wall + half.Y + 0.04f));
+                    var q = new Rect2(at - half, half * 2);
+                    if (!Free(q)) continue;
+                    // (its head, local -z, to the wall at sv)
+                    o.Add(("own:bed", At(at.X, at.Y, ins.Floor, sv > 0 ? 0 : Mathf.Pi)));
+                    Take(q);
+                    // a chest at its foot, a rug along its open side
+                    var cq = new Rect2(at.X - 0.5f, at.Y + sv * (half.Y + 0.45f) - 0.33f, 1.0f, 0.66f);
+                    if (Free(cq, 0.6f)) { o.Add(("own:chest", At(cq.GetCenter().X, cq.GetCenter().Y, ins.Floor, sv > 0 ? Mathf.Pi : 0, Vector3.One * 0.85f))); Take(cq); }
+                    var rq = new Rect2(at.X + su * (half.X + 0.6f) - 0.55f, at.Y - 0.95f, 1.1f, 1.9f);
+                    if (Free(rq, 0.4f)) { o.Add(("rug", At(rq.GetCenter().X, rq.GetCenter().Y, ins.Floor + 0.025f, 0, new Vector3(0.55f, 1, 0.95f)))); Take(rq); }
+                }
+                else
+                {
+                    var half = new Vector2(0.64f, 0.38f);
+                    var at = new Vector2(c.X + su * (wall + half.X + 0.05f), c.Y + sv * (wall + half.Y + 0.05f));
+                    var q = new Rect2(at - half, half * 2);
+                    if (!Free(q)) continue;
+                    o.Add(("props/Chest_Wood", At(at.X, at.Y, ins.Floor, sv > 0 ? 0 : Mathf.Pi)));
+                    Take(q);
+                }
                 break;
             }
-            // a table and a stool in the middle, where the room is 4 by 3.5 m or more
+            // a table on a rug, a bench along it and a stool, in the middle where the room is 4 by 3.5 m or more
             if (r.Size.X >= 4f && r.Size.Y >= 3.5f || r.Size.Y >= 4f && r.Size.X >= 3.5f)
             {
                 bool alongU = r.Size.X >= r.Size.Y;
                 var c = r.GetCenter() + new Vector2(((hh >> 5) % 5 - 2) * 0.15f, ((hh >> 9) % 5 - 2) * 0.15f);
                 var th = alongU ? new Vector2(1.42f, 0.55f) : new Vector2(0.55f, 1.42f);
                 var q = new Rect2(c - th, th * 2);
+                // (the rug under it, as big as the room lets it be)
+                var rh = alongU ? new Vector2(1.75f, 1.2f) : new Vector2(1.2f, 1.75f);
+                var rq = new Rect2(c - rh, rh * 2);
+                for (int k = 0; k < 5 && !Free(rq, 0.2f); k++) { rh *= 0.9f; rq = new Rect2(c - rh, rh * 2); }
                 if (Free(q))
                 {
+                    if (Free(rq, 0.2f)) { o.Add(("rug", At(c.X, c.Y, ins.Floor + 0.025f, alongU ? Mathf.Pi / 2 : 0, new Vector3(alongU ? rh.Y : rh.X, 1, alongU ? rh.X : rh.Y)))); covers.Add((rq, 1f)); }
                     o.Add(("props/Table_Large", At(c.X, c.Y, ins.Floor, alongU ? 0 : Mathf.Pi / 2)));
-                    used.Add(q);
-                    var s = c + (alongU ? new Vector2(0.5f, 0.85f) : new Vector2(0.85f, 0.5f));
-                    o.Add(("props/Stool", At(s.X, s.Y, ins.Floor, (hh % 11) * 0.5f)));
+                    Take(q);
+                    var off = alongU ? new Vector2(0, 0.85f) : new Vector2(0.85f, 0);
+                    var bh = alongU ? new Vector2(1.39f, 0.27f) : new Vector2(0.27f, 1.39f);
+                    var bq = new Rect2(c - off - bh, bh * 2);
+                    if (Free(bq, 0.5f)) { o.Add(("props/Bench", At(c.X - off.X, c.Y - off.Y, ins.Floor, alongU ? 0 : Mathf.Pi / 2))); Take(bq); }
+                    var s = c + off + (alongU ? new Vector2(0.5f, 0) : new Vector2(0, 0.5f));
+                    var sq = new Rect2(s - new Vector2(0.25f, 0.25f), new Vector2(0.5f, 0.5f));
+                    if (Free(sq, 0.5f)) { o.Add(("props/Stool", At(s.X, s.Y, ins.Floor, (hh % 11) * 0.5f))); Take(sq); }
                 }
             }
+            // along the walls: runs of what a house keeps, backs to the wall, gaps between, never before a door
+            var kinds = new (string Id, Vector2 Half, float Scale)[]
+            {
+                ("props/Barrel", new(0.36f, 0.36f), 1f), ("props/Bag", new(0.34f, 0.3f), 1f), ("props/Crate_Wooden", new(0.56f, 0.58f), 0.8f),
+                ("props/Cabinet", new(0.68f, 0.19f), 0.88f), ("props/Workbench", new(1.01f, 0.51f), 1f), ("props/Bucket_Wooden_1", new(0.22f, 0.2f), 1f),
+                ("props/FarmCrate_Apple", new(0.36f, 0.22f), 1f), ("props/Pot_1", new(0.28f, 0.25f), 1f), ("props/Vase_2", new(0.35f, 0.35f), 0.8f),
+                ("props/Nightstand_Shelf", new(0.35f, 0.2f), 0.72f), ("props/FarmCrate_Empty", new(0.36f, 0.22f), 1f),
+            };
+            // (runs: a few of one kind together, then something else)
+            int[][] runs = { new[] { 0, 0 }, new[] { 1, 1, 1 }, new[] { 3 }, new[] { 2, 6 }, new[] { 4, 5 }, new[] { 0, 5 }, new[] { 9, 7 }, new[] { 2, 10, 1 }, new[] { 8, 0 }, new[] { 1, 0, 1 } };
+            int ri = (int)(hh % (uint)runs.Length);
+            for (int sideI = 0; sideI < 4; sideI++)
+            {
+                // the side's inner edge: along u (v fixed) or along v; into the room
+                bool alongU = sideI < 2;
+                float fixedC = sideI switch { 0 => inner.Position.Y, 1 => inner.End.Y, 2 => inner.Position.X, _ => inner.End.X };
+                var into = sideI switch { 0 => new Vector2(0, 1), 1 => new Vector2(0, -1), 2 => new Vector2(1, 0), _ => new Vector2(-1, 0) };
+                // (the piece's front, local +z, into the room)
+                float yaw = Mathf.Atan2(into.X, into.Y);
+                float a0 = alongU ? inner.Position.X : inner.Position.Y, a1 = alongU ? inner.End.X : inner.End.Y;
+                float t = a0 + 0.05f + Rnd() * 0.3f;
+                while (t < a1 - 0.3f)
+                {
+                    var run = runs[ri++ % runs.Length];
+                    float t0 = t;
+                    bool any = false;
+                    foreach (var ki in run)
+                    {
+                        var (id, h0, sc) = kinds[ki];
+                        float along = h0.X * sc, across = h0.Y * sc;
+                        float ct = t + along, cn = fixedC + (alongU ? into.Y : into.X) * (across + 0.03f);
+                        var cp = alongU ? new Vector2(ct, cn) : new Vector2(cn, ct);
+                        var half = alongU ? new Vector2(along, across) : new Vector2(across, along);
+                        var q = new Rect2(cp - half, half * 2);
+                        if (ct + along > a1 || !Free(q, 0.75f)) { t += 0.25f; continue; }
+                        // (a little off square: a barrel or a sack turned, a crate nudged)
+                        bool round = id.Contains("Barrel") || id.Contains("Bag") || id.Contains("Pot") || id.Contains("Vase") || id.Contains("Bucket");
+                        float jy = round ? Rnd() * Mathf.Tau : (Rnd() - 0.5f) * 0.12f;
+                        o.Add((id, At(cp.X, cp.Y, ins.Floor, yaw + jy, Vector3.One * sc)));
+                        Take(q);
+                        t += 2 * along + 0.04f + Rnd() * 0.08f;
+                        any = true;
+                    }
+                    // (a gap after each run: wider where the room is small)
+                    t += any ? (big ? 0.3f : 0.55f) + Rnd() * 0.5f : 0.0f;
+                    if (t <= t0) t = t0 + 0.25f;
+                }
+            }
+            // rushes strewn on the floor left: patches on a 1.2 m grid where nothing stands, ragged (the shader); some left bare
+            for (float pu = inner.Position.X + 0.05f; pu < inner.End.X - 0.5f; pu += 1.2f)
+                for (float pv = inner.Position.Y + 0.05f; pv < inner.End.Y - 0.5f; pv += 1.2f)
+                {
+                    var q = new Rect2(pu, pv, Mathf.Min(1.2f, inner.End.X - pu - 0.02f), Mathf.Min(1.2f, inner.End.Y - pv - 0.02f));
+                    if (!Inside(q) || used.Any(u => u.Intersects(q.Grow(-0.2f)))) continue;
+                    if (Rnd() < 0.15f) continue;
+                    o.Add(("straw", At(q.GetCenter().X, q.GetCenter().Y, ins.Floor + 0.018f, Mathf.Floor(Rnd() * 4) * Mathf.Pi / 2, new Vector3(q.Size.X * 0.66f, 1, q.Size.Y * 0.66f))));
+                    covers.Add((q, 0.6f));
+                }
+            Bare[ins.House] = BareShare(ins, inner, covers);
         }
+        GD.Print($"house insides furnished: {string.Join(", ", o.GroupBy(x => x.Item1).Select(g => $"{g.Key} {g.Count()}"))}");
+        GD.Print($"house insides furnished: bare floor {string.Join(" ", Bare.OrderBy(b => b.Key).Select(b => $"{b.Key}:{b.Value:0.00}"))}");
         return o;
+    }
+
+    /// <summary>(E9c3) Each furnished inside's bare floor share (house id: 0..1), as Furnish left it.</summary>
+    public static readonly Dictionary<int, float> Bare = new();
+
+    // (every corner of q in one of the cells: an L's notch is not floor)
+    static bool CellsCover(Inside ins, Rect2 q)
+    {
+        foreach (var p in new[] { q.Position, q.End, new Vector2(q.Position.X, q.End.Y), new Vector2(q.End.X, q.Position.Y) })
+            if (!ins.Cells.Any(c => c.Grow(0.02f).HasPoint(p))) return false;
+        return true;
+    }
+
+    /// <summary>The share of the floor inside the walls nothing furnishes (a 10 cm raster; straw and the hearth count in part).</summary>
+    static float BareShare(Inside ins, Rect2 inner, List<(Rect2 R, float Share)> covers)
+    {
+        int n = 0;
+        float bare = 0;
+        for (float u = inner.Position.X + 0.05f; u < inner.End.X; u += 0.1f)
+            for (float v = inner.Position.Y + 0.05f; v < inner.End.Y; v += 0.1f)
+            {
+                var p = new Vector2(u, v);
+                if (!ins.Cells.Any(c => c.HasPoint(p))) continue;
+                n++;
+                float cov = 0;
+                foreach (var (rr, s) in covers) if (rr.HasPoint(p)) cov = Mathf.Max(cov, s);
+                bare += 1 - cov;
+            }
+        return n > 0 ? bare / n : 0;
     }
 
     static uint Hash(Vector3 p) => (uint)(Mathf.FloorToInt(p.X * 2.3f + 0.5f) * 73856093) ^ (uint)(Mathf.FloorToInt(p.Z * 2.3f + 0.5f) * 19349663) ^ (uint)(Mathf.FloorToInt(p.Y + 0.5f) * 83492791);
@@ -279,7 +426,9 @@ public sealed class OwnWalls
         }
         if (!ResourceLoader.Exists($"{Dir}/{preset}.glb")) return false;
         float gy = ground.TryGetValue(house, out var g0) ? at.Origin.Y - g0 : 0f;
-        var data = new Color((tint + 0.5f) / 8f, gy, (hs % 997) / 997f, isRoof ? (style * 8 + roofTint + 0.5f) / 32f : (style + 0.5f) / 4f);
+        // (E9c3: b's whole part 1 for a stone piece, its cut capped as rubble; else by its sill beam)
+        bool stone = !isRoof && (preset.StartsWith("stone") || preset.StartsWith("quoin") || preset.StartsWith("pier"));
+        var data = new Color((tint + 0.5f) / 8f, gy, (hs % 997) / 997f + (stone ? 1f : 0f), isRoof ? (style * 8 + roofTint + 0.5f) / 32f : (style + 0.5f) / 4f);
         var k = (preset, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
         if (!groups.TryGetValue(k, out var l)) groups[k] = l = new();
         l.Add((at, data, house, isRoof));
@@ -351,16 +500,19 @@ public sealed class OwnWalls
         // it, and (E9c2) faded with it on its curve: the copies given custom data, r its unit + 1 (kit.gdshader's house fade)
         foreach (var mmi in root.GetChildren().OfType<MultiMeshInstance3D>())
         {
-            if (mmi.GetMeta("prop", "").AsString() is not ("props/Lantern_Wall" or "props/Torch_Metal") || mmi.Multimesh is not MultiMesh mm) continue;
+            // ((E9c3) and what furnishes the insides, "inside": given their unit and g 1 (the cauldron 2): kit.gdshader brings them in with it)
+            bool inside = mmi.HasMeta("inside");
+            if (!inside && mmi.GetMeta("prop", "").AsString() is not ("props/Lantern_Wall" or "props/Torch_Metal") || mmi.Multimesh is not MultiMesh mm) continue;
+            float mode = !inside ? 0 : mmi.GetMeta("prop", "").AsString() == "props/Cauldron" ? 2 : 1;
             var ats = Enumerable.Range(0, mm.InstanceCount).Select(mm.GetInstanceTransform).ToArray();
             var us = new int[ats.Length];
             for (int i = 0; i < ats.Length; i++)
             {
                 us[i] = -1;
                 for (int u = 0; u < fade.Units.Count; u++)
-                    if (fade.Units[u].FirstOrDefault(v => v.Ridge == 3) is { Ridge: 3 } w && w.Box.Grow(0.7f).HasPoint(w.To * ats[i].Origin))
+                    if (fade.Units[u].FirstOrDefault(v => v.Ridge == 3) is { Ridge: 3 } w && w.Box.Grow(inside ? 0.05f : 0.7f).HasPoint(w.To * ats[i].Origin + (inside ? new Vector3(0, 0.3f, 0) : Vector3.Zero)))
                     {
-                        fade.Hung.Add((mm, i, ats[i], u));
+                        if (!inside) fade.Hung.Add((mm, i, ats[i], u));
                         us[i] = u;
                         break;
                     }
@@ -369,7 +521,7 @@ public sealed class OwnWalls
             mm.InstanceCount = 0;
             mm.UseCustomData = true;
             mm.InstanceCount = ats.Length;
-            for (int i = 0; i < ats.Length; i++) { mm.SetInstanceTransform(i, ats[i]); mm.SetInstanceCustomData(i, new Color(us[i] + 1, 0, 0, 0)); }
+            for (int i = 0; i < ats.Length; i++) { mm.SetInstanceTransform(i, ats[i]); mm.SetInstanceCustomData(i, new Color(us[i] + 1, us[i] >= 0 ? mode : 0, 0, 0)); }
         }
         fade.Name = "house_fade";
         root.AddChild(fade);

@@ -44,6 +44,14 @@ public sealed partial class HouseFade : Node
     int frames;
 
     const float Ease = 0.3f;
+    // (E9c3) once in her way a unit stays cut until she has been clear of it this long: its fade runs to 0 or 1 and
+    // rests only there, never held part way by her standing at its edge
+    const float Linger = 0.4f;
+    float[] away = System.Array.Empty<float>();
+    // (E9c3) what furnishes the insides (Insides.cs, meta "inside"): our props and the hearths, in view only while
+    // their house is cut, coming in on its curve (their transparency); the hearths' lights with them
+    readonly List<(GeometryInstance3D G, int Unit)> ins = new();
+    readonly List<(Light3D L, float E, int Unit)> inLights = new();
     static readonly StringName IdsA = "house_fade_ids", IdsB = "house_fade_ids2", AmtA = "house_fade", AmtB = "house_fade2", CutA = "house_cut", CutB = "house_cut2";
     float[] fade = System.Array.Empty<float>();
     readonly float hold = float.TryParse(SurvivorUnchained.Args.Get("house-fade-hold"), System.Globalization.NumberStyles.Float,
@@ -69,7 +77,10 @@ public sealed partial class HouseFade : Node
         for (int i = 0; i < Units.Count; i++)
         {
             bool hit = on && InWay(Units[i], cam!.GlobalPosition);
-            float to = hit ? (hold >= 0 ? hold : 1) : 0;
+            if (away.Length != Units.Count) away = new float[Units.Count];
+            away[i] = hit ? 0 : away[i] + (float)delta;
+            bool want = hit || fade[i] > 0 && away[i] < Linger;
+            float to = want ? (hold >= 0 ? hold : 1) : 0;
             fade[i] = hold >= 0 ? to : Mathf.MoveToward(fade[i], to, step);
         }
         if (++frames == 3) Attach();
@@ -163,7 +174,15 @@ public sealed partial class HouseFade : Node
             foreach (var n in root.FindChildren("Chimney*", "", true, false)) GD.Print($"house fade smoke {n.Name} {n.GetClass()} at {(n as Node3D)?.GlobalPosition} unit {UnitAt(((Node3D)n).GlobalPosition, 3f, 6f)}");
         foreach (var n in root.FindChildren("Chimney*", "GPUParticles3D", true, false))
             if (n is GpuParticles3D p && UnitAt(p.GlobalPosition, 1.5f, 7f) is int u && u >= 0) smokes.Add((p, u));
-        GD.Print($"house fade: {faders.Count} faders, {lamps.Count} lights, {smokes.Count} smokes with their houses");
+        foreach (var n in root.FindChildren("*", "Node3D", true, false).OfType<Node3D>().Where(x => x.HasMeta("inside") && x is not MultiMeshInstance3D).ToList())
+        {
+            int u = UnitAt(n.GlobalPosition + new Vector3(0, 0.3f, 0), 0.05f, 0);
+            if (u < 0) continue;
+            if (n is MeshInstance3D card && card.MaterialOverride is ShaderMaterial) { card.SetInstanceShaderParameter("unit", (float)(u + 1)); continue; }
+            foreach (var gi in n.FindChildren("*", "GeometryInstance3D", true, false).OfType<GeometryInstance3D>()) { ins.Add((gi, u)); gi.Visible = false; }
+            foreach (var l in n.FindChildren("*", "Light3D", true, false).OfType<Light3D>()) inLights.Add((l, l.LightEnergy, u));
+        }
+        GD.Print($"house fade: {faders.Count} faders, {lamps.Count} lights, {smokes.Count} smokes with their houses; {ins.Count} inside pieces, {inLights.Count} hearth lights");
     }
 
     float Eased(int u) => u >= fade.Length ? 0 : hold >= 0 ? fade[u] : fade[u] * fade[u] * (3 - 2 * fade[u]);
@@ -200,6 +219,20 @@ public sealed partial class HouseFade : Node
             if (f <= 0 && shown[u] <= 0) continue;
             p.Transparency = f;
             p.Emitting = f < 0.5f;
+        }
+        foreach (var (g, u) in ins)
+        {
+            if (!IsInstanceValid(g)) continue;
+            float f = Eased(u);
+            if (g.Visible != f > 0) g.Visible = f > 0;
+            if (f > 0 && !Mathf.IsEqualApprox(g.Transparency, 1 - f)) g.Transparency = 1 - f;
+        }
+        foreach (var (l, e, u) in inLights)
+        {
+            if (!IsInstanceValid(l)) continue;
+            float f = Eased(u);
+            l.Visible = f > 0;
+            l.LightEnergy = e * f;
         }
         for (int u = 0; u < shown.Length; u++) shown[u] = fade[u];
     }

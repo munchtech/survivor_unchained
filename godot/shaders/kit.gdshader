@@ -195,6 +195,13 @@ global uniform vec4 house_fade_ids2;
 global uniform vec4 house_fade;
 global uniform vec4 house_fade2;
 varying flat float v_unit;
+// (E9c3) a kit piece inside one of our houses (OwnWalls.FadeUnits: its copy's custom data g 1, the cauldron 2): it comes
+// in with its house's cutaway (below the cut, by its own scatter, so where the wall's ghost is kept it is not) and goes
+// above it with the walls; where it is (world), and its own frame's place and normal (the cauldron's mouth)
+varying flat float v_inmode;
+varying vec3 v_kw;
+varying vec3 v_kl;
+varying vec3 v_kn;
 // (E9c2) The cutaway: each unit's walls fade only above its cut (house_cut: a world height, 0.9 m over its floor),
 // the footing below stands, capped (its walls' back faces, seen down into the cut, drawn as a stone wall top);
 // its roofs fade whole. What hangs on its walls (a kit lantern: its MultiMesh's custom data r, the unit + 1) fades
@@ -238,6 +245,7 @@ uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off
 uniform float big_lost = 0.4;        // (E9b6) the share of 2.5 m cells with a 40-80 cm patch fallen off
 uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
 varying vec4 v_wall;
+varying flat float v_stone;
 varying float v_hgt;
 varying vec3 v_wp;
 float wall_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -246,6 +254,8 @@ float wall_noise(vec2 p) {
 	f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(wall_hash(i), wall_hash(i + vec2(1.0, 0.0)), f.x), mix(wall_hash(i + vec2(0.0, 1.0)), wall_hash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
+// (E9c3) the cut's line broken (m, added to the cut's height) at a place on the ground
+float cut_broken(vec2 xz) { return 0.06 * (wall_noise(xz * 3.1) - 0.5) + 0.025 * (wall_noise(xz * 11.0 + 5.0) - 0.5); }
 #endif
 #ifdef OWN_ROOF
 // Our own roofs (tools/assets/env_roof.py, KitLook.Roof; E9b2), on the walls' uniforms above and the roof sheet: its aux
@@ -323,6 +333,10 @@ void vertex() {
 	vec3 ip = MODEL_MATRIX[3].xyz;
 	// (E9c2: a copy's fade unit + 1 in its custom data's r, 0 none; ours below take theirs from its whole part too)
 	v_unit = floor(INSTANCE_CUSTOM.r);
+	v_inmode = INSTANCE_CUSTOM.g;
+	v_kw = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_kl = VERTEX;
+	v_kn = NORMAL;
 	v_up = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
 	v_jit = fract(sin(dot(ip.xz, vec2(12.9898, 78.233))) * 43758.5453);
 	v_y = VERTEX.y;
@@ -363,8 +377,10 @@ void vertex() {
 #endif
 #ifdef OWN_WALL
 	// (custom data r: its fade unit + 1 in the whole part, its tint in the fraction)
-	v_wall = vec4(fract(INSTANCE_CUSTOM.r), INSTANCE_CUSTOM.gba);
+	v_wall = vec4(fract(INSTANCE_CUSTOM.r), INSTANCE_CUSTOM.g, fract(INSTANCE_CUSTOM.b), INSTANCE_CUSTOM.a);
 	v_unit = floor(INSTANCE_CUSTOM.r);
+	// (E9c3: custom data b's whole part 1 for a stone piece, its cut capped as rubble; else timber, capped by its sill beam)
+	v_stone = floor(INSTANCE_CUSTOM.b);
 	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
 	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 #endif
@@ -404,19 +420,35 @@ void fragment() {
 	// (no round window: the house fade above)
 	vec2 mo = vec2(0.0);
 	float kept = 1.0;
-	bool cap = false;
+	bool cap = false, lip = false;
+	vec3 cap_at = vec3(0.0);
 	if (view_from.w > 0.0 && distance(CAMERA_POSITION_WORLD, view_from.xyz) <= 1.0) {
 		float f = house_fade_of(v_unit);
 #ifdef OWN_WALL
 		// (E9c2) the cutaway: faded above the cut only; the back faces (the walls are drawn both sides, OWN_WALL only)
 		// only as the cut's cap, under the cut of a unit fading, else not at all in the camera's view (in a light's
 		// they cast with the front, the same closed wall)
-		bool above = v_wp.y > house_cut_of(v_unit);
+		// (E9c3) the cut's line knocked down, not sawn: +-3 cm over 10-40 cm, by the place across the ground (so both faces
+		// of a wall and its cap meet on it); a 2-4 cm lip under it darker on the faces (the broken edge)
+		float cy = house_cut_of(v_unit);
+		float cb = cy + cut_broken(v_wp.xz);
+		bool above = v_wp.y > cb;
 		if (!FRONT_FACING) {
-			if (f <= 0.0 || above) discard;
+			if (f <= 0.0) discard;
+			// the cap: where the eye's ray through this back face crosses the cut (the wall's top, seen from above), its
+			// height broken as the faces' line; drawn there (its light taken there too), flat, nothing stretched down a face
+			vec3 C = CAMERA_POSITION_WORLD, D = v_wp - C;
+			if (D.y > -1e-4) discard;
+			float t = (cy - C.y) / D.y;
+			vec3 H = C + D * t;
+			t = (cy + cut_broken(H.xz) - C.y) / D.y;
+			H = C + D * t;
+			if (t > 1.0) discard;
+			cap_at = H;
 			cap = true;
 		}
 		else if (f > 0.0 && above && coverage_cut(FRAGCOORD.xy) < f) discard;
+		else if (f > 0.0 && v_wp.y > cb - (0.02 + 0.02 * wall_noise(v_wp.xz * 17.0 + 3.0))) lip = true;
 #else
 		// (the roof clears first, twice as fast: half way, it is gone and the walls half faded, never her under a
 		// half-faded roof's striped tiles)
@@ -430,7 +462,8 @@ void fragment() {
 	// (E9c2) a kit piece hung on one of our houses (a wall lantern, a torch) fades whole with its house
 	if (v_unit > 0.5 && view_from.w > 0.0 && distance(CAMERA_POSITION_WORLD, view_from.xyz) <= 1.0) {
 		float hf = house_fade_of(v_unit);
-		if (hf > 0.0 && coverage_cut(FRAGCOORD.xy) < hf) discard;
+		if (v_inmode > 0.5 && v_kw.y <= house_cut_of(v_unit)) { if (coverage_cut(FRAGCOORD.xy + vec2(41.0, 23.0)) >= hf) discard; }
+		else if (hf > 0.0 && coverage_cut(FRAGCOORD.xy) < hf) discard;
 	}
 #endif
 #ifdef SEE_SCREEN
@@ -494,6 +527,23 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	if (use_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+#if !defined(OWN_WALL) && !defined(OWN_ROOF)
+	if (v_inmode > 1.5 && v_inmode < 2.5) {
+		// (E9c3) the cauldron (props/Cauldron: its bowl's inside under a rim at 0.71-0.81 m, 0.43-0.47 m out): its mouth
+		// dark from above, sooted, deepest at the bottom; its rim's top worn bright iron (the hearth's light catches it)
+		float kr = length(v_kl.xz);
+		bool inner = kr < 0.432 && v_kl.y > 0.2 && v_kl.y < 0.79 && (dot(v_kn.xz, v_kl.xz) < 0.0 || v_kn.y > 0.5);
+		if (inner) {
+			ALBEDO = vec3(0.035, 0.03, 0.028) * (1.0 + 1.6 * smoothstep(0.45, 0.79, v_kl.y));
+			ROUGHNESS = 0.9;
+			NORMAL_MAP = vec3(0.5, 0.5, 1.0);
+		} else if (v_kl.y > 0.765 && kr > 0.42 && v_kn.y > 0.3) {
+			ALBEDO = mix(ALBEDO, vec3(0.4, 0.37, 0.34), 0.4);
+			ROUGHNESS = 0.42;
+			METALLIC = 0.6;
+		}
+	}
+#endif
 #ifdef OWN_WALL
 	{
 		vec3 ax = texture(aux_tex, UV).rgb;
@@ -556,15 +606,42 @@ void fragment() {
 		if (grime_debug > 0.0 && grime_debug < 1.5) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
+		if (lip) ALBEDO *= 0.55;
 		if (cap) {
-			// (E9c2) the cut's cap: the wall's core seen from above, the sheet's rubble (its region: u 0-1, v 0-0.5,
-			// 4 x 2 m) laid flat in world space at 0.6 of its value, facing up; its derivatives unwrapped, so no seam
-			vec2 rq = v_wp.xz / vec2(4.0, 2.0);
-			vec3 rc = textureGrad(albedo_tex, vec2(fract(rq.x), fract(rq.y) * 0.5), dFdx(rq) * vec2(1.0, 0.5), dFdy(rq) * vec2(1.0, 0.5)).rgb;
-			ALBEDO = rc * 0.6;
+			// (E9c3) the cut's cap at the wall's top (cap_at): across the wall, how far in from its far face (the face this
+			// is the back of) and its run along; a stone wall's rubble core (the sheet's rubble at half size: 10-20 cm
+			// stones in dark mortar) with chips of broken stone lying on it; a timber wall's sill beam (the sheet's adzed oak,
+			// its grain along the wall); both darker at their broken edges (2-4 cm)
+			vec3 H = cap_at;
+			vec3 gn = normalize(cross(dFdx(v_wp), dFdy(v_wp)));
+			gn = normalize(vec3(gn.x, 0.0, gn.z) + vec3(1e-5, 0.0, 0.0));
+			vec3 ta = vec3(-gn.z, 0.0, gn.x);
+			float across = abs(dot(H - v_wp, gn));
+			float along = dot(H, ta);
+			vec2 hq = H.xz;
+			float en = 0.02 + 0.02 * wall_noise(hq * 13.0 + 7.0);
+			float edge = min(across, abs(0.2 - across));
+			vec3 cc;
+			if (v_stone > 0.5) {
+				vec2 rq = hq / vec2(2.0, 1.0);
+				cc = textureGrad(albedo_tex, vec2(fract(rq.x), fract(rq.y) * 0.5), dFdx(rq) * vec2(1.0, 0.5), dFdy(rq) * vec2(1.0, 0.5)).rgb * 0.72;
+				float ch = wall_noise(hq * 28.0 + 1.7);
+				cc = mix(cc, vec3(0.42, 0.39, 0.34) * (0.8 + 0.4 * wall_noise(hq * 60.0)), smoothstep(0.74, 0.78, ch));
+				cc *= 1.0 - 0.45 * (smoothstep(0.66, 0.73, ch) - smoothstep(0.74, 0.76, ch));
+			} else {
+				vec2 bq = vec2(along / 4.0, clamp(across / 0.25, 0.0, 1.0));
+				vec2 bu = vec2(fract(bq.x), 0.75 + bq.y * 0.0625);
+				cc = textureGrad(albedo_tex, bu, dFdx(bq) * vec2(1.0, 0.0625), dFdy(bq) * vec2(1.0, 0.0625)).rgb * timber_tints[clamp(int(v_wall.r * 8.0), 0, 5) % 3] * 0.8;
+				// (the beam's joints: a butt every 2-3 m)
+				float jt = fract(along / 2.6 + v_wall.b);
+				cc *= 1.0 - 0.6 * (1.0 - smoothstep(0.0, 0.006, min(jt, 1.0 - jt)));
+			}
+			cc *= mix(0.5, 1.0, smoothstep(en * 0.5, en, edge));
+			ALBEDO = cc;
 			NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 			NORMAL_MAP = vec3(0.5, 0.5, 1.0);
 			ROUGHNESS = 0.95;
+			LIGHT_VERTEX = (VIEW_MATRIX * vec4(H, 1.0)).xyz;
 		}
 	}
 #endif
