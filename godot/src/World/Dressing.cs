@@ -253,7 +253,7 @@ public static class Dressing
         // (--flora-hide A,B: a developer's switch, these species or kinds of ours left out (a frame's diff finds what they are))
         var hide = SurvivorUnchained.Args.Get("flora-hide")?.Split(',') ?? [];
         foreach (var ((file, look), (sp, at, vars)) in merged)
-            if (!hide.Contains(sp.Name) && !hide.Contains(sp.Kind)) OwnFlora(root, sp, file, look, at, vars);
+            if (!hide.Contains(sp.Name) && !hide.Contains(sp.Kind)) { OwnFlora(root, sp, file, look, at, vars); CanopyLog.Register(root, sp, at); }
         // (a stone darkened under a crown (sky_dark, the pebbles) reads the ground's exposure, as the ground's litter does)
         int skySet = 0;
         if (z.Place == null && merged.Keys.Any(k => merged[k].Sp.Stone && merged[k].Sp.Shader.ContainsKey("sky_dark")))
