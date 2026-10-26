@@ -182,9 +182,9 @@ public partial class GameHud : CanvasLayer
         col.Position = new Vector2(right - w, foot - 120);
         col.Size = new Vector2(w, 120);
         col.MouseFilter = Control.MouseFilterEnum.Ignore;
-        // No box: a soft dark falloff behind the type (about 40% at its middle, nothing at its edge), so the
+        // No box: a soft dark falloff behind the type (about 55% at its middle, nothing at its edge; 40% barely showed at dawn), so the
         // tally reads on the hub's brightest planks as on night grass (UI note 8, 26 Oct).
-        var g = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.025f, 0.4f), new Color(0.02f, 0.015f, 0.025f, 0.24f), new Color(0.02f, 0.015f, 0.025f, 0) }, Offsets = new[] { 0f, 0.45f, 1f } };
+        var g = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.025f, 0.55f), new Color(0.02f, 0.015f, 0.025f, 0.34f), new Color(0.02f, 0.015f, 0.025f, 0) }, Offsets = new[] { 0f, 0.45f, 1f } };
         combat.AddChild(new TextureRect
         {
             Texture = new GradientTexture2D { Gradient = g, Width = 128, Height = 128, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f) },
@@ -770,7 +770,7 @@ public partial class GameHud : CanvasLayer
         foreach (var c in objectives.GetChildren()) c.QueueFree();
         foreach (var t in list)
         {
-            var head = Style.H(6, Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi));
+            var head = Style.H(6, Rimmed(Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi)));
             head.Alignment = BoxContainer.AlignmentMode.End;
             objectives.AddChild(head);
             foreach (var s in t.Steps)
@@ -785,13 +785,14 @@ public partial class GameHud : CanvasLayer
                 if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
                 {
                     var font = s.Optional ? Style.TextItalic : Style.Ui;
-                    row = Style.H(5, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col), Style.Prompt(act));
-                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Style.Label(after, font, 16, col));
+                    row = Style.H(5, Rimmed(Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
+                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Rimmed(Style.Label(after, font, 16, col)));
                     row.AddChild(mark);
                 }
                 else
                 {
-                    var l = Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right);
+                    // The objectives stand on the world like the tally: rimmed, so a dim italic line never ghosts over a tree.
+                    var l = Rimmed(Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
                     l.CustomMinimumSize = new Vector2(370, 0);
                     row = Style.H(7, l, mark);
                 }
