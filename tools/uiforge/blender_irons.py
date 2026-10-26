@@ -539,25 +539,68 @@ def rrect(x0, y0, x1, y1, r, n=10):
     return B.outline(x0, y0, x1, y1, radius=r, n_round=n)
 
 
-def floor_material(name, seed):
+def floor_material(name, seed, span=None, inset=0.0):
     """A seat's floor: a dark iron plate, rough and only half metal, so the house light lies on it
     and the collar's shadow can be seen falling across it (a mirror-flat plate seen from above
-    reflects only the dark room and reads as a hole)."""
+    reflects only the dark room and reads as a hole). With `vignette` [px, darkest] the plate
+    darkens toward the walls (soot and the walls' own shade gathering there): a smooth step over
+    that many px from the opening's edge, measured on the slab's own coordinates (`span` px
+    across, the opening `inset` px in from the slab's edge)."""
     m = bpy.data.materials.new(name)
     m.use_nodes = True
-    b = m.node_tree.nodes["Principled BSDF"]
-    b.inputs["Base Color"].default_value = B.hexc(SPEC["seat"].get("floor", "#1e1b20"))
+    nt = m.node_tree
+    n, k = nt.nodes, nt.links
+    b = n["Principled BSDF"]
     fs = SPEC["seat"]
+    col = B.hexc(fs.get("floor", "#1e1b20"))
+    b.inputs["Base Color"].default_value = col
     b.inputs["Metallic"].default_value = fs.get("floor_metal", 0.2)
     b.inputs["Roughness"].default_value = fs.get("floor_rough", 0.8)
     b.inputs["Specular IOR Level"].default_value = fs.get("floor_spec", 0.3)
-    return facets(m, seed, scale=4.0, tilt=0.035, deep=1.8)
+    vg = fs.get("vignette")
+    if vg and span:
+        tc = n.new("ShaderNodeTexCoord")
+        sep = n.new("ShaderNodeSeparateXYZ")
+        k.new(tc.outputs["Generated"], sep.inputs[0])
+
+        def edge(sock):                              # px in from the opening's edge on one axis
+            inv = n.new("ShaderNodeMath")
+            inv.operation = "SUBTRACT"
+            inv.inputs[0].default_value = 1.0
+            k.new(sock, inv.inputs[1])
+            mn = n.new("ShaderNodeMath")
+            mn.operation = "MINIMUM"
+            k.new(sock, mn.inputs[0])
+            k.new(inv.outputs[0], mn.inputs[1])
+            ma = n.new("ShaderNodeMath")
+            ma.operation = "MULTIPLY_ADD"
+            ma.inputs[1].default_value = span
+            ma.inputs[2].default_value = -inset
+            k.new(mn.outputs[0], ma.inputs[0])
+            return ma.outputs[0]
+        dmin = n.new("ShaderNodeMath")
+        dmin.operation = "MINIMUM"
+        k.new(edge(sep.outputs["X"]), dmin.inputs[0])
+        k.new(edge(sep.outputs["Y"]), dmin.inputs[1])
+        mr = n.new("ShaderNodeMapRange")
+        mr.interpolation_type = "SMOOTHSTEP"
+        mr.inputs["From Min"].default_value = 0.0
+        mr.inputs["From Max"].default_value = vg[0]
+        mr.inputs["To Min"].default_value = vg[1]
+        mr.inputs["To Max"].default_value = 1.0
+        k.new(dmin.outputs[0], mr.inputs["Value"])
+        sc = n.new("ShaderNodeVectorMath")
+        sc.operation = "SCALE"
+        sc.inputs[0].default_value = col[:3]
+        k.new(mr.outputs["Result"], sc.inputs["Scale"])
+        k.new(sc.outputs[0], b.inputs["Base Color"])
+    return facets(m, seed, scale=4.0, tilt=fs.get("floor_tilt", 0.035), deep=1.8)
 
 
 def seat(k, state):
     sp = SPEC["seat"]
-    cw = sp["canvas"]
-    st = Stage(cw, cw)
+    cw_ = sp["canvas"]
+    st = Stage(cw_, cw_)
     ax, ay = sp["at"]
     s, f = sp["size"], sp["face"]
     rnd = random.Random(100 + k)
@@ -565,7 +608,8 @@ def seat(k, state):
     # own; every corner rounder than the inner wall's reach, so the sweep never folds)
     m = f / 2
     x0, y0, x1, y1 = ax + m, ay + m, ax + s - m, ay + s - m
-    pts = B.densify(B.outline(x0, y0, x1, y1, corners=[rnd.uniform(3.9, 4.8) for _ in range(4)], n_round=18), 0.12)
+    c0, c1 = sp.get("corners", [3.9, 4.8])
+    pts = B.densify(B.outline(x0, y0, x1, y1, corners=[rnd.uniform(c0, c1) for _ in range(4)], n_round=18), 0.12)
     cxs, cys = (x0 + x1) / 2, (y0 + y1) / 2
     bow = [rnd.uniform(-0.35, 0.35) for _ in range(4)]
 
@@ -611,14 +655,19 @@ def seat(k, state):
         d = m * (1 - 2 * i / 36)
         if d < prof[-1][0]:
             prof.append((d, surf(d)))
+    j_ch = len(prof)                                  # the chamfer, from the arris down
     for i in range(0, 9):
         d = -m - cw * i / 8
         prof.append((d, surf(d)))
+    j_ch1 = len(prof)
     prof += [(-m - cw - 0.05, zf - 0.25), (-m - cw - 0.05, 0.0), (0.0, 0.0)]
-    # eight rank dimples punched in the lower bar's lit inner slope, spread wide enough to count
+    # eight rank dimples punched in the lower bar's lit inner slope, spread wide enough to count:
+    # "ball" a round dent; "cyl" a punched hole (steep walls, a level floor that sees only the
+    # dark room), so each reads as a dark pit with lit iron on both sides of it
     dim = []
     rp, dp = sp.get("dimple_r", 1.3), sp.get("dimple_depth", 0.9)
     span, dd = sp.get("dimple_span", 9.5), sp.get("dimple_d", 1.6)
+    shape = sp.get("dimple_shape", "ball")
     dx0, dx1 = ax + span, ax + s - span
     for i in range(sp["dimples"]):
         qx = dx0 + (dx1 - dx0) * i / (sp["dimples"] - 1) + rnd.uniform(-0.2, 0.2)
@@ -626,12 +675,20 @@ def seat(k, state):
         dim.append((qx, qy))
     Rs = (rp * rp + dp * dp) / (2 * dp)               # the punch's ball
     zpit = surf(-dd) - dp + Rs                        # its centre
+    zb = surf(-dd) - dp                               # the hole's level floor
+    lip = sp.get("dimple_lip", 0.3)
 
     def mod(i, x, y, d, z):
         px, py = x + nrm[i][0] * d, y + nrm[i][1] * d
         for (qx, qy) in dim:
             r2 = (px - qx) ** 2 + (py - qy) ** 2
-            if r2 < Rs * Rs:
+            if shape == "cyl":
+                r = math.sqrt(r2)
+                if r < rp + lip:
+                    t = min(1.0, max(0.0, (rp + lip - r) / (2 * lip)))
+                    t = t * t * (3 - 2 * t)
+                    z = min(z, z + (zb - z) * t)
+            elif r2 < Rs * Rs:
                 z = min(z, max(zpit - math.sqrt(Rs * Rs - r2), zch - 0.6))
         return d, z
 
@@ -639,10 +696,32 @@ def seat(k, state):
         st.suns[2].data.energy *= sp["rim"]
     col = sweep(st, "collar", path, nrm, prof, mod)
     wear(st, col, k0=sp.get("k0", 0.2), k1=0.95, ztop=top, zw=sp.get("zw", 0.45), seed=k, zlow=zch - 0.4)
+    # the chamfer into the seat is filed, not left in its scale: a little brighter iron, so the
+    # walls facing the light (the lower and right) catch it and those turned away stay dark;
+    # nothing bright inside the rank's pits
+    cwr = sp.get("chamfer_wear", 0.0)
+    if cwr > 0 or shape == "cyl":
+        ca_ = col.data.color_attributes["wear"]
+        Mp = len(prof)
+        vs = col.data.vertices
+        off = Vector((k * 5.3, k * 2.9, k * 7.7))
+        for v in vs:
+            j = v.index % Mp
+            w = ca_.data[v.index].color[0]
+            if j_ch <= j < j_ch1 and cwr > 0:
+                nz = noise.noise(v.co * (1.0 / (U * st.S * 2.6)) + off)
+                w = max(w, cwr * (0.75 + 0.25 * nz))
+            if shape == "cyl":
+                vx = v.co.x / (U * st.S) + cw_ / 2
+                vy = cw_ / 2 - v.co.y / (U * st.S)
+                for (qx, qy) in dim:
+                    if (vx - qx) ** 2 + (vy - qy) ** 2 < (rp + lip * 0.5) ** 2:
+                        w = 0.0
+            ca_.data[v.index].color = (w, w, w, 1)
     col.data.materials.append(iron("collar", 40 + k, state=state, scale=7.0, tilt=0.12))
     e = m + 1.0
     fl = slab(st, "floor", rrect(ax + e, ay + e, ax + s - e, ay + s - e, 1.2), 0.0, zf, 0.25)
-    fl.data.materials.append(floor_material("floor", 60 + k))
+    fl.data.materials.append(floor_material("floor", 60 + k, span=s - 2 * e, inset=m + cw + 0.05 - 1.0))
     tagn = {"": "seat", "hot": "seat_hot"}[state]
     st.render(f"{tagn}_{k}")
     if state == "":
