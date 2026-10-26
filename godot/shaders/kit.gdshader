@@ -418,6 +418,9 @@ void fragment() {
 		}
 		else if (f > 0.0 && above && coverage_cut(FRAGCOORD.xy) < f) discard;
 #else
+		// (the roof clears first, twice as fast: half way, it is gone and the walls half faded, never her under a
+		// half-faded roof's striped tiles)
+		f = min(1.0, f * 2.0);
 		if (f > 0.0 && coverage_cut(FRAGCOORD.xy) < f) discard;
 #endif
 	}
