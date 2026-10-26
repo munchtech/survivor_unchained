@@ -52,6 +52,8 @@ public sealed partial class HouseFade : Node
     // their house is cut, coming in on its curve (their transparency); the hearths' lights with them
     readonly List<(GeometryInstance3D G, int Unit)> ins = new();
     readonly List<(Light3D L, float E, int Unit)> inLights = new();
+    // (E9c2 perf) the inside MultiMeshInstance3Ds: no shadows, and out of the draw while no unit is cut
+    readonly List<MultiMeshInstance3D> inMmis = new();
     static readonly StringName IdsA = "house_fade_ids", IdsB = "house_fade_ids2", AmtA = "house_fade", AmtB = "house_fade2", CutA = "house_cut", CutB = "house_cut2";
     float[] fade = System.Array.Empty<float>();
     readonly float hold = float.TryParse(SurvivorUnchained.Args.Get("house-fade-hold"), System.Globalization.NumberStyles.Float,
@@ -179,9 +181,10 @@ public sealed partial class HouseFade : Node
             int u = UnitAt(n.GlobalPosition + new Vector3(0, 0.3f, 0), 0.05f, 0);
             if (u < 0) continue;
             if (n is MeshInstance3D card && card.MaterialOverride is ShaderMaterial) { card.SetInstanceShaderParameter("unit", (float)(u + 1)); continue; }
-            foreach (var gi in n.FindChildren("*", "GeometryInstance3D", true, false).OfType<GeometryInstance3D>()) { ins.Add((gi, u)); gi.Visible = false; }
+            foreach (var gi in n.FindChildren("*", "GeometryInstance3D", true, false).OfType<GeometryInstance3D>()) { ins.Add((gi, u)); gi.Visible = false; gi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; }
             foreach (var l in n.FindChildren("*", "Light3D", true, false).OfType<Light3D>()) inLights.Add((l, l.LightEnergy, u));
         }
+        foreach (var m in root.FindChildren("*", "MultiMeshInstance3D", true, false).OfType<MultiMeshInstance3D>().Where(x => x.HasMeta("inside"))) { m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; m.Visible = false; inMmis.Add(m); }
         GD.Print($"house fade: {faders.Count} faders, {lamps.Count} lights, {smokes.Count} smokes with their houses; {ins.Count} inside pieces, {inLights.Count} hearth lights");
     }
 
@@ -227,6 +230,9 @@ public sealed partial class HouseFade : Node
             if (g.Visible != f > 0) g.Visible = f > 0;
             if (f > 0 && !Mathf.IsEqualApprox(g.Transparency, 1 - f)) g.Transparency = 1 - f;
         }
+        bool anyCut = false;
+        for (int u = 0; u < fade.Length && !anyCut; u++) anyCut = Eased(u) > 0 || shown[u] > 0;
+        foreach (var m in inMmis) if (IsInstanceValid(m) && m.Visible != anyCut) m.Visible = anyCut;
         foreach (var (l, e, u) in inLights)
         {
             if (!IsInstanceValid(l)) continue;

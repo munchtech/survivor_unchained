@@ -743,7 +743,7 @@ public static class Dressing
                 // Which piece, and where each one stands, for taking one away in play (HideProps).
                 mmi.SetMeta("prop", id);
                 mmi.SetMeta("at", new Godot.Collections.Array<Vector3>(list.Select(t => t.Origin)));
-                if (inside) mmi.SetMeta("inside", true);
+                if (inside) { mmi.SetMeta("inside", true); mmi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; }
                 root.AddChild(mmi);
             }
         }
