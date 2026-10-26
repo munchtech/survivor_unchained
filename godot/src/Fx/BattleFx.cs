@@ -77,14 +77,14 @@ public partial class BattleFx : Node3D
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
 
-    static Texture2D? ringTex, discTex, laneTex, hatchTex, dashTex, wallTex, laneFillTex;
+    static Texture2D? glowTex, ringTex, discTex, laneTex, hatchTex, dashTex, wallTex, laneFillTex;
     static readonly Dictionary<int, Texture2D> coneTex = new(), bandTex = new();
 
     sealed class Mark
     {
         public required Decal Decal;
         public float T, Life, Radius;
-        public bool Progress, Grow, Active;
+        public bool Progress, Grow, Sink, Active;
         public Color Color;
         public Decal? Fill;
         /// <summary>The lane again, drawn only where something tall stands over it (a roof): an elite's or
@@ -123,6 +123,7 @@ public partial class BattleFx : Node3D
             flashes.Add((l, 1, 1, 0));
         }
         ringTex ??= GroundTexture(0);
+        glowTex ??= GroundTexture(7);
         discTex ??= GroundTexture(1);
         laneTex ??= GroundTexture(2);
         hatchTex ??= GroundTexture(3);
@@ -326,7 +327,7 @@ public partial class BattleFx : Node3D
         m.Life = life;
         m.Radius = radius;
         m.Color = color;
-        m.Progress = m.Grow = false;
+        m.Progress = m.Grow = m.Sink = false;
         m.Length = 0;
         if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
@@ -577,6 +578,17 @@ public partial class BattleFx : Node3D
         Flash(at + Vector3.Up * 2, pal.Light, 8, 0.25f, 10);
     }
 
+    /// <summary>An ember going down into the ground: a soft warm glow, no rim, that swells in, shrinks
+    /// and fades (C04 A's "the ember goes back into the ground"; a cinematic's nova with "plain").
+    /// Its box is shallow so it lights the ground, not her sword.</summary>
+    void Sinking(double x, double z, float radius, float life)
+    {
+        var m = Ground(x, z, radius, glowTex!, new Color(1f, 0.5f, 0.2f), life, 1.2f);
+        m.Sink = true;
+        m.Decal.Size = new Vector3(radius * 2, 0.5f, radius * 2);
+        m.Decal.Modulate = m.Color with { A = 0 };
+    }
+
     void Nova(double x, double z, float radius, Color color, float life)
     {
         var m = Ground(x, z, radius, ringTex!, color, life, 3);
@@ -613,7 +625,9 @@ public partial class BattleFx : Node3D
             {
                 float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
                 float r = Mathf.Sqrt(u * u + v * v), a;
-                if (kind == 0) a = Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.07f, 0, 1) + Mathf.Clamp(1 - r, 0, 1) * 0.12f * (r < 0.93f ? 1 : 0);
+                // A soft glow, no rim (an ember going into the ground).
+                if (kind == 7) { float s = Mathf.Clamp(1 - r, 0, 1); a = s * s * (3 - 2 * s); }
+                else if (kind == 0) a = Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.07f, 0, 1) + Mathf.Clamp(1 - r, 0, 1) * 0.12f * (r < 0.93f ? 1 : 0);
                 // A blow coming, filling as it comes: a bright front at its edge and a sparse hatch behind
                 // it, so the crowd still reads through (a solid fill hid the fight).
                 else if (kind == 1) a = r < 0.97f ? 0.08f + (Mathf.PosMod((u - v) * 6f, 1f) < 0.22f ? 0.2f : 0) + 0.72f * Mathf.SmoothStep(0.8f, 0.95f, r) : Mathf.Clamp((1 - r) / 0.03f, 0, 1);
@@ -894,6 +908,7 @@ public partial class BattleFx : Node3D
                 case Ev.Nova e:
                 {
                     var pal = Palette.Of(e.School);
+                    if (e.Plain) { Sinking(e.X, e.Z, (float)e.Radius, (float)Math.Max(0.5, e.Duration)); break; }
                     if (!Blast(e.X, e.Z, e.School, (float)e.Radius * 0.9f, (float)Math.Max(0.5, e.Duration * 1.5), 1f, light: true)) Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
                     if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
                     break;
@@ -1372,7 +1387,13 @@ public partial class BattleFx : Node3D
             if (!m.Active) continue;
             m.T += fdt / Mathf.Max(0.05f, m.Life);
             if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; continue; }
-            if (m.Grow)
+            if (m.Sink)
+            {
+                float r = m.Radius * (1 - 0.65f * m.T);
+                m.Decal.Size = new Vector3(r * 2, 0.5f, r * 2);
+                m.Decal.Modulate = m.Color with { A = 0.55f * Mathf.Sin(Mathf.Pi * Mathf.Sqrt(m.T)) };
+            }
+            else if (m.Grow)
             {
                 float r = m.Radius * (0.25f + 0.75f * Mathf.Sqrt(m.T));
                 m.Decal.Size = new Vector3(r * 2, 4, r * 2);

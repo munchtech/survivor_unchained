@@ -12,7 +12,7 @@
     "bank": [1.0, -49.0, 3.1416],
     "road": [0.5, -58.0, 3.1416],
     "shallows": [2.0, -41.0, 1.5708],
-    "top": [0.2, -66.0, 3.1416]
+    "top": [0.3, -71.0, 3.1416]
   },
   "cast": {
     "her": {"kind": "survivor", "mark": "bank"}
@@ -23,25 +23,25 @@
       "type": "MS",
       "dur": 4.0,
       "when": {"facts": ["prologue.dawn_south"]},
-      "note": "Still south, looting the ford: an MS of her standing in the shallows, turning toward the light that is starting in the east.",
-      "cam": {"pos": {"abs": [-1.2, -0.3, -43.6]}, "at": {"actor": "her", "bone": "chest"}, "lens": 35},
+      "note": "Still south, looting the ford: an MS of her from the front 3/4 (south-east), at her eye line, standing in the shallows; she turns her head toward the light starting in the east.",
+      "cam": {"pos": {"abs": [4.4, 0.95, -38.4]}, "at": {"actor": "her", "bone": "chest", "off": [0, 0.15, 0]}, "lens": 35},
       "cues": [
         {"do": "event", "name": "ford_clear"},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
         {"do": "place", "mark": "shallows", "heading": 0.0},
         {"do": "anim", "clip": "@idle", "blend": 0},
-        {"at": 1.2, "do": "look", "where": [30.0, 2.0, -41.0], "over": 1.6}
+        {"at": 1.2, "do": "look", "where": [30.0, 10.0, -41.0], "over": 1.2}
       ]
     },
     {
-      "id": "A8",
-      "type": "LS",
-      "dur": 5.5,
-      "note": "Low behind her on the road, looking north up the hill: she walks away from camera into the light; at the top of the hill the gate stands open. Her own body from the cut (play). Over the last 3 s the camera cranes up over her, tilting down into the game's view; she walks on into play. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
-      "cam": {"pos": {"mark": "road", "off": [1.6, 0.6, 3.0]}, "at": [1.0, 4.0, -110.0], "lens": 28, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
-      "fit": ["cin_first_light.back", "cin_first_light.face"],
-      "tail": 4.5,
+      "id": "A8a",
+      "type": "MLS",
+      "dur": 4.0,
+      "note": "A 3/4 front MLS from the road's east side at her head height: she stands on the road where she came up, the ford and the far bank behind her; the ember drains out at her feet. A slow push. The reeds and back lines.",
+      "cam": {"pos": {"mark": "road", "off": [5.55, 1.6, -3.32]}, "at": {"actor": "her", "bone": "chest", "off": [0, -0.4, 0]}, "lens": 35, "move": {"start": 0, "end": "end", "push": 0.5, "ease": "inout"}},
+      "fit": ["cin_first_light.back"],
+      "tail": 0.4,
       "cues": [
         {"do": "event", "name": "ford_clear", "when": {"facts": ["!prologue.dawn_south"]}},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
@@ -49,29 +49,48 @@
         {"do": "globe", "light": 4, "level": 0.25},
         {"do": "globe", "light": 5, "level": 0.25},
         {"do": "globe", "light": 6, "level": 0.25},
+        {"at": 0.5, "do": "globe", "light": 4, "level": 0.06, "over": 8.5},
+        {"at": 0.5, "do": "globe", "light": 5, "level": 0.06, "over": 8.5},
+        {"at": 0.5, "do": "globe", "light": 6, "level": 0.06, "over": 8.5},
+        {"at": 0.5, "do": "light", "light": 4, "from": 1.0, "level": 0.35, "over": 8.5},
+        {"at": 0.5, "do": "light", "light": 5, "from": 1.0, "level": 0.35, "over": 8.5},
+        {"at": 0.5, "do": "light", "light": 6, "from": 1.0, "level": 0.35, "over": 8.5},
         {"do": "place", "mark": "road"},
         {"do": "anim", "clip": "@idle", "blend": 0},
-        {"do": "atmosphere", "preset": "play", "from": "now", "over": 1.5},
+        {"do": "atmosphere", "preset": "playdawn", "from": "now", "over": 9.0},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road1", "where": [0.5, 0, -68.0], "size": [30, 1.4, 12], "sink": 0.6},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road2", "where": [0.5, 0, -80.0], "size": [34, 1.6, 12], "sink": 1.0},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road3", "where": [0.5, 0, -92.0], "size": [38, 1.8, 12], "sink": 1.0},
         {"do": "mist", "color": "#cbb9b0", "falloff": 2.5, "density": 0.3, "name": "road4", "where": [0.5, 0, -104.0], "size": [42, 2.2, 14], "sink": 1.0},
+        {"at": 0.0, "do": "play"},
+        {"do": "prints", "from": [1.0, -49.0], "to": [0.6, -57.0], "stride": 0.8, "when": {"facts": ["!prologue.dawn_south"]}},
+        {"at": 0.3, "do": "line", "id": "cin_first_light.reeds", "when": {"facts": ["!prologue.reeds_said"]}},
+        {"at": "after:cin_first_light.reeds+0.5", "do": "line", "id": "cin_first_light.back", "when": {"facts": ["!prologue.reeds_said"]}},
+        {"at": 0.3, "do": "line", "id": "cin_first_light.back", "when": {"facts": ["prologue.reeds_said"]}},
+        {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.4},
+        {"at": "after:cin_first_light.reeds+0.5", "do": "vfx", "kind": "nova", "where": {"mark": "road"}, "radius": 1.2, "school": "fire", "dur": 1.6, "when": {"facts": ["!prologue.reeds_said"]}, "plain": true},
+        {"at": 0.3, "do": "vfx", "kind": "nova", "where": {"mark": "road"}, "radius": 1.2, "school": "fire", "dur": 1.6, "when": {"facts": ["prologue.reeds_said"]}, "plain": true},
+        {"at": 0.3, "do": "music", "mood": "mystery", "intensity": 0.2, "over": 1.0}
+      ]
+    },
+    {
+      "id": "A8",
+      "type": "LS",
+      "dur": 5.5,
+      "note": "Over her right shoulder at shoulder height, looking north up the hill: the road and the open gate are the subject. The face line; she sets off up the road into the light early in it (her own body), and over the last 3 s the camera cranes up over her into the game's view. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
+      "cam": {"pos": {"mark": "road", "off": [1.2, 1.65, 3.6]}, "at": [1.0, 4.0, -110.0], "lens": 32, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
+      "fit": ["cin_first_light.face"],
+      "tail": 4.5,
+      "cues": [
         {"at": 0.0, "do": "play"},
         {"at": "end", "do": "event", "name": "douse"},
         {"at": "end-3.0", "do": "mist", "name": "road1", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road2", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road3", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road4", "density": 0, "over": 2.6},
-        {"do": "prints", "from": [1.0, -49.0], "to": [0.6, -57.0], "stride": 0.8, "when": {"facts": ["!prologue.dawn_south"]}},
-        {"at": 0.3, "do": "line", "id": "cin_first_light.reeds", "when": {"facts": ["!prologue.reeds_said"]}},
-        {"at": "after:cin_first_light.reeds+0.5", "do": "line", "id": "cin_first_light.back", "when": {"facts": ["!prologue.reeds_said"]}},
-        {"at": 0.3, "do": "line", "id": "cin_first_light.back", "when": {"facts": ["prologue.reeds_said"]}},
-        {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.4},
-        {"at": 1.2, "do": "vfx", "kind": "nova", "where": {"mark": "road"}, "radius": 1.6, "school": "fire", "dur": 1.8},
-        {"at": 0.3, "do": "music", "mood": "mystery", "intensity": 0.2, "over": 1.0},
         {"at": "after:cin_first_light.back+0.3", "do": "music", "mood": "silence"},
         {"at": "after:cin_first_light.back+0.8", "do": "line", "id": "cin_first_light.face"},
-        {"at": "end-6.5", "do": "move", "to": "top", "dur": 6.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
+        {"at": "end-12.0", "do": "move", "to": "top", "dur": 12.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": "end-3.0", "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0}
       ]
     }
