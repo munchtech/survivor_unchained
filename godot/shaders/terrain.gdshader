@@ -53,6 +53,8 @@ uniform int debug_view = 0;
 // the preset's amount and thaw (Atmosphere: x amount, y thaw), the rime's value, and how far down the heights it reaches.
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
 global uniform vec4 ground_frost;
+// (x the moon's share of the key, y a low warm sun's: Atmosphere.cs.)
+global uniform vec4 flora_light;
 // E6: the river (Water.cs): the water's height (x; w 1 when the zone has one), and its bed and bank (water.json "look"
 // "bed": x pebbles 0-1, y silt 0-1, z m above the water the bank is wet, w how dark it is), the silt's colour.
 global uniform vec4 water_level;
@@ -479,7 +481,7 @@ void fragment() {
 	// The pools (fix 2): soft-edged, 0.5-2 m, where the mud gathers (the well, posts, stalls, a wall's foot, the broken
 	// edge), wet and smooth enough to hold the sky; only the tallest tops break their rims.
 	float pool_f = mud_g * 0.85 + collar * 0.6 + s_band * 0.4 + (nM.b - 0.5) * 0.75 + (nF.r - 0.5) * 0.35 + (rg4.b - 0.5) * 0.08;
-	float pool = smoothstep(0.66, 0.84, pool_f) * w_setts * mud_pool;
+	float pool = smoothstep(0.7, 0.88, pool_f) * w_setts * mud_pool;
 	float pool_c = pool * (1.0 - smoothstep(0.62, 0.78, hgt) * (1.0 - smoothstep(0.35, 0.8, pool)));
 	mud_c = max(mud_c, pool_c);
 	// (E3 G: mud, not dark stone: about 30% under the stones' value, hue about 30 degrees and well over the stones'
@@ -492,7 +494,7 @@ void fragment() {
 	// dark wet earth, with value and hue. Shaded p10/mean 15/20 -> 20/25 at towndawn; lit by day 0.77 of the stone, was 0.65.)
 	// (E9e r2, fix 2: the mud read ochre by day, its saturation pushed and the grade's vibrance on top. Dark umber now, lit
 	// sRGB about 75, 60, 45 at saturation under 40%: a less saturated base, mud_sat 1, and the warm bias only in shade.)
-	vec3 mud_col = mix(mix(vec3(0.071, 0.048, 0.025), vec3(0.060, 0.043, 0.029), mud_pool), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.04, 0.86, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
+	vec3 mud_col = mix(mix(vec3(0.071, 0.048, 0.025), vec3(0.048, 0.035, 0.023), mud_pool), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.04, 0.86, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
 	// (A grain of its own at 5-20 cm: a flat sheet read as a decal. Not the tile's, whose stones showed through.)
 	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
 	mud_col *= mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.93 + 0.1 * mgr.r, mud_paint);
@@ -500,7 +502,7 @@ void fragment() {
 	// (E9e: at dawn the shaded mud still read as a blue-black hole, p10 23-25 RGB 27,29,46: the sky's blue is all the
 	// shade has, and the mud's base gave it nothing redder to light. Its blue down, red and green up, and a little lift, so
 	// in shade it stays earth, a brown-violet under the stones' blue-grey, and in sun a browner wet clay.)
-	mud_col *= mix(vec3(1.0), vec3(1.55, 1.5, 0.95), mud_warm * mix(1.0, 1.0 - ex4.g, mud_pool));
+	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(2.1, 1.8, 0.75), mud_pool), mud_warm * mix(1.0, mix(0.3, 1.0, max(flora_light.x, flora_light.y)), mud_pool));
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
 	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);
@@ -508,10 +510,17 @@ void fragment() {
 	albedo = mix(albedo, albedo * mix(vec3(0.92, 0.85, 0.74), vec3(0.9, 0.86, 0.8), mud_pool), collar * (1.0 - mud_c) * 0.6);
 	albedo = mix(albedo, mud_col, mud_c);
 	rough = mix(rough, mix(mix(0.85, 0.65, mdep * collar), 0.97, mud_paint), mud_c);
-	albedo = mix(albedo, mud_col * 0.6, pool_c);
-	rough = mix(rough, mix(0.5, 0.36, smoothstep(0.3, 0.9, pool)), pool_c);
+	// (Wet mud at the rim, a film of standing water in the middle, broken by scum: dark pits read as burn marks, so the
+	// pool's value is the mud's and its wet read is the sky in it.)
+	float pool_w = smoothstep(0.45, 0.9, pool) * smoothstep(0.25, 0.75, nF.g * 0.7 + rg4.a * 0.3);
+	// (At the close camera's grazing look the film held the whole pale sky, a white sheet: there it is wet mud.)
+	float pool_far = smoothstep(0.004, 0.012, footg);
+	pool_w *= mix(0.35, 1.0, pool_far);
+	albedo = mix(albedo, mud_col * mix(0.85, 0.7, pool_w), pool_c);
+	rough = mix(rough, mix(0.45, 0.2, pool_w), pool_c);
 	n_w = normalize(mix(n_w, n_geo, pool_c));
 	float pool_s = pool_c * w_setts;
+	float pool_spec = mix(0.4, 0.9, pool_w) * mix(0.6, 1.0, pool_far);
 	n_w = normalize(mix(n_w, n_geo, mud_c * mix(0.85, 1.0, mud_paint)));
 	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
 	ao = mix(ao, 1.0, mud_c * mud_ao * (1.0 - mud_paint));
@@ -739,7 +748,7 @@ void fragment() {
 	AO_LIGHT_AFFECT = 0.25;
 	// By night the ground's sheen at the close camera's grazing angle read as snow on the road and pale smears at the
 	// tufts' feet (judge 1, E3 fix 10): the moonlit ground kept matte, the puddles still holding the sky.
-	SPECULAR = dbg_on ? 0.0 : mix(mix(mix(mix(0.35, mud_spec, mud_s), 0.28, pool_s), night_spec, night), mirror, pud);
+	SPECULAR = dbg_on ? 0.0 : mix(mix(mix(mix(0.35, mud_spec, mud_s), pool_spec, pool_s), night_spec, night), mirror, pud);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 
 	// The Flare's drain, web, frost and scars (flare_world.gdshaderinc).
