@@ -180,21 +180,36 @@ public partial class Instrument : Control
 
 /// <summary>A glass vessel in its iron cuff: her life (blood, its number) or the art in her hand (its
 /// glyph, its charge rising as it readies, the seconds left). The liquid is the vessel shader's
-/// (shaders/hud_vessel.gdshader); the cuff is UI art's (hud/cuff.png, the left cuff; mirrored for the
-/// right) or drawn.</summary>
+/// (shaders/hud_vessel.gdshader: her life in blood mode, HUD v2; the art in the first HUD's look until its
+/// gold mode is made); over her blood, the glass's own light, rendered (hud/glass.png, premultiplied); the
+/// cuff is UI art's (hud/cuff.png, the left cuff; mirrored for the right) or drawn. Each frame only the
+/// shader's uniforms change: the number redraws when it (or its ink) does.</summary>
 public partial class Vessel : Control
 {
     public static readonly Vector2 Half = new(Instrument.R + Instrument.Band + 14, Instrument.R + Instrument.Band + 14);
+    /// <summary>Her life's number: bone, and the low red at 30% and under (HUD v2).</summary>
+    public static readonly Color Bone = new("#f2e8d6"), LowInk = new("#ff6a5a");
+    static readonly StringName ULevel = "level", UTrail = "trail", UShield = "shield", UPulse = "pulse", USlosh = "slosh", UGlow = "glow";
     readonly bool life;
     readonly ColorRect glass;
     readonly ShaderMaterial mat;
     readonly Cuff cuff;
-    readonly Control over;
+    readonly Over over;
+    /// <summary>Her life: the blood's motion (HUD v2), and the cuff's inner chamfer flushed red on the
+    /// heartbeat (hud/cuff_glow.png, added).</summary>
+    readonly Flow? flow;
+    readonly TextureRect? flush;
+    /// <summary>The level and the shield (0..1 of her life). Trail is the first HUD's and unused by her blood,
+    /// whose hurt film is its own. Pulse: 1 where her heartbeat may sound (the fight), 0 at peace; the beat
+    /// itself is the vessel's, at 30% and under.</summary>
     public float Level = 1, Trail = 1, Shield, Pulse, Glow;
     public string Number = "";
     public Texture2D? Glyph;
     public Color GlyphTint = Colors.White;
-    float slosh, shownLevel = -1;
+    float slosh, shownLevel = -1, flushShown = -1;
+    string drawnNumber = "";
+    Texture2D? drawnGlyph;
+    Color drawnTint, drawnInk, ink = Bone;
 
     public Vessel(bool life)
     {
@@ -204,12 +219,18 @@ public partial class Vessel : Control
         PivotOffset = Half;
         mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_vessel.gdshader") };
         mat.SetShaderParameter("seed", life ? 0.13f : 0.71f);
+        mat.SetShaderParameter("mode", life ? 0 : 2);
         if (!life) Liquid(new Color("#ffcf7a"), new Color("#a8460c"), new Color("#0c0907"));
         glass = new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Half - new Vector2(Instrument.R, Instrument.R), Size = new Vector2(Instrument.R * 2, Instrument.R * 2) };
         AddChild(glass);
-        // UI art's glass over the liquid (its window's light caught high on the left, its rim's shade),
-        // sized so its glass's edge meets the cuff's seat.
-        if (UiArt.Art("hud/globe_glass.png") is { } painted)
+        if (life)
+        {
+            flow = new Flow(mat, true);
+            Light(this, "hud/glass.png", Instrument.R + 6, Half);
+        }
+        // The art: UI art's first glass over the liquid (its window's light caught high on the left, its rim's
+        // shade), sized so its glass's edge meets the cuff's seat.
+        else if (UiArt.Art("hud/globe_glass.png") is { } painted)
         {
             float gs = Instrument.R * 2 / 0.91f;
             AddChild(new TextureRect { Texture = painted, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
@@ -218,11 +239,43 @@ public partial class Vessel : Control
         }
         cuff = new Cuff(Instrument.R, Instrument.Band, mirrored: !life, Half);
         AddChild(cuff);
+        if (life && UiArt.Tex("hud/cuff_glow.png", false) is { } chamfer)
+        {
+            flush = new TextureRect { Texture = chamfer, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+                MouseFilter = MouseFilterEnum.Ignore, Size = Half * 2, TextureFilter = TextureFilterEnum.LinearWithMipmaps,
+                Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add }, Modulate = Colors.Transparent };
+            AddChild(flush);
+        }
         over = new Over(this);
         AddChild(over);
     }
 
-    /// <summary>The liquid's colours: at its surface, at its foot, and the empty glass.</summary>
+    /// <summary>A glass's rendered light (hud/glass.png, hud/glass_small.png: its window, hot spot, rim and the
+    /// cuff's shadow, nothing else) laid over its liquid: premultiplied (out = under * (1 - a) + rgb), its file
+    /// twice the size shown and drawn with mipmaps, r px out from the glass's middle at c.</summary>
+    public static TextureRect? Light(Control parent, string art, float r, Vector2 c)
+    {
+        if (UiArt.Tex(art, false) is not { } tex) return null;
+        var t = new TextureRect { Texture = tex, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+            MouseFilter = MouseFilterEnum.Ignore, Position = c - new Vector2(r, r), Size = new Vector2(2 * r, 2 * r),
+            TextureFilter = TextureFilterEnum.LinearWithMipmaps, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.PremultAlpha } };
+        parent.AddChild(t);
+        return t;
+    }
+
+    /// <summary>Alegreya Sans 800 with lining tabular figures (lnum, tnum): numbers that hold still as they change.</summary>
+    public static Font Figures => figures ??= new FontVariation
+    {
+        BaseFont = Style.UiHeavy,
+        OpentypeFeatures = new Godot.Collections.Dictionary
+        {
+            { TextServerManager.Singleton.GetPrimaryInterface().NameToTag("lnum"), 1 },
+            { TextServerManager.Singleton.GetPrimaryInterface().NameToTag("tnum"), 1 },
+        },
+    };
+    static FontVariation? figures;
+
+    /// <summary>The liquid's colours: at its surface, at its foot, and the empty glass (the art's).</summary>
     public void Liquid(Color shallow, Color deep, Color? empty = null)
     {
         mat.SetShaderParameter("shallow", shallow);
@@ -232,20 +285,159 @@ public partial class Vessel : Control
 
     public override void _Process(double delta)
     {
-        float dt = (float)delta;
-        // A sudden change (a blow, a draught, the art spent) sloshes the surface, which settles over a
-        // second or so; the art's steady filling does not.
-        if (shownLevel >= 0 && Math.Abs(Level - shownLevel) > 0.04f) slosh = Math.Min(1, slosh + Math.Abs(Level - shownLevel) * 4);
-        shownLevel = Level;
-        slosh = Mathf.MoveToward(slosh, 0, dt * 0.9f);
-        mat.SetShaderParameter("level", Level);
-        // (only her life leaves a trail as it falls)
-        mat.SetShaderParameter("trail", life ? Math.Max(Trail, Level) : Level);
-        mat.SetShaderParameter("shield", Shield);
-        mat.SetShaderParameter("pulse", Pulse);
-        mat.SetShaderParameter("slosh", slosh);
-        mat.SetShaderParameter("glow", Glow);
-        over.QueueRedraw();
+        float dt = Math.Min((float)delta, 0.1f);
+        if (flow != null)
+        {
+            flow.Tick(dt, Level, Shield, Pulse > 0);
+            ink = flow.Low ? LowInk : Bone;
+            if (flush != null && flow.Beat != flushShown)
+            {
+                flushShown = flow.Beat;
+                flush.Modulate = new Color(0.88f, 0.16f, 0.17f, 0.9f * flushShown);
+            }
+        }
+        else
+        {
+            // The art: a sudden change (the art spent) sloshes the surface, which settles over a second or so;
+            // its steady filling does not.
+            if (shownLevel >= 0 && Math.Abs(Level - shownLevel) > 0.04f) slosh = Math.Min(1, slosh + Math.Abs(Level - shownLevel) * 4);
+            shownLevel = Level;
+            slosh = Mathf.MoveToward(slosh, 0, dt * 0.9f);
+            mat.SetShaderParameter(ULevel, Level);
+            mat.SetShaderParameter(UTrail, Level);
+            mat.SetShaderParameter(UShield, Shield);
+            mat.SetShaderParameter(UPulse, Pulse);
+            mat.SetShaderParameter(USlosh, slosh);
+            mat.SetShaderParameter(UGlow, Glow);
+        }
+        if (Number != drawnNumber || Glyph != drawnGlyph || GlyphTint != drawnTint || ink != drawnInk)
+        {
+            drawnNumber = Number; drawnGlyph = Glyph; drawnTint = GlyphTint; drawnInk = ink;
+            over.QueueRedraw();
+        }
+    }
+
+    /// <summary>The blood's motion, HUD v2 (shaders/hud_vessel.gdshader, modes 0 and 1). It eases the level as
+    /// drawn (a blow takes it down in about 0.1 s, healing fills it in about 0.4) and rocks the surface on a
+    /// change (a damped slosh, settled in 0.8 s). For her life it also runs the hurt film down the glass (0.6 s),
+    /// swirls fresh blood up on healing (a rise of 3% or more, never the slow regeneration), beats at 30% and
+    /// under (every 1.1 s, 0.75 s under 15%) and rimes the shield's frost, cracking it away once (0.3 s) when the
+    /// shield breaks. Each frame it sets only the uniforms that changed: at rest, none.</summary>
+    public sealed class Flow
+    {
+        static readonly StringName[] Names = ["level", "tilt", "wave", "film_top", "film_t", "heal", "heal_t", "beat", "frost", "crack", "crack_reach"];
+        /// <summary>The slosh's swing (0.46 s) and its damping (settled in 0.8 s).</summary>
+        const float W = Mathf.Tau / 0.46f, Damp = 4.9f;
+        readonly ShaderMaterial mat;
+        readonly bool life;
+        readonly float[] sent = new float[11];
+        float last = -1, sx, sv, filmTop, filmT = 1, healT = 9, healA, healAcc, phase, frost, crackT = 1, crackReach;
+        /// <summary>The level as drawn.</summary>
+        public float Shown { get; private set; } = -1;
+        /// <summary>The heartbeat now (0..1, 1 on the beat), and whether it beats.</summary>
+        public float Beat { get; private set; }
+        public bool Low { get; private set; }
+
+        public Flow(ShaderMaterial mat, bool life)
+        {
+            this.mat = mat;
+            this.life = life;
+            Array.Fill(sent, float.NaN);
+        }
+
+        /// <summary>A change rocks the surface: a blow or a draught hard, a trickle hardly at all.</summary>
+        public void Kick(float change)
+        {
+            float a = Math.Abs(change);
+            if (a < 1e-5f) return;
+            sv += Math.Sign(change) * Math.Min(2.2f, a * 4.7f + (a > 0.015f ? 0.35f : 0));
+        }
+
+        /// <summary>A frame: the level wanted, the shield (0..1 of her life) and whether the heartbeat may sound.
+        /// ease false draws the level as given (the draught paces its own).</summary>
+        public void Tick(float dt, float level, float shield = 0, bool alarm = false, bool ease = true)
+        {
+            level = Math.Clamp(level, 0, 1);
+            if (last < 0) last = Shown = level;
+            float d = level - last;
+            if (life)
+            {
+                if (d < -0.002f)
+                {
+                    // A blow: the glass keeps a film of blood from where it stood (still higher if the last
+                    // one's has not run down yet).
+                    float still = filmT < 1 ? Mathf.Lerp(filmTop, Shown, filmT * filmT) : 0;
+                    filmTop = Math.Max(Math.Max(Shown, last), still);
+                    filmT = 0;
+                }
+                else if (d > 0.002f)
+                {
+                    healAcc += d;
+                    if (healAcc >= 0.03f)
+                    {
+                        if (healT > 0.9f) healT = 0;
+                        healA = Math.Min(1, Math.Max(healA, 0.45f + healAcc * 2.5f));
+                    }
+                }
+                if (Math.Abs(d) > 0.004f) Kick(d);
+            }
+            healAcc = Math.Max(0, healAcc - dt * 0.05f);
+            last = level;
+            Shown = !ease ? level : Shown + (level - Shown) * (1 - Mathf.Exp(-(level < Shown ? 24f : 7f) * dt));
+            if (Math.Abs(level - Shown) < 0.0005f) Shown = level;
+            // The slosh: a damped swing, stepped finely.
+            int steps = Math.Max(1, (int)Math.Ceiling(dt / 0.008f));
+            for (int i = 0; i < steps; i++)
+            {
+                float h = dt / steps;
+                sv += (-W * W * sx - 2 * Damp * sv) * h;
+                sx += sv * h;
+            }
+            sx = Math.Clamp(sx, -0.16f, 0.16f);
+            if (Math.Abs(sx) < 0.0004f && Math.Abs(sv) < 0.004f) sx = sv = 0;
+            filmT = Math.Min(1, filmT + dt / 0.6f);
+            healT += dt;
+            if (healT > 1.4f) healA = 0;
+            // The heartbeat: at 30% and under, where it may sound; its first beat lands a moment after the blow.
+            bool low = life && alarm && Shown <= 0.30f && level > 0;
+            float period = Shown < 0.15f ? 0.75f : 1.1f;
+            if (low && !Low) phase = 0.70f;
+            Low = low;
+            if (low) phase = (phase + dt / period) % 1f;
+            Beat = low ? HeartBeat(phase * period, period) : 0;
+            // The frost: rimed as far round as the shield holds; cracked away once when it breaks.
+            float sh = life ? Math.Clamp(shield, 0, 1) : 0;
+            if (sh <= 0.0005f && frost > 0.01f) { crackT = 0; crackReach = frost; frost = 0; }
+            else frost = Mathf.MoveToward(frost, sh, dt * 2.5f);
+            crackT = Math.Min(1, crackT + dt / 0.3f);
+            float he = healA * Mathf.Clamp(healT / 0.15f, 0, 1) * (1 - Mathf.SmoothStep(0.6f, 1.4f, healT));
+            Set(0, Shown);
+            Set(1, sx);
+            Set(2, 0.3f * sv / W);
+            Set(3, filmTop);
+            Set(4, filmT);
+            Set(5, he);
+            Set(6, he > 0 ? healT : 0);
+            Set(7, Beat);
+            Set(8, frost);
+            Set(9, crackT);
+            Set(10, crackReach);
+        }
+
+        void Set(int i, float v)
+        {
+            if (sent[i] == v) return;
+            sent[i] = v;
+            mat.SetShaderParameter(Names[i], v);
+        }
+
+        /// <summary>A heart's beat s seconds into its period: a sharp rise and a softer fall, its second sound
+        /// 0.2 s after the first.</summary>
+        static float HeartBeat(float s, float period)
+        {
+            static float P(float u) => u < 0 ? Mathf.Exp(-(u / 0.035f) * (u / 0.035f)) : Mathf.Exp(-u / 0.13f);
+            return Math.Min(1, P(s) + 0.6f * P(s - 0.2f) + P(s - period));
+        }
     }
 
     /// <summary>Over the glass: the art's glyph, the number (her life, or the seconds the art has left).</summary>
@@ -271,12 +463,31 @@ public partial class Vessel : Control
                 DrawTextureRect(g, r, false, v.GlyphTint);
             }
             if (v.Number == "") return;
-            var f = v.life ? Style.UiHeavy : Style.Display;
-            int fs = v.life ? 24 : 34;
+            if (v.life) { LifeNumber(c); return; }
+            var f = Style.Display;
+            const int fs = 34;
             var ts = f.GetStringSize(v.Number, HorizontalAlignment.Left, -1, fs);
             var at = c + new Vector2(-ts.X / 2, fs * 0.36f);
             DrawStringOutline(f, at + new Vector2(0, 1), v.Number, HorizontalAlignment.Left, -1, fs, 6, new Color(0, 0, 0, 0.55f));
             DrawString(f, at, v.Number, HorizontalAlignment.Left, -1, fs, new Color("#fff4ea"));
+        }
+
+        /// <summary>Her life's number (HUD v2): Alegreya Sans 800, 22 px, lining tabular figures, bone (the low red
+        /// at 30% and under), a soft shadow (0, 2, 4 px at 70%) and no stroke; its middle 58% of the way down the
+        /// glass, on the blood's mass and out of the window's reflection.</summary>
+        void LifeNumber(Vector2 c)
+        {
+            var f = Figures;
+            const int fs = 22;
+            var ts = f.GetStringSize(v.Number, HorizontalAlignment.Left, -1, fs);
+            // (the figures stand 0.596 em tall on the baseline: their middle 0.293 em above it)
+            var at = new Vector2(Mathf.Round(c.X - ts.X / 2), Mathf.Round(c.Y + 0.16f * Instrument.R + 0.293f * fs));
+            var sh = at + new Vector2(0, 2);
+            DrawStringOutline(f, sh, v.Number, HorizontalAlignment.Left, -1, fs, 8, new Color(0, 0, 0, 0.10f));
+            DrawStringOutline(f, sh, v.Number, HorizontalAlignment.Left, -1, fs, 5, new Color(0, 0, 0, 0.16f));
+            DrawStringOutline(f, sh, v.Number, HorizontalAlignment.Left, -1, fs, 2, new Color(0, 0, 0, 0.24f));
+            DrawString(f, sh, v.Number, HorizontalAlignment.Left, -1, fs, new Color(0, 0, 0, 0.40f));
+            DrawString(f, at, v.Number, HorizontalAlignment.Left, -1, fs, v.ink);
         }
     }
 }
@@ -498,6 +709,9 @@ public partial class Round : Control
     readonly Kind kind;
     readonly Cuff cuff;
     readonly Control icon;
+    readonly Glass glassOf;
+    readonly Count2 countOf;
+    int countDrawn = int.MinValue;
     public int Count, Max = 2;
     public float Recharge;
     /// <summary>The dash's form (her calling's art riding it, Forms.cs): -1 none; 0..1 its wait coming round, a
@@ -517,19 +731,27 @@ public partial class Round : Control
         Size = Half * 2;
         cuff = new Cuff(Instrument.SmallR, Instrument.SmallBand, kind == Kind.Dash, Half, small: true);
         // The glass first, under the iron.
-        AddChild(new Glass(this));
+        AddChild(glassOf = new Glass(this));
         AddChild(cuff);
         float s = Instrument.SmallR * 1.5f;
-        icon = kind == Kind.Draught ? ItemPhotos.Icon("potion", (int)s, new Color("#ff8a80")) : Glyphs.Icon("dash", (int)s, Style.Ink);
+        // (HUD v2: the draught has no flask icon; its glass is the flask)
+        icon = kind == Kind.Draught ? new Control() : Glyphs.Icon("dash", (int)s, Style.Ink);
         icon.Position = Half - new Vector2(s, s) / 2;
         icon.Size = new Vector2(s, s);
         icon.MouseFilter = MouseFilterEnum.Ignore;
         AddChild(icon);
-        AddChild(new Count2(this));
+        AddChild(countOf = new Count2(this));
     }
 
     public override void _Process(double delta)
     {
+        // HUD v2: the draught's liquid is the vessel shader's (its uniforms only); its count redraws when it changes.
+        if (kind == Kind.Draught)
+        {
+            glassOf.Tick(Math.Min((float)delta, 0.1f));
+            if (Count != countDrawn) { countDrawn = Count; countOf.QueueRedraw(); }
+            return;
+        }
         // An empty draught is dimmed, not hidden: its place keeps the instrument whole.
         icon.Modulate = kind == Kind.Draught && Count <= 0 ? new Color(0.45f, 0.42f, 0.42f, 0.7f) : Colors.White;
         foreach (var c in GetChildren()) if (c is CanvasItem ci && ci != icon && ci != cuff) ci.QueueRedraw();
@@ -538,10 +760,48 @@ public partial class Round : Control
     partial class Glass : Control
     {
         readonly Round o;
-        public Glass(Round o) { this.o = o; MouseFilter = MouseFilterEnum.Ignore; Size = o.Size; }
+        /// <summary>The draught (HUD v2): its liquid, the vessel shader in draught mode under its glass's
+        /// rendered light (hud/glass_small.png).</summary>
+        readonly Vessel.Flow? flow;
+        int had = -1;
+        float lvl;
+        bool draining;
+
+        public Glass(Round o)
+        {
+            this.o = o;
+            MouseFilter = MouseFilterEnum.Ignore;
+            Size = o.Size;
+            if (o.kind != Kind.Draught) return;
+            float r = Instrument.SmallR;
+            var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_vessel.gdshader") };
+            mat.SetShaderParameter("mode", 1);
+            mat.SetShaderParameter("seed", 0.37f);
+            mat.SetShaderParameter("dry_film", 0f);
+            AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Size / 2 - new Vector2(r, r), Size = new Vector2(2 * r, 2 * r) });
+            Vessel.Light(this, "hud/glass_small.png", r + 2, Size / 2);
+            flow = new Vessel.Flow(mat, false);
+        }
+
+        /// <summary>The draught's level: full while one is left; drunk, it drains (0.25 s) and the next fills it
+        /// (0.6 s); with none left, dark (or rising as it refills, Recharge).</summary>
+        public void Tick(float dt)
+        {
+            if (flow == null) return;
+            int n = Math.Max(0, o.Count);
+            float want = n > 0 ? 1 : Math.Clamp(o.Recharge, 0, 1);
+            if (had < 0) { had = n; lvl = want; }
+            if (n < had) { draining = true; flow.Kick(-0.3f); }
+            else if (n > had && had == 0) flow.Kick(0.15f);
+            had = n;
+            if (draining) { lvl = Mathf.MoveToward(lvl, 0, dt * 4); if (lvl <= 0) draining = false; }
+            else lvl = Mathf.MoveToward(lvl, want, dt / 0.6f);
+            flow.Tick(dt, lvl, ease: false);
+        }
 
         public override void _Draw()
         {
+            if (o.kind == Kind.Draught) return;
             var c = Size / 2;
             float r = Instrument.SmallR;
             DrawCircle(c, r, new Color(0.05f, 0.04f, 0.05f, 0.95f));
@@ -576,11 +836,17 @@ public partial class Round : Control
         {
             if (o.kind == Kind.Dash && o.Form >= 1) { Licks(); return; }
             if (o.kind != Kind.Draught) return;
-            var f = Style.UiHeavy;
+            // HUD v2: the count in the glass's lower right (Alegreya Sans 800, 16 px, lining tabular figures), bone,
+            // dim with none left; a 1.5 px dark outline and a soft shadow, so it reads on the blood's bright rim.
+            var f = Vessel.Figures;
+            const int fs = 16;
             string s = o.Count.ToString();
-            var at = Size / 2 + new Vector2(Instrument.SmallR * 0.42f, Instrument.SmallR * 0.78f);
-            DrawStringOutline(f, at, s, HorizontalAlignment.Left, -1, 15, 5, new Color(0, 0, 0, 0.9f));
-            DrawString(f, at, s, HorizontalAlignment.Left, -1, 15, o.Count > 0 ? Colors.White : Style.BloodHi);
+            var ts = f.GetStringSize(s, HorizontalAlignment.Left, -1, fs);
+            var mid = Size / 2 + new Vector2(Instrument.SmallR * 0.40f, Instrument.SmallR * 0.42f);
+            var at = new Vector2(Mathf.Round(mid.X - ts.X / 2), Mathf.Round(mid.Y + 0.293f * fs));
+            DrawStringOutline(f, at + new Vector2(0, 1.5f), s, HorizontalAlignment.Left, -1, fs, 7, new Color(0, 0, 0, 0.22f));
+            DrawStringOutline(f, at, s, HorizontalAlignment.Left, -1, fs, 3, new Color(0, 0, 0, 0.62f));
+            DrawString(f, at, s, HorizontalAlignment.Left, -1, fs, o.Count > 0 ? Vessel.Bone : new Color(0.55f, 0.51f, 0.46f));
         }
 
         /// <summary>The ready form: tongues of fire licking up off the top of the cuff, each on its own

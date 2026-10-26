@@ -1296,12 +1296,9 @@ public partial class GameHud : CanvasLayer
         else { trailWait = 0; trailShown = hpShown; }
         var life = irons.Life;
         life.Trail = trailShown;
-        bool low = hpShown < 0.35f && combat.Visible;
         float now = Time.GetTicksMsec() / 1000f;
-        // Low, her life's vessel beats like a heart and its glass flushes.
-        float beat = low ? 1 + 0.05f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
-        life.Scale = new Vector2(beat, beat);
-        life.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
+        // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
+        life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false, barEmber);
         // The art readied: its glass flares once and settles to its ready glow.
         artPing = Math.Max(0, artPing - delta / 0.5);
