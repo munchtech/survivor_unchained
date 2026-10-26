@@ -356,7 +356,7 @@ public partial class PersonView : Node3D, INpcView
     /// (FolkShadow). Not for her, nor anyone a cinematic plays.</summary>
     public void Lod()
     {
-        shadowJob = FolkShadow.Begin(person);
+        BeginShadow();
         if (LodOff || seen != null) return;
         // (6 m round: the shadow of a person at the edge of the frame reaches in from about 4 m out with the sun low)
         seen = new VisibleOnScreenNotifier3D { Aabb = new Aabb(new Vector3(-6, -1, -6), new Vector3(12, 5, 12)) };
@@ -364,6 +364,10 @@ public partial class PersonView : Node3D, INpcView
         seen.ScreenEntered += LodResume;
         AddChild(seen);
     }
+
+    /// <summary>Its one shadow begun (FolkShadow), here or on the worker that made it (WalkerView).</summary>
+    public void BeginShadow() { if (!shadowBegun) { shadowBegun = true; shadowJob = FolkShadow.Begin(person); } }
+    bool shadowBegun;
 
     void LodHold()
     {

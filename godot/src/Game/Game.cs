@@ -780,6 +780,7 @@ public partial class Game : Node, IZoneHost
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
+        RehearseDraft(b);
     }
 
     void HookBattle(Battle b)

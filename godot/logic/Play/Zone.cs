@@ -166,6 +166,9 @@ public interface IZoneLook
     INpcView Person(NpcDef def, Spot spot);
     /// <summary>Someone from the town, made up (Folk): a person as a spec.</summary>
     INpcView Walker(PersonSpec spec, double scale);
+    /// <summary>The same, come out into a town already running (a door, a gate): it may stand up over the next few
+    /// frames, its calls kept till it does (the screen does not wait for it).</summary>
+    INpcView WalkerLater(PersonSpec spec, double scale) => Walker(spec, scale);
     /// <summary>A light that goes where something carries it (a torch).</summary>
     void MoveLight(int light, double x, double y, double z);
     /// <summary>The ground's height.</summary>

@@ -32,6 +32,11 @@ public static class FolkShadow
     /// <summary>A mesh's surfaces, read once (null: a surface that can't join: not skinned triangles).</summary>
     static Surf?[] Read(ArrayMesh am)
     {
+        lock (read) return ReadLocked(am);
+    }
+
+    static Surf?[] ReadLocked(ArrayMesh am)
+    {
         if (read.TryGetValue(am.GetInstanceId(), out var got)) return got;
         var o = new Surf?[am.GetSurfaceCount()];
         int nShapes = am.GetBlendShapeCount();

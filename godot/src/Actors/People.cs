@@ -92,7 +92,15 @@ public static class People
             sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape, Highlight: C(spec.HairHighlight));
     }
 
+    /// <summary>Held while a person is made (WalkerView makes townsfolk on a worker thread; the caches here are shared).</summary>
+    public static readonly object BuildLock = new();
+
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
+    {
+        lock (BuildLock) return BuildLocked(spec);
+    }
+
+    static Person BuildLocked(SurvivorUnchained.World.PersonSpec spec)
     {
         var look = LookOf(spec);
         var body = spec.Body;

@@ -401,6 +401,7 @@ public partial class WorldScene : Node3D, IZoneLook
 
     public INpcView Walker(PersonSpec spec, double scale)
     {
+        Folk.ChurnEvery = Args.Num("folk-churn", 0);
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var v = new PersonView(spec, null, scale);
         long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -408,6 +409,14 @@ public partial class WorldScene : Node3D, IZoneLook
         long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
         v.Lod();
         if (Perf.On) GD.Print($"perf walker: made {(t1 - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms, in the tree {(t2 - t1) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms, its shadow begun {(System.Diagnostics.Stopwatch.GetTimestamp() - t2) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms");
+        return v;
+    }
+
+    public INpcView WalkerLater(PersonSpec spec, double scale)
+    {
+        if (Args.Get("walker-later") == "off") return Walker(spec, scale);
+        var v = new WalkerView(spec, scale);
+        AddChild(v);
         return v;
     }
 
