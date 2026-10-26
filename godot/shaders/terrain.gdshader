@@ -90,6 +90,18 @@ uniform float crown_grass = 0.45;
 // (lf4 V: a rut puddle at Low Ford's post mirrored the sky as a pale blue-white blob) pud_night: the sky in standing
 // water cut by this share while the night's frost is out (and its albedo kept muddy); 0: as before, dawn and day unchanged
 uniform float pud_night = 0.0;
+// (lf5p, judge lf4 #1: by night Low Ford's rut puddles read as black holes) pud_mud: the night's standing water's albedo
+// lifted from pud_dark toward pud_mud_k (about the wet rim's value: wet mud, never a hole) by this share while the frost is
+// out; pud_sheen: the sky kept in a band just inside the water's edge (a faint rim catching the moon's sky) though
+// pud_night cuts it in the middle. 0, 0: as before.
+uniform float pud_mud = 0.0;
+uniform float pud_mud_k = 0.62;
+uniform float pud_sheen = 0.0;
+// (lf5p, judge lf4 #5) the meadow in her ember's pool (the global survivor's xz, flora_night.y of the way by night) turned
+// from green toward straw within ember_r m, so her warm light reads ochre on it, not olive-chartreuse; her light untouched.
+global uniform vec4 survivor;
+global uniform vec4 flora_night;
+uniform float ember_r = 7.0;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
@@ -622,12 +634,14 @@ void fragment() {
 	albedo *= 1.0 - pud_rim * prim;
 	rough = mix(rough, 0.6, prim * 0.5);
 	// (Standing water: dark, and smooth enough to hold the sky; judge 1, E3 fix 7.)
-	albedo = mix(albedo, albedo * pud_dark, pud);
+	float pn = pud_night * ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
+	albedo = mix(albedo, albedo * mix(pud_dark, pud_mud_k, clamp(pud_mud * pn / max(pud_night, 1e-4), 0.0, 1.0)), pud);
 	// The sky in it broken (judge 2): none under a crown or the eaves, less in the shade, broken by ripples and scum.
 	float brk = smoothstep(0.25, 0.75, nF.g * 0.6 + nF.b * 0.4);
 	float mirror = mirror_amt * mix(mirror_rut, 1.0, max(w_setts, 1.0 - step(0.05, rut))) * smoothstep(0.35, 0.9, ex4.r) * mix(0.45, 1.0, ex4.g) * mix(0.15, 1.0, brk);
-	float pn = pud_night * ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
-	mirror *= 1.0 - pn;
+	// (lf5p: the sky kept in a 0.1-0.3 m band inside the edge, the middle muddy)
+	float p_rim = pud_sheen > 0.0 ? smoothstep(0.62, 0.66, pf) * (1.0 - smoothstep(0.69, 0.8, pf)) : 0.0;
+	mirror *= 1.0 - pn * (1.0 - pud_sheen * p_rim);
 	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud * (1.0 - pn * 0.6));
 	n_w = normalize(mix(n_w, normalize(n_geo + vec3(nF.a - 0.5, 0.0, rag - 0.5) * 0.15), pud));
 
@@ -739,6 +753,12 @@ void fragment() {
 		rough = mix(rough, 0.6, bk_wet);
 	}
 
+	if (flora_night.y > 0.0 && survivor.w > 0.5 && w_meadow > 0.0) {
+		float ek = flora_night.y * w_meadow * (1.0 - smoothstep(ember_r * 0.35, ember_r, length(w - survivor.xz)));
+		float el = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+		vec3 straw = vec3(1.0, 0.8, 0.52);
+		albedo = mix(albedo, straw * (el / dot(straw, vec3(0.2126, 0.7152, 0.0722))), ek);
+	}
 	ALBEDO = albedo;
 	if (debug_view == 1) ALBEDO = pm.rgb;
 	if (debug_view == 2) ALBEDO = sp.rgb;

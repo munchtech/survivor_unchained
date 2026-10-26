@@ -89,6 +89,14 @@ uniform float trod_share = 0.12;
 // (lf3b r2: a lattice of clusters read as a new grid of tufts) fine: a 1.5-2 m noise field thins the drift in places
 // (to 1 - fine), so the tufts gather unevenly, with no cell to repeat
 uniform float fine = 0.0;
+// (Low Ford lf5p, judge lf4 #9: one tuft at one value everywhere; #7: by dawn the tufts' teal ignored the warm key)
+// dry_share of the clumps (in patches, a field of a few metres) a second kind, dry and straw-tipped (dry_tint over the
+// green); val_spread: each clump's and each patch's value plus or minus this; day_cool: the share of the lows' cool tint
+// kept by day and dawn (by night whole). 0, 0, 1: as before.
+uniform float dry_share = 0.0;
+uniform vec3 dry_tint = vec3(1.35, 1.1, 0.62);
+uniform float val_spread = 0.0;
+uniform float day_cool = 1.0;
 
 float hue_of(vec3 c) {
 	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
@@ -211,7 +219,12 @@ void vertex() {
 	vec4 ex4 = textureLod(expo_tex, zuv, 0.0);
 	float low = ex4.b * 2.0 - 1.0;
 	float lush = clamp(smoothstep(-0.1, 0.5, low + (nM.r - 0.5) * 0.4), 0.0, 1.0);
-	v_tint = mix(warm, cool, lush) * tone * (0.8 + 0.3 * gh(wp * 3.9 + 8.0));
+	v_tint = mix(warm, cool, lush * mix(day_cool, 1.0, flora_light.x)) * tone * (0.8 + 0.3 * gh(wp * 3.9 + 8.0));
+	if (dry_share > 0.0) {
+		float dk = step(gh(wp * 8.3 + 17.0), dry_share * (0.4 + 1.2 * smoothstep(0.35, 0.7, nM.b * 0.6 + nC.r * 0.4)));
+		v_tint *= mix(vec3(1.0), dry_tint, dk);
+	}
+	v_tint *= 1.0 + val_spread * ((gh(wp * 2.9 + 21.0) * 2.0 - 1.0) * 0.6 + (nM.g - 0.5) * 2.0 * 0.6);
 	v_frost = 0.0;
 	if (ground_frost.x > 0.001) {
 		v_frost = ground_frost.x * ex4.r * (1.0 - ground_frost.y * ex4.g * 0.92) * (0.6 + 0.4 * h1);

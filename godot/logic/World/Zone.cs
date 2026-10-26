@@ -128,6 +128,10 @@ public sealed record AtmospherePreset(
     public double RiverMoon { get; init; } = 0;
     /// <summary>(Low Ford r3) How far a warm lamp's or fire's light on our own grass turns toward ochre, its lime taken out (grass_own.gdshader's flora_lamp); 0 as built.</summary>
     public double GrassLampOchre { get; init; } = 0;
+    /// <summary>(Low Ford lf5p) Our broadleaf bushes' and alders' leaves by night pulled this share toward their own grey (kit.gdshader's flora_night.x); 0 as built.</summary>
+    public double BushNightSat { get; init; } = 0;
+    /// <summary>(Low Ford lf5p) How far the meadow ground in her ember's pool turns from green to straw, so her warm light reads ochre on it, not chartreuse (terrain.gdshader's flora_night.y; her own lighting untouched); 0 as built.</summary>
+    public double GroundEmberOchre { get; init; } = 0;
     /// <summary>Hoar frost on the ground's exposed tops in play (0: none; 1: a night's full frost; look bible 1f),
     /// and how much of it the sun has thawed where it falls (0: none; 1: all of it, leaving it in the shade).</summary>
     public double Frost { get; init; }

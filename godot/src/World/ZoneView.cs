@@ -391,8 +391,9 @@ public partial class ZoneView : Node3D
                 if (own.Range > 0) lights[li].OmniRange = own.Range;
                 if (own.Att > 0) lights[li].OmniAttenuation = own.Att;
                 specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
+                if (own.Day < 1) dayDim[li] = own.Day;
             }
-            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (Night || !dayDim.TryGetValue(li, out var dd0) ? 1 : dd0);
             glowLight.Remove(best);
         }
         // (E9d) the wall lanterns by the doors: a flame and glass in the kit's cage, its light moved into it (ZoneView.Town)
@@ -557,8 +558,12 @@ public partial class ZoneView : Node3D
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) PlumeLook(c, on);
         foreach (var (h, f) in ownTorches) { f.Visible = on; Lamps.SetLit(h, on); }
+        foreach (var (li, dk) in dayDim) if (li < lights.Count && li < specs.Count) lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (on ? 1 : dk);
         Shadows();
     }
+
+    /// <summary>(lf5p) The zone's own lamps dimmed when it is not night (props_own.json "lamps" "day"): by the light's index.</summary>
+    readonly Dictionary<int, float> dayDim = new();
 
     bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows && !SurvivorUnchained.Args.Has("lamp-shadows-off");   // (--lamp-shadows-off: pictures)
 

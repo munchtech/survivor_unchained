@@ -186,6 +186,10 @@ uniform float crown_hi = 0.0;
 uniform float crown_r = 2.0;
 uniform float crown_keep = 1.5;
 global uniform vec4 canopy_fade;
+// (lf5p) the kept stump's cut top (its trunk's inside seen from above), and our broadleaves' night grey (flora_night.x)
+uniform float stump_top = 0.0;
+uniform vec3 stump_wood : source_color = vec3(0.42, 0.33, 0.22);
+global uniform vec4 flora_night;
 varying flat float v_fade;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
@@ -930,6 +934,10 @@ void fragment() {
 			float tn = night * smoothstep(0.3, 1.0, COLOR.g) * smoothstep(0.55, 1.0, COLOR.r);
 			ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)), tip_night_sat * tn) * (1.0 - tip_night_dim * tn);
 		}
+#ifdef OWN_BROADLEAF
+		// (Low Ford lf5p, judge lf4 #8: the night bushes too saturated) toward their own grey by flora_night.x by night; 0 as built
+		ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)), flora_night.x * night);
+#endif
 		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
 		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
@@ -952,6 +960,13 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
 		ALBEDO *= mix(0.6, 1.0, open_);
+		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
+		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
+		// facing up, so the stump reads as a sawn top with its bark round it; stump_top 0: as before
+		if (v_fade > 0.0 && !FRONT_FACING && stump_top > 0.0) {
+			ALBEDO = mix(ALBEDO, stump_wood * mix(0.85, 1.1, fract(v_jit * 7.3)), stump_top);
+			NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, stump_top));
+		}
 	}
 #endif
 

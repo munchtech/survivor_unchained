@@ -155,6 +155,10 @@ flora_lamp={
 "type": "float",
 "value": 0.0
 }
+flora_night={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 view_from={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

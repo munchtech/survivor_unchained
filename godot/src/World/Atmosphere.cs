@@ -279,6 +279,7 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("town_lit", TownLit);
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, (float)p.RiverMoon));
         RenderingServer.GlobalShaderParameterSet("flora_lamp", SurvivorUnchained.Args.Num("grass-lamp-ochre", (float)p.GrassLampOchre));
+        RenderingServer.GlobalShaderParameterSet("flora_night", new Vector4(SurvivorUnchained.Args.Num("bush-night-sat", (float)p.BushNightSat), SurvivorUnchained.Args.Num("ground-ember-ochre", (float)p.GroundEmberOchre), 0, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed
         // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)
         float frost = (float)p.Frost * FrostScale, thaw = (float)p.FrostThaw;

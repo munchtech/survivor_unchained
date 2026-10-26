@@ -148,6 +148,21 @@ uniform float lamp_pool = 0.0;
 // The air's say over the river (Atmosphere.Set, play's presets, E1): x its light, y the sky in it, z how far the
 // ripples bend it (under 1 the moon's glints gather into a band toward it); (1, 1, 1) as built.
 global uniform vec4 water_air;
+// (Low Ford lf5p, judge lf4 #3: pale foam blobs on open water, over something just under the surface that breaks nothing)
+// foam_emerge: the foot's ring only where something within foam_emerge_r m of it (on the screen) stands above the water;
+// 0: as before.
+uniform float foam_emerge = 0.0;
+uniform float foam_emerge_r = 0.45;
+// (lf5p, judge lf4 #6: the moon's glitter column even end to end) moon_taper: its glints faded toward the column's ends
+// (the half vector's offset from the mirror point, along the view, over moon_taper, across over moon_taper * 0.6); moon_vary:
+// the flecks' size and density wandering along it (a few metres' field); 0, 0: as before.
+uniform float moon_taper = 0.0;
+uniform float moon_vary = 0.0;
+// (lf5p, judge lf4 #3: the ford's body one flat teal) bank_tint: the body toward the shallows' colour where it is under
+// bank_depth m (the banks, the stones' feet), murkier past deep; 0: as before.
+uniform float bank_tint = 0.0;
+uniform float bank_depth = 0.6;
+varying float fleck;
 
 varying vec3 w_pos;
 // The glints' strength (the fragment's SPECULAR, which light() can't read).
@@ -262,6 +277,8 @@ void fragment() {
 	// (full by 'shore' m deep at most, E6c judge r2)
 	float in_k = smoothstep(0.0, shore * (0.55 + 0.45 * texture(noise_tex, wv.xz * 0.07 + 0.11).g), wd);
 	vec3 body = mix(color, murk, smoothstep(0.3, deep, wd));
+	if (bank_tint > 0.0) body = mix(body, mix(color, shallow * 0.55, 0.5), bank_tint * (1.0 - smoothstep(0.05, bank_depth, wd)) * (0.7 + 0.3 * texture(noise_tex, wv.xz * 0.05 + 0.4).b));
+	fleck = texture(noise_tex, wv.xz * 0.11 + vec2(0.31, 0.63) - flow * t * 0.04).g;
 	body = mix(body, shallow * 0.6, sh * 0.5);
 	float opaque = 1.0 - dot(trans, vec3(0.3333));
 
@@ -276,6 +293,17 @@ void fragment() {
 	// single lit pixels)
 	float fw = min(fwidth(wd), foam_depth) * 1.5;
 	float touch = 1.0 - smoothstep(foam_depth * 0.3 - fw, foam_depth * (0.7 + 0.8 * fn) + fw, wd);
+	if (foam_emerge > 0.0 && touch > 0.001) {
+		float up = 0.0;
+		vec2 ro = vec2(PROJECTION_MATRIX[0][0], PROJECTION_MATRIX[1][1]) * 0.5 * foam_emerge_r / max(-VERTEX.z, 0.1);
+		for (int i = 0; i < 8; i++) {
+			float an = float(i) * 0.7854;
+			vec2 uo = SCREEN_UV + vec2(cos(an), sin(an)) * ro;
+			vec3 q = (INV_VIEW_MATRIX * vec4(view_at(uo, INV_PROJECTION_MATRIX, depth_tex), 1.0)).xyz;
+			up = max(up, step(wv.y - 0.01, q.y));
+		}
+		touch *= mix(1.0, up, foam_emerge);
+	}
 	// A stone's foot or a leg (what it meets is steep) rings whole; a shelving bank only in lace, here and there, so the
 	// shore is a soft wet edge and never a drawn line.
 	// (E6c, judge r2: the bank's lace a band 0.25-0.4 m wide across the ground from the waterline, torn into pieces
@@ -400,7 +428,14 @@ void light() {
 	vec3 c = LIGHT_COLOR * (D * F * vis * ndl * ATTENUATION) * (LIGHT_IS_DIRECTIONAL ? 1.0 : glint_near);
 	if (mw > 0.0) {
 		// (the moon's: sparse on the crests, moon_gain of it, over its soft broken column, in moon_tint, under moon_cap)
-		c *= mix(1.0, mix(1.0 - moon_sparse, 1.0, crest * crest) * moon_gain, mw);
+		float cr = moon_vary > 0.0 ? pow(crest, mix(1.0, mix(0.45, 3.2, smoothstep(0.25, 0.75, fleck)), moon_vary)) : crest;
+		c *= mix(1.0, mix(1.0 - moon_sparse, 1.0, cr * cr) * moon_gain, mw);
+		if (moon_taper > 0.0) {
+			vec3 tx = cross(flat_n, VIEW);
+			tx = dot(tx, tx) > 1e-6 ? normalize(tx) : vec3(1.0, 0.0, 0.0);
+			float ta = dot(h, cross(tx, flat_n)) / moon_taper, tc = dot(h, tx) / (moon_taper * 0.6);
+			c *= mix(1.0, exp(-ta * ta - tc * tc), mw);
+		}
 		if (moon_column > 0.0) {
 			vec3 ax = cross(flat_n, VIEW);
 			ax = dot(ax, ax) > 1e-6 ? normalize(ax) : vec3(1.0, 0.0, 0.0);
