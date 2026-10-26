@@ -1102,6 +1102,7 @@ public static class People
                         m.SetShaderParameter("edge_tone", EdgeTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
+                        HerZones(m, look, null);
                         SkinSet(m, m.ResourceName);
                     }
                     else if (m.Shader == eyeShader)
@@ -1723,6 +1724,8 @@ public static class People
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
         if (who == "heroine") HerShade(m, look);
+        // (her face's skin zones, colour and sheen, her pores' coarse layer and the broad sheen lobe: HerZones)
+        if (who == "heroine") HerZones(m, look, src.ResourceName == "skin_head");
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1880,6 +1883,57 @@ public static class People
         // C 6.0 at L 38 against her lit neck's 4.8. The play camera unchanged (mean 0.05 of 255). --shade-thin X: another.)
         m.SetShaderParameter("shade_thin", (float)SurvivorUnchained.Args.Num("shade-thin", 0.15f));
     }
+
+    /// <summary>Her skin's surface, zone by zone (max judge b1, face 44, 26 October 2026: fair read as smooth matte vinyl,
+    /// deep as flat clay, one hue forehead to chin, no pores at the Look). The skin shader's zone_* (her face's colour
+    /// zones and gloss zones, tools/assets/heroine_skin_zones.py: a redder nose, cheeks, ears and lip line, a yellower
+    /// forehead, faint cool under her eyes and at her jaw, pinker lids; an oilier T-zone, softer cheeks, wet lips), sheen2
+    /// (a second, broad sheen lobe) and peel / pore_rough (her pores' coarse layer, so her highlight breaks up at the
+    /// Look's zoom). Her colour zones scaled by her skin's lightness: on deep skin a subtler, browner flush. head: her
+    /// head's own material (the zone maps laid on it); null: a material already made (HerRestyle), its maps kept.
+    /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
+    static void HerZones(ShaderMaterial m, Look look, bool? head)
+    {
+        if (SkinZonesOff) return;
+        if (head == true)
+        {
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_skin_zones.png"))
+                m.SetShaderParameter("skin_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_skin_zones.png"));
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_sheen_zones.png"))
+                m.SetShaderParameter("sheen_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_sheen_zones.png"));
+        }
+        // (deep: 0 at her own fair paint, 1 at the Deep swatch's lightness)
+        var t = HerTone(look);
+        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
+        float deep = Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+        m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
+        m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
+        m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
+        m.SetShaderParameter("zone_cool", ZoneCool.Fair.Lerp(ZoneCool.Deep, deep));
+        m.SetShaderParameter("zone_lids", ZoneLids.Fair.Lerp(ZoneLids.Deep, deep));
+        m.SetShaderParameter("zone_rough", 1f);
+        m.SetShaderParameter("zone_rough_base", ZoneRough.Base);
+        m.SetShaderParameter("zone_rough_t", ZoneRough.T);
+        m.SetShaderParameter("zone_rough_cheek", ZoneRough.Cheek);
+        m.SetShaderParameter("zone_rough_lip", ZoneRough.Lip);
+        m.SetShaderParameter("zone_rough_body", ZoneRough.Body);
+        m.SetShaderParameter("sheen2", Sheen2.Amount);
+        m.SetShaderParameter("sheen2_rough", Sheen2.Rough);
+        m.SetShaderParameter("sheen2_base", Sheen2.Base);
+        m.SetShaderParameter("peel", head == false ? Peel.Body : Peel.Head);
+        m.SetShaderParameter("peel_scale", Peel.Scale);
+        m.SetShaderParameter("pore_rough", Peel.Rough);
+    }
+
+    static readonly bool SkinZonesOff = SurvivorUnchained.Args.Get("skin-zones") == "off";
+    static readonly (float Fair, float Deep) ZoneColour = (1f, 0.6f);
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneFlush = (new(1f, 0.82f, 0.80f), new(1f, 0.90f, 0.86f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneYellow = (new(1f, 0.98f, 0.88f), new(1f, 0.98f, 0.92f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneCool = (new(0.94f, 0.97f, 1.03f), new(0.96f, 0.98f, 1.0f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneLids = (new(0.96f, 0.84f, 0.86f), new(0.94f, 0.88f, 0.88f));
+    static readonly (float Base, float T, float Cheek, float Lip, float Body) ZoneRough = (0.5f, 0.4f, 0.55f, 0.3f, 0.5f);
+    static readonly (float Amount, float Rough, float Base) Sheen2 = (0.6f, 0.75f, 0.4f);
+    static readonly (float Head, float Body, float Scale, float Rough) Peel = (0.12f, 0.06f, 0.4f, 0.3f);
 
     static Vector3 HerAmbient(Look look)
     {
