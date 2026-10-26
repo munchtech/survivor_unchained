@@ -110,6 +110,10 @@ public interface IZoneHost
     void Teach(Callout c) { }
     /// <summary>Whether a callout was seen on this profile (what follows it can be asked for at once).</summary>
     bool Taught(string id) => false;
+    /// <summary>Whether a callout waits in the line, asked but not yet shown (its moment can be held for it).</summary>
+    bool TeachWaiting(string id) => false;
+    /// <summary>The callout on the screen now (none: none is up).</summary>
+    Callout? Teaching => null;
     /// <summary>The survivor is up again here (the prologue's forgiveness).</summary>
     void Revived(double x, double z);
     /// <summary>The key or button bound to an action, as the player would name it.</summary>

@@ -125,16 +125,16 @@ public partial class Game
             {
                 if (OnScreen(w) is not Vector2 v) continue;
                 // (each one ringed only well inside the screen: the rest get an edge arrow)
-                if (t.Each && !SafeArea.HasPoint(v)) continue;
+                if (t.Each && !InSafe(v)) continue;
                 // (a candidate: the first well inside the screen is the one)
                 if (t.Safe)
                 {
                     if (t.Open && OS.GetCmdlineUserArgs().Contains("--teach-diag") && (Battle?.Time ?? 0) - diagAt > 0.25)
                     {
                         diagAt = Battle?.Time ?? 0; InOpen(w);
-                        GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={SafeArea.HasPoint(v)} block={diagBlock}");
+                        GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={InSafe(v)} block={diagBlock}");
                     }
-                    if (!SafeArea.HasPoint(v)) continue;
+                    if (!InSafe(v)) continue;
                     if (t.Open && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
                     if (t.Open && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
@@ -222,6 +222,10 @@ public partial class Game
 
     /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>
     static readonly Rect2 SafeArea = new(300, 150, 1320, 700);
+    /// <summary>The minimap and the zone's header and objectives under it (top right): a ring there sat
+    /// against the words (au1 item 9, the lamps).</summary>
+    static readonly Rect2 HudCorner = new(1460, 0, 460, 450);
+    static bool InSafe(Vector2 v) => SafeArea.HasPoint(v) && !HudCorner.HasPoint(v);
 
     /// <summary>The callout's things in the world that are off the screen: the point on the screen's edge
     /// toward each, and which way (a lamp behind the camera's edge gets a chevron there).</summary>
@@ -233,7 +237,7 @@ public partial class Game
         foreach (var p in c.Target.World())
         {
             var w = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-            if (camera.IsPositionBehind(w) || OnScreen(p) is Vector2 on && (!c.Target.Each || SafeArea.HasPoint(on))) continue;
+            if (camera.IsPositionBehind(w) || OnScreen(p) is Vector2 on && (!c.Target.Each || InSafe(on))) continue;
             var d = camera.UnprojectPosition(w) - mid;
             float far = d.Length() - Ui.Callout.EdgeTip - 8;
             if (far < 1) continue;

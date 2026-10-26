@@ -123,7 +123,8 @@ public sealed class Prologue : ZoneRuntime
                 chestOpened = true;
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
-                G.After(0.6, () => Tip("pack", "Your pack", "What you find, you keep. The ember will not outlast the night; gear, gold and what you learn will. Open your pack to wear the jerkin.", [Key("inventory")], 14));
+                // (said where it's found; F8 waits for it to go, au1 item 10: the two stacked at the Post)
+                G.After(0.6, () => Tip("pack", "Your pack", "What you find, you keep. The ember will not outlast the night; gear, gold and what you learn will. Open your pack to wear the jerkin.", [Key("inventory")], 11));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -190,6 +191,8 @@ public sealed class Prologue : ZoneRuntime
     double callerAt;
     /// <summary>When the Knight's present windup began (game seconds).</summary>
     double knightWound = -1;
+    /// <summary>Its windup was held once already for F7 waiting in the line.</summary>
+    bool knightHeld;
     /// <summary>F7 freezes a beat into the windup, once its red lane is down and on the screen.</summary>
     const double LaneBeat = 0.3;
 
@@ -198,7 +201,25 @@ public sealed class Prologue : ZoneRuntime
     void KnightWatch()
     {
         if (B == null) return;
-        if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; return; }
+        // Until F7 is seen, its first red line waits for a moment it can be taught in (au1 item 10: the
+        // first was drawn off the screen's middle, under another callout, and went untaught): it isn't
+        // begun while the Knight stands far from her or another callout has the screen.
+        if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line")
+            && (Dist(kw.X, kw.Z, B.Player.X, B.Player.Z) > 8 || G.Teaching != null))
+            kw.RangedT = Math.Max(kw.RangedT, 0.25);
+        if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
+        // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
+        if (knightWound >= 0 && !knightHeld && !G.Taught("red_line") && G.TeachWaiting("red_line") && (k.Def.Charge ?? k.Def.Lunge) is { } held)
+        {
+            knightHeld = true;
+            k.StateT += 1.5;
+            double r = held.Speed * held.Time;
+            B.Events.Emit(new Ev.Telegraph
+            {
+                Id = k.Id, Shape = TelegraphShape.Line, X = k.X, Z = k.Z, X1 = k.X + k.LungeX * r, Z1 = k.Z + k.LungeZ * r,
+                Radius = k.Radius, Width = k.Radius * 2.2, Duration = k.StateT, Hostile = true,
+            });
+        }
         if (knightWound >= 0) return;
         knightWound = B.Time;
         // (every windup until F7 is seen: the one it freezes in is the one drawn out)
@@ -255,6 +276,10 @@ public sealed class Prologue : ZoneRuntime
         // F6: six risen at her (or 14 s in), while the night's first fights run.
         if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (stageT > 14 || Now != Stage.Rising || Crowd(p.X, p.Z, 3) >= 6))
             Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
+        // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her.
+        // The Warden's channel later asks for it by name (au1 item 4).
+        if (Now == Stage.Ambush && stageT > 4 && B.FormReady && Crowd(p.X, p.Z, 6) >= 4 && B.Ability is AbilityKind fk && FormWords(fk) is string fw)
+            Teach("form", CalloutKind.Freeze, Abilities.All[fk].Name, $"While it's lit, your dash ({Key("dash")}) is {fw}", Aim.At("dash"), "dash", after: "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
@@ -265,7 +290,7 @@ public sealed class Prologue : ZoneRuntime
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
         // names the Flare (the art then rides the dash).
-        if (Now == Stage.Barrow && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
+        if (Now == Stage.Barrow && G.CurrentHint?.Id != "pack" && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
         {
             var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
             if (B.Flare is { } fl)
@@ -280,7 +305,7 @@ public sealed class Prologue : ZoneRuntime
         }
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
-            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow. Put them out.",
+            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nBreak them, or lure his charge into one.",
                 new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
@@ -292,6 +317,16 @@ public sealed class Prologue : ZoneRuntime
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
     }
+
+    /// <summary>What the calling's art does when it rides the dash, in F6b's words (none: no callout).</summary>
+    static string? FormWords(AbilityKind k) => k switch
+    {
+        AbilityKind.BullRush => "a charge that throws the dead aside.\nA big one stops it, stunned, and whatever it was casting breaks.",
+        AbilityKind.Grapple => "a hooked chain.\nIt hauls you to the first thing in its way, and stuns it.",
+        AbilityKind.MirrorStep => "a step that leaves two reflections.\nWhat hunts you turns on them.",
+        AbilityKind.Vault => "a spring back through the air.\nIt leaves snares where you stood.",
+        _ => null,
+    };
 
     /// <summary>How many of the hostile dead stand within r of a point.</summary>
     int Crowd(double x, double z, double r) => B?.Enemies.Living().Count(e => e.State is not (EnemyState.Dying or EnemyState.Rising) && e.Disposition == Disposition.Hostile && Dist(e.X, e.Z, x, z) < r) ?? 0;
@@ -672,8 +707,14 @@ public sealed class Prologue : ZoneRuntime
                     Bar(new BossBar("The Ford-Warden", "Keeper of the Low Crossing", warden.Hp, warden.MaxHp, [0.7, 0.4], bar?.Channel, lit > 0));
                     if (ai.Mode == "channel")
                     {
-                        bool breaks = B.Ability is AbilityKind k && Abilities.All[k].Interrupts;
-                        Tip("channel", "Break the channel", $"It is calling up the drowned. {(breaks ? $"{Key("ability")} breaks it." : "Hurt it hard enough and it breaks.")} If it finishes, a lamp is lit again.", [Key("ability")], 10);
+                        // (what breaks it: her art where it rides the dash and interrupts, the Flare, or a hard
+                        // enough beating; Act.Ability became the Flare on 11 Oct, so no key is called "ability")
+                        var form = B.Ability is AbilityKind k && Abilities.All[k] is { Interrupts: true, Movement: true } d ? d : null;
+                        var ways = new List<string>();
+                        var keys = new List<string>();
+                        if (form != null) { ways.Add($"{form.Name} into it ({Key("dash")})"); keys.Add(Key("dash")); }
+                        if (B.Flare != null) { ways.Add($"your Flare ({Key("flare")})"); keys.Add(Key("flare")); }
+                        Tip("channel", "Break the channel", $"It is calling up the drowned. {(ways.Count > 0 ? $"Break it: {string.Join(", or ", ways)}." : "Hurt it hard enough and it breaks.")} If it finishes, a lamp is lit again.", keys, 10);
                     }
                     if (stageT > 40 && lit == 3) { shown.Remove("lamps2"); Tip("lamps2", "The lamps", "Lure its charge into a lamp: stand before one, and step aside at the last moment.", [Key("dash")], 10); }
                 }

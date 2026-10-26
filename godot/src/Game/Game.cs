@@ -810,7 +810,16 @@ public partial class Game : Node, IZoneHost
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
     public void SetObjectives(List<Tracked> list) { objectivesBase = list; RefreshObjectives(); }
-    public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
+    public void SetHint(Hint? hint)
+    {
+        // (a scripted run logs each tip and shoots it, as it does a callout: its words and keys are checked too)
+        if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
+        {
+            GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
+            Shots.Want("tip_" + hint.Id, 0.9);
+        }
+        hud.Hint(CurrentHint = hint);
+    }
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     public void Capture(bool on) => controls.Captured = on;
     string? draftTip;
