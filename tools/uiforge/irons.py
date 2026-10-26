@@ -125,12 +125,13 @@ def glass(r, size, ss=3, curve=1.0, soft=0.14, window=2.2, rimlight=0.8):
     return np.dstack([rgb, out[..., 3]])
 
 
-def bloom(img, sig=(4.0, 9.0), w=(0.9, 0.35), edge=4):
-    """Heat thrown round a hot piece: an orange bloom from its hot pixels, 3 to 5 shown px out
-    (sigmas in file px), faded to nothing `edge` file px from the picture's sides."""
+def bloom(img, seed, sig=(3.0, 7.0), w=(1.6, 1.1), edge=4):
+    """Heat thrown round a hot piece: an orange bloom 3 to 5 shown px out past its frame, from
+    `seed` (the heat's own light: the hot render's red less the cold one's, so the collar's dull
+    red outer face throws it too, not only its hottest inner edge; sigmas in file px), faded to
+    nothing `edge` file px from the picture's sides."""
     rgb, a = img[..., :3], img[..., 3]
-    hot = np.clip((rgb[..., 0] - 0.5) * 2.5, 0, 1) * np.clip(rgb[..., 0] - rgb[..., 2] - 0.25, 0, 1) * 3 * a
-    g = np.clip(sum(cv2.GaussianBlur(hot, (0, 0), s) * k for s, k in zip(sig, w)), 0, 1)
+    g = np.clip(sum(cv2.GaussianBlur(seed, (0, 0), s) * k for s, k in zip(sig, w)), 0, 1)
     h, ww = g.shape
     yy, xx = np.mgrid[0:h, 0:ww].astype(np.float32)
     d = np.minimum(np.minimum(xx, ww - 1 - xx), np.minimum(yy, h - 1 - yy))
@@ -173,8 +174,13 @@ def make(pieces):
             full = load(f"seat_{k}")
             col = load(f"seat_collar_{k}")
             made.append(save(shadow(full), f"seat_{k}"))
-            hot = np.pad(shadow(load(f"seat_hot_{k}")), ((2 * P, 2 * P), (2 * P, 2 * P), (0, 0)))
-            made.append(save(bloom(hot), f"seat_hot_{k}"))      # hot_pad shown px wider each side, for its bloom
+            hr = load(f"seat_hot_{k}")
+            heat = np.clip(hr[..., 0] - full[..., 0], 0, 1) * hr[..., 3]
+            pad = ((2 * P, 2 * P), (2 * P, 2 * P))
+            hot = np.pad(shadow(hr), pad + ((0, 0),))
+            bl = SPEC["seat"].get("bloom", {})
+            made.append(save(bloom(hot, np.pad(heat, pad), tuple(bl.get("sig", (3.0, 7.0))), tuple(bl.get("w", (1.6, 1.1)))),
+                             f"seat_hot_{k}"))                 # hot_pad shown px wider each side, for its bloom
             # empty: the collar unlit (its rims about 35%), the floor at 60%
             cm = np.clip(col[..., 3] * (col[..., :3] @ np.array([0.3, 0.59, 0.11]) > 0.004), 0, 1)
             e = shadow(full).copy()
@@ -227,6 +233,8 @@ if __name__ == "__main__":
                            capture_output=True, text=True, timeout=3600)
         if "Traceback" in r.stdout + r.stderr:
             raise SystemExit((r.stdout + r.stderr)[-3000:])
+    # (seats_hot and lock_hot render only the hot ones; their filing is the whole piece's)
+    pieces = [{"seats_hot": "seats", "lock_hot": "lock"}.get(p, p) for p in pieces]
     paths = make(pieces)
     write_imports(paths)
     print("\n".join(paths))

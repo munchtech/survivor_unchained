@@ -1435,7 +1435,9 @@ public partial class KeyTag : Control
 
     /// <summary>Hung at x, its plate's top at y (HUD v2: 2 lower under a small cuff, whose band's hole its link
     /// runs from; the art cuff's tag at y itself).</summary>
-    public void Place(float x, float y) { cx = x; cy = y; Position = new Vector2(x - Size.X / 2, y + (ring ? 0 : 2)); }
+    /// (The art cuff's tag 3 higher, so its link runs up into a hole drilled in the band's foot, as the small
+    /// cuffs' do: KeyTag draws that hole, since cuff.png is the life cuff's too, which hangs no tag.)
+    public void Place(float x, float y) { cx = x; cy = y; Position = new Vector2(x - Size.X / 2, y + (ring ? -3 : 2)); }
 
     public void Refresh()
     {
@@ -1483,8 +1485,22 @@ public partial class KeyTag : Control
         var tag = UiArt.Art($"hud/tag_{(int)w}.png");
         // (HUD v2: the art's plate at image (3, 8), its ear and the link it hangs by above it, cut at the band;
         // in the irons' light, gentler: a rubbed plate is what the eye reads the key on)
-        float pl = Cuff.Day ? 0.95f : 0.8f;
-        if (tag != null) DrawTexture(tag, new Vector2(Mathf.Round(Size.X / 2 - w / 2) - 3, -8), new Color(pl, pl, pl));
+        // (HUD v2 r2: the irons' own light, darker: iron like the cuff it hangs from, not a pale steel label; the
+        // darkest at which the pressed key still reads at a glance by its lit lip)
+        float pl = Cuff.Day ? 0.52f : 0.63f;
+        var cold = Cuff.Cold;
+        if (tag != null)
+        {
+            // the art cuff's tag: the hole in the band's foot its link goes into (7 above the plate, on the band's
+            // outer slope 3 in from its edge), dark, its lower lip catching a hair of light
+            if (ring)
+            {
+                var hole = new Vector2(Mathf.Round(Size.X / 2) , -7);
+                DrawCircle(hole + new Vector2(0.3f, 0.5f), 1.7f, new Color(0.62f, 0.6f, 0.58f, 0.22f), true, -1, true);
+                DrawCircle(hole, 1.5f, new Color("#050303") with { A = 0.92f }, true, -1, true);
+            }
+            DrawTexture(tag, new Vector2(Mathf.Round(Size.X / 2 - w / 2) - 3, -8), new Color(cold.R * pl, cold.G * pl, cold.B * pl));
+        }
         else
         {
             plate ??= new StyleBoxFlat { BgColor = new Color("#2a2420"), BorderColor = new Color("#6b5a48"), BorderWidthTop = 1, CornerRadiusTopLeft = 2, CornerRadiusTopRight = 2, CornerRadiusBottomLeft = 2, CornerRadiusBottomRight = 2 };

@@ -127,9 +127,29 @@
   "zw": 0.45,
   "dents": 5,
   "nicks": 2,
-  "heat_pow": 1.4,
+  "heat_pow": 0.9,
   "heat_strength": 1.6,
-  "hot_pad": 6
+  "hot_pad": 6,
+  "heat_floor": 0.2,
+  "heat_corner": 0.55,
+  "heat_vary": 0.22,
+  "heat_crust": [
+   9.0,
+   0.3,
+   0.64,
+   0.6
+  ],
+  "bloom": {
+   "_doc": "irons.bloom: seeded from the heat's own light (hot render less cold), sigmas in file px",
+   "sig": [
+    3.0,
+    7.0
+   ],
+   "w": [
+    4.8,
+    3.2
+   ]
+  }
  },
  "inlay": {
   "_doc": "inlays.py: shown px (38 shown = 76 file); the groove (lip, wall) and the domed enamel",
@@ -215,7 +235,40 @@
   "body_top": 22,
   "link_variant": 5,
   "apex": 6.8,
-  "keyhole_y": 21.5
+  "keyhole_y": 21.5,
+  "heat_core": [
+   0.5,
+   0.03
+  ],
+  "crust": [
+   11.0,
+   0.3,
+   0.64,
+   0.65
+  ],
+  "heat_ramp": [
+   [
+    0.0,
+    "#0a0100"
+   ],
+   [
+    0.35,
+    "#2a0501"
+   ],
+   [
+    0.6,
+    "#641104"
+   ],
+   [
+    0.82,
+    "#a82c0c"
+   ],
+   [
+    1.0,
+    "#e2581c"
+   ]
+  ],
+  "heat": 1.1
  },
  "hanger": {
   "canvas": [

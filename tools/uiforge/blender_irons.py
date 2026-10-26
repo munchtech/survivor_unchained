@@ -156,7 +156,9 @@ def iron(name, seed, state="", **kw):
 def body_heat_material(name, seed, strength=1.0):
     """A thick iron body warming through (the lock as the chain nears full): still the chain's iron
     with its sheen, a dull red coming up from its core and fading toward its edges, which cool
-    first, broken by dark scale; only the hottest of it reaches the leading links' orange."""
+    first, its scale broad dull flakes that only dim it (never black on orange: leopard print);
+    only its very core reaches the leading links' orange. SPEC lock: heat_core [edge, core] (the
+    core's reach in the body's own coords), heat_ramp, crust [px, from, to, floor]."""
     m = C.iron_chain_material()
     m.name = name
     nt = m.node_tree
@@ -180,38 +182,44 @@ def body_heat_material(name, seed, strength=1.0):
     ln = n.new("ShaderNodeVectorMath")
     ln.operation = "LENGTH"
     k.new(cmb.outputs[0], ln.inputs[0])
+    sp = SPEC.get("lock", {})
+    ce, cc = sp.get("heat_core", [0.52, 0.08])
     core = n.new("ShaderNodeMapRange")
     core.interpolation_type = "SMOOTHSTEP"
-    core.inputs["From Min"].default_value = 0.52
-    core.inputs["From Max"].default_value = 0.08
+    core.inputs["From Min"].default_value = ce
+    core.inputs["From Max"].default_value = cc
     k.new(ln.outputs["Value"], core.inputs["Value"])
-    crust = scale_crust(n, k, seed)
+    cpx, c0, c1, cf = sp.get("crust", [7.0, 0.38, 0.5, 0.35])
+    crust = scale_crust(n, k, seed, px=cpx, lo=c0, hi=c1, floor=cf, detail=1.0, distortion=0.5)
     heat = n.new("ShaderNodeMath")
     heat.operation = "MULTIPLY"
     k.new(core.outputs[0], heat.inputs[0])
     k.new(crust, heat.inputs[1])
-    heat_ramp(n, k, heat.outputs[0], bsdf, strength,
-              [(0.0, "#0c0100"), (0.5, "#5a0e04"), (0.85, "#c84a18"), (1.0, "#ff7a28")])
+    ramp = sp.get("heat_ramp", [[0.0, "#0c0100"], [0.5, "#5a0e04"], [0.85, "#c84a18"], [1.0, "#ff7a28"]])
+    heat_ramp(n, k, heat.outputs[0], bsdf, strength, [tuple(s) for s in ramp])
     return facets(m, seed, cell=8.0, tilt=0.1)
 
 
-def scale_crust(n, k, seed, px=7.0):
-    """Forge scale on hot iron: a few broad dark flakes over the glow, irregular (a low-detail,
-    distorted noise some `px` shown px across, cut hard), never an even pebble of cells."""
+def scale_crust(n, k, seed, px=7.0, lo=0.38, hi=0.5, floor=0.35, detail=1.5, distortion=0.8):
+    """Forge scale on hot iron: a few broad flakes over the glow, irregular (a low-detail,
+    distorted noise some `px` shown px across, from `lo` to `hi` of it mapped to `floor` to 1:
+    a narrow range and a low floor cut dark flakes hard, a wide one and a high floor only dim
+    the heat in broad soft patches), never an even pebble of cells."""
     tco = n.new("ShaderNodeTexCoord")
     mp = n.new("ShaderNodeMapping")
     mp.inputs["Location"].default_value = (seed * 1.7, seed * 2.9, 0)
     k.new(tco.outputs["Object"], mp.inputs["Vector"])
     nz = n.new("ShaderNodeTexNoise")
     nz.inputs["Scale"].default_value = 1.0 / (px * SPEC["scale"] * U)
-    nz.inputs["Detail"].default_value = 1.5
-    nz.inputs["Distortion"].default_value = 0.8
+    nz.inputs["Detail"].default_value = detail
+    nz.inputs["Distortion"].default_value = distortion
     k.new(mp.outputs[0], nz.inputs["Vector"])
     crust = n.new("ShaderNodeMapRange")
+    crust.interpolation_type = "SMOOTHSTEP"
     k.new(nz.outputs["Fac"], crust.inputs["Value"])
-    crust.inputs["From Min"].default_value = 0.38
-    crust.inputs["From Max"].default_value = 0.5
-    crust.inputs["To Min"].default_value = 0.35
+    crust.inputs["From Min"].default_value = lo
+    crust.inputs["From Max"].default_value = hi
+    crust.inputs["To Min"].default_value = floor
     crust.inputs["To Max"].default_value = 1.0
     return crust.outputs[0]
 
@@ -247,7 +255,8 @@ def collar_heat_material(name, seed, strength=1.6):
     bsdf = n["Principled BSDF"]
     at = n.new("ShaderNodeAttribute")
     at.attribute_name = "collar_heat"
-    crust = scale_crust(n, k, seed, px=6.0)
+    cpx, c0, c1, cf = SPEC["seat"].get("heat_crust", [6.0, 0.38, 0.5, 0.35])
+    crust = scale_crust(n, k, seed, px=cpx, lo=c0, hi=c1, floor=cf, detail=1.0, distortion=0.5)
     # the scale lies on the cooler outer iron; the inner edge burns through it
     mix = n.new("ShaderNodeMix")
     mix.data_type = "FLOAT"
@@ -258,8 +267,8 @@ def collar_heat_material(name, seed, strength=1.6):
     heat.operation = "MULTIPLY"
     k.new(at.outputs["Fac"], heat.inputs[0])
     k.new(mix.outputs[0], heat.inputs[1])
-    heat_ramp(n, k, heat.outputs[0], bsdf, strength,
-              [(0.0, "#0a0100"), (0.3, "#4a0c03"), (0.62, "#c8461a"), (0.86, "#ffa040"), (1.0, "#fff0c0")])
+    ramp = SPEC["seat"].get("heat_ramp", [[0.0, "#0a0100"], [0.3, "#4a0c03"], [0.62, "#c8461a"], [0.86, "#ffa040"], [1.0, "#fff0c0"]])
+    heat_ramp(n, k, heat.outputs[0], bsdf, strength, [tuple(s) for s in ramp])
     return facets(m, seed, cell=8.0, tilt=0.085)
 
 
@@ -796,10 +805,19 @@ def seat(k, state):
         if "collar_heat" not in col.data.color_attributes:
             col.data.color_attributes.new("collar_heat", "FLOAT_COLOR", "POINT")
         ha = col.data.color_attributes["collar_heat"]
+        # heat across the whole face (dull red at its outer edge, `heat_floor`), its outer corners
+        # cooler (farthest from the seat), one side a little hotter than another (heat_vary)
+        hf, cc, hv = sp.get("heat_floor", 0.0), sp.get("heat_corner", 0.0), sp.get("heat_vary", 0.0)
+        hx, hy = (x1 - x0) / 2, (y1 - y0) / 2
         for v in col.data.vertices:
-            j = v.index % Mp
+            j, i = v.index % Mp, v.index // Mp
             u = 1.0 if j >= j_ch1 else min(1.0, max(0.0, (m - prof[j][0]) / (2 * m + cw)))
-            u = u ** sp.get("heat_pow", 1.4)
+            u = hf + (1 - hf) * u ** sp.get("heat_pow", 1.4)
+            px_, py_ = path[i % n]
+            cr = min(abs(px_ - cxs) / hx, abs(py_ - cys) / hy)
+            cr = max(0.0, min(1.0, (cr - 0.5) / 0.5))
+            u *= 1 - cc * cr * cr * (1 - u)
+            u *= 1 - hv * (0.5 + 0.5 * noise.noise(Vector((i / n * 5.0, k * 1.7, 0.3))))
             ha.data[v.index].color = (u, u, u, 1)
         col.data.materials.append(collar_heat_material("collar_hot", 40 + k, sp.get("heat_strength", 1.6)))
     else:
@@ -1008,6 +1026,9 @@ def main():
             seat(k, "hot")
         json.dump({str(k): [[round(x, 2), round(y, 2)] for x, y in v] for k, v in dims.items()},
                   open(os.path.join(OUT, "dimples.json"), "w"), indent=1)
+    elif "seats_hot" in want:                       # the hot castings alone (the cold ones and dimples kept)
+        for k in SPEC["seat"]["variants"]:
+            seat(k, "hot")
     if "sill" in want:
         for N in SPEC["sill"]["counts"]:
             sill(N)
@@ -1019,6 +1040,8 @@ def main():
     if "lock" in want:
         for s in ("", "open", "hot"):
             lock(s)
+    elif "lock_hot" in want:
+        lock("hot")
 
 
 if __name__ == "__main__":
