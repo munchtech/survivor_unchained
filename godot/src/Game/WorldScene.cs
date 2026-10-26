@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
@@ -67,13 +67,15 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>Where she is drawn this frame (on the ground; Interp).</summary>
     public Vector3 HerDrawn { get; private set; }
 
-    public WorldScene(ZoneData data, FollowCamera cam)
+    public WorldScene(ZoneData data, FollowCamera cam) : this(data, cam, new ZoneView(data, new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z))) { }
+
+    /// <summary>Round a zone already stood up (built ahead: Game.Prepare).</summary>
+    public WorldScene(ZoneData data, FollowCamera cam, ZoneView view)
     {
         Data = data;
         this.cam = cam;
         Name = $"World_{data.Id}";
-        var start = new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z);
-        View = new ZoneView(data, start);
+        View = view;
         AddChild(View);
         AddChild(Crowd);
         Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam };

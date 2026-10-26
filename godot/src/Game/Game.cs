@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
@@ -360,6 +360,9 @@ public partial class Game : Node, IZoneHost
         // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
         // later, warm builds: what a place costs to enter once the session has
         // begun, and to enter again).
+        foreach (var hop in Args.Get("prepare")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => Prepare(onTo));
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Travel(onTo));
@@ -621,6 +624,20 @@ public partial class Game : Node, IZoneHost
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
+        else if (ahead != null && aheadId == id)
+        {
+            // Built ahead (Prepare): whatever is left done now.
+            Perf.Lap("ahead", true);
+            ahead.Finish();
+            scene = aheadScene!;
+            ahead = null; aheadId = null; aheadScene = null;
+            GroundPaint.Of(scene.Data);
+            Perf.Lap("built ahead: the rest");
+            AddChild(scene);
+            Prefetch.ReleaseAhead();
+            Perf.Lap("built ahead: added");
+            goto Built;
+        }
         else { currentMap = null; data = new ZoneData(id); }
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
@@ -628,6 +645,7 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
+        Built:
         // (a story night let go stands still until its result: StoryNight.StandDown)
         scene.Move = () => zone is StoryNight { Over: true } ? (0, 0) : auto?.Move ?? PlayMove();
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
@@ -652,6 +670,48 @@ public partial class Game : Node, IZoneHost
         CrowdView.FlareRingPast = fl.RingPast;
         ApplySettings();
         return scene;
+    }
+
+    /// <summary>A place being built ahead of the journey to it (Prepare), and its id.</summary>
+    Slices? ahead;
+    string? aheadId;
+    WorldScene? aheadScene;
+
+    /// <summary>The place `id` built ahead, a few milliseconds a frame while this one plays (the Prologue asks as
+    /// C04 A begins): its data, the ground's paint and the map's drawing worked out on a worker thread, its textures
+    /// decoded on workers, then its pieces stood up off the tree (Slices). Travel waits behind the black for what
+    /// is left; Stage adds it. Nothing of it shows, or reaches the place still shown, till then.</summary>
+    public void Prepare(string id)
+    {
+        if (aheadId == id || scene?.Data.Id == id || id is "arena" or "map") return;
+        aheadId = id;
+        aheadScene = null;
+        ahead = new Slices(BuildAhead(id));
+    }
+
+    IEnumerable<object?> BuildAhead(string id)
+    {
+        // (the zone's own-props and flora tables read here first: the worker only finds them)
+        OwnProps.For(id);
+        yield return null;
+        var load = System.Threading.Tasks.Task.Run(() => new ZoneData(id));
+        yield return load;
+        var data = load.Result;
+        // The flora's sizes the ground's paint reads, looked up here, where their files load.
+        foreach (var g in data.Flora) { Dressing.BoundsOf(g.Piece); yield return null; }
+        yield return System.Threading.Tasks.Task.Run(() => { GroundPaint.Ready(data); MapScreen.DrawAhead(data); });
+        foreach (var s in Prefetch.Ahead(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: true)) yield return s;
+        var view = new ZoneView(data);
+        foreach (var s in view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)) yield return s;
+        aheadScene = new WorldScene(data, cam, view);
+    }
+
+    /// <summary>Each frame: the place being built ahead goes on (a little while this one plays, more behind the black).</summary>
+    void PumpAhead()
+    {
+        if (ahead == null || ahead.Done) return;
+        if (ahead.Step(inTransit ? 40 : 4) && Perf.On)
+            GD.Print($"perf ahead {aheadId}: built in {ahead.Frames} frames, main thread {ahead.MainMs:0} ms, at most {ahead.MaxMs:0.0} ms a frame, longest step {ahead.LongestMs:0.0} ms ({ahead.Longest})");
     }
 
     public void EnterZone(string id, string? from, Arrival? at = null)
@@ -745,7 +805,7 @@ public partial class Game : Node, IZoneHost
         controls.Captured = true;
         if (pull) { hud.Pull(1.1, caption, sub); Sfx.Stinger("pull"); }
         else hud.Fade(1, 0.8, caption, sub);
-        Wait(pull ? 1.15 : 0.85, () =>
+        Wait(pull ? 1.15 : 0.85, () => WhenBuilt(to, () =>
         {
             EnterZone(to, from, at);
             Save("travel");
@@ -756,7 +816,14 @@ public partial class Game : Node, IZoneHost
                 controls.ClearLatches();
                 inTransit = false;
             });
-        });
+        }));
+    }
+
+    /// <summary>Once the place being built ahead is (behind the black: PumpAhead goes faster then), or at once.</summary>
+    void WhenBuilt(string id, Action fn)
+    {
+        if (ahead == null || aheadId != id || ahead.Done) fn();
+        else Wait(0, () => WhenBuilt(id, fn));
     }
 
     /// <summary>Later, in real time (a fade, the fall).</summary>
@@ -1032,6 +1099,7 @@ public partial class Game : Node, IZoneHost
 
     public override void _Process(double delta)
     {
+        PumpAhead();
         // Something over the game has the buttons: pad buttons mean their menu meaning first.
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.

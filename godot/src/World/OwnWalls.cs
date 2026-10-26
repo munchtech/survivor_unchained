@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Godot;
@@ -613,8 +613,8 @@ public sealed class OwnWalls
         return list;
     }
 
-    /// <summary>The taken pieces as MultiMeshes under root (one per preset per square).</summary>
-    public void Build(Node3D root)
+    /// <summary>The taken pieces as MultiMeshes under root (one per preset per square), in steps (Slices).</summary>
+    public IEnumerable<object?> Build(Node3D root)
     {
         int n = 0;
         // the chimneys' tops, for the soot on the roofs round them
@@ -646,10 +646,15 @@ public sealed class OwnWalls
                         if (img.GetPixel(i, j).R < foot + 0.04f) img.SetPixel(i, j, new Color(foot + 0.04f, 0, 0));
             KitLook.SetGround(ImageTexture.CreateFromImage(img), new Vector4(x0, z0, x1 - x0, z1 - z0));
         }
+        yield return "walls: the ground under the town";
+        // (each preset's file loaded on its own step)
+        foreach (var (preset, _, _) in groups.Keys) { PartsOf(preset); yield return "walls: a file loaded"; }
         var unitOf = FadeUnits(root);
+        yield return "walls: the fade units";
         foreach (var ((preset, _, _), list) in groups)
             foreach (var (mesh, local) in PartsOf(preset))
             {
+                yield return "walls: a group";
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = true, Mesh = mesh, InstanceCount = list.Count };
                 for (int i = 0; i < list.Count; i++)
                 {
