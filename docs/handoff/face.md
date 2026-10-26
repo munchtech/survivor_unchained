@@ -2,17 +2,21 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Face 43 (26 Oct): pixie A MERGED; ladder + neck patch MR READY; next = SKIN diagnosis
+## Paused here (Face 43, 26 Oct): Face's fixed list DONE; SKIN options with the owner
 
-**Branch face-37** (own junction to its own public\assets). Scratch F43 = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\fce3bb46-6066-4189-a877-02222732c4ac\scratchpad\face43` (`shoot.sh`, `l1.txt` shot lines, `cmp.py`, `fold\` ladder frames, `neck\` neck frames; judge crops in `..\judge43\`).
-- **MR1 MERGED** (ac62384b): pixie ear back to A (B's three commits reverted to b763c7ff; frames pixel-identical to the owner's A), braid/ponytail ear corner, 7d tick, 7e front tone.
-- **MR2 READY** (d05a61e9, e4d4618b; tests 1054/0/8):
-  - **Ear-front ladder = the 7e paint's comb mask** (each texel's distance to the ear's points, 2-3 mm apart). `front_tone` now lays the distance per point, barycentric, eased in 3D (`FRONT_SOFT` 1 mm); `FRONT_DBG=1` paints the mask green. All 10 paints re-laid from b763c7ff~1 (Sunborn cut 0). heroine.glb untouched; Body has nothing to do (same `ear_front` mark).
-  - **Neck-base patch = light:** only the near-grey key reached her far neck under the jaw, and `edge_tone` never did (seam ease 0 on the head mesh). heroine_skin.gdshader `edge_head` (1.0) / `edge_head_y` (1.665, 1.695 model y): edge_tone reaches her head's neck under the jaw, Look rig only. Fair night hue 37 to 51, deep 20 to 34; face dE <= 0.0001; town unchanged. A/B: `--skin-set *:edge_head=0`.
-  - **Judge j43 (max): ladder PASS, neck PASS, jaw/cheek specks PASS-WITH-NOTES (no heal: they read as freckles; at night the lower-right-cheek cluster is a shade grey, the night fill's colour, optional).** Jaw specks are closed.
-- **Notes from j43 (later lists):** the braid-only pale crosshatch glint above the ear at lk40 (hair; was there before); the braid crown reads as a painted shell (hair scope); deep skin by night reads saturated brick red on chest/shoulders (a SKIN-diagnosis input: measure chest/shoulder hue and chroma, deep night vs day vs the swatch).
-- **NEXT: SKIN diagnosis only** (waxy close-ups, orange plastic at night, deep skin red-orange): options and costs for the owner; no build.
-- Spend: solvers 92k (ladder), 151k (neck); judge 105k.
+**Branch face-37** (own junction to its own public\assets). Both MRs MERGED: MR1 ac62384b (pixie ear back to A, the owner's pick; braid/ponytail ear corner; 7d tick; 7e front tone), MR2 f5d0a01d (ear-front ladder, neck patch). Tests 1054/0/8. Scratch backed up to `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_fce3bb46\face43\` (`shoot.sh`, `l1.txt`, `cmp.py`, `skin\` scripts and numbers, `judge43\` crops).
+- **Ear-front ladder = the 7e paint's comb mask** (each texel's distance to the ear's points, 2-3 mm apart). `front_tone` now lays the distance per point, barycentric, eased in 3D (`FRONT_SOFT` 1 mm); `FRONT_DBG=1` paints the mask green. All 10 paints re-laid from b763c7ff~1. heroine.glb untouched (step 6b did sharpen the strip's facets, dihedral p95 9 to 20 deg, but they render smooth).
+- **Neck-base patch = light:** heroine_skin.gdshader `edge_head` (1.0) / `edge_head_y` (1.665, 1.695 model y) carry edge_tone up her head's neck under the jaw (Look rig only). A/B: `--skin-set *:edge_head=0`.
+- **Judge j43 (max): ladder PASS, neck PASS, jaw/cheek specks PASS-WITH-NOTES (freckles; no heal). Jaw specks closed.**
+- **SKIN diagnosis (report sent to main for the owner; nothing built).** Causes, worst first:
+  1. Warm lamps on an albedo her tones already saturate (tone x face_tone take the paint's C .035 to ~.09). Town night fair face hue 36-41, deep chest 27, against the swatch's 48.5 at up to 1.7x its chroma: the orange and the "brick red".
+  2. The Look's night grade: its orange highlight tint (`NightGrade` #ffad5c at 0.24) multiplies chroma 3.5-4.4x above L .75. The town close-up already neutralizes it (`ViewHighlightsNeutral`); the Look does not.
+  3. Almost no sheen on her face (1-2.4% of luminance; deep 15-42%, one even lobe) and flat roughness (0.6, the pore tile only +-0.015): pores never show, so she reads as matte wax.
+  4. No colour zones in the paint (cheek hue = forehead).
+  Scatter, wrap and tone trim are ruled out. The Rendering lead's 29% clip doesn't reproduce at these cameras (4%, Look night only).
+  Options: B = the Look's highlight tint neutral, as the town close-up (~200k, 1-2 h, global); A = her sheen/roughness zone map + second lobe + a soft colour-zone layer, face_tone refit (~600k, 5-7 h, medium risk); C = a night "skin-line hold" on her warm lamps (~300k, 3 h). Fallback D = repaint with zones (~800k+). Frames and scripts in the backup's `skin\` (the override crops `cmp_L_sheen_zone.png` are UNCHECKED: look before showing anyone).
+- **Later list (Face/hair):** the braid-only pale crosshatch glint above the ear at Look 40 (j43; was there before); the braid crown reads as a painted shell (j43, hair scope); the night fill greys the lower-right-cheek freckle cluster a shade (optional, light); the ponytail's purple haze at Look -40; the town lamp behind the lobe; black hair reads navy at night.
+- Spend this session: solvers 92k (ladder), 151k (neck), 189k (skin diagnosis); judge 105k.
 
 ## Paused here (Face 42, 26 Oct, handoff at ~240k): pixie ear sent to the owner as A|B; braid ear, tick, ear-front tone built
 
