@@ -112,57 +112,93 @@ public sealed class OwnWalls
     }
 
     /// <summary>(E9c) The houses' fade units (HouseFade, added under root): each house, or each 12 m length of a long one
-    /// (a town wall, so only the length in her way fades), as a box in its house's own frame: its footprint from its walls
-    /// (not the eaves' overhang, so a house behind her is never taken), its height from all of it. Returns each copy's
-    /// unit by its house and place.</summary>
+    /// (a town wall, so only the length in her way fades), as the volumes it fills: a box in its house's own frame round
+    /// its walls (their footprint and height, not the eaves' overhang nor the gables, so a house beside or behind her
+    /// is never taken), and each roof body as the prism under its two slopes in its own frame (a roof's box would stand
+    /// over the street by its eaves), each spire and chimney as its box. Returns each copy's unit by its house and place.</summary>
     Dictionary<(int, Vector3), int> FadeUnits(Node3D root)
     {
         var unitOf = new Dictionary<(int, Vector3), int>();
         var byHouse = groups.SelectMany(g => g.Value.Select(e => (Preset: g.Key.Preset, e.At, e.House, e.Roof))).Where(e => e.House >= 0).GroupBy(e => e.House);
         var fade = new HouseFade();
+        static bool Wall((string Preset, Transform3D At, int House, bool Roof) e) => !e.Roof && !e.Preset.StartsWith("gable");
         foreach (var h in byHouse)
         {
             // the house's frame: its walls' direction, folded to a quarter turn
             double sx = 0, sy = 0;
-            foreach (var e in h.Where(e => !e.Roof))
+            foreach (var e in h.Where(Wall))
             {
                 double a = 4 * Mathf.Atan2(e.At.Basis.Column0.Z, e.At.Basis.Column0.X);
                 sx += System.Math.Cos(a); sy += System.Math.Sin(a);
             }
-            float yaw = (float)System.Math.Atan2(sy, sx) / 4, c = Mathf.Cos(yaw), sn = Mathf.Sin(yaw);
-            Vector3 F(Vector3 p) => new(p.X * c + p.Z * sn, p.Y, -p.X * sn + p.Z * c);
+            float yaw = (float)System.Math.Atan2(sy, sx) / 4;
+            // (world to the house's frame: x along its walls, y up, z across)
+            var toHouse = new Transform3D(new Basis(Vector3.Up, yaw), Vector3.Zero);
             // its long axis, cut in lengths of at most 12 m (by each copy's own place)
-            var walls = h.Where(e => !e.Roof).Select(e => F(e.At.Origin)).DefaultIfEmpty(F(h.First().At.Origin)).ToList();
+            var walls = h.Where(Wall).Select(e => toHouse * e.At.Origin).DefaultIfEmpty(toHouse * h.First().At.Origin).ToList();
             float u0 = walls.Min(p => p.X), u1 = walls.Max(p => p.X), v0 = walls.Min(p => p.Z), v1 = walls.Max(p => p.Z);
             bool alongU = u1 - u0 >= v1 - v0;
             float lo = alongU ? u0 : v0, len = alongU ? u1 - u0 : v1 - v0;
             int n = Mathf.Max(1, Mathf.RoundToInt(len / 12f));
-            var boxes = new (Vector3 Min, Vector3 Max, bool Any)[n];
-            for (int i = 0; i < n; i++) boxes[i] = (Vector3.Inf, -Vector3.Inf, false);
+            var boxes = new Aabb?[n];
+            var vols = Enumerable.Range(0, n).Select(_ => new List<HouseFade.Vol>()).ToArray();
             foreach (var e in h)
             {
-                var o = F(e.At.Origin);
+                var o = toHouse * e.At.Origin;
                 int k = Mathf.Clamp((int)(((alongU ? o.X : o.Z) - lo) / Mathf.Max(len, 1e-3f) * n), 0, n - 1);
                 unitOf[(h.Key, e.At.Origin)] = fade.Units.Count + k;
                 foreach (var (mesh, local) in PartsOf(e.Preset))
                 {
                     var bb = mesh.GetAabb();
-                    for (int j = 0; j < 8; j++)
+                    if (Wall(e))
                     {
-                        var p = F(e.At * local * bb.GetEndpoint(j));
-                        ref var b = ref boxes[k];
-                        // (the footprint from the walls only; the height from all)
-                        if (!e.Roof) { b.Min = new(Mathf.Min(b.Min.X, p.X), b.Min.Y, Mathf.Min(b.Min.Z, p.Z)); b.Max = new(Mathf.Max(b.Max.X, p.X), b.Max.Y, Mathf.Max(b.Max.Z, p.Z)); b.Any = true; }
-                        b.Min.Y = Mathf.Min(b.Min.Y, p.Y); b.Max.Y = Mathf.Max(b.Max.Y, p.Y);
+                        for (int j = 0; j < 8; j++)
+                        {
+                            var p = toHouse * (e.At * local * bb.GetEndpoint(j));
+                            boxes[k] = boxes[k] is Aabb b ? b.Expand(p) : new Aabb(p, Vector3.Zero);
+                        }
                     }
+                    else if (e.Roof)
+                        vols[k].Add(new HouseFade.Vol((e.At * local).AffineInverse(), bb, e.Preset.StartsWith("roof_") ? RidgeOf(mesh) : 0));
                 }
             }
-            foreach (var b in boxes) fade.Units.Add((c, sn, b.Any ? b.Min : Vector3.Zero, b.Any ? b.Max : Vector3.Zero));
+            for (int k = 0; k < n; k++)
+            {
+                if (boxes[k] is Aabb b) vols[k].Add(new HouseFade.Vol(toHouse, b, 3));
+                fade.Units.Add(vols[k].ToArray());
+            }
+        }
+        // what hangs on the walls (the kit's copies, already under root): taken by the unit whose walls' box, 0.7 m wider, holds it
+        foreach (var mmi in root.GetChildren().OfType<MultiMeshInstance3D>())
+        {
+            if (mmi.GetMeta("prop", "").AsString() is not ("props/Lantern_Wall" or "props/Torch_Metal") || mmi.Multimesh is not MultiMesh mm) continue;
+            for (int i = 0; i < mm.InstanceCount; i++)
+            {
+                var at = mm.GetInstanceTransform(i);
+                for (int u = 0; u < fade.Units.Count; u++)
+                    if (fade.Units[u].FirstOrDefault(v => v.Ridge == 3) is { Ridge: 3 } w && w.Box.Grow(0.7f).HasPoint(w.To * at.Origin))
+                    {
+                        fade.Hung.Add((mm, i, at, u));
+                        break;
+                    }
+            }
         }
         fade.Name = "house_fade";
         root.AddChild(fade);
         GD.Print($"house fade: {fade.Units.Count} units");
         return unitOf;
+    }
+
+    /// <summary>A roof body's ridge: 1 along its mesh's x, 2 along z (the axis its top vertices spread along).</summary>
+    static int RidgeOf(Mesh mesh)
+    {
+        var bb = mesh.GetAabb();
+        float top = bb.End.Y - 0.12f * bb.Size.Y;
+        float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+        for (int si = 0; si < mesh.GetSurfaceCount(); si++)
+            foreach (var v in (Vector3[])mesh.SurfaceGetArrays(si)[(int)Mesh.ArrayType.Vertex])
+                if (v.Y >= top) { x0 = Mathf.Min(x0, v.X); x1 = Mathf.Max(x1, v.X); z0 = Mathf.Min(z0, v.Z); z1 = Mathf.Max(z1, v.Z); }
+        return x1 - x0 >= z1 - z0 ? 1 : 2;
     }
 
     static List<(Mesh Mesh, Transform3D Local)> PartsOf(string preset)
