@@ -25,6 +25,7 @@ public sealed class Slices
     /// <summary>The longest single step, and where it ended (the step's own name, if it yields one).</summary>
     public double LongestMs;
     public string Longest = "";
+    string last = "start";
 
     public Slices(IEnumerable<object?> work) => steps = work.GetEnumerator();
 
@@ -48,6 +49,9 @@ public sealed class Slices
             if (!steps.MoveNext()) { Done = true; break; }
             double sms = Stopwatch.GetElapsedTime(s0).TotalMilliseconds;
             if (sms > LongestMs) { LongestMs = sms; Longest = steps.Current as string ?? Longest; }
+            // (--perf: each step over a frame's share named, from the yield before it to its own)
+            if (sms > 8 && Perf.On) GD.Print($"perf ahead step {sms:0.0} ms: {last} .. {steps.Current as string ?? steps.Current?.GetType().Name ?? "-"}");
+            if (steps.Current is string label) last = label;
             if (steps.Current is Task t) wait = t;
             if (Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= budgetMs) break;
         }
@@ -61,6 +65,34 @@ public sealed class Slices
     public void Finish()
     {
         while (!Step(double.MaxValue)) wait?.Wait();
+    }
+
+    /// <summary>The main thread's frames so far (PumpAhead counts them), and the worker's share of each for work
+    /// done on a worker thread (Paced): what it hands the renderer is drawn on the main thread at the frame's end,
+    /// so a frame's worth at a time.</summary>
+    public static long Frame;
+    public static volatile float PacedMs = 4;
+
+    /// <summary>Work in steps on a worker thread, paced by the main thread's frames: once a frame's share
+    /// (PacedMs) is spent, the next step waits for the next frame.</summary>
+    public static void Paced(IEnumerable<object?> work)
+    {
+        long f = System.Threading.Interlocked.Read(ref Frame);
+        long t0 = Stopwatch.GetTimestamp();
+        long s0 = t0;
+        string last = "start";
+        foreach (var s in work)
+        {
+            if (s is Task t) t.GetAwaiter().GetResult();
+            double sms = Stopwatch.GetElapsedTime(s0).TotalMilliseconds;
+            if (sms > 10 && Perf.On) GD.Print($"perf ahead worker step at {Perf.Now:0.000} {sms:0.0} ms: {last} .. {s as string ?? s?.GetType().Name ?? "-"}");
+            if (s is string label) last = label;
+            s0 = Stopwatch.GetTimestamp();
+            if (Stopwatch.GetElapsedTime(t0).TotalMilliseconds < PacedMs) continue;
+            while (System.Threading.Interlocked.Read(ref Frame) == f) System.Threading.Thread.Sleep(1);
+            f = System.Threading.Interlocked.Read(ref Frame);
+            t0 = s0 = Stopwatch.GetTimestamp();
+        }
     }
 
     /// <summary>Work in steps done straight through.</summary>

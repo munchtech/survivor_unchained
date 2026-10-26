@@ -113,6 +113,8 @@ public partial class Perf : Node
 
     string name = "";
     double warm, span, window, t, nextWindow;
+    /// <summary>(--perf: the recording's clock, as its frames CSV gives it, for logs from other threads)</summary>
+    public static double Now;
     long last;
     long lastAlloc, lastMainAlloc;
     int lastGen0, lastGen1, lastGen2;
@@ -205,6 +207,7 @@ public partial class Perf : Node
         if (Args.Has("perf-draws") && t >= nextHook) { nextHook = t + 5; HookDraws(); }
         last = now;
         t += delta;
+        Now = t;
         // How long from launch to the first frame drawn (the engine's clock starts with the process).
         if (!firstFrame) { firstFrame = true; GD.Print($"perf {name}: first frame at {Time.GetTicksMsec() / 1000.0:0.0}s since launch"); }
         Each();

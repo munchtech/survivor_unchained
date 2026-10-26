@@ -634,7 +634,8 @@ public partial class Game : Node, IZoneHost
             GroundPaint.Of(scene.Data);
             Perf.Lap("built ahead: the rest");
             AddChild(scene);
-            Prefetch.ReleaseAhead();
+            // (what was decoded and loaded for it held till its people are stood up too: EnterZone)
+            releaseAhead = true;
             Perf.Lap("built ahead: added");
             goto Built;
         }
@@ -672,6 +673,9 @@ public partial class Game : Node, IZoneHost
         return scene;
     }
 
+    /// <summary>The hold on what was decoded and loaded ahead of the place let go once it is entered.</summary>
+    bool releaseAhead;
+
     /// <summary>A place being built ahead of the journey to it (Prepare), and its id.</summary>
     Slices? ahead;
     string? aheadId;
@@ -701,8 +705,12 @@ public partial class Game : Node, IZoneHost
         foreach (var g in data.Flora) { Dressing.BoundsOf(g.Piece); yield return null; }
         yield return System.Threading.Tasks.Task.Run(() => { GroundPaint.Ready(data); MapScreen.DrawAhead(data); });
         foreach (var s in Prefetch.Ahead(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: true)) yield return s;
+        if (!Args.Has("ahead-main")) yield return Prefetch.PeopleAhead(Journey != null ? Loadouts.Of(Journey.Ch).Person : null);
         var view = new ZoneView(data);
-        foreach (var s in view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)) yield return s;
+        // (its pieces stood up on a worker thread: off the tree, nodes and resources may be made on any thread; the
+        // main thread only flushes their rendering commands, a little a frame)
+        if (Args.Has("ahead-main")) foreach (var s in view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)) yield return s;
+        else yield return System.Threading.Tasks.Task.Run(() => Slices.Paced(view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)));
         aheadScene = new WorldScene(data, cam, view);
     }
 
@@ -710,6 +718,8 @@ public partial class Game : Node, IZoneHost
     void PumpAhead()
     {
         if (ahead == null || ahead.Done) return;
+        System.Threading.Interlocked.Increment(ref Slices.Frame);
+        Slices.PacedMs = inTransit ? 1000 : (float)Args.Num("ahead-pace", 0);
         if (ahead.Step(inTransit ? 40 : 4) && Perf.On)
             GD.Print($"perf ahead {aheadId}: built in {ahead.Frames} frames, main thread {ahead.MainMs:0} ms, at most {ahead.MaxMs:0.0} ms a frame, longest step {ahead.LongestMs:0.0} ms ({ahead.Longest})");
     }
@@ -735,6 +745,7 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
         Perf.Lap("play: the crowd's kinds made ready (bakes)");
+        if (releaseAhead) { releaseAhead = false; Prefetch.ReleaseAhead(); }
         // --perf: how long the place took to stand up (the frame it happens in holds that long).
         if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }

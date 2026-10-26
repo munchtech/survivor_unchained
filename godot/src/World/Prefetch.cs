@@ -159,12 +159,32 @@ public static class Prefetch
     }
 
     static readonly List<ImageTexture> heldAhead = new();
+    static readonly List<Resource> scenesAhead = new();
+
+    /// <summary>The people's scene files a place's folk and the survivor are built from (her figure, the townsfolk's
+    /// wardrobe, the arms they may carry), loaded on a worker thread ahead of the place and held with its textures:
+    /// the folk stood up as it is entered find them loaded.</summary>
+    public static System.Threading.Tasks.Task PeopleAhead(PersonSpec? her)
+    {
+        var files = new List<string>(Wardrobe());
+        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons"))
+            if (w.EndsWith(".glb")) files.Add($"res://assets/weapons/{w}");
+        if (her != null) files.AddRange(People.Files(her));
+        return System.Threading.Tasks.Task.Run(() =>
+        {
+            var got = new List<Resource>();
+            foreach (var f in files)
+                if (ResourceLoader.Exists(f) && ResourceLoader.Load(f) is Resource r) got.Add(r);
+            lock (scenesAhead) scenesAhead.AddRange(got);
+        });
+    }
 
     /// <summary>The hold on a place's textures decoded ahead let go (it is added: what it uses, it keeps).</summary>
     public static void ReleaseAhead()
     {
         foreach (var t in heldAhead) t.Dispose();
         heldAhead.Clear();
+        lock (scenesAhead) scenesAhead.Clear();
     }
 
     /// <summary>Our hold on what was decoded let go: the scenes built from it
