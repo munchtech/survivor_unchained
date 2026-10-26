@@ -400,7 +400,8 @@ def run(path_in, path_out, png_dir=None):
         print("ARM_TONE: %s: %d texels carry tone, steepest %.1f deg; %d KB png%s"
               % (name, live, tilt, len(png) // 1024, " (added to its relief)" if base is not None else ""))
     g.setdefault("asset", {}).setdefault("extras", {})[MARK] = {
-        "strength": STRENGTH, "body_size": BODY_SIZE, "graft_size": GRAFT_SIZE, "was": was}
+        "strength": STRENGTH, "body_size": BODY_SIZE, "graft_size": GRAFT_SIZE, "was": was,
+        "delt_w": DELT_W, "split": _SPL}
     _write(path_out, g, binc)
 
 
