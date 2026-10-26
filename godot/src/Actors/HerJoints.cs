@@ -45,6 +45,7 @@ public partial class HerJoints : SkeletonModifier3D
         public Quaternion Own;      // a share's turn about its line, from the bone it shares
         public float Push, From, To; // a point's push out across the bend (metres), eased in over these degrees
         public float Squeeze, SqueezeX, SqueezeFrom; // a point's width drawn in along its X toward SqueezeX (metres), eased in from SqueezeFrom to To
+        public bool Hinge;          // a share's half-bend is about its own hinge (spec "hinge"; Play/ElbowHinge)
         public float RollK;         // a share's part of the upper arm's roll, in a chained arm (twist_chain "roll")
     }
 
@@ -181,6 +182,7 @@ public partial class HerJoints : SkeletonModifier3D
                     Kind = (string)h["kind"], Bone = bone, Source = src,
                     Amount = amounts.TryGetValue(hname, out var ca) ? ca : (float)(double)h["amount"],
                     RollK = rolls.TryGetValue(hname, out var rk) ? rk : 0f,
+                    Hinge = h.ContainsKey("hinge") && (bool)h["hinge"],
                     Bulge = sh.ContainsKey("bulge") ? (float)(double)sh["bulge"] : 0f,
                     BulgeMax = sh.ContainsKey("bulge_max") ? (float)(double)sh["bulge_max"] : 1f,
                     Pivot = sh.ContainsKey("pivot") ? (float)(double)sh["pivot"] : 0f,
@@ -308,6 +310,8 @@ public partial class HerJoints : SkeletonModifier3D
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (bend, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
                         var turned = (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized();
+                        if (h.Hinge)
+                            turned = Gq(ElbowHinge.Share(Nq(rest), Nq(sk.GetBonePoseRotation(h.Source)), h.Amount, Nq(h.Own)));
                         if (side.Chain && h.RollK != 0f)
                             turned = Gq(ArmTwist.Share(Nq(rest), Nq(sk.GetBonePoseRotation(h.Source)), h.Amount, Nq(h.Own), roll, h.RollK));
                         sk.SetBonePoseRotation(h.Bone, turned);

@@ -54,13 +54,15 @@ SPEC = {
         {"name": "upperarm_share_{s}", "parent": "clavicle_{s}", "kind": "share", "bone": "upperarm_{s}", "amount": 0.5,
          "bulge": 0.0, "bulge_max": 1.0, "way": "front"},
         {"name": "lowerarm_share_{s}", "parent": "upperarm_{s}", "kind": "share", "bone": "lowerarm_{s}", "amount": 0.5,
-         "bulge": 0.45, "bulge_max": 1.45, "pivot": 0.047, "way": "front"},
+         "bulge": 0.45, "bulge_max": 1.45, "pivot": 0.047, "way": "front",
+         # (Body 14: its half-bend about its own hinge, its X (hinge_part), not the swing's shortest arc)
+         "hinge": True},
         # The elbow's point: the share's twin, pushed out across the bend
         # (away from the crease, -Z) by `push` metres eased in from `from`
         # to `to` degrees of bend; it takes the share's weight on the
         # patch weights.point gives it.
         {"name": "lowerarm_point_{s}", "parent": "upperarm_{s}", "kind": "point", "bone": "lowerarm_{s}", "amount": 0.5,
-         "share": "lowerarm_share_{s}", "push": 0.03, "from": 70, "to": 145, "way": "front",
+         "share": "lowerarm_share_{s}", "push": 0.03, "from": 70, "to": 145, "way": "front", "hinge": True,
          # and drawn in across the bend (its X, the hinge axis) toward
          # `squeeze_x` metres along it, losing `squeeze` of its width there
          # by `to` degrees, eased in from `squeeze_from`: from behind, the
@@ -219,6 +221,21 @@ SPEC = {
         "reach": [0.10, 0.60],
         "reach_from": ["upperarm_share_{s}", "clavicle_{s}"],
         "radius": [0.30, 0.40],
+    },
+    # Her elbow's weights kept off the humerus (Body 14, 26 Oct; elbow_trim, run on a built body by
+    # tools/assets/elbow_trim_post.py). The bones that follow the elbow's bend (`lower`: the forearm, its twists, the
+    # hand and fingers, the elbow's share and point) reached up the humerus (on B's back 5.5% of the bend at t .75,
+    # 16% at .85; mostly the share), so a bend swung the triceps and biceps there: the back edge out 3.9 mm at t .75
+    # at 90 deg, the front in 3.1, the outer side caved. Their weight is kept whole from t `full` toward the elbow and
+    # eased out (smoothstep) to none at t `gone` (t along the humerus at rest: 0 the shoulder joint, 1 the elbow's),
+    # per sector round the arm: `bf` on the back and front (|cos| of the angle round from her front past `c`[1]),
+    # `side` on the outer and inner sides (below `c`[0]), smoothstep between; what it loses goes to the upper arm's
+    # chain (twist_chain nodes, as hats by t), or the upper arm itself where it has none.
+    "elbow_trim": {
+        "lower": ["lowerarm_{s}", "lowerarm_twist_01_{s}", "lowerarm_twist_02_{s}", "hand_{s}", "lowerarm_share_{s}",
+                  "lowerarm_point_{s}"],
+        "fingers": ["index", "middle", "ring", "pinky", "thumb"],
+        "bf": [0.82, 0.92], "side": [0.80, 0.92], "c": [0.3, 0.7],
     },
     # Her scapula (Body 6 S1, 24 Oct; the shoulder rig's stage 1). A real shoulder girdle rises with the arm mostly by
     # the SCAPULA's upward rotation (39-50 deg overhead), the clavicle only ~6 deg up; her clavicle alone carried 34
@@ -428,6 +445,20 @@ def forearm_turn(sk, h, hand_local):
     if np.linalg.norm(t0) < 1e-9 or np.linalg.norm(t) < 1e-9:
         return 0.0
     return math.degrees(math.atan2(float(np.dot(np.cross(t0, t), a)), float(np.dot(t0, t))))
+
+
+def hinge_part(swing, own, amount):
+    """`amount` of a joint's bend about the share's own hinge (its X, the share's rest turn `own` about the bone's
+    line carries it into the bone below's rest frame), as a rotation in that frame: the angle about the hinge that
+    takes the bone's line (+Y) to its posed line, both seen along the hinge. The swing's shortest arc runs about
+    Y x Y', off the hinge wherever the joint carries an angle (her elbow's ~16 deg: 23 deg off at 90, 64 at 145), and
+    half of it swung the flesh above the elbow sideways; the hinge's own turn bends it in the bend's plane."""
+    a = qrot(own, [1.0, 0, 0])
+    y1 = qrot(swing, [0, 1.0, 0])
+    p0 = np.array([0, 1.0, 0]) - a * a[1]
+    p1 = y1 - a * float(a @ y1)
+    ang = math.degrees(math.atan2(float(np.cross(p0, p1) @ a), float(p0 @ p1)))
+    return qaxis(a, ang * amount)
 
 
 def _swing_deg(swing):
@@ -940,7 +971,11 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None, panels
                 if chain and sk.names[j] in rolls:
                     # (and its share of the upper arm's roll, about its own line)
                     own = qmul(qaxis([0, 1.0, 0], roll * rolls[sk.names[j]]), own)
-                rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(qslerp(ident, swing, hh["amount"]), own)))
+                if hh.get("hinge"):
+                    # (about its own hinge only: the swing's off-hinge rest stays with the bone below)
+                    rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(hinge_part(swing, own, hh["amount"]), own)))
+                else:
+                    rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(qslerp(ident, swing, hh["amount"]), own)))
                 if scale is not None:
                     deg = _swing_deg(swing)
                     hs = hh if hh["kind"] == "share" else next(x for x in SPEC["helpers"] if x["name"] == hh["share"])
@@ -1181,6 +1216,51 @@ def _chain_split(W, P, I, s, sh, ax, u):
         if k + 1 < len(nodes):
             hat = np.where(x > t, (ts[k + 1] - x) / (ts[k + 1] - t), hat)
         W[:, j] += w * np.clip(hat, 0, 1)
+
+
+def elbow_trim(W, P, names, heads, s, front=(0, 0, 1.0), cfg=None):
+    """Weights W [V, J] (columns `names`) on rest points P [V, 3] with side `s`'s elbow bones' weight kept off the
+    humerus (SPEC "elbow_trim"), as a new array; `heads` each bone's rest head (name to point), `front` her front in
+    that space. Points with none of those bones' weight are returned as they were."""
+    cfg = cfg or SPEC["elbow_trim"]
+    W = np.array(W, float)
+    I = {n: i for i, n in enumerate(names)}
+    low = [I[n.replace("{s}", s)] for n in cfg["lower"] if n.replace("{s}", s) in I]
+    low += [i for n, i in I.items() if n.endswith("_" + s) and n.split("_")[0] in cfg["fingers"]]
+    sh, el = np.asarray(heads[f"upperarm_{s}"], float), np.asarray(heads[f"lowerarm_{s}"], float)
+    ax = el - sh
+    L2 = float(ax @ ax)
+    u = ax / math.sqrt(L2)
+    rel = P - sh
+    t = rel @ ax / L2
+    f = np.asarray(front, float) - u * (u @ np.asarray(front, float))
+    f = f / np.linalg.norm(f)
+    perp = rel - np.outer(rel @ u, u)
+    c = np.abs(perp @ f) / np.maximum(np.linalg.norm(perp, axis=1), 1e-9)
+    k = _smooth((c - cfg["c"][0]) / (cfg["c"][1] - cfg["c"][0]))
+    gone = cfg["side"][0] + k * (cfg["bf"][0] - cfg["side"][0])
+    full = cfg["side"][1] + k * (cfg["bf"][1] - cfg["side"][1])
+    keep = _smooth((t - gone) / (full - gone))
+    lw = W[:, low].sum(1)
+    rows = np.nonzero((lw > 0) & (keep < 1))[0]
+    if not len(rows):
+        return W
+    moved = W[rows][:, low].sum(1) * (1 - keep[rows])
+    W[np.ix_(rows, low)] *= keep[rows, None]
+    tc = SPEC["twist_chain"]
+    nodes = [(I.get(n.replace("{s}", s)), tt) for n, tt in tc["nodes"]]
+    if not has_chain(I, s) or any(j is None for j, _ in nodes):
+        nodes = [(I[f"upperarm_{s}"], 1.0)]
+    ts = [tt for _, tt in nodes]
+    x = np.clip(t[rows], ts[0], ts[-1])
+    for n_, (j, tt) in enumerate(nodes):
+        hat = np.ones_like(x)
+        if n_ > 0:
+            hat = np.where(x < tt, (x - ts[n_ - 1]) / (tt - ts[n_ - 1]), hat)
+        if n_ + 1 < len(nodes):
+            hat = np.where(x > tt, (ts[n_ + 1] - x) / (ts[n_ + 1] - tt), hat)
+        W[rows, j] += moved * np.clip(hat, 0, 1)
+    return W
 
 
 # ----------------------------------------------------------- correctives --

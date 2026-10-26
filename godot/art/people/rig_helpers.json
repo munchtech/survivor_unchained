@@ -43,7 +43,8 @@
    "bulge": 0.45,
    "bulge_max": 1.45,
    "pivot": 0.047,
-   "way": "front"
+   "way": "front",
+   "hinge": true
   },
   {
    "name": "lowerarm_point_{s}",
@@ -56,6 +57,7 @@
    "from": 70,
    "to": 145,
    "way": "front",
+   "hinge": true,
    "squeeze": 0.0,
    "squeeze_x": 0.0,
    "squeeze_from": 100
@@ -231,6 +233,35 @@
   "radius": [
    0.3,
    0.4
+  ]
+ },
+ "elbow_trim": {
+  "lower": [
+   "lowerarm_{s}",
+   "lowerarm_twist_01_{s}",
+   "lowerarm_twist_02_{s}",
+   "hand_{s}",
+   "lowerarm_share_{s}",
+   "lowerarm_point_{s}"
+  ],
+  "fingers": [
+   "index",
+   "middle",
+   "ring",
+   "pinky",
+   "thumb"
+  ],
+  "bf": [
+   0.82,
+   0.92
+  ],
+  "side": [
+   0.8,
+   0.92
+  ],
+  "c": [
+   0.3,
+   0.7
   ]
  },
  "scap": {
