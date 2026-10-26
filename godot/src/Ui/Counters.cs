@@ -283,7 +283,7 @@ public partial class ShopScreen : CounterScreen
         static string Word(string kind) => kind switch
         {
             "material" => "materials", "consumable" => "draughts", "trophy" => "trophies", "ring" => "rings", "amulet" => "amulets", "cloak" => "cloaks",
-            "weapon" => "weapons", "offhand" => "off-hands", "head" => "helms", "body" => "body armour", "relic" => "relics", "tool" => "tools",
+            "weapon" => "weapons", "offhand" => "off-hands", "head" => "helms", "body" => "body armor", "relic" => "relics", "tool" => "tools",
             _ => kind.Replace('_', ' '),
         };
         var w = def.Buys.Select(Word).ToList();

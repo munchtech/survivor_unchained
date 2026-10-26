@@ -160,6 +160,7 @@ public static class UiArt
     public static void Warm()
     {
         foreach (var s in Frames.Values) Tex(s.File);
+        Backdrop.Warm();
     }
 
     /// <summary>A frame by name, or the drawn one. The drawn one's content

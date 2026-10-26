@@ -249,6 +249,37 @@ public partial class Game
         else draftWait = 0;
     }
 
+    static bool draftRehearsed;
+
+    /// <summary>The first draft's opening rehearsed behind the black of a place's load (MR4: its opening frame held
+    /// 80 ms, the next 85: the panel's first build, its cards' first layout and type, a callout's): a draft panel of
+    /// stand-in cards (none dealt: the fight's dice are not touched), a panel callout over it, laid out and drawn
+    /// one frame under the fade, then freed. Once a session; --draft-rehearse off: not (to compare).</summary>
+    void RehearseDraft(Battle b)
+    {
+        if (draftRehearsed || Args.Get("draft-rehearse") == "off" || hud.FadeAmount < 0.99f) return;
+        draftRehearsed = true;
+        var offers = new List<Offer>();
+        foreach (var id in Content.Weapons.Pool.Take(2))
+        {
+            var d = Content.Weapons.All[id];
+            offers.Add(new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Content.Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1 });
+        }
+        foreach (var d in Content.Boons.Order.Select(id => Content.Boons.All[id]).Where(d => d.Kind == Content.BoonKind.Passive).Take(2))
+            offers.Add(new Offer { Kind = OfferKind.Boon, Id = d.Id, Rarity = d.Rarity, Title = d.Name, Text = d.Text, From = 0, To = 1, Icon = d.Icon, Tags = d.Tags });
+        var panel = new DraftPanel(new DraftView(1, false, offers, b.Rerolls, b.Banishes, 0, null, LevelUp.BuildTags(b), _ => { }, () => { }, _ => { }, null, b) { Teaching = true });
+        hud.Over(panel);
+        var callout = new Ui.Callout();
+        hud.Callout(callout);
+        callout.Show(new CalloutLook("Rehearsal", "Take a card: the ember is yours to spend.", CalloutKind.Panel, null, null, "to go on") { Headed = true });
+        // (nothing of it answers the mouse in the frame it stands)
+        static void Deaf(Node n) { if (n is Control c) c.MouseFilter = Control.MouseFilterEnum.Ignore; foreach (var k in n.GetChildren()) Deaf(k); }
+        Deaf(panel);
+        Deaf(callout);
+        // Freed as the next frame begins, before it is drawn again.
+        GetTree().Connect(SceneTree.SignalName.ProcessFrame, Callable.From(() => { panel.QueueFree(); callout.QueueFree(); }), (uint)ConnectFlags.OneShot);
+    }
+
     void OpenDraft()
     {
         var b = Battle!;

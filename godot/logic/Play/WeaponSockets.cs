@@ -31,6 +31,11 @@ public static class WeaponSockets
         _ => null,
     };
 
+    /// <summary>Whether a socket sits at her waist (hip blade, hip loop, hip belt, belt back) rather than on her back or slung.
+    /// Creation's Look step keeps waist pieces sheathed and shown (her town stand's hands rest on them) and hides back ones,
+    /// which would cover her hair when the Look turns her to show a braid. Null (no socket) is not at the waist.</summary>
+    public static bool AtWaist(string? socket) => socket is HipBlade or HipLoop or HipBelt or BeltBack;
+
     /// <summary>A kind from a tag: the glTF node extra "kind", or a name suffix ("longsword.blade1h", "kind=axe2h", "_staff");
     /// anything unknown is None.</summary>
     public static WeaponKind Parse(string? tag)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
@@ -360,6 +360,9 @@ public partial class Game : Node, IZoneHost
         // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
         // later, warm builds: what a place costs to enter once the session has
         // begun, and to enter again).
+        foreach (var hop in Args.Get("prepare")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => Prepare(onTo));
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Travel(onTo));
@@ -621,6 +624,21 @@ public partial class Game : Node, IZoneHost
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
+        else if (ahead != null && aheadId == id)
+        {
+            // Built ahead (Prepare): whatever is left done now.
+            Perf.Lap("ahead", true);
+            ahead.Finish();
+            scene = aheadScene!;
+            ahead = null; aheadId = null; aheadScene = null;
+            GroundPaint.Of(scene.Data);
+            Perf.Lap("built ahead: the rest");
+            AddChild(scene);
+            // (what was decoded and loaded for it held till its people are stood up too: EnterZone)
+            releaseAhead = true;
+            Perf.Lap("built ahead: added");
+            goto Built;
+        }
         else { currentMap = null; data = new ZoneData(id); }
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
@@ -628,6 +646,7 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
+        Built:
         // (a story night let go stands still until its result: StoryNight.StandDown)
         scene.Move = () => zone is StoryNight { Over: true } ? (0, 0) : auto?.Move ?? PlayMove();
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
@@ -654,6 +673,57 @@ public partial class Game : Node, IZoneHost
         return scene;
     }
 
+    /// <summary>The hold on what was decoded and loaded ahead of the place let go once it is entered.</summary>
+    bool releaseAhead;
+
+    /// <summary>A place being built ahead of the journey to it (Prepare), and its id.</summary>
+    Slices? ahead;
+    string? aheadId;
+    WorldScene? aheadScene;
+
+    /// <summary>The place `id` built ahead, a few milliseconds a frame while this one plays (the Prologue asks as
+    /// C04 A begins): its data, the ground's paint and the map's drawing worked out on a worker thread, its textures
+    /// decoded on workers, then its pieces stood up off the tree (Slices). Travel waits behind the black for what
+    /// is left; Stage adds it. Nothing of it shows, or reaches the place still shown, till then.</summary>
+    public void Prepare(string id)
+    {
+        if (aheadId == id || scene?.Data.Id == id || id is "arena" or "map") return;
+        aheadId = id;
+        aheadScene = null;
+        ahead = new Slices(BuildAhead(id));
+    }
+
+    IEnumerable<object?> BuildAhead(string id)
+    {
+        // (the zone's own-props and flora tables read here first: the worker only finds them)
+        OwnProps.For(id);
+        yield return null;
+        var load = System.Threading.Tasks.Task.Run(() => new ZoneData(id));
+        yield return load;
+        var data = load.Result;
+        // The flora's sizes the ground's paint reads, looked up here, where their files load.
+        foreach (var g in data.Flora) { Dressing.BoundsOf(g.Piece); yield return null; }
+        yield return System.Threading.Tasks.Task.Run(() => { GroundPaint.Ready(data); MapScreen.DrawAhead(data); });
+        foreach (var s in Prefetch.Ahead(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: true)) yield return s;
+        if (!Args.Has("ahead-main")) yield return Prefetch.PeopleAhead(Journey != null ? Loadouts.Of(Journey.Ch).Person : null);
+        var view = new ZoneView(data);
+        // (its pieces stood up on a worker thread: off the tree, nodes and resources may be made on any thread; the
+        // main thread only flushes their rendering commands, a little a frame)
+        if (Args.Has("ahead-main")) foreach (var s in view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)) yield return s;
+        else yield return System.Threading.Tasks.Task.Run(() => Slices.Paced(view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)));
+        aheadScene = new WorldScene(data, cam, view);
+    }
+
+    /// <summary>Each frame: the place being built ahead goes on (a little while this one plays, more behind the black).</summary>
+    void PumpAhead()
+    {
+        if (ahead == null || ahead.Done) return;
+        System.Threading.Interlocked.Increment(ref Slices.Frame);
+        Slices.PacedMs = inTransit ? 1000 : (float)Args.Num("ahead-pace", 0);
+        if (ahead.Step(inTransit ? 40 : 4) && Perf.On)
+            GD.Print($"perf ahead {aheadId}: built in {ahead.Frames} frames, main thread {ahead.MainMs:0} ms, at most {ahead.MaxMs:0.0} ms a frame, longest step {ahead.LongestMs:0.0} ms ({ahead.Longest})");
+    }
+
     public void EnterZone(string id, string? from, Arrival? at = null)
     {
         // The title's stage is the prologue's place: begun there, it is kept.
@@ -675,6 +745,7 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
         Perf.Lap("play: the crowd's kinds made ready (bakes)");
+        if (releaseAhead) { releaseAhead = false; Prefetch.ReleaseAhead(); }
         // --perf: how long the place took to stand up (the frame it happens in holds that long).
         if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }
@@ -709,6 +780,7 @@ public partial class Game : Node, IZoneHost
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
+        RehearseDraft(b);
     }
 
     void HookBattle(Battle b)
@@ -745,7 +817,7 @@ public partial class Game : Node, IZoneHost
         controls.Captured = true;
         if (pull) { hud.Pull(1.1, caption, sub); Sfx.Stinger("pull"); }
         else hud.Fade(1, 0.8, caption, sub);
-        Wait(pull ? 1.15 : 0.85, () =>
+        Wait(pull ? 1.15 : 0.85, () => WhenBuilt(to, () =>
         {
             EnterZone(to, from, at);
             Save("travel");
@@ -756,7 +828,14 @@ public partial class Game : Node, IZoneHost
                 controls.ClearLatches();
                 inTransit = false;
             });
-        });
+        }));
+    }
+
+    /// <summary>Once the place being built ahead is (behind the black: PumpAhead goes faster then), or at once.</summary>
+    void WhenBuilt(string id, Action fn)
+    {
+        if (ahead == null || aheadId != id || ahead.Done) fn();
+        else Wait(0, () => WhenBuilt(id, fn));
     }
 
     /// <summary>Later, in real time (a fade, the fall).</summary>
@@ -816,7 +895,7 @@ public partial class Game : Node, IZoneHost
         if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
         {
             GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
-            Shots.Want("tip_" + hint.Id, 0.9);
+            // (its picture is asked for by the HUD once the tip is drawn at full strength: GameHud.Update)
         }
         hud.Hint(CurrentHint = hint);
     }
@@ -1032,6 +1111,7 @@ public partial class Game : Node, IZoneHost
 
     public override void _Process(double delta)
     {
+        PumpAhead();
         // Something over the game has the buttons: pad buttons mean their menu meaning first.
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
@@ -1159,6 +1239,8 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        // The header's time of day as the zone has it now (a story's dawn turns without the clock).
+        if (zone != null) hud.ZoneInfo(zone.Name, zone.Region, World.Day, zone.TimeOf(World));
         Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
@@ -1586,7 +1668,8 @@ public partial class Game : Node, IZoneHost
                 wb.Events.Emit(new Ev.Bark { X = x + 2, Z = z - 1, Text = t, Speaker = "The Ford-Warden" });
             wb.Events.Emit(new Ev.Bark { X = x - 1.5, Z = z - 0.5, Text = "Something moves in the reeds." });
             wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
-            wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
+            // (and a blow the Warden blocks, beside his line: combat's floater, kept off it, UI note 1)
+            wb.Events.Emit(new Ev.Hit { X = x + 2, Z = z - 1, Blocked = true, Target = 0, MaxHp = 1, School = School.Physical });
         }
         // --nohud: the world alone, for pictures of what a screen lies over.
         if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
@@ -1806,7 +1889,7 @@ public partial class Game : Node, IZoneHost
             var flipped = flips.Split(',').ToHashSet();
             double every = Args.Num("perf-flip-every", 1);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            bool outNow = false, wasOut = false, pinesOut = false, broadOut = false, rocksOut = false;
+            bool outNow = false, wasOut = false, peopleOut = false, pinesOut = false, broadOut = false, rocksOut = false;
             List<Node3D>? pines = null, broad = null, rocks = null;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
@@ -1830,10 +1913,21 @@ public partial class Game : Node, IZoneHost
                 if (flipped.Contains("interp")) SurvivorUnchained.View.Interp.On = on;
                 wasOut = outNow;
                 if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                // anim: every animation mixer but hers stopped (their skeletons then stand still, unposed); people:
+                // every skinned figure but her hidden (MR4: what the town's folk cost, posing and drawing)
+                if ((flipped.Contains("anim") || flipped.Contains("people")) && outNow != peopleOut)
+                {
+                    peopleOut = outNow;
+                    foreach (var n in GetTree().Root.FindChildren("*", "AnimationMixer", true, false))
+                        if (flipped.Contains("anim") && (scene.Player == null || !scene.Player.IsAncestorOf(n))) ((AnimationMixer)n).Active = on;
+                    foreach (var n in GetTree().Root.FindChildren("*", "Skeleton3D", true, false))
+                        if (flipped.Contains("people") && (scene.Player == null || !scene.Player.IsAncestorOf(n)) && n.GetParent() is Node3D pn) pn.Visible = on;
+                }
                 if (flipped.Contains("furshadow") && scene.Player != null)
                     foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("hud")) hud.Visible = on;
                 if (flipped.Contains("brush")) Brush.Paused = !on;
                 if (flipped.Contains("fx")) scene.Fx.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;

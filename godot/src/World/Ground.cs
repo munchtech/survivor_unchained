@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -68,7 +68,7 @@ public static class Ground
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
         // The paint reconciled with the roads, and the road, wet and puddle mask (GroundPaint.cs).
-        var paint = GroundPaint.Of(z);
+        var paint = GroundPaint.Ahead(z);
         var splat = ImageTexture.CreateFromImage(WithMips(paint.Splat));
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("splat", splat);

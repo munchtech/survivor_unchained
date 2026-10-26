@@ -78,7 +78,10 @@ public partial class PlayerView : Node3D
     readonly HerCarriage? carriage;
     float runSpeed;
     float sprintSpeed;
-    AnimationNodeAnimation? sprintNode;
+    AnimationNodeAnimation? sprintNode, walkNode;
+    // Her gait (animation 51): the walk's and run's ground speeds and lengths, the shared stride phase (0 = left heel down), and how long she has stood.
+    float walkSpeed, walkLen, runLen, stride, standT;
+    bool hasWalk;
     PersonView? view;
     // Weapons sheathed in town (Play/Sheath.cs): fed each frame from the close-up's situation (Calm).
     readonly Sheath sheath = new();
@@ -123,15 +126,25 @@ public partial class PlayerView : Node3D
             sprintNode = new AnimationNodeAnimation { Animation = own.Has(sprint) ? own.Prefix + sprint : run };
             mv.AddNode("sprint", sprintNode, new Vector2(0, 400));
             mv.AddNode("fast", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 300));
-            mv.AddNode("runScale", new AnimationNodeTimeScale(), new Vector2(400, 300));
+            // Her walk (if she has one for this calling and state) and her run are each seeked every frame to the shared
+            // stride phase, so they stay on the same foot through the blend.
+            walkNode = new AnimationNodeAnimation { Animation = run };
+            mv.AddNode("walk", walkNode, new Vector2(0, 100));
+            mv.AddNode("walkSeek", new AnimationNodeTimeSeek(), new Vector2(200, 100));
+            mv.AddNode("runSeek", new AnimationNodeTimeSeek(), new Vector2(400, 300));
+            mv.AddNode("blendW", new AnimationNodeBlend2(), new Vector2(400, 0));
             mv.AddNode("blend", new AnimationNodeBlend2(), new Vector2(600, 100));
             mv.ConnectNode("fast", 0, "run");
             mv.ConnectNode("fast", 1, "sprint");
-            mv.ConnectNode("runScale", 0, "fast");
-            mv.ConnectNode("blend", 0, "idle");
-            mv.ConnectNode("blend", 1, "runScale");
+            mv.ConnectNode("walkSeek", 0, "walk");
+            mv.ConnectNode("runSeek", 0, "fast");
+            mv.ConnectNode("blendW", 0, "idle");
+            mv.ConnectNode("blendW", 1, "walkSeek");
+            mv.ConnectNode("blend", 0, "blendW");
+            mv.ConnectNode("blend", 1, "runSeek");
             mv.ConnectNode("output", 0, "blend");
             moveNode = mv;
+            GaitClips(People.Clip(person, "Jog_Fwd_Loop"));
             carriage = new HerCarriage();
             person.Skeleton.AddChild(carriage);
             person.Skeleton.MoveChild(carriage, 0);
@@ -364,11 +377,25 @@ public partial class PlayerView : Node3D
         var run = People.Clip(person, "Jog_Fwd_Loop", sheathed);
         runNode.Animation = run;
         runSpeed = run.StartsWith(own.Prefix) ? own.Speed(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
+        GaitClips(run, sheathed);
         if (sprintNode == null) return;
         // The sprint follows: her town sprint if she has one, else the town run itself; the armed sprint on the draw.
         var sprint = run.StartsWith(own.Prefix + "run_") ? "sprint" + run[(own.Prefix.Length + 3)..] : "";
         if (own.Has(sprint)) { sprintNode.Animation = own.Prefix + sprint; sprintSpeed = own.Speed(sprint) * person.Root.Scale.X; }
         else { sprintNode.Animation = run; sprintSpeed = runSpeed; }
+    }
+
+    /// <summary>Her walk for this calling and state (or the run's own clip standing in when there is none), and the lengths the stride seeks by.</summary>
+    void GaitClips(string run, bool sheathed = false)
+    {
+        if (walkNode == null || person.Anim == null) return;
+        var w = own.Walk(person.Calling, person.Kind, sheathed);
+        hasWalk = w != null && person.Anim.HasAnimation(w);
+        walkNode.Animation = hasWalk ? w! : run;
+        walkSpeed = hasWalk ? own.Speed(w![own.Prefix.Length..]) * person.Root.Scale.X : 0;
+        if (walkSpeed <= 0.05f) hasWalk = false;
+        walkLen = person.Anim.HasAnimation(walkNode.Animation) ? (float)person.Anim.GetAnimation(walkNode.Animation).Length : 1;
+        runLen = person.Anim.HasAnimation(run) ? (float)person.Anim.GetAnimation(run).Length : 1;
     }
 
     /// <summary>An art used: the hands that go with it.</summary>
@@ -695,10 +722,7 @@ public partial class PlayerView : Node3D
         // Pulling up out of a run: onto whichever foot was coming down.
         if (runT > 0.4 && !(bool)tree.Get("parameters/fullShot/active"))
         {
-            var pos = tree.Get("parameters/move/run/current_position");
-            var len = tree.Get("parameters/move/run/current_length");
-            float phase = pos.VariantType != Variant.Type.Nil && len.VariantType != Variant.Type.Nil && (float)len > 0
-                ? (float)pos / (float)len : rng.Randf();
+            float phase = stride;
             var stop = Sheath.Pick(sheath.Sheathed, $"stop_{person.Calling}", phase >= 0.25f && phase < 0.75f ? "_r" : "_l", own.Has);
             if (stop != null) FullHer(stop, 1, true);
         }
@@ -730,14 +754,22 @@ public partial class PlayerView : Node3D
     {
         // Standing to running over the first two metres a second; the run
         // at the rate her ground speed asks.
-        float w = Mathf.SmoothStep(0.25f, 2.2f, speed);
+        float natural0 = Mathf.Lerp(runSpeed, sprintSpeed, sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, speed) : 0);
+        var (wWalk, w) = Stride.Weights(speed, walkSpeed, natural0, hasWalk);
+        tree.Set("parameters/move/blendW/blend_amount", wWalk);
         tree.Set("parameters/move/blend/blend_amount", w);
         // Into the sprint as she goes past her run's own speed; the pair
         // played at the rate the blend of their speeds asks.
         float fast = sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, speed) : 0;
         tree.Set("parameters/move/fast/blend_amount", fast);
         float natural = Mathf.Lerp(runSpeed, sprintSpeed, fast);
-        tree.Set("parameters/move/runScale/scale", Mathf.Clamp(speed / natural, 0.55f, 1.5f));
+        // One stride phase for both gaits; a walk starts on the left heel after she has stood a moment.
+        standT = speed < 0.05f ? standT + dt : 0;
+        if (standT > 0.4f) stride = 0;
+        float period = Stride.Period(speed, walkLen, walkSpeed, runLen, Stride.RunScale(speed, natural), w, hasWalk);
+        stride = Stride.Advance(stride, dt, period);
+        tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
+        tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.

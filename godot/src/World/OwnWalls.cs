@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Godot;
@@ -454,6 +454,17 @@ public sealed class OwnWalls
 
     static uint Hash(Vector3 p) => (uint)(Mathf.FloorToInt(p.X * 2.3f + 0.5f) * 73856093) ^ (uint)(Mathf.FloorToInt(p.Z * 2.3f + 0.5f) * 19349663) ^ (uint)(Mathf.FloorToInt(p.Y + 0.5f) * 83492791);
 
+    /// <summary>(ResourceLoader.Exists asked once a preset: a town asks it for each of its thousands of pieces)</summary>
+    static bool Exists(string preset)
+    {
+        lock (exists)
+        {
+            if (!exists.TryGetValue(preset, out var e)) exists[preset] = e = ResourceLoader.Exists($"{Dir}/{preset}.glb");
+            return e;
+        }
+    }
+    static readonly Dictionary<string, bool> exists = new();
+
     /// <summary>Takes a kit piece as ours (true: drawn by Build, or dropped), or false to leave it to the kit.</summary>
     public bool Take(string id, int house, Transform3D at, float cell)
     {
@@ -470,7 +481,7 @@ public sealed class OwnWalls
             preset = pier.Top ? "pier_hi" : "pier_lo";
             at = new Transform3D(pier.Wall, at.Origin);
         }
-        if (!ResourceLoader.Exists($"{Dir}/{preset}.glb")) return false;
+        if (!Exists(preset)) return false;
         float gy = ground.TryGetValue(house, out var g0) ? at.Origin.Y - g0 : 0f;
         // (E9c3: b's whole part 1 for a stone piece, its cut capped as rubble; else by its sill beam)
         bool stone = !isRoof && (preset.StartsWith("stone") || preset.StartsWith("quoin") || preset.StartsWith("pier"));
@@ -613,8 +624,8 @@ public sealed class OwnWalls
         return list;
     }
 
-    /// <summary>The taken pieces as MultiMeshes under root (one per preset per square).</summary>
-    public void Build(Node3D root)
+    /// <summary>The taken pieces as MultiMeshes under root (one per preset per square), in steps (Slices).</summary>
+    public IEnumerable<object?> Build(Node3D root)
     {
         int n = 0;
         // the chimneys' tops, for the soot on the roofs round them
@@ -633,23 +644,37 @@ public sealed class OwnWalls
             float x0 = at.Min(p => p.X) - 10f, z0 = at.Min(p => p.Z) - 10f, x1 = at.Max(p => p.X) + 10f, z1 = at.Max(p => p.Z) + 10f;
             const float c = 0.5f;
             int w = Mathf.Min(1024, Mathf.CeilToInt((x1 - x0) / c) + 1), h = Mathf.Min(1024, Mathf.CeilToInt((z1 - z0) / c) + 1);
-            var img = Image.CreateEmpty(w, h, false, Image.Format.Rf);
-            for (int j = 0; j < h; j++)
-                for (int i = 0; i < w; i++)
-                    img.SetPixel(i, j, new Color(zone.HeightAt(x0 + (i + 0.5f) * (x1 - x0) / w, z0 + (j + 0.5f) * (z1 - z0) / h), 0, 0));
-            // (the terrain is pressed down under the houses: within 1.2 m of a wall piece the ground is at least its house's foot,
-            // where the street meets the wall)
-            float sx = w / (x1 - x0), sz = h / (z1 - z0);
-            foreach (var (p, foot) in feet)
-                for (int j = Mathf.Max(0, (int)((p.Z - 1.2f - z0) * sz)); j <= Mathf.Min(h - 1, (int)((p.Z + 1.2f - z0) * sz)); j++)
-                    for (int i = Mathf.Max(0, (int)((p.X - 1.2f - x0) * sx)); i <= Mathf.Min(w - 1, (int)((p.X + 1.2f - x0) * sx)); i++)
-                        if (img.GetPixel(i, j).R < foot + 0.04f) img.SetPixel(i, j, new Color(foot + 0.04f, 0, 0));
+            // (worked out on a worker thread: the terrain's heights are data; the image made of them here)
+            var px = new float[w * h];
+            var feetNow = feet.ToArray();
+            var zd = zone!;
+            yield return System.Threading.Tasks.Task.Run(() =>
+            {
+                for (int j = 0; j < h; j++)
+                    for (int i = 0; i < w; i++)
+                        px[j * w + i] = zd.HeightAt(x0 + (i + 0.5f) * (x1 - x0) / w, z0 + (j + 0.5f) * (z1 - z0) / h);
+                // (the terrain is pressed down under the houses: within 1.2 m of a wall piece the ground is at least its house's foot,
+                // where the street meets the wall)
+                float sx = w / (x1 - x0), sz = h / (z1 - z0);
+                foreach (var (p, foot) in feetNow)
+                    for (int j = Mathf.Max(0, (int)((p.Z - 1.2f - z0) * sz)); j <= Mathf.Min(h - 1, (int)((p.Z + 1.2f - z0) * sz)); j++)
+                        for (int i = Mathf.Max(0, (int)((p.X - 1.2f - x0) * sx)); i <= Mathf.Min(w - 1, (int)((p.X + 1.2f - x0) * sx)); i++)
+                            if (px[j * w + i] < foot + 0.04f) px[j * w + i] = foot + 0.04f;
+            });
+            var bytes = new byte[px.Length * 4];
+            System.Buffer.BlockCopy(px, 0, bytes, 0, bytes.Length);
+            var img = Image.CreateFromData(w, h, false, Image.Format.Rf, bytes);
             KitLook.SetGround(ImageTexture.CreateFromImage(img), new Vector4(x0, z0, x1 - x0, z1 - z0));
         }
+        yield return "walls: the ground under the town";
+        // (each preset's file loaded on its own step)
+        foreach (var (preset, _, _) in groups.Keys) { PartsOf(preset); yield return "walls: a file loaded"; }
         var unitOf = FadeUnits(root);
+        yield return "walls: the fade units";
         foreach (var ((preset, _, _), list) in groups)
             foreach (var (mesh, local) in PartsOf(preset))
             {
+                yield return "walls: a group";
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = true, Mesh = mesh, InstanceCount = list.Count };
                 for (int i = 0; i < list.Count; i++)
                 {
