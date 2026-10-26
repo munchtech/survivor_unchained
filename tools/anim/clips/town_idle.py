@@ -389,24 +389,27 @@ STANCES = {
     "reaver_town": ("Proud", None, dict(side="l", shift=0.07, roll=7, yaw=5, width=0.32, knee=5, settle=0.3, counter=0.5,
                                         free_turn=15, free_fwd=0.06, free_knee=16), None),
     # Poised: the GracefulArms take, the weight on her back (right) leg, the left foot 8 cm ahead and turned out.
-    # (Animation 51, the judge: "from the front" the weight must show: the free knee 1.5-2 cm below the standing one,
-    # turned in 29 deg (turn_in), the free foot out and ahead of a standing foot set back; the hips 9 deg, the chest 3 against.)
-    "arcanist_town": ("GracefulArms", (3, 11), dict(side="r", shift=0.05, roll=11, yaw=4, width=0.20, knee=5, settle=0.1,
-                                                    counter=0.3, free_out=0.06, free_fwd=0.005, stand_back=0.03, free_turn=20,
-                                                    free_knee_in=0.01, turn_in=True), None),
+    # (Animation 51, the judge: "from the front" the weight must show: the free knee 1.3 cm below the standing one and
+    # turned in 12 deg (turn_in), the free foot out and ahead of a standing foot set back; the hips 10 deg, the chest 3
+    # against. The knee turned in no more than 15 deg against its foot's turn out: no twist bones at her ankle.)
+    "arcanist_town": ("GracefulArms", (3, 11), dict(side="r", shift=0.05, roll=12, yaw=4, width=0.20, knee=5, settle=0.1,
+                                                    counter=0.3, free_out=0.06, free_fwd=0.005, stand_back=0.03, free_turn=15,
+                                                    free_knee_in=-0.009, turn_in=True), None),
     # Loose but watchful: the HandsInPockets take, the weight on her left leg, a slow look to her right and back.
-    # (Animation 51: the free foot 8 cm ahead (a standing foot set back) and turned out 17, its knee lower and turned in,
-    # the shoulders 2.5 deg against the hips.)
-    "stalker_town": ("HandsInPockets", (0, 8), dict(side="l", shift=0.05, roll=10, yaw=4, width=0.24, knee=5, settle=0.1,
-                                                    counter=0.25, free_turn=5, free_fwd=0.07, stand_back=0.05, free_knee=18,
-                                                    free_knee_in=0.05, turn_in=True), dict(deg=-28.0, start=0.2, hold=0.3, ease=0.17)),
+    # (Animation 51: the free foot 8 cm ahead (a standing foot set back) and turned out 12, its knee 1.2 cm lower (the
+    # hips 11 deg), the kneecap over the toes within 15 deg; the shoulders 2.5 deg against the hips.)
+    "stalker_town": ("HandsInPockets", (0, 8), dict(side="l", shift=0.05, roll=11, yaw=4, width=0.24, knee=5, settle=0.1,
+                                                    counter=0.25, free_turn=0, free_fwd=0.07, stand_back=0.05, free_knee=18,
+                                                    free_knee_in=0.0, turn_in=True), dict(deg=-28.0, start=0.2, hold=0.3, ease=0.17)),
     # The warden's WiggleHips (the owner loves its sway: its path and timing kept exactly, her hips' roll with it) set
-    # on her right leg (animation 51, the judge: "never passes level"): her feet moved 5.7 cm to her left under the
-    # sway, so it runs from a little on her right hip to fully on it; the hips 3.5 deg more on that side and never
-    # under 3; her left foot ahead and turned out, its knee soft and turned in.
-    "warden_town": ("WiggleHips", None, dict(side="r", shift=0.0, roll=3.5, roll_floor=3.0, yaw=0.0, counter=0.5, settle=0.0,
-                                             knee=7, feet_shift=0.057, free_fwd=0.03, stand_back=0.05, free_turn=20,
-                                             free_knee=14, free_knee_in=0.02, turn_in=True), None),
+    # on her right leg (animation 51, the judge: "never passes level"): her left foot set 6 cm further out, so the
+    # sway rides 3 cm further over her right foot than the take's (from about level over her feet to fully on her right
+    # hip), its far end no further past her right ankle than round 2's; the hips 4.5 deg more on that side and never
+    # under 3.5; her left foot 10 cm ahead (the right set back) and turned out 12 more, its knee soft and turned in 8
+    # (the kneecap over the toes within 15 deg).
+    "warden_town": ("WiggleHips", None, dict(side="r", shift=0.0, roll=4.5, roll_floor=3.5, yaw=0.0, counter=0.5, settle=0.0,
+                                             knee=5, feet_shift=-0.005, free_fwd=0.0, stand_back=0.08, free_turn=12,
+                                             free_knee=14, free_knee_in=-0.007, turn_in=True), None),
 }
 
 
