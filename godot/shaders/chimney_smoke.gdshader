@@ -34,8 +34,8 @@ void fragment() {
 	vec2 p = UV * 2.0 - 1.0;
 	// a lumpy edge: two octaves of noise, its own per puff
 	float n = 0.65 * vn(p * 2.2 + v_seed) + 0.35 * vn(p * 5.1 - v_seed * 1.7);
-	float r = length(p) + 0.42 * (n - 0.5);
-	float a = 1.0 - smoothstep(0.3, 0.95, r);
+	float r = length(p) + 0.6 * (n - 0.5);
+	float a = (1.0 - smoothstep(0.15, 0.95, r)) * (0.55 + 0.45 * smoothstep(0.25, 0.7, n));
 	// shaded as a ball: the view-space normal of a sphere under the quad
 	float z = sqrt(max(1.0 - dot(p, p), 0.0));
 	vec3 nrm = normalize(TANGENT * p.x - BINORMAL * p.y + NORMAL * (z + 0.35));

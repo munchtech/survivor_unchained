@@ -21,7 +21,7 @@ public partial class ZoneView
     /// <summary>--wall-lamp-energy K, --wall-lamp-range M: a wall lantern's light (the data's 4.5 over 8 m).</summary>
     static readonly float WallLampEnergy = SurvivorUnchained.Args.Num("wall-lamp-energy", 1.6f), WallLampRange = SurvivorUnchained.Args.Num("wall-lamp-range", 4.2f);
     /// <summary>The kit's Lantern_Wall cage in its own frame: its middle, the flame's foot (m).</summary>
-    static readonly Vector3 CageMid = new(0, 0.29f, 0.808f), CageFoot = new(0, 0.13f, 0.808f);
+    static readonly Vector3 CageMid = new(0, 0.29f, 0.808f), CageFoot = new(0, 0.17f, 0.808f);
 
     /// <summary>The wall lanterns: each light whose glowing ball hangs by a Lantern_Wall copy (within 1.1 m of its cage)
     /// takes a flame in the cage, a glass in it, and its light at the cage.</summary>
@@ -54,15 +54,16 @@ public partial class ZoneView
             {
                 Name = "glass",
                 Mesh = new CylinderMesh { TopRadius = 0.118f * s, BottomRadius = 0.112f * s, Height = 0.29f * s, RadialSegments = 6, Rings = 1, CapTop = false, CapBottom = false },
-                MaterialOverride = Lamps.GlassOf(false),
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                 Position = mid,
             };
+            glass.SetSurfaceOverrideMaterial(0, Lamps.GlassOf(false));   // (a surface override: Lamps.SetLit finds its glass by it)
             holder.AddChild(glass);
             Landmarks.Root.AddChild(holder);
             LampFlame(g, li, foot, FlameKind.Lamp, false, LampScale * 0.85f * s, holder);
             // the kit's cages (one MultiMesh, every door's) out of the lamps' light: lit from inside they flared pale
             mmi.Layers |= LampLayer;
+            DarkIron(mmi);
             lights[li].LightColor = new Color(LampColor);
             lights[li].OmniRange = WallLampRange;
             lights[li].OmniAttenuation = LampAtt;
@@ -71,6 +72,21 @@ public partial class ZoneView
             lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
             unwired.Remove(g);
         }
+    }
+
+    /// <summary>--wall-lamp-iron K: the kit's pale trim metal on the wall lanterns darkened to blackened iron (it read
+    /// pale grey-white against the stone, lit and unlit), its albedo times this.</summary>
+    static readonly float WallLampIron = SurvivorUnchained.Args.Num("wall-lamp-iron", 0.3f);
+    static void DarkIron(MultiMeshInstance3D mmi)
+    {
+        if (mmi.HasMeta("dark_iron") || mmi.Multimesh?.Mesh is not Mesh mesh) return;
+        mmi.SetMeta("dark_iron", true);
+        if ((mmi.MaterialOverride ?? mesh.SurfaceGetMaterial(0)) is not ShaderMaterial km) return;
+        var dm = (ShaderMaterial)km.Duplicate();
+        var c = dm.GetShaderParameter("albedo_color").VariantType == Godot.Variant.Type.Color ? dm.GetShaderParameter("albedo_color").AsColor() : Colors.White;
+        dm.SetShaderParameter("albedo_color", new Color(c.R * WallLampIron, c.G * WallLampIron * 0.97f, c.B * WallLampIron * 0.92f, c.A));
+        dm.SetShaderParameter("roughness", 0.6f);
+        mmi.MaterialOverride = dm;
     }
 
     Transform3D InZone(Node3D n)
@@ -100,9 +116,9 @@ public partial class ZoneView
         var p = new ParticleProcessMaterial
         {
             EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.15f,
-            Direction = new Vector3(0.15f, 1, 0.05f).Normalized(), Spread = 6, InitialVelocityMin = 0.75f, InitialVelocityMax = 0.95f,
-            DampingMin = 0.08f, DampingMax = 0.12f, Gravity = new Vector3(0.16f, 0.02f, 0.05f),
-            ScaleMin = 0.75f, ScaleMax = 1.0f, ScaleCurve = CurveOf((0, 0.7f), (0.35f, 1.9f), (1, 3.6f)),
+            Direction = new Vector3(0.15f, 1, 0.05f).Normalized(), Spread = 5, InitialVelocityMin = 0.6f, InitialVelocityMax = 0.8f,
+            DampingMin = 0.08f, DampingMax = 0.12f, Gravity = new Vector3(0.34f, 0.02f, 0.08f),
+            ScaleMin = 0.75f, ScaleMax = 1.0f, ScaleCurve = CurveOf((0, 0.45f), (0.35f, 1.4f), (1, 2.7f)),
             AngleMin = -180, AngleMax = 180, AngularVelocityMin = -8, AngularVelocityMax = 8,
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.02f, TurbulenceInfluenceMax = 0.05f,
         };
@@ -119,17 +135,17 @@ public partial class ZoneView
     }
 
     /// <summary>--smoke-density K: the plumes' cover, for pictures.</summary>
-    static readonly float SmokeDensity = SurvivorUnchained.Args.Num("smoke-density", 0.55f);
+    static readonly float SmokeDensity = SurvivorUnchained.Args.Num("smoke-density", 0.4f);
 
     /// <summary>A plume by day (pale, warm where the key lights it) or by night (dark, thin).</summary>
     public static void PlumeLook(GpuParticles3D smoke, bool night)
     {
         if (smoke.DrawPass1 is not QuadMesh { Material: ShaderMaterial m }) { Campfire.ChimneyLook(smoke, night); return; }
-        m.SetShaderParameter("lit_col", night ? new Color("#4a505e") : new Color("#e2dcd2"));
+        m.SetShaderParameter("lit_col", night ? new Color("#4a505e") : new Color("#d6d4d0"));
         m.SetShaderParameter("shade_col", night ? new Color("#22252e") : new Color("#77797f"));
         m.SetShaderParameter("density", SmokeDensity * (night ? 0.7f : 1f));
-        m.SetShaderParameter("warm_key", night ? 0f : 0.55f);
-        ((ParticleProcessMaterial)smoke.ProcessMaterial).ColorRamp = RampOf((0, new Color(1, 1, 1, 0)), (0.08f, new Color(1, 1, 1, 0.85f)), (0.45f, new Color(0.97f, 0.97f, 0.98f, 0.55f)), (1, new Color(0.94f, 0.95f, 0.97f, 0)));
+        m.SetShaderParameter("warm_key", night ? 0f : 0.2f);
+        ((ParticleProcessMaterial)smoke.ProcessMaterial).ColorRamp = RampOf((0, new Color(1, 1, 1, 0)), (0.08f, new Color(1, 1, 1, 0.8f)), (0.4f, new Color(0.97f, 0.97f, 0.98f, 0.45f)), (1, new Color(0.94f, 0.95f, 0.97f, 0)));
     }
 
     static GradientTexture1D RampOf(params (float At, Color C)[] stops)
