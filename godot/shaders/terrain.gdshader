@@ -500,12 +500,14 @@ void fragment() {
 	vec3 mud_col = mix(mix(vec3(0.071, 0.048, 0.025), vec3(0.048, 0.035, 0.023), mud_pool), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.04, 0.86, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
 	// (A grain of its own at 5-20 cm: a flat sheet read as a decal. Not the tile's, whose stones showed through.)
 	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
-	mud_col *= mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.93 + 0.1 * mgr.r, mud_paint);
+	// (E9d: towndawn's lit mud by the stalls read speckled: the grain calmer, more so with the pools on)
+	mud_col *= mix(mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.88 + 0.16 * mgr.r + 0.06 * mgr.g, mud_pool), 0.93 + 0.1 * mgr.r, mud_paint);
 	mud_col = max(mix(vec3(dot(mud_col, vec3(0.2126, 0.7152, 0.0722))), mud_col, mix(mud_sat, 1.0, mud_pool)), 0.0);
 	// (E9e: at dawn the shaded mud still read as a blue-black hole, p10 23-25 RGB 27,29,46: the sky's blue is all the
 	// shade has, and the mud's base gave it nothing redder to light. Its blue down, red and green up, and a little lift, so
 	// in shade it stays earth, a brown-violet under the stones' blue-grey, and in sun a browner wet clay.)
-	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(2.1, 1.8, 0.75), mud_pool), mud_warm * mix(1.0, mix(0.3, 1.0, max(flora_light.x, flora_light.y)), mud_pool));
+	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(1.95, 1.48, 0.86), mud_pool),   // (E9d: was 2.1, 1.8, 0.75: mustard under the dawn sun; wet umber)
+		 mud_warm * mix(1.0, mix(0.3, 1.0, max(flora_light.x, flora_light.y)), mud_pool));
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
 	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);

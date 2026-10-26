@@ -243,6 +243,21 @@ uniform vec4 ground_rect = vec4(0.0);  // its world x, z origin and size; z 0: n
 uniform float plaster_mottle = 0.1;  // value mottling on plaster at 1-2 m
 uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off (the lath behind)
 uniform float big_lost = 0.4;        // (E9b6) the share of 2.5 m cells with a 40-80 cm patch fallen off
+// (E9d) the town's lit windows: how lit the town is (Atmosphere.TownLit: 0 by day, 1 at dawn and by night), the share of
+// wall pieces whose glass glows, its colour and strength (linear, over the dark glass)
+global uniform float town_lit;
+uniform float window_share = 0.38;
+// (E9d, judge E9b r3) weathering: dressed stone's ground grime and worn arrises, sunlit plaster's stains, a clay roof's eave
+// run-off, its broad blotches toward grey-brown and its lichen, a chimney's stone cap
+uniform float ashlar_grime_h = 1.1;     // the dressed stone's grime to this height (m)
+uniform float ashlar_grime = 0.2;       // this much darker at the ground
+uniform float ashlar_edge = 0.1;        // its arrises this much darker (worn, dirt in them)
+uniform float plaster_stain = 0.15;     // plaster stained to (1 - this) in streaked patches
+uniform float eave_run = 0.2;           // the eave's run-off: (1 - this) over its lowest 0.6-0.9 m
+uniform float roof_blotch = 0.1;        // 2-4 m blotches this much toward grey-brown, lighter or darker
+uniform float lichen = 0.6;             // lichen flecks in patches (clay), mostly on the lower third
+uniform vec3 window_glow = vec3(1.0, 0.46, 0.15);
+uniform float window_k = 1.6;
 uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
 varying vec4 v_wall;
 varying flat float v_stone;
@@ -607,6 +622,18 @@ void fragment() {
 		col *= mix(1.0 - house_rise, 1.0, smoothstep(0.0, 6.0, h));
 		float splash = 1.0 - smoothstep(0.0, splash_h, hn - 0.25 * sn);
 		col *= mix(vec3(1.0), vec3(1.0 - splash_dark) * vec3(0.95, 0.97, 0.82), splash);
+		// (E9d) dressed stone (the sheet's ashlar: quoins, sills, coping): grime from the ground to about 1.1 m, its arrises worn
+		if (UV.x < 0.75 && UV.y > 0.8125 && UV.y < 0.90625) {
+			col *= mix(1.0 - ashlar_grime, 1.0, smoothstep(0.2, ashlar_grime_h, hn + 0.15 * (sn - 0.5)));
+			vec3 fw = fwidth(NORMAL);
+			float edge = clamp((fw.x + fw.y + fw.z) * 6.0, 0.0, 1.0);
+			col *= 1.0 - ashlar_edge * edge * (0.6 + 0.4 * wall_noise(wq * 9.0));
+		}
+		// (E9d) plaster stained: rain streaks from the eaves and sills in broad patches, to 0.85x
+		if (ax.r > 0.75) {
+			float st = wall_noise(vec2((v_wp.x + v_wp.z) * 1.6, v_wp.y * 0.22 + 3.0)) * wall_noise(wq * 0.4 + 2.2);
+			col *= 1.0 - plaster_stain * smoothstep(0.18, 0.5, st) * vec3(1.0, 1.0, 1.06);
+		}
 		// stains under the sills: streaks running down (the sheet's noise stretched down the wall)
 		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
 		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);
@@ -614,6 +641,17 @@ void fragment() {
 		if (grime_debug > 0.0 && grime_debug < 1.5) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
+		// (E9d) a lit window: the glass (its sheet region) on about one wall piece in three glows warm from inside, at
+		// dawn and by night only; brighter low (the hearth, a table's candle), uneven across the old crown glass
+		vec2 gl = (UV - vec2(0.875, 0.8125)) / vec2(0.125, 0.09375);
+		if (town_lit > 0.001 && gl.x > 0.0 && gl.x < 1.0 && gl.y > 0.0 && gl.y < 1.0
+				&& wall_hash(vec2(v_wall.b * 91.7 + 0.37, floor(v_wall.r * 8.0) * 3.1)) < window_share) {
+			float wn = 0.6 + 0.4 * wall_noise(v_wp.xz * 2.7 + v_wp.y * 3.3);
+			float low = 1.0 - 0.45 * smoothstep(0.0, 1.4, fract(h / 2.9) * 2.9 - 0.9);
+			EMISSION += window_glow * window_k * town_lit * wn * low * (0.75 + 0.5 * dot(c.rgb, LW) / 0.12);
+			ALBEDO *= 0.5;
+			ROUGHNESS = 0.2;
+		}
 		if (lip) ALBEDO *= 0.55;
 		if (cap) {
 			// (E9c3) the cut's cap at the wall's top (cap_at): across the wall, how far in from its far face (the face this
@@ -694,6 +732,31 @@ void fragment() {
 		float sn = wall_noise(v_wp.xz * 2.3 + v_wp.y * 1.7);
 		col *= 1.0 - soot_dark * clamp(soot * (0.55 + 0.9 * sn), 0.0, 1.0);
 		if (ax.r < 0.25) col *= 1.0 - stack_soot * COLOR.b;
+		// (E9d) a chimney's cap stone grey: its top 0.25 m, 0.9x the brick's value
+		if (ax.r < 0.25) {
+			for (int i = 0; i < 32; i++) {
+				vec4 ch = chimneys[i];
+				if (ch.w <= 0.0) break;
+				vec3 d = v_wp - ch.xyz;
+				if (dot(d.xz, d.xz) < 0.8 && d.y > -0.28 && d.y < 0.3) { col = vec3(dot(col, LW)) * vec3(0.95, 0.97, 1.0) * 0.9; break; }
+			}
+		}
+		if (cover) {
+			// (E9d) the eave's run-off: the lowest 0.6-0.9 m darker, its upper edge broken by the drips' streaks
+			float er = wall_noise(vec2(v_lz * 5.0 + v_wall.b * 9.0, 0.5));
+			col *= mix(1.0 - eave_run, 1.0, smoothstep(0.45 + 0.3 * er, 0.75 + 0.3 * er, v_rh));
+			// 2-4 m blotches toward grey-brown, lighter or darker
+			float bn = wall_noise(v_wp.xz * 0.33 + 17.0 + v_wall.b * 3.0);
+			float bl = dot(col, LW);
+			col = mix(col, vec3(bl) * vec3(1.05, 0.98, 0.9), roof_blotch * 2.5 * abs(bn - 0.5) * 2.0) * (1.0 + roof_blotch * (2.0 * bn - 1.0));
+			// lichen on clay: flecks (5-15 cm) in patches, most on the lower third, ochre or grey-green
+			if (ax.r > 0.9) {
+				float lp = smoothstep(0.55, 0.7, wall_noise(v_wp.xz * 0.6 + v_wall.b * 11.0)) * mix(1.0, 0.35, smoothstep(1.2, 2.4, v_rh));
+				float lf = smoothstep(0.62, 0.7, wall_noise(v_wp.xz * 9.0 + v_wp.y * 4.0));
+				vec3 lc = mix(vec3(0.62, 0.53, 0.30), vec3(0.50, 0.53, 0.44), wall_noise(v_wp.xz * 1.3));
+				col = mix(col, lc * (0.8 + 0.3 * wall_noise(v_wp.xz * 23.0)), lichen * lp * lf);
+			}
+		}
 		float rough = ax.g;
 		if (cover) {
 			// moss on the slopes facing north, patchy, thickest toward the eaves and on the shaded roofs' lower courses

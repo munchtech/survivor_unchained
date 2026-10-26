@@ -81,6 +81,8 @@ public static class Lamps
     /// <summary>--ford-glass K, --ford-glass-a A, --ford-edge K, --ford-edge-a A: the ford irons' cold glass brightness and cover (its face under the flame), for pictures.</summary>
     static readonly float FordGlassK = SurvivorUnchained.Args.Num("ford-glass", 0.04f), FordGlassA = SurvivorUnchained.Args.Num("ford-glass-a", 0.3f),
         FordEdge = SurvivorUnchained.Args.Num("ford-edge", 0.2f), FordEdgeA = SurvivorUnchained.Args.Num("ford-edge-a", 0.3f);
+    /// <summary>The lit glass's material (warm or cold), for a lamp made in code (ZoneView.Town's wall lanterns).</summary>
+    public static ShaderMaterial GlassOf(bool isCold) => Glass(isCold);
     static ShaderMaterial Glass(bool isCold)
     {
         ref var slot = ref isCold ? ref cold : ref warm;
