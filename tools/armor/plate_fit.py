@@ -20,8 +20,9 @@ gives the before/after counts (OUT>2: past the outer face by 2 mm, as wearcheck'
 Plates (plate_fit.json "group"): 'side' = a side's rigid parts all one plate (a shell with its trims and studs);
 'sets' = rigid parts clustered by their original weight set (--orig id=<gltf>: the export's, by mesh and point;
 else the file's), one plate a cluster (lames). Small and non-rigid parts within attach_mm of a plate ride it (ties:
-the nearest original set); LOD and shadow meshes ride their nearest plate point. Shapes ("shapes": "drop") are taken
-off the plates' points (a rigid shell does not bend); kept elsewhere.
+the nearest original set); LOD and shadow meshes ride their nearest plate point. Her shoulder shapes on the piece
+(body_follow_post's) are kept ("shapes": "keep", measured: the fit with them is far better, warden.pauldrons skin
+OUT>2 on cast_raise/leap/idle_warden 1847 -> 1099 kept vs 1647 dropped); "drop" takes them off the plates' points.
 
     python tools/armor/plate_fit.py [--pieces a,b,..] [--clips c1,..] [--step 2] [--out <dir>] [--orig id=<gltf>,..]
                                     [--write] [--shapes keep|drop]
