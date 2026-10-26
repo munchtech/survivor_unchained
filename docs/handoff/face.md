@@ -2,6 +2,18 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Face 43 (26 Oct): pixie A MERGED; ladder + neck patch MR READY; next = SKIN diagnosis
+
+**Branch face-37** (own junction to its own public\assets). Scratch F43 = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\fce3bb46-6066-4189-a877-02222732c4ac\scratchpad\face43` (`shoot.sh`, `l1.txt` shot lines, `cmp.py`, `fold\` ladder frames, `neck\` neck frames; judge crops in `..\judge43\`).
+- **MR1 MERGED** (ac62384b): pixie ear back to A (B's three commits reverted to b763c7ff; frames pixel-identical to the owner's A), braid/ponytail ear corner, 7d tick, 7e front tone.
+- **MR2 READY** (d05a61e9, e4d4618b; tests 1054/0/8):
+  - **Ear-front ladder = the 7e paint's comb mask** (each texel's distance to the ear's points, 2-3 mm apart). `front_tone` now lays the distance per point, barycentric, eased in 3D (`FRONT_SOFT` 1 mm); `FRONT_DBG=1` paints the mask green. All 10 paints re-laid from b763c7ff~1 (Sunborn cut 0). heroine.glb untouched; Body has nothing to do (same `ear_front` mark).
+  - **Neck-base patch = light:** only the near-grey key reached her far neck under the jaw, and `edge_tone` never did (seam ease 0 on the head mesh). heroine_skin.gdshader `edge_head` (1.0) / `edge_head_y` (1.665, 1.695 model y): edge_tone reaches her head's neck under the jaw, Look rig only. Fair night hue 37 to 51, deep 20 to 34; face dE <= 0.0001; town unchanged. A/B: `--skin-set *:edge_head=0`.
+  - **Judge j43 (max): ladder PASS, neck PASS, jaw/cheek specks PASS-WITH-NOTES (no heal: they read as freckles; at night the lower-right-cheek cluster is a shade grey, the night fill's colour, optional).** Jaw specks are closed.
+- **Notes from j43 (later lists):** the braid-only pale crosshatch glint above the ear at lk40 (hair; was there before); the braid crown reads as a painted shell (hair scope); deep skin by night reads saturated brick red on chest/shoulders (a SKIN-diagnosis input: measure chest/shoulder hue and chroma, deep night vs day vs the swatch).
+- **NEXT: SKIN diagnosis only** (waxy close-ups, orange plastic at night, deep skin red-orange): options and costs for the owner; no build.
+- Spend: solvers 92k (ladder), 151k (neck); judge 105k.
+
 ## Paused here (Face 42, 26 Oct, handoff at ~240k): pixie ear sent to the owner as A|B; braid ear, tick, ear-front tone built
 
 **Where things are.** Branch **face-37** (own junction; integration merged at 126b1d9e). HEAD is past 5b6805c5. Every step is WIP, judged as below, and NOT merged.
