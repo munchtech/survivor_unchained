@@ -687,8 +687,8 @@ TOWN = {
     # The crossbow slung on her back, the daggers at the back of her belt.
     # (Round 2, the judge: "mirrored", "claws": the right elbow 13 more and the hand a little forward on her thigh,
     # both hands' fingers together in a loose half-curl.)
-    "stalker_town": town_idle.hang_arms(l=dict(out=0.215, pole=_P(0.15), fingers=town_idle.HALF_CURL),
-                                        r=dict(out=0.235, pole=_P(0.1), elbow=31.0, fwd=0.02, fingers=town_idle.HALF_CURL)),
+    "stalker_town": town_idle.hang_arms(l=dict(out=0.21, pole=_P(0.15), fingers=town_idle.HALF_CURL),
+                                        r=dict(out=0.224, pole=_P(0.1), elbow=31.0, fwd=0.02, fingers=town_idle.HALF_CURL)),
 }
 
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
