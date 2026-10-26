@@ -5,7 +5,17 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## Experience 3 (play-1 lead, 26 Oct): MR1+MR2 PASSED round 3, MR READY; MR3 (canopy fade) next
+## Experience 3 (play-1 lead, 26 Oct): MR1+2 MR READY (sent to main at 9f3b6c8e); MR3 canopy fade built, motion re-check NEXT
+
+**Start here (Experience 4).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_burst.py, logs, judge_b1 crops).
+1. **Import first:** integration 6d8c2e92 (Env E9d) is merged in (0c658800) with new assets: run `Godot_console.exe --headless --path godot --import` (~4 min) before any shot. One untracked .uid was set aside in `play2/uid_backup/`.
+2. **MR3, the canopy fade** (solver commits 10741942, 943c0eec; tune 34f1bca2). kit.gdshader OWN_FOLIAGE: a tree whose crown covers her or the ground within `canopy_fade.x` m of her (on screen, at her distance) fades whole by the house fade's dither; the lower trunk stays (per-species crown_lo/hi/r/keep in data/flora_species.json); shadows kept; play camera only (`KitLook.CanopyView`). Switches `--canopy R,E,G|off`, `--canopy-log` (CPU mirror, prints the blocking trees).
+   - Judges: the stills (c3_* vs h1_*) SHIP at 7 m / 0.85 (it asked 6 m / 0.80). The MOTION judge (burst b1_*: `SHOT_FROM=143 python play_burst.py NAME 0.05 24`) FAILED the dithered ghost: a screen-door patch over her ember-lit ground and frame-to-frame sizzle (crops `play2/judge_b1/`, p2223.png).
+   - Applied its quick fix, NOT yet re-shot: crowns cut 100% once eased, ease 1.5 m (`canopy_fade` = (6, 1.5, 1, 1) in project.godot).
+   - NEXT: re-shoot in motion (movie mode `--write-movie <file>.avi --fixed-fps 60`, or a burst) covering an ease-in AND an ease-out; judge (xhigh); full test; MR. If the ease band still sizzles, the judge's preferred fix is alpha blend (alpha ~0.2, depth write off) with a shadows-only copy.
+3. **Also on MR3 (coordinator, 26 Oct):** subtitles show through a tree in Env 17's town frame `town_o_03` (UI/text draw order): find the frame in Env's shots and fix it with MR3.
+4. **Sent to Env 17** (aa34beda274ad4169): the tree list. Five spruce trunks stand in the road at z 63-70: (-3.7, 63.2) (-7.9, 69.9) (-5.6, 69.4) (-6.6, 66.9) (-8.0, 64.3); the rest are covered by the fade. Roofs (au1 6): the h1 hub run shows E9c's house cutaway already clears them, so it is closed.
+5. **MR4 baseline (h1 run, `play2/logs/h1.log`):** the Waystation built in 7608 ms (ground+water 2067, props files 949 + props 1574, textures 405, landmarks 231, grass 171, the rest 242) plus pipelines. Her outfit is rebuilt (250-310 ms) at EVERY hand-back (the "her outfit" laps after each cinematic). Hub windows: p50 11.6-13.2 ms against main 3.4-3.7 + render 3.2-3.4 + gpu 3.0 ms, so ~6 ms is unaccounted (engine side: animation mixers, skeletons, physics, navigation? Godot's Performance monitors). The 0.1% and max (230-630 ms) are the shot captures every 20 s, not the game. Perf is noisy while other leads use the GPU (38% GPU use with no game running): measure ABAB. Then MR5 (audit 14, 15).
 
 **MR1+2 round 3 (commits after 134c320f):** judge r3 (xhigh): all 7 frames SHIP (frames `survivorsunchained_inputs/play1/r3/`). Fixes:
 - The Flare's great blessings leaked on a test profile: `GameTeach.Taught` read the profile before `--teach-reset` cleared it (the Teacher is lazy). `Taught` now builds the Teacher first.

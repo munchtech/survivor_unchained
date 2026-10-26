@@ -1,6 +1,10 @@
 """The pixie kept off her ear, on her ear as it is (face 41, 26 Oct).
 
-    python tools/assets/heroine_pixie_ear.py godot/art/people [--dry]
+    python tools/assets/heroine_pixie_ear.py godot/art/people [--dry] [--style pixie,braid,ponytail]
+
+Face 42 (26 Oct): the braid and ponytail take it too (--style; default pixie). The braid had the same dark tuft of
+blunt card ends over her lit helix root at the Look turned 40, and their cap (laid for the old ear) showed on the
+ear's front and inside its top: their cap also fades within CAP_TIP of the flap. Their tie (hair_tie) is left alone; mark <style>_ear.
 
 heroine_hair.py builds the pixie from the built blend, whose ear is the old one (before heroine_ear_shape set it in
 toward her skull), and heroine_ear_shape.py --follow-only then carries it onto the new ear. Its build-time ear rules
@@ -34,6 +38,13 @@ CLEAR = (0.0010, 0.0035)        # m from a sight line: no hair within the first,
 RIM_UP = 0.008                  # m over the flap's middle (side on): the rim kept in sight (its top and upper front;
                                 # below, her sideburn lies in front of it, as a real one does)
 TIP = (0.0008, 0.0035)          # m from her ear's flap: the same (cards and strands, not the cap)
+CAP_TIP = (0.0015, 0.0040)      # m from her ear's flap: the braid's and ponytail's cap the same (face 42: their cap,
+                                # laid for the old ear, showed as a dark band down the helix's front at the Look turned
+                                # 40 and a stroke inside its top at -40; the pixie's cap is as j5 passed it)
+PIXIE_CLEAR = (0.0025, 0.0045)  # m from a sight line: the pixie's (a skin margin seen round the rim, not only off it)
+PIXIE_TIP = (0.0030, 0.0050)    # m from her ear's flap: the pixie's cards AND cap (face 42 j1, max: its side hair still lay
+                                # on the helix's top at the Look turned 40, the owner's "hair still goes over the ear":
+                                # 3-4 mm of skin over the ear's top, ~2 mm between the sideburn's tip and its front)
 REACH = 0.045                   # m from the ear's middle (3D): the points looked at
 
 
@@ -94,16 +105,19 @@ def line_gap(Q, R, D):
     return g
 
 
-def run(art, dry=False, report=True):
-    path = os.path.join(art, "heroine_hair_pixie.gltf")
+def run(art, dry=False, report=True, style="pixie"):
+    path = os.path.join(art, "heroine_hair_%s.gltf" % style)
+    mark = MARK if style == "pixie" else "%s_ear" % style
     G = _Gl(path)
-    if MARK in G.g["asset"].get("extras", {}):
+    if mark in G.g["asset"].get("extras", {}):
         print("PIXIE_EAR: %s has had it" % os.path.basename(path))
         return
     P, UV, F, hy = es._head(os.path.join(art, "heroine.glb"))
     L = ear_lines(P, F, hy, report)
     for p in G.g["meshes"][0]["primitives"]:
         name = G.g["materials"][p["material"]].get("name")
+        if name == "hair_tie":
+            continue
         a = p["attributes"]
         V = G.get(a["POSITION"]).astype(float)
         C = G.get(a["COLOR_0"]).astype(float) / 65535.0
@@ -114,10 +128,17 @@ def run(art, dry=False, report=True):
             if not m.any():
                 continue
             g = line_gap(V[m], e["R"], e["D"])
-            w = _ss((g - CLEAR[0]) / (CLEAR[1] - CLEAR[0]))
-            if name != "hair_cap":
+            cl = PIXIE_CLEAR if style == "pixie" else CLEAR
+            w = _ss((g - cl[0]) / (cl[1] - cl[0]))
+            if style == "pixie":
+                dt = cKDTree(e["flap"]).query(V[m])[0]
+                w = np.minimum(w, _ss((dt - PIXIE_TIP[0]) / (PIXIE_TIP[1] - PIXIE_TIP[0])))
+            elif name != "hair_cap":
                 dt = cKDTree(e["flap"]).query(V[m])[0]
                 w = np.minimum(w, _ss((dt - TIP[0]) / (TIP[1] - TIP[0])))
+            else:
+                dt = cKDTree(e["flap"]).query(V[m])[0]
+                w = np.minimum(w, _ss((dt - CAP_TIP[0]) / (CAP_TIP[1] - CAP_TIP[0])))
             k[m] = np.minimum(k[m], w)
         a0 = C[:, 3].copy()
         C[:, 3] = C[:, 3] * k
@@ -125,8 +146,9 @@ def run(art, dry=False, report=True):
             ch = a0 - C[:, 3] > 0.02
             print("PIXIE_EAR: %s: %d of %d points eased (%d to under 0.1)" % (name, int(ch.sum()), len(V), int((ch & (C[:, 3] < 0.1)).sum())))
         G.put(a["COLOR_0"], np.clip(np.round(C * 65535.0), 0, 65535).astype(np.uint16))
-    G.g["asset"].setdefault("extras", {})[MARK] = "clear %.1f-%.1f mm, tip %.1f-%.1f mm, %d views" % (
-        CLEAR[0] * 1e3, CLEAR[1] * 1e3, TIP[0] * 1e3, TIP[1] * 1e3, len(VIEWS))
+    tip = PIXIE_TIP if style == "pixie" else TIP
+    G.g["asset"].setdefault("extras", {})[mark] = "clear %.1f-%.1f mm, tip %.1f-%.1f mm, %d views" % (
+        (PIXIE_CLEAR if style == "pixie" else CLEAR)[0] * 1e3, (PIXIE_CLEAR if style == "pixie" else CLEAR)[1] * 1e3, tip[0] * 1e3, tip[1] * 1e3, len(VIEWS))
     if not dry:
         G.save()
         print("PIXIE_EAR: %s written" % path)
@@ -134,4 +156,7 @@ def run(art, dry=False, report=True):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    run(a[0] if a else "godot/art/people", dry="--dry" in a)
+    st = a[a.index("--style") + 1].split(",") if "--style" in a else ["pixie"]
+    pos = [x for i, x in enumerate(a) if not x.startswith("--") and (i == 0 or a[i - 1] != "--style")]
+    for s_ in st:
+        run(pos[0] if pos else "godot/art/people", dry="--dry" in a, style=s_)
