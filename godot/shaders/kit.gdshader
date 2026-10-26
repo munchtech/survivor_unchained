@@ -158,6 +158,10 @@ uniform float lamp_gain = 1.0;
 uniform float lamp_green = 0.0;
 // (lf1b) under the moon a spray's open outer half lifted by up to this (the lit top of each tier, its tips)
 uniform float tip_lift = 0.0;
+// (lf3b, judge lf2 #2: the lit tips by night the frame's brightest green, neon emerald) under the moon the same tips
+// pulled toward their own grey by tip_night_sat and down by tip_night_dim (0: as before; by day and at dawn, nothing)
+uniform float tip_night_sat = 0.0;
+uniform float tip_night_dim = 0.0;
 // (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
 // its crown seen from above read as a hole by day, judge E4c)
 uniform float core = 1.0;
@@ -922,6 +926,10 @@ void fragment() {
 		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
 		ALBEDO *= mix(vec3(1.0), vec3(0.7, 1.15, 0.9), night);
 		ALBEDO = max(hue_turn(ALBEDO, radians(night_hue * night)), vec3(0.0)) * mix(1.0, night_value, night);
+		{
+			float tn = night * smoothstep(0.3, 1.0, COLOR.g) * smoothstep(0.55, 1.0, COLOR.r);
+			ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)), tip_night_sat * tn) * (1.0 - tip_night_dim * tn);
+		}
 		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
 		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
