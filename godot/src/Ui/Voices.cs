@@ -218,7 +218,13 @@ public partial class Voices : Node3D
         float quiet = Quiet ? 0 : 1;
         plateK = Away ? Mathf.Max(0, plateK - (float)delta / 0.4f) : 1;
         float pk = Bare ? 0 : quiet * plateK;
-        foreach (var (n, m) in plates.Values) { n.Transparency = 1 - pk; m.Transparency = 1 - pk; n.Visible = pk > 0; }
+        // A boss's own plate stands down while its bar is up: the bar already names it, and over the fight the
+        // plate fell onto the instrument (UI notes r3 judge, 27 Oct).
+        foreach (var (id, (n, m)) in plates)
+        {
+            float k2 = Ui.GameHud.BossName is { } bn && said.TryGetValue(id, out var sw) && string.Equals(sw.Name, bn, StringComparison.OrdinalIgnoreCase) ? 0 : pk;
+            n.Transparency = 1 - k2; m.Transparency = 1 - k2; n.Visible = k2 > 0;
+        }
         for (int i = barks.Count - 1; i >= 0; i--)
         {
             var b = barks[i];

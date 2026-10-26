@@ -942,9 +942,13 @@ public partial class GameHud : CanvasLayer
     string bossMarks = "";
     ColorRect? bossStagger, bossStaggerGroove;
 
+    /// <summary>The boss whose bar is up (its world plate stands down meanwhile), or null.</summary>
+    public static string? BossName { get; private set; }
+
     public void Boss(BossBar? bar)
     {
         bossBox.Visible = bar != null;
+        BossName = bar?.Name;
         if (bar == null) return;
         bossName.Text = bar.Name.ToUpperInvariant();
         // A boss's Break (the damage past its phase marks) beside its title.
