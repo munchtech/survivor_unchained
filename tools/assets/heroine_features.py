@@ -190,6 +190,9 @@ if os.environ.get("HAIRLINE_DENSITY", "1") == "1":
     scalp = np.maximum(scalp, _dn * _front * smooth((rise + _dlo) / (_dlo + _dhi)))
 # Not her ears (what her ears' own keys move, and 6 mm round them): darkened
 # with her scalp they turned the colour of her hair.
+# (26 October, face 41: this still left the shade on her ear's front third, helix top to tragus ("in front and below,
+# her face's", and the blur), hair-coloured under the pixie. Her whole ear is cleared after, on the built glb's ear:
+# tools/assets/heroine_ear_shape.py --shade, body post step 7c. Run it after this script.)
 from scipy.spatial import cKDTree  # noqa: E402
 _kb = me.shape_keys.key_blocks if me.shape_keys else {}
 _base = np.array([d.co[:] for d in _kb[0].data]) if _kb else None

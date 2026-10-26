@@ -1094,6 +1094,7 @@ public static class People
                         m.SetShaderParameter("edge_tone", EdgeTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
+                        SkinSet(m, m.ResourceName);
                     }
                     else if (m.Shader == eyeShader)
                     {
@@ -1739,12 +1740,27 @@ public static class People
         }
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
+        SkinSet(m, src.ResourceName);
+        return m;
+    }
+
+    /// <summary>--skin-set "part:k=v,k=a/b/c;...": a part's skin uniforms tried without a build ("*" every part); applied
+    /// in Skin() and again after her look's own tones and shade (HerShade), so it wins over them.</summary>
+    static void SkinSet(ShaderMaterial m, string name)
+    {
         if (SurvivorUnchained.Args.Get("skin-set") is string ss)
             foreach (var part in ss.Split(';'))
-                if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == src.ResourceName))
+                if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == name))
                     foreach (var kv in kvs.Split(','))
                         if (kv.Split('=') is [var k, var v])
                         {
+                            // (a picture file (.png/.jpg, a path without a colon, relative to godot/): a texture uniform, e.g.
+                            // paint=.shots/flat.png to take a layer out (face 41: flat paint, a neutral normal for pores/relief))
+                            if (v.EndsWith(".png") || v.EndsWith(".jpg"))
+                            {
+                                if (Image.LoadFromFile(v) is { } img) { img.GenerateMipmaps(); m.SetShaderParameter(k.Trim(), ImageTexture.CreateFromImage(img)); }
+                                continue;
+                            }
                             // (a/b/c: a vec3)
                             var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
                                 System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
@@ -1752,7 +1768,6 @@ public static class People
                             if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
                             else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
                         }
-        return m;
     }
 
     /// <summary>A Marionette NPC's skin (NpcPackage): the game's skin shader (heroine_skin.gdshader: pores, light under

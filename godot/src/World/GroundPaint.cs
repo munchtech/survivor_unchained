@@ -52,7 +52,7 @@ public sealed class GroundPaint
     internal static readonly float RutCore = Args.Num("road-rut-core", 0.16f);    // half the core's width
     internal static readonly float RutFeather = Args.Num("road-rut-feather", 0.15f);
     internal static readonly float ClearingSoft = Args.Num("clearing-soft", 2.2f);  // a clearing's dirt edge blurred over this (m)
-    internal static readonly float PoolEvery = Args.Num("pool-every", 80f);   // open setts: one puddle in this many square metres
+    internal static readonly float PoolEvery = Args.Num("pool-every", 0f);   // open setts: one puddle in this many square metres (0: none)
     internal static readonly bool PoolsOn = !Args.Has("no-pools");
     internal static float RutW => RutCore + RutFeather * 0.5f;                       // a rut's half width, to its shoulder's middle
 
@@ -266,8 +266,9 @@ public sealed class GroundPaint
                     }
                 }
             }
-            // The open setts: about one in 50 square metres of them.
-            int many = (int)(size * size / PoolEvery);
+            // The open setts: one in PoolEvery square metres of them. (E9e r3: off by default: a round pool in the open square
+            // with nothing over it read as a stain or a manhole; the mud pools gather at what stands instead.)
+            int many = PoolEvery > 0f ? (int)(size * size / PoolEvery) : 0;
             for (int k = 0; k < many; k++)
             {
                 float x = PU(-half, half), zz = PU(-half, half);
@@ -409,8 +410,9 @@ public sealed class GroundPaint
         for (int j = 0; j < er; j++)
             for (int i = 0; i < er; i++)
                 lie[j * er + i] = (byte)(Mathf.Clamp(0.5f + Sample(lows, n, st, half, -half + (i + 0.5f) * et, -half + (j + 0.5f) * et) / (3f * sd), 0, 1) * 255);
-        Exposure = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(null)));
+        // (Near first: it lays the setts' course direction, which the exposure's A carries.)
         Near = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, MakeNear(z, px, sr)));
+        Exposure = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(null)));
         if (sun is Vector3 sdir) BakeSun(sdir);
         // --ground-dump DIR: both as PNGs, to check them by eye.
         if (Args.Get("ground-dump") is { } dumpDir)
@@ -488,8 +490,32 @@ public sealed class GroundPaint
             for (int k = 0; k < lane.Length; k++)
                 lane[k] = (1f - Mathf.SmoothStep(0.45f, 1.0f, mx[k] - dd[k])) * Mathf.SmoothStep(1.0f, 2.0f, dd[k]);
             lane = Blur(lane, sr, Math.Max(1, (int)(0.3f / smt)));
+            // The courses' direction (E9e r2: courses run across a street, so the east road's must turn): the structure
+            // tensor of the distance's gradient over about 3 m. Across a street that gradient points from kerb to kerb, so
+            // where it lies mostly along z (an east-west street) the courses run north-south. 0 courses along x, 1 along z.
+            var jxx = new float[sr * sr];
+            var jzz = new float[sr * sr];
+            for (int j = 1; j < sr - 1; j++)
+                for (int i = 1; i < sr - 1; i++)
+                {
+                    int k = j * sr + i;
+                    if (dd[k] == 0) continue;
+                    float gx = (dd[k + 1] - dd[k - 1]) / (2 * smt), gz = (dd[k + sr] - dd[k - sr]) / (2 * smt);
+                    jxx[k] = gx * gx; jzz[k] = gz * gz;
+                }
+            int rb = Math.Max(1, (int)(1.5f / smt));
+            jxx = Blur(Blur(jxx, sr, rb), sr, rb);
+            jzz = Blur(Blur(jzz, sr, rb), sr, rb);
+            dirS = new float[sr * sr];
+            for (int k = 0; k < dirS.Length; k++) dirS[k] = jzz[k] / (jxx[k] + jzz[k] + 1e-6f);
+            // (The distance off the splat's texels stair-stepped the kerb: centred on the texel's edge, blurred twice over
+            // a texel, and read bilinearly below, its contours run smooth.)
+            distS = new float[sr * sr];
+            for (int k = 0; k < dd.Length; k++) distS[k] = dd[k] > 0 ? dd[k] - 0.5f * smt : -0.5f * smt;
+            distS = Blur(Blur(distS, sr, 1), sr, 1);
         }
         var o8 = new byte[er * er * 4];
+        courseDir = new byte[er * er];
         for (int j = 0; j < er; j++)
             for (int i = 0; i < er; i++)
             {
@@ -503,13 +529,26 @@ public sealed class GroundPaint
                     l = lane[sj * sr + si];
                 }
                 o8[k * 4 + 2] = (byte)(Mathf.Clamp(l, 0, 1) * 255);
-                o8[k * 4 + 3] = 255;
+                // A: the distance into the setts from their edge (0-2 m; the shader's edge band and kerb read it).
+                float din = 0, dir = 0;
+                if (any)
+                {
+                    float fx = Math.Clamp((i + 0.5f) * et / smt - 0.5f, 0, sr - 1.001f), fz = Math.Clamp((j + 0.5f) * et / smt - 0.5f, 0, sr - 1.001f);
+                    int si = (int)fx, sj = (int)fz;
+                    float ax = fx - si, az = fz - sj;
+                    float Bi(float[] a) => (a[sj * sr + si] * (1 - ax) + a[sj * sr + si + 1] * ax) * (1 - az) + (a[(sj + 1) * sr + si] * (1 - ax) + a[(sj + 1) * sr + si + 1] * ax) * az;
+                    din = Bi(distS); dir = Bi(dirS);
+                }
+                o8[k * 4 + 3] = (byte)(Mathf.Clamp(din / 2f, 0, 1) * 255);
+                courseDir[k] = (byte)(Mathf.Clamp(dir, 0, 1) * 255);
             }
         return o8;
     }
 
     readonly int er;
     readonly float et, half;
+    byte[] courseDir = Array.Empty<byte>();
+    float[] dirS = Array.Empty<float>(), distS = Array.Empty<float>();
     readonly float[] skyBlur = Array.Empty<float>();
     readonly byte[] lie = Array.Empty<byte>();
     readonly List<(Vector2 C, float R, float Lo, float Hi, float K)> shelters = new();
@@ -552,7 +591,7 @@ public sealed class GroundPaint
             ex[k * 4] = (byte)(Mathf.Clamp(skyBlur[k], 0, 1) * 255);
             ex[k * 4 + 1] = lit == null ? (byte)255 : (byte)(Mathf.Clamp(lit[k], 0, 1) * 255);
             ex[k * 4 + 2] = lie[k];
-            ex[k * 4 + 3] = 255;
+            ex[k * 4 + 3] = courseDir.Length == er * er ? courseDir[k] : (byte)0;   // the setts' course direction (MakeNear)
         }
         return ex;
     }

@@ -691,25 +691,50 @@ public static class Dressing
         // Our own props where the zone swaps a kit piece for one (OwnProps: its props_own.json "pieces").
         var own = OwnProps.For(z.Id);
         var ours = new List<(string Id, string Preset, Transform3D At)>();
+        int droppedInside = 0;
+        var insideNodes = new List<Node3D>();
         // Our own town walls where the zone has them (OwnWalls: props_own.json "walls").
         var walls = OwnWalls.For(z);
         for (int pi = 0; pi < z.Props.Count; pi++)
         {
             var (id, at) = z.Props[pi];
-            if (walls != null && walls.Take(id, pi < z.PropHouse.Count ? z.PropHouse[pi] : -1, at, cell)) continue;
+            int house = pi < z.PropHouse.Count ? z.PropHouse[pi] : -1;
+            if (walls != null && walls.Take(id, house, at, cell)) continue;
+            // (E9c2) nothing of the street's left standing inside a closed house (the cutaway shows the inside: a cart
+            // parked in house 17, barrels in house 14's): its own furnishings below stand there instead
+            if (walls != null && house < 0 && OwnWalls.InsideAny(z, at.Origin.X, at.Origin.Z, 0.25f)) { droppedInside++; continue; }
             if (own != null && OwnProps.Swap(own, id, at.Origin) is string preset) { ours.Add((id, preset, at)); continue; }
             var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
             list.Add(at);
         }
-        // (Each piece's file loaded first, so the time it takes shows apart from placing them.)
-        foreach (var ((id, _, _), _) in groups) { int sl = id.IndexOf('/'); PartsOf(id[..sl], id[(sl + 1)..]); }
-        Perf.Lap("props: their files loaded");
-        foreach (var ((id, _, _), list) in groups)
+        // (E9c2) the closed houses' floors, hearths and furniture (OwnWalls.Furnish), as kit pieces
+        if (walls != null)
         {
+            var furn = OwnWalls.Furnish(z);
+            foreach (var (id, at) in furn)
+            {
+                // (E9c3) ours, the hearths, rugs and rushes as nodes of their own (HouseFade brings them in with their house:
+                // "inside"); the kit's pieces grouped apart from the street's ("in|"), their copies given their unit by OwnWalls
+                if (Insides.Node(id, at) is Node3D n) { n.SetMeta("inside", true); insideNodes.Add(n); continue; }
+                if (id.Contains(':') || id is "hearth" or "rug" or "straw") continue;
+                var k = ("in|" + id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
+                if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
+                list.Add(at);
+            }
+            GD.Print($"house insides: {furn.Count} pieces furnished, {droppedInside} street props dropped from inside");
+        }
+        // (Each piece's file loaded first, so the time it takes shows apart from placing them.)
+        foreach (var ((gid, _, _), _) in groups) { var id = gid.StartsWith("in|") ? gid[3..] : gid; int sl = id.IndexOf('/'); PartsOf(id[..sl], id[(sl + 1)..]); }
+        Perf.Lap("props: their files loaded");
+        foreach (var ((gid, _, _), list) in groups)
+        {
+            bool inside = gid.StartsWith("in|");
+            var id = inside ? gid[3..] : gid;
             int slash = id.IndexOf('/');
             string kit = id[..slash], piece = id[(slash + 1)..];
-            bool foot = kit is "village" or "custom";
+            // ((E9c2) a house's floor laid flat: no foot to darken)
+            bool foot = kit is "village" or "custom" && !piece.StartsWith("Floor_");
             foreach (var (mesh, local) in PartsOf(kit, piece))
             {
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, KitLook.Look.Plain, foot), InstanceCount = list.Count };
@@ -718,9 +743,11 @@ public static class Dressing
                 // Which piece, and where each one stands, for taking one away in play (HideProps).
                 mmi.SetMeta("prop", id);
                 mmi.SetMeta("at", new Godot.Collections.Array<Vector3>(list.Select(t => t.Origin)));
+                if (inside) { mmi.SetMeta("inside", true); mmi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; }
                 root.AddChild(mmi);
             }
         }
+        foreach (var n in insideNodes) root.AddChild(n);
         walls?.Build(root);
         foreach (var (id, preset, at) in ours)
         {

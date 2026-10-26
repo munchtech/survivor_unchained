@@ -2,6 +2,7 @@
  "_doc": "The set-dressing props' presets (tools/assets/env_props.py builds one GLB each into godot/art/world/props). kind: which builder; the rest its sizes (metres) and palette (sRGB hex, multiplied over the atlas region's painted near-neutral: tools/assets/env_props_atlas.py). A new variant is a new entry here: a kind, a seed, sizes, colours. A zone then sets which of its pieces each one replaces: godot/data/zones/<zone>/props_own.json.",
  "presets": {
   "bedroll_open": {"kind": "bedroll_open", "seed": 1, "len": 1.75, "wide": 0.78, "blanket": "#868a6c", "band": "#e6d8b4", "sheet": "#5e4a3a", "pillow": "#a08670", "strap": "#ffffff"},
+  "bed": {"kind": "bed", "seed": 41, "w": 1.86, "len": 2.4, "h": 0.81, "wood": "#9c8670", "tick": "#d6cbb2", "blanket": "#9a5640", "band": "#dccfa8", "pillow": "#e0d6bf"},
   "bedroll_rolled": {"kind": "bedroll_rolled", "seed": 2, "len": 0.72, "r": 0.13, "blanket": "#868a6c", "band": "#e6d8b4", "strap": "#ffffff"},
   "pack": {"kind": "pack", "seed": 3, "h": 0.58, "r": 0.25, "cloth": "#d8ccb0", "flap": "#ffffff", "strap": "#ffffff", "roll": "#a6a492", "band": "#e8dcc4"},
   "chest": {"kind": "chest", "seed": 4, "w": 1.24, "d": 0.74, "h": 0.52, "lid": 0.16, "wood": "#9c9894", "iron": "#ffffff"},

@@ -1799,6 +1799,85 @@ def table(p):
     return parts
 
 
+def bed(p):
+    """(E9c3) A cottage bed for the house insides (props Bed_Twin1's box): an oak frame (four posts, the head pair
+    taller with a boarded headboard, side rails and a low footboard), a lumpy straw tick of linen on it, a wool
+    blanket over it in bold folds, draped over the sides and the foot, its head turned down (a pale band), and a
+    linen bolster. Read from the play camera's steep top: the frame shows round the blanket, the folds by their shade."""
+    rng = Rng(p['seed'])
+    wood, tick, blanket, band, pillow = (hexlin(p[k]) for k in ('wood', 'tick', 'blanket', 'band', 'pillow'))
+    W, L, H = p['w'], p['len'], p['h']
+    pw, rail = 0.09, 0.13
+    parts = []
+    hx, hz = W / 2 - pw / 2, L / 2 - pw / 2
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            ph = H if sz < 0 else H * 0.62
+            parts.append(Part(box(pw, ph, pw, 0.01), 'wood', wood * (0.85 + rng(-0.05, 0.05)), T(sx * hx, ph / 2, sz * hz), cap='endgrain'))
+    ry = 0.26
+    for sx in (-1, 1):
+        parts.append(Part(box(0.07, L - 2 * pw + 0.02, rail, 0.008), 'wood', wood * 0.8, T(sx * hx, ry + rail / 2, 0) @ R('X', math.pi / 2), cap='endgrain'))
+    for sz, top in ((-1, H - 0.05), (1, H * 0.62 - 0.04)):
+        parts.append(Part(box(0.07, W - 2 * pw + 0.02, rail, 0.008), 'wood', wood * 0.8, T(0, ry + rail / 2, sz * hz) @ R('Z', math.pi / 2), cap='endgrain'))
+        # boards between the posts (the headboard tall, the footboard low), a capping rail
+        nb = 3
+        for k in range(nb):
+            x = -(W - 2 * pw) / 2 + (W - 2 * pw) * (k + 0.5) / nb
+            bh = top - (ry + rail)
+            parts.append(Part(box(bh, (W - 2 * pw) / nb - 0.012, 0.035, 0.006), 'wood', wood * (0.9 + rng(-0.08, 0.06)),
+                              T(x, ry + rail + bh / 2, sz * hz) @ R('Z', math.pi / 2), cap='endgrain', jitter=0.06))
+        parts.append(Part(box(0.06, W - 2 * pw + 0.04, 0.07, 0.008), 'wood', wood * 0.95, T(0, top + 0.03, sz * hz) @ R('Z', math.pi / 2), cap='endgrain'))
+    # the straw tick: lumpy, its edges rounded down onto the rails
+    tw, tl, t0, tt = W - 2 * pw - 0.02, L - 2 * pw - 0.02, ry + rail - 0.03, 0.16
+    def tk(u, v):
+        x, z = (u - 0.5) * tw, (v - 0.5) * tl
+        e = max(abs(u - 0.5) * 2, abs(v - 0.5) * 2)
+        y = t0 + tt * (1 - max(0.0, e - 0.82) / 0.18 * 0.7) + 0.02 * hnoise((x * 4, 0, z * 4), p['seed'] + 7)
+        return (x, y, z)
+    parts.append(Part(grid(10, 14, tk, skirt=0.04), 'canvas', tick, smooth=True, jitter=0.0))
+    top = t0 + tt
+    # the blanket: from the foot (v 0, +z) to its turned-down head (v 1), over the tick, its sides draped down
+    bw = tw + 0.1
+    fold_v, rf = 0.74, 0.03
+    def bl(u, v):
+        s = (u - 0.5) * 2
+        a = abs(s)
+        x = s * bw / 2 if a < 0.86 else (math.copysign(1, s) * (tw / 2 + 0.045))
+        drop = 0.0 if a < 0.78 else min(1.0, (a - 0.78) / 0.22) * (tt + 0.03)
+        folds = 0.028 * math.sin(v * 13.0 + s * 3.1 + 1.3 * hnoise((s, 0, v * 2), p['seed'])) * (0.45 + 0.55 * math.sin(v * 4.1 + s * 2.3) ** 2)
+        lump = 0.015 * hnoise((s * 3, 2, v * 6), p['seed'] + 1)
+        base = top + 0.03 + folds + lump - drop
+        z0 = tl / 2 + 0.03
+        if v <= fold_v:
+            return (x * (1 + 0.02 * math.sin(v * 9)), base, z0 - v / fold_v * (tl * fold_v + 0.03))
+        zf = z0 - (tl * fold_v + 0.03)
+        d = (v - fold_v) / (1 - fold_v) * 0.32
+        if d < math.pi * rf:
+            th = d / rf
+            return (x, base + rf - rf * math.cos(th), zf - rf * math.sin(th))
+        return (x, base + 2 * rf + 0.004, zf + (d - math.pi * rf))
+    bmb = grid(12, 26, bl)
+    flap = [f for f in bmb.faces if f.calc_center_median().y > top + 0.03 + 1.6 * rf and f.calc_center_median().z > -tl / 2 + 0.05 and
+            f.calc_center_median().z < z_of_fold(tl, fold_v) + 0.35]
+    dup = bmesh.ops.duplicate(bmb, geom=flap)
+    bmesh.ops.reverse_faces(bmb, faces=[g for g in dup['geom'] if isinstance(g, bmesh.types.BMFace)])
+    parts.append(Part(bmb, 'cloth', blanket, smooth=True, jitter=0.0))
+    # the turned-down band
+    def bandf(u, v):
+        q = bl(u, 1.0 - (1.0 - v) * 0.18)
+        return (q[0], q[1] + 0.003, q[2])
+    parts.append(Part(grid(12, 3, bandf), 'cloth', band, smooth=True, jitter=0.0))
+    # the bolster at the head
+    pr = 0.1
+    parts += [q for q in roll_parts(p, tw * 0.86, pr, T(0, top + pr * 0.7, -tl / 2 + 0.17) @ S(1, 0.62, 1), rng, pillow, pillow * 0.95, pillow)
+              if q.region in ('cloth', 'rollend')]
+    return parts
+
+
+def z_of_fold(tl, fold_v):
+    return tl / 2 + 0.03 - (tl * fold_v + 0.03)
+
+
 def chair(p):
     """A plain joined chair (props Chair_1), E7b r2: sturdy enough to read lying in the yard from the play camera
     (the first read as a wire ladder): square legs, one solid seat slab on aprons, a solid back board between its
@@ -2020,7 +2099,7 @@ def carved_lintel(parts, rng, xface, yc, stone):
 
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
-         'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair,
+         'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt}
 
 

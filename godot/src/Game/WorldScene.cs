@@ -323,6 +323,7 @@ public partial class WorldScene : Node3D, IZoneLook
             flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
+            SurvivorUnchained.View.HouseFade.Her = new Vector4((float)hx, y + 1.1f, (float)hz, 1);
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)hx, (float)hz);
             View.FollowGrass(at);
