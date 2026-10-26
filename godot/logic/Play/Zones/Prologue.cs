@@ -60,6 +60,8 @@ public sealed class Prologue : ZoneRuntime
     int startWeapons = -1;
     /// <summary>The first character level, at dawn: its banner, and whether its callout is due (after her dawn line).</summary>
     Announcement? levelAnn;
+    /// <summary>The character levels the night paid at dawn, and the traits they left to choose (F12's words).</summary>
+    int levelsTaught, traitsDue;
     bool levelDue;
     /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
     bool knightPlanted, knightRan;
@@ -123,7 +125,8 @@ public sealed class Prologue : ZoneRuntime
                 chestOpened = true;
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
-                G.After(0.6, () => Tip("pack", "Your pack", "What you find, you keep. The ember will not outlast the night; gear, gold and what you learn will. Open your pack to wear the jerkin.", [Key("inventory")], 14));
+                // (said where it's found; F8 waits for it to go, au1 item 10: the two stacked at the Post)
+                G.After(0.6, () => Tip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your pack and wear the jerkin.", null, 11));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -165,6 +168,29 @@ public sealed class Prologue : ZoneRuntime
 
     string Key(string action) => G.KeyLabel(action);
 
+    /// <summary>Seconds until the Warden's "RISE" cry, held while the channel's tip settles.</summary>
+    double riseBarkIn;
+
+    void RiseBark(Enemy e) => B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "RISE, YOU WHO DROWNED HERE.", Speaker = "The Ford-Warden" });
+
+    /// <summary>The channel's tip, as a channel begins: once a profile, and only with an answer in hand (the
+    /// form lit or the Flare full), naming only what's ready (round 2 judge: it came before either was
+    /// usable). True when it showed.</summary>
+    bool ChannelTip()
+    {
+        if (shown.Contains("channel")) return false;
+        // (what breaks it: her art where it rides the dash and interrupts, the Flare, or a hard enough
+        // beating; Act.Ability became the Flare on 11 Oct, so no key is called "ability")
+        var form = B.Ability is AbilityKind k && Abilities.All[k] is { Interrupts: true, Movement: true } d && B.FormReady ? d : null;
+        var ways = new List<string>();
+        var keys = new List<string>();
+        if (form != null) { ways.Add($"{form.Name} into him"); keys.Add(Key("dash")); }
+        if (B.Flare != null && B.FlareReady) { ways.Add("use your Flare"); keys.Add(Key("flare")); }
+        if (ways.Count == 0) return false;
+        Tip("channel", "Break his spell", $"The Warden is raising the drowned.{NL}Break it: {string.Join(", or ", ways)}.{NL}If he finishes, a lamp lights again.", keys, 10);
+        return true;
+    }
+
     /* --------------------------------------------- the callouts (Teach.cs) -- */
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
     // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
@@ -190,6 +216,11 @@ public sealed class Prologue : ZoneRuntime
     double callerAt;
     /// <summary>When the Knight's present windup began (game seconds).</summary>
     double knightWound = -1;
+    /// <summary>Its windup was held once already for F7 waiting in the line.</summary>
+    bool knightHeld;
+    /// <summary>When the lamps' lure was last said (stage time): again every 30 s while all three burn, never every frame
+    /// (asked each frame, its 10 s life ran out a frame at a time and it flickered).</summary>
+    double lamps2At = -99;
     /// <summary>F7 freezes a beat into the windup, once its red lane is down and on the screen.</summary>
     const double LaneBeat = 0.3;
 
@@ -198,7 +229,25 @@ public sealed class Prologue : ZoneRuntime
     void KnightWatch()
     {
         if (B == null) return;
-        if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; return; }
+        // Until F7 is seen, its first red line waits for a moment it can be taught in (au1 item 10: the
+        // first was drawn off the screen's middle, under another callout, and went untaught): it isn't
+        // begun while another callout has the screen (a gate on her distance kept a kiting run from ever seeing it, m3).
+        if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line")
+            && G.Teaching != null)
+            kw.RangedT = Math.Max(kw.RangedT, 0.25);
+        if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
+        // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
+        if (knightWound >= 0 && !knightHeld && !G.Taught("red_line") && G.TeachWaiting("red_line") && (k.Def.Charge ?? k.Def.Lunge) is { } held)
+        {
+            knightHeld = true;
+            k.StateT += 1.5;
+            double r = held.Speed * held.Time;
+            B.Events.Emit(new Ev.Telegraph
+            {
+                Id = k.Id, Shape = TelegraphShape.Line, X = k.X, Z = k.Z, X1 = k.X + k.LungeX * r, Z1 = k.Z + k.LungeZ * r,
+                Radius = k.Radius, Width = k.Radius * 2.2, Duration = k.StateT, Hostile = true,
+            });
+        }
         if (knightWound >= 0) return;
         knightWound = B.Time;
         // (every windup until F7 is seen: the one it freezes in is the one drawn out)
@@ -220,9 +269,12 @@ public sealed class Prologue : ZoneRuntime
             return [];
         double reach = (k.Def.Charge ?? k.Def.Lunge) is { } l ? l.Speed * l.Time : 6;
         var p = B.Player;
+        // (and clear of the chest: a ring by it reads as the chest's, judge 1)
+        var chest = L("chest");
         return new[] { 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8 }
             .Select(f => (X: k.X + k.LungeX * reach * f, Z: k.Z + k.LungeZ * reach * f))
             .OrderBy(q => Dist(q.X, q.Z, p.X, p.Z) < 2.4 ? 1 : 0)
+            .ThenBy(q => Dist(q.X, q.Z, chest.X, chest.Z) < 3 ? 1 : 0)
             .Select(q => Up(q.X, q.Z, 0.1)).ToList();
     }
 
@@ -231,6 +283,7 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         var p = B.Player;
         KnightWatch();
+        if (B.FlareGreatsHeld && (G.Taught("art") || Now >= Stage.ToFord)) B.FlareGreatsHeld = false;
         // F1: the first ember on the ground (one well inside the screen: it waits for one).
         if (Now == Stage.Rising && B.EmbersLying > 0)
             Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
@@ -243,18 +296,23 @@ public sealed class Prologue : ZoneRuntime
             if (shown.Add("lore.ember"))
                 G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
         }
-        // F4: the first skill draft after the great blessing (on the panel, at the first combat-skill card).
-        if (B.EmberLevel >= 2 && B.DraftOwed)
-            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"), after: "great_blessing");
+        // F4: the first skill draft, the ember's first rise (on the panel, at the first combat-skill card).
+        if (B.EmberLevel >= 2 && B.DraftOwed && B.GreatOwed == 0)
+            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"));
         // F5: the first combat skill on the console.
         if (startWeapons >= 0 && B.Weapons.Count > startWeapons)
         {
             var w = B.Weapons[startWeapons];
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
-        // F6: six risen at her (or 14 s in), while the night's first fights run.
-        if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (stageT > 14 || Now != Stage.Rising || Crowd(p.X, p.Z, 3) >= 6))
+        // F6: after the blessing, six risen at her (or 58 s in), else on the road (au1 item 2: it was the sixth
+        // lesson in 12 s).
+        if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (Now != Stage.Rising || G.Taught("great_blessing") && (stageT > 58 || Crowd(p.X, p.Z, 3) >= 6)))
             Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
+        // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her.
+        // The Warden's channel later asks for it by name (au1 item 4).
+        if (Now == Stage.Ambush && stageT > 4 && B.FormReady && Crowd(p.X, p.Z, 6) >= 4 && B.Ability is AbilityKind fk && FormWords(fk) is string fw)
+            Teach("form", CalloutKind.Freeze, Abilities.All[fk].Name, $"When your dash is aflame, it's {fw}", Aim.At("dash"), "dash", after: "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
@@ -265,7 +323,7 @@ public sealed class Prologue : ZoneRuntime
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
         // names the Flare (the art then rides the dash).
-        if (Now == Stage.Barrow && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
+        if (Now == Stage.Barrow && G.CurrentHint?.Id != "pack" && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
         {
             var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
             if (B.Flare is { } fl)
@@ -280,17 +338,40 @@ public sealed class Prologue : ZoneRuntime
         }
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
-            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow. Put them out.",
-                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
+            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nPut them out: break them, or lure his charge into one.",
+                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25,
+                    Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught");
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
-            Teach("level", CalloutKind.Freeze, "What the night taught you", $"This one stays, night and day. Open {Key("character")} to spend it.",
-                new Aim { Hud = "banner", Banner = levelAnn });
+            G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
+    }
+
+    /// <summary>What the calling's art does when it rides the dash, in F6b's words (none: no callout).</summary>
+    static string? FormWords(AbilityKind k) => k switch
+    {
+        AbilityKind.BullRush => "a charge\nthat throws the dead aside.\nBig ones stop it, but they're stunned,\nand their spell breaks.",
+        AbilityKind.Grapple => "a hooked chain.\nIt hauls you to the first thing\nin its way, and stuns it.",
+        AbilityKind.MirrorStep => "a step\nthat leaves two reflections.\nWhat hunts you turns on them.",
+        AbilityKind.Vault => "a spring\nback through the air.\nIt leaves snares where you stood.",
+        _ => null,
+    };
+
+    const string NL = "\n";
+    static readonly string[] Numbers = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+    static string Count(int n) => n >= 0 && n < Numbers.Length ? Numbers[n] : n.ToString();
+
+    /// <summary>F12 (au1 item 13: the first level the player sees reads "Level 5", four earned unseen, and a
+    /// trait was never told from a skill): what the night paid, that it's kept, and what to do with it.</summary>
+    string LevelLine()
+    {
+        string levels = levelsTaught == 1 ? "a level" : $"{Count(levelsTaught)} levels";
+        string choose = traitsDue > 1 ? $"Press {Key("character")} to choose {Count(traitsDue)}." : traitsDue == 1 ? $"Press {Key("character")} to choose one." : $"Press {Key("character")} to spend them.";
+        return $"You gained {levels} tonight, and they're yours to keep.{NL}The ember's skills were only lent; traits stay.{NL}{choose}";
     }
 
     /// <summary>How many of the hostile dead stand within r of a point.</summary>
@@ -402,7 +483,10 @@ public sealed class Prologue : ZoneRuntime
                     if (th is double t1 && hpK < t1) ai.Thresholds.RemoveAt(0);
                     ai.Mode = "channel"; ai.T = 0; ai.ChannelHp = e.Hp; ai.ChannelCd = 34; ai.RaiseT = 0.6;
                     wardenView.SetPose("channel");
-                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "RISE, YOU WHO DROWNED HERE.", Speaker = "The Ford-Warden" });
+                    // (the tip comes first when it shows, and his cry a beat after it settles, so the two never
+                    // land together: round 2 judge)
+                    riseBarkIn = ChannelTip() ? 1.3 : 0;
+                    if (riseBarkIn <= 0) RiseBark(e);
                     return true;
                 }
                 if (dist < 5.2 && ai.CleaveCd <= 0)
@@ -498,7 +582,8 @@ public sealed class Prologue : ZoneRuntime
             case "channel":
             {
                 double k = ai.T / 6;
-                if (bar != null) Bar(bar with { Channel = ("Calling the drowned — break it!", Math.Min(1, k)) });
+                if (riseBarkIn > 0 && (riseBarkIn -= dt) <= 0) RiseBark(e);
+                if (bar != null) Bar(bar with { Channel = ("Raising the drowned: break it!", Math.Min(1, k)) });
                 ai.RaiseT -= dt;
                 if (ai.RaiseT <= 0)
                 {
@@ -553,8 +638,9 @@ public sealed class Prologue : ZoneRuntime
                 // Keep the clearing full: more of them the longer it goes on.
                 double want = Math.Min(40, 16 + stageT * 0.3);
                 if (spawnT <= 0 && n < want) { SpawnAround("risen", 2 + (stageT > 40 ? 1 : 0), 9, 14); spawnT = stageT > 30 ? 0.8 : 1.1; }
-                // The first rise of the ember brings a great blessing, before its first card.
-                if (B.EmberLevel >= 2 && shown.Add("great"))
+                // A great blessing on its own panel, half a minute after the first skill (au1 item 2: it came
+                // with the first card, two picks and six lessons in 12 s); never on top of a level's draft.
+                if (B.EmberLevel >= 2 && stageT > 40 && !B.DraftOwed && (G.Taught("first_draft") || stageT > 60) && shown.Add("great"))
                 {
                     B.GreatOwed++;
                     // F3 says it on the panel (the general draft tip waits for the panels after it).
@@ -670,12 +756,7 @@ public sealed class Prologue : ZoneRuntime
                 {
                     int lit = LitCount;
                     Bar(new BossBar("The Ford-Warden", "Keeper of the Low Crossing", warden.Hp, warden.MaxHp, [0.7, 0.4], bar?.Channel, lit > 0));
-                    if (ai.Mode == "channel")
-                    {
-                        bool breaks = B.Ability is AbilityKind k && Abilities.All[k].Interrupts;
-                        Tip("channel", "Break the channel", $"It is calling up the drowned. {(breaks ? $"{Key("ability")} breaks it." : "Hurt it hard enough and it breaks.")} If it finishes, a lamp is lit again.", [Key("ability")], 10);
-                    }
-                    if (stageT > 40 && lit == 3) { shown.Remove("lamps2"); Tip("lamps2", "The lamps", "Lure its charge into a lamp: stand before one, and step aside at the last moment.", [Key("dash")], 10); }
+                    if (stageT > 40 && lit == 3 && stageT - lamps2At > 30) { lamps2At = stageT; shown.Remove("lamps2"); Tip("lamps2", "The lamps", "Lure its charge into a lamp: stand before one, and step aside at the last moment.", [Key("dash")], 10); }
                 }
                 break;
             case Stage.Victory:
@@ -1029,7 +1110,8 @@ public sealed class Prologue : ZoneRuntime
             G.After(4.6, () =>
             {
                 var ch = G.Journey.Ch;
-                levelAnn = new Announcement($"Level {ch.Level}", ch.TraitPicks > 0 ? $"A new trait can be chosen ({Key("character")})" : $"Attribute points to spend ({Key("character")})", "boon", 4.5, "What the night taught you");
+                levelAnn = new Announcement($"Level {ch.Level}", ch.TraitPicks > 1 ? $"{Count(ch.TraitPicks)} new traits to choose ({Key("character")})" : ch.TraitPicks == 1 ? $"A new trait to choose ({Key("character")})" : $"Attribute points to spend ({Key("character")})", "boon", 4.5, "What the night taught you");
+                levelsTaught = taught; traitsDue = ch.TraitPicks;
                 G.Announce(levelAnn);
                 G.Journey.Grew();
             });
@@ -1091,6 +1173,8 @@ public sealed class Prologue : ZoneRuntime
         }, new Held { Forearm = "shield_round" }, man.X, man.Z, 2.2, "Death_A");
         G.SetDraftTip(Draft);
         startWeapons = b.Weapons.Count;
+        // (no great blessing offers to grow a Flare she hasn't met: F8 teaches it, au1 item 3)
+        b.FlareGreatsHeld = !G.Taught("art");
         if (F("prologue.done").Truthy)
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.

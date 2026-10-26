@@ -273,6 +273,8 @@ public sealed partial class Battle
     public readonly List<int> PendingBlessings = new();
     /// <summary>Great blessings owed (an arena's first, its fifteenth minute's).</summary>
     public int GreatOwed;
+    /// <summary>The Flare's great blessings are kept out of the offers (the Prologue, until the Flare is taught: au1 item 3).</summary>
+    public bool FlareGreatsHeld;
     /// <summary>Cards more on the next great blessing (the ember-core broken in time).</summary>
     public int GreatExtra;
     public readonly HashSet<string> Discoveries = new();

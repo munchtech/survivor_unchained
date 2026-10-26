@@ -34,15 +34,16 @@ Read in order, these lines are the whole explanation: what ember is, that it ris
 |---|---|---|---|---|---|---|
 | F1 | `ember_ground` | `Rising`: the first ember lies on the ground (the first kill, a few seconds in) | the nearest ember stone | freeze | Ember | The light the dead carry. Come close and it comes to you. |
 | F2 | `ember_bar` | the first ember gathered | the ember bar, top center | arrow only | Rising | Ember fills this. When it's full, the ember rises. |
-| F3 | `great_blessing` | the first draft panel (ember level 2; the panel already pauses) | the cards | on the panel | A great blessing | The ember lends you a blessing. It changes how you fight until dawn. |
-| F4 | `first_draft` | the first skill draft after it | the first combat-skill card | on the panel | A skill | The ember lends you skills as it rises. Choose one. |
+| F3 | `great_blessing` | its own panel, granted 40 s into `Rising` once F4 was seen and no level's draft is owed (26 Oct, au1 item 2: no longer stacked on the first card); no Flare blessing is offered until F8 has taught the Flare (au1 item 3) | the cards | on the panel | A great blessing | The ember lends you a blessing. It changes how you fight until dawn. |
+| F4 | `first_draft` | the first skill draft, at the ember's first rise | the first combat-skill card | on the panel | A skill | The ember lends you skills as it rises. Choose one. |
 | F5 | `first_skill` | the first combat skill lands on the console | its slot | arrow only | the skill's name | It fires on its own, like your weapon. First light takes it back. |
-| F6 | `dash` | `Rising`: the first time six risen are within 3 m of her (or at 14 s, as today, if that never happens) | the dash on the console | freeze | Dash | `Key("dash")`: a roll nothing can touch. Two charges; they come back. |
-| F7 | `red_line` | `Post`: the Barrow Knight's first red line appears | the red line on the ground | freeze | Red line | The Knight is about to strike along this line. Get off it. |
+| F6 | `dash` | `Rising`, after F3: six risen within 3 m of her, or 58 s in; else the road (26 Oct, au1 item 2) | the dash on the console | freeze | Dash | `Key("dash")`: a roll nothing can touch. Two charges; they come back. |
+| F6b | `form` | `Ambush` (4 s in): her calling's art rides the dash and is lit, four or more of the dead within 6 m; after F6 | the dash on the console | freeze | the art's name | When your dash glows, it's a charge that throws the dead aside. / Big ones stop it, but they're stunned, and their spell breaks. (The dash ring glows ember when the form is ready.) (Bull Rush; Grapple, Mirror Step and Vault have their own line in `Prologue.FormWords`.) |
+| F7 | `red_line` | `Post`: the Barrow Knight's first red line appears (the Knight doesn't begin it far from her or under another callout, and holds it once while F7 waits) | the red line on the ground | freeze | Red line | The Knight is about to strike along this line. Get off it. |
 | F8 | `art` | `Barrow`: the Grave-Caller within 16 m and her art ready (today's `ability` tip) | the art's ring (Q), and the Grave-Caller | freeze | the art's name | If it interrupts: `Key("ability")`: your art. It breaks the Grave-Caller's channel. Otherwise: `Key("ability")`: your art. Kill the Grave-Caller before it raises more. |
-| F9 | `lamps` | `Boss`: 3 s after C02 hands back | the three blue lamps | freeze | The lamps | While these burn, the Warden barely feels a blow. Break them. |
+| F9 | `lamps` | `Boss`: 3 s after C02 hands back | the three blue lamps | freeze | The lamps | Three lamps guard the Warden. While they burn, he barely feels a blow. / Put them out: break them, or lure his charge into one. (The ring never sits in the minimap's corner.) |
 | F10 | `draught` | the first time her health falls under 40%, anywhere in the Prologue | the draught on the console | freeze | Draught | Drink a draught to mend: `Key(...)`, the draught's binding. |
-| F12 | `level` | the first character level, at dawn, **after** the narrator's dawn line ends | the Level announcement | freeze | What the night taught you | This one stays, night and day. Open `Key("character")` to spend it. |
+| F12 | `level` | the first character level, at dawn, **after** the narrator's dawn line ends | the Level announcement | freeze | What the night taught you | (26 Oct, au1 item 13) You gained four levels tonight, and they're yours to keep. / The ember's skills were only lent; traits stay. / Press `Key("character")` to choose two. (Counts from the night; "traits" marked in ember; the banner reads "Two new traits to choose (C)".) |
 | F13 | `flare` | *When the Flare lands on Q (CLASSES.md):* its meter first full | the Flare's ring | freeze | Flare | `Key("flare")`: your Flare. It fills fastest when you're in trouble. |
 
 (There is no F11: the dawn's own words are the announcement's and the narrator's, item 6 above.)
@@ -53,6 +54,8 @@ Notes for the experience director:
 - F7: trim the red-line sentence from the Elites pop-up, since the freeze says it.
 - F9 says why the lamps matter in the tale's own terms (SB00: "Oil, never ember. Nobody remembers why."). Keep today's `lamps2` pop-up for the trick (lure his charge into a lamp).
 - F10: today the draught is on `Key("ultimate")`. CLASSES.md renames it to `Act.Draught` on R, so use the draught's binding when this is built.
+- Break the channel (pop-up, 26 Oct): reads "The Warden is raising the drowned. / Break it: Bull Rush into him, or use your Flare. / If he finishes, a lamp lights again." (keys as the tip's chips; without a form or Flare: "Hurt him hard enough and it breaks.") (`Key("ability")` no longer exists: Act.Ability became the Flare on 11 Oct.)
+- Your pack stays at the chest; F8 waits until it is gone (au1 item 10).
 - F13 waits for the Flare (CLASSES.md: "It fills fastest when you're in trouble"). Until then, F8 teaches Q as the art.
 - Each callout shows once, on the first journey. A "Tips" setting can turn them off.
 
