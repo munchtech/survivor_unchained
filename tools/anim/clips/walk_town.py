@@ -57,7 +57,7 @@ CALLINGS = {
 for _c in CALLINGS.values():
     _c.setdefault("twist", 5.0)
     _c.setdefault("bob", 0.75)
-    _c.setdefault("kick", 1.0)
+    _c.setdefault("kick", 0.7)
     _c.setdefault("abd_cap", 14.0)
     _c.setdefault("shrug", 0.25)
 
@@ -65,7 +65,9 @@ for _c in CALLINGS.values():
 HEEL = {"l": np.array([0.0938, 0.0, -0.0799]), "r": np.array([-0.0886, 0.0, -0.0787])}
 BALL = {"l": np.array([0.1245, 0.0, 0.0648]), "r": np.array([-0.1234, 0.0, 0.0651])}
 UP, FWD, LAT = np.array([0, 1.0, 0]), np.array([0, 0, 1.0]), np.array([1.0, 0, 0])
-CLEAR = 0.015       # the swing foot's sole and toe tip at least this far off the ground (m)
+TOE_UP = 0.02       # the frames after a toe-off: the sole and toe tip at least this far up (m)
+KICK0 = 0.0         # where in the swing (share) the kick's easing starts
+CLEAR = 0.025       # the swing foot's sole and toe tip at least this far off the ground (m)
 TOE_OUT = 6.0       # each foot's heading out from straight ahead (deg)
 LAG = 2.5          # frames the elbow's bend peaks behind the shoulder's forward swing
 _BASE = {}
@@ -117,6 +119,7 @@ class Walk:
         self.L, self.P, self.speed = L.copy(), P.copy(), speed
         self.grest, self.prest = (a[0] for a in self.sk.rest_globals())
         self.root_q = self.sk.rest_rot[self.I["root"]]
+        self.pin = {}
 
     @property
     def n(self):
@@ -504,6 +507,17 @@ def _feet(w, c, base_w):
             Gf[t] = qmul(qaxis(UP, sg * TOE_OUT - yaw), Gf[t])
         zc = Pf[mask, 2].mean()
         Pf[:, 2] = zc + c["stride"] * (Pf[:, 2] - zc)
+        # The swing's heel kick (her_2 folds the swing knee to ~80 deg): the foot's rise off its stance height kept
+        # by c["kick"] (the toe's clearance restored below).
+        # Only through the swing's fold (12-62% of it: none at the toe-off, which would scuff), none by the reach forward to the strike (a lowered foot
+        # there would pull the hips down).
+        if c["kick"] != 1.0:
+            y0 = float(Pf[mask, 1].min())
+            sw_ = [(idx[-1] + k) % n for k in range(1, n - best + 1)]
+            for k, t in enumerate(sw_):
+                u = (k + 1) / (len(sw_) + 1)
+                f_ = 1.0 - (1.0 - c["kick"]) * math.sin(math.pi * min(max((u - KICK0) / 0.5, 0.0), 1.0)) ** 2
+                Pf[t, 1] = y0 + f_ * (Pf[t, 1] - y0)
         # The sole's pivot: the heel, flat, then the ball.
         hl = qrot(qinv(w.grest[f]), HEEL[s] - w.prest[f])
         bl = qrot(qinv(w.grest[f]), BALL[s] - w.prest[f])
@@ -518,13 +532,20 @@ def _feet(w, c, base_w):
         Bw[:, 2] += w.speed * ts
         flat_k = next((k for k in range(best) if Bw[k, 1] <= Hw[k, 1]), best // 2)
         X = Hw.copy()
-        X[flat_k:] = Hw[flat_k] - Bw[flat_k] + Bw[flat_k:]
+        # (Round 2: from the flat foot to the toe-off the foot rolls over its ball JOINT, held where it stood when
+        # flat, the toes planted with it (_toes): pivoting on the ball's skin slid the toe pads 13-19 mm forward.)
+        bj = qrot(qinv(w.grest[f]), w.prest[I[f"ball_{s}"]] - w.prest[f])
+        Jn = np.array([Pf[t] + qrot(Gf[t], bj) for t in range(n)])
+        Jw = Jn[idx].copy()
+        Jw[:, 2] += w.speed * ts
+        X[flat_k:] = Hw[flat_k] - Jw[flat_k] + Jw[flat_k:]
+        jy = Jn[idx[flat_k], 1] - Bn[idx[flat_k], 1]
         anchor = X.mean(0)
         corr = np.zeros((n, 3))
         for k, t in enumerate(idx):
             corr[t, 0] = anchor[0] - X[k, 0]
             corr[t, 2] = anchor[2] - X[k, 2]
-            corr[t, 1] = -(Hn[t, 1] if k < flat_k else Bn[t, 1])
+            corr[t, 1] = -Hn[t, 1] if k < flat_k else jy - Jn[t, 1]
         # Eased in and out over 3 frames either side of the stance (the foot coming down and going up).
         ramp = 3
         for side_ in (-1, 1):
@@ -546,13 +567,14 @@ def _feet(w, c, base_w):
         near = np.array([min(min((t - u) % n, (u - t) % n) for u in idx) for t in range(n)])
         # (and from the frame after toe-off, off the ground at once: a toe left down while the foot eases away slides)
         after = np.array([(t - idx[-1]) % n for t in range(n)])
-        lo = np.where(near > ramp, np.maximum(CLEAR - low_, 0.0), np.where((after >= 0) & (after <= ramp), np.maximum(0.011 - low_, 0.0), 0.0))
+        lo = np.where(near > ramp, np.maximum(CLEAR - low_, 0.0), np.where((after >= 0) & (after <= ramp), np.maximum(TOE_UP - low_, 0.0), 0.0))
         hi = np.where(mask & (after != 0), 0.0, 1.0)
         lift = lo.copy()
         for _ in range(40):
             lift = np.clip(_smooth(lift, 1.5), lo, hi)
         Pf[:, 1] += lift
         out[s] = (Gf, Pf)
+        w.pin[s] = [idx[k] for k in range(flat_k, best)]
         spells[s] = mask
     return out, spells
 
@@ -588,6 +610,23 @@ def _legs(w, feet):
 
 
 def _toes(w, floor=0.023):
+    """(Round 2: through each foot's roll over its ball, w.pin, the toes keep the turn they had when the foot lay
+    flat: planted.)"""
+    I, n = w.I, w.n
+    for s in "lr":
+        pin = getattr(w, "pin", {}).get(s, [])
+        if not pin:
+            continue
+        ba = I[f"ball_{s}"]
+        G, _ = w.g()
+        keep = G[pin[0], ba].copy()
+        want = G[:, ba].copy()
+        want[pin] = keep
+        w.set_global(ba, want, G)
+    _toes_floor(w, floor)
+
+
+def _toes_floor(w, floor=0.023):
     """Each foot's toes bent up where they would go under the ground (her toe tips stand 2.3 cm up at rest), as
     they do at toe-off and through a flat stance."""
     I, n = w.I, w.n
@@ -669,6 +708,7 @@ def _pelvis_height(w, c, spells, feet):
             v = np.zeros((n, 3))
             v[:, 1] = -mid_
             w2 = Walk(w.rig, w.L, w.P, w.speed)
+            w2.pin = w.pin
             w2.shift_pelvis(v)
             _legs(w2, feet)
             k1 = _knees(w2, spells, feet)
@@ -701,6 +741,8 @@ def _pelvis_height(w, c, spells, feet):
             if pas[s][t] > 0.3 and hor < dcap * dcap:
                 lo[t] = max(lo[t], math.sqrt(dcap * dcap - hor) + hv[1])
     lo = np.minimum(lo, hi)
+    if DEBUG is not None and len(DEBUG) and DEBUG[0] == "h":
+        DEBUG.append((lo.copy(), hi.copy()))
     dy = np.clip(np.zeros(n), lo, hi)
     for _ in range(40):
         dy = np.clip(_smooth(dy, 1.5), lo, hi)
@@ -711,7 +753,7 @@ def _pelvis_height(w, c, spells, feet):
 
 
 # --------------------------------------------------------------- clearance --
-NEAR = 0.004        # the forearm's and hand's least clearance from her skin and her own outfit (m), on her real mesh
+NEAR = 0.004        # the arm's (below the armpit) least clearance from her skin and her own outfit (m), on her real mesh
 _MEASURE = {}
 DEBUG = []  # (a list with one item to collect: outfit, side, frame, near mm, along, part, skin mm)
 
@@ -742,7 +784,7 @@ def _near(w, c):
         for s in "lr":
             dist, along, hit, brst, nb = con[s]
             pts = m.arm[s][0]
-            ok = np.isfinite(dist) & (along >= 1.0)
+            ok = np.isfinite(dist) & (along >= 0.35)  # (the armpit, where skin folds, kept apart as motion.py does)
             if ok.any():
                 d = dist[ok]
                 do = d - cov[pts[ok]] - cov[np.maximum(nb[ok], 0)]
@@ -754,7 +796,7 @@ def _near(w, c):
     return out
 
 
-def _clear(w, c, rounds=3):
+def _clear(w, c, rounds=5):
     """Each arm let out from the shoulder only where (and as much as) the real mesh needs: the forearm and hand
     NEAR clear of her and her own outfit, the abduction capped at c["abd_cap"]."""
     I, n = w.I, w.n
@@ -765,7 +807,7 @@ def _clear(w, c, rounds=3):
         moved = False
         for s, sg in (("l", 1.0), ("r", -1.0)):
             _, ab, _ = _arm_angles(G, Pp, I, s)
-            need = np.degrees(np.maximum(NEAR + 0.002 - near[s], 0.0) / 0.45)
+            need = np.degrees(np.maximum(NEAR + 0.002 - near[s], 0.0) / 0.3)
             lo = np.minimum(need, np.maximum(c["abd_cap"] - ab, 0.0))
             add = lo.copy()
             for _k in range(6):
