@@ -703,6 +703,8 @@ public static class Dressing
             // (E9c2) nothing of the street's left standing inside a closed house (the cutaway shows the inside: a cart
             // parked in house 17, barrels in house 14's): its own furnishings below stand there instead
             if (walls != null && house < 0 && OwnWalls.InsideAny(z, at.Origin.X, at.Origin.Z, 0.25f)) { droppedInside++; continue; }
+            // (E9d) the web game's wares and stock at the stalls our own stalls replace, cleared
+            if (own != null && OwnProps.Cleared(own, id, at.Origin)) continue;
             if (own != null && OwnProps.Swap(own, id, at.Origin) is string preset) { ours.Add((id, preset, at)); continue; }
             var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
@@ -712,8 +714,12 @@ public static class Dressing
         if (walls != null)
         {
             var furn = OwnWalls.Furnish(z);
-            foreach (var (id, at) in furn)
+            foreach (var (id0, at) in furn)
             {
+                // (E9d) our own trestle table and lidded barrel inside for the kit's (its table's pale battens read as a rug's
+                // border over its top, its open barrels as pale empty rings from above)
+                // (E9d r2: ours and the kit's both built along x, as Furnish lays the bench along the table's long side: no turn)
+                var id = id0 switch { "props/Table_Large" => "own:table", "props/Barrel" => "own:barrel", _ => id0 };
                 // (E9c3) ours, the hearths, rugs and rushes as nodes of their own (HouseFade brings them in with their house:
                 // "inside"); the kit's pieces grouped apart from the street's ("in|"), their copies given their unit by OwnWalls
                 if (Insides.Node(id, at) is Node3D n) { n.SetMeta("inside", true); insideNodes.Add(n); continue; }

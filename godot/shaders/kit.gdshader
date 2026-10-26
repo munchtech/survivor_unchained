@@ -257,6 +257,26 @@ uniform vec4 ground_rect = vec4(0.0);  // its world x, z origin and size; z 0: n
 uniform float plaster_mottle = 0.1;  // value mottling on plaster at 1-2 m
 uniform float lost_plaster = 1.0;    // patches where the plaster has fallen off (the lath behind)
 uniform float big_lost = 0.4;        // (E9b6) the share of 2.5 m cells with a 40-80 cm patch fallen off
+// (E9d) the town's lit windows: how lit the town is (Atmosphere.TownLit: 0 by day, 1 at dawn and by night), the share of
+// wall pieces whose glass glows, its colour and strength (linear, over the dark glass)
+global uniform float town_lit;
+uniform float window_share = 0.38;
+// (E9d, judge E9b r3) weathering: dressed stone's ground grime and worn arrises, sunlit plaster's stains, a clay roof's eave
+// run-off, its broad blotches toward grey-brown and its lichen, a chimney's stone cap
+uniform float ashlar_grime_h = 1.1;     // the dressed stone's grime to this height (m)
+uniform float ashlar_grime = 0.2;       // this much darker at the ground
+uniform float ashlar_edge = 0.1;        // its arrises this much darker (worn, dirt in them)
+uniform float plaster_stain = 0.15;     // plaster stained to (1 - this) in streaked patches
+uniform float eave_run = 0.25;          // the eave's run-off: (1 - this) over its lowest 0.6-0.9 m
+uniform float roof_blotch = 0.1;        // 2-4 m blotches this much toward grey-brown, lighter or darker
+uniform float roof_blotch_clay = 0.24;  // (r2) the same on clay, and a finer darker layer
+uniform float lichen = 0.6;             // lichen flecks in patches (clay), mostly on the lower third
+uniform vec3 window_hot = vec3(1.0, 0.6, 0.24);    // (r2) the pane's hot spot
+uniform vec3 window_edge = vec3(0.85, 0.3, 0.06);  // its edges, a deeper amber
+uniform float window_k = 1.9;
+uniform float window_edge_k = 0.55;
+uniform float window_bake = 1.2;   // the bakery's windows this much brighter again
+global uniform vec4 town_bakery;   // the bakery's front (world) and the radius its windows are in (0: none)
 uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
 varying vec4 v_wall;
 varying flat float v_stone;
@@ -280,6 +300,12 @@ uniform vec3 clay_tints[4];      // (godot/data/house_look.json)
 uniform vec3 shingle_tints[4];
 uniform vec4 chimneys[32];       // each stack's top (xyz), w 1; OwnWalls.Build
 uniform float roof_sag = 0.04;
+#if !defined(OWN_FOLIAGE) && !defined(OWN_ROCK)
+global uniform vec4 key_dir;
+global uniform vec4 flora_light;  // (x: how much the key is the moon; declared above for the trees and stones)
+#endif
+uniform float roof_night = 0.8;
+uniform float roof_debug = 0.0;  // (E9d r3) the night sky's fill on the roofs (x flora_light.x)
 uniform float roof_lean = 0.14;          // (E9b6 r4) each roof racked sideways at its middle this much (m)
 uniform vec2 roof_lean_dir = vec2(0.0, 1.0);  // world x, z: toward the play camera   // each house's roof sags this much more at most (m), by its copy's hash
 uniform float tile_val = 0.12;   // each tile lighter or darker
@@ -661,6 +687,18 @@ void fragment() {
 		col *= mix(1.0 - house_rise, 1.0, smoothstep(0.0, 6.0, h));
 		float splash = 1.0 - smoothstep(0.0, splash_h, hn - 0.25 * sn);
 		col *= mix(vec3(1.0), vec3(1.0 - splash_dark) * vec3(0.95, 0.97, 0.82), splash);
+		// (E9d) dressed stone (the sheet's ashlar: quoins, sills, coping): grime from the ground to about 1.1 m, its arrises worn
+		if (UV.x < 0.75 && UV.y > 0.8125 && UV.y < 0.90625) {
+			col *= mix(1.0 - ashlar_grime, 1.0, smoothstep(0.2, ashlar_grime_h, hn + 0.15 * (sn - 0.5)));
+			vec3 fw = fwidth(NORMAL);
+			float edge = clamp((fw.x + fw.y + fw.z) * 6.0, 0.0, 1.0);
+			col *= 1.0 - ashlar_edge * edge * (0.6 + 0.4 * wall_noise(wq * 9.0));
+		}
+		// (E9d) plaster stained: rain streaks from the eaves and sills in broad patches, to 0.85x
+		if (ax.r > 0.75) {
+			float st = wall_noise(vec2((v_wp.x + v_wp.z) * 1.6, v_wp.y * 0.22 + 3.0)) * wall_noise(wq * 0.4 + 2.2);
+			col *= 1.0 - plaster_stain * smoothstep(0.18, 0.5, st) * vec3(1.0, 1.0, 1.06);
+		}
 		// stains under the sills: streaks running down (the sheet's noise stretched down the wall)
 		float streak = smoothstep(0.25, 0.75, texture(aux_tex, vec2(UV.x * 1.7, UV.y * 0.1)).b);
 		col *= 1.0 - stain_dark * COLOR.g * (0.3 + 0.7 * streak);
@@ -668,6 +706,24 @@ void fragment() {
 		if (grime_debug > 0.0 && grime_debug < 1.5) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
+		// (E9d) a lit window: the glass (its sheet region) on about one wall piece in three glows warm from inside, at
+		// dawn and by night only; brighter low (the hearth, a table's candle), uneven across the old crown glass
+		vec2 gl = (UV - vec2(0.875, 0.8125)) / vec2(0.125, 0.09375);
+		// (r2: the bakery on the square's edge, ZoneView.Town's town_bakery: its windows always lit, hotter, brighter)
+		float bake = town_bakery.w > 0.0 ? 1.0 - smoothstep(town_bakery.w * 0.8, town_bakery.w, length(v_wp - town_bakery.xyz)) : 0.0;
+		if (town_lit > 0.001 && gl.x > 0.0 && gl.x < 1.0 && gl.y > 0.0 && gl.y < 1.0
+				&& (bake > 0.5 || wall_hash(vec2(v_wall.b * 91.7 + 0.37, floor(v_wall.r * 8.0) * 3.1)) < window_share)) {
+			float wn = 0.6 + 0.4 * wall_noise(v_wp.xz * 2.7 + v_wp.y * 3.3);
+			float low = 1.0 - 0.45 * smoothstep(0.0, 1.4, fract(h / 2.9) * 2.9 - 0.9);
+			// (r2: the panes read flat cream: a deep amber with a hot spot low in the middle (the fire or the candle
+			// seen through the old glass), the edges falling to a darker orange so the colour holds after the tonemap)
+			float hot = exp(-dot((gl - vec2(0.5, 0.62)) * vec2(1.6, 1.9), (gl - vec2(0.5, 0.62)) * vec2(1.6, 1.9)) * 2.2);
+			hot *= 0.8 + 0.4 * wall_hash(vec2(v_wall.b * 13.1, floor(v_wall.r * 8.0)));
+			vec3 wc = mix(window_edge, window_hot, hot) * mix(window_edge_k, window_k, hot);
+			EMISSION += wc * town_lit * wn * low * (1.0 + bake * window_bake) * (0.75 + 0.5 * dot(c.rgb, LW) / 0.12);
+			ALBEDO *= 0.5;
+			ROUGHNESS = 0.2;
+		}
 		if (lip) ALBEDO *= 0.55;
 		if (cap) {
 			// (E9c3) the cut's cap at the wall's top (cap_at): across the wall, how far in from its far face (the face this
@@ -748,6 +804,43 @@ void fragment() {
 		float sn = wall_noise(v_wp.xz * 2.3 + v_wp.y * 1.7);
 		col *= 1.0 - soot_dark * clamp(soot * (0.55 + 0.9 * sn), 0.0, 1.0);
 		if (ax.r < 0.25) col *= 1.0 - stack_soot * COLOR.b;
+		// (E9d) a chimney's cap stone grey: its top 0.25 m, 0.9x the brick's value
+		if (ax.r < 0.25) {
+			for (int i = 0; i < 32; i++) {
+				vec4 ch = chimneys[i];
+				if (ch.w <= 0.0) break;
+				vec3 d = v_wp - ch.xyz;
+				if (dot(d.xz, d.xz) < 0.8 && d.y > -0.28 && d.y < 0.3) { col = vec3(dot(col, LW)) * vec3(0.95, 0.97, 1.0) * 0.9; break; }
+			}
+		}
+		if (cover) {
+			// (E9d) the eave's run-off: the lowest 0.6-0.9 m darker, its upper edge broken by the drips' streaks
+			float er = wall_noise(vec2(v_lz * 5.0 + v_wall.b * 9.0, 0.5));
+			col *= mix(1.0 - eave_run, 1.0, smoothstep(0.45 + 0.3 * er, 0.75 + 0.3 * er, v_rh));
+			// 2-4 m blotches toward grey-brown, lighter or darker
+			float bn = wall_noise(v_wp.xz * 0.33 + 17.0 + v_wall.b * 3.0);
+			float bl = dot(col, LW);
+			// (E9d r2: the clay still read clean, its rows even orange: on clay the blotches stronger, a second finer layer
+			// (1-2 m), and leaning dark (weathered clay goes brown-grey, it doesn't bleach))
+			float rb = ax.r > 0.9 ? roof_blotch_clay : roof_blotch;
+			float bs = 2.0 * bn - 1.0;
+			col = mix(col, vec3(bl) * vec3(1.05, 0.97, 0.88), rb * 2.5 * abs(bs)) * (1.0 + rb * (bs > 0.0 ? 0.45 * bs : bs));
+			if (ax.r > 0.9) {
+				// (0.6-1.2 m: a few tiles' worth, so a roof seen 4 m wide still breaks up; moss-dark and grey-brown by turns)
+				float bf = wall_noise(v_wp.xz * 1.4 + 41.0 + v_wall.b * 5.0);
+				float bg = wall_noise(v_wp.xz * 0.7 - 13.0 + v_wall.b * 7.0);
+				col *= 1.0 - rb * 1.6 * smoothstep(0.42, 0.78, bf) * (0.7 + 0.3 * wall_noise(v_wp.xz * 3.1));
+				col = mix(col, vec3(dot(col, LW)) * vec3(1.02, 0.97, 0.9), rb * 2.0 * smoothstep(0.5, 0.8, bg));
+			}
+			// lichen on clay: flecks (5-15 cm) in patches, most on the lower third, ochre or grey-green; (r2) its value
+			// taken from the clay's own (a little lighter), not set: on shaded clay it stood as pale grey camouflage
+			if (ax.r > 0.9) {
+				float lp = smoothstep(0.55, 0.7, wall_noise(v_wp.xz * 0.6 + v_wall.b * 11.0)) * mix(1.0, 0.35, smoothstep(1.2, 2.4, v_rh));
+				float lf = smoothstep(0.62, 0.7, wall_noise(v_wp.xz * 9.0 + v_wp.y * 4.0));
+				vec3 lc = mix(vec3(1.18, 1.0, 0.56), vec3(0.96, 1.02, 0.84), wall_noise(v_wp.xz * 1.3));
+				col = mix(col, lc * dot(col, LW) * 1.15 * (0.85 + 0.25 * wall_noise(v_wp.xz * 23.0)), lichen * lp * lf);
+			}
+		}
 		float rough = ax.g;
 		if (cover) {
 			// moss on the slopes facing north, patchy, thickest toward the eaves and on the shaded roofs' lower courses
@@ -764,6 +857,11 @@ void fragment() {
 		col *= mix(1.0 - roof_occl, 1.0, COLOR.r);
 		ALBEDO = col;
 		ROUGHNESS = rough;
+		// (E9d r3) the night sky's light on a slope turned from the moon (only there: the moonlit slopes as they were): the moon's slope lit, the other went to pure black
+		// under the night grade's toe (e9d3 townnight_o_01); the open sky over a roof lights it more than the ambient gives
+		EMISSION += col * roof_night * flora_light.x * vec3(0.6, 0.72, 1.0) * smoothstep(0.15, 0.7, v_wn.y) * smoothstep(0.45, 0.05, dot(v_wn, key_dir.xyz));
+		// (--roof-debug: red the clay covering, green the shingle, blue the rest)
+		if (roof_debug > 0.5) { ALBEDO = cover ? (ax.r > 0.9 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)) : vec3(0.0, 0.0, 1.0); EMISSION = ALBEDO * 0.6; }
 	}
 #endif
 #ifdef OWN_FOLIAGE

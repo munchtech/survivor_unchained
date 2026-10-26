@@ -28,13 +28,15 @@ public static class Atmospheres
     public static readonly AtmospherePreset NightTown = Night with
     {
         Sky = Night.Sky with { Glow = "#2c4470" },
-        KeyColor = "#9fb6e6", KeyIntensity = 1.35, KeyElevation = 48, ShadowStrength = 0.55,
-        HemiSky = "#2c3e62", HemiGround = "#1a150f", HemiIntensity = 0.58, EnvIntensity = 0.4,
+        // (E9d r2: the moon and the fill raised (key 1.35, hemi 0.58 #2c3e62, env 0.4, lift 0.01/0.018/0.035, contrast 1.22):
+        // away from the lamps the grass and the yards sank to black, p50 under 1 of 255; a moonlit blue-violet now)
+        KeyColor = "#a4b8ec", KeyIntensity = 1.8, KeyElevation = 48, ShadowStrength = 0.55,
+        HemiSky = "#3a4a7c", HemiGround = "#1e1812", HemiIntensity = 0.82, EnvIntensity = 0.52,
         FogColor = "#0b121c", FogDensity = 0.011, Exposure = 1.32, Rim = "#86a4e8", RimStrength = 0.42,
         Grade = NightGrade with
         {
-            Lift = [0.01, 0.018, 0.035], ShadowTint = "#2a4a66", HighlightTint = "#ffa34e", TintStrength = 0.3,
-            Saturation = 0.98, Vibrance = 0.16, Contrast = 1.22, Toe = 0.5,
+            Lift = [0.016, 0.024, 0.05], ShadowTint = "#2e4470", HighlightTint = "#ffa34e", TintStrength = 0.3,
+            Saturation = 1.0, Vibrance = 0.2, Contrast = 1.16, Toe = 0.5,
         },
     };
 

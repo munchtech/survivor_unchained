@@ -35,7 +35,8 @@ public static class OwnProps
     /// whether the made piece stays under them (Over), and their scale in the piece's frame (a tree of ours).</summary>
     public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
     public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
-        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null);
+        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null,
+        List<Vector3>? Clear = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -112,7 +113,10 @@ public static class OwnProps
                 float F(string n, float d) => ll.TryGetProperty(n, out var v) ? v.GetSingle() : d;
                 litLight = new Lamp(ll.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0));
             }
-            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight);
+            // clear: [x, z, r] where the kit's small props (props/*) go (E9d: the web game's wares on the stalls our own stalls carry)
+            var clear = new List<Vector3>();
+            if (r.TryGetProperty("clear", out var cl)) foreach (var c in cl.EnumerateArray()) clear.Add(new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()));
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight, clear);
         }
         zones[zone] = z;
         return z;
@@ -133,6 +137,14 @@ public static class OwnProps
         var n = e.Preset.StartsWith("flora:") ? Dressing.OwnTree(e.Preset[6..]) : Piece(e.Preset);
         if (n != null && e.Scale != 1f) n.Scale = Vector3.One * e.Scale;
         return n;
+    }
+
+    /// <summary>Whether a kit piece at a place is cleared away (props_own.json "clear": only the small props, props/*).</summary>
+    public static bool Cleared(Zone z, string id, Vector3 at)
+    {
+        if (z.Clear is not { Count: > 0 } cl || !id.StartsWith("props/")) return false;
+        foreach (var c in cl) if (new Vector2(at.X - c.X, at.Z - c.Y).Length() < c.Z) return true;
+        return false;
     }
 
     /// <summary>The preset standing in for a kit piece at a place, or null to keep the kit's.</summary>
@@ -203,6 +215,42 @@ public static class OwnProps
         }
     }
 
+    static StandardMaterial3D? paper;
+    /// <summary>(E9d) The notices' sheet (tools/assets/env_notice_paper.py), times the vertex colours.</summary>
+    static Material Paper => paper ??= new StandardMaterial3D
+    {
+        ResourceName = "notice_paper", VertexColorUseAsAlbedo = true, Roughness = 0.95f,
+        AlbedoTexture = GD.Load<Texture2D>($"{Dir}/notice_paper.png"), TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+    };
+
+    static StandardMaterial3D? water;
+    /// <summary>(E9d r3) A trough's water (env_props.py trough_water_mesh, UVs in metres): a grey-blue sky value, glossy, in
+    /// broad soft ripples (a smooth noise as its normal map, about 25 cm across); the canvas weave read as woven mesh.</summary>
+    static Material Water => water ??= new StandardMaterial3D
+    {
+        ResourceName = "trough_water", AlbedoColor = new Color("#485a68"), Roughness = 0.14f, MetallicSpecular = 0.45f,
+        NormalEnabled = true, NormalScale = 0.55f,
+        NormalTexture = new NoiseTexture2D
+        {
+            Width = 256, Height = 256, Seamless = true, AsNormalMap = true, BumpStrength = 3f,
+            Noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 0.012f, FractalOctaves = 2, Seed = 5 },
+        },
+        Uv1Scale = new Vector3(1.2f, 1.2f, 1f),
+        TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+    };
+
+    static StandardMaterial3D? cloth;
+    /// <summary>(E9d) The stalls' canvas (tools/assets/env_canvas_tile.py: a tiling linen weave, 0.5 m a tile), times the
+    /// vertex colours (the dye, stripes, fading and soiling env_props.py bakes).</summary>
+    static Material Cloth => cloth ??= new StandardMaterial3D
+    {
+        ResourceName = "stall_canvas", VertexColorUseAsAlbedo = true, Roughness = 0.93f,
+        AlbedoTexture = GD.Load<Texture2D>($"{Dir}/canvas_tile.png"), NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{Dir}/canvas_tile_n.png"),
+        NormalScale = 0.6f, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+        // (light through the canvas from above: its underside not black at the close camera)
+        BacklightEnabled = true, Backlight = new Color(0.22f, 0.2f, 0.17f),
+    };
+
     /// <summary>A preset's node (its LOD0 and LOD1 by distance, shadows on), or null if it was never built.</summary>
     public static Node3D? Piece(string preset)
     {
@@ -212,11 +260,18 @@ public static class OwnProps
         root.Name = "own_" + preset;
         bool hasLod = false;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false)) if (n.Name.ToString().EndsWith("_LOD1")) hasLod = true;
+        // (E9d) clutter under half a metre casts no shadow (the shadow-draw budget)
+        bool small = Box(preset) is Aabb bx && bx.Size.Y < 0.5f;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
         {
             if (n is not MeshInstance3D m || m.Mesh == null) continue;
+            // (E9d) the notices: their own paper sheet (notice_paper.png), no shadow, no LOD (a few hundred triangles)
+            if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
+            // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
+            if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
+            if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
-            m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;
+            m.CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
             if (!hasLod) continue;
             if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = Lod1From;
             else m.VisibilityRangeEnd = Lod1From;

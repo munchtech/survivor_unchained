@@ -331,6 +331,7 @@ public static class KitLook
         m.SetShaderParameter("wind", 0f);
         HouseLook(m);
         m.SetShaderParameter("chimneys", chimneys);
+        if (SurvivorUnchained.Args.Has("roof-debug")) m.SetShaderParameter("roof_debug", 1f);
         // (no rim pass: the house fade, as the walls)
         roofs.Add(m);
         return m;
