@@ -110,6 +110,10 @@ public interface IZoneHost
     void Teach(Callout c) { }
     /// <summary>Whether a callout was seen on this profile (what follows it can be asked for at once).</summary>
     bool Taught(string id) => false;
+    /// <summary>Whether a callout waits in the line, asked but not yet shown (its moment can be held for it).</summary>
+    bool TeachWaiting(string id) => false;
+    /// <summary>The callout on the screen now (none: none is up).</summary>
+    Callout? Teaching => null;
     /// <summary>The survivor is up again here (the prologue's forgiveness).</summary>
     void Revived(double x, double z);
     /// <summary>The key or button bound to an action, as the player would name it.</summary>
@@ -246,6 +250,11 @@ public sealed class NpcActor
     public Action<string>? Spoken;
     string pose;
     double barkT;
+    /// <summary>Its own clock, and when it last said each line (au1 item 17: a guard's one line came round
+    /// every 30-60 s, four times in five minutes): a line isn't said again for LineRest seconds.</summary>
+    double age;
+    readonly Dictionary<string, double> lastLine = new();
+    public const double LineRest = 300;
 
     public NpcActor(NpcDef def, IZoneLook look, Random rng, Spot? at = null)
     {
@@ -277,6 +286,7 @@ public sealed class NpcActor
 
     public void Update(double dt, double px, double pz)
     {
+        age += dt;
         if (Hidden) { view.Place(X, 0, Z, Heading, false); return; }
         double y = look.HeightAt(X, Z) + (pose == "Sit_Chair_Idle" ? 0.05 : 0);
         double d = Math.Sqrt((px - X) * (px - X) + (pz - Z) * (pz - Z));
@@ -306,7 +316,12 @@ public sealed class NpcActor
                 look.Bark(first, X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
                 Spoken?.Invoke(first);
             }
-            else if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
+            else if (pool.Where(l => !lastLine.TryGetValue(l, out var at) || age - at >= LineRest).ToList() is { Count: > 0 } fresh)
+            {
+                var line = fresh[rng.Next(fresh.Count)];
+                lastLine[line] = age;
+                look.Bark(line, X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
+            }
         }
     }
 

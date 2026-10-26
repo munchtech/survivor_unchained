@@ -180,8 +180,11 @@ public partial class DraftPanel : Control
         if (foot == null) return;
         foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
         bool pad = Controls.Instance.UsingPad;
-        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.Key("1-4"), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
+        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.Key($"1-{Math.Clamp(v.Offers.Count, 2, 4)}"), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
         foot.AddChild(Style.Hint(Act.Confirm, banishing ? "Banish it" : "Take it"));
+        // (a panel a callout teaches on, the first skill and the first blessing, shows only the choice: reroll,
+        // banish and skip are verbs nobody has met yet, au1 judge)
+        if (v.Teaching) return;
         var reroll = Style.Button("", () => { if (armed && v.Rerolls > 0 && chosen == null) v.Reroll(); }, false, true);
         Nav.Id(reroll, "reroll");
         var rr = Style.H(6, Style.Prompt(pad ? Act.Alt : Act.Reroll), Style.Label($"Reroll  {v.Rerolls}", Style.UiBold, Style.Caption, Style.GoldHi));
@@ -325,6 +328,8 @@ public partial class DraftPanel : Control
             v2.AddChild(pips);
         }
         var text = o.Kind == OfferKind.Evolve && o.Text.Contains(" becomes ") && o.Text.IndexOf(". ") is int dot && dot > 0 ? o.Text[(dot + 2)..] : o.Text;
+        // (no widow: the last two words kept together, round 3 judge)
+        if (text.LastIndexOf(' ') is int sp && sp > 0 && text.Count(ch => ch == ' ') >= 4) text = text[..sp] + "\u00a0" + text[(sp + 1)..];
         var body = Style.Label(text, Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
         // A short line sits in the middle of the card's open space, not under the title with the
@@ -332,10 +337,12 @@ public partial class DraftPanel : Control
         body.VerticalAlignment = VerticalAlignment.Center;
         v2.AddChild(body);
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
-        foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
+        // (on a teaching panel, not a reason every card gives: it tells none of them apart, round 3)
+        foreach (var why in o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2))
             v2.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
-        // What a combat skill becomes, and with what.
-        if (o.Recipe is { Length: > 0 } recipe)
+        // What a combat skill becomes, and with what (not on a teaching panel: the same line under every
+        // card, and "Fits your build" with no build yet, said nothing that told the cards apart, round 2 judge).
+        if (o.Recipe is { Length: > 0 } recipe && !v.Teaching)
             v2.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
@@ -350,7 +357,7 @@ public partial class DraftPanel : Control
         // The path it belongs to, or (if none) that it fits what the build already does.
         if (o.Path is { } pid && Content.Paths.Find(pid) is { } path)
             v2.AddChild(Style.Label(path.Name, Style.DisplayLight, Style.Small, Style.Gold, false, HorizontalAlignment.Center));
-        else if (fits)
+        else if (fits && !v.Teaching)
         {
             var fl = Style.H(4, Glyphs.Icon("flame", 15, Style.EmberHi), Style.Label("Fits your build", Style.UiBold, Style.Caption, Style.EmberHi));
             fl.Alignment = BoxContainer.AlignmentMode.Center;
