@@ -84,6 +84,12 @@ uniform float rut_blur = 0.3;
 // (lf3b) how much the rime follows the road's shape (on the crown and the ruts' shoulders, off the ruts): 1 as judge 2
 // asked in town; by Low Ford's moon it drew the crown as a pale kerb between two black trenches
 uniform float road_rime = 1.0;
+// (lf4 V, judge lf2 #3: the pale "kerb" between Low Ford's ruts was this strip's grass layer, its earth cut by
+// 45%: a grey-green band 1.5x the road's value by night) crown_grass: how much of the centre strip's dirt goes to grass
+uniform float crown_grass = 0.45;
+// (lf4 V: a rut puddle at Low Ford's post mirrored the sky as a pale blue-white blob) pud_night: the sky in standing
+// water cut by this share while the night's frost is out (and its albedo kept muddy); 0: as before, dawn and day unchanged
+uniform float pud_night = 0.0;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
@@ -289,7 +295,7 @@ void fragment() {
 	float hdp = h_depth + 0.22 * clamp(bare * (1.0 - bare) * 4.0, 0.0, 1.0);
 	// The road's centre strip: sparse grass between the ruts.
 	float cen = smoothstep(0.84, 0.96, pm.r);
-	wd *= 1.0 - cen * 0.45;
+	wd *= 1.0 - cen * crown_grass;
 	// (Where trodden earth meets grass the heights decide less, so the edge ramps instead of cutting on the maps' grain.)
 	float wedge = clamp(max(wd * (1.0 - wd), wm * (1.0 - wm)) * 4.0, 0.0, 1.0) * (1.0 - step(0.02, sp.g));
 	hdp += verge_soft * wedge;
@@ -620,7 +626,9 @@ void fragment() {
 	// The sky in it broken (judge 2): none under a crown or the eaves, less in the shade, broken by ripples and scum.
 	float brk = smoothstep(0.25, 0.75, nF.g * 0.6 + nF.b * 0.4);
 	float mirror = mirror_amt * mix(mirror_rut, 1.0, max(w_setts, 1.0 - step(0.05, rut))) * smoothstep(0.35, 0.9, ex4.r) * mix(0.45, 1.0, ex4.g) * mix(0.15, 1.0, brk);
-	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud);
+	float pn = pud_night * ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
+	mirror *= 1.0 - pn;
+	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud * (1.0 - pn * 0.6));
 	n_w = normalize(mix(n_w, normalize(n_geo + vec3(nF.a - 0.5, 0.0, rag - 0.5) * 0.15), pud));
 
 	// Dew by night (judge 1, E3 fix 10 and 3: the moonlit road read as snow): bare earth and stone darker while the
