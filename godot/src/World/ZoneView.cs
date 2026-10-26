@@ -563,6 +563,8 @@ public partial class ZoneView : Node3D
     /// (the owner's call): by day their light is faint beside the sun's, and
     /// in town their shadows were two thirds of every frame's shadow draws.
     /// Never at the lowest quality.</summary>
+    /// <summary>(E9d r3) Lights never offered a shadow: the town's braziers (ZoneView.Town.TownFire).</summary>
+    readonly HashSet<int> unshadowed = new();
     bool CastsShadow(ZoneData.LightSpec l) => l.Intensity >= 8 && lampShadows && (Night || dusk);
 
     void Shadows()
@@ -575,7 +577,7 @@ public partial class ZoneView : Node3D
     void OfferShadow(int i)
     {
         if (i >= specs.Count || i >= lights.Count || i >= lit.Count) return;
-        if (lit[i] && CastsShadow(specs[i])) ShadowLamp.Offer(lights[i], 0);
+        if (lit[i] && CastsShadow(specs[i]) && !unshadowed.Contains(i)) ShadowLamp.Offer(lights[i], 0);
         else ShadowLamp.Withdraw(lights[i]);
     }
 

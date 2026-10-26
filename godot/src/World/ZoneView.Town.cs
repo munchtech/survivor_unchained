@@ -152,7 +152,11 @@ public partial class ZoneView
         int n = 0;
         foreach (var c in fire.FindChildren("*", "GeometryInstance3D", true, false))
             if (c is GeometryInstance3D gi && gi.CastShadow != GeometryInstance3D.ShadowCastingSetting.Off) { gi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; n++; }
-        if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"BRAZIER at {at} light {light}: {n} pieces of its fire unshadowed");
+        // (r3: and the light's own shadow off: the stand's bowl under the flame threw a crisp black ellipse on the setts
+        // round its foot (e9d3 townnight); unshadowed, the setts under it take the fire's glow like the ember-lit ground under a brazier)
+        unshadowed.Add(light);
+        lights[light].ShadowEnabled = false;
+        if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"BRAZIER at {at} light {light}: {n} pieces of its fire unshadowed, its light unshadowed");
     }
 
     /// <summary>--wall-lamp-iron K: the kit's pale trim metal on the wall lanterns darkened to blackened iron (it read

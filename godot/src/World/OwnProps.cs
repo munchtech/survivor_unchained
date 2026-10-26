@@ -223,6 +223,22 @@ public static class OwnProps
         AlbedoTexture = GD.Load<Texture2D>($"{Dir}/notice_paper.png"), TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
     };
 
+    static StandardMaterial3D? water;
+    /// <summary>(E9d r3) A trough's water (env_props.py trough_water_mesh, UVs in metres): a grey-blue sky value, glossy, in
+    /// broad soft ripples (a smooth noise as its normal map, about 25 cm across); the canvas weave read as woven mesh.</summary>
+    static Material Water => water ??= new StandardMaterial3D
+    {
+        ResourceName = "trough_water", AlbedoColor = new Color("#485a68"), Roughness = 0.14f, MetallicSpecular = 0.45f,
+        NormalEnabled = true, NormalScale = 0.55f,
+        NormalTexture = new NoiseTexture2D
+        {
+            Width = 256, Height = 256, Seamless = true, AsNormalMap = true, BumpStrength = 3f,
+            Noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 0.012f, FractalOctaves = 2, Seed = 5 },
+        },
+        Uv1Scale = new Vector3(1.2f, 1.2f, 1f),
+        TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+    };
+
     static StandardMaterial3D? cloth;
     /// <summary>(E9d) The stalls' canvas (tools/assets/env_canvas_tile.py: a tiling linen weave, 0.5 m a tile), times the
     /// vertex colours (the dye, stripes, fading and soiling env_props.py bakes).</summary>
@@ -253,6 +269,7 @@ public static class OwnProps
             if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
             if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
+            if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
             m.CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
             if (!hasLod) continue;

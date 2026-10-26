@@ -286,6 +286,12 @@ uniform vec3 clay_tints[4];      // (godot/data/house_look.json)
 uniform vec3 shingle_tints[4];
 uniform vec4 chimneys[32];       // each stack's top (xyz), w 1; OwnWalls.Build
 uniform float roof_sag = 0.04;
+#if !defined(OWN_FOLIAGE) && !defined(OWN_ROCK)
+global uniform vec4 key_dir;
+global uniform vec4 flora_light;  // (x: how much the key is the moon; declared above for the trees and stones)
+#endif
+uniform float roof_night = 0.8;
+uniform float roof_debug = 0.0;  // (E9d r3) the night sky's fill on the roofs (x flora_light.x)
 uniform float roof_lean = 0.14;          // (E9b6 r4) each roof racked sideways at its middle this much (m)
 uniform vec2 roof_lean_dir = vec2(0.0, 1.0);  // world x, z: toward the play camera   // each house's roof sags this much more at most (m), by its copy's hash
 uniform float tile_val = 0.12;   // each tile lighter or darker
@@ -797,6 +803,11 @@ void fragment() {
 		col *= mix(1.0 - roof_occl, 1.0, COLOR.r);
 		ALBEDO = col;
 		ROUGHNESS = rough;
+		// (E9d r3) the night sky's light on a slope turned from the moon (only there: the moonlit slopes as they were): the moon's slope lit, the other went to pure black
+		// under the night grade's toe (e9d3 townnight_o_01); the open sky over a roof lights it more than the ambient gives
+		EMISSION += col * roof_night * flora_light.x * vec3(0.6, 0.72, 1.0) * smoothstep(0.15, 0.7, v_wn.y) * smoothstep(0.45, 0.05, dot(v_wn, key_dir.xyz));
+		// (--roof-debug: red the clay covering, green the shingle, blue the rest)
+		if (roof_debug > 0.5) { ALBEDO = cover ? (ax.r > 0.9 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)) : vec3(0.0, 0.0, 1.0); EMISSION = ALBEDO * 0.6; }
 	}
 #endif
 #ifdef OWN_FOLIAGE

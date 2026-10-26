@@ -2233,10 +2233,13 @@ def stall(p):
     dye = hexlin(DYE.get(p['dye'], p['dye']))
     dye2 = hexlin(DYE.get(p.get('dye2', 'linen'), p.get('dye2', 'linen')))
     pale = hexlin(DYE['linen'])
+    # (E9d r3) what the sun bleaches the top toward: linen by default; a dark dye's own greyed pale (the woad's went lilac)
+    fade_to = hexlin(p['fade_to']) if 'fade_to' in p else pale
     stripe = p.get('stripe', 0.0)
     parts = []
     hx, zb, zf = 1.3, -0.8, 0.9
-    yb, yf = 2.42, 2.05
+    # (E9d r3: lift raises the whole awning, the posts with it: the herb stall's valance hid its stallholder's head)
+    yb, yf = 2.42 + p.get('lift', 0.0), 2.05 + p.get('lift', 0.0)
     pw = 0.11
     # Posts, hewn, each a little off plumb.
     for sx in (-1, 1):
@@ -2285,7 +2288,7 @@ def stall(p):
         az = min(1.0, max(0.0, t))
         s = sag * math.sin(math.pi * ax) * math.sin(math.pi * az) ** 0.7
         # tension folds running from the post tops toward the middle, and a looser rumple
-        s += 0.018 * math.sin(11 * (x * 0.8 + z) + ph) * math.sin(math.pi * ax) + 0.012 * hnoise(Vector((x * 3, 0, z * 3)), p['seed'])
+        s += p.get('folds', 0.018) * math.sin(11 * (x * 0.8 + z) + ph) * math.sin(math.pi * ax) + 0.012 * hnoise(Vector((x * 3, 0, z * 3)), p['seed'])
         over_x = max(0.0, abs(x) - hx)
         y -= s + over_x * 0.9
         if z > zf:
@@ -2314,7 +2317,7 @@ def stall(p):
             ax = min(1.0, max(0.0, (x + hx) / (2 * hx)))
             az = min(1.0, max(0.0, (z - zb) / (zf - zb)))
             fade += p['crown'] * math.sin(math.pi * ax) ** 1.5 * (1 - az) ** 0.6
-        base = base.lerp(pale, max(0.0, min(0.8, fade)))
+        base = base.lerp(fade_to, max(0.0, min(0.8, fade)))
         if face_top and p.get('sag_shade', 0.0) > 0 and abs(x) < hx and zb < z < zf:
             # (E9d r2) the bellies between the rails darker, the cloth over the rails and posts lighter: the sag reads from above
             ax = (x + hx) / (2 * hx)
@@ -2342,11 +2345,26 @@ def stall(p):
         xs += panel
     # A patch or two, sewn over a tear (a scrap of another cloth).
     for (pu, pv, pw2, ph2, ptint) in p.get('patches', []):
+        rag = p.get('patch_rag', 0.0)
+
         def patch(u, v, pu=pu, pv=pv, pw2=pw2, ph2=ph2):
-            uu = pu + (u - 0.5) * pw2 / W
-            vv = pv + (v - 0.5) * ph2 / (z1 - z0)
+            du, dv = u - 0.5, v - 0.5
+            if rag > 0:
+                # (E9d r3) a torn scrap, not a cut label: its edge in and out by up to rag of its size
+                a = math.atan2(dv, du)
+                k = 1.0 - rag * (0.5 + 0.5 * math.sin(3 * a + pu * 9) * 0.6 + 0.4 * hnoise(Vector((math.cos(a) * 2.5, 0, math.sin(a) * 2.5)), p['seed'] + 31))
+                e = max(abs(du), abs(dv)) * 2
+                du, dv = du * (1 - (1 - k) * e), dv * (1 - (1 - k) * e)
+            uu = pu + du * pw2 / W
+            vv = pv + dv * ph2 / (z1 - z0)
             return roof(uu, vv) + Vector((0, 0.009, 0))
-        parts.append(Part(sheet(3, 3, patch, 0.003), 'tile', hexlin(DYE.get(ptint, ptint)), smooth=True, jitter=0.04))
+        pn = 10 if rag > 0 else 3
+        pp = Part(sheet(pn, pn, patch, 0.003), 'tile', hexlin(DYE.get(ptint, ptint)), smooth=True, jitter=0.04)
+        if p.get('patch_weather'):
+            # (E9d r3) faded, shaded and soiled as the sheet under it, so it sits within its value
+            pp.vmod = lambda t, c: cloth_tint(c, True, t)
+            pp.jitter = 0.0
+        parts.append(pp)
         if p.get('patch_stitch'):
             # (E9d r2) its hem sewn round in a darker thread: a patch, not a tag
             for (ua, va, ub, vb) in ((0, 0, 1, 0), (1, 0, 1, 1), (1, 1, 0, 1), (0, 1, 0, 0)):
@@ -2533,6 +2551,33 @@ NOTICES = [(-0.82, 1.62, 0.36, 0.46, -3, 0, 1, 0), (-0.36, 1.48, 0.42, 0.56, 2, 
            (0.45, 1.02, 0.34, 0.3, 2, 6, -1, 0), (0.88, 1.12, 0.22, 0.3, -2, 7, 3, 1)]
 
 
+def trough_water_mesh(name, mat, p):
+    """(E9d r3) The trough's water: a flat sheet inside its boards, UVs in metres (OwnProps' water material ripples it)."""
+    L, Wd, H, t = p['len'], 0.55, 0.5, 0.05
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.new()
+    x0, x1, z0, z1, y = -L / 2 + t, L / 2 - t, -Wd / 2 + t, Wd / 2 - t, H - 0.08
+    vs = [bm.verts.new(c) for c in ((x0, y, z0), (x0, y, z1), (x1, y, z1), (x1, y, z0))]
+    f = bm.faces.new(vs)
+    for l in f.loops:
+        l[uvl].uv = (l.vert.co.x, l.vert.co.z)
+    bm.normal_update()
+    if f.normal.y < 0:
+        f.normal_flip()
+    me = bpy.data.meshes.new(name)
+    bm.transform(G2B)
+    bm.to_mesh(me)
+    bm.free()
+    ca_ = me.color_attributes.new('tint', 'FLOAT_COLOR', 'CORNER')
+    for li in range(len(me.loops)):
+        ca_.data[li].color = (1, 1, 1, 1)
+    me.color_attributes.active_color = ca_
+    me.materials.append(mat)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
 def notice_paper_mesh(name, mat):
     """The notices on the board's face: each a sheet bowed off the planks a little, UVs on its cell of notice_paper.png
     (4 x 2 cells), a corner torn off where it says; nails (two or three, on the atlas mesh, see notice_nails)."""
@@ -2641,9 +2686,8 @@ def trough(p):
         parts.append(Part(box(Wd - 2 * t, 0.35, t, 0.005), 'wood', wood * 0.82, T(sx * (L / 2 - t / 2), 0.31, 0) @ R('Y', math.pi / 2), cap='endgrain'))
         parts.append(Part(box(0.22, 0.14, Wd + 0.12, 0.01), 'stone', hexlin('#b8b0a4'), T(sx * L * 0.33, 0.07, 0), jitter=0.05))
         parts.append(Part(box(0.04, 0.36, 0.006), 'iron', hexlin('#ffffff'), T(sx * L * 0.2, 0.3, Wd / 2 + 0.003), jitter=0.0))
-    wat = grid(6, 2, lambda u, v: (-L / 2 + t + (L - 2 * t) * u, H - 0.08 + 0.003 * math.sin(u * 13), -Wd / 2 + t + (Wd - 2 * t) * v))
-    # (E9d r2) the sky in it: a grey-blue mid value on the plain canvas region, not black iron
-    parts.append(Part(wat, 'canvas', hexlin(p.get('water', '#6c8090')), smooth=True, jitter=0.0))
+    # (E9d r3) the water: its own mesh and material (trough_water_mesh; OwnProps' glossy rippled water), not the canvas
+    # region (its weave read as woven mesh at the close camera)
     bk = lathe([(0.12, 0.0), (0.15, 0.3)], 12, cap0=True, cap1=False)
     parts.append(Part(bk, 'wood', wood * 0.85, T(L / 2 + 0.3, 0, 0.25), smooth=False))
     parts.append(Part(torus(0.15, 0.008, 12, 4), 'iron', hexlin('#ffffff'), T(L / 2 + 0.3, 0.25, 0.25), smooth=True, jitter=0.0))
@@ -2854,6 +2898,9 @@ def main():
             pa = notice_paper_mesh(name + '_paper', pm)
             obs.append(pa)
             meta['tris_paper'] = tris(pa)
+        if p['kind'] == 'trough':
+            wm = bpy.data.materials.get('water') or bpy.data.materials.new('water')
+            obs.append(trough_water_mesh(name + '_water', wm, p))
         bb = [B2G @ Vector(c) for c in ob.bound_box]
         meta['box'] = [round(min(v[i] for v in bb), 3) for i in range(3)] + [round(max(v[i] for v in bb), 3) for i in range(3)]
         bpy.ops.object.select_all(action='DESELECT')

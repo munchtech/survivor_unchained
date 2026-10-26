@@ -12,6 +12,7 @@ global uniform vec4 survivor;   // her chest (xyz), w 1 while she is in the worl
 // smoke over it must go with it)
 uniform float near_gap = 1.5;
 uniform float near_soft = 4.0;
+uniform float near_side = 2.5;   // (m) smoke this far off her line of sight stays
 uniform vec3 lit_col : source_color = vec3(0.86, 0.83, 0.78);
 uniform vec3 shade_col : source_color = vec3(0.46, 0.48, 0.53);
 uniform float density = 0.55;
@@ -51,8 +52,13 @@ void fragment() {
 	ALBEDO = mix(shade_col, lit_col * key, lam) * COLOR.rgb;
 	float clear = 1.0;
 	if (survivor.w > 0.5) {
-		float her_d = -(VIEW_MATRIX * vec4(survivor.xyz, 1.0)).z;
+		vec3 her_v = (VIEW_MATRIX * vec4(survivor.xyz, 1.0)).xyz;
+		float her_d = -her_v.z;
 		clear = smoothstep(her_d - near_gap - near_soft, her_d - near_gap, -VERTEX.z);
+		// (E9d r3: only smoke on the line from the camera to her: its distance from that line at its own depth; before,
+		// every plume nearer the camera than her went, so an uncut house's chimney up the frame stood bare)
+		float side = length(VERTEX.xy - her_v.xy * (VERTEX.z / min(her_v.z, -0.1)));
+		clear = mix(clear, 1.0, smoothstep(near_side, near_side + 2.5, side));
 		// (only smoke well over her head: a cook fire's or a brazier's low plume on the street before her stays)
 		float wy = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).y;
 		clear = mix(1.0, clear, smoothstep(2.5, 4.5, wy - survivor.y));

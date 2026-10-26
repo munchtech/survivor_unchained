@@ -13,7 +13,7 @@ import random
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "godot" / "art" / "world" / "props" / "notice_paper.png"
@@ -21,6 +21,28 @@ C = 256
 TONES = [(226, 214, 184), (214, 196, 150), (200, 194, 178), (220, 206, 170), (190, 168, 128), (228, 220, 196), (206, 186, 146), (218, 204, 176)]
 KIND = ["hand", "bounty", "hand", "bill", "hand", "seal", "hand", "bill"]
 INK = (38, 30, 26)
+# (E9d r3) the printed headings in real words (the judge read the block glyphs as misspelt capitals): Cinzel (SIL OFL),
+# the repo's own roman capitals
+FONT = ROOT / "tools" / "uiforge" / "fonts" / "Cinzel-wght.ttf"
+HEADS = {1: "REWARD", 3: "NOTICE", 7: "BY ORDER"}
+
+
+def heading(dr, text, x0, x1, y0, y1, rnd, weight="Black"):
+    """Block capitals centred in the box, as large as fit, the press's ink a little uneven."""
+    size = y1 - y0
+    while size > 8:
+        f = ImageFont.truetype(str(FONT), size)
+        try:
+            f.set_variation_by_name(weight)
+        except Exception:
+            pass
+        l, t, r, b = dr.textbbox((0, 0), text, font=f)
+        if r - l <= x1 - x0 and b - t <= y1 - y0:
+            break
+        size -= 1
+    x = (x0 + x1 - (r - l)) // 2 - l
+    y = (y0 + y1 - (b - t)) // 2 - t
+    dr.text((x, y), text, font=f, fill=INK)
 
 
 def noise(h, w, scale, rng):
@@ -84,7 +106,7 @@ def cell(i, rng, rnd):
         if rnd.random() < 0.6:
             dr.line([(C - 110, C - 36), (C - 40, C - 40)], fill=INK, width=2)
     elif k == "bounty":
-        hand_line(dr, m + 10, C - m - 10, 34, rnd, 5, 16)
+        heading(dr, HEADS[1], m + 14, C - m - 14, 18, 48, rnd)
         bx0, by0, bx1, by1 = 58, 54, C - 58, 170
         # (E9d r2: a woodcut print, not an icon) a cut block: the ground cut away in close hatching, the head and shoulders
         # left standing light, shaded down one side in cross-hatching, the features gouged in short uneven strokes.
@@ -136,21 +158,7 @@ def cell(i, rng, rnd):
     elif k == "bill":
         # (E9d r2: printed words, not black bars) a heading in big block capitals, a rule, then two columns of small type,
         # each line words of letters with gaps, a ragged right edge
-        x = m + 6
-        while x < C - m - 16:
-            wn = rnd.randint(3, 6)
-            for _ in range(wn):
-                lw = rnd.randint(8, 13)
-                if x + lw > C - m - 6:
-                    break
-                dr.rectangle((x, 28, x + lw, 48), fill=INK)
-                cut = rnd.random()
-                if cut < 0.4:
-                    dr.rectangle((x + 3, 33 + rnd.randint(0, 6), x + lw - 3, 37 + rnd.randint(0, 6)), fill=TONES[i])
-                elif cut < 0.7:
-                    dr.rectangle((x + 3, 32, x + lw - 3, 48), fill=TONES[i])
-                x += lw + 3
-            x += 10
+        heading(dr, HEADS.get(i, "NOTICE"), m + 6, C - m - 6, 22, 52, rnd)
         dr.line([(m, 56), (C - m, 56)], fill=INK, width=2)
         dr.line([(m + 20, 60), (C - m - 20, 60)], fill=INK, width=1)
         for col in range(2):
