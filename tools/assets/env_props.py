@@ -2195,7 +2195,7 @@ def hang_bunch(parts, at, L, r, tint, rng, head=None):
     """Herbs hung to dry, heads down (E9d r2: stalks you can see, not a dark cone): a fan of thin stalks splaying from the
     tie, each with its leaves in small clumps along it and a seed head or flower tuft at its tip, dried green or ochre,
     lighter at the tips; the cord to the rail."""
-    n = 9
+    n = 12
     for k in range(n):
         a = k * 2.399 + rng(-0.3, 0.3)
         spread = r * rng(0.55, 1.15)
@@ -2203,12 +2203,18 @@ def hang_bunch(parts, at, L, r, tint, rng, head=None):
         tip = Vector((math.cos(a) * spread, -ln, math.sin(a) * spread))
         ln2, sat = along(Vector((0, -0.01, 0)), tip, side=Vector((math.cos(a + 1.57), 0, math.sin(a + 1.57))))
         parts.append(Part(box(0.007, ln2, 0.007), 'canvas', tint * rng(0.7, 0.9), at @ sat, jitter=0.0))
-        for j in range(2):
-            t = 0.42 + 0.3 * j + rng(-0.05, 0.05)
+        # leaf blades along it, angled out and down from the stalk, alternate sides: a sprig's silhouette, not beads
+        d = tip.normalized()
+        out = Vector((math.cos(a), 0, math.sin(a)))
+        for j in range(4):
+            t = 0.3 + 0.17 * j + rng(-0.04, 0.04)
             c = tip * t
-            lf = lumpy(sphere(r * rng(0.26, 0.36), 5, 3, 0.55), 0.3, 40, k * 3 + j)
-            parts.append(Part(lf, 'canvas', tint * rng(0.85, 1.15), at @ T(c.x, c.y, c.z) @ R('Y', rng(0, 6)) @ R('X', rng(-0.6, 0.6)), smooth=True, jitter=0.0))
-        hd = lumpy(sphere(r * rng(0.22, 0.3), 5, 3, 1.2), 0.25, 30, k + 50)
+            sgn = 1 if j % 2 else -1
+            lv = (d * 0.55 + out * sgn * 0.8 + Vector((0, -0.2, 0))).normalized()
+            ll = rng(0.045, 0.07)
+            lln, lat = along(c, c + lv * ll, side=Vector((-out.z, 0, out.x)))
+            parts.append(Part(box(0.022, lln, 0.003), 'canvas', tint * rng(0.95, 1.2), at @ lat, jitter=0.0))
+        hd = lumpy(sphere(r * rng(0.14, 0.2), 5, 3, 1.4), 0.25, 30, k + 50)
         parts.append(Part(hd, 'canvas', (head if head is not None else tint) * rng(1.0, 1.2), at @ T(tip.x, tip.y, tip.z), smooth=True, jitter=0.0))
     parts.append(Part(box(0.018, 0.04, 0.018), 'leather', Vector((0.6, 0.52, 0.4)), at @ T(0, -0.01, 0), jitter=0.0))
     parts.append(Part(box(0.006, 0.12, 0.006), 'leather', Vector((0.6, 0.52, 0.4)), at @ T(0, 0.06, 0), jitter=0.0))
@@ -2420,7 +2426,7 @@ def stall(p):
         for i in range(2):
             bolt(parts, T(-1.0 + i * 0.25, 0.4, cz1 + 0.3) @ R('X', -0.25 + i * 0.12), 0.8, 0.1, hexlin(cols[(i + 3) % 6]))
     elif ware == 'herbs':
-        greens = ['#a8b070', '#c8a858', '#9aa868', '#d0b468', '#b0a070']
+        greens = ['#b8c07a', '#dcbc64', '#a8b872', '#e0c470', '#c4b47a']
         heads = ['#d8c890', '#e0b860', '#c8b0c8', '#e8d080', '#d0c088']
         for i in range(9):
             x = -1.1 + i * 0.27 + rng(-0.03, 0.03)
