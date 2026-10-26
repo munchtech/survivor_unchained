@@ -46,14 +46,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 MARK = "heroine_arm_lines"
 GATE = "LINES"
 _E = os.environ.get
-GEO = float(_E("LINES_GEO", "0.85"))                                   # share of the hull deficit filled
+GEO = float(_E("LINES_GEO", "1.3"))                                   # share of the hull deficit filled
 GEO_P = tuple(float(v) for v in _E("LINES_P", "-110,80").split(","))  # phi window (deg), 15 deg fades inside it
 GEO_S = tuple(float(v) for v in _E("LINES_S", "0,215").split(","))    # s window (mm), 20 mm fades inside it
 GSS, GSP = float(_E("LINES_GSS", "8")), float(_E("LINES_GSP", "6"))  # the fill's blur: mm in s, deg in phi
-TSS, TSP = float(_E("LINES_TSS", "10")), float(_E("LINES_TSP", "10"))  # the tone's blur: mm in s, deg in phi
+TSS, TSP = float(_E("LINES_TSS", "14")), float(_E("LINES_TSP", "14"))  # the tone's blur: mm in s, deg in phi
 # (and, optionally, the filled radius faired: narrow crests lowered and flats rounded, a Gaussian of LP deg in phi
-# (LPS mm in s), the change x LP_AMT, in the same window; 0 = off)
-LP, LPS, LP_AMT = float(_E("LINES_LP", "0")), float(_E("LINES_LPS", "4")), float(_E("LINES_LP_AMT", "1"))
+# (LPS mm in s), the change x LP_AMT, in the same window; 0 = off; veins b1: 10)
+LP, LPS, LP_AMT = float(_E("LINES_LP", "10")), float(_E("LINES_LPS", "4")), float(_E("LINES_LP_AMT", "1"))
 STEP = 2.5                                                              # grid: mm in s, deg in phi
 SS = np.arange(-100, 281, STEP)
 PP = np.arange(-180, 180, STEP)
