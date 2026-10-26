@@ -130,7 +130,7 @@ public partial class PersonView : Node3D, INpcView
 
     void PlayLoop(double blend)
     {
-        var name = People.Clip(person, walking ? loopClip : loop);
+        var name = People.Clip(person, walking ? loopClip : loop, emptyHanded, emptyHanded ? "" : null);
         person.Anim.Play(name, blend, (float)loopSpeed);
         Native(name);
         // A townsperson's first stand starts somewhere of its own in the loop (Play.TownStands.Phase), so the town
@@ -290,11 +290,18 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
-    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).</summary>
+    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).
+    /// With them put away her hands are empty, so she stands as she does in a safe place with nothing in them (her
+    /// calling's town stand: relaxed arms, open hands), not in the stand made around a hilt and a shield, whose
+    /// clenched fists and held-out arms read as nobody stands (the owner, 26 October 2026, on this camp).</summary>
     public void ShowHeld(bool shown)
     {
         foreach (var m in held.Values) if (IsInstanceValid(m)) m.Visible = shown;
+        if (emptyHanded == !shown) return;
+        emptyHanded = !shown;
+        if (!walking && actLeft <= 0 && !holding) PlayLoop(0.4);
     }
+    bool emptyHanded;
 
     public void Hold(string slot, string? pack, string? piece)
     {
