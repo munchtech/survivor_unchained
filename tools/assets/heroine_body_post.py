@@ -25,29 +25,39 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
      the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
      records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
      RETIRED (armor 18 g2b): baked into heroine_built_armroot.blend; runs only with --arm-shape (pre-graft blend).
-  6b. (retired, armor 17 N3) arc_fit_post fitted the arcanist's caps and evened its collar on the built gltf (armor 16
+  6a. (retired, armor 17 N3) arc_fit_post fitted the arcanist's caps and evened its collar on the built gltf (armor 16
      N1); a max judge failed both as cut. heroine_outfits.py now cuts them right: caps ending above her deltoid's bulge,
      CAP_LIFT off her and CAP_THICK of the leather's thickness (THIN_ZONE), and the collar cut on her Head weight made
      the same both sides (KEEP_SYM). Not run.
-  6c. heroine_brow_strokes: her own face's brows painted again as grown hairs, none crossing (the old strokes filled
+  6b. heroine_ear_shape --art: her ears set closer to her head (each point in toward the fitted skull by a share of
+     its stand-off: lobe 20 -> 12 mm, middle 19 -> 15, top 13 -> 10) and the ear's lower front join with her cheek
+     rounded; hair, outfits, armor pieces follow, records re-keyed; then heroine_ear_ao.py again from the new shape
+     (face 41, the owner 26 Oct: "lobe might stick too far away from head")         [heroine_ear_shape]
+  7. heroine_brow_strokes: her own face's brows painted again as grown hairs, none crossing (the old strokes filled
      from the skin round them first), in head_tex/heroine_head.jpg, the paint the game lays over the glb's own copy;
      then heroine_browdye (Own's brows.png's core and skin from it). No glb is written: the LODs never carry her head
      (face 40, a max judge: the old strokes crossed in a lattice, "hatching")     [the paint's JPEG comment brow_strokes]
-  7. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
+  7b. heroine_ear_shape --paint: every head paint's ear join (where the features' blue fades over the tragus and the
+     lobe's front) laid as the blend of ear and cheek as they render, so her face's tone no longer warms the ear's
+     already warmed paint into a pink band (face 41)                             [each paint's JPEG comment ear_join]
+  7c. heroine_ear_shape --shade: the scalp shade (head_tex/heroine_shadow.png's green, laid by heroine_features.py)
+     taken off her whole ear, front and tragus with it, faded back in over 0.5-3 mm into her scalp: under the pixie
+     the ear's front third read hair-coloured (face 41, the owner 26 Oct)       [the PNG's text chunk ear_shade]
+  8. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
      sets it while the reaver's top is worn) (armor 15 w1)                                    [worn_reaver]
-  7b. axilla_fold_post: her pec fold as an arm rises, the morphs axilla_fold_l/r (a ridge along the pec's outer edge,
+  8b. axilla_fold_post: her pec fold as an arm rises, the morphs axilla_fold_l/r (a ridge along the pec's outer edge,
      an armpit hollow behind it) and raise_crease_l/r (the crease under each breast half filled, its lower edge's
      shear smoothed), authored on her posed shape at full raise; HerRaise drives them per side; the arcanist, ranger
      and reaver tops and pauldrons carry the same morphs (they follow her skin) (armor 16 R1)  [axilla_fold; outfit's axilla_fold]
-  7c. shoulder_psd_post: her shoulders and armpits as an arm rises, pose-space correctives shoulder_{abd117,abd140,
+  8c. shoulder_psd_post: her shoulders and armpits as an arm rises, pose-space correctives shoulder_{abd117,abd140,
      flex117,flex140,up175,abd140s,flex140s,up175s}_l/r, authored with HerShrug's clavicle lift (helpers.shrug; the s
      ones 30 deg past it): delta-mush targets, then sculpted (a deltoid cap, the pec and lat folds as webs over the
      pit's crease, the hollow between, folded faces untangled) (armor 17 C1, C2); HerRaise drives them from each upper
      arm's direction in her torso frame (Play/ShoulderPsd); every outfit's tops, cloak and collar carry them, the
      pauldrons the whole of the shoulder's move  [shoulder_psd; outfit's shoulder_psd, shoulder_psd_pauldrons]
-  8. heroine_lod: the play LODs of every outfit, from the final body and pieces.
+  9. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]
 """
@@ -107,13 +117,20 @@ def main(a):
     # it would slim her arms twice. The step's code stays for a build from the pre-graft blend.)
     if "--arm-shape" in a and "heroine_arm_shape" not in m:
         run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
-    # (6b arc_fit_post retired, armor 17 N3: the caps and collar are cut right in heroine_outfits.py itself)
+    # (6a arc_fit_post retired, armor 17 N3: the caps and collar are cut right in heroine_outfits.py itself)
+    if "heroine_ear_shape" not in m:
+        run(os.path.join(HERE, "heroine_ear_shape.py"), "--art", art)
+        run(os.path.join(HERE, "heroine_ear_ao.py"))
     paint = os.path.join(art, "head_tex", "heroine_head.jpg")
     if os.path.exists(paint):
         import heroine_brow_strokes as bs
         if bs.MARK not in bs.comment(paint):
             run(os.path.join(HERE, "heroine_brow_strokes.py"), art)
             run(os.path.join(HERE, "heroine_browdye.py"))
+    # (each paint carries its own done-mark; the step skips a marked one)
+    run(os.path.join(HERE, "heroine_ear_shape.py"), "--paint", art)
+    # (the shade carries its own done-mark; heroine_features.py writes a new one without it)
+    run(os.path.join(HERE, "heroine_ear_shape.py"), "--shade", art)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     # (the body's morphs skipped when on the glb, each outfit's follow when its file is marked)
