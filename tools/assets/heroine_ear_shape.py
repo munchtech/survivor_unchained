@@ -31,6 +31,8 @@ points near the moved skin carried by its move (FOLLOW).
 
     python tools/assets/heroine_ear_shape.py --art godot/art/people [--no-follow] [--keep NAME ...] [--dry]
     python tools/assets/heroine_ear_shape.py --paint godot/art/people [face ...]   (no faces: every head paint)
+    python tools/assets/heroine_ear_shape.py --shade godot/art/people              (no scalp shade on her ears: body post 7c)
+    python tools/assets/heroine_ear_shape.py --follow-only godot/art/people BEFORE_GLB FILE ...   (a late-built piece)
     python tools/assets/heroine_ear_shape.py --measure GLB                       (the numbers, nothing written)
 Run after heroine_arm_shape (heroine_body_post.py); --paint after the brow strokes (step 7). Done-marks: the glb's
 heroine_ear_shape, each paint's JPEG comment ear_join. Then heroine_ear_ao.py again (the ear's shade from its new
@@ -402,6 +404,90 @@ def paint_join(art, faces=None, report=True):
             path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + PAINT_MARK).strip().encode("latin-1"))
 
 
+# ---- the scalp shade: none on her ear ----
+
+SHADE_MARK = "ear_shade"
+SHADE_H = 0.002                    # m of stand-off: her ear (the skull fit's), within EAR_R[0] of its middle
+SHADE_FADE = (0.0005, 0.003)       # m from that ear (3D): no shade within the first, the shade as it was past the second
+SHADE_GUTTER = 4                   # texels: uncovered texels this near a changed one take its share (mipmaps)
+
+
+def shade_off(art, src=None, report=True):
+    """heroine_shadow.png's green (her scalp's shade, multiplied by her hair's colour in the game) taken off her whole
+    ear, front, tragus and helix with it, faded back in over SHADE_FADE into her scalp; red, blue, alpha and every texel
+    past the fade kept byte for byte. (face 41, 26 Oct: heroine_features.py's ear rule leaves her ear's front to her
+    face's side, "in front and below, her face's", and its blur and her ear's top-front keep the shade: at the Look
+    turned 40 the ear's front third, helix top to tragus, read hair-coloured with no hair on.) Done-mark: the PNG's
+    text chunk ear_shade; heroine_features.py writes a new one without it, so run this after it (body post 7c)."""
+    from PIL import Image, PngImagePlugin
+    from scipy import ndimage
+    from scipy.spatial import cKDTree
+    path = os.path.join(art, "head_tex", "heroine_shadow.png")
+    im = Image.open(src or path)
+    if SHADE_MARK in im.info:
+        print("EAR_SHADE: %s has had it" % os.path.basename(path))
+        return None
+    A = np.array(im.convert("RGBA"))
+    size = A.shape[0]
+    P, UV, F, head_y = _head(os.path.join(art, "heroine.glb"))
+    cov = np.zeros((size, size), bool)
+    ci, cj, _ = _raster(UV, F, np.zeros((len(P), 1)), size)
+    cov[ci, cj] = True
+    M = np.ones((size, size), np.float32)
+    touched = np.zeros((size, size), bool)
+    for sx in (-1, 1):
+        f = ear_frame(P, sx, head_y)
+        core = f["near"] & (f["h"] > SHADE_H) & (f["r"] < EAR_R[0])
+        d = cKDTree(P[core]).query(P)[0]
+        T = F[(d[F] < SHADE_FADE[1] + 0.004).all(1)]
+        iy, ix, dt = _raster(UV, T, d[:, None], size)
+        m = _ss((dt[:, 0] - SHADE_FADE[0]) / (SHADE_FADE[1] - SHADE_FADE[0]))
+        M[iy, ix] = np.minimum(M[iy, ix], m)
+        touched[iy, ix] |= m < 1
+        if report:
+            g = A[iy, ix, 1] / 255.0
+            q = dt[:, 0] < SHADE_FADE[0]
+            print("EAR_SHADE: side %+d: %d ear points, %d texels on her ear (shade mean %.3f, max %.3f, over 0.1: %d) -> 0"
+                  % (sx, int(core.sum()), int(q.sum()), g[q].mean(), g[q].max(), int((g[q] > 0.1).sum())))
+    # (the texels round her UV islands, unrendered but in their mipmaps, take their nearest covered texel's share)
+    dist, (ny, nx) = ndimage.distance_transform_edt(~cov, return_indices=True)
+    gut = ~cov & (dist <= SHADE_GUTTER) & touched[ny, nx]
+    M[gut] = M[ny[gut], nx[gut]]
+    g0 = A[..., 1].astype(np.float32)
+    A[..., 1] = np.clip(np.floor(g0 * M + 0.5), 0, 255).astype(np.uint8)
+    info = PngImagePlugin.PngInfo()
+    info.add_text(SHADE_MARK, "fade %.1f-%.1f mm, h %.1f mm" % (SHADE_FADE[0] * 1000, SHADE_FADE[1] * 1000, SHADE_H * 1000))
+    Image.fromarray(A, "RGBA").save(path, pnginfo=info)
+    if report:
+        print("EAR_SHADE: %s: %d texels changed (%d gutter)" % (path, int((A[..., 1] != g0).sum()), int(gut.sum())))
+    return M
+
+
+def follow_only(art, files, before):
+    """The followers alone, for a piece built after the glb had its ear shape (the glb is marked, so --art skips): the
+    move field computed again from the glb as it was before (before: that glb, e.g. from git), checked against the
+    installed one, then each named file followed. Only for files built on the old ear (heroine_hair.py builds from
+    the built blend, which has the old ear) and not yet followed."""
+    import tempfile
+    hp = os.path.join(art, "heroine.glb")
+    tmp = os.path.join(tempfile.mkdtemp(prefix="ear_follow_"), "heroine.glb")
+    fld = correct(before, tmp, report=False)
+    if fld is None:
+        raise SystemExit("EAR_SHAPE: %s is already marked; give the glb from before the ear shape" % before)
+    a, b = ns._Skin(_Gl(tmp)).B, ns._Skin(_Gl(hp)).B
+    err = float(np.abs(a - b).max()) if a.shape == b.shape else float("inf")
+    if err > 1e-5:
+        raise SystemExit("EAR_SHAPE: the field from %s does not give the installed glb (off by %.3g m)" % (before, err))
+    old = ns.FOLLOW
+    ns.FOLLOW = FOLLOW
+    try:
+        for fp in files:
+            big = ns.follow_piece(fp, fld)
+            print("EAR_SHAPE: %s followed, largest %.2f mm" % (os.path.basename(fp), big * 1000))
+    finally:
+        ns.FOLLOW = old
+
+
 def measure(glb):
     G = _Gl(glb)
     S = ns._Skin(G)
@@ -423,6 +509,11 @@ if __name__ == "__main__":
         run_art(a[1], follow="--no-follow" not in a, dry="--dry" in a, keep=keep)
     elif a and a[0] == "--paint":
         paint_join(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
+    elif a and a[0] == "--shade":
+        shade_off(a[1])
+    elif a and a[0] == "--follow-only":
+        # (--follow-only ART BEFORE_GLB FILE ...)
+        follow_only(a[1], a[3:], a[2])
     elif a and a[0] == "--measure":
         measure(a[1])
     else:

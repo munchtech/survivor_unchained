@@ -35,6 +35,9 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   7b. heroine_ear_shape --paint: every head paint's ear join (where the features' blue fades over the tragus and the
      lobe's front) laid as the blend of ear and cheek as they render, so her face's tone no longer warms the ear's
      already warmed paint into a pink band (face 41)                             [each paint's JPEG comment ear_join]
+  7c. heroine_ear_shape --shade: the scalp shade (head_tex/heroine_shadow.png's green, laid by heroine_features.py)
+     taken off her whole ear, front and tragus with it, faded back in over 0.5-3 mm into her scalp: under the pixie
+     the ear's front third read hair-coloured (face 41, the owner 26 Oct)       [the PNG's text chunk ear_shade]
   8. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
@@ -107,6 +110,8 @@ def main(a):
             run(os.path.join(HERE, "heroine_browdye.py"))
     # (each paint carries its own done-mark; the step skips a marked one)
     run(os.path.join(HERE, "heroine_ear_shape.py"), "--paint", art)
+    # (the shade carries its own done-mark; heroine_features.py writes a new one without it)
+    run(os.path.join(HERE, "heroine_ear_shape.py"), "--shade", art)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     if "--no-lod" not in a:
