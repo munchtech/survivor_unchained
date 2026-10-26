@@ -719,7 +719,7 @@ public sealed class Prologue : ZoneRuntime
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 if (knight == null && !chestOpened)
                 {
-                    Tip("chest", "The Watch-post", "The watchman's chest is unguarded now.", [Key("interact")]);
+                    Tip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", [Key("interact")]);
                     Objective([("Put down the Barrow Knight", true, false), ("Search the old Watch-post", false, false)]);
                 }
                 if (p.Z < 21 && knight == null)

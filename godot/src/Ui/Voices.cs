@@ -272,6 +272,9 @@ public partial class Voices : Node3D
             // Never inside the banner's words, nor beside them on their line (read across, a howl's
             // caption and the banner's title made one sentence): under them (over them is the boss's bar).
             if (Ui.GameHud.Banner is Rect2 band && band.GrowIndividual(140, 6, 140, 6).Intersects(new Rect2(at, size))) at.Y = band.End.Y + 10;
+            // Under a live tip by 24 px at the least (never over its words).
+            float floor = Ui.GameHud.TipBottom > 0 ? Ui.GameHud.TipBottom + 24 : 0;
+            if (at.Y < floor) at.Y = floor;
             float want = 0;
             for (int pass = 0; pass < 8; pass++)
             {
@@ -280,6 +283,7 @@ public partial class Voices : Node3D
                 if (hit.Size == Vector2.Zero) break;
                 want = at.Y + size.Y + 4 - hit.Position.Y;
             }
+            if (floor > 0) want = Math.Min(want, Math.Max(0, at.Y - floor));
             b.Lift = b.T < 0.05 ? want : Mathf.Lerp(b.Lift, want, ease);
             b.Box.Position = at - new Vector2(0, b.Lift);
             b.Box.Size = size;
