@@ -894,6 +894,75 @@ def _warden_hilt(rig, clip):
     return hilt_carry(rig, clip, {"clav": 1.0, "wrist": (0.3124, -0.0235, -0.0058)})
 
 
+# The sheathed viking sword's grip at her left hip (Arms.cs hip_blade; arms_local.json "sheathed" viking_sword@hand_r,
+# in the pelvis bone's frame: x her left, y up, z ahead): the line through its leather's section centres, from under
+# the pommel (top) to just above the guard (bot); 16.7 mm round it. (The other one-handed blades share the scabbard.)
+GRIP_TOP, GRIP_BOT = (0.209, 0.1654, 0.0515), (0.2154, 0.0867, 0.0386)
+# The grip's line in her left fist closed in WRAP["sword"] (hand_l's frame: a point on it, and its way out of the thumb
+# side), fitted on her posed hand (scratch anim51/wh/fitline.py): each finger's middle bone 1-3 mm off a 15.6 mm round,
+# the palm on it. (WeaponSockets.BladeAtR / BladeDirR taken through her mirror, the right fist's seat, sat 6 mm and 6 deg
+# off it: her fingers went 12-14 mm into the grip.)
+FIST_L = ((0.04016, 0.08475, -0.00967), (0.09099, 0.55736, 0.82527))
+# The scabbard stands off her hip by her outfit's socket clearance (godot/art/anim/socket_clearance.json hip_blade, out
+# along the pelvis's +x): the warden's.
+HIP_BLADE_OUT = 0.0155
+
+
+def grip_hilt(rig, clip, at=0.0, spin=20.0, pole=(1.0, -0.2, 0.3), fingers=None, push=HIP_BLADE_OUT, passes=2, twist=0.5):
+    """`clip` with her left hand closed round the sheathed sword's grip (GRIP_TOP..GRIP_BOT), frame by frame on the
+    clip's own pelvis, so the hand rides her hips with the sword: the fist's hollow on the grip's
+    line (FIST_L), `at` m from its middle toward the guard (the scabbard `push` m out), its blade way pointing down the grip to the guard (the forefinger and
+    thumb by the guard, the little finger under the pommel), turned `spin` deg about the grip (0: the least turn from
+    the hand's rest); the elbow's way `pole` from the shoulder in the pelvis's frame. The left arm solved afresh
+    (keyed.solve_frames, the clip as its base), every other joint as it was."""
+    from keyed import WRAP, solve_frames
+    from rig import qmatrix, qnorm
+    I = rig.I
+    pel, ua = I["pelvis"], I["upperarm_l"]
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    A, D = np.array(FIST_L[0]), np.array(FIST_L[1])
+    D /= np.linalg.norm(D)
+    top, bot = (np.array(v) + (push, 0.0, 0.0) for v in (GRIP_TOP, GRIP_BOT))
+    down = (bot - top) / np.linalg.norm(bot - top)
+
+    def turn(u, v):
+        w, c = np.cross(u, v), float(u @ v)
+        K = np.array([[0, -w[2], w[1]], [w[2], 0, -w[0]], [-w[1], w[0], 0]])
+        return np.eye(3) + K + K @ K / (1 + c)
+
+    s = math.radians(spin)
+    K = np.array([[0, -down[2], down[1]], [down[2], 0, -down[0]], [-down[1], down[0], 0]])
+    R = (np.eye(3) + math.sin(s) * K + (1 - math.cos(s)) * K @ K) @ turn(D, down)   # the hand's axes, pelvis frame
+    W = (top + bot) / 2 + down * at - R @ A                                          # the wrist, pelvis frame
+    arm = [ua]
+    for j in arm:
+        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
+
+    n = clip.frames
+    want = [qmatrix(qnorm(g[f, pel])) @ R for f in range(n)]
+    at = [p[f, pel] + qmatrix(qnorm(g[f, pel])) @ W for f in range(n)]
+    aim, put = list(want), list(at)
+    base = [(clip.rot[f].copy(), clip.pos[f].copy()) for f in range(n)]
+    for k in range(passes):
+        # (The solve lands the wrist 4-6 mm off its key and the hand a degree or so: the shoulder settles after the arm is
+        # laid. A second pass keys it that much the other way.)
+        specs = [{"hand_l": {"pos": tuple(put[f]), "knuckles": tuple(aim[f][:, 1]), "blade": tuple(aim[f][:, 2]),
+                             "pole": tuple(qmatrix(qnorm(g[f, pel])) @ np.array(pole, float)), "pole_at": "shoulder", "twist": twist},
+                  "fingers_l": fingers if fingers is not None else WRAP["sword"]} for f in range(n)]
+        rot, _ = solve_frames(rig, specs, base, loop=clip.loop, weapon=(clip.meta or {}).get("weapon", ""))
+        for f in range(n):
+            for j in arm:
+                clip.rot[f, j] = rot[f, j]
+        g2, p2 = rig.sk.fk(clip.rot, clip.pos)
+        for f in range(n):
+            got = qmatrix(qnorm(g2[f, I["hand_l"]]))
+            aim[f] = aim[f] @ got.T @ want[f]
+            u, _s, vt = np.linalg.svd(aim[f])
+            aim[f] = u @ vt
+            put[f] = put[f] + (at[f] - p2[f, I["hand_l"]])
+    return clip
+
+
 # Passes after the arms (an idle's name: f(rig, clip) -> clip).
 POST = {"idle_warden_town": _warden_hilt}
 
