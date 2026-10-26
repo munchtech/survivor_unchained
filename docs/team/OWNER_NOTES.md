@@ -3,7 +3,7 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 26 October 2026 (coordinator df2b13cc)
-- **WARDEN TOWN STAND KEPT (the owner, 26 Oct, after the before/after videos in `survivorsunchained_inputs\anim51_warden_sway\`):** "Keep the new Warden stand." Animation 51's item 1 (natural stances, round 3 max PASS on 19 frames) is closed; the two front-only marks (right hand ~8 cm off the skirt at the sway's end, the left hand reading beside the scabbard) close as known.
+- **WARDEN TOWN STAND KEPT (the owner, 26 Oct, after the before/after videos in `survivorsunchained_inputs\anim51_warden_sway\`):** "Keep the new Warden stand." Animation 51's item 1 (natural stances, round 3 max PASS on 19 frames) is closed. Its two front-view marks (the right hand ~8 cm off the skirt at the sway's end; the left hand reading beside the scabbard, not on the hilt) were REOPENED by the owner: "Yes, have Animation fix both Warden hand marks in one round with the walks." Animation 51 fixes them alongside the walks.
 
 ## 25 October 2026 (coordinator a44c2c21, main account)
 - **Scope (the owner, 25 Oct night):** "focus on anything that was near a milestone, but then move into cleaning up assets and playability of a polished tutorial into act 1." The other account's arm/shoulder work (Body 9-11, armor-7) is "near completion": this account finishes it (round 13, then the G3 chain and MR).
