@@ -433,7 +433,7 @@ uniform vec3 wall_tint = vec3(1.0, 0.88, 0.78);   // (the grey it goes to, warme
 // one colour or one gloss. skin_zones: R flush (cheeks, nose, ears, lip line), G yellow (forehead), B cool (under the
 // eyes, the jaw), A her upper lids; each a soft multiply on her albedo at zone_colour (0: none, as before), its colours
 // set per skin tone (People.HerZones: deep skin a subtler, browner version).
-uniform sampler2D skin_zones : hint_default_black, filter_linear_mipmap;
+uniform sampler2D skin_zones : hint_default_transparent, filter_linear_mipmap;   // (transparent: black's alpha is 1, her lids' tint all over her body)
 uniform float zone_colour = 0.0;
 uniform vec3 zone_flush = vec3(1.0, 0.82, 0.80);
 uniform vec3 zone_yellow = vec3(1.0, 0.98, 0.88);
@@ -442,23 +442,26 @@ uniform vec3 zone_lids = vec3(0.96, 0.84, 0.86);
 // sheen_zones: R the T-zone (oilier, glossier), G her cheeks (softer), B her lips (wet), A the face's reach (outside it,
 // her neck and behind her ears, zone_rough_body, as every other part of her). Roughness taken toward the zones' at
 // zone_rough (0: as before).
-uniform sampler2D sheen_zones : hint_default_black, filter_linear_mipmap;
+uniform sampler2D sheen_zones : hint_default_transparent, filter_linear_mipmap;
 uniform float zone_rough = 0.0;
 uniform float zone_rough_base = 0.5;
 uniform float zone_rough_t = 0.4;
 uniform float zone_rough_cheek = 0.55;
 uniform float zone_rough_lip = 0.3;
 uniform float zone_rough_body = 0.5;
+uniform float zone_lip_shine = 0.0;   // (her lips' sheen this much over her skin's, by sheen_zones' blue: wet; 0: as before)
 // A second, broad sheen lobe (skin's oil over its surface): sheen2 of the first lobe's reflectance, at sheen2_rough,
 // sheen2_base of it outside the T-zone and lips (0: none, as before).
 uniform float sheen2 = 0.0;
 uniform float sheen2_rough = 0.75;
 uniform float sheen2_base = 0.4;
-// Her pores' coarse layer (the pores' own tile peel_scale as large, peel its depth; 0: none, as before), so the
-// highlight breaks up at the Look's zoom, where the fine tile is under a pixel; and the pores' roughness contrast
-// (pore_rough, added to the tile's fixed 0.3).
+// Her pores' coarse layer (tools/assets/skin_peel.py: pores as shallow wells and an orange-peel undulation, on a tile
+// 1/peel_scale of the pore tile's; peel its slopes' strength; 0: none, as before), so the highlight breaks up at the
+// Look's zoom, where the pore tile's own detail is under a pixel (its 32 px mip, flat); pore_rough: her skin that much
+// rougher in the pores (the tile's cavity, its alpha).
+uniform sampler2D peel_map : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float peel = 0.0;
-uniform float peel_scale = 0.4;
+uniform float peel_scale = 0.333;
 uniform float pore_rough = 0.0;
 varying float mouth_w;
 varying float mouth_c;
@@ -586,18 +589,19 @@ void fragment() {
 		}
 	}
 	float relief_slope = 0.0;
+	vec4 pm = peel > 0.0 || pore_rough > 0.0 ? texture(peel_map, UV * pore_scale * peel_scale + vec2(0.71, 0.23)) : vec4(0.5, 0.5, 1.0, 1.0);
 	if (has_relief) {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
 		// normal map): the pores' slopes added to the body's, at their depth.
 		vec2 a = (texture(relief, UV).xy * 2.0 - 1.0) * relief_amount;
 		relief_slope = length(a);
 		vec2 b = (q.xy * 2.0 - 1.0) * depth;
-		if (peel > 0.0) b += (texture(pores, UV * pore_scale * peel_scale + vec2(0.71, 0.23)).xy * 2.0 - 1.0) * peel * mix(0.35, 1.0, patchy) * hw;
+		if (peel > 0.0) b += (pm.xy * 2.0 - 1.0) * peel * hw;
 		vec3 n = normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a)))));
 		NORMAL_MAP = vec3(n.xy * 0.5 + 0.5, 1.0);
 		NORMAL_MAP_DEPTH = 1.0;
 	} else if (peel > 0.0) {
-		vec2 b = (q.xy * 2.0 - 1.0) * depth + (texture(pores, UV * pore_scale * peel_scale + vec2(0.71, 0.23)).xy * 2.0 - 1.0) * peel * mix(0.35, 1.0, patchy) * hw;
+		vec2 b = (q.xy * 2.0 - 1.0) * depth + (pm.xy * 2.0 - 1.0) * peel * hw;
 		NORMAL_MAP = vec3(normalize(vec3(b, 1.0)).xy * 0.5 + 0.5, 1.0);
 		NORMAL_MAP_DEPTH = 1.0;
 	} else {
@@ -614,7 +618,7 @@ void fragment() {
 		base_r = mix(base_r, mix(zone_rough_body, mix(zone_rough_body, zt, sz.a), hw), zone_rough);
 	}
 	oil_w = sheen2 * mix(sheen2_base, 1.0, max(sz.r, sz.b) * sz.a);
-	ROUGHNESS = clamp(base_r + (q.a - 0.5) * (0.3 + pore_rough) + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
+	ROUGHNESS = clamp(base_r + (q.a - 0.5) * 0.3 + (1.0 - pm.a) * pore_rough * hw + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	ROUGHNESS = mix(ROUGHNESS, clamp(paint_rough + (q.a - 0.5) * 0.1, 0.0, 1.0), pa);
 	ROUGHNESS = clamp(ROUGHNESS + relief_rough * smoothstep(0.0, 0.12, relief_slope), 0.0, 1.0);
 	METALLIC = paint_metal * pa;
@@ -626,6 +630,7 @@ void fragment() {
 	float ao = mix(aot.r, max(aot.r, lip_ao_open), max(lip_w, lips_apart * (1.0 - lips_narrow) * smoothstep(0.6, 0.95, fm.g))) * ea;
 	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
 	SPECULAR *= mix(1.0, lip_spec, lip_w * lip_tone);
+	SPECULAR *= 1.0 + zone_lip_shine * sz.b * sz.a;
 	SPECULAR = mix(SPECULAR, paint_shine * smoothstep(0.45, 0.95, ao), pa);
 	sheen = SPECULAR;
 	AO = ao;

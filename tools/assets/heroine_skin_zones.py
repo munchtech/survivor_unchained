@@ -79,7 +79,7 @@ def main():
     # (the face: in front of her ears, above her jaw's underside; eased out over 1.5 cm)
     cover = hl.smooth(-0.035, -0.010, pos[:, 2]) * hl.smooth(1.630, 1.648, pos[:, 1])
     vals = np.c_[field(pos, FLUSH), field(pos, YELLOW), field(pos, COOL), field(pos, LIDS),
-                 field(pos, OIL), field(pos, CHEEK) * (1 - lips), lips, cover]
+                 field(pos, OIL), field(pos, CHEEK) * (1 - lips) * (1 - field(pos, OIL)), lips, cover]
     vals = hl.smoothed(pos, vals, SMOOTH, vox=VOX)
     # (the lips sharper than the rest: smoothed less)
     vals[:, 6] = hl.smoothed(pos, lips[:, None], 0.0012, vox=0.0008)[:, 0]
