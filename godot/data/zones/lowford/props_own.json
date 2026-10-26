@@ -113,6 +113,34 @@
   "glow-1-0": {
    "color": "#ffa040",
    "energy": 1.4
+  },
+  "glow-2-0": {
+   "color": "#ffa040",
+   "energy": 1.0
+  },
+  "glow-9-0": {
+   "color": "#ffa040",
+   "energy": 1.0
+  },
+  "glow-10-0": {
+   "color": "#ffa040",
+   "energy": 1.0
+  },
+  "glow-11-0": {
+   "color": "#ffa040",
+   "energy": 1.0
+  },
+  "glow-12-0": {
+   "color": "#ffa040",
+   "energy": 1.0
+  },
+  "glow-13-0": {
+   "color": "#ffa040",
+   "energy": 1.0
+  },
+  "glow-14-0": {
+   "color": "#ffa040",
+   "energy": 1.0
   }
  },
  "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
