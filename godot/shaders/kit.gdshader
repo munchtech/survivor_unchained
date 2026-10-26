@@ -766,8 +766,11 @@ void fragment() {
 			float bs = 2.0 * bn - 1.0;
 			col = mix(col, vec3(bl) * vec3(1.05, 0.97, 0.88), rb * 2.5 * abs(bs)) * (1.0 + rb * (bs > 0.0 ? 0.45 * bs : bs));
 			if (ax.r > 0.9) {
-				float bf = wall_noise(v_wp.xz * 0.8 + 41.0 + v_wall.b * 5.0);
-				col *= 1.0 - rb * 0.9 * smoothstep(0.45, 0.8, bf) * (0.7 + 0.3 * wall_noise(v_wp.xz * 3.1));
+				// (0.6-1.2 m: a few tiles' worth, so a roof seen 4 m wide still breaks up; moss-dark and grey-brown by turns)
+				float bf = wall_noise(v_wp.xz * 1.4 + 41.0 + v_wall.b * 5.0);
+				float bg = wall_noise(v_wp.xz * 0.7 - 13.0 + v_wall.b * 7.0);
+				col *= 1.0 - rb * 1.6 * smoothstep(0.42, 0.78, bf) * (0.7 + 0.3 * wall_noise(v_wp.xz * 3.1));
+				col = mix(col, vec3(dot(col, LW)) * vec3(1.02, 0.97, 0.9), rb * 2.0 * smoothstep(0.5, 0.8, bg));
 			}
 			// lichen on clay: flecks (5-15 cm) in patches, most on the lower third, ochre or grey-green; (r2) its value
 			// taken from the clay's own (a little lighter), not set: on shaded clay it stood as pale grey camouflage
