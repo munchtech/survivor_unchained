@@ -2,7 +2,77 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Paused here (Face 41, 26 Oct, coordinator wind-down): ear MR READY; next = the braid's ear corner
+## Paused here (Face 42, 26 Oct, handoff at ~240k): pixie ear sent to the owner as A|B; braid ear, tick, ear-front tone built
+
+**Where things are.** Branch **face-37** (own junction; integration merged at 126b1d9e). HEAD is past 5b6805c5. Every step is WIP, judged as below, and NOT merged.
+
+**Scratch: F42** = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\df2b13cc-a34c-447a-ad1e-31bc7932a7ab\scratchpad\face42`. Don't clear it. It holds:
+- `shoot.sh`. Set IMPORT=1 to reimport first. That is needed for ANY art, jpg or png change: Godot only sees imported art.
+- `tiles.py`; `sheet.py` (labelled 1:1 owner sheets from a json spec).
+- `fin\f.txt`: every shot line.
+- `brief_j1..j3.md`; `r2b\solver*_brief.md`.
+- `solver`, `solver2`, `solver3`. `solver3\rebuild.sh` rebuilds the pixie and the paints from their bases.
+
+**Built (commits on face-37):**
+- **ebd372c3: braid and ponytail kept off the ear.** Run `heroine_pixie_ear.py --style braid,ponytail`.
+  - Cards fade by TIP. Their CAP also fades within CAP_TIP (1.5-4 mm) of the flap.
+  - The dark band down the helix front at lk40 and the stroke inside its top at lk-40 were the CAP. Found with H1DBG=capgreen,cardsblue.
+  - **Judge j1 (max): braid PASS-WITH-NOTES.**
+- **Also in ebd372c3: the tragus crease tick, halved.** `heroine_ear_shape.py --tick` (body-post step 7d, mark ear_tick, all 10 paints). **j1: tick PASS.**
+- **b763c7ff: the ear front's pale grey strip toned to her cheek.** `heroine_ear_shape.py --front` (body-post step 7e, mark ear_front; per paint, Sunborn skipped). The rendered strip went from dL +0.072 to +0.041.
+- **b50754ba, 5df99057, 5b6805c5: pixie B, over three solver rounds.**
+  - The cap is refined near the ear. Sight lines run from behind the rim and from the ear's front.
+  - `--shade` writes head_tex/heroine_shadow_pixie.png. People.HerScalp takes heroine_shadow_<style>.png if it exists. Its alpha scales the skin shader's grain (3 lines in heroine_skin.gdshader).
+  - `--skin` repaints the bared scalp in all 10 paints (mark pixie_skin).
+  - The hair is back against the helix's upper back (APEX_Z/BACK_PEN).
+
+**Body-post:** step 7 (brows) is untouched; Body 13 depends on it. Steps 7d and 7e are new: paints only, each with its own mark. Main has been told.
+
+**Pixie ear: j3 (max) FAIL, close. Sent to main as an A|B choice.**
+- Sheets: `survivorsunchained_inputs\face42_owner\owner2_AB.png` and `owner2_town.png`. j3's owner note is in the message to main.
+- **A** = b763c7ff's pixie: hair down to the rim. j2 agreed the owner is right about it.
+- **B** = 5b6805c5: clear of the top and front, with three marks:
+  - the bared strip reads as a pale bump ("extra ear") at lk40, worst in black;
+  - a white-lilac fleck at the -40 tip;
+  - a tiny notch at 0.
+- **If the owner picks B, one hair-edge round (j3's fix):**
+  - lower the hair edge at the top-front to an even 4-6 px band;
+  - fade the edge into short clipped hair in the hair's own material;
+  - add a dark, warm contact crease, 2-3 px, along the helix top;
+  - make the strip darker than the rim and warm, not grey;
+  - fill the fleck and the notch;
+  - round the ear apex in heroine.glb only if -40 still reads pointed.
+- **If the owner picks A:**
+  - restore the pixie gltf/bin from b763c7ff;
+  - delete heroine_shadow_pixie.png;
+  - rebuild the paints from b763c7ff's, without pixie_skin;
+  - the grain lines in the shader can stay: they are harmless.
+
+**NEXT, in order:**
+1. **The owner's pixie pick** (above). Then a judge, then the MR: full `dotnet test` (last 1051/0/8 before this session), push, tell main.
+2. **NEW from j3: the ear's front edge (crus and tragus) reads as a crinkled ladder** of 3-4 pale bars at lk40, about 20x80 px. It is the same in A, B and the braid. Likely geometry or normals from the ear pull-in (the smoothing in `heroine_ear_shape --art`), or paint. Diagnose with H1DBG=flathead/nospec.
+3. **Face notes:**
+   - **Neck-base purple patch.** Body 13 found it is LIGHTING: the key falls off past the terminator, leaving the soft lamps and the Look's lilac rim. Normals and seams are ruled out.
+     - Fix in the shader or People.cs: warm the shade where the key falls off, or less rim lilac on her neck. About 5-15 lines.
+     - Check fair and deep at the Look, day and night; xhigh judge.
+     - Body's frames are in the coordinator scratchpad, body13\neck\.
+     - Or offer it as an option inside the skin diagnosis.
+   - **Throat creases:** closed as known.
+   - **Jaw and cheek specks:** heal in heroine_head.jpg.
+   - **Forearm tick:** Body chain.
+   - **Also seen by j1:** a slightly grimy shadow-side cheek at town night (a fill-light question, not paint), and black forearm marks reading as flat stickers (body or paint).
+4. **SKIN diagnosis only** (waxy close-ups, orange plastic at night, deep skin red-orange): options and costs for the owner.
+
+**Minor, closed unless cheap:**
+- the braid's grey crosshatch above the ear on dark hair;
+- the ponytail's purple haze at lk-40;
+- the town lamp behind the lobe.
+
+**Later:** black hair reads navy at night.
+
+**Spend:** judges j1 131k, j2 115k, j3 107k; solvers 176k, 177k, 122k.
+
+## Paused here (Face 41, 26 Oct, coordinator wind-down): ear MR READY (history)
 Branch **face-37** (own junction; integration merged at 4cd57e50; 10 env-only commits behind since). Brows + pixie MR merged (6b118307). Scratch backed up to `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_a44c2c21\face41\` (B): `shoot.sh`, `m41.py`, every brief-sized script, sheets, `ear3\after`, `pixie3\after`, `pixie_before\` (what the owner failed), `j4\`, `j5\` crops.
 **The ear (owner 26 Oct: "lobe might stick too far away from head and this part here looks off, and the hair still seems to go over the ear on pixie despite what you say"):** MR READY (face-37 HEAD). In it:
 - `tools/assets/heroine_ear_shape.py`, three new body-post steps (heroine_body_post.py docstring):
