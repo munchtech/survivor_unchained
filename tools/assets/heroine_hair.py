@@ -1850,6 +1850,7 @@ def style_bob():
 PIXIE_EAR = dict(clear=(0.0015, 0.006), under=(0.005, 0.009), turn=(0.004, 0.016), narrow=0.65, near=0.03, lock=0.85,
                  tip=(-0.005, 0.012), back_rise=0.004, front_slope=1.0, tip_jit=0.0015, burn_down=0.1, cut_in=-0.0005,
                  reach=(0.035, 0.07), long=1.35, burn_long=1.6)
+PIXIE_EAR.update({k_: (tuple(v_) if isinstance(v_, list) else v_) for k_, v_ in __import__("json").loads(os.environ.get("PIXIE_EAR_SET", "{}")).items()})   # (test only)
 _PEAR = {}
 if FLAP_TREE is not None:
     for _sg in (-1, 1):
@@ -1891,7 +1892,10 @@ def pixie_burn_line(Q, jit=0.0):
         yb = yt + cfg["back_rise"]
         zt_ = np.broadcast_to(np.asarray(zt, float), (len(Q),))
         m = (np.sign(Q[:, 0]) == sg) & (np.abs(Q[:, 0]) > 0.05) & (Q[:, 1] < e["yf"] + 0.004) & (Q[:, 1] > yt - 0.03)
-        back = zt_ + (e["root"] - zt_) * np.clip((Q[:, 1] - yt) / (yb - yt), 0, None)
+        # (face 41: clipped at 1, so behind `back_rise` it holds at the helix root's height. Unclipped it went on
+        # rising, 3.4 mm a mm, to over 3 cm above her ear's top by its front (to yf + 4 mm): every card there cut or
+        # stopped, a wedge of bare scalp over her ear's front, a dark slash at the Look turned 40 on light hair)
+        back = zt_ + (e["root"] - zt_) * np.clip((Q[:, 1] - yt) / (yb - yt), 0, 1)
         front = np.minimum(zt_ + cfg["front_slope"] * (yt - Q[:, 1]), EYE_Z + 0.01)
         zl = np.where(m, np.where(Q[:, 1] > yt, back, front), zl)
     return zl
@@ -2795,10 +2799,6 @@ def build(style):
         bpy.data.meshes.remove(old.data)
     shape, comb, sides = STYLES[style]
     layers = shape()
-    if os.environ.get("DBG_DUMP"):                           # (test only: every layer's points, for finding a stray card)
-        np.savez(os.environ["DBG_DUMP"] + f"_{style}.npz", HP=HP, EAR=EAR, EYE_Z=EYE_Z,
-                 **{f"L{i}": c["V"] for i, c in enumerate(layers)},
-                 **{f"K{i}": np.array([c.get("mat", 0), len(c.get("F", []))]) for i, c in enumerate(layers)})
     # (r7: with edge-strip cards, the fine material's atlas is hair_fine_strands.png: the strand atlas squeezed
     # into its top, the strip under it; every other fine card's v moved up into the top part)
     for i_ in [int(v) for v in os.environ.get("DBG_ZERO", "").split(",") if v]:    # (test only: layer i unseen)
@@ -2821,6 +2821,10 @@ def build(style):
                 near_ += [] if n_ is None else [n_]
         print("  ear zone: %d cards cut short; nearest card tip to an ear (below its top): %s mm; ears %s" % (
             cut_, "%.1f" % min(near_) if near_ else "none", " ".join("%+d: front y %.1f, root z %.1f, tragus z %.1f" % (sg, e["yf"] * 1000, e["root"] * 1000, e["tragus"] * 1000) for sg, e in _EARF.items())))
+    if os.environ.get("DBG_DUMP"):                           # (test only: every layer's points, as cut, for finding a stray card)
+        np.savez(os.environ["DBG_DUMP"] + f"_{style}.npz", HP=HP, EAR=EAR, EYE_Z=EYE_Z,
+                 **{f"L{i}": c["V"] for i, c in enumerate(layers)},
+                 **{f"K{i}": np.array([c.get("mat", 0), len(c.get("F", []))]) for i, c in enumerate(layers)})
     V, N, UV, C, F, M = [], [], [], [], [], []
     base = 0
     for li, c in enumerate(layers):
@@ -2900,6 +2904,13 @@ def build(style):
     Ch[matte >= 0.999, 2] = 0.5                              # (face 38 r5: the shader matte mark: base colour, no shine)
     gm_ = (matte > 0.001) & (matte < 0.999)
     Ch[gm_, 2] = 0.45 + 0.045 * matte[gm_]                   # (r8: graded, 0.45 none to 0.495 full)
+    if os.environ.get("DBG_DUMP"):                           # (test only: each card point's shade, for finding a dark card)
+        np.savez(os.environ["DBG_DUMP"] + f"_{style}_ao.npz", ao=Ch[:, 0])
+    if os.environ.get("DBG_TINT"):                           # (test only: layer i's shade set, "i:v,j:w", to find a card in a shot)
+        o_ = np.cumsum([0] + [len(c["V"]) for c in layers])
+        for kv_ in os.environ["DBG_TINT"].split(","):
+            i_, v_ = kv_.split(":")
+            Ch[o_[int(i_)]:o_[int(i_) + 1], 0] = float(v_)
     C = [Ch]
     cp = cap(comb, sides)
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])
