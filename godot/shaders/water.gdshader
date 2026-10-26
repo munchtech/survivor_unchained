@@ -135,9 +135,16 @@ uniform float moon_column = 0.0;
 uniform float moon_col_w = 0.05;
 uniform float moon_col_l = 0.25;
 uniform float moon_break = 0.6;
+// ...the ripples' tilt as the moon sees it stretched along the view (moon_along) and narrowed across it (moon_across), so
+// its glitter lies in a broken column toward the camera, as moonlight on a river does, not a round disc; 1, 1 as built.
+uniform float moon_along = 1.0;
+uniform float moon_across = 1.0;
 // (Low Ford r3: the ford lamps' mirror points from the play camera were tight white clusters, a second moon) a near light's
 // glint cap scaled by lamp_cap (1 as built).
 uniform float lamp_cap = 1.0;
+// ...and a near light's soft pool in the water's body (its light scattered in the river, the lamp's own colour round it,
+// unbroken by the ripples: the ford's blue lamps read lit from the play camera, her ember warms the water by her); 0 none.
+uniform float lamp_pool = 0.0;
 // The air's say over the river (Atmosphere.Set, play's presets, E1): x its light, y the sky in it, z how far the
 // ripples bend it (under 1 the moon's glints gather into a band toward it); (1, 1, 1) as built.
 global uniform vec4 water_air;
@@ -371,6 +378,13 @@ void light() {
 	// (a near light glints on the steeper facets, broader: E6c, judge r2, her ember's glint was lost behind the post)
 	// (glint_bend 0: as the moon's; E6c: 3 spread the pylons' lamps into sparkle clumps and still never showed her ember)
 	vec3 gn = LIGHT_IS_DIRECTIONAL || glint_bend <= 0.0 ? NORMAL : glint_n;
+	if (LIGHT_IS_DIRECTIONAL && water_air.w > 0.0) {
+		vec3 mx = cross(flat_n, VIEW);
+		mx = dot(mx, mx) > 1e-6 ? normalize(mx) : vec3(1.0, 0.0, 0.0);
+		vec3 ml = cross(mx, flat_n);
+		float mwa = clamp(water_air.w, 0.0, 1.0);
+		gn = normalize(flat_n * dot(NORMAL, flat_n) + mx * dot(NORMAL, mx) * mix(1.0, moon_across, mwa) + ml * dot(NORMAL, ml) * mix(1.0, moon_along, mwa));
+	}
 	float ndh = clamp(dot(gn, h), 0.0, 1.0);
 	float mw = LIGHT_IS_DIRECTIONAL ? clamp(water_air.w, 0.0, 1.0) : 0.0;
 	float mr = mix(ROUGHNESS, max(ROUGHNESS, moon_rough), mw);
@@ -431,4 +445,5 @@ void light() {
 	float sk = LIGHT_IS_DIRECTIONAL ? mix(1.0, clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0), mw) : clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0);
 	float gcap = LIGHT_IS_DIRECTIONAL ? mix(glint_cap, moon_cap, mw) : glint_cap * mix(1.0, glint_high, cam_hi * streak_tame) * lamp_cap;
 	SPECULAR_LIGHT += c * min(1.0, gcap / max(m, 1e-4)) * sk * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
+	if (!LIGHT_IS_DIRECTIONAL && lamp_pool > 0.0) SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * lamp_pool * clamp(spec_k * 4.0, 0.0, 1.0) * water_air.x;
 }

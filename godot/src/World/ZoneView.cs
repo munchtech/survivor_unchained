@@ -293,7 +293,8 @@ public partial class ZoneView : Node3D
     static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.35f);
     static readonly bool FordPylonLit = !SurvivorUnchained.Args.Has("ford-pylon-dark");
     /// <summary>--ford-flame-k K: the ford flames' brightness over the road lamps' (AgX whitens a bright blue).</summary>
-    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.25f);
+    // (Low Ford r3, judge r2: the ford irons read unlit from the play camera: 0.25 to 0.6, with the river's lamp_pool round them)
+    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.6f);
     /// <summary>--ford-core-blue B: the ford flames' core pulled toward blue (0 = blue-white, which AgX clips to pure white).</summary>
     static readonly float FordCoreBlue = SurvivorUnchained.Args.Num("ford-core-blue", 1.3f);
     /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>

@@ -81,8 +81,9 @@ public static class Lamps
     public const float OldGlassK = 2.2f, OldGlassA = 0.45f;
     /// <summary>--lamp-glass-warm HEX, --lamp-glass-cold HEX: the lit glass's tint, for pictures (AgX greys a pale tint: saturated).</summary>
     static readonly string GlassWarm = SurvivorUnchained.Args.Get("lamp-glass-warm") ?? "#ff8a30", GlassCold = SurvivorUnchained.Args.Get("lamp-glass-cold") ?? "#3d70ff";
-    /// <summary>--ford-glass K, --ford-glass-a A, --ford-edge K, --ford-edge-a A: the ford irons' cold glass brightness and cover (its face under the flame), for pictures.</summary>
-    static readonly float FordGlassK = SurvivorUnchained.Args.Num("ford-glass", 0.04f), FordGlassA = SurvivorUnchained.Args.Num("ford-glass-a", 0.3f),
+    /// <summary>(Low Ford r3, judge r2: the ford irons read unlit, cold white: 0.04 to 0.2, the glass lit blue round its flame)
+    /// --ford-glass K, --ford-glass-a A, --ford-edge K, --ford-edge-a A: the ford irons' cold glass brightness and cover (its face under the flame), for pictures.</summary>
+    static readonly float FordGlassK = SurvivorUnchained.Args.Num("ford-glass", 0.2f), FordGlassA = SurvivorUnchained.Args.Num("ford-glass-a", 0.3f),
         FordEdge = SurvivorUnchained.Args.Num("ford-edge", 0.2f), FordEdgeA = SurvivorUnchained.Args.Num("ford-edge-a", 0.3f);
     /// <summary>--lamp-edge K, --lamp-edge-a A: the warm glass's fresnel edge brightness and cover, for pictures.</summary>
     static readonly float WarmEdge = SurvivorUnchained.Args.Num("lamp-edge", 0.1f), WarmEdgeA = SurvivorUnchained.Args.Num("lamp-edge-a", 0.2f);
