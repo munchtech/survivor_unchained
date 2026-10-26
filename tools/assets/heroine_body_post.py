@@ -24,11 +24,15 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   6. heroine_arm_shape --art: her upper arms slimmer on the inner side (girth ~32 -> ~28.5 cm at 25-50%, tapering to
      the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
      records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
-  7. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
+  7. heroine_brow_strokes: her own face's brows painted again as grown hairs, none crossing (the old strokes filled
+     from the skin round them first), in head_tex/heroine_head.jpg, the paint the game lays over the glb's own copy;
+     then heroine_browdye (Own's brows.png's core and skin from it). No glb is written: the LODs never carry her head
+     (face 40, a max judge: the old strokes crossed in a lattice, "hatching")     [the paint's JPEG comment brow_strokes]
+  8. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
      sets it while the reaver's top is worn) (armor 15 w1)                                    [worn_reaver]
-  8. heroine_lod: the play LODs of every outfit, from the final body and pieces.
+  9. heroine_lod: the play LODs of every outfit, from the final body and pieces.
 
     python tools/assets/heroine_body_post.py [art dir, default godot/art/people] [--skip-nape] [--no-lod]
 """
@@ -85,6 +89,12 @@ def main(a):
         run(os.path.join(HERE, "heroine_neck_relief.py"), glb, glb)
     if "heroine_arm_shape" not in m:
         run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
+    paint = os.path.join(art, "head_tex", "heroine_head.jpg")
+    if os.path.exists(paint):
+        import heroine_brow_strokes as bs
+        if bs.MARK not in bs.comment(paint):
+            run(os.path.join(HERE, "heroine_brow_strokes.py"), art)
+            run(os.path.join(HERE, "heroine_browdye.py"))
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     if "--no-lod" not in a:

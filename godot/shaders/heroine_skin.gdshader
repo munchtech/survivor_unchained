@@ -261,6 +261,10 @@ uniform float scalp_hue_ref = 0.75;
 // (and its dark the same way, down to this much of it on the darkest skin: on deep skin her scalp's shade laid a darker
 // band beside the pale curve down her temple (face 32 r2), and her own skin, dark already, has no pale scalp to hide)
 uniform float scalp_dark_min = 0.4;
+// (face 40 b3: how far her scalp's shade takes her skin's own colour to her hair's first, its hue and chroma, at its
+// lightness: on deep skin, whose shade is held lighter (scalp_dark_min), her red-brown skin showed a rust-orange band
+// under black hair at the hairline. People.HerScalp: 1 under black, none under a fair or red hair)
+uniform float scalp_follow = 0.0;
 // His brows (painted with his face; the blue of shadow_mask) dyed his
 // hair's colour: their paint scaled from its own colour (brow_paint) to
 // brow_colour, every hair of it kept.
@@ -530,6 +534,7 @@ void fragment() {
 			float ls = max(dot(sc, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 			ws = clamp(ws, 0.0, 1.0);
 			float tk = mix(1.0, clamp(dot(tone, vec3(0.2126, 0.7152, 0.0722)) / scalp_hue_ref, 0.0, 1.0), scalp_hue);
+			ALBEDO = mix(ALBEDO, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) * sc / ls, ws * scalp_follow);
 			ALBEDO = min(ALBEDO * mix(vec3(1.0), sc / ls, pow(ws, scalp_lead) * tk) * mix(1.0, ls, ws * mix(scalp_dark_min, 1.0, tk)), vec3(1.0));
 		}
 	}

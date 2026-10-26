@@ -47,15 +47,28 @@ uniform float through = 0.5;
 // streaks along the strands; each lock somewhere from the highlight toward a brown between it and her hair.
 uniform float highlights = 0.0;            // on (1) or off (0: her dye one colour)
 uniform vec3 highlight : source_color = vec3(0.6, 0.29, 0.125);
-uniform float hl_locks = 0.4;              // the share of her front and crown locks that take it
-uniform float hl_scale = 12.0;             // its sections' size (a noise over her head at rest, per metre): highlights in sections, as foils lay them
-uniform float hl_jitter = 0.35;            // lock by lock within and about them
-uniform vec3 hl_seed = vec3(3.1, 1.7, 5.3);         // where on her head its sections fall
-uniform float hl_back = 0.3;               // of that, the share away from her front and crown
-uniform float hl_strands = 0.6;            // the share of a lock's strands
-uniform float hl_root = 0.6;              // its strength at the root, of the tip's
-uniform float hl_brown = 0.6;              // how far a lock may lean toward the brown
-uniform vec4 hl_front = vec4(0.0, 0.09, 0.12, 0.2);   // (front: z from, to; crown: y from, to; metres from her head joint at rest)
+uniform float hl_locks = 0.4;              // the share of the locks in its panels that take it
+uniform float hl_strength = 1.0;           // (face 40: per swatch, looks.json's hairHighlights' strength: honey 1.5)
+uniform float hl_back = 0.0;               // its strength outside its panels, of theirs
+uniform float hl_strands = 0.85;           // the share of a lock's strands
+uniform float hl_root = 0.75;             // its strength at the root, of the tip's
+uniform float hl_brown = 0.5;              // the share of its locks a tan/mid-brown, not the highlight itself
+uniform vec3 hl_tan : source_color = vec3(0.54, 0.42, 0.31);   // (that brown's hue; drawn at 0.8 of the highlight's lightness)
+uniform vec2 hl_lock_w = vec2(0.35, 1.0);  // (face 40: each lock's strength, from, to)
+uniform float hl_dip = 0.7;                // (face 40: how deep the 1-2 dips along a lock's length go: long bands broken)
+// (face 40, the judge: in 2-3 soft panels, as the reference lays them, not every other lock: a crown/front panel and
+// a temple panel. Each: centre xyz and its radius (metres from her head joint at rest; +z her front, +y up).)
+uniform vec4 hl_panel_a = vec4(0.03, 0.2, 0.03, 0.09);      // crown/front (a little to her left)
+uniform vec4 hl_panel_b = vec4(-0.08, 0.13, 0.05, 0.08);    // temple (her right)
+uniform vec4 hl_panel_c = vec4(0.0, 0.0, 0.0, 0.0);         // (a third, radius 0: none)
+// (face 40 r2, the lead: the temple panel bold, a clear patch, as the reference's; the crown subtler: each panel's
+// share of the locks (of hl_locks) and gain on its strength)
+uniform vec3 hl_share = vec3(1.0, 2.6, 1.0);     // (panels a, b, c)
+uniform vec3 hl_gain = vec3(1.1, 3.2, 1.1);
+// (face 40 r2: the ash a near-neutral highlight is pushed to, against her warm lights: at the Look's night an ash albedo
+// read salmon, #c89680, hue 18)
+uniform vec3 hl_ash = vec3(0.55, 0.85, 1.25);
+uniform float hl_show = 0.0;             // (a developer's switch, --hair-set hair:hl_show=1: the panels in red, green and blue)
 uniform mat3 head_turn = mat3(1.0);        // her head's turn from its rest (HairSway)
 // (face 37: the strands' read. fibre_lo/fibre_hi: a strand's shade range in the atlas (was fixed 0.15/0.85);
 // lock_share: how much each card's own tone (its vertex green) moves it (was fixed 0.04); wrap: the light
@@ -142,6 +155,7 @@ varying float sparkle;
 varying float fibre;
 varying float lock_n;
 varying vec3 hl_at;
+varying float hl_ashen;                    // (face 40 r2: how much of it an ash highlight: its secondary shine untinted)
 
 float hl_hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float hl_noise(vec3 p) {
@@ -208,13 +222,29 @@ void fragment() {
 	// Highlights: a lock (its card's number) taken or not, by where it lies (front and crown), streaked strand by strand
 	// (the atlas's green), stronger toward its tip; not the cap, the tie or the matte-marked hairs.
 	float hl_h = fract(COLOR.g * 91.7 + 0.37);
-	float hl_where = mix(hl_back, 1.0, max(smoothstep(hl_front.x, hl_front.y, hl_at.z), smoothstep(hl_front.z, hl_front.w, hl_at.y)));
-	float hl_w = highlights * ((cap || tie) ? 0.0 : 1.0) * (1.0 - matte)
-		* smoothstep(-0.04, 0.04, hl_locks * hl_where - 1.0 + mix(hl_noise(hl_at * hl_scale + hl_seed), hl_h, hl_jitter))
+	float hl_pa = hl_panel_a.w > 0.0 ? 1.0 - smoothstep(0.55, 1.0, length(hl_at - hl_panel_a.xyz) / hl_panel_a.w) : 0.0;
+	float hl_pb = hl_panel_b.w > 0.0 ? 1.0 - smoothstep(0.55, 1.0, length(hl_at - hl_panel_b.xyz) / hl_panel_b.w) : 0.0;
+	float hl_pc = hl_panel_c.w > 0.0 ? 1.0 - smoothstep(0.55, 1.0, length(hl_at - hl_panel_c.xyz) / hl_panel_c.w) : 0.0;
+	float hl_p = max(hl_pa, max(hl_pb, hl_pc));
+	// (a lock taken or not by its own number; a taken lock as strong as its own share, and broken by one or two dips
+	// along its length)
+	vec3 hl_pw = vec3(hl_pa, hl_pb, hl_pc) / max(hl_pa + hl_pb + hl_pc, 1e-3);
+	float hl_take = smoothstep(-0.03, 0.03, hl_locks * dot(hl_pw, hl_share) - fract(hl_h * 17.3 + 0.11));
+	float hl_d1 = 0.25 + 0.5 * fract(hl_h * 5.9), hl_d2 = 0.15 + 0.7 * fract(hl_h * 11.3);
+	float hl_dips = (1.0 - hl_dip * exp(-pow((UV.y - hl_d1) / 0.07, 2.0)))
+		* (1.0 - hl_dip * step(0.5, fract(hl_h * 3.1)) * exp(-pow((UV.y - hl_d2) / 0.05, 2.0)));
+	float hl_w = highlights * ((cap || tie) ? 0.0 : 1.0) * (1.0 - matte) * hl_take * max(hl_p, hl_back)
+		* mix(hl_lock_w.x, hl_lock_w.y, sqrt(fract(hl_h * 13.1))) * hl_dips
 		* smoothstep(0.42, 0.58, fract(t.g + hl_h * 3.7) + hl_strands - 0.5)
 		* mix(hl_root, 1.0, smoothstep(0.0, 0.7, UV.y));
-	vec3 hl_c = mix(highlight, mix(highlight, colour, 0.45) * 0.85, hl_brown * fract(hl_h * 7.3));
-	vec3 dye = mix(colour, hl_c, hl_w);
+	hl_w = min(hl_w * hl_strength * dot(hl_pw, hl_gain), 1.0);
+	const vec3 hl_lum = vec3(0.2126, 0.7152, 0.0722);
+	vec3 hl_t = hl_tan * (0.8 * dot(highlight, hl_lum) / max(dot(hl_tan, hl_lum), 1e-4));
+	// (a near-neutral highlight's (platinum's, ash's) brown its own grey: a warm one read pink on blonde)
+	float hl_s = (max(highlight.r, max(highlight.g, highlight.b)) - min(highlight.r, min(highlight.g, highlight.b))) / max(max(highlight.r, max(highlight.g, highlight.b)), 1e-3);
+	hl_t = mix(vec3(dot(hl_t, hl_lum)), hl_t, smoothstep(0.1, 0.35, hl_s));
+	vec3 hl_c = step(hl_brown, fract(hl_h * 7.3)) > 0.5 ? highlight : hl_t;
+	vec3 dye = hl_show > 0.5 ? vec3(hl_pa, hl_pb, hl_pc) : mix(colour, hl_c, hl_w);
 	float dye_sat = (max(dye.r, max(dye.g, dye.b)) - min(dye.r, min(dye.g, dye.b))) / max(max(dye.r, max(dye.g, dye.b)), 0.001);
 	vec3 dark = dye * mix(vec3(0.53), vec3(0.62, 0.5, 0.45), smoothstep(0.2, 0.5, dye_sat));
 	vec3 light = min(dye * vec3(1.4, 1.5, 1.55), vec3(1.0));
@@ -224,6 +254,9 @@ void fragment() {
 	float dye_neutral = 1.0 - smoothstep(0.2, 0.5, dye_sat), dye_lum = dot(dye, vec3(0.2126, 0.7152, 0.0722));
 	tint = min(tint * (1.0 + lift * dye_neutral * smoothstep(0.3, 0.6, dye_lum)), vec3(1.0));
 	float ash_w = ash * dye_neutral * smoothstep(0.1, 0.35, dye_lum);
+	// (face 40 r2: a near-neutral highlight (platinum, ash) kept ash on a warm hair: mixed over a blonde, its streaks read pink)
+	hl_ashen = hl_w * (1.0 - smoothstep(0.06, 0.2, hl_s));
+	tint = mix(tint, vec3(dot(tint, vec3(0.2126, 0.7152, 0.0722))) * hl_ash, hl_ashen);
 	float depth = COLOR.r;                                        // 1 outermost, darker within
 	strand = normalize(BINORMAL);                                 // along its V: root to tip
 	sparkle = t.g;
@@ -332,5 +365,5 @@ void light() {
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);
 	vec3 lc1 = mix(lc, vec3(dot(lc, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk);
-	SPECULAR_LIGHT += seen * fibre * fibre * (lc1 * shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk) * s1 + lc * ALBEDO * vec3(1.0, 0.55, 0.35) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	SPECULAR_LIGHT += seen * fibre * fibre * (lc1 * shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk) * s1 + lc * ALBEDO * mix(vec3(1.0, 0.55, 0.35), vec3(0.9, 0.95, 1.0), hl_ashen) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
 }

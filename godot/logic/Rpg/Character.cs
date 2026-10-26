@@ -110,6 +110,9 @@ public sealed class CharacterData
     public bool? Headgear;
     /// <summary>Look: a dyed cloak (or none), skin, hair.</summary>
     public string? Cloak, Skin, Hair;
+    /// <summary>Her hair's highlights, a second colour on some of her locks (World.Lore.HighlightColor): null off,
+    /// "auto" her hair colour's own, or a highlight's id.</summary>
+    public string? HairHighlight;
     /// <summary>The body: a man or a woman, their hair's cut, a beard, a woman's figure.</summary>
     public Sex? Sex;
     public string? HairStyle;
@@ -178,7 +181,7 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle;
+    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle, HairHighlight;
     public bool? Headgear, Beard;
     public Sex? Sex;
     public double? Figure;
@@ -589,6 +592,7 @@ public static class Character
             Id = $"hero-{ToBase36(s)}", Name = string.IsNullOrWhiteSpace(c.Name) ? "Nameless" : c.Name.Trim(),
             Archetype = c.Archetype, Background = c.Background, Model = c.Model ?? a.Model, Palette = c.Palette,
             Headgear = c.Headgear ?? true, Cloak = c.Cloak, Skin = c.Skin, Hair = c.Hair, Sex = c.Sex, HairStyle = c.HairStyle,
+            HairHighlight = string.IsNullOrEmpty(c.HairHighlight) || c.HairHighlight == "off" ? null : c.HairHighlight,
             Beard = c.Beard, BeardStyle = c.BeardStyle, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             // (only the sliders moved from her own face are kept)
             Face = c.Face?.Where(f => Math.Abs(f.Value) > 1e-3).ToDictionary(f => f.Key, f => Math.Round(Math.Clamp(f.Value, -1, 1), 3)) is { Count: > 0 } face ? face : null,

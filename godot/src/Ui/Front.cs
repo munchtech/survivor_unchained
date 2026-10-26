@@ -235,6 +235,8 @@ public sealed class CreationDraft
     /// <summary>Her eyes, the paint on her face, and her face: its sliders
     /// (her own face where none is moved) and the face it started from.</summary>
     public string Eyes = "moss", Paint = "none", FaceShape = "own";
+    /// <summary>Her hair's highlights: "" off, "auto" her hair colour's own, or a highlight's id (World.Lore.HighlightColor).</summary>
+    public string HairHighlight = "";
     public Dictionary<string, double> Face = new();
     /// <summary>The group last touched, by screen (the calling's: 0 calling, 1 arms, 2 origin, read
     /// closely on the right; the look's: 0 her face's rows, 1 her hair's, framing her for it), and the
@@ -251,6 +253,7 @@ public sealed class CreationDraft
         Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
         Eyes = Loadouts.HeroKit(Sex) != null ? Eyes : null, Paint = Loadouts.HeroKit(Sex) != null ? Paint : null,
         FaceShape = Loadouts.HeroKit(Sex) != null ? FaceShape : null,
+        HairHighlight = Sex == Sex.Female && HairHighlight != "" ? HairHighlight : null,
         BeardStyle = Loadouts.HeroKit(Sex) is { Beards.Count: > 0 } && BeardStyle != "" ? BeardStyle : null,
     };
 
@@ -260,7 +263,7 @@ public sealed class CreationDraft
 
     /// <summary>What the figure looks like: changes when this does (her hair,
     /// skin, eyes, face and paint are changed on her where she stands).</summary>
-    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{FaceShape}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
+    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairHighlight}|{HairStyle}|{Eyes}|{Paint}|{FaceShape}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
 
     /// <summary>A body chosen: its own hairstyle kept if it is one of its own,
     /// its own first otherwise; a hero's own eyes, paint and face start as theirs.</summary>
