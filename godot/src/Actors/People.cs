@@ -1155,7 +1155,10 @@ public static class People
 
     public static void HerScalp(Person p, Color hair)
     {
-        const string file = "res://art/people/head_tex/heroine_shadow.png";
+        // (a style's own shade where it has one: heroine_shadow_pixie.png, off the skin round her ear's top as the
+        // pixie's hair is, tools/assets/heroine_pixie_ear.py --shade; face 42)
+        string file = $"res://art/people/head_tex/heroine_shadow_{p.HairStyle}.png";
+        if (p.HairStyle == "" || !ResourceLoader.Exists(file)) file = "res://art/people/head_tex/heroine_shadow.png";
         if (!ResourceLoader.Exists(file)) return;
         var mask = GD.Load<Texture2D>(file);
         int set = 0;
