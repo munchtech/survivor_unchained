@@ -206,6 +206,9 @@ public partial class Vessel : Control
         if (empty is Color e) mat.SetShaderParameter("empty", e);
     }
 
+    // (the names set each frame, made once: a string given where a name is wanted is a new tracked name each call)
+    static class Pn { public static readonly StringName level = "level", trail = "trail", shield = "shield", pulse = "pulse", slosh = "slosh", glow = "glow"; }
+
     public override void _Process(double delta)
     {
         float dt = (float)delta;
@@ -214,13 +217,13 @@ public partial class Vessel : Control
         if (shownLevel >= 0 && Math.Abs(Level - shownLevel) > 0.04f) slosh = Math.Min(1, slosh + Math.Abs(Level - shownLevel) * 4);
         shownLevel = Level;
         slosh = Mathf.MoveToward(slosh, 0, dt * 0.9f);
-        mat.SetShaderParameter("level", Level);
+        mat.SetShaderParameter(Pn.level, Level);
         // (only her life leaves a trail as it falls)
-        mat.SetShaderParameter("trail", life ? Math.Max(Trail, Level) : Level);
-        mat.SetShaderParameter("shield", Shield);
-        mat.SetShaderParameter("pulse", Pulse);
-        mat.SetShaderParameter("slosh", slosh);
-        mat.SetShaderParameter("glow", Glow);
+        mat.SetShaderParameter(Pn.trail, life ? Math.Max(Trail, Level) : Level);
+        mat.SetShaderParameter(Pn.shield, Shield);
+        mat.SetShaderParameter(Pn.pulse, Pulse);
+        mat.SetShaderParameter(Pn.slosh, slosh);
+        mat.SetShaderParameter(Pn.glow, Glow);
         // (the glyph and number are redrawn only when what they show changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (!overDrawn || Glyph != drawnGlyph || GlyphTint != drawnTint || Number != drawnNumber)
         {

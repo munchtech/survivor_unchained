@@ -136,11 +136,23 @@ public partial class Perf : Node
 
     /// <summary>--perf-allocs: the runtime's allocation samples (one every
     /// 100 KB or so, named by the type that crossed the line) counted by type
-    /// over the recording, to find what the garbage is made of.</summary>
+    /// and by thread (the main thread or another) over the recording, to find
+    /// what the garbage is made of; and each collection, as the runtime tells
+    /// it (the generation, why, how long the threads took to stop and the
+    /// collection itself, what was kept, how much was found through the old
+    /// objects' cards), to find what makes a young collection slow.</summary>
     sealed class AllocSamples : System.Diagnostics.Tracing.EventListener
     {
         public volatile bool Counting;
         public readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> Bytes = new();
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> Gcs = new();
+        /// <summary>The main thread's OS id (allocations on it are named "main", the rest "other").</summary>
+        public long MainOs;
+        DateTime suspendFrom, gcFrom;
+        double suspendMs, gcAt;
+        int depth, reason, type;
+        string heap = "", condemn = "";
+        readonly long[] marked = new long[9];
 
         protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource source)
         {
@@ -148,22 +160,60 @@ public partial class Perf : Node
                 EnableEvents(source, System.Diagnostics.Tracing.EventLevel.Verbose, (System.Diagnostics.Tracing.EventKeywords)0x1);
         }
 
+        object? P(System.Diagnostics.Tracing.EventWrittenEventArgs e, string n)
+        {
+            int i = e.PayloadNames!.IndexOf(n);
+            return i >= 0 ? e.Payload![i] : null;
+        }
+        long L(System.Diagnostics.Tracing.EventWrittenEventArgs e, string n) => P(e, n) is { } v ? Convert.ToInt64(v) : -1;
+
         protected override void OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs e)
         {
-            if (!Counting || e.EventName is not ("GCAllocationTick_V4" or "GCAllocationTick_V3") || e.PayloadNames == null || e.Payload == null) return;
-            int ti = e.PayloadNames.IndexOf("TypeName"), ai = e.PayloadNames.IndexOf("AllocationAmount64");
-            if (ti < 0) return;
-            long amount = ai >= 0 ? Convert.ToInt64(e.Payload[ai]) : 100_000;
-            Bytes.AddOrUpdate((string)e.Payload[ti]!, amount, (_, v) => v + amount);
+            if (!Counting || e.PayloadNames == null || e.Payload == null) return;
+            switch (e.EventName)
+            {
+                case "GCAllocationTick_V4" or "GCAllocationTick_V3":
+                {
+                    if (P(e, "TypeName") is not string tn) return;
+                    long amount = L(e, "AllocationAmount64") is var a and >= 0 ? a : 100_000;
+                    string key = (e.OSThreadId == MainOs ? "main  " : "other ") + tn;
+                    Bytes.AddOrUpdate(key, amount, (_, v) => v + amount);
+                    break;
+                }
+                case "GCSuspendEEBegin_V1": suspendFrom = e.TimeStamp; gcAt = Now; break;
+                case "GCSuspendEEEnd_V1": suspendMs = (e.TimeStamp - suspendFrom).TotalMilliseconds; break;
+                case "GCStart_V2" or "GCStart_V1":
+                    gcFrom = e.TimeStamp; depth = (int)L(e, "Depth"); reason = (int)L(e, "Reason"); type = (int)L(e, "Type");
+                    Array.Clear(marked); heap = condemn = ""; break;
+                case "GCMarkWithType":
+                {
+                    long t = L(e, "Type"), b = L(e, "Bytes");
+                    if (t >= 0 && t < marked.Length) marked[t] += b;
+                    break;
+                }
+                case "GCGlobalHeapHistory_V2" or "GCGlobalHeapHistory_V3" or "GCGlobalHeapHistory_V4":
+                    condemn = $"condemn 0x{L(e, "CondemnReasons0"):x}/0x{L(e, "CondemnReasons1"):x} mech 0x{L(e, "GlobalMechanisms"):x}"; break;
+                case "GCHeapStats_V2" or "GCHeapStats_V1":
+                    heap = $"kept g0 {L(e, "TotalPromotedSize0") / 1024}K g1 {L(e, "TotalPromotedSize1") / 1024}K, sizes g0 {L(e, "GenerationSize0") >> 20}M g1 {L(e, "GenerationSize1") >> 20}M g2 {L(e, "GenerationSize2") >> 20}M loh {L(e, "GenerationSize3") >> 20}M, handles {L(e, "GCHandleCount")} pinned {L(e, "PinnedObjectCount")}"; break;
+                case "GCRestartEEEnd_V1":
+                    // marked by root: 0 stacks, 1 finalizer queue, 2 handles, 3 older generations (the cards), 6 dependent handles
+                    Gcs.Enqueue($"perf gc at {gcAt:0.00}s: gen {depth} reason {reason} type {type}, suspend {suspendMs:0.0} ms, gc {(e.TimeStamp - gcFrom).TotalMilliseconds:0.0} ms, total {(e.TimeStamp - suspendFrom).TotalMilliseconds:0.0} ms; " +
+                                $"marked from stacks {marked[0] / 1024}K handles {marked[2] / 1024}K cards {marked[3] / 1024}K dep {marked[6] / 1024}K fq {marked[1] / 1024}K; {heap}; {condemn}");
+                    break;
+            }
         }
     }
 
     AllocSamples? allocs;
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
 
     public override void _Ready()
     {
         if (!On) { SetProcess(false); return; }
-        if (Args.Has("perf-allocs")) allocs = new AllocSamples();
+        // The runtime the game is hosted on, and its collector's settings as it read them (which runtimeconfig was honoured).
+        GD.Print($"perf runtime {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, server gc {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, gc config: " +
+                 string.Join(" ", GC.GetConfigurationVariables().OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}={kv.Value}")));
+        if (Args.Has("perf-allocs")) allocs = new AllocSamples { MainOs = OperatingSystem.IsWindows() ? GetCurrentThreadId() : -1 };
         name = Args.Get("perf") is { } n && n != "1" ? n : "perf";
         warm = Args.Num("perf-warm", 8);
         span = Args.Num("perf-for", 30);
@@ -409,8 +459,9 @@ public partial class Perf : Node
             allocs.Counting = false;
             long all = allocs.Bytes.Values.Sum();
             GD.Print($"perf {name} allocated (sampled), {all / 1048576.0:0.0} MB over the recording, by type:");
-            foreach (var (type, bytes) in allocs.Bytes.OrderByDescending(kv => kv.Value).Take(30))
+            foreach (var (type, bytes) in allocs.Bytes.OrderByDescending(kv => kv.Value).Take(40))
                 GD.Print($"perf alloc {bytes / 1024,8} KB {100.0 * bytes / Math.Max(1, all),5:0.0}%  {type}");
+            foreach (var g in allocs.Gcs) GD.Print(g);
             allocs.Dispose();
         }
         // The last young collection: what it kept, what the heap holds by generation, and how long it held the game.

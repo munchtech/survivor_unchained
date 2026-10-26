@@ -534,24 +534,30 @@ public partial class HairSway : Node
         }
         // (Its first frame has no last: it stood as it stands.)
         if (!drawn) { swayThen = sway; headThen = headAt; System.Array.Copy(swung, swungThen, 8); System.Array.Copy(arms, armsThen, 4); System.Array.Copy(restAt, restThen, 8); System.Array.Copy(turnAt, turnThen, 8); drawn = true; }
+        // (The basis and the arrays made into Godot's values once a frame and freed as soon as they are given, not per
+        // pass and left to the collector: each is a tracked, finalized wrapper that outlived the young collection, ~60%
+        // of what every collection kept in play, and the cause of its 10-30 ms pauses.)
+        using Variant vTurn = headTurn, vChain = swung, vChainThen = swungThen, vArms = arms, vArmsThen = armsThen,
+            vRest = restAt, vRestThen = restThen, vTurnAt = turnAt, vTurnThen = turnThen;
+        float armR = foreBone.Length > 0 ? ForearmR : 0f;
         for (int s = 0; s < mesh.Mesh.GetSurfaceCount(); s++)
             if (mesh.GetSurfaceOverrideMaterial(s) is ShaderMaterial first)
-                foreach (var m in SurvivorUnchained.View.HairDraw.Passes(first))   // (a blended pass over its solid parts swings with them)
+                for (var m = first; m != null; m = m.NextPass as ShaderMaterial)   // (a blended pass over its solid parts swings with them: HairDraw.Passes)
                 {
                     m.SetShaderParameter(SwayName, sway);
                     m.SetShaderParameter(HeadName, headAt);
-                    m.SetShaderParameter(HeadTurnName, headTurn);
-                    m.SetShaderParameter(ChainName, swung);
+                    m.SetShaderParameter(HeadTurnName, vTurn);
+                    m.SetShaderParameter(ChainName, vChain);
                     m.SetShaderParameter(SwayThenName, swayThen);
                     m.SetShaderParameter(HeadThenName, headThen);
-                    m.SetShaderParameter(ChainThenName, swungThen);
-                    m.SetShaderParameter(ArmsName, arms);
-                    m.SetShaderParameter(ArmsThenName, armsThen);
-                    m.SetShaderParameter(ArmRName, foreBone.Length > 0 ? ForearmR : 0f);
-                    m.SetShaderParameter(RestName, restAt);
-                    m.SetShaderParameter(RestThenName, restThen);
-                    m.SetShaderParameter(TurnName, turnAt);
-                    m.SetShaderParameter(TurnThenName, turnThen);
+                    m.SetShaderParameter(ChainThenName, vChainThen);
+                    m.SetShaderParameter(ArmsName, vArms);
+                    m.SetShaderParameter(ArmsThenName, vArmsThen);
+                    m.SetShaderParameter(ArmRName, armR);
+                    m.SetShaderParameter(RestName, vRest);
+                    m.SetShaderParameter(RestThenName, vRestThen);
+                    m.SetShaderParameter(TurnName, vTurnAt);
+                    m.SetShaderParameter(TurnThenName, vTurnThen);
                 }
     }
 
@@ -829,9 +835,10 @@ public partial class HairSway : Node
     /// carried down from the root (each joint's bend now, less its bend at rest, laid on the link before's turn), so a
     /// twist doesn't build up as it would from each link's own shortest turn, and no link flips as it swings past
     /// half a turn from its rest. Each point takes the mean of its two links'; the root none (her hair at the tie is held).</summary>
+    readonly Quaternion[] seg = new Quaternion[7];
+
     void Turn(Transform3D local)
     {
-        var seg = new Quaternion[7];
         for (int i = 0; i < 8; i++) restAt[i] = local * target[i];
         Vector3 d0 = Vector3.Zero, e0 = Vector3.Zero;
         for (int j = 0; j < 7; j++)
