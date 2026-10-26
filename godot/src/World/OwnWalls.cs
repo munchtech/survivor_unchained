@@ -41,7 +41,7 @@ public sealed class OwnWalls
     static (int, int, int) Key(Vector3 p) => (Mathf.RoundToInt(p.X * 4), Mathf.RoundToInt(p.Y * 4), Mathf.RoundToInt(p.Z * 4));
     ZoneData? zone;
     readonly List<(Vector3 At, float Foot)> feet = new();
-    readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data)>> groups = new();
+    readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data, int House, bool Roof)>> groups = new();
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
     /// <summary>The zone's own walls, or null if it has none (or --walls-kit, --props-own-off).</summary>
@@ -106,9 +106,63 @@ public sealed class OwnWalls
         var data = new Color((tint + 0.5f) / 8f, gy, (hs % 997) / 997f, isRoof ? (style * 8 + roofTint + 0.5f) / 32f : (style + 0.5f) / 4f);
         var k = (preset, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
         if (!groups.TryGetValue(k, out var l)) groups[k] = l = new();
-        l.Add((at, data));
+        l.Add((at, data, house, isRoof));
         if (!isRoof && ground.TryGetValue(house, out var gf)) feet.Add((at.Origin, gf));
         return true;
+    }
+
+    /// <summary>(E9c) The houses' fade units (HouseFade, added under root): each house, or each 12 m length of a long one
+    /// (a town wall, so only the length in her way fades), as a box in its house's own frame: its footprint from its walls
+    /// (not the eaves' overhang, so a house behind her is never taken), its height from all of it. Returns each copy's
+    /// unit by its house and place.</summary>
+    Dictionary<(int, Vector3), int> FadeUnits(Node3D root)
+    {
+        var unitOf = new Dictionary<(int, Vector3), int>();
+        var byHouse = groups.SelectMany(g => g.Value.Select(e => (Preset: g.Key.Preset, e.At, e.House, e.Roof))).Where(e => e.House >= 0).GroupBy(e => e.House);
+        var fade = new HouseFade();
+        foreach (var h in byHouse)
+        {
+            // the house's frame: its walls' direction, folded to a quarter turn
+            double sx = 0, sy = 0;
+            foreach (var e in h.Where(e => !e.Roof))
+            {
+                double a = 4 * Mathf.Atan2(e.At.Basis.Column0.Z, e.At.Basis.Column0.X);
+                sx += System.Math.Cos(a); sy += System.Math.Sin(a);
+            }
+            float yaw = (float)System.Math.Atan2(sy, sx) / 4, c = Mathf.Cos(yaw), sn = Mathf.Sin(yaw);
+            Vector3 F(Vector3 p) => new(p.X * c + p.Z * sn, p.Y, -p.X * sn + p.Z * c);
+            // its long axis, cut in lengths of at most 12 m (by each copy's own place)
+            var walls = h.Where(e => !e.Roof).Select(e => F(e.At.Origin)).DefaultIfEmpty(F(h.First().At.Origin)).ToList();
+            float u0 = walls.Min(p => p.X), u1 = walls.Max(p => p.X), v0 = walls.Min(p => p.Z), v1 = walls.Max(p => p.Z);
+            bool alongU = u1 - u0 >= v1 - v0;
+            float lo = alongU ? u0 : v0, len = alongU ? u1 - u0 : v1 - v0;
+            int n = Mathf.Max(1, Mathf.RoundToInt(len / 12f));
+            var boxes = new (Vector3 Min, Vector3 Max, bool Any)[n];
+            for (int i = 0; i < n; i++) boxes[i] = (Vector3.Inf, -Vector3.Inf, false);
+            foreach (var e in h)
+            {
+                var o = F(e.At.Origin);
+                int k = Mathf.Clamp((int)(((alongU ? o.X : o.Z) - lo) / Mathf.Max(len, 1e-3f) * n), 0, n - 1);
+                unitOf[(h.Key, e.At.Origin)] = fade.Units.Count + k;
+                foreach (var (mesh, local) in PartsOf(e.Preset))
+                {
+                    var bb = mesh.GetAabb();
+                    for (int j = 0; j < 8; j++)
+                    {
+                        var p = F(e.At * local * bb.GetEndpoint(j));
+                        ref var b = ref boxes[k];
+                        // (the footprint from the walls only; the height from all)
+                        if (!e.Roof) { b.Min = new(Mathf.Min(b.Min.X, p.X), b.Min.Y, Mathf.Min(b.Min.Z, p.Z)); b.Max = new(Mathf.Max(b.Max.X, p.X), b.Max.Y, Mathf.Max(b.Max.Z, p.Z)); b.Any = true; }
+                        b.Min.Y = Mathf.Min(b.Min.Y, p.Y); b.Max.Y = Mathf.Max(b.Max.Y, p.Y);
+                    }
+                }
+            }
+            foreach (var b in boxes) fade.Units.Add((c, sn, b.Any ? b.Min : Vector3.Zero, b.Any ? b.Max : Vector3.Zero));
+        }
+        fade.Name = "house_fade";
+        root.AddChild(fade);
+        GD.Print($"house fade: {fade.Units.Count} units");
+        return unitOf;
     }
 
     static List<(Mesh Mesh, Transform3D Local)> PartsOf(string preset)
@@ -147,7 +201,7 @@ public sealed class OwnWalls
         {
             if (!preset.StartsWith("chim_")) continue;
             float top = PartsOf(preset).Select(p => p.Local * p.Mesh.GetAabb().End).Select(v => v.Y).DefaultIfEmpty(3f).Max();
-            foreach (var (at, _) in list) tops.Add(at * new Vector3(0, top, 0));
+            foreach (var (at, _, _, _) in list) tops.Add(at * new Vector3(0, top, 0));
         }
         KitLook.SetChimneys(tops);
         // the terrain's height under the town (0.5 m cells), so the walls' grime rises from the ground itself (E9b3)
@@ -170,6 +224,7 @@ public sealed class OwnWalls
                         if (img.GetPixel(i, j).R < foot + 0.04f) img.SetPixel(i, j, new Color(foot + 0.04f, 0, 0));
             KitLook.SetGround(ImageTexture.CreateFromImage(img), new Vector4(x0, z0, x1 - x0, z1 - z0));
         }
+        var unitOf = FadeUnits(root);
         foreach (var ((preset, _, _), list) in groups)
             foreach (var (mesh, local) in PartsOf(preset))
             {
@@ -177,7 +232,9 @@ public sealed class OwnWalls
                 for (int i = 0; i < list.Count; i++)
                 {
                     mm.SetInstanceTransform(i, list[i].At * local);
-                    mm.SetInstanceCustomData(i, list[i].Data);
+                    // (r's whole part: the copy's fade unit + 1, HouseFade; its fraction the tint)
+                    var d = list[i].Data;
+                    mm.SetInstanceCustomData(i, new Color(d.R + (unitOf.TryGetValue((list[i].House, list[i].At.Origin), out var u) ? u + 1 : 0), d.G, d.B, d.A));
                 }
                 var mmi = new MultiMeshInstance3D { Multimesh = mm, Name = "own_" + preset };
                 mmi.SetMeta("prop", "house/" + preset);

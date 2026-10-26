@@ -37,6 +37,11 @@ SETS = {
     # shingles (stacks at 7.2,31.5 and 17.2,32.5), her 8 m north of them (the town wall stands south of them); at dawn the north street, its buildings in frame)
     "townroofs": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "12,24"], 1),
     "townroofsdawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,-26"], 1),
+    # (E9c: a house between her and the play camera, which looks north: behind house 14 (1.5 m north of its north wall),
+    # under house 17's north eave (against its wall), and in the 5 m lane between house 30 and the east town wall's house 7
+    # (nothing should fade there). x="--house-fade-hold 0.5" holds every fade at half, for the mid-fade frames)
+    "townbehind": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
+    "townbehinddawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
     # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),

@@ -8,6 +8,8 @@
 // round window (see_through below). The piece itself is cut there, and its
 // feathered rim is drawn again, translucent, by this material's next pass
 // (KitLook: the same code with REVEAL defined, blended).
+// Our own town walls and roofs (OWN_WALL, OWN_ROOF) have no window: the house in the way fades
+// whole instead (the house fade, below; E9c).
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
@@ -207,6 +209,23 @@ uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above t
 varying vec4 v_wall;
 varying float v_hgt;
 varying vec3 v_wp;
+// (E9c) The house fade, in place of the round window for our walls and roofs: the part of a house (OwnWalls'
+// fade unit: a house, or a 12 m length of a long one) that stands between her and the play camera is cut away
+// by a threshold moved every frame (coverage.gdshaderinc), so the temporal smoothing sums the frames' cuts into
+// an even fade, never a stipple and never a hole. HouseFade (OwnWalls.cs) eases each unit's fade over 0.3 s and
+// names up to 8 of them here: ids (unit + 1, 0 none) and how far each is faded (0 whole, 1 gone). Only in the
+// camera's own view: in a light's the house is whole, so its shadow stays on the street.
+#include "res://shaders/coverage.gdshaderinc"
+global uniform vec4 house_fade_ids;
+global uniform vec4 house_fade_ids2;
+global uniform vec4 house_fade;
+global uniform vec4 house_fade2;
+varying flat float v_unit;
+float house_fade_of(float u) {
+	vec4 a = step(abs(house_fade_ids - u), vec4(0.5)) * house_fade;
+	vec4 b = step(abs(house_fade_ids2 - u), vec4(0.5)) * house_fade2;
+	return u < 0.5 ? 0.0 : max(max(max(a.x, a.y), max(a.z, a.w)), max(max(b.x, b.y), max(b.z, b.w)));
+}
 
 float wall_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float wall_noise(vec2 p) {
@@ -328,12 +347,15 @@ void vertex() {
 	v_top = MODEL_MATRIX[3].y + wet_top * length(MODEL_MATRIX[1].xyz);
 #endif
 #ifdef OWN_WALL
-	v_wall = INSTANCE_CUSTOM;
+	// (custom data r: its fade unit + 1 in the whole part, its tint in the fraction)
+	v_wall = vec4(fract(INSTANCE_CUSTOM.r), INSTANCE_CUSTOM.gba);
+	v_unit = floor(INSTANCE_CUSTOM.r);
 	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
 	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 #endif
 #ifdef OWN_ROOF
-	v_wall = INSTANCE_CUSTOM;
+	v_wall = vec4(fract(INSTANCE_CUSTOM.r), INSTANCE_CUSTOM.gba);
+	v_unit = floor(INSTANCE_CUSTOM.r);
 	VERTEX.y -= COLOR.a * roof_sag * fract(INSTANCE_CUSTOM.b * 7.13 + 0.31);
 	{
 		// (E9b6 r4) each roof racked sideways at its middle (the sag's weight): toward roof_lean_dir (the play camera)
@@ -363,8 +385,18 @@ void vertex() {
 }
 
 void fragment() {
+#if defined(OWN_WALL) || defined(OWN_ROOF)
+	// (no round window: the house fade above)
+	vec2 mo = vec2(0.0);
+	float kept = 1.0;
+	if (view_from.w > 0.0 && distance(CAMERA_POSITION_WORLD, view_from.xyz) <= 1.0) {
+		float f = house_fade_of(v_unit);
+		if (f > 0.0 && coverage_cut(FRAGCOORD.xy) < f) discard;
+	}
+#else
 	vec2 mo = see_parts(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
 	float kept = see_through(mo);
+#endif
 #ifdef SEE_SCREEN
 	// (The feather held to its width on the screen where how far the piece is opened
 	// varies across it: the distance to the window's edge rescaled to change as fast
