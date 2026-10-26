@@ -116,6 +116,15 @@ Round 11 (25 Oct, the owner on round 10's NATURAL cast: "what are those lumps", 
           passes over the fold's band (S.fb: from the breast's rim under the nipple out to IMFHR past its border),
           one soft gradient. IMFH (the move made harmonic over that band) and IMFHN (her turned skinned normal there)
           are off: neither took the edge.
+Round 12 (25 Oct, the owner: "fix the small step at the shoulder top in the overhead front"): the step was a crumple of
+          10-26 flipped faces where the raised deltoid meets the trapezius' end, at every overhead key: the solve packs
+          that skin into a crease and the 18 mm closing pushed the crease's floor out along each point's own normal, the
+          moves crossed. From A 100 (the lowered key unchanged): that closing's ball CLOSERT_HI 24 mm along a direction
+          field smoothed CLOSET_NSM 60 passes (parallel moves); STOP last: the faces still flipped on the shoulder top
+          and 2 rings round them smoothed till none is left (moves <= STOP_MAX). Show 16 -> 6 flipped, cast 11/15 -> 6/8.
+          STOP_KEEP: everything off the shoulder top kept exactly round 11's (round 11's sculpt made too, this one kept
+          over the top's closing zone, eased): the cleanup loops stop on the whole region's fold count, so the top's
+          fewer folds had changed the passes the arm-breast junction got (slots off the top now within 0.03 mm).
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -202,7 +211,11 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          lipFo=_bm("SCULPT_LIP_FO", 0.4, 0.4, 0.4), lipHi=_bm("SCULPT_LIP_HI", 1.0, 1.0, 0.0), lipHiA=(80.0, 105.0),
          imfH=_bm("SCULPT_IMF_H", 0.0, 0.0, 0.0), imfHR=float(_E("SCULPT_IMF_HR", 0.025)),
          imfHIn=float(_E("SCULPT_IMF_HIN", 0.3)), imfHY=float(_E("SCULPT_IMF_HY", 0.01)), imfHA=(75.0, 95.0),
-         imfHN=_bm("SCULPT_IMF_HN", 0.0, 0.0, 0.0), imfHS=_bm("SCULPT_IMF_HS", 0.0, 0.0, 8.0))
+         imfHN=_bm("SCULPT_IMF_HN", 0.0, 0.0, 0.0), imfHS=_bm("SCULPT_IMF_HS", 0.0, 0.0, 8.0),
+         stop=_bm("SCULPT_STOP", 0.0, 0.0, 1.0), stopF=float(_E("SCULPT_STOP_F", 0.0005)),
+         stopKeep=int(_E("SCULPT_STOP_KEEP", 1)), stopD=int(_E("SCULPT_STOP_D", 2)), stopIt=int(_E("SCULPT_STOP_IT", 40)),
+         stopMax=float(_E("SCULPT_STOP_MAX", 0.010)), stopA=(95.0, 105.0),
+         closeRtHi=float(_E("SCULPT_CLOSERT_HI", 0.024)), closeTNsm=int(_E("SCULPT_CLOSET_NSM", 60)))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -540,7 +553,7 @@ def _fair_patches(H, X, phi, S, rmin, p):
     return X, "->".join(map(str, log))
 
 
-def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0, never="rim"):
+def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0, never="rim", nsm=4):
     """(X, fill) (round 5) every fold of the zone tighter than R ROUNDED by a rolling ball of radius R (a morphological
     closing): the balls that touch the surface from outside without cutting it (centres X + R N from the zone and six
     rings round it, kept where no body point is nearer than 0.9 R) make an envelope; each zone point is moved out along
@@ -548,7 +561,7 @@ def _close(H, X, zw, R, smax=0.02, step=0.0005, sm=0, never="rim"):
     eased by zw (0-1). So a pinch or a V between two masses becomes a fold of radius R, and nothing wider moves"""
     F = H.b.F
     Nn = ph.vn(X, F)
-    Ns = ph.vn(H.smooth(X, 4), F)
+    Ns = ph.vn(H.smooth(X, nsm), F)
     cand = np.nonzero(H.rings(zw > 0.01, 6))[0]
     O = X[cand] + R * Nn[cand]
     dmin, _ = cKDTree(X).query(O)
@@ -895,6 +908,7 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         X = X + (p["bin"] * _ramp(A, *p["binA"]) * wb)[:, None] * md
         if info is not None:
             info["bin"] = 1000 * p["bin"] * _ramp(A, *p["binA"]) * wb.max()
+    wtop = None
     if p["close"] > 0:
         # (round 5) no fold in the join tighter than CLOSER (a rolling ball's closing, _close): the arm's underside
         # landing on the breast's upper-outer edge in a pinched V (rows 1, 3, 5), the crease down the deltoid's back
@@ -914,9 +928,15 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         wt = (_ss((xs_ - p["vfX"]) / 0.03) * _ss((ys_ - p["vfY"]) / 0.04) * (1 - _ss((np.abs(zs_ - p["vfZ"]) - p["vfW"]) / 0.03))
               * (1 - _ss((S.bsm - 0.1) / 0.15)) * _ss((phi - 0.15) / 0.3))
         wt = H.smooth(wt, 3) * kC
+        wtop = wt
         cf = []
         if p["closeRt"] > 0:
-            X, f = _close(H, X, wt, p["closeRt"], p["closeMax"], sm=p["closeSm"], never=p["closeNever"])
+            # (round 12) at the overhead keys (from A 100) the shoulder's top closed with a larger ball (CLOSERT_HI) along
+            # a direction field smoothed over its size (CLOSET_NSM passes, was 4): the moves along the crease's own
+            # normals crossed and folded its faces (the crumple STOP clears last); the lowered key keeps round 11's
+            hiT = _ramp(A, *p.get("stopA", (95.0, 105.0))) >= 0.5 and p.get("stop", 0) > 0
+            X, f = _close(H, X, wt, p["closeRtHi"] if hiT else p["closeRt"], p["closeMax"], sm=p["closeSm"],
+                          never=p["closeNever"], nsm=int(p["closeTNsm"]) if hiT else 4)
             cf.append(f)
         X, f = _close(H, X, wj, p["closeR"], p["closeMax"], sm=p["closeSm"], never=p["closeNever"])
         cf.append(f)
@@ -1059,6 +1079,44 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         X = Xc + mv * np.minimum(1, p["clearMax"] / np.maximum(np.linalg.norm(mv, axis=1), 1e-12))[:, None]
         if info is not None:
             info["clear"] = int((_flips(F, X) & lc[F].all(1)).sum())
+    kS = p.get("stop", 0) * _ramp(A, *p.get("stopA", (95.0, 105.0)))
+    if kS > 0 and wtop is not None:
+        # (round 12) STOP: the shoulder's top where the raised deltoid meets the trapezius (the owner: "the small step
+        # at the shoulder top", row 1). The solve packs the skin there into a crease (40-90 faces folded, Xa); the
+        # 18 mm closing pushes the crease's floor out along its normals, so the folded faces come up onto the surface
+        # and the untangle, fairing and CLEAR leave a crumple of 10-26 flipped faces at every overhead key (show,
+        # cast both sides, cast150): at the front camera it sits on the outline as a notch between the trapezius'
+        # end and the deltoid. Last: the faces still flipped on the shoulder's top (the closing's zone), STOPD rings
+        # round them, re-solved as a thin plate (Laplacian zero, eased in over the band's edge; the rest held): one
+        # smooth fillet from the trapezius into the deltoid. Eased in from A 95, whole at 105 (the lowered key: none)
+        top = H.rings(wtop > 0.05, 1) & (S.bsm < 0.1)
+        X1, n0 = X.copy(), int((_flips(F, X) & top[F].all(1)).sum())
+        for _ in range(p["stopIt"]):
+            fl = _flips(F, X1) & top[F].all(1)
+            if not fl.any():
+                break
+            m = np.zeros(len(X), bool)
+            m[F[fl].ravel()] = True
+            ws = np.clip(H.smooth(H.rings(m, int(p["stopD"])).astype(float), 1) * 1.5, 0, 1) * top
+            for _ in range(3):
+                X1 = X1 + 0.5 * ws[:, None] * b.lap(X1)
+        mv = X1 - X
+        X1 = X + mv * np.minimum(1, p["stopMax"] / np.maximum(np.linalg.norm(mv, axis=1), 1e-12))[:, None]
+        if info is not None:
+            info["stop"] = (n0, int((_flips(F, X1) & top[F].all(1)).sum()), round(1000 * np.linalg.norm(X1 - X, axis=1).max(), 1))
+        X = X + kS * (X1 - X)
+        if p.get("stopKeep", 1) > 0:
+            # everything off the shoulder's top kept EXACTLY round 11's: the cleanup loops above (untangle, fairing,
+            # spot, CLEAR) stop on the fold count over the whole region, so fewer folds on the shoulder's top changed
+            # the passes the arm-breast junction got (the cast's pocket 4.9/5.8 -> 0.5/1.4 mm). Round 11's sculpt
+            # (STOP off) is made too and this one kept only over the shoulder top's closing zone (3 rings round it,
+            # eased over 3 more)
+            D11, _ = author(H, S, d, side, dict(p, stop=0.0), X0in=X0in)
+            wm = np.clip(H.smooth(H.rings(wtop > 0.01, 3).astype(float), 3) * 1.5, 0, 1)
+            dX = X - (X0 + D11)
+            if info is not None:
+                info["stopKeep"] = (int((wm > 0).sum()), round(1000 * np.linalg.norm((1 - wm)[:, None] * dX, axis=1).max(), 2))
+            X = (X0 + D11) + wm[:, None] * dX
     if still:
         # (round 10) STILL: nothing on the breasts, the join's move eased to nothing at their border
         X = X0 + (1 - S.keepB)[:, None] * (X - X0)
