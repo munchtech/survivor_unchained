@@ -102,11 +102,12 @@ void cells(vec2 x, out vec2 mid, out float border)
 // (lines), and the outer surface's light (front, rgb added in linear light; alpha the cuff's shadow). The two
 // frames either side of the level are slid onto one surface (theirs interpolated, plus the slosh) and blended;
 // then the film, the heal, the beat and the frost go on in linear light, and the front over all. Opaque.
+// (The overlays default black, so one unbound adds nothing; the liquid unbound reads white: a stale build.)
 uniform sampler2D liquid : filter_linear_mipmap;
-uniform sampler2D front : filter_linear_mipmap;
+uniform sampler2D front : hint_default_black, filter_linear_mipmap;
 uniform sampler2D lines : filter_nearest;
-uniform sampler2D film_map : filter_linear_mipmap;
-uniform sampler2D frost_map : filter_linear_mipmap;
+uniform sampler2D film_map : hint_default_black, filter_linear_mipmap;
+uniform sampler2D frost_map : hint_default_black, filter_linear_mipmap;
 uniform int frames = 17;
 uniform int cols = 5;
 uniform float canvas = 124.0;

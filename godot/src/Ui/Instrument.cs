@@ -262,7 +262,9 @@ public partial class Vessel : Control
     {
         foreach (var (u, f) in new[] { ("liquid", "glass_liquid"), ("front", "glass_front"), ("lines", "glass_lines"), ("frost_map", "glass_frost") })
             if (UiArt.Tex($"hud/{f}{suf}.png", false) is { } t) mat.SetShaderParameter(u, t);
+            else GD.PushError($"Vessel.Glass: hud/{f}{suf}.png did not load (unimported?): the glass draws wrong");
         if (suf == "" && UiArt.Tex("hud/glass_film.png", false) is { } fm) mat.SetShaderParameter("film_map", fm);
+        else if (suf == "") GD.PushError("Vessel.Glass: hud/glass_film.png did not load (unimported?)");
         mat.SetShaderParameter("frames", frames);
         mat.SetShaderParameter("cols", cols);
         mat.SetShaderParameter("canvas", canvas);
