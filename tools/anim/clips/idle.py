@@ -890,7 +890,8 @@ def base_r1(rig):
 
 def _warden_hilt(rig, clip):
     from clips.run import hilt_carry
-    return hilt_carry(rig, clip, {"clav": 1.0})
+    # (The wrist 12 mm further out than the run's: the sway's hip roll brought her hip into the hand, 8 mm into the warden outfit.)
+    return hilt_carry(rig, clip, {"clav": 1.0, "wrist": (0.3124, -0.0235, -0.0058)})
 
 
 # Passes after the arms (an idle's name: f(rig, clip) -> clip).
