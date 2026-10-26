@@ -32,6 +32,22 @@ LICENCE = {
 # ground: the lower foot held to the ground (the game makes the flight),
 # layer, note}
 TABLE = {
+    "test_walk_her_0": dict(source="kimodo", file="her_walk_0.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo her_walk take 0 (walk candidate)"),
+    "test_walk_her_1": dict(source="kimodo", file="her_walk_1.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo her_walk take 1 (walk candidate)"),
+    "test_walk_her_2": dict(source="kimodo", file="her_walk_2.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo her_walk take 2 (walk candidate)"),
+    "test_walk_her_3": dict(source="kimodo", file="her_walk_3.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo her_walk take 3 (walk candidate)"),
+    "test_walk_her_4": dict(source="kimodo", file="her_walk_4.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo her_walk take 4 (walk candidate)"),
+    "test_walk_woman_0": dict(source="kimodo", file="walk_woman_0.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo woman_walk take 0 (walk candidate)"),
+    "test_walk_woman_1": dict(source="kimodo", file="walk_woman_1.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo woman_walk take 1 (walk candidate)"),
+    "test_walk_woman_2": dict(source="kimodo", file="walk_woman_2.bvh", loop=True, place="line", cycle=(0.9, 1.4),
+                              note="Kimodo woman_walk take 2 (walk candidate)"),
     "test_kimodo_leap": dict(source="kimodo", file="example_01_single_text_prompt.bvh", place="keep",
                              note="Kimodo's own example: runs and leaps an obstacle (pipeline test)"),
     "test_video_pose": dict(source="video", file="pexels_6769391_pose.bvh", place="line",
@@ -80,7 +96,7 @@ def pin(sk, pos, sigma=6):
     return p
 
 
-def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=False, layer="full", note="", span=None):
+def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=False, layer="full", note="", span=None, cycle=None):
     path = MOCAP / source / file
     if not path.exists():
         return None
@@ -110,7 +126,8 @@ def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=F
     elif place == "pin":
         pos = pin(rig.sk, pos)
     if loop is True:
-        d, a, b = best_loop(local, pos, rig.sk, int(0.6 * len(local)), len(local) - 1)
+        lo, hi = (int(cycle[0] * 30), int(cycle[1] * 30)) if cycle else (int(0.6 * len(local)), len(local) - 1)
+        d, a, b = best_loop(local, pos, rig.sk, lo, hi)
         local, pos = make_loop(local, pos, a, b)
     meta = {"source": f"{desc}: {file}", "licence": desc.split(":")[0],
             "changes": "retargeted to her skeleton, feet locked" + (", retimed" if warp_ else "") +
@@ -122,7 +139,7 @@ def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=F
 def clips(rig, want):
     out = []
     for name, row in TABLE.items():
-        if name.startswith("test_") and not any(name in w for w in want):
+        if name.startswith("test_") and not any(name in w or w in name for w in want):
             continue
         if want and not any(w in name for w in want):
             continue
