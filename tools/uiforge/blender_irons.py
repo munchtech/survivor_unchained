@@ -237,7 +237,7 @@ def heat_ramp(n, k, heat, bsdf, strength, stops=None):
 
 def collar_heat_material(name, seed, strength=1.6):
     """A seat's collar heated from the seat inward (it can evolve): the chain's iron, its emission
-    from the vertex colour 'heat' (0 at the collar's outer edge, 1 at its inner wall) broken by
+    from the vertex colour 'collar_heat' (Cycles keeps 'heat' for volumes; 0 at the collar's outer edge, 1 at its inner wall) broken by
     forge scale: dull red outside, the leading links' orange across the face, yellow-white at the
     inner edge. The iron's facets and sheen keep."""
     m = C.iron_chain_material()
@@ -246,7 +246,7 @@ def collar_heat_material(name, seed, strength=1.6):
     n, k = nt.nodes, nt.links
     bsdf = n["Principled BSDF"]
     at = n.new("ShaderNodeAttribute")
-    at.attribute_name = "heat"
+    at.attribute_name = "collar_heat"
     crust = scale_crust(n, k, seed, px=6.0)
     # the scale lies on the cooler outer iron; the inner edge burns through it
     mix = n.new("ShaderNodeMix")
@@ -793,9 +793,9 @@ def seat(k, state):
     if state == "hot":
         # how far in across the collar each vertex lies: 0 at its outer edge, 1 at its inner wall
         Mp = len(prof)
-        if "heat" not in col.data.color_attributes:
-            col.data.color_attributes.new("heat", "FLOAT_COLOR", "POINT")
-        ha = col.data.color_attributes["heat"]
+        if "collar_heat" not in col.data.color_attributes:
+            col.data.color_attributes.new("collar_heat", "FLOAT_COLOR", "POINT")
+        ha = col.data.color_attributes["collar_heat"]
         for v in col.data.vertices:
             j = v.index % Mp
             u = 1.0 if j >= j_ch1 else min(1.0, max(0.0, (m - prof[j][0]) / (2 * m + cw)))

@@ -1304,17 +1304,18 @@ public partial class EmberChain : Control
                 DrawLine(new Vector2(-12.5f, 13.3f), new Vector2(12.5f, 13.3f), new Color(1, 0.94f, 0.8f, 0.28f), 1, true);
             }
             string s2 = c.level.ToString();
-            var f = Style.Display;
             if (art != null)
             {
                 // HUD v2: the level stamped in the body, bone in the dark iron so it reads by day, its stamp's
                 // shade at its upper left; the ember's white as the heat comes into it. (Its middle is 22 below
                 // the pivot, 5 lower when open; the keyhole is at 33.5.)
+                // (the life number's figures: their 1 has its flag, so it is never the keyhole's slot)
+                var f2 = Vessel.Figures;
                 int fs2 = s2.Length > 2 ? 15 : 19;
-                var ts2 = f.GetStringSize(s2, HorizontalAlignment.Left, -1, fs2);
-                var at2 = new Vector2(Mathf.Round(-ts2.X / 2), Mathf.Round(22 + (c.open > 0.3f ? 5 : 0) + fs2 * 0.36f));
-                DrawString(f, at2 - Vector2.One, s2, HorizontalAlignment.Left, -1, fs2, new Color("#050302") with { A = 0.75f });
-                DrawString(f, at2, s2, HorizontalAlignment.Left, -1, fs2, new Color("#e8dcc4").Lerp(new Color("#ffe8c0"), Math.Clamp(heat, 0, 1)) with { A = 0.92f });
+                var ts2 = f2.GetStringSize(s2, HorizontalAlignment.Left, -1, fs2);
+                var at2 = new Vector2(Mathf.Round(-ts2.X / 2), Mathf.Round(22 + (c.open > 0.3f ? 5 : 0) + fs2 * 0.3f));
+                DrawString(f2, at2 - Vector2.One, s2, HorizontalAlignment.Left, -1, fs2, new Color("#050302") with { A = 0.75f });
+                DrawString(f2, at2, s2, HorizontalAlignment.Left, -1, fs2, new Color("#e8dcc4").Lerp(new Color("#ffe8c0"), Math.Clamp(heat, 0, 1)) with { A = 0.92f });
                 // The chain's middle link's upper bar over the shackle (cut from its own sprite, face_5), with the
                 // link's own place, angle, size, light and heat: the shackle passes behind it and over its lower bar.
                 int m = Links / 2;
@@ -1330,6 +1331,7 @@ public partial class EmberChain : Control
                 return;
             }
             // The level, stamped: dark in the iron, the ember's colour when the heat is in it.
+            var f = Style.Display;
             int fs = s2.Length > 2 ? 13 : 16;
             var ts = f.GetStringSize(s2, HorizontalAlignment.Left, -1, fs);
             var at = new Vector2(-ts.X / 2, 12 + 11.5f + fs * 0.36f);
@@ -1481,7 +1483,7 @@ public partial class KeyTag : Control
         var tag = UiArt.Art($"hud/tag_{(int)w}.png");
         // (HUD v2: the art's plate at image (3, 8), its ear and the link it hangs by above it, cut at the band;
         // in the irons' light, gentler: a rubbed plate is what the eye reads the key on)
-        float pl = Cuff.Day ? 1.1f : 0.9f;
+        float pl = Cuff.Day ? 0.95f : 0.8f;
         if (tag != null) DrawTexture(tag, new Vector2(Mathf.Round(Size.X / 2 - w / 2) - 3, -8), new Color(pl, pl, pl));
         else
         {
