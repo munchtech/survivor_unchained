@@ -19,7 +19,7 @@
   },
   "species": {
     "spruce": {"pieces": ["spruce_a", "spruce_b", "spruce_c"], "packed": false, "kind": "pine", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
-               "shader": {"hue_floor": 108, "near_dim": 0.5, "lean": 10, "lean_h": 8.8, "stretch_lo": 0.8, "stretch_hi": 1.2, "leader_from": 6.0, "leader_lo": 0.55, "leader_hi": 1.6}},
+               "shader": {"hue_floor": 108, "near_dim": 0.5, "lean": 10, "lean_h": 8.8, "stretch_lo": 0.8, "stretch_hi": 1.2, "leader_from": 6.0, "leader_lo": 0.55, "leader_hi": 1.6, "jit_hue": 13, "jit_lo": 0.72, "jit_hi": 1.08, "old_share": 0.14, "old_amt": 0.45, "core_night": 0.5, "lamp_gain": 0.6, "lamp_green": 0.2}},
     "alder": {"pieces": ["alder_a", "alder_b", "alder_c"], "packed": false, "kind": "broadleaf", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
               "shader": {"broadleaf": 1, "flutter": 2.2, "hue_floor": 98, "core": 0.3, "sun_lift": 1.0, "night_hue": 10, "night_value": 0.9}},
     "snag": {"pieces": ["snag_a", "snag_b", "snag_c"], "packed": true, "kind": "dead", "lod": [44, 100], "cell": 24, "shadow": true, "wind": 0.2,

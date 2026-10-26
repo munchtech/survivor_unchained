@@ -144,6 +144,18 @@ uniform float leader_from = 6.0;
 uniform float leader_lo = 1.0;
 uniform float leader_hi = 1.0;
 uniform float hue_floor = 100.0;
+// (lf1b) each tree its own green: hue within +-jit_hue deg, value jit_lo-jit_hi; a share (old_share) browner and greyer by
+// old_amt (an old or drought-touched spruce), so a stand is not one teal mass; core_night: how far an inner spray darkens
+// under the moon (0.8 as before; the spruce's tiers need more); lamp_gain, lamp_green: a lamp's light on the needles (not
+// the moon's or the sun's) scaled, its green cut, so needles by her light go a warm olive, not lime (light(), below)
+uniform float jit_hue = 7.0;
+uniform float jit_lo = 0.87;
+uniform float jit_hi = 1.08;
+uniform float old_share = 0.0;
+uniform float old_amt = 0.0;
+uniform float core_night = 0.8;
+uniform float lamp_gain = 1.0;
+uniform float lamp_green = 0.0;
 // (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
 // its crown seen from above read as a hole by day, judge E4c)
 uniform float core = 1.0;
@@ -828,7 +840,8 @@ void fragment() {
 		// each tree its own green: hue within 7 degrees (olive to blue-green), value within 13% (two hashes, not one)
 		float j2 = fract(v_jit * 7.31 + 0.37);
 		// (up no more than 8%: a near tree jittered up read as the frame's brightest mint, judge E4c)
-		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-7.0, 7.0, v_jit))), vec3(0.0)) * mix(0.87, 1.08, j2);
+		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-jit_hue, jit_hue, v_jit))), vec3(0.0)) * mix(jit_lo, jit_hi, j2);
+		if (fract(v_jit * 13.37 + 0.11) < old_share) ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)) * vec3(1.3, 1.0, 0.6), old_amt * mix(0.6, 1.0, fract(v_jit * 5.71)));
 		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
 		// stood as the frame's brightest mint at roaddawn, judge E4c)
 		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
@@ -844,7 +857,7 @@ void fragment() {
 		float hl = hue_of(sqrt(max(ALBEDO * key, vec3(0.0))));
 		ALBEDO = max(hue_turn(ALBEDO, radians(clamp(hue_floor - hl, 0.0, 60.0) * low_sun)), vec3(0.0));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
-		ALBEDO *= mix(mix(0.5, 0.8, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
+		ALBEDO *= mix(mix(0.5, core_night, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
 		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
 		ALBEDO *= mix(vec3(1.0), vec3(0.7, 1.15, 0.9), night);
 		ALBEDO = max(hue_turn(ALBEDO, radians(night_hue * night)), vec3(0.0)) * mix(1.0, night_value, night);
@@ -952,5 +965,17 @@ void light() {
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
 	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d * lift + BACKLIGHT * (1.0 - d)) / PI;
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
+}
+#endif
+
+#if defined(OWN_FOLIAGE) && !defined(OWN_BROADLEAF)
+// (lf1b) The spruce's own light: Lambert with the built-in back light's transmission, as the engine's; a lamp's (not the
+// key's) scaled by lamp_gain and its green cut by lamp_green on the needles (u < .75), so her warm light reads olive on
+// them, not lime. No highlight (SPECULAR was 0.12: the moon's specks read as frost).
+void light() {
+	vec3 lc = LIGHT_COLOR;
+	if (!LIGHT_IS_DIRECTIONAL && UV.x < 0.75) lc *= vec3(1.0, 1.0 - lamp_green, 1.0 - 0.5 * lamp_green) * lamp_gain;
+	float d = max(dot(NORMAL, LIGHT), 0.0);
+	DIFFUSE_LIGHT += lc * ATTENUATION * (d + BACKLIGHT * (1.0 - d)) / PI;
 }
 #endif
