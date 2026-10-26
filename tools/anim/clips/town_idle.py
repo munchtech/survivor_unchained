@@ -25,7 +25,7 @@ def _env(T, amp, phase):
 
 
 def contra(rig, clip: Clip, side="l", shift=0.06, roll=6.0, yaw=0.0, counter=0.5, knee=4.0, settle=0.25, phase=0.0,
-           free_out=0.0, free_fwd=0.0, free_turn=0.0, free_knee_in=0.0, chest_yaw=0.0, width=None) -> Clip:
+           free_out=0.0, free_fwd=0.0, free_turn=0.0, free_knee_in=0.0, chest_yaw=0.0, width=None, free_knee=None) -> Clip:
     """`clip` stood with her weight on one leg (contrapposto). side: the standing leg ("l"/"r"); shift: her pelvis
     carried that far toward it (m); roll: the hips tilted, the standing hip up (deg); yaw: the free hip brought forward
     (deg); counter: the shoulders tilted back against the hips (a share of roll, through the spine); knee: the
@@ -33,6 +33,8 @@ def contra(rig, clip: Clip, side="l", shift=0.06, roll=6.0, yaw=0.0, counter=0.5
     swelling and easing once over the loop (a share), from `phase`. The free foot: moved out (m, away from the
     standing one) and forward (m), turned out (deg), its knee drawn in toward the other (m on the knee's aim).
     chest_yaw: the chest's turn left at the top of the spine (deg). width: her ankles set that far apart (m) first.
+    free_knee: the free knee's mean bend (deg), made by drawing the free foot in under its hip (toward the standing
+    leg) as far as it takes (or out, for less): a soft free knee is what reads as the weight off it.
     Her head keeps the take's own carriage (the neck takes back the spine's turn)."""
     from rig import qaxis, qbetween, qinv, qmul, qrot, two_bone_ik
     sk = rig.sk
@@ -115,11 +117,140 @@ def contra(rig, clip: Clip, side="l", shift=0.06, roll=6.0, yaw=0.0, counter=0.5
         dy = (lo + hi) / 2
         _, _, b = legs(dy)
         lo, hi = (dy, hi) if b[side] > knee else (lo, dy)
-    r, q, b = legs((lo + hi) / 2)
+    dy = (lo + hi) / 2
+    tuck = 0.0
+    if free_knee is not None:
+        # (The standing leg's knee does not depend on the free foot: the height found above holds.)
+        ank0 = ank[free].copy()
+        lo, hi = -0.06, 0.12
+        for _ in range(16):
+            tuck = (lo + hi) / 2
+            ank[free] = ank0 + left * sgn * tuck
+            _, _, b = legs(dy)
+            lo, hi = (lo, tuck) if b[free] > free_knee else (tuck, hi)
+        tuck = (lo + hi) / 2
+        ank[free] = ank0 + left * sgn * tuck
+    r, q, b = legs(dy)
     meta = {**clip.meta, "changes": clip.meta.get("changes", "") +
             f"; her weight on the {'left' if side == 'l' else 'right'} leg (hips {roll:.0f} deg, carried {shift * 100:.0f} cm,"
-            f" knees {b['l']:.0f}/{b['r']:.0f} deg, a settle of {settle:.0%})"}
+            f" knees {b['l']:.0f}/{b['r']:.0f} deg, the free foot {tuck * 100:+.1f} cm in, a settle of {settle:.0%})"}
     return Clip(clip.name, clip.fps, r, q, loop=clip.loop, meta=meta)
+
+
+def soften(rig, clip: Clip, knee=10.0, roll=3.5, chest=1.5, reach=0.04, roll_max=6.0) -> Clip:
+    """A swaying stand (the warden's WiggleHips) never on two locked knees: as her hips swing over one foot the other
+    knee softens `knee` deg (toward it as they come back through the middle, half each), and the pelvis rolls down
+    on that side, about its own centre (the sway's path kept), solved per frame so each knee takes its bend: the
+    roll sought near `roll` deg (at most roll_max), the pelvis's height for the loaded knee. The chest leans `chest`
+    deg back against the roll through the spine; the head keeps its carriage. reach: how far (m) the hips swing off
+    the middle of her feet before the weight is wholly on one foot (tanh)."""
+    from rig import qaxis, qbetween, qinv, qmul, qrot, two_bone_ik
+    sk = rig.sk
+    rot, pos = clip.rot.copy(), clip.pos.copy()
+    T = rot.shape[0]
+    pel, root = sk.i("pelvis"), sk.i("root")
+    spine = [sk.i("spine_01"), sk.i("spine_02"), sk.i("spine_03")]
+    neck = sk.i("neck_01")
+    g, p = sk.fk(rot, pos)
+    J = {s: (sk.i(f"thigh_{s}"), sk.i(f"calf_{s}"), sk.i(f"foot_{s}")) for s in "lr"}
+    ank = {s: p[:, J[s][2]].copy() for s in "lr"}
+    foot_g = {s: g[:, J[s][2]].copy() for s in "lr"}
+    fwd = sum(p[:, sk.i(f"ball_{s}")] - ank[s] for s in "lr").mean(axis=0)
+    fwd[1] = 0
+    fwd /= np.linalg.norm(fwd)
+    up = np.array([0.0, 1.0, 0.0])
+    left = np.cross(up, fwd)
+
+    def bend(A, B, C):
+        u, v = B - A, C - B
+        return math.degrees(math.acos(np.clip(np.dot(u, v) / np.linalg.norm(u) / np.linalg.norm(v), -1, 1)))
+    k0 = {s: np.array([bend(*(p[t, j] for j in J[s])) for t in range(T)]) for s in "lr"}
+    w = np.tanh(((p[:, pel] - (ank["l"] + ank["r"]) / 2) @ left) / reach)   # + her hips over her left foot
+    unl = {"l": (1 - w) / 2, "r": (1 + w) / 2}                              # each leg's share unloaded
+    want = {s: k0[s] + knee * unl[s] for s in "lr"}
+    rolls = np.zeros(T)
+
+    def frame(t, rl, dy):
+        """Frame t with the pelvis rolled rl deg (+ her left hip up) and lowered dy: (rot row, pos row, bends)."""
+        r, q = rot[t].copy(), pos[t].copy()
+        Tp = qaxis(fwd, rl)
+        gp_new = qmul(Tp, g[t, pel])
+        r[pel] = qmul(qinv(g[t, root]), gp_new)
+        q[pel] = q[pel] + qrot(qinv(g[t, root]), up * dy)
+        par = gp_new
+        for k, j in enumerate(spine, 1):
+            r_k = rl * (1 - k / 3) - (chest * np.sign(rl) * min(1.0, abs(rl) / max(roll, 1e-6))) * k / 3
+            gj = qmul(qaxis(fwd, r_k), g[t, j])
+            r[j] = qmul(qinv(par), gj)
+            par = gj
+        r[neck] = qmul(qinv(par), g[t, neck])
+        gl, gpos = sk.fk(r[None], q[None])
+        gl, gpos = gl[0], gpos[0]
+        out = {}
+        for s in "lr":
+            th, ca, fo = J[s]
+            A, B, C = gpos[th], gpos[ca], gpos[fo]
+            kk = p[t, ca] - (p[t, th] + ank[s][t]) / 2
+            kk = kk / max(np.linalg.norm(kk), 1e-6)
+            nb, nc = two_bone_ik(A, B, C, ank[s][t], (A + ank[s][t]) / 2 + kk)
+            r1 = qbetween(B - A, nb - A)
+            gth = qmul(r1, gl[th])
+            c2 = nb + qrot(r1, C - B)
+            gca = qmul(qbetween(c2 - nb, nc - nb), qmul(r1, gl[ca]))
+            r[th] = qmul(qinv(gl[sk.parent[th]]), gth)
+            r[ca] = qmul(qinv(gth), gca)
+            r[fo] = qmul(qinv(gca), foot_g[s][t])
+            out[s] = bend(A, nb, nc)
+        return r, q, out
+
+    for t in range(T):
+        un = "r" if w[t] >= 0 else "l"        # the leg coming unloaded
+        ld = "l" if un == "r" else "r"
+        sg = 1.0 if un == "r" else -1.0       # its hip down: + roll raises her left
+        def height(rl):
+            lo, hi = -0.06, 0.03
+            for _ in range(14):
+                dy = (lo + hi) / 2
+                _, _, b = frame(t, rl, dy)
+                lo, hi = (dy, hi) if b[ld] > want[ld][t] else (lo, dy)
+            return (lo + hi) / 2
+        lo, hi = 0.0, roll_max
+        for _ in range(12):
+            a = (lo + hi) / 2
+            _, _, b = frame(t, sg * a, height(sg * a))
+            lo, hi = (lo, a) if b[un] > want[un][t] else (a, hi)
+        a = (lo + hi) / 2
+        rolls[t] = sg * a
+        rot[t], pos[t], _ = frame(t, sg * a, height(sg * a))
+    meta = {**clip.meta, "changes": clip.meta.get("changes", "") +
+            f"; softened: the unloading knee +{knee:.0f} deg, the hips rolled down on its side (|roll| mean {np.abs(rolls).mean():.1f},"
+            f" max {np.abs(rolls).max():.1f} deg), the chest {chest:.1f} against"}
+    return Clip(clip.name, clip.fps, rot, pos, loop=clip.loop, meta=meta)
+
+
+def shoulders(rig, clip: Clip, drop_l=0.0, drop_r=0.0) -> Clip:
+    """Her shoulders let down: each clavicle turned drop deg down about her forward axis (the shoulder's tip lower,
+    the neck longer), in the chest's frame; the arms solved after hang from there."""
+    from rig import qaxis, qinv, qmul
+    sk = rig.sk
+    rot = clip.rot.copy()
+    g, _ = sk.fk(clip.rot, clip.pos)
+    fwd = np.array([0.0, 0.0, 1.0])
+    for s, d, sg in (("l", drop_l, -1.0), ("r", drop_r, 1.0)):
+        if not d:
+            continue
+        c = sk.i(f"clavicle_{s}")
+        for t in range(clip.frames):
+            ax = qrot_(g[t, sk.i("spine_03")], fwd)
+            gc = qmul(qaxis(ax, sg * d), g[t, c])
+            rot[t, c] = qmul(qinv(g[t, sk.parent[c]]), gc)
+    meta = {**clip.meta, "changes": clip.meta.get("changes", "") + f"; shoulders let down {drop_l:.0f}/{drop_r:.0f} deg"}
+    return Clip(clip.name, clip.fps, rot, clip.pos, loop=clip.loop, meta=meta)
+
+
+def qrot_(q, v):
+    from rig import qrot
+    return qrot(q, np.asarray(v, float))
 
 
 def look(rig, clip: Clip, deg=28.0, start=0.2, hold=0.35, ease=0.18, pitch=0.0, neck_share=0.4) -> Clip:
@@ -205,14 +336,21 @@ def _relaxed(curl):
 STANCES = {
     # Heavy and swaggering: the Proud take (a broad chest leaned back, chin level), the weight sunk into her left hip.
     "reaver_town": ("Proud", None, dict(side="l", shift=0.07, roll=7, yaw=5, width=0.32, knee=5, settle=0.3, counter=0.5,
-                                        free_turn=10), None),
+                                        free_turn=15, free_fwd=0.06, free_knee=16), None),
     # Poised: the GracefulArms take, the weight on her back (right) leg, the left foot 8 cm ahead and turned out.
-    "arcanist_town": ("GracefulArms", (3, 11), dict(side="r", shift=0.05, roll=5, yaw=4, width=0.20, knee=5, settle=0.2,
+    "arcanist_town": ("GracefulArms", (3, 11), dict(side="r", shift=0.05, roll=7, yaw=4, width=0.20, knee=5, settle=0.2,
                                                     counter=0.4, free_fwd=0.08, free_turn=20), None),
     # Loose but watchful: the HandsInPockets take, the weight on her left leg, a slow look to her right and back.
-    "stalker_town": ("HandsInPockets", (0, 8), dict(side="l", shift=0.05, roll=5, yaw=4, width=0.24, knee=9, settle=0.4,
-                                                    counter=0.5, free_turn=10), dict(deg=-28.0, start=0.2, hold=0.3, ease=0.17)),
+    "stalker_town": ("HandsInPockets", (0, 8), dict(side="l", shift=0.05, roll=5.5, yaw=4, width=0.24, knee=5, settle=0.4,
+                                                    counter=0.5, free_turn=15, free_knee=16), dict(deg=-28.0, start=0.2, hold=0.3, ease=0.17)),
 }
+
+
+# Animation 50, round 2 (the max judge: "the stance underneath doesn't yet": square, both knees locked). A swaying
+# stand softened (soften), and the shoulders let down where the take holds them above her walk_tired's (shoulders:
+# (left, right) deg).
+SWAYS = {"warden_town": dict(knee=10.0, roll=3.5, chest=1.5)}
+SHOULDERS = {"arcanist_town": (5.0, 5.0), "stalker_town": (3.5, 5.0), "warden_town": (0.0, 4.0)}
 
 
 def town_base(rig, calling):
@@ -230,14 +368,21 @@ def town_base(rig, calling):
 # of the side seam, 1.10 m up at rest), the palm in, the fingers down and forward over the hip, the wrist bent back 40,
 # the elbow out 11 cm and well behind her side (the forearm along her flank), open to 83 (95 would put the hand on her
 # thigh: the hip bone sits 30 cm under her shoulder and her arm is 52 cm).
-_RV_K, _RV_B = _hand((0.105, -0.654, 0.657), (-0.95, -0.277, 0.0))
-REAVER_HIP_L = dict(pos=(0.2155, 1.095, 0.0), pole=_pole(53.0), knuckles=_RV_K, blade=_RV_B, curl=0.06)
+# (Round 2 of animation 50, the judge: the hand floated 15 mm off her outfit, "from 30 deg it floats off the hip":
+# the heel planted, 13 mm in, the wrist bent back 6 less, the elbow drawn back 12.)
+_RV_K, _RV_B = _hand((0.129, -0.702, 0.7), (-0.95, -0.277, 0.0))
+REAVER_HIP_L = dict(pos=(0.2015, 1.095, 0.0), pole=_pole(57.0), knuckles=_RV_K, blade=_RV_B, curl=0.06)
 # The arcanist: her left wrist resting on the side of her hip bone at the seam (contact 17 cm out, 1.08 m up at rest),
 # the hand hanging soft beside it (the fingers down, the palm back: the back of the hand to the camera, the thumb side
 # of the wrist on her hip), the elbow out 20 cm, open to 86. (The palm turned out, the wrist's very back on her hip,
 # was fitted and dropped: the forearm wrung 156 deg from rest, audit's limit 120, the elbow's flesh kept 38 %.)
 _AR_K, _AR_B = _hand((0.1, -0.97, -0.1), (math.cos(math.radians(-75.0)), 0.0, math.sin(math.radians(-75.0))))
-ARC_WRIST_L = dict(pos=(0.203, 1.20, 0.015), pole=_pole(30.0), knuckles=_AR_K, blade=_AR_B, curl=0.10)
+ARC_WRIST_L0 = dict(pos=(0.203, 1.20, 0.015), pole=_pole(30.0), knuckles=_AR_K, blade=_AR_B, curl=0.10)
+# Round 2 of animation 50 (the judge: "a balled fist with a high teapot elbow"): the hand open, the fingers together
+# in a loose half-curl, the wrist bent forward 35 so the back of the wrist lies on her hip and the fingers trail back
+# (the palm out and back), the elbow lowered and drawn back.
+_AR_K, _AR_B = _hand((0.14, -0.96, -0.2), (math.cos(math.radians(-45.0)), 0.0, math.sin(math.radians(-45.0))))
+ARC_WRIST_L = dict(pos=(0.176, 1.17, 0.015), pole=_pole(25.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
 
 
 def on_hip(spec, free):
@@ -259,6 +404,10 @@ def on_hip(spec, free):
 # stand can use it (hang_arms), one hand or both.
 HANG = dict(out=0.21, fwd=0.0, elbow=18.0, elbow_life=1.5, pole=(0.0, -0.2, -1.0), thumb=(-0.15, -0.1, 1.0),
             swing=0.010, swing_phase=0.0, fingers="relaxed")
+
+
+# A hanging hand's fingers together in a loose half-curl (20-30 deg a joint; "relaxed" is about 12).
+HALF_CURL = _relaxed(0.2)
 
 
 def _mirror(v, side):
