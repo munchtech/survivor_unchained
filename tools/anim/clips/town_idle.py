@@ -370,19 +370,20 @@ def town_base(rig, calling):
 # thigh: the hip bone sits 30 cm under her shoulder and her arm is 52 cm).
 # (Round 2 of animation 50, the judge: the hand floated 15 mm off her outfit, "from 30 deg it floats off the hip":
 # the heel planted, 13 mm in, the wrist bent back 6 less, the elbow drawn back 12.)
-_RV_K, _RV_B = _hand((0.129, -0.702, 0.7), (-0.95, -0.277, 0.0))
-REAVER_HIP_L = dict(pos=(0.2015, 1.095, 0.0), pole=_pole(57.0), knuckles=_RV_K, blade=_RV_B, curl=0.06)
+_RV_K, _RV_B = _hand((0.01, -0.69, 0.724), (-0.95, -0.277, 0.0))
+REAVER_HIP_L = dict(pos=(0.2175, 1.095, 0.0), pole=_pole(57.0), knuckles=_RV_K, blade=_RV_B, curl=0.06)
 # The arcanist: her left wrist resting on the side of her hip bone at the seam (contact 17 cm out, 1.08 m up at rest),
 # the hand hanging soft beside it (the fingers down, the palm back: the back of the hand to the camera, the thumb side
 # of the wrist on her hip), the elbow out 20 cm, open to 86. (The palm turned out, the wrist's very back on her hip,
 # was fitted and dropped: the forearm wrung 156 deg from rest, audit's limit 120, the elbow's flesh kept 38 %.)
-_AR_K, _AR_B = _hand((0.1, -0.97, -0.1), (math.cos(math.radians(-75.0)), 0.0, math.sin(math.radians(-75.0))))
-ARC_WRIST_L0 = dict(pos=(0.203, 1.20, 0.015), pole=_pole(30.0), knuckles=_AR_K, blade=_AR_B, curl=0.10)
+# (Was: knuckles (0.1, -0.97, -0.1), the palm 75 deg back, the wrist at (0.203, 1.20, 0.015), pole 30, curl 0.10.)
 # Round 2 of animation 50 (the judge: "a balled fist with a high teapot elbow"): the hand open, the fingers together
-# in a loose half-curl, the wrist bent forward 35 so the back of the wrist lies on her hip and the fingers trail back
-# (the palm out and back), the elbow lowered and drawn back.
-_AR_K, _AR_B = _hand((0.14, -0.96, -0.2), (math.cos(math.radians(-45.0)), 0.0, math.sin(math.radians(-45.0))))
-ARC_WRIST_L = dict(pos=(0.176, 1.17, 0.015), pole=_pole(25.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
+# in a loose half-curl, the back of the wrist on her hip (2 mm off her outfit) and the hand bent forward off it so the
+# fingers trail back and down, resting on the side of her hip (2 mm off); the elbow lowered 13 deg (out 37). Fitted
+# on frame 0 (scratch anim50/tools/fit_arc.py). The wrist takes 53 deg of that bend: at 35-45 the fingers go 3-16 mm
+# into her hip, and the elbow drawn back instead flips the arm (the elbow behind her, the fingers pointing ahead).
+_AR_K, _AR_B = _hand((0.231, -0.811, -0.537), (math.cos(math.radians(-25.0)), 0.0, math.sin(math.radians(-25.0))))
+ARC_WRIST_L = dict(pos=(0.1736, 1.17, 0.015), pole=_pole(8.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
 
 
 def on_hip(spec, free):

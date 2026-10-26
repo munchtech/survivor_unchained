@@ -678,7 +678,7 @@ _P = lambda x: (x, -0.2, -1.0)   # an elbow pole behind her, x out (+) or in (-)
 _NONE = lambda t, f: {}
 # The warden's WiggleHips: her hips swing out under the left hand further than the right.
 # (Round 2: the left hand ahead of the sheathed sword, which hangs along her left thigh.)
-WARDEN_TOWN = town_idle.hang_arms(l=dict(out=0.22, fwd=0.05), r=dict(out=0.21))
+WARDEN_TOWN = town_idle.hang_arms(l=dict(out=0.22, fwd=0.07), r=dict(out=0.21))
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
     "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
@@ -687,8 +687,8 @@ TOWN = {
     # The crossbow slung on her back, the daggers at the back of her belt.
     # (Round 2, the judge: "mirrored", "claws": the right elbow 13 more and the hand a little forward on her thigh,
     # both hands' fingers together in a loose half-curl.)
-    "stalker_town": town_idle.hang_arms(l=dict(out=0.195, pole=_P(0.15), fingers=town_idle.HALF_CURL),
-                                        r=dict(out=0.21, pole=_P(0.1), elbow=31.0, fwd=0.04, fingers=town_idle.HALF_CURL)),
+    "stalker_town": town_idle.hang_arms(l=dict(out=0.215, pole=_P(0.15), fingers=town_idle.HALF_CURL),
+                                        r=dict(out=0.235, pole=_P(0.1), elbow=31.0, fwd=0.02, fingers=town_idle.HALF_CURL)),
 }
 
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
