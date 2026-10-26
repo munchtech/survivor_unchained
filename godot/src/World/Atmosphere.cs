@@ -61,6 +61,9 @@ public partial class Atmosphere : Node3D
     public float Mute = 0.16f;
     /// <summary>Her carried light's gain under the air in force (AtmospherePreset.Ember).</summary>
     public static float EmberGain = 1;
+    /// <summary>(E9d) How lit the town is (0 by day, 1 at dawn, dusk and night): its lamps burn and some windows glow
+    /// (ZoneView.Town, kit.gdshader's town_lit) from a low or a moonlit key.</summary>
+    public static float TownLit = 1;
     /// <summary>The camera's own say over the exposure (1: none): the close view by night opens up, as an eye does
     /// on a face near it, so the wood behind her reads (GameCloseUp, E1).</summary>
     public float ViewExposure { get; private set; } = 1;
@@ -270,6 +273,8 @@ public partial class Atmosphere : Node3D
         float lowSun = Mathf.Clamp((kc.R - kc.B) * 3f, 0f, 1f) * (1f - Mathf.SmoothStep(15f, 35f, (float)p.KeyElevation));
         var kl = kc.SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("flora_light", new Vector4(moon, lowSun, kl.R / Mathf.Max(kl.G, 1e-3f), kl.B / Mathf.Max(kl.G, 1e-3f)));
+        TownLit = Mathf.Max(moon, 1f - Mathf.SmoothStep(18f, 26f, (float)p.KeyElevation));
+        RenderingServer.GlobalShaderParameterSet("town_lit", TownLit);
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed
         // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)

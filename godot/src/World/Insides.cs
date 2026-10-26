@@ -21,6 +21,8 @@ public static class Insides
         {
             if (OwnProps.Piece(id[4..]) is not Node3D p) return null;
             p.Transform = at;
+            // (E9d) inside, as the kit's inside pieces: no shadows
+            foreach (var n in p.FindChildren("*", "GeometryInstance3D", true, false)) if (n is GeometryInstance3D g) g.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             return p;
         }
         if (id == "hearth")

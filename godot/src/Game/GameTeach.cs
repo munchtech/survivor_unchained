@@ -38,7 +38,9 @@ public partial class Game
     /// <summary>A zone's callout at its moment.</summary>
     public void Teach(Callout c) => Teacher.Offer(c, teachClock, TeachBusy());
     /// <summary>Whether a callout was seen on this profile.</summary>
-    public bool Taught(string id) => Settings.Current.SeenTips.Contains(id);
+    /// (Asks the Teacher first, so --teach-reset has cleared the profile before any zone reads it: a test
+    /// run's Begin saw last run's "art" and let the Flare's great blessings through, round 2 judge.)
+    public bool Taught(string id) { _ = Teacher; return Settings.Current.SeenTips.Contains(id); }
     /// <summary>--teach-hurt (a scripted run): the autopilot keeps the Flare for F8 in the Barrow.</summary>
     public bool HoldFlare => Args.Has("teach-hurt") && !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
 
@@ -125,16 +127,16 @@ public partial class Game
             {
                 if (OnScreen(w) is not Vector2 v) continue;
                 // (each one ringed only well inside the screen: the rest get an edge arrow)
-                if (t.Each && !SafeArea.HasPoint(v)) continue;
+                if (t.Each && !InSafe(v)) continue;
                 // (a candidate: the first well inside the screen is the one)
                 if (t.Safe)
                 {
                     if (t.Open && OS.GetCmdlineUserArgs().Contains("--teach-diag") && (Battle?.Time ?? 0) - diagAt > 0.25)
                     {
                         diagAt = Battle?.Time ?? 0; InOpen(w);
-                        GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={SafeArea.HasPoint(v)} block={diagBlock}");
+                        GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={InSafe(v)} block={diagBlock}");
                     }
-                    if (!SafeArea.HasPoint(v)) continue;
+                    if (!InSafe(v)) continue;
                     if (t.Open && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
                     if (t.Open && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
@@ -222,6 +224,10 @@ public partial class Game
 
     /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>
     static readonly Rect2 SafeArea = new(300, 150, 1320, 700);
+    /// <summary>The minimap and the zone's header and objectives under it (top right): a ring there sat
+    /// against the words (au1 item 9, the lamps).</summary>
+    static readonly Rect2 HudCorner = new(1460, 0, 460, 450);
+    static bool InSafe(Vector2 v) => SafeArea.HasPoint(v) && !HudCorner.HasPoint(v);
 
     /// <summary>The callout's things in the world that are off the screen: the point on the screen's edge
     /// toward each, and which way (a lamp behind the camera's edge gets a chevron there).</summary>
@@ -233,7 +239,7 @@ public partial class Game
         foreach (var p in c.Target.World())
         {
             var w = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-            if (camera.IsPositionBehind(w) || OnScreen(p) is Vector2 on && (!c.Target.Each || SafeArea.HasPoint(on))) continue;
+            if (camera.IsPositionBehind(w) || OnScreen(p) is Vector2 on && (!c.Target.Each || InSafe(on))) continue;
             var d = camera.UnprojectPosition(w) - mid;
             float far = d.Length() - Ui.Callout.EdgeTip - 8;
             if (far < 1) continue;
@@ -356,7 +362,7 @@ public partial class Game
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
             answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
-        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null });
+        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null, Mark = c.Mark });
         calloutShown = view;
         AimCallout();
         // (--shot: a frame of each, and a freeze holds until it is taken)
@@ -397,6 +403,8 @@ public partial class Game
             radii.Add(c.Target.Hud switch
             {
                 "art" => Instrument.R + Instrument.Band,
+                // (a lit dash's ring stands outside its flames and badge, round 3 judge)
+                "dash" when hud.DashLit => Instrument.SmallR + Instrument.SmallBand + 18,
                 "dash" or "draught" => Instrument.SmallR + Instrument.SmallBand,
                 "chain" => 22,
                 _ => Instrument.Sock / 2 + 4,
@@ -423,6 +431,7 @@ public partial class Game
         }
         // The figures on the screen: an arrow bends round them.
         var avoid = new List<Rect2>();
+        var shun = new List<Rect2>();
         if (Battle is { } bt && scene != null)
             foreach (var en in bt.Enemies.Living())
             {
@@ -432,11 +441,13 @@ public partial class Game
                 {
                     float h = Math.Max(24, f.Y - hd.Y);
                     avoid.Add(new Rect2(f.X - h * 0.3f, hd.Y, h * 0.6f, h));
+                    if (c.Target.ShunBig && (en.Def.Scale ?? 1) >= 1.4) shun.Add(new Rect2(f.X - h * 0.45f, hd.Y, h * 0.9f, h));
                 }
             }
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
         {
-            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c),
+            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
+            WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
             AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
         });
     }
