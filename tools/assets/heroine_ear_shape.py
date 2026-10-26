@@ -533,6 +533,78 @@ def front_tone(art, faces=None, report=True):
             path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + FRONT_MARK).strip().encode("latin-1"))
 
 
+# ---- the ear's front: its painted ladder smoothed ----
+LADDER_MARK = "ear_ladder"
+LADDER_T = (0.12, 0.22, 0.95, 1.05)   # the ear's height (t): the front from below the tragus to the helix's top
+LADDER_Z = (0.008, 0.005)             # m behind the ear's front (z): in full within the second, none past the first
+LADDER_EAR = (0.0008, 0.0022)         # m from her ear's own points: in full within the first, none past the second
+LADDER_SIGMA = (0.0006, 0.0028)       # m: the grain kept (finer than the first), the bars taken (finer than the second)
+
+
+def ladder_off(art, faces=None, dry=False, report=True):
+    """Her ear's front (the crus and the tragus's front edge, up to the helix root) read as a crinkled ladder of 3-4
+    pale bars at the Look turned 40 (face 42 j3; the same with the braid, the ponytail and the pixie). Face 43 found it in
+    the paint (the paint alone, emitted, has the bars; her normals there are smooth). So each paint's ear front keeps its
+    lightness and colour at the broad scale (a 3D low-pass, LADDER_SIGMA[1], of the strip alone) and its fine grain
+    (finer than LADDER_SIGMA[0]); the bars between go. Done-mark: each paint's JPEG comment ear_ladder."""
+    from PIL import Image
+    from scipy.spatial import cKDTree
+    import heroine_ears as he
+    import heroine_brow_strokes as bs
+    tex = os.path.join(art, "head_tex")
+    P, UV, F, head_y = _head(os.path.join(art, "heroine.glb"))
+    paints = [fn for fn in sorted(os.listdir(tex)) if fn.startswith("heroine_head") and fn.endswith(".jpg")]
+    if faces:
+        paints = [fn for fn in paints if fn[len("heroine_head"):-4].lstrip("_") in faces or (fn == "heroine_head.jpg" and "own" in faces)]
+    sides = []
+    for sx in (-1, 1):
+        f = ear_frame(P, sx, head_y)
+        y0, y1 = f["y"]
+        t = (P[:, 1] - y0) / (y1 - y0)
+        dz = P[:, 2] - f["zf"]
+        sel = (np.sign(P[:, 0]) == sx) & (t > 0.05) & (t < 1.12) & (dz > -0.015) & (dz < 0.02)
+        sides.append((sx, f, F[sel[F].all(1)], cKDTree(P[f["ear"]])))
+    for fn in paints:
+        path = os.path.join(tex, fn)
+        if LADDER_MARK in bs.comment(path) and not dry:
+            print("EAR_LADDER: %s has had it" % fn)
+            continue
+        img = Image.open(path).convert("RGB")
+        size = img.size[0]
+        A = np.asarray(img, np.float32) / 255
+        out = A.copy()
+        for sx, f, T, et in sides:
+            iy, ix, X = _raster(UV, T, P, size)
+            lab = he.oklab(_lin(A[iy, ix].astype(np.float64)))
+            y0, y1 = f["y"]
+            t = (X[:, 1] - y0) / (y1 - y0)
+            dz = X[:, 2] - f["zf"]
+            de = et.query(X)[0]
+            w = (_band(t, LADDER_T) * _ss((dz + LADDER_Z[0]) / (LADDER_Z[0] - LADDER_Z[1]))
+                 * _ss((LADDER_EAR[1] - de) / (LADDER_EAR[1] - LADDER_EAR[0])))
+            lo = X.min(0) - 0.01
+            shape = tuple(np.ceil((X.max(0) + 0.01 - lo) / VOX).astype(int) + 1)
+            ws = (w > 0.05).astype(np.float32) * w.astype(np.float32)        # (the strip's own paint only)
+            broad, _ = _lowpass(X, lab, ws, LADDER_SIGMA[1], lo, shape)
+            fine, _ = _lowpass(X, lab, ws, LADDER_SIGMA[0], lo, shape)
+            new = broad + (lab - fine)
+            res = lab + w[:, None] * (new - lab)
+            q = w > 0.5
+            band = lambda L: float(np.std((fine[q, 0] if L is None else L) - broad[q, 0]))
+            after_fine, _ = _lowpass(X, res, ws, LADDER_SIGMA[0], lo, shape)
+            after_broad, _ = _lowpass(X, res, ws, LADDER_SIGMA[1], lo, shape)
+            if report:
+                print("EAR_LADDER: %s side %+d: %d texels (%d over half); bars (L, %.1f-%.1f mm) std %.4f -> %.4f; mean L %.3f -> %.3f" % (
+                    fn, sx, int((w > 0.01).sum()), int(q.sum()), LADDER_SIGMA[0] * 1000, LADDER_SIGMA[1] * 1000,
+                    band(None), float(np.std(after_fine[q, 0] - after_broad[q, 0])), float(lab[q, 0].mean()), float(res[q, 0].mean())))
+            out[iy, ix] = _srgb(np.clip(he.unoklab(res), 0, 1)).astype(np.float32)
+            if os.environ.get("LADDER_DBG"):
+                out[iy, ix, 1] = np.maximum(out[iy, ix, 1], w.astype(np.float32))
+        if not dry:
+            Image.fromarray(np.clip(out * 255 + 0.5, 0, 255).astype(np.uint8)).save(
+                path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + LADDER_MARK).strip().encode("latin-1"))
+
+
 # ---- the scalp shade: none on her ear ----
 
 SHADE_MARK = "ear_shade"
@@ -646,6 +718,8 @@ if __name__ == "__main__":
         paint_join(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
     elif a and a[0] == "--front":
         front_tone(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
+    elif a and a[0] == "--ladder":
+        ladder_off(a[1], [x for x in a[2:] if not x.startswith("--")] or None, dry="--dry" in a)
     elif a and a[0] == "--tick":
         tick_off(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
     elif a and a[0] == "--shade":
