@@ -190,6 +190,15 @@ uniform float edge_to = 0.7;
 // (kept to her neck by her freckles' map's blue, 0 from her collarbones down and on parts without the map: on her
 // limbs' silhouettes it turned her thighs and arms a richer, bluer pink in the whole frame, judge j7 (f); 0 as r11)
 uniform float edge_neck = 1.0;
+// (and on her head, edge_head of it below edge_head_y (model-space height, full under .x, none over .y): her head ends
+// above her neck's seam, and the far side of her neck under her jaw is her head's, where ao_map's green (seam ease)
+// kept edge_tone off as her face. There the key alone lights her (the fill is across her throat) and its tone is near
+// grey (key_tone, fitted to the key and the warm fill together): Oklab C .02 against her lit neck's .039, and the Look's
+// grade turned it grey-lilac, own fair hue 34-39 against 54 beside it, deep 19-25 against 38 (face 43, 26 October 2026).
+// Her ears start at 1.714 and her chin's underside at 1.65 (heroine.glb's skin_head); 0 as before.)
+uniform float edge_head = 1.0;
+uniform vec2 edge_head_y = vec2(1.665, 1.695);
+varying float model_y;
 // The lamps behind her (the Look's cool rim and the fire's edge lamp, neither with a shadow) shaded by her head's own
 // shade (ao_map's red), back_occ of it: her jaw never shaded the rim, which lit the far side of her neck under her jaw
 // as brightly as the key, a cool grey-lilac band there on the fair faces (the owner, 10 October 2026; skin r12: with
@@ -436,6 +445,7 @@ void vertex() {
 		tuck_gone = step(0.995, h);
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	}
+	model_y = VERTEX.y;
 }
 
 void fragment() {
@@ -582,7 +592,7 @@ void fragment() {
 	soft_w = 1.0 - fm.b;
 	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
-	edge_w = (seam_ease ? 1.0 - aot.g : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
+	edge_w = (seam_ease ? max(1.0 - aot.g, edge_head * (1.0 - smoothstep(edge_head_y.x, edge_head_y.y, model_y))) : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
 	// (under the Look's rig only, where it was fitted: in play every lamp is a key, and it lit her chest 4-5 L* over
 	// BEFORE's, own and Sunborn alike, by day and at night; judge rj2v fix 4, 13 October 2026)
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
