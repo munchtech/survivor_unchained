@@ -564,8 +564,10 @@ def main(argv):
         mw = None
         folder = OUT / "hero"
     else:
-        m = Measure(Body.heroine(jiggle=True), outfits)
-        mw = Measure(Body.heroine(outfit=None, jiggle=True), ()) if outfits else None
+        # (Animation 52, Body 14's call: posed with her helper bones driven, as the game does; without them an elbow
+        # bent past ~60 read 26-36 volume where the game keeps 79-87.)
+        m = Measure(Body.heroine(jiggle=True, helpers=True), outfits)
+        mw = Measure(Body.heroine(outfit=None, jiggle=True, helpers=True), ()) if outfits else None
         if mw is not None:
             mw.b.jiggle.amount, mw.b.jiggle.squash = 0.55, 0.0
             mw.cover = m.cover

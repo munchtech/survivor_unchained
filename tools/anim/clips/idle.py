@@ -972,7 +972,14 @@ def grip_hilt(rig, clip, at=0.0, spin=20.0, pole=(1.0, -0.2, 0.3), fingers=None,
 
 
 # Passes after the arms (an idle's name: f(rig, clip) -> clip).
-POST = {"idle_warden_town": _warden_hilt}
+# (Animation 52: the owner reopened the warden's left hand, "on the hilt" from the front; Body 14's call: the pose is
+# fine, the elbow volume drop was motion.py posing without her helpers. spin 40 over the fitted 20: the wrist's flex
+# 30-58 -> 14-41 deg, the fist still on the grip.)
+def _warden_grip(rig, clip):
+    return grip_hilt(rig, clip, spin=40.0)
+
+
+POST = {"idle_warden_town": _warden_grip}
 
 
 def clips(rig, want):
