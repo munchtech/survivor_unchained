@@ -703,6 +703,8 @@ public static class Dressing
             // (E9c2) nothing of the street's left standing inside a closed house (the cutaway shows the inside: a cart
             // parked in house 17, barrels in house 14's): its own furnishings below stand there instead
             if (walls != null && house < 0 && OwnWalls.InsideAny(z, at.Origin.X, at.Origin.Z, 0.25f)) { droppedInside++; continue; }
+            // (E9d) the web game's wares and stock at the stalls our own stalls replace, cleared
+            if (own != null && OwnProps.Cleared(own, id, at.Origin)) continue;
             if (own != null && OwnProps.Swap(own, id, at.Origin) is string preset) { ours.Add((id, preset, at)); continue; }
             var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();

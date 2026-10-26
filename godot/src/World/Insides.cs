@@ -21,6 +21,8 @@ public static class Insides
         {
             if (OwnProps.Piece(id[4..]) is not Node3D p) return null;
             p.Transform = at;
+            // (E9d) inside, as the kit's inside pieces: no shadows
+            foreach (var n in p.FindChildren("*", "GeometryInstance3D", true, false)) if (n is GeometryInstance3D g) g.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             return p;
         }
         if (id == "hearth")
@@ -50,6 +52,9 @@ public static class Insides
     {
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/floor_cloth.gdshader") };
         m.SetShaderParameter("rug", isRug);
+        // (E9d) drawn before the furniture fading in over it (the kit's insides draw in the transparent pass, their depth
+        // unwritten: a rug sorted after a table drew its border across the table's top)
+        m.RenderPriority = -10;
         return m;
     }
 }

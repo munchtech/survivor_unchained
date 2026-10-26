@@ -32,6 +32,18 @@
   "headstone_b": {"kind": "gravestone", "seed": 38, "head": "round", "w": 1.15, "hs": 1.4, "t": 0.26, "chip": 0.5, "lean": 0.07, "roll": -0.1, "stone": "#b0aca4", "soil": "#8a785c", "grime": 0.8, "moss_top": 0.35},
   "marker_cross": {"kind": "marker", "seed": 39, "h": 1.55, "w": 0.85, "wood": "#a49c90", "soil": "#8a785c", "roll": 0.17, "lean": -0.11, "beam": 0.14, "thick": 0.1},
   "marker_lashed": {"kind": "marker", "seed": 40, "lashed": true, "h": 1.5, "w": 0.9, "wood": "#a0968a", "rope": "#a89878", "soil": "#8a785c", "roll": -0.21, "lean": 0.1, "pole": 0.07},
-  "crypt": {"kind": "crypt", "seed": 41, "w": 6.0, "d": 8.0, "h": 8.0, "stone": "#dcd8d0", "mortar": "#8a857c", "grime": 2.6, "moss_top": 0.85, "lod1": 0.4, "slab": "#c8c2b6", "foot": 0.3, "streak": 0.4}
+  "crypt": {"kind": "crypt", "seed": 41, "w": 6.0, "d": 8.0, "h": 8.0, "stone": "#dcd8d0", "mortar": "#8a857c", "grime": 2.6, "moss_top": 0.85, "lod1": 0.4, "slab": "#c8c2b6", "foot": 0.3, "streak": 0.4},
+  "stall_produce": {"kind": "stall", "seed": 51, "wood": "#b8a690", "dye": "madder", "dye2": "linen", "stripe": 0.29, "valance": "scallop", "band": "madder", "wares": "produce", "patches": [[0.3, 0.45, 0.32, 0.26, "linen"]]},
+  "stall_cloth": {"kind": "stall", "seed": 52, "wood": "#a89884", "dye": "woad", "valance": "scallop", "band": "linen", "wares": "cloth", "sag": 0.16, "patches": [[0.7, 0.35, 0.3, 0.22, "walnut"]]},
+  "stall_herbs": {"kind": "stall", "seed": 53, "wood": "#b4a28a", "dye": "weld", "dye2": "linen", "stripe": 0.29, "valance": "ragged", "band": "weld", "wares": "herbs", "patches": []},
+  "stall_pots": {"kind": "stall", "seed": 54, "wood": "#a49480", "dye": "linen", "valance": "ragged", "band": "walnut", "wares": "pots", "sag": 0.17, "patches": [[0.25, 0.55, 0.36, 0.3, "madder"], [0.72, 0.3, 0.22, 0.2, "walnut"]]},
+  "notice_board": {"kind": "notice_board", "seed": 55, "w": 2.2, "wood": "#a89880"},
+  "handcart": {"kind": "handcart", "seed": 56, "wood": "#c8b8a0"},
+  "trough": {"kind": "trough", "seed": 57, "len": 1.8, "wood": "#a8988a"},
+  "heap_crates": {"kind": "market_heap", "seed": 58, "items": [["crate", 0, 0, 10], ["crate", 0.05, 0.02, -5, {"w": 0.7, "d": 0.7, "h": 0.6, "y": 0.91, "seed": 12}], ["crate", 0.95, 0.1, 25, {"w": 0.7, "d": 0.65, "h": 0.62, "seed": 13}], ["barrel", -0.95, 0.3, 0], ["barrel", -0.75, -0.55, 40, {"seed": 15}], ["sack", 0.6, 0.9, 0], ["sack_lying", -0.2, 0.9, 80]]},
+  "heap_hay": {"kind": "market_heap", "seed": 59, "items": [["hay", 0, 0, 8], ["hay", 0.1, 0.05, -6, 0.45], ["hay", 1.05, 0.2, 80], ["straw", 0.4, 0.2, 0, 1.6, 1.1], ["dung", 1.6, -0.6, 0, 4], ["bucket", -0.8, 0.6, 0]]},
+  "heap_sacks": {"kind": "market_heap", "seed": 60, "items": [["sack", 0, 0, 0], ["sack", 0.42, 0.1, 40], ["sack", 0.2, -0.4, 90], ["sack_lying", -0.45, 0.3, 20], ["basket", 0.75, 0.55, 0, "#7a9a50"], ["basket", -0.1, 0.65, 0, "#b8443a"], ["straw", 0.2, 0.2, 0, 0.9, 0.7]]},
+  "heap_pots": {"kind": "market_heap", "seed": 61, "items": [["crate", 0, 0, 0, {"w": 0.7, "d": 0.6, "h": 0.5, "seed": 16}], ["crock", 0.62, 0.15, 0, 0.45], ["crock", 0.55, -0.32, 0, 0.36], ["crock", -0.6, 0.3, 0, 0.5], ["straw", 0.1, 0.2, 0, 1.0, 0.7], ["barrel", -0.5, -0.55, 0, {"seed": 17}]]},
+  "crock": {"kind": "market_heap", "seed": 62, "items": [["crock", 0, 0, 0, 0.36]]}
  }
 }
