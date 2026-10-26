@@ -371,6 +371,13 @@ def _hand(fingers, palm):
     return tuple(k), tuple(np.cross(p, k))
 
 
+def _hand_r(fingers, palm):
+    """_hand for a RIGHT hand (its fingers' and palm's ways in her space): the left's, mirrored."""
+    m = np.array([-1.0, 1.0, 1.0])
+    k, b = _hand(tuple(np.asarray(fingers, float) * m), tuple(np.asarray(palm, float) * m))
+    return tuple(np.asarray(k) * m), tuple(np.asarray(b) * m)
+
+
 def _pole(back):
     """An elbow pole out to her left side, swung `back` degrees behind it (the chest's frame)."""
     a = math.radians(back)
@@ -453,14 +460,25 @@ REAVER_HIP_L = dict(pos=(0.2175, 1.095, 0.0), pole=_pole(57.0), knuckles=_RV_K, 
 # into her hip, and the elbow drawn back instead flips the arm (the elbow behind her, the fingers pointing ahead).
 _AR_K, _AR_B = _hand((0.231, -0.811, -0.537), (math.cos(math.radians(-25.0)), 0.0, math.sin(math.radians(-25.0))))
 ARC_WRIST_L = dict(pos=(0.1736, 1.17, 0.015), pole=_pole(8.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
+# Animation 51 (the judge, round 3: "a high teapot elbow", the hand "a knuckle clump"): the back of the wrist slid
+# 3.7 cm back along the side of her hip and 2 cm down toward the top of the hip bone (3.5 mm off her outfit); the hand
+# rolled palm-down (out and back) so the graded fingers trail down and back, their length seen from the front; the arm's
+# swivel (the wrist's least strain, keyed) then takes the elbow back and in: out 6 cm past the shoulder joint from the
+# front (was 14), the upper arm 32 deg behind her (was 35 ahead), the elbow open to 77. (Fitted on the stand's frame 0,
+# scratch anim51/s3b/search3.py. Between the two the swivel has no rest: at 10-15 deg ahead the elbow goes back out
+# to 15 cm and the fingers 9-16 mm into her hip.)
+_AR_K, _AR_B = _hand((0.3602, -0.9006, -0.2432), (0.7146, 0.434, -0.5486))
+ARC_WRIST_L = dict(pos=(0.1749, 1.151, -0.022), pole=_pole(38.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
 
 
 def on_hip(spec, free):
-    """Arms for a town stand: `free` (idle.free_arms) with the left hand as `spec` keeps it on her pelvis. Returns
+    """Arms for a town stand: `free` (idle.free_arms) with the left hand (or spec["side"]'s) as `spec` keeps it on her
+    pelvis (a right hand's spec in its own terms: _hand_r). Returns
     make(rig, base) -> over(t, f) (the hand rides the base's pelvis)."""
     def make(rig, base):
-        return pelvis_hand(rig, base, free, "l", spec["pos"], spec["pole"], spec.get("fingers") or _relaxed(spec["curl"]),
-                           knuckles=spec["knuckles"], blade=spec["blade"], twist=0.5)
+        return pelvis_hand(rig, base, free, spec.get("side", "l"), spec["pos"], spec["pole"],
+                           spec.get("fingers") or _relaxed(spec["curl"]), knuckles=spec["knuckles"], blade=spec["blade"],
+                           twist=spec.get("twist", 0.5))
     make.needs_base = True
     return make
 
@@ -494,6 +512,14 @@ def graded(knuckle=(15.0, 30.0), middle=(20.0, 45.0), tip=(10.0, 20.0), spreads=
 
 # (Animation 51, the judge of the arcanist's on-hip hand: "a knuckle clump, a fist": its curl graded and open.)
 ARC_WRIST_L["fingers"] = graded((15.0, 20.0), (20.0, 30.0), (8.0, 12.0))
+# (Animation 51, the judge: the stalker's right thumb hooked over her belt at the front of the right hip, the elbow
+# ~80, that hand 12-15 cm above the left; the other fingers together, lying on the hip.) The wrist 1.145 m up at rest
+# (15 cm above the hanging left), the fingers down and a little in and ahead along the front of her hip and thigh, the
+# palm to her; the thumb's pad on the belt 1.4 mm off the ranger outfit, the fingers 2 mm off; the elbow open to 81.
+# (Fitted on frame 0, scratch anim51/s3b/fit_stk.py.)
+_ST_K, _ST_B = _hand_r((0.1891, -0.9456, 0.2648), (0.6312, -0.0895, -0.7705))
+STALKER_THUMB_R = dict(side="r", pos=(-0.1499, 1.145, 0.1096), pole=(-math.cos(math.radians(30.0)), 0.0, -math.sin(math.radians(30.0))),
+                       knuckles=_ST_K, blade=_ST_B, curl=0.2, fingers=graded((5.0, 12.0), (8.0, 18.0), (4.0, 10.0)))
 
 
 def _mirror(v, side):

@@ -681,7 +681,7 @@ _NONE = lambda t, f: {}
 # (Animation 51, the judge: the arms mirrored and angled out from the front. Her left hand rests on the sheathed sword's
 # hilt as her town run's does (run.hilt_carry, POST below); the right hangs in closer, its forearm upright, the elbow
 # softer.)
-WARDEN_TOWN = town_idle.hang_arms(r=dict(out=0.184, elbow=30.0))
+WARDEN_TOWN = town_idle.hang_arms(r=dict(out=0.198, elbow=30.0))
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
     "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
@@ -692,8 +692,8 @@ TOWN = {
     # both hands' fingers together in a loose half-curl.)
     # (Animation 51, the judge: the left forearm upright, the fingertips at her outer thigh; both hands' curl graded
     # index -> little, no spread.)
-    "stalker_town": town_idle.hang_arms(l=dict(out=0.176, elbow=14.0, pole=_P(0.15), fingers=town_idle.graded()),
-                                        r=dict(out=0.224, pole=_P(0.1), elbow=31.0, fwd=0.02, fingers=town_idle.graded())),
+    # (Animation 51, round 3b: the right thumb hooked over her belt, town_idle.STALKER_THUMB_R.)
+    "stalker_town": town_idle.hang_arms(town_idle.on_hip(town_idle.STALKER_THUMB_R, _NONE), l=dict(out=0.176, elbow=14.0, pole=_P(0.15), fingers=town_idle.graded())),
 }
 
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
