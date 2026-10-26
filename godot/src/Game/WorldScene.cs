@@ -395,13 +395,19 @@ public partial class WorldScene : Node3D, IZoneLook
         v.Position = new Vector3((float)spot.X, (float)HeightAt(spot.X, spot.Z), (float)spot.Z);
         v.Rotation = new Vector3(0, (float)spot.Facing, 0);
         AddChild(v);
+        v.Lod();
         return v;
     }
 
     public INpcView Walker(PersonSpec spec, double scale)
     {
+        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var v = new PersonView(spec, null, scale);
+        long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
         AddChild(v);
+        long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+        v.Lod();
+        if (Perf.On) GD.Print($"perf walker: made {(t1 - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms, in the tree {(t2 - t1) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms, its shadow begun {(System.Diagnostics.Stopwatch.GetTimestamp() - t2) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms");
         return v;
     }
 
