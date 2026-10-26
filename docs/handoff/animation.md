@@ -2,6 +2,48 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+## 00000000000000000000. Paused here (animation 50, 26 Oct, coordinator wind-down): she must look NATURAL
+Branch `anim-50` (worktree .claude/worktrees/anim-50). `godot/assets` is a junction to its OWN public/assets: no stash, reset --hard or checkout .; remove the link before a merge and remake it after. Never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json, *.import or *.uid. No helpers or turns are held.
+Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\a44c2c21-ed7f-40ee-bf4a-842fa5db11c1\scratchpad\anim50\`, with its texts backed up to `survivorsunchained_inputs\scratch_anim50`. It holds:
+- the solver1 and solver2 briefs and the judge1 brief;
+- frames: s1\ (before) and s2\ (after round 1);
+- tools\: shoot.sh (lists of `NAME|godot args`, one turn), import_pack_shoot.sh, sheet.py, and the measures stance.py, stance2.py, onhip.py, along.py, scabbard.py.
+
+**The owner (26 Oct):** "nobody stands like that ... we hold things sometimes at weird angles. we just don't look natural". Frames in survivorsunchained_inputs\owner_frames_26oct\: camp_stance_unnatural.png (FAIL calibration) and reaver_walk_left_arm.webp.
+
+**Diagnosis (numbers).** No runtime layer moves her arms: HerPose leaves her own clips as they were made.
+1. **The camp frame:** creation's Look step hid the weapons (ShowHeld false) while the ARMED idle kept playing, so she held fists and a shield arm out. FIXED in 5b172522: with empty hands she plays her calling's town stand (PersonView.ShowHeld, People.Clip with kind ""). `--fig-zoom` and `--fig-turn` frame the figure for pictures.
+2. **The reaver's left arm and the cinematic walks:** she has NO walk clip. From 0.25 to 2.2 m/s PlayerView blends her idle with her run, unsynced, the run slowed to 0.55x. Cinematics steer her own body at walking pace. So a "walk" is part idle (the reaver's on-hip left arm) and part slow-motion run. This is item 2.
+3. **The town stands:** the free arms were held out from the chest (21-25 deg out, elbows bent 26-41) as clearance for the swaying hip.
+
+**Item 1, the stances.**
+- **Round 1 (a75606b5).** `town_idle.hang_arms` and `HANG` hang each free hand from the pelvis: abd 9-12, elbow 18, 5-30 mm off her, 0 mm into her or her outfits. motion.py now reports `near`.
+- **Max judge round 1: FAIL, close to medium.** "The arm change works, the stance underneath doesn't." Most Look frames PASS. The judge's notes:
+  - square, level hips over two locked knees, and mirrored arms;
+  - the reaver's on-hip hand floats and the arcanist's is a fist with a teapot elbow;
+  - the stalker's fingers read as claws.
+- **Round 2 (5556b76e, 32e620cd, 1b56a03e; packed under a turn).** The numbers are in the solver's commits. 0 square frames in any stand; audit 0 flags. **NOT JUDGED YET.**
+  - New code: `contra(free_knee=)`, `soften()` (the warden's sway kept exactly, the unloading knee +10, the roll about the pelvis's centre), `shoulders()` (clavicles let down), and `HALF_CURL` fingers.
+  - The reaver: the heel of the hand on her belt, 0.8 mm off.
+  - The arcanist: the back of the wrist on her hip, the hand an open half-curl.
+  - The stalker: the right arm bent more, the fingers closed.
+  - The warden: the left hand 31 mm clear of the sheathed sword.
+
+**Next:**
+1. **Judge round 2.** Shoot it with `tools\shoot.sh` and `s2.txt` (everything is built and packed in the worktree). Then a max judge: the brief is judge1_brief.md plus the round-1 verdict above plus the solver's open questions:
+   - the on-hip hands go 12 mm (reaver into warden) and 27 mm (arcanist into reaver) into OTHER callings' outfits: a per-outfit runtime hand offset like socket_clearance.json, or accept it;
+   - the arcanist's elbow was not drawn back;
+   - the warden's added roll is only 2 deg;
+   - do the stalker's arms still mirror?
+   - the reaver's cocked hip from the front.
+   Before the merge, show the owner the warden's before/after in motion (the idle they love). Then the full test and MR1.
+2. **Item 2, the walks.** A real walk for each calling (town and armed) as a synced blend point between the idle and the run, used in play and in cinematics (GameCinema steers PlayerView). The free arms swing, and no on-hip arm leaks in. Sources on disk:
+   - Kimodo `her_walk` (5 takes) and `walk_woman` (3 takes) in C:\Users\munch\Tools\mocap\kimodo; clips/generated.py retargets them;
+   - 100STYLE through `build.py try_walk_<Style>` (walk_tired is its Neutral).
+3. **Item 3, held-prop angles:** an audit, then the fixes.
+
+Every helper brief says "every Godot/Blender run takes its turn via tools/turn.py first" (round 1's solver packed without one).
+
 ## 0000000000000000000. MR READY 2 (animation 49, 21 Oct); the area is free after the merge (slot to the boss Warden rebuild)
 Branch `anim-40` (junction rules below; never commit heroine.res, *_clips.json, manifest.json, arms_rest_godot.json, *.import). Integration merged at 67824ba8. No helpers or turns held. Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\c4134bd3-ebec-4f59-ad97-c6010364bcd4\scratchpad\anim\`. It holds stp\ (judge briefs r1-r4, shots to shots4, heldt2.py, a per-frame staff/fist dump), mr2\ (checks), and tools\gshoot.sh and clipdiff.py. Texts are backed up to survivorsunchained_inputs\scratch_anim49.
 **MR2 is 10 clips:**
