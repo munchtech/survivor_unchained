@@ -76,6 +76,11 @@ uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_black;
 // The ruts: the albedo at a full rut's core (GroundPaint gives G 0.42-1, so plus or minus 40%); the crown between them lighter.
 uniform float rut_dark = 0.45;
 uniform float crown_lift = 0.12;
+// (lf3b, judge lf2 #3: Low Ford's ruts read as straight near-black trenches beside a pale kerb) rut_soft: the ruts' darkness
+// taken from the mask blurred over about rut_blur m (their edges eased out into the road and the grass), and broken along
+// them by a 2-3 m field down to (1 - rut_soft * 0.55) in places; 0: as before
+uniform float rut_soft = 0.0;
+uniform float rut_blur = 0.3;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
@@ -580,6 +585,13 @@ void fragment() {
 	// darkness wandering; the crown between them a little lighter. (The dip in the normal kept slight: at a low
 	// sun one wall lit and one dark read as a thin line, not a track.)
 	float rut_w = rut * w_soft;
+	if (rut_soft > 0.0 && w_soft > 0.0 && pm.r > 0.05) {
+		float e = rut_blur / zone_size;
+		float rb = (textureLod(paint_mask, zuv + vec2(e, 0.0), 0.0).g + textureLod(paint_mask, zuv - vec2(e, 0.0), 0.0).g
+			+ textureLod(paint_mask, zuv + vec2(0.0, e), 0.0).g + textureLod(paint_mask, zuv - vec2(0.0, e), 0.0).g) * 0.25;
+		float rn = texture(noise_tex, w * 0.4 + 0.37).g;
+		rut_w = mix(rut, 0.5 * rut + 0.5 * rb, rut_soft) * (1.0 - rut_soft * 0.55 * smoothstep(0.42, 0.68, rn)) * w_soft;
+	}
 	albedo *= mix(1.0, rut_dark, rut_w);
 	albedo *= 1.0 - rut_sun * rut_w * ex4.g;
 	albedo *= 1.0 + crown_lift * smoothstep(0.82, 0.95, pm.r) * w_soft;
