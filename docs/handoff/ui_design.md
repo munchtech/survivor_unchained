@@ -1,6 +1,23 @@
 # Handoff: UI design lead
 
-## UI 12 (26-27 Oct; branch ui-11, worktree .claude/worktrees/ui-11, junction godot/assets to its OWN public/assets)
+## UI 12 handed off (27 Oct; branch ui-11, worktree .claude/worktrees/ui-11, junction godot/assets to its OWN public/assets)
+**Notes MR: READY, branch `ui-12-notes`@bd72241f (pushed)** = integration + the 8 routed notes (fd76a6e4, e0fc3089, dc0bc5f5, 70b9ed23, 3c24447c) WITHOUT the v2 WIP. Judged over 3 rounds and passed; F (barks under a tip) passes on its 24 px rule and was never caught in frame. Tests on the ui-11 tip (a superset): 1054/0/8. Closed as known: the card ivy (v2 retires card frames), small grey loot labels, her HP bar over a loot label, a codex line running 1200 px (later list), left-edge barks at ~20 px.
+**HUD v2 left half: round 2 judged (max): NO, distance CLOSE, one round.** It reads as one object now: lug, sill hangers, lock through a link, pressed tags. Plain states pass the gate narrowly: 100 night and day, 55 plain, shield. Fixes:
+1. The hurt film is a jagged opaque "skyline", so 55 reads as about 70%; at 18 it floats over a black gap. Rebuild its mask: 3-5 low lobes and 4-7 rounded drips 3-6 px wide, opacity 0 rising to 55-65% at the surface, about 0.55 of the blood's value, no gap.
+2. The surface ellipse doesn't read. Make it about 10 px tall at 55, 15-20% lighter, with a 1 px #ff7a66 meniscus.
+3. At night the cuff and seats are cold charcoal beside warm links. Tint every iron the same; roughen the ring by day.
+4. The hot lock barely warms. Below 60% it should be chain iron; at 90% and above, an orange core #ff8a30 with a #fff0c0 numeral.
+Smaller: a 1 px lower lip on the unlit rank pits, liquid swirls at most -10%, a feathered glint, a darker R tag face at 1080, frost rime 3-4 px at 1080, and a reshoot of 18 on the beat. Ask the owner: the ring is about 7 px at 1080 and reads more like a porthole bezel; it may want to be 25-35% thicker.
+Main's rule (27 Oct): round 2 was the last before the owner; the options went to main. Judge crops are in the coordinator scratchpad, folder ui12/v2r2_judge (*_AB.png, *_L.png, detail.png).
+**Code map:**
+- Glass: tools/uiforge/blender_glass.py + glass.json (Cycles shells + a 17/13-level liquid atlas), hud_vessel.gdshader blood/draught, Vessel.Glass in Instrument.cs.
+- Iron: blender_irons.py / irons.json / `irons.py --render`, inlays.py.
+- Harness: HudPin.cs (--hud-pin / --hud-seq).
+- Shots: gf_*, gfd_*, gf14_*, gfd14_* (at e3252372), from script ui12/v1.sh. The scratch play.py and direct.py pass --stale-ok (HUD only).
+**Cost:** notes ~0.6M; v2 left half ~2.3M (r1 1.2M, r2 1.1M); API $0.
+**Incidents:** a glass solver's bare `turn.py give blender` freed body14's turn, and empty stray folders were left under C:/tools/comfy/out/uiforge/glass/test (delete by hand).
+
+### Earlier (UI 12, during the session)
 **Notes MR (8 routed notes):** commits fd76a6e4, e0fc3089 (tally falloff 55%, objectives rimmed), dc0bc5f5 (r2), 70b9ed23 (r3: explicit *term* tip marks, cards' rarity centered / no double NEW / KeyCap, nameplates clamped 24 px, shot hooks tip_ (at full opacity), prompt_<verb>, barktip_N, floaterlift_N). Judges: r1 3/8 PASS; r2 A/E/G PASS, C+D fail close, B/F/H not in frame. r3 shoot = n4. The MR is NOT the branch tip (v2 WIP sits between): build a notes branch = e0fc3089 + dc0bc5f5 + 70b9ed23 diffs (git apply --3way on a temp index, or the main session cherry-picks those four commits). Closed as known: the card frame's ivy/root clump (v2 retires card frames); loot labels small and grey (v2 list).
 **v2 left half (WIP, unjudged by a max judge):** 43a779d3 deltas + Sill/KeyTag/CuffFront + --hud-pin/--hud-seq harness (HudPin.cs); 9a726014/eb62b7ce/11e1c7a5 iron kit (tools/uiforge/blender_irons.py, irons.json, irons.py --render in a Blender turn; inlays.py; art/ui/hud/*, art/ui/inlay/*); d6828194 glass shader blood+draught; 6555ffa7 art anchors wired; a5eb5599 inlays in seats. Solvers' own reads: cuff/glass/lock close, seats medium-close, inlays medium (read as bone line, not glassy enamel: width 3.8, edge_depth 0.7, enamel_k 0.4, pad 0.6; floor #141217 + steeper vignette). Shots: scratch ui12/v1.sh (hvn10/hvd10/hvn14/hvd14_hudK).
 **Next:** judge n4 (notes r3), MR; max judge the v2 left half (HUD_V2 section 6 checklist, A|B vs n2/o1a), at most one fix round, then the OWNER gate via main. Cost so far: notes ~0.38M, v2 piece ~1.05M.
