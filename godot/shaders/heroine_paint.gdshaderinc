@@ -77,6 +77,28 @@ uniform float mul_order = 0.0;
 uniform float mul_side_a = 1.15;
 uniform float mul_side_b = 1.55;
 uniform float mul_split = 0.512;
+// (face 41, judge j2: one darken times one warm tint gave every hair one faint red-brown, black's auburn. Now each hair
+// its own brow: a target colour per hair (People.HerPaint's BrowTarget: hue 0-1, saturation, and value as a share of
+// the skin's own sRGB value round it), and the multiply is that target over her painted skin's albedo per channel,
+// at most 1 (a darken only; the target's own hue keeps B <= G <= R), so a stroke's core is the target whatever the
+// skin's cast. Ordered as the multiply itself (never bluer than her skin) every target took her skin's red, black's auburn)
+uniform float target_mode = 0.0;
+uniform vec3 brow_target = vec3(0.06, 0.32, 0.375);
+// (the least a target's channel may be, sRGB: under it the night grade's toe took a near-black stroke to navy)
+uniform float target_floor = 0.04;
+// (how far a channel may rise past her skin's: her deep skin has so little blue that, held to 1, a black hair's target
+// kept the skin's red at S 0.7; the target's value under the skin's keeps it a darken)
+uniform float target_cap = 3.0;
+uniform float target_border = 1.0;
+// (each brow's value over the target's, as mul_side_a/b: her shadowed brow under the night's fill read darker and violet)
+uniform vec3 target_side = vec3(1.15, 1.0, 0.0);
+
+vec3 hsv_rgb(vec3 c) {
+	vec3 q = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+	return c.z * mix(vec3(1.0), q, c.y);
+}
+vec3 lin_srgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
+vec3 srgb_lin(vec3 c) { return mix(c / 12.92, pow((max(c, vec3(0.0)) + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
 
 void vertex() {
 	// (a tenth of a millimetre out, so it never fights the skin under it)
@@ -177,6 +199,15 @@ void fragment() {
 		float k = clamp(dot(dt, lum) / max(dot(here * skin_tone, lum), 2e-3), 0.0, 8.0);
 		f = mix(f, mul_warm * (k / max(dot(mul_warm, lum), 1e-3)), mul_scalar);
 		f *= UV.x < mul_split ? mul_side_a : mul_side_b;
+		if (target_mode > 0.5) {
+			vec3 s_srgb = lin_srgb(sc);
+			float sv = max(s_srgb.r, max(s_srgb.g, s_srgb.b));
+			vec3 tg = srgb_lin(max(hsv_rgb(vec3(brow_target.xy, brow_target.z * sv * (UV.x < mul_split ? target_side.x : target_side.y))), vec3(target_floor)));
+			vec3 ft = clamp(tg / max(here * skin_tone, vec3(2e-3)), 0.0, target_cap);
+			// (blue never lifted past green: lifted, the stroke took the night fill on her shadowed brow as violet, h 250-300)
+			ft.b = mix(ft.b, min(ft.b, ft.g), target_border);
+			f = ft;
+		}
 		ALBEDO = mix(vec3(1.0), f, a);
 		ALPHA = 1.0;
 #else
