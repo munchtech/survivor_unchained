@@ -887,14 +887,14 @@ def shrug(sk: Skeleton, rot, report=None):
     return rot
 
 
-def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
+def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None, panels=True):
     """Her helpers posed from the pose (local rotations [J, 4], changed in
     place): the forearm's roll handed to the hand, the twists shared out, the
     shares half bent and swollen across the bend (`scale` [J, 3], if given,
     takes their stretch, and `shift` [J, 3] the move in the bone's own frame
     that holds its pivot still). As HerJoints.cs does it, after every other layer;
     her clavicle lift first (shrug, as HerShrug does before HerRaise).
-    `state` and `dt`: the panels' fall from frame to frame (drive_panels)."""
+    `state` and `dt`: the twist roll's unwrap and (with `panels`) the panels' fall from frame to frame (drive_panels)."""
     I = sk.index
     ident = np.array([0, 0, 0, 1.0])
     shrug(sk, rot)   # her clavicle lift first (HerShrug runs before every other layer of hers)
@@ -949,8 +949,95 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None):
                     scale[j] = (1.0 - q, 1.0, k)
                     if shift is not None:
                         shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(deg, hh))
-    drive_panels(sk, rot, state, dt)
+    drive_panels(sk, rot, state if panels else None, dt)
     return rot
+
+
+# ---- HerRaise.cs's pull on her breasts as an arm rises (its defaults; RaiseRamp the twin) ----
+RAISE = dict(start=-10.0, full=70.0, pitch=20.0, yaw=12.0, up=0.034, out=0.010, back=0.006, sup=0.22, sside=0.03, rigid=0.0)
+
+
+def raise_breasts(sk: Skeleton, rot, pos, scale, squash=1.0):
+    """Her breast bones (local rotations rot and positions pos [J, ...], and `scale` [J, 3], changed in place) as
+    HerRaise sets them, after HerShrug: per side, w a smoothstep of the upper arm's elevation in spine_03's frame
+    (RAISE start..full); the bone moved out/up/back, turned (yaw out, pitch up) and stretched up (the volume kept);
+    `squash` HerJiggle.Squash (the worn top's; 0 under plate: no lift)."""
+    I = sk.index
+    if "spine_03" not in I:
+        return rot
+    c = RAISE
+    grot, gpos = sk.fk(rot[None], pos[None])
+    grot, gpos = grot[0], gpos[0]
+    ci = qinv(grot[I["spine_03"]])
+    for i, s in enumerate("lr"):
+        b, u, lo = (I.get(n + "_" + s) for n in ("breast", "upperarm", "lowerarm"))
+        if b is None or u is None or lo is None:
+            continue
+        d = qrot(ci, gpos[lo] - gpos[u])
+        d = d / np.linalg.norm(d)
+        el = math.degrees(math.asin(float(np.clip(d[1], -1, 1))))
+        t = float(np.clip((el - c["start"]) / (c["full"] - c["start"]), 0, 1)) if c["full"] > c["start"] else float(el >= c["full"])
+        w = t * t * (3 - 2 * t)
+        if w <= 0:
+            continue
+        side = 1.0 if i == 0 else -1.0
+        held, splay = c["rigid"] + (1 - c["rigid"]) * squash, squash
+        turn = qmul(qaxis([0, 1.0, 0], c["yaw"] * side * w * splay), qaxis([1.0, 0, 0], -c["pitch"] * w * held))
+        pos[b] = pos[b] + np.array([c["out"] * side * splay, c["up"] * held, -c["back"] * held]) * w
+        rot[b] = qnorm(qmul(turn, rot[b]))
+        if scale is not None:
+            uu, ss = 1 + w * squash * c["sup"], 1 + w * squash * c["sside"]
+            scale[b] = scale[b] * np.array([ss, 1 / (uu * ss), uu])
+    return rot
+
+
+def drive_shoulder(sk: Skeleton, G):
+    """Her shoulder helpers (SPEC "shoulder") in bone globals G [J, 4, 4] (changed in place) as HerShoulder.cs poses
+    them, last of her layers: each from its own rest global (the skeleton's, as Godot's GetBoneGlobalRest), its
+    parent's and its aim carrier's posed and rest globals and A (the upper arm from neck_01 -> pelvis)."""
+    I = sk.index
+    if "pelvis" not in I or "neck_01" not in I:
+        return G
+    fr = getattr(sk, "_shoulder_rest", None)
+    if fr is None:
+        grot, gpos = sk.rest_globals()
+        R = np.tile(np.eye(4), (len(sk.names), 1, 1))
+        for j in range(len(sk.names)):
+            R[j, :3, :3] = qmatrix(grot[0, j])
+            R[j, :3, 3] = gpos[0, j]
+        fr = {}
+        for s, sg in (("l", 1.0), ("r", -1.0)):
+            if not has_shoulder(I, s):
+                continue
+            J0, E0 = R[I["upperarm_" + s]][:3, 3], R[I["lowerarm_" + s]][:3, 3]
+            h = (E0 - J0) / np.linalg.norm(E0 - J0)
+            m = np.array([sg, 1.0, 1.0])
+            for k, c in SPEC["shoulder"]["bones"].items():
+                j = I.get(f"{k}_{s}")
+                pj, oj = I.get(c["parent"].replace("{s}", s)), I.get(c["on"].replace("{s}", s))
+                if j is None or pj is None or oj is None:
+                    continue
+                G0 = R[j]
+                T0 = None if c["aim"] is None else J0 + c["aim"][0] * h + np.asarray(c["aim"][1], float) * m
+                L0 = 1.0 if T0 is None else float(np.linalg.norm(T0 - G0[:3, 3]))
+                fr[j] = (dict(G0=G0, T0=T0, L0=L0, c=c, s=s, off=np.asarray(c["off"], float) * m), pj, oj, R[pj], R[oj])
+        sk._shoulder_rest = fr
+    if not fr:
+        return G
+    down = G[I["pelvis"], :3, 3] - G[I["neck_01"], :3, 3]
+    down = down / np.linalg.norm(down)
+    A = {}
+    for s in "lr":
+        if "upperarm_" + s in I:
+            u = G[I["lowerarm_" + s], :3, 3] - G[I["upperarm_" + s], :3, 3]
+            A[s] = math.degrees(math.acos(float(np.clip(u @ down / np.linalg.norm(u), -1, 1))))
+    for j, (f, pj, oj, Rp0, Ron0) in fr.items():
+        # (the parent's and carrier's rotations orthonormal, as HerShoulder reads them: Basis.Orthonormalized)
+        Mp, Mon = G[pj].copy(), G[oj].copy()
+        for M in (Mp, Mon):
+            M[:3, :3] = M[:3, :3] / np.linalg.norm(M[:3, :3], axis=0)
+        G[j] = shoulder_helper(f, A[f["s"]], Mp, Rp0, Mon, Ron0)
+    return G
 
 
 # --------------------------------------------------------------- weights --

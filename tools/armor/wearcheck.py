@@ -566,11 +566,11 @@ def main(argv):
                         O = O - D * x["tuck"][:, None] + D * 1e-5
                     elif "dA" in x:
                         # (skinning is linear in the rest point: the displacement goes through its blend of bones)
-                        Jp, Wp = body.J[x["pts"]], body.W[x["pts"]]
+                        Jp, Wp = body.Jv[x["pts"]], body.W[x["pts"]]
                         M = sum(Wp[:, k, None, None] * S[Jp[:, k], :3, :3] for k in range(Jp.shape[1]))
                         O = O + np.einsum("nij,nj->ni", M, x["dA"])
                         if "nB" in x:
-                            Jb, Wb = body.J[x["nB"]], body.W[x["nB"]]
+                            Jb, Wb = body.Jv[x["nB"]], body.W[x["nB"]]
                             Mb = sum(Wb[:, k, None, None] * S[Jb[:, k]] for k in range(Jb.shape[1]))
                             pr = np.c_[P0[x["pts"]] + x["dA"], np.ones(len(x["pts"]))]
                             Ob = np.einsum("nij,nj->ni", Mb[:, :3, :], pr)
