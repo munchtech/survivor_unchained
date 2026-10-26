@@ -643,6 +643,7 @@ public partial class Game
             p.X = at.X; p.Z = at.Z; p.Facing = her.Rotation.Y; p.Vx = p.Vz = 0;
             pv.Face(her.Rotation.Y, new Vector3(at.X, (float)g.scene.HeightAt(at.X, at.Z), at.Z));
             pv.Hidden = false;
+            pv.Still = true;
             her.Visible = false;
             moves.RemoveAll(mv => mv.Actor == "her");
         }
@@ -959,7 +960,7 @@ public partial class Game
                     switch (c.Str("kind"))
                     {
                         case "shake": g.cam.AddTrauma((float)c.Num("amount", 0.4)); break;
-                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9) }); break;
+                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9), Plain = c.Has("plain") && c.Get("plain").ValueKind == System.Text.Json.JsonValueKind.True }); break;
                         case "burst": b.Events.Emit(new Ev.Explosion { X = at.X, Z = at.Z, Radius = c.Num("radius", 1.2), School = Enum.Parse<School>(c.Str("school") ?? "physical", true), Power = c.Num("power", 0.5) }); break;
                     }
                     break;
@@ -1568,6 +1569,7 @@ public partial class Game
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;
             var pv = g.scene!.Player;
+            pv.Still = false;
             if (handed)
             {
                 // Her own body already: what she was doing carries on, easing out.

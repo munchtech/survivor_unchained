@@ -894,8 +894,8 @@ public partial class BattleFx : Node3D
                 case Ev.Nova e:
                 {
                     var pal = Palette.Of(e.School);
-                    if (!Blast(e.X, e.Z, e.School, (float)e.Radius * 0.9f, (float)Math.Max(0.5, e.Duration * 1.5), 1f, light: true)) Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
-                    if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
+                    if (e.Plain || !Blast(e.X, e.Z, e.School, (float)e.Radius * 0.9f, (float)Math.Max(0.5, e.Duration * 1.5), 1f, light: true)) Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
+                    if ((e.Rings ?? 1) > 0 && !e.Plain) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
                     break;
                 }
                 case Ev.Rise e:
