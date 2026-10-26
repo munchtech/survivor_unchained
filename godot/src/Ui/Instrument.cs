@@ -27,20 +27,24 @@ public partial class Instrument : Control
     public const float VY = 1080 - 30 - (R + Band);
     /// <summary>The six places: their size, the gap between, and their tops (their middles 20 px above
     /// the vessels', so the chain and the keys have room under them).</summary>
-    public const float Sock = 58, SockGap = 8, SockY = VY - 20 - Sock / 2;
+    public const float Sock = 58, SockGap = 6, SockY = VY - 20 - Sock / 2;
     /// <summary>The draught's and the dash's glass, and their iron.</summary>
     public const float SmallR = 23, SmallBand = 6;
     /// <summary>Where the chain leaves each cuff: an eye this far below the level, on the inner side.</summary>
     public const float EyeAngle = 32;
+    /// <summary>HUD v2: the clear between the row's ends and the small glasses (22), the forged lug between a
+    /// big cuff and the small glass (10, part of the cuff art, kept here so the art lines up), the sill under
+    /// the row (5 tall, 6 past each end), and the key tags hung at 6 o'clock (16 tall).</summary>
+    public const float SeatClear = 22, LugLen = 10, SillH = 5, SillOver = 6, TagH = 16;
 
     public static float SocksX => 960 - (6 * Sock + 5 * SockGap) / 2;
     public static float SmallY => SockY + Sock / 2;
     public static Vector2 LifeAt => new(960 - Reach, VY);
     public static Vector2 ArtAt => new(960 + Reach, VY);
-    public static Vector2 DraughtAt => new(SocksX - 14 - SmallR - SmallBand, SmallY);
-    public static Vector2 DashAt => new(SocksX + 6 * Sock + 5 * SockGap + 14 + SmallR + SmallBand, SmallY);
-    /// <summary>The chain's ends, at the cuffs' eyes.</summary>
-    public static Vector2 EyeL => LifeAt + new Vector2(Mathf.Cos(Mathf.DegToRad(EyeAngle)), Mathf.Sin(Mathf.DegToRad(EyeAngle))) * (R + Band + 2);
+    public static Vector2 DraughtAt => new(SocksX - SeatClear - SmallR - SmallBand, SmallY);
+    public static Vector2 DashAt => new(SocksX + 6 * Sock + 5 * SockGap + SeatClear + SmallR + SmallBand, SmallY);
+    /// <summary>The chain's ends: the riveted joints on the cuffs' outer edge, 32 degrees below level.</summary>
+    public static Vector2 EyeL => LifeAt + new Vector2(Mathf.Cos(Mathf.DegToRad(EyeAngle)), Mathf.Sin(Mathf.DegToRad(EyeAngle))) * (R + Band);
     public static Vector2 EyeR => new(1920 - EyeL.X, EyeL.Y);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
     public static Rect2 Bounds => new(960 - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
@@ -53,16 +57,19 @@ public partial class Instrument : Control
     /// art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives, Statuses;
     public readonly Label ArtWord, ArtNote;
-    readonly Control lifeKey = new(), artKey = new(), draughtKey = new(), dashKey = new();
+    public readonly Sill SillStrap = new();
+    readonly KeyTag draughtKey = new(Act.Draught), dashKey = new(Act.Dash), artKey = new(Act.Flare);
+    int laidN = -1;
 
     public Instrument()
     {
         MouseFilter = MouseFilterEnum.Ignore;
         Position = Vector2.Zero;
         Size = new Vector2(1920, 1080);
-        // (the chain first: its eyes and the cuffs lie over its ends)
+        // (draw order: the sill and the six seats, the cuffs and small glasses, then the chain over the
+        // cuffs' bands, then each cuff's front ear over the chain's first link, then the key tags)
+        AddChild(SillStrap);
         Chain = new EmberChain();
-        AddChild(Chain);
         Life = new Vessel(true) { Position = LifeAt - Vessel.Half };
         AddChild(Life);
         Art = new Vessel(false) { Position = ArtAt - Vessel.Half };
@@ -76,6 +83,9 @@ public partial class Instrument : Control
         AddChild(Draught);
         Dash = new Round(Round.Kind.Dash) { Position = DashAt - Round.Half };
         AddChild(Dash);
+        AddChild(Chain);
+        AddChild(new CuffFront(false) { Position = LifeAt - Vessel.Half });
+        AddChild(new CuffFront(true) { Position = ArtAt - Vessel.Half });
         Passives = Style.H(6);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
         Passives.Position = new Vector2(SocksX, SockY - 34);
@@ -95,29 +105,21 @@ public partial class Instrument : Control
         ArtNote.Position = new Vector2(ArtAt.X - 200, VY - R - Band - 50);
         ArtNote.Size = new Vector2(400, 18);
         AddChild(ArtNote);
-        foreach (var k in new[] { lifeKey, artKey, draughtKey, dashKey }) { k.MouseFilter = MouseFilterEnum.Ignore; AddChild(k); }
+        draughtKey.Place(DraughtAt.X, 989);
+        dashKey.Place(DashAt.X, 989);
+        artKey.Place(ArtAt.X, 1053);
+        AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         Keys();
+        Lay(Sockets.Length, true);
     }
 
-    /// <summary>The keys, as the device in hand has them: on the art's cuff at its foot, and over the
-    /// draught's and the dash's iron at theirs.</summary>
+    /// <summary>The keys, as the device in hand has them: iron tags at 6 o'clock under the draught, the dash
+    /// and the art's cuff (the life cuff has none). A tag redraws only when its key or button changed.</summary>
     public void Keys()
     {
-        void Put(Control holder, Act a, Vector2 at)
-        {
-            foreach (var c in holder.GetChildren()) { holder.RemoveChild(c); c.QueueFree(); }
-            var k = Style.Prompt(a);
-            // Centred on its place whatever its width (a cap is as wide as its word).
-            k.SetAnchorsPreset(LayoutPreset.Center);
-            k.GrowHorizontal = GrowDirection.Both;
-            k.GrowVertical = GrowDirection.Both;
-            holder.AddChild(k);
-            holder.Size = Vector2.Zero;
-            holder.Position = at;
-        }
-        Put(artKey, Act.Flare, ArtAt + new Vector2(0, R + Band - 2));
-        Put(draughtKey, Act.Draught, DraughtAt + new Vector2(0, SmallR + SmallBand - 1));
-        Put(dashKey, Act.Dash, DashAt + new Vector2(0, SmallR + SmallBand - 1));
+        draughtKey.Refresh();
+        dashKey.Refresh();
+        artKey.Refresh();
     }
 
     /// <summary>A callout's spotlight: every part dimmed to dim but the one taught (keep: "art", "dash",
@@ -128,7 +130,7 @@ public partial class Instrument : Control
         Color For(bool kept) => kept ? Colors.White : dim;
         Chain.Modulate = For(keep == "chain");
         Chain.Pulse = pulse;
-        Life.Modulate = lifeKey.Modulate = For(false);
+        Life.Modulate = For(false);
         Art.Modulate = artKey.Modulate = For(keep == "art");
         // (the chain's callout: what stands over the chain fades with the six places, so the arrow's
         // point reads as the chain's)
@@ -140,11 +142,33 @@ public partial class Instrument : Control
         foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
     }
 
+    /// <summary>Debug (--hud-pin seats=f3:h:e): the seats as shown, whatever she carries. f3 is filled at rank 3
+    /// of 8, h filled and hot (can evolve), e empty (night); fewer codes than seats leaves the rest empty.</summary>
+    public void PinSeats(string[] codes, bool night)
+    {
+        var defs = System.Linq.Enumerable.ToList(Content.Weapons.All.Values);
+        int shown = 0;
+        for (int i = 0; i < Sockets.Length; i++)
+        {
+            string c = i < codes.Length ? codes[i] : "e";
+            if (c.StartsWith("e") || defs.Count == 0) { Sockets[i].Empty(); continue; }
+            var d = defs[(i * 7) % defs.Count];
+            bool hot = c.StartsWith("h");
+            int rank = hot ? Content.Weapons.MaxRank : int.TryParse(c.AsSpan(1), out var r) ? Math.Clamp(r, 1, Content.Weapons.MaxRank) : 1;
+            Sockets[i].Show(d.Id, d.Art, ItemViews.SchoolColors[d.School], 1, rank, Content.Weapons.MaxRank, false, hot);
+            shown++;
+        }
+        Lay(shown, night);
+    }
+
     /// <summary>The six places' spread: by night all six from the left (the empty ones the places still to
     /// come), by day only what is carried, centred on the middle (the day has no places to promise).</summary>
     public void Lay(int shown, bool all)
     {
         int n = all ? Sockets.Length : Math.Min(shown, Sockets.Length);
+        if (n == laidN) return;
+        laidN = n;
+        SillStrap.Lay(n);
         float x0 = 960 - (n * Sock + Math.Max(0, n - 1) * SockGap) / 2;
         for (int i = 0; i < Sockets.Length; i++)
         {
@@ -286,8 +310,7 @@ public partial class Cuff : Control
             return;
         }
         float ro = r + band;
-        // The hinge's knuckle on the outer side, and the eye on the inner (under the band, so the band's
-        // edge runs over their roots).
+        // The hinge's knuckle on the outer side (the chain's joint is CuffFront's: a rivet, no open eye).
         float side = mirrored ? 1 : -1;
         if (!small)
         {
@@ -297,10 +320,6 @@ public partial class Cuff : Control
             DrawLine(k + new Vector2(-6, -4.5f), k + new Vector2(6, -4.5f), new Color(0, 0, 0, 0.75f), 1.2f, true);
             DrawLine(k + new Vector2(-6, 4.5f), k + new Vector2(6, 4.5f), new Color(0, 0, 0, 0.75f), 1.2f, true);
             DrawLine(k + new Vector2(-5, -12), k + new Vector2(5, -12), new Color(1, 0.95f, 0.85f, 0.18f), 1, true);
-            float a = Mathf.DegToRad(Instrument.EyeAngle);
-            var eye = c + new Vector2(-side * Mathf.Cos(a), Mathf.Sin(a)) * (ro + 2);
-            DrawArc(eye, 6.5f, 0, Mathf.Tau, 24, Iron(0.3f), 4, true);
-            DrawArc(eye, 8.6f, 0, Mathf.Tau, 24, new Color(0, 0, 0, 0.8f), 1.2f, true);
         }
         Band(this, c, r, band);
         if (!small)
@@ -621,6 +640,8 @@ public partial class EmberChain : Control
     float fill, flash, swing, swingV, open;
     /// <summary>A callout points at the chain: its heat runs along all of it (0 to 1).</summary>
     public float Pulse;
+    /// <summary>Debug (--hud-pin lockheat): the lock's heat held at this, 0 to 1; -1 off.</summary>
+    public float PinHeat = -1;
     bool ember = true;
     int level = 1;
     readonly Glow glow;
@@ -804,7 +825,7 @@ public partial class EmberChain : Control
         {
             var top = c.At(0.5f) + new Vector2(0, 2);
             DrawSetTransform(top, c.swing * 0.12f);
-            float heat = c.ember ? Math.Max(c.fill >= 0.5f ? 0.45f + 0.55f * Mathf.Clamp((c.fill - 0.5f) * 2, 0, 1) : 0, c.flash) : 0;
+            float heat = c.PinHeat >= 0 ? c.PinHeat : c.ember ? Math.Max(c.fill >= 0.5f ? 0.45f + 0.55f * Mathf.Clamp((c.fill - 0.5f) * 2, 0, 1) : 0, c.flash) : 0;
             var art = UiArt.Art(c.open > 0.3f ? "hud/lock_open.png" : "hud/lock.png");
             if (art != null)
             {
@@ -845,5 +866,168 @@ public partial class EmberChain : Control
             DrawString(f, at, s2, HorizontalAlignment.Left, -1, fs, ink);
             DrawSetTransform(Vector2.Zero);
         }
+    }
+}
+
+/// <summary>HUD v2: the strap the six seats stand on, 5 px tall and 6 px past each end of the row, a rivet
+/// under each gap. By day it is as long as what she carries, centered. hud/sill_N.png (N seats shown, drawn
+/// at half its size: the art is rendered at 2x) when UI art has made it, else drawn plain dark iron.</summary>
+public partial class Sill : Control
+{
+    int n = Content.Weapons.MaxWeapons;
+    Texture2D? art;
+
+    public Sill()
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        TextureFilter = TextureFilterEnum.LinearWithMipmaps;
+    }
+
+    /// <summary>The row now has n seats (hidden for none); redraws only on a change.</summary>
+    public void Lay(int n)
+    {
+        this.n = n;
+        Visible = n > 0;
+        if (n <= 0) return;
+        art = UiArt.Art($"hud/sill_{n}.png");
+        float row = n * Instrument.Sock + (n - 1) * Instrument.SockGap;
+        Size = art != null ? art.GetSize() / 2 : new Vector2(row + 2 * Instrument.SillOver, Instrument.SillH);
+        Position = new Vector2(960 - Size.X / 2, Instrument.SockY + Instrument.Sock);
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        if (art != null) { DrawTextureRect(art, new Rect2(Vector2.Zero, Size), false); return; }
+        DrawRect(new Rect2(Vector2.Zero, Size), new Color("#1a1714"));
+        DrawRect(new Rect2(0, 0, Size.X, 1), new Color("#f2e8d6") with { A = 0.3f });
+        for (int g = 0; g < n - 1; g++)
+        {
+            float x = Instrument.SillOver + (g + 1) * Instrument.Sock + g * Instrument.SockGap + Instrument.SockGap / 2f;
+            DrawCircle(new Vector2(x, Instrument.SillH / 2f + 0.5f), 1.5f, new Color("#0c0a08"));
+        }
+    }
+}
+
+/// <summary>HUD v2: a key on a small stamped iron tag (16 tall; 24, 32, 40 or 52 wide) hung from a ring at
+/// 6 o'clock. The key in Alegreya Sans 800 caps 14 px, bone, a 1 px dark edge; SPACE tracked 60. On a pad
+/// the button sits in the same tag (Style.PadButton, scaled to fit). Redraws only when its key or button
+/// changes (Refresh). hud/tag_W.png and hud/tag_ring.png (half size) when made, else a drawn plate.</summary>
+public partial class KeyTag : Control
+{
+    readonly Act act;
+    string text = "";
+    string? padName;
+    float w = 24, cx;
+    bool built;
+    Control? padView;
+    static StyleBoxFlat? plate;
+
+    public KeyTag(Act act)
+    {
+        this.act = act;
+        MouseFilter = MouseFilterEnum.Ignore;
+        TextureFilter = TextureFilterEnum.LinearWithMipmaps;
+        Size = new Vector2(52, Instrument.TagH);
+    }
+
+    /// <summary>Hung from a ring at x, its top at y.</summary>
+    public void Place(float x, float y) { cx = x; Position = new Vector2(x - Size.X / 2, y); }
+
+    public void Refresh()
+    {
+        var c = Controls.Instance;
+        string? pad = c != null && c.UsingPad ? System.Linq.Enumerable.FirstOrDefault(c.PadLabels(act)) : null;
+        string t = pad != null ? "" : (c?.KeyLabel(act) ?? "?").ToUpperInvariant();
+        if (built && t == text && pad == padName) return;
+        built = true; text = t; padName = pad;
+        padView?.QueueFree();
+        padView = null;
+        if (pad != null)
+        {
+            w = 32;
+            padView = Style.PadButton(pad);
+            AddChild(padView);
+            var ps = padView.GetCombinedMinimumSize();
+            float k = (Instrument.TagH - 3) / Math.Max(1, ps.Y);
+            padView.Size = ps;
+            padView.Scale = new Vector2(k, k);
+            padView.Position = new Vector2((Size.X - ps.X * k) / 2, (Instrument.TagH - ps.Y * k) / 2);
+        }
+        else
+        {
+            w = t.Length <= 1 ? 24 : t.Length == 2 ? 32 : t.Length == 3 ? 40 : 52;
+            if (t.Length > 4) w = Math.Max(w, TextWidth() + 10);
+        }
+        Size = new Vector2(Math.Max(52, w), Instrument.TagH);
+        Place(cx, Position.Y);
+        QueueRedraw();
+    }
+
+    float Track => text == "SPACE" ? 60 / 1000f * 14 : 0;
+
+    float TextWidth()
+    {
+        var f = Style.UiHeavy;
+        float x = 0;
+        foreach (char ch in text) x += f.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, 14).X + Track;
+        return x - Track;
+    }
+
+    public override void _Draw()
+    {
+        float x0 = (Size.X - w) / 2;
+        var tag = UiArt.Art($"hud/tag_{(int)w}.png");
+        if (tag != null) DrawTextureRect(tag, new Rect2(x0, 0, tag.GetSize() / 2), false);
+        else
+        {
+            plate ??= new StyleBoxFlat { BgColor = new Color("#2a2420"), BorderColor = new Color("#6b5a48"), BorderWidthTop = 1, CornerRadiusTopLeft = 2, CornerRadiusTopRight = 2, CornerRadiusBottomLeft = 2, CornerRadiusBottomRight = 2 };
+            DrawStyleBox(plate, new Rect2(x0, 0, w, Instrument.TagH));
+        }
+        if (UiArt.Art("hud/tag_ring.png") is { } ring) DrawTextureRect(ring, new Rect2(Size.X / 2 - ring.GetSize().X / 4, -ring.GetSize().Y / 4, ring.GetSize() / 2), false);
+        if (padName != null || text == "") return;
+        var f = Style.UiHeavy;
+        float x = (Size.X - TextWidth()) / 2;
+        float y = (Instrument.TagH - f.GetHeight(14)) / 2 + f.GetAscent(14);
+        foreach (char ch in text)
+        {
+            string s = ch.ToString();
+            DrawStringOutline(f, new Vector2(x, y), s, HorizontalAlignment.Left, -1, 14, 1, new Color("#0c0a08") with { A = 0.8f });
+            DrawString(f, new Vector2(x, y), s, HorizontalAlignment.Left, -1, 14, new Color("#f2e8d6"));
+            x += f.GetStringSize(s, HorizontalAlignment.Left, -1, 14).X + Track;
+        }
+    }
+}
+
+/// <summary>HUD v2: a cuff's front ear and rivet (hud/cuff_front.png), drawn over the chain's first link with
+/// the cuff's own placement, size and mirroring. Drawn without the art: a domed rivet at the joint.</summary>
+public partial class CuffFront : Control
+{
+    readonly bool mirrored;
+
+    public CuffFront(bool mirrored)
+    {
+        this.mirrored = mirrored;
+        MouseFilter = MouseFilterEnum.Ignore;
+        Size = Vessel.Half * 2;
+        TextureFilter = TextureFilterEnum.LinearWithMipmaps;
+    }
+
+    public override void _Draw()
+    {
+        var c = Size / 2;
+        if (UiArt.Art("hud/cuff_front.png") is { } art)
+        {
+            var s = art.GetSize();
+            if (mirrored) DrawSetTransform(c, 0, new Vector2(-1, 1)); else DrawSetTransform(c);
+            DrawTexture(art, -s / 2);
+            DrawSetTransform(Vector2.Zero);
+            return;
+        }
+        float a = Mathf.DegToRad(Instrument.EyeAngle);
+        var p = c + new Vector2((mirrored ? -1 : 1) * Mathf.Cos(a), Mathf.Sin(a)) * (Instrument.R + Instrument.Band);
+        DrawCircle(p, 3.6f, new Color(0, 0, 0, 0.85f));
+        DrawCircle(p, 3f, Cuff.Iron(0.3f));
+        DrawCircle(p - new Vector2(0.8f, 0.9f), 1.3f, Cuff.Iron(0.85f));
     }
 }

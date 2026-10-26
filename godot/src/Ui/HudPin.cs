@@ -1,0 +1,56 @@
+using System;
+using System.Globalization;
+
+namespace SurvivorUnchained.Ui;
+
+/// <summary>
+/// Debug only (Args reads nothing in a player's build): holds what the instrument DISPLAYS, every frame, for
+/// pictures. Not gameplay: the fight runs on underneath.
+///   --hud-pin "life=0.4,shield=0.3,ember=0.7,lockheat=0.5,draught=0,art=1,seats=f3:h:e"
+///     life 0-1 (her life), shield 0-1 (a fraction of her max life), ember 0-1 (the chain's fill), lockheat 0-1,
+///     draught (a count, 0 = empty), art 0-1 (the art glass's level), seats: one code per seat from the left,
+///     f3 = filled at rank 3 of 8, h = filled and hot (can evolve), e = empty (night); missing = empty.
+///   --hud-seq "state;state;..." [--hud-seq-every S]: Shots.cs steps through the states (each one applied over
+///     --hud-pin) and saves SHOT_hud0.png, SHOT_hud1.png...
+/// </summary>
+public static class HudPin
+{
+    public static float? Life, Shield, Ember, LockHeat, Art;
+    public static int? Draught;
+    public static string[]? Seats;
+    static readonly string baseSpec = Args.Get("hud-pin") ?? "";
+    /// <summary>The sequence's states (empty: none).</summary>
+    public static readonly string[] Seq = Args.Get("hud-seq") is string q ? q.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : [];
+
+    public static bool Active { get; private set; } = Args.Has("hud-pin") || Args.Has("hud-seq");
+
+    static HudPin() { if (Active) Parse(baseSpec); }
+
+    /// <summary>Sequence state k: the pin over a clean slate.</summary>
+    public static void Use(int k)
+    {
+        Life = Shield = Ember = LockHeat = Art = null; Draught = null; Seats = null;
+        Parse(baseSpec);
+        if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
+    }
+
+    static void Parse(string spec)
+    {
+        foreach (var part in spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv.Length < 2) continue;
+            float F() => float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? Math.Clamp(v, 0, 1) : 0;
+            switch (kv[0].Trim().ToLowerInvariant())
+            {
+                case "life": Life = F(); break;
+                case "shield": Shield = F(); break;
+                case "ember": Ember = F(); break;
+                case "lockheat": LockHeat = F(); break;
+                case "art": Art = F(); break;
+                case "draught": Draught = (int)Math.Round(float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : 0); break;
+                case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
+            }
+        }
+    }
+}

@@ -512,6 +512,7 @@ public partial class GameHud : CanvasLayer
         combat.Visible = b.Combat;
         var p = b.Player;
         double max = b.MaxHp;
+        pinMax = max;
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
         var life = irons.Life;
@@ -601,7 +602,7 @@ public partial class GameHud : CanvasLayer
             // dash form's badge only (UI note 3, 26 Oct: the Q orb wore the bull of Bull Rush).
             art.Glyph = Glyphs.Texture(fl.Icon is { Length: > 0 } fi ? fi : fl.Id, 96, Hex("#fff3dc"), line: true);
             art.GlyphTint = b.FlareReady ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
-            art.Number = b.FlareReady ? "" : $"{Math.Floor(b.FlareMeter % full)}%";
+            art.Number = "";   // (HUD v2: no percent; the level is the reading)
             // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
             var line = new System.Text.StringBuilder();
             foreach (var r in b.Reflexes)
@@ -610,6 +611,7 @@ public partial class GameHud : CanvasLayer
         }
         else { art.Level = 0; art.Glyph = null; art.Number = ""; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 
+        ApplyPin(true, ember);
         if (!b.Combat) return;
         // The fight's clock and its count belong to the night; by day they would only be noise.
         tallyTime.Visible = ember;
@@ -644,6 +646,28 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A status's countdown as shown: whole seconds, none for what lasts.</summary>
     static double Countdown(double left) => left > 600 ? -1 : Math.Ceiling(left);
+
+    double pinMax = 100;
+
+    /// <summary>Debug (--hud-pin, HudPin.cs): what the instrument shows held at the pinned values, never the
+    /// fight. Nothing when no pin is given.</summary>
+    void ApplyPin(bool withSeats, bool night)
+    {
+        if (!HudPin.Active) return;
+        var life = irons.Life;
+        if (HudPin.Life is float l)
+        {
+            life.Level = life.Trail = hpShown = trailShown = l;
+            globeNum = double.NaN;
+            life.Number = $"{Math.Ceiling(l * pinMax)}";
+        }
+        if (HudPin.Shield is float sh) { life.Shield = sh; underShieldK = sh; }
+        if (HudPin.Ember is float em) barShown = barWant = em;
+        irons.Chain.PinHeat = HudPin.LockHeat ?? -1;
+        if (HudPin.Draught is int dr) irons.Draught.Count = dr;
+        if (HudPin.Art is float ar) { irons.Art.Level = ar; irons.Art.Number = ""; }
+        if (withSeats && HudPin.Seats is { } seats) irons.PinSeats(seats, night);
+    }
 
     void Statuses()
     {
@@ -1269,6 +1293,7 @@ public partial class GameHud : CanvasLayer
         float beat = low ? 1 + 0.05f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
         life.Scale = new Vector2(beat, beat);
         life.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
+        ApplyPin(false, barEmber);
         // The art readied: its glass flares once and settles to its ready glow.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
