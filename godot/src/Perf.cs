@@ -91,13 +91,22 @@ public partial class Perf : Node
     /// <summary>First in every frame's process callbacks: where the main thread's own work begins.</summary>
     sealed partial class Start : Node
     {
-        public override void _Ready() { ProcessPriority = int.MinValue; ProcessMode = ProcessModeEnum.Always; }
-        public override void _Process(double delta) => frameFrom = Stopwatch.GetTimestamp();
+        public override void _Ready() { ProcessPriority = int.MinValue; ProcessPhysicsPriority = int.MinValue; ProcessMode = ProcessModeEnum.Always; }
+        public override void _Process(double delta) { frameFrom = Stopwatch.GetTimestamp(); physThis = physFrom; physFrom = 0; }
+        // (the first physics callback of the frame: where its physics steps begin, if any ran)
+        public override void _PhysicsProcess(double delta) { if (physFrom == 0) physFrom = Stopwatch.GetTimestamp(); }
     }
+
+    // The frame's wall clock cut where the engine's own steps meet (MR4, the hub's unaccounted ~5 ms): physics
+    // first, then the process callbacks (main), the rest of the process step (the message queue, deferred calls,
+    // skeletons), the renderer's draw (frame_pre_draw to frame_post_draw) and what follows it (the swap, input).
+    static long physFrom, physThis, preDraw, postDraw, lastEnd, deferAt;
+    // (a deferred call queued last in the frame: the message queue's work queued before it, skeletons' poses among it, ends there)
+    static readonly Callable Deferred = Callable.From(() => deferAt = Stopwatch.GetTimestamp());
 
     struct Frame
     {
-        public double T, Ms, Main, Physics, Proc, Nav, RenderCpu, Setup, Gpu;
+        public double T, Ms, Main, Physics, Proc, Nav, RenderCpu, Setup, Gpu, Tail, Queue, Draw, After, PhysW;
         public long Alloc, MainAlloc, Primitives;
         public int Draws, Objects, ShadowDraws, ShadowObjects, CanvasDraws, Pipelines, Gen0, Gen1, Gen2;
     }
@@ -162,6 +171,8 @@ public partial class Perf : Node
         ProcessPriority = int.MaxValue;
         // (Process order is by priority across the tree, wherever the node sits.)
         AddChild(new Start());
+        RenderingServer.FramePreDraw += () => preDraw = Stopwatch.GetTimestamp();
+        RenderingServer.FramePostDraw += () => postDraw = Stopwatch.GetTimestamp();
         if (!Args.Has("perf-vsync"))
         {
             DisplayServer.WindowSetVsyncMode(DisplayServer.VSyncMode.Disabled);
@@ -183,6 +194,15 @@ public partial class Perf : Node
     {
         long now = Stopwatch.GetTimestamp();
         double ms = (now - last) * TickMs, main = (now - frameFrom) * TickMs;
+        bool cut = lastEnd > 0 && preDraw > lastEnd && postDraw >= preDraw && frameFrom >= postDraw;
+        long physAt = physThis > postDraw ? physThis : frameFrom;
+        double tail = cut ? (preDraw - lastEnd) * TickMs : 0, draw = cut ? (postDraw - preDraw) * TickMs : 0,
+            after = cut ? (physAt - postDraw) * TickMs : 0, physW = cut ? (frameFrom - physAt) * TickMs : 0;
+        double queue = cut && deferAt > lastEnd && deferAt <= preDraw ? (deferAt - lastEnd) * TickMs : 0;
+        lastEnd = now;
+        Deferred.CallDeferred();
+        drawMark = now;
+        if (Args.Has("perf-draws") && t >= nextHook) { nextHook = t + 5; HookDraws(); }
         last = now;
         t += delta;
         // How long from launch to the first frame drawn (the engine's clock starts with the process).
@@ -216,8 +236,9 @@ public partial class Perf : Node
         {
             T = t, Ms = ms, Main = main,
             Physics = Performance.GetMonitor(Performance.Monitor.TimePhysicsProcess) * 1000,
-            // (the engine's whole process step, ours and its own: mixers, skeletons, the message queue; and navigation)
+            // (the engine's process step and navigation: Godot keeps these as the worst frame of each second, not this frame)
             Proc = Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000,
+            Tail = tail, Queue = queue, Draw = draw, After = after, PhysW = physW,
             Nav = Performance.GetMonitor(Performance.Monitor.TimeNavigationProcess) * 1000,
             RenderCpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(vp),
             Setup = RenderingServer.GetFrameSetupTimeCpu(),
@@ -344,14 +365,41 @@ public partial class Perf : Node
         return string.Create(CultureInfo.InvariantCulture,
             $"{1000 / mean:0} fps, {mean:0.00}ms (p50 {ms[ms.Count / 2]:0.00}, 1% {Worst(ms, 0.01):0.0}, 0.1% {Worst(ms, 0.001):0.0}, max {ms[^1]:0.0}) " +
             $"main {w.Average(x => x.Main):0.00}ms ({each}) render {w.Average(x => x.RenderCpu + x.Setup):0.00}ms gpu {w.Average(x => x.Gpu):0.00}ms " +
-            $"engine proc {w.Average(x => x.Proc):0.00} phys {w.Average(x => x.Physics):0.00} nav {w.Average(x => x.Nav):0.00} " +
+            $"cut: physics {w.Average(x => x.PhysW):0.00} tail {w.Average(x => x.Tail):0.00} (queue {w.Average(x => x.Queue):0.00}) draw {w.Average(x => x.Draw):0.00} after {w.Average(x => x.After):0.00} " +
+            $"worst/s: proc {w.Average(x => x.Proc):0.00} phys {w.Average(x => x.Physics):0.00} nav {w.Average(x => x.Nav):0.00} " +
             $"draws {w.Average(x => x.Draws):0}+{w.Average(x => x.ShadowDraws):0}sh+{w.Average(x => x.CanvasDraws):0}ui " +
             $"alloc {w.Average(x => x.Alloc) / 1024:0.0}KB/f (main {w.Average(x => x.MainAlloc) / 1024:0.0}) gc {w.Sum(x => x.Gen0)}/{w.Sum(x => x.Gen1)}/{w.Sum(x => x.Gen2)} pipes {w.Sum(x => x.Pipelines)}");
+    }
+
+    // --perf-draws (MR4): each canvas item's own _Draw, timed from the draw signal before it in the message
+    // queue (the HUD's redraws ran 3.4 ms a frame there), the costliest printed at the end.
+    readonly Dictionary<string, double> drawMs = new();
+    readonly HashSet<ulong> drawHooked = new();
+    static long drawMark;
+    double nextHook;
+
+    void HookDraws()
+    {
+        foreach (var n in GetTree().Root.FindChildren("*", "CanvasItem", true, false))
+        {
+            if (!drawHooked.Add(n.GetInstanceId())) continue;
+            var ci = (CanvasItem)n;
+            string key = $"{ci.GetParent()?.Name}/{ci.Name} ({ci.GetType().Name})";
+            ci.Draw += () =>
+            {
+                long now = Stopwatch.GetTimestamp();
+                if (recording && drawMark > 0) drawMs[key] = drawMs.GetValueOrDefault(key) + (now - drawMark) * TickMs;
+                drawMark = now;
+            };
+        }
     }
 
     void Finish()
     {
         SetProcess(false);
+        if (drawMs.Count > 0)
+            foreach (var (dk, dv) in drawMs.OrderByDescending(kv => kv.Value).Take(25))
+                GD.Print($"perf draws {dv / Math.Max(1, frames.Count):0.000} ms/frame {dk}");
         live = false;
         if (allocs != null)
         {
@@ -437,14 +485,14 @@ public partial class Perf : Node
         j.Append("}\n");
         using (var f = FileAccess.Open($"{dir}/{name}.json", FileAccess.ModeFlags.Write)) f?.StoreString(j.ToString());
 
-        var c = new StringBuilder("t,ms,main,physics_max,render_cpu,setup,gpu,draws,objects,primitives,shadow_draws,shadow_objects,canvas_draws,alloc,main_alloc,gen0,gen1,gen2,pipelines");
+        var c = new StringBuilder("t,ms,main,physics_max,render_cpu,setup,gpu,draws,objects,primitives,shadow_draws,shadow_objects,canvas_draws,alloc,main_alloc,gen0,gen1,gen2,pipelines,tail,queue,draw,after,phys_wall");
         foreach (var p in PartNames) c.Append(',').Append(p);
         foreach (var e in extraNames) c.Append(',').Append(e);
         c.Append('\n');
         for (int fi = 0; fi < frames.Count; fi++)
         {
             var x = frames[fi];
-            c.Append(string.Create(inv, $"{x.T:0.000},{x.Ms:0.000},{x.Main:0.000},{x.Physics:0.000},{x.RenderCpu:0.000},{x.Setup:0.000},{x.Gpu:0.000},{x.Draws},{x.Objects},{x.Primitives},{x.ShadowDraws},{x.ShadowObjects},{x.CanvasDraws},{x.Alloc},{x.MainAlloc},{x.Gen0},{x.Gen1},{x.Gen2},{x.Pipelines}"));
+            c.Append(string.Create(inv, $"{x.T:0.000},{x.Ms:0.000},{x.Main:0.000},{x.Physics:0.000},{x.RenderCpu:0.000},{x.Setup:0.000},{x.Gpu:0.000},{x.Draws},{x.Objects},{x.Primitives},{x.ShadowDraws},{x.ShadowObjects},{x.CanvasDraws},{x.Alloc},{x.MainAlloc},{x.Gen0},{x.Gen1},{x.Gen2},{x.Pipelines},{x.Tail:0.000},{x.Queue:0.000},{x.Draw:0.000},{x.After:0.000},{x.PhysW:0.000}"));
             for (int i = 0; i < Parts; i++) c.Append(',').Append(parts[fi * Parts + i].ToString("0.###", inv));
             for (int i = 0; i < k; i++) c.Append(',').Append(extras[fi * k + i].ToString("0.##", inv));
             c.Append('\n');

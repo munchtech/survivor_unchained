@@ -1806,7 +1806,7 @@ public partial class Game : Node, IZoneHost
             var flipped = flips.Split(',').ToHashSet();
             double every = Args.Num("perf-flip-every", 1);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            bool outNow = false, wasOut = false, pinesOut = false, broadOut = false, rocksOut = false;
+            bool outNow = false, wasOut = false, peopleOut = false, pinesOut = false, broadOut = false, rocksOut = false;
             List<Node3D>? pines = null, broad = null, rocks = null;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
@@ -1830,10 +1830,21 @@ public partial class Game : Node, IZoneHost
                 if (flipped.Contains("interp")) SurvivorUnchained.View.Interp.On = on;
                 wasOut = outNow;
                 if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                // anim: every animation mixer but hers stopped (their skeletons then stand still, unposed); people:
+                // every skinned figure but her hidden (MR4: what the town's folk cost, posing and drawing)
+                if ((flipped.Contains("anim") || flipped.Contains("people")) && outNow != peopleOut)
+                {
+                    peopleOut = outNow;
+                    foreach (var n in GetTree().Root.FindChildren("*", "AnimationMixer", true, false))
+                        if (flipped.Contains("anim") && (scene.Player == null || !scene.Player.IsAncestorOf(n))) ((AnimationMixer)n).Active = on;
+                    foreach (var n in GetTree().Root.FindChildren("*", "Skeleton3D", true, false))
+                        if (flipped.Contains("people") && (scene.Player == null || !scene.Player.IsAncestorOf(n)) && n.GetParent() is Node3D pn) pn.Visible = on;
+                }
                 if (flipped.Contains("furshadow") && scene.Player != null)
                     foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("hud")) hud.Visible = on;
                 if (flipped.Contains("brush")) Brush.Paused = !on;
                 if (flipped.Contains("fx")) scene.Fx.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
