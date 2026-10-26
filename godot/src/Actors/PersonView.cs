@@ -49,15 +49,21 @@ public partial class PersonView : Node3D, INpcView
     public void Sheathe(bool on)
     {
         if (person.Own == null) return;
-        foreach (var (slot, id) in pieces)
-        {
-            if (!held.TryGetValue(slot, out var old)) continue;
-            Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
-            if (now == null) continue;
-            (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
-            held[slot] = now;
-        }
+        foreach (var (slot, id) in pieces) Swap(slot, id, on);
     }
+
+    // One piece to its sheathed mount (on) or back into its hand; false if it has none or is already there.
+    bool Swap(string slot, string id, bool on)
+    {
+        if (!held.TryGetValue(slot, out var old)) return false;
+        if (on && IsInstanceValid(old) && old.Name.ToString().StartsWith("sheathed:")) return false;
+        Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
+        if (now == null) return false;
+        (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
+        held[slot] = now;
+        return true;
+    }
+    readonly System.Collections.Generic.HashSet<string> lookSheathed = new();
 
     // The seat each held piece had in its hand mount (Slide's base), and the point and axis its tilt turns it about
     // (the fist's fitted pocket and the palm's normal, in the mount's space; none for a piece without a pocket): re-read
@@ -130,7 +136,7 @@ public partial class PersonView : Node3D, INpcView
 
     void PlayLoop(double blend)
     {
-        var name = People.Clip(person, walking ? loopClip : loop);
+        var name = People.Clip(person, walking ? loopClip : loop, emptyHanded, emptyHanded ? "" : null);
         person.Anim.Play(name, blend, (float)loopSpeed);
         Native(name);
         // A townsperson's first stand starts somewhere of its own in the loop (Play.TownStands.Phase), so the town
@@ -290,11 +296,34 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
-    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).</summary>
+    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).
+    /// With them put away her hands are empty, so she stands as she does in a safe place with nothing in them (her
+    /// calling's town stand: relaxed arms, open hands), not in the stand made around a hilt and a shield, whose
+    /// clenched fists and held-out arms read as nobody stands (the owner, 26 October 2026, on this camp). Hers at the Look:
+    /// pieces that ride at her waist are sheathed and shown (her town stand's hands rest on them: the Warden's fist on her
+    /// sword's grip), pieces that ride on her back stay hidden so nothing covers her hair.</summary>
     public void ShowHeld(bool shown)
     {
-        foreach (var m in held.Values) if (IsInstanceValid(m)) m.Visible = shown;
+        if (person.Own != null)
+        {
+            if (!shown)
+            {
+                foreach (var (slot, id) in pieces)
+                    if (WeaponSockets.AtWaist(WeaponSockets.SocketOf(Arms.KindOf(id))) && Swap(slot, id, true)) lookSheathed.Add(slot);
+            }
+            else
+            {
+                foreach (var slot in lookSheathed) if (pieces.TryGetValue(slot, out var id)) Swap(slot, id, false);
+                lookSheathed.Clear();
+            }
+        }
+        foreach (var (slot, m) in held)
+            if (IsInstanceValid(m)) m.Visible = shown || (person.Own != null && !shown && lookSheathed.Contains(slot));
+        if (emptyHanded == !shown) return;
+        emptyHanded = !shown;
+        if (!walking && actLeft <= 0 && !holding) PlayLoop(0.4);
     }
+    bool emptyHanded;
 
     public void Hold(string slot, string? pack, string? piece)
     {

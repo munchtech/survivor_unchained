@@ -141,6 +141,13 @@ public sealed class OwnClips
         return want != null && Has(want) ? Prefix + want : null;
     }
 
+    /// <summary>Her walk for this calling and state (animation 51), prefixed, or null when she has none (the staff's town state).</summary>
+    public string? Walk(string calling, string kind, bool sheathed)
+    {
+        foreach (var n in SurvivorUnchained.Play.Sheath.Names("walk", calling, kind, sheathed)) if (Has(n)) return Prefix + n;
+        return null;
+    }
+
     string First(params string[] names)
     {
         foreach (var n in names) if (Has(n)) return n;

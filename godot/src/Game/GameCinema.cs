@@ -92,6 +92,13 @@ public partial class Game
     (double X, double Z) PlayMove()
     {
         if (cineWalk is { } w) return w;
+        // --stroll M: a constant move at M m/s of ground speed along the --facing heading (0 = +Z; the move is (sin, cos) of it), for gait shots.
+        if (Args.Has("stroll") && Battle is { } sb)
+        {
+            double top = Math.Max(0.1, sb.Stats.Get(Stat.MoveSpeed) * sb.Player.SlowF), k = Math.Min(1.5, Args.Num("stroll", 1) / top);
+            double f = Args.Num("facing", 0) * Math.PI / 180;
+            return (Math.Sin(f) * k, Math.Cos(f) * k);
+        }
         if (controls.Captured) return (0, 0);
         double x = controls.MoveX, z = controls.MoveZ;
         if (x * x + z * z > 0.01) carryT = 0;
