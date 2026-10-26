@@ -460,15 +460,9 @@ REAVER_HIP_L = dict(pos=(0.2175, 1.095, 0.0), pole=_pole(57.0), knuckles=_RV_K, 
 # into her hip, and the elbow drawn back instead flips the arm (the elbow behind her, the fingers pointing ahead).
 _AR_K, _AR_B = _hand((0.231, -0.811, -0.537), (math.cos(math.radians(-25.0)), 0.0, math.sin(math.radians(-25.0))))
 ARC_WRIST_L = dict(pos=(0.1736, 1.17, 0.015), pole=_pole(8.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
-# Animation 51 (the judge, round 3: "a high teapot elbow", the hand "a knuckle clump"): the back of the wrist slid
-# 3.7 cm back along the side of her hip and 2 cm down toward the top of the hip bone (3.5 mm off her outfit); the hand
-# rolled palm-down (out and back) so the graded fingers trail down and back, their length seen from the front; the arm's
-# swivel (the wrist's least strain, keyed) then takes the elbow back and in: out 6 cm past the shoulder joint from the
-# front (was 14), the upper arm 32 deg behind her (was 35 ahead), the elbow open to 77. (Fitted on the stand's frame 0,
-# scratch anim51/s3b/search3.py. Between the two the swivel has no rest: at 10-15 deg ahead the elbow goes back out
-# to 15 cm and the fingers 9-16 mm into her hip.)
-_AR_K, _AR_B = _hand((0.3602, -0.9006, -0.2432), (0.7146, 0.434, -0.5486))
-ARC_WRIST_L = dict(pos=(0.1749, 1.151, -0.022), pole=_pole(38.0), knuckles=_AR_K, blade=_AR_B, curl=0.20)
+# (Animation 51, round 3b, tried and dropped: the wrist 3.7 cm back and 2 cm down, the hand rolled palm-down so the
+# fingers trail down and back, took the elbow back to the shoulder line (out 6 cm, 32 deg behind) but wrung the
+# forearm 155 deg from rest (audit's limit 120) every frame. Between that and this the swivel has no rest.)
 
 
 def on_hip(spec, free):
