@@ -5,7 +5,7 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 built and judged once (FIX, close); round 2 shot, judge next
+## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 judged twice; round 3 fixes next, then merge
 
 **Worktree/branch** as Experience 1 below (junction to the worktree's OWN `public/assets`; to remove the link use PowerShell `cmd /c rmdir godot\assets` from the worktree, since bash's `cmd //c rmdir` failed). Integration 126b1d9e is merged in. Import cache is fresh. Run tool: `<coordinator scratchpad>\play2\play.py NAME EVERY COUNT --teach-end` (one godot turn, about 9 min to dawn). It logs `teach ...` and now `tip <id> t= keys= text=` lines, and shoots `NAME_teach_<id>_1.png` and `NAME_tip_<id>_1.png` into `godot/.shots/`.
 **Done (commits 3145c709, 200aeb30, a2a06a12, plus the copy doc):**
@@ -18,7 +18,16 @@ For a fresh successor. Read these first:
 - au1 17: a line rests 300 s per NPC (`NpcActor.LineRest`). au1 20: the lanes log.
 - Judge round 1 fixes: the blessing kicker is keyed on holding a great blessing, no summon blessings before a summon, teaching panels hide Reroll/Banish/Skip, keys read 1-N, and lamps2 no longer re-fires every frame.
 - Tests 1051/0/8 before round 1.
-**NEXT:** check run m3 (tests chained after it) and frames `m3_teach_{form,level,great_blessing,first_draft,lamps}`, `m3_tip_{channel,pack}`. Then one xhigh judge on those frames only. Then merge to integration (`tools/scratch/coordinator/merge_lead.sh play-1` from main, or tell main) and full tests.
+**Round 2 judge (m3 frames): level SHIP; all round-1 asks landed; 6 FIX.** Fix next, in this order:
+1. **Called Shot (a Flare blessing) was still offered at 1:21.** `b.FlareGreatsHeld` is set at Prologue.cs ~1157 and read at LevelUp.cs:293. Find which path still adds FlareGreat: maybe another offer builder for the GreatRoles Answer slot, or setup running on another Battle. Also change the great block's `o.Why.Add("Your calling's own")` to "Suits your calling".
+2. **The form glow can't be told apart:** a callout's HUD-target spotlight is ember too (`hud.Spotlight`). Make the callout highlight neutral (pale), and give `Round.Form` ready a look of its own (flame licks or a horn badge). Re-break the form lines: "When your dash glows, it's a charge / that throws the dead aside. / Big ones stop it, but they're stunned, / and their spell breaks."
+3. **Channel tip:** show it only once the form or the Flare is ready. Hold the Warden's "RISE..." bark until the tip settles. Use one name: cast bar "Raising the drowned: break it!" (Prologue.cs channel case) and title "Break his spell".
+4. **First draft:** hide "Fits your build" and the "Evolves:" lines on teaching panels (Panels.cs, `v.Teaching`). "all the way round" -> "sweeps the whole front of you" (Butcher's Cleaver text).
+5. **Pack tip:** an inline [I] chip (hint text has no inline keys today: `TipLine`), with breaks at sentence ends.
+6. **Lamps:** the off-screen markers are orange flames but the lamps are cold blue (recolor the markers); drop the card lower-left, off the Warden.
+Routed by the judge: Combat card copy (Cold, Then Not tail; "fire" -> "strike"); UI (rarity row floats, dim italic objective, Night icon at dawn, bottom-right counters over bright planks); Env (no visible flame in the lit lamps); Rendering (ferns cover her at the form freeze).
+**The m3 run found:** with the Knight's first lunge gated on her distance (8 m), a kiting run never saw F7 and the Post ran 140 s. Gate removed (commit after d9748814). Run m4 checks it (`grep "red_line" play2/logs/m4.log`).
+**Tests:** PrologueTests updated (the first rise brings its card alone). Full suite 1050+1 green after that fix. Run the full suite before the merge.
 **Still open from judge 1:**
 - The red_line ring sits at the lane's far end by the chest. Order `KnightLane()` points away from L("chest").
 - The pack tip's "I" chip is dark (`GameHud.HintKeys`, UI).
