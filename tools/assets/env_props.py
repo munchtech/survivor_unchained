@@ -2191,11 +2191,26 @@ def bolt(parts, at, L, r, tint):
     parts.append(p)
 
 
-def hang_bunch(parts, at, L, r, tint, rng):
-    """Herbs hung to dry, heads down: a cone of stalks, tied with a cord at the top, the cord to the rail."""
-    cone = lathe([(0.012, 0.0), (r * 0.5, -L * 0.25), (r, -L * 0.7), (r * 0.7, -L * 0.92), (0.0, -L)], 7, cap0=True, cap1=False)
-    lumpy(cone, 0.18, 26, int(rng(0, 99)))
-    parts.append(Part(cone, 'bark', tint, at, smooth=True, jitter=0.1))
+def hang_bunch(parts, at, L, r, tint, rng, head=None):
+    """Herbs hung to dry, heads down (E9d r2: stalks you can see, not a dark cone): a fan of thin stalks splaying from the
+    tie, each with its leaves in small clumps along it and a seed head or flower tuft at its tip, dried green or ochre,
+    lighter at the tips; the cord to the rail."""
+    n = 9
+    for k in range(n):
+        a = k * 2.399 + rng(-0.3, 0.3)
+        spread = r * rng(0.55, 1.15)
+        ln = L * rng(0.8, 1.05)
+        tip = Vector((math.cos(a) * spread, -ln, math.sin(a) * spread))
+        ln2, sat = along(Vector((0, -0.01, 0)), tip, side=Vector((math.cos(a + 1.57), 0, math.sin(a + 1.57))))
+        parts.append(Part(box(0.007, ln2, 0.007), 'canvas', tint * rng(0.7, 0.9), at @ sat, jitter=0.0))
+        for j in range(2):
+            t = 0.42 + 0.3 * j + rng(-0.05, 0.05)
+            c = tip * t
+            lf = lumpy(sphere(r * rng(0.26, 0.36), 5, 3, 0.55), 0.3, 40, k * 3 + j)
+            parts.append(Part(lf, 'canvas', tint * rng(0.85, 1.15), at @ T(c.x, c.y, c.z) @ R('Y', rng(0, 6)) @ R('X', rng(-0.6, 0.6)), smooth=True, jitter=0.0))
+        hd = lumpy(sphere(r * rng(0.22, 0.3), 5, 3, 1.2), 0.25, 30, k + 50)
+        parts.append(Part(hd, 'canvas', (head if head is not None else tint) * rng(1.0, 1.2), at @ T(tip.x, tip.y, tip.z), smooth=True, jitter=0.0))
+    parts.append(Part(box(0.018, 0.04, 0.018), 'leather', Vector((0.6, 0.52, 0.4)), at @ T(0, -0.01, 0), jitter=0.0))
     parts.append(Part(box(0.006, 0.12, 0.006), 'leather', Vector((0.6, 0.52, 0.4)), at @ T(0, 0.06, 0), jitter=0.0))
 
 
@@ -2287,8 +2302,19 @@ def stall(p):
     def cloth_tint(c, face_top=True, base=None):
         x, y, z = c.x, c.y, c.z
         n1 = hnoise(Vector((x * 2.3, 0, z * 2.3)), p['seed'] + 5)
-        fade = (0.24 if face_top else 0.08) + 0.12 * n1
+        fade = (p.get('fade', 0.24) if face_top else 0.08) + 0.12 * n1
+        if face_top and p.get('crown', 0.0) > 0:
+            # (E9d r2) sun-faded most on the crown: the high middle of the sheet, least at its edges
+            ax = min(1.0, max(0.0, (x + hx) / (2 * hx)))
+            az = min(1.0, max(0.0, (z - zb) / (zf - zb)))
+            fade += p['crown'] * math.sin(math.pi * ax) ** 1.5 * (1 - az) ** 0.6
         base = base.lerp(pale, max(0.0, min(0.8, fade)))
+        if face_top and p.get('sag_shade', 0.0) > 0 and abs(x) < hx and zb < z < zf:
+            # (E9d r2) the bellies between the rails darker, the cloth over the rails and posts lighter: the sag reads from above
+            ax = (x + hx) / (2 * hx)
+            az = (z - zb) / (zf - zb)
+            dip = math.sin(math.pi * ax) * math.sin(math.pi * az) ** 0.7
+            base = base * (1.0 + p['sag_shade'] * (0.35 - dip))
         # soiled toward the low edges, tide marks in blotches, a dark rain line along the back
         low = smooth01(0.3, 1.0, (z - zf + 0.3) / 0.5) * 0.25 + smooth01(hx - 0.1, hx + 0.16, abs(x)) * 0.22
         blot = smooth01(0.35, 0.62, hnoise(Vector((x * 4.1, 1.3, z * 4.1)), p['seed'] + 9)) * 0.14
@@ -2301,7 +2327,7 @@ def stall(p):
     awp.vmod = cloth_mod
     parts.append(awp)
     # Sewn seams between the panels (each two stripes wide), raised a little: a stitched ridge that catches the light.
-    panel = (2 * stripe) if stripe > 0 else 0.6
+    panel = (2 * stripe) if stripe > 0 else p.get('panel', 0.6)
     xs = -W / 2 + panel
     while xs < W / 2 - 0.1:
         u = (xs + W / 2) / W
@@ -2315,6 +2341,11 @@ def stall(p):
             vv = pv + (v - 0.5) * ph2 / (z1 - z0)
             return roof(uu, vv) + Vector((0, 0.009, 0))
         parts.append(Part(sheet(3, 3, patch, 0.003), 'tile', hexlin(DYE.get(ptint, ptint)), smooth=True, jitter=0.04))
+        if p.get('patch_stitch'):
+            # (E9d r2) its hem sewn round in a darker thread: a patch, not a tag
+            for (ua, va, ub, vb) in ((0, 0, 1, 0), (1, 0, 1, 1), (1, 1, 0, 1), (0, 1, 0, 0)):
+                pts = [patch(ua + (ub - ua) * k / 6, va + (vb - va) * k / 6) + Vector((0, 0.003, 0)) for k in range(7)]
+                parts.append(Part(ribbon(pts, 0.012, 0.003), 'tile', hexlin(DYE.get(ptint, ptint)) * 0.6, smooth=True, jitter=0.0))
     # The valance: hung from the front edge, its hem scalloped (or torn ragged), a band of the second cloth.
     vk = p.get('valance', 'scallop')
     vd = 0.3
@@ -2389,10 +2420,11 @@ def stall(p):
         for i in range(2):
             bolt(parts, T(-1.0 + i * 0.25, 0.4, cz1 + 0.3) @ R('X', -0.25 + i * 0.12), 0.8, 0.1, hexlin(cols[(i + 3) % 6]))
     elif ware == 'herbs':
-        greens = ['#7a8a50', '#8e9a62', '#6a7a48', '#a09a5a', '#8a7a58']
+        greens = ['#a8b070', '#c8a858', '#9aa868', '#d0b468', '#b0a070']
+        heads = ['#d8c890', '#e0b860', '#c8b0c8', '#e8d080', '#d0c088']
         for i in range(9):
             x = -1.1 + i * 0.27 + rng(-0.03, 0.03)
-            hang_bunch(parts, T(x, yf - 0.12, zf + 0.06), rng(0.24, 0.34), rng(0.045, 0.06), hexlin(greens[i % 5]) * rng(0.85, 1.1), rng)
+            hang_bunch(parts, T(x, yf - 0.12, zf + 0.06), rng(0.28, 0.36), rng(0.07, 0.09), hexlin(greens[i % 5]) * rng(0.9, 1.05), rng, hexlin(heads[i % 5]))
         for i in range(5):
             crock(parts, T(-1.0 + i * 0.22, top, cm - 0.05 + rng(-0.05, 0.05)), rng(0.14, 0.22), rng(0.05, 0.075), hexlin('#b07a5c') * rng(0.85, 1.1), 0.6, False, rng)
         basket(parts, T(0.45, top, cm) @ R('Y', 0.5), 0.22, 0.15, straw * 0.85, 'cloth', hexlin('#9a8058'), rng, 7, 0.04)
@@ -2604,7 +2636,8 @@ def trough(p):
         parts.append(Part(box(0.22, 0.14, Wd + 0.12, 0.01), 'stone', hexlin('#b8b0a4'), T(sx * L * 0.33, 0.07, 0), jitter=0.05))
         parts.append(Part(box(0.04, 0.36, 0.006), 'iron', hexlin('#ffffff'), T(sx * L * 0.2, 0.3, Wd / 2 + 0.003), jitter=0.0))
     wat = grid(6, 2, lambda u, v: (-L / 2 + t + (L - 2 * t) * u, H - 0.08 + 0.003 * math.sin(u * 13), -Wd / 2 + t + (Wd - 2 * t) * v))
-    parts.append(Part(wat, 'iron', hexlin('#3a4a48'), smooth=True, jitter=0.0))
+    # (E9d r2) the sky in it: a grey-blue mid value on the plain canvas region, not black iron
+    parts.append(Part(wat, 'canvas', hexlin(p.get('water', '#6c8090')), smooth=True, jitter=0.0))
     bk = lathe([(0.12, 0.0), (0.15, 0.3)], 12, cap0=True, cap1=False)
     parts.append(Part(bk, 'wood', wood * 0.85, T(L / 2 + 0.3, 0, 0.25), smooth=False))
     parts.append(Part(torus(0.15, 0.008, 12, 4), 'iron', hexlin('#ffffff'), T(L / 2 + 0.3, 0.25, 0.25), smooth=True, jitter=0.0))
@@ -2661,10 +2694,63 @@ def market_heap(p):
         elif what == 'crock':
             h = it[4] if len(it) > 4 else 0.4
             crock(parts, at, h, h * 0.45, hexlin('#b8704e') * rng(0.85, 1.05), 0.55, True, rng)
+        elif what == 'woodpile':
+            # (E9d r2) split firewood stacked against a wall: rows of billets, their cut ends out
+            nrow, ncol, L2 = it[4], it[5], 0.45
+            for rr in range(nrow):
+                for cc in range(ncol - (rr % 2)):
+                    rb = rng(0.06, 0.08)
+                    bl = lathe([(rb, -L2 / 2), (rb * rng(0.9, 1.0), L2 / 2)], 5, cap0=True, cap1=True)
+                    xx = -ncol * 0.075 + cc * 0.15 + (0.075 if rr % 2 else 0) + rng(-0.01, 0.01)
+                    parts.append(Part(bl, 'bark', hexlin('#b8a890') * rng(0.85, 1.1), at @ T(xx, 0.07 + rr * 0.13, rng(-0.03, 0.03)) @ R('X', math.pi / 2) @ R('Y', rng(0, 6)), cap='endgrain', jitter=0.0))
+        elif what == 'bench':
+            # (E9d r2) a plank bench on two splayed legs
+            ln = it[4] if len(it) > 4 else 1.4
+            wood = hexlin('#c8b8a0')
+            parts.append(Part(box(0.05, ln, 0.3, 0.006), 'wood', wood, at @ T(0, 0.45, 0) @ R('Z', math.pi / 2), cap='endgrain'))
+            for sx in (-1, 1):
+                parts.append(Part(box(0.26, 0.44, 0.05, 0.005), 'wood', wood * 0.85, at @ T(sx * (ln / 2 - 0.15), 0.215, 0) @ R('Y', math.pi / 2) @ R('Z', sx * 0.06), cap='endgrain'))
+        elif what == 'crock_on':
+            crock(parts, at @ T(0, it[5], 0), it[4], it[4] * 0.45, hexlin('#b8704e') * rng(0.85, 1.05), 0.55, True, rng)
         elif what == 'bucket':
             bk = lathe([(0.12, 0.0), (0.15, 0.3)], 12, cap0=True, cap1=False)
             parts.append(Part(bk, 'wood', hexlin('#c9ae92') * 0.85, at, smooth=False))
             parts.append(Part(torus(0.15, 0.008, 12, 4), 'iron', hexlin('#ffffff'), at @ T(0, 0.25, 0), smooth=True, jitter=0.0))
+    return parts
+
+
+def brazier(p):
+    """(E9d r2) The square's brazier: a wrought-iron stand of three legs with a ring between them, a hammered bowl on top,
+    grey ash in it with a few coals and half-burnt sticks (dark by day; the glow is the lamps' code)."""
+    rng = Rng(p['seed'])
+    iron = hexlin(p.get('iron', '#d8d0c8'))
+    parts = []
+    H = p.get('h', 1.0)
+    rb = 0.32
+    for k in range(3):
+        a = k * 2.094 + 0.3
+        top = Vector((math.cos(a) * rb * 0.55, H - 0.12, math.sin(a) * rb * 0.55))
+        foot = Vector((math.cos(a) * rb * 1.05, 0.0, math.sin(a) * rb * 1.05))
+        ln, at = along(foot, top)
+        parts.append(Part(box(0.035, ln, 0.035, 0.004), 'iron', iron, at, jitter=0.05))
+        parts.append(Part(lumpy(sphere(0.04, 6, 3, 0.5), 0.1, 20, k), 'iron', iron * 0.9, T(foot.x, 0.01, foot.z), smooth=True, jitter=0.0))
+    parts.append(Part(torus(rb * 0.75, 0.012, 16, 4), 'iron', iron * 0.95, T(0, H * 0.45, 0), smooth=True, jitter=0.0))
+    bowl = lathe([(0.0, H - 0.2), (0.12, H - 0.2), (0.27, H - 0.1), (rb, H + 0.04), (rb + 0.03, H + 0.06)], 16, cap0=True, cap1=False)
+    lumpy(bowl, 0.02, 9, p['seed'])
+    parts.append(Part(bowl, 'iron', iron, smooth=True, jitter=0.0))
+    parts.append(Part(torus(rb + 0.02, 0.018, 18, 4), 'iron', iron * 1.05, T(0, H + 0.055, 0), smooth=True, jitter=0.0))
+    ash = lathe([(0.0, H + 0.03), (rb - 0.03, H + 0.0)], 14, cap0=True, cap1=False)
+    lumpy(ash, 0.04, 14, p['seed'] + 1)
+    parts.append(Part(ash, 'soil', hexlin(p.get('ash', '#c8c2ba')), smooth=True, jitter=0.0))
+    for k in range(int(p.get('coals', 9))):
+        a, d = rng(0, 6.28), rng(0.0, rb * 0.65)
+        c = lumpy(sphere(rng(0.035, 0.055), 7, 4, 0.7), 0.25, 30, k)
+        tint = hexlin('#3c322c') if k % 3 else hexlin('#8a4a30')
+        parts.append(Part(c, 'soil', tint * rng(0.8, 1.1), T(math.cos(a) * d, H + 0.035, math.sin(a) * d) @ R('Y', rng(0, 6)), smooth=True, jitter=0.0))
+    for k in range(3):
+        a = rng(0, 6.28)
+        ln, at = along(Vector((math.cos(a) * 0.05, H + 0.04, math.sin(a) * 0.05)), Vector((math.cos(a + 0.6) * 0.22, H + 0.1, math.sin(a + 0.6) * 0.22)))
+        parts.append(Part(box(0.05, ln, 0.045, 0.004), 'bark', hexlin('#6a5e54'), at, cap='endgrain', jitter=0.05))
     return parts
 
 
@@ -2675,7 +2761,7 @@ KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt,
-         'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap}
+         'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier}
 
 
 # ---------------------------------------------------------------- build --

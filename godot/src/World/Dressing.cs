@@ -718,11 +718,11 @@ public static class Dressing
             {
                 // (E9d) our own trestle table and lidded barrel inside for the kit's (its table's pale battens read as a rug's
                 // border over its top, its open barrels as pale empty rings from above)
-                // (ours built along x, the kit's along z: the table turned a quarter)
+                // (E9d r2: ours and the kit's both built along x, as Furnish lays the bench along the table's long side: no turn)
                 var id = id0 switch { "props/Table_Large" => "own:table", "props/Barrel" => "own:barrel", _ => id0 };
                 // (E9c3) ours, the hearths, rugs and rushes as nodes of their own (HouseFade brings them in with their house:
                 // "inside"); the kit's pieces grouped apart from the street's ("in|"), their copies given their unit by OwnWalls
-                if (Insides.Node(id, id == "own:table" ? at * new Transform3D(new Basis(Vector3.Up, Mathf.Pi / 2), Vector3.Zero) : at) is Node3D n) { n.SetMeta("inside", true); insideNodes.Add(n); continue; }
+                if (Insides.Node(id, at) is Node3D n) { n.SetMeta("inside", true); insideNodes.Add(n); continue; }
                 if (id.Contains(':') || id is "hearth" or "rug" or "straw") continue;
                 var k = ("in|" + id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
                 if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();

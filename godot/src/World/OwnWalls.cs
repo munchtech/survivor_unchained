@@ -231,6 +231,9 @@ public sealed class OwnWalls
                 if (m == du0) u = inner.Position.X + hr + 0.12f; else if (m == du1) u = inner.End.X - hr - 0.12f;
                 else if (m == dv0) v = inner.Position.Y + hr + 0.12f; else v = inner.End.Y - hr - 0.12f;
                 var hq = new Rect2(u - hr, v - hr, 2 * hr, 2 * hr);
+                // (E9d r2) on a hearthstone of laid brick where the floor is boards: no fire on bare planks
+                if (floor != "village/Floor_UnevenBrick")
+                    o.Add(("village/Floor_UnevenBrick", At(u, v, ins.Floor + 0.012f, (hh >> 2) % 2 == 0 ? 0 : Mathf.Pi / 2, new Vector3(hr + 0.22f, 1, hr + 0.22f))));
                 o.Add(("hearth", At(u, v, ins.Floor, (hh % 7) * 0.9f)));
                 Hearth[ins.House] = new Vector2(u, v);
                 Take(hq.Grow(0.12f), 0.9f);

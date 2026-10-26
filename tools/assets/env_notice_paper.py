@@ -85,31 +85,90 @@ def cell(i, rng, rnd):
             dr.line([(C - 110, C - 36), (C - 40, C - 40)], fill=INK, width=2)
     elif k == "bounty":
         hand_line(dr, m + 10, C - m - 10, 34, rnd, 5, 16)
-        bx0, by0, bx1, by1 = 58, 56, C - 58, 168
-        dr.rectangle((bx0, by0, bx1, by1), outline=INK, width=3)
-        # a woodcut face: head, hood, eyes, a scar, hatching
-        cx, cy = (bx0 + bx1) // 2, (by0 + by1) // 2 + 6
-        dr.ellipse((cx - 34, cy - 44, cx + 34, cy + 40), outline=INK, width=3)
-        dr.pieslice((cx - 50, cy - 60, cx + 50, cy + 70), 180, 360, outline=INK, width=4)
-        dr.line([(cx - 18, cy - 8), (cx - 6, cy - 6)], fill=INK, width=4)
-        dr.line([(cx + 6, cy - 6), (cx + 18, cy - 8)], fill=INK, width=4)
-        dr.line([(cx, cy - 2), (cx - 4, cy + 14), (cx + 3, cy + 15)], fill=INK, width=2)
-        dr.line([(cx - 12, cy + 26), (cx + 12, cy + 24)], fill=INK, width=3)
-        dr.line([(cx + 14, cy - 22), (cx + 26, cy + 6)], fill=INK, width=2)
-        for k2 in range(14):
-            dr.line([(bx0 + 4 + k2 * 4, by1 - 4), (bx0 + 4 + k2 * 4 + 14, by1 - 30)], fill=INK, width=1)
-        for y in (186, 206, 226):
+        bx0, by0, bx1, by1 = 58, 54, C - 58, 170
+        # (E9d r2: a woodcut print, not an icon) a cut block: the ground cut away in close hatching, the head and shoulders
+        # left standing light, shaded down one side in cross-hatching, the features gouged in short uneven strokes.
+        cx, cy = (bx0 + bx1) // 2, (by0 + by1) // 2 + 4
+        S = 3
+        bw, bh = (bx1 - bx0) * S, (by1 - by0) * S
+        fig = Image.new("L", (bw, bh), 0)
+        fd = ImageDraw.Draw(fig)
+        hx, hy = (cx - bx0) * S, (cy - by0) * S
+        fd.ellipse((hx - 26 * S, hy - 40 * S, hx + 25 * S, hy + 22 * S), fill=255)
+        fd.rectangle((hx - 12 * S, hy + 8 * S, hx + 11 * S, hy + 30 * S), fill=255)
+        fd.ellipse((hx - 56 * S, hy + 26 * S, hx + 54 * S, hy + 110 * S), fill=255)
+        figa = np.asarray(fig) > 0
+        blk = Image.new("L", (bw, bh), 255)
+        bd = ImageDraw.Draw(blk)
+        for t in range(-bh, bw, 5 * S // 2):
+            bd.line([(t, bh), (t + bh, 0)], fill=0, width=S + rnd.randint(0, 1))
+        shade = Image.new("L", (bw, bh), 255)
+        sd = ImageDraw.Draw(shade)
+        for t in range(-bh, bw, 3 * S):
+            sd.line([(t, 0), (t + bh * 0.6, bh)], fill=0, width=S)
+        yy, xx = np.mgrid[0:bh, 0:bw]
+        side = (xx > hx + 6 * S + 0.25 * (yy - hy)) | (yy > hy + 34 * S)
+        out = np.where(figa, np.where(side, np.asarray(shade), 255), np.asarray(blk)).astype(np.uint8)
+        po = Image.fromarray(out)
+        pd = ImageDraw.Draw(po)
+        def g(pts, w):
+            pd.line([(x * S + rnd.uniform(-1, 1), y * S + rnd.uniform(-1, 1)) for x, y in pts], fill=0, width=w * S)
+        ox, oy = hx / S, hy / S
+        g([(ox - 26, oy - 12), (ox - 20, oy - 42), (ox + 6, oy - 46), (ox + 24, oy - 20)], 3)   # hood's edge
+        g([(ox - 15, oy - 10), (ox - 5, oy - 8)], 3)
+        g([(ox + 5, oy - 8), (ox + 14, oy - 11)], 3)
+        g([(ox - 16, oy - 15), (ox - 4, oy - 16)], 1)
+        g([(ox + 1, oy - 4), (ox - 3, oy + 7), (ox + 3, oy + 8)], 2)
+        g([(ox - 9, oy + 15), (ox + 1, oy + 13), (ox + 9, oy + 15)], 2)
+        g([(ox + 10, oy - 22), (ox + 20, oy + 2)], 2)  # the scar
+        g([(ox - 24, oy + 2), (ox - 12, oy + 22), (ox + 10, oy + 22), (ox + 22, oy + 4)], 1)  # jaw, beard line
+        po = po.resize((bx1 - bx0, by1 - by0), Image.LANCZOS)
+        ink = np.asarray(po, np.float32) / 255.0
+        cellv = np.asarray(im, np.float32)
+        reg = cellv[by0:by1, bx0:bx1]
+        inkc = np.array(INK, np.float32)
+        reg[:] = reg * ink[..., None] + inkc * (1 - ink[..., None]) * (0.85 + 0.15 * noise(by1 - by0, bx1 - bx0, 4, rng))[..., None]
+        im = Image.fromarray(np.clip(cellv, 0, 255).astype(np.uint8))
+        dr = ImageDraw.Draw(im)
+        dr.rectangle((bx0 - 3, by0 - 3, bx1 + 2, by1 + 2), outline=INK, width=2)
+        for y in (188, 208, 228):
             hand_line(dr, m + 6, C - m - 6, y, rnd, 2, 8)
     elif k == "bill":
-        dr.rectangle((m, m, C - m, 52), fill=INK)
-        for x in range(m + 8, C - m - 10, 22):
-            dr.rectangle((x, 30, x + 14, 44), fill=TONES[i])
+        # (E9d r2: printed words, not black bars) a heading in big block capitals, a rule, then two columns of small type,
+        # each line words of letters with gaps, a ragged right edge
+        x = m + 6
+        while x < C - m - 16:
+            wn = rnd.randint(3, 6)
+            for _ in range(wn):
+                lw = rnd.randint(8, 13)
+                if x + lw > C - m - 6:
+                    break
+                dr.rectangle((x, 28, x + lw, 48), fill=INK)
+                cut = rnd.random()
+                if cut < 0.4:
+                    dr.rectangle((x + 3, 33 + rnd.randint(0, 6), x + lw - 3, 37 + rnd.randint(0, 6)), fill=TONES[i])
+                elif cut < 0.7:
+                    dr.rectangle((x + 3, 32, x + lw - 3, 48), fill=TONES[i])
+                x += lw + 3
+            x += 10
+        dr.line([(m, 56), (C - m, 56)], fill=INK, width=2)
+        dr.line([(m + 20, 60), (C - m - 20, 60)], fill=INK, width=1)
         for col in range(2):
             x0 = m + col * (C - 2 * m) // 2 + 4
-            for y in range(70, C - m - 6, 13):
-                w = rnd.randint(60, (C - 2 * m) // 2 - 12)
-                dr.rectangle((x0, y, x0 + w, y + 5), fill=INK)
-        dr.line([(C // 2, 64), (C // 2, C - m - 6)], fill=INK, width=1)
+            xe = x0 + (C - 2 * m) // 2 - 12
+            for y in range(72, C - m - 6, 12):
+                x = x0 + (8 if rnd.random() < 0.15 else 0)
+                end = xe - rnd.randint(0, 30)
+                while x < end - 6:
+                    for _ in range(rnd.randint(2, 7)):
+                        lw = rnd.randint(2, 4)
+                        tall = rnd.random() < 0.25
+                        dr.rectangle((x, y - (3 if tall else 0), x + lw, y + 4), fill=INK)
+                        x += lw + 2
+                        if x >= end:
+                            break
+                    x += 5
+        dr.line([(C // 2, 66), (C // 2, C - m - 6)], fill=INK, width=1)
     elif k == "seal":
         hand_line(dr, m + 26, C - m - 26, 40, rnd, 4, 13)
         y = 70
