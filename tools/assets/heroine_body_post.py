@@ -42,7 +42,8 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
      than its 1.5 mm neighbourhood) eased by half: a dark red tick at the Look turned 40 (face 42)
                                                                                  [each paint's JPEG comment ear_tick]
   7e. heroine_ear_shape --front: every head paint's ear front (helix root to tragus) laid darker by its own gap to its
-     cheek and a little richer: it rendered a pale grey strip by her cheek at the Look turned 40 (face 42)
+     cheek and a little richer: it rendered a pale grey strip by her cheek at the Look turned 40 (face 42); its mask
+     smooth along the ear (face 43: a comb mask had left a ladder of pale bars)
                                                                                [each paint's JPEG comment ear_front]
   8. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
