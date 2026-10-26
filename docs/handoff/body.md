@@ -2,6 +2,9 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in `.claude/worktrees/armor-7` (branch armor-7, junction worktree: never git stash / reset --hard / checkout . / merge / pull with `godot\assets` linked; remove the link before merging integration, remake it after). One writer: the body chain and the armor pieces both live there.
 
+## Body 11, 25 Oct: round 13 SOLVER RUNNING (fresh su-lead-max on `B9rief_sculpt13.md`, on round 12's body)
+Round 13 had not started (no r13 commit, `B913\` held only the owner's crops). Solver output `B913\` (HOW.txt, sheet_rows15.png BODY 8 | ROUND 12 | ROUND 13, c_arm.png, sheet_look.png). Next: max judge `B9\judge_r13.md` (judge_r12 pattern; rows 1, 2, 3, 5 + Look front/turn 40 + 1:1 arm crops), then the owner's sheet. After the owner's yes: G3 outfit chain on the new topology (`B97\HOW.txt` chain notes: vertex ids changed, tuck re-record, LOD), dressed judge, full test, MR into claude/vigilant-galileo-l6jqyx.
+
 ## Body 10, 25 Oct: rounds 8-9 shot and judged; OWNER SHEET sent, waiting
 B9 as below; rounds in `B9
 8\`, `B9
