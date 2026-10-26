@@ -534,13 +534,21 @@ void fragment() {
 		float kr = length(v_kl.xz);
 		bool inner = kr < 0.432 && v_kl.y > 0.2 && v_kl.y < 0.79 && (dot(v_kn.xz, v_kl.xz) < 0.0 || v_kn.y > 0.5);
 		if (inner) {
-			ALBEDO = vec3(0.035, 0.03, 0.028) * (1.0 + 1.6 * smoothstep(0.45, 0.79, v_kl.y));
-			ROUGHNESS = 0.9;
+			// (E9c4: a near-black sooted bowl, no sky in it, so the mouth reads as a hole from above)
+			ALBEDO = vec3(0.012, 0.010, 0.009) * (1.0 + 1.2 * smoothstep(0.55, 0.79, v_kl.y));
+			ROUGHNESS = 0.95;
+			SPECULAR = 0.05;
 			NORMAL_MAP = vec3(0.5, 0.5, 1.0);
 		} else if (v_kl.y > 0.765 && kr > 0.42 && v_kn.y > 0.3) {
-			ALBEDO = mix(ALBEDO, vec3(0.4, 0.37, 0.34), 0.4);
-			ROUGHNESS = 0.42;
-			METALLIC = 0.6;
+			// (its rim's top worn iron, dark: the hearth's light picks it out, the sky does not whiten it)
+			ALBEDO = vec3(0.09, 0.085, 0.08);
+			ROUGHNESS = 0.5;
+			METALLIC = 0.5;
+		} else {
+			// (E9c4) the body blackened cast iron (the kit's trim metal reads pale and flat): dark, warm, sooted low
+			ALBEDO = vec3(0.045, 0.04, 0.036) * (0.7 + 0.3 * smoothstep(0.0, 0.6, v_kl.y)) * (0.85 + 0.3 * dot(ALBEDO, LW));
+			ROUGHNESS = 0.7;
+			METALLIC = 0.3;
 		}
 	}
 #endif

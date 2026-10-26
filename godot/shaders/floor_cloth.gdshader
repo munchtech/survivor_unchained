@@ -50,13 +50,13 @@ vec2 stalk(vec2 p, float cs, float k) {
 			vec2 o = (q + vec2(hash(q + 3.7 + k), hash(q + 9.1 + k))) * cs;
 			float a = hash(q + 5.3 + k) * 3.14159 + k * 0.7;
 			vec2 d = vec2(cos(a), sin(a));
-			float L = mix(0.1, 0.25, hash(q + 7.7 + k)) * 0.5;
-			float w = mix(0.004, 0.006, hash(q + 1.9 + k));
+			float L = mix(0.16, 0.3, hash(q + 7.7 + k)) * 0.5;
+			float w = mix(0.0065, 0.0095, hash(q + 1.9 + k));
 			vec2 r = p - o;
 			float t = dot(r, d);
 			float s = abs(dot(r, vec2(-d.y, d.x)));
 			float taper = 1.0 - smoothstep(0.6, 1.0, abs(t) / L);
-			if (abs(t) < L && s < w * (0.5 + 0.5 * taper)) best = vec2(0.6 + 0.6 * hash(q + 2.3 + k), 1.0);
+			if (abs(t) < L && s < w * (0.5 + 0.5 * taper)) best = vec2(0.8 + 0.3 * hash(q + 2.3 + k), 1.0);
 		}
 	return best;
 }
@@ -102,14 +102,16 @@ void fragment() {
 		// the rushes: dense in the middle of the card, thinning out to a ragged edge
 		vec2 r = abs(m) / max(hf, vec2(0.05));
 		float edge = max(r.x, r.y) + 0.35 * (noise(m * 2.5 + seed) - 0.5);
-		float dens = (1.0 - smoothstep(0.55, 1.0, edge)) * smoothstep(0.28, 0.62, noise(m * 1.4 + seed * 0.7));
+		// (E9c4: a scatter of matted rushes on the boards, not a mat; stalks 1.3-1.9 cm, so they hold at the game camera)
+		float dens = 0.7 * (1.0 - smoothstep(0.5, 1.0, edge)) * smoothstep(0.3, 0.65, noise(m * 1.4 + seed * 0.7));
 		vec2 s = vec2(0.0);
 		for (int k = 0; k < 3; k++) {
 			vec2 t = stalk(m + float(k) * 0.37, 0.1, float(k));
 			if (t.y > 0.0 && hash(floor(m * 10.0 + float(k) * 0.37) + 4.4) < dens) { s = t; }
 		}
 		if (s.y <= 0.0) discard;
-		vec3 dry = mix(vec3(0.34, 0.29, 0.19), vec3(0.47, 0.41, 0.27), noise(m * 6.0 + seed));
+		// (E9c4: old dry straw, warm and mid-dark, about 0.4 sRGB luma (linear albedo here), so it stays straw in shade)
+		vec3 dry = mix(vec3(0.196, 0.113, 0.027), vec3(0.319, 0.188, 0.043), noise(m * 6.0 + seed));
 		col = dry * s.x * (0.85 + 0.3 * noise(m * 40.0));
 		rough = 0.9;
 	}
