@@ -121,6 +121,8 @@ uniform float mud_sat = 1.45;
 uniform float mud_ao = 0.8;
 // ... and its specular (the sky's sheen greyed the dark mud).
 uniform float mud_spec = 0.1;
+// (E9e: the mud's hue pulled off the shade's blue, 0-1.)
+uniform float mud_warm = 1.0;
 // Style r2 (--setts-paint): the street's mud painted, an opaque matte darker browner earth (a calm sheet, no grain), flat,
 // moss along its edges. 0 is the mud as it was.
 uniform float mud_paint = 0.0;
@@ -422,6 +424,10 @@ void fragment() {
 	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
 	mud_col *= mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.93 + 0.1 * mgr.r, mud_paint);
 	mud_col = max(mix(vec3(dot(mud_col, vec3(0.2126, 0.7152, 0.0722))), mud_col, mud_sat), 0.0);
+	// (E9e: at dawn the shaded mud still read as a blue-black hole, p10 23-25 RGB 27,29,46: the sky's blue is all the
+	// shade has, and the mud's base gave it nothing redder to light. Its blue down, red and green up, and a little lift, so
+	// in shade it stays earth, a brown-violet under the stones' blue-grey, and in sun a browner wet clay.)
+	mud_col *= mix(vec3(1.0), vec3(1.55, 1.5, 0.95), mud_warm);
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
 	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);
