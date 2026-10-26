@@ -371,22 +371,9 @@ public partial class Callout : Control, ICalloutView
         return c;
     }
 
-    /// <summary>A key as a callout draws it, the same for every key it names (Space, R, E): a dark cap,
-    /// 26 px at the least, a warm edge, the key's name in bone.</summary>
-    static Control KeyCap(string text, float k)
-    {
-        var p = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(26, 26) * k, SizeFlagsVertical = SizeFlags.ShrinkCenter };
-        var s = new StyleBoxFlat { BgColor = new Color(0.05f, 0.04f, 0.035f, 0.85f), BorderColor = Hot with { A = 0.6f } };
-        s.SetBorderWidthAll(2);
-        s.SetCornerRadiusAll(4);
-        s.ContentMarginLeft = s.ContentMarginRight = 7 * k;
-        s.ContentMarginTop = s.ContentMarginBottom = 1;
-        p.AddThemeStyleboxOverride("panel", s);
-        var l = Style.Label(text, Style.UiBold, (int)Math.Round(15 * k), Bone, false, HorizontalAlignment.Center, false);
-        l.VerticalAlignment = VerticalAlignment.Center;
-        p.AddChild(l);
-        return p;
-    }
+    /// <summary>A key as a callout draws it, the same for every key it names (Space, R, E): the shared keycap
+    /// the tips use too (Style.KeyCap).</summary>
+    static Control KeyCap(string text, float k) => Style.KeyCap(text, k);
 
     static Control Pad(Control c, int side)
     {

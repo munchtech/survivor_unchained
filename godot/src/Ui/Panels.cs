@@ -50,6 +50,8 @@ public partial class DraftPanel : Control
     int? chosen;
     double t;
     readonly List<Button> cards = new();
+    /// <summary>Each card's upper words, its footer block and its body (Fit keeps the words clear of the footer).</summary>
+    readonly List<(VBoxContainer Top, VBoxContainer Foot, Label Body)> fitted = new();
     readonly Dictionary<string, Control> buildChips = new();
     HBoxContainer foot = null!;
     Label banner = null!;
@@ -288,13 +290,26 @@ public partial class DraftPanel : Control
         var glow = new Panel { MouseFilter = MouseFilterEnum.Ignore, ShowBehindParent = true, Name = "Glow" };
         Style.Fill(glow);
         panel.AddChild(glow);
-        var v2 = Style.V(Style.Gap2);
         // The painted card's iron is wider than the drawn one's edge: what is written keeps inside it.
         bool painted = UiArt.Has((string)panel.GetMeta("frame"));
-        v2.Position = painted ? new Vector2(40, 22) : new Vector2(22, 20);
-        v2.Size = painted ? new Vector2(CardW - 80, CardH - 64) : new Vector2(CardW - 44, CardH - 36);
-        v2.SetMeta("home", v2.Position);
-        b.AddChild(v2);
+        var words = new Control { MouseFilter = MouseFilterEnum.Ignore, Name = "Words" };
+        words.Position = painted ? new Vector2(40, 22) : new Vector2(22, 20);
+        words.Size = painted ? new Vector2(CardW - 80, CardH - 64) : new Vector2(CardW - 44, CardH - 36);
+        words.SetMeta("home", words.Position);
+        b.AddChild(words);
+        var v2 = Style.V(Style.Gap2);
+        v2.Size = words.Size;
+        words.AddChild(v2);
+        // The footer block (why, tags, path, the rarity row and the key) stands on the card's foot, a fixed
+        // distance above its bottom edge on every card, growing upward; the body above takes the slack, so
+        // every card in a row shares its footer baseline (UI notes 5 and 6, 26 Oct: the rarity row floated
+        // and the footers sat at uneven heights where a long body pushed them down).
+        var fv = Style.V(Style.Gap2);
+        fv.AnchorLeft = 0; fv.AnchorRight = 1; fv.AnchorTop = 1; fv.AnchorBottom = 1;
+        fv.OffsetLeft = fv.OffsetRight = 0;
+        fv.OffsetTop = fv.OffsetBottom = painted ? 8 : 0;
+        fv.GrowVertical = GrowDirection.Begin;
+        words.AddChild(fv);
         // What it is, on a ribbon; NEW when it is new to the build.
         var ribbon = Style.H(6);
         ribbon.Alignment = BoxContainer.AlignmentMode.Center;
@@ -339,11 +354,11 @@ public partial class DraftPanel : Control
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
         // (on a teaching panel, not a reason every card gives: it tells none of them apart, round 3)
         foreach (var why in o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2))
-            v2.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
+            fv.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
         // What a combat skill becomes, and with what (not on a teaching panel: the same line under every
         // card, and "Fits your build" with no build yet, said nothing that told the cards apart, round 2 judge).
         if (o.Recipe is { Length: > 0 } recipe && !v.Teaching)
-            v2.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
+            fv.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
         bool fits = false;
@@ -351,24 +366,32 @@ public partial class DraftPanel : Control
         {
             bool fit = o.Kind is not (OfferKind.Rank or OfferKind.Evolve) && v.Build.Contains(tg);
             fits |= fit;
-            tags.AddChild(Style.Label(tg.ToString().ToLowerInvariant(), Style.UiBold, Style.Caption, fit ? Style.EmberHi : Style.InkFaint));
+            // (a tag the build lacks in the card's secondary ink at full strength: information, not a
+            // disabled state; the faint grey read as switched off, UI note 7)
+            tags.AddChild(Style.Label(tg.ToString().ToLowerInvariant(), Style.UiBold, Style.Caption, fit ? Style.EmberHi : Style.InkDim));
         }
-        v2.AddChild(tags);
+        if (tags.GetChildCount() > 0) fv.AddChild(tags);
         // The path it belongs to, or (if none) that it fits what the build already does.
         if (o.Path is { } pid && Content.Paths.Find(pid) is { } path)
-            v2.AddChild(Style.Label(path.Name, Style.DisplayLight, Style.Small, Style.Gold, false, HorizontalAlignment.Center));
+            fv.AddChild(Style.Label(path.Name, Style.DisplayLight, Style.Small, Style.Gold, false, HorizontalAlignment.Center));
         else if (fits && !v.Teaching)
         {
             var fl = Style.H(4, Glyphs.Icon("flame", 15, Style.EmberHi), Style.Label("Fits your build", Style.UiBold, Style.Caption, Style.EmberHi));
             fl.Alignment = BoxContainer.AlignmentMode.Center;
-            v2.AddChild(fl);
+            fv.AddChild(fl);
         }
         // Its rarity, in words and diamonds as well as colour; its key.
-        var foot = Style.H(Style.Gap2, Style.Label(crown ? "Legendary" : o.Rarity.ToString(), Style.UiBold, Style.Caption, rc), Style.Gems(r, 6));
+        // (the word and its diamonds on one middle line: the diamonds hung below the word's)
+        var rword = Style.Label(crown ? "Legendary" : o.Rarity.ToString(), Style.UiBold, Style.Caption, rc);
+        rword.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var gems = Style.Gems(r, 6);
+        gems.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var foot = Style.H(Style.Gap2, rword, gems);
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var key = new Control { CustomMinimumSize = new Vector2(30, 26), MouseFilter = MouseFilterEnum.Ignore, Name = "Key" };
         foot.AddChild(key);
-        v2.AddChild(foot);
+        fv.AddChild(foot);
+        fitted.Add((v2, fv, body));
         var ban = Style.Label("BANISH", Style.Display, 30, new Color("#ff8a6a"), false, HorizontalAlignment.Center);
         ban.Position = new Vector2(0, 186); ban.Size = new Vector2(CardW, 40);
         ban.Visible = false;
@@ -378,6 +401,19 @@ public partial class DraftPanel : Control
         b.Pressed += () => Take(i);
         cards.Add(b);
         return b;
+    }
+
+    /// <summary>A card's upper words kept above its footer block: the body takes what room is left, and a
+    /// body too long for it steps its type down (a point a frame, three at most) rather than push the
+    /// footer off its line.</summary>
+    static void Fit((VBoxContainer Top, VBoxContainer Foot, Label Body) c)
+    {
+        float room = c.Foot.Position.Y - Style.Gap2;
+        if (c.Foot.Size.Y <= 0 || room <= 0) return;
+        if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) c.Top.Size = new Vector2(c.Top.Size.X, room);
+        int fs = c.Body.HasThemeFontSizeOverride("font_size") ? c.Body.GetThemeFontSize("font_size") : Style.Body;
+        if (c.Top.GetCombinedMinimumSize().Y > room + 0.5f && fs > Style.Body - 3)
+            c.Body.AddThemeFontSizeOverride("font_size", fs - 1);
     }
 
     /// <summary>The focused card lifted, the banish mark shown, a chosen card glowing; its skill lit in the build.</summary>
@@ -477,6 +513,7 @@ public partial class DraftPanel : Control
             float k = Mathf.Clamp((float)((t - 0.06 - i * 0.08) / 0.5), 0, 1);
             float e = 1 - (1 - k) * (1 - k) * (1 - k);
             if (chosen == null) cards[i].Modulate = Colors.White with { A = e };
+            Fit(fitted[i]);
             // (risen from below to where the card's own frame puts its words: the painted frame's
             // inset, not the drawn one's, or the words sat 18 px left of the card's middle)
             var words = cards[i].GetChild<Control>(1);

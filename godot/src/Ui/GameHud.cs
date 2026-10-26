@@ -182,6 +182,15 @@ public partial class GameHud : CanvasLayer
         col.Position = new Vector2(right - w, foot - 120);
         col.Size = new Vector2(w, 120);
         col.MouseFilter = Control.MouseFilterEnum.Ignore;
+        // No box: a soft dark falloff behind the type (about 40% at its middle, nothing at its edge), so the
+        // tally reads on the hub's brightest planks as on night grass (UI note 8, 26 Oct).
+        var g = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.025f, 0.4f), new Color(0.02f, 0.015f, 0.025f, 0.24f), new Color(0.02f, 0.015f, 0.025f, 0) }, Offsets = new[] { 0f, 0.45f, 1f } };
+        combat.AddChild(new TextureRect
+        {
+            Texture = new GradientTexture2D { Gradient = g, Width = 128, Height = 128, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f) },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore,
+            Position = new Vector2(right - 300, foot - 170), Size = new Vector2(420, 230),
+        });
         combat.AddChild(col);
         tally = col;
         tallyWord = Style.Label("", Style.UiHeavy, Style.Badge, Style.Ember, false, HorizontalAlignment.Right);
@@ -197,6 +206,16 @@ public partial class GameHud : CanvasLayer
         row.AddChild(killsChip);
         row.AddChild(Style.H(5, Glyphs.Icon("coin", 18, Style.GoldHi), tallyGold));
         col.AddChild(row);
+        foreach (var l in new[] { tallyWord, tallyTime, tallyKills, tallyGold }) Rimmed(l);
+    }
+
+    /// <summary>A 1 px dark rim round the type, over its drop shadow: corner words that stand on the world
+    /// with no box read on the brightest ground (UI note 8).</summary>
+    static Label Rimmed(Label l)
+    {
+        l.AddThemeConstantOverride("outline_size", 2);
+        l.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.015f, 0.01f, 0.8f));
+        return l;
     }
     /// <summary>Soft shade behind the top-right corner and along the bottom, so
     /// the HUD's words read over bright cobbles as well as night grass.</summary>
@@ -250,7 +269,7 @@ public partial class GameHud : CanvasLayer
         c.Position = new Vector2(1920 - 31 - 400, 22);
         c.Size = new Vector2(400, 0);
         play.AddChild(c);
-        zoneName = Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right);
+        zoneName = Rimmed(Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right));
         c.AddChild(zoneName);
         zoneSub = Style.H(6);
         zoneSub.Alignment = BoxContainer.AlignmentMode.End;
@@ -578,7 +597,9 @@ public partial class GameHud : CanvasLayer
             if (per >= 1 && artReadyWas < 1) artPing = 1;
             artReadyWas = per;
             art.Level = (float)per;
-            art.Glyph = Glyphs.Texture(Abilities.All[b.Ability ?? AbilityKind.Sprint].Icon, 96, Hex("#fff3dc"), line: true);
+            // The Flare's own glyph (its data's icon), never the calling's art's: the Warden's bull is the
+            // dash form's badge only (UI note 3, 26 Oct: the Q orb wore the bull of Bull Rush).
+            art.Glyph = Glyphs.Texture(fl.Icon is { Length: > 0 } fi ? fi : fl.Id, 96, Hex("#fff3dc"), line: true);
             art.GlyphTint = b.FlareReady ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
             art.Number = b.FlareReady ? "" : $"{Math.Floor(b.FlareMeter % full)}%";
             // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
@@ -676,13 +697,23 @@ public partial class GameHud : CanvasLayer
         }
         return holder;
     }
+    /// <summary>What the header shows now (the game asks every frame; it is redrawn only when this changes).</summary>
+    (string Name, string? Region, int Day, TimeOfDay Time)? zoneShown;
+
+    /// <summary>The place's name and, under it, the time of day (its word and its sun or moon), the day and the
+    /// region. Called on every frame of play with the zone's time as it is now, so the header follows the time
+    /// live (UI note 2, 26 Oct: it said Night under a moon at the Prologue's dawn, set only when the zone loaded).</summary>
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
+        if (zoneShown == (name, region, day, time)) return;
+        zoneShown = (name, region, day, time);
         zoneName.Text = name.ToUpperInvariant();
         foreach (var c in zoneSub.GetChildren()) if (c != dial) c.QueueFree();
         // Where the clock runs, its dial says the time of day; elsewhere a sun or a moon.
         if (!dial.Visible) zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
-        zoneSub.AddChild(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f }));
+        zoneSub.AddChild(Rimmed(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f })));
+        // (the glyph's place stands as the clock last said: hidden where a clock runs)
+        if (clockNow.Clock != null && zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = false;
     }
 
     FallChoices? fall;
@@ -951,7 +982,8 @@ public partial class GameHud : CanvasLayer
         bool pad = Controls.Instance.UsingPad;
         bool wasd = keys.Count == 4 && string.Concat(keys) == "WASD";
         if (pad && wasd) { yield return Style.PadButton("Left stick"); yield break; }
-        foreach (var k in keys) yield return pad && !wasd && PadNames.Contains(k) ? Style.PadButton(k) : Style.Key(k);
+        // (the tip's keys in the keycap the callouts use: the HUD's dark key was too dark to read on the night, UI note 4)
+        foreach (var k in keys) yield return pad && !wasd && PadNames.Contains(k) ? Style.PadButton(k) : Style.KeyCap(k, 1.1f);
     }
 
     /// <summary>The device in hand changed: every key shown redraws as its keys or buttons.</summary>

@@ -37,6 +37,10 @@ public partial class Voices : Node3D
     sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown);
 
     readonly List<Said> barks = new();
+    /// <summary>Combat's floaters standing now (a "blocked"), where they stand on the screen and until when:
+    /// a line shown while one stands is lifted clear of it, as of an older line.</summary>
+    readonly List<(Rect2 R, double Until)> floaters = new();
+    double now;
     readonly Dictionary<string, Queue<Waiting>> waiting = new();
     CanvasLayer? layer;
     /// <summary>A conversation is on: the names and words step back.</summary>
@@ -170,8 +174,44 @@ public partial class Voices : Node3D
         Plates(new());
     }
 
+    /// <summary>A combat floater (a "blocked": damage numbers' family, short-lived, at the hit) kept off every
+    /// line being said (UI note 1, 26 Oct: it printed into the Warden's bark): moved down under a box its
+    /// footprint (worldW by worldH metres, rising `rise` over `life` seconds) would cross; false when there
+    /// is no room under it on the screen, and it is better not shown.</summary>
+    public bool ClearOfLines(ref Vector3 at, float worldW, float worldH, float rise, double life)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null || cam.IsPositionBehind(at)) return true;
+        var p = cam.UnprojectPosition(at);
+        var up = cam.UnprojectPosition(at + Vector3.Up * (worldH / 2 + rise));
+        var down = cam.UnprojectPosition(at - Vector3.Up * worldH / 2);
+        float half = (cam.UnprojectPosition(at + cam.GlobalBasis.X * worldW / 2) - p).Length();
+        float above = p.Y - up.Y, below = down.Y - p.Y;
+        Rect2 Foot(Vector2 c) => new(c.X - half, c.Y - above, half * 2, above + below);
+        var boxes = barks.Where(b => b.Box.Visible && b.T > 0).Select(b => new Rect2(b.Box.Position, b.Box.Size).Grow(6)).ToList();
+        bool moved = false;
+        for (int pass = 0; pass < 4; pass++)
+        {
+            var f = Foot(p);
+            var hit = boxes.FirstOrDefault(r => r.Intersects(f));
+            if (hit.Size == Vector2.Zero) break;
+            p.Y = hit.End.Y + above;
+            moved = true;
+        }
+        if (Foot(p).End.Y > GetViewport().GetVisibleRect().Size.Y - 8 || boxes.Any(r => r.Intersects(Foot(p)))) return false;
+        if (moved)
+        {
+            float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+            at = cam.ProjectPosition(p, depth);
+        }
+        floaters.Add((Foot(p), now + life));
+        return true;
+    }
+
     public override void _Process(double delta)
     {
+        now += delta;
+        floaters.RemoveAll(f => f.Until <= now);
         float quiet = Quiet ? 0 : 1;
         plateK = Away ? Mathf.Max(0, plateK - (float)delta / 0.4f) : 1;
         float pk = Bare ? 0 : quiet * plateK;
@@ -213,6 +253,8 @@ public partial class Voices : Node3D
                 if (m.Visible) placed.Add(new Rect2(c - new Vector2(m.FontSize * k / 2, m.Offset.Y * k + m.FontSize * k / 2), new Vector2(m.FontSize * k, m.FontSize * k)));
             }
         }
+        // (and combat's floaters: a line said while a "blocked" stands is lifted clear of it)
+        foreach (var f in floaters) placed.Add(f.R);
         float ease = 1 - Mathf.Exp(-10f * (float)delta);
         foreach (var b in barks)
         {

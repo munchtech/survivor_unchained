@@ -498,19 +498,12 @@ public partial class TipLine : Control
     static readonly Regex KeyToken = new(@"\{key:([^}]+)\}");
 
     /// <summary>A keycap for the words, drawn once into a small viewport that stays with the tip, its texture
-    /// set inline in the line: lighter than the HUD's dark key (it must read inside a line of pale words).</summary>
+    /// set inline in the line: the shared keycap (Style.KeyCap), as the head's keys and the callouts draw it.</summary>
     Texture2D Chip(string key)
     {
-        var size = new Vector2I(Math.Max(28, 14 + 10 * key.Length), 28);
-        var box = new StyleBoxFlat { BgColor = new Color("#2a221a"), BorderColor = new Color("#e2cf9e"), CornerDetail = 4 };
-        box.SetBorderWidthAll(2);
-        box.SetCornerRadiusAll(5);
-        box.BorderWidthBottom = 4;
-        var cap = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        cap.AddThemeStyleboxOverride("panel", box);
-        var l = Style.Label(key, Style.UiHeavy, 17, new Color("#fff1d0"), false, HorizontalAlignment.Center, false);
-        l.VerticalAlignment = VerticalAlignment.Center;
-        cap.AddChild(l);
+        var cap = Style.KeyCap(key, 1.05f);
+        var size = (Vector2I)cap.GetCombinedMinimumSize().Ceil();
+        size = new Vector2I(Math.Max(size.X, Math.Max(28, 14 + 10 * key.Length)), Math.Max(size.Y, 28));
         cap.Size = size;
         var vp = new SubViewport { TransparentBg = true, Disable3D = true, Size = size, RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
         vp.AddChild(cap);
