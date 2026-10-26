@@ -155,6 +155,10 @@ view_from={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+canopy_fade={
+"type": "vec4",
+"value": Vector4(6, 1.5, 1, 1)
+}
 water_level={
 "type": "vec4",
 "value": Vector4(0, -1000, 0, 0)

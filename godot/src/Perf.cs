@@ -97,7 +97,7 @@ public partial class Perf : Node
 
     struct Frame
     {
-        public double T, Ms, Main, Physics, RenderCpu, Setup, Gpu;
+        public double T, Ms, Main, Physics, Proc, Nav, RenderCpu, Setup, Gpu;
         public long Alloc, MainAlloc, Primitives;
         public int Draws, Objects, ShadowDraws, ShadowObjects, CanvasDraws, Pipelines, Gen0, Gen1, Gen2;
     }
@@ -216,6 +216,9 @@ public partial class Perf : Node
         {
             T = t, Ms = ms, Main = main,
             Physics = Performance.GetMonitor(Performance.Monitor.TimePhysicsProcess) * 1000,
+            // (the engine's whole process step, ours and its own: mixers, skeletons, the message queue; and navigation)
+            Proc = Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000,
+            Nav = Performance.GetMonitor(Performance.Monitor.TimeNavigationProcess) * 1000,
             RenderCpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(vp),
             Setup = RenderingServer.GetFrameSetupTimeCpu(),
             Gpu = RenderingServer.ViewportGetMeasuredRenderTimeGpu(vp),
@@ -341,6 +344,7 @@ public partial class Perf : Node
         return string.Create(CultureInfo.InvariantCulture,
             $"{1000 / mean:0} fps, {mean:0.00}ms (p50 {ms[ms.Count / 2]:0.00}, 1% {Worst(ms, 0.01):0.0}, 0.1% {Worst(ms, 0.001):0.0}, max {ms[^1]:0.0}) " +
             $"main {w.Average(x => x.Main):0.00}ms ({each}) render {w.Average(x => x.RenderCpu + x.Setup):0.00}ms gpu {w.Average(x => x.Gpu):0.00}ms " +
+            $"engine proc {w.Average(x => x.Proc):0.00} phys {w.Average(x => x.Physics):0.00} nav {w.Average(x => x.Nav):0.00} " +
             $"draws {w.Average(x => x.Draws):0}+{w.Average(x => x.ShadowDraws):0}sh+{w.Average(x => x.CanvasDraws):0}ui " +
             $"alloc {w.Average(x => x.Alloc) / 1024:0.0}KB/f (main {w.Average(x => x.MainAlloc) / 1024:0.0}) gc {w.Sum(x => x.Gen0)}/{w.Sum(x => x.Gen1)}/{w.Sum(x => x.Gen2)} pipes {w.Sum(x => x.Pipelines)}");
     }

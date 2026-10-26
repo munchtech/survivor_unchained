@@ -155,6 +155,20 @@ uniform float night_hue = 0.0;
 uniform float night_value = 1.0;
 // (and its light through the needles cut by this much by day: judge E4 r3, the nearest roaddawn spruce still the frame's mintiest)
 uniform float near_back = 0.25;
+// (E3 au1-5) The canopy fade, in place of the round window for our trees: a tree whose crown, seen from the play
+// camera, covers her or the ground within canopy_fade.x m of her (on the screen, at her distance; the ground's
+// depth foreshortened by the camera's pitch) fades WHOLE, its leaves and its bark above crown_keep, to a ghost
+// (canopy_fade.z the share cut), eased over canopy_fade.y m, by the house fade's moving threshold (coverage.gdshaderinc),
+// so the temporal smoothing makes it an even ghost, never a hole or a stipple. Decided per copy in vertex() from its
+// origin, its scale and its species' crown (local m: crown_lo its base, crown_hi its top, 0 never faded, crown_r its
+// radius; flora_species.json's "shader"), the same for every vertex of it (a flat varying). Only in the play camera's
+// own view: in a light's the tree is whole, so its shadow stays. canopy_fade.w 0: off (--canopy off).
+uniform float crown_lo = 0.0;
+uniform float crown_hi = 0.0;
+uniform float crown_r = 2.0;
+uniform float crown_keep = 1.5;
+global uniform vec4 canopy_fade;
+varying flat float v_fade;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
@@ -389,6 +403,42 @@ void vertex() {
 		float ld = fract(sin(dot(ip.xz, vec2(7.77, 93.51))) * 51721.17) * TAU;
 		VERTEX.xz += vec2(cos(ld), sin(ld)) * tan(la) / (2.0 * lean_h) * h * h;
 	}
+	v_fade = 0.0;
+	if (crown_hi > 0.0 && canopy_fade.w > 0.0 && survivor.w > 0.0 && view_from.w > 0.0 && distance(INV_VIEW_MATRIX[3].xyz, view_from.xyz) <= 1.0) {
+		// the crown's base and top as this copy is drawn (its stretch and its leader, as above)
+		float st = mix(stretch_lo, stretch_hi, fract(sin(dot(ip.xz, vec2(17.17, 63.41))) * 19417.83));
+		float hl = mix(leader_lo, leader_hi, fract(sin(dot(ip.xz, vec2(51.3, 27.9))) * 37281.41));
+		float top = (crown_hi > leader_from ? leader_from + (crown_hi - leader_from) * hl : crown_hi) * st;
+		vec3 upv = MODEL_MATRIX[1].xyz;
+		vec3 vb = (VIEW_MATRIX * vec4(ip + upv * (crown_lo * st), 1.0)).xyz;
+		vec3 vt = (VIEW_MATRIX * vec4(ip + upv * top, 1.0)).xyz;
+		vec3 hv = (VIEW_MATRIX * vec4(survivor.xyz, 1.0)).xyz;
+		// (a crown wholly behind the camera's plane is not seen: none; one partly behind, cut at 1 m before the lens,
+		// or its projection, flipped and huge, swept across her)
+		float zb = vb.z, zt = vt.z, vb_z0 = vb.z, vt_z0 = vt.z;
+		if (max(zb, zt) > -1.0) {
+			if (min(zb, zt) > -1.0) zb = 1e9;
+			else if (zb > -1.0) vb = mix(vt, vb, (-1.0 - zt) / (zb - zt));
+			else vt = mix(vb, vt, (-1.0 - zb) / (zt - zb));
+		}
+		// on the screen, in metres at her distance (a perspective's x / z, y / z): the crown a segment, its radius about it
+		float hz = min(hv.z, -0.5);
+		vec2 a = vb.xy * (hz / min(vb.z, -0.5)), b = vt.xy * (hz / min(vt.z, -0.5));
+		float rr = crown_r * length(upv) * hz / min(0.5 * (vb.z + vt.z), -0.5);
+		if (zb > 1e8) a = b = vec2(1e6);
+		// the ground round her seen foreshortened: screen heights stretched back to ground depth by the camera's pitch
+		float ky = 1.0 / max(abs(INV_VIEW_MATRIX[2].y), 0.3);
+		vec2 p = hv.xy;
+		a.y *= ky; b.y *= ky; p.y *= ky;
+		vec2 ab = b - a;
+		float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+		float d = length(p - (a + ab * t)) - rr;
+		v_fade = 1.0 - smoothstep(canopy_fade.x, canopy_fade.x + canopy_fade.y, d);
+		// (a crown that reaches within 1 m of the lens's plane is cut whole: its axis behind the plane read as
+		// "not seen", yet its needles hung in front and flashed across her for a few frames as the camera passed, judge e2)
+		// (eased over the 1.5 m before it, so a crown that crosses it in view fades rather than pops: judge e3)
+		v_fade = max(v_fade, smoothstep(-(crown_r * length(upv) + 2.5), -(crown_r * length(upv) + 1.0), max(vb_z0, vt_z0)));
+	}
 #endif
 	VERTEX.x += sway;
 	VERTEX.z += sway * 0.5;
@@ -481,6 +531,14 @@ void fragment() {
 		f = min(1.0, f * 2.0);
 		if (f > 0.0 && coverage_cut(FRAGCOORD.xy) < f) discard;
 #endif
+	}
+#elif defined(OWN_FOLIAGE)
+	// (no round window: the canopy fade, above; the trunk below crown_keep stands, its cut eased over 0.6 m)
+	vec2 mo = vec2(0.0);
+	float kept = 1.0;
+	if (v_fade > 0.0) {
+		float ff = v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : smoothstep(crown_keep, crown_keep + 0.6, v_y));
+		if (coverage_cut(FRAGCOORD.xy) < ff) discard;
 	}
 #else
 	vec2 mo = see_parts(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
