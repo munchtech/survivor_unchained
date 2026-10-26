@@ -126,6 +126,8 @@ public static class Atmospheres
         Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 280, MoonSat = 0.16, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#4a2f78", PaintShadowK = 0.75 },
         Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
         CrowdRim = 0.2, RiverLight = 0.55, RiverSky = 0.45, RiverBend = 0.5,
+        // (Low Ford r3, judge r2: the moon's glitter a noisy white blob round her, every warm pool's grass lime)
+        RiverMoon = 1, GrassLampOchre = 0.7,
         Frost = 1,
     };
 
@@ -221,6 +223,7 @@ public static class Atmospheres
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
+            RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),
             Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
         };
 
