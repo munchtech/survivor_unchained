@@ -149,6 +149,9 @@ class Arm:
         return out
 
 
+HINGE = "rig"   # --hinge: the bend's axis, "rig" (across the humerus and her front) or "x" (the elbow share's own X)
+
+
 def hang_pose(body, s, deg, fwd=0.0):
     """Rest rotations with her upper arm hung straight down (then swung `fwd` degrees forward) and the elbow bent
     `deg` (as bend reads it) about its hinge (across the humerus and her front)."""
@@ -170,6 +173,10 @@ def hang_pose(body, s, deg, fwd=0.0):
     # upper arm's swing, so the forearm bends in the shares' own plane
     h = np.cross(d, [0, 0, 1.0])
     h = qrot(sw, h / np.linalg.norm(h))
+    if HINGE == "x":
+        # the share's own X (square to the forearm: a bend about it rolls the forearm none), as the clips bend
+        h = qrot(qmul(grot[0, ua], sk.rest_rot[I[f"lowerarm_share_{s}"]]), [1.0, 0, 0])
+        h = h * np.sign(h @ qrot(sw, np.cross(d, [0, 0, 1.0])))
     g_la0 = grot[0, la]
 
     def at(a):
@@ -299,8 +306,18 @@ def apply_toggles(body, s, toggles):
             for h in hp.SPEC["helpers"]:
                 if h["name"] in ("lowerarm_share_{s}", "lowerarm_point_{s}"):
                     h["amount"] = float(v)
+        elif k in ("hinge", "nohinge"):
+            for h in hp.SPEC["helpers"]:
+                if h["name"] in ("lowerarm_share_{s}", "lowerarm_point_{s}"):
+                    h["hinge"] = k == "hinge"
         elif k == "trim":
             trim(body, s, float(v))
+        elif k == "etrim":
+            # helpers.elbow_trim (SPEC "elbow_trim"; v "bf0:bf1:side0:side1" overrides its cuts)
+            if v:
+                q = [float(x) for x in v.split(":")]
+                hp.SPEC["elbow_trim"]["bf"], hp.SPEC["elbow_trim"]["side"] = q[:2], q[2:4]
+            etrim(body, s)
         elif k == "pivot":
             move_pivot(body, s, float(v) / 1000)
     return saved
@@ -335,6 +352,17 @@ def trim(body, s, t_cut, fade=0.15):
     near = np.array([min(nodes, key=lambda n: abs(n[1] - x))[0] for x in t])
     D[np.arange(len(rows)), near] += moved
     set_dense(body, rows, D)
+
+
+def etrim(body, s):
+    """helpers.elbow_trim on the body's weights (its rest space, her front +Z)."""
+    sk = body.sk
+    rows = np.nonzero(body.kind == "skin")[0]
+    D = dense(body, rows)
+    heads = {n: body.rest[j][:3, 3] for n, j in sk.index.items()}
+    D2 = hp.elbow_trim(D, body.P[rows], sk.names, heads, s)
+    ch = np.nonzero(np.abs(D2 - D).max(1) > 0)[0]
+    set_dense(body, rows[ch], D2[ch])
 
 
 def move_pivot(body, s, d):
@@ -413,7 +441,10 @@ def main():
     ap.add_argument("--fwd", type=float, default=0.0)
     ap.add_argument("--toggle", default="")
     ap.add_argument("--weights", action="store_true")
+    ap.add_argument("--hinge", default="rig", choices=["rig", "x"])
     a = ap.parse_args()
+    global HINGE
+    HINGE = a.hinge
     body = load(a.body, a.skeleton)
     for s in a.side:
         arm = Arm(body, s)
