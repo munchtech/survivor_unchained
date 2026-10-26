@@ -105,6 +105,17 @@ Round 10 (25 Oct, the owner on round 9: "the breasts aren't doin great. if they 
           (no lift, no draw-in, no top-up): both (smoothed breast weight >= STILL_T) ride the chest as the skin and the
           helpers (HerRaise) carry them, the join's move eased to nothing over STILL_R outside their border, her
           skinned normal on them. "r9" rebuilds round 9's breasts.
+Round 11 (25 Oct, the owner on round 10's NATURAL cast: "what are those lumps", one each side where the arm's underside
+          comes down onto the breast): the lumps were the PEC'S ROLL (LIP): its chest end stood 9 mm proud between the
+          arm's underside and the breast's upper-outer side, a separate form in the front view (offline: LIP 0 alone
+          takes both away; a roll tapered in from 20-40 mm off its chest end still bumps). NATURAL: LIPHI 0, the roll
+          eased out over A 80-105 (the lowered key keeps round 10's, so row 3 is unchanged); the arm's underside runs
+          into the breast's side in one curve. The serrated dark edge under the lifted breast (the cast, her left) was
+          the crease's down-turned normals interpolated across her chest wall's long triangles under it, once the lift
+          showed the crease (it is in the skinned crease too, smaller): IMFHS 8, the slots' normal target smoothed 8
+          passes over the fold's band (S.fb: from the breast's rim under the nipple out to IMFHR past its border),
+          one soft gradient. IMFH (the move made harmonic over that band) and IMFHN (her turned skinned normal there)
+          are off: neither took the edge.
 Keys and slots: the reaver_show key (right A 113.5, az 23) and the cast key (l A 117 az 70, r A 114 az 61) give the
 A 117 slots: per point the abd117 and flex117 shapes solved so Play/ShoulderPsd's weights at each key give back that
 key's sculpt exactly (the left's show key is the right's mirrored); the old overhead cast (l A 148, r A 155) gives
@@ -186,7 +197,12 @@ P = dict(ridge=float(_E("SCULPT_RIDGE", 0.0)), back=float(_E("SCULPT_BACK", 0.00
          jcloseMax=float(_E("SCULPT_JCLOSE_MAX", 0.012)), jcloseRad=float(_E("SCULPT_JCLOSE_RAD", 0.07)), jcloseA=(95.0, 105.0),
          still=_bm("SCULPT_STILL", 0.0, 1.0, 0.0), stillT=float(_E("SCULPT_STILL_T", 0.1)), stillR=float(_E("SCULPT_STILL_R", 0.02)),
          domeF=_bm("SCULPT_DOME_FRONT", 0.0, 0.0, 1.0), imfOut=_bm("SCULPT_IMF_OUT", 0.0, 0.0, 1.0),
-         lipEnd=_bm("SCULPT_LIP_END", 0.0, 0.0, 0.035))
+         lipEnd=_bm("SCULPT_LIP_END", 0.0, 0.0, 0.035),
+         lipC0=_bm("SCULPT_LIP_C0", 0.0, 0.0, 0.0), lipC=_bm("SCULPT_LIP_C", 0.02, 0.02, 0.02),
+         lipFo=_bm("SCULPT_LIP_FO", 0.4, 0.4, 0.4), lipHi=_bm("SCULPT_LIP_HI", 1.0, 1.0, 0.0), lipHiA=(80.0, 105.0),
+         imfH=_bm("SCULPT_IMF_H", 0.0, 0.0, 0.0), imfHR=float(_E("SCULPT_IMF_HR", 0.025)),
+         imfHIn=float(_E("SCULPT_IMF_HIN", 0.3)), imfHY=float(_E("SCULPT_IMF_HY", 0.01)), imfHA=(75.0, 95.0),
+         imfHN=_bm("SCULPT_IMF_HN", 0.0, 0.0, 0.0), imfHS=_bm("SCULPT_IMF_HS", 0.0, 0.0, 8.0))
 SLOTS117 = ("shoulder_abd117", "shoulder_flex117")
 SLOTS150 = ("shoulder_abd140", "shoulder_flex140", "shoulder_up175", "shoulder_abd140s", "shoulder_flex140s", "shoulder_up175s")
 LVL = "shoulder_lvl80"
@@ -332,6 +348,16 @@ class Side:
             bb = np.maximum(s.bsm, H.smooth(bo, 6))
             dg = dijkstra(H.GR, indices=np.nonzero(bb >= p["stillT"])[0], min_only=True, limit=3 * p["stillR"])
             s.keepB = 1 - _ss(np.where(np.isfinite(dg), dg, 1.0) / p["stillR"])
+        # (round 11) IMFH: the fold under the breast, the band the move is made harmonic over: her skin under the
+        # nipple's height (less IMFHY) from the breast's rim (smoothed breast weight under IMFHIN, not its core) out to
+        # IMFHR past its border (smoothed weight 0.03) along her skin, this side
+        s.fb = np.zeros(len(U), bool)
+        s.fbE = np.zeros(len(U))
+        if p.get("imfH", 0) > 0 or p.get("imfHN", 0) > 0 or p.get("imfHS", 0) > 0:
+            dg = dijkstra(H.GR, indices=np.nonzero(s.bsm >= 0.03)[0], min_only=True, limit=2 * p["imfHR"])
+            dg = np.where(np.isfinite(dg), dg, 1.0)
+            s.fb = (s.bsm < p["imfHIn"]) & (dg <= p["imfHR"]) & (U[:, 1] < U[s.nip, 1] - p["imfHY"]) & (x > 0.005)
+            s.fbE = np.clip(H.smooth(s.fb.astype(float), 3) * 1.5, 0, 1)
         # the arm's rest frame square to the humerus: out (the deltoid's side) and front
         lat0 = np.array([sg * 1.0, 0, 0])
         s.lat0 = _unit(lat0 - (lat0 @ h0) * h0)
@@ -785,10 +811,17 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
             env = (1 - _ss((sl - 0.4) / 0.6)) * np.where(qq == 0, _ss(1 - np.maximum(-al, 0) / p["lipEnd"]), 1.0)
             env *= np.where(qq == ns - 1, _ss(1 - np.abs(al) / 0.02), 1.0)
         else:
-            env = _ss(sm / 0.02) * (1 - _ss((sl - 0.4) / 0.6))
+            # (round 11) rising from nothing at LIPC0 off its chest end, whole LIPC later (round 3: 0 and 20 mm),
+            # fading from LIPFO of the way to nothing at its arm end
+            c0, c1, fo = p.get("lipC0", 0.0), p.get("lipC", 0.02), p.get("lipFo", 0.4)
+            env = _ss((sm - c0) / c1) * (1 - _ss((sl - fo) / (1 - fo)))
             env *= np.where((qq == 0) | (qq == ns - 1), _ss(1 - np.abs(al) / 0.02), 1.0)
         prof = np.where(sx >= 0, np.exp(-(sx / p["lipF"]) ** 2), np.exp(-(sx / p["lipP"]) ** 2))
-        off[nr] += p["lip"] * kA * env * prof
+        # (round 11) LIPHI: the roll's share at the overhead keys (eased over LIPHIA): NATURAL none. With the arms up
+        # the roll stood as its own form between the arm's underside and the breast's upper-outer side (the owner's
+        # "lumps" at the cast, both sides); without it the arm's underside runs into the breast's side in one curve
+        kHi = 1 - (1 - p.get("lipHi", 1.0)) * _ramp(A, *p.get("lipHiA", (80.0, 105.0)))
+        off[nr] += p["lip"] * kA * kHi * env * prof
     lat, fr = Ra @ S.lat0, Ra @ S.fr0
     v = X - J
     ta = v @ h
@@ -954,6 +987,24 @@ def author(H, S, d, side, p=P, info=None, X0in=None, **_):
         wi = np.clip(H.smooth(wi, 3) * 1.5, 0, 1)
         Dm = H.smooth(X - X0, p["imfS"] + int(round(4 * ko)))
         X = X + wi[:, None] * (X0 + Dm - X)
+    kH = p.get("imfH", 0) * _ramp(A, *p.get("imfHA", (75.0, 95.0)))
+    if kH > 0 and not still:
+        # (round 11) IMFH: the fold under the breast kept as her skin folds it (the skinned crease is clean: Body 8,
+        # STILL): over the fold's band (S.fb) the move is the HARMONIC fill of the move round it (the lifted breast's
+        # rim above, her chest wall IMFHR below), so it varies smoothly across the crease and the crease is carried,
+        # not sheared: the lift's step at the core's ragged edge (the held core over the solved panel) tipped the
+        # crease's thin triangles into a serrated dark edge (the cast's "ragged line under her left breast")
+        band = S.fb & (phi > 1e-4)
+        if band.any():
+            bi, bo_ = np.nonzero(band)[0], np.nonzero(~band)[0]
+            D = X - X0
+            lu = splu(H.L[bi][:, bi].tocsc())
+            rhs = -(H.L[bi][:, bo_] @ D[bo_])
+            Dh = D.copy()
+            Dh[bi] = np.stack([lu.solve(rhs[:, k]) for k in range(3)], 1)
+            X = X + kH * (Dh - D)
+            if info is not None:
+                info["imfH"] = (int(band.sum()), 1000 * np.linalg.norm(Dh - D, axis=1).max())
     if p.get("vkeep", 0) > 0:
         # (round 8) her breast NEVER smaller (the owner: "do not narrow bust"; a draw-in only if "it dosn't get
         # smaller"): the draw-in (BIN) and the lift's stretch took 5-9% off her breast's volume at the A 114-117 keys.
@@ -1152,7 +1203,17 @@ def build(G, log=print):
         wn = wn * wn * (3 - 2 * wn)
         if P["still"] > 0:
             wn = wn * (1 - S[side].keepB)                     # (round 10) STILL: her skinned normal on the breasts
+        if P["imfHN"] > 0:
+            # (round 11) on the fold under the breast, her skinned normal turned by the surface's own turn there
+            wn = wn * (1 - P["imfHN"] * np.max([S[s_].fbE for s_ in sides], 0))
         t = _unit(wn[:, None] * ng + (1 - wn[:, None]) * nt)
+        if P["imfHS"] > 0:
+            # (round 11) the fold under the breast lit as one soft gradient: the target smoothed IMFHS passes over the
+            # fold's band (eased): the crease's down-turned normals were interpolated across the chest wall's long
+            # triangles under it into dark wedges (the serrated edge Godot showed under the lifted breast)
+            fbE = np.max([S[s_].fbE for s_ in sides], 0)
+            t = _unit(t + fbE[:, None] * (_unit(H.smooth(t, int(P["imfHS"]))) - t))
+            wn = np.maximum(wn, fbE)
         live = (np.linalg.norm(D, axis=1) > 1e-6) | (wn > 1e-4)
         shs = joint[key][2][side] if key in joint else None
         if shs is not None:
