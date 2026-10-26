@@ -337,8 +337,9 @@ public partial class DraftPanel : Control
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
         foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
             v2.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
-        // What a combat skill becomes, and with what.
-        if (o.Recipe is { Length: > 0 } recipe)
+        // What a combat skill becomes, and with what (not on a teaching panel: the same line under every
+        // card, and "Fits your build" with no build yet, said nothing that told the cards apart, round 2 judge).
+        if (o.Recipe is { Length: > 0 } recipe && !v.Teaching)
             v2.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
@@ -353,7 +354,7 @@ public partial class DraftPanel : Control
         // The path it belongs to, or (if none) that it fits what the build already does.
         if (o.Path is { } pid && Content.Paths.Find(pid) is { } path)
             v2.AddChild(Style.Label(path.Name, Style.DisplayLight, Style.Small, Style.Gold, false, HorizontalAlignment.Center));
-        else if (fits)
+        else if (fits && !v.Teaching)
         {
             var fl = Style.H(4, Glyphs.Icon("flame", 15, Style.EmberHi), Style.Label("Fits your build", Style.UiBold, Style.Caption, Style.EmberHi));
             fl.Alignment = BoxContainer.AlignmentMode.Center;

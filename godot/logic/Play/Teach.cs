@@ -40,6 +40,12 @@ public sealed record Aim
     public bool Each { get; init; }
     /// <summary>How big a thing in the world is ringed, in metres from its middle (about a man's half-width).</summary>
     public double Radius { get; init; } = 0.55;
+    /// <summary>Its marks in cold blue, not ember (things that glow cold: the Warden's lamps).</summary>
+    public bool Cold { get; init; }
+    /// <summary>Where its words would rather stand, as fractions of the screen (none: toward the middle).</summary>
+    public (double X, double Y)? WordsNear { get; init; }
+    /// <summary>The words keep off the big figures on the screen (a boss, an elite).</summary>
+    public bool ShunBig { get; init; }
 
     public static Aim At(string hud) => new() { Hud = hud };
     public static Aim In(Func<IReadOnlyList<(double X, double Y, double Z)>> world) => new() { World = world };

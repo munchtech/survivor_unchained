@@ -125,7 +125,7 @@ public static class Weapons
             Id = "cleaver", Name = "Butcher's Cleaver", School = School.Physical, Behavior = WeaponBehavior.Slash, Tags = [Tag.Melee, Tag.Steel, Tag.Physical, Tag.Area],
             Base = new() { Cooldown = 1.45, Damage = 38.26, Reach = 2.5, Arc = 3.4, Knockback = 1.3, Projectiles = 1, Status = S(Bleed, 0.35, 0.3, 3) },
             Art = "slash_heavy", BossDamage = 1.3, Findable = true,
-            Description = "A heavy, wide chop all the way round the front of you. Opens wounds.",
+            Description = "A heavy, wide chop that sweeps the whole front of you. Opens wounds.",
             Evolutions =
             [
                 new() { Id = "whirlwind", Name = "Whirlwind", Description = "The chop becomes a full turn: everything around you, every time.",

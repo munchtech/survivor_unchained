@@ -482,9 +482,12 @@ public partial class Round : Control
     public int Count, Max = 2;
     public float Recharge;
     /// <summary>The dash's form (her calling's art riding it, Forms.cs): -1 none; 0..1 its wait coming round, a
-    /// thin ember arc outside the glass; 1 ready, the glass ringed in breathing ember (the "lit" the form
-    /// callout names, au1 judge: the ready cue was a gray line of text under the Q orb).</summary>
+    /// thin ember arc outside the glass; 1 ready: the glass warm, flames licking up off the cuff's rim and the
+    /// calling's own badge (FormGlyph) at its shoulder: a look of its own, never the callouts' ring (round 2
+    /// judge: the ready glow and a callout's ring were the same ember circle).</summary>
     public float Form = -1;
+    /// <summary>The calling's art's glyph, the badge the ready form wears.</summary>
+    public Texture2D? FormGlyph;
 
     public Round(Kind kind)
     {
@@ -526,9 +529,7 @@ public partial class Round : Control
             if (o.Form >= 1)
             {
                 float breath = 0.5f + 0.5f * Mathf.Sin(Time.GetTicksMsec() / 1000f * 3.2f);
-                DrawCircle(c, r - 1, new Color(1f, 0.55f, 0.15f, 0.10f + 0.08f * breath));
-                DrawArc(c, r + Instrument.SmallBand + 3, 0, Mathf.Tau, 48, new Color(1f, 0.6f, 0.2f, 0.35f + 0.3f * breath), 5, true);
-                DrawArc(c, r + Instrument.SmallBand + 3, 0, Mathf.Tau, 48, new Color(1f, 0.82f, 0.5f, 0.9f), 2, true);
+                DrawCircle(c, r - 1, new Color(1f, 0.55f, 0.15f, 0.14f + 0.1f * breath));
             }
             else if (o.Form >= 0)
                 DrawArc(c, r + Instrument.SmallBand + 3, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Form, 48, new Color(1f, 0.6f, 0.2f, 0.45f), 2, true);
@@ -552,12 +553,53 @@ public partial class Round : Control
 
         public override void _Draw()
         {
+            if (o.kind == Kind.Dash && o.Form >= 1) { Licks(); return; }
             if (o.kind != Kind.Draught) return;
             var f = Style.UiHeavy;
             string s = o.Count.ToString();
             var at = Size / 2 + new Vector2(Instrument.SmallR * 0.42f, Instrument.SmallR * 0.78f);
             DrawStringOutline(f, at, s, HorizontalAlignment.Left, -1, 15, 5, new Color(0, 0, 0, 0.9f));
             DrawString(f, at, s, HorizontalAlignment.Left, -1, 15, o.Count > 0 ? Colors.White : Style.BloodHi);
+        }
+
+        /// <summary>The ready form: tongues of fire licking up off the top of the cuff, each on its own
+        /// flicker, and the calling's badge (an iron coin, its glyph in ember) at the right shoulder.</summary>
+        void Licks()
+        {
+            var c = Size / 2;
+            float t = Time.GetTicksMsec() / 1000f;
+            float r0 = Instrument.SmallR + Instrument.SmallBand - 1;
+            for (int i = 0; i < 9; i++)
+            {
+                float u = (i - 4) / 4f;
+                float a = -Mathf.Pi / 2 + u * 1.25f;
+                float flick = 0.5f + 0.3f * Mathf.Sin(t * (7.1f + i * 1.3f) + i * 2.1f) + 0.2f * Mathf.Sin(t * (12.7f + i * 0.7f) + i);
+                float h = (5.5f + 7.5f * flick) * (1 - 0.55f * u * u);
+                float w = 0.115f * (1 - 0.3f * u * u);
+                var dir = Vector2.FromAngle(a);
+                var side = new Vector2(-dir.Y, dir.X);
+                float sway = 2.2f * Mathf.Sin(t * (5.3f + i) + i * 1.7f);
+                Vector2 Tongue(float hk) => c + dir * (r0 + h * hk) + side * sway * hk * hk;
+                Vector2[] Shape(float wk, float hk)
+                {
+                    var b1 = c + Vector2.FromAngle(a - w * wk) * r0;
+                    var b2 = c + Vector2.FromAngle(a + w * wk) * r0;
+                    var m1 = c + dir * (r0 + h * hk * 0.45f) - side * (r0 * w * wk * 0.8f) + side * sway * 0.3f;
+                    var m2 = c + dir * (r0 + h * hk * 0.45f) + side * (r0 * w * wk * 0.8f) + side * sway * 0.3f;
+                    return [b1, m1, Tongue(hk), m2, b2];
+                }
+                DrawColoredPolygon(Shape(1, 1), new Color(0.95f, 0.32f, 0.06f, 0.85f));
+                DrawColoredPolygon(Shape(0.55f, 0.62f), new Color(1f, 0.74f, 0.3f, 0.95f));
+            }
+            // The badge: the calling's own mark, so the lit dash says whose charge it is.
+            if (o.FormGlyph is { } g)
+            {
+                var at = c + Vector2.FromAngle(-Mathf.Pi / 4) * (Instrument.SmallR + Instrument.SmallBand + 2);
+                const float br = 11;
+                DrawCircle(at, br + 2, new Color(0.055f, 0.04f, 0.035f, 0.95f));
+                DrawArc(at, br + 1, 0, Mathf.Tau, 32, new Color(1f, 0.6f, 0.2f, 0.95f), 1.6f, true);
+                DrawTextureRect(g, new Rect2(at - Vector2.One * (br - 1.5f), Vector2.One * (br - 1.5f) * 2), false, new Color(1f, 0.78f, 0.42f));
+            }
         }
     }
 }

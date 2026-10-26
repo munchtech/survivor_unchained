@@ -126,7 +126,7 @@ public sealed class Prologue : ZoneRuntime
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
                 // (said where it's found; F8 waits for it to go, au1 item 10: the two stacked at the Post)
-                G.After(0.6, () => Tip("pack", "Your pack", "What you find, you keep. The ember won't outlast the night; gear, gold and what you learn will. Press I to open your pack and wear the jerkin.", [Key("inventory")], 11));
+                G.After(0.6, () => Tip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your pack and wear the jerkin.", null, 11));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -167,6 +167,29 @@ public sealed class Prologue : ZoneRuntime
     }
 
     string Key(string action) => G.KeyLabel(action);
+
+    /// <summary>Seconds until the Warden's "RISE" cry, held while the channel's tip settles.</summary>
+    double riseBarkIn;
+
+    void RiseBark(Enemy e) => B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "RISE, YOU WHO DROWNED HERE.", Speaker = "The Ford-Warden" });
+
+    /// <summary>The channel's tip, as a channel begins: once a profile, and only with an answer in hand (the
+    /// form lit or the Flare full), naming only what's ready (round 2 judge: it came before either was
+    /// usable). True when it showed.</summary>
+    bool ChannelTip()
+    {
+        if (shown.Contains("channel")) return false;
+        // (what breaks it: her art where it rides the dash and interrupts, the Flare, or a hard enough
+        // beating; Act.Ability became the Flare on 11 Oct, so no key is called "ability")
+        var form = B.Ability is AbilityKind k && Abilities.All[k] is { Interrupts: true, Movement: true } d && B.FormReady ? d : null;
+        var ways = new List<string>();
+        var keys = new List<string>();
+        if (form != null) { ways.Add($"{form.Name} into him"); keys.Add(Key("dash")); }
+        if (B.Flare != null && B.FlareReady) { ways.Add("use your Flare"); keys.Add(Key("flare")); }
+        if (ways.Count == 0) return false;
+        Tip("channel", "Break his spell", $"The Warden is raising the drowned.{NL}Break it: {string.Join(", or ", ways)}.{NL}If he finishes, a lamp lights again.", keys, 10);
+        return true;
+    }
 
     /* --------------------------------------------- the callouts (Teach.cs) -- */
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
@@ -246,9 +269,12 @@ public sealed class Prologue : ZoneRuntime
             return [];
         double reach = (k.Def.Charge ?? k.Def.Lunge) is { } l ? l.Speed * l.Time : 6;
         var p = B.Player;
+        // (and clear of the chest: a ring by it reads as the chest's, judge 1)
+        var chest = L("chest");
         return new[] { 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8 }
             .Select(f => (X: k.X + k.LungeX * reach * f, Z: k.Z + k.LungeZ * reach * f))
             .OrderBy(q => Dist(q.X, q.Z, p.X, p.Z) < 2.4 ? 1 : 0)
+            .ThenBy(q => Dist(q.X, q.Z, chest.X, chest.Z) < 3 ? 1 : 0)
             .Select(q => Up(q.X, q.Z, 0.1)).ToList();
     }
 
@@ -313,7 +339,8 @@ public sealed class Prologue : ZoneRuntime
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
             Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nPut them out: break them, or lure his charge into one.",
-                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25 });
+                new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25,
+                    Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
         // F10: her health under 40% for the first time, with a draught to drink.
         if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught");
@@ -327,10 +354,10 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>What the calling's art does when it rides the dash, in F6b's words (none: no callout).</summary>
     static string? FormWords(AbilityKind k) => k switch
     {
-        AbilityKind.BullRush => "a charge that throws the dead aside.\nBig ones stop it, but they're stunned, and their spell breaks.",
-        AbilityKind.Grapple => "a hooked chain.\nIt hauls you to the first thing in its way, and stuns it.",
-        AbilityKind.MirrorStep => "a step that leaves two reflections.\nWhat hunts you turns on them.",
-        AbilityKind.Vault => "a spring back through the air.\nIt leaves snares where you stood.",
+        AbilityKind.BullRush => "a charge\nthat throws the dead aside.\nBig ones stop it, but they're stunned,\nand their spell breaks.",
+        AbilityKind.Grapple => "a hooked chain.\nIt hauls you to the first thing\nin its way, and stuns it.",
+        AbilityKind.MirrorStep => "a step\nthat leaves two reflections.\nWhat hunts you turns on them.",
+        AbilityKind.Vault => "a spring\nback through the air.\nIt leaves snares where you stood.",
         _ => null,
     };
 
@@ -456,7 +483,10 @@ public sealed class Prologue : ZoneRuntime
                     if (th is double t1 && hpK < t1) ai.Thresholds.RemoveAt(0);
                     ai.Mode = "channel"; ai.T = 0; ai.ChannelHp = e.Hp; ai.ChannelCd = 34; ai.RaiseT = 0.6;
                     wardenView.SetPose("channel");
-                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "RISE, YOU WHO DROWNED HERE.", Speaker = "The Ford-Warden" });
+                    // (the tip comes first when it shows, and his cry a beat after it settles, so the two never
+                    // land together: round 2 judge)
+                    riseBarkIn = ChannelTip() ? 1.3 : 0;
+                    if (riseBarkIn <= 0) RiseBark(e);
                     return true;
                 }
                 if (dist < 5.2 && ai.CleaveCd <= 0)
@@ -552,7 +582,8 @@ public sealed class Prologue : ZoneRuntime
             case "channel":
             {
                 double k = ai.T / 6;
-                if (bar != null) Bar(bar with { Channel = ("Calling the drowned — break it!", Math.Min(1, k)) });
+                if (riseBarkIn > 0 && (riseBarkIn -= dt) <= 0) RiseBark(e);
+                if (bar != null) Bar(bar with { Channel = ("Raising the drowned: break it!", Math.Min(1, k)) });
                 ai.RaiseT -= dt;
                 if (ai.RaiseT <= 0)
                 {
@@ -725,17 +756,6 @@ public sealed class Prologue : ZoneRuntime
                 {
                     int lit = LitCount;
                     Bar(new BossBar("The Ford-Warden", "Keeper of the Low Crossing", warden.Hp, warden.MaxHp, [0.7, 0.4], bar?.Channel, lit > 0));
-                    if (ai.Mode == "channel")
-                    {
-                        // (what breaks it: her art where it rides the dash and interrupts, the Flare, or a hard
-                        // enough beating; Act.Ability became the Flare on 11 Oct, so no key is called "ability")
-                        var form = B.Ability is AbilityKind k && Abilities.All[k] is { Interrupts: true, Movement: true } d ? d : null;
-                        var ways = new List<string>();
-                        var keys = new List<string>();
-                        if (form != null) { ways.Add($"{form.Name} into him"); keys.Add(Key("dash")); }
-                        if (B.Flare != null) { ways.Add("use your Flare"); keys.Add(Key("flare")); }
-                        Tip("channel", "Break the channel", $"The Warden is raising the drowned.{NL}{(ways.Count > 0 ? $"Break it: {string.Join(", or ", ways)}." : "Hurt him hard enough and it breaks.")}{NL}If he finishes, a lamp lights again.", keys, 10);
-                    }
                     if (stageT > 40 && lit == 3 && stageT - lamps2At > 30) { lamps2At = stageT; shown.Remove("lamps2"); Tip("lamps2", "The lamps", "Lure its charge into a lamp: stand before one, and step aside at the last moment.", [Key("dash")], 10); }
                 }
                 break;

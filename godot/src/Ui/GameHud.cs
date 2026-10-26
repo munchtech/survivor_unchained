@@ -560,6 +560,11 @@ public partial class GameHud : CanvasLayer
         dash.Recharge = (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1);
         dash.Form = b.Ability is AbilityKind fk && Abilities.All[fk].Movement
             ? b.FormReady ? 1 : (float)Math.Clamp(1 - p.AbilityCd / Math.Max(0.1, b.FormWait(fk)), 0, 0.99) : -1;
+        if (b.Ability != formGlyphOf)
+        {
+            formGlyphOf = b.Ability;
+            dash.FormGlyph = b.Ability is AbilityKind gk ? Glyphs.Texture(Abilities.All[gk].Icon, 48, Hex("#fff3dc"), line: true) : null;
+        }
         irons.Draught.Count = draughts;
 
         // The art slot now shows the Flare (docs/design/CLASSES.md §3): its meter, a plain readout until phase 3's HUD.
@@ -1107,6 +1112,7 @@ public partial class GameHud : CanvasLayer
     }
 
     string? spotKeep;
+    AbilityKind? formGlyphOf;
     bool spotUp, spotDim, spotSlots, spotWas;
     float spotK, slotK;
 

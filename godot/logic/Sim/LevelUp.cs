@@ -301,7 +301,7 @@ public static class LevelUp
                 string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
                 var o = new Offer { Kind = OfferKind.Boon, Id = id, Rarity = d.Rarity, Title = d.Name, Text = text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true, Great = true };
                 bool suits = OnPath(id, p => p.Great);
-                if (d.Calling != null) o.Why.Add("Your calling's own");
+                if (d.Calling != null) o.Why.Add("Suits your calling");
                 else if (suits) o.Why.Add("Suits your path");
                 pool.Add(new Cand { O = o, W = (deeper ? 3 : 1) * (suits || d.Calling != null ? 1.5 : 1) * Again(o) });
             }

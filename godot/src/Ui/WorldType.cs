@@ -474,13 +474,40 @@ public partial class TipLine : Control
         line.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.6f));
         line.AddThemeConstantOverride("shadow_offset_y", 2);
         line.AddThemeConstantOverride("shadow_outline_size", 8);
-        line.Text = $"[center]{Marked(text, title)}[/center]";
-        line.CustomMinimumSize = new Vector2(Math.Min(720, Style.Text.GetStringSize(text, HorizontalAlignment.Left, -1, 20).X + 10), 0);
+        // (a key the words name stands in them as its keycap: "{key:I}" in a tip's text, round 2 judge)
+        string marked = Marked(text, title);
+        line.PushParagraph(HorizontalAlignment.Center);
+        int at = 0;
+        foreach (Match m in KeyToken.Matches(marked))
+        {
+            line.AppendText(marked[at..m.Index]);
+            line.AddImage(Chip(m.Groups[1].Value), 0, 0, Colors.White, InlineAlignment.Center);
+            at = m.Index + m.Length;
+        }
+        line.AppendText(marked[at..]);
+        line.Pop();
+        float widest = KeyToken.Replace(text, "  $1  ").Split('\n').Max(l => Style.Text.GetStringSize(l, HorizontalAlignment.Left, -1, 20).X);
+        line.CustomMinimumSize = new Vector2(Math.Min(720, widest + 10), 0);
         column.AddChild(line);
         burn = WorldType.Light(new Vector2(760, 150), Style.Ember with { A = 0 });
         AddChild(burn);
         AddChild(column);
         Modulate = Colors.Transparent;
+    }
+
+    static readonly Regex KeyToken = new(@"\{key:([^}]+)\}");
+
+    /// <summary>A keycap for the words: the HUD's own key (Style.Key), drawn once into a small viewport that
+    /// stays with the tip, its texture set inline in the line.</summary>
+    Texture2D Chip(string key)
+    {
+        var cap = Style.Key(key);
+        var size = new Vector2I(Math.Max(26, 12 + 9 * key.Length), 26);
+        cap.Size = size;
+        var vp = new SubViewport { TransparentBg = true, Disable3D = true, Size = size, RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
+        vp.AddChild(cap);
+        AddChild(vp);
+        return vp.GetTexture();
     }
 
     /// <summary>The text with its subject (the title's word, where the text says it) marked in ember, once.</summary>

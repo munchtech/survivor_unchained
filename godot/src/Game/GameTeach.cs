@@ -38,7 +38,9 @@ public partial class Game
     /// <summary>A zone's callout at its moment.</summary>
     public void Teach(Callout c) => Teacher.Offer(c, teachClock, TeachBusy());
     /// <summary>Whether a callout was seen on this profile.</summary>
-    public bool Taught(string id) => Settings.Current.SeenTips.Contains(id);
+    /// (Asks the Teacher first, so --teach-reset has cleared the profile before any zone reads it: a test
+    /// run's Begin saw last run's "art" and let the Flare's great blessings through, round 2 judge.)
+    public bool Taught(string id) { _ = Teacher; return Settings.Current.SeenTips.Contains(id); }
     /// <summary>--teach-hurt (a scripted run): the autopilot keeps the Flare for F8 in the Barrow.</summary>
     public bool HoldFlare => Args.Has("teach-hurt") && !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
 
@@ -427,6 +429,7 @@ public partial class Game
         }
         // The figures on the screen: an arrow bends round them.
         var avoid = new List<Rect2>();
+        var shun = new List<Rect2>();
         if (Battle is { } bt && scene != null)
             foreach (var en in bt.Enemies.Living())
             {
@@ -436,11 +439,13 @@ public partial class Game
                 {
                     float h = Math.Max(24, f.Y - hd.Y);
                     avoid.Add(new Rect2(f.X - h * 0.3f, hd.Y, h * 0.6f, h));
+                    if (c.Target.ShunBig && (en.Def.Scale ?? 1) >= 1.4) shun.Add(new Rect2(f.X - h * 0.45f, hd.Y, h * 0.9f, h));
                 }
             }
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
         {
-            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c),
+            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
+            WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
             AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
         });
     }
