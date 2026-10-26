@@ -740,9 +740,9 @@ def crate(p):
     for k in range(ns):
         y = 0.09 + span * (k + 0.5) / ns
         for sz in (-1, 1):
-            parts.append(Part(box(sh, W - 2 * pt, st * 0.8, 0.003), 'wood', wood, T(0, y, sz * (D / 2 - st * 0.4 - 0.004)) @ R('Z', math.pi / 2), cap='endgrain'))
+            parts.append(Part(box(sh, W - 2 * pt, st * 0.8, 0.003), 'wood', wood * rng(0.84, 1.1), T(0, y, sz * (D / 2 - st * 0.4 - 0.004)) @ R('Z', math.pi / 2), cap='endgrain'))
         for sx in (-1, 1):
-            parts.append(Part(box(sh, D - 2 * pt, st * 0.8, 0.003), 'wood', wood, T(sx * (W / 2 - st * 0.4 - 0.004), y, 0) @ R('Y', math.pi / 2) @ R('Z', math.pi / 2), cap='endgrain'))
+            parts.append(Part(box(sh, D - 2 * pt, st * 0.8, 0.003), 'wood', wood * rng(0.84, 1.1), T(sx * (W / 2 - st * 0.4 - 0.004), y, 0) @ R('Y', math.pi / 2) @ R('Z', math.pi / 2), cap='endgrain'))
     diag = math.atan2(H - 0.1, W - 2 * pt)
     for sz in (-1, 1):
         ln = math.hypot(H - 0.1, W - 2 * pt)
@@ -751,10 +751,32 @@ def crate(p):
         ln = math.hypot(H - 0.1, D - 2 * pt)
         d2 = math.atan2(H - 0.1, D - 2 * pt)
         parts.append(Part(box(st, ln - 0.05, 0.07, 0.004), 'wood', wood * 0.95, T(sx * (W / 2 + st * 0.3), H / 2, 0) @ R('X', (math.pi / 2 - d2) * sx), cap='endgrain'))
-    # The lid: four boards across.
+    # The lid (lf5c, the lf0 triage: "flat crates": from the play camera its top was one even board): four boards of
+    # unequal width with dark gaps between (2-2.5 cm: the inside's shadow shows), each its own tone (one weathered pale,
+    # one dark), a few mm proud or sunk and a little twisted; two battens across them near the ends, a nail pair at each
+    # crossing; the bake's lit edges wear their rims
+    gap = p.get('gap', 0.022)
+    ws = [rng(0.8, 1.2) for _ in range(4)]
+    ws = [w / sum(ws) * (D - 3 * gap - 0.004) for w in ws]
+    tones = [rng(0.78, 1.12) for _ in range(4)]
+    tones[int(rng(0, 4)) % 4] = rng(1.12, 1.22)
+    z = -D / 2 + 0.002
     for k in range(4):
-        z = -D / 2 + D * (k + 0.5) / 4
-        parts.append(Part(box(st, W, D / 4 - 0.012, 0.004), 'wood', wood, T(0, H + st / 2, z) @ R('Z', math.pi / 2), cap='endgrain'))
+        zc = z + ws[k] / 2
+        dy = rng(-0.003, 0.004)
+        tw = rng(-0.02, 0.02)
+        parts.append(Part(box(st, W, ws[k], 0.005), 'wood', wood * tones[k], T(0, H + st / 2 + dy, zc) @ R('X', tw) @ R('Z', math.pi / 2), cap='endgrain'))
+        z += ws[k] + gap
+    bw = 0.075
+    for sx in (-1, 1):
+        x = sx * (W / 2 - pt - bw / 2 + 0.01)
+        parts.append(Part(box(bw, D - 0.03, st, 0.005), 'wood', wood * rng(0.7, 0.82), T(x, H + st * 1.5 + 0.004, 0) @ R('X', math.pi / 2), cap='endgrain'))
+        z = -D / 2 + 0.002
+        for k in range(4):
+            zc = z + ws[k] / 2
+            for o in (-0.22, 0.22):
+                parts.append(Part(box(0.011, 0.006, 0.011), 'iron', hexlin('#3a3632'), T(x + o * bw * rng(0.8, 1.2), H + st * 2 + 0.006, zc + o * ws[k] * rng(0.6, 1.0))))
+            z += ws[k] + gap
     return parts
 
 

@@ -116,6 +116,10 @@ uniform float algae = 0.0;
 uniform vec4 algae_color : source_color = vec4(0.22, 0.2, 0.11, 1.0);
 uniform float algae_w = 0.025;
 uniform float amb_occl = 1.0;
+// (lf5c) leaf litter caught on its ledges and level faces (what faces up, in its hollows and inner corners: the baked
+// cavity and occlusion), in scattered spots, litter_color; 0 none
+uniform float litter = 0.0;
+uniform vec4 litter_color : source_color = vec4(0.36, 0.22, 0.11, 1.0);
 // (a pebble under a crown darkens as the ground's litter does there: GroundPaint's exposure (R the open sky), sky_dark of it; Dressing sets it)
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
 uniform float zone_size = 260.0;
@@ -1010,6 +1014,11 @@ void fragment() {
 		lz *= 1.0 - wet;
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
+		if (litter > 0.0) {
+			float lsp = texture(stone_tex, wp.xz / (tile * 0.53) + vec2(0.21, 0.67)).a;
+			float lt = smoothstep(0.78, 0.95, bn.y) * smoothstep(0.15, 0.5, COLOR.g + COLOR.b + 0.35 * mz) * smoothstep(0.55, 0.7, lsp) * (1.0 - wet);
+			col = mix(col, litter_color.rgb * (0.7 + 0.6 * st.r), litter * lt);
+		}
 		col *= mix(1.0, wet_dark, wet);
 		float damp = top_damp * smoothstep(0.0, 0.25, flora_light.x) * (1.0 - wet) * mix(0.55, 1.0, smoothstep(0.3, 0.7, st.a + 0.25 * COLOR.g));
 		col *= (1.0 - damp) * mix(1.0, top_level, (1.0 - wet) * smoothstep(0.4, 0.8, v_up));

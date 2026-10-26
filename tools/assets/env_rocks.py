@@ -56,11 +56,11 @@ PRESETS = {
     # (lf5c, the lf0 triage on the boulders and field rocks: "grey block-like": now broken from planes (sculpt_frac): an angular
     # chunk, a tilted slab standing out of the ground, a low half-sunk one with a ledge, one cracked in two, a chipped one)
     'fieldrock': dict(lods=(1600, 500, 160), shadow=True, variants=[
-        dict(method='frac', seed=1201, ax=(1.6, 1.35, 1.2), cz=0.7, fn=10, ftop=4, fup=(0.5, 0.85), fd=(0.74, 0.93), fk=0.05, chips=7, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.05, split_d=0.12, lump=0.04, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1211, ax=(1.75, 1.0, 1.2), cz=0.6, fn=9, ftop=3, fup=(0.6, 0.85), fd=(0.8, 0.94), fk=0.05, chips=5, chip_d=(0.05, 0.12), strata=5, strata_d=0.03, lean=16, lump=0.04, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1223, ax=(1.6, 1.45, 1.05), cz=0.5, sink=0.1, fn=10, ftop=5, fup=(0.65, 0.9), fd=(0.76, 0.93), fk=0.06, chips=6, chip_d=(0.06, 0.13), ledges=2, lump=0.05, amp=0.012, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1227, ax=(1.65, 1.3, 1.1), cz=0.7, fn=11, ftop=5, fup=(0.5, 0.85), fd=(0.76, 0.94), fk=0.05, chips=6, chip_d=(0.05, 0.12), splits=1, split_w=0.11, split_d=0.32, lump=0.04, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1229, ax=(1.55, 1.45, 1.15), cz=0.7, fn=12, ftop=5, fup=(0.45, 0.85), fd=(0.72, 0.93), fk=0.045, chips=9, chip_d=(0.05, 0.14), ledges=1, lump=0.05, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1201, ax=(1.6, 1.35, 1.2), cz=0.58, side_z=(0.05, 0.5), fn=13, ftop=4, fup=(0.5, 0.85), fd=(0.7, 0.93), fk=0.05, chips=7, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.05, split_d=0.12, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1211, ax=(1.75, 1.0, 1.2), cz=0.48, side_z=(0.05, 0.5), fn=12, ftop=3, fup=(0.6, 0.85), fd=(0.8, 0.94), fk=0.05, chips=5, chip_d=(0.05, 0.12), strata=5, strata_d=0.03, lean=16, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1223, ax=(1.6, 1.45, 1.05), cz=0.38, side_z=(0.05, 0.5), sink=0.1, fn=13, ftop=5, fup=(0.65, 0.9), fd=(0.7, 0.93), fk=0.06, chips=6, chip_d=(0.06, 0.13), ledges=2, lump=0.06, amp=0.012, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1227, ax=(1.65, 1.3, 1.1), cz=0.58, side_z=(0.05, 0.5), fn=14, ftop=5, fup=(0.5, 0.85), fd=(0.7, 0.94), fk=0.05, chips=6, chip_d=(0.05, 0.12), splits=1, split_w=0.11, split_d=0.32, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1229, ax=(1.55, 1.45, 1.15), cz=0.58, side_z=(0.05, 0.5), fn=15, ftop=5, fup=(0.45, 0.85), fd=(0.72, 0.93), fk=0.045, chips=9, chip_d=(0.05, 0.14), ledges=1, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
     ]),
     # cliff / outcrop chunk: blocky, stratified in layers (each its own inset, a joint between), stacks (scale ~5: 17 m)
     'cliff': dict(lods=(6000, 1800, 500), shadow=True, variants=[
@@ -181,6 +181,16 @@ def tex():
     hgt = 0.55 * body + 0.2 * grain + 0.035 * smooth(0.55, 0.85, pits) - 0.22 * crack   # (E5b: pits faint: at 0.12 their lit rims read as a crazed net)
     # colour: dark to light by the body and grain, warm and cool patches, the cracks dark
     v = np.clip(0.15 + 0.85 * (0.65 * body + 0.35 * grain - 0.1), 0, 1)
+    # (lf5c: 'contrast' spreads the value about its middle (the lf4 sheet's p5-p95 luma was .29-.45: one flat grey-brown from
+    # the play camera); 'speck' a granite's light and dark grains (feldspar, mica: a sparkle of value at 1:1, not a smooth wash);
+    # 'blotch' broad dark weathered patches (where water sat: a value break across a face))
+    v = np.clip(0.5 + float(sd.get('contrast', 1.0)) * (v - 0.5), 0, 1)
+    if sd.get('speck'):
+        sp = fbm(N, rng, ((160, 0.6), (320, 0.4)))
+        v = np.clip(v + float(sd['speck']) * (smooth(0.62, 0.72, sp) - 0.7 * smooth(0.36, 0.28, sp)), 0, 1)
+    if sd.get('blotch'):
+        bl = fbm(N, rng, ((5, 0.6), (11, 0.4)))
+        v = v * (1 - float(sd['blotch']) * smooth(0.55, 0.75, bl))
     seg = v * (len(pal) - 1)
     i0 = np.clip(seg.astype(int), 0, len(pal) - 2)
     t = (seg - i0)[..., None]
@@ -195,6 +205,12 @@ def tex():
     nrm /= np.linalg.norm(nrm, axis=2, keepdims=True)
     nrm = nrm * 0.5 + 0.5
     p = pt.paint(col, nrm, pt.preset('rock', sd.get('paint', {})))
+    # (lf5c: 'post_contrast' the painted sheet's value spread about its mean, after the brush (which evens it): the value
+    # the play camera sees is the 5-50 cm patches, a 5 m boulder ~250 px across, so its range lives there, not in grains)
+    if sd.get('post_contrast'):
+        lum = p.mean(2, keepdims=True)
+        m = float(lum.mean())
+        p = np.clip(p * (m + float(sd['post_contrast']) * (lum - m)) / np.maximum(lum, 1e-3), 0, 1)
     # the moss's breakup (alpha): soft clumps, so moss grows in patches, not as a flat coat
     moss = smooth(0.3, 0.75, fbm(N, rng, ((6, 0.5), (14, 0.3), (40, 0.2))))
     os.makedirs(OUT, exist_ok=True)
