@@ -179,6 +179,22 @@ public static class Prefetch
         });
     }
 
+    static List<Resource> castHeld = new();
+
+    /// <summary>The files a place's cinematics cast their people from, loaded on a worker thread and held (Game.CastAhead;
+    /// the place's before let go).</summary>
+    public static void CastAhead(IEnumerable<string> paths)
+    {
+        var files = new List<string>(paths);
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var got = new List<Resource>();
+            foreach (var f in files)
+                if (ResourceLoader.Exists(f) && ResourceLoader.Load(f) is Resource r) got.Add(r);
+            castHeld = got;
+        });
+    }
+
     /// <summary>The hold on a place's textures decoded ahead let go (it is added: what it uses, it keeps).</summary>
     public static void ReleaseAhead()
     {

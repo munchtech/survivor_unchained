@@ -368,8 +368,12 @@ public partial class Game : Node, IZoneHost
                 Wait(secs, () => Travel(onTo));
         // --cine ID: that cinematic played here at once (pictures of it, its previs),
         // and on into the one it runs on into (its end.next), as the zone plays them.
+        // --cine-at T: it begins T seconds in, from play (perf: a start's cost seen apart from the load's).
         if (Args.Get("cine") is string cid && cine == null)
-            Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
+        {
+            void Play() => Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
+            if (Args.Has("cine-at")) Wait(Args.Num("cine-at", 10), Play); else Play();
+        }
         Save("new");
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
@@ -1195,6 +1199,7 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        DoubleAhead(dt);
         // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
         // opened in this view only, never in a light's.
         if (GetViewport().GetCamera3D() is { } seen)
