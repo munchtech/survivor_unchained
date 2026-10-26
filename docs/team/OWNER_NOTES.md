@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 26 October 2026 (coordinator df2b13cc)
+- **WARDEN TOWN STAND KEPT (the owner, 26 Oct, after the before/after videos in `survivorsunchained_inputs\anim51_warden_sway\`):** "Keep the new Warden stand." Animation 51's item 1 (natural stances, round 3 max PASS on 19 frames) is closed; the two front-only marks (right hand ~8 cm off the skirt at the sway's end, the left hand reading beside the scabbard) close as known.
+
 ## 25 October 2026 (coordinator a44c2c21, main account)
 - **Scope (the owner, 25 Oct night):** "focus on anything that was near a milestone, but then move into cleaning up assets and playability of a polished tutorial into act 1." The other account's arm/shoulder work (Body 9-11, armor-7) is "near completion": this account finishes it (round 13, then the G3 chain and MR).
 - **Post-Warden river-exit cinematic: the butt shot (the owner, 25 Oct):** "for the cinematic after exiting the river after beating the warden it has a camera angle pointed up at the butt - we want sex appeal for sure but we want it to be the players choice (zoom in town, sometimes angles) but the gratuitous butt shot reads off so maybe change the angle of that slightly, or just not as long of a frame". Routed to Experience 1 (play-1). Standing rule: sex appeal is the player's choice (town zoom, occasional angles); cinematics don't linger on gratuitous low-angle body shots. (Found: C04 A shot A8, hip-height camera held ~20 s on her back; Experience 1 is reframing it to a shoulder-height 3/4.)
