@@ -179,7 +179,7 @@ public static class Water
     /// (m of foam behind a stone or a leg, 0 none), ripple_size (m), ripple_bend, refract, gloss (the glints' roughness),
     /// glint_cap, glint_spread, glint_bend and glint_near (a near light's glint: its roughness, how much steeper its facets, its gain), wake_taper (how fast a wake narrows: length = width / it),
     /// lace_size (m: the shore foam's lace).</summary>
-    public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss", "glint_cap", "glint_spread", "glint_bend", "glint_near", "glint_sheen", "wake_taper", "lace_size", "mirror", "mirror_from", "mirror_to", "mirror_ripple", "streak", "streak_w", "streak_l", "streak_cap", "streak_tame", "streak_h0", "streak_h1", "streak_h2", "streak_h3", "streak_high", "glint_high"];
+    public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss", "glint_cap", "glint_spread", "glint_bend", "glint_near", "glint_sheen", "wake_taper", "lace_size", "mirror", "mirror_from", "mirror_to", "mirror_ripple", "streak", "streak_w", "streak_l", "streak_cap", "streak_tame", "streak_h0", "streak_h1", "streak_h2", "streak_h3", "streak_high", "glint_high", "bed_soft", "bed_soft_lod", "bed_soft_depth"];
 
     /// <summary>The bed and the bank (water.json "look" "bed"; the terrain shader's global water_bed, water_silt): pebbles
     /// (0-1, river stones in the silt), silt (0-1, how far the bed takes the silt's colour), wet (m above the water the bank

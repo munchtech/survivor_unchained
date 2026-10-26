@@ -111,14 +111,20 @@ public static class Atmospheres
     /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#90b6ff", KeyIntensity = 4.9 * 0.55,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
+        // (Low Ford r1, triage judge: outside her pool near-black navy, one hue, the trunks' shadows huge black bars. The moon
+        // 28 to 48 degrees (a shadow 1.9 to 0.9 times its caster's height) at 2.6, not 2.7 (its sun-facing ground held), lighter
+        // shadows (0.9 to 0.6: the shade takes 40% of the moon); a violet fill (hemisphere #33508c to #463c8a at 4.0) and the
+        // grade's moon step on the shade only (MoonTop 0.44, hue 280): the shade violet, the moonlit grass and the needles keep
+        // their teal-green, the lamps' and fires' pockets warm. Frame median luma 26-30 to 33-45 of 255.)
+        KeyColor = "#80b6f2", KeyIntensity = 2.6,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
         // (E4f, judge E4 r3: at 20 degrees the trees' shadows lay across the camp and road as a fence of long straight bars; up
         // to 28. Measured at the camp: x0.73 (sin 20 / sin 28) left the moonlit ground 1.6-2.5 OKLab L brighter (p85, p95); x0.55
         // holds it (35.5 / 45.4 against 35.4 / 46.0). The frame's median still rises 1.6 L*: the shadows are shorter, the point)
-        KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
-        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.6, EnvIntensity = 1.2,
+        KeyElevation = 48, KeyAzimuth = 250, ShadowStrength = 0.6,
+        HemiSky = "#463c8a", HemiGround = "#1e1a14", HemiIntensity = 4.0, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
+        Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 280, MoonSat = 0.16, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#4a2f78", PaintShadowK = 0.75 },
+        Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
         CrowdRim = 0.2, RiverLight = 0.55, RiverSky = 0.45, RiverBend = 0.5,
         Frost = 1,
     };

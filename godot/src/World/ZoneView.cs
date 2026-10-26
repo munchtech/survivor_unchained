@@ -298,6 +298,12 @@ public partial class ZoneView : Node3D
     static readonly float FordCoreBlue = SurvivorUnchained.Args.Num("ford-core-blue", 1.3f);
     /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>
     static readonly float LampScale = SurvivorUnchained.Args.Num("lamp-scale", 1.3f);
+    /// <summary>--holder-lamp-scale S: the flame in our own lamp holders (the posts' 0.27 m cage; Low Ford r1: at 1.3 the flame was
+    /// a sliver beside its lit glass, the cage a pale box), for pictures.</summary>
+    static readonly float HolderLampScale = SurvivorUnchained.Args.Num("holder-lamp-scale", 1.6f);
+    /// <summary>--post-lamp-att A, --post-lamp-energy K: the post lantern's falloff and its light against the road lamps' (the
+    /// ground's pool at 2.1 m kept: 2.1^-0.7 / 2.1^-2 = 2.6, so 0.4), for pictures.</summary>
+    static readonly float PostLampAtt = SurvivorUnchained.Args.Num("post-lamp-att", 0.7f), PostLampEnergy = SurvivorUnchained.Args.Num("post-lamp-energy", 0.4f);
     static readonly float FordFlame = SurvivorUnchained.Args.Num("ford-flame", 1.5f);
     /// <summary>--ford-energy K: the ford lamps' light, for pictures. (E7 round 2: 12 with --ford-att 2.3, so the lamp lays a pool
     /// round its pier, the water at 1 m twice as bright as at 4 m, where at 1 and 1.7 the moon's wash drowned it: 1.4x.)</summary>
@@ -371,9 +377,12 @@ public partial class ZoneView : Node3D
             }
             if (best == null) { Lamps.SetLit(holder, false); continue; }
             int li = glowLight[best];
-            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : LampScale, holder);
+            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : HolderLampScale, holder);
             if (!torch) { lights[li].LightColor = new Color(LampColor); lights[li].OmniRange = LampRange; lights[li].OmniAttenuation = LampAtt; }
             specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
+            // (Low Ford r1) a lantern hung at head height (the post's, its flame 2.1 m up): at the falloff's 2 her head, half a
+            // metre under it, took 18 times the ground's light and blew out white; a flatter falloff, the ground's pool held
+            if (kind == "post_lantern") { lights[li].OmniAttenuation = PostLampAtt; specs[li] = specs[li] with { Intensity = specs[li].Intensity * PostLampEnergy }; }
             // A lamp of the zone's own (props_own.json "lamps", by its glow node): the camp's lantern burns amber, not the road's pale warm.
             if (OwnProps.For(Data.Id)?.Lamps.GetValueOrDefault(best) is OwnProps.Lamp own)
             {

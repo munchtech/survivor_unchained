@@ -16,7 +16,7 @@ render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specula
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 // The noise's slopes (Water.Grad: RG the swell's (noise R), BA the chop's (noise B), 0.5 flat), so a ripple's normal is one look.
 uniform sampler2D grad_tex : filter_linear_mipmap, repeat_enable;
-uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform bool stream = true;
 // The body: color its scattered light where deep, murk past 'deep' m, shallow the tint the bed takes through it.
@@ -42,6 +42,12 @@ uniform float wake = 1.6;
 uniform float ripple_size = 1.4;
 uniform float ripple_bend = 0.55;
 uniform float refract = 0.03;
+// (Low Ford r1, triage judge: the crowns' shadows on the bed showed through the clear ford as hard straight-edged wedges and
+// sawtooth) The bed seen through softens with depth, as water scatters what it carries: by bed_soft of a blur bed_soft_lod
+// mips deep (5: about 32 px at 1080p), full by bed_soft_depth m; the shallows' first hand keeps its pebbles sharp.
+uniform float bed_soft = 0.85;
+uniform float bed_soft_lod = 5.0;
+uniform float bed_soft_depth = 0.4;
 // The glints' sharpness (roughness at the ripples' crests).
 uniform float gloss = 0.06;
 // The brightest a light's glint gets (linear, its brightest channel): under the tonemap's white, so a lamp's glint keeps
@@ -218,6 +224,12 @@ void fragment() {
 	vec3 trans = exp(-path * ext);
 	float sh = stream ? 1.0 - smoothstep(0.0, 0.55, UV2.x) : 0.0;
 	vec3 under = texture(screen_tex, bent).rgb;
+	float soft_k = bed_soft * smoothstep(0.04, bed_soft_depth, wd);
+	if (soft_k > 0.0) {
+		// (two blurs, a mip apart, averaged: one mip alone shows its texel blocks at the play camera's 1:1)
+		vec3 blur = 0.5 * (textureLod(screen_tex, bent, bed_soft_lod).rgb + textureLod(screen_tex, bent, bed_soft_lod - 1.0).rgb);
+		under = mix(under, blur, soft_k);
+	}
 
 	// The body: its colour deepening to murk, lit by the scene (ALBEDO); in by the shore's band.
 	// (its width wandering along the bank, so the clear strip at the edge is never an even ribbon)

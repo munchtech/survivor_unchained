@@ -217,6 +217,8 @@ public partial class Atmosphere : Node3D
                     Moon = T("moon", p.Grade.Moon), MoonHue = T("mhue", p.Grade.MoonHue), MoonSat = T("msat", p.Grade.MoonSat),
                     MoonDrop = T("mdrop", p.Grade.MoonDrop), MoonLo = T("mlo", p.Grade.MoonLo), MoonHi = T("mhi", p.Grade.MoonHi),
                     MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth),
+                    PaintShadow = H("psh", p.Grade.PaintShadow), PaintShadowK = T("pshk", p.Grade.PaintShadowK), PaintVib = T("pvib", p.Grade.PaintVib),
+                    PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi),
                 },
             };
         }
