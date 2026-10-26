@@ -5,6 +5,97 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 6 (play-1 lead, 26-27 Oct): MR4 MR READY; the Prologue's cinematic-start freezes next (s5), then MR5 (items 14+15)
+
+**MR4 (frame time), MR READY at play-1@06c7db76 (integration merged, imported; tests 1070/0/8; full shot-free Prologue run mr4b clean, no errors):**
+- s1 ade3d9ea: the Waystation's pieces built on a worker during C04 A, one step a frame (`Slices.Paced`; `--ahead-main` = old path). C04 A: 0 new frames over 33 ms (was ~20 of 100-224). Hold behind the black 2.2 -> ~1.0 s (one ~0.9 s frame: her outfit 256 ms, Waystation.Begin 214, 900 pipelines). CLOSED AS KNOWN: the screen is static black; a split needs her figure built ahead via `HerWear.Live` (s3's plan) if UI ever animates the hold.
+- s2 368f6085: GC pauses cut (Godot Variant/StringName wrappers surviving young GCs: HairSway, HerFaceLife, OwnClips, Controls, Instrument); `Atmosphere.GradeLut` on workers (bytes identical). Editor runs use .NET 10 via GodotPlugins' rollForward, so csproj GC settings don't apply in our runs; exports run net8.
+- s3 c80fdae3: flipbook atlases loaded ahead, the draft backdrop warmed, HerJiggle string churn. s4 9b1075dc + fa8a5373: folk shadow merge (`FolkShadow.cs`, shadow draws -86%), off-screen folk animation held (-2.4 ms with 16 folk), walkers built on a worker (`WalkerView`), a draft rehearsal (`GameMenus.RehearseDraft`; the hub's first draft 80+85 -> 36+45 ms, closed as known). Switches: `--folk-shadow off --folk-lod off --walker-later off --draft-rehearse off --folk-churn S`.
+- No-look-change checks (w1): grade LUT 0 bytes differ; her close-up frames vs the old files at the noise floor; Waystation arrival vs `--ahead-main` spread jitter only (sheets in scratch play3\w1\).
+**Next (s5, brief in scratch play3\brief_s5.md):** the shot-free run found freezes at cinematic STARTS: C04 A 2.43 s (+326 ms), C02 1.21 s, C03 351 ms (~240 MB allocated each), and the Prologue's first drafts 382/325 ms (the rehearsal doesn't cover them). Then MR5 = items 14 (UNBLOCKED by UI 12: teach minimap, lock, counters, Ember plainly; talk prompt = Style.KeyCap + name label, looks are UI's) + 15 (Experience 4's notes below). Routed: the play camera's ~30% zoom pop in Animation's side strips: likely `FollowCamera.Place`'s `room` (a 2D raycast on Battle.Collision, GameCloseUp.cs ~30, snaps in at rate 14 on any collider incl. low props): diagnose with a camera log.
+**Scratch:** `...\fce3bb46-...\scratchpad\play3\` (tr.py, perf.py, play.py, play_perf.py = no --shot, frames/cut/corr.py, trtrace2.py, sh4/sh5.py, cmp.py; `..\alloctool` = s2's trace reader). Shots mode saves PNGs that cost 300-800 ms a frame: never read hitches from a `--shot` run.
+
+## Experience 5 (play-1 lead, 26 Oct): PAUSED for the coordinator's wind-down; MR4 freeze WIP at 69338d30 (NOT mergeable)
+
+**Paused here; next:** finish MR4's freeze (below), then the folk LOD, then the full test and MR; then MR5 (item 15, Experience 4's notes below). Integration merged at 0a447b24 (docs only, no import needed). No turns held. Item 14 still on HOLD for UI 11 (`a00a39b9f159396f9`).
+
+**MR4 freeze, WIP 69338d30 (medium solver a5323c4b, 192k).** The Waystation is now built ahead during C04 A (`Game.Prepare`/`BuildAhead`/`PumpAhead`, new `src/World/Slices.cs` step runner, `Prologue.Dawnbreak` calls `G.Prepare("waystation")`; ZoneView/Dressing.Props/OwnWalls as steps; GroundPaint.Ahead; MapScreen.DrawAhead; Prefetch.Ahead; Travel waits behind the black via WhenBuilt). Tests 1054/0/8.
+- Before (repro tr0): build frame 7.46 s, then 1.62 s (the map's first drawing, `MapScreen.Drawing`, not pipelines). C04 A already had 79/127/93 ms frames of its own.
+- After (tr2): build frame 2.41 s (EnterPlay 2082 ms: `Waystation.People` 1567, her outfit 292), next frame 57 ms. **But C04 A now has ~20 frames of 100-224 ms from the ahead-steps: do not merge until fixed.**
+- Fast repro (2 min): `play2/tr.py NAME --zone lowford --cine c04a --prepare waystation@24 --travel waystation@40 --perf-warm 2 --perf-for 40`; `frames.py NAME 33` lists slow frames; `trtrace.py`, `sscope.py`, `sslong.py FILE "Game._Process" 150` for dotnet-trace trees.
+- NEXT, in order (each measured with the repro): (1) long ahead-steps: OwnWalls' ground SetPixel loop (214 ms; float[] on a worker + CreateFromData), prop file loads one per step (find the slow ones), flora 128, scatter 109, GrowGrass 186 (Randf), landmarks 237, OwnWalls.Furnish 157, `OwnWalls.Take`'s ResourceLoader.Exists 281 ms (cache it). (2) EnterPlay in one frame: load and hold the townsfolk's parts during the build ahead (`Waystation.People`, `Arms.Make` 232); reuse her PlayerView when `Loadouts.Look` is unchanged; C04 B's cast rebuilds her (`GameCinema.Cast` "CineSurvivor" 244-310 ms): a spare figure matched by look. (3) pipelines (~910 on the build frame): measure whether the main thread waits; add the scene in pieces behind the black. (4) Check the Waystation looks the same at arrival, then the full play.py run.
+- Acceptance (unchanged): fade start to first play frame no frame over 100 ms (stretch 50), hold at most ~2 s past the fade, C04 A no new frame over 33 ms.
+- Spawn the next solver fresh with this list (the old one was at budget). A loading indicator during the hold, if needed, is UI 11's look.
+
+**Folk LOD (not started):** mixers off off-screen (VisibleOnScreenNotifier3D, generous AABB), small parts' shadows off or one merged shadow caster per folk (HerLod.Merge pattern; persons built in People.cs / NpcPackage.cs), ABAB with flipstat.py (flips anim, people). Real play after C04 has 4 folk, the quick start 15.
+
+## Experience 4 (play-1 lead, 26 Oct): MR3 MR READY (d6868600); MR4 diagnosed, HUD part fixed (54e83e86), the rest NEXT
+
+**Start here (Experience 5).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_fixed.py = play.py at `--fixed-fps 60`, perf.py = the hub straight from launch with `--perf`, flipstat.py NAME = an ABAB flip run's in/out means, ease_sheets.py, `*_stale.py` = copies with `--stale-ok`).
+- **Merge integration first.** turn.py now refuses play-1 as STALE (an integration commit came in). Follow the junction rule: `cmd /c rmdir godotssets`, merge, remake the link, then `--headless --import`.
+- **An import is needed after every merge.** A stale cache broke the hub build with a missing own:crock.
+
+**Owner and coordinator (26 Oct):**
+- The HUD and UI visuals are placeholder until **UI 11** (worktree ui-11, SendMessage id `a00a39b9f159396f9`) finishes.
+- The split: UI 11 owns how each element looks and where it sits; we own when it shows, what it says, and the flow. Sign-off goes both ways, and neither side edits the other's code without asking.
+- No judge rounds on how any tip, ring, chip, card or marker looks. Judge flow, timing and wording only.
+- Audit item 14 (minimap, talk key, counters, Ember in plain words) is on HOLD for UI 11, which will say when the HUD settles. Item 15 is ours (below).
+
+**MR3, canopy fade: DONE, MR READY play-1@d6868600, sent to main.**
+- Motion judge e2 (xhigh; 6 bursts of consecutive 1/60 s frames caught mid-ease via `--canopy-log --canopy-burst N,K` under `--fixed-fps 60`): the ease band and the half-faded holds SHIP at 1:1.
+- It found crowns whose axis sat behind the lens plane flashing over her for 3 frames. Now any crown within 1 m of the lens is cut, eased over the 1.5 m before it. Rejudge e3: SHIP.
+- Tests 1054/0/8.
+- town_o_03 subtitle: asked Env 17 (aa34beda274ad4169) for the frame, no reply yet. Speech is a 2D CanvasLayer, so a tree can't draw over it. Main says: if it's low contrast over foliage, give the line a backing (that's now UI 11's look); if it's a mid-fade catch, close it.
+
+**MR4 findings (the hub straight from launch, `perf.py`; numbers noisy run to run, GPU shared, so trust only ABAB flips):**
+- Hub frame is 14-22 ms, CPU-bound (GPU 3-3.6 ms). The new wall-clock cuts in Perf (`cut: physics / tail (queue) / draw / after`) place the old "unaccounted ~6 ms" in two spots:
+  - Godot's message queue: controls' _Draw after QueueRedraw, plus skeleton updates.
+  - The renderer's draw: about 2 ms over its measured CPU time, which is GPU sync.
+- **HUD, ABAB:** 5.0 ms a frame (queue 3.4 + draw 1.3), and in ALL play, not just the hub. Fixed in part at **54e83e86** (worker): minimap marks pooled, redraw on change; the queue is down about 1.9 ms.
+  - Still per-frame because they breathe by Time: the dash glass while ready, the chain glow with heat, a ripe socket rim, the bezel's day ember.
+  - UI 11 took "the HUD under 1 ms, redraw on change, no per-frame node churn" as hard constraints for its rebuild.
+- **Folk, ABAB with 15 folk out in the quick start (real play after C04 has 4):**
+  - Animation (`--perf-flip anim`): 4.7 ms total, about 0.3 ms a folk (mixers 1.7, skeleton queue 1.2, draw/skin setup 1.7).
+  - Drawing (`--perf-flip people`): 3.2 ms, with +105 draws and +510 SHADOW draws (about 33 shadow draws each: many outfit meshes, each casting into the sun cascades and the lamps).
+  - All three (anim, people, labels): 7.9 ms.
+  - Her (visibility only): 1.6 ms.
+- **NEXT for frame time (code, ours):**
+  1. Folk animation LOD: mixers off when off-screen (VisibleOnScreenNotifier3D), a lower rate when far.
+  2. Folk shadows: one merged shadow caster per folk (her HerLod.Merge does this for her: "23 shadow casters into 1"), or no shadows from small parts.
+  3. Re-measure with `flipstat.py` (flips anim, people, hud, her). Folk art itself belongs to NPC/Marionette (baked dressed NPCs will be single meshes); say so to main.
+- **NEXT for the 6 s freeze:** nothing built yet. The facts:
+  - `Prologue.Finish` calls `G.Travel("waystation")` (Game.cs ~735). It fades 0.8 s, then `EnterZone` builds synchronously, a 7.6 s frame (ground+water 2.1-2.3 s, props files 0.9 s, props 1.6 s, textures 0.4-0.56 s; 1041-1126 pipelines on first draw). Then C04 B plays.
+  - The black hold shows a static caption, so it reads as a hang. Her outfit is rebuilt (250-310 ms) at every cinematic hand-back.
+  - Plan:
+    a) preload the Waystation's files (ResourceLoader.LoadThreadedRequest) during C04 A at Low Ford (27 s);
+    b) split EnterZone's laps over frames behind the black, with something that moves (ask UI 11 for the loading look);
+    c) a pipeline prewarm: render the hub from the C04 B and play cameras behind the black before the fade-in;
+    d) stop the outfit rebuild at hand-back when nothing changed.
+  - Measure with `--perf h1`-style real runs (play.py with `--perf NAME --perf-warm 8 --perf-for 2600`; the window lines and `built in` laps).
+  - Art causes go to main with numbers, for Env 17.
+
+**MR5 = audit item 15 only (go):**
+- Health is full until 2:46, so dash and the draught are taught with nothing to dodge. Add a real threat in the Ambush (Prologue.cs `case Stage.Ambush`, ~694).
+- The Road (4 s) and ToFord (6 s) are skipped. Give the Road a short lore or loot beat: the Road ends at `p.Z < cart.Z + 7`, Prologue.cs ~670.
+- Space the lessons. No new HUD visuals.
+- Copy is in our voice, logged for Story in docs/story/TUTORIAL_COPY.md.
+- Judge on flow, timing and wording (xhigh) with a play.py run.
+
+**UI elements the tutorial depends on (sent to UI 11 and main asked for it here; what each must communicate):**
+1. Callout, Freeze/Arrow/Panel (Callout.cs, Teach.cs, GameTeach.cs): a ring on the target (world ember, HUD pale, lamps cold blue), a title, 1-3 lines. Says: look here, what it is or how, paused, how to go on.
+2. Off-screen marker: says one of them is that way (the lamps).
+3. Dash-ready form (GameHud.DashLit, Round.Form, Licks, FormGlyph): says your next dash is your calling's art. It must not look like a callout highlight.
+4. Key chips ({key:X} in copy, TipLine.Chip): the bound key, readable on the tip bar.
+5. Tip line: one optional fact, then it fades.
+6. Teaching cards (Panels.cs v.Teaching): choose one, and what each does in a line. No reroll, banish, skip, recipe or shared reasons.
+7. Ember chain and padlock (Instrument.cs): gathered ember fills it, full means rise and pick a skill, and the number is tonight's rise.
+8. Ember halo on the ground: pick this up.
+9. Channel tip and cast bar ("Break his spell" / "Raising the drowned: break it!"): stop this now, with the tool that's ready.
+10. Boss bar with the lamps: the lamps shield him.
+11. Red line ring (F7): get off this line.
+12. Level card (F12): N levels kept for good, skills were lent, press C to choose N traits.
+13. Interaction prompt ("[E] Talk Chid"): you can talk to them. Unverified, because the autopilot never walks up to anyone.
+
 ## Experience 3 (play-1 lead, 26 Oct): MR1+2 MR READY (sent to main at 9f3b6c8e); MR3 canopy fade built, motion re-check NEXT
 
 **Start here (Experience 4).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_burst.py, logs, judge_b1 crops).

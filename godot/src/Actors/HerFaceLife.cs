@@ -105,6 +105,29 @@ public partial class HerFaceLife : Node
     /// her lips closed her mouth is dark inside, so the teeth a corner of her lips shows read as shade, not a white
     /// speck (Sunborn at the Look, judge s1). Her side teeth stay in the cheeks' shade anyway (their vertex colour,
     /// tools/assets/heroine_teethshade.py). The teeth's material is remade with each look, so it is set each frame.</summary>
+    /// <summary>The parameters' names made once (a string given where a name is wanted is a new tracked name each call,
+    /// set each frame: they outlived the young collection).</summary>
+    static class P
+    {
+        public static readonly StringName lit = "lit", shut = "shut", narrow = "narrow", upper_mask = "upper_mask", mask_w = "mask_w", drop_v = "drop_v", band = "band", paint = "paint", grow = "grow", lips_apart = "lips_apart", lips_narrow = "lips_narrow", fold = "fold", open_light = "open_light", head_inv = "head_inv";
+    }
+
+    /// <summary>Which of a skin's binds is on her head bone: found once per skin and skeleton (each lookup by bind name
+    /// made a new tracked name per bind, each frame), as the loop it replaces found it (by name, or by bone without one).</summary>
+    static int HeadBind(Skin skin, Skeleton3D sk, int head, ref (Skin?, Skeleton3D?, int, int) memo)
+    {
+        if (memo.Item1 == skin && memo.Item2 == sk && memo.Item3 == head) return memo.Item4;
+        int found = -1;
+        for (int i = 0; i < skin.GetBindCount(); i++)
+        {
+            string bn = skin.GetBindName(i);
+            if ((bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i)) == head) { found = i; break; }
+        }
+        memo = (skin, sk, head, found);
+        return found;
+    }
+    (Skin?, Skeleton3D?, int, int) tongueBind, teethBind;
+
     void TeethLight()
     {
         if (teeth == null || mouth == null || teeth.Mesh == null) return;
@@ -113,11 +136,11 @@ public partial class HerFaceLife : Node
         for (int s = 0; s < teeth.Mesh.GetSurfaceCount(); s++)
             if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
             {
-                m.SetShaderParameter("lit", k);
+                m.SetShaderParameter(P.lit, k);
                 // (the lamps cut wholly with her lips shut (her mouth's corner), 0.6 of the way once they part)
-                m.SetShaderParameter("shut", 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
+                m.SetShaderParameter(P.shut, 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
                 // (her side teeth flat in her mouth's shade while her lips are parted only a little: the shader's narrow)
-                m.SetShaderParameter("narrow", 1 - Mathf.SmoothStep(0.25f, 0.6f, w));
+                m.SetShaderParameter(P.narrow, 1 - Mathf.SmoothStep(0.25f, 0.6f, w));
                 foreach (var (n, v) in teethParams) m.SetShaderParameter(n, v);
             }
     }
@@ -159,34 +182,31 @@ public partial class HerFaceLife : Node
         int head = sk.FindBone("Head");
         Vector3 v = Vector3.Zero;
         if (head >= 0 && d > 0)
-            for (int i = 0; i < skin.GetBindCount(); i++)
+            if (HeadBind(skin, sk, head, ref teethBind) is var i and >= 0)
             {
-                string bn = skin.GetBindName(i);
-                if ((bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i)) != head) continue;
                 var toMesh = ((sk.GetBoneGlobalPose(head) * skin.GetBindPose(i)).AffineInverse() * teeth.Transform).AffineInverse();
                 v = toMesh.Basis * new Vector3(0, -d, 0);
-                break;
             }
         // (the band, and its gaps' shell behind it, on as far as the drop is: HerFaceLife's shell pass only then)
         float band = DropMost > 0 ? d / DropMost : 0;
         for (int s = 0; s < am.GetSurfaceCount(); s++)
             if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
             {
-                m.SetShaderParameter("upper_mask", upperMask);
-                m.SetShaderParameter("mask_w", MaskW);
-                m.SetShaderParameter("drop_v", v);
-                m.SetShaderParameter("band", band);
+                m.SetShaderParameter(P.upper_mask, upperMask);
+                m.SetShaderParameter(P.mask_w, MaskW);
+                m.SetShaderParameter(P.drop_v, v);
+                m.SetShaderParameter(P.band, band);
                 if (band > 0.001f && v != Vector3.Zero && ShellGrow > 0)
                 {
                     shellShader ??= GD.Load<Shader>("res://shaders/heroine_teeth_shell.gdshader");
                     if (m.NextPass is not ShaderMaterial sm || sm.Shader != shellShader)
                         m.NextPass = sm = new ShaderMaterial { Shader = shellShader, ResourceName = "teeth_shell" };
-                    sm.SetShaderParameter("paint", m.GetShaderParameter("paint"));
-                    sm.SetShaderParameter("upper_mask", upperMask);
-                    sm.SetShaderParameter("mask_w", MaskW);
-                    sm.SetShaderParameter("drop_v", v);
-                    sm.SetShaderParameter("grow", ShellGrow * v.Length() / d);
-                    sm.SetShaderParameter("band", band);
+                    sm.SetShaderParameter(P.paint, m.GetShaderParameter(P.paint));
+                    sm.SetShaderParameter(P.upper_mask, upperMask);
+                    sm.SetShaderParameter(P.mask_w, MaskW);
+                    sm.SetShaderParameter(P.drop_v, v);
+                    sm.SetShaderParameter(P.grow, ShellGrow * v.Length() / d);
+                    sm.SetShaderParameter(P.band, band);
                     foreach (var pn in new[] { "lit", "narrow", "closed", "side_floor" }) sm.SetShaderParameter(pn, m.GetShaderParameter(pn));
                     foreach (var (pn, pv) in teethParams) sm.SetShaderParameter(pn, pv);
                 }
@@ -214,16 +234,16 @@ public partial class HerFaceLife : Node
         for (int s = 0; mouth.Mesh != null && s < mouth.Mesh.GetSurfaceCount(); s++)
             if (mouth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true)
             {
-                m.SetShaderParameter("lips_apart", apart);
-                m.SetShaderParameter("lips_narrow", 1 - Mathf.SmoothStep(0.3f, 0.6f, w));
+                m.SetShaderParameter(P.lips_apart, apart);
+                m.SetShaderParameter(P.lips_narrow, 1 - Mathf.SmoothStep(0.3f, 0.6f, w));
                 // (the corners' cut of the lamps behind her only as her smile folds them in: at rest the crease is
                 // open to the light, and a lamp to her side and behind cut there drew a black smudge past each
                 // corner, the lamp at c02 s8; face 30 cine)
-                if (smile >= 0 && !NoFold) m.SetShaderParameter("fold", Mathf.SmoothStep(0.05f, 0.4f, mouth.GetBlendShapeValue(smile)));
+                if (smile >= 0 && !NoFold) m.SetShaderParameter(P.fold, Mathf.SmoothStep(0.05f, 0.4f, mouth.GetBlendShapeValue(smile)));
             }
         for (int s = 0; tongue?.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
             if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
-                m.SetShaderParameter("open_light", tl);
+                m.SetShaderParameter(P.open_light, tl);
     }
 
     /// <summary>--mouth-cam: each frame, the camera in her head's own space (the glb's, as her head, teeth and tongue are
@@ -281,16 +301,13 @@ public partial class HerFaceLife : Node
         if (tongue?.Skin is not { } skin || GetParent() is not Skeleton3D sk) return;
         int head = sk.FindBone("Head");
         if (head < 0) return;
-        for (int i = 0; i < skin.GetBindCount(); i++)
-        {
-            string bn = skin.GetBindName(i);
-            if ((bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i)) != head) continue;
-            var inv = (sk.GetBoneGlobalPose(head) * skin.GetBindPose(i)).AffineInverse() * tongue.Transform;
-            for (int s = 0; tongue.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
-                if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
-                    m.SetShaderParameter("head_inv", inv);
-            return;
-        }
+        int i = HeadBind(skin, sk, head, ref tongueBind);
+        if (i < 0) return;
+        var inv = (sk.GetBoneGlobalPose(head) * skin.GetBindPose(i)).AffineInverse() * tongue.Transform;
+        using Variant vInv = inv;
+        for (int s = 0; tongue.Mesh != null && s < tongue.Mesh.GetSurfaceCount(); s++)
+            if (tongue.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
+                m.SetShaderParameter(P.head_inv, vInv);
     }
 
     void TongueParams()

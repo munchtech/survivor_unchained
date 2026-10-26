@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Godot;
@@ -28,13 +28,30 @@ public sealed class GroundPaint
     /// quarter metre: R the open sky (0 under a crown, by a wall and under its eaves; 1 in the open; blurred about a
     /// metre), G the sun on the ground for the thaw (0 in the shade of a crown or a wall at the key's angle; baked by
     /// SunAt), B the lie of the land over 10-40 m (0.5 level; up to 1 in a damp low, down to 0 on a dry rise).</summary>
-    public readonly ImageTexture Exposure;
+    public ImageTexture Exposure => exposure ??= ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, exposurePx));
+    ImageTexture? exposure;
+    byte[] exposurePx;
+    /// <summary>The sun the exposure was baked for (SunAt; null: none yet).</summary>
+    Vector3? baked;
 
     static readonly ConditionalWeakTable<ZoneData, GroundPaint> Made = new();
     static GroundPaint? latest;
     static Vector3? sun;
 
-    public static GroundPaint Of(ZoneData z) => latest = Made.GetValue(z, k => new GroundPaint(k));
+    public static GroundPaint Of(ZoneData z)
+    {
+        var p = latest = Made.GetValue(z, k => new GroundPaint(k));
+        // Made ahead (Ready), the sun may have moved since: baked again for it, as it would have been made now.
+        if (sun is Vector3 s && p.baked != s) { Perf.Lap("ground paint: (before)"); p.BakeSun(s); Perf.Lap("ground paint: baked again for the sun"); }
+        return p;
+    }
+
+    /// <summary>The paint worked out ahead of its place being built, on a worker thread (Game.Prepare): it is the
+    /// latest only once its place is built (Of). Its textures are made on the main thread as they are first asked for.</summary>
+    public static void Ready(ZoneData z) => Made.GetValue(z, k => new GroundPaint(k));
+
+    /// <summary>The zone's paint, without making it the latest (a place built ahead: Of makes it so once it is added).</summary>
+    public static GroundPaint Ahead(ZoneData z) => Made.GetValue(z, k => new GroundPaint(k));
 
     /// <summary>The thaw's sun (toward the light): the latest zone's sun on the ground is baked for it.</summary>
     public static void SunAt(Vector3 dir)
@@ -411,8 +428,8 @@ public sealed class GroundPaint
             for (int i = 0; i < er; i++)
                 lie[j * er + i] = (byte)(Mathf.Clamp(0.5f + Sample(lows, n, st, half, -half + (i + 0.5f) * et, -half + (j + 0.5f) * et) / (3f * sd), 0, 1) * 255);
         // (Near first: it lays the setts' course direction, which the exposure's A carries.)
-        Near = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, MakeNear(z, px, sr)));
-        Exposure = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(null)));
+        nearPx = MakeNear(z, px, sr);
+        exposurePx = Pack(null);
         if (sun is Vector3 sdir) BakeSun(sdir);
         // --ground-dump DIR: both as PNGs, to check them by eye.
         if (Args.Get("ground-dump") is { } dumpDir)
@@ -428,7 +445,9 @@ public sealed class GroundPaint
     /// to a wall or a building's base (0-2 m), for the gutters and the weeds in the joints; G to anything standing (walls,
     /// the well, stalls, fences, posts), for the grime; B the setts' wear lane (1 down the middle of a street or the
     /// square's ways, about 1.5 m wide).</summary>
-    public readonly ImageTexture Near;
+    public ImageTexture Near => near ??= ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, nearPx));
+    ImageTexture? near;
+    readonly byte[] nearPx;
 
     byte[] MakeNear(ZoneData z, byte[] sp, int sr)
     {
@@ -580,7 +599,9 @@ public sealed class GroundPaint
                 }
         }
         lit = Blur(Blur(lit, er, 1), er, 1);
-        Exposure.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(lit)));
+        baked = dir;
+        exposurePx = Pack(lit);
+        exposure?.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, exposurePx));
     }
 
     byte[] Pack(float[]? lit)

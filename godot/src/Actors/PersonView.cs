@@ -369,6 +369,54 @@ public partial class PersonView : Node3D, INpcView
 
     public override void _Ready() => Settle();
 
+    /* ------------------------------------------------- a townsperson's LOD -- */
+
+    /// <summary>On screen (with room round it for its shadow, cast long at dusk): while it isn't, its clip is held
+    /// still (no mixing, no skeleton to lay) and the time kept, and when it comes back the clip is moved on by
+    /// that time first, so it stands where it would have been.</summary>
+    VisibleOnScreenNotifier3D? seen;
+    FolkShadow.Job? shadowJob;
+    bool lodHeld;
+    double lodHeldFor;
+    AnimationMixer.AnimationCallbackModeProcess lodMode;
+    static readonly bool LodOff = Args.Get("folk-lod") == "off";
+
+    /// <summary>The town's people (walkers and those who stand): its clip held off screen, and its shadow one draw
+    /// (FolkShadow). Not for her, nor anyone a cinematic plays.</summary>
+    public void Lod()
+    {
+        BeginShadow();
+        if (LodOff || seen != null) return;
+        // (6 m round: the shadow of a person at the edge of the frame reaches in from about 4 m out with the sun low)
+        seen = new VisibleOnScreenNotifier3D { Aabb = new Aabb(new Vector3(-6, -1, -6), new Vector3(12, 5, 12)) };
+        seen.ScreenExited += LodHold;
+        seen.ScreenEntered += LodResume;
+        AddChild(seen);
+    }
+
+    /// <summary>Its one shadow begun (FolkShadow), here or on the worker that made it (WalkerView).</summary>
+    public void BeginShadow() { if (!shadowBegun) { shadowBegun = true; shadowJob = FolkShadow.Begin(person); } }
+    bool shadowBegun;
+
+    void LodHold()
+    {
+        if (Cinema || Driven || lodHeld) return;
+        lodHeld = true;
+        lodHeldFor = 0;
+        lodMode = person.Anim.CallbackModeProcess;
+        person.Anim.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
+    }
+    int lodFrames;
+
+    void LodResume()
+    {
+        if (!lodHeld) return;
+        lodHeld = false;
+        if (Cinema) return;   // (a cinematic took it while away: its clock plays it now)
+        person.Anim.CallbackModeProcess = lodMode;
+        if (person.Anim.IsPlaying()) person.Anim.Advance(lodHeldFor);
+    }
+
     /// <summary>Posed now, as it will be drawn. A figure added in the middle of a frame showed its
     /// bind pose (a T) for that frame, and her corrective layer eased in from nothing: the pack's
     /// doll did both on every refresh.</summary>
@@ -382,6 +430,10 @@ public partial class PersonView : Node3D, INpcView
 
     public override void _Process(double delta)
     {
+        if (shadowJob is { Done: true } sj) { shadowJob = null; FolkShadow.Finish(person, sj); }
+        if (lodHeld) { if (Cinema || Driven) LodResume(); else lodHeldFor += delta; }
+        // (made off screen: held from its third frame, once the notifier has had a look)
+        else if (seen != null && lodFrames < 3 && ++lodFrames == 3 && !seen.IsOnScreen()) LodHold();
         if (person.Pose is HerPose hp && !Driven)
         {
             float k = 1 - Mathf.Exp(-12 * (float)delta);
