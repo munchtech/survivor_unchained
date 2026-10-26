@@ -379,6 +379,7 @@ public sealed class OwnWalls
                         // (E9d: the kit's pot read as a pale empty ring from above: our own earthenware crock; the round things
                         // set in and out from the wall and a little different in size, so a run of barrels isn't a ruler-straight row)
                         if (round) { cp += (alongU ? new Vector2(0, into.Y) : new Vector2(into.X, 0)) * (Rnd() * 0.09f); sc *= 0.93f + Rnd() * 0.12f; }
+                        if (id == "props/Barrel_Apples") { o.Add(("own:basket_apples", At(cp.X, cp.Y, ins.Floor, yaw + jy, Vector3.One * 1.25f))); Take(q); t += 2 * along + 0.04f + Rnd() * 0.08f; any = true; continue; }
                         if (id == "props/Pot_1") { o.Add(("own:crock", At(cp.X, cp.Y, ins.Floor, yaw + jy, Vector3.One * sc * 1.1f))); Take(q); t += 2 * along + 0.04f + Rnd() * 0.08f; any = true; continue; }
                         o.Add((id, At(cp.X, cp.Y, ins.Floor, yaw + jy, id.EndsWith("Apples") ? new Vector3(sc, sc * 0.72f, sc) : Vector3.One * sc)));
                         Take(q);

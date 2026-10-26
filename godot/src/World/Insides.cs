@@ -52,9 +52,6 @@ public static class Insides
     {
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/floor_cloth.gdshader") };
         m.SetShaderParameter("rug", isRug);
-        // (E9d) drawn before the furniture fading in over it (the kit's insides draw in the transparent pass, their depth
-        // unwritten: a rug sorted after a table drew its border across the table's top)
-        m.RenderPriority = -10;
         return m;
     }
 }

@@ -44,6 +44,7 @@
   "heap_hay": {"kind": "market_heap", "seed": 59, "items": [["hay", 0, 0, 8], ["hay", 0.1, 0.05, -6, 0.45], ["hay", 1.05, 0.2, 80], ["straw", 0.4, 0.2, 0, 1.6, 1.1], ["dung", 1.6, -0.6, 0, 4], ["bucket", -0.8, 0.6, 0]]},
   "heap_sacks": {"kind": "market_heap", "seed": 60, "items": [["sack", 0, 0, 0], ["sack", 0.42, 0.1, 40], ["sack", 0.2, -0.4, 90], ["sack_lying", -0.45, 0.3, 20], ["basket", 0.75, 0.55, 0, "#7a9a50"], ["basket", -0.1, 0.65, 0, "#b8443a"], ["straw", 0.2, 0.2, 0, 0.9, 0.7]]},
   "heap_pots": {"kind": "market_heap", "seed": 61, "items": [["crate", 0, 0, 0, {"w": 0.7, "d": 0.6, "h": 0.5, "seed": 16}], ["crock", 0.62, 0.15, 0, 0.45], ["crock", 0.55, -0.32, 0, 0.36], ["crock", -0.6, 0.3, 0, 0.5], ["straw", 0.1, 0.2, 0, 1.0, 0.7], ["barrel", -0.5, -0.55, 0, {"seed": 17}]]},
-  "crock": {"kind": "market_heap", "seed": 62, "items": [["crock", 0, 0, 0, 0.36]]}
+  "crock": {"kind": "market_heap", "seed": 62, "items": [["crock", 0, 0, 0, 0.36]]},
+  "basket_apples": {"kind": "market_heap", "seed": 63, "items": [["basket", 0, 0, 0, "#b8443a"]]}
  }
 }
