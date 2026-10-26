@@ -5,6 +5,20 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 5 (play-1 lead, 26 Oct): PAUSED for the coordinator's wind-down; MR4 freeze WIP at 69338d30 (NOT mergeable)
+
+**Paused here; next:** finish MR4's freeze (below), then the folk LOD, then the full test and MR; then MR5 (item 15, Experience 4's notes below). Integration merged at 0a447b24 (docs only, no import needed). No turns held. Item 14 still on HOLD for UI 11 (`a00a39b9f159396f9`).
+
+**MR4 freeze, WIP 69338d30 (medium solver a5323c4b, 192k).** The Waystation is now built ahead during C04 A (`Game.Prepare`/`BuildAhead`/`PumpAhead`, new `src/World/Slices.cs` step runner, `Prologue.Dawnbreak` calls `G.Prepare("waystation")`; ZoneView/Dressing.Props/OwnWalls as steps; GroundPaint.Ahead; MapScreen.DrawAhead; Prefetch.Ahead; Travel waits behind the black via WhenBuilt). Tests 1054/0/8.
+- Before (repro tr0): build frame 7.46 s, then 1.62 s (the map's first drawing, `MapScreen.Drawing`, not pipelines). C04 A already had 79/127/93 ms frames of its own.
+- After (tr2): build frame 2.41 s (EnterPlay 2082 ms: `Waystation.People` 1567, her outfit 292), next frame 57 ms. **But C04 A now has ~20 frames of 100-224 ms from the ahead-steps: do not merge until fixed.**
+- Fast repro (2 min): `play2/tr.py NAME --zone lowford --cine c04a --prepare waystation@24 --travel waystation@40 --perf-warm 2 --perf-for 40`; `frames.py NAME 33` lists slow frames; `trtrace.py`, `sscope.py`, `sslong.py FILE "Game._Process" 150` for dotnet-trace trees.
+- NEXT, in order (each measured with the repro): (1) long ahead-steps: OwnWalls' ground SetPixel loop (214 ms; float[] on a worker + CreateFromData), prop file loads one per step (find the slow ones), flora 128, scatter 109, GrowGrass 186 (Randf), landmarks 237, OwnWalls.Furnish 157, `OwnWalls.Take`'s ResourceLoader.Exists 281 ms (cache it). (2) EnterPlay in one frame: load and hold the townsfolk's parts during the build ahead (`Waystation.People`, `Arms.Make` 232); reuse her PlayerView when `Loadouts.Look` is unchanged; C04 B's cast rebuilds her (`GameCinema.Cast` "CineSurvivor" 244-310 ms): a spare figure matched by look. (3) pipelines (~910 on the build frame): measure whether the main thread waits; add the scene in pieces behind the black. (4) Check the Waystation looks the same at arrival, then the full play.py run.
+- Acceptance (unchanged): fade start to first play frame no frame over 100 ms (stretch 50), hold at most ~2 s past the fade, C04 A no new frame over 33 ms.
+- Spawn the next solver fresh with this list (the old one was at budget). A loading indicator during the hold, if needed, is UI 11's look.
+
+**Folk LOD (not started):** mixers off off-screen (VisibleOnScreenNotifier3D, generous AABB), small parts' shadows off or one merged shadow caster per folk (HerLod.Merge pattern; persons built in People.cs / NpcPackage.cs), ABAB with flipstat.py (flips anim, people). Real play after C04 has 4 folk, the quick start 15.
+
 ## Experience 4 (play-1 lead, 26 Oct): MR3 MR READY (d6868600); MR4 diagnosed, HUD part fixed (54e83e86), the rest NEXT
 
 **Start here (Experience 5).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_fixed.py = play.py at `--fixed-fps 60`, perf.py = the hub straight from launch with `--perf`, flipstat.py NAME = an ABAB flip run's in/out means, ease_sheets.py, `*_stale.py` = copies with `--stale-ok`).
