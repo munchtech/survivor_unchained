@@ -177,8 +177,8 @@ vec3 blood(vec2 p, float r, float px, float t)
 		float rise = heal_t * 0.85;
 		float hn = fbm(vec2(q.x * 2.6 + 0.45 * sin(q.y * 4.0 + heal_t * 1.9), q.y * 2.1 + heal_t * 1.5) + seed * 3.0);
 		float risen = smoothstep(RI - rise - 0.30, RI - rise + 0.05, q.y);
-		float plume = smoothstep(0.46, 0.70, hn) * risen * body * exp(-pow(q.x / (0.35 + 0.6 * clamp(rise, 0.0, 1.0)), 2.0));
-		col = mix(col, vec3(0.90, 0.24, 0.22), plume * heal * 0.75);
+		float plume = smoothstep(0.40, 0.58, hn) * risen * body * exp(-pow(q.x / (0.35 + 0.6 * clamp(rise, 0.0, 1.0)), 2.0));
+		col = mix(col, vec3(1.0, 0.40, 0.34), clamp(plume * heal * 1.5, 0.0, 1.0));
 	}
 
 	// Hurt: above the new level the glass keeps a film of blood from where it stood; it runs down,
@@ -234,18 +234,18 @@ vec3 blood(vec2 p, float r, float px, float t)
 		float fr = length(fp);
 		float ang = abs(atan(fp.x, -fp.y)) / PI;
 		float held = 1.0 - smoothstep(reach - 0.02, reach + 0.02, ang + (fbm(fp * 9.0 + seed * 4.0) - 0.5) * 0.10);
-		float th = 0.13 * (1.0 - 0.5 * ang / max(reach, 0.05));
+		float th = 0.195 * (1.0 - 0.5 * ang / max(reach, 0.05));
 		float sp = noise(vec2(ang * 46.0 + seed * 3.0, 0.5));
 		float inner = RI - th * (0.35 + 0.9 * sp * sp);
 		float rime = smoothstep(inner - px, inner + px, fr) * held * fade * step(fr, 1.0);
 		vec2 fm; float fb;
 		cells(fp * 9.0 + seed * 5.0, fm, fb);
 		float facet = 1.0 - smoothstep(0.0, 0.08, fb);
-		float dens = mix(0.30, 0.62, smoothstep(inner, RI, fr));
-		vec3 ice = mix(vec3(0.604, 0.831, 1.0), vec3(0.93, 0.97, 1.0), 0.55 * facet);
-		col = mix(col, ice, rime * (dens + 0.15 * facet));
-		col += vec3(0.604, 0.831, 1.0) * 0.035 * reach * fade;
-		col += vec3(0.85, 0.94, 1.0) * lines * held * 0.6;
+		float dens = mix(0.45, 0.85, smoothstep(inner, RI, fr));
+		vec3 ice = mix(vec3(0.604, 0.831, 1.0), vec3(0.97, 0.99, 1.0), 0.65 * facet);
+		col = mix(col, ice, clamp(rime * (dens + 0.22 * facet), 0.0, 1.0));
+		col += vec3(0.604, 0.831, 1.0) * 0.055 * reach * fade;
+		col += vec3(0.85, 0.94, 1.0) * lines * held * 0.9;
 	}
 
 	// The wall: the cavity's edge seen through thick glass, darker.
