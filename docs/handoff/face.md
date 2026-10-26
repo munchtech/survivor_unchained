@@ -4,7 +4,7 @@ Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES
 
 ## Paused here (Face 41, 26 Oct, coordinator wind-down): ear MR READY; next = the braid's ear corner
 Branch **face-37** (own junction; integration merged at 4cd57e50; 10 env-only commits behind since). Brows + pixie MR merged (6b118307). Scratch backed up to `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_a44c2c21\face41\` (B): `shoot.sh`, `m41.py`, every brief-sized script, sheets, `ear3\after`, `pixie3\after`, `pixie_before\` (what the owner failed), `j4\`, `j5\` crops.
-**The ear (owner 26 Oct: "lobe might stick too far away from head and this part here looks off, and the hair still seems to go over the ear on pixie despite what you say"):** MR READY at the commit after this one. In it:
+**The ear (owner 26 Oct: "lobe might stick too far away from head and this part here looks off, and the hair still seems to go over the ear on pixie despite what you say"):** MR READY (face-37 HEAD). In it:
 - `tools/assets/heroine_ear_shape.py`, three new body-post steps (heroine_body_post.py docstring):
   - 6b `--art`: the ear pulled in toward the skull. Lobe 20.4 to 12.2 mm, middle 18.8 to 14.7, top 13 to 10.2. The tragus is smoothed; the ear is found by position, not index; pieces and hair follow; done-mark `heroine_ear_shape`.
   - 7b `--paint`: the pink join was her face tone laid twice across the tragus. Every head paint is blended (`ear_join` mark); join C 0.108 to 0.07 against the cheek's 0.06.
@@ -15,7 +15,7 @@ Branch **face-37** (own junction; integration merged at 4cd57e50; 10 env-only co
 - Judges: j4 (max) passed the lobe and the join (PWN), failed the pixie. **j5 (max): pixie PASS-WITH-NOTES; "would the owner accept? Yes for the pixie".**
 - Full test 1051/0/8. Body 12 just runs heroine_body_post.py; the steps skip on their marks.
 **NEXT (j5's pushback: show the owner braid + pixie together):**
-1. The BRAID's ear corner: a dark tuft of blunt card ends over the lit helix root at lk40 (~12x45 px; it was there before this work, `B\..\c_braid.png`). Apply the same fade to the braid's cards (and check the ponytail at lk±40): fully clear within 1 mm of the helix-top sight lines, normal by 3.5 mm. Shoot copper/black/blonde at lk40 and lk-40, then one max judge.
+1. The BRAID's ear corner: a dark tuft of blunt card ends over the lit helix root at lk40 (~12x45 px; it was there before this work, `survivorsunchained_inputs\scratch_a44c2c21\c_braid.png`, cols: black before | deep | copper ear3 | copper now). Apply the same fade to the braid's cards (and check the ponytail at lk±40): fully clear within 1 mm of the helix-top sight lines, normal by 3.5 mm. Shoot copper/black/blonde at lk40 and lk-40, then one max judge.
 2. Night: `--time night` does nothing at the Look (`a_cnight` = day). Shoot the night pixie on the town close camera turned ~40.
 3. Smaller notes: a red tick below the tragus on fair skin (cut its red ~50%); the ear has no freckles and its concha is shaded cool (optional).
 Then the Face notes, diagnosed by the diag solver (commit cf2fce90 `--skin-set` takes texture files; frames and scripts in B\diag):
