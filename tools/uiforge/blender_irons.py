@@ -45,6 +45,13 @@ class Stage:
         B.suns()
         self.sc = sc
         self.suns = [bpy.data.objects[n] for n in ("key", "fill", "rim")]
+        # the house light with its cool strip low right turned down (SPEC light), so the iron's
+        # lower right falls into its dark crescent instead of a second bright rim
+        lt = SPEC.get("light", {})
+        for nd in bpy.context.scene.world.node_tree.nodes:
+            if nd.type == "MATH" and nd.operation == "MULTIPLY" and abs(nd.inputs[1].default_value - 2.5) < 1e-6:
+                nd.inputs[1].default_value *= lt.get("rim_world", 1.0)
+        self.suns[2].data.energy *= lt.get("rim_sun", 1.0)
         B.camera(W * self.S, H * self.S)
         self.iron = bpy.data.collections.new("iron")
         self.catch = bpy.data.collections.new("catch")
@@ -144,6 +151,73 @@ def iron(name, seed, state="", **kw):
     return facets(m, seed, **kw)
 
 
+def body_heat_material(name, seed, strength=1.0):
+    """A thick iron body warming through (the lock as the chain nears full): still the chain's iron
+    with its sheen, a dull red coming up from its core and fading toward its edges, which cool
+    first, broken by dark scale; only the hottest of it reaches the leading links' orange."""
+    m = C.iron_chain_material()
+    m.name = name
+    nt = m.node_tree
+    n, k = nt.nodes, nt.links
+    bsdf = n["Principled BSDF"]
+    gen = n.new("ShaderNodeTexCoord")
+    sep = n.new("ShaderNodeSeparateXYZ")
+    k.new(gen.outputs["Generated"], sep.inputs[0])
+    # the core: 1 in the middle of the face, 0 at its edge (generated coords span the body)
+    dx = n.new("ShaderNodeMath")
+    dx.operation = "SUBTRACT"
+    dx.inputs[1].default_value = 0.5
+    k.new(sep.outputs["X"], dx.inputs[0])
+    dy = n.new("ShaderNodeMath")
+    dy.operation = "SUBTRACT"
+    dy.inputs[1].default_value = 0.56
+    k.new(sep.outputs["Y"], dy.inputs[0])
+    cmb = n.new("ShaderNodeCombineXYZ")
+    k.new(dx.outputs[0], cmb.inputs["X"])
+    k.new(dy.outputs[0], cmb.inputs["Y"])
+    ln = n.new("ShaderNodeVectorMath")
+    ln.operation = "LENGTH"
+    k.new(cmb.outputs[0], ln.inputs[0])
+    core = n.new("ShaderNodeMapRange")
+    core.interpolation_type = "SMOOTHSTEP"
+    core.inputs["From Min"].default_value = 0.52
+    core.inputs["From Max"].default_value = 0.08
+    k.new(ln.outputs["Value"], core.inputs["Value"])
+    tco = n.new("ShaderNodeTexCoord")
+    mp = n.new("ShaderNodeMapping")
+    mp.inputs["Location"].default_value = (seed * 1.7, seed * 2.9, 0)
+    k.new(tco.outputs["Object"], mp.inputs["Vector"])
+    nz = n.new("ShaderNodeTexNoise")
+    nz.inputs["Scale"].default_value = 11.0
+    nz.inputs["Detail"].default_value = 5.0
+    k.new(mp.outputs[0], nz.inputs["Vector"])
+    crust = n.new("ShaderNodeMapRange")
+    k.new(nz.outputs["Fac"], crust.inputs["Value"])
+    crust.inputs["From Min"].default_value = 0.36
+    crust.inputs["From Max"].default_value = 0.62
+    crust.inputs["To Min"].default_value = 0.3
+    crust.inputs["To Max"].default_value = 1.0
+    heat = n.new("ShaderNodeMath")
+    heat.operation = "MULTIPLY"
+    k.new(core.outputs[0], heat.inputs[0])
+    k.new(crust.outputs[0], heat.inputs[1])
+    ramp = n.new("ShaderNodeValToRGB")
+    e = ramp.color_ramp.elements
+    e[0].color = B.hexc("#0c0100")
+    e[1].position = 1.0
+    e[1].color = B.hexc("#e8641e")
+    mid = e.new(0.55)
+    mid.color = B.hexc("#7a1404")
+    k.new(heat.outputs[0], ramp.inputs["Fac"])
+    k.new(ramp.outputs["Color"], bsdf.inputs["Emission Color"])
+    st = n.new("ShaderNodeMath")
+    st.operation = "MULTIPLY"
+    st.inputs[1].default_value = strength
+    k.new(heat.outputs[0], st.inputs[0])
+    k.new(st.outputs[0], bsdf.inputs["Emission Strength"])
+    return facets(m, seed, scale=6.0)
+
+
 def plate(name, color, seed):
     """A dark iron plate (a seat's floor): the chain's iron in a darker colour, less worn."""
     keep = dict(C.SPEC)
@@ -239,7 +313,7 @@ def dome(st, name, x, y, z, r, flat=0.55, mat=None):
     return st.add(o)
 
 
-def wear(st, ob, k0=0.22, k1=0.85, ztop=None, zw=0.0, seed=0):
+def wear(st, ob, k0=0.22, k1=0.85, ztop=None, zw=0.0, seed=0, zlow=None):
     """Rubbed bright where the iron is convex (its edges, a rivet's crown), and on its highest
     face if `ztop` (shown px) is given; broken up by noise. Written as the colour 'wear' that
     iron_chain_material reads."""
@@ -274,6 +348,8 @@ def wear(st, ob, k0=0.22, k1=0.85, ztop=None, zw=0.0, seed=0):
         if ztop is not None:
             z = v.co.z / (U * S)
             w = max(w, zw * min(1.0, max(0.0, (z - (ztop - 1.0)) / 1.0)))
+        if zlow is not None:                        # nothing rubs down in the hollows
+            w *= min(1.0, max(0.0, (v.co.z / (U * S) - zlow) / 1.2))
         nz = noise.noise(v.co * (1.0 / (U * S * 2.2)) + off)
         w = w * (0.6 + 0.4 * (nz + 1) / 2) * (0.75 + 0.25 * math.copysign(1, nz))
         ca.data[v.index].color = (w ** 1.2, w ** 1.2, w ** 1.2, 1)
@@ -342,7 +418,7 @@ def cuff(name, big=True):
     if big:
         hg, jt, lg = cs["hinge"], cs["joint"], cs["lug"]
         band = ring_band(st, "band", cx, cy, ri, ro, 7.0, seams=(hg["angle"], jt["angle"]), seed=seed, n=2200)
-        wear(st, band, ztop=7.0, zw=0.55, seed=1)
+        wear(st, band, ztop=7.0, zw=cs.get("zw", 0.8), seed=1)
         band.data.materials.append(mat)
         parts.append(band)
         # the hinge at 9 o'clock: three knuckles and a peened pin
@@ -463,6 +539,21 @@ def rrect(x0, y0, x1, y1, r, n=10):
     return B.outline(x0, y0, x1, y1, radius=r, n_round=n)
 
 
+def floor_material(name, seed):
+    """A seat's floor: a dark iron plate, rough and only half metal, so the house light lies on it
+    and the collar's shadow can be seen falling across it (a mirror-flat plate seen from above
+    reflects only the dark room and reads as a hole)."""
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = B.hexc(SPEC["seat"].get("floor", "#1e1b20"))
+    fs = SPEC["seat"]
+    b.inputs["Metallic"].default_value = fs.get("floor_metal", 0.2)
+    b.inputs["Roughness"].default_value = fs.get("floor_rough", 0.8)
+    b.inputs["Specular IOR Level"].default_value = fs.get("floor_spec", 0.3)
+    return facets(m, seed, scale=4.0, tilt=0.035, deep=1.8)
+
+
 def seat(k, state):
     sp = SPEC["seat"]
     cw = sp["canvas"]
@@ -470,17 +561,19 @@ def seat(k, state):
     ax, ay = sp["at"]
     s, f = sp["size"], sp["face"]
     rnd = random.Random(100 + k)
-    # path: the face's middle line, a hand-forged square (sides bowed a little, corners each their own)
+    # path: the face's middle line, a hand-forged square (sides bowed a little, corners each their
+    # own; every corner rounder than the inner wall's reach, so the sweep never folds)
     m = f / 2
     x0, y0, x1, y1 = ax + m, ay + m, ax + s - m, ay + s - m
-    pts = B.densify(B.outline(x0, y0, x1, y1, corners=[rnd.uniform(2.4, 3.6) for _ in range(4)], n_round=14), 0.12)
+    pts = B.densify(B.outline(x0, y0, x1, y1, corners=[rnd.uniform(3.9, 4.8) for _ in range(4)], n_round=18), 0.12)
     cxs, cys = (x0 + x1) / 2, (y0 + y1) / 2
     bow = [rnd.uniform(-0.35, 0.35) for _ in range(4)]
-    path = []
-    for (x, y) in pts:
+
+    def bowed(x, y):
         u, v = (x - cxs) / ((x1 - x0) / 2), (y - cys) / ((y1 - y0) / 2)
-        path.append((x + bow[0] * (1 - v * v) * (1 if u > 0 else -1) * (abs(u) > 0.95),
-                     y + bow[1] * (1 - u * u) * (1 if v > 0 else -1) * (abs(v) > 0.95)))
+        return (x + bow[0] * (1 - v * v) * (1 if u > 0 else -1) * (abs(u) > 0.95),
+                y + bow[1] * (1 - u * u) * (1 if v > 0 else -1) * (abs(v) > 0.95))
+    path = [bowed(x, y) for (x, y) in pts]
     n = len(path)
     nrm = []
     for i in range(n):
@@ -491,36 +584,65 @@ def seat(k, state):
     # outward: the normal must point away from the middle
     if (path[0][0] - cxs) * nrm[0][0] + (path[0][1] - cys) * nrm[0][1] < 0:
         nrm = [(-a, -b) for a, b in nrm]
-    top = 4.9
-    prof = [(m, 0.0), (m, top - 1.3)]
-    for i in range(1, 9):
-        t = i / 8 * math.pi / 2
-        prof.append((m - 0.9 + 0.9 * math.cos(t), top - 1.3 + 1.3 * math.sin(t) * 0.95))
-    for i in range(1, 16):
-        d = (m - 0.9) - (2 * m - 1.6) * i / 16
-        prof.append((d, top - 0.06 * math.sin(math.pi * i / 16) - 0.05))
-    for i in range(1, 7):
-        t = i / 6 * math.pi / 2
-        prof.append((-m + 0.7 - 0.7 * math.sin(t), top - 0.05 - 0.7 * (1 - math.cos(t))))
-    prof += [(-m, 1.6), (-m, 0.0), (0.0, 0.0)]
+    # the profile (d outward from the middle line, z up): a battered outer wall; a rounded face
+    # whose flanks lie near 30 deg, so seen from above the flank toward the light shows a clean
+    # stroke of worn steel (the outer edge of the top and left bars, the inner edge of the bottom
+    # and right ones) and the other flank stays dark; then a chamfer down into the seat (lit on
+    # the lower right, in shade on the upper left) and a plain wall to the floor `sink` px below
+    # the crown, the collar's shadow lying on the floor beside it
+    top, hz, sink = sp.get("top", 6.5), sp.get("round", 1.2), sp.get("sink", 4.0)
+    cp, cw, ca = sp.get("cap_p", 1.3), sp.get("chamfer", 1.5), math.radians(sp.get("chamfer_deg", 35))
+    zc, zf = top - hz, top - sink
+    zch = zc - cw * math.tan(ca)
+
+    def surf(d):
+        if d >= -m:
+            return zc + hz * (1 - min(1.0, abs(d) / m) ** cp)
+        return zc - (-m - d) * math.tan(ca)
+    fo = sp.get("fillet", 0.7)                       # the outer wall rounds into the face
+    prof = [(m + 0.5, 0.0)]
+    for i in range(1, 6):
+        prof.append((m + 0.5 * (1 - i / 6) ** 1.5, (zc - fo) * i / 5))
+    for i in range(1, 7):                            # quarter round from the wall up onto the face
+        t = math.pi / 2 * i / 6
+        d = m + 0.08 - fo * 0.45 * (1 - math.cos(t)) + 0.0
+        prof.append((d, zc - fo + (fo + hz * (1 - min(1.0, abs(d) / m) ** cp)) * math.sin(t)))
+    for i in range(1, 36):
+        d = m * (1 - 2 * i / 36)
+        if d < prof[-1][0]:
+            prof.append((d, surf(d)))
+    for i in range(0, 9):
+        d = -m - cw * i / 8
+        prof.append((d, surf(d)))
+    prof += [(-m - cw - 0.05, zf - 0.25), (-m - cw - 0.05, 0.0), (0.0, 0.0)]
+    # eight rank dimples punched in the lower bar's lit inner slope, spread wide enough to count
     dim = []
-    dx0, dx1 = ax + 12.5, ax + s - 12.5
+    rp, dp = sp.get("dimple_r", 1.3), sp.get("dimple_depth", 0.9)
+    span, dd = sp.get("dimple_span", 9.5), sp.get("dimple_d", 1.6)
+    dx0, dx1 = ax + span, ax + s - span
     for i in range(sp["dimples"]):
-        dim.append((dx0 + (dx1 - dx0) * i / (sp["dimples"] - 1) + rnd.uniform(-0.25, 0.25), ay + s - m + rnd.uniform(-0.15, 0.15)))
+        qx = dx0 + (dx1 - dx0) * i / (sp["dimples"] - 1) + rnd.uniform(-0.2, 0.2)
+        qy = bowed(qx, ay + s - m)[1] - dd + rnd.uniform(-0.08, 0.08)
+        dim.append((qx, qy))
+    Rs = (rp * rp + dp * dp) / (2 * dp)               # the punch's ball
+    zpit = surf(-dd) - dp + Rs                        # its centre
 
     def mod(i, x, y, d, z):
         px, py = x + nrm[i][0] * d, y + nrm[i][1] * d
         for (qx, qy) in dim:
             r2 = (px - qx) ** 2 + (py - qy) ** 2
-            if r2 < 1.2 ** 2 and z > top - 0.6:
-                z -= 0.6 * math.sqrt(1 - r2 / 1.44)
+            if r2 < Rs * Rs:
+                z = min(z, max(zpit - math.sqrt(Rs * Rs - r2), zch - 0.6))
         return d, z
 
+    if "rim" in sp:
+        st.suns[2].data.energy *= sp["rim"]
     col = sweep(st, "collar", path, nrm, prof, mod)
-    wear(st, col, k0=0.3, k1=1.0, seed=k)
-    col.data.materials.append(iron("collar", 40 + k, state=state, scale=7.0, tilt=0.13))
-    fl = slab(st, "floor", rrect(ax + f - 0.6, ay + f - 0.6, ax + s - f + 0.6, ay + s - f + 0.6, 1.0), 0.0, 1.0, 0.3)
-    fl.data.materials.append(plate("floor", "#0c0b0e", 60 + k))
+    wear(st, col, k0=sp.get("k0", 0.2), k1=0.95, ztop=top, zw=sp.get("zw", 0.45), seed=k, zlow=zch - 0.4)
+    col.data.materials.append(iron("collar", 40 + k, state=state, scale=7.0, tilt=0.12))
+    e = m + 1.0
+    fl = slab(st, "floor", rrect(ax + e, ay + e, ax + s - e, ay + s - e, 1.2), 0.0, zf, 0.25)
+    fl.data.materials.append(floor_material("floor", 60 + k))
     tagn = {"": "seat", "hot": "seat_hot"}[state]
     st.render(f"{tagn}_{k}")
     if state == "":
@@ -580,7 +702,8 @@ def lock(state):
     slot = [(ax - 0.7, by + 20.2), (ax + 0.7, by + 20.2), (ax + 0.9, by + 24.2), (ax - 0.9, by + 24.2)][::-1]
     body = slab(st, "body", body_pts, 1.5, 7.5, 2.0, holes=[kh])
     wear(st, body, k0=0.25, k1=0.9, seed=1)
-    body.data.materials.append(iron("body", 120, state="hot" if state == "hot" else "", scale=6.0))
+    body.data.materials.append(body_heat_material("body", 120, SPEC["lock"].get("heat", 1.0)) if state == "hot"
+                               else iron("body", 120, scale=6.0))
     core = slab(st, "core", circle(ax, by + 21.5, 3.6, 24), 2.0, 3.0, 0.2)
     core.data.materials.append(B.plain_material("dark", "#050404", 0.2, 0.8))
     slt = slab(st, "slot", slot, 6.6, 7.7, 0.1)

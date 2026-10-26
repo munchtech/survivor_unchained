@@ -68,14 +68,14 @@ def radial(img, cx, cy, r):
     return np.hypot((xx + 0.5) / 2 - cx, (yy + 0.5) / 2 - cy) < r
 
 
-def glass(r, size, ss=3):
+def glass(r, size, ss=3, curve=1.0, soft=0.14, window=2.2, rimlight=0.8):
     """The glass's light alone (2x file, premultiplied): a sphere cap of thick old glass under the
     house light. rgb is the light it adds, a how much it darkens what is under it."""
     N = size * 2 * ss
     k = N / size
     yy, xx = (np.mgrid[0:N, 0:N].astype(np.float32) + 0.5) / k - size / 2
     rho = np.hypot(xx, yy)
-    Rc = r * 1.18
+    Rc = r * curve
     nx, ny = xx / Rc, -yy / Rc
     nz = np.sqrt(np.clip(1 - nx * nx - ny * ny, 0, 1))
     Rx, Ry, Rz = 2 * nz * nx, 2 * nz * ny, 2 * nz * nz - 1
@@ -95,12 +95,13 @@ def glass(r, size, ss=3):
     front = Rx * w0[0] + Ry * w0[1] + Rz * w0[2]
     wu, wv = 0.16, 0.26
     sd = np.where(v < wv - wu, np.maximum(np.abs(u) - wu, -wv - v), np.hypot(u, v - (wv - wu)) - wu)
-    win = np.clip(0.5 - sd / 0.05, 0, 1) * (front > 0)
+    win = np.clip(0.5 - sd / soft, 0, 1) * (front > 0)
     win *= np.clip(0.55 + 0.45 * (v + wv) / (2 * wv), 0, 1)          # brighter at its head
     light = np.zeros((N, N, 3), np.float32)
-    light += (Fr * 6.0 * win)[..., None] * np.array([1.0, 0.95, 0.88], np.float32)
+    light += (Fr * window * win)[..., None] * np.array([1.0, 0.95, 0.88], np.float32)
     light += (Fr * 30.0 * lobe([-0.62, 0.62, 0.48], 900))[..., None] * np.array([1.0, 0.94, 0.85], np.float32)
-    light += (Fr * 1.6 * lobe([0.7, -0.62, 0.35], 14))[..., None] * np.array([0.72, 0.77, 1.0], np.float32)
+    # the cool strip low right, only where the glass turns away at its rim (no gloss blob)
+    light += (Fr * rimlight * lobe([0.7, -0.62, 0.35], 14) * np.clip(rho / r, 0, 1) ** 8)[..., None] * np.array([0.72, 0.77, 1.0], np.float32)
     light = np.minimum(light, np.array([0.30, 0.30, 0.30]) + (Fr * 30.0 * lobe([-0.62, 0.62, 0.48], 900))[..., None])
     # the refraction ring: the rim 3 px darker, its lower-right inner edge a 1 px bright line
     ring = np.clip((rho - (r - 3.2)) / 3.0, 0, 1) ** 1.3 * 0.42
