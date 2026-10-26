@@ -53,12 +53,14 @@ PRESETS = {
         dict(method='frac', seed=1131, ax=(1.5, 1.4, 1.15), cz=0.75, fn=9, ftop=4, fup=(0.45, 0.85), fd=(0.72, 0.95), fk=0.06, chips=7, chip_d=(0.06, 0.15), ledges=2, splits=1, split_w=0.05, split_d=0.13, lump=0.06, amp=0.01, freq=0.9, fine=0.006, foot=-0.45, cut=-0.3),
     ]),
     # field rock: angular, broken faces with soft bevels, lichened in the shader (the kit's 'rock': scale ~0.6, squashed)
+    # (lf5c, the lf0 triage on the boulders and field rocks: "grey block-like": now broken from planes (sculpt_frac): an angular
+    # chunk, a tilted slab standing out of the ground, a low half-sunk one with a ledge, one cracked in two, a chipped one)
     'fieldrock': dict(lods=(1600, 500, 160), shadow=True, variants=[
-        dict(seed=201, ax=(1.6, 1.35, 1.25), cz=0.75, planes=9, k=0.07, tilt=1.0, amp=0.05, freq=1.6, fine=0.014, foot=-0.45, cut=-0.3),
-        dict(seed=211, ax=(1.7, 1.2, 1.2), cz=0.8, planes=8, k=0.06, tilt=1.0, amp=0.05, freq=1.8, fine=0.014, foot=-0.45, cut=-0.3),
-        dict(seed=223, ax=(1.5, 1.4, 1.3), cz=0.7, planes=11, k=0.08, tilt=1.0, amp=0.04, freq=1.4, fine=0.012, foot=-0.45, cut=-0.3),
-        dict(seed=227, ax=(1.65, 1.3, 1.1), cz=0.85, planes=7, k=0.05, tilt=0.9, amp=0.06, freq=2.0, fine=0.016, foot=-0.45, cut=-0.3),
-        dict(seed=229, ax=(1.55, 1.45, 1.2), cz=0.75, planes=10, k=0.07, tilt=1.0, amp=0.05, freq=1.6, fine=0.014, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1201, ax=(1.6, 1.35, 1.2), cz=0.7, fn=10, ftop=4, fup=(0.5, 0.85), fd=(0.74, 0.93), fk=0.05, chips=7, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.05, split_d=0.12, lump=0.04, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1211, ax=(1.75, 1.0, 1.2), cz=0.6, fn=9, ftop=3, fup=(0.6, 0.85), fd=(0.8, 0.94), fk=0.05, chips=5, chip_d=(0.05, 0.12), strata=5, strata_d=0.03, lean=16, lump=0.04, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1223, ax=(1.6, 1.45, 1.05), cz=0.5, sink=0.1, fn=10, ftop=5, fup=(0.65, 0.9), fd=(0.76, 0.93), fk=0.06, chips=6, chip_d=(0.06, 0.13), ledges=2, lump=0.05, amp=0.012, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1227, ax=(1.65, 1.3, 1.1), cz=0.7, fn=11, ftop=5, fup=(0.5, 0.85), fd=(0.76, 0.94), fk=0.05, chips=6, chip_d=(0.05, 0.12), splits=1, split_w=0.11, split_d=0.32, lump=0.04, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1229, ax=(1.55, 1.45, 1.15), cz=0.7, fn=12, ftop=5, fup=(0.45, 0.85), fd=(0.72, 0.93), fk=0.045, chips=9, chip_d=(0.05, 0.14), ledges=1, lump=0.05, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
     ]),
     # cliff / outcrop chunk: blocky, stratified in layers (each its own inset, a joint between), stacks (scale ~5: 17 m)
     'cliff': dict(lods=(6000, 1800, 500), shadow=True, variants=[
@@ -79,13 +81,16 @@ PRESETS = {
     # from over it, two soft 'planes' and one fracture breaking a side off the dome, its body deeper than its crown
     # ('az_lo') and taken in a little under its widest ('waist': the river's undercut, shown where it stands tall);
     # its sizes and tilts, and how proud it stands, Dressing's (the causeway's data)
+    # (lf5c, lf4: the stepping stones read as brown loaves, smooth domes with pale foam rings: now river stones broken from planes
+    # (sculpt_frac): a low faceted crown (three near-level faces, no flat lid, no dome), sides leaning back ('side_z'), worn
+    # rims 3 cm, chips off its edges, one in three cracked or stepped; the crown at about 0.75 m as before (Dressing's 'top')
     'stepping': dict(lods=(1200, 400, 140), shadow=False, variants=[
-        dict(seed=501, ax=(0.65, 0.49, 0.25), sides=6, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
-        dict(seed=503, ax=(0.68, 0.42, 0.22), sides=5, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
-        dict(seed=509, ax=(0.7, 0.4, 0.27), sides=7, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
-        dict(seed=537, ax=(0.6, 0.48, 0.24), sides=5, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
-        dict(seed=523, ax=(0.65, 0.45, 0.26), sides=7, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
-        dict(seed=541, ax=(0.68, 0.52, 0.23), sides=6, cz=0.5, az_lo=0.6, side_lean=(0.1, 0.35), k=0.06, planes=2, tilt=0.7, amp=0.07, freq=1.5, fine=0.006, foot=-0.2, cut=0.05, fract=1, fk=0.02, fdepth=(0.62, 0.72), fup=(0.35, 0.6), waist=0.08, waist_h=0.2),
+        dict(method='frac', seed=1501, ax=(0.552, 0.367, 0.25), az_lo=0.6, cz=0.52, fn=9, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1503, ax=(0.578, 0.315, 0.22), az_lo=0.6, cz=0.52, fn=8, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), splits=1, split_w=0.025, split_d=0.05, lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1509, ax=(0.595, 0.3, 0.27), az_lo=0.6, cz=0.52, fn=10, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), ledges=1, ledge_d=(0.12, 0.2), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1537, ax=(0.51, 0.36, 0.24), az_lo=0.6, cz=0.52, fn=8, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1523, ax=(0.552, 0.338, 0.26), az_lo=0.6, cz=0.52, fn=10, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), splits=1, split_w=0.025, split_d=0.05, lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1541, ax=(0.578, 0.39, 0.23), az_lo=0.6, cz=0.52, fn=9, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), ledges=1, ledge_d=(0.12, 0.2), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
     ]),
 }
 
@@ -338,7 +343,9 @@ def sculpt_frac(prm):
     rng = np.random.default_rng(prm['seed'])
     D, F = icosphere(7)
     ax = np.array(prm['ax'], np.float64)
-    re = 1 / np.sqrt(((D / ax) ** 2).sum(1))
+    # ('az_lo': its body's half depth under its middle, if not ax z: a stone deeper than its crown)
+    axd = np.where(D[:, 2:3] < 0, np.array([ax[0], ax[1], prm.get('az_lo', ax[2])]), ax)
+    re = 1 / np.sqrt(((D / axd) ** 2).sum(1))
 
     def support(n):
         return math.sqrt(((ax * n) ** 2).sum())
@@ -358,7 +365,7 @@ def sculpt_frac(prm):
     a1 = rng.uniform(0, 2 * math.pi)
     for j in range(ns):
         th = a1 + 2 * math.pi * (j + rng.uniform(-0.3, 0.3)) / max(ns, 1)
-        z = rng.uniform(-0.25, 0.3)
+        z = rng.uniform(*prm.get('side_z', (-0.25, 0.3)))
         n = np.array([math.cos(th) * math.sqrt(1 - z * z), math.sin(th) * math.sqrt(1 - z * z), z])
         R.append(plane(n, support(n) * rng.uniform(*prm['fd'])))
     r = softmin(np.stack(R, 1), prm['fk'])
@@ -575,7 +582,7 @@ def mesh(only=None):
                 c = band - band.mean(0)
                 ev = np.linalg.eigh(np.cov(c.T))[1]
                 ext = np.ptp(c @ ev, 0)
-                print(f'  stepping {vi}: sides {prm["sides"]}, dome {zt.max() - np.percentile(zt, 3):.3f} m, footprint {ext.max():.2f} x {ext.min():.2f} m, L:W {ext.max() / ext.min():.2f}')
+                print(f'  stepping {vi}: sides {prm.get("sides", prm.get("fn"))}, dome {zt.max() - np.percentile(zt, 3):.3f} m, footprint {ext.max():.2f} x {ext.min():.2f} m, L:W {ext.max() / ext.min():.2f}')
             print(f'  {name} {vi}: {len(F)} dense tris, size {np.ptp(V, 0).round(2)}, edge>0.5 {np.mean(C[:, 0] > 0.5):.2f} cavity>0.5 {np.mean(C[:, 1] > 0.5):.2f} broad>0.5 {np.mean(C[:, 2] > 0.5):.2f}')
         tris = []
         names = ['lod0', 'lod1', 'lod2'] + (['shadow'] if pre['shadow'] else [])
