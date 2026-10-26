@@ -551,9 +551,10 @@ def dress(parts, d, seed):
                 lim = (x0 + 0.01 * u, x1 - 0.01 * u, z0 + 0.01 * u, z1 - 0.01 * u)
                 if wup < 0.85 and rng() < d.get('moss', 0.6):
                     # a slope (a roof slab, local z down it): moss along its lower edge, where the water runs off
-                    tn = MOSS_DARK.lerp(MOSS_SAGE, rng(0.0, 0.7)) * rng(0.85, 1.15)
-                    cx = x0 + sx * rng(0.3, 0.7)
-                    out.append(Part(_cushion(rng, cx, z1 - sz * 0.14, y, sx * rng(0.25, 0.5), sz * rng(0.1, 0.17), rag=0.38, n=13, dome=0.006, lim=lim), 'soil', tn, pt.at, jitter=0.0))
+                    # (sage, near the slab's own value: the dark cushion read as a hole under the moon)
+                    tn = MOSS_SAGE * rng(0.95, 1.3)
+                    cx = x0 + sx * rng(0.4, 0.6)
+                    out.append(Part(_cushion(rng, cx, z1 - sz * 0.12, y, sx * rng(0.42, 0.6), sz * rng(0.09, 0.15), rag=0.3, n=13, dome=0.006, lim=lim), 'soil', tn, pt.at, jitter=0.0))
                 elif rng() < d.get('moss', 0.6):
                     k = d.get('cover', 0.4) * rng(0.6, 1.25)
                     cx, cz = x0 + sx * rng(0.25, 0.75), z0 + sz * rng(0.25, 0.75)
@@ -2236,10 +2237,16 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
         parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.45, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06 - Vector((0, sag, 0)))) @ frame, cap='stone', jitter=0.0))
         course = 0.56
         nk = int(run / course + 0.999)
+        # (lf6d) old: courses of unequal depth (the quarry's beds), slabs of unequal width, so no grid shows
+        cvar = ro.get('course_var', 0.0)
+        cds = [course * (1 + cvar * (rng(-1, 1) if cvar else 0.0)) for _ in range(nk)]
+        cds = [c * run / sum(cds) * nk * course / run for c in cds] if cvar else cds
+        s_at = [sum(cds[:k]) for k in range(nk)]
         for k in range(nk):
-            s0 = k * course
+            s0 = s_at[k]
+            course = cds[k]
             lift = 0.035  # each course rides on the one below at its tail
-            xs = lay_course(-ln / 2, ln / 2, 0.82, rng, k % 2 == 1)
+            xs = lay_course(-ln / 2, ln / 2, ro.get('bl', 0.82), rng, k % 2 == 1)
             t = (s0 + course / 2) / run
             for a, b in zip(xs, xs[1:]):
                 xm = (a + b) / 2
@@ -2251,6 +2258,9 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
                 m = max(m, 0.35 * smooth01(0.62, 0.8, mz))
                 dark = 1.0 - 0.3 * smooth01(0.7, 1.0, t)
                 tn = slab * rng(vlo, vhi) * dark
+                if ro.get('cluster'):
+                    # weathering in drifts across the slabs (wet, darker; dry, paler), not slab by slab
+                    tn = tn * (1 + ro['cluster'] * hnoise(Vector((xm * 0.8, 0, s0 * 1.1 + sx * 5.3)), 63))
                 if rng() < p_lichen:
                     tn = tn.lerp(Vector((0.86, 0.85, 0.74)), rng(0.3, 0.6))  # pale lichen
                 tn = tn.lerp(moss * rng(0.85, 1.1), min(1.0, m * 0.9))

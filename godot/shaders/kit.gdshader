@@ -563,7 +563,8 @@ void fragment() {
 	vec2 mo = vec2(0.0);
 	float kept = 1.0;
 	if (v_fade > 0.0) {
-		float ff = v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : smoothstep(crown_keep, crown_keep + 0.6, v_y));
+		// (lf6d: with stump_top, the bark cut level and hard, a saw's cut, not eased: the eased cut's band read as a dome)
+		float ff = v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
 		if (coverage_cut(FRAGCOORD.xy) < ff) discard;
 	}
 #else
@@ -968,7 +969,21 @@ void fragment() {
 		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
 		// facing up, so the stump reads as a sawn top with its bark round it; stump_top 0: as before
 		if (v_fade > 0.0 && !FRONT_FACING && stump_top > 0.0) {
-			ALBEDO = mix(ALBEDO, stump_wood * mix(0.85, 1.1, fract(v_jit * 7.3)), stump_top);
+			// (lf6d) the cut's face where the view ray crosses the cut's plane (local y = crown_keep): its growth rings
+			// about the trunk's middle, a darker heart, the pale sapwood under the bark, a check split across it
+			mat4 im = inverse(MODEL_MATRIX);
+			vec3 lp = (im * (INV_VIEW_MATRIX * vec4(VERTEX, 1.0))).xyz;
+			vec3 lc = (im * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+			float tc = (crown_keep - lc.y) / min(lp.y - lc.y, -1e-4);
+			vec2 hc = lc.xz + (lp.xz - lc.xz) * tc;
+			float rr = length(hc);
+			float rw = length(lp.xz);
+			float ring = 0.5 + 0.5 * sin(rr * 160.0 + 2.0 * sin(atan(hc.y, hc.x) * 3.0 + v_jit * 6.0));
+			vec3 cut = stump_wood * mix(0.85, 1.1, fract(v_jit * 7.3)) * mix(0.78, 1.0, ring);
+			cut *= mix(0.72, 1.0, smoothstep(0.0, 0.05, rr));
+			cut = mix(cut, stump_wood * 1.25, smoothstep(0.7, 0.92, rr / max(rw, 1e-3)) * 0.6);
+			cut *= 1.0 - 0.45 * (1.0 - smoothstep(0.004, 0.012, abs(dot(hc, vec2(cos(v_jit * 6.28), sin(v_jit * 6.28)))))) * step(rr, rw * 0.8);
+			ALBEDO = mix(ALBEDO, cut, stump_top);
 			NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, stump_top));
 		}
 	}
