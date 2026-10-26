@@ -2,7 +2,11 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Paused here (Face 40, 22 Oct, coordinator wind-down); next:
+## Face 41 (25-26 Oct): brows + pixie ear MR READY (face-37)
+F41 scratch = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\a44c2c21-ed7f-40ee-bf4a-842fa5db11c1\scratchpad\face41` (`shoot.sh`, `m41.py` brow core/skin measure (mask from F40 b3\after\bw_black_fair.png), `f1\` final frames, `j3\` crops). Pixie slash fixed (57dc08a3: `pixie_burn_line` clip had no upper limit). Deep brows per hair colour (d26a860d, e23f8f2d: `target_mode` in heroine_paint.gdshaderinc, `People.BrowTargets`; Look night V/skin black .37/.39, brown .44/.47, copper .49/.53, blonde .64/.72). Copper on fair: BrowCopper .8/1.0, strength .87. **Judge j3 (max): deep brows PWN, brown-skin PASS, copper on fair PASS, pixie ear PWN: ship.** Full test 1051/0/8.
+Open notes (later list): pixie 3-6 px dark specks at the ear's top front at lk40 (fade the scalp shade to 0 within ~10 mm above the ear's clearance line); **black hair reads navy-indigo at the Look night** (hair owner); after the SKIN cast fix re-run the brow numbers (accept within ±0.04, darkest-10% hue 340-40). Next: the Face notes (neck-base purple patch, throat shadow, face paler than torso at the Look, left forearm specks, jaw/cheek smudges), then SKIN diagnosis only.
+
+## Paused here (Face 40, 22 Oct, coordinator wind-down) (history)
 Worktree `.claude/worktrees/face-37`, branch **face-37** (own junction; integration merged at 2c45b07f). F40 = coordinator scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\67a4f142-1816-491a-be2f-c6d6488eb39a\scratchpad\face40` (every brief, sheet and verdict by round; `shoot.sh`, `f1.txt` shot lines, `browm.py`/`b3\m3.py` brow measures). Rebuild C# before every shoot; judges are su-lead-max subagents, solvers su-lead-high at medium.
 **Merged:** eyes2-40 (eye follow-ups, 5e72ce4a). **Edge-39 leftover hair notes: closed as known (coordinator).**
 On face-37, built, NOT merged:
