@@ -477,6 +477,7 @@ FRONT_GAP = 0.05                     # OKLab L the ear's front gains over her ch
                                      # the 0.035 a lit rim may keep (measured face 42, braid copper at the Look turned 40)
 FRONT_MAX = 0.06                     # the most L taken off
 FRONT_C = 0.35                       # its chroma raised by this share at the full cut (it rendered 0.83x the cheek's)
+FRONT_SOFT = 0.001                   # m: the mask's 3D low-pass (its edge eased over her ear's mesh, ~2-3 mm a ring)
 
 
 def front_tone(art, faces=None, report=True):
@@ -501,7 +502,10 @@ def front_tone(art, faces=None, report=True):
         t = (P[:, 1] - y0) / (y1 - y0)
         dz = P[:, 2] - f["zf"]
         sel = (np.sign(P[:, 0]) == sx) & (t > 0.1) & (t < 1.1) & (dz > -0.015) & (dz < 0.02)
-        sides.append((sx, f, F[sel[F].all(1)], cKDTree(P[f["ear"]])))
+        # (each point's distance to her ear's points, laid on the texels barycentric: face 43 found the texel's own
+        # distance to those points, spaced 2-3 mm, made the mask a comb, a darkened tooth round each point and the
+        # paint between left pale, the "ladder" of 3-4 pale bars at the Look turned 40)
+        sides.append((sx, f, F[sel[F].all(1)], cKDTree(P[f["ear"]]).query(P)[0]))
     for fn in paints:
         path = os.path.join(tex, fn)
         if FRONT_MARK in bs.comment(path):
@@ -511,21 +515,26 @@ def front_tone(art, faces=None, report=True):
         size = img.size[0]
         A = np.asarray(img, np.float32) / 255
         out = A.copy()
-        for sx, f, T, et in sides:
-            iy, ix, X = _raster(UV, T, P, size)
+        for sx, f, T, dv in sides:
+            iy, ix, XD = _raster(UV, T, np.c_[P, dv], size)
+            X, de = XD[:, :3], XD[:, 3]
             lab = he.oklab(_lin(A[iy, ix].astype(np.float64)))
             y0, y1 = f["y"]
             t = (X[:, 1] - y0) / (y1 - y0)
             dz = X[:, 2] - f["zf"]
-            de = et.query(X)[0]
             ear = (de < 0.0007) & (dz > -0.007) & (t > 0.3) & (t < 0.9)
             cheek = (de > 0.004) & (dz > 0.004) & (dz < 0.012) & (t > 0.3) & (t < 0.9)
             cut = float(np.clip(lab[ear, 0].mean() - lab[cheek, 0].mean() + FRONT_GAP, 0, FRONT_MAX))
             w = _band(t, FRONT_T) * _ss((dz + FRONT_Z[0]) / (FRONT_Z[0] - FRONT_Z[1])) * _ss((FRONT_EAR[1] - de) / (FRONT_EAR[1] - FRONT_EAR[0]))
+            lo = X.min(0) - 0.01
+            w = _lowpass(X, w[:, None], np.ones(len(X), np.float32), FRONT_SOFT, lo,
+                         tuple(np.ceil((X.max(0) + 0.01 - lo) / VOX).astype(int) + 1))[0][:, 0]
             new = lab.copy()
             new[:, 0] -= w * cut
             new[:, 1:] *= (1 + FRONT_C * w * cut / FRONT_MAX)[:, None]
             out[iy, ix] = _srgb(np.clip(he.unoklab(new), 0, 1)).astype(np.float32)
+            if os.environ.get("FRONT_DBG"):                  # (the mask itself, green, to see its shape in a shot)
+                out[iy, ix, 1] = np.maximum(out[iy, ix, 1], w.astype(np.float32))
             if report:
                 print("EAR_FRONT: %s side %+d: ear front L %.3f, cheek %.3f: cut %.3f over %d texels" % (
                     fn, sx, lab[ear, 0].mean(), lab[cheek, 0].mean(), cut, int((w > 0.5).sum())))
