@@ -255,9 +255,14 @@ uniform float ashlar_edge = 0.1;        // its arrises this much darker (worn, d
 uniform float plaster_stain = 0.15;     // plaster stained to (1 - this) in streaked patches
 uniform float eave_run = 0.25;          // the eave's run-off: (1 - this) over its lowest 0.6-0.9 m
 uniform float roof_blotch = 0.1;        // 2-4 m blotches this much toward grey-brown, lighter or darker
+uniform float roof_blotch_clay = 0.24;  // (r2) the same on clay, and a finer darker layer
 uniform float lichen = 0.6;             // lichen flecks in patches (clay), mostly on the lower third
-uniform vec3 window_glow = vec3(1.0, 0.46, 0.15);
-uniform float window_k = 1.6;
+uniform vec3 window_hot = vec3(1.0, 0.6, 0.24);    // (r2) the pane's hot spot
+uniform vec3 window_edge = vec3(0.85, 0.3, 0.06);  // its edges, a deeper amber
+uniform float window_k = 1.9;
+uniform float window_edge_k = 0.55;
+uniform float window_bake = 1.2;   // the bakery's windows this much brighter again
+global uniform vec4 town_bakery;   // the bakery's front (world) and the radius its windows are in (0: none)
 uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above the ground (red < 0.4 m, green < 1.2, blue < 3), to check the ground map reaches the wall
 varying vec4 v_wall;
 varying flat float v_stone;
@@ -644,11 +649,18 @@ void fragment() {
 		// (E9d) a lit window: the glass (its sheet region) on about one wall piece in three glows warm from inside, at
 		// dawn and by night only; brighter low (the hearth, a table's candle), uneven across the old crown glass
 		vec2 gl = (UV - vec2(0.875, 0.8125)) / vec2(0.125, 0.09375);
+		// (r2: the bakery on the square's edge, ZoneView.Town's town_bakery: its windows always lit, hotter, brighter)
+		float bake = town_bakery.w > 0.0 ? 1.0 - smoothstep(town_bakery.w * 0.8, town_bakery.w, length(v_wp - town_bakery.xyz)) : 0.0;
 		if (town_lit > 0.001 && gl.x > 0.0 && gl.x < 1.0 && gl.y > 0.0 && gl.y < 1.0
-				&& wall_hash(vec2(v_wall.b * 91.7 + 0.37, floor(v_wall.r * 8.0) * 3.1)) < window_share) {
+				&& (bake > 0.5 || wall_hash(vec2(v_wall.b * 91.7 + 0.37, floor(v_wall.r * 8.0) * 3.1)) < window_share)) {
 			float wn = 0.6 + 0.4 * wall_noise(v_wp.xz * 2.7 + v_wp.y * 3.3);
 			float low = 1.0 - 0.45 * smoothstep(0.0, 1.4, fract(h / 2.9) * 2.9 - 0.9);
-			EMISSION += window_glow * window_k * town_lit * wn * low * (0.75 + 0.5 * dot(c.rgb, LW) / 0.12);
+			// (r2: the panes read flat cream: a deep amber with a hot spot low in the middle (the fire or the candle
+			// seen through the old glass), the edges falling to a darker orange so the colour holds after the tonemap)
+			float hot = exp(-dot((gl - vec2(0.5, 0.62)) * vec2(1.6, 1.9), (gl - vec2(0.5, 0.62)) * vec2(1.6, 1.9)) * 2.2);
+			hot *= 0.8 + 0.4 * wall_hash(vec2(v_wall.b * 13.1, floor(v_wall.r * 8.0)));
+			vec3 wc = mix(window_edge, window_hot, hot) * mix(window_edge_k, window_k, hot);
+			EMISSION += wc * town_lit * wn * low * (1.0 + bake * window_bake) * (0.75 + 0.5 * dot(c.rgb, LW) / 0.12);
 			ALBEDO *= 0.5;
 			ROUGHNESS = 0.2;
 		}
@@ -748,13 +760,22 @@ void fragment() {
 			// 2-4 m blotches toward grey-brown, lighter or darker
 			float bn = wall_noise(v_wp.xz * 0.33 + 17.0 + v_wall.b * 3.0);
 			float bl = dot(col, LW);
-			col = mix(col, vec3(bl) * vec3(1.05, 0.98, 0.9), roof_blotch * 2.5 * abs(bn - 0.5) * 2.0) * (1.0 + roof_blotch * (2.0 * bn - 1.0));
-			// lichen on clay: flecks (5-15 cm) in patches, most on the lower third, ochre or grey-green
+			// (E9d r2: the clay still read clean, its rows even orange: on clay the blotches stronger, a second finer layer
+			// (1-2 m), and leaning dark (weathered clay goes brown-grey, it doesn't bleach))
+			float rb = ax.r > 0.9 ? roof_blotch_clay : roof_blotch;
+			float bs = 2.0 * bn - 1.0;
+			col = mix(col, vec3(bl) * vec3(1.05, 0.97, 0.88), rb * 2.5 * abs(bs)) * (1.0 + rb * (bs > 0.0 ? 0.45 * bs : bs));
+			if (ax.r > 0.9) {
+				float bf = wall_noise(v_wp.xz * 0.8 + 41.0 + v_wall.b * 5.0);
+				col *= 1.0 - rb * 0.9 * smoothstep(0.45, 0.8, bf) * (0.7 + 0.3 * wall_noise(v_wp.xz * 3.1));
+			}
+			// lichen on clay: flecks (5-15 cm) in patches, most on the lower third, ochre or grey-green; (r2) its value
+			// taken from the clay's own (a little lighter), not set: on shaded clay it stood as pale grey camouflage
 			if (ax.r > 0.9) {
 				float lp = smoothstep(0.55, 0.7, wall_noise(v_wp.xz * 0.6 + v_wall.b * 11.0)) * mix(1.0, 0.35, smoothstep(1.2, 2.4, v_rh));
 				float lf = smoothstep(0.62, 0.7, wall_noise(v_wp.xz * 9.0 + v_wp.y * 4.0));
-				vec3 lc = mix(vec3(0.62, 0.53, 0.30), vec3(0.50, 0.53, 0.44), wall_noise(v_wp.xz * 1.3));
-				col = mix(col, lc * (0.8 + 0.3 * wall_noise(v_wp.xz * 23.0)), lichen * lp * lf);
+				vec3 lc = mix(vec3(1.18, 1.0, 0.56), vec3(0.96, 1.02, 0.84), wall_noise(v_wp.xz * 1.3));
+				col = mix(col, lc * dot(col, LW) * 1.15 * (0.85 + 0.25 * wall_noise(v_wp.xz * 23.0)), lichen * lp * lf);
 			}
 		}
 		float rough = ax.g;

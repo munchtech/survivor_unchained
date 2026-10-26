@@ -6,6 +6,12 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabl
 
 global uniform vec4 key_dir;
 global uniform vec4 flora_light;
+global uniform vec4 survivor;   // her chest (xyz), w 1 while she is in the world
+// (E9d r2) smoke between the camera and her fades out: nearer the camera than she is by near_gap it thins, gone by
+// near_gap + near_soft (plumes hung over the cut rooms and beside a cut house; the house fade's cut is hers, and the
+// smoke over it must go with it)
+uniform float near_gap = 1.5;
+uniform float near_soft = 4.0;
 uniform vec3 lit_col : source_color = vec3(0.86, 0.83, 0.78);
 uniform vec3 shade_col : source_color = vec3(0.46, 0.48, 0.53);
 uniform float density = 0.55;
@@ -43,5 +49,13 @@ void fragment() {
 	float lam = clamp(dot(nrm, L) * 0.6 + 0.45 + 0.25 * (n - 0.5), 0.0, 1.0);
 	vec3 key = mix(vec3(1.0), clamp(vec3(flora_light.z, 1.0, flora_light.w), vec3(0.6), vec3(1.6)), warm_key);
 	ALBEDO = mix(shade_col, lit_col * key, lam) * COLOR.rgb;
-	ALPHA = clamp(a * COLOR.a * density, 0.0, 1.0);
+	float clear = 1.0;
+	if (survivor.w > 0.5) {
+		float her_d = -(VIEW_MATRIX * vec4(survivor.xyz, 1.0)).z;
+		clear = smoothstep(her_d - near_gap - near_soft, her_d - near_gap, -VERTEX.z);
+		// (only smoke well over her head: a cook fire's or a brazier's low plume on the street before her stays)
+		float wy = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).y;
+		clear = mix(1.0, clear, smoothstep(2.5, 4.5, wy - survivor.y));
+	}
+	ALPHA = clamp(a * COLOR.a * density * clear, 0.0, 1.0);
 }

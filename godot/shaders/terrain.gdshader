@@ -122,7 +122,9 @@ uniform float mud_sat = 1.45;
 // (E9a: how far the mud lifts the occlusion of the joints it fills, 0-1.)
 uniform float mud_ao = 0.8;
 // ... and its specular (the sky's sheen greyed the dark mud).
-uniform float mud_spec = 0.1;
+uniform float mud_spec = 0.2;   // (r2 0.1: the wet gloss)
+uniform float mud_wet_dark = 0.18;
+uniform float mud_wet_rough = 0.34;
 // (E9e: the mud's hue pulled off the shade's blue, 0-1.)
 uniform float mud_warm = 1.0;
 // Style r2 (--setts-paint): the street's mud painted, an opaque matte darker browner earth (a calm sheet, no grain), flat,
@@ -506,7 +508,7 @@ void fragment() {
 	// (E9e: at dawn the shaded mud still read as a blue-black hole, p10 23-25 RGB 27,29,46: the sky's blue is all the
 	// shade has, and the mud's base gave it nothing redder to light. Its blue down, red and green up, and a little lift, so
 	// in shade it stays earth, a brown-violet under the stones' blue-grey, and in sun a browner wet clay.)
-	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(1.95, 1.48, 0.86), mud_pool),   // (E9d: was 2.1, 1.8, 0.75: mustard under the dawn sun; wet umber)
+	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(1.62, 1.36, 0.9), mud_pool),   // (E9d: was 2.1, 1.8, 0.75: mustard under the dawn sun; r2 was 1.95, 1.48, 0.86: rust-orange under the lamps; a darker wet umber)
 		 mud_warm * mix(1.0, mix(0.3, 1.0, max(flora_light.x, flora_light.y)), mud_pool));
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
@@ -536,6 +538,9 @@ void fragment() {
 	ao = mix(ao, 1.0, mud_c * mud_ao * (1.0 - mud_paint));
 	float dbg_mud_c = step(0.5, mud_c) * w_setts;
 	float mud_s = mud_c * w_setts;
+	// (E9d r2) the mud wet: darker and glossier than the setts (under the lamps it read as dry rust)
+	albedo *= 1.0 - mud_wet_dark * mud_s * (1.0 - mud_paint);
+	rough = mix(rough, mud_wet_rough, mud_s * (1.0 - mud_paint));
 	float dbg_collar = step(0.5, collar);
 	float joint = w_setts * (1.0 - smoothstep(0.14, 0.26, hgt));
 	// Moss in the shaded joints, in patches, out of the wear lane.

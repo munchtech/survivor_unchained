@@ -72,6 +72,87 @@ public partial class ZoneView
             lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
             unwired.Remove(g);
         }
+        Bakery(cages);
+        // (r2) the gates' six lamps: a white ball on an iron sconce that no holder took (the judge's white orb by day, e9d2
+        // townbehind_o_02): a torch's flame in the sconce's ring instead, cold by day like the rest
+        if (Data.Id == "waystation")
+            foreach (var (g, li) in unwired.ToList())
+            {
+                if (li >= lights.Count || fireGlow.Contains(g) || Node(g) is not Node3D ball) continue;
+                var at = InLandmarks(ball).Origin + Vector3.Down * GateFlameDown;
+                if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"LAMP gate {g} light {li} at {at}");
+                var holder = new Node3D { Name = "gate_lamp_" + g };
+                Landmarks.Root.AddChild(holder);
+                LampFlame(g, li, at, FlameKind.Torch, false, 0.8f, holder);
+                unwired.Remove(g);
+            }
+    }
+
+    /// <summary>--bakery-off: no bakery. The bakery on the square: the house whose door lantern faces the square nearest
+    /// its middle; its windows always lit at dawn and by night, hotter (kit.gdshader's town_bakery), and its light
+    /// spilling on the setts before it (a warm light, no shadow, lit with the town).</summary>
+    void Bakery(List<(Vector3 Mid, Vector3 Foot, float Scale, MultiMeshInstance3D Mmi)> cages)
+    {
+        RenderingServer.GlobalShaderParameterSet("town_bakery", Vector4.Zero);
+        if (Data.Id != "waystation" || SurvivorUnchained.Args.Has("bakery-off")) return;
+        var picks = new List<(float D, Vector3 Mid, Vector3 Face)>();
+        foreach (var mmi in cages.Select(c => c.Mmi).Distinct())
+        {
+            var to = InZone(mmi);
+            for (int i = 0; i < mmi.Multimesh.InstanceCount; i++)
+            {
+                var at = to * mmi.Multimesh.GetInstanceTransform(i);
+                var m = at * CageMid;
+                // (its facing: the cage hangs 0.81 m out from the wall along the piece's +z)
+                var f = at.Basis.Z with { Y = 0 };
+                if (f.LengthSquared() < 1e-6f) continue;
+                f = f.Normalized();
+                var flat = new Vector2(m.X, m.Z);
+                if (flat.Length() > 18f || flat.Length() < 1f || new Vector2(f.X, f.Z).Dot(-flat.Normalized()) < 0.6f) continue;
+                picks.Add((flat.Length(), m, f));
+            }
+        }
+        if (picks.Count == 0) return;
+        picks.Sort((a, b) => a.D.CompareTo(b.D));
+        var (_, mid, face) = picks[Mathf.Clamp(BakeryPick, 0, picks.Count - 1)];
+        var wall = mid - face * 0.81f;
+        RenderingServer.GlobalShaderParameterSet("town_bakery", new Vector4(wall.X, wall.Y - 0.6f, wall.Z, 4.2f));
+        var spill = new OmniLight3D
+        {
+            Name = "BakerySpill", LightColor = new Color("#ff8a38"), OmniRange = BakeryRange, OmniAttenuation = 1.3f,
+            LightEnergy = BakeryEnergy, ShadowEnabled = false, Position = wall + face * 1.6f + Vector3.Down * 1.1f,
+        };
+        lightRoot.AddChild(spill);
+        bakery = spill;
+        if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"BAKERY at {wall} facing {face} of {picks.Count}");
+    }
+    OmniLight3D? bakery;
+    /// <summary>--gate-flame-down M: a gate torch's flame below its old ball (the sconce's ring).</summary>
+    static readonly float GateFlameDown = SurvivorUnchained.Args.Num("gate-flame-down", 0.12f);
+    /// <summary>--bakery-energy K, --bakery-range M; --bakery-pick N (pictures: the Nth nearest house instead).</summary>
+    static readonly float BakeryEnergy = SurvivorUnchained.Args.Num("bakery-energy", 1.4f), BakeryRange = SurvivorUnchained.Args.Num("bakery-range", 4.5f);
+    static readonly int BakeryPick = (int)SurvivorUnchained.Args.Num("bakery-pick", 0f);
+
+    /// <summary>(r2) The town's fires: one burning by day (the cook fire by the stalls) sends up a pale plume, so smoke shows
+    /// on the square; a brazier's fire (lit at night) casts no shadow (its logs, lit from
+    /// the flame over them, threw a dark four-lobed splat on the setts round the stand's foot).</summary>
+    void TownFire(Vector3 at, float size, int light, Node3D fire, Node3D fx)
+    {
+        if (Data.Id != "waystation" || light < 0 || light >= lights.Count) return;
+        if (specs[light].On)
+        {
+            var smoke = Plume(0.8f, 10f);
+            smoke.Name = "Cooksmoke" + chimneys.Count;
+            smoke.Position = at + Vector3.Up * 0.9f * size;
+            fx.AddChild(smoke);
+            chimneys.Add(smoke);
+            return;
+        }
+        // (its logs, lit from the flame over them, threw their crossed shadows on the setts round the stand's foot: no shadow)
+        int n = 0;
+        foreach (var c in fire.FindChildren("*", "GeometryInstance3D", true, false))
+            if (c is GeometryInstance3D gi && gi.CastShadow != GeometryInstance3D.ShadowCastingSetting.Off) { gi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; n++; }
+        if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"BRAZIER at {at} light {light}: {n} pieces of its fire unshadowed");
     }
 
     /// <summary>--wall-lamp-iron K: the kit's pale trim metal on the wall lanterns darkened to blackened iron (it read
@@ -111,6 +192,7 @@ public partial class ZoneView
     {
         if (Data.Id != "waystation" || LampsAllDay) return;
         bool day = SurvivorUnchained.View.Atmosphere.TownLit < 0.5f;
+        if (bakery != null && bakery.Visible == day) bakery.Visible = !day;
         if (day == lampsDay) return;
         lampsDay = day;
         foreach (var li in dayLamps) SetLit(li, lit[li]);
@@ -121,29 +203,37 @@ public partial class ZoneView
 
     /// <summary>A chimney's plume: soft puffs rising, bent by the wind, opening and fading over 8 s (about 4 m up and
     /// 3 m downwind), lit by the key on one side (shaders/chimney_smoke). No shadow.</summary>
-    public static GpuParticles3D Plume()
+    /// <summary>(r2) A plume's size (a cook fire's about half a chimney's) and its life (s): by the round-2 judge the
+    /// chimneys' 8 s plumes never reached a street frame (the play camera looks down steeply; a plume rising off the
+    /// stacks leaves the frame's top); now 12 s, rising about 6 m and leaning 8-10 m down the wind (east-south-east,
+    /// across the frame and toward the camera), so the frames' tops catch them over the roofs.</summary>
+    public static GpuParticles3D Plume(float size = 1f, float life = 0f)
     {
+        if (life <= 0) life = PlumeLife;
+        float k = life / 12f;
         var p = new ParticleProcessMaterial
         {
-            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.15f,
-            Direction = new Vector3(0.15f, 1, 0.05f).Normalized(), Spread = 5, InitialVelocityMin = 0.6f, InitialVelocityMax = 0.8f,
-            DampingMin = 0.08f, DampingMax = 0.12f, Gravity = new Vector3(0.34f, 0.02f, 0.08f),
-            ScaleMin = 0.75f, ScaleMax = 1.0f, ScaleCurve = CurveOf((0, 0.45f), (0.35f, 1.4f), (1, 2.7f)),
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.15f * size,
+            Direction = new Vector3(0.25f, 1, 0.15f).Normalized(), Spread = 6, InitialVelocityMin = 0.65f, InitialVelocityMax = 0.85f,
+            DampingMin = 0.04f, DampingMax = 0.06f, Gravity = new Vector3(PlumeWind * 0.86f, 0.02f, PlumeWind * PlumeWindZ),
+            ScaleMin = 0.75f * size, ScaleMax = 1.0f * size, ScaleCurve = CurveOf((0, 0.45f), (0.3f, 1.4f), (1, 3.2f)),
             AngleMin = -180, AngleMax = 180, AngularVelocityMin = -8, AngularVelocityMax = 8,
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.02f, TurbulenceInfluenceMax = 0.05f,
         };
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chimney_smoke.gdshader") };
         var smoke = new GpuParticles3D
         {
-            Name = "Chimney", Amount = 22, Lifetime = 8, ProcessMaterial = p, Preprocess = 8,
+            Name = "Chimney", Amount = Mathf.Max(8, Mathf.RoundToInt(30 * k)), Lifetime = life, ProcessMaterial = p, Preprocess = life,
             DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = mat },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            VisibilityAabb = new Aabb(new Vector3(-3, -1, -3), new Vector3(9, 9, 6)),
+            VisibilityAabb = new Aabb(new Vector3(-4, -1, -4), new Vector3(20, 14, 16)),
         };
         PlumeLook(smoke, false);
         return smoke;
     }
 
+    /// <summary>--plume-life S, --plume-wind A (m/s/s): the chimneys' plumes' life and wind, for pictures.</summary>
+    static readonly float PlumeLife = SurvivorUnchained.Args.Num("plume-life", 12f), PlumeWind = SurvivorUnchained.Args.Num("plume-wind", 0.12f), PlumeWindZ = SurvivorUnchained.Args.Num("plume-windz", 0.5f);
     /// <summary>--smoke-density K: the plumes' cover, for pictures.</summary>
     static readonly float SmokeDensity = SurvivorUnchained.Args.Num("smoke-density", 0.4f);
 

@@ -108,6 +108,7 @@ public partial class ZoneView : Node3D
             var fire = Campfire.Build(fat, (float)f.Size, ring: f.Ring);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
+            TownFire(fat, (float)f.Size, f.Light, fire, fx);   // (E9d r2: a cook fire's smoke; a brazier's fire unshadowed; ZoneView.Town)
             if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~Campfire.CoalLayer;
             // The web game marks a fire's flame with a glowing ball; here the
             // fire has flames of its own, and the ball would only bloom white.
@@ -120,6 +121,9 @@ public partial class ZoneView : Node3D
         foreach (var c in meta.Chimneys)
         {
             var smoke = Plume();   // (E9d: the town's plumes, ZoneView.Town)
+            // (each its own name: a second "Chimney" under one parent was renamed "@Chimney@n", and HouseFade, finding
+            // "Chimney*", tied one plume of 18 to its house: the rest hung over the cut rooms)
+            smoke.Name = "Chimney" + chimneys.Count;
             smoke.Position = new Vector3((float)c.X, (float)c.Y, (float)c.Z);
             fx.AddChild(smoke);
             chimneys.Add(smoke);
