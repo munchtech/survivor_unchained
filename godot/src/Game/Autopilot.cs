@@ -168,8 +168,16 @@ public sealed class Autopilot
                 tx = f.X + Math.Cos(orbit) * 9; tz = f.Z + 10 + Math.Sin(orbit) * 5;
                 break;
             }
-            case "Victory" or "Dawn":
+            case "Victory":
                 break;
+            case "Dawn":
+            {
+                // The night is over: up the road to the Waystation, as the objective says (a run went on standing
+                // at the top of the road for good, and never reached Act 1).
+                var gt = Place("gate");
+                tx = gt.X; tz = gt.Z - 8;
+                break;
+            }
             default:
             {
                 // Down the road.
