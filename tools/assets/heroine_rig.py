@@ -298,10 +298,17 @@ def _game_skeleton(arm):
         if not os.path.exists(path):
             continue
         sk = Skeleton.load(path)
-        if set(sk.names) != names:
+        if set(sk.names) != names and not names <= set(sk.names):
             continue
+        # A dump holding MORE bones than the armature (the 100-bone game dump vs a 90-bone export)
+        # is kept whole (its parents and rest turns need the extra bones); only the armature's
+        # bones are position-checked and re-seated, and the extras get zero weight in the callers.
         _, gpos = sk.rest_globals()
-        heads = _to_game([(arm.matrix_world @ arm.data.bones[n].head_local)[:] for n in sk.names])
+        have = [j for j, n in enumerate(sk.names) if n in names]
+        heads = np.zeros_like(gpos[0])
+        heads[have] = _to_game([(arm.matrix_world @ arm.data.bones[sk.names[j]].head_local)[:] for j in have])
+        gpos = gpos.copy()
+        gpos[0][[j for j in range(len(sk.names)) if j not in set(have)]] = 0
         err = np.abs(gpos[0] - heads).max()
         if err < 0.002:
             return sk
@@ -315,8 +322,14 @@ def _game_skeleton(arm):
             grot, _ = sk.rest_globals()
             from rig import qinv, qrot
             pos = sk.rest_pos.copy()
+            hs = set(have)
             for j, p in enumerate(sk.parent):
-                pos[j] = heads[j] if p < 0 else qrot(qinv(grot[0, p]), heads[j] - heads[p])
+                if j not in hs:
+                    continue
+                if p < 0:
+                    pos[j] = heads[j]
+                elif p in hs:
+                    pos[j] = qrot(qinv(grot[0, p]), heads[j] - heads[p])
             sk.rest_pos = pos
             moved = [sk.names[j] for j in np.where(dev >= 0.002)[0]]
             print(f"RIG correctives: {f} was {err * 1000:.1f} mm off this armature; rest re-seated on its heads "
@@ -414,7 +427,7 @@ def _sampler_moves(arm, sampler):
         return {}
     _, _, Pb, Wb = sampler
     order = [b.name for b in arm.data.bones]
-    W = Wb[:, [order.index(n) for n in sk.names]]
+    W = np.stack([Wb[:, order.index(n)] if n in order else np.zeros(len(Wb)) for n in sk.names], 1)
     top = np.argsort(-W, axis=1)[:, :4]
     keep = np.zeros_like(W)
     rows = np.arange(len(W))[:, None]
