@@ -651,43 +651,12 @@ DAGGERS_HAND_R = (0.05, -0.34, 0.24)
 DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 
 
-# Her free arms in town brought in toward her sides (animation 50; the owner, 26 Oct: "nobody stands like that"): each
-# hand's sideways reach from the shoulder scaled by FREE_IN, its length kept (the drop takes up the rest), so the arm
-# hangs closer and no more bent. 1.0: the arms as animation 44-48 had them (17-25 deg out, the hand 27 cm out from the hip).
-FREE_IN = float(os.environ.get("FREE_IN", "1.0"))
-
-
-def _in(v, k=None):
-    """A shoulder-relative hand target with its sideways part scaled by k (FREE_IN), its length kept."""
-    k = FREE_IN if k is None else k
-    x, y, z = (float(c) for c in v)
-    r = math.sqrt(x * x + y * y + z * z)
-    x *= k
-    y = -math.sqrt(max(r * r - x * x - z * z, 0.0)) if y < 0 else y
-    return np.array((x, y, z))
-
-
-def warden_town(t, f):
-    """In town, her weapons sheathed (the sword at her left hip, the shield
-    on her back): the arms hang free and easy at her sides, the elbows soft,
-    the wrists straight (the thumb forward, the palm to the thigh), clear of
-    her hips and skirt; a small counter-swing to the hips' sway."""
-    sw = 0.012 * math.sin(2 * math.pi * t * 2)
-    return {
-        "hand_l": {"arc": arc_of(_in((0.16, -0.46, 0.08 + sw))), "pole": (0.3, -0.2, -1.0), "frame": "chest",
-                   "thumb": _n((-0.15, -0.1, 1.0)), "twist": 1.0},
-        "hand_r": {"arc": arc_of(_in((-0.14, -0.46, 0.08 - sw))), "pole": (-0.3, -0.2, -1.0), "frame": "chest",
-                   "thumb": _n((0.15, -0.1, 1.0)), "twist": 1.0},
-        "fingers_l": "relaxed", "fingers_r": "relaxed",
-    }
-
-
 def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0, swing=0.012, pole_l=(0.3, -0.2, -1.0),
               pole_r=(-0.3, -0.2, -1.0)):
-    """warden_town's free arms for another calling's town stand (its weapons sheathed): each hand (chest frame, from
-    the shoulder) moved clear of what that calling wears sheathed, `reach` the arm let out (1.025: the elbows soft at
-    20-25 deg, not 35), the same small counter-swing to the hips' sway."""
-    hl, hr = _in(np.array(hand_l, float) * reach), _in(np.array(hand_r, float) * reach)
+    """Free arms aimed from the shoulder in the chest's frame (animation 44-48's town arms, held out 17-25 deg to clear
+    her swaying hips; the town stands now hang theirs, town_idle.hang_arms): each hand (chest frame, from the
+    shoulder), `reach` the arm let out, a small counter-swing to the hips' sway. (staff_town's base.)"""
+    hl, hr = np.array(hand_l, float) * reach, np.array(hand_r, float) * reach
 
     def arms(t, f):
         sw = swing * math.sin(2 * math.pi * t * 2)
@@ -699,22 +668,25 @@ def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0
     return arms
 
 
-# Her town stands (animation 44; animation 48: each calling its own standing, town_idle.STANCES), her arms free and clear
-# of her sheathed pieces (free_arms; the reaver's and the arcanist's left hand on her hip, town_idle.on_hip).
-TOWN_ARMS_L = {
-    # The stalker's left arm in 9 deg and the elbow 17 deg softer (round 1, the max judge): the hand 2-4 cm off her hip.
-    "stalker_town": (0.1117, -0.4466, 0.0971),
-    # The staff stand's free left arm the same way (round 1's polish): the elbow 15 deg softer, the hand 3-4 cm off her hip.
-    "arcanist_staff_town": (0.10, -0.455, 0.10),
-}
+# Her town stands (animation 44; animation 48: each calling its own standing, town_idle.STANCES). Animation 50 (the
+# owner, 26 Oct, of the arms held out from her sides: "nobody stands like that"): every free hand HANGS
+# (town_idle.hang_arms), beside her outer thigh on her pelvis, the elbow soft at 18, the upper arm 8-12 deg out; the
+# reaver's and the arcanist's left hand stay on her hip (town_idle.on_hip). Each hand's `out` (m beyond her hip joint)
+# and elbow `pole` fitted to her body and every outfit (scratch anim50/hang harness: 0 mm into her or any outfit,
+# the hand and forearm 5-25 mm off her own calling's): the hips sway and cock differently under each stand.
+_P = lambda x: (x, -0.2, -1.0)   # an elbow pole behind her, x out (+) or in (-) of the arm, for a LEFT hand
+_NONE = lambda t, f: {}
+# The warden's WiggleHips: her hips swing out under the left hand further than the right.
+WARDEN_TOWN = town_idle.hang_arms(l=dict(out=0.22), r=dict(out=0.21))
 TOWN = {
-    # The axe (or two) on the hip loop at her right (and left) hip: the hands a little ahead of the heads.
-    "reaver_town": town_idle.on_hip(town_idle.REAVER_HIP_L, free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03)),
-    # The wand on the belt at her right hip.
-    "arcanist_town": town_idle.on_hip(town_idle.ARC_WRIST_L, free_arms(reach=1.03)),
+    # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
+    "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
+    # The wand on the belt at her right hip, her weight on her right leg.
+    "arcanist_town": town_idle.hang_arms(town_idle.on_hip(town_idle.ARC_WRIST_L, _NONE), r=dict(out=0.19, pole=_P(0.1))),
     # The crossbow slung on her back, the daggers at the back of her belt.
-    "stalker_town": free_arms(hand_l=TOWN_ARMS_L["stalker_town"], reach=1.03),
+    "stalker_town": town_idle.hang_arms(l=dict(out=0.195, pole=_P(0.15)), r=dict(out=0.21, pole=_P(0.1))),
 }
+
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
 def staff_town(t, f):
     """The staff upright at her right side as her armed stand holds it (idle_arcanist's arm: the grip forward of her
@@ -738,18 +710,8 @@ def staff_town(t, f):
     return d
 
 
-def _staff_town_l(hand_l):
-    """staff_town with its free left hand at `hand_l` (free_arms', reach 1.03)."""
-    free = free_arms(hand_l=hand_l, reach=1.03)
-
-    def arms(t, f):
-        d = staff_town(t, f)
-        d["hand_l"] = free(t, f)["hand_l"]
-        return d
-    return arms
-
-
-TOWN["arcanist_staff_town"] = _staff_town_l(TOWN_ARMS_L["arcanist_staff_town"])
+# The staff stand's free left arm hangs as the others do.
+TOWN["arcanist_staff_town"] = town_idle.hang_arms(staff_town, l=dict(out=0.21, pole=_P(0.1)))
 
 
 # A captured standing's stretch (seconds into the take) where not the first 8 s. (Animation 44's WiggleHips windows for
@@ -788,7 +750,7 @@ IDLES = {
     "idle_stalker": ("Crouched", stalker, "crossbow"),
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
-    "idle_warden_town": ("WiggleHips", warden_town, ""),
+    "idle_warden_town": ("WiggleHips", WARDEN_TOWN, ""),
     # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
     # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
     "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),

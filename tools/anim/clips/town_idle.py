@@ -248,3 +248,72 @@ def on_hip(spec, free):
                            knuckles=spec["knuckles"], blade=spec["blade"], twist=0.5)
     make.needs_base = True
     return make
+
+
+# A hanging arm (animation 50; the owner, 26 Oct, of her free arms held out from her sides: "nobody stands like that").
+# The arms had been aimed at a fixed point in her CHEST's frame, so the hips swaying or cocked under them had to be
+# cleared by holding the hands out 27-32 cm beyond the hip (17-25 deg out, the elbows 26-39). A hanging hand rides the
+# HIP instead: its place beside the outer thigh (out from the hip joint and ahead of it, in the pelvis's frame, swung
+# a little fore and aft) is followed frame by frame across the floor, and the wrist hangs at a set reach from the
+# shoulder straight above that place, so the elbow stays as soft as asked whatever the hips and the breath do. Any
+# stand can use it (hang_arms), one hand or both.
+HANG = dict(out=0.21, fwd=0.0, elbow=18.0, elbow_life=1.5, pole=(0.0, -0.2, -1.0), thumb=(-0.15, -0.1, 1.0),
+            swing=0.010, swing_phase=0.0, fingers="relaxed")
+
+
+def _mirror(v, side):
+    """A left hand's vector (her character's space) for `side`: x turned over for the right."""
+    return v if side == "l" else (-v[0], v[1], v[2])
+
+
+def hang_target(rig, g, p, f, side, spec, t):
+    """The hanging hand's key at frame f (globals g, positions p of the base) and loop time t: {"arc", "pole",
+    "frame": "chest", "thumb", "twist"} (spec: HANG's keys, given for a LEFT hand; the right's mirrored)."""
+    from gait import arc_of
+    from rig import qinv, qmul, qrot
+    I = rig.I
+    grest, prest = (a[0] for a in rig.sk.rest_globals())
+    pel, s3 = I["pelvis"], I["spine_03"]
+    ua, la, ha = I[f"upperarm_{side}"], I[f"lowerarm_{side}"], I[f"hand_{side}"]
+    a = float(np.linalg.norm(prest[la] - prest[ua]))
+    b = float(np.linalg.norm(prest[ha] - prest[la]))
+    e = math.radians(spec["elbow"] + spec["elbow_life"] * math.sin(2 * math.pi * t + spec["swing_phase"]))
+    r = math.sqrt(a * a + b * b + 2 * a * b * math.cos(e))
+    dp = qmul(g[f, pel], qinv(grest[pel]))
+    ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
+    sgn = 1.0 if side == "l" else -1.0
+    fwd = spec["fwd"] + sgn * spec["swing"] * math.sin(2 * math.pi * t * 2 + spec["swing_phase"])
+    # Out from her hip joint and ahead of it, in the pelvis's frame (her +X her left, +Z ahead).
+    D = p[f, I[f"thigh_{side}"]] + qrot(dp, np.array((sgn * spec["out"], 0.0, fwd)))
+    sh = p[f, ua]
+    h = D - sh
+    h[1] = 0.0
+    hh = float(np.linalg.norm(h))
+    if hh > 0.95 * r:
+        h *= 0.95 * r / hh
+        hh = 0.95 * r
+    W = sh + h + np.array((0.0, -math.sqrt(r * r - hh * hh), 0.0))
+    return {"arc": arc_of(qrot(ic, W - sh)), "pole": _mirror(spec["pole"], side), "frame": "chest",
+            "thumb": tuple(qrot(ic, qrot(dp, np.array(_mirror(spec["thumb"], side), float) / np.linalg.norm(spec["thumb"])))),
+            "twist": 1.0}
+
+
+def hang_arms(arms=None, **hands):
+    """Arms for a stand with hanging hands: `arms` (over(t, f), or a make(rig, base) as on_hip returns, or None) with
+    each hand named (l=..., r=...: HANG's keys to change, for a LEFT hand; the right's mirrored; {} for HANG's own)
+    hung from her shoulder beside her thigh (hang_target). Returns make(rig, base) -> over(t, f)."""
+    specs = {s: dict(HANG, **(v or {})) for s, v in hands.items()}
+
+    def make(rig, base):
+        under = arms(rig, base) if getattr(arms, "needs_base", False) else arms
+        g, p = rig.sk.fk(base.rot, base.pos)
+
+        def over(t, f):
+            d = dict(under(t, f)) if under else {}
+            for s, sp in specs.items():
+                d[f"hand_{s}"] = hang_target(rig, g, p, f, s, sp, t)
+                d[f"fingers_{s}"] = sp["fingers"]
+            return d
+        return over
+    make.needs_base = True
+    return make
