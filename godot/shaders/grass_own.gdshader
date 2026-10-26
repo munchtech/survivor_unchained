@@ -221,6 +221,11 @@ void fragment() {
 
 // The key's light on the blades as the built-in gives it (Burley, and the back light through them), its sunlit upper
 // part warmed by sun_tip (the key alone, by day and dawn; never the moon or a lamp).
+// (Low Ford r3, judge r2: under every lamp, fire and her ember the blades went lime: green times a warm light is yellow-green)
+// A warm near light's share on the blades turned toward ochre, its lightness kept: flora_lamp of the way (the air's
+// GrassLampOchre; 0 as built), by how warm the light is (red over blue); the moon and the sun untouched.
+global uniform float flora_lamp;
+uniform vec3 lamp_ochre = vec3(1.0, 0.74, 0.40);
 void light() {
 	float cnl = max(dot(NORMAL, LIGHT), 0.0);
 	float cnv = max(dot(NORMAL, VIEW), 1e-3);
@@ -230,5 +235,14 @@ void light() {
 	float d = fl * fv * cnl;
 	vec3 lc = LIGHT_COLOR * ATTENUATION;
 	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_body * mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t)), 1.0 - flora_light.x);
-	DIFFUSE_LIGHT += lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
+	vec3 add = lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
+	if (!LIGHT_IS_DIRECTIONAL && flora_lamp > 0.0) {
+		float warmth = clamp((lc.r - lc.b) / max(lc.r, 1e-4) * 2.0, 0.0, 1.0);
+		vec3 lum = vec3(0.2126, 0.7152, 0.0722);
+		vec3 a = max(ALBEDO, vec3(0.02));
+		vec3 lit = a * add;
+		vec3 och = lamp_ochre * (dot(lit, lum) / dot(lamp_ochre, lum));
+		add = mix(lit, och, flora_lamp * warmth) / a;
+	}
+	DIFFUSE_LIGHT += add;
 }
