@@ -559,9 +559,13 @@ def hang_target(rig, g, p, f, side, spec, t):
         h *= 0.95 * r / hh
         hh = 0.95 * r
     W = sh + h + np.array((0.0, -math.sqrt(r * r - hh * hh), 0.0))
-    return {"arc": arc_of(qrot(ic, W - sh)), "pole": _mirror(spec["pole"], side), "frame": "chest",
-            "thumb": tuple(qrot(ic, qrot(dp, np.array(_mirror(spec["thumb"], side), float) / np.linalg.norm(spec["thumb"])))),
-            "twist": 1.0}
+    key = {"arc": arc_of(qrot(ic, W - sh)), "pole": _mirror(spec["pole"], side), "frame": "chest",
+           "thumb": tuple(qrot(ic, qrot(dp, np.array(_mirror(spec["thumb"], side), float) / np.linalg.norm(spec["thumb"])))),
+           "twist": 1.0}
+    if spec.get("flex"):
+        # The fingers laid in toward her thigh at the wrist (deg; a function of t, or a number).
+        key["flex"] = spec["flex"](t) if callable(spec["flex"]) else spec["flex"]
+    return key
 
 
 def hang_arms(arms=None, **hands):
