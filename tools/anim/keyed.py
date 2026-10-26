@@ -20,6 +20,8 @@ origin facing +Z, her left at +X, up +Y; metres and degrees):
                       left straight, the forearm rolled so the thumb side
                       faces as near this way as it can (a carried weapon),
                "frame": "char" | "chest" (which space blade/knuckles/pos use),
+               "flex": with "thumb", degrees the wrist bends the fingers toward
+                      the palm (a hanging hand laid in to her thigh),
                "ext": degrees the wrist may bend back (a hand on the ground
                       under her weight; default EXT)}
     foot_l/r  {"pos": (x, y, z) the ankle (y 0 = flat on the ground),
@@ -593,6 +595,9 @@ class Rig:
                     if np.linalg.norm(zp) < 1e-6 or np.linalg.norm(tp) < 1e-6:
                         return cur
                     ang = math.degrees(math.atan2(float(np.dot(np.cross(zp, tp), fa_)), float(np.dot(zp, tp))))
+                    if spec.get("flex"):
+                        # The fingers bent toward the palm at the wrist (deg), about the hand's thumb-side axis.
+                        return qmul(qmul(qaxis(fa_, ang), cur), qaxis([0, 0, 1.0], float(spec["flex"])))
                     return qmul(qaxis(fa_, ang), cur)
                 want = _want_grip(qmul(qmul(d_la, self.grest[ha]), lq) if lq is not None else qmul(d_la, self.grest[ha]))
                 return qmul(want, qinv(lq)) if lq is not None else want

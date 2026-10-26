@@ -651,26 +651,11 @@ DAGGERS_HAND_R = (0.05, -0.34, 0.24)
 DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 
 
-def warden_town(t, f):
-    """In town, her weapons sheathed (the sword at her left hip, the shield
-    on her back): the arms hang free and easy at her sides, the elbows soft,
-    the wrists straight (the thumb forward, the palm to the thigh), clear of
-    her hips and skirt; a small counter-swing to the hips' sway."""
-    sw = 0.012 * math.sin(2 * math.pi * t * 2)
-    return {
-        "hand_l": {"arc": arc_of((0.16, -0.46, 0.08 + sw)), "pole": (0.3, -0.2, -1.0), "frame": "chest",
-                   "thumb": _n((-0.15, -0.1, 1.0)), "twist": 1.0},
-        "hand_r": {"arc": arc_of((-0.14, -0.46, 0.08 - sw)), "pole": (-0.3, -0.2, -1.0), "frame": "chest",
-                   "thumb": _n((0.15, -0.1, 1.0)), "twist": 1.0},
-        "fingers_l": "relaxed", "fingers_r": "relaxed",
-    }
-
-
 def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0, swing=0.012, pole_l=(0.3, -0.2, -1.0),
               pole_r=(-0.3, -0.2, -1.0)):
-    """warden_town's free arms for another calling's town stand (its weapons sheathed): each hand (chest frame, from
-    the shoulder) moved clear of what that calling wears sheathed, `reach` the arm let out (1.025: the elbows soft at
-    20-25 deg, not 35), the same small counter-swing to the hips' sway."""
+    """Free arms aimed from the shoulder in the chest's frame (animation 44-48's town arms, held out 17-25 deg to clear
+    her swaying hips; the town stands now hang theirs, town_idle.hang_arms): each hand (chest frame, from the
+    shoulder), `reach` the arm let out, a small counter-swing to the hips' sway. (staff_town's base.)"""
     hl, hr = np.array(hand_l, float) * reach, np.array(hand_r, float) * reach
 
     def arms(t, f):
@@ -683,22 +668,42 @@ def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0
     return arms
 
 
-# Her town stands (animation 44; animation 48: each calling its own standing, town_idle.STANCES), her arms free and clear
-# of her sheathed pieces (free_arms; the reaver's and the arcanist's left hand on her hip, town_idle.on_hip).
-TOWN_ARMS_L = {
-    # The stalker's left arm in 9 deg and the elbow 17 deg softer (round 1, the max judge): the hand 2-4 cm off her hip.
-    "stalker_town": (0.1117, -0.4466, 0.0971),
-    # The staff stand's free left arm the same way (round 1's polish): the elbow 15 deg softer, the hand 3-4 cm off her hip.
-    "arcanist_staff_town": (0.10, -0.455, 0.10),
-}
+# Her town stands (animation 44; animation 48: each calling its own standing, town_idle.STANCES). Animation 50 (the
+# owner, 26 Oct, of the arms held out from her sides: "nobody stands like that"): every free hand HANGS
+# (town_idle.hang_arms), beside her outer thigh on her pelvis, the elbow soft at 18, the upper arm 8-12 deg out; the
+# reaver's and the arcanist's left hand stay on her hip (town_idle.on_hip). Each hand's `out` (m beyond her hip joint)
+# and elbow `pole` fitted to her body and every outfit (scratch anim50/hang harness: 0 mm into her or any outfit,
+# the hand and forearm 5-25 mm off her own calling's): the hips sway and cock differently under each stand.
+_P = lambda x: (x, -0.2, -1.0)   # an elbow pole behind her, x out (+) or in (-) of the arm, for a LEFT hand
+_NONE = lambda t, f: {}
+# The warden's WiggleHips: her hips swing out under the left hand further than the right.
+# (Round 2: the left hand ahead of the sheathed sword, which hangs along her left thigh.)
+# (Animation 51, the judge: the arms mirrored and angled out from the front. Her left hand rests on the sheathed sword's
+# hilt as her town run's does (run.hilt_carry, POST below); the right hangs in closer, its forearm upright, the elbow
+# softer.)
+# (Animation 52, the owner reopened it, the judge: "as the pelvis moves over the right foot, the right arm floats about
+# 8-10 cm off the skirt while her torso leans over that hip. It should hang straight down and meet the skirt." At a
+# fixed out of 0.198 the hand was 6 mm off the warden skirt as the hip came in under it and up to 43 mm off as it swung
+# away. Its out now follows the sway, and as that hip leans out under it (the wrist on the hip) the fingers lay in to
+# the thigh at the wrist (flex, up to 3.3 deg): each fitted per frame to the skirt, then to a 4-harmonic loop. The
+# hand and forearm 0.3-6.9 mm off the warden outfit all through, the hand 2.7-4.9 mm at the far sway. Scratch anim52/wh.)
+WARDEN_TOWN = town_idle.hang_arms(r=dict(
+    out=town_idle.loop_wave(0.1833, (0.0016, 0.0005), (-0.0064, 0.0104), (-0.0001, 0.0004), (0.0008, -0.0007)),
+    flex=town_idle.loop_wave(0.78, (0.07, -0.27), (0.55, -1.11), (-0.24, -0.21), (-0.61, -0.53)), elbow=30.0))
 TOWN = {
-    # The axe (or two) on the hip loop at her right (and left) hip: the hands a little ahead of the heads.
-    "reaver_town": town_idle.on_hip(town_idle.REAVER_HIP_L, free_arms(hand_r=(-0.16, -0.46, 0.035), reach=1.03)),
-    # The wand on the belt at her right hip.
-    "arcanist_town": town_idle.on_hip(town_idle.ARC_WRIST_L, free_arms(reach=1.03)),
+    # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
+    "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
+    # The wand on the belt at her right hip, her weight on her right leg.
+    "arcanist_town": town_idle.hang_arms(town_idle.on_hip(town_idle.ARC_WRIST_L, _NONE), r=dict(out=0.19, pole=_P(0.1))),
     # The crossbow slung on her back, the daggers at the back of her belt.
-    "stalker_town": free_arms(hand_l=TOWN_ARMS_L["stalker_town"], reach=1.03),
+    # (Round 2, the judge: "mirrored", "claws": the right elbow 13 more and the hand a little forward on her thigh,
+    # both hands' fingers together in a loose half-curl.)
+    # (Animation 51, the judge: the left forearm upright, the fingertips at her outer thigh; both hands' curl graded
+    # index -> little, no spread.)
+    # (Animation 51, round 3b: the right thumb hooked over her belt, town_idle.STALKER_THUMB_R.)
+    "stalker_town": town_idle.hang_arms(town_idle.on_hip(town_idle.STALKER_THUMB_R, _NONE), l=dict(out=0.176, elbow=14.0, pole=_P(0.15), fingers=town_idle.graded())),
 }
+
 # A staff stays in her hand in town (WeaponSockets.SocketOf: null).
 def staff_town(t, f):
     """The staff upright at her right side as her armed stand holds it (idle_arcanist's arm: the grip forward of her
@@ -722,18 +727,8 @@ def staff_town(t, f):
     return d
 
 
-def _staff_town_l(hand_l):
-    """staff_town with its free left hand at `hand_l` (free_arms', reach 1.03)."""
-    free = free_arms(hand_l=hand_l, reach=1.03)
-
-    def arms(t, f):
-        d = staff_town(t, f)
-        d["hand_l"] = free(t, f)["hand_l"]
-        return d
-    return arms
-
-
-TOWN["arcanist_staff_town"] = _staff_town_l(TOWN_ARMS_L["arcanist_staff_town"])
+# The staff stand's free left arm hangs as the others do.
+TOWN["arcanist_staff_town"] = town_idle.hang_arms(staff_town, l=dict(out=0.21, pole=_P(0.1)))
 
 
 # A captured standing's stretch (seconds into the take) where not the first 8 s. (Animation 44's WiggleHips windows for
@@ -772,7 +767,7 @@ IDLES = {
     "idle_stalker": ("Crouched", stalker, "crossbow"),
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
-    "idle_warden_town": ("WiggleHips", warden_town, ""),
+    "idle_warden_town": ("WiggleHips", WARDEN_TOWN, ""),
     # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
     # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
     "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),
@@ -879,6 +874,10 @@ def base_of(rig, calling):
             base = town_idle.town_base(rig, calling)
         else:
             base = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0), window=TOWN_WINDOW.get(calling))
+        if calling in town_idle.SWAYS:
+            base = town_idle.soften(rig, base, **town_idle.SWAYS[calling])
+        if calling in town_idle.SHOULDERS:
+            base = town_idle.shoulders(rig, base, *town_idle.SHOULDERS[calling])
         if calling in STAND:
             base = stand(rig, base, **STAND[calling])
         if st:
@@ -897,6 +896,92 @@ def base_r1(rig):
     return _bases["_r1"]
 
 
+def _warden_hilt(rig, clip):
+    from clips.run import hilt_carry
+    # (The wrist 12 mm further out than the run's: the sway's hip roll brought her hip into the hand, 8 mm into the warden outfit.)
+    return hilt_carry(rig, clip, {"clav": 1.0, "wrist": (0.3124, -0.0235, -0.0058)})
+
+
+# The sheathed viking sword's grip at her left hip (Arms.cs hip_blade; arms_local.json "sheathed" viking_sword@hand_r,
+# in the pelvis bone's frame: x her left, y up, z ahead): the line through its leather's section centres, from under
+# the pommel (top) to just above the guard (bot); 16.7 mm round it. (The other one-handed blades share the scabbard.)
+GRIP_TOP, GRIP_BOT = (0.209, 0.1654, 0.0515), (0.2154, 0.0867, 0.0386)
+# The grip's line in her left fist closed in WRAP["sword"] (hand_l's frame: a point on it, and its way out of the thumb
+# side), fitted on her posed hand (scratch anim51/wh/fitline.py): each finger's middle bone 1-3 mm off a 15.6 mm round,
+# the palm on it. (WeaponSockets.BladeAtR / BladeDirR taken through her mirror, the right fist's seat, sat 6 mm and 6 deg
+# off it: her fingers went 12-14 mm into the grip.)
+FIST_L = ((0.04016, 0.08475, -0.00967), (0.09099, 0.55736, 0.82527))
+# The scabbard stands off her hip by her outfit's socket clearance (godot/art/anim/socket_clearance.json hip_blade, out
+# along the pelvis's +x): the warden's.
+HIP_BLADE_OUT = 0.0155
+
+
+def grip_hilt(rig, clip, at=0.0, spin=20.0, pole=(1.0, -0.2, 0.3), fingers=None, push=HIP_BLADE_OUT, passes=2, twist=0.5):
+    """`clip` with her left hand closed round the sheathed sword's grip (GRIP_TOP..GRIP_BOT), frame by frame on the
+    clip's own pelvis, so the hand rides her hips with the sword: the fist's hollow on the grip's
+    line (FIST_L), `at` m from its middle toward the guard (the scabbard `push` m out), its blade way pointing down the grip to the guard (the forefinger and
+    thumb by the guard, the little finger under the pommel), turned `spin` deg about the grip (0: the least turn from
+    the hand's rest); the elbow's way `pole` from the shoulder in the pelvis's frame. The left arm solved afresh
+    (keyed.solve_frames, the clip as its base), every other joint as it was."""
+    from keyed import WRAP, solve_frames
+    from rig import qmatrix, qnorm
+    I = rig.I
+    pel, ua = I["pelvis"], I["upperarm_l"]
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    A, D = np.array(FIST_L[0]), np.array(FIST_L[1])
+    D /= np.linalg.norm(D)
+    top, bot = (np.array(v) + (push, 0.0, 0.0) for v in (GRIP_TOP, GRIP_BOT))
+    down = (bot - top) / np.linalg.norm(bot - top)
+
+    def turn(u, v):
+        w, c = np.cross(u, v), float(u @ v)
+        K = np.array([[0, -w[2], w[1]], [w[2], 0, -w[0]], [-w[1], w[0], 0]])
+        return np.eye(3) + K + K @ K / (1 + c)
+
+    s = math.radians(spin)
+    K = np.array([[0, -down[2], down[1]], [down[2], 0, -down[0]], [-down[1], down[0], 0]])
+    R = (np.eye(3) + math.sin(s) * K + (1 - math.cos(s)) * K @ K) @ turn(D, down)   # the hand's axes, pelvis frame
+    W = (top + bot) / 2 + down * at - R @ A                                          # the wrist, pelvis frame
+    arm = [ua]
+    for j in arm:
+        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
+
+    n = clip.frames
+    want = [qmatrix(qnorm(g[f, pel])) @ R for f in range(n)]
+    at = [p[f, pel] + qmatrix(qnorm(g[f, pel])) @ W for f in range(n)]
+    aim, put = list(want), list(at)
+    base = [(clip.rot[f].copy(), clip.pos[f].copy()) for f in range(n)]
+    for k in range(passes):
+        # (The solve lands the wrist 4-6 mm off its key and the hand a degree or so: the shoulder settles after the arm is
+        # laid. A second pass keys it that much the other way.)
+        specs = [{"hand_l": {"pos": tuple(put[f]), "knuckles": tuple(aim[f][:, 1]), "blade": tuple(aim[f][:, 2]),
+                             "pole": tuple(qmatrix(qnorm(g[f, pel])) @ np.array(pole, float)), "pole_at": "shoulder", "twist": twist},
+                  "fingers_l": fingers if fingers is not None else WRAP["sword"]} for f in range(n)]
+        rot, _ = solve_frames(rig, specs, base, loop=clip.loop, weapon=(clip.meta or {}).get("weapon", ""))
+        for f in range(n):
+            for j in arm:
+                clip.rot[f, j] = rot[f, j]
+        g2, p2 = rig.sk.fk(clip.rot, clip.pos)
+        for f in range(n):
+            got = qmatrix(qnorm(g2[f, I["hand_l"]]))
+            aim[f] = aim[f] @ got.T @ want[f]
+            u, _s, vt = np.linalg.svd(aim[f])
+            aim[f] = u @ vt
+            put[f] = put[f] + (at[f] - p2[f, I["hand_l"]])
+    return clip
+
+
+# Passes after the arms (an idle's name: f(rig, clip) -> clip).
+# (Animation 52: the owner reopened the warden's left hand, "on the hilt" from the front; Body 14's call: the pose is
+# fine, the elbow volume drop was motion.py posing without her helpers. spin 40 over the fitted 20: the wrist's flex
+# 30-58 -> 14-41 deg, the fist still on the grip.)
+def _warden_grip(rig, clip):
+    return grip_hilt(rig, clip, spin=40.0)
+
+
+POST = {"idle_warden_town": _warden_grip}
+
+
 def clips(rig, want):
     out = []
     for name, (style, arms, weapon) in IDLES.items():
@@ -911,6 +996,8 @@ def clips(rig, want):
         if name == "idle_arcanist":
             meta.update(arc_grip())
         clip = layered(name, rig, base, arms, meta)
+        if name in POST:
+            clip = POST[name](rig, clip)
         if name[5:] in TOWN or name == "idle_arcanist_staff_town":
             clip = level_head(rig, clip)
         out.append(clip)
