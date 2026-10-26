@@ -5,6 +5,16 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 6 (play-1 lead, 26-27 Oct): MR4 MR READY; the Prologue's cinematic-start freezes next (s5), then MR5 (items 14+15)
+
+**MR4 (frame time), MR READY at play-1@06c7db76 (integration merged, imported; tests 1070/0/8; full shot-free Prologue run mr4b clean, no errors):**
+- s1 ade3d9ea: the Waystation's pieces built on a worker during C04 A, one step a frame (`Slices.Paced`; `--ahead-main` = old path). C04 A: 0 new frames over 33 ms (was ~20 of 100-224). Hold behind the black 2.2 -> ~1.0 s (one ~0.9 s frame: her outfit 256 ms, Waystation.Begin 214, 900 pipelines). CLOSED AS KNOWN: the screen is static black; a split needs her figure built ahead via `HerWear.Live` (s3's plan) if UI ever animates the hold.
+- s2 368f6085: GC pauses cut (Godot Variant/StringName wrappers surviving young GCs: HairSway, HerFaceLife, OwnClips, Controls, Instrument); `Atmosphere.GradeLut` on workers (bytes identical). Editor runs use .NET 10 via GodotPlugins' rollForward, so csproj GC settings don't apply in our runs; exports run net8.
+- s3 c80fdae3: flipbook atlases loaded ahead, the draft backdrop warmed, HerJiggle string churn. s4 9b1075dc + fa8a5373: folk shadow merge (`FolkShadow.cs`, shadow draws -86%), off-screen folk animation held (-2.4 ms with 16 folk), walkers built on a worker (`WalkerView`), a draft rehearsal (`GameMenus.RehearseDraft`; the hub's first draft 80+85 -> 36+45 ms, closed as known). Switches: `--folk-shadow off --folk-lod off --walker-later off --draft-rehearse off --folk-churn S`.
+- No-look-change checks (w1): grade LUT 0 bytes differ; her close-up frames vs the old files at the noise floor; Waystation arrival vs `--ahead-main` spread jitter only (sheets in scratch play3\w1\).
+**Next (s5, brief in scratch play3\brief_s5.md):** the shot-free run found freezes at cinematic STARTS: C04 A 2.43 s (+326 ms), C02 1.21 s, C03 351 ms (~240 MB allocated each), and the Prologue's first drafts 382/325 ms (the rehearsal doesn't cover them). Then MR5 = items 14 (UNBLOCKED by UI 12: teach minimap, lock, counters, Ember plainly; talk prompt = Style.KeyCap + name label, looks are UI's) + 15 (Experience 4's notes below). Routed: the play camera's ~30% zoom pop in Animation's side strips: likely `FollowCamera.Place`'s `room` (a 2D raycast on Battle.Collision, GameCloseUp.cs ~30, snaps in at rate 14 on any collider incl. low props): diagnose with a camera log.
+**Scratch:** `...\fce3bb46-...\scratchpad\play3\` (tr.py, perf.py, play.py, play_perf.py = no --shot, frames/cut/corr.py, trtrace2.py, sh4/sh5.py, cmp.py; `..\alloctool` = s2's trace reader). Shots mode saves PNGs that cost 300-800 ms a frame: never read hitches from a `--shot` run.
+
 ## Experience 5 (play-1 lead, 26 Oct): PAUSED for the coordinator's wind-down; MR4 freeze WIP at 69338d30 (NOT mergeable)
 
 **Paused here; next:** finish MR4's freeze (below), then the folk LOD, then the full test and MR; then MR5 (item 15, Experience 4's notes below). Integration merged at 0a447b24 (docs only, no import needed). No turns held. Item 14 still on HOLD for UI 11 (`a00a39b9f159396f9`).
