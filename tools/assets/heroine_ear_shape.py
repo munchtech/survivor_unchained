@@ -31,7 +31,7 @@ points near the moved skin carried by its move (FOLLOW).
 
     python tools/assets/heroine_ear_shape.py --art godot/art/people [--no-follow] [--keep NAME ...] [--dry]
     python tools/assets/heroine_ear_shape.py --paint godot/art/people [face ...]   (no faces: every head paint)
-    python tools/assets/heroine_ear_shape.py --shade godot/art/people              (no scalp shade on her ears: body post 7c)
+    python tools/assets/heroine_ear_shape.py --shade godot/art/people [SRC]        (no scalp shade on her ears: body post 7c)
     python tools/assets/heroine_ear_shape.py --follow-only godot/art/people BEFORE_GLB FILE ...   (a late-built piece)
     python tools/assets/heroine_ear_shape.py --measure GLB                       (the numbers, nothing written)
 Run after heroine_arm_shape (heroine_body_post.py); --paint after the brow strokes (step 7). Done-marks: the glb's
@@ -410,6 +410,8 @@ SHADE_MARK = "ear_shade"
 SHADE_H = 0.002                    # m of stand-off: her ear (the skull fit's), within EAR_R[0] of its middle
 SHADE_FADE = (0.0005, 0.003)       # m from that ear (3D): no shade within the first, the shade as it was past the second
 SHADE_GUTTER = 4                   # texels: uncovered texels this near a changed one take its share (mipmaps)
+SHADE_FLOOR = 0.35                 # of the shade kept on her scalp's skin round the ear (stand-off under SHADE_FLOOR_H)
+SHADE_FLOOR_H = (0.0008, 0.0016)   # m: the floor in full under the first, none (her ear's root) past the second
 
 
 def shade_off(art, src=None, report=True):
@@ -440,8 +442,12 @@ def shade_off(art, src=None, report=True):
         core = f["near"] & (f["h"] > SHADE_H) & (f["r"] < EAR_R[0])
         d = cKDTree(P[core]).query(P)[0]
         T = F[(d[F] < SHADE_FADE[1] + 0.004).all(1)]
-        iy, ix, dt = _raster(UV, T, d[:, None], size)
+        iy, ix, dt = _raster(UV, T, np.c_[d, f["h"]], size)
         m = _ss((dt[:, 0] - SHADE_FADE[0]) / (SHADE_FADE[1] - SHADE_FADE[0]))
+        # (face 41 pixie3: not to none on her scalp's skin just round her ear: there, under the pixie's edge drawn
+        # back off the helix, the bare 3 mm band read a pale patch, a hole in the shade; kept at SHADE_FLOOR, her
+        # sideburn tapering into skin as the shade itself fades to her cheek)
+        m = np.maximum(m, SHADE_FLOOR * _ss((SHADE_FLOOR_H[1] - dt[:, 1]) / (SHADE_FLOOR_H[1] - SHADE_FLOOR_H[0])))
         M[iy, ix] = np.minimum(M[iy, ix], m)
         touched[iy, ix] |= m < 1
         if report:
@@ -456,7 +462,7 @@ def shade_off(art, src=None, report=True):
     g0 = A[..., 1].astype(np.float32)
     A[..., 1] = np.clip(np.floor(g0 * M + 0.5), 0, 255).astype(np.uint8)
     info = PngImagePlugin.PngInfo()
-    info.add_text(SHADE_MARK, "fade %.1f-%.1f mm, h %.1f mm" % (SHADE_FADE[0] * 1000, SHADE_FADE[1] * 1000, SHADE_H * 1000))
+    info.add_text(SHADE_MARK, "fade %.1f-%.1f mm, h %.1f mm, floor %.2f" % (SHADE_FADE[0] * 1000, SHADE_FADE[1] * 1000, SHADE_H * 1000, SHADE_FLOOR))
     Image.fromarray(A, "RGBA").save(path, pnginfo=info)
     if report:
         print("EAR_SHADE: %s: %d texels changed (%d gutter)" % (path, int((A[..., 1] != g0).sum()), int(gut.sum())))
@@ -510,7 +516,8 @@ if __name__ == "__main__":
     elif a and a[0] == "--paint":
         paint_join(a[1], [x for x in a[2:] if not x.startswith("--")] or None)
     elif a and a[0] == "--shade":
-        shade_off(a[1])
+        # (--shade ART [SRC]: SRC, the shade as heroine_features.py wrote it (unmarked), to lay it again)
+        shade_off(a[1], a[2] if len(a) > 2 else None)
     elif a and a[0] == "--follow-only":
         # (--follow-only ART BEFORE_GLB FILE ...)
         follow_only(a[1], a[3:], a[2])

@@ -3,7 +3,8 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "f48278423107ffd3cd187a39cf6ef0ee"
+   "data": "f3c7a34ea954fa0cabb5ad7533057593",
+   "pixie_ear": "clear 1.0-3.5 mm, tip 0.8-3.5 mm, 32 views"
   }
  },
  "scene": 0,
