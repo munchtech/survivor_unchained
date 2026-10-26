@@ -36,6 +36,8 @@ public sealed partial class HouseFade : Node
     // by its hung lanterns and inside it (made transparent as it fades), its lights (their colour dimmed, as the
     // flicker drives their energy), its chimney smoke (transparent, and no new puffs past half)
     readonly List<(GeometryInstance3D G, int Unit)> faders = new();
+    // (the glow balls also shrink on the curve: their additive material takes no instance transparency)
+    readonly List<(Node3D N, Vector3 Scale, int Unit)> balls = new();
     readonly List<(Light3D L, Color Base, int Unit)> lamps = new();
     readonly List<(GpuParticles3D P, int Unit)> smokes = new();
     float[] shown = System.Array.Empty<float>();
@@ -129,6 +131,7 @@ public sealed partial class HouseFade : Node
             if (u < 0 && UnitAt(g.GlobalPosition, 1.0f, 0) is int w && w >= 0 && (g.GlobalPosition.Y > Cut[w] || UnitAt(g.GlobalPosition, -0.1f, 0) >= 0)) u = w;
             if (SurvivorUnchained.Args.Has("house-fade-debug")) GD.Print($"house fade glow {g.Name} at {g.GlobalPosition} unit {u} near {UnitAt(g.GlobalPosition, 3f, 3f)}");
             if (u < 0) continue;
+            balls.Add((g, g.Scale, u));
             foreach (var gi in g.FindChildren("*", "GeometryInstance3D", true, false).Append(g).OfType<GeometryInstance3D>())
                 if (seen.Add(gi.GetInstanceId())) faders.Add((gi, u));
         }
@@ -173,6 +176,13 @@ public sealed partial class HouseFade : Node
             float f = Eased(u);
             if (Mathf.IsEqualApprox(g.Transparency, f)) continue;
             g.Transparency = f;
+        }
+        foreach (var (n, sc, u) in balls)
+        {
+            if (!IsInstanceValid(n)) continue;
+            float f = Eased(u);
+            if (f <= 0 && shown[u] <= 0) continue;
+            n.Scale = sc * Mathf.Max(1e-4f, 1 - f);
         }
         for (int i = 0; i < lamps.Count; i++)
         {
