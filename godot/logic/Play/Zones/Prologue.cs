@@ -126,7 +126,7 @@ public sealed class Prologue : ZoneRuntime
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
                 // (said where it's found; F8 waits for it to go, au1 item 10: the two stacked at the Post)
-                G.After(0.6, () => Tip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your pack and wear the jerkin.", null, 11));
+                G.After(0.6, () => Tip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your *pack* and wear the jerkin.", null, 11));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -630,7 +630,7 @@ public sealed class Prologue : ZoneRuntime
         switch (Now)
         {
             case Stage.Wake:
-                if (stageT > 1.2) Tip("move", "Move", "Keep moving. Your weapon strikes on its own.", ["W", "A", "S", "D"], 11);
+                if (stageT > 1.2) Tip("move", "Move", "Keep *moving*. Your weapon strikes on its own.", ["W", "A", "S", "D"], 11);
                 if (stageT > 3) { Go(Stage.Rising); spawnT = 0; }
                 break;
             case Stage.Rising:
@@ -652,7 +652,7 @@ public sealed class Prologue : ZoneRuntime
                     checkpoint = new XZ(p.X, p.Z);
                     G.Say("The ground goes still. For now. The road runs north, toward the Waystation.", null, 5);
                     Objective([("Survive the night", true, false), ("Follow the road north", false, false)]);
-                    Tip("road", "The road north", "Follow the road. The dead keep coming; let them come to your weapons, and keep your feet moving.");
+                    Tip("road", "The road north", "Follow the *road*. The dead keep coming; let them come to your weapons, and keep your feet moving.");
                 }
                 break;
             }
@@ -664,7 +664,7 @@ public sealed class Prologue : ZoneRuntime
                     var def = Now == Stage.Road2 && B.Rng.Next() < 0.2 ? "risen_warrior" : B.Rng.Next() < 0.12 ? "risen_archer" : "risen";
                     SpawnAround(def, 1 + (B.Rng.Next() < 0.5 ? 1 : 0), 10, 15, 0.55, Now == Stage.Road2 ? 2 : 1);
                     spawnT = 1.3;
-                    if (def == "risen_warrior") Tip("shield", "Shieldmen", "Bolts and arrows glance off a raised shield. Get to its side, or hit it with something that is not a projectile.");
+                    if (def == "risen_warrior") Tip("shield", "Shieldmen", "Bolts and arrows glance off a *raised shield*. Get to its side, or hit it with something that is not a projectile.");
                 }
                 var cart = L("cart"); var post = L("post");
                 if (Now == Stage.Road && p.Z < cart.Z + 7)
@@ -719,7 +719,7 @@ public sealed class Prologue : ZoneRuntime
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 if (knight == null && !chestOpened)
                 {
-                    Tip("chest", "The Watch-post", "The watchman's chest is unguarded now.", [Key("interact")]);
+                    Tip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", [Key("interact")]);
                     Objective([("Put down the Barrow Knight", true, false), ("Search the old Watch-post", false, false)]);
                 }
                 if (p.Z < 21 && knight == null)
