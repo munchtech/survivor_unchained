@@ -651,6 +651,22 @@ DAGGERS_HAND_R = (0.05, -0.34, 0.24)
 DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 
 
+# Her free arms in town brought in toward her sides (animation 50; the owner, 26 Oct: "nobody stands like that"): each
+# hand's sideways reach from the shoulder scaled by FREE_IN, its length kept (the drop takes up the rest), so the arm
+# hangs closer and no more bent. 1.0: the arms as animation 44-48 had them (17-25 deg out, the hand 27 cm out from the hip).
+FREE_IN = float(os.environ.get("FREE_IN", "1.0"))
+
+
+def _in(v, k=None):
+    """A shoulder-relative hand target with its sideways part scaled by k (FREE_IN), its length kept."""
+    k = FREE_IN if k is None else k
+    x, y, z = (float(c) for c in v)
+    r = math.sqrt(x * x + y * y + z * z)
+    x *= k
+    y = -math.sqrt(max(r * r - x * x - z * z, 0.0)) if y < 0 else y
+    return np.array((x, y, z))
+
+
 def warden_town(t, f):
     """In town, her weapons sheathed (the sword at her left hip, the shield
     on her back): the arms hang free and easy at her sides, the elbows soft,
@@ -658,9 +674,9 @@ def warden_town(t, f):
     her hips and skirt; a small counter-swing to the hips' sway."""
     sw = 0.012 * math.sin(2 * math.pi * t * 2)
     return {
-        "hand_l": {"arc": arc_of((0.16, -0.46, 0.08 + sw)), "pole": (0.3, -0.2, -1.0), "frame": "chest",
+        "hand_l": {"arc": arc_of(_in((0.16, -0.46, 0.08 + sw))), "pole": (0.3, -0.2, -1.0), "frame": "chest",
                    "thumb": _n((-0.15, -0.1, 1.0)), "twist": 1.0},
-        "hand_r": {"arc": arc_of((-0.14, -0.46, 0.08 - sw)), "pole": (-0.3, -0.2, -1.0), "frame": "chest",
+        "hand_r": {"arc": arc_of(_in((-0.14, -0.46, 0.08 - sw))), "pole": (-0.3, -0.2, -1.0), "frame": "chest",
                    "thumb": _n((0.15, -0.1, 1.0)), "twist": 1.0},
         "fingers_l": "relaxed", "fingers_r": "relaxed",
     }
@@ -671,7 +687,7 @@ def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0
     """warden_town's free arms for another calling's town stand (its weapons sheathed): each hand (chest frame, from
     the shoulder) moved clear of what that calling wears sheathed, `reach` the arm let out (1.025: the elbows soft at
     20-25 deg, not 35), the same small counter-swing to the hips' sway."""
-    hl, hr = np.array(hand_l, float) * reach, np.array(hand_r, float) * reach
+    hl, hr = _in(np.array(hand_l, float) * reach), _in(np.array(hand_r, float) * reach)
 
     def arms(t, f):
         sw = swing * math.sin(2 * math.pi * t * 2)
