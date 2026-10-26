@@ -200,29 +200,114 @@ def hash2(i, j, v):
 
 
 def setts_layout(variant):
-    """Seeds, their keys and their weights (a power diagram: a weighted stone takes ground from its neighbours)."""
-    cols, rows = COLS, ROWS
-    dx, dz = SETTS_M / cols, SETTS_M / rows
-    seeds, keys, wts = [], [], []
-    for j in range(rows):
-        for i in range(cols):
-            border = i in (0, cols - 1) or j in (0, rows - 1)
-            r = hash2(i, j, 0 if border else variant + 1)
-            x = (i + 0.5 * (j & 1) + r.uniform(-JIT, JIT)) * dx
-            z = (j + r.uniform(-JIT * 0.9, JIT * 0.9)) * dz
-            w = 0.0
-            if not border:
-                # The courses bow, differently in each variant, straight at the tile's edge.
-                ph = variant * 2.1
-                ex = np.sin(np.pi * x / SETTS_M) * np.sin(np.pi * z / SETTS_M)
-                z += 0.07 * ex * np.sin(2 * np.pi * x / SETTS_M * (1 + variant % 2) + ph)
-                x += 0.03 * ex * np.sin(2 * np.pi * z / SETTS_M * 2 + ph)
-                u = r.uniform(0, 1)
-                w = BIG_W * r.uniform(0.8, 1.15) if u < BIG_P else (-SMALL_W * r.uniform(0.5, 1.0) if u > 1 - SMALL_P else 0.0)
-            seeds.append((x % SETTS_M, z % SETTS_M))
-            keys.append((i, j, 0 if border else variant + 1))
-            wts.append(w)
-    return np.array(seeds), keys, np.array(wts)
+    """The courses (E9e): bands across the tile (shared by every variant, so tiles meet clean top and bottom), each
+    cut into dressed setts 12-24 cm long; the stones within 0.35 m of the tile's left and right edges are shared too,
+    the rest each variant's own, staggered off the course below. A few flags span two courses. Returns the course
+    edges (z) and the stones: a list of dicts (course, u0, u1, the joints' tilts, the stone's own key)."""
+    rs = np.random.default_rng(0x5E77)
+    hk = rs.uniform(CRS_H[0], CRS_H[1], 64)
+    n = int(round(SETTS_M / hk.mean()))
+    hk = rs.uniform(CRS_H[0], CRS_H[1], n)
+    zk = np.concatenate([[0.0], np.cumsum(hk / hk.sum() * SETTS_M)])
+    rv = np.random.default_rng(1000 + variant)
+    courses = []
+    prev = None
+    for k in range(n):
+        r0 = hash2(k, 0, 0)
+        o = r0.uniform(0.02, 0.2)
+        L = lambda r: r.uniform(STONE_L[0], STONE_L[1])
+        left = [o]
+        while left[-1] < o + EDGE_SHARE:
+            left.append(left[-1] + L(r0))
+        right = [o + SETTS_M]
+        while right[-1] > SETTS_M - EDGE_SHARE:
+            right.append(right[-1] - L(r0))
+        right = right[::-1]
+        a, b = left[-1], right[0]
+        m = max(1, int(round((b - a) / np.mean(STONE_L))))
+        ls = rv.uniform(STONE_L[0], STONE_L[1], m)
+        mid = list(a + np.cumsum(ls / ls.sum() * (b - a))[:-1])
+        # Stagger: no joint within 4 cm of one in the course below.
+        if prev is not None:
+            for i, x in enumerate(mid):
+                d = prev - x
+                j = np.argmin(np.abs(d))
+                if abs(d[j]) < STAGGER:
+                    mid[i] = x - np.sign(d[j] or 1) * (STAGGER - abs(d[j]) + 0.01)
+        js = np.array(left + mid + right)
+        keep = np.concatenate([[True], np.diff(js) > 0.07])
+        js = js[keep]
+        js[-1] = o + SETTS_M
+        tl = np.array([hash2(k, int(round(x * 1000)), 0 if (x < o + EDGE_SHARE + 0.3 or x > SETTS_M - EDGE_SHARE - 0.3) else variant + 1).normal(0, TILT) for x in js])
+        tl[-1] = tl[0]
+        courses.append(dict(z0=zk[k], z1=zk[k + 1], j=js, t=tl, o=o))
+        prev = np.concatenate([js, js - SETTS_M, js + SETTS_M])
+    stones = []
+    for k, c in enumerate(courses):
+        for i in range(len(c['j']) - 1):
+            u0, u1 = c['j'][i], c['j'][i + 1]
+            shared = u0 < c['o'] + EDGE_SHARE or u1 > SETTS_M - EDGE_SHARE
+            stones.append(dict(k=k, k1=k, u0=u0, u1=u1, t0=c['t'][i], t1=c['t'][i + 1],
+                               key=(k, int(round(u0 * 1000)), 0 if shared else variant + 1)))
+    # The flags: a few big stones over two courses, in each variant's own middle.
+    for f in range(FLAGS):
+        for _ in range(40):
+            k = int(rv.integers(2, n - 3))
+            ua = rv.uniform(0.7, SETTS_M - 1.2)
+            w = rv.uniform(FLAG_W[0], FLAG_W[1])
+            c0, c1 = courses[k], courses[k + 1]
+            ia = np.searchsorted(c0['j'], ua); ib = np.searchsorted(c0['j'], ua + w)
+            if ia < 1 or ib >= len(c0['j']) or ib - ia < 1:
+                continue
+            a, b = c0['j'][ia], c0['j'][ib]
+            if b - a < FLAG_W[0] * 0.8 or any(s.get('flag') and s['k'] in (k - 1, k, k + 1, k + 2) and s['u1'] > a - 0.3 and s['u0'] < b + 0.3 for s in stones):
+                continue
+            tt = 0.0
+            stones[:] = [s for s in stones if not (s['k'] == k and s['u1'] > a + 0.005 and s['u0'] < b - 0.005)]
+            for s in stones:
+                if s['k'] == k and abs(s['u1'] - a) < 0.005:
+                    s['t1'] = tt
+                if s['k'] == k and abs(s['u0'] - b) < 0.005:
+                    s['t0'] = tt
+            # The course above, re-cut at the flag's edges (the stones it cuts keep their far joints and tilts).
+            c = courses[k + 1]
+            new = []
+            for i in range(len(c['j']) - 1):
+                u0, u1 = c['j'][i], c['j'][i + 1]
+                if u1 <= a + 0.005 or u0 >= b - 0.005:
+                    continue
+                if u0 < a - 0.005:
+                    new.append((u0, a, c['t'][i], tt))
+                if u1 > b + 0.005:
+                    new.append((b, u1, tt, c['t'][i + 1]))
+            stones[:] = [s for s in stones if not (s['k'] == k + 1 and s['u0'] < b - 0.005 and s['u1'] > a + 0.005)]
+            for u0, u1, t0, t1 in new:
+                if u1 - u0 > 0.06:
+                    stones.append(dict(k=k + 1, k1=k + 1, u0=u0, u1=u1, t0=t0, t1=t1, key=(k + 1, int(round(u0 * 1000)), variant + 1)))
+            stones.append(dict(k=k, k1=k + 1, u0=a, u1=b, t0=tt, t1=tt, key=(k, 7000 + f, variant + 1), flag=True))
+            break
+    return courses, stones
+
+
+def _stone_look(r, flag):
+    """One stone's own tone (sRGB 0-1), wear, tilt, crown and edge: granite greys, a few warmer, darker, paler."""
+    u = r.uniform(0, 1)
+    if u < 0.58:   # grey granite
+        h, s, v = r.uniform(25, 45), r.uniform(0.05, 0.13), r.normal(0.345, 0.04)
+    elif u < 0.74:  # a warmer, browner stone
+        h, s, v = r.uniform(26, 38), r.uniform(0.17, 0.27), r.normal(0.33, 0.035)
+    elif u < 0.87:  # dark whin, blue-grey
+        h, s, v = r.uniform(200, 225), r.uniform(0.03, 0.06), r.normal(0.26, 0.025)
+    elif u < 0.95:  # a pale one
+        h, s, v = r.uniform(32, 46), r.uniform(0.06, 0.11), r.normal(0.43, 0.03)
+    else:           # rosy granite
+        h, s, v = r.uniform(12, 22), r.uniform(0.10, 0.16), r.normal(0.33, 0.03)
+    if flag:
+        h, s, v = r.uniform(30, 42), r.uniform(0.08, 0.14), r.normal(0.36, 0.025)
+    tone = np.array(colorsys.hsv_to_rgb(h / 360.0, s, float(np.clip(v, 0.2, 0.5))))
+    return dict(tone=tone, wear=r.uniform(0, 1) ** 1.3, tilt=r.normal(0, 0.012, 2), top=r.uniform(0.8, 1.0),
+                sid=r.uniform(0.1, 0.9), ins=r.uniform(INSET[0], INSET[1], 4), rad=r.uniform(0.012, 0.03) if r.uniform() > 0.12 else r.uniform(0.04, 0.06),
+                cham=r.uniform(0.012, 0.028), grad=r.normal(0, 0.06, 2), crown=r.uniform(0.0006, 0.0022))
 
 
 def setts_sources(variant):
@@ -230,96 +315,108 @@ def setts_sources(variant):
     height (metres), id (stone index), tone (RGB, each stone's own colour), wear (0-1, worn tops), mud (0-1, the dirt
     packed into the joints), moss (0-1, where moss grows in them), grain (-1..1, the stone's surface at 2-5 cm), sid
     (each stone's own random 0.1-0.9, 0 in the joints), stone (0-1, coverage)."""
-    s, keys, wt = setts_layout(variant)
-    tree = cKDTree(s, boxsize=SETTS_M)
+    courses, stones = setts_layout(variant)
     px = SETTS_M / SN
-    cpx = SN / SETTS_M                               # px per metre
+    cpx = SN / SETTS_M
     g = (np.arange(SN) + 0.5) * px
     X, Z = np.meshgrid(g, g)
-    P = np.stack([X.ravel(), Z.ravel()], -1)
-    edge = np.zeros(len(P)); i1 = np.zeros(len(P), int); qa = np.zeros((len(P), 2))
-    for c0 in range(0, len(P), 1 << 19):
-        Pc = P[c0:c0 + (1 << 19)]
-        d, idx = tree.query(Pc, k=8)
-        pw = d * d - wt[idx]
-        o = np.argsort(pw, 1)
-        idx = np.take_along_axis(idx, o, 1)
-        a = idx[:, 0]
-        q = Pc - s[a]
-        q -= SETTS_M * np.round(q / SETTS_M)
-        es = []
-        for c in range(1, 8):
-            v = s[idx[:, c]] - s[a]
-            v -= SETTS_M * np.round(v / SETTS_M)
-            vl = np.maximum(np.linalg.norm(v, axis=1), 1e-6)
-            es.append((vl * vl + wt[a] - wt[idx[:, c]]) / (2 * vl) - (q * v).sum(1) / vl)
-        es = np.maximum(np.stack(es, 1), 0)
-        edge[c0:c0 + len(Pc)] = -np.log(np.exp(-KK * es).sum(1)) / KK
-        i1[c0:c0 + len(Pc)] = a; qa[c0:c0 + len(Pc)] = q
-    edge = np.maximum(edge.reshape(SN, SN), 0)
-    # The joints wobble (no ruler-straight sides): about 4 mm over 4-6 cm.
-    edge = edge + WOBBLE * fbm(SN, np.random.default_rng(500), cpx * 0.05, 2)
-    q = qa.reshape(SN, SN, 2)
-    i1 = i1.reshape(SN, SN)
-
-    # Per stone: one hue within 6 degrees, saturation within 10%, value SD about 10%.
-    ns = len(s)
-    tone = np.zeros((ns, 3)); wear = np.zeros(ns); tilt = np.zeros((ns, 2)); top = np.zeros(ns); sid = np.zeros(ns)
-    for k, key in enumerate(keys):
-        r = hash2(*key)
-        h = (STONE_HSV[0] + np.clip(r.normal(0, 3.0), -6, 6)) / 360.0
-        sat = STONE_HSV[1] * r.uniform(0.9, 1.1)
-        val = STONE_HSV[2] * np.clip(r.normal(1.0, 0.10), 0.8, 1.22)
-        tone[k] = colorsys.hsv_to_rgb(h, sat, val)
-        wear[k] = r.uniform(0, 1) ** 1.5
-        tilt[k] = r.normal(0, 0.03, 2)
-        top[k] = r.uniform(0.75, 1.0)
-        sid[k] = r.uniform(0.1, 0.9)
-
-    # Each variant's own noise in the middle, one shared field toward the tile's edge, so tiles meet clean.
-    e = np.minimum(np.minimum(g, SETTS_M - g), 0.6) / 0.6
-    m = np.minimum(e[None, :], e[:, None])
+    e_t = np.minimum(np.minimum(g, SETTS_M - g), 0.6) / 0.6
+    m = np.minimum(e_t[None, :], e_t[:, None])
     m = m * m * (3 - 2 * m)
+
     def mixed(cell_m, oct_, sd):
         return (fbm(SN, np.random.default_rng(sd), cell_m * cpx, oct_) * (1 - m)
                 + fbm(SN, np.random.default_rng(sd + 1 + variant), cell_m * cpx, oct_) * m)
-    dirt = mixed(0.6, 4, 100)                   # where the dirt lies, about 0.6 m
-    fine = mixed(0.05, 3, 110)
-    # Joints 2.4-3.4 cm wide, varying along their length (about 0.15 m), wider where the dirt lies.
-    jv = mixed(0.15, 2, 300)
-    joint = (JOINT_HALF + 0.0045 * jv) * (1 + 0.15 * np.clip(dirt, 0, 1))
-    dome = np.clip((edge - joint) / DOME_R, 0, 1)
+    # The courses bow (each variant its own way, straight at the tile's edge) and wander a little.
+    ph = variant * 2.1
+    ex = np.sin(np.pi * X / SETTS_M) * np.sin(np.pi * Z / SETTS_M)
+    V = (Z + 0.025 * ex * np.sin(2 * np.pi * X / SETTS_M * (1 + variant % 2) + ph) + 0.012 * mixed(0.5, 2, 600)) % SETTS_M
+    U = (X + 0.012 * ex * np.sin(2 * np.pi * Z / SETTS_M * 2 + ph)) % SETTS_M
+    zk = np.array([c['z0'] for c in courses] + [SETTS_M])
+    K = np.clip(np.searchsorted(zk, V, side='right') - 1, 0, len(courses) - 1)
+    # Each pixel's stone: its course's stone between the (tilted) joints either side.
+    sid_px = np.full((SN, SN), -1, int)
+    by_course = {}
+    for si, s in enumerate(stones):
+        for kk in range(s['k'], s['k1'] + 1):
+            by_course.setdefault(kk, []).append(si)
+    for k, c in enumerate(courses):
+        msk = K == k
+        if not msk.any():
+            continue
+        lst = sorted(by_course.get(k, []), key=lambda si: stones[si]['u0'])
+        u0 = np.array([stones[si]['u0'] for si in lst]); u1 = np.array([stones[si]['u1'] for si in lst])
+        uu = U[msk].copy()
+        uu = np.where(uu < c['o'], uu + SETTS_M, uu)
+        vm = V[msk] - 0.5 * (c['z0'] + c['z1'])
+        t0 = np.array([stones[si]['t0'] for si in lst]); t1 = np.array([stones[si]['t1'] for si in lst])
+        i = np.clip(np.searchsorted(u0, uu, side='right') - 1, 0, len(lst) - 1)
+        for _ in range(2):
+            i = np.where(uu < u0[i] + t0[i] * vm, np.maximum(i - 1, 0), i)
+            i = np.where(uu > u1[i] + t1[i] * vm, np.minimum(i + 1, len(lst) - 1), i)
+        sid_px[msk] = np.array(lst)[i]
+    ns = len(stones)
+    look = [_stone_look(hash2(*s['key']), s.get('flag', False)) for s in stones]
+    # Per-pixel distance into its stone (a rounded box with its own insets, tilted sides).
+    S = sid_px
+    Uu = np.where(U < np.array([courses[s['k']]['o'] for s in stones])[S], U + SETTS_M, U)
+    za = np.array([courses[s['k']]['z0'] for s in stones]); zb = np.array([courses[s['k1']]['z1'] for s in stones])
+    vmid = np.array([0.5 * (courses[s['k']]['z0'] + courses[s['k']]['z1']) for s in stones])
+    arr = lambda key: np.array([s[key] for s in stones])
+    ins = np.array([l['ins'] for l in look]); rad = np.array([l['rad'] for l in look])
+    vm = V - vmid[S]
+    dl = Uu - (arr('u0')[S] + arr('t0')[S] * vm) - ins[S, 0]
+    dr = (arr('u1')[S] + arr('t1')[S] * vm) - Uu - ins[S, 1]
+    Vv = V.copy()
+    # (A stone across the tile's top edge: its course is the last; V near 0 belongs to it only if K says so.)
+    db = Vv - za[S] - ins[S, 2]
+    dt = zb[S] - Vv - ins[S, 3]
+    dx = np.minimum(dl, dr); dy = np.minimum(db, dt)
+    r_ = rad[S]
+    qx, qy = r_ - dx, r_ - dy
+    edge = np.where(np.maximum(qx, qy) > 0, r_ - np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)), np.minimum(dx, dy))
+    # Chipped, uneven arrises: a few mm over 2-6 cm.
+    edge = edge + WOBBLE * fbm(SN, np.random.default_rng(500), cpx * 0.04, 3)
+    stone = gaussian_filter((edge > 0).astype(float), 0.6, mode='wrap')
+    cham = np.array([l['cham'] for l in look])[S]
+    dome = np.clip(edge / cham, 0, 1)
     dome = 1 - (1 - dome) ** 2
-    stone = gaussian_filter((edge > joint).astype(float), 0.7, mode='wrap')
-    gr = mixed(0.035, 2, 400)                   # grain at 2-5 cm
-    h_m = (dome * DOME_H * top[i1] + (q * tilt[i1]).sum(-1) * stone + gr * 0.0006 * stone + 0.0006 * fine)
+    # In-stone position (for the crown, tilt and the value's slow drift over a stone).
+    cu = 0.5 * (arr('u0') + arr('u1')); cv = 0.5 * (za + zb)
+    hu = 0.5 * (arr('u1') - arr('u0')); hv = 0.5 * (zb - za)
+    qu = (Uu - cu[S]) / hu[S]; qv = (V - cv[S]) / hv[S]
+    tilt = np.array([l['tilt'] for l in look])[S]
+    top = np.array([l['top'] for l in look])[S]
+    crown = np.array([l['crown'] for l in look])[S]
+    gr = mixed(0.035, 2, 400)
+    fine = mixed(0.05, 3, 110)
+    h_m = (dome * TOP_H * top + crown * (1 - 0.5 * (qu * qu + qv * qv)) + (tilt[..., 0] * qu * hu[S] + tilt[..., 1] * qv * hv[S])
+           + gr * 0.0006 + 0.0004 * fine)
     h_m = h_m * stone + (1 - stone) * (-0.004 + 0.0025 * fine)
-    # The dirt packed into the joints (a little proud of their floor where it is thick) and the moss in it.
+    dirt = mixed(0.6, 4, 100)
     mud = np.clip(0.55 + 0.45 * mixed(0.12, 3, 200) + 0.3 * dirt, 0, 1) * (1 - stone)
     moss = np.clip((-dirt - 0.25) * 2.5, 0, 1) * np.clip(0.5 + 0.8 * mixed(0.08, 2, 210), 0, 1) * (1 - stone)
     h_m += mud * 0.002 * (1 - stone)
-    sidm = np.where(stone > 0.5, sid[i1], 0.0)
-    wearm = wear[i1] * dome * stone
-    src = dict(height=h_m, id=i1.astype(float), tone=tone[i1], wear=wearm, mud=mud, moss=moss, grain=gr, sid=sidm,
-               stone=stone, dome=dome, edge=edge, joint=joint)
+    # The tone: each stone's own, drifting a little across it, with a granite speckle and a weathered mottle.
+    tone = np.array([l['tone'] for l in look])[S]
+    grad = np.array([l['grad'] for l in look])[S]
+    speck = fbm(SN, np.random.default_rng(700 + variant), 0.8, 1)
+    mott = mixed(0.06, 2, 710)
+    tone = tone * (1 + grad[..., 0:1] * qu[..., None] + grad[..., 1:2] * qv[..., None]) * (1 + 0.07 * speck[..., None] + 0.05 * mott[..., None])
+    sidv = np.array([l['sid'] for l in look])
+    sidm = np.where(stone > 0.5, sidv[S], 0.0)
+    wearm = np.array([l['wear'] for l in look])[S] * dome * stone
+    src = dict(height=h_m, id=S.astype(float), tone=np.clip(tone, 0, 1), wear=wearm, mud=mud, moss=moss, grain=gr, sid=sidm,
+               stone=stone, dome=dome, edge=edge, joint=np.zeros_like(edge))
     if SIZES:
-        area = np.bincount(i1.ravel(), weights=(edge > joint).ravel().astype(float), minlength=ns) * px * px
-        eq = np.sqrt(4 * area[area > 0.002] / np.pi)
-        # The widest extent of each stone (its Feret width along x, z and both diagonals).
-        st = (edge > joint)
-        ids = i1[st]
-        co = np.stack(np.nonzero(st), -1).astype(float) * px - s[ids][:, ::-1]
-        co -= SETTS_M * np.round(co / SETTS_M)          # (round the stone's seed, so a stone across the tile's edge is whole)
-        wmax = np.zeros(ns)
-        for a in (np.array([1, 0]), np.array([0, 1]), np.array([1, 1]) / 2 ** 0.5, np.array([1, -1]) / 2 ** 0.5):
-            pr = co @ a
-            lo = np.full(ns, 1e9); hi = np.full(ns, -1e9)
-            np.minimum.at(lo, ids, pr); np.maximum.at(hi, ids, pr)
-            wmax = np.maximum(wmax, hi - lo)
-        wm = wmax[area > 0.002]
-        print(f'  setts {variant}: stones {len(eq)}, eq. diameter p5 {np.percentile(eq, 5):.3f} p50 {np.median(eq):.3f} '
-              f'p95 {np.percentile(eq, 95):.3f} max {eq.max():.3f}; 35-45 cm {100 * ((eq > 0.33) & (eq < 0.46)).mean():.1f}%; '
-              f'width p50 {np.median(wm):.3f} p99 {np.percentile(wm, 99):.3f} max {wm.max():.3f} m', flush=True)
+        st = edge > 0
+        area = np.bincount(S.ravel(), weights=st.ravel().astype(float), minlength=ns) * px * px
+        ok = area > 0.002
+        eq = np.sqrt(4 * area[ok] / np.pi)
+        ln = (arr('u1') - arr('u0'))[ok]
+        print(f'  setts {variant}: stones {ok.sum()} ({ok.sum() / SETTS_M ** 2:.1f}/m2, {np.sqrt(ok.sum()) / SETTS_M:.2f}/m), courses {len(courses)}, '
+              f'eq. diameter p5 {np.percentile(eq, 5):.3f} p50 {np.median(eq):.3f} p95 {np.percentile(eq, 95):.3f} max {eq.max():.3f}; '
+              f'length p5 {np.percentile(ln, 5):.3f} p50 {np.median(ln):.3f} p95 {np.percentile(ln, 95):.3f}; joint share {1 - st.mean():.3f}', flush=True)
     return src
 
 
@@ -332,15 +429,16 @@ def bake_setts(src):
     alb = src['tone'] * (1 + GRAIN * gr[..., None]) * (1 + 0.06 * wear[..., None])
     alb *= 1 - 0.10 * lip[..., None]
     # The joints: brown grit and packed dirt, moss where it is never swept.
-    grit = np.array([0.28, 0.23, 0.17])
-    dirt = np.array([0.22, 0.18, 0.13])
+    # (E9e: grit and sand nearer the stones' value, so the joints draw no dark outline round every stone.)
+    grit = np.array([0.31, 0.28, 0.23])
+    dirt = np.array([0.25, 0.21, 0.16])
     moss = np.array([0.16, 0.19, 0.10])
     mortar = grit + (dirt - grit) * src['mud'][..., None]
     mortar += (moss - mortar) * src['moss'][..., None] * 0.6
     alb = np.clip(alb * st + mortar * (1 - st), 0, 1)
     rough = (0.72 - 0.15 * wear) * stone + 0.95 * (1 - stone)
     hn = np.clip((h_m + 0.006) / 0.022, 0, 1)
-    ao = gaussian_filter(np.clip(1 - 0.25 * (1 - stone) - 0.1 * lip, 0, 1), 1.0, mode='wrap')
+    ao = gaussian_filter(np.clip(1 - 0.18 * (1 - stone) - 0.06 * lip, 0, 1), 1.0, mode='wrap')
     n = normal_from(h_m, px, 1.0)
     # The normal's B carries each stone's own random (0.1-0.9; the shader rebuilds z from x and y).
     n[..., 2] = src['sid'] * 2 - 1
@@ -379,17 +477,17 @@ def build_setts(variant, grain=None):
 
 SIZES = '--sizes' in sys.argv
 STASH = {}   # the last tile's stones, joints and grain (for a measuring script)
-COLS, ROWS = 17, 19   # about 0.235 m x 0.21 m cells before the weights
-JIT = 0.30
-KK = 70.0             # the corners' rounding (1/m)
-BIG_P, BIG_W = 0.05, 0.03      # a few big stones (35-45 cm) and their power weight (m^2)
-SMALL_P, SMALL_W = 0.08, 0.005
-JOINT_HALF = 0.013    # half a joint (2.2-3.2 cm full)
-DOME_H = 0.010        # each stone's dome, to DOME_R in from its joint
-DOME_R = 0.06
+# E9e: dressed setts in courses (the Voronoi field read as a cartoon mosaic at the play camera).
+CRS_H = (0.11, 0.155)   # a course's width across the street (m)
+STONE_L = (0.12, 0.24)  # a sett's length along its course (m)
+EDGE_SHARE = 0.35       # the stones within this of the tile's left and right edges are every variant's
+STAGGER = 0.04          # no joint within this of one in the course below
+TILT = 0.12             # a joint's lean off square (its slope)
+FLAGS, FLAG_W = 3, (0.32, 0.5)   # big flags per variant tile, over two courses, and their length
+INSET = (0.0015, 0.0055)  # each side's own set-back from its joint line (the joints 0.3-1.1 cm, plus the wobble)
+TOP_H = 0.010           # the dressed top's height over the joint's floor, reached over the stone's chamfer
 WOBBLE = 0.004
-GRAIN = 0.12          # grain at 2-5 cm: plus or minus about 5% luma
-STONE_HSV = (34.0, 0.16, 0.33)   # the stones' one hue (degrees), saturation and value
+GRAIN = 0.10
 
 
 def to8(a):
@@ -427,7 +525,7 @@ P_JOINT_V = 0.0030
 P_BEVEL = (0.030, 0.048)   # the rounded bevel (m), at most 0.38 of the stone's inradius
 P_TOP_H = 0.013            # the top's height over the gap's floor (m)
 P_TILT = (2.0, 4.0)        # the top's tilt (degrees), in the normal; a quarter of it in the height
-P_WOBBLE = 0.003
+P_WOBBLE = 0.004
 P_SUN = np.array([0.866, -0.5])     # toward the sun in the tile (col, row): azimuth 330 (x = cos az, z = sin az; rows = z)
 P_STROKE = 0.06                     # the strokes along a stone's long axis, +/-
 P_STROKE_W = 0.065                  # their width (m): 2-3 to a stone
