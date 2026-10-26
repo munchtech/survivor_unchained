@@ -24,10 +24,17 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   6. heroine_arm_shape --art: her upper arms slimmer on the inner side (girth ~32 -> ~28.5 cm at 25-50%, tapering to
      the elbow), the armpit web slimmer from both sides, a small deltoid swell; hair, outfits, armor pieces follow,
      records re-keyed (armor 15, the owner 22 Oct)                                   [heroine_arm_shape]
+  6b. heroine_ear_shape --art: her ears set closer to her head (each point in toward the fitted skull by a share of
+     its stand-off: lobe 20 -> 12 mm, middle 19 -> 15, top 13 -> 10) and the ear's lower front join with her cheek
+     rounded; hair, outfits, armor pieces follow, records re-keyed; then heroine_ear_ao.py again from the new shape
+     (face 41, the owner 26 Oct: "lobe might stick too far away from head")         [heroine_ear_shape]
   7. heroine_brow_strokes: her own face's brows painted again as grown hairs, none crossing (the old strokes filled
      from the skin round them first), in head_tex/heroine_head.jpg, the paint the game lays over the glb's own copy;
      then heroine_browdye (Own's brows.png's core and skin from it). No glb is written: the LODs never carry her head
      (face 40, a max judge: the old strokes crossed in a lattice, "hatching")     [the paint's JPEG comment brow_strokes]
+  7b. heroine_ear_shape --paint: every head paint's ear join (where the features' blue fades over the tragus and the
+     lobe's front) laid as the blend of ear and cheek as they render, so her face's tone no longer warms the ear's
+     already warmed paint into a pink band (face 41)                             [each paint's JPEG comment ear_join]
   8. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
@@ -89,12 +96,17 @@ def main(a):
         run(os.path.join(HERE, "heroine_neck_relief.py"), glb, glb)
     if "heroine_arm_shape" not in m:
         run(os.path.join(HERE, "heroine_arm_shape.py"), "--art", art)
+    if "heroine_ear_shape" not in m:
+        run(os.path.join(HERE, "heroine_ear_shape.py"), "--art", art)
+        run(os.path.join(HERE, "heroine_ear_ao.py"))
     paint = os.path.join(art, "head_tex", "heroine_head.jpg")
     if os.path.exists(paint):
         import heroine_brow_strokes as bs
         if bs.MARK not in bs.comment(paint):
             run(os.path.join(HERE, "heroine_brow_strokes.py"), art)
             run(os.path.join(HERE, "heroine_browdye.py"))
+    # (each paint carries its own done-mark; the step skips a marked one)
+    run(os.path.join(HERE, "heroine_ear_shape.py"), "--paint", art)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     if "--no-lod" not in a:
