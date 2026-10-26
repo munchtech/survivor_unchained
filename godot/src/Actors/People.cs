@@ -18,7 +18,7 @@ public static class People
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
         Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0,
         IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null,
-        string? FaceShape = null, float? Freckles = null);
+        string? FaceShape = null, float? Freckles = null, Color? Highlight = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -89,7 +89,7 @@ public static class People
         var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
         return new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
-            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape);
+            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape, Highlight: C(spec.HairHighlight));
     }
 
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
@@ -129,7 +129,7 @@ public static class People
         if (her)
         {
             var hairStyle = HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0];
-            if (hairHider == null) HerHair(p, hairStyle, look.HairColor ?? HerHairColour);
+            if (hairHider == null) HerHair(p, hairStyle, look.HairColor ?? HerHairColour, look.Highlight);
             else { p.HairStyle = hairStyle; GD.Print($"her wear: hair hidden by {hairHider}"); }
             HerScalp(p, look.HairColor ?? HerHairColour);
             HerFaceKey(p, look.FaceShape);
@@ -622,7 +622,7 @@ public static class People
     /// <summary>One of her hairstyles on her head, dyed: its paint is grey,
     /// light to dark, and takes the colour as it is. The one she had is
     /// taken off first.</summary>
-    public static void HerHair(Person p, string style, Color colour)
+    public static void HerHair(Person p, string style, Color colour, Color? highlight = null)
     {
         foreach (var old in p.Hair) { p.Meshes.Remove(old); old.QueueFree(); }
         p.Hair.Clear();
@@ -643,7 +643,7 @@ public static class People
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                 {
-                    var hm = Hair(src, colour);
+                    var hm = Hair(src, colour, highlight, style);
                     // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
                     if (style == "pixie" && hm is ShaderMaterial sm)
                         foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
@@ -798,7 +798,7 @@ public static class People
     /// how much of the dye's colour it takes. (--brows soften,sat tries others.)</summary>
     static readonly (float Soften, float Sat) HerBrows = SurvivorUnchained.Args.Get("brows") is string bw && bw.Split(',') is [var bs, var bt]
         ? (float.Parse(bs, System.Globalization.CultureInfo.InvariantCulture), float.Parse(bt, System.Globalization.CultureInfo.InvariantCulture))
-        : (0.07f, 0.7f);
+        : (0.07f, 1.2f);   // (face 39 dye: the red hairs' only, BrowRed)
 
     /// <summary>Her brows' dye kept in a warm hue band (Oklab degrees; face 33, round 3): the most a
     /// copper's (or any darker hair's) dye may lean to yellow, the most a blonde's, and the least chroma it
@@ -838,9 +838,45 @@ public static class People
     /// warm band and its chroma kept (face 33, round 3: a darkened yellow is olive, and the game's teal night
     /// grade took a copper's brows to olive-brown and a blonde's to khaki; a blonde's brows are golden, a
     /// copper's auburn). A near-black's or a grey's left as it was: they have no hue to keep.</summary>
+    // (face 39: 0.42 to 0.38, with HerBrows' colour 0.7 to 1.2: the owner's "dark brown, thick and felt-textured
+    // against the copper, read as drawn on"; now a shade or two under her copper, its own warmth kept. --brow-dark tries others)
+    static readonly float BrowDark = SurvivorUnchained.Args.Num("brow-dark", 0.38f);
+
+    /// <summary>The least Oklab chroma a brow dye with little colour of its own takes on deep skin (face 39 dye2;
+    /// --brow-deep-warm tries others).</summary>
+    static Shader? paintMulShader;
+
+    static readonly float BrowDeepWarm = SurvivorUnchained.Args.Num("brow-deep-warm", 0.07f);
+
+    /// <summary>How far a hair's brows take the red settings (face 39's: sat 1.2, BrowDark 0.38, dye_gamma 0.9,
+    /// hair_lo 0.2) over the old ones (0.7, 0.42, 0.5, 0.08): all for a red (hue 25 degrees or less, saturation
+    /// 0.65 or more: copper, auburn, strawberry, chestnut), none for a blonde (hue 35 or more) or a hair
+    /// with little colour (saturation under 0.3: black, grey, platinum), blended between. (Judge j1, face 39:
+    /// the red settings turned a blonde's brows ginger and a black's warmer.)</summary>
+    // (face 39 dye2: saturation 0.58 to 0.65, not 0.3 to 0.5: brown, #5e3e28 (hue 24, saturation 0.57), took the red
+    // settings and its brows read crimson-brown, #601203 against a hair of hue 21; copper 0.70, auburn 0.77,
+    // strawberry 0.68, chestnut 0.74 stay whole)
+    /// <summary>A red hair's brows on fair skin (HerPaint, face 40 b3): its dye's chroma and lightness times these,
+    /// its hue plus the third (degrees, toward auburn).</summary>
+    /// <summary>How deep a skin takes her brows as the multiply (heroine_paint_mul.gdshader; --brow-mul-at tries others).</summary>
+    static readonly float BrowMulAt = SurvivorUnchained.Args.Num("brow-mul-at", 0.5f);
+    static readonly Vector3 BrowCopper = new(0.8f, 1.0f, -10f);
+    /// <summary>Her brow cores on deep skin per hair (face 41, judge j2): hue in degrees, saturation, and value as a
+    /// share of the skin's own sRGB value round it (heroine_paint.gdshaderinc's target_mode).</summary>
+    static readonly (Vector3 Black, Vector3 Brown, Vector3 Copper, Vector3 Blonde) BrowTargets =
+        (new(25f, 0.3f, 0.40f), new(35f, 0.5f, 0.44f), new(24f, 0.55f, 0.48f), new(32f, 0.3f, 0.56f));
+    public static float BrowRed(Color b) => (1f - Mathf.SmoothStep(25f, 35f, b.H * 360f)) * Mathf.SmoothStep(0.58f, 0.65f, b.S);
+
+    /// <summary>How blonde a hair is (hue 35 degrees or more, its colour kept, light: honey, fair): its brows lighter
+    /// and less saturated than the old settings gave (BrowDark 0.42 to 0.3, sat 0.7 to 0.6). The old settings left
+    /// fair's brow strokes at 0.57 of the hair's brightness but more saturated than the hair (0.68 to 0.54), an
+    /// orange-gold; the judge's target is a dark blonde, no more saturated than the hair (about #8a7550).</summary>
+    public static float BrowBlonde(Color b) => Mathf.SmoothStep(25f, 35f, b.H * 360f) * Mathf.SmoothStep(0.3f, 0.45f, b.S) * Mathf.SmoothStep(0.35f, 0.5f, b.Luminance);
+
     static Color BrowDye(Color b)
     {
-        var dye = b.Darkened(0.42f + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
+        float dark = SurvivorUnchained.Args.Get("brow-dark") != null ? BrowDark : Mathf.Lerp(Mathf.Lerp(0.42f, 0.3f, BrowBlonde(b)), BrowDark, BrowRed(b));
+        var dye = b.Darkened(dark + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
         var (hL, hC, _) = Oklch(b);
         // (round 4: a fair grey or platinum hair's brows a soft grey-brown, not the warm lerp's tan)
         float wg = Mathf.SmoothStep(0.5f, 0.6f, hL) * (1f - Mathf.SmoothStep(0.02f, 0.05f, hC));
@@ -885,14 +921,47 @@ public static class People
                 // (Own's brows.png on another face dyed that face's lid crease, a copper second brow under its own)
                 if (brow is Color b && ResourceLoader.Exists(brows))
                 {
-                    var m = new ShaderMaterial { Shader = paintShader };
+                    var tone = skin.GetShaderParameter("tone").AsColor();
+                    float deep = 1f - Mathf.SmoothStep(0.4f, 0.6f, 0.2126f * tone.R + 0.7152f * tone.G + 0.0722f * tone.B);
+                    // (face 40 r2: on deep skin a multiply over her lit skin (heroine_paint_mul.gdshader): as a lit pass of
+                    // their own they took only the night's blue, every stroke's core blue-black. Chosen before any parameter:
+                    // a shader set after them dropped them)
+                    var m = new ShaderMaterial { Shader = deep >= BrowMulAt ? (paintMulShader ??= GD.Load<Shader>("res://shaders/heroine_paint_mul.gdshader")) : paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
                     m.SetShaderParameter("dyed", true);
                     // (darker than her hair and a little warmer, as brows are: the fairer
                     // her hair the more, so a platinum blonde has ash-brown brows, not grey)
                     // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
                     // darkened, read olive; red hair's read crimson)
-                    m.SetShaderParameter("dye", BrowDye(b));
+                    // (face 39 dye2: on deep skin (her tone multiplier's luminance under 0.6: Deep's 0.34, Fair's 1.0) a brow
+                    // dye with little colour of its own a warm dark brown: a black's, near neutral, mixed in ratio with
+                    // her red-brown skin, drew blue-grey strokes, #1e171c, hue 320)
+                    var dye = BrowDye(b);
+                    if (deep > 0f)
+                    {
+                        var (dL, dC, dH) = Oklch(dye);
+                        float plain = deep * (1f - Mathf.SmoothStep(0.03f, 0.06f, Oklch(b).C));
+                        dye = FromOklch(dL, Mathf.Lerp(dC, Mathf.Max(dC, BrowDeepWarm), plain), Mathf.Lerp(dH, 45f, plain));
+                    }
+                    // (face 40 b3, the judge: a copper's brows on fair skin read like marker (#783d1b, saturation 0.77): its
+                    // dye's chroma down and darker, its hue toward auburn, as grown brows. Env BROWCOP "chroma,light,hue" in a
+                    // shot: tried without a build)
+                    float fairRed = (1f - deep) * BrowRed(b);
+                    if (fairRed > 0f)
+                    {
+                        var (cc, cl, ch) = (BrowCopper.X, BrowCopper.Y, BrowCopper.Z);
+                        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("BROWCOP") is { Length: > 0 } bc
+                            && bc.Split(',') is [var a0, var a1, var a2])
+                        {
+                            var ci = System.Globalization.CultureInfo.InvariantCulture;
+                            (cc, cl, ch) = (float.Parse(a0, ci), float.Parse(a1, ci), float.Parse(a2, ci));
+                        }
+                        var (rL, rC, rH) = Oklch(dye);
+                        dye = FromOklch(rL * Mathf.Lerp(1f, cl, fairRed), rC * Mathf.Lerp(1f, cc, fairRed), rH + ch * fairRed);
+                    }
+                    m.SetShaderParameter("dye", dye);
+                    // (face 41, judge j2 fix 3: a copper's brows on fair skin a touch thinner, so the close-up by day reads auburn, not a dark band)
+                    if (fairRed > 0f) m.SetShaderParameter("strength", Mathf.Lerp(1f, 0.87f, fairRed));
                     // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
                     m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
                     m.SetShaderParameter("skin_tone", skin.GetShaderParameter("tone"));
@@ -900,8 +969,71 @@ public static class People
                     // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
                     // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
                     // olive; a near-black's 0.85, warmed in the shader instead)
-                    m.SetShaderParameter("dye_sat", HerBrows.Sat / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
+                    float red = SurvivorUnchained.Args.Get("brows") != null ? 1f : BrowRed(b);
+                    float sat = Mathf.Lerp(Mathf.Lerp(0.7f, 0.6f, BrowBlonde(b)), HerBrows.Sat, red) / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance));
+                    // (face 39 dye2: on deep skin a red's or brown's brows held darker took the held dye's whole colour and
+                    // more (dye_sat_held 1.6, dye_sat to 1.7): pure red-black, #440600 copper's; held at 0.7 and 0.8 a dark
+                    // auburn-brown, #34150d. A blonde's there kept a grey-mauve haze at dye_fair_sat 0.85: 1.2 and hair_lo 0.2, a warm brown)
+                    m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, Mathf.Min(sat, 0.8f), deep));
+                    m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 0.7f, deep));
+                    m.SetShaderParameter("dye_fair_sat", Mathf.Lerp(0.85f, 1.2f, deep));
                     m.SetShaderParameter("rough", 0.8f);
+                    // (face 39: each hair's own darkness counted as it is (gamma 0.5 to 0.9), the darkest less past the
+                    // core (0.5 to 0.25), and the faint texels between strokes left skin (from 0.08 to 0.2): the half-dark
+                    // texels filled the strokes into one felt block)
+                    m.SetShaderParameter("dye_gamma", Mathf.Lerp(0.5f, 0.9f, red));
+                    m.SetShaderParameter("dye_deep", 0.25f);
+                    // (face 39 dye2: on deep skin the faint texels left skin too, a blonde's grey-mauve haze over its strokes)
+                    m.SetShaderParameter("hair_lo", Mathf.Lerp(Mathf.Lerp(0.08f, 0.2f, red), 0.2f, deep));
+                    m.SetShaderParameter("hair_hi", Mathf.Lerp(0.7f, 0.5f, deep));
+                    // (face 40, the judge: on deep skin her brows sat near the skin's value and she read browless at the
+                    // Look (brow/skin 0.65-0.86 in screen value): the dye held to a smaller share of her skin's lightness,
+                    // black's least, a blonde's most (r2: 0.25 to 0.34 of her lit skin under the multiply, was 0.75 for all, which held every dye alike), each
+                    // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
+                    // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
+                    // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
+                    // (face 40 b3: a blonde's at most 0.29, was 0.34: with each brow's darkening evened (heroine_paint.gdshaderinc's
+                    // mul_side) a blonde's lighter brow went past 0.6 of the skin beside it)
+                    if (deep > 0f)
+                    {
+                        float room = Mathf.Lerp(0.25f, 0.29f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
+                        m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
+                        m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
+                        m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
+                        m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 1.2f, deep));
+                        // (face 40 r2: the hue her brows take her lit skin toward (heroine_paint_mul.gdshader's deep_tint, linear),
+                        // found against the Look's night grade, which takes a neutral or cool dark to mauve and her skin's own warm
+                        // light a warm one to red: a near-neutral warm for black, a yellow-brown for a brown or blonde, an orange-
+                        // brown for a copper)
+                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+                        var tint = new Vector3(1f, 0.95f, 0.55f).Lerp(new Vector3(1f, 0.85f, 0.4f), wc).Lerp(new Vector3(1f, 0.75f, 0.4f), wr);
+                        m.SetShaderParameter("deep_tint", tint);
+                    }
+                    // (face 41, judge j2: every hair one faint red-brown at ~0.55 of the skin, black's auburn. Each hair's brow
+                    // core now a target (hue 0-1, saturation, value over the skin's own): black near-neutral and darkest,
+                    // brown dark brown, copper auburn, blonde a lighter taupe; the multiply is it over her painted skin)
+                    if (deep >= BrowMulAt)
+                    {
+                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+                        float wb = BrowBlonde(b);
+                        var tg = BrowTargets.Black.Lerp(BrowTargets.Brown, wc).Lerp(BrowTargets.Copper, wr).Lerp(BrowTargets.Blonde, wb);
+                        m.SetShaderParameter("target_mode", 1f);
+                        // (the value as seen: deep skin's toe and grade crush a brow's darkness, so it is held 0.07 lighter there)
+                        m.SetShaderParameter("brow_target", new Vector3(tg.X / 360f, tg.Y, tg.Z + 0.07f * deep));
+                        m.SetShaderParameter("mul_side_a", 1f);
+                        m.SetShaderParameter("mul_side_b", 1f);
+                    }
+                    // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
+                    if (SurvivorUnchained.Args.Get("brow-set") is string bs)
+                        foreach (var kv in bs.Split(','))
+                            if (kv.Split('=') is [var k, var v])
+                            {
+                                var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                                if (xs.Any(float.IsNaN)) continue;
+                                if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                                else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
+                            }
                     Then(m);
                 }
                 // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
@@ -948,14 +1080,14 @@ public static class People
         if (p.Body != "heroine") return;
         var colour = look.HairColor ?? HerHairColour;
         var style = HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0];
-        if (style != p.HairStyle) HerHair(p, style, colour);
+        if (style != p.HairStyle) HerHair(p, style, colour, look.Highlight);
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
                     if (m.Shader == hairShader || m.Shader == hairSoftShader || Coverage.On && m.Shader == Coverage.Hair || HairDraw.IsHair(m.Shader))
-                        foreach (var pass in HairDraw.Passes(m)) pass.SetShaderParameter("colour", colour);
+                        foreach (var pass in HairDraw.Passes(m)) { pass.SetShaderParameter("colour", colour); Highlight(pass, look.Highlight, p.HairStyle); }
                     else if (m.ResourceName == "brows") Coverage.Colour(m, colour.Darkened(0.45f));
                     else if (m.Shader == skinShader2)
                     {
@@ -995,7 +1127,7 @@ public static class People
     /// not his stubble's 0.85, as what stayed of her head's pale paint greyed it) and its hue ahead of its dark
     /// (scalp_lead, see heroine_skin.gdshader): face 32, 20 October, her hairline's grey band at the Look. (env SCALP
     /// "dark=0.3,sat=1,max=1,lead=1" in a shot: tried without a build.)</summary>
-    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f;
+    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f, ScalpFollow = 1f, ScalpDarkMin = 0.8f;
     public static Color ScalpColour(Color hair)
     {
         float dark = 0.3f, sat = 1.0f;
@@ -1005,7 +1137,7 @@ public static class People
                 var t = kv.Split('=');
                 if (t.Length != 2) continue;
                 float v = float.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture);
-                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v;
+                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v; else if (t[0] == "follow") ScalpFollow = v; else if (t[0] == "darkmin") ScalpDarkMin = v;
             }
         var c = hair.Darkened(dark);
         c = Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
@@ -1046,6 +1178,11 @@ public static class People
                 m.SetShaderParameter("scalp_max", ScalpMax);
                 m.SetShaderParameter("scalp_lead", ScalpLead);
                 m.SetShaderParameter("scalp_hue", ScalpHue);
+                // (face 40 b3: under a dark hair her skin's own colour at the hairline taken to the hair's: black's rust band on deep skin)
+                // (and its dark there whole, not held lighter on deep skin (scalp_dark_min 0.4): her skin's own red-brown under it)
+                float dk = 1f - Mathf.SmoothStep(0.15f, 0.35f, hair.Luminance);
+                m.SetShaderParameter("scalp_follow", ScalpFollow * dk);
+                m.SetShaderParameter("scalp_dark_min", Mathf.Lerp(0.4f, ScalpDarkMin, dk));
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
@@ -1207,7 +1344,7 @@ public static class People
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
     /// strands, darker at the roots and deep in, with the long highlight
     /// across them.</summary>
-    internal static Material Hair(BaseMaterial3D src, Color colour)
+    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
         hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
@@ -1225,10 +1362,29 @@ public static class People
             pass.SetShaderParameter("colour", colour);
             pass.SetShaderParameter("cap", src.ResourceName == "hair_cap");
             pass.SetShaderParameter("tie", src.ResourceName == "hair_tie");
+            Highlight(pass, highlight, style);
             HairSet(pass, src.ResourceName);
         }
         return m;
     }
+
+    /// <summary>Her hair's highlights (heroine_hair.gdshaderinc's highlight): a second colour on some of her
+    /// locks, in the hair's own colour, or none.</summary>
+    static void Highlight(ShaderMaterial pass, Color? highlight, string? style = null)
+    {
+        pass.SetShaderParameter("highlights", highlight is null ? 0f : 1f);
+        if (highlight is not Color h) return;
+        pass.SetShaderParameter("highlight", h);
+        // (face 40, the judge: pixie's and ponytail's locks are shorter and lie closer, so half the braid's share, or
+        // they read as tiger stripes; a swatch's own share and strength from looks.json: platinum twice the locks,
+        // honey half as strong again)
+        var sw = SurvivorUnchained.World.Lore.HairHighlights.FirstOrDefault(x => x.Color.Length > 0 && new Color(x.Color).IsEqualApprox(h));
+        pass.SetShaderParameter("hl_locks", Mathf.Min(HighlightLocks * (style is "pixie" or "ponytail" ? 0.5f : 1f) * (sw?.Share ?? 1f), 0.95f));
+        pass.SetShaderParameter("hl_strength", sw?.Strength ?? 1f);
+    }
+
+    /// <summary>The share of the locks in her highlights' panels that take them, on the braid (heroine_hair.gdshaderinc's hl_locks).</summary>
+    const float HighlightLocks = 0.45f;
 
     /// <summary>--hair-set "hair:shine=0.3;*:wrap=0.2": a developer's switch, her hair's uniforms tried without a build,
     /// by part (hair, hair_cap, hair_fine, hair_tie; "*" for every part); a/b/c is a vec3.</summary>
@@ -1243,7 +1399,8 @@ public static class People
                         var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
                             System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
                         if (xs.Any(float.IsNaN)) continue;
-                        if (xs.Length == 3) sm.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                        if (xs.Length == 4) sm.SetShaderParameter(k.Trim(), new Vector4(xs[0], xs[1], xs[2], xs[3]));
+                        else if (xs.Length == 3) sm.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
                         else if (xs.Length == 1) sm.SetShaderParameter(k.Trim(), xs[0]);
                     }
     }

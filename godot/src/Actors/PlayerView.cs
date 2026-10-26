@@ -234,6 +234,9 @@ public partial class PlayerView : Node3D
     public Vector3 FigurePosition => person.Root.GlobalPosition;
     /// <summary>Out of the picture while a cinematic's double plays her.</summary>
     public bool Hidden;
+    /// <summary>Her body handed to a cinematic: she stands quiet, with no idle breaks (a sword flourish
+    /// read as sniffing the blade in C04 A's memory beat; play-1, 25 Oct).</summary>
+    public bool Still;
     /// <summary>The way she turns to while she stands (the book open: to the view); null: her own.</summary>
     public float? Turned;
     /// <summary>What she lifts her head to while she stands (the book open: the camera; her idle
@@ -704,7 +707,7 @@ public partial class PlayerView : Node3D
         // (A breath is caught on stopping, or not at all.)
         if (stillT > 1.0) ranFor = 0;
         bool calm = b.NearestHostile(p.X, p.Z, 14) == null && (!Busy || fullSoft);
-        if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
+        if (!calm || Still || Hidden) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
         // (Only with her hands empty, every piece at its socket: FreeHand.)
         if (ranFor > 6 && stillT > 0.75 && FreeHand.Both(loadout.Arms, sheath.Sheathed, id => WeaponSockets.SocketOf(Arms.KindOf(id)) != null))
         {

@@ -35,7 +35,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim, ownRock, ownRockRim, ownWall, ownWallRim, ownRoof, ownRoofRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim, ownRock, ownRockRim, ownWall, ownRoof;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -189,11 +189,12 @@ public static class KitLook
 
     /// <summary>Our own town walls (kit.gdshader's OWN_WALL, OwnWalls): the trim sheet, each house's plaster and
     /// timber tint by its copy's custom data (godot/data/house_look.json: the palettes and the weathering), grime
-    /// from the house's ground up, stains under the sills; drawn with the see-through window's rim like the rest.</summary>
+    /// from the house's ground up, stains under the sills; faded whole where it stands between her and the camera (HouseFade; E9c), never windowed.</summary>
     static ShaderMaterial Wall()
     {
-        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL") };
-        ownWallRim ??= Rim(ownWall);
+        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL")
+            // (E9c2) drawn both sides: its back faces are the cutaway's cap (kit.gdshader discards them elsewhere in the camera's view)
+            .Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         const string dir = "res://art/world/house";
         var m = new ShaderMaterial { Shader = ownWall };
         m.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{dir}/house_albedo.jpg"));
@@ -205,7 +206,7 @@ public static class KitLook
         m.SetShaderParameter("wind", 0f);
         HouseLook(m);
         if (groundTex != null) { m.SetShaderParameter("ground_h", groundTex); m.SetShaderParameter("ground_rect", groundRect); }
-        m.NextPass = RimOf(m, ownWallRim);
+        // (no rim pass: the house in the way fades whole, HouseFade; E9c)
         walls.Add(m);
         return m;
     }
@@ -276,11 +277,10 @@ public static class KitLook
 
     /// <summary>Our own roofs (kit.gdshader's OWN_ROOF, OwnWalls; E9b2): the roof sheet, each house's roof tint and
     /// timber tint by its copy's custom data (godot/data/house_look.json), each tile varied again, soot round the
-    /// chimneys, moss on the north slopes, each roof's own sag; drawn with the see-through window's rim.</summary>
+    /// chimneys, moss on the north slopes, each roof's own sag; faded with its house (HouseFade; E9c).</summary>
     static ShaderMaterial Roof()
     {
         ownRoof ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_ROOF") };
-        ownRoofRim ??= Rim(ownRoof);
         const string dir = "res://art/world/house";
         var m = new ShaderMaterial { Shader = ownRoof };
         m.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{dir}/roof_albedo.jpg"));
@@ -292,7 +292,7 @@ public static class KitLook
         m.SetShaderParameter("wind", 0f);
         HouseLook(m);
         m.SetShaderParameter("chimneys", chimneys);
-        m.NextPass = RimOf(m, ownRoofRim);
+        // (no rim pass: the house fade, as the walls)
         roofs.Add(m);
         return m;
     }

@@ -159,6 +159,13 @@ public partial class Game : Node, IZoneHost
         return face;
     }
 
+    /// <summary>--hair-highlight HEX|default (pictures of her hair's highlights): a colour, or her --hair-colour's own
+    /// (World.Lore.DefaultHighlight), as a "#rrggbb"; null without it.</summary>
+    // (Its presence also forces highlights on while they are parked: World.Lore.ForceHighlights.)
+    public static string? HighlightArg() => Args.Get("hair-highlight") is string hl && (SurvivorUnchained.World.Lore.ForceHighlights = true)
+        ? hl is "default" or "auto" ? SurvivorUnchained.World.Lore.HighlightColor(Args.Get("hair-colour"), SurvivorUnchained.World.Lore.HighlightAuto) : hl
+        : null;
+
     /// <summary>--preset's own skin, when no --skin is given (as the Look's Choose gives it).</summary>
     static string? QuickSkin() => Args.Get("preset") is string ps ? Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps)?.Skin : null;
 
@@ -183,6 +190,8 @@ public partial class Game : Node, IZoneHost
             // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
             FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),
             Face = QuickFace(),
+            // --hair-highlight HEX|default: her locks' highlights (default: her --hair-colour's own)
+            HairHighlight = HighlightArg(),
         });
         // --art ID[:FACET+FACET]: that art in hand, learned and (with facets) mastered.
         if (Args.Get("art") is string art)
