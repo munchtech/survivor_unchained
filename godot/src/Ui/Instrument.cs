@@ -593,7 +593,7 @@ public partial class Socket : Control
     public string Id = "";
     /// <summary>HUD v2: which of the three seat castings it wears (seat index % 3, so neighbors differ).</summary>
     public int Seat;
-    Texture2D? art;
+    Texture2D? art, inlay;
     static Vector2[][]? dimples;
 
     /// <summary>The rank pits' centers per casting, in shown px of the 68 px seat image (hud/seat.json).</summary>
@@ -630,7 +630,7 @@ public partial class Socket : Control
     public void Empty()
     {
         if (!filled && Id == "") return;
-        filled = false; Id = ""; art = null; crown = -1; Scale = Vector2.One; Modulate = Colors.White;
+        filled = false; Id = ""; art = null; inlay = null; crown = -1; Scale = Vector2.One; Modulate = Colors.White;
         QueueRedraw();
     }
 
@@ -639,6 +639,8 @@ public partial class Socket : Control
         if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
         art = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        // HUD v2: the glyph as an enamel inlay set in the seat's floor (art/ui/inlay/<glyph>.png, 2x), where made.
+        inlay = UiArt.Art($"inlay/{glyph}.png");
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
         if (ready < lastReady - 0.4) flash = 1;
         lastReady = ready;
@@ -674,7 +676,12 @@ public partial class Socket : Control
             if (!filled) return;
             float heat = evolved ? 1 : ripe ? 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f)) : 0;
             if (heat > 0 && UiArt.Art($"hud/seat_hot_{Seat}.png") is { } hotSeat) DrawTexture(hotSeat, new Vector2(-4, -4), Colors.White with { A = heat });
-            if (art != null)
+            if (inlay != null)
+            {
+                var col3 = ready >= 0.98 ? new Color(1.12f, 1.12f, 1.12f) : Colors.White;
+                DrawTextureRect(inlay, new Rect2((s - 38) / 2, (s - 38) / 2, 38, 38), false, col3.Lerp(new Color(2.0f, 1.8f, 1.5f), (float)flash));
+            }
+            else if (art != null)
             {
                 float g2 = s * 0.66f;
                 var col2 = ready >= 0.98 ? new Color(1.25f, 1.25f, 1.25f) : Colors.White;
