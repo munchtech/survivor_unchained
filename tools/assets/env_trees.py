@@ -1274,12 +1274,19 @@ def alder_proxy(H, R, seed, stems):
     # (0.86 of the crown, judge E4c: the cards' outer halves out of it, so a crown's sunward top reads lit)
     # (and low in it, its top well under the crown's: a low sun over the proxy's top shadowed the crown's whole
     # top, which the camera sees)
-    lump(np.array([0, 0, zc - 0.08 * hz]), 0.54 * R, 0.45 * hz)
-    for k in range(int(rng.integers(5, 8))):
-        a = rng.uniform(0, 6.28); zf = rng.uniform(-0.5, 0.4)
-        rxy = math.sqrt(1 - zf * zf)
-        o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
-        lump(np.array([0, 0, zc]) + o * np.array([R, R, hz]) * rng.uniform(0.3, 0.4), rng.uniform(0.34, 0.42) * R, rng.uniform(0.27, 0.35) * hz, 7, 4)
+    # (lf3b: at dawn the big core and its five to seven lumps cast one smooth pointed blade, judge lf2 #5: a round lump
+    # stretches along a low sun into a blade, and lumps round a core fill it) eight to ten flattened clump masses at
+    # heights through the crown, each inside 0.9 of it: a flat mass casts its own shape, so under a low sun the masses at
+    # different heights fall apart along the shadow, clumps with light between; under a high one they still cover it
+    nl = int(rng.integers(8, 11))
+    a0 = rng.uniform(0, 6.28)
+    for k in range(nl):
+        zf = (k + 0.5) / nl * 1.3 - 0.7 + rng.normal(0, 0.06)
+        rxy = math.sqrt(max(1 - zf * zf, 0.05))
+        a = a0 + k * 2.39996 + rng.normal(0, 0.3)
+        off = rng.uniform(0.25, 0.5) * rxy
+        rr = min(rng.uniform(0.34, 0.44), 0.9 * rxy - off + 0.12) * R
+        lump(np.array([math.cos(a) * off * R, math.sin(a) * off * R, zc + zf * hz]), max(rr, 0.2 * R), rng.uniform(0.12, 0.17) * hz, 7, 3)
     for pts, rad in alder_stems(H, seed, stems):
         tube(b, pts[:4], rad[:4], 4)
     return b

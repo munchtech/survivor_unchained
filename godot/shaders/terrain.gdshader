@@ -81,6 +81,9 @@ uniform float crown_lift = 0.12;
 // them by a 2-3 m field down to (1 - rut_soft * 0.55) in places; 0: as before
 uniform float rut_soft = 0.0;
 uniform float rut_blur = 0.3;
+// (lf3b) how much the rime follows the road's shape (on the crown and the ruts' shoulders, off the ruts): 1 as judge 2
+// asked in town; by Low Ford's moon it drew the crown as a pale kerb between two black trenches
+uniform float road_rime = 1.0;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
@@ -645,7 +648,7 @@ void fragment() {
 		// Its verges: no lift at the made edge (the pale verge strips), the rime there no crisper than the road's.
 		float vb = smoothstep(0.02, 0.3, pm.r) + verge * 0.6;
 		float ridge = smoothstep(0.04, 0.25, rut) * (1.0 - smoothstep(0.3, 0.65, rut));
-		top = mix(top, 0.5 + cen * 0.25 + ridge * 0.35 - rut * 0.45 + (hgt - hb) * 0.5, rd);
+		top = mix(top, 0.5 + (cen * 0.25 + ridge * 0.35 - rut * 0.45) * road_rime + (hgt - hb) * 0.5, rd);
 		// By night the frost on the tufts, not the bare soil between.
 		top += (tuft - 0.5) * 0.5 * nt;
 		// At dawn only the tops: the threshold raised with the thaw (judge 1, E3 fix 2: no pale blotches in the shade).

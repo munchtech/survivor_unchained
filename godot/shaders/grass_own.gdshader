@@ -86,6 +86,9 @@ uniform float small_share = 0.0;
 uniform float tilt_var = 0.0;
 uniform float trod = 0.0;
 uniform float trod_share = 0.12;
+// (lf3b r2: a lattice of clusters read as a new grid of tufts) fine: a 1.5-2 m noise field thins the drift in places
+// (to 1 - fine), so the tufts gather unevenly, with no cell to repeat
+uniform float fine = 0.0;
 
 float hue_of(vec3 c) {
 	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
@@ -151,6 +154,10 @@ void vertex() {
 		tr = smoothstep(0.66 - trod_share * 0.9, 0.74 - trod_share * 0.9, tn) * trod;
 	}
 	if (cluster > 0.0) dens *= 1.0 - cluster_gap * smoothstep(0.32, 0.62, cl_r);
+	if (fine > 0.0) {
+		vec4 nf2 = texture(noise_tex, wp * 0.53 + 0.21);
+		dens *= 1.0 - fine * smoothstep(0.62, 0.38, nf2.r * 0.65 + nf2.g * 0.35);
+	}
 	float keep = step(h3, dens * density * edge * (1.0 - tr));
 	// (a fire's pit bare, the camp round it thinning out to `clear` times its radius; a prop's patch (OwnProps "bare")
 	// thins out to its own w times its radius)
