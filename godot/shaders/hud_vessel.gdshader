@@ -97,160 +97,130 @@ void cells(vec2 x, out vec2 mid, out float border)
 	border = md;
 }
 
+// HUD v2 r2 (the glass rebuilt from renders, tools/uiforge/blender_glass.py): the view through the glass at
+// `frames` levels (liquid, an atlas; frame 0 the empty glass, the last full), each frame's surface per column
+// (lines), and the outer surface's light (front, rgb added in linear light; alpha the cuff's shadow). The two
+// frames either side of the level are slid onto one surface (theirs interpolated, plus the slosh) and blended;
+// then the film, the heal, the beat and the frost go on in linear light, and the front over all. Opaque.
+uniform sampler2D liquid : filter_linear_mipmap;
+uniform sampler2D front : filter_linear_mipmap;
+uniform sampler2D lines : filter_nearest;
+uniform sampler2D film_map : filter_linear_mipmap;
+uniform sampler2D frost_map : filter_linear_mipmap;
+uniform int frames = 17;
+uniform int cols = 5;
+uniform float canvas = 124.0;
+uniform float cav_r = 56.5;
+uniform float glass_r = 60.0;
+
+vec3 lin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
+vec3 enc(vec3 c) { c = clamp(c, 0.0, 1.0); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+
+// frame k's far surface edge at file column cx, in shown px from the frame's top
+float line_at(int k, float cx)
+{
+	int w = int(canvas * 2.0);
+	float c = clamp(cx - 0.5, 0.0, float(w - 1));
+	int c0 = int(floor(c)), c1 = min(c0 + 1, w - 1);
+	vec4 a = texelFetch(lines, ivec2(c0, k), 0), b = texelFetch(lines, ivec2(c1, k), 0);
+	float ya = a.r * 255.0 + a.g * 255.0 / 256.0, yb = b.r * 255.0 + b.g * 255.0 / 256.0;
+	return mix(ya, yb, fract(c)) * 0.5;
+}
+
+float line_lv(float lv, float cx)
+{
+	float fi = clamp(lv, 0.0, 1.0) * float(frames - 1);
+	int k0 = int(floor(fi)), k1 = min(k0 + 1, frames - 1);
+	return mix(line_at(k0, cx), line_at(k1, cx), fi - float(k0));
+}
+
+vec3 frame_at(int k, vec2 at)
+{
+	vec2 rows = vec2(float(cols), ceil(float(frames) / float(cols)));
+	vec2 o = vec2(float(k % cols), float(k / cols));
+	vec2 uv = (o + clamp(at / canvas, vec2(0.002), vec2(0.998))) / rows;
+	return lin(texture(liquid, uv).rgb);
+}
+
 vec3 blood(vec2 p, float r, float px, float t)
 {
 	bool small = mode == 1;
-	// her blood: #1e0205 in its depth, #8c0d14 near the surface, the rim #e0302a, the meniscus #ff7a66;
-	// the draught's a shade warmer
-	vec3 c_deep = small ? vec3(0.150, 0.026, 0.014) : vec3(0.118, 0.008, 0.020);
-	vec3 c_surf = small ? vec3(0.640, 0.130, 0.060) : vec3(0.549, 0.051, 0.078);
-	vec3 c_rim = small ? vec3(0.960, 0.320, 0.170) : vec3(0.878, 0.188, 0.165);
-	vec3 c_men = small ? vec3(1.000, 0.560, 0.420) : vec3(1.000, 0.478, 0.400);
-	vec3 c_air = vec3(0.036, 0.030, 0.033);
-	float aa = 0.6 * px;
+	float R = glass_r;
+	vec2 at = (p * (canvas * 0.5) / 1.0) + vec2(canvas * 0.5);    // shown px in the frame
+	vec2 q = at - vec2(canvas * 0.5);
+	float rr = length(q);
+	float lv = clamp(level, 0.0, 1.0);
+	float fi = lv * float(frames - 1);
+	int k0 = int(floor(fi)), k1 = min(k0 + 1, frames - 1);
+	float f = fi - float(k0);
+	float cx = at.x * 2.0;
+	float y0 = line_at(k0, cx), y1 = line_at(k1, cx);
+	float live = smoothstep(0.0, 0.03, lv) * smoothstep(1.0, 0.97, lv);
+	float xr = q.x / R;
+	float swell = small ? 0.0 : (0.014 * sin(xr * 3.1 + t * 1.25) + 0.007 * sin(xr * 7.3 - t * 2.05 + 1.7));
+	float target = mix(y0, y1, f) + (swell + tilt * xr + wave * sin(xr * 5.0 + t * 9.0)) * R * live;
+	float w = exp(-pow((at.y - target) / 9.0, 2.0)) * (1.0 - smoothstep(cav_r - 2.0, cav_r + 1.5, rr));
+	vec3 c0 = frame_at(k0, vec2(at.x, at.y - (target - y0) * w));
+	vec3 c1 = frame_at(k1, vec2(at.x, at.y - (target - y1) * w));
+	vec3 col = mix(c0, c1, f);
+	bool inside = rr < cav_r - 0.4;
+	float below = smoothstep(target - 0.6, target + 0.6, at.y) * live + step(0.999, lv);
+	vec4 fm = texture(film_map, at / canvas);
 
-	// Inside the thick wall the cavity's edge is seen refracted: the liquid just inside it, darker.
-	float wall = smoothstep(RI - 0.5 * px, RI + 0.5 * px, r);
-	vec2 q = r > RI ? p * ((RI - 0.006) / r) : p;
-	float rq = length(q);
-	float zq = sqrt(max(RI * RI - rq * rq, 0.0)) / RI;
-
-	// The surface: a plane at the level, swelling a little at rest and tilted by a slosh; seen from a
-	// little above, an ellipse 8% of its chord in height. None at full or empty.
-	float lv = level;
-	float s0 = RI * (1.0 - 2.0 * lv);
-	float w = sqrt(max(RI * RI - s0 * s0, 0.0));
-	float live = smoothstep(0.0, 0.025, lv) * smoothstep(1.0, 0.975, lv);
-	float swell = (0.014 * sin(q.x * 3.1 + t * 1.25) + 0.007 * sin(q.x * 7.3 - t * 2.05 + 1.7)) * (small ? 0.0 : 1.0);
-	float yc = s0 + (swell + tilt * q.x + wave * sin(q.x * 5.0 + t * 9.0)) * live;
-	float xw = clamp(q.x / max(w, 1e-4), -1.0, 1.0);
-	float he = 0.08 * w * sqrt(max(0.0, 1.0 - xw * xw));
-	float yn = yc + he, yf = yc - he;
-	float body = smoothstep(yn - aa, yn + aa, q.y);
-	float top = smoothstep(yf - aa, yf + aa, q.y) * (1.0 - body);
-
-	// The body: lighter toward its surface (full, toward the glass's top), near-black in its depth, round
-	// as the cavity is, lit from the upper left.
-	float dep = max(q.y - yn, 0.0);
-	vec3 liq = mix(c_surf * 0.80, c_deep, smoothstep(0.0, small ? 1.1 : 0.95, dep));
-	vec3 nq = vec3(q.x, -q.y, zq * RI) / RI;
-	float lit = clamp(dot(nq, normalize(vec3(-0.55, 0.60, 0.58))), 0.0, 1.0);
-	liq *= (0.70 + 0.45 * lit) * (0.80 + 0.20 * zq);
-	// Slow dark veins turning in it, at low contrast.
-	float va = t * 0.045 + seed * 6.0;
-	mat2 vr = mat2(vec2(cos(va), sin(va)), vec2(-sin(va), cos(va)));
-	float f = fbm(vr * q * (small ? 1.2 : 1.8) + vec2(seed * 13.0, t * 0.025));
-	float vein = 1.0 - smoothstep(0.0, small ? 0.05 : 0.03, abs(f - 0.5));
-	float swirl = fbm(vr * q * 0.9 + vec2(-t * 0.03, seed * 7.0));
-	liq *= (0.93 + 0.14 * swirl) * (1.0 - 0.18 * vein);
-	// The light leaving at the lower right: a rim, brightest just inside the wall.
-	vec2 dq = q / max(rq, 1e-4);
-	float face = clamp(dot(dq, vec2(0.574, 0.819)), 0.0, 1.0);
-	float ex = pow(face, 3.0) * smoothstep(RI - (small ? 0.40 : 0.24), RI - 0.03, rq);
-	liq = mix(liq, c_rim, clamp(ex * 0.95, 0.0, 1.0));
-	liq += c_rim * 0.20 * pow(face, 8.0) * smoothstep(RI - 0.10, RI - 0.03, rq);
-
-	// The surface seen from above: lighter than the body, the window's light caught on its far left.
-	float v = clamp((q.y - yf) / max(2.0 * he, 1e-4), 0.0, 1.0);
-	vec3 surf = mix(c_surf * 1.30, c_men, 0.20 * (1.0 - v)) * mix(1.0, 0.85, v);
-	surf += c_men * 0.12 * exp(-pow((xw + 0.40) / 0.38, 2.0)) * (1.0 - v);
-	// (the near lip a hair darker, so the ellipse reads)
-	liq *= 1.0 - 0.30 * exp(-pow((q.y - yn) / (1.2 * px), 2.0)) * live;
-	// Its far edge: the meniscus, 1 px, where the blood climbs the far wall.
-	float men = (1.0 - smoothstep(0.30 * px, 1.05 * px, abs(q.y - yf + 0.25 * px))) * live;
-	men *= smoothstep(1.0, 0.80, abs(xw)) * (1.0 - wall);
-
-	// The air in the glass: dark, its far wall a little lighter toward the edge, warmed just above the blood.
-	vec3 air = c_air * (0.70 + 0.65 * smoothstep(0.30, RI, rq));
-	air += c_surf * 0.09 * exp(-max(yf - q.y, 0.0) / 0.16) * live;
-
-	vec3 col = air;
-	col = mix(col, surf, top);
-	col = mix(col, liq, body);
-	col = mix(col, c_men, 0.7 * men);
-	// The heartbeat: the blood brightens.
-	col += (col * 0.60 + c_rim * 0.10) * beat * max(top, body);
-
+	// Hurt: above the new level, the film the blood left on the glass runs down and clears (film_map: when
+	// each place clears and how thick it is, between where the blood stood and where it stands).
+	if (!small && film_t < 1.0 && film_top > lv + 0.002 && inside)
+	{
+		float yt = line_lv(film_top, cx);
+		float s = (at.y - yt) / max(target - yt, 1.0);
+		if (s >= 0.0 && s <= 1.0)
+		{
+			vec4 m = texture(film_map, vec2(at.x / canvas, s));
+			float on = smoothstep(film_t - 0.035, film_t + 0.035, m.r) * (1.0 - below);
+			vec3 fc = vec3(0.20, 0.006, 0.010) * (0.55 + 0.9 * m.g) + vec3(0.30, 0.02, 0.02) * m.g * smoothstep(-0.6, 0.8, (q.x + q.y) / R) * 0.5;
+			col = mix(col, fc, clamp(on * (0.50 + 0.45 * m.g), 0.0, 0.95));
+		}
+	}
+	// Empty: the dried film.
+	float dry = (1.0 - smoothstep(0.0, 0.02, lv)) * dry_film * (small ? 0.0 : 1.0);
+	col = mix(col, vec3(0.055, 0.008, 0.006), fm.b * dry * 0.85);
 	// Healing: lighter, fresh blood swirling up from the foot.
 	if (heal > 0.001)
 	{
+		vec2 hq = q / R;
 		float rise = heal_t * 0.85;
-		float hn = fbm(vec2(q.x * 2.6 + 0.45 * sin(q.y * 4.0 + heal_t * 1.9), q.y * 2.1 + heal_t * 1.5) + seed * 3.0);
-		float risen = smoothstep(RI - rise - 0.30, RI - rise + 0.05, q.y);
-		float plume = smoothstep(0.40, 0.58, hn) * risen * body * exp(-pow(q.x / (0.35 + 0.6 * clamp(rise, 0.0, 1.0)), 2.0));
-		col = mix(col, vec3(1.0, 0.40, 0.34), clamp(plume * heal * 1.5, 0.0, 1.0));
+		float hn = fbm(vec2(hq.x * 2.6 + 0.45 * sin(hq.y * 4.0 + heal_t * 1.9), hq.y * 2.1 + heal_t * 1.5) + seed * 3.0);
+		float risen = smoothstep(0.94 - rise - 0.30, 0.94 - rise + 0.05, hq.y);
+		float plume = smoothstep(0.40, 0.58, hn) * risen * below * exp(-pow(hq.x / (0.35 + 0.6 * clamp(rise, 0.0, 1.0)), 2.0));
+		col = mix(col, vec3(1.0, 0.13, 0.09), clamp(plume * heal * 1.2, 0.0, 1.0));
 	}
-
-	// Hurt: above the new level the glass keeps a film of blood from where it stood; it runs down,
-	// unevenly (its rivulets slower), and clears.
-	if (film_t < 1.0 && film_top > lv + 0.002)
-	{
-		float y0 = RI * (1.0 - 2.0 * film_top);
-		float n1 = noise(vec2(q.x * 2.2 + seed * 11.0, 0.37));
-		float prog = clamp(film_t / mix(0.62, 0.92, n1), 0.0, 1.0);
-		float ytop = mix(y0, yn, prog * prog);
-		float cx = q.x * 7.0 + seed * 5.0, cid = floor(cx);
-		float rx = (cid + 0.25 + 0.5 * hash(vec2(cid, 7.7)) - seed * 5.0) / 7.0;
-		float riv = step(0.6, hash(vec2(cid, 3.1))) * (1.0 - smoothstep(0.5 * px, 1.3 * px, abs(q.x - rx)));
-		float rtop = mix(y0, yn, pow(prog * (0.45 + 0.3 * hash(vec2(cid, 9.9))), 2.0));
-		float thin = 1.0 - smoothstep(0.5, 1.0, film_t);
-		float sheet = smoothstep(ytop - aa, ytop + aa, q.y);
-		float on = max(sheet, riv * smoothstep(rtop - aa, rtop + aa, q.y)) * (1.0 - body) * (1.0 - wall);
-		float fa = (0.30 + 0.22 * smoothstep(ytop, yn, q.y) + 0.25 * riv + 0.18 * exp(-pow((q.y - ytop) / (1.6 * px), 2.0))) * thin;
-		vec3 fc = vec3(0.30, 0.018, 0.032) + c_men * 0.08 * smoothstep(0.2, -0.8, q.x + q.y);
-		col = mix(col, fc, clamp(fa, 0.0, 0.9) * on);
-	}
-
-	// Empty: dark glass with a dried film, heaviest at the foot where the last of it stood.
-	float dry = (1.0 - smoothstep(0.0, 0.012, lv)) * dry_film;
-	if (dry > 0.0)
-	{
-		float dn = fbm(q * 5.0 + seed * 7.0);
-		float stain = smoothstep(0.50, 0.72, dn) * smoothstep(0.0, 0.85, q.y);
-		float tide = exp(-pow((q.y - (RI - 0.14) - 0.015 * sin(q.x * 11.0)) / (1.3 * px), 2.0)) * step(abs(q.x), 0.62);
-		float cid = floor(q.x * 6.0 + 3.0);
-		float trail_ = step(0.7, hash(vec2(cid, 5.3))) * (1.0 - smoothstep(0.4 * px, 1.1 * px, abs(q.x - (cid + 0.5 - 3.0) / 6.0))) * smoothstep(-0.2, 0.6, q.y);
-		float pool = smoothstep(RI - 0.12, RI - 0.03, q.y);
-		float da = clamp(stain * 0.35 + tide * 0.55 + trail_ * 0.35 + pool * 0.45, 0.0, 0.7) * dry;
-		col = mix(col, vec3(0.17, 0.040, 0.028) * (0.8 + 0.4 * dn), da);
-	}
-
-	// Shielded: frost rimes the glass from the top, as far round as the shield holds; when the shield
-	// breaks it cracks into shards that slide off and fade.
+	// Low: on the beat a red bloom in the blood's lower third and on the glass's inner bevel.
+	float lower = smoothstep(-0.05, 0.55, q.y / R);
+	col *= 1.0 + beat * (0.55 * lower * below + 0.15 * below);
+	col += vec3(0.75, 0.05, 0.04) * beat * 0.35 * smoothstep(R - 6.0, R - 1.5, rr);
+	// Shielded: frost grown in from the rim, round from the top as far as the shield holds; cracked away once.
 	float reach = crack < 1.0 ? crack_reach : frost;
 	if (reach > 0.001)
 	{
-		vec2 fp = p;
-		float fade = 1.0, lines = 0.0;
+		vec2 fa = at;
+		float fade = 1.0;
 		if (crack < 1.0)
 		{
-			vec2 mid; float border;
-			cells(p * 4.5 + seed * 3.0, mid, border);
-			vec2 cm = (mid - seed * 3.0) / 4.5;
-			fp = p - (normalize(cm + vec2(0.0, -0.15)) * 0.10 * crack + vec2(0.0, 0.45 * crack * crack));
-			fade = 1.0 - smoothstep(0.30, 1.0, crack);
-			lines = (1.0 - smoothstep(0.0, 0.06, border)) * (1.0 - smoothstep(0.0, 0.6, crack));
+			vec4 id = texture(frost_map, at / canvas);
+			float hsh = fract(id.b * 91.7);
+			fa = at - vec2((hsh - 0.5) * 10.0, 3.0 + 20.0 * hsh) * crack - vec2(0.0, 26.0 * crack * crack);
+			fade = 1.0 - smoothstep(0.25, 1.0, crack);
 		}
-		float fr = length(fp);
-		float ang = abs(atan(fp.x, -fp.y)) / PI;
-		float held = 1.0 - smoothstep(reach - 0.02, reach + 0.02, ang + (fbm(fp * 9.0 + seed * 4.0) - 0.5) * 0.10);
-		float th = 0.195 * (1.0 - 0.5 * ang / max(reach, 0.05));
-		float sp = noise(vec2(ang * 46.0 + seed * 3.0, 0.5));
-		float inner = RI - th * (0.35 + 0.9 * sp * sp);
-		float rime = smoothstep(inner - px, inner + px, fr) * held * fade * step(fr, 1.0);
-		vec2 fm; float fb;
-		cells(fp * 9.0 + seed * 5.0, fm, fb);
-		float facet = 1.0 - smoothstep(0.0, 0.08, fb);
-		float dens = mix(0.45, 0.85, smoothstep(inner, RI, fr));
-		vec3 ice = mix(vec3(0.604, 0.831, 1.0), vec3(0.97, 0.99, 1.0), 0.65 * facet);
-		col = mix(col, ice, clamp(rime * (dens + 0.22 * facet), 0.0, 1.0));
-		col += vec3(0.604, 0.831, 1.0) * 0.055 * reach * fade;
-		col += vec3(0.85, 0.94, 1.0) * lines * held * 0.9;
+		vec4 fr = texture(frost_map, fa / canvas);
+		float held = 1.0 - smoothstep(reach - 0.02, reach + 0.02, fr.g);
+		float a = fr.a * held * fade;
+		vec3 ice = lin(mix(vec3(0.604, 0.831, 1.0), vec3(0.96, 0.99, 1.0), fr.r * 0.7)) * (0.35 + 0.75 * fr.r);
+		col = mix(col, ice, clamp(a * 0.85, 0.0, 0.9));
+		col += lin(vec3(0.604, 0.831, 1.0)) * 0.025 * reach * fade;
 	}
-
-	// The wall: the cavity's edge seen through thick glass, darker.
-	col *= mix(1.0, 0.70, wall);
-	return col;
+	vec4 fl = texture(front, at / canvas);
+	col += lin(fl.rgb);
+	return enc(col);
 }
 
 // mode 2: the first HUD's vessel (the art), kept as it was until its gold mode is made.
@@ -307,5 +277,8 @@ void fragment()
 		COLOR = vec4(first(p, r, aa, t), 1.0 - smoothstep(1.0 - aa, 1.0, r));
 	}
 	else
-		COLOR = vec4(blood(p, r, px, t), 1.0 - smoothstep(1.0 - px, 1.0, r));
+	{
+		float rs = r * canvas * 0.5;
+		COLOR = vec4(blood(p, r, px, t), 1.0 - smoothstep(glass_r + 1.5, glass_r + 2.5, rs));
+	}
 }

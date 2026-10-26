@@ -224,12 +224,13 @@ public partial class Vessel : Control
         mat.SetShaderParameter("seed", life ? 0.13f : 0.71f);
         mat.SetShaderParameter("mode", life ? 0 : 2);
         if (!life) Liquid(new Color("#ffcf7a"), new Color("#a8460c"), new Color("#0c0907"));
-        glass = new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Half - new Vector2(Instrument.R, Instrument.R), Size = new Vector2(Instrument.R * 2, Instrument.R * 2) };
+        // (her blood: the rect is the rendered glass's canvas, 124 px, its edge under the cuff)
+        float gr = life ? Glass(mat, "", 124, 17, 5, Instrument.R, 56.5f) : Instrument.R;
+        glass = new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Half - new Vector2(gr, gr), Size = new Vector2(gr * 2, gr * 2) };
         AddChild(glass);
         if (life)
         {
             flow = new Flow(mat, true);
-            Light(this, "hud/glass.png", Instrument.R + 6, Half);
         }
         // The art: UI art's first glass over the liquid (its window's light caught high on the left, its rim's
         // shade), sized so its glass's edge meets the cuff's seat.
@@ -251,6 +252,23 @@ public partial class Vessel : Control
         }
         over = new Over(this);
         AddChild(over);
+    }
+
+    /// <summary>HUD v2 r2: a glass rendered in Blender (tools/uiforge/blender_glass.py): the view through it at
+    /// `frames` fill levels (hud/glass_liquid*.png, an atlas of `cols` across), each frame's surface
+    /// (glass_lines*), the outer surface's light (glass_front*), the frost (glass_frost*) and, for her life,
+    /// the hurt film's map (glass_film); the shader slides and blends the frames. Returns half the canvas.</summary>
+    public static float Glass(ShaderMaterial mat, string suf, float canvas, int frames, int cols, float r, float cavity)
+    {
+        foreach (var (u, f) in new[] { ("liquid", "glass_liquid"), ("front", "glass_front"), ("lines", "glass_lines"), ("frost_map", "glass_frost") })
+            if (UiArt.Tex($"hud/{f}{suf}.png", false) is { } t) mat.SetShaderParameter(u, t);
+        if (suf == "" && UiArt.Tex("hud/glass_film.png", false) is { } fm) mat.SetShaderParameter("film_map", fm);
+        mat.SetShaderParameter("frames", frames);
+        mat.SetShaderParameter("cols", cols);
+        mat.SetShaderParameter("canvas", canvas);
+        mat.SetShaderParameter("glass_r", r);
+        mat.SetShaderParameter("cav_r", cavity);
+        return canvas / 2;
     }
 
     /// <summary>A glass's rendered light (hud/glass.png, hud/glass_small.png: its window, hot spot, rim and the
@@ -503,6 +521,12 @@ public partial class Cuff : Control
     readonly float r, band;
     readonly bool mirrored, small;
 
+    /// <summary>HUD v2: by day (her experience on the chain) or by night (the ember). The irons take the links'
+    /// own light (EmberChain's cold tint): dulled by night so the heat is what the eye finds, brightened steel
+    /// by day. EmberChain.Set flips it and redraws the instrument.</summary>
+    public static bool Day;
+    public static Color Cold => Day ? new Color(1.2f, 1.22f, 1.28f) : new Color(0.72f, 0.70f, 0.68f);
+
     public Cuff(float r, float band, bool mirrored, Vector2 half, bool small = false)
     {
         this.r = r; this.band = band; this.mirrored = mirrored; this.small = small;
@@ -521,7 +545,7 @@ public partial class Cuff : Control
             // the right cuff is the image flipped in x about that centre)
             var anchor = small ? new Vector2(35, 30) : new Vector2(85, 87);
             if (mirrored) DrawSetTransform(c, 0, new Vector2(-1, 1)); else DrawSetTransform(c);
-            DrawTexture(art, -anchor);
+            DrawTexture(art, -anchor, Cold);
             DrawSetTransform(Vector2.Zero);
             return;
         }
@@ -591,27 +615,42 @@ public partial class Cuff : Control
 public partial class Socket : Control
 {
     public string Id = "";
-    /// <summary>HUD v2: which of the three seat castings it wears (seat index % 3, so neighbors differ).</summary>
+    /// <summary>HUD v2: which of the three old seat castings it wears (seat index % 3, so neighbors differ); with
+    /// the six castings made (hud/seat_5.png), each seat wears its own, in the order the seats were made.</summary>
     public int Seat;
+    static int made;
+    readonly int nth = made++;
     Texture2D? art, inlay;
     static Vector2[][]? dimples;
+    static float hotPad;
+    /// <summary>Each casting's own value (hammered by hand, no two alike), times the irons' light.</summary>
+    static readonly float[] CastValue = { 0, 0.05f, -0.04f, 0.03f, -0.06f, 0.02f };
 
-    /// <summary>The rank pits' centers per casting, in shown px of the 68 px seat image (hud/seat.json).</summary>
+    /// <summary>Which casting: one of six when they are made, else one of the three.</summary>
+    int Cast => UiArt.Art("hud/seat_5.png") != null ? nth % 6 : Seat % 3;
+
+    /// <summary>The rank pits' centers per casting, in shown px of the 68 px seat image (hud/seat.json, every
+    /// casting it lists), and how far the hot seat's art reaches past the seat's (its bloom, hot_pad).</summary>
     static Vector2[][] Dimples()
     {
         if (dimples != null) return dimples;
-        dimples = new Vector2[3][];
         try
         {
-            var d = Json.ParseString(Godot.FileAccess.GetFileAsString(UiArt.Root + "hud/seat.json")).AsGodotDictionary()["dimples"].AsGodotDictionary();
-            for (int k = 0; k < 3; k++)
+            var root = Json.ParseString(Godot.FileAccess.GetFileAsString(UiArt.Root + "hud/seat.json")).AsGodotDictionary();
+            if (root.ContainsKey("hot_pad")) hotPad = (float)root["hot_pad"];
+            var d = root["dimples"].AsGodotDictionary();
+            int n = 0;
+            while (d.ContainsKey(n.ToString())) n++;
+            dimples = new Vector2[Math.Max(n, 1)][];
+            dimples[0] = Array.Empty<Vector2>();
+            for (int k = 0; k < n; k++)
             {
                 var a = d[k.ToString()].AsGodotArray();
                 dimples[k] = new Vector2[a.Count];
                 for (int i = 0; i < a.Count; i++) { var xy = a[i].AsGodotArray(); dimples[k][i] = new Vector2((float)xy[0], (float)xy[1]); }
             }
         }
-        catch (Exception) { dimples = new Vector2[3][] { Array.Empty<Vector2>(), Array.Empty<Vector2>(), Array.Empty<Vector2>() }; }
+        catch (Exception) { dimples = new Vector2[1][] { Array.Empty<Vector2>() }; }
         return dimples;
     }
     Color school;
@@ -669,13 +708,21 @@ public partial class Socket : Control
     {
         float s = Size.X;
         // HUD v2: the cast seat (68 px, the 58 seat at (4, 4)); no drawn collar, floor or rivets with it.
-        var seat = UiArt.Art(filled ? $"hud/seat_{Seat}.png" : $"hud/seat_empty_{Seat}.png");
+        int cast = Cast;
+        var seat = UiArt.Art(filled ? $"hud/seat_{cast}.png" : $"hud/seat_empty_{cast}.png");
         if (seat != null)
         {
-            DrawTexture(seat, new Vector2(-4, -4));
+            var cold = Cuff.Cold;
+            float v = 1 + CastValue[cast % CastValue.Length];
+            DrawTexture(seat, new Vector2(-4, -4), new Color(cold.R * v, cold.G * v, cold.B * v));
             if (!filled) return;
             float heat = evolved ? 1 : ripe ? 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f)) : 0;
-            if (heat > 0 && UiArt.Art($"hud/seat_hot_{Seat}.png") is { } hotSeat) DrawTexture(hotSeat, new Vector2(-4, -4), Colors.White with { A = heat });
+            // (the hot casting is hot_pad px wider each side, for the heat it throws round it)
+            if (heat > 0 && UiArt.Art($"hud/seat_hot_{cast}.png") is { } hotSeat)
+            {
+                Dimples();
+                DrawTexture(hotSeat, new Vector2(-4 - hotPad, -4 - hotPad), Colors.White with { A = heat });
+            }
             if (inlay != null)
             {
                 var col3 = ready >= 0.98 ? new Color(1.12f, 1.12f, 1.12f) : Colors.White;
@@ -688,16 +735,20 @@ public partial class Socket : Control
                 DrawTextureRect(art, new Rect2((s - g2) / 2, (s - g2) / 2 - 3, g2, g2), false, col2.Lerp(new Color(2.2f, 2.0f, 1.7f), (float)flash));
             }
             if (ready < 0.98) DrawRect(new Rect2(3, 3, s - 6, (s - 6) * (float)(1 - ready)), new Color(0.02f, 0.015f, 0.03f, 0.6f));
-            var pits = Dimples()[Seat % 3];
+            // The rank: eight pits punched in the foot bar, a coal in each one reached (its top edge lit), the
+            // rest left dark in the iron.
+            var all = Dimples();
+            var pits = all[cast % all.Length];
             for (int i = 0; i < pits.Length; i++)
             {
                 var pc = pits[i] - new Vector2(4, 4);
                 if (i < rank)
                 {
-                    DrawCircle(pc, 1.9f, new Color("#ff8a3a") with { A = 0.35f });
-                    DrawCircle(pc, 1.5f, new Color("#ff8a3a") with { A = 0.85f });
+                    DrawCircle(pc, 2.4f, new Color("#ff8a3a") with { A = 0.2f });
+                    DrawCircle(pc, 1.6f, new Color("#e8702a") with { A = 0.95f });
+                    DrawCircle(pc + new Vector2(-0.3f, -0.6f), 0.75f, new Color("#ffd8a8") with { A = 0.85f });
                 }
-                else DrawCircle(pc, 1.1f, new Color(0, 0, 0, 0.55f));
+                else DrawCircle(pc, 1.2f, new Color(0, 0, 0, 0.35f));
             }
             return;
         }
@@ -841,8 +892,8 @@ public partial class Round : Control
             mat.SetShaderParameter("mode", 1);
             mat.SetShaderParameter("seed", 0.37f);
             mat.SetShaderParameter("dry_film", 0f);
-            AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Size / 2 - new Vector2(r, r), Size = new Vector2(2 * r, 2 * r) });
-            Vessel.Light(this, "hud/glass_small.png", r + 2, Size / 2);
+            float gr = Vessel.Glass(mat, "_small", 50, 13, 4, r, 21.6f);
+            AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Size / 2 - new Vector2(gr, gr), Size = new Vector2(2 * gr, 2 * gr) });
             flow = new Vessel.Flow(mat, false);
         }
 
@@ -987,12 +1038,89 @@ public partial class EmberChain : Control
         AddChild(lck);
     }
 
-    /// <summary>How full (0 to 1), whether it is the ember or her experience, and the level.</summary>
+    /// <summary>How full (0 to 1), whether it is the ember or her experience, and the level. Night to day or back
+    /// changes the irons' light (Cuff.Day): then everything in the instrument redraws once.</summary>
     public void Set(float fill, bool ember, int level)
     {
         this.fill = Mathf.Clamp(fill, 0, 1);
         this.ember = ember;
         this.level = Math.Max(1, level);
+        if (Cuff.Day == ember)
+        {
+            Cuff.Day = !ember;
+            if (GetParent() is { } p) Redraw(p);
+        }
+    }
+
+    static void Redraw(Node n)
+    {
+        if (n is CanvasItem ci) ci.QueueRedraw();
+        foreach (var ch in n.GetChildren()) Redraw(ch);
+    }
+
+    /// <summary>HUD v2: the links in the chain (a multiple of four, so the first, the last and the middle one are
+    /// face-on: 40 at 1080), the k-th link's centre on the chain's shallow sag, and the angle it lies at.</summary>
+    public static int Links => Math.Max(4, 4 * (int)Math.Round((Instrument.EyeR.X - Instrument.EyeL.X) / (17.2f * LinkScale) / 4));
+    public static Vector2 LinkAt(int k) => Along((float)k / Links);
+    public static float LinkAngle(int k)
+    {
+        float t = (float)k / Links;
+        Vector2 a = Along(Math.Max(0, t - 0.01f)), b = Along(Math.Min(1, t + 0.01f));
+        return Mathf.Atan2(b.Y - a.Y, b.X - a.X);
+    }
+    static Vector2 Along(float t)
+    {
+        Vector2 a = Instrument.EyeL, b = Instrument.EyeR;
+        return new(Mathf.Lerp(a.X, b.X, t), Mathf.Lerp(a.Y, b.Y, t) + Sag * 4 * t * (1 - t));
+    }
+
+    static int[]? variants;
+
+    /// <summary>Which of the six castings the k-th link is, by hash: every one of the six for each shape, none
+    /// the same as any of the three of its shape before it, so no repeat the eye can find; the middle link is
+    /// face_5, the one the lock's front piece (hud/lock_link_front.png) is cut from.</summary>
+    static int Variant(int k)
+    {
+        int n = Links;
+        if (variants == null || variants.Length != n + 1)
+        {
+            variants = new int[n + 1];
+            int m = n / 2;
+            for (int j = 0; j <= n; j++)
+            {
+                if (j == m) { variants[j] = 5; continue; }
+                int best = 0;
+                float top = -1;
+                for (int c = 0; c < 6; c++)
+                {
+                    bool taken = c == 5 && m > j && m - j <= 6 && (m - j) % 2 == 0;
+                    for (int b = 2; b <= 6 && j - b >= 0; b += 2) taken |= variants[j - b] == c;
+                    if (taken) continue;
+                    float h = Hash(j * 6 + c, 29);
+                    if (h > top) { top = h; best = c; }
+                }
+                variants[j] = best;
+            }
+        }
+        return variants[Math.Clamp(k, 0, n)];
+    }
+
+    static float Hash(int k, int salt)
+    {
+        uint h = (uint)(k * 374761393 + salt * 668265263);
+        h = (h ^ (h >> 13)) * 1274126177u;
+        return ((h ^ (h >> 16)) & 0xffffff) / (float)0x1000000;
+    }
+
+    /// <summary>The k-th link's cold light: by night dulled, so the heat is what the eye finds; by day steel,
+    /// brightened where she has grown, dulled beyond; each link a little its own (hand-forged, 5% either way).</summary>
+    Color ColdTint(int k)
+    {
+        float t = (float)k / Links;
+        var tint = ember ? new Color(0.72f, 0.7f, 0.68f) : t <= fill ? new Color(1.2f, 1.22f, 1.28f) : new Color(0.62f, 0.62f, 0.66f);
+        if (!ember && flash > 0) tint = tint.Lerp(new Color(2.2f, 2.3f, 2.5f), flash);
+        float j = 1 + 0.05f * (2 * Hash(k, 41) - 1);
+        return new Color(tint.R * j, tint.G * j, tint.B * j);
     }
 
     /// <summary>A level gained: the chain flares, the lock springs and swings.</summary>
@@ -1016,15 +1144,10 @@ public partial class EmberChain : Control
         lck.QueueRedraw();
     }
 
-    Vector2 A => Instrument.EyeL;
-    Vector2 B => Instrument.EyeR;
-    float Len => B.X - A.X;
-    float Pitch => 17.2f * LinkScale;
-    // (HUD v2: a multiple of four, so the first and last links and the middle one are all face-on)
-    int Count => Math.Max(4, 4 * (int)Math.Round(Len / Pitch / 4));
+    int Count => Links;
 
     /// <summary>A point along the chain (0 at the left eye, 1 at the right), on its shallow sag.</summary>
-    Vector2 At(float t) => new(Mathf.Lerp(A.X, B.X, t), Mathf.Lerp(A.Y, B.Y, t) + Sag * 4 * t * (1 - t));
+    Vector2 At(float t) => Along(t);
 
     /// <summary>How hot the link at t is (0 cold to 1 white-hot): the body it has reached a deep red, the
     /// last links bright, a flare over all as she rises.</summary>
@@ -1048,19 +1171,13 @@ public partial class EmberChain : Control
                 bool face = (k & 1) == 0;
                 if (face != (pass == 0)) continue;
                 float t = (float)k / n;
-                var at = At(t);
-                float ang = Mathf.Atan2(At(Math.Min(1, t + 0.01f)).Y - At(Math.Max(0, t - 0.01f)).Y, (Math.Min(1, t + 0.01f) - Math.Max(0, t - 0.01f)) * Len);
-                DrawSetTransform(at, ang, new Vector2(LinkScale, LinkScale));
-                int variant = (k * 7 + 3) % 6;
+                DrawSetTransform(LinkAt(k), LinkAngle(k), new Vector2(LinkScale, LinkScale));
+                int variant = Variant(k);
                 string shape = face ? "face" : "edge";
                 float heat = ember ? Heat(t) : 0;
                 if (ChainTabs.Sprite($"{shape}_{variant}") is { } cold)
                 {
-                    // By night the cold links are dulled, so the heat is what the eye finds; by day, steel
-                    // brightened where she has grown, dulled beyond.
-                    var tint = ember ? new Color(0.72f, 0.7f, 0.68f) : t <= fill ? new Color(1.2f, 1.22f, 1.28f) : new Color(0.62f, 0.62f, 0.66f);
-                    if (!ember && flash > 0) tint = tint.Lerp(new Color(2.2f, 2.3f, 2.5f), flash);
-                    DrawTexture(cold, -cold.GetSize() / 2, tint);
+                    DrawTexture(cold, -cold.GetSize() / 2, ColdTint(k));
                     if (heat > 0 && ChainTabs.Sprite($"warm_{shape}_{variant}") is { } warm)
                         DrawTexture(warm, -warm.GetSize() / 2, Colors.White with { A = Math.Min(1, heat / 0.5f) });
                     if (heat > 0.6f && ChainTabs.Sprite($"hot_{shape}_{variant}") is { } hot)
@@ -1161,7 +1278,7 @@ public partial class EmberChain : Control
             var art = UiArt.Art(c.open > 0.3f ? "hud/lock_open.png" : "hud/lock.png");
             if (art != null)
             {
-                DrawTexture(art, new Vector2(-19, -10));
+                DrawTexture(art, new Vector2(-19, -10), Cuff.Cold);
                 if (heat > 0 && UiArt.Art("hud/lock_hot.png") is { } hot) DrawTexture(hot, new Vector2(-19, -10), Colors.White with { A = heat });
             }
             else
@@ -1186,13 +1303,36 @@ public partial class EmberChain : Control
                 DrawPolyline(outline, new Color(0, 0, 0, 0.9f), 1.4f, true);
                 DrawLine(new Vector2(-12.5f, 13.3f), new Vector2(12.5f, 13.3f), new Color(1, 0.94f, 0.8f, 0.28f), 1, true);
             }
-            // The level, stamped: dark in the iron, the ember's colour when the heat is in it.
             string s2 = c.level.ToString();
             var f = Style.Display;
+            if (art != null)
+            {
+                // HUD v2: the level stamped in the body, bone in the dark iron so it reads by day, its stamp's
+                // shade at its upper left; the ember's white as the heat comes into it. (Its middle is 22 below
+                // the pivot, 5 lower when open; the keyhole is at 33.5.)
+                int fs2 = s2.Length > 2 ? 15 : 19;
+                var ts2 = f.GetStringSize(s2, HorizontalAlignment.Left, -1, fs2);
+                var at2 = new Vector2(Mathf.Round(-ts2.X / 2), Mathf.Round(22 + (c.open > 0.3f ? 5 : 0) + fs2 * 0.36f));
+                DrawString(f, at2 - Vector2.One, s2, HorizontalAlignment.Left, -1, fs2, new Color("#050302") with { A = 0.75f });
+                DrawString(f, at2, s2, HorizontalAlignment.Left, -1, fs2, new Color("#e8dcc4").Lerp(new Color("#ffe8c0"), Math.Clamp(heat, 0, 1)) with { A = 0.92f });
+                // The chain's middle link's upper bar over the shackle (cut from its own sprite, face_5), with the
+                // link's own place, angle, size, light and heat: the shackle passes behind it and over its lower bar.
+                int m = Links / 2;
+                DrawSetTransform(LinkAt(m), LinkAngle(m), new Vector2(LinkScale, LinkScale));
+                if (UiArt.Art("hud/lock_link_front.png") is { } fr)
+                {
+                    DrawTexture(fr, -fr.GetSize() / 2, c.ColdTint(m));
+                    float lh = c.ember ? c.Heat(0.5f) : 0;
+                    if (lh > 0 && UiArt.Art("hud/lock_link_front_warm.png") is { } fw) DrawTexture(fw, -fw.GetSize() / 2, Colors.White with { A = Math.Min(1, lh / 0.5f) });
+                    if (lh > 0.6f && UiArt.Art("hud/lock_link_front_hot.png") is { } fh) DrawTexture(fh, -fh.GetSize() / 2, Colors.White with { A = (lh - 0.6f) / 0.4f });
+                }
+                DrawSetTransform(Vector2.Zero);
+                return;
+            }
+            // The level, stamped: dark in the iron, the ember's colour when the heat is in it.
             int fs = s2.Length > 2 ? 13 : 16;
             var ts = f.GetStringSize(s2, HorizontalAlignment.Left, -1, fs);
-            // (the art's numeral centre is image (19, 32), 5 lower when open: 22 below the pivot; the keyhole is at 31.5)
-            var at = new Vector2(-ts.X / 2, art != null ? 22 + (c.open > 0.3f ? 5 : 0) + fs * 0.36f : 12 + 11.5f + fs * 0.36f);
+            var at = new Vector2(-ts.X / 2, 12 + 11.5f + fs * 0.36f);
             var ink = c.ember ? new Color("#1a0e08").Lerp(Style.EmberHi, Math.Min(1, heat * 1.4f)) : new Color("#121418");
             DrawString(f, at + new Vector2(0, 1), s2, HorizontalAlignment.Left, -1, fs, new Color(1, 0.92f, 0.8f, 0.18f));
             DrawString(f, at, s2, HorizontalAlignment.Left, -1, fs, ink);
@@ -1237,10 +1377,23 @@ public partial class Sill : Control
         {
             // (cut at x 38, the middle of the first seat's bay: left piece, then the right piece from the cut
             // plus the seats left out; whole pitches, so the pattern runs on)
+            // HUD v2: two hangers tie the strap to the chain, so seats, chain and cuffs are one piece of iron
+            // (hud/hanger.png: an eye under the strap, its anchor at image (9, 4), at 993; its last link's foot
+            // laid in a face-on link of the chain, which draws over it): under the face-on link nearest 19 px in
+            // from the row's left end (never the lock's), and its mirror
+            if (UiArt.Art("hud/hanger.png") is { } hg)
+            {
+                int L = EmberChain.Links, mid = L / 2, best = 0;
+                float want = 960 - (n * Instrument.Sock + (n - 1) * Instrument.SockGap) / 2 + 19, bd = float.MaxValue;
+                for (int k = 0; k < mid; k += 2)
+                    if (Math.Abs(EmberChain.LinkAt(k).X - want) is var d && d < bd) { bd = d; best = k; }
+                foreach (int k in new[] { best, L - best })
+                    DrawTexture(hg, new Vector2(Mathf.Round(EmberChain.LinkAt(k).X - Position.X - 9), 993 - Position.Y - 4), Cuff.Cold);
+            }
             var sz = art.GetSize();
             float cut = 38, skip = (full - n) * 64;
-            DrawTextureRectRegion(art, new Rect2(0, 0, cut, sz.Y), new Rect2(0, 0, cut, sz.Y));
-            DrawTextureRectRegion(art, new Rect2(cut, 0, sz.X - skip - cut, sz.Y), new Rect2(cut + skip, 0, sz.X - skip - cut, sz.Y));
+            DrawTextureRectRegion(art, new Rect2(0, 0, cut, sz.Y), new Rect2(0, 0, cut, sz.Y), Cuff.Cold);
+            DrawTextureRectRegion(art, new Rect2(cut, 0, sz.X - skip - cut, sz.Y), new Rect2(cut + skip, 0, sz.X - skip - cut, sz.Y), Cuff.Cold);
             return;
         }
         DrawRect(new Rect2(Vector2.Zero, Size), new Color("#1a1714"));
@@ -1262,7 +1415,7 @@ public partial class KeyTag : Control
     readonly Act act;
     string text = "";
     string? padName;
-    float w = 24, cx;
+    float w = 24, cx, cy;
     bool built;
     Control? padView;
     static StyleBoxFlat? plate;
@@ -1278,8 +1431,9 @@ public partial class KeyTag : Control
         Size = new Vector2(52, Instrument.TagH);
     }
 
-    /// <summary>Hung from a ring at x, its top at y.</summary>
-    public void Place(float x, float y) { cx = x; Position = new Vector2(x - Size.X / 2, y); }
+    /// <summary>Hung at x, its plate's top at y (HUD v2: 2 lower under a small cuff, whose band's hole its link
+    /// runs from; the art cuff's tag at y itself).</summary>
+    public void Place(float x, float y) { cx = x; cy = y; Position = new Vector2(x - Size.X / 2, y + (ring ? 0 : 2)); }
 
     public void Refresh()
     {
@@ -1307,7 +1461,7 @@ public partial class KeyTag : Control
             if (t.Length > 4) w = Math.Max(w, TextWidth() + 10);
         }
         Size = new Vector2(Math.Max(52, w), Instrument.TagH);
-        Place(cx, Position.Y);
+        Place(cx, cy);
         QueueRedraw();
     }
 
@@ -1325,24 +1479,27 @@ public partial class KeyTag : Control
     {
         float x0 = (Size.X - w) / 2;
         var tag = UiArt.Art($"hud/tag_{(int)w}.png");
-        // (the art's plate is 1 px in from the image's corner; its hole is at (1 + plate/2, 3.6))
-        if (tag != null) DrawTextureRect(tag, new Rect2(Size.X / 2 - 1 - w / 2, -1, tag.GetSize()), false);
+        // (HUD v2: the art's plate at image (3, 8), its ear and the link it hangs by above it, cut at the band;
+        // in the irons' light, gentler: a rubbed plate is what the eye reads the key on)
+        float pl = Cuff.Day ? 1.1f : 0.9f;
+        if (tag != null) DrawTexture(tag, new Vector2(Mathf.Round(Size.X / 2 - w / 2) - 3, -8), new Color(pl, pl, pl));
         else
         {
             plate ??= new StyleBoxFlat { BgColor = new Color("#2a2420"), BorderColor = new Color("#6b5a48"), BorderWidthTop = 1, CornerRadiusTopLeft = 2, CornerRadiusTopRight = 2, CornerRadiusBottomLeft = 2, CornerRadiusBottomRight = 2 };
             DrawStyleBox(plate, new Rect2(x0, 0, w, Instrument.TagH));
         }
-        // (the Q tag's own ring: image (6, 1.5) on the band's foot, 1050; the small cuffs carry theirs)
-        if (this.ring && UiArt.Art("hud/tag_ring.png") is { } rg) DrawTexture(rg, new Vector2(Size.X / 2 - 6, 1048.5f - Position.Y));
         if (padName != null || text == "") return;
+        // The key pressed into the plate: its floor dark, a 1 px lip of light at its lower right; its caps' middle
+        // on the plate's (Alegreya Sans caps stand 0.645 em)
         var f = Style.UiHeavy;
-        float x = (Size.X - TextWidth()) / 2;
-        float y = (Instrument.TagH - f.GetHeight(14)) / 2 + f.GetAscent(14) + (tag != null && (int)w == 24 ? 1.5f : 0);
+        float x = Mathf.Round((Size.X - TextWidth()) / 2);
+        float y = Mathf.Round(Instrument.TagH / 2 + 0.645f * 14 / 2);
         foreach (char ch in text)
         {
             string s = ch.ToString();
-            DrawStringOutline(f, new Vector2(x, y), s, HorizontalAlignment.Left, -1, 14, 1, new Color("#0c0a08") with { A = 0.8f });
-            DrawString(f, new Vector2(x, y), s, HorizontalAlignment.Left, -1, 14, new Color("#f2e8d6"));
+            var p = new Vector2(Mathf.Round(x), y);
+            DrawString(f, p + Vector2.One, s, HorizontalAlignment.Left, -1, 14, new Color("#f2e8d6") with { A = 0.55f });
+            DrawString(f, p, s, HorizontalAlignment.Left, -1, 14, new Color("#0b0908") with { A = 0.95f });
             x += f.GetStringSize(s, HorizontalAlignment.Left, -1, 14).X + Track;
         }
     }
@@ -1368,7 +1525,7 @@ public partial class CuffFront : Control
         if (UiArt.Art("hud/cuff_front.png") is { } art)
         {
             if (mirrored) DrawSetTransform(c, 0, new Vector2(-1, 1)); else DrawSetTransform(c);
-            DrawTexture(art, -new Vector2(85, 87));
+            DrawTexture(art, -new Vector2(85, 87), Cuff.Cold);
             DrawSetTransform(Vector2.Zero);
             return;
         }
