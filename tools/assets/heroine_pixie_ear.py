@@ -72,6 +72,8 @@ SHADE_CLEAR = (0.0020, 0.0040)  # m: her scalp shade under the pixie (head_tex/h
 SHADE_TIP = (0.0030, 0.0050)    # lines and her ear's flap as its hair, so the skin round the rim is skin, not the shade
                                 # read as hair (face 42 r2b: with no hair on, the shade ran dark to the helix's top)
 SHADE_BLUR = 1.2                # texels (of 1024): the clearing's edge softened
+GRAIN_KEEP = 0.2                # her skin's shader grain kept over the bared scalp and her ear's top (the shade's alpha)
+GRAIN_T = (0.50, 0.65)          # her ear from this height up (none under the first, in full past the second)
 SHADE_FRONT = PIXIE_FRONT       # m: and the same off the ear's front
 REACH = 0.045                   # m from the ear's middle (3D): the points looked at
 
@@ -353,7 +355,7 @@ def shade(art, report=True):
     md5 = hashlib.md5(open(src, "rb").read()).hexdigest()
     tag = "clear %.1f-%.1f mm, front %.1f-%.1f mm (h %.1f, y %.0f-%.0f mm, dense, blur %.1f), tip %.1f-%.1f mm, back %.0f mm, src %s" % (
         SHADE_CLEAR[0] * 1e3, SHADE_CLEAR[1] * 1e3, SHADE_FRONT[0] * 1e3, SHADE_FRONT[1] * 1e3, FRONT_H * 1e3, FRONT_Y[0] * 1e3, FRONT_Y[1] * 1e3, SHADE_BLUR, SHADE_TIP[0] * 1e3,
-                                                                         SHADE_TIP[1] * 1e3, PIXIE_BACK * 1e3, md5)
+                                                                         SHADE_TIP[1] * 1e3, PIXIE_BACK * 1e3, md5) + ", grain %.2f from t %.2f-%.2f, skin wid %.1f mm, ear %.0f mm" % (GRAIN_KEEP, GRAIN_T[0], GRAIN_T[1], SKIN_WID * 1e3, TOP_DE * 1e3)
     if os.path.exists(dst) and Image.open(dst).info.get("pixie_shade") == tag:
         print("PIXIE_EAR: %s has had it" % os.path.basename(dst))
         return
@@ -378,6 +380,16 @@ def shade(art, report=True):
     M[gut] = M[ny[gut], nx[gut]]
     g0 = A[..., 1].astype(np.float32)
     A[..., 1] = np.clip(np.floor(g0 * M + 0.5), 0, 255).astype(np.uint8)
+    # (its alpha: her skin's shader grain kept GRAIN_KEEP there (heroine_skin.gdshader, under scalp_shadow): bared, the
+    # scalp's grain (x3 off her face, none on it) read as a pale mottle on her ear's top and the margin round it)
+    Z = _zone(art, size)
+    gw = np.maximum((1 - Z["kw"]) * Z["sc"], (1 - Z["sc"]) * _ss((Z["t"] - GRAIN_T[0]) / (GRAIN_T[1] - GRAIN_T[0])) * (Z["de"] < TOP_DE))
+    Gm = np.zeros((size, size), np.float32)
+    Gm[Z["iy"], Z["ix"]] = gw
+    Gm = ndimage.gaussian_filter(Gm, SHADE_BLUR)
+    gut = ~cov & (dist <= 4)
+    Gm[gut] = Gm[ny[gut], nx[gut]]
+    A[..., 3] = np.clip(np.floor(255 * (1 - (1 - GRAIN_KEEP) * Gm) + 0.5), 0, 255).astype(np.uint8)
     info = PngImagePlugin.PngInfo()
     info.add_text("pixie_shade", tag)
     Image.fromarray(A, "RGBA").save(dst, pnginfo=info)
@@ -385,8 +397,111 @@ def shade(art, report=True):
         print("PIXIE_EAR: %s: %d texels eased" % (dst, int((A[..., 1] != g0).sum())))
 
 
+SKIN_MARK = "pixie_skin"
+SKIN_WID = 0.003                 # m: the skin's lift runs this far under the hair past the shade's clearing (its edge
+                                 # under hair, not at the hair's fading edge)
+SKIN_EAR = (0.0008, 0.0015)      # m of stand-off off her skull: in full under the first, none past the second (the ear's
+                                 # own paint left; its front is heroine_ear_shape's front_tone)
+SKIN_Q = (1.69, 1.72, 1.77)      # linear: the bared scalp's paint over her face's beside it (features' blue), per channel
+                                 # (face 42 r2c: bared, it rendered 0.057 OKLab L under her cheek, greyer and yellower at
+                                 # the Look turned 40 in copper; her face takes face_tone and its fits, her scalp none)
+SKIN_C = 1.2                     # its OKLab chroma raised by this share (at the same lift it rendered 0.85x her cheek's: a
+                                 # grey strip behind the rim in blonde)
+SKIN_DETAIL = 0.5                # the paint's fine detail (over its blur, SKIN_SIGMA texels of 4096) kept: the scalp's
+SKIN_SIGMA = 10.0                # stipple of follicles eased toward her cheek's finer grain
+TOP_T = (0.70, 0.82)             # her ear's own top (its height up the ear: none under the first, in full past the second),
+TOP_REF = (0.40, 0.65)           # which the pixie bares (its hair lay on it): its blur taken to the ear's paint between
+TOP_DETAIL = 0.35                # these heights, TOP_DETAIL of its detail kept (face 42 r2c: its paint, never seen
+                                 # before, rendered a pale mottle on the helix's top front and a mauve-grey patch behind)
+TOP_DE = 0.006                   # m from the ear's points (its flap standing 3 mm off her skull): its rim's outer 1.5-3 mm too
+
+
+def _zone(art, n=1024):
+    """The pixie's bared zone round her ears at her head's texels (n x n): each texel's clearing (k0; kw, SKIN_WID
+    further under the hair), stand-off off her skull (h), height up the ear (t), distance to its points (de), the
+    features' blue, and the weights: w her bared scalp's (off her face and ear), we her ear's own top's."""
+    from PIL import Image
+    from scipy import ndimage
+    P, UV, F, hy = es._head(os.path.join(art, "heroine.glb"))
+    L = ear_lines(P, F, hy, False)
+    T = F[(np.linalg.norm(P[F] - np.vstack([e["c"] for e in L.values()])[:, None, None], axis=-1) < REACH).all(-1).any(0)]
+    iy, ix, X = es._raster(UV, T, P, n)
+    k0, kw = clear_field(X, L), clear_field(X, L, SKIN_WID)
+    h, t, de = np.zeros(len(X)), np.zeros(len(X)), np.full(len(X), np.inf)
+    for sg in (-1, 1):
+        m = np.sign(X[:, 0]) == sg
+        f = es.ear_frame(P, sg, hy)
+        h[m] = np.abs(X[m, 0]) - f["sk"](X[m][:, 1:3])
+        t[m] = (X[m, 1] - f["y"][0]) / (f["y"][1] - f["y"][0])
+        de[m] = cKDTree(P[f["ear"]]).query(X[m])[0]
+    fe = np.asarray(Image.open(os.path.join(art, "head_tex", "heroine_features.png")).convert("RGBA"), np.float32)[..., 2] / 255
+    fe = ndimage.zoom(fe, n / fe.shape[0], order=1) if fe.shape[0] != n else fe
+    blue = fe[iy, ix]
+    sc = _ss((SKIN_EAR[1] - h) / (SKIN_EAR[1] - SKIN_EAR[0]))
+    w = (1 - kw) * sc * (1 - blue)
+    we = (1 - sc) * _ss((t - TOP_T[0]) / (TOP_T[1] - TOP_T[0])) * (de < TOP_DE)
+    return dict(iy=iy, ix=ix, X=X, k0=k0, kw=kw, h=h, t=t, de=de, blue=blue, sc=sc, w=w, we=we)
+
+
+def skin(art, faces=None, report=True):
+    """The scalp the pixie bares round her ears (clear_field, SKIN_WID further under the hair) laid in her face's
+    colour in each head paint (head_tex/heroine_head*.jpg): its blur taken to her face's paint beside it times SKIN_Q,
+    SKIN_DETAIL of its fine detail kept; off her face (the features' blue, which has face_tone) and her ear. Face 42
+    r2c: bared, it read a grey-brown crescent round the rim. Done-mark: each paint's JPEG comment pixie_skin."""
+    from PIL import Image
+    from scipy import ndimage
+    import heroine_brow_strokes as bs
+    import heroine_ears as he
+    tex = os.path.join(art, "head_tex")
+    paints = [fn for fn in sorted(os.listdir(tex)) if fn.startswith("heroine_head") and fn.endswith(".jpg")]
+    if faces:
+        paints = [fn for fn in paints if fn[len("heroine_head"):-4].lstrip("_") in faces or (fn == "heroine_head.jpg" and "own" in faces)]
+    paints = [fn for fn in paints if SKIN_MARK not in bs.comment(os.path.join(tex, fn)) or print("PIXIE_EAR: %s has had it" % fn)]
+    if not paints:
+        return
+    n = 1024
+    Z = _zone(art)
+    iy, ix, k0, h, t, de, blue, w, we = (Z[k] for k in ("iy", "ix", "k0", "h", "t", "de", "blue", "w", "we"))
+    bare = (k0 < 0.2) & (h < SKIN_EAR[0]) & (blue < 0.1)
+    face = (blue > 0.9) & (h < SKIN_EAR[0]) & (k0 > 0.99)
+    top = (h > SKIN_EAR[1]) & (t > TOP_T[1]) & (de < 0.001)
+    mid = (h > SKIN_EAR[1]) & (t > TOP_REF[0]) & (t < TOP_REF[1]) & (de < 0.001)
+    Wn, We = np.zeros((n, n), np.float32), np.zeros((n, n), np.float32)
+    Wn[iy, ix], We[iy, ix] = w, we
+    for fn in paints:
+        path = os.path.join(tex, fn)
+        img = Image.open(path).convert("RGB")
+        size = img.size[0]
+        A = es._lin(np.asarray(img, np.float32) / 255)
+        a = es._lin(np.asarray(img.resize((n, n), Image.BOX), np.float32) / 255)
+        G = a[iy[face], ix[face]].mean(0) * np.array(SKIN_Q) / a[iy[bare], ix[bare]].mean(0)
+        Ge = a[iy[mid], ix[mid]].mean(0) / a[iy[top], ix[top]].mean(0)
+        Wt = np.clip(ndimage.zoom(Wn, size / n, order=1), 0, 1) if size != n else Wn
+        Et = np.clip(ndimage.zoom(We, size / n, order=1), 0, 1) if size != n else We
+        Et = np.minimum(Et, 1 - Wt)
+        ys, xs = np.nonzero((Wt > 0.002) | (Et > 0.002))
+        y0, y1, x0, x1 = max(ys.min() - 64, 0), min(ys.max() + 65, size), max(xs.min() - 64, 0), min(xs.max() + 65, size)
+        sub = A[y0:y1, x0:x1]
+        low = np.stack([ndimage.gaussian_filter(sub[..., c], SKIN_SIGMA * size / 4096) for c in range(3)], -1)
+        new = he.oklab(np.clip((low + SKIN_DETAIL * (sub - low)) * G, 0, 1).astype(np.float64))
+        new[..., 1:] *= SKIN_C
+        new = np.clip(he.unoklab(new), 0, 1).astype(np.float32)
+        ear = np.clip((low + TOP_DETAIL * (sub - low)) * Ge, 0, 1)
+        wt, et = Wt[y0:y1, x0:x1, None], Et[y0:y1, x0:x1, None]
+        A[y0:y1, x0:x1] = sub * (1 - wt - et) + new * wt + ear * et
+        out = np.clip(es._srgb(A) * 255 + 0.5, 0, 255).astype(np.uint8)
+        Image.fromarray(out).save(path, quality=95, subsampling=0, comment=(bs.comment(path) + " " + SKIN_MARK).strip().encode("latin-1"))
+        if report:
+            print("PIXIE_EAR: %s: bared scalp's paint x %s (linear), %d texels; ear's top x %s, %d texels" % (
+                fn, np.round(G, 3), int((Wt > 0.5).sum()), np.round(Ge, 3), int((Et > 0.5).sum())))
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
+    if "--skin" in a:
+        pos = [x for x in a if not x.startswith("--")]
+        skin(pos[0] if pos else "godot/art/people", pos[1:] or None)
+        sys.exit(0)
     if "--shade" in a:
         shade(next((x for x in a if not x.startswith("--")), "godot/art/people"))
         sys.exit(0)

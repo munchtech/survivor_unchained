@@ -510,6 +510,9 @@ void fragment() {
 	float depth = mix(seam_depth, pore_depth, hw) * mix(0.35, 1.0, patchy) * mix(1.0, paint_pores, pa);
 	// (where her freckles' map says, its blue: her head and up her neck, none from her collarbones down)
 	float ga = grain_amount * (1.0 - fm.b) * fk.b;
+	// (and where her scalp's shade mask's alpha says, under a style that bares her scalp: the pixie's margin round her
+	// ear and the ear's top, whose grain read a pale mottle; tools/assets/heroine_pixie_ear.py --shade, face 42)
+	if (scalp_shadow > 0.0) ga *= texture(shadow_mask, UV).a;
 	if (ga > 0.0) {
 		// (a tile every 28 mm: pore_scale is a tile every 9; the two reads' mean has
 		// 0.71 of one's spread, given back)
