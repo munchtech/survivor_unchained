@@ -78,7 +78,7 @@ public partial class WorldScene : Node3D, IZoneLook
         View = view;
         AddChild(View);
         AddChild(Crowd);
-        Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam };
+        Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam, Lines = Voices };
         Fx.OnDamageFlash = v => damageFlash = Math.Max(damageFlash, v);
         AddChild(Fx);
         AddChild(Voices);
