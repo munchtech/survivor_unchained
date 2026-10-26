@@ -60,10 +60,12 @@ public class PrologueTests
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
         Assert.True(s.B.Enemies.Living().Count() > 6);
         Assert.Equal("move", s.Host.CurrentHint?.Id ?? "move");
-        // The first rise of the ember brings a great blessing before its card.
+        // The first rise of the ember brings its first card alone; the great blessing comes on its own
+        // panel later (au1 item 2).
         s.B.GainEmber(s.B.EmberNext);
         Run(s, 0.1);
-        Assert.True(LevelUp.GreatNext(s.B));
+        Assert.False(LevelUp.GreatNext(s.B));
+        Assert.True(s.B.DraftOwed);
         Assert.NotNull(s.Host.DraftTip);
     }
 
