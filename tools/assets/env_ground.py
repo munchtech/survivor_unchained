@@ -289,25 +289,51 @@ def setts_layout(variant):
     return courses, stones
 
 
-def _stone_look(r, flag):
-    """One stone's own tone (sRGB 0-1), wear, tilt, crown and edge: granite greys, a few warmer, darker, paler."""
+def _stone_look(r, flag, cm):
+    """One stone's own tone (sRGB 0-1), wear, tilt, crown and edge: granite greys, some browner, some blue-grey whin,
+    a few pale or rosy accents (E9e r2: 90% within 10% of their course's mean value `cm`, the accents 7%; the big
+    swings are the shader's 2-6 m layer now, not the stones' own, which read as tone noise)."""
     u = r.uniform(0, 1)
-    if u < 0.58:   # grey granite
-        h, s, v = r.uniform(25, 45), r.uniform(0.05, 0.13), r.normal(0.345, 0.04)
-    elif u < 0.74:  # a warmer, browner stone
-        h, s, v = r.uniform(26, 38), r.uniform(0.17, 0.27), r.normal(0.33, 0.035)
-    elif u < 0.87:  # dark whin, blue-grey
-        h, s, v = r.uniform(200, 225), r.uniform(0.03, 0.06), r.normal(0.26, 0.025)
-    elif u < 0.95:  # a pale one
-        h, s, v = r.uniform(32, 46), r.uniform(0.06, 0.11), r.normal(0.43, 0.03)
+    acc = 0
+    if u < 0.60:   # grey granite
+        h, s, k = r.uniform(28, 45), r.uniform(0.05, 0.11), 1.0
+    elif u < 0.78:  # a warmer, browner stone
+        h, s, k = r.uniform(26, 36), r.uniform(0.13, 0.19), 0.98
+    elif u < 0.93:  # dark whin, blue-grey
+        h, s, k = r.uniform(200, 225), r.uniform(0.03, 0.06), 0.93
+    elif u < 0.97:  # a pale one
+        h, s, k, acc = r.uniform(32, 46), r.uniform(0.05, 0.09), 1.17, 1
     else:           # rosy granite
-        h, s, v = r.uniform(12, 22), r.uniform(0.10, 0.16), r.normal(0.33, 0.03)
+        h, s, k, acc = r.uniform(12, 22), r.uniform(0.10, 0.15), 1.0, 2
     if flag:
-        h, s, v = r.uniform(30, 42), r.uniform(0.08, 0.14), r.normal(0.36, 0.025)
+        h, s, k, acc = r.uniform(30, 42), r.uniform(0.07, 0.12), 1.03, 0
+    v = 0.345 * cm * k * (1 + float(np.clip(r.normal(0, 0.035), -0.07, 0.07)))
     tone = np.array(colorsys.hsv_to_rgb(h / 360.0, s, float(np.clip(v, 0.2, 0.5))))
-    return dict(tone=tone, wear=r.uniform(0, 1) ** 1.3, tilt=r.normal(0, 0.012, 2), top=r.uniform(0.8, 1.0),
+    # (E9e r2, the close camera: worn crowns 2-4 mm, each stone its own height (+-3-5 mm) and tilt (up to 2 degrees),
+    # arrises rounded over 1-2 cm.)
+    return dict(tone=tone, acc=acc, wear=r.uniform(0, 1) ** 1.3, tilt=np.clip(r.normal(0, 0.018, 2), -0.035, 0.035),
+                lift=float(np.clip(r.normal(0, 0.0028), -0.005, 0.005)), top=r.uniform(0.85, 1.0),
                 sid=r.uniform(0.1, 0.9), ins=r.uniform(INSET[0], INSET[1], 4), rad=r.uniform(0.012, 0.03) if r.uniform() > 0.12 else r.uniform(0.04, 0.06),
-                cham=r.uniform(0.012, 0.028), grad=r.normal(0, 0.06, 2), crown=r.uniform(0.0006, 0.0022))
+                cham=r.uniform(0.010, 0.020), grad=r.normal(0, 0.04, 2), crown=r.uniform(0.002, 0.004),
+                etl=np.clip(r.normal(0, 0.045, 2), -0.08, 0.08))
+
+
+def _demote_accents(look, S):
+    """No two accent stones touching: a pale or rosy stone next to another accent turns plain grey granite."""
+    pairs = set()
+    for ax in (0, 1):
+        for sh in (6, -6):
+            a = S; b = np.roll(S, sh, axis=ax)
+            d = a != b
+            for x, y in zip(a[d].ravel(), b[d].ravel()):
+                pairs.add((int(x), int(y)))
+    nb = {}
+    for x, y in pairs:
+        nb.setdefault(x, set()).add(y)
+    for i, l in enumerate(look):
+        if l['acc'] and any(look[j]['acc'] for j in nb.get(i, ()) if j < i):
+            v = colorsys.rgb_to_hsv(*l['tone'])[2] / (1.17 if l['acc'] == 1 else 1.0)
+            l['tone'] = np.array(colorsys.hsv_to_rgb(36 / 360.0, 0.08, v)); l['acc'] = 0
 
 
 def setts_sources(variant):
@@ -356,7 +382,9 @@ def setts_sources(variant):
             i = np.where(uu > u1[i] + t1[i] * vm, np.minimum(i + 1, len(lst) - 1), i)
         sid_px[msk] = np.array(lst)[i]
     ns = len(stones)
-    look = [_stone_look(hash2(*s['key']), s.get('flag', False)) for s in stones]
+    cmean = [1 + float(np.clip(hash2(c_, 0, 77).normal(0, 0.03), -0.06, 0.06)) for c_ in range(len(courses))]
+    look = [_stone_look(hash2(*s['key']), s.get('flag', False), cmean[s['k']]) for s in stones]
+    _demote_accents(look, sid_px)
     # Per-pixel distance into its stone (a rounded box with its own insets, tilted sides).
     S = sid_px
     Uu = np.where(U < np.array([courses[s['k']]['o'] for s in stones])[S], U + SETTS_M, U)
@@ -369,8 +397,11 @@ def setts_sources(variant):
     dr = (arr('u1')[S] + arr('t1')[S] * vm) - Uu - ins[S, 1]
     Vv = V.copy()
     # (A stone across the tile's top edge: its course is the last; V near 0 belongs to it only if K says so.)
-    db = Vv - za[S] - ins[S, 2]
-    dt = zb[S] - Vv - ins[S, 3]
+    # (E9e r2: the long sides off true too, each its own few degrees, so no stone is a machined block.)
+    etl = np.array([l['etl'] for l in look]); cu0 = 0.5 * (arr('u0') + arr('u1'))
+    du = Uu - cu0[S]
+    db = Vv - za[S] - ins[S, 2] - etl[S, 0] * du
+    dt = zb[S] - Vv - ins[S, 3] - etl[S, 1] * du
     dx = np.minimum(dl, dr); dy = np.minimum(db, dt)
     r_ = rad[S]
     qx, qy = r_ - dx, r_ - dy
@@ -390,9 +421,14 @@ def setts_sources(variant):
     crown = np.array([l['crown'] for l in look])[S]
     gr = mixed(0.035, 2, 400)
     fine = mixed(0.05, 3, 110)
-    h_m = (dome * TOP_H * top + crown * (1 - 0.5 * (qu * qu + qv * qv)) + (tilt[..., 0] * qu * hu[S] + tilt[..., 1] * qv * hv[S])
-           + gr * 0.0006 + 0.0004 * fine)
-    h_m = h_m * stone + (1 - stone) * (-0.004 + 0.0025 * fine)
+    lift = np.array([l['lift'] for l in look])[S]
+    body = TOP_H * top + lift + crown * (1 - 0.5 * np.clip(qu * qu + qv * qv, 0, 2)) + (tilt[..., 0] * qu * hu[S] + tilt[..., 1] * qv * hv[S])
+    # (E9e r2: the stone's height falls to the joint's floor over its rounded arris and a 3 mm side, never a step: the
+    # step drew a dark hairline round every stone at the close camera. The joints recessed 5-15 mm, their floors uneven.)
+    jf = JOINT_D + 0.003 * mixed(0.15, 2, 120)
+    h_m = np.where(edge > 0, dome * np.maximum(body, 0.002) + gr * 0.0006 + 0.0004 * fine,
+                   -jf * np.clip(-edge / 0.003, 0, 1) + 0.0012 * fine)
+    h_m = gaussian_filter(h_m, 0.5, mode='wrap')
     dirt = mixed(0.6, 4, 100)
     mud = np.clip(0.55 + 0.45 * mixed(0.12, 3, 200) + 0.3 * dirt, 0, 1) * (1 - stone)
     moss = np.clip((-dirt - 0.25) * 2.5, 0, 1) * np.clip(0.5 + 0.8 * mixed(0.08, 2, 210), 0, 1) * (1 - stone)
@@ -436,8 +472,8 @@ def bake_setts(src):
     mortar = grit + (dirt - grit) * src['mud'][..., None]
     mortar += (moss - mortar) * src['moss'][..., None] * 0.6
     alb = np.clip(alb * st + mortar * (1 - st), 0, 1)
-    rough = (0.72 - 0.15 * wear) * stone + 0.95 * (1 - stone)
-    hn = np.clip((h_m + 0.006) / 0.022, 0, 1)
+    rough = (0.84 - 0.08 * wear) * stone + 0.95 * (1 - stone)   # (E9e r2: dry tops about 0.8, so a wet pool reads by its sheen)
+    hn = np.clip((h_m + 0.006) / H_SPAN, 0, 1)
     ao = gaussian_filter(np.clip(1 - 0.18 * (1 - stone) - 0.06 * lip, 0, 1), 1.0, mode='wrap')
     n = normal_from(h_m, px, 1.0)
     # The normal's B carries each stone's own random (0.1-0.9; the shader rebuilds z from x and y).
@@ -450,7 +486,7 @@ def save_sources(variant, src):
     SRC.mkdir(parents=True, exist_ok=True)
     def u16(a, lo, hi, name):
         Image.fromarray(np.clip(np.round((a - lo) / (hi - lo) * 65535), 0, 65535).astype(np.uint16)).save(SRC / f'v{variant}_{name}.png')
-    u16(src['height'], -0.006, 0.016, 'height')            # metres, -6 to +16 mm
+    u16(src['height'], -0.006, H_SPAN - 0.006, 'height')   # metres, -6 to +18 mm
     Image.fromarray(src['id'].astype(np.uint16)).save(SRC / f'v{variant}_id.png')
     to8(src['tone']).save(SRC / f'v{variant}_tone.png')
     for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome'):
@@ -462,7 +498,7 @@ def load_sources(variant):
     def f(name):
         return np.asarray(Image.open(SRC / f'v{variant}_{name}.png')).astype(float)
     src = {k: f(k) / 255 for k in ('wear', 'mud', 'moss', 'sid', 'stone', 'dome')}
-    src['height'] = f('height') / 65535 * 0.022 - 0.006
+    src['height'] = f('height') / 65535 * H_SPAN - 0.006
     src['id'] = f('id')
     src['tone'] = f('tone') / 255
     src['grain'] = f('grain') / 255 * 2 - 1
@@ -484,8 +520,10 @@ EDGE_SHARE = 0.35       # the stones within this of the tile's left and right ed
 STAGGER = 0.04          # no joint within this of one in the course below
 TILT = 0.12             # a joint's lean off square (its slope)
 FLAGS, FLAG_W = 3, (0.32, 0.5)   # big flags per variant tile, over two courses, and their length
-INSET = (0.0015, 0.0055)  # each side's own set-back from its joint line (the joints 0.3-1.1 cm, plus the wobble)
-TOP_H = 0.010           # the dressed top's height over the joint's floor, reached over the stone's chamfer
+INSET = (0.004, 0.010)  # each side's own set-back from its joint line (E9e r2: the joints 8-20 mm, plus the wobble)
+TOP_H = 0.0075          # the dressed top's height over the joint's lip, reached over the stone's chamfer
+JOINT_D = 0.0045        # the joint's floor under the lip (the stones' tops 5-15 mm over it)
+H_SPAN = 0.024          # arh B: -6 to +18 mm (E9e r2; was +16, the per-stone heights and tilts need the room)
 WOBBLE = 0.004
 GRAIN = 0.10
 
