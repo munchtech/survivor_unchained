@@ -156,6 +156,8 @@ uniform float old_amt = 0.0;
 uniform float core_night = 0.8;
 uniform float lamp_gain = 1.0;
 uniform float lamp_green = 0.0;
+// (lf1b) under the moon a spray's open outer half lifted by up to this (the lit top of each tier, its tips)
+uniform float tip_lift = 0.0;
 // (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
 // its crown seen from above read as a hole by day, judge E4c)
 uniform float core = 1.0;
@@ -857,7 +859,8 @@ void fragment() {
 		float hl = hue_of(sqrt(max(ALBEDO * key, vec3(0.0))));
 		ALBEDO = max(hue_turn(ALBEDO, radians(clamp(hue_floor - hl, 0.0, 60.0) * low_sun)), vec3(0.0));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
-		ALBEDO *= mix(mix(0.5, core_night, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
+		ALBEDO *= mix(mix(0.5, core_night, night), 1.0, open_) * mix(1.0, 0.62, night);
+		ALBEDO *= 1.0 + tip_lift * night * smoothstep(0.35, 1.0, COLOR.g) * smoothstep(0.6, 1.0, COLOR.r);  // (under the moon a crown's lit tips no brighter than the moonlit road)
 		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
 		ALBEDO *= mix(vec3(1.0), vec3(0.7, 1.15, 0.9), night);
 		ALBEDO = max(hue_turn(ALBEDO, radians(night_hue * night)), vec3(0.0)) * mix(1.0, night_value, night);

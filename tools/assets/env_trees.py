@@ -947,7 +947,7 @@ def spruce_branch(b, c0, az, L, t, lod, rng, form, H, R):
 
 def sky_bake(b, H, R, vox=0.2):
     """Each leaf vertex's openness to the sky (13 rays within 60 degrees of the zenith through a voxel grid of the
-    crown's own sprays), its colour's r 0.3-1, and its normal turned with it: open, up (a tier's lit top, its tips);
+    crown's own sprays), its colour's r 0.42-1, and its normal turned with it: open, up (a tier's lit top, its tips);
     shut in, out from the trunk and down (the dark under the tier above). The bark keeps its own."""
     V = np.array(b.v, np.float64)
     F = np.array(b.f)
@@ -987,7 +987,8 @@ def sky_bake(b, H, R, vox=0.2):
                 break
             tau[ok] += tau_v[ii[ok, 0], ii[ok, 1], ii[ok, 2]]
         tot += wi * np.exp(-tau)
-    op = tot / sum(w)
+    # (lifted: a tier's open top as light as the old crown's skin, judge lf1b r1 at 1:1: the stand went dark)
+    op = (tot / sum(w)) ** 0.6
     # the geometric normal of each vertex's card (its upper side up)
     gn = np.zeros_like(V)
     for f in F:
@@ -1004,7 +1005,7 @@ def sky_bake(b, H, R, vox=0.2):
         n = r * (0.55 - 0.15 * o) + np.array([0, 0, -0.15 + 1.0 * o]) + gn[i] * 0.3
         b.n[i] = n / np.linalg.norm(n)
         c = b.c[i]
-        b.c[i] = (0.3 + 0.7 * float(o), c[1], c[2])
+        b.c[i] = (0.42 + 0.58 * float(o), c[1], c[2])
     return op
 
 
