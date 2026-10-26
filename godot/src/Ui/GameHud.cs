@@ -558,6 +558,8 @@ public partial class GameHud : CanvasLayer
         dash.Max = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
         dash.Count = p.DashCharges;
         dash.Recharge = (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1);
+        dash.Form = b.Ability is AbilityKind fk && Abilities.All[fk].Movement
+            ? b.FormReady ? 1 : (float)Math.Clamp(1 - p.AbilityCd / Math.Max(0.1, b.FormWait(fk)), 0, 0.99) : -1;
         irons.Draught.Count = draughts;
 
         // The art slot now shows the Flare (docs/design/CLASSES.md §3): its meter, a plain readout until phase 3's HUD.
@@ -574,8 +576,8 @@ public partial class GameHud : CanvasLayer
             art.Glyph = Glyphs.Texture(Abilities.All[b.Ability ?? AbilityKind.Sprint].Icon, 96, Hex("#fff3dc"), line: true);
             art.GlyphTint = b.FlareReady ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
             art.Number = b.FlareReady ? "" : $"{Math.Floor(b.FlareMeter % full)}%";
-            var line = new System.Text.StringBuilder(b.Ability is AbilityKind ak
-                ? (b.FormReady ? $"{Abilities.All[ak].Name}: ready" : $"{Abilities.All[ak].Name}: {p.AbilityCd:0.0}s") : "");
+            // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
+            var line = new System.Text.StringBuilder();
             foreach (var r in b.Reflexes)
                 line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
             irons.ArtNote.Text = line.ToString();

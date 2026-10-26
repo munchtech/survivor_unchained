@@ -360,7 +360,7 @@ public partial class Game
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
             answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
-        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null });
+        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null, Mark = c.Mark });
         calloutShown = view;
         AimCallout();
         // (--shot: a frame of each, and a freeze holds until it is taken)

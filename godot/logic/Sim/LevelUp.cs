@@ -129,6 +129,9 @@ public static class LevelUp
         return o;
     }
 
+    /// <summary>The blessings that bring something to fight for her (BuildTags counts them as summons).</summary>
+    static readonly string[] SummonSources = ["spirit_companion", "grave_call", "soul_harvest"];
+
     public static HashSet<Tag> BuildTags(Battle b)
     {
         var o = new HashSet<Tag>();
@@ -292,6 +295,8 @@ public static class LevelUp
                 var d = Boons.All[id];
                 int r = b.Boons.GetValueOrDefault(id);
                 if (r >= d.Max || b.BannedCards.Contains(id) || (d.Calling != null && d.Calling != b.Calling)) continue;
+                // (a blessing for what fights for her, offered before anything does, is a dead pick: au1 judge)
+                if (r == 0 && d.Tags.Contains(Tag.Summon) && !tags.Contains(Tag.Summon) && !SummonSources.Contains(id)) continue;
                 bool deeper = r > 0 && d.DeeperText is { } dt && r - 1 < dt.Length;
                 string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
                 var o = new Offer { Kind = OfferKind.Boon, Id = id, Rarity = d.Rarity, Title = d.Name, Text = text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true, Great = true };
@@ -428,7 +433,7 @@ public static class LevelUp
                 if (b.CallingPaths.Any(p => Paths.Find(p)?.Weapons.Contains(id) == true) || (b.Favours.Count > 0 && d.Tags.Any(b.Favours.Contains)))
                 {
                     lean *= CallingLean;
-                    if (mine == null) o.Why.Add("Your calling's");
+                    if (mine == null) o.Why.Add("Suits your calling");
                 }
                 lean = RoadLeaned(b, id, lean, o);
                 w *= lean;

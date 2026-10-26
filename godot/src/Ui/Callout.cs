@@ -13,6 +13,8 @@ public sealed record CalloutLook(string Title, string Line, CalloutKind Kind, Ac
 {
     /// <summary>The thing has its own heading (a draft panel, a banner shown again): the title is not said twice.</summary>
     public bool Headed { get; init; }
+    /// <summary>The word marked in ember (none: the title's, Subject).</summary>
+    public string? Mark { get; init; }
 }
 
 /// <summary>Where a callout points this frame, on the HUD's 1920 by 1080: points (a HUD part, a thing
@@ -247,7 +249,7 @@ public partial class Callout : Control, ICalloutView
         }
         // A row too wide for the measure breaks into rows of about equal width (never one word left alone).
         rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Balance(r, W, maxW)).ToList();
-        string? subject = Subject(text, look.Title);
+        string? subject = look.Mark ?? Subject(text, look.Title);
         bool marked = false;
         var list = new List<Control>();
         foreach (var r in rows)

@@ -180,8 +180,11 @@ public partial class DraftPanel : Control
         if (foot == null) return;
         foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
         bool pad = Controls.Instance.UsingPad;
-        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.Key("1-4"), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
+        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.Key($"1-{Math.Clamp(v.Offers.Count, 2, 4)}"), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
         foot.AddChild(Style.Hint(Act.Confirm, banishing ? "Banish it" : "Take it"));
+        // (a panel a callout teaches on, the first skill and the first blessing, shows only the choice: reroll,
+        // banish and skip are verbs nobody has met yet, au1 judge)
+        if (v.Teaching) return;
         var reroll = Style.Button("", () => { if (armed && v.Rerolls > 0 && chosen == null) v.Reroll(); }, false, true);
         Nav.Id(reroll, "reroll");
         var rr = Style.H(6, Style.Prompt(pad ? Act.Alt : Act.Reroll), Style.Label($"Reroll  {v.Rerolls}", Style.UiBold, Style.Caption, Style.GoldHi));

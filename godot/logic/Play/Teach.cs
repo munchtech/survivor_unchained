@@ -57,6 +57,8 @@ public sealed record Callout(string Id, CalloutKind Kind, string Title, string L
     public double Gap { get; init; } = Teacher.Gap;
     /// <summary>It does not wait for a hint (held under it): F2 follows F1 before the ember can rise.</summary>
     public bool OverHint { get; init; }
+    /// <summary>The line's word marked in ember (none: the title's).</summary>
+    public string? Mark { get; init; }
     /// <summary>A freeze on a passing thing in the world (a red line, an ember stone, an enemy): it does
     /// not wait for a hint or an interact prompt, which are held under it and come back after.</summary>
     public bool Transient => Kind == CalloutKind.Freeze && Target.World != null;

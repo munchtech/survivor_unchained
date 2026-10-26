@@ -481,6 +481,10 @@ public partial class Round : Control
     readonly Control icon;
     public int Count, Max = 2;
     public float Recharge;
+    /// <summary>The dash's form (her calling's art riding it, Forms.cs): -1 none; 0..1 its wait coming round, a
+    /// thin ember arc outside the glass; 1 ready, the glass ringed in breathing ember (the "lit" the form
+    /// callout names, au1 judge: the ready cue was a gray line of text under the Q orb).</summary>
+    public float Form = -1;
 
     public Round(Kind kind)
     {
@@ -519,6 +523,15 @@ public partial class Round : Control
             DrawCircle(c, r, new Color(0.05f, 0.04f, 0.05f, 0.95f));
             DrawCircle(c + new Vector2(-r * 0.3f, -r * 0.4f), r * 0.45f, new Color(1, 1, 1, 0.04f));
             if (o.kind != Kind.Dash) return;
+            if (o.Form >= 1)
+            {
+                float breath = 0.5f + 0.5f * Mathf.Sin(Time.GetTicksMsec() / 1000f * 3.2f);
+                DrawCircle(c, r - 1, new Color(1f, 0.55f, 0.15f, 0.10f + 0.08f * breath));
+                DrawArc(c, r + Instrument.SmallBand + 3, 0, Mathf.Tau, 48, new Color(1f, 0.6f, 0.2f, 0.35f + 0.3f * breath), 5, true);
+                DrawArc(c, r + Instrument.SmallBand + 3, 0, Mathf.Tau, 48, new Color(1f, 0.82f, 0.5f, 0.9f), 2, true);
+            }
+            else if (o.Form >= 0)
+                DrawArc(c, r + Instrument.SmallBand + 3, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Form, 48, new Color(1f, 0.6f, 0.2f, 0.45f), 2, true);
             // The charges, round the inside of the glass from the top: lit when held, the next filling.
             int n = Math.Max(1, o.Max);
             float gap = 0.22f, span = (Mathf.Tau - gap * n) / n;
