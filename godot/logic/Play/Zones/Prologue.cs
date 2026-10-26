@@ -60,6 +60,8 @@ public sealed class Prologue : ZoneRuntime
     int startWeapons = -1;
     /// <summary>The first character level, at dawn: its banner, and whether its callout is due (after her dawn line).</summary>
     Announcement? levelAnn;
+    /// <summary>The character levels the night paid at dawn, and the traits they left to choose (F12's words).</summary>
+    int levelsTaught, traitsDue;
     bool levelDue;
     /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
     bool knightPlanted, knightRan;
@@ -252,6 +254,7 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         var p = B.Player;
         KnightWatch();
+        if (B.FlareGreatsHeld && (G.Taught("art") || Now >= Stage.ToFord)) B.FlareGreatsHeld = false;
         // F1: the first ember on the ground (one well inside the screen: it waits for one).
         if (Now == Stage.Rising && B.EmbersLying > 0)
             Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
@@ -264,17 +267,18 @@ public sealed class Prologue : ZoneRuntime
             if (shown.Add("lore.ember"))
                 G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
         }
-        // F4: the first skill draft after the great blessing (on the panel, at the first combat-skill card).
-        if (B.EmberLevel >= 2 && B.DraftOwed)
-            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"), after: "great_blessing");
+        // F4: the first skill draft, the ember's first rise (on the panel, at the first combat-skill card).
+        if (B.EmberLevel >= 2 && B.DraftOwed && B.GreatOwed == 0)
+            Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"));
         // F5: the first combat skill on the console.
         if (startWeapons >= 0 && B.Weapons.Count > startWeapons)
         {
             var w = B.Weapons[startWeapons];
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
-        // F6: six risen at her (or 14 s in), while the night's first fights run.
-        if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (stageT > 14 || Now != Stage.Rising || Crowd(p.X, p.Z, 3) >= 6))
+        // F6: after the blessing, six risen at her (or 58 s in), else on the road (au1 item 2: it was the sixth
+        // lesson in 12 s).
+        if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (Now != Stage.Rising || G.Taught("great_blessing") && (stageT > 58 || Crowd(p.X, p.Z, 3) >= 6)))
             Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
         // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her.
         // The Warden's channel later asks for it by name (au1 item 4).
@@ -312,7 +316,7 @@ public sealed class Prologue : ZoneRuntime
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught");
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
-            Teach("level", CalloutKind.Freeze, "What the night taught you", $"This one stays, night and day. Open {Key("character")} to spend it.",
+            Teach("level", CalloutKind.Freeze, "What the night taught you", LevelLine(),
                 new Aim { Hud = "banner", Banner = levelAnn });
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
@@ -327,6 +331,20 @@ public sealed class Prologue : ZoneRuntime
         AbilityKind.Vault => "a spring back through the air.\nIt leaves snares where you stood.",
         _ => null,
     };
+
+    const string NL = "\n";
+    static readonly string[] Numbers = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+    static string Count(int n) => n >= 0 && n < Numbers.Length ? Numbers[n] : n.ToString();
+    static string Cap(string s) => s.Length > 0 ? char.ToUpperInvariant(s[0]) + s[1..] : s;
+
+    /// <summary>F12 (au1 item 13: the first level the player sees reads "Level 5", four earned unseen, and a
+    /// trait was never told from a skill): what the night paid, that it's kept, and what to do with it.</summary>
+    string LevelLine()
+    {
+        string levels = levelsTaught == 1 ? "One level" : $"{Cap(Count(levelsTaught))} levels";
+        string choose = traitsDue > 1 ? $"Open {Key("character")} to choose {Count(traitsDue)} traits." : traitsDue == 1 ? $"Open {Key("character")} to choose a trait." : $"Open {Key("character")} to spend them.";
+        return $"{levels}, and you keep them, night and day.{NL}The ember's skills were only lent; traits are yours.{NL}{choose}";
+    }
 
     /// <summary>How many of the hostile dead stand within r of a point.</summary>
     int Crowd(double x, double z, double r) => B?.Enemies.Living().Count(e => e.State is not (EnemyState.Dying or EnemyState.Rising) && e.Disposition == Disposition.Hostile && Dist(e.X, e.Z, x, z) < r) ?? 0;
@@ -588,8 +606,9 @@ public sealed class Prologue : ZoneRuntime
                 // Keep the clearing full: more of them the longer it goes on.
                 double want = Math.Min(40, 16 + stageT * 0.3);
                 if (spawnT <= 0 && n < want) { SpawnAround("risen", 2 + (stageT > 40 ? 1 : 0), 9, 14); spawnT = stageT > 30 ? 0.8 : 1.1; }
-                // The first rise of the ember brings a great blessing, before its first card.
-                if (B.EmberLevel >= 2 && shown.Add("great"))
+                // A great blessing on its own panel, half a minute after the first skill (au1 item 2: it came
+                // with the first card, two picks and six lessons in 12 s); never on top of a level's draft.
+                if (B.EmberLevel >= 2 && stageT > 40 && !B.DraftOwed && (G.Taught("first_draft") || stageT > 60) && shown.Add("great"))
                 {
                     B.GreatOwed++;
                     // F3 says it on the panel (the general draft tip waits for the panels after it).
@@ -1070,7 +1089,8 @@ public sealed class Prologue : ZoneRuntime
             G.After(4.6, () =>
             {
                 var ch = G.Journey.Ch;
-                levelAnn = new Announcement($"Level {ch.Level}", ch.TraitPicks > 0 ? $"A new trait can be chosen ({Key("character")})" : $"Attribute points to spend ({Key("character")})", "boon", 4.5, "What the night taught you");
+                levelAnn = new Announcement($"Level {ch.Level}", ch.TraitPicks > 1 ? $"{Count(ch.TraitPicks)} new traits to choose ({Key("character")})" : ch.TraitPicks == 1 ? $"A new trait to choose ({Key("character")})" : $"Attribute points to spend ({Key("character")})", "boon", 4.5, "What the night taught you");
+                levelsTaught = taught; traitsDue = ch.TraitPicks;
                 G.Announce(levelAnn);
                 G.Journey.Grew();
             });
@@ -1132,6 +1152,8 @@ public sealed class Prologue : ZoneRuntime
         }, new Held { Forearm = "shield_round" }, man.X, man.Z, 2.2, "Death_A");
         G.SetDraftTip(Draft);
         startWeapons = b.Weapons.Count;
+        // (no great blessing offers to grow a Flare she hasn't met: F8 teaches it, au1 item 3)
+        b.FlareGreatsHeld = !G.Taught("art");
         if (F("prologue.done").Truthy)
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.

@@ -287,7 +287,7 @@ public static class LevelUp
         if (GreatNext(b))
         {
             var pool = new List<Cand>();
-            foreach (var id in Boons.Great.Concat(b.Flare != null ? Boons.FlareGreat : []))
+            foreach (var id in Boons.Great.Concat(b.Flare != null && !b.FlareGreatsHeld ? Boons.FlareGreat : []))
             {
                 var d = Boons.All[id];
                 int r = b.Boons.GetValueOrDefault(id);
