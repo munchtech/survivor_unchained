@@ -31,20 +31,35 @@ from rig import Clip, qaxis, qbetween, qinv, qmul, qrot, qslerp
 # fore-and-aft travel; knee: the stance knee's cap at passing (deg); bend: extra stance knee bend (deg, the pelvis
 # lowered); drop: extra pelvis drop at each heel contact (m); swing: the upper arm's fore-aft range (deg, + forward);
 # abd: its abduction (deg); elbow: the elbow's range (deg); wrist: soft wrists (deg of lag against the swing).
+# Round 2 (the max judge, Animation 51): tilt: the pelvis's mean pitch from rest (deg, + forward; her_2's is -26, a
+# Kimodo retarget's tuck: her idles stand at -5, her runs and the other walks at +7);
+# chest: the share of her_2's upper-back rounding kept (the chest's pitch on the lower spine's); stack: the shoulder
+# joints this far ahead of the hip joints at passing (m), by turning the lower spine; neck: the neck's own extension
+# (deg, the head kept level); yaw_strike: the chest's counter-yaw locked to the heel strikes; thumb: the knuckle line's
+# heading in (deg); fingers: graded() bends (index's knuckle, middle, tip ranges); twist: the upper arm turned in (deg);
+# bob: the hips' vertical travel kept (share, about its mean); kick: the swing foot's height kept (share).
+_F0 = ((15.0, 30.0), (20.0, 45.0), (10.0, 20.0))
 CALLINGS = {
-    "warden": dict(frames=40, sway=1.0, counter=1 / 3, yaw=0.0, lean=2.0, upper=0.0, head=1.0, clav=(0.0, 0.0),
-                   width=0.0, stride=1.0, knee=15.0, bend=0.0, drop=0.01, swing=(-12.0, 10.0), abd=10.0, elbow=(10.0, 25.0),
-                   wrist=0.0, outfit="warden"),
-    "reaver": dict(frames=43, sway=0.7, counter=0.0, yaw=4.5, lean=0.0, upper=3.0, head=1.0, clav=(0.0, 4.0),
-                   width=0.04, stride=1.1, knee=15.0, bend=0.0, drop=0.005, swing=(-13.0, 12.0), abd=10.5, elbow=(8.0, 25.0),
-                   wrist=0.0, outfit="reaver"),
-    "arcanist": dict(frames=40, sway=0.575, counter=0.0, yaw=0.0, lean=0.0, upper=2.0, head=0.5, clav=(3.0, 3.0),
-                     width=-0.02, stride=1.0, knee=10.0, bend=0.0, drop=0.0, swing=(-9.0, 6.0), abd=8.0, elbow=(8.0, 20.0),
-                     wrist=0.0, outfit="arcanist"),
-    "stalker": dict(frames=44, sway=0.75, counter=0.0, yaw=0.0, lean=0.0, upper=-4.5, head=0.5, clav=(0.0, 0.0),
-                    width=0.0, stride=1.0, knee=20.0, bend=5.0, drop=0.0, swing=(-12.0, 10.0), abd=9.0, elbow=(12.0, 30.0),
-                    wrist=6.0, outfit="ranger"),
+    "warden": dict(frames=40, sway=1.0, counter=1 / 3, yaw=0.0, yaw_strike=False, tilt=0.0, chest=0.5, stack=0.01,
+                   upper=0.0, head=1.0, neck=0.0, clav=(0.0, 0.0), width=0.0, stride=1.0, knee=15.0, bend=0.0, drop=0.01,
+                   swing=(-12.0, 10.0), abd=7.5, elbow=(10.0, 25.0), wrist=0.0, thumb=10.0, fingers=_F0, outfit="warden"),
+    "reaver": dict(frames=43, sway=0.7, counter=0.0, yaw=7.0, yaw_strike=True, tilt=0.0, chest=0.5, stack=0.01,
+                   upper=3.5, head=1.0, neck=0.0, clav=(0.0, 2.5), width=0.04, stride=1.1, knee=15.0, bend=0.0, drop=0.005,
+                   swing=(-13.0, 12.0), abd=8.0, elbow=(8.0, 25.0), wrist=0.0, thumb=10.0, fingers=_F0, outfit="reaver"),
+    "arcanist": dict(frames=40, sway=0.575, counter=0.0, yaw=0.0, yaw_strike=False, tilt=0.0, chest=0.5, stack=0.01,
+                     upper=0.0, head=0.5, neck=3.0, clav=(2.0, 2.0), width=-0.02, stride=1.0, knee=10.0, bend=0.0, drop=0.0,
+                     swing=(-9.0, 7.0), abd=7.0, elbow=(15.0, 21.0), wrist=0.0, thumb=10.0, fingers=_F0, outfit="arcanist"),
+    "stalker": dict(frames=44, sway=0.75, counter=0.0, yaw=0.0, yaw_strike=False, tilt=0.0, chest=0.5, stack=0.01,
+                    upper=-4.5, head=0.5, neck=0.0, clav=(0.0, 0.0), width=0.0, stride=1.0, knee=20.0, bend=5.0, drop=0.0,
+                    swing=(-12.0, 10.0), abd=7.5, elbow=(12.0, 28.0), wrist=6.0, thumb=3.0,
+                    fingers=((10.0, 30.0), (14.0, 45.0), (6.0, 20.0)), outfit="ranger"),
 }
+for _c in CALLINGS.values():
+    _c.setdefault("twist", 5.0)
+    _c.setdefault("bob", 0.75)
+    _c.setdefault("kick", 1.0)
+    _c.setdefault("abd_cap", 14.0)
+    _c.setdefault("shrug", 0.25)
 
 # Her soles at rest (skin within 2.5 cm of the ground, motion.soles): the heel's and the ball's bottom.
 HEEL = {"l": np.array([0.0938, 0.0, -0.0799]), "r": np.array([-0.0886, 0.0, -0.0787])}
@@ -52,10 +67,9 @@ BALL = {"l": np.array([0.1245, 0.0, 0.0648]), "r": np.array([-0.1234, 0.0, 0.065
 UP, FWD, LAT = np.array([0, 1.0, 0]), np.array([0, 0, 1.0]), np.array([1.0, 0, 0])
 CLEAR = 0.015       # the swing foot's sole and toe tip at least this far off the ground (m)
 TOE_OUT = 6.0       # each foot's heading out from straight ahead (deg)
-HIP_CLEAR = 0.147   # the hand's and fingers' least distance from the thigh's bone line (m)
-THUMB = 10.0        # the knuckle line's heading in from straight ahead (deg): thumbs forward, palms to the thighs
 LAG = 2.5          # frames the elbow's bend peaks behind the shoulder's forward swing
 _BASE = {}
+_LAST = {}  # per calling: the clearance's opening and the mesh's near (read by the checks)
 
 
 def _base(rig):
@@ -205,16 +219,30 @@ def _bone_axes(w, G, j):
     return roll, yaw, pitch
 
 
-def _trunk(w, c):
+def _trunk(w, c, pas):
     I, n = w.I, w.n
     pel, s1, s2, s3 = I["pelvis"], I["spine_01"], I["spine_02"], I["spine_03"]
     G, Pp = w.g()
     head0 = G[:, I["Head"]].copy()
     chest0 = _bone_axes(w, G, s3)
     roll, yaw = _hip_line(Pp, I)
+    k = c["sway"] - 1.0
+    # Round 2: her_2 walks sway-backed (the pelvis tilted back, the lumbar leaning back, the upper back rounded
+    # forward over it: the shoulder joints 9-14 cm behind the hip joints). The pelvis turned forward c["tilt"] (the
+    # spine above kept), the rounding (the chest's pitch on the lower spine's) cut to c["chest"] of itself at the
+    # chest joint; the trunk then stacked from the lower spine (below, once the chest is square).
+    if c["tilt"] is not None:
+        G, _ = w.g()
+        s1g = G[:, s1].copy()
+        w.turn(pel, np.tile(qaxis(LAT, c["tilt"] - float(_bone_axes(w, G, pel)[2].mean())), (n, 1)), G)
+        G, _ = w.g()
+        w.set_global(s1, s1g, G)
+        G, Pp = w.g()
+        roll2, _ = _hip_line(Pp, I)
+        k = c["sway"] * np.ptp(roll) / max(np.ptp(roll2), 1e-6) - 1.0  # (the tilt changes the hip line's roll: her_2's kept)
+        roll = roll2
     # Sway: the pelvis's roll and its side shift scaled about their mean; the spine above kept where it was.
     # (her_2 carries her hips 4 deg low on the left on average: that mean is taken out, a limp's tilt.)
-    k = c["sway"] - 1.0
     if True:
         d = k * (roll - roll.mean()) - roll.mean()
         q = np.array([qaxis(FWD, a) for a in d])
@@ -226,10 +254,17 @@ def _trunk(w, c):
         v = np.zeros((n, 3))
         v[:, 0] = k * (x - x.mean())
         w.shift_pelvis(v)
-    # Lean (from the hips) and the upper spine's extension.
-    if c["lean"]:
-        w.turn(s1, np.tile(qaxis(LAT, c["lean"]), (n, 1)))
-    if c["upper"]:
+    # The spine straightened: her_2's lumbar leans back (spine_02 -19 deg) under a chest pitched forward (+16): the
+    # lower spine and spine_02 brought to one lean (solved below), the chest's own forward pitch cut to c["chest"].
+    G, _ = w.g()
+    p1, p2, p3 = (_bone_axes(w, G, j)[2] for j in (s1, s2, s3))
+    w.turn(s2, np.tile(qaxis(LAT, float((p1 - p2).mean())), (n, 1)), G)
+    G, _ = w.g()
+    w.turn(s3, np.tile(qaxis(LAT, float((p1.mean() + c["chest"] * p3.mean()) - _bone_axes(w, G, s3)[2].mean())), (n, 1)), G)
+    # The upper spine's extension (+, a sternum lift: at the chest joint only) or flexion (-, the stalker's hunch).
+    if c["upper"] > 0:
+        w.turn(s3, np.tile(qaxis(LAT, -c["upper"]), (n, 1)))
+    elif c["upper"]:
         for j, share in ((s2, 0.4), (s3, 0.6)):
             w.turn(j, np.tile(qaxis(LAT, -c["upper"] * share), (n, 1)))
     # The chest's roll against the pelvis's (counter share), and its counter-yaw (deg).
@@ -240,7 +275,12 @@ def _trunk(w, c):
     dy = np.zeros(n)
     if c["counter"]:
         dr = -c["counter"] * (roll - roll.mean()) - (cr - cr.mean())
-    if c["yaw"]:
+    if c["yaw"] and c["yaw_strike"]:
+        # The shoulder opposite the leading leg forward, peaking at each heel strike (frame 0 the left's: the
+        # chest turned to her left, + about up, the right shoulder ahead), the arms riding on it.
+        want = c["yaw"] * np.cos(2 * math.pi * np.arange(n) / n)
+        dy = want - (cy - cy.mean())
+    elif c["yaw"]:
         y = yaw - yaw.mean()
         want = -c["yaw"] * y / max(np.abs(y).max(), 1e-6)
         dy = want - (cy - cy.mean())
@@ -262,8 +302,17 @@ def _trunk(w, c):
     # Shoulders level in the chest (her_2 carries the left 2 cm high), then (down, back) deg, about the chest's axes.
     G, Pp = w.g()
     yl, yr = (np.mean([qrot(qinv(G[t, s3]), Pp[t, I[f"upperarm_{s}"]] - Pp[t, s3])[1] for t in range(n)]) for s in "lr")
-    lv = math.degrees(math.atan2((yl - yr) / 2, 0.17))
+    lv = math.degrees(math.atan2((yl - yr) / 2, 0.17)) if c["shrug"] >= 1.0 else 0.0  # (the unshrug squares them)
     down, back = c["clav"]
+    # her_2 shrugs: each shoulder joint 4.4 cm up and 2.3 back in the chest from where it stands at rest (her runs
+    # carry 1 cm): c["shrug"] of that kept, the clavicle turned (about the chest's axes) to put it there.
+    G, Pp = w.g()
+    unshrug = {}
+    for s in "lr":
+        cj, uj = I[f"clavicle_{s}"], I[f"upperarm_{s}"]
+        loc = np.mean([qrot(qmul(w.grest[s3], qinv(G[t, s3])), Pp[t, uj] - Pp[t, cj]) for t in range(n)], 0)
+        rest = w.prest[uj] - w.prest[cj]
+        unshrug[s] = qbetween(loc, rest + c["shrug"] * (loc - rest))
     if True:
         G, _ = w.g()
         for s, sg in (("l", 1.0), ("r", -1.0)):
@@ -271,10 +320,23 @@ def _trunk(w, c):
             q = []
             for t in range(n):
                 dc = qmul(G[t, s3], qinv(w.grest[s3]))
-                loc = qmul(qaxis(UP, back * sg), qaxis(FWD, -(down + sg * lv) * sg))
+                loc = qmul(qmul(qaxis(UP, back * sg), qaxis(FWD, -(down + sg * lv) * sg)), unshrug[s])
                 q.append(qmul(qmul(dc, loc), qinv(dc)))
             # turn the clavicle, the upper arm set again later
             w.turn(j, np.array(q), G)
+    # Stacked: the lower spine turned (forward +) until the shoulder joints stand c["stack"] ahead of the hip joints
+    # at passing (pas: weights), the chest above carried.
+    wt = pas / max(pas.sum(), 1e-6)
+    for _ in range(4):
+        G, Pp = w.g()
+        hip = (Pp[:, I["thigh_l"]] + Pp[:, I["thigh_r"]]) / 2
+        sho = (Pp[:, I["upperarm_l"]] + Pp[:, I["upperarm_r"]]) / 2
+        dz = float(((sho - hip)[:, 2] * wt).sum())
+        h = float((np.linalg.norm(sho - Pp[:, s1], axis=1) * wt).sum())
+        da = math.degrees(math.asin(np.clip((c["stack"] - dz) / h, -0.5, 0.5)))
+        if abs(da) < 0.05:
+            break
+        w.turn(s1, np.tile(qaxis(LAT, da), (n, 1)), G)
     # The head: her_2's own head turn, its motion about its mean kept by c["head"], its mean as it was (chin level).
     G, _ = w.g()
     hj, nj = I["Head"], I["neck_01"]
@@ -292,6 +354,9 @@ def _trunk(w, c):
     delta = np.array([qmul(want[t], qinv(G[t, hj])) for t in range(n)])
     half = np.array([qslerp(np.array([0, 0, 0, 1.0]), d, 0.5) for d in delta])
     w.turn(nj, half, G)
+    if c["neck"]:
+        # A long neck: the neck itself stood up (extended), the head kept level on it.
+        w.turn(nj, np.tile(qaxis(LAT, -c["neck"]), (n, 1)))
     G, _ = w.g()
     w.set_global(hj, want, G)
     return chest0
@@ -337,6 +402,10 @@ def _arms(w, c, fingers):
             d = np.array([sg * math.tan(math.radians(al[t])), -1.0, math.tan(math.radians(th[t]))])
             q.append(qbetween(cur, d))
         w.turn(ua_j, np.array(q), G)
+        # The upper arm turned in on its own axis (the elbow pointing back, the thumb forward).
+        if c["twist"]:
+            G, Pp = w.g()
+            w.turn(ua_j, np.array([qaxis(Pp[t, la_j] - Pp[t, ua_j], sg * c["twist"]) for t in range(n)]), G)
         # Elbow: bent about its own hinge (the plane of upper arm and forearm) to the wanted angle.
         G, Pp = w.g()
         q = []
@@ -365,7 +434,7 @@ def _arms(w, c, fingers):
     for s, sg in (("l", 1.0), ("r", -1.0)):
         la_j, ha_j = I[f"lowerarm_{s}"], I[f"hand_{s}"]
         G, Pp = w.g()
-        d = np.array([-sg * math.sin(math.radians(THUMB)), 0.0, math.cos(math.radians(THUMB))])
+        d = np.array([-sg * math.sin(math.radians(c["thumb"])), 0.0, math.cos(math.radians(c["thumb"]))])
         q = []
         for t in range(n):
             a = Pp[t, ha_j] - Pp[t, la_j]
@@ -378,29 +447,11 @@ def _arms(w, c, fingers):
     # Fingers: a graded half-curl, the same every frame.
     for name, val in fingers.items():
         w.L[:, I[name]] = val
-    # Clear of her hip: where the hip sways out under a hand (and her outfit with it), the arm let out from the
-    # shoulder until the hand and fingers keep HIP_CLEAR from the thigh's bone line (motion.py checks the outfits).
-    def segd(x, a, b):
-        ab = b - a
-        u = np.clip(np.sum((x - a) * ab, -1) / np.sum(ab * ab, -1), 0, 1)
-        return np.linalg.norm(x - (a + ab * u[..., None]), axis=-1)
-    for _ in range(2):
-        G, Pp = w.g()
-        for s, sg in (("l", 1.0), ("r", -1.0)):
-            pts = [I[nm] for nm in w.sk.names if nm.endswith("_" + s) and nm.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb")]
-            D = np.min([segd(Pp[:, j], Pp[:, I[f"thigh_{s}"]], Pp[:, I[f"calf_{s}"]]) for j in pts], axis=0)
-            lo = np.degrees(np.maximum(HIP_CLEAR - D, 0.0) / 0.5)
-            out_ = lo.copy()
-            for _k in range(40):
-                out_ = np.clip(_smooth(out_, 1.5), lo, 30.0)
-            if out_.max() > 0.01:
-                w.turn(I[f"upperarm_{s}"], np.array([qaxis(FWD, sg * a) for a in out_]), G)
-                G, Pp = w.g()
 
 
-def _finger_pose(rig, w):
+def _finger_pose(rig, w, bends=None):
     from clips.town_idle import graded
-    spec = graded()
+    spec = graded(*bends) if bends else graded()
     rot, _ = rig.solve({"fingers_l": spec, "fingers_r": spec}, base=(w.L[0], w.P[0]))
     names = [nm for nm in rig.sk.names if nm.split("_")[0] in ("thumb", "index", "middle", "ring", "pinky")]
     return {nm: rot[rig.I[nm]] for nm in names}
@@ -594,6 +645,11 @@ def _pelvis_height(w, c, spells, feet):
     I, n = w.I, w.n
     pel = I["pelvis"]
     dy = np.zeros(n)
+    # The hips' rise and fall (her_2's bob, 7-8 cm at the neck) scaled about its mean by c["bob"].
+    if c["bob"] != 1.0:
+        _, Pp = w.g()
+        y = Pp[:, pel, 1]
+        dy += (c["bob"] - 1.0) * (y - y.mean())
     # Drop at each heel contact (the first frames of a stance).
     if c["drop"]:
         for s in "lr":
@@ -654,6 +710,75 @@ def _pelvis_height(w, c, spells, feet):
     _legs(w, feet)
 
 
+# --------------------------------------------------------------- clearance --
+NEAR = 0.004        # the forearm's and hand's least clearance from her skin and her own outfit (m), on her real mesh
+_MEASURE = {}
+DEBUG = []  # (a list with one item to collect: outfit, side, frame, near mm, along, part, skin mm)
+
+
+def _mesh(outfit):
+    if outfit not in _MEASURE:
+        import motion
+        from skin import Body
+        m = motion.Measure(Body.heroine(jiggle=True), (outfit,))
+        if outfit == "warden":  # the plate holds her springs (as motion.py's "plate" run)
+            m.b.jiggle.amount, m.b.jiggle.squash = 0.55, 0.0
+        _MEASURE[outfit] = m
+    return _MEASURE[outfit]
+
+
+def _near(w, c):
+    """Per side, per frame: the forearm's and hand's least clearance (m, - into it) from the rest of her skin and
+    from her own outfit, on her posed mesh with the springs run (as motion.py measures it)."""
+    import skin
+    m = _mesh(c["outfit"])
+    cov = m.cover[c["outfit"]]
+    clip = skin.Clip("walk", 30, np.concatenate([w.L, w.L[:1]]), np.concatenate([w.P, w.P[:1]]), True,
+                     {"speed": float(w.speed)})
+    Gs = m.b.frames(clip)
+    out = {s: np.full(w.n, 0.08) for s in "lr"}
+    for f in range(w.n):
+        con = m.contact(m.b.pose(Gs[f]))
+        for s in "lr":
+            dist, along, hit, brst, nb = con[s]
+            pts = m.arm[s][0]
+            ok = np.isfinite(dist) & (along >= 1.0)
+            if ok.any():
+                d = dist[ok]
+                do = d - cov[pts[ok]] - cov[np.maximum(nb[ok], 0)]
+                out[s][f] = min(float(d.min()), float(do.min()))
+                if DEBUG:
+                    i = int(np.argmin(np.minimum(d, do)))
+                    hp = hit[ok][i]
+                    DEBUG.append((c["outfit"], s, f, round(1000 * out[s][f]), round(float(along[ok][i]), 2), m.b.parts[hp] if hp >= 0 else "-", round(1000 * float(d[i]))))
+    return out
+
+
+def _clear(w, c, rounds=3):
+    """Each arm let out from the shoulder only where (and as much as) the real mesh needs: the forearm and hand
+    NEAR clear of her and her own outfit, the abduction capped at c["abd_cap"]."""
+    I, n = w.I, w.n
+    total = {s: np.zeros(n) for s in "lr"}
+    for _ in range(rounds):
+        near = _near(w, c)
+        G, Pp = w.g()
+        moved = False
+        for s, sg in (("l", 1.0), ("r", -1.0)):
+            _, ab, _ = _arm_angles(G, Pp, I, s)
+            need = np.degrees(np.maximum(NEAR + 0.002 - near[s], 0.0) / 0.45)
+            lo = np.minimum(need, np.maximum(c["abd_cap"] - ab, 0.0))
+            add = lo.copy()
+            for _k in range(6):
+                add = np.maximum(_smooth(add, 1.0), lo)
+            if add.max() > 0.05:
+                moved = True
+                w.turn(I[f"upperarm_{s}"], np.array([qaxis(FWD, sg * a) for a in add]), G)
+                total[s] += add
+        if not moved:
+            break
+    return total, _near(w, c)
+
+
 # ------------------------------------------------------------------- make --
 def make_walk(rig, calling):
     c = CALLINGS[calling]
@@ -662,11 +787,13 @@ def make_walk(rig, calling):
     # The stride (and so the speed) carried by the feet.
     w.speed *= c["stride"]
     plain = Walk(rig, w.L, w.P, w.speed)
-    fingers = _finger_pose(rig, w)
+    fingers = _finger_pose(rig, w, c["fingers"])
     feet, spells = _feet(w, c, plain)
-    _trunk(w, c)
+    pw = _passing(w, spells, feet)
+    _trunk(w, c, pw["l"] + pw["r"])
     _arms(w, c, fingers)
     _pelvis_height(w, c, spells, feet)
+    opened, near = _clear(w, c)
     L = np.concatenate([w.L, w.L[:1]])
     P = np.concatenate([w.P, w.P[:1]])
     name = f"walk_{calling}_town"
@@ -676,6 +803,7 @@ def make_walk(rig, calling):
             "layer": "full", "speed": float(w.speed),
             "note": f"her town walk, {calling} (weapons sheathed, both arms free); loop starts at the left heel strike",
             "stance": {s: [int(t) for t in np.nonzero(spells[s])[0]] for s in "lr"}}
+    _LAST[calling] = dict(opened=opened, near=near)
     return Clip(name, 30, L, P, loop=True, meta=meta)
 
 
