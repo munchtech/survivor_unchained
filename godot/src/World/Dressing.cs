@@ -691,16 +691,33 @@ public static class Dressing
         // Our own props where the zone swaps a kit piece for one (OwnProps: its props_own.json "pieces").
         var own = OwnProps.For(z.Id);
         var ours = new List<(string Id, string Preset, Transform3D At)>();
+        int droppedInside = 0;
         // Our own town walls where the zone has them (OwnWalls: props_own.json "walls").
         var walls = OwnWalls.For(z);
         for (int pi = 0; pi < z.Props.Count; pi++)
         {
             var (id, at) = z.Props[pi];
-            if (walls != null && walls.Take(id, pi < z.PropHouse.Count ? z.PropHouse[pi] : -1, at, cell)) continue;
+            int house = pi < z.PropHouse.Count ? z.PropHouse[pi] : -1;
+            if (walls != null && walls.Take(id, house, at, cell)) continue;
+            // (E9c2) nothing of the street's left standing inside a closed house (the cutaway shows the inside: a cart
+            // parked in house 17, barrels in house 14's): its own furnishings below stand there instead
+            if (walls != null && house < 0 && OwnWalls.InsideAny(z, at.Origin.X, at.Origin.Z, 0.25f)) { droppedInside++; continue; }
             if (own != null && OwnProps.Swap(own, id, at.Origin) is string preset) { ours.Add((id, preset, at)); continue; }
             var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
             list.Add(at);
+        }
+        // (E9c2) the closed houses' floors, hearths and furniture (OwnWalls.Furnish), as kit pieces
+        if (walls != null)
+        {
+            var furn = OwnWalls.Furnish(z);
+            foreach (var (id, at) in furn)
+            {
+                var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
+                if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
+                list.Add(at);
+            }
+            GD.Print($"house insides: {furn.Count} pieces furnished, {droppedInside} street props dropped from inside");
         }
         // (Each piece's file loaded first, so the time it takes shows apart from placing them.)
         foreach (var ((id, _, _), _) in groups) { int sl = id.IndexOf('/'); PartsOf(id[..sl], id[(sl + 1)..]); }
@@ -709,7 +726,8 @@ public static class Dressing
         {
             int slash = id.IndexOf('/');
             string kit = id[..slash], piece = id[(slash + 1)..];
-            bool foot = kit is "village" or "custom";
+            // ((E9c2) a house's floor laid flat: no foot to darken)
+            bool foot = kit is "village" or "custom" && !piece.StartsWith("Floor_");
             foreach (var (mesh, local) in PartsOf(kit, piece))
             {
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, KitLook.Look.Plain, foot), InstanceCount = list.Count };

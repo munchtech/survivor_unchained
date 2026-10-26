@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -24,24 +25,31 @@ public sealed partial class HouseFade : Node
     /// <summary>Each unit's volumes (OwnWalls.FadeUnits).</summary>
     public readonly List<Vol[]> Units = new();
 
-    /// <summary>What hangs on a unit's walls (kit lanterns, torches: OwnWalls.FadeUnits): one copy of a MultiMesh, put out
-    /// of view while its unit is more than half faded (too small to want a fade of its own).</summary>
+    /// <summary>(E9c2) Each unit's cut, world height: above it the unit fades (0.9 m over its floor), below it stands
+    /// (the cutaway: the house cut down to its footing, never gone). Roofs fade whole.</summary>
+    public readonly List<float> Cut = new();
+
+    /// <summary>What hangs on a unit's walls (kit lanterns, torches: OwnWalls.FadeUnits): one copy of a MultiMesh, faded
+    /// with its unit by the kit shader (its custom data r: the unit + 1).</summary>
     public readonly List<(MultiMesh Mm, int I, Transform3D At, int Unit)> Hung = new();
-    bool[] hidden = System.Array.Empty<bool>();
-    // (the lanterns' glow balls, landmarks.glb's "glow-*" nodes within 0.8 m of a hung lantern: shrunk away with it, not
-    // hidden, as ZoneView shows and hides them by the light's hours)
-    readonly List<(Node3D N, Vector3 Scale, int Hung)> glows = new();
+    // (E9c2) what else goes with a unit, on its curve (found once, on the third frame): the glow balls, flames and glass
+    // by its hung lanterns and inside it (made transparent as it fades), its lights (their colour dimmed, as the
+    // flicker drives their energy), its chimney smoke (transparent, and no new puffs past half)
+    readonly List<(GeometryInstance3D G, int Unit)> faders = new();
+    readonly List<(Light3D L, Color Base, int Unit)> lamps = new();
+    readonly List<(GpuParticles3D P, int Unit)> smokes = new();
+    float[] shown = System.Array.Empty<float>();
     int frames;
 
     const float Ease = 0.3f;
-    static readonly StringName IdsA = "house_fade_ids", IdsB = "house_fade_ids2", AmtA = "house_fade", AmtB = "house_fade2";
+    static readonly StringName IdsA = "house_fade_ids", IdsB = "house_fade_ids2", AmtA = "house_fade", AmtB = "house_fade2", CutA = "house_cut", CutB = "house_cut2";
     float[] fade = System.Array.Empty<float>();
     readonly float hold = float.TryParse(SurvivorUnchained.Args.Get("house-fade-hold"), System.Globalization.NumberStyles.Float,
         System.Globalization.CultureInfo.InvariantCulture, out var h) ? Mathf.Clamp(h, 0, 1) : -1;
-    readonly float[] ids = new float[8], amt = new float[8];
+    readonly float[] ids = new float[8], amt = new float[8], cut = new float[8];
     readonly Vector3[] pts = new Vector3[5];
     // (-1: set on the first frame, so a zone left faded is cleared)
-    Vector4 lastA = -Vector4.One, lastB = -Vector4.One, lastC = -Vector4.One, lastD = -Vector4.One;
+    Vector4 lastA = -Vector4.One, lastB = -Vector4.One, lastC = -Vector4.One, lastD = -Vector4.One, lastE = -Vector4.One, lastF = -Vector4.One;
 
     public override void _Process(double delta)
     {
@@ -62,23 +70,11 @@ public sealed partial class HouseFade : Node
             float to = hit ? (hold >= 0 ? hold : 1) : 0;
             fade[i] = hold >= 0 ? to : Mathf.MoveToward(fade[i], to, step);
         }
-        if (hidden.Length != Hung.Count) hidden = new bool[Hung.Count];
-        if (++frames == 3 && Hung.Count > 0)
-            foreach (var n in GetTree().Root.FindChildren("glow-*", "Node3D", true, false))
-                if (n is Node3D g)
-                    for (int i = 0; i < Hung.Count; i++)
-                        if (g.GlobalPosition.DistanceTo(Hung[i].At.Origin) < 0.8f) { glows.Add((g, g.Scale, i)); break; }
-        for (int i = 0; i < Hung.Count; i++)
-        {
-            var (mm, ix, at, unit) = Hung[i];
-            bool hide = fade[unit] > 0.5f;
-            if (hide == hidden[i]) continue;
-            hidden[i] = hide;
-            mm.SetInstanceTransform(ix, hide ? new Transform3D(new Basis().Scaled(Vector3.Zero), at.Origin) : at);
-            foreach (var (g, sc, hi) in glows) if (hi == i && IsInstanceValid(g)) g.Scale = hide ? sc * 1e-4f : sc;
-        }
+        if (++frames == 3) Attach();
+        if (shown.Length != Units.Count) shown = new float[Units.Count];
+        Follow();
         // the 8 most faded, eased (smoothstep) as the shader takes them
-        System.Array.Clear(ids); System.Array.Clear(amt);
+        System.Array.Clear(ids); System.Array.Clear(amt); System.Array.Clear(cut);
         int used = 0;
         for (int i = 0; i < fade.Length; i++)
         {
@@ -93,12 +89,109 @@ public sealed partial class HouseFade : Node
                 if (amt[m] >= f) continue;
                 at = m;
             }
-            ids[at] = i + 1; amt[at] = f;
+            ids[at] = i + 1; amt[at] = f; cut[at] = i < Cut.Count ? Cut[i] : -1e4f;
         }
         Set(IdsA, new Vector4(ids[0], ids[1], ids[2], ids[3]), ref lastA);
         Set(IdsB, new Vector4(ids[4], ids[5], ids[6], ids[7]), ref lastB);
         Set(AmtA, new Vector4(amt[0], amt[1], amt[2], amt[3]), ref lastC);
         Set(AmtB, new Vector4(amt[4], amt[5], amt[6], amt[7]), ref lastD);
+        Set(CutA, new Vector4(cut[0], cut[1], cut[2], cut[3]), ref lastE);
+        Set(CutB, new Vector4(cut[4], cut[5], cut[6], cut[7]), ref lastF);
+    }
+
+    /// <summary>The unit whose walls' box, grown by g (in x and z; y from its foot to its top plus up), holds p, or -1.</summary>
+    int UnitAt(Vector3 p, float g, float up)
+    {
+        for (int u = 0; u < Units.Count; u++)
+            foreach (var v in Units[u])
+            {
+                if (v.Ridge != 3) continue;
+                var q = v.To * p;
+                var b = v.Box;
+                if (q.X > b.Position.X - g && q.X < b.End.X + g && q.Z > b.Position.Z - g && q.Z < b.End.Z + g && q.Y > b.Position.Y - 0.5f && q.Y < b.End.Y + up) return u;
+            }
+        return -1;
+    }
+
+    void Attach()
+    {
+        var root = GetTree().Root;
+        var near = new List<(Vector3 At, int Unit)>();
+        foreach (var (_, _, at, u) in Hung) near.Add((at.Origin, u));
+        int Near(Vector3 p) { foreach (var (a, u) in near) if (a.DistanceTo(p) < 1.3f) return u; return -1; }
+        var seen = new HashSet<ulong>();
+        // (glow balls, landmarks.glb's "glow-*": by a hung lantern, or inside the house)
+        foreach (var n in root.FindChildren("glow-*", "Node3D", true, false))
+        {
+            if (n is not Node3D g) continue;
+            int u = Near(g.GlobalPosition);
+            // (or on its wall: a lamp's ball within a metre of it, over its cut; or inside it)
+            if (u < 0 && UnitAt(g.GlobalPosition, 1.0f, 0) is int w && w >= 0 && (g.GlobalPosition.Y > Cut[w] || UnitAt(g.GlobalPosition, -0.1f, 0) >= 0)) u = w;
+            if (SurvivorUnchained.Args.Has("house-fade-debug")) GD.Print($"house fade glow {g.Name} at {g.GlobalPosition} unit {u} near {UnitAt(g.GlobalPosition, 3f, 3f)}");
+            if (u < 0) continue;
+            foreach (var gi in g.FindChildren("*", "GeometryInstance3D", true, false).Append(g).OfType<GeometryInstance3D>())
+                if (seen.Add(gi.GetInstanceId())) faders.Add((gi, u));
+        }
+        // (the road's lamps the landmarks hang on our walls (Landmarks.Holders, their "lamp" meta): within a metre of its walls, over its cut,
+        // and what is in them)
+        foreach (var hn in root.FindChildren("*", "Node3D", true, false).OfType<Node3D>().Where(x => x.HasMeta("lamp")).ToList())
+        {
+            var hp = hn.GlobalPosition;
+            int u = UnitAt(hp, 1.0f, 0);
+            if (u < 0 || hp.Y < Cut[u]) continue;
+            near.Add((hp, u));
+            foreach (var gi in hn.FindChildren("*", "GeometryInstance3D", true, false).OfType<GeometryInstance3D>())
+                if (seen.Add(gi.GetInstanceId())) faders.Add((gi, u));
+        }
+        // (the flames and glass in a hung lantern: small pieces, not the kit's MultiMeshes)
+        if (near.Count > 0)
+            foreach (var n in root.FindChildren("*", "GeometryInstance3D", true, false))
+                if (n is GeometryInstance3D gi && gi is not MultiMeshInstance3D && Near(gi.GlobalPosition) is int u && u >= 0
+                    && (gi.GlobalTransform * gi.GetAabb()).Size.Length() < 1.6f && seen.Add(gi.GetInstanceId()))
+                    faders.Add((gi, u));
+        foreach (var n in root.FindChildren("*", "Light3D", true, false))
+            if (n is OmniLight3D or SpotLight3D && n is Light3D l)
+            {
+                int u = Near(l.GlobalPosition);
+                if (u < 0) u = UnitAt(l.GlobalPosition, 0.8f, 0);
+                if (u >= 0) lamps.Add((l, l.LightColor, u));
+            }
+        if (SurvivorUnchained.Args.Has("house-fade-debug"))
+            foreach (var n in root.FindChildren("Chimney*", "", true, false)) GD.Print($"house fade smoke {n.Name} {n.GetClass()} at {(n as Node3D)?.GlobalPosition} unit {UnitAt(((Node3D)n).GlobalPosition, 3f, 6f)}");
+        foreach (var n in root.FindChildren("Chimney*", "GPUParticles3D", true, false))
+            if (n is GpuParticles3D p && UnitAt(p.GlobalPosition, 1.5f, 7f) is int u && u >= 0) smokes.Add((p, u));
+        GD.Print($"house fade: {faders.Count} faders, {lamps.Count} lights, {smokes.Count} smokes with their houses");
+    }
+
+    float Eased(int u) => u >= fade.Length ? 0 : hold >= 0 ? fade[u] : fade[u] * fade[u] * (3 - 2 * fade[u]);
+
+    void Follow()
+    {
+        foreach (var (g, u) in faders)
+        {
+            if (!IsInstanceValid(g)) continue;
+            float f = Eased(u);
+            if (Mathf.IsEqualApprox(g.Transparency, f)) continue;
+            g.Transparency = f;
+        }
+        for (int i = 0; i < lamps.Count; i++)
+        {
+            var (l, c, u) = lamps[i];
+            if (!IsInstanceValid(l)) continue;
+            float f = Eased(u), was = shown[u];
+            // (its colour as the zone set it taken while the house stands, given back when it stands again)
+            if (f <= 0) { if (was > 0) l.LightColor = c; else if (l.LightColor != c) lamps[i] = (l, l.LightColor, u); continue; }
+            l.LightColor = new Color(c.R * (1 - f), c.G * (1 - f), c.B * (1 - f), c.A);
+        }
+        foreach (var (p, u) in smokes)
+        {
+            if (!IsInstanceValid(p)) continue;
+            float f = Eased(u);
+            if (f <= 0 && shown[u] <= 0) continue;
+            p.Transparency = f;
+            p.Emitting = f < 0.5f;
+        }
+        for (int u = 0; u < shown.Length; u++) shown[u] = fade[u];
     }
 
     static void Set(StringName name, Vector4 v, ref Vector4 last)

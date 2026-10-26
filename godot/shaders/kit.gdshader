@@ -183,6 +183,37 @@ vec3 hue_turn(vec3 c, float a) {
 // (foliage: its leaves' undersides are not a roof's; KitLook)
 uniform bool leaves = false;
 
+// (E9c) The house fade, in place of the round window for our walls and roofs: the part of a house (OwnWalls'
+// fade unit: a house, or a 12 m length of a long one) that stands between her and the play camera is cut away
+// by a threshold moved every frame (coverage.gdshaderinc), so the temporal smoothing sums the frames' cuts into
+// an even fade, never a stipple and never a hole. HouseFade (OwnWalls.cs) eases each unit's fade over 0.3 s and
+// names up to 8 of them here: ids (unit + 1, 0 none) and how far each is faded (0 whole, 1 gone). Only in the
+// camera's own view: in a light's the house is whole, so its shadow stays on the street.
+#include "res://shaders/coverage.gdshaderinc"
+global uniform vec4 house_fade_ids;
+global uniform vec4 house_fade_ids2;
+global uniform vec4 house_fade;
+global uniform vec4 house_fade2;
+varying flat float v_unit;
+// (E9c2) The cutaway: each unit's walls fade only above its cut (house_cut: a world height, 0.9 m over its floor),
+// the footing below stands, capped (its walls' back faces, seen down into the cut, drawn as a stone wall top);
+// its roofs fade whole. What hangs on its walls (a kit lantern: its MultiMesh's custom data r, the unit + 1) fades
+// whole with it.
+global uniform vec4 house_cut;
+global uniform vec4 house_cut2;
+float house_fade_of(float u) {
+	vec4 a = step(abs(house_fade_ids - u), vec4(0.5)) * house_fade;
+	vec4 b = step(abs(house_fade_ids2 - u), vec4(0.5)) * house_fade2;
+	return u < 0.5 ? 0.0 : max(max(max(a.x, a.y), max(a.z, a.w)), max(max(b.x, b.y), max(b.z, b.w)));
+}
+// (the unit's cut height; -1e4 for none)
+float house_cut_of(float u) {
+	vec4 a = step(abs(house_fade_ids - u), vec4(0.5));
+	vec4 b = step(abs(house_fade_ids2 - u), vec4(0.5));
+	return dot(a, house_cut) + dot(b, house_cut2) + (1.0 - min(1.0, dot(a, vec4(1.0)) + dot(b, vec4(1.0)))) * -1e4;
+}
+
+
 #if defined(OWN_WALL) || defined(OWN_ROOF)
 // Our own town walls (tools/assets/env_house.py, OwnWalls, KitLook.Wall): the trim sheet's aux (r its tint class:
 // 1 plaster, .5 timber; g roughness; b a grime noise tiling with its region); each copy's custom data r its house's
@@ -209,24 +240,6 @@ uniform float grime_debug = 0.0;     // (E9b4) 1: flat colours by height above t
 varying vec4 v_wall;
 varying float v_hgt;
 varying vec3 v_wp;
-// (E9c) The house fade, in place of the round window for our walls and roofs: the part of a house (OwnWalls'
-// fade unit: a house, or a 12 m length of a long one) that stands between her and the play camera is cut away
-// by a threshold moved every frame (coverage.gdshaderinc), so the temporal smoothing sums the frames' cuts into
-// an even fade, never a stipple and never a hole. HouseFade (OwnWalls.cs) eases each unit's fade over 0.3 s and
-// names up to 8 of them here: ids (unit + 1, 0 none) and how far each is faded (0 whole, 1 gone). Only in the
-// camera's own view: in a light's the house is whole, so its shadow stays on the street.
-#include "res://shaders/coverage.gdshaderinc"
-global uniform vec4 house_fade_ids;
-global uniform vec4 house_fade_ids2;
-global uniform vec4 house_fade;
-global uniform vec4 house_fade2;
-varying flat float v_unit;
-float house_fade_of(float u) {
-	vec4 a = step(abs(house_fade_ids - u), vec4(0.5)) * house_fade;
-	vec4 b = step(abs(house_fade_ids2 - u), vec4(0.5)) * house_fade2;
-	return u < 0.5 ? 0.0 : max(max(max(a.x, a.y), max(a.z, a.w)), max(max(b.x, b.y), max(b.z, b.w)));
-}
-
 float wall_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float wall_noise(vec2 p) {
 	vec2 i = floor(p), f = fract(p);
@@ -308,6 +321,8 @@ float see_through(vec2 mo) {
 
 void vertex() {
 	vec3 ip = MODEL_MATRIX[3].xyz;
+	// (E9c2: a copy's fade unit + 1 in its custom data's r, 0 none; ours below take theirs from its whole part too)
+	v_unit = floor(INSTANCE_CUSTOM.r);
 	v_up = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
 	v_jit = fract(sin(dot(ip.xz, vec2(12.9898, 78.233))) * 43758.5453);
 	v_y = VERTEX.y;
@@ -389,13 +404,31 @@ void fragment() {
 	// (no round window: the house fade above)
 	vec2 mo = vec2(0.0);
 	float kept = 1.0;
+	bool cap = false;
 	if (view_from.w > 0.0 && distance(CAMERA_POSITION_WORLD, view_from.xyz) <= 1.0) {
 		float f = house_fade_of(v_unit);
+#ifdef OWN_WALL
+		// (E9c2) the cutaway: faded above the cut only; the back faces (the walls are drawn both sides, OWN_WALL only)
+		// only as the cut's cap, under the cut of a unit fading, else not at all in the camera's view (in a light's
+		// they cast with the front, the same closed wall)
+		bool above = v_wp.y > house_cut_of(v_unit);
+		if (!FRONT_FACING) {
+			if (f <= 0.0 || above) discard;
+			cap = true;
+		}
+		else if (f > 0.0 && above && coverage_cut(FRAGCOORD.xy) < f) discard;
+#else
 		if (f > 0.0 && coverage_cut(FRAGCOORD.xy) < f) discard;
+#endif
 	}
 #else
 	vec2 mo = see_parts(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
 	float kept = see_through(mo);
+	// (E9c2) a kit piece hung on one of our houses (a wall lantern, a torch) fades whole with its house
+	if (v_unit > 0.5 && view_from.w > 0.0 && distance(CAMERA_POSITION_WORLD, view_from.xyz) <= 1.0) {
+		float hf = house_fade_of(v_unit);
+		if (hf > 0.0 && coverage_cut(FRAGCOORD.xy) < hf) discard;
+	}
 #endif
 #ifdef SEE_SCREEN
 	// (The feather held to its width on the screen where how far the piece is opened
@@ -520,6 +553,16 @@ void fragment() {
 		if (grime_debug > 0.0 && grime_debug < 1.5) col = h < 0.4 ? vec3(1.0, 0.0, 0.0) : h < 1.2 ? vec3(0.0, 1.0, 0.0) : h < 3.0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = col;
 		ROUGHNESS = ax.g;
+		if (cap) {
+			// (E9c2) the cut's cap: the wall's core seen from above, the sheet's rubble (its region: u 0-1, v 0-0.5,
+			// 4 x 2 m) laid flat in world space at 0.6 of its value, facing up; its derivatives unwrapped, so no seam
+			vec2 rq = v_wp.xz / vec2(4.0, 2.0);
+			vec3 rc = textureGrad(albedo_tex, vec2(fract(rq.x), fract(rq.y) * 0.5), dFdx(rq) * vec2(1.0, 0.5), dFdy(rq) * vec2(1.0, 0.5)).rgb;
+			ALBEDO = rc * 0.6;
+			NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+			NORMAL_MAP = vec3(0.5, 0.5, 1.0);
+			ROUGHNESS = 0.95;
+		}
 	}
 #endif
 #ifdef OWN_ROOF

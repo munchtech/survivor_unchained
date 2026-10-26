@@ -83,6 +83,182 @@ public sealed class OwnWalls
         return o;
     }
 
+    /// <summary>(E9c2) A closed house's inside, for the cutaway (HouseFade cuts it to its footing): its frame (world to
+    /// the house's: x along its walls, z across), its walls' outer rectangle there, its floor's height, the 2 m cells
+    /// its walls close round (an L's notch left out), its chimneys and doors (house frame).</summary>
+    public sealed class Inside
+    {
+        public int House;
+        public Transform3D To;
+        public Rect2 R;
+        public float Ground, Floor;
+        public readonly List<Rect2> Cells = new();
+        public readonly List<Vector2> Chimneys = new(), Doors = new();
+        public Aabb World;
+        public bool Holds(Vector3 p, float inset = 0.1f)
+        {
+            if (!World.Grow(0.1f).HasPoint(p with { Y = World.Position.Y + 0.01f })) return false;
+            var q = To * p;
+            var v = new Vector2(q.X, q.Z);
+            foreach (var c in Cells) if (c.Grow(-inset).HasPoint(v)) return true;
+            return false;
+        }
+    }
+
+    static readonly Dictionary<string, List<Inside>> insides = new();
+
+    /// <summary>(E9c2) The zone's closed houses' insides (none where the zone has no walls of ours).</summary>
+    public static List<Inside> InsidesOf(ZoneData z)
+    {
+        if (insides.TryGetValue(z.Id, out var list)) return list;
+        insides[z.Id] = list = new();
+        if (SurvivorUnchained.Args.Has("walls-kit") || SurvivorUnchained.Args.Has("props-own-off")
+            || !FileAccess.FileExists($"res://data/zones/{z.Id}/props_own.json")) return list;
+        var walls = new Dictionary<int, List<Transform3D>>();
+        var extra = new Dictionary<int, List<(string Id, Vector3 At)>>();
+        for (int i = 0; i < z.Props.Count && i < z.PropHouse.Count; i++)
+        {
+            int h = z.PropHouse[i];
+            if (h < 0) continue;
+            var (id, at) = z.Props[i];
+            if (id.StartsWith("village/Wall_")) { if (!walls.TryGetValue(h, out var l)) walls[h] = l = new(); l.Add(at); }
+            if (id.StartsWith("village/Door_1") || id == "village/Prop_Chimney")
+            { if (!extra.TryGetValue(h, out var l)) extra[h] = l = new(); l.Add((id, at.Origin)); }
+        }
+        foreach (var (h, ws) in walls)
+        {
+            float g = ws.Min(t => t.Origin.Y);
+            var lo = ws.Where(t => t.Origin.Y < g + 0.5f).ToList();
+            double sx = 0, sy = 0;
+            foreach (var t in lo) { double a = 4 * Mathf.Atan2(t.Basis.Column0.Z, t.Basis.Column0.X); sx += System.Math.Cos(a); sy += System.Math.Sin(a); }
+            var to = new Transform3D(new Basis(Vector3.Up, (float)System.Math.Atan2(sy, sx) / 4), Vector3.Zero);
+            var pts = lo.Select(t => to * t.Origin).ToList();
+            float u0 = pts.Min(p => p.X), u1 = pts.Max(p => p.X), v0 = pts.Min(p => p.Z), v1 = pts.Max(p => p.Z);
+            // (a run of town wall, or a lean-to's single face: no inside)
+            if (u1 - u0 < 2.5f || v1 - v0 < 2.5f) continue;
+            // the wall's outer face is the pieces' origin line, so the corner pieces' origins sit a half piece in:
+            // the outer rectangle runs to the walls' far faces (a 2 m piece's ends, from the walls across it)
+            var ins = new Inside { House = h, To = to, R = new Rect2(u0, v0, u1 - u0, v1 - v0), Ground = g };
+            int nx = Mathf.Max(1, Mathf.RoundToInt((u1 - u0) / 2f)), nz = Mathf.Max(1, Mathf.RoundToInt((v1 - v0) / 2f));
+            float cw = (u1 - u0) / nx, ch = (v1 - v0) / nz;
+            for (int j = 0; j < nz; j++)
+                for (int i = 0; i < nx; i++)
+                {
+                    float cu = u0 + (i + 0.5f) * cw, cv = v0 + (j + 0.5f) * ch;
+                    bool l = pts.Any(p => Mathf.Abs(p.Z - cv) < ch * 0.55f && p.X < cu - 0.3f), r = pts.Any(p => Mathf.Abs(p.Z - cv) < ch * 0.55f && p.X > cu + 0.3f);
+                    bool d = pts.Any(p => Mathf.Abs(p.X - cu) < cw * 0.55f && p.Z < cv - 0.3f), up = pts.Any(p => Mathf.Abs(p.X - cu) < cw * 0.55f && p.Z > cv + 0.3f);
+                    if (l && r && d && up) ins.Cells.Add(new Rect2(u0 + i * cw, v0 + j * ch, cw, ch));
+                }
+            if (ins.Cells.Count == 0) continue;
+            // the floor: the house's ground, raised to the terrain where it stands higher inside (at most 0.4 m)
+            float top = g;
+            var back = to.AffineInverse();
+            foreach (var c in ins.Cells)
+                for (int k = 0; k < 9; k++)
+                {
+                    var p = back * new Vector3(c.Position.X + c.Size.X * (0.15f + 0.35f * (k % 3)), 0, c.Position.Y + c.Size.Y * (0.15f + 0.35f * (k / 3)));
+                    top = Mathf.Max(top, z.HeightAt(p.X, p.Z));
+                }
+            ins.Floor = Mathf.Min(top, g + 0.4f) + 0.02f;
+            foreach (var (id, at) in extra.TryGetValue(h, out var ex) ? ex : new())
+            {
+                var q = to * at;
+                (id.StartsWith("village/Door") ? ins.Doors : ins.Chimneys).Add(new Vector2(q.X, q.Z));
+            }
+            var wb = new Aabb(back * new Vector3(u0, g, v0), Vector3.Zero);
+            foreach (var cq in new[] { new Vector3(u1, g, v0), new Vector3(u0, g, v1), new Vector3(u1, g + 3f, v1) }) wb = wb.Expand(back * cq);
+            ins.World = wb;
+            list.Add(ins);
+        }
+        GD.Print($"house insides: {list.Count} ({list.Sum(i => i.Cells.Count)} cells)");
+        return list;
+    }
+
+    /// <summary>(E9c2) Whether a point is inside one of the zone's closed houses (nothing grows or lies there).</summary>
+    public static bool InsideAny(ZoneData z, float x, float zz, float inset = 0.1f)
+    {
+        var l = InsidesOf(z);
+        if (l.Count == 0) return false;
+        var p = new Vector3(x, 0, zz);
+        foreach (var i in l) if (i.Holds(p, inset)) return true;
+        return false;
+    }
+
+    /// <summary>(E9c2) What furnishes each inside, as kit pieces: a floor of boards (or flags, one house in three) on its
+    /// cells, a hearth slab under its chimney with a pot on it, a table and a stool in the middle of a room big enough,
+    /// and a bed (a big house) or a chest in the corner farthest from its door. All under the cut (0.9 m).</summary>
+    public static List<(string Id, Transform3D At)> Furnish(ZoneData z)
+    {
+        var o = new List<(string, Transform3D)>();
+        foreach (var ins in InsidesOf(z))
+        {
+            var back = ins.To.AffineInverse();
+            uint hh = (uint)(ins.House * 2654435761u);
+            string floor = hh % 3 == 1 ? "village/Floor_UnevenBrick" : "village/Floor_WoodLight";
+            Transform3D At(float u, float v, float y, float yaw, Vector3? scale = null)
+            {
+                var b = new Basis(Vector3.Up, yaw);
+                if (scale is Vector3 s) b = b.Scaled(s);
+                return new Transform3D(back.Basis * b, back * new Vector3(u, y, v));
+            }
+            foreach (var c in ins.Cells)
+                o.Add((floor, At(c.GetCenter().X, c.GetCenter().Y, ins.Floor, (hh >> 3) % 2 == 0 ? 0 : Mathf.Pi, new Vector3(c.Size.X / 2f, 1, c.Size.Y / 2f))));
+            var r = ins.R;
+            const float wall = 0.36f;
+            var used = new List<Rect2>();
+            bool Free(Rect2 q) => !used.Any(u => u.Intersects(q)) && ins.Cells.Any(c => c.Grow(0.05f).Encloses(q) || c.Intersects(q))
+                && !ins.Doors.Any(d => q.Grow(0.9f).HasPoint(d));
+            foreach (var ch in ins.Chimneys.Take(1))
+            {
+                // (against the nearest wall, within the rectangle)
+                float du0 = ch.X - r.Position.X, du1 = r.End.X - ch.X, dv0 = ch.Y - r.Position.Y, dv1 = r.End.Y - ch.Y;
+                float m = Mathf.Min(Mathf.Min(du0, du1), Mathf.Min(dv0, dv1));
+                bool alongU = m == dv0 || m == dv1;
+                float hu = alongU ? 0.75f : 0.5f, hv = alongU ? 0.5f : 0.75f;
+                float u = Mathf.Clamp(ch.X, r.Position.X + wall + hu, r.End.X - wall - hu), v = Mathf.Clamp(ch.Y, r.Position.Y + wall + hv, r.End.Y - wall - hv);
+                if (m == du0) u = r.Position.X + wall + hu; else if (m == du1) u = r.End.X - wall - hu;
+                else if (m == dv0) v = r.Position.Y + wall + hv; else v = r.End.Y - wall - hv;
+                o.Add(("village/Floor_Brick", At(u, v, ins.Floor + 0.04f, alongU ? 0 : Mathf.Pi / 2, new Vector3(0.75f, 5f, 0.5f))));
+                o.Add(("props/Cauldron", At(u, v, ins.Floor + 0.09f, (hh % 7) * 0.9f)));
+                used.Add(new Rect2(u - hu - 0.2f, v - hv - 0.2f, 2 * hu + 0.4f, 2 * hv + 0.4f));
+            }
+            // the corner farthest from the doors: a bed in a big house, else a chest
+            var door = ins.Doors.Count > 0 ? ins.Doors : new List<Vector2> { r.GetCenter() };
+            var corners = new[] { r.Position, new Vector2(r.End.X, r.Position.Y), new Vector2(r.Position.X, r.End.Y), r.End }
+                .OrderByDescending(c => door.Min(d => d.DistanceTo(c))).ToList();
+            bool big = r.Area >= 40f;
+            string piece = big ? "props/Bed_Twin1" : "props/Chest_Wood";
+            // (half sizes along the house's u and v: the bed's head to the wall across, the chest's back to the long wall)
+            Vector2 half = big ? new Vector2(0.94f, 1.21f) : new Vector2(0.64f, 0.38f);
+            foreach (var c in corners)
+            {
+                float su = c.X < r.GetCenter().X ? 1 : -1, sv = c.Y < r.GetCenter().Y ? 1 : -1;
+                var at = new Vector2(c.X + su * (wall + half.X + 0.05f), c.Y + sv * (wall + half.Y + 0.05f));
+                var q = new Rect2(at - half, half * 2);
+                if (!Free(q)) continue;
+                o.Add((piece, At(at.X, at.Y, ins.Floor, big ? (sv > 0 ? Mathf.Pi : 0) : (sv > 0 ? 0 : Mathf.Pi))));
+                used.Add(q);
+                break;
+            }
+            // a table and a stool in the middle, where the room is 4 by 3.5 m or more
+            if (r.Size.X >= 4f && r.Size.Y >= 3.5f || r.Size.Y >= 4f && r.Size.X >= 3.5f)
+            {
+                bool alongU = r.Size.X >= r.Size.Y;
+                var c = r.GetCenter() + new Vector2(((hh >> 5) % 5 - 2) * 0.15f, ((hh >> 9) % 5 - 2) * 0.15f);
+                var th = alongU ? new Vector2(1.42f, 0.55f) : new Vector2(0.55f, 1.42f);
+                var q = new Rect2(c - th, th * 2);
+                if (Free(q))
+                {
+                    o.Add(("props/Table_Large", At(c.X, c.Y, ins.Floor, alongU ? 0 : Mathf.Pi / 2)));
+                    used.Add(q);
+                    var s = c + (alongU ? new Vector2(0.5f, 0.85f) : new Vector2(0.85f, 0.5f));
+                    o.Add(("props/Stool", At(s.X, s.Y, ins.Floor, (hh % 11) * 0.5f)));
+                }
+            }
+        }
+        return o;
+    }
+
     static uint Hash(Vector3 p) => (uint)(Mathf.FloorToInt(p.X * 2.3f + 0.5f) * 73856093) ^ (uint)(Mathf.FloorToInt(p.Z * 2.3f + 0.5f) * 19349663) ^ (uint)(Mathf.FloorToInt(p.Y + 0.5f) * 83492791);
 
     /// <summary>Takes a kit piece as ours (true: drawn by Build, or dropped), or false to leave it to the kit.</summary>
@@ -162,26 +338,38 @@ public sealed class OwnWalls
                         vols[k].Add(new HouseFade.Vol((e.At * local).AffineInverse(), bb, e.Preset.StartsWith("roof_") ? RidgeOf(mesh) : 0));
                 }
             }
+            // (E9c2) the cut: 0.9 m over its floor (its ground, for a house with no inside of ours)
+            float cutY = (zone != null ? InsidesOf(zone).FirstOrDefault(i => i.House == h.Key)?.Floor : null) ?? (ground.TryGetValue(h.Key, out var gk) ? gk : 0f);
             for (int k = 0; k < n; k++)
             {
                 if (boxes[k] is Aabb b) vols[k].Add(new HouseFade.Vol(toHouse, b, 3));
                 fade.Units.Add(vols[k].ToArray());
+                fade.Cut.Add(cutY + 0.9f);
             }
         }
-        // what hangs on the walls (the kit's copies, already under root): taken by the unit whose walls' box, 0.7 m wider, holds it
+        // what hangs on the walls (the kit's copies, already under root): taken by the unit whose walls' box, 0.7 m wider, holds
+        // it, and (E9c2) faded with it on its curve: the copies given custom data, r its unit + 1 (kit.gdshader's house fade)
         foreach (var mmi in root.GetChildren().OfType<MultiMeshInstance3D>())
         {
             if (mmi.GetMeta("prop", "").AsString() is not ("props/Lantern_Wall" or "props/Torch_Metal") || mmi.Multimesh is not MultiMesh mm) continue;
-            for (int i = 0; i < mm.InstanceCount; i++)
+            var ats = Enumerable.Range(0, mm.InstanceCount).Select(mm.GetInstanceTransform).ToArray();
+            var us = new int[ats.Length];
+            for (int i = 0; i < ats.Length; i++)
             {
-                var at = mm.GetInstanceTransform(i);
+                us[i] = -1;
                 for (int u = 0; u < fade.Units.Count; u++)
-                    if (fade.Units[u].FirstOrDefault(v => v.Ridge == 3) is { Ridge: 3 } w && w.Box.Grow(0.7f).HasPoint(w.To * at.Origin))
+                    if (fade.Units[u].FirstOrDefault(v => v.Ridge == 3) is { Ridge: 3 } w && w.Box.Grow(0.7f).HasPoint(w.To * ats[i].Origin))
                     {
-                        fade.Hung.Add((mm, i, at, u));
+                        fade.Hung.Add((mm, i, ats[i], u));
+                        us[i] = u;
                         break;
                     }
             }
+            if (us.All(u => u < 0)) continue;
+            mm.InstanceCount = 0;
+            mm.UseCustomData = true;
+            mm.InstanceCount = ats.Length;
+            for (int i = 0; i < ats.Length; i++) { mm.SetInstanceTransform(i, ats[i]); mm.SetInstanceCustomData(i, new Color(us[i] + 1, 0, 0, 0)); }
         }
         fade.Name = "house_fade";
         root.AddChild(fade);

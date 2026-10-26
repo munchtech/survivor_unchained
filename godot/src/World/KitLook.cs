@@ -192,7 +192,9 @@ public static class KitLook
     /// from the house's ground up, stains under the sills; faded whole where it stands between her and the camera (HouseFade; E9c), never windowed.</summary>
     static ShaderMaterial Wall()
     {
-        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL") };
+        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL")
+            // (E9c2) drawn both sides: its back faces are the cutaway's cap (kit.gdshader discards them elsewhere in the camera's view)
+            .Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         const string dir = "res://art/world/house";
         var m = new ShaderMaterial { Shader = ownWall };
         m.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{dir}/house_albedo.jpg"));

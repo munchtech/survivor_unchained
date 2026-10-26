@@ -180,6 +180,8 @@ public static class Scatter
         bool Ok(float x, float zz)
         {
             if (Math.Abs(x) > lim || Math.Abs(zz) > lim || z.Meta.WaterAt(x, zz)) return false;
+            // (E9c2) nothing inside a closed house (the cutaway shows its floor)
+            if (OwnWalls.InsideAny(z, x, zz, -0.05f)) return false;
             foreach (var f in z.Meta.Fires)
                 if ((x - f.X) * (x - f.X) + (zz - f.Z) * (zz - f.Z) < 1.6f * 1.6f) return false;
             return true;
