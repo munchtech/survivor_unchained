@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -35,6 +36,8 @@ public sealed class PersonSpec
     /// suit her own: Loadouts.HerBody), "anime" for donizaki's, bare.</summary>
     public string? Body;
     public string? HairColor, Hair, Skin;
+    /// <summary>Her hair's highlights' colour ("#rrggbb"), or none.</summary>
+    public string? HairHighlight;
     public List<string>? Outfit;
     public bool? Beard;
     /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or none.</summary>
@@ -119,6 +122,11 @@ public sealed class LookChoice
     public string Id = "", Name = "", Color = "";
     /// <summary>An eye's second colour, the ring round its pupil ("" none).</summary>
     public string Ring = "";
+    /// <summary>A hair colour's highlights when they are turned on and none is picked (looks.json's hairHighlights' id).</summary>
+    public string Highlight = "";
+    /// <summary>A highlight's share of the locks and its strength, against the others' (looks.json's hairHighlights:
+    /// face 40, platinum 2 and honey 3).</summary>
+    public float Share = 1f, Strength = 1f;
 }
 
 /// <summary>One of a hero's own hairstyles (the heroine's: the view's heroine_hair_ID), and how it is worn.</summary>
@@ -204,7 +212,7 @@ public static class Lore
 
     sealed class LooksFile
     {
-        public List<LookChoice> Cloaks = new(), Skins = new(), Hairs = new();
+        public List<LookChoice> Cloaks = new(), Skins = new(), Hairs = new(), HairHighlights = new();
         public Dictionary<string, List<string>> HairStyles = new();
         public Dictionary<string, HeroLook> Heroes = new();
     }
@@ -232,6 +240,46 @@ public static class Lore
     public static List<LookChoice> CloakDyes => L.Cloaks;
     public static List<LookChoice> Skins => L.Skins;
     public static List<LookChoice> Hairs => L.Hairs;
+    /// <summary>The colours her hair's highlights may take (a second colour on some of her locks: the owner, 22 Oct).</summary>
+    public static List<LookChoice> HairHighlights => L.HairHighlights;
+    /// <summary>The id a highlight choice of "auto" stands for (CharacterData.HairHighlight).</summary>
+    public const string HighlightAuto = "auto";
+
+    /// <summary>A hair colour's own highlights (an id of HairHighlights): its looks.json default, or, for a colour
+    /// not among the hairs (a "#rrggbb", "" as it grew), by how light it is: copper on the dark, honey on the
+    /// middling, platinum on the fair.</summary>
+    public static string DefaultHighlight(string? hair)
+    {
+        var h = Hairs.FirstOrDefault(x => x.Id == hair || x.Color != "" && string.Equals(x.Color, hair, StringComparison.OrdinalIgnoreCase));
+        if (h is { Highlight: not "" }) return h.Highlight;
+        var hex = h?.Color is { Length: > 0 } c ? c : hair;
+        if (hex is not { Length: 7 } || hex[0] != '#') return "honey";
+        double Ch(int i) => Convert.ToInt32(hex.Substring(i, 2), 16) / 255.0;
+        double lum = 0.2126 * Ch(1) + 0.7152 * Ch(3) + 0.0722 * Ch(5);
+        return lum < 0.2 ? "copper" : lum < 0.5 ? "honey" : "platinum";
+    }
+
+    /// <summary>Whether character creation offers highlights and her hair shows them (face 40, 22 Oct): PARKED, off.
+    /// The highlights failed their judge (j1: tiger stripes, crown crumbs, a half-head panel) and wait for a rebuild;
+    /// until then the Look hides the row and a saved look's highlight loads but renders off (ShownHighlight). Set
+    /// true to bring them back. (--hair-highlight still forces them on in pictures: ForceHighlights.)</summary>
+    public const bool ShowHighlights = false;
+    /// <summary>Highlights shown even while parked (the shot switch --hair-highlight, and tests).</summary>
+    public static bool ForceHighlights;
+    /// <summary>The highlight her hair renders with: HighlightColor while highlights are shown (ShowHighlights or
+    /// ForceHighlights), else none.</summary>
+    public static string? ShownHighlight(string? hair, string? choice) =>
+        ShowHighlights || ForceHighlights ? HighlightColor(hair, choice) : null;
+
+    /// <summary>Her hair's highlights' colour ("#rrggbb"), or null for none: a choice null or "" is off, "auto" (or
+    /// "default") the hair's own (DefaultHighlight), else a HairHighlights id or a "#rrggbb" of its own.</summary>
+    public static string? HighlightColor(string? hair, string? choice)
+    {
+        if (string.IsNullOrEmpty(choice) || choice == "off") return null;
+        if (choice[0] == '#') return choice;
+        var id = choice is HighlightAuto or "default" ? DefaultHighlight(hair) : choice;
+        return HairHighlights.FirstOrDefault(x => x.Id == id)?.Color is { Length: > 0 } c ? c : null;
+    }
     public static List<string> HairStyles(Sex sex) => L.HairStyles[sex.Key()];
     /// <summary>What a hero's own body of that sex offers to be shaped with, or null.</summary>
     public static HeroLook? Hero(Sex sex) => L.Heroes.TryGetValue(sex.Key(), out var h) ? h : null;

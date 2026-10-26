@@ -643,6 +643,7 @@ public partial class Game
             p.X = at.X; p.Z = at.Z; p.Facing = her.Rotation.Y; p.Vx = p.Vz = 0;
             pv.Face(her.Rotation.Y, new Vector3(at.X, (float)g.scene.HeightAt(at.X, at.Z), at.Z));
             pv.Hidden = false;
+            pv.Still = true;
             her.Visible = false;
             moves.RemoveAll(mv => mv.Actor == "her");
         }
@@ -905,6 +906,9 @@ public partial class Game
                     {
                         "now" => g.air.Current,
                         "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
+                        // "playdawn": the zone's own dawn, the air play will take up at a dawn hand-back
+                        // (C04 A: the dawn comes up under its lines, not a night with stars; play-1).
+                        "playdawn" when g.zone != null => g.zone.AtmosphereFor(TimeOfDay.Dawn),
                         var n => Atmospheres.ByName(n == "play" ? "night" : n!),
                     }, c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
@@ -914,7 +918,7 @@ public partial class Game
                         // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
                         // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
                         // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
-                        if (c.Str("preset") == "play") @from = @from with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
+                        if (c.Str("preset") is "play" or "playdawn") @from = @from with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
                         if (over > 0 && !skipping)
                         {
                             double last = -1;
@@ -959,7 +963,7 @@ public partial class Game
                     switch (c.Str("kind"))
                     {
                         case "shake": g.cam.AddTrauma((float)c.Num("amount", 0.4)); break;
-                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9) }); break;
+                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9), Plain = c.Has("plain") && c.Get("plain").ValueKind == System.Text.Json.JsonValueKind.True }); break;
                         case "burst": b.Events.Emit(new Ev.Explosion { X = at.X, Z = at.Z, Radius = c.Num("radius", 1.2), School = Enum.Parse<School>(c.Str("school") ?? "physical", true), Power = c.Num("power", 0.5) }); break;
                     }
                     break;
@@ -1568,6 +1572,7 @@ public partial class Game
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;
             var pv = g.scene!.Player;
+            pv.Still = false;
             if (handed)
             {
                 // Her own body already: what she was doing carries on, easing out.

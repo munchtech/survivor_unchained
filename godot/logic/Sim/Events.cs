@@ -60,7 +60,7 @@ public static class Ev
     public sealed class PlayerHeal : CombatEvent { public double Amount; }
     public sealed class PlayerDeath : CombatEvent { public double X, Z; public string Killer = ""; public int KillerId; }
     public sealed class Status : CombatEvent { public int Target; public StatusKind Kind; public double X, Z; }
-    public sealed class Nova : CombatEvent { public double X, Z, Radius; public School School; public double Duration; public int? Rings; public string? Art; public int Rank; }
+    public sealed class Nova : CombatEvent { public double X, Z, Radius; public School School; public double Duration; public int? Rings; public string? Art; public int Rank; /** A flat ring on the ground only, no standing blast (a cinematic's ember going into the ground). */ public bool Plain; }
     public sealed class Explosion : CombatEvent { public double X, Z, Radius; public School School; public double Power; public string? Art; public int Rank; }
     public sealed class Chain : CombatEvent { public double[] Points = System.Array.Empty<double>(); public School School; public string? Art; public int Rank; }
     public sealed class Beam : CombatEvent { public double X0, Z0, X1, Z1, Width; public School School; public double Duration; public string? Art; public int Rank; }

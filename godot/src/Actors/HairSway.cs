@@ -87,6 +87,7 @@ public partial class HairSway : Node
     // What the shader is given (in the mesh's space): this frame's swing and where her head
     // is, and last frame's, for the motion vectors (MotionClock).
     Vector3 sway, headAt;
+    Basis headTurn = Basis.Identity;
     Vector3[] swung = new Vector3[8], swungThen = new Vector3[8];
     // And the chain at rest (where it hangs, carried by its bone) and how each place along it has turned, so the shader
     // turns her hair with it, not only moves it (moved only, a braid swung sideways went edge-on flat, and cards burst
@@ -520,6 +521,10 @@ public partial class HairSway : Node
             sway = local.Basis * off * Amount;
         }
         headAt = local * (world * pose.Origin);
+        // (her head's turn from its rest, in the hair's own space: the shader's highlights pick her front and crown
+        // locks by where they lie on her head at rest, so a lock keeps its colour as she turns her head)
+        var lw = (local * world).Basis;
+        headTurn = (lw * (pose.Basis * sk.GetBoneGlobalRest(head).Basis.Inverse()) * lw.Inverse()).Orthonormalized();
         (armsThen, arms) = (arms, armsThen);
         for (int a = 0; a < 2; a++)
         {
@@ -535,6 +540,7 @@ public partial class HairSway : Node
                 {
                     m.SetShaderParameter(SwayName, sway);
                     m.SetShaderParameter(HeadName, headAt);
+                    m.SetShaderParameter(HeadTurnName, headTurn);
                     m.SetShaderParameter(ChainName, swung);
                     m.SetShaderParameter(SwayThenName, swayThen);
                     m.SetShaderParameter(HeadThenName, headThen);
@@ -813,6 +819,7 @@ public partial class HairSway : Node
 
     // The parameters' names made once: a string given where a name is wanted
     // is a new name each call, and every frame's left for the collector.
+    static readonly StringName HeadTurnName = "head_turn";
     static readonly StringName SwayName = "sway", HeadName = "head", ChainName = "chain",
         SwayThenName = "sway_then", HeadThenName = "head_then", ChainThenName = "chain_then",
         ArmsName = "arms", ArmsThenName = "arms_then", ArmRName = "arm_r",
