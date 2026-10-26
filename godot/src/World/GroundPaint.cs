@@ -52,7 +52,7 @@ public sealed class GroundPaint
     internal static readonly float RutCore = Args.Num("road-rut-core", 0.16f);    // half the core's width
     internal static readonly float RutFeather = Args.Num("road-rut-feather", 0.15f);
     internal static readonly float ClearingSoft = Args.Num("clearing-soft", 2.2f);  // a clearing's dirt edge blurred over this (m)
-    internal static readonly float PoolEvery = Args.Num("pool-every", 80f);   // open setts: one puddle in this many square metres
+    internal static readonly float PoolEvery = Args.Num("pool-every", 0f);   // open setts: one puddle in this many square metres (0: none)
     internal static readonly bool PoolsOn = !Args.Has("no-pools");
     internal static float RutW => RutCore + RutFeather * 0.5f;                       // a rut's half width, to its shoulder's middle
 
@@ -266,8 +266,9 @@ public sealed class GroundPaint
                     }
                 }
             }
-            // The open setts: about one in 50 square metres of them.
-            int many = (int)(size * size / PoolEvery);
+            // The open setts: one in PoolEvery square metres of them. (E9e r3: off by default: a round pool in the open square
+            // with nothing over it read as a stain or a manhole; the mud pools gather at what stands instead.)
+            int many = PoolEvery > 0f ? (int)(size * size / PoolEvery) : 0;
             for (int k = 0; k < many; k++)
             {
                 float x = PU(-half, half), zz = PU(-half, half);

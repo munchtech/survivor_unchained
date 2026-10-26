@@ -480,7 +480,10 @@ void fragment() {
 	mud_c = max(mud_c, smoothstep(0.05, 0.5, mud_g + collar) * 0.3 * smoothstep(0.006, 0.02, footg) * mud_pool);
 	// The pools (fix 2): soft-edged, 0.5-2 m, where the mud gathers (the well, posts, stalls, a wall's foot, the broken
 	// edge), wet and smooth enough to hold the sky; only the tallest tops break their rims.
-	float pool_f = mud_g * 0.85 + collar * 0.6 + s_band * 0.4 + (nM.b - 0.5) * 0.75 + (nF.r - 0.5) * 0.35 + (rg4.b - 0.5) * 0.08;
+	// (E9e r3, fix 2-3: round pools read as stains or manholes, a smooth blob at the kerb: the outline lobed by 1-2 m and
+	// 0.6 m noise, warped; the broken edge no longer gathers a pool of its own.)
+	vec4 lb4 = texture(noise_tex, w * 0.75 + (rg4.ga - 0.5) * 0.35 + 0.19);
+	float pool_f = mud_g * 0.85 + collar * 0.6 + (nM.b - 0.5) * 0.75 + (nF.r - 0.5) * 0.3 + (lb4.r - 0.5) * 0.5 + (rg4.b - 0.5) * 0.2;
 	float pool = smoothstep(0.7, 0.88, pool_f) * w_setts * mud_pool;
 	float pool_c = pool * (1.0 - smoothstep(0.62, 0.78, hgt) * (1.0 - smoothstep(0.35, 0.8, pool)));
 	mud_c = max(mud_c, pool_c);
@@ -516,11 +519,16 @@ void fragment() {
 	// (At the close camera's grazing look the film held the whole pale sky, a white sheet: there it is wet mud.)
 	float pool_far = smoothstep(0.004, 0.012, footg);
 	pool_w *= mix(0.35, 1.0, pool_far);
-	albedo = mix(albedo, mud_col * mix(0.85, 0.7, pool_w), pool_c);
-	rough = mix(rough, mix(0.45, 0.2, pool_w), pool_c);
+	float pool_ndv = smoothstep(0.15, 0.75, clamp(dot(n_geo, normalize(CAMERA_POSITION_WORLD - w_pos)), 0.0, 1.0));
+	// (E9e r3: the sky the grazing look loses comes back as the mud's own warmth, a wet sheen tinted by its albedo.)
+	albedo = mix(albedo, mud_col * mix(1.15, 0.95, pool_w) * mix(vec3(1.5, 1.4, 1.2), vec3(1.2, 1.05, 0.9), pool_ndv), pool_c);
+	rough = mix(rough, mix(0.45, 0.2, pool_w) + (1.0 - pool_ndv) * 0.15, pool_c);
 	n_w = normalize(mix(n_w, n_geo, pool_c));
 	float pool_s = pool_c * w_setts;
-	float pool_spec = mix(0.4, 0.9, pool_w) * mix(0.6, 1.0, pool_far);
+	// (E9e r3, fix 1: at a grazing look the film held the pale sky, white as frost or ash: 0.9 is F0 0.13, six times
+	// water's. Now near water's F0 looking down and a tenth of it at grazing, where Godot scales the Fresnel rim by
+	// 50 F0: wet mud with a sheen, never a mirror.)
+	float pool_spec = mix(0.1, mix(0.2, 0.28, pool_w), pool_ndv);
 	n_w = normalize(mix(n_w, n_geo, mud_c * mix(0.85, 1.0, mud_paint)));
 	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
 	ao = mix(ao, 1.0, mud_c * mud_ao * (1.0 - mud_paint));
@@ -742,6 +750,8 @@ void fragment() {
 		if (debug_view == 31) m = seam * w_setts;
 		ALBEDO = vec3(0.0);
 		EMISSION = vec3(step(0.5, m) * 50.0);
+		// 32 (E9e r3): the old puddles red, the mud pools green, the setts' mud blue.
+		if (debug_view == 32) { float d_p = step(0.5, pud), d_q = step(0.5, pool_s) * (1.0 - d_p); EMISSION = vec3(d_p, d_q, step(0.5, dbg_mud_c) * (1.0 - d_p) * (1.0 - d_q) * 0.5) * 4.0; }
 	}
 	ROUGHNESS = clamp(mix(rough, 1.0, night * (1.0 - pud) * 0.6), 0.04, 1.0);
 	AO = mix(1.0, ao, 0.85);
