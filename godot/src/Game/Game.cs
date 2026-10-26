@@ -816,7 +816,7 @@ public partial class Game : Node, IZoneHost
         if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
         {
             GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
-            Shots.Want("tip_" + hint.Id, 0.9);
+            // (its picture is asked for by the HUD once the tip is drawn at full strength: GameHud.Update)
         }
         hud.Hint(CurrentHint = hint);
     }

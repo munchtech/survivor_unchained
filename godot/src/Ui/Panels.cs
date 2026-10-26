@@ -182,8 +182,11 @@ public partial class DraftPanel : Control
         if (foot == null) return;
         foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
         bool pad = Controls.Instance.UsingPad;
-        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.Key($"1-{Math.Clamp(v.Offers.Count, 2, 4)}"), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
-        foot.AddChild(Style.Hint(Act.Confirm, banishing ? "Banish it" : "Take it"));
+        // (the shared keycap, as the tips draw it)
+        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.KeyCap($"1-{Math.Clamp(v.Offers.Count, 2, 4)}", 0.9f), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
+        var take = Style.H(6, pad ? Style.Prompt(Act.Confirm) : Style.KeyCap(Controls.Instance?.KeyLabel(Act.Confirm) ?? "Enter", 0.9f), Style.Label(banishing ? "Banish it" : "Take it", Style.Ui, Style.Caption, Style.InkDim));
+        take.Alignment = BoxContainer.AlignmentMode.Center;
+        foot.AddChild(take);
         // (a panel a callout teaches on, the first skill and the first blessing, shows only the choice: reroll,
         // banish and skip are verbs nobody has met yet, au1 judge)
         if (v.Teaching) return;
@@ -314,7 +317,7 @@ public partial class DraftPanel : Control
         var ribbon = Style.H(6);
         ribbon.Alignment = BoxContainer.AlignmentMode.Center;
         ribbon.AddChild(Style.Panel(Style.Box(new Color(0, 0, 0, 0.45f), rc with { A = 0.5f }, 1, 12, 6), Style.Label(Kicker(o).ToUpperInvariant(), Style.UiHeavy, Style.Badge, rc.Lightened(0.25f), false, HorizontalAlignment.Center)));
-        if (Fresh(o)) ribbon.AddChild(Style.Panel(Style.Box(Style.Ember with { A = 0.9f }, Style.EmberHi, 1, 12, 6), Style.Label("NEW", Style.UiHeavy, Style.Badge, new Color("#2a1206"), false, HorizontalAlignment.Center, false)));
+        if (Fresh(o) && !Kicker(o).StartsWith("New", StringComparison.OrdinalIgnoreCase)) ribbon.AddChild(Style.Panel(Style.Box(Style.Ember with { A = 0.9f }, Style.EmberHi, 1, 12, 6), Style.Label("NEW", Style.UiHeavy, Style.Badge, new Color("#2a1206"), false, HorizontalAlignment.Center, false)));
         v2.AddChild(ribbon);
         // The icon on a disc of its colour.
         var art = new CenterContainer { CustomMinimumSize = new Vector2(v2.Size.X, 132), MouseFilter = MouseFilterEnum.Ignore };
@@ -386,7 +389,12 @@ public partial class DraftPanel : Control
         rword.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         var gems = Style.Gems(r, 6);
         gems.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        var foot = Style.H(Style.Gap2, rword, gems);
+        // (the rarity and its gems on the card's own axis; the slot number keeps its corner, a spacer of its width balancing it)
+        var foot = Style.H(Style.Gap2);
+        foot.AddChild(new Control { CustomMinimumSize = new Vector2(30, 26), MouseFilter = MouseFilterEnum.Ignore });
+        foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        foot.AddChild(rword);
+        foot.AddChild(gems);
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var key = new Control { CustomMinimumSize = new Vector2(30, 26), MouseFilter = MouseFilterEnum.Ignore, Name = "Key" };
         foot.AddChild(key);
@@ -451,7 +459,7 @@ public partial class DraftPanel : Control
             if (b.FindChild("Key", true, false) is Control key)
             {
                 foreach (var c in key.GetChildren()) c.QueueFree();
-                if (!pad) key.AddChild(Style.Key($"{i + 1}"));
+                if (!pad) key.AddChild(Style.KeyCap($"{i + 1}", 0.9f));
                 else if (on) key.AddChild(Style.PadButton("A"));
             }
         }

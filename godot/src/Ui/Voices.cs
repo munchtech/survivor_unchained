@@ -31,7 +31,10 @@ public partial class Voices : Node3D
         public double T, Life;
         /// <summary>How far it is moved up to stand clear of the lines before it (eased).</summary>
         public float Lift;
+        /// <summary>Its shot under a live tip was asked for (--shot only).</summary>
+        public bool Shot;
     }
+    static int barkTipShots;
 
     /// <summary>A line waiting for its speaker's last to finish.</summary>
     sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown);
@@ -249,6 +252,13 @@ public partial class Voices : Node3D
                 var c = cam.UnprojectPosition(n.Position);
                 var lines = n.Text.Split('\n');
                 float w = lines.Max(l => display.GetStringSize(l, HorizontalAlignment.Left, -1, n.FontSize).X) * k, h = lines.Length * n.FontSize * 1.3f * k;
+                // A name never runs off the screen: moved in (label pixels) to stand at least 24 px inside the viewport.
+                float vpW = GetViewport().GetVisibleRect().Size.X, dx = 0;
+                if (c.X - w / 2 < 24) dx = 24 - (c.X - w / 2);
+                else if (c.X + w / 2 > vpW - 24) dx = vpW - 24 - (c.X + w / 2);
+                n.Offset = n.Offset with { X = dx / k };
+                m.Offset = m.Offset with { X = dx / k };
+                c.X += dx;
                 placed.Add(new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h)).Grow(4));
                 if (m.Visible) placed.Add(new Rect2(c - new Vector2(m.FontSize * k / 2, m.Offset.Y * k + m.FontSize * k / 2), new Vector2(m.FontSize * k, m.FontSize * k)));
             }
@@ -275,6 +285,8 @@ public partial class Voices : Node3D
             // Under a live tip by 24 px at the least (never over its words).
             float floor = Ui.GameHud.TipBottom > 0 ? Ui.GameHud.TipBottom + 24 : 0;
             if (at.Y < floor) at.Y = floor;
+            // (--shot: a bark placed under a live tip, a frame of it a moment on, up to three)
+            if (floor > 0 && !b.Shot && barkTipShots < 3 && Args.Has("shot")) { b.Shot = true; Shots.Want($"barktip_{++barkTipShots}", 0.2); }
             float want = 0;
             for (int pass = 0; pass < 8; pass++)
             {

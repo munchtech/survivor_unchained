@@ -833,11 +833,15 @@ public partial class GameHud : CanvasLayer
         }
     }
 
+    readonly HashSet<string> tipShot = new(), promptShot = new();
+
     public void Prompt(PromptView? p)
     {
         promptView = p;
         promptBox.Visible = p != null;
         if (p == null) return;
+        // (--shot: the first time each prompt kind is shown whole)
+        if (Args.Has("shot") && promptShot.Add(p.Verb.ToLowerInvariant().Replace(' ', '_'))) Shots.Want($"prompt_{p.Verb.ToLowerInvariant().Replace(' ', '_')}", 0.3);
         foreach (var c in promptBox.GetChildren()) { promptBox.RemoveChild(c); c.QueueFree(); }
         // The key as the device in hand has it: a keycap, or the pad's button.
         var key = Controls.Instance.UsingPad ? Style.PadButton(Controls.Instance.PadLabels(p.For).FirstOrDefault() ?? "B")
@@ -1265,6 +1269,8 @@ public partial class GameHud : CanvasLayer
         {
             tipLine.Held = Banner != null || HoldTip;
             tipLine.Position = new Vector2(960, TipY);
+            // (--shot: a tip's picture once it is drawn at full strength, after it has waited for any banner; once per tip)
+            if (!tipLine.Held && tipLine.T >= 0.55 && hintView != null && Args.Has("shot") && tipShot.Add(hintView.Id)) Shots.Want("tip_" + hintView.Id, 0.1);
         }
         TipBottom = TipUp ? tipLine!.Area.End.Y : 0;
         // The chain's heat flows toward its value; a new level has already flared it and filled it,

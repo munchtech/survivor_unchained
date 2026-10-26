@@ -550,7 +550,7 @@ public partial class TipLine : Control
         {
             var w = w0.TrimEnd('s');
             if (w.Length < 3 || w.Equals("the", StringComparison.OrdinalIgnoreCase)) continue;
-            var m = Regex.Match(safe, $@"{Regex.Escape(w)}\w*", RegexOptions.IgnoreCase);
+            var m = Regex.Match(safe, $@"\b{Regex.Escape(w)}\w*", RegexOptions.IgnoreCase);
             if (m.Success) return safe[..m.Index] + "[color=#ffa04a]" + m.Value + "[/color]" + safe[(m.Index + m.Length)..];
         }
         return safe;

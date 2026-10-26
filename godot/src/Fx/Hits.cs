@@ -160,6 +160,7 @@ public partial class Hits : Node3D
     public void Text(Vector3 at, string text, Color color, int size = 60) => Show(at, text, color, size);
 
     /// <summary>A floater that would print over a dropped item's name is lifted to stand just above it (UI note 5, 26 Oct).</summary>
+    static int liftShots;
     Vector3 ClearOfNames(Vector3 at, string text, int size)
     {
         var names = SurvivorUnchained.Ui.GroundLabels.Drawn;
@@ -177,6 +178,7 @@ public partial class Hits : Node3D
             moved = true;
         }
         if (!moved) return at;
+        if (liftShots < 3 && Args.Has("shot")) Shots.Want($"floaterlift_{++liftShots}", 0.1);
         float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
         return cam.ProjectPosition(p, depth);
     }
