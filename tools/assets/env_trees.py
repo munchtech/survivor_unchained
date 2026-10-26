@@ -1090,27 +1090,31 @@ def shadow_proxy(H, R, seed, form=None):
     hs = 0.55 + 0.03 * H
     tiers = int(rng.integers(6, 8)) + (1 if H > 9 else 0)
     hts = hs + (H - hs) * (1 - (1 - np.arange(tiers) / tiers) ** 1.25) + rng.normal(0, 0.08, tiers)
+    # (lf3b, judge lf2 #5: at dawn the old blades' shadows were smooth spear blades, the tiers merged into one leaf)
+    # every other tier shorter, so the outline steps whorl by whorl; the blades narrower, a notch each side at the
+    # middle (one row more: about +30% tris), a shallower hang with the tip turned up, and more of them missing, so the
+    # low sun shows light between tiers and between branches
     for k, h0 in enumerate(hts):
         t = (h0 - hs) / (H - hs)
-        rt = R * spruce_prof(min(max(t, 0), 1), form) * 0.95
+        rt = R * spruce_prof(min(max(t, 0), 1), form) * 0.97 * (1.0 if k % 2 == 0 else rng.uniform(0.7, 0.8))
         n = int(rng.integers(5, 8)) if t < 0.75 else 4
         az0 = rng.uniform(0, 6.28)
         c0 = axis(h0) + np.array([0, 0, h0])
         for i in range(n):
-            if t < 0.75 and rng.random() < 0.12:
+            if t < 0.75 and rng.random() < 0.16:
                 continue
-            az = az0 + i * 2 * math.pi / n + rng.normal(0, 0.2)
+            az = az0 + i * 2 * math.pi / n + rng.normal(0, 0.22)
             hd = np.array([math.cos(az), math.sin(az), 0.0]); sd = np.array([-hd[1], hd[0], 0.0])
-            r = rt * rng.uniform(0.85, 1.1)
-            dr = 0.22 + 0.2 * (1 - t)
+            r = rt * rng.uniform(0.8, 1.15)
+            dr = 0.17 + 0.17 * (1 - t)
             P = []
-            for s, hw in ((0.0, 0.1), (0.35, rng.uniform(0.26, 0.34)), (0.7, rng.uniform(0.22, 0.3)), (1.0, rng.uniform(0.04, 0.09))):
-                cc = c0 + hd * r * s + np.array([0, 0, -r * (dr * s + 0.25 * s * s)])
-                j = rng.uniform(-0.06, 0.06) * r
+            for s, hw in ((0.0, 0.08), (0.3, rng.uniform(0.22, 0.29)), (0.5, rng.uniform(0.08, 0.12)), (0.74, rng.uniform(0.19, 0.26)), (1.0, rng.uniform(0.02, 0.05))):
+                cc = c0 + hd * r * s + np.array([0, 0, -r * (dr * s + 0.2 * s * s - 0.06 * max(s - 0.7, 0) ** 2 / 0.09)])
+                j = rng.uniform(-0.08, 0.08) * r
                 P.append([cc - sd * (hw * r + j), cc + sd * (hw * r - j)])
-            N = [[np.array([0, 0, 1.0])] * 2] * 4
-            UV = [[uv] * 2] * 4
-            b.quad_grid(P, N, UV, 1, 3)
+            N = [[np.array([0, 0, 1.0])] * 2] * 5
+            UV = [[uv] * 2] * 5
+            b.quad_grid(P, N, UV, 1, 4)
     return b
 
 
