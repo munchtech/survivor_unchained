@@ -249,6 +249,7 @@ PAINT_R = (0.040, 0.050)           # m from each ear's middle (3D): laid in full
 EAR_NEAR = (0.004, 0.010)          # m from the ear's own points (stand-off over 3 mm): the same
 B_EDGE = (0.004, 0.03)             # the features' blue: none laid under the first or over 1 - it, whole past the second
 LP_SIGMA = (0.003, 0.009)          # m: each side's paint smoothed in 3D (the near and the wide pass, for reach)
+TRIM = 0.22                        # the join's chroma eased down at its middle (see paint_join)
 DETAIL_SIGMA = 0.0008             # m: finer than this, a texel's own colour over its neighbours' is kept
 VOX = 0.0005                       # m, the smoothing's grid
 
@@ -384,6 +385,9 @@ def paint_join(art, faces=None, report=True):
             # (the texel's own lightness at every scale; its colour the blend's, at that lightness, with its own fine
             # colour over its smoothed colour kept)
             ab = Lb[:, 1:] * (Lt[:, :1] / np.maximum(Lb[:, :1], 1e-4)) + (Lt[:, 1:] - Lf[:, 1:])
+            # (and the join's colour eased down by TRIM at its middle (b 0.5): measured at the Look after the blend alone,
+            # the join still ran 1.35x her cheek's chroma, the lamps' own tones also following the blue)
+            ab *= (1 - TRIM * np.clip(4 * b * (1 - b), 0, 1))[:, None]
             new = np.clip(he.unoklab(np.c_[Lt[:, :1], ab]), 0, 1) / tone
             w = _ss((b - B_EDGE[0]) / (B_EDGE[1] - B_EDGE[0])) * _ss((1 - B_EDGE[0] - b) / (B_EDGE[1] - B_EDGE[0]))
             w *= _ss((PAINT_R[1] - np.linalg.norm(X - cen, axis=1)) / (PAINT_R[1] - PAINT_R[0]))
