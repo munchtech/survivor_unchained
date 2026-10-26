@@ -44,7 +44,7 @@ CALLINGS = {
                    upper=0.0, head=1.0, neck=0.0, clav=(0.0, 0.0), width=0.0, stride=1.0, knee=15.0, bend=0.0, drop=0.01,
                    swing=(-12.0, 10.0), abd=7.5, elbow=(10.0, 25.0), wrist=0.0, thumb=10.0, fingers=_F0, outfit="warden"),
     "reaver": dict(frames=43, sway=0.7, counter=0.0, yaw=7.0, yaw_strike=True, tilt=0.0, chest=0.5, stack=0.01,
-                   upper=3.5, head=1.0, neck=0.0, clav=(0.0, 2.5), width=0.04, stride=1.1, knee=15.0, bend=0.0, drop=0.005,
+                   upper=3.5, head=1.0, neck=0.0, clav=(0.0, 2.5), width=0.04, stride=1.0, knee=22.0, bend=0.0, drop=0.005,
                    swing=(-13.0, 12.0), abd=8.0, elbow=(8.0, 25.0), wrist=0.0, thumb=10.0, fingers=_F0, outfit="reaver"),
     "arcanist": dict(frames=40, sway=0.575, counter=0.0, yaw=0.0, yaw_strike=False, tilt=0.0, chest=0.5, stack=0.01,
                      upper=0.0, head=0.5, neck=3.0, clav=(2.0, 2.0), width=-0.02, stride=1.0, knee=10.0, bend=0.0, drop=0.0,
@@ -54,6 +54,8 @@ CALLINGS = {
                     swing=(-12.0, 10.0), abd=7.5, elbow=(12.0, 28.0), wrist=6.0, thumb=3.0,
                     fingers=((10.0, 30.0), (14.0, 45.0), (6.0, 20.0)), outfit="ranger"),
 }
+# Reaver round 3 (Animation 52): her head bobbed 11 cm on the 1.1 stride (the double-support low is set by the legs'
+# reach, so `bob` and `bend` don't move it); stride 1.0 and the stance knee capped at 22 at passing bring it to 7.5.
 for _c in CALLINGS.values():
     _c.setdefault("twist", 5.0)
     _c.setdefault("bob", 0.75)
