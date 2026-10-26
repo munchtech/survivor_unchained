@@ -41,6 +41,9 @@ fresh export, and restore tools/assets/heroine_neck_graft.npz from git after eve
   7d. heroine_ear_shape --tick: every head paint's crease line where her tragus meets her cheek (darker and redder
      than its 1.5 mm neighbourhood) eased by half: a dark red tick at the Look turned 40 (face 42)
                                                                                  [each paint's JPEG comment ear_tick]
+  7e. heroine_ear_shape --front: every head paint's ear front (helix root to tragus) laid darker by its own gap to its
+     cheek and a little richer: it rendered a pale grey strip by her cheek at the Look turned 40 (face 42)
+                                                                               [each paint's JPEG comment ear_front]
   8. worn_reaver_post: the reaver's channel of her vertex colours rebuilt from its slots' tuck records (the plain
      calling then tucks her under the wrap as the pieces path does), and the morph worn_reaver on her body (her
      breasts' undersides a little heavier, a soft roll under the wrap's lower edge, the outer side in; People.WornShape
@@ -116,6 +119,7 @@ def main(a):
     # (the shade carries its own done-mark; heroine_features.py writes a new one without it)
     run(os.path.join(HERE, "heroine_ear_shape.py"), "--shade", art)
     run(os.path.join(HERE, "heroine_ear_shape.py"), "--tick", art)
+    run(os.path.join(HERE, "heroine_ear_shape.py"), "--front", art)
     # (the channel is rebuilt on every run, the morph only on a glb without it)
     run(os.path.join(HERE, "worn_reaver_post.py"), art)
     if "--no-lod" not in a:

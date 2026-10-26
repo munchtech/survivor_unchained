@@ -41,6 +41,10 @@ TIP = (0.0008, 0.0035)          # m from her ear's flap: the same (cards and str
 CAP_TIP = (0.0015, 0.0040)      # m from her ear's flap: the braid's and ponytail's cap the same (face 42: their cap,
                                 # laid for the old ear, showed as a dark band down the helix's front at the Look turned
                                 # 40 and a stroke inside its top at -40; the pixie's cap is as j5 passed it)
+PIXIE_CLEAR = (0.0025, 0.0045)  # m from a sight line: the pixie's (a skin margin seen round the rim, not only off it)
+PIXIE_TIP = (0.0030, 0.0050)    # m from her ear's flap: the pixie's cards AND cap (face 42 j1, max: its side hair still lay
+                                # on the helix's top at the Look turned 40, the owner's "hair still goes over the ear":
+                                # 3-4 mm of skin over the ear's top, ~2 mm between the sideburn's tip and its front)
 REACH = 0.045                   # m from the ear's middle (3D): the points looked at
 
 
@@ -124,11 +128,15 @@ def run(art, dry=False, report=True, style="pixie"):
             if not m.any():
                 continue
             g = line_gap(V[m], e["R"], e["D"])
-            w = _ss((g - CLEAR[0]) / (CLEAR[1] - CLEAR[0]))
-            if name != "hair_cap":
+            cl = PIXIE_CLEAR if style == "pixie" else CLEAR
+            w = _ss((g - cl[0]) / (cl[1] - cl[0]))
+            if style == "pixie":
+                dt = cKDTree(e["flap"]).query(V[m])[0]
+                w = np.minimum(w, _ss((dt - PIXIE_TIP[0]) / (PIXIE_TIP[1] - PIXIE_TIP[0])))
+            elif name != "hair_cap":
                 dt = cKDTree(e["flap"]).query(V[m])[0]
                 w = np.minimum(w, _ss((dt - TIP[0]) / (TIP[1] - TIP[0])))
-            elif style != "pixie":
+            else:
                 dt = cKDTree(e["flap"]).query(V[m])[0]
                 w = np.minimum(w, _ss((dt - CAP_TIP[0]) / (CAP_TIP[1] - CAP_TIP[0])))
             k[m] = np.minimum(k[m], w)
@@ -138,8 +146,9 @@ def run(art, dry=False, report=True, style="pixie"):
             ch = a0 - C[:, 3] > 0.02
             print("PIXIE_EAR: %s: %d of %d points eased (%d to under 0.1)" % (name, int(ch.sum()), len(V), int((ch & (C[:, 3] < 0.1)).sum())))
         G.put(a["COLOR_0"], np.clip(np.round(C * 65535.0), 0, 65535).astype(np.uint16))
+    tip = PIXIE_TIP if style == "pixie" else TIP
     G.g["asset"].setdefault("extras", {})[mark] = "clear %.1f-%.1f mm, tip %.1f-%.1f mm, %d views" % (
-        CLEAR[0] * 1e3, CLEAR[1] * 1e3, TIP[0] * 1e3, TIP[1] * 1e3, len(VIEWS))
+        (PIXIE_CLEAR if style == "pixie" else CLEAR)[0] * 1e3, (PIXIE_CLEAR if style == "pixie" else CLEAR)[1] * 1e3, tip[0] * 1e3, tip[1] * 1e3, len(VIEWS))
     if not dry:
         G.save()
         print("PIXIE_EAR: %s written" % path)
