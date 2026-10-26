@@ -463,6 +463,7 @@ public partial class Vessel : Control
         }
     }
 
+
     /// <summary>Over the glass: the art's glyph, the number (her life, or the seconds the art has left).</summary>
     partial class Over : Control
     {
@@ -672,6 +673,7 @@ public partial class Socket : Control
     {
         if (!filled && Id == "") return;
         filled = false; Id = ""; art = null; inlay = null; crown = -1; Scale = Vector2.One; Modulate = Colors.White;
+        dirty = false;
         QueueRedraw();
     }
 
@@ -679,14 +681,21 @@ public partial class Socket : Control
     {
         if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
-        art = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        var newArt = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
+        if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
+        art = newArt;
         // HUD v2: the glyph as an enamel inlay set in the seat's floor (art/ui/inlay/<glyph>.png, 2x), where made.
-        inlay = UiArt.Art($"inlay/{glyph}.png");
+        var newInlay = UiArt.Art($"inlay/{glyph}.png");
+        if (newInlay != inlay) dirty = true;
+        inlay = newInlay;
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
         if (ready < lastReady - 0.4) flash = 1;
         lastReady = ready;
         this.ready = ready;
     }
+
+    bool dirty = true;
 
     /// <summary>It has evolved: the place swells and burns gold, settling over a second.</summary>
     public void Crown() => crown = 0;
@@ -694,7 +703,9 @@ public partial class Socket : Control
     public override void _Process(double delta)
     {
         t += delta;
+        double before = flash;
         flash = Math.Max(0, flash - delta * 4);
+        if (flash != before) dirty = true;
         if (crown >= 0)
         {
             crown += delta;
@@ -703,7 +714,8 @@ public partial class Socket : Control
             Modulate = Colors.White.Lerp(new Color(2.2f, 1.8f, 1.0f), e);
             if (crown >= 1.3) { crown = -1; Scale = Vector2.One; Modulate = Colors.White; }
         }
-        QueueRedraw();
+        // Where it breathes gold (ready to evolve, not yet evolved) it draws by the clock, so it goes on redrawing.
+        if (dirty || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
     }
 
     public override void _Draw()
@@ -870,8 +882,20 @@ public partial class Round : Control
         }
         // An empty draught is dimmed, not hidden: its place keeps the instrument whole.
         icon.Modulate = kind == Kind.Draught && Count <= 0 ? new Color(0.45f, 0.42f, 0.42f, 0.7f) : Colors.White;
-        foreach (var c in GetChildren()) if (c is CanvasItem ci && ci != icon && ci != cuff) ci.QueueRedraw();
+        // (its glass and count are redrawn only when what they show changes, or while the ready dash's flames
+        // and breathing run by the clock: MR4, the HUD's redraws were 3.4 ms a frame)
+        bool live = kind == Kind.Dash && Form >= 1;
+        if (live || !shown || Count != shownCount || Max != shownMax || Recharge != shownRecharge || Form != shownForm || FormGlyph != shownGlyph)
+        {
+            shown = true; shownCount = Count; shownMax = Max; shownRecharge = Recharge; shownForm = Form; shownGlyph = FormGlyph;
+            foreach (var c in GetChildren()) if (c is CanvasItem ci && ci != icon && ci != cuff) ci.QueueRedraw();
+        }
     }
+
+    bool shown;
+    int shownCount, shownMax;
+    float shownRecharge, shownForm;
+    Texture2D? shownGlyph;
 
     partial class Glass : Control
     {
@@ -1141,11 +1165,32 @@ public partial class EmberChain : Control
         // The lock swings on its link and settles, a pendulum a little under its damping.
         swingV += (-60 * swing - 3.2f * swingV) * dt;
         swing += swingV * dt;
-        QueueRedraw();
-        glow.QueueRedraw();
-        lck.QueueRedraw();
+        // Each part is redrawn only when what it shows differs from its last drawing (MR4, the HUD's redraws
+        // were 3.4 ms a frame). The glow breathes by the clock while there is heat in the chain or a callout
+        // pulses it, so then it goes on every frame; the lock redraws while it swings, to a hair's difference.
+        var a = A; var b = B;
+        bool geo = a != drawnA || b != drawnB;
+        if (geo || fill != drawnFill || ember != drawnEmber || flash != drawnFlash)
+            QueueRedraw();
+        bool breathing = Pulse > 0 || flash > 0 || (ember && fill > 0);
+        if (breathing || geo || fill != drawnFill || ember != drawnEmber || flash != drawnFlash || Pulse != drawnPulse)
+            glow.QueueRedraw();
+        if (geo || fill != drawnFill || ember != drawnEmber || flash != drawnFlash || open != drawnOpen || level != drawnLevel
+            || Math.Abs(swing - drawnSwing) > 1e-4f)
+        {
+            lck.QueueRedraw();
+            drawnSwing = swing; drawnOpen = open; drawnLevel = level;
+        }
+        drawnA = a; drawnB = b; drawnFill = fill; drawnEmber = ember; drawnFlash = flash; drawnPulse = Pulse;
     }
 
+    Vector2 drawnA = new(float.NaN, 0), drawnB;
+    float drawnFill = -1, drawnFlash = -1, drawnPulse = -1, drawnOpen = -1, drawnSwing = 1e9f;
+    bool drawnEmber;
+    int drawnLevel;
+
+    Vector2 A => Instrument.EyeL;
+    Vector2 B => Instrument.EyeR;
     int Count => Links;
 
     /// <summary>A point along the chain (0 at the left eye, 1 at the right), on its shallow sag.</summary>

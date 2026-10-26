@@ -101,7 +101,13 @@ public static class Dressing
 
     /// <summary>A flora piece's bounds as it stands (its meshes where they sit in it; a scan's first
     /// variant): GroundPaint reads its crown from it, for the frost's sky exposure.</summary>
-    public static Aabb BoundsOf(string piece)
+    public static Aabb BoundsOf(string piece) => bounds.GetOrAdd(piece, Bounds);
+
+    /// <summary>(kept: the ground's paint, worked out on a worker thread ahead of its place, reads them there, each
+    /// looked up first on the main thread, where the files are loaded: Game.Prepare)</summary>
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Aabb> bounds = new();
+
+    static Aabb Bounds(string piece)
     {
         if (piece.StartsWith("own:")) return LodsOf(OwnFile(piece))[0]!.GetAabb();
         var list = piece.StartsWith("scan:") ? VariantsOf(piece[5..]) : PartsOf("nature", piece);
@@ -686,6 +692,13 @@ public static class Dressing
     public static Node3D Props(ZoneData z)
     {
         var root = new Node3D { Name = "Props" };
+        Slices.All(Props(z, root));
+        return root;
+    }
+
+    /// <summary>Props' steps, under root (Slices: a frame may end after each piece).</summary>
+    public static IEnumerable<object?> Props(ZoneData z, Node3D root)
+    {
         var groups = new Dictionary<(string, int, int), List<Transform3D>>();
         float cell = PropCell;
         // Our own props where the zone swaps a kit piece for one (OwnProps: its props_own.json "pieces").
@@ -697,6 +710,7 @@ public static class Dressing
         var walls = OwnWalls.For(z);
         for (int pi = 0; pi < z.Props.Count; pi++)
         {
+            if (pi % 16 == 15) yield return null;
             var (id, at) = z.Props[pi];
             int house = pi < z.PropHouse.Count ? z.PropHouse[pi] : -1;
             if (walls != null && walls.Take(id, house, at, cell)) continue;
@@ -713,9 +727,12 @@ public static class Dressing
         // (E9c2) the closed houses' floors, hearths and furniture (OwnWalls.Furnish), as kit pieces
         if (walls != null)
         {
+            yield return "props: the street's";
             var furn = OwnWalls.Furnish(z);
+            yield return "props: the houses furnished";
             foreach (var (id0, at) in furn)
             {
+                yield return "props: a house's piece";
                 // (E9d) our own trestle table and lidded barrel inside for the kit's (its table's pale battens read as a rug's
                 // border over its top, its open barrels as pale empty rings from above)
                 // (E9d r2: ours and the kit's both built along x, as Furnish lays the bench along the table's long side: no turn)
@@ -731,10 +748,11 @@ public static class Dressing
             GD.Print($"house insides: {furn.Count} pieces furnished, {droppedInside} street props dropped from inside");
         }
         // (Each piece's file loaded first, so the time it takes shows apart from placing them.)
-        foreach (var ((gid, _, _), _) in groups) { var id = gid.StartsWith("in|") ? gid[3..] : gid; int sl = id.IndexOf('/'); PartsOf(id[..sl], id[(sl + 1)..]); }
+        foreach (var ((gid, _, _), _) in groups) { var id = gid.StartsWith("in|") ? gid[3..] : gid; int sl = id.IndexOf('/'); PartsOf(id[..sl], id[(sl + 1)..]); yield return "props: a file loaded"; }
         Perf.Lap("props: their files loaded");
         foreach (var ((gid, _, _), list) in groups)
         {
+            yield return "props: a group";
             bool inside = gid.StartsWith("in|");
             var id = inside ? gid[3..] : gid;
             int slash = id.IndexOf('/');
@@ -754,9 +772,10 @@ public static class Dressing
             }
         }
         foreach (var n in insideNodes) root.AddChild(n);
-        walls?.Build(root);
+        if (walls != null) foreach (var s in walls.Build(root)) yield return s;
         foreach (var (id, preset, at) in ours)
         {
+            yield return "props: one of ours";
             int slash = id.IndexOf('/');
             Aabb? kit = null;
             foreach (var (mesh, local) in PartsOf(id[..slash], id[(slash + 1)..]))
@@ -768,7 +787,6 @@ public static class Dressing
             n.SetMeta("at1", at.Origin);
             root.AddChild(n);
         }
-        return root;
     }
 
     /// <summary>One kit piece as a node of its own (set down in play), or

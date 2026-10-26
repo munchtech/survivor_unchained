@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -55,6 +55,24 @@ public partial class MapScreen : Overlay
     public static ImageTexture Drawing(ZoneData z)
     {
         if (drawings.TryGetValue(z.Id, out var hit)) return hit;
+        var img = drawn.TryRemove(z.Id, out var ahead) ? ahead : Draw(z);
+        var tex = ImageTexture.CreateFromImage(img);
+        drawings[z.Id] = tex;
+        return tex;
+    }
+
+    /// <summary>The zone drawn ahead of its place being built, on a worker thread (Game.Prepare): only the picture,
+    /// made a texture when the map first shows it (it took a whole frame of 1.3 s, the Waystation's first).</summary>
+    public static void DrawAhead(ZoneData z)
+    {
+        if (!drawings.ContainsKey(z.Id) && !drawn.ContainsKey(z.Id)) drawn[z.Id] = Draw(z);
+    }
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Image> drawn = new();
+
+    /// <summary>The drawing itself (any thread: it reads only the zone's data).</summary>
+    static Image Draw(ZoneData z)
+    {
         var meta = z.Meta;
         float extent = Extent(meta);
         const int G = 300;
@@ -134,9 +152,7 @@ public partial class MapScreen : Overlay
             }
         var img = Image.CreateFromData(W, W, false, Image.Format.Rgb8, px8);
         img.GenerateMipmaps();
-        var tex = ImageTexture.CreateFromImage(img);
-        drawings[z.Id] = tex;
-        return tex;
+        return img;
     }
 
     /// <summary>

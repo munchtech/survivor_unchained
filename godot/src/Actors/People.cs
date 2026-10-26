@@ -92,7 +92,15 @@ public static class People
             sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape, Highlight: C(spec.HairHighlight));
     }
 
+    /// <summary>Held while a person is made (WalkerView makes townsfolk on a worker thread; the caches here are shared).</summary>
+    public static readonly object BuildLock = new();
+
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
+    {
+        lock (BuildLock) return BuildLocked(spec);
+    }
+
+    static Person BuildLocked(SurvivorUnchained.World.PersonSpec spec)
     {
         var look = LookOf(spec);
         var body = spec.Body;
@@ -225,7 +233,9 @@ public static class People
     /// <summary>The clip a person plays for one the game names: a survivor's
     /// own where they have it ("her/...", "him/..."), the library's otherwise. `sheathed`: her town stand and run
     /// (Play/Sheath.Names: the held kind's own, then the calling's, then the armed ones).</summary>
-    public static string Clip(Person p, string name, bool sheathed = false)
+    /// <summary>`kind`: the kind held, if not the person's own ("" for empty hands: creation's look, its pieces put
+    /// away, plays the calling's town stand, not the stand made around a hilt and a shield).</summary>
+    public static string Clip(Person p, string name, bool sheathed = false, string? kind = null)
     {
         // One of the kit's own asked for by name ("folk/m_rise_stiff": the Warden in a cinematic).
         if (name.StartsWith(FolkClips.Prefix) && p.Anim.HasAnimation(name)) return name;
@@ -239,7 +249,7 @@ public static class People
         }
         // (One of their own asked for by its own name.)
         if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
-        return own.For(p.Calling, p.Kind, name, sheathed) is string mine ? mine : Resolve(name);
+        return own.For(p.Calling, kind ?? p.Kind, name, sheathed) is string mine ? mine : Resolve(name);
     }
 
     /// <summary>A person, put together: returns its root (add it to the
@@ -761,9 +771,9 @@ public static class People
         // (face 39, judge j3b: by night (HerEyesNight, the close view's night key) the lids' and corners' shade on
         // the eye eased 0.6 of itself and the iris lifted 1.8x, held to 0.9 of its colour and warmed to olive: the
         // fair night close-up's iris read 14-22 of 255, one near-black disc with the pupil, now ~34; deep skin's
-        // eyes left as dark as its face)
+        // eyes left as dark as its face; face 44, judge b1: 1.8 read lit from inside at the night close-up, 1.5 a natural green)
         e.SetShaderParameter("night_lid", 0.6f);
-        e.SetShaderParameter("night_iris", 1.8f);
+        e.SetShaderParameter("night_iris", 1.5f);
         e.SetShaderParameter("night_sat", 0.9f);
         e.SetShaderParameter("night_warm", 1f);
         // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)

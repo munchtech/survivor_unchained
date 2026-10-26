@@ -125,8 +125,10 @@ public partial class Game
     /// <summary>Framed for a step or a part of the look: so near, turned so far.</summary>
     public void FrameFigure(float zoom, float turn = 0)
     {
-        figZoom = Mathf.Clamp(zoom, 0, 1);
-        figTurn = turn;
+        // --fig-zoom Z, --fig-turn DEG: creation's figure framed and turned so, whatever the screen asks (pictures of her
+        // whole stance on the look, its pieces put away).
+        figZoom = Mathf.Clamp(Args.Has("fig-zoom") ? Args.Num("fig-zoom", 0f) : zoom, 0, 1);
+        figTurn = Args.Has("fig-turn") ? Mathf.DegToRad((float)Args.Num("fig-turn", 0f)) : turn;
     }
 
     /// <summary>Each frame of creation: the figure turned toward where she is asked to

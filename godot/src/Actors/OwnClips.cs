@@ -50,12 +50,22 @@ public sealed class OwnClips
     /// <summary>One of these clips by the full name an animation player knows it by.</summary>
     public bool Owns(string name) => name.StartsWith(Prefix);
 
+    // (Each clip's value, read from the meta once: asked several times a frame (her grip, her layers), every read
+    // made new Godot wrappers (the clip's dictionary, the value, its key) that outlived the young collection.)
+    readonly Dictionary<(string, string), Variant> metaRead = new();
+
     Variant Meta(string clip, string key)
     {
         Library();
-        if (meta == null || !meta.ContainsKey(clip)) return default;
-        var m = meta[clip].AsGodotDictionary();
-        return m.ContainsKey(key) ? m[key] : default;
+        if (meta == null) return default;
+        if (metaRead.TryGetValue((clip, key), out var known)) return known;
+        Variant v = default;
+        if (meta.ContainsKey(clip))
+        {
+            var m = meta[clip].AsGodotDictionary();
+            if (m.ContainsKey(key)) v = m[key];
+        }
+        return metaRead[(clip, key)] = v;
     }
 
     /// <summary>How fast a loop carries them, in metres a second of their own
@@ -139,6 +149,13 @@ public sealed class OwnClips
                 _ => null,
             };
         return want != null && Has(want) ? Prefix + want : null;
+    }
+
+    /// <summary>Her walk for this calling and state (animation 51), prefixed, or null when she has none (the staff's town state).</summary>
+    public string? Walk(string calling, string kind, bool sheathed)
+    {
+        foreach (var n in SurvivorUnchained.Play.Sheath.Names("walk", calling, kind, sheathed)) if (Has(n)) return Prefix + n;
+        return null;
     }
 
     string First(params string[] names)

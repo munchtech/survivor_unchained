@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Cinema;
@@ -1045,6 +1045,8 @@ public sealed class Prologue : ZoneRuntime
     {
         if (B == null) return;
         Go(Stage.Dawn);
+        // The Waystation, where the road goes from here, built ahead while C04 A plays and she walks out.
+        G.Prepare("waystation");
         B.Collision.RemoveTagged("gate");
         // Chid, who has watched the ford all night (TWIST_OPTIONS A); the narrator says it as plainly as the rest.
         // When C04 A follows on the cut, it says the reeds as she climbs out, and shows the gate.
