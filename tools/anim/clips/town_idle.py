@@ -488,6 +488,15 @@ HANG = dict(out=0.21, fwd=0.0, elbow=18.0, elbow_life=1.5, pole=(0.0, -0.2, -1.0
             swing=0.010, swing_phase=0.0, fingers="relaxed")
 
 
+def loop_wave(mean, *harmonics):
+    """A smooth looping value of the loop time t (0..1): mean + sum of a_k cos(2 pi k t) + b_k sin(2 pi k t) for
+    harmonics ((a_1, b_1), (a_2, b_2), ...). (A hanging hand's `out` that follows her skirt as the hip sways.)"""
+    def wave(t):
+        return mean + sum(a * math.cos(2 * math.pi * k * t) + b * math.sin(2 * math.pi * k * t)
+                          for k, (a, b) in enumerate(harmonics, 1))
+    return wave
+
+
 # A hanging hand's fingers together in a loose half-curl (20-30 deg a joint; "relaxed" is about 12).
 HALF_CURL = _relaxed(0.2)
 
@@ -539,7 +548,9 @@ def hang_target(rig, g, p, f, side, spec, t):
     sgn = 1.0 if side == "l" else -1.0
     fwd = spec["fwd"] + sgn * spec["swing"] * math.sin(2 * math.pi * t * 2 + spec["swing_phase"])
     # Out from her hip joint and ahead of it, in the pelvis's frame (her +X her left, +Z ahead).
-    D = p[f, I[f"thigh_{side}"]] + qrot(dp, np.array((sgn * spec["out"], 0.0, fwd)))
+    # (`out` may be a function of the loop time, t -> m: a hand kept on a skirt whose hip sways out and back under it.)
+    out = spec["out"](t) if callable(spec["out"]) else spec["out"]
+    D = p[f, I[f"thigh_{side}"]] + qrot(dp, np.array((sgn * out, 0.0, fwd)))
     sh = p[f, ua]
     h = D - sh
     h[1] = 0.0

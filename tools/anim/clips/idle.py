@@ -681,7 +681,13 @@ _NONE = lambda t, f: {}
 # (Animation 51, the judge: the arms mirrored and angled out from the front. Her left hand rests on the sheathed sword's
 # hilt as her town run's does (run.hilt_carry, POST below); the right hangs in closer, its forearm upright, the elbow
 # softer.)
-WARDEN_TOWN = town_idle.hang_arms(r=dict(out=0.198, elbow=30.0))
+# (Animation 52, the owner reopened it, the judge: "as the pelvis moves over the right foot, the right arm floats about
+# 8-10 cm off the skirt while her torso leans over that hip. It should hang straight down and meet the skirt." At a
+# fixed out of 0.198 the hand was 6 mm off the warden skirt as the hip came in under it and 43 mm off as it swung
+# away. Its out now follows the sway (fitted per frame to the skirt, then to a 4-harmonic loop): 0-6 mm off all
+# through. Scratch anim52/wh.)
+WARDEN_TOWN = town_idle.hang_arms(r=dict(out=town_idle.loop_wave(0.182, (0.0013, 0.001), (-0.0075, 0.0125), (0.0004, 0.0009),
+                                                                  (0.002, 0.0005)), elbow=30.0))
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
     "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
