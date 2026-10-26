@@ -169,7 +169,57 @@ public sealed class ZoneMeta
     public WaterMaskDef? WaterMask;
     public int LandmarkMeshes;
 
-    public static ZoneMeta Load(string id) => Json.Parse<ZoneMeta>(DataFiles.Text($"zones/{id}/zone.json"));
+    public static ZoneMeta Load(string id)
+    {
+        var z = Json.Parse<ZoneMeta>(DataFiles.Text($"zones/{id}/zone.json"));
+        AddPropColliders(z, id);
+        return z;
+    }
+
+    /// <summary>Box colliders for the placed props in zones/{id}/props_own.json: each "place" entry with
+    /// "col": [cx, cz, hw, hd] (metres, in the preset's own frame, before its rotation and scale).</summary>
+    public static void AddPropColliders(ZoneMeta z, string id)
+    {
+        string text;
+        try { text = DataFiles.Text($"zones/{id}/props_own.json"); }
+        catch { return; }
+        using var doc = JsonDocument.Parse(text);
+        if (!doc.RootElement.TryGetProperty("place", out var place) || place.ValueKind != JsonValueKind.Array) return;
+        int nextId = 0;
+        foreach (var c in z.Colliders) nextId = Math.Max(nextId, c.Id + 1);
+        foreach (var e in place.EnumerateArray())
+        {
+            var c = PropCollider(e);
+            if (c == null) continue;
+            c.Id = nextId++;
+            z.Colliders.Add(c);
+        }
+    }
+
+    /// <summary>One "place" entry as a box collider (Id left 0), or null without a "col". Godot's
+    /// Basis(Up, rot) sends local x to world (cos, -sin) and local z to (sin, cos); the box's own x axis
+    /// runs along (cos Rot, sin Rot), so its Rot is -rot.</summary>
+    public static ColliderDef? PropCollider(JsonElement e)
+    {
+        if (e.ValueKind != JsonValueKind.Object || !e.TryGetProperty("col", out var col)
+            || col.ValueKind != JsonValueKind.Array || col.GetArrayLength() < 4) return null;
+        double cx = col[0].GetDouble(), cz = col[1].GetDouble(), hw = col[2].GetDouble(), hd = col[3].GetDouble();
+        double x = e.TryGetProperty("x", out var px) ? px.GetDouble() : 0;
+        double zz = e.TryGetProperty("z", out var pz) ? pz.GetDouble() : 0;
+        double rot = e.TryGetProperty("rot", out var pr) ? pr.GetDouble() : 0;
+        double s = e.TryGetProperty("scale", out var ps) ? ps.GetDouble() : 1;
+        double cos = Math.Cos(rot), sin = Math.Sin(rot);
+        hw *= s; hd *= s;
+        return new ColliderDef
+        {
+            Kind = ColliderKind.Box,
+            X = x + (cx * cos + cz * sin) * s,
+            Z = zz + (-cx * sin + cz * cos) * s,
+            Hw = hw, Hd = hd, Rot = -rot,
+            R = Math.Sqrt(hw * hw + hd * hd),
+            Tag = "prop",
+        };
+    }
 
     /// <summary>A named place: Places[table][name] as a point.</summary>
     public XZ Place(string table, string name)

@@ -128,6 +128,13 @@ public sealed partial class HouseFade : Node
         return -1;
     }
 
+    int SmokeUnit(Vector3 p)
+    {
+        foreach (var g in new[] { 0f, 0.3f, 0.75f, 1.5f })
+            if (UnitAt(p, g, 7f) is int u && u >= 0) return u;
+        return -1;
+    }
+
     void Attach()
     {
         var root = GetTree().Root;
@@ -175,7 +182,9 @@ public sealed partial class HouseFade : Node
         if (SurvivorUnchained.Args.Has("house-fade-debug"))
             foreach (var n in root.FindChildren("Chimney*", "", true, false)) GD.Print($"house fade smoke {n.Name} {n.GetClass()} at {(n as Node3D)?.GlobalPosition} unit {UnitAt(((Node3D)n).GlobalPosition, 3f, 6f)}");
         foreach (var n in root.FindChildren("Chimney*", "GPUParticles3D", true, false))
-            if (n is GpuParticles3D p && UnitAt(p.GlobalPosition, 1.5f, 7f) is int u && u >= 0) smokes.Add((p, u));
+            // (E9d r3: the house the stack stands in first, then the nearest within 1.5 m: at 1.5 m first-found, a stack by a
+            // party wall was tied to its cut neighbour, and the uncut house's plume went with that one)
+            if (n is GpuParticles3D p && SmokeUnit(p.GlobalPosition) is int u && u >= 0) smokes.Add((p, u));
         foreach (var n in root.FindChildren("*", "Node3D", true, false).OfType<Node3D>().Where(x => x.HasMeta("inside") && x is not MultiMeshInstance3D).ToList())
         {
             int u = UnitAt(n.GlobalPosition + new Vector3(0, 0.3f, 0), 0.05f, 0);

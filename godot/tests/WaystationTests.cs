@@ -54,7 +54,7 @@ public class WaystationTests
         Assert.Contains(s.Host.Said, l => l.StartsWith("The Waystation"));
         Assert.NotEmpty(s.Host.FakeLook.LastPlates);
         // The lanes the town walks run clear of every wall.
-        Assert.Empty((System.Collections.Generic.List<string>)s.Zone.Debug()["lanes"]!);
+        Assert.Equal("", (string)s.Zone.Debug()["lanes"]!);
     }
 
     [Fact]

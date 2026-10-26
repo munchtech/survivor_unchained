@@ -108,6 +108,7 @@ public partial class ZoneView : Node3D
             var fire = Campfire.Build(fat, (float)f.Size, ring: f.Ring);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
+            TownFire(fat, (float)f.Size, f.Light, fire, fx);   // (E9d r2: a cook fire's smoke; a brazier's fire unshadowed; ZoneView.Town)
             if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~Campfire.CoalLayer;
             // The web game marks a fire's flame with a glowing ball; here the
             // fire has flames of its own, and the ball would only bloom white.
@@ -119,7 +120,10 @@ public partial class ZoneView : Node3D
         WireLamps(meta);
         foreach (var c in meta.Chimneys)
         {
-            var smoke = Campfire.ChimneySmoke();
+            var smoke = Plume();   // (E9d: the town's plumes, ZoneView.Town)
+            // (each its own name: a second "Chimney" under one parent was renamed "@Chimney@n", and HouseFade, finding
+            // "Chimney*", tied one plume of 18 to its house: the rest hung over the cut rooms)
+            smoke.Name = "Chimney" + chimneys.Count;
             smoke.Position = new Vector3((float)c.X, (float)c.Y, (float)c.Z);
             fx.AddChild(smoke);
             chimneys.Add(smoke);
@@ -381,6 +385,8 @@ public partial class ZoneView : Node3D
             lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
             glowLight.Remove(best);
         }
+        // (E9d) the wall lanterns by the doors: a flame and glass in the kit's cage, its light moved into it (ZoneView.Town)
+        WireWallLanterns(meta, glowLight);
         // The Low Ford's three: the keeper's lamp-iron (the Warden carries the same) on each pylon, a low blue flame.
         if (meta.Refs.ValueKind == System.Text.Json.JsonValueKind.Object && meta.Refs.TryGetProperty("pylons", out var pylons) && Lamps.Of("ford_lamp") is Lamps.Info ford)
         {
@@ -478,6 +484,7 @@ public partial class ZoneView : Node3D
         Lamps.Inner(holder, at + Vector3.Up * fh * 0.35f, cold, fh * 0.75f);   // (the zone isn't in the tree yet: its own frame, at its origin)
         lampFlames.Add((light, f));
         driven.Add(light);
+        if (!cold) dayLamps.Add(light);
         foreach (var m in holder.FindChildren("*", "GeometryInstance3D", true, false)) { ((GeometryInstance3D)m).Layers = LampLayer; if (SurvivorUnchained.Args.Has("lamp-nocage")) ((GeometryInstance3D)m).Visible = false; }
         lights[light].LightCullMask &= ~LampLayer;
         if (!lampGlass.TryGetValue(light, out var list)) lampGlass[light] = list = new();
@@ -495,6 +502,8 @@ public partial class ZoneView : Node3D
         if (ForcedOff.Contains(light)) on = false;
         else if (ForcedOn.Contains(light)) on = true;
         lit[light] = on;
+        // (E9d) a lamp held cold by the day: its light, flame and glass out, whatever it was set to (ZoneView.Town)
+        if (DayCold(light)) on = false;
         lights[light].Visible = on;
         OfferShadow(light);
         if (flames.TryGetValue(light, out var flame)) flame.Visible = on;
@@ -536,7 +545,7 @@ public partial class ZoneView : Node3D
         Night = on;
         foreach (var n in Data.Meta.NightNodes) if (Node(n) is Node3D node) node.Visible = on;
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
-        foreach (var c in chimneys) Campfire.ChimneyLook(c, on);
+        foreach (var c in chimneys) PlumeLook(c, on);
         foreach (var (h, f) in ownTorches) { f.Visible = on; Lamps.SetLit(h, on); }
         Shadows();
     }
@@ -554,6 +563,8 @@ public partial class ZoneView : Node3D
     /// (the owner's call): by day their light is faint beside the sun's, and
     /// in town their shadows were two thirds of every frame's shadow draws.
     /// Never at the lowest quality.</summary>
+    /// <summary>(E9d r3) Lights never offered a shadow: the town's braziers (ZoneView.Town.TownFire).</summary>
+    readonly HashSet<int> unshadowed = new();
     bool CastsShadow(ZoneData.LightSpec l) => l.Intensity >= 8 && lampShadows && (Night || dusk);
 
     void Shadows()
@@ -566,7 +577,7 @@ public partial class ZoneView : Node3D
     void OfferShadow(int i)
     {
         if (i >= specs.Count || i >= lights.Count || i >= lit.Count) return;
-        if (lit[i] && CastsShadow(specs[i])) ShadowLamp.Offer(lights[i], 0);
+        if (lit[i] && CastsShadow(specs[i]) && !unshadowed.Contains(i)) ShadowLamp.Offer(lights[i], 0);
         else ShadowLamp.Withdraw(lights[i]);
     }
 
@@ -695,6 +706,7 @@ public partial class ZoneView : Node3D
     {
         time += delta;
         float t = (float)time;
+        TownTick();
         if (SurvivorUnchained.Args.Has("lamp-debug") && (lampDebugAt ??= new Queue<float>(System.Array.ConvertAll((SurvivorUnchained.Args.Get("lamp-debug-at") ?? "9").Split(','), x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)))).Count > 0 && t > lampDebugAt.Peek())
         {
             lampDebugAt.Dequeue();
