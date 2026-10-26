@@ -188,6 +188,22 @@ public static class KitLook
     }
 
     static bool canopySet;
+    /// <summary>The canopy fade's values in force (global canopy_fade), for --canopy-log's mirror.</summary>
+    public static Vector4 CanopyFade => canopyArg ?? (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"];
+    static Vector4? canopyArg;
+    static bool? canopyOn;
+    public static bool CanopyPlaying => canopyOn == true && CanopyFade.W > 0;
+
+    /// <summary>The canopy fade on only in the play camera's view (Game, each frame): off in a cinematic or a held showcase
+    /// view, where the trees are framed whole. Set only when it changes.</summary>
+    public static void CanopyView(bool play)
+    {
+        if (canopyOn == play) return;
+        canopyOn = play;
+        var v = CanopyFade;
+        if (!play) v.W = 0;
+        RenderingServer.GlobalShaderParameterSet("canopy_fade", v);
+    }
 
     /// <summary>The canopy fade's tunables (kit.gdshader OWN_FOLIAGE, global canopy_fade; project.godot holds the defaults):
     /// --canopy R,E,G (the fight radius on the screen at her distance, m; the ease, m; the ghost, the share cut) or
@@ -206,6 +222,7 @@ public static class KitLook
             for (int i = 0; i < p.Length && i < 3; i++)
                 if (float.TryParse(p[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f)) v[i] = f;
         }
+        canopyArg = v;
         RenderingServer.GlobalShaderParameterSet("canopy_fade", v);
     }
 

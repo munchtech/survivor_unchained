@@ -387,10 +387,19 @@ void vertex() {
 		vec3 vb = (VIEW_MATRIX * vec4(ip + upv * (crown_lo * st), 1.0)).xyz;
 		vec3 vt = (VIEW_MATRIX * vec4(ip + upv * top, 1.0)).xyz;
 		vec3 hv = (VIEW_MATRIX * vec4(survivor.xyz, 1.0)).xyz;
+		// (a crown wholly behind the camera's plane is not seen: none; one partly behind, cut at 1 m before the lens,
+		// or its projection, flipped and huge, swept across her)
+		float zb = vb.z, zt = vt.z;
+		if (max(zb, zt) > -1.0) {
+			if (min(zb, zt) > -1.0) zb = 1e9;
+			else if (zb > -1.0) vb = mix(vt, vb, (-1.0 - zt) / (zb - zt));
+			else vt = mix(vb, vt, (-1.0 - zb) / (zt - zb));
+		}
 		// on the screen, in metres at her distance (a perspective's x / z, y / z): the crown a segment, its radius about it
 		float hz = min(hv.z, -0.5);
 		vec2 a = vb.xy * (hz / min(vb.z, -0.5)), b = vt.xy * (hz / min(vt.z, -0.5));
 		float rr = crown_r * length(upv) * hz / min(0.5 * (vb.z + vt.z), -0.5);
+		if (zb > 1e8) a = b = vec2(1e6);
 		// the ground round her seen foreshortened: screen heights stretched back to ground depth by the camera's pitch
 		float ky = 1.0 / max(abs(INV_VIEW_MATRIX[2].y), 0.3);
 		vec2 p = hv.xy;

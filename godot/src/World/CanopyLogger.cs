@@ -15,7 +15,8 @@ public partial class CanopyLogger : Node
         var her4 = HouseFade.Her;
         if (her4.W <= 0 || GetViewport().GetCamera3D() is not { } cam) return;
         var her = new Vector3(her4.X, her4.Y, her4.Z);
-        fade ??= RenderingServer.GlobalShaderParameterGet("canopy_fade").AsVector4();
+        fade ??= KitLook.CanopyFade;
+        if (!KitLook.CanopyPlaying) return;
     var fd = fade.Value;
         var view = cam.GetCameraTransform().AffineInverse();
         var hv = view * her;
@@ -30,6 +31,12 @@ public partial class CanopyLogger : Node
             if (flat > 70) continue;
             var vb = view * (t.At + t.Up * t.Lo);
             var vt = view * (t.At + t.Up * t.Top);
+            if (Mathf.Max(vb.Z, vt.Z) > -1)
+            {
+                if (Mathf.Min(vb.Z, vt.Z) > -1) continue;
+                if (vb.Z > -1) vb = vt.Lerp(vb, (-1 - vt.Z) / (vb.Z - vt.Z));
+                else vt = vb.Lerp(vt, (-1 - vb.Z) / (vt.Z - vb.Z));
+            }
             var a = new Vector2(vb.X, vb.Y) * (hz / Mathf.Min(vb.Z, -0.5f));
             var b = new Vector2(vt.X, vt.Y) * (hz / Mathf.Min(vt.Z, -0.5f));
             float rr = t.R * t.Up.Length() * hz / Mathf.Min(0.5f * (vb.Z + vt.Z), -0.5f);

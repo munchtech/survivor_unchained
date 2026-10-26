@@ -1120,6 +1120,8 @@ public partial class Game : Node, IZoneHost
         if (GetViewport().GetCamera3D() is { } seen)
         {
             RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, 1));
+            // (the canopy fade, our trees over her faded whole: the play camera's only, E3 au1-5)
+            KitLook.CanopyView(Mode == "play" && !InCinematic && !showing);
             // (--see-debug: what stands in the window, listed once the place has settled)
             if (KitLook.SeeDebug && !seeListed && scene.Time > 2.5)
             {
