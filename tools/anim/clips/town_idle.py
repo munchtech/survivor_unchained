@@ -456,7 +456,7 @@ def on_hip(spec, free):
     """Arms for a town stand: `free` (idle.free_arms) with the left hand as `spec` keeps it on her pelvis. Returns
     make(rig, base) -> over(t, f) (the hand rides the base's pelvis)."""
     def make(rig, base):
-        return pelvis_hand(rig, base, free, "l", spec["pos"], spec["pole"], _relaxed(spec["curl"]),
+        return pelvis_hand(rig, base, free, "l", spec["pos"], spec["pole"], spec.get("fingers") or _relaxed(spec["curl"]),
                            knuckles=spec["knuckles"], blade=spec["blade"], twist=0.5)
     make.needs_base = True
     return make
@@ -487,6 +487,10 @@ def graded(knuckle=(15.0, 30.0), middle=(20.0, 45.0), tip=(10.0, 20.0), spreads=
     bends = {f: [a + (b - a) * i / 3 for a, b in (knuckle, middle, tip)] for i, f in enumerate(("index", "middle", "ring", "pinky"))}
     bends["thumb"] = finger_curl("relaxed")["thumb"]
     return dict(r, bends=bends, spreads=dict(spreads if spreads is not None else r["spreads"]))
+
+
+# (Animation 51, the judge of the arcanist's on-hip hand: "a knuckle clump, a fist": its curl graded and open.)
+ARC_WRIST_L["fingers"] = graded((15.0, 20.0), (20.0, 30.0), (8.0, 12.0))
 
 
 def _mirror(v, side):
