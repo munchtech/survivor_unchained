@@ -855,7 +855,7 @@ public static class People
     /// <summary>Her brow cores on deep skin per hair (face 41, judge j2): hue in degrees, saturation, and value as a
     /// share of the skin's own sRGB value round it (heroine_paint.gdshaderinc's target_mode).</summary>
     static readonly (Vector3 Black, Vector3 Brown, Vector3 Copper, Vector3 Blonde) BrowTargets =
-        (new(25f, 0.3f, 0.40f), new(35f, 0.5f, 0.42f), new(24f, 0.55f, 0.48f), new(32f, 0.3f, 0.56f));
+        (new(25f, 0.3f, 0.40f), new(35f, 0.5f, 0.44f), new(24f, 0.55f, 0.48f), new(32f, 0.3f, 0.56f));
     public static float BrowRed(Color b) => (1f - Mathf.SmoothStep(25f, 35f, b.H * 360f)) * Mathf.SmoothStep(0.58f, 0.65f, b.S);
 
     /// <summary>How blonde a hair is (hue 35 degrees or more, its colour kept, light: honey, fair): its brows lighter
