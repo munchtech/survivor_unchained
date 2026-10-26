@@ -120,7 +120,7 @@ public static class Atmospheres
         // (E4f, judge E4 r3: at 20 degrees the trees' shadows lay across the camp and road as a fence of long straight bars; up
         // to 28. Measured at the camp: x0.73 (sin 20 / sin 28) left the moonlit ground 1.6-2.5 OKLab L brighter (p85, p95); x0.55
         // holds it (35.5 / 45.4 against 35.4 / 46.0). The frame's median still rises 1.6 L*: the shadows are shorter, the point)
-        KeyElevation = 48, KeyAzimuth = 250, ShadowStrength = 0.76,   // (Low Ford r3, judge r2: the lit ground and the shade barely parted: 0.6 to 0.68; lf5p, judge lf4: the wood road's dapple still murky, 0.76)
+        KeyElevation = 48, KeyAzimuth = 250, ShadowStrength = 0.8,   // (Low Ford r3, judge r2: the lit ground and the shade barely parted: 0.6 to 0.68; lf5p, judge lf4: the wood road's dapple still murky, 0.8)
         HemiSky = "#463c8a", HemiGround = "#1e1a14", HemiIntensity = 4.0, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
         Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 280, MoonSat = 0.16, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#4a2f78", PaintShadowK = 0.75 },
@@ -129,7 +129,7 @@ public static class Atmospheres
         // (Low Ford r3, judge r2: the moon's glitter a noisy white blob round her, every warm pool's grass lime)
         RiverMoon = 1, GrassLampOchre = 0.7,
         // (Low Ford lf5p, judge lf4: the night bushes too saturated; her pool tipped the meadow ground olive-chartreuse)
-        BushNightSat = 0.15, GroundEmberOchre = 0.6,
+        BushNightSat = 0.4, GroundEmberOchre = 0.6,
         Frost = 1,
     };
 

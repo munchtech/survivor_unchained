@@ -640,7 +640,7 @@ void fragment() {
 	float brk = smoothstep(0.25, 0.75, nF.g * 0.6 + nF.b * 0.4);
 	float mirror = mirror_amt * mix(mirror_rut, 1.0, max(w_setts, 1.0 - step(0.05, rut))) * smoothstep(0.35, 0.9, ex4.r) * mix(0.45, 1.0, ex4.g) * mix(0.15, 1.0, brk);
 	// (lf5p: the sky kept in a 0.1-0.3 m band inside the edge, the middle muddy)
-	float p_rim = pud_sheen > 0.0 ? smoothstep(0.62, 0.66, pf) * (1.0 - smoothstep(0.69, 0.8, pf)) : 0.0;
+	float p_rim = pud_sheen > 0.0 ? smoothstep(0.61, 0.7, pf) * (1.0 - smoothstep(0.68, 0.95, pf)) * (0.6 + 0.4 * brk) : 0.0;
 	mirror *= 1.0 - pn * (1.0 - pud_sheen * p_rim);
 	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud * (1.0 - pn * 0.6));
 	n_w = normalize(mix(n_w, normalize(n_geo + vec3(nF.a - 0.5, 0.0, rag - 0.5) * 0.15), pud));

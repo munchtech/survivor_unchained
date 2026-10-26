@@ -97,6 +97,8 @@ uniform float dry_share = 0.0;
 uniform vec3 dry_tint = vec3(1.35, 1.1, 0.62);
 uniform float val_spread = 0.0;
 uniform float day_cool = 1.0;
+// ...and the blades by day and dawn times day_warm (by night untouched); 1: as before.
+uniform vec3 day_warm = vec3(1.0);
 
 float hue_of(vec3 c) {
 	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
@@ -246,6 +248,7 @@ void fragment() {
 	float hl = hue_of(sqrt(max(gb * key, vec3(0.0))));
 	gb = max(hue_turn(gb, radians(clamp(hue_floor - hl, 0.0, 60.0) * flora_light.y)), vec3(0.0));
 	gb *= mix(vec3(1.0), night_tint, flora_light.x);
+	gb *= mix(day_warm, vec3(1.0), flora_light.x);
 	// (a flower's pale head no brighter than the moonlit road: dimmed by night)
 	gb *= 1.0 - 0.5 * flora_light.x * smoothstep(0.2, 0.4, dot(tx.rgb, vec3(0.2126, 0.7152, 0.0722)));
 	float fr = v_frost * smoothstep(mix(1.0, 0.35, v_frost), 1.0, t);
