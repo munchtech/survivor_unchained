@@ -316,7 +316,10 @@ def _add_joints(G, B, need):
         names = [g["nodes"][j]["name"] for j in sk["joints"]]
         ibm = G.get(sk["inverseBindMatrices"]).reshape(-1, 16)
         byname = {g["nodes"][j]["name"]: j for j in sk["joints"]}
-        add = [nm for nm in B.names if nm in need and nm not in names]
+        # (every joint of BODY's the skin lacks, in BODY's order: an outfit bound to the body's own joint list, as
+        # heroine_lod.py asserts; a piece on another list takes only the joints its weights need)
+        same = names == B.names[:len(names)]
+        add = [nm for nm in B.names if nm not in names and (same or nm in need)]
         for nm in add:
             bj = B.joint_nodes[B.names.index(nm)]
             par = B.nodes[bp[bj]]["name"]
@@ -467,15 +470,29 @@ def follow_file(path, fld, kind, shapes, dry=False):
                 tj = np.array([jm.get(nm, 0) for nm in B.names])[top]
                 tj[tw <= 0] = 0
                 wide = (tw[:, 4:] > 0).any()
-                a["JOINTS_0"] = _add_acc(G, tj[:, :4].astype(np.uint16), 5123, "VEC4")
+                # (the joints' own component type kept where it holds the skin: heroine_lod joins by type)
+                jt = g["accessors"][a["JOINTS_0"]]["componentType"]
+                jt = jt if jt == 5123 or len(jm) <= 256 else 5123
+                jd = np.uint8 if jt == 5121 else np.uint16
+                a["JOINTS_0"] = _add_acc(G, tj[:, :4].astype(jd), jt, "VEC4")
                 a["WEIGHTS_0"] = _add_acc(G, tw[:, :4].astype(np.float32), 5126, "VEC4")
                 if wide:
-                    a["JOINTS_1"] = _add_acc(G, tj[:, 4:].astype(np.uint16), 5123, "VEC4")
+                    a["JOINTS_1"] = _add_acc(G, tj[:, 4:].astype(jd), jt, "VEC4")
                     a["WEIGHTS_1"] = _add_acc(G, tw[:, 4:].astype(np.float32), 5126, "VEC4")
                 else:
                     a.pop("JOINTS_1", None)
                     a.pop("WEIGHTS_1", None)
                 res["wpts"] += int((np.abs(dw).max(1) > 1e-4).sum())
+            # (one weight layout over the file: where any primitive took eight, every skinned one carries the second
+            # set, zeros where unused; heroine_lod joins a material's primitives attribute by attribute)
+            if any("JOINTS_1" in p["attributes"] for _, _, p in prims):
+                for node, m, p in prims:
+                    a = p["attributes"]
+                    if "JOINTS_0" in a and "JOINTS_1" not in a:
+                        n = g["accessors"][a["POSITION"]]["count"]
+                        jt = g["accessors"][a["JOINTS_0"]]["componentType"]
+                        a["JOINTS_1"] = _add_acc(G, np.zeros((n, 4), np.uint8 if jt == 5121 else np.uint16), jt, "VEC4")
+                        a["WEIGHTS_1"] = _add_acc(G, np.zeros((n, 4), np.float32), 5126, "VEC4")
     # shapes
     res["shaped"] = 0
     if shapes and kind != "hair":
