@@ -23,6 +23,12 @@ left for it); the old orb, hand and forearm cleared and a new cradle inpainted u
 turbo masked img2img over a sketch: palm under the glass, fingertips over the rim at 7-8 o'clock, thumb at 4-5, a
 short diagonal wrist-thick forearm). Her fingertips and thumb are the front layer over the glass (mask R), only in its
 outer RING px (1080); the rest of the glass's inside is the shader's (nothing of her behind it).
+
+dg4 (the judge, round 3 notes: "the hand reads as a paddle"; the orb ~10 px higher, its top at the groove above her lip):
+the orb's centre at (378, 950) on the screen (was 382, 960; her head unmoved), 26 px of air to her chin; a new cradle
+inpainted (dg4_hand.png, ui17 p1: three fingertips fanned apart up the glass's lower left, each over the rim no more
+than the RING, a thumb pad at 4-5 o'clock, the palm under the glass). Her hand and forearm lifted HAND_LIFT brighter
+and the orb's red laid on the faces next to its lower half (RED_BOUNCE).
 """
 import json
 import os
@@ -35,9 +41,9 @@ from scipy import ndimage
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui16_dg_src"
 SEED = 6305
-NAME = "dg3_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut)
+NAME = "dg4_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut)
 PADL = 128                 # the source's left padding (dg3: the orb further left)
-GLASS = (248.0, 359.9, 139.8)  # dg3's glass (placed by the guide): centre, radius
+GLASS = (238.64, 336.6, 139.8)  # dg4's glass (placed by the guide, screen (378, 950)): centre, radius
 RING = 12.0                # her fingertips and thumb may lie over the glass's outer RING px (1080), no further in
 OUT = os.path.join(WT, "godot", "art", "ui", "lamp_life", "drowned")
 
@@ -49,6 +55,8 @@ BAR_LINE = 930.0    # the bar's top line: above it, she fades when something is 
 CHAIN_Y = 1047.0    # the chain's row (the ring orb's eye)
 GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
 SHOULDER = (530.0 + PADL, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
+HAND_LIFT = 0.22    # her hand and forearm brighter than the rest of her bronze
+RED_BOUNCE = (0.34, 0.035, 0.02)   # the orb's red on the faces of her hand beside its lower half
 
 
 def fit_circle(alpha, box):
@@ -97,8 +105,10 @@ def main():
     ring_px = RING / s0
     # (only where the fingertips and thumb are: 7-8 o'clock and 4-5; under the glass's foot her palm is behind it)
     th = np.degrees(np.arctan2(yy - cy, xx - cx))
-    sector = ((th > 18) & (th < 64)) | ((th > 116) & (th < 162))
-    cand = ndimage.binary_opening(inside & bronze & ~glint & (d > r - ring_px - 2) & sector, iterations=1)
+    sector = ((th > 18) & (th < 64)) | ((th > 116) | (th < -170))   # (dg4: the fingertips reach 9 o'clock)
+    # (dg4: a fingertip's dark nail and shadowed tip count too, or the tips come out square)
+    dark = (np.max(rgb, axis=2) < 0.10) & (alpha > 0.5)
+    cand = ndimage.binary_opening(inside & (bronze | dark) & ~glint & (d > r - ring_px - 2) & sector, iterations=1)
     lab, n = ndimage.label(cand | (bronze & ~inside & (d < r + 60)))
     ring = (d > r + 2) & (d < r + 8) & (yy > cy) & bronze
     keep = set(np.unique(lab[ring])) - {0}
@@ -112,6 +122,9 @@ def main():
     # (the painted blood's glow spilt past the glass onto the black: not her)
     spill = (~inside) & (R > 1.8 * G) & (R > 1.5 * B) & ~bronze
     a = alpha * (1 - hole) * (1 - ndimage.gaussian_filter(spill.astype(np.float32), 1.0))
+    # (dg4: the painted glass's own rim a few px outside the fitted circle, a pale double rim: only her bronze stays)
+    ghost = (d >= r + 1.0) & (d < r + 12) & ~bronze
+    a = a * (1 - np.clip(ndimage.gaussian_filter(ghost.astype(np.float32), 0.8) * 1.5, 0, 1))
     # her hand and forearm (held at full in the fade): left of her neck and chest, below the glass's middle
     bnd = np.interp(yy, [0, 520, 600, 660, 768], [300, 292, 268, 255, 250]) + PADL
     held = ndimage.gaussian_filter(((xx < bnd) & (yy > cy - 0.2 * r) & (a > 0.05)).astype(np.float32), 2.0)
@@ -133,6 +146,12 @@ def main():
     gl = (0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2])[..., None]
     over = np.clip(gl - 0.42, 0, None)
     g = g - sm * over * 0.55 * (g / np.maximum(gl, 1e-3))
+    # (dg4: her hand brighter, and the blood's light on its faces next to the glass: palm edge, fingers, thumb)
+    hm = held[..., None]
+    g = g * (1 + HAND_LIFT * hm)
+    near = np.clip(1 - (d - r) / 42.0, 0, 1) * np.clip((yy - (cy + 0.15 * r)) / (0.25 * r), 0, 1)
+    gl = (0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2])[..., None]
+    g = g + (near ** 1.4 * held)[..., None] * np.array(RED_BOUNCE) * np.clip(gl * 2.5, 0.35, 1.0)
     g = np.clip(g, 0, 1)
 
     # the scale: the glass ORB_D across at 1080, the art at 2x
@@ -146,7 +165,7 @@ def main():
     y1 = head_top + HEAD_H / s
     x1 = W
     cw, ch = (x1 - x0) * s, (y1 - y0) * s
-    cw2, ch2 = int(round(cw * 2)), int(round(ch * 2))
+    cw2, ch2 = int(np.floor(cw * 2)), int(np.floor(ch * 2))   # (floor: the box never past the source)
     rgba = np.dstack([g, a]).astype(np.float32)
     # premultiply for the resample, then back
     pm = np.dstack([rgba[..., :3] * rgba[..., 3:], rgba[..., 3:]])

@@ -5,8 +5,8 @@
 // always clear. The blood is deep garnet with depth (dark to the rim, a glow low inside), a slow swirl through it and
 // a bright thin meniscus that moves a little; the empty glass shows the screen behind it (the world, and her hand
 // behind the glass) darkened and refracted (screen_tex: LifeLamp's BackBufferCopy over the orb only); a bright rim,
-// a dark line of glass inside it and one crisp window upper left. The ward is a shell of ice grown in from the rim:
-// its depth is how much ward is left. The fade (fig_a) dims her figure, never the glass or her hand and forearm
+// a dark line of glass inside it and one crisp window upper left. The ward is a smooth frost band ~10 px inside the
+// rim, its arc (clockwise from the top) how much ward is left. The fade (fig_a) dims her figure, never the glass or her hand and forearm
 // (mask G). Vessel.Flow's uniforms drive the blood (level, tilt, wave, film, heal, beat, frost, crack); nothing on
 // the CPU redraws.
 shader_type canvas_item;
@@ -103,6 +103,8 @@ void fragment()
 		vec3 blood = mix(g_deep, g_mid, thick);
 		blood *= mix(0.58, 1.30, smoothstep(0.30, 0.78, sw));
 		blood *= 1.0 - 0.38 * vein * smoothstep(0.15, 0.6, z);
+		// (dg4, the judge: the full red a touch darker in the rim band, the ball's edge turning away)
+		blood *= 1.0 - 0.24 * smoothstep(0.76, 0.97, rr);
 		// the glow held low inside, a little right of centre (the window's light gathered by the ball)
 		vec2 gq = (q - vec2(0.16, 0.40)) * vec2(1.0, 1.25);
 		float glow = exp(-dot(gq, gq) / 0.17);
@@ -169,10 +171,10 @@ void fragment()
 		// (the sky's soft reflection over its upper half)
 		gcol += vec3(0.62, 0.66, 0.74) * 0.06 * smoothstep(0.45, 0.98, rr) * smoothstep(0.25, -0.85, q.y);
 
-		// ---- the ward (dg3, the judge: "a fixed ~10 px frost band whose arc length is the ward"): frost ~10 px wide
-		// inside the rim, grown clockwise from the top as far round as the ward holds (all the way round at a ward
-		// equal to her life); crystalline (needles grown in from the rim, their facets lit from the window), its
-		// leading edge a bright crystal front; broken, it shatters off and falls
+		// ---- the ward (dg4, the judge: "the crackle reads as cracked glass"): a smooth frost band ~10 px wide inside
+		// the rim, grown clockwise from the top as far round as the ward holds (all the way round at a ward equal to her
+		// life): milky ice brighter at the rim, a faint slow shimmer through it, a thin cold line at its inner edge; a sharp
+		// start at the top and a bright leading tip with a glint; broken, it shatters off in flakes and falls
 		float fr = crack < 1.0 ? crack_reach : frost;
 		if (fr > 0.001)
 		{
@@ -189,44 +191,33 @@ void fragment()
 			float ang = fract(atan(fq.x, -fq.y) / 6.2831853);   // 0 at the top, clockwise
 			float arcpx = ang * 6.2831853 * orb_r;               // round the rim, px
 			float dep = (1.0 - fl) * orb_r;                      // in from the rim, px
-			// needles: cells long in toward the middle, narrow round the rim
-			vec2 cp = vec2(arcpx / 3.2, dep / 7.0);
-			vec2 ci = floor(cp), cf = fract(cp);
-			float f1 = 9.0, f2 = 9.0, cid = 0.0;
-			for (int j = -1; j <= 1; j++)
-			for (int i = -1; i <= 1; i++)
-			{
-				vec2 g = vec2(float(i), float(j));
-				vec2 o = vec2(h21(ci + g), h21(ci + g + 17.3));
-				vec2 dv = (g + o - cf) * vec2(3.2, 7.0);
-				float dd = length(dv);
-				if (dd < f1) { f2 = f1; f1 = dd; cid = h21(ci + g + 41.7); }
-				else if (dd < f2) f2 = dd;
-			}
-			float facet = f2 - f1;                               // px to the crystal's edge
-			// the band: ~10 px, its inner edge ragged by the needles (a px or two), the outer at the rim
-			float bwid = 9.5 + 2.2 * (cid - 0.5);
-			float inband = smoothstep(bwid + 0.7, bwid - 0.7, dep) * smoothstep(0.2, 1.0, dep);
-			// the arc: to the ward's reach, the front stepped crystal by crystal
-			float reach = fr * 6.2831853 * orb_r + 1.6 * (cid - 0.5);
-			float cover = smoothstep(reach + 0.6, reach - 0.6, arcpx) * (fr >= 0.999 ? 1.0 : smoothstep(-0.4, 1.4, arcpx));
-			float lit_f = mix(0.55, 1.0, 0.5 + 0.5 * dot(fq / max(fl, 1e-4), lightd));
-			vec3 ice = vec3(0.60, 0.83, 1.0);
-			// facets: each crystal its own value, darker toward its middle, bright at its edges, denser at the rim
-			float body = (0.34 + 0.32 * cid) * mix(0.75, 1.0, smoothstep(bwid, 0.0, dep));
-			float edges = 1.0 - smoothstep(0.25, 0.9, facet);
-			vec3 frostc = ice * (body + 0.55 * edges) * lit_f;
-			float fa = clamp((0.62 + 0.25 * edges) * inband * cover * fade, 0.0, 1.0);
+			float bwid = 10.0;
+			float tb = clamp(dep / bwid, 0.0, 1.0);
+			float inband = smoothstep(bwid + 0.6, bwid - 0.6, dep) * smoothstep(0.0, 0.9, dep);
+			bool whole = fr >= 0.999;
+			float reach = fr * 6.2831853 * orb_r;
+			// (the start: a clean radial cut at the top, a px of edge; the end at the reach)
+			float cover = smoothstep(reach + 0.6, reach - 0.6, arcpx) * (whole ? 1.0 : smoothstep(0.0, 1.0, arcpx));
+			if (whole) cover = 1.0;
+			float lit_f = mix(0.62, 1.0, 0.5 + 0.5 * dot(fq / max(fl, 1e-4), lightd));
+			vec3 ice = vec3(0.62, 0.83, 1.0);
+			float shim = fbm(vec2(arcpx * 0.045 - t * 0.12, dep * 0.10 + t * 0.05));
+			float body = mix(0.86, 0.50, tb) * (0.88 + 0.24 * shim);
+			vec3 frostc = ice * body * lit_f;
+			float fa = clamp(mix(0.80, 0.58, tb) * inband * cover * fade, 0.0, 1.0);
 			gcol = mix(gcol, frostc, fa);
-			// (the inner edge: a thin cold line where the crystals stop)
-			gcol += ice * 0.35 * exp(-pow((dep - bwid) / 0.7, 2.0)) * cover * fade * lit_f;
-			// (the leading edge: a bright crystal front, ~3 px back from the reach, and a glow ahead of it)
+			// (the inner edge: a thin cold line where the frost stops; the start cut's edge a touch brighter)
+			gcol += ice * 0.30 * exp(-pow((dep - bwid) / 0.7, 2.0)) * cover * fade * lit_f * step(dep, bwid + 2.0);
+			gcol += ice * 0.30 * (whole ? 0.0 : 1.0) * exp(-pow(arcpx / 1.0, 2.0)) * inband * fade;
+			// (the leading tip: bright ice over its last ~5 px, a glint at its heart and a short glow ahead of it)
 			float behind = reach - arcpx;
-			float lead = (fr >= 0.999 ? 0.0 : 1.0) * smoothstep(bwid + 1.0, bwid - 1.0, dep) * smoothstep(0.0, 1.0, dep) * fade;
-			float front = exp(-pow(behind / 2.2, 2.0)) * step(-0.5, behind);
-			float spark = 0.75 + 0.25 * sin(t * 5.0 + cid * 30.0);
-			gcol = mix(gcol, vec3(0.92, 0.97, 1.0), clamp(front * lead * 0.85 * spark, 0.0, 1.0));
-			gcol += vec3(0.45, 0.70, 1.0) * 0.35 * exp(-max(-behind, 0.0) / 2.5) * step(behind, 0.0) * lead;
+			float lead = (whole ? 0.0 : 1.0) * fade;
+			float spark = 0.80 + 0.20 * sin(t * 4.0);
+			float tip = exp(-pow(behind / 4.0, 2.0)) * step(-0.5, behind) * inband;
+			gcol = mix(gcol, vec3(0.93, 0.98, 1.0), clamp(tip * lead * 0.92, 0.0, 1.0));
+			float gl = exp(-(pow(behind - 1.2, 2.0) + pow(dep - 0.5 * bwid, 2.0)) / 9.0);
+			gcol += vec3(1.0, 1.0, 1.0) * 1.3 * gl * lead * spark;
+			gcol += vec3(0.45, 0.72, 1.0) * 0.30 * exp(-max(-behind, 0.0) / 3.0) * step(behind, 0.0) * smoothstep(bwid + 2.0, bwid - 2.0, dep) * lead;
 		}
 
 		// ---- the rim (dg3, the judge: "an even bright outline reads as a drawn circle"): uneven Fresnel. A dim cool
