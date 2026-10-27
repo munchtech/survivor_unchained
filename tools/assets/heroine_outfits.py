@@ -2112,7 +2112,7 @@ SPEC = {
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
     "darkleather": ("Leather026", (1.0, 0.8, 0.65), 30, 3, 0.0, None),
     "redleather": ("Leather024", (1, 1, 1), None, 4, 0.0, None),
-    "oldleather": ("Leather014", (1, 1, 1), None, 4, 0.0, None),
+    "oldleather": ("Leather014", (1, 0.96, 0.62), None, 4, 0.0, None),   # (Body 17: the scan is rose-grey, hue 8: the reaver's gear read dusty mauve on deep skin and her boots grey; hue 26, sat 0.6, same value, judge PASS)
     "velvet": ("velour_velvet", (0.32, 0.1, 0.45), None, 5, 0.0, None),
     "linen": ("rough_linen", (0.3, 0.4, 0.25), None, 5, 0.0, None),
     "fur": ("curly_teddy_natural", (0.55, 0.42, 0.32), 70, 4, 0.0, 0.9),
