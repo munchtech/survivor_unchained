@@ -1000,7 +1000,7 @@ public partial class Game : Node, IZoneHost
         // prompt, 4 s clear of anything else on the screen; asked while the prompt is up.
         if (best != null && best.Id.StartsWith("talk:"))
             Teach(new Play.Callout("talk", Play.CalloutKind.Arrow, "Talk", $"{KeyLabel("interact")}: talk. A mark over someone's head means news for you.", Play.Aim.At("prompt"))
-                { Quiet = 4, Mark = "talk", Patience = 30 });
+                { Quiet = 4, Mark = "talk", Patience = 30, After = zone.Id == "waystation" ? "minimap" : null });
         var view = best != null ? new PromptView(controls.KeyLabel(Act.Interact), best.Verb, best.Name, best.Hint?.Invoke(), best.Locked?.Invoke()) : null;
         if (view != promptShown) hud.Prompt(promptShown = view);
     }

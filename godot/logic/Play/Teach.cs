@@ -183,7 +183,8 @@ public sealed class Teacher
     static Busy Blocking(Callout c, Busy busy)
     {
         // (one that teaches the interact prompt points at it: the prompt is its target, never in its way)
-        if (c.Target.Hud == "prompt") busy &= ~Busy.Prompt;
+        // (nor one on the corner map: the prompt stands by the one in reach, far from it)
+        if (c.Target.Hud is "prompt" or "minimap") busy &= ~Busy.Prompt;
         return c.Transient ? busy & ~(Busy.Hint | Busy.Prompt) : c.OverHint ? busy & ~Busy.Hint : busy;
     }
 
