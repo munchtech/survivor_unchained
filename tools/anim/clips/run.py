@@ -321,11 +321,12 @@ def wand_along(lean=18.0):
 # (solver runs1): sword and dagger points 40-65 deg below level, trailing; the axe 63 deg; the reaver's axe trails
 # steeper (42) as the reaver's lean is smaller. (Run ahead and down as the walk's, the axe went 22-38 mm into the thigh
 # driving up.)
-TRAIL_ARM = ((20, 1, 148, -70), (0, 0, 146, -70))
+TRAIL_ARM = ((20, 18, 148, -70), (0, 17, 146, -70))
 TRAIL = dict(back=26.0, out=0.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=10.0)
 DAGGER_ARM = ((10, 1, 148, -70), (-10, 0, 146, -70))
 DAGGER_TRAIL = dict(TRAIL)
 AXE_TRAIL = dict(TRAIL, back=42.0)
+AXE_TRAIL_ARM = ((20, 24, 148, -70), (0, 22, 146, -70))  # (the reaver's hunch: at 15 out the upper arm met her outfits, 4-10 mm)
 WAND_ARM = ((12, 15, 140, 10), (-18, 14, 132, -10))
 
 
@@ -333,8 +334,8 @@ WAND_ARM = ((12, 15, 140, 10), (-18, 14, 132, -10))
 RUNS = {
     "run_warden": (replace(WARDEN, swing_r=TRAIL_ARM), {"r": axe_hang(**TRAIL), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
-    "run_reaver": (replace(REAVER, swing_r=TRAIL_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": axe_hang(**AXE_TRAIL)}, "axe"),
-    "run_reaver_axes": (replace(REAVER, swing_r=TRAIL_ARM, swing=AXES_L), {"r": axe_hang(**AXE_TRAIL), "l": axe_hang(**AXE_HANG)}, "axes"),
+    "run_reaver": (replace(REAVER, swing_r=AXE_TRAIL_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": axe_hang(**AXE_TRAIL)}, "axe"),
+    "run_reaver_axes": (replace(REAVER, swing_r=AXE_TRAIL_ARM, swing=AXES_L), {"r": axe_hang(**AXE_TRAIL), "l": axe_hang(**AXE_HANG)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
