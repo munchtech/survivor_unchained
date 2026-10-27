@@ -431,7 +431,7 @@ public partial class Game
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
             answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
-        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null, Mark = c.Mark });
+        { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null, Mark = c.Mark, MarkInk = c.MarkInk });
         calloutShown = view;
         AimCallout();
         // (--shot: a frame of each, and a freeze holds until it is taken)
@@ -454,6 +454,8 @@ public partial class Game
 
     void TeachDown(Callout c)
     {
+        // (--shot: frames just after the card is taken down, to see that none of its words is left on the world)
+        if (Args.Has("shot") && c.Kind == CalloutKind.Freeze) { Shots.Want("teach_" + c.Id + "_after1", 0.6); Shots.Want("teach_" + c.Id + "_after2", 1.6); }
         calloutShown?.TakeDown();
         calloutShown = null;
         hud.HoldTip = false;

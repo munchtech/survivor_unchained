@@ -15,6 +15,8 @@ public sealed record CalloutLook(string Title, string Line, CalloutKind Kind, Ac
     public bool Headed { get; init; }
     /// <summary>The word marked in ember (none: the title's, Subject).</summary>
     public string? Mark { get; init; }
+    /// <summary>The marked word's colour as hex (none: ember amber).</summary>
+    public string? MarkInk { get; init; }
 }
 
 /// <summary>Where a callout points this frame, on the HUD's 1920 by 1080: points (a HUD part, a thing
@@ -286,7 +288,7 @@ public partial class Callout : Control, ICalloutView
                 string bb = seg.Replace("[", "[lb]");
                 if (!marked && subject != null && Regex.Match(bb, $@"\b{Regex.Escape(subject)}\b", RegexOptions.IgnoreCase) is { Success: true } m)
                 {
-                    bb = bb[..m.Index] + $"[color={Mark.ToHtml(false)}]" + m.Value + "[/color]" + bb[(m.Index + m.Length)..];
+                    bb = bb[..m.Index] + $"[color={(look.MarkInk != null ? new Color(look.MarkInk) : Mark).ToHtml(false)}]" + m.Value + "[/color]" + bb[(m.Index + m.Length)..];
                     marked = true;
                 }
                 box.AddChild(Text(bb, W(seg), size, maxW));

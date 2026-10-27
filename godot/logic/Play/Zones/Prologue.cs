@@ -250,8 +250,8 @@ public sealed class Prologue : ZoneRuntime
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
     // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
 
-    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap, bool overHint = false, double patience = 8, bool urgent = false) =>
-        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap, OverHint = overHint, Patience = patience, Urgent = urgent });
+    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap, bool overHint = false, double patience = 8, bool urgent = false, string? markInk = null) =>
+        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap, OverHint = overHint, Patience = patience, Urgent = urgent, MarkInk = markInk });
 
     /// <summary>A point on the ground, lifted a little (what an arrow points at).</summary>
     (double X, double Y, double Z) Up(double x, double z, double lift) => (x, G.Look.HeightAt(x, z) + lift, z);
@@ -476,7 +476,7 @@ public sealed class Prologue : ZoneRuntime
                 Seen = () => knight is { Alive: true } kn && KnightOpen(kn) ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : [],
                 Ring = () => knight is { Alive: true } kn && KnightOpen(kn) ? [Up(kn.X, kn.Z, 0.95 * (kn.Def.Scale ?? 1))] : [],
                 RingRadius = 0.75 * 1.45,
-            });
+            }, markInk: "#ff3b3b"); // scarlet, lifted from the telegraph's #ff0612 to read on the panel (5.6:1 vs 5.0:1)
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
         // names the Flare (the art then rides the dash).
