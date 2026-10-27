@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 27 October 2026 (coordinator 9c583f93)
+- Warden sword held in town (crop: gold kit, cobbles, pommel up, blade hanging plumb): "is this angle possible or natural?" Main's answer: no. The wrist is bent ~90 deg sideways and the grip isn't in a closed fist. Routed to Animation 54 (item 2, held-prop angles): closed fist, wrist near neutral, blade continuing the forearm.
+
 ## 26 October 2026, night (coordinator 3bed6fb4)
 - **HUD LAMP NOTES (the owner, 26 Oct night):** "it can be read as a healing potion very easily, and its hard to see hp missing when its that shape. it can move slightly down AND take up slightly more space above where it is now so it can be elongated a little". Sent to UI 14 (outranks the judge's notes).
 - **HUD LIFE: EXPLORE AN ORB (the owner, 26 Oct night):** "I think the orb shape might be better. I know I said 'not the same old ui' but I guess its like that for a reason. we don't have to go full sphere but might be worth exploring". Sent to UI 14: 2 orb-shaped life vessels (globe lamp / round oil font) beside the fix-round lamp, one judge, sheet to the owner.
