@@ -3,7 +3,10 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 27 October 2026 (coordinator 9c583f93)
-- Warden sword held in town (crop: gold kit, cobbles, pommel up, blade hanging plumb): "is this angle possible or natural?" Main's answer: no. The wrist is bent ~90 deg sideways and the grip isn't in a closed fist. Routed to Animation 54 (item 2, held-prop angles): closed fist, wrist near neutral, blade continuing the forearm.
+- Warden sword held in town (crop: gold kit, cobbles, pommel up, blade hanging plumb): "is this angle possible or natural?" Main's answer: no. The wrist is bent ~90 deg sideways and the grip isn't in a closed fist. Routed to Animation 54 (item 2, held-prop angles): closed fist, wrist near neutral, blade continuing the forearm. Found: `idle_warden_town`; fixed with the idles (2b).
+- PENDING owner pick: the HUD life sheet (tall lamp / globe / no vessel), coming from UI 16. Tell them: no option lowers the HUD top (~176 px); the Flare cuff sets it.
+- Told the owner (not yet answered): the Prologue has no stakes (two full runs at full health); Experience tunes the Ambush to cost a standing player 25-40% health and fires the draught lesson under 70%.
+- Main's rulings today: painted-steel enamel for her steel (metal dyes stay metal); only the reaver axe hangs from the belt until Animation widens the warden's left arm.
 
 ## 26 October 2026, night (coordinator 3bed6fb4)
 - **HUD LAMP NOTES (the owner, 26 Oct night):** "it can be read as a healing potion very easily, and its hard to see hp missing when its that shape. it can move slightly down AND take up slightly more space above where it is now so it can be elongated a little". Sent to UI 14 (outranks the judge's notes).
