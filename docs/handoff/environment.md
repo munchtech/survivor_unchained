@@ -1,6 +1,7 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (env lead 20, 27 Oct): E8 DONE (judge r3 xhigh PASS-WITH-NOTES, close; 5/5 frames gate YES); final import, tests and Release perf running, then the MR; next E10
+## Now (env lead 20, 27 Oct): E8 MR READY (judge r3 xhigh PASS-WITH-NOTES, close; 5/5 frames gate YES); next E10 (needs a quiet-machine window from main)
+- **Perf (the gate's cost as an ABAB delta, per main; the machine was busy):** a static Release run at the gate spot (`env20\gate_ab.sh`; `--spots 0,-100 --spots-from 0`, since `--spots` needs the shot clock unless `from` is 0). B = `--props-skip` on our pieces, which falls back to KayKit. Night, A vs B: GPU 3.4 vs 3.4 ms, draws 319 vs 316, shadow draws 73 vs 83, prims +60k. Dawn: GPU 3.3 vs 3.3-3.4 (the 2nd pair was noisy at 4.0-4.5 on both), shadow draws 75 vs 80. So the gate costs about 0 ms of GPU and 5-10 FEWER shadow draws than KayKit. One A run crashed (AccessViolation at 21 s, `env_perf1\e8\gate_night_a1.log`); the rerun was clean. The full-run `lf_hi_e8` is disturbed, so ignore its absolute numbers. Tests 1123/0/8 on 72117bbe.
 - Integration merged at a1fd6fa3 (junction rule). Judge 3 brief: `<coord 9c583f93 scratch>\env20\e8_judge3.md`. Final script: `env20\final_e8.sh` (import, build, tests, Release `lf_hi_e8` to `survivorsunchained_inputs\env_perf1\e8\`; compare `env_perf1\lf\lf_hi_lf6_windows.md`).
 - **Closed as known (r3 = round cap):** the damp band hidden by the mist (reads right), the merlon rims and corbel row (enlarged only), and the faint blue-lamp halos in s8a.
 - **Later list, from judge 3 (none fails a frame):**
