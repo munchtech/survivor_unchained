@@ -508,9 +508,10 @@ public partial class BattleFx : Node3D
                     float a = max(max(t.r, t.g), t.b) * t.a;
                     // (a red line's copy has a faint dark bed, so over water, where no decal lands, it reads as a lane)
                     float b = texture(cover, UV).a * bed.a;
-                    float all_a = a + b * (1.0 - a);
-                    ALBEDO = (col.rgb * a + bed.rgb * b * (1.0 - a)) / max(all_a, 1e-4);
-                    ALPHA = col.a * all_a * over;
+                    // (the bed at its own strength, not the light's breath: water through it read rose)
+                    float la = a * col.a, all_a = la + b * (1.0 - la);
+                    ALBEDO = (col.rgb * la + bed.rgb * b * (1.0 - la)) / max(all_a, 1e-4);
+                    ALPHA = all_a * over;
                 }
                 """,
         };
@@ -763,7 +764,7 @@ public partial class BattleFx : Node3D
     /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
-    const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.85f;
+    const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
     const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
     /// <summary>A styled fill's even glow behind its front (about the bed's own, so the filled part reads twice as hot).</summary>
     const float FillBody = 0.25f;
@@ -793,7 +794,7 @@ public partial class BattleFx : Node3D
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
         var hot = danger ? new Color("#ff0612") : new Color("#ffa020");
         var bed = danger ? Palette.TeleDangerGround : Palette.TeleAmberGround;
-        float inside = danger ? 0.97f : 0.55f, glowIn = danger ? 0.25f : style == 3 ? 0.06f : 0.1f;
+        float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.25f : style == 3 ? 0.06f : 0.1f;
         // a ring's core in its texture's units (its radius is 1)
         float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
         for (int y = 0; y < h; y++)
