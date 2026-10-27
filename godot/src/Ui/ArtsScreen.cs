@@ -301,7 +301,7 @@ public partial class ArtsScreen : Overlay
         else if (ch.Slotted.Count < SkillBook.Slots(ch))
             d.AddChild(Nav.Id(Kit.Word($"Carry {w.Name}", () => G.Gear((j, _) => SkillBook.Slot(j.Ch, w.Id)), Style.EmberHi, 17), "carry"));
         else
-            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level and the eighth.", Style.TextItalic, 14, Kit.Dim, true));
+            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level, the eighth, the fourteenth and the twentieth.", Style.TextItalic, 14, Kit.Dim, true));
         return d;
     }
 }

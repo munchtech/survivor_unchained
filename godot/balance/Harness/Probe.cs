@@ -129,12 +129,11 @@ public static class Probe
         var a = Callings.Archetype(calling);
         var j = Journey.Begin(new CreationChoice
         {
-            Name = "Probe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            Name = "Probe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0], Type = type,
         }, (uint)seed);
         while (j.Ch.Level < charLevel) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
-        if (type != "") LampBook.SetType(j.Ch, type);
         if (lamps == "full")
         {
             foreach (var sid in Lamps.StoryFights) j.World.Facts[$"arena.{sid}"] = "won";

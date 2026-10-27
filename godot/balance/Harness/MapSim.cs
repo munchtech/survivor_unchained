@@ -45,7 +45,7 @@ public static class MapSim
     const double Dt = 1 / 60.0;
 
     /// <summary>A survivor at a level, as a player would have dressed them by then: the calling's own
-    /// path's three skills at the day's rank, the points in the calling's attribute, and plain gear
+    /// path's skills at the day's rank, as many as the level's slots hold, the points in the calling's attribute, and plain gear
     /// at a rarity in every slot.</summary>
     public static Journey Survivor(string calling, int level, int gearRarity, int seed)
     {

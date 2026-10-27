@@ -181,6 +181,8 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
+    /// <summary>The type: one of the calling's roads (data/content/lamps.json); empty or foreign walks the default.</summary>
+    public string Type = "";
     public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle, HairHighlight;
     public bool? Headgear, Beard;
     public Sex? Sex;
@@ -604,6 +606,7 @@ public static class Character
         ch.Known = ArtBook.Starting(c.Archetype);
         if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);
         ArtBook.HoldKin(ch);
+        LampBook.Begin(ch, c.Type);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
         foreach (var id in bg.Items)
         {

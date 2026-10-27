@@ -175,13 +175,14 @@ public static class ArenaSim
         {
             Name = "Bot", Archetype = spec.Calling, Background = "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = a.Weapons[Math.Min(spec.Weapon, a.Weapons.Count - 1)], Ability = a.Abilities[Math.Min(spec.Art, a.Abilities.Count - 1)],
+            // The type (road), picked at creation as a player picks it (docs/design/CLASSES.md section 2).
+            Type = spec.Type,
         }, (uint)spec.Seed);
         // A survivor further on: the levels, and the points put into the calling's own.
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
-        // The type (road) and the lamps lit (docs/design/CLASSES.md section 2).
-        if (spec.Type != "") LampBook.SetType(j.Ch, spec.Type);
+        // The lamps lit.
         if (spec.Lamps == "full")
         {
             foreach (var id in Lamps.StoryFights) j.World.Facts[$"arena.{id}"] = "won";

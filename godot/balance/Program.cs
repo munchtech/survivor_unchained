@@ -364,8 +364,7 @@ void SuggestPath()
     foreach (var road in SurvivorUnchained.Content.Lamps.Roads.Values.Where(r => r.Stand != null).OrderBy(r => r.Id))
     {
         var a = Callings.Archetype(road.Calling);
-        var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice { Name = "Bot", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1);
-        LampBook.SetType(j.Ch, road.Id);
+        var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice { Name = "Bot", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0], Type = road.Id }, 1);
         // --lamps full: the arena's full board (story fights won, the atlas, past Act 1), as ArenaSim lights it.
         if (opt.Get("lamps", "") == "full")
         {

@@ -46,9 +46,17 @@ public static class LampBook
     public static LampState State(CharacterData ch)
     {
         if (ch.Lamps != null) return ch.Lamps;
+        Begin(ch, null);
+        return ch.Lamps!;
+    }
+
+    /// <summary>The board as creation leaves it: the chosen type (one of the calling's roads; anything
+    /// else walks the default) lit on every layout, so switching layouts never drops the pick.</summary>
+    public static void Begin(CharacterData ch, string? type)
+    {
+        if (type == null || !Lamps.Roads.TryGetValue(type, out var r) || r.Calling != ch.Archetype) type = DefaultType(ch.Archetype);
         ch.Lamps = new LampState();
-        foreach (var l in ch.Lamps.Layouts) Reset(ch, l, DefaultType(ch.Archetype));
-        return ch.Lamps;
+        foreach (var l in ch.Lamps.Layouts) Reset(ch, l, type);
     }
 
     public static LampLayout Now(CharacterData ch) => State(ch).Now;
