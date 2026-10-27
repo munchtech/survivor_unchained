@@ -14,7 +14,7 @@ render_mode blend_premul_alpha;
 
 uniform sampler2D lit : source_color, filter_linear_mipmap;
 uniform sampler2D cold : source_color, filter_linear_mipmap;
-uniform sampler2D mask : hint_default_black, filter_linear_mipmap;   // R oil, G font highlights, B glass
+uniform sampler2D mask : hint_default_black, filter_linear_mipmap;   // R oil, G font highlights, B glass, A 1 - inside/2
 uniform sampler2D flame_tex : source_color, filter_linear_mipmap;     // light-keyed flame, foot at the bottom
 
 // the canvas in 1080 px, and its places (lamp_geo.json)
@@ -26,6 +26,8 @@ uniform vec2 font_x = vec2(18.18, 158.18);
 uniform float chim_top = 55.05;
 uniform float flame_aspect = 3.16;
 uniform float flame_full = 34.0;   // the flame's height at full life (1080 px)
+uniform vec2 skip = vec2(0.0);     // an iron band across the glass (its rows): the level never rests behind it
+uniform float halo_row = 46.2;     // the instrument's top line in the quad (nothing of the halo over it)
 
 // Vessel.Flow
 uniform float level : hint_range(0.0, 1.0) = 1.0;
@@ -61,6 +63,15 @@ float vnoise(vec2 p)
 	return mix(mix(h21(i), h21(i + vec2(1, 0)), u.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), u.x), u.y);
 }
 float fbm(vec2 p) { return 0.55 * vnoise(p) + 0.3 * vnoise(p * 2.1 + 3.7) + 0.15 * vnoise(p * 4.3 + 9.1); }
+// the glass's whole inside (the iron over it included): its outer edge is the rim
+float inside_at(vec2 uv) { return clamp(2.0 * (1.0 - texture(mask, uv).a), 0.0, 1.0); }
+// her life's level as a row: up the glass from its foot, jumping the iron band (skip) if there is one
+float level_row(float lv)
+{
+	float sh = skip.y - skip.x;
+	float r = oil_bot - lv * (oil_bot - oil_top - sh);
+	return r < skip.y ? r - sh : r;
+}
 
 void fragment()
 {
@@ -97,14 +108,14 @@ void fragment()
 	float rim = 0.0;
 	if (m.r > 0.01)
 	{
-		float up = texture(mask, UV - vec2(0.0, 2.5) * tx).r, dn = texture(mask, UV + vec2(0.0, 2.5) * tx).r;
-		float sd = min(texture(mask, UV - vec2(2.5, 0.0) * tx).r, texture(mask, UV + vec2(2.5, 0.0) * tx).r);
+		float up = inside_at(UV - vec2(0.0, 2.5) * tx), dn = inside_at(UV + vec2(0.0, 2.5) * tx);
+		float sd = min(inside_at(UV - vec2(2.5, 0.0) * tx), inside_at(UV + vec2(2.5, 0.0) * tx));
 		rim = max(max(1.0 - up, 1.0 - dn), (1.0 - sd) * smoothstep(0.55, 0.7, abs(u))) * m.r;
 	}
 	if (m.r > 0.01)
 	{
 		float lv = oil_off == 1 ? 0.0 : level;
-		float surf = oil_bot - lv * span + tilt * u * span * 0.9 + wave * span * sin(u * 3.1 + t * 7.0);
+		float surf = level_row(lv) + tilt * u * span * 0.9 + wave * span * sin(u * 3.1 + t * 7.0);
 		float below = smoothstep(surf - 0.6, surf + 0.6, px.y) * step(0.002, lv);
 		float depth = clamp((px.y - surf) / max(span, 1.0), 0.0, 1.0);
 		// the oil: liquid lit by its own flame: deep red, darker at the glass's edges and its foot, warm on its top
@@ -123,7 +134,7 @@ void fragment()
 		// the flame's light on the oil's top, strongest under the wick
 		float d = px.y - surf;
 		oil += fire * vec3(1.0, 0.5, 0.32) * 0.16 * gs * exp(-max(d, 0.0) / 5.0) * (1.0 - 0.6 * abs(u));
-		// the level: a pale line across the whole font, a dark line under it
+		// the level: a pale line across the whole font (behind the cage's iron, as the oil is), a dark line under it
 		float lipk = exp(-d * d / 0.9);
 		oil = mix(oil, vec3(1.0, 0.80, 0.70) * (0.85 + 0.15 * gs + 0.4 * beat), clamp(lipk * 0.95, 0.0, 1.0));
 		oil *= 1.0 - 0.4 * exp(-pow((d - 2.6) / 1.3, 2.0));
@@ -141,7 +152,7 @@ void fragment()
 		col = mix(col, oil, fill);
 		a = mix(a, 1.0, max(fill, emp * 0.85));
 		// the hurt film: blood clinging to the glass from where it stood, running down
-		float ftop = oil_bot - mix(film_top, lv, film_t * film_t) * span;
+		float ftop = level_row(mix(film_top, lv, film_t * film_t));
 		float film = emp * step(ftop, px.y) * (1.0 - film_t) * (0.55 + 0.45 * vnoise(vec2(px.x * 0.4, px.y * 0.05 - t * 2.0)));
 		col = mix(col, vec3(0.45, 0.02, 0.03), film * 0.7);
 		a = max(a, film * 0.85);
@@ -160,7 +171,7 @@ void fragment()
 			fp.y -= (6.0 + 22.0 * cell) * crack * crack;
 			fade = 1.0 - smoothstep(0.2, 1.0, crack);
 			vec2 fu = fp / canvas;
-			float up = texture(mask, fu - vec2(0.0, 2.5) * tx).r, dn = texture(mask, fu + vec2(0.0, 2.5) * tx).r;
+			float up = inside_at(fu - vec2(0.0, 2.5) * tx), dn = inside_at(fu + vec2(0.0, 2.5) * tx);
 			rimS = max(1.0 - up, 1.0 - dn) * texture(mask, fu).r;
 		}
 		vec2 rs = (fp - vec2(cxf, cyf)) / vec2(half_w, 0.5 * span + 3.0);
@@ -176,8 +187,8 @@ void fragment()
 	col += fire * chim * g * (0.55 * exp(-gd / 8.0) + 0.42 * exp(-gd / 22.0) + 0.10);
 	vec4 outc = vec4(col * a, a);   // premultiplied
 	// a soft halo out into the air round the chimney (light: added, no cover)
-	// (none of it over the instrument's top line, 904 at 1080: the quad's row 46)
-	outc.rgb += fire * g * 0.30 * exp(-gd / 16.0) * (1.0 - a * 0.6) * smoothstep(46.5, 54.0, px.y);
+	// (none of it over the top line: 904 at 1080 for the squat lamp, 900 for the UI 15 shapes: halo_row)
+	outc.rgb += fire * g * 0.30 * exp(-gd / 16.0) * (1.0 - a * 0.6) * smoothstep(halo_row + 0.3, halo_row + 7.8, px.y);
 
 	// ---- the flame: the painted one, its height her life's, swaying; guttering, low, leaning and blue at its root
 	if (on > 0.5 && flame > 0.01)

@@ -27,5 +27,15 @@
   86.06
  ],
  "foot": 194.22,
- "flame_aspect": 3.164
+ "flame_aspect": 3.164,
+ "shape": "squat",
+ "skip": [
+  0,
+  0
+ ],
+ "floor": 1052,
+ "top_line": 904,
+ "flame_full": 34,
+ "number_y": 182,
+ "top": 50.0
 }

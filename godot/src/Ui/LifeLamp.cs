@@ -15,26 +15,46 @@ namespace SurvivorUnchained.Ui;
 /// it redraws only when it changes.</summary>
 public partial class LifeLamp : Control
 {
-    /// <summary>The quad, in 1080 px (art/ui/lamp_life/lamp_geo.json; the art is twice this).</summary>
-    public static readonly Vector2 Canvas = new(176, 196);
-    /// <summary>The lamp's foot in the quad, the eye on its font's right strap (the chain leaves from it), the
+    /// <summary>UI 15: the lamp's shape (--lamp-shape squat|tall|globe|font; squat until the owner picks): its art
+    /// in art/ui/lamp_life (squat) or art/ui/lamp_life/&lt;shape&gt;/, cut by tools/uiforge/lamp_life_cut.py, and
+    /// every place below from that folder's lamp_geo.json, read once.</summary>
+    public static readonly string Shape = Args.Get("lamp-shape") is "tall" or "globe" or "font" ? Args.Get("lamp-shape")! : "squat";
+    static readonly string Dir = Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
+    static readonly Godot.Collections.Dictionary Geo = LoadGeo();
+    /// <summary>The quad, in 1080 px (the art is twice this).</summary>
+    public static readonly Vector2 Canvas = V("canvas");
+    /// <summary>The lamp's foot in the quad, the eye on its font's right side (the chain leaves from it), the
     /// font's middle (the number) and the wick.</summary>
-    public const float FootY = 194.22f;
-    public static readonly Vector2 Eye = new(162.02f, 165.03f), FontMid = new(88.18f, 152.01f), Wick = new(88.38f, 85.35f);
-    /// <summary>The oil's top and foot rows, the font's sides, and the flame's height at full: its tip (35 px over
-    /// the wick at its brightest flicker) stays under the instrument's top line (904: the old cuff's top, 176 px
-    /// over the foot of the screen), the lamp's own top at 908.</summary>
-    public const float OilTop = 129.5f, OilBot = 169.25f, FlameFull = 34f;
-    public static readonly Vector2 FontX = new(18.18f, 158.18f);
-    /// <summary>Where its foot stands on the screen (the old life cuff's foot, 28 px clear of the edge).</summary>
-    public const float Floor = 1052;
+    public static readonly float FootY = F("foot");
+    public static readonly Vector2 Eye = V("eye"), FontMid = V("font_mid"), Wick = V("wick");
+    /// <summary>The oil's top and foot rows, the font's sides, and the flame's height at full: its tip and the
+    /// lamp's top stay under the top line (squat: 904, the old cuff's top; the UI 15 shapes: 900).</summary>
+    public static readonly float OilTop = F("oil_top"), OilBot = F("oil_bot"), FlameFull = F("flame_full");
+    public static readonly Vector2 FontX = V("font_x");
+    /// <summary>An iron band across the glass (its rows in the quad; zero: none): the level jumps it.</summary>
+    public static readonly Vector2 Skip = V("skip");
+    /// <summary>Where its foot stands on the screen (squat: the old life cuff's foot, 28 px clear of the edge;
+    /// the UI 15 shapes 16 px clear), and the top line nothing of it crosses.</summary>
+    public static readonly float Floor = F("floor"), TopLine = F("top_line");
     /// <summary>Where the number stands: its middle on the lamp's foot, under the font.</summary>
-    public const float NumberY = 182f;
+    public static readonly float NumberY = F("number_y");
     /// <summary>The pool's quad round the lamp's foot (1080 px, from the lamp's quad's top left) and its gain at
     /// full light (the scene's brightness lifted by about +45% at its heart: the warm tint takes a share).</summary>
-    public static readonly Rect2 PoolRect = new(-152, -78, 480, 300);
+    public static readonly Rect2 PoolRect = new(Canvas.X / 2 - 240, FootY - 272, 480, 300);
     public const float PoolGain = 0.54f;
     static readonly bool noPool = Args.Has("no-lamp-pool"), noOil = Args.Has("lamp-no-oil");
+
+    static Godot.Collections.Dictionary LoadGeo()
+    {
+        string path = $"res://art/ui/{Dir}/lamp_geo.json";
+        if (FileAccess.FileExists(path) && Json.ParseString(FileAccess.GetFileAsString(path)).AsGodotDictionary() is { Count: > 0 } d)
+            return d;
+        GD.PushError($"LifeLamp: {path} did not load: the lamp draws wrong");
+        return new Godot.Collections.Dictionary();
+    }
+    static float F(string k) => Geo.TryGetValue(k, out var v) ? (float)v.AsDouble() : 0;
+    static Vector2 V(string k) => Geo.TryGetValue(k, out var v) && v.AsGodotArray() is { Count: 2 } a
+        ? new Vector2((float)a[0].AsDouble(), (float)a[1].AsDouble()) : Vector2.Zero;
 
     /// <summary>The level and the shield (0..1 of her life), the trail (unused: the hurt film is the oil's own),
     /// and Pulse: 1 where her heartbeat may sound (the fight).</summary>
@@ -64,14 +84,18 @@ public partial class LifeLamp : Control
         PivotOffset = new Vector2(Canvas.X / 2, FootY);
         mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_lamp.gdshader") };
         foreach (var (u, f) in new[] { ("lit", "lamp_lit"), ("cold", "lamp_cold"), ("mask", "lamp_mask"), ("flame_tex", "lamp_flame") })
-            if (UiArt.Tex($"lamp_life/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
-            else GD.PushError($"LifeLamp: lamp_life/{f}.png did not load (unimported?): the lamp draws wrong");
+            if (UiArt.Tex($"{Dir}/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
+            else GD.PushError($"LifeLamp: {Dir}/{f}.png did not load (unimported?): the lamp draws wrong");
         mat.SetShaderParameter("canvas", Canvas);
         mat.SetShaderParameter("wick", Wick);
         mat.SetShaderParameter("oil_top", OilTop);
         mat.SetShaderParameter("oil_bot", OilBot);
         mat.SetShaderParameter("font_x", FontX);
         mat.SetShaderParameter("flame_full", FlameFull);
+        mat.SetShaderParameter("flame_aspect", F("flame_aspect"));
+        mat.SetShaderParameter("chim_top", F("chim_top"));
+        mat.SetShaderParameter("skip", Skip);
+        mat.SetShaderParameter("halo_row", TopLine - (Floor - FootY));
         if (noOil) mat.SetShaderParameter("oil_off", 1);
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
         flow = new Vessel.Flow(mat, true);
