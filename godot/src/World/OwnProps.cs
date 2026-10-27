@@ -45,6 +45,9 @@ public static class OwnProps
     /// <summary>(E8 r2) A preset's own LOD1 distance (props.json "lod_m": the gate's towers and gatehouse, so the play
     /// camera, about 30 m off, sees their joints and bevels, not the decimated LOD1's smooth facets).</summary>
     static readonly Dictionary<string, float> lods = new();
+    /// <summary>(E8 later) Presets that cast no shadow (props.json "no_shadow": the camp's ground dressing, what the
+    /// open gate shows beyond it).</summary>
+    static readonly HashSet<string> unshadowed = new();
     static OrmMaterial3D? mat;
 
     /// <summary>A zone's own-props data, or null if it has none.</summary>
@@ -185,6 +188,7 @@ public static class OwnProps
                     boxes[p.Name] = new Aabb(lo, new Vector3(b[3].GetSingle(), b[4].GetSingle(), b[5].GetSingle()) - lo);
                     if (p.Value.TryGetProperty("axis", out var ax)) axes[p.Name] = new Vector2(ax[0].GetSingle(), ax[1].GetSingle());
                     if (p.Value.TryGetProperty("lod_m", out var lm)) lods[p.Name] = lm.GetSingle();
+                    if (p.Value.TryGetProperty("no_shadow", out var ns) && ns.GetBoolean()) unshadowed.Add(p.Name);
                 }
             }
         }
@@ -217,6 +221,19 @@ public static class OwnProps
             }
             else mat.Roughness = 0.9f;
             return mat;
+        }
+    }
+
+    static ShaderMaterial? glow;
+    /// <summary>(E8 later) Lit panes: the vertex colour times --props-glow (2), unshaded (the zone's fog still on them).</summary>
+    static Material Glow
+    {
+        get
+        {
+            if (glow != null) return glow;
+            glow = new ShaderMaterial { ResourceName = "own_glow", Shader = new Shader { Code = "shader_type spatial; render_mode unshaded; uniform float energy = 2.0; void fragment() { ALBEDO = COLOR.rgb * energy; }" } };
+            glow.SetShaderParameter("energy", SurvivorUnchained.Args.Num("props-glow", 2f));
+            return glow;
         }
     }
 
@@ -288,7 +305,7 @@ public static class OwnProps
         bool hasLod = false;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false)) if (n.Name.ToString().EndsWith("_LOD1")) hasLod = true;
         // (E9d) clutter under half a metre casts no shadow (the shadow-draw budget)
-        bool small = Box(preset) is Aabb bx && bx.Size.Y < 0.5f;
+        bool small = Box(preset) is Aabb bx && bx.Size.Y < 0.5f || unshadowed.Contains(preset);
         float lodFrom = lods.TryGetValue(preset, out var lm) && !SurvivorUnchained.Args.Has("props-lod") ? lm : Lod1From;
         // (E8) a preset with a shadow proxy (<preset>_shadow, a few boxes): the proxy alone casts its shadow
         bool proxy = false;
@@ -308,6 +325,8 @@ public static class OwnProps
             if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
             if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
+            // (E8 later) a near prop's lit panes (a window, a lantern's glass): their colour as it is, unshaded, in the fog
+            if (m.Name.ToString().EndsWith("_glow")) { m.MaterialOverride = Glow; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
             m.CastShadow = small || proxy ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;

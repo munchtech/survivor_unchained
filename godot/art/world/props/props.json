@@ -622,7 +622,7 @@
  "curtain_b": {
   "tris": 12573,
   "tris_shadow": 72,
-  "tris_lod1": 5657,
+  "tris_lod1": 5656,
   "box": [
    -5.199,
    -1.8,
@@ -648,7 +648,7 @@
  "curtain_d": {
   "tris": 13984,
   "tris_shadow": 84,
-  "tris_lod1": 6292,
+  "tris_lod1": 6291,
   "box": [
    -5.198,
    -1.8,
@@ -709,6 +709,44 @@
    340.0,
    230.2,
    75.0
+  ]
+ },
+ "beyond_house": {
+  "tris": 414,
+  "tris_glow": 12,
+  "no_shadow": true,
+  "box": [
+   -3.3,
+   -3.2,
+   -5.6,
+   3.3,
+   6.9,
+   0.6
+  ]
+ },
+ "beyond_lamp": {
+  "tris": 132,
+  "tris_glow": 12,
+  "no_shadow": true,
+  "box": [
+   -0.075,
+   -0.4,
+   -0.15,
+   0.82,
+   2.6,
+   0.15
+  ]
+ },
+ "camp_ground": {
+  "tris": 832,
+  "no_shadow": true,
+  "box": [
+   -4.605,
+   -0.161,
+   -4.226,
+   4.685,
+   0.478,
+   4.097
   ]
  }
 }

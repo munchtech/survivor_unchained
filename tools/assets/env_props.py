@@ -341,9 +341,11 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
         a = i * 2.39996
         dirs.append(Vector((r * math.cos(a), z, r * math.sin(a))))
     occ, conv = [], []
-    # (E8 r2) the mesh is in Blender's frame (z up): the grime, the foot band and the ground plane read height off
-    # y (a depth) until now; GRIME['zup'] (a preset's "zup") reads it off z, as meant. Off: as every prop was judged.
-    UP = 2 if GRIME.get('zup') else 1
+    # Height is y here (bm is in the game frame after B2G). (E8 r2) "zup" read it off z (a depth) by mistake: the drums'
+    # grime and ground shade lay front to back (E8 later: measured, luma 0.10 at the back to 0.40 at the front). Fixed:
+    # height is y for all; the far castle alone keeps the old axis (its "old": {"grime_depth": true}, its judged look).
+    UP = 2 if OLD.get('grime_depth') else 1
+    top_y = GRIME.get('run_top') or max((v.co[UP] for v in bm.verts), default=0.0)
     for v in bm.verts:
         n = v.normal
         t = n.orthogonal().normalized()
@@ -404,7 +406,25 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
                     lt = lt * (1.0 - GRIME['foot'] * fb)
                     lt = lt.lerp(Vector((lt.x * 0.8, lt.y * 0.97, lt.z * 0.6)), 0.7 * fb)
                     lt = lt * (0.86 + 0.2 * smooth01(-0.6, 0.6, hnoise(co * 1.3, 43)))
-                    if abs(up) < 0.4 and GRIME['top'] > 0:
+                    if abs(up) < 0.4 and GRIME.get('runs'):
+                        # (E8 later) grime runs: soft vertical streaks hanging from the battlements, darker and a little
+                        # cooler (rain off the merlons and through the crenels), each its own length; one coordinate along
+                        # the face (round a drum: its arc), so a run goes down through the courses, not block by block
+                        rs, rl = GRIME['runs']
+                        if GRIME.get('ring'):
+                            u = math.atan2(co.z, co.x) * math.hypot(co.x, co.z)
+                        else:
+                            u = co.x if abs(poly.normal.y) >= abs(poly.normal.x) else co.z
+                        d = top_y - y
+                        a = smooth01(-0.15, 0.55, hnoise(Vector((u * 1.9, 0.0, u * 0.7)), 47)) * (0.55 + 0.45 * smooth01(-0.5, 0.5, hnoise(Vector((u * 6.1, 0.0, 0.0)), 53)))
+                        ln = rl * (0.3 + 0.7 * smooth01(-0.8, 0.8, hnoise(Vector((u * 0.83, 0.0, u * 0.41)), 59)))
+                        run = a * (1.0 - smooth01(0.0, 1.0, d / max(ln, 0.1))) * smooth01(-0.3, 0.2, d)
+                        drip = 0.35 * (1.0 - smooth01(0.0, 0.9, d))  # the drip line under the parapet, all along
+                        lt = lt.lerp(Vector((lt.x * 0.6, lt.y * 0.64, lt.z * 0.71)), rs * max(run, drip))
+                    if GRIME.get('base'):
+                        # (E8 later) the masonry darker toward its base (splash, damp, soil), over the lower half
+                        lt = lt * (1.0 - GRIME['base'] * (1.0 - smooth01(0.0, top_y * 0.55, y)))
+                    if abs(up) < 0.4 and GRIME['top'] > 0 and not GRIME.get('runs'):
                         st = smooth01(0.05, 0.45, hnoise(Vector((co.x * 2.7 + co.z * 2.7, 0.0, 0.0)), 41))
                         hi = smooth01(GRIME['top'] * 0.4, GRIME['top'] * 0.78, y)
                         lt = lt.lerp(Vector((lt.x * 0.62, lt.y * 0.62, lt.z * 0.56)), GRIME['streak'] * st * hi)
@@ -472,13 +492,16 @@ def finish(name, parts, mat, seed):
     kinds = [info[i][1] for i in pidx]
     bake_colours(me, tints, kinds, vmods=[info[i][4] for i in pidx])
     me.materials.append(mat)
-    if 'tile' in kinds:
-        # (E9d) the cloth's faces take the second material (main() splits them off as <name>_cloth)
-        cm = bpy.data.materials.get('cloth') or bpy.data.materials.new('cloth')
+    for kind_, mname in (('tile', 'cloth'), ('glow', 'glow')):
+        # (E9d) the cloth's faces take a material of their own (main() splits them off as <name>_cloth); (E8 later) so
+        # do a near prop's lit panes (<name>_glow: OwnProps' unshaded glow), not the far castle's (its one far mesh)
+        if kind_ not in kinds or (kind_ == 'glow' and GRIME.get('far')):
+            continue
+        cm = bpy.data.materials.get(mname) or bpy.data.materials.new(mname)
         me.materials.append(cm)
         for poly in me.polygons:
-            if kinds[poly.index] == 'tile':
-                poly.material_index = 1
+            if kinds[poly.index] == kind_:
+                poly.material_index = len(me.materials) - 1
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     return ob
@@ -3801,12 +3824,167 @@ def ridge_trees(parts, rng, lift, w, tint, seed, x0=44.0, x1=150.0):
                 parts.append(Part(lathe([(r * 0.68, h * 0.42), (0.0, h)], 5, cap0=False), 'stone', tn * 1.05, T(xx, y, z) @ turn, jitter=0.0))
 
 
+# ------------------------------------------------- (E8 later) beyond the gate, the camp's ground --
+
+def zone_height(path, size, res):
+    """A zone's ground height at world (x, z), bilinear over its heights.bin (res x res floats, size metres)."""
+    import array
+    a = array.array('f')
+    with open(os.path.join(ROOT, path), 'rb') as f:
+        a.frombytes(f.read())
+    cell = size / (res - 1)
+
+    def h(x, z):
+        u, v = (x + size / 2) / cell, (z + size / 2) / cell
+        i, j = max(0, min(res - 2, int(u))), max(0, min(res - 2, int(v)))
+        fu, fv = min(1.0, max(0.0, u - i)), min(1.0, max(0.0, v - j))
+
+        def g(ii, jj):
+            return a[jj * res + ii]
+        return (g(i, j) * (1 - fu) + g(i + 1, j) * fu) * (1 - fv) + (g(i, j + 1) * (1 - fu) + g(i + 1, j + 1) * fu) * fv
+    return h
+
+
+def drape(ob, d):
+    """(E8 later) A ground-hugging preset laid over the zone's ground: each vertex raised by the ground's height at its
+    world place over the height at the preset's origin (d: heights, size, res, at [x, z]; the preset placed unturned)."""
+    h = zone_height(d['heights'], d['size'], d['res'])
+    ax, az = d['at']
+    h0 = h(ax, az)
+    for v in ob.data.vertices:
+        # Blender frame: x is the world's x, -y the world's z, z up
+        v.co.z += h(ax + v.co.x, az - v.co.y) - h0
+    ob.data.update()
+
+
+def beyond_house(p):
+    """(E8 later) What the open gate shows (C04 A8, dawn): a stone house up the road beyond it, its front to the road,
+    a lit window by its near corner and a door, shutters, quoins and a plinth; a shingled roof and a chimney. Seen
+    only through the arch at about 60 m, in the dawn mist: plain boxes on the props atlas, no shadow. The origin: the
+    front's foot at its middle; the body runs down into the slope behind (the ground rises 0.45 m a metre)."""
+    rng = Rng(p['seed'])
+    stone, wood, roof = hexlin(p['stone']), hexlin(p['wood']), hexlin(p['roof'])
+    warm = hexlin(p['warm'])
+    w, d, eave = p['w'], p['d'], p['eave']
+    parts = []
+    sink = 3.2
+    parts.append(Part(box(w, eave + sink, d), 'stone', st(stone, rng, 0.03), T(0, (eave - sink) / 2, -d / 2), cap='stone', jitter=0.0))
+    parts.append(Part(box(w + 0.12, 0.45, d + 0.12), 'stone', stone * 0.8, T(0, 0.12, -d / 2), cap='stone', jitter=0.0))
+    for sx in (-1, 1):
+        for k in range(int(eave / 0.42)):
+            lw = 0.5 if k % 2 == 0 else 0.32
+            parts.append(Part(box(lw, 0.36, 0.06), 'stone', st(stone * 1.12, rng, 0.06), T(sx * (w / 2 - lw / 2 + 0.03), 0.4 + k * 0.42, 0.03), jitter=0.0))
+    gable_roof(parts, T(0, 0, -d / 2), w, d, p['pitch'], eave, roof, stone)
+    parts.append(Part(box(0.7, 2.2, 0.7), 'stone', stone * 0.85, T(w / 2 - 0.9, eave + 1.6, -d / 2 - 0.6), cap='stone', jitter=0.0))
+    # the lit window near the left corner, its frame, a mullion cross in front of the glow, the shutters open
+    wx, wy, ww, wh = p['win']
+    glow_win(parts, T(wx, wy, 0.03), ww, wh, warm)
+    for (sx_, sy_, px_, py_) in ((ww + 0.16, 0.1, 0, wh / 2 + 0.05), (ww + 0.2, 0.12, 0, -wh / 2 - 0.06), (0.08, wh, -ww / 2 - 0.04, 0), (0.08, wh, ww / 2 + 0.04, 0)):
+        parts.append(Part(box(sx_, sy_, 0.1), 'wood', wood * 0.8, T(wx + px_, wy + py_, 0.06), jitter=0.0))
+    parts.append(Part(box(0.05, wh, 0.05), 'wood', wood * 0.5, T(wx, wy, 0.1), jitter=0.0))
+    parts.append(Part(box(ww, 0.05, 0.05), 'wood', wood * 0.5, T(wx, wy + 0.05, 0.1), jitter=0.0))
+    for sx in (-1, 1):
+        parts.append(Part(box(ww / 2 + 0.04, wh + 0.04, 0.04), 'wood', wood * rng(0.85, 1.0), T(wx + sx * (ww * 0.5 + 0.08 + ww * 0.24), wy, 0.18) @ R('Y', sx * 1.2), jitter=0.0))
+    # the door, set back, its lintel and step
+    dx = p['door']
+    parts.append(Part(box(1.0, 2.0, 0.08), 'wood', wood * 0.7, T(dx, 1.0, 0.0), jitter=0.0))
+    parts.append(Part(box(1.3, 0.22, 0.2), 'wood', wood * 0.6, T(dx, 2.1, 0.05), jitter=0.0))
+    parts.append(Part(box(1.2, 0.12, 0.45), 'stone', stone * 0.9, T(dx, 0.06, 0.2), jitter=0.0))
+    return parts
+
+
+def beyond_lamp(p):
+    """(E8 later) A road lamp up the road beyond the gate (C04 A8, seen through the arch): a timber post, an arm out
+    over the road (+x) braced from below, an iron lantern hanging from it, its panes lit (the glow mesh). No shadow."""
+    wood, iron, warm = hexlin(p['wood']), hexlin(p['iron']), hexlin(p['warm'])
+    H, arm = p['h'], p['arm']
+    parts = [Part(box(0.15, H + 0.4, 0.15), 'wood', wood, T(0, (H - 0.4) / 2, 0), cap='endgrain', jitter=0.0),
+             Part(box(arm + 0.1, 0.11, 0.11), 'wood', wood * 0.9, T(arm / 2, H - 0.08, 0), jitter=0.0),
+             Part(box(0.07, 0.62, 0.07), 'wood', wood * 0.85, T(0.24, H - 0.35, 0) @ R('Z', 0.75), jitter=0.0)]
+    lx, ly = arm - 0.08, H - 0.55
+    parts.append(Part(box(0.02, 0.2, 0.02), 'iron', iron, T(lx, H - 0.24, 0), jitter=0.0))
+    parts.append(Part(box(0.3, 0.05, 0.3), 'iron', iron, T(lx, ly + 0.2, 0), jitter=0.0))
+    parts.append(Part(box(0.16, 0.08, 0.16), 'iron', iron, T(lx, ly + 0.27, 0), jitter=0.0))
+    parts.append(Part(box(0.26, 0.04, 0.26), 'iron', iron, T(lx, ly - 0.2, 0), jitter=0.0))
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            parts.append(Part(box(0.03, 0.4, 0.03), 'iron', iron, T(lx + sx * 0.12, ly, sz * 0.12), jitter=0.0))
+    parts.append(Part(box(0.21, 0.36, 0.21), 'glow', warm, T(lx, ly, 0), jitter=0.0))
+    return parts
+
+
+def pebble(r, rng, flat=0.55):
+    """(E8 later) A field stone: a lumpy low icosphere, squashed, its foot sunk (80 triangles)."""
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0)
+    sx, sz = rng(0.8, 1.25), rng(0.75, 1.15)
+    sd = rng(0, 100)
+    for v in bm.verts:
+        c = v.co.copy()
+        k = 1.0 + 0.22 * hnoise(c * 1.7 + Vector((sd, 0, 0)), int(sd))
+        v.co = Vector((c.x * sx * k * r, c.y * flat * k * r, c.z * sz * k * r))
+        if v.co.y < 0:
+            v.co.y *= 0.4
+    bm.normal_update()
+    return bm
+
+
+def stick(L, r, rng, segs=5):
+    """(E8 later) A stick along local x (a short tube, its ends cut)."""
+    bm = lathe([(r, -L / 2), (r * rng(0.75, 0.95), L / 2)], segs)
+    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / 2, 3, 'Z'))
+    return bm
+
+
+def flake(r, rng, n=6):
+    """(E8 later) A flat ragged scrap (ash, charcoal) lying on the ground."""
+    bm = bmesh.new()
+    c = bm.verts.new((0, 0.012, 0))
+    rim = [bm.verts.new((math.cos(2 * math.pi * k / n) * r * rng(0.55, 1.15), 0.008, math.sin(2 * math.pi * k / n) * r * rng(0.55, 1.15))) for k in range(n)]
+    for k in range(n):
+        bm.faces.new((c, rim[(k + 1) % n], rim[k]))
+    bm.normal_update()
+    return bm
+
+
+def camp_ground(p):
+    """(E8 later) The camp's ground dressing round the fire (origin: the fire's middle): field stones at the camp's
+    edge and by the paths' mouths, a kindling pile by the short log and loose twigs, ash and charcoal scraps round the
+    ring, charred brands. All low (stones <= 0.2 m out of the ground), no colliders, no shadow; draped over the
+    ground (main(), "drape")."""
+    rng = Rng(p['seed'])
+    stone, bark = hexlin(p['stone']), hexlin(p['bark'])
+    ash, char = hexlin(p['ash']), hexlin(p['char'])
+    parts = []
+    for (x, z, r) in p['stones']:
+        t = stone * rng(0.75, 1.15)
+        parts.append(Part(pebble(r, rng), 'stone', Vector((t.x, t.y * rng(0.97, 1.03), t.z * rng(0.94, 1.04))), T(x, r * 0.12, z) @ R('Y', rng(0, 6.28)), smooth=True, jitter=0.0))
+    kx, kz, ka = p['kindling']
+    at = T(kx, 0, kz) @ R('Y', ka)
+    for i in range(7):
+        L, r = rng(0.45, 0.7), rng(0.022, 0.04)
+        y = r + (0.05 if i >= 4 else 0.0) + (0.04 if i == 6 else 0.0)
+        parts.append(Part(stick(L, r, rng), 'bark', bark * rng(0.8, 1.1), at @ T(rng(-0.06, 0.06), y, -0.12 + (i % 4) * 0.075 + rng(-0.02, 0.02)) @ R('Y', rng(-0.15, 0.15)), jitter=0.0))
+    for (x, z, a, L) in p['twigs']:
+        parts.append(Part(stick(L, rng(0.012, 0.022), rng, 4), 'bark', bark * rng(0.7, 1.0), T(x, 0.015, z) @ R('Y', a), jitter=0.0))
+    r0, r1 = p['ash_r']
+    for i in range(p['ash_n']):
+        a = rng(0, 6.28)
+        rr = r0 + (r1 - r0) * rng() ** 1.6
+        dark = rng() < 0.45
+        parts.append(Part(flake(rng(0.04, 0.11) if dark else rng(0.07, 0.17), rng), 'stone', (char if dark else ash) * rng(0.8, 1.2), T(math.cos(a) * rr, 0.004 * (i % 3), math.sin(a) * rr) @ R('Y', rng(0, 6.28)), jitter=0.0))
+    for (x, z, a, L) in p['brands']:
+        parts.append(Part(stick(L, 0.035, rng, 5), 'endgrain', char * 1.3, T(x, 0.03, z) @ R('Y', a), jitter=0.0))
+    return parts
+
+
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt,
          'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier,
-         'curtain': curtain, 'gatehouse': gatehouse, 'tower': tower, 'castle': castle}
+         'curtain': curtain, 'gatehouse': gatehouse, 'tower': tower, 'castle': castle,
+         'beyond_house': beyond_house, 'beyond_lamp': beyond_lamp, 'camp_ground': camp_ground}
 
 
 # ---------------------------------------------------------------- build --
@@ -3858,7 +4036,9 @@ def main():
         GRIME['h'], GRIME['moss'] = p.get('grime', 0.0), p.get('moss_top', 0.0)
         GRIME['top'], GRIME['foot'], GRIME['streak'] = p.get('h', 0.0), p.get('foot', 0.0), p.get('streak', 0.0)
         GRIME['ao'] = p.get('ao', 1.0)
-        GRIME['zup'] = p.get('zup', False)
+        GRIME['far'] = p.get('far', False)
+        GRIME['runs'], GRIME['run_top'] = p.get('runs'), p.get('run_top', 0.0)
+        GRIME['base'], GRIME['ring'] = p.get('base_dark', 0.0), p['kind'] == 'tower'
         OLD.clear()
         OLD.update(p.get('old', {}))
         SHADOW.clear()
@@ -3867,20 +4047,26 @@ def main():
             parts = dress(parts, p['dress'], p['seed'])
         ob = finish(name, parts, mat, p['seed'])
         obs = [ob]
-        if len(ob.data.materials) > 1:
+        while len(ob.data.materials) > 1:
+            # the last extra material's faces split off as <name>_<material> (cloth, glow)
+            k = len(ob.data.materials) - 1
+            mname = ob.data.materials[k].name.split('.')[0]
+            have = set(bpy.context.scene.collection.objects)
             bpy.ops.object.select_all(action='DESELECT')
             ob.select_set(True)
             bpy.context.view_layer.objects.active = ob
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.select_all(action='DESELECT')
-            ob.active_material_index = 1
+            ob.active_material_index = k
             bpy.ops.object.material_slot_select()
             bpy.ops.mesh.separate(type='SELECTED')
             bpy.ops.object.mode_set(mode='OBJECT')
-            cl = [o for o in bpy.context.scene.collection.objects if o is not ob and o.type == 'MESH' and o.name.startswith(name)][0]
-            cl.name = name + '_cloth'
-            cl.data.materials.pop(index=0)
-            ob.data.materials.pop(index=1)
+            cl = [o for o in bpy.context.scene.collection.objects if o not in have and o.type == 'MESH'][0]
+            cl.name = name + '_' + mname
+            keep = cl.data.materials[k]
+            cl.data.materials.clear()
+            cl.data.materials.append(keep)
+            ob.data.materials.pop(index=k)
             for pl in cl.data.polygons:
                 pl.material_index = 0
             obs.append(cl)
@@ -3925,11 +4111,18 @@ def main():
             meta['lod_m'] = p['lod_m']  # (E8 r2) where its LOD1 takes over (OwnProps.Piece; the default 22 m)
         if SHADOW:
             meta['tris_shadow'] = tris(obs[-1])
-        if len(obs) > 1 and obs[1].name.endswith('_cloth'):
-            meta['tris_cloth'] = tris(obs[1])
+        for o in obs[1:]:
+            if o.name.endswith(('_cloth', '_glow')):
+                meta['tris_' + o.name.rsplit('_', 1)[1]] = tris(o)
+        if p.get('no_shadow'):
+            meta['no_shadow'] = True  # (E8 later) OwnProps casts no shadow from it (cheap dressing, backdrops)
         if p['kind'] == 'log':
             meta['axis'] = [round(p['r'] * 0.85, 4), p['r']]  # the axis's height and the bark's radius (OwnProps lays logs by it)
-        if meta['tris'] > 1000 and not p.get('far'):
+        if p.get('drape'):
+            drape(ob, p['drape'])
+            for o in obs[1:]:
+                drape(o, p['drape'])
+        if meta['tris'] > 1000 and not p.get('far') and not p.get('no_lod'):
             lo = lod1(ob, p.get('lod1', 0.45))
             obs.insert(1, lo)
             meta['tris_lod1'] = tris(lo)
