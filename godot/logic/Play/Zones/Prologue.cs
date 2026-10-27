@@ -289,20 +289,23 @@ public sealed class Prologue : ZoneRuntime
         // behind something tall still attacks (v5: it stood 40 s and never wound up).
         double dt = Math.Clamp(B.Time - knightWatchT, 0, 0.5);
         knightWatchT = B.Time;
+        bool holding = false;
         if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line") && knightHeldAll < KnightHoldAll)
         {
             bool shut = !KnightOpen(kw);
-            bool hold = G.Teaching != null || G.Saying || B.DraftOwed || (shut && knightHeldShut < KnightHoldShut);
-            if (hold)
+            holding = G.Teaching != null || G.Saying || B.DraftOwed || (shut && knightHeldShut < KnightHoldShut);
+            if (holding)
             {
                 if (kw.RangedT <= 0.25) { knightHeldAll += dt; if (shut) knightHeldShut += dt; }
                 kw.RangedT = Math.Max(kw.RangedT, 0.25);
             }
         }
+        // (until F7 is taught, with no hold on it, it may begin its run from close: it stood in melee reach for 10 to 20 s and never lunged)
+        if (knight is { Alive: true } kl) kl.LungeMin = !G.Taught("red_line") && !knightRan && !holding ? 0.3 : 2;
         if (knight is { Alive: true } kd && B.Time - knightDiagAt >= 3)
         {
             knightDiagAt = B.Time;
-            PaceNotes.Enqueue($"pace knight watch t={B.Time:0.0} state={kd.State} rangedT={kd.RangedT:0.0} dist={Dist(kd.X, kd.Z, B.Player.X, B.Player.Z):0.0} los={B.Collision.Raycast(kd.X, kd.Z, B.Player.X, B.Player.Z, 0.3) == null} held={knightHeldAll:0.0}/{knightHeldShut:0.0} open={KnightOpen(kd)}");
+            PaceNotes.Enqueue($"pace knight watch t={B.Time:0.0} state={kd.State} rangedT={kd.RangedT:0.0} dist={Dist(kd.X, kd.Z, B.Player.X, B.Player.Z):0.0} los={B.Collision.Raycast(kd.X, kd.Z, B.Player.X, B.Player.Z, 0.3) == null} held={knightHeldAll:0.0}/{knightHeldShut:0.0} open={KnightOpen(kd)} lungeMin={kd.LungeMin:0.0}{(knightHeldAll >= KnightHoldAll && B.Collision.Raycast(kd.X, kd.Z, B.Player.X, B.Player.Z, 0.3) != null ? " NO_CLEAR_RAY" : "")}");
         }
         if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
         // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
