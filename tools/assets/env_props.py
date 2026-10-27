@@ -420,7 +420,7 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
                         ln = rl * (0.3 + 0.7 * smooth01(-0.8, 0.8, hnoise(Vector((u * 0.83, 0.0, u * 0.41)), 59)))
                         run = a * (1.0 - smooth01(0.0, 1.0, d / max(ln, 0.1))) * smooth01(-0.3, 0.2, d)
                         drip = 0.35 * (1.0 - smooth01(0.0, 0.9, d))  # the drip line under the parapet, all along
-                        lt = lt.lerp(Vector((lt.x * 0.6, lt.y * 0.64, lt.z * 0.71)), rs * max(run, drip))
+                        lt = lt.lerp(Vector((lt.x * 0.48, lt.y * 0.52, lt.z * 0.6)), min(1.0, rs * max(run, drip)))
                     if GRIME.get('base'):
                         # (E8 later) the masonry darker toward its base (splash, damp, soil), over the lower half
                         lt = lt * (1.0 - GRIME['base'] * (1.0 - smooth01(0.0, top_y * 0.55, y)))
