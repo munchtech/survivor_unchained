@@ -85,7 +85,7 @@ public partial class LifeLamp : Control
     public bool Behind;
     public const float FadeTo = 0.55f, FadeTime = 0.25f, FadeBack = 0.4f, FadeHold = 0.8f;
     float figA = 1, sFigA = -1, clearFor = 99;
-    bool wasBehind;
+    bool wasBehind, liveShot;
     /// <summary>The Drowned Girl's orb: its rect (the glass and the refraction's reach) copied from the screen
     /// before the quad draws, so the empty glass shows what is behind it (the copy's rect is in the canvas's own
     /// coordinates: set where the orb stands, in OrbCopy).</summary>
@@ -182,6 +182,14 @@ public partial class LifeLamp : Control
             wasBehind = Behind;
             Send(UFigA, figA, ref sFigA);
             OrbCopy();
+            // (dg3, the judge: the fade shown working live: with --shot, the first frame a real trigger (not
+            // HudPin's behind=1) has taken her to FadeTo is saved as SHOT_livefade.png)
+            if (!liveShot && Behind && HudPin.Behind != true && figA <= FadeTo + 0.02f && Args.Get("shot") is { } sn)
+            {
+                liveShot = true;
+                GetViewport().GetTexture().GetImage().SavePng(ProjectSettings.GlobalizePath($"res://.shots/{sn}_livefade.png"));
+                GD.Print($"dg live fade shot at {Time.GetTicksMsec() / 1000.0:0.00}");
+            }
         }
         if (Number != drawnNumber) { drawnNumber = Number; figure.QueueRedraw(); }
         PoolTick();

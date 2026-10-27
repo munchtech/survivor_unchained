@@ -16,6 +16,13 @@ lamp_cold (behind the glass: hud_dg_orb.gdshader draws the glass over it and sho
 empty glass), so nothing of her covers the glass and its lowest quarter is always clear. lamp_mask.png: R her
 parts over the glass (none), G her hand and forearm (held at full when the figure fades). The grade warms the
 highlights (brow, nose, lips, knuckles, hair crests), deepens the verdigris and tones down the shoulder's hot spot.
+
+dg3 (the judge: the orb against her nose and lips, the cradle hidden behind the glass, the forearm a vertical stalk):
+the orb moved to d1b's spacing, its top at her lips and ~25 px of air to her chin (the source padded PADL px on the
+left for it); the old orb, hand and forearm cleared and a new cradle inpainted under the glass (dg3_hand.png: Krea 2
+turbo masked img2img over a sketch: palm under the glass, fingertips over the rim at 7-8 o'clock, thumb at 4-5, a
+short diagonal wrist-thick forearm). Her fingertips and thumb are the front layer over the glass (mask R), only in its
+outer RING px (1080); the rest of the glass's inside is the shader's (nothing of her behind it).
 """
 import json
 import os
@@ -28,8 +35,10 @@ from scipy import ndimage
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui16_dg_src"
 SEED = 6305
-NAME = "dg2_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut)
-GLASS = (178.9, 167.8, 139.8)  # seed 6305's glass (the inpaint kept its upper half): centre, radius
+NAME = "dg3_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut)
+PADL = 128                 # the source's left padding (dg3: the orb further left)
+GLASS = (248.0, 359.9, 139.8)  # dg3's glass (placed by the guide): centre, radius
+RING = 12.0                # her fingertips and thumb may lie over the glass's outer RING px (1080), no further in
 OUT = os.path.join(WT, "godot", "art", "ui", "lamp_life", "drowned")
 
 ORB_D = 120.0       # the glass across at 1080
@@ -39,7 +48,7 @@ RIGHT_X = 770.0     # the quad's right edge on the screen (the hair runs on unde
 BAR_LINE = 930.0    # the bar's top line: above it, she fades when something is behind her
 CHAIN_Y = 1047.0    # the chain's row (the ring orb's eye)
 GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
-SHOULDER = (530.0, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
+SHOULDER = (530.0 + PADL, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
 
 
 def fit_circle(alpha, box):
@@ -82,22 +91,31 @@ def main():
     # her bronze (even lit red by the glass, under ~2.4 red over green; never the smoked glass's violet)
     bronze = (R / (G + 0.03) < 2.4) & (B < 0.92 * G) & (alpha > 0.5) & (np.maximum(R, G) > 0.06)
     glint = (np.min(rgb, axis=2) > 0.55)
-    # her hand inside the circle: the bronze there joined to the hand below it (the painted speculars float free)
-    cand = ndimage.binary_opening(inside & bronze & ~glint, iterations=2)
-    lab, n = ndimage.label(cand | (bronze & ~inside & (d < r + 40)))
-    ring = (d > r + 2) & (d < r + 6) & (yy > cy) & bronze
+    # her fingertips and thumb over the glass: the bronze inside its outer RING joined to her hand outside it (the
+    # painted orb's own glints and reflections float free); deeper in, nothing of her
+    s0 = ORB_D / (2 * r)
+    ring_px = RING / s0
+    # (only where the fingertips and thumb are: 7-8 o'clock and 4-5; under the glass's foot her palm is behind it)
+    th = np.degrees(np.arctan2(yy - cy, xx - cx))
+    sector = ((th > 18) & (th < 64)) | ((th > 116) & (th < 162))
+    cand = ndimage.binary_opening(inside & bronze & ~glint & (d > r - ring_px - 2) & sector, iterations=1)
+    lab, n = ndimage.label(cand | (bronze & ~inside & (d < r + 60)))
+    ring = (d > r + 2) & (d < r + 8) & (yy > cy) & bronze
     keep = set(np.unique(lab[ring])) - {0}
     hand_in = inside & np.isin(lab, list(keep)) & cand
-    hand_in = ndimage.binary_dilation(ndimage.binary_fill_holes(ndimage.binary_closing(hand_in, iterations=2)), iterations=1) & inside
-    hs = ndimage.gaussian_filter(hand_in.astype(np.float32), 1.2)
+    hand_in = ndimage.binary_fill_holes(ndimage.binary_closing(hand_in, iterations=2)) & inside & (d > r - ring_px - 2)
+    hs = ndimage.gaussian_filter(hand_in.astype(np.float32), 0.9)
+    front = np.clip(hs * 1.6 - 0.3, 0, 1) * (d < r + 1.5) * np.clip((d - (r - ring_px - 2)) / 2.0, 0, 1)
+    front *= ndimage.gaussian_filter(sector.astype(np.float32), 2.0)
     glass = np.clip((r + 1.5 - d) / 1.5, 0, 1)
-    hole = glass * (1 - np.clip(hs * 1.6 - 0.3, 0, 1))
+    hole = glass * (1 - front)
     # (the painted blood's glow spilt past the glass onto the black: not her)
     spill = (~inside) & (R > 1.8 * G) & (R > 1.5 * B) & ~bronze
     a = alpha * (1 - hole) * (1 - ndimage.gaussian_filter(spill.astype(np.float32), 1.0))
     # her hand and forearm (held at full in the fade): left of her neck and chest, below the glass's middle
-    bnd = np.interp(yy, [0, 520, 600, 660, 768], [300, 292, 268, 255, 250])
-    held = ndimage.gaussian_filter(((xx < bnd) & (yy > cy) & (a > 0.05)).astype(np.float32), 2.0)
+    bnd = np.interp(yy, [0, 520, 600, 660, 768], [300, 292, 268, 255, 250]) + PADL
+    held = ndimage.gaussian_filter(((xx < bnd) & (yy > cy - 0.2 * r) & (a > 0.05)).astype(np.float32), 2.0)
+    held = np.maximum(held, front)
     # grade: warm bronze, the blood still reads first
     lum = (0.3 * R + 0.59 * G + 0.11 * B)[..., None]
     g = lum + (rgb - lum) * GRADE["sat"]
@@ -145,7 +163,7 @@ def main():
     out = Image.fromarray((np.clip(np.dstack([orgb, oa]), 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
     os.makedirs(OUT, exist_ok=True)
     out.save(os.path.join(OUT, "lamp_cold.png"))
-    mk = Image.fromarray((np.dstack([np.zeros_like(held), held, np.zeros_like(held)]) * 255 + 0.5).astype(np.uint8), "RGB")
+    mk = Image.fromarray((np.dstack([front, held, np.zeros_like(held)]) * 255 + 0.5).astype(np.uint8), "RGB")
     mk = mk.resize((cw2, ch2), Image.LANCZOS, box=box)
     mk.save(os.path.join(OUT, "lamp_mask.png"))
 
