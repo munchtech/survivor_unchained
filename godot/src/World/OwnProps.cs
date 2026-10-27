@@ -275,11 +275,14 @@ public static class OwnProps
         BacklightEnabled = true, Backlight = new Color(0.22f, 0.2f, 0.17f),
     };
 
+    /// <summary>--props-skip a,b,...: presets left out (the kit's piece keeps its place), for bisecting.</summary>
+    static readonly HashSet<string> Skip = new((SurvivorUnchained.Args.Get("props-skip") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries));
+
     /// <summary>A preset's node (its LOD0 and LOD1 by distance, shadows on), or null if it was never built.</summary>
     public static Node3D? Piece(string preset)
     {
         var path = $"{Dir}/{preset}.glb";
-        if (!ResourceLoader.Exists(path)) return null;
+        if (!ResourceLoader.Exists(path) || Skip.Contains(preset)) return null;
         var root = GD.Load<PackedScene>(path).Instantiate<Node3D>();
         root.Name = "own_" + preset;
         bool hasLod = false;

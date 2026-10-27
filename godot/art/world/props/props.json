@@ -661,8 +661,8 @@
  "gatehouse": {
   "tris": 17225,
   "lod_m": 45,
-  "tris_shadow": 192,
-  "tris_lod1": 7750,
+  "tris_shadow": 308,
+  "tris_lod1": 7751,
   "box": [
    -4.316,
    -1.8,

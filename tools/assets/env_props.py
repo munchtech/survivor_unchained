@@ -3290,7 +3290,18 @@ def gatehouse(p):
     wall_parts(parts, rng, W, ph + 0.25, 0.5, 0.5, 0.95, stone * 0.98, mortar, lambda x: 99.0, x0, at=T(0, HG - 0.25, -DG / 2 + 0.25), sink=0.0)
     merlons(parts, rng, x0 + 0.04, W / 2 - 0.04, top, -DG / 2 + 0.25, 0.5, mh, 0.95, 0.5, stone, broken={2}, fall_z=-DG / 2 + 1.1, fall_y=HG)
     flags(parts, rng, x0 + 0.02, W / 2 - 0.02, -DG / 2 + 0.5, DG / 2 - F, HG, stone, rows=4)
-    shadow_box(W, top + foot, DG, T(0, (top - foot) / 2, 0))
+    # (E8c) the proxy keeps the passage open, the arch's curve through it (as the core): the dawn sun, low in the
+    # north-north-east, shines through the gate onto the road (Low Ford's gatedawn left sun pool; a solid block shut it out)
+    for sg in (-1, 1):
+        pts = [(sg * W / 2, -foot), (sg * r, -foot), (sg * r, spring)]
+        for i in range(1, 12):
+            a = (0.0 if sg > 0 else math.pi) + sg * (math.pi / 2) * (i / 12)
+            pts.append((r * math.cos(a), spring + r * math.sin(a)))
+        pts += [(0.0, spring + r), (0.0, top), (sg * W / 2, top)]
+        if sg > 0:
+            pts.reverse()
+        # (shadow_d: the block as deep as the KayKit gate's, not the passage's 5 m, so the slant reaches through)
+        SHADOW.append((prism(pts, p.get('shadow_d', DG), bevel=0.0), T(0, 0, 0)))
     return parts
 
 
@@ -3811,14 +3822,21 @@ def main():
                 sb.from_mesh(tmp)
                 bpy.data.meshes.remove(tmp)
                 bm_.free()
+            if p.get('shadow_floor'):
+                # (E8c) the proxy stands on the piece's floor, its footing cut off: where the ground rises under the wall
+                # (Low Ford's gate on its slope; the ground casts no shadow) a sunk footing cast the hill's shadow over
+                # the road the low dawn sun grazes, which the KayKit piece, stood on the floor, never did
+                for v in sb.verts:
+                    v.co.z = max(v.co.z, 0.0)
             if p.get('shadow_h'):
                 # (E8 r2) the proxy squashed to this height (its teeth kept): the shadow the KayKit piece cast, so the
                 # moon's falls short of the road she walks and the dawn's sun pools stay lit (the piece stands taller)
-                zt = max(v.co.z for v in sb.verts)
+                # (E8c) shadow_keep: the proxy stands true up to this height (the gatehouse's passage, its arch), squashed above
+                zt, zk = max(v.co.z for v in sb.verts), p.get('shadow_keep', 0.0)
                 if zt > p['shadow_h']:
                     for v in sb.verts:
-                        if v.co.z > 0:
-                            v.co.z *= p['shadow_h'] / zt
+                        if v.co.z > zk:
+                            v.co.z = zk + (v.co.z - zk) * (p['shadow_h'] - zk) / (zt - zk)
             bmesh.ops.triangulate(sb, faces=sb.faces[:])
             sme = bpy.data.meshes.new(name + '_shadow')
             sb.to_mesh(sme)
