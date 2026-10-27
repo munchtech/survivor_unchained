@@ -584,7 +584,7 @@ public partial class GameHud : CanvasLayer
         int lv = ember ? b.EmberLevel : Math.Max(1, level.Level);
         if (lv != shownLevel || ember != shownEmber)
         {
-            if (lv > shownLevel && ember == shownEmber && shownLevel > 0) { barShown = 1; irons.Chain.Rise(); }
+            if (lv > shownLevel && ember == shownEmber && shownLevel > 0) { barShown = 1; irons.Chain.Rise(); irons.River?.Thread.Rise(); }
             shownLevel = lv; shownEmber = ember;
             barLevel = lv;
         }
@@ -1227,7 +1227,8 @@ public partial class GameHud : CanvasLayer
         ? killsChip.GetGlobalRect().Merge(gold.GetGlobalRect()).Merge(tallyTime.GetGlobalRect() is var tt && tallyTime.IsVisibleInTree() ? new Rect2(tt.End.X - tallyTime.GetMinimumSize().X, tt.Position.Y, tallyTime.GetMinimumSize().X, tt.Size.Y) : gold.GetGlobalRect()) : null;
     /// <summary>The lock at the chain's middle, the ember's level stamped on it (EmberChain.Lock: from the
     /// chain's sag at its middle, shackle to foot).</summary>
-    public Rect2? EmberLockArea => irons.Chain.IsVisibleInTree() ? new Rect2(960 - 16, Instrument.EyeL.Y + 4, 32, 38) : null;
+    public Rect2? EmberLockArea => irons.River is { } river ? (river.Thread.IsVisibleInTree() ? new Rect2(DgRiver.BossAt - Vector2.One * DgRiver.BossR, Vector2.One * 2 * DgRiver.BossR) : null)
+        : irons.Chain.IsVisibleInTree() ? new Rect2(960 - 16, Instrument.EyeL.Y + 4, 32, 38) : null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>
@@ -1344,6 +1345,7 @@ public partial class GameHud : CanvasLayer
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         irons.Chain.Set(barShown, barEmber, barLevel);
+        irons.River?.Thread.Set(barShown, barEmber, barLevel);
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;

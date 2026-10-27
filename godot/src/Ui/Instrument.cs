@@ -46,14 +46,18 @@ public partial class Instrument : Control
     public static float SocksX => Mid - (6 * Sock + 5 * SockGap) / 2;
     public static float SmallY => SockY + Sock / 2;
     public static Vector2 LifeAt => new(Mid - Reach, VY);
-    public static Vector2 ArtAt => new(Mid + Reach, VY);
-    public static Vector2 DraughtAt => new(SocksX - SeatClear - SmallR - SmallBand, SmallY);
-    public static Vector2 DashAt => new(SocksX + 6 * Sock + 5 * SockGap + SeatClear + SmallR + SmallBand, SmallY);
-    /// <summary>The chain's ends: the riveted joints on the cuffs' outer edge, 32 degrees below level.</summary>
-    public static Vector2 EyeL => LifeAt + JointOff;
-    /// <summary>The chain's filled links: its rect from the left eye to the lock's left edge (the lock stands at the middle, 32 wide).</summary>
-    public static Rect2 ChainFill => new(EyeL.X, EyeL.Y - 17, Mid - 16 - EyeL.X, 38);
-    public static Vector2 EyeR => new(2 * Mid - EyeL.X, EyeL.Y);
+    /// <summary>(The Drowned Girl, UI 17: the Flare's glass in the eddy, the draught and the dash where the river's
+    /// geo puts them, DgRiver.)</summary>
+    public static Vector2 ArtAt => LifeLamp.Drowned ? DgRiver.FlareAt : new(Mid + Reach, VY);
+    public static Vector2 DraughtAt => LifeLamp.Drowned ? DgRiver.DraughtAt : new(SocksX - SeatClear - SmallR - SmallBand, SmallY);
+    public static Vector2 DashAt => LifeLamp.Drowned ? DgRiver.DashAt : new(SocksX + 6 * Sock + 5 * SockGap + SeatClear + SmallR + SmallBand, SmallY);
+    /// <summary>The chain's ends: the riveted joints on the cuffs' outer edge, 32 degrees below level (the Drowned
+    /// Girl: the river's crest's ends, at its middle height, so "chain" brackets the thread on it).</summary>
+    public static Vector2 EyeL => LifeLamp.Drowned ? new(DgRiver.Crest[0].X, DgRiver.CrestRect.GetCenter().Y) : LifeAt + JointOff;
+    /// <summary>The chain's filled links: its rect from the left eye to the lock's left edge (the lock stands at the middle, 32 wide;
+    /// the Drowned Girl: the whole thread, which fills along all of it).</summary>
+    public static Rect2 ChainFill => LifeLamp.Drowned ? new(EyeL.X, EyeL.Y - 17, EyeR.X - EyeL.X, 38) : new(EyeL.X, EyeL.Y - 17, Mid - 16 - EyeL.X, 38);
+    public static Vector2 EyeR => LifeLamp.Drowned ? new(DgRiver.Crest[^1].X, EyeL.Y) : new(2 * Mid - EyeL.X, EyeL.Y);
     /// <summary>HUD A2: the first link's centre from LifeAt: the eye on the life lamp's font (LifeLamp.Eye in
     /// its quad, the quad's foot on LifeLamp.Floor); mirrored on the right.</summary>
     public static Vector2 JointOff => LampAt + LifeLamp.Eye - LifeAt;
@@ -61,13 +65,16 @@ public partial class Instrument : Control
     /// her geo puts her).</summary>
     public static Vector2 LampAt => LifeLamp.Drowned ? LifeLamp.At : new(LifeAt.X - LifeLamp.Canvas.X / 2, LifeLamp.Floor - LifeLamp.FootY);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
-    public static Rect2 Bounds => new(Mid - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
+    public static Rect2 Bounds => LifeLamp.Drowned ? new(LifeLamp.At.X, LifeLamp.At.Y, DgRiver.At.X + DgRiver.ArtSize.X - LifeLamp.At.X, 1080 - LifeLamp.At.Y)
+        : new(Mid - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
 
     public readonly LifeLamp Life;
     public readonly Vessel Art;
     public readonly Socket[] Sockets = new Socket[Content.Weapons.MaxWeapons];
     public readonly Round Draught, Dash;
     public readonly EmberChain Chain;
+    /// <summary>The Drowned Girl (--hud drowned): her hair's river, the bar (null in the other HUDs).</summary>
+    public readonly DgRiver? River;
     /// <summary>The passives over the six places; what is on her (burning, shielded) over her life; the
     /// art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives, Statuses;
@@ -85,13 +92,23 @@ public partial class Instrument : Control
         // cuffs' bands, then each cuff's front ear over the chain's first link, then the key tags)
         AddChild(SillStrap);
         Chain = new EmberChain();
+        // (the Drowned Girl: the river under her figure, so its strands come out of her hair; no sill, no chain)
+        if (LifeLamp.Drowned)
+        {
+            River = new DgRiver();
+            AddChild(River);
+            SillStrap.Visible = false;
+            Chain.Visible = false;
+        }
         Life = new LifeLamp { Position = LampAt };
         AddChild(Life);
         Art = new Vessel(false) { Position = ArtAt - Vessel.Half };
+        // (the Drowned Girl: the Flare's glass bare in the eddy's hole, sized to it, until piece 4's coal)
+        if (LifeLamp.Drowned) { Art.Bare(); Art.Scale = Vector2.One * (DgRiver.FlareR / R); }
         AddChild(Art);
         for (int i = 0; i < Sockets.Length; i++)
         {
-            Sockets[i] = new Socket { Seat = i % 3, Position = new Vector2(SocksX + i * (Sock + SockGap), SockY) };
+            Sockets[i] = new Socket { Seat = i % 3, Index = i, Position = new Vector2(SocksX + i * (Sock + SockGap), SockY) };
             AddChild(Sockets[i]);
         }
         Draught = new Round(Round.Kind.Draught) { Position = DraughtAt - Round.Half };
@@ -99,15 +116,23 @@ public partial class Instrument : Control
         Dash = new Round(Round.Kind.Dash) { Position = DashAt - Round.Half };
         AddChild(Dash);
         AddChild(Chain);
+        if (River != null) AddChild(River.Thread);
         // (UI 16 ring: the orb casing's eye's front half over the chain's first link, which runs through it)
         if (!HerLight.On && LifeLamp.Front is { } eyeFront)
             AddChild(new TextureRect { Texture = eyeFront, Position = LampAt, Size = LifeLamp.Canvas, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
-        AddChild(new CuffFront(true) { Position = ArtAt - Vessel.Half });
+        if (!LifeLamp.Drowned) AddChild(new CuffFront(true) { Position = ArtAt - Vessel.Half });
         Passives = Style.H(6);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
         Passives.Position = new Vector2(SocksX, SockY - 34);
         Passives.Size = new Vector2(6 * Sock + 5 * SockGap, 28);
+        // (the Drowned Girl: over the seats, clear above the river's crest)
+        if (LifeLamp.Drowned)
+        {
+            float mid = (DgRiver.Seat(0).X + DgRiver.Seat(5).X) / 2, w = DgRiver.Seat(5).X - DgRiver.Seat(0).X + DgRiver.SeatD;
+            Passives.Position = new Vector2(mid - w / 2, DgRiver.CrestRect.Position.Y - 34);
+            Passives.Size = new Vector2(w, 28);
+        }
         AddChild(Passives);
         Statuses = Style.H(10);
         Statuses.Alignment = BoxContainer.AlignmentMode.Center;
@@ -126,6 +151,13 @@ public partial class Instrument : Control
         draughtKey.Place(DraughtAt.X, 989);  // plate top: the tag's hole (13, 3.6) meets the ring's (35, 64.5) under the draught's band centre
         dashKey.Place(DashAt.X, 989);
         artKey.Place(ArtAt.X, 1057);  // the ring hangs at the band's foot (1050), the plate within 1053-1073
+        // (the Drowned Girl: under the small cuffs' feet, and under the eddy's glass on its bronze lip, as the concept has them)
+        if (LifeLamp.Drowned)
+        {
+            draughtKey.Place(DraughtAt.X, DraughtAt.Y + SmallR + SmallBand + 3);
+            dashKey.Place(DashAt.X, DashAt.Y + SmallR + SmallBand + 3);
+            artKey.Place(ArtAt.X, ArtAt.Y + DgRiver.FlareR + 7);
+        }
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         Keys();
         Lay(Sockets.Length, true);
@@ -149,6 +181,7 @@ public partial class Instrument : Control
         Chain.Modulate = For(keep == "chain");
         Chain.Pulse = pulse;
         Life.Modulate = For(false);
+        if (River != null) { River.Modulate = For(false); River.Thread.Modulate = For(keep == "chain"); River.Thread.Pulse = pulse; }
         Art.Modulate = artKey.Modulate = For(keep == "art");
         // (the chain's callout: what stands over the chain fades with the six places, so the arrow's
         // point reads as the chain's)
@@ -161,7 +194,8 @@ public partial class Instrument : Control
     }
 
     /// <summary>Debug (--hud-pin seats=f3:h:e): the seats as shown, whatever she carries. f3 is filled at rank 3
-    /// of 8, h filled and hot (can evolve), e empty (night); fewer codes than seats leaves the rest empty.</summary>
+    /// of 8, c3 the same coming back (on cooldown), h filled and hot (can evolve), e empty (night); fewer codes than
+    /// seats leaves the rest empty.</summary>
     public void PinSeats(string[] codes, bool night)
     {
         var defs = System.Linq.Enumerable.ToList(Content.Weapons.All.Values);
@@ -173,7 +207,9 @@ public partial class Instrument : Control
             var d = defs[(i * 7) % defs.Count];
             bool hot = c.StartsWith("h");
             int rank = hot ? Content.Weapons.MaxRank : int.TryParse(c.AsSpan(1), out var r) ? Math.Clamp(r, 1, Content.Weapons.MaxRank) : 1;
-            Sockets[i].Show(d.Id, d.Art, ItemViews.SchoolColors[d.School], 1, rank, Content.Weapons.MaxRank, false, hot);
+            // (c3: filled at rank 3 and coming back, a quarter, half or three quarters ready by its place)
+            double ready = c.StartsWith("c") ? 0.25 + 0.25 * (i % 3) : 1;
+            Sockets[i].Show(d.Id, d.Art, ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot);
             shown++;
         }
         Lay(shown, night);
@@ -191,7 +227,9 @@ public partial class Instrument : Control
         for (int i = 0; i < Sockets.Length; i++)
         {
             Sockets[i].Visible = i < n;
-            Sockets[i].Position = new Vector2(x0 + i * (Sock + SockGap), SockY);
+            // (the Drowned Girl: each ring has its own place in the current; by day the ones not carried stand empty)
+            if (LifeLamp.Drowned) { Sockets[i].Visible = true; Sockets[i].Position = DgRiver.Seat(i) - Sockets[i].Size / 2; }
+            else Sockets[i].Position = new Vector2(x0 + i * (Sock + SockGap), SockY);
         }
     }
 }
@@ -224,6 +262,8 @@ public partial class Vessel : Control
     public string Number = "";
     public Texture2D? Glyph;
     public Color GlyphTint = Colors.White;
+    /// <summary>The Drowned Girl: the glass without its iron (it sits in the river's eddy).</summary>
+    public void Bare() => cuff.Visible = false;
     float slosh, shownLevel = -1, flushShown = -1;
     string drawnNumber = "";
     Texture2D? drawnGlyph;
@@ -636,6 +676,8 @@ public partial class Socket : Control
     /// <summary>HUD v2: which of the three old seat castings it wears (seat index % 3, so neighbors differ); with
     /// the six castings made (hud/seat_5.png), each seat wears its own, in the order the seats were made.</summary>
     public int Seat;
+    /// <summary>Its place in the row (the Drowned Girl's rings: which ring and well it wears, DgRiver).</summary>
+    public int Index;
     static int made;
     readonly int nth = made++;
     Texture2D? art, inlay;
@@ -679,7 +721,7 @@ public partial class Socket : Control
     public Socket()
     {
         MouseFilter = MouseFilterEnum.Ignore;
-        Size = new Vector2(Instrument.Sock, Instrument.Sock);
+        Size = LifeLamp.Drowned ? new Vector2(DgRiver.SeatD, DgRiver.SeatD) : new Vector2(Instrument.Sock, Instrument.Sock);
         PivotOffset = Size / 2;
         TextureFilter = TextureFilterEnum.LinearWithMipmaps;
     }
@@ -735,6 +777,7 @@ public partial class Socket : Control
 
     public override void _Draw()
     {
+        if (LifeLamp.Drowned) { DrawRing(); return; }
         float s = Size.X;
         // HUD v2: the cast seat (68 px, the 58 seat at (4, 4)); no drawn collar, floor or rivets with it.
         int cast = Cast;
@@ -819,6 +862,81 @@ public partial class Socket : Control
         {
             float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
             DrawRect(new Rect2(1, 1, s - 2, s - 2), Style.Gold with { A = a }, false, 2);
+        }
+    }
+
+    /// <summary>The Drowned Girl (UI 17): the seat as a hair-bound bronze ring in the river (DgRiver.Ring) round a well of
+    /// dark river glass (DgRiver.Well). In it, what the square seats show, read the same way: the skill's inlay (or
+    /// its glyph), brighter when ready; the shade that sweeps off from the top as it readies, cut to the well's round;
+    /// the rank as eight coals along the well's foot; ready to evolve, the ring's inner edge breathing gold (gold
+    /// when evolved). An empty seat is the ring round a darker, empty well.</summary>
+    void DrawRing()
+    {
+        var c = Size / 2;
+        float hr = DgRiver.Hole(Index);
+        if (hr <= 0) hr = Size.X * 0.34f;
+        if (DgRiver.Well(Index) is { } well)
+        {
+            var ws = well.GetSize();
+            DrawTextureRect(well, new Rect2(c - ws / 2, ws), false, filled ? Colors.White : new Color(0.7f, 0.7f, 0.7f));
+        }
+        else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
+        if (filled)
+        {
+            float g = Mathf.Min(38, hr * 2 * 0.80f);
+            if (inlay != null)
+            {
+                var col3 = ready >= 0.98 ? new Color(1.12f, 1.12f, 1.12f) : Colors.White;
+                DrawTextureRect(inlay, new Rect2(c - new Vector2(g, g) / 2, new Vector2(g, g)), false, col3.Lerp(new Color(2.0f, 1.8f, 1.5f), (float)flash));
+            }
+            else if (art != null)
+            {
+                var col2 = ready >= 0.98 ? new Color(1.25f, 1.25f, 1.25f) : Colors.White;
+                DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2.Lerp(new Color(2.2f, 2.0f, 1.7f), (float)flash));
+            }
+            // the shade, from the top of the well down to what is still to come back, cut to the round
+            if (ready < 0.98)
+            {
+                float r = hr + 0.5f, yCut = -r + 2 * r * (float)(1 - ready);
+                var pts = new List<Vector2>();
+                float a0 = Mathf.Asin(Mathf.Clamp(yCut / r, -1, 1));
+                // (from the cut's right end round the top to its left end)
+                const int n = 40;
+                for (int k = 0; k <= n; k++)
+                {
+                    float a = a0 + (-Mathf.Pi - 2 * a0) * k / n;
+                    pts.Add(c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r);
+                }
+                if (pts.Count >= 3) DrawColoredPolygon(pts.ToArray(), new Color(0.015f, 0.012f, 0.02f, 0.72f));
+                // (its edge a water line, so where it stands reads at a glance: a hair of cold light across the well)
+                float half = Mathf.Sqrt(Mathf.Max(0, r * r - yCut * yCut)) - 1.5f;
+                if (half > 2) DrawLine(c + new Vector2(-half, yCut), c + new Vector2(half, yCut), new Color(0.80f, 0.92f, 0.88f, 0.55f), 1.3f, true);
+            }
+            // the rank: eight coals along the well's foot, those reached lit
+            for (int i = 0; i < max; i++)
+            {
+                float t = max == 1 ? 0.5f : (float)i / (max - 1);
+                float a = Mathf.DegToRad(90 + 52 - 104 * t);
+                var pc = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (hr - 4.2f);
+                if (i < rank)
+                {
+                    DrawCircle(pc, 2.3f, new Color("#ff8a3a") with { A = 0.22f }, true, -1, true);
+                    DrawCircle(pc, 1.5f, (evolved || ripe ? Style.EmberHi : new Color("#e8702a")) with { A = 0.95f }, true, -1, true);
+                    DrawCircle(pc + new Vector2(-0.3f, -0.5f), 0.7f, new Color("#ffd8a8") with { A = 0.85f }, true, -1, true);
+                }
+                else DrawCircle(pc, 1.1f, new Color(0, 0, 0, 0.5f), true, -1, true);
+            }
+        }
+        if (DgRiver.Ring(Index) is { } ring)
+        {
+            var rs = ring.GetSize();
+            DrawTextureRect(ring, new Rect2(c - rs / 2, rs), false);
+        }
+        if (filled && (evolved || ripe))
+        {
+            float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
+            DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
+            DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
         }
     }
 
