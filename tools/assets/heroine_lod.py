@@ -321,6 +321,14 @@ def slot_join(items, tag=""):
     one mesh a material was before slots (heroine_outfits.py, armor lead 1): each slot mesh's pieces (extras "pieces":
     [their place in the material's join, their triangles]) cut out, each piece's own run of vertices, and laid back
     in the join's order. Without "pieces", the meshes end to end in their "rank"."""
+    # gltf_compact drops an all-zero second weight set per mesh: a slot without it joins with zeros (Body 15)
+    for k1 in ("JOINTS_1", "WEIGHTS_1"):
+        have = [a for _, a, _ in items if k1 in a]
+        if have:
+            for _, a, _ in items:
+                if k1 not in a:
+                    ref = have[0][k1]
+                    a[k1] = (np.zeros((len(a["POSITION"][0]),) + ref[0].shape[1:], ref[0].dtype), ref[1])
     keys = list(items[0][1])
     assert all(set(a) == set(keys) for _, a, _ in items), f"{tag}: its slots' meshes carry different attributes"
     for k in keys:
