@@ -135,6 +135,28 @@ public static class Wear
         return r;
     }
 
+    /// <summary>Splits a dye string: "#rrggbb", "#rrggbb:metal" or "#rrggbb:paint" (suffix case-insensitive, whitespace trimmed).
+    /// An explicit suffix wins. With none, Metal is true only for a near-neutral light colour (HSV saturation under 0.15 and
+    /// value at least 0.5: silver, steel, pewter); every other colour is paint. Gold, bronze and brass dyes must carry ":metal"
+    /// (a hue can't tell gold from yellow paint). Hex comes back without the suffix.</summary>
+    public static (string Hex, bool Metal) DyeFinish(string dye)
+    {
+        var parts = dye.Split(':', 2);
+        var hex = parts[0].Trim();
+        if (parts.Length == 2)
+        {
+            var sfx = parts[1].Trim();
+            if (sfx.Equals("metal", StringComparison.OrdinalIgnoreCase)) return (hex, true);
+            if (sfx.Equals("paint", StringComparison.OrdinalIgnoreCase)) return (hex, false);
+        }
+        var h = hex.TrimStart('#');
+        if (h.Length < 6 || !int.TryParse(h.AsSpan(0, 6), System.Globalization.NumberStyles.HexNumber, null, out var v)) return (hex, false);
+        double r = (v >> 16 & 255) / 255.0, g = (v >> 8 & 255) / 255.0, b = (v & 255) / 255.0;
+        double mx = Math.Max(r, Math.Max(g, b)), mn = Math.Min(r, Math.Min(g, b));
+        double sat = mx <= 0 ? 0 : (mx - mn) / mx;
+        return (hex, sat < 0.15 && mx >= 0.5);
+    }
+
     /// <summary>Piece id -> dye zone -> "#rrggbb", from the equipped items that wear pieces and carry a dye (ItemInstance.Dye).</summary>
     public static Dictionary<string, Dictionary<string, string>> DyeOf(Equipment eq, System.Func<string, ItemDef?>? find = null)
     {
