@@ -55,6 +55,9 @@ public partial class Voices : Node3D
     /// <summary>No name plates or quest marks at all (set by shots that must keep the frame clear; Away and Quiet are driven by the game).</summary>
     public bool Bare;
     float plateK = 1;
+    /// <summary>Per plate: how far it has stepped aside (0 standing, 1 gone) for its own speaker's bark. The
+    /// bark names the speaker already, and the plate's letters showed through the words (UI 16 MR2).</summary>
+    readonly Dictionary<string, float> aside = new();
     static readonly bool platesOld = OS.GetCmdlineUserArgs().Contains("--plates-old");
 
     public Voices() { Name = "Voices"; }
@@ -118,7 +121,7 @@ public partial class Voices : Node3D
         }
         gone.Clear();
         foreach (var id in plates.Keys) if (!keep.Contains(id)) gone.Add(id);
-        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); }
+        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); aside.Remove(id); }
     }
 
     /// <summary>Something said to the air, over someone's head. Their line before
@@ -248,6 +251,11 @@ public partial class Voices : Node3D
         foreach (var (id, (n, m)) in plates)
         {
             float k2 = Ui.GameHud.BossName is { } bn && said.TryGetValue(id, out var sw) && string.Equals(sw.Name, bn, StringComparison.OrdinalIgnoreCase) ? 0 : pk;
+            // (its own speaker's bark is up: the plate and its quest mark fade out over 0.2 s, back after)
+            bool talking = barks.Any(b => b.T < b.Life && new Vector2(b.At.X - n.Position.X, b.At.Z - n.Position.Z).LengthSquared() < 1.2f * 1.2f);
+            float ow = aside.GetValueOrDefault(id);
+            aside[id] = ow = Mathf.Clamp(ow + (talking ? 1 : -1) * (float)delta / 0.2f, 0, 1);
+            k2 *= 1 - ow;
             n.Transparency = 1 - k2; m.Transparency = 1 - k2; n.Visible = k2 > 0;
         }
         for (int i = barks.Count - 1; i >= 0; i--)
@@ -278,8 +286,10 @@ public partial class Voices : Node3D
             float vpH = GetViewport().GetVisibleRect().Size.Y;
             // (a fixed-size Label3D's font pixel on the screen)
             float k = 0.0007f / (2 * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2)) * vpH;
-            foreach (var (n, m) in plates.Values)
+            foreach (var (pid, (n, m)) in plates)
             {
+                // (a plate stepping aside for its own speaker's bark is no obstacle to it)
+                if (aside.GetValueOrDefault(pid) > 0) continue;
                 if (!n.Visible || n.Text == "" || cam.IsPositionBehind(n.Position)) continue;
                 var c = cam.UnprojectPosition(n.Position);
                 var lines = n.Text.Split('\n');
