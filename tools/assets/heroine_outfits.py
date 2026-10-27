@@ -5412,6 +5412,9 @@ def grid(nu, nv):
 
 # (FRINGE_RIGID: a hanging piece cut into tongues weights each tongue as one; see hanging())
 FRINGE_RIGID = os.environ.get("FRINGE_RIGID", "1") == "1"
+# (REAVER_PANEL / REAVER_BOOT: the reaver's front panel and boots as Body 17 remade them; "old": as before)
+REAVER_PANEL = os.environ.get("REAVER_PANEL", "new")
+REAVER_BOOT = os.environ.get("REAVER_BOOT", "made")
 # (FRINGE_ONE: a front panel given `one_piece` moves as one piece below its top; see hanging())
 FRINGE_ONE = os.environ.get("FRINGE_ONE", "1") == "1"
 
@@ -5427,7 +5430,7 @@ def fringe(hem, strips, depth, notch=0.18):
 
 
 def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56, snug=None,
-            strips=None, one_piece=None):
+            strips=None, one_piece=None, taper=0.0, crease=None, splay=0.0, notch_depth=0.0):
     """Cloth hanging from her hips, all round her between the angles a0 and
     a1 (radians; 0 her front, rising toward her left): at each angle it
     falls from the hips, flaring out by `flare` a metre of fall, and never
@@ -5438,7 +5441,11 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     `z_top` may be a function of the angle (a plate hung from under a belt
     follows the belt's line). With `snug` it is tucked: only `snug` off her at
     its top, easing to `gap` over its first 5 cm, and its top edge (hidden
-    under what it hangs from) is not trimmed."""
+    under what it hangs from) is not trimmed.
+    (Body 17, the reaver's panel) `taper`: its sides cut in by that much (m) a metre of fall, so it narrows to
+    its hem; `crease` (angle, width rad, depth m): one soft fold down it from 6 cm below its top, a valley
+    with a low ridge beside it; `splay` (rad): a fringe's tongues fan out from their notches' roots (`strips`
+    and `notch_depth` the fringe's), the outer ones most, each lifted or laid a little in turn."""
     a = np.linspace(a0, a1, nu)
     top = np.asarray(z_top(a), float) if callable(z_top) else np.full(nu, float(z_top))
     zmax = float(top.max())
@@ -5474,7 +5481,21 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
         r = np.maximum(r, R + clear)
     zz = np.repeat(zs[:, None], nu, 1)
     aa = np.repeat(a[None, :], len(zs), 0)
-    pos = np.stack([r * np.sin(aa), cy - r * np.cos(aa), zz], -1).reshape(-1, 3)
+    fall_ = np.maximum(top[None, :] - zz, 0)
+    if crease is not None:
+        ca, cw, cd = crease
+        g_ = lambda x: np.exp(-(x / cw) ** 2)
+        r = r - cd * ramp(fall_, 0.06, 0.16) * (g_(aa - ca) - 0.35 * g_(aa - ca - 1.6 * cw))
+    a_pos = aa
+    if splay and strips:
+        u0_ = (aa - a0) / (a1 - a0) * 2 - 1
+        k0_ = np.clip(np.floor((u0_ + 1) / 2 * strips), 0, strips - 1)
+        uc_ = (k0_ + 0.5) / strips * 2 - 1
+        root_ = np.vectorize(hem)(uc_) + notch_depth
+        t_ = ramp(root_ - zz, 0.0, max(notch_depth, 1e-3) * 1.5)
+        a_pos = aa + splay * uc_ * t_
+        r = r + 0.004 * np.where(k0_ % 2 == 0, 1.0, -0.4) * t_
+    pos = np.stack([r * np.sin(a_pos), cy - r * np.cos(a_pos), zz], -1).reshape(-1, 3)
     tris = grid(len(zs), nu)
     nor = vertex_normals(pos, tris)
     out = np.c_[np.sin(aa).ravel(), -np.cos(aa).ravel()]
@@ -5485,6 +5506,8 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     zb = np.array([hem(x) for x in u])
     arc = np.minimum(aa.ravel() - a0, a1 - aa.ravel()) * r.ravel()
     top_at = np.repeat(top[None, :], len(zs), 0).ravel()
+    if taper:
+        arc = arc - taper * np.maximum(top_at - pos[:, 2], 0)
     f = np.minimum.reduce([pos[:, 2] - zb, top_at - pos[:, 2] + 0.002, arc])
     # (a tucked top is hidden: its trim would only stand into what hides it)
     f_trim = np.minimum(pos[:, 2] - zb, arc) if snug is not None else f
@@ -9130,8 +9153,15 @@ def reaver():
                corner=0.006),
         # The panel's hem cut into a fringe: strips with V-notches between.
         # (columns ~1 mm apart: any closer and the weld merges them)
-        *hanging("reaver.loin_front", -0.33, 0.33, bz0, fringe(lambda u: 0.52 + 0.07 * u * u, 11, 0.075, notch=0.26), "oldleather",
-                 flare=0.06, lift=0.016, trim=edge(0.01), nu=120, strips=11, one_piece=0.7),
+        # (Body 17, judge at the 1:1 town close-up: "a flat grey plank down to the knee". REAVER_PANEL=old: as it was.
+        # Now ~30% shorter (its middle 0.53 -> 0.37 m, ending well above the knee's fur), a hem that waves, its sides
+        # tapering in, one crease down it, the tongues splayed; the lower half folds over her thigh: helpers "fold")
+        *(hanging("reaver.loin_front", -0.33, 0.33, bz0, fringe(lambda u: 0.52 + 0.07 * u * u, 11, 0.075, notch=0.26), "oldleather",
+                  flare=0.06, lift=0.016, trim=edge(0.01), nu=120, strips=11, one_piece=0.7) if REAVER_PANEL == "old" else
+          hanging("reaver.loin_front", -0.34, 0.34, bz0,
+                  fringe(lambda u: bz0 - 0.37 + 0.045 * u * u + 0.007 * np.sin(5.3 * u + 0.8) + 0.004 * np.sin(11.7 * u + 2.1), 9, 0.05, notch=0.3),
+                  "oldleather", flare=0.05, lift=0.016, trim=edge(0.01), nu=120, strips=9, one_piece=0.7,
+                  taper=0.03, crease=(0.07, 0.035, 0.006), splay=0.05, notch_depth=0.05)),
         # Wolf fangs on a cord round her neck, hanging into her cleavage:
         # trophies of the Verge's wolves.
         # (TAUT_CORD: laid from inside the base of her neck, so no point jumps from her collarbone to her neck
@@ -9161,9 +9191,50 @@ def reaver():
         out += [
             *piece(f"reaver.bracer_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.04, legs=False), "oldleather", lift=0.004, smooth=6, trim=edge(), studs="rust"),
             *piece(f"reaver.wristfur_{sd}", limb(sd, WRIST_S - 0.05, WRIST_S + 0.005, legs=False), "fur", lift=0.012, thick=0.012, smooth=8),
-            *piece(f"reaver.boot_{sd}", limb(sd, KNEE_S - 0.01, 9.9), "oldleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03),
+            *(piece(f"reaver.boot_{sd}", limb(sd, KNEE_S - 0.01, 9.9), "oldleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03)
+              if REAVER_BOOT == "old" else
+              # (Body 17, judge at the 1:1 town close-up: "dark stockings over bare feet", toes showing, no sole or
+              # heel. Now a boot made on the Ranger's last, as the Arcanist's: one rounded toe box, a sole edge
+              # ~11 mm proud with its welt, a low heel block, its top under the fur cuff, lower behind the knee)
+              BOOTS.boot(f"reaver.boot_{sd}", sd, KNEE_S + 0.01, 0.03, REAVER_BOOT_ST, "oldleather", sole_key="darkleather")),
             *piece(f"reaver.bootfur_{sd}", limb(sd, KNEE_S - 0.05, KNEE_S + 0.06), "fur", lift=0.016, thick=0.016, smooth=10),
         ]
+        if REAVER_BOOT != "old":
+            out += reaver_wraps(sd)
+    return out
+
+
+# (Body 17) The reaver's boots: the Ranger's last with a thicker sole and a lower heel; bands of dark leather
+# wound round the shaft from her ankle to the fur cuff, each tilted the other way from the last (crossed, as
+# cross-gartering reads from the front), laid on the boot's own shaft 2 mm off it.
+REAVER_BOOT_ST = dict(BOOTS.RANGER, t_fore=0.009, heel=0.008, t_heel=0.006)
+REAVER_WRAPS = int(os.environ.get("REAVER_WRAPS", "5"))
+
+
+def reaver_wraps(sd, width=0.021, tilt=0.017):
+    pos_, tris_ = BOOTS.SHELL[sd]
+    shell = BVHTree.FromPolygons([tuple(p) for p in pos_], tris_.tolist())
+    knee, ank = np.asarray(LEG[sd][1], float), np.asarray(LEG[sd][2], float)
+    z0, z1 = ank[2] + 0.07 + tilt, leg_z(sd, KNEE_S + 0.075) - tilt - width / 2
+    out = []
+    for i, zc in enumerate(np.linspace(z0, z1, REAVER_WRAPS)):
+        amp = tilt * (1 if i % 2 == 0 else -1)
+        pts = []
+        for th in np.linspace(0, 2 * np.pi, 48, endpoint=False):
+            z = zc + amp * np.sin(th)
+            c = knee + (ank - knee) * (knee[2] - z) / (knee[2] - ank[2])
+            d = np.array([np.sin(th), -np.cos(th), 0.0])
+            hit = shell.ray_cast(Vector((c[0], c[1], z)), Vector(d), 0.25)
+            if hit[0] is None:
+                continue
+            # (the shell is the upper's inner sheet: out by its 2.5 mm and 2 mm more)
+            pts.append(np.array(hit[0][:]) + d * 0.0045)
+        if len(pts) < 40:
+            print("WRAPS reaver.boot_%s: band %d missed the shaft (%d of 48 rays)" % (sd, i, len(pts)))
+            continue
+        out += ribbon(f"reaver.boot_{sd}_wrap{i}", pts + [pts[0]], width, "darkleather", lift=0.0006, thick=0.002,
+                      snap=False, closed=True, trim=("blackleather", 0.0025, 0.0004, 0.0009))
+    print("WRAPS reaver.boot_%s: %d bands %.0f mm wide from %.3f to %.3f m, tilted +-%.0f mm" % (sd, len(out) and REAVER_WRAPS, width * 1000, z0, z1, tilt * 1000))
     return out
 
 
@@ -10552,6 +10623,46 @@ if os.environ.get("PANEL_W", "1") == "1" and "panel_front" in arm.data.bones:
                 _ks.append(k_)
         print("PANEL reaver.loin_front: top %.3f m, %d points onto panel_front (k mean %.2f, %d at 1)"
               % (_top, _n, float(np.mean(_ks)), int(np.sum(np.array(_ks) > 0.999))))
+        # (Body 17) The lower half's fold: three shape keys (helpers.py SPEC "panels" "fold", HerJoints drives
+        # them): its points below the hinge turned forward about her lateral axis through the panel's middle
+        # there by `step` (a), a further `step` (b, on top of a) and back by `neg` (n), eased over +-`band`.
+        import helpers as _hp
+        _fd = next((p_.get("fold") for p_ in _hp.SPEC.get("panels", []) if p_["name"] == "panel_front"), None)
+        if _fd and REAVER_PANEL != "old":
+            _yh, _bw = _fd["hinge"], _fd["band"]
+            _mw = _main[0].matrix_world
+            _near = [(_mw @ v.co).y for v in _main[0].data.vertices if abs((_mw @ v.co).z - _yh) < 0.01]
+            _H = np.array([0.0, float(np.median(_near)), _yh])
+
+            def _turned(Q, deg):
+                a_ = math.radians(deg)
+                c_, s_ = math.cos(a_), math.sin(a_)
+                d_ = Q - _H
+                # (forward: her front is -Y; the panel's foot toward it and up)
+                return np.c_[d_[:, 0], d_[:, 1] * c_ + d_[:, 2] * s_, -d_[:, 1] * s_ + d_[:, 2] * c_] + _H
+            _moved = 0
+            for o in _pobjs:
+                me_ = o.data
+                n_ = len(me_.vertices)
+                if me_.shape_keys is None:
+                    o.shape_key_add(name="Basis", from_mix=False)
+                base_ = np.empty(n_ * 3)
+                me_.shape_keys.reference_key.data.foreach_get("co", base_)
+                base_ = base_.reshape(-1, 3)
+                M_ = np.array(o.matrix_world)
+                Wp = base_ @ M_[:3, :3].T + M_[:3, 3]
+                t_ = np.clip((_yh + _bw - Wp[:, 2]) / (2 * _bw), 0, 1)
+                w_ = (t_ * t_ * (3 - 2 * t_))[:, None]
+                Minv = np.linalg.inv(M_[:3, :3])
+                d1 = w_ * (_turned(Wp, _fd["step"]) - Wp)
+                d2 = w_ * (_turned(Wp, 2 * _fd["step"]) - Wp) - d1
+                dn = w_ * (_turned(Wp, -_fd["neg"]) - Wp)
+                for nm_, d_ in zip(_fd["shapes"], (d1, d2, dn)):
+                    kb_ = o.shape_key_add(name=nm_, from_mix=False)
+                    kb_.data.foreach_set("co", (base_ + d_ @ Minv.T).ravel())
+                _moved += int((w_[:, 0] > 0).sum())
+            print("PANEL FOLD reaver.loin_front: hinge %.3f m (middle y %.3f), %d points in its lower half, shapes %s"
+                  % (_yh, _H[1], _moved, ", ".join(_fd["shapes"])))
 
 
 def rings_one(objs):
