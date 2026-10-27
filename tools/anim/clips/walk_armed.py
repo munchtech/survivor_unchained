@@ -75,16 +75,13 @@ def wand(k, f):
             "blade": _n((-0.15, -0.35, 0.92)), "twist": 0.5}
 
 
-def crossbow_r(k, f):
-    """The crossbow low ahead of her in both hands (idle.stalker's carry), steady, the right fist on its grip."""
-    from clips.idle import STALKER_HAND_R
-    h = dict(STALKER_HAND_R["hand_r"])
-    return h
-
-
-def crossbow_l(k, f):
-    from clips.idle import STALKER_HAND_L
-    return dict(STALKER_HAND_L["hand_l"])
+def crossbow(k, f):
+    """The crossbow in her right fist on its pistol grip as her run carries it (run.crossbow_low: the stock level and
+    ahead, the forearm level from an elbow by her ribs, the fist at her waist 10 cm out), steadier. (Both hands on it as
+    her idle holds it, the left on the fore-stock, put her upper arms 30-49 mm into her breasts and sides at the walk's
+    chest: her idle stands wider, the crossbow further ahead.)"""
+    return {"arc": arc_of(_at((-0.10, -0.15, 0.32), 0.03, k)), "pole": (-0.2, -0.3, -1.0),
+            "knuckles": (0.0, 0.64, 0.77), "blade": (0.0, 0.77, -0.64), "frame": "chest", "twist": 0.5}
 
 
 def dagger(side):
@@ -105,7 +102,7 @@ WALKS = {
     "walk_reaver_axes": ("reaver", {"r": axe("r"), "l": axe("l")}, {"r": "grip", "l": "grip"}, "axes"),
     "walk_arcanist": ("arcanist", {"r": staff}, {"r": "grip"}, "staff"),
     "walk_arcanist_wand": ("arcanist", {"r": wand}, {"r": "grip"}, "wand"),
-    "walk_stalker": ("stalker", {"r": crossbow_r, "l": crossbow_l}, {"r": "grip", "l": "relaxed"}, "crossbow"),
+    "walk_stalker": ("stalker", {"r": crossbow}, {"r": "grip"}, "crossbow"),
     "walk_stalker_daggers": ("stalker", {"r": dagger("r"), "l": dagger("l")}, {"r": "grip", "l": "grip"}, "daggers"),
 }
 _TOWN = {}
@@ -124,8 +121,8 @@ def _swing_k(rig, clip):
 # Which way each carriage's hand is let out where her forearm or hand comes too near her or her own outfit (chest
 # frame; x toward her left): out from her side, the crossbow's two hands together and ahead (LINKED: one piece).
 OUT = {"r": (-1.0, 0.0, 0.0), "l": (1.0, 0.0, 0.0)}
-PUSH = {"walk_stalker": {"r": (0.0, 0.0, 1.0), "l": (0.0, 0.0, 1.0)}}
-LINKED = {"walk_stalker"}
+PUSH = {"walk_stalker": {"r": (-0.6, 0.0, 0.8)}}
+LINKED = set()
 OUTFIT = {"warden": "warden", "reaver": "reaver", "arcanist": "arcanist", "stalker": "ranger"}
 _LAST = {}  # per clip: the hands' push (m, per side per frame) and the arms' clearance after it (read by the checks)
 
@@ -150,7 +147,8 @@ def _solve(rig, name, town, k, push):
             sp[f"hand_{s}"] = h
             sp[f"fingers_{s}"] = fingers[s]
         specs.append(sp)
-    srot, _ = solve_frames(rig, specs, [(rot[f], pos[f]) for f in range(n)], loop=True, weapon=weapon)
+    bases = [(rot[f], pos[f]) for f in range(n)]
+    srot, _ = solve_frames(rig, specs, bases, loop=True, weapon=weapon)
     I = rig.I
     for s in arms:
         chain = [I[f"upperarm_{s}"]]
