@@ -223,6 +223,15 @@ uniform vec3 sky_tone = vec3(0.0);
 // on her (ambient_tint) is as before. body_gate 0: as before (--body-gate off).
 uniform vec3 body_tone = vec3(1.0);
 uniform float body_gate = 0.0;
+// Her deep swatch's neck drawn toward her face's colour at the Look (People.DeepNeck; her albedo's colour, its luminance
+// 1, mixed a of the way to rgb, linear): deep takes the fair-fitted tone stack, and outside her face's paint (features'
+// blue) her toned albedo sat 16-27 deg yellower than her cheek (Oklab h 64-75 against 48), so by night the key lit the
+// neck under her jaw olive-grey (h 64, C .029) under a fire-lit red-brown face (h 47; face 47, 27 October 2026). Its luminance times rgb's (0.93: the warmer neck takes more of the fire); on her head below neck_pull_y
+// (model-space height, all under .x, none over .y: her jaw, at the Look 1.63, overshot to h 38-40 under the full pull
+// where the neck under it reached 45) and up her neck (her freckles' map's blue on her body); under the rig only, so
+// play and the town are as before. a 0: none (fair; --deep-neck off).
+uniform vec4 neck_pull = vec4(1.0, 1.0, 1.0, 0.0);
+uniform vec2 neck_pull_y = vec2(1.6, 1.645);
 // How much of the Look's portrait rig lights her (GameFront's portrait light, 0 for her whole figure, 1 from head and
 // shoulders in; 0 in play). Her head's tones above (body_tone kept up her neck, key, sky, soft and edge tones, and her
 // face's face_tone) were all fitted under that rig, its key with the soft fill showing her paint without body_tone; under
@@ -564,6 +573,12 @@ void fragment() {
 	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate) * rig_w;
 	body_back = pow(max(body_tone, vec3(1e-3)), vec3(neck_w - 1.0));
 	ALBEDO *= body_back;
+	if (neck_pull.a * rig_w > 0.0) {
+		vec3 nlw = vec3(0.2126, 0.7152, 0.0722);
+		float nl = dot(ALBEDO, nlw);
+		vec3 nc = ALBEDO / max(nl, 1e-5);
+		ALBEDO = nl * max(vec3(0.0), mix(nc, neck_pull.rgb, neck_pull.a * rig_w * (1.0 - fm.b) * (seam_ease ? 1.0 - smoothstep(neck_pull_y.x, neck_pull_y.y, model_y) : fk.b)));
+	}
 	vec3 alb_pre = ALBEDO;
 	if (zone_colour > 0.0) {
 		vec4 cz = texture(skin_zones, UV) * zone_colour;
@@ -746,7 +761,10 @@ void fragment() {
 	// (dbg_gate 16: her skin zones (R flush, G yellow, B cool), emitted; 17: her sheen zones (R T-zone, G cheeks, B lips))
 	if (dbg_gate > 15.5 && dbg_gate < 17.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * (dbg_gate > 16.5 ? sz.rgb : texture(skin_zones, UV).rgb); }
 	// (dbg_gate 18: R a pixel's size in mm / 4, G her pores' reach, B her lower lip's wet core)
-	if (dbg_gate > 17.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(pfp * 0.25, pz.r, pz.g); }
+	if (dbg_gate > 17.5 && dbg_gate < 18.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(pfp * 0.25, pz.r, pz.g); }
+	// (dbg_gate 19: R her model-space height from 1.4 to 1.8 (0 to 1), G the face's paint (features' blue), B her
+	// freckles' map's blue; face 47's neck_pull_y)
+	if (dbg_gate > 18.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(clamp((model_y - 1.4) / 0.4, 0.0, 1.0), fm.b, fk.b); }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,

@@ -45,6 +45,7 @@
   "kk-halloween-lantern_standing-0"
  ],
  "place": [
+  {"preset": "castle", "x": 3.0, "z": -650.0, "y": 0.2, "scale": 0.6},
   {
    "preset": "bedroll_open",
    "x": -12.9,
@@ -153,6 +154,9 @@
  },
  "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
  "kits": {
+  "hex_buildings/wall_straight": {"preset": ["curtain_a", "curtain_b", "curtain_c", "curtain_d"], "scale": 0.192308},
+  "hex_buildings/wall_straight_gate": {"preset": "gatehouse", "scale": 0.192308},
+  "hex_buildings/building_tower_base_blue": {"preset": ["tower_w", "tower_e", "tower_w", "tower_w"], "scale": 0.213675},
   "dungeon/wall_cracked": "wall_cracked",
   "dungeon/wall_broken": "wall_broken",
   "dungeon/wall_half": "wall_half",

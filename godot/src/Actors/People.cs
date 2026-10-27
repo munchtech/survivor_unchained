@@ -1109,6 +1109,7 @@ public static class People
                         m.SetShaderParameter("key_tone", KeyTone(look));
                         m.SetShaderParameter("sky_tone", SkyTone(look));
                         m.SetShaderParameter("edge_tone", EdgeTone(look));
+                        m.SetShaderParameter("neck_pull", NeckPull(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
                         HerZones(m, look, null);
@@ -1799,6 +1800,7 @@ public static class People
             m.SetShaderParameter("key_tone", KeyTone(look));
             m.SetShaderParameter("sky_tone", SkyTone(look));
             m.SetShaderParameter("edge_tone", EdgeTone(look));
+            m.SetShaderParameter("neck_pull", NeckPull(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
         }
@@ -2133,6 +2135,20 @@ public static class People
     {
         ["fair"] = ArgVec("face-swatch-fair", new(1f, 1f, 1f)), ["deep"] = ArgVec("face-swatch", new(1.02f, 0.93f, 1f)),
     };
+
+    /// <summary>Her deep swatch's neck at the Look, drawn toward her face's colour (the skin shader's neck_pull: rgb a
+    /// colour her albedo's is mixed toward, linear, a how far; face 47, 27 October 2026). By night the neck under her jaw
+    /// read olive-grey (Oklab h 64, C .029) under a fire-lit red-brown face (h 47): deep's toned albedo there was 16-27 deg
+    /// yellower than her face's, which takes face_tone and FaceSwatch where her neck takes neither. With it, turn 40: under
+    /// her jaw h 44.5 C .057, lower neck 46.2 .081, jaw 48.1 (cheek 47.3); turn 0 neck 45.8 .071; L +.007-.010. Deep only and under the rig only
+    /// (fair, play and the town as before). (--deep-neck off: before; --deep-neck R,G,B,A: another, for judging it.)</summary>
+    static readonly Vector4 DeepNeck = SurvivorUnchained.Args.Get("deep-neck") is string dn
+        ? dn == "off" ? Vector4.Zero : dn.Split(',') is [var r, var g, var b, var w]
+            ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b, System.Globalization.CultureInfo.InvariantCulture), float.Parse(w, System.Globalization.CultureInfo.InvariantCulture))
+            : Vector4.Zero
+        : new(2.231f, 0.636f, 0.014f, 0.55f);   // (Oklab h 60, C .085 at L .37, luminance 0.93; fitted at the Look by night)
+
+    static Vector4 NeckPull(Look look) => ToneA1 && HerSkinId(look) == "deep" && DeepNeck.W > 0f ? DeepNeck : new(1f, 1f, 1f, 0f);
 
     static Vector3 FaceSwatch(Look look) => ToneA1 && HerFaceSwatch.TryGetValue(HerSkinId(look), out var v) ? v : Vector3.One;
 
