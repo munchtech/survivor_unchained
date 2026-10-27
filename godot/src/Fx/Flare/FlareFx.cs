@@ -78,6 +78,7 @@ public partial class FlareFx : Node3D
     static double HoldOf(string calling) => calling switch { "stalker" => 0.15, "reaver" => 0.2, _ => 0.3 };
 
     OmniLight3D headLight = null!, spendLight = null!;
+    static readonly bool SpendLightOld = Args.Get("spend-light") == "old";
     readonly List<Ember> embers = new();
     readonly List<Vector4> marks = new();
     /// <summary>Each mark's shape (judge 4 fix 9): the ember's way over the ground (x, z), its size 0.7-1.3x, its arcs' seed.</summary>
@@ -93,7 +94,9 @@ public partial class FlareFx : Node3D
         AddChild(glow);
         AddChild(shards);
         headLight = new OmniLight3D { LightColor = new Color(1f, 0.55f, 0.2f), LightEnergy = 0, OmniRange = 6, ShadowEnabled = false };
-        spendLight = new OmniLight3D { LightColor = new Color(0.45f, 0.7f, 1f), LightEnergy = 0, OmniRange = 14, ShadowEnabled = true };
+        // (E10) Shown only while lit: at energy 0 it gives no light, but a shadowed light in view still drew its six
+        // shadow faces each frame (35 casters in C02's ford). --spend-light old: always shown (to compare).
+        spendLight = new OmniLight3D { LightColor = new Color(0.45f, 0.7f, 1f), LightEnergy = 0, OmniRange = 14, ShadowEnabled = true, Visible = SpendLightOld };
         AddChild(headLight);
         AddChild(spendLight);
         BoomReady();
@@ -238,6 +241,7 @@ public partial class FlareFx : Node3D
             // The Flare's light at the Spend: 2-4 frames at its peak, then down over 0.4 s.
             float sl = spendLightT < 0 ? 0 : (float)(t - spendLightT);
             spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
+            spendLight.Visible = SpendLightOld || spendLight.LightEnergy > 0;
             if (sl > 0.6f) spendLightT = -1;
             RenderingServer.GlobalShaderParameterSet("flare_look", look);
             // (FLARE_NOWEB=1, a look-dev switch: the web off, to find what else draws lines on the ground.)

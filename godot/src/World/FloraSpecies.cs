@@ -139,6 +139,27 @@ public static class FloraSpecies
         return d;
     }
 
+    /// <summary>(E8 later r2) A zone's footpaths for the ground (flora_species.json "ground_paths": polylines of [x, z]),
+    /// as segments (x0, z0, x1, z1), twelve at most (terrain.gdshader path_seg).</summary>
+    public static List<Vector4> PathsFor(string zone)
+    {
+        var l = new List<Vector4>();
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone == "" || !FileAccess.FileExists(zp) || !Load(zp).TryGetProperty("ground_paths", out var g)) return l;
+        foreach (var line in g.EnumerateArray())
+        {
+            if (line.ValueKind != JsonValueKind.Array) continue;
+            Vector2? last = null;
+            foreach (var pt in line.EnumerateArray())
+            {
+                var p = new Vector2(pt[0].GetSingle(), pt[1].GetSingle());
+                if (last is Vector2 q && l.Count < 12) l.Add(new Vector4(q.X, q.Y, p.X, p.Y));
+                last = p;
+            }
+        }
+        return l;
+    }
+
     /// <summary>A species by its name ("stepping").</summary>
     public static Species Named(string name)
     {

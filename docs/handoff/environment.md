@@ -1,5 +1,34 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (Env 21, 27 Oct): E10 MERGED (ee5f0c18); the E8 later list DONE (final xhigh judge PASS, close, 7/7 gate YES, every frame better than round 1); MR READY
+- **E10:** absolute runs passed page 11 in every window (hi/med e10a); merged by main.
+- **The later list (3 build rounds, 2 xhigh judges; commits 7d49e242..c51c41e9):**
+  - A8 arch: `beyond_house` + `beyond_lamp` past the gate (lit `_glow` panes, `no_shadow` in props.json read by `OwnProps.cs`), a faint horizon haze veil past the gatehouse (`Atmosphere.cs`).
+  - Grime: `bake_colours` height axis fixed (y up for every preset; the far castle keeps `old.grime_depth`), `runs` + `base_dark`; per-pixel runs and a moss foot band on flagged outer faces (`godot/shaders/props_runs.gdshader`, faces flagged by vertex alpha 0.5).
+  - Tower-foot band: the terrain's warm street-mud term off in Low Ford; a cool damp band at the foot of standing things (`terrain.gdshader` `foot_damp`/`foot_w`, set in `lowford/flora_species.json`; town unchanged, every new term defaults 0). Gate torches dim by day, paler, low specular (`props_own.json` lamps `spec`/`day`).
+  - s8a: gold halo `soft` + `ontop` glow keys (`GameCinema.cs`), halo 0.06, a small light on the keep; two trees moved off the third blue ford lamp (`flora_move`).
+  - Camp: `camp_ground` dressing mesh (10 varied stones, kindling, brands, ash), scorch disc / trample / paths in the terrain shader (`ground_paths`), `tools/assets/lowford_camp_paint.py` (starts from the pre-cut splat at 58e2a203^).
+- **Perf (hi, whole Low Ford to Exit, `env_perf1\e10\lf_hi_e21a_windows.md`; NOT a quiet machine: two ui-11 Godot runs overlapped):** GPU flat against e10a (Rising 3.8 vs 3.7 ms, Boss 4.6 vs 4.7, Intro/Boss 4.9 vs 4.8), draws and shadow draws flat (Intro/Boss 470 vs 515). The CPU columns doubled everywhere (render CPU 2.1-4.0, frame p99 40-57) from the contention; the quiet last window (Exit) matches e10a (frame 3.9 vs 4.0, p99 4.5 vs 4.3, render CPU 1.0 vs 0.9). Nothing in the list adds per-frame CPU work. The export's Godot wrapper hung after writing the build (0 CPU, no child): stopped by PID, the run went on.
+- **Closed as known (judge 2):** camp lantern pool outshines the fire (Rendering/lighting, logged); gate_o_01 drum body below the plinth dark (560-900 x 60-160); olive moss on the o_01 plinth tops; one smooth "potato" stone in camp o_00 (1170-1200 x 515-555); the A8 lit drum faces' block checker (accepted r1); the camp paths don't show at 1:1 (harmless).
+- **Cost:** solvers 193k + 138k + 221k + 150k, judges 93k + 92k. Briefs, scripts and verdict crops: `survivorsunchained_inputs\scratch_env21\` (common.md, judge1.md, judge2.md, j1\, j2\).
+
+## Paused here (Env 20, 27 Oct, coordinator WIND-DOWN; history): the E10 absolute runs, then E10's MR
+- **E8 MERGED** (integration fast-forwarded to 5fe50e02). **E10's fixes are BUILT and proven by ABAB (92bab48f, 772ddc85; solver 180k).** The MR waits ONLY on the absolute runs.
+- **Run (the main session or you, on a quiet stretch):** `bash C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_env20\e10_abs.sh e10a`. It does the import, the Release export, and the whole Low Ford to Exit at 1440p high and at 1080p medium, writing `survivorsunchained_inputs\env_perf1\e10\lf_{hi,med}_e10a_windows.md`. Merge integration first, under the junction rule.
+  - **Pass:** page 11 in every 20-s window: GPU <= 6 / 4.5 ms, gpu p99 <= 10 / 7, frame p99 <= 16.7, render CPU <= 3, shadow draws <= 1,200 / 1,000, prims <= 5M / 4M, and the log reaching Exit.
+  - **Cine windows** are judged on frame time and render CPU only, not the draw count (main, 27 Oct). Compare to `env_perf1\lf\lf_hi_lf6_windows.md`.
+  - On a pass, run `dotnet test`, then send MR READY.
+- **The fixes:** c02's 12 drowned and the cinematic Warden each cast one joined shadow (`FolkShadow`, in `GameCinema.cs`; `--extras-shadow off` compares). The Flare's spend light now shows only while lit: it had drawn 6 shadow faces a frame at energy 0, in play too (`FlareFx.cs`; `--spend-light old`). `--lampdbg` gives a census of lamp casters (`ShadowLamp.Describe`, `GameCinema.Census`).
+  - ABAB in c02: render CPU 2.40 -> 2.05 ms, shadow draws 1,311 -> 659, frame and GPU unchanged. In play, ToFord and Barrow shadow draws drop 243 -> 166 and 250 -> 142 (GPU -0.2 ms).
+  - Pixel diffs: c02 s1/s2/s10/s11/s12 mean <= 0.001/255; the other cines <= 0.009. Data in `env_perf1\e10s\`; scripts in `scratch_env20\solver\`.
+- **Rejected:** dropping the Warden lantern's cine shadow, because it shows at 1:1.
+- **Doubts:**
+  - `--cine c02` alone hangs in Release after its first frame. Use the full Low Ford run.
+  - No judge has seen a Flare Spend since the spend-light change (it should be look-neutral).
+  - What's left in c02 is the flora in the lamps' reach (about 140 casters) and her cine model (66).
+  - One gate perf run crashed with an AccessViolation at 21 s (`env_perf1\e8\gate_night_a1.log`); it did not reproduce.
+- **Later list:** judge 3's E8 marks (Now section below), and the camp's flat dirt.
+
 ## Now (env lead 20, 27 Oct): E8 MR READY (judge r3 xhigh PASS-WITH-NOTES, close; 5/5 frames gate YES); next E10 (needs a quiet-machine window from main)
 - **Perf (the gate's cost as an ABAB delta, per main; the machine was busy):** a static Release run at the gate spot (`env20\gate_ab.sh`; `--spots 0,-100 --spots-from 0`, since `--spots` needs the shot clock unless `from` is 0). B = `--props-skip` on our pieces, which falls back to KayKit. Night, A vs B: GPU 3.4 vs 3.4 ms, draws 319 vs 316, shadow draws 73 vs 83, prims +60k. Dawn: GPU 3.3 vs 3.3-3.4 (the 2nd pair was noisy at 4.0-4.5 on both), shadow draws 75 vs 80. So the gate costs about 0 ms of GPU and 5-10 FEWER shadow draws than KayKit. One A run crashed (AccessViolation at 21 s, `env_perf1\e8\gate_night_a1.log`); the rerun was clean. The full-run `lf_hi_e8` is disturbed, so ignore its absolute numbers. Tests 1123/0/8 on 72117bbe.
 - Integration merged at a1fd6fa3 (junction rule). Judge 3 brief: `<coord 9c583f93 scratch>\env20\e8_judge3.md`. Final script: `env20\final_e8.sh` (import, build, tests, Release `lf_hi_e8` to `survivorsunchained_inputs\env_perf1\e8\`; compare `env_perf1\lf\lf_hi_lf6_windows.md`).
