@@ -1503,6 +1503,8 @@ public static class People
                 metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
                 // (blued steel 1; enamel 2, blue enamel chipped to bright steel: body 16, the Warden's navy as paint)
                 if (metalFinishes.TryGetValue(key, out var fin) && (string)fin is "blued" or "enamel") m.SetShaderParameter("finish", (string)fin == "enamel" ? 2 : 1);
+                // (dye_paint keys: bare as built, but a dye paints them like enamel: HerWear.DyeMesh)
+                if (metalFinishes.TryGetValue("dye_paint", out var dp) && dp.AsGodotArray().Contains(key)) { m.SetMeta("finish0", 0); m.SetMeta("dye_paint", true); }
                 // (pieces of this key with a finish of their own, matched in the shader by the piece
                 // number heroine_outfits.py bakes into each piece: the key's pieces are one mesh)
                 if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))

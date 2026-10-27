@@ -157,6 +157,27 @@ public static class Wear
         return (hex, sat < 0.15 && mx >= 0.5);
     }
 
+    /// <summary>The darker bronze her trim takes under a gold plate dye (a trial hex can replace it: env GOLD_TRIM, read in HerWear).</summary>
+    public const string GoldTrimBronze = "#8a5c30:metal";
+
+    /// <summary>Why: a gold metal dye on the "metal" zone makes the plate the same colour as the gold trim (trim zone: gold, claspgold,
+    /// wiregold, bronze, rivetbronze), which swallows the trim. When the "metal" entry is a metal dye whose colour is gold or brass
+    /// (HSV hue 25-65 deg, saturation at least 0.3, value at least 0.45) and the dict has no "trim" entry, returns a copy with
+    /// "trim" set to GoldTrimBronze. An explicit "trim" dye always wins. Any other dye comes back as the same instance.</summary>
+    public static IReadOnlyDictionary<string, string> TrimUnderGold(IReadOnlyDictionary<string, string> dye)
+    {
+        if (dye.ContainsKey("trim") || !dye.TryGetValue("metal", out var m)) return dye;
+        var (hex, metal) = DyeFinish(m);
+        var h = hex.TrimStart('#');
+        if (!metal || h.Length < 6 || !int.TryParse(h.AsSpan(0, 6), System.Globalization.NumberStyles.HexNumber, null, out var v)) return dye;
+        double r = (v >> 16 & 255) / 255.0, g = (v >> 8 & 255) / 255.0, b = (v & 255) / 255.0;
+        double mx = Math.Max(r, Math.Max(g, b)), mn = Math.Min(r, Math.Min(g, b)), d = mx - mn;
+        if (d <= 0 || d / mx < 0.3 || mx < 0.45) return dye;
+        double hue = mx == r ? 60 * (((g - b) / d + 6) % 6) : mx == g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+        if (hue < 25 || hue > 65) return dye;
+        return new Dictionary<string, string>(dye) { ["trim"] = GoldTrimBronze };
+    }
+
     /// <summary>Piece id -> dye zone -> "#rrggbb", from the equipped items that wear pieces and carry a dye (ItemInstance.Dye).</summary>
     public static Dictionary<string, Dictionary<string, string>> DyeOf(Equipment eq, System.Func<string, ItemDef?>? find = null)
     {
