@@ -135,6 +135,8 @@ public partial class Callout : Control, ICalloutView
     public static bool DimHeld;
     /// <summary>--dim-diag: the flat dim before UI 16 for a frame of the same moment (before/after).</summary>
     public static bool DimOld;
+    /// <summary>After dark (set by the game when it shows a freeze): the dim keeps the night's dark readable.</summary>
+    public bool Night;
 
     public void Show(CalloutLook l)
     {
@@ -766,7 +768,7 @@ public partial class Callout : Control, ICalloutView
         // The world drains, darkens and softens, but for a soft round pool on each thing in the world
         // (its own colour, no more light than it had); a HUD part has no pool (the HUD keeps it undimmed).
         if (Freeze) dim.Visible = !DimHeld;
-        if (Freeze) dimMat.SetShaderParameter("old_dim", DimOld ? 1 : 0);
+        if (Freeze) { dimMat.SetShaderParameter("old_dim", DimOld ? 1 : 0); dimMat.SetShaderParameter("night", Night ? 1f : 0f); }
         if (dim.Visible)
         {
             var lights = new Vector4[6];
@@ -1110,6 +1112,7 @@ public partial class Callout : Control, ICalloutView
             uniform int soft_first = 0;
             uniform float amount = 0.0;
             uniform int old_dim = 0;
+            uniform float night = 0.0;
             uniform vec2 canvas = vec2(1920.0, 1080.0);
             void fragment() {
                 vec2 p = UV * canvas;
@@ -1144,14 +1147,16 @@ public partial class Callout : Control, ICalloutView
                     src = mix(c, acc / wsum, k);
                 }
                 float y = dot(src, vec3(0.299, 0.587, 0.114));
-                // Half drained, and darkened by the pixel's own light: a lit ground by day loses about 40%, the
-                // night's dark keeps nearly all it has (a flat 28% cut sank a night frame to near black: the
-                // bolts' archers in the dash lesson barely read). The drain and the pools still set the taught apart.
-                float lum = smoothstep(0.03, 0.42, y);
-                float keep = old_dim == 1 ? 0.72 : mix(0.92, 0.6, lum);
+                // Half drained, and darkened by the hour and the pixel's own light. By day the lit ground loses
+                // about 40%, its shade less; by night (a flat 28% cut sank it to near black: the bolts' archers in
+                // the dash lesson barely read) the dark keeps nearly all it has and the lit about 80%: the drain,
+                // the softening and the warm pools set the taught apart instead.
+                float day_keep = mix(0.9, 0.55, smoothstep(0.03, 0.25, y));
+                float night_keep = mix(0.95, 0.8, smoothstep(0.05, 0.35, y));
+                float keep = old_dim == 1 ? 0.72 : mix(day_keep, night_keep, night);
                 vec3 ash = mix(vec3(y), src, 0.5) * keep;
                 vec2 q = UV - 0.5;
-                ash *= 1.0 - (old_dim == 1 ? 0.15 : mix(0.05, 0.15, lum)) * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
+                ash *= 1.0 - (old_dim == 1 ? 0.15 : mix(0.15, 0.06, night)) * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
                 // (a thing's pool is lit warm, as by the ember: never a cold white patch)
                 vec3 col = mix(c, ash, k) * mix(vec3(1.0), vec3(1.06, 0.95, 0.78), warm * amount);
                 COLOR = vec4(col, 1.0);
