@@ -2,6 +2,13 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Face 45 (26 Oct): SKIN A MR READY (face-44); C waits on the owner seeing A
+
+**Done:** integration merged (d41330cd, the 82c1f68e repack; junction removed and remade), reimported, 30 frames (R_ pores on, N_ off, O_ before; fair/deep x Look z1 t0/t40/z.55, town night/day). **Judge a2 (max, 84k): PASS-WITH-NOTES, pores OFF ships.** Gate YES on every frame with pores off; deep clearly better on all five (umber, face = chest, no purple/brick shadows), fair equal or slightly better; all seven round-1 marks fixed. Pores ON fail the gate at deep Look t40 (single-pixel glints on the sheen: nose side, upper cheek, temple) and add nothing on fair. **b8a540eb:** pores off by default (`People.SkinPoresOn`; `--skin-pores on` = the r2 layer); default frame = N_ (mean diff 0.006). Tests 1070/0/8. Owner sheet: `survivorsunchained_inputs\face45_owner\skinA_AB_half.jpg` (before | A, fair and deep, Look t0/t40, town night/day).
+- **Later list (from a2):** (1) pores rework: Toksvig-widen the sheen roughness by the pore normal's variance or feed pores to the broad lobe only, deep pore x0.5, pores darken the highlight like pits, re-judge deep t40 in motion; (2) fair cheek flush on the shadow side reads rouge/salmon (fTday her left cheek; milder fz1t0 far jaw corner): fair cheek-only zone colour .85 -> ~.65, optionally flush x lerp(.5,1,NdotL); measure shadow vs lit cheek a* first; (3) fair Look-night lower neck/collar faint grey-green mottling (in before too: paint or night ambient, not A).
+- Scratch: coordinator scratchpad `face45\` (`shoot.sh`, `j1.txt`, `brief.md`, `sheets\`, `j1\` frames).
+- Spend: judge 84k; no solvers; API $0.
+
 ## Face 44 (26 Oct): PAUSED at the coordinator's wind-down. SKIN B MR READY (ba4b4450); A round 2 BUILT, unjudged
 
 **Paused here; next:** merge integration first (face-44 lacks 82c1f68e, the heroine repack with 105 clips; R2 frames were shot `--stale-ok` with before and after on the same art), then reimport, and re-shoot R_/N_ (list `face44\a2\fin2.txt`) plus O_ before frames (`--skin-zones off --tone-a1 off --grade-try shskin=0`). Then ONE max judge on A r2, with pores ON (R_) and OFF (N_, `--skin-pores off`). Main's ruling: if the pores still fail, ship pores off and put pores on the later list. Freckles stay at their pre-A strength (the owner protects her identity). Then the full test and the A MR. The owner saw the r1 sheet (`survivorsunchained_inputs\face44_owner\skinA_r1_AB_half.jpg`); main relays any notes. If A r2 is still far, send main options; no round 3.
