@@ -20,7 +20,7 @@
       {"slot": "boots", "match": ["sabaton_[lr](_.*)?"]}
     ],
     "arcanist": [
-      {"slot": "top", "match": ["corset(_.*)?", "clasp(_.*)?", "boning[a-d](_.*)?"]},
+      {"slot": "top", "match": ["corset(_.*)?", "clasp(_.*)?", "boning[a-d](_.*)?"], "under": ["plate_gstring_plain"]},
       {"slot": "bottom", "match": ["thong(_.*)?"]},
       {"slot": "collar", "match": ["choker(_.*)?"]},
       {"slot": "head", "match": ["hat_.*"]},

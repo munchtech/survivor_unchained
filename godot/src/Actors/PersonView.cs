@@ -214,11 +214,14 @@ public partial class PersonView : Node3D, INpcView
     /// clock, moved only by Advance, so the performance keeps to the timeline.</summary>
     public bool Cinema { get; private set; }
 
+    /// <summary>Her double in a safe cinematic: her pieces at their sockets and every clip cued her town one.</summary>
+    public bool Sheathed { get; set; }
+
     /// <summary>A clip from a moment in it, at a speed (0 holds that frame), blended in.</summary>
     public void Cue(string clip, double from, double speed, double blend)
     {
         Cinema = true;
-        var name = People.Clip(person, clip);
+        var name = People.Clip(person, clip, Sheathed);
         if (!person.Anim.HasAnimation(name)) { GD.PushWarning($"cinema: no clip {clip}"); return; }
         // A gesture (a nod, an exhale) is laid over what plays, not played in its place.
         if (person.Own is { } own && own.Owns(name) && own.Gesture(name[own.Prefix.Length..]) && person.Gestures is { } g)

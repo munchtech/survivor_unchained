@@ -110,6 +110,9 @@ public sealed class OwnClips
         "Pistol_Idle", "Spell_Simple_Idle_Loop", "Idle_Shield_Loop",
     };
 
+    // (The names a walk goes by in the game's data; "Walk_Formal_Loop" is a cinematic's.)
+    static readonly HashSet<string> Walks = new() { "Walk_Loop", "Walk", "Walking_A", "Walking_B", "Walking_C", "Walk_Formal_Loop" };
+
     static readonly HashSet<string> Moving = new()
     {
         "Walk_Loop", "Walk", "Walking_A", "Walking_B", "Walking_C", "Jog_Fwd_Loop", "Jog_Fwd", "Running_A", "Running_B", "Sprint_Loop", "Sprint",
@@ -123,6 +126,8 @@ public sealed class OwnClips
         if (Library() == null) return null;
         string? want = null;
         if (Idles.Contains(game)) want = First(SurvivorUnchained.Play.Sheath.Names("idle", calling, kind, sheathed));
+        else if (Walks.Contains(game) && Walk(calling, kind, sheathed) is string walk) return walk;
+        else if (Walks.Contains(game) && game == "Walk_Formal_Loop") return null;
         else if (Moving.Contains(game)) want = First(SurvivorUnchained.Play.Sheath.Names("run", calling, kind, sheathed));
         else
             want = game switch
@@ -154,7 +159,7 @@ public sealed class OwnClips
     /// <summary>Her walk for this calling and state (animation 51), prefixed, or null when she has none (the staff's town state).</summary>
     public string? Walk(string calling, string kind, bool sheathed)
     {
-        foreach (var n in SurvivorUnchained.Play.Sheath.Names("walk", calling, kind, sheathed)) if (Has(n)) return Prefix + n;
+        foreach (var n in SurvivorUnchained.Play.Sheath.WalkNames(calling, kind, sheathed, Has)) if (Has(n)) return Prefix + n;
         return null;
     }
 

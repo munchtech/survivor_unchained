@@ -127,6 +127,18 @@ public static class FloraSpecies
         return root.GetProperty("kinds").GetProperty(use).Clone();
     }
 
+    /// <summary>(lf3b) A zone's own ground paint values (its flora_species.json "ground": terrain.gdshader uniform names to
+    /// numbers, over Ground.cs's defaults; a --ground-* switch still wins); none if it has none.</summary>
+    public static Dictionary<string, float> GroundFor(string zone)
+    {
+        var d = new Dictionary<string, float>();
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone == "" || !FileAccess.FileExists(zp) || !Load(zp).TryGetProperty("ground", out var g)) return d;
+        foreach (var kv in g.EnumerateObject())
+            if (kv.Value.ValueKind == JsonValueKind.Number) d[kv.Name] = kv.Value.GetSingle();
+        return d;
+    }
+
     /// <summary>A species by its name ("stepping").</summary>
     public static Species Named(string name)
     {

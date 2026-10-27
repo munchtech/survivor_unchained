@@ -151,6 +151,10 @@ def main(argv):
         src.append((i, m, mat, attrs, tris, tris[keep], dropped))
     kept_total = sum(len(k) for *_, k, _ in src)
     budget = int(GAMEPLAY * t0)
+    # (a material made only of small parts draws whole at the play camera and counts against the budget: the rest
+    # share what is left (Body 14: plate_pauldrons_plain's straps, 312 triangles, put it 0.5% over))
+    whole = sum(len(tris) for *_, tris, kt, _ in src if not len(kt))
+    budget = max(budget - whole, int(0.5 * budget))
     ap = Appender(g)
     rep = {"full_triangles": t0, "lod1": {}, "shadow": {}}
     lod_tris = 0
