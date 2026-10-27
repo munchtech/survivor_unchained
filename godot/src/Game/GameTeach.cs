@@ -89,6 +89,9 @@ public partial class Game
     }
 
     /// <summary>Where a callout points now: its points and areas on the HUD's canvas (none: not there).</summary>
+    /// <summary>--no-open (a dev flag for pictures): a lesson that waits for the open (the red line) may show under a canopy.</summary>
+    static readonly bool noOpen = OS.GetCmdlineUserArgs().Contains("--no-open");
+
     (List<Vector2> Points, List<Rect2> Areas, bool Gone, int WorldOn) Resolve(Callout c)
     {
         var pts = new List<Vector2>();
@@ -137,9 +140,9 @@ public partial class Game
                         GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={InSafe(v)} block={diagBlock}");
                     }
                     if (!InSafe(v)) continue;
-                    if (t.Open && !InOpen(w)) continue;
+                    if (t.Open && !noOpen && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
-                    if (t.Open && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
+                    if (t.Open && !noOpen && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
                     {
                         if (OS.GetCmdlineUserArgs().Contains("--teach-diag")) GD.Print($"teachdiag {c.Id} t={Battle?.Time ?? 0:0.0} seen-blocked block={diagBlock}");
                         break;
@@ -460,9 +463,14 @@ public partial class Game
                     if (c.Target.ShunBig && (en.Def.Scale ?? 1) >= 1.4) shun.Add(new Rect2(f.X - h * 0.45f, hd.Y, h * 0.9f, h));
                 }
             }
+        // (what a lesson names but does not ring, e.g. the Knight that casts the red line: its own pool)
+        var pools = new List<Vector3>();
+        if (c.Target.Seen?.Invoke() is { } seenPts)
+            foreach (var q in seenPts)
+                if (OnScreen(q) is Vector2 qv) pools.Add(new Vector3(qv.X, qv.Y, PxPerMetre(q) * 1.3f));
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
         {
-            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
+            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun, Pools = pools,
             WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
             AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
         });

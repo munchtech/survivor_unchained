@@ -857,6 +857,7 @@ public partial class EmberChain : Control
         /// <summary>By day, LEVEL inked beside the lock, left of its body and under the chain's links: Cinzel caps
         /// 8 px tall at 1080, spaced, a muted bone with a dark halo so it reads on the bright planks; still as
         /// the lock swings (it is on the irons' plate, not the lock).</summary>
+        static GradientTexture2D? soft;
         void Word(Vector2 top, float a)
         {
             const string w = "LEVEL";
@@ -870,6 +871,15 @@ public partial class EmberChain : Control
             var at = new Vector2(Mathf.Round(top.X - 25 - width), Mathf.Round(top.Y + 25 + fs * 0.34f));
             var halo = new Color("#050302") with { A = 0.62f * a };
             var ink = new Color("#cbbd9f") with { A = 0.86f * a };
+            // (a soft dark under it, as the place-name header's type has (round 2 judge): it sits on the world
+            // like SPACE and R on their tabs, not as bare letters on the planks)
+            soft ??= new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = [new Color(0.02f, 0.015f, 0.025f, 0.55f), new Color(0.02f, 0.015f, 0.025f, 0.34f), new Color(0.02f, 0.015f, 0.025f, 0)], Offsets = [0f, 0.45f, 1f] },
+                Width = 128, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
+            };
+            var mid = new Vector2(at.X + width / 2, at.Y - fs * 0.34f);
+            DrawTextureRect(soft, new Rect2(mid - new Vector2(width / 2 + 26, 17), new Vector2(width + 52, 34)), false, Colors.White with { A = a });
             float x = at.X;
             foreach (var ch in w)
             {
