@@ -5,6 +5,16 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 9 (play-1 lead, 27 Oct): MR5 fix round done, re-judged; MR5 READY
+
+**State:** the MR5 fix round (12 items) built, the xhigh re-judge (aebd7397) gave A and B SHIP WITH FIXES (small); its three fixes built (df36280d); a full run v8 on the final code. This was i15's and i14's last round: anything later is a new list.
+- **Built:** elite/chest/pack tips re-timed, the Barrow line waits for the pack tip (e11df505); the Knight lives through 2 windups; L4 talk cut; L1 lock after the 2nd rise's draft, no crowd gate (ec6c92a5, 33c8d478); F2 aims at `chain_fill` (Instrument.ChainFill); F7 rings the Knight + arrow on his lane, the wall case fixed (open-ground test now uses a wall's faces, not its box; the Knight narrows when stuck out of sight) and F8 shows while the Grave-Caller stands (his arrival fills her Flare once; the autopilot holds the Flare for it) (1b130e90); the draught lesson under 70%, no "she must be seen" wait, gap 3, held off the Knight's windup/lunge + 1.5 s (df36280d).
+- **Ambush stakes** (36a8658f..24aeacb2, df36280d): opening volley x1.5, ditch dead x1.3, 24 foes held, and a steer in `Prologue.AmbushMul` via `Battle.FoeHitMul` (x0.25 when she loses >1.2%/s; x2.5 when she stood still 3 s and loses <0.9%/s in the first 30 s, off after she drinks). Idle loses 27-29% by +30 s (amb21-23), the dodging pilot 7.5-10% (n13-14). Judge: the steer is acceptable while no hit numbers show on her.
+- **Closed as known:** the F7 arrow tip lands on her figure (reads "you're on it").
+- **Routed (with the MR):** the Knight's white flash (VFX/model); the dark blue night frames (env). UI 16's "Knight low in frame" was the old v4 frame; v6 has him mid-frame.
+- **Scratch:** coordinator scratchpad 7ccc6e14 `play6\` (briefs, pace5.py, logs amb*, n*, v6-v8). Frames `godot/.shots/v6_*`, `v6b_*`, `v8_*`.
+- **Cost:** worker 64k + 44k, solvers 189k + 151k (3.7 h of runs), judge 131k, API $0.
+
 ## Experience 8 (play-1 lead, 27 Oct): PAUSED (coordinator wind-down); MR5 judged, ONE fix round left
 
 **Paused here (Experience 8, 27 Oct); next:** run the fix round in scratch `play5\brief_mr5fix.md` (12 decided items) on ONE fresh `su-worker` (or a medium su-lead-high for items 11-12, which need digging). Then ONE xhigh re-judge of only the changed frames (F2, L1, F7, the Post tips, F8, the draught if it fires) plus the ambush HP numbers, then one full shot-free run, tests, and MR5 to main. This is i15's last round (the cap): anything still open after it closes as known. Integration f09f6d81 is merged in (5ae3fdb1). Tests 1130/0/8. No turns held, no helpers running.

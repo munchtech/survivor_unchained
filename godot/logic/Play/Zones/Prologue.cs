@@ -649,7 +649,9 @@ public sealed class Prologue : ZoneRuntime
     /// 78% by 28 s (amb5), 84% (amb9), 26% (amb7), 9% (amb10): her drafts' dodge, block and armor, her kills and
     /// whether her dash cleared the volley swing it. A dodging player never meets the curve.) Full everywhere else.</summary>
     /// <summary>The Knight is winding up or lunging, or did within 1.5 s (the draught lesson waits).</summary>
-    bool KnightHolds() => knight is { Alive: true } k && (k.State is EnemyState.Windup or EnemyState.Lunging || B != null && B.Time - knightBusyAt < 1.5);
+    // (Experience 9, v8: also while F7 is still to come, above 40% HP: the draught freeze landed 1.5 s before F7's.)
+    bool KnightHolds() => knight is { Alive: true } k && (k.State is EnemyState.Windup or EnemyState.Lunging || B != null && B.Time - knightBusyAt < 1.5
+        || !G.Taught("red_line") && B != null && B.Player.Hp >= B.MaxHp * 0.4);
     double knightBusyAt = -99;
     int lastDraughts = -1;
     /// <summary>She drank a draught in the Ambush: the x2.5 push is off for the rest of it.</summary>
