@@ -387,7 +387,9 @@ def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r"):
 # thigh as the knee drove through, the sprint's 10 mm into it), the elbow open 125-128 (the axe's 118-122: its head
 # off the floor, 0.25 m at the lowest), the forearm turned a little out.
 LOW_ARM = ((12, 19, 125, -10), (-18, 19, 128, -15))
-LOW_ARM_R = ((12, 19, 118, -10), (-18, 19, 122, -15))
+# The axes' upper arms 24/22 out (at 19 the sprint's upper arm went 32-38 mm into her side and 11-31 into her breast
+# under motion --outfits; the trailing carry's 22-24 for the same reason).
+LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # The owner on the reaver run (routed, 27 Oct): "it reads as a careful jog". Her armed reaver runs drive harder: leant
 # 18 (was 14) with the back 4, more flight (duty 0.27, was 0.30), a deeper, heavier drop and bob (0.11, 0.09), the
 # knee up (0.42, was 0.36), the heel kicked (0.52) and the foot reaching (0.40); the hips turn less (9, was 11) and

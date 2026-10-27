@@ -32,8 +32,9 @@ SPRINT_SWING = (5, -3, 1.25, -3)
 # shield slung on her back (judge r3: 3-5 mm through at ph0 and ph50 at x1.25).
 # A fifth number: the free (left) upper arm's out, both ends, +deg. The axes sprint's hung second axe 5 in: at the run's 14 (+1 back)
 # the sprint's elbow swung round 25 deg further out, the forearm turned in, and the head came in onto her knee (anim 44
-# solver 7c).
-SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8, -3, 1.25, -3, -5), "run_reaver_town": (5, -3, 1.25, -3, 3), "run_stalker_town": (5, -3, 1.25, -3, 8)}
+# solver 7c). Animation 56 (the low point): the left arm swings its second axe like the first, so it takes the
+# default swing and 3 out (at the old 5 in its upper arm met her side, 3 mm, in the sprint).
+SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (5, -3, 1.25, -3, 3), "run_reaver_town": (5, -3, 1.25, -3, 3), "run_stalker_town": (5, -3, 1.25, -3, 8)}
 
 
 # The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).
