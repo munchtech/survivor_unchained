@@ -103,8 +103,8 @@ public partial class Instrument : Control
         Life = new LifeLamp { Position = LampAt };
         AddChild(Life);
         Art = new Vessel(false) { Position = ArtAt - Vessel.Half };
-        // (the Drowned Girl: the Flare's glass bare in the eddy's hole, sized to it, until piece 4's coal)
-        if (LifeLamp.Drowned) { Art.Bare(); Art.Scale = Vector2.One * (DgRiver.FlareR / R); }
+        // (the Drowned Girl: the Flare is a live coal in the eddy's hole, DgCoal)
+        if (LifeLamp.Drowned) Art.Coal();
         AddChild(Art);
         for (int i = 0; i < Sockets.Length; i++)
         {
@@ -154,8 +154,9 @@ public partial class Instrument : Control
         // (the Drowned Girl: under the small cuffs' feet, and under the eddy's glass on its bronze lip, as the concept has them)
         if (LifeLamp.Drowned)
         {
-            draughtKey.Place(DraughtAt.X, DraughtAt.Y + SmallR + SmallBand + 3);
-            dashKey.Place(DashAt.X, DashAt.Y + SmallR + SmallBand + 3);
+            // (piece 5: under the flask's foot, and under the dash's pearls)
+            draughtKey.Place(DraughtAt.X, DraughtAt.Y + 40);
+            dashKey.Place(DashAt.X, DashAt.Y + 40);
             artKey.Place(ArtAt.X, ArtAt.Y + DgRiver.FlareR + 7);
         }
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
@@ -262,8 +263,16 @@ public partial class Vessel : Control
     public string Number = "";
     public Texture2D? Glyph;
     public Color GlyphTint = Colors.White;
-    /// <summary>The Drowned Girl: the glass without its iron (it sits in the river's eddy).</summary>
-    public void Bare() => cuff.Visible = false;
+    /// <summary>The Drowned Girl (piece 4): no glass, no iron, no glyph: the live coal in the river's eddy (DgCoal),
+    /// fed this vessel's level.</summary>
+    public void Coal()
+    {
+        cuff.Visible = glass.Visible = over.Visible = false;
+        coal = new DgCoal();
+        coal.Position = Half - coal.Size / 2;
+        AddChild(coal);
+    }
+    DgCoal? coal;
     float slosh, shownLevel = -1, flushShown = -1;
     string drawnNumber = "";
     Texture2D? drawnGlyph;
@@ -387,6 +396,7 @@ public partial class Vessel : Control
             mat.SetShaderParameter(UPulse, Pulse);
             mat.SetShaderParameter(USlosh, slosh);
             mat.SetShaderParameter(UGlow, Glow);
+            if (coal != null) coal.Level = Level;
         }
         if (Number != drawnNumber || Glyph != drawnGlyph || GlyphTint != drawnTint || ink != drawnInk)
         {
@@ -714,6 +724,7 @@ public partial class Socket : Control
         return dimples;
     }
     Color school;
+    string glyphKey = "";
     int rank, max = 8;
     bool evolved, ripe, filled;
     double ready = 1, lastReady = 1, flash, t, crown = -1;
@@ -739,6 +750,7 @@ public partial class Socket : Control
         if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
         var newArt = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
@@ -884,7 +896,20 @@ public partial class Socket : Control
         if (filled)
         {
             float g = Mathf.Min(38, hr * 2 * 0.80f);
-            if (inlay != null)
+            // (piece 5: gold inlay, the line glyph's shape, DgGold; lit and warm-lit under when ready, dull bronze-gold
+            // coming back; a faint share of the school's colour in the light under it so neighbours differ)
+            if (glyphKey != "")
+            {
+                int gi = (int)Mathf.Round(g);
+                var (gold, glowTex) = DgGold.Of(glyphKey, gi);
+                var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
+                bool up = ready >= 0.98;
+                var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
+                if (up || flash > 0) DrawTextureRect(glowTex, gr, false, warm with { A = (up ? 0.42f : 0) + 0.5f * (float)flash });
+                var tone = (up ? Colors.White : new Color(0.66f, 0.60f, 0.52f)).Lerp(new Color(1.5f, 1.4f, 1.25f), (float)flash);
+                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = 1 });
+            }
+            else if (inlay != null)
             {
                 var col3 = ready >= 0.98 ? new Color(1.12f, 1.12f, 1.12f) : Colors.White;
                 DrawTextureRect(inlay, new Rect2(c - new Vector2(g, g) / 2, new Vector2(g, g)), false, col3.Lerp(new Color(2.0f, 1.8f, 1.5f), (float)flash));
@@ -1001,18 +1026,28 @@ public partial class Round : Control
         icon.Size = new Vector2(s, s);
         icon.MouseFilter = MouseFilterEnum.Ignore;
         AddChild(icon);
+        // (the Drowned Girl, piece 5: the hair-bound flask and the small ring with its pearls, DgSmall, for the glass
+        // and iron; the count and the ready form's flames stay on top)
+        if (LifeLamp.Drowned)
+        {
+            glassOf.Visible = cuff.Visible = icon.Visible = false;
+            AddChild(dg = new DgSmall(this, kind == Kind.Dash));
+        }
         AddChild(countOf = new Count2(this));
     }
+    readonly DgSmall? dg;
 
     public override void _Process(double delta)
     {
         // HUD v2: the draught's liquid is the vessel shader's (its uniforms only); its count redraws when it changes.
         if (kind == Kind.Draught)
         {
-            glassOf.Tick(Math.Min((float)delta, 0.1f));
+            if (dg != null) dg.Tick(Math.Min((float)delta, 0.1f));
+            else glassOf.Tick(Math.Min((float)delta, 0.1f));
             if (Count != countDrawn) { countDrawn = Count; countOf.QueueRedraw(); }
             return;
         }
+        if (HudPin.Dash is float dp) { Count = (int)dp; Recharge = dp - (int)dp; }
         // An empty draught is dimmed, not hidden: its place keeps the instrument whole.
         icon.Modulate = kind == Kind.Draught && Count <= 0 ? new Color(0.45f, 0.42f, 0.42f, 0.7f) : Colors.White;
         // (its glass and count are redrawn only when what they show changes, or while the ready dash's flames
@@ -1121,7 +1156,8 @@ public partial class Round : Control
             const int fs = 16;
             string s = o.Count.ToString();
             var ts = f.GetStringSize(s, HorizontalAlignment.Left, -1, fs);
-            var mid = Size / 2 + new Vector2(Instrument.SmallR * 0.40f, Instrument.SmallR * 0.42f);
+            // (the Drowned Girl: beside the flask's foot, on the bronze, as the concept has it)
+            var mid = Size / 2 + (LifeLamp.Drowned ? new Vector2(21, 17) : new Vector2(Instrument.SmallR * 0.40f, Instrument.SmallR * 0.42f));
             var at = new Vector2(Mathf.Round(mid.X - ts.X / 2), Mathf.Round(mid.Y + 0.293f * fs));
             DrawStringOutline(f, at + new Vector2(0, 1.5f), s, HorizontalAlignment.Left, -1, fs, 7, new Color(0, 0, 0, 0.22f));
             DrawStringOutline(f, at, s, HorizontalAlignment.Left, -1, fs, 3, new Color(0, 0, 0, 0.62f));

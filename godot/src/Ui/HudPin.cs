@@ -10,15 +10,17 @@ namespace SurvivorUnchained.Ui;
 ///     life 0-1 (her life), shield 0-1 (a fraction of her max life), ember 0-1 (the chain's fill), lockheat 0-1,
 ///     draught (a count, 0 = empty), art 0-1 (the art glass's level), seats: one code per seat from the left,
 ///     f3 = filled at rank 3 of 8, h = filled and hot (can evolve), e = empty (night); missing = empty;
-///     behind=1: the Drowned Girl's figure faded as if something were behind it.
+///     behind=1: the Drowned Girl's figure faded as if something were behind it; day=1|0: her XP thread
+///     drawn as by day (her experience) or by night (the ember), whatever the fight is; dash=1.4: the dash's
+///     charges held (1 held, the next 40% back).
 ///   --hud-seq "state;state;..." [--hud-seq-every S]: Shots.cs steps through the states (each one applied over
 ///     --hud-pin) and saves SHOT_hud0.png, SHOT_hud1.png...
 /// </summary>
 public static class HudPin
 {
-    public static float? Life, Shield, Ember, LockHeat, Art;
+    public static float? Life, Shield, Ember, LockHeat, Art, Dash;
     public static int? Draught;
-    public static bool? Behind;
+    public static bool? Behind, Day;
     public static string[]? Seats;
     static readonly string baseSpec = Args.Get("hud-pin") ?? "";
     /// <summary>The sequence's states (empty: none).</summary>
@@ -31,7 +33,7 @@ public static class HudPin
     /// <summary>Sequence state k: the pin over a clean slate.</summary>
     public static void Use(int k)
     {
-        Life = Shield = Ember = LockHeat = Art = null; Draught = null; Seats = null; Behind = null;
+        Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -52,6 +54,8 @@ public static class HudPin
                 case "art": Art = F(); break;
                 case "draught": Draught = (int)Math.Round(float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : 0); break;
                 case "behind": Behind = F() > 0.5f; break;
+                case "day": Day = F() > 0.5f; break;
+                case "dash": Dash = float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var ds) ? Math.Max(0, ds) : 0; break;
                 case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
             }
         }

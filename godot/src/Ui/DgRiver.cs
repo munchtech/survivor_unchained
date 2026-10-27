@@ -130,7 +130,7 @@ public partial class DgRiver : Control
         int level = 1;
         string drawn = "";
         static GradientTexture2D? soft;
-        static readonly Color GoldLit = new("#e6bf72"), GoldHot = new("#fff0c4"), EmberLit = new("#ffa848"), EmberHot = new("#ffe2a8"),
+        static readonly Color GoldLit = new("#e6bf72"), GoldHot = new("#fff0c4"), EmberLit = new("#ff9238"), EmberHot = new("#ffe2a8"),
             Wire = new(0.50f, 0.39f, 0.22f, 0.80f);
 
         public ThreadLine()
@@ -219,7 +219,7 @@ public partial class DgRiver : Control
             {
                 var pa = Part(pts, len, start, reach);
                 // the lit wire: a soft light round it (warmer by night), the gold, a bright hair along its top
-                DrawPolyline(pa, lit with { A = ember ? 0.20f : 0.13f }, 6f, true);
+                DrawPolyline(pa, lit with { A = ember ? 0.24f : 0.13f }, 6f, true);
                 DrawPolyline(pa, lit.Darkened(0.35f), 2.6f, true);
                 DrawPolyline(pa, lit, 1.9f, true);
                 DrawPolyline(Shift(pa, -0.55f), hot with { A = 0.85f }, 0.9f, true);
