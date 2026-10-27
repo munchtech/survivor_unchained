@@ -623,7 +623,7 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The ditch's opening: how many of the dead rise round her, how near, how much harder they and
     /// the bowmen's bolts hit than the road's.</summary>
     const int AmbushRing = 12;
-    const double AmbushNear = 3.5, AmbushHit = 1.6, AmbushBolt = 1.5;
+    const double AmbushNear = 3.5, AmbushHit = 1.3, AmbushBolt = 1.5;
     /// <summary>The Ambush's opening (s from the spring) and the field its top-up keeps through it.</summary>
     const double AmbushOpen = 30, AmbushField = 24;
     /// <summary>The Ambush's curve (MR5 item 11 round 2): what she may have taken by f s from the spring, of her
