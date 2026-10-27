@@ -86,6 +86,10 @@ public partial class HerJoints : SkeletonModifier3D
         public readonly int[][] Chains = new int[2][];   // each thigh up to (not with) the pelvis
         public readonly Vector3[] Rest0 = new Vector3[2]; // each thigh's line at rest, her rest axes
         public double Last = double.NaN;                  // last frame's turn (degrees), for its fall
+        public Core.PanelSwing.FoldLaw? Fold;             // the lower half's fold (its mesh's blend shapes), if any
+        public string[] FoldShapes = System.Array.Empty<string>();
+        public readonly Core.PanelSwing.FoldState FoldState = new();
+        public readonly List<(MeshInstance3D Mi, int[] Idx)> FoldOn = new();
     }
 
     Skeleton3D? found;
@@ -99,6 +103,18 @@ public partial class HerJoints : SkeletonModifier3D
     void Rescan(Skeleton3D sk)
     {
         rescan = false;
+        // (a panel's fold shapes on whatever mesh carries them: the Reaver's outfit)
+        foreach (var p in panels)
+        {
+            p.FoldOn.Clear();
+            if (p.Fold == null) continue;
+            foreach (var n in sk.GetChildren())
+                if (n is MeshInstance3D mi && mi.Mesh != null && !mi.IsQueuedForDeletion())
+                {
+                    var idx = System.Array.ConvertAll(p.FoldShapes, nm => mi.FindBlendShapeByName(nm));
+                    if (System.Array.Exists(idx, i => i >= 0)) p.FoldOn.Add((mi, idx));
+                }
+        }
         foreach (var side in sides)
             foreach (var c in side.Correctives)
             {
@@ -230,6 +246,15 @@ public partial class HerJoints : SkeletonModifier3D
                     Law = new Core.PanelSwing.Law((double)p["amount"], (double)p["soft"], (double)p["spread_from"], (double)p["spread_to"], (double)p["spread_damp"],
                         p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450),
                 };
+                if (p.ContainsKey("fold"))
+                {
+                    var f = p["fold"].AsGodotDictionary();
+                    var c = f["contact"].AsGodotArray();
+                    one.Fold = new Core.PanelSwing.FoldLaw((double)f["step"], (double)f["neg"], (double)f["hz"], (double)f["zeta"], (double)f["rest"],
+                        (double)c[0], (double)c[1], (int)f["substeps"]);
+                    var sh = f["shapes"].AsGodotArray();
+                    one.FoldShapes = new[] { (string)sh[0], (string)sh[1], (string)sh[2] };
+                }
                 foreach (var (t, i) in new[] { (tl, 0), (tr, 1) })
                 {
                     var chain = new List<int>();
@@ -383,9 +408,22 @@ public partial class HerJoints : SkeletonModifier3D
                 if (i == 0) { fl = sw; al = sp; } else { fr = sw; ar = sp; }
             }
             // (up with the thigh at once, down as a loose flap falls: Core/PanelSwing.Fall)
-            p.Last = Core.PanelSwing.Fall(p.Law, p.Last, Core.PanelSwing.Turn(p.Law, fl, fr, al, ar), delta);
+            double law = Core.PanelSwing.Turn(p.Law, fl, fr, al, ar);
+            p.Last = Core.PanelSwing.Fall(p.Law, p.Last, law, delta);
             float deg = (float)p.Last;
             sk.SetBonePoseRotation(p.Bone, (new Quaternion(p.Axis, Mathf.DegToRad(deg)) * p.Rest).Normalized());
+            // (the lower half: a pendulum lying on the leading thigh, its fold as the mesh's shapes: Core/PanelSwing.Fold)
+            if (p.Fold is { } fold && p.FoldOn.Count > 0)
+            {
+                var (wa, wb, wn) = Core.PanelSwing.FoldWeights(fold, Core.PanelSwing.Fold(fold, p.FoldState, law, p.Law.Amount, p.Last, delta));
+                foreach (var (mi, idx) in p.FoldOn)
+                    if (IsInstanceValid(mi))
+                    {
+                        if (idx[0] >= 0) mi.SetBlendShapeValue(idx[0], (float)wa);
+                        if (idx[1] >= 0) mi.SetBlendShapeValue(idx[1], (float)wb);
+                        if (idx[2] >= 0) mi.SetBlendShapeValue(idx[2], (float)wn);
+                    }
+            }
         }
     }
 }

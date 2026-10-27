@@ -54,6 +54,53 @@ public static class PanelSwing
         return Math.Max(target, Math.Max(y, prev - law.FallRate * dt));
     }
 
+    /// <summary>The lower half's fold (rig_helpers.json "panels" "fold"): three blend shapes on the panel's
+    /// mesh turning its points below the hinge forward by Step (a), a further Step (b) and back by Neg (n).</summary>
+    public readonly record struct FoldLaw(double Step, double Neg, double Hz, double Zeta, double Rest, double C1, double C0, int Substeps);
+
+    /// <summary>The fold's state from frame to frame: the lower half's angle from plumb, its speed, last frame's contact.</summary>
+    public sealed class FoldState
+    {
+        public bool Started;
+        public double Lam, V, Push;
+    }
+
+    /// <summary>The lower half's fold this frame (degrees past the upper's turn <paramref name="th"/>, + forward)
+    /// from the law's turn (<paramref name="turn"/>, before its fall; <paramref name="amount"/> the law's amount),
+    /// <paramref name="dt"/> seconds on: a damped pendulum hanging toward Rest, never below C1 x the lead - C0
+    /// (lying on the leading thigh, lifted with it), at most two steps forward and Neg back.
+    /// helpers.py panel_fold, number for number.</summary>
+    public static double Fold(in FoldLaw f, FoldState st, double turn, double amount, double th, double dt)
+    {
+        double push = f.C1 * (amount != 0 ? turn / amount : 0) - f.C0;
+        if (!st.Started)
+        {
+            st.Started = true; st.Lam = Math.Max(push, f.Rest); st.V = 0; st.Push = push;
+        }
+        if (dt > 0)
+        {
+            double w = 2 * Math.PI * f.Hz, h = dt / f.Substeps, p0 = st.Push, rate = (push - p0) / dt;
+            double lam = st.Lam, v = st.V;
+            for (int s = 0; s < f.Substeps; s++)
+            {
+                double ps = p0 + (push - p0) * (s + 1) / f.Substeps;
+                v += (w * w * (f.Rest - lam) - 2 * f.Zeta * w * v) * h;
+                lam += v * h;
+                if (lam < ps) { lam = ps; v = Math.Max(v, rate); }
+            }
+            st.Lam = lam; st.V = v; st.Push = push;
+        }
+        double beta = st.Lam - th;
+        if (beta > 2 * f.Step) { beta = 2 * f.Step; st.Lam = th + beta; }
+        return Math.Max(beta, -f.Neg);
+    }
+
+    /// <summary>The fold's three shapes' weights (a, b, n) for <paramref name="beta"/> degrees. helpers.py fold_weights.</summary>
+    public static (double A, double B, double N) FoldWeights(in FoldLaw f, double beta)
+        => beta >= 0
+            ? (Math.Min(beta / f.Step, 1), Math.Min(Math.Max((beta - f.Step) / f.Step, 0), 1), 0)
+            : (0, 0, Math.Min(-beta / f.Neg, 1));
+
     /// <summary>A thigh's line (its +Y in her rest axes carried with the
     /// pelvis: +Y up, +Z her front) against its rest line: (forward swing in
     /// her side plane, spread out to <paramref name="side"/>, +1 her left, -1
