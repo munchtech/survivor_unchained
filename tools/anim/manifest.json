@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 112,
- "planned": 73,
+ "made": 113,
+ "planned": 74,
  "clips": [
   {
    "clip": "idle_warden",
@@ -41,6 +41,18 @@
    "status": "made",
    "fallback": "Idle_Loop",
    "made_by": "100STYLE Angry_ID, arms keyed",
+   "source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+   "length": 5.0,
+   "layer": "full"
+  },
+  {
+   "clip": "idle_reaver_axes",
+   "plays_for": "idle, reaver with two axes",
+   "status": "made",
+   "fallback": "Idle_Loop",
+   "made_by": "100STYLE Angry_ID (idle_reaver's base), arms keyed",
    "source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
    "licence": "CC BY 4.0",
    "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
