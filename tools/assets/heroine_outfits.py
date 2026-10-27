@@ -3943,7 +3943,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             d_, j_ = cKDTree(P[sel_]).query(pos, k=6)
             iw_ = 1.0 / np.maximum(d_, 1e-4)
             nw_ = (W[sel_][j_] * iw_[:, :, None]).sum(1) / iw_.sum(1)[:, None]
-            t_ = np.clip((at[:, -3] + 0.02) / 0.02, 0, 1)[:, None]
+            t_ = np.clip((at[:, -3] - 0.005) / 0.015, 0, 1)[:, None]   # (the filled foot only: the ankle's bridge as cut)
             at[:, 3:3 + NB] = at[:, 3:3 + NB] * (1 - t_) + nw_ * t_
     pos = relax(pos, tris, interior=smooth, edge=edge)
     if iron:
