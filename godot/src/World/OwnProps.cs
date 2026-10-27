@@ -42,6 +42,9 @@ public static class OwnProps
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
     static readonly Dictionary<string, Vector2> axes = new();
+    /// <summary>(E8 r2) A preset's own LOD1 distance (props.json "lod_m": the gate's towers and gatehouse, so the play
+    /// camera, about 30 m off, sees their joints and bevels, not the decimated LOD1's smooth facets).</summary>
+    static readonly Dictionary<string, float> lods = new();
     static OrmMaterial3D? mat;
 
     /// <summary>A zone's own-props data, or null if it has none.</summary>
@@ -181,6 +184,7 @@ public static class OwnProps
                     var lo = new Vector3(b[0].GetSingle(), b[1].GetSingle(), b[2].GetSingle());
                     boxes[p.Name] = new Aabb(lo, new Vector3(b[3].GetSingle(), b[4].GetSingle(), b[5].GetSingle()) - lo);
                     if (p.Value.TryGetProperty("axis", out var ax)) axes[p.Name] = new Vector2(ax[0].GetSingle(), ax[1].GetSingle());
+                    if (p.Value.TryGetProperty("lod_m", out var lm)) lods[p.Name] = lm.GetSingle();
                 }
             }
         }
@@ -213,6 +217,25 @@ public static class OwnProps
             }
             else mat.Roughness = 0.9f;
             return mat;
+        }
+    }
+
+    static ShaderMaterial? far;
+    static bool farShown = true;
+    /// <summary>(E8 r2) Whether the far castle draws (Atmosphere.Set: only under a night sky).</summary>
+    public static void FarShown(bool on) { farShown = on; far?.SetShaderParameter("shown", on ? 1f : 0f); }
+    /// <summary>(E8) The far castle's (C01 s8a, 265 m off): the props atlas times the vertex colours, the zone's fog
+    /// off and its own haze in its place (Godot's fog at that range left a flat fog-coloured shape, its windows gone),
+    /// the lit windows (vertex alpha 0) glowing their own colour (shaders/far_castle.gdshader).</summary>
+    public static Material Far
+    {
+        get
+        {
+            if (far != null) return far;
+            far = new ShaderMaterial { ResourceName = "far_castle", Shader = GD.Load<Shader>("res://shaders/far_castle.gdshader") };
+            far.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{Dir}/props_albedo.jpg"));
+            far.SetShaderParameter("shown", farShown ? 1f : 0f);
+            return far;
         }
     }
 
@@ -252,30 +275,45 @@ public static class OwnProps
         BacklightEnabled = true, Backlight = new Color(0.22f, 0.2f, 0.17f),
     };
 
+    /// <summary>--props-skip a,b,...: presets left out (the kit's piece keeps its place), for bisecting.</summary>
+    static readonly HashSet<string> Skip = new((SurvivorUnchained.Args.Get("props-skip") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries));
+
     /// <summary>A preset's node (its LOD0 and LOD1 by distance, shadows on), or null if it was never built.</summary>
     public static Node3D? Piece(string preset)
     {
         var path = $"{Dir}/{preset}.glb";
-        if (!ResourceLoader.Exists(path)) return null;
+        if (!ResourceLoader.Exists(path) || Skip.Contains(preset)) return null;
         var root = GD.Load<PackedScene>(path).Instantiate<Node3D>();
         root.Name = "own_" + preset;
         bool hasLod = false;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false)) if (n.Name.ToString().EndsWith("_LOD1")) hasLod = true;
         // (E9d) clutter under half a metre casts no shadow (the shadow-draw budget)
         bool small = Box(preset) is Aabb bx && bx.Size.Y < 0.5f;
+        float lodFrom = lods.TryGetValue(preset, out var lm) && !SurvivorUnchained.Args.Has("props-lod") ? lm : Lod1From;
+        // (E8) a preset with a shadow proxy (<preset>_shadow, a few boxes): the proxy alone casts its shadow
+        bool proxy = false;
+        foreach (var n in root.FindChildren("*_shadow", "MeshInstance3D", true, false)) proxy = true;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
         {
             if (n is not MeshInstance3D m || m.Mesh == null) continue;
+            if (m.Name.ToString().EndsWith("_shadow")) { m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly; continue; }
+            // (E8) the far castle: its own material (the atlas, its own haze, its lit windows), no shadow, no LOD
+            if (m.Name.ToString().EndsWith("_far"))
+            {
+                m.MaterialOverride = Far; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                GD.Print($"(E8) far {m.Name}: cast_shadow {m.CastShadow}, one draw ({m.Mesh.GetSurfaceCount()} surface)");
+                continue;
+            }
             // (E9d) the notices: their own paper sheet (notice_paper.png), no shadow, no LOD (a few hundred triangles)
             if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
             if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
             if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
-            m.CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
+            m.CastShadow = small || proxy ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
             if (!hasLod) continue;
-            if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = Lod1From;
-            else m.VisibilityRangeEnd = Lod1From;
+            if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = lodFrom;
+            else m.VisibilityRangeEnd = lodFrom;
         }
         return root;
     }
