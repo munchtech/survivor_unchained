@@ -1,5 +1,21 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Paused here (env lead 19, 27 Oct, coordinator WIND-DOWN); next: the E8 round-3 judge (the last round), then E8's MR, then E10
+- **Low Ford MERGED** to integration (df0cf10c). **E8 round 3 is BUILT and UNJUDGED** (3c7897a2, c215c7be; frames `godot/.shots/e8d1_gate_o_00/01`, `e8d1_gatedawn_o_00`, `e8d1_cine_c01_s8a_1`, `e8d1c_c04a_sa8_1`).
+- **Next:** reuse `survivorsunchained_inputs\scratch_env19\e8_judge2.md` as judge 3 (xhigh): r2 -> r3 frames, plus r2's verdict, which is summarized below.
+  - On PASS / PASS-WITH-NOTES: merge integration under the junction rule, run the full tests, and a short Release perf on the Exit window (the towers and gatehouse now keep full detail to 45 m, about +40k tris at the gate). Then MR.
+  - On FAIL: the round cap is reached. Close what is marks, and cut or restage the shot that can't pass; tell main.
+- **Judges:**
+  - r1: FAIL, medium-far. Cones, a huge far castle, and dark dawn and night shadows.
+  - r2: FAIL, medium. 4/5 frames pass the gate; A8's drums read as jutting crates.
+- **r3 numbers:** A8 west drum std 8.8 and range 34 (target <= 11 / 40). Night boxes 56.3 / 50.2 / 44.3 (targets >= 50 / 45 / 44), with no pale stripes. Dawn pools 56.3 / 48.9. The s8a gold halo is about 28 px. Towers 23.1k / 22.8k tris; castle 7.8k.
+  - Missed: A8's green damp band at the drum bases (0%). C04 A's `road4` mist (2.2 m at z -104) hides it; lowering that cue is Experience/cinematics' call, so note it for the judge.
+  - Unconfirmed: the gatehouse merlon-cap rims at 1:1, and the top corbel table, which may read a little blocky.
+- **Shadow cheats (on purpose):** the proxies are squashed to the old KayKit height (`shadow_h`), stand on the wall base (`shadow_floor`), and the gatehouse proxy has an arched passage 2.5 m deep. A debug flag, `--props-skip a,b`, is in OwnProps.cs.
+- **Scripts** are in `survivorsunchained_inputs\scratch_env19\` (`shoot.sh`, `shoot_c04a.sh`; copy them to your scratch and fix the paths). shoot.sh's import step skips silently when freshness refuses, so add `--stale-ok` or merge first. shoot_c04a.sh doesn't take the import lock.
+- **Cost (E8):** r1 solver 218k + judge 77k; r2 220k + dawn debug 132k + judge 80k; r3 195k. Total about 0.92M; lead about 190k.
+- **Later list:** main's note (26 Oct): the camp (lf6_camp_o_00) reads as flat dark dirt. Cheap ground dressing would help: scattered stones, a cart track, low brush by the fire ring. The curtains and gatehouse still have the `bake_colours` depth-axis grime bug (`zup` is off on them, to keep their judged look).
+
 ## Now (env lead 19, 26 Oct): Low Ford MR READY env-16@df0cf10c; E8 round 1 built, shooting, judge next
 - **Low Ford MR:** Release perf `survivorsunchained_inputs/env_perf1/lf/lf_hi_lf6_windows.md`: GPU 3.3-4.8 ms (E7c 3.4-5.0), shadow draws peak 1,017 in the boss-intro cine (E7c 1,262), 96-287 elsewhere; run clean to Exit; tests 1070/0/8.
 - **E8 r1 (solver 218k; 2cea6815, b10d548b, 8189117c, unjudged):** Low Ford's KayKit hex gate (`gate-0`), 10 wall runs and 2 tower bases swapped via `props_own.json` `kits` for ours (`env_props.py`: 4 curtain variants, gatehouse with arch/portcullis/open leaves, round towers with slate cones; `<name>_shadow` proxies cast alone, 13 casters vs 18). Far castle: one mesh 4.2k tris, `far_castle.gdshader` (own haze, ignores fog; lit windows by vertex colour), at (3,-260), the gold lamp in a high keep window. frames.py sets `gate`, `gatedawn`; s8a still via `--cine c01 --shot <name> --until 24`; script `<coord scratch>\env19\shoot.sh ROUND [import]`. Before frames `godot/.shots/e8a0_*`.
