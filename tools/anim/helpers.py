@@ -193,6 +193,11 @@ SPEC = {
         {"name": "panel_front", "parent": "pelvis", "thighs": ["thigh_l", "thigh_r"], "pivot": [0.0, 0.0, 0.06],
          "length": 0.45, "amount": 1.15, "soft": 12.0, "spread_from": 8.0, "spread_to": 20.0, "spread_damp": 0.6,
          "fall_tau": 0.04, "fall_rate": 450.0,
+         # (Body 18, judge at the 1:1 town close-up: "in the run the panel juts forward as a rigid flat board 6-8 cm
+         # above the raised thigh". Its pivot sits above and before the hip joint, so turned with the thigh it rode
+         # over it; past `drop_from` degrees of lead it turns `drop` a degree less: run peak 84 -> 73 deg on a 77 deg
+         # thigh, and its sides lift off the thigh under them ("side" below) so the lowered panel isn't cut by it)
+         "drop": 0.4, "drop_from": 45.0,
          # The lower half's fold (Body 17, 27 Oct; panel_fold): not a bone (a bone would change her skeleton,
          # every clip's pack and the body file) but three blend shapes on the panel's own mesh, made by
          # heroine_outfits.py: its points below `hinge` (rest height, glTF metres; eased over +-`band`)
@@ -203,8 +208,24 @@ SPEC = {
          # in walk/run/sprint) and lifted with it, so it drapes over the thigh as it rises and trails it
          # ~0.1 s as it falls. Measured on the shortened panel (S17 solve1 harness.py): walk stand-off
          # 66 -> 53 mm (the full-length panel today: 98), thigh points inside unchanged in run/sprint/idle/sit.
-         "fold": {"shapes": ["panel_fold_a", "panel_fold_b", "panel_fold_n"], "hinge": 0.86, "band": 0.03,
-                  "step": 25.0, "neg": 25.0, "hz": 1.6, "zeta": 0.45, "rest": 0.0, "contact": [1.12, 9.0], "substeps": 4}},
+         # (Body 18: hinge 0.86 -> 0.84, 55% down the panel, the judge's bend)
+         "fold": {"shapes": ["panel_fold_a", "panel_fold_b", "panel_fold_n"], "hinge": 0.84, "band": 0.03,
+                  "step": 25.0, "neg": 25.0, "hz": 1.6, "zeta": 0.45, "rest": 0.0, "contact": [1.12, 9.0], "substeps": 4,
+                  # (Body 18) two more shapes: the panel's half over each thigh lifted along its face by up to `lift`
+                  # (m, from `x`[0] off her middle to `x`[1], none in its top 3 cm, all from 12 cm down), weighed by
+                  # that thigh's forward swing (smoothstep over `swing` degrees): the sheet tilts onto the raised
+                  # thigh's crown instead of the thigh cutting through its edge
+                  "side": {"shapes": ["panel_side_l", "panel_side_r"], "lift": 0.055, "x": [0.005, 0.06], "swing": [10.0, 45.0]}},
+         # (Body 18 r4, judge at the town sprint: "as the near thigh comes down the panel floats as a straight stiff
+         # paddle 6-8 cm off it", the fall's hang and the 1.6 Hz fold's slow drop.) In a sprint (panel_sprint: the
+         # lead's held peak past `amp`, its held swing past `range`, both held `decay` deg/s, so a seat or a held
+         # pose never counts, nor a run, peak 79) the law blends to these: the upper turns `amount` a degree of lead
+         # (it lies on the thigh down its whole descent: 1.15 floats 7-10 cm off it there; the walk keeps 1.15, under
+         # which its thigh stays out of the panel), falls with no hang (`fall_tau`, `fall_rate`) and the lower half is a
+         # critically damped spring (`zeta` 1, `hz` 19: settled in 0.05 s, never overshooting). S18 solve4 h4.py,
+         # sprint_reaver(_town): lower half over the descending thigh p10 142 -> 6 mm, skin inside the panel max 76 -> 22
+         "sprint": {"amp": [81.0, 86.0], "range": [30.0, 40.0], "decay": 10.0,
+                    "amount": 0.5, "fall_tau": 0.012, "fall_rate": 1200.0, "hz": 19.0, "zeta": 1.0}},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
@@ -559,14 +580,57 @@ def _softrelu(x, k):
     return 0.0 if x <= 0 else (x * x / (2 * k) if x < k else x - k / 2)
 
 
-def panel_turn(pn, fl, fr, al, ar):
+def panel_turn(pn, fl, fr, al, ar, drop=True):
     """Degrees a panel turns forward (SPEC "panels"): from each thigh's
-    forward swing (fl, fr) and spread (al, ar), degrees from rest."""
+    forward swing (fl, fr) and spread (al, ar), degrees from rest. Past
+    `drop_from` degrees of lead it turns `drop` a degree less (softly, and
+    not with the thighs spread), so at a run's raised knee it lies on the
+    thigh rather than riding over it (Body 18); drop=False: without that
+    (the fold's contact reads the thigh's own lead)."""
     k = pn["soft"]
     lead = _smax(fl, fr, k) - k / 4
     spread = (al + ar) / 2
-    damp = 1.0 - pn["spread_damp"] * float(_smooth((spread - pn["spread_from"]) / (pn["spread_to"] - pn["spread_from"])))
-    return pn["amount"] * _softrelu(lead, k) * damp
+    sp = float(_smooth((spread - pn["spread_from"]) / (pn["spread_to"] - pn["spread_from"])))
+    damp = 1.0 - pn["spread_damp"] * sp
+    t = pn["amount"] * _softrelu(lead, k) * damp
+    if drop and pn.get("drop"):
+        t -= pn["drop"] * _softrelu(lead - pn["drop_from"], k) * (1.0 - sp)
+    return t
+
+
+def side_weights(sd, fl, fr):
+    """The panel's side shapes' weights (left, right) from each thigh's forward swing (SPEC "panels" "fold"
+    "side"): smoothstep over `swing`. PanelSwing.SideWeights' twin."""
+    a, b = sd["swing"]
+    return float(_smooth((fl - a) / (b - a))), float(_smooth((fr - a) / (b - a)))
+
+
+def panel_sprint(sd, st, lead, dt):
+    """How much of a sprint the panel's law is in (0..1, SPEC "panels" "sprint") from the lead's swing this frame
+    and `st` (a dict kept frame to frame, {} at the first): its peak and trough held, each easing back toward the lead
+    `decay` deg/s; the held peak past `amp` (smoothstep) times the held swing (peak - trough) past `range`.
+    PanelSwing.Sprint's twin."""
+    if "hi" not in st:
+        st.update(hi=lead, lo=lead)
+    else:
+        st["hi"] = max(lead, st["hi"] - sd["decay"] * dt)
+        st["lo"] = min(lead, st["lo"] + sd["decay"] * dt)
+    a0, a1 = sd["amp"]
+    r0, r1 = sd["range"]
+    return float(_smooth((st["hi"] - a0) / (a1 - a0))) * float(_smooth((st["hi"] - st["lo"] - r0) / (r1 - r0)))
+
+
+def sprint_blend(pn, g):
+    """The panel's law `pn` blended `g` of the way to its "sprint" numbers (the fold's hz and zeta with it)."""
+    sd = pn.get("sprint")
+    if not sd or g <= 0:
+        return pn
+    out = dict(pn)
+    for k in ("amount", "fall_tau", "fall_rate"):
+        out[k] = pn[k] + (sd[k] - pn[k]) * g
+    if "fold" in pn:
+        out["fold"] = dict(pn["fold"], **{k: pn["fold"][k] + (sd[k] - pn["fold"][k]) * g for k in ("hz", "zeta")})
+    return out
 
 
 def panel_fall(pn, prev, target, dt):
@@ -594,7 +658,8 @@ def panel_fold(fd, st, turn, amount, th, dt):
     if dt > 0:
         w = 2 * math.pi * fd["hz"]
         z = fd["zeta"]
-        n = int(fd["substeps"])
+        # (substeps: at least `substeps`, and enough that w h <= 1, so a stiff spring holds at a long frame)
+        n = max(int(fd["substeps"]), math.ceil(w * dt))
         h = dt / n
         p0 = st["push"]
         rate = (push - p0) / dt
@@ -668,7 +733,14 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
         if j is None:
             continue
         p = I[pn["parent"]]
-        law = deg = panel_turn(pn, *panel_angles(sk, rot, pn))
+        ang = panel_angles(sk, rot, pn)
+        if state is not None and "sprint" in pn:
+            k = pn["soft"]
+            g = panel_sprint(pn["sprint"], state.setdefault(pn["name"] + ":sprint", {}),
+                             _smax(ang[0], ang[1], k) - k / 4, dt if dt is not None else 0.0)
+            state[pn["name"] + ":sprint_g"] = g
+            pn = sprint_blend(pn, g)
+        law = deg = panel_turn(pn, *ang)
         if state is not None:
             deg = state[pn["name"]] = panel_fall(pn, state.get(pn["name"]), deg, dt if dt is not None else 0.0)
             if "fold" in pn:
@@ -676,6 +748,8 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
                 st_ = state.setdefault(pn["name"] + ":fold_st", {})
                 beta = panel_fold(pn["fold"], st_, law, pn["amount"], deg, dt if dt is not None else 0.0)
                 state[pn["name"] + ":fold"] = (beta, fold_weights(pn["fold"], beta))
+                if "side" in pn["fold"]:
+                    state[pn["name"] + ":side"] = side_weights(pn["fold"]["side"], ang[0], ang[1])
         # about her lateral axis (+X her right), in the pelvis's frame: the
         # panel's bottom forward and up
         gp = sk.rest_globals()[0][0, p]

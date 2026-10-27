@@ -10,7 +10,8 @@ namespace SurvivorUnchained.Core;
 /// </summary>
 public static class PanelSwing
 {
-    public readonly record struct Law(double Amount, double Soft, double SpreadFrom, double SpreadTo, double SpreadDamp, double FallTau = 0.04, double FallRate = 450);
+    public readonly record struct Law(double Amount, double Soft, double SpreadFrom, double SpreadTo, double SpreadDamp, double FallTau = 0.04, double FallRate = 450,
+        double Drop = 0, double DropFrom = 45);
 
     /// <summary>Polynomial smooth max, <paramref name="k"/> wide (max + k/4 where a == b).</summary>
     public static double SmoothMax(double a, double b, double k)
@@ -36,9 +37,64 @@ public static class PanelSwing
     {
         double k = law.Soft;
         double lead = SmoothMax(fl, fr, k) - k / 4;
-        double damp = 1 - law.SpreadDamp * Smooth(((al + ar) / 2 - law.SpreadFrom) / (law.SpreadTo - law.SpreadFrom));
-        return law.Amount * SoftRelu(lead, k) * damp;
+        double sp = Smooth(((al + ar) / 2 - law.SpreadFrom) / (law.SpreadTo - law.SpreadFrom));
+        double t = law.Amount * SoftRelu(lead, k) * (1 - law.SpreadDamp * sp);
+        // (Body 18: past DropFrom degrees of lead, Drop a degree less, not with the thighs spread: on the thigh, not over it)
+        if (law.Drop != 0) t -= law.Drop * SoftRelu(lead - law.DropFrom, k) * (1 - sp);
+        return t;
     }
+
+    /// <summary>(Body 18 r4) The sprint law (rig_helpers.json "panels" "sprint"): the lead's held peak past Amp and held
+    /// swing past Range (each held, easing back Decay deg/s) blend the law to these numbers: the upper turns Amount a
+    /// degree (lying on the thigh down its descent), falls with no hang (FallTau, FallRate) and the fold is critically
+    /// damped (Hz, Zeta).</summary>
+    public readonly record struct SprintLaw(double AmpFrom, double AmpTo, double RangeFrom, double RangeTo, double Decay,
+        double Amount, double FallTau, double FallRate, double Hz, double Zeta);
+
+    /// <summary>The sprint gate's held peak and trough of the lead, frame to frame.</summary>
+    public sealed class SprintState
+    {
+        public bool Started;
+        public double Hi, Lo;
+    }
+
+    /// <summary>The leading thigh's swing (the smooth max Turn reads).</summary>
+    public static double Lead(in Law law, double fl, double fr) => SmoothMax(fl, fr, law.Soft) - law.Soft / 4;
+
+    /// <summary>How much of a sprint the law is in (0..1) from the lead this frame, <paramref name="dt"/> seconds on:
+    /// its peak and trough held, each easing back toward the lead Decay deg/s; smoothstep of the held peak over Amp
+    /// times smoothstep of the held swing (peak - trough) over Range (a seat or a held pose never counts, nor a run).
+    /// helpers.py panel_sprint, number for number.</summary>
+    public static double Sprint(in SprintLaw s, SprintState st, double lead, double dt)
+    {
+        if (!st.Started) { st.Started = true; st.Hi = st.Lo = lead; }
+        else
+        {
+            st.Hi = Math.Max(lead, st.Hi - s.Decay * dt);
+            st.Lo = Math.Min(lead, st.Lo + s.Decay * dt);
+        }
+        return Smooth((st.Hi - s.AmpFrom) / (s.AmpTo - s.AmpFrom)) * Smooth((st.Hi - st.Lo - s.RangeFrom) / (s.RangeTo - s.RangeFrom));
+    }
+
+    /// <summary>The law <paramref name="g"/> of the way to the sprint's numbers. helpers.py sprint_blend.</summary>
+    public static Law Blend(in Law law, in SprintLaw s, double g) => g <= 0 ? law : law with
+    {
+        Amount = law.Amount + (s.Amount - law.Amount) * g,
+        FallTau = law.FallTau + (s.FallTau - law.FallTau) * g,
+        FallRate = law.FallRate + (s.FallRate - law.FallRate) * g,
+    };
+
+    /// <summary>The fold <paramref name="g"/> of the way to the sprint's spring (Hz, Zeta).</summary>
+    public static FoldLaw Blend(in FoldLaw f, in SprintLaw s, double g) => g <= 0 ? f : f with
+    {
+        Hz = f.Hz + (s.Hz - f.Hz) * g,
+        Zeta = f.Zeta + (s.Zeta - f.Zeta) * g,
+    };
+
+    /// <summary>The panel's side shapes' weights (left, right): each thigh's forward swing, smoothstep over
+    /// [<paramref name="from"/>, <paramref name="to"/>] degrees (rig_helpers.json "fold" "side"). helpers.py side_weights.</summary>
+    public static (double L, double R) SideWeights(double fl, double fr, double from, double to) =>
+        (Smooth((fl - from) / (to - from)), Smooth((fr - from) / (to - from)));
 
     /// <summary>The turn this frame (degrees) from last frame's (<paramref name="prev"/>,
     /// NaN at the first) and the law's (<paramref name="target"/>), <paramref name="dt"/>
@@ -79,11 +135,14 @@ public static class PanelSwing
         }
         if (dt > 0)
         {
-            double w = 2 * Math.PI * f.Hz, h = dt / f.Substeps, p0 = st.Push, rate = (push - p0) / dt;
+            // (substeps: at least Substeps, and enough that w h <= 1, so a stiff spring holds at a long frame)
+            double w = 2 * Math.PI * f.Hz;
+            int n = Math.Max(f.Substeps, (int)Math.Ceiling(w * dt));
+            double h = dt / n, p0 = st.Push, rate = (push - p0) / dt;
             double lam = st.Lam, v = st.V;
-            for (int s = 0; s < f.Substeps; s++)
+            for (int s = 0; s < n; s++)
             {
-                double ps = p0 + (push - p0) * (s + 1) / f.Substeps;
+                double ps = p0 + (push - p0) * (s + 1) / n;
                 v += (w * w * (f.Rest - lam) - 2 * f.Zeta * w * v) * h;
                 lam += v * h;
                 if (lam < ps) { lam = ps; v = Math.Max(v, rate); }

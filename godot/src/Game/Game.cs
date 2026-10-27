@@ -925,7 +925,8 @@ public partial class Game : Node, IZoneHost
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
     // --cine (pictures of a cinematic, played at once): no name card over its first shots; in play a fight comes first.
-    public void AnnounceZone() { if (zone != null && !Args.Has("cine")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
+    // (--noannounce: no zone banner, for gait shots in its first 4 s)
+    public void AnnounceZone() { if (zone != null && !Args.Has("cine") && !Args.Has("noannounce")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
 
     public void Revived(double x, double z)
     {

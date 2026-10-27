@@ -397,7 +397,8 @@
       "reaver.boots.blackleather",
       "reaver.boots.darkleather",
       "reaver.boots.fur",
-      "reaver.boots.oldleather",
+      "reaver.boots.hide",
+      "reaver.boots.rawhide",
       "reaver.boots.thread"
     ],
     "tuck": "armor_tuck/reaver.boots.bin",
@@ -495,7 +496,7 @@
       "skirt"
     ],
     "meshes": [
-      "reaver.skirt.darkleather",
+      "reaver.skirt.burnished",
       "reaver.skirt.oldleather"
     ],
     "tuck": "armor_tuck/reaver.skirt.bin",
