@@ -1,5 +1,49 @@
 # Handoff: skills look and feel
 
+## Combat VFX 1 (vfx-1 worktree, 27 Oct): PAUSED at the coordinator's wind-down; judge round 2 next
+
+**The owner's ask:** "a combat VFX lead (the Knight's salmon red line and white flash)". The coordinator's ruling: red for elite and boss blows only; the crowd's blows stay amber.
+
+**Causes found:**
+- **The Knight's line was never red.** Every hostile blow used `Palette.TeleBlow`, amber #ff9a1a. Elites were scaled to x0.28 and drawn as an additive emissive decal at energy 2.5. The AgX tonemapper folds that bright orange to salmon, and adding light over lit dirt turns pink.
+- **The white flash** was `vat.gdshaderinc`'s struck term: hot^4 x0.38 plus rim^2 x1.1, a flat warm-white wash. From the play camera most of a body counts as "rim", so it became a flat cream cut-out, held through hit-stop.
+- **The Grave-Caller's raise ring** (Ai.cs, Ring with Inner 0) drew as a filled 7 m salmon disc.
+- **The Ford-Warden's cleave and charge marks** (Prologue.cs, about lines 787 and 795) never set `Boss`, so they drew in the crowd's amber.
+
+**Built** (branch vfx-1, commits 748f462d, c336a847, 6cf7e3c7, 23461218, 312e8a4b):
+- **The danger mark** (`BattleFx.cs`: `Ground`, `DangerOf`, `FillStyle`/`FillTexture`, `BedOrm`, `OverLane`; `Palette.TeleDanger`, `TeleAmber`): a scarlet edge pre-skewed for AgX over a near-solid old-blood bed, with its own hot running fill, NormalFade 0.6, crisp ring rims sized in metres, and an over-copy in the same shape.
+- **Crowd blows and the raise ring:** dim true amber with a faint bed.
+- **The struck flash:** a champion lifts its own paint, warm, with a rim pop scaled by the paint. The crowd's rim-only path is unchanged.
+- **A dev switch:** `--on elite` frames each elite or boss mark (`tele<id>`), its hits (`hit<id>`) and one crowd mark every 6 s (`crowd`) (`Game.EliteShot`).
+
+**Judge state:**
+- Round 1 (xhigh) FAILED the line (it read coral/rose) and the other marks (the Warden's salmon, the Grave-Caller ring too loud). The flash got PASS-WITH-NOTES: the glitch is gone, but the crit lift was too weak.
+- The round 2 build is measured but NOT judged:
+  - Night Knight bed (119-154, 32-44, 35-46), saturation 0.75, hue 358-359.
+  - Day bed brick (115, 48, 44), saturation 0.6.
+  - Raise ring rim (203, 146, 78), hue 32.
+  - Under AgX no red reaches (235+, <50, <40); the solver's offline curve gives (213, 73, 48) at 1.0.
+- **Open:** the Warden's lane over the RIVER still reads rose (hue 347-355). Water writes no depth, so the decal lands on the riverbed under the water and the over-copy never fires. That needs a water-aware over-copy (a solver item).
+
+**Next:**
+1. Run the logic tests. Prologue.cs changed and they haven't been run.
+2. ONE xhigh judge, round 2 of 3, on the r2 frames in `godot/.shots/`: `r2pro_teach_red_line_1`, `r2pro_tele32_3`/`_15`, `r2arena_tele0_2`, `r2day_tele0_4`/`_6`/`_8`, hits `r2pro_hit32_1..3` and `r2arena_hit0_1..3`, raise `r2pro_tele29_1..3`, Warden `r2pro_tele301_30` and `r2pro_tele302_10`/`_40`, crowd `r2gc_crowd_1`.
+   - The judge's first brief and its verdict's levers are in this page's history.
+   - The shoot scripts (`shoot.sh`, `pace.py`, `sheet.py`) are in coordinator scratch 7ccc6e14 `vfx1\` (and `vfx1\r2\measure.py`).
+3. Fix the river case if the judge wants it.
+4. Full test, then the MR.
+
+**Asides from round 1 for other owners:**
+- Crit numbers land over the hotbar (whoever owns the numbers).
+- F7's "line" word is amber while the line is red (UI).
+- No blood flecks on the Knight in the prologue (undead?).
+
+**Later (coordinator):** the owner's 9 skill-VFX reference videos are downloaded (owner OK) to `C:\Users\munch\Desktop\survivorsunchained_inputs\vfx_refs\<id>\`: video.mp4, title.txt, 14 evenly spaced stills and sheet.jpg each. Scene detection found almost no cuts, so the stills aren't picked at effect moments. Study them after the MR.
+
+**Worktree notes:**
+- `public/assets` has the main checkout's 811 untracked asset files COPIED in, and the import was done.
+- `git status` shows reimport noise on `.import` files. It isn't ours; never `git add` it.
+
 For the next skills lead. Read in this order:
 
 1. `docs/team/README.md` (the bar, how we work, heavy work takes turns).
