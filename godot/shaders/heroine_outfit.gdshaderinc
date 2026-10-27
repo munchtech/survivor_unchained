@@ -101,6 +101,20 @@ uniform int finish = 0;
 uniform vec3 blued : source_color = vec3(0.43, 0.44, 0.49);        // (blued steel: its reflectance; deep blue-black where it reflects the dark. metal r3: was 0.36,0.38,0.47, black rubber in moonlit and dawn shade; r4: was 0.42,0.44,0.52, candy blue by the moon)
 uniform vec3 blued_temper : source_color = vec3(0.46, 0.43, 0.53); // (its temper sheen: a faint violet in patches; scaled with blued, metal r3; r4: was 0.57)
 uniform float blued_chip = 1.0;                    // (how far its worn edges chip back to bright steel)
+// (body 16: finish 2, blue enamel chipped at its edges to bright steel, the look bible's other Warden finish. Fully
+// metallic blued steel has no diffuse colour: its navy showed only in what it reflected, so a plate turned edge-on to a
+// bright sky read pale glassy silver. Paint keeps its colour at every angle: mostly dielectric, satin. A dye recolours the
+// paint, never the bare steel under it)
+uniform vec3 enamel : source_color = vec3(0.06, 0.12, 0.30);   // (its navy, sRGB; scaled by the key's own value as the oxide is)
+uniform float enamel_metal = 0.3;                  // (a little metal under the paint: a faint cool sheen, never a mirror)
+uniform float enamel_rough = 0.6;                  // (satin paint; a piece's metal_rough override moves it by the same step)
+uniform float enamel_grime = 0.35;                 // (its grime, of bare metal's: paint wipes cleaner, and brown dirt over navy read as warm grey)
+uniform float enamel_spec_cap = 0.03;             // (its lights' highlights capped at this times a white card (metal_spec_cap's 1.2 for bare metal): satin paint's broad lobe at metal's cap whitened a whole plate turned to the sun, the pale lilac pauldron)
+uniform float enamel_gloss_cap = 0.6;              // (and where it is polished (roughness 0.38 or less, the cups' 0.22 override) this: one small soft highlight kept)
+uniform float enamel_f90 = 0.3;                    // (its highlight's Fresnel at grazing: a satin microsurface shadows its own glare)
+uniform float enamel_env = 0.6;                    // (the sky's reflection kept on the paint, of bare metal's: satin paint shows a soft sheen, not the sky)
+uniform float enamel_chip = 0.8;                   // (how far it chips back to the steel)
+uniform float enamel_chip_reach = 0.007;           // (and how far in from a rim the chipping reaches, m: blued's was 14 mm, most of a small lame)
 uniform float metal_env = 0.50;                    // (the sky's reflection kept: no probe, the rest is the dark around her; metal r3: was 0.55)
 uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
 uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
@@ -122,6 +136,7 @@ uniform float rim_metal = 0.85;                    // (and its metalness: scratc
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
+varying float v_paint;                             // (finish 2's paint here, for light())
 varying float v_spec_mute;                         // (armor 16 N4: piece_spec_mute here, for light())
 global uniform vec4 ground_bounce;                   // (Atmosphere: the key's light off the ground, linear; metal reflects it below the horizon)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone; 6 the c5 bare rim's mask)
@@ -228,6 +243,7 @@ void fragment() {
 	vec3 gold_emit = vec3(0.0);
 	vec3 look_emit = vec3(0.0);                     // (the Look's softbox in her plate, armor 16)
 	vec3 dbg6 = vec3(0.0);
+	float dbg_paint = -1.0;                         // (debug_view 14: finish 2's paint, green; its bare steel red)
 	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
@@ -370,6 +386,24 @@ void fragment() {
 			col = mix(oxide, col, chip);
 			rough = mix(rough + 0.03, rough, chip);
 		}
+		float paint = 0.0;
+		if (finish == 2) {
+			// Blue enamel (or the dye) over the steel, chipped back to it where worn and along the rims, as blued's chipping
+			float rim = 1.0 - smoothstep(min(0.003, enamel_chip_reach * 0.5), enamel_chip_reach, edge);
+			// (its chips by the rims, and only a few small scuffs on the high points: a small dome is all bulge, and
+			// blued's scuffs there stripped most of a pauldron back to bright steel)
+			float e_wear = clamp(near_edge * smoothstep(0.2, 0.55, fleck + 0.25) + bulge * smoothstep(0.8, 0.92, fleck) * 0.6, 0.0, 1.0);
+			float chip = clamp(max(smoothstep(0.35, 0.6, e_wear * (0.75 + 0.5 * fleck)), rim * smoothstep(0.62, 0.8, fleck + 0.25 * rim + 0.15 * blot)) * enamel_chip, 0.0, 1.0);
+			vec3 steel_c = mean_col * (0.9 + 0.2 * blot_c) * mix(1.0, metal_wear_bright, wear);
+			vec3 coat = dye_amount > 0.0 ? dye_apply(mean_col, mean_col)
+				: enamel * clamp(dot(mean_col, vec3(0.3, 0.59, 0.11)) / 0.42, 0.55, 1.0);
+			coat *= 0.95 + 0.1 * blot_c;
+			paint = (1.0 - chip) * (1.0 - gold);
+			col = mix(col, mix(steel_c, coat, 1.0 - chip), 1.0 - gold);
+			float r_paint = enamel_rough + (p_rough - metal_rough) + 0.06 * (blot_c - 0.5) + (dtl.b - 0.5) * detail_rough * 0.5;
+			rough = mix(rough, r_paint, paint);
+			dbg_paint = paint;
+		}
 		// grime is dirt, not metal: dark, brown, dielectric
 		vec3 dirt = vec3(0.045, 0.036, 0.027);
 		if (rusty > 0.5) {
@@ -377,8 +411,10 @@ void fragment() {
 			col = mix(dye_apply(mean_col, mean_col), dye_apply(texture(albedo, UV).rgb * tint, mean_col), 0.5) * (0.9 + 0.2 * blot);
 			rough = max(rough + 0.2, 0.62) - 0.15 * wear;
 		}
+		grime *= mix(1.0, enamel_grime, paint);
 		col = mix(col, dirt, grime * 0.8);
 		metal = mix(1.0, 0.0, grime * 0.85);
+		metal *= mix(1.0, enamel_metal, paint);              // (paint: mostly dielectric, its colour held at every angle)
 		if (rusty > 0.5) metal = mix(0.35, 0.9, wear) * (1.0 - grime * 0.85);
 		// (the pauldron's plates and the bracers satin, the set matching: at the Look they
 		// blew out 5.7% of the lower frame at 0.32, face lead; judge 7)
@@ -409,6 +445,7 @@ void fragment() {
 		float p_graze = metal_env_graze;
 		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i]) && piece_graze[i] >= 0.0) p_graze = piece_graze[i];
 		keep = max(keep, p_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
+		keep *= mix(1.0, enamel_env, paint);
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
 		float down = smoothstep(0.0, 0.35, -rw.y);
@@ -434,6 +471,7 @@ void fragment() {
 		}
 		RADIANCE = vec4(ground / max(1.0 - keep, 1e-3), 1.0 - keep);
 		v_metal = metal;
+		v_paint = paint;
 		v_spec_mute = max(p_mute, look_metal_mute * look_rig * (1.0 - gold)) * (1.0 - bare);
 #else
 		col *= mix(0.75, 1.0, sky);
@@ -533,6 +571,7 @@ void fragment() {
 	if (debug_view == 10) { ALBEDO = clamp(col, 0.0, 1.0); }   // (armor 14: no sky occlusion)
 	if (debug_view == 11) { ALBEDO = clamp(texture(albedo, UV).rgb * tint * mix(0.55, 1.0, sky), 0.0, 1.0); }   // (armor 14: the texture and sky only, no mottle/wear)
 	if (debug_view == 9) { ROUGHNESS = 0.55; }
+	if (debug_view == 14) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = dbg_paint < 0.0 ? vec3(0.0) : vec3(1.0 - dbg_paint, dbg_paint, 0.0) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 12) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = (NORMAL * 0.5 + 0.5) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (armor 17 N5: its interpolated vertex normal, view space, as colour)
 	if (debug_view == 13) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = vec3(fract(UV * 8.0), 0.0) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (and its UV, as colour)
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
@@ -561,11 +600,11 @@ void light() {
 	float D = kd * kd * (1.0 / PI);
 	float G = 0.5 / mix(2.0 * cNdotL * cNdotV, cNdotL + cNdotV, a);
 	vec3 f0 = mix(vec3(0.04), ALBEDO, v_metal);
-	float f90 = clamp(50.0 * f0.g, 0.0, 1.0);
+	float f90 = mix(clamp(50.0 * f0.g, 0.0, 1.0), enamel_f90, v_paint);
 	vec3 F = f0 + (f90 - f0) * pow(1.0 - cLdotH, 5.0);
 	vec3 s = cNdotL * D * G * F * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
-	float cap = metal_spec_cap * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
+	float cap = mix(metal_spec_cap, mix(enamel_gloss_cap, enamel_spec_cap, smoothstep(0.38, 0.52, r)), v_paint) * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
 	float knee = metal_spec_knee * cap;
 	float sl = dot(s, lw);
 	if (sl > knee && cap > 1e-6) {

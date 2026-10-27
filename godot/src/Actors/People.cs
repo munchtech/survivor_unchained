@@ -1500,7 +1500,8 @@ public static class People
                 m.SetShaderParameter("metal_detail", metalDetail);
                 m.SetShaderParameter("has_detail", metalDetail != null);
                 metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
-                if (metalFinishes.TryGetValue(key, out var fin) && (string)fin == "blued") m.SetShaderParameter("finish", 1);
+                // (blued steel 1; enamel 2, blue enamel chipped to bright steel: body 16, the Warden's navy as paint)
+                if (metalFinishes.TryGetValue(key, out var fin) && (string)fin is "blued" or "enamel") m.SetShaderParameter("finish", (string)fin == "enamel" ? 2 : 1);
                 // (pieces of this key with a finish of their own, matched in the shader by the piece
                 // number heroine_outfits.py bakes into each piece: the key's pieces are one mesh)
                 if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
@@ -1585,6 +1586,11 @@ public static class People
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
             if (System.Environment.GetEnvironmentVariable("GOLD_ROUGH") is string gr && float.TryParse(gr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var grv)) m.SetShaderParameter("gold_rough", grv);
+            // (METAL_TRY=name=value;...: a metal key's float uniforms for one run, a trial knob, body 16)
+            if (kind == 1 && System.Environment.GetEnvironmentVariable("METAL_TRY") is string mt)
+                foreach (var kv in mt.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split('=', 2)).Where(x => x.Length == 2))
+                    if (kv[1].Split(',') is { Length: 3 } c3) m.SetShaderParameter(kv[0].Trim(), new Color(float.Parse(c3[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(c3[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(c3[2], System.Globalization.CultureInfo.InvariantCulture)));
+                    else if (float.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var mtv)) m.SetShaderParameter(kv[0].Trim(), mtv);
             if (System.Environment.GetEnvironmentVariable("OUTFIT_DEBUG_VIEW") is string dv && int.TryParse(dv, out var dvv)) m.SetShaderParameter("debug_view", dvv);   // (a check: 4 = the gold mask flat magenta)
             mi.SetSurfaceOverrideMaterial(s, m);
         }
