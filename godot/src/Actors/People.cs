@@ -1900,6 +1900,12 @@ public static class People
         m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep0(look)));
         m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
         m.SetShaderParameter("hold_chroma", 0f);
+        // (the Look by night: her warm lamps and the fire held to deep's amber at 0.9 of their luminance on deep skin (its
+        // neck, jaw and chest read terracotta, judge j1; lit cheek C .074 to .084, L within .005); none on fair: at half,
+        // the town's fair amber turned her face 6-10 degrees yellow under the Look's grade; HerLookHold)
+        m.SetMeta("look_hold", Mathf.Lerp(LookHold.Fair, LookHold.Deep, deep0(look)));
+        m.SetMeta("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
+        m.SetMeta("look_gain", Mathf.Lerp(LookGain.Fair, LookGain.Deep, deep0(look)));
         if (SkinZonesOff) return;
         if (head == true)
         {
@@ -1959,6 +1965,8 @@ public static class People
     // her skin line 48.5; Oklab L within 0.01)
     static readonly (Vector3 Fair, Vector3 Deep) HoldTint = (new(1f, 0.67f, 0.25f), new(1f, 0.6f, 0.22f));
     static readonly (float Fair, float Deep) HoldGain = (1.1f, 1.35f);
+    static readonly (float Fair, float Deep) LookHold = (0f, 1f);
+    static readonly (float Fair, float Deep) LookGain = (1f, 0.9f);
 
     static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
     static readonly float ZoneDeepSpec = 0.8f;
@@ -2164,9 +2172,33 @@ public static class People
         k *= SkinHold;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("skin_hold", k);
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    m.SetShaderParameter("skin_hold", k);
+                    m.SetShaderParameter("hold_keep", 0f);
+                    if (m.HasMeta("hold_gain")) m.SetShaderParameter("hold_gain", (float)m.GetMeta("hold_gain"));
+                }
     }
 
+    /// <summary>The night skin-line hold at the Look (HerSkinHold's, the fire and the rig's warm lamps held): night 1 by the
+    /// fire, 0 in another light (--look-time); its strength her skin's own (look_hold: half on fair, all on deep). GameFront
+    /// sets it each frame while she is made.</summary>
+    public static void HerLookHold(Person p, float night)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    m.SetShaderParameter("skin_hold", night * SkinHold * (m.HasMeta("look_hold") ? (float)m.GetMeta("look_hold") : 0f));
+                    m.SetShaderParameter("hold_keep", LookKeep);
+                    if (m.HasMeta("look_gain")) m.SetShaderParameter("hold_gain", (float)m.GetMeta("look_gain") * LookGainK);
+                }
+    }
+
+    // (--look-hold-keep K, --look-hold-gain G: the Look's hold_keep and its gain times G, for pictures)
+    static readonly float LookKeep = (float)SurvivorUnchained.Args.Num("look-hold-keep", 0f);
+    static readonly float LookGainK = (float)SurvivorUnchained.Args.Num("look-hold-gain", 1f);
     static readonly float SkinHold = SurvivorUnchained.Args.Get("skin-hold") == "off" ? 0f : (float)SurvivorUnchained.Args.Num("skin-hold", 1f);
 
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
