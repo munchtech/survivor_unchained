@@ -80,7 +80,7 @@ public partial class LifeLamp : Control
     /// <summary>The flame's light on the ground (GameHud adds it under everything else on the HUD).</summary>
     public readonly Control Pool;
     readonly ShaderMaterial poolMat;
-    readonly BackBufferCopy copy;
+    readonly BackBufferCopy? copy;
     string drawnNumber = "";
     static readonly StringName UFlame = "flame", UGutter = "gutter", UOut = "out_t", UFlick = "flick", UGlow = "glow", UGain = "gain";
     float sFlame = -1, sGutter = -1, sOut = -2, sFlick = -1, sGlow = -1, sGain = -1;
@@ -121,11 +121,12 @@ public partial class LifeLamp : Control
         Pool = new Control { MouseFilter = MouseFilterEnum.Ignore, Visible = false };
         // (Godot 4.5 takes the copy's rect in the canvas's own coordinates, not the node's: it is set where the
         // pool stands, in PoolTick; a local rect copied the screen's top left and the pool read black)
-        Pool.AddChild(copy = new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Rect, Rect = new Rect2(Vector2.Zero, PoolRect.Size) });
+        // (orb modes never show the pool: no copy, no quad built)
+        if (Orb == null) Pool.AddChild(copy = new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Rect, Rect = new Rect2(Vector2.Zero, PoolRect.Size) });
         poolMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_lamp_pool.gdshader") };
         poolMat.SetShaderParameter("size", PoolRect.Size);
         poolMat.SetShaderParameter("centre", new Vector2(Canvas.X / 2, FootY - 30) - PoolRect.Position);
-        Pool.AddChild(new ColorRect { Material = poolMat, MouseFilter = MouseFilterEnum.Ignore, Size = PoolRect.Size });
+        if (Orb == null) Pool.AddChild(new ColorRect { Material = poolMat, MouseFilter = MouseFilterEnum.Ignore, Size = PoolRect.Size });
     }
 
     public override void _Process(double delta)
@@ -157,7 +158,7 @@ public partial class LifeLamp : Control
         if (Pool.Visible != want) Pool.Visible = want;
         if (!want) return;
         var at = GetGlobalTransformWithCanvas() * PoolRect.Position;
-        if (Pool.Position != at) { Pool.Position = at; copy.Rect = new Rect2(at, PoolRect.Size); }
+        if (Pool.Position != at) { Pool.Position = at; if (copy != null) copy.Rect = new Rect2(at, PoolRect.Size); }
         Send(UGain, gain, ref sGain, poolMat);
     }
 

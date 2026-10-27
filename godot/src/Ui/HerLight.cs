@@ -15,6 +15,8 @@ namespace SurvivorUnchained.Ui;
 /// (HeartPulse.LastSound) while it sounds, its own clock at the same pace while it does not (a pinned shot).</summary>
 public sealed partial class HerLight : Control
 {
+    /// <summary>--no-edge: the low-life edge pulse off entirely (for an ABAB of the perf).</summary>
+    static readonly bool NoEdge = Args.Has("no-edge");
     public static readonly bool On = Args.Get("hud-life") == "her";
     /// <summary>Shots only (--beat-peak): the low-life beat held at its peak, so a still shows the edge pulse.</summary>
     static readonly bool beatPeak = Args.Has("beat-peak");
@@ -77,7 +79,7 @@ public sealed partial class HerLight : Control
         if (HeartPulse.LastSound > lastSync && now - HeartPulse.LastSound < 0.2) { lastSync = HeartPulse.LastSound; clock = now - HeartPulse.LastSound; }
         else { clock += dt; if (clock >= period) clock %= period; }
         float beat = low ? beatPeak ? 1 : HeartPulse.Shape(clock) : 0;
-        float strength = (On || LifeLamp.Orb != null) && (low || (fight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
+        float strength = !NoEdge && (On || LifeLamp.Orb != null) && (low || (fight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
 
         bool show = fight && at != null;
         Under.Visible = show;
