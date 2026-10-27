@@ -216,6 +216,21 @@ public static class OwnProps
         }
     }
 
+    static ShaderMaterial? far;
+    /// <summary>(E8) The far castle's (C01 s8a, 265 m off): the props atlas times the vertex colours, the zone's fog
+    /// off and its own haze in its place (Godot's fog at that range left a flat fog-coloured shape, its windows gone),
+    /// the lit windows (vertex alpha 0) glowing their own colour (shaders/far_castle.gdshader).</summary>
+    public static Material Far
+    {
+        get
+        {
+            if (far != null) return far;
+            far = new ShaderMaterial { ResourceName = "far_castle", Shader = GD.Load<Shader>("res://shaders/far_castle.gdshader") };
+            far.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{Dir}/props_albedo.jpg"));
+            return far;
+        }
+    }
+
     static StandardMaterial3D? paper;
     /// <summary>(E9d) The notices' sheet (tools/assets/env_notice_paper.py), times the vertex colours.</summary>
     static Material Paper => paper ??= new StandardMaterial3D
@@ -263,16 +278,22 @@ public static class OwnProps
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false)) if (n.Name.ToString().EndsWith("_LOD1")) hasLod = true;
         // (E9d) clutter under half a metre casts no shadow (the shadow-draw budget)
         bool small = Box(preset) is Aabb bx && bx.Size.Y < 0.5f;
+        // (E8) a preset with a shadow proxy (<preset>_shadow, a few boxes): the proxy alone casts its shadow
+        bool proxy = false;
+        foreach (var n in root.FindChildren("*_shadow", "MeshInstance3D", true, false)) proxy = true;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
         {
             if (n is not MeshInstance3D m || m.Mesh == null) continue;
+            if (m.Name.ToString().EndsWith("_shadow")) { m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly; continue; }
+            // (E8) the far castle: its own material (the atlas, its own haze, its lit windows), no shadow, no LOD
+            if (m.Name.ToString().EndsWith("_far")) { m.MaterialOverride = Far; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) the notices: their own paper sheet (notice_paper.png), no shadow, no LOD (a few hundred triangles)
             if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
             if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
             if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
-            m.CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
+            m.CastShadow = small || proxy ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
             if (!hasLod) continue;
             if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = Lod1From;
             else m.VisibilityRangeEnd = Lod1From;

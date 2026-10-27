@@ -288,8 +288,9 @@ def uv_part(p, rng):
             continue
         groups.setdefault((region, ax), []).append(f)
     for (region, ax), faces in groups.items():
-        u0, v0, u1, v1 = ATLAS[region]['uv']
-        mu, mv = ATLAS[region]['m']
+        # (E8) the far castle's lit windows ('glow') sit on the soil region: their vertex colour is their glow
+        u0, v0, u1, v1 = ATLAS.get(region, ATLAS['soil'])['uv']
+        mu, mv = ATLAS.get(region, ATLAS['soil'])['m']
 
         def ab(c):
             if ax == 1:
@@ -366,6 +367,11 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
     ca = me.color_attributes.new('tint', 'FLOAT_COLOR', 'CORNER')
     for poly in me.polygons:
         tint = tints[poly.index]
+        if kind_of_face[poly.index] == 'glow':
+            # (E8) a lit window of the far castle: its glow colour as it is, flagged by alpha 0 (OwnProps' far material)
+            for li in poly.loop_indices:
+                ca.data[li].color = (tint.x, tint.y, tint.z, 0.0)
+            continue
         hard = kind_of_face[poly.index] in ('wood', 'iron', 'endgrain', 'stone', 'bark')
         barky = kind_of_face[poly.index] == 'bark'
         for li in poly.loop_indices:
@@ -3007,11 +3013,550 @@ def brazier(p):
 PRESETS = {}
 
 
+# ------------------------------------- E8: the Waystation's gate, walls and towers at Low Ford; the far castle --
+# Built in metres (props_own.json "kits" scales each to its KayKit piece: 1/5.2 the wall runs and the gate, 1/4.68
+# the towers). Local frame: x along the wall, y up from the kit piece's floor, +z south (the outer face, toward the
+# ford and the play camera). The near pieces' own meshes cast no shadow: each has a low-poly proxy (<name>_shadow,
+# a few boxes and lathes) that casts it (OwnProps.Piece). The far castle (<name>_far) is one low mesh, no shadow,
+# its lit windows flagged in the vertex alpha (0: a window, its colour its glow; OwnProps' far material).
+
+SHADOW = []  # (E8) the preset's shadow proxy: [(bmesh, matrix)], built by main() as <name>_shadow
+
+
+def shadow_box(sx, sy, sz, at):
+    SHADOW.append((box(sx, sy, sz), at))
+
+
+def st(stone, rng, k=0.09):
+    return stone * (1 + rng(-k, k))
+
+
+def merlons(parts, rng, x0, x1, y, zc, depth, mh, mw, gap, stone, broken=(), loops=(), shadow=True, fall_z=None, skip=(), fall_y=None):
+    """A battlemented top from x0 to x1 standing on y (z about zc): merlons (a block, a weathered cap; with a loop:
+    two halves either side of a slit, the dark behind) and the crenels between (a sill); broken: merlon indices lost
+    to a ragged stump, the lost stone lying on the walk (at fall_z); skip: indices gone altogether (a breach)."""
+    n = max(2, int(round((x1 - x0 + gap) / (mw + gap))))
+    w = (x1 - x0 - gap * (n - 1)) / n
+    for i in range(n):
+        cx = x0 + i * (w + gap) + w / 2
+        if i in skip:
+            continue
+        if i in broken:
+            hb = mh * rng(0.25, 0.5)
+            parts.append(Part(broken_block(w - 0.04, hb, depth - 0.04, rng, cuts=2, chip=0.8), 'stone', st(stone, rng) * 0.96,
+                              T(cx + rng(-0.03, 0.03), y + hb / 2, zc), cap='stone', jitter=0.0))
+            if fall_z is not None:
+                k = rng(0.6, 0.9)
+                bm = broken_block(w * k, mh * 0.6 * k, depth * 0.8, rng, cuts=1, chip=0.9)
+                m = bedded(bm, T(cx + rng(-0.4, 0.4), 0, fall_z) @ R('Y', rng(-0.6, 0.6)) @ R('X', rng(-0.3, 0.3)), 0.02)
+                parts.append(Part(bm, 'stone', st(stone, rng) * 0.9, T(0, y if fall_y is None else fall_y, 0) @ m, cap='stone', jitter=0.0))
+        else:
+            hb = mh - 0.13
+            if i in loops:
+                hw = (w - 0.13) / 2
+                for s in (-1, 1):
+                    sblock(parts, (hw - 0.02, hb - 0.02, depth - 0.02), T(cx + s * (hw / 2 + 0.065), y + hb / 2, zc), st(stone, rng), rng, drop=('-y',))
+                parts.append(Part(box(0.16, hb * 0.86, 0.1), 'stone', stone * 0.06, T(cx, y + hb * 0.48, zc - depth * 0.3), jitter=0.0))
+            else:
+                sblock(parts, (w - 0.03, hb - 0.02, depth - 0.02), T(cx, y + hb / 2, zc) @ R('Y', rng(-0.02, 0.02)), st(stone, rng), rng, drop=('-y',))
+            sblock(parts, (w + 0.05, 0.13, depth + 0.07), T(cx, y + hb + 0.065, zc) @ R('Z', rng(-0.02, 0.02)), st(stone, rng) * 1.04, rng, chip=0.6)
+            if shadow:
+                shadow_box(w, mh, depth, T(cx, y + mh / 2, zc))
+        if i < n - 1 and (i + 1) not in skip:
+            sblock(parts, (gap + 0.06, 0.12, depth + 0.04), T(cx + w / 2 + gap / 2, y + 0.06, zc) @ R('X', 0.06), st(stone, rng) * 1.03, rng, chip=0.5, drop=('-y',))
+    return n, w
+
+
+def flags(parts, rng, x0, x1, z0, z1, y, stone, rows=2):
+    """A wall-walk of flagstones from x0 to x1, z0 to z1, their tops at y: rows across, joints in bond."""
+    dz = (z1 - z0) / rows
+    for r in range(rows):
+        zc = z0 + dz * (r + 0.5)
+        xs = lay_course(x0, x1, 0.95, rng, r % 2 == 1)
+        for a, b in zip(xs, xs[1:]):
+            sblock(parts, (b - a - 0.03, 0.18, dz - 0.03), T((a + b) / 2, y - 0.09 - rng(0, 0.025), zc) @ R('X', rng(-0.015, 0.015)) @ R('Z', rng(-0.015, 0.015)),
+                   st(stone, rng, 0.12) * 0.94, rng, drop=('-y',), chip=0.6, top_cuts=1)
+
+
+def footing(parts, rng, x0, L, zf, F, foot, stone, mortar, top=0.55):
+    """A wall's footing: big blocks from foot metres under the kit floor (the slope falls away south of the wall)
+    to top, stood out from the face, and a chamfered weathering course over them."""
+    wall_parts(parts, rng, L, foot + top, F + 0.3, 0.6, 1.35, stone * 0.92, mortar, lambda x: 99.0, x0, at=T(0, -foot, zf + 0.15), gap=0.03, sink=0.0)
+    xs = lay_course(x0, x0 + L, 1.25, rng, False)
+    for a, b in zip(xs, xs[1:]):
+        sblock(parts, (b - a - 0.03, 0.2, 0.42), T((a + b) / 2, top + 0.02, zf + F / 2 + 0.1) @ R('X', 0.55), st(stone, rng) * 0.95, rng, chip=0.6, drop=('-y',))
+
+
+def retint(parts, test, f):
+    """The stone parts whose middles pass test(x, y) re-tinted by f (a repaired stretch: newer, paler stone)."""
+    for pt in parts:
+        if pt.region == 'stone':
+            o = pt.at.to_translation()
+            if test(o.x, o.y):
+                pt.tint = f(pt.tint)
+
+
+def curtain(p):
+    """(E8) A curtain wall run: a battered footing, the outer face in courses (arrow loops through it), a parapet with
+    merlons (some with loops, some lost, a breach where several are gone and the parapet with them), the walk of
+    flagstones behind and a low lip on its inner edge, a buttress or two; a repaired stretch in paler stone, a
+    settled crack; streaks and grime from the foot."""
+    rng = Rng(p['seed'])
+    L, H, D, F = p.get('len', 10.4), p.get('h', 5.2), p.get('d', 2.6), p.get('face', 0.55)
+    ph, mh = p.get('para', 1.0), p.get('mh', 0.85)
+    foot = p.get('footing', 1.8)
+    stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
+    x0 = -L / 2
+    zf = D / 2 - F / 2
+    parts = []
+    footing(parts, rng, x0, L, zf, F, foot, stone, mortar)
+    top = H + ph
+    holes = [(x - 0.1, x + 0.1, 1.5, 2.8) for x in p.get('slits', [])]
+    br = p.get('breach')  # [x0, x1, depth]: the parapet broken down over a stretch
+
+    def keep(x):
+        if br and br[0] < x < br[1]:
+            m = 1 - abs((x - (br[0] + br[1]) / 2) / ((br[1] - br[0]) / 2))
+            return top - br[2] * smooth01(0.0, 0.5, m) + 0.15 * math.sin(x * 5.1)
+        return top + 0.3
+    wall_parts(parts, rng, L, top - 0.55, F, p.get('course', 0.5), p.get('block', 0.95), stone, mortar,
+               lambda x: keep(x) - 0.55, x0, at=T(0, 0.55, zf), holes=[(a, b, c - 0.55, d - 0.55) for a, b, c, d in holes],
+               crack=p.get('crack') and (x0 + p['crack'][0] * L, x0 + p['crack'][1] * L), sink=0.0)
+    for (a, b, c, d) in holes:
+        parts.append(Part(box(b - a + 0.06, d - c, 0.12), 'stone', stone * 0.05, T((a + b) / 2, (c + d) / 2, D / 2 - F - 0.02), jitter=0.0))
+    mw, gap = p.get('mw', 1.0), p.get('gap', 0.55)
+    n = max(2, int(round((L - 0.1 + gap) / (mw + gap))))
+    w = (L - 0.1 - gap * (n - 1)) / n
+    skip = set()
+    if br:
+        for i in range(n):
+            cx = x0 + 0.05 + i * (w + gap) + w / 2
+            if br[0] - w * 0.3 < cx < br[1] + w * 0.3:
+                skip.add(i)
+    merlons(parts, rng, x0 + 0.05, x0 + L - 0.05, top, zf, F, mh, mw, gap, stone, broken=set(p.get('lost', [])),
+            loops=set(p.get('loops', [])), fall_z=-0.4, skip=skip, fall_y=H)
+    if br:
+        # the breach's stones: a heap on the walk behind it, a few down the outer face's foot
+        bx = (br[0] + br[1]) / 2
+        for j in range(5):
+            bm = broken_block(rng(0.5, 0.95), rng(0.3, 0.45), rng(0.4, 0.55), rng, cuts=2, chip=0.9)
+            m = bedded(bm, T(bx + rng(-1.0, 1.0), 0, rng(-0.9, 0.2)) @ R('Y', rng(0, 6.28)) @ R('X', rng(-0.4, 0.4)), 0.03)
+            parts.append(Part(bm, 'stone', st(stone, rng) * 0.88, T(0, H, 0) @ m, cap='stone', jitter=0.0))
+    # the walk and its inner lip
+    flags(parts, rng, x0 + 0.02, x0 + L - 0.02, -D / 2 + 0.42, D / 2 - F, H, stone)
+    xs = lay_course(x0, x0 + L, 1.1, rng, True)
+    for a, b in zip(xs, xs[1:]):
+        sblock(parts, (b - a - 0.03, 0.42, 0.4), T((a + b) / 2, H + 0.19, -D / 2 + 0.2), st(stone, rng) * 0.97, rng, drop=('-y',), chip=0.6, top_cuts=1)
+    # the core under the walk (its outer face behind the facing; its inner face never seen from the south)
+    parts.append(Part(box(L - 0.04, H + foot - 0.2, D - F - 0.02), 'stone', mortar * 0.55, T(0, (H - foot) / 2 - 0.1, -F / 2), cap='stone', jitter=0.0))
+    # buttresses: battered piers stood out from the face, a sloped weathering on top
+    for bx in p.get('buttress', []):
+        y, k = -foot, 0
+        bw, bd = 1.5, 0.95
+        while y < p.get('bh', 3.4):
+            cy = 0.55 if y > -0.01 else foot / 2
+            s = 1.0 - 0.05 * k
+            sblock(parts, (bw * s, cy - 0.02, bd * s), T(bx, y + cy / 2, D / 2 + bd * s / 2 - 0.05), st(stone, rng), rng, drop=('-y', '+y'), chip=0.6)
+            y += cy
+            k += 1
+        sblock(parts, (bw * 0.82, 0.3, bd * 0.7), T(bx, y + 0.02, D / 2 + bd * 0.28) @ R('X', 0.6), st(stone, rng) * 1.02, rng, chip=0.7)
+        shadow_box(bw, y + foot, bd, T(bx, (y - foot) / 2, D / 2 + bd / 2))
+    if p.get('patch'):
+        a, b, c, d = p['patch']
+        warm = Vector((1.1, 1.05, 0.9))
+        retint(parts, lambda x, y: x0 + a * L < x < x0 + b * L and c < y < d, lambda t: Vector((t.x * warm.x, t.y * warm.y, t.z * warm.z)))
+    shadow_box(L, top + foot, D, T(0, (top - foot) / 2, 0))
+    return parts
+
+
+def voussoirs(parts, rng, r, spring, S, top, zc, depth, stone, n=11):
+    """An arch's ring of wedge stones about (0, spring), its intrados radius r, each stone's outer edge carried to the
+    square |x| = S, y = top (the coursed face's opening), the keystone stood a little proud."""
+    def hit(a):
+        c, s = math.cos(a), math.sin(a)
+        t = min(S / abs(c) if abs(c) > 1e-6 else 1e9, (top - spring) / s if s > 1e-6 else 1e9)
+        return (c * t, spring + s * t)
+    ca = math.atan2(top - spring, S)
+    for i in range(n):
+        a0, a1 = math.pi * (1 - i / n), math.pi * (1 - (i + 1) / n)
+        am = (a0 + a1) / 2
+        inner = [(r * math.cos(a0), spring + r * math.sin(a0)), (r * math.cos(am), spring + r * math.sin(am)), (r * math.cos(a1), spring + r * math.sin(a1))]
+        outer = [hit(a1)]
+        for cn in (ca, math.pi - ca):
+            if a1 < cn < a0:
+                outer.append((S if cn < math.pi / 2 else -S, top))
+        outer.append(hit(a0))
+        outer.sort(key=lambda q: math.atan2(q[1] - spring, q[0]))
+        poly = inner + outer
+        key = i == n // 2
+        cx = sum(q[0] for q in poly) / len(poly)
+        cy = sum(q[1] for q in poly) / len(poly)
+        sh = 0.025
+        poly = [(q[0] - sh * (q[0] - cx) / max(0.05, math.hypot(q[0] - cx, q[1] - cy)), q[1] - sh * (q[1] - cy) / max(0.05, math.hypot(q[0] - cx, q[1] - cy))) for q in poly]
+        bm = prism(poly, depth + (0.08 if key else 0.0), bevel=0.025)
+        parts.append(Part(bm, 'stone', st(stone, rng) * (1.06 if key else 1.0), T(0, 0, zc + (0.04 if key else 0.0)), cap='stone', jitter=0.0))
+
+
+def gatehouse(p):
+    """(E8) The gatehouse between the towers: a passage under a round arch (voussoirs, quoined jambs, a keystone),
+    the portcullis drawn up with its teeth under the crown, the two timber leaves swung back inside; over the arch
+    a machicolated gallery on corbels, battlements front and back, a walk of flagstones."""
+    rng = Rng(p['seed'])
+    W, DG, HG = p.get('w', 8.6), p.get('d', 5.0), p.get('h', 7.6)
+    F, ph, mh, foot = p.get('face', 0.6), p.get('para', 1.0), p.get('mh', 0.85), p.get('footing', 1.8)
+    r, spring, vd = p.get('r', 1.95), p.get('spring', 3.2), p.get('vd', 0.75)
+    stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
+    wood, iron = hexlin(p.get('wood', '#8a7460')), hexlin(p.get('iron', '#5a5a60'))
+    x0 = -W / 2
+    zf = DG / 2 - F / 2
+    parts = []
+    S = r + vd
+    top = HG + ph
+    for (a, b) in ((x0, -r - 0.05), (r + 0.05, W / 2)):
+        wall_parts(parts, rng, b - a, foot + 0.55, F + 0.3, 0.6, 1.3, stone * 0.92, mortar, lambda x: 99.0, a, at=T(0, -foot, zf + 0.15), gap=0.03, sink=0.0)
+    # the face in courses, the arch's opening cut square; the course that straddles its top sets where the voussoirs stop
+    yb = spring + S - 0.55
+    rows = wall_parts(parts, rng, W, top - 0.55, F, 0.52, 0.95, stone, mortar, lambda x: top + 1.0, x0, at=T(0, 0.55, zf),
+                      holes=[(-S, S, -0.6, yb)], sink=0.0)
+    ytop = min([y1 for (k, a, b, y0, y1) in rows if y0 < yb <= y1 + 1e-6] or [yb]) + 0.55
+    # the jambs: quoins, long and short in turn, up to the springing
+    y, k = -0.3, 0
+    while y < spring - 0.05:
+        cy = min(0.52, spring - y)
+        long_ = k % 2 == 0
+        wq = vd if long_ else vd * 0.6
+        for s in (-1, 1):
+            sblock(parts, (wq - 0.03, cy - 0.025, F + 0.04), T(s * (r + wq / 2), y + cy / 2, zf + 0.02), st(stone, rng) * 1.06, rng, drop=('-y', '+y'), chip=0.5)
+            if not long_:
+                sblock(parts, (vd * 0.4 - 0.03, cy - 0.025, F), T(s * (r + vd * 0.8), y + cy / 2, zf), st(stone, rng), rng, drop=('-y', '+y'))
+        y += cy
+        k += 1
+    voussoirs(parts, rng, r, spring, S, ytop, zf, F + 0.04, stone * 1.03, n=p.get('n_v', 11))
+    # the core: two halves either side of the passage, the arch's curve carried through it (the vault)
+    for sg in (-1, 1):
+        pts = [(sg * (W / 2 - 0.02), -foot), (sg * r, -foot), (sg * r, spring)]
+        for i in range(1, 12):
+            a = (0.0 if sg > 0 else math.pi) + sg * (math.pi / 2) * (i / 12)
+            pts.append((r * math.cos(a), spring + r * math.sin(a)))
+        pts += [(0.0, spring + r), (0.0, HG - 0.02), (sg * (W / 2 - 0.02), HG - 0.02)]
+        if sg > 0:
+            pts.reverse()
+        parts.append(Part(prism(pts, DG - F - 0.04, bevel=0.0), 'stone', mortar * 0.42, T(0, 0, -F / 2 - 0.02), cap='stone', jitter=0.0))
+    # the portcullis drawn up (its teeth under the crown), in its slot behind the face
+    zp = zf - F / 2 - 0.35
+    bars = 9
+    ylo = spring + r - 0.75
+    for i in range(bars):
+        x = -r * 0.9 + 2 * r * 0.9 * i / (bars - 1)
+        yl = ylo - (0.22 if i % 2 == 0 else 0.1)
+        hh = spring + r + 0.25 - yl
+        parts.append(Part(box(0.1, hh, 0.1), 'wood', wood * 0.55 * (1 + rng(-0.1, 0.1)), T(x, yl + hh / 2, zp), jitter=0.0))
+        parts.append(Part(lathe([(0.07, 0.0), (0.0, -0.22)], 4), 'iron', iron, T(x, yl, zp), jitter=0.0))
+    for yy in (ylo + 0.12, ylo + 0.5):
+        hw = math.sqrt(max(0.0, r * r - (yy - spring) ** 2)) if yy > spring else r
+        parts.append(Part(box(2 * hw - 0.05, 0.09, 0.13), 'wood', wood * 0.5, T(0, yy, zp + 0.07), jitter=0.0))
+    # the leaves swung back against the passage walls at its inner end
+    for s in (-1, 1):
+        lw, lh = r * 0.98, spring + r * 0.62
+        xc = s * (r - 0.09)
+        zc = -DG / 2 + 0.55 + lw / 2
+        n_pl = 5
+        for j in range(n_pl):
+            zz = zc - lw / 2 + lw * (j + 0.5) / n_pl
+            parts.append(Part(box(0.09, lh - 0.05 * (j % 2), lw / n_pl - 0.015), 'wood', wood * (1 + rng(-0.12, 0.12)), T(xc, lh / 2, zz), jitter=0.0))
+        for yy in (0.5, lh * 0.5, lh - 0.5):
+            parts.append(Part(box(0.03, 0.12, lw * 0.92), 'iron', iron * 0.8, T(xc - s * 0.06, yy, zc), jitter=0.0))
+    # the machicolated gallery over the arch: corbels, a parapet stood out on them (the slots dark between), merlons
+    gx = p.get('gallery', 2.9)
+    gz = DG / 2 + 0.45
+    yc = HG - 1.15
+    nc = 6
+    for i in range(nc):
+        x = -gx + 2 * gx * i / (nc - 1)
+        for j in range(3):
+            d = 0.3 + 0.2 * j
+            sblock(parts, (0.42, 0.33, d), T(x, yc + 0.17 + 0.33 * j, DG / 2 + d / 2 - 0.02), st(stone, rng), rng, drop=('-z',), chip=0.6)
+    yg = yc + 1.0
+    wall_parts(parts, rng, 2 * gx + 0.5, top - yg, 0.42, 0.48, 0.9, stone, mortar, lambda x: 99.0, -gx - 0.25, at=T(0, yg, gz + 0.2), sink=0.0)
+    parts.append(Part(box(2 * gx + 0.4, 0.08, 0.5), 'stone', stone * 0.05, T(0, yg - 0.03, DG / 2 + 0.2), jitter=0.0))
+    merlons(parts, rng, -gx - 0.25, gx + 0.25, top, gz + 0.2, 0.45, mh, 0.95, 0.5, stone, loops={1, 3})
+    shadow_box(2 * gx + 0.5, top - yc, 0.9, T(0, (top + yc) / 2, gz))
+    for (a, b) in ((x0 + 0.04, -gx - 0.3), (gx + 0.3, W / 2 - 0.04)):
+        merlons(parts, rng, a, b, top, zf, F, mh, 0.95, 0.5, stone)
+    # the rear parapet, battlemented, one merlon lost
+    wall_parts(parts, rng, W, ph + 0.25, 0.5, 0.5, 0.95, stone * 0.98, mortar, lambda x: 99.0, x0, at=T(0, HG - 0.25, -DG / 2 + 0.25), sink=0.0)
+    merlons(parts, rng, x0 + 0.04, W / 2 - 0.04, top, -DG / 2 + 0.25, 0.5, mh, 0.95, 0.5, stone, broken={2}, fall_z=-DG / 2 + 1.1, fall_y=HG)
+    flags(parts, rng, x0 + 0.02, W / 2 - 0.02, -DG / 2 + 0.5, DG / 2 - F, HG, stone, rows=4)
+    shadow_box(W, top + foot, DG, T(0, (top - foot) / 2, 0))
+    return parts
+
+
+def ring(parts, rng, r, y0, H, ch, n, stone, F=0.5, slits=(), k0=0, arc=None):
+    """A round tower's wall in courses from y0, H high: n tangent blocks a course, the joints broken course to course;
+    slits: (angle, y) a loop through it (two narrow jambs, the dark behind) over two courses; arc: blocks only
+    within this angle of south (the side every camera sees: the play camera looks north, as C01 s8a), the back a
+    plain shell of the same stone (the triangle budget)."""
+    if arc is not None:
+        parts.append(Part(lathe([(r - 0.02, y0), (r - 0.02, y0 + H)], 10, cap0=False, cap1=False, a0=math.pi / 2 + arc, a1=2.5 * math.pi - arc, closed=False),
+                          'stone', stone * 0.92, T(0, 0, 0), cyl=r, jitter=0.0))
+    step = 2 * math.pi / n
+    bw = 2 * r * math.tan(step / 2)
+    y, k = y0, k0
+    rows = []
+    while y < y0 + H - 0.08:
+        cy = min(ch * rng(0.92, 1.08), y0 + H - y)
+        if y0 + H - (y + cy) < 0.2:
+            cy = y0 + H - y
+        rows.append((y, cy, k))
+        y += cy
+        k += 1
+    for (y, cy, k) in rows:
+        off = step / 2 if k % 2 else 0.0
+        for i in range(n):
+            a = i * step + off
+            if arc is not None and abs(math.atan2(math.sin(a), math.cos(a))) > arc:
+                continue
+            sl = [s for s in slits if abs(math.atan2(math.sin(a - s[0]), math.cos(a - s[0]))) < step / 2 and s[1] - 0.05 <= y < s[1] + 0.95]
+            t = st(stone, rng)
+            at = R('Y', a) @ T(0, y + cy / 2, r - F / 2)
+            if sl:
+                jw = (bw - 0.16) / 2
+                for s in (-1, 1):
+                    sblock(parts, (jw - 0.02, cy - 0.02, F), at @ T(s * (jw / 2 + 0.08), 0, 0), t * 1.05, rng, drop=('-y', '+y'), chip=0.4)
+                parts.append(Part(box(0.2, cy, 0.1), 'stone', stone * 0.05, at @ T(0, 0, -F / 2 - 0.02), jitter=0.0))
+            else:
+                sblock(parts, (bw + 0.02, cy - 0.025, F), at @ R('Y', rng(-0.01, 0.01)), t, rng, drop=('-y', '+y'), chip=0.5)
+    return y0 + H
+
+
+def cone_slates(parts, rng, re, ye, h, slate, sw=0.46, sl=0.66, vis=0.44, moss=0.0):
+    """A conical roof of slates from the eave (radius re at ye) to the apex h over it: courses of thin slates, each
+    lapping the one below, the joints broken, each slate its own tone (a few darker, a few pale), moss low down;
+    a lead cap at the top."""
+    L = math.hypot(re, h)
+    phi = math.atan2(h, re)
+    nr = int(L / vis)
+    last = 0
+    for i in range(nr):
+        t = i * vis / L
+        r = re * (1 - t)
+        if r < 0.42:
+            break
+        last = i
+        y = ye + h * t
+        m = max(6, int(round(2 * math.pi * r / sw)))
+        off = rng(0, 2 * math.pi / m)
+        for j in range(m):
+            a = off + 2 * math.pi * j / m + rng(-0.012, 0.012)
+            w = 2 * math.pi * r / m * 1.08
+            bm = box(w, 0.035, sl)
+            bm.normal_update()
+            bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.normal.y < -0.9], context='FACES')
+            q = rng()
+            tone = 0.72 if q < 0.12 else (1.28 if q > 0.93 else 1.0)
+            tn = slate * tone * (1 + rng(-0.1, 0.1))
+            if moss and rng() < moss * (1 - t) ** 2:
+                tn = tn.lerp(MOSS_SAGE * 0.75, rng(0.3, 0.6))
+            at = R('Y', a) @ T(0, y, r) @ R('X', phi) @ T(0, 0.022 + 0.008 * (i % 2), sl / 2 - 0.03) @ R('Z', rng(-0.03, 0.03))
+            parts.append(Part(bm, 'stone', tn, at, jitter=0.0))
+    tt = (last + 1) * vis / L
+    rc = max(0.42, re * (1 - tt)) + 0.12
+    yc = ye + h * tt - 0.15
+    parts.append(Part(lathe([(rc, yc - 0.15), (rc * 0.9, yc), (0.06, ye + h + 0.05)], 12), 'iron', slate * 0.65, T(0, 0, 0), smooth=True, jitter=0.0))
+
+
+def tower(p):
+    """(E8) A round flanking tower: a splayed footing, the drum in courses with arrow loops, a ring of corbels
+    carrying a wider upper stage (small windows, a string course), a conical slate cap on its eave, an iron
+    finial with a vane."""
+    rng = Rng(p['seed'])
+    R0, H, foot = p.get('r', 2.95), p.get('h', 10.0), p.get('footing', 1.8)
+    stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
+    slate, iron = hexlin(p.get('slate', '#4a5058')), hexlin(p.get('iron', '#4a4a50'))
+    n = p.get('sides', 18)
+    parts = []
+    ring(parts, rng, R0 + 0.35, -foot, foot + 0.1, foot / 2 + 0.06, n, stone * 0.9, F=0.7, arc=math.radians(115))
+    for i in range(n):
+        a = (i + 0.5) * 2 * math.pi / n
+        bw = 2 * (R0 + 0.2) * math.tan(math.pi / n)
+        sblock(parts, (bw + 0.03, 0.2, 0.45), R('Y', a) @ T(0, 0.12, R0 + 0.12) @ R('X', 0.6), st(stone, rng) * 0.95, rng, chip=0.5, drop=('-y',))
+    slits = [(math.radians(a), y) for a, y in p.get('slits', [[-30, 2.2], [25, 5.4], [-5, 7.6]])]
+    ring(parts, rng, R0, 0.25, H - 0.25, 0.56, n, stone, slits=slits, arc=math.radians(110))
+    parts.append(Part(lathe([(R0 - 0.45, -foot), (R0 - 0.45, H + 0.1)], 12, cap0=False), 'stone', mortar * 0.3, T(0, 0, 0), jitter=0.0))
+    R1 = R0 + 0.32
+    for i in range(n):
+        a = (i + 0.5) * 2 * math.pi / n
+        for j in range(3):
+            d = 0.22 + 0.16 * j
+            sblock(parts, (0.36, 0.3, d), R('Y', a) @ T(0, H + 0.15 + 0.3 * j, R0 + d / 2 - 0.1), st(stone, rng), rng, chip=0.6, drop=('-z',))
+    yu = H + 0.95
+    up_h = p.get('upper', 1.9)
+    wins = [(math.radians(a), yu + 0.5) for a in p.get('windows', [-12, 48])]
+    ring(parts, rng, R1, yu, up_h, 0.48, n + 2, stone * 1.02, F=0.45, slits=wins, k0=1, arc=math.radians(115))
+    for i in range(n + 2):
+        a = (i + 0.5) * 2 * math.pi / (n + 2)
+        bw = 2 * (R1 + 0.08) * math.tan(math.pi / (n + 2))
+        sblock(parts, (bw + 0.03, 0.16, 0.3), R('Y', a) @ T(0, yu + up_h + 0.08, R1 - 0.05), st(stone, rng) * 1.05, rng, chip=0.5)
+    parts.append(Part(lathe([(R1 - 0.2, yu + up_h + 0.1), (R1 - 0.2, yu + up_h + 0.4)], 16), 'stone', mortar * 0.4, T(0, 0, 0), jitter=0.0))
+    ye = yu + up_h + 0.12
+    re = R1 + p.get('eave', 0.5)
+    hr = p.get('roof', 6.2)
+    cone_slates(parts, rng, re, ye, hr, slate, moss=p.get('slate_moss', 0.25))
+    parts.append(Part(lathe([(re - 0.05, ye - 0.02), (R1 - 0.15, ye + 0.12)], 24, cap0=False, cap1=False), 'wood', hexlin('#3a3028'), T(0, 0, 0), jitter=0.0))
+    yt = ye + hr
+    parts.append(Part(lathe([(0.03, yt - 0.2), (0.03, yt + 1.1), (0.0, yt + 1.25)], 6), 'iron', iron, T(0, 0, 0), jitter=0.0))
+    parts.append(Part(lathe([(0.0, -0.1), (0.1, 0.0), (0.0, 0.1)], 8), 'iron', iron, T(0, yt + 0.25, 0), jitter=0.0))
+    vb = bmesh.new()
+    pts = ((0.0, 0.0, 0.0), (0.55, 0.05, 0.0), (0.62, 0.3, 0.0), (0.0, 0.32, 0.0))
+    vb.faces.new([vb.verts.new(v) for v in pts])
+    vb.faces.new([vb.verts.new(v) for v in reversed(pts)])
+    parts.append(Part(vb, 'iron', iron * 1.1, T(0, yt + 0.6, 0) @ R('Y', rng(0, 6.28)), jitter=0.0))
+    SHADOW.append((lathe([(R0 + 0.35, -foot), (R0, 0.4), (R0, H), (R1, H + 0.9), (R1, ye)], 10), Matrix.Identity(4)))
+    SHADOW.append((lathe([(re, ye), (0.0, ye + hr)], 10), Matrix.Identity(4)))
+    return parts
+
+
+# --------------------------------------------------------------- the far castle --
+
+def glow_win(parts, at, w, h, warm):
+    """A lit window (the far castle): a thin pane stood proud of the face, flagged to glow (OwnProps' far material)."""
+    parts.append(Part(box(w, h, 0.1), 'glow', warm, at, jitter=0.0))
+
+
+def far_block(parts, rng, sx, sy, sz, at, stone, k=0.06):
+    parts.append(Part(box(sx, sy, sz), 'stone', st(stone, rng, k), at, cap='stone', jitter=0.0))
+
+
+def far_merlons(parts, rng, x0, x1, y, at, depth, stone, mw=0.9, gap=0.7, mh=0.9):
+    n = max(2, int(round((x1 - x0 + gap) / (mw + gap))))
+    w = (x1 - x0 - gap * (n - 1)) / n
+    for i in range(n):
+        far_block(parts, rng, w, mh, depth, at @ T(x0 + i * (w + gap) + w / 2, y + mh / 2, 0), stone, 0.04)
+
+
+def far_wall(parts, rng, a, b, h, th, stone):
+    """A curtain wall from a to b ([x, z]), h high, a string course under its battlements on the outer edge."""
+    a, b = Vector((a[0], 0, a[1])), Vector((b[0], 0, b[1]))
+    L = (b - a).length
+    d = (b - a).normalized()
+    at = T(*((a + b) / 2)) @ R('Y', math.atan2(d.x, d.z) - math.pi / 2)
+    far_block(parts, rng, L, h, th, at @ T(0, h / 2, 0), stone)
+    far_block(parts, rng, L, 0.5, th + 0.4, at @ T(0, h - 1.2, 0), stone * 0.9)
+    far_merlons(parts, rng, -L / 2 + 0.3, L / 2 - 0.3, h, at @ T(0, 0, th / 2 - 0.3), 0.6, stone)
+
+
+def far_tower(parts, rng, x, z, r, h, stone, slate, roof=0.0, crenel=False, segs=12, wins=(), warm=None):
+    parts.append(Part(lathe([(r * 1.12, 0.0), (r, 2.0), (r, h)], segs, cap0=False), 'stone', st(stone, rng), T(x, 0, z), jitter=0.0))
+    if roof > 0:
+        parts.append(Part(lathe([(r * 1.25, h - 0.5), (0.0, h + roof)], segs), 'stone', slate * (1 + rng(-0.06, 0.06)), T(x, 0, z), jitter=0.0))
+        parts.append(Part(lathe([(0.08, h + roof - 0.3), (0.0, h + roof + 2.2)], 4, cap0=False), 'iron', slate * 0.6, T(x, 0, z), jitter=0.0))
+    else:
+        parts.append(Part(lathe([(r * 1.12, h - 0.8), (r * 1.12, h)], segs), 'stone', stone * 0.95, T(x, 0, z), jitter=0.0))
+    if crenel:
+        n = max(6, int(2 * math.pi * r * 1.12 / 1.7))
+        for i in range(n):
+            far_block(parts, rng, 0.9, 0.95, 0.5, T(x, 0, z) @ R('Y', 2 * math.pi * i / n) @ T(0, h + 0.47, r * 1.12 - 0.25), stone, 0.04)
+    for (a, y, w, hh) in wins:
+        glow_win(parts, T(x, 0, z) @ R('Y', math.radians(a)) @ T(0, y, r + 0.01), w, hh, warm)
+
+
+def gable_roof(parts, at, l, d, h, y, tint, stone):
+    rf = bmesh.new()
+    a = [rf.verts.new(c) for c in ((-l / 2 - 0.5, y, -d / 2 - 0.6), (l / 2 + 0.5, y, -d / 2 - 0.6), (l / 2 + 0.5, y, d / 2 + 0.6), (-l / 2 - 0.5, y, d / 2 + 0.6),
+                                  (-l / 2 - 0.5, y + h, 0), (l / 2 + 0.5, y + h, 0))]
+    rf.faces.new((a[0], a[1], a[5], a[4]))
+    rf.faces.new((a[2], a[3], a[4], a[5]))
+    rf.normal_update()
+    _outward(rf)
+    parts.append(Part(rf, 'stone', tint, at, jitter=0.0))
+    for s in (-1, 1):
+        g = bmesh.new()
+        gv = [g.verts.new((s * l / 2, yy, z)) for yy, z in ((y, -d / 2), (y, d / 2), (y + h - 0.3, 0))]
+        g.faces.new(gv if s > 0 else list(reversed(gv)))
+        g.normal_update()
+        parts.append(Part(g, 'stone', stone, at, jitter=0.0))
+
+
+def castle(p):
+    """(E8) The far castle on its hill north of the Waystation (C01 s8a, 265 m off; one merged low mesh on the props
+    atlas, no shadow): the keep under the gold lamp (its lit window high on the south face, the preset's origin at
+    the lamp's x, z), its corbelled parapet and corner bartizans with cones, a pyramid slate roof and a chimney; the
+    curtain with round corner towers under slate cones and a twin-towered gatehouse; a hall's steep roof over the
+    bailey with lit windows; a slender tower to the west. y 0: the hilltop (the curtain's foot)."""
+    rng = Rng(p['seed'])
+    stone, slate = hexlin(p['stone']), hexlin(p['slate'])
+    warm = hexlin(p.get('warm', '#ffb060'))
+    parts = []
+    ly = p['lamp_y']
+    kw, kh = 13.0, p.get('keep_h', 38.0)
+    kz = -0.5 - kw / 2
+    far_block(parts, rng, kw, kh, kw, T(0, kh / 2, kz), stone)
+    for (y, k) in ((kh * 0.32, 0.9), (kh * 0.66, 0.95)):
+        far_block(parts, rng, kw + 0.3, 0.45, kw + 0.3, T(0, y, kz), stone * k)
+    for x in (-kw / 2 + 0.8, kw / 2 - 0.8):
+        far_block(parts, rng, 1.6, kh - 1, 0.6, T(x, (kh - 1) / 2, kz + kw / 2 + 0.25), stone * 0.97)
+    far_block(parts, rng, kw + 1.0, 1.4, kw + 1.0, T(0, kh + 0.3, kz), stone * 1.03)
+    for s in range(4):
+        far_merlons(parts, rng, -kw / 2 - 0.2, kw / 2 + 0.2, kh + 1.0, T(0, 0, kz) @ R('Y', s * math.pi / 2) @ T(0, 0, kw / 2 + 0.2), 0.6, stone, mw=1.0, gap=0.75, mh=1.1)
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            cx, cz = sx * (kw / 2 + 0.3), kz + sz * (kw / 2 + 0.3)
+            parts.append(Part(lathe([(0.2, kh - 3.0), (1.5, kh - 1.0), (1.5, kh + 2.6)], 10), 'stone', st(stone, rng), T(cx, 0, cz), jitter=0.0))
+            parts.append(Part(lathe([(1.75, kh + 2.5), (0.0, kh + 7.5)], 10), 'stone', slate, T(cx, 0, cz), jitter=0.0))
+    pr = bmesh.new()
+    hw = kw / 2 - 0.7
+    v = [pr.verts.new((x, kh + 0.6, z)) for x, z in ((-hw, -hw), (hw, -hw), (hw, hw), (-hw, hw))]
+    ap = pr.verts.new((0, kh + 0.6 + p.get('keep_roof', 9.0), 0))
+    for i in range(4):
+        pr.faces.new((v[i], v[(i + 1) % 4], ap))
+    pr.normal_update()
+    _outward(pr)
+    parts.append(Part(pr, 'stone', slate * 0.95, T(0, 0, kz), jitter=0.0))
+    far_block(parts, rng, 1.1, 5.5, 1.1, T(hw * 0.45, kh + 4.2, kz - hw * 0.3), stone * 0.9)
+    # its windows: the lamp's (lit, high on the south face, a smaller light over it), others lit lower, a few dark
+    zf = kz + kw / 2 + 0.02
+    glow_win(parts, T(0, ly - 0.3, zf), 1.3, 2.6, warm)
+    for (x, y, lit) in ((-3.6, ly - 9.5, True), (3.4, ly - 9.5, False), (-3.4, ly - 17.0, False), (3.8, ly - 18.0, True), (-3.6, ly, False), (3.6, ly, False)):
+        if lit:
+            glow_win(parts, T(x, y, zf), 0.9, 1.7, warm * rng(0.6, 0.85))
+        else:
+            parts.append(Part(box(0.85, 1.7, 0.1), 'stone', stone * 0.1, T(x, y, zf), jitter=0.0))
+    wh = p.get('wall_h', 16.0)
+    zs, xw, xe, zb = 22.0, -34.0, 38.0, -40.0
+    far_wall(parts, rng, (xw, zs), (-4.5, zs), wh, 3.0, stone)
+    far_wall(parts, rng, (5.5, zs), (xe, zs), wh, 3.0, stone)
+    far_wall(parts, rng, (xe, zs), (xe + 4, zb), wh + 1, 3.0, stone * 0.92)
+    far_wall(parts, rng, (xw - 3, zb), (xw, zs), wh + 1, 3.0, stone * 0.92)
+    far_wall(parts, rng, (xw - 3, zb), (xe + 4, zb), wh + 2, 3.0, stone * 0.85)
+    for gx in (-6.0, 7.0):
+        far_tower(parts, rng, gx, zs + 1.4, 3.4, wh + 6.0, stone, slate, crenel=True)
+    far_block(parts, rng, 10.0, 6.0, 4.0, T(0.5, wh + 2.0, zs + 0.5), stone)
+    far_merlons(parts, rng, -3.5, 4.5, wh + 5.0, T(0.5, 0, zs + 2.2), 0.6, stone)
+    glow_win(parts, T(0.5, wh + 2.4, zs + 2.55), 0.8, 1.4, warm * 0.75)
+    far_tower(parts, rng, xw, zs, 4.2, wh + 9.0, stone, slate, roof=9.5, wins=[(0, wh + 5.0, 0.7, 1.3)], warm=warm * 0.7)
+    far_tower(parts, rng, xe, zs, 4.4, wh + 8.0, stone, slate, roof=10.0)
+    far_tower(parts, rng, xe + 4, zb, 4.6, wh + 13.0, stone * 0.92, slate, roof=11.0)
+    far_tower(parts, rng, xw - 3, zb, 4.2, wh + 11.0, stone * 0.92, slate, roof=10.0)
+    far_tower(parts, rng, -21.0, -18.0, 3.0, p.get('west_h', 36.0), stone * 0.96, slate, roof=12.0, wins=[(10, 30.0, 0.6, 1.2)], warm=warm * 0.8)
+    hx, hz, hl, hd, hh = 23.0, -6.0, 18.0, 9.0, 20.0
+    far_block(parts, rng, hl, hh, hd, T(hx, hh / 2, hz), stone * 0.97)
+    gable_roof(parts, T(hx, 0, hz), hl, hd, 7.5, hh, slate * 0.9, stone * 0.95)
+    for i in range(5):
+        if i != 2:
+            glow_win(parts, T(hx - hl / 2 + 2.2 + i * (hl - 4.4) / 4, hh - 4.0, hz + hd / 2 + 0.02), 0.85, 2.2, warm * rng(0.5, 0.8))
+    far_block(parts, rng, 1.2, 4.0, 1.2, T(hx + hl / 2 - 2.5, hh + 7.0, hz), stone * 0.88)
+    far_block(parts, rng, 14.0, 19.0, 8.0, T(-14.0, 9.5, -2.0), stone * 0.94)
+    gable_roof(parts, T(-14.0, 0, -2.0), 14.0, 8.0, 5.0, 19.0, slate * 0.85, stone * 0.94)
+    glow_win(parts, T(-17.0, 15.5, 2.02), 0.8, 1.5, warm * 0.6)
+    return parts
+
+
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt,
-         'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier}
+         'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier,
+         'curtain': curtain, 'gatehouse': gatehouse, 'tower': tower, 'castle': castle}
 
 
 # ---------------------------------------------------------------- build --
@@ -3065,6 +3610,7 @@ def main():
         GRIME['ao'] = p.get('ao', 1.0)
         OLD.clear()
         OLD.update(p.get('old', {}))
+        SHADOW.clear()
         parts = KINDS[p['kind']](p)
         if p.get('dress'):
             parts = dress(parts, p['dress'], p['seed'])
@@ -3087,12 +3633,35 @@ def main():
             for pl in cl.data.polygons:
                 pl.material_index = 0
             obs.append(cl)
+        if SHADOW:
+            # (E8) the shadow proxy: its boxes merged, one mesh (OwnProps: shadows only; the preset's own meshes cast none)
+            sb = bmesh.new()
+            for bm_, at_ in SHADOW:
+                bm_.transform(G2B @ at_)
+                tmp = bpy.data.meshes.new('tmp')
+                bm_.to_mesh(tmp)
+                sb.from_mesh(tmp)
+                bpy.data.meshes.remove(tmp)
+                bm_.free()
+            bmesh.ops.triangulate(sb, faces=sb.faces[:])
+            sme = bpy.data.meshes.new(name + '_shadow')
+            sb.to_mesh(sme)
+            sb.free()
+            sme.materials.append(mat)
+            so = bpy.data.objects.new(name + '_shadow', sme)
+            bpy.context.scene.collection.objects.link(so)
+            obs.append(so)
+        if p.get('far'):
+            # (E8) the far castle: one mesh, no LOD, named for OwnProps' far material
+            ob.name = name + '_far'
         meta = {'tris': tris(ob)}
-        if len(obs) > 1:
+        if SHADOW:
+            meta['tris_shadow'] = tris(obs[-1])
+        if len(obs) > 1 and obs[1].name.endswith('_cloth'):
             meta['tris_cloth'] = tris(obs[1])
         if p['kind'] == 'log':
             meta['axis'] = [round(p['r'] * 0.85, 4), p['r']]  # the axis's height and the bark's radius (OwnProps lays logs by it)
-        if meta['tris'] > 1000:
+        if meta['tris'] > 1000 and not p.get('far'):
             lo = lod1(ob, p.get('lod1', 0.45))
             obs.insert(1, lo)
             meta['tris_lod1'] = tris(lo)

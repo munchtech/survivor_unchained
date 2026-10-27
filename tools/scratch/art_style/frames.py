@@ -80,6 +80,10 @@ SETS = {
     "lfher": (NIGHT + ["--spots-clear", "--spots", "-2.5,93.0;-1.5,94.2;-21.5,2.5"], 3),
     # (Low Ford r1: the play path, her fighting at night from the Rising clearing, the autopilot playing: no spots, the living on)
     "lfplay": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "play"], 3),
+    # (E8: the Waystation's gate and walls north of the ford at the play camera, her short of the Exit (exitZ -104): on the
+    # road before the gate, and by the east tower and wall run; one dawn)
+    "gate": (NIGHT + ["--spots-clear", "--spots", "0,-100;10,-102"], 2),
+    "gatedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "0,-100"], 1),
     "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")
