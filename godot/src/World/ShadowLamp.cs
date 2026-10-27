@@ -128,4 +128,18 @@ public static class ShadowLamp
             else if (!on) Write(e.Light, false, 1);
         }
     }
+    /// <summary>(--lampdbg) Each offered light as a line: where, its range, its distance from the camera, whether its
+    /// reach is in the camera's view, whether it shadows now.</summary>
+    public static IEnumerable<string> Describe(Camera3D cam)
+    {
+        var planes = cam.GetFrustum();
+        foreach (var e in entries)
+        {
+            if (!Alive(e) || !e.Light.IsInsideTree()) continue;
+            var p = e.Light.GlobalPosition;
+            bool seen = true;
+            foreach (var pl in planes) if (pl.DistanceTo(p) > e.Light.OmniRange) { seen = false; break; }
+            yield return $"{e.Light.GetPath()} at ({p.X:0.0},{p.Y:0.0},{p.Z:0.0}) range {e.Light.OmniRange:0.0} energy {e.Light.LightEnergy:0.00} cam {cam.GlobalPosition.DistanceTo(p):0.0} m view {(seen ? 1 : 0)} shadow {(e.Light.ShadowEnabled ? 1 : 0)}";
+        }
+    }
 }

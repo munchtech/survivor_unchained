@@ -128,13 +128,21 @@ public partial class Game
                     if (i < 0) { made[name] = new WardenView(); continue; }
                     var visuals = c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"];
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
-                    made[$"{name}.{i}"] = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    var pv = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    if (ExtrasShadow) pv.BeginShadow();
+                    made[$"{name}.{i}"] = pv;
                 }
                 return made;
             });
             castAhead[f.Id] = castChain;
         }
     }
+
+    /// <summary>(E10) A crowd of extras (C02's twelve drowned) casts as one shadow a figure (FolkShadow, as the town's
+    /// folk do): the same geometry on the same bones, so the same shadow, in each lamp's six faces and each cascade
+    /// for one draw instead of each mesh's. Their shape keys never change after they are made, and nothing in a
+    /// cinematic re-dresses them. --extras-shadow off: each mesh casts (to compare).</summary>
+    static readonly bool ExtrasShadow = Args.Get("extras-shadow") != "off";
 
     /// <summary>The cast made ahead for each cinematic file (by its id), and the chain they are made on (one at a time).</summary>
     readonly Dictionary<string, System.Threading.Tasks.Task<Dictionary<string, Node3D>>> castAhead = new();
@@ -435,6 +443,7 @@ public partial class Game
                 {
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
                     var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    if (ExtrasShadow) v.BeginShadow();   // (made here, not ahead: its one shadow begun now; a no-op if begun)
                     v.Name = $"Cine_{name}{i}";
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
@@ -649,6 +658,8 @@ public partial class Game
                 stillK++;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
                 if (Args.Has("mouth-cam")) GD.Print($"STILL {file.Id}_s{shot.Id}_{stillK}");
+                if (Args.Has("lampdbg") && g.camera != null)
+                    foreach (var ln in SurvivorUnchained.View.ShadowLamp.Describe(g.camera)) GD.Print($"lampdbg {file.Id} s{shot.Id} {ln}");
                 // --cinebones: where the cast's bones are at each still, for framing shots on them.
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)
