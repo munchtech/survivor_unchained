@@ -121,6 +121,8 @@ public partial class BattleFx : Node3D
     static readonly float[] markHeights = new float[SurvivorUnchained.View.MarkPass.MaxMarks * SurvivorUnchained.View.MarkPass.Grid * SurvivorUnchained.View.MarkPass.Grid];
     static readonly bool[] slotUsed = new bool[SurvivorUnchained.View.MarkPass.MaxMarks];
     static readonly bool MarkPassOff = System.Environment.GetEnvironmentVariable("MARK_PASS") == "0";
+    static Texture3D? markLut;
+    static Rid markLutRd;
 
     /// <summary>The lines being said (WorldScene's Voices): combat's floaters keep off them.</summary>
     public SurvivorUnchained.View.Voices? Lines;
@@ -1841,6 +1843,14 @@ public partial class BattleFx : Node3D
         if (n == 0) return;
         // (on whichever camera draws; beside another effect's compositor, first: the brush paints the finished frame)
         if (GetViewport()?.GetCamera3D() is not { } cam) return;
+        // (how the frame will be seen: the bed's value and the rims' fold are solved through it)
+        if ((cam.Environment ?? cam.GetWorld3D()?.Environment) is { } env)
+        {
+            var lut = env.AdjustmentEnabled && env.AdjustmentColorCorrection is Texture3D t3 ? t3 : null;
+            if (lut != markLut) { markLut = lut; markLutRd = lut != null ? RenderingServer.TextureGetRdTexture(lut.GetRid()) : default; }
+            markPass.SetGrade(env.TonemapExposure, env.TonemapMode == Godot.Environment.ToneMapper.Agx, env.AdjustmentEnabled,
+                env.AdjustmentBrightness, env.AdjustmentContrast, env.AdjustmentSaturation, markLutRd);
+        }
         if (cam.Compositor == null) cam.Compositor = markComp;
         else if (cam.Compositor != markComp && !cam.Compositor.CompositorEffects.Contains(markPass))
         {

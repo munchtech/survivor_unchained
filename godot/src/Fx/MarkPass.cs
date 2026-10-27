@@ -22,15 +22,16 @@ public partial class MarkPass : CompositorEffect
     /// <summary>The look's numbers (env MARK_TUNE "k=0.8,w=0.5,..." overrides, for measuring).</summary>
     public static readonly Dictionary<string, float> Tune = new()
     {
-        ["k"] = 1.0f,      // the bed's value against the ground's (its scalar x k, in linear light)
-        ["w"] = 1.0f,      // the scalar: luma (0) to the brightest channel (1)
+        ["k"] = 0.82f,     // the bed's value against the ground's AS SEEN (display brightest channel, after AgX and the grade)
         ["tg"] = 0.0f, ["tb"] = 0.004f, // the bed's scarlet, linear (1, tg, tb)
         ["hg"] = 0.0f, ["hb"] = 0.015f, // the rims' (#ff0612)
         ["glow"] = 0.0f,   // a breath of light through the bed's heart (the rise toward the rims stays)
         ["g0"] = 0.14f, ["g1"] = 0.4f, // over the mark's ground: full to g0 m, none past g1
         ["front"] = 0.2f, ["tail"] = 0.4f, ["body"] = 0.1f, ["fill"] = 0.35f,
         ["roof"] = 2.6f,
-        ["cal"] = 0, ["dk"] = 0.3f, ["dv"] = 0.02f, ["le"] = 0.6f,
+        ["le"] = 0.6f,     // the rims' and the heart's light (x the mark's energy)
+        ["fs"] = 0.88f, ["fh"] = 5f, // the red's fold: no light past where the seen scarlet's saturation drops under fs or its hue passes fh
+        ["knee"] = 0.6f,   // the light eases into the fold from this share of it
     };
 
     static MarkPass()
@@ -45,11 +46,15 @@ public partial class MarkPass : CompositorEffect
     volatile int count;
     volatile float[]? heights;
     float waterY; bool waterOn;
+    // (the frame's display transform, read from its environment: tonemap exposure, AgX or not, brightness/contrast/
+    // saturation, the grade's 3D table)
+    float exposure = 1, bri = 1, con = 1, sat = 1; bool agx = true, bcs, lutOn;
+    Rid lutTex;
     public double GpuMs = -1;
     public static bool Time = System.Environment.GetEnvironmentVariable("MARK_TIME") == "1";
 
     RenderingDevice? rd;
-    Rid shader, pipe, sampler, ubo, markBuf, hBuf;
+    Rid shader, pipe, sampler, linSampler, ubo, markBuf, hBuf, idLut;
     bool failed;
 
     public MarkPass()
@@ -68,6 +73,14 @@ public partial class MarkPass : CompositorEffect
         Enabled = n > 0;
     }
 
+    /// <summary>How the frame will be seen (the pass works in the scene's light, before the tonemap: the bed's value and
+    /// the rims' fold are solved through the same AgX, adjustments and grade table the frame goes through).</summary>
+    public void SetGrade(float exposure, bool agx, bool adjust, float bri, float con, float sat, Rid lut)
+    {
+        this.exposure = exposure; this.agx = agx; bcs = adjust; this.bri = bri; this.con = con; this.sat = sat;
+        lutOn = adjust && lut.IsValid; lutTex = lut;
+    }
+
     /// <summary>The marks' ground heights (Grid x Grid per slot) after one changed.</summary>
     public void SetHeights(float[] h) => heights = h;
 
@@ -83,6 +96,20 @@ public partial class MarkPass : CompositorEffect
             MinFilter = RenderingDevice.SamplerFilter.Nearest, MagFilter = RenderingDevice.SamplerFilter.Nearest,
             RepeatU = RenderingDevice.SamplerRepeatMode.ClampToEdge, RepeatV = RenderingDevice.SamplerRepeatMode.ClampToEdge,
         });
+        linSampler = rd.SamplerCreate(new RDSamplerState
+        {
+            MinFilter = RenderingDevice.SamplerFilter.Linear, MagFilter = RenderingDevice.SamplerFilter.Linear,
+            RepeatU = RenderingDevice.SamplerRepeatMode.ClampToEdge, RepeatV = RenderingDevice.SamplerRepeatMode.ClampToEdge,
+            RepeatW = RenderingDevice.SamplerRepeatMode.ClampToEdge,
+        });
+        // (no grade table: a 2x2x2 identity in its place)
+        var id = new byte[32];
+        for (int z = 0, o = 0; z < 2; z++) for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++, o += 4) { id[o] = (byte)(x * 255); id[o + 1] = (byte)(y * 255); id[o + 2] = (byte)(z * 255); id[o + 3] = 255; }
+        idLut = rd.TextureCreate(new RDTextureFormat
+        {
+            TextureType = RenderingDevice.TextureType.Type3D, Width = 2, Height = 2, Depth = 2, Format = RenderingDevice.DataFormat.R8G8B8A8Unorm,
+            UsageBits = RenderingDevice.TextureUsageBits.SamplingBit | RenderingDevice.TextureUsageBits.CanUpdateBit,
+        }, new RDTextureView(), new Godot.Collections.Array<byte[]> { id });
         ubo = rd.UniformBufferCreate(128);
         markBuf = rd.StorageBufferCreate(MaxMarks * MarkFloats * 4);
         hBuf = rd.StorageBufferCreate(MaxMarks * Grid * Grid * 4);
@@ -135,12 +162,14 @@ public partial class MarkPass : CompositorEffect
         var push = new float[]
         {
             size.X, size.Y, n, hasN ? 1 : 0,
-            waterOn ? 1 : 0, waterY, T["k"], T["w"],
+            waterOn ? 1 : 0, waterY, T["k"], exposure,
             T["tg"], T["tb"], T["hg"], T["hb"],
             T["glow"], T["g0"], T["g1"], T["roof"],
             T["front"], T["tail"], T["body"], T["fill"],
-            T["cal"], T["dk"], T["dv"], T["le"],
+            bri, con, sat, (agx ? 1 : 0) + (bcs ? 2 : 0) + (lutOn ? 4 : 0),
+            T["le"], T["fs"], T["fh"], T["knee"],
         };
+        Rid lut = lutOn && lutTex.IsValid ? lutTex : idLut;
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
         for (uint v = 0, nv = buf.GetViewCount(); v < nv; v++)
         {
@@ -154,6 +183,7 @@ public partial class MarkPass : CompositorEffect
                 U(RenderingDevice.UniformType.UniformBuffer, 3, ubo),
                 U(RenderingDevice.UniformType.StorageBuffer, 4, markBuf),
                 U(RenderingDevice.UniformType.StorageBuffer, 5, hBuf),
+                U(RenderingDevice.UniformType.SamplerWithTexture, 6, linSampler, lut),
             });
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
@@ -168,7 +198,7 @@ public partial class MarkPass : CompositorEffect
     public override void _Notification(int what)
     {
         if (what != NotificationPredelete || rd == null) return;
-        foreach (var r in new[] { shader, sampler, ubo, markBuf, hBuf })
+        foreach (var r in new[] { idLut, shader, sampler, linSampler, ubo, markBuf, hBuf })
             if (r.IsValid) rd.FreeRid(r);
     }
 
@@ -190,11 +220,12 @@ public partial class MarkPass : CompositorEffect
         layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
         layout(push_constant, std430) uniform P {
             vec2 size; float n; float has_n;
-            float water_on; float water_y; float k; float w;
+            float water_on; float water_y; float k; float expo;
             float tg; float tb; float hg; float hb;
             float glow; float g0; float g1; float roof;
             float front; float tail; float body; float fill_e;
-            float cal; float dk; float dv; float le;
+            float bri; float con; float sat; float flags;
+            float le; float fs; float fh; float knee;
         } pc;
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth;
@@ -202,6 +233,54 @@ public partial class MarkPass : CompositorEffect
         layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; mat4 cam; } mt;
         layout(set = 0, binding = 4, std430) readonly buffer Marks { vec4 m[]; } mk;
         layout(set = 0, binding = 5, std430) readonly buffer Hts { float h[]; } ht;
+        layout(set = 0, binding = 6) uniform sampler3D lut;
+
+        // How a scene colour will be seen: Godot 4.5's AgX (its own approximation, verbatim), sRGB, the adjustments,
+        // the grade's table (the tonemap pass's order).
+        vec3 agx(vec3 c) {
+            const mat3 inset = mat3(
+                0.54490813676363087053, 0.14044005884001287035, 0.088827411851915368603,
+                0.37377945959812267119, 0.75410959864013760045, 0.17887712465043811023,
+                0.081384976686407536266, 0.10543358536857773485, 0.73224999956948382528);
+            const mat3 outset = mat3(
+                1.9645509602733325934, -0.29932243390911083839, -0.16436833806080403409,
+                -0.85585845117807513559, 1.3264510741502356555, -0.23822464068860595117,
+                -0.10886710826831608324, -0.027084020983874825605, 1.402665347143271889);
+            const float mn = -12.4739311883324, mx = 4.02606881166759;
+            c = inset * max(c, 2e-10);
+            c = (clamp(log2(c), mn, mx) - mn) / (mx - mn);
+            vec3 x2 = c * c, x4 = x2 * x2;
+            c = 0.021 * c + 4.0111 * x2 - 25.682 * x2 * c + 70.359 * x4 - 74.778 * x4 * c + 27.069 * x4 * x2;
+            return outset * pow(max(c, 0.0), vec3(2.4));
+        }
+        vec3 seen(vec3 c) {
+            int f = int(pc.flags + 0.5);
+            c *= pc.expo;
+            c = (f & 1) != 0 ? agx(c) : c;
+            c = clamp(c, 0.0, 1.0);
+            c = mix(12.92 * c, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+            if ((f & 2) != 0) {
+                c *= pc.bri;
+                c = mix(vec3(0.5), c, pc.con);
+                c = mix(vec3(dot(vec3(1.0), c) * 0.33333), c, pc.sat);
+            }
+            if ((f & 4) != 0) c = textureLod(lut, clamp(c, 0.0, 1.0), 0.0).rgb;
+            return c;
+        }
+
+        // The scarlet's seen value over 64 steps of its light (log2, x the exposure: -12 to +1 stops), one step per
+        // invocation of the group; and its fold, the last step still scarlet (saturation >= fs, hue <= fh degrees).
+        const int NT = 64;
+        const float LO = -12.0, ST = 13.0 / 63.0;
+        shared float tv[NT];
+        shared float tok[NT];
+        float hue(vec3 c) {
+            float m = max(c.r, max(c.g, c.b)), n = min(c.r, min(c.g, c.b));
+            if (m - n < 1e-5) return 0.0;
+            float h = c.r >= m ? (c.g - c.b) / (m - n) : c.g >= m ? (c.b - c.r) / (m - n) + 2.0 : (c.r - c.g) / (m - n) + 4.0;
+            h *= 60.0;
+            return h > 180.0 ? h - 360.0 : h;
+        }
 
         const int G = 32;
         float ground(int slot, vec2 q) {
@@ -230,18 +309,20 @@ public partial class MarkPass : CompositorEffect
         void shape(int i, vec2 l, out float cover, out float light) {
             vec4 a = mk.m[i * 4], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
             int kind = int(a.w + 0.5);
-            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0;
+            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca;
             if (kind == 0) {
                 // a lane: rims along its sides at 0.9 of its half width, soft ends (no cap line: a lane, not a box)
                 float sc = hx;
                 d = abs(l.x) - 0.9 * hx;
                 float core = max(0.012 * sc, 0.008), soft = max(0.014 * sc, 0.008), glw = max(0.05 * sc, 0.03);
                 edge = rim(d, core, soft, glw, 0.5);
+                ca = clamp(1.0 - max(abs(d) - core, 0.0) / soft, 0.0, 1.0);
                 float sm = smoothstep(-0.35 * hx, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 float fe = hz - abs(l.y);
                 ends = smoothstep(0.0, 0.45, fe);
                 edge *= smoothstep(0.0, 0.3, fe);
+                ca *= smoothstep(0.0, 0.3, fe);
                 wh = glw * 1.5;
                 if (e.x >= 0.0) {
                     float dm = (-hz + e.x) - l.y;
@@ -258,6 +339,7 @@ public partial class MarkPass : CompositorEffect
                     d = max(r - rc, r * sin(clamp(ang - e.y, -1.5, 1.5)));
                 } else d = max(r - rc, e.y - r);
                 float rm = clamp(1.0 - max(abs(d) - core, 0.0) / soft, 0.0, 1.0);
+                ca = rm * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
                 float fall = d < 0.0 ? 0.35 * exp(d / fin) : 0.25 * exp(-d / fout);
                 edge = max(rm, fall) * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
                 float sm = smoothstep(-0.33 * R, 0.0, d);
@@ -265,11 +347,22 @@ public partial class MarkPass : CompositorEffect
                 wh = fout * 2.0;
                 if (e.x >= 0.0 && kind == 1) f = fillf(e.x * 0.97 - r);
             }
-            cover = (d < 0.0 ? 1.0 : exp(-d / wh)) * ends;
+            // (the rims' cores over the bed's scarlet, not the ground's own colour: a rim added over grey went salmon)
+            cover = max((d < 0.0 ? 1.0 : exp(-d / wh)) * ends, ca);
             light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
         }
 
         void main() {
+            {
+                uint t = gl_LocalInvocationIndex;
+                vec3 c = seen(exp2(LO + float(t) * ST) / max(pc.expo, 1e-6) * vec3(1.0, pc.tg, pc.tb));
+                float m = max(c.r, max(c.g, c.b)), n = min(c.r, min(c.g, c.b));
+                float h = hue(c);
+                tv[t] = m;
+                // (only where it is bright: a grade's tinted blacks are not its fold)
+                tok[t] = ((m - n) / max(m, 1e-5) >= pc.fs && h <= pc.fh) || m < 0.25 ? 1.0 : 0.0;
+            }
+            barrier();
             ivec2 p = ivec2(gl_GlobalInvocationID.xy);
             if (p.x >= int(pc.size.x) || p.y >= int(pc.size.y)) return;
             vec2 uv = (vec2(p) + 0.5) / pc.size;
@@ -287,7 +380,7 @@ public partial class MarkPass : CompositorEffect
                 vec3 nv = texture(nrm, uv).xyz * 2.0 - 1.0;
                 up = (mt.cam * vec4(nv, 0.0)).y / max(length(nv), 1e-4);
             }
-            float tint = 0.0, kk = pc.k;
+            float tint = 0.0;
             float light = 0.0;
             int n = int(pc.n);
             for (int i = 0; i < n; i++) {
@@ -319,23 +412,33 @@ public partial class MarkPass : CompositorEffect
                 if (gate <= 0.0) continue;
                 float c, li;
                 shape(i, l, c, li);
-                if (pc.cal > 0.5) {
-                    // (calibration: stripes 0.25 m across the lane, tinted and not; k in four steps along it)
-                    if (fract(l.x / 0.25) >= 0.5) c = 0.0;
-                    kk = 0.6 + 0.4 * floor(clamp((l.y + s.y) / (2.0 * s.y), 0.0, 0.999) * 4.0);
-                    li = 0.0;
-                }
                 tint = max(tint, c * gate * s.w);
                 light += li * gate;
             }
             if (tint <= 0.0 && light <= 0.0) return;
             vec4 col = imageLoad(colour, p);
-            float lum = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));
-            float val = mix(lum, max(col.r, max(col.g, col.b)), pc.w);
-            // (AgX's toe darkens a lone red more than grey: dk lifts the dark ground's bed, full below dv)
-            float kd = pc.cal > 0.5 ? kk : kk * (1.0 + pc.dk * (1.0 - smoothstep(0.0, 1.0, log2(max(val, 1e-5) / pc.dv) / 4.0 + 0.0)));
-            vec3 bed = val * kd * vec3(1.0, pc.tg, pc.tb);
-            col.rgb = mix(col.rgb, bed, clamp(tint, 0.0, 1.0)) + light * vec3(1.0, pc.hg, pc.hb);
+            // the fold: the last step that is still scarlet (the steps below it are)
+            int fi = 0;
+            for (int j = 0; j < NT; j++) if (tok[j] > 0.5) fi = j; else break;
+            float rf = exp2(LO + float(fi) * ST) / max(pc.expo, 1e-6);
+            // the bed: the scarlet whose seen value is k x the ground's seen value (its brightest channel)
+            vec3 g = seen(col.rgb);
+            float want = pc.k * max(g.r, max(g.g, g.b));
+            int lo = 0, hi = NT - 1;
+            while (hi - lo > 1) { int mid = (lo + hi) / 2; if (tv[mid] <= want) lo = mid; else hi = mid; }
+            float r;
+            if (want <= tv[0]) r = exp2(LO) * want / max(tv[0], 1e-6);
+            else r = exp2(LO + (float(lo) + clamp((want - tv[lo]) / max(tv[hi] - tv[lo], 1e-6), 0.0, 1.0)) * ST);
+            r = min(r / max(pc.expo, 1e-6), rf);
+            vec3 base = mix(col.rgb, r * vec3(1.0, pc.tg, pc.tb), clamp(tint, 0.0, 1.0));
+            // the light on it: eased into the fold, never past it (AgX turns a red past it salmon, then white)
+            float add = light;
+            if (add > 0.0) {
+                float a = pc.knee * rf, x = base.r + add;
+                float y = x <= a ? x : a + (rf - a) * (1.0 - exp(-(x - a) / max(rf - a, 1e-6)));
+                add = max(y - base.r, 0.0);
+            }
+            col.rgb = base + add * vec3(1.0, pc.hg, pc.hb);
             imageStore(colour, p, col);
         }
         """;
