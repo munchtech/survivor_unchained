@@ -1840,6 +1840,9 @@ public partial class BattleFx : Node3D
         }
         if (hts) markPass.SetHeights((float[])markHeights.Clone());
         markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);
+        // (MARK_TIME=1: the pass's GPU time, every 30th frame a mark is up)
+        if (SurvivorUnchained.View.MarkPass.Time && n > 0 && Engine.GetFramesDrawn() % 30 == 0 && markPass.GpuMs >= 0)
+            GD.Print($"markpass gpu {markPass.GpuMs:0.000} ms marks {n} fps {Engine.GetFramesPerSecond():0}");
         if (n == 0) return;
         // (on whichever camera draws; beside another effect's compositor, first: the brush paints the finished frame)
         if (GetViewport()?.GetCamera3D() is not { } cam) return;
