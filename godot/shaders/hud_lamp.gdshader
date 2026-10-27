@@ -160,8 +160,10 @@ void fragment()
 		a = mix(a, 1.0, max(fill, emp * 0.85));
 		// the hurt film: blood clinging to the glass from where it stood, running down
 		float ftop = level_row(mix(film_top, lv, film_t * film_t));
-		float film = emp * step(ftop, px.y) * (1.0 - film_t) * (0.55 + 0.45 * vnoise(vec2(px.x * 0.4, px.y * 0.05 - t * 2.0)));
-		col = mix(col, vec3(0.45, 0.02, 0.03), film * 0.7);
+		// (UI 15 fix 1: runs of blood down the glass, not a veil over it: a veil read as thin oil in a still)
+		float runs = smoothstep(0.5, 0.78, vnoise(vec2(px.x * 0.55, px.y * 0.035 - t * 2.4)));
+		float film = emp * step(ftop, px.y) * (1.0 - film_t) * runs;
+		col = mix(col, vec3(0.30, 0.01, 0.02), film * 0.8);
 		a = max(a, film * 0.85);
 	}
 	// ---- the shield: an arc of silver-blue light round the font's rim, from its top round both sides as far as
