@@ -48,7 +48,9 @@ _E = os.environ.get
 AMT = float(_E("SCULPT_AMT", "1.35"))   # (round 2: 1.0 read too faint at 0.9 px/mm in clay)
 RELIEF_K = float(_E("SCULPT_RELIEF", "1.6"))   # the relief's slopes x this (tone's was 1.75)
 # deltoid: heads (t0, phi0, half-length t, half-width deg, mm); its V edge (t at phi 90, t at its borders), band (t)
-DELT_HEADS = ((0.14, 28, 0.26, 48, 4.5), (0.17, 90, 0.30, 62, 6.0), (0.14, 152, 0.26, 48, 4.0))
+# (the middle head kept low: it is her shoulder line seen from the front (2.7 head widths, approved); the cap stands
+# proud in the side view through the front and rear heads)
+DELT_HEADS = ((0.14, 28, 0.26, 48, 6.0), (0.17, 90, 0.30, 62, 3.5), (0.14, 152, 0.26, 48, 5.5))
 DELT_V = (0.46, 0.24)
 DELT_BAND = 0.07
 DELT_TOP = (-0.14, -0.02)   # t: none above the first, whole below the second
