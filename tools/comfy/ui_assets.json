@@ -1200,6 +1200,63 @@
    "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
    "note": "light-keyed by tools/uiforge/lamp_life_cut.py",
    "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_tall",
+   "file": "lamp_life/tall/lamp_lit.png",
+   "also": [
+    "lamp_life/tall/lamp_cold.png",
+    "lamp_life/tall/lamp_mask.png"
+   ],
+   "size": [
+    352,
+    452
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4311,
+   "prompt": "A heavy hand-forged oil lamp seen straight from the front, as tall as it is wide plus a half: a large oval clear glass oil font shaped like an upright egg, a little taller than it is wide, empty and clean, its front unobstructed, held in a blackened iron cradle with three hammered straps and a heavy foot ring, a thick riveted iron burner collar on its top with a small wick-turn key on its side, a short wide clear glass chimney no taller than the collar over a golden flame with a white core rising from a flat wick, no cork, no bottle neck, no stopper, hammered iron with worn edges, painterly realism, lit only by its own flame, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD A2 life lamp, tall shape (UI 15, 27 Oct 2026: the owner's 'elongated a little'): seeds 4310-4314 painted (and 4300-4304 of a slimmer prompt, too thin, not used); 4311 cut by BiRefNet, layered by tools/uiforge/lamp_life_cut.py (shape 'tall'); the chain's eye and the flame as the squat's. Sources kept in survivorsunchained_inputs/ui15_lamp_src/",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_globe",
+   "file": "lamp_life/globe/lamp_lit.png",
+   "also": [
+    "lamp_life/globe/lamp_cold.png",
+    "lamp_life/globe/lamp_mask.png"
+   ],
+   "size": [
+    352,
+    444
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4301,
+   "prompt": "A round oil lamp seen straight from the front: a large clear glass globe, a full sphere, empty and clean, its front unobstructed, held in a hand-forged blackened iron cage: a riveted iron cradle cupping its lower part on a heavy round iron foot, and four thin curved iron ribs rising up its sides to a heavy riveted iron burner collar on the top of the globe, a short clear glass chimney on the collar over a golden flame with a white core rising from a flat wick, no cork, no bottle neck, no stopper, hammered iron with worn edges, painterly realism, lit only by its own flame, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD A2 life lamp, globe shape (UI 15, 27 Oct 2026: the owner's 'the orb shape might be better'): seeds 4300-4304 painted, 4301 cut by BiRefNet, layered by tools/uiforge/lamp_life_cut.py (shape 'globe'). Sources kept in survivorsunchained_inputs/ui15_lamp_src/",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_font",
+   "file": "lamp_life/font/lamp_lit.png",
+   "also": [
+    "lamp_life/font/lamp_cold.png",
+    "lamp_life/font/lamp_mask.png"
+   ],
+   "size": [
+    352,
+    452
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4302,
+   "prompt": "A ship's oil lamp seen straight from the front: a squat round clear glass oil font shaped like a flattened sphere, much wider than it is tall, empty and clean, its front unobstructed, sitting in a hand-forged blackened iron cradle with a heavy foot ring, a thick riveted iron burner collar on its top with a small wick-turn key on its side, a short wide clear glass chimney on the collar over a golden flame with a white core rising from a flat wick, the iron collar and chimney leading the silhouette, no cork, no bottle neck, no stopper, hammered iron with worn edges, painterly realism, lit only by its own flame, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD A2 life lamp, round-font shape (UI 15, 27 Oct 2026): seeds 4300-4304 painted, 4302 cut by BiRefNet, layered by tools/uiforge/lamp_life_cut.py (shape 'font'). Sources kept in survivorsunchained_inputs/ui15_lamp_src/",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
   }
  ],
  "icon_sets": {
