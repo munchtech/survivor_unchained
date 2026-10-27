@@ -344,13 +344,18 @@ TRAIL_ARM = ((20, 14, 120, -40), (-25, 13, 120, -40))
 TRAIL = dict(back=53.0, out=-5.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=-22.0)
 # The daggers keep round 1's near-straight carry (Animation 55 r2's bent arms put both upper arms 45-68 mm into all
 # four outfits on held frames); they passed the runs1 judge with notes.
-DAGGER_ARM = ((10, 1, 148, -70), (-10, 0, 146, -70))
+DAGGER_ARM = ((10, 1, 125, -85), (-10, 0, 123, -85))
 DAGGER_TRAIL = dict(back=26.0, out=0.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=10.0)
 # The reaver's axe: forward the fist no more than 10 ahead of hanging (at 20, the forearm reached ahead and the wrist
 # could only trail the haft 20-30 out); its upper arm 22-24 out (at 15 it met her outfits, runs1). The second axe
 # (run_reaver_axes) on the same carry mirrored (it hung near vertical from a straight arm, a different hold).
-AXE_TRAIL = dict(TRAIL, back=54.0, out=-6.0, out_swing=-28.0)
-AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
+# Animation 55 (a max judge on runs3: the axe read level on screen when its haft pointed away from the camera): the haft
+# steeper, -58..-64 pitch, straight back (outward yaw <= 10), the elbow bent 67 (was 48) with the fist 6-9 cm higher,
+# the head >= 0.40 m off the floor. A bent forearm can only drop the haft this steep if the upper arm is swept back
+# (th -39..-44, hanging 30 behind: the forearm then hangs near vertical and the wrist asks 45-65 of its range), the
+# upper arm abducted 30 (24 before: the clearance to her thighs), the turn -28..-33.
+AXE_TRAIL = dict(TRAIL, back=17.3, out=-8.2, out_swing=-10.1)
+AXE_TRAIL_ARM = ((-39.1, 30, 113, -28.1), (-44.2, 28, 113, -32.6))
 # The wand: the upper arm a little behind hanging so the bent elbow's forearm (and the wand on its line) still points
 # down 37-56 degrees; the forearm turned out behind her (turn -20: at -10 the wand passed 19 mm from her thigh, now
 # 60) and the tip 5 more out past her front knee.
