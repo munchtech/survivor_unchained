@@ -45,6 +45,10 @@ public static class Palette
     /// solid. Each has its own edge as well (filled, hatched, dashed, hard), so colour is
     /// never the only sign.</summary>
     public static readonly Color TeleBlow = K("#ff9a1a", 2.6f), TeleGround = K("#a050ff", 2.2f), TeleSafe = K("#8ad0ff", 2.2f), TeleWall = K("#c8c8d0", 1.6f);
+    /// <summary>An elite's or a boss's blow (the F7 lesson's "red line"): a hot scarlet, kept under AgX's fold to
+    /// white, over ground darkened to old blood (an added red over lit dirt read salmon, the owner, 27 October).
+    /// Its edge glows; her own low-life edge is a soft dark (0.45, 0.02, 0.02) wash at the screen's rim.</summary>
+    public static readonly Color TeleDanger = C("#ff2410"), TeleDangerGround = new("#4a0a06");
     public static Color Telegraph(TelegraphKind k) => k switch
     {
         TelegraphKind.Ground => TeleGround, TelegraphKind.Safe => TeleSafe, TelegraphKind.Wall => TeleWall, _ => TeleBlow,

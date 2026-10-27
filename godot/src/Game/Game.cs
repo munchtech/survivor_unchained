@@ -1060,6 +1060,7 @@ public partial class Game : Node, IZoneHost
         foreach (var e in evs)
         {
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
+            if (Shots.On("elite")) EliteShot(e);
             Feel(e, ref crits);
             switch (e)
             {
@@ -1108,6 +1109,30 @@ public partial class Game : Node, IZoneHost
     /// stagger, its arrival and what is announced (Shots.Want). --on casts: a run of
     /// frames, fifteen a second, through each creature's marked cast and a second after
     /// it (judging a slam or a call as the player sees it).</summary>
+    /// <summary>--on elite: frames of each elite's or boss's marked blow (early, mid, at the end) and of
+    /// its hit flash (struck, and two frames on), at most one flash a second (judging the red line and
+    /// the struck light as the player sees them).</summary>
+    double eliteHitShot = -9, crowdTeleShot = -9;
+    void EliteShot(CombatEvent e)
+    {
+        bool Big(int id) => Battle != null && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
+        switch (e)
+        {
+            case Ev.Telegraph t when t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
+                foreach (var f in new[] { 0.12, 0.5, 0.88 }) Shots.Want($"tele{t.Id}", t.Duration * f);
+                break;
+            // (and the crowd's marks, one frame of one at most every 6 s)
+            case Ev.Telegraph t when t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
+                crowdTeleShot = Battle?.Time ?? 0;
+                Shots.Want("crowd", t.Duration * 0.6);
+                break;
+            case Ev.Hit h when !h.Dot && Big(h.Target) && (Battle?.Time ?? 0) - eliteHitShot > 1:
+                eliteHitShot = Battle?.Time ?? 0;
+                foreach (var f in new[] { 0.0, 1 / 60.0, 3 / 60.0 }) Shots.Want($"hit{h.Target}", f);
+                break;
+        }
+    }
+
     static void BossShot(CombatEvent e)
     {
         switch (e)

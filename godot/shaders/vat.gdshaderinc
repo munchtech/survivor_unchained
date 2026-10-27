@@ -140,6 +140,14 @@ void fragment() {
 		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 		e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
 	}
+	// Struck past the crowd's rim-only flare (a champion's, a few at once): the body's paint is lifted, lit
+	// by the scene's own light, so the flash keeps its shading and is as bright as the place allows. An
+	// added light lit it as if by day: at night the Barrow Knight went a flat cream cut-out, struck after
+	// struck, and read as a model glitch (Experience 9's judge, 27 October).
+	float struck = max(fx.x - 0.12, 0.0) / 0.88;
+	struck *= struck;
+	// (its own hue only: a lift toward white, even shaded, read as an untextured clay body)
+	c = min(c * (1.0 + 1.3 * struck), vec3(0.9));
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -157,7 +165,15 @@ void fragment() {
 	// (a full white-hot body bloomed the pale risen into blobs).
 	float hot = fx.x * fx.x;
 	// (At 0.75 across the whole body a pale body lost its paint and read as a ghost.)
-	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.38 + fx.x * (0.1 + rim * rim * 1.1));
+	// The rim-only flare (the crowd's, up to 0.12) as it was. Past it, the lifted paint above and a hot
+	// edge, never a flat wash: from the play camera most of a body is "rim", so rim^2 x 1.1 plus 0.38
+	// over all of it was a flat unlit cream body.
+	float low = min(fx.x, 0.12), high = max(fx.x - 0.12, 0.0) / 0.88;
+	// (the rim's breath gives way as the struck lift comes: at night it alone was a pale wash)
+	e += vec3(1.0, 0.86, 0.72) * low * (1.0 - high) * (0.1 + rim * rim * 1.1);
+	// (and a breath of warm light in its own paint: no rim term, which covers the whole body from up here,
+	// and no more, or the night's dark body goes pale)
+	e += vec3(1.0, 0.62, 0.38) * c * high * high * 0.12;
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

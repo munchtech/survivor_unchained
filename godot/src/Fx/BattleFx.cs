@@ -85,6 +85,10 @@ public partial class BattleFx : Node3D
         public required Decal Decal;
         public float T, Life, Radius;
         public bool Progress, Grow, Sink, Active;
+        /// <summary>An elite's or a boss's blow: its colour is in its textures (scarlet light over darkened
+        /// ground), so its Modulate stays white and only its alpha and energy move.</summary>
+        public bool Danger;
+        public float Energy;
         public Color Color;
         public Decal? Fill;
         /// <summary>The lane again, drawn only where something tall stands over it (a roof): an elite's or
@@ -334,11 +338,25 @@ public partial class BattleFx : Node3D
         m.Length = 0;
         if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
-        d.TextureEmission = tex;
-        d.TextureAlbedo = null;
-        d.EmissionEnergy = energy;
-        d.Modulate = color;
-        d.AlbedoMix = 0;
+        m.Danger = dangerNext;
+        dangerNext = false;
+        if (m.Danger)
+        {
+            var (alb, em) = DangerOf(tex);
+            d.TextureEmission = em;
+            d.TextureAlbedo = alb;
+            d.AlbedoMix = 1;
+            d.EmissionEnergy = m.Energy = DangerEnergy;
+            d.Modulate = m.Color = Colors.White;
+        }
+        else
+        {
+            d.TextureEmission = tex;
+            d.TextureAlbedo = null;
+            d.EmissionEnergy = m.Energy = energy;
+            d.Modulate = color;
+            d.AlbedoMix = 0;
+        }
         d.Position = V(x, heightAt(x, z), z);
         d.Rotation = Vector3.Zero;
         d.Size = new Vector3(radius * 2, 4, radius * 2);
@@ -356,8 +374,8 @@ public partial class BattleFx : Node3D
             m.Progress = true;
             if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = discTex }; AddChild(m.Fill); }
             m.Fill.Position = m.Decal.Position;
-            m.Fill.Modulate = color with { A = 0.42f };
-            m.Fill.EmissionEnergy = 1.4f;
+            m.Fill.Modulate = (m.Danger ? Palette.TeleDanger : color) with { A = 0.42f };
+            m.Fill.EmissionEnergy = m.Danger ? DangerFill : 1.4f;
             m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
             m.Fill.Visible = true;
         }
@@ -383,8 +401,8 @@ public partial class BattleFx : Node3D
             m.Radius = width / 2;
             if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1 }; AddChild(m.Fill); }
             m.Fill.TextureEmission = laneFillTex;
-            m.Fill.Modulate = color with { A = 0.42f };
-            m.Fill.EmissionEnergy = 1.4f;
+            m.Fill.Modulate = (m.Danger ? Palette.TeleDanger : color) with { A = 0.42f };
+            m.Fill.EmissionEnergy = m.Danger ? DangerFill : 1.4f;
             m.Fill.Rotation = m.Decal.Rotation;
             m.Fill.Position = m.From;
             m.Fill.Size = new Vector3(width * 0.94f, 4, 0.01f);
@@ -649,6 +667,54 @@ public partial class BattleFx : Node3D
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
         return ImageTexture.CreateFromImage(img);
+    }
+
+    /// <summary>The next Ground mark is an elite's or a boss's blow (set by the telegraph, taken by Ground).</summary>
+    bool dangerNext;
+    /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x), its running fill's,
+    /// and its copy over a roof (x the scarlet, unshaded).</summary>
+    const float DangerEnergy = 1.5f, DangerFlare = 1.45f, DangerFill = 1.1f, DangerOver = 0.85f;
+    static readonly Dictionary<Texture2D, (Texture2D Albedo, Texture2D Emission)> dangerTex = new();
+
+    /// <summary>A mark's shape as a danger mark: its ground darkened to old blood (albedo, its alpha the cover:
+    /// fuller than the light's, so the whole shape reads as one dark-red thing in daylight), and its light in
+    /// scarlet. The lane has its own: a near-solid bed with hard bright edges (two thin lines over lit dirt read
+    /// as a drawn outline, not a blow).</summary>
+    static (Texture2D, Texture2D) DangerOf(Texture2D tex)
+    {
+        if (dangerTex.TryGetValue(tex, out var t)) return t;
+        bool lane = tex == laneTex;
+        var src = tex.GetImage();
+        int w = src.GetWidth(), h = src.GetHeight();
+        var alb = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+        var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+        // (the textures are sRGB; the scarlet's sRGB, scaled in linear and stored back)
+        var hot = new Color("#ff2410");
+        var bed = Palette.TeleDangerGround;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                float a, cover;
+                if (lane)
+                {
+                    float u = (x + 0.5f) / w * 2 - 1, v = (y + 0.5f) / h * 2 - 1, e = Mathf.Abs(u);
+                    float ends = Mathf.Clamp((1 - Mathf.Abs(v)) / 0.04f, 0, 1);
+                    float edge = Mathf.Clamp(1 - Mathf.Abs(e - 0.9f) / 0.075f, 0, 1);
+                    // its light: the hard edges, and a low glow through the bed, stronger toward the edges
+                    a = (edge + (e < 0.86f ? 0.025f + 0.05f * e * e : 0)) * ends;
+                    cover = (e < 0.97f ? 0.62f + 0.38f * Mathf.SmoothStep(0.55f, 0.88f, e) : edge) * ends;
+                }
+                else
+                {
+                    a = src.GetPixel(x, y).A;
+                    cover = Mathf.Clamp(a * 2.2f, 0, 1) * 0.85f;
+                }
+                a = Mathf.Clamp(a, 0, 1);
+                float al = Mathf.Pow(a, 1 / 2.2f);
+                em.SetPixel(x, y, new Color(hot.R * al, hot.G * al, hot.B * al, 1));
+                alb.SetPixel(x, y, new Color(bed.R, bed.G, bed.B, Mathf.Clamp(cover, 0, 1)));
+            }
+        return dangerTex[tex] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
     }
 
     /// <summary>A cone pointing along the texture's v, apex at the centre, `arc` degrees wide.</summary>
@@ -1031,6 +1097,12 @@ public partial class BattleFx : Node3D
                     // A named move (its name shown over whoever makes it) is one to read, whoever makes it:
                     // a boss's strength (the Hollow's drive was drawn at the crowd's, and read as the place's edge).
                     if (e.Hostile) { float k = e.Boss || e.Label is { Length: > 0 } ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
+                    // An elite's or a boss's blow is the red line (F7 teaches it by that name): scarlet over darkened
+                    // ground, in its textures. The crowd's blows stay amber and quiet (main's ruling, 27 October).
+                    bool danger = e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null
+                        && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)));
+                    if (danger) col = Palette.TeleDanger;
+                    dangerNext = danger;
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line)
@@ -1047,6 +1119,7 @@ public partial class BattleFx : Node3D
                         keyed[e.Id] = Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration);
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
+                    dangerNext = false;
                     // A boss's move, named over the boss for as long as its mark stands: who is doing
                     // it, where the eye already is (over the mark, it sat on the survivor's head).
                     if (e.Label is { Length: > 0 } label)
@@ -1414,8 +1487,11 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
+                // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
+                if (m.Danger) m.Decal.EmissionEnergy = m.Energy * (m.T > 0.85f ? DangerFlare : 0.88f + 0.12f * Mathf.Sin((float)now * 12));
+                var oc = m.Danger ? Palette.TeleDanger * DangerOver : m.Color * 2.4f;
                 if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
-                    om.SetShaderParameter("col", new Color(Mathf.Min(1, m.Color.R * 2.4f), Mathf.Min(1, m.Color.G * 2.4f), Mathf.Min(1, m.Color.B * 2.4f), 0.8f * m.Decal.Modulate.A));
+                    om.SetShaderParameter("col", new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B), 0.8f * m.Decal.Modulate.A));
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
