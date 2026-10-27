@@ -21,6 +21,9 @@ public sealed partial class HerLight : Control
     public static bool PoolHeld;
     /// <summary>Her life as last shown (the shots log it).</summary>
     public float LifeNow { get; private set; } = 1;
+    public Vector2 FeetNow { get; private set; }
+    /// <summary>For the shots' log: her feet on the screen and her life as shown ("" without this HUD).</summary>
+    public static string Note() => Live is { } h ? $" feet {h.FeetNow.X:0} {h.FeetNow.Y:0} life {h.LifeNow:0.000}" : "";
 
     /// <summary>The pool's quad round her feet (1080 px) and the pool's reach in it.</summary>
     static readonly Vector2 PoolSize = new(520, 340), PoolRadii = new(240, 158);
@@ -57,6 +60,7 @@ public sealed partial class HerLight : Control
     {
         using var _ = new Perf.Span(Perf.Part.Hud);
         LifeNow = life;
+        if (at is { } ft) FeetNow = ft;
         double now = Time.GetTicksMsec() / 1000.0;
         // the heart: in step with the sound while it beats, its own clock at the same pace otherwise
         bool low = fight && life <= HeartPulse.LowAt && life > 0;

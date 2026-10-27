@@ -37,9 +37,9 @@ public static class HeartPulse
         return (float)(0.3 + 0.7 * Math.Pow(u, 1.3));
     }
 
-    /// <summary>Her light on the ground: its gain (the pool shader's) at this life. Full 0.50 (about +40% at its
+    /// <summary>Her light on the ground: its gain (the pool shader's) at this life. Full 0.45 (about +40% at its
     /// heart), half at 55%, small at 25% and under, none at 0.</summary>
-    public const float PoolFull = 0.50f;
+    public const float PoolFull = 0.45f;
     public static float PoolGain(double life)
     {
         life = Math.Clamp(life, 0, 1);

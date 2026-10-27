@@ -125,7 +125,7 @@ public partial class Shots : Node
                 DirAccess.MakeDirRecursiveAbsolute(hd);
                 var hf = $"{hd}/{name}_hud{hudNext}.png";
                 GetViewport().GetTexture().GetImage().SavePng(hf);
-                GD.Print($"saved {hf} at {time:0.00}s (hud state {hudNext}: {Ui.HudPin.Seq[hudNext]})");
+                GD.Print($"saved {hf} at {time:0.00}s (hud state {hudNext}: {Ui.HudPin.Seq[hudNext]}){Ui.HerLight.Note()}");
                 // --pool-ab: the same moment again without the life lamp's pool (the game paused, the pool hidden),
                 // so its lift is measured on the same frame
                 if (Args.Has("pool-ab") && Ui.LifeLamp.Live is { } lamp)
@@ -185,7 +185,7 @@ public partial class Shots : Node
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
-        GD.Print($"saved {file} at {time:0.00}s{HerAt()}");
+        GD.Print($"saved {file} at {time:0.00}s{HerAt()}{Ui.HerLight.Note()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
         if (GetViewport().GetCamera3D() is { } cam3) GD.Print($"camera {cam3.GlobalTransform} fov {cam3.Fov}");
         if (Args.Has("mark-bones")) PrintMarks();

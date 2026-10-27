@@ -71,6 +71,8 @@ public partial class GameHud : CanvasLayer
     bool underWanted;
     // HUD variant "her life" (--hud-life her, HerLight.cs): no lamp; her bar, her light and the edges carry her life.
     HerLight? her;
+    static readonly double herBleed = Args.Num("hurt-bleed", 0), herBleedFrom = Args.Num("hurt-from", 0);
+    double bleedAt, bleedHp;
     Vector2? herAt;
     // The corner: the minimap over the place's name and the objectives.
     Minimap minimap = null!;
@@ -540,6 +542,20 @@ public partial class GameHud : CanvasLayer
         var p = b.Player;
         double max = b.MaxHp;
         pinMax = max;
+        // (--hurt-bleed F, a shot of her life falling for real: F of her life a second taken as a blow, down to
+        // 12%, from the fight's second --hurt-from on, on top of its own blows (--hurt-mul); HUD variant "her life" only)
+        if (her != null && herBleed > 0 && b.Combat && p.Alive)
+        {
+            double t = Time.GetTicksMsec() / 1000.0;
+            if (bleedAt > 0 && b.Time >= herBleedFrom && p.Hp / max > 0.12)
+            {
+                // (and no healing while it bleeds: the draught's lesson and pickups would undo the fall)
+                if (bleedHp > 0 && p.Hp > bleedHp) p.Hp = bleedHp;
+                b.HurtPlayerRaw(Math.Min(t - bleedAt, 0.25) * herBleed * max, School.Physical, "debug", null, true);
+                bleedHp = p.Hp;
+            }
+            bleedAt = t;
+        }
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
         var life = irons.Life;
@@ -1337,7 +1353,7 @@ public partial class GameHud : CanvasLayer
         // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false, barEmber);
-        her?.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree() && FadeAmount < 0.5f, herAt);
+        her?.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt);
         // The art readied: its glass flares once and settles to its ready glow.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
