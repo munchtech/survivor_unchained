@@ -397,7 +397,8 @@
       "reaver.boots.blackleather",
       "reaver.boots.darkleather",
       "reaver.boots.fur",
-      "reaver.boots.oldleather",
+      "reaver.boots.hide",
+      "reaver.boots.rawhide",
       "reaver.boots.thread"
     ],
     "tuck": "armor_tuck/reaver.boots.bin",

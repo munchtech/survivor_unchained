@@ -230,5 +230,17 @@
   ],
   "roughness": 0.3,
   "zone": "metal"
+ },
+ "hide": {
+  "kind": "leather",
+  "repeats": 3,
+  "rough_floor": 0.75,
+  "zone": "leather"
+ },
+ "rawhide": {
+  "kind": "leather",
+  "repeats": 3,
+  "rough_floor": 0.6,
+  "zone": "leather"
  }
 }
