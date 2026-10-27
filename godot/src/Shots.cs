@@ -115,6 +115,7 @@ public partial class Shots : Node
                 GetViewport().GetTexture().GetImage().SavePng(hf);
                 GetTree().Paused = false;
                 Ui.LifeLamp.PoolHeld = false;
+                Ui.HerLight.PoolHeld = false;
                 hudNext++; hudPhase = 0;
                 if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { GetTree().Quit(); return; }
             }
@@ -132,6 +133,9 @@ public partial class Shots : Node
                     GetTree().Paused = true;
                     lamp.Pool.Visible = false;
                     Ui.LifeLamp.PoolHeld = true;
+                    // (--hud-life her: her own light on the ground, held off the same way)
+                    if (Ui.HerLight.Live is { } herL) herL.Pool.Visible = false;
+                    Ui.HerLight.PoolHeld = true;
                     hudAt = time; hudPhase = 2;
                     return;
                 }
@@ -171,7 +175,7 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
-            GD.Print($"saved {f} at {time:0.00}s{HerAt()}");
+            GD.Print($"saved {f} at {time:0.00}s{HerAt()}{(Ui.HerLight.Live is { } hl ? $" life {hl.LifeNow:0.000}" : "")}");
         }
         if (until > 0 && time >= until) { GetTree().Quit(); return; }
         if (taken >= count) return;

@@ -69,6 +69,9 @@ public partial class GameHud : CanvasLayer
     ColorRect underFill = null!, underShield = null!;
     float underK = 1, underShieldK, underAlpha;
     bool underWanted;
+    // HUD variant "her life" (--hud-life her, HerLight.cs): no lamp; her bar, her light and the edges carry her life.
+    HerLight? her;
+    Vector2? herAt;
     // The corner: the minimap over the place's name and the objectives.
     Minimap minimap = null!;
     VBoxContainer corner = null!;
@@ -120,6 +123,7 @@ public partial class GameHud : CanvasLayer
         // the life lamp's light on the ground: over the world, under everything on the HUD
         root.AddChild(irons.Life.Pool);
         root.MoveChild(irons.Life.Pool, 0);
+        if (HerLight.On) BuildHer();
         BuildTally();
         BuildCorner();
         BuildEdges();
@@ -257,6 +261,25 @@ public partial class GameHud : CanvasLayer
         underShield = new ColorRect { Color = Style.Shield, Position = new Vector2(1, 1), Size = new Vector2(0, 3), MouseFilter = Control.MouseFilterEnum.Ignore };
         back.AddChild(underShield);
         combat.AddChild(under);
+    }
+
+    /// <summary>HUD variant "her life" (--hud-life her): the lamp hidden (its number and pool go with it), the
+    /// chain's left end in a forged ring where the lamp's eye held it, what is on her (statuses) where the lamp
+    /// stood; her bar, her light on the ground and the low-life edges (HerLight).</summary>
+    void BuildHer()
+    {
+        irons.Life.Visible = false;
+        irons.AddChild(new ChainEnd());
+        irons.Statuses.Position = new Vector2(Instrument.LifeAt.X - 150, Instrument.SmallY - 15);
+        her = new HerLight();
+        root.AddChild(her);
+        root.AddChild(her.Pool);
+        root.MoveChild(her.Pool, 0);
+        play.AddChild(her.Edge);
+        play.MoveChild(her.Edge, 0);
+        combat.AddChild(her.Under);
+        under.Visible = false;
+        if (Args.Get("hurt-mul") is string hm) SurvivorUnchained.Sim.Battle.HurtMul = Args.Num("hurt-mul", 1);
     }
 
     /// <summary>The minimap's top: low enough that the day's path over its bezel clears the screen's edge.</summary>
@@ -1044,6 +1067,7 @@ public partial class GameHud : CanvasLayer
     public void Follow(Vector2? at)
     {
         if (at is { } p) under.Position = p + new Vector2(-38, 22);
+        herAt = at;
         underWanted &= at != null;
     }
 
@@ -1313,6 +1337,7 @@ public partial class GameHud : CanvasLayer
         // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false, barEmber);
+        her?.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree() && FadeAmount < 0.5f, herAt);
         // The art readied: its glass flares once and settles to its ready glow.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
