@@ -1251,19 +1251,25 @@ public partial class Game : Node, IZoneHost
             // faded all the time)
             if (hud.FigureRect is Rect2 fig)
             {
-                bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && fig.HasPoint(camera.UnprojectPosition(w)); }
-                float gy = at.Y + 1;
-                bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
-                if (!behind)
-                    foreach (var e in fb2.Enemies.Living())
-                        if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { behind = true; break; }
-                marks.RemoveAll(m => m.Until < playedT);
-                if (!behind)
-                    foreach (var m in marks)
-                        // (its middle and four points round its edge)
-                        if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
-                            || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
-                hud.FigureBehind(behind);
+                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone)
+                bool Behind(Rect2 rect)
+                {
+                    bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && rect.HasPoint(camera.UnprojectPosition(w)); }
+                    float gy = at.Y + 1;
+                    bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
+                    if (!behind)
+                        foreach (var e in fb2.Enemies.Living())
+                            if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { behind = true; break; }
+                    marks.RemoveAll(m => m.Until < playedT);
+                    if (!behind)
+                        foreach (var m in marks)
+                            // (its middle and four points round its edge)
+                            if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
+                                || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
+                    return behind;
+                }
+                hud.FigureBehind(Behind(fig));
+                hud.RiverBehind(Behind(Ui.DgRiver.BandRect));
             }
             if (near != null)
             {

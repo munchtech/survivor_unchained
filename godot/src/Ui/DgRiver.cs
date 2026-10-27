@@ -9,9 +9,9 @@ namespace SurvivorUnchained.Ui;
 /// is the bar (art/ui/dg_river, tools/uiforge/dg_river_cut.py: the owner's picked concept's own bar, d1v 5071, at
 /// its 0.615 scale). Drawn under her figure: where she is solid she hides it, so its strands come out of her back
 /// hair. The six seats are hair-bound rings in the current (Socket draws them, Seat), the Flare's glass sits in
-/// the eddy at its right end (Flare), the draught and the dash where the concept has them. Until piece 3's gold
-/// thread, her experience (by night the ember) runs as a plain ember line on the river's crest (Crest: the
-/// polyline piece 3 runs on), its level on a small boss where it leaves her hair (Thread).
+/// the eddy at its right end (Flare), the draught and the dash where the concept has them. Piece 3: her
+/// experience (by night the ember) runs as a fine gold thread on the river's crest (Crest), its level on a
+/// gold-rimmed knot where it leaves her hair (Thread).
 /// </summary>
 public partial class DgRiver : Control
 {
@@ -76,6 +76,28 @@ public partial class DgRiver : Control
 
     public readonly ThreadLine Thread;
 
+    /// <summary>The band a foe or a mark is "behind the river" in (1080 px): the art from its top where it leaves her
+    /// hair (y 880) down.</summary>
+    public static Rect2 BandRect => new(At.X, 880, ArtSize.X, 1080 - 880);
+    /// <summary>The survivor, an elite or a marked attack behind the river (Game sets it each frame): the river's art
+    /// alone fades as her figure does (LifeLamp's times); the seats' glyphs, the thread and the orb stay at full.</summary>
+    public bool Behind;
+    float alpha = 1, clearFor = 99;
+
+    public override void _Process(double delta)
+    {
+        float dt = (float)delta;
+        clearFor = Behind ? 0 : clearFor + dt;
+        bool dim = clearFor < LifeLamp.FadeHold;
+        float a = Mathf.MoveToward(alpha, dim ? LifeLamp.FadeTo : 1, dt * (1 - LifeLamp.FadeTo) / (dim ? LifeLamp.FadeTime : LifeLamp.FadeBack));
+        if (a != alpha)
+        {
+            if ((a <= LifeLamp.FadeTo + 0.001f) != (alpha <= LifeLamp.FadeTo + 0.001f) && Args.Has("shot")) GD.Print($"dg river fade alpha {a:0.00}");
+            alpha = a;
+            SelfModulate = Colors.White with { A = alpha };
+        }
+    }
+
     public DgRiver()
     {
         MouseFilter = MouseFilterEnum.Ignore;
@@ -94,18 +116,22 @@ public partial class DgRiver : Control
     public static Texture2D? Ring(int i) => UiArt.Art($"{Dir}/ring_{i % 6}.png");
     public static Texture2D? Well(int i) => UiArt.Art($"{Dir}/well_{i % 6}.png");
 
-    /// <summary>Until piece 3: her experience (by night the ember) as an ember line along the crest, a dark groove
-    /// the whole way, lit to how full, a spark at its lead; its level on a small bronze boss at its left end. A new
-    /// level flashes it (Rise).</summary>
+    /// <summary>Piece 3, the gold thread: her experience (by night the ember) as a fine gold wire inlaid along the
+    /// river's crest. Unfilled it is a dull bronze hairline in its groove; filled it is polished gold, by night
+    /// heated to an ember gold. Its lead is a small bead that sparks when it grows; now and then a glint runs along
+    /// the lit wire. Its level sits on a gold-rimmed knot where it leaves her hair. A new level flashes it (Rise).
+    /// --hud-pin day=1|0 holds the day's or the night's look for pictures.</summary>
     public partial class ThreadLine : Control
     {
-        float fill, flash;
+        float fill, flash, spark, glintT = 2.5f;
         /// <summary>A callout points at it: the heat runs along all of it (0 to 1).</summary>
         public float Pulse;
         bool ember = true;
         int level = 1;
         string drawn = "";
         static GradientTexture2D? soft;
+        static readonly Color GoldLit = new("#e6bf72"), GoldHot = new("#fff0c4"), EmberLit = new("#ffa848"), EmberHot = new("#ffe2a8"),
+            Wire = new(0.50f, 0.39f, 0.22f, 0.80f);
 
         public ThreadLine()
         {
@@ -116,6 +142,8 @@ public partial class DgRiver : Control
         public void Set(float fill, bool ember, int level)
         {
             fill = Mathf.Clamp(fill, 0, 1);
+            if (HudPin.Day is bool day) ember = !day;
+            if (ember == this.ember && level == this.level && fill > this.fill + 0.0015f) spark = 1;
             string key = $"{fill:0.000}|{ember}|{level}";
             this.fill = fill; this.ember = ember; this.level = Math.Max(1, level);
             if (key != drawn) { drawn = key; QueueRedraw(); }
@@ -125,65 +153,111 @@ public partial class DgRiver : Control
 
         public override void _Process(double delta)
         {
-            if (flash > 0) { flash = Math.Max(0, flash - (float)delta * 1.6f); QueueRedraw(); }
-            else if (Pulse > 0) QueueRedraw();
+            float dt = (float)delta;
+            bool live = false;
+            if (flash > 0) { flash = Math.Max(0, flash - dt * 1.6f); live = true; }
+            if (spark > 0) { spark = Math.Max(0, spark - dt * 2.2f); live = true; }
+            // (a glint runs along the lit wire every seven seconds or so, 1.4 s long; between, nothing redraws)
+            glintT -= dt;
+            if (glintT < -1.5f) { glintT = 6f; live = true; }
+            if (glintT < 0 && fill > 0.04f) live = true;
+            if (live || Pulse > 0) QueueRedraw();
+        }
+
+        /// <summary>The point at length s along the line (and the index past it).</summary>
+        static Vector2 At(Vector2[] pts, float[] len, float s, out int k)
+        {
+            for (k = 1; k < pts.Length; k++)
+                if (len[k] >= s) return pts[k - 1].Lerp(pts[k], (s - len[k - 1]) / Math.Max(1e-3f, len[k] - len[k - 1]));
+            k = pts.Length - 1;
+            return pts[^1];
+        }
+
+        static Vector2[] Part(Vector2[] pts, float[] len, float s0, float s1)
+        {
+            var l = new List<Vector2> { At(pts, len, s0, out int k0) };
+            for (int i = k0; i < pts.Length && len[i] < s1; i++) l.Add(pts[i]);
+            l.Add(At(pts, len, s1, out _));
+            return l.ToArray();
+        }
+
+        static Vector2[] Shift(Vector2[] a, float dy)
+        {
+            var o = new Vector2[a.Length];
+            for (int i = 0; i < a.Length; i++) o[i] = a[i] + new Vector2(0, dy);
+            return o;
         }
 
         public override void _Draw()
         {
-            var pts = Crest;
-            // (the lengths along it, so the fill is by length)
+            // (the wire rides a hair above the crest's line, on the wave's top)
+            var src = Crest;
+            var pts = new Vector2[src.Length];
+            for (int i = 0; i < src.Length; i++) pts[i] = src[i] + new Vector2(0, -1);
             var len = new float[pts.Length];
             for (int i = 1; i < pts.Length; i++) len[i] = len[i - 1] + pts[i].DistanceTo(pts[i - 1]);
             float total = len[^1];
-            DrawPolyline(pts, new Color(0.03f, 0.022f, 0.016f, 0.82f), 4.2f, true);
-            DrawPolyline(pts, new Color(0.45f, 0.36f, 0.24f, 0.55f), 1.4f, true);
-            var lit = ember ? new Color("#ff9a40") : new Color("#f2cf86");
-            var hot = ember ? new Color("#ffd8a0") : new Color("#fff0c8");
-            float reach = Math.Max(fill, flash) * total;
+            float start = BossR + 1;  // (from the knot's rim)
+            // its groove: a dark cut, and in it the wire, dull
+            var all = Part(pts, len, start, total);
+            DrawPolyline(Shift(all, 0.9f), new Color(0.02f, 0.015f, 0.01f, 0.75f), 3.6f, true);
+            DrawPolyline(all, Wire, 1.25f, true);
+            var lit = ember ? EmberLit : GoldLit;
+            var hot = ember ? EmberHot : GoldHot;
+            float reach = start + Math.Max(fill, flash) * (total - start);
             if (Pulse > 0)
             {
                 float t = (Time.GetTicksMsec() / 1000f) % 1.8f / 1.2f;
-                reach = Math.Max(reach, Mathf.Clamp(t, 0, 1) * total * Pulse);
+                reach = Math.Max(reach, start + Mathf.Clamp(t, 0, 1) * (total - start) * Pulse);
             }
-            if (reach > 0.5f)
+            soft ??= new GradientTexture2D
             {
-                var part = new List<Vector2> { pts[0] };
-                Vector2 lead = pts[0];
-                for (int i = 1; i < pts.Length; i++)
+                Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
+                Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0.3f }, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 0.3f, 1f } },
+            };
+            if (reach > start + 0.5f)
+            {
+                var pa = Part(pts, len, start, reach);
+                // the lit wire: a soft light round it (warmer by night), the gold, a bright hair along its top
+                DrawPolyline(pa, lit with { A = ember ? 0.20f : 0.13f }, 6f, true);
+                DrawPolyline(pa, lit.Darkened(0.35f), 2.6f, true);
+                DrawPolyline(pa, lit, 1.9f, true);
+                DrawPolyline(Shift(pa, -0.55f), hot with { A = 0.85f }, 0.9f, true);
+                // the glint: a short bright run sliding along the lit wire
+                if (glintT < 0 && reach - start > 30)
                 {
-                    if (len[i] <= reach) { part.Add(pts[i]); lead = pts[i]; continue; }
-                    float k = (reach - len[i - 1]) / Math.Max(1e-3f, len[i] - len[i - 1]);
-                    lead = pts[i - 1].Lerp(pts[i], k);
-                    part.Add(lead);
-                    break;
+                    float k = Mathf.Clamp(-glintT / 1.4f, 0, 1);
+                    float g = start + k * (reach - start + 40) - 20;
+                    for (int j = -3; j <= 3; j++)
+                    {
+                        float s0 = g + j * 4, a = 0.55f * (1 - Math.Abs(j) / 4f) * Mathf.Sin(Mathf.Pi * k);
+                        if (s0 < start || s0 + 4 > reach) continue;
+                        DrawPolyline(Shift(Part(pts, len, s0, s0 + 4), -0.4f), Colors.White with { A = a }, 1.3f, true);
+                    }
                 }
-                var pa = part.ToArray();
-                DrawPolyline(pa, lit with { A = 0.22f }, 7f, true);
-                DrawPolyline(pa, lit, 2.4f, true);
-                DrawPolyline(pa, hot with { A = 0.7f }, 1f, true);
-                soft ??= new GradientTexture2D
-                {
-                    Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
-                    Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0.3f }, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 0.3f, 1f } },
-                };
-                float sr = 7 + 6 * flash;
-                DrawTextureRect(soft, new Rect2(lead - new Vector2(sr, sr), new Vector2(sr * 2, sr * 2)), false, hot with { A = 0.9f });
+                // the lead: a bead, sparking as it grows
+                var lead = At(pts, len, reach, out _);
+                float sr = 6 + 5 * Math.Max(flash, spark);
+                DrawTextureRect(soft, new Rect2(lead - new Vector2(sr, sr), new Vector2(sr * 2, sr * 2)), false, lit with { A = 0.55f + 0.4f * spark });
+                DrawCircle(lead, 2.3f, lit.Darkened(0.2f), true, -1, true);
+                DrawCircle(lead + new Vector2(-0.5f, -0.6f), 1.2f, hot, true, -1, true);
             }
-            // the level's boss: a bronze stud, dark in its middle, the number in cream
+            // the knot: the level on a bronze boss with a gold rim, where the thread leaves her hair
             var c = BossAt;
-            DrawCircle(c + new Vector2(1, 1.5f), BossR + 1.5f, new Color(0, 0, 0, 0.55f), true, -1, true);
-            DrawCircle(c, BossR, new Color(0.40f, 0.30f, 0.17f), true, -1, true);
-            DrawArc(c, BossR - 0.8f, Mathf.Pi * 1.05f, Mathf.Pi * 1.75f, 16, new Color(0.95f, 0.80f, 0.52f, 0.75f), 1.3f, true);
-            DrawCircle(c, BossR - 3f, new Color(0.07f, 0.05f, 0.035f), true, -1, true);
-            if (flash > 0) DrawCircle(c, BossR - 3f, lit with { A = 0.6f * flash }, true, -1, true);
+            DrawCircle(c + new Vector2(1, 1.6f), BossR + 1.8f, new Color(0, 0, 0, 0.6f), true, -1, true);
+            DrawCircle(c, BossR + 0.6f, new Color(0.30f, 0.22f, 0.12f), true, -1, true);
+            DrawArc(c, BossR - 0.6f, 0, Mathf.Tau, 48, new Color(0.62f, 0.48f, 0.27f), 2.4f, true);
+            DrawArc(c, BossR - 0.4f, Mathf.Pi * 0.95f, Mathf.Pi * 1.85f, 24, new Color(1f, 0.88f, 0.60f, 0.85f), 1.3f, true);
+            DrawArc(c, BossR - 0.9f, Mathf.Pi * 0.05f, Mathf.Pi * 0.8f, 24, new Color(0.12f, 0.08f, 0.04f, 0.8f), 1.1f, true);
+            DrawCircle(c, BossR - 2.6f, new Color(0.06f, 0.045f, 0.03f), true, -1, true);
+            if (flash > 0) DrawCircle(c, BossR - 2.6f, lit with { A = 0.6f * flash }, true, -1, true);
             var f = Style.Display;
             string s = level.ToString();
-            int fs = s.Length > 1 ? 13 : 15;
+            int fs = s.Length > 1 ? 12 : 14;
             var sz = f.GetStringSize(s, HorizontalAlignment.Left, -1, fs);
-            var p = new Vector2(c.X - sz.X / 2, c.Y + fs * 0.36f);
-            DrawString(f, p + new Vector2(0, 1), s, HorizontalAlignment.Left, -1, fs, new Color(0, 0, 0, 0.8f));
-            DrawString(f, p, s, HorizontalAlignment.Left, -1, fs, LifeLamp.Cream);
+            var p = new Vector2(Mathf.Round(c.X - sz.X / 2), Mathf.Round(c.Y + fs * 0.36f));
+            DrawString(f, p + new Vector2(0, 1), s, HorizontalAlignment.Left, -1, fs, new Color(0, 0, 0, 0.85f));
+            DrawString(f, p, s, HorizontalAlignment.Left, -1, fs, new Color("#f2d9a0"));
         }
     }
 }

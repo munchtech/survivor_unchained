@@ -324,7 +324,8 @@ public partial class GameHud : CanvasLayer
         hintBox.Visible = false;
         play.AddChild(hintBox);
         subtitle = Style.V(2);
-        subtitle.Position = new Vector2(504, 1080 - 228 - 90);
+        // (the Drowned Girl: 24 px clear above her head, top y 818, and the river's top)
+        subtitle.Position = new Vector2(504, (LifeLamp.Drowned ? 818 - 24 : 1080 - 228) - 90);
         subtitle.Size = new Vector2(912, 90);
         ((VBoxContainer)subtitle).Alignment = BoxContainer.AlignmentMode.End;
         sayWho = Style.Label("", Style.Display, 17, Style.GoldHi, false, HorizontalAlignment.Center);
@@ -1085,6 +1086,7 @@ public partial class GameHud : CanvasLayer
     /// other HUDs); Game tells her when a foe or the survivor stands behind it, and she fades.</summary>
     public Rect2? FigureRect => LifeLamp.Drowned ? irons.Life.FadeRect : null;
     public void FigureBehind(bool behind) => irons.Life.Behind = behind;
+    public void RiverBehind(bool behind) { if (irons.River != null) irons.River.Behind = behind; }
 
     public void Follow(Vector2? at)
     {
