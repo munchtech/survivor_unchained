@@ -377,25 +377,30 @@ def main(shape, check=None):
 #            clear: the same, all of it
 #   ember    (y0, y1): rows whose orange glow is the embers (mask R; the cold painting has them dark)
 #   wick     (x, y): the flame's foot; flame_full its height at full (1080 px); eye the chain's first link;
+#   break_   (deg, width deg, splay px): the shackle snapped there (orb_break); luma the iron's mean light;
+#   rim      a cool light line on the outer edge above the glass's middle (its strength);
 #   number   where her life's figures stand (none: on the glass, high in its middle, clear of the level's read); tint the iron's cool cast (blue-black); clip rows cut off below
 # Out to lamp_life/<theme>/: lamp_lit.png (the casing, the embers glowing), lamp_cold.png (embers dark),
 # lamp_mask.png (R embers, G the iron near the flame), lamp_flame.png (lamp only), lamp_geo.json.
 SRC16 = INPUTS + "/ui16_orb_src/"
 ORBS = {
-    # The Broken Link: Krea seed 4604, a shackle snapped open at its upper right, its broken end bent out; the
-    # chain kept to the first link (the HUD's chain leaves from its foot)
-    "link": dict(src=SRC16 + "link/cand_4604.png", rows=[], tint=(0.80, 0.85, 0.95),
-                 eye=(507, 772), clip=785),
+    # The Broken Link (round 2, the judge: round 1's Krea 4604 read as a pale porthole with a latch): Krea link2
+    # seed 4613, a heavy hammered shackle ring, an iron link through its foot into a rusted one; the break made
+    # here (break_: at 2 o'clock, a jagged gap with bright raw fracture faces, the lower end splayed outward)
+    "link": dict(src=SRC16 + "link2/cand_4613.png", rows=[], tint=(0.80, 0.85, 0.95), luma=0.19,
+                 break_=(-34, 17, 30), bar=(420, (70, 110)), eye=(826, 734), eye_ring=True, clip=990),
     # The Held Dead's Warmth: Krea seed 4603, a riveted arch over a pierced brazier bowl; the arch's legs drawn
     # longer so the glass sits whole on the bowl's lip, the bowl squashed, the embers through its slots
     "ember": dict(src=SRC16 + "ember/cand_4603.png", rows=[(430, 520, 2.0), (620, 960, 0.62)], fit_top=True,
-                  front=(509, 565, 440, 37), ember=(600, 960), tint=(0.78, 0.80, 0.86), dark=0.82,
+                  front=(509, 565, 440, 37), ember=(600, 960), rim=1.0,
+                  slots=(665, 905, (0, 2, 4, 7, 9, 11)), eye_ring=True, tint=(0.78, 0.80, 0.86), dark=0.82,
                   eye=(930, 600)),
-    # Lamps Are Lit: Krea seed 4604, a lantern ring in a gimbal on a foot, a burner crown on its top; the wick
-    # cleared (the shader's flame), the crown's stem and the foot's stem shortened
-    "lamp": dict(src=SRC16 + "lamp/cand_4604.png", rows=[(205, 235, 0.3), (812, 868, 0.05), (880, 982, 0.7)],
-                 erase=[(470, 0, 555, 160)], clear=[(480, 0, 545, 90)], wick=(509, 162), flame_full=15, tint=(0.80, 0.83, 0.92),
-                 eye=(880, 500)),
+    # Lamps Are Lit (round 2, the judge: round 1's crowned gimbal read as a desk globe): Krea lamp2 seed 4615, a
+    # forged ring frame on three claws, a burner cup on an arm off its upper right shoulder (the flame stands in
+    # it, beside the glass, not over it); the wick cleared, the claws shortened
+    "lamp": dict(src=SRC16 + "lamp2/cand_4615.png", rows=[(830, 970, 0.55)], luma=0.19,
+                 erase=[(835, 30, 905, 118)], wick=(862, 112), flame_full=24, tint=(0.80, 0.83, 0.92),
+                 eye=(744, 925)),
 }
 ORB_TUCK = 6          # painting px the glass runs on under the iron round its opening
 ORB_FLOOR, ORB_TOP = 1066, 904
@@ -421,6 +426,91 @@ def orb_fit(m, c0, top=False, maxr=420):
     return cx, cy, float(np.sqrt(c + cx * cx + cy * cy))
 
 
+def orb_break(rgb, A, cx, cy, r, ang, width, splay):
+    """The shackle snapped: a gap at ang degrees (0 = 3 o'clock, negative up) width degrees wide, its edges
+    ragged; the end below it splayed outward (splay px at the break, easing back over 40 degrees); the fracture
+    faces (px within ~6 of the gap) returned for raw metal."""
+    H, W = A.shape
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    rr = np.hypot(xx - cx, yy - cy)
+    th = np.degrees(np.arctan2(yy - cy, xx - cx))
+    rng = np.random.default_rng(16)
+    jag = np.interp(rr, np.arange(0, 600, 9), rng.uniform(-1, 1, len(np.arange(0, 600, 9)))) * width * 0.07
+    t0, t1 = ang - width / 2 + jag, ang + width / 2 - jag * 0.7
+    # the lower end bent out: sample it from nearer the middle
+    past = np.clip(th - t1, 0, None)
+    s = splay * np.clip(1 - past / 40, 0, 1) ** 2 * (th > t1)
+    src_r = rr - s
+    sx = cx + src_r * np.cos(np.radians(th))
+    sy = cy + src_r * np.sin(np.radians(th))
+    warp = lambda a_: nd.map_coordinates(a_, [sy, sx], order=1, mode="constant")
+    rgb = np.stack([warp(rgb[..., i]) for i in range(3)], 2)
+    A = warp(A)
+    ring = rr > r - 4
+    gap = ((th > t0) & (th < t1) & ring).astype(np.float32)
+    gap = blur(gap, 0.8)
+    A = A * (1 - gap)
+    # the faces: just outside the gap's two edges, on the iron
+    dist = np.minimum(np.abs(th - t0), np.abs(th - t1)) * np.radians(1) * rr
+    face = np.clip(1.2 - dist / 7, 0, 1) * (1 - gap) * (A > 0.5) * ring
+    face *= 0.6 + 0.4 * blur(rng.random((H, W)), 0.6) / 0.5 * 0.5
+    return rgb, A, blur(face.astype(np.float32), 0.7)
+
+
+def orb_bar(rgb, A, cx, cy, r_in, r_out, skip):
+    """The shackle shaded as a round bar lit from the upper left (a lit ridge, its lower right in shadow), its
+    hammered texture kept at 60%; the sector skip (degrees, 90 = 6 o'clock: the link through it) left as painted."""
+    H, W = A.shape
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    rr = np.hypot(xx - cx, yy - cy)
+    dx, dy = (xx - cx) / np.maximum(rr, 1), (yy - cy) / np.maximum(rr, 1)
+    sgn = np.clip(2 * (rr - r_in) / (r_out - r_in) - 1, -1, 1)
+    nz = np.sqrt(np.clip(1 - sgn * sgn, 0, 1))
+    L = np.array([-0.55, -0.65, 0.55]); L /= np.linalg.norm(L)
+    Hh = L + np.array([0, 0, 1.0]); Hh /= np.linalg.norm(Hh)
+    nx, ny = sgn * dx, sgn * dy
+    diff = np.clip(nx * L[0] + ny * L[1] + nz * L[2], 0, 1)
+    spec = np.clip(nx * Hh[0] + ny * Hh[1] + nz * Hh[2], 0, 1) ** 28
+    tone = 0.07 + 0.42 * diff + 0.40 * spec
+    lum = rgb.mean(2)
+    detail = lum - blur(lum, 5)
+    bar = (tone + 0.6 * detail)[..., None] * np.array([0.95, 1.0, 1.08])
+    th = np.degrees(np.arctan2(yy - cy, xx - cx))
+    keep = np.clip((np.abs(th - (skip[0] + skip[1]) / 2) - (skip[1] - skip[0]) / 2) / 10, 0, 1)
+    w = (A > 0.02) * (rr > r_in - 6) * (rr < r_out + 45) * keep
+    return rgb * (1 - w[..., None]) + bar * w[..., None]
+
+
+def orb_slots(rgb, A, y0, y1, keep):
+    """A grille's slots thinned to heavier bars: the slots (dark or glowing runs in rows y0-y1) numbered left to
+    right, those not in keep filled with the iron either side (blended across, the left bar's grain laid on)."""
+    lum = rgb.mean(2)
+    hot = (rgb[..., 0] - rgb[..., 2] > 0.14) & (rgb[..., 0] > 0.22)
+    m = np.zeros(lum.shape, bool)
+    m[y0:y1] = ((lum < 0.09) | hot)[y0:y1] & (A[y0:y1] > 0.5)
+    m = nd.binary_opening(m, iterations=1)
+    lab, n = nd.label(m)
+    sz = nd.sum(m, lab, range(1, n + 1))
+    big = [i + 1 for i in range(n) if sz[i] > 800]
+    big.sort(key=lambda i: nd.center_of_mass(m, lab, i)[1])
+    print(f"slots: {len(big)} found, keeping {keep}")
+    out = rgb.copy()
+    detail = rgb - np.stack([blur(rgb[..., i], 4) for i in range(3)], 2)
+    for j, i in enumerate(big):
+        if j in keep:
+            continue
+        sm = nd.binary_dilation(lab == i, iterations=3)
+        ys = np.where(sm.any(1))[0]
+        for y in ys:
+            xs_ = np.where(sm[y])[0]
+            a, b = xs_[0] - 2, xs_[-1] + 3
+            w = b - a
+            t_ = np.linspace(0, 1, w)[:, None]
+            base = rgb[y, a] * (1 - t_) + rgb[y, b] * t_
+            out[y, a:b] = base + detail[y, a - w:b - w] * 0.8
+    return out
+
+
 def orb(theme, check=None):
     S = ORBS[theme]
     out = os.path.join(ART, theme)
@@ -443,6 +533,13 @@ def orb(theme, check=None):
         A[S["clip"]:] *= 0
     cx, cy, r = orb_fit(A > 0.5, (W0 / 2, H0 * 0.42), S.get("fit_top", False))
     print(f"{theme}: opening c ({cx:.1f}, {cy:.1f}) r {r:.1f}")
+    face = np.zeros((H0, W0), np.float32)
+    if "break_" in S:
+        rgb, A, face = orb_break(rgb, A, cx, cy, r, *S["break_"])
+    if "bar" in S:
+        rgb = orb_bar(rgb, A, cx, cy, r, *S["bar"])
+    if "slots" in S:
+        rgb = orb_slots(rgb, A, *S["slots"])
     # the embers: orange light in the bowl's rows (lit keeps them; cold has them dark, the shader brings them up)
     emb = np.zeros((H0, W0), np.float32)
     if "ember" in S:
@@ -453,6 +550,19 @@ def orb(theme, check=None):
     # the iron cooled to blue-black, the painting's light kept
     g = rgb.mean(2, keepdims=True)
     iron = g * np.array(S["tint"]) * S.get("dark", 1.0) + (rgb - g) * 0.18
+    if "luma" in S:
+        # (the iron at the HUD's own value: its mean light over the casing)
+        cur = float((iron.mean(2) * A).sum() / max(A.sum(), 1))
+        iron *= S["luma"] / cur
+        print(f"{theme}: iron luma {cur:.3f} -> {S['luma']}")
+    # the fracture's raw metal: bright, cold, ragged
+    raw = np.array([0.82, 0.85, 0.90]) * (0.8 + 0.4 * np.random.default_rng(7).random((H0, W0, 1)))
+    iron = iron * (1 - face[..., None]) + raw * face[..., None]
+    if "rim" in S:
+        # a cool line of light on the outer edge above the glass's middle (it holds against dark ground)
+        edge = np.clip(A - blur(nd.grey_erosion(A, size=(7, 7)), 1.0), 0, 1) * (yy_ := np.mgrid[0:H0, 0:W0][0] < cy)
+        edge *= np.hypot(np.mgrid[0:H0, 0:W0][1] - cx, np.mgrid[0:H0, 0:W0][0] - cy) > r + 12
+        iron += edge[..., None] * np.array([0.30, 0.34, 0.42]) * S["rim"]
     lit = iron * (1 - emb[..., None]) + rgb * emb[..., None]
     cold = iron * (1 - emb[..., None]) + rgb * emb[..., None] * 0.12
     for y0, y1, f in S["rows"]:
@@ -496,6 +606,8 @@ def orb(theme, check=None):
     print(f"{theme}: k {k1:.4f}  glass {2 * r * k1:.1f} px  casing {(bot_row - top_row) * k1:.1f} px")
     # into the canvas at twice the 1080 size, the orb's middle at the canvas's middle
     half = max(cx - x0_, x1_ - cx) * k1 + 4
+    if S.get("eye_ring"):
+        half = max(half, (S["eye"][0] - cx) * k1 + 30)
     CANVAS = (2 * int(np.ceil(half)), int(room + FOOT_PAD + 2))
     cw, ch = CANVAS[0] * 2, CANVAS[1] * 2
     K = 2 * k1
@@ -513,8 +625,30 @@ def orb(theme, check=None):
         est = np.stack([blur(c_[..., i] * A, 3) for i in range(3)], 2) / np.maximum(wsum, 1e-4)
         return np.where(A[..., None] > 0.02, c_, est)
     os.makedirs(out, exist_ok=True)
-    canvas(np.concatenate([bleed(lit), A[..., None]], 2), "RGBA").save(os.path.join(out, "lamp_lit.png"))
-    canvas(np.concatenate([bleed(cold), A[..., None]], 2), "RGBA").save(os.path.join(out, "lamp_cold.png"))
+    L_im = canvas(np.concatenate([bleed(lit), A[..., None]], 2), "RGBA")
+    C_im = canvas(np.concatenate([bleed(cold), A[..., None]], 2), "RGBA")
+    eye_px = None
+    if S.get("eye_ring"):
+        # the chain's eye: the squat lamp's forged carrying ring (Krea lamp_b seed 4203), on its side, its left end
+        # on the casing's iron at the eye; the HUD's chain hangs from its hole
+        rs = load(S.get("ring", SRC14 + "cand_4203_cut.png"))
+        ra_ = np.asarray(rs, np.float32) / 255
+        rrows = (ra_[..., 3] > 0.5).sum(1)
+        r_bot = int(np.where(rrows > 60)[0][0]) - 1
+        rx0, rx1 = np.where(ra_[:r_bot, :, 3].max(0) > 0.5)[0][[0, -1]]
+        ring = ra_[:r_bot, rx0:rx1 + 1].copy()
+        g_ = ring[..., :3].mean(2, keepdims=True)
+        ring[..., :3] = g_ * np.array([0.80, 0.84, 0.92]) * 0.8 + (ring[..., :3] - g_) * 0.15
+        ri = Image.fromarray((np.clip(ring, 0, 1) * 255).astype(np.uint8), "RGBA").rotate(-90, expand=True, resample=Image.BICUBIC)
+        kr = RING_1080 * 2 / ri.height
+        ri = ri.resize((max(1, round(ri.width * kr)), round(ri.height * kr)), Image.LANCZOS)
+        ex2 = ox + S["eye"][0] * K - ri.width * 0.22
+        ey2 = oy + rowmap(S["eye"][1]) * K - ri.height / 2
+        for im_ in (L_im, C_im):
+            im_.alpha_composite(ri, (round(ex2), round(ey2)))
+        eye_px = [round((ex2 + ri.width * 0.62) / 2, 2), round((ey2 + ri.height / 2) / 2, 2)]
+    L_im.save(os.path.join(out, "lamp_lit.png"))
+    C_im.save(os.path.join(out, "lamp_cold.png"))
     near = np.zeros((H, W0), np.float32)
     if "wick" in S:
         yy2, xx2 = np.mgrid[0:H, 0:W0].astype(np.float32)
@@ -530,6 +664,8 @@ def orb(theme, check=None):
                floor=ORB_FLOOR, top_line=ORB_TOP,
                number_y=at(*S["number"])[1] if "number" in S else round(c1080[1] - 0.45 * r * k1, 2), flame_full=ff, glass_px=round(2 * r * k1, 1))
     geo["footprint"] = round(geo["foot"] - geo["top"], 1)
+    if eye_px:
+        geo["eye"] = eye_px
     if "wick" in S:
         import shutil
         geo["wick"] = at(*S["wick"])
