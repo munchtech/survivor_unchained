@@ -342,8 +342,10 @@ def wand_along(lean=18.0, out=0.0):
 # moved it (blend 6-8 deg).
 TRAIL_ARM = ((20, 14, 120, -40), (-25, 13, 120, -40))
 TRAIL = dict(back=53.0, out=-5.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=-22.0)
-DAGGER_ARM = ((10, 2, 116, -35), (-25, 1, 120, -35))
-DAGGER_TRAIL = dict(TRAIL, back=55.0, out=-8.0, out_swing=-10.0)
+# The daggers keep round 1's near-straight carry (Animation 55 r2's bent arms put both upper arms 45-68 mm into all
+# four outfits on held frames); they passed the runs1 judge with notes.
+DAGGER_ARM = ((10, 1, 148, -70), (-10, 0, 146, -70))
+DAGGER_TRAIL = dict(back=26.0, out=0.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=10.0)
 # The reaver's axe: forward the fist no more than 10 ahead of hanging (at 20, the forearm reached ahead and the wrist
 # could only trail the haft 20-30 out); its upper arm 22-24 out (at 15 it met her outfits, runs1). The second axe
 # (run_reaver_axes) on the same carry mirrored (it hung near vertical from a straight arm, a different hold).

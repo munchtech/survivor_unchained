@@ -39,6 +39,26 @@ public partial class PersonView : Node3D, INpcView
         if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) { held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l"); pieces["forearm.l"] = f; }
     }
 
+    /// <summary>A held piece's long axis in its bone's frame (toward its far end from the bone), zero if the slot holds
+    /// none (HerArmHold swings it along its arc).</summary>
+    public Vector3 PieceAxis(string slot)
+    {
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || mount.GetParent() is not Node3D att || !mount.IsInsideTree()) return Vector3.Zero;
+        var toBone = att.GlobalTransform.AffineInverse();
+        Vector3 best = Vector3.Zero;
+        foreach (var n in mount.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            if (n is not MeshInstance3D mi) continue;
+            var box = mi.GetAabb();
+            for (int c = 0; c < 8; c++)
+            {
+                var p = toBone * (mi.GlobalTransform * box.GetEndpoint(c));
+                if (p.LengthSquared() > best.LengthSquared()) best = p;
+            }
+        }
+        return best.LengthSquared() > 1e-8f ? best.Normalized() : Vector3.Zero;
+    }
+
     /// <summary>The weapon (Arms id) in each slot.</summary>
     readonly System.Collections.Generic.Dictionary<string, string> pieces = new();
 
