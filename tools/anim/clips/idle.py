@@ -498,9 +498,13 @@ def _smooth(u):
 # The left breaks the mirror: its arm hangs straighter (hand 1.4 cm lower, the shoulder ~6 deg back: the elbow ~15-22 deg),
 # its haft ~8 deg nearer plumb (pitch -73) and its splay 4-5 deg wider (13 deg out), so the pair read as two angles and the
 # head stays off her left foot.)
+# (Animation 56, the max judge: at 330 the left haft hung near parallel to her left shin, its head on her moccasin's toe.
+# Asked back -30 -> -19 (got: the wrist again delivers less than asked), the hand 8 mm higher and 5 mm forward: measured
+# pitch -73.5 -> ~-78, splay 12-13, the head 7-8 cm further back (134-173 -> ~55-95 mm ahead of her toe), the elbow 19-25,
+# >= 100 mm off her legs. The right stays at -65, so the two never read parallel.)
 AXE_IDLE = {"hand": (0.085, -0.51, 0.05), "pole": (0.3, -0.2, -1.0), "out": 6.0, "back": -45.0, "edge": 0.0,
             "sway": 0.010, "knuckles": False}
-AXE_IDLE_L = {"hand": (0.085, -0.524, 0.0), "out": 10.0, "back": -30.0}   # the left's own differences (mirrored otherwise)
+AXE_IDLE_L = {"hand": (0.085, -0.516, 0.005), "out": 10.0, "back": -19.0}   # the left's own differences (mirrored otherwise)
 # Her fist closed higher on the haft (animation 55, 27 Oct: gripped at the very end of a long haft the axe read as held out
 # at arm's length): the fist `grip` m nearer the head, the end showing behind it. The clips carry it as a negative
 # "grip_slide" (the right) and "grip_slide_l" (the left; keyed.solve_frames slide_l, OwnClips.GripSlideL), the game sliding
@@ -725,6 +729,89 @@ DAGGERS_HAND_R = (0.05, -0.34, 0.24)
 DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 
 
+# Animation 56 (idles B): the four idles' own arms, each over its calling's captured standing (IDLE_ARMS: the idle alone
+# takes them; the clips keyed from the idle's arms, the stops, breaks, shows and the Flare, keep IDLES' own).
+# The owner's bar: effortlessly badass, loose and confident, nothing held at a weird angle.
+
+# The stalker's knives at ease (idle_stalker_daggers): each fist by her hip, a little ahead of it, the elbow soft, the blade
+# down and ahead (below level from every side, never jutting at the camera); not mirrored, the left a little higher and
+# further forward, its blade nearer level. Chest frame: the fist from its shoulder (x toward her left), the elbow's pole,
+# the blade's way.
+# (Animation 56: the blades' line 36-42 deg below level, the right splayed 25-29 deg out, the left 14-19; the elbows 26 and
+# 34; 24-27 mm off her thighs, where the first tries, fists in at her groin's width, put both tips 23-62 mm into them.)
+DAGGERS_IDLE = {"r": {"hand": (-0.05, -0.45, 0.22), "pole": (-0.5, -0.2, -1.0), "blade": (-0.40, -0.42, 0.80)},
+                "l": {"hand": (0.03, -0.42, 0.26), "pole": (0.5, -0.2, -1.0), "blade": (0.30, -0.50, 0.80)}}
+
+
+def stalker_knives(t, f):
+    """idle_stalker_daggers' arms (animation 56): the knife fighter at ease, DAGGERS_IDLE."""
+    a = {}
+    for s in "rl":
+        d = DAGGERS_IDLE[s]
+        a[f"hand_{s}"] = {"arc": arc_of(d["hand"]), "pole": d["pole"], "frame": "chest", "blade": _n(d["blade"]),
+                          "twist": 0.5, **({"knuckles": _n(d["knuckles"])} if "knuckles" in d else {})}
+        a[f"fingers_{s}"] = "grip"
+    return a
+
+
+# The wand at rest (idle_arcanist_wand, on the arcanist's standing; animation 56): the right arm let down by her thigh,
+# the elbow soft, the wand on the forearm's line pointing down and a little ahead (as the runs carry it, run.wand_along);
+# the left hand the staff idle's free one. Chest frame.
+# (The wand 40-44 deg below level and 14 deg out, ~20 deg off the forearm's line as the run's; the elbow 28; 45 mm off her
+# thigh.)
+WAND_IDLE = {"hand": (-0.045, -0.47, 0.17), "pole": (-0.4, -0.2, -1.0), "blade": (-0.24, -0.62, 0.75)}
+
+
+def arcanist_wand(t, f):
+    """idle_arcanist_wand's right arm (the left: the staff idle's free hand, build_one)."""
+    w = WAND_IDLE
+    return {"hand_r": {"arc": arc_of(w["hand"]), "pole": w["pole"], "frame": "chest", "blade": _n(w["blade"]), "twist": 0.5,
+                       **({"knuckles": _n(w["knuckles"])} if "knuckles" in w else {})},
+            "fingers_r": "grip"}
+
+
+arcanist_wand.free_left = True
+
+
+# The crossbow at a low ready (idle_stalker; animation 56): the carry of stalker() (STALKER_HAND_R/L, which the shot and
+# the stops share and keep) turned muzzle-down `pitch` deg about her right fist and moved by `shift` (chest frame, m), the
+# left hand carried with it on the fore-stock.
+# (The bow's line 26-28 deg below level before, pointing ~60 deg across her toward her left; now 36-38, its muzzle 29-32
+# below the wrist: an 11 deg turn.)
+STALKER_LOW = {"pitch": 11.0, "yaw": 38.0, "shift": (0.0, 0.0, 0.0)}
+_SHOULDER_X = 0.19   # (each shoulder's x off her middle at rest, the chest frame: the two hands' arcs in one space)
+
+
+def _arc_vec(arc):
+    az, el, r = (math.radians(arc[0]), math.radians(arc[1]), arc[2])
+    return np.array([math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)]) * r
+
+
+def stalker_low(t, f):
+    """idle_stalker's arms (animation 56): STALKER_LOW."""
+    from keyed import _axis_matrix
+    y = math.radians(STALKER_LOW["yaw"])
+    Rx = _axis_matrix([math.cos(y), 0.0, -math.sin(y)], STALKER_LOW["pitch"])
+    hr, hl = dict(STALKER_HAND_R["hand_r"]), dict(STALKER_HAND_L["hand_l"])
+    sh = np.array(STALKER_LOW["shift"], float)
+    pr = _arc_vec(hr["arc"]) + (-_SHOULDER_X, 0, 0)
+    pl = _arc_vec(hl["arc"]) + (_SHOULDER_X, 0, 0)
+    pl2 = pr + Rx @ (pl - pr)
+    hr["arc"] = arc_of(pr + sh - (-_SHOULDER_X, 0, 0))
+    hl["arc"] = arc_of(pl2 + sh - (_SHOULDER_X, 0, 0))
+    hr["blade"] = tuple(Rx @ np.array(STALKER_TOP, float))
+    for h in (hr, hl):
+        for k in ("knuckles", "blade"):
+            if k in h and not (h is hr and k == "blade"):
+                h[k] = tuple(Rx @ np.array(h[k], float))
+    return {"hand_r": hr, "hand_l": hl, "fingers_r": "grip", "fingers_l": "relaxed"}
+
+
+# The crossbow's top (hand_r +Z) in stalker()'s carry, the chest frame (stalker_top on the heroine, 27 Oct): turned with
+# the carry so the bow turns as one.
+STALKER_TOP = (0.5221272672374219, 0.8379472461150218, -0.15604051294925717)
+
+
 def free_arms(hand_l=(0.16, -0.46, 0.08), hand_r=(-0.14, -0.46, 0.08), reach=1.0, swing=0.012, pole_l=(0.3, -0.2, -1.0),
               pole_r=(-0.3, -0.2, -1.0)):
     """Free arms aimed from the shoulder in the chest's frame (animation 44-48's town arms, held out 17-25 deg to clear
@@ -841,6 +928,7 @@ IDLES = {
     "idle_reaver_axes": ("Angry", reaver_axes, "axes"),
     "idle_stalker": ("Crouched", stalker, "crossbow"),
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
+    "idle_arcanist_wand": ("Strutting", arcanist_wand, "wand"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
     "idle_warden_town": ("WiggleHips", WARDEN_TOWN, ""),
     # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
@@ -854,7 +942,10 @@ IDLES = {
 
 _bases = {}
 # An idle that stands on another's captured base (the same standing, other arms).
-SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_reaver_axes": "reaver", "idle_arcanist_staff_town": "arcanist_town"}
+SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_reaver_axes": "reaver", "idle_arcanist_staff_town": "arcanist_town",
+               "idle_arcanist_wand": "arcanist"}
+# The idles' own arms where IDLES' (which the stops and shows start or end on) differ (animation 56), and their own meta.
+IDLE_ARMS = {"idle_stalker_daggers": stalker_knives, "idle_stalker": stalker_low}
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
@@ -1130,25 +1221,27 @@ def _warden_grip(rig, clip):
 POST = {"idle_warden_town": _warden_grip}
 
 
+def build_one(rig, name):
+    """One idle (IDLES[name]) built: its arms (IDLE_ARMS over IDLES' own) on its captured base, its meta, its passes."""
+    style, arms, weapon = IDLES[name]
+    arms = IDLE_ARMS.get(name, arms)
+    base = base_of(rig, SHARES_BASE.get(name, name[5:]))
+    if arms is arcanist or getattr(arms, "free_left", False):
+        arms = _free_hand(rig, base, arms, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arms)
+    elif getattr(arms, "needs_base", False):
+        arms = arms(rig, base)
+    meta = {"weapon": weapon}
+    if name == "idle_arcanist":
+        meta.update(arc_grip())
+    if name in ("idle_reaver", "idle_reaver_axes"):
+        meta.update(axe_grip(name == "idle_reaver_axes"))
+    clip = layered(name, rig, base, arms, meta)
+    if name in POST:
+        clip = POST[name](rig, clip)
+    if name[5:] in TOWN or name == "idle_arcanist_staff_town":
+        clip = level_head(rig, clip)
+    return clip
+
+
 def clips(rig, want):
-    out = []
-    for name, (style, arms, weapon) in IDLES.items():
-        if want and not any(w in name for w in want):
-            continue
-        base = base_of(rig, SHARES_BASE.get(name, name[5:]))
-        if arms is arcanist:
-            arms = _free_hand(rig, base, arms, ARC_STS[ARC_ST]["hand"]) if ARC_ST else _on_hip(rig, base, arms)
-        elif getattr(arms, "needs_base", False):
-            arms = arms(rig, base)
-        meta = {"weapon": weapon}
-        if name == "idle_arcanist":
-            meta.update(arc_grip())
-        if name in ("idle_reaver", "idle_reaver_axes"):
-            meta.update(axe_grip(name == "idle_reaver_axes"))
-        clip = layered(name, rig, base, arms, meta)
-        if name in POST:
-            clip = POST[name](rig, clip)
-        if name[5:] in TOWN or name == "idle_arcanist_staff_town":
-            clip = level_head(rig, clip)
-        out.append(clip)
-    return out
+    return [build_one(rig, name) for name in IDLES if not want or any(w in name for w in want)]
