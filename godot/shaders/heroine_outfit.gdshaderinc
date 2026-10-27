@@ -423,8 +423,8 @@ void fragment() {
 		grime *= mix(1.0, enamel_grime, paint);
 		col = mix(col, dirt, grime * 0.8);
 		metal = mix(1.0, 0.0, grime * 0.85);
-		metal *= mix(1.0, enamel_metal, paint);
-		if (finish == 3) metal = mix(metal, 1.0 - grime * dyed_grime_metal, 1.0 - gold);   // (dyed metal: its dirt stays a dull film on the metal; at bare metal's 0.85 a pale dye's grime, lit as paint, read as a chalky glassy cap)              // (paint: mostly dielectric, its colour held at every angle)
+		metal *= mix(1.0, enamel_metal, paint);              // (paint: mostly dielectric, its colour held at every angle)
+		if (finish == 3) metal = mix(metal, 1.0 - grime * dyed_grime_metal, 1.0 - gold);   // (dyed metal: its dirt stays a dull film on the metal; at bare metal's 0.85 a pale dye's grime, lit as paint, read as a chalky glassy cap)
 		if (rusty > 0.5) metal = mix(0.35, 0.9, wear) * (1.0 - grime * 0.85);
 		// (the pauldron's plates and the bracers satin, the set matching: at the Look they
 		// blew out 5.7% of the lower frame at 0.32, face lead; judge 7)
