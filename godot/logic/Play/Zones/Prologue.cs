@@ -560,6 +560,7 @@ public sealed class Prologue : ZoneRuntime
     {
         if (B == null) return;
         sprungAt = stageT;
+        takenAtSpring = B.DamageTaken;
         Objective([("Follow the road north", true, false), ("Survive the ambush at the wagon", false, false)]);
         // (MR5 item 11, i15's "no stakes early": an idle player lost 7-10% in the trap's first 15 s, the pilot
         // nothing. The ditch's own dead rise closer and hit harder than the road's (this fight's spawns only,
@@ -622,9 +623,34 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The ditch's opening: how many of the dead rise round her, how near, how much harder they and
     /// the bowmen's bolts hit than the road's.</summary>
     const int AmbushRing = 12;
-    const double AmbushNear = 3.5, AmbushHit = 1.3, AmbushBolt = 2;
+    const double AmbushNear = 3.5, AmbushHit = 1.6, AmbushBolt = 1.5;
     /// <summary>The Ambush's opening (s from the spring) and the field its top-up keeps through it.</summary>
-    const double AmbushOpen = 30, AmbushField = 22;
+    const double AmbushOpen = 30, AmbushField = 24;
+    /// <summary>The Ambush's curve (MR5 item 11 round 2): what she may have taken by f s from the spring, of her
+    /// health (36% at 30 s, a 48 s fight's end at 58%), and how hard the dead hit once she's past it.</summary>
+    const double AmbushCurve = 0.012, AmbushPulled = 0.25;
+    /// <summary>And the floor for one who stands still in it (27% at 30 s): below it, while she has stood 1.5 s, the
+    /// dead hit this much harder. The ditch punishes standing; a moving player is never pushed.</summary>
+    const double AmbushFloor = 0.009, AmbushStill = 2.5;
+    /// <summary>What she had taken when the trap sprang (Battle.DamageTaken).</summary>
+    double takenAtSpring;
+    /// <summary>How long she has stood (under 0.8 m/s), and where she was last frame.</summary>
+    double stillT;
+    XZ lastAt;
+    /// <summary>The dead's blows in the Ambush (MR5 item 11 round 2): full between the floor and the curve of what
+    /// she's taken since the spring; pulled above the curve; harder below the floor while she stands. (Idle runs lost
+    /// 78% by 28 s (amb5), 84% (amb9), 26% (amb7), 9% (amb10): her drafts' dodge, block and armor, her kills and
+    /// whether her dash cleared the volley swing it. A dodging player never meets the curve.) Full everywhere else.</summary>
+    double AmbushMul(double dt)
+    {
+        if (B == null) return 1;
+        var p = B.Player;
+        if (dt > 0) { stillT = Dist(p.X, p.Z, lastAt.X, lastAt.Z) < 0.8 * dt ? stillT + dt : 0; lastAt = new XZ(p.X, p.Z); }
+        if (Now != Stage.Ambush || sprungAt < 0) return 1;
+        double taken = B.DamageTaken - takenAtSpring, f = stageT - sprungAt;
+        if (taken > B.MaxHp * AmbushCurve * f) return AmbushPulled;
+        return stillT > 1.5 && taken < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
+    }
     /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
     readonly HashSet<int> boltsSpent = new();
 
@@ -868,6 +894,7 @@ public sealed class Prologue : ZoneRuntime
         stageT += dt;
         spawnT -= dt;
         int n = Hostiles();
+        B.FoeHitMul = AmbushMul(dt);
         Callouts();
         PaceWords();
         switch (Now)
@@ -955,7 +982,7 @@ public sealed class Prologue : ZoneRuntime
                 if (fought < 40 && B.Time - ambDiagAt >= 1)
                 {
                     ambDiagAt = B.Time;
-                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)}");
+                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)} taken={B.DamageTaken - takenAtSpring:0} mul={B.FoeHitMul:0.##}");
                 }
                 // (MR5 item 11 round 2: the bolts are doubled for the opening volley only. A bowman who has loosed it
                 // (his reload is up again) shoots the road's bolts after: amb5, five bowmen never killed, kept loosing
