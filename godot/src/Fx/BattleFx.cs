@@ -856,13 +856,16 @@ public partial class BattleFx : Node3D
     /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
-    const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
+    const float DangerEnergy = 0.45f, DangerFlare = 1.4f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
     const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
     /// <summary>A styled bed's ambient occlusion (its share of the sky's light).</summary>
     const float BedAo = 0.15f;
     /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
     /// whatever the ring's size), and the raising's.</summary>
     const float RingCoreM = 0.045f, RaiseCoreM = 0.08f;
+    /// <summary>A red bed's own glow at its heart (it rises toward the edges): at 0.06 the bed lit 1.8x the arena's dark
+    /// ground, the light alone; at 0.012 the blue night pulled the dry bed to crimson (hue 345): 0.035 between).</summary>
+    const float DangerBedGlow = 0.035f;
     static readonly Dictionary<(Texture2D, int, int), (Texture2D Albedo, Texture2D Emission)> dangerTex = new();
 
     /// <summary>A mark's shape as a styled mark: its ground darkened (albedo, its alpha the cover: near-full under a red
@@ -882,8 +885,9 @@ public partial class BattleFx : Node3D
         var alb = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
-        var hot = danger ? new Color("#ff0612") : new Color("#ffa020");
-        var bed = danger ? Palette.TeleDangerGround : Palette.TeleAmberGround;
+        // (the crowd's a touch yellower: AgX and its dark bed pulled #ffa020 to hue 24, a rust; the raising's rim read 32 as it was)
+        var hot = danger ? new Color("#ff0612") : style == 2 ? new Color("#ffb22a") : new Color("#ffa020");
+        var bed = danger ? Palette.TeleDangerGround : style == 2 ? new Color("#2a1b07") : Palette.TeleAmberGround;
         // (a red bed's own glow is a breath: at 0.25 through it, with the fill's even body over it, the bed lit 1.25-2.5x
         // brighter than the ground round it and a wide lane read as a red rug, not as light; round 3's judge)
         float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
@@ -902,7 +906,7 @@ public partial class BattleFx : Node3D
                     float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1), (danger ? 0.5f : 0.3f) * Mathf.Exp(-d / (danger ? 0.05f : 0.028f)));
                     // its light: the edges, and a low glow through the bed; a red one's rises toward its edges (light
                     // along the rims, the bed between them dark), the crowd's a little stronger toward them
-                    float inner = danger ? 0.06f + 0.45f * Mathf.Pow(Mathf.SmoothStep(0.55f, 0.9f, e), 2) : glowIn + 0.04f * e * e;
+                    float inner = danger ? DangerBedGlow + 0.45f * Mathf.Pow(Mathf.SmoothStep(0.55f, 0.9f, e), 2) : glowIn + 0.04f * e * e;
                     a = Mathf.Max(edge, e < 0.9f ? inner : 0) * ends;
                     cover = (e < 0.9f ? inside + (1 - inside) * Mathf.SmoothStep(0.6f, 0.9f, e) : Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1)) * ends;
                 }
@@ -912,7 +916,7 @@ public partial class BattleFx : Node3D
                     // a crisp rim: its core, a short falloff inward, a breath outward; and the bed's glow inside
                     float rim = Mathf.Clamp(1 - Mathf.Max(Mathf.Abs(d) - core, 0) / (core * 0.6f + 0.003f), 0, 1);
                     float fall = d < 0 ? 0.35f * Mathf.Exp(d / (core * 4 + 0.01f)) : 0.25f * Mathf.Exp(-d / (core * 1.2f + 0.004f));
-                    float inner = danger ? 0.05f + 0.4f * Mathf.Pow(Mathf.SmoothStep(0.6f, 0.93f, r), 2) : glowIn * 0.8f;
+                    float inner = danger ? DangerBedGlow + 0.4f * Mathf.Pow(Mathf.SmoothStep(0.6f, 0.93f, r), 2) : glowIn * 0.8f;
                     a = Mathf.Max(Mathf.Max(rim, fall), r < 0.93f ? inner : 0) * Mathf.Clamp((0.995f - r) / 0.01f, 0, 1);
                     cover = r < 0.93f ? inside : rim;
                 }
