@@ -367,13 +367,19 @@ public partial class Game
             g.scene!.CameraHeld = true;
             if (g.scene.Player != null) g.scene.Player.Hidden = true;
             b.WorldRate = file.World.Rate; b.WorldRateT = 1e9;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            double Ms() => (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             made = g.TakeCast(file.Id);
-            foreach (var (name, c) in file.Cast) Cast(name, c);
+            double tTake = Ms(), tWorst = 0; string worst = "";
+            foreach (var (name, c) in file.Cast) { double a = Ms(); Cast(name, c); if (Ms() - a > tWorst) { tWorst = Ms() - a; worst = name; } }
+            double tCast = Ms();
             if (made != null) foreach (var n in made.Values) if (!n.IsInsideTree()) n.QueueFree();
             made = null;
             SunAhead();
+            double tSun = Ms();
             GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
             Dispatch(player.Advance(0));
+            if (Perf.On) GD.Print($"perf cine begin {file.Id}: ctor-to-take {tTake:0.0} cast {tCast - tTake:0.0} (worst {worst} {tWorst:0.0}) sun {tSun - tCast:0.0} dispatch {Ms() - tSun:0.0} ms");
         }
 
         /* --------------------------------------------------------- the cast -- */
@@ -838,8 +844,11 @@ public partial class Game
         {
             foreach (var tc in cues)
             {
+                long q0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 try { Do(tc, skipping); }
                 catch (Exception e) { GD.PushWarning($"cinema {file.Id} shot {tc.Shot.Shot.Id}: {tc.Cue.Do} failed: {e.Message}"); }
+                double qms = (System.Diagnostics.Stopwatch.GetTimestamp() - q0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                if (Perf.On && qms > 2) GD.Print($"perf cue {file.Id} {tc.Cue.Do} {tc.Cue.Actor} {qms:0.0} ms");
             }
         }
 
