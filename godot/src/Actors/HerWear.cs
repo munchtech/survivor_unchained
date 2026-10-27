@@ -106,11 +106,18 @@ public static class HerWear
             if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !m.HasMeta("zone")) continue;
             var zone = (string)m.GetMeta("zone");
             bool outfit = m.HasMeta("kind");
-            if (outfit && (int)m.GetMeta("kind") == 0 && dye.TryGetValue("thread", out var th)) m.SetShaderParameter("thread", new Color(th));
+            if (outfit && (int)m.GetMeta("kind") == 0 && dye.TryGetValue("thread", out var th)) m.SetShaderParameter("thread", new Color(Wear.DyeFinish(th).Hex));
             if (!dye.TryGetValue(zone, out var hex)) continue;
-            var c = new Color(hex);
+            var (dyeHex, isMetal) = Wear.DyeFinish(hex);
+            var c = new Color(dyeHex);
             if (outfit)
             {
+                // enamel metal (finish 2): a metal dye keeps metal (finish 3, dyed metal: brushed, no oxide); a colour dye paints the enamel
+                if ((int)m.GetMeta("kind") == 1)
+                {
+                    if (!m.HasMeta("finish0") && m.GetShaderParameter("finish").AsInt32() == 2) m.SetMeta("finish0", 2);
+                    if (m.HasMeta("finish0")) m.SetShaderParameter("finish", isMetal ? 3 : (int)m.GetMeta("finish0"));
+                }
                 m.SetShaderParameter("dye", c);
                 m.SetShaderParameter("dye_amount", 1.0f);
                 continue;
