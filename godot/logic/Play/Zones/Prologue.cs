@@ -629,8 +629,8 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The Ambush's curve (MR5 item 11 round 2): what she may have taken by f s from the spring, of her
     /// health (36% at 30 s, a 48 s fight's end at 58%), and how hard the dead hit once she's past it.</summary>
     const double AmbushCurve = 0.012, AmbushPulled = 0.25;
-    /// <summary>And the floor for one who stands still in it (27% at 30 s): below it, while she has stood 1.5 s, the
-    /// dead hit this much harder. The ditch punishes standing; a moving player is never pushed.</summary>
+    /// <summary>And the floor for one who stands still in it (27% at 30 s): below it, through the opening, while she
+    /// has stood 3 s, the dead hit this much harder. The ditch punishes standing; a moving player is never pushed.</summary>
     const double AmbushFloor = 0.009, AmbushStill = 2.5;
     /// <summary>What she had taken when the trap sprang (Battle.DamageTaken).</summary>
     double takenAtSpring;
@@ -651,7 +651,9 @@ public sealed class Prologue : ZoneRuntime
         // ember's levels and her drafts' mending put the rest back)
         double lost = B.MaxHp - p.Hp, f = stageT - sprungAt;
         if (lost > B.MaxHp * AmbushCurve * f) return AmbushPulled;
-        return stillT > 1.5 && lost < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
+        // (the push only through the opening, and on 3 s of standing: the pilot pauses in the fight's last seconds,
+        // and n6 and n8 lost 23% and 22% there under it)
+        return f < AmbushOpen && stillT > 3 && lost < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
     }
     /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
     readonly HashSet<int> boltsSpent = new();
