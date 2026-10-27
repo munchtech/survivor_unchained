@@ -46,6 +46,10 @@ uniform vec4 empty : source_color = vec4(0.07, 0.035, 0.04, 1.0);
 uniform vec4 trail_col : source_color = vec4(1.0, 0.62, 0.52, 1.0);
 uniform vec4 shield_col : source_color = vec4(0.62, 0.84, 1.0, 1.0);
 uniform float own_light = 1.0;
+// HUD A2 round 2: the draught as a small dark vial (one red in the corner: the life lamp's): its liquid dimmed and
+// drained of colour (1 and 0 leave it as it was)
+uniform float liq_dim = 1.0;
+uniform float liq_desat = 0.0;
 
 // The cavity inside the thick glass (the rendered rim's bright inner line sits on it).
 const float RI = 0.94;
@@ -219,6 +223,7 @@ vec3 blood(vec2 p, float r, float px, float t)
 		col = mix(col, ice, clamp(a * 0.85, 0.0, 0.9));
 		col += lin(vec3(0.604, 0.831, 1.0)) * 0.025 * reach * fade;
 	}
+	col = mix(col, vec3(dot(col, vec3(0.21, 0.72, 0.07))), liq_desat) * liq_dim;
 	vec4 fl = texture(front, at / canvas);
 	col += lin(fl.rgb);
 	return enc(col);

@@ -2,7 +2,11 @@
 // tools/uiforge/lamp_life_cut.py) with her life twice over: the oil in its font (blood-red, lit at its
 // surface, deep at the foot, the empty glass above dark and see-through) and the flame on its wick (tall and
 // steady when full, smaller at half, guttering blue at the root at 30% and under, out with a curl of smoke at
-// 0). The flame's light mixes the lamp from its cold painting to its lit one. The oil's motion is
+// 0). The flame is a meter of its own (round 2): its height, its glow in the chimney glass (white-gold full,
+// half and orange at 55%, nearly dark guttering) and its light on the collar and the font's top: the lamp is lit
+// by its flame only (the cold painting where its light doesn't reach). The empty glass reads as glass (a flame-lit
+// rim on its upper curve, a faint smoky fill), the level is a pale line across the whole font, and the shield is
+// an arc of silver-blue light round the font's rim. The pool of light on the ground is hud_lamp_pool's. The oil's motion is
 // Vessel.Flow's (the same uniforms as hud_vessel: level, tilt, wave, film, heal, beat, frost, crack); the
 // flame's state is LampState's (flame, gutter, out_t, flick). Nothing on the CPU redraws: uniforms and TIME.
 shader_type canvas_item;
@@ -39,13 +43,15 @@ uniform float crack_reach = 0.0;
 uniform float flame = 1.0;   // the flame's height, 0..1 of full
 uniform float gutter = 0.0;  // 0 steady .. 1 guttering
 uniform float out_t = -1.0;  // seconds since it went out (-1 lit)
-uniform float flick = 1.0;   // its light now (the ground light's too)
+uniform float flick = 1.0;   // its flicker now (1 steady)
+uniform float glow = 1.0;    // its light now (LampState.Light: Glow(flame) x flicker; 0 out)
+uniform int oil_off = 0;     // debug (--lamp-no-oil): the font drawn empty, so the flame's read is measured alone
 
 uniform vec4 oil_hi : source_color = vec4(0.62, 0.05, 0.06, 1.0);
 uniform vec4 oil_lo : source_color = vec4(0.09, 0.005, 0.01, 1.0);
 uniform vec4 lip : source_color = vec4(1.0, 0.50, 0.40, 1.0);
 uniform vec4 warm : source_color = vec4(1.0, 0.69, 0.38, 1.0);
-uniform vec4 frost_col : source_color = vec4(0.80, 0.90, 1.0, 1.0);
+uniform vec4 frost_col : source_color = vec4(0.66, 0.82, 1.0, 1.0);
 
 float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p)
@@ -63,85 +69,119 @@ void fragment()
 	vec3 m = texture(mask, UV).rgb;
 	float t = TIME;
 	float on = out_t < 0.0 ? 1.0 : 0.0;
-	float light = flame * flick * on;   // how much the flame lights the lamp
-	// the flame's light on the lamp: the lit painting near the flame, falling off down the font
-	float dw = length((px - wick + vec2(0.0, flame_full * 0.45 * flame)) * vec2(1.0, 0.8));
-	float reach = exp(-dw / 45.0) * 0.6 + 0.4 * smoothstep(oil_top + 20.0, wick.y, px.y);
-	vec3 col = mix(C.rgb, L.rgb, clamp(light * reach * 1.15, 0.0, 1.0));
+	float g = clamp(glow, 0.0, 1.3) * on;     // the flame's light (steep: 1 full, ~0.46 at 55%, ~0.12 at 18%)
+	float gs = clamp(g, 0.0, 1.0);
+	// the flame's heart: half way up the flame
+	vec2 heart = wick - vec2(0.0, flame_full * 0.42 * max(flame, 0.15));
+	// its warmth: white-gold at full, orange as it sinks
+	vec3 fire = mix(vec3(1.0, 0.46, 0.14), vec3(1.0, 0.80, 0.52), smoothstep(0.15, 0.9, gs));
+	// ---- the lamp lit by its flame: the lit painting where the light reaches (the collar, the font's top), the
+	// cold one beyond; plus the flame's warm light laid on the iron and glass close to it
+	float dw = length((px - heart) * vec2(1.0, 0.7));
+	float reach = exp(-dw / 38.0);
+	vec3 col = mix(C.rgb, L.rgb, clamp(gs * (0.25 + 1.1 * reach), 0.0, 1.0));
 	float a = C.a;
+	// (the mask's glass is the chimney's and the font's: the chimney's is the glass over the wick)
+	float chim = m.b * (1.0 - smoothstep(wick.y + 1.0, wick.y + 6.0, px.y));
+	col += fire * a * g * 0.42 * exp(-dw / 22.0) * (1.0 - chim);
 
-	// ---- the oil
+	// ---- the oil font
 	float cxf = 0.5 * (font_x.x + font_x.y), half_w = 0.5 * (font_x.y - font_x.x);
 	float u = (px.x - cxf) / half_w;   // -1..1 across the font
 	float span = oil_bot - oil_top;
-	float surf = oil_bot - level * span + tilt * u * span * 0.9 + wave * span * sin(u * 3.1 + t * 7.0);
-	// the empty glass: dark and see-through (the painting's own glass, dimmed)
+	float cyf = 0.5 * (oil_top + oil_bot);
+	vec2 tx = vec2(1.0) / canvas;
+	// the font glass's rim: the edge of its inside (up and down; to the sides only at its ends, not at the strap)
+	float rim = 0.0;
 	if (m.r > 0.01)
 	{
-		float below = smoothstep(surf - 0.6, surf + 0.6, px.y);
+		float up = texture(mask, UV - vec2(0.0, 2.5) * tx).r, dn = texture(mask, UV + vec2(0.0, 2.5) * tx).r;
+		float sd = min(texture(mask, UV - vec2(2.5, 0.0) * tx).r, texture(mask, UV + vec2(2.5, 0.0) * tx).r);
+		rim = max(max(1.0 - up, 1.0 - dn), (1.0 - sd) * smoothstep(0.55, 0.7, abs(u))) * m.r;
+	}
+	if (m.r > 0.01)
+	{
+		float lv = oil_off == 1 ? 0.0 : level;
+		float surf = oil_bot - lv * span + tilt * u * span * 0.9 + wave * span * sin(u * 3.1 + t * 7.0);
+		float below = smoothstep(surf - 0.6, surf + 0.6, px.y) * step(0.002, lv);
 		float depth = clamp((px.y - surf) / max(span, 1.0), 0.0, 1.0);
-		// the oil's body: deep at the foot, brighter under the surface, slow swirls, darker at the font's sides
+		// the oil: liquid lit by its own flame: deep red, darker at the glass's edges and its foot, warm on its top
 		float sw = fbm(vec2(px.x * 0.07, px.y * 0.09 - t * 0.12) + vec2(t * 0.05, 0.0));
-		vec3 oil = mix(oil_hi.rgb, oil_lo.rgb, pow(depth, 0.7)) * (0.7 + 0.6 * sw);
-		oil *= 1.0 - 0.55 * smoothstep(0.55, 1.0, abs(u));
+		vec3 oil = mix(oil_hi.rgb, oil_lo.rgb, pow(depth, 0.6)) * (0.75 + 0.5 * sw);
+		oil *= 1.0 - 0.6 * smoothstep(0.45, 1.0, abs(u));
+		float edge = max(1.0 - texture(mask, UV + vec2(0.0, 5.0) * tx).r,
+			(1.0 - min(texture(mask, UV - vec2(6.0, 0.0) * tx).r, texture(mask, UV + vec2(6.0, 0.0) * tx).r)) * step(0.55, abs(u)));
+		oil *= 1.0 - 0.45 * edge;
 		// healing: fresh blood swirling up from the foot
 		float hs = heal * smoothstep(0.0, 0.4, heal_t) * (1.0 - smoothstep(0.6, 1.4, heal_t));
 		float rise = oil_bot - heal_t * span * 1.1;
 		oil += vec3(0.9, 0.12, 0.10) * hs * exp(-abs(px.y - rise) / 9.0) * (0.5 + sw);
 		// the heartbeat: the oil swells bright
 		oil *= 1.0 + 0.85 * beat;
-		// the flame's warmth on the oil's top
-		oil += warm.rgb * 0.10 * light * exp(-(px.y - surf) / 10.0);
-		// the meniscus: the surface seen from a little above: a lit lip, a dark line under it
+		// the flame's light on the oil's top, strongest under the wick
 		float d = px.y - surf;
-		float lipk = exp(-d * d / 1.6) * (1.0 - 0.5 * abs(u));
-		oil = mix(oil, lip.rgb * (0.8 + 0.5 * beat), clamp(lipk * 0.9, 0.0, 1.0));
-		oil *= 1.0 - 0.45 * exp(-pow((d - 3.0) / 1.6, 2.0));
-		// the font glass's own light over the oil, and the inner rim lit red
-		oil += vec3(1.0, 0.86, 0.82) * m.g * 0.65;
+		oil += fire * vec3(1.0, 0.5, 0.32) * 0.16 * gs * exp(-max(d, 0.0) / 5.0) * (1.0 - 0.6 * abs(u));
+		// the level: a pale line across the whole font, a dark line under it
+		float lipk = exp(-d * d / 0.9);
+		oil = mix(oil, vec3(1.0, 0.80, 0.70) * (0.85 + 0.15 * gs + 0.4 * beat), clamp(lipk * 0.95, 0.0, 1.0));
+		oil *= 1.0 - 0.4 * exp(-pow((d - 2.6) / 1.3, 2.0));
+		// the font glass's own light over the oil, toned down (the oil is liquid, not lacquer)
+		oil += vec3(1.0, 0.86, 0.82) * m.g * 0.28;
 		float fill = m.r * below;
-		col = mix(col, oil, fill);
-		a = mix(a, 1.0, fill);
-		// the empty glass above: a little darker, its own highlights kept
+		// the empty glass above: glass, never black: a faint smoky fill, the flame's warmth on it, its highlights kept
 		float emp = m.r * (1.0 - below);
-		col = mix(col, col * 0.62 + vec3(0.02, 0.0, 0.0), emp * 0.6);
+		vec3 smoke = vec3(0.17, 0.155, 0.15) + col * 0.55 + fire * 0.10 * gs;
+		col = mix(col, smoke, emp * 0.7);
+		col += vec3(0.9, 0.85, 0.8) * m.g * emp * 0.18;
+		// the rim of the empty glass on its upper curve, lit by the flame (a cool glint where it is out)
+		float top_curve = rim * smoothstep(cyf + 4.0, oil_top - 2.0, px.y);
+		col += mix(vec3(0.35, 0.38, 0.42), fire * 1.1, gs) * top_curve * emp * (0.35 + 0.65 * gs);
+		col = mix(col, oil, fill);
+		a = mix(a, 1.0, max(fill, emp * 0.85));
 		// the hurt film: blood clinging to the glass from where it stood, running down
-		float ftop = oil_bot - mix(film_top, level, film_t * film_t) * span;
+		float ftop = oil_bot - mix(film_top, lv, film_t * film_t) * span;
 		float film = emp * step(ftop, px.y) * (1.0 - film_t) * (0.55 + 0.45 * vnoise(vec2(px.x * 0.4, px.y * 0.05 - t * 2.0)));
 		col = mix(col, vec3(0.45, 0.02, 0.03), film * 0.7);
 		a = max(a, film * 0.85);
-		// the shield: a pale frost in the font glass, from its top as far down as the shield holds; once broken,
-		// it cracks off and falls
-		float fr = crack < 1.0 ? crack_reach : frost;
-		if (fr > 0.001)
+	}
+	// ---- the shield: an arc of silver-blue light round the font's rim, from its top round both sides as far as
+	// the shield holds; broken, it shatters off and falls
+	float fr = crack < 1.0 ? crack_reach : frost;
+	if (fr > 0.001)
+	{
+		vec2 fp = px;
+		float fade = 1.0;
+		float rimS = rim;
+		if (crack < 1.0)
 		{
-			vec2 fp = px;
-			float fade = 1.0;
-			if (crack < 1.0)
-			{
-				float cell = h21(floor(px / 7.0));
-				fp.y -= (8.0 + 26.0 * cell) * crack * crack;
-				fade = 1.0 - smoothstep(0.2, 1.0, crack);
-			}
-			float ice = fbm(fp * 0.22) * 0.6 + 0.4 * vnoise(fp * 0.9);
-			float edge = oil_top + fr * span * 1.05;
-			float fz = smoothstep(edge + 3.0, edge - 3.0 - 6.0 * ice, fp.y) * m.r * fade;
-			col = mix(col, frost_col.rgb * (0.75 + 0.35 * ice), fz * 0.62);
-			a = max(a, fz * 0.75);
+			float cell = h21(floor(px / vec2(9.0, 40.0)));
+			fp.y -= (6.0 + 22.0 * cell) * crack * crack;
+			fade = 1.0 - smoothstep(0.2, 1.0, crack);
+			vec2 fu = fp / canvas;
+			float up = texture(mask, fu - vec2(0.0, 2.5) * tx).r, dn = texture(mask, fu + vec2(0.0, 2.5) * tx).r;
+			rimS = max(1.0 - up, 1.0 - dn) * texture(mask, fu).r;
 		}
+		vec2 rs = (fp - vec2(cxf, cyf)) / vec2(half_w, 0.5 * span + 3.0);
+		float ang = abs(atan(rs.x, -rs.y)) / 3.14159265;   // 0 at the top, 1 at the foot
+		float held = 1.0 - smoothstep(fr - 0.006, fr + 0.006, ang);
+		float sh = clamp(rimS * 1.6, 0.0, 1.0) * held * fade;
+		col = mix(col, frost_col.rgb, sh);
+		a = max(a, sh);
 	}
 
-	// ---- the warm glow inside the glass round the flame
-	float gd = length((px - wick + vec2(0.0, flame_full * 0.42 * flame)) * vec2(1.0, 0.75));
-	col += warm.rgb * m.b * light * (0.55 * exp(-gd / 10.0) + 0.18 * exp(-gd / 26.0));
+	// ---- the glow inside the chimney glass round the flame: the glass filled with its light
+	float gd = length((px - heart) * vec2(1.0, 0.8));
+	col += fire * chim * g * (0.55 * exp(-gd / 8.0) + 0.42 * exp(-gd / 22.0) + 0.10);
+	vec4 outc = vec4(col * a, a);   // premultiplied
+	// a soft halo out into the air round the chimney (light: added, no cover)
+	outc.rgb += fire * g * 0.30 * exp(-gd / 16.0) * (1.0 - a * 0.6);
 
 	// ---- the flame: the painted one, its height her life's, swaying; guttering, low, leaning and blue at its root
-	vec4 outc = vec4(col * a, a);   // premultiplied
 	if (on > 0.5 && flame > 0.01)
 	{
 		float fh = flame_full * flame * (1.0 - 0.18 * gutter * (0.5 + 0.5 * sin(t * 13.0 + 2.0 * sin(t * 5.3))));
-		fh *= 0.94 + 0.06 * flick;
-		float fw = fh / flame_aspect * (1.0 + 0.35 * gutter);
+		fh *= 0.94 + 0.06 * min(flick, 1.0);
+		float fw = fh / flame_aspect * (1.0 + 0.35 * gutter) * mix(1.25, 1.0, flame);
 		vec2 q = vec2((px.x - wick.x) / fw + 0.5, (px.y - (wick.y - fh)) / fh);
 		float up = 1.0 - q.y;   // 0 at the foot, 1 at the tip
 		float sway = (0.05 + 0.18 * gutter) * up * up * sin(t * (3.1 + 6.0 * gutter) + up * 3.0)
@@ -151,11 +191,14 @@ void fragment()
 		{
 			vec4 f = texture(flame_tex, q);
 			vec3 fl = f.rgb;
+			// white-gold core, amber body; orange as it sinks
+			float core = smoothstep(0.55, 0.95, dot(fl, vec3(0.33)));
+			fl = mix(fl * fire * 1.3, vec3(1.0, 0.95, 0.82) * f.a, core * (0.4 + 0.6 * gs));
 			// the gutter: the blue root climbs, the gold thins
 			float root = smoothstep(0.55, 1.0, q.y);
-			fl = mix(fl, fl * vec3(0.45, 0.6, 1.25) + vec3(0.0, 0.05, 0.25) * f.a, gutter * root);
+			fl = mix(fl, fl * vec3(0.45, 0.6, 1.25) + vec3(0.0, 0.08, 0.35) * f.a, gutter * root);
 			fl *= mix(1.0, 0.75, gutter * (1.0 - root));
-			fl *= 0.9 + 0.15 * flick;
+			fl *= (0.95 + 0.25 * clamp(flick, 0.6, 1.4)) * (0.9 + 0.7 * gs);
 			outc.rgb += fl;   // light: added
 			outc.a = max(outc.a, f.a * 0.9);
 		}

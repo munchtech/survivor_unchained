@@ -1253,7 +1253,6 @@ public partial class Game : Node, IZoneHost
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
             hud.Frame(Battle, ch.Gold, Journey.Draughts, (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
-            if (scene?.Player is { } pv && GodotObject.IsInstanceValid(pv)) Ui.LifeLamp.GroundY = pv.GlobalPosition.Y;
             hud.MapFrame(MiniView());
             if (zone is ArenaRun ar && Battle is { } cb2)
             {

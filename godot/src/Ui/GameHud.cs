@@ -117,6 +117,9 @@ public partial class GameHud : CanvasLayer
         // Her irons, by day and by night, at peace and in a fight: the keystone stays where it is.
         irons = new Instrument();
         play.AddChild(irons);
+        // the life lamp's light on the ground: over the world, under everything on the HUD
+        root.AddChild(irons.Life.Pool);
+        root.MoveChild(irons.Life.Pool, 0);
         BuildTally();
         BuildCorner();
         BuildEdges();

@@ -9,9 +9,10 @@ namespace SurvivorUnchained.Ui;
 /// over the painted lamp (art/ui/lamp_life, tools/uiforge/lamp_life_cut.py): the oil in its font is her life
 /// (Vessel.Flow's motion: the damped slosh, the hurt film, the heal, the heartbeat at 30% and under, the
 /// shield's frost); the flame on its wick is her life too (LampState: tall, smaller, guttering, out with
-/// smoke, relit). Its light falls on the ground under it: one OmniLight3D, no shadows, placed each frame on
-/// her ground plane under the lamp's spot on the screen, its energy her flame's, off when the HUD is hidden.
-/// The number (bone on a dark halo) redraws only when it changes.</summary>
+/// smoke, relit). Its light falls on the ground round it: Pool, a local screen-space light under the whole HUD
+/// (shaders/hud_lamp_pool.gdshader; GameHud lays it first), its gain her flame's light, hidden with the lamp.
+/// The number (bone on a dark halo) stands on the lamp's foot, out of the font's middle where the level reads;
+/// it redraws only when it changes.</summary>
 public partial class LifeLamp : Control
 {
     /// <summary>The quad, in 1080 px (art/ui/lamp_life/lamp_geo.json; the art is twice this).</summary>
@@ -27,9 +28,13 @@ public partial class LifeLamp : Control
     public static readonly Vector2 FontX = new(18.18f, 158.18f);
     /// <summary>Where its foot stands on the screen (the old life cuff's foot, 28 px clear of the edge).</summary>
     public const float Floor = 1052;
-    /// <summary>Her ground's height under the lamp's spot (set by the game each frame: her feet's).</summary>
-    public static float GroundY;
-    static readonly bool noLight = Args.Has("no-lamp-light");
+    /// <summary>Where the number stands: its middle on the lamp's foot, under the font.</summary>
+    public const float NumberY = 182f;
+    /// <summary>The pool's quad round the lamp's foot (1080 px, from the lamp's quad's top left) and its gain at
+    /// full light (the scene lifted by up to +45% at its heart).</summary>
+    public static readonly Rect2 PoolRect = new(-152, -78, 480, 300);
+    public const float PoolGain = 0.45f;
+    static readonly bool noPool = Args.Has("no-lamp-pool"), noOil = Args.Has("lamp-no-oil");
 
     /// <summary>The level and the shield (0..1 of her life), the trail (unused: the hurt film is the oil's own),
     /// and Pulse: 1 where her heartbeat may sound (the fight).</summary>
@@ -40,10 +45,13 @@ public partial class LifeLamp : Control
     readonly ShaderMaterial mat;
     readonly Vessel.Flow flow;
     readonly Figure figure;
-    OmniLight3D? light;
+    /// <summary>The flame's light on the ground (GameHud adds it under everything else on the HUD).</summary>
+    public readonly Control Pool;
+    readonly ShaderMaterial poolMat;
+    readonly BackBufferCopy copy;
     string drawnNumber = "";
-    static readonly StringName UFlame = "flame", UGutter = "gutter", UOut = "out_t", UFlick = "flick";
-    float sFlame = -1, sGutter = -1, sOut = -2, sFlick = -1;
+    static readonly StringName UFlame = "flame", UGutter = "gutter", UOut = "out_t", UFlick = "flick", UGlow = "glow", UGain = "gain";
+    float sFlame = -1, sGutter = -1, sOut = -2, sFlick = -1, sGlow = -1, sGain = -1;
 
     public LifeLamp()
     {
@@ -60,10 +68,20 @@ public partial class LifeLamp : Control
         mat.SetShaderParameter("oil_bot", OilBot);
         mat.SetShaderParameter("font_x", FontX);
         mat.SetShaderParameter("flame_full", FlameFull);
+        if (noOil) mat.SetShaderParameter("oil_off", 1);
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
         flow = new Vessel.Flow(mat, true);
         figure = new Figure(this);
         AddChild(figure);
+        // the pool: a copy of the world under its rect only, then the quad that lifts it
+        Pool = new Control { MouseFilter = MouseFilterEnum.Ignore, Visible = false };
+        // (Godot 4.5 takes the copy's rect in the canvas's own coordinates, not the node's: it is set where the
+        // pool stands, in PoolTick; a local rect copied the screen's top left and the pool read black)
+        Pool.AddChild(copy = new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Rect, Rect = new Rect2(Vector2.Zero, PoolRect.Size) });
+        poolMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_lamp_pool.gdshader") };
+        poolMat.SetShaderParameter("size", PoolRect.Size);
+        poolMat.SetShaderParameter("centre", new Vector2(Canvas.X / 2, FootY - 30) - PoolRect.Position);
+        Pool.AddChild(new ColorRect { Material = poolMat, MouseFilter = MouseFilterEnum.Ignore, Size = PoolRect.Size });
     }
 
     public override void _Process(double delta)
@@ -76,58 +94,35 @@ public partial class LifeLamp : Control
         Send(UGutter, State.Gutter, ref sGutter);
         Send(UOut, State.OutT, ref sOut);
         Send(UFlick, State.Flick, ref sFlick);
+        Send(UGlow, State.Light, ref sGlow);
         if (Number != drawnNumber) { drawnNumber = Number; figure.QueueRedraw(); }
-        Ground();
+        PoolTick();
     }
 
-    void Send(StringName u, float v, ref float sent)
+    void Send(StringName u, float v, ref float sent) => Send(u, v, ref sent, mat);
+
+    /// <summary>The pool follows the lamp: where it stands on the screen, shown only while the lamp is (the HUD
+    /// hidden, it goes), its gain the flame's light and the lamp's fade.</summary>
+    void PoolTick()
+    {
+        float gain = PoolGain * State.Light * Modulate.A * (IsVisibleInTree() ? 1 : 0);
+        bool want = !noPool && gain > 0.0005f;
+        if (Pool.Visible != want) Pool.Visible = want;
+        if (!want) return;
+        var at = GetGlobalTransformWithCanvas() * PoolRect.Position;
+        if (Pool.Position != at) { Pool.Position = at; copy.Rect = new Rect2(at, PoolRect.Size); }
+        Send(UGain, gain, ref sGain, poolMat);
+    }
+
+    void Send(StringName u, float v, ref float sent, ShaderMaterial m)
     {
         if (v == sent) return;
         sent = v;
-        mat.SetShaderParameter(u, v);
+        m.SetShaderParameter(u, v);
     }
 
-    /// <summary>The flame's light on the ground: a real light (an overlay reads as a smudge once the camera
-    /// moves), warm, no shadows, on her ground under the lamp's spot; small by day, plain by night.</summary>
-    void Ground()
-    {
-        var cam = GetViewport()?.GetCamera3D();
-        bool want = !noLight && cam != null && IsVisibleInTree() && State.Light > 0.001f;
-        if (!want)
-        {
-            if (light != null && GodotObject.IsInstanceValid(light)) light.Visible = false;
-            return;
-        }
-        if (light == null || !GodotObject.IsInstanceValid(light))
-        {
-            light = new OmniLight3D { LightColor = new Color("#ffb060"), ShadowEnabled = false, OmniAttenuation = 1.5f, LightSpecular = 0.25f, Visible = false };
-            cam!.GetViewport().CallDeferred(Node.MethodName.AddChild, light);
-            return;
-        }
-        if (!light.IsInsideTree()) return;
-        // the lamp's foot on the screen (the HUD's 1920 by 1080 is the viewport's, stretched as canvas items)
-        var spot = GetGlobalTransformWithCanvas() * new Vector2(Canvas.X / 2, FootY - 30);
-        var o = cam!.ProjectRayOrigin(spot);
-        var d = cam.ProjectRayNormal(spot);
-        if (Math.Abs(d.Y) < 1e-3f) { light.Visible = false; return; }
-        float k = (GroundY - o.Y) / d.Y;
-        if (k <= 0) { light.Visible = false; return; }
-        var hit = o + d * k;
-        float l = State.Light;
-        light.GlobalPosition = hit + new Vector3(0, 0.9f, 0);
-        light.LightEnergy = 2.2f * l * Modulate.A;
-        light.OmniRange = 3.6f + 3.0f * Math.Min(1, l);
-        light.Visible = true;
-    }
-
-    public override void _ExitTree()
-    {
-        if (light != null && GodotObject.IsInstanceValid(light)) light.QueueFree();
-        light = null;
-    }
-
-    /// <summary>Her life's number on the font: Alegreya Sans 800, lining tabular figures, bone on a dark halo
-    /// (it reads on the full oil and the empty glass alike), with the shared soft shadow (0, 2, 4 px).</summary>
+    /// <summary>Her life's number on the lamp's foot (round 2: on the font's middle it hid the level): Alegreya
+    /// Sans 800, lining tabular figures, bone on a dark halo, with the shared soft shadow (0, 2, 4 px).</summary>
     sealed partial class Figure : Control
     {
         readonly LifeLamp l;
@@ -140,7 +135,7 @@ public partial class LifeLamp : Control
             const int fs = 27;
             var ts = f.GetStringSize(l.Number, HorizontalAlignment.Left, -1, fs);
             // (the figures stand 0.596 em tall on the baseline: their middle 0.293 em above it)
-            var at = new Vector2(Mathf.Round(FontMid.X - ts.X / 2), Mathf.Round(FontMid.Y + 0.293f * fs));
+            var at = new Vector2(Mathf.Round(FontMid.X - ts.X / 2), Mathf.Round(NumberY + 0.293f * fs));
             var sh = at + new Vector2(0, 2);
             DrawStringOutline(f, sh, l.Number, HorizontalAlignment.Left, -1, fs, 10, new Color(0, 0, 0, 0.18f));
             DrawStringOutline(f, at, l.Number, HorizontalAlignment.Left, -1, fs, 7, new Color(0.04f, 0.01f, 0.01f, 0.45f));
