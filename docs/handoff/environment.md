@@ -1,7 +1,7 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
 ## Now (env lead 20, 27 Oct): E8 DONE (judge r3 xhigh PASS-WITH-NOTES, close; 5/5 frames gate YES); final import, tests and Release perf running, then the MR; next E10
-- Integration merged at a1fd6fa3 (junction rule). Judge 3 brief: `<coord 9c583f93 scratch>\env20\e8_judge3.md`. Final script: `env20inal_e8.sh` (import, build, tests, Release `lf_hi_e8` to `survivorsunchained_inputs\env_perf1\e8\`; compare `env_perf1\lf\lf_hi_lf6_windows.md`).
+- Integration merged at a1fd6fa3 (junction rule). Judge 3 brief: `<coord 9c583f93 scratch>\env20\e8_judge3.md`. Final script: `env20\final_e8.sh` (import, build, tests, Release `lf_hi_e8` to `survivorsunchained_inputs\env_perf1\e8\`; compare `env_perf1\lf\lf_hi_lf6_windows.md`).
 - **Closed as known (r3 = round cap):** the damp band hidden by the mist (reads right), the merlon rims and corbel row (enlarged only), and the faint blue-lamp halos in s8a.
 - **Later list, from judge 3 (none fails a frame):**
   1. A8: the open arch (875-1010 x 500-650) shows a blank grey earth bank. It should show something beyond, such as a roofline with a warm window or the road climbing to a lamp. Medium.
