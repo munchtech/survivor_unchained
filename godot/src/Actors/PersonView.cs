@@ -34,6 +34,8 @@ public partial class PersonView : Node3D, INpcView
         person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
+        // (a Marionette package's own walk, when its manifest names one: the risen's lurch)
+        if (person.Package is string pkg && NpcPackage.WalkClip(pkg, person.Woman) is string walk) WalkClip = walk;
         if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }
         if (arms?.Left is string l && Arms.All.ContainsKey(l)) { held["handslot.l"] = Arms.Hold(person, l, "hand_l"); pieces["handslot.l"] = l; }
         if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) { held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l"); pieces["forearm.l"] = f; }
