@@ -1257,6 +1257,64 @@
    "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
    "note": "HUD A2 life lamp, round-font shape (UI 15, 27 Oct 2026): seeds 4300-4304 painted, 4302 cut by BiRefNet, layered by tools/uiforge/lamp_life_cut.py (shape 'font'). Sources kept in survivorsunchained_inputs/ui15_lamp_src/",
    "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_orb_link",
+   "file": "lamp_life/link/lamp_lit.png",
+   "also": [
+    "lamp_life/link/lamp_cold.png",
+    "lamp_life/link/lamp_mask.png"
+   ],
+   "size": [
+    336,
+    328
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4613,
+   "prompt": "One massive ancient iron shackle ring, thick and heavy, dark blue-black hammered iron, pitted and scarred, irregular hand-set rivets, around a large round empty opening, the opening flat black and empty, the ring torn apart at its upper right where it was snapped by force: a clear gap with jagged bright raw metal on both fracture faces and the broken end splayed outward away from the ring, a forged eye at the foot of the ring with one heavy rusted chain link threaded through it hanging down, cold dim light. Seen straight from the front, centred, the round opening a perfect circle, painterly realism, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD life orb casing 'The Broken Link' (UI 16, 27 Oct 2026, --life-orb link): link2 seeds 4610-4615 painted (round 1's link seeds 4600-4604 of an earlier prompt not used); 4613 keyed by its light and layered by tools/uiforge/lamp_life_cut.py ORBS 'link' (the break, round-bar shading, soot plate made there); the chain's eye is the carrying ring of Krea lamp_b seed 4203. Sources kept in survivorsunchained_inputs/ui16_orb_src/",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_orb_ember",
+   "file": "lamp_life/ember/lamp_lit.png",
+   "also": [
+    "lamp_life/ember/lamp_cold.png",
+    "lamp_life/ember/lamp_mask.png"
+   ],
+   "size": [
+    436,
+    328
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4603,
+   "prompt": "A soot-black hand-forged iron reliquary cradle: a thick round riveted iron ring around a large round empty opening, the opening flat black and empty, the ring seated in a heavy cupped iron brazier bowl beneath it, the bowl's front a pierced iron grille of narrow upright slots, glowing orange embers and coals visible through the slots, the iron otherwise dark and sooty with worn edges. Seen straight from the front, centred, the round opening a perfect circle, painterly realism, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD life orb casing 'The Held Dead's Warmth' (UI 16, --life-orb ember; cut by the judges, kept selectable): seeds 4600-4604 painted, 4603 layered by lamp_life_cut.py ORBS 'ember'. Sources in survivorsunchained_inputs/ui16_orb_src/",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_orb_lamp",
+   "file": "lamp_life/lamp/lamp_lit.png",
+   "also": [
+    "lamp_life/lamp/lamp_cold.png",
+    "lamp_life/lamp/lamp_mask.png",
+    "lamp_life/lamp/lamp_flame.png"
+   ],
+   "size": [
+    328,
+    328
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4615,
+   "prompt": "A thick hand-forged blackened iron ring frame around a large round empty opening, the opening flat black and empty, riveted and hammered with worn edges, a small iron oil-lamp burner cup on a short curved iron arm fixed to the upper right shoulder of the ring, a short wick in the cup with no flame, the ring resting on a low heavy iron cradle of three short claws, no stand, no crown, dim cold light. Seen straight from the front, centred, the round opening a perfect circle, painterly realism, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD life orb casing 'Lamps Are Lit' (UI 16, --life-orb lamp; cut by the judges, kept selectable): lamp2 seeds 4610-4615 painted (round 1's lamp seeds 4600-4604 not used), 4615 layered by lamp_life_cut.py ORBS 'lamp'; the flame is lamp_life_flame (seed 4201). Sources in survivorsunchained_inputs/ui16_orb_src/",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
   }
  ],
  "icon_sets": {

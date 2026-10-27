@@ -48,7 +48,15 @@ uniform float glow = 1.0;
 uniform vec4 blood_hi : source_color = vec4(0.80, 0.10, 0.11, 1.0);
 uniform vec4 blood_lo : source_color = vec4(0.17, 0.004, 0.012, 1.0);
 
-float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+// (an integer hash: the sine hash gave a cell's two sides different values where the compiler fused its dot
+// product differently, and the blood showed 1 px steps at the noise's cell edges)
+float h21(vec2 p)
+{
+	uvec2 q = uvec2(ivec2(floor(p)) + 32768);
+	uint n = q.x * 1597334677u ^ q.y * 3812015801u;
+	n = (n ^ (n >> 16u)) * 2246822519u;
+	return float(n >> 8u) / 16777215.0;
+}
 float vnoise(vec2 p)
 {
 	vec2 i = floor(p), f = fract(p);
@@ -113,7 +121,8 @@ void fragment()
 		float surf = level_row(lv) + tilt * q.x * span * 0.45 + wave * span * 0.5 * sin(q.x * 3.1 + t * 7.0) + swell * step(0.002, lv) * step(lv, 0.998);
 		float d = px.y - surf;
 		float below = smoothstep(-0.6, 0.6, d) * step(0.002, lv);
-		float depth = clamp(d / span, 0.0, 1.0);
+		// (its depth mostly the glass's own, so a full orb is as rich as a half one: dark only low in the glass)
+		float depth = mix(clamp(d / span, 0.0, 1.0), clamp((px.y - orb_c.y + 0.2 * orb_vis) / (1.2 * orb_vis), 0.0, 1.0), 0.7);
 		// the blood: deep red, brighter just under its surface, near black at the glass's foot and its edges
 		// (two broad octaves only: the fine one showed as 4 px blocks at 1:1)
 		vec2 sp = vec2(px.x * 0.035 + t * 0.03, px.y * 0.045 - t * 0.07);

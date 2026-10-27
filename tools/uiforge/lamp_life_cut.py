@@ -388,7 +388,8 @@ ORBS = {
     # seed 4613, a heavy hammered shackle ring, an iron link through its foot into a rusted one; the break made
     # here (break_: at 2 o'clock, a jagged gap with bright raw fracture faces, the lower end splayed outward)
     "link": dict(src=SRC16 + "link2/cand_4613.png", rows=[], tint=(0.80, 0.85, 0.95), luma=0.19,
-                 break_=(-34, 17, 30), bar=(420, (70, 110)), eye=(826, 734), eye_ring=True, clip=990),
+                 break_=(-34, 13, 34), bar=(420, (70, 110)), eye=(826, 734), eye_ring=True, clip=990,
+                 backplate=True),
     # The Held Dead's Warmth: Krea seed 4603, a riveted arch over a pierced brazier bowl; the arch's legs drawn
     # longer so the glass sits whole on the bowl's lip, the bowl squashed, the embers through its slots
     "ember": dict(src=SRC16 + "ember/cand_4603.png", rows=[(430, 520, 2.0), (620, 960, 0.62)], fit_top=True,
@@ -438,8 +439,8 @@ def orb_break(rgb, A, cx, cy, r, ang, width, splay):
     jag = np.interp(rr, np.arange(0, 600, 9), rng.uniform(-1, 1, len(np.arange(0, 600, 9)))) * width * 0.07
     t0, t1 = ang - width / 2 + jag, ang + width / 2 - jag * 0.7
     # the lower end bent out: sample it from nearer the middle
-    past = np.clip(th - t1, 0, None)
-    s = splay * np.clip(1 - past / 40, 0, 1) ** 2 * (th > t1)
+    past = np.clip(t0 - th, 0, None)
+    s = splay * np.clip(1 - past / 40, 0, 1) ** 2 * (th < t0)
     src_r = rr - s
     sx = cx + src_r * np.cos(np.radians(th))
     sy = cy + src_r * np.sin(np.radians(th))
@@ -452,7 +453,7 @@ def orb_break(rgb, A, cx, cy, r, ang, width, splay):
     A = A * (1 - gap)
     # the faces: just outside the gap's two edges, on the iron
     dist = np.minimum(np.abs(th - t0), np.abs(th - t1)) * np.radians(1) * rr
-    face = np.clip(1.2 - dist / 7, 0, 1) * (1 - gap) * (A > 0.5) * ring
+    face = np.clip(1.3 - dist / 20, 0, 1) * (1 - gap) * (A > 0.5) * ring
     face *= 0.6 + 0.4 * blur(rng.random((H, W)), 0.6) / 0.5 * 0.5
     return rgb, A, blur(face.astype(np.float32), 0.7)
 
@@ -478,6 +479,10 @@ def orb_bar(rgb, A, cx, cy, r_in, r_out, skip):
     th = np.degrees(np.arctan2(yy - cy, xx - cx))
     keep = np.clip((np.abs(th - (skip[0] + skip[1]) / 2) - (skip[1] - skip[0]) / 2) / 10, 0, 1)
     w = (A > 0.02) * (rr > r_in - 6) * (rr < r_out + 45) * keep
+    # (the link through its foot: brought up to the ring's light, its texture calmed)
+    link = (A > 0.02) * (1 - keep) * (rr > r_in - 6)
+    calm = np.stack([blur(rgb[..., i], 1.5) for i in range(3)], 2) * 0.6 + rgb * 0.4
+    rgb = rgb * (1 - link[..., None]) + np.clip(calm * 1.45, 0, 1) * link[..., None]
     return rgb * (1 - w[..., None]) + bar * w[..., None]
 
 
@@ -556,7 +561,7 @@ def orb(theme, check=None):
         iron *= S["luma"] / cur
         print(f"{theme}: iron luma {cur:.3f} -> {S['luma']}")
     # the fracture's raw metal: bright, cold, ragged
-    raw = np.array([0.82, 0.85, 0.90]) * (0.8 + 0.4 * np.random.default_rng(7).random((H0, W0, 1)))
+    raw = np.array([0.40, 0.42, 0.46]) * (0.8 + 0.4 * np.random.default_rng(7).random((H0, W0, 1)))
     iron = iron * (1 - face[..., None]) + raw * face[..., None]
     if "rim" in S:
         # a cool line of light on the outer edge above the glass's middle (it holds against dark ground)
@@ -592,6 +597,16 @@ def orb(theme, check=None):
         lip = rowmap(fy) + fb * np.sqrt(np.clip(1 - ((xx - fx) / fa) ** 2, 0, 1))
         hole *= np.clip((lip - yy) / 1.5, 0, 1)
     A *= 1 - hole
+    if S.get("backplate"):
+        # an opaque soot plate in any gap inside the casing's outline (the scene never shows through it)
+        disk = np.hypot(xx - cx, yy - cy_o) < r + ORB_TUCK
+        inner = nd.binary_fill_holes((A > 0.3) | disk) & ~(np.hypot(xx - cx, yy - cy_o) < r - 2)
+        plate = blur((inner & (A < 0.95)).astype(np.float32), 0.7) * inner
+        soot = np.array([0.035, 0.036, 0.042])
+        lit = lit * A[..., None] + soot * plate[..., None] * (1 - A[..., None])
+        cold = cold * A[..., None] + soot * plate[..., None] * (1 - A[..., None])
+        A = np.maximum(A, plate)
+        lit /= np.maximum(A, 1e-3)[..., None]; cold /= np.maximum(A, 1e-3)[..., None]
     sil = A > 0.3
     rows_ = np.where(sil.any(1))[0]
     top_row, bot_row = int(rows_[0]), int(rows_[-1]) + 1
@@ -640,9 +655,9 @@ def orb(theme, check=None):
         g_ = ring[..., :3].mean(2, keepdims=True)
         ring[..., :3] = g_ * np.array([0.80, 0.84, 0.92]) * 0.8 + (ring[..., :3] - g_) * 0.15
         ri = Image.fromarray((np.clip(ring, 0, 1) * 255).astype(np.uint8), "RGBA").rotate(-90, expand=True, resample=Image.BICUBIC)
-        kr = RING_1080 * 2 / ri.height
+        kr = RING_1080 * 2 * 1.3 / ri.height
         ri = ri.resize((max(1, round(ri.width * kr)), round(ri.height * kr)), Image.LANCZOS)
-        ex2 = ox + S["eye"][0] * K - ri.width * 0.22
+        ex2 = ox + S["eye"][0] * K - ri.width * 0.12
         ey2 = oy + rowmap(S["eye"][1]) * K - ri.height / 2
         for im_ in (L_im, C_im):
             im_.alpha_composite(ri, (round(ex2), round(ey2)))
