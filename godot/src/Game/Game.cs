@@ -892,6 +892,7 @@ public partial class Game : Node, IZoneHost
         double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds;
         // (--pace: each line's time, length and her health, for the tutorial's pacing audit)
         if (Args.Has("pace")) GD.Print($"pace say t={Battle?.Time ?? 0:0.0} up={up:0.0} hp={Battle?.Player.Hp ?? 0:0}/{Battle?.MaxHp ?? 0:0} text={(text.Length > 60 ? text[..60] : text)}");
+        if (Args.Has("pace") && Args.Has("shot")) Shots.Want($"say_{Battle?.Time ?? 0:000}", 1.2);
         hud.Say(text, who, up);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }

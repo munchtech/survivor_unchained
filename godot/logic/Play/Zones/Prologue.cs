@@ -68,6 +68,8 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The Ambush's trap: when the ditch rose (stage time; none yet: the wagon is still quiet), and the
     /// bowmen it put up, whose first volley comes all at once and teaches the dash (au i15).</summary>
     double sprungAt = -1;
+    /// <summary>The wagon's trap has sprung (the pacing log, a shot of it).</summary>
+    public bool Sprung => sprungAt >= 0;
     bool wagonSaid;
     readonly List<Enemy> bowmen = new();
     readonly List<(double X, double Z, int Light, string Flame)> pylons = new();
