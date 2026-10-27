@@ -45,7 +45,7 @@
   "kk-halloween-lantern_standing-0"
  ],
  "place": [
-  {"preset": "castle", "x": 3.0, "z": -650.0, "y": 0.2, "scale": 0.5},
+  {"preset": "castle", "x": 3.0, "z": -650.0, "y": 0.2, "scale": 0.6},
   {
    "preset": "bedroll_open",
    "x": -12.9,

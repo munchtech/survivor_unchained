@@ -238,6 +238,9 @@ public partial class Atmosphere : Node3D
         Key.ShadowOpacity = (float)p.ShadowStrength;
 
         var s = p.Sky;
+        // (E8 r2) the far castle stands only under a night sky (C01 s8a's lamp); by day or dawn it would show over the
+        // gate's silhouette (C04 A8) in the night's haze
+        OwnProps.FarShown(C(s.Top).Luminance < 0.08f);
         sky.SetShaderParameter("top", C(s.Top));
         sky.SetShaderParameter("horizon", C(s.Horizon));
         sky.SetShaderParameter("bottom", C(s.Bottom));

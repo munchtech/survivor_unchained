@@ -221,6 +221,9 @@ public static class OwnProps
     }
 
     static ShaderMaterial? far;
+    static bool farShown = true;
+    /// <summary>(E8 r2) Whether the far castle draws (Atmosphere.Set: only under a night sky).</summary>
+    public static void FarShown(bool on) { farShown = on; far?.SetShaderParameter("shown", on ? 1f : 0f); }
     /// <summary>(E8) The far castle's (C01 s8a, 265 m off): the props atlas times the vertex colours, the zone's fog
     /// off and its own haze in its place (Godot's fog at that range left a flat fog-coloured shape, its windows gone),
     /// the lit windows (vertex alpha 0) glowing their own colour (shaders/far_castle.gdshader).</summary>
@@ -231,6 +234,7 @@ public static class OwnProps
             if (far != null) return far;
             far = new ShaderMaterial { ResourceName = "far_castle", Shader = GD.Load<Shader>("res://shaders/far_castle.gdshader") };
             far.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{Dir}/props_albedo.jpg"));
+            far.SetShaderParameter("shown", farShown ? 1f : 0f);
             return far;
         }
     }
