@@ -2117,7 +2117,13 @@ SPEC = {
     # oldleather's scan and tint, its grain a third coarser, with broad tonal patches and pale scuffs baked in (HIDE_MOTTLE
     # "patch,scuff" strengths; 0,0 = oldleather's look); "rawhide" the pale thongs crossing it)
     "hide": ("Leather014", (1, 0.96, 0.62), None, 3, 0.0, None),
-    "rawhide": ("Leather014", (1.0, 0.9, 0.72), 122, 3, 0.0, None),   # (a pale tan: (1, 0.84, 0.56) read orange cord)
+    # (Body 18, judge: "salmon-pink ... reads as ballet/gladiator ribbons, not rawhide": desaturated toward yellow-cream,
+    # the scan's own R:G:B 1.46:1:0.93 tinted to ~1.12:1:0.74, mean 122 -> 108 (frame about #736349, luma ~90);
+    # was (1.0, 0.9, 0.72), 122)
+    "rawhide": ("Leather014", (0.768, 1.0, 0.796), 108, 3, 0.0, None),
+    # (Body 18, judge on the panel: "a burnished edge, a 4-6 mm band ~35% lighter on both long edges and the hem":
+    # oldleather's scan and tint at a mean 35% over its own 54, a little glossier where hands and wear polish it)
+    "burnished": ("Leather014", (1, 0.96, 0.62), 73, 4, 0.0, 0.62),
     "velvet": ("velour_velvet", (0.32, 0.1, 0.45), None, 5, 0.0, None),
     "linen": ("rough_linen", (0.3, 0.4, 0.25), None, 5, 0.0, None),
     "fur": ("curly_teddy_natural", (0.55, 0.42, 0.32), 70, 4, 0.0, 0.9),
@@ -5497,7 +5503,13 @@ REAVER_PANEL = os.environ.get("REAVER_PANEL", "new")
 # (Body 18, judge: "side-on it reads as a cord": the taper eased, the hem ~20% wider)
 # (its tongues fanned a little more: hem 98 -> ~120 mm, its top as it was; Body 17's PANEL_TAPER=0.03 PANEL_SPLAY=0.05)
 PANEL_TAPER = float(os.environ.get("PANEL_TAPER", "0.0"))
-PANEL_SPLAY = float(os.environ.get("PANEL_SPLAY", "0.08"))
+# (Body 18 r2, judge: "side-on still a thin straight strap ... fix the shape, not the width": PANEL_WRAP its sides swept
+# back (m, see hanging()), a burnished edge PANEL_EDGE_W wide in PANEL_EDGE (round 1: darkleather 0.01), the tongues
+# fanned 10-15 deg (splay 0.08 -> 0.12: the outer ~13)
+PANEL_SPLAY = float(os.environ.get("PANEL_SPLAY", "0.12"))
+PANEL_WRAP = float(os.environ.get("PANEL_WRAP", "0.021"))
+PANEL_EDGE = os.environ.get("PANEL_EDGE", "burnished")
+PANEL_EDGE_W = float(os.environ.get("PANEL_EDGE_W", "0.005"))
 REAVER_BOOT = os.environ.get("REAVER_BOOT", "hide")
 # (FRINGE_ONE: a front panel given `one_piece` moves as one piece below its top; see hanging())
 FRINGE_ONE = os.environ.get("FRINGE_ONE", "1") == "1"
@@ -5514,7 +5526,7 @@ def fringe(hem, strips, depth, notch=0.18):
 
 
 def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56, snug=None,
-            strips=None, one_piece=None, taper=0.0, crease=None, splay=0.0, notch_depth=0.0):
+            strips=None, one_piece=None, taper=0.0, crease=None, splay=0.0, notch_depth=0.0, wrap=0.0):
     """Cloth hanging from her hips, all round her between the angles a0 and
     a1 (radians; 0 her front, rising toward her left): at each angle it
     falls from the hips, flaring out by `flare` a metre of fall, and never
@@ -5570,6 +5582,12 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
         ca, cw, cd = crease
         g_ = lambda x: np.exp(-(x / cw) ** 2)
         r = r - cd * ramp(fall_, 0.06, 0.16) * (g_(aa - ca) - 0.35 * g_(aa - ca - 1.6 * cw))
+    if wrap:
+        # (Body 18, the reaver's panel side-on "a thin straight strap": its cross-section curved round her thighs, the
+        # sides swept back by up to `wrap` (m, at its edges, quadratic across it) from 2 cm below its top to 22 cm,
+        # never nearer her than its clearance)
+        un_ = (aa - (a0 + a1) / 2) / ((a1 - a0) / 2)
+        r = np.maximum(r - wrap * un_ ** 2 * ramp(fall_, 0.02, 0.22), R + clear)
     a_pos = aa
     if splay and strips:
         u0_ = (aa - a0) / (a1 - a0) * 2 - 1
@@ -9244,8 +9262,8 @@ def reaver():
                   flare=0.06, lift=0.016, trim=edge(0.01), nu=120, strips=11, one_piece=0.7) if REAVER_PANEL == "old" else
           hanging("reaver.loin_front", -0.34, 0.34, bz0,
                   fringe(lambda u: bz0 - 0.37 + 0.045 * u * u + 0.007 * np.sin(5.3 * u + 0.8) + 0.004 * np.sin(11.7 * u + 2.1), 9, 0.05, notch=0.3),
-                  "oldleather", flare=0.05, lift=0.016, trim=edge(0.01), nu=120, strips=9, one_piece=0.7,
-                  taper=PANEL_TAPER, crease=(0.07, 0.035, 0.006), splay=PANEL_SPLAY, notch_depth=0.05)),
+                  "oldleather", flare=0.05, lift=0.016, trim=edge(PANEL_EDGE_W, PANEL_EDGE), nu=120, strips=9, one_piece=0.7,
+                  taper=PANEL_TAPER, crease=(0.07, 0.035, 0.006), splay=PANEL_SPLAY, notch_depth=0.05, wrap=PANEL_WRAP)),
         # Wolf fangs on a cord round her neck, hanging into her cleavage:
         # trophies of the Verge's wolves.
         # (TAUT_CORD: laid from inside the base of her neck, so no point jumps from her collarbone to her neck
@@ -9306,6 +9324,8 @@ TS_THONG = float(os.environ.get("TS_THONG", "0.014"))       # (each thong's widt
 REAVER_HIDE = os.environ.get("REAVER_HIDE", "hide")
 REAVER_THONG_KEY = os.environ.get("REAVER_THONG_KEY", "rawhide")
 TS_PUCKER = float(os.environ.get("TS_PUCKER", "0.016"))
+TS_GAPS = [float(v) for v in os.environ.get("TS_GAPS", "1.18,0.84,1.1,0.88").split(",")]
+TS_KNOT = os.environ.get("TS_KNOT", "1") == "1"
 TS_PUCKER_SIZE = [float(v) for v in os.environ.get("TS_PUCKER_SIZE", "0.015,0.010,0.0042,0.0018").split(",")]
 
 
@@ -9459,7 +9479,14 @@ def reaver_turnshoe(sd):
     ring = snap(_ts_smooth(_ts_resample(_ts_smooth(ring, 3, True), 0.006, True), 3, True))
     nt = REAVER_THONGS
     ph = np.linspace(0, 2 * np.pi * nt, 160 * nt)
-    zt = z0 + (z1 - z0) * (ph + 0.75 * np.sin(ph)) / (2 * np.pi * nt)
+    # (Body 18, judge: "a perfectly even X-lattice reads as ballet/gladiator ribbons": the turns' heights uneven,
+    # TS_GAPS each turn's share (-+15-20%), so the crossings sit irregularly as a hand wraps them; "1" = even)
+    g_ = np.resize(np.array(TS_GAPS), nt)
+    g_ = g_ / g_.mean()
+    cum = np.r_[0, np.cumsum(g_)] / nt
+    tt_ = ph / (2 * np.pi)
+    gk = g_[np.clip(np.floor(tt_).astype(int), 0, nt - 1)]
+    zt = z0 + (z1 - z0) * (np.interp(tt_, np.arange(nt + 1), cum) + gk * 0.75 * np.sin(ph) / (2 * np.pi * nt))
     th_a, th_b = (snap(_ts_smooth(_ts_resample(_ts_smooth(on_leg(s_ * ph, zt), 3, False), 0.006, False), 3, False)) for s_ in (1, -1))
 
     def over(c, others):
@@ -9478,6 +9505,26 @@ def reaver_turnshoe(sd):
     out.append(band(f"{name}_thongring", ring, REAVER_THONG_KEY, TS_THONG, 0.0022, True, nv=6))
     out.append(band(f"{name}_thong0", th_a, REAVER_THONG_KEY, TS_THONG, 0.0022, False, nv=6, rise=over(th_a, [(ring, None), (th_b, False)])))
     out.append(band(f"{name}_thong1", th_b, REAVER_THONG_KEY, TS_THONG, 0.0022, False, nv=6, rise=over(th_b, [(ring, None), (th_a, True)])))
+    # (Body 18, judge: "add a knot with two short tails under the fur cuff": where the two thongs end, crossed in front
+    # at z1, a tight loop of thong over the crossing and two tails of unequal length hanging from it)
+    if TS_KNOT:
+        e_ = (th_a[-1] + th_b[-1]) / 2
+        ax_e = knee + (ank - knee) * ((knee[2] - e_[2]) / (knee[2] - ank[2]))
+        o_ = e_ - ax_e
+        o_[2] = 0
+        o_ /= np.linalg.norm(o_) + 1e-12
+        sd_ = np.cross([0, 0, 1.0], o_)
+        a_ = np.linspace(0, 2 * np.pi, 24, endpoint=False)
+        knot = snap(e_ + 0.0065 * (np.outer(np.cos(a_), sd_) + np.outer(np.sin(a_), [0, 0, 1.0])))
+        out.append(band(f"{name}_thongknot", knot, REAVER_THONG_KEY, TS_THONG * 0.75, 0.0024, True, nv=6, rise=0.0034))
+        t0_ = math.atan2(o_[0], -o_[1])
+        for k_, (dt_, ln_) in enumerate(((0.22, 0.062), (-0.15, 0.045))):
+            u_ = np.linspace(0, 1, 24)
+            tail = on_leg(t0_ + dt_ * u_ ** 1.3, e_[2] - 0.004 - ln_ * u_)
+            if len(tail) > 4:
+                tail = snap(_ts_smooth(_ts_resample(_ts_smooth(tail, 2, False), 0.005, False), 2, False))
+                out.append(band(f"{name}_thongtail{k_}", tail, REAVER_THONG_KEY, TS_THONG * 0.8, 0.0022, False, nv=6,
+                                rise=0.0026 * (1 - np.linspace(0, 1, len(tail))) ** 2))
     print("TURNSHOE %s: seam %.0f mm, %d puckers, thongs %d turns from %.3f to %.3f m (%d, %d points), ring %d" % (
         name, 1000 * sl_[-1], ribs, nt, z0, z1, len(th_a), len(th_b), len(ring)))
     return out
@@ -10905,6 +10952,17 @@ if os.environ.get("PANEL_W", "1") == "1" and "panel_front" in arm.data.bones:
                 for nm_, d_ in zip(_fd["shapes"], (d1, d2, dn)):
                     kb_ = o.shape_key_add(name=nm_, from_mix=False)
                     kb_.data.foreach_set("co", (base_ + d_ @ Minv.T).ravel())
+                # (Body 18) its half over each thigh lifted along its face (her front, -Y) as that thigh swings forward
+                # (helpers.py SPEC "panels" "fold" "side"; HerJoints drives them): none in its top 3 cm, all 12 cm down
+                _sd = _fd.get("side")
+                if _sd:
+                    g2_ = np.clip((_top - Wp[:, 2] - 0.03) / 0.09, 0, 1)
+                    for nm_, sg_ in zip(_sd["shapes"], (1, -1)):
+                        t2_ = np.clip((sg_ * Wp[:, 0] - _sd["x"][0]) / (_sd["x"][1] - _sd["x"][0]), 0, 1)
+                        d_ = np.zeros_like(Wp)
+                        d_[:, 1] = -_sd["lift"] * t2_ * t2_ * (3 - 2 * t2_) * g2_
+                        kb_ = o.shape_key_add(name=nm_, from_mix=False)
+                        kb_.data.foreach_set("co", (base_ + d_ @ Minv.T).ravel())
                 _moved += int((w_[:, 0] > 0).sum())
             print("PANEL FOLD reaver.loin_front: hinge %.3f m (middle y %.3f), %d points in its lower half, shapes %s"
                   % (_yh, _H[1], _moved, ", ".join(_fd["shapes"])))
