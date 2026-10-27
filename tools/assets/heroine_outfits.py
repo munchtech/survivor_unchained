@@ -3928,6 +3928,15 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos = pos + nor * lift
     if hull is not None:
         pos = hulled(pos, at[:, -3], tris, fill=HULL_FILL.get(name, 0))
+        if HULL_FILL.get(name):
+            # (filled, a point over her toes may come from between them: its weights from her skin nearest where it
+            # now is (her leg's), not where it was cut; as cut, her toes came out through it in the walk, 122 samples)
+            sel_ = np.where(LEGW[name[-1]] > 0.5)[0]
+            d_, j_ = cKDTree(P[sel_]).query(pos, k=6)
+            iw_ = 1.0 / np.maximum(d_, 1e-4)
+            nw_ = (W[sel_][j_] * iw_[:, :, None]).sum(1) / iw_.sum(1)[:, None]
+            t_ = np.clip((at[:, -3] + 0.02) / 0.02, 0, 1)[:, None]
+            at[:, 3:3 + NB] = at[:, 3:3 + NB] * (1 - t_) + nw_ * t_
     pos = relax(pos, tris, interior=smooth, edge=edge)
     if iron:
         pos = taubin(pos, tris, rounds=iron)
