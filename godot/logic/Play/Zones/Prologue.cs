@@ -517,7 +517,14 @@ public sealed class Prologue : ZoneRuntime
         // waited out its patience for "notyet" and came at 16%. Its gap after another freeze or a draft is 3 s, not 5:
         // urgent, its moment is now, and it still leaves a beat of play between two freezes.)
         if (p.Alive && p.Hp < B.MaxHp * 0.7 && G.Journey.Draughts > 0)
-            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught" }, "draught", gap: 3, urgent: true);
+        {
+            // (MR5 judge r2: never on the Knight's windup, nor 1.5 s after his windup/lunge ends. The ask is withheld, and
+            // a queued one is let go by Still the tick he winds up; asked again every tick, it requeues once the hold ends.)
+            if (knight is { Alive: true } kd && kd.State is EnemyState.Windup or EnemyState.Lunging) knightBusyAt = B.Time;
+            if (!KnightHolds())
+                G.Teach(new Callout("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught" }, "draught")
+                    { Gap = 3, Urgent = true, Still = () => !KnightHolds() });
+        }
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
             G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
@@ -641,10 +648,20 @@ public sealed class Prologue : ZoneRuntime
     /// health she's lost since the spring; pulled above the curve; harder below the floor while she stands. (Idle runs lost
     /// 78% by 28 s (amb5), 84% (amb9), 26% (amb7), 9% (amb10): her drafts' dodge, block and armor, her kills and
     /// whether her dash cleared the volley swing it. A dodging player never meets the curve.) Full everywhere else.</summary>
+    /// <summary>The Knight is winding up or lunging, or did within 1.5 s (the draught lesson waits).</summary>
+    bool KnightHolds() => knight is { Alive: true } k && (k.State is EnemyState.Windup or EnemyState.Lunging || B != null && B.Time - knightBusyAt < 1.5);
+    double knightBusyAt = -99;
+    int lastDraughts = -1;
+    /// <summary>She drank a draught in the Ambush: the x2.5 push is off for the rest of it.</summary>
+    bool drankInAmbush;
+
     double AmbushMul(double dt)
     {
         if (B == null) return 1;
         var p = B.Player;
+        int dr = G.Journey.Draughts;
+        if (lastDraughts >= 0 && dr < lastDraughts && Now == Stage.Ambush) drankInAmbush = true;
+        lastDraughts = dr;
         if (dt > 0) { stillT = Dist(p.X, p.Z, lastAt.X, lastAt.Z) < 0.8 * dt ? stillT + dt : 0; lastAt = new XZ(p.X, p.Z); }
         if (Now != Stage.Ambush || sprungAt < 0) return 1;
         // (on the health she shows, not the damage taken: amb12-14 took 37-38% by 30 s and showed 10-25% lost, the
@@ -653,7 +670,7 @@ public sealed class Prologue : ZoneRuntime
         if (lost > B.MaxHp * AmbushCurve * f) return AmbushPulled;
         // (the push only through the opening, and on 3 s of standing: the pilot pauses in the fight's last seconds,
         // and n6 and n8 lost 23% and 22% there under it)
-        return f < AmbushOpen && stillT > 3 && lost < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
+        return f < AmbushOpen && stillT > 3 && !drankInAmbush && lost < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
     }
     /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
     readonly HashSet<int> boltsSpent = new();
