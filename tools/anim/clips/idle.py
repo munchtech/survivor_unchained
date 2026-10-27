@@ -33,7 +33,8 @@ def layered(name, rig, base: Clip, over, meta=None) -> Clip:
     n = base.frames
     rot, pos = solve_frames(rig, [over(f / max(n - 1, 1), f) for f in range(n)], [(base.rot[f], base.pos[f]) for f in range(n)],
                             loop=base.loop, weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)),
-                            tilt=float((meta or {}).get("grip_tilt", 0.0)))
+                            tilt=float((meta or {}).get("grip_tilt", 0.0)),
+                            slide_l=float((meta or {}).get("grip_slide_l", 0.0)))
     m = dict(base.meta)
     m.update(meta or {})
     return Clip(name, base.fps, rot, pos, loop=base.loop, meta=m)
@@ -489,9 +490,23 @@ def _smooth(u):
 # Each fist from its shoulder (chest frame, m; x toward her left), the elbow's pole (chest frame), and the haft: `out`
 # deg out from plumb, `back` deg trailing behind it (- ahead), `edge` the bit turned that many deg out from straight
 # back (with `knuckles`; off: the fist's roll left to the forearm, the bit forward and down).
-AXE_IDLE = {"hand": (0.085, -0.49, 0.05), "pole": (0.3, -0.2, -1.0), "out": 14.0, "back": -48.0, "edge": 0.0,
+# (Round 2, 27 Oct: the fist gripped at the very end of the haft read as holding the axe out, and the right and left
+# were mirror images. Now: the fist AXE_GRIP up the haft (below); the haft ~65 deg below level (60 before, to ~24 deg from
+# plumb) with the splay 16-17 -> ~8-9 deg, got by the target and the hand 2 cm lower (the wrist's strain 22-23 swing,
+# 17 ulnar, below the 30 / 24 it had), not by asking the wrist; the elbow soft, 29-34 deg. `back` is the target's trail
+# only: the wrist cannot reach what is asked for (45 asked, 24 got); it was 48 asked, 31 got.
+# The left breaks the mirror: its arm hangs straighter (hand 1.4 cm lower, the shoulder ~6 deg back: the elbow ~15-22 deg),
+# its haft ~8 deg nearer plumb (pitch -73) and its splay 4-5 deg wider (13 deg out), so the pair read as two angles and the
+# head stays off her left foot.)
+AXE_IDLE = {"hand": (0.085, -0.51, 0.05), "pole": (0.3, -0.2, -1.0), "out": 6.0, "back": -45.0, "edge": 0.0,
             "sway": 0.010, "knuckles": False}
-AXE_IDLE_L = {}   # the left's own differences (mirrored otherwise)
+AXE_IDLE_L = {"hand": (0.085, -0.524, 0.0), "out": 10.0, "back": -30.0}   # the left's own differences (mirrored otherwise)
+# Her fist closed higher on the haft (animation 55, 27 Oct: gripped at the very end of a long haft the axe read as held out
+# at arm's length): the fist `grip` m nearer the head, the end showing behind it. The clips carry it as a negative
+# "grip_slide" (the right) and "grip_slide_l" (the left; keyed.solve_frames slide_l, OwnClips.GripSlideL), the game sliding
+# the axe back through the fist by as much; the key's hand is laid that far back up the haft so the wrist stays where it
+# hangs. The left's own `grip` may differ (AXE_IDLE_L).
+AXE_GRIP = 0.13
 
 
 def _axe_down(side, t, a):
@@ -504,10 +519,22 @@ def _axe_down(side, t, a):
     eb = np.array([sg * math.sin(e), math.sin(b), -math.cos(b)])
     eb = eb - haft * float(eb @ haft)
     pole = np.array(a["pole"], float) * (sg, 1.0, 1.0)
+    # (A grip higher on the haft: the key's hand is where the piece's line passes `grip` m back toward the butt of the wrist
+    # the clip wants; solve_frames' shift brings the wrist up the haft to the fist's place.)
+    h = h - a.get("grip", AXE_GRIP) * np.array(_n(haft))
     spec = {"arc": arc_of(h), "pole": tuple(pole), "frame": a.get("frame", "char"), "blade": tuple(_n(haft)), "twist": 0.5}
     if a.get("knuckles", True):
         spec["knuckles"] = tuple(_n(eb))
     return spec
+
+
+def axe_grip(both=False):
+    """The meta of every clip that holds the hanging axe (idle_reaver, idle_reaver_axes, idle_reaver_break): the fist closed
+    AXE_GRIP higher on the haft (a negative slide), the left's as well when `both`."""
+    m = {"grip_slide": -AXE_IDLE.get("grip", AXE_GRIP)}
+    if both:
+        m["grip_slide_l"] = -{**AXE_IDLE, **AXE_IDLE_L}.get("grip", AXE_GRIP)
+    return m
 
 
 def reaver_shoulder(t, f):
@@ -1032,9 +1059,12 @@ POMMEL_TOP = (0.207, 0.231, 0.055)
 # PALM: the point of the palm (hand_l's frame; +x the palm side, +y the fingers, +z the thumb) laid on POMMEL_TOP;
 # DRAPE: the fingers' bends over the lobe (deg, knuckle/middle/last).
 PALM_L = (0.024, 0.085, -0.004)
-DRAPE_L = {"bends": {"index": [48.0, 55.0, 26.0], "middle": [50.0, 56.0, 27.0], "ring": [46.0, 53.0, 25.0],
-                     "pinky": [54.0, 55.0, 25.0], "thumb": [6.0, 14.0, 12.0]},
-           "spreads": {"index": -4.0, "middle": 0.0, "ring": 3.0, "pinky": 7.0}}
+# (27 Oct, the owner's note on limp fingers: the middle joints curled 15-20 deg more, graded from the index to the little
+# finger, the knuckle bends 14-17 deg and the last joints 8-10 deg less to keep them off the pommel, as far from it as
+# before (9-14 mm bone to pommel, now 10-18), and drawn together by about 5 deg of fan: spreads -4..7 -> -2.2..3.9.)
+DRAPE_L = {"bends": {"index": [34.0, 70.0, 18.0], "middle": [36.0, 72.5, 19.0], "ring": [29.0, 71.0, 15.0],
+                     "pinky": [40.0, 75.0, 17.0], "thumb": [6.0, 14.0, 12.0]},
+           "spreads": {"index": -2.2, "middle": 0.0, "ring": 1.7, "pinky": 3.9}}
 
 
 def rest_on_pommel(rig, clip, pole=(0.15, -0.55, -1.0), ext=10.0, palm=PALM_L, fingers=None, push=HIP_BLADE_OUT,
@@ -1113,6 +1143,8 @@ def clips(rig, want):
         meta = {"weapon": weapon}
         if name == "idle_arcanist":
             meta.update(arc_grip())
+        if name in ("idle_reaver", "idle_reaver_axes"):
+            meta.update(axe_grip(name == "idle_reaver_axes"))
         clip = layered(name, rig, base, arms, meta)
         if name in POST:
             clip = POST[name](rig, clip)
