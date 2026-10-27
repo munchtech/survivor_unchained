@@ -305,6 +305,9 @@ public sealed partial class Battle
     /// <summary>Minibosses slain, by family: each carries out two of its people's material (crafting's, design 6.1).</summary>
     public readonly Dictionary<Family, int> MinibossesByFamily = new();
     public double DamageTaken, GoldGained;
+    /// <summary>What the dead's blows on the survivor are scaled by (1: as they land). Set by a zone's own fight only
+    /// (the Prologue's Ambush pulls its blows once an idle player is down to its curve, MR5 item 11).</summary>
+    public double FoeHitMul = 1;
     /// <summary>How much of GoldGained is already in the survivor's purse.</summary>
     public double GoldBanked;
     public double GoldTotal => GoldGained;
@@ -1171,6 +1174,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive || !Combat) return 0;
+        amount *= FoeHitMul;
         stoneLull = 0;
         if (p.Iframes > 0 || p.Leap != null)
         {
