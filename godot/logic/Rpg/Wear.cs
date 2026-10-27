@@ -157,8 +157,8 @@ public static class Wear
         return (hex, sat < 0.15 && mx >= 0.5);
     }
 
-    /// <summary>The darker bronze her trim takes under a gold plate dye (a trial hex can replace it: env GOLD_TRIM, read in HerWear).</summary>
-    public const string GoldTrimBronze = "#8a5c30:metal";
+    /// <summary>The darker bronze her trim takes under a gold plate dye (Body 18 judge 1: #8a5c30 read as flat tarnished brown; warmer toward copper and ~10% lighter. A trial hex can replace it: env GOLD_TRIM, read in HerWear).</summary>
+    public const string GoldTrimBronze = "#9c6434:metal";
 
     /// <summary>Why: a gold metal dye on the "metal" zone makes the plate the same colour as the gold trim (trim zone: gold, claspgold,
     /// wiregold, bronze, rivetbronze), which swallows the trim. When the "metal" entry is a metal dye whose colour is gold or brass
