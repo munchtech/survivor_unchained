@@ -416,12 +416,16 @@ uniform float spec_cap = 0.2;
 // (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
 // cheek at the Look, face 32 r2: a gold sheen under 0.8)
 uniform float metal_cap = 0.8;
-// (the night skin-line hold, face 46 skin C: a warm lamp's colour on her skin pulled toward white, its luminance kept, until
-// its tint (the lamp over its own luminance, less white) is no longer than hold_chroma: under the town's fires her lit skin
-// went orange/salmon off her skin line while her hair, clothes and the scene keep the lamps' full warmth. Automatic: a
-// near-white lamp is within reach and untouched; directional lamps (sun, moon) and cool lamps untouched. 0: as before.)
+// (the night skin-line hold, face 46 skin C: under the close view's warm night lamps her lit skin went orange/salmon off
+// her skin line (the night grade warms her highlights further), while her hair, clothes and the scene keep the lamps'
+// full warmth. skin_hold (0 to 1, the close view's night weight, People.HerSkinHold) pulls each warm lamp's colour on her
+// skin toward hold_tint (an amber, more yellow than the fires', so after the grade she lands on her line), until its
+// tint (the lamp over its own luminance) is within hold_chroma of hold_tint's; its luminance kept, times hold_gain.
+// Directional lamps (sun, moon) and cool lamps untouched. 0: as before.)
 uniform float skin_hold = 0.0;
-uniform float hold_chroma = 0.3;
+uniform vec3 hold_tint = vec3(1.0, 0.85, 0.55);
+uniform float hold_chroma = 0.0;
+uniform float hold_gain = 1.0;
 // (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
 // clavicle and across her chest as whitish-grey, violet under a cool lamp ("an ashy smear", judge J2, face 36; with
 // spec_cap 0 her chest's hue 25 against her face's 39, at 0.2 -14). Where her albedo's luminance is under deep_lum.x (all
@@ -769,9 +773,11 @@ void light() {
 	} else {
 	vec3 lc = LIGHT_COLOR;
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
-		float ly = max(dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722)), 1e-5);
-		vec3 ld = LIGHT_COLOR / ly - 1.0;
-		lc = ly * (1.0 + ld * mix(1.0, min(1.0, hold_chroma / max(length(ld), 1e-5)), skin_hold));
+		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
+		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);
+		vec3 ht = hold_tint / max(dot(hold_tint, hlw), 1e-5);
+		vec3 ld = LIGHT_COLOR / ly - ht;
+		lc = mix(LIGHT_COLOR, ly * hold_gain * (ht + ld * min(1.0, hold_chroma / max(length(ld), 1e-5))), skin_hold);
 	}
 	float c_ndv = max(dot(dn, VIEW), 1e-4);
 	float s_ndv = max(dot(NORMAL, VIEW), 1e-4);

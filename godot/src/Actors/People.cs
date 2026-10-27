@@ -1895,10 +1895,11 @@ public static class People
     /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
     static void HerZones(ShaderMaterial m, Look look, bool? head)
     {
-        // (face 46 skin C: the night skin-line hold, each warm lamp's colour on her skin held near white, its luminance kept;
-        // --skin-hold off: none, as before)
-        m.SetShaderParameter("skin_hold", SkinHoldOff ? 0f : 1f);
-        m.SetShaderParameter("hold_chroma", HoldChroma);
+        // (face 46 skin C, the night skin-line hold's lamp (HerSkinHold): an amber, a redder one on deep skin; its gain
+        // keeps her lightness (on deep the night grade's toe took 0.025 Oklab L off her face at the lamps' own luminance))
+        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep0(look)));
+        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
+        m.SetShaderParameter("hold_chroma", 0f);
         if (SkinZonesOff) return;
         if (head == true)
         {
@@ -1909,10 +1910,7 @@ public static class People
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
                 m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
         }
-        // (deep: 0 at her own fair paint, 1 at the Deep swatch's lightness)
-        var t = HerTone(look);
-        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
-        float deep = Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+        float deep = deep0(look);
         m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
         m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
         m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
@@ -1949,9 +1947,20 @@ public static class People
         m.SetShaderParameter("peel_fade", Peel.Fade);
     }
 
+    /// <summary>Her skin's darkness for her zones and hold: 0 at her own fair paint, 1 at the Deep swatch's lightness.</summary>
+    static float deep0(Look look)
+    {
+        var t = HerTone(look);
+        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
+        return Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+    }
+
+    // (tuned at the town night close-up, face 46: fair forehead/cheek/nose/neck/shoulder hue 50-53/52/44/47/50, deep 52/47/47/52/52,
+    // her skin line 48.5; Oklab L within 0.01)
+    static readonly (Vector3 Fair, Vector3 Deep) HoldTint = (new(1f, 0.67f, 0.25f), new(1f, 0.6f, 0.22f));
+    static readonly (float Fair, float Deep) HoldGain = (1.1f, 1.35f);
+
     static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
-    static readonly bool SkinHoldOff = SurvivorUnchained.Args.Get("skin-hold") == "off";
-    static readonly float HoldChroma = 0.3f;
     static readonly float ZoneDeepSpec = 0.8f;
     static readonly float ZoneLipShineDeep = 0.5f;
     static readonly float FreckleKeep = 1f;
@@ -2144,6 +2153,21 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader) m.SetShaderParameter("night_ease", k);
     }
+
+    /// <summary>Her skin's night skin-line hold (heroine_skin.gdshader's skin_hold, 0 by day to 1): each warm lamp's colour
+    /// on her skin pulled toward hold_tint (face 46 skin C), so under the night key and the fires she stays on her skin line
+    /// while her hair, clothes and the scene keep their warmth. GameCloseUp sets it each frame while its night light is on
+    /// her. --skin-hold off: none (as before); --skin-hold K: K of it (pictures).</summary>
+    public static void HerSkinHold(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        k *= SkinHold;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("skin_hold", k);
+    }
+
+    static readonly float SkinHold = SurvivorUnchained.Args.Get("skin-hold") == "off" ? 0f : (float)SurvivorUnchained.Args.Num("skin-hold", 1f);
 
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
     /// (C03, judge r1: a warm ear against a cool face under the moon); 1 gives it back.</summary>
