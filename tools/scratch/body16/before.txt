@@ -1,0 +1,12 @@
+idle_warden_town     chevalier_sword@hand_r out   -7.3..   4.1 ( 11.4)  fore  -25.3.. -23.1 (  2.2)  skin   2.6 outfit   9.7 mm  hand    1 mm f66 l
+walk_warden_town     chevalier_sword@hand_r out  -15.6..  22.4 ( 37.9)  fore  -35.0.. -23.7 ( 11.3)  skin  36.9 outfit  18.2 mm  hand    0 mm f3 l
+run_warden_town      chevalier_sword@hand_r out   -1.0..  12.1 ( 13.2)  fore  -36.8.. -36.0 (  0.9)  skin   0.0 outfit  16.9 mm  hand    8 mm f7 l
+sprint_warden_town   chevalier_sword@hand_r out   -1.6..  13.2 ( 14.8)  fore  -39.6.. -38.8 (  0.8)  skin   0.0 outfit  14.5 mm  hand    9 mm f5 l
+idle_reaver_town     viking_axe@hand_r      out   11.6..  15.5 (  3.9)  fore  -11.2.. -10.1 (  1.1)  skin   0.0 outfit   0.0 mm  hand  179 mm f94 r
+idle_reaver_town     viking_axe@hand_l      out   22.5..  26.3 (  3.8)  fore  -16.1.. -14.0 (  2.1)  skin   0.0 outfit   0.0 mm  hand  160 mm f25 l
+walk_reaver_town     viking_axe@hand_r      out    8.3..  30.2 ( 21.9)  fore  -18.6..  -0.7 ( 17.9)  skin  17.6 outfit  34.4 mm  hand   17 mm f28 r
+walk_reaver_town     viking_axe@hand_l      out    6.5..  28.9 ( 22.4)  fore  -17.4..  -5.0 ( 12.4)  skin  18.0 outfit  10.9 mm  hand   30 mm f6 l
+run_reaver_town      viking_axe@hand_r      out   12.8..  25.4 ( 12.5)  fore  -20.1.. -13.2 (  6.9)  skin   0.0 outfit   0.0 mm  hand  390 mm f11 r
+run_reaver_town      viking_axe@hand_l      out   12.7..  25.4 ( 12.7)  fore  -20.1.. -13.2 (  6.9)  skin   0.0 outfit   0.0 mm  hand  388 mm f2 l
+sprint_reaver_town   viking_axe@hand_r      out   12.2..  26.4 ( 14.1)  fore  -22.7.. -16.0 (  6.7)  skin   0.0 outfit   0.0 mm  hand  404 mm f12 r
+sprint_reaver_town   viking_axe@hand_l      out   12.3..  26.3 ( 14.0)  fore  -22.7.. -15.9 (  6.7)  skin   0.0 outfit   0.0 mm  hand  401 mm f3 l

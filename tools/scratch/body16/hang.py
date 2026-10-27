@@ -133,7 +133,16 @@ for calling, keys in SETS.items():
                             E = qmul(qinv(avg), D); es, et = split(E)
                             I1 = np.array([1.0, 0, 0, 0])
                             tg = qmul(avg, qmul(slerp(I1, es, K), slerp(I1, et, KT)))
-                        o = slerp(o, tg, 1 - math.exp(-dt / TAU))
+                        if "twistnow" in opt:
+                            # the swing about the mean eased; the twist (turn about her vertical) taken now
+                            E = qmul(qinv(avg), D); es, et = split(E)
+                            I1 = np.array([1.0, 0, 0, 0])
+                            sw2 = slerp(I1, es, K)
+                            ws = sw2 if "_ws" not in dir() or f == 0 and p == 0 else slerp(_ws, sw2, 1 - math.exp(-dt / TAU))
+                            _ws = ws
+                            o = qmul(avg, qmul(ws, et))
+                        else:
+                            o = slerp(o, tg, 1 - math.exp(-dt / TAU))
                         sw = o
                         Rw = mat(o) @ Pr @ A[:3, :3]
                     pw = M[:3, :3] @ pl + M[:3, 3]
