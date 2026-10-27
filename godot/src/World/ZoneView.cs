@@ -328,11 +328,18 @@ public partial class ZoneView : Node3D
     static readonly float FordLightUp = SurvivorUnchained.Args.Num("ford-light-up", 0.35f);
     static readonly bool FordPylonLit = !SurvivorUnchained.Args.Has("ford-pylon-dark");
     /// <summary>--ford-flame-k K: the ford flames' brightness over the road lamps' (AgX whitens a bright blue).</summary>
-    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.25f);
+    // (Low Ford r3, judge r2: the ford irons read unlit from the play camera: 0.25 to 0.6, with the river's lamp_pool round them)
+    static readonly float FordFlameK = SurvivorUnchained.Args.Num("ford-flame-k", 0.6f);
     /// <summary>--ford-core-blue B: the ford flames' core pulled toward blue (0 = blue-white, which AgX clips to pure white).</summary>
     static readonly float FordCoreBlue = SurvivorUnchained.Args.Num("ford-core-blue", 1.3f);
     /// <summary>--lamp-scale S: the road lamps' flame scale (the lamp kind's 0.16 m card; the post's cage is 0.27 m tall), for pictures.</summary>
     static readonly float LampScale = SurvivorUnchained.Args.Num("lamp-scale", 1.3f);
+    /// <summary>--holder-lamp-scale S: the flame in our own lamp holders (the posts' 0.27 m cage; Low Ford r1: at 1.3 the flame was
+    /// a sliver beside its lit glass, the cage a pale box), for pictures.</summary>
+    static readonly float HolderLampScale = SurvivorUnchained.Args.Num("holder-lamp-scale", 1.6f);
+    /// <summary>--post-lamp-att A, --post-lamp-energy K: the post lantern's falloff and its light against the road lamps' (the
+    /// ground's pool at 2.1 m kept: 2.1^-0.7 / 2.1^-2 = 2.6, so 0.4), for pictures.</summary>
+    static readonly float PostLampAtt = SurvivorUnchained.Args.Num("post-lamp-att", 0.7f), PostLampEnergy = SurvivorUnchained.Args.Num("post-lamp-energy", 0.4f);
     static readonly float FordFlame = SurvivorUnchained.Args.Num("ford-flame", 1.5f);
     /// <summary>--ford-energy K: the ford lamps' light, for pictures. (E7 round 2: 12 with --ford-att 2.3, so the lamp lays a pool
     /// round its pier, the water at 1 m twice as bright as at 4 m, where at 1 and 1.7 the moon's wash drowned it: 1.4x.)</summary>
@@ -406,9 +413,12 @@ public partial class ZoneView : Node3D
             }
             if (best == null) { Lamps.SetLit(holder, false); continue; }
             int li = glowLight[best];
-            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : LampScale, holder);
+            LampFlame(best, li, at, torch ? FlameKind.Torch : FlameKind.Lamp, false, torch ? 0.8f : HolderLampScale, holder);
             if (!torch) { lights[li].LightColor = new Color(LampColor); lights[li].OmniRange = LampRange; lights[li].OmniAttenuation = LampAtt; }
             specs[li] = specs[li] with { Intensity = specs[li].Intensity * LampEnergy };
+            // (Low Ford r1) a lantern hung at head height (the post's, its flame 2.1 m up): at the falloff's 2 her head, half a
+            // metre under it, took 18 times the ground's light and blew out white; a flatter falloff, the ground's pool held
+            if (kind == "post_lantern") { lights[li].OmniAttenuation = PostLampAtt; specs[li] = specs[li] with { Intensity = specs[li].Intensity * PostLampEnergy }; }
             // A lamp of the zone's own (props_own.json "lamps", by its glow node): the camp's lantern burns amber, not the road's pale warm.
             if (OwnProps.For(Data.Id)?.Lamps.GetValueOrDefault(best) is OwnProps.Lamp own)
             {
@@ -416,8 +426,9 @@ public partial class ZoneView : Node3D
                 if (own.Range > 0) lights[li].OmniRange = own.Range;
                 if (own.Att > 0) lights[li].OmniAttenuation = own.Att;
                 specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
+                if (own.Day < 1) dayDim[li] = own.Day;
             }
-            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (Night || !dayDim.TryGetValue(li, out var dd0) ? 1 : dd0);
             glowLight.Remove(best);
         }
         // (E9d) the wall lanterns by the doors: a flame and glass in the kit's cage, its light moved into it (ZoneView.Town)
@@ -582,8 +593,12 @@ public partial class ZoneView : Node3D
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) PlumeLook(c, on);
         foreach (var (h, f) in ownTorches) { f.Visible = on; Lamps.SetLit(h, on); }
+        foreach (var (li, dk) in dayDim) if (li < lights.Count && li < specs.Count) lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (on ? 1 : dk);
         Shadows();
     }
+
+    /// <summary>(lf5p) The zone's own lamps dimmed when it is not night (props_own.json "lamps" "day"): by the light's index.</summary>
+    readonly Dictionary<int, float> dayDim = new();
 
     bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows && !SurvivorUnchained.Args.Has("lamp-shadows-off");   // (--lamp-shadows-off: pictures)
 

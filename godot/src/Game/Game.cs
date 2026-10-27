@@ -368,8 +368,12 @@ public partial class Game : Node, IZoneHost
                 Wait(secs, () => Travel(onTo));
         // --cine ID: that cinematic played here at once (pictures of it, its previs),
         // and on into the one it runs on into (its end.next), as the zone plays them.
+        // --cine-at T: it begins T seconds in, from play (perf: a start's cost seen apart from the load's).
         if (Args.Get("cine") is string cid && cine == null)
-            Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
+        {
+            void Play() => Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
+            if (Args.Has("cine-at")) Wait(Args.Num("cine-at", 10), Play); else Play();
+        }
         Save("new");
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
@@ -821,14 +825,25 @@ public partial class Game : Node, IZoneHost
         {
             EnterZone(to, from, at);
             Save("travel");
-            Wait(caption != null ? 1.4 : 0.2, () =>
+            // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
+            // only once the frames come smooth again, so no hitch shows through the fade-in)
+            Wait(caption != null ? 1.4 : 0.2, () => WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
                 controls.ClearLatches();
                 inTransit = false;
-            });
+            }));
         }));
+    }
+
+    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s.</summary>
+    void WhenSmooth(Action fn, int calm = 0, double waited = 0)
+    {
+        double dt = GetProcessDeltaTime();
+        calm = dt < 0.04 ? calm + 1 : 0;
+        if (calm >= 2 || waited > 2) fn();
+        else Wait(0, () => WhenSmooth(fn, calm, waited + dt));
     }
 
     /// <summary>Once the place being built ahead is (behind the black: PumpAhead goes faster then), or at once.</summary>
@@ -1195,6 +1210,7 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        DoubleAhead(dt);
         // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
         // opened in this view only, never in a light's.
         if (GetViewport().GetCamera3D() is { } seen)

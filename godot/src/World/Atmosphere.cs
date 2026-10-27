@@ -92,6 +92,7 @@ public partial class Atmosphere : Node3D
             PaintShadow = Atmospheres.CloseNightPaint.PaintShadow,
             PaintShadowK = Mathf.Lerp((float)g.PaintShadowK, (float)Atmospheres.CloseNightPaint.PaintShadowK, ViewHighlightsNeutral),
             PaintLift = Mathf.Lerp((float)g.PaintLift, (float)Atmospheres.CloseNightPaint.PaintLift, ViewHighlightsNeutral),
+            PaintShadowSkin = Mathf.Lerp((float)g.PaintShadowSkin, (float)Atmospheres.CloseNightPaint.PaintShadowSkin, ViewHighlightsNeutral),
         };
     /// <summary>A cinematic's own grade over the preset's (GameCinema's "grade" cue: the moon's colour, the painted shade),
     /// null outside one; SetCineGrade remakes the table at once, and the cinematic's end gives play's back.</summary>
@@ -118,6 +119,7 @@ public partial class Atmosphere : Node3D
         HighlightTint = FrontHiWarm ? p.Grade.HighlightTint : "#bcbcbc",
         PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
         PaintShadow = Atmospheres.CloseNightPaint.PaintShadow, PaintShadowK = Atmospheres.CloseNightPaint.PaintShadowK, PaintLift = Atmospheres.CloseNightPaint.PaintLift,
+        PaintShadowSkin = Atmospheres.CloseNightPaint.PaintShadowSkin,
     } : p.Grade;
     /// <summary>--close-moon-off K: how much of the grade's moon colour the close view by night takes off (pictures).</summary>
     static readonly float CloseMoonOff = SurvivorUnchained.Args.Num("close-moon-off", 1f);
@@ -190,6 +192,16 @@ public partial class Atmosphere : Node3D
     static Color C(string hex) => new(hex);
 
     /// <param name="grade">Rebuild the colour grade too (not every frame of a blend).</param>
+    /// <summary>The sun the frost's thaw is baked for under `p` (Set: GroundPaint.SunAt), or null if it has no thaw:
+    /// for baking it ahead (GroundPaint.SunAhead). (--air-old and --air-tune are not followed: a bake ahead for a
+    /// sun that does not come is only wasted, and the one that does is baked as before.)</summary>
+    public static Vector3? ThawSun(AtmospherePreset p)
+    {
+        if (!(p.Frost * FrostScale > 0 && p.FrostThaw > 0)) return null;
+        float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
+        return new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
+    }
+
     public void Set(AtmospherePreset p, bool grade = true)
     {
         // --air-old: play's presets (E1) back to the ones before them, for before-and-after pictures.
@@ -222,6 +234,8 @@ public partial class Atmosphere : Node3D
                     Moon = T("moon", p.Grade.Moon), MoonHue = T("mhue", p.Grade.MoonHue), MoonSat = T("msat", p.Grade.MoonSat),
                     MoonDrop = T("mdrop", p.Grade.MoonDrop), MoonLo = T("mlo", p.Grade.MoonLo), MoonHi = T("mhi", p.Grade.MoonHi),
                     MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth),
+                    PaintShadow = H("psh", p.Grade.PaintShadow), PaintShadowK = T("pshk", p.Grade.PaintShadowK), PaintVib = T("pvib", p.Grade.PaintVib),
+                    PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi),
                 },
             };
         }
@@ -280,12 +294,14 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("flora_light", new Vector4(moon, lowSun, kl.R / Mathf.Max(kl.G, 1e-3f), kl.B / Mathf.Max(kl.G, 1e-3f)));
         TownLit = Mathf.Max(moon, 1f - Mathf.SmoothStep(18f, 26f, (float)p.KeyElevation));
         RenderingServer.GlobalShaderParameterSet("town_lit", TownLit);
-        RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, 0));
+        RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, (float)p.RiverMoon));
+        RenderingServer.GlobalShaderParameterSet("flora_lamp", SurvivorUnchained.Args.Num("grass-lamp-ochre", (float)p.GrassLampOchre));
+        RenderingServer.GlobalShaderParameterSet("flora_night", new Vector4(SurvivorUnchained.Args.Num("bush-night-sat", (float)p.BushNightSat), SurvivorUnchained.Args.Num("ground-ember-ochre", (float)p.GroundEmberOchre), 0, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed
         // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)
         float frost = (float)p.Frost * FrostScale, thaw = (float)p.FrostThaw;
         RenderingServer.GlobalShaderParameterSet("ground_frost", new Vector4(frost, thaw, 0, 0));
-        if (frost > 0 && thaw > 0) GroundPaint.SunAt(dir);
+        if (frost > 0 && thaw > 0) GroundPaint.SunAt(dir);   // (as ThawSun says)
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the
         // sky's lower half is the hemisphere's dark ground colour, so in shade her plate reflected
         // nothing and read as rubber (look bible, armor metal; metal round 3).
@@ -498,12 +514,12 @@ public partial class Atmosphere : Node3D
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
 
     /// <summary>--grade-try k=v,...: a trial paint grade over the preset's own (GradeSettings.Paint*), key by key, for style
-    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi, shskin. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
     static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
 
     sealed class GradeTry
     {
-        public float? Mute, Vib, Skin, ShadowK, Lift, Hi;
+        public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin;
         public string? Shadow;
 
         public static GradeTry? Parse(string? spec)
@@ -526,6 +542,7 @@ public partial class Atmosphere : Node3D
                     case "shadowk": t.ShadowK = f; break;
                     case "lift": t.Lift = f; break;
                     case "hi": t.Hi = f; break;
+                    case "shskin": t.ShadowSkin = f; break;
                     default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
                 }
             }
@@ -536,7 +553,7 @@ public partial class Atmosphere : Node3D
     /// <summary>The paint grade's terms for one table: the grade's own, each --grade-try key over its own.</summary>
     readonly struct Paint
     {
-        readonly float vib, skin, shadowK, lift, hi, vibDark;
+        readonly float vib, skin, shadowK, lift, hi, vibDark, shadowSkin;
         readonly bool hasShadow;
         readonly float ls, cs, hs;
         public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
@@ -545,6 +562,7 @@ public partial class Atmosphere : Node3D
         {
             vib = t?.Vib ?? (float)g.PaintVib; hi = t?.Hi ?? (float)g.PaintHi; lift = t?.Lift ?? (float)g.PaintLift;
             shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1; vibDark = (float)g.PaintVibDark;
+            shadowSkin = t?.ShadowSkin ?? (float)g.PaintShadowSkin;
             string hex = t?.Shadow ?? g.PaintShadow;
             hasShadow = hex != "";
             ls = cs = hs = 0;
@@ -583,6 +601,8 @@ public partial class Atmosphere : Node3D
             {
                 float dark = 1 - Smooth(0.12f, 0.45f, L), fadeBlack = Smooth(0, 0.08f, L), own = 1 - Smooth(0.02f, 0.07f, C);
                 float w = Mathf.Clamp(shadowK * dark * own * fadeBlack, 0, 1);
+                // (skin's hues spared by PaintShadowSkin: the lerp to blue ran her shade through red and violet)
+                if (shadowSkin != 0) w *= 1 - shadowSkin * skinHue * Smooth(0.012f, 0.025f, C);
                 float ct = cs * Mathf.Min(L / Mathf.Max(ls, 0.05f), 1), hsr = Mathf.DegToRad(hs);
                 a = Mathf.Lerp(a, ct * Mathf.Cos(hsr), w);
                 b = Mathf.Lerp(b, ct * Mathf.Sin(hsr), w);

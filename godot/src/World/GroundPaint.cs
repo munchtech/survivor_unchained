@@ -58,8 +58,31 @@ public sealed class GroundPaint
     {
         if (dir.Y < 0.05f || sun is Vector3 was && was.AngleTo(dir) < 0.02f) return;
         sun = dir;
-        latest?.BakeSun(dir);
+        if (latest == null) return;
+        // Baked ahead for this sun (SunAhead): taken (waited for, if it is not done: no longer than baking it here).
+        int k = latest.sunsAhead.FindIndex(a => a.Dir.AngleTo(dir) < 1e-4f);
+        if (k >= 0)
+        {
+            var px = latest.sunsAhead[k].Px.Result;
+            latest.sunsAhead.RemoveAt(k);
+            latest.TakeSun(dir, px);
+            return;
+        }
+        latest.BakeSun(dir);
     }
+
+    /// <summary>The thaw's sun baked ahead for the latest zone on a worker thread (a cinematic about to bring up a
+    /// dawn: Game.Cine.SunAhead), so SunAt only takes it. Its result is the same as SunAt baking it then.</summary>
+    public static void SunAhead(Vector3 dir)
+    {
+        if (latest is not { } p || dir.Y < 0.05f || p.baked is Vector3 b && b.AngleTo(dir) < 1e-4f
+            || p.sunsAhead.Exists(a => a.Dir.AngleTo(dir) < 1e-4f)) return;
+        // (a few at most: a cinematic's suns; the oldest let go)
+        if (p.sunsAhead.Count >= 4) p.sunsAhead.RemoveAt(0);
+        p.sunsAhead.Add((dir, System.Threading.Tasks.Task.Run(() => p.SunPx(dir))));
+    }
+
+    readonly List<(Vector3 Dir, System.Threading.Tasks.Task<byte[]> Px)> sunsAhead = new();
 
     // Tunable from the command line for sweeps (SurvivorUnchained.Args).
     internal static readonly float RoadHalf = Args.Num("road-half", 1.55f);      // the made surface, half its width
@@ -577,7 +600,17 @@ public sealed class GroundPaint
 
     /// <summary>The sun on the ground for a key toward `dir`: a crown shades the ground where the ray to the sun
     /// passes through it (a capsule from the crown along the shadow), a wall where it passes under its top.</summary>
-    void BakeSun(Vector3 dir)
+    void BakeSun(Vector3 dir) => TakeSun(dir, SunPx(dir));
+
+    void TakeSun(Vector3 dir, byte[] px)
+    {
+        baked = dir;
+        exposurePx = px;
+        exposure?.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, exposurePx));
+    }
+
+    /// <summary>The exposure with the sun toward `dir` (reads only what the constructor made: any thread).</summary>
+    byte[] SunPx(Vector3 dir)
     {
         var lit = new float[er * er];
         Array.Fill(lit, 1f);
@@ -599,9 +632,7 @@ public sealed class GroundPaint
                 }
         }
         lit = Blur(Blur(lit, er, 1), er, 1);
-        baked = dir;
-        exposurePx = Pack(lit);
-        exposure?.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, exposurePx));
+        return Pack(lit);
     }
 
     byte[] Pack(float[]? lit)
