@@ -1,255 +1,261 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using SurvivorUnchained.Content;
-using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>The hands after the Lamps (docs/design/CLASSES.md Â§0, Â§2.3, Â§3): the dash forms, the reflexes,
-/// the Flare and how its meter fills (Sim/Forms.cs, Sim/Flare.cs).</summary>
-public class HandsTests
+/// <summary>The four Hands (docs/design/CLASS_IDENTITY_AND_TALENTS.md 2.2 item 1): each fires on its tags and only
+/// its calling's, on an empty board, and the card says so.</summary>
+public sealed class HandsTests
 {
-    static CharacterData Survivor(string calling, params string[] lit)
+    static Battle Fight(string? calling, params (string Id, int Rank)[] weapons)
     {
-        var a = Callings.Archetype(calling);
-        var ch = Character.Create(new CreationChoice
-        {
-            Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
-        }, 1, 7);
-        ch.Ability = Abilities.Kin[calling];
-        LampBook.State(ch);
-        foreach (var id in lit) LampBook.Now(ch).Lit.Add(id);
-        return ch;
+        var b = BattleTests.Arena(3, weapons);
+        b.Lamps = new LampLoadout();
+        b.Calling = calling;
+        return b;
     }
 
-    /// <summary>The lamp that teaches the calling's default Strike.</summary>
-    static string Ultimate(string calling)
+    /// <summary>A creature that stands and takes it, risen and next to her.</summary>
+    static Enemy Dummy(Battle b, bool boss = false, bool elite = false, double dx = 1.5)
     {
-        var road = Lamps.Road(LampBook.DefaultType(calling));
-        return Lamps.All.Values.First(l => l.Kind == LampKind.Ultimate && l.Calling == calling && l.Effects.Any(e => e.Do == LampDo.Flare && e.Flare == road.Strike)).Id;
-    }
-
-    static Battle Fight(CharacterData ch, double flareStart = 0)
-    {
-        var kit = Character.Kit(ch, false);
-        return new Battle(new BattleSetup
-        {
-            Seed = 5, Collision = new CollisionWorld(120), Combat = true, Stats = kit.Stats, Weapons = [], Ability = kit.Ability,
-            ArtRank = kit.ArtRank, Facets = kit.Facets, Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = ch.Level, FlareStart = flareStart,
-        });
-    }
-
-    static void Tick(Battle b, double seconds, double mx = 0, double mz = 0)
-    {
-        for (double t = 0; t < seconds - 1e-9; t += 1 / 60.0) { b.Tick(1 / 60.0, mx, mz); b.Events.Drain(); }
-    }
-
-    static Enemy Foe(Battle b, double x, double z)
-    {
-        var e = b.SpawnEnemy("risen", x, z)!;
-        e.AttackT = 99;
-        e.RangedT = 99;
+        var e = b.SpawnEnemy("risen", b.Player.X + dx, b.Player.Z)!;
+        e.MaxHp = e.Hp = 1e9;
+        e.AttackT = e.RangedT = 99;
+        // Her skills hold while it rises: the tests count their firings themselves.
+        foreach (var w in b.Weapons) w.Timer = 1e9;
+        for (int i = 0; i < 30; i++) b.Tick(0.1, 0, 0);
+        b.Events.Drain();
+        e.Boss = boss;
+        e.Elite = elite || boss;
+        e.MaxHp = e.Hp = 1e9;
         return e;
     }
 
-    static Battle Flaring(string calling = "warden") => Fight(Survivor(calling, Ultimate(calling)));
-
-    [Fact]
-    public void A_warden_dashes_into_a_bull_rush_once_then_plain()
+    static void Reindex(Battle b)
     {
-        var b = Fight(Survivor("warden"));
-        var p = b.Player;
-        Assert.Equal(AbilityKind.BullRush, b.Ability);
-        Assert.True(b.FormReady);
-        Assert.True(b.Dash(1, 0));
-        Assert.Equal(AbilityKind.BullRush, b.Art.Rush);
-        Assert.Equal(8 * b.Stats.Get(Stat.AbilityCooldown) * Abilities.RankHaste(b.ArtRank), p.AbilityCd, 2);
-        Assert.Equal(b.MaxHp * 0.15, b.Art.Barrier, 3);
-        Assert.True(p.Shield > 0);
-        Tick(b, 0.6);
-        Assert.Null(b.Art.Rush);
-        Assert.True(b.Dash(1, 0));
-        Assert.True(p.DashT > 0);
-        Assert.Null(b.Art.Rush);
+        b.Spatial.Clear();
+        foreach (var e in b.Enemies.Items) if (e.Alive && e.State != EnemyState.Dying) b.Spatial.Insert(e.Id, e.X, e.Z);
+    }
+
+    /// <summary>The skill fires once, at whatever stands beside her.</summary>
+    static void FireOnce(Battle b, WeaponInst w, Enemy e)
+    {
+        e.X = b.Player.X + 1.5; e.Z = b.Player.Z;
+        Reindex(b);
+        w.Timer = 0;
+        int casts = w.Casts;
+        Firing.Tick(b, w, 0.01);
+        Assert.Equal(casts + 1, w.Casts);
     }
 
     [Fact]
-    public void A_stalkers_vault_leaps_the_way_of_the_dash()
+    public void The_wardens_fourth_melee_blow_is_heavy_and_stuns_a_creature()
     {
-        var b = Fight(Survivor("stalker"));
-        var p = b.Player;
-        Assert.Equal(AbilityKind.Vault, b.Ability);
-        Assert.True(b.Dash(1, 0));
-        Assert.NotNull(p.Leap);
-        Assert.True(p.Leap!.X1 > p.Leap.X0 + 1);
-        Assert.True(p.AbilityCd > 0);
+        var b = Fight("warden", ("oathblade", 1));
+        var w = b.Weapons[0];
+        var e = Dummy(b);
+        for (int i = 0; i < 3; i++) { FireOnce(b, w, e); e.Status.Remove(StatusKind.Stun); }
+        Assert.Equal(0, b.HandHeavies);
+        FireOnce(b, w, e);
+        Assert.Equal(1, b.HandHeavies);
+        Assert.True(e.Status.Has(StatusKind.Stun));
+        Assert.Contains(b.Events.Drain(), x => x is Ev.Hand { Kind: HandKind.Heavy });
+        // The count starts again: the fifth is plain.
+        e.Status.Remove(StatusKind.Stun);
+        FireOnce(b, w, e);
+        Assert.Equal(1, b.HandHeavies);
+        Assert.False(e.Status.Has(StatusKind.Stun));
     }
 
     [Fact]
-    public void A_reavers_grapple_with_nothing_to_bite_is_a_plain_dash()
+    public void A_heavy_blow_on_a_boss_fills_its_stagger_bar()
     {
-        var b = Fight(Survivor("reaver"));
-        var p = b.Player;
-        Assert.Equal(AbilityKind.Grapple, b.Ability);
-        Assert.True(b.Dash(1, 0));
-        Assert.True(p.DashT > 0);
-        Assert.Equal(0, p.AbilityCd);
+        var b = Fight("warden", ("oathblade", 1));
+        var w = b.Weapons[0];
+        var e = Dummy(b, boss: true);
+        for (int i = 0; i < 3; i++) FireOnce(b, w, e);
+        double before = e.Stagger;
+        FireOnce(b, w, e);
+        Assert.True(e.Stagger - before >= Content.Hands.Warden.Stagger * b.Rules.StaggerTaken * 0.99, $"{before} -> {e.Stagger}");
+        Assert.False(e.Status.Has(StatusKind.Stun));
     }
 
     [Fact]
-    public void The_shield_bash_reflex_fires_itself_on_a_crowd_and_leaves_the_forms_wait()
+    public void A_heavy_throw_lands_heavy_when_it_arrives()
     {
-        var b = Fight(Survivor("warden", "warden.shield_bash"));
-        var p = b.Player;
-        var r = b.Reflexes.Single(x => x.Def.Art == "shield_bash");
-        for (int i = 0; i < 3; i++) Foe(b, 1.2 + 0.2 * i, 0.3 * i);
-        double wait = p.AbilityCd;
-        Tick(b, 0.2);
-        Assert.Equal(1, r.Fired);
-        Assert.True(r.Cd > 0);
-        Assert.Equal(wait, p.AbilityCd, 6);
-    }
-
-    [Fact]
-    public void The_smoke_bomb_reflex_answers_a_perfect_dodge()
-    {
-        var b = Fight(Survivor("stalker", "stalker.smoke_bomb"));
-        var r = b.Reflexes.Single(x => x.Def.Art == "smoke_bomb");
-        Assert.True(b.Dash(1, 0));
-        b.HurtPlayer(5, School.Physical, "t", null, telegraphed: true);
-        Assert.True(b.Player.PerfectThisDash);
-        Assert.Equal(1, r.Fired);
-    }
-
-    [Fact]
-    public void The_red_tide_reflex_answers_a_low_health()
-    {
-        var b = Fight(Survivor("reaver", "reaver.red_tide"));
-        var r = b.Reflexes.Single(x => x.Def.Art == "red_tide");
-        b.Player.Hp = b.MaxHp * 0.2;
-        double before = b.Player.Hp;
-        Tick(b, 0.2);
-        Assert.Equal(1, r.Fired);
-        Assert.True(b.Player.Hp > before + b.MaxHp * 0.05);
-    }
-
-    [Fact]
-    public void The_flare_strikes_and_holds_her_untouchable()
-    {
-        var b = Flaring();
-        var p = b.Player;
-        Assert.NotNull(b.Flare);
-        Assert.False(b.UseFlare(1, 0));
-        b.FillFlare(100, "t");
-        Assert.True(b.FlareReady);
-        var e = Foe(b, 2, 0);
-        Assert.True(b.UseFlare(1, 0));
-        Assert.Equal(0, b.FlareMeter, 6);
-        Assert.Equal(1, b.FlareCasts);
-        Assert.True(p.Iframes >= Math.Min(Battle.StrikeMax, b.Flare!.Length) + Battle.StrikeAfter - 1e-9);
-        Assert.True(b.FlareHold > 0);
-        Tick(b, 1.4);
-        Assert.True(b.DamageBy.GetValueOrDefault("flare") > 0);
-        Assert.True(e.Hp < e.MaxHp || !e.Alive);
-    }
-
-    [Fact]
-    public void A_clutch_flare_mends_a_fifth_over_a_second()
-    {
-        var b = Flaring();
-        b.Player.Hp = b.MaxHp * 0.2;
-        b.FillFlare(100, "t");
-        Assert.True(b.UseFlare(1, 0));
-        Tick(b, 1.1);
-        Assert.Equal(1, b.FlareClutches);
-        Assert.InRange(b.Player.Hp / b.MaxHp, 0.36, 0.46);
-    }
-
-    [Fact]
-    public void A_bright_map_mends_nothing()
-    {
-        var b = Flaring();
-        b.Rules.FlareMends = false;
-        b.Player.Hp = b.MaxHp * 0.2;
-        b.FillFlare(100, "t");
-        Assert.True(b.UseFlare(1, 0));
-        Tick(b, 1.1);
-        Assert.Equal(1, b.FlareClutches);
-        Assert.InRange(b.Player.Hp / b.MaxHp, 0.19, 0.24);
-    }
-
-    [Fact]
-    public void The_flare_fills_from_a_perfect_dodge_and_from_trouble()
-    {
-        var b = Flaring("reaver");
-        var p = b.Player;
-        Assert.True(b.Dash(1, 0));
-        b.HurtPlayer(5, School.Physical, "t", null, telegraphed: true);
-        Assert.Equal(10, b.FlareMeter, 3);
-
-        // 10% of health lost: +4; below a third, +8.
-        b.FlareMeter = 0;
-        p.Hp = b.MaxHp * 0.5;
-        b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(4, b.FlareMeter, 3);
-        b.FlareMeter = 0;
-        p.Hp = b.MaxHp * 0.4;
-        b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(8, b.FlareMeter, 3);
-
-        // The first drop below a quarter: the ember answers (+35), once in 45 s.
-        b.FlareMeter = 0;
-        p.Hp = b.MaxHp * 0.3;
-        b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(8 + 35, b.FlareMeter, 3);
-        b.FlareMeter = 0;
-        p.Hp = b.MaxHp * 0.3;
-        b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(8, b.FlareMeter, 3);
-    }
-
-    [Fact]
-    public void Kills_fill_at_most_their_rate_and_a_story_fight_starts_at_half()
-    {
-        var b = Flaring();
-        var foes = Enumerable.Range(0, 12).Select(i => Foe(b, 8 + i * 0.1, 8)).ToList();
-        foreach (var e in foes) b.HitEnemy(e, 1e6, School.Physical, [Tag.Physical]);
-        double kills = b.FlareFills.GetValueOrDefault("kills");
-        Assert.InRange(kills, 0.1 - 1e-9, Battle.FillKillRate + 1e-9);
-
-        Assert.Equal(50, Fight(Survivor("warden", Ultimate("warden")), flareStart: 50).FlareMeter, 3);
-    }
-
-    [Fact]
-    public void Facet_ids_are_unique_across_every_art()
-    {
-        var ids = Abilities.All.Values.SelectMany(a => a.Facets.Select(f => f.Id)).ToList();
-        Assert.Equal(ids.Count, ids.Distinct().Count());
-    }
-
-    [Fact]
-    public void A_survivor_made_holding_a_callings_art_ends_holding_the_kin()
-    {
-        foreach (var (calling, kin) in Abilities.Kin)
+        var b = Fight("warden", ("judgement_disc", 1));
+        var w = b.Weapons[0];
+        var e = Dummy(b, dx: 4);
+        for (int i = 0; i < 4; i++)
         {
-            var art = Abilities.All.Values.First(a => a.Calling == calling && !a.Movement);
-            var a = Callings.Archetype(calling);
-            var ch = Character.Create(new CreationChoice
-            {
-                Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = art.Id,
-            }, 1, 7);
-            Assert.Equal(kin, ch.Ability);
-            Assert.Contains(kin, ch.Known);
+            e.X = b.Player.X + 4; e.Z = b.Player.Z;
+            w.Timer = 0;
+            Firing.Tick(b, w, 0.01);
+            for (int k = 0; k < 40; k++) { e.AttackT = 99; b.Tick(1 / 60.0, 0, 0); }
+            w.Timer = 99;
         }
-        var old = Survivor("warden");
-        old.Ability = "shield_bash";
-        ArtBook.HoldKin(old);
-        Assert.Equal("bull_rush", old.Ability);
-        old.Ability = "sprint";
-        ArtBook.HoldKin(old);
-        Assert.Equal("sprint", old.Ability);
+        Assert.True(b.HandHeavies >= 1);
+    }
+
+    [Fact]
+    public void Spells_and_plain_projectiles_are_never_heavy_and_holy_skills_lay_a_stone_per_champion_per_firing()
+    {
+        var b = Fight("warden", ("dawnpulse", 1));
+        var w = b.Weapons[0];
+        var e = Dummy(b, elite: true);
+        for (int i = 0; i < 4; i++) FireOnce(b, w, e);
+        Assert.Equal(0, b.HandHeavies);
+        Assert.Equal(4, b.HandStones);
+        Assert.Equal(4, b.Stones);
+        // On a creature that is no champion, no stone.
+        var c = Fight("warden", ("dawnpulse", 1));
+        var plain = Dummy(c);
+        FireOnce(c, c.Weapons[0], plain);
+        Assert.Equal(0, c.HandStones);
+    }
+
+    [Fact]
+    public void The_hands_stones_answer_with_a_rebuke_on_an_empty_board()
+    {
+        var b = Fight("warden", ("dawnpulse", 1));
+        var e = Dummy(b, elite: true);
+        int need = Content.Hands.Warden.Stones;
+        for (int i = 0; i < need; i++) FireOnce(b, b.Weapons[0], e);
+        Assert.Equal(1, b.Rebukes);
+        Assert.Equal(0, b.Stones);
+    }
+
+    [Fact]
+    public void A_reavers_hit_on_a_bleeding_thing_adds_frenzy_and_her_areas_grow_when_hurt()
+    {
+        var b = Fight("reaver", ("cleaver", 1), ("volley", 1));
+        var e = Dummy(b);
+        var w = b.Weapons[0];
+        b.HitEnemy(e, 1, School.Physical, w.Tags, new HitOpts { Weapon = w });
+        Assert.Equal(0, b.Frenzy);
+        e.Status.Ensure(StatusKind.Bleed, 5, 1, 1, 0.5);
+        b.HitEnemy(e, 1, School.Physical, w.Tags, new HitOpts { Weapon = w });
+        Assert.Equal(1, b.Frenzy);
+        // At most one a gate.
+        b.HitEnemy(e, 1, School.Physical, w.Tags, new HitOpts { Weapon = w });
+        Assert.Equal(1, b.Frenzy);
+        Assert.True(Firing.CooldownOf(b, w) < Firing.CooldownOf(Fight("reaver", ("cleaver", 1)), Fight("reaver", ("cleaver", 1)).Weapons[0]) + 1e-9);
+
+        Assert.Equal(1, b.HandAreaMul(w));
+        b.Player.Hp = b.MaxHp * 0.4;
+        Assert.Equal(1 + Content.Hands.Reaver.Area, b.HandAreaMul(w), 6);
+        Assert.Equal(1, b.HandAreaMul(b.Weapons[1])); // Volley has no Area
+    }
+
+    [Fact]
+    public void An_arcanists_spell_kill_leaves_ground_and_passes_its_mark()
+    {
+        var b = Fight("arcanist", ("cinderfall", 1), ("oathblade", 1));
+        var e = Dummy(b);
+        var next = b.SpawnEnemy("risen", e.X + 2, e.Z)!;
+        next.Hp = next.MaxHp = 1e9;
+        Reindex(b);
+        e.Hp = 1;
+        e.Status[StatusKind.Mark] = new StatusSlot(4, 1, 1, 0.5);
+        var spell = b.Weapons[0];
+        b.HitEnemy(e, 100, spell.School, spell.Tags, new HitOpts { Weapon = spell, NoCrit = true });
+        Assert.Equal(1, b.HandGrounds);
+        Assert.Contains(b.Zones.Items, z => z.Alive && z.Credit == "hand" && z.School == School.Fire);
+        Assert.Equal(1, b.HandMarks);
+        Assert.True(next.Status.Has(StatusKind.Mark));
+
+        // A blade's kill leaves nothing.
+        var c = Fight("arcanist", ("oathblade", 1));
+        var f = Dummy(c);
+        f.Hp = 1;
+        c.HitEnemy(f, 100, School.Physical, c.Weapons[0].Tags, new HitOpts { Weapon = c.Weapons[0], NoCrit = true });
+        Assert.Equal(0, c.HandGrounds);
+    }
+
+    [Fact]
+    public void After_a_dash_a_stalkers_projectiles_pierce_once_more_and_champions_are_struck_true()
+    {
+        var b = Fight("stalker", ("volley", 1), ("oathblade", 1));
+        var bow = b.Weapons[0];
+        var champ = Dummy(b, elite: true);
+        Assert.Equal(0, b.HandPierce(bow));
+        Assert.True(b.Dash(1, 0));
+        Assert.Equal(Content.Hands.Stalker.Pierce, b.HandPierce(bow));
+        Assert.Equal(0, b.HandPierce(b.Weapons[1])); // a blade has no pierce to gain
+        for (int i = 0; i < 10; i++) b.HitEnemy(champ, 1, School.Physical, bow.Tags, new HitOpts { Weapon = bow, Projectile = true });
+        Assert.Equal(10, b.HandTrues);
+        // A creature that is no champion is not struck true by the Hand.
+        var c = Fight("stalker", ("volley", 1));
+        var mob = Dummy(c);
+        c.Dash(1, 0);
+        for (int i = 0; i < 10; i++) c.HitEnemy(mob, 1, School.Physical, c.Weapons[0].Tags, new HitOpts { Weapon = c.Weapons[0], Projectile = true });
+        Assert.Equal(0, c.HandTrues);
+        // The window closes.
+        b.Time += Abilities.Dash.Time + Content.Hands.Stalker.Seconds + 0.1;
+        Assert.Equal(0, b.HandPierce(bow));
+    }
+
+    [Fact]
+    public void Off_calling_or_switched_off_no_hand_bends_anything()
+    {
+        foreach (var calling in new string?[] { null, "reaver", "arcanist", "stalker" })
+        {
+            var b = Fight(calling, ("oathblade", 1));
+            var e = Dummy(b);
+            for (int i = 0; i < 8; i++) FireOnce(b, b.Weapons[0], e);
+            Assert.Equal(0, b.HandHeavies);
+        }
+        var off = Fight("warden", ("oathblade", 1));
+        off.HandsOn = false;
+        var d = Dummy(off);
+        for (int i = 0; i < 8; i++) FireOnce(off, off.Weapons[0], d);
+        Assert.Equal(0, off.HandHeavies);
+
+        var r = Fight("reaver", ("cleaver", 1));
+        r.HandsOn = false;
+        var bleeding = Dummy(r);
+        bleeding.Status.Ensure(StatusKind.Bleed, 5, 1, 1, 0.5);
+        r.HitEnemy(bleeding, 1, School.Physical, r.Weapons[0].Tags, new HitOpts { Weapon = r.Weapons[0] });
+        Assert.Equal(0, r.Frenzy);
+        r.Player.Hp = 1;
+        Assert.Equal(1, r.HandAreaMul(r.Weapons[0]));
+
+        var s = Fight("stalker", ("volley", 1));
+        s.HandsOn = false;
+        s.Dash(1, 0);
+        Assert.Equal(0, s.HandPierce(s.Weapons[0]));
+        // A fight's switch starts from the harness's.
+        Assert.Equal(Battle.Hands, new Battle(new BattleSetup { Seed = 1, Collision = new CollisionWorld(40), Combat = true, Stats = new StatBlock(), Weapons = [] }).HandsOn);
+    }
+
+    [Fact]
+    public void The_card_says_what_her_hand_does_and_nothing_where_it_does_nothing()
+    {
+        var W = Weapons.All;
+        Assert.StartsWith("In a warden's hand: every 4th blow is heavy", Hands.Line("warden", W["oathblade"]));
+        Assert.Contains("lays a Stone", Hands.Line("warden", W["judgement_disc"]));
+        Assert.Contains("heavy", Hands.Line("warden", W["judgement_disc"]));
+        Assert.Null(Hands.Line("warden", W["volley"]));
+        Assert.Null(Hands.Line("warden", W["seeking_motes"]));
+        Assert.Contains("bleeding thing add Frenzy", Hands.Line("reaver", W["cleaver"]));
+        Assert.Contains("larger", Hands.Line("reaver", W["cleaver"]));
+        Assert.DoesNotContain("larger", Hands.Line("reaver", W["volley"]));
+        Assert.StartsWith("In an arcanist's hand: what it kills leaves 1 m of burning ground for 2 s", Hands.Line("arcanist", W["cinderfall"]));
+        Assert.Contains("chilling", Hands.Line("arcanist", W["rimeshard"]));
+        Assert.Contains("moonlit", Hands.Line("arcanist", W["seeking_motes"]));
+        Assert.DoesNotContain("ground", Hands.Line("arcanist", W["arcweb"]));
+        Assert.Null(Hands.Line("arcanist", W["oathblade"]));
+        Assert.Contains("pierces once more", Hands.Line("stalker", W["volley"]));
+        Assert.DoesNotContain("pierces", Hands.Line("stalker", W["oathblade"]));
+        Assert.Null(Hands.Line(null, W["oathblade"]));
+
+        // The draft's card carries it, for her calling only.
+        var b = Fight("warden");
+        Assert.EndsWith(Hands.Line("warden", W["oathblade"])!, LevelUp.WithHand(b, W["oathblade"]));
+        b.Calling = "stalker";
+        Assert.DoesNotContain("warden", LevelUp.WithHand(b, W["oathblade"]));
+        Assert.Equal(W["seeking_motes"].Description, LevelUp.WithHand(Fight("warden"), W["seeking_motes"]));
     }
 }

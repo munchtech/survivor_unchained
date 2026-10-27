@@ -13,6 +13,8 @@ public sealed partial class Battle
 {
     /// <summary>The Hands on (the harness's --hand 0 turns every one off, to measure them).</summary>
     public static bool Hands = true;
+    /// <summary>This fight's Hands, from Hands as it begins (so a test may turn one fight's off without touching others).</summary>
+    public bool HandsOn = Hands;
 
     /// <summary>The weapon whose heavy blow is landing now (in its firing, or as its heavy projectile strikes).</summary>
     internal WeaponInst? HeavyBy;
@@ -29,7 +31,7 @@ public sealed partial class Battle
     /// <summary>Which Hand is hers (0 none, 1 warden, 2 reaver, 3 arcanist, 4 stalker), read once per calling set.</summary>
     int HandKindNow()
     {
-        if (!Hands) return 0;
+        if (!HandsOn) return 0;
         if (!ReferenceEquals(handFor, Calling))
         {
             handFor = Calling;
