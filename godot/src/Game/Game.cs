@@ -127,7 +127,7 @@ public partial class Game : Node, IZoneHost
         var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         UiArt.Warm();
         if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away", Talk = Args.Get("auto") == "talk" };
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
@@ -902,6 +902,7 @@ public partial class Game : Node, IZoneHost
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         hud.Announce(a);
         sound.Announce(a, bossUp);
+        if (Args.Has("pace")) GD.Print($"pace announce t={Battle?.Time ?? 0:0.0} title={a.Title} line={a.Sub}");
         if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);
     }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
@@ -995,6 +996,11 @@ public partial class Game : Node, IZoneHost
             if (d < it.R && d < bd) { bd = d; best = it; }
         }
         near = best;
+        // (au1 item 14: talking was never taught) the first time someone can be talked to, an arrow at the
+        // prompt, 4 s clear of anything else on the screen; asked while the prompt is up.
+        if (best != null && best.Id.StartsWith("talk:"))
+            Teach(new Play.Callout("talk", Play.CalloutKind.Arrow, "Talk", $"{KeyLabel("interact")}: talk. A mark over someone's head means news for you.", Play.Aim.At("prompt"))
+                { Quiet = 4, Mark = "talk", Patience = 30 });
         var view = best != null ? new PromptView(controls.KeyLabel(Act.Interact), best.Verb, best.Name, best.Hint?.Invoke(), best.Locked?.Invoke()) : null;
         if (view != promptShown) hud.Prompt(promptShown = view);
     }

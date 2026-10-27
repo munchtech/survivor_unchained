@@ -106,6 +106,11 @@ public partial class Game
             case "draught": pts.Add(Instrument.DraughtAt); break;
             case "art": pts.Add(Instrument.ArtAt); break;
             case "banner": if (hud.BannerUp) areas.Add(hud.BannerArea); break;
+            // (au1 item 14: the parts never taught, each by the HUD's own accessor, bracketed)
+            case "prompt": if (hud.PromptArea is Rect2 pa) areas.Add(pa); break;
+            case "minimap": if (hud.MinimapArea is Rect2 ma) areas.Add(ma); break;
+            case "tally": if (hud.TallyArea is Rect2 ta) areas.Add(ta); break;
+            case "lock": if (hud.EmberLockArea is Rect2 la) areas.Add(la); break;
             case "cards":
                 if (hud.DraftShown is { } dp && dp.CardAreas().ToList() is { Count: > 0 } all)
                     areas.Add(all.Select(x => x.Rect).Aggregate((a, b) => a.Merge(b)));
@@ -280,6 +285,9 @@ public partial class Game
         if (t.Hud == "card:weapon") return teachOffers?.Any(o => o.Kind == OfferKind.Weapon) == true ? Presence.Here : Presence.NotYet;
         if (t.Hud == "cards") return teachOffers is { Count: > 0 } ? Presence.Here : Presence.NotYet;
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
+        // (a HUD part that comes and goes: here while it shows)
+        if (t.Hud == "prompt" && hud.PromptArea == null || t.Hud == "minimap" && hud.MinimapArea == null
+            || t.Hud == "tally" && hud.TallyArea == null || t.Hud == "lock" && hud.EmberLockArea == null) return Presence.NotYet;
         // (a freeze on her own state: never the moment a roof hides her)
         if (t.HerSeen && Battle?.Player is { } pl && scene != null && !InOpen((pl.X, scene.HeightAt(pl.X, pl.Z) + 1.3, pl.Z), true)) return Presence.NotYet;
         if (t.World != null)

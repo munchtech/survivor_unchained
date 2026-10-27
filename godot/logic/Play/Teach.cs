@@ -68,6 +68,13 @@ public sealed record Callout(string Id, CalloutKind Kind, string Title, string L
     /// <summary>A freeze on a passing thing in the world (a red line, an ember stone, an enemy): it does
     /// not wait for a hint or an interact prompt, which are held under it and come back after.</summary>
     public bool Urgent { get; init; }
+    /// <summary>A lesson that keeps its distance (au1 item 14): it comes only once this many game seconds
+    /// have passed with nothing else on the screen (another callout, a narrated line, a tip, a banner, a
+    /// cinematic, a panel). 0: it waits only for a clear screen.</summary>
+    public double Quiet { get; init; }
+    /// <summary>Whether its moment still holds, asked while it waits (none: as long as it is asked). False: it
+    /// is let go unseen ("passed"), as one whose target is gone (the tally's calm ends when the ditch rises).</summary>
+    public Func<bool>? Still { get; init; }
     public bool Transient => Kind == CalloutKind.Freeze && (Target.World != null || Urgent);
 }
 
@@ -173,7 +180,17 @@ public sealed class Teacher
 
     /// <summary>What of the screen's business holds back a callout that isn't a panel (a transient
     /// freeze goes over a hint).</summary>
-    static Busy Blocking(Callout c, Busy busy) => c.Transient ? busy & ~(Busy.Hint | Busy.Prompt) : c.OverHint ? busy & ~Busy.Hint : busy;
+    static Busy Blocking(Callout c, Busy busy)
+    {
+        // (one that teaches the interact prompt points at it: the prompt is its target, never in its way)
+        if (c.Target.Hud == "prompt") busy &= ~Busy.Prompt;
+        return c.Transient ? busy & ~(Busy.Hint | Busy.Prompt) : c.OverHint ? busy & ~Busy.Hint : busy;
+    }
+
+    /// <summary>What counts as something else on the screen, for a lesson's quiet (Callout.Quiet).</summary>
+    const Busy Loud = Busy.Cinematic | Busy.Transit | Busy.Fall | Busy.Overlay | Busy.Draft | Busy.Banner | Busy.Say | Busy.Hint;
+    /// <summary>When something else was last on the screen (game seconds).</summary>
+    double loudAt = double.NegativeInfinity;
 
     static readonly (Busy B, string Name)[] Names =
     [
@@ -196,6 +213,7 @@ public sealed class Teacher
             var block = Blocking(c, busy);
             foreach (var (b, n) in Names) if ((block & b) != 0) why.Add(n);
             if (now - pauseEnd < c.Gap) why.Add("gap");
+            if (c.Quiet > 0 && now - loudAt < c.Quiet) why.Add("quiet");
         }
         if (c.After is string a && !memory.Seen(a) && !Lapsed(a, now)) why.Add("prereq");
         if (p == Presence.NotYet) why.Add("notyet");
@@ -210,6 +228,8 @@ public sealed class Teacher
         lastNow = now;
         // A draft is a pause: the gap runs from its end.
         if ((busy & Busy.Draft) != 0) pauseEnd = now;
+        // (a lesson's quiet runs from the end of whatever else was up, a callout included)
+        if ((busy & Loud) != 0 || Current != null) loudAt = now;
         if (Current is { } cur)
         {
             switch (cur.Kind)
@@ -235,13 +255,13 @@ public sealed class Teacher
             var e = queue[i];
             var c = e.C;
             if (memory.Seen(c.Id)) { queue.RemoveAt(i--); continue; }
-            var p = where(c);
+            var p = c.Still?.Invoke() == false ? Presence.Gone : where(c);
             if (p == Presence.Gone || now - e.At > c.Patience)
             {
                 queue.RemoveAt(i--);
                 dropped[c.Id] = now;
                 LogWaited = string.Join(",", e.Waited);
-                Log?.Invoke("dropped", c, p == Presence.Gone ? "gone" : "waited");
+                Log?.Invoke("dropped", c, p == Presence.Gone ? (c.Still?.Invoke() == false ? "passed" : "gone") : "waited");
                 continue;
             }
             var why = Why(c, now, busy, p);

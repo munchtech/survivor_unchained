@@ -1145,6 +1145,16 @@ public partial class GameHud : CanvasLayer
     public bool HoldBanner;
     /// <summary>Where the banner's words are (the callout's target), while it shows.</summary>
     public Rect2 BannerArea => BannerRect();
+    /// <summary>(The callouts' aim, au1 item 14: where each part they teach stands, while it shows. Repoint
+    /// these when the HUD moves; the callouts follow.) The interact prompt.</summary>
+    public Rect2? PromptArea => promptBox.Visible ? promptBox.GetGlobalRect() : null;
+    /// <summary>The corner map.</summary>
+    public Rect2? MinimapArea => minimap.IsVisibleInTree() ? new Rect2(minimap.GlobalPosition, new Vector2(Minimap.Diameter, Minimap.Diameter)) : null;
+    /// <summary>The tally's slain and gold (the night's clock over them).</summary>
+    public Rect2? TallyArea => killsChip.IsVisibleInTree() && tallyGold.GetParent() is Control gold ? killsChip.GetGlobalRect().Merge(gold.GetGlobalRect()) : null;
+    /// <summary>The lock at the chain's middle, the ember's level stamped on it (EmberChain.Lock: from the
+    /// chain's sag at its middle, shackle to foot).</summary>
+    public Rect2? EmberLockArea => irons.Chain.IsVisibleInTree() ? new Rect2(960 - 17, Instrument.EyeL.Y + 4, 34, 46) : null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>

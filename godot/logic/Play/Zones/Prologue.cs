@@ -185,6 +185,10 @@ public sealed class Prologue : ZoneRuntime
     readonly Queue<(Action Do, Func<bool>? Still)> words = new();
     double wordsFree;
     const double WordsGap = 4, WordsAfterCallout = 2;
+    /// <summary>A lesson's distance from any other callout, line or tip (au1 item 14), both ways.</summary>
+    const double LessonQuiet = 4;
+    /// <summary>The lessons the road's words wait for while they wait their turn.</summary>
+    static readonly string[] Lessons = ["tally"];
 
     /// <summary>Words for the road's line: said in their turn (dropped if `still` says their moment has gone).</summary>
     void Words(Action say, Func<bool>? still = null) => words.Enqueue((say, still));
@@ -204,7 +208,8 @@ public sealed class Prologue : ZoneRuntime
     void PaceWords()
     {
         if (B == null) return;
-        if (G.Teaching != null) wordsFree = Math.Max(wordsFree, B.Time + WordsAfterCallout);
+        if (G.Teaching != null) wordsFree = Math.Max(wordsFree, B.Time + (G.Teaching.Quiet > 0 ? LessonQuiet : WordsAfterCallout));
+        if (Lessons.Any(G.TeachWaiting)) return;
         if (G.Saying) wordsFree = Math.Max(wordsFree, B.Time + 1.5);
         while (words.Count > 0 && words.Peek().Still is { } still && !still()) words.Dequeue();
         if (words.Count == 0 || G.Saying || G.Teaching != null || B.Time < wordsFree) return;
@@ -276,8 +281,12 @@ public sealed class Prologue : ZoneRuntime
         // Until F7 is seen, its first red line waits for a moment it can be taught in (au1 item 10: the
         // first was drawn off the screen's middle, under another callout, and went untaught): it isn't
         // begun while another callout has the screen (a gate on her distance kept a kiting run from ever seeing it, m3).
+        // i14 (F7 never showed in real runs, f7a): the first windup came under the Knight's own narrated line
+        // (a freeze waits for a Say: dropped as gone when it ended), and the next with its head behind the
+        // cracked wall (the freeze waits to see it: gone again). So none begins under a line, a draft or a
+        // callout, nor while the Knight stands behind something tall.
         if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line")
-            && G.Teaching != null)
+            && (G.Teaching != null || G.Saying || B.DraftOwed || !KnightOpen(kw)))
             kw.RangedT = Math.Max(kw.RangedT, 0.25);
         if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
         // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
@@ -305,6 +314,16 @@ public sealed class Prologue : ZoneRuntime
         });
     }
 
+    double knightOpenAt = -9;
+    bool knightOpen;
+    /// <summary>Whether the Knight stands in the open from the camera, foot to crown (asked 4 times a second).</summary>
+    bool KnightOpen(Enemy k)
+    {
+        if (B!.Time - knightOpenAt < 0.25) return knightOpen;
+        knightOpenAt = B.Time;
+        return knightOpen = G.OpenGround(k.X, k.Z, 1.62 * (k.Def.Scale ?? 1));
+    }
+
     /// <summary>The Barrow Knight's lane while it is marked (its windup), a beat after it was: points along
     /// it, those clear of her first (the ring marks the lane, never her figure), the lane's middle first.</summary>
     IReadOnlyList<(double X, double Y, double Z)> KnightLane()
@@ -328,11 +347,13 @@ public sealed class Prologue : ZoneRuntime
         var p = B.Player;
         KnightWatch();
         if (B.FlareGreatsHeld && (G.Taught("art") || Now >= Stage.ToFord)) B.FlareGreatsHeld = false;
-        // F1: the first ember on the ground (one well inside the screen: it waits for one).
-        if (Now == Stage.Rising && B.EmbersLying > 0)
+        // F1: the first ember on the ground near her (one well inside the screen: it waits for one). Asked only
+        // while one lies near (asked at any ember on the field, it was let go as gone at once and F2 came first,
+        // 43.6 s against 49.2, i14), and never after F2 (the explanation reads in order or not at all).
+        if (Now == Stage.Rising && B.EmbersLying > 0 && !G.Taught("ember_bar") && NearEmbers().Count > 0)
             Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
-        // F2: straight after F1 (before the first rise), else the first ember gathered.
-        if (B.EmberXp > 0 || B.EmberLevel > 1 || G.Taught("ember_ground"))
+        // F2: straight after F1 (before the first rise); without F1 only once the Rising is 30 s old.
+        if (G.Taught("ember_ground") || (B.EmberXp > 0 || B.EmberLevel > 1) && (Now != Stage.Rising || stageT > 30))
             Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground", gap: 0.6, overHint: true);
         // (and the journal remembers what the valley believes, once an ember is gathered)
         if (B.EmberXp > 0 || B.EmberLevel > 1)
@@ -349,6 +370,16 @@ public sealed class Prologue : ZoneRuntime
             var w = B.Weapons[startWeapons];
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
+        // The lock (au1 item 14: the "4" on it was never taught): the ember's level, once it has risen and its
+        // skill was shown, away from any crowd, 4 s clear of anything else on the screen.
+        if (B.EmberLevel >= 2 && G.Taught("first_skill") && Now is Stage.Rising or Stage.Road && Crowd(p.X, p.Z, 6) < 5)
+            G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The lock", "The ember's level tonight. It springs open each time the ember rises.", Aim.At("lock"))
+                { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Crowd(B.Player.X, B.Player.Z, 6) < 6 });
+        // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
+        // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
+        if (B.GoldGained > 0 && TallyCalm())
+            G.Teach(new Callout("tally", CalloutKind.Arrow, "The tally", "How long you've lasted, the dead you've put down, and your gold.", Aim.At("tally"))
+                { Quiet = LessonQuiet, Mark = "gold", Patience = 30, Still = TallyCalm });
         // F6: the ditch's first volley in the air at her, so the roll answers a real danger (au i15: it was
         // taught in the Rising with nothing to dodge, her health full until 2:46). Only while the bolts fly (a
         // short patience: never late, after they land; the next volley asks again); 20 s on, or past the
@@ -403,6 +434,13 @@ public sealed class Prologue : ZoneRuntime
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
     }
+
+    /// <summary>A calm for the tally's lesson: the road before the trap springs, the walks between fights,
+    /// the dawn; nothing hostile within 8 m.</summary>
+    bool TallyCalm() => B != null && (Now is Stage.Road or Stage.Road2 or Stage.ToFord or Stage.Dawn || Now == Stage.Ambush && sprungAt < 0)
+        && Crowd(B.Player.X, B.Player.Z, 8) == 0;
+    /// <summary>When the tally's lesson was last waiting or up (Ambush stage time): the trap springs 2 s after it.</summary>
+    double tallyHeldAt = -99;
 
     /// <summary>When F6 was first seen taught (game seconds): F6b keeps its distance from it.</summary>
     double dashAt = double.MaxValue;
@@ -805,7 +843,9 @@ public sealed class Prologue : ZoneRuntime
                 {
                     // (the ditch rises once the wagon's line is read)
                     if (wagonSaid && !G.Saying && wagonDoneAt < 0) wagonDoneAt = stageT;
-                    if ((wagonDoneAt >= 0 && stageT - wagonDoneAt >= 0.8) || stageT > 16) Spring();
+                    // (and the tally's lesson, if the coins were taken, 2 s gone: i14)
+                    if (G.Teaching?.Id == "tally" || G.TeachWaiting("tally")) tallyHeldAt = stageT;
+                    if ((wagonDoneAt >= 0 && stageT - wagonDoneAt >= 0.8 && stageT - tallyHeldAt >= 2) || stageT > 30) Spring();
                     break;
                 }
                 double fought = stageT - sprungAt;
