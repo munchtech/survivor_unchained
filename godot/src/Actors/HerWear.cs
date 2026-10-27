@@ -150,7 +150,10 @@ public static class HerWear
     /// <summary>True while a live swap makes her new figure (WorldScene.SetLoadout): Apply then leaves the garment tuck's
     /// work, and what follows it, to Pump over the next frames (the lay on a worker), and Busy says when she is dressed.
     /// Her first figure, and every other, is dressed at once.</summary>
-    public static bool Live;
+    /// (Per thread: her cinematic double, made on a worker meanwhile, is dressed at once: Game.DoubleAhead.)
+    [System.ThreadStatic] public static bool Live;
+    /// <summary>A live swap's dressing still going on (Game.DoubleAhead waits for it: the caches here are shared).</summary>
+    public static bool Dressing => pending.Count > 0;
     /// <summary>The main thread's share of a frame Pump may spend on dressing her (a step started runs to its end).</summary>
     const double PumpBudgetMs = 6;
     static readonly Dictionary<People.Person, Pending> pending = new();
@@ -200,14 +203,19 @@ public static class HerWear
     /// <summary>Each frame (the main thread): the figures being dressed go on.</summary>
     public static void Pump()
     {
-        if (pending.Count == 0) return;
-        foreach (var (p, job) in pending.ToList())
+        // (not while a figure is made on a worker, Game.DoubleAhead: the next frame)
+        if (pending.Count == 0 || !System.Threading.Monitor.TryEnter(People.BuildLock)) return;
+        try
         {
-            job.Step(PumpBudgetMs);
-            if (!job.Done) continue;
-            pending.Remove(p);
-            GD.Print($"her wear: live swap dressed over {job.Frames} frames, main thread {job.MainMs:F1} ms (at most {job.MaxMs:F1} ms a frame)");
+            foreach (var (p, job) in pending.ToList())
+            {
+                job.Step(PumpBudgetMs);
+                if (!job.Done) continue;
+                pending.Remove(p);
+                GD.Print($"her wear: live swap dressed over {job.Frames} frames, main thread {job.MainMs:F1} ms (at most {job.MaxMs:F1} ms a frame)");
+            }
         }
+        finally { System.Threading.Monitor.Exit(People.BuildLock); }
     }
 
     static IEnumerable<System.Threading.Tasks.Task?> ApplySteps(People.Person p, string calling, IReadOnlyDictionary<string, string> look, IReadOnlyDictionary<string, Dictionary<string, string>>? dyes)

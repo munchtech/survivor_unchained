@@ -29,7 +29,8 @@ public static class OwnProps
 
     public sealed record Hide(Vector2 At, float R, float MaxH);
     public sealed record Place(string Preset, Vector2 At, float Rot, float Scale, float Y, Vector3? A, Vector3? B, float R, Hide? Hide, Vector2? Bare);
-    public sealed record Lamp(Color? Color, float Energy, float Range, float Att);
+    /// <summary>(Day: lf5p, its light's share when it is not night: the Low Ford lamps' pools showed in the dawn's daylight; 1 as before.)</summary>
+    public sealed record Lamp(Color? Color, float Energy, float Range, float Att, float Day = 1);
     public sealed record Nudge(Vector2 At, Vector2 By, float Turn);
     /// <summary>A KayKit piece's own stand-ins (one per copy, by the landmark's number: Preset is the one chosen),
     /// whether the made piece stays under them (Over), and their scale in the piece's frame (a tree of ours).</summary>
@@ -76,7 +77,7 @@ public static class OwnProps
                 foreach (var l in ls.EnumerateObject())
                 {
                     float F(string n, float d) => l.Value.TryGetProperty(n, out var v) ? v.GetSingle() : d;
-                    lamps[l.Name] = new Lamp(l.Value.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0));
+                    lamps[l.Name] = new Lamp(l.Value.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0), F("day", 1));
                 }
             var nudges = new List<Nudge>();
             if (r.TryGetProperty("nudge", out var nu))

@@ -64,6 +64,10 @@ import heroine_boots as BOOTS
 BOOTS.bind(globals())
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_rig as rig_helpers  # noqa: E402  (her helper bones, added just before export)
+# Her upper arm's twist chain (tools/anim/helpers.py SPEC "twist_chain", Body 5 A2): upperarm_twist_02-_04 built into
+# her and split onto her body and every piece. Off by default until the chain's rebuild (correctives and post steps
+# re-solved on its weights) is judged; TWIST_CHAIN=1 builds it.
+TWIST_CHAIN = os.environ.get("TWIST_CHAIN", "0") == "1"
 
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 body = bpy.data.objects["Heroine"]
@@ -1638,13 +1642,27 @@ print("BREAST WEIGHTS eased at", int((np.abs(W - W_AUTHORED).sum(1) > 1e-4).sum(
 # skin's weights jump from point to point, and where a garment's eased
 # edge lay on them, her skin moved by another rule and came through the
 # edge in steps when she moved. Garments take these, so the two agree.
-_keep = wsum(*[n for n in BONES if n.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb", "Head")]) > 0.05
+# (armor 18 g3: her wrists eased too. Kept at a hand share over 0.05, the wrist's points just under it took the eased
+# hand share (up to 0.4) beside kept points at 0.06-0.1 nearer the hand: weights out of order along her arm, and a bent
+# hand folded her inner wrist (a dark speck at the town close-up). Now the authored rows come back in smoothly between a
+# hand share of 0.05 and WRIST_KEEP (0.6), so the wrist is one 1.5 cm blend and her palm and fingers keep theirs. Her
+# head's rule is as it was. WRIST_KEEP=0 restores the old cut.)
+_hs = wsum(*[n for n in BONES if n.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb")])
+_keep = (_hs > 0.05) | (wsum(*[n for n in BONES if n.split("_")[0] == "Head"]) > 0.05)
+_wk1 = float(os.environ.get("WRIST_KEEP", "0.6"))
 _el = np.linalg.norm(P[TRI[:, 0]] - P[TRI[:, 1]], axis=1)
 _rounds = int(np.clip((0.015 / float(np.median(_el))) ** 2, 0, 80))
 _W = W.copy()
 for _ in range(_rounds):
     _W = ADJ @ _W
-W = np.where(_keep[:, None], W, _W)
+if _wk1 > 0.05:
+    _kh = np.clip((_hs - 0.05) / (_wk1 - 0.05), 0, 1)
+    _kh = _kh * _kh * (3 - 2 * _kh)
+    _kf = np.where(wsum(*[n for n in BONES if n.split("_")[0] == "Head"]) > 0.05, 1.0, _kh)
+    W = _kf[:, None] * W + (1 - _kf[:, None]) * _W
+    print("WRIST_KEEP %.2f: %d points of her wrists blend authored and eased weights" % (_wk1, int(((_kf > 0) & (_kf < 1)).sum())))
+else:
+    W = np.where(_keep[:, None], W, _W)
 _fifth = -np.partition(-W, 4, axis=1)[:, 4]
 W = np.maximum(W - _fifth[:, None], 0)
 W = W / np.maximum(W.sum(1, keepdims=True), 1e-9)
@@ -2482,6 +2500,10 @@ BIND_FIT = {"ranger.corset"}
 BIND_SLIM_STITCH = float(os.environ.get("BIND_SLIM_STITCH", "0.05"))   # (s18 leo2: 0.45 = as built in s18leo)
 BIND_SLIM = {k_: tuple(float(v_) for v_ in r_.split(":")) for k_, r_ in (e_.split("=", 1) for e_ in os.environ.get(
     "BIND_SLIM", "arcanist.corset=0.007:0.0004:0.0015:0.0016").split(",") if e_)}
+# (armor 17 N3: a piece's name -> (a field on its edge line, 0..1; (width, height, overhang, thickness)): its binding
+# eased to that size where the field is 1. The arcanist's caps: a roll sized for the full 3 mm sheet stood ~4 mm proud
+# over the skived 2 mm cap, a lip at its hem (max judge OJ1: "a flush bound edge, no rolled lip"). Set by the outfit.)
+BIND_ZONE = {}
 
 
 def sheet_untangled(name, pos, ref, tris, zone, rounds=400):
@@ -2652,6 +2674,16 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
                 ws_, hs_, os_, ts_ = BIND_SLIM[name]
                 w_r, h_r, o_r, t_r = (v_ + sl_ * (s_ - v_) for v_, s_ in ((width, ws_), (height, hs_), (overhang, os_), (thick, ts_)))
                 print("BIND_SLIM %s_bind%d: %d of %d rings slimmed (to %.1f by %.1f mm)" % (name, k, int((sl_ > 0.5).sum()), len(cur), ws_ * 1000, (ts_ + 2 * hs_) * 1000))
+        if name in BIND_ZONE:
+            zf_, zs_ = BIND_ZONE[name]
+            z_ = np.clip(np.asarray(zf_(cur), float), 0, 1)
+            for _ in range(8):
+                z_ = (np.roll(z_, 1) + 2 * z_ + np.roll(z_, -1)) / 4
+            if z_.max() > 0.01:
+                w_r, h_r, o_r, t_r = (v_ + z_ * (s_ - v_) for v_, s_ in ((w_r, zs_[0]), (h_r, zs_[1]), (o_r, zs_[2]), (t_r, zs_[3])))
+                if name not in BIND_SLIM:
+                    sl_ = np.zeros(len(cur))
+                print("BIND_ZONE %s_bind%d: %d of %d rings eased (to %.1f by %.1f mm)" % (name, k, int((z_ > 0.5).sum()), len(cur), zs_[0] * 1000, (zs_[3] + 2 * zs_[1]) * 1000))
         if os.environ.get("RIB_DUMP"):
             np.savez(os.path.join(os.environ["RIB_DUMP"], f"{name}_bind{k}.npz"), cur=cur, nrm=nrm, outward=outward)
         beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, w_r, h_r, o_r, t_r,
@@ -3815,6 +3847,20 @@ def edge_lining(name, pos, at, tris, spec, sel):
     return np.vstack(LP), np.vstack(LW), np.array(LT)
 
 
+# (armor 17 N3: pieces whose keep_off weights (her Head's) are made the same both sides before the cut: her Head
+# weight sits higher on her right side of the neck, so the arcanist's high collar was cut up to 2.5 cm lower on her
+# right, a notch where it met the plunge (max judge OJ1). Each point takes the lower of its own weight and its
+# mirror's, so her right's collar comes up to her left's, left = right.)
+KEEP_SYM = {k_ for k_ in os.environ.get("KEEP_SYM", "arcanist.corset").split(",") if k_}
+_MIRROR_P = []
+
+
+def keep_sym(w):
+    if not _MIRROR_P:
+        _MIRROR_P.append(cKDTree(P).query(P * np.array([-1.0, 1.0, 1.0]))[1])
+    return np.minimum(w, w[_MIRROR_P[0]])
+
+
 def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False, line=None, seat=None, blend_from=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
@@ -3827,7 +3873,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     some of her triangles, is not eased (easing would wear it through)."""
     # Never her head or hair (the hair is part of her mesh).
     slot_m = SLOT if slot is True else (SLOT & (X < 0) if slot == "right" else (SLOT & (X > 0) if slot == "left" else np.zeros(len(P), bool)))
-    f = smooth_field(np.minimum.reduce([field, (0.3 - wsum(*keep_off)) * 0.1, (0.5 - HAIR) * 0.1,
+    wk_ = wsum(*keep_off)
+    if name in KEEP_SYM and not np.isscalar(wk_):
+        wk_ = keep_sym(wk_)
+    f = smooth_field(np.minimum.reduce([field, (0.3 - wk_) * 0.1, (0.5 - HAIR) * 0.1,
                                         np.where(slot_m, -0.004, 1.0)]), soften)
     # `cut`, a second field, trims the piece after it is shaped: a cup
     # keeps the shape of the full cup however low it is cut.
@@ -4434,6 +4483,9 @@ NAPE_ITERS = int(os.environ.get("NAPE_ITERS", "150"))
 NAPE_SIDE = float(os.environ.get("NAPE_SIDE", "0.011"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
+# (armor 17 N3: a piece's name -> a field on its points, the share of its thickness kept there (1 = all): the
+# arcanist's shoulder caps a 2 mm leather hugging her, not a 3 mm pad, max judge OJ1. Set by the outfit.)
+THIN_ZONE = {}
 
 
 def loop_divided(pos, attr, tris, red, sw):
@@ -4664,7 +4716,9 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     # A large piece keeps enough triangles to hold her curves (thinned too
     # far, it flattens and her skin pokes through between its points).
     area = sum(p.area for p in me.polygons)
-    budget = max(budget, int(area * 60000))
+    # (CAP_DENSITY: a piece build's own floor, triangles a square metre; tools/armor sets it for one part (the cuirass's
+    # plate, armor 12 c3); unset, 60000 as always)
+    budget = max(budget, int(area * globals().get("CAP_DENSITY", 60000)))
     if len(me.polygons) > budget:
         # Only the inside is thinned: the edge and two rows in from it keep
         # every point, so a cut line stays the smooth curve it was made.
@@ -4708,6 +4762,11 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
             ds_ = cKDTree(pos[np.unique(be)]).query(pos)[0]
             ws_ = np.clip(ds_ / so_, 0, 1)
             ws_ = ws_ * ws_ * (3 - 2 * ws_)
+            if name in THIN_ZONE:
+                # (THIN_ZONE: the share kept there, on top of the skive's; Solidify takes sf_ + (1 - sf_) * w)
+                zf_ = np.clip(np.asarray(THIN_ZONE[name](pos), float), sf_, 1.0)
+                ws_ = np.clip(((sf_ + (1 - sf_) * ws_) * zf_ - sf_) / (1 - sf_), 0, 1)
+                print("THIN_ZONE %s: %d points at under %.0f%% of the sheet's thickness" % (name, int((zf_ < 0.99).sum()), zf_.min() * 100))
             gs_ = obj.vertex_groups.new(name="_skive")
             for i_ in range(len(pos)):
                 gs_.add([i_], float(ws_[i_]), "REPLACE")
@@ -5800,7 +5859,25 @@ def arcanist():
     # CAP_UNDER under her arm, where the armhole follows her torso's own
     # line; cut exactly (`exact`), bound in the suit's gold.)
     ARC_CAPS = os.environ.get("ARC_CAPS", "1") == "1"
+    # (armor 17 N3, max judge OJ1: at 7 cm the caps ran past the widest bulge of her deltoid, "a linebacker's
+    # shoulders". Now each ends above it, about 3.5 cm below her shoulder point on the outside, tapering to nothing
+    # at her armpit; the lower deltoid shows as bare shoulder. Over the cap (her skin's arm weight CAP_W) the
+    # leather is laid CAP_LIFT off her, not the suit's 3.5 mm, and CAP_THICK of its thickness (a 2 mm leather
+    # hugging her, its bound edge flush), so arc_fit_post's caps step is retired.)
+    # (its taper as before, CAP_TOP 7 cm on the line; the cap only cut off at CAP_MAX along her arm, a soft
+    # minimum CAP_SOFT round: cut short everywhere, the armhole's back moved into her armpit's fold, where the
+    # suit lay 2 mm inside her at rest)
     CAP_TOP = float(os.environ.get("CAP_TOP", "0.07"))
+    CAP_MAX = float(os.environ.get("CAP_MAX", "0.04"))
+    CAP_SOFT = float(os.environ.get("CAP_SOFT", "0.008"))
+    CAP_W = tuple(float(v_) for v_ in os.environ.get("CAP_W", "0.20,0.50").split(","))
+    CAP_C = tuple(float(v_) for v_ in os.environ.get("CAP_C", "-0.1,0.5").split(","))
+    # (the cap's binding: (width, height, overhang, thickness) over the cap, by her arm weight CAP_BW: about the
+    # skived edge's own thickness, so it lies flush, not a 4 mm roll)
+    CAP_BW = tuple(float(v_) for v_ in os.environ.get("CAP_BW", "0.15,0.40").split(","))
+    CAP_BIND = tuple(float(v_) for v_ in os.environ.get("CAP_BIND", "0.006,0.00025,0.0012,0.0010").split(","))
+    CAP_LIFT = float(os.environ.get("CAP_LIFT", "0.0010"))
+    CAP_THICK = float(os.environ.get("CAP_THICK", "0.67"))
     CAP_UNDER = float(os.environ.get("CAP_UNDER", "0.0"))
     CAP_POW = float(os.environ.get("CAP_POW", "1.5"))
     def cap_len(q, sd):
@@ -5813,9 +5890,32 @@ def arcanist():
         up_ = np.array([0.0, 0.0, 1.0]) - ax_[2] * ax_
         up_ /= np.linalg.norm(up_)
         c_ = np.clip(r_ @ up_, -1, 1)
-        return CAP_UNDER + (CAP_TOP - CAP_UNDER) * ((1 + c_) / 2) ** CAP_POW - t_
+        l_ = CAP_UNDER + (CAP_TOP - CAP_UNDER) * ((1 + c_) / 2) ** CAP_POW
+        if CAP_MAX > 0:
+            l_ = 0.5 * (l_ + CAP_MAX - np.sqrt((l_ - CAP_MAX) ** 2 + CAP_SOFT ** 2))
+        return l_ - t_
     cap_torso = {sd: smooth_field(0.5 - ARMW[sd], 40) * 0.1 for sd in "lr"}
     cap_kd = cKDTree(P)
+    def cap_upper(q):
+        """Over the top of her arm (1), not its front, back or underside (0): the armhole's front and back, at her
+        armpit, keep the suit's lift (laid 1 mm off there, her skin came through it as an arm rose)."""
+        out_ = np.zeros(len(q))
+        for sd, s_ in (("l", 1), ("r", -1)):
+            a0, a1 = ARM[sd][0], ARM[sd][1]
+            ax_ = (a1 - a0) / np.linalg.norm(a1 - a0)
+            r_ = q - a0 - np.outer((q - a0) @ ax_, ax_)
+            r_ = r_ / np.maximum(np.linalg.norm(r_, axis=1, keepdims=True), 1e-9)
+            up_ = np.array([0.0, 0.0, 1.0]) - ax_[2] * ax_
+            up_ /= np.linalg.norm(up_)
+            out_ = np.where(q[:, 0] * s_ > 0, ramp(r_ @ up_, CAP_C[0], CAP_C[1]), out_)
+        return out_
+    def cap_share(q):
+        return ramp((ARMW["l"] + ARMW["r"])[cap_kd.query(q)[1]], CAP_W[0], CAP_W[1]) * cap_upper(q)
+    def corset_lift(q):
+        return 0.0035 - (0.0035 - CAP_LIFT) * cap_share(q)
+    if ARC_CAPS:
+        THIN_ZONE["arcanist.corset"] = lambda q: 1 - (1 - CAP_THICK) * cap_share(q)
+        BIND_ZONE["arcanist.corset"] = (lambda q: ramp((ARMW["l"] + ARMW["r"])[cap_kd.query(q)[1]], CAP_BW[0], CAP_BW[1]) * cap_upper(q), CAP_BIND)
     def caps_exact(q):
         d_, j_ = cap_kd.query(q, k=6)
         w_ = 1.0 / np.maximum(d_, 1e-5)
@@ -7414,7 +7514,7 @@ def arcanist():
         # (opening into the gusset at its foot, as the warden's does)
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
-        *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
+        *piece("arcanist.corset", corset, "plumleather", lift=corset_lift if ARC_CAPS else 0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim] + ([crotch_lay] if LEO_ONE else []),
                crotch=one_keep, clear=one_clear if LEO_ONE else None,
                hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]) * (1 - LEO_UH * on_gusset(q)))),
@@ -9191,11 +9291,14 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     # (entries it doesn't make, the armor pieces' own (gold trims' and gems': tools/armor/adorn.py), kept as they are)
-    keep, zones = {}, {}
+    keep, zones, extra = {}, {}, {}
     if os.path.exists(path):
         old = json.load(open(path, encoding="utf-8"))
         keep = {k: v for k, v in old.items() if k not in SPEC}
         zones = {k: v["zone"] for k, v in old.items() if "zone" in v}   # (dye zones are data: kept across a rebuild)
+        # (armor 16: a material's hand-set shading keys (the plumleather's rough_floor and clear coat, the glove satin's
+        # sheen) are data too: every key this build doesn't write is kept)
+        extra = {k: {kk: vv for kk, vv in v.items() if kk not in ("kind", "repeats", "pull", "tint", "zone")} for k, v in old.items() if k in SPEC}
     with open(path, "w", encoding="utf-8") as fh:
         from PIL import Image
 
@@ -9204,7 +9307,7 @@ def material_table(path):
             if not (STOCK_IVORY and kind(k) == "sheer" and os.path.exists(f)):
                 return {}
             return {"tint": [round(float(c) / 255, 4) for c in np.asarray(Image.open(f).convert("RGB"), np.float32).reshape(-1, 3).mean(0)]}
-        json.dump({**{k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k), **({"zone": zones[k]} if k in zones else {})} for k, v in SPEC.items()}, **keep}, fh, indent=1)
+        json.dump({**{k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {}), **tint(k), **({"zone": zones[k]} if k in zones else {}), **extra.get(k, {})} for k, v in SPEC.items()}, **keep}, fh, indent=1)
 
 # (s30, for face's hair drape, 18 Oct: BODY_BLEND_OUT=<path> saves a copy of the scene here, her body after the
 # F1 body pass and every body step above, before any outfit is made; object names kept: Heroine, HeroineHead,
@@ -9817,6 +9920,9 @@ if BODY_OUT:
     # (armor lead 1: and each (outfit, slot)'s own, from its hiding pieces by the same rule)
     slot_check([o for o in made if o.name.partition(".")[0] in OUTFITS], "tuck")
     for _aout in OUTFITS:
+        if ONLY and _aout != ONLY:
+            # (armor 17 N3: an --only build with --body has no other outfit's pieces; their channels stay empty)
+            continue
         _ahides = [o for o in made if o.name.startswith(_aout + ".") and o.get("hides")]
         for _aslot in sorted({slot_entry(o.name)["slot"] for o in made if o.name.startswith(_aout + ".")}):
             _aobjs = [o for o in _ahides if slot_entry(o.name)["slot"] == _aslot]
@@ -9901,7 +10007,7 @@ if BODY_OUT:
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
     mend_folds(me, body)
-    rig_helpers.apply(arm, [body])
+    rig_helpers.apply(arm, [body], chain=TWIST_CHAIN)
     _ff_keep = None
     if HAND_PIVOTS and FINGER_FIX:
         _ffm = body.data
@@ -10148,12 +10254,14 @@ def rigid_again(objs, riders):
 
 PL_RAW = os.environ.get("PL_RAW", "1") == "1"
 SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "0,0,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON", "leather") == "leather" else set()
-SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26,upperarm_twist_01_l:0.27").split(",") if kv)] if os.environ.get("PAULDRON", "leather") == "leather" else []
+# (with her twist chain, TWIST_CHAIN=1, twist_01 carries 0.30 of the roll, not 0.50: the row's 0.27 goes to twist_02,
+# which carries 0.475, so the plates keep the turn they were judged on)
+SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26," + ("upperarm_twist_02_l" if TWIST_CHAIN else "upperarm_twist_01_l") + ":0.27").split(",") if kv)] if os.environ.get("PAULDRON", "leather") == "leather" else []
 RIGID_PIECES = one_blend_pieces(made)
 RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
 _rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
 RIDERS = [(o, r) for o in made if o.type == "MESH" and o not in RIGID_PIECES for r in [rows_of(o)] if _rset & set(r)]
-rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body)
+rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body, chain=TWIST_CHAIN)
 rigid_again(RIGID_PIECES, RIDERS)
 
 # (s23 solver, the elbow glove's top edge, shoulder caps on: heroine_rig shares each point's limb
@@ -10839,6 +10947,7 @@ for name in OUTFITS:
                            "covers": e_.get("covers", [slot]), "meshes": sorted(meshes_),
                            "tuck": f"armor_tuck/{name}.{slot}.bin" if tk_ else None,
                            "tuck_count": ARMOR_TUCK_N.get((name, slot)), "body_hash": ARMOR_BODY_HASH,
+                           **({"under": e_["under"]} if "under" in e_ else {}),
                            **({"hold": {"amount": 0.55, "squash": 0}} if (name, slot) == ("warden", "top") else {})})  # (plate holds her: HerJiggle)
     print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)
 # (armor lead 1: one row per (outfit, slot); body_hash as armor_tuck_write has it)

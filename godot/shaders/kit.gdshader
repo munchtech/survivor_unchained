@@ -116,6 +116,10 @@ uniform float algae = 0.0;
 uniform vec4 algae_color : source_color = vec4(0.22, 0.2, 0.11, 1.0);
 uniform float algae_w = 0.025;
 uniform float amb_occl = 1.0;
+// (lf5c) leaf litter caught on its ledges and level faces (what faces up, in its hollows and inner corners: the baked
+// cavity and occlusion), in scattered spots, litter_color; 0 none
+uniform float litter = 0.0;
+uniform vec4 litter_color : source_color = vec4(0.36, 0.22, 0.11, 1.0);
 // (a pebble under a crown darkens as the ground's litter does there: GroundPaint's exposure (R the open sky), sky_dark of it; Dressing sets it)
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
 uniform float zone_size = 260.0;
@@ -144,6 +148,24 @@ uniform float leader_from = 6.0;
 uniform float leader_lo = 1.0;
 uniform float leader_hi = 1.0;
 uniform float hue_floor = 100.0;
+// (lf1b) each tree its own green: hue within +-jit_hue deg, value jit_lo-jit_hi; a share (old_share) browner and greyer by
+// old_amt (an old or drought-touched spruce), so a stand is not one teal mass; core_night: how far an inner spray darkens
+// under the moon (0.8 as before; the spruce's tiers need more); lamp_gain, lamp_green: a lamp's light on the needles (not
+// the moon's or the sun's) scaled, its green cut, so needles by her light go a warm olive, not lime (light(), below)
+uniform float jit_hue = 7.0;
+uniform float jit_lo = 0.87;
+uniform float jit_hi = 1.08;
+uniform float old_share = 0.0;
+uniform float old_amt = 0.0;
+uniform float core_night = 0.8;
+uniform float lamp_gain = 1.0;
+uniform float lamp_green = 0.0;
+// (lf1b) under the moon a spray's open outer half lifted by up to this (the lit top of each tier, its tips)
+uniform float tip_lift = 0.0;
+// (lf3b, judge lf2 #2: the lit tips by night the frame's brightest green, neon emerald) under the moon the same tips
+// pulled toward their own grey by tip_night_sat and down by tip_night_dim (0: as before; by day and at dawn, nothing)
+uniform float tip_night_sat = 0.0;
+uniform float tip_night_dim = 0.0;
 // (how much of the vertex occlusion darkens a species' crown core: the spruce's 1; the alder's less,
 // its crown seen from above read as a hole by day, judge E4c)
 uniform float core = 1.0;
@@ -168,6 +190,10 @@ uniform float crown_hi = 0.0;
 uniform float crown_r = 2.0;
 uniform float crown_keep = 1.5;
 global uniform vec4 canopy_fade;
+// (lf5p) the kept stump's cut top (its trunk's inside seen from above), and our broadleaves' night grey (flora_night.x)
+uniform float stump_top = 0.0;
+uniform vec3 stump_wood : source_color = vec3(0.42, 0.33, 0.22);
+global uniform vec4 flora_night;
 varying flat float v_fade;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
@@ -537,7 +563,8 @@ void fragment() {
 	vec2 mo = vec2(0.0);
 	float kept = 1.0;
 	if (v_fade > 0.0) {
-		float ff = v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : smoothstep(crown_keep, crown_keep + 0.6, v_y));
+		// (lf6d: with stump_top, the bark cut level and hard, a saw's cut, not eased: the eased cut's band read as a dome)
+		float ff = v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
 		if (coverage_cut(FRAGCOORD.xy) < ff) discard;
 	}
 #else
@@ -886,7 +913,8 @@ void fragment() {
 		// each tree its own green: hue within 7 degrees (olive to blue-green), value within 13% (two hashes, not one)
 		float j2 = fract(v_jit * 7.31 + 0.37);
 		// (up no more than 8%: a near tree jittered up read as the frame's brightest mint, judge E4c)
-		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-7.0, 7.0, v_jit))), vec3(0.0)) * mix(0.87, 1.08, j2);
+		ALBEDO = max(hue_turn(ALBEDO, radians(mix(-jit_hue, jit_hue, v_jit))), vec3(0.0)) * mix(jit_lo, jit_hi, j2);
+		if (fract(v_jit * 13.37 + 0.11) < old_share) ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)) * vec3(1.3, 1.0, 0.6), old_amt * mix(0.6, 1.0, fract(v_jit * 5.71)));
 		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
 		// stood as the frame's brightest mint at roaddawn, judge E4c)
 		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
@@ -902,10 +930,19 @@ void fragment() {
 		float hl = hue_of(sqrt(max(ALBEDO * key, vec3(0.0))));
 		ALBEDO = max(hue_turn(ALBEDO, radians(clamp(hue_floor - hl, 0.0, 60.0) * low_sun)), vec3(0.0));
 		// the crown's dark core: inner sprays darker (their light shut out by the crown round them)
-		ALBEDO *= mix(mix(0.5, 0.8, night), 1.0, open_) * mix(1.0, 0.62, night);  // (under the moon a crown's lit tips no brighter than the moonlit road)
+		ALBEDO *= mix(mix(0.5, core_night, night), 1.0, open_) * mix(1.0, 0.62, night);
+		ALBEDO *= 1.0 + tip_lift * night * smoothstep(0.35, 1.0, COLOR.g) * smoothstep(0.6, 1.0, COLOR.r);  // (under the moon a crown's lit tips no brighter than the moonlit road)
 		// (under the moon a crown in shade a deep blue-green, not the grade's navy: judge E4c)
 		ALBEDO *= mix(vec3(1.0), vec3(0.7, 1.15, 0.9), night);
 		ALBEDO = max(hue_turn(ALBEDO, radians(night_hue * night)), vec3(0.0)) * mix(1.0, night_value, night);
+		{
+			float tn = night * smoothstep(0.3, 1.0, COLOR.g) * smoothstep(0.55, 1.0, COLOR.r);
+			ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)), tip_night_sat * tn) * (1.0 - tip_night_dim * tn);
+		}
+#ifdef OWN_BROADLEAF
+		// (Low Ford lf5p, judge lf4 #8: the night bushes too saturated) toward their own grey by flora_night.x by night; 0 as built
+		ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)), flora_night.x * night);
+#endif
 		// light through the needles from behind, a cool green (hue about 125) whatever the key's colour
 		// (sun x needle colour went yellow at dawn, judge E4b): as strong as the needles' own would be,
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
@@ -928,6 +965,27 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
 		ALBEDO *= mix(0.6, 1.0, open_);
+		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
+		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
+		// facing up, so the stump reads as a sawn top with its bark round it; stump_top 0: as before
+		if (v_fade > 0.0 && !FRONT_FACING && stump_top > 0.0) {
+			// (lf6d) the cut's face where the view ray crosses the cut's plane (local y = crown_keep): its growth rings
+			// about the trunk's middle, a darker heart, the pale sapwood under the bark, a check split across it
+			mat4 im = inverse(MODEL_MATRIX);
+			vec3 lp = (im * (INV_VIEW_MATRIX * vec4(VERTEX, 1.0))).xyz;
+			vec3 lc = (im * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+			float tc = (crown_keep - lc.y) / min(lp.y - lc.y, -1e-4);
+			vec2 hc = lc.xz + (lp.xz - lc.xz) * tc;
+			float rr = length(hc);
+			float rw = length(lp.xz);
+			float ring = 0.5 + 0.5 * sin(rr * 160.0 + 2.0 * sin(atan(hc.y, hc.x) * 3.0 + v_jit * 6.0));
+			vec3 cut = stump_wood * mix(0.85, 1.1, fract(v_jit * 7.3)) * mix(0.78, 1.0, ring);
+			cut *= mix(0.72, 1.0, smoothstep(0.0, 0.05, rr));
+			cut = mix(cut, stump_wood * 1.25, smoothstep(0.7, 0.92, rr / max(rw, 1e-3)) * 0.6);
+			cut *= 1.0 - 0.45 * (1.0 - smoothstep(0.004, 0.012, abs(dot(hc, vec2(cos(v_jit * 6.28), sin(v_jit * 6.28)))))) * step(rr, rw * 0.8);
+			ALBEDO = mix(ALBEDO, cut, stump_top);
+			NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, stump_top));
+		}
 	}
 #endif
 
@@ -971,6 +1029,11 @@ void fragment() {
 		lz *= 1.0 - wet;
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
+		if (litter > 0.0) {
+			float lsp = texture(stone_tex, wp.xz / (tile * 0.53) + vec2(0.21, 0.67)).a;
+			float lt = smoothstep(0.78, 0.95, bn.y) * smoothstep(0.15, 0.5, COLOR.g + COLOR.b + 0.35 * mz) * smoothstep(0.55, 0.7, lsp) * (1.0 - wet);
+			col = mix(col, litter_color.rgb * (0.7 + 0.6 * st.r), litter * lt);
+		}
 		col *= mix(1.0, wet_dark, wet);
 		float damp = top_damp * smoothstep(0.0, 0.25, flora_light.x) * (1.0 - wet) * mix(0.55, 1.0, smoothstep(0.3, 0.7, st.a + 0.25 * COLOR.g));
 		col *= (1.0 - damp) * mix(1.0, top_level, (1.0 - wet) * smoothstep(0.4, 0.8, v_up));
@@ -1010,5 +1073,17 @@ void light() {
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
 	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d * lift + BACKLIGHT * (1.0 - d)) / PI;
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
+}
+#endif
+
+#if defined(OWN_FOLIAGE) && !defined(OWN_BROADLEAF)
+// (lf1b) The spruce's own light: Lambert with the built-in back light's transmission, as the engine's; a lamp's (not the
+// key's) scaled by lamp_gain and its green cut by lamp_green on the needles (u < .75), so her warm light reads olive on
+// them, not lime. No highlight (SPECULAR was 0.12: the moon's specks read as frost).
+void light() {
+	vec3 lc = LIGHT_COLOR;
+	if (!LIGHT_IS_DIRECTIONAL && UV.x < 0.75) lc *= vec3(1.0, 1.0 - lamp_green, 1.0 - 0.5 * lamp_green) * lamp_gain;
+	float d = max(dot(NORMAL, LIGHT), 0.0);
+	DIFFUSE_LIGHT += lc * ATTENUATION * (d + BACKLIGHT * (1.0 - d)) / PI;
 }
 #endif

@@ -33,6 +33,11 @@ public sealed class Sheath
             : [$"{stem}_{calling}_{kind}_town", $"{stem}_{calling}_town", $"{stem}_{calling}_{kind}", $"{stem}_{calling}"])
         : [$"{stem}_{calling}_{kind}", $"{stem}_{calling}"];
 
+    /// <summary>The walk clips to try, in order: Names("walk"), except that a drawn kind with its own run but no walk of
+    /// its own gets none (the calling's walk is built for the calling's default weapon, in the wrong hands).</summary>
+    public static string[] WalkNames(string calling, string kind, bool sheathed, System.Func<string, bool> has) =>
+        !sheathed && has($"run_{calling}_{kind}") && !has($"walk_{calling}_{kind}") ? [] : Names("walk", calling, kind, sheathed);
+
     /// <summary>Whether a calling holding a kind has a town stand (and so sheathes in a safe place).</summary>
     public static bool HasTown(string calling, string kind, System.Func<string, bool> has) =>
         has($"idle_{calling}_{kind}_town") || (!StaysInHand(kind) && has($"idle_{calling}_town"));

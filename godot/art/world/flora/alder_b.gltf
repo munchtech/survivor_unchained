@@ -249,42 +249,42 @@
 		{
 			"bufferView":15,
 			"componentType":5126,
-			"count":642,
+			"count":637,
 			"max":[
-				1.4192713499069214,
-				5.856619834899902,
-				1.6009583473205566
+				1.7308070659637451,
+				6.936403751373291,
+				2.0397229194641113
 			],
 			"min":[
-				-1.7387152910232544,
+				-1.54950749874115,
 				-0.2228647619485855,
-				-1.854486107826233
+				-1.7239981889724731
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":16,
 			"componentType":5126,
-			"count":642,
+			"count":637,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":17,
 			"componentType":5126,
-			"count":642,
+			"count":637,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":18,
 			"componentType":5123,
-			"count":642,
+			"count":637,
 			"normalized":true,
 			"type":"VEC4"
 		},
 		{
 			"bufferView":19,
 			"componentType":5123,
-			"count":1326,
+			"count":1224,
 			"type":"SCALAR"
 		}
 	],
@@ -381,32 +381,32 @@
 		},
 		{
 			"buffer":0,
-			"byteLength":7704,
+			"byteLength":7644,
 			"byteOffset":165812,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":7704,
-			"byteOffset":173516,
+			"byteLength":7644,
+			"byteOffset":173456,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":5136,
-			"byteOffset":181220,
+			"byteLength":5096,
+			"byteOffset":181100,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":5136,
-			"byteOffset":186356,
+			"byteLength":5096,
+			"byteOffset":186196,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":2652,
-			"byteOffset":191492,
+			"byteLength":2448,
+			"byteOffset":191292,
 			"target":34963
 		}
 	],
@@ -418,7 +418,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":194144,
+			"byteLength":193740,
 			"uri":"alder_b.bin"
 		}
 	]

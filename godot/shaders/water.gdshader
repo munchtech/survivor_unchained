@@ -16,7 +16,7 @@ render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specula
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 // The noise's slopes (Water.Grad: RG the swell's (noise R), BA the chop's (noise B), 0.5 flat), so a ripple's normal is one look.
 uniform sampler2D grad_tex : filter_linear_mipmap, repeat_enable;
-uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform bool stream = true;
 // The body: color its scattered light where deep, murk past 'deep' m, shallow the tint the bed takes through it.
@@ -42,6 +42,12 @@ uniform float wake = 1.6;
 uniform float ripple_size = 1.4;
 uniform float ripple_bend = 0.55;
 uniform float refract = 0.03;
+// (Low Ford r1, triage judge: the crowns' shadows on the bed showed through the clear ford as hard straight-edged wedges and
+// sawtooth) The bed seen through softens with depth, as water scatters what it carries: by bed_soft of a blur bed_soft_lod
+// mips deep (5: about 32 px at 1080p), full by bed_soft_depth m; the shallows' first hand keeps its pebbles sharp.
+uniform float bed_soft = 0.85;
+uniform float bed_soft_lod = 5.0;
+uniform float bed_soft_depth = 0.4;
 // The glints' sharpness (roughness at the ripples' crests).
 uniform float gloss = 0.06;
 // The brightest a light's glint gets (linear, its brightest channel): under the tonemap's white, so a lamp's glint keeps
@@ -113,9 +119,50 @@ uniform float streak_h2 = 11.0;
 uniform float streak_h3 = 14.0;
 uniform float streak_high = 1.0;
 uniform float glint_high = 0.1;
+// (Low Ford r3, judge r2: under the play camera the moon's glitter was a noisy white disc round her, read as a blob, not
+// moonlight) The moon's glint as moonlight, water_air.w of the way (the air's RiverMoon: 0 by day and as built): rougher
+// (its facets' roughness at least moon_rough), only on the chop's crests (moon_sparse of it masked off the troughs: sparse
+// glints), moon_gain of its strength, under moon_cap (linear, its brightest channel), in moon_tint's hue (sRGB, the
+// light's brightness kept), over a soft column toward the camera (moon_column: an anisotropic lobe round the mirror point,
+// moon_col_w across and moon_col_l along the view, broken by the ripples' tilt by moon_break). And a directional light's
+// glint scaled by its light_specular (x2, as the near lights'), so a fill with light_specular 0 leaves no second moon.
+uniform float moon_rough = 0.0;
+uniform float moon_sparse = 0.0;
+uniform float moon_gain = 1.0;
+uniform float moon_cap = 1.6;
+uniform vec3 moon_tint : source_color = vec3(1.0);
+uniform float moon_column = 0.0;
+uniform float moon_col_w = 0.05;
+uniform float moon_col_l = 0.25;
+uniform float moon_break = 0.6;
+// ...the ripples' tilt as the moon sees it stretched along the view (moon_along) and narrowed across it (moon_across), so
+// its glitter lies in a broken column toward the camera, as moonlight on a river does, not a round disc; 1, 1 as built.
+uniform float moon_along = 1.0;
+uniform float moon_across = 1.0;
+// (Low Ford r3: the ford lamps' mirror points from the play camera were tight white clusters, a second moon) a near light's
+// glint cap scaled by lamp_cap (1 as built).
+uniform float lamp_cap = 1.0;
+// ...and a near light's soft pool in the water's body (its light scattered in the river, the lamp's own colour round it,
+// unbroken by the ripples: the ford's blue lamps read lit from the play camera, her ember warms the water by her); 0 none.
+uniform float lamp_pool = 0.0;
 // The air's say over the river (Atmosphere.Set, play's presets, E1): x its light, y the sky in it, z how far the
 // ripples bend it (under 1 the moon's glints gather into a band toward it); (1, 1, 1) as built.
 global uniform vec4 water_air;
+// (Low Ford lf5p, judge lf4 #3: pale foam blobs on open water, over something just under the surface that breaks nothing)
+// foam_emerge: the foot's ring only where something within foam_emerge_r m of it (on the screen) stands above the water;
+// 0: as before.
+uniform float foam_emerge = 0.0;
+uniform float foam_emerge_r = 0.45;
+// (lf5p, judge lf4 #6: the moon's glitter column even end to end) moon_taper: its glints faded toward the column's ends
+// (the half vector's offset from the mirror point, along the view, over moon_taper, across over moon_taper * 0.6); moon_vary:
+// the flecks' size and density wandering along it (a few metres' field); 0, 0: as before.
+uniform float moon_taper = 0.0;
+uniform float moon_vary = 0.0;
+// (lf5p, judge lf4 #3: the ford's body one flat teal) bank_tint: the body toward the shallows' colour where it is under
+// bank_depth m (the banks, the stones' feet), murkier past deep; 0: as before.
+uniform float bank_tint = 0.0;
+uniform float bank_depth = 0.6;
+varying float fleck;
 
 varying vec3 w_pos;
 // The glints' strength (the fragment's SPECULAR, which light() can't read).
@@ -218,12 +265,20 @@ void fragment() {
 	vec3 trans = exp(-path * ext);
 	float sh = stream ? 1.0 - smoothstep(0.0, 0.55, UV2.x) : 0.0;
 	vec3 under = texture(screen_tex, bent).rgb;
+	float soft_k = bed_soft * smoothstep(0.04, bed_soft_depth, wd);
+	if (soft_k > 0.0) {
+		// (two blurs, a mip apart, averaged: one mip alone shows its texel blocks at the play camera's 1:1)
+		vec3 blur = 0.5 * (textureLod(screen_tex, bent, bed_soft_lod).rgb + textureLod(screen_tex, bent, bed_soft_lod - 1.0).rgb);
+		under = mix(under, blur, soft_k);
+	}
 
 	// The body: its colour deepening to murk, lit by the scene (ALBEDO); in by the shore's band.
 	// (its width wandering along the bank, so the clear strip at the edge is never an even ribbon)
 	// (full by 'shore' m deep at most, E6c judge r2)
 	float in_k = smoothstep(0.0, shore * (0.55 + 0.45 * texture(noise_tex, wv.xz * 0.07 + 0.11).g), wd);
 	vec3 body = mix(color, murk, smoothstep(0.3, deep, wd));
+	if (bank_tint > 0.0) body = mix(body, mix(color, shallow * 0.55, 0.5), bank_tint * (1.0 - smoothstep(0.05, bank_depth, wd)) * (0.7 + 0.3 * texture(noise_tex, wv.xz * 0.05 + 0.4).b));
+	fleck = texture(noise_tex, wv.xz * 0.11 + vec2(0.31, 0.63) - flow * t * 0.04).g;
 	body = mix(body, shallow * 0.6, sh * 0.5);
 	float opaque = 1.0 - dot(trans, vec3(0.3333));
 
@@ -238,6 +293,17 @@ void fragment() {
 	// single lit pixels)
 	float fw = min(fwidth(wd), foam_depth) * 1.5;
 	float touch = 1.0 - smoothstep(foam_depth * 0.3 - fw, foam_depth * (0.7 + 0.8 * fn) + fw, wd);
+	if (foam_emerge > 0.0 && touch > 0.001) {
+		float up = 0.0;
+		vec2 ro = vec2(PROJECTION_MATRIX[0][0], PROJECTION_MATRIX[1][1]) * 0.5 * foam_emerge_r / max(-VERTEX.z, 0.1);
+		for (int i = 0; i < 8; i++) {
+			float an = float(i) * 0.7854;
+			vec2 uo = SCREEN_UV + vec2(cos(an), sin(an)) * ro;
+			vec3 q = (INV_VIEW_MATRIX * vec4(view_at(uo, INV_PROJECTION_MATRIX, depth_tex), 1.0)).xyz;
+			up = max(up, step(wv.y - 0.01, q.y));
+		}
+		touch *= mix(1.0, up, foam_emerge);
+	}
 	// A stone's foot or a leg (what it meets is steep) rings whole; a shelving bank only in lace, here and there, so the
 	// shore is a soft wet edge and never a drawn line.
 	// (E6c, judge r2: the bank's lace a band 0.25-0.4 m wide across the ground from the waterline, torn into pieces
@@ -340,8 +406,17 @@ void light() {
 	// (a near light glints on the steeper facets, broader: E6c, judge r2, her ember's glint was lost behind the post)
 	// (glint_bend 0: as the moon's; E6c: 3 spread the pylons' lamps into sparkle clumps and still never showed her ember)
 	vec3 gn = LIGHT_IS_DIRECTIONAL || glint_bend <= 0.0 ? NORMAL : glint_n;
+	if (LIGHT_IS_DIRECTIONAL && water_air.w > 0.0) {
+		vec3 mx = cross(flat_n, VIEW);
+		mx = dot(mx, mx) > 1e-6 ? normalize(mx) : vec3(1.0, 0.0, 0.0);
+		vec3 ml = cross(mx, flat_n);
+		float mwa = clamp(water_air.w, 0.0, 1.0);
+		gn = normalize(flat_n * dot(NORMAL, flat_n) + mx * dot(NORMAL, mx) * mix(1.0, moon_across, mwa) + ml * dot(NORMAL, ml) * mix(1.0, moon_along, mwa));
+	}
 	float ndh = clamp(dot(gn, h), 0.0, 1.0);
-	float a = LIGHT_IS_DIRECTIONAL ? ROUGHNESS * ROUGHNESS : max(ROUGHNESS, glint_spread) * max(ROUGHNESS, glint_spread);
+	float mw = LIGHT_IS_DIRECTIONAL ? clamp(water_air.w, 0.0, 1.0) : 0.0;
+	float mr = mix(ROUGHNESS, max(ROUGHNESS, moon_rough), mw);
+	float a = LIGHT_IS_DIRECTIONAL ? mr * mr : max(ROUGHNESS, glint_spread) * max(ROUGHNESS, glint_spread);
 	float a2 = a * a;
 	float dd = ndh * ndh * (a2 - 1.0) + 1.0;
 	float D = a2 / (PI * dd * dd);
@@ -351,6 +426,27 @@ void light() {
 	float ndv = clamp(dot(NORMAL, VIEW), 1e-3, 1.0);
 	float vis = 0.25 / ((ndl * (1.0 - k) + k) * (ndv * (1.0 - k) + k) + 1e-4);
 	vec3 c = LIGHT_COLOR * (D * F * vis * ndl * ATTENUATION) * (LIGHT_IS_DIRECTIONAL ? 1.0 : glint_near);
+	if (mw > 0.0) {
+		// (the moon's: sparse on the crests, moon_gain of it, over its soft broken column, in moon_tint, under moon_cap)
+		float cr = moon_vary > 0.0 ? pow(crest, mix(1.0, mix(0.45, 3.2, smoothstep(0.25, 0.75, fleck)), moon_vary)) : crest;
+		c *= mix(1.0, mix(1.0 - moon_sparse, 1.0, cr * cr) * moon_gain, mw);
+		if (moon_taper > 0.0) {
+			vec3 tx = cross(flat_n, VIEW);
+			tx = dot(tx, tx) > 1e-6 ? normalize(tx) : vec3(1.0, 0.0, 0.0);
+			float ta = dot(h, cross(tx, flat_n)) / moon_taper, tc = dot(h, tx) / (moon_taper * 0.6);
+			c *= mix(1.0, exp(-ta * ta - tc * tc), mw);
+		}
+		if (moon_column > 0.0) {
+			vec3 ax = cross(flat_n, VIEW);
+			ax = dot(ax, ax) > 1e-6 ? normalize(ax) : vec3(1.0, 0.0, 0.0);
+			vec3 al = cross(ax, flat_n);
+			float hx = (dot(h, ax) - moon_break * dot(NORMAL, ax)) / moon_col_w;
+			float hl = (dot(h, al) - moon_break * dot(NORMAL, al)) / moon_col_l;
+			c += LIGHT_COLOR * ATTENUATION * moon_column * mw * exp(-hx * hx - hl * hl) * mix(0.25, 1.4, crest) * clamp(spec_k * 4.0, 0.0, 1.0);
+		}
+		vec3 tl = max(moon_tint, vec3(1e-4));
+		c = mix(c, tl * (max(c.r, max(c.g, c.b)) / max(tl.r, max(tl.g, tl.b))), mw);
+	}
 	if (!LIGHT_IS_DIRECTIONAL && glint_sheen > 0.0) {
 		float ndh_s = clamp(dot(NORMAL, h), 0.0, 1.0);
 		float as2 = 0.0625;
@@ -381,7 +477,8 @@ void light() {
 	float m = max(c.r, max(c.g, c.b));
 	// (E7 round 3: a near light's glint scaled by its light_specular over Godot's 0.5, after the cap: the ford lamps at 0.3
 	// spread blown white patches on the far ripples at the cap; the moon and the sun as before)
-	float sk = LIGHT_IS_DIRECTIONAL ? 1.0 : clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0);
-	float gcap = LIGHT_IS_DIRECTIONAL ? glint_cap : glint_cap * mix(1.0, glint_high, cam_hi * streak_tame);
+	float sk = LIGHT_IS_DIRECTIONAL ? mix(1.0, clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0), mw) : clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0);
+	float gcap = LIGHT_IS_DIRECTIONAL ? mix(glint_cap, moon_cap, mw) : glint_cap * mix(1.0, glint_high, cam_hi * streak_tame) * lamp_cap;
 	SPECULAR_LIGHT += c * min(1.0, gcap / max(m, 1e-4)) * sk * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
+	if (!LIGHT_IS_DIRECTIONAL && lamp_pool > 0.0) SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * lamp_pool * clamp(spec_k * 4.0, 0.0, 1.0) * water_air.x;
 }

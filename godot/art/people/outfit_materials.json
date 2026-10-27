@@ -111,6 +111,16 @@
  "glovesatin": {
   "kind": "satin",
   "repeats": 40,
+  "sheen": 0.75,
+  "axis": 2,
+  "along": 0.75,
+  "across": 0.34,
+  "body": 0.64,
+  "turn": 0.78,
+  "cap": 1.35,
+  "wrinkle": 1.0,
+  "wrinkle_top": 1.0,
+  "wrinkle_wrist": -9.0,
   "zone": "cloth"
  },
  "glovepipe": {

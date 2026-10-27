@@ -167,6 +167,9 @@ public partial class ZoneView
     static ShaderMaterial WallGlassOf()
     {
         var m = (ShaderMaterial)Lamps.GlassOf(false).Duplicate();
+        // (the town's lit glass as judged in E9d, before Low Ford r1 dimmed the holders' glass)
+        m.SetShaderParameter("glow_strength", 0.24f * Lamps.OldGlassK);
+        m.SetShaderParameter("lit_alpha", Lamps.OldGlassA);
         m.SetShaderParameter("edge_k", 0.1f);
         m.SetShaderParameter("edge_alpha", 0.2f);
         m.RenderPriority = -1;
