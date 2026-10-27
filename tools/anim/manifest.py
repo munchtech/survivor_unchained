@@ -20,6 +20,7 @@ PLAN = {
     "idle_warden": ("idle, warden", "Idle_Loop", "100STYLE Heavyset_ID, arms keyed"),
     "idle_arcanist": ("idle, arcanist", "Idle_Loop", "100STYLE Strutting_ID, arms keyed"),
     "idle_reaver": ("idle, reaver", "Idle_Loop", "100STYLE Angry_ID, arms keyed"),
+    "idle_reaver_axes": ("idle, reaver with two axes", "Idle_Loop", "100STYLE Angry_ID (idle_reaver's base), arms keyed"),
     "idle_stalker": ("idle, stalker", "Idle_Loop", "100STYLE Crouched_ID, arms keyed"),
     "idle_stalker_daggers": ("idle, stalker with daggers", "Idle_Loop", "100STYLE Crouched_ID (idle_stalker's base), arms keyed"),
     "idle_warden_break": ("idle break, warden", "-", "keyed"),
