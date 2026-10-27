@@ -478,14 +478,61 @@ def _smooth(u):
     return u * u * (3 - 2 * u)
 
 
-def reaver(t, f):
+# The reaver at ease in a fight (animation 55): each axe hangs low from an arm let down by her side, the elbow soft,
+# the haft down and ahead and swung out past her thigh, its head before her knee, the wrist near straight. (Before: the
+# axe held aloft on her shoulder, its haft across her face seen from her side; the second axe of a pair lay across her
+# pelvis under a hand on her hip.) Not head-down and trailing: the axe leaves her fist on its thumb side (the socket's
+# BladeDirR) about 90 deg off the forearm's line, so a plumb haft from a hanging forearm asks the wrist for ~90 deg
+# of ulnar bend (it has 38): asked for plumb with the bit back (out 15, back 12-50) the solver pinned the wrist at its
+# limits (ulnar 37-38, flex 20-37) and still left the haft plumb-forward with the bit forward. (Shoulder rest: the
+# haft over her shoulder crosses her neck seen from her side, whatever the lie.) Scratch anim55/idlesA/rb.py.
+# Each fist from its shoulder (chest frame, m; x toward her left), the elbow's pole (chest frame), and the haft: `out`
+# deg out from plumb, `back` deg trailing behind it (- ahead), `edge` the bit turned that many deg out from straight
+# back (with `knuckles`; off: the fist's roll left to the forearm, the bit forward and down).
+AXE_IDLE = {"hand": (0.085, -0.49, 0.05), "pole": (0.3, -0.2, -1.0), "out": 14.0, "back": -48.0, "edge": 0.0,
+            "sway": 0.010, "knuckles": False}
+AXE_IDLE_L = {}   # the left's own differences (mirrored otherwise)
+
+
+def _axe_down(side, t, a):
+    sg = 1.0 if side == "l" else -1.0
+    h = np.array(a["hand"], float) * (sg, 1.0, 1.0)
+    # A small hang to the breath, against the sway (the arm a pendulum, a beat behind).
+    h = h + (0.0, 0.0, a["sway"] * math.sin(2 * math.pi * t * 2 - (0.6 if side == "l" else 0.0)))
+    o, b, e = (math.radians(a[k]) for k in ("out", "back", "edge"))
+    haft = np.array([sg * math.sin(o), -math.cos(b) * math.cos(o), -math.sin(b) * math.cos(o)])
+    eb = np.array([sg * math.sin(e), math.sin(b), -math.cos(b)])
+    eb = eb - haft * float(eb @ haft)
+    pole = np.array(a["pole"], float) * (sg, 1.0, 1.0)
+    spec = {"arc": arc_of(h), "pole": tuple(pole), "frame": a.get("frame", "char"), "blade": tuple(_n(haft)), "twist": 0.5}
+    if a.get("knuckles", True):
+        spec["knuckles"] = tuple(_n(eb))
+    return spec
+
+
+def reaver_shoulder(t, f):
+    """The old reaver idle's arms (before Animation 55): the axe on her shoulder, its head behind her. reaver_show
+    (soul.py) still opens and closes on them; the idle itself now hangs the axe (reaver below)."""
     return {
-        # The axe on her shoulder, its head behind her.
         "hand_r": {"arc": arc_of((-0.03, -0.13, 0.11)), "pole": (-0.6, -1.0, 0.0), "frame": "chest",
                    "blade": _n((-0.15, 0.35, -0.95)), "twist": 0.5},
         "hand_l": {"arc": arc_of((-0.02, -0.42, 0.06)), "pole": (0.4, 0.0, -1.0), "frame": "chest"},
         "fingers_r": "grip", "fingers_l": "fist",
     }
+
+
+def reaver(t, f):
+    """One axe (idle_reaver): it hangs from her right fist; the left hangs empty, loosely closed."""
+    return {"hand_r": _axe_down("r", t, AXE_IDLE),
+            "hand_l": {"arc": arc_of(np.add(AXE_IDLE["hand"], (0.0, 0.0, AXE_IDLE["sway"] * math.sin(2 * math.pi * t * 2 - 0.6)))),
+                       "pole": (0.3, -0.2, -1.0), "frame": "chest", "thumb": _n((-0.15, -0.1, 1.0)), "twist": 1.0},
+            "fingers_r": "grip", "fingers_l": "relaxed"}
+
+
+def reaver_axes(t, f):
+    """Two axes (idle_reaver_axes, on idle_reaver's standing): one hanging from each fist."""
+    return {"hand_r": _axe_down("r", t, AXE_IDLE), "hand_l": _axe_down("l", t, {**AXE_IDLE, **AXE_IDLE_L}),
+            "fingers_r": "grip", "fingers_l": "grip"}
 
 
 # Her left hand laid over the crossbow's fore-stock, palm down, a hand ahead of the right fist, the fingers over its
@@ -764,6 +811,7 @@ IDLES = {
     "idle_warden": ("Heavyset", warden, "sword+shield"),
     "idle_arcanist": ("Strutting", arcanist, "staff"),
     "idle_reaver": ("Angry", reaver, "axe"),
+    "idle_reaver_axes": ("Angry", reaver_axes, "axes"),
     "idle_stalker": ("Crouched", stalker, "crossbow"),
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
@@ -779,7 +827,7 @@ IDLES = {
 
 _bases = {}
 # An idle that stands on another's captured base (the same standing, other arms).
-SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_arcanist_staff_town": "arcanist_town"}
+SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_reaver_axes": "reaver", "idle_arcanist_staff_town": "arcanist_town"}
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
@@ -971,12 +1019,82 @@ def grip_hilt(rig, clip, at=0.0, spin=20.0, pole=(1.0, -0.2, 0.3), fingers=None,
     return clip
 
 
+# The sheathed viking sword's pommel (arms_local.json "sheathed", pelvis frame, the scabbard's push not added): a flat
+# lobed plate 25 mm thick (x 0.193-0.218), 60 mm fore and aft (z 0.025-0.085), its top edge at y 0.225-0.235.
+POMMEL_TOP = (0.207, 0.231, 0.055)
+# Her left palm on it (animation 55, the owner on the town close-up of the fist on the grip: "is this angle possible or
+# natural?"; the forearm level, the elbow out, the wrist bent ~90 down, the fingers open). With the hilt where it hangs
+# (its grip's top 0.29 m under her shoulder, the pommel's 0.22) no closed fist on the grip lets the elbow hang by her
+# side with the wrist straight: the fist turned every way round the grip (scratch anim55/idlesA/g.py) left the wrist
+# 29 deg or more bent with the elbow back, or straight only with the elbow out at shoulder height (as it was) or across
+# her front. A palm laid on the pommel's top edge, the fingers draped over its front lobe, takes any forearm the
+# elbow gives it: the wrist straight on the forearm's line, the elbow back by her side.
+# PALM: the point of the palm (hand_l's frame; +x the palm side, +y the fingers, +z the thumb) laid on POMMEL_TOP;
+# DRAPE: the fingers' bends over the lobe (deg, knuckle/middle/last).
+PALM_L = (0.024, 0.085, -0.004)
+DRAPE_L = {"bends": {"index": [48.0, 55.0, 26.0], "middle": [50.0, 56.0, 27.0], "ring": [46.0, 53.0, 25.0],
+                     "pinky": [54.0, 55.0, 25.0], "thumb": [6.0, 14.0, 12.0]},
+           "spreads": {"index": -4.0, "middle": 0.0, "ring": 3.0, "pinky": 7.0}}
+
+
+def rest_on_pommel(rig, clip, pole=(0.15, -0.55, -1.0), ext=10.0, palm=PALM_L, fingers=None, push=HIP_BLADE_OUT,
+                   passes=4, twist=0.5):
+    """`clip` with her left palm resting on the sheathed sword's pommel (POMMEL_TOP, the scabbard `push` m out), frame by
+    frame on the clip's own pelvis so the hand rides her hips with the sword: the palm (`palm`, hand_l's frame) on its
+    top edge, the palm facing down onto it, the hand on the forearm's line (bent back `ext` deg), the fingers draped
+    over the front lobe (DRAPE_L); the elbow's way `pole` from the shoulder in the pelvis's frame (out, up, ahead).
+    Each pass lays the hand on the forearm the last solve gave (the forearm follows the wrist, the wrist the hand)."""
+    from keyed import solve_frames
+    from rig import qmatrix, qnorm
+    I = rig.I
+    pel, ua, la, ha = I["pelvis"], I["upperarm_l"], I["lowerarm_l"], I["hand_l"]
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    C = np.array(POMMEL_TOP) + (push, 0.0, 0.0)
+    arm = [ua]
+    for j in arm:
+        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
+    n = clip.frames
+    Mp = [qmatrix(qnorm(g[f, pel])) for f in range(n)]
+    top = [p[f, pel] + Mp[f] @ C for f in range(n)]
+    # The forearm's first guess: ahead and a little down from the elbow.
+    fa = [Mp[f] @ _n((0.05, -0.25, 1.0)) for f in range(n)]
+    base = [(clip.rot[f].copy(), clip.pos[f].copy()) for f in range(n)]
+    e = math.radians(ext)
+    for k in range(passes):
+        specs = []
+        for f in range(n):
+            # The hand's axes: +y the forearm's line bent back `ext` about the palm's side-to-side axis, +x (the palm side)
+            # facing down onto the pommel, +z = x cross y (the thumb side, toward her middle).
+            y = fa[f] / np.linalg.norm(fa[f])
+            x = np.array([0.0, -1.0, 0.0]) - y * (-y[1])
+            x /= np.linalg.norm(x)
+            y = y * math.cos(e) - x * math.sin(e)
+            x = x * math.cos(e) + fa[f] / np.linalg.norm(fa[f]) * math.sin(e)
+            x -= y * float(x @ y)
+            x /= np.linalg.norm(x)
+            z = np.cross(x, y)
+            R = np.stack([x, y, z], axis=1)
+            W = top[f] - R @ np.array(palm, float)
+            specs.append({"hand_l": {"pos": tuple(W), "knuckles": tuple(y), "blade": tuple(z),
+                                     "pole": tuple(Mp[f] @ np.array(pole, float)), "pole_at": "shoulder", "twist": twist},
+                          "fingers_l": fingers if fingers is not None else DRAPE_L})
+        rot, _ = solve_frames(rig, specs, base, loop=clip.loop, weapon=(clip.meta or {}).get("weapon", ""))
+        g2, p2 = rig.sk.fk(rot, clip.pos)
+        fa = [p2[f, ha] - p2[f, la] for f in range(n)]
+    for f in range(n):
+        for j in arm:
+            clip.rot[f, j] = rot[f, j]
+    return clip
+
+
 # Passes after the arms (an idle's name: f(rig, clip) -> clip).
 # (Animation 52: the owner reopened the warden's left hand, "on the hilt" from the front; Body 14's call: the pose is
 # fine, the elbow volume drop was motion.py posing without her helpers. spin 40 over the fitted 20: the wrist's flex
 # 30-58 -> 14-41 deg, the fist still on the grip.)
+# (Animation 55: the owner, on the town close-up, "is this angle possible or natural?": the palm on the pommel instead,
+# rest_on_pommel.)
 def _warden_grip(rig, clip):
-    return grip_hilt(rig, clip, spin=40.0)
+    return rest_on_pommel(rig, clip)
 
 
 POST = {"idle_warden_town": _warden_grip}
