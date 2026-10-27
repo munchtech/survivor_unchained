@@ -260,42 +260,126 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
 AXE_HANG = dict(back=26.0, out=-10.0, edge=0.0, swing=6.0)
 
 
-def axe_hang(back=17.0, out=6.0, edge=0.0, swing=0.0):
+def axe_hang(back=17.0, out=6.0, edge=0.0, swing=0.0, side="l", knuckles=True, out_swing=0.0):
     """The second axe hung at her left side (anim 44 judge r3): the haft down from the fist, trailing `back` degrees
     behind vertical and `out` out from her, its edge facing back (`edge` degrees turned out from straight back),
-    the haft's trail growing `swing` degrees as the fist goes back (k 0) and easing it as it comes forward."""
+    the haft's trail growing `swing` degrees as the fist goes back (k 0) and easing it as it comes forward.
+    (Animation 54: `side` "r" mirrors it for the right fist's trailing carries, run.TRAIL.)"""
+    sg = 1.0 if side == "l" else -1.0
+
     def f(ph, k, hand):
         hand = dict(hand)
         b = math.radians(back + swing * (0.5 - k))
-        o = math.radians(out)
-        haft = np.array([math.sin(o), -math.cos(b) * math.cos(o), -math.sin(b) * math.cos(o)])
+        o = math.radians(out + out_swing * (0.5 - k))
+        haft = np.array([sg * math.sin(o), -math.cos(b) * math.cos(o), -math.sin(b) * math.cos(o)])
         e = math.radians(edge)
-        eb = np.array([math.sin(e), math.sin(b), -math.cos(b)])
+        eb = np.array([sg * math.sin(e), math.sin(b), -math.cos(b)])
         eb = eb - haft * float(np.dot(eb, haft))
-        hand.update({"blade": tuple(haft / np.linalg.norm(haft)), "knuckles": tuple(eb / np.linalg.norm(eb)), "frame": "char"})
+        hand.update({"blade": tuple(haft / np.linalg.norm(haft)), "frame": "char"})
+        if knuckles:
+            hand["knuckles"] = tuple(eb / np.linalg.norm(eb))
         return hand
     return f
 
 
+_ARM_LEN = []
+
+
+def wand_along(lean=18.0, out=0.0):
+    """The wand carried as an extension of the forearm (animation 54: at blade_carry's straight wrist it stood ~45 deg
+    off the forearm, a T): the wand on the forearm's line from elbow to wrist, tipped `lean` degrees off it toward
+    her front and up (the wrist's ulnar bend takes the rest), so it points ahead and down as the arm swings.
+    `out` (animation 55): the tip turned that many degrees out to her right, clear of her front knee."""
+    def f(ph, k, hand):
+        hand = dict(hand)
+        if not _ARM_LEN:
+            from rig import Skeleton
+            sk = Skeleton.load()
+            _, p = sk.rest_globals()
+            p, I = p[0], sk.index
+            _ARM_LEN.extend([float(np.linalg.norm(p[I["lowerarm_r"]] - p[I["upperarm_r"]])),
+                             float(np.linalg.norm(p[I["hand_r"]] - p[I["lowerarm_r"]]))])
+        lu, lf = _ARM_LEN
+        az, el, r = math.radians(hand["arc"][0]), math.radians(hand["arc"][1]), hand["arc"][2]
+        H = r * np.array([math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)])
+        fa = H - lu * np.array(hand["pole"], float)
+        fa /= np.linalg.norm(fa)
+        n = np.array([0.0, 0.5, 1.0]) - fa * float(np.dot([0.0, 0.5, 1.0], fa))
+        n /= np.linalg.norm(n)
+        a = math.radians(lean)
+        v = fa * math.cos(a) + n * math.sin(a)
+        if out:
+            o = np.array([-1.0, 0.0, 0.0]) - v * float(v[0] * -1.0)
+            o /= np.linalg.norm(o)
+            v = v * math.cos(math.radians(out)) + o * math.sin(math.radians(out))
+        hand.update({"blade": tuple(v), "frame": "chest", "twist": 0.5})
+        return hand
+    return f
+
+
+# Animation 54 (a max judge, 26 Oct: at the run's pump the sword, the reaver's axe, the right dagger and the wand stood
+# out level, ~90 deg off the forearm, the sword ~70 cm out of her silhouette): the held piece trailing low at her side
+# as the hung second axe is (axe_hang mirrored), the arm near straight and turned out so the thumb side faces back,
+# swinging with the stride; the wand on the forearm's line (wand_along). The thumb side is turned back by the outside
+# route (the upper arm turned 70 out, as AXES_L's), so the game's walk-run blend rolls the blade out past her side, not
+# in across her legs (turned in, a 50/50 blend with walk_warden put the sword 89 mm into her thigh). Keyed by the blade
+# alone (blade and knuckles together asked more than the wrist can, and the sword stood out sideways). Measured
+# (solver runs1): sword and dagger points 40-65 deg below level, trailing; the axe 63 deg; the reaver's axe trails
+# steeper (42) as the reaver's lean is smaller. (Run ahead and down as the walk's, the axe went 22-38 mm into the thigh
+# driving up.)
+# Animation 55 (a max judge on runs1: the long pieces too near the floor, the sword's tip at her soles, the arms near
+# straight, a dead carry): the elbows bent 48-62 and the pieces raised. A trailing piece in a bent arm's fist can only
+# trail if the forearm swings out from her side (the wrist turns a blade 17-77 degrees off the forearm's line, the
+# axe's 20-66; a forearm reaching ahead turns the piece out of her shadow, sideways), so the solve brings the forearm
+# out and down from an elbow kept by her side; the hand no further out than runs1's. Each trailing piece asked a little
+# in toward her (`out` < 0) and further in as the fist goes back (`out_swing` < 0): asked straight back, the pieces
+# yawed 20-30 out where the wrist ran out of reach. Measured (solver runs2): sword pitch -38..-40, -1..9 out, tip
+# 0.40 m off the floor (was 0.10), elbow 60, the fist +-8 cm fore and aft; axes -46..-49, -8..13 out; daggers -34..-46.
+# WIP, NOT SHIPPABLE: the game's walk-run blend (50/50 per-bone slerp) now rolls the sword and daggers 37-44 deg off
+# the walk-run arc, out sideways (the walk's thumb forward, this hold's thumb back and the forearm out: a bent arm turns
+# the piece with the forearm), the daggers 75-104 mm into her legs mid-blend; the daggers' upper arms 45-68 mm into
+# her outfits (motion --outfits). runs1's near-straight arms kept the piece near the forearm's line, so the twist barely
+# moved it (blend 6-8 deg).
+TRAIL_ARM = ((20, 14, 120, -40), (-25, 13, 120, -40))
+TRAIL = dict(back=53.0, out=-5.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=-22.0)
+# The daggers keep round 1's near-straight carry (Animation 55 r2's bent arms put both upper arms 45-68 mm into all
+# four outfits on held frames); they passed the runs1 judge with notes.
+DAGGER_ARM = ((10, 1, 125, -85), (-10, 0, 123, -85))
+DAGGER_TRAIL = dict(back=26.0, out=0.0, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=10.0)
+# The reaver's axe: forward the fist no more than 10 ahead of hanging (at 20, the forearm reached ahead and the wrist
+# could only trail the haft 20-30 out); its upper arm 22-24 out (at 15 it met her outfits, runs1). The second axe
+# (run_reaver_axes) on the same carry mirrored (it hung near vertical from a straight arm, a different hold).
+# Animation 55 runs3 tried a steeper haft (-58..-64, elbow 67, upper arm swept back 39-44, abducted 30): it fixed the
+# level read but the arm read winged out from her body (max judge, round 3). The round-2 hold below is kept as an
+# interim (better than the old level jut in every view); a different hold family (haft along the forearm, or a
+# shoulder carry) is next.
+AXE_TRAIL = dict(TRAIL, back=54.0, out=-6.0, out_swing=-28.0)
+AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
+# The wand: the upper arm a little behind hanging so the bent elbow's forearm (and the wand on its line) still points
+# down 37-56 degrees; the forearm turned out behind her (turn -20: at -10 the wand passed 19 mm from her thigh, now
+# 60) and the tip 5 more out past her front knee.
+WAND_ARM = ((0, 15, 120, 0), (-30, 14, 120, -20))
+
+
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
-    "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+    "run_warden": (replace(WARDEN, swing_r=TRAIL_ARM), {"r": axe_hang(**TRAIL), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
-    "run_reaver": (replace(REAVER, swing_r=AXE_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": blade_carry(up_fwd=0.75)}, "axe"),
-    "run_reaver_axes": (replace(REAVER, swing_r=AXE_ARM, swing=AXES_L), {"r": blade_carry(up_fwd=0.75), "l": axe_hang(**AXE_HANG)}, "axes"),
+    "run_reaver": (replace(REAVER, swing_r=AXE_TRAIL_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": axe_hang(**AXE_TRAIL)}, "axe"),
+    "run_reaver_axes": (replace(REAVER, swing_r=AXE_TRAIL_ARM, swing=AXE_TRAIL_ARM), {"r": axe_hang(**AXE_TRAIL), "l": axe_hang(**dict(AXE_TRAIL, side="l"))}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
     # 58-61 degrees out of her sagittal plane at the back swing, 29-34 forward; up, at most 13 (run and sprint).
-    "run_arcanist_wand": (replace(ARCANIST, fingers_r="grip", swing_r=((6, 10, 80, 25), (-30, 13, 70, -35)),
-                                  fingers="fist", swing=WAND_L), {"r": blade_carry(out=0.0)}, "wand"),
+    "run_arcanist_wand": (replace(ARCANIST, fingers_r="grip", swing_r=WAND_ARM,
+                                  fingers="fist", swing=WAND_L), {"r": wand_along(out=5.0)}, "wand"),
     # The free left hand a fist and closer behind (its open fingers met her thigh, 7 mm; 31 in the sprint). The right
     # fist closed on the crossbow's pistol grip (WRAP["crossbow"], 18 October; relaxed, it stood off the grip).
     "run_stalker": (replace(STALKER, fingers="fist", fingers_r="grip", swing=((6, 10, 80, 20), (-30, 12, 62, -35))),
                     {"r": crossbow_low()}, "crossbow"),
     # Both fists closed on the daggers ("grip": each the fitted dagger fist, keyed.wrap_of: WRAP["daggers"] right,
     # WRAP["daggers_l"] left; with the gait's relaxed hands the fingers stood 10-73 mm off the hilts).
-    "run_stalker_daggers": (replace(STALKER, fingers="grip"), {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
+    "run_stalker_daggers": (replace(STALKER, fingers="grip", swing=DAGGER_ARM), {"r": axe_hang(**DAGGER_TRAIL), "l": axe_hang(**{**DAGGER_TRAIL, "side": "l"})}, "daggers"),
     # In town, weapons sheathed: her calling's carriage, the arms swinging free.
     # The free right hand a loose fist (hilt judge r1: open and limp, beside the still left arm the run read inert).
     "run_warden_town": (replace(WARDEN, fingers="relaxed", fingers_r="fist", swing=SWING), {}, ""),

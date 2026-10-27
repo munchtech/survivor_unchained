@@ -43,6 +43,11 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     public Vector2? WordsNear { get; init; }
     /// <summary>Figures the words must not cover (a boss), besides her.</summary>
     public IReadOnlyList<Rect2>? Shun { get; init; }
+    /// <summary>Extra pools (x, y, radius px) for the things the lesson names but does not ring: the
+    /// caster of a telegraph (the Knight of the red line), so it is not dimmed to a ghost.</summary>
+    public IReadOnlyList<Vector3>? Pools { get; init; }
+    /// <summary>Discs (x, y, radius) kept wholly undimmed and unblurred, as she is (a caster's body).</summary>
+    public IReadOnlyList<Vector3>? Crisp { get; init; }
     /// <summary>Points (by index) that are ringed but never get an arrow (the Knight, beside his lane).</summary>
     public IReadOnlyList<int>? NoArrow { get; init; }
     /// <summary>A point (by index) with no ring: the arrow lands on it bare (the lane under her).</summary>
@@ -133,6 +138,14 @@ public partial class Callout : Control, ICalloutView
         AddChild(ink);
         Modulate = Colors.Transparent;
     }
+
+    /// <summary>--dim-diag with --shot: the freeze's dim held off for a frame of the same moment undimmed
+    /// (set by GameTeach; the two frames differ by the dim alone).</summary>
+    public static bool DimHeld;
+    /// <summary>--dim-diag: the flat dim before UI 16 for a frame of the same moment (before/after).</summary>
+    public static bool DimOld;
+    /// <summary>After dark (set by the game when it shows a freeze): the dim keeps the night's dark readable.</summary>
+    public bool Night;
 
     public void Show(CalloutLook l)
     {
@@ -767,6 +780,8 @@ public partial class Callout : Control, ICalloutView
         else smoke.Visible = false;
         // The world drains, darkens and softens, but for a soft round pool on each thing in the world
         // (its own colour, no more light than it had); a HUD part has no pool (the HUD keeps it undimmed).
+        if (Freeze) dim.Visible = !DimHeld;
+        if (Freeze) { dimMat.SetShaderParameter("old_dim", DimOld ? 1 : 0); dimMat.SetShaderParameter("night", Night ? 1f : 0f); }
         if (dim.Visible)
         {
             var lights = new Vector4[6];
@@ -782,10 +797,22 @@ public partial class Callout : Control, ICalloutView
                 var m = marks[i];
                 lights[n++] = new Vector4(m.C.X, m.C.Y, i == aim.Bare ? 90 : m.R * 1.5f + 46, 0.7f);
             }
+            if (aim.Pools != null)
+                foreach (var pl in aim.Pools)
+                    if (n < 6) lights[n++] = new Vector4(pl.X, pl.Y, pl.Z, 0.7f);
+            var crisp = new Vector4[4];
+            int cn = 0;
+            if (aim.Crisp != null)
+                foreach (var cr in aim.Crisp)
+                    if (cn < 4) crisp[cn++] = new Vector4(cr.X, cr.Y, cr.Z, 0);
+            dimMat.SetShaderParameter("crisp", crisp);
+            dimMat.SetShaderParameter("crisp_n", cn);
             dimMat.SetShaderParameter("lights", lights);
             dimMat.SetShaderParameter("count", n);
             dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
             dimMat.SetShaderParameter("amount", Smooth(age / 0.26) * out_);
+            if (OS.GetCmdlineUserArgs().Contains("--dim-diag") && age > 0.6 && age < 1.3)
+                GD.Print($"dimdiag age={age:0.00} words={new Rect2(wordsAt - Size2 / 2, Size2)} lights={string.Join(";", lights.Take(n).Select(l => $"{l.X:0},{l.Y:0},{l.Z:0}"))}");
         }
         glow.QueueRedraw();
         ink.QueueRedraw();
@@ -1106,7 +1133,11 @@ public partial class Callout : Control, ICalloutView
             uniform vec4 lights[6];
             uniform int count = 0;
             uniform int soft_first = 0;
+            uniform vec4 crisp[4];
+            uniform int crisp_n = 0;
             uniform float amount = 0.0;
+            uniform int old_dim = 0;
+            uniform float night = 0.0;
             uniform vec2 canvas = vec2(1920.0, 1080.0);
             void fragment() {
                 vec2 p = UV * canvas;
@@ -1123,8 +1154,15 @@ public partial class Callout : Control, ICalloutView
                     lit = max(lit, l);
                     warm = max(warm, l * lights[i].w);
                 }
+                // (a caster's body: wholly lit, edge eased over its outer fifth; no dim, no blur)
+                float body = 0.0;
+                for (int j = 0; j < 4; j++) {
+                    if (j >= crisp_n) { break; }
+                    float dj = length(p - crisp[j].xy);
+                    body = max(body, 1.0 - smoothstep(0.8 * crisp[j].z, crisp[j].z, dj));
+                }
                 vec3 c = texture(screen, SCREEN_UV).rgb;
-                float k = amount * (1.0 - lit);
+                float k = amount * (1.0 - max(lit, body));
                 vec3 src = c;
                 if (k > 0.001) {
                     // (about 3 px at 1080p: a 5 by 5 gaussian, 1.5 px apart)
@@ -1141,12 +1179,20 @@ public partial class Callout : Control, ICalloutView
                     src = mix(c, acc / wsum, k);
                 }
                 float y = dot(src, vec3(0.299, 0.587, 0.114));
-                // (about 30% darker, half drained: the night still reads, the thing taught stands out)
-                vec3 ash = mix(vec3(y), src, 0.5) * 0.72;
+                // Half drained, and darkened by the hour and the pixel's own light. By day the lit ground loses
+                // about 30% (round 2 judge: 45% sank it to the shadows' level, a dusk), its shade less; by night (a flat 28% cut sank it to near black: the bolts' archers in
+                // the dash lesson barely read) the dark keeps nearly all it has and the lit about 80%: the drain,
+                // the softening and the warm pools set the taught apart instead.
+                float day_keep = mix(0.92, 0.70, smoothstep(0.03, 0.25, y));
+                float night_keep = mix(0.95, 0.8, smoothstep(0.05, 0.35, y));
+                float keep = old_dim == 1 ? 0.72 : mix(day_keep, night_keep, night);
+                vec3 ash = mix(vec3(y), src, 0.5) * keep;
                 vec2 q = UV - 0.5;
-                ash *= 1.0 - 0.15 * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
+                ash *= 1.0 - (old_dim == 1 ? 0.15 : mix(0.15, 0.06, night)) * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
                 // (a thing's pool is lit warm, as by the ember: never a cold white patch)
                 vec3 col = mix(c, ash, k) * mix(vec3(1.0), vec3(1.06, 0.95, 0.78), warm * amount);
+                // (the pools a touch brighter than the ground was, by day: so they still stand off the lighter world)
+                col *= 1.0 + 0.15 * lit * amount * (1.0 - night) * (old_dim == 1 ? 0.0 : 1.0);
                 COLOR = vec4(col, 1.0);
             }
             """,
