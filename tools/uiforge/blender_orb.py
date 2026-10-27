@@ -8,7 +8,9 @@ Two forms (spec "form"):
         right, the two ends pried ~25 deg apart, each a rough fracture face tilted to the eye
   ring  the glass ringed by forged links (the Flare emblem's ring, blender_chain.py, sized for the orb),
         flat and on edge in turn, one snapped open and splayed the same way
-Both: hammer dimples over every bar (their ridges rubbed bright on the crown), forge scale in the
+  waystone  the glass sunk in a socket bored through a squat roadside stone, the three-roads mark chiselled
+        beside it, lichen in the hollows, chipped corners, an iron band seating the glass (spec "stone")
+link and ring: hammer dimples over every bar (their ridges rubbed bright on the crown), forge scale in the
 iron's colour and roughness, a dark recessed back plate behind the glass (only its crescents show), and
 a forged eye welded on the lower right that the HUD's chain leaves from.
 
@@ -522,6 +524,240 @@ def form_ring(mats):
     return dict(open_c=(0.0, 0.0), open_r=r, eye=eye, ext=ext, tips=tipsall)
 
 
+# ------------------------------------------------------------ waystone --
+# The Waystation, "where three roads meet": the glass sunk in a socket bored through a squat roadside stone.
+# The stone is a heightfield seen from the front, meshed in rings from the socket's bore out to its weathered
+# outline (star-shaped about the glass, so the silhouette is a smooth 1600-point curve, not a grid's stairs):
+# a domed face, its edge rounded over, lumps and runnels of weather, the bore's lip chamfered in, the three-roads
+# mark chiselled beside the socket (V grooves, peck marks along them), corners knocked off the base (flat
+# fracture facets, fresh stone), lichen in the hollows; a forged iron band seats the glass, an iron eye on a
+# pin in the right flank carries the HUD's chain.
+
+def _noise_grid(xs, ys, scale, kind, seed, octaves=4):
+    out = []
+    off = Vector((seed * 1.7, seed * 0.3 + 11, 5.0))
+    for x, y in zip(xs, ys):
+        p = Vector((x / scale, y / scale, 0)) + off
+        if kind == "ridged":
+            out.append(noise.ridged_multi_fractal(p, 1.0, 2.1, octaves, 1.0, 2.0))
+        elif kind == "fractal":
+            out.append(noise.fractal(p, 1.0, 2.1, octaves))
+        else:
+            out.append(noise.noise(p))
+    import numpy as np
+    a = np.array(out, np.float64)
+    return (a - a.mean()) / max(a.std(), 1e-6)
+
+
+def _box(a, kt, ks):
+    """A box blur over the ring grid (theta wraps, s clamps), kt x ks cells."""
+    import numpy as np
+    b = sum(np.roll(a, k, 0) for k in range(-kt, kt + 1)) / (2 * kt + 1)
+    pad = np.concatenate([np.repeat(b[:, :1], ks, 1), b, np.repeat(b[:, -1:], ks, 1)], 1)
+    c = np.cumsum(np.concatenate([np.zeros((b.shape[0], 1)), pad], 1), 1)
+    return (c[:, 2 * ks + 1:] - c[:, :-2 * ks - 1]) / (2 * ks + 1)
+
+
+def stone_outline(th, g, seed):
+    """The stone's outline radius (1080 px) about the glass at each angle: a rounded box, its crown higher on the
+    left, its base flatter, weathered unevenly; chips notch it."""
+    import numpy as np
+    c, s = np.cos(th), np.sin(th)
+    a = np.where(c < 0, g["aL"], g["aR"]) * (1 - g.get("taper", 0.0) * np.clip(s, 0, 1) ** 2)
+    b = np.where(s > 0, g["bT"] - g.get("tilt", 0) * c, g["bB"])
+    p = np.where(s > 0, g.get("p_top", 2.5), g.get("p_bot", 3.6))
+    R = 1.0 / ((np.abs(c) / a) ** p + (np.abs(s) / b) ** p) ** (1.0 / p)
+    wob = np.array([noise.fractal(Vector((math.cos(t) * 1.6, math.sin(t) * 1.6, seed + 0.5)), 1.0, 2.0, 3) for t in th])
+    R *= 1 + g.get("wobble", 0.022) * (wob - wob.mean()) / max(wob.std(), 1e-6)
+    for ch in g.get("chips", []):
+        d = np.angle(np.exp(1j * (th - math.radians(ch[0]))))
+        R -= ch[3] * np.clip(1 - np.abs(d) / math.radians(ch[4]), 0, 1) ** 0.6
+    return R
+
+
+def stone_material():
+    m = bpy.data.materials.new("orb_stone")
+    m.use_nodes = True
+    nt = m.node_tree
+    n, k = nt.nodes, nt.links
+    bsdf = n["Principled BSDF"]
+    tco = n.new("ShaderNodeTexCoord")
+    attr = n.new("ShaderNodeAttribute")
+    attr.attribute_name = "stone"
+    sep = n.new("ShaderNodeSeparateColor")
+    k.new(attr.outputs["Color"], sep.inputs[0])
+
+    def mix(fac, a, b, blend="MIX"):
+        x = n.new("ShaderNodeMix")
+        x.data_type = "RGBA"
+        x.blend_type = blend
+        for i, v in ((0, fac), (6, a), (7, b)):
+            if isinstance(v, tuple):
+                x.inputs[i].default_value = v
+            elif isinstance(v, float):
+                x.inputs[i].default_value = v
+            else:
+                k.new(v, x.inputs[i])
+        return x.outputs[2]
+
+    def tex(kind, size, detail=3.0):
+        t = n.new("ShaderNodeTexNoise" if kind == "noise" else "ShaderNodeTexVoronoi")
+        t.inputs["Scale"].default_value = 1.0 / (size * K)
+        if kind == "noise":
+            t.inputs["Detail"].default_value = detail
+        k.new(tco.outputs["Object"], t.inputs["Vector"])
+        return t
+
+    def ramp(src, lo, hi):
+        r_ = n.new("ShaderNodeMapRange")
+        k.new(src, r_.inputs["Value"])
+        r_.inputs["From Min"].default_value = lo
+        r_.inputs["From Max"].default_value = hi
+        return r_.outputs[0]
+
+    # the grit: flecks of dark and pale grain in a warm grey (gritstone), broad stains of a greener grey
+    grain = tex("vor", SP.get("grain_px", 0.9))
+    fleck = ramp(grain.outputs["Distance"], 0.05, 0.6)
+    col = mix(fleck, B.hexc(SP.get("stone_dark", "#4a453f")), B.hexc(SP.get("stone_col", "#6d675e")))
+    stain = tex("noise", SP.get("stain_px", 26), 5.0)
+    col = mix(ramp(stain.outputs["Fac"], 0.42, 0.62), col, B.hexc(SP.get("stone_moss", "#575b4c")))
+    weather = tex("noise", 7.0, 6.0)
+    col = mix(ramp(weather.outputs["Fac"], 0.35, 0.7), mix(0.5, col, (0.55, 0.53, 0.5, 1), "MULTIPLY"), col)
+    # convex (weathered pale) and concave (dirt-dark): R is 0.5 flat, 1 convex, 0 hollow
+    conv = ramp(sep.outputs[0], 0.5, 0.85)
+    col = mix(conv, col, B.hexc(SP.get("stone_pale", "#8b857a")))
+    hol = ramp(sep.outputs[0], 0.5, 0.15)
+    col = mix(hol, col, mix(0.65, col, (0.35, 0.34, 0.33, 1), "MULTIPLY"))
+    # fresh fracture (the chips): a cooler, paler, cleaner grey
+    col = mix(sep.outputs[2], col, B.hexc(SP.get("stone_fresh", "#8a8986")))
+    # lichen: crusty muted sage rosettes, only where G says
+    crust = tex("vor", SP.get("lichen_px", 1.6))
+    lic = mix(ramp(crust.outputs["Distance"], 0.1, 0.7), B.hexc(SP.get("lichen", "#6f7752")), B.hexc(SP.get("lichen2", "#4d5540")))
+    col = mix(sep.outputs[1], col, lic)
+    ao = n.new("ShaderNodeAmbientOcclusion")
+    ao.inputs["Distance"].default_value = 6.0 * K
+    col = mix(0.7, col, ao.outputs["AO"], "MULTIPLY")
+    k.new(col, bsdf.inputs["Base Color"])
+    bsdf.inputs["Metallic"].default_value = 0.0
+    rough = n.new("ShaderNodeMapRange")
+    k.new(sep.outputs[2], rough.inputs["Value"])
+    rough.inputs["To Min"].default_value = 0.9
+    rough.inputs["To Max"].default_value = 0.72
+    k.new(rough.outputs[0], bsdf.inputs["Roughness"])
+    # the grit in the light: fine bump from the grain and a finer noise
+    fine = tex("noise", 0.6, 3.0)
+    hsum = n.new("ShaderNodeMath")
+    hsum.operation = "ADD"
+    k.new(fine.outputs["Fac"], hsum.inputs[0])
+    k.new(grain.outputs["Distance"], hsum.inputs[1])
+    bump = n.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = SP.get("grit", 0.3)
+    bump.inputs["Distance"].default_value = 0.35 * K
+    k.new(hsum.outputs[0], bump.inputs["Height"])
+    k.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return m
+
+
+def form_waystone(mats):
+    import numpy as np
+    g = SP["stone"]
+    r = SP.get("glass_r", 49)
+    NT, NS = g.get("nt", 1600), g.get("ns", 260)
+    th = np.linspace(0, 2 * np.pi, NT, endpoint=False)
+    R = stone_outline(th, g, 3)
+    r_in = r - 3.0
+    s = np.linspace(0, 1, NS)
+    TH, S_ = np.meshgrid(th, s, indexing="ij")
+    U_ = r_in + S_ * (R[:, None] - r_in)
+    X, Y = U_ * np.cos(TH), U_ * np.sin(TH)
+    xs, ys = X.ravel(), Y.ravel()
+    e = R[:, None] - U_
+    Re, D0 = g.get("Re", 8.0), g.get("D0", 14.0)
+    ec = np.clip(e, 0, Re)
+    z = D0 - (Re - np.sqrt(np.maximum(0, Re * Re - (Re - ec) ** 2)))
+    cxy = g.get("dome_c", [-4, -8])
+    rho = np.hypot(X - cxy[0], Y - cxy[1]) / g.get("dome_r", 95)
+    z += g.get("bulge", 9) * np.clip(1 - rho ** 2, -0.4, 1)
+    for key, kind in (("lump", "fractal"), ("ero", "ridged"), ("fine", "noise")):
+        sc, amp = g[key]
+        z += amp * _noise_grid(xs, ys, sc, kind, {"lump": 1, "ero": 2, "fine": 3}[key]).reshape(X.shape)
+    # the bore: the lip chamfered in, then the wall straight down
+    L, ld = g.get("lip", [7, 6])
+    t = (U_ - r) / L
+    z -= np.where(U_ >= r, ld * np.clip(1 - t, 0, 1) ** 2, ld + (r - U_) * 3)
+    # the three-roads mark: V grooves, pecked along their length
+    mk = g["mark"]
+    mx, my = mk["at"]
+    hw, gd, pitch = mk["hw"], mk["depth"], mk["pitch"]
+    cut = np.zeros_like(z)
+    for ang, ln in mk["arms"]:
+        dx, dy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+        px_, py_ = X - mx, Y - my
+        along = np.clip(px_ * dx + py_ * dy, 0, ln)
+        d = np.hypot(px_ - along * dx, py_ - along * dy)
+        taper = 1 - 0.35 * (along / ln) ** 2          # (each road shallower toward its end)
+        peck = 1 + 0.28 * np.sin(2 * np.pi * along / pitch + ang) + 0.12 * np.sin(2 * np.pi * along / (pitch * 0.43))
+        w = np.clip(1 - (d / (hw * (0.9 + 0.2 * np.sin(along * 1.3 + ang)))) ** 2, 0, 1)
+        cut = np.maximum(cut, gd * taper * peck * w)
+    z -= cut
+    # chips: flat fracture facets across the base's corners
+    fresh = np.zeros_like(z)
+    for ch in g.get("chips", []):
+        a = math.radians(ch[0])
+        Rc = float(stone_outline(np.array([a]), g, 3)[0])
+        nin = np.array([-math.cos(a), -math.sin(a)])
+        tg = np.array([-nin[1], nin[0]])
+        dd = (X - Rc * math.cos(a)) * nin[0] + (Y - Rc * math.sin(a)) * nin[1]
+        tt = (X - Rc * math.cos(a)) * tg[0] + (Y - Rc * math.sin(a)) * tg[1]
+        # (anchored to the surface a chip's depth in from the edge: a scar stepped down from it, falling to the edge)
+        qx, qy = Rc * math.cos(a) + nin[0] * ch[1], Rc * math.sin(a) + nin[1] * ch[1]
+        zref = float(z.ravel()[np.argmin(np.hypot(xs - qx, ys - qy))])
+        plane = zref - g.get("chip_step", 1.5) - ch[2] * (ch[1] - dd) + ch[5] * tt
+        rough_ = g.get("chip_rough", 0.25) * _noise_grid(xs, ys, g.get("chip_px", 6.0), "noise", 7 + int(ch[0])).reshape(X.shape)
+        under = plane + rough_ < z
+        fresh = np.maximum(fresh, np.clip((z - plane - rough_) / 0.8, 0, 1))
+        z = np.where(under, plane + rough_, z)
+    # convexity, lichen
+    blur = _box(_box(z, 6, 5), 6, 5)
+    cav = np.clip(0.5 + (z - blur) * g.get("cav_k", 0.35), 0, 1)
+    patch = _noise_grid(xs, ys, g.get("lichen_patch", 9), "fractal", 9).reshape(X.shape)
+    lic = np.clip((patch - g.get("lichen_cut", 1.1)) * 2.5, 0, 1) * np.clip((0.55 - cav) * 4 + 0.3, 0, 1)
+    lic *= (1 - fresh) * (U_ > r + L) * (cut < 0.2)
+    print("ORB lichen cover", round(float(lic.mean()), 3), "fresh", round(float(fresh.mean()), 3))
+    # the mesh
+    co = np.stack([X * K, Y * K, z * K], -1).reshape(-1, 3)
+    idx = np.arange(NT * NS).reshape(NT, NS)
+    a0 = idx[:, :-1]
+    a1 = np.roll(idx, -1, 0)[:, :-1]
+    faces = np.stack([a0, a0 + 1, a1 + 1, a1], -1).reshape(-1, 4)
+    me = bpy.data.meshes.new("stone")
+    me.from_pydata(co.tolist(), [], faces.tolist())
+    me.update()
+    ca = me.color_attributes.new("stone", "FLOAT_COLOR", "POINT")
+    rgba = np.stack([cav, lic, fresh, np.ones_like(cav)], -1).reshape(-1)
+    ca.data.foreach_set("color", rgba.astype(np.float32))
+    ob = bpy.data.objects.new("stone", me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.data.materials.append(stone_material())
+    for p in ob.data.polygons:
+        p.use_smooth = True
+    # the iron band seating the glass, in the lip
+    bw = g.get("band_wire", 2.4)
+    rb = r + bw * 0.7
+    zb = float(np.mean([np.interp(rb, U_[i], z[i]) for i in range(NT)]))
+    band = bar_piece("band", [Vector((P(rb) * math.cos(q), P(rb) * math.sin(q), P(zb + bw * g.get("band_lift", 0.25))))
+                              for q in np.linspace(0, 2 * np.pi, 480, endpoint=False)], P(bw), True, [], 41, mats)
+    # the chain's eye: a forged ring on a pin driven into the right flank
+    ea = math.radians(g.get("eye_deg", -24))
+    Re_ = float(stone_outline(np.array([ea]), g, 3)[0])
+    out = Vector((math.cos(ea), math.sin(ea), 0))
+    pin = Vector((P(Re_ - 2.0) * math.cos(ea), P(Re_ - 2.0) * math.sin(ea), P(D0 - Re * 0.6)))
+    eye = lug(math.degrees(ea), pin, out, mats, 51)
+    ext = (P(float(np.max(np.abs(R * np.cos(th))))) + 2 * P(SP.get("lug_r", 6.5)) + 3 * P(2.5),
+           P(float(np.max(np.abs(R * np.sin(th))))))
+    return dict(open_c=(0.0, 0.0), open_r=P(r), eye=eye, ext=ext, tips=[])
+
+
 def main():
     global K
     argv = sys.argv[sys.argv.index("--") + 1:]
@@ -535,7 +771,7 @@ def main():
     B.world()
     B.suns()
     mats = [iron_material(), fracture_material()]
-    geo = form_link(mats) if SP.get("form", "link") == "link" else form_ring(mats)
+    geo = dict(link=form_link, ring=form_ring, waystone=form_waystone)[SP.get("form", "link")](mats)
     # the glass's own light on the iron's inner flanks (cool, dim: the orb is lit glass, not fire), unseen itself,
     # so the bar's inside reads as iron round the glass rather than a black gap
     bpy.ops.mesh.primitive_circle_add(vertices=96, radius=geo["open_r"] * 0.97, fill_type="NGON", location=(0, 0, 0))

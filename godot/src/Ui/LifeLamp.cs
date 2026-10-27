@@ -20,10 +20,10 @@ public partial class LifeLamp : Control
     /// every place below from that folder's lamp_geo.json, read once.</summary>
     public static readonly string Shape = Args.Get("lamp-shape") is "tall" or "globe" or "font" ? Args.Get("lamp-shape")! : "squat";
     /// <summary>UI 16 (the owner: "the typical orbs that these games have, but lets have what they are encased in
-    /// show our themes"): her life as a classic orb in a themed casing (--life-orb link|ring|linkk|ember|lamp; none until the
+    /// show our themes"): her life as a classic orb in a themed casing (--life-orb link|ring|waystone|linkk|ember|lamp; none until the
     /// owner picks): shaders/hud_orb.gdshader over art/ui/lamp_life/&lt;theme&gt;/ (lamp_life_cut.py's ORBS). No
     /// pool on the ground; the low-life edge pulse (HerLight.Edge) runs with it.</summary>
-    public static readonly string? Orb = Args.Get("life-orb") is "link" or "linkk" or "ring" or "ember" or "lamp" ? Args.Get("life-orb") : null;
+    public static readonly string? Orb = Args.Get("life-orb") is "link" or "linkk" or "ring" or "waystone" or "ember" or "lamp" ? Args.Get("life-orb") : null;
     static readonly string Dir = Orb != null ? $"lamp_life/{Orb}" : Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
     static readonly Godot.Collections.Dictionary Geo = LoadGeo();
     /// <summary>The quad, in 1080 px (the art is twice this).</summary>

@@ -1,0 +1,39 @@
+{
+ "shape": "waystone",
+ "canvas": [
+  194,
+  164
+ ],
+ "orb_c": [
+  96.8,
+  66.82
+ ],
+ "orb_r": 48.29,
+ "orb_vis": 47.32,
+ "font_mid": [
+  96.8,
+  66.82
+ ],
+ "eye": [
+  171.43,
+  96.97
+ ],
+ "foot": 162.11,
+ "top": 2.11,
+ "floor": 1066,
+ "top_line": 904,
+ "number_y": 45.52,
+ "flame_full": 0,
+ "glass_px": 94.6,
+ "footprint": 160.0,
+ "oil_top": 19.5,
+ "oil_bot": 114.14,
+ "font_x": [
+  49.48,
+  144.12
+ ],
+ "skip": [
+  0,
+  0
+ ]
+}

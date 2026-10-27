@@ -398,6 +398,10 @@ ORBS = {
     # The Ring of Links (L2): the glass ringed by seven forged links, the emblem's ring, one snapped open
     "ring": dict(src=SRC16 + "blender/l2.png", blend=SRC16 + "blender/l2.json", rows=[], tint=(0.90, 0.93, 1.0),
                  chroma=0.45),
+    # The Waystone (W1): the Waystation's "where three roads meet", the glass sunk in a socket bored through a squat
+    # roadside stone, the three-roads mark chiselled beside it, an iron band seating the glass; its colour kept
+    "waystone": dict(src=SRC16 + "blender/w1.png", blend=SRC16 + "blender/w1.json", rows=[], tint=(1.0, 1.0, 1.0),
+                     chroma=0.75, luma=0.19),
     # The Held Dead's Warmth: Krea seed 4603, a riveted arch over a pierced brazier bowl; the arch's legs drawn
     # longer so the glass sits whole on the bowl's lip, the bowl squashed, the embers through its slots
     "ember": dict(src=SRC16 + "ember/cand_4603.png", rows=[(430, 520, 2.0), (620, 960, 0.62)], fit_top=True,
