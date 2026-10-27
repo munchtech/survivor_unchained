@@ -1,5 +1,10 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (env lead 19, 26 Oct): Low Ford MR READY env-16@df0cf10c; E8 round 1 built, shooting, judge next
+- **Low Ford MR:** Release perf `survivorsunchained_inputs/env_perf1/lf/lf_hi_lf6_windows.md`: GPU 3.3-4.8 ms (E7c 3.4-5.0), shadow draws peak 1,017 in the boss-intro cine (E7c 1,262), 96-287 elsewhere; run clean to Exit; tests 1070/0/8.
+- **E8 r1 (solver 218k; 2cea6815, b10d548b, 8189117c, unjudged):** Low Ford's KayKit hex gate (`gate-0`), 10 wall runs and 2 tower bases swapped via `props_own.json` `kits` for ours (`env_props.py`: 4 curtain variants, gatehouse with arch/portcullis/open leaves, round towers with slate cones; `<name>_shadow` proxies cast alone, 13 casters vs 18). Far castle: one mesh 4.2k tris, `far_castle.gdshader` (own haze, ignores fog; lit windows by vertex colour), at (3,-260), the gold lamp in a high keep window. frames.py sets `gate`, `gatedawn`; s8a still via `--cine c01 --shot <name> --until 24`; script `<coord scratch>\env19\shoot.sh ROUND [import]`. Before frames `godot/.shots/e8a0_*`.
+- **Doubts:** ~180k LOD0 tris over the 13 pieces (towers 23k each: trim if perf objects); castle height on the zone-edge terrain unconfirmed; trees may hide it in s8a; the play camera never meant to see the castle (unverified).
+
 ## Paused here (env lead 18, 26 Oct, coordinator WIND-DOWN); next: the Release Low Ford perf run, then the MR
 - Low Ford reopen DONE (lf6 judge 17/17 gate YES). Integration merged at c813106a; import done; tests 1070/0/8 after that merge; the teach run was clean through C04a (0 script errors, on 45d894f7, before the anim merge). **Only the Release perf is left before the MR:** `bash survivorsunchained_inputs/scratch_env18/final_lf2.sh` (fix its L= path to your scratch; it imports, tests, then takes gpu+godot and runs `tools/perf/release.py run ... lf_hi_lf6`); compare to `survivorsunchained_inputs/env_perf1/e7c/lf_hi_e7c_windows.md` (GPU 3.4-5.0 ms, shadow draws <= 1,200 outside cines). It was stopped queued behind Experience's GPU turn. Then MR, then E8, E10.
 
