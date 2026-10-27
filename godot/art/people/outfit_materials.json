@@ -52,6 +52,7 @@
  "oldleather": {
   "kind": "leather",
   "repeats": 4,
+  "rough_floor": 0.75,
   "zone": "leather"
  },
  "velvet": {

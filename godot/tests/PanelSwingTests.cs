@@ -78,4 +78,28 @@ public class PanelSwingTests
             last = t;
         }
     }
+    static readonly PanelSwing.FoldLaw Fold = new(25.0, 25.0, 1.6, 0.45, 0.0, 1.12, 9.0, 4);
+
+    [Fact]
+    public void FoldMatchesTheTools()
+    {
+        // One run of frames through helpers.py panel_fold (turn, the upper's turn, dt -> fold, values printed from it):
+        // lying on the rising thigh, trailing it forward as it falls, capped at two steps, swinging back to plumb.
+        var st = new PanelSwing.FoldState();
+        (double turn, double th, double dt, double want)[] seq =
+        {
+            (10, 11.5, 1 / 30.0, -10.760869565217389), (30, 34.5, 1 / 30.0, -14.282608695652172),
+            (70, 80.5, 1 / 30.0, -21.32608695652172), (84, 96.6, 1 / 30.0, -9.67300837855241),
+            (60, 85, 1 / 30.0, 13.577133866600235), (35, 60, 1 / 30.0, 37.3017178573525),
+            (30, 45, 1 / 30.0, 41.70652326800622), (28, 36, 1 / 30.0, 34.352328749763515),
+            (28, 32.2, 1 / 60.0, 28.918194229131295), (5, 6, 1 / 144.0, 50.0),
+            (0, 0, 0.5, 2.5660459065483154), (0, 0, 0.0, 2.5660459065483154),
+        };
+        foreach (var (turn, th, dt, want) in seq)
+            Assert.Equal(want, PanelSwing.Fold(Fold, st, turn, 1.15, th, dt), 9);
+        var (a, b, n) = PanelSwing.FoldWeights(Fold, 37.3017178573525);
+        Assert.Equal(1.0, a, 9); Assert.Equal(0.4920687142941, b, 9); Assert.Equal(0.0, n, 9);
+        (a, b, n) = PanelSwing.FoldWeights(Fold, -21.32608695652172);
+        Assert.Equal(0.0, a, 9); Assert.Equal(0.0, b, 9); Assert.Equal(0.8530434782608688, n, 9);
+    }
 }
