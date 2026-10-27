@@ -637,8 +637,8 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>How long she has stood (under 0.8 m/s), and where she was last frame.</summary>
     double stillT;
     XZ lastAt;
-    /// <summary>The dead's blows in the Ambush (MR5 item 11 round 2): full between the floor and the curve of what
-    /// she's taken since the spring; pulled above the curve; harder below the floor while she stands. (Idle runs lost
+    /// <summary>The dead's blows in the Ambush (MR5 item 11 round 2): full between the floor and the curve of the
+    /// health she's lost since the spring; pulled above the curve; harder below the floor while she stands. (Idle runs lost
     /// 78% by 28 s (amb5), 84% (amb9), 26% (amb7), 9% (amb10): her drafts' dodge, block and armor, her kills and
     /// whether her dash cleared the volley swing it. A dodging player never meets the curve.) Full everywhere else.</summary>
     double AmbushMul(double dt)
@@ -647,9 +647,11 @@ public sealed class Prologue : ZoneRuntime
         var p = B.Player;
         if (dt > 0) { stillT = Dist(p.X, p.Z, lastAt.X, lastAt.Z) < 0.8 * dt ? stillT + dt : 0; lastAt = new XZ(p.X, p.Z); }
         if (Now != Stage.Ambush || sprungAt < 0) return 1;
-        double taken = B.DamageTaken - takenAtSpring, f = stageT - sprungAt;
-        if (taken > B.MaxHp * AmbushCurve * f) return AmbushPulled;
-        return stillT > 1.5 && taken < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
+        // (on the health she shows, not the damage taken: amb12-14 took 37-38% by 30 s and showed 10-25% lost, the
+        // ember's levels and her drafts' mending put the rest back)
+        double lost = B.MaxHp - p.Hp, f = stageT - sprungAt;
+        if (lost > B.MaxHp * AmbushCurve * f) return AmbushPulled;
+        return stillT > 1.5 && lost < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
     }
     /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
     readonly HashSet<int> boltsSpent = new();
