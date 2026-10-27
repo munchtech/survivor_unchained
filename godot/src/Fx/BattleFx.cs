@@ -88,6 +88,9 @@ public partial class BattleFx : Node3D
         /// <summary>An elite's or a boss's blow: its colour is in its textures (scarlet light over darkened
         /// ground), so its Modulate stays white and only its alpha and energy move.</summary>
         public bool Danger;
+        /// <summary>A crowd's blow in its own textures (dim amber light over a faint dark bed), as Danger is.</summary>
+        public bool Amber;
+        public bool Styled => Danger || Amber;
         public float Energy;
         public Color Color;
         public Decal? Fill;
@@ -338,16 +341,19 @@ public partial class BattleFx : Node3D
         m.Length = 0;
         if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
-        m.Danger = dangerNext;
-        dangerNext = false;
-        if (m.Danger)
+        m.Danger = styleNext == 1;
+        m.Amber = styleNext == 2;
+        styleNext = 0;
+        if (m.Styled)
         {
-            var (alb, em) = DangerOf(tex);
+            var (alb, em) = DangerOf(tex, m.Amber ? (raisingNext ? 3 : 2) : 1, radius);
             d.TextureEmission = em;
             d.TextureAlbedo = alb;
             d.AlbedoMix = 1;
-            d.EmissionEnergy = m.Energy = DangerEnergy;
+            d.EmissionEnergy = m.Energy = m.Danger ? DangerEnergy : raisingNext ? RaiseEnergy : AmberEnergy;
             d.Modulate = m.Color = Colors.White;
+            // (a decal smears down whatever stands upright in its box: a post, a wall's foot)
+            d.NormalFade = 0.6f;
         }
         else
         {
@@ -356,7 +362,9 @@ public partial class BattleFx : Node3D
             d.EmissionEnergy = m.Energy = energy;
             d.Modulate = color;
             d.AlbedoMix = 0;
+            d.NormalFade = 0;
         }
+        raisingNext = false;
         d.Position = V(x, heightAt(x, z), z);
         d.Rotation = Vector3.Zero;
         d.Size = new Vector3(radius * 2, 4, radius * 2);
@@ -372,10 +380,9 @@ public partial class BattleFx : Node3D
         if (progress)
         {
             m.Progress = true;
-            if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = discTex }; AddChild(m.Fill); }
+            if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1 }; AddChild(m.Fill); }
             m.Fill.Position = m.Decal.Position;
-            m.Fill.Modulate = (m.Danger ? Palette.TeleDanger : color) with { A = 0.42f };
-            m.Fill.EmissionEnergy = m.Danger ? DangerFill : 1.4f;
+            FillStyle(m, color, false);
             m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
             m.Fill.Visible = true;
         }
@@ -400,9 +407,7 @@ public partial class BattleFx : Node3D
             m.Length = (float)len;
             m.Radius = width / 2;
             if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1 }; AddChild(m.Fill); }
-            m.Fill.TextureEmission = laneFillTex;
-            m.Fill.Modulate = (m.Danger ? Palette.TeleDanger : color) with { A = 0.42f };
-            m.Fill.EmissionEnergy = m.Danger ? DangerFill : 1.4f;
+            FillStyle(m, color, true);
             m.Fill.Rotation = m.Decal.Rotation;
             m.Fill.Position = m.From;
             m.Fill.Size = new Vector3(width * 0.94f, 4, 0.01f);
@@ -410,6 +415,58 @@ public partial class BattleFx : Node3D
         }
         if (key is int k2) keyed[k2] = m;
         return m;
+    }
+
+    /// <summary>A running fill's look: a styled mark's (red or amber) is its own hatchless glow, clearly hotter than
+    /// the bed it runs over, with a bright front; the rest the old hatched fill in the mark's colour.</summary>
+    void FillStyle(Mark m, Color color, bool lane)
+    {
+        var f = m.Fill!;
+        if (m.Styled)
+        {
+            dangerFillTex ??= FillTexture(true);
+            dangerDiscTex ??= FillTexture(false);
+            f.TextureEmission = lane ? dangerFillTex : dangerDiscTex;
+            f.Modulate = (m.Danger ? Palette.TeleDanger : Palette.TeleAmber) with { A = 0.42f };
+            f.EmissionEnergy = m.Danger ? DangerFill : m.Energy * AmberFillK;
+            f.NormalFade = 0.6f;
+        }
+        else
+        {
+            f.TextureEmission = lane ? laneFillTex : discTex;
+            f.Modulate = color with { A = 0.42f };
+            f.EmissionEnergy = 1.4f;
+            f.NormalFade = 0;
+        }
+    }
+
+    static Texture2D? dangerFillTex, dangerDiscTex;
+
+    /// <summary>A styled mark's running fill: an even glow (no hatch) and a thin bright front, for a lane (front at
+    /// both ends of v, the one under the foe hidden) or a disc (front at its rim).</summary>
+    static Texture2D FillTexture(bool lane)
+    {
+        const int N = 256;
+        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1, a;
+                if (lane)
+                {
+                    float d = 1 - Mathf.Abs(v);
+                    a = Mathf.Clamp((0.86f - Mathf.Abs(u)) / 0.04f, 0, 1) * Mathf.Clamp(d / 0.01f, 0, 1)
+                        * (FillBody + (1 - FillBody) * Mathf.Exp(-d / 0.035f));
+                }
+                else
+                {
+                    float r = Mathf.Sqrt(u * u + v * v), d = 0.97f - r;
+                    a = Mathf.Clamp(d / 0.01f, 0, 1) * (FillBody + (1 - FillBody) * Mathf.Exp(-Mathf.Max(d, 0) / 0.03f));
+                }
+                a = Mathf.Pow(Mathf.Clamp(a, 0, 1), 1 / 2.2f);
+                img.SetPixel(x, y, new Color(a, a, a, 1));
+            }
+        return ImageTexture.CreateFromImage(img);
     }
 
     static Shader? overShader;
@@ -426,7 +483,9 @@ public partial class BattleFx : Node3D
                 render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix, shadows_disabled;
                 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
                 uniform sampler2D lane : source_color, filter_linear;
+                uniform sampler2D cover : filter_linear;
                 uniform vec4 col : source_color = vec4(1.0, 0.2, 0.1, 0.8);
+                uniform vec4 bed : source_color = vec4(0.0);
                 void fragment() {
                     float d = texture(depth_tex, SCREEN_UV).r;
                     vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
@@ -435,8 +494,11 @@ public partial class BattleFx : Node3D
                     float over = smoothstep(2.6, 3.4, mine - scene);
                     vec4 t = texture(lane, UV);
                     float a = max(max(t.r, t.g), t.b) * t.a;
-                    ALBEDO = col.rgb;
-                    ALPHA = col.a * a * over;
+                    // (a red line's copy has a faint dark bed, so over water, where no decal lands, it reads as a lane)
+                    float b = texture(cover, UV).a * bed.a;
+                    float all_a = a + b * (1.0 - a);
+                    ALBEDO = (col.rgb * a + bed.rgb * b * (1.0 - a)) / max(all_a, 1e-4);
+                    ALPHA = col.a * all_a * over;
                 }
                 """,
         };
@@ -451,7 +513,20 @@ public partial class BattleFx : Node3D
         double mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
         m.Over.Position = V(mx, heightAt(mx, mz) + 0.05, mz);
         m.Over.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
-        ((ShaderMaterial)m.Over.MaterialOverride).SetShaderParameter("lane", laneTex);
+        var om = (ShaderMaterial)m.Over.MaterialOverride;
+        if (m.Danger)
+        {
+            // the red line's own shape (its light, no crosshatch: over water the hatch read as a net) and its bed
+            om.SetShaderParameter("lane", m.Decal.TextureEmission);
+            om.SetShaderParameter("cover", m.Decal.TextureAlbedo);
+            om.SetShaderParameter("bed", Palette.TeleDangerGround with { A = DangerOverBed });
+        }
+        else
+        {
+            om.SetShaderParameter("lane", laneTex);
+            om.SetShaderParameter("cover", laneTex);
+            om.SetShaderParameter("bed", new Color(0, 0, 0, 0));
+        }
         m.Over.Visible = true;
     }
 
@@ -669,52 +744,81 @@ public partial class BattleFx : Node3D
         return ImageTexture.CreateFromImage(img);
     }
 
-    /// <summary>The next Ground mark is an elite's or a boss's blow (set by the telegraph, taken by Ground).</summary>
-    bool dangerNext;
-    /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x), its running fill's,
-    /// and its copy over a roof (x the scarlet, unshaded).</summary>
-    const float DangerEnergy = 1.5f, DangerFlare = 1.45f, DangerFill = 1.1f, DangerOver = 0.85f;
-    static readonly Dictionary<Texture2D, (Texture2D Albedo, Texture2D Emission)> dangerTex = new();
+    /// <summary>The next Ground mark's style, set by the telegraph and taken by Ground: 1 an elite's or a boss's blow
+    /// (the red line), 2 a crowd's blow (dim amber); 0 the mark's own colour. raisingNext: the amber ring is a raising.</summary>
+    int styleNext;
+    bool raisingNext;
+    /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
+    /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
+    /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
+    const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.5f;
+    const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 1f, RaiseEnergy = 0.5f;
+    /// <summary>A styled fill's even glow behind its front (about the bed's own, so the filled part reads twice as hot).</summary>
+    const float FillBody = 0.25f;
+    /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
+    /// whatever the ring's size), and the raising's.</summary>
+    const float RingCoreM = 0.045f, RaiseCoreM = 0.08f;
+    static readonly Dictionary<(Texture2D, int, int), (Texture2D Albedo, Texture2D Emission)> dangerTex = new();
 
-    /// <summary>A mark's shape as a danger mark: its ground darkened to old blood (albedo, its alpha the cover:
-    /// fuller than the light's, so the whole shape reads as one dark-red thing in daylight), and its light in
-    /// scarlet. The lane has its own: a near-solid bed with hard bright edges (two thin lines over lit dirt read
-    /// as a drawn outline, not a blow).</summary>
-    static (Texture2D, Texture2D) DangerOf(Texture2D tex)
+    /// <summary>A mark's shape as a styled mark: its ground darkened (albedo, its alpha the cover: near-full under a red
+    /// line, so blue night ground can't mix it to rose; faint under the crowd's amber), and its light in the style's hue,
+    /// saturated and low (AgX folds a bright red toward orange and white). The lane and the ring have their own: narrow
+    /// hot cores with a short soft glow (a wide clipped core read as a neon tube), and a low glow through the bed.
+    /// style: 1 danger, 2 the crowd's amber, 3 the raising's amber ring. radius: a ring's, in metres (its core is sized
+    /// in metres, so a big ring's rim is as crisp as a small one's).</summary>
+    (Texture2D, Texture2D) DangerOf(Texture2D tex, int style, float radius = 1)
     {
-        if (dangerTex.TryGetValue(tex, out var t)) return t;
-        bool lane = tex == laneTex;
+        bool lane = tex == laneTex, ring = tex == ringTex;
+        int bucket = ring ? Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(radius, 0.25f)) / Mathf.Log(2) * 2), -4, 10) : 0;
+        if (dangerTex.TryGetValue((tex, style, bucket), out var t)) return t;
+        bool danger = style == 1;
         var src = tex.GetImage();
-        int w = src.GetWidth(), h = src.GetHeight();
+        int w = lane || ring ? 512 : src.GetWidth(), h = lane || ring ? 512 : src.GetHeight();
         var alb = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
-        // (the textures are sRGB; the scarlet's sRGB, scaled in linear and stored back)
-        var hot = new Color("#ff2410");
-        var bed = Palette.TeleDangerGround;
+        // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
+        var hot = danger ? new Color("#ff031e") : new Color("#ffa020");
+        var bed = danger ? Palette.TeleDangerGround : Palette.TeleAmberGround;
+        float inside = danger ? 0.9f : style == 3 ? 0.3f : 0.35f, glowIn = 0.25f;
+        // a ring's core in its texture's units (its radius is 1)
+        float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
         for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
             {
                 float a, cover;
+                float u = (x + 0.5f) / w * 2 - 1, v = (y + 0.5f) / h * 2 - 1;
                 if (lane)
                 {
-                    float u = (x + 0.5f) / w * 2 - 1, v = (y + 0.5f) / h * 2 - 1, e = Mathf.Abs(u);
-                    float ends = Mathf.Clamp((1 - Mathf.Abs(v)) / 0.04f, 0, 1);
-                    float edge = Mathf.Clamp(1 - Mathf.Abs(e - 0.9f) / 0.075f, 0, 1);
-                    // its light: the hard edges, and a low glow through the bed, stronger toward the edges
-                    a = (edge + (e < 0.86f ? 0.025f + 0.05f * e * e : 0)) * ends;
-                    cover = (e < 0.97f ? 0.62f + 0.38f * Mathf.SmoothStep(0.55f, 0.88f, e) : edge) * ends;
+                    float e = Mathf.Abs(u), d = Mathf.Abs(e - 0.9f);
+                    float ends = Mathf.Clamp((1 - Mathf.Abs(v)) / 0.03f, 0, 1);
+                    // the edge: a narrow hot core and a soft glow two or three pixels out from it
+                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1), 0.3f * Mathf.Exp(-d / 0.028f));
+                    // its light: the edges, and a low glow through the bed, a little stronger toward them
+                    a = Mathf.Max(edge, e < 0.9f ? glowIn + 0.04f * e * e : 0) * ends;
+                    cover = (e < 0.9f ? inside + (1 - inside) * Mathf.SmoothStep(0.6f, 0.9f, e) : Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1)) * ends;
+                }
+                else if (ring)
+                {
+                    float r = Mathf.Sqrt(u * u + v * v), d = r - 0.93f;
+                    // a crisp rim: its core, a short falloff inward, a breath outward; and the bed's glow inside
+                    float rim = Mathf.Clamp(1 - Mathf.Max(Mathf.Abs(d) - core, 0) / (core * 0.6f + 0.003f), 0, 1);
+                    float fall = d < 0 ? 0.35f * Mathf.Exp(d / (core * 4 + 0.01f)) : 0.25f * Mathf.Exp(-d / (core * 1.2f + 0.004f));
+                    a = Mathf.Max(Mathf.Max(rim, fall), r < 0.93f ? glowIn * 0.8f : 0) * Mathf.Clamp((0.995f - r) / 0.01f, 0, 1);
+                    cover = r < 0.93f ? inside : rim;
                 }
                 else
                 {
-                    a = src.GetPixel(x, y).A;
-                    cover = Mathf.Clamp(a * 2.2f, 0, 1) * 0.85f;
+                    float s = src.GetPixel(x, y).A;
+                    cover = Mathf.Clamp(s * 2.2f, 0, 1) * (danger ? 0.85f : 0.5f);
+                    // sharpened: an edge's falloff squared, the low fill kept
+                    a = Mathf.Max(s * s, Mathf.Min(s, 0.12f));
                 }
                 a = Mathf.Clamp(a, 0, 1);
                 float al = Mathf.Pow(a, 1 / 2.2f);
                 em.SetPixel(x, y, new Color(hot.R * al, hot.G * al, hot.B * al, 1));
                 alb.SetPixel(x, y, new Color(bed.R, bed.G, bed.B, Mathf.Clamp(cover, 0, 1)));
             }
-        return dangerTex[tex] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+        return dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
     }
 
     /// <summary>A cone pointing along the texture's v, apex at the centre, `arc` degrees wide.</summary>
@@ -1104,8 +1208,13 @@ public partial class BattleFx : Node3D
                     bool raising = e.Shape == TelegraphShape.Ring && e.Inner <= 0.01 && !e.Boss && e.Label == null;
                     bool danger = e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null && !raising
                         && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)));
+                    // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
+                    // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
+                    bool amber = !danger && e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null && e.Label == null;
                     if (danger) col = Palette.TeleDanger;
-                    dangerNext = danger;
+                    else if (amber) col = Palette.TeleAmber;
+                    styleNext = danger ? 1 : amber ? 2 : 0;
+                    raisingNext = raising;
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line)
@@ -1122,7 +1231,7 @@ public partial class BattleFx : Node3D
                         keyed[e.Id] = Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration);
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
-                    dangerNext = false;
+                    styleNext = 0; raisingNext = false;
                     // A boss's move, named over the boss for as long as its mark stands: who is doing
                     // it, where the eye already is (over the mark, it sat on the survivor's head).
                     if (e.Label is { Length: > 0 } label)
@@ -1491,10 +1600,10 @@ public partial class BattleFx : Node3D
                 // Telegraphs: steady, a quick flare at the end.
                 m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
                 // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
-                if (m.Danger) m.Decal.EmissionEnergy = m.Energy * (m.T > 0.85f ? DangerFlare : 0.88f + 0.12f * Mathf.Sin((float)now * 12));
+                if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (m.T > 0.85f ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12));
                 var oc = m.Danger ? Palette.TeleDanger * DangerOver : m.Color * 2.4f;
                 if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
-                    om.SetShaderParameter("col", new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B), 0.8f * m.Decal.Modulate.A));
+                    om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.

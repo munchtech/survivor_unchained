@@ -144,11 +144,11 @@ void fragment() {
 	// by the scene's own light, so the flash keeps its shading and is as bright as the place allows. An
 	// added light lit it as if by day: at night the Barrow Knight went a flat cream cut-out, struck after
 	// struck, and read as a model glitch (Experience 9's judge, 27 October).
-	float struck = max(fx.x - 0.12, 0.0) / 0.88;
-	struck *= struck * struck;
+	// (half the old falloff's power: at s^3 a champion's blow was gone before a frame at 1:1 caught it)
+	float struck = pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5);
 	// (its own hue only, and warm: a lift toward white, even shaded, read as an untextured clay body; at x2.3
 	// a grey hood under firelight still went white)
-	c = min(c * (1.0 + struck * vec3(1.0, 0.8, 0.6)), vec3(0.75));
+	c = min(c * (1.0 + 1.6 * struck * vec3(1.0, 0.85, 0.7)), vec3(0.85));
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -174,7 +174,10 @@ void fragment() {
 	e += vec3(1.0, 0.86, 0.72) * low * (1.0 - high) * (0.1 + rim * rim * 1.1);
 	// (and a breath of warm light in its own paint: no rim term, which covers the whole body from up here,
 	// and no more, or the night's dark body goes pale)
-	e += vec3(1.0, 0.62, 0.38) * c * high * high * 0.12;
+	e += vec3(1.0, 0.62, 0.38) * c * struck * 0.25;
+	// (and a pop at its edge, in its own paint: scaled by c, or from up here the rim covers the whole body
+	// and it is the old cream cut-out again)
+	e += c * 0.6 * struck * pow(rim, 3.0);
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

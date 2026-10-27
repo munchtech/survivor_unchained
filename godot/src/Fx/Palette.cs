@@ -48,7 +48,10 @@ public static class Palette
     /// <summary>An elite's or a boss's blow (the F7 lesson's "red line"): a hot scarlet, kept under AgX's fold to
     /// white, over ground darkened to old blood (an added red over lit dirt read salmon, the owner, 27 October).
     /// Its edge glows; her own low-life edge is a soft dark (0.45, 0.02, 0.02) wash at the screen's rim.</summary>
-    public static readonly Color TeleDanger = C("#ff2410"), TeleDangerGround = new("#4a0a06");
+    public static readonly Color TeleDanger = C("#ff031e"), TeleDangerGround = new("#4a0a06");
+    /// <summary>The crowd's blows and a raising, in their own textures: a true amber, dim (about 0.4 of the red's light),
+    /// over a faint dark bed (TeleBlow added at x2.5 went salmon under AgX).</summary>
+    public static readonly Color TeleAmber = C("#ffa020"), TeleAmberGround = new("#2a1606");
     public static Color Telegraph(TelegraphKind k) => k switch
     {
         TelegraphKind.Ground => TeleGround, TelegraphKind.Safe => TeleSafe, TelegraphKind.Wall => TeleWall, _ => TeleBlow,
