@@ -88,7 +88,7 @@ public partial class ArmsDump : Node
         foreach (var (id, bone) in all)
         {
             if (Arms.Sheathed(id, bone == "hand_l") is not { } sock || Arms.SocketFacing(id, bone == "hand_l") is not { } face) continue;
-            var piece = Arms.MakeSheathed(id);
+            var piece = Arms.MakeSheathed(id, bone == "hand_l");
             var v = new List<Vector3>();
             var t = new List<int[]>();
             Collect(piece, Transform3D.Identity, sock.At, v, t);
