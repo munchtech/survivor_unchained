@@ -285,9 +285,8 @@ public static class Arms
     /// Hang (Body 16): a piece hung from her belt (a scabbard, an axe in its loop) is turned about this belt point (skeleton
     /// space at rest, mirrored as At is) as a hung weight (View/SheathSway, Play/SheathHang) instead of riding the bone
     /// rigidly; null: it rides rigidly (strapped across her back, tucked in the belt).
-    /// Frog (Body 17): a hafted piece hangs in a leather frog (Made.Frog, MakeSheathed): how far her belt lies from the
-    /// haft's top toward her (m, along -Normal across the haft) for its strap to reach; 0: no frog.
-    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false, Vector3? Hang = null, float Frog = 0);
+    /// Frog (Body 17): a hafted piece hangs in a leather frog (Made.Frog, MakeSheathed).
+    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false, Vector3? Hang = null, bool Frog = false);
 
     static readonly Dictionary<string, Socket> Sockets = new()
     {
@@ -313,10 +312,14 @@ public static class Arms
         // and 14 back at rest, 9-13 out in the walk (was 17-21), the head 4.5 cm farther out and 6 cm farther back so her
         // right forearm (walk) and kicked-back foot (sprint) still clear it: 0 mm into her skin and outfit in every reaver
         // town clip, both hands (the walk's forearm 9 mm off the head, the sprint's boot 7 mm off the foot), the nearest
-        // hand 80 mm (tools/scratch/body17/axe/row.py). The head now hangs off her belt in a leather frog (Frog: its strap
-        // reaches 11 cm across to her belt; Made.Frog).)
-        [WeaponSockets.HipLoop] = new("pelvis", new(-0.259f, 0.526f, -0.383f), new(0.185f, 0.953f, 0.238f), new(0.980f, -0.198f, 0.030f), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true,
-            Hang: new(-0.155f, 1.06f, -0.250f), Frog: 0.112f),
+        // hand 80 mm (tools/scratch/body17/axe/row.py). The head now hangs off her belt in a leather frog (Made.Frog).)
+        // (Body 17, 27 October, judge: in the side walk the head hung 8-10 cm behind her buttock, unattached: the top now
+        // 3 cm higher, 5.5 cm in and 6 cm forward, leaning 12.5 deg out and 30 back at rest, so in the walk the poll rides
+        // 3-9 mm off her outfit (8.8 cm before), 0 mm into her skin and outfit in every reaver town clip, both hands (the
+        // walk's forearm 1.2 mm off the head, the sprint's calf 0.6 mm off the foot); walk splay 10-15 deg (the sprint's
+        // heel wants the foot that far out). The frog's strap on the head's outer face: tools/scratch/body17/axe/row2.py.)
+        [WeaponSockets.HipLoop] = new("pelvis", new(-0.206f, 0.614f, -0.465f), new(0.189f, 0.850f, 0.491f), new(0.971f, -0.236f, 0.035f), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true,
+            Hang: new(-0.10f, 1.09f, -0.19f), Frog: true),
         // Wand: tucked in the belt behind her right hip at about 5 o'clock, the grip at the leotard's hip line (1.08 m),
         // the crystal down and back about 30 deg (animation 44, solver idle 2: crystal up, it stood beside her breast and
         // her forearm passed through it in the run).
@@ -458,13 +461,13 @@ public static class Arms
             sc.Position = new Vector3(0, info.Sheath.Y + guard, 0);
             root.AddChild(sc);
         }
-        if (WeaponSockets.SocketOf(KindOf(id)) is { } sock && Sockets[sock].Frog > 0 && Sheathed(id, left) is { } mount && SocketFacing(id, left) is { } face)
+        if (WeaponSockets.SocketOf(KindOf(id)) is { } sock && Sockets[sock].Frog && Sheathed(id, left) is { } mount && SocketFacing(id, left) is { } face)
         {
             // Toward her belt in the piece's space: the way into her body there, across the haft.
             var inward = mount.At.Basis.Inverse() * -face.Normal;
             inward = new Vector3(inward.X, 0, inward.Z).Normalized();
-            var (top, half, back) = HaftOf(id, w, inward);
-            var frog = Made.Frog(half.X, half.Y, inward, back, Sockets[sock].Frog);
+            var (top, half, poll, cheek) = HaftOf(id, w, inward);
+            var frog = Made.Frog(half.X, half.Y, inward, poll, cheek);
             frog.Position = top;
             root.AddChild(frog);
         }
@@ -475,17 +478,17 @@ public static class Arms
         return root;
     }
 
-    static readonly Dictionary<(string, bool), (Vector3, Vector2, float)> hafts = new();
+    static readonly Dictionary<(string, bool), (Vector3, Vector2, float, float)> hafts = new();
 
     /// <summary>Where a hafted piece's head begins, in its sheathed root's space (Body 17, for the frog): the haft's axis at
-    /// the head's foot, the haft's half-widths across X and Z just under it, and how far the head stands off the axis
-    /// toward `inward` (unit, XZ) over its first 12 cm. Read from the piece's own surface (its vertices and points 1 cm
+    /// the head's foot, the haft's half-widths across X and Z just under it, and how far the head stands off the axis over
+    /// its first 12 cm along X toward `inward` (unit, XZ; the poll, facing her) and along Z away from it (its outer cheek). Read from the piece's own surface (its vertices and points 1 cm
     /// apart along its edges: a haft is often one long quad). The haft's axis and radius are read at the grip (the
     /// piece's origin, +-4 cm, wider if the grip has no vertices there); going up, the head begins at the lowest point
     /// standing off the axis by more than 1.5 haft radii + 5 mm but within 10 cm of it (a beard hanging lower and farther
     /// out, as the viking axe's, is not the head's foot: the band sits beside it, under the eye). None (a plain club):
     /// 12 cm under the top.</summary>
-    static (Vector3 Top, Vector2 Half, float Back) HaftOf(string id, Node3D piece, Vector3 inward)
+    static (Vector3 Top, Vector2 Half, float Poll, float Cheek) HaftOf(string id, Node3D piece, Vector3 inward)
     {
         lock (hafts)
         {
@@ -535,14 +538,14 @@ public static class Arms
             bool found = false;
             foreach (var p in q)
                 if (p.Y > g.Y + 0.10f && D(p) > rim && D(p) < 0.10f && (!found || p.Y < top)) { top = p.Y; found = true; }
-            float u = 0, w = 0, back = 0;
+            float u = 0, w = 0, poll = 0, cheek = 0, fx = inward.X < 0 ? -1 : 1, oz = inward.Z > 0 ? -1 : 1;
             foreach (var p in q)
             {
                 if (p.Y >= top - 0.06f && p.Y <= top - 0.003f && D(p) <= rim) { u = MathF.Max(u, MathF.Abs(p.X - cx)); w = MathF.Max(w, MathF.Abs(p.Z - cz)); }
-                if (p.Y >= top && p.Y <= top + 0.12f && D(p) < 0.12f) back = MathF.Max(back, (p.X - cx) * inward.X + (p.Z - cz) * inward.Z);
+                if (p.Y >= top && p.Y <= top + 0.12f && D(p) < 0.12f) { poll = MathF.Max(poll, (p.X - cx) * fx); cheek = MathF.Max(cheek, (p.Z - cz) * oz); }
             }
             if (u == 0) (u, w) = (r, r);
-            return hafts[key] = (new Vector3(cx, top, cz), new Vector2(u, w), back);
+            return hafts[key] = (new Vector3(cx, top, cz), new Vector2(u, w), poll, cheek);
         }
     }
 
