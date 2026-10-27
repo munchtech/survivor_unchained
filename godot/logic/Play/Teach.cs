@@ -67,7 +67,8 @@ public sealed record Callout(string Id, CalloutKind Kind, string Title, string L
     public string? Mark { get; init; }
     /// <summary>A freeze on a passing thing in the world (a red line, an ember stone, an enemy): it does
     /// not wait for a hint or an interact prompt, which are held under it and come back after.</summary>
-    public bool Transient => Kind == CalloutKind.Freeze && Target.World != null;
+    public bool Urgent { get; init; }
+    public bool Transient => Kind == CalloutKind.Freeze && (Target.World != null || Urgent);
 }
 
 /// <summary>Where a callout's target is now: on screen, not yet (a draft without the card), or gone.</summary>

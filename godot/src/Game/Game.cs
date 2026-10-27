@@ -889,7 +889,8 @@ public partial class Game : Node, IZoneHost
     public void Say(string text, string? who = null, double seconds = 4)
     {
         var take = voice.Narrate(text);
-        double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds;
+        // (no voice: up long enough to read, 17 characters a second)
+        double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : Math.Max(seconds, text.Length / 17.0);
         // (--pace: each line's time, length and her health, for the tutorial's pacing audit)
         if (Args.Has("pace")) GD.Print($"pace say t={Battle?.Time ?? 0:0.0} up={up:0.0} hp={Battle?.Player.Hp ?? 0:0}/{Battle?.MaxHp ?? 0:0} text={(text.Length > 60 ? text[..60] : text)}");
         if (Args.Has("pace") && Args.Has("shot")) Shots.Want($"say_{Battle?.Time ?? 0:000}", 1.2);
