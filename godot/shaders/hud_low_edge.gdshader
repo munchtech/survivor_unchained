@@ -3,11 +3,12 @@
 // toward none; it never reaches into the middle 70% of the screen (a rounded square, |x| and |y| under 0.70 of
 // the half-screen stay clear). One full-screen quad, a few ALU ops.
 shader_type canvas_item;
-render_mode blend_mix;
+render_mode blend_premul_alpha;
 
 uniform float strength = 0.0;   // HeartPulse.EdgeStrength: 0 off, 0.3 at 30%, 1 at none
 uniform float beat = 0.0;       // the heartbeat now, 0..1 (1 on the beat)
-uniform vec4 blood : source_color = vec4(0.38, 0.03, 0.02, 1.0);
+uniform vec4 blood : source_color = vec4(0.90, 0.09, 0.05, 1.0);   // crimson, added (UI 15 fix 1)
+uniform float shade = 0.58;   // how much of the scene under it is darkened (the rest of its colour is light added)
 
 void fragment()
 {
@@ -19,5 +20,8 @@ void fragment()
 	float ramp = smoothstep(start, 1.12, d);
 	float a = ramp * s * (0.62 + 0.35 * beat);
 	if (a <= 0.002) discard;
-	COLOR = vec4(blood.rgb, clamp(a, 0.0, 0.88));
+	// UI 15 fix 1: crimson light added over a partial darkening (premultiplied: scene * (1 - a * shade) + crimson
+	// * a), never a mix toward dark red: over the blue night grade a mix read as plum
+	a = clamp(a, 0.0, 0.88);
+	COLOR = vec4(blood.rgb * a * 0.85, a * shade);
 }

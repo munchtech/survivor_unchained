@@ -37,22 +37,28 @@ public partial class Instrument : Control
     /// the row (5 tall, 6 past each end), and the key tags hung at 6 o'clock (16 tall).</summary>
     public const float SeatClear = 22, LugLen = 10, SillH = 5, SillOver = 6, TagH = 16;
 
-    public static float SocksX => 960 - (6 * Sock + 5 * SockGap) / 2;
+    /// <summary>The cluster's middle: the screen's (960), but in the "her life" HUD (no lamp, UI 15 fix 1) moved
+    /// so the irons from the chain's forged left end (ChainEnd.Reach left of the first link) to the Flare cuff's
+    /// hinge (ArtOuter right of its middle) sit centred on the screen.</summary>
+    public static readonly float Mid = HerLight.On ? 960 - (LifeLamp.Eye.X - LifeLamp.Canvas.X / 2 - ChainEnd.Reach + ArtOuter) / 2 : 960;
+    /// <summary>The Flare cuff's iron past its middle on the outer side (its hinge: hud/cuff.png's anchor, 85).</summary>
+    public const float ArtOuter = 85;
+    public static float SocksX => Mid - (6 * Sock + 5 * SockGap) / 2;
     public static float SmallY => SockY + Sock / 2;
-    public static Vector2 LifeAt => new(960 - Reach, VY);
-    public static Vector2 ArtAt => new(960 + Reach, VY);
+    public static Vector2 LifeAt => new(Mid - Reach, VY);
+    public static Vector2 ArtAt => new(Mid + Reach, VY);
     public static Vector2 DraughtAt => new(SocksX - SeatClear - SmallR - SmallBand, SmallY);
     public static Vector2 DashAt => new(SocksX + 6 * Sock + 5 * SockGap + SeatClear + SmallR + SmallBand, SmallY);
     /// <summary>The chain's ends: the riveted joints on the cuffs' outer edge, 32 degrees below level.</summary>
     public static Vector2 EyeL => LifeAt + JointOff;
-    public static Vector2 EyeR => new(1920 - EyeL.X, EyeL.Y);
+    public static Vector2 EyeR => new(2 * Mid - EyeL.X, EyeL.Y);
     /// <summary>HUD A2: the first link's centre from LifeAt: the eye on the life lamp's font (LifeLamp.Eye in
     /// its quad, the quad's foot on LifeLamp.Floor); mirrored on the right.</summary>
     public static Vector2 JointOff => LampAt + LifeLamp.Eye - LifeAt;
     /// <summary>The life lamp's quad's top left: centred on LifeAt, its foot on LifeLamp.Floor.</summary>
     public static Vector2 LampAt => new(LifeAt.X - LifeLamp.Canvas.X / 2, LifeLamp.Floor - LifeLamp.FootY);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
-    public static Rect2 Bounds => new(960 - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
+    public static Rect2 Bounds => new(Mid - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
 
     public readonly LifeLamp Life;
     public readonly Vessel Art;
@@ -174,7 +180,7 @@ public partial class Instrument : Control
         if (n == laidN) return;
         laidN = n;
         SillStrap.Lay(n);
-        float x0 = 960 - (n * Sock + Math.Max(0, n - 1) * SockGap) / 2;
+        float x0 = Mid - (n * Sock + Math.Max(0, n - 1) * SockGap) / 2;
         for (int i = 0; i < Sockets.Length; i++)
         {
             Sockets[i].Visible = i < n;
@@ -1422,7 +1428,7 @@ public partial class Sill : Control
         art = UiArt.Art($"hud/sill_{full}.png");
         float row = n * Instrument.Sock + (n - 1) * Instrument.SockGap;
         Size = art != null ? new Vector2(64 * n + 11, art.GetSize().Y / 2) : new Vector2(row + 2 * Instrument.SillOver, Instrument.SillH);
-        Position = new Vector2(960 - row / 2 - Instrument.SillOver, art != null ? 985 : Instrument.SockY + Instrument.Sock);
+        Position = new Vector2(Instrument.Mid - row / 2 - Instrument.SillOver, art != null ? 985 : Instrument.SockY + Instrument.Sock);
         QueueRedraw();
     }
 
@@ -1439,7 +1445,7 @@ public partial class Sill : Control
             if (UiArt.Art("hud/hanger.png") is { } hg)
             {
                 int L = EmberChain.Links, mid = L / 2, best = 0;
-                float want = 960 - (n * Instrument.Sock + (n - 1) * Instrument.SockGap) / 2 + 19, bd = float.MaxValue;
+                float want = Instrument.Mid - (n * Instrument.Sock + (n - 1) * Instrument.SockGap) / 2 + 19, bd = float.MaxValue;
                 for (int k = 0; k < mid; k += 2)
                     if (Math.Abs(EmberChain.LinkAt(k).X - want) is var d && d < bd) { bd = d; best = k; }
                 foreach (int k in new[] { best, L - best })

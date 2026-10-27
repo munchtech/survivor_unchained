@@ -64,13 +64,12 @@ public partial class GameHud : CanvasLayer
     PromptView? promptView;
     Hint? hintView;
     Control killsChip = null!, tally = null!;
-    // The survivor's own health, drawn under them in a night's fight.
-    Control under = null!;
-    ColorRect underFill = null!, underShield = null!;
-    float underK = 1, underShieldK, underAlpha;
+    // The survivor's own health, drawn under them in a night's fight (UI 15 fix 1: HerLight.Bar in every HUD,
+    // the same life the HUD shows, pins included; the old flat red ColorRect bar is retired).
+    float underAlpha;
     bool underWanted;
-    // HUD variant "her life" (--hud-life her, HerLight.cs): no lamp; her bar, her light and the edges carry her life.
-    HerLight? her;
+    // Her bar in every HUD; the variant "her life" (--hud-life her, HerLight.On) adds her light and the edges.
+    HerLight her = null!;
     static readonly double herBleed = Args.Num("hurt-bleed", 0), herBleedFrom = Args.Num("hurt-from", 0);
     double bleedAt, bleedHp;
     Vector2? herAt;
@@ -250,19 +249,13 @@ public partial class GameHud : CanvasLayer
         play.AddChild(foot);
     }
 
-    /// <summary>The survivor's health under their feet, where the eye already is
-    /// in a night's fight (the survivors-likes' answer: docs/UI_RESEARCH.md 4.1).</summary>
+    /// <summary>The survivor's health under their feet, where the eye already is in a night's fight (the
+    /// survivors-likes' answer: docs/UI_RESEARCH.md 4.1): HerLight's forged bar, in every HUD.</summary>
     void BuildUnder()
     {
-        under = new Control { Size = new Vector2(76, 9), MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = Colors.Transparent };
-        var back = new Panel { Size = new Vector2(76, 9), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-        back.AddThemeStyleboxOverride(PanelName, Style.Box(new Color(0.05f, 0.02f, 0.02f, 0.85f), new Color(0, 0, 0, 0.9f), 1, 3, 0));
-        under.AddChild(back);
-        underFill = new ColorRect { Color = Hex("#e8383a"), Position = new Vector2(1, 1), Size = new Vector2(74, 7), MouseFilter = Control.MouseFilterEnum.Ignore };
-        back.AddChild(underFill);
-        underShield = new ColorRect { Color = Style.Shield, Position = new Vector2(1, 1), Size = new Vector2(0, 3), MouseFilter = Control.MouseFilterEnum.Ignore };
-        back.AddChild(underShield);
-        combat.AddChild(under);
+        her = new HerLight();
+        combat.AddChild(her);
+        combat.AddChild(her.Under);
     }
 
     /// <summary>HUD variant "her life" (--hud-life her): the lamp hidden (its number and pool go with it), the
@@ -271,16 +264,16 @@ public partial class GameHud : CanvasLayer
     void BuildHer()
     {
         irons.Life.Visible = false;
-        irons.AddChild(new ChainEnd());
+        // the chain's forged left end: its ring under the chain, its upper right quarter over it
+        var end = new ChainEnd();
+        irons.AddChild(end);
+        irons.MoveChild(end, irons.Chain.GetIndex());
+        irons.AddChild(new ChainEnd(front: true));
         irons.Statuses.Position = new Vector2(Instrument.LifeAt.X - 150, Instrument.SmallY - 15);
-        her = new HerLight();
-        root.AddChild(her);
         root.AddChild(her.Pool);
         root.MoveChild(her.Pool, 0);
         play.AddChild(her.Edge);
         play.MoveChild(her.Edge, 0);
-        combat.AddChild(her.Under);
-        under.Visible = false;
         if (Args.Get("hurt-mul") is string hm) SurvivorUnchained.Sim.Battle.HurtMul = Args.Num("hurt-mul", 1);
     }
 
@@ -544,7 +537,7 @@ public partial class GameHud : CanvasLayer
         pinMax = max;
         // (--hurt-bleed F, a shot of her life falling for real: F of her life a second taken as a blow, down to
         // 12%, from the fight's second --hurt-from on, on top of its own blows (--hurt-mul); HUD variant "her life" only)
-        if (her != null && herBleed > 0 && b.Combat && p.Alive)
+        if (herBleed > 0 && b.Combat && p.Alive)
         {
             double t = Time.GetTicksMsec() / 1000.0;
             if (bleedAt > 0 && b.Time >= herBleedFrom && p.Hp / max > 0.12)
@@ -589,8 +582,6 @@ public partial class GameHud : CanvasLayer
             shownLevel = lv; shownEmber = ember;
             barLevel = lv;
         }
-        underK = k;
-        underShieldK = (float)Math.Clamp(p.Shield / max, 0, 1);
         underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar;
 
         // The six places: what fires by itself, in the order it came; the rest quiet.
@@ -713,7 +704,7 @@ public partial class GameHud : CanvasLayer
             globeNum = double.NaN;
             life.Number = $"{Math.Ceiling(l * pinMax)}";
         }
-        if (HudPin.Shield is float sh) { life.Shield = sh; underShieldK = sh; }
+        if (HudPin.Shield is float sh) life.Shield = sh;
         if (HudPin.Ember is float em) barShown = barWant = em;
         irons.Chain.PinHeat = HudPin.LockHeat ?? -1;
         if (HudPin.Draught is int dr) irons.Draught.Count = dr;
@@ -1082,7 +1073,6 @@ public partial class GameHud : CanvasLayer
     /// <summary>Where the survivor stands on screen, each frame (null: not on it).</summary>
     public void Follow(Vector2? at)
     {
-        if (at is { } p) under.Position = p + new Vector2(-38, 22);
         herAt = at;
         underWanted &= at != null;
     }
@@ -1340,10 +1330,6 @@ public partial class GameHud : CanvasLayer
         }
         // The health under the survivor eases in and out with the night's fight.
         underAlpha = Mathf.MoveToward(underAlpha, underWanted ? 1 : 0, dt * 4);
-        under.Modulate = Colors.White with { A = underAlpha };
-        underFill.Size = new Vector2(74 * underK, 7);
-        underFill.Color = underK < 0.35f ? Hex("#ff5a4a").Lerp(Colors.White, 0.25f * Mathf.Max(0, Mathf.Sin(Time.GetTicksMsec() / 1000f * 7))) : Hex("#e8383a");
-        underShield.Size = new Vector2(74 * underShieldK, 3);
         // The trail behind her life catches up after a moment.
         if (trailShown > hpShown) { trailWait += dt; if (trailWait > 0.35f) trailShown = Mathf.MoveToward(trailShown, hpShown, dt * 1.6f); }
         else { trailWait = 0; trailShown = hpShown; }
@@ -1353,7 +1339,7 @@ public partial class GameHud : CanvasLayer
         // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false, barEmber);
-        her?.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt);
+        her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, HerLight.On ? 1 : underAlpha);
         // The art readied: its glass flares once and settles to its ready glow.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;

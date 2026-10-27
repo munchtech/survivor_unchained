@@ -134,18 +134,25 @@ void fragment()
 		// the flame's light on the oil's top, strongest under the wick
 		float d = px.y - surf;
 		oil += fire * vec3(1.0, 0.5, 0.32) * 0.16 * gs * exp(-max(d, 0.0) / 5.0) * (1.0 - 0.6 * abs(u));
-		// the level: a pale line across the whole font (behind the cage's iron, as the oil is), a dark line under it
-		float lipk = exp(-d * d / 0.9);
-		oil = mix(oil, vec3(1.0, 0.80, 0.70) * (0.85 + 0.15 * gs + 0.4 * beat), clamp(lipk * 0.95, 0.0, 1.0));
-		oil *= 1.0 - 0.4 * exp(-pow((d - 2.6) / 1.3, 2.0));
+		// the level (UI 15 fix 1): a bright line 1-2 px across the whole font, even at the glass's dark edges (behind
+		// the cage's iron, as the oil is), a dark line under it so it reads on night grass and brown ground alike
+		float lipk = exp(-d * d / 1.1);
+		oil = mix(oil, vec3(1.0, 0.86, 0.74) * (1.05 + 0.15 * gs + 0.4 * beat), clamp(lipk * 1.15, 0.0, 1.0));
+		oil *= 1.0 - 0.55 * exp(-pow((d - 2.8) / 1.2, 2.0));
 		// the font glass's own light over the oil, toned down (the oil is liquid, not lacquer)
 		oil += vec3(1.0, 0.86, 0.82) * m.g * 0.28;
 		float fill = m.r * below;
-		// the empty glass above: glass, never black: a faint smoky fill, the flame's warmth on it, its highlights kept
+		// the empty glass above: neutral smoky glass at every life (UI 15 fix 1: the painting's red under it read as
+		// thin oil): the painting's light only, its colour dropped; the flame's warmth amber at its top only; its
+		// highlight streak always there
 		float emp = m.r * (1.0 - below);
-		vec3 smoke = vec3(0.17, 0.155, 0.15) + col * 0.55 + fire * 0.10 * gs;
-		col = mix(col, smoke, emp * 0.7);
-		col += vec3(0.9, 0.85, 0.8) * m.g * emp * 0.18;
+		float lum = dot(col, vec3(0.299, 0.587, 0.114));
+		float topw = smoothstep(cyf, oil_top - 2.0, px.y);
+		vec3 smoke = vec3(0.15, 0.155, 0.165) + vec3(0.97, 0.99, 1.03) * lum * 0.5 + vec3(1.0, 0.66, 0.30) * 0.12 * gs * topw;
+		col = mix(col, smoke, emp * 0.92);
+		col += vec3(0.86, 0.89, 0.94) * m.g * emp * 0.34;
+		// a line of light on the glass just over the oil (the surface's own glint through the glass)
+		col += vec3(1.0, 0.88, 0.74) * 0.35 * exp(-pow((d + 1.6) / 0.8, 2.0)) * emp * step(0.002, lv);
 		// the rim of the empty glass on its upper curve, lit by the flame (a cool glint where it is out)
 		float top_curve = rim * smoothstep(cyf + 4.0, oil_top - 2.0, px.y);
 		col += mix(vec3(0.35, 0.38, 0.42), fire * 1.1, gs) * top_curve * emp * (0.35 + 0.65 * gs);

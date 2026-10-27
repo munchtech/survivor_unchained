@@ -55,8 +55,10 @@ public sealed partial class HerLight : Control
     public override void _ExitTree() { if (Live == this) Live = null; }
 
     /// <summary>A frame. life and trail: as the HUD shows them (0..1); shield (0..1 of her life); fight: her fight
-    /// is on and the HUD shown (the bar, the pool and the edge show only then); at: her feet on the screen.</summary>
-    public void Tick(float dt, float life, float trail, float shield, bool fight, Vector2? at)
+    /// is on and the HUD shown (the bar, the pool and the edge show only then); at: her feet on the screen; bar: the
+    /// bar's own fade (the lamp HUDs ease it in and out with the night's fight and the "Health under you"
+    /// setting; 1 in this variant). Without --hud-life her only the bar is drawn (UI 15 fix 1: one life, one bar).</summary>
+    public void Tick(float dt, float life, float trail, float shield, bool fight, Vector2? at, float bar = 1)
     {
         using var _ = new Perf.Span(Perf.Part.Hud);
         LifeNow = life;
@@ -64,22 +66,28 @@ public sealed partial class HerLight : Control
         double now = Time.GetTicksMsec() / 1000.0;
         // the heart: in step with the sound while it beats, its own clock at the same pace otherwise
         bool low = fight && life <= HeartPulse.LowAt && life > 0;
+        if (!On) fight &= bar > 0.001f;
         double period = HeartPulse.Period(life);
         if (HeartPulse.LastSound > lastSync && now - HeartPulse.LastSound < 0.2) { lastSync = HeartPulse.LastSound; clock = now - HeartPulse.LastSound; }
         else { clock += dt; if (clock >= period) clock %= period; }
         float beat = low ? HeartPulse.Shape(clock) : 0;
-        float strength = low || (fight && life <= 0) ? HeartPulse.EdgeStrength(life) : 0;
+        float strength = On && (low || (fight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
 
         bool show = fight && at != null;
         Under.Visible = show;
-        if (show) Under.Set(at!.Value, life, trail, shield, beat, dt);
+        if (show)
+        {
+            Under.Set(at!.Value, life, trail, shield, beat, dt);
+            var mod = Colors.White with { A = bar };
+            if (Under.Modulate != mod) Under.Modulate = mod;
+        }
 
         Send(edgeMat, "strength", strength, ref sStrength);
         Send(edgeMat, "beat", beat, ref sBeat);
         bool edge = fight && strength > 0.001f;
         if (Edge.Visible != edge) Edge.Visible = edge;
 
-        float gain = show ? HeartPulse.PoolGain(life) * HeartPulse.Flicker(life, now) : 0;
+        float gain = show && On ? HeartPulse.PoolGain(life) * HeartPulse.Flicker(life, now) : 0;
         bool want = !PoolHeld && gain > 0.0005f;
         if (Pool.Visible != want) Pool.Visible = want;
         if (!want) return;
@@ -95,21 +103,34 @@ public sealed partial class HerLight : Control
         m.SetShaderParameter(u, v);
     }
 
-    /// <summary>Her bar under her feet: a forged iron strap (dark, a lit top edge, riveted ends) round a sunk
-    /// well; her life in warm red (a lit top, a deep foot), the recent hit in bone draining after it, the shield
-    /// in pale silver-blue after her life, quarter marks over all. At 30% and under the red warms and swells on
-    /// each beat and a blood glow breathes round the strap.</summary>
+    /// <summary>Her bar under her feet (UI 15 fix 1: in every HUD, the HUD's own iron and copper): a forged iron
+    /// strap in the instrument's iron (Cuff.Iron under the irons' night/day light, Cuff.Cold), a hammered lit
+    /// top edge and a dark foot, copper collars riveted round its ends (the chain's warm links' copper); in its
+    /// sunk well her life in warm red with an ember wick burning at its end (a hot bead, its glow added over the
+    /// iron), the recent hit in bone draining after it, the shield in pale silver-blue after her life, quarter
+    /// notches over all. At 30% and under a blood glow stands round the strap (there in a still, swelling on
+    /// each beat) and the red warms with the heart.</summary>
     public sealed partial class Bar : Control
     {
         /// <summary>The strap and the well in it (px at 1080), and how far under her feet it hangs.</summary>
-        public const float W = 88, H = 12, Wx = 4, Wy = 2.5f, Drop = 22;
+        public const float W = 96, H = 14, Wx = 6, Wy = 3, Drop = 21, Collar = 5;
         public static float WellW => W - 2 * Wx;
         public static float WellH => H - 2 * Wy;
         float life = 1, trail = 1, shield, beat, shown = -1;
-        static readonly Color Iron = new("#2b2521"), IronLit = new("#9a8b78"), IronCap = new("#5a4f45"), Well = new("#160807"),
-            RedTop = new("#e2533d"), RedFoot = new("#8e1a12"), Hot = new("#ff8a5c"), TrailC = new("#e6cfa8"), ShieldC = new("#c6d6e6"), ShieldTop = new("#eef4fa");
+        bool day;
+        static readonly Color Well = new("#120605"), RedTop = new("#e5503a"), RedFoot = new("#7e140e"), Hot = new("#ff8a5c"),
+            TrailC = new("#e6cfa8"), ShieldC = new("#c6d6e6"), ShieldTop = new("#eef4fa"),
+            CopperLit = new("#f0b07a"), CopperHi = new("#c87440"), CopperMid = new("#8e4522"), CopperFoot = new("#3a170a"),
+            WickCore = new("#fff0c8"), WickHot = new("#ffb35a");
+        readonly WickGlow glow;
 
-        public Bar() { MouseFilter = MouseFilterEnum.Ignore; Size = new Vector2(W, H); }
+        public Bar()
+        {
+            MouseFilter = MouseFilterEnum.Ignore;
+            Size = new Vector2(W, H);
+            glow = new WickGlow(this) { Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+            AddChild(glow);
+        }
 
         public void Set(Vector2 feet, float life, float trail, float shield, float beat, float dt)
         {
@@ -120,76 +141,174 @@ public sealed partial class HerLight : Control
             shown += (life - shown) * (1 - Mathf.Exp(-(life < shown ? 24f : 8f) * dt));
             if (Math.Abs(life - shown) < 0.0005f) shown = life;
             trail = Math.Max(trail, shown);
-            if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat) return;
-            this.life = shown; this.trail = trail; this.shield = shield; this.beat = beat;
+            if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat && day == Cuff.Day) return;
+            this.life = shown; this.trail = trail; this.shield = shield; this.beat = beat; day = Cuff.Day;
             QueueRedraw();
+            glow.QueueRedraw();
         }
+
+        bool Low => life <= HeartPulse.LowAt && life > 0;
+        /// <summary>The low-life glow now: there in a still (0.45), full on the beat.</summary>
+        float LowGlow => Low ? 0.45f + 0.55f * beat : 0;
+
+        static Color Iron(float light) => (Cuff.Iron(light) * Cuff.Cold) with { A = 1 };
+
+        void Shade(float x, float y, float w, float h, Color top, Color foot) =>
+            DrawPolygon(new[] { new Vector2(x, y), new Vector2(x + w, y), new Vector2(x + w, y + h), new Vector2(x, y + h) }, new[] { top, top, foot, foot });
 
         public override void _Draw()
         {
             float l = Math.Clamp(life, 0, 1), t = Math.Clamp(trail, 0, 1), sh = Math.Clamp(shield, 0, 1);
-            bool low = l <= HeartPulse.LowAt && l > 0;
-            // a soft shadow, and at low life a blood glow breathing round it on the beat
-            DrawRect(new Rect2(-2, -1, W + 4, H + 4), new Color(0, 0, 0, 0.28f));
-            DrawRect(new Rect2(-1, 0, W + 2, H + 2), new Color(0, 0, 0, 0.42f));
-            if (low && beat > 0.01f)
-                for (int i = 3; i >= 1; i--)
-                    DrawRect(new Rect2(-i - 1, -i - 1, W + 2 * i + 2, H + 2 * i + 2), new Color(0.85f, 0.12f, 0.06f, 0.10f * beat));
-            // the strap: dark iron, a lit top edge, a dark foot, riveted end caps
-            DrawRect(new Rect2(0, 0, W, H), Iron);
-            DrawRect(new Rect2(1, 0, W - 2, 1), IronLit with { A = 0.85f });
-            DrawRect(new Rect2(0, H - 1, W, 1), new Color(0.05f, 0.04f, 0.035f));
-            foreach (float x in new[] { 0f, W - 3 })
+            bool low = Low;
+            // a soft shadow, and at low life a blood glow standing round it, swelling on the beat
+            DrawRect(new Rect2(-2, -1, W + 4, H + 4), new Color(0, 0, 0, 0.30f));
+            DrawRect(new Rect2(-1, 0, W + 2, H + 2), new Color(0, 0, 0, 0.45f));
+            if (low)
+                for (int i = 4; i >= 1; i--)
+                    DrawRect(new Rect2(-i - 1, -i, W + 2 * i + 2, H + 2 * i), new Color(0.80f, 0.06f, 0.04f, 0.085f * LowGlow * (5 - i) / 2.5f));
+            // the strap: forged iron, round in section (lit across its upper third, dark at its foot)
+            Shade(0, 0, W, H * 0.4f, Iron(0.8f), Iron(0.44f));
+            Shade(0, H * 0.4f, W, H * 0.6f, Iron(0.44f), Iron(0.1f));
+            DrawRect(new Rect2(1, 0, W - 2, 1), Iron(1) with { A = 0.85f });
+            DrawRect(new Rect2(0, H - 1, W, 1), new Color(0.03f, 0.025f, 0.02f));
+            // hammer marks: a few dents in the lit edge, each a dark pit with a lit lip after it
+            foreach (float x in new[] { 11f, 23f, 38f, 52f, 61f, 74f, 86f })
             {
-                DrawRect(new Rect2(x, 1, 3, H - 2), IronCap);
-                DrawRect(new Rect2(x + 1, H / 2 - 1, 1, 2), IronLit with { A = 0.9f });
+                DrawRect(new Rect2(x, 1, 2, 1), Iron(0.12f) with { A = 0.7f });
+                DrawRect(new Rect2(x + 2, 1, 1, 1), Iron(1) with { A = 0.5f });
+                DrawRect(new Rect2(x - 3, H - 2, 2, 1), Iron(0.5f) with { A = 0.35f });
             }
             // the well
             float x0 = Wx, y0 = Wy, ww = WellW, wh = WellH;
+            DrawRect(new Rect2(x0 - 1, y0 - 1, ww + 2, wh + 2), new Color(0.02f, 0.012f, 0.01f));
             DrawRect(new Rect2(x0, y0, ww, wh), Well);
+            DrawRect(new Rect2(x0 - 1, y0 + wh, ww + 2, 1), Iron(0.75f) with { A = 0.55f });
             // the recent hit, in bone, draining
-            if (t > l + 0.002f) DrawRect(new Rect2(x0 + ww * l, y0, ww * (t - l), wh), TrailC with { A = 0.9f });
+            if (t > l + 0.002f)
+                Shade(x0 + ww * l, y0, ww * (t - l), wh, TrailC, TrailC.Darkened(0.28f));
             // her life: warm red, lit at the top, deep at the foot; warmer and swelling on the beat when low
             if (l > 0)
             {
                 float fw = ww * l;
                 Color top = RedTop, foot = RedFoot;
-                if (low) { top = top.Lerp(Hot, 0.25f + 0.55f * beat); foot = foot.Lerp(RedTop, 0.35f * beat); }
-                DrawPolygon(new[] { new Vector2(x0, y0), new Vector2(x0 + fw, y0), new Vector2(x0 + fw, y0 + wh), new Vector2(x0, y0 + wh) },
-                    new[] { top, top, foot, foot });
-                DrawRect(new Rect2(x0, y0, fw, 1), new Color(1, 0.78f, 0.62f, 0.55f + (low ? 0.35f * beat : 0)));
+                if (low) { top = top.Lerp(Hot, 0.2f + 0.5f * LowGlow); foot = foot.Lerp(RedTop, 0.3f * LowGlow); }
+                Shade(x0, y0, fw, wh, top, foot);
+                DrawRect(new Rect2(x0, y0, fw, 1), new Color(1, 0.80f, 0.64f, 0.6f + 0.3f * LowGlow));
+                // the wick: the fill's end burns, a hot bead two px wide, warmer toward the foot
+                float wx = Mathf.Max(x0, x0 + fw - 2);
+                Shade(wx, y0, Mathf.Min(2, fw), wh, WickCore, WickHot);
             }
             // the shield: after her life (over its end when it would run past the strap)
             if (sh > 0.002f)
             {
                 float sw = ww * Math.Min(sh, 1);
                 float sx = Math.Min(x0 + ww * l, x0 + ww - sw);
-                DrawRect(new Rect2(sx, y0, sw, wh), ShieldC with { A = 0.92f });
+                Shade(sx, y0, sw, wh, ShieldC with { A = 0.95f }, ShieldC.Darkened(0.3f) with { A = 0.95f });
                 DrawRect(new Rect2(sx, y0, sw, 1), ShieldTop);
-                DrawRect(new Rect2(sx, y0, 1, wh), new Color(0.25f, 0.3f, 0.38f, 0.8f));
+                DrawRect(new Rect2(sx, y0, 1, wh), new Color(0.22f, 0.27f, 0.36f, 0.85f));
             }
-            // the quarter marks
-            for (int q = 1; q < 4; q++) DrawRect(new Rect2(Mathf.Round(x0 + ww * q / 4f), y0 + 1, 1, wh - 1), new Color(0.05f, 0.02f, 0.02f, 0.45f));
-            // the well's own shade: a dark line under the strap's lit lip
+            // the quarter notches
+            for (int q = 1; q < 4; q++)
+            {
+                float qx = Mathf.Round(x0 + ww * q / 4f);
+                DrawRect(new Rect2(qx, y0 + 1, 1, wh - 1), new Color(0.04f, 0.015f, 0.01f, 0.5f));
+                DrawRect(new Rect2(qx, 0, 1, y0 - 1), Iron(0.1f));
+            }
+            // the well's own shade under the strap's lip
             DrawRect(new Rect2(x0, y0, ww, 1), new Color(0, 0, 0, 0.35f));
+            // the copper collars round its ends: round in section, a rivet through each, the seam where they meet the iron
+            foreach (float cx in new[] { 0f, W - Collar })
+            {
+                Shade(cx, -1, Collar, H * 0.45f + 1, CopperLit, CopperHi);
+                Shade(cx, H * 0.45f, Collar, H * 0.55f + 1, CopperMid, CopperFoot);
+                DrawRect(new Rect2(cx, -1, Collar, 1), CopperLit with { A = 0.9f });
+                DrawRect(new Rect2(cx, H, Collar, 1), new Color(0.05f, 0.02f, 0.01f, 0.9f));
+                float seam = cx == 0 ? Collar : cx - 1;
+                DrawRect(new Rect2(seam, -1, 1, H + 2), new Color(0.06f, 0.03f, 0.02f, 0.85f));
+                var rv = new Vector2(cx + Collar / 2f, H / 2f);
+                DrawCircle(rv, 1.6f, CopperFoot);
+                DrawCircle(rv - new Vector2(0.4f, 0.5f), 0.8f, CopperLit);
+            }
+        }
+
+        /// <summary>The wick's glow and the low beat's warmth, added over the strap (CanvasItemMaterial add).</summary>
+        sealed partial class WickGlow : Control
+        {
+            readonly Bar bar;
+            public WickGlow(Bar bar) { this.bar = bar; MouseFilter = MouseFilterEnum.Ignore; Size = new Vector2(W, H); }
+
+            public override void _Draw()
+            {
+                float l = Math.Clamp(bar.life, 0, 1);
+                if (l <= 0) return;
+                var at = new Vector2(Wx + WellW * l - 1, Wy + WellH / 2f);
+                float k = 1 + 0.6f * bar.LowGlow;
+                var c = new Color(1, 0.42f, 0.12f);
+                DrawCircle(at, 9, c with { A = 0.07f * k });
+                DrawCircle(at, 6, c with { A = 0.11f * k });
+                DrawCircle(at, 3.5f, new Color(1, 0.6f, 0.25f, 0.20f * k));
+                DrawCircle(at, 1.8f, new Color(1, 0.85f, 0.55f, 0.35f * k));
+            }
         }
     }
 }
 
-/// <summary>HUD variant "her life": the chain's left end, where the lamp's eye held it: a forged iron ring the
-/// first link passes through.</summary>
+/// <summary>HUD variant "her life": the chain's forged left end, where the lamp's eye held it (UI 15 fix 1), in the
+/// book's own language (ChainTabs: the chain runs through an eyelet and its end is held on a riveted tab): the
+/// tab (chain/tab.png) under the first link, its rivet where the link ends; the eyelet's back (chain/eye_back.png)
+/// under the chain between the first two links and its front (eye_front.png) over them (front: true). The
+/// chain's own scale (EmberChain, four fifths) for the eyelet; the tab a little larger, so the end has weight
+/// against the Flare's cuff. Drawn rings if the art is missing.</summary>
 public sealed partial class ChainEnd : Control
 {
-    public ChainEnd() { MouseFilter = MouseFilterEnum.Ignore; Size = new Vector2(1920, 1080); }
+    /// <summary>The tab's size (px at 1080) and its middle left of the first link; how far the end reaches left of it.</summary>
+    public const float Tab = 40, TabOff = 12, Reach = TabOff + Tab / 2 + 2;
+    const float EyeScale = 0.8f, EyeOff = 8.5f;
+    readonly bool front;
+
+    public ChainEnd(bool front = false) { this.front = front; MouseFilter = MouseFilterEnum.Ignore; Size = new Vector2(1920, 1080); TextureFilter = TextureFilterEnum.LinearWithMipmaps; }
 
     public override void _Draw()
     {
-        var c = Instrument.EyeL + new Vector2(-7, 0);
-        DrawCircle(c + new Vector2(0, 2), 10.5f, new Color(0, 0, 0, 0.45f));
-        DrawCircle(c, 10, new Color("#2b2521"));
-        DrawArc(c, 8.2f, Mathf.Pi * 1.05f, Mathf.Pi * 1.95f, 20, new Color("#9a8b78"), 1.6f, true);
-        DrawArc(c, 8.2f, Mathf.Pi * 0.1f, Mathf.Pi * 0.9f, 20, new Color("#14100d"), 1.6f, true);
-        DrawCircle(c, 4.2f, new Color("#0b0807"));
-        DrawArc(c, 4.4f, Mathf.Pi * 0.1f, Mathf.Pi * 0.9f, 12, new Color("#6f6355"), 1.1f, true);
+        var link = Instrument.EyeL;
+        var eye = link + new Vector2(EyeOff, 0.4f);
+        if (!front)
+        {
+            var tc = link + new Vector2(-TabOff, 0);
+            if (ChainTabs.Sprite("tab") is { } tab)
+            {
+                // (the painted tab is near black: lifted to the irons' own iron, a lit edge on its upper left, a rivet
+                // in each left corner; a short shadow down and right)
+                var r = new Rect2(tc - Vector2.One * Tab / 2, Vector2.One * Tab);
+                DrawRect(new Rect2(r.Position + new Vector2(2, 3), r.Size - new Vector2(3, 3)), new Color(0, 0, 0, 0.35f));
+                DrawTextureRect(tab, r, false, (Cuff.Cold * 1.9f) with { A = 1 });
+                DrawRect(new Rect2(r.Position + new Vector2(3, 2), new Vector2(Tab - 6, 1)), Cuff.Iron(1) with { A = 0.45f });
+                DrawRect(new Rect2(r.Position + new Vector2(2, 3), new Vector2(1, Tab - 6)), Cuff.Iron(1) with { A = 0.3f });
+                foreach (float dy in new[] { -1f, 1f })
+                {
+                    var p = tc + new Vector2(-Tab / 2 + 7, dy * (Tab / 2 - 7));
+                    DrawCircle(p, 2.4f, Cuff.Iron(0.15f));
+                    DrawCircle(p - new Vector2(0.6f, 0.7f), 1.2f, Cuff.Iron(0.9f));
+                }
+            }
+            else
+            {
+                DrawRect(new Rect2(tc - Vector2.One * Tab / 2, Vector2.One * Tab), Cuff.Iron(0.3f));
+                DrawCircle(tc, 3, Cuff.Iron(0.8f));
+            }
+            if (ChainTabs.Sprite("eye_back") is { } back)
+            {
+                DrawSetTransform(eye, 0, Vector2.One * EyeScale);
+                DrawTexture(back, -back.GetSize() / 2, Cuff.Cold);
+                DrawSetTransform(Vector2.Zero);
+            }
+            return;
+        }
+        if (ChainTabs.Sprite("eye_front") is { } fr)
+        {
+            DrawSetTransform(eye, 0, Vector2.One * EyeScale);
+            DrawTexture(fr, -fr.GetSize() / 2, Cuff.Cold);
+            DrawSetTransform(Vector2.Zero);
+        }
     }
 }
