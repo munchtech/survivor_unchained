@@ -125,16 +125,58 @@ public partial class Game
                 var made = new Dictionary<string, Node3D>();
                 foreach (var (name, c, i) in specs)
                 {
-                    if (i < 0) { made[name] = new WardenView(); continue; }
+                    if (i < 0) { var wv = new WardenView(); if (ExtrasShadow) wv.Body.BeginShadow(); made[name] = wv; continue; }
                     var visuals = c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"];
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
-                    made[$"{name}.{i}"] = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    var pv = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    if (ExtrasShadow) pv.BeginShadow();
+                    made[$"{name}.{i}"] = pv;
                 }
                 return made;
             });
             castAhead[f.Id] = castChain;
         }
     }
+
+    /// <summary>(--lampdbg) Who draws: each group's (the node under the zone's world) geometry in the camera's view, and
+    /// its shadow casters in each shadowing lamp's reach, as "group main N lampcasters M" (diagnostics only).</summary>
+    static IEnumerable<string> Census(Game g)
+    {
+        var cam = g.camera!;
+        var planes = cam.GetFrustum();
+        var lamps = g.GetTree().Root.FindChildren("*", "OmniLight3D", true, false).OfType<OmniLight3D>()
+            .Where(l => l.IsVisibleInTree() && l.ShadowEnabled).ToList();
+        var tally = new SortedDictionary<string, (int Main, int Cast)>();
+        var perLamp = new Dictionary<OmniLight3D, int>();
+        foreach (var n in g.GetTree().Root.FindChildren("*", "GeometryInstance3D", true, false))
+        {
+            var gi = (GeometryInstance3D)n;
+            if (!gi.IsVisibleInTree()) continue;
+            var box = gi.GlobalTransform * gi.GetAabb();
+            bool seen = planes.All(pl => { var c = box.GetCenter(); var e = box.Size / 2;
+                return pl.DistanceTo(c) <= Math.Abs(pl.Normal.X) * e.X + Math.Abs(pl.Normal.Y) * e.Y + Math.Abs(pl.Normal.Z) * e.Z; });
+            int cast = 0;
+            if (gi.CastShadow != GeometryInstance3D.ShadowCastingSetting.Off)
+                foreach (var l in lamps)
+                    if (l.GlobalPosition.Clamp(box.Position, box.End).DistanceTo(l.GlobalPosition) <= l.OmniRange) { cast++; perLamp[l] = perLamp.GetValueOrDefault(l) + 1; }
+            var path = gi.GetPath().ToString().Split('/');
+            int w = Array.FindIndex(path, x => x.StartsWith("World_"));
+            string key = w < 0 || w + 1 >= path.Length ? (path.Length > 3 ? path[3] : gi.Name.ToString())
+                : path[w + 1].StartsWith("Zone_") && w + 2 < path.Length ? $"{path[w + 1]}/{path[w + 2]}" : path[w + 1];
+            if (key.StartsWith("Cine_drowned")) key = "Cine_drowned*";
+            var t = tally.GetValueOrDefault(key);
+            tally[key] = (t.Main + (seen && gi.CastShadow != GeometryInstance3D.ShadowCastingSetting.ShadowsOnly ? 1 : 0), t.Cast + cast);
+        }
+        yield return $"lamps shadowing {lamps.Count}: " + string.Join(", ", lamps.Select(l => l.GetParent().Name + "/" + l.Name + " " + perLamp.GetValueOrDefault(l)));
+        foreach (var (key, (m, c)) in tally.OrderByDescending(kv => kv.Value.Cast + kv.Value.Main)) if (m + c > 0) yield return $"{key} main {m} lampcasters {c}";
+    }
+
+    /// <summary>(E10) A crowd of extras (C02's twelve drowned) and a cinematic's boss (its Warden) cast as one shadow a
+    /// figure (FolkShadow, as the town's folk do): the same geometry on the same bones, so the same shadow, in each
+    /// lamp's six faces and each cascade for one draw instead of each mesh's. Their shape keys never change after they
+    /// are made (no face is played on them), and nothing in a cinematic re-dresses them. Not her: her face and her
+    /// fitting move her shape keys. --extras-shadow off: each mesh casts (to compare).</summary>
+    static readonly bool ExtrasShadow = Args.Get("extras-shadow") != "off";
 
     /// <summary>The cast made ahead for each cinematic file (by its id), and the chain they are made on (one at a time).</summary>
     readonly Dictionary<string, System.Threading.Tasks.Task<Dictionary<string, Node3D>>> castAhead = new();
@@ -417,6 +459,7 @@ public partial class Game
                 // The cinematic's own Warden: the zone's waits hidden, and the
                 // fight's takes his place where this one is left.
                 var w = Made(name) as WardenView ?? new WardenView();
+                if (ExtrasShadow) w.Body.BeginShadow();   // (his one shadow, as the extras': a no-op if begun ahead)
                 w.Name = "Cine_" + name;
                 w.Glow = c.Glow;
                 g.scene!.AddChild(w);
@@ -435,6 +478,7 @@ public partial class Game
                 {
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
                     var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    if (ExtrasShadow) v.BeginShadow();   // (made here, not ahead: its one shadow begun now; a no-op if begun)
                     v.Name = $"Cine_{name}{i}";
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
@@ -649,6 +693,11 @@ public partial class Game
                 stillK++;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
                 if (Args.Has("mouth-cam")) GD.Print($"STILL {file.Id}_s{shot.Id}_{stillK}");
+                if (Args.Has("lampdbg") && g.camera != null)
+                {
+                    foreach (var ln in SurvivorUnchained.View.ShadowLamp.Describe(g.camera)) GD.Print($"lampdbg {file.Id} s{shot.Id} {ln}");
+                    foreach (var ln in Census(g)) GD.Print($"census {file.Id} s{shot.Id} {ln}");
+                }
                 // --cinebones: where the cast's bones are at each still, for framing shots on them.
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)
