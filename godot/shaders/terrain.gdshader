@@ -588,7 +588,7 @@ void fragment() {
 	if (foot_damp > 0.0) {
 		float fdn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (rg4.g - 0.5) * 0.35 + (nM.a - 0.5) * 0.25;
 		float fd = (1.0 - smoothstep(foot_w * 0.25, foot_w, fdn)) * foot_damp;
-		albedo *= mix(vec3(1.0), mix(vec3(0.62, 0.64, 0.72), vec3(0.46, 0.53, 0.72), w_setts), fd);
+		albedo *= mix(vec3(1.0), mix(vec3(0.62, 0.64, 0.72), vec3(0.56, 0.68, 0.92), w_setts), fd);
 		rough = mix(rough, mix(rough * 0.85, 0.42, w_setts), fd);
 	}
 	if (camp_scorch + trample > 0.0) {

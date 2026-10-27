@@ -15,8 +15,8 @@ uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, re
 uniform sampler2D orm_tex : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float normal_scale = 1.0;
 // The runs' colour at full (linear multiply: about 20% darker on screen, toward green-brown) and the foot band's.
-uniform vec3 run_col = vec3(0.60, 0.62, 0.49);
-uniform vec3 moss_col = vec3(0.70, 0.80, 0.52);
+uniform vec3 run_col = vec3(0.50, 0.53, 0.40);
+uniform vec3 moss_col = vec3(0.78, 0.86, 0.60);
 uniform float moss_k = 1.0;
 instance uniform float run_top = 10.0;
 instance uniform float run_drop = 0.0;
@@ -71,7 +71,7 @@ void fragment() {
 			run = max(run, acr * alg);
 		}
 		run *= mix(0.6, 1.0, vn(vec2(u * 4.1, d * 1.3)));
-		alb *= mix(vec3(1.0), run_col, clamp(run * run_k, 0.0, 1.0));
+		alb *= mix(vec3(1.0), run_col, clamp(run * run_k * 1.5, 0.0, 1.0));
 		// the damp foot: a mossy band with a ragged top, smoother (wet)
 		float fh = 1.15 + 0.35 * (vn(vec2(u * 0.9 + sd, 3.0)) - 0.5) * 2.0 + 0.14 * (vn(vec2(u * 4.3, 7.0)) - 0.5) * 2.0;
 		float band = (1.0 - smoothstep(fh - 0.12, fh + 0.08, o_pos.y)) * mix(0.75, 1.0, vn(vec2(u * 2.7, o_pos.y * 3.1)));

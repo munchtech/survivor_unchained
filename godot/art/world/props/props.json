@@ -629,7 +629,7 @@
  "curtain_b": {
   "tris": 12573,
   "tris_shadow": 72,
-  "tris_lod1": 5657,
+  "tris_lod1": 5656,
   "box": [
    -5.199,
    -1.8,
@@ -669,7 +669,7 @@
  "curtain_d": {
   "tris": 13984,
   "tris_shadow": 84,
-  "tris_lod1": 6291,
+  "tris_lod1": 6292,
   "box": [
    -5.198,
    -1.8,
