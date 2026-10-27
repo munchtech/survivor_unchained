@@ -297,10 +297,11 @@ public static class Arms
         [WeaponSockets.Back] = new("spine_03", new(0.002f, 1.219f, -0.204f), new(0.006f, 1, -0.001f), new(-0.001f, -0.001f, -1), new(0, 0, -1)),
         // One-handed blade: left hip, in the scabbard (MakeSheathed), hilt forward and up, blade down and back about
         // 30 degrees off vertical, flat to her side (thickness out).
-        // Rides rigidly for now (main, 27 Oct): hung from its sheath point (Hang: new(0.21f, 1.20f, 0.10f)) the scabbard
-        // swings into the warden's left forearm/hand by 14-18 mm in the run and sprint; it hangs once Animation widens
-        // that arm (Body 16's numbers, tools/scratch/body16/hang.py).
-        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true),
+        // Hung from its sheath point (Body 16) in walk and idle; RIGID, riding the pelvis, in the clips where her hand
+        // holds the hilt (Body 17, 27 Oct: run_warden_town and sprint_warden_town, SheathHang.HiltHeld), where hung
+        // it swung into that hand (10.0 / 11.6 mm; tools/scratch/body16/hang.py), eased over 0.2 s at the cuts.
+        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true,
+            Hang: new(0.21f, 1.20f, 0.10f)),
         // Blunt and axe: the hip loop behind her right hip (left hand: mirrored, MirrorEdge, so gyre's two ride as mirror
         // images), at about 5 o'clock (12 her front): the head on the belt (the haft's top 1.06 m up, 22 cm out from her
         // axis), the haft down along the back of her thigh, its foot leaning 20 deg out and 10 deg to her side so the thigh
@@ -434,7 +435,8 @@ public static class Arms
         att.AddChild(mount);
         mount.Transform = at;
         mount.AddChild(MakeSheathed(id, left));
-        if (HangPoint(id, left, calling ?? "") is { } pivot) SheathSway.Attach(skeleton, mount, bone, pivot);
+        if (HangPoint(id, left, calling ?? "") is { } pivot)
+            SheathSway.Attach(skeleton, mount, bone, pivot, hilt: WeaponSockets.SocketOf(KindOf(id)) == WeaponSockets.HipBlade);
         return mount;
     }
 
