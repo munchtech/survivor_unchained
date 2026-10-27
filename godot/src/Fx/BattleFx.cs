@@ -107,7 +107,20 @@ public partial class BattleFx : Node3D
         /// which way, how long.</summary>
         public Vector3 From, Along;
         public float Length;
+        /// <summary>A red mark drawn by MarkPass on the finished frame (its decals kept hidden, as its data): its shape
+        /// (0 lane, 1 ring, 2 cone, 3 band; -1 the decal draws it), its heights' slot, a cone's half arc or a band's
+        /// inner radius, whether a roof over it takes it, and whether its heights are to be sampled.</summary>
+        public int Shape = -1, Slot = -1;
+        public float P1;
+        public bool Roof, HeightsDue;
     }
+
+    /// <summary>The red marks' pass (one, shared by every BattleFx) and its slots' ground heights.</summary>
+    static readonly SurvivorUnchained.View.MarkPass markPass = new();
+    static readonly Compositor markComp = new() { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { markPass } };
+    static readonly float[] markHeights = new float[SurvivorUnchained.View.MarkPass.MaxMarks * SurvivorUnchained.View.MarkPass.Grid * SurvivorUnchained.View.MarkPass.Grid];
+    static readonly bool[] slotUsed = new bool[SurvivorUnchained.View.MarkPass.MaxMarks];
+    static readonly bool MarkPassOff = System.Environment.GetEnvironmentVariable("MARK_PASS") == "0";
 
     /// <summary>The lines being said (WorldScene's Voices): combat's floaters keep off them.</summary>
     public SurvivorUnchained.View.Voices? Lines;
@@ -350,7 +363,15 @@ public partial class BattleFx : Node3D
         m.Length = 0;
         if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
+        if (m.Slot >= 0) { slotUsed[m.Slot] = false; m.Slot = -1; }
+        m.Shape = -1; m.P1 = 0; m.Roof = false; m.HeightsDue = false;
         m.Danger = styleNext == 1;
+        if (m.Danger && !MarkPassOff)
+        {
+            // (sized and turned by its caller after this; its heights are sampled at the next Update)
+            int s = Array.IndexOf(slotUsed, false);
+            if (s >= 0) { slotUsed[s] = true; m.Slot = s; m.HeightsDue = true; if (tex == ringTex) m.Shape = 1; }
+        }
         m.Amber = styleNext == 2;
         m.Raise = m.Amber && raisingNext;
         m.FillNow = null;
@@ -386,7 +407,8 @@ public partial class BattleFx : Node3D
         d.Position = V(x, heightAt(x, z), z);
         d.Rotation = Vector3.Zero;
         d.Size = new Vector3(radius * 2, 4, radius * 2);
-        d.Visible = true;
+        // (a red mark's decal is MarkPass's data, never drawn; RedMarks shows it again if no pass shape takes it)
+        d.Visible = m.Slot < 0;
         if (m.Fill != null) m.Fill.Visible = false;
         return m;
     }
@@ -402,7 +424,7 @@ public partial class BattleFx : Node3D
             m.Fill.Position = m.Decal.Position;
             FillStyle(m, color, false);
             m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
-            m.Fill.Visible = true;
+            m.Fill.Visible = m.Slot < 0;
         }
         if (key is int k2) keyed[k2] = m;
     }
@@ -417,6 +439,7 @@ public partial class BattleFx : Node3D
         var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
         m.Decal.Size = new Vector3(width, 4, (float)len);
         m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
+        if (m.Slot >= 0) m.Shape = 0;
         if (progress)
         {
             m.Progress = true;
@@ -429,7 +452,7 @@ public partial class BattleFx : Node3D
             m.Fill.Rotation = m.Decal.Rotation;
             m.Fill.Position = m.From;
             m.Fill.Size = new Vector3(width * 0.94f, 4, 0.01f);
-            m.Fill.Visible = true;
+            m.Fill.Visible = m.Slot < 0;
         }
         if (key is int k2) keyed[k2] = m;
         return m;
@@ -569,6 +592,8 @@ public partial class BattleFx : Node3D
                 """,
         };
         var d = m.Decal;
+        // (a red mark drawn on the finished frame takes a roof and water in its own pass)
+        if (m.Shape >= 0) { m.Roof |= roof; return; }
         bool wet = Wet(d);
         if (!roof && !wet) return;
         MeshInstance3D Copy(MeshInstance3D? had, int priority)
@@ -766,7 +791,8 @@ public partial class BattleFx : Node3D
         if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, (fire ? 6 : 12) * glow, brief ? 0.15f : 0.3f + r * 0.04f, fire ? r * 2.4f + 3 : r * 3 + 4);
         // And what it leaves behind.
         var (mark, size, last, spin) = ScarOf(school);
-        if (On('m')) Scars.Add(mark, ground, r * size, last, spin);
+        // (none on the river: the Warden's slam crack floated on the water like dry mud, round 3's judge)
+        if (On('m') && !(SurvivorUnchained.View.Water.Level is float wl && gy < wl - 0.05f)) Scars.Add(mark, ground, r * size, last, spin);
         return true;
     }
 
@@ -991,6 +1017,7 @@ public partial class BattleFx : Node3D
         if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
         int pct = (int)Math.Round(Math.Clamp(inner / Math.Max(0.01, outer), 0, 0.95) * 20) * 5;
         var m = Ground(x, z, outer, BandTexture(pct), color, life);
+        if (m.Slot >= 0) { m.Shape = 3; m.P1 = (float)Math.Clamp(inner, 0, outer * 0.9); }
         if (key is int k2) keyed[k2] = m;
     }
 
@@ -1000,6 +1027,7 @@ public partial class BattleFx : Node3D
         if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; }
         var m = Ground(x, z, radius, ConeTexture((int)Math.Round(arc * 180 / Math.PI / 5) * 5), color, life);
         m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(Math.Cos(angle), Math.Sin(angle)), 0);
+        if (m.Slot >= 0) { m.Shape = 2; m.P1 = (float)(arc / 2); }
         if (key is int k2) keyed[k2] = m;
     }
 
@@ -1740,6 +1768,7 @@ public partial class BattleFx : Node3D
                 }
             }
         }
+        RedMarks();
         for (int i = 0; i < beams.Count; i++)
         {
             var (m, mat, t, life) = beams[i];
@@ -1771,6 +1800,54 @@ public partial class BattleFx : Node3D
         Waves.Step(fdt);
         Smoke.Step(fdt);
         Gore.Step(fdt);
+    }
+
+    /// <summary>The red marks handed to MarkPass for this frame (their decals hidden: they are its data), new ones'
+    /// ground heights sampled once, a dead one's slot freed; the pass on the camera that draws.</summary>
+    void RedMarks()
+    {
+        const int G = SurvivorUnchained.View.MarkPass.Grid;
+        float[]? buf = null;
+        int n = 0;
+        bool hts = false;
+        foreach (var m in marks)
+        {
+            if (m.Slot < 0) continue;
+            if (!m.Active) { slotUsed[m.Slot] = false; m.Slot = -1; m.Shape = -1; continue; }
+            if (m.Shape < 0) { slotUsed[m.Slot] = false; m.Slot = -1; m.Decal.Visible = true; continue; }
+            var d = m.Decal;
+            if (d.Visible) d.Visible = false;
+            if (m.Fill is { Visible: true } f) f.Visible = false;
+            float hx = d.Size.X / 2, hz = d.Size.Z / 2;
+            Vector3 ax = d.Basis.X.Normalized(), az = d.Basis.Z.Normalized();
+            if (m.HeightsDue)
+            {
+                m.HeightsDue = false; hts = true;
+                int o = m.Slot * G * G;
+                for (int j = 0; j < G; j++)
+                    for (int i = 0; i < G; i++)
+                    {
+                        var p = d.Position + ax * (hx * (-1 + 2f * i / (G - 1))) + az * (hz * (-1 + 2f * j / (G - 1)));
+                        markHeights[o + j * G + i] = (float)heightAt(p.X, p.Z);
+                    }
+            }
+            if (n >= SurvivorUnchained.View.MarkPass.MaxMarks) continue;
+            buf ??= new float[SurvivorUnchained.View.MarkPass.MaxMarks * 16];
+            float fill = !m.Progress ? -1 : m.Length > 0 ? m.Length * m.T : m.Radius * m.T;
+            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy, 1, fill, m.P1, m.Slot, m.Roof);
+        }
+        if (hts) markPass.SetHeights((float[])markHeights.Clone());
+        markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);
+        if (n == 0) return;
+        // (on whichever camera draws; beside another effect's compositor, first: the brush paints the finished frame)
+        if (GetViewport()?.GetCamera3D() is not { } cam) return;
+        if (cam.Compositor == null) cam.Compositor = markComp;
+        else if (cam.Compositor != markComp && !cam.Compositor.CompositorEffects.Contains(markPass))
+        {
+            var fx = cam.Compositor.CompositorEffects.Duplicate();
+            fx.Insert(0, markPass);
+            cam.Compositor.CompositorEffects = fx;
+        }
     }
 
     float artT;
