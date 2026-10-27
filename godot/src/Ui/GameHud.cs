@@ -942,6 +942,10 @@ public partial class GameHud : CanvasLayer
     /// heads keep out of it: a howl's caption printed beside the banner's own line read as one).</summary>
     public static Rect2? Banner { get; private set; }
 
+    /// <summary>The top-right block on the screen (the minimap over the place's name and the objectives), while
+    /// it shows: the name plates over people's heads give way under it.</summary>
+    public static Rect2? Header { get; private set; }
+
     /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
     public static float TopClear { get; private set; } = 118;
     /// <summary>The live tip's bottom edge on the screen (0: none); barks keep 24 px under it.</summary>
@@ -1290,6 +1294,10 @@ public partial class GameHud : CanvasLayer
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
         Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
         TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 24;
+        Rect2? header = null;
+        if (minimap.IsVisibleInTree()) header = minimap.GetGlobalRect();
+        if (corner.IsVisibleInTree()) header = header is Rect2 h0 ? h0.Merge(corner.GetGlobalRect()) : corner.GetGlobalRect();
+        Header = header;
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Notice n) continue;

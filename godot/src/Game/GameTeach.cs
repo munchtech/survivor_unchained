@@ -307,9 +307,16 @@ public partial class Game
         // (--teach-diag with --shot: each freeze's frame first with the ember halos held out, to measure them by)
         // (the callout's own frame a few frames after, halos back: the two differ by the halos alone)
         if (haloDiag != null && !Shots.Pending("teach_" + haloDiag + "_nohalo")) { scene.Fx.HalosHidden = false; haloDiag = null; }
+        if (dimDiag != null)
+        {
+            // (undimmed, then the old flat dim, then this one)
+            bool held = Shots.Pending("teach_" + dimDiag + "_nodim"), old = Shots.Pending("teach_" + dimDiag + "_olddim");
+            Ui.Callout.DimHeld = held; Ui.Callout.DimOld = !held && old;
+            if (!held && !old) dimDiag = null;
+        }
     }
 
-    string? haloDiag;
+    string? haloDiag, dimDiag;
 
     double hurtT;
     bool hurtDone, flareGiven;
@@ -372,7 +379,15 @@ public partial class Game
             scene.Fx.HalosHidden = true;
             Shots.Want("teach_" + c.Id + "_nohalo", 0.75);
         }
-        if (Args.Has("shot")) Shots.Want("teach_" + c.Id, haloDiag == c.Id ? 1.05 : 0.9);
+        // (--dim-diag with --shot: each freeze's frame first undimmed, then dimmed, the same frozen moment)
+        if (Args.Has("shot") && c.Kind == CalloutKind.Freeze && OS.GetCmdlineUserArgs().Contains("--dim-diag"))
+        {
+            dimDiag = c.Id;
+            Ui.Callout.DimHeld = true;
+            Shots.Want("teach_" + c.Id + "_nodim", 0.75);
+            Shots.Want("teach_" + c.Id + "_olddim", 0.9);
+        }
+        if (Args.Has("shot")) Shots.Want("teach_" + c.Id, haloDiag == c.Id ? 1.05 : dimDiag == c.Id ? 1.1 : 0.9);
     }
 
     void TeachDown(Callout c)

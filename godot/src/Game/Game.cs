@@ -1394,7 +1394,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool flareFilled, flareReadyShot;
-    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone;
     int toastI;
 
     /// <summary>One of each kind of notice (--toasts), in the words the game uses.</summary>
@@ -1697,6 +1697,13 @@ public partial class Game : Node, IZoneHost
         {
             tipDone = true;
             SetHint(new Hint("sample", "Elites", "Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it.", [KeyLabel("dash")]));
+        }
+        // --freeze-test T: a teaching freeze on her and the dash at T seconds (pictures of the freeze's dim
+        // wherever the run is: by day in the hub, by night in a story fight); with --teach-reset.
+        if (Args.Has("freeze-test") && !freezeTestDone && Battle != null && Journey.Playtime >= Args.Num("freeze-test", 3))
+        {
+            freezeTestDone = true;
+            Teach(new Play.Callout("freeze_test", Play.CalloutKind.Freeze, "Dash", "Roll through the bolts; nothing touches you mid-roll.", new Play.Aim { Hud = "dash", HerSeen = true }, "dash"));
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
