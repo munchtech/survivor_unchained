@@ -1321,6 +1321,8 @@ public sealed class Prologue : ZoneRuntime
 
     public override void Frame(double dt)
     {
+        // (a freeze holds the director too: the road's next words keep their distance from it, seen here)
+        if (B != null && G.Teaching != null) wordsFree = Math.Max(wordsFree, B.Time + WordsAfterCallout);
         // C03's Grimtunnel comes up while the zone's director waits: his surfacing is kept here.
         if (grimByCine && grim is { Alive: true, State: EnemyState.Surfacing } gs) { gs.StateT -= dt; if (gs.StateT <= 0) gs.State = EnemyState.Active; }
         if (wardenGone) return;
