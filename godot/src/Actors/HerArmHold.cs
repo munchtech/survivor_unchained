@@ -40,6 +40,7 @@ public partial class HerArmHold : SkeletonModifier3D
         float d = Mathf.Clamp(ua.Dot(ub), -1f, 1f);
         var swing = c.LengthSquared() > 1e-12f ? new Quaternion(c.Normalized(), Mathf.Acos(d)) : Quaternion.Identity;
         var twist = (swing.Inverse() * b * a.Inverse()).Normalized();
+        swing = swing.Normalized();
         if (twist.W < 0) twist = -twist;
         return (Quaternion.Identity.Slerp(swing, e) * Quaternion.Identity.Slerp(twist, e) * a).Normalized();
     }
@@ -77,7 +78,7 @@ public partial class HerArmHold : SkeletonModifier3D
             bool shoulder = name.StartsWith("clavicle") || name.StartsWith("trap") || name.StartsWith("scap") || name.StartsWith("pec") || name.StartsWith("lat") || name.StartsWith("upperarm_share");
             swings[i] = shoulder ? 0 : name.EndsWith("_l") ? 1 : -1;
             paths[i] = $"Armature/Skeleton3D:{name}";
-            rest[i] = sk.GetBoneRest(bones[i]).Basis.GetRotationQuaternion();
+            rest[i] = sk.GetBoneRest(bones[i]).Basis.Orthonormalized().GetRotationQuaternion().Normalized();
             if (name == "hand_r") handR = i;
             if (name == "hand_l") handL = i;
         }
@@ -92,7 +93,7 @@ public partial class HerArmHold : SkeletonModifier3D
         return t;
     }
 
-    Quaternion Sample(Animation a, int[] t, int i, double time) => t[i] >= 0 ? a.RotationTrackInterpolate(t[i], time) : rest[i];
+    Quaternion Sample(Animation a, int[] t, int i, double time) => (t[i] >= 0 ? a.RotationTrackInterpolate(t[i], time) : rest[i]).Normalized();
 
     public override void _ProcessModificationWithDelta(double delta)
     {
@@ -108,10 +109,10 @@ public partial class HerArmHold : SkeletonModifier3D
         {
             var qw = Sample(Walk, tw, i, WalkT);
             var qr = Sample(Run, tr, i, RunT);
-            if (ts != null) qr = qr.Slerp(Sample(Sprint!, ts, i, RunT), Fast);
+            if (ts != null) qr = qr.Slerp(Sample(Sprint!, ts, i, RunT), Fast).Normalized();
             int p = parentSlot[i];
-            cw[i] = p >= 0 ? cw[p] * qw : qw;
-            cr[i] = p >= 0 ? cr[p] * qr : qr;
+            cw[i] = (p >= 0 ? cw[p] * qw : qw).Normalized();
+            cr[i] = (p >= 0 ? cr[p] * qr : qr).Normalized();
             var axis = i == handR ? AxisR : i == handL ? AxisL : Vector3.Zero;
             co[i] = axis.LengthSquared() > 1e-8f ? SwingTwist(cw[i], cr[i], axis, e) : cw[i].Slerp(cr[i], e);
         }
@@ -121,9 +122,9 @@ public partial class HerArmHold : SkeletonModifier3D
         {
             var f = (sk.GetBoneGlobalPose(spine3).Basis.Inverse() * (sk.GetBoneGlobalPose(pelvis).Basis * Vector3.Back)).Normalized();
             float th = Mathf.DegToRad(Bump) * Mathf.Sin(Mathf.Pi * e);
-            var outL = new Quaternion(f, th);
-            var outR = new Quaternion(f, -th);
-            for (int i = 0; i < n; i++) if (swings[i] != 0) co[i] = (swings[i] > 0 ? outL : outR) * co[i];
+            var outL = new Quaternion(f, th).Normalized();
+            var outR = new Quaternion(f, -th).Normalized();
+            for (int i = 0; i < n; i++) if (swings[i] != 0) co[i] = ((swings[i] > 0 ? outL : outR) * co[i]).Normalized();
         }
         for (int i = 0; i < n; i++)
         {
