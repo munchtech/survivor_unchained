@@ -3,25 +3,16 @@
 // toward none; it never reaches into the middle 70% of the screen (a rounded square, |x| and |y| under 0.70 of
 // the half-screen stay clear). One full-screen quad, a few ALU ops.
 shader_type canvas_item;
-render_mode blend_premul_alpha;
+render_mode blend_mul;
+#include "res://shaders/hud_low_edge.gdshaderinc"
 
-uniform float strength = 0.0;   // HeartPulse.EdgeStrength: 0 off, 0.3 at 30%, 1 at none
-uniform float beat = 0.0;       // the heartbeat now, 0..1 (1 on the beat)
-uniform vec4 blood : source_color = vec4(0.90, 0.09, 0.05, 1.0);   // crimson, added (UI 15 fix 1)
-uniform float shade = 0.58;   // how much of the scene under it is darkened (the rest of its colour is light added)
+uniform vec3 tint = vec3(0.92, 0.16, 0.12);   // what the edge multiplies the scene by at full: blue and green crushed
+// (UI 15 judge 2: crimson ADDED over the blue night grade read mauve where it faded; the multiply darkens toward
+// deep crimson first, then hud_low_edge_glow.gdshader (a child quad) adds a little crimson light on top)
 
 void fragment()
 {
-	vec2 q = abs(UV - 0.5) * 2.0;           // 0 at the middle, 1 at the edges
-	float d = pow(pow(q.x, 4.0) + pow(q.y, 4.0), 0.25);
-	float s = clamp(strength, 0.0, 1.0);
-	// its inner edge creeps in with strength and on the beat, never past 0.70
-	float start = mix(0.86, 0.70, s * (0.75 + 0.25 * beat));
-	float ramp = smoothstep(start, 1.12, d);
-	float a = ramp * s * (0.62 + 0.35 * beat);
+	float a = edge_a(UV);
 	if (a <= 0.002) discard;
-	// UI 15 fix 1: crimson light added over a partial darkening (premultiplied: scene * (1 - a * shade) + crimson
-	// * a), never a mix toward dark red: over the blue night grade a mix read as plum
-	a = clamp(a, 0.0, 0.88);
-	COLOR = vec4(blood.rgb * a * 0.85, a * shade);
+	COLOR = vec4(mix(vec3(1.0), tint, a), 1.0);
 }

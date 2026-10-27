@@ -928,8 +928,10 @@ public partial class Round : Control
             mat.SetShaderParameter("dry_film", 0f);
             // HUD A2 round 2: one red in the corner. The draught is a small dark vial (oxblood, desaturated), so at
             // low life it never outshines the lamp; its count keeps its bone figure.
-            mat.SetShaderParameter("liq_dim", 0.22f);
-            mat.SetShaderParameter("liq_desat", 0.55f);
+            // (--hud-life her, judge 2: with no lamp the round red draught sat where players look for life and read
+            // as a life orb that never drains: there it goes darker and nearly grey)
+            mat.SetShaderParameter("liq_dim", HerLight.On ? 0.14f : 0.22f);
+            mat.SetShaderParameter("liq_desat", HerLight.On ? 0.85f : 0.55f);
             float gr = Vessel.Glass(mat, "_small", 50, 13, 4, r, 21.6f);
             AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Position = Size / 2 - new Vector2(gr, gr), Size = new Vector2(2 * gr, 2 * gr) });
             flow = new Vessel.Flow(mat, false);
