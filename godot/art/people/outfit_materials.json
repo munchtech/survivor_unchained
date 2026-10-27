@@ -242,5 +242,11 @@
   "repeats": 3,
   "rough_floor": 0.6,
   "zone": "leather"
+ },
+ "burnished": {
+  "kind": "leather",
+  "repeats": 4,
+  "rough_floor": 0.6,
+  "zone": "leather"
  }
 }

@@ -215,7 +215,7 @@ SPEC = {
                   # (m, from `x`[0] off her middle to `x`[1], none in its top 3 cm, all from 12 cm down), weighed by
                   # that thigh's forward swing (smoothstep over `swing` degrees): the sheet tilts onto the raised
                   # thigh's crown instead of the thigh cutting through its edge
-                  "side": {"shapes": ["panel_side_l", "panel_side_r"], "lift": 0.055, "x": [0.005, 0.06], "swing": [20.0, 60.0]}}},
+                  "side": {"shapes": ["panel_side_l", "panel_side_r"], "lift": 0.055, "x": [0.005, 0.06], "swing": [10.0, 45.0]}}},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
