@@ -486,8 +486,8 @@ public partial class TipLine : Control
         }
         line.AppendText(marked[at..]);
         line.Pop();
-        float widest = KeyToken.Replace(text, "  $1  ").Split('\n').Max(l => Style.Text.GetStringSize(l, HorizontalAlignment.Left, -1, 20).X);
-        line.CustomMinimumSize = new Vector2(Math.Min(720, widest + 10), 0);
+        float widest = KeyToken.Replace(text.Replace("*", ""), "  $1  ").Split('\n').Max(l => Style.Text.GetStringSize(l, HorizontalAlignment.Left, -1, 20).X);
+        line.CustomMinimumSize = new Vector2(Balanced(KeyToken.Replace(text.Replace("*", ""), "  $1  "), Math.Min(720, widest + 10)), 0);
         column.AddChild(line);
         burn = WorldType.Light(new Vector2(760, 150), Style.Ember with { A = 0 });
         AddChild(burn);
@@ -495,22 +495,41 @@ public partial class TipLine : Control
         Modulate = Colors.Transparent;
     }
 
+    /// <summary>The wrap width, narrowed (never under 70%) until no wrapped line of the text ends in a lone word or two
+    /// (a last line under 35% of the width). Measured once, as the tip is built.</summary>
+    static float Balanced(string text, float w0)
+    {
+        float Last(string para, float w)
+        {
+            float cur = 0, space = Style.Text.GetStringSize(" ", HorizontalAlignment.Left, -1, 20).X;
+            bool wrapped = false;
+            foreach (var word in para.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                float ww = Style.Text.GetStringSize(word, HorizontalAlignment.Left, -1, 20).X;
+                if (cur > 0 && cur + space + ww > w) { cur = ww; wrapped = true; }
+                else cur += (cur > 0 ? space : 0) + ww;
+            }
+            return wrapped ? cur / w : 1;
+        }
+        float best = w0, bestMin = 0;
+        for (float w = w0; w >= w0 * 0.7f; w -= w0 * 0.03f)
+        {
+            float worst = text.Split('\n').Min(p => Last(p, w));
+            if (worst >= 0.35f) return w;
+            if (worst > bestMin) { bestMin = worst; best = w; }
+        }
+        return best;
+    }
+
     static readonly Regex KeyToken = new(@"\{key:([^}]+)\}");
 
     /// <summary>A keycap for the words, drawn once into a small viewport that stays with the tip, its texture
-    /// set inline in the line: lighter than the HUD's dark key (it must read inside a line of pale words).</summary>
+    /// set inline in the line: the shared keycap (Style.KeyCap), as the head's keys and the callouts draw it.</summary>
     Texture2D Chip(string key)
     {
-        var size = new Vector2I(Math.Max(28, 14 + 10 * key.Length), 28);
-        var box = new StyleBoxFlat { BgColor = new Color("#2a221a"), BorderColor = new Color("#e2cf9e"), CornerDetail = 4 };
-        box.SetBorderWidthAll(2);
-        box.SetCornerRadiusAll(5);
-        box.BorderWidthBottom = 4;
-        var cap = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        cap.AddThemeStyleboxOverride("panel", box);
-        var l = Style.Label(key, Style.UiHeavy, 17, new Color("#fff1d0"), false, HorizontalAlignment.Center, false);
-        l.VerticalAlignment = VerticalAlignment.Center;
-        cap.AddChild(l);
+        var cap = Style.KeyCap(key, 1.05f);
+        var size = (Vector2I)cap.GetCombinedMinimumSize().Ceil();
+        size = new Vector2I(Math.Max(size.X, Math.Max(28, 14 + 10 * key.Length)), Math.Max(size.Y, 28));
         cap.Size = size;
         var vp = new SubViewport { TransparentBg = true, Disable3D = true, Size = size, RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
         vp.AddChild(cap);
@@ -522,10 +541,15 @@ public partial class TipLine : Control
     static string Marked(string text, string title)
     {
         string safe = text.Replace("[", "[lb]");
+        // A term the text marks itself ("*watchman's chest*") is colored whole.
+        var hand = Regex.Match(safe, @"\*([^*]+)\*");
+        if (hand.Success) return safe[..hand.Index] + "[color=#ffa04a]" + hand.Groups[1].Value + "[/color]" + safe[(hand.Index + hand.Length)..].Replace("*", "");
+        // Else the title's words, last first, skipping the articles (a bare "the" is never the subject).
         var word = title.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var w in word.Length > 0 ? new[] { word[^1].TrimEnd('s'), word[0] } : Array.Empty<string>())
+        foreach (var w0 in word.Reverse())
         {
-            if (w.Length < 3) continue;
+            var w = w0.TrimEnd('s');
+            if (w.Length < 3 || w.Equals("the", StringComparison.OrdinalIgnoreCase)) continue;
             var m = Regex.Match(safe, $@"\b{Regex.Escape(w)}\w*", RegexOptions.IgnoreCase);
             if (m.Success) return safe[..m.Index] + "[color=#ffa04a]" + m.Value + "[/color]" + safe[(m.Index + m.Length)..];
         }

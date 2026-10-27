@@ -96,6 +96,9 @@ public partial class BattleFx : Node3D
         public float Length;
     }
 
+    /// <summary>The lines being said (WorldScene's Voices): combat's floaters keep off them.</summary>
+    public SurvivorUnchained.View.Voices? Lines;
+
     public BattleFx(Func<double, double, double> heightAt)
     {
         this.heightAt = heightAt;
@@ -788,7 +791,15 @@ public partial class BattleFx : Node3D
                     }
                     if (e.Blocked)
                     {
-                        if (time - lastBlocked > 0.35) { lastBlocked = time; Hits.Text(at, "blocked", new Color(0.7f, 0.75f, 0.8f), 44); }
+                        // Combat's floater, small and short-lived at the blow, never over a line being said: under
+                        // its box, or not shown (UI note 1). (Its footprint: "blocked" at 44 with the pool's
+                        // sideways jitter, rising 0.53 m over its 0.75 s.)
+                        if (time - lastBlocked > 0.35)
+                        {
+                            lastBlocked = time;
+                            var bat = at;
+                            if (Lines?.ClearOfLines(ref bat, 1.7f, 0.3f, 0.53f, 0.75) != false) Hits.Text(bat, "blocked", new Color(0.7f, 0.75f, 0.8f), 44);
+                        }
                         Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
