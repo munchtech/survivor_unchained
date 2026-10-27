@@ -41,11 +41,12 @@ public partial class Game
     /// (Asks the Teacher first, so --teach-reset has cleared the profile before any zone reads it: a test
     /// run's Begin saw last run's "art" and let the Flare's great blessings through, round 2 judge.)
     public bool Taught(string id) { _ = Teacher; return Settings.Current.SeenTips.Contains(id); }
-    /// <summary>--teach-hurt (a scripted run): the autopilot keeps the Flare for F8 in the Barrow.</summary>
-    public bool HoldFlare => Args.Has("teach-hurt") && !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
+    /// <summary>(the autopilot) It keeps the Flare in the Barrow until F8 has asked for it.</summary>
+    public bool HoldFlare => !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
+    public bool Saying => hud.SayUp;
     /// <summary>Whether a callout waits in the line (the autopilot holds its draught for F10's).</summary>
     public bool TeachWaiting(string id) => teacher?.Queued(id) == true;
     /// <summary>Real seconds it has been up.</summary>
@@ -59,7 +60,7 @@ public partial class Game
         if (what == "shown") real = "0";
         var at = Primary(c);
         string waited = what is "queued" or "shown" or "dropped" ? $" waited={(teacher?.LogWaited is { Length: > 0 } w ? w : "-")}" : "";
-        GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}{waited}");
+        GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}{waited}{(Battle is { } hb ? $" hp={hb.Player.Hp:0}/{hb.MaxHp:0}" : "")}");
     }
 
     /// <summary>What has the screen, for the line of callouts.</summary>
@@ -101,10 +102,17 @@ public partial class Game
             case null: break;
             // (the whole chain, bracketed: it is the bar that fills, not its lock)
             case "chain": areas.Add(new Rect2(Instrument.EyeL.X, Instrument.EyeL.Y - 17, Instrument.EyeR.X - Instrument.EyeL.X, 38)); break;
+            // (the filled links, left of the lock: F2's, where the ember fills; the lock itself is L1's)
+            case "chain_fill": areas.Add(Instrument.ChainFill); break;
             case "dash": pts.Add(Instrument.DashAt); break;
             case "draught": pts.Add(Instrument.DraughtAt); break;
             case "art": pts.Add(Instrument.ArtAt); break;
             case "banner": if (hud.BannerUp) areas.Add(hud.BannerArea); break;
+            // (au1 item 14: the parts never taught, each by the HUD's own accessor, bracketed)
+            case "prompt": if (hud.PromptArea is Rect2 pa) areas.Add(pa); break;
+            case "minimap": if (hud.MinimapArea is Rect2 ma) areas.Add(ma); break;
+            case "tally": if (hud.TallyArea is Rect2 ta) areas.Add(ta); break;
+            case "lock": if (hud.EmberLockArea is Rect2 la) areas.Add(la); break;
             case "cards":
                 if (hud.DraftShown is { } dp && dp.CardAreas().ToList() is { Count: > 0 } all)
                     areas.Add(all.Select(x => x.Rect).Aggregate((a, b) => a.Merge(b)));
@@ -144,7 +152,12 @@ public partial class Game
                         if (OS.GetCmdlineUserArgs().Contains("--teach-diag")) GD.Print($"teachdiag {c.Id} t={Battle?.Time ?? 0:0.0} seen-blocked block={diagBlock}");
                         break;
                     }
-                    pts.Add(v); worldOn++; break;
+                    pts.Add(v); worldOn++;
+                    // (and what is ringed beside it, on the screen: the Knight himself)
+                    if (t.Ring?.Invoke() is { } ring)
+                        foreach (var q in ring)
+                            if (OnScreen(q) is Vector2 rv && Canvas.HasPoint(rv)) { pts.Add(rv); worldOn++; }
+                    break;
                 }
                 pts.Add(v);
                 worldOn++;
@@ -161,6 +174,14 @@ public partial class Game
 
     /// <summary>(`raised`: the point is where it is, not on the ground: a figure's head; the figure's own
     /// shape, small and round the point, is passed over.)</summary>
+    /// <summary>A mesh's faces, for a line's true strike (built once a mesh).</summary>
+    readonly Dictionary<Rid, TriangleMesh?> faces = new();
+    TriangleMesh? Faces(Mesh m)
+    {
+        if (faces.TryGetValue(m.GetRid(), out var tm)) return tm;
+        return faces[m.GetRid()] = m.GenerateTriangleMesh();
+    }
+
     bool InOpen((double X, double Y, double Z) p, bool raised = false)
     {
         diagBlock = "-";
@@ -198,7 +219,19 @@ public partial class Game
             for (int i = 1; i < 48; i++)
             {
                 var q = from.Lerp(to, i / 48f);
-                if (q.Y > ground + 2.6f && box.HasPoint(q)) { diagBlock = $"{g.GetPath()} box={box.Position}/{box.Size}"; return true; }
+                if (q.Y > ground + 2.6f && box.HasPoint(q))
+                {
+                    // (a mesh's box is coarse: a wall standing across the view boxes a field of open ground
+                    // behind it. Its own faces are asked: the line must strike them. MR5 item 12: a cracked
+                    // wall's box hid the Knight's lane, and her, through both windups.)
+                    if (g is MeshInstance3D { Mesh: { } mesh } mi && Faces(mesh) is { } tm)
+                    {
+                        var inv = mi.GlobalTransform.AffineInverse();
+                        if (tm.IntersectSegment(inv * from, inv * to).Count == 0) return false;
+                    }
+                    diagBlock = $"{g.GetPath()} box={box.Position}/{box.Size}";
+                    return true;
+                }
             }
             return false;
         }
@@ -279,6 +312,9 @@ public partial class Game
         if (t.Hud == "card:weapon") return teachOffers?.Any(o => o.Kind == OfferKind.Weapon) == true ? Presence.Here : Presence.NotYet;
         if (t.Hud == "cards") return teachOffers is { Count: > 0 } ? Presence.Here : Presence.NotYet;
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
+        // (a HUD part that comes and goes: here while it shows)
+        if (t.Hud == "prompt" && hud.PromptArea == null || t.Hud == "minimap" && hud.MinimapArea == null
+            || t.Hud == "tally" && hud.TallyArea == null || t.Hud == "lock" && hud.EmberLockArea == null) return Presence.NotYet;
         // (a freeze on her own state: never the moment a roof hides her)
         if (t.HerSeen && Battle?.Player is { } pl && scene != null && !InOpen((pl.X, scene.HeightAt(pl.X, pl.Z) + 1.3, pl.Z), true)) return Presence.NotYet;
         if (t.World != null)
@@ -297,6 +333,7 @@ public partial class Game
         if (scene == null || Mode != "play") return;
         if (!scene.SimPaused) teachClock += dt;
         TeachHurt(dt);
+        PaceLog();
         var t = Teacher;
         if (hudMode == "draft") teachOffers = offers; else teachOffers = null;
         var was = t.Current;
@@ -310,6 +347,27 @@ public partial class Game
     }
 
     string? haloDiag;
+
+    string? paceStage;
+    bool paceSprung;
+    double paceHpT;
+
+    /// <summary>--pace (the tutorial's pacing audit): each Prologue stage as it begins, and her health
+    /// every 5 s of play, with the game's clock.</summary>
+    void PaceLog()
+    {
+        if (!Args.Has("pace") || Battle is not { } b) return;
+        string? st = zone is Zones.Prologue pr ? pr.Now.ToString() : null;
+        if (st != paceStage) { paceStage = st; GD.Print($"pace stage {st} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} at=({b.Player.X:0},{b.Player.Z:0})"); }
+        if (zone is Zones.Prologue { Sprung: true } && !paceSprung)
+        {
+            paceSprung = true;
+            GD.Print($"pace sprung t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
+            if (Args.Has("shot")) { Shots.Want("ambush_sprung", 1.6); Shots.Want("ambush_volley", 2.3); }
+        }
+        if (zone is Zones.Prologue pz) while (pz.PaceNotes.Count > 0) GD.Print(pz.PaceNotes.Dequeue());
+        if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st} at=({b.Player.X:0},{b.Player.Z:0}) draughts={Journey?.Draughts}"); }
+    }
 
     double hurtT;
     bool hurtDone, flareGiven;
@@ -357,7 +415,7 @@ public partial class Game
         // (no damage numbers over the words while a callout is up)
         if (scene != null) scene.Fx.Hits.Visible = false;
         // The part taught is kept (the HUD stays whole; the world dims on a freeze); the chain's callout fades the six places.
-        hud.Spotlight(c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud == "chain");
+        hud.Spotlight(c.Target.Hud == "chain_fill" ? "chain" : c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud is "chain" or "chain_fill");
         var view = new Ui.Callout();
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
@@ -406,12 +464,28 @@ public partial class Game
                 // (a lit dash's ring stands outside its flames and badge, round 3 judge)
                 "dash" when hud.DashLit => Instrument.SmallR + Instrument.SmallBand + 18,
                 "dash" or "draught" => Instrument.SmallR + Instrument.SmallBand,
-                "chain" => 22,
+                "chain" or "chain_fill" => 22,
                 _ => Instrument.Sock / 2 + 4,
             });
+        int bare = -1;
+        List<int>? noArrow = null;
         if (c.Target.World != null)
             foreach (var w in c.Target.World())
                 if (OnScreen(w) is Vector2 v) radii.Add(Math.Clamp(PxPerMetre(w) * (float)c.Target.Radius, 20, 56));
+        // (a Safe point is the one picked, its things ringed after it: the point bare, the arrow on it,
+        // the things ringed at their own size with no arrow)
+        if (c.Target.Safe && c.Target.Ring != null && worldOn > 1)
+        {
+            radii.RemoveRange(Math.Min(radii.Count, hudPts + 1), Math.Max(0, radii.Count - hudPts - 1));
+            bare = hudPts;
+            noArrow = [];
+            foreach (var q in c.Target.Ring())
+                if (OnScreen(q) is Vector2 rv && Canvas.HasPoint(rv))
+                {
+                    noArrow.Add(radii.Count);
+                    radii.Add(Math.Clamp(PxPerMetre(q) * (float)c.Target.RingRadius, 28, 110));
+                }
+        }
         Rect2? her = null;
         if (Battle?.Player is { } pl && scene != null)
         {
@@ -448,7 +522,8 @@ public partial class Game
         {
             Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
             WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
-            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
+            Bare = bare, NoArrow = noArrow,
+            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud is "chain" or "chain_fill" ? 2 : 12,
         });
     }
 
