@@ -1166,6 +1166,40 @@
    "prompt": "An empty wide low plate of blackened forged iron, a short crest strip along its top edge, lamp-iron brackets at its top corners, the face plain and dark, seamless left to right.",
    "where": "A crested card too low for crest_card's slice: creation's calling cards (470x92) and any row-shaped choice. Neutral iron, the code tints its crest strip and hairline",
    "made_by": "not yet made"
+  },
+  {
+   "id": "lamp_life",
+   "file": "lamp_life/lamp_lit.png",
+   "also": [
+    "lamp_life/lamp_cold.png",
+    "lamp_life/lamp_mask.png"
+   ],
+   "size": [
+    320,
+    680
+   ],
+   "kind": "hud",
+   "aspect": "3:4 (Portrait Standard)",
+   "seed": 4203,
+   "prompt": "A sturdy oil lamp of forged black iron and clear glass, front view: a wide round clear glass oil font held in three hammered iron straps, a thick forged iron collar ring with rivets, a tall bulging clear glass chimney, a tall golden flame burning inside the chimney, a carrying ring on top, painterly realism, dark, lit only by its own flame, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "HUD A2 life lamp (UI 14, 26 Oct 2026): Krea seed 4203 cut from black, then layered by tools/uiforge/lamp_life_cut.py",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "lamp_life_flame",
+   "file": "lamp_life/lamp_flame.png",
+   "size": [
+    128,
+    405
+   ],
+   "kind": "hud",
+   "aspect": "1:1 (Square)",
+   "seed": 4201,
+   "prompt": "A single tall steady oil lamp flame, golden with a white-hot core at its base and a soft orange tip, rising from a wick, nothing else, painterly realism, isolated on a flat black background.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
+   "note": "light-keyed by tools/uiforge/lamp_life_cut.py",
+   "made_by": "tools/uiforge/lamp_life_cut.py"
   }
  ],
  "icon_sets": {

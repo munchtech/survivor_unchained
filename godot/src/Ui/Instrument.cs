@@ -46,13 +46,16 @@ public partial class Instrument : Control
     /// <summary>The chain's ends: the riveted joints on the cuffs' outer edge, 32 degrees below level.</summary>
     public static Vector2 EyeL => LifeAt + JointOff;
     public static Vector2 EyeR => new(1920 - EyeL.X, EyeL.Y);
-    /// <summary>HUD v2: the first link's centre from the life cuff's centre (the art's rivet at cuff image
-    /// (150.0, 127.6) less the band centre (85, 87), plus the link's 4.4 px beside it); mirrored on the right.</summary>
-    public static readonly Vector2 JointOff = new(69.4f, 40.6f);
+    /// <summary>HUD A2: the first link's centre from LifeAt: the eye on the life lamp's font (LifeLamp.Eye in
+    /// its quad, the quad's foot on LifeLamp.Floor); mirrored on the right.</summary>
+    public static Vector2 JointOff => LampAt + LifeLamp.Eye - LifeAt;
+    /// <summary>The life lamp's quad's top left: centred on LifeAt, its foot on LifeLamp.Floor.</summary>
+    public static Vector2 LampAt => new(LifeAt.X - LifeLamp.Canvas.X / 2, LifeLamp.Floor - LifeLamp.FootY);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
-    public static Rect2 Bounds => new(960 - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
+    public static Rect2 Bounds => new(960 - Reach - R - Band - 16, LampAt.Y + 40, 2 * (Reach + R + Band + 16), 1080 - (LampAt.Y + 40));
 
-    public readonly Vessel Life, Art;
+    public readonly LifeLamp Life;
+    public readonly Vessel Art;
     public readonly Socket[] Sockets = new Socket[Content.Weapons.MaxWeapons];
     public readonly Round Draught, Dash;
     public readonly EmberChain Chain;
@@ -73,7 +76,7 @@ public partial class Instrument : Control
         // cuffs' bands, then each cuff's front ear over the chain's first link, then the key tags)
         AddChild(SillStrap);
         Chain = new EmberChain();
-        Life = new Vessel(true) { Position = LifeAt - Vessel.Half };
+        Life = new LifeLamp { Position = LampAt };
         AddChild(Life);
         Art = new Vessel(false) { Position = ArtAt - Vessel.Half };
         AddChild(Art);
@@ -87,7 +90,6 @@ public partial class Instrument : Control
         Dash = new Round(Round.Kind.Dash) { Position = DashAt - Round.Half };
         AddChild(Dash);
         AddChild(Chain);
-        AddChild(new CuffFront(false) { Position = LifeAt - Vessel.Half });
         AddChild(new CuffFront(true) { Position = ArtAt - Vessel.Half });
         Passives = Style.H(6);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
@@ -96,7 +98,8 @@ public partial class Instrument : Control
         AddChild(Passives);
         Statuses = Style.H(10);
         Statuses.Alignment = BoxContainer.AlignmentMode.Center;
-        Statuses.Position = new Vector2(LifeAt.X - 150, VY - R - Band - 40);
+        // (over the lamp's carrying ring)
+        Statuses.Position = new Vector2(LifeAt.X - 150, LampAt.Y + 40);
         Statuses.Size = new Vector2(300, 30);
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
