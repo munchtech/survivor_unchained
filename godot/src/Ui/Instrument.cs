@@ -52,7 +52,7 @@ public partial class Instrument : Control
     /// <summary>The life lamp's quad's top left: centred on LifeAt, its foot on LifeLamp.Floor.</summary>
     public static Vector2 LampAt => new(LifeAt.X - LifeLamp.Canvas.X / 2, LifeLamp.Floor - LifeLamp.FootY);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
-    public static Rect2 Bounds => new(960 - Reach - R - Band - 16, LampAt.Y + 40, 2 * (Reach + R + Band + 16), 1080 - (LampAt.Y + 40));
+    public static Rect2 Bounds => new(960 - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
 
     public readonly LifeLamp Life;
     public readonly Vessel Art;
@@ -98,8 +98,7 @@ public partial class Instrument : Control
         AddChild(Passives);
         Statuses = Style.H(10);
         Statuses.Alignment = BoxContainer.AlignmentMode.Center;
-        // (over the lamp's carrying ring)
-        Statuses.Position = new Vector2(LifeAt.X - 150, LampAt.Y + 40);
+        Statuses.Position = new Vector2(LifeAt.X - 150, VY - R - Band - 40);
         Statuses.Size = new Vector2(300, 30);
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);

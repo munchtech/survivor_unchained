@@ -15,11 +15,16 @@ namespace SurvivorUnchained.Ui;
 public partial class LifeLamp : Control
 {
     /// <summary>The quad, in 1080 px (art/ui/lamp_life/lamp_geo.json; the art is twice this).</summary>
-    public static readonly Vector2 Canvas = new(160, 340);
+    public static readonly Vector2 Canvas = new(176, 196);
     /// <summary>The lamp's foot in the quad, the eye on its font's right strap (the chain leaves from it), the
     /// font's middle (the number) and the wick.</summary>
-    public const float FootY = 337.84f;
-    public static readonly Vector2 Eye = new(146.99f, 306.77f), FontMid = new(80f, 288.13f), Wick = new(79.16f, 195.77f);
+    public const float FootY = 194.22f;
+    public static readonly Vector2 Eye = new(162.02f, 165.03f), FontMid = new(88.18f, 152.01f), Wick = new(88.38f, 85.35f);
+    /// <summary>The oil's top and foot rows, the font's sides, and the flame's height at full: its tip (35 px over
+    /// the wick at its brightest flicker) stays under the instrument's top line (904: the old cuff's top, 176 px
+    /// over the foot of the screen), the lamp's own top at 908.</summary>
+    public const float OilTop = 129.5f, OilBot = 169.25f, FlameFull = 34f;
+    public static readonly Vector2 FontX = new(18.18f, 158.18f);
     /// <summary>Where its foot stands on the screen (the old life cuff's foot, 28 px clear of the edge).</summary>
     public const float Floor = 1052;
     /// <summary>Her ground's height under the lamp's spot (set by the game each frame: her feet's).</summary>
@@ -49,6 +54,12 @@ public partial class LifeLamp : Control
         foreach (var (u, f) in new[] { ("lit", "lamp_lit"), ("cold", "lamp_cold"), ("mask", "lamp_mask"), ("flame_tex", "lamp_flame") })
             if (UiArt.Tex($"lamp_life/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
             else GD.PushError($"LifeLamp: lamp_life/{f}.png did not load (unimported?): the lamp draws wrong");
+        mat.SetShaderParameter("canvas", Canvas);
+        mat.SetShaderParameter("wick", Wick);
+        mat.SetShaderParameter("oil_top", OilTop);
+        mat.SetShaderParameter("oil_bot", OilBot);
+        mat.SetShaderParameter("font_x", FontX);
+        mat.SetShaderParameter("flame_full", FlameFull);
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
         flow = new Vessel.Flow(mat, true);
         figure = new Figure(this);
@@ -95,7 +106,7 @@ public partial class LifeLamp : Control
         }
         if (!light.IsInsideTree()) return;
         // the lamp's foot on the screen (the HUD's 1920 by 1080 is the viewport's, stretched as canvas items)
-        var spot = GetGlobalTransformWithCanvas() * new Vector2(Canvas.X / 2, FootY - 40);
+        var spot = GetGlobalTransformWithCanvas() * new Vector2(Canvas.X / 2, FootY - 30);
         var o = cam!.ProjectRayOrigin(spot);
         var d = cam.ProjectRayNormal(spot);
         if (Math.Abs(d.Y) < 1e-3f) { light.Visible = false; return; }
@@ -104,8 +115,8 @@ public partial class LifeLamp : Control
         var hit = o + d * k;
         float l = State.Light;
         light.GlobalPosition = hit + new Vector3(0, 0.9f, 0);
-        light.LightEnergy = 1.6f * l * Modulate.A;
-        light.OmniRange = 3.2f + 2.6f * Math.Min(1, l);
+        light.LightEnergy = 2.2f * l * Modulate.A;
+        light.OmniRange = 3.6f + 3.0f * Math.Min(1, l);
         light.Visible = true;
     }
 

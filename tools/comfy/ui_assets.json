@@ -1175,15 +1175,15 @@
     "lamp_life/lamp_mask.png"
    ],
    "size": [
-    320,
-    680
+    352,
+    392
    ],
    "kind": "hud",
-   "aspect": "3:4 (Portrait Standard)",
+   "aspect": "1:1 (Square)",
    "seed": 4203,
-   "prompt": "A sturdy oil lamp of forged black iron and clear glass, front view: a wide round clear glass oil font held in three hammered iron straps, a thick forged iron collar ring with rivets, a tall bulging clear glass chimney, a tall golden flame burning inside the chimney, a carrying ring on top, painterly realism, dark, lit only by its own flame, isolated on a flat black background.",
+   "prompt": "A squat heavy ship's oil lamp seen straight from the front: a very wide, low, round clear glass oil font, much wider than it is tall, empty and clean, held in a hand-forged blackened iron cradle with three hammered straps and a heavy foot ring, a short thick riveted iron burner collar with a small wick-turn key on its side, a short wide clear glass chimney no taller than the collar, a golden flame with a white core rising from a flat wick inside it, the whole lamp low and wide, hammered iron with worn edges, painterly realism, lit only by its own flame, isolated on a flat black background.",
    "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
-   "note": "HUD A2 life lamp (UI 14, 26 Oct 2026): Krea seed 4203 cut from black, then layered by tools/uiforge/lamp_life_cut.py",
+   "note": "HUD A2 life lamp, squat (UI 14, 26 Oct 2026: the owner's height limit): Krea squat_a seed 4203 cut by BiRefNet, layered by tools/uiforge/lamp_life_cut.py; the chain's eye is the carrying ring of Krea lamp_b seed 4203 (same model; prompt in ui14 krea_log). Sources kept in survivorsunchained_inputs/ui14_lamp_src/",
    "made_by": "tools/uiforge/lamp_life_cut.py"
   },
   {

@@ -11,7 +11,7 @@ flame_gold seed 4201. Out, at twice the 1080 size (the HUD scales x4/3 at 1440):
                  the oil), B the glass (chimney and font: lit warm by the flame), A the iron near the flame.
   lamp_flame.png the painted flame, light-keyed (premultiplied: rgb is its light, a its cover).
   lamp_geo.json  where things are, in 1080 px from the canvas's top left (the C# constants come from it).
-Run: python tools/uiforge/lamp_life_cut.py <lamp_cut.png> <flame.png> [--check out.png]
+Run: python tools/uiforge/lamp_life_cut.py <squat_cut.png> <flame.png> <ring_lamp_cut.png> [--check out.png]
 (the sources are kept in C:/Users/munch/Desktop/survivorsunchained_inputs/ui14_lamp_src/)
 """
 import json, os, sys
@@ -22,10 +22,15 @@ from scipy import ndimage as nd
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "godot", "art", "ui", "lamp_life")
 
-FONT_W = 132          # the font's outside width at 1080 (the brief: at least 120 inside the glass's read)
-CUT = (112, 262)      # source rows taken out of the chimney's straight tube (a stubbier chimney)
-CANVAS = (160, 340)   # 1080 px: the quad (room above the chimney for the smoke)
+# The squat lamp (26 Oct, the owner: "too much screenspace vertically"): Krea squat_a seed 4203, its rows in the
+# cut source: the chimney's neck 15-110 taken out; the bulb's waist (the collar's top) at 300; the font's glass
+# 525-825 (its widest at 675); the cradle under it to the foot.
+WIDE = 140            # the lamp's widest (the cradle round the font) at 1080: the glass inside it about 130
+CUT = (15, 110)
+WAIST, FONT = 300, (525, 825)
+CANVAS = (176, 196)   # 1080 px: the quad (the lamp 146 tall at its foot, room above for the smoke)
 FOOT_PAD = 2          # 1080 px under the foot inside the canvas
+SW = 56               # the centre strap's width (source px)
 
 
 def blur(a, s):
@@ -37,7 +42,7 @@ def load(p):
     return im.crop(im.getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox())
 
 
-def main(src_p, flame_p, check=None):
+def main(src_p, flame_p, ring_p, check=None):
     src = load(src_p)
     a = np.asarray(src, np.float32) / 255
     # 1. the chimney shortened: CUT rows out of its straight tube, crossfaded over 8 rows
@@ -53,30 +58,20 @@ def main(src_p, flame_p, check=None):
     lum = rgb.mean(2)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     rows = (A > 0.5).sum(1)
-    # the parts, by the silhouette's widths (source proportions: tube, globe, collar, font, foot)
-    lower = int(H * 0.6)
-    fr = lower + int(np.argmax(rows[lower:]))          # the font's widest row
+    d = CUT[1] - CUT[0]
+    waist, ft, fb = WAIST - d, FONT[0] - d, FONT[1] - d
+    fr = ft + int(np.argmax(rows[ft:fb]))
     xs = np.where(A[fr] > 0.5)[0]
     fx0, fx1 = xs[0], xs[-1]
     cx = (fx0 + fx1) / 2
-    wide = rows > rows[fr] * 0.70
-    ft = fr
-    while ft > 0 and wide[ft - 1]: ft -= 1
-    fb = fr
-    while fb < H - 1 and wide[fb + 1]: fb += 1
-    # the globe: the bulge above the collar (rows between the tube and the collar where the width swells)
-    tube_w = np.median(rows[int(H * 0.08):int(H * 0.2)])
-    gl = np.where(rows[:ft] > tube_w * 1.5)[0]
-    g_top = gl[0]
-    # the collar starts where the globe narrows to its waist
-    mid = g_top + int(np.argmax(rows[g_top:g_top + int(0.25 * H)]))
-    waist = mid + int(np.argmin(rows[mid:mid + int(0.16 * H)]))
-    print(f"src {W}x{H}  font rows {ft}-{fb} widest {fr} x {fx0}-{fx1}  globe top {g_top} mid {mid} waist {waist}")
+    g_top = int(np.where(rows > rows[:waist].max() * 0.6)[0][0])
+    tube_w = float(np.median(rows[:max(3, CUT[0])]))
+    print(f"src {W}x{H}  font rows {ft}-{fb} widest {fr} x {fx0}-{fx1}  bulb {g_top}-{waist}")
 
     # 2. the painted flame lifted out (inside the globe: bright, warm)
     br = rgb.max(2)
     globe = (yy >= g_top) & (yy <= waist + 6)
-    fm = globe & (br > 0.6) & (rgb[..., 0] > rgb[..., 2] + 0.12) & (np.abs(xx - cx) < 34)
+    fm = globe & (br > 0.6) & (rgb[..., 0] > rgb[..., 2] + 0.12) & (np.abs(xx - cx) < 60)
     lab, k = nd.label(fm)
     if k:
         sizes = nd.sum(fm, lab, range(1, k + 1))
@@ -100,8 +95,8 @@ def main(src_p, flame_p, check=None):
     chim = (yy < waist - 4) & (yy > H * 0.035)
     chim_in = nd.binary_erosion(sil & chim, iterations=6)
     # the font's glass: the silhouette's font rows, in from its iron frame
-    font_sil = sil & (yy >= ft - 30) & (yy <= fb + 40)
-    font_in = nd.binary_erosion(font_sil, iterations=15)
+    font_sil = sil & (yy >= ft) & (yy <= fb)
+    font_in = nd.binary_erosion(font_sil, iterations=22)
     # keep only the glass band between the frame's top and bottom rims: rows whose inside spans most of the width
     fw = font_in.sum(1)
     band = fw > (fx1 - fx0) * 0.55
@@ -111,13 +106,12 @@ def main(src_p, flame_p, check=None):
     sl = blur(lum, 1.0)
     starts = []
     for y in np.where(band)[0]:
-        lo = int(cx - 40)
-        c = np.convolve(sl[y, lo:lo + 80], np.ones(36) / 36, mode="valid")
+        lo = int(cx - 70)
+        c = np.convolve(sl[y, lo:lo + 140], np.ones(SW) / SW, mode="valid")
         starts.append(lo + int(np.argmin(c)))
-    s0 = int(np.median(starts))
+    s0 = int(cx) - 34  # (the painting's strap: 366-423 in the source; the darkest-window search drifts right)
     strap = np.zeros_like(font_in)
-    strap[:, s0 - 2:s0 + 38] = True
-    font_in &= (yy <= fb - 4)
+    strap[:, s0:s0 + 62] = True
     oil = font_in & ~strap
     oil = blur(oil.astype(np.float32), 0.9)
     oil_rows = np.where(oil.max(1) > 0.5)[0]
@@ -148,13 +142,18 @@ def main(src_p, flame_p, check=None):
     A2 = A * (1 - glass * (1 - see))
 
     # 5. the eye for the chain: the carrying ring on top, turned on its side, on the font's right frame
-    ring_rows = np.where(rows[:int(H * 0.08)] > 0)[0]
-    r_bot = int(np.where(rows > tube_w * 0.6)[0][0]) - 1
-    rx0, rx1 = np.where(A[:r_bot].max(0) > 0.5)[0][[0, -1]]
-    ring = np.concatenate([lit[:r_bot, rx0:rx1 + 1], A[:r_bot, rx0:rx1 + 1, None]], 2)
-    # remove it from the lamp's top? no: it stays (the lamp's own carrying ring); a copy is the chain's eye
+    # (the ring is the tall lamp's carrying ring, krea lamp_b seed 4203: the same hand)
+    rs = load(ring_p)
+    ra_ = np.asarray(rs, np.float32) / 255
+    rrows = (ra_[..., 3] > 0.5).sum(1)
+    r_bot = int(np.where(rrows > 60)[0][0]) - 1
+    rx0, rx1 = np.where(ra_[:r_bot, :, 3].max(0) > 0.5)[0][[0, -1]]
+    ring = ra_[:r_bot, rx0:rx1 + 1]
+    g_ = ring[..., :3].mean(2, keepdims=True)
+    ring[..., :3] = g_ * np.array([0.84, 0.82, 0.84]) + (ring[..., :3] - g_) * 0.25
     ring_im = Image.fromarray((np.clip(ring, 0, 1) * 255).astype(np.uint8), "RGBA").rotate(-90, expand=True, resample=Image.BICUBIC)
-    ring_im = ring_im.resize((int(ring_im.width * 0.62), int(ring_im.height * 0.62)), Image.LANCZOS)
+    kr = 74 / ring_im.height
+    ring_im = ring_im.resize((int(ring_im.width * kr), int(ring_im.height * kr)), Image.LANCZOS)
     eye_y = int(fr + (fb - fr) * 0.55)
     xr = np.where(A[eye_y] > 0.5)[0][-1]
     ex, ey = xr - 10, eye_y - ring_im.height // 2
@@ -178,7 +177,7 @@ def main(src_p, flame_p, check=None):
     W2 = W + pad
 
     # 6. into the canvas at 2x the 1080 size
-    k = 2 * FONT_W / (fx1 - fx0)
+    k = 2 * WIDE / (fx1 - fx0)
     cw, ch = CANVAS[0] * 2, CANVAS[1] * 2
     lw, lh = round(W2 * k), round(H * k)
     ox = round(cw / 2 - cx * k)
@@ -240,4 +239,4 @@ if __name__ == "__main__":
     args = [x for x in sys.argv[1:] if not x.startswith("--")]
     chk = sys.argv[sys.argv.index("--check") + 1] if "--check" in sys.argv else None
     if chk in args: args.remove(chk)
-    main(args[0], args[1], chk)
+    main(args[0], args[1], args[2], chk)

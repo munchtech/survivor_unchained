@@ -8,12 +8,12 @@ public class LampStateTests
     [Fact]
     public void FlameFallsWithLifeAndGuttersOnlyLow()
     {
-        Assert.Equal(1f, LampState.Height(1), 3);
+        Assert.Equal(1f, LampState.Height(1), 0.001f);
         Assert.True(LampState.Height(0.55f) < 0.85f && LampState.Height(0.55f) > 0.65f);
         Assert.True(LampState.Height(0.18f) < LampState.Height(0.55f));
         Assert.Equal(0f, LampState.GutterFor(0.31f));
         Assert.True(LampState.GutterFor(0.30f) > 0.3f);
-        Assert.Equal(1f, LampState.GutterFor(0.05f), 3);
+        Assert.Equal(1f, LampState.GutterFor(0.05f), 0.001f);
         Assert.Equal(0f, LampState.GutterFor(0f));
     }
 
@@ -27,11 +27,11 @@ public class LampStateTests
         Assert.Equal(0f, s.OutT);
         Assert.Equal(0f, s.Light);
         s.Tick(0, 0.5f, 1.0);
-        Assert.Equal(0.5f, s.OutT, 3);
+        Assert.Equal(0.5f, s.OutT, 0.001f);
         s.Tick(0.5f, 1 / 60f, 1.1);
         Assert.True(s.OutT < 0 && s.Flame > 0 && s.Flame < 0.2f);
         for (int i = 0; i < 60; i++) s.Tick(0.5f, 1 / 60f, 1.1 + i / 60.0);
-        Assert.Equal(LampState.Height(0.5f), s.Flame, 2);
+        Assert.Equal(LampState.Height(0.5f), s.Flame, 0.01f);
     }
 
     [Fact]

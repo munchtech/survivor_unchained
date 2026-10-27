@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://cyuq5io15cum4"
+path="res://.godot/imported/lamp_mask.png-b1067b78f769c831a994b2130c31c6e3.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/ui/lamp_life/lamp_mask.png"
+dest_files=["res://.godot/imported/lamp_mask.png-b1067b78f769c831a994b2130c31c6e3.ctex"]
 
 [params]
 

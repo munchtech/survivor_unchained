@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://divuy4qjsr34l"
+path="res://.godot/imported/lamp_cold.png-258fb900da7f6fef7c9486846c6bea13.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/ui/lamp_life/lamp_cold.png"
+dest_files=["res://.godot/imported/lamp_cold.png-258fb900da7f6fef7c9486846c6bea13.ctex"]
 
 [params]
 

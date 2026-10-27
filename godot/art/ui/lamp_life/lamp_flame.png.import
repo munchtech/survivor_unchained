@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://ddngafathijiw"
+path="res://.godot/imported/lamp_flame.png-aad40447351e8ce4bd50bcd65f826304.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/ui/lamp_life/lamp_flame.png"
+dest_files=["res://.godot/imported/lamp_flame.png-aad40447351e8ce4bd50bcd65f826304.ctex"]
 
 [params]
 

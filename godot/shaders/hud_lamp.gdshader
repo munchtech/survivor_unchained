@@ -14,14 +14,14 @@ uniform sampler2D mask : hint_default_black, filter_linear_mipmap;   // R oil, G
 uniform sampler2D flame_tex : source_color, filter_linear_mipmap;     // light-keyed flame, foot at the bottom
 
 // the canvas in 1080 px, and its places (lamp_geo.json)
-uniform vec2 canvas = vec2(160.0, 340.0);
-uniform vec2 wick = vec2(79.2, 195.8);
-uniform float oil_top = 258.9;
-uniform float oil_bot = 318.0;
-uniform vec2 font_x = vec2(14.0, 146.0);
-uniform float chim_top = 81.8;
+uniform vec2 canvas = vec2(176.0, 196.0);
+uniform vec2 wick = vec2(88.38, 85.35);
+uniform float oil_top = 129.5;
+uniform float oil_bot = 169.25;
+uniform vec2 font_x = vec2(18.18, 158.18);
+uniform float chim_top = 55.05;
 uniform float flame_aspect = 3.16;
-uniform float flame_full = 64.0;   // the flame's height at full life (1080 px)
+uniform float flame_full = 34.0;   // the flame's height at full life (1080 px)
 
 // Vessel.Flow
 uniform float level : hint_range(0.0, 1.0) = 1.0;
@@ -66,7 +66,7 @@ void fragment()
 	float light = flame * flick * on;   // how much the flame lights the lamp
 	// the flame's light on the lamp: the lit painting near the flame, falling off down the font
 	float dw = length((px - wick + vec2(0.0, flame_full * 0.45 * flame)) * vec2(1.0, 0.8));
-	float reach = exp(-dw / 70.0) * 0.6 + 0.4 * smoothstep(oil_top + 20.0, wick.y, px.y);
+	float reach = exp(-dw / 45.0) * 0.6 + 0.4 * smoothstep(oil_top + 20.0, wick.y, px.y);
 	vec3 col = mix(C.rgb, L.rgb, clamp(light * reach * 1.15, 0.0, 1.0));
 	float a = C.a;
 
@@ -133,7 +133,7 @@ void fragment()
 
 	// ---- the warm glow inside the glass round the flame
 	float gd = length((px - wick + vec2(0.0, flame_full * 0.42 * flame)) * vec2(1.0, 0.75));
-	col += warm.rgb * m.b * light * (0.55 * exp(-gd / 16.0) + 0.18 * exp(-gd / 40.0));
+	col += warm.rgb * m.b * light * (0.55 * exp(-gd / 10.0) + 0.18 * exp(-gd / 26.0));
 
 	// ---- the flame: the painted one, its height her life's, swaying; guttering, low, leaning and blue at its root
 	vec4 outc = vec4(col * a, a);   // premultiplied
@@ -171,7 +171,7 @@ void fragment()
 			float cx = wick.x + sin(rise * 0.075 - out_t * 2.2) * (2.0 + rise * 0.10) + (vnoise(vec2(rise * 0.05, out_t)) - 0.5) * rise * 0.12;
 			float w = 1.6 + rise * 0.07;
 			float dens = exp(-pow((px.x - cx) / w, 2.0)) * (0.55 + 0.45 * fbm(vec2(px.x * 0.15, rise * 0.08 - out_t * 1.5)));
-			dens *= smoothstep(travel, travel - 25.0, rise) * (1.0 - smoothstep(1.5, 4.5, out_t)) * (1.0 - smoothstep(0.0, 160.0, rise));
+			dens *= smoothstep(travel, travel - 25.0, rise) * (1.0 - smoothstep(1.5, 4.5, out_t)) * (1.0 - smoothstep(0.0, 90.0, rise));
 			vec3 sc = vec3(0.62, 0.60, 0.58);
 			float sa = clamp(dens * 0.7, 0.0, 0.8);
 			outc = vec4(sc * sa + outc.rgb * (1.0 - sa), sa + outc.a * (1.0 - sa));
