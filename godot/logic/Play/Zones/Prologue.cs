@@ -438,11 +438,12 @@ public sealed class Prologue : ZoneRuntime
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
         // The lock (au1 item 14: the "4" on it was never taught; MR5: it moves to the second rise): once the ember
-        // has risen a second time (level 3) and that draft is picked and closed, in the Rising or the Road, away
-        // from any crowd, 4 s clear of anything else. Dropped unseen ("passed") once the Ambush begins.
-        if (B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road && Crowd(p.X, p.Z, 6) < 5)
+        // has risen a second time (level 3) and that draft is picked and closed, in the Rising or the Road,
+        // 4 s clear of anything else (Experience 9: no crowd gate; the Rising stays crowded after the 2nd rise, so
+        // v6 never asked it until the Road; the arrow sits on the HUD, off the fight). Dropped unseen ("passed") once the Ambush begins.
+        if (B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road)
             G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The lock", "The ember's level tonight. It springs open each time the ember rises.", Aim.At("lock"))
-                { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road && Crowd(B.Player.X, B.Player.Z, 6) < 6 });
+                { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road });
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
         // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
         if (B.GoldGained > 0 && TallyCalm())
@@ -511,10 +512,10 @@ public sealed class Prologue : ZoneRuntime
                     Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
         // F10: her health under 70% for the first time (MR5: it was half), with a draught to drink (au i15: under 40% a real
         // run never came, 42% at the lowest; the ambush's volley and the Knight bring it down before the ford).
-        // (asked again under 40%, it no longer waits to see her clear: amb2, idle under a canopy, it waited out
-        // four asks from 147 HP to 12 and never came)
+        // (under 55% it no longer waits to see her clear: amb2, idle under a canopy, it waited out four asks from
+        // 147 HP to 12 and never came; amb4 dropped it at 112 HP for "notyet")
         if (p.Alive && p.Hp < B.MaxHp * 0.7 && G.Journey.Draughts > 0)
-            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = p.Hp >= B.MaxHp * 0.4 }, "draught", gap: 5, urgent: true);
+            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = p.Hp >= B.MaxHp * 0.55 }, "draught", gap: 5, urgent: true);
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
             G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
