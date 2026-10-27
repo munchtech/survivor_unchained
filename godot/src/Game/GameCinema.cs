@@ -108,6 +108,56 @@ public partial class Game
                     foreach (var v in c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"]) { var sp = Visuals.Of(v); Add(sp.Person ?? new PersonSpec(), sp.Arms); }
             }
         Prefetch.CastAhead(paths);
+        // (and the figures themselves, s6: C02's Warden and twelve drowned were made on the main thread as it began,
+        // 140 ms; each cinematic's boss and extras made on a worker, one file after another, held off the tree)
+        if (Args.Get("cast-ahead") == "off") return;
+        foreach (var f in files)
+        {
+            var specs = new List<(string Key, CineCast C, int I)>();
+            foreach (var (name, c) in f.Cast)
+                if (c.Kind == "boss") specs.Add((name, c, -1));
+                else if (c.Kind == "extras" && c.At != null) for (int i = 0; i < c.At.Count; i++) specs.Add((name, c, i));
+            if (specs.Count == 0) continue;
+            var before = castChain;
+            castChain = System.Threading.Tasks.Task.Run(() =>
+            {
+                try { before?.Wait(); } catch (Exception) { }
+                var made = new Dictionary<string, Node3D>();
+                foreach (var (name, c, i) in specs)
+                {
+                    if (i < 0) { made[name] = new WardenView(); continue; }
+                    var visuals = c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"];
+                    var spec = Visuals.Of(visuals[i % visuals.Count]);
+                    made[$"{name}.{i}"] = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                }
+                return made;
+            });
+            castAhead[f.Id] = castChain;
+        }
+    }
+
+    /// <summary>The cast made ahead for each cinematic file (by its id), and the chain they are made on (one at a time).</summary>
+    readonly Dictionary<string, System.Threading.Tasks.Task<Dictionary<string, Node3D>>> castAhead = new();
+    System.Threading.Tasks.Task<Dictionary<string, Node3D>>? castChain;
+
+    /// <summary>A cinematic's cast made ahead (waited for, if still being made), taken: what it does not use is freed.</summary>
+    Dictionary<string, Node3D>? TakeCast(string fileId)
+    {
+        if (!castAhead.Remove(fileId, out var t)) return null;
+        try { return t.Result; }
+        catch (Exception e) { GD.PushWarning($"cinema: the cast made ahead failed ({e.Message})"); return null; }
+    }
+
+    /// <summary>What was made ahead and not taken, freed (the place left, or the game).</summary>
+    void DropCast()
+    {
+        foreach (var t in castAhead.Values)
+        {
+            try { t.Wait(10000); } catch (Exception) { }
+            if (t.IsCompletedSuccessfully) foreach (var n in t.Result.Values) if (IsInstanceValid(n) && !n.IsInsideTree()) n.Free();
+        }
+        castAhead.Clear();
+        castChain = null;
     }
 
     /// <summary>Each frame (a look a second): her double made ahead if there is none for her as she is.</summary>
@@ -122,7 +172,7 @@ public partial class Game
         if ((doubleCheck -= dt) > 0 || Journey == null || scene?.Battle == null || Args.Has("no-double-ahead")) return;
         doubleCheck = 1;
         if (!(cineZones ??= CineZones()).TryGetValue(scene.Data.Id, out var here)) return;
-        if (castAheadZone != scene.Data.Id) { castAheadZone = scene.Data.Id; CastAhead(here); }
+        if (castAheadZone != scene.Data.Id) { DropCast(); castAheadZone = scene.Data.Id; CastAhead(here); }
         if (doubleAhead is { IsCompleted: false }) return;
         if (HerWear.Dressing) return;
         var lo = Loadouts.Of(Journey.Ch);
@@ -145,6 +195,7 @@ public partial class Game
         if (doubleAhead is { } t) { try { t.Wait(5000); } catch (Exception) { } if (t.IsCompletedSuccessfully) t.Result.Free(); doubleAhead = null; }
         foreach (var d in doublesDropped) { try { d.Wait(5000); } catch (Exception) { } if (d.IsCompletedSuccessfully) d.Result.Free(); }
         doublesDropped.Clear();
+        DropCast();
     }
 
     /// <summary>Her double made ahead, if it is of her as she is (waited for, if it is still being made); else null.</summary>
@@ -316,13 +367,20 @@ public partial class Game
             g.scene!.CameraHeld = true;
             if (g.scene.Player != null) g.scene.Player.Hidden = true;
             b.WorldRate = file.World.Rate; b.WorldRateT = 1e9;
+            made = g.TakeCast(file.Id);
             foreach (var (name, c) in file.Cast) Cast(name, c);
+            if (made != null) foreach (var n in made.Values) if (!n.IsInsideTree()) n.QueueFree();
+            made = null;
             SunAhead();
             GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
             Dispatch(player.Advance(0));
         }
 
         /* --------------------------------------------------------- the cast -- */
+
+        /// <summary>This file's cast made ahead on a worker (Game.CastAhead), while the cast is being stood up.</summary>
+        Dictionary<string, Node3D>? made;
+        Node3D? Made(string key) => made != null && made.Remove(key, out var n) ? n : null;
 
         void Cast(string name, CineCast c)
         {
@@ -352,7 +410,9 @@ public partial class Game
             {
                 // The cinematic's own Warden: the zone's waits hidden, and the
                 // fight's takes his place where this one is left.
-                var w = new WardenView { Name = "Cine_" + name, Glow = c.Glow };
+                var w = Made(name) as WardenView ?? new WardenView();
+                w.Name = "Cine_" + name;
+                w.Glow = c.Glow;
                 g.scene!.AddChild(w);
                 bosses[name] = w;
                 people[name] = w.Body;
@@ -368,7 +428,8 @@ public partial class Game
                 for (int i = 0; i < c.At.Count; i++)
                 {
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
-                    var v = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale) { Name = $"Cine_{name}{i}" };
+                    var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    v.Name = $"Cine_{name}{i}";
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
                     people[who] = v;
