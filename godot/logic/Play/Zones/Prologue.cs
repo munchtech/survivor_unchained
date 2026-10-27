@@ -318,7 +318,7 @@ public sealed class Prologue : ZoneRuntime
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
             {
                 World = KnightLane, Safe = true, Open = true,
-                Seen = () => knight is { Alive: true } kn ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : [],
+                Seen = () => knight is { Alive: true } kn ? [Up(kn.X, kn.Z, 0), Up(kn.X, kn.Z, 0.45 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 0.95 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.4 * (kn.Def.Scale ?? 1))] : [],
             });
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
