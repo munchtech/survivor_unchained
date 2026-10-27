@@ -36,6 +36,18 @@ def _at(rest, swing, k, lift=0.0):
     return r
 
 
+def _pitch(v, deg):
+    """v turned `deg` about the chest's x (her left): + tips its forward part up."""
+    a = math.radians(deg)
+    x, y, z = v
+    return (x, y * math.cos(a) + z * math.sin(a), -y * math.sin(a) + z * math.cos(a))
+
+
+# Each side's swing velocity (-1..1, + coming forward) and its swing `LAG` frames late, per frame (set by make()).
+_CTX = {}
+LAG = 2.5
+
+
 # ---------------------------------------------------------------- carriages --
 # Each: (k, frame) -> the hand's spec (keyed.Rig.solve), k the town walk's swing on that side.
 
@@ -57,16 +69,26 @@ def axe(side):
     her leg."""
     sg = 1.0 if side == "l" else -1.0
 
+    # (Round 2, the judge: the left read near level at her belt, its head before her left knee at the right heel
+    # strike; the left hand let 3 cm further out and its haft dropped toward 45 deg forward and down.)
+    out, blade = (0.10, (sg * 0.25, -0.45, 0.86)) if side == "r" else (0.13, (sg * 0.32, -0.62, 0.72))
+
     def f(k, fr):
-        return {"arc": arc_of(_at((sg * 0.10, -0.46, 0.05), 0.08, k, 0.01)), "pole": (sg * 0.5, -0.2, -1.0),
-                "frame": "chest", "blade": _n((sg * 0.25, -0.45, 0.86)), "twist": 0.5}
+        return {"arc": arc_of(_at((sg * out, -0.46, 0.05), 0.08, k, 0.01)), "pole": (sg * 0.5, -0.2, -1.0),
+                "frame": "chest", "blade": _n(blade), "twist": 0.5}
     return f
 
 
 def staff(k, f):
     """The staff upright in her right fist at her side, tipped forward (run.staff_hold), the arm barely swinging."""
+    # (Round 2: the staff's head trails the stride, its pitch swinging STAFF_PITCH deg, LAG frames behind the arm.)
+    d = STAFF_PITCH * (2.0 * _CTX["r"][1][f] - 1.0)
     return {"arc": arc_of(_at((-0.10, -0.40, 0.10), 0.03, k)), "pole": (-0.3, -0.1, -1.0),
-            "blade": (0.05, 0.94, 0.33), "knuckles": (0.0, -0.33, 0.94), "frame": "chest", "twist": 0.5}
+            "blade": _pitch((0.05, 0.94, 0.33), d), "knuckles": _pitch((0.0, -0.33, 0.94), d), "frame": "chest",
+            "twist": 0.5}
+
+
+STAFF_PITCH = 2.0  # deg either way: 4 in all
 
 
 def wand(k, f):
@@ -80,18 +102,38 @@ def crossbow(k, f):
     ahead, the forearm level from an elbow by her ribs, the fist at her waist 10 cm out), steadier. (Both hands on it as
     her idle holds it, the left on the fore-stock, put her upper arms 30-49 mm into her breasts and sides at the walk's
     chest: her idle stands wider, the crossbow further ahead.)"""
-    return {"arc": arc_of(_at((-0.10, -0.15, 0.32), 0.03, k)), "pole": (-0.2, -0.3, -1.0),
-            "knuckles": (0.0, 0.64, 0.77), "blade": (0.0, 0.77, -0.64), "frame": "chest", "twist": 0.5}
+    # Round 2 (the judge: forearm level at the waist and the bow 20 deg up read as presenting a pistol): the front
+    # end down CROSSBOW_DOWN deg at the wrist, the elbow opened, the fist lower, at her hip.
+    return {"arc": arc_of(_at(CROSSBOW_HAND, 0.03, k)), "pole": (-0.2, -0.3, -1.0),
+            "knuckles": _pitch((0.0, 0.64, 0.77), -CROSSBOW_DOWN), "blade": _pitch((0.0, 0.77, -0.64), -CROSSBOW_DOWN),
+            "frame": "chest", "twist": 0.5}
+
+
+CROSSBOW_HAND = (-0.12, -0.30, 0.24)
+CROSSBOW_DOWN = 33.0
 
 
 def dagger(side):
     """A dagger in each fist, the arms near hanging and swinging with the stride, the blade rising ahead and out."""
     sg = 1.0 if side == "l" else -1.0
 
+    # Round 2 (the judge: elbows bent and out, the points level ahead, the camp stance's "arms held out, fists clenched,
+    # stiff"): the arm near straight (25-30 deg of bend), the elbow in by her side, swung as the town walk's free arm;
+    # the point tipped forward and down; the wrist trailing each swing DAGGER_LAG deg; the forearm's turn out easing
+    # toward neutral on the backswing.
     def f(k, fr):
-        return {"arc": arc_of(_at((sg * 0.10, -0.45, 0.07), 0.12, k, 0.01)), "pole": (sg * 0.5, -0.2, -1.0),
-                "frame": "chest", "thumb": _n((sg * 0.25, 0.55, 0.8)), "twist": 0.5}
+        v = _CTX[side][0][fr]
+        th = DAGGER_THUMB + DAGGER_LAG * v  # (forward: the knuckles trail, the point tips up)
+        h = _at((sg * 0.075, -0.505, 0.05), 0.17, k, 0.012)
+        h *= DAGGER_REACH / np.linalg.norm(h)  # (one reach: the elbow's bend held at 25-30 through the swing)
+        return {"arc": arc_of(h), "pole": (sg * 0.15, -0.2, -1.0),
+                "frame": "chest", "blade": _n((sg * (0.05 + 0.15 * k), math.tan(math.radians(th)), 1.0)), "twist": 0.5}
     return f
+
+
+DAGGER_THUMB = -31.0  # the point's way, deg above level ahead
+DAGGER_LAG = 9.0
+DAGGER_REACH = 0.500  # m, shoulder to wrist
 
 
 # name: (calling, {side: carriage}, {side: fingers}, weapon (keyed.grip_of))
@@ -167,6 +209,9 @@ def make(rig, name, rounds=6):
     town = _TOWN[calling]
     n = len(town.rot) - 1
     k = _swing_k(rig, town)
+    for s in "lr":
+        vel = np.gradient(np.concatenate([k[s][-3:-1], k[s][:n], k[s][:2]]))[2:-2]
+        _CTX[s] = (vel / max(np.abs(vel).max(), 1e-6), wt._shift(k[s][:n], LAG))
     push = {s: np.zeros(n) for s in "lr"}
     c = {"outfit": OUTFIT[calling]}
     # The hands let out where (and as much as) her real mesh needs: the forearm and hand wt.NEAR clear of her and her
