@@ -510,6 +510,17 @@ def _axe_down(side, t, a):
     return spec
 
 
+def reaver_shoulder(t, f):
+    """The old reaver idle's arms (before Animation 55): the axe on her shoulder, its head behind her. reaver_show
+    (soul.py) still opens and closes on them; the idle itself now hangs the axe (reaver below)."""
+    return {
+        "hand_r": {"arc": arc_of((-0.03, -0.13, 0.11)), "pole": (-0.6, -1.0, 0.0), "frame": "chest",
+                   "blade": _n((-0.15, 0.35, -0.95)), "twist": 0.5},
+        "hand_l": {"arc": arc_of((-0.02, -0.42, 0.06)), "pole": (0.4, 0.0, -1.0), "frame": "chest"},
+        "fingers_r": "grip", "fingers_l": "fist",
+    }
+
+
 def reaver(t, f):
     """One axe (idle_reaver): it hangs from her right fist; the left hangs empty, loosely closed."""
     return {"hand_r": _axe_down("r", t, AXE_IDLE),
