@@ -465,12 +465,19 @@ public partial class Game
             }
         // (what a lesson names but does not ring, e.g. the Knight that casts the red line: its own pool)
         var pools = new List<Vector3>();
+        // (the first is his feet: one ground pool about 1.5 m across; the rest are his body, as crisp as she is)
+        var crisp = new List<Vector3>();
         if (c.Target.Seen?.Invoke() is { } seenPts)
-            foreach (var q in seenPts)
-                if (OnScreen(q) is Vector2 qv) pools.Add(new Vector3(qv.X, qv.Y, PxPerMetre(q) * 1.3f));
+            for (int si = 0; si < seenPts.Count; si++)
+            {
+                var q = seenPts[si];
+                if (OnScreen(q) is not Vector2 qv) continue;
+                if (si == 0) pools.Add(new Vector3(qv.X, qv.Y, PxPerMetre(q) * 1.5f));
+                else crisp.Add(new Vector3(qv.X, qv.Y, PxPerMetre(q) * 0.5f));
+            }
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
         {
-            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun, Pools = pools,
+            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun, Pools = pools, Crisp = crisp,
             WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
             AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
         });

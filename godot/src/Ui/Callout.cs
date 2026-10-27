@@ -46,6 +46,8 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     /// <summary>Extra pools (x, y, radius px) for the things the lesson names but does not ring: the
     /// caster of a telegraph (the Knight of the red line), so it is not dimmed to a ghost.</summary>
     public IReadOnlyList<Vector3>? Pools { get; init; }
+    /// <summary>Discs (x, y, radius) kept wholly undimmed and unblurred, as she is (a caster's body).</summary>
+    public IReadOnlyList<Vector3>? Crisp { get; init; }
 }
 
 /// <summary>The drawing of a callout, as the game drives it (the UI design pass restyles behind it).</summary>
@@ -790,6 +792,13 @@ public partial class Callout : Control, ICalloutView
             if (aim.Pools != null)
                 foreach (var pl in aim.Pools)
                     if (n < 6) lights[n++] = new Vector4(pl.X, pl.Y, pl.Z, 0.7f);
+            var crisp = new Vector4[4];
+            int cn = 0;
+            if (aim.Crisp != null)
+                foreach (var cr in aim.Crisp)
+                    if (cn < 4) crisp[cn++] = new Vector4(cr.X, cr.Y, cr.Z, 0);
+            dimMat.SetShaderParameter("crisp", crisp);
+            dimMat.SetShaderParameter("crisp_n", cn);
             dimMat.SetShaderParameter("lights", lights);
             dimMat.SetShaderParameter("count", n);
             dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
@@ -1116,6 +1125,8 @@ public partial class Callout : Control, ICalloutView
             uniform vec4 lights[6];
             uniform int count = 0;
             uniform int soft_first = 0;
+            uniform vec4 crisp[4];
+            uniform int crisp_n = 0;
             uniform float amount = 0.0;
             uniform int old_dim = 0;
             uniform float night = 0.0;
@@ -1135,8 +1146,15 @@ public partial class Callout : Control, ICalloutView
                     lit = max(lit, l);
                     warm = max(warm, l * lights[i].w);
                 }
+                // (a caster's body: wholly lit, edge eased over its outer fifth; no dim, no blur)
+                float body = 0.0;
+                for (int j = 0; j < 4; j++) {
+                    if (j >= crisp_n) { break; }
+                    float dj = length(p - crisp[j].xy);
+                    body = max(body, 1.0 - smoothstep(0.8 * crisp[j].z, crisp[j].z, dj));
+                }
                 vec3 c = texture(screen, SCREEN_UV).rgb;
-                float k = amount * (1.0 - lit);
+                float k = amount * (1.0 - max(lit, body));
                 vec3 src = c;
                 if (k > 0.001) {
                     // (about 3 px at 1080p: a 5 by 5 gaussian, 1.5 px apart)
