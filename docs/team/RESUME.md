@@ -2,7 +2,17 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 27 October, evening: coordinator 7ccc6e14 (running; read this first)
+## 27 October, night: coordinator 7ccc6e14 WIND-DOWN DONE (read this first; details in the lines below)
+**All leads PAUSED cleanly, pushed, no turns, no helpers.** Restart order for the next coordinator (fresh successors, lead_brief.md):
+1. **Merges first:** UI ui-16-fixes@97dbaf79 (move colliding untracked .uid/.import aside first; then remove ui16-mr with wt_remove.ps1 -Force), Animation anim-53@43bf2036 (+ REPACK her clips, never --body hero). Then the quiet-machine E8 abs rerun.
+2. **UI 17** (ui-11@0d355d12, handoff "START HERE (UI 17)"): Drowned Girl piece-1 notes, then the hair-river bar etc.
+3. **Animation 56** (anim-53@33e68925): one max judge on idles r2 (1197b46c, last round), fold into the MR, then 2b rest, then option B (new hold family).
+4. **Classes Phase 1, the Warden slice:** design approved by the owner (all 10 recommendations), docs/design/CLASS_IDENTITY_AND_TALENTS.md on design-classes-1@3c0721e7 (merge the doc first).
+5. **Combat VFX 2** (vfx-1@94481925, skills.md top): logic tests, r2 re-judge, river lane fix, MR; then study the owner's refs (vfx_refs).
+6. **NPC 14** (npc-2@cc889d0c + Marionette npcgen-1@6b8e1a8): reshoot + one judge on the proof; MESHY ONLY AFTER A JUDGED CONCEPT.
+Cap 5 leads: pick 5 of 2-6 (my order: UI, Animation, Classes, VFX, NPC). Clear scratchpad 7ccc6e14 npc13 + body18 (backed up); keep ui16, anim55, vfx1, coord.
+
+## 27 October, evening: coordinator 7ccc6e14 (log)
 **Merged today (pushed):** E10 (ee5f0c18), Env 21's E8 later list (40da17c4), Body 17 reaver panel + moccasins + axe frog + warden sword hang (22a2d168), Experience 9 MR5 prologue fixes + Ambush stakes 27-29% idle / 7.5-10% dodging (df08c5e3). Tests 1154/0/8. env-16 and play-1 removed. Main checkout needs a Godot import before its next shot; 13 untracked .uid files that blocked the MR5 merge are in scratchpad 7ccc6e14 `coord\uid_backup` (11 identical, 2 differed).
 **Owner decisions today:** HUD = **"The Drowned Girl"** (bronze woman lifts the life orb, her hair is the bar; concept `survivorsunchained_inputs\ui16_hud_directions\d1b_1x.png`); lamp, globe and the link-ring orb rejected ("very bad"); height/Flare/layout all open. **No asset that needs crediting** (memory no-credit-assets): CC BY first (Sketchfab weapons, wolf, boar, lampling ghoul, CC BY idle motion), then CC0 kits replaced over time in our painterly style. Main recommended Meshy Pro ($20/mo, owner owns output) as generator + Marionette as fixer, **DECIDED: owner subscribes to Meshy Pro; no bake-off; Marionette specializes as the fixer.** NPC 13 wires Meshy in (owner enters the key) and proves an undead, a tree, a weapon.
 **Running (fresh successors if stopped, lead_brief.md):**
