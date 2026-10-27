@@ -29,10 +29,10 @@ public sealed partial class HerLight : Control
     static readonly Vector2 PoolSize = new(520, 340), PoolRadii = new(240, 158);
 
     public readonly Control Pool;
-    public readonly ColorRect Edge;
+    public readonly Control Edge;
     public readonly Bar Under;
     readonly BackBufferCopy copy;
-    readonly ShaderMaterial poolMat, edgeMat, glowMat;
+    readonly ShaderMaterial poolMat, edgeMat;
     float sGain = -1, sStrength = -1, sBeat = -1;
     double clock, lastSync = double.NegativeInfinity;
 
@@ -47,10 +47,11 @@ public sealed partial class HerLight : Control
         poolMat.SetShaderParameter("radii", PoolRadii);
         Pool.AddChild(new ColorRect { Material = poolMat, MouseFilter = MouseFilterEnum.Ignore, Size = PoolSize });
         edgeMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_low_edge.gdshader") };
-        Edge = new ColorRect { Material = edgeMat, MouseFilter = MouseFilterEnum.Ignore, Size = new Vector2(1920, 1080), Visible = false };
-        // (judge 2: the edge darkens toward deep crimson by a multiply, then a child quad adds a little crimson light)
-        glowMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_low_edge_glow.gdshader") };
-        Edge.AddChild(new ColorRect { Material = glowMat, MouseFilter = MouseFilterEnum.Ignore, Size = new Vector2(1920, 1080) });
+        // (the edge reads the screen: its own full copy first, since the pools' rect copies leave the rest of the
+        // back buffer stale or black; a still caught the edges black the frame the pulse came on)
+        Edge = new Control { MouseFilter = MouseFilterEnum.Ignore, Size = new Vector2(1920, 1080), Visible = false };
+        Edge.AddChild(new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Viewport });
+        Edge.AddChild(new ColorRect { Material = edgeMat, MouseFilter = MouseFilterEnum.Ignore, Size = new Vector2(1920, 1080) });
         Under = new Bar();
     }
 
@@ -89,7 +90,6 @@ public sealed partial class HerLight : Control
         Send(edgeMat, "beat", beat, ref sBeat);
         bool edge = fight && strength > 0.001f;
         if (Edge.Visible != edge) Edge.Visible = edge;
-        if (edge) { glowMat.SetShaderParameter("strength", strength); glowMat.SetShaderParameter("beat", beat); }
 
         float gain = show && On ? HeartPulse.PoolGain(life) * HeartPulse.Flicker(life, now) : 0;
         bool want = !PoolHeld && gain > 0.0005f;

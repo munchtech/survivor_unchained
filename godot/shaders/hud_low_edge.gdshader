@@ -3,16 +3,27 @@
 // toward none; it never reaches into the middle 70% of the screen (a rounded square, |x| and |y| under 0.70 of
 // the half-screen stay clear). One full-screen quad, a few ALU ops.
 shader_type canvas_item;
-render_mode blend_mul;
+render_mode blend_mix;
 #include "res://shaders/hud_low_edge.gdshaderinc"
 
-uniform vec3 tint = vec3(0.92, 0.16, 0.12);   // what the edge multiplies the scene by at full: blue and green crushed
-// (UI 15 judge 2: crimson ADDED over the blue night grade read mauve where it faded; the multiply darkens toward
-// deep crimson first, then hud_low_edge_glow.gdshader (a child quad) adds a little crimson light on top)
+uniform sampler2D screen : hint_screen_texture, filter_linear;
+uniform vec3 tint = vec3(0.80, 0.13, 0.11);   // the grey edge multiplied toward deep crimson
+uniform vec4 blood : source_color = vec4(0.95, 0.10, 0.06, 1.0);
+uniform float glow = 0.60;   // crimson light at the beat's peak, inside the band (m^1.5: it reads at 18% too)
+// (judges 3-4: crimson added over the night blue read plum; a multiply toward red over blue read aubergine. The
+// edge now takes the scene to grey first, then to dark crimson, then lights a crimson band on the beat, so the fade
+// runs blue, grey-dark, crimson and never violet. It reads the screen, so it costs one screen copy, and only at
+// low life: the node is hidden otherwise.)
 
 void fragment()
 {
 	float a = edge_a(UV);
 	if (a <= 0.002) discard;
-	COLOR = vec4(mix(vec3(1.0), tint, a), 1.0);
+	vec3 c = texture(screen, SCREEN_UV).rgb;
+	float m = clamp(a / 0.9, 0.0, 1.0);
+	float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	c = mix(c, vec3(l), smoothstep(0.0, 0.55, m));
+	c *= mix(vec3(1.0), tint, m);
+	c += blood.rgb * pow(m, 1.5) * glow * smoothstep(0.1, 0.9, beat);
+	COLOR = vec4(c, 1.0);
 }
