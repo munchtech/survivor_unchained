@@ -30,7 +30,7 @@ public partial class MarkPass : CompositorEffect
         ["g0"] = 0.14f, ["g1"] = 0.4f, // over the mark's ground: full to g0 m, none past g1
         ["front"] = 0.2f, ["tail"] = 0.4f, ["body"] = 0.1f, ["fill"] = 0.35f,
         ["roof"] = 2.6f,
-        ["cal"] = 0, ["dk"] = 0.6f, ["dv"] = 0.02f,
+        ["cal"] = 0, ["dk"] = 0.3f, ["dv"] = 0.02f, ["le"] = 0.6f,
     };
 
     static MarkPass()
@@ -139,7 +139,7 @@ public partial class MarkPass : CompositorEffect
             T["tg"], T["tb"], T["hg"], T["hb"],
             T["glow"], T["g0"], T["g1"], T["roof"],
             T["front"], T["tail"], T["body"], T["fill"],
-            T["cal"], T["dk"], T["dv"], 0,
+            T["cal"], T["dk"], T["dv"], T["le"],
         };
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
         for (uint v = 0, nv = buf.GetViewCount(); v < nv; v++)
@@ -194,7 +194,7 @@ public partial class MarkPass : CompositorEffect
             float tg; float tb; float hg; float hb;
             float glow; float g0; float g1; float roof;
             float front; float tail; float body; float fill_e;
-            float cal; float dk; float dv; float pad;
+            float cal; float dk; float dv; float le;
         } pc;
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth;
@@ -238,7 +238,7 @@ public partial class MarkPass : CompositorEffect
                 float core = max(0.012 * sc, 0.008), soft = max(0.014 * sc, 0.008), glw = max(0.05 * sc, 0.03);
                 edge = rim(d, core, soft, glw, 0.5);
                 float sm = smoothstep(-0.35 * hx, 0.0, d);
-                inner = d < 0.0 ? pc.glow + 0.45 * sm * sm : 0.0;
+                inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 float fe = hz - abs(l.y);
                 ends = smoothstep(0.0, 0.45, fe);
                 edge *= smoothstep(0.0, 0.3, fe);
@@ -261,12 +261,12 @@ public partial class MarkPass : CompositorEffect
                 float fall = d < 0.0 ? 0.35 * exp(d / fin) : 0.25 * exp(-d / fout);
                 edge = max(rm, fall) * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
                 float sm = smoothstep(-0.33 * R, 0.0, d);
-                inner = d < 0.0 ? pc.glow + 0.4 * sm * sm : 0.0;
+                inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 wh = fout * 2.0;
                 if (e.x >= 0.0 && kind == 1) f = fillf(e.x * 0.97 - r);
             }
             cover = (d < 0.0 ? 1.0 : exp(-d / wh)) * ends;
-            light = max(edge, inner * ends) * s.z + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
+            light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
         }
 
         void main() {
