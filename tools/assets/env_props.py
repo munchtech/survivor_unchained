@@ -3495,17 +3495,18 @@ def arc_ring(parts, rng, r, y0, H, F, stone, at=Matrix.Identity(4), arc=None, ch
             # (E8d) each block its own colour (+-7%), its faces one: flush (+-4 mm), smooth round the drum, few chips
             mid = at @ R('Y', ac) @ Vector((0.0, y + cy / 2, r))
             t = damp(stone, y + cy / 2, rng, wet, at=mid) * (1 + rng(-0.07, 0.07))
-            drop = ('-z', '-y') if (top and last) else ('-z', '-y', '+y')
+            # (E8d) the ends dropped too (the joint shows the mortar bed, not a block's end lit edge-on by a torch)
+            drop = ('-z', '-y', '-x', '+x') if (top and last) else ('-z', '-y', '+y', '-x', '+x')
             jut = rng(-0.004, 0.004)
             base = at @ R('Y', ac) @ T(0, y + cy / 2, r - F / 2 + jut)
             if sl and L > 0.5:
                 jw = (L - 0.2) / 2
                 for s in (-1, 1):
-                    parts.append(Part(arc_block(jw - 0.02, cy - 0.022, F, r, rng, bevel=0.016, chip=0.15, drop=('-z', '-y', '+y'), smooth_face=True), 'stone', t * 1.04,
+                    parts.append(Part(arc_block(jw - 0.02, cy - 0.022, F, r, rng, bevel=0.016, chip=0.05, drop=('-z', '-y', '+y'), smooth_face=True), 'stone', t * 1.04,
                                       at @ R('Y', ac + s * (jw / 2 + 0.1) / r) @ T(0, y + cy / 2, r - F / 2), cap='stone', smooth='faces', jitter=0.0))
                 parts.append(Part(box(0.22, cy, 0.1), 'stone', stone * 0.05, base @ T(0, 0, -F / 2 - 0.02), jitter=0.0))
             else:
-                parts.append(Part(arc_block(L - 0.022, cy - 0.022, F, r, rng, bevel=0.016, chip=0.15, drop=drop, smooth_face=True), 'stone', t, base,
+                parts.append(Part(arc_block(L - 0.022, cy - 0.022, F, r, rng, bevel=0.016, chip=0.05, drop=drop, smooth_face=True), 'stone', t, base,
                                   cap='stone', smooth='faces', jitter=0.0))
     return y0 + H
 
