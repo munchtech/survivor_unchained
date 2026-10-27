@@ -46,6 +46,7 @@ from heroine_neck import _Gl  # noqa: E402
 from worn_reaver_post import _sparse, _vn, _ss  # noqa: E402
 from shoulder_psd_post import _read_sparse  # noqa: E402
 from carry_targets import closest  # noqa: E402
+from gltf_compact import compact  # noqa: E402
 
 MARK = "body_follow"
 MATCH_R = 0.020                 # m: a BASE point's paint twin on BODY looked for this near
@@ -58,6 +59,9 @@ W_NEAR, W_FAR = float(os.environ.get("BF_WNEAR", 0.025)), float(os.environ.get("
 SHAPE_NEAR, SHAPE_FAR = 0.06, 0.10          # (shoulder_psd_post's FOLLOW_NEAR/FAR)
 PAULDRON_NEAR, PAULDRON_FAR = 0.11, 0.15
 SHAPE_K, SHAPE_POW = 3, 4
+# sparse shape entries below these are not written (0.1 mm, 0.01 of a unit normal): the fade touched most points by
+# hundredths of a millimetre, and 18 shapes on whole tops took heroine_outfit_warden.bin past GitHub's 100 MB (Body 15)
+SHAPE_POS_MIN, SHAPE_NOR_MIN = 1e-4, 0.01
 SHAPE_PARTS = ("top", "cloak", "collar")
 HAIR_WEIGHTS = False            # (hair keeps its own chains' weights; its rest follows)
 # pauldrons (a slot): BF_PAUL_HELPERS=fold folds the helper joints' weight change into their parents (the plate rides
@@ -592,6 +596,9 @@ def follow_file(path, fld, kind, shapes, dry=False):
     g["buffers"][0]["byteLength"] = len(G.buf) - G.b0
     if not dry:
         G.save()
+        if path.endswith(".gltf"):
+            # repack: the replaced targets' old views go, and an all-zero second weight set is dropped
+            compact(path, SHAPE_POS_MIN, SHAPE_NOR_MIN)
     return res
 
 
@@ -640,12 +647,12 @@ def _shapes(G, prims, Ps, M, inv, offs, fld, shapes, kind, path):
             binb = G.buf
             for _, D in shapes:
                 Dp = (D[j] * w[..., None]).sum(1) * fade[:, None]
-                Dp[np.linalg.norm(Dp, axis=1) < 1e-6] = 0
+                Dp[np.linalg.norm(Dp, axis=1) < SHAPE_POS_MIN] = 0
                 ip = np.nonzero(np.abs(Dp).max(1) > 0)[0]
                 t = {"POSITION": _sparse_g(G, len(X), ip, Dp[ip])}
                 if "NORMAL" in pp["attributes"]:
                     dN = _vn(X + Dp, Ff) - _vn(X, Ff)
-                    dN[np.abs(dN).max(1) < 1e-5] = 0
+                    dN[np.linalg.norm(dN, axis=1) < SHAPE_NOR_MIN] = 0
                     inn = np.nonzero(np.abs(dN).max(1) > 0)[0]
                     t["NORMAL"] = _sparse_g(G, len(X), inn, dN[inn])
                 pp.setdefault("targets", []).append(t)
