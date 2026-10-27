@@ -558,7 +558,10 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         sprungAt = stageT;
         Objective([("Follow the road north", true, false), ("Survive the ambush at the wagon", false, false)]);
-        for (int i = 0; i < 10; i++) SpawnAround(i % 4 == 0 ? "risen_warrior" : "risen", 1, 5, 9, 0, 2);
+        // (MR5 item 11, i15's "no stakes early": an idle player lost 7-10% in the trap's first 15 s, the pilot
+        // nothing. The ditch's own dead rise closer and hit harder than the road's (this fight's spawns only,
+        // never the shared defs): idle should lose 25-40% through the volley and the rise, the pilot ~10% or less.)
+        for (int i = 0; i < AmbushRing; i++) SpawnAround(i % 4 == 0 ? "risen_warrior" : "risen", 1, AmbushNear, AmbushNear + 4, 0, 2, AmbushHit);
         var p = B.Player;
         for (int i = 0; i < 5; i++)
             for (int tries = 0; tries < 10; tries++)
@@ -571,6 +574,7 @@ public sealed class Prologue : ZoneRuntime
                 {
                     // (all at once, a second after they stand: one volley, not a patter)
                     e.RangedT = 1.0;
+                    e.Damage *= AmbushBolt;
                     bowmen.Add(e);
                 }
                 break;
@@ -612,7 +616,12 @@ public sealed class Prologue : ZoneRuntime
     }
 
     /// <summary>Some of the dead, somewhere around the survivor. `ahead` biases north.</summary>
-    void SpawnAround(string def, int n, double rMin, double rMax, double ahead = 0, int level = 1)
+    /// <summary>The ditch's opening: how many of the dead rise round her, how near, how much harder they and
+    /// the bowmen's bolts hit than the road's.</summary>
+    const int AmbushRing = 12;
+    const double AmbushNear = 3.5, AmbushHit = 1.8, AmbushBolt = 2;
+
+    void SpawnAround(string def, int n, double rMin, double rMax, double ahead = 0, int level = 1, double hit = 1)
     {
         if (B == null) return;
         var p = B.Player;
@@ -624,7 +633,7 @@ public sealed class Prologue : ZoneRuntime
                 double d = rMin + B.Rng.Next() * (rMax - rMin);
                 double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
                 if (!OpenGround(x, z)) continue;
-                B.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Style = def is "risen" or "risen_warrior" ? SpawnStyle.Rise : SpawnStyle.Walk, Level = level });
+                if (B.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Style = def is "risen" or "risen_warrior" ? SpawnStyle.Rise : SpawnStyle.Walk, Level = level }) is { } e) e.Damage *= hit;
                 break;
             }
     }
