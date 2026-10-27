@@ -285,9 +285,20 @@ public sealed class Prologue : ZoneRuntime
         // (a freeze waits for a Say: dropped as gone when it ended), and the next with its head behind the
         // cracked wall (the freeze waits to see it: gone again). So none begins under a line, a draft or a
         // callout, nor while the Knight stands behind something tall.
-        if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line")
-            && (G.Teaching != null || G.Saying || B.DraftOwed || !KnightOpen(kw)))
-            kw.RangedT = Math.Max(kw.RangedT, 0.25);
+        // The holds are bounded (f7 fix): out of the open it is held 4 s in all, and every hold together 10 s, so a Knight
+        // behind something tall still attacks (v5: it stood 40 s and never wound up).
+        double dt = Math.Clamp(B.Time - knightWatchT, 0, 0.5);
+        knightWatchT = B.Time;
+        if (knight is { Alive: true, State: not EnemyState.Windup } kw && !G.Taught("red_line") && knightHeldAll < KnightHoldAll)
+        {
+            bool shut = !KnightOpen(kw);
+            bool hold = G.Teaching != null || G.Saying || B.DraftOwed || (shut && knightHeldShut < KnightHoldShut);
+            if (hold)
+            {
+                if (kw.RangedT <= 0.25) { knightHeldAll += dt; if (shut) knightHeldShut += dt; }
+                kw.RangedT = Math.Max(kw.RangedT, 0.25);
+            }
+        }
         if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
         // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
         if (knightWound >= 0 && !knightHeld && !G.Taught("red_line") && G.TeachWaiting("red_line") && (k.Def.Charge ?? k.Def.Lunge) is { } held)
@@ -303,6 +314,7 @@ public sealed class Prologue : ZoneRuntime
         }
         if (knightWound >= 0) return;
         knightWound = B.Time;
+        PaceNotes.Enqueue($"pace knight windup t={B.Time:0.0} held={knightHeldAll:0.0} open={KnightOpen(k)}");
         // (every windup until F7 is seen: the one it freezes in is the one drawn out)
         if (G.Taught("red_line") || (k.Def.Charge ?? k.Def.Lunge) is not { } lunge) return;
         k.StateT += LaneBeat;
@@ -313,6 +325,13 @@ public sealed class Prologue : ZoneRuntime
             Radius = k.Radius, Width = k.Radius * 2.2, Duration = k.StateT, Hostile = true,
         });
     }
+
+    /// <summary>Seconds the Knight has been held (ready to wind up) for standing out of the open, and for any hold at all.</summary>
+    double knightHeldShut, knightHeldAll, knightWatchT;
+    /// <summary>The most it is held for being out of the open, and for everything together.</summary>
+    const double KnightHoldShut = 4, KnightHoldAll = 10;
+    /// <summary>Lines for the --pace log, taken by the game each frame (this layer has no console).</summary>
+    public readonly Queue<string> PaceNotes = new();
 
     double knightOpenAt = -9;
     bool knightOpen;
@@ -401,7 +420,8 @@ public sealed class Prologue : ZoneRuntime
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
             {
                 World = KnightLane, Safe = true, Open = true,
-                Seen = () => knight is { Alive: true } kn ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : [],
+                Seen = () => knight is { Alive: true } kn
+                    ? KnightOpen(kn) ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : KnightLane() : [],
             });
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
@@ -833,7 +853,6 @@ public sealed class Prologue : ZoneRuntime
                     for (int i = 0; i < 4; i++) SpawnAround("risen", 1, 5, 9, 0, 2);
                     Words(() => G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5));
                     Objective([("Survive the ambush at the wagon", true, false), ("Put down the Barrow Knight", false, false), ("Search the old Watch-post", false, false)]);
-                    PacedTip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
                 }
                 break;
             }
@@ -870,6 +889,7 @@ public sealed class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Post:
+                if (G.Taught("red_line") || knightRan) PacedTip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
                 if (knight is { Alive: true } kn && !knightRan)
                 {
                     if (kn.State == EnemyState.Windup) knightPlanted = true;
