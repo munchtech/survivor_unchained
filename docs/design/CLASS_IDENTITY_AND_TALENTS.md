@@ -593,6 +593,8 @@ Phase 1 is the smallest slice the owner can play.
 
 ## 7. Open questions for the owner (each with my recommendation)
 
+**Decided (the owner, 27 October 2026): "Go with all 10 recommendations".** All ten below are answered as recommended. Phase 1 (the Warden, felt) is next, when the coordinator has a free lead slot.
+
 1. **Move 12 of today's skills into kindred pairs**, so each calling loses 6 of today's 26 (e.g. a reaver can no longer throw Judgement Disc)?
    - *Recommend yes.* Identity needs real edges, and PoE shows open pools converge.
    - The alternative: keep all 26 open and make every new skill calling-only or kindred. Identity then is thinner and only the new skills carry it.
