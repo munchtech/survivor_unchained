@@ -2,6 +2,11 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 27 October 2026, afternoon (coordinator f22ca2bc)
+- **Her elbow bend (HIGH, always seen):** "that bend still just dosn't look feminine OR athletic - it just looks clunky like quaternus model or whatever". Crop: `survivorsunchained_inputs\owner_frames_27oct\elbow_bend.png` (warden kit, town, right arm bent ~90 deg, bracer). Body 14's hinge fix (8d5b104c) was the rig side; what's left is shape: a uniform tube upper arm, a hard V at the inner crease, no biceps belly, no elbow point, no forearm taper. Routed: Body 19 (armor-7), shape corrective + arm shape, owner sees the bare A|B before the outfit chain.
+- **Armpit too (same session):** "armpit problems there too, and elbow". Second crop (not saved to disk): front 3/4, warden kit in town, right arm down and slightly forward with the elbow bent: the arm joins the chest like a tube plugged into the torso, the front armpit is flat with no pec-to-arm fold, the deltoid is weak and the shoulder narrow and pinched, and the inner elbow is again a hard V. Added to Body 19.
+- **HUD centerpiece (verdict):** "the drowned girl centerpiece is a nice place to start.  it will get lots of polish right?" A GO for UI 17 (piece-1 notes, hair-river bar, XP thread, Flare coal, whole-HUD judge), with a polish list of its own on the centerpiece.
+
 ## 27 October 2026 (coordinator 9c583f93)
 - Warden sword held in town (crop: gold kit, cobbles, pommel up, blade hanging plumb): "is this angle possible or natural?" Main's answer: no. The wrist is bent ~90 deg sideways and the grip isn't in a closed fist. Routed to Animation 54 (item 2, held-prop angles): closed fist, wrist near neutral, blade continuing the forearm. Found: `idle_warden_town`; fixed with the idles (2b).
 - PENDING owner pick: the HUD life sheet (tall lamp / globe / no vessel), coming from UI 16. Tell them: no option lowers the HUD top (~176 px); the Flare cuff sets it.
