@@ -1706,7 +1706,7 @@ public partial class Game
                 {
                     float dx = (x + 0.5f) / N * 2 - 1, dy = (y + 0.5f) / N * 2 - 1, r2 = dx * dx + dy * dy;
                     float win = r2 >= 1 ? 0 : (1 - r2) * (1 - r2);
-                    float a = (0.55f * Mathf.Exp(-r2 * 40f) + 0.45f * Mathf.Exp(-r2 * 5f)) * win;
+                    float a = (0.3f * Mathf.Exp(-r2 * 40f) + 0.7f * Mathf.Exp(-r2 * 5f)) * win;
                     img.SetPixel(x, y, new Color(1, 1, 1, a));
                 }
             img.GenerateMipmaps();
