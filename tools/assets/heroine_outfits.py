@@ -3054,10 +3054,15 @@ def frame(name, centre, nrm, up, w, h, mkey, r=0.002, corner=0.004, lift=0.0):
 NB = len(BONES)
 
 
-def hulled(pos, where, tris, blend=0.02):
+def hulled(pos, where, tris, blend=0.02, fill=0):
     """Where `where` > 0 (a boot's foot), the piece laid on the convex hull
     of itself there: toes become one rounded toe box, as leather over them
-    is; it eases back to its own shape over `blend` of `where`."""
+    is; it eases back to its own shape over `blend` of `where`. `fill` (Body
+    17, the reaver's turnshoe): the sheet first smoothed that many rounds
+    there (the hull taken before), so the gaps between her toes fill before
+    each point goes to the hull's nearest point: low between her toes that
+    was the hull's floor, and the gap between her big toe and the next
+    stayed, a notch in the outline and a crease above it."""
     from scipy.spatial import ConvexHull
     m = where > -blend
     if m.sum() < 10:
@@ -3067,8 +3072,18 @@ def hulled(pos, where, tris, blend=0.02):
     bvh = BVHTree.FromPolygons([tuple(p) for p in hv], h.simplices.tolist())
     out = pos.copy()
     t = np.clip((where + blend) / blend, 0, 1)
+    src = pos
+    if fill:
+        import scipy.sparse as sp_
+        e_ = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+        A_ = sp_.coo_matrix((np.ones(2 * len(e_)), (np.r_[e_[:, 0], e_[:, 1]], np.r_[e_[:, 1], e_[:, 0]])), shape=(len(pos), len(pos))).tocsr()
+        A_.data[:] = 1.0
+        deg_ = np.asarray(A_.sum(1)).ravel() + 1e-12
+        src = pos.copy()
+        for _ in range(fill):
+            src = np.where(m[:, None], (A_ @ src) / deg_[:, None], pos)
     for i in np.where(m)[0]:
-        q = bvh.find_nearest(Vector(pos[i]))[0]
+        q = bvh.find_nearest(Vector(src[i]))[0]
         if q is not None:
             out[i] = pos[i] * (1 - t[i]) + np.array(q[:]) * t[i]
     return out
@@ -3912,7 +3927,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     else:
         pos = pos + nor * lift
     if hull is not None:
-        pos = hulled(pos, at[:, -3], tris)
+        pos = hulled(pos, at[:, -3], tris, fill=HULL_FILL.get(name, 0))
     pos = relax(pos, tris, interior=smooth, edge=edge)
     if iron:
         pos = taubin(pos, tris, rounds=iron)
@@ -5414,7 +5429,7 @@ def grid(nu, nv):
 FRINGE_RIGID = os.environ.get("FRINGE_RIGID", "1") == "1"
 # (REAVER_PANEL / REAVER_BOOT: the reaver's front panel and boots as Body 17 remade them; "old": as before)
 REAVER_PANEL = os.environ.get("REAVER_PANEL", "new")
-REAVER_BOOT = os.environ.get("REAVER_BOOT", "made")
+REAVER_BOOT = os.environ.get("REAVER_BOOT", "hide")
 # (FRINGE_ONE: a front panel given `one_piece` moves as one piece below its top; see hanging())
 FRINGE_ONE = os.environ.get("FRINGE_ONE", "1") == "1"
 
@@ -9193,48 +9208,200 @@ def reaver():
             *piece(f"reaver.wristfur_{sd}", limb(sd, WRIST_S - 0.05, WRIST_S + 0.005, legs=False), "fur", lift=0.012, thick=0.012, smooth=8),
             *(piece(f"reaver.boot_{sd}", limb(sd, KNEE_S - 0.01, 9.9), "oldleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03)
               if REAVER_BOOT == "old" else
-              # (Body 17, judge at the 1:1 town close-up: "dark stockings over bare feet", toes showing, no sole or
-              # heel. Now a boot made on the Ranger's last, as the Arcanist's: one rounded toe box, a sole edge
-              # ~11 mm proud with its welt, a low heel block, its top under the fur cuff, lower behind the knee)
-              BOOTS.boot(f"reaver.boot_{sd}", sd, KNEE_S + 0.01, 0.03, REAVER_BOOT_ST, "oldleather", sole_key="darkleather")),
+              # (Body 17, judge at the 1:1 town close-up: "dark stockings over bare feet"; then the Ranger's last
+              # reskinned, out of her (her toes through it at rest) and not hers: the coordinator wants rough hide
+              # wrapped on her own foot. A turnshoe, see reaver_turnshoe)
+              reaver_turnshoe(sd)),
             *piece(f"reaver.bootfur_{sd}", limb(sd, KNEE_S - 0.05, KNEE_S + 0.06), "fur", lift=0.016, thick=0.016, smooth=10),
         ]
-        if REAVER_BOOT != "old":
-            out += reaver_wraps(sd)
     return out
 
 
-# (Body 17) The reaver's boots: the Ranger's last with a thicker sole and a lower heel; bands of dark leather
-# wound round the shaft from her ankle to the fur cuff, each tilted the other way from the last (crossed, as
-# cross-gartering reads from the front), laid on the boot's own shaft 2 mm off it.
-REAVER_BOOT_ST = dict(BOOTS.RANGER, t_fore=0.009, heel=0.008, t_heel=0.006)
-REAVER_WRAPS = int(os.environ.get("REAVER_WRAPS", "5"))
+# (Body 17) The reaver's boots: rough hide on her own foot, a turnshoe. Her sock as it was (her leg and foot
+# lifted 5 mm, the foot on its convex hull: one rounded toe box, no toes), and on it, all cheap rolled tubes
+# (tube()) moving with the sock under them:
+#   - a rawhide sole edge round the foot just over its floor (TS_SOLE_UP), TS_SOLE wide and 3 mm proud, a black
+#     bead under it at the ground;
+#   - a moccasin seam over her toes, a U from beside the ball round the front, gathered (short ribs outside it);
+#   - two rawhide thongs crossed up her shin from an ankle ring to under the fur cuff (REAVER_THONGS turns
+#     each, crossing in front at every turn, rising faster in front than behind so the crosses stand up), the
+#     second over the first in front and under it behind.
+REAVER_THONGS = int(os.environ.get("REAVER_THONGS", "4"))
+HULL_FILL = {f"reaver.boot_{sd}": int(os.environ.get("TS_FILL", "150")) for sd in "lr"} if REAVER_BOOT != "old" else {}
+TS_SOLE_UP = float(os.environ.get("TS_SOLE_UP", "0.007"))  # (the sole edge's middle, this far over the sock's floor)
+TS_SOLE = float(os.environ.get("TS_SOLE", "0.009"))         # (its width across the corner)
+TS_THONG = float(os.environ.get("TS_THONG", "0.014"))       # (each thong's width: ~7 px on a 250 px boot)
 
 
-def reaver_wraps(sd, width=0.021, tilt=0.017):
-    pos_, tris_ = BOOTS.SHELL[sd]
-    shell = BVHTree.FromPolygons([tuple(p) for p in pos_], tris_.tolist())
-    knee, ank = np.asarray(LEG[sd][1], float), np.asarray(LEG[sd][2], float)
-    z0, z1 = ank[2] + 0.07 + tilt, leg_z(sd, KNEE_S + 0.075) - tilt - width / 2
-    out = []
-    for i, zc in enumerate(np.linspace(z0, z1, REAVER_WRAPS)):
-        amp = tilt * (1 if i % 2 == 0 else -1)
-        pts = []
-        for th in np.linspace(0, 2 * np.pi, 48, endpoint=False):
-            z = zc + amp * np.sin(th)
-            c = knee + (ank - knee) * (knee[2] - z) / (knee[2] - ank[2])
-            d = np.array([np.sin(th), -np.cos(th), 0.0])
-            hit = shell.ray_cast(Vector((c[0], c[1], z)), Vector(d), 0.25)
-            if hit[0] is None:
-                continue
-            # (the shell is the upper's inner sheet: out by its 2.5 mm and 2 mm more)
-            pts.append(np.array(hit[0][:]) + d * 0.0045)
-        if len(pts) < 40:
-            print("WRAPS reaver.boot_%s: band %d missed the shaft (%d of 48 rays)" % (sd, i, len(pts)))
+def _ts_resample(c, step, closed):
+    c = np.asarray(c, float)
+    cc = np.vstack([c, c[:1]]) if closed else c
+    sl = np.r_[0, np.cumsum(np.linalg.norm(np.diff(cc, axis=0), axis=1))]
+    n = max(4, int(round(sl[-1] / step)))
+    t = np.linspace(0, sl[-1], n, endpoint=not closed)
+    return np.c_[[np.interp(t, sl, cc[:, k]) for k in range(3)]].T
+
+
+def _ts_smooth(c, rounds, closed):
+    c = np.asarray(c, float).copy()
+    for _ in range(rounds):
+        if closed:
+            c = (np.roll(c, 1, 0) + 2 * c + np.roll(c, -1, 0)) / 4
+        else:
+            c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
+    return c
+
+
+def reaver_turnshoe(sd):
+    name = f"reaver.boot_{sd}"
+    out = list(piece(name, limb(sd, KNEE_S - 0.01, 9.9), "oldleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03))
+    s_pos, s_tris, s_wt, s_thick = SHEET[name]
+    s_wt = np.asarray(s_wt, float)
+    s_nrm = vertex_normals(s_pos, s_tris)
+    knee, ank, ball = (np.asarray(LEG[sd][k], float) for k in (1, 2, 3))
+    # (the sheet's normals outward: most of the shin's point away from her leg's line)
+    shin = (s_pos[:, 2] > ank[2] + 0.05) & (s_pos[:, 2] < knee[2] - 0.05)
+    ax_ = knee[None, :] + (ank - knee)[None, :] * ((knee[2] - s_pos[:, 2]) / (knee[2] - ank[2]))[:, None]
+    if ((s_nrm[shin] * (s_pos[shin] - ax_[shin])).sum(1) < 0).mean() > 0.5:
+        s_nrm, s_tris = -s_nrm, s_tris[:, ::-1]
+    bvh = BVHTree.FromPolygons([tuple(p) for p in s_pos], s_tris.tolist())
+    kd = cKDTree(s_pos)
+    src = (s_pos, s_wt)
+
+    def nrm_at(c, rounds=6, closed=False):
+        _, j = kd.query(c, k=8)
+        n_ = _ts_smooth(s_nrm[j].mean(1), rounds, closed)
+        return n_ / (np.linalg.norm(n_, axis=1)[:, None] + 1e-12)
+
+    def snap(c):
+        return np.array([bvh.find_nearest(Vector(p))[0][:] for p in c])
+
+    def frame(c, closed):
+        tg = (np.roll(c, -1, 0) - np.roll(c, 1, 0)) if closed else np.gradient(c, axis=0)
+        tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
+        n_ = nrm_at(c, closed=closed)
+        n_ = n_ - tg * (n_ * tg).sum(1)[:, None]
+        n_ /= np.linalg.norm(n_, axis=1)[:, None] + 1e-12
+        return n_, np.cross(n_, tg)
+
+    def band(nm, c, mkey, width, proud, closed, nv=8, rise=0.0):
+        # (a flattened tube on the sock's outside: its inner face on it, `proud` off it, `rise` more lifted)
+        n_, across = frame(c, closed)
+        rise = np.broadcast_to(np.asarray(rise, float), (len(c),))
+        cur = c + n_ * (s_thick + proud / 2 + rise)[:, None]
+        return tube(nm, cur, n_, across, mkey, width, proud / 2, width / 2, 0.0, *src, closed=closed, nv=nv)
+
+    # --- the sole edge: round the foot's outline in plan (the convex outline of its lowest 25 mm), each point a ray
+    # in from outside at TS_SOLE_UP over the sock's floor near it (the arch's floor higher)
+    from scipy.spatial import ConvexHull
+    foot = s_pos[:, 2] < ank[2] - 0.035
+    low = s_pos[foot]
+    zf = low[:, 2].min()
+    lowp = low[low[:, 2] < zf + 0.025]
+    poly = lowp[ConvexHull(lowp[:, :2]).vertices]
+    ol = _ts_resample(np.c_[poly[:, :2], np.zeros(len(poly))], 0.005, True)[:, :2]
+    tg2 = np.roll(ol, -1, 0) - np.roll(ol, 1, 0)
+    tg2 /= np.linalg.norm(tg2, axis=1)[:, None] + 1e-12
+    on2 = np.c_[tg2[:, 1], -tg2[:, 0]]
+    kd2 = cKDTree(low[:, :2])
+    # (the floor's height along it eased over ~6 cm: the line rises gently under her arch, no kinks)
+    zb = np.array([low[i_, 2].min() if len(i_) else zf for i_ in kd2.query_ball_point(ol, 0.012)])
+    zb = np.clip(_ts_smooth(np.convolve(np.r_[zb[-3:], zb, zb[:3]], np.ones(7) / 7, "valid")[:, None], 30, True)[:, 0], zf, zf + 0.02)
+    sole = []
+    for q, o, z_ in zip(ol, on2, zb):
+        st_ = q + o * 0.03
+        hit = bvh.ray_cast(Vector((st_[0], st_[1], z_ + TS_SOLE_UP)), Vector((-o[0], -o[1], 0.0)), 0.1)
+        if hit[0] is not None:
+            sole.append(np.array(hit[0][:]))
+    sole = snap(_ts_smooth(_ts_resample(_ts_smooth(np.array(sole), 4, True), 0.005, True), 4, True))
+    print("TURNSHOE %s sole: floor %.3f, %d of %d rays, %.0f mm round, z %.3f..%.3f" % (
+        name, zf, len(sole), len(ol), 1000 * np.linalg.norm(np.diff(np.vstack([sole, sole[:1]]), axis=0), axis=1).sum(),
+        sole[:, 2].min(), sole[:, 2].max()))
+    out.append(band(f"{name}_sole", sole, "darkleather", TS_SOLE, 0.003, True))
+    # (the dark line at the ground: a bead under the sole edge, on its lower side)
+    n_, across = frame(sole, True)
+    down = np.where((across[:, 2] < 0)[:, None], across, -across)
+    bead = sole + down * (TS_SOLE * 0.42) + n_ * (s_thick + 0.0012)
+    out.append(tube(f"{name}_ground", bead, n_, across, "blackleather", 0.004, 0.0012, 0.002, 0.0, *src, closed=True, nv=5))
+
+    # --- the moccasin seam: a U over her toes, from beside the ball round the front, laid from above
+    f2 = (ball - ank)[:2]
+    f2 /= np.linalg.norm(f2)
+    pp = np.array([-f2[1], f2[0]])
+    fm = foot & (s_pos[:, 2] < 0.07)
+    yf = (s_pos[fm, :2] - ank[:2]) @ f2
+    xf = (s_pos[fm, :2] - ank[:2]) @ pp
+    ball_yf = float((ball[:2] - ank[:2]) @ f2)
+    toe_yf = yf.max()
+    nb = np.abs(yf - ball_yf) < 0.012
+    xc, hw = (xf[nb].max() + xf[nb].min()) / 2, (xf[nb].max() - xf[nb].min()) / 2
+    yc = ball_yf - 0.012
+    a_ax, b_ax = toe_yf - 0.024 - yc, 0.6 * hw
+    phi = np.linspace(-np.radians(95), np.radians(95), 80)
+    plan = ank[:2] + np.outer(yc + a_ax * np.cos(phi), f2) + np.outer(xc + b_ax * np.sin(phi), pp)
+    top = []
+    for q in plan:
+        hit = bvh.ray_cast(Vector((q[0], q[1], ank[2] + 0.05)), Vector((0, 0, -1)), 0.3)
+        top.append(np.array(hit[0][:]) if hit[0] is not None else np.full(3, np.nan))
+    top = np.array(top)
+    top = top[np.isfinite(top).all(1)]
+    seam = snap(_ts_smooth(_ts_resample(top, 0.003, False), 4, False))
+    out.append(band(f"{name}_seam", seam, "darkleather", 0.0045, 0.0018, False, nv=6))
+    # (gathered: short ribs out from the seam round its front, the sole's leather puckered into it)
+    cen = ank + np.r_[f2 * yc + pp * xc, 0.0]
+    sn_, _ = frame(seam, False)
+    sl_ = np.r_[0, np.cumsum(np.linalg.norm(np.diff(seam, axis=0), axis=1))]
+    ribs = 0
+    for s_ in np.arange(0.012, sl_[-1] - 0.012, 0.0075):
+        i = int(np.searchsorted(sl_, s_))
+        p0, n0 = seam[i], sn_[i]
+        h_ = (p0 - cen)[:2]
+        if np.degrees(np.arccos(np.clip(h_ @ f2 / (np.linalg.norm(h_) + 1e-12), -1, 1))) > 75:
             continue
-        out += ribbon(f"reaver.boot_{sd}_wrap{i}", pts + [pts[0]], width, "darkleather", lift=0.0006, thick=0.002,
-                      snap=False, closed=True, trim=("blackleather", 0.0025, 0.0004, 0.0009))
-    print("WRAPS reaver.boot_%s: %d bands %.0f mm wide from %.3f to %.3f m, tilted +-%.0f mm" % (sd, len(out) and REAVER_WRAPS, width * 1000, z0, z1, tilt * 1000))
+        r_ = p0 - cen
+        r_ = r_ - n0 * (r_ @ n0)
+        r_ /= np.linalg.norm(r_) + 1e-12
+        rib = snap(p0[None, :] + r_[None, :] * np.linspace(0.002, 0.009, 5)[:, None])
+        out.append(band(f"{name}_pucker{ribs}", rib, "oldleather", 0.0026, 0.0014, False, nv=6))
+        ribs += 1
+
+    # --- the thongs: an ankle ring, then two crossed up her shin to under the fur cuff
+    z0, z1 = ank[2] + 0.045, leg_z(sd, KNEE_S + 0.045)
+
+    def on_leg(th, z):
+        pts = []
+        for t_, zz in zip(th, z):
+            c = knee + (ank - knee) * (knee[2] - zz) / (knee[2] - ank[2])
+            d = np.array([np.sin(t_), -np.cos(t_), 0.0])
+            hit = bvh.ray_cast(Vector((c[0], c[1], zz)), Vector(d), 0.3)
+            pts.append(np.array(hit[0][:]) if hit[0] is not None else np.full(3, np.nan))
+        pts = np.array(pts)
+        return pts[np.isfinite(pts).all(1)]
+    ring = on_leg(np.linspace(0, 2 * np.pi, 120, endpoint=False), np.full(120, z0 - 0.006))
+    ring = snap(_ts_smooth(_ts_resample(_ts_smooth(ring, 3, True), 0.006, True), 3, True))
+    nt = REAVER_THONGS
+    ph = np.linspace(0, 2 * np.pi * nt, 160 * nt)
+    zt = z0 + (z1 - z0) * (ph + 0.75 * np.sin(ph)) / (2 * np.pi * nt)
+    th_a, th_b = (snap(_ts_smooth(_ts_resample(_ts_smooth(on_leg(s_ * ph, zt), 3, False), 0.006, False), 3, False)) for s_ in (1, -1))
+
+    def over(c, others):
+        # (lifted where it crosses another: the second thong over the first in front, under it behind; both over the ring)
+        lift_ = np.zeros(len(c))
+        ax_c = knee + (ank - knee) * ((knee[2] - c[:, 2]) / (knee[2] - ank[2]))[:, None]
+        isf = (c - ax_c)[:, 1] < 0
+        for o_, fr_ in others:
+            d_ = cKDTree(o_).query(c)[0]
+            w_ = np.clip(1 - d_ / (TS_THONG * 1.1), 0, 1)
+            w_ = w_ * w_ * (3 - 2 * w_)
+            if fr_ is not None:
+                w_ = w_ * (isf if fr_ else ~isf)
+            lift_ = np.maximum(lift_, w_ * 0.0024)
+        return _ts_smooth(lift_[:, None], 4, False)[:, 0]
+    out.append(band(f"{name}_thongring", ring, "darkleather", TS_THONG, 0.0022, True, nv=6))
+    out.append(band(f"{name}_thong0", th_a, "darkleather", TS_THONG, 0.0022, False, nv=6, rise=over(th_a, [(ring, None), (th_b, False)])))
+    out.append(band(f"{name}_thong1", th_b, "darkleather", TS_THONG, 0.0022, False, nv=6, rise=over(th_b, [(ring, None), (th_a, True)])))
+    print("TURNSHOE %s: seam %.0f mm, %d puckers, thongs %d turns from %.3f to %.3f m (%d, %d points), ring %d" % (
+        name, 1000 * sl_[-1], ribs, nt, z0, z1, len(th_a), len(th_b), len(ring)))
     return out
 
 
