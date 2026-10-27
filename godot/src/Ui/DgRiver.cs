@@ -104,6 +104,11 @@ public partial class DgRiver : Control
         TextureFilter = TextureFilterEnum.Linear;
         Position = At;
         Size = ArtSize;
+        // (ui17 A: the bronze's idle sheen, the same sweep as her figure's, in screen px)
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_river.gdshader") };
+        m.SetShaderParameter("scr_at", At);
+        m.SetShaderParameter("size", ArtSize);
+        Material = m;
         Thread = new ThreadLine();  // (the instrument's child, over her figure and the river: screen px)
     }
 

@@ -79,9 +79,9 @@ public partial class LifeLamp : Control
     public float Level = 1, Trail = 1, Shield, Pulse;
     /// <summary>The Drowned Girl: the survivor, an elite or a marked attack behind her figure (Game sets it each
     /// frame): the figure fades to FadeTo over FadeTime, holds FadeHold after the last frame something was behind
-    /// it (no flicker as a crowd mills past), and comes back over FadeBack. Her hand and forearm stay at full
-    /// (the cut's mask G), so the orb is never held by nothing. (dg1 faded to 35% for any foe: in a horde that was
-    /// the normal state, a murky ghost.)</summary>
+    /// it (no flicker as a crowd mills past), and comes back over FadeBack. Her hand and forearm fade with her (ui17
+    /// A, the judge: held solid while she faded, they read as pasted on); the glass stays. (dg1 faded to 35% for any
+    /// foe: in a horde that was the normal state, a murky ghost.)</summary>
     public bool Behind;
     public const float FadeTo = 0.55f, FadeTime = 0.25f, FadeBack = 0.4f, FadeHold = 0.8f;
     float figA = 1, sFigA = -1, clearFor = 99;
@@ -134,6 +134,7 @@ public partial class LifeLamp : Control
             mat.SetShaderParameter("orb_c", V("orb_c"));
             mat.SetShaderParameter("orb_r", F("orb_r"));
             mat.SetShaderParameter("orb_vis", F("orb_vis"));
+            if (Drowned) mat.SetShaderParameter("scr_at", At);
         }
         mat.SetShaderParameter("wick", Wick);
         mat.SetShaderParameter("oil_top", OilTop);

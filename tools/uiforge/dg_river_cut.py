@@ -26,6 +26,9 @@ import cv2
 import numpy as np
 from PIL import Image, ImageFilter
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from dg_figure_cut import STRAND_GAIN, bronze_pass, strand_pass  # noqa: E402
+
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui17_dg_src"
 OUT = os.path.join(WT, "godot", "art", "ui", "dg_river")
@@ -35,7 +38,13 @@ S = 0.615                     # source px -> 1080 px (the concept's)
 DX = 40                       # right of the concept's place
 OX, OY = 356 - 42 * S + DX, 815 - 34 * S   # the source's (0, 0) on the 1080 screen (the concept: piece (356, 815), bbox (42, 34))
 X_FROM = 300                  # source columns left of this are the concept's girl (the rest of her is hidden under the in-game figure)
-JOIN = [(600, 868), (640, 880), (700, 903), (757, 932), (807, 958), (850, 978)]  # (1080 px) near her, the river shows only under this line
+# (1080 px) near her, the river shows only under this line. ui17 A (the owner circled the swept-back lock over the XP's
+# left end, "can probably just go"): the line drops to the bar's top, so her back hair falls straight into the bar
+JOIN = [(600, 946), (636, 952), (660, 962), (700, 971), (760, 977), (820, 980), (880, 983)]
+# ui17 A ("a little tighter"): the bar sinks BAR_SINK px from her hair to the flat run before the eddy, tapering to
+# nothing over SINK_TAPER (1080 x) so the eddy (the Flare's glass) and the seats' centres stay where they are
+BAR_SINK = 6.0
+SINK_TAPER = (1372, 1432)
 GOLD = (1837.6, 312.6, 93.3)  # the eddy's painted glass in the source (cx, cy, r)
 SEAT_PITCH, SEAT_D, SEAT_Y = 82, 78, 1031
 SEAT_MID = 958 + DX
@@ -44,6 +53,12 @@ XP_X = (668 + DX, 1392 + DX)
 DRAUGHT = (675 + DX + 4, 1024)
 DASH = (SEAT_MID + SEAT_PITCH * 2.5 + 76, 1024)
 GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
+# ui17 A: painted patches over the cut (Krea 2 turbo masked inpaints of this cut + her figure, BiRefNet alpha; the
+# scripts and seeds in survivorsunchained_inputs/ui17_dg_src/patches/README.txt): (name, box at 1080 px). Each is
+# river_patch_NAME.png (RGBA, 2x: the river there) and river_patch_NAME_w.png (its blend weight).
+#   j: her hair's fall into the bar, a clean sculpted top where the circled lock was cut
+#   c: 2-3 crests on the flat run from the dash to the eddy (the judge: "reads as a ladle handle")
+PATCHES = [("j", (584, 904, 944, 1044)), ("c", (1256, 924, 1456, 1024))]
 
 
 def smooth(e0, e1, x):
@@ -109,6 +124,10 @@ def river():
     L = np.zeros((2160, 3840, 4), np.float32)
     y1, x1 = min(2160, oy2 + H2), min(3840, ox2 + W2)
     L[oy2:y1, ox2:x1] = big[:y1 - oy2, :x1 - ox2]
+    # the bar sinks (a vertical shift by column, tapered off before the eddy)
+    Yg, Xg = np.mgrid[:2160, :3840].astype(np.float32)
+    dy = 2 * BAR_SINK * (1 - smooth(2 * SINK_TAPER[0], 2 * SINK_TAPER[1], Xg))
+    L = cv2.remap(L, Xg, Yg - dy, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
     # the join: hidden left of her back hair's contour (it is under her there), faded out above JOIN_Y near her
     F = figure_alpha_2x()
     cxs = np.zeros(2160, np.float32)
@@ -124,12 +143,25 @@ def river():
     vis = np.where(F > 0.97, 1.0, side * top)
     L[..., 3] *= vis
     L[..., :3] *= vis[..., None]
+    for name, (x0, y0, x1, y1) in PATCHES:
+        f = os.path.join(SRC, "patches", f"river_patch_{name}.png")
+        if not os.path.exists(f):
+            print(f"(no patch {name})")
+            continue
+        P = np.asarray(Image.open(f).convert("RGBA"), np.float32) / 255
+        w = np.asarray(Image.open(f.replace(".png", "_w.png")).convert("L"), np.float32)[..., None] / 255
+        pre = np.dstack([P[..., :3] * P[..., 3:], P[..., 3:]])
+        sl = np.s_[y0 * 2:y1 * 2, x0 * 2:x1 * 2]
+        L[sl] = L[sl] * (1 - w) + pre * w
     # crop to its bbox (even, so the 1x position is whole)
     ys, xs = np.nonzero(L[..., 3] > 1 / 255)
     bx0, by0 = (xs.min() // 2) * 2, (ys.min() // 2) * 2
     bx1, by1 = ((xs.max() + 2) // 2) * 2, 2160
     L = L[by0:by1, bx0:bx1]
     col = np.where(L[..., 3:] > 1e-4, L[..., :3] / np.maximum(L[..., 3:], 1e-4), 0)
+    # (ui17 A) the bronze pass, as on her figure (2x screen px: 0.86 of her source's)
+    col = bronze_pass(np.clip(col, 0, 1), L[..., 3], scale=0.86)
+    col = strand_pass(col, L[..., 3], np.ones(col.shape[:2], np.float32), scale=0.86, gain=STRAND_GAIN)
     img = Image.fromarray((np.dstack([np.clip(col, 0, 1), L[..., 3]]) * 255 + 0.5).astype(np.uint8), "RGBA")
     return img, (int(bx0 // 2), int(by0 // 2))
 

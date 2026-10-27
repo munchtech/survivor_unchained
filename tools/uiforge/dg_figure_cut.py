@@ -41,22 +41,100 @@ from scipy import ndimage
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui16_dg_src"
 SEED = 6305
-NAME = "dg4_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut)
+NAME = "dg5_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut); ui17 A: dg5 = fuller fingers, round pads (ui17_dg_src/patches/README.txt)
 PADL = 128                 # the source's left padding (dg3: the orb further left)
 GLASS = (238.64, 336.6, 139.8)  # dg4's glass (placed by the guide, screen (378, 950)): centre, radius
 RING = 12.0                # her fingertips and thumb may lie over the glass's outer RING px (1080), no further in
 OUT = os.path.join(WT, "godot", "art", "ui", "lamp_life", "drowned")
 
 ORB_D = 120.0       # the glass across at 1080
-HEAD_H = 262.0      # her head's top to the screen's foot at 1080
+HEAD_H = 252.0      # her head's top to the screen's foot at 1080 (ui17 A: 262 -> 252, the owner's "a little tighter": she and the orb sink 10 px)
 PAD = 6             # clear round her in the quad, 1080 px
 RIGHT_X = 770.0     # the quad's right edge on the screen (the hair runs on under the draught's glass)
 BAR_LINE = 930.0    # the bar's top line: above it, she fades when something is behind her
 CHAIN_Y = 1047.0    # the chain's row (the ring orb's eye)
 GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
 SHOULDER = (530.0 + PADL, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
-HAND_LIFT = 0.22    # her hand and forearm brighter than the rest of her bronze
-RED_BOUNCE = (0.34, 0.035, 0.02)   # the orb's red on the faces of her hand beside its lower half
+HAND_LIFT = 0.06    # her hand and forearm a touch brighter than the rest of her bronze (ui17 A: 0.22 read yellow)
+RED_BOUNCE = (0.0, 0.0, 0.0)   # (ui17 A: the orb's red on her is live now, hud_dg_orb.gdshader, scaled to her life)
+STRAND_GAIN = 1.0   # ui17 A: the hair's joined highlights (strand_pass)
+HAND_MATCH = 1.0    # ui17 A (the judge: "yellower than her body"): her hand's hue matched to her neck and shoulder
+
+
+# ui17 A (the judge's polish list, "Bronze: tight highlights on the raised edges ... green patina only in the hollows;
+# no blotches on shoulder or cheek"): the bronze pass, run on her figure here and on the river (dg_river_cut.py)
+CHEEK = (545.0, 238.0, 38.0, 44.0)      # source px (dg4_hand.png, already padded) (x, y, rx, ry): smoothed (the blotches), never her features
+SHOULDER_E = (650.0, 590.0, 110.0, 70.0)
+
+
+def bronze_pass(g, a, smooth_mask=None, scale=1.0, ridge_k=None, round_mask=None):
+    """g: graded RGB (0..1), a: alpha; scale: source px per the figure's source px (the river's are coarser).
+    The verdigris kept only in the hollows (where the bronze is darker than round it), bronzed elsewhere at its own
+    value; the raised edges' highlights tightened (a narrow warm lift where the bronze is lighter than round it);
+    the blotches smoothed where smooth_mask says (edge-keeping)."""
+    import cv2
+    g = g.astype(np.float32)
+    if smooth_mask is not None:
+        sm = cv2.bilateralFilter(g, 9, 0.07, 5.0 * scale)
+        sm = cv2.bilateralFilter(sm, 9, 0.05, 5.0 * scale)
+        g = g + (sm - g) * smooth_mask[..., None]
+    if round_mask is not None:
+        # (a round form, the shoulder: its patchy hot spots blurred into one smooth fall of light)
+        pa = np.dstack([g * a[..., None], a])
+        bl = cv2.GaussianBlur(pa, (0, 0), 6.0 * scale)
+        bl = bl[..., :3] / np.maximum(bl[..., 3:], 1e-3)
+        g = g + (np.clip(bl, 0, 1) - g) * (round_mask * (a > 0.5))[..., None]
+    L = 0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2]
+    Lb = cv2.GaussianBlur(L, (0, 0), 7.0 * scale)
+    cav = np.clip((Lb - L) / 0.07, 0, 1)
+    gr = np.clip((g[..., 1] - g[..., 0]) * 7.0 + 0.15, 0, 1)
+    bz = L[..., None] * np.array([1.28, 0.98, 0.66], np.float32)
+    keep = np.clip((cav - 0.06) / 0.35, 0, 1)
+    w = gr * (1 - keep) * 0.6
+    g = g * (1 - w[..., None]) + bz * w[..., None]
+    L = 0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2]
+    # (the ridges from a smoothed value, so the paint's speckle never sparkles: only edges a few px long)
+    Ls = cv2.GaussianBlur(L, (0, 0), 1.2 * scale)
+    ridge = np.clip((Ls - cv2.GaussianBlur(L, (0, 0), 3.5 * scale)) / 0.06 - 0.25, 0, 1)
+    lit = np.clip((Ls - 0.28) / 0.22, 0, 1)
+    rk = 1.0 if ridge_k is None else ridge_k
+    g = g + np.array([0.22, 0.16, 0.08], np.float32) * (ridge * lit * (a > 0.5) * rk)[..., None]
+    return np.clip(g, 0, 1)
+
+
+def strand_pass(g, a, mask, scale=1.0, gain=1.0):
+    """ui17 A (the judge: "hair: ... highlights run unbroken from her crown into the river"): the hair's highlights
+    carried along its own strands. The strands' direction from the bronze's structure tensor; each highlight (the
+    bronze lighter than round it) averaged along that direction ~16 px each way (line integral convolution), so the
+    painted dashes join into running lines; the gain is laid back as a warm lift where mask says."""
+    import cv2
+    L = (0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2]).astype(np.float32)
+    hp = np.clip(L - cv2.GaussianBlur(L, (0, 0), 2.5 * scale), 0, None) * (a > 0.5)
+    Ls = cv2.GaussianBlur(L, (0, 0), 1.5 * scale)
+    ix, iy = cv2.Sobel(Ls, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(Ls, cv2.CV_32F, 0, 1, ksize=3)
+    sg = 5.0 * scale
+    j11, j22, j12 = (cv2.GaussianBlur(v, (0, 0), sg) for v in (ix * ix, iy * iy, ix * iy))
+    phi = 0.5 * np.arctan2(2 * j12, j11 - j22)          # across the strands
+    vx, vy = -np.sin(phi).astype(np.float32), np.cos(phi).astype(np.float32)   # along them
+    H, W = L.shape
+    gy, gx = np.mgrid[:H, :W].astype(np.float32)
+    acc, wsum = hp.copy(), np.ones_like(hp)
+    step = 1.4 * scale
+    for sgn in (1.0, -1.0):
+        px, py = gx.copy(), gy.copy()
+        dx, dy = vx * sgn, vy * sgn
+        for k in range(12):
+            nx = cv2.remap(vx, px, py, cv2.INTER_LINEAR)
+            ny = cv2.remap(vy, px, py, cv2.INTER_LINEAR)
+            flip = np.sign(nx * dx + ny * dy + 1e-6)
+            dx, dy = nx * flip, ny * flip
+            px, py = px + dx * step, py + dy * step
+            wk = 1.0 - k / 12.0
+            acc += cv2.remap(hp, px, py, cv2.INTER_LINEAR) * wk
+            wsum += wk
+    lic = acc / wsum
+    add = np.clip(lic * 2.4 - hp, 0, None) * mask * (a > 0.5)
+    return np.clip(g + np.array([1.0, 0.78, 0.45], np.float32) * (add * gain)[..., None], 0, 1)
 
 
 def fit_circle(alpha, box):
@@ -153,6 +231,27 @@ def main():
     gl = (0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2])[..., None]
     g = g + (near ** 1.4 * held)[..., None] * np.array(RED_BOUNCE) * np.clip(gl * 2.5, 0.35, 1.0)
     g = np.clip(g, 0, 1)
+    # (ui17 A) her hand's hue matched to her body's: each channel scaled so the lit hand's mean colour has her neck
+    # and shoulder's ratios at its own brightness
+    gl = 0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2]
+    lit = (a > 0.9) & (gl > 0.15)
+    hk, bk = lit & (held > 0.8), lit & (held < 0.05) & (xx > bnd + 40)
+    hm_, bm_ = g[hk].mean(0), g[bk].mean(0)
+    k = (bm_ / bm_.mean()) / (hm_ / hm_.mean())
+    print(f"hand match: hand {hm_.round(3)} body {bm_.round(3)} gain {k.round(3)}")
+    g = np.clip(g * (1 + (k - 1) * HAND_MATCH * held[..., None]), 0, 1)
+    # (ui17 A) the bronze pass: patina to the hollows, tight highlights, the cheek's and shoulder's blotches smoothed
+    def ell(e):
+        return np.clip(1.6 - 1.6 * np.sqrt(((xx - e[0]) / e[2]) ** 2 + ((yy - e[1]) / e[3]) ** 2), 0, 1)
+    # (her face passed: the pass at half there, its value kept)
+    face = ell((520.0, 190.0, 95.0, 150.0))
+    g0 = g
+    g = bronze_pass(g, a, ell(CHEEK) * 0.85, ridge_k=1 - 0.5 * face, round_mask=ell(SHOULDER_E) * 0.8)
+    g = g0 + (g - g0) * (1 - 0.5 * face)[..., None]
+    # (ui17 A) the hair's highlights joined along its strands: her hair only (not her face, neck, shoulder or hand)
+    skin = np.clip(np.maximum.reduce([ell((520.0, 200.0, 110.0, 175.0)), ell((560.0, 420.0, 120.0, 140.0)), ell(SHOULDER_E) * 1.3]) * 1.5, 0, 1)
+    hair = (1 - skin) * (1 - held) * (xx > 430)
+    g = strand_pass(g, a, hair, gain=STRAND_GAIN)
 
     # the scale: the glass ORB_D across at 1080, the art at 2x
     s = ORB_D / (2 * r)             # source px -> 1080 px
