@@ -58,7 +58,154 @@ public partial class Game
         finally { chained = null; }
         if (scene != null) scene.Fx.HideLoot = true;
         handoffId = id;
+        // (its double taken: the next one's made now)
+        doubleCheck = 0;
         return true;
+    }
+
+    /* Her double built ahead (s5). A cinematic's "survivor" is her figure made new: 250-450 ms and some 240 MB on
+     * the main thread as each began (C02, C03, C04 A). One is made on a worker thread while play goes on (as
+     * WalkerView makes the townsfolk), held off the tree, and the next cinematic takes it if she still looks as
+     * she did (her look and arms: DoubleKey); if not, it is made there as before. Only in a place with cinematics. */
+    System.Threading.Tasks.Task<PersonView>? doubleAhead;
+    string? doubleKey, doubleSeen;
+    double doubleCheck;
+    readonly List<System.Threading.Tasks.Task<PersonView>> doublesDropped = new();
+    static readonly JsonSerializerOptions DoubleJson = new() { IncludeFields = true };
+
+    static string DoubleKey(Loadout lo) =>
+        JsonSerializer.Serialize(lo.Person, DoubleJson) + "|" + lo.Arms.Right + "|" + lo.Arms.Left + "|" + lo.Arms.Forearm;
+
+    static Dictionary<string, List<CineFile>>? cineZones;
+    string? castAheadZone;
+
+    static Dictionary<string, List<CineFile>> CineZones()
+    {
+        var z = new Dictionary<string, List<CineFile>>();
+        foreach (var f in DirAccess.GetFilesAt("res://data/cinematics"))
+            if (f.EndsWith(".json") && !f.StartsWith("_"))
+                try { var cf = CineFile.Load(f[..^5]); (z.TryGetValue(cf.Zone, out var l) ? l : z[cf.Zone] = new()).Add(cf); } catch (Exception) { }
+        return z;
+    }
+
+    /// <summary>The files the people a place's cinematics cast are made from (its named folk, its crowds, what they
+    /// hold), loaded on a worker as the place is entered and held while it plays: C02's drowned were loaded from
+    /// disk on the main thread as it began, some 650 ms.</summary>
+    void CastAhead(List<CineFile> files)
+    {
+        var paths = new HashSet<string>();
+        void Add(PersonSpec? spec, Held? arms)
+        {
+            if (spec != null) foreach (var f in People.Files(spec)) paths.Add(f);
+            foreach (var a in new[] { arms?.Right, arms?.Left, arms?.Forearm })
+                if (a != null && Arms.All.TryGetValue(a, out var w) && w.Build == null) paths.Add($"res://assets/weapons/{w.File}.glb");
+        }
+        foreach (var f in files)
+            foreach (var c in f.Cast.Values)
+            {
+                if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def) Add(def.Person ?? new PersonSpec(), def.Arms);
+                else if (c.Kind == "extras")
+                    foreach (var v in c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"]) { var sp = Visuals.Of(v); Add(sp.Person ?? new PersonSpec(), sp.Arms); }
+            }
+        Prefetch.CastAhead(paths);
+        // (and the figures themselves, s6: C02's Warden and twelve drowned were made on the main thread as it began,
+        // 140 ms; each cinematic's boss and extras made on a worker, one file after another, held off the tree)
+        if (Args.Get("cast-ahead") == "off") return;
+        foreach (var f in files)
+        {
+            var specs = new List<(string Key, CineCast C, int I)>();
+            foreach (var (name, c) in f.Cast)
+                if (c.Kind == "boss") specs.Add((name, c, -1));
+                else if (c.Kind == "extras" && c.At != null) for (int i = 0; i < c.At.Count; i++) specs.Add((name, c, i));
+            if (specs.Count == 0) continue;
+            var before = castChain;
+            castChain = System.Threading.Tasks.Task.Run(() =>
+            {
+                try { before?.Wait(); } catch (Exception) { }
+                var made = new Dictionary<string, Node3D>();
+                foreach (var (name, c, i) in specs)
+                {
+                    if (i < 0) { made[name] = new WardenView(); continue; }
+                    var visuals = c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"];
+                    var spec = Visuals.Of(visuals[i % visuals.Count]);
+                    made[$"{name}.{i}"] = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                }
+                return made;
+            });
+            castAhead[f.Id] = castChain;
+        }
+    }
+
+    /// <summary>The cast made ahead for each cinematic file (by its id), and the chain they are made on (one at a time).</summary>
+    readonly Dictionary<string, System.Threading.Tasks.Task<Dictionary<string, Node3D>>> castAhead = new();
+    System.Threading.Tasks.Task<Dictionary<string, Node3D>>? castChain;
+
+    /// <summary>A cinematic's cast made ahead (waited for, if still being made), taken: what it does not use is freed.</summary>
+    Dictionary<string, Node3D>? TakeCast(string fileId)
+    {
+        if (!castAhead.Remove(fileId, out var t)) return null;
+        try { return t.Result; }
+        catch (Exception e) { GD.PushWarning($"cinema: the cast made ahead failed ({e.Message})"); return null; }
+    }
+
+    /// <summary>What was made ahead and not taken, freed (the place left, or the game).</summary>
+    void DropCast()
+    {
+        foreach (var t in castAhead.Values)
+        {
+            try { t.Wait(10000); } catch (Exception) { }
+            if (t.IsCompletedSuccessfully) foreach (var n in t.Result.Values) if (IsInstanceValid(n) && !n.IsInsideTree()) n.Free();
+        }
+        castAhead.Clear();
+        castChain = null;
+    }
+
+    /// <summary>Each frame (a look a second): her double made ahead if there is none for her as she is.</summary>
+    void DoubleAhead(double dt)
+    {
+        for (int i = doublesDropped.Count - 1; i >= 0; i--)
+            if (doublesDropped[i].IsCompleted)
+            {
+                if (doublesDropped[i].IsCompletedSuccessfully) doublesDropped[i].Result.Free();
+                doublesDropped.RemoveAt(i);
+            }
+        if ((doubleCheck -= dt) > 0 || Journey == null || scene?.Battle == null || Args.Has("no-double-ahead")) return;
+        doubleCheck = 1;
+        if (!(cineZones ??= CineZones()).TryGetValue(scene.Data.Id, out var here)) return;
+        if (castAheadZone != scene.Data.Id) { DropCast(); castAheadZone = scene.Data.Id; CastAhead(here); }
+        if (doubleAhead is { IsCompleted: false }) return;
+        if (HerWear.Dressing) return;
+        var lo = Loadouts.Of(Journey.Ch);
+        var key = DoubleKey(lo);
+        if (doubleAhead != null && key == doubleKey) return;
+        // (her look as it was a second ago too: not between swaps)
+        bool settled = key == doubleSeen;
+        doubleSeen = key;
+        if (!settled) { doubleCheck = 0.5; return; }
+        if (doubleAhead != null) doublesDropped.Add(doubleAhead);
+        doubleKey = key;
+        var spec = lo.Person;
+        var held = new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm };
+        doubleAhead = System.Threading.Tasks.Task.Run(() => new PersonView(spec, held, 0.8) { Name = "CineSurvivor" });
+    }
+
+    /// <summary>The game goes: her double made ahead, never added, goes with it (no leak reported at exit).</summary>
+    public override void _ExitTree()
+    {
+        if (doubleAhead is { } t) { try { t.Wait(5000); } catch (Exception) { } if (t.IsCompletedSuccessfully) t.Result.Free(); doubleAhead = null; }
+        foreach (var d in doublesDropped) { try { d.Wait(5000); } catch (Exception) { } if (d.IsCompletedSuccessfully) d.Result.Free(); }
+        doublesDropped.Clear();
+        DropCast();
+    }
+
+    /// <summary>Her double made ahead, if it is of her as she is (waited for, if it is still being made); else null.</summary>
+    PersonView? TakeDouble(Loadout lo)
+    {
+        if (doubleAhead is not { } t || t.IsFaulted || t.IsCanceled || doubleKey != DoubleKey(lo)) return null;
+        doubleAhead = null;
+        doubleKey = null;
+        try { return t.Result; }
+        catch (Exception e) { GD.PushWarning($"cinema: her double made ahead failed ({e.Message})"); return null; }
     }
 
     public bool CanCinematic(string id) =>
@@ -220,19 +367,29 @@ public partial class Game
             g.scene!.CameraHeld = true;
             if (g.scene.Player != null) g.scene.Player.Hidden = true;
             b.WorldRate = file.World.Rate; b.WorldRateT = 1e9;
+            made = g.TakeCast(file.Id);
             foreach (var (name, c) in file.Cast) Cast(name, c);
+            if (made != null) foreach (var n in made.Values) if (!n.IsInsideTree()) n.QueueFree();
+            made = null;
+            SunAhead();
             GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
             Dispatch(player.Advance(0));
         }
 
         /* --------------------------------------------------------- the cast -- */
 
+        /// <summary>This file's cast made ahead on a worker (Game.CastAhead), while the cast is being stood up.</summary>
+        Dictionary<string, Node3D>? made;
+        Node3D? Made(string key) => made != null && made.Remove(key, out var n) ? n : null;
+
         void Cast(string name, CineCast c)
         {
             if (c.Kind == "survivor")
             {
                 var lo = Loadouts.Of(g.Journey.Ch);
-                var v = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
+                // (made ahead on a worker while play went on, if she still looks so: Game.DoubleAhead)
+                var v = g.TakeDouble(lo)
+                    ?? new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
                 // The townsfolk's clips too (sitting on the floor, arms folded): made on the
                 // same skeleton, they stand in until her own cinematic motion comes.
                 if (FolkClips.Library() is { } folk && !v.Person.Anim.HasAnimationLibrary("folk")) v.Person.Anim.AddAnimationLibrary("folk", folk);
@@ -253,7 +410,9 @@ public partial class Game
             {
                 // The cinematic's own Warden: the zone's waits hidden, and the
                 // fight's takes his place where this one is left.
-                var w = new WardenView { Name = "Cine_" + name, Glow = c.Glow };
+                var w = Made(name) as WardenView ?? new WardenView();
+                w.Name = "Cine_" + name;
+                w.Glow = c.Glow;
                 g.scene!.AddChild(w);
                 bosses[name] = w;
                 people[name] = w.Body;
@@ -269,7 +428,8 @@ public partial class Game
                 for (int i = 0; i < c.At.Count; i++)
                 {
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
-                    var v = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale) { Name = $"Cine_{name}{i}" };
+                    var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    v.Name = $"Cine_{name}{i}";
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
                     people[who] = v;
@@ -905,27 +1065,10 @@ public partial class Game
                     break;
                 case "atmosphere":
                 {
-                    // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
-                    // cinematic and finished in the next); a skip lands on k1. "from": "now"
-                    // blends from the air as it is (a scene's own night back into play's).
-                    // "play": the zone's own air for the time it is (the hand-back into play's look).
-                    var to = Tuned(c.Str("preset") switch
-                    {
-                        "now" => g.air.Current,
-                        "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
-                        // "playdawn": the zone's own dawn, the air play will take up at a dawn hand-back
-                        // (C04 A: the dawn comes up under its lines, not a night with stars; play-1).
-                        "playdawn" when g.zone != null => g.zone.AtmosphereFor(TimeOfDay.Dawn),
-                        var n => Atmospheres.ByName(n == "play" ? "night" : n!),
-                    }, c);
+                    var (to, fromAir) = AirOf(c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
-                    if (c.Str("from") is string fromName)
+                    if (fromAir is { } from)
                     {
-                        var from = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
-                        // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
-                        // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
-                        // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
-                        if (c.Str("preset") is "play" or "playdawn") @from = @from with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
                         if (over > 0 && !skipping)
                         {
                             double last = -1;
@@ -1407,6 +1550,53 @@ public partial class Game
         /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
         /// "hemi", "env", "exposure", "fog" and "rim" scale the preset's own; "azimuth" and "elevation" (degrees)
         /// move the moon or sun for the shot; "keyColor", "fogColor", "hemiSky", "hemiGround" and "rimColor" replace its colours.</summary>
+        /// <summary>An "atmosphere" cue's air, where it goes and where from (null: set at once), as the cue reads now.</summary>
+        (AtmospherePreset To, AtmospherePreset? From) AirOf(CineCue c)
+        {
+            // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
+            // cinematic and finished in the next); a skip lands on k1. "from": "now"
+            // blends from the air as it is (a scene's own night back into play's).
+            // "play": the zone's own air for the time it is (the hand-back into play's look).
+            var to = Tuned(c.Str("preset") switch
+            {
+                "now" => g.air.Current,
+                "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
+                // "playdawn": the zone's own dawn, the air play will take up at a dawn hand-back
+                // (C04 A: the dawn comes up under its lines, not a night with stars; play-1).
+                "playdawn" when g.zone != null => g.zone.AtmosphereFor(TimeOfDay.Dawn),
+                var n => Atmospheres.ByName(n == "play" ? "night" : n!),
+            }, c);
+            if (c.Str("from") is not string fromName) return (to, null);
+            var src = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
+            // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
+            // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
+            // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
+            if (c.Str("preset") is "play" or "playdawn") src = src with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
+            return (to, src);
+        }
+
+        /// <summary>The frost's thaw baked ahead, on a worker, for each sun this cinematic and the one it runs on into
+        /// set as their atmosphere cues begin (GroundPaint.SunAhead): C04 A's dawn baked it on the main thread as it
+        /// came up, 2.4 s.</summary>
+        void SunAhead()
+        {
+            var files = new List<CineFile> { file };
+            if (file.End.Next is string next) try { files.Add(CineFile.Load(next)); } catch (Exception) { }
+            foreach (var f in files)
+                foreach (var shot in f.Shots)
+                    foreach (var c in shot.Cues)
+                    {
+                        if (c.Do != "atmosphere") continue;
+                        var (to, src) = AirOf(c);
+                        double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
+                        AtmospherePreset[] airs = src is not { } fr ? [to] : c.Num("over") > 0
+                            ? new[] { Atmospheres.Blend(fr, to, k0), Atmospheres.Blend(fr, to, k1) }
+                            : [k1 >= 1 ? to : Atmospheres.Blend(fr, to, k1)];
+                        foreach (var p in airs)
+                            if (Atmosphere.ThawSun(p) is Vector3 dir) GroundPaint.SunAhead(dir);
+                    }
+        }
+
         static AtmospherePreset Tuned(AtmospherePreset p, CineCue c) => p with
         {
             KeyIntensity = p.KeyIntensity * c.Num("key", 1), HemiIntensity = p.HemiIntensity * c.Num("hemi", 1),
