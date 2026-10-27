@@ -5,10 +5,46 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## Experience 7 (play-1 lead, 26 Oct): MR4b MR READY (play-1@4e795287 + this doc); MR5 next
+## Experience 9 (play-1 lead, 27 Oct): MR5 fix round done, re-judged; MR5 READY
 
-**MR4b checks:** the no-look check of the ahead-built cast: C02 and C04 A on vs `--no-double-ahead --cast-ahead off` 0 px differing (floor 0; sheets scratch play3\w1\c02_*.png, c04a_*.png). The arrival frames (1140/140/93 ms in m7full) sat behind full black but used 1.37 of the 1.4 s caption hold, so 4e795287 holds the fade-in until two frames come in under 40 ms (2 s at most; `Game.WhenSmooth`). Integration merged (a6a9d542), tests 1070/0/8, full shot-free run m7full: 61 over 33 ms, 3 over 100 outside the arrival (235.9 s C02 start 91 ms/39 pipelines, 319.7 and 345.1 s ~100 ms in C03-C04 stage 11, 890.9 s 103 ms at the Waystation), no errors.
-**MR5 (next):** item 15 (brief scratch play4\brief_i15.md), the zoom pop + the >100 ms tail (play4\brief_zoom.md), item 14 only if the owner picks HUD A2 (if C wins, it waits for UI). Medium solvers, one at a time (they share the build), then an xhigh flow judge on item 15.
+**State:** the MR5 fix round (12 items) built, the xhigh re-judge (aebd7397) gave A and B SHIP WITH FIXES (small); its three fixes built (df36280d); a full run v8 on the final code. This was i15's and i14's last round: anything later is a new list.
+- **Built:** elite/chest/pack tips re-timed, the Barrow line waits for the pack tip (e11df505); the Knight lives through 2 windups; L4 talk cut; L1 lock after the 2nd rise's draft, no crowd gate (ec6c92a5, 33c8d478); F2 aims at `chain_fill` (Instrument.ChainFill); F7 rings the Knight + arrow on his lane, the wall case fixed (open-ground test now uses a wall's faces, not its box; the Knight narrows when stuck out of sight) and F8 shows while the Grave-Caller stands (his arrival fills her Flare once; the autopilot holds the Flare for it) (1b130e90); the draught lesson under 70%, no "she must be seen" wait, gap 3, held off the Knight's windup/lunge + 1.5 s (df36280d).
+- **Ambush stakes** (36a8658f..24aeacb2, df36280d): opening volley x1.5, ditch dead x1.3, 24 foes held, and a steer in `Prologue.AmbushMul` via `Battle.FoeHitMul` (x0.25 when she loses >1.2%/s; x2.5 when she stood still 3 s and loses <0.9%/s in the first 30 s, off after she drinks). Idle loses 27-29% by +30 s (amb21-23), the dodging pilot 7.5-10% (n13-14). Judge: the steer is acceptable while no hit numbers show on her.
+- **Closed as known:** the F7 arrow tip lands on her figure (reads "you're on it").
+- **Routed (with the MR):** the Knight's white flash (VFX/model); the dark blue night frames (env). UI 16's "Knight low in frame" was the old v4 frame; v6 has him mid-frame.
+- **Scratch:** `survivorsunchained_inputs\scratch_play6\` (briefs, pace5.py, logs amb*, n*, v6-v9). Frames `godot/.shots/v6_*`, `v6b_*`, `v8_*`.
+- **Cost:** worker 64k + 44k, solvers 189k + 151k (3.7 h of runs), judge 131k, API $0.
+
+## Experience 8 (play-1 lead, 27 Oct): PAUSED (coordinator wind-down); MR5 judged, ONE fix round left
+
+**Paused here (Experience 8, 27 Oct); next:** run the fix round in scratch `play5\brief_mr5fix.md` (12 decided items) on ONE fresh `su-worker` (or a medium su-lead-high for items 11-12, which need digging). Then ONE xhigh re-judge of only the changed frames (F2, L1, F7, the Post tips, F8, the draught if it fires) plus the ambush HP numbers, then one full shot-free run, tests, and MR5 to main. This is i15's last round (the cap): anything still open after it closes as known. Integration f09f6d81 is merged in (5ae3fdb1). Tests 1130/0/8. No turns held, no helpers running.
+- **Built since Experience 7:**
+  - Item 14 + F7 (89d2a819, 81b93b42, 203ed65a): lessons L1 lock, L2 tally, L3 minimap, L4 talk; the Ember explanation in order; Callout `Quiet`/`Still`; `--auto talk`.
+  - New GameHud accessors `PromptArea`, `MinimapArea`, `TallyArea`, `EmberLockArea`: the merge point with UI 14.
+  - F7: the Knight's holds are bounded and his first lunge is forced at close range (26faaf13, 2b4ac60f, 993a94af: `Enemy.LungeMin`; `pace knight windup/watch` log lines).
+- **Judge (xhigh, combined, a16ec7c2):**
+  - C, the zoom pop: SHIP.
+  - A, i15 round 2: SHIP WITH FIXES, close. No stakes yet: v4 and v5 ran at 212/212 the whole Prologue. Tune the Ambush with `--auto idle` until an idle player loses 25-40% HP; the draught lesson fires under 70% HP.
+  - B, i14 + F7: SHIP WITH FIXES, close. Cut L4; move L1 to the 2nd rise; F7 rings the Knight, with the arrow at her spot on the lane; space the Post's tips; F2 aims at the filled links; the chest tip loses its E chip; F8 (art) never shows in time.
+  - Every fix is in the brief.
+- **F7 status:** f7e is within target (the windup came 11.5 s into the Post). f7f is the wall case: no clear ray, so the first freeze was dropped "gone, notyet". That's brief item 12.
+- **Routed (tell main with the MR):**
+  - The red-line telegraph reads salmon, not red (combat VFX).
+  - The freeze dim leaves night frames near black (UI).
+  - The lock shows her own level by day with no word (UI; it matters from night 2).
+  - Pink-skinned figures in the town's top left (NPC).
+  - The "RAV CUTWELL" label is clipped at the top edge (UI).
+- **Scratch:** `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\9c583f93-c0ad-4a2d-8f37-a803f39d38c2\scratchpad\play5\`, backed up to `survivorsunchained_inputs\scratch_play5\`. It holds pace5.py (env STOP, BASE=hub, AUTO), the logs v4, v5 and f7a-f, and the briefs i14, f7fix, mr5fix and judge_mr5. Frames are `godot/.shots/v4_*` and `v4b_*`.
+- **Cost this session:** solver 201k, worker 57k, judge 151k, API $0.
+
+## Experience 7 (play-1 lead, 26 Oct): PAUSED (coordinator wind-down); MR4b MR READY (db2f125a, sent); MR5 mostly built
+
+**Paused here; next:** MR5 at play-1@5ce39cac+this doc, tests 1074/0/8, no turns held. Built:
+- **Item 15 (pacing)** f2da898a..1e5deea3 + judge fixes 5ce39cac. Judge i15 r1 (xhigh, play4\judge_i15.md): SHIP WITH FIXES, close; all fixes applied (dash freezes at 4 m with bolt marks and a dodge line; draught waits only for a freeze (`Callout.Urgent`); the Road's dead fall away, coins at the wagon tail, the objective set at the trap, 0.8 s silence; spacing from a line's end; the shield tip from the trap with new copy; unvoiced lines up >= chars/17 s CENTRALLY in `Game.Say`; no spawns in Road/ToFord/Road2's first 6 s). v3 timeline in play4\logs\v3.pace; frames `godot/.shots/i15t_*`. Round 2 = ONE xhigh judge on the i15t frames (no draught frame in the seeded run; v3.pace has it at 192.3 s, HP 87) combined with the zoom strip below and item 14.
+- **Zoom pop** 2719e93c: the room ray (new `logic/Play/CameraRoom.cs`) sees past thin posts, passes over low colliders (drawn top cached), glides in log distance; 14.85% -> 3.29% a frame max. Strips play4\strip_zoom_before/after.png, unjudged: a lamp post now passes in front of her for a few frames (a thin-occluder fade would be polish, likely close as fine).
+- **Perf tail** (CLOSED AS KNOWN): C02 start 91-138 ms cold (cast 16-22 ms + first cues 31 ms + 117 pipelines on the first draw; only an offscreen pipeline warm would cure it, at a cut it hides); 319.7 s not reproducible; 345/891 s outside our code on a shared GPU. Diagnostics in dce862db (`--perf` prints a cinematic start's sections).
+- **Open, NEXT:** item 14 (UNBLOCKED: the owner picked HUD A2, bottom-center layout kept): teach the minimap + map key, check the talk prompt appears at an NPC (`Style.KeyCap` + name; autopilot never talks: script a walk-up), the padlock "4" and kill/gold counters, Ember in plain words (TUTORIAL_COPY "The Ember explanation"); audit text `survivorsunchained_inputs\play1udit_au1.md` item 14. Also F7 (the Knight's red-line lesson) never shows in real runs (old): fix in the same pass. One medium solver, then the combined judge, then the full run, MR5.
+- Scratch play4\ (briefs, pace.py, cam.py, jumps.py, strip.py, logs). Cost this session: solvers 191k+165k, worker 88k, judge 114k, runner 30k.
 
 ## Experience 6 (play-1 lead, 26-27 Oct): PAUSED (coordinator wind-down); MR4 sent at ea5f1cc2; MR4b (s5+s6) built, checks left
 

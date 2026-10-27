@@ -82,6 +82,8 @@ public sealed class Enemy : Pooled
     public bool Scripted;
     public EnemyState State = EnemyState.Active;
     public double StateT, AttackT, RangedT, RaiseT;
+    /// <summary>The nearest a lunger may begin its run from (2 m; the zone lowers it for the Barrow Knight's first red line).</summary>
+    public double LungeMin = 2;
     /// <summary>-1 the player, otherwise an enemy id; -2 none.</summary>
     public int Target = -1;
     public double RetargetT;
