@@ -52,7 +52,9 @@ public static class Wear
     /// other visual slots it covers, equipped or not (a suit hides what it covers). A fill never hides an equipped piece
     /// (loot the player put on must show): a fill whose covers reach a slot an equipped piece shows in is dropped, and
     /// its own slot is filled by the first calling in FallbackOrder whose piece for that slot covers that slot only, or
-    /// left empty with a note. A piece the index does not know is left off, with a note why.</summary>
+    /// left empty with a note. A calling row displaced by an equipped piece puts its `under` pieces on in its place (the
+    /// arcanist's leotard top leaves the warden's bottom and belt), each in its own slot unless that is equipped or hidden.
+    /// A piece the index does not know is left off, with a note why.</summary>
     public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null, IReadOnlyCollection<string>? hide = null)
     {
         // (`hide`: visual slots left empty, no equipped piece and no fill: her show-helm toggle off leaves "head" bare)
@@ -85,6 +87,19 @@ public static class Wear
             var fb = FallbackOrder.Select(c => ix.Find($"{c}.{slot}")).FirstOrDefault(p => p is { } p_ && p_.Covers.Count == 1 && p_.Covers[0] == slot);
             if (fb != null) { r[slot] = fb.Id; notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece; {slot} filled with '{fb.Id}'"); }
             else notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece, and no calling has a {slot} that covers only {slot}; {slot} left empty");
+        }
+        // (a calling row displaced by an equipped piece leaves its `under` pieces in its place)
+        foreach (var (slot, id) in ix.Calling(calling))
+        {
+            if (slot == Ink || ix.Find(id) is not { Under: { Count: > 0 } under }) continue;
+            if (!(eq.ContainsKey(slot) || hidden.Contains(slot))) continue;
+            foreach (var u in under)
+            {
+                if (ix.Find(u) is not { } ur) { notes?.Add($"wear: {calling}'s '{id}' lists unknown under piece '{u}'; skipped"); continue; }
+                if (eq.ContainsKey(ur.Slot) || hidden.Contains(ur.Slot) || Hid(ur.Slot)) continue;
+                r[ur.Slot] = u;
+                notes?.Add($"wear: {calling}'s '{id}' is displaced; '{u}' worn under it");
+            }
         }
         // (and what the fills kept hide, of the other fills)
         foreach (var (slot, id) in r.ToList())

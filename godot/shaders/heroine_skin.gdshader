@@ -416,6 +416,16 @@ uniform float spec_cap = 0.2;
 // (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
 // cheek at the Look, face 32 r2: a gold sheen under 0.8)
 uniform float metal_cap = 0.8;
+// (the night skin-line hold, face 46 skin C: under the close view's warm night lamps her lit skin went orange/salmon off
+// her skin line (the night grade warms her highlights further), while her hair, clothes and the scene keep the lamps'
+// full warmth. skin_hold (0 to 1, the close view's night weight, People.HerSkinHold) pulls each warm lamp's colour on her
+// skin toward hold_tint (an amber, more yellow than the fires', so after the grade she lands on her line), until its
+// tint (the lamp over its own luminance) is within hold_chroma of hold_tint's; its luminance kept, times hold_gain.
+// Directional lamps (sun, moon) and cool lamps untouched. 0: as before.)
+uniform float skin_hold = 0.0;
+uniform vec3 hold_tint = vec3(1.0, 0.85, 0.55);
+uniform float hold_chroma = 0.0;
+uniform float hold_gain = 1.0;
 // (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
 // clavicle and across her chest as whitish-grey, violet under a cool lamp ("an ashy smear", judge J2, face 36; with
 // spec_cap 0 her chest's hue 25 against her face's 39, at 0.2 -14). Where her albedo's luminance is under deep_lum.x (all
@@ -761,6 +771,14 @@ void light() {
 		DIFFUSE_LIGHT += (dbg_gate > 1.5 ? (dbg_gate - 2.0) * vec3(c_ndl * kw * (1.0 - bh), ATTENUATION * kw * (1.0 - bh), 0.0)
 			: dbg_gate * ATTENUATION * c_ndl * vec3(kw * (1.0 - bh), 1.0 - kw, kw * bh));
 	} else {
+	vec3 lc = LIGHT_COLOR;
+	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
+		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
+		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);
+		vec3 ht = hold_tint / max(dot(hold_tint, hlw), 1e-5);
+		vec3 ld = LIGHT_COLOR / ly - ht;
+		lc = mix(LIGHT_COLOR, ly * hold_gain * (ht + ld * min(1.0, hold_chroma / max(length(ld), 1e-5))), skin_hold);
+	}
 	float c_ndv = max(dot(dn, VIEW), 1e-4);
 	float s_ndv = max(dot(NORMAL, VIEW), 1e-4);
 	vec3 h = normalize(VIEW + LIGHT);
@@ -805,7 +823,7 @@ void light() {
 	}
 	rich = mix(rich, vec3(1.0), paint_w);
 	kt = mix(kt, vec3(1.0), paint_w);
-	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
+	DIFFUSE_LIGHT += mouth_lit * lc * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w * (1.0 - paint_w));
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
@@ -813,9 +831,9 @@ void light() {
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
 	rim_light *= 1.0 - rim_dn;
-	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
+	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * lc * ATTENUATION * un;
 	// light through her where she is thin
-	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
+	DIFFUSE_LIGHT += mouth_lit * lc * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
 	if (s_ndl > 0.0) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;

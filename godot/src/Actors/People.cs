@@ -370,10 +370,19 @@ public static class People
         skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
+        // Her clavicle lift as an arm rises above level (the hands kept), before the shapes and twists read the arm.
+        skel.AddChild(new HerShrug());
+        // The pectoral's pull on her breasts as an arm rises, before the springs follow it.
+        skel.AddChild(new HerRaise());
+        // Her scapulae turned up as each arm rises (only a body built with them: scap_rig_post.py).
+        skel.AddChild(new HerScap());
         skel.AddChild(new HerJiggle());
         skel.AddChild(new HerFaceLife());
         // Her twist and share bones, from the pose every layer above has made.
         skel.AddChild(new HerJoints());
+        // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae and the twist
+        // bones (the delt is twist_02's child; shoulder_rig_post.py).
+        skel.AddChild(new HerShoulder());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
@@ -1452,7 +1461,7 @@ public static class People
         HerLod.For(p)?.Merge(laid);
     }
 
-    static Shader? furShader, sheerShader, outfitShader, metalShader;
+    static Shader? furShader, sheerShader, outfitShader, metalShader, satinShader;
     static Godot.Collections.Dictionary? outfitTable, metalFinishes;
     static Texture2D? metalDetail;
 
@@ -1477,7 +1486,10 @@ public static class People
             // (metal: the same shader with metal's own light and reflection, one shared scratch-and-pit
             // detail and its key's finish; the look bible's armor-metal page)
             if (kind == 1) metalShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_metal.gdshader");
-            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : outfitShader };
+            // (a satin with a sheen, the arcanist's opera gloves: satin's own light, its sheen along the arm, armor 16)
+            bool sheen = kind == 5 && entry.ContainsKey("sheen");
+            if (sheen) satinShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_satin.gdshader");
+            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : sheen ? satinShader : outfitShader };
             m.SetShaderParameter("kind", kind);
             // (its dye zone, from the table: HerWear.DyeMesh sets the dye on the surfaces of the zone a piece is dyed in)
             m.SetMeta("zone", entry.TryGetValue("zone", out var zn) ? (string)zn : "none");
@@ -1494,7 +1506,7 @@ public static class People
                 if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
                 {
                     string set = mi.Name.ToString().Split('_')[0];
-                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids;
+                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids; var pb = ids; var prr = ids; var prb = ids; var pf = ids; var ps = ids; var pfm = ids; var pmu = ids;
                     int n = 0;
                     foreach (var (pn, pv) in byKey.AsGodotDictionary())
                     {
@@ -1504,11 +1516,25 @@ public static class People
                         ids[n] = PieceNumber(name[(set.Length + 1)..]);
                         if (o.TryGetValue("metal_rough", out var r)) pr[n] = (float)r;
                         if (o.TryGetValue("metal_env_graze", out var g)) pg[n] = (float)g;
+                        if (o.TryGetValue("metal_blot", out var bl)) pb[n] = (float)bl;
+                        if (o.TryGetValue("metal_rim_rough", out var rr)) prr[n] = (float)rr;
+                        if (o.TryGetValue("metal_rim_bright", out var rb)) prb[n] = (float)rb;
+                        if (o.TryGetValue("metal_fine", out var fi)) pf[n] = (float)fi;
+                        if (o.TryGetValue("metal_rim_steel", out var rs)) ps[n] = (float)rs;
+                        if (o.TryGetValue("metal_form", out var fm)) pfm[n] = (float)fm;
+                        if (o.TryGetValue("metal_spec_mute", out var mu)) pmu[n] = (float)mu;
                         n++;
                     }
                     m.SetShaderParameter("piece_id", ids);
                     m.SetShaderParameter("piece_rough", pr);
                     m.SetShaderParameter("piece_graze", pg);
+                    m.SetShaderParameter("piece_blot", pb);
+                    m.SetShaderParameter("piece_rim_rough", prr);
+                    m.SetShaderParameter("piece_rim_bright", prb);
+                    m.SetShaderParameter("piece_fine", pf);
+                    m.SetShaderParameter("piece_rim_steel", ps);
+                    m.SetShaderParameter("piece_form", pfm);
+                    m.SetShaderParameter("piece_spec_mute", pmu);
                 }
             }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
@@ -1525,6 +1551,36 @@ public static class People
             if (kind == 0 && entry.ContainsKey("rough_var")) m.SetShaderParameter("leather_rough_var", (float)entry["rough_var"]);
             if (kind == 0 && entry.ContainsKey("clearcoat")) m.SetShaderParameter("leather_clearcoat", (float)entry["clearcoat"]);
             if (kind == 0 && entry.ContainsKey("clearcoat_rough")) m.SetShaderParameter("leather_clearcoat_rough", (float)entry["clearcoat_rough"]);
+            // (her plate's reflection at the Look, under its rig only (look_rig), armor 16: the key's softbox and a dim dome;
+            // LOOK_METAL_ENV=env,key,dome tries others)
+            if (kind == 1)
+            {
+                // (N4: env,key,dome,mute,gold: a soft box, the rig's lamps muted on the plate, the gold's share)
+                // (N5, OJ2: the key 3.5 to 5.0 and the dome 0.45 to 0.6, the muted plate read dark slate; the gold 1.6 to 1.3, now glossier)
+                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,5.0,0.6,0.75,1.3").Split(',');
+                float L(int i) => float.Parse(le[i], System.Globalization.CultureInfo.InvariantCulture);
+                m.SetShaderParameter("look_metal_env", L(0)); m.SetShaderParameter("look_metal_key", L(1)); m.SetShaderParameter("look_metal_dome", L(2));
+                if (le.Length > 3) m.SetShaderParameter("look_metal_mute", L(3));
+                if (le.Length > 4) m.SetShaderParameter("look_gold_key", L(4));
+            }
+            // (a satin's sheen, where its row names one: the arcanist's opera gloves, armor 16)
+            if (kind == 5 && entry.ContainsKey("sheen")) m.SetShaderParameter("satin_sheen", (float)entry["sheen"]);
+            if (kind == 5 && entry.ContainsKey("axis")) m.SetShaderParameter("satin_axis", (int)entry["axis"]);
+            if (kind == 5 && entry.ContainsKey("along")) m.SetShaderParameter("satin_along", (float)entry["along"]);
+            if (kind == 5 && entry.ContainsKey("across")) m.SetShaderParameter("satin_across", (float)entry["across"]);
+            if (kind == 5 && entry.ContainsKey("body")) m.SetShaderParameter("satin_body", (float)entry["body"]);
+            if (kind == 5 && entry.ContainsKey("turn")) m.SetShaderParameter("satin_turn", (float)entry["turn"]);
+            if (kind == 5 && entry.ContainsKey("cap")) m.SetShaderParameter("satin_spec_cap", (float)entry["cap"]);
+            // (its wrinkles: soft ruching at the wrist, creases inside the elbow, long diagonal folds; their way round
+            // the arm written into its UV2, which a satin never reads otherwise, armor 16 N4)
+            if (kind == 5 && entry.ContainsKey("wrinkle") && mi.Mesh is ArrayMesh am
+                && SatinAround(am, s, (float)entry["wrinkle_top"], (float)entry["wrinkle_wrist"]))
+            {
+                m.SetShaderParameter("satin_wrinkle", (float)entry["wrinkle"]);
+                m.SetShaderParameter("satin_top_v", (float)entry["wrinkle_top"]);
+                m.SetShaderParameter("satin_wrist_v", (float)entry["wrinkle_wrist"]);
+                m.SetShaderParameter("satin_uv_per_m", (float)entry["repeats"]);
+            }
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
@@ -1532,6 +1588,57 @@ public static class People
             if (System.Environment.GetEnvironmentVariable("OUTFIT_DEBUG_VIEW") is string dv && int.TryParse(dv, out var dvv)) m.SetShaderParameter("debug_view", dvv);   // (a check: 4 = the gold mask flat magenta)
             mi.SetSurfaceOverrideMaterial(s, m);
         }
+    }
+
+    /// <summary>A glove's way round its arm (armor 16 N4, the satin's wrinkles): each vertex's angle about its forearm's
+    /// axis (0 toward her front, the inside of the elbow), written into the surface's UV2 as (cos, sin) so it blends
+    /// smoothly all the way round. Each arm (the sign of x) on its own: its axis the forearm's long way (between the
+    /// wrist's and the top's UV v), mirrored, so the right glove's folds mirror the left's. False if it can't take it.</summary>
+    static bool SatinAround(ArrayMesh mesh, int s, float topV, float wristV)
+    {
+        var arr = mesh.SurfaceGetArrays(s);
+        if (arr[(int)Mesh.ArrayType.TexUV2].VariantType == Variant.Type.Nil) return false;
+        var P = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var U = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+        var format = mesh.SurfaceGetFormat(s);
+        if ((format & Mesh.ArrayFormat.FlagCompressAttributes) != 0) { GD.PushWarning("SatinAround: compressed attributes"); return false; }
+        var U2 = new Vector2[P.Length];
+        foreach (int side in new[] { 1, -1 })
+        {
+            bool Fore(int i) => Mathf.Sign(P[i].X) == side && U[i].Y < topV - 0.5f && U[i].Y > wristV + 0.5f;
+            var c = Vector3.Zero; int n = 0;
+            for (int i = 0; i < P.Length; i++) if (Fore(i)) { c += P[i]; n++; }
+            if (n < 20) continue;
+            c /= n;
+            // (its long way: the covariance's first axis, by power iteration)
+            var cx = Vector3.Zero; var cy = Vector3.Zero; var cz = Vector3.Zero;
+            for (int i = 0; i < P.Length; i++)
+                if (Fore(i)) { var d = P[i] - c; cx += d * d.X; cy += d * d.Y; cz += d * d.Z; }
+            var ax = new Vector3(side, -1, 0).Normalized();
+            for (int it = 0; it < 32; it++) ax = (cx * ax.X + cy * ax.Y + cz * ax.Z).Normalized();
+            if (ax.X * side < 0) ax = -ax;                     // (toward the hand)
+            var f = (Vector3.Back - ax * ax.Z).Normalized();   // (her front, +z, square to it)
+            var b = ax.Cross(f);
+            for (int i = 0; i < P.Length; i++)
+            {
+                if (Mathf.Sign(P[i].X) != side) continue;
+                var d = P[i] - c; d -= ax * d.Dot(ax);
+                float a = Mathf.Atan2(d.Dot(b), d.Dot(f));
+                U2[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+            }
+        }
+        int vc = P.Length;
+        uint stride = RenderingServer.MeshSurfaceGetFormatAttributeStride((RenderingServer.ArrayFormat)format, vc);
+        uint off = RenderingServer.MeshSurfaceGetFormatOffset((RenderingServer.ArrayFormat)format, vc, (int)Mesh.ArrayType.TexUV2);
+        var attr = RenderingServer.MeshGetSurface(mesh.GetRid(), s)["attribute_data"].AsByteArray();
+        if (attr.Length < stride * vc) return false;
+        for (int i = 0; i < vc; i++)
+        {
+            System.BitConverter.TryWriteBytes(new System.Span<byte>(attr, (int)(i * stride + off), 4), U2[i].X);
+            System.BitConverter.TryWriteBytes(new System.Span<byte>(attr, (int)(i * stride + off + 4), 4), U2[i].Y);
+        }
+        mesh.SurfaceUpdateAttributeRegion(s, 0, attr);
+        return true;
     }
 
     /// <summary>A piece's own number, as heroine_outfits.py bakes it into its vertex
@@ -1546,6 +1653,18 @@ public static class People
         }
         return ((~c) % 1000) / 1000f;
     }
+
+    /// <summary>The reaver's pelt (armor 16, judge J5: "plush felt, not a pelt"): its shells and knobs.</summary>
+    public static int PeltShells = 30;
+    public static readonly Dictionary<string, float> Pelt = new()
+    {
+        ["fur_length"] = 0.03f, ["density"] = 260f, ["droop"] = 0.25f, ["comb"] = 0.9f,
+        ["root_dark"] = 0.3f, ["tip_light"] = 1.35f, ["backlight"] = 0.3f,
+        ["tuft"] = 0.075f, ["guard"] = 0.22f, ["under_len"] = 0.5f, ["frost"] = 0.12f,
+        // (N4, OJ1: the pile 22 mm as before, the fringe up to 30 mm in uneven locks and lighter, the spine darker)
+        ["body_len"] = 0.73f, ["fringe_w"] = 0.024f, ["fringe_light"] = 1.4f, ["spine_dark"] = 0.72f,
+        ["hem_vary"] = 0.55f, ["hem_scale"] = 9f,
+    };
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
     /// shells (shaders/fur_shell.gdshader), each further out, keeping only
@@ -1573,12 +1692,19 @@ public static class People
             bool down = src.ResourceName == "down";
             furShader ??= GD.Load<Shader>("res://shaders/fur_shell.gdshader");
             ShaderMaterial? first = null, last = null;
-            for (int i = 0; i <= shells; i++)
+            // (fur proper is a pelt, armor 16: longer, in tufts, combed; a few more shells for its length)
+            int n = down ? shells : PeltShells;
+            for (int i = 0; i <= n; i++)
             {
                 var m = new ShaderMaterial { Shader = furShader };
                 m.SetShaderParameter("albedo_tex", src.AlbedoTexture);
                 m.SetShaderParameter("tint", src.AlbedoColor);
-                m.SetShaderParameter("layer", (float)i / shells);
+                m.SetShaderParameter("layer", (float)i / n);
+                if (!down)
+                {
+                    m.SetShaderParameter("pelt", 1.0f);
+                    foreach (var (k, v) in Pelt) m.SetShaderParameter(k, v);
+                }
                 if (down)
                 {
                     m.SetShaderParameter("fur_length", 0.009f);
@@ -1895,6 +2021,11 @@ public static class People
     /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
     static void HerZones(ShaderMaterial m, Look look, bool? head)
     {
+        // (face 46 skin C, the night skin-line hold's lamp (HerSkinHold): an amber, a redder one on deep skin; its gain
+        // keeps her lightness (on deep the night grade's toe took 0.025 Oklab L off her face at the lamps' own luminance))
+        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep0(look)));
+        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
+        m.SetShaderParameter("hold_chroma", 0f);
         if (SkinZonesOff) return;
         if (head == true)
         {
@@ -1905,10 +2036,7 @@ public static class People
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
                 m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
         }
-        // (deep: 0 at her own fair paint, 1 at the Deep swatch's lightness)
-        var t = HerTone(look);
-        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
-        float deep = Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+        float deep = deep0(look);
         m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
         m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
         m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
@@ -1944,6 +2072,19 @@ public static class People
         m.SetShaderParameter("peel_diffuse", Peel.Diffuse);
         m.SetShaderParameter("peel_fade", Peel.Fade);
     }
+
+    /// <summary>Her skin's darkness for her zones and hold: 0 at her own fair paint, 1 at the Deep swatch's lightness.</summary>
+    static float deep0(Look look)
+    {
+        var t = HerTone(look);
+        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
+        return Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+    }
+
+    // (tuned at the town night close-up, face 46: fair forehead/cheek/nose/neck/shoulder hue 50-53/52/44/47/50, deep 52/47/47/52/52,
+    // her skin line 48.5; Oklab L within 0.01)
+    static readonly (Vector3 Fair, Vector3 Deep) HoldTint = (new(1f, 0.67f, 0.25f), new(1f, 0.6f, 0.22f));
+    static readonly (float Fair, float Deep) HoldGain = (1.1f, 1.35f);
 
     static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
     static readonly float ZoneDeepSpec = 0.8f;
@@ -2138,6 +2279,21 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader) m.SetShaderParameter("night_ease", k);
     }
+
+    /// <summary>Her skin's night skin-line hold (heroine_skin.gdshader's skin_hold, 0 by day to 1): each warm lamp's colour
+    /// on her skin pulled toward hold_tint (face 46 skin C), so under the night key and the fires she stays on her skin line
+    /// while her hair, clothes and the scene keep their warmth. GameCloseUp sets it each frame while its night light is on
+    /// her. --skin-hold off: none (as before); --skin-hold K: K of it (pictures).</summary>
+    public static void HerSkinHold(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        k *= SkinHold;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("skin_hold", k);
+    }
+
+    static readonly float SkinHold = SurvivorUnchained.Args.Get("skin-hold") == "off" ? 0f : (float)SurvivorUnchained.Args.Num("skin-hold", 1f);
 
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
     /// (C03, judge r1: a warm ear against a cool face under the moon); 1 gives it back.</summary>

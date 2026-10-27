@@ -257,6 +257,7 @@ public partial class Game
     /// one frame under the fade, then freed. Once a session; --draft-rehearse off: not (to compare).</summary>
     void RehearseDraft(Battle b)
     {
+        if (Args.Dev && !draftRehearsed) GD.Print($"draft rehearsal {(Args.Get("draft-rehearse") == "off" ? "off" : hud.FadeAmount < 0.99f ? "skipped" : "ran")} fade={hud.FadeAmount:0.00}");
         if (draftRehearsed || Args.Get("draft-rehearse") == "off" || hud.FadeAmount < 0.99f) return;
         draftRehearsed = true;
         var offers = new List<Offer>();

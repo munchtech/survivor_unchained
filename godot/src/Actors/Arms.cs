@@ -341,13 +341,17 @@ public static class Arms
 
     static Facts Info(string id)
     {
-        if (!facts.TryGetValue(id, out var m))
+        // (locked: her cinematic double is made on a worker thread, Game.DoubleAhead)
+        lock (facts)
         {
-            var w = Make(id);
-            facts[id] = m = new Facts((int)w.GetMeta("kind"), (Vector3)w.GetMeta("sheath"), (float)w.GetMeta("tip"));
-            w.Free();
+            if (!facts.TryGetValue(id, out var m))
+            {
+                var w = Make(id);
+                facts[id] = m = new Facts((int)w.GetMeta("kind"), (Vector3)w.GetMeta("sheath"), (float)w.GetMeta("tip"));
+                w.Free();
+            }
+            return m;
         }
-        return m;
     }
 
     /// <summary>The bones' rest poses in skeleton space (heroine, tools/anim/data/heroine_skeleton.json): the
