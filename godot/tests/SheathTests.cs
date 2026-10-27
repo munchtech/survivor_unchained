@@ -147,4 +147,13 @@ public class SheathTests
         Assert.Equal(new[] { "run_arcanist_staff_town", "run_arcanist_staff", "run_arcanist" }, Sheath.Names("run", "arcanist", "staff", true));
         Assert.Contains("run_arcanist_town", Sheath.Names("run", "arcanist", "wand", true));
     }
+
+    [Fact]
+    public void ADrawnKindWithItsOwnRunButNoWalkGetsNoWalk()
+    {
+        var has = new System.Func<string, bool>(n => n is "run_warden_sword" or "walk_warden");
+        Assert.Empty(Sheath.WalkNames("warden", "sword", false, has));
+        Assert.Equal(["walk_warden_greatsword", "walk_warden"], Sheath.WalkNames("warden", "greatsword", false, n => n == "x"));
+        Assert.Equal(Sheath.Names("walk", "warden", "sword", true), Sheath.WalkNames("warden", "sword", true, has));
+    }
 }
