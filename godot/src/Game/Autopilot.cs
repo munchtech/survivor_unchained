@@ -24,7 +24,8 @@ public sealed class Autopilot
     double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
-    /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player.</summary>
+    /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player. (In the Prologue
+    /// it walks the road until the Ambush springs, then stands.)</summary>
     public bool Idle;
     /// <summary>Walk down the screen, toward the camera (--auto toward): her face to it.</summary>
     public bool Toward;
@@ -96,7 +97,9 @@ public sealed class Autopilot
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
         if (Away && b != null && b.Player.Alive && !g.InTransit) { Move = (0, -1); return; }
         if (Across && b != null && b.Player.Alive && !g.InTransit) { Move = ((int)(t / 6) % 2 == 0 ? 1 : -1, 0); return; }
-        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle) return;
+        // (idle in the Prologue walks the road like the pilot until the Ambush's trap springs, then stands:
+        // the worst player in its first real fight, MR5 item 11)
+        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle && !(z is Zones.Prologue { Sprung: false })) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);

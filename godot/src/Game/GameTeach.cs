@@ -41,8 +41,8 @@ public partial class Game
     /// (Asks the Teacher first, so --teach-reset has cleared the profile before any zone reads it: a test
     /// run's Begin saw last run's "art" and let the Flare's great blessings through, round 2 judge.)
     public bool Taught(string id) { _ = Teacher; return Settings.Current.SeenTips.Contains(id); }
-    /// <summary>--teach-hurt (a scripted run): the autopilot keeps the Flare for F8 in the Barrow.</summary>
-    public bool HoldFlare => Args.Has("teach-hurt") && !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
+    /// <summary>(the autopilot) It keeps the Flare in the Barrow until F8 has asked for it.</summary>
+    public bool HoldFlare => !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
@@ -152,7 +152,12 @@ public partial class Game
                         if (OS.GetCmdlineUserArgs().Contains("--teach-diag")) GD.Print($"teachdiag {c.Id} t={Battle?.Time ?? 0:0.0} seen-blocked block={diagBlock}");
                         break;
                     }
-                    pts.Add(v); worldOn++; break;
+                    pts.Add(v); worldOn++;
+                    // (and what is ringed beside it, on the screen: the Knight himself)
+                    if (t.Ring?.Invoke() is { } ring)
+                        foreach (var q in ring)
+                            if (OnScreen(q) is Vector2 rv && Canvas.HasPoint(rv)) { pts.Add(rv); worldOn++; }
+                    break;
                 }
                 pts.Add(v);
                 worldOn++;
@@ -169,6 +174,14 @@ public partial class Game
 
     /// <summary>(`raised`: the point is where it is, not on the ground: a figure's head; the figure's own
     /// shape, small and round the point, is passed over.)</summary>
+    /// <summary>A mesh's faces, for a line's true strike (built once a mesh).</summary>
+    readonly Dictionary<Rid, TriangleMesh?> faces = new();
+    TriangleMesh? Faces(Mesh m)
+    {
+        if (faces.TryGetValue(m.GetRid(), out var tm)) return tm;
+        return faces[m.GetRid()] = m.GenerateTriangleMesh();
+    }
+
     bool InOpen((double X, double Y, double Z) p, bool raised = false)
     {
         diagBlock = "-";
@@ -206,7 +219,19 @@ public partial class Game
             for (int i = 1; i < 48; i++)
             {
                 var q = from.Lerp(to, i / 48f);
-                if (q.Y > ground + 2.6f && box.HasPoint(q)) { diagBlock = $"{g.GetPath()} box={box.Position}/{box.Size}"; return true; }
+                if (q.Y > ground + 2.6f && box.HasPoint(q))
+                {
+                    // (a mesh's box is coarse: a wall standing across the view boxes a field of open ground
+                    // behind it. Its own faces are asked: the line must strike them. MR5 item 12: a cracked
+                    // wall's box hid the Knight's lane, and her, through both windups.)
+                    if (g is MeshInstance3D { Mesh: { } mesh } mi && Faces(mesh) is { } tm)
+                    {
+                        var inv = mi.GlobalTransform.AffineInverse();
+                        if (tm.IntersectSegment(inv * from, inv * to).Count == 0) return false;
+                    }
+                    diagBlock = $"{g.GetPath()} box={box.Position}/{box.Size}";
+                    return true;
+                }
             }
             return false;
         }
@@ -442,9 +467,25 @@ public partial class Game
                 "chain" or "chain_fill" => 22,
                 _ => Instrument.Sock / 2 + 4,
             });
+        int bare = -1;
+        List<int>? noArrow = null;
         if (c.Target.World != null)
             foreach (var w in c.Target.World())
                 if (OnScreen(w) is Vector2 v) radii.Add(Math.Clamp(PxPerMetre(w) * (float)c.Target.Radius, 20, 56));
+        // (a Safe point is the one picked, its things ringed after it: the point bare, the arrow on it,
+        // the things ringed at their own size with no arrow)
+        if (c.Target.Safe && c.Target.Ring != null && worldOn > 1)
+        {
+            radii.RemoveRange(Math.Min(radii.Count, hudPts + 1), Math.Max(0, radii.Count - hudPts - 1));
+            bare = hudPts;
+            noArrow = [];
+            foreach (var q in c.Target.Ring())
+                if (OnScreen(q) is Vector2 rv && Canvas.HasPoint(rv))
+                {
+                    noArrow.Add(radii.Count);
+                    radii.Add(Math.Clamp(PxPerMetre(q) * (float)c.Target.RingRadius, 28, 110));
+                }
+        }
         Rect2? her = null;
         if (Battle?.Player is { } pl && scene != null)
         {
@@ -481,6 +522,7 @@ public partial class Game
         {
             Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
             WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
+            Bare = bare, NoArrow = noArrow,
             AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud is "chain" or "chain_fill" ? 2 : 12,
         });
     }

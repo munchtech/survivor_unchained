@@ -34,6 +34,12 @@ public sealed record Aim
     /// <summary>With Open: points that must be on the screen and in the open too (the Knight's head and
     /// chest, so the one the line names can be read; none: it waits).</summary>
     public Func<IReadOnlyList<(double X, double Y, double Z)>>? Seen { get; init; }
+    /// <summary>With Safe: things ringed beside the point, with no arrow of their own (the Knight himself,
+    /// while the arrow lands on his lane where she stands). Those on the screen are ringed; while there are
+    /// any, the point itself is left bare (the arrow lands on it, no ring). None: the point is ringed.</summary>
+    public Func<IReadOnlyList<(double X, double Y, double Z)>>? Ring { get; init; }
+    /// <summary>How big a Ring thing is ringed, in metres from its middle.</summary>
+    public double RingRadius { get; init; } = 0.9;
     /// <summary>Each of the world's points is ringed only where it stands well inside the screen (clear
     /// of its edges and the HUD); the rest get an arrowhead on the screen's edge. It waits until one does.
     /// (The three lamps never stand on one screen at the play camera: 1,300 px apart.)</summary>

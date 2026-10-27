@@ -71,6 +71,7 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The Ambush's trap: when the ditch rose (stage time; none yet: the wagon is still quiet), and the
     /// bowmen it put up, whose first volley comes all at once and teaches the dash (au i15).</summary>
     double sprungAt = -1;
+    double ambDiagAt = -9;
     /// <summary>The wagon's trap has sprung (the pacing log, a shot of it).</summary>
     public bool Sprung => sprungAt >= 0;
     bool wagonSaid;
@@ -305,6 +306,24 @@ public sealed class Prologue : ZoneRuntime
                 kw.RangedT = Math.Max(kw.RangedT, 0.25);
             }
         }
+        // (n1, MR5 item 12: wedged in a gap of the post's wall it stood 95 s on one spot, never a clear line to
+        // her, never a windup: the nav grid's gaps are cut for a man (0.42 m), his bulk is 0.8. Stuck 1.5 s out
+        // of her sight, he squeezes to a man's girth until he sees her or stands close, then fills out again.)
+        if (knight is { Alive: true } ks)
+        {
+            if (B.Time - knightStuckAt >= 1.5)
+            {
+                bool clear = B.Collision.Raycast(ks.X, ks.Z, B.Player.X, B.Player.Z, 0.3) == null;
+                double near = Dist(ks.X, ks.Z, B.Player.X, B.Player.Z);
+                if (ks.State == EnemyState.Active && !clear && near > 2.5 && Dist(ks.X, ks.Z, knightStuckX, knightStuckZ) < 0.3)
+                {
+                    if (ks.Radius > 0.45) PaceNotes.Enqueue($"pace knight squeeze t={B.Time:0.0} at=({ks.X:0.0},{ks.Z:0.0})");
+                    ks.Radius = 0.42;
+                }
+                else if (clear || near <= 2.5) ks.Radius = ks.Def.Radius;
+                knightStuckAt = B.Time; knightStuckX = ks.X; knightStuckZ = ks.Z;
+            }
+        }
         // (until F7 is taught, with no hold on it, it may begin its run from close: it stood in melee reach for 10 to 20 s and never lunged)
         if (knight is { Alive: true } kl) kl.LungeMin = !G.Taught("red_line") && !knightRan && !holding ? 0.3 : 2;
         if (knight is { Alive: true } kd && B.Time - knightDiagAt >= 3)
@@ -341,6 +360,7 @@ public sealed class Prologue : ZoneRuntime
 
     /// <summary>Seconds the Knight has been held (ready to wind up) for standing out of the open, and for any hold at all.</summary>
     double knightDiagAt = -9;
+    double knightStuckAt = -9, knightStuckX, knightStuckZ;
     double knightHeldShut, knightHeldAll, knightWatchT;
     /// <summary>The most it is held for being out of the open, and for everything together.</summary>
     const double KnightHoldShut = 4, KnightHoldAll = 10;
@@ -358,7 +378,7 @@ public sealed class Prologue : ZoneRuntime
     }
 
     /// <summary>The Barrow Knight's lane while it is marked (its windup), a beat after it was: points along
-    /// it, those clear of her first (the ring marks the lane, never her figure), the lane's middle first.</summary>
+    /// it, those clear of her first (the arrow lands on the lane, never her figure), then nearest her.</summary>
     IReadOnlyList<(double X, double Y, double Z)> KnightLane()
     {
         if (knight is not { Alive: true, State: EnemyState.Windup } k || (k.LungeX == 0 && k.LungeZ == 0) || knightWound < 0 || B!.Time - knightWound < LaneBeat)
@@ -371,8 +391,22 @@ public sealed class Prologue : ZoneRuntime
             .Select(f => (X: k.X + k.LungeX * reach * f, Z: k.Z + k.LungeZ * reach * f))
             .OrderBy(q => Dist(q.X, q.Z, p.X, p.Z) < 2.4 ? 1 : 0)
             .ThenBy(q => Dist(q.X, q.Z, chest.X, chest.Z) < 3 ? 1 : 0)
+            .ThenBy(q => Dist(q.X, q.Z, p.X, p.Z))
             .Select(q => Up(q.X, q.Z, 0.1)).ToList();
     }
+
+    /// <summary>Whether the Grave-Caller's coming has filled her Flare (once, for F8).</summary>
+    bool callerFilled;
+
+    /// <summary>When a callout was last up (game seconds): F8 asks 4 s clear of the other lessons.</summary>
+    double lessonUpAt = -99;
+
+    /// <summary>F8: patient while the Grave-Caller lives; 4 s clear of the other lessons (asked so), and
+    /// straight after the Barrow's line (a line is not a lesson: n1, a lesson's quiet held it 4 s past the
+    /// line, 17 s into a short fight, the Grave-Caller already beaten down).</summary>
+    void ArtLesson(string title, string line, Aim aim) =>
+        G.Teach(new Callout("art", CalloutKind.Freeze, title, line, aim, "flare")
+        { Gap = 1, Patience = 25, Still = () => Now == Stage.Barrow && caller is { Alive: true } });
 
     void Callouts()
     {
@@ -434,24 +468,40 @@ public sealed class Prologue : ZoneRuntime
         if (KnightLane().Count > 0)
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
             {
+                // (MR5 item 5: the Knight himself ringed, the arrow on his lane where she stands. Hidden behind
+                // something tall, the lane alone: its point must be in the open, nothing more (item 12: asking
+                // every lane point to be in the open let a lane half behind the wall wait out the windup))
                 World = KnightLane, Safe = true, Open = true,
-                Seen = () => knight is { Alive: true } kn
-                    ? KnightOpen(kn) ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : KnightLane() : [],
+                Seen = () => knight is { Alive: true } kn && KnightOpen(kn) ? [Up(kn.X, kn.Z, 1.25 * (kn.Def.Scale ?? 1)), Up(kn.X, kn.Z, 1.62 * (kn.Def.Scale ?? 1))] : [],
+                Ring = () => knight is { Alive: true } kn && KnightOpen(kn) ? [Up(kn.X, kn.Z, 0.95 * (kn.Def.Scale ?? 1))] : [],
+                RingRadius = 0.75 * 1.45,
             });
         // F8: the Grave-Caller near and what Q casts ready. Q is the art until the Flare lands; once it
         // has (B.Flare), Q is the Flare and its ring shows the meter, so it waits for the meter full and
         // names the Flare (the art then rides the dash).
-        if (Now == Stage.Barrow && G.CurrentHint?.Id != "pack" && caller is { Alive: true } gc && Dist(gc.X, gc.Z, p.X, p.Z) < 16 && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
+        // (MR5 item 10: in real play she has the Flare by the Barrow and its meter was never full while the
+        // Grave-Caller stood (v4, v5: never shown; f7c/d: shown as the last of the dead fell). So the ember
+        // answers the Grave-Caller: the first time it is up and near, her Flare fills, once, and the lesson
+        // asks while it lives, with the quiet of a lesson (4 s clear of the rest).)
+        bool callerUp = Now == Stage.Barrow && caller is { Alive: true, State: not (EnemyState.Rising or EnemyState.Dying) } cu && Dist(cu.X, cu.Z, p.X, p.Z) < 16;
+        if (callerUp && !G.Taught("art") && !callerFilled && B.Flare != null)
+        {
+            callerFilled = true;
+            B.FlareMeter = Math.Max(B.FlareMeter, Battle.FlareFull);
+            PaceNotes.Enqueue($"pace art fill t={B.Time:0.0} meter={B.FlareMeter:0}");
+        }
+        if (G.Teaching != null) lessonUpAt = B.Time;
+        if (callerUp && G.CurrentHint?.Id != "pack" && B.Time - lessonUpAt >= LessonQuiet && (B.Flare != null ? B.FlareReady : B.Ability is AbilityKind && p.AbilityCd <= 0))
         {
             var aim = new Aim { Hud = "art", World = () => caller is { Alive: true } c ? [Up(c.X, c.Z, 1.4)] : [] };
             if (B.Flare is { } fl)
-                Teach("art", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare, the ember's great blow.\nIt's full: spend it on the Grave-Caller\nbefore it raises more.", aim, "flare");
+                ArtLesson(fl.Name, $"{Key("flare")}: your Flare, the ember's great blow.\nIt's full: spend it on the Grave-Caller\nbefore it raises more.", aim);
             else if (B.Ability is AbilityKind ak)
             {
                 var ab = Abilities.All[ak];
-                Teach("art", CalloutKind.Freeze, ab.Name, ab.Interrupts
+                ArtLesson(ab.Name, ab.Interrupts
                         ? $"{Key("flare")}: your art. It breaks the Grave-Caller's channel."
-                        : $"{Key("flare")}: your art. Kill the Grave-Caller before it raises more.", aim, "flare");
+                        : $"{Key("flare")}: your art. Kill the Grave-Caller before it raises more.", aim);
             }
         }
         // F9: the lamps, 3 s after C02 hands back.
@@ -461,8 +511,10 @@ public sealed class Prologue : ZoneRuntime
                     Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
         // F10: her health under 70% for the first time (MR5: it was half), with a draught to drink (au i15: under 40% a real
         // run never came, 42% at the lowest; the ambush's volley and the Knight bring it down before the ford).
+        // (asked again under 40%, it no longer waits to see her clear: amb2, idle under a canopy, it waited out
+        // four asks from 147 HP to 12 and never came)
         if (p.Alive && p.Hp < B.MaxHp * 0.7 && G.Journey.Draughts > 0)
-            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught", gap: 5, urgent: true);
+            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = p.Hp >= B.MaxHp * 0.4 }, "draught", gap: 5, urgent: true);
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
             G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
@@ -883,6 +935,12 @@ public sealed class Prologue : ZoneRuntime
                     break;
                 }
                 double fought = stageT - sprungAt;
+                // (--pace: her health each second of the fight's first 40 s, for the stakes' measure, MR5 item 11)
+                if (fought < 40 && B.Time - ambDiagAt >= 1)
+                {
+                    ambDiagAt = B.Time;
+                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)}");
+                }
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
                 double want = Math.Min(46, 26 + fought * 0.5);
