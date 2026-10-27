@@ -90,6 +90,9 @@ public partial class Game
     }
 
     /// <summary>Where a callout points now: its points and areas on the HUD's canvas (none: not there).</summary>
+    /// <summary>--no-open (a dev flag for pictures): a lesson that waits for the open (the red line) may show under a canopy.</summary>
+    static readonly bool noOpen = OS.GetCmdlineUserArgs().Contains("--no-open");
+
     (List<Vector2> Points, List<Rect2> Areas, bool Gone, int WorldOn) Resolve(Callout c)
     {
         var pts = new List<Vector2>();
@@ -145,9 +148,9 @@ public partial class Game
                         GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={InSafe(v)} block={diagBlock}");
                     }
                     if (!InSafe(v)) continue;
-                    if (t.Open && !InOpen(w)) continue;
+                    if (t.Open && !noOpen && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
-                    if (t.Open && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
+                    if (t.Open && !noOpen && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
                     {
                         if (OS.GetCmdlineUserArgs().Contains("--teach-diag")) GD.Print($"teachdiag {c.Id} t={Battle?.Time ?? 0:0.0} seen-blocked block={diagBlock}");
                         break;
@@ -344,9 +347,16 @@ public partial class Game
         // (--teach-diag with --shot: each freeze's frame first with the ember halos held out, to measure them by)
         // (the callout's own frame a few frames after, halos back: the two differ by the halos alone)
         if (haloDiag != null && !Shots.Pending("teach_" + haloDiag + "_nohalo")) { scene.Fx.HalosHidden = false; haloDiag = null; }
+        if (dimDiag != null)
+        {
+            // (undimmed, then the old flat dim, then this one)
+            bool held = Shots.Pending("teach_" + dimDiag + "_nodim"), old = Shots.Pending("teach_" + dimDiag + "_olddim");
+            Ui.Callout.DimHeld = held; Ui.Callout.DimOld = !held && old;
+            if (!held && !old) dimDiag = null;
+        }
     }
 
-    string? haloDiag;
+    string? haloDiag, dimDiag;
 
     string? paceStage;
     bool paceSprung;
@@ -416,7 +426,8 @@ public partial class Game
         if (scene != null) scene.Fx.Hits.Visible = false;
         // The part taught is kept (the HUD stays whole; the world dims on a freeze); the chain's callout fades the six places.
         hud.Spotlight(c.Target.Hud == "chain_fill" ? "chain" : c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud is "chain" or "chain_fill");
-        var view = new Ui.Callout();
+        // (night: the zone after dark, or a fight by the ember's light)
+        var view = new Ui.Callout { Night = scene?.View.Night == true || !Ui.EmberChain.Day };
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
             answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
@@ -430,7 +441,15 @@ public partial class Game
             scene.Fx.HalosHidden = true;
             Shots.Want("teach_" + c.Id + "_nohalo", 0.75);
         }
-        if (Args.Has("shot")) Shots.Want("teach_" + c.Id, haloDiag == c.Id ? 1.05 : 0.9);
+        // (--dim-diag with --shot: each freeze's frame first undimmed, then dimmed, the same frozen moment)
+        if (Args.Has("shot") && c.Kind == CalloutKind.Freeze && OS.GetCmdlineUserArgs().Contains("--dim-diag"))
+        {
+            dimDiag = c.Id;
+            Ui.Callout.DimHeld = true;
+            Shots.Want("teach_" + c.Id + "_nodim", 0.75);
+            Shots.Want("teach_" + c.Id + "_olddim", 0.9);
+        }
+        if (Args.Has("shot")) Shots.Want("teach_" + c.Id, haloDiag == c.Id ? 1.05 : dimDiag == c.Id ? 1.1 : 0.9);
     }
 
     void TeachDown(Callout c)
@@ -518,9 +537,21 @@ public partial class Game
                     if (c.Target.ShunBig && (en.Def.Scale ?? 1) >= 1.4) shun.Add(new Rect2(f.X - h * 0.45f, hd.Y, h * 0.9f, h));
                 }
             }
+        // (what a lesson names but does not ring, e.g. the Knight that casts the red line: its own pool)
+        var pools = new List<Vector3>();
+        // (the first is his feet: one ground pool about 1.5 m across; the rest are his body, as crisp as she is)
+        var crisp = new List<Vector3>();
+        if (c.Target.Seen?.Invoke() is { } seenPts)
+            for (int si = 0; si < seenPts.Count; si++)
+            {
+                var q = seenPts[si];
+                if (OnScreen(q) is not Vector2 qv) continue;
+                if (si == 0) pools.Add(new Vector3(qv.X, qv.Y, PxPerMetre(q) * 1.5f));
+                else crisp.Add(new Vector3(qv.X, qv.Y, PxPerMetre(q) * 0.5f));
+            }
         calloutShown.Aim(new CalloutAim(pts, areas, c.Kind == CalloutKind.Panel ? hud.DraftShown?.TipArea : null)
         {
-            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
+            Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun, Pools = pools, Crisp = crisp,
             WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
             Bare = bare, NoArrow = noArrow,
             AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud is "chain" or "chain_fill" ? 2 : 12,
