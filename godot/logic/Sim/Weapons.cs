@@ -45,6 +45,10 @@ public sealed class WeaponInst
     public int Swing;
     /// <summary>The strength of the cast now in hand (the Ledger, the Crowded Sky, the Echo): a multiplier on its projectiles.</summary>
     public double CastMul = 1;
+    /// <summary>Firings so far, and the Melee or Thrown ones the warden's Hand counts toward its heavy blow (Sim/Hands.cs).</summary>
+    public int Casts, HandBlows;
+    /// <summary>The last firing was heavy: its burst shots still to come are too.</summary>
+    public bool HeavyCast;
     Tag[]? tags;
 
     public WeaponInst(string id, int rank, int slot)
@@ -119,6 +123,8 @@ public static class Firing
         if (w.Evolution != null) a *= w.Evolution.Mods.Area ?? 1;
         // sunderer.skill.area / tags.area: the skill's lamps and its tags' lamps reach wider.
         a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags) + b.StormReach(w);
+        // The reaver's Hand: hurt below half, her areas reach wider.
+        a *= b.HandAreaMul(w);
         return a;
     }
 
@@ -154,7 +160,7 @@ public static class Firing
     }
 
     static int PierceOf(Battle b, WeaponInst w) =>
-        b.StalkerPierce(w, (int)(w.Num(s => s.Pierce) ?? 0) + RoundInt(b.Stats.Get(Stat.Pierce)) + w.Mods.Pierce + (w.Evolution?.Mods.Pierce ?? 0));
+        b.StalkerPierce(w, (int)(w.Num(s => s.Pierce) ?? 0) + RoundInt(b.Stats.Get(Stat.Pierce)) + w.Mods.Pierce + (w.Evolution?.Mods.Pierce ?? 0)) + b.HandPierce(w);
 
     static double RangeOf(WeaponInst w) => w.Num(s => s.Range) ?? 14;
 
@@ -171,13 +177,23 @@ public static class Firing
             {
                 w.BurstLeft--;
                 w.BurstT = 0.07;
+                var hb0 = b.HeavyBy;
+                b.HeavyBy = w.HeavyCast ? w : null;
                 FireBurstShot(b, w);
+                b.HeavyBy = hb0;
             }
         }
         if (w.Timer > 0) return;
         int kills0 = w.Kills;
         b.ArcanistBeforeCast(w);
+        // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
+        bool heavy = b.HandBeginCast(w);
+        var hb = b.HeavyBy;
+        b.HeavyBy = heavy ? w : null;
         bool fired = Fire(b, w);
+        b.HeavyBy = hb;
+        b.HandEndCast(w, fired);
+        if (fired) w.HeavyCast = heavy;
         b.ArcanistAfterCast(w, fired);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
@@ -263,6 +279,7 @@ public static class Firing
             pr.Tags = w.Tags;
             pr.Radius = (w.Num(s => s.Radius) ?? 0.2) * Math.Sqrt(b.Stats.Get(Stat.Area));
             pr.Pierce = PierceOf(b, w);
+            if (b.HandPierce(w) > 0) b.HandPierced(pr);
             pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0);
             pr.Life = life ?? DurationOf(b, w, w.Num(s => s.Life) ?? 2.0) / (1 + Content.Weapons.DurationStep * (w.Rank - 1));
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;

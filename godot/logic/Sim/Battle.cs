@@ -216,6 +216,8 @@ public struct HitOpts
     public bool Provoke;
     /// <summary>What the damage is credited to when no weapon dealt it (Battle.DamageBy).</summary>
     public string? Credit;
+    /// <summary>A heavy blow's (the warden's Hand): set by a heavy projectile's hit.</summary>
+    public bool Heavy;
 }
 
 /// <summary>What a trigger sees when it fires.</summary>
@@ -604,6 +606,7 @@ public sealed partial class Battle
         }
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
         StalkerOnDash();
+        HandOnDash();
         OpenGate(x0, z0);
         return true;
     }
@@ -775,9 +778,11 @@ public sealed partial class Battle
         // roadknife.adders_patience: no *sure* strike (true = sure crit); the build's own crit chance still rolls.
         bool noTrue = StalkerNoTrue;
         bool crit = o.Crit && !noTrue;
+        // The stalker's Hand: just after a dash, a blow on a champion strikes true.
+        bool handTrue = !noTrue && StalkerHand && HandTrue(e, o);
         if (!crit && !o.NoCrit && !o.Dot)
         {
-            double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o));
+            double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o)) + (handTrue ? 1 : 0);
             // The Hunters' Blind: the first blow on anything unhurt.
             if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
             // Night-Eyes: the far ones, in the dark, are seen best.
@@ -847,9 +852,11 @@ public sealed partial class Battle
 
         // Knockback: heavier things move less, bosses not at all.
         if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback));
+        // The warden's Hand: a heavy blow (every few firings of a Melee or Thrown skill; all of its hits).
+        bool heavy = !o.Dot && (o.Heavy || (HeavyBy != null && o.Weapon == HeavyBy));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
-            double k = o.Knockback * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
+            double k = o.Knockback * (heavy ? Content.Hands.Warden.Knockback : 1) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
         }
@@ -870,6 +877,8 @@ public sealed partial class Battle
         ReaverOnHit(e, o);
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
+        if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy);
+        if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); }
         FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
@@ -921,6 +930,8 @@ public sealed partial class Battle
         if (credit == "flare" && !e.Boss) FlareKillsNow++;
         crowdDied?.Add(e.Id);
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
+        // The arcanist's Hand: a Spell's kill leaves its ground and passes its mark (before the lamps' own passing).
+        if (credited && e.Disposition != Disposition.Ally && ArcanistHand) HandArcanistKill(e, weapon);
         ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
         FlareOnKilled(e, credited && e.Disposition != Disposition.Ally);
@@ -1564,6 +1575,7 @@ public sealed partial class Battle
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
+        e.HandStoneKey = 0;
         e.HasteT = e.WardT = e.Ward = 0; e.Haste = 1;
         // (Only those with the verb draw from the stream: the rest of the fight's dice stay where they were.)
         e.AuraT = def.Aura is { } au ? au.Every * (0.3 + Rng.Next() * 0.4) : 0;
@@ -1585,6 +1597,7 @@ public sealed partial class Battle
         if (pr == null) return null;
         pr.Reset();
         pr.Owner = owner; pr.X = x; pr.Z = z; pr.Damage = damage; pr.School = school; pr.Credit = credit;
+        if (owner == Side.Player) pr.HeavyId = HeavyBy?.Id;
         return pr;
     }
 
@@ -2015,7 +2028,16 @@ public sealed partial class Battle
         return null;
     }
 
+    /// <summary>A projectile strikes; one loosed in a heavy blow lands heavy, splash and all.</summary>
     void ProjectileHit(Projectile pr, Enemy e)
+    {
+        var hb = HeavyBy;
+        HeavyBy = pr.HeavyId != null && ReferenceEquals(pr.HeavyId, pr.Weapon) ? WeaponById(pr.Weapon) : null;
+        ProjectileStrikes(pr, e);
+        HeavyBy = hb;
+    }
+
+    void ProjectileStrikes(Projectile pr, Enemy e)
     {
         var weapon = WeaponById(pr.Weapon);
         HitEnemy(e, pr.Damage, pr.School, pr.Tags, new HitOpts

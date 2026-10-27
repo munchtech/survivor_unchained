@@ -34,6 +34,7 @@ using SurvivorUnchained.Rpg;
  *          --charges 0 (every charger on its own clock, as before the charge director)
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
+ *          --hand 0 (every calling's Hand off, to measure them)
  *          --offcalling (with --type both|<road>: each road's skills drafted (policy road:T, --policies ignored) on its
  *          own calling and on each other calling; the report's on-calling table, target <= x1.25)
  *
@@ -46,6 +47,8 @@ Pilot.Banks = opt.Get("bank", "1") != "0";
 Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
 Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
 Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
+// --hand 0: every calling's Hand off (docs/design/CLASS_IDENTITY_AND_TALENTS.md 2.2), to measure what the Hands bring.
+SurvivorUnchained.Sim.Battle.Hands = opt.Get("hand", "1") != "0";
 SurvivorUnchained.Sim.Battle.FlareRout = double.Parse(opt.Get("rout", "0"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Sim.Battle.FlareReachMul = double.Parse(opt.Get("flarereach", "1"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Play.Bosses.StoryBoss.Cuts = opt.Get("storycut", "1") != "0";

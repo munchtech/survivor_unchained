@@ -287,6 +287,8 @@ public partial class ArtsScreen : Overlay
         d.AddChild(Style.H(Style.Gap4, m, Style.V(2, Style.Label(w.Name.ToUpperInvariant(), Style.Display, 28, Kit.Ink),
             Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col))));
         d.AddChild(Style.Label(w.Description, Style.Text, 17, Kit.Ink2, true));
+        // What her calling's Hand does to it, in her hands by day and by night (plain text; the look is the UI lead's).
+        if (Content.Hands.Line(ch.Archetype, w) is { } hand) d.AddChild(Style.Label(hand, Style.Text, 16, Kit.Ink2, true));
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));

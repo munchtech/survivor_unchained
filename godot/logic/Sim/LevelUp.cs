@@ -193,6 +193,10 @@ public static class LevelUp
     /// <summary>Passive skills held (blessings are not passives).</summary>
     public static int PassivesHeld(Battle b) => b.Boons.Count(kv => kv.Value > 0 && Boons.Find(kv.Key)?.Kind == BoonKind.Passive);
 
+    /// <summary>A skill's description, and the line her calling's Hand adds to it (Content/Hands.Line) when it bends it.</summary>
+    public static string WithHand(Battle b, WeaponDef d) =>
+        Battle.Hands && Content.Hands.Line(b.Calling, d) is { } line ? $"{d.Description} {line}" : d.Description;
+
     static string Names(IEnumerable<string> ids)
     {
         var n = ids.Select(id => Boons.Find(id)?.Name ?? id).ToList();
@@ -426,7 +430,8 @@ public static class LevelUp
                 // Kindred skills are two callings' only (docs/design/CLASS_IDENTITY_AND_TALENTS.md section 2.1).
                 if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id) || !Content.Weapons.CanCarry(b.Calling, id)) continue;
                 var d = Content.Weapons.All[id];
-                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
+                // The card says what her Hand does to it (the tooltip is the truth).
+                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = WithHand(b, d), Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
                 double w = 3.2 * want * Affinity(d.Tags, tags) * Again(o);
                 var mine = paths.FirstOrDefault(p => p.Weapons.Contains(id));
                 double lean = 1;
