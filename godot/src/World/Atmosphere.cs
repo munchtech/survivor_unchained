@@ -92,6 +92,7 @@ public partial class Atmosphere : Node3D
             PaintShadow = Atmospheres.CloseNightPaint.PaintShadow,
             PaintShadowK = Mathf.Lerp((float)g.PaintShadowK, (float)Atmospheres.CloseNightPaint.PaintShadowK, ViewHighlightsNeutral),
             PaintLift = Mathf.Lerp((float)g.PaintLift, (float)Atmospheres.CloseNightPaint.PaintLift, ViewHighlightsNeutral),
+            PaintShadowSkin = Mathf.Lerp((float)g.PaintShadowSkin, (float)Atmospheres.CloseNightPaint.PaintShadowSkin, ViewHighlightsNeutral),
         };
     /// <summary>A cinematic's own grade over the preset's (GameCinema's "grade" cue: the moon's colour, the painted shade),
     /// null outside one; SetCineGrade remakes the table at once, and the cinematic's end gives play's back.</summary>
@@ -118,6 +119,7 @@ public partial class Atmosphere : Node3D
         HighlightTint = FrontHiWarm ? p.Grade.HighlightTint : "#bcbcbc",
         PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
         PaintShadow = Atmospheres.CloseNightPaint.PaintShadow, PaintShadowK = Atmospheres.CloseNightPaint.PaintShadowK, PaintLift = Atmospheres.CloseNightPaint.PaintLift,
+        PaintShadowSkin = Atmospheres.CloseNightPaint.PaintShadowSkin,
     } : p.Grade;
     /// <summary>--close-moon-off K: how much of the grade's moon colour the close view by night takes off (pictures).</summary>
     static readonly float CloseMoonOff = SurvivorUnchained.Args.Num("close-moon-off", 1f);
@@ -502,12 +504,12 @@ public partial class Atmosphere : Node3D
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
 
     /// <summary>--grade-try k=v,...: a trial paint grade over the preset's own (GradeSettings.Paint*), key by key, for style
-    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi, shskin. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
     static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
 
     sealed class GradeTry
     {
-        public float? Mute, Vib, Skin, ShadowK, Lift, Hi;
+        public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin;
         public string? Shadow;
 
         public static GradeTry? Parse(string? spec)
@@ -530,6 +532,7 @@ public partial class Atmosphere : Node3D
                     case "shadowk": t.ShadowK = f; break;
                     case "lift": t.Lift = f; break;
                     case "hi": t.Hi = f; break;
+                    case "shskin": t.ShadowSkin = f; break;
                     default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
                 }
             }
@@ -540,7 +543,7 @@ public partial class Atmosphere : Node3D
     /// <summary>The paint grade's terms for one table: the grade's own, each --grade-try key over its own.</summary>
     readonly struct Paint
     {
-        readonly float vib, skin, shadowK, lift, hi, vibDark;
+        readonly float vib, skin, shadowK, lift, hi, vibDark, shadowSkin;
         readonly bool hasShadow;
         readonly float ls, cs, hs;
         public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
@@ -549,6 +552,7 @@ public partial class Atmosphere : Node3D
         {
             vib = t?.Vib ?? (float)g.PaintVib; hi = t?.Hi ?? (float)g.PaintHi; lift = t?.Lift ?? (float)g.PaintLift;
             shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1; vibDark = (float)g.PaintVibDark;
+            shadowSkin = t?.ShadowSkin ?? (float)g.PaintShadowSkin;
             string hex = t?.Shadow ?? g.PaintShadow;
             hasShadow = hex != "";
             ls = cs = hs = 0;
@@ -587,6 +591,8 @@ public partial class Atmosphere : Node3D
             {
                 float dark = 1 - Smooth(0.12f, 0.45f, L), fadeBlack = Smooth(0, 0.08f, L), own = 1 - Smooth(0.02f, 0.07f, C);
                 float w = Mathf.Clamp(shadowK * dark * own * fadeBlack, 0, 1);
+                // (skin's hues spared by PaintShadowSkin: the lerp to blue ran her shade through red and violet)
+                if (shadowSkin != 0) w *= 1 - shadowSkin * skinHue * Smooth(0.012f, 0.025f, C);
                 float ct = cs * Mathf.Min(L / Mathf.Max(ls, 0.05f), 1), hsr = Mathf.DegToRad(hs);
                 a = Mathf.Lerp(a, ct * Mathf.Cos(hsr), w);
                 b = Mathf.Lerp(b, ct * Mathf.Sin(hsr), w);

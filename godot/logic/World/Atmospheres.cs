@@ -95,7 +95,7 @@ public static class Atmospheres
     /// one grade on her and the world: her shaded skin's chroma 7.9 to 8.3, lit skin 9.7 to 9.8, the neck's shade hue 21-22 both ways.)</summary>
     public static readonly GradeSettings CloseNightPaint = PlayNightGrade with
     {
-        PaintVib = 0.7, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015,
+        PaintVib = 0.7, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015, PaintShadowSkin = 1,
         MoonSat = 0.085,   // (G1 r3: the play night's 0.14 is the camp grass's; the close view keeps the 0.085 she was judged under)
     };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
@@ -219,7 +219,8 @@ public static class Atmospheres
             MoonTop = Lerp(a.Grade.MoonTop, b.Grade.MoonTop, t), MoonWidth = Lerp(a.Grade.MoonWidth, b.Grade.MoonWidth, t),
             PaintVib = Lerp(a.Grade.PaintVib, b.Grade.PaintVib, t), PaintHi = Lerp(a.Grade.PaintHi, b.Grade.PaintHi, t),
             PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
-            PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
+            PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
+            PaintShadowSkin = Lerp(a.Grade.PaintShadowSkin, b.Grade.PaintShadowSkin, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
         })
         {
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
