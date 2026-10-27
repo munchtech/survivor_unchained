@@ -29,6 +29,9 @@ public partial class Voices : Node3D
         public required Vector3 At;
         public required string Text;
         public double T, Life;
+        /// <summary>0..1: whether its speaker's head is on the screen (eased over 0.25 s); the anchor it follows (smoothed).</summary>
+        public float Vis;
+        public Vector2? Anchor;
         /// <summary>How far it is moved up to stand clear of the lines before it (eased).</summary>
         public float Lift;
         public float? Pick;
@@ -55,6 +58,9 @@ public partial class Voices : Node3D
     /// <summary>No name plates or quest marks at all (set by shots that must keep the frame clear; Away and Quiet are driven by the game).</summary>
     public bool Bare;
     float plateK = 1;
+    /// <summary>Per plate: how far it has stepped aside (0 standing, 1 gone) for its own speaker's bark. The
+    /// bark names the speaker already, and the plate's letters showed through the words (UI 16 MR2).</summary>
+    readonly Dictionary<string, float> aside = new();
     static readonly bool platesOld = OS.GetCmdlineUserArgs().Contains("--plates-old");
 
     public Voices() { Name = "Voices"; }
@@ -118,7 +124,7 @@ public partial class Voices : Node3D
         }
         gone.Clear();
         foreach (var id in plates.Keys) if (!keep.Contains(id)) gone.Add(id);
-        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); }
+        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); aside.Remove(id); }
     }
 
     /// <summary>Something said to the air, over someone's head. Their line before
@@ -163,7 +169,8 @@ public partial class Voices : Node3D
                 if (cur != "" && One(t) > width - 8) { lines.Add(cur); cur = wd; } else cur = t;
             }
             lines.Add(cur);
-            if (lines.Count <= n && (lines.Count == 1 || One(lines[^1]) >= One(lines[0]) * 0.33f && lines[^1].Contains(' '))) return width;
+            bool dangling = lines.Take(lines.Count - 1).Any(l => { var e = l.Split(' ')[^1].ToLowerInvariant(); return e is "a" or "an" or "the"; });
+            if (!dangling && lines.Count <= n && (lines.Count == 1 || One(lines[^1]) >= One(lines[0]) * 0.33f && lines[^1].Contains(' '))) return width;
         }
         return 460;
     }
@@ -248,6 +255,11 @@ public partial class Voices : Node3D
         foreach (var (id, (n, m)) in plates)
         {
             float k2 = Ui.GameHud.BossName is { } bn && said.TryGetValue(id, out var sw) && string.Equals(sw.Name, bn, StringComparison.OrdinalIgnoreCase) ? 0 : pk;
+            // (its own speaker's bark is up: the plate and its quest mark fade out over 0.2 s, back after)
+            bool talking = barks.Any(b => b.T < b.Life && new Vector2(b.At.X - n.Position.X, b.At.Z - n.Position.Z).LengthSquared() < 1.2f * 1.2f);
+            float ow = aside.GetValueOrDefault(id);
+            aside[id] = ow = Mathf.Clamp(ow + (talking ? 1 : -1) * (float)delta / 0.2f, 0, 1);
+            k2 *= 1 - ow;
             n.Transparency = 1 - k2; m.Transparency = 1 - k2; n.Visible = k2 > 0;
         }
         for (int i = barks.Count - 1; i >= 0; i--)
@@ -278,8 +290,10 @@ public partial class Voices : Node3D
             float vpH = GetViewport().GetVisibleRect().Size.Y;
             // (a fixed-size Label3D's font pixel on the screen)
             float k = 0.0007f / (2 * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2)) * vpH;
-            foreach (var (n, m) in plates.Values)
+            foreach (var (pid, (n, m)) in plates)
             {
+                // (a plate stepping aside for its own speaker's bark is no obstacle to it)
+                if (aside.GetValueOrDefault(pid) > 0) continue;
                 if (!n.Visible || n.Text == "" || cam.IsPositionBehind(n.Position)) continue;
                 var c = cam.UnprojectPosition(n.Position);
                 var lines = n.Text.Split('\n');
@@ -322,15 +336,23 @@ public partial class Voices : Node3D
         foreach (var b in barks)
         {
             var head = b.At + Vector3.Up * 2.1f;
-            if (cam.IsPositionBehind(head)) { b.Box.Visible = false; continue; }
-            b.Box.Visible = true;
+            if (cam.IsPositionBehind(head)) { b.Vis = 0; b.Box.Visible = false; b.Anchor = null; continue; }
             var size = b.Box.GetCombinedMinimumSize();
+            var vp = GetViewport().GetVisibleRect().Size;
+            var hp = cam.UnprojectPosition(head);
+            // (only while his head is on the screen is the bark shifted in to fit; once it leaves, the bark fades out over 0.25 s)
+            bool onScreen = hp.X >= 16 && hp.X <= vp.X - 16 && hp.Y >= 0 && hp.Y <= vp.Y;
+            b.Vis = Mathf.Clamp(b.Vis + (onScreen ? 1 : -1) * (float)delta / 0.25f, 0, 1);
+            if (b.Vis <= 0) { b.Box.Visible = false; b.Anchor = null; continue; }
+            b.Box.Visible = true;
+            // (following the head, smoothed: no jitter)
+            b.Anchor = b.Anchor is Vector2 prev ? prev.Lerp(hp, ease) : hp;
             // (rising a little as it is said)
-            var at = cam.UnprojectPosition(head) - new Vector2(size.X / 2, size.Y + (float)Math.Min(b.T, 3) * 6);
+            var at = b.Anchor.Value - new Vector2(size.X / 2, size.Y + (float)Math.Min(b.T, 3) * 6);
             // A speaker at the top of the screen says it under their feet, not under the HUD's bars
             // nor over the name of the move they make (held just under the bars: Hits.UnderTheBars).
             float top = Ui.GameHud.TopClear + 66;
-            if (at.Y < top) at.Y = Math.Max(top, cam.UnprojectPosition(b.At).Y + 14);
+            if (at.Y < top) at.Y = Math.Max(top, hp.Y + 14);
             at.X = Mathf.Clamp(at.X, 16, GetViewport().GetVisibleRect().Size.X - 16 - size.X);
             // Never inside the banner's words, nor beside them on their line (read across, a howl's
             // caption and the banner's title made one sentence): under them (over them is the boss's bar).
@@ -365,7 +387,7 @@ public partial class Voices : Node3D
             b.Box.Size = size;
             placed.Add(new Rect2(at - new Vector2(0, want), size).Grow(6));
             if (Args.Has("shot")) { var me = new Rect2(at - new Vector2(0, want), size); foreach (var o in barkRects) { float gx = Math.Max(o.Position.X - me.End.X, me.Position.X - o.End.X), gy = Math.Max(o.Position.Y - me.End.Y, me.Position.Y - o.End.Y); float g = Math.Max(gx, gy); if (g < barkMinGap) { barkMinGap = g; GD.Print($"[bark-gap] min {g:0.0} px me {me} other {o} lift {b.Lift:0.0} want {want:0.0} T {b.T:0.00} ({b.Text.Length} chars, {b.Box.GetCombinedMinimumSize().Y:0} px tall)"); } } barkRects.Add(me); }
-            float a = (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet;
+            float a = (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet * b.Vis;
             b.Box.Modulate = new Color(1, 1, 1, a);
         }
     }

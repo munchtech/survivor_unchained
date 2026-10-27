@@ -394,12 +394,15 @@
       "boots"
     ],
     "meshes": [
+      "reaver.boots.blackleather",
+      "reaver.boots.darkleather",
       "reaver.boots.fur",
-      "reaver.boots.oldleather",
+      "reaver.boots.hide",
+      "reaver.boots.rawhide",
       "reaver.boots.thread"
     ],
     "tuck": "armor_tuck/reaver.boots.bin",
-    "tuck_count": 3245,
+    "tuck_count": 3547,
     "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223"
   },
   {
@@ -450,7 +453,7 @@
       "reaver.cloak.fur"
     ],
     "tuck": "armor_tuck/reaver.cloak.bin",
-    "tuck_count": 175,
+    "tuck_count": 182,
     "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223"
   },
   {
@@ -493,7 +496,7 @@
       "skirt"
     ],
     "meshes": [
-      "reaver.skirt.darkleather",
+      "reaver.skirt.burnished",
       "reaver.skirt.oldleather"
     ],
     "tuck": "armor_tuck/reaver.skirt.bin",
@@ -514,7 +517,7 @@
       "reaver.top.thread"
     ],
     "tuck": "armor_tuck/reaver.top.bin",
-    "tuck_count": 1657,
+    "tuck_count": 1498,
     "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223"
   }
 ]

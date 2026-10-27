@@ -1,0 +1,12 @@
+row -0.130,1.06,-0.245,11,-16: pivot [-0.13, 1.06, -0.245] shaft [0.184, 0.945, 0.271] at [-0.233, 0.531, -0.397] thick [0.979, -0.2, 0.032]
+row -0.120,1.06,-0.250,11,-16: pivot [-0.12, 1.06, -0.25] shaft [0.184, 0.945, 0.271] at [-0.223, 0.531, -0.402] thick [0.979, -0.2, 0.032]
+row -0.130,1.06,-0.255,10.5,-18: pivot [-0.13, 1.06, -0.255] shaft [0.174, 0.937, 0.304] at [-0.227, 0.535, -0.425] thick [0.98, -0.193, 0.036]
+row -0.140,1.06,-0.250,10.5,-16: pivot [-0.14, 1.06, -0.25] shaft [0.175, 0.946, 0.271] at [-0.238, 0.53, -0.402] thick [0.981, -0.192, 0.034]
+row -0.120,1.06,-0.240,11,-18: pivot [-0.12, 1.06, -0.24] shaft [0.182, 0.935, 0.304] at [-0.222, 0.536, -0.41] thick [0.979, -0.201, 0.034]
+row -0.135,1.07,-0.245,11,-17: pivot [-0.135, 1.07, -0.245] shaft [0.183, 0.94, 0.287] at [-0.237, 0.543, -0.406] thick [0.979, -0.2, 0.033]
+walk   -0.130,1.06,-0.245,11,-16    R out   9.2.. 12.7 fore  -16.9.. -15.0 skin   0.0 (f0) outfit -10.1 (f28) hand   85 mm | skin@ y+0.65 lowerarm_twist_01_r f28 -16.9 outfit@ y+0.64 lowerarm_twist_01_r
+walk   -0.120,1.06,-0.250,11,-16    R out   9.2.. 12.7 fore  -16.9.. -15.0 skin   0.0 (f0) outfit  -7.9 (f4) hand   93 mm | skin@ y+0.01 calf_r f4 -16.5 outfit@ y+0.01 calf_r
+walk   -0.130,1.06,-0.255,10.5,-18  R out   8.6.. 12.3 fore  -18.9.. -17.0 skin   0.0 (f0) outfit -15.6 (f28) hand   96 mm | skin@ y+0.65 lowerarm_twist_01_r f28 -22.6 outfit@ y+0.65 lowerarm_twist_01_r
+walk   -0.140,1.06,-0.250,10.5,-16  R out   8.7.. 12.2 fore  -16.9.. -15.0 skin   0.0 (f0) outfit -11.0 (f28) hand   87 mm | skin@ y+0.65 lowerarm_twist_01_r f28 -16.9 outfit@ y+0.65 lowerarm_twist_01_r
+walk   -0.120,1.06,-0.240,11,-18    R out   9.1.. 12.8 fore  -18.9.. -17.0 skin   0.0 (f0) outfit  -9.8 (f28) hand   87 mm | skin@ y+0.64 lowerarm_twist_01_r f28 -16.1 outfit@ y+0.64 lowerarm_twist_01_r
+walk   -0.135,1.07,-0.245,11,-17    R out   9.1.. 12.7 fore  -17.9.. -16.0 skin   0.0 (f0) outfit  -8.2 (f28) hand   89 mm | skin@ y+0.65 lowerarm_twist_01_r f28 -14.9 outfit@ y+0.65 lowerarm_twist_01_r

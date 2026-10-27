@@ -106,6 +106,24 @@ uniform float ember_r = 7.0;
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
 uniform float gutter_w = 0.4;
+// (E8 later r2, Low Ford: flora_species.json "ground") foot_damp: the ground at the foot of what stands damp, not mud
+// (the gate's drums stood in a band of rust: the setts' mud, warm and lost stone by stone, ending dead at the grass):
+// darker (about 0.75 of the stone on screen) and cooler, smoother so the moon gives it a sheen, out to foot_w m,
+// feathered by noise and carried onto the earth as darker soil; the margin's warm tint neutral. 0 (the default, the
+// town): none of it.
+uniform float foot_damp = 0.0;
+uniform float foot_w = 0.6;
+// (E8 later r2, Low Ford's camp: flora_species.json "ground" and "ground_paths") camp_scorch: a burnt disc round each
+// fire (warm_at) out to scorch_r m, soft-edged, flecked with pale ash; trample: the earth between the fire and the logs
+// lighter (worn); path_seg: footpaths (segments x0, z0, x1, z1, path_n of them) path_hw m to their edge, path_lift
+// lighter. All 0 by default (the town): none of it.
+uniform float camp_scorch = 0.0;
+uniform float scorch_r = 1.0;
+uniform float trample = 0.0;
+uniform vec4 path_seg[12];
+uniform int path_n = 0;
+uniform float path_hw = 0.2;
+uniform float path_lift = 0.0;
 // The setts' shoulders lit less (judge 1, E3 fix 6: the bevel rims read as mosaic; halve their highlight).
 uniform float setts_bump = 0.32;
 uniform float night_dew = 0.35;
@@ -476,7 +494,7 @@ void fragment() {
 	albedo *= mix(vec3(1.0), mix(vec3(1.02, 1.0, 0.965), vec3(0.985, 1.0, 1.025), smoothstep(0.3, 0.7, nM.a)), w_setts * setts_lf);
 	// Darker and warmer at the margins: along the walls and under the eaves.
 	float margin = (1.0 - smoothstep(0.4, 1.8, nr.r * 2.0)) * w_setts * setts_lf;
-	albedo *= mix(vec3(1.0), vec3(0.9, 0.86, 0.8), margin);
+	albedo *= mix(vec3(1.0), mix(vec3(0.9, 0.86, 0.8), vec3(0.87), step(0.001, foot_damp)), margin);
 	// Grime within 0.6-1 m of what stands (a trace now: the mud below carries it); a wear lane down the ways; weeds and
 	// moss in the joints by the walls.
 	float near_any = 1.0 - smoothstep(0.6, 1.0, nr.g * 2.0 + (nF.b - 0.5) * 0.3);
@@ -567,6 +585,36 @@ void fragment() {
 	// (E9d r2) the mud wet: darker and glossier than the setts (under the lamps it read as dry rust)
 	albedo *= 1.0 - mud_wet_dark * mud_s * (1.0 - mud_paint);
 	rough = mix(rough, mud_wet_rough, mud_s * (1.0 - mud_paint));
+	if (foot_damp > 0.0) {
+		float fdn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (rg4.g - 0.5) * 0.35 + (nM.a - 0.5) * 0.25;
+		float fd = (1.0 - smoothstep(foot_w * 0.25, foot_w, fdn)) * foot_damp;
+		albedo *= mix(vec3(1.0), mix(vec3(0.62, 0.64, 0.72), vec3(0.54, 0.67, 0.97), w_setts), fd);
+		rough = mix(rough, mix(rough * 0.85, 0.42, w_setts), fd);
+	}
+	if (camp_scorch + trample > 0.0) {
+		for (int i = 0; i < 4; i++) {
+			if (warm_at[i].z <= 0.0) continue;
+			float dn = length(w - warm_at[i].xy) + (nF.r - 0.5) * 0.3 + (nM.b - 0.5) * 0.25;
+			float sc = (1.0 - smoothstep(scorch_r * 0.55, scorch_r * 1.15, dn)) * camp_scorch;
+			albedo = mix(albedo, vec3(0.040, 0.032, 0.026) * (0.75 + 0.5 * nF.g), sc * 0.75);
+			float fl = smoothstep(0.70, 0.80, texture(noise_tex, w * 2.3 + 0.29).r * 0.6 + nF.a * 0.4) * sc;
+			albedo = mix(albedo, vec3(0.22, 0.21, 0.20), fl * 0.65);
+			rough = mix(rough, 0.95, sc);
+			float tr = smoothstep(scorch_r * 0.95, scorch_r * 1.4, dn) * (1.0 - smoothstep(2.6, 3.4, dn)) * trample;
+			albedo *= 1.0 + tr * (0.7 + 0.6 * nM.g);
+		}
+	}
+	if (path_n > 0) {
+		float pd = 1e3;
+		for (int i = 0; i < 12; i++) {
+			if (i >= path_n) break;
+			vec2 a0 = path_seg[i].xy, ab = path_seg[i].zw - a0;
+			float t = clamp(dot(w - a0, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+			pd = min(pd, length(w - a0 - ab * t));
+		}
+		float hw = path_hw * (1.0 + 0.35 * (texture(noise_tex, w * 0.35 + 0.61).g - 0.5) * 2.0);
+		albedo *= 1.0 + (1.0 - smoothstep(hw * 0.5, hw * 1.1, pd + (nF.b - 0.5) * 0.07)) * path_lift;
+	}
 	float dbg_collar = step(0.5, collar);
 	float joint = w_setts * (1.0 - smoothstep(0.14, 0.26, hgt));
 	// Moss in the shaded joints, in patches, out of the wear lane.

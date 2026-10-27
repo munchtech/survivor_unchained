@@ -79,6 +79,15 @@ public partial class PlayerView : Node3D
     float runSpeed;
     float sprintSpeed;
     AnimationNodeAnimation? sprintNode, walkNode;
+    // Her arm-hold switch (animation 55, Play/ArmHold): a copy of the move graph whose run weight is the switched hold's
+    // (0 or 1), its arm bones only laid over the move blend by a filtered Blend2; HerArmHold crossfades each switch.
+    AnimationNodeAnimation? aIdle, aWalk, aRun, aSprint;
+    readonly ArmHold armHold = new();
+    HerArmHold? armMod;
+    bool armOn;
+    // What Carry asked of the fade this frame, handed to HerArmHold after the tree's next Advance (the frame it shows).
+    (bool Fading, float E, Animation? Walk, Animation? Run, Animation? Sprint, double WalkT, double RunT, float Fast) armFade;
+    static readonly bool ArmBlendOff = SurvivorUnchained.Args.Get("arm-blend") == "off";
     // Her gait (animation 51): the walk's and run's ground speeds and lengths, the shared stride phase (0 = left heel down), and how long she has stood.
     float walkSpeed, walkLen, runLen, stride, standT;
     bool hasWalk;
@@ -142,12 +151,45 @@ public partial class PlayerView : Node3D
             mv.ConnectNode("blendW", 1, "walkSeek");
             mv.ConnectNode("blend", 0, "blendW");
             mv.ConnectNode("blend", 1, "runSeek");
-            mv.ConnectNode("output", 0, "blend");
+            // The arms' copy: the same clips, seeks and weights but the switched run weight (fed in Carry).
+            aIdle = new AnimationNodeAnimation { Animation = idle };
+            aWalk = new AnimationNodeAnimation { Animation = run };
+            aRun = new AnimationNodeAnimation { Animation = run };
+            aSprint = new AnimationNodeAnimation { Animation = sprintNode.Animation };
+            mv.AddNode("aIdle", aIdle, new Vector2(0, 600));
+            mv.AddNode("aWalk", aWalk, new Vector2(0, 700));
+            mv.AddNode("aRun", aRun, new Vector2(0, 800));
+            mv.AddNode("aSprint", aSprint, new Vector2(0, 900));
+            mv.AddNode("aFast", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 850));
+            mv.AddNode("aWalkSeek", new AnimationNodeTimeSeek(), new Vector2(200, 700));
+            mv.AddNode("aRunSeek", new AnimationNodeTimeSeek(), new Vector2(400, 850));
+            mv.AddNode("aBlendW", new AnimationNodeBlend2(), new Vector2(400, 600));
+            mv.AddNode("aBlend", new AnimationNodeBlend2(), new Vector2(600, 700));
+            // Filtered: the arm bones blend toward the copy by the amount, every other track keeps input 0 whole.
+            var arms = new AnimationNodeBlend2 { FilterEnabled = true };
+            for (int b = 0; b < person.Skeleton.GetBoneCount(); b++)
+                if (ArmHold.IsArmBone(person.Skeleton.GetBoneName(b))) arms.SetFilterPath($"Armature/Skeleton3D:{person.Skeleton.GetBoneName(b)}", true);
+            mv.AddNode("arms", arms, new Vector2(800, 300));
+            mv.ConnectNode("aFast", 0, "aRun");
+            mv.ConnectNode("aFast", 1, "aSprint");
+            mv.ConnectNode("aWalkSeek", 0, "aWalk");
+            mv.ConnectNode("aRunSeek", 0, "aFast");
+            mv.ConnectNode("aBlendW", 0, "aIdle");
+            mv.ConnectNode("aBlendW", 1, "aWalkSeek");
+            mv.ConnectNode("aBlend", 0, "aBlendW");
+            mv.ConnectNode("aBlend", 1, "aRunSeek");
+            mv.ConnectNode("arms", 0, "blend");
+            mv.ConnectNode("arms", 1, "aBlend");
+            mv.ConnectNode("output", 0, "arms");
             moveNode = mv;
             GaitClips(People.Clip(person, "Jog_Fwd_Loop"));
             carriage = new HerCarriage();
             person.Skeleton.AddChild(carriage);
             person.Skeleton.MoveChild(carriage, 0);
+            // First of all, on the tree's own pose (before her carriage, her pose layer and the helpers).
+            armMod = new HerArmHold();
+            person.Skeleton.AddChild(armMod);
+            person.Skeleton.MoveChild(armMod, 0);
         }
         else
         {
@@ -372,6 +414,7 @@ public partial class PlayerView : Node3D
     void Mount(bool sheathed)
     {
         view?.Sheathe(sheathed);
+        if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;   // (the pieces remounted: their axes read again)
         if (!mine || idleNode == null || runNode == null) return;
         idleNode.Animation = People.Clip(person, loadout.Arms.Idle, sheathed);
         var run = People.Clip(person, "Jog_Fwd_Loop", sheathed);
@@ -383,6 +426,17 @@ public partial class PlayerView : Node3D
         var sprint = run.StartsWith(own.Prefix + "run_") ? "sprint" + run[(own.Prefix.Length + 3)..] : "";
         if (own.Has(sprint)) { sprintNode.Animation = own.Prefix + sprint; sprintSpeed = own.Speed(sprint) * person.Root.Scale.X; }
         else { sprintNode.Animation = run; sprintSpeed = runSpeed; }
+        ArmClips();
+    }
+
+    /// <summary>The arms' copy of the move graph plays the same clips.</summary>
+    void ArmClips()
+    {
+        if (aIdle == null || aWalk == null || aRun == null || aSprint == null || idleNode == null || runNode == null || walkNode == null || sprintNode == null) return;
+        aIdle.Animation = idleNode.Animation;
+        aWalk.Animation = walkNode.Animation;
+        aRun.Animation = runNode.Animation;
+        aSprint.Animation = sprintNode.Animation;
     }
 
     /// <summary>Her walk for this calling and state (or the run's own clip standing in when there is none), and the lengths the stride seeks by.</summary>
@@ -396,6 +450,7 @@ public partial class PlayerView : Node3D
         if (walkSpeed <= 0.05f) hasWalk = false;
         walkLen = person.Anim.HasAnimation(walkNode.Animation) ? (float)person.Anim.GetAnimation(walkNode.Animation).Length : 1;
         runLen = person.Anim.HasAnimation(run) ? (float)person.Anim.GetAnimation(run).Length : 1;
+        ArmClips();
     }
 
     /// <summary>An art used: the hands that go with it.</summary>
@@ -471,6 +526,14 @@ public partial class PlayerView : Node3D
     {
         time += dt;
         if (mine) tree.Advance(dt);
+        // The arm-hold crossfade, on the frame the tree first shows what Carry set last frame.
+        if (armMod != null)
+        {
+            armMod.Fading = armFade.Fading;
+            armMod.E = armFade.E;
+            armMod.Walk = armFade.Walk; armMod.Run = armFade.Run; armMod.Sprint = armFade.Sprint;
+            armMod.WalkT = armFade.WalkT; armMod.RunT = armFade.RunT; armMod.Fast = armFade.Fast;
+        }
         var p = b.Player;
         double y = heightAt(x, z);
         if (leap >= 0) y += Mathf.Sin((float)(leap * Mathf.Pi)) * 2.2;
@@ -770,6 +833,30 @@ public partial class PlayerView : Node3D
         stride = Stride.Advance(stride, dt, period);
         tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
         tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
+        // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
+        // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
+        bool armNow = !ArmBlendOff && armMod != null && hasWalk && !sheath.Sheathed && (!string.IsNullOrEmpty(loadout.Arms.Right) || loadout.Arms.Left != null);
+        if (armNow && !armOn) armHold.Reset(w);
+        if (armNow) armHold.Step(w, dt);
+        armOn = armNow;
+        // Mid-fade (and nothing laid over her arms: a blow, a roll), HerArmHold lays her arms between the two holds.
+        bool fadeNow = armNow && armHold.Fading && !(bool)tree.Get("parameters/fullShot/active") && !(bool)tree.Get("parameters/upperShot/active");
+        if (fadeNow && armMod != null)
+        {
+            if (armMod.AxisR == Vector3.Zero && armMod.AxisL == Vector3.Zero && view != null) { armMod.AxisR = view.PieceAxis("handslot.r"); armMod.AxisL = view.PieceAxis("handslot.l"); }
+            Animation? A(string? n) => n != null && tree.HasAnimation(n) ? tree.GetAnimation(n) : null;
+            armFade = (true, armHold.E, A(walkNode?.Animation), A(runNode?.Animation), A(sprintNode?.Animation), stride * walkLen, stride * runLen, fast);
+        }
+        else armFade = default;
+        tree.Set("parameters/move/arms/blend_amount", armNow ? 1f : 0f);
+        if (armNow)
+        {
+            tree.Set("parameters/move/aBlendW/blend_amount", wWalk);
+            tree.Set("parameters/move/aFast/blend_amount", fast);
+            tree.Set("parameters/move/aBlend/blend_amount", armHold.Run ? 1f : 0f);
+            tree.Set("parameters/move/aWalkSeek/seek_request", stride * walkLen);
+            tree.Set("parameters/move/aRunSeek/seek_request", stride * runLen);
+        }
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.

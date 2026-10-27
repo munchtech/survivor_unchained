@@ -51,6 +51,8 @@ public partial class Instrument : Control
     public static Vector2 DashAt => new(SocksX + 6 * Sock + 5 * SockGap + SeatClear + SmallR + SmallBand, SmallY);
     /// <summary>The chain's ends: the riveted joints on the cuffs' outer edge, 32 degrees below level.</summary>
     public static Vector2 EyeL => LifeAt + JointOff;
+    /// <summary>The chain's filled links: its rect from the left eye to the lock's left edge (the lock stands at the middle, 32 wide).</summary>
+    public static Rect2 ChainFill => new(EyeL.X, EyeL.Y - 17, Mid - 16 - EyeL.X, 38);
     public static Vector2 EyeR => new(2 * Mid - EyeL.X, EyeL.Y);
     /// <summary>HUD A2: the first link's centre from LifeAt: the eye on the life lamp's font (LifeLamp.Eye in
     /// its quad, the quad's foot on LifeLamp.Floor); mirrored on the right.</summary>

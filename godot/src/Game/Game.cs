@@ -127,7 +127,7 @@ public partial class Game : Node, IZoneHost
         var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         UiArt.Warm();
         if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away", Talk = Args.Get("auto") == "talk" };
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
@@ -889,7 +889,12 @@ public partial class Game : Node, IZoneHost
     public void Say(string text, string? who = null, double seconds = 4)
     {
         var take = voice.Narrate(text);
-        hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
+        // (no voice: up long enough to read, 17 characters a second)
+        double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : Math.Max(seconds, text.Length / 17.0);
+        // (--pace: each line's time, length and her health, for the tutorial's pacing audit)
+        if (Args.Has("pace")) GD.Print($"pace say t={Battle?.Time ?? 0:0.0} up={up:0.0} hp={Battle?.Player.Hp ?? 0:0}/{Battle?.MaxHp ?? 0:0} text={(text.Length > 60 ? text[..60] : text)}");
+        if (Args.Has("pace") && Args.Has("shot")) Shots.Want($"say_{Battle?.Time ?? 0:000}", 1.2);
+        hud.Say(text, who, up);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a)
@@ -897,6 +902,7 @@ public partial class Game : Node, IZoneHost
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         hud.Announce(a);
         sound.Announce(a, bossUp);
+        if (Args.Has("pace")) GD.Print($"pace announce t={Battle?.Time ?? 0:0.0} title={a.Title} line={a.Sub}");
         if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);
     }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
@@ -907,7 +913,7 @@ public partial class Game : Node, IZoneHost
     public void SetHint(Hint? hint)
     {
         // (a scripted run logs each tip and shoots it, as it does a callout: its words and keys are checked too)
-        if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
+        if (hint != null && hint.Id != CurrentHint?.Id && (Args.Has("shot") || Args.Has("pace")))
         {
             GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
             // (its picture is asked for by the HUD once the tip is drawn at full strength: GameHud.Update)
@@ -919,7 +925,8 @@ public partial class Game : Node, IZoneHost
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
     // --cine (pictures of a cinematic, played at once): no name card over its first shots; in play a fight comes first.
-    public void AnnounceZone() { if (zone != null && !Args.Has("cine")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
+    // (--noannounce: no zone banner, for gait shots in its first 4 s)
+    public void AnnounceZone() { if (zone != null && !Args.Has("cine") && !Args.Has("noannounce")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
 
     public void Revived(double x, double z)
     {
@@ -990,6 +997,7 @@ public partial class Game : Node, IZoneHost
             if (d < it.R && d < bd) { bd = d; best = it; }
         }
         near = best;
+        // (the talk lesson L4 is cut, MR5 judge: the prompt "E Talk Tam" is the lesson)
         var view = best != null ? new PromptView(controls.KeyLabel(Act.Interact), best.Verb, best.Name, best.Hint?.Invoke(), best.Locked?.Invoke()) : null;
         if (view != promptShown) hud.Prompt(promptShown = view);
     }

@@ -48,6 +48,10 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     public IReadOnlyList<Vector3>? Pools { get; init; }
     /// <summary>Discs (x, y, radius) kept wholly undimmed and unblurred, as she is (a caster's body).</summary>
     public IReadOnlyList<Vector3>? Crisp { get; init; }
+    /// <summary>Points (by index) that are ringed but never get an arrow (the Knight, beside his lane).</summary>
+    public IReadOnlyList<int>? NoArrow { get; init; }
+    /// <summary>A point (by index) with no ring: the arrow lands on it bare (the lane under her).</summary>
+    public int Bare { get; init; } = -1;
 }
 
 /// <summary>The drawing of a callout, as the game drives it (the UI design pass restyles behind it).</summary>
@@ -440,7 +444,7 @@ public partial class Callout : Control, ICalloutView
         for (int i = 0; i < aim.Points.Count && i < 3; i++)
         {
             float r = aim.Radii is { } rr && i < rr.Count ? rr[i] : 30;
-            float ring = r + 9;
+            float ring = i == aim.Bare ? 4 : r + 9;
             list.Add((aim.Points[i], ring, new Rect2(aim.Points[i] - Vector2.One * ring, Vector2.One * ring * 2), true));
         }
         if (aim.Points.Count == 0)
@@ -463,6 +467,9 @@ public partial class Callout : Control, ICalloutView
         for (int i = 0; i < aim.HudPoints && i < aim.Points.Count; i++) if (aim.Points[i] == at) return true;
         return false;
     }
+
+    /// <summary>Whether the mark at this place is the bare one (no ring: the arrow lands on it).</summary>
+    bool IsBare(Vector2 at) => aim.Bare >= 0 && aim.Bare < aim.Points.Count && aim.Points[aim.Bare] == at;
 
     Vector2 Primary() => aim.Points.Count > 0 ? aim.Points[0] : aim.Areas.Count > 0 ? aim.Areas[0].GetCenter() : new Vector2(960, 540);
 
@@ -541,6 +548,7 @@ public partial class Callout : Control, ICalloutView
         for (int i = 0; i < marks.Count; i++)
         {
             if (!InWorld(i)) { list.Add(i); continue; }
+            if (aim.NoArrow?.Contains(i) == true) continue;
             float d = marks[i].C.DistanceTo(wordsAt);
             if (d < nd) { nd = d; nearest = i; }
         }
@@ -787,7 +795,7 @@ public partial class Callout : Control, ICalloutView
             {
                 if (!InWorld(i)) continue;
                 var m = marks[i];
-                lights[n++] = new Vector4(m.C.X, m.C.Y, m.R * 1.5f + 46, 0.7f);
+                lights[n++] = new Vector4(m.C.X, m.C.Y, i == aim.Bare ? 90 : m.R * 1.5f + 46, 0.7f);
             }
             if (aim.Pools != null)
                 foreach (var pl in aim.Pools)
@@ -843,7 +851,7 @@ public partial class Callout : Control, ICalloutView
             {
                 var marks = c.Marks();
                 for (int i = 0; i < marks.Count; i++)
-                    if (!c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow, c.OnHud(marks[i].C));
+                    if (i != c.aim.Bare && !c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow, c.OnHud(marks[i].C));
             }
             if (c.aim.Edges is { } edges) foreach (var (at, d) in edges) Chevron(at, d, k, breathe, reach, glow);
             foreach (var (way, m) in c.Arrows())
@@ -866,7 +874,7 @@ public partial class Callout : Control, ICalloutView
                     }, r);
                     float bloom = (64 + 14 * strike) * k;
                     DrawTextureRect(Bloom(), new Rect2(tip - Vector2.One * bloom / 2, Vector2.One * bloom), false, Ember with { A = 0.42f + 0.3f * strike });
-                    if (reach >= 1) Mark(m, k, strike, breathe, true, c.OnHud(m.C));
+                    if (reach >= 1 && !c.IsBare(m.C)) Mark(m, k, strike, breathe, true, c.OnHud(m.C));
                     continue;
                 }
                 // The iron, then the heat inside it, cooler at the words, hottest at the point.
@@ -881,7 +889,7 @@ public partial class Callout : Control, ICalloutView
                 Link(pts[0], da, k);
                 float drawn = (tip - pts[0]).Length();
                 if (drawn > 14) Head(tip, dir, k * Mathf.Clamp(drawn / 80f, 0.45f, 1f));
-                if (reach >= 1) Mark(m, k, strike, breathe, false, c.OnHud(m.C));
+                if (reach >= 1 && !c.IsBare(m.C)) Mark(m, k, strike, breathe, false, c.OnHud(m.C));
             }
         }
 

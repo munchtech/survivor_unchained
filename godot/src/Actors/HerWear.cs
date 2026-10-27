@@ -101,22 +101,31 @@ public static class HerWear
     /// its stitch thread; fur and sheer (zone cloth) take the dye on their tint, keeping its luma.</summary>
     internal static void DyeMesh(MeshInstance3D mi, IReadOnlyDictionary<string, string> dye)
     {
+        // (a gold plate dye would swallow the gold trim: Wear.TrimUnderGold darkens the trim to bronze; env GOLD_TRIM="#rrggbb:metal" tries another)
+        dye = Wear.TrimUnderGold(dye);
+        if (dye.TryGetValue("trim", out var gt) && gt == Wear.GoldTrimBronze && System.Environment.GetEnvironmentVariable("GOLD_TRIM") is { Length: > 0 } trial)
+            dye = new Dictionary<string, string>(dye) { ["trim"] = trial };
         for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
         {
             if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !m.HasMeta("zone")) continue;
             var zone = (string)m.GetMeta("zone");
             bool outfit = m.HasMeta("kind");
             if (outfit && (int)m.GetMeta("kind") == 0 && dye.TryGetValue("thread", out var th)) m.SetShaderParameter("thread", new Color(Wear.DyeFinish(th).Hex));
-            if (!dye.TryGetValue(zone, out var hex)) continue;
+            if (!dye.TryGetValue(zone, out var hex))
+            {
+                // (no dye in this zone: back to the built finish)
+                if (outfit && (int)m.GetMeta("kind") == 1 && m.HasMeta("finish0")) m.SetShaderParameter("finish", (int)m.GetMeta("finish0"));
+                continue;
+            }
             var (dyeHex, isMetal) = Wear.DyeFinish(hex);
             var c = new Color(dyeHex);
             if (outfit)
             {
-                // enamel metal (finish 2): a metal dye keeps metal (finish 3, dyed metal: brushed, no oxide); a colour dye paints the enamel
+                // enamel and dye_paint metal (meta finish0 = the built finish): a metal dye gives dyed metal (finish 3: brushed, no oxide); a colour dye paints it (finish 2)
                 if ((int)m.GetMeta("kind") == 1)
                 {
                     if (!m.HasMeta("finish0") && m.GetShaderParameter("finish").AsInt32() == 2) m.SetMeta("finish0", 2);
-                    if (m.HasMeta("finish0")) m.SetShaderParameter("finish", isMetal ? 3 : (int)m.GetMeta("finish0"));
+                    if (m.HasMeta("finish0")) m.SetShaderParameter("finish", isMetal ? 3 : 2);
                 }
                 m.SetShaderParameter("dye", c);
                 m.SetShaderParameter("dye_amount", 1.0f);

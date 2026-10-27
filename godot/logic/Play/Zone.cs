@@ -117,6 +117,11 @@ public interface IZoneHost
     bool TeachWaiting(string id) => false;
     /// <summary>The callout on the screen now (none: none is up).</summary>
     Callout? Teaching => null;
+    /// <summary>A narrated line is on the screen now (a zone's next line waits for it, so none is cut off).</summary>
+    bool Saying => false;
+    /// <summary>Whether a figure standing here, foot to head (`up` metres), is in the open from the camera
+    /// (nothing tall between): a freeze on it can be read (F7 waits for the Knight in the open).</summary>
+    bool OpenGround(double x, double z, double up) => true;
     /// <summary>The survivor is up again here (the prologue's forgiveness).</summary>
     void Revived(double x, double z);
     /// <summary>The key or button bound to an action, as the player would name it.</summary>
