@@ -47,8 +47,11 @@ public static class SkillBook
 
     public static bool Knows(CharacterData ch, string id) => ch.Skills.Contains(id);
 
-    /// <summary>Seen burning in an arena, and not yet learned.</summary>
-    public static bool CanLearn(CharacterData ch, string id) => Weapons.All.TryGetValue(id, out var w) && w.Findable && ch.Discovered.Contains(id) && !Knows(ch, id);
+    /// <summary>The survivor's calling may carry it (Weapons.CanCarry: a kindred skill is two callings').</summary>
+    public static bool Carries(CharacterData ch, string id) => Weapons.CanCarry(ch.Archetype, id);
+
+    /// <summary>Seen burning in an arena, not yet learned, and the calling's to carry.</summary>
+    public static bool CanLearn(CharacterData ch, string id) => Weapons.All.TryGetValue(id, out var w) && w.Findable && ch.Discovered.Contains(id) && !Knows(ch, id) && Carries(ch, id);
 
     public static bool Learn(CharacterData ch, string id)
     {
@@ -68,16 +71,18 @@ public static class SkillBook
 
     public static bool Slot(CharacterData ch, string id)
     {
-        if (!Knows(ch, id) || ch.Slotted.Contains(id) || ch.Slotted.Count >= Slots(ch)) return false;
+        if (!Knows(ch, id) || !Carries(ch, id) || ch.Slotted.Contains(id) || ch.Slotted.Count >= Slots(ch)) return false;
         ch.Slotted.Add(id);
         return true;
     }
 
     public static void Unslot(CharacterData ch, string id) => ch.Slotted.Remove(id);
 
-    /// <summary>What is carried by day and can be used: slotted, measured up to, within the slots.</summary>
+    /// <summary>What is carried by day and can be used: slotted, measured up to, the
+    /// calling's to carry (one that is not lies idle, as one not measured up to
+    /// does: an old save keeps it, unused), within the slots.</summary>
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch) =>
-        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
+        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id) && Carries(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
 
     /// <summary>The skills attuned for the night: those carried by day (and
     /// measured up to). In an arena the ember offers them in its first drafts,

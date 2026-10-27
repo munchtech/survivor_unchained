@@ -222,7 +222,7 @@ public partial class ArtsScreen : Overlay
             list.AddChild(Kit.Head("Seen in the arenas", "not yet learned"));
             foreach (var id in seen) list.AddChild(SkillEntry(ch, id, false));
         }
-        int unseen = Weapons.Pool.Count(id => !ch.Discovered.Contains(id));
+        int unseen = Weapons.Pool.Count(id => !ch.Discovered.Contains(id) && SkillBook.Carries(ch, id));
         if (unseen > 0) list.AddChild(Style.Label($"{unseen} more burn in the arenas, not yet shown to you.", Style.TextItalic, 15, Kit.Faint, true));
         row.AddChild(list);
         row.AddChild(new LedgerRule { CustomMinimumSize = new Vector2(49, 0), SizeFlagsVertical = SizeFlags.Fill });

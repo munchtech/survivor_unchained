@@ -333,7 +333,11 @@ public static class Drops
     /// <summary>A Set or Legendary piece that may fall here: its least level met, its story
     /// condition holding.</summary>
     static bool MayDrop(ItemDef d, DropCtx x) =>
-        d.DropsFrom is int from && x.Level >= from && (d.DropsWhen == null || x.Allows?.Invoke(d.DropsWhen) == true);
+        d.DropsFrom is int from && x.Level >= from && (d.DropsWhen == null || x.Allows?.Invoke(d.DropsWhen) == true) && Wieldable(d, x.Ch);
+
+    /// <summary>A weapon drops for a survivor only if their calling may carry its skill
+    /// (another is picked instead); with no survivor to ask, anything may drop.</summary>
+    public static bool Wieldable(ItemDef d, CharacterData? ch) => d.Weapon == null || ch == null || SkillBook.Carries(ch, d.Weapon.Id);
 
     public static IEnumerable<ItemDef> Legendaries(DropCtx x) =>
         Items.All.Values.Where(d => d.Rarity == 4 && d.Set == null && Leveled(d) && MayDrop(d, x));
@@ -391,8 +395,9 @@ public static class Drops
     {
         if (R() < Rules.WeaponShare)
         {
-            var all = Callings.Archetypes.Values.SelectMany(a => a.Weapons).Distinct().OrderBy(id => id, StringComparer.Ordinal).ToList();
-            var mine = x.Ch != null ? Callings.Archetype(x.Ch.Archetype).Weapons : new List<string>();
+            var all = Callings.Archetypes.Values.SelectMany(a => a.Weapons).Distinct().Where(id => Wieldable(Items.Get(id), x.Ch))
+                .OrderBy(id => id, StringComparer.Ordinal).ToList();
+            var mine = x.Ch != null ? Callings.Archetype(x.Ch.Archetype).Weapons.Where(id => Wieldable(Items.Get(id), x.Ch)).ToList() : new List<string>();
             var pool = mine.Count > 0 && R() < Rules.CallingShare ? mine : all;
             return pool[(int)(R() * pool.Count) % pool.Count];
         }
@@ -434,7 +439,7 @@ public static class Drops
         rolls += (int)extra + (R() < extra % 1 ? 1 : 0);
         bool hoard = x.Source is DropSource.Boss or DropSource.MapRuler;
         bool owed = hoard && w != null && w.LootDebt >= Rules.Debt;
-        bool first = x.StoryBoss && w != null && !w.FirstLegendary && EarlyLegendaries().Any();
+        bool first = x.StoryBoss && w != null && !w.FirstLegendary && EarlyLegendaries().Any(d => Wieldable(d, x.Ch));
         string? material = x.People != null ? PeopleMaterial(x.People) : null;
         // Fire is the scars', iron the atlas's (crafting design 20.1): in a map the lamplings leave iron.
         if (material == "ember_shard" && x.Source is DropSource.MapPack or DropSource.MapPackFine or DropSource.MapKeeper or DropSource.MapRuler or DropSource.Strongbox)
@@ -453,7 +458,7 @@ public static class Drops
             if (k == 0 && first)
             {
                 // The first story boss beaten: a Legendary from the early pool, the calling's own likelier.
-                var pool = EarlyLegendaries().ToList();
+                var pool = EarlyLegendaries().Where(d => Wieldable(d, x.Ch)).ToList();
                 var mine = x.Ch != null ? pool.Where(d => d.Of != null && Callings.Archetype(x.Ch.Archetype).Weapons.Contains(d.Of)).ToList() : new();
                 var d = mine.Count > 0 && R() < 0.75 ? mine[(int)(R() * mine.Count) % mine.Count] : PickNamed(pool, x, R);
                 it = Inventory.Make(x.Ch, d.Id, seed: (uint)(R() * int.MaxValue), dropped: true, level: Math.Clamp(x.Level, 1, Rules.MaxLevel));

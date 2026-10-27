@@ -178,7 +178,8 @@ public static class LevelUp
     public static List<Evolution> EarnedBranches(Battle b, string weaponId)
     {
         var w = b.Weapons.Find(x => x.Id == weaponId);
-        if (w == null || w.Evolution != null || w.Rank < Content.Weapons.MaxRank) return new();
+        // An evolution is carried by whoever may carry its skill.
+        if (w == null || w.Evolution != null || w.Rank < Content.Weapons.MaxRank || !Content.Weapons.CanCarry(b.Calling, w.Id)) return new();
         return w.Def.Evolutions.Where(evo => evo.Catalysts.Any(c => Holds(b, c))).ToList();
     }
 
@@ -422,14 +423,15 @@ public static class LevelUp
             double want = b.Weapons.Count < 2 ? 2.4 : b.Weapons.Count < 4 ? 1.4 : 0.8;
             foreach (var id in Content.Weapons.Pool)
             {
-                if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id)) continue;
+                // Kindred skills are two callings' only (docs/design/CLASS_IDENTITY_AND_TALENTS.md section 2.1).
+                if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id) || !Content.Weapons.CanCarry(b.Calling, id)) continue;
                 var d = Content.Weapons.All[id];
                 var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
                 double w = 3.2 * want * Affinity(d.Tags, tags) * Again(o);
                 var mine = paths.FirstOrDefault(p => p.Weapons.Contains(id));
                 double lean = 1;
                 if (mine != null) { lean *= PathLean; o.Path = mine.Id; o.Why.Add($"On your path: {mine.Name}"); }
-                // A slight lean toward the calling's own style; anyone can take anything.
+                // A slight lean toward the calling's own style, among what it may carry.
                 if (b.CallingPaths.Any(p => Paths.Find(p)?.Weapons.Contains(id) == true) || (b.Favours.Count > 0 && d.Tags.Any(b.Favours.Contains)))
                 {
                     lean *= CallingLean;
@@ -602,7 +604,8 @@ public static class LevelUp
 
     /// <summary>The unions whose two halves are carried, both evolved.</summary>
     public static IEnumerable<UnionDef> ReadyUnions(Battle b) =>
-        Unions.All.Where(u => b.Weapons.Any(w => w.Id == u.A && w.Evolution != null) && b.Weapons.Any(w => w.Id == u.B && w.Evolution != null));
+        // A union is for the callings both its halves allow (Weapons.CanCarry intersects them).
+        Unions.All.Where(u => Content.Weapons.CanCarry(b.Calling, u.Id) && b.Weapons.Any(w => w.Id == u.A && w.Evolution != null) && b.Weapons.Any(w => w.Id == u.B && w.Evolution != null));
 
     static bool IsCatalyst(Offer o, WeaponInst w) => o.Kind == OfferKind.Boon && !o.Blessing && w.Def.Evolutions.Any(e => e.Catalysts.Contains(o.Id));
 

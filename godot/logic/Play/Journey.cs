@@ -487,6 +487,7 @@ public sealed partial class Journey
         {
             var wd = Content.Weapons.All[skill];
             if (SkillBook.Knows(Ch, skill)) { Warn($"You already know {wd.Name}"); return; }
+            if (!SkillBook.Carries(Ch, skill)) { Warn($"{wd.Name} is not a {Callings.Archetype(Ch.Archetype).Name}'s to carry"); return; }
             if (!SkillBook.Learn(Ch, skill)) { Warn($"The words mean nothing yet: {wd.Name} has to be seen burning in an arena first"); return; }
             OnAnnounce(new Announcement(wd.Name, SkillBook.Meets(Ch, skill) ? "Learned for the day. Carry it from your skills (K)" : $"Learned, but it asks {SkillBook.Need} {SkillBook.Attribute(skill)} of you", "boon", 3.6, "A new skill"));
         }

@@ -132,6 +132,14 @@ void Arena()
     {
         // Each road T of calling C: on-calling (C, type T) and off-calling (each other calling C', its first road), all drafting road T's skills.
         string[] all4 = ["warden", "reaver", "arcanist", "stalker"];
+        // An off-calling host drafts only what it may carry (Weapons.CanCarry): say what each road's draft loses.
+        foreach (var c in Callers())
+          foreach (var ty in TypesOf(c).Where(t => t != ""))
+            foreach (var host in all4.Where(h => h != c))
+            {
+                var lost = Lamps.Roads[ty].Skills.Where(id => !Weapons.CanCarry(host, id)).ToList();
+                if (lost.Count > 0) Console.WriteLine($"offcalling {ty} on {host}: cannot carry {string.Join(", ", lost)}");
+            }
         foreach (var c in Callers())
           foreach (var ty in TypesOf(c))
             foreach (var host in all4)

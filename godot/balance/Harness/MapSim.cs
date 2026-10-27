@@ -64,7 +64,7 @@ public static class MapSim
         foreach (var id in pick.Weapons.Concat(path.SelectMany(p => p.Weapons)).Distinct())
         {
             if (ch.Slotted.Count >= SkillBook.Slots(ch)) break;
-            if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || ch.Skills.Contains(id)) continue;
+            if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || !SkillBook.Carries(ch, id) || ch.Skills.Contains(id)) continue;
             ch.Skills.Add(id);
             ch.Slotted.Add(id);
         }
