@@ -1934,8 +1934,9 @@ public static class People
         if (head != null && ResourceLoader.Exists("res://art/people/skin_peel.png"))
             m.SetShaderParameter("peel_map", GD.Load<Texture2D>("res://art/people/skin_peel.png"));
         // (r2: the coarse layer only where pores show (pore_zones), its slopes mostly on her sheen, eased out with distance;
-        // none on her body. --skin-pores off: none of it, the rest of r2 kept)
-        bool pores = !SkinPoresOff;
+        // none on her body. Off by default (face 45, judge a2: on deep at the Look's turn 40 they glint on the sheen like
+        // glitter, and on fair they don't show at 1:1); --skin-pores on: the r2 layer, for the later list's rework)
+        bool pores = SkinPoresOn;
         m.SetShaderParameter("peel", pores ? (head == false ? Peel.Body : Mathf.Lerp(Peel.Head, Peel.Deep, deep)) : 0f);
         m.SetShaderParameter("peel_scale", Peel.Scale);
         m.SetShaderParameter("pore_rough", pores && head != false ? Peel.Rough : 0f);
@@ -1944,7 +1945,7 @@ public static class People
         m.SetShaderParameter("peel_fade", Peel.Fade);
     }
 
-    static readonly bool SkinPoresOff = SurvivorUnchained.Args.Get("skin-pores") == "off";
+    static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
     static readonly float ZoneDeepSpec = 0.8f;
     static readonly float ZoneLipShineDeep = 0.5f;
     static readonly float FreckleKeep = 1f;
