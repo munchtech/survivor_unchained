@@ -93,10 +93,13 @@ def _body_keys():
     # Anyway: a breath, and up to it.
     k(67, spine=(0, -2, 0), neck=(0, 0, 0), head=(0, 4, 0), clav_r=(2, 2))
     # Drinking: the head back, more as the flask empties; the right shoulder up with the elbow.
-    k(73, spine=(0, -4, 0), neck=(0, -8, 0), head=(-2, -12, 0), clav_r=(4, 4))
-    k(90, spine=(0, -5, 0), neck=(0, -10, 0), head=(-2, -15, 0), clav_r=(5, 4))
-    k(108, spine=(0, -6, 0), neck=(0, -12, 0), head=(-2, -17, 0), clav_r=(6, 4))
-    k(126, spine=(0, -7, 0), neck=(0, -13, 0), head=(-2, -19, 0), clav_r=(6, 4), ease="ease")
+    # (The back leans with it, so the elbow stays at or below her shoulder as
+    # the flask tips up: drinking from the shoulder, the upper arm went 25
+    # degrees above level and opened the armpit to the close camera.)
+    k(73, spine=(0, -4, 0), neck=(0, -8, 0), head=(-2, -12, 0), clav_r=(5, 4))
+    k(90, spine=(0, -5, 0), neck=(0, -10, 0), head=(-2, -15, 0), clav_r=(7, 4))
+    k(108, spine=(0, -6, 0), neck=(0, -13, 0), head=(-2, -19, 0), clav_r=(10, 4))
+    k(126, spine=(0, -7, 0), neck=(0, -14, 0), head=(-2, -21, 0), clav_r=(11, 4), ease="ease")
     # Off it: the head comes forward, a breath out (the shoulders drop).
     k(134, spine=(0, -2, 0), neck=(0, -2, 0), head=(-1, -3, 0), clav_r=(3, 2))
     k(143, spine=(0, 3, 0), neck=(0, 3, 0), head=(0, 3, 0), clav_l=(-2, 0), clav_r=(-2, 0))
@@ -110,6 +113,10 @@ def _body_keys():
         k(fr, spine=(0, 2 - 1.2 * lift, 0), neck=(0, 2, 0), head=(2.5 * look, 1 - 2.0 * look, 1.0 * look),
           clav_l=(1.2 * lift, 0), clav_r=(1.2 * lift, 0), ease="ease")
     return K
+
+
+# How far the right elbow comes in toward her middle while she drinks (0 out, 1 in).
+TUCK = [(96, 0.0), (112, 1.0), (126, 1.0), (132, 0.0)]
 
 
 def _swallows(fr):
@@ -143,9 +150,9 @@ def _flask(fr):
         # To her lips, tipping up as she drinks.
         (67, SPOUT, "mouth", (0.0, -0.015, 0.025), -20, 12, 1.0),
         (73, SPOUT, "mouth", (0.0, 0.0, -0.004), 2, 12, 1.0),
-        (90, SPOUT, "mouth", (0.0, 0.0, -0.004), 10, 12, 1.0),
-        (108, SPOUT, "mouth", (0.0, 0.0, -0.004), 16, 12, 1.0),
-        (126, SPOUT, "mouth", (0.0, 0.0, -0.004), 22, 12, 1.0),
+        (90, SPOUT, "mouth", (0.0, 0.0, -0.004), 8, 12, 1.0),
+        (108, SPOUT, "mouth", (0.0, 0.0, -0.004), 10, 12, 1.0),
+        (126, SPOUT, "mouth", (0.0, 0.0, -0.004), 12, 12, 1.0),
         # Off it, and down.
         (134, SPOUT, "mouth", (-0.02, -0.06, 0.08), -45, 12, 1.0),
         (144, SPOUT, "mouth", (-0.04, -0.25, 0.14), -80, 10, 0.0),
@@ -266,7 +273,10 @@ def flask_drink(rig: Rig):
             pos_c = pos_c + (pos_f - pos_c) * w
             blade_c = slerp_dir(blade_c, blade_f, w)
             knuck_c = slerp_dir(knuck_c, knuck_f, w)
-            pole_c = slerp_dir(pole_c, (-0.35, -0.6, 0.7), w)
+            # The elbow in toward her middle only as the flask tips up (it
+            # keeps the elbow at or below the shoulder; earlier, low, it would
+            # press the upper arm into her breast).
+            pole_c = slerp_dir(pole_c, slerp_dir((-0.35, -0.6, 0.7), (-0.1, -0.7, 0.7), float(_ease_between(TUCK, fr, 1))), w)
         pose["hand_r"] = {"pos": tuple(pos_c), "blade": tuple(blade_c), "knuckles": tuple(knuck_c), "pole": tuple(pole_c), "frame": "char"}
         # The left hand: to her teeth for the cork, else in her space.
         pos_l, blade_l, knuck_l, pole_l = _hand_char(CORK_L, fr)

@@ -1,0 +1,53 @@
+{
+  "note": "tools/armor/plate_fit.py's pieces and settings (Body 14 fit2). group: 'side' = every rigid part of a side is one plate (a shell with its trims and studs: warden.pauldrons); 'sets' = rigid parts clustered by their original weight set (tol: L1 of the dense weights), one plate a cluster (lames). Parts smaller than plate_min points, and non-rigid parts, ride the nearest plate within attach_mm (ties: the closest original set); LOD and shadow meshes ride the nearest plate point. bones: the candidates ({s}: the plate's side), those her skeleton has.",
+  "defaults": {
+    "group": "sets",
+    "tol": 0.15,
+    "plate_min": 200,
+    "attach_mm": 4.0,
+    "clear_skin_mm": 1.0,
+    "clear_top_mm": 1.0,
+    "clear_lame_mm": 0.3,
+    "w_skin": 1.0,
+    "w_top": 1.5,
+    "w_lame": 3.0,
+    "reg_mm": 0.3,
+    "swim_floor_mm": 0.6,
+    "max_infl": 8,
+    "rows_per_sample": 6,
+    "row_margin_mm": 6.0,
+    "rounds": 3,
+    "shapes": "keep",
+    "swim_cost": 200.0
+  },
+  "bones": [
+    "clavicle_{s}",
+    "spine_03",
+    "spine_02",
+    "upperarm_{s}",
+    "upperarm_share_{s}",
+    "upperarm_twist_01_{s}",
+    "upperarm_twist_02_{s}",
+    "delt_{s}",
+    "trap_{s}",
+    "scap_{s}"
+  ],
+  "under_slots": [
+    "top"
+  ],
+  "swim_clips": [
+    "idle_warden",
+    "idle_warden_town",
+    "idle_stalker",
+    "idle_reaver",
+    "idle_arcanist"
+  ],
+  "pieces": {
+    "warden.pauldrons": {
+      "group": "side"
+    },
+    "plate_pauldrons_plain": {},
+    "plate_pauldrons_warden": {},
+    "ranger.pauldrons": {}
+  }
+}
