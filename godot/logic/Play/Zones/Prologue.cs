@@ -624,7 +624,7 @@ public sealed class Prologue : ZoneRuntime
     /// the bowmen's bolts hit than the road's.</summary>
     const int AmbushRing = 12;
     const double AmbushNear = 3.5, AmbushHit = 1.3, AmbushBolt = 1.5;
-    /// <summary>The Ambush's opening (s from the spring) and the field its top-up keeps through it.</summary>
+    /// <summary>The Ambush's opening (s from the spring: the push on a still player) and the field its top-up keeps.</summary>
     const double AmbushOpen = 30, AmbushField = 24;
     /// <summary>The Ambush's curve (MR5 item 11 round 2): what she may have taken by f s from the spring, of her
     /// health (36% at 30 s, a 48 s fight's end at 58%), and how hard the dead hit once she's past it.</summary>
@@ -995,9 +995,10 @@ public sealed class Prologue : ZoneRuntime
                     if (bw.Alive && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(bw.Id)) bw.Damage /= AmbushBolt;
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
-                // (and through the opening, the top-up only keeps the field at AmbushField: amb5, idle, killing
-                // little, let it climb 17 -> 38 by 20 s; the horde grows as before after it)
-                double want = fought < AmbushOpen ? AmbushField : Math.Min(46, AmbushField + (fought - AmbushOpen) * 0.5);
+                // (and the top-up only keeps the field at AmbushField: amb5, idle, killing little, let it climb 17 -> 38
+                // by 20 s; and the pilot, who lost 0-8% in the opening at this field, lost 10-20% more in the last 15 s
+                // once it grew to 30-35 (n6, n9, n12))
+                double want = AmbushField;
                 if (spawnT <= 0 && n < want)
                 {
                     double r = B.Rng.Next();
