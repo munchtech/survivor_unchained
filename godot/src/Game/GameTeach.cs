@@ -46,6 +46,7 @@ public partial class Game
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
+    public bool Saying => hud.SayUp;
     /// <summary>Whether a callout waits in the line (the autopilot holds its draught for F10's).</summary>
     public bool TeachWaiting(string id) => teacher?.Queued(id) == true;
     /// <summary>Real seconds it has been up.</summary>
@@ -321,8 +322,8 @@ public partial class Game
     {
         if (!Args.Has("pace") || Battle is not { } b) return;
         string? st = zone is Zones.Prologue pr ? pr.Now.ToString() : null;
-        if (st != paceStage) { paceStage = st; GD.Print($"pace stage {st} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}"); }
-        if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st}"); }
+        if (st != paceStage) { paceStage = st; GD.Print($"pace stage {st} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} at=({b.Player.X:0},{b.Player.Z:0})"); }
+        if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st} at=({b.Player.X:0},{b.Player.Z:0}) draughts={Journey?.Draughts}"); }
     }
 
     double hurtT;

@@ -65,6 +65,11 @@ public sealed class Prologue : ZoneRuntime
     bool levelDue;
     /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
     bool knightPlanted, knightRan;
+    /// <summary>The Ambush's trap: when the ditch rose (stage time; none yet: the wagon is still quiet), and the
+    /// bowmen it put up, whose first volley comes all at once and teaches the dash (au i15).</summary>
+    double sprungAt = -1;
+    bool wagonSaid;
+    readonly List<Enemy> bowmen = new();
     readonly List<(double X, double Z, int Light, string Flame)> pylons = new();
     readonly double[] lampY;
     readonly bool[] litPylons;
@@ -126,7 +131,7 @@ public sealed class Prologue : ZoneRuntime
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
                 // (said where it's found; F8 waits for it to go, au1 item 10: the two stacked at the Post)
-                G.After(0.6, () => Tip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your *pack* and wear the jerkin.", null, 11));
+                G.After(0.6, () => PacedTip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your *pack* and wear the jerkin.", null, 11));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -168,6 +173,40 @@ public sealed class Prologue : ZoneRuntime
 
     string Key(string action) => G.KeyLabel(action);
 
+    /* The road's words in a line (au i15): the narration and the tips between the Rising and the ford, each
+     * read before the next. One comes once no line is being narrated and no callout is up, and 4 s of play
+     * after the one before it (2 s after a callout): at the Post the Road2 line was cut off by the Knight's
+     * 4 s later, the chest, pack and Barrow came in 5 s, and the Barrow's last callout and the ford's line
+     * 0.3 s apart. */
+    readonly Queue<(Action Do, Func<bool>? Still)> words = new();
+    double wordsFree;
+    const double WordsGap = 4, WordsAfterCallout = 2;
+
+    /// <summary>Words for the road's line: said in their turn (dropped if `still` says their moment has gone).</summary>
+    void Words(Action say, Func<bool>? still = null) => words.Enqueue((say, still));
+
+    /// <summary>A tip in the road's line: once (asked every frame is fine), shown in its turn while `still` holds.</summary>
+    void PacedTip(string id, string title, string text, List<string>? keys = null, double life = 9, Func<bool>? still = null)
+    {
+        if (shown.Contains(id) || words.Any(w => w.Do.Target is TipAsk t && t.Id == id)) return;
+        words.Enqueue((new TipAsk(this, id, title, text, keys, life).Show, still));
+    }
+
+    sealed record TipAsk(Prologue Z, string Id, string Title, string Text, List<string>? Keys, double Life)
+    {
+        public void Show() => Z.Tip(Id, Title, Text, Keys, Life);
+    }
+
+    void PaceWords()
+    {
+        if (B == null) return;
+        if (G.Teaching != null) wordsFree = Math.Max(wordsFree, B.Time + WordsAfterCallout);
+        while (words.Count > 0 && words.Peek().Still is { } still && !still()) words.Dequeue();
+        if (words.Count == 0 || G.Saying || G.Teaching != null || B.Time < wordsFree) return;
+        words.Dequeue().Do();
+        wordsFree = B.Time + WordsGap;
+    }
+
     /// <summary>Seconds until the Warden's "RISE" cry, held while the channel's tip settles.</summary>
     double riseBarkIn;
 
@@ -195,8 +234,8 @@ public sealed class Prologue : ZoneRuntime
     // The words are docs/story/TUTORIAL_COPY.md's, at the moments its table names. Each is asked
     // for every frame its moment holds; the game shows it once a profile, when the screen is clear.
 
-    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap, bool overHint = false) =>
-        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap, OverHint = overHint });
+    void Teach(string id, CalloutKind kind, string title, string line, Aim aim, string? answer = null, string? after = null, double gap = Teacher.Gap, bool overHint = false, double patience = 8) =>
+        G.Teach(new Callout(id, kind, title, line, aim, answer) { After = after, Gap = gap, OverHint = overHint, Patience = patience });
 
     /// <summary>A point on the ground, lifted a little (what an arrow points at).</summary>
     (double X, double Y, double Z) Up(double x, double z, double lift) => (x, G.Look.HeightAt(x, z) + lift, z);
@@ -305,13 +344,19 @@ public sealed class Prologue : ZoneRuntime
             var w = B.Weapons[startWeapons];
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
-        // F6: after the blessing, six risen at her (or 58 s in), else on the road (au1 item 2: it was the sixth
-        // lesson in 12 s).
-        if (Now is Stage.Rising or Stage.Road or Stage.Ambush or Stage.Road2 && (Now != Stage.Rising || G.Taught("great_blessing") && (stageT > 58 || Crowd(p.X, p.Z, 3) >= 6)))
-            Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash");
-        // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her.
-        // The Warden's channel later asks for it by name (au1 item 4).
-        if (Now == Stage.Ambush && stageT > 4 && B.FormReady && Crowd(p.X, p.Z, 6) >= 4 && B.Ability is AbilityKind fk && FormWords(fk) is string fw)
+        // F6: the ditch's first volley in the air at her, so the roll answers a real danger (au i15: it was
+        // taught in the Rising with nothing to dodge, her health full until 2:46). Only while the bolts fly (a
+        // short patience: never late, after they land; the next volley asks again); 20 s on, or past the
+        // Ambush, it comes all the same.
+        if (dashAt == double.MaxValue && G.Taught("dash")) dashAt = B.Time;
+        bool volley = Now == Stage.Ambush && sprungAt >= 0 && VolleyIn();
+        if (volley || (Now == Stage.Ambush && sprungAt >= 0 && stageT - sprungAt > 20) || Now is Stage.Road2 or Stage.Post)
+            Teach("dash", CalloutKind.Freeze, "Dash", $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.", Aim.At("dash"), "dash",
+                overHint: volley, patience: volley ? 0.5 : 8);
+        // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her,
+        // 10 s after F6 at the soonest (two freezes on the dash, so each is read). The Warden's channel later
+        // asks for it by name (au1 item 4).
+        if (Now == Stage.Ambush && sprungAt >= 0 && G.Taught("dash") && B.Time - dashAt > 10 && B.FormReady && Crowd(p.X, p.Z, 6) >= 4 && B.Ability is AbilityKind fk && FormWords(fk) is string fw)
             Teach("form", CalloutKind.Freeze, Abilities.All[fk].Name, $"When your dash is aflame, it's {fw}", Aim.At("dash"), "dash", after: "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
@@ -341,14 +386,57 @@ public sealed class Prologue : ZoneRuntime
             Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nPut them out: break them, or lure his charge into one.",
                 new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25,
                     Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
-        // F10: her health under 40% for the first time, with a draught to drink.
-        if (p.Alive && p.Hp < B.MaxHp * 0.4 && G.Journey.Draughts > 0)
+        // F10: her health under half for the first time, with a draught to drink (au i15: under 40% a real
+        // run never came, 42% at the lowest; the ambush's volley and the Knight bring it down before the ford).
+        if (p.Alive && p.Hp < B.MaxHp * 0.5 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught");
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
             G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
+    }
+
+    /// <summary>When F6 was first seen taught (game seconds): F6b keeps its distance from it.</summary>
+    double dashAt = double.MaxValue;
+
+    /// <summary>A bolt of the bowmen's in the air, within 6 m of her and coming at her.</summary>
+    bool VolleyIn()
+    {
+        if (B == null || bowmen.Count == 0) return false;
+        var p = B.Player;
+        foreach (var pr in B.Projectiles.Living())
+        {
+            if (pr.Owner != Side.Enemy || !bowmen.Any(e => e.Id == pr.OwnerId)) continue;
+            double dx = p.X - pr.X, dz = p.Z - pr.Z;
+            if (dx * dx + dz * dz < 36 && dx * pr.Vx + dz * pr.Vz > 0) return true;
+        }
+        return false;
+    }
+
+    /// <summary>The wagon's trap springs (au i15): the drowned up out of the ditch around her, and a file of bowmen
+    /// on its far side, ahead of her and in the open, who loose together once they stand.</summary>
+    void Spring()
+    {
+        if (B == null) return;
+        sprungAt = stageT;
+        for (int i = 0; i < 10; i++) SpawnAround(i % 4 == 0 ? "risen_warrior" : "risen", 1, 5, 9, 0, 2);
+        var p = B.Player;
+        for (int i = 0; i < 5; i++)
+            for (int tries = 0; tries < 10; tries++)
+            {
+                double a = -Math.PI / 2 + (i - 2) * 0.32 + (B.Rng.Next() - 0.5) * 0.2 + (tries > 4 ? Math.PI : 0);
+                double d = 7.5 + B.Rng.Next() * 1;
+                double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
+                if (!OpenGround(x, z) || B.Collision.Raycast(x, z, p.X, p.Z, 0.1) != null) continue;
+                if (B.SpawnEnemy("risen_archer", x, z, new Battle.SpawnOpts { Style = SpawnStyle.Rise, Level = 2 }) is { } e)
+                {
+                    // (all at once, a second after they stand: one volley, not a patter)
+                    e.RangedT = 1.0;
+                    bowmen.Add(e);
+                }
+                break;
+            }
     }
 
     /// <summary>What the calling's art does when it rides the dash, in F6b's words (none: no callout).</summary>
@@ -627,6 +715,7 @@ public sealed class Prologue : ZoneRuntime
         spawnT -= dt;
         int n = Hostiles();
         Callouts();
+        PaceWords();
         switch (Now)
         {
             case Stage.Wake:
@@ -652,7 +741,8 @@ public sealed class Prologue : ZoneRuntime
                     checkpoint = new XZ(p.X, p.Z);
                     G.Say("The ground goes still. For now. The road runs north, toward the Waystation.", null, 5);
                     Objective([("Survive the night", true, false), ("Follow the road north", false, false)]);
-                    Tip("road", "The road north", "Follow the *road*. The dead keep coming; let them come to your weapons, and keep your feet moving.");
+                    // (the road tip is folded in: it came with this line, and said what it and the objective say, au i15)
+                    wordsFree = B.Time + WordsGap;
                 }
                 break;
             }
@@ -664,16 +754,19 @@ public sealed class Prologue : ZoneRuntime
                     var def = Now == Stage.Road2 && B.Rng.Next() < 0.2 ? "risen_warrior" : B.Rng.Next() < 0.12 ? "risen_archer" : "risen";
                     SpawnAround(def, 1 + (B.Rng.Next() < 0.5 ? 1 : 0), 10, 15, 0.55, Now == Stage.Road2 ? 2 : 1);
                     spawnT = 1.3;
-                    if (def == "risen_warrior") Tip("shield", "Shieldmen", "Bolts and arrows glance off a *raised shield*. Get to its side, or hit it with something that is not a projectile.");
+                    if (def == "risen_warrior") PacedTip("shield", "Shieldmen", "Bolts and arrows glance off a *raised shield*. Get to its side, or hit it with something that is not a projectile.");
                 }
                 var cart = L("cart"); var post = L("post");
                 if (Now == Stage.Road && p.Z < cart.Z + 7)
                 {
                     Go(Stage.Ambush);
                     checkpoint = new XZ(cart.X - 3, cart.Z + 8);
-                    G.Say("A wagon on its side, and the ditch beside it full of the drowned. One of them is still holding the reins. They were waiting.", null, 5);
+                    Words(() => { G.Say("A wagon on its side, and the ditch beside it full of the drowned. One of them is still holding the reins. They were waiting.", null, 5); wagonSaid = true; });
                     Objective([("Follow the road north", true, false), ("Survive the ambush at the wagon", false, false)]);
-                    for (int i = 0; i < 10; i++) SpawnAround(i % 4 == 0 ? "risen_warrior" : "risen", 1, 5, 9, 0, 2);
+                    // The Road's beat (au i15): the wagon is quiet while its line is read, and what spilled
+                    // from it lies in the road; the ditch rises after (Spring).
+                    for (int i = 0; i < 3; i++)
+                        B.SpawnPickup(PickupKind.Gold, cart.X - 1.5 + i * 1.4 + (B.Rng.Next() - 0.5), cart.Z + 2.5 + (B.Rng.Next() - 0.5) * 1.5, 2 + i);
                 }
                 if (Now == Stage.Road2 && Dist(p.X, p.Z, post.X, post.Z) < 18)
                 {
@@ -685,26 +778,33 @@ public sealed class Prologue : ZoneRuntime
                     knight.RangedT = 8;
                     knight.HpFloor = knight.MaxHp * 0.2;
                     for (int i = 0; i < 4; i++) SpawnAround("risen", 1, 5, 9, 0, 2);
-                    G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5);
+                    Words(() => G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5));
                     Objective([("Survive the ambush at the wagon", true, false), ("Put down the Barrow Knight", false, false), ("Search the old Watch-post", false, false)]);
-                    Tip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
+                    PacedTip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
                 }
                 break;
             }
             case Stage.Ambush:
             {
-                double want = Math.Min(46, 26 + stageT * 0.5);
+                if (sprungAt < 0)
+                {
+                    // (the ditch rises once the wagon's line is read)
+                    if ((wagonSaid && !G.Saying) || stageT > 16) Spring();
+                    break;
+                }
+                double fought = stageT - sprungAt;
+                double want = Math.Min(46, 26 + fought * 0.5);
                 if (spawnT <= 0 && n < want)
                 {
                     double r = B.Rng.Next();
                     SpawnAround(r < 0.22 ? "risen_warrior" : r < 0.32 ? "risen_archer" : "risen", 3 + (B.Rng.Next() < 0.5 ? 1 : 0), 8, 14, 0, 2);
                     spawnT = 1.05;
                 }
-                if (stageT > 48)
+                if (fought > 48)
                 {
                     Go(Stage.Road2);
                     checkpoint = new XZ(p.X, p.Z);
-                    G.Say("The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most: red hair under the weed, and new boots.", null, 5);
+                    Words(() => G.Say("The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most: red hair under the weed, and new boots.", null, 5));
                     Objective([("Survive the ambush at the wagon", true, false), ("Follow the road north", false, false)]);
                 }
                 break;
@@ -719,7 +819,7 @@ public sealed class Prologue : ZoneRuntime
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 if (knight == null && !chestOpened)
                 {
-                    Tip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", [Key("interact")]);
+                    PacedTip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", [Key("interact")], still: () => !chestOpened);
                     Objective([("Put down the Barrow Knight", true, false), ("Search the old Watch-post", false, false)]);
                 }
                 if (p.Z < 21 && knight == null)
@@ -741,7 +841,7 @@ public sealed class Prologue : ZoneRuntime
                     var barrow = L("barrow");
                     checkpoint = new XZ(barrow.X + 10, barrow.Z - 6);
                     Objective([("Put down the Grave-Caller", true, false), ("Cross at the Low Ford", false, false)]);
-                    G.Say("The dead go quiet. Somewhere ahead, water, and a cold blue light.", null, 5);
+                    Words(() => G.Say("The dead go quiet. Somewhere ahead, water, and a cold blue light.", null, 5));
                 }
                 break;
             case Stage.ToFord:
@@ -799,7 +899,7 @@ public sealed class Prologue : ZoneRuntime
             double a = i / 5.0 * Math.PI * 2;
             B.SpawnEnemy(i % 3 == 0 ? "risen_warrior" : "risen", barrow.X + Math.Cos(a) * 4, barrow.Z + Math.Sin(a) * 4, new Battle.SpawnOpts { Style = SpawnStyle.Rise, Level = 2 });
         }
-        G.Say("Past the fence, a figure in a tall hat is talking to the graves. The graves are listening.", null, 6);
+        Words(() => G.Say("Past the fence, a figure in a tall hat is talking to the graves. The graves are listening.", null, 6));
     }
 
     /* ------------------------------------------------------------- intro -- */
@@ -808,6 +908,7 @@ public sealed class Prologue : ZoneRuntime
     {
         if (B == null) return;
         Go(Stage.Intro);
+        words.Clear();
         cutT = 0;
         checkpoint = new XZ(0, L("ford").Z + 19);
         G.Capture(true);
