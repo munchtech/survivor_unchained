@@ -1,5 +1,16 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Now (env lead 20, 27 Oct): E8 DONE (judge r3 xhigh PASS-WITH-NOTES, close; 5/5 frames gate YES); final import, tests and Release perf running, then the MR; next E10
+- Integration merged at a1fd6fa3 (junction rule). Judge 3 brief: `<coord 9c583f93 scratch>\env20\e8_judge3.md`. Final script: `env20inal_e8.sh` (import, build, tests, Release `lf_hi_e8` to `survivorsunchained_inputs\env_perf1\e8\`; compare `env_perf1\lf\lf_hi_lf6_windows.md`).
+- **Closed as known (r3 = round cap):** the damp band hidden by the mist (reads right), the merlon rims and corbel row (enlarged only), and the faint blue-lamp halos in s8a.
+- **Later list, from judge 3 (none fails a frame):**
+  1. A8: the open arch (875-1010 x 500-650) shows a blank grey earth bank. It should show something beyond, such as a roofline with a warm window or the road climbing to a lamp. Medium.
+  2. s8a: the keep cuts off the lower half of the gold halo (1000-1060 x 278-310) and its edge is defined, so it reads like a small moon. Draw it over the keep with a smooth falloff and let the keep's top stones catch gold.
+  3. The torch pools at the tower feet look ragged, stone by stone: rust stains at dawn (gatedawn 340-760 x 0-120, 1200-1560 x 0-110), red-brown at night. They should be a smooth falloff, less saturated.
+  4. A8: the stone is a bit clean. Add grime streaks under the merlons and darken it toward the base.
+  5. For the cinematics lead: in s8a the third blue ford lamp hides behind the right-hand tree (around 1335 x 700-800).
+- **Cost (E8 r3 judge):** 75k.
+
 ## Paused here (env lead 19, 27 Oct, coordinator WIND-DOWN); next: the E8 round-3 judge (the last round), then E8's MR, then E10
 - **Low Ford MERGED** to integration (df0cf10c). **E8 round 3 is BUILT and UNJUDGED** (3c7897a2, c215c7be; frames `godot/.shots/e8d1_gate_o_00/01`, `e8d1_gatedawn_o_00`, `e8d1_cine_c01_s8a_1`, `e8d1c_c04a_sa8_1`).
 - **Next:** reuse `survivorsunchained_inputs\scratch_env19\e8_judge2.md` as judge 3 (xhigh): r2 -> r3 frames, plus r2's verdict, which is summarized below.
