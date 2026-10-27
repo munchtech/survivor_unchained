@@ -426,9 +426,6 @@ uniform float skin_hold = 0.0;
 uniform vec3 hold_tint = vec3(1.0, 0.85, 0.55);
 uniform float hold_chroma = 0.0;
 uniform float hold_gain = 1.0;
-// (hold_keep 1, the Look's: only the lamp's hue turned to hold_tint's, its own warmth kept (hold_tint's would warm the rig's
-// near-white key and bounce); 0, the town's: hold_tint's warmth too)
-uniform float hold_keep = 0.0;
 // (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
 // clavicle and across her chest as whitish-grey, violet under a cool lamp ("an ashy smear", judge J2, face 36; with
 // spec_cap 0 her chest's hue 25 against her face's 39, at 0.2 -14). Where her albedo's luminance is under deep_lum.x (all
@@ -779,9 +776,7 @@ void light() {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
 		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);
 		vec3 ht = hold_tint / max(dot(hold_tint, hlw), 1e-5);
-		vec3 lt = LIGHT_COLOR / ly;
-		ht = 1.0 + (ht - 1.0) * mix(1.0, length(lt - 1.0) / max(length(ht - 1.0), 1e-5), hold_keep);
-		vec3 ld = lt - ht;
+		vec3 ld = LIGHT_COLOR / ly - ht;
 		lc = mix(LIGHT_COLOR, ly * hold_gain * (ht + ld * min(1.0, hold_chroma / max(length(ld), 1e-5))), skin_hold);
 	}
 	float c_ndv = max(dot(dn, VIEW), 1e-4);
