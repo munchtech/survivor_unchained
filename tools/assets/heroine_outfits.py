@@ -3090,7 +3090,10 @@ def hulled(pos, where, tris, blend=0.02, fill=0):
             out[i] = pos[i] * (1 - t[i]) + np.array(q[:]) * t[i]
     if fill and HULL_PAD > 0:
         # (and the filled foot HULL_PAD further out, eased in over the blend: her toes flexing in the walk)
-        out = out + vertex_normals(out, tris) * (HULL_PAD * np.clip(where / 0.02, 0, 1))[:, None]
+        vn_ = vertex_normals(out, tris)
+        if ((vn_[m] * (out[m] - out[m].mean(0))).sum(1) < 0).mean() > 0.5:
+            vn_ = -vn_
+        out = out + vn_ * (HULL_PAD * np.clip(where / 0.02, 0, 1))[:, None]
     return out
 
 
