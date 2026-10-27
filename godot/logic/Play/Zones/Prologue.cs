@@ -981,7 +981,7 @@ public sealed class Prologue : ZoneRuntime
                 }
                 double fought = stageT - sprungAt;
                 // (--pace: her health each second of the fight's first 40 s, for the stakes' measure, MR5 item 11)
-                if (fought < 40 && B.Time - ambDiagAt >= 1)
+                if (fought < 50 && B.Time - ambDiagAt >= 1)
                 {
                     ambDiagAt = B.Time;
                     PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)} taken={B.DamageTaken - takenAtSpring:0} mul={B.FoeHitMul:0.##}");
@@ -995,7 +995,7 @@ public sealed class Prologue : ZoneRuntime
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
                 // (and through the opening, the top-up only keeps the field at AmbushField: amb5, idle, killing
                 // little, let it climb 17 -> 38 by 20 s; the horde grows as before after it)
-                double want = fought < AmbushOpen ? AmbushField : Math.Min(46, AmbushField + (fought - AmbushOpen) * 1.0);
+                double want = fought < AmbushOpen ? AmbushField : Math.Min(46, AmbushField + (fought - AmbushOpen) * 0.5);
                 if (spawnT <= 0 && n < want)
                 {
                     double r = B.Rng.Next();
