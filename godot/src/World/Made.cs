@@ -240,6 +240,91 @@ public static class Made
         return root;
     }
 
+    /// <summary>An axe's or a mace's frog (Body 17, 27 October): the leather loop her hip-loop piece hangs in, so the head
+    /// visibly rests on something instead of sticking to her. A band of the scabbard's dark leather (4 cm, 3.5 mm proud)
+    /// round the haft just under the head, and a flat strap (2.8 cm, its edges a lighter burnished leather so it reads
+    /// against dark ground) on the head's OUTER face, the side seen from beside her: tucked under the band, up its outer
+    /// face, and across the eye's cheek on a rising curve round the poll's outer corner, where the head rests against her
+    /// (it goes on to her belt there, out of sight: nothing of it stands proud of the poll toward her, so the hang that
+    /// brings the poll within a few mm of her never pushes the strap into her).
+    /// The origin is the haft's axis at the head's foot, +Y up the haft; `u`, `v` the haft's half-widths across X and Z
+    /// there; `inward` the way to her belt (in XZ, unit): its X part the way the poll faces (toward her), its Z part's
+    /// opposite the outer face; `poll` how far the head stands off the axis toward her along X, `cheek` how far its outer
+    /// face stands off it. About 450 triangles.</summary>
+    public static Node3D Frog(float u, float v, Vector3 inward, float poll, float cheek)
+    {
+        const float t = 0.0035f, lo = -0.042f, hi = -0.001f, half = 0.014f, thick = 0.002f, edge = 0.0019f, rise = 0.045f;
+        var root = new Node3D { Name = "frog" };
+        var f = new Vector3(inward.X < 0 ? -1 : 1, 0, 0);
+        var o = new Vector3(0, 0, inward.Z > 0 ? -1 : 1);
+        // The band: a lathe round the haft, flattened to its section, its inner rim tucked 1 mm into the wood.
+        float r = Mathf.Max(u, v), sx = (u + t) / (r + t), sz = (v + t) / (r + t), b = v + t;
+        var band = new Build();
+        Lathe(band, Pts(r - 0.001f, lo, r + t * 0.6f, lo + 0.001f, r + t, lo + 0.004f, r + t, hi - 0.004f, r + t * 0.6f, hi - 0.001f, r - 0.001f, hi),
+            16, null, p => new Vector3(p.X * sx, p.Y, p.Z * sz));
+        // The strap's path: under the band's foot, up its outer face, then a rising curve over the cheek (2 mm off it)
+        // that flattens out at the poll and turns in round its outer corner.
+        float zc = cheek + thick + 0.002f;
+        var path = new List<Vector3> { o * (b - 0.004f) + Vector3.Up * (lo - 0.004f), o * (b + thick) + Vector3.Up * (lo + 0.006f), o * (b + thick) + Vector3.Up * (hi - 0.008f) };
+        Vector3 c0 = o * (b + thick) + Vector3.Up * (hi - 0.002f), c1 = o * zc + Vector3.Up * (rise * 0.95f), c2 = o * zc + f * (poll - 0.008f) + Vector3.Up * rise;
+        for (int k = 1; k <= 8; k++)
+        {
+            float s = k / 8f;
+            var q = c0 * (1 - s) * (1 - s) + c1 * 2 * s * (1 - s) + c2 * s * s;
+            path.Add(new Vector3(q.X, q.Y, k == 1 ? (b + thick + (zc - b - thick) * 0.5f) * o.Z : zc * o.Z));
+        }
+        path.Add(o * (zc - 0.004f) + f * (poll - 0.002f) + Vector3.Up * rise);
+        path.Add(o * (zc - 0.008f) + f * (poll + thick) + Vector3.Up * rise);
+        // Flat to the head: each point's width across the path in the cheek's plane (the face toward `o`).
+        var sides = new List<Vector3>();
+        for (int k = 0; k < path.Count; k++)
+            sides.Add(o.Cross((path[Math.Min(path.Count - 1, k + 1)] - path[Math.Max(0, k - 1)]).Normalized()).Normalized());
+        var strap = new Build();
+        Strip(strap, path, sides, half, thick);
+        // The worn edges: a 3.8 mm rim of lighter leather along each side, 0.4 mm proud of the strap all round.
+        var rims = new Build();
+        foreach (float e in new[] { -1f, 1f })
+        {
+            var at = new List<Vector3>();
+            for (int k = 0; k < path.Count; k++) at.Add(path[k] + sides[k] * e * (half - edge + 0.0004f));
+            Strip(rims, at, sides, edge, thick + 0.0004f);
+        }
+        var leather = Mat("#3b2618", 0, 0.75f);
+        Add(root, band, leather);
+        Add(root, strap, leather);
+        Add(root, rims, Mat("#8a6440", 0, 0.5f));
+        return root;
+    }
+
+    /// <summary>A flat strip (a strap) swept along a path: `half` its half-width along each point's `sides`, `thick` its half-thickness
+    /// across, each face its own vertices (hard edges), the ends capped.</summary>
+    static void Strip(Build b, IReadOnlyList<Vector3> path, IReadOnlyList<Vector3> sides, float half, float thick)
+    {
+        int n = path.Count;
+        var c = new Vector3[n, 4];
+        var face = new Vector3[n];
+        for (int k = 0; k < n; k++)
+        {
+            var tg = (path[Math.Min(n - 1, k + 1)] - path[Math.Max(0, k - 1)]).Normalized();
+            face[k] = tg.Cross(sides[k]).Normalized();
+            var w = sides[k] * half; var f = face[k] * thick;
+            c[k, 0] = path[k] - w - f; c[k, 1] = path[k] + w - f; c[k, 2] = path[k] + w + f; c[k, 3] = path[k] - w + f;
+        }
+        for (int e = 0; e < 4; e++)
+            for (int k = 0; k < n - 1; k++)
+            {
+                int e1 = (e + 1) % 4;
+                var mid = (c[k, e] + c[k, e1] + c[k + 1, e] + c[k + 1, e1]) / 4 - (path[k] + path[k + 1]) / 2;
+                var nn = mid.Normalized();
+                b.Quad(b.V(c[k, e], nn), b.V(c[k, e1], nn), b.V(c[k + 1, e1], nn), b.V(c[k + 1, e], nn));
+            }
+        foreach (var (k, s) in new[] { (0, -1f), (n - 1, 1f) })
+        {
+            var nn = (path[Math.Min(n - 1, k + 1)] - path[Math.Max(0, k - 1)]).Normalized() * s;
+            b.Quad(b.V(c[k, 0], nn), b.V(c[k, 1], nn), b.V(c[k, 2], nn), b.V(c[k, 3], nn));
+        }
+    }
+
     /// <summary>The Grave Tether: blackwood, a claw of bone at its head
     /// clutching a dark light, a coil of it winding down the shaft.</summary>
     public static Node3D DarkWand()

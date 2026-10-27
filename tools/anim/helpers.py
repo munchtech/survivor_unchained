@@ -192,7 +192,19 @@ SPEC = {
     "panels": [
         {"name": "panel_front", "parent": "pelvis", "thighs": ["thigh_l", "thigh_r"], "pivot": [0.0, 0.0, 0.06],
          "length": 0.45, "amount": 1.15, "soft": 12.0, "spread_from": 8.0, "spread_to": 20.0, "spread_damp": 0.6,
-         "fall_tau": 0.04, "fall_rate": 450.0},
+         "fall_tau": 0.04, "fall_rate": 450.0,
+         # The lower half's fold (Body 17, 27 Oct; panel_fold): not a bone (a bone would change her skeleton,
+         # every clip's pack and the body file) but three blend shapes on the panel's own mesh, made by
+         # heroine_outfits.py: its points below `hinge` (rest height, glTF metres; eased over +-`band`)
+         # turned forward about her lateral axis through the panel's middle there, by `step` (a), a further
+         # `step` (b, stacked on a) and back by `neg` (n). The lower half is a damped pendulum (`hz`, `zeta`)
+         # hanging toward `rest` degrees from plumb, lying on the leading thigh (never below `contact`[0] x the
+         # law's lead - `contact`[1] degrees, measured: the least angle with no thigh through the lower half
+         # in walk/run/sprint) and lifted with it, so it drapes over the thigh as it rises and trails it
+         # ~0.1 s as it falls. Measured on the shortened panel (S17 solve1 harness.py): walk stand-off
+         # 66 -> 53 mm (the full-length panel today: 98), thigh points inside unchanged in run/sprint/idle/sit.
+         "fold": {"shapes": ["panel_fold_a", "panel_fold_b", "panel_fold_n"], "hinge": 0.86, "band": 0.03,
+                  "step": 25.0, "neg": 25.0, "hz": 1.6, "zeta": 0.45, "rest": 0.0, "contact": [1.12, 9.0], "substeps": 4}},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
@@ -570,6 +582,46 @@ def panel_fall(pn, prev, target, dt):
     return max(target, y, prev - pn["fall_rate"] * dt)
 
 
+def panel_fold(fd, st, turn, amount, th, dt):
+    """The lower half's fold this frame (degrees past the upper's turn `th`, + forward) from the law's turn
+    `turn` (before its fall; `amount` the law's amount) and `st` (a dict kept from frame to frame, {} at the
+    first: the half's own angle from plumb, its speed, last frame's contact), `dt` seconds on (SPEC "panels"
+    "fold"). PanelSwing.Fold's twin."""
+    c1, c0 = fd["contact"]
+    push = c1 * (turn / amount if amount else 0.0) - c0
+    if "lam" not in st:
+        st.update(lam=max(push, fd["rest"]), v=0.0, push=push)
+    if dt > 0:
+        w = 2 * math.pi * fd["hz"]
+        z = fd["zeta"]
+        n = int(fd["substeps"])
+        h = dt / n
+        p0 = st["push"]
+        rate = (push - p0) / dt
+        lam, v = st["lam"], st["v"]
+        for s in range(n):
+            ps = p0 + (push - p0) * (s + 1) / n
+            v += (w * w * (fd["rest"] - lam) - 2 * z * w * v) * h
+            lam += v * h
+            if lam < ps:
+                lam = ps
+                v = max(v, rate)
+        st.update(lam=lam, v=v, push=push)
+    beta = st["lam"] - th
+    if beta > 2 * fd["step"]:
+        beta = 2 * fd["step"]
+        st["lam"] = th + beta
+    return max(beta, -fd["neg"])
+
+
+def fold_weights(fd, beta):
+    """The fold's three shapes' weights (a, b, n) for `beta` degrees (panel_fold)."""
+    s = fd["step"]
+    if beta >= 0:
+        return min(beta / s, 1.0), min(max((beta - s) / s, 0.0), 1.0), 0.0
+    return 0.0, 0.0, min(-beta / fd["neg"], 1.0)
+
+
 def _swing_spread(v, v0, side):
     """A thigh's line v (its +Y, in her rest axes carried with the pelvis)
     against its rest v0: (forward swing in her side plane, spread out to
@@ -616,9 +668,14 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
         if j is None:
             continue
         p = I[pn["parent"]]
-        deg = panel_turn(pn, *panel_angles(sk, rot, pn))
+        law = deg = panel_turn(pn, *panel_angles(sk, rot, pn))
         if state is not None:
             deg = state[pn["name"]] = panel_fall(pn, state.get(pn["name"]), deg, dt if dt is not None else 0.0)
+            if "fold" in pn:
+                # (the lower half's fold: its shapes' weights left in state[name + ":fold"])
+                st_ = state.setdefault(pn["name"] + ":fold_st", {})
+                beta = panel_fold(pn["fold"], st_, law, pn["amount"], deg, dt if dt is not None else 0.0)
+                state[pn["name"] + ":fold"] = (beta, fold_weights(pn["fold"], beta))
         # about her lateral axis (+X her right), in the pelvis's frame: the
         # panel's bottom forward and up
         gp = sk.rest_globals()[0][0, p]
