@@ -18,6 +18,8 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class Water
 {
+    /// <summary>The zone's still water's height (its WATER_Y, set with the global water_level), or none.</summary>
+    public static float? Level;
     static readonly List<WeakRef> mats = new();
     static readonly Dictionary<ulong, (Light3D Light, Color Tint)> tints = new();
 

@@ -72,8 +72,16 @@ public partial class Shots : Node
         live.wanted.Add((live.time + inSeconds, tag));
     }
 
+    /// <summary>Frames the game asks for this many drawn frames on (a hit-stop holds the clock, not the frames).</summary>
+    readonly List<(long At, string Tag)> wantedFrames = new();
+    public static void WantFrames(string tag, int frames)
+    {
+        if (live == null) return;
+        live.wantedFrames.Add(((long)Engine.GetFramesDrawn() + frames, tag));
+    }
+
     /// <summary>Whether a frame of that tag is still to be taken.</summary>
-    public static bool Pending(string tag) => live != null && live.wanted.Exists(w => w.Tag == tag);
+    public static bool Pending(string tag) => live != null && (live.wanted.Exists(w => w.Tag == tag) || live.wantedFrames.Exists(w => w.Tag == tag));
 
     /// <summary>The run ends this many seconds on (sooner than --until: a whole night ends at its result).</summary>
     public static void EndIn(double seconds)
@@ -136,6 +144,21 @@ public partial class Shots : Node
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
             GD.Print($"saved {f} at {time:0.00}s{HerAt()}");
+            // (the camera, so a mark's ground can be found in the frame and measured)
+            if (GetViewport().GetCamera3D() is { } wc) GD.Print($"camera {wc.GlobalTransform} fov {wc.Fov}");
+        }
+        for (int i = wantedFrames.Count - 1; i >= 0; i--)
+        {
+            if ((long)Engine.GetFramesDrawn() < wantedFrames[i].At) continue;
+            var tag = Safe(wantedFrames[i].Tag);
+            wantedFrames.RemoveAt(i);
+            int k = tagged[tag] = tagged.GetValueOrDefault(tag) + 1;
+            var d = ProjectSettings.GlobalizePath("res://.shots");
+            DirAccess.MakeDirRecursiveAbsolute(d);
+            var f = $"{d}/{name}_{tag}_{k}.png";
+            GetViewport().GetTexture().GetImage().SavePng(f);
+            GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
+            if (GetViewport().GetCamera3D() is { } wc) GD.Print($"camera {wc.GlobalTransform} fov {wc.Fov}");
         }
         if (until > 0 && time >= until) { GetTree().Quit(); return; }
         if (taken >= count) return;

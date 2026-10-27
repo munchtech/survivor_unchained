@@ -46,9 +46,10 @@ public static class Palette
     /// never the only sign.</summary>
     public static readonly Color TeleBlow = K("#ff9a1a", 2.6f), TeleGround = K("#a050ff", 2.2f), TeleSafe = K("#8ad0ff", 2.2f), TeleWall = K("#c8c8d0", 1.6f);
     /// <summary>An elite's or a boss's blow (the F7 lesson's "red line"): a hot scarlet, kept under AgX's fold to
-    /// white, over ground darkened to old blood (an added red over lit dirt read salmon, the owner, 27 October).
+    /// white, over ground darkened to old blood (an added red over lit dirt read salmon, the owner, 27 October; at #4a0a06 the
+    /// bed lit brighter than the ground round it and read as a red rug, round 3).
     /// Its edge glows; her own low-life edge is a soft dark (0.45, 0.02, 0.02) wash at the screen's rim.</summary>
-    public static readonly Color TeleDanger = C("#ff0612"), TeleDangerGround = new("#4a0a06");
+    public static readonly Color TeleDanger = C("#ff0612"), TeleDangerGround = new("#2c0604");
     /// <summary>The crowd's blows and a raising, in their own textures: a true amber, dim (about 0.4 of the red's light),
     /// over a faint dark bed (TeleBlow added at x2.5 went salmon under AgX).</summary>
     public static readonly Color TeleAmber = C("#ffa020"), TeleAmberGround = new("#2a1606");

@@ -92,8 +92,14 @@ public partial class BattleFx : Node3D
         public bool Amber;
         public bool Styled => Danger || Amber;
         public float Energy;
+        /// <summary>The amber ring is a raising (its own thin front, no body).</summary>
+        public bool Raise;
         public Color Color;
         public Decal? Fill;
+        /// <summary>A styled fill's texture now (its front's depth is in metres: one per size step, FillTex).</summary>
+        public Texture2D? FillNow;
+        /// <summary>The fill again, over water (where the decal lands on the riverbed under it).</summary>
+        public MeshInstance3D? OverFill;
         /// <summary>The lane again, drawn only where something tall stands over it (a roof): an elite's or
         /// a boss's red line is never hidden.</summary>
         public MeshInstance3D? Over;
@@ -105,6 +111,9 @@ public partial class BattleFx : Node3D
 
     /// <summary>The lines being said (WorldScene's Voices): combat's floaters keep off them.</summary>
     public SurvivorUnchained.View.Voices? Lines;
+
+    /// <summary>The ground's height under a point (as the marks lie on it).</summary>
+    public double GroundAt(double x, double z) => heightAt(x, z);
 
     public BattleFx(Func<double, double, double> heightAt)
     {
@@ -343,6 +352,9 @@ public partial class BattleFx : Node3D
         var d = m.Decal;
         m.Danger = styleNext == 1;
         m.Amber = styleNext == 2;
+        m.Raise = m.Amber && raisingNext;
+        m.FillNow = null;
+        if (m.OverFill != null) m.OverFill.Visible = false;
         styleNext = 0;
         if (m.Styled)
         {
@@ -355,8 +367,9 @@ public partial class BattleFx : Node3D
             d.AlbedoMix = 1;
             d.EmissionEnergy = m.Energy = m.Danger ? DangerEnergy : raisingNext ? RaiseEnergy : AmberEnergy;
             d.Modulate = m.Color = Colors.White;
-            // (a decal smears down whatever stands upright in its box: a post, a wall's foot)
-            d.NormalFade = 0.6f;
+            // (a decal smears down whatever stands upright in its box: a post, a wall's foot; at 0.5 a wall or a crate's side
+            // (0.5 on Godot's 0..1 measure) takes none of it, a 60-degree bank half)
+            d.NormalFade = MarkNormalFade;
         }
         else
         {
@@ -366,7 +379,8 @@ public partial class BattleFx : Node3D
             d.EmissionEnergy = m.Energy = energy;
             d.Modulate = color;
             d.AlbedoMix = 0;
-            d.NormalFade = 0;
+            // (the plain marks, a hazard's hatch or a safe ring, had none and climbed pillars' and crates' sides)
+            d.NormalFade = MarkNormalFade;
         }
         raisingNext = false;
         d.Position = V(x, heightAt(x, z), z);
@@ -398,7 +412,7 @@ public partial class BattleFx : Node3D
     /// one more line on the ground (two edges alone read as the story places' burning edge).</summary>
     Mark Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null, bool progress = false)
     {
-        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; if (old.Over != null) old.Over.Visible = false; }
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; if (old.Over != null) old.Over.Visible = false; if (old.OverFill != null) old.OverFill.Visible = false; }
         double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
         var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
         m.Decal.Size = new Vector3(width, 4, (float)len);
@@ -428,23 +442,35 @@ public partial class BattleFx : Node3D
         var f = m.Fill!;
         if (m.Styled)
         {
-            dangerFillTex ??= FillTexture(true);
-            dangerDiscTex ??= FillTexture(false);
-            f.TextureEmission = lane ? dangerFillTex : dangerDiscTex;
+            f.TextureEmission = m.FillNow = FillTex(lane, FillStyleOf(m), 0.01f);
             f.Modulate = (m.Danger ? Palette.TeleDanger : Palette.TeleAmber) with { A = 0.42f };
             f.EmissionEnergy = m.Danger ? DangerFill : m.Energy * AmberFillK;
-            f.NormalFade = 0.6f;
         }
         else
         {
             f.TextureEmission = lane ? laneFillTex : discTex;
             f.Modulate = color with { A = 0.42f };
             f.EmissionEnergy = 1.4f;
-            f.NormalFade = 0;
         }
+        f.NormalFade = MarkNormalFade;
     }
 
-    static Texture2D? dangerFillTex, dangerDiscTex, bedOrm;
+    static int FillStyleOf(Mark m) => m.Danger ? 1 : m.Raise ? 3 : 2;
+
+    /// <summary>A styled fill's texture for its size now (a lane's length, a disc's radius, in metres), its front's depth
+    /// kept in metres as it grows.</summary>
+    void FillTexNow(Mark m, bool lane, float size)
+    {
+        if (!m.Styled || m.Fill == null) return;
+        var t = FillTex(lane, FillStyleOf(m), size);
+        if (t == m.FillNow) return;
+        m.Fill.TextureEmission = m.FillNow = t;
+        if (m.OverFill is { } of && of.MaterialOverride is ShaderMaterial om) om.SetShaderParameter("lane", t);
+    }
+
+    static Texture2D? bedOrm;
+    /// <summary>Every ground mark's and fill's normal fade (Godot's: 0 none, 1 only what faces the decal's axis).</summary>
+    const float MarkNormalFade = 0.5f;
 
     /// <summary>A styled bed's surface: occluded (no ambient or sky reflection), fully rough, not metal.</summary>
     static Texture2D BedOrm()
@@ -454,59 +480,86 @@ public partial class BattleFx : Node3D
         return ImageTexture.CreateFromImage(img);
     }
 
-    /// <summary>A styled mark's running fill: an even glow (no hatch) and a thin bright front, for a lane (front at
-    /// both ends of v, the one under the foe hidden) or a disc (front at its rim).</summary>
-    static Texture2D FillTexture(bool lane)
+    /// <summary>A styled fill's fronts (round 3's judge: the even body behind the front left a hard seam where the fill
+    /// stopped and a lighter half-lane): a red fill a bright front about 0.2 m deep at the edge's energy with a breath of
+    /// body behind it; the crowd's and the raising's a thin amber lip and a short tail, the raising none behind that.</summary>
+    const float DangerFrontM = 0.2f, DangerFillBody = 0.06f, AmberFrontM = 0.06f, AmberTailM = 0.3f, AmberFillBody = 0.03f, RaiseFrontM = 0.06f, RaiseTailM = 0.4f;
+    static readonly Dictionary<(bool, int, int), Texture2D> fillTex = new();
+
+    /// <summary>A styled mark's running fill for its size (a lane's length or a disc's radius, m; half-octave steps): its
+    /// front at its leading edge in metres (a lane's at both ends of v, the one under the foe hidden; a disc's at its rim).
+    /// style: 1 danger, 2 the crowd's amber, 3 the raising's.</summary>
+    static Texture2D FillTex(bool lane, int style, float size)
     {
-        const int N = 256;
-        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
-        for (int y = 0; y < N; y++)
-            for (int x = 0; x < N; x++)
+        int b = Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(size, 0.1f)) / Mathf.Log(2) * 2), -6, 12);
+        if (fillTex.TryGetValue((lane, style, b), out var t)) return t;
+        float S = Mathf.Pow(2, b / 2f);
+        float front = style == 1 ? DangerFrontM : style == 3 ? RaiseFrontM : AmberFrontM;
+        float tail = style == 1 ? 0 : style == 3 ? RaiseTailM : AmberTailM;
+        float body = style == 1 ? DangerFillBody : style == 3 ? 0 : AmberFillBody;
+        int W = lane ? 32 : 256, H = lane ? 512 : 256;
+        var data = new byte[W * H * 4];
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
             {
-                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1, a;
-                if (lane)
+                float u = (x + 0.5f) / W * 2 - 1, v = (y + 0.5f) / H * 2 - 1, dm, lat;
+                if (lane) { dm = (1 - Mathf.Abs(v)) * S / 2; lat = Mathf.Clamp((0.86f - Mathf.Abs(u)) / 0.04f, 0, 1); }
+                else { dm = (0.97f - Mathf.Sqrt(u * u + v * v)) * S; lat = 1; }
+                float a = 0;
+                if (dm > 0)
                 {
-                    float d = 1 - Mathf.Abs(v);
-                    a = Mathf.Clamp((0.86f - Mathf.Abs(u)) / 0.04f, 0, 1) * Mathf.Clamp(d / 0.01f, 0, 1)
-                        * (FillBody + (1 - FillBody) * Mathf.Exp(-d / 0.035f));
+                    float f = tail > 0
+                        ? Mathf.Lerp(1, 0.5f * Mathf.Pow(1 - Mathf.Clamp((dm - front) / tail, 0, 1), 2), Mathf.SmoothStep(front * 0.5f, front * 1.5f, dm))
+                        : 1 - Mathf.SmoothStep(0.05f, front + 0.02f, dm);
+                    a = Mathf.Clamp(dm / 0.012f, 0, 1) * lat * Mathf.Max(f, body);
                 }
-                else
-                {
-                    float r = Mathf.Sqrt(u * u + v * v), d = 0.97f - r;
-                    a = Mathf.Clamp(d / 0.01f, 0, 1) * (FillBody + (1 - FillBody) * Mathf.Exp(-Mathf.Max(d, 0) / 0.03f));
-                }
-                a = Mathf.Pow(Mathf.Clamp(a, 0, 1), 1 / 2.2f);
-                img.SetPixel(x, y, new Color(a, a, a, 1));
+                byte g = (byte)Mathf.RoundToInt(Mathf.Pow(Mathf.Clamp(a, 0, 1), 1 / 2.2f) * 255);
+                int o = (y * W + x) * 4;
+                data[o] = data[o + 1] = data[o + 2] = g; data[o + 3] = 255;
             }
-        return ImageTexture.CreateFromImage(img);
+        return fillTex[(lane, style, b)] = ImageTexture.CreateFromImage(Image.CreateFromData(W, H, false, Image.Format.Rgba8, data));
     }
 
     static Shader? overShader;
 
-    /// <summary>The lane drawn again over everything, but only where the scene in front of it stands well
-    /// above the ground (more than 2.6 m nearer the camera: a roof, a canopy), so it never paints
-    /// over a figure.</summary>
-    void OverLane(Mark m, double x0, double z0, double x1, double z1, float width)
+    /// <summary>A danger mark drawn again over what hides it from the decal: a roof or a canopy over a lane (where the
+    /// scene in front stands well nearer the camera and faces up, so it never paints a figure, a pillar's or a crate's
+    /// side), and water (where the decal lands on the riverbed under it and the water's blue mixed it to rose: round 2's
+    /// Ford-Warden). Over water it lies on the surface, after the water (render priority), wherever the scene seen
+    /// through it lies under the water line (a figure standing in the river keeps its body above it), with its bed near
+    /// opaque. The fill gets its own copy over water. roof: the lane's roof copy (the old OverLane).</summary>
+    void Over(Mark m, bool roof)
     {
         overShader ??= new Shader
         {
             Code = """
                 shader_type spatial;
-                render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix, shadows_disabled;
+                render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix, shadows_disabled, fog_disabled;
+                global uniform vec4 water_level;
                 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+                uniform sampler2D normal_tex : hint_normal_roughness_texture, filter_nearest;
                 uniform sampler2D lane : source_color, filter_linear;
                 uniform sampler2D cover : filter_linear;
                 uniform vec4 col : source_color = vec4(1.0, 0.2, 0.1, 0.8);
                 uniform vec4 bed : source_color = vec4(0.0);
+                uniform float roof = 1.0;
+                uniform float wet = 0.0;
                 void fragment() {
                     float d = texture(depth_tex, SCREEN_UV).r;
                     vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
-                    float scene = -v.z / v.w;
+                    vec3 sv = v.xyz / v.w;
+                    float scene = -sv.z;
                     float mine = -VERTEX.z;
-                    float over = smoothstep(2.6, 3.4, mine - scene);
+                    vec3 n = texture(normal_tex, SCREEN_UV).xyz * 2.0 - 1.0;
+                    float up = (INV_VIEW_MATRIX * vec4(n, 0.0)).y;
+                    // a roof: well nearer, and facing up (a pillar's side or a crate's is not a roof)
+                    float over = roof * smoothstep(2.6, 3.4, mine - scene) * smoothstep(0.35, 0.6, up);
+                    // water: what is seen here lies under the water line (the riverbed, a leg in the river)
+                    float sy = (INV_VIEW_MATRIX * vec4(sv, 1.0)).y;
+                    over = max(over, wet * step(0.5, water_level.w) * smoothstep(0.02, 0.12, water_level.x - sy));
                     vec4 t = texture(lane, UV);
                     float a = max(max(t.r, t.g), t.b) * t.a;
-                    // (a red line's copy has a faint dark bed, so over water, where no decal lands, it reads as a lane)
+                    // (a red line's copy has its dark bed, so over water, where no decal lands, it reads as a lane)
                     float b = texture(cover, UV).a * bed.a;
                     // (the bed at its own strength, not the light's breath: water through it read rose)
                     float la = a * col.a, all_a = la + b * (1.0 - la);
@@ -515,23 +568,31 @@ public partial class BattleFx : Node3D
                 }
                 """,
         };
-        if (m.Over == null)
+        var d = m.Decal;
+        bool wet = Wet(d);
+        if (!roof && !wet) return;
+        MeshInstance3D Copy(MeshInstance3D? had, int priority)
         {
-            m.Over = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1 };
-            m.Over.MaterialOverride = new ShaderMaterial { Shader = overShader };
-            AddChild(m.Over);
+            if (had != null) return had;
+            var mi = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1, Mesh = unitPlane ??= new PlaneMesh { Size = Vector2.One } };
+            mi.MaterialOverride = new ShaderMaterial { Shader = overShader, RenderPriority = priority };
+            AddChild(mi);
+            return mi;
         }
-        double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
-        m.Over.Mesh = new PlaneMesh { Size = new Vector2(width, (float)len) };
-        double mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
-        m.Over.Position = V(mx, heightAt(mx, mz) + 0.05, mz);
-        m.Over.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
+        // (over water, on its surface: the decal's own ground under it would sit the copy on the riverbed, bent at the bank)
+        float y = wet ? WaterY + 0.03f : (float)heightAt(d.Position.X, d.Position.Z) + 0.05f;
+        m.Over = Copy(m.Over, 1);
+        m.Over.Position = new Vector3(d.Position.X, y, d.Position.Z);
+        m.Over.Rotation = d.Rotation;
+        m.Over.Scale = new Vector3(d.Size.X, 1, d.Size.Z);
         var om = (ShaderMaterial)m.Over.MaterialOverride;
+        om.SetShaderParameter("roof", roof ? 1f : 0f);
+        om.SetShaderParameter("wet", wet ? 1f : 0f);
         if (m.Danger)
         {
             // the red line's own shape (its light, no crosshatch: over water the hatch read as a net) and its bed
-            om.SetShaderParameter("lane", m.Decal.TextureEmission);
-            om.SetShaderParameter("cover", m.Decal.TextureAlbedo);
+            om.SetShaderParameter("lane", d.TextureEmission);
+            om.SetShaderParameter("cover", d.TextureAlbedo);
             om.SetShaderParameter("bed", Palette.TeleDangerGround with { A = DangerOverBed });
         }
         else
@@ -541,6 +602,37 @@ public partial class BattleFx : Node3D
             om.SetShaderParameter("bed", new Color(0, 0, 0, 0));
         }
         m.Over.Visible = true;
+        if (wet && m.Danger && m.Fill != null)
+        {
+            m.OverFill = Copy(m.OverFill, 2);
+            m.OverFill.Position = new Vector3(m.Fill.Position.X, WaterY + 0.035f, m.Fill.Position.Z);
+            m.OverFill.Rotation = m.Fill.Rotation;
+            m.OverFill.Scale = new Vector3(Mathf.Max(m.Fill.Size.X, 0.01f), 1, Mathf.Max(m.Fill.Size.Z, 0.01f));
+            var fm = (ShaderMaterial)m.OverFill.MaterialOverride;
+            fm.SetShaderParameter("roof", 0f);
+            fm.SetShaderParameter("wet", 1f);
+            fm.SetShaderParameter("lane", m.Fill.TextureEmission);
+            fm.SetShaderParameter("bed", new Color(0, 0, 0, 0));
+            m.OverFill.Visible = true;
+        }
+    }
+
+    static PlaneMesh? unitPlane;
+    /// <summary>The zone's still water's height (ZoneView sets the global water_level; none: far under everything).</summary>
+    static float WaterY => SurvivorUnchained.View.Water.Level ?? -1000;
+
+    /// <summary>Whether any of a decal's footprint lies under the zone's still water.</summary>
+    bool Wet(Decal d)
+    {
+        if (SurvivorUnchained.View.Water.Level is not float wy) return false;
+        var b = d.Basis;
+        for (int i = -2; i <= 2; i++)
+            for (int k = -2; k <= 2; k++)
+            {
+                var p = d.Position + b.X * (d.Size.X * 0.45f * i / 2) + b.Z * (d.Size.Z * 0.45f * k / 2);
+                if (heightAt(p.X, p.Z) < wy - 0.05) return true;
+            }
+        return false;
     }
 
     /// <summary>A ring that races out from a point and fades.</summary>
@@ -766,8 +858,6 @@ public partial class BattleFx : Node3D
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
     const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
     const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
-    /// <summary>A styled fill's even glow behind its front (about the bed's own, so the filled part reads twice as hot).</summary>
-    const float FillBody = 0.25f;
     /// <summary>A styled bed's ambient occlusion (its share of the sky's light).</summary>
     const float BedAo = 0.15f;
     /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
@@ -794,7 +884,9 @@ public partial class BattleFx : Node3D
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
         var hot = danger ? new Color("#ff0612") : new Color("#ffa020");
         var bed = danger ? Palette.TeleDangerGround : Palette.TeleAmberGround;
-        float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.25f : style == 3 ? 0.06f : 0.1f;
+        // (a red bed's own glow is a breath: at 0.25 through it, with the fill's even body over it, the bed lit 1.25-2.5x
+        // brighter than the ground round it and a wide lane read as a red rug, not as light; round 3's judge)
+        float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
         // a ring's core in its texture's units (its radius is 1)
         float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
         for (int y = 0; y < h; y++)
@@ -807,9 +899,11 @@ public partial class BattleFx : Node3D
                     float e = Mathf.Abs(u), d = Mathf.Abs(e - 0.9f);
                     float ends = Mathf.Clamp((1 - Mathf.Abs(v)) / 0.03f, 0, 1);
                     // the edge: a narrow hot core and a soft glow two or three pixels out from it
-                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1), 0.3f * Mathf.Exp(-d / 0.028f));
-                    // its light: the edges, and a low glow through the bed, a little stronger toward them
-                    a = Mathf.Max(edge, e < 0.9f ? glowIn + 0.04f * e * e : 0) * ends;
+                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1), (danger ? 0.5f : 0.3f) * Mathf.Exp(-d / (danger ? 0.05f : 0.028f)));
+                    // its light: the edges, and a low glow through the bed; a red one's rises toward its edges (light
+                    // along the rims, the bed between them dark), the crowd's a little stronger toward them
+                    float inner = danger ? 0.06f + 0.45f * Mathf.Pow(Mathf.SmoothStep(0.55f, 0.9f, e), 2) : glowIn + 0.04f * e * e;
+                    a = Mathf.Max(edge, e < 0.9f ? inner : 0) * ends;
                     cover = (e < 0.9f ? inside + (1 - inside) * Mathf.SmoothStep(0.6f, 0.9f, e) : Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1)) * ends;
                 }
                 else if (ring)
@@ -818,7 +912,8 @@ public partial class BattleFx : Node3D
                     // a crisp rim: its core, a short falloff inward, a breath outward; and the bed's glow inside
                     float rim = Mathf.Clamp(1 - Mathf.Max(Mathf.Abs(d) - core, 0) / (core * 0.6f + 0.003f), 0, 1);
                     float fall = d < 0 ? 0.35f * Mathf.Exp(d / (core * 4 + 0.01f)) : 0.25f * Mathf.Exp(-d / (core * 1.2f + 0.004f));
-                    a = Mathf.Max(Mathf.Max(rim, fall), r < 0.93f ? glowIn * 0.8f : 0) * Mathf.Clamp((0.995f - r) / 0.01f, 0, 1);
+                    float inner = danger ? 0.05f + 0.4f * Mathf.Pow(Mathf.SmoothStep(0.6f, 0.93f, r), 2) : glowIn * 0.8f;
+                    a = Mathf.Max(Mathf.Max(rim, fall), r < 0.93f ? inner : 0) * Mathf.Clamp((0.995f - r) / 0.01f, 0, 1);
                     cover = r < 0.93f ? inside : rim;
                 }
                 else
@@ -826,7 +921,7 @@ public partial class BattleFx : Node3D
                     float s = src.GetPixel(x, y).A;
                     cover = Mathf.Clamp(s * 2.2f, 0, 1) * (danger ? 0.85f : 0.5f);
                     // sharpened: an edge's falloff squared, the low fill kept
-                    a = Mathf.Max(s * s, Mathf.Min(s, 0.12f));
+                    a = Mathf.Max(s * s, Mathf.Min(s, danger ? 0.06f : 0.12f));
                 }
                 a = Mathf.Clamp(a, 0, 1);
                 float al = Mathf.Pow(a, 1 / 2.2f);
@@ -1235,7 +1330,7 @@ public partial class BattleFx : Node3D
                     else if (e.Shape == TelegraphShape.Line)
                     {
                         var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
-                        if (e.Hostile && TelegraphRead.Champion(e, champ)) OverLane(lm, e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1));
+                        if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Ring && !raising) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
@@ -1246,6 +1341,8 @@ public partial class BattleFx : Node3D
                         keyed[e.Id] = Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration);
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
+                    // (a red circle, cone or band over water: its copy on the surface; a lane's is made above)
+                    if (danger && e.Shape != TelegraphShape.Line && keyed.TryGetValue(e.Id, out var dm) && dm.Danger) Over(dm, false);
                     styleNext = 0; raisingNext = false;
                     // A boss's move, named over the boss for as long as its mark stands: who is doing
                     // it, where the eye already is (over the mark, it sat on the survivor's head).
@@ -1597,7 +1694,7 @@ public partial class BattleFx : Node3D
         {
             if (!m.Active) continue;
             m.T += fdt / Mathf.Max(0.05f, m.Life);
-            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; continue; }
+            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; if (m.OverFill != null) m.OverFill.Visible = false; continue; }
             if (m.Sink)
             {
                 float r = m.Radius * (1 - 0.65f * m.T);
@@ -1619,6 +1716,9 @@ public partial class BattleFx : Node3D
                 var oc = m.Danger ? Palette.TeleDanger * DangerOver : m.Color * 2.4f;
                 if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
                     om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
+                // (the fill's copy at the fill's own light: a decal's emission is the texture x its modulate x its energy)
+                if (m.OverFill is { Visible: true } ovf0 && ovf0.MaterialOverride is ShaderMaterial fom)
+                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = 1 });
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
@@ -1626,8 +1726,14 @@ public partial class BattleFx : Node3D
                     var mid = m.From + m.Along * (l / 2);
                     m.Fill.Position = new Vector3(mid.X, (float)heightAt(mid.X, mid.Z), mid.Z);
                     m.Fill.Size = new Vector3(m.Radius * 2 * 0.94f, 4, l);
+                    FillTexNow(m, true, l);
                 }
-                else if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, 4, r * 2); }
+                else if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, 4, r * 2); FillTexNow(m, false, r); }
+                if (m.OverFill is { Visible: true } ovf && m.Fill != null)
+                {
+                    ovf.Position = new Vector3(m.Fill.Position.X, ovf.Position.Y, m.Fill.Position.Z);
+                    ovf.Scale = new Vector3(Mathf.Max(m.Fill.Size.X, 0.01f), 1, Mathf.Max(m.Fill.Size.Z, 0.01f));
+                }
             }
         }
         for (int i = 0; i < beams.Count; i++)
