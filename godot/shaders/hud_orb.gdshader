@@ -198,17 +198,28 @@ void fragment()
 		float held = 1.0 - smoothstep(line_y - 1.0 / orb_r, line_y + 1.0 / orb_r, fq.y);
 		float sweep = 0.5 + 0.5 * sin(t * 0.55 + (fq.x - fq.y) * 2.4);
 		float shim = 0.55 * vnoise(vec2(px.x * 0.07 + t * 0.10, px.y * 0.07 - t * 0.06)) + 0.45 * sweep;
-		float filmw = (0.20 + 0.14 * shim) * held * onglass * fade;
-		gcol = mix(gcol, vec3(0.46, 0.58, 0.74), filmw);
-		gcol += vec3(0.50, 0.62, 0.80) * 0.10 * pow(sweep, 6.0) * held * onglass * fade;
-		// the crisp lit edge: 1.2 px round the film's outline on the glass's rim, bright at the upper left
+		// (UI 16 judge, round 5: the ward read as frosted glass or a second, silver liquid and paled the number's
+		// ground: now an ice-blue lit rim round the whole glass and only a faint film; the red under it unchanged,
+		// the empty glass behind the number kept dark)
+		float filmw = (0.045 + 0.04 * shim) * held * onglass * fade * (1.0 - 0.85 * below);
+		vec3 ice = vec3(0.50, 0.78, 1.0);
+		gcol += ice * filmw;
+		gcol += ice * 0.05 * pow(sweep, 6.0) * held * onglass * fade * (1.0 - 0.85 * below);
+		// the lit rim: ~1.6 px of ice round the glass's edge, all the way round (brightest at the upper left), and a
+		// soft inner glow ~4 px off it
 		float inpx = (orb_vis - fl * orb_r);
-		float lit_ = mix(0.35, 1.0, 0.5 + 0.5 * dot(fq / max(fl, 1e-3), normalize(vec2(-0.62, -0.78))));
-		float rimf = (smoothstep(-0.6, 0.2, inpx) * (1.0 - smoothstep(1.0, 1.8, inpx))) * held;
+		float lit_ = mix(0.62, 1.0, 0.5 + 0.5 * dot(fq / max(fl, 1e-3), normalize(vec2(-0.62, -0.78))));
+		// (the whole glass ringed while any ward holds; brightest over the part it holds, so its amount still reads)
+		float hk = mix(0.45, 1.0, held);
+		// (inset a px: the casing's iron laps the glass's outer px)
+		float rimf = (smoothstep(0.2, 1.0, inpx) * (1.0 - smoothstep(2.4, 3.2, inpx))) * hk;
+		float glowf = exp(-max(inpx - 2.0, 0.0) / 4.0) * smoothstep(0.2, 1.0, inpx) * hk * (1.0 - rimf) * (1.0 - 0.6 * below);
 		// and along its falling edge inside the glass while it is not full
 		float lip = exp(-pow((fq.y - line_y) * orb_r / 0.8, 2.0)) * onglass * step(fr, 0.995);
-		gcol = mix(gcol, vec3(0.80, 0.88, 0.98), clamp(rimf * 0.85 * lit_ + lip * 0.45, 0.0, 1.0) * fade);
-		ga = max(ga, gin * filmw);
+		gcol += ice * 0.42 * glowf * lit_ * fade;
+		gcol = mix(gcol, vec3(0.52, 0.80, 1.0), clamp(rimf * 0.95 * lit_ + lip * 0.40, 0.0, 1.0) * fade);
+		gcol += vec3(0.30, 0.42, 0.50) * rimf * lit_ * lit_ * fade;
+		ga = max(ga, gin * max(filmw, rimf * fade));
 		}
 		// the glass's light from the upper left: a soft window, a hot point, a thin rim crescent; a faint
 		// bounce low on the right

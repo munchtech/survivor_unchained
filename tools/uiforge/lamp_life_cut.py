@@ -396,8 +396,11 @@ ORBS = {
     "link": dict(src=SRC16 + "blender/l1.png", blend=SRC16 + "blender/l1.json", rows=[], tint=(0.90, 0.93, 1.0),
                  chroma=0.45),
     # The Ring of Links (L2): the glass ringed by seven forged links, the emblem's ring, one snapped open
-    "ring": dict(src=SRC16 + "blender/l2.png", blend=SRC16 + "blender/l2.json", rows=[], tint=(0.90, 0.93, 1.0),
-                 chroma=0.45),
+    # (round 3, the judge: the links in the HUD chain's own iron, colour kept at the chain's light; a welded eye
+    # at 4:30 the chain's first link runs through: its ring's lower half cut as lamp_front.png, drawn over the
+    # chain; eye_dx: the first link's centre right of the eye's middle, its left end upright in the hole)
+    "ring": dict(src=SRC16 + "blender/l2.png", blend=SRC16 + "blender/l2.json", rows=[], tint=(1.0, 1.0, 1.0),
+                 chroma=1.0, luma=0.17, eye_dx=9.44),
     # The Waystone (W1): the Waystation's "where three roads meet", the glass sunk in a socket bored through a squat
     # roadside stone, the three-roads mark chiselled beside it, an iron band seating the glass; its colour kept
     "waystone": dict(src=SRC16 + "blender/w1.png", blend=SRC16 + "blender/w1.json", rows=[], tint=(1.0, 1.0, 1.0),
@@ -579,10 +582,12 @@ def orb(theme, check=None):
     # the iron cooled to blue-black, the painting's light kept
     g = rgb.mean(2, keepdims=True)
     iron = g * np.array(S["tint"]) * S.get("dark", 1.0) + (rgb - g) * S.get("chroma", 0.18)
+    lk = 1.0
     if "luma" in S:
         # (the iron at the HUD's own value: its mean light over the casing)
         cur = float((iron.mean(2) * A).sum() / max(A.sum(), 1))
-        iron *= S["luma"] / cur
+        lk = S["luma"] / cur
+        iron *= lk
         print(f"{theme}: iron luma {cur:.3f} -> {S['luma']}")
     # the fracture's raw metal: bright, cold, ragged
     raw = np.array([0.40, 0.42, 0.46]) * (0.8 + 0.4 * np.random.default_rng(7).random((H0, W0, 1)))
@@ -686,6 +691,21 @@ def orb(theme, check=None):
         for im_ in (L_im, C_im):
             im_.alpha_composite(ri, (round(ex2), round(ey2)))
         eye_px = [round((ex2 + ri.width * 0.62) / 2, 2), round((ey2 + ri.height / 2) / 2, 2)]
+    if blend and blend.get("front"):
+        # the eye's front: its ring's lower half (in front of the chain's first link), the same light as the casing
+        fa = np.asarray(Image.open(os.path.splitext(S["src"])[0] + "_front.png").convert("RGBA"), np.float32) / 255
+        fx, fy = S["eye"]
+        er = sum(blend["eye_ring"]) + 3
+        yy_, xx_ = np.mgrid[0:H0, 0:W0].astype(np.float32)
+        keep = np.clip((yy_ - fy + 1.0) / 2.0, 0, 1) * (np.abs(xx_ - fx) < er) * (np.abs(yy_ - fy) < er)
+        fA = fa[..., 3] * keep
+        frgb = np.where(fa[..., 3:] > 1e-3, fa[..., :3], 0)
+        g2 = frgb.mean(2, keepdims=True)
+        fi = (g2 * np.array(S["tint"]) * S.get("dark", 1.0) + (frgb - g2) * S.get("chroma", 0.18)) * lk
+        wF = blur(fA, 3)[..., None]
+        est = np.stack([blur(fi[..., i] * fA, 3) for i in range(3)], 2) / np.maximum(wF, 1e-4)
+        fi = np.where(fA[..., None] > 0.02, fi, est)
+        canvas(np.concatenate([fi, fA[..., None]], 2), "RGBA").save(os.path.join(out, "lamp_front.png"))
     L_im.save(os.path.join(out, "lamp_lit.png"))
     C_im.save(os.path.join(out, "lamp_cold.png"))
     near = np.zeros((H, W0), np.float32)
@@ -705,6 +725,8 @@ def orb(theme, check=None):
     geo["footprint"] = round(geo["foot"] - geo["top"], 1)
     if eye_px:
         geo["eye"] = eye_px
+    if "eye_dx" in S:
+        geo["eye"] = [round(geo["eye"][0] + S["eye_dx"], 2), geo["eye"][1]]
     if "wick" in S:
         import shutil
         geo["wick"] = at(*S["wick"])

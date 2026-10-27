@@ -37,6 +37,7 @@ from mathutils.kdtree import KDTree
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import blender_frames as B  # noqa: E402
+import blender_chainline as C  # noqa: E402
 
 U = B.U
 SP = {}
@@ -151,7 +152,9 @@ def snap(pts, at, gap, splay_deg, bend_len, lift=0.0):
         t0, t1 = (seq[0], seq[2]) if end == 0 else (seq[-1], seq[-3])
         tan = (t0 - t1).normalized()
         tips.append((t0.copy(), tan))
-    ext = SP["_wire_now"] * 1.7
+    # (past each tip for the cut, but never as far as the other tip: a narrow break's extensions would cross)
+    ext = min(SP["_wire_now"] * 1.7, 0.45 * (tips[0][0] - tips[1][0]).length)
+    SP["_ext"] = ext
     pre = [tips[0][0] + tips[0][1] * ext * f for f in (1.0, 0.66, 0.33)]
     post = [tips[1][0] + tips[1][1] * ext * f for f in (0.33, 0.66, 1.0)]
     out = pre + seq + post
@@ -190,6 +193,9 @@ def fracture(ob, tips, wire, seed):
     for f in bm.faces:
         f.material_index = 0
     planes = []
+    # (the cut's reach: the extension past the tip and the slant's run; no further, or a narrow break's cut bites
+    # the other end's bar)
+    reach = min(wire * 3.2, SP.get("_ext", wire * 1.7) + wire * 1.5)
     for ti, (tip, tan) in enumerate(tips):
         other = tips[1 - ti][0] if len(tips) > 1 else tip + tan * 1e6
         beta = math.radians(rnd.uniform(*SP.get("slant", [20, 28])))
@@ -198,19 +204,22 @@ def fracture(ob, tips, wire, seed):
         planes.append(nrm)
 
         def mine(c):
-            return (c - tip).length < wire * 3.2 and (c - tip).length < (c - other).length
+            return (c - tip).length < reach and (c - tip).length < (c - other).length
         near = [e for e in bm.verts[:] + bm.edges[:] + bm.faces[:]
                 if mine(e.co if isinstance(e, bmesh.types.BMVert) else
                         (e.verts[0].co + e.verts[1].co) / 2 if isinstance(e, bmesh.types.BMEdge) else e.calc_center_median())]
         bmesh.ops.bisect_plane(bm, geom=near, plane_co=tip, plane_no=nrm, clear_outer=True, dist=wire * 1e-4)
         bnd = [e for e in bm.edges if e.is_boundary and mine((e.verts[0].co + e.verts[1].co) / 2)]
-        res = bmesh.ops.holes_fill(bm, edges=bnd, sides=0)
-        for f in res["faces"]:
-            pk = bmesh.ops.poke(bm, faces=[f])
-            for f2 in pk["faces"]:
-                f2.material_index = 1
-            for v in pk["verts"]:
-                v.co += nrm * wire * rnd.uniform(-0.15, 0.25)
+        # (a fan to the boundary's middle, not holes_fill: that fails on a loop the cut left one edge off true)
+        mid = bm.verts.new(sum((e.verts[0].co + e.verts[1].co for e in bnd), Vector()) / (2 * max(1, len(bnd))))
+        for e in bnd:
+            a_, b_ = e.verts
+            f = bm.faces.new((a_, b_, mid))
+            f.normal_update()
+            if f.normal.dot(nrm) < 0:
+                f.normal_flip()
+            f.material_index = 1
+        mid.co += nrm * wire * rnd.uniform(-0.15, 0.25)
     # subdivide the cap fans for interior detail (their material carries), then tear the face
     capf = [f for f in bm.faces if f.material_index == 1]
     inner = list({e for f in capf for e in f.edges if all(lf.material_index == 1 for lf in e.link_faces)})
@@ -222,7 +231,7 @@ def fracture(ob, tips, wire, seed):
         nrm = planes[ti]
         for v in bm.verts:
             d = v.co - tip
-            if d.length > wire * 3.2:
+            if d.length > reach:
                 continue
             sd = d.dot(nrm)                         # 0 on the cut, negative back along the bar
             if sd < -wire * 0.9 or sd > wire * 0.05:
@@ -239,6 +248,59 @@ def fracture(ob, tips, wire, seed):
     bm.to_mesh(ob.data)
     bm.free()
     ob.data.update()
+
+
+def facets(ob, cell, depth, wire, seed):
+    """A few flat hammer facets (spec "facets": [cell, depth]): at each blow a plane `depth` under the bar's
+    skin, the iron above it pressed flat (within the blow's reach, eased out at its border), so each facet is a
+    flat face with a crisp edge; returns each vertex's ridge-ness and stores the facets' edges (vertices with one
+    side pressed and the other not) in SP["_edge"] for wear() to rub bright."""
+    me = ob.data
+    me.update()
+    rnd = random.Random(seed)
+    vs = list(me.vertices)
+    capf = set()
+    for p in me.polygons:
+        if p.material_index == 1:
+            capf.update(p.vertices)
+    area = sum(p.area for p in me.polygons)
+    nseed = max(3, int(area / (cell * cell)))
+    pick = rnd.sample([v.index for v in vs if v.index not in capf], min(nseed, len(vs) - len(capf)))
+    seeds = [(vs[j].co.copy(), vs[j].normal.copy(), depth * rnd.uniform(0.6, 1.3), cell * rnd.uniform(0.7, 1.2)) for j in pick]
+    kd = KDTree(len(seeds))
+    for i, (co, _, _, _) in enumerate(seeds):
+        kd.insert(co, i)
+    kd.balance()
+    press = [0.0] * len(vs)
+    moves = [None] * len(vs)
+    for v in vs:
+        if v.index in capf:
+            continue
+        best, mv = 0.0, None
+        for (co, i, d) in kd.find_range(v.co, cell * 1.3):
+            sco, sn, dp, rad = seeds[i]
+            if d > rad or v.normal.dot(sn) < 0.55:
+                continue
+            h = (v.co - sco).dot(sn) + dp            # above the facet's plane by h
+            ease = 1 - max(0.0, (d / rad - 0.8) / 0.2) ** 2
+            if h > 0 and h * ease > best:
+                best, mv = h * ease, -sn * h * ease
+        if mv is not None:
+            press[v.index] = best
+            moves[v.index] = mv
+    lo_k = SP.get("unevenness", 0.03)
+    for v in vs:
+        lo = wire * lo_k * noise.noise(v.co / (wire * 2.6) + Vector((seed, 1, 2)))
+        v.co += v.normal * lo + (moves[v.index] if moves[v.index] is not None else Vector())
+    pressed = [p > depth * 0.25 for p in press]
+    edge = set()
+    for e in me.edges:
+        a, b = e.vertices
+        if pressed[a] != pressed[b]:
+            edge.update((a, b))
+    SP["_edge"] = edge
+    me.update()
+    return [0.75 if pressed[i] else 1.0 for i in range(len(vs))]
 
 
 def hammer(ob, cell, depth, wire, seed):
@@ -303,8 +365,14 @@ def wear(ob, ridge, seed, contacts=()):
         patch = 0.5 + 0.5 * noise.noise(v.co * (1.0 / (SP.get("wear_patch", 9) * K)) + Vector((seed, 3, 5)))
         r = max(0.0, ridge[v.index] if ridge else 1.0)
         edge = max(0.0, n.dot(graze)) ** SP.get("edge_pow", 14)
-        w = 0.7 * crown * (r ** 2.2) * min(1.0, max(0.0, (patch - 0.4) * 2.6)) + 0.35 * rim * r ** 2 + edge * (0.55 + 0.45 * r)
+        w = (SP.get("crown_k", 0.7) * crown * (r ** 2.2) * min(1.0, max(0.0, (patch - 0.4) * 2.6)) + SP.get("rim_k", 0.35) * rim * r ** 2
+             + SP.get("edge_k", 1.0) * edge * (0.55 + 0.45 * r))
         w = min(1.0, w)
+        if "wear_cut" in SP:
+            # (crisp: the rubbed metal a clean band, not a soft sheen)
+            w = min(1.0, max(0.0, (w - SP["wear_cut"]) / 0.12))
+        if v.index in SP.get("_edge", ()):
+            w = max(w, SP.get("facet_edge", 0.85))
         for (pt, rad) in contacts:
             d = (v.co - pt).length
             w = max(w, max(0.0, 1 - d / rad) ** 1.5 * 0.9)
@@ -386,6 +454,87 @@ def iron_material():
     return m
 
 
+def chain_iron_material():
+    """The HUD chain's own iron (blender_chainline.iron_chain_material with chain.py's TAB_IRON, spec
+    "chain_mat"): blackened iron, rust in its hollows, rubbed bright where `wear` says; here with the orb's
+    deeper occlusion in the recesses and a faint grain, so the casing and the chain read as one metal."""
+    C.SPEC.clear()
+    C.SPEC.update(SP.get("chain_mat", {}))
+    m = C.iron_chain_material()
+    m.name = "orb_chain_iron"
+    nt = m.node_tree
+    n, k = nt.nodes, nt.links
+    bsdf = n["Principled BSDF"]
+    src = bsdf.inputs["Base Color"].links[0].from_socket
+    ao = n.new("ShaderNodeAmbientOcclusion")
+    ao.inputs["Distance"].default_value = SP.get("ao_dist", 4.0) * K
+    pw = n.new("ShaderNodeMath")
+    pw.operation = "POWER"
+    k.new(ao.outputs["AO"], pw.inputs[0])
+    pw.inputs[1].default_value = SP.get("ao_pow", 1.6)
+    aom = n.new("ShaderNodeMix")
+    aom.data_type = "RGBA"
+    aom.blend_type = "MULTIPLY"
+    aom.inputs[0].default_value = SP.get("ao_k", 0.85)
+    k.new(src, aom.inputs[6])
+    k.new(pw.outputs[0], aom.inputs[7])
+    k.new(aom.outputs[2], bsdf.inputs["Base Color"])
+    if "rub" in SP:
+        # the rubbed metal, crisp whatever the mesh's density: a thin band along each bar's crown (its normal facing
+        # the eye) and along its upper-left edge (facing the key light), broken into long patches; maxed with `wear`
+        rb = SP["rub"]
+        geo = n.new("ShaderNodeNewGeometry")
+        sep = n.new("ShaderNodeSeparateXYZ")
+        k.new(geo.outputs["Normal"], sep.inputs[0])
+        crown = n.new("ShaderNodeMapRange")
+        k.new(sep.outputs["Z"], crown.inputs["Value"])
+        crown.inputs["From Min"].default_value, crown.inputs["From Max"].default_value = rb.get("crown", [0.955, 0.975])
+        dot = n.new("ShaderNodeVectorMath")
+        dot.operation = "DOT_PRODUCT"
+        k.new(geo.outputs["Normal"], dot.inputs[0])
+        dot.inputs[1].default_value = Vector((-0.66, 0.66, 0.36)).normalized()
+        edge = n.new("ShaderNodeMapRange")
+        k.new(dot.outputs["Value"], edge.inputs["Value"])
+        edge.inputs["From Min"].default_value, edge.inputs["From Max"].default_value = rb.get("edge", [0.80, 0.86])
+        mx = n.new("ShaderNodeMath")
+        mx.operation = "MAXIMUM"
+        k.new(crown.outputs[0], mx.inputs[0])
+        k.new(edge.outputs[0], mx.inputs[1])
+        tco0 = n.new("ShaderNodeTexCoord")
+        pn = n.new("ShaderNodeTexNoise")
+        pn.inputs["Scale"].default_value = 1.0 / (rb.get("patch", 9.0) * K)
+        pn.inputs["Detail"].default_value = 2.0
+        k.new(tco0.outputs["Object"], pn.inputs["Vector"])
+        pm = n.new("ShaderNodeMapRange")
+        k.new(pn.outputs["Fac"], pm.inputs["Value"])
+        pm.inputs["From Min"].default_value, pm.inputs["From Max"].default_value = rb.get("keep", [0.40, 0.46])
+        mul = n.new("ShaderNodeMath")
+        mul.operation = "MULTIPLY"
+        k.new(mx.outputs[0], mul.inputs[0])
+        k.new(pm.outputs[0], mul.inputs[1])
+        attr = next(x for x in n if x.bl_idname == "ShaderNodeAttribute")
+        both = n.new("ShaderNodeMath")
+        both.operation = "MAXIMUM"
+        k.new(attr.outputs["Fac"], both.inputs[0])
+        k.new(mul.outputs[0], both.inputs[1])
+        for l in list(nt.links):
+            if l.from_node == attr and l.to_node != both:
+                to = l.to_socket
+                nt.links.remove(l)
+                k.new(both.outputs[0], to)
+    tco = n.new("ShaderNodeTexCoord")
+    fine = n.new("ShaderNodeTexNoise")
+    fine.inputs["Scale"].default_value = 1.0 / (1.1 * K)
+    fine.inputs["Detail"].default_value = 4.0
+    k.new(tco.outputs["Object"], fine.inputs["Vector"])
+    bump = n.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = SP.get("grain", 0.12)
+    bump.inputs["Distance"].default_value = 0.4 * K
+    k.new(fine.outputs["Fac"], bump.inputs["Height"])
+    k.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return m
+
+
 def fracture_material():
     m = bpy.data.materials.new("orb_fracture")
     m.use_nodes = True
@@ -402,7 +551,7 @@ def fracture_material():
     col.inputs[6].default_value = B.hexc(SP.get("frac", "#7c818b"))
     col.inputs[7].default_value = B.hexc(SP.get("frac2", "#4a4e57"))
     k.new(col.outputs[2], bsdf.inputs["Base Color"])
-    bsdf.inputs["Metallic"].default_value = 1.0
+    bsdf.inputs["Metallic"].default_value = SP.get("frac_metal", 1.0)
     bsdf.inputs["Roughness"].default_value = SP.get("frac_rough", 0.5)
     bump = n.new("ShaderNodeBump")
     bump.inputs["Strength"].default_value = SP.get("frac_bump", 0.35)
@@ -427,8 +576,14 @@ def bar_piece(name, centre, wire, closed, tips, seed, mats, contacts=()):
         fracture(ob, tips, wire, seed)
     cell, depth = SP.get("dent", [6.5, 0.9])
     f = max(0.45, min(1.0, wire / P(14)))   # (thin bars take smaller, shallower blows)
-    ridge = hammer(ob, cell * K * f, depth * K * f, wire, seed)
+    if "facets" in SP:
+        fc, fd = SP["facets"]
+        ridge = facets(ob, fc * K * f, fd * K * f, wire, seed)
+    else:
+        SP["_edge"] = set()
+        ridge = hammer(ob, cell * K * f, depth * K * f, wire, seed)
     wear(ob, ridge, seed, contacts)
+    SP["_edge"] = set()
     for p in ob.data.polygons:
         p.use_smooth = True
     return ob
@@ -454,6 +609,49 @@ def lug(at_deg, outer_pt, outward, mats, seed):
     wd.rotation_euler = (0, 0, math.atan2(outward.y, outward.x))
     wd.data.materials.append(mats[0])
     bpy.ops.object.shade_smooth()
+    return c
+
+
+def eye_thread(at, outward, mats, seed):
+    """The welded eye the HUD's chain runs through (spec ring.thread: {"r", "wire", "lean", "shank"}): a ring
+    whose hole stands upright, leaned `lean` deg toward the eye (its lower half in front), on a short forged
+    shank from the casing at `at`, the weld a squat blob. Its centre is returned; the ring is SP["_front"] (the
+    front pass renders its lower half over the chain)."""
+    t = SP["ring"]["thread"]
+    rr, rw = P(t.get("r", 5.2)), P(t.get("wire", 1.6))
+    lean = math.radians(t.get("lean", 35))
+    sh = P(t.get("shank", 3.0))
+    # the ring's nearest point to the casing is on its upper left: its centre out from there
+    c = at + outward * (sh + rr * 0.3) + Vector((rr * 0.3, 0, 0))
+    pts = [c + Vector((rr * math.cos(u), -rr * math.sin(u) * math.sin(lean), rr * math.sin(u) * math.cos(lean)))
+           for u in (2 * math.pi * i / 72 for i in range(72))]
+    SP["_wire_now"] = rw
+    ring_ = tube("eye_ring", pts, rw, True, res=8)
+    for m in mats:
+        ring_.data.materials.append(m)
+    SP["_edge"] = set()
+    ridge = hammer(ring_, P(3.0), P(0.25), rw, seed)
+    wear(ring_, ridge, seed)
+    for p in ring_.data.polygons:
+        p.use_smooth = True
+    # the shank: from inside the casing's bar to the ring's left
+    near = min(pts, key=lambda p: (p - at).length)
+    a0 = at - outward * rw * 1.5
+    shank = tube("eye_shank", [a0.lerp(near, f) for f in (0.0, 0.33, 0.66, 1.0)], rw * 1.15, False, res=8)
+    shank.data.materials.append(mats[0])
+    sr = hammer(shank, P(3.0), P(0.2), rw, seed + 1)
+    wear(shank, sr, seed + 1)
+    for p in shank.data.polygons:
+        p.use_smooth = True
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=24, ring_count=12, location=at + outward * rw * 0.3)
+    wd = bpy.context.active_object
+    wd.name = "eye_weld"
+    wd.scale = (rw * 2.4, rw * 2.0, rw * 1.5)
+    wd.rotation_euler = (0, 0, math.atan2(outward.y, outward.x))
+    wd.data.materials.append(mats[0])
+    bpy.ops.object.shade_smooth()
+    SP["_front"] = ring_
+    SP["_eye_r"] = (rr, rw)
     return c
 
 
@@ -516,9 +714,15 @@ def form_ring(mats):
         # +y of the link's frame must face outward: z rotation a - 90deg puts +x along -tangent, +y outward
         place(ob, (math.cos(a) * R, math.sin(a) * R, 0), (tilt, 0, a - math.pi / 2))
         tipsall += [ob.matrix_world @ t[0] for t in tips]
-        if i == g.get("lug_i", 2):
+        if i == g.get("lug_i", 2) and not g.get("thread"):
             out = Vector((math.cos(a), math.sin(a), 0))
             eye = lug(math.degrees(a), out * (R + Wd / 2 - wire * 0.2), out, mats, 30)
+    if g.get("thread"):
+        # the chain's eye: a forged ring on a short shank welded to the casing at lug_deg, its hole upright, leaned
+        # toward the eye so the HUD chain's first link (face on, its left end upright) runs through it
+        la = math.radians(g.get("lug_deg", -45))
+        out = Vector((math.cos(la), math.sin(la), 0))
+        eye = eye_thread(out * (R + Wd / 2 - wire * 0.35), out, mats, 31)
     plate(R, R, wire * 2.2)
     ext = (R / math.cos(math.pi / n) + Wd / 2 + 2 * P(SP.get("lug_r", 6.5)) + 3 * P(2.5),) * 2
     return dict(open_c=(0.0, 0.0), open_r=r, eye=eye, ext=ext, tips=tipsall)
@@ -770,7 +974,7 @@ def main():
     sc.render.image_settings.color_depth = "8"
     B.world()
     B.suns()
-    mats = [iron_material(), fracture_material()]
+    mats = [chain_iron_material() if SP.get("chain_mat") else iron_material(), fracture_material()]
     geo = dict(link=form_link, ring=form_ring, waystone=form_waystone)[SP.get("form", "link")](mats)
     # the glass's own light on the iron's inner flanks (cool, dim: the orb is lit glass, not fire), unseen itself,
     # so the bar's inside reads as iron round the glass rather than a black gap
@@ -787,10 +991,23 @@ def main():
     B.camera(W, H)
     sc.render.filepath = out
     bpy.ops.render.render(write_still=True)
+    front = None
+    if SP.get("_front") is not None:
+        # the front pass: only the eye's ring, everything else held out (its shadows kept), for the layer over the chain
+        fr = SP["_front"]
+        for o in bpy.context.scene.objects:
+            if o.type == "MESH" and o is not fr:
+                o.is_holdout = True
+        sc.cycles.samples = SP.get("front_samples", 64)
+        front = os.path.splitext(out)[0] + "_front.png"
+        sc.render.filepath = front
+        bpy.ops.render.render(write_still=True)
     # render px (y down) from Blender units: the camera centred, U per render px
     to_px = lambda v: [round(W / 2 + v[0] / U, 2), round(H / 2 - v[1] / U, 2)]
     res = dict(size=[W, H], px=px, open_c=to_px(geo["open_c"]), open_r=round(geo["open_r"] / U, 2),
                eye=to_px(geo["eye"]), tips=[to_px(t) for t in geo["tips"]], spec=SP.get("form"))
+    if front:
+        res.update(front=front, eye_ring=[round(SP["_eye_r"][0] / U, 2), round(SP["_eye_r"][1] / U, 2)])
     json.dump(res, open(os.path.splitext(out)[0] + ".json", "w"), indent=1)
     print("ORB", json.dumps(res))
 

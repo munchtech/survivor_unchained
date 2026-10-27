@@ -26,6 +26,9 @@ public partial class LifeLamp : Control
     public static readonly string? Orb = Args.Get("life-orb") is "link" or "linkk" or "ring" or "waystone" or "ember" or "lamp" ? Args.Get("life-orb") : null;
     static readonly string Dir = Orb != null ? $"lamp_life/{Orb}" : Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
     static readonly Godot.Collections.Dictionary Geo = LoadGeo();
+    /// <summary>UI 16 ring: the front half of the casing's welded eye (lamp_front.png, the quad's size), drawn over
+    /// the chain so its first link runs through the eye; null where the casing has none.</summary>
+    public static Texture2D? Front => Orb != null ? UiArt.Tex($"{Dir}/lamp_front.png") : null;
     /// <summary>The quad, in 1080 px (the art is twice this).</summary>
     public static readonly Vector2 Canvas = V("canvas");
     /// <summary>The lamp's foot in the quad, the eye on its font's right side (the chain leaves from it), the

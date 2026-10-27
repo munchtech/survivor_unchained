@@ -96,6 +96,10 @@ public partial class Instrument : Control
         Dash = new Round(Round.Kind.Dash) { Position = DashAt - Round.Half };
         AddChild(Dash);
         AddChild(Chain);
+        // (UI 16 ring: the orb casing's eye's front half over the chain's first link, which runs through it)
+        if (!HerLight.On && LifeLamp.Front is { } eyeFront)
+            AddChild(new TextureRect { Texture = eyeFront, Position = LampAt, Size = LifeLamp.Canvas, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
         AddChild(new CuffFront(true) { Position = ArtAt - Vessel.Half });
         Passives = Style.H(6);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
