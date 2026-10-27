@@ -387,7 +387,7 @@ public sealed class Prologue : ZoneRuntime
             Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
         // F2: straight after F1 (before the first rise); without F1 only once the Rising is 30 s old.
         if (G.Taught("ember_ground") || (B.EmberXp > 0 || B.EmberLevel > 1) && (Now != Stage.Rising || stageT > 30))
-            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain"), after: "ember_ground", gap: 0.6, overHint: true);
+            Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain_fill"), after: "ember_ground", gap: 0.6, overHint: true);
         // (and the journal remembers what the valley believes, once an ember is gathered)
         if (B.EmberXp > 0 || B.EmberLevel > 1)
         {
@@ -403,11 +403,12 @@ public sealed class Prologue : ZoneRuntime
             var w = B.Weapons[startWeapons];
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
         }
-        // The lock (au1 item 14: the "4" on it was never taught): the ember's level, once it has risen and its
-        // skill was shown, away from any crowd, 4 s clear of anything else on the screen.
-        if (B.EmberLevel >= 2 && G.Taught("first_skill") && Now is Stage.Rising or Stage.Road && Crowd(p.X, p.Z, 6) < 5)
+        // The lock (au1 item 14: the "4" on it was never taught; MR5: it moves to the second rise): once the ember
+        // has risen a second time (level 3) and that draft is picked and closed, in the Rising or the Road, away
+        // from any crowd, 4 s clear of anything else. Dropped unseen ("passed") once the Ambush begins.
+        if (B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road && Crowd(p.X, p.Z, 6) < 5)
             G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The lock", "The ember's level tonight. It springs open each time the ember rises.", Aim.At("lock"))
-                { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Crowd(B.Player.X, B.Player.Z, 6) < 6 });
+                { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road && Crowd(B.Player.X, B.Player.Z, 6) < 6 });
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
         // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
         if (B.GoldGained > 0 && TallyCalm())
@@ -458,9 +459,9 @@ public sealed class Prologue : ZoneRuntime
             Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nPut them out: break them, or lure his charge into one.",
                 new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25,
                     Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
-        // F10: her health under half for the first time, with a draught to drink (au i15: under 40% a real
+        // F10: her health under 70% for the first time (MR5: it was half), with a draught to drink (au i15: under 40% a real
         // run never came, 42% at the lowest; the ambush's volley and the Knight bring it down before the ford).
-        if (p.Alive && p.Hp < B.MaxHp * 0.5 && G.Journey.Draughts > 0)
+        if (p.Alive && p.Hp < B.MaxHp * 0.7 && G.Journey.Draughts > 0)
             Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = true }, "draught", gap: 5, urgent: true);
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)

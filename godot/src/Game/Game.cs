@@ -996,11 +996,7 @@ public partial class Game : Node, IZoneHost
             if (d < it.R && d < bd) { bd = d; best = it; }
         }
         near = best;
-        // (au1 item 14: talking was never taught) the first time someone can be talked to, an arrow at the
-        // prompt, 4 s clear of anything else on the screen; asked while the prompt is up.
-        if (best != null && best.Id.StartsWith("talk:"))
-            Teach(new Play.Callout("talk", Play.CalloutKind.Arrow, "Talk", $"{KeyLabel("interact")}: talk. A mark over someone's head means news for you.", Play.Aim.At("prompt"))
-                { Quiet = 4, Mark = "talk", Patience = 30, After = zone.Id == "waystation" ? "minimap" : null });
+        // (the talk lesson L4 is cut, MR5 judge: the prompt "E Talk Tam" is the lesson)
         var view = best != null ? new PromptView(controls.KeyLabel(Act.Interact), best.Verb, best.Name, best.Hint?.Invoke(), best.Locked?.Invoke()) : null;
         if (view != promptShown) hud.Prompt(promptShown = view);
     }

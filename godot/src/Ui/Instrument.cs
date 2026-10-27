@@ -41,6 +41,8 @@ public partial class Instrument : Control
     public static Vector2 DashAt => new(SocksX + 6 * Sock + 5 * SockGap + 14 + SmallR + SmallBand, SmallY);
     /// <summary>The chain's ends, at the cuffs' eyes.</summary>
     public static Vector2 EyeL => LifeAt + new Vector2(Mathf.Cos(Mathf.DegToRad(EyeAngle)), Mathf.Sin(Mathf.DegToRad(EyeAngle))) * (R + Band + 2);
+    /// <summary>The chain's filled links: its rect from the left eye to the lock's left edge (the lock stands at the middle, 32 wide).</summary>
+    public static Rect2 ChainFill => new(EyeL.X, EyeL.Y - 17, 960 - 16 - EyeL.X, 38);
     public static Vector2 EyeR => new(1920 - EyeL.X, EyeL.Y);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
     public static Rect2 Bounds => new(960 - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));

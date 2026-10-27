@@ -102,6 +102,8 @@ public partial class Game
             case null: break;
             // (the whole chain, bracketed: it is the bar that fills, not its lock)
             case "chain": areas.Add(new Rect2(Instrument.EyeL.X, Instrument.EyeL.Y - 17, Instrument.EyeR.X - Instrument.EyeL.X, 38)); break;
+            // (the filled links, left of the lock: F2's, where the ember fills; the lock itself is L1's)
+            case "chain_fill": areas.Add(Instrument.ChainFill); break;
             case "dash": pts.Add(Instrument.DashAt); break;
             case "draught": pts.Add(Instrument.DraughtAt); break;
             case "art": pts.Add(Instrument.ArtAt); break;
@@ -388,7 +390,7 @@ public partial class Game
         // (no damage numbers over the words while a callout is up)
         if (scene != null) scene.Fx.Hits.Visible = false;
         // The part taught is kept (the HUD stays whole; the world dims on a freeze); the chain's callout fades the six places.
-        hud.Spotlight(c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud == "chain");
+        hud.Spotlight(c.Target.Hud == "chain_fill" ? "chain" : c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud is "chain" or "chain_fill");
         var view = new Ui.Callout();
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
@@ -437,7 +439,7 @@ public partial class Game
                 // (a lit dash's ring stands outside its flames and badge, round 3 judge)
                 "dash" when hud.DashLit => Instrument.SmallR + Instrument.SmallBand + 18,
                 "dash" or "draught" => Instrument.SmallR + Instrument.SmallBand,
-                "chain" => 22,
+                "chain" or "chain_fill" => 22,
                 _ => Instrument.Sock / 2 + 4,
             });
         if (c.Target.World != null)
@@ -479,7 +481,7 @@ public partial class Game
         {
             Her = her, Radii = radii, HudPoints = hudPts, Avoid = avoid, Edges = OffScreen(c), Cold = c.Target.Cold, Shun = shun,
             WordsNear = c.Target.WordsNear is { } wn ? new Vector2((float)wn.X * 1920, (float)wn.Y * 1080) : null,
-            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud == "chain" ? 2 : 12,
+            AreaGrow = c.Target.Hud is string sk && sk.StartsWith("socket:") ? 6 : c.Target.Hud is "chain" or "chain_fill" ? 2 : 12,
         });
     }
 
