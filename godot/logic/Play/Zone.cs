@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Core;
@@ -84,6 +84,9 @@ public interface IZoneHost
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
     void Travel(string zone, string? caption = null, string? sub = null);
+    /// <summary>The place a journey will soon go to, built ahead of it while this one plays (a host that builds
+    /// nothing does nothing).</summary>
+    void Prepare(string zone) { }
     /// <summary>A Wayfinder's map is over: the game tells it on its own page, then goes back to the
     /// Waystation; a host without a page goes straight back.</summary>
     void MapOver(Zones.MapResult r, bool alive) =>
@@ -163,6 +166,9 @@ public interface IZoneLook
     INpcView Person(NpcDef def, Spot spot);
     /// <summary>Someone from the town, made up (Folk): a person as a spec.</summary>
     INpcView Walker(PersonSpec spec, double scale);
+    /// <summary>The same, come out into a town already running (a door, a gate): it may stand up over the next few
+    /// frames, its calls kept till it does (the screen does not wait for it).</summary>
+    INpcView WalkerLater(PersonSpec spec, double scale) => Walker(spec, scale);
     /// <summary>A light that goes where something carries it (a torch).</summary>
     void MoveLight(int light, double x, double y, double z);
     /// <summary>The ground's height.</summary>

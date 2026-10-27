@@ -35,6 +35,9 @@ public partial class GroundLabels : Control
     /// that would fall on one gives way to it, faint, and never runs through its words.</summary>
     public readonly List<Rect2> KeepOut = new();
 
+    /// <summary>Where the names stood at the last draw (screen px): the combat floaters give way to them (Hits.Show).</summary>
+    public static readonly List<Rect2> Drawn = new();
+
     public void Show(IEnumerable<GroundLabel> list)
     {
         labels.Clear();
@@ -47,6 +50,7 @@ public partial class GroundLabels : Control
         // Lowest on the screen first: they are nearest the camera's ground and keep their place.
         labels.Sort((a, b) => b.At.Y.CompareTo(a.At.Y));
         var placed = new List<Rect2>();
+        Drawn.Clear();
         var link = UiArt.Icon("glyph", "link_set_14");
         foreach (var l in labels)
         {
@@ -61,6 +65,7 @@ public partial class GroundLabels : Control
             // Still on another after stepping up (a heap): left unsaid rather than written over it.
             if (placed.Exists(r => r.Grow(1).Intersects(box))) continue;
             placed.Add(box);
+            Drawn.Add(box);
             // Under the HUD's own words it gives way: faint, and its light not drawn.
             bool under = KeepOut.Exists(r => r.Intersects(box.Grow(4)));
             if (under) { DrawString(font, new Vector2(box.Position.X + (l.Set ? 18 : 0), box.Position.Y + font.GetAscent(size)), text, HorizontalAlignment.Left, -1, size, l.Color with { A = 0.14f }); continue; }

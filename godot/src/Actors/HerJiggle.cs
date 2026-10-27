@@ -52,7 +52,7 @@ public partial class HerJiggle : SkeletonModifier3D
             if (m.Index < 0) m.Index = sk.FindBone(m.Bone);
             if (m.Index < 0) continue;
             var pose = sk.GetBoneGlobalPose(m.Index);
-            float len = BoneLength(sk, m.Index);
+            float len = BoneLength(m.Bone);
             var head = world * pose.Origin;
             var target = world * (pose.Origin + pose.Basis.Y.Normalized() * len);
             if (!m.Live || dt <= 0) { m.P = target; m.V = Vector3.Zero; m.Live = true; continue; }
@@ -93,10 +93,11 @@ public partial class HerJiggle : SkeletonModifier3D
         }
     }
 
-    static float BoneLength(Skeleton3D sk, int bone)
+    static float BoneLength(string bone)
     {
         // A leaf bone's length is not stored; these were made 8 to 10 cm.
-        return sk.GetBoneName(bone).StartsWith("glute") ? 0.10f : 0.085f;
+        // (the mass's own name, the bone found by it: asking the skeleton made a string a mass a frame, MR4)
+        return bone.StartsWith("glute") ? 0.10f : 0.085f;
     }
 
     /// <summary>A push the springs feel at once (a landing, a blow), in metres

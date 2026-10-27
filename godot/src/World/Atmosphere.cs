@@ -109,8 +109,13 @@ public partial class Atmosphere : Node3D
     /// <summary>The title and the Look (Atmospheres.Front) take the close view's paint grade (G1 r4 judge: it fixed her pale, washed-out
     /// lit face at the Look; identity, freckles and copper held). --front-unpainted: the grade before it (pictures).</summary>
     static readonly bool FrontPaint = !SurvivorUnchained.Args.Has("front-unpainted");
+    /// <summary>The title and the Look also take the close view's neutral highlight tint (Face 44, skin B): the night grade's
+    /// orange #ffad5c at 0.24 multiplied the chroma of her brightest skin 3.5-4.4x above L .75 and left a flat orange
+    /// forehead, which the town close-up already took off (ViewHighlightsNeutral). --front-hi-warm: the tint before it (pictures).</summary>
+    static readonly bool FrontHiWarm = SurvivorUnchained.Args.Has("front-hi-warm");
     static GradeSettings Own(AtmospherePreset p) => FrontPaint && ReferenceEquals(p, Atmospheres.Front) ? p.Grade with
     {
+        HighlightTint = FrontHiWarm ? p.Grade.HighlightTint : "#bcbcbc",
         PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
         PaintShadow = Atmospheres.CloseNightPaint.PaintShadow, PaintShadowK = Atmospheres.CloseNightPaint.PaintShadowK, PaintLift = Atmospheres.CloseNightPaint.PaintLift,
     } : p.Grade;
@@ -326,10 +331,13 @@ public partial class Atmosphere : Node3D
         float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
         var paint = new Paint(g, Try);
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
-        var slices = new Godot.Collections.Array<Image>();
-        for (int b = 0; b < LutSize; b++)
+        // (The table is worked out on the worker threads, a blue slice each, into bytes, then made one image per slice:
+        // 32^3 Image.SetPixel calls and the sums on the main thread held a frame ~100 ms when a cinematic's
+        // atmosphere moved the grade (C04 A at 9 s). Each byte is what SetPixel wrote for RGB8: the channel times 255, clamped, truncated.)
+        var data = new byte[LutSize][];
+        System.Threading.Tasks.Parallel.For(0, LutSize, b =>
         {
-            var img = Image.CreateEmpty(LutSize, LutSize, false, Image.Format.Rgb8);
+            var px = data[b] = new byte[LutSize * LutSize * 3];
             for (int gi = 0; gi < LutSize; gi++)
                 for (int r = 0; r < LutSize; r++)
                 {
@@ -366,10 +374,12 @@ public partial class Atmosphere : Node3D
                     if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
                     if (paint.On) outLin = paint.Apply(outLin);
                     var o = Srgb(outLin);
-                    img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
+                    int at = (gi * LutSize + r) * 3;
+                    px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);
                 }
-            slices.Add(img);
-        }
+        });
+        var slices = new Godot.Collections.Array<Image>();
+        for (int b = 0; b < LutSize; b++) slices.Add(Image.CreateFromData(LutSize, LutSize, false, Image.Format.Rgb8, data[b]));
         // --grade-dump FILE: the table's bytes (blue-major slices, RGB8), to check it outside the game.
         if (SurvivorUnchained.Args.Get("grade-dump") is { } dump)
         {
@@ -382,6 +392,9 @@ public partial class Atmosphere : Node3D
         luts[key] = tex;
         return tex;
     }
+
+    /// <summary>A channel as Image.SetPixel stores it in RGB8 (Godot: uint8_t(CLAMP(c * 255.0, 0, 255))).</summary>
+    static byte Byte8(float c) => (byte)Math.Clamp(c * 255.0, 0.0, 255.0);
 
     /// <summary>--grade-old: the grade before KeepHue, for before-and-after pictures.</summary>
     static readonly bool OldGrade = SurvivorUnchained.Args.Has("grade-old");

@@ -159,6 +159,30 @@ public partial class Hits : Node3D
     /// <summary>A word or number that rises from where something happened and fades.</summary>
     public void Text(Vector3 at, string text, Color color, int size = 60) => Show(at, text, color, size);
 
+    /// <summary>A floater that would print over a dropped item's name is lifted to stand just above it (UI note 5, 26 Oct).</summary>
+    static int liftShots;
+    Vector3 ClearOfNames(Vector3 at, string text, int size)
+    {
+        var names = SurvivorUnchained.Ui.GroundLabels.Drawn;
+        var cam = GetViewport()?.GetCamera3D();
+        if (names.Count == 0 || cam == null || cam.IsPositionBehind(at)) return at;
+        var p = cam.UnprojectPosition(at);
+        float w = Mathf.Max(50, text.Length * size * 0.4f), h = size * 0.8f;
+        bool moved = false;
+        for (int pass = 0; pass < 3; pass++)
+        {
+            var f = new Rect2(p.X - w / 2, p.Y - h / 2, w, h);
+            var hit = names.Find(r => r.Grow(4).Intersects(f));
+            if (hit.Size == Vector2.Zero) break;
+            p.Y = hit.Position.Y - 6 - h / 2;
+            moved = true;
+        }
+        if (!moved) return at;
+        if (liftShots < 3 && Args.Has("shot")) Shots.Want($"floaterlift_{++liftShots}", 0.1);
+        float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+        return cam.ProjectPosition(p, depth);
+    }
+
     /// <summary>As Text, saying which of the pool's labels it took.</summary>
     int Show(Vector3 at, string text, Color color, int size)
     {
@@ -168,7 +192,8 @@ public partial class Hits : Node3D
         l.Text = text;
         l.FontSize = size;
         l.Modulate = color;
-        l.GlobalPosition = at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0);
+        at = ClearOfNames(at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
+        l.GlobalPosition = at;
         l.Visible = true;
         numbers[i] = (l, 0);
         return i;

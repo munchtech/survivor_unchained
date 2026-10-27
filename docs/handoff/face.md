@@ -2,6 +2,14 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Face 44 (26 Oct): SKIN B MR READY; A next
+
+**Branch face-44** (own junction to its own public\assets, assume-unchanged). Scratch: the coordinator scratchpad's `face44\` (`shoot.sh <abs list> <abs outdir>`, `sheet.py`, `skin\an.py` region Oklab table, lists `b1.txt`/`i1.txt`, frames and sheets in `b1\`).
+- **B (02462088):** `Atmosphere.Own()` gives `Atmospheres.Front` (title and Look only) the neutral highlight tint `#bcbcbc`; `--front-hi-warm` = before. Front's Moon was already 0 and its paint grade already the close view's, so this is the whole match to the town close-up. Fair forehead C .090 -> .074, clip 10.9% -> 0; deep unchanged (under L .75). In play the Look is night only (`--look-time` is a pictures flag).
+- **Irises (260284a9):** `People.cs` eye setup `night_iris` 1.8 -> 1.5 (the close-up by night only; judge b1: 1.8 lit from inside, 1.3 drifts to the black disc).
+- **Judge b1 (max): B PASS, iris 1.5.** Gate NO on every Look frame, all A's work: her skin is FAR from the bar (shape, brows, eyes close). Worst first: (1) no sheen or break-up (start: roughness forehead/nose ~0.40, cheeks 0.55, lips 0.30; specular ~0.35); (2) deep skin brick red (albedo: hue to umber, less red, lower chroma; measure deep cheek/chest hue+C at Look night vs day); (3) no color zones (redder nose/cheeks/ears/lip line, yellower forehead, cool under-eye and jaw, pinker lids); (4) patchy hard-edged posterized tone on chest/shoulders/arms, worst on deep: find the source first (the painterly post on skin? 8-bit banding in the darks?); (5) no pores at zoom 1 (a low tiling detail normal). Then match face and chest hue/lightness (her face sits paler and pinker than her chest).
+- Tests 1070/0/8.
+
 ## Paused here (Face 43, 26 Oct): Face's fixed list DONE; SKIN options with the owner
 
 **Branch face-37** (own junction to its own public\assets). Both MRs MERGED: MR1 ac62384b (pixie ear back to A, the owner's pick; braid/ponytail ear corner; 7d tick; 7e front tone), MR2 f5d0a01d (ear-front ladder, neck patch). Tests 1054/0/8. Scratch backed up to `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_fce3bb46\face43\` (`shoot.sh`, `l1.txt`, `cmp.py`, `skin\` scripts and numbers, `judge43\` crops).

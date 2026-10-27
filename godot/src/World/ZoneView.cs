@@ -20,40 +20,66 @@ namespace SurvivorUnchained.View;
 public partial class ZoneView : Node3D
 {
     public readonly ZoneData Data;
-    public readonly Landmarks Landmarks;
+    public Landmarks Landmarks { get; private set; } = null!;
     readonly List<OmniLight3D> lights = new();
     readonly List<float> phases = new();
     readonly List<bool> lit = new();
     /// <summary>Every light's spec: the zone's, then those the runtime set down.</summary>
-    readonly List<ZoneData.LightSpec> specs;
+    List<ZoneData.LightSpec> specs = null!;
     readonly Dictionary<int, MeshInstance3D> flames = new();
-    readonly Node3D lightRoot;
+    Node3D lightRoot = null!;
     readonly HashSet<string> stopped = new();
     readonly List<(int Light, Node3D Fire)> fires = new();
     readonly HashSet<string> fireGlow = new();
     readonly List<GpuParticles3D> chimneys = new();
     readonly List<(int Light, GpuParticles3D Moths)> moths = new();
-    readonly ShaderMaterial ground;
+    ShaderMaterial ground = null!;
     MultiMeshInstance3D? grass, leaves;
-    readonly Node3D props;
+    Node3D props = null!;
     double time;
     public bool Night { get; private set; }
 
     /// <param name="grassAround">Where to grow the meadow (the web game grows
     /// it round the survivor as they go); null for none.</param>
-    public ZoneView(ZoneData z, Vector2? grassAround = null, float grassRadius = 40)
+    public ZoneView(ZoneData z, Vector2? grassAround = null, float grassRadius = 40) : this(z)
+    {
+        Slices.All(Build(grassAround, grassRadius));
+        WaterLevel();
+        // (its paint the latest now, for the thaw's sun: GroundPaint.SunAt)
+        if (z.Place == null) GroundPaint.Of(z);
+    }
+
+    /// <summary>A zone to be stood up a few steps a frame (Build), ahead of the journey to it: nothing of it
+    /// reaches the place still shown (the water's height for the stones goes out as it enters the tree).</summary>
+    public ZoneView(ZoneData z)
     {
         Data = z;
         Name = $"Zone_{z.Id}";
+    }
+
+    bool later;
+    public override void _EnterTree() { if (later) WaterLevel(); }
+
+    /// <summary>(the water's height for our own stones' wet band, kit.gdshader's OWN_ROCK; none: far under everything)</summary>
+    void WaterLevel() => RenderingServer.GlobalShaderParameterSet("water_level", Data.Meta.Places.TryGetValue("WATER_Y", out var wly) ? new Vector4(wly.GetSingle(), 0, 0, 1) : new Vector4(0, -1000, 0, 0));
+
+    /// <summary>Its steps (Slices): the ground and water, the flora, the scatter, the props piece by piece, the
+    /// landmarks, the meadow, the lights and fires one by one. Built ahead (Game.Prepare), a frame may end at
+    /// each; built at once, they run straight through.</summary>
+    public IEnumerable<object?> Build(Vector2? grassAround = null, float grassRadius = 40, bool ahead = false)
+    {
+        var z = Data;
+        later = ahead;
         Perf.Lap("zone view", true);
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
+        yield return "ground";
         AddChild(Water.Build(z));
-        // (the water's height for our own stones' wet band, kit.gdshader's OWN_ROCK; none: far under everything)
-        RenderingServer.GlobalShaderParameterSet("water_level", z.Meta.Places.TryGetValue("WATER_Y", out var wly) ? new Vector4(wly.GetSingle(), 0, 0, 1) : new Vector4(0, -1000, 0, 0));
+        yield return "water";
         if (MistLayers.Build(z) is { } mist) AddChild(mist);
         Perf.Lap("ground and water");
+        yield return "mist";
         var flora = Dressing.Flora(z);
         AddChild(flora);
         // Nothing grows in a fire pit: neither the flora nor the meadow (GrowGrass).
@@ -64,21 +90,26 @@ public partial class ZoneView : Node3D
                 Bare(flora, new Vector3((float)f.X, (float)f.Y, (float)f.Z), 0.95f * (float)f.Size);
             }
         Perf.Lap("flora");
+        yield return "flora";
         if (Scatter.Build(z) is { } sc) AddChild(sc);
         Perf.Lap("scatter");
+        yield return "scatter";
         foreach (var p in OwnProps.For(z.Id)?.Places ?? new())
             if (p.Bare is Vector2 b) pits.Add(new Vector4(p.At.X, p.At.Y, b.X, b.Y));
-        props = Dressing.Props(z);
+        props = new Node3D { Name = "Props" };
+        foreach (var s in Dressing.Props(z, props)) yield return s;
         AddChild(props);
         Perf.Lap("props");
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
+        yield return "landmarks";
         // Our own props placed by the zone's data (OwnProps: props_own.json "place"), the blocked-out ones hidden.
         var ownProps = OwnProps.For(z.Id);
         if (ownProps != null) AddChild(OwnProps.Dress(z, ownProps, Landmarks.Root));
         // The camp on the Low Ford road, made for its close-ups (Camp.cs); its logs ours where the data places them.
         if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root, logs: ownProps == null || !ownProps.Places.Exists(p => p.Preset.StartsWith("log"))));
         Perf.Lap("landmarks");
+        yield return "own props";
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
         {
@@ -92,16 +123,18 @@ public partial class ZoneView : Node3D
         // (An arena whose place grows none, the Dig, has no meadow at all.)
         if (grassAround is Vector2 at && (z.Place == null || ArenaGround.GrowsGrass(z.Place.Id))) GrowGrass(at, grassRadius);
         Perf.Lap("grass");
+        yield return "grass";
 
         var meta = z.Meta;
         specs = new List<ZoneData.LightSpec>(z.Lights);
         lightRoot = new Node3D { Name = "Lights" };
         AddChild(lightRoot);
-        for (int i = 0; i < meta.Lights.Count; i++) MakeLight(z.Lights[i]);
+        for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(z.Lights[i]); yield return null; }
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
         foreach (var f in meta.Fires)
         {
+            yield return "light or fire";
             // The web game's ring of stones round it goes; the fire's own ring takes its place.
             var fat = new Vector3((float)f.X, (float)f.Y, (float)f.Z);
             if (f.Ring) HideLandmarksNear(fat, 0.85f * (float)f.Size);
@@ -117,7 +150,9 @@ public partial class ZoneView : Node3D
         }
         // The lamps: modeled holders with the flame kit's flames in them (Lamps.cs, look bible 10), where
         // the web game hung glowing balls (the road's lanterns, the gate's torches, the ford's three beacons).
+        yield return "fire";
         WireLamps(meta);
+        yield return "lamps";
         foreach (var c in meta.Chimneys)
         {
             var smoke = Plume();   // (E9d: the town's plumes, ZoneView.Town)

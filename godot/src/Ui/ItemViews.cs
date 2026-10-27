@@ -367,7 +367,7 @@ void fragment() {
 
     /* ------------------------------------------------------------- card -- */
 
-    /// <summary>What a number on a piece says, in words: its base's numbers read as "Armour 7", the
+    /// <summary>What a number on a piece says, in words: its base's numbers read as "Armor 7", the
     /// rest as a change ("+8 health", "+12% fire resistance").</summary>
     public static string ModText(StatMod m, bool implicitBase = false)
     {
@@ -375,7 +375,7 @@ void fragment() {
         bool pct = m.Kind != ModKind.Flat || Percent(m.Stat);
         double v = pct ? m.Value * 100 : m.Value;
         string num = Math.Abs(v - Math.Round(v)) < 0.05 ? $"{Math.Round(v)}" : $"{v:0.#}";
-        if (implicitBase && m.Kind == ModKind.Flat && m.Stat == Stat.Armor) return $"Armour {num}";
+        if (implicitBase && m.Kind == ModKind.Flat && m.Stat == Stat.Armor) return $"Armor {num}";
         string sign = v >= 0 ? "+" : "−";
         num = num.TrimStart('-');
         if (m.Kind == ModKind.More) return $"{num}% more {name}";
