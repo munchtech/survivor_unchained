@@ -282,7 +282,10 @@ public static class Arms
     /// way; MirrorEdge: the edge is mirrored instead (Thick flipped), so a pair (gyre's axes) rides as true mirror images
     /// (the piece symmetric through its flat, it looks the same).
     /// Sheathed() turns the row into the bone's space.</summary>
-    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false);
+    /// Hang (Body 16): a piece hung from her belt (a scabbard, an axe in its loop) is turned about this belt point (skeleton
+    /// space at rest, mirrored as At is) as a hung weight (View/SheathSway, Play/SheathHang) instead of riding the bone
+    /// rigidly; null: it rides rigidly (strapped across her back, tucked in the belt).
+    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false, Vector3? Hang = null);
 
     static readonly Dictionary<string, Socket> Sockets = new()
     {
@@ -292,14 +295,18 @@ public static class Arms
         [WeaponSockets.Back] = new("spine_03", new(0.002f, 1.219f, -0.204f), new(0.006f, 1, -0.001f), new(-0.001f, -0.001f, -1), new(0, 0, -1)),
         // One-handed blade: left hip, in the scabbard (MakeSheathed), hilt forward and up, blade down and back about
         // 30 degrees off vertical, flat to her side (thickness out).
-        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true),
+        // Hung from the sheath point at the belt (Body 16).
+        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true,
+            Hang: new(0.21f, 1.20f, 0.10f)),
         // Blunt and axe: the hip loop behind her right hip (left hand: mirrored, MirrorEdge, so gyre's two ride as mirror
         // images), at about 5 o'clock (12 her front): the head on the belt (the haft's top 1.06 m up, 22 cm out from her
         // axis), the haft down along the back of her thigh, its foot leaning 20 deg out and 10 deg to her side so the thigh
         // clears it as it swings back in the run, the blade straight back. `At` is the axe's sheath point near the haft's
         // foot. (Animation 44, solver idle 2, 20 October: her hands had rested on the heads at her side; now the nearest
         // hand is 20 cm off a head in the town idle and 39 cm in the run and sprint, 0 mm into her: socktry.py.)
-        [WeaponSockets.HipLoop] = new("pelvis", new(-0.289f, 0.542f, -0.305f), new(0.319f, 0.925f, 0.205f), new(0.945f, -0.326f, 0), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true),
+        // Hung from the head on the belt (the haft's top, 1.06 m up and 22 cm out; Body 16).
+        [WeaponSockets.HipLoop] = new("pelvis", new(-0.289f, 0.542f, -0.305f), new(0.319f, 0.925f, 0.205f), new(0.945f, -0.326f, 0), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true,
+            Hang: new(-0.110f, 1.06f, -0.190f)),
         // Wand: tucked in the belt behind her right hip at about 5 o'clock, the grip at the leotard's hip line (1.08 m),
         // the crystal down and back about 30 deg (animation 44, solver idle 2: crystal up, it stood beside her breast and
         // her forearm passed through it in the run).
@@ -380,6 +387,18 @@ public static class Arms
         return (k.Bone, RestOf(k.Bone).AffineInverse() * new Transform3D(basis, at));
     }
 
+    /// <summary>The belt point a hung piece turns about, in the socket bone's space (pushed out by the outfit as the
+    /// mount is), or null if it rides rigidly or has no socket.</summary>
+    public static Vector3? HangPoint(string id, bool left = false, string? outfit = null)
+    {
+        if (WeaponSockets.SocketOf(KindOf(id)) is not { } name || Sockets[name].Hang is not { } p) return null;
+        var k = Sockets[name];
+        var normal = k.Normal;
+        if (left && k.Mirrors) { p.X = -p.X; normal.X = -normal.X; }
+        if (outfit != null) p += normal * Clearance.Metres(outfit, name);
+        return RestOf(k.Bone).AffineInverse() * p;
+    }
+
     /// <summary>The socket a piece rides in and the way out of her body there, in the socket bone's space (what
     /// tools_scenes/ArmsDump.cs writes for armscheck.py --sockets), or null if it stays in her hand.</summary>
     public static (string Socket, Vector3 Normal)? SocketFacing(string id, bool left = false)
@@ -406,6 +425,7 @@ public static class Arms
         att.AddChild(mount);
         mount.Transform = at;
         mount.AddChild(MakeSheathed(id));
+        if (HangPoint(id, left, calling ?? "") is { } pivot) SheathSway.Attach(skeleton, mount, bone, pivot);
         return mount;
     }
 
