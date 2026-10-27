@@ -24,8 +24,10 @@ public class BalanceTests(ITestOutputHelper log)
     {
         var specs = new List<ProbeSpec>();
         foreach (var p in Paths.All)
-            // Twelve seeds: at six, a 1% change in one rule moved a path 4% by chance alone (grave, the reaver quarter).
-            for (int s = 1; s <= 12; s++)
+            // Forty-eight seeds: at six, a 1% change in one rule moved a path 4% by chance alone (grave, the reaver quarter);
+            // at twelve, the host on a stalker read 0.68 of the median on seeds 1-12 and 0.745 on 13-36 once access
+            // narrowed the pools (27 October), so a path near its floor passed or failed by its seeds.
+            for (int s = 1; s <= 48; s++)
                 specs.Add(new ProbeSpec(s, p.Callings[0], $"path:{p.Id}", Targets.LevelAt(15)));
         var o = new ConcurrentBag<ProbeResult>();
         Parallel.ForEach(specs, spec => o.Add(Probe.Run(spec)));
@@ -81,7 +83,8 @@ public class BalanceTests(ITestOutputHelper log)
         // A blessing's rule, a hidden pairing, a status: none should outdo the
         // weapons it rides on. What any one of them deals, as a share of a build's damage.
         var worst = new Dictionary<string, double>();
-        foreach (var p in Probes.Value)
+        // The worst share over the first twelve seeds, as this bound was set: a worst case grows with the sample.
+        foreach (var p in Probes.Value.Where(p => p.Spec.Seed <= 12))
         {
             double total = p.DamageBy.Values.Sum();
             if (total <= 0) continue;
