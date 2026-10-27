@@ -889,7 +889,10 @@ public partial class Game : Node, IZoneHost
     public void Say(string text, string? who = null, double seconds = 4)
     {
         var take = voice.Narrate(text);
-        hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
+        double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds;
+        // (--pace: each line's time, length and her health, for the tutorial's pacing audit)
+        if (Args.Has("pace")) GD.Print($"pace say t={Battle?.Time ?? 0:0.0} up={up:0.0} hp={Battle?.Player.Hp ?? 0:0}/{Battle?.MaxHp ?? 0:0} text={(text.Length > 60 ? text[..60] : text)}");
+        hud.Say(text, who, up);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a)
@@ -907,7 +910,7 @@ public partial class Game : Node, IZoneHost
     public void SetHint(Hint? hint)
     {
         // (a scripted run logs each tip and shoots it, as it does a callout: its words and keys are checked too)
-        if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
+        if (hint != null && hint.Id != CurrentHint?.Id && (Args.Has("shot") || Args.Has("pace")))
         {
             GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
             // (its picture is asked for by the HUD once the tip is drawn at full strength: GameHud.Update)

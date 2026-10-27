@@ -59,7 +59,7 @@ public partial class Game
         if (what == "shown") real = "0";
         var at = Primary(c);
         string waited = what is "queued" or "shown" or "dropped" ? $" waited={(teacher?.LogWaited is { Length: > 0 } w ? w : "-")}" : "";
-        GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}{waited}");
+        GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}{waited}{(Battle is { } hb ? $" hp={hb.Player.Hp:0}/{hb.MaxHp:0}" : "")}");
     }
 
     /// <summary>What has the screen, for the line of callouts.</summary>
@@ -297,6 +297,7 @@ public partial class Game
         if (scene == null || Mode != "play") return;
         if (!scene.SimPaused) teachClock += dt;
         TeachHurt(dt);
+        PaceLog();
         var t = Teacher;
         if (hudMode == "draft") teachOffers = offers; else teachOffers = null;
         var was = t.Current;
@@ -310,6 +311,19 @@ public partial class Game
     }
 
     string? haloDiag;
+
+    string? paceStage;
+    double paceHpT;
+
+    /// <summary>--pace (the tutorial's pacing audit): each Prologue stage as it begins, and her health
+    /// every 5 s of play, with the game's clock.</summary>
+    void PaceLog()
+    {
+        if (!Args.Has("pace") || Battle is not { } b) return;
+        string? st = zone is Zones.Prologue pr ? pr.Now.ToString() : null;
+        if (st != paceStage) { paceStage = st; GD.Print($"pace stage {st} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}"); }
+        if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st}"); }
+    }
 
     double hurtT;
     bool hurtDone, flareGiven;
