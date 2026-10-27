@@ -512,10 +512,12 @@ public sealed class Prologue : ZoneRuntime
                     Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
         // F10: her health under 70% for the first time (MR5: it was half), with a draught to drink (au i15: under 40% a real
         // run never came, 42% at the lowest; the ambush's volley and the Knight bring it down before the ford).
-        // (under 55% it no longer waits to see her clear: amb2, idle under a canopy, it waited out four asks from
-        // 147 HP to 12 and never came; amb4 dropped it at 112 HP for "notyet")
+        // (MR5 item 11: it never waits to see her clear of roofs and canopies. Its target is the HUD's draught slot and
+        // the freeze shows her anyway; a queued ask keeps the Aim it was first asked with, so amb5's, asked at 70%,
+        // waited out its patience for "notyet" and came at 16%. Its gap after another freeze or a draft is 3 s, not 5:
+        // urgent, its moment is now, and it still leaves a beat of play between two freezes.)
         if (p.Alive && p.Hp < B.MaxHp * 0.7 && G.Journey.Draughts > 0)
-            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught", HerSeen = p.Hp >= B.MaxHp * 0.55 }, "draught", gap: 5, urgent: true);
+            Teach("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught" }, "draught", gap: 3, urgent: true);
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
         if (levelDue && levelAnn != null && !finished)
             G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
@@ -620,7 +622,11 @@ public sealed class Prologue : ZoneRuntime
     /// <summary>The ditch's opening: how many of the dead rise round her, how near, how much harder they and
     /// the bowmen's bolts hit than the road's.</summary>
     const int AmbushRing = 12;
-    const double AmbushNear = 3.5, AmbushHit = 1.8, AmbushBolt = 2;
+    const double AmbushNear = 3.5, AmbushHit = 1.3, AmbushBolt = 2;
+    /// <summary>The Ambush's opening (s from the spring) and the field its top-up keeps through it.</summary>
+    const double AmbushOpen = 30, AmbushField = 22;
+    /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
+    readonly HashSet<int> boltsSpent = new();
 
     void SpawnAround(string def, int n, double rMin, double rMax, double ahead = 0, int level = 1, double hit = 1)
     {
@@ -951,9 +957,16 @@ public sealed class Prologue : ZoneRuntime
                     ambDiagAt = B.Time;
                     PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)}");
                 }
+                // (MR5 item 11 round 2: the bolts are doubled for the opening volley only. A bowman who has loosed it
+                // (his reload is up again) shoots the road's bolts after: amb5, five bowmen never killed, kept loosing
+                // doubled bolts and an idle player lost 78% in 28 s, amb4 42%.)
+                foreach (var bw in bowmen)
+                    if (bw.Alive && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(bw.Id)) bw.Damage /= AmbushBolt;
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
-                double want = Math.Min(46, 26 + fought * 0.5);
+                // (and through the opening, the top-up only keeps the field at AmbushField: amb5, idle, killing
+                // little, let it climb 17 -> 38 by 20 s; the horde grows as before after it)
+                double want = fought < AmbushOpen ? AmbushField : Math.Min(46, AmbushField + (fought - AmbushOpen) * 1.0);
                 if (spawnT <= 0 && n < want)
                 {
                     double r = B.Rng.Next();
