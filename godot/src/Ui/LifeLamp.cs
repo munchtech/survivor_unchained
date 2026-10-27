@@ -31,9 +31,9 @@ public partial class LifeLamp : Control
     /// <summary>Where the number stands: its middle on the lamp's foot, under the font.</summary>
     public const float NumberY = 182f;
     /// <summary>The pool's quad round the lamp's foot (1080 px, from the lamp's quad's top left) and its gain at
-    /// full light (the scene lifted by up to +45% at its heart).</summary>
+    /// full light (the scene's brightness lifted by about +45% at its heart: the warm tint takes a share).</summary>
     public static readonly Rect2 PoolRect = new(-152, -78, 480, 300);
-    public const float PoolGain = 0.45f;
+    public const float PoolGain = 0.54f;
     static readonly bool noPool = Args.Has("no-lamp-pool"), noOil = Args.Has("lamp-no-oil");
 
     /// <summary>The level and the shield (0..1 of her life), the trail (unused: the hurt film is the oil's own),
@@ -41,6 +41,10 @@ public partial class LifeLamp : Control
     public float Level = 1, Trail = 1, Shield, Pulse;
     public string Number = "";
     public readonly LampState State = new();
+    /// <summary>The lamp on the HUD now (the shots' --pool-ab hides its pool for a second picture).</summary>
+    public static LifeLamp? Live;
+    /// <summary>The pool held off (the shots' --pool-ab second picture).</summary>
+    public static bool PoolHeld;
 
     readonly ShaderMaterial mat;
     readonly Vessel.Flow flow;
@@ -99,6 +103,9 @@ public partial class LifeLamp : Control
         PoolTick();
     }
 
+    public override void _EnterTree() => Live = this;
+    public override void _ExitTree() { if (Live == this) Live = null; }
+
     void Send(StringName u, float v, ref float sent) => Send(u, v, ref sent, mat);
 
     /// <summary>The pool follows the lamp: where it stands on the screen, shown only while the lamp is (the HUD
@@ -106,7 +113,7 @@ public partial class LifeLamp : Control
     void PoolTick()
     {
         float gain = PoolGain * State.Light * Modulate.A * (IsVisibleInTree() ? 1 : 0);
-        bool want = !noPool && gain > 0.0005f;
+        bool want = !noPool && !PoolHeld && gain > 0.0005f;
         if (Pool.Visible != want) Pool.Visible = want;
         if (!want) return;
         var at = GetGlobalTransformWithCanvas() * PoolRect.Position;

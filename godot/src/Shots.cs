@@ -109,6 +109,15 @@ public partial class Shots : Node
         if (Ui.HudPin.Seq.Length > 0 && hudNext < Ui.HudPin.Seq.Length)
         {
             if (hudPhase == 0 && time >= seconds + hudNext * Args.Num("hud-seq-every", 1.5f)) { Ui.HudPin.Use(hudNext); hudAt = time; hudPhase = 1; }
+            else if (hudPhase == 2 && time >= hudAt + 0.25)
+            {
+                var hf = ProjectSettings.GlobalizePath("res://.shots") + $"/{name}_hud{hudNext}_np.png";
+                GetViewport().GetTexture().GetImage().SavePng(hf);
+                GetTree().Paused = false;
+                Ui.LifeLamp.PoolHeld = false;
+                hudNext++; hudPhase = 0;
+                if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { GetTree().Quit(); return; }
+            }
             else if (hudPhase == 1 && time >= hudAt + 0.35)
             {
                 var hd = ProjectSettings.GlobalizePath("res://.shots");
@@ -116,6 +125,16 @@ public partial class Shots : Node
                 var hf = $"{hd}/{name}_hud{hudNext}.png";
                 GetViewport().GetTexture().GetImage().SavePng(hf);
                 GD.Print($"saved {hf} at {time:0.00}s (hud state {hudNext}: {Ui.HudPin.Seq[hudNext]})");
+                // --pool-ab: the same moment again without the life lamp's pool (the game paused, the pool hidden),
+                // so its lift is measured on the same frame
+                if (Args.Has("pool-ab") && Ui.LifeLamp.Live is { } lamp)
+                {
+                    GetTree().Paused = true;
+                    lamp.Pool.Visible = false;
+                    Ui.LifeLamp.PoolHeld = true;
+                    hudAt = time; hudPhase = 2;
+                    return;
+                }
                 hudNext++; hudPhase = 0;
                 if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { GetTree().Quit(); return; }
             }

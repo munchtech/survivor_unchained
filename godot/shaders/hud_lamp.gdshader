@@ -83,6 +83,8 @@ void fragment()
 	float a = C.a;
 	// (the mask's glass is the chimney's and the font's: the chimney's is the glass over the wick)
 	float chim = m.b * (1.0 - smoothstep(wick.y + 1.0, wick.y + 6.0, px.y));
+	// the chimney's glass unlit is dark (a cold lamp at night), lit it fills with the flame
+	col *= 1.0 - 0.5 * chim * (1.0 - gs);
 	col += fire * a * g * 0.42 * exp(-dw / 22.0) * (1.0 - chim);
 
 	// ---- the oil font
@@ -174,7 +176,8 @@ void fragment()
 	col += fire * chim * g * (0.55 * exp(-gd / 8.0) + 0.42 * exp(-gd / 22.0) + 0.10);
 	vec4 outc = vec4(col * a, a);   // premultiplied
 	// a soft halo out into the air round the chimney (light: added, no cover)
-	outc.rgb += fire * g * 0.30 * exp(-gd / 16.0) * (1.0 - a * 0.6);
+	// (none of it over the instrument's top line, 904 at 1080: the quad's row 46)
+	outc.rgb += fire * g * 0.30 * exp(-gd / 16.0) * (1.0 - a * 0.6) * smoothstep(46.5, 54.0, px.y);
 
 	// ---- the flame: the painted one, its height her life's, swaying; guttering, low, leaning and blue at its root
 	if (on > 0.5 && flame > 0.01)
