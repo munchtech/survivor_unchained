@@ -1385,6 +1385,9 @@ public partial class Game
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                         MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(lin.R, lin.G, lin.B), DisableFog = clear },
                     });
+                    // "soft": the halo fades with no rim (a gaussian, not the cone's ramp: a far lamp's glow
+                    // in the air, not a small moon); "ontop": it is drawn over what stands before the lamp
+                    // (the keep it burns on), as the eye sees a light's glare spill over its own stones.
                     fire.AddChild(new MeshInstance3D
                     {
                         Mesh = new QuadMesh { Size = Vector2.One * size * (float)c.Num("spread", 9) },
@@ -1393,7 +1396,8 @@ public partial class Game
                         {
                             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
                             BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-                            AlbedoTexture = Halo(), AlbedoColor = new Color(col.R, col.G, col.B, (float)c.Num("halo", 0.55)), DisableFog = clear,
+                            AlbedoTexture = c.Bool("soft") ? SoftHalo() : Halo(), AlbedoColor = new Color(col.R, col.G, col.B, (float)c.Num("halo", 0.55)), DisableFog = clear,
+                            NoDepthTest = c.Bool("ontop"),
                         },
                     });
                     // "light": it lights what is near it too (a lamp held to a face), within "range".
@@ -1689,6 +1693,25 @@ public partial class Game
         }
 
         /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
+        static ImageTexture? softHalo;
+        /// <summary>A halo with no rim: a narrow bright core in a wide gaussian, both windowed to reach
+        /// nothing at the edge with no slope left (E8 s8a: the cone's ramp read as a small moon).</summary>
+        static ImageTexture SoftHalo()
+        {
+            if (softHalo != null) return softHalo;
+            const int N = 128;
+            var img = Image.CreateEmpty(N, N, true, Image.Format.Rgba8);
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float dx = (x + 0.5f) / N * 2 - 1, dy = (y + 0.5f) / N * 2 - 1, r2 = dx * dx + dy * dy;
+                    float win = r2 >= 1 ? 0 : (1 - r2) * (1 - r2);
+                    float a = (0.55f * Mathf.Exp(-r2 * 40f) + 0.45f * Mathf.Exp(-r2 * 5f)) * win;
+                    img.SetPixel(x, y, new Color(1, 1, 1, a));
+                }
+            img.GenerateMipmaps();
+            return softHalo = ImageTexture.CreateFromImage(img);
+        }
         static GradientTexture2D Halo() => halo ??= new GradientTexture2D
         {
             Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.25f), new Color(1, 1, 1, 0)], Offsets = [0, 0.18f, 1] },
