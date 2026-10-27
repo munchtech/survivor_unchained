@@ -240,7 +240,7 @@
  "rawhide": {
   "kind": "leather",
   "repeats": 3,
-  "rough_floor": 0.6,
+  "rough_floor": 0.85,
   "zone": "leather"
  },
  "burnished": {

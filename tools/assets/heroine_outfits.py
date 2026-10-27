@@ -2120,7 +2120,10 @@ SPEC = {
     # (Body 18, judge: "salmon-pink ... reads as ballet/gladiator ribbons, not rawhide": desaturated toward yellow-cream,
     # the scan's own R:G:B 1.46:1:0.93 tinted to ~1.12:1:0.74, mean 122 -> 108 (frame about #736349, luma ~90);
     # was (1.0, 0.9, 0.72), 122)
-    "rawhide": ("Leather014", (0.768, 1.0, 0.796), 108, 3, 0.0, None),
+    # (Body 18 r4, judge: "they read blue-grey cord in frame (R/G 1.04-1.09, luma 33-47)": the leather's sheen of the sky
+    # on a dark cord; now 1.11:1:0.6 at a mean 195, its grain evened to 0.55 (RAWHIDE_EVEN) so the light end doesn't clip
+    # flat, and its roughness floor 0.85 (outfit_materials.json): in frame sunlit R/G 1.18-1.19, G/B 1.6, luma 80-85)
+    "rawhide": ("Leather014", (0.76, 1.0, 0.644), 195, 3, 0.0, None),
     # (Body 18, judge on the panel: "a burnished edge, a 4-6 mm band ~35% lighter on both long edges and the hem":
     # oldleather's scan and tint at a mean 35% over its own 54, a little glossier where hands and wear polish it)
     "burnished": ("Leather014", (1, 0.96, 0.62), 73, 4, 0.0, 0.62),
@@ -2204,6 +2207,9 @@ def _hide_mottle(col, seed=18):
     return c * (mean0 / c.mean((0, 1)))
 
 
+RAWHIDE_EVEN = float(os.environ.get("RAWHIDE_EVEN", "0.55"))   # (Body 18 r4: the thongs' grain contrast about its mean)
+
+
 def mat(key):
     if key in MATS:
         return MATS[key]
@@ -2223,6 +2229,9 @@ def mat(key):
         col = np.clip(col, med * 0.8, med * 1.18)
     if key == "hide":
         col = _hide_mottle(col)
+    if key == "rawhide":
+        mu = col.reshape(-1, 3).mean(0)
+        col = mu + RAWHIDE_EVEN * (col - mu)
     out = os.path.join(TEX, f"outfit_{key}_diff.jpg")
     Image.fromarray(np.clip(col, 0, 255).astype(np.uint8)).save(out, quality=92)
     m = bpy.data.materials.new(key)
