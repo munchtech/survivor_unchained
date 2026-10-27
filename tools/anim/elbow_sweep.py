@@ -149,6 +149,7 @@ class Arm:
         return out
 
 
+DEV_AT = ((0, 0.0), (20, 16.0), (45, 16.0), (90, 10.0), (135, 3.0), (180, 0.0))   # flexion -> sideways swing (deg)
 HINGE = "rig"   # --hinge: the bend's axis, "rig" (across the humerus and her front) or "x" (the elbow share's own X)
 
 
@@ -173,6 +174,18 @@ def hang_pose(body, s, deg, fwd=0.0):
     # upper arm's swing, so the forearm bends in the shares' own plane
     h = np.cross(d, [0, 0, 1.0])
     h = qrot(sw, h / np.linalg.norm(h))
+    if HINGE == "flex":
+        # (Body 19) as her clips bend it: the forearm FLEXED deg about its own X (helpers.flexion) and swung toward
+        # the humerus' line as her clips carry it at that flexion (DEV_AT, Body 19's census); its local turn only
+        la_rest = sk.rest_rot[la]
+        hum = gpos[0, la] - gpos[0, ua]
+        sx = math.copysign(1.0, float(hum @ qrot(grot[0, la], [1.0, 0, 0])))
+        dv = math.radians(float(np.interp(deg, *zip(*DEV_AT))))
+        f = math.radians(deg)
+        want = np.array([sx * math.sin(dv), math.cos(dv) * math.cos(f), math.cos(dv) * math.sin(f)])
+        r = rot.copy()
+        r[la] = qmul(la_rest, qbetween([0, 1.0, 0], want))
+        return r
     if HINGE == "x":
         # the share's own X (square to the forearm: a bend about it rolls the forearm none), as the clips bend
         h = qrot(qmul(grot[0, ua], sk.rest_rot[I[f"lowerarm_share_{s}"]]), [1.0, 0, 0])
@@ -273,6 +286,28 @@ def crease(V, G, arm):
     d = np.linalg.norm(V[m] - el, axis=1)
     d0 = np.linalg.norm(arm.body.P[m] - arm.el0, axis=1)
     return float(d.min() * 1000), float(d0.min() * 1000)
+
+
+def olecranon(V, G, arm):
+    """(Body 19, as solver 1's am.py) the elbow's back point: in the posed upper arm's frame, the back edge (|across|
+    < 25 mm) per 7.5 mm along the humerus from the joint, against the upper arm's back line (z -60..-30 mm) carried on:
+    its most beyond that line at z -7.5..+22.5 mm (mm)."""
+    sh, el, u, f, h = frame(G, arm)
+    rel = V[arm.sel] - el
+    y, z, x = rel @ f, rel @ u * 1000, rel @ h
+    near = np.abs(x) < 0.025
+    rows = []
+    for z0 in np.arange(-60, 31, 7.5):
+        k = near & (np.abs(z - z0) < 3.75)
+        rows.append((z0, -y[k].min() * 1000 if k.any() else np.nan))
+    rows = np.array(rows)
+    up = rows[(rows[:, 0] >= -60) & (rows[:, 0] <= -30)]
+    c = np.polyfit(up[:, 0], up[:, 1], 1)
+    tip = rows[(rows[:, 0] >= -7.5) & (rows[:, 0] <= 22.5)]
+    return float(np.nanmax(tip[:, 1] - np.polyval(c, tip[:, 0])))
+
+
+KEEP_V = False
 
 
 def elbow_volume(V, G, arm, T):
@@ -402,7 +437,8 @@ def sweep(body, s, fwd=0.0, toggles=(), bends=BENDS, quiet=False):
             fs = front_spread(V, N, G, arm)
             cr = crease(V, G, arm)
             vol = elbow_volume(V, G, arm, Ts)
-            rows.append(dict(deg=deg, outline=ol, girth=gi, spread=fs, crease=cr, vol=vol))
+            rows.append(dict(deg=deg, outline=ol, girth=gi, spread=fs, crease=cr, vol=vol, ole=olecranon(V, G, arm),
+                             V=V if KEEP_V else None))
         return rows
     finally:
         undo(body, saved)
@@ -428,7 +464,8 @@ def summarize(rows):
             f"  front " + " ".join(f"{x:+5.1f}" for x in dfr[::2]) + f" | max {dfr[upto][jf]:+5.1f}@t{ts[upto][jf]:.2f}"
             f"  lat " + " ".join(f"{x:+5.1f}" for x in dlat[::2]) + "  med " + " ".join(f"{x:+5.1f}" for x in dmed[::2]) +
             f"  girth% " + " ".join(f"{100 * (r['girth'][t] / ref['girth'][t] - 1):+5.1f}" for t in TS) +
-            f"  bic spread {r['spread'][0]:4.1f} tilt {r['spread'][1]:+5.1f}  crease {r['crease'][0]:4.1f}mm  vol {r['vol']:5.0f}")
+            f"  bic spread {r['spread'][0]:4.1f} tilt {r['spread'][1]:+5.1f}  crease {r['crease'][0]:4.1f}mm  vol {r['vol']:5.0f}"
+            f" ({100 * (r['vol'] / ref['vol'] - 1):+4.0f}%)  ole {r['ole']:+5.1f}")
     lines.insert(0, "deg   back/front edge change vs elbow 0 at t=" + " ".join(f"{o[0]:.2f}" for o in ref["outline"][::2]))
     return "\n".join(lines)
 
@@ -441,7 +478,8 @@ def main():
     ap.add_argument("--fwd", type=float, default=0.0)
     ap.add_argument("--toggle", default="")
     ap.add_argument("--weights", action="store_true")
-    ap.add_argument("--hinge", default="rig", choices=["rig", "x"])
+    ap.add_argument("--hinge", default="rig", choices=["rig", "x", "flex"])
+    ap.add_argument("--bends", default="")
     a = ap.parse_args()
     global HINGE
     HINGE = a.hinge
@@ -463,7 +501,8 @@ def main():
             for tag, prof in lm.items():
                 print(tag, " ".join(f"{(t - 1) * arm.L * 1000:+.0f}:{r * 1000:.1f}" for t, r in prof))
         tg = [x for x in a.toggle.split(",") if x]
-        print(summarize(sweep(body, s, a.fwd, tg)))
+        bends = [int(x) for x in a.bends.split(",")] if a.bends else BENDS
+        print(summarize(sweep(body, s, a.fwd, tg, bends)))
 
 
 if __name__ == "__main__":
