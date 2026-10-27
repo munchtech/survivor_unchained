@@ -1363,5 +1363,60 @@
    "tint": "full colour",
    "prompt": "A game controller button prompt icon: {name}, dark rounded button, clean and flat, front view, on a pure black background."
   }
- }
+ },
+ "_concepts": "Painted concepts that are not in the game (owner picks first): their Krea seeds and prompts, for provenance. Not read by ui_art.py.",
+ "concepts": [
+  {
+   "id": "life_orb_concept_mothers_vigil",
+   "name": "The Mother's Vigil",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c1_1x.png",
+   "kind": "concept",
+   "aspect": "4:3 (Standard), 1184x888",
+   "seed": 4705,
+   "seeds_painted": "4700-4705 (4:3; an earlier portrait run of the same seeds also painted)",
+   "prompt": "Dark fantasy action RPG HUD ornament: the health orb at the left end of the game's bottom bar. A carved grey marble grave statue of a kneeling woman in a long hooded mourning veil, at the left, holding a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left in both arms against her breast; her hooded head is bowed and her cheek rests on the top of the orb, eyes closed; heavy clean folds of veil and sleeve fall to the left and down. The orb is as wide as her whole body; statue and orb together are wider than tall. Tender and sorrowful. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'The Mother's Vigil' (UI 16, 27 Oct 2026; concepts only, not built): seed 4705 chosen of 4700-4705 (4:3; an earlier portrait run of the same seeds also painted); cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "life_orb_concept_hands_of_the_dead",
+   "name": "Hands of the Dead",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c2_1x.png",
+   "kind": "concept",
+   "aspect": "1:1 (Square), 1024x1024",
+   "seed": 4733,
+   "seeds_painted": "4730-4734 (and the many-hands variant 4720-4724, not used)",
+   "prompt": "Dark fantasy action RPG HUD ornament: the health orb at the left end of the game's bottom bar. Two large carved stone hands rising from below, cupped together like hands lifting water from a river, holding up a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left that rests in the cup of the palms, the long fingers curving up around its lower half, the wrists fading into black below. Pale grey river-worn marble, smooth and clean. Tender, like an offering. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'Hands of the Dead' (UI 16, 27 Oct 2026; concepts only, not built): seed 4733 chosen of 4730-4734 (and the many-hands variant 4720-4724, not used); cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "life_orb_concept_drowned_girl",
+   "name": "The Drowned Girl",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c3_1x.png",
+   "kind": "concept",
+   "aspect": "4:3 (Standard), 1184x888",
+   "seed": 4761,
+   "seeds_painted": "4760-4765 (the compact variant 4790-4795 not used)",
+   "prompt": "Dark fantasy action RPG HUD ornament: the health orb at the left end of the game's bottom bar. A sculpted relief of a beautiful drowned young woman at the left, her face in profile turned upward, eyes closed, lips parted, in dark river-worn bronze with green verdigris; her very long hair flows out behind her in great smooth curving locks like the currents of a river, the locks sweeping around and cradling a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left at the right. Art Nouveau, elegant flowing lines. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'The Drowned Girl' (UI 16, 27 Oct 2026; concepts only, not built): seed 4761 chosen of 4760-4765 (the compact variant 4790-4795 not used); cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "life_orb_concept_broken_grave",
+   "name": "The Broken Grave",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c4_1x.png",
+   "kind": "concept",
+   "aspect": "4:3 (Standard), 1184x888",
+   "seed": 4783,
+   "seeds_painted": "4780-4784",
+   "prompt": "Dark fantasy action RPG health orb ornament. a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left bursting up out of a broken grave slab: the heavy flat slab of dark grey stone, its edge carved with a plain border, split by the orb rising through it, two great sharp-edged slab pieces tilted up and apart on either side of the orb like opened doors, a few smaller shards thrown up, the orb sitting low in the break. The slab low and wide; the orb the biggest thing. Defiant, the dead getting up. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no bars, no frames.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'The Broken Grave' (UI 16, 27 Oct 2026; concepts only, not built): seed 4783 chosen of 4780-4784; cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  }
+ ]
 }
