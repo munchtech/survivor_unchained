@@ -8,7 +8,7 @@
     "stones": 6,
     "radius": 8,
     "lull": 6,
-    "rebuke": 10,
+    "rebuke": 3,
     "perLevel": 0.08,
     "boss": 0.5
   },

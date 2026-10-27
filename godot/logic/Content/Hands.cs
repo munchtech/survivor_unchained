@@ -20,7 +20,7 @@ public static class Hands
         public double Stagger = 0.1;
         /// <summary>Holy skills lay a Stone per champion struck (once a firing). Shield Arm's numbers when it is lit, else these.</summary>
         public int Stones = 6;
-        public double Radius = 8, Lull = 6, Rebuke = 10, PerLevel = 0.08, Boss = 0.5;
+        public double Radius = 8, Lull = 6, Rebuke = 3, PerLevel = 0.08, Boss = 0.5;
     }
 
     public sealed class ReaverHand
