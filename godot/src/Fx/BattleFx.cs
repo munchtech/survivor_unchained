@@ -349,6 +349,9 @@ public partial class BattleFx : Node3D
             var (alb, em) = DangerOf(tex, m.Amber ? (raisingNext ? 3 : 2) : 1, radius);
             d.TextureEmission = em;
             d.TextureAlbedo = alb;
+            // (its bed takes no sky: no ambient and no sky in its sheen, which mixed the dark red to rose under a blue
+            // night and to brick in the day; only the scene's lights fall on it)
+            d.TextureOrm = bedOrm ??= BedOrm();
             d.AlbedoMix = 1;
             d.EmissionEnergy = m.Energy = m.Danger ? DangerEnergy : raisingNext ? RaiseEnergy : AmberEnergy;
             d.Modulate = m.Color = Colors.White;
@@ -359,6 +362,7 @@ public partial class BattleFx : Node3D
         {
             d.TextureEmission = tex;
             d.TextureAlbedo = null;
+            d.TextureOrm = null;
             d.EmissionEnergy = m.Energy = energy;
             d.Modulate = color;
             d.AlbedoMix = 0;
@@ -440,7 +444,15 @@ public partial class BattleFx : Node3D
         }
     }
 
-    static Texture2D? dangerFillTex, dangerDiscTex;
+    static Texture2D? dangerFillTex, dangerDiscTex, bedOrm;
+
+    /// <summary>A styled bed's surface: occluded (no ambient or sky reflection), fully rough, not metal.</summary>
+    static Texture2D BedOrm()
+    {
+        var img = Image.CreateEmpty(4, 4, false, Image.Format.Rgba8);
+        img.Fill(new Color(BedAo, 1, 0, 1));
+        return ImageTexture.CreateFromImage(img);
+    }
 
     /// <summary>A styled mark's running fill: an even glow (no hatch) and a thin bright front, for a lane (front at
     /// both ends of v, the one under the foe hidden) or a disc (front at its rim).</summary>
@@ -751,10 +763,12 @@ public partial class BattleFx : Node3D
     /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
-    const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.5f;
-    const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 1f, RaiseEnergy = 0.5f;
+    const float DangerEnergy = 0.55f, DangerFlare = 1.3f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.85f;
+    const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
     /// <summary>A styled fill's even glow behind its front (about the bed's own, so the filled part reads twice as hot).</summary>
     const float FillBody = 0.25f;
+    /// <summary>A styled bed's ambient occlusion (its share of the sky's light).</summary>
+    const float BedAo = 0.15f;
     /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
     /// whatever the ring's size), and the raising's.</summary>
     const float RingCoreM = 0.045f, RaiseCoreM = 0.08f;
@@ -777,9 +791,9 @@ public partial class BattleFx : Node3D
         var alb = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
-        var hot = danger ? new Color("#ff031e") : new Color("#ffa020");
+        var hot = danger ? new Color("#ff0612") : new Color("#ffa020");
         var bed = danger ? Palette.TeleDangerGround : Palette.TeleAmberGround;
-        float inside = danger ? 0.9f : style == 3 ? 0.3f : 0.35f, glowIn = 0.25f;
+        float inside = danger ? 0.97f : 0.55f, glowIn = danger ? 0.25f : style == 3 ? 0.06f : 0.1f;
         // a ring's core in its texture's units (its radius is 1)
         float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
         for (int y = 0; y < h; y++)
