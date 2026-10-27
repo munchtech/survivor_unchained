@@ -29,8 +29,12 @@ public partial class Voices : Node3D
         public required Vector3 At;
         public required string Text;
         public double T, Life;
+        /// <summary>0..1: whether its speaker's head is on the screen (eased over 0.25 s); the anchor it follows (smoothed).</summary>
+        public float Vis;
+        public Vector2? Anchor;
         /// <summary>How far it is moved up to stand clear of the lines before it (eased).</summary>
         public float Lift;
+        public float? Pick;
         /// <summary>Its shot under a live tip was asked for (--shot only).</summary>
         public bool Shot;
     }
@@ -54,6 +58,10 @@ public partial class Voices : Node3D
     /// <summary>No name plates or quest marks at all (set by shots that must keep the frame clear; Away and Quiet are driven by the game).</summary>
     public bool Bare;
     float plateK = 1;
+    /// <summary>Per plate: how far it has stepped aside (0 standing, 1 gone) for its own speaker's bark. The
+    /// bark names the speaker already, and the plate's letters showed through the words (UI 16 MR2).</summary>
+    readonly Dictionary<string, float> aside = new();
+    static readonly bool platesOld = OS.GetCmdlineUserArgs().Contains("--plates-old");
 
     public Voices() { Name = "Voices"; }
 
@@ -116,7 +124,7 @@ public partial class Voices : Node3D
         }
         gone.Clear();
         foreach (var id in plates.Keys) if (!keep.Contains(id)) gone.Add(id);
-        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); }
+        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); aside.Remove(id); }
     }
 
     /// <summary>Something said to the air, over someone's head. Their line before
@@ -143,6 +151,30 @@ public partial class Voices : Node3D
         Show(key, new Waiting(text, at, speaker, alert, voice, shown));
     }
 
+    /// <summary>A bark's width: one line if it fits 460 px; else the narrowest width giving the same number of
+    /// lines with the last no shorter than a third of the first (no lone word on a line of its own).</summary>
+    static float BarkWidth(string text, int size)
+    {
+        float One(string t) => Style.Ui.GetStringSize(t, HorizontalAlignment.Left, -1, size).X;
+        float tw = One(text);
+        if (tw + 8 <= 460) return tw + 8;
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        int n = (int)Math.Ceiling((tw + 8) / 460);
+        for (float width = tw / n + 8; width <= 460; width += 6)
+        {
+            var lines = new List<string>(); string cur = "";
+            foreach (var wd in words)
+            {
+                string t = cur == "" ? wd : cur + " " + wd;
+                if (cur != "" && One(t) > width - 8) { lines.Add(cur); cur = wd; } else cur = t;
+            }
+            lines.Add(cur);
+            bool dangling = lines.Take(lines.Count - 1).Any(l => { var e = l.Split(' ')[^1].ToLowerInvariant(); return e is "a" or "an" or "the"; });
+            if (!dangling && lines.Count <= n && (lines.Count == 1 || One(lines[^1]) >= One(lines[0]) * 0.33f && lines[^1].Contains(' '))) return width;
+        }
+        return 460;
+    }
+
     void Show(string key, Waiting w)
     {
         if (layer == null) { layer = new CanvasLayer { Layer = 5 }; AddChild(layer); }
@@ -154,7 +186,7 @@ public partial class Voices : Node3D
         var words = Style.Label(w.Text, Style.Ui, w.Alert ? 26 : 23, w.Alert ? new Color("#ffd07a") : new Color("#f0e6d2"), true, HorizontalAlignment.Center);
         words.AddThemeConstantOverride("outline_size", 7);
         words.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.015f, 0.01f, 0.92f));
-        words.CustomMinimumSize = new Vector2(Math.Min(460, Style.Ui.GetStringSize(w.Text, HorizontalAlignment.Left, -1, w.Alert ? 26 : 23).X + 8), 0);
+        words.CustomMinimumSize = new Vector2(BarkWidth(w.Text, w.Alert ? 26 : 23), 0);
         box.AddChild(words);
         box.Modulate = new Color(1, 1, 1, 0);
         layer.AddChild(box);
@@ -223,6 +255,11 @@ public partial class Voices : Node3D
         foreach (var (id, (n, m)) in plates)
         {
             float k2 = Ui.GameHud.BossName is { } bn && said.TryGetValue(id, out var sw) && string.Equals(sw.Name, bn, StringComparison.OrdinalIgnoreCase) ? 0 : pk;
+            // (its own speaker's bark is up: the plate and its quest mark fade out over 0.2 s, back after)
+            bool talking = barks.Any(b => b.T < b.Life && new Vector2(b.At.X - n.Position.X, b.At.Z - n.Position.Z).LengthSquared() < 1.2f * 1.2f);
+            float ow = aside.GetValueOrDefault(id);
+            aside[id] = ow = Mathf.Clamp(ow + (talking ? 1 : -1) * (float)delta / 0.2f, 0, 1);
+            k2 *= 1 - ow;
             n.Transparency = 1 - k2; m.Transparency = 1 - k2; n.Visible = k2 > 0;
         }
         for (int i = barks.Count - 1; i >= 0; i--)
@@ -240,6 +277,7 @@ public partial class Voices : Node3D
 
     /// <summary>Each line over its speaker's head, as the camera sees them now, the
     /// older first; a newer one that would cross an older is lifted clear of it.</summary>
+    float barkMinGap = float.MaxValue;
     void Place(double delta, float quiet)
     {
         var cam = GetViewport()?.GetCamera3D();
@@ -252,8 +290,10 @@ public partial class Voices : Node3D
             float vpH = GetViewport().GetVisibleRect().Size.Y;
             // (a fixed-size Label3D's font pixel on the screen)
             float k = 0.0007f / (2 * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2)) * vpH;
-            foreach (var (n, m) in plates.Values)
+            foreach (var (pid, (n, m)) in plates)
             {
+                // (a plate stepping aside for its own speaker's bark is no obstacle to it)
+                if (aside.GetValueOrDefault(pid) > 0) continue;
                 if (!n.Visible || n.Text == "" || cam.IsPositionBehind(n.Position)) continue;
                 var c = cam.UnprojectPosition(n.Position);
                 var lines = n.Text.Split('\n');
@@ -265,6 +305,26 @@ public partial class Voices : Node3D
                 n.Offset = n.Offset with { X = dx / k };
                 m.Offset = m.Offset with { X = dx / k };
                 c.X += dx;
+                // Nor half off the top or the foot of the screen, nor under the top-right block (the minimap, the
+                // place, the objectives): it fades out over the last 40 px before it would be cut or covered.
+                var box = new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h));
+                // (--plates-old: as before UI 16, for before/after pictures)
+                if (platesOld) { placed.Add(box.Grow(4)); continue; }
+                if (m.Visible && m.Text != "") box = box.Expand(c - new Vector2(0, m.Offset.Y * k + m.FontSize * k / 2));
+                float edge = Mathf.Clamp(Mathf.Min(box.Position.Y - 4, vpH - 4 - box.End.Y) / 40f, 0, 1);
+                if (Ui.GameHud.Header is Rect2 hd)
+                {
+                    float sx = vpW / 1920f;
+                    var hr = new Rect2(hd.Position * sx, hd.Size * sx).Grow(6);
+                    // (how far clear of the block: the larger of the gaps across and down; 0 inside it)
+                    float gap = Mathf.Max(Mathf.Max(hr.Position.X - box.End.X, box.Position.X - hr.End.X), Mathf.Max(hr.Position.Y - box.End.Y, box.Position.Y - hr.End.Y));
+                    edge = Mathf.Min(edge, Mathf.Clamp(gap / 40f, 0, 1));
+                }
+                if (edge < 1)
+                {
+                    n.Transparency = 1 - (1 - n.Transparency) * edge; m.Transparency = 1 - (1 - m.Transparency) * edge;
+                    if (edge <= 0) { n.Visible = false; continue; }
+                }
                 placed.Add(new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h)).Grow(4));
                 if (m.Visible) placed.Add(new Rect2(c - new Vector2(m.FontSize * k / 2, m.Offset.Y * k + m.FontSize * k / 2), new Vector2(m.FontSize * k, m.FontSize * k)));
             }
@@ -272,19 +332,28 @@ public partial class Voices : Node3D
         // (and combat's floaters: a line said while a "blocked" stands is lifted clear of it)
         foreach (var f in floaters) placed.Add(f.R);
         float ease = 1 - Mathf.Exp(-10f * (float)delta);
+        var barkRects = new List<Rect2>();
         foreach (var b in barks)
         {
             var head = b.At + Vector3.Up * 2.1f;
-            if (cam.IsPositionBehind(head)) { b.Box.Visible = false; continue; }
-            b.Box.Visible = true;
+            if (cam.IsPositionBehind(head)) { b.Vis = 0; b.Box.Visible = false; b.Anchor = null; continue; }
             var size = b.Box.GetCombinedMinimumSize();
+            var vp = GetViewport().GetVisibleRect().Size;
+            var hp = cam.UnprojectPosition(head);
+            // (only while his head is on the screen is the bark shifted in to fit; once it leaves, the bark fades out over 0.25 s)
+            bool onScreen = hp.X >= 16 && hp.X <= vp.X - 16 && hp.Y >= 0 && hp.Y <= vp.Y;
+            b.Vis = Mathf.Clamp(b.Vis + (onScreen ? 1 : -1) * (float)delta / 0.25f, 0, 1);
+            if (b.Vis <= 0) { b.Box.Visible = false; b.Anchor = null; continue; }
+            b.Box.Visible = true;
+            // (following the head, smoothed: no jitter)
+            b.Anchor = b.Anchor is Vector2 prev ? prev.Lerp(hp, ease) : hp;
             // (rising a little as it is said)
-            var at = cam.UnprojectPosition(head) - new Vector2(size.X / 2, size.Y + (float)Math.Min(b.T, 3) * 6);
+            var at = b.Anchor.Value - new Vector2(size.X / 2, size.Y + (float)Math.Min(b.T, 3) * 6);
             // A speaker at the top of the screen says it under their feet, not under the HUD's bars
             // nor over the name of the move they make (held just under the bars: Hits.UnderTheBars).
             float top = Ui.GameHud.TopClear + 66;
-            if (at.Y < top) at.Y = Math.Max(top, cam.UnprojectPosition(b.At).Y + 14);
-            at.X = Mathf.Clamp(at.X, 16, 1904 - size.X);
+            if (at.Y < top) at.Y = Math.Max(top, hp.Y + 14);
+            at.X = Mathf.Clamp(at.X, 16, GetViewport().GetVisibleRect().Size.X - 16 - size.X);
             // Never inside the banner's words, nor beside them on their line (read across, a howl's
             // caption and the banner's title made one sentence): under them (over them is the boss's bar).
             if (Ui.GameHud.Banner is Rect2 band && band.GrowIndividual(140, 6, 140, 6).Intersects(new Rect2(at, size))) at.Y = band.End.Y + 10;
@@ -293,20 +362,32 @@ public partial class Voices : Node3D
             if (at.Y < floor) at.Y = floor;
             // (--shot: a bark placed under a live tip, a frame of it a moment on, up to three)
             if (floor > 0 && !b.Shot && barkTipShots < 3 && Args.Has("shot")) { b.Shot = true; Shots.Want($"barktip_{++barkTipShots}", 0.2); }
-            float want = 0;
-            for (int pass = 0; pass < 8; pass++)
+            // Clear of every other line, plate and floater by 12 px at the least: the natural spot if it is
+            // clear, else (the one it took last time if still clear, so it never flips) the nearest spot just
+            // above or below something in the way.
+            float vpH2 = GetViewport().GetVisibleRect().Size.Y, lo = Math.Max(8, floor);
+            bool Clear(float y) { var r = new Rect2(at.X, y, size.X, size.Y).Grow(6); return y >= lo - 0.5f && y + size.Y <= vpH2 - 8 && !placed.Any(p => p.Intersects(r)); }
+            float pick = at.Y;
+            if (!Clear(pick))
             {
-                var r = new Rect2(at - new Vector2(0, want), size).Grow(4);
-                var hit = placed.FirstOrDefault(p => p.Intersects(r));
-                if (hit.Size == Vector2.Zero) break;
-                want = at.Y + size.Y + 4 - hit.Position.Y;
+                if (b.Pick is float pv && Clear(pv)) pick = pv;
+                else
+                {
+                    float best = float.MaxValue, bestY = at.Y;
+                    foreach (var p in placed)
+                        foreach (var y in new[] { p.Position.Y - 12 - size.Y, p.End.Y + 12 })
+                            if (Clear(y) && Math.Abs(y - at.Y) < best) { best = Math.Abs(y - at.Y); bestY = y; }
+                    pick = bestY;
+                }
             }
-            if (floor > 0) want = Math.Min(want, Math.Max(0, at.Y - floor));
+            b.Pick = pick == at.Y ? null : pick;
+            float want = at.Y - pick;
             b.Lift = b.T < 0.05 ? want : Mathf.Lerp(b.Lift, want, ease);
             b.Box.Position = at - new Vector2(0, b.Lift);
             b.Box.Size = size;
-            placed.Add(new Rect2(at - new Vector2(0, want), size));
-            float a = (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet;
+            placed.Add(new Rect2(at - new Vector2(0, want), size).Grow(6));
+            if (Args.Has("shot")) { var me = new Rect2(at - new Vector2(0, want), size); foreach (var o in barkRects) { float gx = Math.Max(o.Position.X - me.End.X, me.Position.X - o.End.X), gy = Math.Max(o.Position.Y - me.End.Y, me.Position.Y - o.End.Y); float g = Math.Max(gx, gy); if (g < barkMinGap) { barkMinGap = g; GD.Print($"[bark-gap] min {g:0.0} px me {me} other {o} lift {b.Lift:0.0} want {want:0.0} T {b.T:0.00} ({b.Text.Length} chars, {b.Box.GetCombinedMinimumSize().Y:0} px tall)"); } } barkRects.Add(me); }
+            float a = (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet * b.Vis;
             b.Box.Modulate = new Color(1, 1, 1, a);
         }
     }
