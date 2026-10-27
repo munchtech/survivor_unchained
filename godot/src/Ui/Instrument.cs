@@ -655,6 +655,9 @@ public partial class EmberChain : Control
 {
     const float LinkScale = 0.8f, Sag = 4;
     float fill, flash, swing, swingV, open;
+    /// <summary>The word LEVEL beside the lock by day (0 to 1): the number is her own level then; by night the
+    /// ember's, and no word (lesson L1 teaches the ember's lock). Eased over the day/ember switch.</summary>
+    float word;
     /// <summary>A callout points at the chain: its heat runs along all of it (0 to 1).</summary>
     public float Pulse;
     bool ember = true;
@@ -673,11 +676,16 @@ public partial class EmberChain : Control
         AddChild(lck);
     }
 
+    /// <summary>By day (her experience on the chain) or by night (the ember): a freeze's dim reads it (the night
+    /// keeps its dark). Set keeps it.</summary>
+    public static bool Day;
+
     /// <summary>How full (0 to 1), whether it is the ember or her experience, and the level.</summary>
     public void Set(float fill, bool ember, int level)
     {
         this.fill = Mathf.Clamp(fill, 0, 1);
         this.ember = ember;
+        Day = !ember;
         this.level = Math.Max(1, level);
     }
 
@@ -694,6 +702,7 @@ public partial class EmberChain : Control
         float dt = (float)Math.Min(delta, 1 / 30.0);
         flash = Mathf.MoveToward(flash, 0, dt / 0.55f);
         open = Mathf.MoveToward(open, 0, dt / 0.45f);
+        word = Mathf.MoveToward(word, ember ? 0 : 1, dt / 0.4f);
         // The lock swings on its link and settles, a pendulum a little under its damping.
         swingV += (-60 * swing - 3.2f * swingV) * dt;
         swing += swingV * dt;
@@ -708,16 +717,16 @@ public partial class EmberChain : Control
         if (breathing || geo || fill != drawnFill || ember != drawnEmber || flash != drawnFlash || Pulse != drawnPulse)
             glow.QueueRedraw();
         if (geo || fill != drawnFill || ember != drawnEmber || flash != drawnFlash || open != drawnOpen || level != drawnLevel
-            || Math.Abs(swing - drawnSwing) > 1e-4f)
+            || Math.Abs(swing - drawnSwing) > 1e-4f || word != drawnWord)
         {
             lck.QueueRedraw();
-            drawnSwing = swing; drawnOpen = open; drawnLevel = level;
+            drawnSwing = swing; drawnOpen = open; drawnLevel = level; drawnWord = word;
         }
         drawnA = a; drawnB = b; drawnFill = fill; drawnEmber = ember; drawnFlash = flash; drawnPulse = Pulse;
     }
 
     Vector2 drawnA = new(float.NaN, 0), drawnB;
-    float drawnFill = -1, drawnFlash = -1, drawnPulse = -1, drawnOpen = -1, drawnSwing = 1e9f;
+    float drawnFill = -1, drawnFlash = -1, drawnPulse = -1, drawnOpen = -1, drawnSwing = 1e9f, drawnWord = -1;
     bool drawnEmber;
     int drawnLevel;
 
@@ -852,12 +861,49 @@ public partial class EmberChain : Control
             return pts.ToArray();
         }
 
+        /// <summary>By day, LEVEL inked beside the lock, left of its body and under the chain's links: Cinzel caps
+        /// 8 px tall at 1080, spaced, a muted bone with a dark halo so it reads on the bright planks; still as
+        /// the lock swings (it is on the irons' plate, not the lock).</summary>
+        static GradientTexture2D? soft;
+        void Word(Vector2 top, float a)
+        {
+            const string w = "LEVEL";
+            const int fs = 12;
+            const float track = 2.2f;
+            var f = Style.Display;
+            float width = -track;
+            foreach (var ch in w) width += f.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, fs).X + track;
+            // (its right end 25 px left of the pivot, clear of the lock's 19 px half-width and its swing; its
+            // caps' middle 25 below the chain's line, beside the body's, under the links' lower bars)
+            var at = new Vector2(Mathf.Round(top.X - 25 - width), Mathf.Round(top.Y + 25 + fs * 0.34f));
+            var halo = new Color("#050302") with { A = 0.62f * a };
+            var ink = new Color("#cbbd9f") with { A = 0.86f * a };
+            // (a soft dark under it, as the place-name header's type has (round 2 judge): it sits on the world
+            // like SPACE and R on their tabs, not as bare letters on the planks)
+            soft ??= new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = [new Color(0.02f, 0.015f, 0.025f, 0.55f), new Color(0.02f, 0.015f, 0.025f, 0.34f), new Color(0.02f, 0.015f, 0.025f, 0)], Offsets = [0f, 0.45f, 1f] },
+                Width = 128, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
+            };
+            var mid = new Vector2(at.X + width / 2, at.Y - fs * 0.34f);
+            DrawTextureRect(soft, new Rect2(mid - new Vector2(width / 2 + 26, 17), new Vector2(width + 52, 34)), false, Colors.White with { A = a });
+            float x = at.X;
+            foreach (var ch in w)
+            {
+                var g = ch.ToString();
+                DrawStringOutline(f, new Vector2(x, at.Y), g, HorizontalAlignment.Left, -1, fs, 4, halo);
+                DrawString(f, new Vector2(x, at.Y), g, HorizontalAlignment.Left, -1, fs, ink);
+                x += f.GetStringSize(g, HorizontalAlignment.Left, -1, fs).X + track;
+            }
+        }
+
         readonly EmberChain c;
         public Lock(EmberChain c) { this.c = c; MouseFilter = MouseFilterEnum.Ignore; Size = c.Size; TextureFilter = TextureFilterEnum.LinearWithMipmaps; }
 
         public override void _Draw()
         {
             var top = c.At(0.5f) + new Vector2(0, 2);
+            if (c.word > 0.01f) Word(top, c.word);
             DrawSetTransform(top, c.swing * 0.12f);
             float heat = c.ember ? Math.Max(c.fill >= 0.5f ? 0.45f + 0.55f * Mathf.Clamp((c.fill - 0.5f) * 2, 0, 1) : 0, c.flash) : 0;
             var art = UiArt.Art(c.open > 0.3f ? "hud/lock_open.png" : "hud/lock.png");

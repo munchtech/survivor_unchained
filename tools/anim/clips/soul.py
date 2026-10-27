@@ -185,14 +185,15 @@ def arcanist_show(rig):
                           phase=lambda f: f / (clip.frames - 1))
 
 
+# (reaver_show keeps the shoulder carry it was judged with, idle.reaver_shoulder; her idle now hangs the axe.)
 def _reaver_over():
     """reaver_show's overhead swing as the owner saw it on 21 Oct (soul.py before d2eb0c5c): the wheel up with the
     fist over her brow. Built with REAVER_SHOW_OVER=1 (same clip name) while the owner picks overhead or lowered."""
     return [
-        (16, over("reaver", spine=(-14, -4, 0),
+        (16, over("reaver_shoulder", spine=(-14, -4, 0),
                   hand_r={"arc": arc_of((-0.26, 0.06, 0.22)), "pole": (-0.9, -0.2, -0.2), "frame": "chest",
                           "blade": _n(-0.5, 0.2, 0.85), "twist": 0.5}), "auto"),
-        (24, over("reaver", spine=(-6, -10, 0), head=(0, -10, 0),
+        (24, over("reaver_shoulder", spine=(-6, -10, 0), head=(0, -10, 0),
                   hand_r={"arc": arc_of((-0.10, 0.36, 0.04)), "pole": (-0.8, 0.4, -0.2), "frame": "chest",
                           "blade": _n(-0.1, 0.4, -0.9), "twist": 0.5}), "auto"),
     ]
@@ -203,29 +204,29 @@ def reaver_show(rig):
     slammed back onto it; her chin up and a grin's worth of swagger."""
     base = idle.base_of(rig, "reaver")
     keys = [
-        (0, over("reaver"), "auto"),
-        (8, over("reaver", spine=(-10, 6, 0),
+        (0, over("reaver_shoulder"), "auto"),
+        (8, over("reaver_shoulder", spine=(-10, 6, 0),
                  hand_r={"arc": arc_of((-0.30, -0.32, 0.10)), "pole": (-0.5, -0.8, 0.0), "frame": "chest",
                          "blade": _n(-0.6, -0.7, 0.3), "twist": 0.5}), "fast"),
     ] + (_reaver_over() if os.environ.get("REAVER_SHOW_OVER") == "1" else [
         # Up before her chest, the haft through upright with the fist still low (armor 18 r2: upright with the fist
         # at her brow put the head out of the close view's top at the peak), then laid back over her shoulder.
-        (13, over("reaver", spine=(-12, 0, 0),
+        (13, over("reaver_shoulder", spine=(-12, 0, 0),
                   hand_r={"arc": arc_of((-0.26, -0.22, 0.26)), "pole": (-0.8, -0.5, -0.2), "frame": "chest",
                           "blade": _n(-0.42, 0.62, 0.66), "twist": 0.5}), "auto"),
-        (17, over("reaver", spine=(-14, -4, 0),
+        (17, over("reaver_shoulder", spine=(-14, -4, 0),
                   hand_r={"arc": arc_of((-0.22, -0.15, 0.24)), "pole": (-0.9, -0.3, -0.2), "frame": "chest",
                           "blade": _n(-0.2, 0.92, -0.3), "twist": 0.5}), "auto"),
-        (21, over("reaver", spine=(-10, -8, 0), head=(0, -6, 0),
+        (21, over("reaver_shoulder", spine=(-10, -8, 0), head=(0, -6, 0),
                   hand_r={"arc": arc_of((-0.17, 0.08, 0.18)), "pole": (-0.9, -0.15, 0.3), "frame": "chest",
                           "blade": _n(-0.08, 0.4, -0.91), "twist": 0.5}), "auto"),
-        (24, over("reaver", spine=(-6, -10, 0), head=(0, -10, 0),
+        (24, over("reaver_shoulder", spine=(-6, -10, 0), head=(0, -10, 0),
                   hand_r={"arc": arc_of((-0.13, 0.23, 0.12)), "pole": (-0.85, -0.05, 0.5), "frame": "chest",
                           "blade": _n(-0.1, 0.45, -0.88), "twist": 0.5}), "auto"),
     ]) + [
-        (30, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -16, -4)), "ease"),
-        (60, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
-        (72, over("reaver"), "ease"),
+        (30, over("reaver_shoulder", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -16, -4)), "ease"),
+        (60, over("reaver_shoulder", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
+        (72, over("reaver_shoulder"), "ease"),
     ]
     return build("reaver_show", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
 
