@@ -182,7 +182,17 @@ public partial class GameHud : CanvasLayer
         col.Position = new Vector2(right - w, foot - 120);
         col.Size = new Vector2(w, 120);
         col.MouseFilter = Control.MouseFilterEnum.Ignore;
-        combat.AddChild(col);
+        // No box: a soft dark falloff behind the type (about 55% at its middle, nothing at its edge; 40% barely showed at dawn), so the
+        // tally reads on the hub's brightest planks as on night grass (UI note 8, 26 Oct).
+        var g = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.025f, 0.55f), new Color(0.02f, 0.015f, 0.025f, 0.34f), new Color(0.02f, 0.015f, 0.025f, 0) }, Offsets = new[] { 0f, 0.45f, 1f } };
+        combat.AddChild(new TextureRect
+        {
+            Texture = new GradientTexture2D { Gradient = g, Width = 128, Height = 128, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f) },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore,
+            Position = new Vector2(right - 300, foot - 170), Size = new Vector2(420, 230),
+        });
+        // (on the play layer, not the fight's: in town only its gold line shows, the purse)
+        play.AddChild(col);
         tally = col;
         tallyWord = Style.Label("", Style.UiHeavy, Style.Badge, Style.Ember, false, HorizontalAlignment.Right);
         tallyWord.PivotOffset = new Vector2(w, 9);
@@ -197,6 +207,16 @@ public partial class GameHud : CanvasLayer
         row.AddChild(killsChip);
         row.AddChild(Style.H(5, Glyphs.Icon("coin", 18, Style.GoldHi), tallyGold));
         col.AddChild(row);
+        foreach (var l in new[] { tallyWord, tallyTime, tallyKills, tallyGold }) Rimmed(l);
+    }
+
+    /// <summary>A 1 px dark rim round the type, over its drop shadow: corner words that stand on the world
+    /// with no box read on the brightest ground (UI note 8).</summary>
+    static Label Rimmed(Label l)
+    {
+        l.AddThemeConstantOverride("outline_size", 2);
+        l.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.015f, 0.01f, 0.8f));
+        return l;
     }
     /// <summary>Soft shade behind the top-right corner and along the bottom, so
     /// the HUD's words read over bright cobbles as well as night grass.</summary>
@@ -250,7 +270,7 @@ public partial class GameHud : CanvasLayer
         c.Position = new Vector2(1920 - 31 - 400, 22);
         c.Size = new Vector2(400, 0);
         play.AddChild(c);
-        zoneName = Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right);
+        zoneName = Rimmed(Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right));
         c.AddChild(zoneName);
         zoneSub = Style.H(6);
         zoneSub.Alignment = BoxContainer.AlignmentMode.End;
@@ -578,7 +598,9 @@ public partial class GameHud : CanvasLayer
             if (per >= 1 && artReadyWas < 1) artPing = 1;
             artReadyWas = per;
             art.Level = (float)per;
-            art.Glyph = Glyphs.Texture(Abilities.All[b.Ability ?? AbilityKind.Sprint].Icon, 96, Hex("#fff3dc"), line: true);
+            // The Flare's own glyph (its data's icon), never the calling's art's: the Warden's bull is the
+            // dash form's badge only (UI note 3, 26 Oct: the Q orb wore the bull of Bull Rush).
+            art.Glyph = Glyphs.Texture(fl.Icon is { Length: > 0 } fi ? fi : fl.Id, 96, Hex("#fff3dc"), line: true);
             art.GlyphTint = b.FlareReady ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
             art.Number = b.FlareReady ? "" : $"{Math.Floor(b.FlareMeter % full)}%";
             // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
@@ -589,7 +611,16 @@ public partial class GameHud : CanvasLayer
         }
         else { art.Level = 0; art.Glyph = null; art.Number = ""; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 
-        if (!b.Combat) return;
+        // Outside a fight (the town, where the shops are) only the gold line of the tally shows.
+        tallyWord.Visible = b.Combat;
+        if (!b.Combat)
+        {
+            tallyTime.Visible = false;
+            killsChip.Visible = false;
+            tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
+            GroundLabels.Drawn.Clear();
+            return;
+        }
         // The fight's clock and its count belong to the night; by day they would only be noise.
         tallyTime.Visible = ember;
         killsChip.Visible = ember;
@@ -676,13 +707,21 @@ public partial class GameHud : CanvasLayer
         }
         return holder;
     }
+    /// <summary>What the header shows now (the game asks every frame; it is redrawn only when this changes).</summary>
+    (string Name, string? Region, int Day, TimeOfDay Time)? zoneShown;
+
+    /// <summary>The place's name and, under it, the time of day (its word and its sun or moon), the day and the
+    /// region. Called on every frame of play with the zone's time as it is now, so the header follows the time
+    /// live (UI note 2, 26 Oct: it said Night under a moon at the Prologue's dawn, set only when the zone loaded).</summary>
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
+        if (zoneShown == (name, region, day, time)) return;
+        zoneShown = (name, region, day, time);
         zoneName.Text = name.ToUpperInvariant();
         foreach (var c in zoneSub.GetChildren()) if (c != dial) c.QueueFree();
-        // Where the clock runs, its dial says the time of day; elsewhere a sun or a moon.
-        if (!dial.Visible) zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
-        zoneSub.AddChild(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f }));
+        // The sun or moon always stands by the time word (the dial, where there is one, sits beside it).
+        zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
+        zoneSub.AddChild(Rimmed(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f })));
     }
 
     FallChoices? fall;
@@ -727,8 +766,6 @@ public partial class GameHud : CanvasLayer
         minimap.Clock(clock, running);
         bool onDial = clock != null && !minimap.Visible;
         if (onDial != dial.Visible) dial.Visible = onDial;
-        // (the sun or moon glyph stands in where no clock runs at all)
-        if (zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = clock == null;
         if (onDial && clock is double c) dial.Set(c, running);
     }
 
@@ -739,7 +776,7 @@ public partial class GameHud : CanvasLayer
         foreach (var c in objectives.GetChildren()) c.QueueFree();
         foreach (var t in list)
         {
-            var head = Style.H(6, Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi));
+            var head = Style.H(6, Rimmed(Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi)));
             head.Alignment = BoxContainer.AlignmentMode.End;
             objectives.AddChild(head);
             foreach (var s in t.Steps)
@@ -754,13 +791,14 @@ public partial class GameHud : CanvasLayer
                 if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
                 {
                     var font = s.Optional ? Style.TextItalic : Style.Ui;
-                    row = Style.H(5, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col), Style.Prompt(act));
-                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Style.Label(after, font, 16, col));
+                    row = Style.H(5, Rimmed(Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
+                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Rimmed(Style.Label(after, font, 16, col)));
                     row.AddChild(mark);
                 }
                 else
                 {
-                    var l = Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right);
+                    // The objectives stand on the world like the tally: rimmed, so a dim italic line never ghosts over a tree.
+                    var l = Rimmed(Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
                     l.CustomMinimumSize = new Vector2(370, 0);
                     row = Style.H(7, l, mark);
                 }
@@ -771,16 +809,20 @@ public partial class GameHud : CanvasLayer
         }
     }
 
+    readonly HashSet<string> tipShot = new(), promptShot = new();
+
     public void Prompt(PromptView? p)
     {
         promptView = p;
         promptBox.Visible = p != null;
         if (p == null) return;
+        // (--shot: the first time each prompt kind is shown whole)
+        if (Args.Has("shot") && promptShot.Add(p.Verb.ToLowerInvariant().Replace(' ', '_'))) Shots.Want($"prompt_{p.Verb.ToLowerInvariant().Replace(' ', '_')}", 0.3);
         foreach (var c in promptBox.GetChildren()) { promptBox.RemoveChild(c); c.QueueFree(); }
         // The key as the device in hand has it: a keycap, or the pad's button.
         var key = Controls.Instance.UsingPad ? Style.PadButton(Controls.Instance.PadLabels(p.For).FirstOrDefault() ?? "B")
-            : Style.Panel(Style.Box(Hex("#0d0c10"), Style.GoldDim, 1, 17, 0), Style.Label(p.Key, Style.UiBold, 16, Style.GoldHi, false, HorizontalAlignment.Center));
-        key.CustomMinimumSize = new Vector2(34, 34);
+            : Style.KeyCap(p.Key, 1.1f);
+        if (Controls.Instance.UsingPad) key.CustomMinimumSize = new Vector2(34, 34);
         bool locked = p.Locked != null;
         var row = Style.H(11, key, Style.Label(p.Verb, Style.UiHeavy, 18, locked ? Colors.White with { A = 0.55f } : Colors.White),
             Style.Label(p.Target, Style.Display, 18, locked ? Style.GoldHi with { A = 0.55f } : Style.GoldHi));
@@ -845,6 +887,8 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
     public static float TopClear { get; private set; } = 118;
+    /// <summary>The live tip's bottom edge on the screen (0: none); barks keep 24 px under it.</summary>
+    public static float TipBottom { get; private set; }
 
     /// <summary>The toasts wait (unseen, their time not running) while this is set.</summary>
     public bool HoldToasts;
@@ -874,9 +918,13 @@ public partial class GameHud : CanvasLayer
     string bossMarks = "";
     ColorRect? bossStagger, bossStaggerGroove;
 
+    /// <summary>The boss whose bar is up (its world plate stands down meanwhile), or null.</summary>
+    public static string? BossName { get; private set; }
+
     public void Boss(BossBar? bar)
     {
         bossBox.Visible = bar != null;
+        BossName = bar?.Name;
         if (bar == null) return;
         bossName.Text = bar.Name.ToUpperInvariant();
         // A boss's Break (the damage past its phase marks) beside its title.
@@ -951,7 +999,8 @@ public partial class GameHud : CanvasLayer
         bool pad = Controls.Instance.UsingPad;
         bool wasd = keys.Count == 4 && string.Concat(keys) == "WASD";
         if (pad && wasd) { yield return Style.PadButton("Left stick"); yield break; }
-        foreach (var k in keys) yield return pad && !wasd && PadNames.Contains(k) ? Style.PadButton(k) : Style.Key(k);
+        // (the tip's keys in the keycap the callouts use: the HUD's dark key was too dark to read on the night, UI note 4)
+        foreach (var k in keys) yield return pad && !wasd && PadNames.Contains(k) ? Style.PadButton(k) : Style.KeyCap(k, 1.1f);
     }
 
     /// <summary>The device in hand changed: every key shown redraws as its keys or buttons.</summary>
@@ -1200,7 +1249,10 @@ public partial class GameHud : CanvasLayer
         {
             tipLine.Held = Banner != null || HoldTip;
             tipLine.Position = new Vector2(960, TipY);
+            // (--shot: a tip's picture once it is drawn at full strength, after it has waited for any banner; once per tip)
+            if (!tipLine.Held && tipLine.T >= 0.55 && hintView != null && Args.Has("shot") && tipShot.Add(hintView.Id)) Shots.Want("tip_" + hintView.Id, 0.1);
         }
+        TipBottom = TipUp ? tipLine!.Area.End.Y : 0;
         // The chain's heat flows toward its value; a new level has already flared it and filled it,
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));

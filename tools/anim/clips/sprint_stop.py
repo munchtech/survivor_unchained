@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import math
+
 import numpy as np
 
 from clips import idle
@@ -109,11 +111,30 @@ STOP_HOLD = 1.0
 STOP_BACK = {"l": (0.08, 0.05), "r": (0.0, 0.0)}
 
 
+def _warden_town_stop(t, f):
+    """The town warden's stop lands with her arms free and easy at her sides (the warden town stand's arms before
+    Animation 50-52 restaged it round her pelvis: its arms are now a make(rig, base) riding the stand's own sway, and
+    its left fist is closed on the sword by a post pass, neither of which a stop's single key can carry). Kept as it
+    was so the stops build unchanged."""
+    sw = 0.012 * math.sin(2 * math.pi * t * 2)
+    return {
+        "hand_l": {"arc": arc_of((0.16, -0.46, 0.08 + sw)), "pole": (0.3, -0.2, -1.0), "frame": "chest",
+                   "thumb": idle._n((-0.15, -0.1, 1.0)), "twist": 1.0},
+        "hand_r": {"arc": arc_of((-0.14, -0.46, 0.08 - sw)), "pole": (-0.3, -0.2, -1.0), "frame": "chest",
+                   "thumb": idle._n((0.15, -0.1, 1.0)), "twist": 1.0},
+        "fingers_l": "relaxed", "fingers_r": "relaxed",
+    }
+
+
+# A stop's arms (one key, over(t, f)) where its calling's idle arms aren't one (Animation 52).
+STOP_ARMS = {"warden_town": _warden_town_stop}
+
+
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
     if calling == "arcanist":
         idle.base_of(rig, "arcanist")  # (on a restaged stand, idle.ARC_ST, its free hand is read off the base)
-    arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
+    arms = (STOP_ARMS.get(calling) or idle.IDLES[f"idle_{calling}"][1])(0, 0)
     if calling == "arcanist":
         arms["hand_r"] = {**arms["hand_r"], "blade": idle._n(idle._ARC.get(f"stop_blade_{side}", STOP_ARC_BLADE))}
     s = 1 if side == "l" else -1

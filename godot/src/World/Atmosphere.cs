@@ -109,8 +109,13 @@ public partial class Atmosphere : Node3D
     /// <summary>The title and the Look (Atmospheres.Front) take the close view's paint grade (G1 r4 judge: it fixed her pale, washed-out
     /// lit face at the Look; identity, freckles and copper held). --front-unpainted: the grade before it (pictures).</summary>
     static readonly bool FrontPaint = !SurvivorUnchained.Args.Has("front-unpainted");
+    /// <summary>The title and the Look also take the close view's neutral highlight tint (Face 44, skin B): the night grade's
+    /// orange #ffad5c at 0.24 multiplied the chroma of her brightest skin 3.5-4.4x above L .75 and left a flat orange
+    /// forehead, which the town close-up already took off (ViewHighlightsNeutral). --front-hi-warm: the tint before it (pictures).</summary>
+    static readonly bool FrontHiWarm = SurvivorUnchained.Args.Has("front-hi-warm");
     static GradeSettings Own(AtmospherePreset p) => FrontPaint && ReferenceEquals(p, Atmospheres.Front) ? p.Grade with
     {
+        HighlightTint = FrontHiWarm ? p.Grade.HighlightTint : "#bcbcbc",
         PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
         PaintShadow = Atmospheres.CloseNightPaint.PaintShadow, PaintShadowK = Atmospheres.CloseNightPaint.PaintShadowK, PaintLift = Atmospheres.CloseNightPaint.PaintLift,
     } : p.Grade;

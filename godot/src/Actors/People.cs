@@ -771,9 +771,9 @@ public static class People
         // (face 39, judge j3b: by night (HerEyesNight, the close view's night key) the lids' and corners' shade on
         // the eye eased 0.6 of itself and the iris lifted 1.8x, held to 0.9 of its colour and warmed to olive: the
         // fair night close-up's iris read 14-22 of 255, one near-black disc with the pupil, now ~34; deep skin's
-        // eyes left as dark as its face)
+        // eyes left as dark as its face; face 44, judge b1: 1.8 read lit from inside at the night close-up, 1.5 a natural green)
         e.SetShaderParameter("night_lid", 0.6f);
-        e.SetShaderParameter("night_iris", 1.8f);
+        e.SetShaderParameter("night_iris", 1.5f);
         e.SetShaderParameter("night_sat", 0.9f);
         e.SetShaderParameter("night_warm", 1f);
         // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)

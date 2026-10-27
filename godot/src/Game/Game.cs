@@ -899,7 +899,7 @@ public partial class Game : Node, IZoneHost
         if (hint != null && hint.Id != CurrentHint?.Id && Args.Has("shot"))
         {
             GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
-            Shots.Want("tip_" + hint.Id, 0.9);
+            // (its picture is asked for by the HUD once the tip is drawn at full strength: GameHud.Update)
         }
         hud.Hint(CurrentHint = hint);
     }
@@ -1244,6 +1244,8 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        // The header's time of day as the zone has it now (a story's dawn turns without the clock).
+        if (zone != null) hud.ZoneInfo(zone.Name, zone.Region, World.Day, zone.TimeOf(World));
         Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
@@ -1671,7 +1673,8 @@ public partial class Game : Node, IZoneHost
                 wb.Events.Emit(new Ev.Bark { X = x + 2, Z = z - 1, Text = t, Speaker = "The Ford-Warden" });
             wb.Events.Emit(new Ev.Bark { X = x - 1.5, Z = z - 0.5, Text = "Something moves in the reeds." });
             wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
-            wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
+            // (and a blow the Warden blocks, beside his line: combat's floater, kept off it, UI note 1)
+            wb.Events.Emit(new Ev.Hit { X = x + 2, Z = z - 1, Blocked = true, Target = 0, MaxHp = 1, School = School.Physical });
         }
         // --nohud: the world alone, for pictures of what a screen lies over.
         if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
