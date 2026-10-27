@@ -299,6 +299,11 @@ public sealed class Prologue : ZoneRuntime
                 kw.RangedT = Math.Max(kw.RangedT, 0.25);
             }
         }
+        if (knight is { Alive: true } kd && B.Time - knightDiagAt >= 3)
+        {
+            knightDiagAt = B.Time;
+            PaceNotes.Enqueue($"pace knight watch t={B.Time:0.0} state={kd.State} rangedT={kd.RangedT:0.0} dist={Dist(kd.X, kd.Z, B.Player.X, B.Player.Z):0.0} los={B.Collision.Raycast(kd.X, kd.Z, B.Player.X, B.Player.Z, 0.3) == null} held={knightHeldAll:0.0}/{knightHeldShut:0.0} open={KnightOpen(kd)}");
+        }
         if (knight is not { Alive: true, State: EnemyState.Windup } k) { knightWound = -1; knightHeld = false; return; }
         // (asked and waiting all the same: the windup is held, once, a beat and a half longer, its lane marked again)
         if (knightWound >= 0 && !knightHeld && !G.Taught("red_line") && G.TeachWaiting("red_line") && (k.Def.Charge ?? k.Def.Lunge) is { } held)
@@ -327,6 +332,7 @@ public sealed class Prologue : ZoneRuntime
     }
 
     /// <summary>Seconds the Knight has been held (ready to wind up) for standing out of the open, and for any hold at all.</summary>
+    double knightDiagAt = -9;
     double knightHeldShut, knightHeldAll, knightWatchT;
     /// <summary>The most it is held for being out of the open, and for everything together.</summary>
     const double KnightHoldShut = 4, KnightHoldAll = 10;
