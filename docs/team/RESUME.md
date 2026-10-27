@@ -2,7 +2,22 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 26 October, evening: coordinator fce3bb46 WIND-DOWN (read this first)
+## 26 October, night: coordinator 3bed6fb4 WIND-DOWN (read this first)
+**Merged to integration tonight:** Face 45 skin A (pores OFF; `--skin-pores on` = the old layer), Face 46 skin C (town night close-up skin-line hold, shader-only, `--skin-hold off`), Env 19 Low Ford (df0cf10c only), Experience 7 MR4b (db2f125a), Body 15 G3 chain (49e80bff: elbow-fixed body, 100-bone skeleton dump committed, outfits compacted under 90 MiB by gltf_compact.py, tuck channels rebuilt). Tests 1120/0/8. face-44 and face-46 removed (an empty face-44 folder may remain, like storybook-1: delete by hand). Cache TTL per agent type: DONE and VERIFIED (below).
+**Owner decisions (OWNER_NOTES 26 Oct night):** HUD = A2 "Lamps Are Lit"; height must stay modest; lamp notes (reads as a healing potion; missing HP hard to see; may sit slightly lower and rise slightly higher, elongated). Skin C go; pores parked. Animation bar "effortlessly badass". Placeholder cinematic VO off while testing.
+**RUNNING at wind-down (restart each as a fresh successor from its handoff top with lead_brief.md if it has stopped):**
+1. **UI 14** (ui-11): A2 life lamp; squat lamp built (0fd2b7a0, 144 px vs today's 176 px), max judge MEDIUM; fix round running (lit flame meter, screen-space pool, glass rim + oil line, darker flask) PLUS the owner's lamp notes. Next: judge, then the lamp sheet to the owner (owner gate before going wide).
+2. **Body 15** (armor-7): G3 merged; now the warden LEFT pauldron rebuilt as a mirror of the right (main's ruling; ~200k, one max judge), own MR. Then routed: sheathed swing/reaver blade sockets, reaver foot wraps grey.
+3. **Experience 7** (play-1): MR5 (item 15 Ambush/Road lessons, item 14 unblocked by A2, the zoom pop in FollowCamera.Place, the last >100 ms frames).
+4. **Env 19** (env-16): E8 round 1 failed (medium-far): round 2 rebuilds the gate tower tops (drum towers), restages the far castle, fixes dawn pools and the Exit night road. Then E10. Later list: the camp reads as flat dirt.
+5. **Animation 53** (anim-53, NEW worktree): armed walks (her cine double uses her own walk, sheathed in town), then held-prop angles, townsman swing. MR1 after armed walks.
+**Main's helpers at wind-down:** a su-runner repacking her clips in the main checkout after the Body merge (expect ~105 clips; revert .import/project.godot after), a su-worker turning placeholder VO off by default (`VoiceOver.cs`/`VoiceLines.cs`, captions and timings kept). Check both landed: `git log` for "Placeholder VO off".
+**Free slot:** Face (next candidates, the owner's call: the deep Look-by-night face/neck hue gap, close, ~150k; Face 45's later list; pores parked).
+**Routed, unowned:** town NPCs read as placeholders at the day close-up (Face 46's judge); the deep outfit's bandeau/bracers read dusty mauve; she reads slightly spotlit at the night close-up (Rendering); editor perf .NET 10 vs net8.
+**Worktrees (7 + main):** armor-7, env-16, npc-2, play-1, ui-11, warden-1, anim-53.
+**Don't clear:** scratchpad fce3bb46 subfolders (leads still use them: body14/15, ui12-14, play3/4, env18/19, anim52/53, coord); this scratchpad (3bed6fb4) `coord\`.
+
+## 26 October, evening: coordinator fce3bb46 WIND-DOWN (history)
 **Merged to integration today:** Face 43 MR1 (pixie ear A, the owner's pick; braid/ponytail ear corner, 7d, 7e) and MR2 (ear-front ladder = 7e's mask comb; neck-base purple = lighting, the Look's edge tone under the jaw), DONE, face-37 removed. Animation 52 (reaver walk bob 11 -> 7.5 cm, both Warden hand marks, the Look shows waist weapons; motion.py now poses with helpers=True) + its sprint_stop fix d0f3991c (the full build broke on town_idle's new make): DONE. Experience MR4 (Waystation 6 s freeze gone, GC hitches, folk shadows -86%). Face 44 skin B (the Look's neutral highlight tint, iris 1.5). UI's 8 routed notes (ui-12-notes). Her clips repacked in the main checkout after the merge. Tests 1070/0/8.
 **Owner decisions (OWNER_NOTES 26 Oct evening):** skin "B then A"; HUD v2 "the same old ui ... the main thing is soul" (memory hud-soul): UI 13 runs a 2-3-direction whole-HUD concept pass, the owner picks, THEN pieces.
 **PAUSED (restart each as a fresh successor from its handoff top with lead_brief.md; worktree at the commit shown):**
