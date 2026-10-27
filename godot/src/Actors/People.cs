@@ -1923,7 +1923,7 @@ public static class People
         m.SetShaderParameter("zone_rough_lip", ZoneRough.Lip);
         m.SetShaderParameter("zone_rough_body", ZoneRough.Body);
         m.SetShaderParameter("zone_lip_shine", Mathf.Lerp(ZoneRough.LipShine, ZoneLipShineDeep, deep));
-        m.SetShaderParameter("lip_core", 1f);
+        m.SetShaderParameter("lip_core", head != false ? 1f : 0f);   // (her body: no pore_zones read)
         m.SetShaderParameter("freckle_keep", FreckleKeep);
         m.SetShaderParameter("freckle_gain", FreckleGain);
         m.SetShaderParameter("skin_chroma", Mathf.Lerp(0f, DeepChroma, deep));
@@ -1939,7 +1939,7 @@ public static class People
         m.SetShaderParameter("peel", pores ? (head == false ? Peel.Body : Mathf.Lerp(Peel.Head, Peel.Deep, deep)) : 0f);
         m.SetShaderParameter("peel_scale", Peel.Scale);
         m.SetShaderParameter("pore_rough", pores && head != false ? Peel.Rough : 0f);
-        m.SetShaderParameter("pore_mask", 1f);
+        m.SetShaderParameter("pore_mask", head != false ? 1f : 0f);
         m.SetShaderParameter("peel_diffuse", Peel.Diffuse);
         m.SetShaderParameter("peel_fade", Peel.Fade);
     }
