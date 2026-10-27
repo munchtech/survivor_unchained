@@ -27,15 +27,77 @@ public partial class Game
         cam.SnapClose();
         hud.Calm(false, 0);
         z.KeepClear = null;
+        roomTops.Clear();
         cam.Room = (a, b) =>
         {
             if (Battle?.Collision is not { } col) return 1;
             float dx = b.X - a.X, dz = b.Z - a.Z, len = Mathf.Sqrt(dx * dx + dz * dz);
             if (len < 0.01f) return 1;
-            // (a wall's face with a hand's room before it)
-            return col.Raycast(a.X, a.Z, b.X, b.Z, 0.25) is { } hit ? Mathf.Max(0, (float)hit.T * len - 0.35f) / len : 1;
+            // (a wall's face with a hand's room before it; a post seen past, a cart passed over: CameraRoom)
+            var hit = col.Raycast(a.X, a.Z, b.X, b.Z, 0.25, true, (c, t) => CameraRoom.Blocks(c, t, a.Y, b.Y, RoomTop(c)));
+            if (CamLog) cam.RoomHit = hit is { } h0 ? $"{h0.Collider.Id}:{h0.Collider.Kind}@{h0.Collider.X:F1},{h0.Collider.Z:F1}_r{h0.Collider.R:F2}_T{h0.T:F2}_top{RoomTop(h0.Collider):F2}" : null;
+            return hit is { } h ? Mathf.Max(0, (float)h.T * len - 0.35f) / len : 1;
         };
         cam.Ground = (x, zz) => (float)(scene?.HeightAt(x, zz) ?? 0);
+    }
+
+    static readonly bool CamLog = Args.Has("camlog");
+    readonly System.Collections.Generic.Dictionary<int, float?> roomTops = new();
+
+    /// <summary>The top (world y) of what is drawn standing on a collider's footprint, looked up once (the renderer's
+    /// own cull of the box over it: meshes and each copy of a multimesh there, not the ground, the grass or the
+    /// living); null where nothing is drawn there.</summary>
+    float? RoomTop(SurvivorUnchained.Sim.Collider c)
+    {
+        if (roomTops.TryGetValue(c.Id, out var known)) return known;
+        float? top = null;
+        var world = camera.GetWorld3D();
+        if (world != null)
+        {
+            // (the footprint, a little inside its edge, so a neighbor's wall touching it is not counted)
+            float ex = (float)c.R + 0.3f, inset = 0.1f;
+            float cx = (float)c.X, cz = (float)c.Z;
+            float gy = (float)(scene?.HeightAt(c.X, c.Z) ?? 0);
+            var box = new Aabb(new Vector3(cx - ex, gy - 4, cz - ex), new Vector3(2 * ex, 44, 2 * ex));
+            bool Over(Aabb a)
+            {
+                if (a.Size.Y < 0.5f || a.Size.X > 40 || a.Size.Z > 40) return false;
+                if (c.Kind == SurvivorUnchained.Sim.ColliderKind.Circle)
+                {
+                    float qx = Mathf.Clamp(cx, a.Position.X, a.End.X), qz = Mathf.Clamp(cz, a.Position.Z, a.End.Z);
+                    float r = (float)c.R - inset;
+                    return (qx - cx) * (qx - cx) + (qz - cz) * (qz - cz) < r * r;
+                }
+                // (a box: the drawn thing's middle within it, a quarter metre's slack, in the box's own frame)
+                float cos = Mathf.Cos(-(float)c.Rot), sin = Mathf.Sin(-(float)c.Rot);
+                var m = a.GetCenter();
+                float lx = (m.X - cx) * cos - (m.Z - cz) * sin, lz = (m.X - cx) * sin + (m.Z - cz) * cos;
+                return Mathf.Abs(lx) < (float)c.Hw + 0.25f && Mathf.Abs(lz) < (float)c.Hd + 0.25f;
+            }
+            foreach (ulong id in RenderingServer.InstancesCullAabb(box, world.Scenario))
+            {
+                if (GodotObject.InstanceFromId(id) is not GeometryInstance3D g || !g.IsVisibleInTree() || g.GetParent() is Skeleton3D) continue;
+                if (g is MultiMeshInstance3D mmi && mmi.Multimesh is { Mesh: { } mesh } mm)
+                {
+                    var local = mesh.GetAabb();
+                    if (local.Size.Y < 0.5f) continue;
+                    var gt = mmi.GlobalTransform;
+                    int n = mm.VisibleInstanceCount >= 0 ? mm.VisibleInstanceCount : mm.InstanceCount;
+                    for (int i = 0; i < n; i++)
+                    {
+                        var a = gt * mm.GetInstanceTransform(i) * local;
+                        if (Over(a)) top = Mathf.Max(top ?? float.MinValue, a.End.Y);
+                    }
+                }
+                else if (g is MeshInstance3D mi && mi.Mesh != null)
+                {
+                    var a = mi.GlobalTransform * mi.GetAabb();
+                    if (Over(a)) top = Mathf.Max(top ?? float.MinValue, a.End.Y);
+                }
+            }
+        }
+        roomTops[c.Id] = top;
+        return top;
     }
 
     /// <summary>Each frame of play.</summary>
