@@ -64,7 +64,10 @@ public sealed class Prologue : ZoneRuntime
     int levelsTaught, traitsDue;
     bool levelDue;
     /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
-    bool knightPlanted, knightRan;
+    bool knightRan, knightWinding, barrowLineSaid;
+    /// <summary>Windups the Knight has finished (his floor holds for two), when F7 ended (stage time), when the tips showed (game time).</summary>
+    int knightWindups;
+    double redEndAt = -1, eliteAt = -1, packAt = -1;
     /// <summary>The Ambush's trap: when the ditch rose (stage time; none yet: the wagon is still quiet), and the
     /// bowmen it put up, whose first volley comes all at once and teaches the dash (au i15).</summary>
     double sprungAt = -1;
@@ -171,6 +174,8 @@ public sealed class Prologue : ZoneRuntime
     void Tip(string id, string title, string text, List<string>? keys = null, double life = 9)
     {
         if (!shown.Add(id)) return;
+        if (id == "pack") packAt = B?.Time ?? 0;
+        if (id == "elite") eliteAt = B?.Time ?? 0;
         G.SetHint(new Hint(id, title, text, keys ?? new()));
         if (life > 0) G.After(life, () => { if (G.CurrentHint?.Id == id) G.SetHint(null); });
     }
@@ -898,17 +903,27 @@ public sealed class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Post:
-                if (G.Taught("red_line") || knightRan) PacedTip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
+                // (F7 ended: the clock for the elite tip's 4 s without a red line on the ground)
+                if (redEndAt < 0 && G.Taught("red_line") && G.Teaching?.Id != "red_line") redEndAt = stageT;
+                bool knightDown = knight is not { Alive: true };
+                bool lineOnGround = knight is { Alive: true } kw && kw.State == EnemyState.Windup;
+                // (the elite tip: at the Knight's fall, or 4 s after F7 with no red line on the ground, whichever first)
+                if (knightDown || (redEndAt >= 0 && stageT - redEndAt >= 4 && !lineOnGround))
+                    PacedTip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things.", null, 12);
                 if (knight is { Alive: true } kn && !knightRan)
                 {
-                    if (kn.State == EnemyState.Windup) knightPlanted = true;
-                    // (and it stands until its red line was frozen on, F7, or a while has passed)
-                    else if ((knightPlanted && (G.Taught("red_line") || stageT > 40)) || stageT > 48) { knightRan = true; kn.HpFloor = 0; }
+                    // (two windups finished, or a while has passed: then it may fall)
+                    bool winding = kn.State == EnemyState.Windup;
+                    if (knightWinding && !winding) knightWindups++;
+                    knightWinding = winding;
+                    if (knightWindups >= 2 || stageT > 48) { knightRan = true; kn.HpFloor = 0; }
                 }
                 if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
+                // (the chest tip comes 4 s after the elite one; the E belongs to the prompt)
+                if (knight == null && !chestOpened && eliteAt >= 0 && B.Time - eliteAt >= 4)
+                    PacedTip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", null, 9, still: () => !chestOpened);
                 if (knight == null && !chestOpened)
                 {
-                    PacedTip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", [Key("interact")], still: () => !chestOpened);
                     Objective([("Put down the Barrow Knight", true, false), ("Search the old Watch-post", false, false)]);
                 }
                 if (p.Z < 21 && knight == null)
@@ -919,6 +934,12 @@ public sealed class Prologue : ZoneRuntime
                 }
                 break;
             case Stage.Barrow:
+                // (the narrated line waits for the pack tip to have been up 8 s; with no chest opened, it doesn't wait)
+                if (!barrowLineSaid && (!chestOpened || (packAt >= 0 && B.Time - packAt >= 8) || stageT > 30))
+                {
+                    barrowLineSaid = true;
+                    Words(() => G.Say("Past the fence, a figure in a tall hat is talking to the graves. The graves are listening.", null, 6));
+                }
                 if (caller is { HpFloor: > 0 } cf && (G.Taught("art") || B.Time - callerAt > 30)) cf.HpFloor = 0;
                 if (caller != null)
                 {
@@ -988,7 +1009,6 @@ public sealed class Prologue : ZoneRuntime
             double a = i / 5.0 * Math.PI * 2;
             B.SpawnEnemy(i % 3 == 0 ? "risen_warrior" : "risen", barrow.X + Math.Cos(a) * 4, barrow.Z + Math.Sin(a) * 4, new Battle.SpawnOpts { Style = SpawnStyle.Rise, Level = 2 });
         }
-        Words(() => G.Say("Past the fence, a figure in a tall hat is talking to the graves. The graves are listening.", null, 6));
     }
 
     /* ------------------------------------------------------------- intro -- */
