@@ -825,14 +825,25 @@ public partial class Game : Node, IZoneHost
         {
             EnterZone(to, from, at);
             Save("travel");
-            Wait(caption != null ? 1.4 : 0.2, () =>
+            // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
+            // only once the frames come smooth again, so no hitch shows through the fade-in)
+            Wait(caption != null ? 1.4 : 0.2, () => WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
                 controls.ClearLatches();
                 inTransit = false;
-            });
+            }));
         }));
+    }
+
+    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s.</summary>
+    void WhenSmooth(Action fn, int calm = 0, double waited = 0)
+    {
+        double dt = GetProcessDeltaTime();
+        calm = dt < 0.04 ? calm + 1 : 0;
+        if (calm >= 2 || waited > 2) fn();
+        else Wait(0, () => WhenSmooth(fn, calm, waited + dt));
     }
 
     /// <summary>Once the place being built ahead is (behind the black: PumpAhead goes faster then), or at once.</summary>
