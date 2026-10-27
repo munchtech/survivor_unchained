@@ -1,5 +1,21 @@
 {
  "items": {
+  "meshy_sword": {
+   "id": "meshy_sword",
+   "name": "Meshy Arming Sword",
+   "kind": "weapon",
+   "rarity": 0,
+   "icon": "sword",
+   "value": 20,
+   "description": "Swings itself at whatever is nearest, in a wide arc.",
+   "weapon": {
+    "id": "oathblade",
+    "rank": 1
+   },
+   "art": "meshy_sword",
+   "artKind": "blade1h",
+   "lore": "A plain arming sword, fullered blade and leather grip (Meshy proof)."
+  },
   "oathbrand": {
    "id": "oathbrand",
    "name": "Oathbrand",
