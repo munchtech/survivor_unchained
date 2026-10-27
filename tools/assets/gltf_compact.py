@@ -17,6 +17,11 @@ import sys
 
 import numpy as np
 
+# GitHub refuses files over 100 MiB; any file this writes over CAP_MIB fails loudly (main, 27 Oct: the warden outfit
+# sat at 89 MiB after compaction, so the next outfit change must not slip past the cap unseen). Fallback if one goes
+# over: BF_PAUL_SHAPES=0 drops the shoulder shapes on the rigid plate shells (warden: -19 MB).
+CAP_MIB = float(os.environ.get("GLTF_CAP_MIB", 90))
+
 DT = {5126: "<f4", 5125: "<u4", 5123: "<u2", 5122: "<i2", 5121: "u1", 5120: "i1"}
 NC = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 
@@ -167,6 +172,9 @@ def compact(path, pos_min=1e-4, nor_min=0.01, dry=False):
                 f.write(b"glTF" + (2).to_bytes(4, "little") + tot.to_bytes(4, "little"))
                 f.write(len(js).to_bytes(4, "little") + b"JSON" + js)
                 f.write(len(out).to_bytes(4, "little") + b"BIN\x00" + bytes(out))
+    if len(out) > CAP_MIB * 2 ** 20:
+        raise SystemExit("COMPACT FAIL %s: %.1f MiB over the %.0f MiB cap (GitHub refuses 100 MiB; see CAP_MIB's note)"
+                         % (path, len(out) / 2 ** 20, CAP_MIB))
     return stats
 
 
