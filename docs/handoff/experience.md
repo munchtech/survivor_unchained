@@ -5,6 +5,28 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 8 (play-1 lead, 27 Oct): PAUSED (coordinator wind-down); MR5 judged, ONE fix round left
+
+**Paused here (Experience 8, 27 Oct); next:** run the fix round in scratch `play5\brief_mr5fix.md` (12 decided items) on ONE fresh `su-worker` (or a medium su-lead-high for items 11-12, which need digging). Then ONE xhigh re-judge of only the changed frames (F2, L1, F7, the Post tips, F8, the draught if it fires) plus the ambush HP numbers, then one full shot-free run, tests, and MR5 to main. This is i15's last round (the cap): anything still open after it closes as known. Integration f09f6d81 is merged in (5ae3fdb1). Tests 1130/0/8. No turns held, no helpers running.
+- **Built since Experience 7:**
+  - Item 14 + F7 (89d2a819, 81b93b42, 203ed65a): lessons L1 lock, L2 tally, L3 minimap, L4 talk; the Ember explanation in order; Callout `Quiet`/`Still`; `--auto talk`.
+  - New GameHud accessors `PromptArea`, `MinimapArea`, `TallyArea`, `EmberLockArea`: the merge point with UI 14.
+  - F7: the Knight's holds are bounded and his first lunge is forced at close range (26faaf13, 2b4ac60f, 993a94af: `Enemy.LungeMin`; `pace knight windup/watch` log lines).
+- **Judge (xhigh, combined, a16ec7c2):**
+  - C, the zoom pop: SHIP.
+  - A, i15 round 2: SHIP WITH FIXES, close. No stakes yet: v4 and v5 ran at 212/212 the whole Prologue. Tune the Ambush with `--auto idle` until an idle player loses 25-40% HP; the draught lesson fires under 70% HP.
+  - B, i14 + F7: SHIP WITH FIXES, close. Cut L4; move L1 to the 2nd rise; F7 rings the Knight, with the arrow at her spot on the lane; space the Post's tips; F2 aims at the filled links; the chest tip loses its E chip; F8 (art) never shows in time.
+  - Every fix is in the brief.
+- **F7 status:** f7e is within target (the windup came 11.5 s into the Post). f7f is the wall case: no clear ray, so the first freeze was dropped "gone, notyet". That's brief item 12.
+- **Routed (tell main with the MR):**
+  - The red-line telegraph reads salmon, not red (combat VFX).
+  - The freeze dim leaves night frames near black (UI).
+  - The lock shows her own level by day with no word (UI; it matters from night 2).
+  - Pink-skinned figures in the town's top left (NPC).
+  - The "RAV CUTWELL" label is clipped at the top edge (UI).
+- **Scratch:** `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\9c583f93-c0ad-4a2d-8f37-a803f39d38c2\scratchpad\play5\`, backed up to `survivorsunchained_inputs\scratch_play5\`. It holds pace5.py (env STOP, BASE=hub, AUTO), the logs v4, v5 and f7a-f, and the briefs i14, f7fix, mr5fix and judge_mr5. Frames are `godot/.shots/v4_*` and `v4b_*`.
+- **Cost this session:** solver 201k, worker 57k, judge 151k, API $0.
+
 ## Experience 7 (play-1 lead, 26 Oct): PAUSED (coordinator wind-down); MR4b MR READY (db2f125a, sent); MR5 mostly built
 
 **Paused here; next:** MR5 at play-1@5ce39cac+this doc, tests 1074/0/8, no turns held. Built:
