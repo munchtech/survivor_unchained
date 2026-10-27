@@ -8,6 +8,14 @@ survivorsunchained_inputs/ui16_dg_src/. The painted glass orb is fitted with a c
 stays as the casing in front of it. The figure is graded to mid-low value bronze (unsaturated against the blood),
 scaled so the glass is ORB_D px across at 1080 (the art at 2x), and cropped from above her head to HEAD_H px
 below it (the screen's foot cuts the rest). Writes godot/art/ui/lamp_life/drowned/lamp_cold.png and lamp_geo.json.
+
+dg2 (the judge: the hand weak, the thumb over the bottom band, the bronze olive and dim): the source is seed 6305
+with its hand and forearm inpainted from d1b's cradle (dg2_hand.png, Krea 2 turbo masked img2img over a guide
+of d1b's hand; face and hair untouched), the palm under the glass. Her hand inside the glass's circle is KEPT in
+lamp_cold (behind the glass: hud_dg_orb.gdshader draws the glass over it and shows it darkened through the
+empty glass), so nothing of her covers the glass and its lowest quarter is always clear. lamp_mask.png: R her
+parts over the glass (none), G her hand and forearm (held at full when the figure fades). The grade warms the
+highlights (brow, nose, lips, knuckles, hair crests), deepens the verdigris and tones down the shoulder's hot spot.
 """
 import json
 import os
@@ -20,6 +28,8 @@ from scipy import ndimage
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui16_dg_src"
 SEED = 6305
+NAME = "dg2_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut)
+GLASS = (178.9, 167.8, 139.8)  # seed 6305's glass (the inpaint kept its upper half): centre, radius
 OUT = os.path.join(WT, "godot", "art", "ui", "lamp_life", "drowned")
 
 ORB_D = 120.0       # the glass across at 1080
@@ -28,7 +38,8 @@ PAD = 6             # clear round her in the quad, 1080 px
 RIGHT_X = 770.0     # the quad's right edge on the screen (the hair runs on under the draught's glass)
 BAR_LINE = 930.0    # the bar's top line: above it, she fades when something is behind her
 CHAIN_Y = 1047.0    # the chain's row (the ring orb's eye)
-GRADE = dict(value=0.72, sat=0.70, gamma=1.10)
+GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
+SHOULDER = (530.0, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
 
 
 def fit_circle(alpha, box):
@@ -59,51 +70,52 @@ def fit_circle(alpha, box):
 
 def main():
     check = sys.argv[sys.argv.index("--check") + 1] if "--check" in sys.argv else None
-    rgb = np.asarray(Image.open(os.path.join(SRC, f"cand_{SEED}.png")).convert("RGB"), np.float32) / 255
-    alpha = np.asarray(Image.open(os.path.join(SRC, f"cut_{SEED}.png")).convert("RGBA"), np.float32)[..., 3] / 255
+    rgb = np.asarray(Image.open(os.path.join(SRC, f"{NAME}.png")).convert("RGB"), np.float32) / 255
+    alpha = np.asarray(Image.open(os.path.join(SRC, f"{NAME}_cut.png")).convert("RGBA"), np.float32)[..., 3] / 255
     H, W = alpha.shape
     R, G, B = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-    red = (R > 0.18) & (R > 1.9 * G) & (R > 1.6 * B)
-    lab, n = ndimage.label(red)
-    big = 1 + int(np.argmax(ndimage.sum(red, lab, range(1, n + 1))))
-    ys, xs = np.nonzero(lab == big)
-    c0 = (xs.mean(), ys.mean())
-    r0 = np.sqrt(len(xs) / np.pi)
-    cx, cy, r, npts = fit_circle(alpha, (xs.min(), ys.min() - int(0.6 * (ys.max() - ys.min())), xs.max(), ys.max()))
-    print(f"glass: centre ({cx:.1f}, {cy:.1f}) r {r:.1f} from {npts} edge points")
-
-    # the glass inside its edge (a px over, to take the painted rim) and her fingers over it: the bronze inside
-    # the circle that joins the hand below it (not the painted speculars, which float free in the glass)
+    cx, cy, r = GLASS
+    print(f"glass: centre ({cx:.1f}, {cy:.1f}) r {r:.1f}")
     yy, xx = np.mgrid[0:H, 0:W]
     d = np.hypot(xx - cx, yy - cy)
     inside = d < r + 1.5
-    # (the glass's blood is red over green ~3 and up; her bronze, even lit red by it, under ~2.2)
-    # (and warm or green, never the smoked empty glass's violet: blue under green)
-    bronze = (R / (G + 0.03) < 2.4) & (B < 0.92 * G) & (alpha > 0.5) & (np.maximum(R, G) > 0.08)
-    # (the white glints are bronze-free: low chroma and bright)
+    # her bronze (even lit red by the glass, under ~2.4 red over green; never the smoked glass's violet)
+    bronze = (R / (G + 0.03) < 2.4) & (B < 0.92 * G) & (alpha > 0.5) & (np.maximum(R, G) > 0.06)
     glint = (np.min(rgb, axis=2) > 0.55)
-    cand = inside & bronze & ~glint
-    cand = ndimage.binary_opening(cand, iterations=2)
+    # her hand inside the circle: the bronze there joined to the hand below it (the painted speculars float free)
+    cand = ndimage.binary_opening(inside & bronze & ~glint, iterations=2)
     lab, n = ndimage.label(cand | (bronze & ~inside & (d < r + 40)))
     ring = (d > r + 2) & (d < r + 6) & (yy > cy) & bronze
     keep = set(np.unique(lab[ring])) - {0}
-    finger = inside & np.isin(lab, list(keep)) & cand
-    # (its holes filled, and a px wider: the painted dark outline round each finger is the finger's)
-    finger = ndimage.binary_fill_holes(ndimage.binary_closing(finger, iterations=2))
-    finger = ndimage.binary_dilation(finger, iterations=1) & inside
-    # soft edges: 1.2 source px each way
-    fs = ndimage.gaussian_filter(finger.astype(np.float32), 1.2)
+    hand_in = inside & np.isin(lab, list(keep)) & cand
+    hand_in = ndimage.binary_dilation(ndimage.binary_fill_holes(ndimage.binary_closing(hand_in, iterations=2)), iterations=1) & inside
+    hs = ndimage.gaussian_filter(hand_in.astype(np.float32), 1.2)
     glass = np.clip((r + 1.5 - d) / 1.5, 0, 1)
-    hole = glass * (1 - np.clip(fs * 1.6 - 0.3, 0, 1))
-    if "--debug" in sys.argv:
-        dbg = (np.dstack([finger, cand, inside]) * 255).astype(np.uint8)
-        Image.fromarray(dbg).crop((0, 0, 400, 360)).save(sys.argv[sys.argv.index("--debug") + 1])
-    a = alpha * (1 - hole)
-
-    # grade: mid-low value bronze, a little less saturated (the blood reads first)
+    hole = glass * (1 - np.clip(hs * 1.6 - 0.3, 0, 1))
+    # (the painted blood's glow spilt past the glass onto the black: not her)
+    spill = (~inside) & (R > 1.8 * G) & (R > 1.5 * B) & ~bronze
+    a = alpha * (1 - hole) * (1 - ndimage.gaussian_filter(spill.astype(np.float32), 1.0))
+    # her hand and forearm (held at full in the fade): left of her neck and chest, below the glass's middle
+    bnd = np.interp(yy, [0, 520, 600, 660, 768], [300, 292, 268, 255, 250])
+    held = ndimage.gaussian_filter(((xx < bnd) & (yy > cy) & (a > 0.05)).astype(np.float32), 2.0)
+    # grade: warm bronze, the blood still reads first
     lum = (0.3 * R + 0.59 * G + 0.11 * B)[..., None]
     g = lum + (rgb - lum) * GRADE["sat"]
     g = np.clip(g, 0, 1) ** GRADE["gamma"] * GRADE["value"]
+    gl = (0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2])[..., None]
+    # (the highlights warmed toward old gold: brow, nose, lips, knuckles, the hair's crests)
+    hi = np.clip((gl - 0.30) / 0.35, 0, 1)
+    g = g * (1 + hi * np.array([0.16, 0.04, -0.14]))
+    # (the verdigris deepened: where green leads red, darker and a richer blue-green)
+    green = np.clip((G - R) * 6.0 + 0.2, 0, 1)[..., None] * (1 - hi)
+    g = g * (1 - green) + g * np.array([0.62, 0.86, 0.84]) * green
+    # (the shoulder's hot spot toned down)
+    sx, sy, sr = SHOULDER
+    sm = np.exp(-((xx - sx) ** 2 + (yy - sy) ** 2) / (2 * sr * sr))[..., None]
+    gl = (0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2])[..., None]
+    over = np.clip(gl - 0.42, 0, None)
+    g = g - sm * over * 0.55 * (g / np.maximum(gl, 1e-3))
+    g = np.clip(g, 0, 1)
 
     # the scale: the glass ORB_D across at 1080, the art at 2x
     s = ORB_D / (2 * r)             # source px -> 1080 px
@@ -133,24 +145,19 @@ def main():
     out = Image.fromarray((np.clip(np.dstack([orgb, oa]), 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
     os.makedirs(OUT, exist_ok=True)
     out.save(os.path.join(OUT, "lamp_cold.png"))
+    mk = Image.fromarray((np.dstack([np.zeros_like(held), held, np.zeros_like(held)]) * 255 + 0.5).astype(np.uint8), "RGB")
+    mk = mk.resize((cw2, ch2), Image.LANCZOS, box=box)
+    mk.save(os.path.join(OUT, "lamp_mask.png"))
 
     def at(x, y):
         return [round((x - x0) * s, 2), round((y - y0) * s, 2)]
     oc = at(cx, cy)
-    # the level's foot: the lowest glass row her thumb leaves clear over the glass's middle half
-    vis = (hole > 0.5)
-    feet = []
-    for x in range(int(cx - 0.45 * r), int(cx + 0.45 * r)):
-        col = np.nonzero(vis[:, x])[0]
-        if len(col):
-            feet.append(col.max())
-    foot = float(np.percentile(feet, 60)) - 2
     canvas = [round(cw, 2), round(ch, 2)]
     at_scr = [round(RIGHT_X - cw, 2), round(1080 - ch, 2)]
     geo = {
         "shape": "drowned", "seed": SEED, "canvas": canvas, "at": at_scr,
         "orb_c": oc, "orb_r": round(r * s, 2), "orb_vis": round(r * s - 0.6, 2),
-        "level_foot": round((foot - y0) * s, 2),
+        "level_foot": -1,
         "font_mid": oc, "number_y": oc[1],
         "eye": [round(cw - 2, 2), round(CHAIN_Y - at_scr[1], 2)],
         "foot": canvas[1], "top": 0, "floor": 1080, "top_line": at_scr[1],

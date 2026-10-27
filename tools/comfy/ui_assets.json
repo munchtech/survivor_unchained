@@ -1321,7 +1321,8 @@
    "name": "The Drowned Girl HUD, piece 1: her bronze figure lifting the life orb to her lips",
    "file": "lamp_life/drowned/lamp_cold.png",
    "also": [
-    "lamp_life/drowned/lamp_geo.json"
+    "lamp_life/drowned/lamp_geo.json",
+    "lamp_life/drowned/lamp_mask.png"
    ],
    "size": [
     1024,
@@ -1334,7 +1335,8 @@
    "prompt": "Dark fantasy action RPG game HUD ornament, a close view of one sculpted relief cast in dark river-worn bronze with green verdigris, Art Nouveau, elegant flowing lines; everything is bronze, a statue, her face, skin and hand bronze too. The head and bare shoulders of a beautiful drowned young woman in clean side profile facing left, filling the whole height of the frame, the top of her head near the top edge, her face tilted upward, eyes closed, lips softly parted. With one slender hand she lifts a very large polished glass orb, bigger than her head, filled with glowing deep blood-red liquid, raised to her lips so it almost touches them; the orb rests on her open palm from below, her slender fingers curling up round its lower edge only, most of the sphere clear and unobstructed. Her very long hair streams back behind her head and sweeps down to the lower right in great smooth flowing locks like the current of a river, running out of the frame at the right edge along the bottom as a low band of hair. Graceful elegant anatomy, a slender neck, a delicate well-drawn hand with five slender fingers and a thumb. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the red glow of the orb on her fingers and chin, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
    "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint's graph via gen.py, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
    "note": "UI 16, 27 Oct 2026, the owner's pick 'The Drowned Girl' (--hud drowned). The painted glass is fitted and cut out (hud_orb.gdshader theme 3 draws the live orb there), her fingers over it kept; graded to mid-low bronze. Sources, prompts and gen.py in survivorsunchained_inputs/ui16_dg_src/.",
-   "made_by": "tools/uiforge/dg_figure_cut.py"
+   "made_by": "tools/uiforge/dg_figure_cut.py",
+   "dg2_hand": "27 Oct, dg2: the hand and forearm repainted over seed 6305 (face, hair, chest untouched, composited back outside the mask): Krea 2 turbo fp8 + krea2_darkbrush 0.8 with DifferentialDiffusion, SetLatentNoiseMask, denoise 0.72, seed 7105, 8 steps, cfg 1, over a guide of the owner-approved d1b concept's cradle hand scaled to the glass and lowered 26 px (survivorsunchained_inputs/ui16_dg_src/dg2/: guide.py, inpaint.py, guide_a.png, mask_a.png, the other seeds 7100..7108, 7200..7203); source dg2_hand.png, cut by BiRefNet (dg2_hand_cut.png); local ComfyUI, no API"
   }
  ],
  "icon_sets": {

@@ -25,9 +25,10 @@ public partial class LifeLamp : Control
     /// pool on the ground; the low-life edge pulse (HerLight.Edge) runs with it.</summary>
     public static readonly string? Orb = Args.Get("hud") == "drowned" ? "drowned" : Args.Get("life-orb") is "link" or "linkk" or "ring" or "waystone" or "ember" or "lamp" ? Args.Get("life-orb") : null;
     /// <summary>UI 16, the owner's pick of the whole-HUD directions: The Drowned Girl (--hud drowned), piece 1. Her
-    /// bronze figure (art/ui/lamp_life/drowned, tools/uiforge/dg_figure_cut.py) holds the life orb at her lips at
-    /// the bar's left end; the orb is hud_orb.gdshader's theme 3, under her fingers (the figure's art is the casing
-    /// over the glass). Foes or the survivor passing behind her head fade the figure (not the glass): Behind.</summary>
+    /// bronze figure (art/ui/lamp_life/drowned, tools/uiforge/dg_figure_cut.py) cradles the life orb at her lips at
+    /// the bar's left end; the orb is its own shader (dg2: shaders/hud_dg_orb.gdshader, the glass over her palm, her
+    /// fingers up its far side over it, the screen behind it seen through its empty part: OrbCopy). The survivor, an
+    /// elite or a marked attack behind her figure fades it (never the glass, her hand or her forearm): Behind.</summary>
     public static bool Drowned => Orb == "drowned";
     static readonly string Dir = Orb != null ? $"lamp_life/{Orb}" : Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
     static readonly Godot.Collections.Dictionary Geo = LoadGeo();
@@ -76,12 +77,24 @@ public partial class LifeLamp : Control
     /// <summary>The level and the shield (0..1 of her life), the trail (unused: the hurt film is the oil's own),
     /// and Pulse: 1 where her heartbeat may sound (the fight).</summary>
     public float Level = 1, Trail = 1, Shield, Pulse;
-    /// <summary>The Drowned Girl: a foe or the survivor behind her figure (Game sets it each frame): the figure fades
-    /// to FadeTo over 0.25 s, and back.</summary>
+    /// <summary>The Drowned Girl: the survivor, an elite or a marked attack behind her figure (Game sets it each
+    /// frame): the figure fades to FadeTo over FadeTime, holds FadeHold after the last frame something was behind
+    /// it (no flicker as a crowd mills past), and comes back over FadeBack. Her hand and forearm stay at full
+    /// (the cut's mask G), so the orb is never held by nothing. (dg1 faded to 35% for any foe: in a horde that was
+    /// the normal state, a murky ghost.)</summary>
     public bool Behind;
-    public const float FadeTo = 0.35f, FadeTime = 0.25f;
-    float figA = 1, sFigA = -1;
+    public const float FadeTo = 0.55f, FadeTime = 0.25f, FadeBack = 0.4f, FadeHold = 0.8f;
+    float figA = 1, sFigA = -1, clearFor = 99;
     bool wasBehind;
+    /// <summary>The Drowned Girl's orb: its rect (the glass and the refraction's reach) copied from the screen
+    /// before the quad draws, so the empty glass shows what is behind it (the copy's rect is in the canvas's own
+    /// coordinates: set where the orb stands, in OrbCopy).</summary>
+    readonly BackBufferCopy? orbCopy;
+    Rect2 orbCopied;
+    static readonly Vector2 OrbC = V("orb_c");
+    static readonly float OrbR = F("orb_r");
+    /// <summary>The number on the orb (the Drowned Girl): the area titles' serif, cream on a dark halo.</summary>
+    public static readonly Color Cream = new("#f3e7cc");
     static readonly StringName UFigA = "fig_a";
     /// <summary>The faded part's rect on the HUD (1080 px).</summary>
     public Rect2 FadeRect => new(Position + FadeLocal.Position, FadeLocal.Size);
@@ -108,9 +121,9 @@ public partial class LifeLamp : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Size = Canvas;
         PivotOffset = new Vector2(Canvas.X / 2, FootY);
-        mat = new ShaderMaterial { Shader = GD.Load<Shader>(Orb != null ? "res://shaders/hud_orb.gdshader" : "res://shaders/hud_lamp.gdshader") };
+        mat = new ShaderMaterial { Shader = GD.Load<Shader>(Drowned ? "res://shaders/hud_dg_orb.gdshader" : Orb != null ? "res://shaders/hud_orb.gdshader" : "res://shaders/hud_lamp.gdshader") };
         foreach (var (u, f) in new[] { ("lit", "lamp_lit"), ("cold", "lamp_cold"), ("mask", "lamp_mask"), ("flame_tex", "lamp_flame") })
-            if (Orb != null && Orb != "lamp" && f == "lamp_flame" || Drowned && f != "lamp_cold") continue;
+            if (Orb != null && Orb != "lamp" && f == "lamp_flame" || Drowned && f is not ("lamp_cold" or "lamp_mask")) continue;
             else if (UiArt.Tex($"{Dir}/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
             else GD.PushError($"LifeLamp: {Dir}/{f}.png did not load (unimported?): the lamp draws wrong");
         mat.SetShaderParameter("canvas", Canvas);
@@ -132,6 +145,7 @@ public partial class LifeLamp : Control
         mat.SetShaderParameter("skip", Skip);
         mat.SetShaderParameter("halo_row", TopLine - (Floor - FootY));
         if (noOil) mat.SetShaderParameter("oil_off", 1);
+        if (Drowned) AddChild(orbCopy = new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Rect, Rect = new Rect2(0, 0, 1, 1) });
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
         flow = new Vessel.Flow(mat, true);
         figure = new Figure(this);
@@ -161,10 +175,13 @@ public partial class LifeLamp : Control
         Send(UGlow, State.Light, ref sGlow);
         if (Drowned)
         {
-            figA = Mathf.MoveToward(figA, Behind ? FadeTo : 1, dt * (1 - FadeTo) / FadeTime);
+            clearFor = Behind ? 0 : clearFor + dt;
+            bool dim = clearFor < FadeHold;
+            figA = Mathf.MoveToward(figA, dim ? FadeTo : 1, dt * (1 - FadeTo) / (dim ? FadeTime : FadeBack));
             if (Behind != wasBehind && Args.Has("shot")) GD.Print($"dg fade {(Behind ? "on" : "off")} at {Time.GetTicksMsec() / 1000.0:0.00}");
             wasBehind = Behind;
             Send(UFigA, figA, ref sFigA);
+            OrbCopy();
         }
         if (Number != drawnNumber) { drawnNumber = Number; figure.QueueRedraw(); }
         PoolTick();
@@ -174,6 +191,17 @@ public partial class LifeLamp : Control
     public override void _ExitTree() { if (Live == this) Live = null; }
 
     void Send(StringName u, float v, ref float sent) => Send(u, v, ref sent, mat);
+
+    /// <summary>The orb's copy of the screen: the glass and 16 px round it (the refraction's reach), where the orb
+    /// stands now.</summary>
+    void OrbCopy()
+    {
+        if (orbCopy == null) return;
+        var xf = GetGlobalTransformWithCanvas();
+        float m = OrbR + 16;
+        var at = new Rect2(xf * (OrbC - new Vector2(m, m)), xf.BasisXform(new Vector2(2 * m, 2 * m)).Abs());
+        if (at != orbCopied) { orbCopied = at; orbCopy.Rect = at; }
+    }
 
     /// <summary>The pool follows the lamp: where it stands on the screen, shown only while the lamp is (the HUD
     /// hidden, it goes), its gain the flame's light and the lamp's fade.</summary>
@@ -205,6 +233,22 @@ public partial class LifeLamp : Control
         public override void _Draw()
         {
             if (l.Number == "") return;
+            if (Drowned)
+            {
+                // (dg2, the judge: the area titles' serif, Cinzel 700, cream on a dark garnet halo; its lining
+                // figures stand 0.714 em tall on the baseline, their middle 0.357 em above it)
+                var d = Style.Display;
+                const int ds = 26;
+                var dsz = d.GetStringSize(l.Number, HorizontalAlignment.Left, -1, ds);
+                var dat = new Vector2(Mathf.Round(FontMid.X - dsz.X / 2), Mathf.Round(NumberY + 0.357f * ds));
+                var dsh = dat + new Vector2(0, 2);
+                DrawStringOutline(d, dsh, l.Number, HorizontalAlignment.Left, -1, ds, 10, new Color(0, 0, 0, 0.20f));
+                DrawStringOutline(d, dat, l.Number, HorizontalAlignment.Left, -1, ds, 7, new Color(0.05f, 0.006f, 0.012f, 0.42f));
+                DrawStringOutline(d, dat, l.Number, HorizontalAlignment.Left, -1, ds, 4, new Color(0.04f, 0.004f, 0.01f, 0.80f));
+                DrawString(d, dsh, l.Number, HorizontalAlignment.Left, -1, ds, new Color(0, 0, 0, 0.40f));
+                DrawString(d, dat, l.Number, HorizontalAlignment.Left, -1, ds, Cream);
+                return;
+            }
             var f = Vessel.Figures;
             const int fs = 27;
             var ts = f.GetStringSize(l.Number, HorizontalAlignment.Left, -1, fs);
