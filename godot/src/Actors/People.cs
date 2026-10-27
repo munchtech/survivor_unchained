@@ -1102,6 +1102,7 @@ public static class People
                         m.SetShaderParameter("edge_tone", EdgeTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
+                        HerZones(m, look, null);
                         SkinSet(m, m.ResourceName);
                     }
                     else if (m.Shader == eyeShader)
@@ -1723,6 +1724,8 @@ public static class People
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
         if (who == "heroine") HerShade(m, look);
+        // (her face's skin zones, colour and sheen, her pores' coarse layer and the broad sheen lobe: HerZones)
+        if (who == "heroine") HerZones(m, look, src.ResourceName == "skin_head");
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1774,6 +1777,7 @@ public static class People
                                 System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
                             if (xs.Any(float.IsNaN)) continue;
                             if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                            else if (xs.Length == 2) m.SetShaderParameter(k.Trim(), new Vector2(xs[0], xs[1]));
                             else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
                         }
     }
@@ -1881,9 +1885,113 @@ public static class People
         m.SetShaderParameter("shade_thin", (float)SurvivorUnchained.Args.Num("shade-thin", 0.15f));
     }
 
+    /// <summary>Her skin's surface, zone by zone (max judge b1, face 44, 26 October 2026: fair read as smooth matte vinyl,
+    /// deep as flat clay, one hue forehead to chin, no pores at the Look). The skin shader's zone_* (her face's colour
+    /// zones and gloss zones, tools/assets/heroine_skin_zones.py: a redder nose, cheeks, ears and lip line, a yellower
+    /// forehead, faint cool under her eyes and at her jaw, pinker lids; an oilier T-zone, softer cheeks, wet lips), sheen2
+    /// (a second, broad sheen lobe) and peel / pore_rough (her pores' coarse layer, so her highlight breaks up at the
+    /// Look's zoom). Her colour zones scaled by her skin's lightness: on deep skin a subtler, browner flush. head: her
+    /// head's own material (the zone maps laid on it); null: a material already made (HerRestyle), its maps kept.
+    /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
+    static void HerZones(ShaderMaterial m, Look look, bool? head)
+    {
+        if (SkinZonesOff) return;
+        if (head == true)
+        {
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_skin_zones.png"))
+                m.SetShaderParameter("skin_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_skin_zones.png"));
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_sheen_zones.png"))
+                m.SetShaderParameter("sheen_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_sheen_zones.png"));
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
+                m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
+        }
+        // (deep: 0 at her own fair paint, 1 at the Deep swatch's lightness)
+        var t = HerTone(look);
+        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
+        float deep = Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+        m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
+        m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
+        m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
+        m.SetShaderParameter("zone_cool", ZoneCool.Fair.Lerp(ZoneCool.Deep, deep));
+        m.SetShaderParameter("zone_lids", ZoneLids.Fair.Lerp(ZoneLids.Deep, deep));
+        m.SetShaderParameter("zone_rough", 1f);
+        m.SetShaderParameter("zone_rough_base", ZoneRough.Base);
+        // (r2: deep skin's T-zone glosses a third as much, its lamps' sheen ZoneDeepSpec of HerShade's: it read oily)
+        m.SetShaderParameter("zone_rough_t", Mathf.Lerp(ZoneRough.T, ZoneRough.Base - (ZoneRough.Base - ZoneRough.T) * 0.35f, deep));
+        m.SetShaderParameter("deep_spec", (float)SurvivorUnchained.Args.Num("deep-spec", 0.6f) * Mathf.Lerp(1f, ZoneDeepSpec, deep));
+        m.SetShaderParameter("zone_rough_cheek", ZoneRough.Cheek);
+        m.SetShaderParameter("zone_rough_lip", ZoneRough.Lip);
+        m.SetShaderParameter("zone_rough_body", ZoneRough.Body);
+        m.SetShaderParameter("zone_lip_shine", Mathf.Lerp(ZoneRough.LipShine, ZoneLipShineDeep, deep));
+        m.SetShaderParameter("lip_core", head != false ? 1f : 0f);   // (her body: no pore_zones read)
+        m.SetShaderParameter("freckle_keep", FreckleKeep);
+        m.SetShaderParameter("freckle_gain", FreckleGain);
+        m.SetShaderParameter("skin_chroma", Mathf.Lerp(0f, DeepChroma, deep));
+        // (deep skin's sheen already shows strongly against its darker diffuse: the broad lobe less there, or it reads oily)
+        m.SetShaderParameter("sheen2", Sheen2.Amount * Mathf.Lerp(1f, Sheen2.Deep, deep));
+        m.SetShaderParameter("sheen2_rough", Sheen2.Rough);
+        m.SetShaderParameter("sheen2_base", Sheen2.Base);
+        if (head != null && ResourceLoader.Exists("res://art/people/skin_peel.png"))
+            m.SetShaderParameter("peel_map", GD.Load<Texture2D>("res://art/people/skin_peel.png"));
+        // (r2: the coarse layer only where pores show (pore_zones), its slopes mostly on her sheen, eased out with distance;
+        // none on her body. Off by default (face 45, judge a2: on deep at the Look's turn 40 they glint on the sheen like
+        // glitter, and on fair they don't show at 1:1); --skin-pores on: the r2 layer, for the later list's rework)
+        bool pores = SkinPoresOn;
+        m.SetShaderParameter("peel", pores ? (head == false ? Peel.Body : Mathf.Lerp(Peel.Head, Peel.Deep, deep)) : 0f);
+        m.SetShaderParameter("peel_scale", Peel.Scale);
+        m.SetShaderParameter("pore_rough", pores && head != false ? Peel.Rough : 0f);
+        m.SetShaderParameter("pore_mask", head != false ? 1f : 0f);
+        m.SetShaderParameter("peel_diffuse", Peel.Diffuse);
+        m.SetShaderParameter("peel_fade", Peel.Fade);
+    }
+
+    static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
+    static readonly float ZoneDeepSpec = 0.8f;
+    static readonly float ZoneLipShineDeep = 0.5f;
+    static readonly float FreckleKeep = 1f;
+    // (her freckles' step held within 10% of before's: town day cheeks -8.0 before, -6.4 without the gain; the Look -10.8)
+    static readonly float FreckleGain = 1.12f;
+    static readonly float DeepChroma = 0.2f;   // (linear; her diffuse's Oklab chroma about 8% more after the grade)
+
+    static readonly bool SkinZonesOff = SurvivorUnchained.Args.Get("skin-zones") == "off";
+    static readonly (float Fair, float Deep) ZoneColour = (0.85f, 0.7f);
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneFlush = (new(1.14f, 0.68f, 0.46f), new(1.04f, 0.84f, 0.78f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneYellow = (new(0.985f, 1f, 0.93f), new(1f, 1f, 1f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneCool = (new(0.94f, 0.97f, 1.03f), new(0.96f, 0.98f, 1.0f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneLids = (new(0.96f, 0.84f, 0.86f), new(0.94f, 0.88f, 0.88f));
+    static readonly (float Base, float T, float Cheek, float Lip, float Body, float LipShine) ZoneRough = (0.5f, 0.4f, 0.55f, 0.3f, 0.5f, 0.6f);
+    static readonly (float Amount, float Rough, float Base, float Deep) Sheen2 = (0.6f, 0.75f, 0.4f, 0.25f);
+    // (r2: Head its slopes' strength on fair skin, Deep on deep (its sheen shows them more); Scale 0.4, its bumps 0.83 of
+    // round 1's (half, 0.667, fell under a pixel at the Look's zoom 1 and showed nothing); Diffuse: her diffuse light sees
+    // that much of its slopes (light under the skin blurs its own shading); Fade: eased out from 0.5 to 0.87 mm a pixel (the
+    // shader's peel_mm): the Look's zoom 1 is about 0.35 (all of it), its zoom 0.55 about 0.6 (some), the town's close view
+    // about 0.95 (none, her roughness's variation only))
+    static readonly (float Head, float Deep, float Body, float Scale, float Rough, float Diffuse, Vector2 Fade) Peel = (1.2f, 0.9f, 0f, 0.4f, 0.15f, 0.25f, new(0.5f, 0.87f));
+
+    /// <summary>Skin A1's tone refit (face 44, 26 October 2026; --tone-a1 off: before, for judging it): the Deep swatch read
+    /// brick red (the Look by night her lit face Oklab hue ~40, the town close-up's chest 29-33, against her albedo's 51),
+    /// so it takes a fit of its own toward umber (HerToneFit's "deep": less red, a little less chroma) and the brown
+    /// swatch's ambient tint (the sky's light through her came out red); and her face, paler and pinker than her chest on
+    /// both tones, takes a trim of its own per swatch (FaceSwatch, on face_tone and face_world).
+    /// (--deep-fit R,G,B and --face-swatch R,G,B: others, linear, for judging them.)</summary>
+    static readonly bool ToneA1 = SurvivorUnchained.Args.Get("tone-a1") != "off";
+
+    static Vector3 ArgVec(string name, Vector3 v) => SurvivorUnchained.Args.Get(name) is string a && a.Split(',') is [var r, var g, var b]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b, System.Globalization.CultureInfo.InvariantCulture))
+        : v;
+
+    static readonly Vector3 DeepFit = ArgVec("deep-fit", new(0.86f, 1.24f, 0.90f));
+
+    static readonly Dictionary<string, Vector3> HerFaceSwatch = new()
+    {
+        ["fair"] = ArgVec("face-swatch-fair", new(1f, 1f, 1f)), ["deep"] = ArgVec("face-swatch", new(1.02f, 0.93f, 1f)),
+    };
+
+    static Vector3 FaceSwatch(Look look) => ToneA1 && HerFaceSwatch.TryGetValue(HerSkinId(look), out var v) ? v : Vector3.One;
+
     static Vector3 HerAmbient(Look look)
     {
-        var a = HerAmbientTints.TryGetValue(HerSkinId(look), out var t) ? t : HerAmbientTint;
+        var a = ToneA1 && HerSkinId(look) == "deep" ? HerAmbientTints["brown"] : HerAmbientTints.TryGetValue(HerSkinId(look), out var t) ? t : HerAmbientTint;
         return a / BodyTone(look);
     }
 
@@ -1992,7 +2100,7 @@ public static class People
     /// key with the soft fill showing her paint without HerBodyTone; under the fire, the moon and the sun alone her head kept
     /// HerBodyTone's blue, pale blue-white over a warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026).
     /// Outside the rig her head takes her body's treatment and her face this (the shader's look_rig, HerLookRig).</summary>
-    static Vector3 FaceWorld(Look look) => HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+    static Vector3 FaceWorld(Look look) => (HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One) * FaceSwatch(look);
 
     /// <summary>How much of the Look's portrait rig lights her, on every part of her skin (the skin shader's look_rig: 1 her
     /// head's tones as fitted under the rig, 0 her body's treatment and her face's FaceWorld, as in play). GameFront sets it
@@ -2057,6 +2165,7 @@ public static class People
     static Vector3 FaceTone(Look look)
     {
         var f = (ToneTrim ? HerFaceTone : HerFaceToneUntrimmed).TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+        f *= FaceSwatch(look);
         return ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? f * Pow(b, 1 - BodyK) : f;
     }
 
@@ -2181,7 +2290,7 @@ public static class People
     {
         var t = SkinTone(look);
         string id = HerSkinId(look);
-        var f = HerToneFit.TryGetValue(id, out var fit) ? fit : Vector3.One;
+        var f = HerToneFit.TryGetValue(id, out var fit) ? fit : ToneA1 && id == "deep" ? DeepFit : Vector3.One;
         f *= BodyTone(look);
         var l = t.SrgbToLinear();
         return new Color(l.R * f.X, l.G * f.Y, l.B * f.Z).LinearToSrgb();

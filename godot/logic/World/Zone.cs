@@ -101,6 +101,10 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public string PaintShadow { get; init; } = "";
     public double PaintShadowK { get; init; }
     public double PaintLift { get; init; }
+    /// <summary>How much of skin's hues (Oklab h 15-90, C over 0.012) the painted shadow spares (0: none; Face 44, skin A0). Laid on
+    /// her shaded skin, the blue lerp passed through red and violet on the way: deep skin's shade side went from h 40-55 to
+    /// 20-43, brick-red and purple patches with hard edges where her shade crossed its L and C thresholds.</summary>
+    public double PaintShadowSkin { get; init; }
     /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
     public double PaintVibDark { get; init; } = 0.2;
 }
