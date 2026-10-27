@@ -2,6 +2,8 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
+**Standing bar (the owner, 26 Oct): "effortlessly badass".** Every judge brief on her motion (armed walks especially) asks it as the whole-frame question: does she move effortlessly badass, or stiff, careful or strained?
+
 ## 0000000000000000000000. MR READY (animation 52, 26 Oct): stances + walks + both Warden hands, one MR
 Branch `anim-50` (junction rules as below; never commit heroine.res, *_clips.json, manifest.json, *.import, *.uid). Integration merged at 450ed598. No helpers or turns held. Scratch `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\fce3bb46-6066-4189-a877-02222732c4ac\scratchpad\anim52\` (briefs solverRH, judge1, judge2; tools\shoot.sh with PACK=, stroll.sh with STALEOK/IMPORT, merge_int.sh = junction-safe merge; sweep.py = reaver walk param sweep; wh\ = the right-hand fit).
 **Done this session (all max-judged PASS):**
