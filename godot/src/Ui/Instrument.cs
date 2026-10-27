@@ -674,11 +674,16 @@ public partial class EmberChain : Control
         AddChild(lck);
     }
 
+    /// <summary>By day (her experience on the chain) or by night (the ember): a freeze's dim reads it (the night
+    /// keeps its dark). Set keeps it.</summary>
+    public static bool Day;
+
     /// <summary>How full (0 to 1), whether it is the ember or her experience, and the level.</summary>
     public void Set(float fill, bool ember, int level)
     {
         this.fill = Mathf.Clamp(fill, 0, 1);
         this.ember = ember;
+        Day = !ember;
         this.level = Math.Max(1, level);
     }
 
