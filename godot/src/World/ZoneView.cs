@@ -425,6 +425,8 @@ public partial class ZoneView : Node3D
                 if (own.Color is Color oc) lights[li].LightColor = oc;
                 if (own.Range > 0) lights[li].OmniRange = own.Range;
                 if (own.Att > 0) lights[li].OmniAttenuation = own.Att;
+                // (E8 later) "spec": its specular share (the gate torches' 0.5 caught each cobble's crown, a pool ragged stone by stone)
+                if (own.Spec >= 0) lights[li].LightSpecular = own.Spec;
                 specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
                 if (own.Day < 1) dayDim[li] = own.Day;
             }

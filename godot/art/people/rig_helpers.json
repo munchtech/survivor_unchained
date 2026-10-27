@@ -187,7 +187,26 @@
    "spread_to": 20.0,
    "spread_damp": 0.6,
    "fall_tau": 0.04,
-   "fall_rate": 450.0
+   "fall_rate": 450.0,
+   "fold": {
+    "shapes": [
+     "panel_fold_a",
+     "panel_fold_b",
+     "panel_fold_n"
+    ],
+    "hinge": 0.86,
+    "band": 0.03,
+    "step": 25.0,
+    "neg": 25.0,
+    "hz": 1.6,
+    "zeta": 0.45,
+    "rest": 0.0,
+    "contact": [
+     1.12,
+     9.0
+    ],
+    "substeps": 4
+   }
   }
  ],
  "twist_chain": {

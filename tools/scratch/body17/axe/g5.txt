@@ -1,0 +1,24 @@
+frog -0.10,1.085,-0.19,12.5,-31 R: poll 0.0428 cheek 0.0263 cover@belt 11.1mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.793, 0.0, 0.61] back 0.0412 reach 0.078 strap at 0.0780
+frog -0.10,1.085,-0.19,12.5,-31 L: poll 0.0428 cheek 0.0249 cover@belt 11.1mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.793, 0.0, -0.61] back 0.0421 reach 0.076 strap at 0.0760
+frog -0.095,1.085,-0.19,12,-31 R: poll 0.0428 cheek 0.0263 cover@belt 11.1mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.791, 0.0, 0.612] back 0.0412 reach 0.074 strap at 0.0740
+frog -0.095,1.085,-0.19,12,-31 L: poll 0.0428 cheek 0.0249 cover@belt 11.1mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.791, 0.0, -0.612] back 0.0421 reach 0.073 strap at 0.0730
+frog -0.10,1.08,-0.19,12,-32 R: poll 0.0428 cheek 0.0263 cover@belt 11.1mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.786, 0.0, 0.618] back 0.0411 reach 0.074 strap at 0.0740
+frog -0.10,1.08,-0.19,12,-32 L: poll 0.0428 cheek 0.0249 cover@belt 11.1mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.786, 0.0, -0.618] back 0.0420 reach 0.071 strap at 0.0710
+frog -0.10,1.09,-0.19,12.5,-30 R: poll 0.0428 cheek 0.0263 cover@belt 12.4mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.797, 0.0, 0.604] back 0.0413 reach 0.081 strap at 0.0810
+frog -0.10,1.09,-0.19,12.5,-30 L: poll 0.0428 cheek 0.0249 cover@belt 11.6mm top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.797, 0.0, -0.604] back 0.0422 reach 0.081 strap at 0.0810
+idle   -0.10,1.085,-0.19,12.5,-31 R out  8.3.. 9.7 skin   0.0@pelvis outfit  -6.1@pelvis hand 192 | gapS min  19.5 med  20.4 max  20.8 gapO min   6.1 med   6.8 | frog skin   0.0 outfit   1.7
+idle   -0.095,1.085,-0.19,12,-31  R out  7.9.. 9.2 skin   0.0@pelvis outfit  -5.4@pelvis hand 195 | gapS min  19.1 med  19.9 max  20.3 gapO min   5.4 med   6.2 | frog skin   0.0 outfit   1.2
+idle   -0.10,1.08,-0.19,12,-32    R out  8.0.. 9.3 skin   0.0@pelvis outfit  -2.6@pelvis hand 190 | gapS min  16.0 med  16.9 max  17.2 gapO min   2.6 med   3.1 | frog skin   0.0 outfit   2.0
+idle   -0.10,1.09,-0.19,12.5,-30  R out  8.2.. 9.6 skin   0.0@pelvis outfit  -9.7@pelvis hand 193 | gapS min  23.1 med  24.0 max  24.4 gapO min   9.7 med  10.5 | frog skin   0.0 outfit   0.5
+walk   -0.10,1.085,-0.19,12.5,-31 R out 10.3..14.9 skin   0.0@lowerarm_twist_01_r outfit   0.2@pelvis hand  88 | gapS min  11.1 med  17.2 max  23.5 gapO min  -0.2 med   4.2 | frog skin   9.1 outfit  13.8
+walk   -0.095,1.085,-0.19,12,-31  R out  9.8..14.4 skin   0.0@pelvis outfit   1.4@pelvis hand  91 | gapS min  10.1 med  16.8 max  22.9 gapO min  -1.4 med   3.1 | frog skin   7.8 outfit  13.9
+walk   -0.10,1.08,-0.19,12,-32    R out  9.8..14.4 skin   0.0@lowerarm_twist_01_r outfit   4.0@pelvis hand  87 | gapS min   7.3 med  13.6 max  20.1 gapO min  -4.0 med   0.3 | frog skin   9.3 outfit  13.8
+walk   -0.10,1.09,-0.19,12.5,-30  R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit  -1.2@lowerarm_twist_01_r hand  89 | gapS min  14.9 med  20.6 max  26.6 gapO min   3.4 med   7.8 | frog skin   7.8 outfit  15.0
+run    -0.10,1.085,-0.19,12.5,-31 R out  6.3.. 9.7 skin   0.0@pelvis outfit  -5.7@pelvis hand 364 | gapS min  19.3 med  20.0 max  21.5 gapO min   5.7 med   7.2 | frog skin   0.0 outfit   7.8
+run    -0.095,1.085,-0.19,12,-31  R out  5.8.. 9.2 skin   0.0@pelvis outfit  -5.2@pelvis hand 365 | gapS min  18.7 med  19.5 max  20.2 gapO min   5.2 med   5.6 | frog skin   0.0 outfit   7.3
+run    -0.10,1.08,-0.19,12,-32    R out  5.6.. 9.1 skin   0.0@pelvis outfit  -2.1@pelvis hand 365 | gapS min  15.9 med  16.5 max  18.2 gapO min   2.1 med   3.5 | frog skin   0.0 outfit   8.1
+run    -0.10,1.09,-0.19,12.5,-30  R out  6.5.. 9.8 skin   0.0@pelvis outfit  -9.4@pelvis hand 363 | gapS min  22.9 med  23.6 max  24.7 gapO min   9.4 med  10.9 | frog skin   0.0 outfit   7.5
+sprint -0.10,1.085,-0.19,12.5,-31 R out  5.9.. 9.7 skin   0.0@calf_r outfit  -4.7@calf_r hand 377 | gapS min  19.2 med  19.6 max  21.2 gapO min   5.4 med   7.3 | frog skin   0.0 outfit   8.4
+sprint -0.095,1.085,-0.19,12,-31  R out  5.3.. 9.1 skin   0.0@calf_r outfit  -1.1@calf_r hand 378 | gapS min  18.7 med  19.1 max  20.0 gapO min   4.9 med   6.2 | frog skin   0.0 outfit   7.8
+sprint -0.10,1.08,-0.19,12,-32    R out  5.2.. 9.1 skin   0.0@pelvis outfit  -1.8@pelvis hand 378 | gapS min  15.8 med  16.1 max  18.0 gapO min   1.8 med   3.7 | frog skin   0.0 outfit   8.7
+sprint -0.10,1.09,-0.19,12.5,-30  R out  6.0.. 9.7 skin   0.0@calf_r outfit  -0.6@calf_r hand 375 | gapS min  22.7 med  23.1 max  24.6 gapO min   9.1 med  11.0 | frog skin   0.0 outfit   8.2

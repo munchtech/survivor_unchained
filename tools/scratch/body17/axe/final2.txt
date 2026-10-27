@@ -1,0 +1,11 @@
+row -0.155,1.06,-0.250,11,-14: pivot [-0.155, 1.06, -0.25] shaft [0.185, 0.953, 0.238] at [-0.259, 0.526, -0.383] thick [0.98, -0.198, 0.03]
+frog -0.155,1.06,-0.250,11,-14 R: top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.841, 0.0, 0.541] back 0.0423 reach 0.112 strap at 0.1080
+frog -0.155,1.06,-0.250,11,-14 L: top [0.0, 0.5783, -0.0002] half 0.0218 0.0168 inward [-0.841, 0.0, -0.541] back 0.0431 reach 0.112 strap at 0.1080
+idle   -0.155,1.06,-0.250,11,-14    R out   4.8..  6.7 fore  -13.2.. -13.0 skin   0.0 (f0) outfit -83.6 (f27) hand  193 mm frog skin   0.0 outfit -12.0 | skin@ y+0.58 pelvis f42 -88.0 outfit@ y+0.64 pelvis
+idle   -0.155,1.06,-0.250,11,-14    L out  15.3.. 17.1 fore  -15.9.. -15.3 skin   0.0 (f0) outfit -86.0 (f97) hand  193 mm frog skin   0.0 outfit -13.2 | skin@ y+0.59 pelvis f97 -86.0 outfit@ y+0.59 pelvis
+walk   -0.155,1.06,-0.250,11,-14    R out   9.2.. 12.6 fore  -14.9.. -13.0 skin   0.0 (f0) outfit  -9.5 (f28) hand   81 mm frog skin   0.0 outfit  10.8 | skin@ y+0.65 lowerarm_twist_01_r f28 -15.9 outfit@ y+0.65 lowerarm_twist_01_r
+walk   -0.155,1.06,-0.250,11,-14    L out   9.4.. 12.8 fore  -14.8.. -13.7 skin   0.0 (f0) outfit -29.1 (f6) hand   94 mm frog skin   0.0 outfit  -6.8 | skin@ y+0.65 lowerarm_twist_01_l f6 -35.9 outfit@ y+0.64 lowerarm_twist_01_l
+run    -0.155,1.06,-0.250,11,-14    R out   7.1..  9.2 fore  -19.7.. -19.3 skin   0.0 (f0) outfit -26.8 (f0) hand  427 mm frog skin   0.0 outfit -10.9 | skin@ y+0.09 calf_r f0 -39.4 outfit@ y+0.04 foot_r
+run    -0.155,1.06,-0.250,11,-14    L out  13.2.. 15.2 fore  -18.0.. -17.2 skin   0.0 (f0) outfit -68.8 (f6) hand  425 mm frog skin   0.0 outfit -13.0 | skin@ y+0.37 thigh_l f6 -79.5 outfit@ y+0.26 thigh_l
+sprint -0.155,1.06,-0.250,11,-14    R out   6.6..  9.0 fore  -22.4.. -22.0 skin   0.0 (f0) outfit  -7.1 (f0) hand  440 mm frog skin   0.0 outfit -10.0 | skin@ y+0.12 foot_r f0 -20.1 outfit@ y+0.12 foot_r
+sprint -0.155,1.06,-0.250,11,-14    L out  13.8.. 16.1 fore  -20.8.. -20.0 skin   0.0 (f0) outfit -62.2 (f6) hand  441 mm frog skin   0.0 outfit -13.6 | skin@ y+0.37 thigh_l f6 -64.4 outfit@ y+0.25 thigh_l
