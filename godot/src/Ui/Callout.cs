@@ -43,6 +43,9 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     public Vector2? WordsNear { get; init; }
     /// <summary>Figures the words must not cover (a boss), besides her.</summary>
     public IReadOnlyList<Rect2>? Shun { get; init; }
+    /// <summary>Extra pools (x, y, radius px) for the things the lesson names but does not ring: the
+    /// caster of a telegraph (the Knight of the red line), so it is not dimmed to a ghost.</summary>
+    public IReadOnlyList<Vector3>? Pools { get; init; }
 }
 
 /// <summary>The drawing of a callout, as the game drives it (the UI design pass restyles behind it).</summary>
@@ -784,6 +787,9 @@ public partial class Callout : Control, ICalloutView
                 var m = marks[i];
                 lights[n++] = new Vector4(m.C.X, m.C.Y, m.R * 1.5f + 46, 0.7f);
             }
+            if (aim.Pools != null)
+                foreach (var pl in aim.Pools)
+                    if (n < 6) lights[n++] = new Vector4(pl.X, pl.Y, pl.Z, 0.7f);
             dimMat.SetShaderParameter("lights", lights);
             dimMat.SetShaderParameter("count", n);
             dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
@@ -1148,10 +1154,10 @@ public partial class Callout : Control, ICalloutView
                 }
                 float y = dot(src, vec3(0.299, 0.587, 0.114));
                 // Half drained, and darkened by the hour and the pixel's own light. By day the lit ground loses
-                // about 40%, its shade less; by night (a flat 28% cut sank it to near black: the bolts' archers in
+                // about 30% (round 2 judge: 45% sank it to the shadows' level, a dusk), its shade less; by night (a flat 28% cut sank it to near black: the bolts' archers in
                 // the dash lesson barely read) the dark keeps nearly all it has and the lit about 80%: the drain,
                 // the softening and the warm pools set the taught apart instead.
-                float day_keep = mix(0.9, 0.55, smoothstep(0.03, 0.25, y));
+                float day_keep = mix(0.92, 0.70, smoothstep(0.03, 0.25, y));
                 float night_keep = mix(0.95, 0.8, smoothstep(0.05, 0.35, y));
                 float keep = old_dim == 1 ? 0.72 : mix(day_keep, night_keep, night);
                 vec3 ash = mix(vec3(y), src, 0.5) * keep;
@@ -1159,6 +1165,8 @@ public partial class Callout : Control, ICalloutView
                 ash *= 1.0 - (old_dim == 1 ? 0.15 : mix(0.15, 0.06, night)) * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
                 // (a thing's pool is lit warm, as by the ember: never a cold white patch)
                 vec3 col = mix(c, ash, k) * mix(vec3(1.0), vec3(1.06, 0.95, 0.78), warm * amount);
+                // (the pools a touch brighter than the ground was, by day: so they still stand off the lighter world)
+                col *= 1.0 + 0.15 * lit * amount * (1.0 - night) * (old_dim == 1 ? 0.0 : 1.0);
                 COLOR = vec4(col, 1.0);
             }
             """,
