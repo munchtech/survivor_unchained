@@ -69,9 +69,11 @@ uniform float sky_share = 1.0;
 uniform float sky_body = -1.0;
 varying float sky_w;
 // Her sheen's strength (SPECULAR), for her light() to read.
-varying vec2 sheen_oil;   // (x the sheen, y the broad lobe's share, oil_w: packed, Godot's 32 varyings were full)
+varying vec4 sheen_oil;   // (x the sheen, y the broad lobe's share, oil_w, zw her normal without the pores' coarse layer,
+                          // octahedral, z 9 when none: packed, Godot's 32 varyings were full)
 #define sheen sheen_oil.x
 #define oil_w sheen_oil.y
+#define macro_n sheen_oil.zw
 // Rougher where the skin is seen edge on: there a light from behind
 // glanced off it as a hard white band (the Fresnel peak a matte skin's fine
 // hairs and pores break up).
@@ -463,6 +465,26 @@ uniform sampler2D peel_map : hint_default_white, filter_linear_mipmap_anisotropi
 uniform float peel = 0.0;
 uniform float peel_scale = 0.333;
 uniform float pore_rough = 0.0;
+// (skin A r2, max judge: at 1:1 the coarse layer read as stubble, grime and acne scars, so) pore_zones (tools/assets/
+// heroine_skin_zones.py): R where pores show (her nose, inner cheeks, mid forehead, half on her chin; none on her lips,
+// jaw, under it, her neck), G her lower lip's wet core. pore_mask: the coarse layer and pore_rough that much kept to R
+// (0: everywhere, as round 1). peel_diffuse: her diffuse light sees that much of the coarse layer's slopes, her sheen
+// all of them (1: all, as round 1). peel_fade (mm a pixel, from, to): the coarse layer's slopes eased out as a pixel
+// grows past a pore's size (peel_mm: about mm to a UV * pore_scale tile on her face, as fwidth measures it: the
+// tile is 9 mm on her mesh's average, her face's UVs denser; her Look's zoom 1 is about 0.35, its zoom 0.55 0.6, the town's
+// close view 0.9), her roughness's variation kept ((0, 0): none, as round 1). lip_core: zone_lip_shine on her lower lip's core (G) instead of all her lips (0: all, as round 1).
+uniform sampler2D pore_zones : hint_default_transparent, filter_linear_mipmap;
+uniform float pore_mask = 0.0;
+uniform float peel_diffuse = 1.0;
+uniform vec2 peel_fade = vec2(0.0);
+uniform float peel_mm = 3.0;
+uniform float lip_core = 0.0;
+// freckle_keep: her freckles' lightness against her skin's held as without her colour zones (the zones' flush took their
+// contrast: a freckle's own colour is a redder skin's; 0: none, as round 1). skin_chroma: her albedo's chroma that much
+// more (deep skin's diffuse read muddy olive; 0: as before).
+uniform float freckle_keep = 0.0;
+uniform float freckle_gain = 1.0;   // (her freckles that much stronger: her zones' sheen veils them a little in daylight; 1: as before)
+uniform float skin_chroma = 0.0;
 varying float mouth_w;
 varying float mouth_c;
 varying float mouth_f;
@@ -482,6 +504,20 @@ void vertex() {
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	}
 	model_y = VERTEX.y;
+}
+
+// (her normal as Godot's normal map makes it, from a tangent-space xy at depth 1, in view space, octahedral)
+vec2 skin_macro(vec2 nxy, vec3 nn, vec3 tt, vec3 bb) {
+	vec3 v = normalize(tt * nxy.x + bb * nxy.y + nn * sqrt(max(0.0, 1.0 - dot(nxy, nxy))));
+	v /= abs(v.x) + abs(v.y) + abs(v.z);
+	return v.z >= 0.0 ? v.xy : (1.0 - abs(v.yx)) * vec2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0);
+}
+
+vec3 skin_unmacro(vec2 e) {
+	vec3 v = vec3(e, 1.0 - abs(e.x) - abs(e.y));
+	float t = max(-v.z, 0.0);
+	v.xy += vec2(v.x >= 0.0 ? -t : t, v.y >= 0.0 ? -t : t);
+	return normalize(v);
 }
 
 void fragment() {
@@ -518,13 +554,25 @@ void fragment() {
 	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate) * rig_w;
 	body_back = pow(max(body_tone, vec3(1e-3)), vec3(neck_w - 1.0));
 	ALBEDO *= body_back;
+	vec3 alb_pre = ALBEDO;
 	if (zone_colour > 0.0) {
 		vec4 cz = texture(skin_zones, UV) * zone_colour;
 		ALBEDO *= mix(vec3(1.0), zone_flush, cz.r) * mix(vec3(1.0), zone_yellow, cz.g) * mix(vec3(1.0), zone_cool, cz.b) * mix(vec3(1.0), zone_lids, cz.a);
 	}
 	if (freckle_amount > 0.001) {
 		float fv = fk.r * (1.0 - smoothstep(freckle_amount - 0.04, freckle_amount + 0.04, fk.g));
-		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.5, 1.0, freckle_amount));
+		vec3 fcol = freckle_colour;
+		if (freckle_keep > 0.0 && zone_colour > 0.0) {
+			vec3 flw = vec3(0.2126, 0.7152, 0.0722);
+			float r0 = dot(alb_pre * fcol, flw) / max(dot(alb_pre, flw), 1e-4);
+			float r1 = dot(ALBEDO * fcol, flw) / max(dot(ALBEDO, flw), 1e-4);
+			fcol *= mix(1.0, r0 / max(r1, 1e-4), freckle_keep);
+		}
+		ALBEDO = mix(ALBEDO, ALBEDO * fcol, min(fv * mix(0.5, 1.0, freckle_amount) * freckle_gain, 1.0));
+	}
+	if (skin_chroma != 0.0) {
+		float cl = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
+		ALBEDO = max(mix(vec3(cl), ALBEDO, 1.0 + skin_chroma), vec3(0.0));
 	}
 	if (brow_dye > 0.0) {
 		// (the hairs' own lightness kept, their black core lifted a little,
@@ -590,18 +638,26 @@ void fragment() {
 	}
 	float relief_slope = 0.0;
 	vec4 pm = peel > 0.0 || pore_rough > 0.0 ? texture(peel_map, UV * pore_scale * peel_scale + vec2(0.71, 0.23)) : vec4(0.5, 0.5, 1.0, 1.0);
+	vec4 pz = pore_mask > 0.0 || lip_core > 0.0 ? texture(pore_zones, UV) : vec4(0.0);
+	float pmk = mix(1.0, pz.r, pore_mask);
+	float pfp = length(fwidth(UV * pore_scale)) * peel_mm;   // (mm a pixel)
+	float pk = peel * hw * pmk * (peel_fade.y > 0.0 ? 1.0 - smoothstep(peel_fade.x, peel_fade.y, pfp) : 1.0);
+	macro_n = vec2(9.0);
 	if (has_relief) {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
 		// normal map): the pores' slopes added to the body's, at their depth.
 		vec2 a = (texture(relief, UV).xy * 2.0 - 1.0) * relief_amount;
 		relief_slope = length(a);
 		vec2 b = (q.xy * 2.0 - 1.0) * depth;
-		if (peel > 0.0) b += (pm.xy * 2.0 - 1.0) * peel * hw;
+		if (pk > 0.0 && peel_diffuse < 1.0) macro_n = skin_macro(normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a))))).xy, NORMAL, TANGENT, BINORMAL);
+		if (peel > 0.0) b += (pm.xy * 2.0 - 1.0) * pk;
 		vec3 n = normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a)))));
 		NORMAL_MAP = vec3(n.xy * 0.5 + 0.5, 1.0);
 		NORMAL_MAP_DEPTH = 1.0;
 	} else if (peel > 0.0) {
-		vec2 b = (q.xy * 2.0 - 1.0) * depth + (pm.xy * 2.0 - 1.0) * peel * hw;
+		vec2 b0 = (q.xy * 2.0 - 1.0) * depth;
+		if (pk > 0.0 && peel_diffuse < 1.0) macro_n = skin_macro(normalize(vec3(b0, 1.0)).xy, NORMAL, TANGENT, BINORMAL);
+		vec2 b = b0 + (pm.xy * 2.0 - 1.0) * pk;
 		NORMAL_MAP = vec3(normalize(vec3(b, 1.0)).xy * 0.5 + 0.5, 1.0);
 		NORMAL_MAP_DEPTH = 1.0;
 	} else {
@@ -618,7 +674,7 @@ void fragment() {
 		base_r = mix(base_r, mix(zone_rough_body, mix(zone_rough_body, zt, sz.a), hw), zone_rough);
 	}
 	oil_w = sheen2 * mix(sheen2_base, 1.0, max(sz.r, sz.b) * sz.a);
-	ROUGHNESS = clamp(base_r + (q.a - 0.5) * 0.3 + (1.0 - pm.a) * pore_rough * hw + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
+	ROUGHNESS = clamp(base_r + (q.a - 0.5) * 0.3 + (1.0 - pm.a) * pore_rough * hw * pmk + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	ROUGHNESS = mix(ROUGHNESS, clamp(paint_rough + (q.a - 0.5) * 0.1, 0.0, 1.0), pa);
 	ROUGHNESS = clamp(ROUGHNESS + relief_rough * smoothstep(0.0, 0.12, relief_slope), 0.0, 1.0);
 	METALLIC = paint_metal * pa;
@@ -630,7 +686,7 @@ void fragment() {
 	float ao = mix(aot.r, max(aot.r, lip_ao_open), max(lip_w, lips_apart * (1.0 - lips_narrow) * smoothstep(0.6, 0.95, fm.g))) * ea;
 	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
 	SPECULAR *= mix(1.0, lip_spec, lip_w * lip_tone);
-	SPECULAR *= 1.0 + zone_lip_shine * sz.b * sz.a;
+	SPECULAR *= 1.0 + zone_lip_shine * mix(sz.b * sz.a, pz.g, lip_core);
 	SPECULAR = mix(SPECULAR, paint_shine * smoothstep(0.45, 0.95, ao), pa);
 	sheen = SPECULAR;
 	AO = ao;
@@ -678,7 +734,9 @@ void fragment() {
 	// (dbg_gate 12: her albedo as toned, emitted; 13: her paint alone, emitted (with --tonemap linear --grade off; face 35))
 	else if (dbg_gate > 11.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = dbg_gate > 12.5 ? texture(paint, UV).rgb : alb_dbg; }
 	// (dbg_gate 16: her skin zones (R flush, G yellow, B cool), emitted; 17: her sheen zones (R T-zone, G cheeks, B lips))
-	if (dbg_gate > 15.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * (dbg_gate > 16.5 ? sz.rgb : texture(skin_zones, UV).rgb); }
+	if (dbg_gate > 15.5 && dbg_gate < 17.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * (dbg_gate > 16.5 ? sz.rgb : texture(skin_zones, UV).rgb); }
+	// (dbg_gate 18: R a pixel's size in mm / 4, G her pores' reach, B her lower lip's wet core)
+	if (dbg_gate > 17.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(pfp * 0.25, pz.r, pz.g); }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -692,7 +750,10 @@ float schlick(float u) {
 
 void light() {
 	float mouth_lit = (1.0 - mouth_occ * smoothstep(0.1, 1.0, mouth_f));
-	float ndl = dot(NORMAL, LIGHT);
+	// (her diffuse light sees peel_diffuse of the pores' coarse layer, her sheen all of it)
+	vec3 dn = macro_n.x > 2.0 ? NORMAL : normalize(mix(skin_unmacro(macro_n), NORMAL, peel_diffuse));
+	float ndl = dot(dn, LIGHT);
+	float s_ndl = max(dot(NORMAL, LIGHT), 0.0);
 	float c_ndl = max(ndl, 0.0);
 	if (dbg_gate > 0.0) {
 		float kw = mix(1.0, smoothstep(shade_from, shade_to, SPECULAR_AMOUNT), shade_by_soft);
@@ -700,7 +761,8 @@ void light() {
 		DIFFUSE_LIGHT += (dbg_gate > 1.5 ? (dbg_gate - 2.0) * vec3(c_ndl * kw * (1.0 - bh), ATTENUATION * kw * (1.0 - bh), 0.0)
 			: dbg_gate * ATTENUATION * c_ndl * vec3(kw * (1.0 - bh), 1.0 - kw, kw * bh));
 	} else {
-	float c_ndv = max(dot(NORMAL, VIEW), 1e-4);
+	float c_ndv = max(dot(dn, VIEW), 1e-4);
+	float s_ndv = max(dot(NORMAL, VIEW), 1e-4);
 	vec3 h = normalize(VIEW + LIGHT);
 	float c_ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
 	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
@@ -754,12 +816,12 @@ void light() {
 	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
-	if (c_ndl > 0.0) {
+	if (s_ndl > 0.0) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;
 		float k = a / (1.0 - c_ndh * c_ndh + da * da);
 		float d_ggx = k * k / PI;
-		float v_ggx = 0.5 / mix(2.0 * c_ndl * c_ndv, c_ndl + c_ndv, a);
+		float v_ggx = 0.5 / mix(2.0 * s_ndl * s_ndv, s_ndl + s_ndv, a);
 		// (a metal's sheen its own colour: the gilt's gold leaf; METALLIC 0 everywhere else)
 		vec3 f0 = mix(vec3(0.16 * sheen * sheen), ALBEDO * un, METALLIC);
 		vec3 f90 = clamp(f0 * 50.0, 0.0, 1.0);
@@ -770,9 +832,9 @@ void light() {
 			float a2 = sheen2_rough * sheen2_rough;
 			float da2 = c_ndh * a2;
 			float k2 = a2 / (1.0 - c_ndh * c_ndh + da2 * da2);
-			lobes += oil_w * (k2 * k2 / PI) * (0.5 / mix(2.0 * c_ndl * c_ndv, c_ndl + c_ndv, a2));
+			lobes += oil_w * (k2 * k2 / PI) * (0.5 / mix(2.0 * s_ndl * s_ndv, s_ndl + s_ndv, a2));
 		}
-		vec3 spec = mouth_lit * c_ndl * lobes * f * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		vec3 spec = mouth_lit * s_ndl * lobes * f * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
 		float alum = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
 		float dk = (1.0 - smoothstep(deep_lum.x, deep_lum.y, alum)) * (1.0 - METALLIC);

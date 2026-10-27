@@ -1777,6 +1777,7 @@ public static class People
                                 System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
                             if (xs.Any(float.IsNaN)) continue;
                             if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                            else if (xs.Length == 2) m.SetShaderParameter(k.Trim(), new Vector2(xs[0], xs[1]));
                             else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
                         }
     }
@@ -1901,6 +1902,8 @@ public static class People
                 m.SetShaderParameter("skin_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_skin_zones.png"));
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_sheen_zones.png"))
                 m.SetShaderParameter("sheen_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_sheen_zones.png"));
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
+                m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
         }
         // (deep: 0 at her own fair paint, 1 at the Deep swatch's lightness)
         var t = HerTone(look);
@@ -1913,31 +1916,56 @@ public static class People
         m.SetShaderParameter("zone_lids", ZoneLids.Fair.Lerp(ZoneLids.Deep, deep));
         m.SetShaderParameter("zone_rough", 1f);
         m.SetShaderParameter("zone_rough_base", ZoneRough.Base);
-        m.SetShaderParameter("zone_rough_t", ZoneRough.T);
+        // (r2: deep skin's T-zone glosses a third as much, its lamps' sheen ZoneDeepSpec of HerShade's: it read oily)
+        m.SetShaderParameter("zone_rough_t", Mathf.Lerp(ZoneRough.T, ZoneRough.Base - (ZoneRough.Base - ZoneRough.T) * 0.35f, deep));
+        m.SetShaderParameter("deep_spec", (float)SurvivorUnchained.Args.Num("deep-spec", 0.6f) * Mathf.Lerp(1f, ZoneDeepSpec, deep));
         m.SetShaderParameter("zone_rough_cheek", ZoneRough.Cheek);
         m.SetShaderParameter("zone_rough_lip", ZoneRough.Lip);
         m.SetShaderParameter("zone_rough_body", ZoneRough.Body);
-        m.SetShaderParameter("zone_lip_shine", ZoneRough.LipShine);
+        m.SetShaderParameter("zone_lip_shine", Mathf.Lerp(ZoneRough.LipShine, ZoneLipShineDeep, deep));
+        m.SetShaderParameter("lip_core", 1f);
+        m.SetShaderParameter("freckle_keep", FreckleKeep);
+        m.SetShaderParameter("freckle_gain", FreckleGain);
+        m.SetShaderParameter("skin_chroma", Mathf.Lerp(0f, DeepChroma, deep));
         // (deep skin's sheen already shows strongly against its darker diffuse: the broad lobe less there, or it reads oily)
         m.SetShaderParameter("sheen2", Sheen2.Amount * Mathf.Lerp(1f, Sheen2.Deep, deep));
         m.SetShaderParameter("sheen2_rough", Sheen2.Rough);
         m.SetShaderParameter("sheen2_base", Sheen2.Base);
         if (head != null && ResourceLoader.Exists("res://art/people/skin_peel.png"))
             m.SetShaderParameter("peel_map", GD.Load<Texture2D>("res://art/people/skin_peel.png"));
-        m.SetShaderParameter("peel", head == false ? Peel.Body : Peel.Head);
+        // (r2: the coarse layer only where pores show (pore_zones), its slopes mostly on her sheen, eased out with distance;
+        // none on her body. --skin-pores off: none of it, the rest of r2 kept)
+        bool pores = !SkinPoresOff;
+        m.SetShaderParameter("peel", pores ? (head == false ? Peel.Body : Mathf.Lerp(Peel.Head, Peel.Deep, deep)) : 0f);
         m.SetShaderParameter("peel_scale", Peel.Scale);
-        m.SetShaderParameter("pore_rough", Peel.Rough);
+        m.SetShaderParameter("pore_rough", pores && head != false ? Peel.Rough : 0f);
+        m.SetShaderParameter("pore_mask", 1f);
+        m.SetShaderParameter("peel_diffuse", Peel.Diffuse);
+        m.SetShaderParameter("peel_fade", Peel.Fade);
     }
 
+    static readonly bool SkinPoresOff = SurvivorUnchained.Args.Get("skin-pores") == "off";
+    static readonly float ZoneDeepSpec = 0.8f;
+    static readonly float ZoneLipShineDeep = 0.5f;
+    static readonly float FreckleKeep = 1f;
+    // (her freckles' step held within 10% of before's: town day cheeks -8.0 before, -6.4 without the gain; the Look -10.8)
+    static readonly float FreckleGain = 1.12f;
+    static readonly float DeepChroma = 0.2f;   // (linear; her diffuse's Oklab chroma about 8% more after the grade)
+
     static readonly bool SkinZonesOff = SurvivorUnchained.Args.Get("skin-zones") == "off";
-    static readonly (float Fair, float Deep) ZoneColour = (1f, 0.7f);
+    static readonly (float Fair, float Deep) ZoneColour = (0.85f, 0.7f);
     static readonly (Vector3 Fair, Vector3 Deep) ZoneFlush = (new(1.14f, 0.68f, 0.46f), new(1.04f, 0.84f, 0.78f));
-    static readonly (Vector3 Fair, Vector3 Deep) ZoneYellow = (new(0.97f, 1f, 0.86f), new(0.98f, 1f, 0.88f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneYellow = (new(0.985f, 1f, 0.93f), new(1f, 1f, 1f));
     static readonly (Vector3 Fair, Vector3 Deep) ZoneCool = (new(0.94f, 0.97f, 1.03f), new(0.96f, 0.98f, 1.0f));
     static readonly (Vector3 Fair, Vector3 Deep) ZoneLids = (new(0.96f, 0.84f, 0.86f), new(0.94f, 0.88f, 0.88f));
-    static readonly (float Base, float T, float Cheek, float Lip, float Body, float LipShine) ZoneRough = (0.5f, 0.4f, 0.55f, 0.3f, 0.5f, 1.0f);
-    static readonly (float Amount, float Rough, float Base, float Deep) Sheen2 = (0.6f, 0.75f, 0.4f, 0.5f);
-    static readonly (float Head, float Body, float Scale, float Rough) Peel = (0.5f, 0.25f, 0.333f, 0.15f);
+    static readonly (float Base, float T, float Cheek, float Lip, float Body, float LipShine) ZoneRough = (0.5f, 0.4f, 0.55f, 0.3f, 0.5f, 0.6f);
+    static readonly (float Amount, float Rough, float Base, float Deep) Sheen2 = (0.6f, 0.75f, 0.4f, 0.25f);
+    // (r2: Head its slopes' strength on fair skin, Deep on deep (its sheen shows them more); Scale 0.4, its bumps 0.83 of
+    // round 1's (half, 0.667, fell under a pixel at the Look's zoom 1 and showed nothing); Diffuse: her diffuse light sees
+    // that much of its slopes (light under the skin blurs its own shading); Fade: eased out from 0.5 to 0.87 mm a pixel (the
+    // shader's peel_mm): the Look's zoom 1 is about 0.35 (all of it), its zoom 0.55 about 0.6 (some), the town's close view
+    // about 0.95 (none, her roughness's variation only))
+    static readonly (float Head, float Deep, float Body, float Scale, float Rough, float Diffuse, Vector2 Fade) Peel = (1.2f, 0.9f, 0f, 0.4f, 0.15f, 0.25f, new(0.5f, 0.87f));
 
     /// <summary>Skin A1's tone refit (face 44, 26 October 2026; --tone-a1 off: before, for judging it): the Deep swatch read
     /// brick red (the Look by night her lit face Oklab hue ~40, the town close-up's chest 29-33, against her albedo's 51),
