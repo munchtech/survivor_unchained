@@ -142,7 +142,7 @@
         {"do": "light", "light": 6, "level": 0.55, "color": "#6e9bff"},
         {"do": "globe", "light": 6, "level": 0.0, "color": "#6e9bff"},
         {"do": "glow", "name": "ford6", "where": [9.624, 3.645, -49.033], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
-        {"do": "glow", "name": "tower", "where": {"abs": [3.0, 134.6, -649.8]}, "color": "#ffc870", "size": 0.86, "spread": 22, "halo": 0.32, "clear": true},
+        {"do": "glow", "name": "tower", "where": {"abs": [3.0, 134.6, -649.8]}, "color": "#ffc870", "size": 0.86, "spread": 28, "halo": 0.06, "soft": true, "ontop": true, "light": 10, "range": 14, "spec": 0.2, "clear": true},
         {"do": "mist", "name": "ford", "where": [0.0, -1.05, -44.0], "size": [80, 1.4, 30], "density": 0.3, "color": "#5a6e8c", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
         {"do": "lit", "light": 7, "on": false},
         {"do": "lit", "light": 8, "on": false},

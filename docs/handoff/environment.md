@@ -1,8 +1,16 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Now (Env 21, 27 Oct): E10 MR READY; next the later list (A8 earth bank, s8a halo, torch pools, A8 grime, camp dirt)
-- **E10 absolute runs PASS page 11 in every window** (main ran them on env-16@6f8a2a0d, quiet machine; `survivorsunchained_inputs\env_perf1\e10\lf_{hi,med}_e10a_windows.md`). Hi (1440p, 18 windows): GPU max 4.8 ms, gpu p99 6.0, frame p99 11.3, render CPU 2.1 (Intro/Boss), shadow draws max 515, prims max 3.05M. Med (1080p, 23 windows): GPU 3.2, gpu p99 4.1, frame p99 9.4, render CPU 2.0, shadow draws 468, prims 3.45M. Both reach Exit (last window Dawn/Exit). The exit-time RID leak lines are Godot's shutdown noise.
-- Integration merged (85ab6f67, junction rule; Body's pauldron enamel in, material only). Tests 1131/0/8.
+## Now (Env 21, 27 Oct): E10 MERGED (ee5f0c18); the E8 later list DONE (final xhigh judge PASS, close, 7/7 gate YES, every frame better than round 1); MR READY
+- **E10:** absolute runs passed page 11 in every window (hi/med e10a); merged by main.
+- **The later list (3 build rounds, 2 xhigh judges; commits 7d49e242..c51c41e9):**
+  - A8 arch: `beyond_house` + `beyond_lamp` past the gate (lit `_glow` panes, `no_shadow` in props.json read by `OwnProps.cs`), a faint horizon haze veil past the gatehouse (`Atmosphere.cs`).
+  - Grime: `bake_colours` height axis fixed (y up for every preset; the far castle keeps `old.grime_depth`), `runs` + `base_dark`; per-pixel runs and a moss foot band on flagged outer faces (`godot/shaders/props_runs.gdshader`, faces flagged by vertex alpha 0.5).
+  - Tower-foot band: the terrain's warm street-mud term off in Low Ford; a cool damp band at the foot of standing things (`terrain.gdshader` `foot_damp`/`foot_w`, set in `lowford/flora_species.json`; town unchanged, every new term defaults 0). Gate torches dim by day, paler, low specular (`props_own.json` lamps `spec`/`day`).
+  - s8a: gold halo `soft` + `ontop` glow keys (`GameCinema.cs`), halo 0.06, a small light on the keep; two trees moved off the third blue ford lamp (`flora_move`).
+  - Camp: `camp_ground` dressing mesh (10 varied stones, kindling, brands, ash), scorch disc / trample / paths in the terrain shader (`ground_paths`), `tools/assets/lowford_camp_paint.py` (starts from the pre-cut splat at 58e2a203^).
+- **Perf (hi, whole Low Ford to Exit, `env_perf1\e10\lf_hi_e21a_windows.md`; NOT a quiet machine: two ui-11 Godot runs overlapped):** GPU flat against e10a (Rising 3.8 vs 3.7 ms, Boss 4.6 vs 4.7, Intro/Boss 4.9 vs 4.8), draws and shadow draws flat (Intro/Boss 470 vs 515). The CPU columns doubled everywhere (render CPU 2.1-4.0, frame p99 40-57) from the contention; the quiet last window (Exit) matches e10a (frame 3.9 vs 4.0, p99 4.5 vs 4.3, render CPU 1.0 vs 0.9). Nothing in the list adds per-frame CPU work. The export's Godot wrapper hung after writing the build (0 CPU, no child): stopped by PID, the run went on.
+- **Closed as known (judge 2):** camp lantern pool outshines the fire (Rendering/lighting, logged); gate_o_01 drum body below the plinth dark (560-900 x 60-160); olive moss on the o_01 plinth tops; one smooth "potato" stone in camp o_00 (1170-1200 x 515-555); the A8 lit drum faces' block checker (accepted r1); the camp paths don't show at 1:1 (harmless).
+- **Cost:** solvers 193k + 138k + 221k + 150k, judges 93k + 92k. Briefs, scripts and verdict crops: `survivorsunchained_inputs\scratch_env21\` (common.md, judge1.md, judge2.md, j1\, j2\).
 
 ## Paused here (Env 20, 27 Oct, coordinator WIND-DOWN; history): the E10 absolute runs, then E10's MR
 - **E8 MERGED** (integration fast-forwarded to 5fe50e02). **E10's fixes are BUILT and proven by ABAB (92bab48f, 772ddc85; solver 180k).** The MR waits ONLY on the absolute runs.
