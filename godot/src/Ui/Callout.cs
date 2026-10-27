@@ -130,6 +130,12 @@ public partial class Callout : Control, ICalloutView
         Modulate = Colors.Transparent;
     }
 
+    /// <summary>--dim-diag with --shot: the freeze's dim held off for a frame of the same moment undimmed
+    /// (set by GameTeach; the two frames differ by the dim alone).</summary>
+    public static bool DimHeld;
+    /// <summary>--dim-diag: the flat dim before UI 16 for a frame of the same moment (before/after).</summary>
+    public static bool DimOld;
+
     public void Show(CalloutLook l)
     {
         look = l;
@@ -759,6 +765,8 @@ public partial class Callout : Control, ICalloutView
         else smoke.Visible = false;
         // The world drains, darkens and softens, but for a soft round pool on each thing in the world
         // (its own colour, no more light than it had); a HUD part has no pool (the HUD keeps it undimmed).
+        if (Freeze) dim.Visible = !DimHeld;
+        if (Freeze) dimMat.SetShaderParameter("old_dim", DimOld ? 1 : 0);
         if (dim.Visible)
         {
             var lights = new Vector4[6];
@@ -778,6 +786,8 @@ public partial class Callout : Control, ICalloutView
             dimMat.SetShaderParameter("count", n);
             dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
             dimMat.SetShaderParameter("amount", Smooth(age / 0.26) * out_);
+            if (OS.GetCmdlineUserArgs().Contains("--dim-diag") && age > 0.6 && age < 1.3)
+                GD.Print($"dimdiag age={age:0.00} words={new Rect2(wordsAt - Size2 / 2, Size2)} lights={string.Join(";", lights.Take(n).Select(l => $"{l.X:0},{l.Y:0},{l.Z:0}"))}");
         }
         glow.QueueRedraw();
         ink.QueueRedraw();
@@ -1099,6 +1109,7 @@ public partial class Callout : Control, ICalloutView
             uniform int count = 0;
             uniform int soft_first = 0;
             uniform float amount = 0.0;
+            uniform int old_dim = 0;
             uniform vec2 canvas = vec2(1920.0, 1080.0);
             void fragment() {
                 vec2 p = UV * canvas;
@@ -1133,10 +1144,14 @@ public partial class Callout : Control, ICalloutView
                     src = mix(c, acc / wsum, k);
                 }
                 float y = dot(src, vec3(0.299, 0.587, 0.114));
-                // (about 30% darker, half drained: the night still reads, the thing taught stands out)
-                vec3 ash = mix(vec3(y), src, 0.5) * 0.72;
+                // Half drained, and darkened by the pixel's own light: a lit ground by day loses about 40%, the
+                // night's dark keeps nearly all it has (a flat 28% cut sank a night frame to near black: the
+                // bolts' archers in the dash lesson barely read). The drain and the pools still set the taught apart.
+                float lum = smoothstep(0.03, 0.42, y);
+                float keep = old_dim == 1 ? 0.72 : mix(0.92, 0.6, lum);
+                vec3 ash = mix(vec3(y), src, 0.5) * keep;
                 vec2 q = UV - 0.5;
-                ash *= 1.0 - 0.15 * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
+                ash *= 1.0 - (old_dim == 1 ? 0.15 : mix(0.05, 0.15, lum)) * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
                 // (a thing's pool is lit warm, as by the ember: never a cold white patch)
                 vec3 col = mix(c, ash, k) * mix(vec3(1.0), vec3(1.06, 0.95, 0.78), warm * amount);
                 COLOR = vec4(col, 1.0);

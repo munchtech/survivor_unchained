@@ -54,6 +54,7 @@ public partial class Voices : Node3D
     /// <summary>No name plates or quest marks at all (set by shots that must keep the frame clear; Away and Quiet are driven by the game).</summary>
     public bool Bare;
     float plateK = 1;
+    static readonly bool platesOld = OS.GetCmdlineUserArgs().Contains("--plates-old");
 
     public Voices() { Name = "Voices"; }
 
@@ -265,6 +266,26 @@ public partial class Voices : Node3D
                 n.Offset = n.Offset with { X = dx / k };
                 m.Offset = m.Offset with { X = dx / k };
                 c.X += dx;
+                // Nor half off the top or the foot of the screen, nor under the top-right block (the minimap, the
+                // place, the objectives): it fades out over the last 40 px before it would be cut or covered.
+                var box = new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h));
+                // (--plates-old: as before UI 16, for before/after pictures)
+                if (platesOld) { placed.Add(box.Grow(4)); continue; }
+                if (m.Visible && m.Text != "") box = box.Expand(c - new Vector2(0, m.Offset.Y * k + m.FontSize * k / 2));
+                float edge = Mathf.Clamp(Mathf.Min(box.Position.Y - 4, vpH - 4 - box.End.Y) / 40f, 0, 1);
+                if (Ui.GameHud.Header is Rect2 hd)
+                {
+                    float sx = vpW / 1920f;
+                    var hr = new Rect2(hd.Position * sx, hd.Size * sx).Grow(6);
+                    // (how far clear of the block: the larger of the gaps across and down; 0 inside it)
+                    float gap = Mathf.Max(Mathf.Max(hr.Position.X - box.End.X, box.Position.X - hr.End.X), Mathf.Max(hr.Position.Y - box.End.Y, box.Position.Y - hr.End.Y));
+                    edge = Mathf.Min(edge, Mathf.Clamp(gap / 40f, 0, 1));
+                }
+                if (edge < 1)
+                {
+                    n.Transparency = 1 - (1 - n.Transparency) * edge; m.Transparency = 1 - (1 - m.Transparency) * edge;
+                    if (edge <= 0) { n.Visible = false; continue; }
+                }
                 placed.Add(new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h)).Grow(4));
                 if (m.Visible) placed.Add(new Rect2(c - new Vector2(m.FontSize * k / 2, m.Offset.Y * k + m.FontSize * k / 2), new Vector2(m.FontSize * k, m.FontSize * k)));
             }
