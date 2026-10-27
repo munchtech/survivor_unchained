@@ -1895,6 +1895,10 @@ public static class People
     /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
     static void HerZones(ShaderMaterial m, Look look, bool? head)
     {
+        // (face 46 skin C: the night skin-line hold, each warm lamp's colour on her skin held near white, its luminance kept;
+        // --skin-hold off: none, as before)
+        m.SetShaderParameter("skin_hold", SkinHoldOff ? 0f : 1f);
+        m.SetShaderParameter("hold_chroma", HoldChroma);
         if (SkinZonesOff) return;
         if (head == true)
         {
@@ -1946,6 +1950,8 @@ public static class People
     }
 
     static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
+    static readonly bool SkinHoldOff = SurvivorUnchained.Args.Get("skin-hold") == "off";
+    static readonly float HoldChroma = 0.3f;
     static readonly float ZoneDeepSpec = 0.8f;
     static readonly float ZoneLipShineDeep = 0.5f;
     static readonly float FreckleKeep = 1f;
