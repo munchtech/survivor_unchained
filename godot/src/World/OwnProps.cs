@@ -235,12 +235,12 @@ public static class OwnProps
     /// <summary>(E8 later r2) The air sheet's colour: the sky's horizon (Atmosphere, on every change of light).</summary>
     public static void SkyHaze(Color horizon) { veilCol = horizon; veil?.SetShaderParameter("haze_col", horizon); }
     /// <summary>(E8 later r2) "haze_veil" (props_own.json "place"): a 6 x 6.5 m sheet of air facing +z, its foot on the
-    /// ground (shaders/haze_veil.gdshader; --haze-veil its share, 0.04), no shadow.</summary>
+    /// ground (shaders/haze_veil.gdshader; --haze-veil its share, 0.048), no shadow.</summary>
     static Node3D Veil()
     {
         veil ??= new ShaderMaterial { ResourceName = "haze_veil", Shader = GD.Load<Shader>("res://shaders/haze_veil.gdshader") };
         veil.SetShaderParameter("haze_col", veilCol);
-        veil.SetShaderParameter("amount", SurvivorUnchained.Args.Num("haze-veil", 0.04f));
+        veil.SetShaderParameter("amount", SurvivorUnchained.Args.Num("haze-veil", 0.048f));
         var root = new Node3D { Name = "own_haze_veil" };
         root.AddChild(new MeshInstance3D
         {

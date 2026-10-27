@@ -588,7 +588,7 @@ void fragment() {
 	if (foot_damp > 0.0) {
 		float fdn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (rg4.g - 0.5) * 0.35 + (nM.a - 0.5) * 0.25;
 		float fd = (1.0 - smoothstep(foot_w * 0.25, foot_w, fdn)) * foot_damp;
-		albedo *= mix(vec3(1.0), mix(vec3(0.62, 0.64, 0.72), vec3(0.56, 0.68, 0.92), w_setts), fd);
+		albedo *= mix(vec3(1.0), mix(vec3(0.62, 0.64, 0.72), vec3(0.54, 0.67, 0.97), w_setts), fd);
 		rough = mix(rough, mix(rough * 0.85, 0.42, w_setts), fd);
 	}
 	if (camp_scorch + trample > 0.0) {
@@ -596,11 +596,11 @@ void fragment() {
 			if (warm_at[i].z <= 0.0) continue;
 			float dn = length(w - warm_at[i].xy) + (nF.r - 0.5) * 0.3 + (nM.b - 0.5) * 0.25;
 			float sc = (1.0 - smoothstep(scorch_r * 0.55, scorch_r * 1.15, dn)) * camp_scorch;
-			albedo = mix(albedo, vec3(0.030, 0.026, 0.023) * (0.75 + 0.5 * nF.g), sc * 0.8);
-			float fl = smoothstep(0.66, 0.74, texture(noise_tex, w * 3.1 + 0.29).r * 0.7 + nF.a * 0.3) * sc;
-			albedo = mix(albedo, vec3(0.26, 0.25, 0.24), fl * 0.8);
+			albedo = mix(albedo, vec3(0.040, 0.032, 0.026) * (0.75 + 0.5 * nF.g), sc * 0.75);
+			float fl = smoothstep(0.70, 0.80, texture(noise_tex, w * 2.3 + 0.29).r * 0.6 + nF.a * 0.4) * sc;
+			albedo = mix(albedo, vec3(0.22, 0.21, 0.20), fl * 0.65);
 			rough = mix(rough, 0.95, sc);
-			float tr = smoothstep(scorch_r * 0.95, scorch_r * 1.4, dn) * (1.0 - smoothstep(2.2, 3.0, dn)) * trample;
+			float tr = smoothstep(scorch_r * 0.95, scorch_r * 1.4, dn) * (1.0 - smoothstep(2.6, 3.4, dn)) * trample;
 			albedo *= 1.0 + tr * (0.7 + 0.6 * nM.g);
 		}
 	}
