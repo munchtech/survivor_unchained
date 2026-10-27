@@ -3080,12 +3080,17 @@ def hulled(pos, where, tris, blend=0.02, fill=0):
         A_.data[:] = 1.0
         deg_ = np.asarray(A_.sum(1)).ravel() + 1e-12
         src = pos.copy()
+        # (the foot past the blend only: the ankle's blend as before, the walk's ankle crease came out through it)
+        mf = where > 0.005
         for _ in range(fill):
-            src = np.where(m[:, None], (A_ @ src) / deg_[:, None], pos)
+            src = np.where(mf[:, None], (A_ @ src) / deg_[:, None], pos)
     for i in np.where(m)[0]:
         q = bvh.find_nearest(Vector(src[i]))[0]
         if q is not None:
             out[i] = pos[i] * (1 - t[i]) + np.array(q[:]) * t[i]
+    if fill and HULL_PAD > 0:
+        # (and the filled foot HULL_PAD further out, eased in over the blend: her toes flexing in the walk)
+        out = out + vertex_normals(out, tris) * (HULL_PAD * np.clip(where / 0.02, 0, 1))[:, None]
     return out
 
 
@@ -9236,6 +9241,7 @@ def reaver():
 #     each, crossing in front at every turn, rising faster in front than behind so the crosses stand up), the
 #     second over the first in front and under it behind.
 REAVER_THONGS = int(os.environ.get("REAVER_THONGS", "4"))
+HULL_PAD = float(os.environ.get("TS_PAD", "0.002"))
 HULL_FILL = {f"reaver.boot_{sd}": int(os.environ.get("TS_FILL", "150")) for sd in "lr"} if REAVER_BOOT != "old" else {}
 TS_SOLE_UP = float(os.environ.get("TS_SOLE_UP", "0.007"))  # (the sole edge's middle, this far over the sock's floor)
 TS_SOLE = float(os.environ.get("TS_SOLE", "0.009"))         # (its width across the corner)
