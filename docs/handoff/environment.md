@@ -1,6 +1,10 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
-## Paused here (Env 20, 27 Oct, coordinator WIND-DOWN); next: the E10 absolute runs on a quiet machine, then E10's MR
+## Now (Env 21, 27 Oct): E10 MR READY; next the later list (A8 earth bank, s8a halo, torch pools, A8 grime, camp dirt)
+- **E10 absolute runs PASS page 11 in every window** (main ran them on env-16@6f8a2a0d, quiet machine; `survivorsunchained_inputs\env_perf1\e10\lf_{hi,med}_e10a_windows.md`). Hi (1440p, 18 windows): GPU max 4.8 ms, gpu p99 6.0, frame p99 11.3, render CPU 2.1 (Intro/Boss), shadow draws max 515, prims max 3.05M. Med (1080p, 23 windows): GPU 3.2, gpu p99 4.1, frame p99 9.4, render CPU 2.0, shadow draws 468, prims 3.45M. Both reach Exit (last window Dawn/Exit). The exit-time RID leak lines are Godot's shutdown noise.
+- Integration merged (85ab6f67, junction rule; Body's pauldron enamel in, material only). Tests 1131/0/8.
+
+## Paused here (Env 20, 27 Oct, coordinator WIND-DOWN; history): the E10 absolute runs, then E10's MR
 - **E8 MERGED** (integration fast-forwarded to 5fe50e02). **E10's fixes are BUILT and proven by ABAB (92bab48f, 772ddc85; solver 180k).** The MR waits ONLY on the absolute runs.
 - **Run (the main session or you, on a quiet stretch):** `bash C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_env20\e10_abs.sh e10a`. It does the import, the Release export, and the whole Low Ford to Exit at 1440p high and at 1080p medium, writing `survivorsunchained_inputs\env_perf1\e10\lf_{hi,med}_e10a_windows.md`. Merge integration first, under the junction rule.
   - **Pass:** page 11 in every 20-s window: GPU <= 6 / 4.5 ms, gpu p99 <= 10 / 7, frame p99 <= 16.7, render CPU <= 3, shadow draws <= 1,200 / 1,000, prims <= 5M / 4M, and the log reaching Exit.
