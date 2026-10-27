@@ -489,6 +489,8 @@ public partial class Callout : Control, ICalloutView
                     float d = Apart(box, marks[i].Box);
                     cost += (i == 0 ? 1.4f : 0.7f) * Math.Abs(d - 120) + (d < 56 ? 400 : 0);
                 }
+                // (the test below only adds: a place already no better than the best is passed by)
+                if (cost >= best) continue;
                 if (her is Rect2 hr)
                     foreach (var i in aimed)
                         if (!ClearWay(new Rect2(x - hw + 14, y - hh + 10, s.X, s.Y), marks[i], hr)) cost += 900;
@@ -542,22 +544,27 @@ public partial class Callout : Control, ICalloutView
             float bend = Bend(A, B);
             return Ink.Bezier(A, A + DA * bend + Bow, B - DB * bend + Bow, B, t, steps);
         }
+
+        /// <summary>Path's points into buf (steps + 1 long), none allocated; how many (0: too short).</summary>
+        public int PathInto(Span<Vector2> buf, float t, int steps)
+        {
+            float bend = Bend(A, B);
+            return Ink.BezierInto(buf, A, A + DA * bend + Bow, B - DB * bend + Bow, B, t, steps);
+        }
     }
 
     /// <summary>Where an arrow may leave the words: 16 px out of their foot or head (under or over the
     /// thing), out of a corner, or, last, out of a side (inline with the words: it reads as a bullet).</summary>
-    static List<(Vector2 P, Vector2 D, float Cost)> Starts(Rect2 box, Vector2 toward)
+    static List<(Vector2 P, Vector2 D, float Cost)> Starts(Rect2 box, Vector2 toward, List<(Vector2 P, Vector2 D, float Cost)> list)
     {
+        list.Clear();
         var c = box.GetCenter();
         float inset = Math.Min(28, box.Size.X * 0.2f);
         float x = Mathf.Clamp(toward.X, box.Position.X + inset, box.End.X - inset);
         var o = box.Grow(Out);
-        var list = new List<(Vector2, Vector2, float)>
-        {
-            (new Vector2(x, o.End.Y), Vector2.Down, 0), (new Vector2(x, o.Position.Y), Vector2.Up, 0),
-            (new Vector2(o.Position.X, c.Y), Vector2.Left, 220), (new Vector2(o.End.X, c.Y), Vector2.Right, 220),
-        };
-        foreach (var (cx, cy) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        list.Add((new Vector2(x, o.End.Y), Vector2.Down, 0)); list.Add((new Vector2(x, o.Position.Y), Vector2.Up, 0));
+        list.Add((new Vector2(o.Position.X, c.Y), Vector2.Left, 220)); list.Add((new Vector2(o.End.X, c.Y), Vector2.Right, 220));
+        foreach (var (cx, cy) in Corners)
         {
             var d = new Vector2(cx * 0.6f, cy * 0.8f);
             var corner = new Vector2(cx < 0 ? box.Position.X : box.End.X, cy < 0 ? box.Position.Y : box.End.Y);
@@ -568,9 +575,15 @@ public partial class Callout : Control, ICalloutView
 
     /// <summary>Where an arrow may land on a mark, from a, and which way: on a ring's near edge (or short of
     /// it, StopY); on an area's near edges, at their middle or toward a corner (a bracket).</summary>
-    List<(Vector2 B, Vector2 DB, float Cost)> Lands((Vector2 C, float R, Rect2 Box, bool Round) m, Vector2 a)
+    static readonly (int, int)[] Corners = { (-1, -1), (1, -1), (1, 1), (-1, 1) };
+    static readonly (float, float)[] Along = { (0.5f, 0f), (0.15f, 50f), (0.85f, 50f) };
+    // (BestWay's lists, kept: it runs thousands of times as a callout is placed, never inside itself)
+    readonly List<(Vector2 P, Vector2 D, float Cost)> startsBuf = new(8);
+    readonly List<(Vector2 B, Vector2 DB, float Cost)> landsBuf = new(8);
+
+    List<(Vector2 B, Vector2 DB, float Cost)> Lands((Vector2 C, float R, Rect2 Box, bool Round) m, Vector2 a, List<(Vector2 B, Vector2 DB, float Cost)> list)
     {
-        var list = new List<(Vector2, Vector2, float)>();
+        list.Clear();
         if (m.Round)
         {
             if (aim.StopY is float sy && a.Y < sy) { list.Add((new Vector2(m.C.X, sy), Vector2.Down, 0)); return list; }
@@ -581,7 +594,7 @@ public partial class Callout : Control, ICalloutView
         var r = m.Box.Grow(4);
         // (a card's leaves stand over its frame: the point stops clear of them)
         float lift = Panel ? 13 : 0;
-        foreach (var (f, cost) in new[] { (0.5f, 0f), (0.15f, 50f), (0.85f, 50f) })
+        foreach (var (f, cost) in Along)
         {
             float x = Mathf.Lerp(r.Position.X, r.End.X, f);
             if (a.Y < r.Position.Y) list.Add((new Vector2(x, r.Position.Y - lift), Vector2.Down, cost));
@@ -598,10 +611,11 @@ public partial class Callout : Control, ICalloutView
     /// thing it lands on, nothing counts (an ember at her feet is still pointed at).</summary>
     float Cost(Way w, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 words, Rect2? her, IReadOnlyList<Rect2>? avoid, int samples)
     {
-        var pts = w.Path(1, samples);
-        if (pts.Count < 2) return float.MaxValue;
+        Span<Vector2> pts = stackalloc Vector2[samples + 1];
+        int n = w.PathInto(pts, 1, samples);
+        if (n < 2) return float.MaxValue;
         float len = 0;
-        for (int i = 1; i < pts.Count; i++) len += pts[i].DistanceTo(pts[i - 1]);
+        for (int i = 1; i < n; i++) len += pts[i].DistanceTo(pts[i - 1]);
         float cost = len + w.Bow.Length() * 0.6f;
         var to = (w.B - w.A).Normalized();
         if (w.DA.Dot(to) < -0.1f) cost += 500;
@@ -613,21 +627,21 @@ public partial class Callout : Control, ICalloutView
         // way into a mark she stands at may graze it rather than hook round.
         Rect2? core = her?.Grow(12 - HerMargin);
         bool herHit = false, marginHit = false, wordsHit = false, edgeHit = false;
-        var hits = avoid != null ? new bool[avoid.Count] : null;
-        for (int i = 1; i < pts.Count; i++)
+        Span<bool> hits = avoid != null ? stackalloc bool[avoid.Count] : default;
+        for (int i = 1; i < n; i++)
         {
             var q = pts[i];
             if (near.HasPoint(q)) continue;
             if (her is Rect2 h && h.HasPoint(q)) { if (core is Rect2 hc && hc.HasPoint(q)) herHit = true; else marginHit = true; }
             if (i > 1 && wordsIn.HasPoint(q)) wordsHit = true;
             if (q.X < 16 || q.X > Canvas - 16 || q.Y < 16 || q.Y > CanvasH - 16) edgeHit = true;
-            if (avoid != null) for (int k = 0; k < avoid.Count; k++) if (!hits![k] && avoid[k].HasPoint(q)) hits[k] = true;
+            if (avoid != null) for (int k = 0; k < avoid.Count; k++) if (!hits[k] && avoid[k].HasPoint(q)) hits[k] = true;
         }
         if (herHit) cost += 4000;
         else if (marginHit) cost += 700;
         if (wordsHit) cost += 2500;
         if (edgeHit) cost += 2000;
-        if (hits != null) foreach (var hb in hits) if (hb) cost += 700;
+        foreach (var hb in hits) if (hb) cost += 700;
         return cost;
     }
 
@@ -636,12 +650,12 @@ public partial class Callout : Control, ICalloutView
         IReadOnlyList<Rect2>? avoid, (int, int, int)? was, bool bowed = true, int samples = 24)
     {
         (Way, int, int, int, float) best = (default, -1, -1, -1, float.MaxValue);
-        var starts = Starts(words, m.C);
+        var starts = Starts(words, m.C, startsBuf);
         float[] bows = bowed ? [0, 0.22f, -0.22f, 0.42f, -0.42f] : [0];
         for (int si = 0; si < starts.Count; si++)
         {
             var (a, da, sc) = starts[si];
-            var lands = Lands(m, a);
+            var lands = Lands(m, a, landsBuf);
             for (int li = 0; li < lands.Count; li++)
             {
                 var (b, db, lc) = lands[li];
@@ -662,8 +676,26 @@ public partial class Callout : Control, ICalloutView
     }
 
     /// <summary>Whether the words at box have a way to a mark that keeps off her (the placing's test: no bows, few samples).</summary>
-    bool ClearWay(Rect2 box, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 her) =>
-        BestWay(box, m, her, null, null, false, 12).Cost < 2500;
+    /// (BestWay's loop, no bows, stopped at the first way under the bar: the same answer as its best's)
+    bool ClearWay(Rect2 box, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 her)
+    {
+        var starts = Starts(box, m.C, startsBuf);
+        for (int si = 0; si < starts.Count; si++)
+        {
+            var (a, da, sc) = starts[si];
+            var lands = Lands(m, a, landsBuf);
+            for (int li = 0; li < lands.Count; li++)
+            {
+                var (b, db, lc) = lands[li];
+                if (a.DistanceTo(b) < 24) continue;
+                var nrm = (b - a).Normalized().Orthogonal();
+                float len = a.DistanceTo(b);
+                var w = new Way(a, da, b, db, nrm * 0f * len);
+                if (Cost(w, m, box, her, null, 12) + sc + lc < 2500) return true;
+            }
+        }
+        return false;
+    }
 
     /// <summary>How far an arrow's ends hold their way before it bends.</summary>
     static float Bend(Vector2 a, Vector2 b) => Math.Min(0.5f * a.DistanceTo(b), 160);
@@ -837,6 +869,19 @@ public partial class Callout : Control, ICalloutView
                 list.Add(v * v * v * p0 + 3 * v * v * s * p1 + 3 * v * s * s * p2 + s * s * s * p3);
             }
             return list;
+        }
+
+        /// <summary>Bezier's points into buf (steps + 1 long), the same sums, nothing allocated (the
+        /// placing tries thousands of ways a callout: s6, 350 ms of lists); how many were written.</summary>
+        public static int BezierInto(Span<Vector2> buf, Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t, int steps)
+        {
+            if (p0.DistanceTo(p3) < 8 || t <= 0) return 0;
+            for (int i = 0; i <= steps; i++)
+            {
+                float s = t * i / steps, v = 1 - s;
+                buf[i] = v * v * v * p0 + 3 * v * v * s * p1 + 3 * v * s * s * p2 + s * s * s * p3;
+            }
+            return steps + 1;
         }
 
         /// <summary>A stroke along the points, w0 wide at the start, w1 at the end (u runs 0 to r

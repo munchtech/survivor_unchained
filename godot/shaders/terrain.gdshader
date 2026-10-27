@@ -76,6 +76,32 @@ uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_black;
 // The ruts: the albedo at a full rut's core (GroundPaint gives G 0.42-1, so plus or minus 40%); the crown between them lighter.
 uniform float rut_dark = 0.45;
 uniform float crown_lift = 0.12;
+// (lf3b, judge lf2 #3: Low Ford's ruts read as straight near-black trenches beside a pale kerb) rut_soft: the ruts' darkness
+// taken from the mask blurred over about rut_blur m (their edges eased out into the road and the grass), and broken along
+// them by a 2-3 m field down to (1 - rut_soft * 0.55) in places; 0: as before
+uniform float rut_soft = 0.0;
+uniform float rut_blur = 0.3;
+// (lf3b) how much the rime follows the road's shape (on the crown and the ruts' shoulders, off the ruts): 1 as judge 2
+// asked in town; by Low Ford's moon it drew the crown as a pale kerb between two black trenches
+uniform float road_rime = 1.0;
+// (lf4 V, judge lf2 #3: the pale "kerb" between Low Ford's ruts was this strip's grass layer, its earth cut by
+// 45%: a grey-green band 1.5x the road's value by night) crown_grass: how much of the centre strip's dirt goes to grass
+uniform float crown_grass = 0.45;
+// (lf4 V: a rut puddle at Low Ford's post mirrored the sky as a pale blue-white blob) pud_night: the sky in standing
+// water cut by this share while the night's frost is out (and its albedo kept muddy); 0: as before, dawn and day unchanged
+uniform float pud_night = 0.0;
+// (lf5p, judge lf4 #1: by night Low Ford's rut puddles read as black holes) pud_mud: the night's standing water's albedo
+// lifted from pud_dark toward pud_mud_k (about the wet rim's value: wet mud, never a hole) by this share while the frost is
+// out; pud_sheen: the sky kept in a band just inside the water's edge (a faint rim catching the moon's sky) though
+// pud_night cuts it in the middle. 0, 0: as before.
+uniform float pud_mud = 0.0;
+uniform float pud_mud_k = 0.62;
+uniform float pud_sheen = 0.0;
+// (lf5p, judge lf4 #5) the meadow in her ember's pool (the global survivor's xz, flora_night.y of the way by night) turned
+// from green toward straw within ember_r m, so her warm light reads ochre on it, not olive-chartreuse; her light untouched.
+global uniform vec4 survivor;
+global uniform vec4 flora_night;
+uniform float ember_r = 7.0;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
@@ -281,7 +307,7 @@ void fragment() {
 	float hdp = h_depth + 0.22 * clamp(bare * (1.0 - bare) * 4.0, 0.0, 1.0);
 	// The road's centre strip: sparse grass between the ruts.
 	float cen = smoothstep(0.84, 0.96, pm.r);
-	wd *= 1.0 - cen * 0.45;
+	wd *= 1.0 - cen * crown_grass;
 	// (Where trodden earth meets grass the heights decide less, so the edge ramps instead of cutting on the maps' grain.)
 	float wedge = clamp(max(wd * (1.0 - wd), wm * (1.0 - wm)) * 4.0, 0.0, 1.0) * (1.0 - step(0.02, sp.g));
 	hdp += verge_soft * wedge;
@@ -580,6 +606,13 @@ void fragment() {
 	// darkness wandering; the crown between them a little lighter. (The dip in the normal kept slight: at a low
 	// sun one wall lit and one dark read as a thin line, not a track.)
 	float rut_w = rut * w_soft;
+	if (rut_soft > 0.0 && w_soft > 0.0 && pm.r > 0.05) {
+		float e = rut_blur / zone_size;
+		float rb = (textureLod(paint_mask, zuv + vec2(e, 0.0), 0.0).g + textureLod(paint_mask, zuv - vec2(e, 0.0), 0.0).g
+			+ textureLod(paint_mask, zuv + vec2(0.0, e), 0.0).g + textureLod(paint_mask, zuv - vec2(0.0, e), 0.0).g) * 0.25;
+		float rn = texture(noise_tex, w * 0.4 + 0.37).g;
+		rut_w = mix(rut, 0.5 * rut + 0.5 * rb, rut_soft) * (1.0 - rut_soft * 0.55 * smoothstep(0.42, 0.68, rn)) * w_soft;
+	}
 	albedo *= mix(1.0, rut_dark, rut_w);
 	albedo *= 1.0 - rut_sun * rut_w * ex4.g;
 	albedo *= 1.0 + crown_lift * smoothstep(0.82, 0.95, pm.r) * w_soft;
@@ -601,11 +634,15 @@ void fragment() {
 	albedo *= 1.0 - pud_rim * prim;
 	rough = mix(rough, 0.6, prim * 0.5);
 	// (Standing water: dark, and smooth enough to hold the sky; judge 1, E3 fix 7.)
-	albedo = mix(albedo, albedo * pud_dark, pud);
+	float pn = pud_night * ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
+	albedo = mix(albedo, albedo * mix(pud_dark, pud_mud_k, clamp(pud_mud * pn / max(pud_night, 1e-4), 0.0, 1.0)), pud);
 	// The sky in it broken (judge 2): none under a crown or the eaves, less in the shade, broken by ripples and scum.
 	float brk = smoothstep(0.25, 0.75, nF.g * 0.6 + nF.b * 0.4);
 	float mirror = mirror_amt * mix(mirror_rut, 1.0, max(w_setts, 1.0 - step(0.05, rut))) * smoothstep(0.35, 0.9, ex4.r) * mix(0.45, 1.0, ex4.g) * mix(0.15, 1.0, brk);
-	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud);
+	// (lf5p: the sky kept in a 0.1-0.3 m band inside the edge, the middle muddy)
+	float p_rim = pud_sheen > 0.0 ? smoothstep(0.61, 0.7, pf) * (1.0 - smoothstep(0.68, 0.95, pf)) * (0.6 + 0.4 * brk) : 0.0;
+	mirror *= 1.0 - pn * (1.0 - pud_sheen * p_rim);
+	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud * (1.0 - pn * 0.6));
 	n_w = normalize(mix(n_w, normalize(n_geo + vec3(nF.a - 0.5, 0.0, rag - 0.5) * 0.15), pud));
 
 	// Dew by night (judge 1, E3 fix 10 and 3: the moonlit road read as snow): bare earth and stone darker while the
@@ -633,7 +670,7 @@ void fragment() {
 		// Its verges: no lift at the made edge (the pale verge strips), the rime there no crisper than the road's.
 		float vb = smoothstep(0.02, 0.3, pm.r) + verge * 0.6;
 		float ridge = smoothstep(0.04, 0.25, rut) * (1.0 - smoothstep(0.3, 0.65, rut));
-		top = mix(top, 0.5 + cen * 0.25 + ridge * 0.35 - rut * 0.45 + (hgt - hb) * 0.5, rd);
+		top = mix(top, 0.5 + (cen * 0.25 + ridge * 0.35 - rut * 0.45) * road_rime + (hgt - hb) * 0.5, rd);
 		// By night the frost on the tufts, not the bare soil between.
 		top += (tuft - 0.5) * 0.5 * nt;
 		// At dawn only the tops: the threshold raised with the thaw (judge 1, E3 fix 2: no pale blotches in the shade).
@@ -716,6 +753,12 @@ void fragment() {
 		rough = mix(rough, 0.6, bk_wet);
 	}
 
+	if (flora_night.y > 0.0 && survivor.w > 0.5 && w_meadow > 0.0) {
+		float ek = flora_night.y * w_meadow * (1.0 - smoothstep(ember_r * 0.35, ember_r, length(w - survivor.xz)));
+		float el = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+		vec3 straw = vec3(1.0, 0.8, 0.52);
+		albedo = mix(albedo, straw * (el / dot(straw, vec3(0.2126, 0.7152, 0.0722))), ek);
+	}
 	ALBEDO = albedo;
 	if (debug_view == 1) ALBEDO = pm.rgb;
 	if (debug_view == 2) ALBEDO = sp.rgb;
