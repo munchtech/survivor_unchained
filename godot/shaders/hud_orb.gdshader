@@ -24,6 +24,11 @@ uniform vec2 wick = vec2(80.0, 20.0);
 uniform float flame_full = 15.0;
 uniform float flame_aspect = 3.16;
 uniform float halo_row = 0.0;
+// theme 3, the Drowned Girl (--hud drowned): the casing is her bronze figure, the glass held in her hands (their
+// fingers are the casing over it); fig_a fades the figure (not the glass) when foes pass behind her head, and the
+// level runs from level_foot (the lowest row her fingers leave clear; < 0: the opening's foot) to the top
+uniform float fig_a = 1.0;
+uniform float level_foot = -1.0;
 
 // Vessel.Flow
 uniform float level : hint_range(0.0, 1.0) = 1.0;
@@ -65,7 +70,7 @@ float vnoise(vec2 p)
 }
 float fbm(vec2 p) { return 0.55 * vnoise(p) + 0.3 * vnoise(p * 2.1 + 3.7) + 0.15 * vnoise(p * 4.3 + 9.1); }
 // her life as a row: up the opening from its foot
-float level_row(float lv) { return orb_c.y + orb_vis - lv * 2.0 * orb_vis; }
+float level_row(float lv) { float f = level_foot < 0.0 ? orb_c.y + orb_vis : level_foot; return f - lv * (f - (orb_c.y - orb_vis)); }
 
 void fragment()
 {
@@ -73,7 +78,7 @@ void fragment()
 	float t = TIME;
 	vec4 C = texture(cold, UV);
 	vec3 m = texture(mask, UV).rgb;
-	float a = C.a;
+	float a = C.a * fig_a;
 	vec3 col = C.rgb;
 	float on = out_t < 0.0 ? 1.0 : 0.0;
 	float g = theme == 2 ? clamp(glow, 0.0, 1.3) * on : 0.0;
@@ -201,10 +206,12 @@ void fragment()
 		// (UI 16 judge, round 5: the ward read as frosted glass or a second, silver liquid and paled the number's
 		// ground: now an ice-blue lit rim round the whole glass and only a faint film; the red under it unchanged,
 		// the empty glass behind the number kept dark)
-		float filmw = (0.045 + 0.04 * shim) * held * onglass * fade * (1.0 - 0.85 * below);
+		// (dg1: the film over the whole empty glass, ending at the moving surface, no line of its own above it; how
+		// much ward holds reads on the rim)
+		float filmw = (0.045 + 0.04 * shim) * onglass * fade * (1.0 - below);
 		vec3 ice = vec3(0.50, 0.78, 1.0);
 		gcol += ice * filmw;
-		gcol += ice * 0.05 * pow(sweep, 6.0) * held * onglass * fade * (1.0 - 0.85 * below);
+		gcol += ice * 0.05 * pow(sweep, 6.0) * onglass * fade * (1.0 - below);
 		// the lit rim: ~1.6 px of ice round the glass's edge, all the way round (brightest at the upper left), and a
 		// soft inner glow ~4 px off it
 		float inpx = (orb_vis - fl * orb_r);
@@ -214,10 +221,8 @@ void fragment()
 		// (inset a px: the casing's iron laps the glass's outer px)
 		float rimf = (smoothstep(0.2, 1.0, inpx) * (1.0 - smoothstep(2.4, 3.2, inpx))) * hk;
 		float glowf = exp(-max(inpx - 2.0, 0.0) / 4.0) * smoothstep(0.2, 1.0, inpx) * hk * (1.0 - rimf) * (1.0 - 0.6 * below);
-		// and along its falling edge inside the glass while it is not full
-		float lip = exp(-pow((fq.y - line_y) * orb_r / 0.8, 2.0)) * onglass * step(fr, 0.995);
 		gcol += ice * 0.42 * glowf * lit_ * fade;
-		gcol = mix(gcol, vec3(0.52, 0.80, 1.0), clamp(rimf * 0.95 * lit_ + lip * 0.40, 0.0, 1.0) * fade);
+		gcol = mix(gcol, vec3(0.52, 0.80, 1.0), clamp(rimf * 0.95 * lit_, 0.0, 1.0) * fade);
 		gcol += vec3(0.30, 0.42, 0.50) * rimf * lit_ * lit_ * fade;
 		ga = max(ga, gin * max(filmw, rimf * fade));
 		}

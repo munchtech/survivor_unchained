@@ -23,12 +23,17 @@ public partial class LifeLamp : Control
     /// show our themes"): her life as a classic orb in a themed casing (--life-orb link|ring|waystone|linkk|ember|lamp; none until the
     /// owner picks): shaders/hud_orb.gdshader over art/ui/lamp_life/&lt;theme&gt;/ (lamp_life_cut.py's ORBS). No
     /// pool on the ground; the low-life edge pulse (HerLight.Edge) runs with it.</summary>
-    public static readonly string? Orb = Args.Get("life-orb") is "link" or "linkk" or "ring" or "waystone" or "ember" or "lamp" ? Args.Get("life-orb") : null;
+    public static readonly string? Orb = Args.Get("hud") == "drowned" ? "drowned" : Args.Get("life-orb") is "link" or "linkk" or "ring" or "waystone" or "ember" or "lamp" ? Args.Get("life-orb") : null;
+    /// <summary>UI 16, the owner's pick of the whole-HUD directions: The Drowned Girl (--hud drowned), piece 1. Her
+    /// bronze figure (art/ui/lamp_life/drowned, tools/uiforge/dg_figure_cut.py) holds the life orb at her lips at
+    /// the bar's left end; the orb is hud_orb.gdshader's theme 3, under her fingers (the figure's art is the casing
+    /// over the glass). Foes or the survivor passing behind her head fade the figure (not the glass): Behind.</summary>
+    public static bool Drowned => Orb == "drowned";
     static readonly string Dir = Orb != null ? $"lamp_life/{Orb}" : Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
     static readonly Godot.Collections.Dictionary Geo = LoadGeo();
     /// <summary>UI 16 ring: the front half of the casing's welded eye (lamp_front.png, the quad's size), drawn over
     /// the chain so its first link runs through the eye; null where the casing has none.</summary>
-    public static Texture2D? Front => Orb != null ? UiArt.Tex($"{Dir}/lamp_front.png") : null;
+    public static Texture2D? Front => Orb != null && !Drowned ? UiArt.Tex($"{Dir}/lamp_front.png") : null;
     /// <summary>The quad, in 1080 px (the art is twice this).</summary>
     public static readonly Vector2 Canvas = V("canvas");
     /// <summary>The lamp's foot in the quad, the eye on its font's right side (the chain leaves from it), the
@@ -48,6 +53,10 @@ public partial class LifeLamp : Control
     public static readonly float NumberY = F("number_y");
     /// <summary>The pool's quad round the lamp's foot (1080 px, from the lamp's quad's top left) and its gain at
     /// full light (the scene's brightness lifted by about +45% at its heart: the warm tint takes a share).</summary>
+    /// <summary>The Drowned Girl: her quad's top left on the 1080 screen (geo "at"), and the part of her above the
+    /// bar line (geo "fade", in the quad) that fades when something is behind it.</summary>
+    public static readonly Vector2 At = V("at");
+    public static readonly Rect2 FadeLocal = new(V("fade_at"), V("fade_size"));
     public static readonly Rect2 PoolRect = new(Canvas.X / 2 - 240, FootY - 272, 480, 300);
     public const float PoolGain = 0.54f;
     static readonly bool noPool = Args.Has("no-lamp-pool"), noOil = Args.Has("lamp-no-oil");
@@ -67,6 +76,15 @@ public partial class LifeLamp : Control
     /// <summary>The level and the shield (0..1 of her life), the trail (unused: the hurt film is the oil's own),
     /// and Pulse: 1 where her heartbeat may sound (the fight).</summary>
     public float Level = 1, Trail = 1, Shield, Pulse;
+    /// <summary>The Drowned Girl: a foe or the survivor behind her figure (Game sets it each frame): the figure fades
+    /// to FadeTo over 0.25 s, and back.</summary>
+    public bool Behind;
+    public const float FadeTo = 0.35f, FadeTime = 0.25f;
+    float figA = 1, sFigA = -1;
+    bool wasBehind;
+    static readonly StringName UFigA = "fig_a";
+    /// <summary>The faded part's rect on the HUD (1080 px).</summary>
+    public Rect2 FadeRect => new(Position + FadeLocal.Position, FadeLocal.Size);
     public string Number = "";
     public readonly LampState State = new();
     /// <summary>The lamp on the HUD now (the shots' --pool-ab hides its pool for a second picture).</summary>
@@ -92,13 +110,14 @@ public partial class LifeLamp : Control
         PivotOffset = new Vector2(Canvas.X / 2, FootY);
         mat = new ShaderMaterial { Shader = GD.Load<Shader>(Orb != null ? "res://shaders/hud_orb.gdshader" : "res://shaders/hud_lamp.gdshader") };
         foreach (var (u, f) in new[] { ("lit", "lamp_lit"), ("cold", "lamp_cold"), ("mask", "lamp_mask"), ("flame_tex", "lamp_flame") })
-            if (Orb != null && Orb != "lamp" && f == "lamp_flame") continue;
+            if (Orb != null && Orb != "lamp" && f == "lamp_flame" || Drowned && f != "lamp_cold") continue;
             else if (UiArt.Tex($"{Dir}/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
             else GD.PushError($"LifeLamp: {Dir}/{f}.png did not load (unimported?): the lamp draws wrong");
         mat.SetShaderParameter("canvas", Canvas);
         if (Orb != null)
         {
-            mat.SetShaderParameter("theme", Orb switch { "ember" => 1, "lamp" => 2, _ => 0 });
+            mat.SetShaderParameter("theme", Orb switch { "ember" => 1, "lamp" => 2, "drowned" => 3, _ => 0 });
+            if (Geo.ContainsKey("level_foot")) mat.SetShaderParameter("level_foot", F("level_foot"));
             mat.SetShaderParameter("orb_c", V("orb_c"));
             mat.SetShaderParameter("orb_r", F("orb_r"));
             mat.SetShaderParameter("orb_vis", F("orb_vis"));
@@ -140,6 +159,13 @@ public partial class LifeLamp : Control
         Send(UOut, State.OutT, ref sOut);
         Send(UFlick, State.Flick, ref sFlick);
         Send(UGlow, State.Light, ref sGlow);
+        if (Drowned)
+        {
+            figA = Mathf.MoveToward(figA, Behind ? FadeTo : 1, dt * (1 - FadeTo) / FadeTime);
+            if (Behind != wasBehind && Args.Has("shot")) GD.Print($"dg fade {(Behind ? "on" : "off")} at {Time.GetTicksMsec() / 1000.0:0.00}");
+            wasBehind = Behind;
+            Send(UFigA, figA, ref sFigA);
+        }
         if (Number != drawnNumber) { drawnNumber = Number; figure.QueueRedraw(); }
         PoolTick();
     }

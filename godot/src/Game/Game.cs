@@ -1233,6 +1233,19 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            // (the Drowned Girl's head fades when she or a foe is behind it: their middles, 1 m up, on the ground she stands on)
+            if (hud.FigureRect is Rect2 fig)
+            {
+                bool behind = !camera.IsPositionBehind(at) && fig.HasPoint(camera.UnprojectPosition(at + Vector3.Up));
+                float gy = at.Y + 1;
+                if (!behind)
+                    foreach (var e in fb2.Enemies.Living())
+                    {
+                        var w = new Vector3((float)e.X, gy, (float)e.Z);
+                        if (!camera.IsPositionBehind(w) && fig.HasPoint(camera.UnprojectPosition(w))) { behind = true; break; }
+                    }
+                hud.FigureBehind(behind);
+            }
             if (near != null)
             {
                 var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);

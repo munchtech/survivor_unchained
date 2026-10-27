@@ -55,8 +55,9 @@ public partial class Instrument : Control
     /// <summary>HUD A2: the first link's centre from LifeAt: the eye on the life lamp's font (LifeLamp.Eye in
     /// its quad, the quad's foot on LifeLamp.Floor); mirrored on the right.</summary>
     public static Vector2 JointOff => LampAt + LifeLamp.Eye - LifeAt;
-    /// <summary>The life lamp's quad's top left: centred on LifeAt, its foot on LifeLamp.Floor.</summary>
-    public static Vector2 LampAt => new(LifeAt.X - LifeLamp.Canvas.X / 2, LifeLamp.Floor - LifeLamp.FootY);
+    /// <summary>The life lamp's quad's top left: centred on LifeAt, its foot on LifeLamp.Floor (the Drowned Girl: where
+    /// her geo puts her).</summary>
+    public static Vector2 LampAt => LifeLamp.Drowned ? LifeLamp.At : new(LifeAt.X - LifeLamp.Canvas.X / 2, LifeLamp.Floor - LifeLamp.FootY);
     /// <summary>All of it on the screen, from the statuses over her life to the lock under the chain.</summary>
     public static Rect2 Bounds => new(Mid - Reach - R - Band - 16, VY - R - Band - 48, 2 * (Reach + R + Band + 16), 1080 - (VY - R - Band - 48));
 

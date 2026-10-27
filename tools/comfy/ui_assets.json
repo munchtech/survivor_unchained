@@ -1315,6 +1315,26 @@
    "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint), local ComfyUI",
    "note": "HUD life orb casing 'Lamps Are Lit' (UI 16, --life-orb lamp; cut by the judges, kept selectable): lamp2 seeds 4610-4615 painted (round 1's lamp seeds 4600-4604 not used), 4615 layered by lamp_life_cut.py ORBS 'lamp'; the flame is lamp_life_flame (seed 4201). Sources in survivorsunchained_inputs/ui16_orb_src/",
    "made_by": "tools/uiforge/lamp_life_cut.py"
+  },
+  {
+   "id": "hud_dg_figure",
+   "name": "The Drowned Girl HUD, piece 1: her bronze figure lifting the life orb to her lips",
+   "file": "lamp_life/drowned/lamp_cold.png",
+   "also": [
+    "lamp_life/drowned/lamp_geo.json"
+   ],
+   "size": [
+    1024,
+    768
+   ],
+   "kind": "hud",
+   "aspect": "4:3, 1024x768",
+   "seed": 6305,
+   "seeds_painted": "6300..6307 (this prompt); earlier whole-bar framings 6100..6103 and 6200..6203 (1536x768) painted the figure too small, not used",
+   "prompt": "Dark fantasy action RPG game HUD ornament, a close view of one sculpted relief cast in dark river-worn bronze with green verdigris, Art Nouveau, elegant flowing lines; everything is bronze, a statue, her face, skin and hand bronze too. The head and bare shoulders of a beautiful drowned young woman in clean side profile facing left, filling the whole height of the frame, the top of her head near the top edge, her face tilted upward, eyes closed, lips softly parted. With one slender hand she lifts a very large polished glass orb, bigger than her head, filled with glowing deep blood-red liquid, raised to her lips so it almost touches them; the orb rests on her open palm from below, her slender fingers curling up round its lower edge only, most of the sphere clear and unobstructed. Her very long hair streams back behind her head and sweeps down to the lower right in great smooth flowing locks like the current of a river, running out of the frame at the right edge along the bottom as a low band of hair. Graceful elegant anatomy, a slender neck, a delicate well-drawn hand with five slender fingers and a thumb. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the red glow of the orb on her fingers and chin, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint's graph via gen.py, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "UI 16, 27 Oct 2026, the owner's pick 'The Drowned Girl' (--hud drowned). The painted glass is fitted and cut out (hud_orb.gdshader theme 3 draws the live orb there), her fingers over it kept; graded to mid-low bronze. Sources, prompts and gen.py in survivorsunchained_inputs/ui16_dg_src/.",
+   "made_by": "tools/uiforge/dg_figure_cut.py"
   }
  ],
  "icon_sets": {

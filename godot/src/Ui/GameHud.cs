@@ -1081,6 +1081,11 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>Where the survivor stands on screen, each frame (null: not on it).</summary>
+    /// <summary>The Drowned Girl (--hud drowned): the part of her figure above the bar line, on the HUD (null in the
+    /// other HUDs); Game tells her when a foe or the survivor stands behind it, and she fades.</summary>
+    public Rect2? FigureRect => LifeLamp.Drowned ? irons.Life.FadeRect : null;
+    public void FigureBehind(bool behind) => irons.Life.Behind = behind;
+
     public void Follow(Vector2? at)
     {
         herAt = at;
