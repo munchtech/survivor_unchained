@@ -1,5 +1,8 @@
 # Handoff: the tutorial environment (the Prologue's world)
 
+## Paused here (env lead 18, 26 Oct, coordinator WIND-DOWN); next: the Release Low Ford perf run, then the MR
+- Low Ford reopen DONE (lf6 judge 17/17 gate YES). Integration merged at c813106a; import done; tests 1070/0/8 after that merge; the teach run was clean through C04a (0 script errors, on 45d894f7, before the anim merge). **Only the Release perf is left before the MR:** `bash survivorsunchained_inputs/scratch_env18/final_lf2.sh` (fix its L= path to your scratch; it imports, tests, then takes gpu+godot and runs `tools/perf/release.py run ... lf_hi_lf6`); compare to `survivorsunchained_inputs/env_perf1/e7c/lf_hi_e7c_windows.md` (GPU 3.4-5.0 ms, shadow draws <= 1,200 outside cines). It was stopped queued behind Experience's GPU turn. Then MR, then E8, E10.
+
 ## Now (env lead 18, 26 Oct): the Low Ford reopen DONE (final judge r4 xhigh: 17/17 frames pass the gate, PASS-WITH-NOTES), MR; next E8, E10
 - **Worktree** `.claude/worktrees/env-16` (branch env-16, own `public/assets` junction; integration merged at 8d4ff950). Briefs, judges and scripts are in the env18 scratch, backed up to `survivorsunchained_inputs\scratch_env18\` (`lf_common.md`, `lf3a/lf3b/lf4v/lf5c/lf5p/lf6d.md`, `lf2/lf4/lf6_judge.md`, `final_lf.sh`).
 - **Judges (xhigh):** lf2: 1/16 YES (A, the light, FAIL close; B, the spruce, PWN). lf4: 2/16 YES (A and B PWN, closed at the round cap). lf6: **17/17 YES**, C and D PWN, close. Frames `godot/.shots/lf6_*`; befores `lf0_*`, `lf2_*`, `lf4_*`.
