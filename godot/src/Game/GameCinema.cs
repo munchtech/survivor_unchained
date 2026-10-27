@@ -396,6 +396,12 @@ public partial class Game
                 g.scene!.AddChild(v);
                 people[name] = v;
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
+                // In a safe place (the same rule as play's close-up) she goes sheathed, as play does.
+                if (g.zone is { Combat: false } && v.Person.Own is { } own && Sheath.HasTown(v.Person.Calling, v.Person.Kind, own.Has))
+                {
+                    v.Sheathed = true;
+                    v.Sheathe(true);
+                }
                 v.Cue(lo.Arms.Idle, 0, 1, 0);
             }
             else if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def)
@@ -969,7 +975,18 @@ public partial class Game
                     // An exact place ("abs") is gone to through the air or the water; anything else along the ground.
                     bool free = orbs.ContainsKey(c.Actor) || (toEl.ValueKind == JsonValueKind.Object && toEl.TryGetProperty("abs", out _));
                     moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading, free));
-                    if (c.Str("clip") is string mc && n is PersonView v) v.Cue(mc, 0, c.Num("speed", 1), 0.25);
+                    if (c.Str("clip") is string mc && n is PersonView v)
+                    {
+                        double pace = c.Num("speed", 1);
+                        // Her own walk keeps its feet to the ground: the clip's metres a second against the ground covered.
+                        var resolved = People.Clip(v.Person, mc, v.Sheathed);
+                        if (v.Person.Own is { } own && own.Owns(resolved) && own.Speed(resolved[own.Prefix.Length..]) is float sp && sp > 0)
+                        {
+                            double dist = new Vector2(dest.X - from.X, dest.Z - from.Z).Length(), dur = Math.Max(0.01, c.Num("dur", 1));
+                            pace = Math.Clamp(dist / dur / (sp * v.Person.Root.Scale.X), 0.5, 1.6);
+                        }
+                        v.Cue(mc, 0, pace, 0.25);
+                    }
                     break;
                 }
                 case "look":
