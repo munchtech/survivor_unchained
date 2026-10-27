@@ -355,6 +355,45 @@ DAGGER_TRAIL = dict(back=26.0, out=0.0, edge=0.0, swing=0.0, side="r", knuckles=
 # shoulder carry) is next.
 AXE_TRAIL = dict(TRAIL, back=54.0, out=-6.0, out_swing=-28.0)
 AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
+
+
+# Animation 56 (hold B, a new family for the heavy pieces): the sword and the axes at a LOW POINT, carried ahead of her
+# hip with the point (or the head) forward, down and out past her leg, the arm loose and swinging a little with the
+# stride: her armed walk's and idle's own hold (walk_armed.sword/axe), so the walk-run re-grip barely moves the piece.
+# Why: a trailing piece runs back-and-down, near the line of an elevated camera's view from her front, so it
+# foreshortened flat from 330/30 (runs2: 1-18 deg off level on screen at the shoot's 29 deg pitch); a forward-down piece
+# runs down the screen from the front and slants from the side (43-84 deg; the far-side piece reads near level only from
+# her other side at the play camera, mostly behind her). Rejected: the shoulder carry for the reaver (the fist at her
+# chest can't turn the haft back over the shoulder within the wrist: the solve stood the axe up beside her head, pitch
+# +50 and the upper arm swept back 45), and the haft along the forearm (it needs a grip slide that follows the move
+# blend, not the arm hold, so the axe would slide in her fist through every walk-run change).
+# Measured (solver holdB p3): sword pitch -46..-29, 19-21 out, tip 0.29 m off the floor at the lowest, 61 mm from her
+# thigh (sprint 34); axe -63..-46, 16-22 out, 96 mm (sprint 74); the second axe -55..-42, 23-30 out, never within 140 mm.
+def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r"):
+    """The held piece's line (hand to point or head) forward and down: `pitch` degrees (fist forward, fist back) and
+    `out` degrees out to that side, in her character's frame, eased between with the arm's swing (k 1 forward)."""
+    sg = 1.0 if side == "l" else -1.0
+
+    def f(ph, k, hand):
+        hand = dict(hand)
+        p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * k)
+        o = math.radians(out[1] + (out[0] - out[1]) * k)
+        hand.update({"blade": (sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)), "frame": "char"})
+        return hand
+    return f
+
+
+# The low-point arm: the upper arm a little ahead and behind hanging, 19 out (at 13 the sword passed 11-15 mm from her
+# thigh as the knee drove through, the sprint's 10 mm into it), the elbow open 125-128 (the axe's 118-122: its head
+# off the floor, 0.25 m at the lowest), the forearm turned a little out.
+LOW_ARM = ((12, 19, 125, -10), (-18, 19, 128, -15))
+LOW_ARM_R = ((12, 19, 118, -10), (-18, 19, 122, -15))
+# The owner on the reaver run (routed, 27 Oct): "it reads as a careful jog". Her armed reaver runs drive harder: leant
+# 18 (was 14) with the back 4, more flight (duty 0.27, was 0.30), a deeper, heavier drop and bob (0.11, 0.09), the
+# knee up (0.42, was 0.36), the heel kicked (0.52) and the foot reaching (0.40); the hips turn less (9, was 11) and
+# the chest more against them (10). run_reaver_town keeps REAVER (her town run is meant easy).
+REAVER_ARMED = replace(REAVER, lean=18, spine_lean=4, duty=0.27, drop=0.11, bob=0.09, reach=0.40, kick=0.52, knee=0.42,
+                       hip_yaw=9, chest_yaw=10)
 # The wand: the upper arm a little behind hanging so the bent elbow's forearm (and the wand on its line) still points
 # down 37-56 degrees; the forearm turned out behind her (turn -20: at -10 the wand passed 19 mm from her thigh, now
 # 60) and the tip 5 more out past her front knee.
@@ -363,10 +402,14 @@ WAND_ARM = ((0, 15, 120, 0), (-30, 14, 120, -20))
 
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
-    "run_warden": (replace(WARDEN, swing_r=TRAIL_ARM), {"r": axe_hang(**TRAIL), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+    # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
+    "run_warden": (replace(WARDEN, swing_r=LOW_ARM), {"r": low_point(out=(26, 24)), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
-    "run_reaver": (replace(REAVER, swing_r=AXE_TRAIL_ARM, swing=((20, 16, 70, 5), REAVER.swing[1])), {"r": axe_hang(**AXE_TRAIL)}, "axe"),
-    "run_reaver_axes": (replace(REAVER, swing_r=AXE_TRAIL_ARM, swing=AXE_TRAIL_ARM), {"r": axe_hang(**AXE_TRAIL), "l": axe_hang(**dict(AXE_TRAIL, side="l"))}, "axes"),
+    "run_reaver": (replace(REAVER_ARMED, swing_r=LOW_ARM_R, swing=((20, 16, 70, 5), REAVER.swing[1])),
+                   {"r": low_point(pitch=(-40, -46), out=(22, 20))}, "axe"),
+    # The pair not mirrored: the second axe's head higher and further out than the first's.
+    "run_reaver_axes": (replace(REAVER_ARMED, swing_r=LOW_ARM_R, swing=LOW_ARM_R),
+                        {"r": low_point(pitch=(-40, -46), out=(22, 20)), "l": low_point(side="l", pitch=(-36, -42), out=(22, 20))}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
