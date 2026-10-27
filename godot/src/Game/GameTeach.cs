@@ -365,7 +365,8 @@ public partial class Game
         if (scene != null) scene.Fx.Hits.Visible = false;
         // The part taught is kept (the HUD stays whole; the world dims on a freeze); the chain's callout fades the six places.
         hud.Spotlight(c.Target.Hud, c.Kind == CalloutKind.Freeze, c.Target.Hud == "chain");
-        var view = new Ui.Callout();
+        // (night: the zone after dark, or a fight by the ember's light)
+        var view = new Ui.Callout { Night = scene?.View.Night == true || !Ui.Cuff.Day };
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
             answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
