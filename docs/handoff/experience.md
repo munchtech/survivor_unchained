@@ -12,7 +12,7 @@ For a fresh successor. Read these first:
 - **Ambush stakes** (36a8658f..24aeacb2, df36280d): opening volley x1.5, ditch dead x1.3, 24 foes held, and a steer in `Prologue.AmbushMul` via `Battle.FoeHitMul` (x0.25 when she loses >1.2%/s; x2.5 when she stood still 3 s and loses <0.9%/s in the first 30 s, off after she drinks). Idle loses 27-29% by +30 s (amb21-23), the dodging pilot 7.5-10% (n13-14). Judge: the steer is acceptable while no hit numbers show on her.
 - **Closed as known:** the F7 arrow tip lands on her figure (reads "you're on it").
 - **Routed (with the MR):** the Knight's white flash (VFX/model); the dark blue night frames (env). UI 16's "Knight low in frame" was the old v4 frame; v6 has him mid-frame.
-- **Scratch:** coordinator scratchpad 7ccc6e14 `play6\` (briefs, pace5.py, logs amb*, n*, v6-v8). Frames `godot/.shots/v6_*`, `v6b_*`, `v8_*`.
+- **Scratch:** `survivorsunchained_inputs\scratch_play6\` (briefs, pace5.py, logs amb*, n*, v6-v9). Frames `godot/.shots/v6_*`, `v6b_*`, `v8_*`.
 - **Cost:** worker 64k + 44k, solvers 189k + 151k (3.7 h of runs), judge 131k, API $0.
 
 ## Experience 8 (play-1 lead, 27 Oct): PAUSED (coordinator wind-down); MR5 judged, ONE fix round left
