@@ -1220,12 +1220,12 @@ public partial class BattleFx : Node3D
                     // ground, in its textures. The crowd's blows stay amber and quiet (main's ruling, 27 October).
                     // (A champion's full ring is its raising of the dead (the Grave-Caller's "Rise...", 7 m), no blow:
                     // drawn as a ring that fills, in the crowd's amber. As a filled band it flooded the screen salmon.)
-                    bool raising = e.Shape == TelegraphShape.Ring && e.Inner <= 0.01 && !e.Boss && e.Label == null;
-                    bool danger = e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null && !raising
-                        && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)));
+                    Func<int, bool> champ = id => System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
+                    var (look, raising) = TelegraphRead.Of(e, champ);
+                    bool danger = look == TelegraphRead.TeleLook.Danger;
                     // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
                     // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
-                    bool amber = !danger && e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null && e.Label == null;
+                    bool amber = look == TelegraphRead.TeleLook.Amber;
                     if (danger) col = Palette.TeleDanger;
                     else if (amber) col = Palette.TeleAmber;
                     styleNext = danger ? 1 : amber ? 2 : 0;
@@ -1235,7 +1235,7 @@ public partial class BattleFx : Node3D
                     else if (e.Shape == TelegraphShape.Line)
                     {
                         var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
-                        if (e.Hostile && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)))) OverLane(lm, e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1));
+                        if (e.Hostile && TelegraphRead.Champion(e, champ)) OverLane(lm, e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1));
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Ring && !raising) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
