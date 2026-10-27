@@ -90,6 +90,9 @@ public partial class HerJoints : SkeletonModifier3D
         public string[] FoldShapes = System.Array.Empty<string>();
         public readonly Core.PanelSwing.FoldState FoldState = new();
         public readonly List<(MeshInstance3D Mi, int[] Idx)> FoldOn = new();
+        public string[] SideShapes = System.Array.Empty<string>();   // (Body 18) its halves over each thigh lifted
+        public double SideFrom, SideTo;
+        public readonly List<(MeshInstance3D Mi, int[] Idx)> SideOn = new();
     }
 
     Skeleton3D? found;
@@ -107,12 +110,15 @@ public partial class HerJoints : SkeletonModifier3D
         foreach (var p in panels)
         {
             p.FoldOn.Clear();
+            p.SideOn.Clear();
             if (p.Fold == null) continue;
             foreach (var n in sk.GetChildren())
                 if (n is MeshInstance3D mi && mi.Mesh != null && !mi.IsQueuedForDeletion())
                 {
                     var idx = System.Array.ConvertAll(p.FoldShapes, nm => mi.FindBlendShapeByName(nm));
                     if (System.Array.Exists(idx, i => i >= 0)) p.FoldOn.Add((mi, idx));
+                    var sdx = System.Array.ConvertAll(p.SideShapes, nm => mi.FindBlendShapeByName(nm));
+                    if (System.Array.Exists(sdx, i => i >= 0)) p.SideOn.Add((mi, sdx));
                 }
         }
         foreach (var side in sides)
@@ -244,7 +250,8 @@ public partial class HerJoints : SkeletonModifier3D
                     Bone = bone, ParentRest = gp, Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
                     Axis = (gp.Inverse() * new Vector3(-1, 0, 0)).Normalized(),
                     Law = new Core.PanelSwing.Law((double)p["amount"], (double)p["soft"], (double)p["spread_from"], (double)p["spread_to"], (double)p["spread_damp"],
-                        p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450),
+                        p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450,
+                        p.ContainsKey("drop") ? (double)p["drop"] : 0, p.ContainsKey("drop_from") ? (double)p["drop_from"] : 45),
                 };
                 if (p.ContainsKey("fold"))
                 {
@@ -254,6 +261,14 @@ public partial class HerJoints : SkeletonModifier3D
                         (double)c[0], (double)c[1], (int)f["substeps"]);
                     var sh = f["shapes"].AsGodotArray();
                     one.FoldShapes = new[] { (string)sh[0], (string)sh[1], (string)sh[2] };
+                    if (f.ContainsKey("side"))
+                    {
+                        var sd = f["side"].AsGodotDictionary();
+                        var ss = sd["shapes"].AsGodotArray();
+                        var sw = sd["swing"].AsGodotArray();
+                        one.SideShapes = new[] { (string)ss[0], (string)ss[1] };
+                        one.SideFrom = (double)sw[0]; one.SideTo = (double)sw[1];
+                    }
                 }
                 foreach (var (t, i) in new[] { (tl, 0), (tr, 1) })
                 {
@@ -422,6 +437,17 @@ public partial class HerJoints : SkeletonModifier3D
                         if (idx[0] >= 0) mi.SetBlendShapeValue(idx[0], (float)wa);
                         if (idx[1] >= 0) mi.SetBlendShapeValue(idx[1], (float)wb);
                         if (idx[2] >= 0) mi.SetBlendShapeValue(idx[2], (float)wn);
+                    }
+            }
+            // (Body 18: the half over each thigh lifted as that thigh swings forward: Core/PanelSwing.SideWeights)
+            if (p.SideOn.Count > 0)
+            {
+                var (sl, sr) = Core.PanelSwing.SideWeights(fl, fr, p.SideFrom, p.SideTo);
+                foreach (var (mi, idx) in p.SideOn)
+                    if (IsInstanceValid(mi))
+                    {
+                        if (idx[0] >= 0) mi.SetBlendShapeValue(idx[0], (float)sl);
+                        if (idx[1] >= 0) mi.SetBlendShapeValue(idx[1], (float)sr);
                     }
             }
         }

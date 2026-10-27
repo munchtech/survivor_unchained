@@ -10,7 +10,8 @@ namespace SurvivorUnchained.Core;
 /// </summary>
 public static class PanelSwing
 {
-    public readonly record struct Law(double Amount, double Soft, double SpreadFrom, double SpreadTo, double SpreadDamp, double FallTau = 0.04, double FallRate = 450);
+    public readonly record struct Law(double Amount, double Soft, double SpreadFrom, double SpreadTo, double SpreadDamp, double FallTau = 0.04, double FallRate = 450,
+        double Drop = 0, double DropFrom = 45);
 
     /// <summary>Polynomial smooth max, <paramref name="k"/> wide (max + k/4 where a == b).</summary>
     public static double SmoothMax(double a, double b, double k)
@@ -36,9 +37,17 @@ public static class PanelSwing
     {
         double k = law.Soft;
         double lead = SmoothMax(fl, fr, k) - k / 4;
-        double damp = 1 - law.SpreadDamp * Smooth(((al + ar) / 2 - law.SpreadFrom) / (law.SpreadTo - law.SpreadFrom));
-        return law.Amount * SoftRelu(lead, k) * damp;
+        double sp = Smooth(((al + ar) / 2 - law.SpreadFrom) / (law.SpreadTo - law.SpreadFrom));
+        double t = law.Amount * SoftRelu(lead, k) * (1 - law.SpreadDamp * sp);
+        // (Body 18: past DropFrom degrees of lead, Drop a degree less, not with the thighs spread: on the thigh, not over it)
+        if (law.Drop != 0) t -= law.Drop * SoftRelu(lead - law.DropFrom, k) * (1 - sp);
+        return t;
     }
+
+    /// <summary>The panel's side shapes' weights (left, right): each thigh's forward swing, smoothstep over
+    /// [<paramref name="from"/>, <paramref name="to"/>] degrees (rig_helpers.json "fold" "side"). helpers.py side_weights.</summary>
+    public static (double L, double R) SideWeights(double fl, double fr, double from, double to) =>
+        (Smooth((fl - from) / (to - from)), Smooth((fr - from) / (to - from)));
 
     /// <summary>The turn this frame (degrees) from last frame's (<paramref name="prev"/>,
     /// NaN at the first) and the law's (<paramref name="target"/>), <paramref name="dt"/>

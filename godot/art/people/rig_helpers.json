@@ -188,13 +188,15 @@
    "spread_damp": 0.6,
    "fall_tau": 0.04,
    "fall_rate": 450.0,
+   "drop": 0.4,
+   "drop_from": 45.0,
    "fold": {
     "shapes": [
      "panel_fold_a",
      "panel_fold_b",
      "panel_fold_n"
     ],
-    "hinge": 0.86,
+    "hinge": 0.84,
     "band": 0.03,
     "step": 25.0,
     "neg": 25.0,
@@ -205,7 +207,22 @@
      1.12,
      9.0
     ],
-    "substeps": 4
+    "substeps": 4,
+    "side": {
+     "shapes": [
+      "panel_side_l",
+      "panel_side_r"
+     ],
+     "lift": 0.055,
+     "x": [
+      0.005,
+      0.06
+     ],
+     "swing": [
+      20.0,
+      60.0
+     ]
+    }
    }
   }
  ],

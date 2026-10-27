@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using SurvivorUnchained.Rpg;
 using Xunit;
 

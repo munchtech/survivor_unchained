@@ -102,4 +102,36 @@ public class PanelSwingTests
         (a, b, n) = PanelSwing.FoldWeights(Fold, -21.32608695652172);
         Assert.Equal(0.0, a, 9); Assert.Equal(0.0, b, 9); Assert.Equal(0.8530434782608688, n, 9);
     }
+
+    // (Body 18) the drop past drop_from (rig_helpers.json "drop" 0.4, "drop_from" 45): helpers.panel_turn's numbers
+    static readonly PanelSwing.Law Dropped = new(1.15, 12.0, 8.0, 20.0, 0.6, 0.04, 450, 0.4, 45);
+
+    [Theory]
+    [InlineData(77, 10, 2, 1, 68.99999999999999)]
+    [InlineData(30, 5, 0, 0, 24.15)]
+    [InlineData(95, 90, 25, 25, 40.029583333333335)]
+    [InlineData(60, 62, 3, 4, 59.31249999999999)]
+    public void DropMatchesTheTools(double fl, double fr, double al, double ar, double want) =>
+        Assert.Equal(want, PanelSwing.Turn(Dropped, fl, fr, al, ar), 9);
+
+    [Fact]
+    public void DropNeverRaisesTheTurnAndLeavesTheWalkAlone()
+    {
+        for (double f = 0; f <= 110; f += 0.5)
+        {
+            Assert.True(PanelSwing.Turn(Dropped, f, 0, 0, 0) <= PanelSwing.Turn(Law, f, 0, 0, 0) + 1e-12);
+            if (f <= 40) Assert.Equal(PanelSwing.Turn(Law, f, 0, 0, 0), PanelSwing.Turn(Dropped, f, 0, 0, 0), 12);
+            // (still rising with the thigh: never turns back as the knee comes up)
+            Assert.True(PanelSwing.Turn(Dropped, f + 0.5, 0, 0, 0) >= PanelSwing.Turn(Dropped, f, 0, 0, 0));
+        }
+    }
+
+    [Fact]
+    public void SideWeightsMatchTheTools()
+    {
+        var (l, r) = PanelSwing.SideWeights(77, 10, 20, 60);
+        Assert.Equal(1.0, l, 12); Assert.Equal(0.0, r, 12);
+        (l, r) = PanelSwing.SideWeights(35, 45, 20, 60);
+        Assert.Equal(0.31640625, l, 12); Assert.Equal(0.68359375, r, 12);
+    }
 }
