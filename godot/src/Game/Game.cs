@@ -73,6 +73,9 @@ public partial class Game : Node, IZoneHost
 
     public override void _Ready()
     {
+        // Data through Godot's file access from the first frame: skills.json and items.json are read
+        // on first use, which can come before any zone loads, and only res:// reads inside an export.
+        ZoneData.UseGodotFiles();
         // The renderer's clock followed from its first frame, for what moves by code (MotionClock).
         SurvivorUnchained.View.MotionClock.Start(this);
         // The colour sheets as Godot should have them, before any model loads.
