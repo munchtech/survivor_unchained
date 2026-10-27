@@ -1116,13 +1116,16 @@ public partial class Game : Node, IZoneHost
     double crowdTeleShot = -9;
     /// <summary>Champions whose normal hit (false) and critical (true) have been framed (one of each a champion).</summary>
     readonly HashSet<(int, bool)> hitShot = new();
+    /// <summary>(--on elite) where in a mark's time its frames fall (env TELE_F "0.05,0.12,..." for a closer look).</summary>
+    static readonly double[] TeleFracs = System.Environment.GetEnvironmentVariable("TELE_F") is { Length: > 0 } tf
+        ? System.Array.ConvertAll(tf.Split(','), x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)) : new[] { 0.12, 0.5, 0.88 };
     void EliteShot(CombatEvent e)
     {
         bool Big(int id) => Battle != null && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
         switch (e)
         {
             case Ev.Telegraph t when t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
-                foreach (var f in new[] { 0.12, 0.5, 0.88 }) Shots.Want($"tele{t.Id}", t.Duration * f);
+                foreach (var f in TeleFracs) Shots.Want($"tele{t.Id}", t.Duration * f);
                 MarkGeo($"tele{t.Id}", t);
                 break;
             // (and the crowd's marks, one frame of one at most every 6 s)
