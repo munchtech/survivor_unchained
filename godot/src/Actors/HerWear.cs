@@ -112,11 +112,11 @@ public static class HerWear
             var c = new Color(dyeHex);
             if (outfit)
             {
-                // enamel metal (finish 2): a metal dye keeps metal (blued, finish 1); a colour dye paints the enamel
+                // enamel metal (finish 2): a metal dye keeps metal (finish 3, dyed metal: brushed, no oxide); a colour dye paints the enamel
                 if ((int)m.GetMeta("kind") == 1)
                 {
                     if (!m.HasMeta("finish0") && m.GetShaderParameter("finish").AsInt32() == 2) m.SetMeta("finish0", 2);
-                    if (m.HasMeta("finish0")) m.SetShaderParameter("finish", isMetal ? 1 : (int)m.GetMeta("finish0"));
+                    if (m.HasMeta("finish0")) m.SetShaderParameter("finish", isMetal ? 3 : (int)m.GetMeta("finish0"));
                 }
                 m.SetShaderParameter("dye", c);
                 m.SetShaderParameter("dye_amount", 1.0f);

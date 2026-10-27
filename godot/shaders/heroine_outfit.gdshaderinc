@@ -115,6 +115,15 @@ uniform float enamel_f90 = 0.3;                    // (its highlight's Fresnel a
 uniform float enamel_env = 0.6;                    // (the sky's reflection kept on the paint, of bare metal's: satin paint shows a soft sheen, not the sky)
 uniform float enamel_chip = 0.8;                   // (how far it chips back to the steel)
 uniform float enamel_chip_reach = 0.007;           // (and how far in from a rim the chipping reaches, m: blued's was 14 mm, most of a small lame)
+// (body 16 r3: finish 3, dyed metal: what HerWear.DyeMesh sets on an enamel key for a metal dye (silver, gold, "#hex:metal").
+// Fully metallic with no oxide, as a dyed blued key, but brushed: an edge-on pauldron at blued's gloss mirrored the bright
+// sky, a pale glassy cap unlike the plate beside it)
+uniform float dyed_rough_min = 0.42;               // (its plate's least roughness; the scuff mask still varies it above)
+uniform float dyed_gloss_min = 0.30;               // (and a polished piece's (its override 0.38 or less, the cups): one soft highlight kept, no chrome sky/ground split)
+uniform float dyed_env = 0.65;                     // (the sky's reflection kept, of bare metal's)
+uniform float dyed_grime_metal = 0.1;              // (its grime's dielectric share, of bare metal's 0.85)
+uniform float dyed_sheen = 0.75;                  // (its brushed plate's lights' highlights scaled by this: the sun's broad lobe over an edge-on pauldron at full read as a pale glassy cap)
+uniform float dyed_ao = 0.35;                      // (and in what the sky can't reach (lame undersides, the shoulder crease) this of it)
 uniform float metal_env = 0.50;                    // (the sky's reflection kept: no probe, the rest is the dark around her; metal r3: was 0.55)
 uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
 uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
@@ -414,12 +423,14 @@ void fragment() {
 		grime *= mix(1.0, enamel_grime, paint);
 		col = mix(col, dirt, grime * 0.8);
 		metal = mix(1.0, 0.0, grime * 0.85);
-		metal *= mix(1.0, enamel_metal, paint);              // (paint: mostly dielectric, its colour held at every angle)
+		metal *= mix(1.0, enamel_metal, paint);
+		if (finish == 3) metal = mix(metal, 1.0 - grime * dyed_grime_metal, 1.0 - gold);   // (dyed metal: its dirt stays a dull film on the metal; at bare metal's 0.85 a pale dye's grime, lit as paint, read as a chalky glassy cap)              // (paint: mostly dielectric, its colour held at every angle)
 		if (rusty > 0.5) metal = mix(0.35, 0.9, wear) * (1.0 - grime * 0.85);
 		// (the pauldron's plates and the bracers satin, the set matching: at the Look they
 		// blew out 5.7% of the lower frame at 0.32, face lead; judge 7)
 		if (flag > 0.25 && flag < 0.75) rough += 0.04;
 		rough = clamp(rough, metal_rough_floor, 0.85);
+		if (finish == 3) rough = mix(rough, max(rough, p_rough <= 0.38 ? dyed_gloss_min : dyed_rough_min), 1.0 - gold);   // (dyed metal: brushed, never a sky mirror)
 		// (gold only, a trial knob: glossier by gold_gloss)
 		rough = mix(rough, max(gold_rough - 0.04 * polish, 0.08), gold * gold_gloss);
 		// (armor 13 c4: a piece's rolled edges glossier and brighter than its plate, so its outline catches the light)
@@ -446,6 +457,7 @@ void fragment() {
 		for (int i = 0; i < 4; i++) if (piece_is(piece, piece_id[i]) && piece_graze[i] >= 0.0) p_graze = piece_graze[i];
 		keep = max(keep, p_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
 		keep *= mix(1.0, enamel_env, paint);
+		if (finish == 3) keep *= mix(1.0, dyed_env * mix(dyed_ao, 1.0, smoothstep(0.2, 0.8, sky)), (1.0 - gold) * (1.0 - bare));
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
 		float down = smoothstep(0.0, 0.35, -rw.y);
@@ -613,6 +625,7 @@ void light() {
 	}
 	// (armor 16 N4: a muted piece's highlight takes the steel's grey-blue, not the lamp's hue: blued steel under a warm key)
 	s = mix(s, vec3(dot(s, lw)) * spec_mute_tint, v_spec_mute);
+	if (finish == 3) s *= mix(1.0, dyed_sheen, smoothstep(0.36, 0.5, r));   // (dyed metal's brushed plate: the sun's broad lobe muted (an edge-on pauldron at full read as a pale glassy cap); the polished cups keep theirs)
 	SPECULAR_LIGHT += s;
 }
 #endif
