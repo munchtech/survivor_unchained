@@ -145,9 +145,10 @@ void fragment() {
 	// added light lit it as if by day: at night the Barrow Knight went a flat cream cut-out, struck after
 	// struck, and read as a model glitch (Experience 9's judge, 27 October).
 	float struck = max(fx.x - 0.12, 0.0) / 0.88;
-	struck *= struck;
-	// (its own hue only: a lift toward white, even shaded, read as an untextured clay body)
-	c = min(c * (1.0 + 1.3 * struck), vec3(0.9));
+	struck *= struck * struck;
+	// (its own hue only, and warm: a lift toward white, even shaded, read as an untextured clay body; at x2.3
+	// a grey hood under firelight still went white)
+	c = min(c * (1.0 + struck * vec3(1.0, 0.8, 0.6)), vec3(0.75));
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));

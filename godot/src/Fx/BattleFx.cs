@@ -1099,7 +1099,10 @@ public partial class BattleFx : Node3D
                     if (e.Hostile) { float k = e.Boss || e.Label is { Length: > 0 } ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
                     // An elite's or a boss's blow is the red line (F7 teaches it by that name): scarlet over darkened
                     // ground, in its textures. The crowd's blows stay amber and quiet (main's ruling, 27 October).
-                    bool danger = e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null
+                    // (A champion's full ring is its raising of the dead (the Grave-Caller's "Rise...", 7 m), no blow:
+                    // drawn as a ring that fills, in the crowd's amber. As a filled band it flooded the screen salmon.)
+                    bool raising = e.Shape == TelegraphShape.Ring && e.Inner <= 0.01 && !e.Boss && e.Label == null;
+                    bool danger = e.Hostile && e.Kind == TelegraphKind.Blow && e.Faction == null && !raising
                         && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)));
                     if (danger) col = Palette.TeleDanger;
                     dangerNext = danger;
@@ -1111,7 +1114,7 @@ public partial class BattleFx : Node3D
                         if (e.Hostile && (e.Boss || System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == e.Id && (x.Elite || x.Boss)))) OverLane(lm, e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1));
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
-                    else if (e.Shape == TelegraphShape.Ring) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
+                    else if (e.Shape == TelegraphShape.Ring && !raising) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
                     {
                         if (keyed.TryGetValue(e.Id, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
