@@ -215,7 +215,17 @@ SPEC = {
                   # (m, from `x`[0] off her middle to `x`[1], none in its top 3 cm, all from 12 cm down), weighed by
                   # that thigh's forward swing (smoothstep over `swing` degrees): the sheet tilts onto the raised
                   # thigh's crown instead of the thigh cutting through its edge
-                  "side": {"shapes": ["panel_side_l", "panel_side_r"], "lift": 0.055, "x": [0.005, 0.06], "swing": [10.0, 45.0]}}},
+                  "side": {"shapes": ["panel_side_l", "panel_side_r"], "lift": 0.055, "x": [0.005, 0.06], "swing": [10.0, 45.0]}},
+         # (Body 18 r4, judge at the town sprint: "as the near thigh comes down the panel floats as a straight stiff
+         # paddle 6-8 cm off it", the fall's hang and the 1.6 Hz fold's slow drop.) In a sprint (panel_sprint: the
+         # lead's held peak past `amp`, its held swing past `range`, both held `decay` deg/s, so a seat or a held
+         # pose never counts, nor a run, peak 79) the law blends to these: the upper turns `amount` a degree of lead
+         # (it lies on the thigh down its whole descent: 1.15 floats 7-10 cm off it there; the walk keeps 1.15, under
+         # which its thigh stays out of the panel), falls with no hang (`fall_tau`, `fall_rate`) and the lower half is a
+         # critically damped spring (`zeta` 1, `hz` 19: settled in 0.05 s, never overshooting). S18 solve4 h4.py,
+         # sprint_reaver(_town): lower half over the descending thigh p10 142 -> 6 mm, skin inside the panel max 76 -> 22
+         "sprint": {"amp": [81.0, 86.0], "range": [30.0, 40.0], "decay": 10.0,
+                    "amount": 0.5, "fall_tau": 0.012, "fall_rate": 1200.0, "hz": 19.0, "zeta": 1.0}},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
@@ -595,6 +605,34 @@ def side_weights(sd, fl, fr):
     return float(_smooth((fl - a) / (b - a))), float(_smooth((fr - a) / (b - a)))
 
 
+def panel_sprint(sd, st, lead, dt):
+    """How much of a sprint the panel's law is in (0..1, SPEC "panels" "sprint") from the lead's swing this frame
+    and `st` (a dict kept frame to frame, {} at the first): its peak and trough held, each easing back toward the lead
+    `decay` deg/s; the held peak past `amp` (smoothstep) times the held swing (peak - trough) past `range`.
+    PanelSwing.Sprint's twin."""
+    if "hi" not in st:
+        st.update(hi=lead, lo=lead)
+    else:
+        st["hi"] = max(lead, st["hi"] - sd["decay"] * dt)
+        st["lo"] = min(lead, st["lo"] + sd["decay"] * dt)
+    a0, a1 = sd["amp"]
+    r0, r1 = sd["range"]
+    return float(_smooth((st["hi"] - a0) / (a1 - a0))) * float(_smooth((st["hi"] - st["lo"] - r0) / (r1 - r0)))
+
+
+def sprint_blend(pn, g):
+    """The panel's law `pn` blended `g` of the way to its "sprint" numbers (the fold's hz and zeta with it)."""
+    sd = pn.get("sprint")
+    if not sd or g <= 0:
+        return pn
+    out = dict(pn)
+    for k in ("amount", "fall_tau", "fall_rate"):
+        out[k] = pn[k] + (sd[k] - pn[k]) * g
+    if "fold" in pn:
+        out["fold"] = dict(pn["fold"], **{k: pn["fold"][k] + (sd[k] - pn["fold"][k]) * g for k in ("hz", "zeta")})
+    return out
+
+
 def panel_fall(pn, prev, target, dt):
     """The panel's turn this frame (degrees) from last frame's (`prev`, None
     at the first) and the law's (`target`), `dt` seconds on: up at once,
@@ -620,7 +658,8 @@ def panel_fold(fd, st, turn, amount, th, dt):
     if dt > 0:
         w = 2 * math.pi * fd["hz"]
         z = fd["zeta"]
-        n = int(fd["substeps"])
+        # (substeps: at least `substeps`, and enough that w h <= 1, so a stiff spring holds at a long frame)
+        n = max(int(fd["substeps"]), math.ceil(w * dt))
         h = dt / n
         p0 = st["push"]
         rate = (push - p0) / dt
@@ -695,6 +734,12 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
             continue
         p = I[pn["parent"]]
         ang = panel_angles(sk, rot, pn)
+        if state is not None and "sprint" in pn:
+            k = pn["soft"]
+            g = panel_sprint(pn["sprint"], state.setdefault(pn["name"] + ":sprint", {}),
+                             _smax(ang[0], ang[1], k) - k / 4, dt if dt is not None else 0.0)
+            state[pn["name"] + ":sprint_g"] = g
+            pn = sprint_blend(pn, g)
         law = deg = panel_turn(pn, *ang)
         if state is not None:
             deg = state[pn["name"]] = panel_fall(pn, state.get(pn["name"]), deg, dt if dt is not None else 0.0)

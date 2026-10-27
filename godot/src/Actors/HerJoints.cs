@@ -93,6 +93,8 @@ public partial class HerJoints : SkeletonModifier3D
         public string[] SideShapes = System.Array.Empty<string>();   // (Body 18) its halves over each thigh lifted
         public double SideFrom, SideTo;
         public readonly List<(MeshInstance3D Mi, int[] Idx)> SideOn = new();
+        public Core.PanelSwing.SprintLaw? Sprint;          // (Body 18 r4) the sprint law, if any
+        public readonly Core.PanelSwing.SprintState SprintState = new();
     }
 
     Skeleton3D? found;
@@ -253,6 +255,14 @@ public partial class HerJoints : SkeletonModifier3D
                         p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450,
                         p.ContainsKey("drop") ? (double)p["drop"] : 0, p.ContainsKey("drop_from") ? (double)p["drop_from"] : 45),
                 };
+                if (p.ContainsKey("sprint"))
+                {
+                    var sd = p["sprint"].AsGodotDictionary();
+                    var am = sd["amp"].AsGodotArray();
+                    var rg = sd["range"].AsGodotArray();
+                    one.Sprint = new Core.PanelSwing.SprintLaw((double)am[0], (double)am[1], (double)rg[0], (double)rg[1], (double)sd["decay"],
+                        (double)sd["amount"], (double)sd["fall_tau"], (double)sd["fall_rate"], (double)sd["hz"], (double)sd["zeta"]);
+                }
                 if (p.ContainsKey("fold"))
                 {
                     var f = p["fold"].AsGodotDictionary();
@@ -423,14 +433,23 @@ public partial class HerJoints : SkeletonModifier3D
                 if (i == 0) { fl = sw; al = sp; } else { fr = sw; ar = sp; }
             }
             // (up with the thigh at once, down as a loose flap falls: Core/PanelSwing.Fall)
-            double law = Core.PanelSwing.Turn(p.Law, fl, fr, al, ar);
-            p.Last = Core.PanelSwing.Fall(p.Law, p.Last, law, delta);
+            // (Body 18 r4: in a sprint the law blends to its sprint numbers: Core/PanelSwing.Sprint)
+            var pl = p.Law;
+            double g = 0;
+            if (p.Sprint is { } spr)
+            {
+                g = Core.PanelSwing.Sprint(spr, p.SprintState, Core.PanelSwing.Lead(pl, fl, fr), delta);
+                pl = Core.PanelSwing.Blend(pl, spr, g);
+            }
+            double law = Core.PanelSwing.Turn(pl, fl, fr, al, ar);
+            p.Last = Core.PanelSwing.Fall(pl, p.Last, law, delta);
             float deg = (float)p.Last;
             sk.SetBonePoseRotation(p.Bone, (new Quaternion(p.Axis, Mathf.DegToRad(deg)) * p.Rest).Normalized());
             // (the lower half: a pendulum lying on the leading thigh, its fold as the mesh's shapes: Core/PanelSwing.Fold)
-            if (p.Fold is { } fold && p.FoldOn.Count > 0)
+            if (p.Fold is { } fold0 && p.FoldOn.Count > 0)
             {
-                var (wa, wb, wn) = Core.PanelSwing.FoldWeights(fold, Core.PanelSwing.Fold(fold, p.FoldState, law, p.Law.Amount, p.Last, delta));
+                var fold = p.Sprint is { } spr2 ? Core.PanelSwing.Blend(fold0, spr2, g) : fold0;
+                var (wa, wb, wn) = Core.PanelSwing.FoldWeights(fold, Core.PanelSwing.Fold(fold, p.FoldState, law, pl.Amount, p.Last, delta));
                 foreach (var (mi, idx) in p.FoldOn)
                     if (IsInstanceValid(mi))
                     {
