@@ -23,6 +23,9 @@ void fragment()
 	float m = clamp(a / 0.9, 0.0, 1.0);
 	float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
 	c = mix(c, vec3(l), smoothstep(0.0, 0.40, m));
+	// (UI 16 judge round 4: the band read heavier at the top left, where the ground is lit: its light evened toward
+	// one level inside the band, so it is the same weight round the whole screen)
+	c *= mix(1.0, clamp(0.11 / max(l, 0.02), 0.55, 1.6), 0.55 * smoothstep(0.0, 0.6, m));
 	// (UI 16 judge: on lit ground the band's inner edge read salmon: the red comes in faster than the light goes)
 	c *= mix(vec3(1.0), tint, smoothstep(0.0, 0.65, m));
 	c += blood.rgb * pow(m, 1.5) * glow * smoothstep(0.1, 0.9, beat);

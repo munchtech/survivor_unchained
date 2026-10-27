@@ -387,9 +387,17 @@ ORBS = {
     # The Broken Link (round 2, the judge: round 1's Krea 4604 read as a pale porthole with a latch): Krea link2
     # seed 4613, a heavy hammered shackle ring, an iron link through its foot into a rusted one; the break made
     # here (break_: at 2 o'clock, a jagged gap with bright raw fracture faces, the lower end splayed outward)
-    "link": dict(src=SRC16 + "link2/cand_4613.png", rows=[], tint=(0.80, 0.85, 0.95), luma=0.19,
+    "linkk": dict(src=SRC16 + "link2/cand_4613.png", rows=[], tint=(0.80, 0.85, 0.95), luma=0.19,
                  break_=(-34, 13, 34), bar=(420, (70, 110)), eye=(826, 734), eye_ring=True, clip=990,
                  backplate=True),
+    # The Broken Link, modelled (round 4, the judge on the Krea one: "a round charcoal ring with a chipped notch"; the
+    # owner: the HUD's modelled chain and lamp are the soul): tools/uiforge/blender_orb.py, one great forged link
+    # snapped open on its upper right (L1); the Krea one kept as linkk
+    "link": dict(src=SRC16 + "blender/l1.png", blend=SRC16 + "blender/l1.json", rows=[], tint=(0.90, 0.93, 1.0),
+                 chroma=0.45),
+    # The Ring of Links (L2): the glass ringed by seven forged links, the emblem's ring, one snapped open
+    "ring": dict(src=SRC16 + "blender/l2.png", blend=SRC16 + "blender/l2.json", rows=[], tint=(0.90, 0.93, 1.0),
+                 chroma=0.45),
     # The Held Dead's Warmth: Krea seed 4603, a riveted arch over a pierced brazier bowl; the arch's legs drawn
     # longer so the glass sits whole on the bowl's lip, the bowl squashed, the embers through its slots
     "ember": dict(src=SRC16 + "ember/cand_4603.png", rows=[(430, 520, 2.0), (620, 960, 0.62)], fit_top=True,
@@ -519,15 +527,24 @@ def orb_slots(rgb, A, y0, y1, keep):
 def orb(theme, check=None):
     S = ORBS[theme]
     out = os.path.join(ART, theme)
-    rgb = np.asarray(Image.open(S["src"]).convert("RGB"), np.float32) / 255
-    H0, W0 = rgb.shape[:2]
-    lum = blur(rgb.mean(2), 1.2)
-    # keyed by its light (the black ground 0.00-0.03): soft alpha, specks dropped
-    A = np.clip((lum - 0.035) / 0.035, 0, 1)
-    lab, n = nd.label(A > 0.5)
-    sz = nd.sum(np.ones_like(lab), lab, range(1, n + 1))
-    keep = np.isin(lab, 1 + np.where(sz > 3000)[0])
-    A *= blur(nd.binary_dilation(keep, iterations=3).astype(np.float32), 1.0)
+    blend = json.load(open(S["blend"])) if "blend" in S else None
+    if blend:
+        # modelled in Blender (blender_orb.py): its own alpha on a transparent ground, the opening and the eye
+        # from the render's json
+        rgba = np.asarray(Image.open(S["src"]).convert("RGBA"), np.float32) / 255
+        rgb, A = rgba[..., :3].copy(), rgba[..., 3].copy()
+        H0, W0 = rgb.shape[:2]
+        S = dict(S, eye=tuple(blend["eye"]))
+    else:
+        rgb = np.asarray(Image.open(S["src"]).convert("RGB"), np.float32) / 255
+        H0, W0 = rgb.shape[:2]
+        lum = blur(rgb.mean(2), 1.2)
+        # keyed by its light (the black ground 0.00-0.03): soft alpha, specks dropped
+        A = np.clip((lum - 0.035) / 0.035, 0, 1)
+        lab, n = nd.label(A > 0.5)
+        sz = nd.sum(np.ones_like(lab), lab, range(1, n + 1))
+        keep = np.isin(lab, 1 + np.where(sz > 3000)[0])
+        A *= blur(nd.binary_dilation(keep, iterations=3).astype(np.float32), 1.0)
     for x0, y0, x1, y1 in S.get("erase", []):
         pale = (rgb[y0:y1, x0:x1].mean(2) > 0.32) & (rgb[y0:y1, x0:x1, 0] - rgb[y0:y1, x0:x1, 2] > 0.06)
         pale = blur(nd.binary_dilation(pale, iterations=3).astype(np.float32), 1.5)
@@ -536,7 +553,10 @@ def orb(theme, check=None):
         A[y0:y1, x0:x1] = 0
     if "clip" in S:
         A[S["clip"]:] *= 0
-    cx, cy, r = orb_fit(A > 0.5, (W0 / 2, H0 * 0.42), S.get("fit_top", False))
+    if blend:
+        (cx, cy), r = blend["open_c"], blend["open_r"]
+    else:
+        cx, cy, r = orb_fit(A > 0.5, (W0 / 2, H0 * 0.42), S.get("fit_top", False))
     print(f"{theme}: opening c ({cx:.1f}, {cy:.1f}) r {r:.1f}")
     face = np.zeros((H0, W0), np.float32)
     if "break_" in S:
@@ -554,7 +574,7 @@ def orb(theme, check=None):
         emb = blur(emb, 0.8)
     # the iron cooled to blue-black, the painting's light kept
     g = rgb.mean(2, keepdims=True)
-    iron = g * np.array(S["tint"]) * S.get("dark", 1.0) + (rgb - g) * 0.18
+    iron = g * np.array(S["tint"]) * S.get("dark", 1.0) + (rgb - g) * S.get("chroma", 0.18)
     if "luma" in S:
         # (the iron at the HUD's own value: its mean light over the casing)
         cur = float((iron.mean(2) * A).sum() / max(A.sum(), 1))

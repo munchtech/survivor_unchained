@@ -146,7 +146,8 @@ void fragment()
 		vec3 empty = vec3(0.085, 0.080, 0.095) + vec3(0.16, 0.17, 0.20) * pow(1.0 - z, 2.0);
 		// (the rim lit as the window is: full at the upper left, ~30% at the lower right)
 		float rim_lit = mix(0.3, 1.0, 0.5 + 0.5 * dot(q / max(rr, 1e-3), normalize(vec2(-0.62, -0.78))));
-		empty += vec3(0.34, 0.36, 0.42) * rim_lit * smoothstep(vis_r - 3.0 / orb_r, vis_r - 0.8 / orb_r, rr);
+		// (a thin cool rim, ~1.5 px, round the empty glass: the judge, round 4)
+		empty += vec3(0.30, 0.36, 0.48) * rim_lit * smoothstep(vis_r - 1.8 / orb_r, vis_r - 0.5 / orb_r, rr);
 		empty += vec3(0.42, 0.035, 0.045) * exp(min(d, 0.0) / 7.0) * step(0.002, lv) * smoothstep(1.0, 0.6, rr);
 		gcol = mix(empty, blood, below);
 		// the surface seen a little from above: a lens 5 px deep across the glass, lit on the left, its front lip
@@ -186,19 +187,28 @@ void fragment()
 				fq.y -= (0.1 + 0.4 * cell) * crack * crack;
 				fade = (1.0 - smoothstep(0.2, 1.0, crack)) * step(0.35, cell);
 			}
-			// (a crisp 3 px silver arc on the glass's visible rim, frost falling off 9 px inward, bright tips
-			// where it ends; the glass inside stays as it is)
-			float ang = abs(atan(fq.x, -fq.y)) / 3.14159265;
-			float held = 1.0 - smoothstep(fr - 0.006, fr + 0.006, ang);
-			float inpx = (orb_vis - length(fq) * orb_r);   // px in from the visible rim
-			float arc = smoothstep(-0.8, 0.4, inpx) * (1.0 - smoothstep(3.4, 4.4, inpx));
-			float frostf = 0.38 * exp(-max(inpx - 3.5, 0.0) / 3.5) * step(0.0, inpx);
-			// a fine frost: sparkles in the falloff, twinkling slowly
-			float spk = step(0.93, h21(floor(px * 0.9))) * (0.5 + 0.5 * sin(t * 2.3 + 40.0 * h21(floor(px * 0.9) + 7.0)));
-			frostf += 0.55 * spk * exp(-max(inpx - 2.0, 0.0) / 4.0) * step(0.0, inpx);
-			float tip = exp(-pow((fr - ang) * 3.14159 * length(fq) * orb_r / 2.2, 2.0)) * step(-0.8, inpx) * (1.0 - smoothstep(4.0, 7.0, inpx)) * step(fr, 0.995);
-			float sh = clamp((arc * 0.9 + frostf) * held + tip * 0.9, 0.0, 1.0) * fade;
-			gcol = mix(gcol, vec3(0.70, 0.80, 0.94), sh);
+		// (UI 16 judge round 4: the ward is a film, not a brighter rim: a translucent steel-blue film over the whole
+		// front of the glass, as far down as it holds (its level drains from the foot up, both sides alike), a
+		// crisp lit edge round it (bright at the upper left), and a slow shimmer moving through it)
+		float vin = orb_vis / orb_r;
+		float fl = length(fq);
+		float onglass = 1.0 - smoothstep(vin - 0.6 / orb_r, vin + 0.4 / orb_r, fl);
+		// (held: the film covers the glass above a line that falls as the ward fills; full at fr 1)
+		float line_y = mix(-vin, vin, clamp(fr, 0.0, 1.0));
+		float held = 1.0 - smoothstep(line_y - 1.0 / orb_r, line_y + 1.0 / orb_r, fq.y);
+		float sweep = 0.5 + 0.5 * sin(t * 0.55 + (fq.x - fq.y) * 2.4);
+		float shim = 0.55 * vnoise(vec2(px.x * 0.07 + t * 0.10, px.y * 0.07 - t * 0.06)) + 0.45 * sweep;
+		float filmw = (0.20 + 0.14 * shim) * held * onglass * fade;
+		gcol = mix(gcol, vec3(0.46, 0.58, 0.74), filmw);
+		gcol += vec3(0.50, 0.62, 0.80) * 0.10 * pow(sweep, 6.0) * held * onglass * fade;
+		// the crisp lit edge: 1.2 px round the film's outline on the glass's rim, bright at the upper left
+		float inpx = (orb_vis - fl * orb_r);
+		float lit_ = mix(0.35, 1.0, 0.5 + 0.5 * dot(fq / max(fl, 1e-3), normalize(vec2(-0.62, -0.78))));
+		float rimf = (smoothstep(-0.6, 0.2, inpx) * (1.0 - smoothstep(1.0, 1.8, inpx))) * held;
+		// and along its falling edge inside the glass while it is not full
+		float lip = exp(-pow((fq.y - line_y) * orb_r / 0.8, 2.0)) * onglass * step(fr, 0.995);
+		gcol = mix(gcol, vec3(0.80, 0.88, 0.98), clamp(rimf * 0.85 * lit_ + lip * 0.45, 0.0, 1.0) * fade);
+		ga = max(ga, gin * filmw);
 		}
 		// the glass's light from the upper left: a soft window, a hot point, a thin rim crescent; a faint
 		// bounce low on the right
@@ -210,7 +220,10 @@ void fragment()
 		float hot = soft * smoothstep(0.975, 0.998, dot(dir, normalize(vec2(-0.62, -0.78))));
 		float cres = smoothstep(0.80, 0.96, rr) * smoothstep(0.25, 0.9, dot(q / max(rr, 1e-3), normalize(vec2(-0.75, -0.85)))) * (1.0 - smoothstep(0.96, 1.0, rr));
 		float bounce = smoothstep(0.82, 0.96, rr) * smoothstep(0.4, 0.95, dot(q / max(rr, 1e-3), normalize(vec2(0.7, 0.8)))) * (1.0 - smoothstep(0.96, 1.0, rr));
-		gcol += vec3(0.95, 0.93, 0.92) * (0.42 * soft + 0.30 * hot + 0.22 * cres) + vec3(0.9, 0.35, 0.3) * 0.16 * bounce;
+		// (the empty glass keeps the full orb's light: the window's read there is the glass's own, not the blood's)
+		float spec_k = mix(1.15, 1.0, below);
+		gcol += vec3(0.95, 0.93, 0.92) * (0.42 * soft + 0.30 * hot + 0.22 * cres) * spec_k + vec3(0.9, 0.35, 0.3) * 0.16 * bounce * below;
+		ga = max(ga, gin * clamp(0.42 * soft + 0.30 * hot + 0.22 * cres, 0.0, 1.0));
 		// (the embers under it light the glass's foot from below)
 		if (theme == 1)
 			gcol += vec3(1.0, 0.36, 0.08) * 0.22 * mix(0.2, 0.82, level) * smoothstep(0.55, 1.0, q.y) * (0.6 + 0.4 * rr);
