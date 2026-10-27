@@ -390,38 +390,40 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
             lt = tint
             if vmods and vmods[poly.index]:
                 lt = vmods[poly.index](tint, bm.verts[vi].co)
+            run_flag = upf = False
             if GRIME['h'] > 0 and kind_of_face[poly.index] in ('stone', 'soil') and not (OLD.get('soil_clean') and kind_of_face[poly.index] == 'soil'):
                 # (E7b) grime rising from the ground: the foot darker and greened in patches, moss on what faces up
                 co = bm.verts[vi].co
+                up = poly.normal.z
+                # (E8 later r2) what faces up near the foot (the footing's weathering course, the ring the play camera
+                # looks down on) keeps a quarter of the grime and none of the foot band, ground shade or base darkening: at full it went black
+                upf = GRIME.get('runs') and up > 0.45
                 g = min(1.0, max(0.0, y / GRIME['h']))
                 g = g * g * (3 - 2 * g)
+                if upf:
+                    g = 0.75 + 0.25 * g
                 nz = 0.5 + 0.9 * hnoise(co * 1.7, 23)
                 lt = lt * (0.58 + 0.42 * g)
                 lt = lt.lerp(Vector((lt.x * 0.86, lt.y * 0.94, lt.z * 0.64)), (1 - g) * min(1.0, max(0.0, nz)))
-                up = poly.normal.z
                 if kind_of_face[poly.index] == 'stone' and GRIME['foot'] > 0:
                     # (E7b r2) the foot band (the bottom 0.6 m) darker and greener, its top edge ragged; blotches of
                     # weather over the whole face (no block left clean); streaks run down from under the top course
-                    fb = 1.0 - smooth01(0.5, 0.85, y + 0.12 * hnoise(co * 2.9, 37))
+                    fb = 0.0 if upf else 1.0 - smooth01(0.5, 0.85, y + 0.12 * hnoise(co * 2.9, 37))
                     lt = lt * (1.0 - GRIME['foot'] * fb)
                     lt = lt.lerp(Vector((lt.x * 0.8, lt.y * 0.97, lt.z * 0.6)), 0.7 * fb)
                     lt = lt * (0.86 + 0.2 * smooth01(-0.6, 0.6, hnoise(co * 1.3, 43)))
                     if abs(up) < 0.4 and GRIME.get('runs'):
-                        # (E8 later) grime runs: soft vertical streaks hanging from the battlements, darker and a little
-                        # cooler (rain off the merlons and through the crenels), each its own length; one coordinate along
-                        # the face (round a drum: its arc), so a run goes down through the courses, not block by block
-                        rs, rl = GRIME['runs']
+                        # (E8 later r2) grime runs: the faces that take them are flagged (vertex alpha 0.5) and the runs
+                        # drawn per pixel by OwnProps' runs material (shaders/props_runs.gdshader): at the vertices (blocks
+                        # 0.4-0.7 m a triangle) a 0.2-0.7 m run smeared to nothing. Outer faces only (a drum's outward,
+                        # a wall's south and ends), never the parapet's inner face the play camera looks down on.
+                        ng = Vector((poly.normal.x, poly.normal.z, -poly.normal.y))
                         if GRIME.get('ring'):
-                            u = math.atan2(co.z, co.x) * math.hypot(co.x, co.z)
+                            pc = B2G @ poly.center  # (the face's own centre: one flag a face, no blend across it)
+                            run_flag = ng.x * pc.x + ng.z * pc.z > 0.3 * math.hypot(pc.x, pc.z)
                         else:
-                            u = co.x if abs(poly.normal.y) >= abs(poly.normal.x) else co.z
-                        d = top_y - y
-                        a = smooth01(-0.15, 0.55, hnoise(Vector((u * 1.9, 0.0, u * 0.7)), 47)) * (0.55 + 0.45 * smooth01(-0.5, 0.5, hnoise(Vector((u * 6.1, 0.0, 0.0)), 53)))
-                        ln = rl * (0.3 + 0.7 * smooth01(-0.8, 0.8, hnoise(Vector((u * 0.83, 0.0, u * 0.41)), 59)))
-                        run = a * (1.0 - smooth01(0.0, 1.0, d / max(ln, 0.1))) * smooth01(-0.3, 0.2, d)
-                        drip = 0.35 * (1.0 - smooth01(0.0, 0.9, d))  # the drip line under the parapet, all along
-                        lt = lt.lerp(Vector((lt.x * 0.48, lt.y * 0.52, lt.z * 0.6)), min(1.0, rs * max(run, drip)))
-                    if GRIME.get('base'):
+                            run_flag = ng.z > -0.3
+                    if GRIME.get('base') and not upf:
                         # (E8 later) the masonry darker toward its base (splash, damp, soil), over the lower half
                         lt = lt * (1.0 - GRIME['base'] * (1.0 - smooth01(0.0, top_y * 0.55, y)))
                     if abs(up) < 0.4 and GRIME['top'] > 0 and not GRIME.get('runs'):
@@ -434,12 +436,12 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
                     mz = 0.5 + 0.55 * hnoise(co * 4.2, 23) + 0.35 * hnoise(co * 11.0, 29)
                     m = GRIME['moss'] * smooth01(0.42, 0.58, mz) * min(1.0, (up - 0.78) * 6.0)
                     lt = lt.lerp(MOSS * (0.85 + 0.3 * hnoise(co * 5.0, 31)), m)
-            s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground else 1.0)
+            s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground and not upf else 1.0)
             if hard:
                 s *= 1.0 + 0.35 * max(0.0, min(conv[vi], 0.6))
             s *= 1.0 + 0.4 * min(0.0, max(conv[vi], -0.5)) * 0.6
             c = lt * s
-            ca.data[li].color = (min(c.x, 1.0), min(c.y, 1.0), min(c.z, 1.0), 1.0)
+            ca.data[li].color = (min(c.x, 1.0), min(c.y, 1.0), min(c.z, 1.0), 0.5 if run_flag else 1.0)
     me.color_attributes.active_color = ca
     bm.free()
 
@@ -3913,11 +3915,12 @@ def beyond_lamp(p):
     return parts
 
 
-def pebble(r, rng, flat=0.55):
-    """(E8 later) A field stone: a lumpy low icosphere, squashed, its foot sunk (80 triangles)."""
+def pebble(r, rng, flat=0.55, el=1.0):
+    """(E8 later) A field stone: a lumpy low icosphere, squashed (flat), drawn out along x (el), its foot sunk (80
+    triangles)."""
     bm = bmesh.new()
     bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0)
-    sx, sz = rng(0.8, 1.25), rng(0.75, 1.15)
+    sx, sz = rng(0.8, 1.25) * el, rng(0.75, 1.15)
     sd = rng(0, 100)
     for v in bm.verts:
         c = v.co.copy()
@@ -3956,9 +3959,11 @@ def camp_ground(p):
     stone, bark = hexlin(p['stone']), hexlin(p['bark'])
     ash, char = hexlin(p['ash']), hexlin(p['char'])
     parts = []
-    for (x, z, r) in p['stones']:
+    for sp_ in p['stones']:
+        # (E8 later r2) [x, z, r, flat, el]: each its own size, flatness and length (judge: stamped, all round and alike)
+        x, z, r = sp_[:3]
         t = stone * rng(0.75, 1.15)
-        parts.append(Part(pebble(r, rng), 'stone', Vector((t.x, t.y * rng(0.97, 1.03), t.z * rng(0.94, 1.04))), T(x, r * 0.12, z) @ R('Y', rng(0, 6.28)), smooth=True, jitter=0.0))
+        parts.append(Part(pebble(r, rng, *sp_[3:5]), 'stone', Vector((t.x, t.y * rng(0.97, 1.03), t.z * rng(0.94, 1.04))), T(x, r * 0.12, z) @ R('Y', rng(0, 6.28)), smooth=True, jitter=0.0))
     kx, kz, ka = p['kindling']
     at = T(kx, 0, kz) @ R('Y', ka)
     for i in range(7):
@@ -4137,6 +4142,12 @@ def main():
             obs.append(trough_water_mesh(name + '_water', wm, p))
         bb = [B2G @ Vector(c) for c in ob.bound_box]
         meta['box'] = [round(min(v[i] for v in bb), 3) for i in range(3)] + [round(max(v[i] for v in bb), 3) for i in range(3)]
+        if p.get('runs'):
+            # (E8 later r2) the grime runs' shape for OwnProps' runs material: where they hang from (the crenels, m), how
+            # far below that the machicolation's or corbels' foot is (a second row starts there), their longest, their
+            # strength, and whether "along the face" is round a drum
+            meta['runs'] = {'top': round(p.get('run_top') or meta['box'][4], 3), 'drop': p.get('run_drop', 0.0), 'len': p['runs'][1],
+                            'k': p['runs'][0], 'ring': p['kind'] == 'tower'}
         bpy.ops.object.select_all(action='DESELECT')
         for o in obs:
             o.select_set(True)

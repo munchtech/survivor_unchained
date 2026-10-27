@@ -48,6 +48,9 @@ public static class OwnProps
     /// <summary>(E8 later) Presets that cast no shadow (props.json "no_shadow": the camp's ground dressing, what the
     /// open gate shows beyond it).</summary>
     static readonly HashSet<string> unshadowed = new();
+    /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
+    /// material on the faces their vertex alpha flags.</summary>
+    static readonly Dictionary<string, (float Top, float Drop, float Len, float K, bool Ring)> runs = new();
     static OrmMaterial3D? mat;
 
     /// <summary>A zone's own-props data, or null if it has none.</summary>
@@ -189,6 +192,9 @@ public static class OwnProps
                     if (p.Value.TryGetProperty("axis", out var ax)) axes[p.Name] = new Vector2(ax[0].GetSingle(), ax[1].GetSingle());
                     if (p.Value.TryGetProperty("lod_m", out var lm)) lods[p.Name] = lm.GetSingle();
                     if (p.Value.TryGetProperty("no_shadow", out var ns) && ns.GetBoolean()) unshadowed.Add(p.Name);
+                    if (p.Value.TryGetProperty("runs", out var rn))
+                        runs[p.Name] = (rn.GetProperty("top").GetSingle(), rn.GetProperty("drop").GetSingle(), rn.GetProperty("len").GetSingle(),
+                            rn.GetProperty("k").GetSingle(), rn.GetProperty("ring").GetBoolean());
                 }
             }
         }
@@ -221,6 +227,43 @@ public static class OwnProps
             }
             else mat.Roughness = 0.9f;
             return mat;
+        }
+    }
+
+    static ShaderMaterial? veil;
+    static Color veilCol = new(0.37f, 0.33f, 0.41f);
+    /// <summary>(E8 later r2) The air sheet's colour: the sky's horizon (Atmosphere, on every change of light).</summary>
+    public static void SkyHaze(Color horizon) { veilCol = horizon; veil?.SetShaderParameter("haze_col", horizon); }
+    /// <summary>(E8 later r2) "haze_veil" (props_own.json "place"): a 6 x 6.5 m sheet of air facing +z, its foot on the
+    /// ground (shaders/haze_veil.gdshader; --haze-veil its share, 0.22), no shadow.</summary>
+    static Node3D Veil()
+    {
+        veil ??= new ShaderMaterial { ResourceName = "haze_veil", Shader = GD.Load<Shader>("res://shaders/haze_veil.gdshader") };
+        veil.SetShaderParameter("haze_col", veilCol);
+        veil.SetShaderParameter("amount", SurvivorUnchained.Args.Num("haze-veil", 0.22f));
+        var root = new Node3D { Name = "own_haze_veil" };
+        root.AddChild(new MeshInstance3D
+        {
+            Name = "haze_veil", Mesh = new QuadMesh { Size = new Vector2(6f, 6.5f) }, MaterialOverride = veil,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Position = new Vector3(0, 2.75f, 0),
+        });
+        return root;
+    }
+
+    static ShaderMaterial? runsMat;
+    /// <summary>(E8 later r2) The prop material plus grime runs and a damp foot per pixel (shaders/props_runs.gdshader).</summary>
+    static Material RunsMat
+    {
+        get
+        {
+            if (runsMat != null) return runsMat;
+            runsMat = new ShaderMaterial { ResourceName = "own_props_runs", Shader = GD.Load<Shader>("res://shaders/props_runs.gdshader") };
+            runsMat.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{Dir}/props_albedo.jpg"));
+            runsMat.SetShaderParameter("normal_tex", GD.Load<Texture2D>($"{Dir}/props_normal.png"));
+            runsMat.SetShaderParameter("orm_tex", GD.Load<Texture2D>($"{Dir}/props_orm.png"));
+            runsMat.SetShaderParameter("normal_scale", SurvivorUnchained.Args.Num("props-normal", 1f));
+            runsMat.SetShaderParameter("moss_k", SurvivorUnchained.Args.Num("props-moss-foot", 1f));
+            return runsMat;
         }
     }
 
@@ -298,6 +341,7 @@ public static class OwnProps
     /// <summary>A preset's node (its LOD0 and LOD1 by distance, shadows on), or null if it was never built.</summary>
     public static Node3D? Piece(string preset)
     {
+        if (preset == "haze_veil") return Veil();
         var path = $"{Dir}/{preset}.glb";
         if (!ResourceLoader.Exists(path) || Skip.Contains(preset)) return null;
         var root = GD.Load<PackedScene>(path).Instantiate<Node3D>();
@@ -329,6 +373,15 @@ public static class OwnProps
             if (m.Name.ToString().EndsWith("_glow")) { m.MaterialOverride = Glow; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
+            if (!Plain && runs.TryGetValue(preset, out var rs) && !SurvivorUnchained.Args.Has("props-no-runs"))
+            {
+                m.MaterialOverride = RunsMat;
+                m.SetInstanceShaderParameter("run_top", rs.Top);
+                m.SetInstanceShaderParameter("run_drop", rs.Drop);
+                m.SetInstanceShaderParameter("run_len", rs.Len);
+                m.SetInstanceShaderParameter("run_k", rs.K);
+                m.SetInstanceShaderParameter("run_ring", rs.Ring ? 1f : 0f);
+            }
             m.CastShadow = small || proxy ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
             if (!hasLod) continue;
             if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = lodFrom;

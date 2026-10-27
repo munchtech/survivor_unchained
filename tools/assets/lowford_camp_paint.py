@@ -1,12 +1,16 @@
 """(E8 later) Low Ford's camp ground in the zone's paint (godot/data/zones/lowford/splat.png, R = trodden earth):
 footpaths worn into the camp (from the road by the post lantern, north into the wood, south-west past the bedroll)
 and the camp's earth broken up, grass let back in patches at its rim (thin tufts where R falls under about 0.5), its
-edge ragged. Run once from the repo root on the paint as committed before E8 later (it reads splat.png and writes it
-back; --from PATH reads another copy, e.g. the git blob).
+edge ragged. (E8 later r2) It starts from the paint as committed before E8 later (the git blob PRE, so a rerun never
+repeats the cut) and wears the zone's footpaths (flora_species.json "ground_paths", the lines the ground shader lightens)
+to bare earth, R 1 at their core, so no grass grows on them. Run from the repo root (--from PATH: another start).
 
     python tools/assets/lowford_camp_paint.py [--from PATH]
 """
+import io
+import json
 import math
+import subprocess
 import sys
 
 import numpy as np
@@ -15,12 +19,9 @@ from PIL import Image
 SPLAT = 'godot/data/zones/lowford/splat.png'
 SIZE, RES = 260.0, 1024
 FIRE = (-10.5, 90.5)
-# the paths (world x, z), each with its core width (m) and its worn strength (R) along it, fading at the far end
-PATHS = [
-    ([(-6.6, 91.0), (-5.2, 91.9), (-3.9, 92.6), (-2.6, 93.0)], 0.75, 0.82),   # east to the road by the post lantern
-    ([(-10.6, 86.2), (-11.2, 84.0), (-11.9, 81.6), (-12.3, 79.0)], 0.6, 0.72),  # north into the wood
-    ([(-13.0, 94.4), (-13.9, 96.6), (-14.6, 98.8), (-15.2, 100.8)], 0.55, 0.66),  # south-west
-]
+PRE = '58e2a203^:godot/data/zones/lowford/splat.png'   # the paint before E8 later's camp cut
+# the paths (world x, z) from the zone's data, each worn bare (R 1) over its core width (m), fading at the far end
+PATHS = [(line, 0.6, 1.0) for line in json.load(open('godot/data/zones/lowford/flora_species.json'))['ground_paths']]
 
 
 def noise(x, z, f, seed):
@@ -37,7 +38,10 @@ def seg_dist(px, pz, a, b):
 
 
 def main():
-    src = sys.argv[sys.argv.index('--from') + 1] if '--from' in sys.argv else SPLAT
+    if '--from' in sys.argv:
+        src = sys.argv[sys.argv.index('--from') + 1]
+    else:
+        src = io.BytesIO(subprocess.run(['git', 'show', PRE], capture_output=True, check=True).stdout)
     im = np.array(Image.open(src)).astype(np.float32) / 255.0
     # the window round the camp (x -22..2, z 74..106)
     i0, i1 = int((74 + 130) / SIZE * RES), int((106 + 130) / SIZE * RES)
@@ -65,7 +69,7 @@ def main():
             along = np.where(m, (s + t) / n, along)
         hw = w * 0.5 * (1.0 + 0.3 * noise(x, z, 2.3, 11.0))
         core = 1.0 - np.clip((best - hw * 0.6) / (hw * 0.9), 0, 1)
-        fade = 1.0 - np.clip((along - 0.6) / 0.4, 0, 1) * 0.75
+        fade = 1.0 - np.clip((along - 0.75) / 0.25, 0, 1) * 0.6
         val = k * (0.85 + 0.15 * noise(x, z, 3.7, 5.0)) * fade
         r = np.maximum(r, core * val)
     im[i0:i1, j0:j1, 0] = np.clip(r, 0, 1)
