@@ -465,7 +465,9 @@ def finish(name, parts, mat, seed):
     bm.to_mesh(me)
     bm.free()
     for poly in me.polygons:
-        poly.use_smooth = info[pidx[poly.index]][2]
+        # (E8d) smooth == 'faces': each face keeps its own flag (a drum block's face smooth, its arrises flat)
+        if info[pidx[poly.index]][2] != 'faces':
+            poly.use_smooth = info[pidx[poly.index]][2]
     tints = [info[i][0] if info[i][3] is None else Vector([a * b for a, b in zip(info[i][0], info[i][3][k])]) for i, k in zip(pidx, sidx)]
     kinds = [info[i][1] for i in pidx]
     bake_colours(me, tints, kinds, vmods=[info[i][4] for i in pidx])
@@ -486,6 +488,7 @@ def finish(name, parts, mat, seed):
 
 MOSS_DARK = Vector((0.2, 0.27, 0.085))   # (lf6d) a cushion moss, linear: dark and rich, so a moonlit top reads stone and moss
 MOSS_SAGE = Vector((0.36, 0.44, 0.17))
+MOSS_WET = Vector((0.24, 0.4, 0.08))     # (E8d) wet moss low on the drums: a green that holds through the dawn's blue mist
 LICHEN = Vector((0.6, 0.6, 0.47))           # pale grey-green crust lichen: the moonlit pops on old stone
 LEAF = (Vector((0.3, 0.16, 0.05)), Vector((0.2, 0.1, 0.04)), Vector((0.36, 0.25, 0.08)), Vector((0.12, 0.08, 0.04)))
 
@@ -3062,7 +3065,8 @@ def merlons(parts, rng, x0, x1, y, zc, depth, mh, mw, gap, stone, broken=(), loo
                 parts.append(Part(box(0.16, hb * 0.86, 0.1), 'stone', stone * 0.06, T(cx, y + hb * 0.48, zc - depth * 0.3), jitter=0.0))
             else:
                 sblock(parts, (w - 0.03, hb - 0.02, depth - 0.02), T(cx, y + hb / 2, zc) @ R('Y', rng(-0.02, 0.02)), st(stone, rng), rng, drop=('-y',))
-            sblock(parts, (w + 0.05, 0.13, depth + 0.07), T(cx, y + hb + 0.065, zc) @ R('Z', rng(-0.02, 0.02)), st(stone, rng) * 1.04, rng, chip=0.6)
+            # (E8d) a fine arris on the cap (the 3 cm bevel's lower edge caught the light: a pale rim under every cap)
+            sblock(parts, (w + 0.05, 0.13, depth + 0.07), T(cx, y + hb + 0.065, zc) @ R('Z', rng(-0.02, 0.02)), st(stone, rng) * 1.04, rng, chip=0.6, bevel=0.012)
             if shadow:
                 shadow_box(w, mh, depth, T(cx, y + mh / 2, zc))
         if i < n - 1 and (i + 1) not in skip:
@@ -3282,13 +3286,12 @@ def gatehouse(p):
     yg = yc + 1.0
     wall_parts(parts, rng, 2 * gx + 0.5, top - yg, 0.42, 0.48, 0.9, stone, mortar, lambda x: 99.0, -gx - 0.25, at=T(0, yg, gz + 0.2), sink=0.0)
     parts.append(Part(box(2 * gx + 0.4, 0.08, 0.5), 'stone', stone * 0.05, T(0, yg - 0.03, DG / 2 + 0.2), jitter=0.0))
-    merlons(parts, rng, -gx - 0.25, gx + 0.25, top, gz + 0.2, 0.45, mh, 0.95, 0.5, stone, loops={1, 3})
-    shadow_box(2 * gx + 0.5, top - yc, 0.9, T(0, (top + yc) / 2, gz))
+    merlons(parts, rng, -gx - 0.25, gx + 0.25, top, gz + 0.2, 0.45, mh, 0.95, 0.5, stone, loops={1, 3}, shadow=False)
     for (a, b) in ((x0 + 0.04, -gx - 0.3), (gx + 0.3, W / 2 - 0.04)):
-        merlons(parts, rng, a, b, top, zf, F, mh, 0.95, 0.5, stone)
+        merlons(parts, rng, a, b, top, zf, F, mh, 0.95, 0.5, stone, shadow=False)
     # the rear parapet, battlemented, one merlon lost
     wall_parts(parts, rng, W, ph + 0.25, 0.5, 0.5, 0.95, stone * 0.98, mortar, lambda x: 99.0, x0, at=T(0, HG - 0.25, -DG / 2 + 0.25), sink=0.0)
-    merlons(parts, rng, x0 + 0.04, W / 2 - 0.04, top, -DG / 2 + 0.25, 0.5, mh, 0.95, 0.5, stone, broken={2}, fall_z=-DG / 2 + 1.1, fall_y=HG)
+    merlons(parts, rng, x0 + 0.04, W / 2 - 0.04, top, -DG / 2 + 0.25, 0.5, mh, 0.95, 0.5, stone, broken={2}, fall_z=-DG / 2 + 1.1, fall_y=HG, shadow=False)
     flags(parts, rng, x0 + 0.02, W / 2 - 0.02, -DG / 2 + 0.5, DG / 2 - F, HG, stone, rows=4)
     # (E8c) the proxy keeps the passage open, the arch's curve through it (as the core): the dawn sun, low in the
     # north-north-east, shines through the gate onto the road (Low Ford's gatedawn left sun pool; a solid block shut it out)
@@ -3302,6 +3305,13 @@ def gatehouse(p):
             pts.reverse()
         # (shadow_d: the block as deep as the KayKit gate's, not the passage's 5 m, so the slant reaches through)
         SHADOW.append((prism(pts, p.get('shadow_d', DG), bevel=0.0), T(0, 0, 0)))
+    # (E8d) the battlements' teeth on the proxy itself, at its south edge: the front gallery's and merlons' own boxes
+    # stood 1-2 m south of the 2.5 m proxy, floating, so the moon cast them as a toothed band beyond a lit stripe
+    sd = p.get('shadow_d', DG)
+    nt = max(2, int(round((W + 0.5) / 1.45)))
+    wt = (W - 0.5 * (nt - 1)) / nt
+    for i in range(nt):
+        shadow_box(wt, mh, 0.5, T(-W / 2 + i * (wt + 0.5) + wt / 2, top + mh / 2, sd / 2 - 0.25))
     return parts
 
 
@@ -3379,7 +3389,7 @@ def cone_slates(parts, rng, re, ye, h, slate, sw=0.46, sl=0.66, vis=0.44, moss=0
     parts.append(Part(lathe([(rc, yc - 0.15), (rc * 0.9, yc), (0.06, ye + h + 0.05)], 12), 'iron', slate * 0.65, T(0, 0, 0), smooth=True, jitter=0.0))
 
 
-def arc_block(L, h, F, r, rng, bevel=0.03, chip=0.4, jag=0.006, drop=('-z',)):
+def arc_block(L, h, F, r, rng, bevel=0.03, chip=0.4, jag=0.006, drop=('-z',), smooth_face=False):
     """(E8 r2) A dressed block bent to a drum: L along the arc (at the outer face, radius r), h high, F deep (the
     outer face at local z +F/2); cut along its length so the bend is smooth (the drum's outline round, no tangent
     corners standing out course by course: the old rings' jagged silhouette), its arrises beveled, hand-jittered."""
@@ -3399,12 +3409,30 @@ def arc_block(L, h, F, r, rng, bevel=0.03, chip=0.4, jag=0.006, drop=('-z',)):
         rho = rc + z
         v.co.x, v.co.z = rho * math.sin(th), rho * math.cos(th) - rc
     bm.normal_update()
+    if smooth_face:
+        # (E8d) the face shaded smooth round the drum (its strips' flat normals stepped 6-9 degrees, staggered course
+        # to course: a checkerboard of lit and shaded facets at 1:1), cut free of its flat arrises (their normals apart)
+        front = []
+        for f in bm.faces:
+            c = f.calc_center_median()
+            rad = Vector((c.x, 0.0, c.z + rc))
+            ok = rad.length > 1e-6 and f.normal.dot(rad.normalized()) > 0.97
+            f.smooth = ok
+            if ok:
+                front.append(f)
+        fs = set(front)
+        edges = [e for f in front for e in f.edges if any(g not in fs for g in e.link_faces) or len(e.link_faces) < 2]
+        if edges:
+            bmesh.ops.split_edges(bm, edges=list(set(edges)))
+        bm.normal_update()
     return bm
 
 
-def damp(stone, y, rng, wet=1.0):
+def damp(stone, y, rng, wet=1.0, at=None):
     """(E8 r2) A drum's stone by its height (m over the kit floor): the lower metre dark and damp, greened in
-    patches with moss, easing to the dry stone by 2.6 m; the top courses a touch paler (weathered)."""
+    patches with moss, easing to the dry stone by 2.6 m; the top courses a touch paler (weathered).
+    (E8d) at: the block's middle (game frame): the moss in the damp band (the lower 1.6 m) in patches across blocks
+    (a noise, so a patch spans a few blocks), a green that holds under the dawn's mist; the rest damp-dark, a little green."""
     if y < 1.0:
         k = 0.56 + 0.12 * max(0.0, y)
         m = (0.5 - 0.3 * max(0.0, y)) * wet
@@ -3414,13 +3442,20 @@ def damp(stone, y, rng, wet=1.0):
     else:
         k, m = 1.0 + 0.06 * min(1.0, (y - 2.6) / 8.0), 0.0
     c = stone * k
+    if at is not None:
+        if m > 0:
+            band = 1.0 - smooth01(0.9, 1.7, y)
+            patch = smooth01(0.36, 0.56, 0.5 + 0.7 * hnoise(at * 0.55, 61))
+            c = c.lerp(MOSS_DARK * 1.25, m * 0.6)
+            c = c.lerp(MOSS_WET, min(1.0, wet * band * patch * rng(0.6, 0.9)))
+        return c
     if m > 0 and rng() < 0.75:
         c = c.lerp(MOSS_DARK * 1.25, m * rng(0.35, 1.0))
     return c
 
 
 def arc_ring(parts, rng, r, y0, H, F, stone, at=Matrix.Identity(4), arc=None, chs=(0.44, 0.5, 0.56, 0.62, 0.7), ls=(0.55, 1.15),
-             slits=(), top=False, wet=1.0):
+             slits=(), top=False, wet=1.0, mortar=None):
     """(E8 r2) A round wall in courses from y0, H high, outer radius r, F deep: each course its own height (chs, a
     little varied), each block its own length (ls), the joints falling where they fall, course by course; arc: blocks
     only within this angle of south (+z: what every camera sees), the back a plain shell of the stone (the triangle
@@ -3429,6 +3464,13 @@ def arc_ring(parts, rng, r, y0, H, F, stone, at=Matrix.Identity(4), arc=None, ch
     if arc is not None:
         parts.append(Part(lathe([(r - 0.03, y0), (r - 0.03, y0 + H)], 12, cap0=False, cap1=False, a0=math.pi / 2 + arc, a1=2.5 * math.pi - arc, closed=False),
                           'stone', damp(stone, y0 + H * 0.6, rng, 0.0) * 0.9, at, cyl=r, jitter=0.0))
+    if mortar is not None:
+        # (E8d) the bed of mortar behind the faces, 4.5 cm back: the joints read as recessed mortar, not the dark core
+        # (rows for the grime rising from the foot)
+        a0, a1 = (math.pi / 2 - arc, math.pi / 2 + arc) if arc is not None else (0.0, 2 * math.pi)
+        ys = [y0] + [y for y in (0.0, 0.6, 1.3, 2.2, 3.4) if y0 + 0.2 < y < y0 + H - 0.2] + [y0 + H - 0.02]
+        parts.append(Part(lathe([(r - 0.045, y) for y in ys], 20, cap0=False, cap1=False, a0=a0, a1=a1,
+                                closed=arc is None), 'stone', mortar, at, cyl=r, jitter=0.0))
     rows, y = [], y0
     while y < y0 + H - 0.08:
         cy = min(chs[int(rng(0, len(chs) - 0.001))] * rng(0.96, 1.04), y0 + H - y)
@@ -3450,18 +3492,21 @@ def arc_ring(parts, rng, r, y0, H, F, stone, at=Matrix.Identity(4), arc=None, ch
             if arc is not None and abs(math.atan2(math.sin(ac), math.cos(ac))) > arc:
                 continue
             sl = [s for s in slits if abs(math.atan2(math.sin(ac - s[0]), math.cos(ac - s[0]))) * r < L / 2 + 0.05 and s[1] - 0.05 <= y < s[1] + 0.95]
-            t = damp(stone, y + cy / 2, rng, wet) * (1 + rng(-0.08, 0.08))
+            # (E8d) each block its own colour (+-7%), its faces one: flush (+-4 mm), smooth round the drum, few chips
+            mid = at @ R('Y', ac) @ Vector((0.0, y + cy / 2, r))
+            t = damp(stone, y + cy / 2, rng, wet, at=mid) * (1 + rng(-0.07, 0.07))
             drop = ('-z', '-y') if (top and last) else ('-z', '-y', '+y')
-            jut = rng(-0.008, 0.008)
+            jut = rng(-0.004, 0.004)
             base = at @ R('Y', ac) @ T(0, y + cy / 2, r - F / 2 + jut)
             if sl and L > 0.5:
                 jw = (L - 0.2) / 2
                 for s in (-1, 1):
-                    parts.append(Part(arc_block(jw - 0.02, cy - 0.022, F, r, rng, drop=('-z', '-y', '+y')), 'stone', t * 1.04,
-                                      at @ R('Y', ac + s * (jw / 2 + 0.1) / r) @ T(0, y + cy / 2, r - F / 2), cap='stone', jitter=0.0))
+                    parts.append(Part(arc_block(jw - 0.02, cy - 0.022, F, r, rng, bevel=0.016, chip=0.15, drop=('-z', '-y', '+y'), smooth_face=True), 'stone', t * 1.04,
+                                      at @ R('Y', ac + s * (jw / 2 + 0.1) / r) @ T(0, y + cy / 2, r - F / 2), cap='stone', smooth='faces', jitter=0.0))
                 parts.append(Part(box(0.22, cy, 0.1), 'stone', stone * 0.05, base @ T(0, 0, -F / 2 - 0.02), jitter=0.0))
             else:
-                parts.append(Part(arc_block(L - 0.022, cy - 0.022, F, r, rng, drop=drop), 'stone', t, base, cap='stone', jitter=0.0))
+                parts.append(Part(arc_block(L - 0.022, cy - 0.022, F, r, rng, bevel=0.016, chip=0.15, drop=drop, smooth_face=True), 'stone', t, base,
+                                  cap='stone', smooth='faces', jitter=0.0))
     return y0 + H
 
 
@@ -3479,16 +3524,17 @@ def drum_merlons(parts, rng, r, y, F, stone, n, mh=0.9, at=Matrix.Identity(4), l
         if i in loops:
             hw = (mw - 0.14) / 2
             for s in (-1, 1):
-                parts.append(Part(arc_block(hw, hb, F, r, rng, drop=('-y',)), 'stone', st(stone, rng),
-                                  at @ R('Y', ac + s * (hw / 2 + 0.07) / r) @ T(0, y + hb / 2, r - F / 2), cap='stone', jitter=0.0))
+                parts.append(Part(arc_block(hw, hb, F, r, rng, chip=0.2, drop=('-y',), smooth_face=True), 'stone', st(stone, rng),
+                                  at @ R('Y', ac + s * (hw / 2 + 0.07) / r) @ T(0, y + hb / 2, r - F / 2), cap='stone', smooth='faces', jitter=0.0))
             parts.append(Part(box(0.15, hb * 0.86, 0.1), 'stone', stone * 0.06, at @ R('Y', ac) @ T(0, y + hb * 0.48, r - F * 0.75), jitter=0.0))
         else:
-            parts.append(Part(arc_block(mw, hb, F, r, rng, drop=('-y',)), 'stone', st(stone, rng), at @ R('Y', ac) @ T(0, y + hb / 2, r - F / 2), cap='stone', jitter=0.0))
+            parts.append(Part(arc_block(mw, hb, F, r, rng, chip=0.2, drop=('-y',), smooth_face=True), 'stone', st(stone, rng), at @ R('Y', ac) @ T(0, y + hb / 2, r - F / 2),
+                              cap='stone', smooth='faces', jitter=0.0))
         cap = st(stone, rng) * 1.05
         if rng() < 0.45:
             cap = cap.lerp(MOSS_SAGE, rng(0.25, 0.55))
-        parts.append(Part(arc_block(mw + 0.06, 0.12, F + 0.06, r + 0.03, rng, chip=0.6, drop=()), 'stone', cap,
-                          at @ R('Y', ac) @ T(0, y + hb + 0.06, r + 0.03 - (F + 0.06) / 2), cap='stone', jitter=0.0))
+        parts.append(Part(arc_block(mw + 0.06, 0.12, F + 0.06, r + 0.03, rng, bevel=0.012, chip=0.3, drop=(), smooth_face=True), 'stone', cap,
+                          at @ R('Y', ac) @ T(0, y + hb + 0.06, r + 0.03 - (F + 0.06) / 2), cap='stone', smooth='faces', jitter=0.0))
         shadow_box(mw, mh, F, at @ R('Y', ac) @ T(0, y + mh / 2, r - F / 2))
 
 
@@ -3505,7 +3551,7 @@ def tower(p):
     machi = p.get('machi', False)
     parts = []
     # the footing: battered, a chamfered weathering course over it
-    arc_ring(parts, rng, R0 + 0.32, -foot, foot - 0.3, 0.7, stone * 0.92, arc=math.radians(120), chs=(0.5, 0.56, 0.62), wet=1.2)
+    arc_ring(parts, rng, R0 + 0.32, -foot, foot - 0.3, 0.7, stone * 0.92, arc=math.radians(120), chs=(0.5, 0.56, 0.62), wet=1.2, mortar=mortar * 0.8)
     n = 22
     for i in range(n):
         a = (i + rng(0.4, 0.6)) * 2 * math.pi / n
@@ -3515,10 +3561,11 @@ def tower(p):
         parts.append(Part(arc_block(bw - 0.03, 0.22, 0.48, R0 + 0.36, rng, chip=0.5, drop=('-y', '-z')), 'stone', damp(stone, 0.0, rng, 1.2) * 0.95,
                           R('Y', a) @ T(0, -0.2, R0 + 0.36 - 0.24) @ R('X', 0.55), cap='stone', jitter=0.0))
     slits = [(math.radians(a), y) for a, y in p.get('slits', [[-30, 2.2], [25, 5.4], [-5, 7.6]])]
-    arc_ring(parts, rng, R0, -0.35, Hd + 0.35, 0.55, stone, arc=math.radians(115), slits=slits)
+    arc_ring(parts, rng, R0, -0.35, Hd + 0.35, 0.55, stone, arc=math.radians(115), slits=slits, mortar=mortar * 0.85)
     parts.append(Part(lathe([(R0 - 0.5, -foot), (R0 - 0.5, Hd + 0.1)], 12, cap0=False, cap1=False), 'stone', mortar * 0.3, T(0, 0, 0), jitter=0.0))
     # the corbel table and the parapet stood out on it
-    R1 = R0 + (0.42 if machi else 0.26)
+    # (E8d) the machicolation stood out 0.5 m (at 0.42 it read as a thin ledge in C04 A8)
+    R1 = R0 + (0.5 if machi else 0.26)
     nc = 26 if machi else 30
     tiers = 3 if machi else 2
     yc = Hd - 0.3 * tiers - 0.02
@@ -3532,7 +3579,7 @@ def tower(p):
     # under the parapet between the corbels: the machicolation's slots open to the dark, or a soffit in shade
     parts.append(Part(lathe([(R1 - 0.02, Hd - 0.08), (R0 + 0.02, Hd - 0.08)], 26, cap0=False, cap1=False), 'stone', stone * (0.05 if machi else 0.4), T(0, 0, 0), jitter=0.0))
     ph = p.get('para', 1.05)
-    arc_ring(parts, rng, R1, Hd - 0.08, ph + 0.08, 0.5, stone * 1.02, chs=(0.5, 0.56), ls=(0.7, 1.2), top=True, wet=0.0)
+    arc_ring(parts, rng, R1, Hd - 0.08, ph + 0.08, 0.5, stone * 1.02, chs=(0.5, 0.56), ls=(0.7, 1.2), top=True, wet=0.0, mortar=mortar * 0.9)
     # its inner face (seen from the play camera, looking down into the tower): a plain shell of the stone
     parts.append(Part(lathe([(R1 - 0.5, Hd + ph), (R1 - 0.5, Hd - 0.1)], 24, cap0=False, cap1=False), 'stone', stone * 0.8, T(0, 0, 0), cyl=R1 - 0.5, jitter=0.0))
     ytop = Hd + ph
@@ -3555,7 +3602,7 @@ def tower(p):
         ta, rt, ht = math.radians(p['turret'][0]), p['turret'][1], p['turret'][2]
         tc = R0 - rt * 0.55
         at = T(tc * math.sin(ta), 0, tc * math.cos(ta))
-        arc_ring(parts, rng, rt, Hd - 0.1, ht + 0.1, 0.4, stone * 1.02, at=at, chs=(0.44, 0.5, 0.56), ls=(0.5, 0.9), top=True, wet=0.0)
+        arc_ring(parts, rng, rt, Hd - 0.1, ht + 0.1, 0.4, stone * 1.02, at=at, chs=(0.44, 0.5, 0.56), ls=(0.5, 0.9), top=True, wet=0.0, mortar=mortar * 0.9)
         parts.append(Part(lathe([(rt - 0.38, Hd + ht), (0.0, Hd + ht)], 12, cap0=False, cap1=False), 'stone', stone * 0.55, at, jitter=0.0))
         door_a = math.atan2(-math.sin(ta), -math.cos(ta))
         parts.append(Part(box(0.62, 1.55, 0.1), 'stone', stone * 0.04, at @ R('Y', door_a) @ T(0, Hd + 0.78, rt + 0.01), jitter=0.0))
@@ -3707,26 +3754,50 @@ def castle(p):
         for pt in parts:
             pt.at = T(0, lift, 0) @ pt.at
         parts.append(ridge(lift, p.get('ridge_w', 320.0), hexlin(p.get('ridge_tint', '#3a3c34')), p['seed']))
+        if p.get('ridge_trees', True):
+            ridge_trees(parts, rng, lift, p.get('ridge_w', 320.0), hexlin(p.get('ridge_tint', '#3a3c34')) * Vector((0.5, 0.62, 0.5)), p['seed'])
     return parts
 
 
-def ridge(lift, w, tint, seed):
-    """(E8 r2) The far castle's ridge: a height grid x in [-w, w], z in [-150, 75] (local, the castle's frame), the
-    crest at lift under the curtain (|x| < 50) falling away to the flanks and in a cliff toward the viewer (+z),
-    lumped by noise, its foot at y 0."""
-    nx, nz = 56, 20
+def ridge_h(x, z, lift, w, seed):
+    """(E8 r2) The far ridge's height at (x, z) (local, the castle's frame): the crest at lift under the curtain
+    (|x| < 50) falling away to the flanks and in a cliff toward the viewer (+z), lumped by noise, its foot at y 0."""
+    ax = abs(x)
+    c = lift - 1.0 - max(0.0, ax - 48.0) ** 1.25 * (lift / (w - 48.0) ** 1.25)
+    c -= max(0.0, z - 30.0) ** 1.6 * 0.9 + max(0.0, -48.0 - z) ** 1.3 * 0.6
+    c += 7.0 * hnoise(Vector((x * 0.03, 0.0, z * 0.03)), seed) * min(1.0, ax / 60.0 + max(0.0, z - 30.0) / 20.0)
+    return max(0.0, c)
 
-    def hy(x, z):
-        ax = abs(x)
-        c = lift - 1.0 - max(0.0, ax - 48.0) ** 1.25 * (lift / (w - 48.0) ** 1.25)
-        c -= max(0.0, z - 30.0) ** 1.6 * 0.9 + max(0.0, -48.0 - z) ** 1.3 * 0.6
-        c += 7.0 * hnoise(Vector((x * 0.03, 0.0, z * 0.03)), seed) * min(1.0, ax / 60.0 + max(0.0, z - 30.0) / 20.0)
-        return max(0.0, c)
+
+def ridge(lift, w, tint, seed):
+    """(E8 r2) The far castle's ridge: a height grid x in [-w, w], z in [-150, 75] (ridge_h)."""
+    nx, nz = 56, 20
 
     def fn(u, v):
         x, z = -w + 2 * w * u, -150.0 + 225.0 * v
-        return Vector((x, hy(x, z), z))
+        return Vector((x, ridge_h(x, z, lift, w, seed), z))
     return Part(grid(nx, nz, fn), 'stone', tint, T(0, 0, 0), jitter=0.0)
+
+
+def ridge_trees(parts, rng, lift, w, tint, seed, x0=44.0, x1=150.0):
+    """(E8d) A ragged line of firs along the ridge's crest, either side of the castle (|x| from x0 to x1), two or
+    three deep from its brow (z 8-31): the smooth dome's skyline broken (C01 s8a). Each a pair of stacked
+    five-sided cones, 6-15 m, dark and a little green; clumps and gaps, a few taller."""
+    for sx in (-1, 1):
+        x = x0 + rng(0.0, 3.0)
+        while x < x1:
+            gap = rng() < 0.12
+            x += rng(5.0, 11.0) if gap else rng(1.8, 4.2)
+            for row in range(3 if rng() < 0.5 else 2):
+                z = 31.0 - row * rng(5.0, 9.0) + rng(-1.5, 1.5)
+                xx = sx * (x + rng(-1.2, 1.2))
+                h = rng(6.0, 11.5) * (1.35 if rng() < 0.12 else 1.0) * (1.0 - 0.3 * max(0.0, (x - 110.0) / 40.0))
+                r = h * rng(0.2, 0.27)
+                y = ridge_h(xx, z, lift, w, seed) - 0.6
+                tn = tint * rng(0.8, 1.15)
+                turn = R('Y', rng(0, 1.25))
+                parts.append(Part(lathe([(r, 0.0), (0.0, h * 0.68)], 5, cap0=False), 'stone', tn, T(xx, y, z) @ turn, jitter=0.0))
+                parts.append(Part(lathe([(r * 0.68, h * 0.42), (0.0, h)], 5, cap0=False), 'stone', tn * 1.05, T(xx, y, z) @ turn, jitter=0.0))
 
 
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
