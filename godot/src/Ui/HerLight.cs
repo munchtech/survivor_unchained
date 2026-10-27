@@ -16,6 +16,8 @@ namespace SurvivorUnchained.Ui;
 public sealed partial class HerLight : Control
 {
     public static readonly bool On = Args.Get("hud-life") == "her";
+    /// <summary>Shots only (--beat-peak): the low-life beat held at its peak, so a still shows the edge pulse.</summary>
+    static readonly bool beatPeak = Args.Has("beat-peak");
     /// <summary>The live one (the shots' --pool-ab holds its pool off for a second picture).</summary>
     public static HerLight? Live;
     public static bool PoolHeld;
@@ -74,8 +76,8 @@ public sealed partial class HerLight : Control
         double period = HeartPulse.Period(life);
         if (HeartPulse.LastSound > lastSync && now - HeartPulse.LastSound < 0.2) { lastSync = HeartPulse.LastSound; clock = now - HeartPulse.LastSound; }
         else { clock += dt; if (clock >= period) clock %= period; }
-        float beat = low ? HeartPulse.Shape(clock) : 0;
-        float strength = On && (low || (fight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
+        float beat = low ? beatPeak ? 1 : HeartPulse.Shape(clock) : 0;
+        float strength = (On || LifeLamp.Orb != null) && (low || (fight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
 
         bool show = fight && at != null;
         Under.Visible = show;

@@ -125,6 +125,12 @@ public partial class GameHud : CanvasLayer
         root.AddChild(irons.Life.Pool);
         root.MoveChild(irons.Life.Pool, 0);
         if (HerLight.On) BuildHer();
+        else if (LifeLamp.Orb != null)
+        {
+            // (UI 16: the orb keeps the "her life" HUD's low-life edge pulse, over the world, under the HUD)
+            play.AddChild(her.Edge);
+            play.MoveChild(her.Edge, 0);
+        }
         BuildTally();
         BuildCorner();
         BuildEdges();

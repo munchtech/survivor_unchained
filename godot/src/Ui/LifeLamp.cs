@@ -19,7 +19,12 @@ public partial class LifeLamp : Control
     /// in art/ui/lamp_life (squat) or art/ui/lamp_life/&lt;shape&gt;/, cut by tools/uiforge/lamp_life_cut.py, and
     /// every place below from that folder's lamp_geo.json, read once.</summary>
     public static readonly string Shape = Args.Get("lamp-shape") is "tall" or "globe" or "font" ? Args.Get("lamp-shape")! : "squat";
-    static readonly string Dir = Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
+    /// <summary>UI 16 (the owner: "the typical orbs that these games have, but lets have what they are encased in
+    /// show our themes"): her life as a classic orb in a themed casing (--life-orb link|ember|lamp; none until the
+    /// owner picks): shaders/hud_orb.gdshader over art/ui/lamp_life/&lt;theme&gt;/ (lamp_life_cut.py's ORBS). No
+    /// pool on the ground; the low-life edge pulse (HerLight.Edge) runs with it.</summary>
+    public static readonly string? Orb = Args.Get("life-orb") is "link" or "ember" or "lamp" ? Args.Get("life-orb") : null;
+    static readonly string Dir = Orb != null ? $"lamp_life/{Orb}" : Shape == "squat" ? "lamp_life" : $"lamp_life/{Shape}";
     static readonly Godot.Collections.Dictionary Geo = LoadGeo();
     /// <summary>The quad, in 1080 px (the art is twice this).</summary>
     public static readonly Vector2 Canvas = V("canvas");
@@ -82,11 +87,19 @@ public partial class LifeLamp : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Size = Canvas;
         PivotOffset = new Vector2(Canvas.X / 2, FootY);
-        mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_lamp.gdshader") };
+        mat = new ShaderMaterial { Shader = GD.Load<Shader>(Orb != null ? "res://shaders/hud_orb.gdshader" : "res://shaders/hud_lamp.gdshader") };
         foreach (var (u, f) in new[] { ("lit", "lamp_lit"), ("cold", "lamp_cold"), ("mask", "lamp_mask"), ("flame_tex", "lamp_flame") })
-            if (UiArt.Tex($"{Dir}/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
+            if (Orb != null && Orb != "lamp" && f == "lamp_flame") continue;
+            else if (UiArt.Tex($"{Dir}/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
             else GD.PushError($"LifeLamp: {Dir}/{f}.png did not load (unimported?): the lamp draws wrong");
         mat.SetShaderParameter("canvas", Canvas);
+        if (Orb != null)
+        {
+            mat.SetShaderParameter("theme", Orb switch { "ember" => 1, "lamp" => 2, _ => 0 });
+            mat.SetShaderParameter("orb_c", V("orb_c"));
+            mat.SetShaderParameter("orb_r", F("orb_r"));
+            mat.SetShaderParameter("orb_vis", F("orb_vis"));
+        }
         mat.SetShaderParameter("wick", Wick);
         mat.SetShaderParameter("oil_top", OilTop);
         mat.SetShaderParameter("oil_bot", OilBot);
@@ -137,7 +150,7 @@ public partial class LifeLamp : Control
     void PoolTick()
     {
         float gain = PoolGain * State.Light * Modulate.A * (IsVisibleInTree() ? 1 : 0);
-        bool want = !noPool && !PoolHeld && gain > 0.0005f;
+        bool want = !noPool && Orb == null && !PoolHeld && gain > 0.0005f;
         if (Pool.Visible != want) Pool.Visible = want;
         if (!want) return;
         var at = GetGlobalTransformWithCanvas() * PoolRect.Position;

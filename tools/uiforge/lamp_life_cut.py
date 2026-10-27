@@ -367,8 +367,193 @@ def main(shape, check=None):
         sheet.save(check)
 
 
+# UI 16 (27 Oct, the owner: "the typical orbs that these games have, but lets have what they are encased in show
+# our themes"): a classic life orb (the glass and the blood drawn by shaders/hud_orb.gdshader) in a painted casing.
+# A casing is a data block: its Krea painting (on flat black, keyed by its light; no BiRefNet), the glass's
+# opening (fitted by a radial scan to the iron's inner edge), and row bands remapped [(y0, y1, f)] (f < 1
+# shorter, f > 1 taller: a stem cut, an arch's legs drawn longer; none may cross the opening). Keys:
+#   front    (cx, cy, a, b): an ellipse's lower half; the painting under it stays over the glass (a bowl's lip)
+#   erase    [(x0, y0, x1, y1)]: pale painted bits cleared (the lamp's wick: the shader's flame stands there);
+#            clear: the same, all of it
+#   ember    (y0, y1): rows whose orange glow is the embers (mask R; the cold painting has them dark)
+#   wick     (x, y): the flame's foot; flame_full its height at full (1080 px); eye the chain's first link;
+#   number   where her life's figures stand (none: on the glass, high in its middle, clear of the level's read); tint the iron's cool cast (blue-black); clip rows cut off below
+# Out to lamp_life/<theme>/: lamp_lit.png (the casing, the embers glowing), lamp_cold.png (embers dark),
+# lamp_mask.png (R embers, G the iron near the flame), lamp_flame.png (lamp only), lamp_geo.json.
+SRC16 = INPUTS + "/ui16_orb_src/"
+ORBS = {
+    # The Broken Link: Krea seed 4604, a shackle snapped open at its upper right, its broken end bent out; the
+    # chain kept to the first link (the HUD's chain leaves from its foot)
+    "link": dict(src=SRC16 + "link/cand_4604.png", rows=[], tint=(0.80, 0.85, 0.95),
+                 eye=(507, 772), clip=785),
+    # The Held Dead's Warmth: Krea seed 4603, a riveted arch over a pierced brazier bowl; the arch's legs drawn
+    # longer so the glass sits whole on the bowl's lip, the bowl squashed, the embers through its slots
+    "ember": dict(src=SRC16 + "ember/cand_4603.png", rows=[(430, 520, 2.0), (620, 960, 0.62)], fit_top=True,
+                  front=(509, 565, 440, 37), ember=(600, 960), tint=(0.78, 0.80, 0.86), dark=0.82,
+                  eye=(930, 600)),
+    # Lamps Are Lit: Krea seed 4604, a lantern ring in a gimbal on a foot, a burner crown on its top; the wick
+    # cleared (the shader's flame), the crown's stem and the foot's stem shortened
+    "lamp": dict(src=SRC16 + "lamp/cand_4604.png", rows=[(205, 235, 0.3), (812, 868, 0.05), (880, 982, 0.7)],
+                 erase=[(470, 0, 555, 160)], clear=[(480, 0, 545, 90)], wick=(509, 162), flame_full=15, tint=(0.80, 0.83, 0.92),
+                 eye=(880, 500)),
+}
+ORB_TUCK = 6          # painting px the glass runs on under the iron round its opening
+ORB_FLOOR, ORB_TOP = 1066, 904
+
+
+def orb_fit(m, c0, top=False, maxr=420):
+    """The opening's circle: the first iron along 180 rays from a guess, outliers (a gap, a link) dropped
+    (top: the rays of its upper half only, an arch's)."""
+    pts = []
+    for t in np.linspace(np.pi, 2 * np.pi, 90) if top else np.linspace(0, 2 * np.pi, 180, endpoint=False):
+        for r in range(30, maxr):
+            x, y = int(c0[0] + r * np.cos(t)), int(c0[1] + r * np.sin(t))
+            if not (0 <= x < m.shape[1] and 0 <= y < m.shape[0]):
+                break
+            if m[y, x]:
+                pts.append((x, y, r))
+                break
+    P = np.array(pts, float)
+    med = np.median(P[:, 2])
+    P = P[np.abs(P[:, 2] - med) < 0.12 * med]
+    A = np.c_[2 * P[:, 0], 2 * P[:, 1], np.ones(len(P))]
+    cx, cy, c = np.linalg.lstsq(A, P[:, 0] ** 2 + P[:, 1] ** 2, rcond=None)[0]
+    return cx, cy, float(np.sqrt(c + cx * cx + cy * cy))
+
+
+def orb(theme, check=None):
+    S = ORBS[theme]
+    out = os.path.join(ART, theme)
+    rgb = np.asarray(Image.open(S["src"]).convert("RGB"), np.float32) / 255
+    H0, W0 = rgb.shape[:2]
+    lum = blur(rgb.mean(2), 1.2)
+    # keyed by its light (the black ground 0.00-0.03): soft alpha, specks dropped
+    A = np.clip((lum - 0.035) / 0.035, 0, 1)
+    lab, n = nd.label(A > 0.5)
+    sz = nd.sum(np.ones_like(lab), lab, range(1, n + 1))
+    keep = np.isin(lab, 1 + np.where(sz > 3000)[0])
+    A *= blur(nd.binary_dilation(keep, iterations=3).astype(np.float32), 1.0)
+    for x0, y0, x1, y1 in S.get("erase", []):
+        pale = (rgb[y0:y1, x0:x1].mean(2) > 0.32) & (rgb[y0:y1, x0:x1, 0] - rgb[y0:y1, x0:x1, 2] > 0.06)
+        pale = blur(nd.binary_dilation(pale, iterations=3).astype(np.float32), 1.5)
+        A[y0:y1, x0:x1] *= 1 - pale
+    for x0, y0, x1, y1 in S.get("clear", []):
+        A[y0:y1, x0:x1] = 0
+    if "clip" in S:
+        A[S["clip"]:] *= 0
+    cx, cy, r = orb_fit(A > 0.5, (W0 / 2, H0 * 0.42), S.get("fit_top", False))
+    print(f"{theme}: opening c ({cx:.1f}, {cy:.1f}) r {r:.1f}")
+    # the embers: orange light in the bowl's rows (lit keeps them; cold has them dark, the shader brings them up)
+    emb = np.zeros((H0, W0), np.float32)
+    if "ember" in S:
+        e0, e1 = S["ember"]
+        o = np.clip((rgb[..., 0] - rgb[..., 2] - 0.14) * 4, 0, 1) * np.clip((rgb[..., 0] - 0.22) * 4, 0, 1)
+        emb[e0:e1] = o[e0:e1]
+        emb = blur(emb, 0.8)
+    # the iron cooled to blue-black, the painting's light kept
+    g = rgb.mean(2, keepdims=True)
+    iron = g * np.array(S["tint"]) * S.get("dark", 1.0) + (rgb - g) * 0.18
+    lit = iron * (1 - emb[..., None]) + rgb * emb[..., None]
+    cold = iron * (1 - emb[..., None]) + rgb * emb[..., None] * 0.12
+    for y0, y1, f in S["rows"]:
+        # (the opening's upper half stays as painted; under its middle a band may draw an arch's legs longer)
+        assert y1 <= cy - r or y0 >= cy, f"{theme}: band {y0}-{y1} crosses the opening's upper half"
+    # the row bands remapped: out row -> painting row, piecewise linear
+    knots_s, knots_o, o_, s_ = [0.0], [0.0], 0.0, 0.0
+    for y0, y1, f in sorted(S["rows"]):
+        o_ += y0 - s_; knots_s.append(y0); knots_o.append(o_)
+        o_ += (y1 - y0) * f; knots_s.append(y1); knots_o.append(o_)
+        s_ = y1
+    o_ += H0 - s_; knots_s.append(H0); knots_o.append(o_)
+    H = int(round(o_))
+    src_rows = np.interp(np.arange(H) + 0.5, knots_o, knots_s) - 0.5
+    rowmap = lambda y: float(np.interp(y, knots_s, knots_o))
+    grid = [np.repeat(src_rows[:, None], W0, 1), np.tile(np.arange(W0, dtype=np.float32), (H, 1))]
+    remap = lambda a_: nd.map_coordinates(a_, grid, order=1, mode="nearest")
+    lit = np.stack([remap(lit[..., i]) for i in range(3)], 2)
+    cold = np.stack([remap(cold[..., i]) for i in range(3)], 2)
+    A, emb = remap(A), remap(emb)
+    cy_o = rowmap(cy)
+    yy, xx = np.mgrid[0:H, 0:W0].astype(np.float32)
+    # the opening cleared (the glass shows), feathered 1.5 px; under a bowl's lip the painting stays in front
+    hole = np.clip((r - 2 - np.hypot(xx - cx, yy - cy_o)) / 1.5, 0, 1)
+    if "front" in S:
+        fx, fy, fa, fb = S["front"]
+        lip = rowmap(fy) + fb * np.sqrt(np.clip(1 - ((xx - fx) / fa) ** 2, 0, 1))
+        hole *= np.clip((lip - yy) / 1.5, 0, 1)
+    A *= 1 - hole
+    sil = A > 0.3
+    rows_ = np.where(sil.any(1))[0]
+    top_row, bot_row = int(rows_[0]), int(rows_[-1]) + 1
+    cols_ = np.where(sil.any(0))[0]
+    x0_, x1_ = int(cols_[0]), int(cols_[-1]) + 1
+    # the scale: all of it (the flame's tip at full included) between ORB_TOP and ORB_FLOOR
+    room = ORB_FLOOR - ORB_TOP - FOOT_PAD
+    ff = S.get("flame_full", 0)
+    k1 = room / (bot_row - top_row)
+    if "wick" in S:
+        k1 = min(k1, (room - ff) / (bot_row - rowmap(S["wick"][1])))
+    print(f"{theme}: k {k1:.4f}  glass {2 * r * k1:.1f} px  casing {(bot_row - top_row) * k1:.1f} px")
+    # into the canvas at twice the 1080 size, the orb's middle at the canvas's middle
+    half = max(cx - x0_, x1_ - cx) * k1 + 4
+    CANVAS = (2 * int(np.ceil(half)), int(room + FOOT_PAD + 2))
+    cw, ch = CANVAS[0] * 2, CANVAS[1] * 2
+    K = 2 * k1
+    ox = round(cw / 2 - cx * K)
+    oy = round(ch - FOOT_PAD * 2 - bot_row * K)
+    lw, lh = round(W0 * K), round(H * K)
+    def canvas(arr, mode):
+        im = Image.fromarray((np.clip(arr, 0, 1) * 255).astype(np.uint8), mode).resize((lw, lh), Image.LANCZOS)
+        c = Image.new(mode, (cw, ch), 0 if mode == "L" else (0,) * len(mode))
+        c.paste(im, (ox, oy))
+        return c
+    # (the colour bled out under the alpha's edge, so filtering keeps no dark fringe)
+    wsum = blur(A, 3)[..., None]
+    def bleed(c_):
+        est = np.stack([blur(c_[..., i] * A, 3) for i in range(3)], 2) / np.maximum(wsum, 1e-4)
+        return np.where(A[..., None] > 0.02, c_, est)
+    os.makedirs(out, exist_ok=True)
+    canvas(np.concatenate([bleed(lit), A[..., None]], 2), "RGBA").save(os.path.join(out, "lamp_lit.png"))
+    canvas(np.concatenate([bleed(cold), A[..., None]], 2), "RGBA").save(os.path.join(out, "lamp_cold.png"))
+    near = np.zeros((H, W0), np.float32)
+    if "wick" in S:
+        yy2, xx2 = np.mgrid[0:H, 0:W0].astype(np.float32)
+        near = np.exp(-np.hypot(xx2 - S["wick"][0], (yy2 - rowmap(S["wick"][1])) * 0.8) / 120) * (A > 0.3)
+    mk = canvas(np.stack([emb, near, np.zeros_like(emb)], 2), "RGB")
+    mk.putalpha(255)
+    mk.save(os.path.join(out, "lamp_mask.png"))
+    def at(x, y):  # painting px (before the remap) -> 1080 px in the canvas
+        return [round((ox + x * K) / 2, 2), round((oy + rowmap(y) * K) / 2, 2)]
+    c1080 = at(cx, cy)
+    geo = dict(shape=theme, canvas=list(CANVAS), orb_c=c1080, orb_r=round((r + ORB_TUCK) * k1, 2), orb_vis=round(r * k1, 2),
+               font_mid=c1080, eye=at(*S["eye"]), foot=round((oy + bot_row * K) / 2, 2), top=round((oy + top_row * K) / 2, 2),
+               floor=ORB_FLOOR, top_line=ORB_TOP,
+               number_y=at(*S["number"])[1] if "number" in S else round(c1080[1] - 0.45 * r * k1, 2), flame_full=ff, glass_px=round(2 * r * k1, 1))
+    geo["footprint"] = round(geo["foot"] - geo["top"], 1)
+    if "wick" in S:
+        import shutil
+        geo["wick"] = at(*S["wick"])
+        shutil.copy(os.path.join(ART, "lamp_flame.png"), os.path.join(out, "lamp_flame.png"))
+        geo["flame_aspect"] = round(Image.open(os.path.join(out, "lamp_flame.png")).height / 128, 3)
+        geo["footprint"] = round(geo["foot"] - min(geo["top"], geo["wick"][1] - ff), 1)
+    # (the lamp's keys LifeLamp still reads, kept sane)
+    geo.update(oil_top=round(c1080[1] - geo["orb_vis"], 2), oil_bot=round(c1080[1] + geo["orb_vis"], 2),
+               font_x=[round(c1080[0] - geo["orb_vis"], 2), round(c1080[0] + geo["orb_vis"], 2)], skip=[0, 0])
+    json.dump(geo, open(os.path.join(out, "lamp_geo.json"), "w"), indent=1)
+    print(json.dumps(geo))
+    if check:
+        c = Image.new("RGBA", (cw, ch), (40, 52, 70, 255))
+        gy, gx = np.mgrid[0:ch, 0:cw].astype(np.float32)
+        q = np.hypot(gx - c1080[0] * 2, gy - c1080[1] * 2) < geo["orb_r"] * 2
+        g_ = np.zeros((ch, cw, 4), np.uint8); g_[q] = (150, 20, 25, 255)
+        c.alpha_composite(Image.fromarray(g_, "RGBA")); c.alpha_composite(Image.open(os.path.join(out, "lamp_lit.png")))
+        c2 = Image.new("RGBA", (cw, ch), (40, 52, 70, 255)); c2.alpha_composite(Image.open(os.path.join(out, "lamp_cold.png")))
+        sh = Image.new("RGB", (cw * 2, ch)); sh.paste(c.convert("RGB"), (0, 0)); sh.paste(c2.convert("RGB"), (cw, 0)); sh.save(check)
+
+
 if __name__ == "__main__":
     args = [x for x in sys.argv[1:] if not x.startswith("--")]
     chk = sys.argv[sys.argv.index("--check") + 1] if "--check" in sys.argv else None
     if chk in args: args.remove(chk)
-    main(args[0] if args else "squat", chk)
+    sh_ = args[0] if args else "squat"
+    orb(sh_, chk) if sh_ in ORBS else main(sh_, chk)
