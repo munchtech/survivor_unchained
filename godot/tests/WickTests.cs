@@ -305,6 +305,118 @@ public sealed class WickTests
         Assert.Equal(2, u.Wick.Bounces);
     }
 
+    /// <summary>A library Turn (no lead-ins) lit on a fight's one skill.</summary>
+    static (Battle B, WeaponInst W) Turned(string skill, int rank, string strand)
+    {
+        var b = Fight(skill, rank, null);
+        var w = b.Weapons[0];
+        w.Wick = Turns.Build(w, [(Wicks.Strand(skill, strand)!, Wicks.PerStrand)]);
+        Assert.Equal([strand], w.Wick.Turns);
+        return (b, w);
+    }
+
+    [Fact]
+    public void Pulse_goes_off_three_times_smaller()
+    {
+        var (b, w) = Turned("dawnpulse", 4, "pulse");
+        var t = Wicks.Turn("pulse");
+        Assert.Equal(3, w.Wick!.Pulses);
+        Assert.Equal(t.Damage, w.Wick.Damage, 6);
+        Assert.Equal(t.Area, w.Wick.Area, 6);
+        var plain = Fight("dawnpulse", 4, null).Weapons[0];
+        Assert.Equal(t.Damage, w.Damage / plain.Damage, 6);
+        var e = b.SpawnEnemy("risen", b.Player.X + 1, b.Player.Z)!;
+        e.MaxHp = e.Hp = 1e9;
+        var novas = new List<double>();
+        for (int i = 0; i < 400 && novas.Count == 0; i++) { b.Tick(0.01, 0, 0); foreach (var ev in b.Events.Drain()) if (ev is Ev.Nova) novas.Add(b.Time); }
+        Assert.Single(novas);
+        // The cast's two follow-ups, PulseGap apart, before its cooldown brings the next cast; one cast, one blow.
+        for (int i = 0; i < 70; i++) { b.Tick(0.01, 0, 0); foreach (var ev in b.Events.Drain()) if (ev is Ev.Nova) novas.Add(b.Time); }
+        Assert.True(Firing.CooldownOf(b, w) > 0.7);
+        Assert.Equal(3, novas.Count);
+        Assert.Equal(t.PulseGap, novas[1] - novas[0], 1);
+        Assert.Equal(t.PulseGap, novas[2] - novas[1], 1);
+        Assert.Equal(1, w.Casts);
+    }
+
+    [Fact]
+    public void On_kill_fires_once_from_the_corpse_with_no_cascade_and_its_gap()
+    {
+        // (gap 0: only the no-cascade rule can stop an echo's kill from echoing)
+        static (Battle B, WeaponInst W, List<(double X, double Z)> Mine, List<(double X, double Z)> Echoes, System.Func<double, double, double, Enemy> At) Setup(double? gap)
+        {
+            var (b, w) = Turned("oathblade", 4, "onkill");
+            if (gap is { } g) w.Wick!.OnKillGap = g;
+            double x = b.Player.X, z = b.Player.Z;
+            Enemy At(double dx, double dz, double hp) { var e = b.SpawnEnemy("risen", x + dx, z + dz)!; e.MaxHp = e.Hp = hp; e.Speed = 0; return e; }
+            return (b, w, new(), new(), At);
+        }
+        static void Run(Battle b, List<(double X, double Z)> mine, List<(double X, double Z)> echoes)
+        {
+            double x = b.Player.X, z = b.Player.Z;
+            // (until her first swing, then a little past it: the echo comes on the next tick)
+            for (int i = 0, after = 0; i < 400 && after < 15; i++)
+            {
+                if (mine.Count > 0) after++;
+                b.Tick(0.02, 0, 0);
+                foreach (var ev in b.Events.Drain())
+                    if (ev is Ev.Slash s) (System.Math.Abs(s.X - x) + System.Math.Abs(s.Z - z) < 0.3 ? mine : echoes).Add((s.X, s.Z));
+            }
+        }
+        static bool Down(Enemy e) => !e.Alive || e.State == EnemyState.Dying;
+
+        // One in her reach that her swing kills; past it, one only an echo from its corpse reaches (and kills), and one
+        // only an echo from that one's corpse could reach.
+        var (b, w, mine, echoes, at) = Setup(0);
+        double r = Firing.AreaOf(b, w, Weapons.Get("oathblade").Base.Reach ?? 2.6);
+        var a = at(1, 0, 1);
+        var next = at(1 + r - 0.4, 0, 1);
+        var far = at(1 + 2 * r - 0.8, 0, 1e9);
+        Run(b, mine, echoes);
+        Assert.True(Down(a) && Down(next));
+        // (one firing: each of its swings, CountOf of them, from the one corpse)
+        var echo = Assert.Single(echoes.Distinct());
+        Assert.Equal(Firing.CountOf(b, w, 1), echoes.Count);
+        Assert.Equal(b.Player.X + 1, echo.X, 0);
+        Assert.Equal(far.MaxHp, far.Hp);
+        // Not a cast: no blow counted, no pose (her firings are her swings alone).
+        Assert.Equal(mine.Count, w.Casts * Firing.CountOf(b, w, 1));
+
+        // Two kills in one swing: one echo, the gap holding the second.
+        (b, w, mine, echoes, at) = Setup(null);
+        Assert.Equal(Wicks.Turn("onkill").OnKillGap, w.Wick!.OnKillGap);
+        var a1 = at(1, 0, 1);
+        var a2 = at(1, 0.5, 1);
+        at(1 + r - 0.4, 0, 1e9); // (something for the echoes to swing at)
+        Run(b, mine, echoes);
+        Assert.True(Down(a1) && Down(a2));
+        Assert.Single(echoes.Distinct());
+    }
+
+    [Fact]
+    public void A_union_carries_both_parts_lead_ins()
+    {
+        var col = new CollisionWorld(120);
+        var b = new Battle(new BattleSetup
+        {
+            Seed = 1, Collision = col, Combat = true, Stats = Stats(), Weapons = [("judgement_disc", 8), ("dawnpulse", 8)], Ability = AbilityKind.ShieldBash,
+            Wicks = new() { ["judgement_disc"] = WickBook.Path(Strand("chain"), "judgement_disc") },
+        });
+        var disc = b.Weapons[0];
+        // Its path: the chain strand (+10% damage, +15% speed, 8% shorter cooldown, the Turn), then four more lead-ins.
+        var lit = disc.Wick!.Lit.Select(id => Wicks.Lamp("judgement_disc", id)!.Value).ToList();
+        Assert.Equal(8, lit.Count);
+        double dmg = 1 + lit.Where(l => l.N < Wicks.PerStrand).Sum(l => l.Strand.LeadIns[l.N - 1].Damage);
+        double cd = 1 + lit.Where(l => l.N < Wicks.PerStrand).Sum(l => l.Strand.LeadIns[l.N - 1].Cooldown);
+        b.Evolve("judgement_disc", "reckoning", chest: true);
+        b.Evolve("dawnpulse", Weapons.Get("dawnpulse").Evolutions[0].Id, chest: true);
+        var u = b.Unite("dawns_judgement")!;
+        Assert.Equal(["chain"], u.Wick!.Turns);
+        Assert.True(dmg > 1.05 && cd < 0.95);
+        Assert.Equal(0.85 * dmg, u.Wick.Damage, 6);
+        Assert.Equal(cd, u.Wick.Cooldown, 6);
+    }
+
     [Fact]
     public void A_skill_with_no_wick_fights_exactly_as_before()
     {
