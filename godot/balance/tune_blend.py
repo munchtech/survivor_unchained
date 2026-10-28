@@ -6,8 +6,8 @@ how the bot fights, the arena under-rates one its build-mates outrange.
 
     python tune_blend.py out/w.json out/a.jsonl [out/b.jsonl ...] [--apply] [--damp 0.6]"""
 import json, math, re, sys, collections, statistics as st
+import skills_json
 
-WEAPONS = '../logic/Content/Weapons.cs'
 UTILITY = {'grave_tether': 0.85, 'gravecall': 0.9, 'hoarfrost': 0.9, 'thornbloom': 0.95}
 
 args = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith('--') and sys.argv[i - 1] != '--damp']
@@ -28,8 +28,7 @@ for r in runs:
             share[k].append(v / tot * n)
 med = st.median([st.median(v) for v in share.values()])
 
-src = open(WEAPONS, encoding='utf-8').read()
-out = src
+out = skills_json.read()
 for w in sorted({d['weapon'] for d in probe}):
     r1, r4, r8 = pidx.get((w, None, 'r1')), pidx.get((w, None, 'r4')), pidx.get((w, None, 'r8'))
     if not (r1 and r4 and r8) or len(share.get(w, [])) < 8:
@@ -39,11 +38,8 @@ for w in sorted({d['weapon'] for d in probe}):
     both = math.sqrt(g * a)
     target = UTILITY.get(w, 1.0)
     f = max(0.6, min(1.8, (target / both) ** damp))
-    m = re.search(r'Id = "%s", Name = .*?(?=\n        new\(\)\n|\n    \}\.ToDictionary)' % w, out, re.S)
-    block = m.group(0)
-    nb = re.sub(r'(Base = new\(\) \{ Cooldown = [\d.]+, Damage = )([\d.]+)', lambda mm: mm.group(1) + ('%.2f' % (float(mm.group(2)) * f)).rstrip('0').rstrip('.'), block, count=1)
-    out = out.replace(block, nb)
+    out = skills_json.scale_base(out, w, f)
     print(f'{w:16} probe {g:.2f} arena {a:.2f} ({len(share[w])} runs) both {both:.2f} -> base x{f:.2f}')
 if apply:
-    open(WEAPONS, 'w', encoding='utf-8').write(out)
+    skills_json.write(out)
     print('applied')

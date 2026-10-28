@@ -46,6 +46,7 @@ public partial class Game
         readonly Game game;
         readonly System.Collections.Generic.List<PersonView> views;
         double t;
+        bool told;
         // per NPC: centre x, z, heading (idle) or circle radius, phase (walk)
         double[][]? at;
 
@@ -84,6 +85,19 @@ public partial class Game
                     views[i].Locomotion(Speed);
                 }
                 views[i].Place(x, game.scene.HeightAt(x, z), z, heading, true);
+            }
+            // (once, late: where each stands in the frame, head and feet, so a shot's seed can be picked with all of them in it)
+            if (!told && t > 9)
+            {
+                told = true;
+                var vp = GetViewport().GetVisibleRect().Size;
+                for (int i = 0; i < views.Count; i++)
+                {
+                    var p = views[i].GlobalPosition;
+                    Vector2 feet = cam.UnprojectPosition(p), head = cam.UnprojectPosition(p + Vector3.Up * 1.9f);
+                    bool inside = !cam.IsPositionBehind(p) && feet.X > 0 && feet.X < vp.X && feet.Y < vp.Y && head.X > 0 && head.X < vp.X && head.Y > 0;
+                    GD.Print($"npc-crowd: {i} feet {feet.X:0},{feet.Y:0} head {head.X:0},{head.Y:0} {(inside ? "in" : "CUT")}");
+                }
             }
         }
     }

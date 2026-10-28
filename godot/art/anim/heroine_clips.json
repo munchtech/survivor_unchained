@@ -344,6 +344,16 @@
 		"speed": 0.0,
 		"weapon": "axe"
 	},
+	"idle_reaver_axes": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.0,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
+		"speed": 0.0,
+		"weapon": "axes"
+	},
 	"idle_reaver_break": {
 		"layer": "full",
 		"length": 3.33333325386047,

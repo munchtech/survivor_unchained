@@ -2,6 +2,17 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 27 October, late night: coordinator f22ca2bc WIND-DOWN (read this first)
+**Integration 3ef34f61 (pushed, tests 1182/0/10):** merged UI 16 fixes, Animation 55 MR (43bf2036) + her clips repacked (113; stray test_walk_* moved out of tools/anim/out/clips to coord scratch), class design doc, Classes P1 (skills to data), NPC 14 (Meshy sword, NpcWalks), verge props_own guard. ui16-mr removed.
+**Restart order (fresh successors, lead_brief.md; scratch now in coordinator f22ca2bc's scratchpad: keep ui17, anim56, classes13, vfx2, body19, coord):**
+1. **UI 17 -> 18** (ui-11, handoff ui_design.md top): owner said of the HUD centerpiece "a nice place to start ... lots of polish"; trimmed the hair lock (owner's circle); whole-HUD max r2 PASS-WITH-NOTES ("first HUD with soul"); round 3 list running at pause (coal, verdigris bronze, hair locks, ranks, rime, lips, draught). **XP line: owner picked A, BUT "still not sure its the correct way to display it"**: before building A, show 2-3 different displays (medallion fill, coal ring, hair tips) on one sheet. **The circled hair lock is still there in what the owner saw** ("it didn't remove the extra hair bit we circled"): FIRST item, cut exactly the region in owner_frames_27oct\hud_hair_trim.webp and show main a before/after crop. Then perf, tests, last judge, MR (cherry-pick onto integration; never merge ui-11 whole).
+2. **Body 19 -> 20** (armor-7@586ee1fe, body.md top): OWNER HIGH, her elbow + armpit read clunky/tube ("like quaternus model"). r1, r2 FAILED FAR (changes too small at 1:1: carve the OUTLINE, 6 px gate); r3 carve built, elbow correctives next, then the 3rd and LAST judge; on fail bring options (hand sculpt / restage pose). ~1.56M spent.
+3. **Animation 57** (anim-53@61efa989): idles warden-reaver CLOSED; 2b + B built, unjudged; full build.py before MR2.
+4. **Classes 14** (classes-13@74b146e3, classes.md top): P1 merged; P2-P5a built; P2 gate failed (boss HP ~+5%), P3 map retune, Hand measure noisy. One MR for P2+P3+P4 is OK (main approves the bundle).
+5. **Combat VFX 3** (vfx-1@f27d4c78, skills.md top): MarkPass re-tint built, unjudged; runner args broke shots; one judge, edges-only fallback, MR.
+6. **NPC 15** (paused, npc-2; Marionette HANDOFF top): risen ARE wanted (owner); the apron one was scrapped: new concept, concept judge on costume fit + modeling, THEN Meshy. Then 3 town archetypes. 915 credits left.
+**Owed:** the quiet-machine E8 abs rerun (still). **Routed, unowned:** dark lines on her lower belly read as dirt (skin); oathbrand has no provenance row; staff too short to plant its butt (props).
+
 ## 27 October, night: coordinator 7ccc6e14 WIND-DOWN DONE (read this first; details in the lines below)
 **All leads PAUSED cleanly, pushed, no turns, no helpers.** Restart order for the next coordinator (fresh successors, lead_brief.md):
 1. **Merges first:** UI ui-16-fixes@97dbaf79 (move colliding untracked .uid/.import aside first; then remove ui16-mr with wt_remove.ps1 -Force), Animation anim-53@43bf2036 (+ REPACK her clips, never --body hero). Then the quiet-machine E8 abs rerun.

@@ -195,6 +195,7 @@ public sealed class ZoneMeta
         string text;
         try { text = DataFiles.Text($"zones/{id}/props_own.json"); }
         catch { return; }
+        if (string.IsNullOrWhiteSpace(text)) return;  // a zone with no props_own.json (the verge) reads as empty
         using var doc = JsonDocument.Parse(text);
         if (!doc.RootElement.TryGetProperty("place", out var place) || place.ValueKind != JsonValueKind.Array) return;
         int nextId = 0;
