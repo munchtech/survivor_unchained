@@ -87,9 +87,15 @@ SEAT_AO = (0.45, 4.0, (1.0, 2.0))
 # end, x ~1295-1490, given definition along the paint's OWN curves: a crisp warm highlight on the top strand's crest, the
 # soft lower mass carved into three locks by teal grooves (the lock below each groove catching a warm, broken highlight
 # on its top edge), fine grooves fading in and out inside them, the locks darkened ~35% as they pass under the cup's lip.
-# survivorsunchained_inputs/ui19_dg_src/hair/r2_carve.py (procedural, no Krea)
+# survivorsunchained_inputs/ui19_dg_src/hair/r2_carve.py (procedural, no Krea). Round 3 (u19R3, x 740-1600, colour and
+# alpha): round 2's carve kept; the middle (x 770-1295, the band above and between the seats) given lighter definition
+# along the paint's own curves (Hessian crests warmed to her strands' gold, grooves teal, faded in and out by noise
+# stretched along the strands: staggered, never parallel runs; off the seats' rings and the dash); the right end a step
+# further, and the wrap into the cup: the top lock carried 6-10 px over the lip toward the top scroll (a contact shadow
+# past its tip), the middle locks darkened into the rim, the bottom lock's crest carried under the cup into the right-hand
+# swirl, a fine loose hair arcing over the top lock to a free point. r3_carve.py, r3_define.py
 HAIR_DIR_19 = "C:/Users/munch/Desktop/survivorsunchained_inputs/ui19_dg_src/hair"
-POST_PATCHES = [("u19R2", (1180, 925, 1530, 1080))]
+POST_PATCHES = [("u19R3", (740, 925, 1600, 1080))]
 # (UI 19, the owner: "not sure the small transparent patch on the left is worth it") the see-through spots left of the
 # flask (the slit between the top strands, the pocket behind the flask's neck) and every other see-through pixel inside
 # her hair's outline at x 600-760: a dark under-layer with back strands laid under what is there, in this layer (under
@@ -242,6 +248,8 @@ def river():
         d = np.hypot(Xs - (SEAT_MID + (i - 2.5) * SEAT_PITCH) - ox, Ys - SEAT_Y - oy) - (SEAT_D / 2 - 1)
         sh = np.maximum(sh, np.exp(-np.clip(d, 0, None) / wd) * (d > -3))
     col = col * (1 - k * sh)[..., None]
+    # (the crest and the bar's top are read from the river's body: a loose hair laid past its top line is not the crest)
+    body = Image.fromarray((np.clip(al, 0, 1) * 255 + 0.5).astype(np.uint8), "L")
     for tag, (x0, y0, x1, y1) in POST_PATCHES:
         f = os.path.join(HAIR_DIR_19, f"patch_{tag}.png")
         if not os.path.exists(f):
@@ -250,7 +258,10 @@ def river():
         P = np.asarray(Image.open(f).convert("RGBA"), np.float32) / 255
         w = np.asarray(Image.open(f.replace(".png", "_w.png")).convert("L"), np.float32)[..., None] / 255
         sl = np.s_[y0 * 2 - by0:y1 * 2 - by0, x0 * 2 - bx0:x1 * 2 - bx0]
-        col[sl] = col[sl] * (1 - w) + P[..., :3] * w      # colour only: the alpha (the silhouette) stays as it is
+        # (premultiplied: the patch's alpha is the river's own except where a strand is laid past the silhouette)
+        pre = col[sl] * al[sl][..., None] * (1 - w) + P[..., :3] * P[..., 3:] * w
+        al[sl] = al[sl] * (1 - w[..., 0]) + P[..., 3] * w[..., 0]
+        col[sl] = np.where(al[sl][..., None] > 1e-3, pre / np.maximum(al[sl][..., None], 1e-3), 0)
     for tag, (x0, y0, x1, y1) in UNDER_PATCHES:
         f = os.path.join(HAIR_DIR_19, f"patch_{tag}.png")
         if not os.path.exists(f):
@@ -263,6 +274,7 @@ def river():
         al[sl] = al[sl] * (1 - w[..., 0]) + P[..., 3] * w[..., 0]
         col[sl] = np.where(al[sl][..., None] > 1e-3, pre / np.maximum(al[sl][..., None], 1e-3), 0)
     img = Image.fromarray((np.dstack([np.clip(col, 0, 1), al]) * 255 + 0.5).astype(np.uint8), "RGBA")
+    img.body = body
     return img, (int(bx0 // 2), int(by0 // 2))
 
 
@@ -354,9 +366,11 @@ def build():
     geo["flare"] = [round(fx, 2), round(fy, 2), round(GOLD[2] * S, 2)]
     geo["draught"] = list(DRAUGHT)
     geo["dash"] = list(DASH)
-    pts = crest(img, at)
+    body = img.copy()
+    body.putalpha(img.body)
+    pts = crest(body, at)
     geo["crest"] = pts
-    al = np.asarray(img.getchannel("A")).astype(np.float32) / 255
+    al = np.asarray(img.body).astype(np.float32) / 255
     rows = np.nonzero(al[:, int((XP_X[0] - at[0]) * 2):int((XP_X[1] - at[0]) * 2)].max(axis=1) > 0.5)[0]
     geo["bar_top"] = round(float(at[1] + rows.min() / 2), 1)
     geo["river_top"] = round(float(at[1] + np.nonzero(al.max(axis=1) > 0.5)[0].min() / 2), 1)
