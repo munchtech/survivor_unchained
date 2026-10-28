@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Godot;
 
@@ -33,6 +34,12 @@ public partial class MarkPass : CompositorEffect
         ["fs"] = 0.88f, ["fh"] = 5f, // the red's fold: no light past where the seen scarlet's saturation drops under fs or its hue passes fh
         ["knee"] = 0.6f,   // the light eases into the fold from this share of it
         ["bed"] = 1f,      // the inner bed's re-tint: 1 the whole mark, 0 edges only (a scarlet band at the rims fading inward, and under the running fill)
+        // (baked into the shader at launch:) a bank: the bed fades where the ground (its heights) is steeper than s0..s1 m/m,
+        // unless it lies under the still water; the bed's value from the screen's 8 px tiles' mean within sb0..sb1 m of the
+        // water's line (no crease where shore foam or a wet band meets it); the height tests' slack on a curved ground (x tol)
+        ["s0"] = 0.9f, ["s1"] = 1.4f, ["sb0"] = 0.08f, ["sb1"] = 0.25f, ["tol"] = 0.6f,
+        // a part-gated pixel (a grass tuft's tips) pushed to the scarlet at its own value, never pink: from rs0 to rs1 of tint
+        ["rs0"] = 0.1f, ["rs1"] = 0.45f,
     };
 
     static MarkPass()
@@ -55,7 +62,8 @@ public partial class MarkPass : CompositorEffect
     public static bool Time = System.Environment.GetEnvironmentVariable("MARK_TIME") == "1";
 
     RenderingDevice? rd;
-    Rid shader, pipe, sampler, linSampler, ubo, markBuf, hBuf, idLut;
+    Rid shader, pipe, sampler, linSampler, ubo, markBuf, hBuf, idLut, tiles;
+    Vector2I tileSize;
     bool failed;
 
     public MarkPass()
@@ -88,7 +96,8 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src });
+        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
         pipe = rd.ComputePipelineCreate(shader);
@@ -169,10 +178,24 @@ public partial class MarkPass : CompositorEffect
             T["front"], T["tail"], T["body"], T["fill"],
             bri, con, sat, (agx ? 1 : 0) + (bcs ? 2 : 0) + (lutOn ? 4 : 0),
             T["le"], T["fs"], T["fh"], T["knee"],
-            T["bed"], 0, 0, 0,
+            T["bed"], 1, 0, 0,
         };
+        // (the tiles: each 8 x 8 px's mean seen value, a first dispatch of the same shader, mode 0)
+        var ts = new Vector2I((size.X + 7) / 8, (size.Y + 7) / 8);
+        if (!tiles.IsValid || ts != tileSize)
+        {
+            if (tiles.IsValid) rd.FreeRid(tiles);
+            tileSize = ts;
+            tiles = rd.TextureCreate(new RDTextureFormat
+            {
+                Width = (uint)ts.X, Height = (uint)ts.Y, Format = RenderingDevice.DataFormat.R16G16B16A16Sfloat,
+                UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.CanCopyFromBit,
+            }, new RDTextureView());
+        }
         Rid lut = lutOn && lutTex.IsValid ? lutTex : idLut;
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
+        push[29] = 0;
+        var pb0 = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
         for (uint v = 0, nv = buf.GetViewCount(); v < nv; v++)
         {
             Rid colour = buf.GetColorLayer(v), depth = buf.GetDepthLayer(v);
@@ -186,7 +209,14 @@ public partial class MarkPass : CompositorEffect
                 U(RenderingDevice.UniformType.StorageBuffer, 4, markBuf),
                 U(RenderingDevice.UniformType.StorageBuffer, 5, hBuf),
                 U(RenderingDevice.UniformType.SamplerWithTexture, 6, linSampler, lut),
+                U(RenderingDevice.UniformType.Image, 7, tiles),
             });
+            long l0 = rd.ComputeListBegin();
+            rd.ComputeListBindComputePipeline(l0, pipe);
+            rd.ComputeListBindUniformSet(l0, set, 0);
+            rd.ComputeListSetPushConstant(l0, pb0, (uint)pb0.Length);
+            rd.ComputeListDispatch(l0, (uint)ts.X, (uint)ts.Y, 1);
+            rd.ComputeListEnd();
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
             rd.ComputeListBindUniformSet(l, set, 0);
@@ -200,7 +230,7 @@ public partial class MarkPass : CompositorEffect
     public override void _Notification(int what)
     {
         if (what != NotificationPredelete || rd == null) return;
-        foreach (var r in new[] { idLut, shader, sampler, linSampler, ubo, markBuf, hBuf })
+        foreach (var r in new[] { idLut, shader, sampler, linSampler, ubo, markBuf, hBuf, tiles })
             if (r.IsValid) rd.FreeRid(r);
     }
 
@@ -237,6 +267,7 @@ public partial class MarkPass : CompositorEffect
         layout(set = 0, binding = 4, std430) readonly buffer Marks { vec4 m[]; } mk;
         layout(set = 0, binding = 5, std430) readonly buffer Hts { float h[]; } ht;
         layout(set = 0, binding = 6) uniform sampler3D lut;
+        layout(set = 0, binding = 7, rgba16f) uniform image2D tiles;
 
         // How a scene colour will be seen: Godot 4.5's AgX (its own approximation, verbatim), sRGB, the adjustments,
         // the grade's table (the tonemap pass's order).
@@ -295,6 +326,31 @@ public partial class MarkPass : CompositorEffect
             float c = ht.h[o + (i.y + 1) * G + i.x], d = ht.h[o + (i.y + 1) * G + i.x + 1];
             return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
         }
+
+        // The ground's slope (m/m) and its bend (m: how far a straight line between cells misses it, the heights' error
+        // against the drawn ground on a bank) at q, a cell either side (continuous across the cells)
+        void relief(int slot, vec2 q, vec2 hs, float g, out float sl, out float bend) {
+            vec2 c = vec2(2.0 / float(G - 1));                    // one cell, in q
+            vec2 cm = max(c * hs, vec2(1e-3));                   // in m
+            float xp = ground(slot, q + vec2(c.x, 0.0)), xn = ground(slot, q - vec2(c.x, 0.0));
+            float zp = ground(slot, q + vec2(0.0, c.y)), zn = ground(slot, q - vec2(0.0, c.y));
+            sl = length(vec2((xp - xn) / (2.0 * cm.x), (zp - zn) / (2.0 * cm.y)));
+            bend = abs(xp + xn - 2.0 * g) + abs(zp + zn - 2.0 * g);
+        }
+
+        // The screen's tiles' mean seen value at p (bilinear, five taps: about 40 px across)
+        float tile1(vec2 t) {
+            ivec2 mx = imageSize(tiles) - 1;
+            ivec2 i = ivec2(floor(t)); vec2 f = t - vec2(i);
+            float a = imageLoad(tiles, clamp(i, ivec2(0), mx)).r, b = imageLoad(tiles, clamp(i + ivec2(1, 0), ivec2(0), mx)).r;
+            float c = imageLoad(tiles, clamp(i + ivec2(0, 1), ivec2(0), mx)).r, d = imageLoad(tiles, clamp(i + ivec2(1, 1), ivec2(0), mx)).r;
+            return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        float vtile(ivec2 p) {
+            vec2 t = (vec2(p) + 0.5) / 8.0 - 0.5;
+            return (tile1(t) + tile1(t + vec2(1.5, 0.0)) + tile1(t - vec2(1.5, 0.0)) + tile1(t + vec2(0.0, 1.5)) + tile1(t - vec2(0.0, 1.5))) * 0.2;
+        }
+        shared float tacc[64];
 
         // A rim's light at signed distance d (m, < 0 inside): a narrow hot core, a short soft glow.
         float rim(float d, float core, float soft, float glw, float gk) {
@@ -357,6 +413,25 @@ public partial class MarkPass : CompositorEffect
         }
 
         void main() {
+            if (pc.pad0 < 0.5) {
+                // mode 0: each 8 x 8 px tile's mean seen value (its brightest channel), from the frame before the marks
+                ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+                uint t = gl_LocalInvocationIndex;
+                bool inb = p.x < int(pc.size.x) && p.y < int(pc.size.y);
+                vec3 c = inb ? seen(imageLoad(colour, p).rgb) : vec3(0.0);
+                tacc[t] = max(c.r, max(c.g, c.b));
+                barrier();
+                for (uint s = 32u; s > 0u; s >>= 1u) {
+                    if (t < s) tacc[t] += tacc[t + s];
+                    barrier();
+                }
+                if (t == 0u) {
+                    ivec2 o = ivec2(gl_WorkGroupID.xy) * 8;
+                    float cnt = float(max(min(8, int(pc.size.x) - o.x), 1) * max(min(8, int(pc.size.y) - o.y), 1));
+                    imageStore(tiles, ivec2(gl_WorkGroupID.xy), vec4(tacc[0] / cnt, 0.0, 0.0, 1.0));
+                }
+                return;
+            }
             {
                 uint t = gl_LocalInvocationIndex;
                 vec3 c = seen(exp2(LO + float(t) * ST) / max(pc.expo, 1e-6) * vec3(1.0, pc.tg, pc.tb));
@@ -376,6 +451,7 @@ public partial class MarkPass : CompositorEffect
             vec3 wp = (mt.cam * vec4(v.xyz, 1.0)).xyz, eye = mt.cam[3].xyz;
             vec3 ray = normalize(wp - eye);
             if (dz <= 1e-7) wp = eye + ray * 1e4;
+            float yt = wp.y;
             // under the still water's line (its bed, a leg in the river): the surface seen there instead
             bool wet = pc.water_on > 0.5 && wp.y < pc.water_y - 0.01 && ray.y < -1e-4;
             if (wet) wp = eye + ray * ((pc.water_y - eye.y) / ray.y);
@@ -386,6 +462,7 @@ public partial class MarkPass : CompositorEffect
             }
             float tint = 0.0;
             float light = 0.0;
+            float rs = 0.0;
             int n = int(pc.n);
             for (int i = 0; i < n; i++) {
                 vec4 a = mk.m[i * 4], ax = mk.m[i * 4 + 1], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
@@ -394,16 +471,26 @@ public partial class MarkPass : CompositorEffect
                 vec2 d = q.xz - a.xz;
                 vec2 l = vec2(dot(d, ax.xy), dot(d, ax.zw));
                 bool inbox = abs(l.x) <= s.x && abs(l.y) <= s.y;
-                float gh = 0.0;
+                float gh = 0.0, bank = 1.0, slack = 0.0, hgt = 1.0;
                 if (inbox) {
-                    float gy = ground(int(e.z + 0.5), l / s.xy);
-                    if (pc.water_on > 0.5) gy = max(gy, pc.water_y);
+                    // one height reference for the bank and the water: the ground's heights, never under the still water
+                    int sl_ = int(e.z + 0.5);
+                    float g = ground(sl_, l / s.xy), sl, bend;
+                    relief(sl_, l / s.xy, s.xy, g, sl, bend);
+                    float gy = pc.water_on > 0.5 ? max(g, pc.water_y) : g;
                     gh = wet ? 0.0 : q.y - gy;
+                    // (the heights are cells; the drawn ground is its own triangles: on a bend they part by up to ~bend)
+                    slack = min(T_TOL * bend, 0.4);
+                    // a bank steeper than s0..s1 shows no bed (no fold down its face), the water past its foot does
+                    float under = pc.water_on > 0.5 ? smoothstep(0.02, 0.3, pc.water_y - g) : 0.0;
+                    bank = 1.0 - smoothstep(T_S0, T_S1, sl) * (1.0 - under);
                 }
                 if (inbox && gh < pc.roof) {
-                    // the ground (and grass, a pebble): full to g0 over it; past a few cm only what faces up
-                    gate = (1.0 - smoothstep(pc.g0, pc.g1, gh)) * (1.0 - smoothstep(0.15, 0.4, -gh));
-                    gate *= mix(1.0, smoothstep(0.3, 0.6, up), smoothstep(0.04, 0.12, gh));
+                    // the ground (and grass, a pebble): full to g0 over it; past a few cm only what faces up (soft
+                    // ramps, the slack widening them where the heights can be wrong)
+                    hgt = (1.0 - smoothstep(pc.g0 + slack, pc.g1 + slack, gh)) * (1.0 - smoothstep(0.15 + slack, 0.4 + 2.0 * slack, -gh));
+                    gate = hgt * mix(1.0, smoothstep(0.3, 0.6, up), smoothstep(0.04 + slack, 0.12 + 2.0 * slack, gh));
+                    gate *= bank;
                 } else if (e.w > 0.5 && ray.y < -1e-4 && up > 0.5) {
                     // a roof or a canopy over it: the mark where the ground under it would be seen
                     vec3 g = eye + ray * ((a.y - eye.y) / ray.y);
@@ -416,7 +503,12 @@ public partial class MarkPass : CompositorEffect
                 if (gate <= 0.0) continue;
                 float c, li;
                 shape(i, l, c, li);
-                tint = max(tint, c * gate * s.w);
+                float tc = c * gate * s.w;
+                if (tc > tint) {
+                    tint = tc;
+                    // (where only the height test holds it back, a tuft's tips: re-saturated below)
+                    rs = smoothstep(T_RS0, T_RS1, tc) * (1.0 - smoothstep(0.85, 1.0, hgt)) * bank;
+                }
                 light += li * gate;
             }
             if (tint <= 0.0 && light <= 0.0) return;
@@ -427,7 +519,10 @@ public partial class MarkPass : CompositorEffect
             float rf = exp2(LO + float(fi) * ST) / max(pc.expo, 1e-6);
             // the bed: the scarlet whose seen value is k x the ground's seen value (its brightest channel)
             vec3 g = seen(col.rgb);
-            float want = pc.k * max(g.r, max(g.g, g.b));
+            float gv = max(g.r, max(g.g, g.b));
+            // by the water's line: the tiles' mean, not the pixel (shore foam, a wet band: no crease in the bed)
+            if (pc.water_on > 0.5 && dz > 1e-7) gv = mix(gv, vtile(p), 1.0 - smoothstep(T_SB0, T_SB1, abs(yt - pc.water_y)));
+            float want = pc.k * gv;
             int lo = 0, hi = NT - 1;
             while (hi - lo > 1) { int mid = (lo + hi) / 2; if (tv[mid] <= want) lo = mid; else hi = mid; }
             float r;
@@ -435,6 +530,8 @@ public partial class MarkPass : CompositorEffect
             else r = exp2(LO + (float(lo) + clamp((want - tv[lo]) / max(tv[hi] - tv[lo], 1e-6), 0.0, 1.0)) * ST);
             r = min(r / max(pc.expo, 1e-6), rf);
             vec3 base = mix(col.rgb, r * vec3(1.0, pc.tg, pc.tb), clamp(tint, 0.0, 1.0));
+            // a part-tinted tuft: the scarlet at the mix's own value (bright in, bright scarlet out; never pink)
+            if (rs > 0.0) base = mix(base, min(max(base.r, max(base.g, base.b)), rf) * vec3(1.0, pc.tg, pc.tb), rs);
             // the light on it: eased into the fold, never past it (AgX turns a red past it salmon, then white)
             float add = light;
             if (add > 0.0) {
