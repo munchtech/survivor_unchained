@@ -1,7 +1,8 @@
 # The Turn measure's reading (turn_measure.sh; Balance arena --pair turn:ID). Per pair: the skill's damage with its
 # Turn and without, on the same build. S = sum on / sum off (pooled, ratio of sums), split into the crowd (not
 # champions) and champions; P = all her damage dealt (on/off) x taken (off/on), as the Hand measure reads it.
-# sigma: delta method on log S over pairs. A/B: two disjoint halves of the seeds (odd and even), which should agree.
+# sigma: delta method on log S over pairs. A/B: two disjoint halves of the seeds (the lower and the upper half; not odd
+# and even, which splits the starting weapon), which should agree.
 import json,sys,math,collections
 def load(fs):
     L=[]
@@ -17,7 +18,8 @@ def sig(L,f):
 sk=lambda s:s['Skill']; el=lambda s:s['Elite']; cr=lambda s:s['Skill']-s['Elite']
 def row(name,L):
     S=ratio(L,sk); s=sig(L,sk)*S
-    A=[x for x in L if x['Seed']%2]; B=[x for x in L if not x['Seed']%2]
+    ss=sorted({x['Seed'] for x in L}); mid=ss[len(ss)//2]
+    A=[x for x in L if x['Seed']<mid]; B=[x for x in L if x['Seed']>=mid]
     d=ratio(L,lambda s:s['Dmg']); t=sum(x['Off']['DamageTaken'] for x in L)/max(1e-9,sum(x['On']['DamageTaken'] for x in L))
     share=sum(x['Off']['Skill'] for x in L)/sum(x['Off']['Dmg'] for x in L)
     champ=sum(x['Off']['Elite'] for x in L)/sum(x['Off']['Skill'] for x in L)
