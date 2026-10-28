@@ -140,7 +140,9 @@ FORM = {
     # a Fourier series to order K (r(phi)), the coefficients smoothed along s2 (sigma mm), and the points moved
     # radially onto it: anything narrower than ~360/(2K) deg of the ring is gone. Whole from s2 s[1] to s[2], fading
     # in from s[0] (the elbow's forms above stay) and out to s[3] (into her hand).
-    "fair_F": dict(K=4, s=(35.0, 90.0, 240.0, 268.0), ds=3.0, half=4.0, sigma=7.0),
+    # (Body 22) OFF: the shipped forearm stays below the elbow (FEATHER fore_s2), so there's nothing of ours to fair
+    "fair_F": None,
+    "fair_F_tried": dict(K=4, s=(35.0, 90.0, 240.0, 268.0), ds=3.0, half=4.0, sigma=7.0),
     # (pass 2) never outward at the shoulder top: the outward move clamped to `out` mm above s[0] (fading out by s[1]),
     # round the back half (phi ramps in phi[0]..phi[1], out phi[2]..phi[3]); the Look's camera sees this side
     "cap_clamp": dict(s=(80.0, 105.0), phi=(70.0, 85.0, 200.0, 215.0), out=0.3),
@@ -161,7 +163,10 @@ FORM = {
     ]),
 }
 FEATHER = {"arm_w": (0.35, 0.75), "top_s": (-28.0, 12.0), "pit_s": (48.0, 98.0), "pit_x": (-18.0, -38.0),
-           "hand_s2": (238.0, 266.0)}
+           "hand_s2": (238.0, 266.0),
+           # (Body 22, the bend bank) the anatomy only above ~40 mm below the elbow joint: her shipped forearm stays
+           # below (every anatomy build's forearm read gaunt with a dark lengthwise line at w_m80, PSDs or none)
+           "fore_s2": (30.0, 52.0)}
 RAY = 40.0           # mm: how far along her normal the form's surface is looked for
 SMOOTH = 2           # passes of the move field's smoothing (umbrella, 0.5)
 
@@ -348,6 +353,8 @@ def feather(b, FR, P, side):
     pit = _ss(fe["pit_x"][0], fe["pit_x"][1], QU[:, 0]) * (1 - _ss(fe["pit_s"][0], fe["pit_s"][1], QU[:, 2]))
     w *= 1 - pit
     w *= 1 - _ss(fe["hand_s2"][0], fe["hand_s2"][1], QF[:, 2])
+    if fe.get("fore_s2"):
+        w *= 1 - _ss(fe["fore_s2"][0], fe["fore_s2"][1], QF[:, 2])
     side_ok = (b.U[:, 0] > XM) if side == "l" else (b.U[:, 0] < XM)
     return w * side_ok
 
@@ -531,4 +538,7 @@ if __name__ == "__main__":
     if "--amt" in sys.argv:
         amt = float(sys.argv[sys.argv.index("--amt") + 1])
         a = [x for x in a if x != str(sys.argv[sys.argv.index("--amt") + 1])]
-    run(a[0], a[1], amt=amt)
+    form = FORM
+    if "--no-relief" in sys.argv:                       # the thumb-side swell off (Body 22's A/B)
+        form = dict(FORM, relief_F=None)
+    run(a[0], a[1], form=form, amt=amt)
