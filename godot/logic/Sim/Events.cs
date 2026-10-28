@@ -93,6 +93,10 @@ public static class Ev
     public sealed class LevelUp : CombatEvent { public int Level; }
     /// <summary>A weapon evolved; out of a chest, the chest's opening shows it, not this.</summary>
     public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; public bool Chest; }
+
+    /// <summary>A wick lamp lit at night as the ember ranks the skill (Sim/Turns.cs); Turn: the lamp is its Turn.</summary>
+    public sealed class Wick : CombatEvent { public string Skill = "", Lamp = ""; public bool Turn; }
+
     public sealed class Discovery : CombatEvent { public string Id = ""; }
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
     /// <summary>A telegraphed blow slipped at the last moment (Battle.PerfectDodge).</summary>

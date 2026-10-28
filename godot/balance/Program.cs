@@ -35,6 +35,7 @@ using SurvivorUnchained.Rpg;
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
  *          --hand 0 (every calling's Hand off, to measure them)
+ *          --wicks none|suggested|plan (default suggested: Light my way), --turn <strand> (that strand first)
  *          --offcalling (with --type both|<road>: each road's skills drafted (policy road:T, --policies ignored) on its
  *          own calling and on each other calling; the report's on-calling table, target <= x1.25)
  *
@@ -49,6 +50,18 @@ Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
 Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
 // --hand 0: every calling's Hand off (docs/design/CLASS_IDENTITY_AND_TALENTS.md 2.2), to measure what the Hands bring.
 SurvivorUnchained.Sim.Battle.Hands = opt.Get("hand", "1") != "0";
+// The Wicks: none, Light my way (a player who never plans: the default here), or the character's plan; --turn
+// lights that strand first on every skill that has it.
+SurvivorUnchained.Rpg.WickBook.Lights = opt.Get("wicks", "suggested") switch
+{
+    "none" => SurvivorUnchained.Rpg.WickBook.Mode.None,
+    "plan" => SurvivorUnchained.Rpg.WickBook.Mode.Plan,
+    "suggested" => SurvivorUnchained.Rpg.WickBook.Mode.Suggested,
+    var w => throw new ArgumentException($"--wicks {w}: none, suggested or plan"),
+};
+SurvivorUnchained.Rpg.WickBook.ForceTurn = opt.Get("turn", "") is { Length: > 0 } turn ? turn : null;
+if (SurvivorUnchained.Rpg.WickBook.ForceTurn is { } ft && !SurvivorUnchained.Content.Wicks.Skills.Any(k => SurvivorUnchained.Content.Wicks.StrandsOf(k).Any(x => x.Id == ft)))
+    throw new ArgumentException($"--turn {ft}: no skill has that strand");
 SurvivorUnchained.Sim.Battle.FlareRout = double.Parse(opt.Get("rout", "0"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Sim.Battle.FlareReachMul = double.Parse(opt.Get("flarereach", "1"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Play.Bosses.StoryBoss.Cuts = opt.Get("storycut", "1") != "0";

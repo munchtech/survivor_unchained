@@ -160,6 +160,8 @@ public sealed class BattleSetup
     /// <summary>What the lit lamps bring (Rpg/LampBook.Loadout), the reflexes' ranks (ArtBook), the
     /// survivor's level (the Flare's damage by day), and the Flare's starting charge (story fights: half).</summary>
     public LampLoadout? Lamps;
+    /// <summary>Each skill's wick in the order it lights (Rpg/WickBook.Paths); null, no wicks.</summary>
+    public Dictionary<string, string[]>? Wicks;
     public Dictionary<string, int>? ReflexRanks;
     public int Level = 1;
     public double FlareStart;
@@ -380,6 +382,7 @@ public sealed partial class Battle
             X = s.StartX, Z = s.StartZ, Facing = s.StartFacing, Hp = s.Hp ?? maxHp,
             DashCharges = RoundInt(Stats.Get(Stat.DashCharges)),
         };
+        if (s.Wicks != null) WickPaths = s.Wicks;
         foreach (var (id, rank) in s.Weapons) AddWeapon(id, rank);
         foreach (var (def, source) in s.Triggers) AddTrigger(def, source);
         Level = Math.Max(1, s.Level);
@@ -758,6 +761,7 @@ public sealed partial class Battle
         if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
+        if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
         dmg *= ReaverDamageMul(e, school, tags, o);
         dmg *= ArcanistDamageMul(e, school, tags, o);
         dmg *= StalkerDamageMul(e, school, tags, o);
@@ -864,6 +868,7 @@ public sealed partial class Battle
         // Status payloads ride the hit.
         statusWeapon = o.Weapon;
         if (o.Status != null) ApplyStatus(e, o.Status, dmg, o.Depth, by);
+        if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, dmg, o.Depth, by);
         statusWeapon = null;
 
         int depth = o.Depth;
@@ -1021,6 +1026,7 @@ public sealed partial class Battle
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
         // Longer burning is more burning: the rate holds, the time stretches.
         double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
+        if (statusWeapon?.Wick != null) dur *= WickDuration(p.Kind);
         from ??= credit;
         switch (p.Kind)
         {
@@ -2315,6 +2321,7 @@ public sealed partial class Battle
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
+        Relight(w, false);
         Weapons.Add(w);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();
@@ -2349,6 +2356,7 @@ public sealed partial class Battle
         building++;
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
         building--;
+        if (w != null) CarryTurns(w, a, c);
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
         return w;
@@ -2360,6 +2368,8 @@ public sealed partial class Battle
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Rank >= Content.Weapons.MaxRank) return;
         w.Rank++;
+        // The wick lights along the day's plan as the ember ranks it.
+        Relight(w, true);
     }
 
     /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>
@@ -2382,6 +2392,8 @@ public sealed partial class Battle
         var evo = Array.Find(w.Def.Evolutions, e => e.Id == branch);
         if (evo == null) return;
         w.Evolution = evo;
+        // Its Turn holds where the evolution still suits it, and goes dark where it replaced the shape.
+        Relight(w, false);
         // What it does beyond numbers: its own rules, credited to it.
         foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
         // It shows what it has become at once: the first volley is now.
