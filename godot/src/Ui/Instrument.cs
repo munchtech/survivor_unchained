@@ -55,7 +55,7 @@ public partial class Instrument : Control
     /// Girl: the river's crest's ends, at its middle height, so "chain" brackets the thread on it).</summary>
     public static Vector2 EyeL => LifeLamp.Drowned ? new(DgRiver.Crest[0].X, DgRiver.CrestRect.GetCenter().Y) : LifeAt + JointOff;
     /// <summary>The chain's filled links: its rect from the left eye to the lock's left edge (the lock stands at the middle, 32 wide;
-    /// the Drowned Girl: the whole thread, which fills along all of it).</summary>
+    /// the Drowned Girl: the river's run along its crest, where the experience light runs on a gain, UI 18).</summary>
     public static Rect2 ChainFill => LifeLamp.Drowned ? new(EyeL.X, EyeL.Y - 17, EyeR.X - EyeL.X, 38) : new(EyeL.X, EyeL.Y - 17, Mid - 16 - EyeL.X, 38);
     /// <summary>The Drowned Girl: the key plates' top (the three on one line, 15 px clear of the screen's foot).</summary>
     public const float DgTagTop = 1049;
@@ -99,6 +99,8 @@ public partial class Instrument : Control
         {
             River = new DgRiver();
             AddChild(River);
+            // (UI 18: the experience light's glint, additive, over the river and under the seats; the old thread is gone)
+            AddChild(River.Spark);
             SillStrap.Visible = false;
             Chain.Visible = false;
         }
@@ -118,7 +120,6 @@ public partial class Instrument : Control
         Dash = new Round(Round.Kind.Dash) { Position = DashAt - Round.Half };
         AddChild(Dash);
         AddChild(Chain);
-        if (River != null) AddChild(River.Thread);
         // (UI 16 ring: the orb casing's eye's front half over the chain's first link, which runs through it)
         if (!HerLight.On && LifeLamp.Front is { } eyeFront)
             AddChild(new TextureRect { Texture = eyeFront, Position = LampAt, Size = LifeLamp.Canvas, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -165,6 +166,8 @@ public partial class Instrument : Control
             artKey.Place(ArtAt.X, DgTagTop + 3);
         }
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
+        // (UI 18: the numbers' card, over everything on the instrument)
+        if (River != null) AddChild(River.Card);
         Keys();
         Lay(Sockets.Length, true);
     }
@@ -187,7 +190,7 @@ public partial class Instrument : Control
         Chain.Modulate = For(keep == "chain");
         Chain.Pulse = pulse;
         Life.Modulate = For(false);
-        if (River != null) { River.Modulate = For(false); River.Thread.Modulate = For(keep == "chain"); River.Thread.Pulse = pulse; }
+        if (River != null) { River.Modulate = For(false); River.Pulse = pulse; }
         Art.Modulate = artKey.Modulate = For(keep == "art");
         // (the chain's callout: what stands over the chain fades with the six places, so the arrow's
         // point reads as the chain's)

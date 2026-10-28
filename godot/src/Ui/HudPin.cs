@@ -13,6 +13,9 @@ namespace SurvivorUnchained.Ui;
 ///     behind=1: the Drowned Girl's figure faded as if something were behind it; day=1|0: her XP thread
 ///     drawn as by day (her experience) or by night (the ember), whatever the fight is; dash=1.4: the dash's
 ///     charges held (1 held, the next 40% back).
+///     UI 18, the experience light (--hud drowned): xp=run:F:T the light T seconds after a gain to F from rest,
+///     xp=rise:F:T T seconds after a level-up (F carried over); xptip=hold (the hold key's card, at the run's front) or
+///     xptip=X:Y (the pointer's card, the pointer at X, Y); xpnum=LEVEL:HAVE:NEED the card's numbers.
 ///   --hud-seq "state;state;..." [--hud-seq-every S]: Shots.cs steps through the states (each one applied over
 ///     --hud-pin) and saves SHOT_hud0.png, SHOT_hud1.png...
 /// </summary>
@@ -22,6 +25,8 @@ public static class HudPin
     public static int? Draught;
     public static bool? Behind, Day;
     public static string[]? Seats;
+    public static string? Xp, XpTip;
+    public static int[]? XpNum;
     static readonly string baseSpec = Args.Get("hud-pin") ?? "";
     /// <summary>The sequence's states (empty: none).</summary>
     public static readonly string[] Seq = Args.Get("hud-seq") is string q ? q.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : [];
@@ -34,6 +39,7 @@ public static class HudPin
     public static void Use(int k)
     {
         Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
+        Xp = XpTip = null; XpNum = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -56,6 +62,9 @@ public static class HudPin
                 case "behind": Behind = F() > 0.5f; break;
                 case "day": Day = F() > 0.5f; break;
                 case "dash": Dash = float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var ds) ? Math.Max(0, ds) : 0; break;
+                case "xp": Xp = kv[1]; break;
+                case "xptip": XpTip = kv[1]; break;
+                case "xpnum": XpNum = Array.ConvertAll(kv[1].Split(':'), v => int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0); break;
                 case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
             }
         }

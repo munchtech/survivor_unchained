@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.Ui;
 
@@ -9,9 +10,10 @@ namespace SurvivorUnchained.Ui;
 /// is the bar (art/ui/dg_river, tools/uiforge/dg_river_cut.py: the owner's picked concept's own bar, d1v 5071, at
 /// its 0.615 scale). Drawn under her figure: where she is solid she hides it, so its strands come out of her back
 /// hair. The six seats are hair-bound rings in the current (Socket draws them, Seat), the Flare's glass sits in
-/// the eddy at its right end (Flare), the draught and the dash where the concept has them. Piece 3: her
-/// experience (by night the ember) runs as a fine gold thread on the river's crest (Crest), its level on a
-/// gold-rimmed knot where it leaves her hair (Thread).
+/// the eddy at its right end (Flare), the draught and the dash where the concept has them. Piece 3 (UI 18, the
+/// owner's pick (c)): her experience (by night the ember) shows only when it moves: a cool light runs along her hair
+/// and the river to the fraction, holds and fades (Light, Play/XpLight.cs, shaders/hud_dg_xp.gdshaderinc); its numbers
+/// on a card (Card). The old gold thread (Thread) is no longer drawn.
 /// </summary>
 public partial class DgRiver : Control
 {
@@ -109,12 +111,230 @@ public partial class DgRiver : Control
         m.SetShaderParameter("scr_at", At);
         m.SetShaderParameter("size", ArtSize);
         Material = m;
+        XpMasks(m);
         Thread = new ThreadLine();  // (the instrument's child, over her figure and the river: screen px)
     }
 
     public override void _Draw()
     {
         if (UiArt.Art($"{Dir}/river.png") is { } art) DrawTextureRect(art, new Rect2(Vector2.Zero, Size), false, Cuff.Day ? new Color(1.06f, 1.06f, 1.08f) : Colors.White);
+    }
+
+    /* ---- UI 18: the experience light (the owner's pick (c): "no XP on screen until it moves") ---- */
+
+    static Godot.Collections.Dictionary? xpGeo;
+    static Godot.Collections.Dictionary XpGeo => xpGeo ??= LoadXp();
+    static Godot.Collections.Dictionary LoadXp()
+    {
+        string path = $"{UiArt.Root}{Dir}/xp_light.json";
+        if (FileAccess.FileExists(path) && Json.ParseString(FileAccess.GetFileAsString(path)).AsGodotDictionary() is { Count: > 0 } d)
+            return d;
+        GD.PushError($"DgRiver: {path} did not load: the experience light runs wrong");
+        return new Godot.Collections.Dictionary();
+    }
+    static float XF(string k, float or) => XpGeo.TryGetValue(k, out var v) ? (float)v.AsDouble() : or;
+    /// <summary>The run's ends in XpLight.S (1080 px): her hair (0) and the eddy (full), from the baked masks.</summary>
+    public static float RunS0 => XF("s0", 52);
+    public static float RunS1 => XF("s1", 1158);
+    static (double X, double Y)[]? crestD;
+    static (double X, double Y)[] CrestD
+    {
+        get
+        {
+            if (crestD != null) return crestD;
+            var c = Crest;
+            crestD = new (double, double)[c.Length];
+            for (int i = 0; i < c.Length; i++) crestD[i] = (c[i].X, c[i].Y);
+            return crestD;
+        }
+    }
+    /// <summary>The front's point on the crest for fraction f of the run, or null while the front is on her hair.</summary>
+    public static Vector2? OnCrest(float f) => XpLight.OnCrest(CrestD, XpLight.FrontS(f, RunS0, RunS1)) is { } p ? new Vector2((float)p.X, (float)p.Y) : null;
+    /// <summary>Her hair, as the hover hears it (the mask's outline, 1080 px, above the flask's key).</summary>
+    static readonly Vector2[] HairOutline =
+    [
+        new(505, 830), new(560, 822), new(640, 850), new(700, 900), new(760, 950), new(760, 1030), new(570, 1030), new(545, 990),
+        new(540, 960), new(535, 900), new(520, 860),
+    ];
+    /// <summary>The pointer is on her hair or the river (from the crest down, to the eddy's glass): the numbers show.</summary>
+    public static bool OnRiver(Vector2 p)
+    {
+        if (Geometry2D.IsPointInPolygon(p, HairOutline)) return true;
+        var c = Crest;
+        if (p.X < c[0].X - 10 || p.X > FlareAt.X - FlareR * 0.5f || p.Y > 1080) return false;
+        float y = c[0].Y;
+        for (int i = 1; i < c.Length; i++) if (c[i].X >= p.X) { y = Mathf.Lerp(c[i - 1].Y, c[i].Y, (p.X - c[i - 1].X) / Math.Max(1e-3f, c[i].X - c[i - 1].X)); break; }
+        return p.Y >= y - 10;
+    }
+
+    /// <summary>The front's glint over the crest (additive, under the seats); the numbers' card (over everything).</summary>
+    public readonly Glint Spark = new();
+    public readonly XpCard Card = new();
+    /// <summary>A callout teaches the run ("Ember fills this", Instrument.ChainFill): the light loops along it, 0 to 1.</summary>
+    public float Pulse;
+    ShaderMaterial? figMat;
+    readonly float[] sent = [-1, -9999, -1, -1, -1, -1];
+    static readonly StringName UOn = "xp_on", UFront = "xp_front", UTail = "xp_tail", UPeak = "xp_peak", UWhole = "xp_whole",
+        UC = "xp_c", UHue = "xp_hue", UDay = "xp_day";
+    public static readonly Color DayLight = new("#cfe8ff"), DayHue = new("#5aa2d6"), NightLight = new("#e2d4ff"), NightHue = new("#9c7ee0");
+
+    void XpMasks(ShaderMaterial m)
+    {
+        if (UiArt.Tex($"{Dir}/xp_light.png", false) is { } t) m.SetShaderParameter("xp_mask", t);
+        else GD.PushError($"DgRiver: {Dir}/xp_light.png did not load: the experience light draws blank");
+        m.SetShaderParameter("xp_at", XpGeo.TryGetValue("at", out var a) ? V(a) : new Vector2(295, 822));
+        m.SetShaderParameter("xp_size", XpGeo.TryGetValue("size", out var s) ? V(s) : new Vector2(1310, 258));
+    }
+
+    /// <summary>What the light shows now (XpLight; by day her experience, by night the ember), on the river and on
+    /// her hair (fig: her figure's material). Sends only what changed: at rest, nothing.</summary>
+    public void Light(XpLight x, bool day, ShaderMaterial? fig)
+    {
+        if (fig != null && fig != figMat) { figMat = fig; XpMasks(fig); Array.Fill(sent, -2); }
+        float front = (float)x.Front, str = (float)x.Strength, whole = (float)x.Whole;
+        if (Pulse > 0)
+        {
+            float t = (Time.GetTicksMsec() / 1000f) % 1.8f / 1.2f;
+            front = Mathf.Clamp(t, 0, 1);
+            str = Math.Max(str, Pulse * (1 - Mathf.SmoothStep(1.0f, 1.25f, t)));
+        }
+        bool on = str > 0.001f || whole > 0.001f;
+        float s = (float)XpLight.FrontS(front, RunS0, RunS1);
+        void Send(int i, StringName u, float v)
+        {
+            if (sent[i] == v) return;
+            sent[i] = v;
+            ((ShaderMaterial)Material).SetShaderParameter(u, v);
+            figMat?.SetShaderParameter(u, v);
+        }
+        Send(0, UOn, on ? 1 : 0);
+        if (on)
+        {
+            Send(1, UFront, s);
+            Send(2, UTail, str);
+            Send(3, UPeak, str);
+            Send(4, UWhole, whole);
+            if (sent[5] != (day ? 1 : 0))
+            {
+                sent[5] = day ? 1 : 0;
+                foreach (var m in new[] { (ShaderMaterial)Material, figMat })
+                {
+                    if (m == null) continue;
+                    var c = day ? DayLight : NightLight;
+                    var h = day ? DayHue : NightHue;
+                    m.SetShaderParameter(UC, new Vector3(c.R, c.G, c.B));
+                    m.SetShaderParameter(UHue, new Vector3(h.R, h.G, h.B));
+                    m.SetShaderParameter(UDay, day ? 1f : 0f);
+                }
+            }
+        }
+        Spark.Show(on && str > 0.001f ? OnCrest(front) : null, str, day);
+    }
+
+    /// <summary>UI 18: the front's glint, a cool point of light where the front meets the crest, with a small bloom
+    /// (dir_c.py: 0.9 of the light in a 3 px core, 1.6 times as wide as tall; the hue at 0.45 in 12 px). Drawn
+    /// additively under the seats: when the front is behind a ring, the ridge above it and the lip below it carry it.</summary>
+    public partial class Glint : Control
+    {
+        static ImageTexture? soft;
+        Color core, bloom;
+        public Glint()
+        {
+            MouseFilter = MouseFilterEnum.Ignore;
+            Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
+            Visible = false;
+            Size = new Vector2(64, 64);
+        }
+        static ImageTexture Soft()
+        {
+            if (soft != null) return soft;
+            const int n = 64;
+            var img = Image.CreateEmpty(n, n, false, Image.Format.Rgba8);
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float dx = (x + 0.5f) / n * 2 - 1, dy = (y + 0.5f) / n * 2 - 1;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy) * 2.6f;   // (the texture spans 2.6 sigma each way)
+                    img.SetPixel(x, y, new Color(1, 1, 1, Mathf.Exp(-r * r)));
+                }
+            return soft = ImageTexture.CreateFromImage(img);
+        }
+        /// <summary>At p (or hidden), at strength k.</summary>
+        public void Show(Vector2? p, float k, bool day)
+        {
+            bool vis = p != null && k > 0.001f;
+            if (Visible != vis) Visible = vis;
+            if (!vis) return;
+            var at = p!.Value + new Vector2(0, -4) - Size / 2;
+            if (Position != at) Position = at;
+            var c = day ? DayLight : NightLight;
+            var h = day ? DayHue : NightHue;
+            var nc = new Color(c.R * 0.9f * k, c.G * 0.9f * k, c.B * 0.9f * k);
+            var nb = new Color(h.R * 0.45f * 0.8f * k, h.G * 0.45f * 0.8f * k, h.B * 0.45f * 0.8f * k);
+            if (nc != core || nb != bloom) { core = nc; bloom = nb; QueueRedraw(); }
+        }
+        public override void _Draw()
+        {
+            var t = Soft();
+            var mid = Size / 2;
+            DrawTextureRect(t, new Rect2(mid - new Vector2(31.2f, 31.2f), new Vector2(62.4f, 62.4f)), false, bloom);
+            DrawTextureRect(t, new Rect2(mid - new Vector2(12.5f, 7.8f), new Vector2(25f, 15.6f)), false, core);
+        }
+    }
+
+    /// <summary>UI 18: the numbers, in the game's tooltip (the morocco card, UiArt "tooltip"): "Level 12" and its
+    /// percent, a small meter in the light's hue, "4,210 / 6,000 experience", "1,790 to level 13" (by night the
+    /// ember's). Shown while the pointer is on the river or the hold key (XpLight.HoldKey, pad LB) is down; redrawn
+    /// only when its words or place change.</summary>
+    public partial class XpCard : Control
+    {
+        public static readonly Vector2 CardSize = new(236, 92);
+        string key = "";
+        (string Title, string Pct, string Count, string Left) lines;
+        float frac;
+        bool day;
+        StyleBox? box;
+        public XpCard()
+        {
+            MouseFilter = MouseFilterEnum.Ignore;
+            Size = CardSize;
+            Visible = false;
+        }
+        /// <summary>Show it with its foot point at anchor (the pointer, or the run's front), or hide it.</summary>
+        public void Set(bool show, Vector2 anchor, (string, string, string, string) l, float f, bool day)
+        {
+            if (Visible != show) Visible = show;
+            if (!show) return;
+            var at = new Vector2(Mathf.Clamp(Mathf.Round(anchor.X - 40), 8, 1920 - 8 - Size.X), Mathf.Clamp(Mathf.Round(anchor.Y - Size.Y - 14), 8, 1080 - Size.Y));
+            if (Position != at) Position = at;
+            string k = $"{l}|{f:0.000}|{day}";
+            if (k == key) return;
+            key = k; lines = l; frac = f; this.day = day;
+            QueueRedraw();
+        }
+        public override void _Draw()
+        {
+            box ??= UiArt.Frame("tooltip", new StyleBoxFlat { BgColor = new Color(0.08f, 0.06f, 0.05f, 0.95f) });
+            box.Draw(GetCanvasItem(), new Rect2(Vector2.Zero, Size));
+            void Text(Font f, int size, Vector2 p, string s, Color c, bool right = false)
+            {
+                if (s == "") return;
+                if (right) p.X -= f.GetStringSize(s, HorizontalAlignment.Left, -1, size).X;
+                DrawString(f, p + new Vector2(1, 1), s, HorizontalAlignment.Left, -1, size, new Color(0, 0, 0, 0.7f));
+                DrawString(f, p, s, HorizontalAlignment.Left, -1, size, c);
+            }
+            Text(Style.Display, 18, new Vector2(14, 27), lines.Title, new Color("#f3d9a0"));
+            Text(Style.UiBold, 16, new Vector2(Size.X - 14, 27), lines.Pct, new Color("#a89c88"), true);
+            // its meter: the numbers' own small line, in the light's hue, drawn only here
+            float x0 = 14, x1 = Size.X - 14, y = 37;
+            DrawRect(new Rect2(x0, y, x1 - x0, 4), new Color(0.047f, 0.043f, 0.063f, 0.9f));
+            var h = day ? DayHue : NightHue;
+            float fx = Mathf.Round(x0 + Mathf.Clamp(frac, 0, 1) * (x1 - x0));
+            float[] row = [1.25f, 1, 1, 0.8f];
+            for (int i = 0; i < 4; i++) if (fx > x0) DrawRect(new Rect2(x0, y + i, fx - x0, 1), new Color(Math.Min(1, h.R * row[i]), Math.Min(1, h.G * row[i]), Math.Min(1, h.B * row[i])));
+            Text(Style.Ui, 16, new Vector2(14, 62), lines.Count, new Color("#e8dcc4"));
+            Text(Style.Ui, 15, new Vector2(14, 81), lines.Left, new Color("#a89c88"));
+        }
     }
 
     /// <summary>The ring (seat i, filled or empty) and its well, centred at c, for Socket's draw.</summary>

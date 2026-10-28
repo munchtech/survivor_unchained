@@ -115,6 +115,7 @@ public partial class ControlsPanel : VBoxContainer
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Flare", [Act.Flare], null),
         ("Draught", [Act.Draught], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
         ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"),
+        ("Level and experience (hold)", [Act.Experience], "LB, in play"),
         ("Look closer, in town", [], "Right stick up / down"), ("Pause", [Act.Pause], null),
         ("Turn the book's pages", [Act.TabPrev, Act.TabNext], "LB / RB"), ("A screen's own pages", [Act.SubPrev, Act.SubNext], "LT / RT"),
         ("In menus: choose, back", [Act.Confirm, Act.Cancel], "A, B"), ("In menus: more", [Act.Alt], "X, Y"),

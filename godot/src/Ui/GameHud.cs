@@ -81,6 +81,11 @@ public partial class GameHud : CanvasLayer
     TipLine? tipLine;
     // The chain's heat eased every frame toward its true value (docs/feel S-06): shown, wanted.
     float barShown, barWant;
+    /// <summary>UI 18, the Drowned Girl: her experience (by night the ember) shows only when it moves (XpLight, drawn by
+    /// DgRiver.Light); its numbers on the river's card. xpHave and xpNeed: this level's count and its need.</summary>
+    XpLight xpLight = new();
+    double xpHave, xpNeed;
+    bool xpLast;
     bool barEmber = true;
     int barLevel = 1;
     double killPop;
@@ -589,6 +594,16 @@ public partial class GameHud : CanvasLayer
             shownLevel = lv; shownEmber = ember;
             barLevel = lv;
         }
+        if (irons.River != null)
+        {
+            // (UI 18: the light runs on a gain; a level-up lights all of her and, by night, names the ember through the
+            // banner, its sound the ember's own level-up (SoundBridge, Ev.LevelUp); by day Journey names the level)
+            xpLight.Feed(e, lv, ember);
+            if (xpLight.Rose && ember && !HudPin.Active) Announce(new Announcement($"Ember {lv}", "the ember rises", "ember", 2.6));
+            xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
+            xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
+            xpHave = ember ? b.EmberXp : level.K * xpNeed;
+        }
         underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar;
 
         // The six places: what fires by itself, in the order it came; the rest quiet.
@@ -709,6 +724,40 @@ public partial class GameHud : CanvasLayer
     static double Countdown(double left) => left > 600 ? -1 : Math.Ceiling(left);
 
     double pinMax = 100;
+
+    /// <summary>UI 18, the Drowned Girl's experience: the light's clock, what it shows, and the numbers' card (the pointer on
+    /// the river, or the hold key or button down: XpLight.HoldKey, pad LB).</summary>
+    void XpTick(DgRiver river, double delta)
+    {
+        bool day = HudPin.Day is bool pd ? pd : !barEmber;
+        var shown = xpLight;
+        if (HudPin.Xp is { } pose && pose.Split(':') is { Length: 3 } px
+            && double.TryParse(px[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pf)
+            && double.TryParse(px[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pt))
+            shown = XpLight.Posed(pf, pt, px[0] == "rise");
+        else xpLight.Step(delta);
+        river.Light(shown, day, irons.Life.Mat);
+        // the numbers
+        var c = Controls.Instance;
+        bool captured = c == null || c.Captured || c.MenuMode;
+        var mouse = irons.GetLocalMousePosition();
+        bool hover = DgRiver.OnRiver(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
+        bool held = c != null && c.Held(Act.Experience);
+        float f = barWant;
+        int lv = barLevel;
+        double have = xpHave, need = xpNeed;
+        if (HudPin.XpTip is { } tip)
+        {
+            captured = false; held = tip == "hold"; hover = !held;
+            if (!held && tip.Split(':') is { Length: 2 } m && float.TryParse(m[0], System.Globalization.CultureInfo.InvariantCulture, out var mx) && float.TryParse(m[1], System.Globalization.CultureInfo.InvariantCulture, out var my)) mouse = new Vector2(mx, my);
+            if (HudPin.XpNum is { Length: 3 } n) { lv = n[0]; have = n[1]; need = n[2]; f = (float)(have / Math.Max(1, need)); }
+            else if (HudPin.Ember is float pe) { f = pe; have = pe * need; }
+        }
+        // (pictures: the card only where a pin asks for it, whatever the pointer is over)
+        bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
+        var anchor = held ? (DgRiver.OnCrest(f) ?? DgRiver.Crest[0]) : mouse;
+        river.Card.Set(show, anchor, XpLight.Lines(!day, lv, have, need, xpLast && day), f, day);
+    }
 
     /// <summary>Debug (--hud-pin, HudPin.cs): what the instrument shows held at the pinned values, never the
     /// fight. Nothing when no pin is given.</summary>
@@ -1360,7 +1409,7 @@ public partial class GameHud : CanvasLayer
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         irons.Chain.Set(barShown, barEmber, barLevel);
-        irons.River?.Thread.Set(barShown, barEmber, barLevel);
+        if (irons.River is { } river) XpTick(river, delta);
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;

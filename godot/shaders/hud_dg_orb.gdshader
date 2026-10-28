@@ -17,6 +17,8 @@
 // same sweep in screen px, so it travels on from her into the river).
 shader_type canvas_item;
 render_mode blend_premul_alpha;
+// (UI 18: the experience light on her hair, hud_dg_xp.gdshaderinc; at rest it does nothing)
+#include "res://shaders/hud_dg_xp.gdshaderinc"
 
 uniform sampler2D cold : source_color, filter_linear_mipmap;      // her figure, straight alpha
 uniform sampler2D mask : hint_default_black, filter_linear_mipmap; // R over the glass, G held at full in the fade
@@ -98,6 +100,8 @@ void fragment()
 	fc += fc * vec3(2.8, 0.20, 0.07) * olf * smoothstep(0.03, 0.20, flum);
 	// the idle sheen on her raised edges (her highlights catch it, her hollows do not)
 	fc += fc * vec3(0.55, 0.45, 0.30) * sheen(scr_at + px, TIME) * smoothstep(0.16, 0.45, flum);
+	// (UI 18: a gain's light along her hair, lifted less than the river's; never her face, shoulder or hand: mask R)
+	if (xp_on > 0.5) fc = xp_light(fc, scr_at + px, texture(xp_mask, (scr_at + px - xp_at) / xp_size).r, 0.28);
 	// her figure in two layers: under the glass (all but her fingers over it) and over it
 	vec4 back = vec4(fc * a * (1.0 - M.r), a * (1.0 - M.r));
 	vec4 front = vec4(fc * a * M.r, a * M.r);

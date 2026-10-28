@@ -106,6 +106,8 @@ public partial class LifeLamp : Control
     public static bool PoolHeld;
 
     readonly ShaderMaterial mat;
+    /// <summary>Her figure's shader (the Drowned Girl: DgRiver.Light runs the experience light on her hair through it).</summary>
+    public ShaderMaterial Mat => mat;
     readonly Vessel.Flow flow;
     readonly Figure figure;
     /// <summary>The flame's light on the ground (GameHud adds it under everything else on the HUD).</summary>
