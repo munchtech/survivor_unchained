@@ -13,6 +13,7 @@ carried at a run (tools/anim/gait.py).
 from __future__ import annotations
 
 import math
+import os
 from dataclasses import replace
 
 import numpy as np
@@ -396,6 +397,23 @@ LOW_ARM = ((12, 19, 125, -10), (-18, 19, 128, -15))
 # The axes' upper arms 24/22 out (at 19 the sprint's upper arm went 32-38 mm into her side and 11-31 into her breast
 # under motion --outfits; the trailing carry's 22-24 for the same reason).
 LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
+# Animation 57 (max judge r1 on the low point, gate NO: at 30 the blade stood vertical down her shin, the tip at her feet;
+# at 90 it lay 31-43 deg over the leading shin; at 270 it poked flat from behind the shield): her warden carry behind a
+# switch, WARDEN_CARRY (the env var WARDEN_CARRY overrides it: low | belt | high), each an arm swing and the blade's
+# low_point line. Why "high": a line on screen from 330/30/90/270 at both the play (29) and close-up (56) pitches reads
+# 35+ deg only when it is steeper than about 60-65 deg off level whatever its heading (or 55-60 straight back); her
+# wrist keeps the blade within about 69 deg of the forearm (keyed RADIAL 22), so pointing down that steep needs the
+# fist at her chest to keep the tip 0.40 m off the floor ("belt": measured pitch only -27..-33, 2-18 deg at 90), and
+# pointing up that steep needs the forearm about level ahead (the fist at her belt, the elbow bent ~90). Upright, the
+# blade leans ahead of her face (20-30 deg forward, 20-30 out) so from 90 and 30 it doesn't stand over her head.
+# "belt" (the judge's in-hold try: fist at the navel, elbow bend ~85, keyed -46 straight ahead): tip 0.51 m (sprint
+# 0.42) but the wrist won't point it down past -33, so it reads 2-18 deg from 90. "low": Animation 56's low point.
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high")
+BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
+HIGH_ARM = ((14, 29, 82, -20), (4, 29, 76, -22))
+WARDEN_CARRIES = {"low": (LOW_ARM, dict(out=(26, 24))),
+                  "belt": (BELT_ARM, dict(pitch=(-45, -47), out=(2, 2))),
+                  "high": (HIGH_ARM, dict(pitch=(80, 80), out=(30, 30)))}
 # Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
 # fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
 # with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
@@ -421,7 +439,9 @@ WAND_ARM = ((0, 15, 120, 0), (-30, 14, 120, -20))
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
-    "run_warden": (replace(WARDEN, swing_r=LOW_ARM), {"r": low_point(out=(26, 24)), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+    # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
+    "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
+                   {"r": low_point(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # (Animation 57: REAVER_ARM_R / REAVER_AXE_R, the grip up the haft; was LOW_ARM_R, low_point(pitch=(-40, -46), out=(22, 20)).)
     "run_reaver": (replace(REAVER_ARMED, swing_r=REAVER_ARM_R, swing=((20, 16, 70, 5), REAVER.swing[1])),
