@@ -5,15 +5,15 @@
     "stun": 0.2,
     "knockback": 1.5,
     "stagger": 0.1,
-    "stones": 10,
-    "radius": 8,
+    "stones": 24,
+    "radius": 5,
     "lull": 6,
     "rebuke": 2,
     "perLevel": 0.08,
     "boss": 0.5
   },
   "reaver": {
-    "per": 0.01,
+    "per": 0.007,
     "cap": 8,
     "fade": 3,
     "gate": 0.1,
