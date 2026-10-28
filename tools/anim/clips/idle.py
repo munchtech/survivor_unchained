@@ -739,8 +739,11 @@ DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 # the blade's way.
 # (Animation 56: the blades' line 36-42 deg below level, the right splayed 25-29 deg out, the left 14-19; the elbows 26 and
 # 34; 24-27 mm off her thighs, where the first tries, fists in at her groin's width, put both tips 23-62 mm into them.)
-DAGGERS_IDLE = {"r": {"hand": (-0.05, -0.45, 0.22), "pole": (-0.5, -0.2, -1.0), "blade": (-0.40, -0.42, 0.80)},
-                "l": {"hand": (0.03, -0.42, 0.26), "pole": (0.5, -0.2, -1.0), "blade": (0.30, -0.50, 0.80)}}
+DAGGERS_IDLE = {"r": {"hand": (-0.05, -0.46, 0.22), "pole": (-0.5, 0.8, -1.0), "blade": (-0.24, -0.766, 0.60)},
+                "l": {"hand": (0.06, -0.44, 0.24), "pole": (0.5, 0.8, -1.0), "blade": (0.22, -0.766, 0.604)}}
+# (Animation 57, from the close-up judge: both blades 44-54 deg below level (were 36-42), turned out <= 16 deg, so the far
+# knife still reads steep on screen; the left fist 2 cm ahead and 2.5 cm out of the right's line, 2 cm higher; the poles
+# lifted so the forearms run steeper than the wrist can cancel.)
 
 
 def stalker_knives(t, f):
@@ -759,7 +762,8 @@ def stalker_knives(t, f):
 # the left hand the staff idle's free one. Chest frame.
 # (The wand 40-44 deg below level and 14 deg out, ~20 deg off the forearm's line as the run's; the elbow 28; 45 mm off her
 # thigh.)
-WAND_IDLE = {"hand": (-0.045, -0.47, 0.17), "pole": (-0.4, -0.2, -1.0), "blade": (-0.24, -0.62, 0.75)}
+WAND_IDLE = {"hand": (-0.07, -0.47, 0.17), "pole": (-0.4, -0.2, -1.0), "blade": (-0.395, -0.707, 0.586)}
+# (Animation 57: the tip turned 12 deg further out, off her thigh and kneecap (47 mm clear); 41-45 deg below level.)
 
 
 def arcanist_wand(t, f):
@@ -778,7 +782,9 @@ arcanist_wand.free_left = True
 # left hand carried with it on the fore-stock.
 # (The bow's line 26-28 deg below level before, pointing ~60 deg across her toward her left; now 36-38, its muzzle 29-32
 # below the wrist: an 11 deg turn.)
-STALKER_LOW = {"pitch": 11.0, "yaw": 38.0, "shift": (0.0, 0.0, -0.02)}
+STALKER_LOW = {"pitch": 29.0,  # (animation 57: muzzle 46-49 deg below level, was 29-32)
+                "yaw": 38.0, "shift": (0.02, 0.04, -0.02)}
+# (The steeper turn dropped her left fist into her body and outfits: the carry raised 4 cm and 2 cm to her left.)
 _SHOULDER_X = 0.19   # (each shoulder's x off her middle at rest, the chest frame: the two hands' arcs in one space)
 
 
