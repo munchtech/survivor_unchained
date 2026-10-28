@@ -143,6 +143,15 @@ SPEC = {
          # (6 mm over 18-26 mm barely showed and read as a nub where it did;
          # broad flanks make the cap a cone with a point: tick.py previews)
          "amount": 0.012, "radius": [0.028, 0.06, 0.045], "lean": 0.0, "near": 0.008, "garment": [0.02, 0.04]},
+        # (Body 19) her elbow's pose-space shapes, authored on her body by
+        # tools/assets/elbow_psd_post.py (not made here: no "amount"), keyed
+        # "on" the forearm's FLEXION (flexion(): its line about its own X; her
+        # clips' small "bends" are mostly the forearm swung sideways onto the
+        # humerus' line) as in-betweens: `keys` [lo, at, hi], 0 at lo, whole
+        # at `at`, 0 again at hi, linear between; hi <= at holds it past `at`.
+        {"name": "elbow_psd45_{s}", "bone": "lowerarm_{s}", "on": "flex", "keys": [0, 45, 90]},
+        {"name": "elbow_psd90_{s}", "bone": "lowerarm_{s}", "on": "flex", "keys": [45, 90, 135]},
+        {"name": "elbow_psd135_{s}", "bone": "lowerarm_{s}", "on": "flex", "keys": [90, 135, 0]},
     ],
     # Panel bones: one centred bone (no {s}) for a hanging front panel (the
     # Reaver's loincloth), a child of the pelvis that swings forward with the
@@ -508,9 +517,32 @@ def bend(sk: Skeleton, rot, bone):
     return _swing_deg(swing)
 
 
+def flexion(sk: Skeleton, rot, bone):
+    """Degrees the joint above `bone` is flexed: its line (+Y) in its rest
+    frame, seen along its own X (the hinge her clips bend about), from rest
+    toward +Z (her front); negative past rest. The swing's sideways part (the
+    forearm swung onto the humerus' line) and its turn about its line left
+    out. Play/ElbowPsd.Flexion is the game's twin."""
+    j = sk.index[bone]
+    d = qrot(qmul(qinv(sk.rest_rot[j]), rot[j]), [0, 1.0, 0])
+    return math.degrees(math.atan2(float(d[2]), float(d[1])))
+
+
 def corrective_weight(c, deg):
-    """A corrective shape's weight at `deg` degrees of its joint's bend:
-    eased in (smoothstep) from c["from"] to c["to"], none below."""
+    """A corrective shape's weight at `deg` degrees of its joint's bend (or
+    flexion, c["on"] "flex"): eased in (smoothstep) from c["from"] to
+    c["to"], none below; or (c["keys"] [lo, at, hi]) an in-between: 0 at lo
+    and below, linear to 1 at `at`, linear to 0 at hi (hi <= at: held at 1
+    past `at`). Play/ElbowPsd.Weight is the game's twin."""
+    if "keys" in c:
+        lo, at, hi = (float(x) for x in c["keys"])
+        if deg <= lo:
+            return 0.0
+        if deg < at:
+            return (deg - lo) / (at - lo)
+        if hi <= at:
+            return 1.0
+        return max(0.0, 1.0 - (deg - at) / (hi - at))
     t = min(max((deg - c["from"]) / (c["to"] - c["from"]), 0.0), 1.0)
     return t * t * (3 - 2 * t)
 
@@ -522,7 +554,8 @@ def corrective_weights(sk: Skeleton, rot):
         for s in "lr":
             b = c["bone"].replace("{s}", s)
             if b in sk.index:
-                out[c["name"].replace("{s}", s)] = corrective_weight(c, bend(sk, rot, b))
+                deg = flexion(sk, rot, b) if c.get("on") == "flex" else bend(sk, rot, b)
+                out[c["name"].replace("{s}", s)] = corrective_weight(c, deg)
     return out
 
 
@@ -1446,6 +1479,8 @@ def corrective(P, W, sk: Skeleton, front=(0, 0, 1.0)):
     rest_inv = np.linalg.inv(mats(grot0[0], gpos0[0]))
     out = {}
     for c in SPEC.get("correctives", []):
+        if "amount" not in c:
+            continue    # (authored by a post step on her body: elbow_psd_post)
         for s in "lr":
             name, bone = c["name"].replace("{s}", s), c["bone"].replace("{s}", s)
             if bone not in sk.index:

@@ -165,6 +165,36 @@
     0.02,
     0.04
    ]
+  },
+  {
+   "name": "elbow_psd45_{s}",
+   "bone": "lowerarm_{s}",
+   "on": "flex",
+   "keys": [
+    0,
+    45,
+    90
+   ]
+  },
+  {
+   "name": "elbow_psd90_{s}",
+   "bone": "lowerarm_{s}",
+   "on": "flex",
+   "keys": [
+    45,
+    90,
+    135
+   ]
+  },
+  {
+   "name": "elbow_psd135_{s}",
+   "bone": "lowerarm_{s}",
+   "on": "flex",
+   "keys": [
+    90,
+    135,
+    0
+   ]
   }
  ],
  "panels": [

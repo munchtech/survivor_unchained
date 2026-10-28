@@ -72,6 +72,8 @@ public partial class HerJoints : SkeletonModifier3D
         public required string Name;
         public required int Bone;
         public required float From, To;
+        public bool Flex;                    // (Body 19) keyed on the flexion (Play/ElbowPsd), not the whole swing
+        public float[]? Keys;                // an in-between [lo, at, hi] (Play/ElbowPsd.Weight)
         public readonly List<(MeshInstance3D Mesh, int Shape)> On = new();
     }
 
@@ -228,10 +230,14 @@ public partial class HerJoints : SkeletonModifier3D
                     var c = cv.AsGodotDictionary();
                     int bone = sk.FindBone(((string)c["bone"]).Replace("{s}", side));
                     if (bone < 0) continue;
+                    var keys = c.ContainsKey("keys") ? c["keys"].AsGodotArray() : null;
                     one.Correctives.Add(new Corrective
                     {
                         Name = ((string)c["name"]).Replace("{s}", side), Bone = bone,
-                        From = (float)(double)c["from"], To = (float)(double)c["to"],
+                        From = c.ContainsKey("from") ? (float)(double)c["from"] : 0f,
+                        To = c.ContainsKey("to") ? (float)(double)c["to"] : 1f,
+                        Flex = c.ContainsKey("on") && (string)c["on"] == "flex",
+                        Keys = keys == null ? null : new[] { (float)(double)keys[0], (float)(double)keys[1], (float)(double)keys[2] },
                     });
                 }
             sides.Add(one);
@@ -409,10 +415,20 @@ public partial class HerJoints : SkeletonModifier3D
             foreach (var c in side.Correctives)
             {
                 var rest = sk.GetBoneRest(c.Bone).Basis.GetRotationQuaternion();
-                var (swing2, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(c.Bone));
-                float deg = Mathf.RadToDeg(2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(swing2.W))));
-                float v = Mathf.Clamp((deg - c.From) / (c.To - c.From), 0f, 1f);
-                float w = v * v * (3 - 2 * v);
+                float deg;
+                if (c.Flex) deg = ElbowPsd.Flexion(Nq(rest), Nq(sk.GetBonePoseRotation(c.Bone)));
+                else
+                {
+                    var (swing2, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(c.Bone));
+                    deg = Mathf.RadToDeg(2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(swing2.W))));
+                }
+                float w;
+                if (c.Keys != null) w = ElbowPsd.Weight(c.Keys[0], c.Keys[1], c.Keys[2], deg);
+                else
+                {
+                    float v = Mathf.Clamp((deg - c.From) / (c.To - c.From), 0f, 1f);
+                    w = v * v * (3 - 2 * v);
+                }
                 foreach (var (mi, i) in c.On)
                     if (IsInstanceValid(mi)) mi.SetBlendShapeValue(i, w);
             }
