@@ -754,12 +754,15 @@ public partial class Callout : Control, ICalloutView
     {
         if (look == null || column == null) return;
         age += delta;
-        if (gone >= 0) { gone += delta; if (gone > 0.3) { QueueFree(); return; } }
+        // (a freeze's card goes in 0.12 s: the world is moving again under it, and a slower fade left its
+        // words ghosting over the walls while the strike it warned of played out)
+        double outT = Freeze ? 0.12 : 0.3;
+        if (gone >= 0) { gone += delta; if (gone > outT) { QueueFree(); return; } }
         var s = Size2;
         column.Size = s;
         column.Position = wordsAt - s / 2;
         // It burns in: the glow first, the words up through it by Legible, the title hot and cooling to bone.
-        float out_ = gone >= 0 ? 1 - Smooth(gone / 0.3) : 1;
+        float out_ = gone >= 0 ? 1 - Smooth((float)(gone / outT)) : 1;
         Modulate = Colors.White with { A = out_ };
         column.Modulate = Colors.White with { A = Smooth(age / ICalloutView.Legible) };
         if (title != null) title.Modulate = Warm.Lerp(Colors.White, Smooth((age - 0.1) / 0.6));
