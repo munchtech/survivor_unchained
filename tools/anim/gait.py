@@ -234,8 +234,10 @@ def _ease(k):
 def run_cycle(name, rig: Rig, g: Gait, meta=None) -> Clip:
     from keyed import solve_frames
     n = g.frames
+    # (A meta "grip_slide" / "grip_slide_l": the piece slid in her fist, keyed.solve_frames; 0 solves as before.)
     rot, pos = solve_frames(rig, [pose_at(g, rig, f / n) for f in range(n + 1)], loop=True,
-                            weapon=(meta or {}).get("weapon", ""))
+                            weapon=(meta or {}).get("weapon", ""), slide=float((meta or {}).get("grip_slide", 0.0)),
+                            slide_l=float((meta or {}).get("grip_slide_l", 0.0)))
     m = {"layer": "full", "speed": g.speed, "cycle": n / 30.0, "steps": 2,
          "source": "keyed (tools/anim/gait.py)", "licence": "own work"}
     m.update(meta or {})

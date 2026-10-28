@@ -369,16 +369,22 @@ AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
 # blend, not the arm hold, so the axe would slide in her fist through every walk-run change).
 # Measured (solver holdB p3): sword pitch -46..-29, 19-21 out, tip 0.29 m off the floor at the lowest, 61 mm from her
 # thigh (sprint 34); axe -63..-46, 16-22 out, 96 mm (sprint 74); the second axe -55..-42, 23-30 out, never within 140 mm.
-def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r"):
+def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0):
     """The held piece's line (hand to point or head) forward and down: `pitch` degrees (fist forward, fist back) and
-    `out` degrees out to that side, in her character's frame, eased between with the arm's swing (k 1 forward)."""
+    `out` degrees out to that side, in her character's frame, eased between with the arm's swing (k 1 forward).
+    `grip` (m, Animation 57): her fist that much higher up the haft (the clip's meta carries it as a negative
+    grip_slide / grip_slide_l, RUN_GRIPS; the key's hand laid that far back down the line so the wrist stays where the
+    swing puts it, as idle._axe_down does; keyed's "nudge")."""
     sg = 1.0 if side == "l" else -1.0
 
     def f(ph, k, hand):
         hand = dict(hand)
         p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * k)
         o = math.radians(out[1] + (out[0] - out[1]) * k)
-        hand.update({"blade": (sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)), "frame": "char"})
+        b = np.array((sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)))
+        hand.update({"blade": tuple(b), "frame": "char"})
+        if grip:
+            hand["nudge"] = tuple(-grip * b)
         return hand
     return f
 
@@ -390,6 +396,16 @@ LOW_ARM = ((12, 19, 125, -10), (-18, 19, 128, -15))
 # The axes' upper arms 24/22 out (at 19 the sprint's upper arm went 32-38 mm into her side and 11-31 into her breast
 # under motion --outfits; the trailing carry's 22-24 for the same reason).
 LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
+# Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
+# fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
+# with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
+# right forearm turned out on the forward swing (turn -35, its haft went across her body); the left's pump damped (its
+# forearm at least 30 below level) and the pair not mirrored.
+REAVER_GRIP = 0.13
+REAVER_ARM_R = ((6, 28, 126, -35), (-18, 22, 104, -20))
+REAVER_ARM_L = ((-4, 32, 128, -10), (-18, 28, 116, -15))
+REAVER_AXE_R = dict(pitch=(-60, -51), out=(12, 10), grip=REAVER_GRIP)
+REAVER_AXE_L = dict(side="l", pitch=(-45, -45), out=(0, -4), grip=REAVER_GRIP)
 # The owner on the reaver run (routed, 27 Oct): "it reads as a careful jog". Her armed reaver runs drive harder: leant
 # 18 (was 14) with the back 4, more flight (duty 0.27, was 0.30), a deeper, heavier drop and bob (0.11, 0.09), the
 # knee up (0.42, was 0.36), the heel kicked (0.52) and the foot reaching (0.40); the hips turn less (9, was 11) and
@@ -407,11 +423,12 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     "run_warden": (replace(WARDEN, swing_r=LOW_ARM), {"r": low_point(out=(26, 24)), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
-    "run_reaver": (replace(REAVER_ARMED, swing_r=LOW_ARM_R, swing=((20, 16, 70, 5), REAVER.swing[1])),
-                   {"r": low_point(pitch=(-40, -46), out=(22, 20))}, "axe"),
-    # The pair not mirrored: the second axe's head higher and further out than the first's.
-    "run_reaver_axes": (replace(REAVER_ARMED, swing_r=LOW_ARM_R, swing=LOW_ARM_R),
-                        {"r": low_point(pitch=(-40, -46), out=(22, 20)), "l": low_point(side="l", pitch=(-36, -42), out=(22, 20))}, "axes"),
+    # (Animation 57: REAVER_ARM_R / REAVER_AXE_R, the grip up the haft; was LOW_ARM_R, low_point(pitch=(-40, -46), out=(22, 20)).)
+    "run_reaver": (replace(REAVER_ARMED, swing_r=REAVER_ARM_R, swing=((20, 16, 70, 5), REAVER.swing[1])),
+                   {"r": low_point(**REAVER_AXE_R)}, "axe"),
+    # The pair not mirrored: the second axe steeper on a damped arm (Animation 57; was LOW_ARM_R mirrored).
+    "run_reaver_axes": (replace(REAVER_ARMED, swing_r=REAVER_ARM_R, swing=REAVER_ARM_L),
+                        {"r": low_point(**REAVER_AXE_R), "l": low_point(**REAVER_AXE_L)}, "axes"),
     "run_arcanist": (replace(ARCANIST, fingers_r="grip"), {"r": staff_hold()}, "staff"),
     # The wand fist turned further out behind her (judge r2: it brushed her buttock's outline at the close-up).
     # Its thumb up, not out (blade_carry's out=-1 is a blade's, riding out from her): with it out the wand stood
@@ -438,6 +455,12 @@ RUNS = {
     "run_stalker_town": (replace(STALKER, fingers="relaxed", fingers_r="fist", swing=((6, 10, 80, 20), (-30, 12, 62, -35)), swing_r=None), {}, ""),
 }
 
+# The runs whose fist grips the piece higher up its shaft (Animation 57: the reaver's axes 13 cm up the haft, as her
+# idle holds them, idle.AXE_GRIP): the meta's negative grip slide (keyed.solve_frames; the game takes the run's grip
+# slide at full run weight, PlayerView), the same in the sprint (sprint_stop). Each must match its low_point's `grip`.
+RUN_GRIPS = {"run_reaver": {"grip_slide": -REAVER_GRIP},
+             "run_reaver_axes": {"grip_slide": -REAVER_GRIP, "grip_slide_l": -REAVER_GRIP}}
+
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
 # The shield hand sits back toward her (run 2.5 cm, sprint 2 cm from the first pass) so the
 # elbow stays bent: at most 124 degrees in the run, 119 in the sprint (a judge's bar: 125/120).
@@ -449,6 +472,6 @@ def clips(rig, want):
     for name, (g, arms, weapon) in RUNS.items():
         if want and not any(w in name for w in want):
             continue
-        clip = run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon})
+        clip = run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon, **RUN_GRIPS.get(name, {})})
         out.append(POST[name](rig, clip) if name in POST else clip)
     return out

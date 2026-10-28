@@ -511,6 +511,10 @@ class Rig:
                 target = pos_t
             else:
                 target = gpos[ha]
+            if "nudge" in spec:
+                # The wrist moved by a vector in the key's own frame (char or chest; Animation 57: run.low_point's
+                # fist higher up the haft, the key's hand laid back down the piece's line).
+                target = np.asarray(target, float) + qrot(frame, np.asarray(spec["nudge"], float))
             if "shift" in spec:
                 # The wrist moved in her space after the key is placed (solve_frames' grip slide: the fist lower
                 # on the shaft, the piece where the key put it).
