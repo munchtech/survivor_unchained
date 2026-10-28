@@ -764,6 +764,7 @@ public partial class Game : Node, IZoneHost
         hudMode = null;
         screens.Close();
         hud.ShowPlay(true);
+        hud.XpWake();   // (UI 18: the experience light at its resting glow, the quiet clock from now)
         scene!.SimPaused = false;
         showing = false;
         scene.Showcase = null;
@@ -1055,6 +1056,9 @@ public partial class Game : Node, IZoneHost
         }
     }
 
+    /// <summary>The marked attacks still to land (the Drowned Girl's figure fades when one is behind it).</summary>
+    readonly List<(double X, double Z, double? X1, double? Z1, double R, double Until)> marks = new();
+
     void OnEvents(List<CombatEvent> evs)
     {
         Journey.BankArt(Battle);
@@ -1064,6 +1068,8 @@ public partial class Game : Node, IZoneHost
         int crits = 0;
         foreach (var e in evs)
         {
+            if (e is Ev.Telegraph tg && tg.Hostile && tg.Duration > 0.02)
+                marks.Add((tg.X, tg.Z, tg.X1, tg.Z1, tg.Radius, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
             Feel(e, ref crits);
@@ -1315,6 +1321,31 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
+            // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is
+            // faded all the time)
+            if (hud.FigureRect is Rect2 fig)
+            {
+                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone)
+                bool Behind(Rect2 rect)
+                {
+                    bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && rect.HasPoint(camera.UnprojectPosition(w)); }
+                    float gy = at.Y + 1;
+                    bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
+                    if (!behind)
+                        foreach (var e in fb2.Enemies.Living())
+                            if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { behind = true; break; }
+                    marks.RemoveAll(m => m.Until < playedT);
+                    if (!behind)
+                        foreach (var m in marks)
+                            // (its middle and four points round its edge)
+                            if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
+                                || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
+                    return behind;
+                }
+                hud.FigureBehind(Behind(fig));
+                hud.RiverBehind(Behind(Ui.DgRiver.BandRect));
+            }
             if (near != null)
             {
                 var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);

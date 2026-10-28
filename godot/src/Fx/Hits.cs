@@ -183,6 +183,42 @@ public partial class Hits : Node3D
         return cam.ProjectPosition(p, depth);
     }
 
+    /// <summary>The Drowned Girl's HUD top at screen x (1080 px): her figure's head over its span, her hair's river
+    /// 880 to the first seat, 955 across the seats, 915 at the eddy; null where nothing of the HUD stands.</summary>
+    public static float? HudTop(float x, float figL, float figR, float figTop, float seatL, float seatR, float eddyL, float eddyR)
+    {
+        if (x >= figL && x <= figR) return Mathf.Min(818, figTop);
+        if (x > figR && x < seatL) return 880;
+        if (x >= seatL && x <= seatR) return 955;
+        if (x > seatR && x < eddyL) return 955;
+        if (x >= eddyL && x <= eddyR) return 915;
+        return null;
+    }
+
+    static int hudShots;
+    /// <summary>The Drowned Girl (UI 17): a number's box keeps its bottom 8 px above the HUD's top at its x.</summary>
+    Vector3 AboveHud(Vector3 at, string text, int size)
+    {
+        var fig = SurvivorUnchained.Ui.LifeLamp.Live?.FadeRect;
+        var cam = GetViewport()?.GetCamera3D();
+        if (fig is not Rect2 f || cam == null || cam.IsPositionBehind(at)) return at;
+        float k = GetViewport().GetVisibleRect().Size.Y / 1080f;
+        var p = cam.UnprojectPosition(at);
+        float h = size * 0.8f;
+        float seatL = SurvivorUnchained.Ui.DgRiver.Seat(0).X - SurvivorUnchained.Ui.DgRiver.SeatD / 2, seatR = SurvivorUnchained.Ui.DgRiver.Seat(5).X + SurvivorUnchained.Ui.DgRiver.SeatD / 2;
+        var fl = SurvivorUnchained.Ui.DgRiver.FlareAt; float fr = SurvivorUnchained.Ui.DgRiver.FlareR;
+        // (the box's width is its text's: check its left, middle and right)
+        float w = Mathf.Max(50, text.Length * size * 0.4f);
+        float top = float.MaxValue;
+        foreach (float dx in new[] { -w / 2, 0, w / 2 })
+            if (HudTop((p.X + dx) / k, f.Position.X, f.End.X, f.Position.Y, seatL, seatR, fl.X - fr, fl.X + fr) is float t) top = Mathf.Min(top, t * k);
+        if (top == float.MaxValue || p.Y + h / 2 <= top - 8) return at;
+        float to = top - 8 - h / 2;
+        if (hudShots++ < 6) GD.Print($"hits: number '{text}' at y {p.Y:0} (bottom {p.Y + h / 2:0}) lifted to {to:0}, HUD top {top:0}");
+        float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+        return cam.ProjectPosition(new Vector2(p.X, to), depth);
+    }
+
     /// <summary>As Text, saying which of the pool's labels it took.</summary>
     int Show(Vector3 at, string text, Color color, int size)
     {
@@ -193,6 +229,7 @@ public partial class Hits : Node3D
         l.FontSize = size;
         l.Modulate = color;
         at = ClearOfNames(at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
+        at = AboveHud(at, text, size);
         l.GlobalPosition = at;
         l.Visible = true;
         numbers[i] = (l, 0);

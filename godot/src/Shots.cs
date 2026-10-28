@@ -53,6 +53,9 @@ public partial class Shots : Node
     string name = "";
     float seconds, every, until;
     int count, taken;
+    // --hud-seq: the instrument's states stepped through, one picture each (HudPin.cs).
+    int hudNext, hudPhase;
+    double hudAt;
     double time;
     static Shots? live;
     /// <summary>The pictures' own clock (seconds since they began), for what changes between pictures.</summary>
@@ -128,7 +131,7 @@ public partial class Shots : Node
         seconds = Args.Num("seconds", 3);
         every = Args.Num("every", 0);
         until = Args.Num("until", Args.Has("on") ? 120 : 0);
-        count = (int)Args.Num("count", every > 0 ? 8 : Args.Has("on") ? 0 : 1);
+        count = (int)Args.Num("count", every > 0 ? 8 : Args.Has("on") || Ui.HudPin.Seq.Length > 0 ? 0 : 1);
         ProcessMode = ProcessModeEnum.Always;
         // --unshaded: paint as it is, without light (a seam in a texture told
         // from one in the lighting).
@@ -140,6 +143,20 @@ public partial class Shots : Node
     public override void _Process(double delta)
     {
         time += delta;
+        if (Ui.HudPin.Seq.Length > 0 && hudNext < Ui.HudPin.Seq.Length)
+        {
+            if (hudPhase == 0 && time >= seconds + hudNext * Args.Num("hud-seq-every", 1.5f)) { Ui.HudPin.Use(hudNext); hudAt = time; hudPhase = 1; }
+            else if (hudPhase == 1 && time >= hudAt + 0.35)
+            {
+                var hd = ProjectSettings.GlobalizePath("res://.shots");
+                DirAccess.MakeDirRecursiveAbsolute(hd);
+                var hf = $"{hd}/{name}_hud{hudNext}.png";
+                GetViewport().GetTexture().GetImage().SavePng(hf);
+                GD.Print($"saved {hf} at {time:0.00}s (hud state {hudNext}: {Ui.HudPin.Seq[hudNext]}){Ui.HerLight.Note()}");
+                hudNext++; hudPhase = 0;
+                if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { GetTree().Quit(); return; }
+            }
+        }
         // --geom-normals (dent d3, a developer's test): 1.5 s before the picture her skin's stored normals are swapped
         // for ones recomputed from her bind geometry (area-weighted, split copies shared), to tell normal data from shape.
         if (Args.Has("geom-normals") && !geomDone && time >= Args.Num("seconds", 3) - 1.5) { geomDone = true; GeomNormals(); }
@@ -172,7 +189,7 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
-            GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
+            GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}{(Ui.HerLight.Live is { } hl ? $" life {hl.LifeNow:0.000}" : "")}");
             // (the camera, so a mark's ground can be found in the frame and measured)
             CamLines();
         }
@@ -197,7 +214,7 @@ public partial class Shots : Node
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
-        GD.Print($"saved {file} at {time:0.00}s{HerAt()}");
+        GD.Print($"saved {file} at {time:0.00}s{HerAt()}{Ui.HerLight.Note()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
         CamLines();
         if (Args.Has("mark-bones")) PrintMarks();

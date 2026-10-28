@@ -64,11 +64,15 @@ public partial class GameHud : CanvasLayer
     PromptView? promptView;
     Hint? hintView;
     Control killsChip = null!, tally = null!;
-    // The survivor's own health, drawn under them in a night's fight.
-    Control under = null!;
-    ColorRect underFill = null!, underShield = null!;
-    float underK = 1, underShieldK, underAlpha;
+    // The survivor's own health, drawn under them in a night's fight (UI 15 fix 1: HerLight.Bar in every HUD,
+    // the same life the HUD shows, pins included; the old flat red ColorRect bar is retired).
+    float underAlpha;
     bool underWanted;
+    // Her bar under her feet and the low-life edges (HerLight).
+    HerLight her = null!;
+    static readonly double herBleed = Args.Num("hurt-bleed", 0), herBleedFrom = Args.Num("hurt-from", 0);
+    double bleedAt, bleedHp;
+    Vector2? herAt;
     // The corner: the minimap over the place's name and the objectives.
     Minimap minimap = null!;
     VBoxContainer corner = null!;
@@ -77,6 +81,11 @@ public partial class GameHud : CanvasLayer
     TipLine? tipLine;
     // The chain's heat eased every frame toward its true value (docs/feel S-06): shown, wanted.
     float barShown, barWant;
+    /// <summary>UI 18, the Drowned Girl: her experience (by night the ember) shows only when it moves (XpLight, drawn by
+    /// DgRiver.Light); its numbers on the river's card. xpHave and xpNeed: this level's count and its need.</summary>
+    XpLight xpLight = new();
+    double xpHave, xpNeed;
+    bool xpLast;
     bool barEmber = true;
     int barLevel = 1;
     double killPop;
@@ -117,6 +126,11 @@ public partial class GameHud : CanvasLayer
         // Her irons, by day and by night, at peace and in a fight: the keystone stays where it is.
         irons = new Instrument();
         play.AddChild(irons);
+        // (the low-life edge pulse: over the world, under the HUD)
+        play.AddChild(her.Edge);
+        play.MoveChild(her.Edge, 0);
+        // (debug --hurt-mul X: every blow on her times X, a shot of her life truly falling)
+        if (Args.Has("hurt-mul")) SurvivorUnchained.Sim.Battle.HurtMul = Args.Num("hurt-mul", 1);
         BuildTally();
         BuildCorner();
         BuildEdges();
@@ -241,19 +255,13 @@ public partial class GameHud : CanvasLayer
         play.AddChild(foot);
     }
 
-    /// <summary>The survivor's health under their feet, where the eye already is
-    /// in a night's fight (the survivors-likes' answer: docs/UI_RESEARCH.md 4.1).</summary>
+    /// <summary>The survivor's health under their feet, where the eye already is in a night's fight (the
+    /// survivors-likes' answer: docs/UI_RESEARCH.md 4.1): HerLight's forged bar, in every HUD.</summary>
     void BuildUnder()
     {
-        under = new Control { Size = new Vector2(76, 9), MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = Colors.Transparent };
-        var back = new Panel { Size = new Vector2(76, 9), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-        back.AddThemeStyleboxOverride(PanelName, Style.Box(new Color(0.05f, 0.02f, 0.02f, 0.85f), new Color(0, 0, 0, 0.9f), 1, 3, 0));
-        under.AddChild(back);
-        underFill = new ColorRect { Color = Hex("#e8383a"), Position = new Vector2(1, 1), Size = new Vector2(74, 7), MouseFilter = Control.MouseFilterEnum.Ignore };
-        back.AddChild(underFill);
-        underShield = new ColorRect { Color = Style.Shield, Position = new Vector2(1, 1), Size = new Vector2(0, 3), MouseFilter = Control.MouseFilterEnum.Ignore };
-        back.AddChild(underShield);
-        combat.AddChild(under);
+        her = new HerLight();
+        combat.AddChild(her);
+        combat.AddChild(her.Under);
     }
 
     /// <summary>The minimap's top: low enough that the day's path over its bezel clears the screen's edge.</summary>
@@ -297,7 +305,8 @@ public partial class GameHud : CanvasLayer
         hintBox.Visible = false;
         play.AddChild(hintBox);
         subtitle = Style.V(2);
-        subtitle.Position = new Vector2(504, 1080 - 228 - 90);
+        // (the Drowned Girl: 24 px clear above her head, top y 818, and the river's top)
+        subtitle.Position = new Vector2(504, 818 - 24 - 90);
         subtitle.Size = new Vector2(912, 90);
         ((VBoxContainer)subtitle).Alignment = BoxContainer.AlignmentMode.End;
         sayWho = Style.Label("", Style.Display, 17, Style.GoldHi, false, HorizontalAlignment.Center);
@@ -513,6 +522,21 @@ public partial class GameHud : CanvasLayer
         combat.Visible = b.Combat;
         var p = b.Player;
         double max = b.MaxHp;
+        pinMax = max;
+        // (--hurt-bleed F, a shot of her life falling for real: F of her life a second taken as a blow, down to
+        // 12%, from the fight's second --hurt-from on, on top of its own blows (--hurt-mul))
+        if (herBleed > 0 && b.Combat && p.Alive)
+        {
+            double t = Time.GetTicksMsec() / 1000.0;
+            if (bleedAt > 0 && b.Time >= herBleedFrom && p.Hp / max > 0.12)
+            {
+                // (and no healing while it bleeds: the draught's lesson and pickups would undo the fall)
+                if (bleedHp > 0 && p.Hp > bleedHp) p.Hp = bleedHp;
+                b.HurtPlayerRaw(Math.Min(t - bleedAt, 0.25) * herBleed * max, School.Physical, "debug", null, true);
+                bleedHp = p.Hp;
+            }
+            bleedAt = t;
+        }
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
         var life = irons.Life;
@@ -542,12 +566,17 @@ public partial class GameHud : CanvasLayer
         int lv = ember ? b.EmberLevel : Math.Max(1, level.Level);
         if (lv != shownLevel || ember != shownEmber)
         {
-            if (lv > shownLevel && ember == shownEmber && shownLevel > 0) { barShown = 1; irons.Chain.Rise(); }
+            if (lv > shownLevel && ember == shownEmber && shownLevel > 0) barShown = 1;
             shownLevel = lv; shownEmber = ember;
             barLevel = lv;
         }
-        underK = k;
-        underShieldK = (float)Math.Clamp(p.Shield / max, 0, 1);
+        // (UI 18: the light runs on a gain; a level-up lights all of her and, by night, names the ember through the
+        // banner, its sound the ember's own level-up (SoundBridge, Ev.LevelUp); by day Journey names the level)
+        xpLight.Feed(e, lv, ember);
+        if (xpLight.Rose && ember && !HudPin.Active) Announce(new Announcement($"Ember {lv}", "the ember rises", "ember", 2.6));
+        xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
+        xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
+        xpHave = ember ? b.EmberXp : level.K * xpNeed;
         underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar;
 
         // The six places: what fires by itself, in the order it came; the rest quiet.
@@ -557,20 +586,30 @@ public partial class GameHud : CanvasLayer
         {
             if (i >= socks.Length) break;
             bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
-            socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve);
+            socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve, w.Timer);
         }
         for (; i < socks.Length; i++) socks[i].Empty();
-        irons.Lay(b.Weapons.Count, all: ember);
 
         boonWant.Clear();
         foreach (var (id, rank) in b.Boons)
             if (rank > 0 && Boons.Find(id) != null) boonWant.Add((id, rank));
+        // (debug --hud-boons N: the shots' passives, the first N boons with ranks, at rank 2, 1, 3 ...)
+        if (PinBoons > 0)
+        {
+            boonWant.Clear();
+            foreach (var id in Boons.Order)
+            {
+                if (boonWant.Count >= PinBoons) break;
+                if (Boons.Find(id) is { Max: > 1 } || boonWant.Count > 0) boonWant.Add((id, 1 + (boonWant.Count * 2 + 1) % 3));
+            }
+        }
         if (!Same(boonWant, boonHave))
         {
             boonHave.Clear();
             boonHave.AddRange(boonWant);
             foreach (var c in irons.Passives.GetChildren()) c.QueueFree();
             foreach (var (id, rank) in boonWant) irons.Passives.AddChild(Passive(Boons.Find(id)!, rank));
+            beadsA = -1;
         }
 
         // The dash's charges round its glass; the draughts left.
@@ -593,24 +632,20 @@ public partial class GameHud : CanvasLayer
         {
             double full = Battle.FlareFull;
             double per = Math.Clamp(b.FlareMeter % full == 0 && b.FlareMeter > 0 ? 1 : b.FlareMeter % full / full, 0, 1);
-            art.Liquid(new Color("#ffc66a"), new Color("#8a3a08"));
             if (b.FlareReady && per < 1) per = 1;
             if (per >= 1 && artReadyWas < 1) artPing = 1;
             artReadyWas = per;
             art.Level = (float)per;
-            // The Flare's own glyph (its data's icon), never the calling's art's: the Warden's bull is the
-            // dash form's badge only (UI note 3, 26 Oct: the Q orb wore the bull of Bull Rush).
-            art.Glyph = Glyphs.Texture(fl.Icon is { Length: > 0 } fi ? fi : fl.Id, 96, Hex("#fff3dc"), line: true);
-            art.GlyphTint = b.FlareReady ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
-            art.Number = b.FlareReady ? "" : $"{Math.Floor(b.FlareMeter % full)}%";
+            // (the Drowned Girl: the coal's heat is the reading; no glyph, no percent)
             // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
             var line = new System.Text.StringBuilder();
             foreach (var r in b.Reflexes)
                 line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
             irons.ArtNote.Text = line.ToString();
         }
-        else { art.Level = 0; art.Glyph = null; art.Number = ""; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
+        else { art.Level = 0; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 
+        ApplyPin(true);
         // Outside a fight (the town, where the shops are) only the gold line of the tally shows.
         tallyWord.Visible = b.Combat;
         if (!b.Combat)
@@ -642,6 +677,7 @@ public partial class GameHud : CanvasLayer
     readonly List<double> statusLeft = new(), statusShown = new();
     readonly List<Label> statusText = new();
     readonly List<(string Id, int Rank)> boonWant = new(), boonHave = new();
+    static readonly int PinBoons = (int)Args.Num("hud-boons", 0);
     double globeNum = double.NaN;
 
     static bool Same<T>(List<T> a, List<T> b)
@@ -654,6 +690,77 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A status's countdown as shown: whole seconds, none for what lasts.</summary>
     static double Countdown(double left) => left > 600 ? -1 : Math.Ceiling(left);
+
+    double pinMax = 100;
+
+    /// <summary>UI 18, the Drowned Girl's experience: the light's clock, what it shows, and the numbers' card (the pointer on
+    /// the river, or the hold key or button down: XpLight.HoldKey, pad LB).</summary>
+    /// <summary>Entering a zone or loading: the experience light at its resting glow, the long quiet's clock from now.</summary>
+    public void XpWake() => xpLight.Wake();
+
+    float beadsA = 1;
+
+    void XpTick(DgRiver river, double delta)
+    {
+        bool day = HudPin.Day is bool pd ? pd : !barEmber;
+        var shown = xpLight;
+        static double? Num(string v) => double.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+        var px = HudPin.Xp?.Split(':');
+        if (px is { Length: 3 } && Num(px[1]) is { } pf && Num(px[2]) is { } pt) shown = XpLight.Posed(pf, pt, px[0] == "rise");
+        else if (px is { Length: 2 } && px[0] == "rest" && Num(px[1]) is { } rf) shown = XpLight.PosedRest(rf);
+        else if (px is { Length: >= 1 } && px[0] == "dark") shown = XpLight.PosedDark(px.Length > 1 && Num(px[1]) is { } df ? df : 0.5);
+        else xpLight.Step(delta);
+        river.Light(shown, day, irons.Life.Mat);
+        // a level-up's name over the river (judge M2), held about 2 s; the banner by night stays too (the top edge)
+        int tl = HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel;
+        river.Title.Set((float)shown.Title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
+        // (the passives' beads on the crest under its subline step back while it shows; the row's own modulate is the callouts')
+        float ba = 1 - (float)shown.Title;
+        if (ba != beadsA)
+        {
+            beadsA = ba;
+            foreach (var bead in irons.Passives.GetChildren()) if (bead is Control bc) bc.Modulate = Colors.White with { A = ba };
+        }
+        // the numbers
+        var c = Controls.Instance;
+        bool captured = c == null || c.Captured || c.MenuMode;
+        var mouse = irons.GetLocalMousePosition();
+        bool hover = DgRiver.OnRiver(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
+        bool held = c != null && c.Held(Act.Experience);
+        float f = barWant;
+        int lv = barLevel;
+        double have = xpHave, need = xpNeed;
+        if (HudPin.XpTip is { } tip)
+        {
+            captured = false; held = tip == "hold"; hover = !held;
+            if (!held && tip.Split(':') is { Length: 2 } m && float.TryParse(m[0], System.Globalization.CultureInfo.InvariantCulture, out var mx) && float.TryParse(m[1], System.Globalization.CultureInfo.InvariantCulture, out var my)) mouse = new Vector2(mx, my);
+            if (HudPin.XpNum is { Length: 3 } n) { lv = n[0]; have = n[1]; need = n[2]; f = (float)(have / Math.Max(1, need)); }
+            else if (HudPin.Ember is float pe) { f = pe; have = pe * need; }
+        }
+        // (pictures: the card only where a pin asks for it, whatever the pointer is over)
+        bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
+        var anchor = held ? (DgRiver.OnCrest(f) ?? DgRiver.Crest[0]) : mouse;
+        river.Card.Set(show, anchor, XpLight.Lines(!day, lv, have, need, xpLast && day), f, day);
+    }
+
+    /// <summary>Debug (--hud-pin, HudPin.cs): what the instrument shows held at the pinned values, never the
+    /// fight. Nothing when no pin is given.</summary>
+    void ApplyPin(bool withSeats)
+    {
+        if (!HudPin.Active) return;
+        var life = irons.Life;
+        if (HudPin.Life is float l)
+        {
+            life.Level = life.Trail = hpShown = trailShown = l;
+            globeNum = double.NaN;
+            life.Number = $"{Math.Ceiling(l * pinMax)}";
+        }
+        if (HudPin.Shield is float sh) life.Shield = sh;
+        if (HudPin.Ember is float em) barShown = barWant = em;
+        if (HudPin.Draught is int dr) irons.Draught.Count = dr;
+        if (HudPin.Art is float ar) irons.Art.Level = ar;
+        if (withSeats && HudPin.Seats is { } seats) irons.PinSeats(seats);
+    }
 
     void Statuses()
     {
@@ -694,6 +801,8 @@ public partial class GameHud : CanvasLayer
     static Control Passive(BoonDef bd, int rank)
     {
         var col = Style.RarityOf((int)bd.Rarity);
+        // (the Drowned Girl: a small bronze stud, its glyph in gold, DgMeters)
+        return DgMeters.Passive(bd.Icon, rank, bd.Max > 1, col);
         var holder = new Control { CustomMinimumSize = new Vector2(26, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
         var gl = Glyphs.Icon(bd.Icon, 22, col, line: true);
         gl.Position = new Vector2(2, 0);
@@ -1018,9 +1127,15 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>Where the survivor stands on screen, each frame (null: not on it).</summary>
+    /// <summary>The Drowned Girl: the part of her figure above the bar line, on the HUD; Game tells her when a foe
+    /// or the survivor stands behind it, and she fades (and the river, RiverBehind).</summary>
+    public Rect2? FigureRect => irons.Life.FadeRect;
+    public void FigureBehind(bool behind) => irons.Life.Behind = behind;
+    public void RiverBehind(bool behind) => irons.River.Behind = behind;
+
     public void Follow(Vector2? at)
     {
-        if (at is { } p) under.Position = p + new Vector2(-38, 22);
+        herAt = at;
         underWanted &= at != null;
     }
 
@@ -1157,9 +1272,10 @@ public partial class GameHud : CanvasLayer
     /// <summary>The tally: the night's clock, and the slain and gold under it (in town, only the gold shows: none).</summary>
     public Rect2? TallyArea => killsChip.IsVisibleInTree() && tallyGold.GetParent() is Control gold
         ? killsChip.GetGlobalRect().Merge(gold.GetGlobalRect()).Merge(tallyTime.GetGlobalRect() is var tt && tallyTime.IsVisibleInTree() ? new Rect2(tt.End.X - tallyTime.GetMinimumSize().X, tt.Position.Y, tallyTime.GetMinimumSize().X, tt.Size.Y) : gold.GetGlobalRect()) : null;
-    /// <summary>The lock at the chain's middle, the ember's level stamped on it (EmberChain.Lock: from the
-    /// chain's sag at its middle, shackle to foot).</summary>
-    public Rect2? EmberLockArea => irons.Chain.IsVisibleInTree() ? new Rect2(960 - 16, Instrument.EyeL.Y + 4, 32, 38) : null;
+    /// <summary>The iron HUD's lock at the chain's middle, the ember's level stamped on it: the Drowned Girl has no
+    /// level knot (UI 18: the level shows on the river's title and card), so never on the screen (the teach target
+    /// "lock" stays NotYet).</summary>
+    public Rect2? EmberLockArea => null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>
@@ -1275,7 +1391,8 @@ public partial class GameHud : CanvasLayer
         // The chain's heat flows toward its value; a new level has already flared it and filled it,
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
-        irons.Chain.Set(barShown, barEmber, barLevel);
+        irons.DayNight(barEmber);
+        XpTick(irons.River, delta);
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;
@@ -1292,26 +1409,19 @@ public partial class GameHud : CanvasLayer
         }
         // The health under the survivor eases in and out with the night's fight.
         underAlpha = Mathf.MoveToward(underAlpha, underWanted ? 1 : 0, dt * 4);
-        under.Modulate = Colors.White with { A = underAlpha };
-        underFill.Size = new Vector2(74 * underK, 7);
-        underFill.Color = underK < 0.35f ? Hex("#ff5a4a").Lerp(Colors.White, 0.25f * Mathf.Max(0, Mathf.Sin(Time.GetTicksMsec() / 1000f * 7))) : Hex("#e8383a");
-        underShield.Size = new Vector2(74 * underShieldK, 3);
         // The trail behind her life catches up after a moment.
         if (trailShown > hpShown) { trailWait += dt; if (trailWait > 0.35f) trailShown = Mathf.MoveToward(trailShown, hpShown, dt * 1.6f); }
         else { trailWait = 0; trailShown = hpShown; }
         var life = irons.Life;
         life.Trail = trailShown;
-        bool low = hpShown < 0.35f && combat.Visible;
         float now = Time.GetTicksMsec() / 1000f;
-        // Low, her life's vessel beats like a heart and its glass flushes.
-        float beat = low ? 1 + 0.05f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
-        life.Scale = new Vector2(beat, beat);
-        life.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
-        // The art readied: its glass flares once and settles to its ready glow.
+        // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
+        life.Pulse = combat.Visible ? 1 : 0;
+        ApplyPin(false);
+        her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha);
+        // The art readied: its coal swells once and settles.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
-        bool armed = art.Level >= 1 && irons.ArtWord.Text == "";
-        art.Glow = armed ? 0.55f + 0.45f * (float)artPing + 0.08f * Mathf.Sin(now * 2.4f) : irons.ArtWord.Text != "" ? 0.6f : 0;
         art.Scale = Vector2.One * (1 + 0.05f * (float)(artPing * artPing));
         if (pullT >= 0)
         {
