@@ -47,7 +47,7 @@ from scipy import ndimage
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui16_dg_src"
 SEED = 6305
-NAME = "dg6_hair"          # the inpainted source (and NAME_cut.png, its alpha); ui17 A: dg5 = fuller fingers, round pads; A3: dg6_hair = the hair as locks (ui17_dg_src/patches/README.txt)
+NAME = "dg5_hand"          # the inpainted source (and NAME_cut.png, its alpha); ui17 A: dg5 = fuller fingers, round pads; A3 tried dg6_hair (the hair as locks): the owner rejected it ("the hair that remains looks bad": clumps, loops lost), UI 18 restored dg5 hair (ui17_dg_src/patches/README.txt)
 PADL = 128                 # the source's left padding (dg3: the orb further left)
 GLASS = (238.64, 336.6, 139.8)  # dg4's glass (placed by the guide, screen (378, 950)): centre, radius
 RING = 12.0                # her fingertips and thumb may lie over the glass's outer RING px (1080), no further in
@@ -63,7 +63,7 @@ GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
 SHOULDER = (530.0 + PADL, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
 HAND_LIFT = 0.06    # her hand and forearm a touch brighter than the rest of her bronze (ui17 A: 0.22 read yellow)
 RED_BOUNCE = (0.0, 0.0, 0.0)   # (ui17 A: the orb's red on her is live now, hud_dg_orb.gdshader, scaled to her life)
-STRAND_GAIN = 0.0   # ui17 A: the hair's joined highlights (strand_pass); A3: off (the hair is repainted as locks, LOCKS)
+STRAND_GAIN = 1.0   # ui17 A: the hair's joined highlights (strand_pass); UI 18: back on with dg5's hair
 HAND_MATCH = 1.0    # ui17 A (the judge: "yellower than her body"): her hand's hue matched to her neck and shoulder
 
 
@@ -173,9 +173,9 @@ LOCKS = [
     [(588, 160), (625, 255), (660, 352), (690, 442), (742, 522), (822, 592), (905, 650)],
 ]
 LOCK_GAIN = 0.0     # (the procedural regroup: off, the hair is repainted, NAME)
-HAIR_LIFT = 0.15
-HAIR_GAMMA = 0.15
-HAIR_VERD = 0.75
+HAIR_LIFT = 0.0     # (A3's lift/gamma/extra verdigris were for the repainted locks; UI 18: off with dg5's hair)
+HAIR_GAMMA = 0.0
+HAIR_VERD = 0.30    # = BZ["verd_cav"]: her hair takes the body's verdigris
 LOCK = dict(flatten=0.6, edge=0.65, groove=0.85, crest=(0.20, 0.15, 0.09))
 
 
