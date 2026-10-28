@@ -50,15 +50,15 @@ RELIEF_K = float(_E("SCULPT_RELIEF", "1.6"))   # the relief's slopes x this (ton
 # deltoid: heads (t0, phi0, half-length t, half-width deg, mm); its V edge (t at phi 90, t at its borders), band (t)
 # (the middle head kept low: it is her shoulder line seen from the front (2.7 head widths, approved); the cap stands
 # proud in the side view through the front and rear heads)
-DELT_HEADS = ((0.14, 28, 0.26, 48, 6.0), (0.17, 90, 0.30, 62, 3.5), (0.14, 152, 0.26, 48, 5.5))
+DELT_HEADS = ((0.14, 28, 0.26, 48, 6.0), (0.17, 90, 0.30, 62, 1.5), (0.14, 152, 0.26, 48, 5.5))
 DELT_V = (0.46, 0.24)
 DELT_BAND = 0.07
 DELT_TOP = (-0.14, -0.02)   # t: none above the first, whole below the second
 DELT_PHI = (-25, 205)       # its front and back borders (deg), 20 deg soft
 UP = (
-    (0.68, 95, 0.22, 55, -3.5),     # outer arm below the insertion: slimmer, so the cap stands proud
+    (0.68, 95, 0.22, 55, -5.0),     # outer arm below the insertion: slimmer, so the cap stands proud
     (0.60, -5, 0.24, 52, 5.0),      # biceps' belly, forward, easing into the crease
-    (0.42, -100, 0.26, 45, -3.0),   # inner arm slimmer (no added girth)
+    (0.42, -100, 0.26, 45, -4.5),   # inner arm slimmer (no added girth)
     (0.33, 170, 0.22, 50, 4.0),     # triceps, upper back third
     (0.86, 180, 0.09, 50, -2.5),    # triceps' flat tendon plane above the olecranon
 )
@@ -73,7 +73,7 @@ FORE = (
 )
 # the front of her pit: the arm end (t, phi) on her arm, the chest end as an offset from the pit's apex (m), the mass
 # (mm, Gaussian sigma mm), the hollow behind it (mm, sigma mm, its offset toward the apex mm)
-WEDGE = dict(arm=(0.30, -38.0), chest=(-0.030, -0.075, 0.060), h=3.5, sig=13.0, hollow=-2.0, hsig=16.0, back=24.0)
+WEDGE = dict(arm=(0.30, -38.0), chest=(-0.030, -0.075, 0.060), h=6.0, sig=13.0, hollow=-3.0, hsig=16.0, back=24.0)
 # relief paths: ((t0, phi0), (t1, phi1), chart, mm, sigma mm, end fades (share of the length))
 GROOVES = (
     ((-0.10, 8), (0.42, 78), "up", -2.5, 9.0, (0.15, 0.35)),     # deltopectoral groove into the insertion
@@ -110,11 +110,11 @@ def delt_field(t, phi):
     return d * m
 
 
-def up_grid(L, up=UP):
-    """the upper arm's move (mm) on tone's (s, phi) grid"""
+def up_grid(L, up=UP, delt=True):
+    """the upper arm's move (mm) on tone's (s, phi) grid (delt: with the deltoid's heads)"""
     S, P = np.meshgrid(tone.RG_S, tone.RG_P, indexing="ij")
     t = S / (L * 1000)
-    return delt_field(t, P) + ac._bumps(t, P, up)
+    return (delt_field(t, P) if delt else 0.0) + ac._bumps(t, P, up)
 
 
 def _centres(Q, O2, ax2, L2, wf):
@@ -144,9 +144,9 @@ def fore_chart(Q, fr, L2, cl):
     return t2, np.degrees(np.arctan2(q @ l2, q @ f2)), np.linalg.norm(q, axis=1) * 1000
 
 
-def moves(b, FR=None, up=UP, fore=FORE, wedge=WEDGE, grids=None, amt=AMT, smooth=SMOOTH):
+def moves(b, FR=None, up=UP, fore=FORE, wedge=WEDGE, grids=None, amt=AMT, smooth=SMOOTH, delt=True):
     """(dU (n, 3) m, info): the upper arm radial (via arm_contour_post.fields on a grid), the forearm and the wedge
-    along her normals; smoothed over her surface."""
+    along her normals; smoothed over her surface. (delt=False: no deltoid; arm_carve_post's tables alone)"""
     import pit_hollow_post as ph
     from scipy.ndimage import map_coordinates  # noqa: F401
     from scipy.spatial import cKDTree
@@ -156,7 +156,7 @@ def moves(b, FR=None, up=UP, fore=FORE, wedge=WEDGE, grids=None, amt=AMT, smooth
     for side, fr in FR.items():
         O, ax = fr["up"][0], fr["up"][1]
         L = float((J["lowerarm_" + side] * fr["mir"] + fr["off"] - O) @ ax)
-        G = up_grid(L, up)
+        G = up_grid(L, up, delt)
         if grids is not None and side in grids:
             G = G + grids[side]["up"]
         g[side] = {"up": G}
