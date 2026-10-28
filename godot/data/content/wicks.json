@@ -30,7 +30,7 @@
   // and "status" is that school's status (what its lead-ins and a converted status give). "inert": in the data
   // and the planner, but not yet in the fight (P5b).
   "turns": {
-    "split":  { "name": "Split",  "text": "Three smaller: three times the projectiles, each 34% damage and 75% size.", "projectiles": 3, "damage": 0.34, "area": 0.75 },
+    "split":  { "name": "Split",  "text": "Three smaller: three times the projectiles, each 28% damage and 75% size.", "projectiles": 3, "damage": 0.28, "area": 0.75 },
     "chain":  { "name": "Chain",  "text": "It bounces twice more, at 85% damage.", "chains": 2, "bounces": 2, "damage": 0.85 },
     "wide":   { "name": "Wide",   "text": "Bigger and slower: 25% larger, 30% longer cooldown, 5% less damage.", "area": 1.25, "cooldown": 1.3, "damage": 0.95 },
     "linger": { "name": "Linger", "text": "It leaves 1.5 m of its own ground for 2 s, burning at 25% of its damage a second.", "ground": { "radius": 1.5, "duration": 2, "dpsPct": 0.25 } },
