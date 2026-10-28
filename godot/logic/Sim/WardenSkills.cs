@@ -203,8 +203,14 @@ public sealed partial class Battle
             double d = Dist(e.X, e.Z, p.X, p.Z), dd = d < 1e-6 ? 1 : d;
             HitEnemy(e, w.Damage * RebukeChampionMul(e), w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = status, BossDamage = w.Def.BossDamage });
         }
-        // Shield of Morning: a barrier for each creature struck.
-        if (w.Wick is { BarrierEach: > 0 } fx) Barrier(MaxHp * Math.Min(fx.BarrierMost > 0 ? fx.BarrierMost : 1, fx.BarrierEach * struck.Count), 6);
+        // Shield of Morning: a barrier for each creature struck. Added to a barrier she holds without renewing its time
+        // (renewed, eight strikes a minute kept the bell's and every other barrier up for good: P 1.43-1.63, P6c).
+        if (w.Wick is { BarrierEach: > 0 } fx)
+        {
+            double add = MaxHp * Math.Min(fx.BarrierMost > 0 ? fx.BarrierMost : 1, fx.BarrierEach * struck.Count);
+            if (p.Shield > 0 && p.ShieldT > 0) p.Shield = Math.Min(MaxHp, p.Shield + StonesBarrier(add));
+            else Barrier(add, 6);
+        }
         RebukeMends();
         return true;
     }

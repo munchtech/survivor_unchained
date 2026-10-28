@@ -484,18 +484,24 @@ public sealed class WardenSkillsTests
         var es = Dummies(b, Blocker);
         double shield = b.Player.Shield;
         Block(b, es[0]);
-        Assert.Equal(b.MaxHp * 0.02, b.Player.Shield - shield, 6);
-        // Two struck, 2%.
+        Assert.Equal(b.MaxHp * 0.004, b.Player.Shield - shield, 6);
+        // Added to a barrier she holds, its time not renewed.
+        b.Player.ShieldT = 1;
+        b.Time += 1;
+        Block(b, es[0]);
+        Assert.Equal(1, b.Player.ShieldT, 6);
+        Assert.Equal(b.MaxHp * 0.008, b.Player.Shield - shield, 6);
+        // Two struck, 0.2%.
         var c = Fight("rebuke", 4, plan: Strand("rebuke.morning"));
         (double, double)[] two = [(2, 0), (2.5, 1)];
         var cs = Dummies(c, two);
         shield = c.Player.Shield;
         Block(c, cs[0]);
-        Assert.Equal(c.MaxHp * 0.01, c.Player.Shield - shield, 6);
+        Assert.Equal(c.MaxHp * 0.002, c.Player.Shield - shield, 6);
     }
 
     [Fact]
-    public void Stone_bell_lays_a_stone_a_toll_and_one_more_a_champion_drawn()
+    public void Stone_bell_lays_two_stones_a_toll_and_one_more_a_champion_drawn()
     {
         Assert.Equal(["wide", "pulse", "watch_bell.stone"], Wicks.Of("watch_bell")!.Strands);
         Assert.StartsWith("Stone Bell:", Wicks.Text("watch_bell", "watch_bell.stone.4"));
@@ -507,6 +513,6 @@ public sealed class WardenSkillsTests
         var es = Dummies(b, Ring);
         es[0].Elite = true;
         FireOnce(b, b.Weapons[0], es, Ring);
-        Assert.Equal(2, b.Stones);
+        Assert.Equal(3, b.Stones);
     }
 }

@@ -140,7 +140,7 @@
       "bossDamage": 1.5,
       "art": "nova_holy",
       "description": "Your shield turns more blows, and every blow that reaches you, turned or not, strikes back in holy light at the one who struck and the three nearest it, at most every 0.5 s.",
-      "base": { "cooldown": 0.5, "damage": 150, "range": 6, "radius": 4, "others": 3, "knockback": 0.6, "block": 0.08, "blockStep": 0.01 },
+      "base": { "cooldown": 0.5, "damage": 700, "range": 6, "radius": 4, "others": 3, "knockback": 0.6, "block": 0.08, "blockStep": 0.01 },
       "evolutions": []
     },
     {
