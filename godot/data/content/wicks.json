@@ -38,7 +38,7 @@
     "onkill": { "name": "On-kill", "text": "It fires again from what it kills.", "inert": true },
     "fire":   { "name": "Fire",   "text": "It becomes fire: it burns, and strikes 10% harder.", "damage": 1.1, "school": "fire", "statused": "burning", "status": { "kind": "burn", "chance": 1, "power": 0.8, "duration": 3 } },
     "frost":  { "name": "Frost",  "text": "It becomes frost: it chills, and strikes 10% harder.", "damage": 1.1, "school": "frost", "statused": "chilled", "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } },
-    "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder).", "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1.5 } }
+    "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } }
   },
 
   // The library's strands: kind, Turn, lead-ins, and which skills it suits. "suits" is a list of alternatives,
