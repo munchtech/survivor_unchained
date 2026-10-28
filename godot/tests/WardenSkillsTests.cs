@@ -245,6 +245,6 @@ public sealed class WardenSkillsTests
         Assert.Equal(2, b.Heaves);
         Assert.True(es[0].Status.Has(StatusKind.Stun));
         double second = es[0].MaxHp - es[0].Hp - first;
-        Assert.InRange(second / first, 0.4, 0.9);
+        Assert.InRange(second / first, 0.25, 0.6);
     }
 }
